@@ -1,0 +1,132 @@
+/*
+ * Copyright (c) 2020 LG Electronics Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+using System.Runtime.InteropServices;
+using UnityEngine;
+
+public class DeviceHelper
+{
+	public static string GetModelName(in GameObject targetObject, in bool searchOnlyOneDepth = false)
+	{
+		try
+		{
+			var nextObject = targetObject.GetComponentInParent<ModelPlugin>();
+
+			if (searchOnlyOneDepth == false)
+			{
+				while (!nextObject.transform.parent.Equals(nextObject.transform.root))
+				{
+					nextObject = nextObject.transform.parent.GetComponentInParent<ModelPlugin>();
+					if (nextObject == null)
+						return string.Empty;
+				}
+			}
+
+			return nextObject.name;
+		}
+		catch
+		{
+			Debug.LogError("Thee is no parent object model");
+			return string.Empty;
+		}
+	}
+
+	public static string GetPartName(in GameObject targetObject)
+	{
+		return GetModelName(targetObject, true);
+	}
+
+	[DllImport("StdHash")]
+	public static extern ulong GetStringHashCode(string value);
+
+	public static void SetCurrentTime(gazebo.msgs.Time gazeboMsgsTime, in bool useRealTime = false)
+	{
+		try
+		{
+			if (gazeboMsgsTime == null)
+			{
+				gazeboMsgsTime = new gazebo.msgs.Time();
+			}
+
+			var timeNow = (useRealTime)? Time.realtimeSinceStartup:Time.time;
+			gazeboMsgsTime.Sec = (int)timeNow;
+			gazeboMsgsTime.Nsec = (int)((timeNow - (float)gazeboMsgsTime.Sec) * (float)1e+9);
+		}
+		catch
+		{
+			Debug.LogError("time message is not initialized yet.");
+		}
+	}
+
+	public static void SetVector3d(gazebo.msgs.Vector3d vector3d, in Vector3 position)
+	{
+		if (vector3d == null)
+		{
+			vector3d = new gazebo.msgs.Vector3d();
+		}
+
+		vector3d.X = position.x;
+		vector3d.Y = position.z;
+		vector3d.Z = position.y;
+	}
+
+	public static void SetQuaternion(gazebo.msgs.Quaternion quaternion, in Quaternion rotation)
+	{
+		if (quaternion == null)
+		{
+			quaternion = new gazebo.msgs.Quaternion();
+		}
+
+		quaternion.X = rotation.x;
+		quaternion.Y = rotation.z;
+		quaternion.Z = rotation.y;
+		quaternion.W = rotation.w;
+	}
+
+	public static Matrix4x4 MakeCustomProjectionMatrix(in float hFov, in float vFov, in float near, in float far)
+	{
+		// construct custom aspect ratio projection matrix
+		// math from https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/opengl-perspective-projection-matrix
+		float h = 1.0f / Mathf.Tan(hFov * Mathf.Deg2Rad / 2f);
+		float v = 1.0f / Mathf.Tan(vFov * Mathf.Deg2Rad / 2f);
+		float a = (far + near) / (near - far);
+		float b = (2.0f * far * near / (near - far));
+
+		var projMatrix = new Matrix4x4(
+			new Vector4(h, 0, 0, 0),
+			new Vector4(0, v, 0, 0),
+			new Vector4(0, 0, a, -1),
+			new Vector4(0, 0, b, 0));
+
+		return projMatrix;
+	}
+
+
+	public static float HorizontalToVerticalFOV(in float horizontalFOV, in float aspect = 1.0f)
+	{
+		return Mathf.Rad2Deg * 2 * Mathf.Atan(Mathf.Tan((horizontalFOV * Mathf.Deg2Rad) / 2f) / aspect);
+	}
+
+	public static bool IsSamePosition(in float A, in float B)
+	{
+		var distance = Mathf.Abs(A - B);
+		if (distance < Mathf.Epsilon)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	public static bool IsSamePosition(in Vector3 A, in Vector3 B)
+	{
+		var distance = Vector3.SqrMagnitude(A - B);
+		if (distance < Vector3.kEpsilon)
+		{
+			return true;
+		}
+		return false;
+	}
+}

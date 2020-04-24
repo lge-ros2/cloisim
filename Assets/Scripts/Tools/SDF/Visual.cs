@@ -1,0 +1,82 @@
+/*
+ * Copyright (c) 2020 LG Electronics Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+using System.Collections.Generic;
+using System.Xml;
+
+namespace SDF
+{
+	public class Visuals : Entities<Visual>
+	{
+		private const string TARGET_TAG = "visual";
+		public Visuals() : base(TARGET_TAG) {}
+		public Visuals(XmlNode _node) : base(_node, TARGET_TAG) {}
+	}
+
+	public class Visual : Entity
+	{
+		private bool cast_shadows = true;
+		private double laser_retro = 0.0;
+		private double transparency = 0.0;
+
+		// <meta> : TBD
+		// <meta>/<layer> : TBD
+
+		private Material material;
+
+		private Geometry geometry;
+		private Plugins plugins;
+
+		public bool CastShadow => cast_shadows;
+
+		public Visual(XmlNode _node)
+			: base(_node)
+		{
+			ParseElements();
+		}
+
+		protected override void ParseElements()
+		{
+			if (root == null)
+				return;
+
+			plugins = new Plugins(root);
+
+			XmlNode matNode = GetNode("material");
+			if (matNode != null)
+			{
+				material = new Material(matNode);
+			}
+
+			XmlNode geomNode = GetNode("geometry");
+			if (geomNode != null)
+			{
+				geometry = new Geometry(geomNode);
+			}
+
+			cast_shadows = GetValue<bool>("cast_shadows");
+			laser_retro = GetValue<double>("laser_retro");
+			transparency = GetValue<double>("transparency");
+
+			// Console.WriteLine("[{0}] P:{1} C:{2}", GetType().Name, parent, child);
+		}
+
+		public Geometry GetGeometry()
+		{
+			return geometry;
+		}
+
+		public Material GetMaterial()
+		{
+			return material;
+		}
+
+		public List<Plugin> GetPlugins()
+		{
+			return plugins.GetData();
+		}
+	}
+}

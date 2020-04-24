@@ -1,0 +1,48 @@
+Open Source Package:
+- name: VSCode
+  version: 2.7
+  source: https://github.com/dotBunny/VSCode
+  license: MIT
+
+- name: AsyncIO
+  version: 0.1.69
+  source: https://github.com/somdoron/AsyncIO
+  license: MPL-2.0
+
+- name: NetMQ
+  version: 4.0.0
+  source: https://github.com/zeromq/netmq
+  license: LGPL-3.0
+
+- name: protobuf-net
+  version: 2.4.6
+  source: https://github.com/protobuf-net/protobuf-net
+  license: Apache-2.0
+
+- name: gazebo
+  version: 9.13.0
+  source: https://bitbucket.org/osrf/gazebo/src/gazebo9_9.13.0
+  license: Apache-2.0
+
+- name: OBJ Importer
+  version: 2.0.2
+  source: https://assetstore.unity.com/packages/tools/modeling/runtime-obj-importer-49547
+  license: MIT
+
+- name: pb_Stl
+  version: 1.0.0
+  source: https://github.com/karl-/pb_Stl
+  license: MIT
+
+- name: Unity3DRuntimeTransformGizmo
+  source: https://github.com/HiddenMonk/Unity3DRuntimeTransformGizmo
+  license: MIT
+
+- name: ProceduralPrimitives From Unify Community Wiki
+  source: https://wiki.unity3d.com/index.php/ProceduralPrimitives
+  license: CC-BY-SA-3.0
+
+- name: Websocket-sharp
+  version: 1.0.3-rc11
+  source: https://github.com/sta/websocket-sharp
+  license: MIT
