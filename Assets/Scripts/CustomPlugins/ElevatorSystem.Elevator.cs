@@ -138,16 +138,6 @@ public partial class ElevatorSystem : CustomPlugin
 	{
 		elevatorIndex = NON_ELEVATOR_INDEX;
 
-		// Try to find in task queue
-		foreach (var task in elevatorTaskQueue)
-		{
-			if (task.toFloor.Equals(currentFloor) && task.state.Equals(ElevatorTaskState.PROCESSING))
-			{
-				elevatorIndex = task.elevatorIndex;
-				return true;
-			}
-		}
-
 		var currentFloorHeight = GetFloorHeight(currentFloor);
 		// If not, try to find in stopped elevator
 		foreach (var elevatorItem in elevatorList)
@@ -156,6 +146,18 @@ public partial class ElevatorSystem : CustomPlugin
 			if (elevator.State.Equals(ElevatorState.STOP) && elevator.IsArrived(currentFloorHeight))
 			{
 				elevatorIndex = elevatorItem.Key;
+				Debug.Log("Already elevator is stopped " + elevatorIndex);
+				return true;
+			}
+		}
+
+		// Try to find in task queue
+		foreach (var task in elevatorTaskQueue)
+		{
+			if (task.toFloor.Equals(currentFloor) && task.state.Equals(ElevatorTaskState.PROCESSING))
+			{
+				elevatorIndex = task.elevatorIndex;
+				Debug.Log("Calling elevator " + elevatorIndex);
 				return true;
 			}
 		}
