@@ -69,6 +69,8 @@
 *.pdb.meta
 *.mdb.meta
 
+README.md.meta
+
 # Unity3D generated file on crash reports
 sysinfo.txt
 
