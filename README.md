@@ -116,6 +116,55 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
   * *And have fun!!!*
 
 
+#### Control service 
+
+CLOiSim supports web-based simulation control service through websocket as an external interface.
+
+websocket service path: ***ws://127.0.0.1:8080/{service-name}***
+
+Just send a request data as a JSON format.
+
+##### Supporting Service Name
++ control  => *url: ws://127.0.0.1:8080/control*
+    + Reset simulation
+        +   `{"command": "reset"}`
+    
++ markers  => *url: ws://127.0.0.1:8080/markers*
+    + Markers are consist of 'group', 'id', 'type', 'color'.
+        + 'id' must be unique in 'group'.
+        + Check supporing color type in below
+            + Red, Green, Blue, Gray, Orange, Lime, Pink, Purple, Navy, Aqua, Cyan, Magenta, Yellow, Black
+        + There are four type of 'type'. Must describe type properties for each type.
+            + line
+                + `"line":{"size":0.03, "point":{"x":1.1, "y":1.1, "z":3.3}, "endpoint":{"x":1.1, "y":1.1, "z":10.0}}}`
+            + text
+                + `"text":{"size": 5, "align": "center", "following": null, "text": "Hello!!!!\nCLOiSim!!", "point": {"x": 1.0, "y": 1.0, "z": 4.0}}`
+            + sphere
+                + ` "sphere":{"size":0.1, "point":{"x": 1.1, "y": 2.2, "z": 4.1}}`
+            + box
+                + `"box":{"size": 0.2, "point":{"x": 2.1, "y": 3.2, "z": 4.1}}`
+    
+    + Add markers
+        + `{"command":"add", "markers":[{"group":"sample","id":4,"type":"line","color":"red", (type_properties_here)},]}`
+        + `{"command":"add", "markers":[{"group":"sample","id":4,"type":"line","color":"red", "line":{"size":0.03, "point":{"x":1.1, "y":1.1, "z":3.3}, "endpoint":{"x":1.1, "y":1.1, "z":10.0}}},]}`
+    + Modify markers
+        + `{"command":"modify", "markers":[{"group":"sample", "id":4, "type":"line", "color":"blue", "line":{"size":0.05, "point":{"x":1.1, "y":1.1, "z":3.3}, "endpoint":{"x":1.1,"y":1.1,"z":5.0}}},]}`
+    + Remove markers
+        + `{"command": "remove", "markers":[{"group":"sample","id":5,"type":"line"},]}`
+    + Get markers list
+        + `{"command": "list"}`
+        + `{"command": "list", "filter":{"group": "sample"}}`
+
+###### Following object feature in 'Text' marker
++ Enable following function
+    + Input target object name in simulation on "following" field.
+    + `"text":{"size": 5, "align": "center", "following": "CLOI_Porter_Robot", "text": "Hello, CLOiSim!!", "point": {"x": 1.0, "y": 3.0, "z": 4.0}}`
++ Disable following function 
+    + `"text":{"size": 5, "align": "center", "following": "", "text": "Hello, CLOiSim", "point": {"x": 1.0, "y": 3.0, "z": 4.0}}`
+    + `"text":{"size": 5, "align": "center", "following": null, "text": "Hello, CLOiSim", "point": {"x": 1.0, "y": 3.0, "z": 4.0}}`
+
+
+
 ## Future Plan
 New features or functions shall be developed on demand.
 
