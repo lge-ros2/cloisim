@@ -72,8 +72,8 @@ public class ModelLoader : MonoBehaviour
 	{
 #if UNITY_EDITOR
  		filesRootDirectory = "/usr/share/gazebo-9/";
-		modelRootDirectories.Add("../../sample-resources/models/");
-		worldRootDirectories.Add("../../sample-resources/worlds/");
+		modelRootDirectories.Add("../sample-resources/models/");
+		worldRootDirectories.Add("../sample-resources/worlds/");
 #else
 		var separator = new char[] {':'};
 		filesRootDirectory = Environment.GetEnvironmentVariable("CLOISIM_FILES_PATH");
