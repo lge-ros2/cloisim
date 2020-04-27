@@ -71,9 +71,9 @@ public class ModelLoader : MonoBehaviour
 	void Awake()
 	{
 #if UNITY_EDITOR
- 		filesRootDirectory = "../../../SimulatorInstance/gazebo/gazebo/build/Installed/Release/share/gazebo-9/";
-		modelRootDirectories.Add("../../../lgrs_resource/assets/models/");
-		worldRootDirectories.Add("../../../lgrs_resource/worlds");
+ 		filesRootDirectory = "/usr/share/gazebo-9/";
+		modelRootDirectories.Add("../sample-resources/models/");
+		worldRootDirectories.Add("../sample-resources/worlds/");
 #else
 		var separator = new char[] {':'};
 		filesRootDirectory = Environment.GetEnvironmentVariable("CLOISIM_FILES_PATH");
