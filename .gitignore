@@ -42,6 +42,7 @@
 
 # Visual Studio Code user settings
 .vscode/
+*.code-workspace
 
 # Gradle cache directory
 .gradle/
