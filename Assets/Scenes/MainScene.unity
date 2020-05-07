@@ -768,7 +768,7 @@ MonoBehaviour:
   doNotLoad: 0
   pauseOnStart: 0
   clearAllOnStart: 1
-  worldFileName: seocho_tower_multi.world
+  worldFileName: lg_seocho.world
 --- !u!114 &249819590
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3253,7 +3253,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.8
+  near clip plane: 0.6
   far clip plane: 500
   field of view: 60
   orthographic: 0
