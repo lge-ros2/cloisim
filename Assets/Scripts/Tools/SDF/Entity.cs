@@ -135,7 +135,7 @@ namespace SDF
 			return ConvertValueType<T>(attributes[attributeName].Value);
 		}
 
-		protected T GetAttribute<T>(in string xpath, in string attributeName, in T defaultValue = default(T))
+		protected T GetAttributeInPath<T>(in string xpath, in string attributeName, in T defaultValue = default(T))
 		{
 			var node = GetNode(xpath);
 			if (node != null)
@@ -215,7 +215,7 @@ namespace SDF
 			var value = GetValue<string>("pose");
 
 			// TBD : for SDF 1.7
-			relative_to = GetAttribute<string>("pose", "relative_to");
+			relative_to = GetAttributeInPath<string>("pose", "relative_to");
 
 			if (value != null)
 			{
