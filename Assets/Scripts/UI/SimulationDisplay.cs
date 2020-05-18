@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
- 
+
 using System;
 using System.Text;
 using UnityEngine;
@@ -18,7 +18,7 @@ public class SimulationDisplay : MonoBehaviour
 	private float dt = 0.0F;
 	private float fps = 0.0F;
 
-	private const float fpsUpdatePeriod = 1.0F;
+	private const float fpsUpdatePeriod = 0.5F;
 
 	// Start is called before the first frame update
 	void Awake()
