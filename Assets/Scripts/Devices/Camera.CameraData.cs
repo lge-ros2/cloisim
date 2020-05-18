@@ -189,5 +189,10 @@ namespace SensorDevices
 		}
 
 		private CamData camData;
+
+		public byte[] GetCamImageData()
+		{
+			return camData.GetTextureData();
+		}
 	}
 }

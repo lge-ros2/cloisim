@@ -113,11 +113,8 @@ public partial class SDFImplement
 
 			var multicamera = newSensorObject.AddComponent<SensorDevices.MultiCamera>();
 			multicamera.deviceName = GetFrameName(newSensorObject);
+			multicamera.parameters = element;
 
-			foreach (var cam in element.list)
-			{
-				multicamera.AddCamera(cam);
-			}
 			return multicamera;
 		}
 
