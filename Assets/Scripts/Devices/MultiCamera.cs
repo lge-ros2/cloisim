@@ -88,7 +88,8 @@ namespace SensorDevices
 			{
 				var image = images[index];
 				var imageData = cameras[index].GetCamImageData();
-				if (image.Data.Length == imageData.Length)
+
+				if (imageData != null && (image.Data.Length == imageData.Length))
 				{
 					image.Data = imageData;
 				}
