@@ -16,9 +16,11 @@ namespace SDF
 	{
 		private Dictionary<string, Tuple<string, string>> resourceModelTable = null; // Model Name, (Model Path, Model File)
 
-		private string[] sdfVersions = { "1.6", "1.5", "1.4", "1.3", "1.2", string.Empty };
+		private string[] sdfVersions = {"1.7", "1.6", "1.5", "1.4", "1.3", "1.2", string.Empty};
 
-		XmlDocument doc = null;
+		private XmlDocument doc = null;
+
+		private string sdfVersion = "1.7";
 
 		private World world = null;
 
@@ -129,13 +131,17 @@ namespace SDF
 				foreach (var subDirectory in rootDirectory.GetDirectories())
 				{
 					if (subDirectory.Name.StartsWith("."))
+					{
 						continue;
+					}
 
 					//Console.WriteLine(subDirectory.Name + " => " + subDirectory.FullName);
 					var modelConfig = subDirectory.FullName + "/model.config";
 
 					if (!File.Exists(modelConfig))
+					{
 						continue;
+					}
 
 					try
 					{
@@ -143,7 +149,7 @@ namespace SDF
 					}
 					catch (XmlException e)
 					{
-						Console.WriteLine("Failed to Load model file - " + e.Message);
+						Console.WriteLine("Failed to Load model file(" + modelConfig  + ") - " + e.Message);
 						continue;
 					}
 
@@ -151,11 +157,10 @@ namespace SDF
 					var modelName = subDirectory.Name; //modelNode["name"].InnerText;
 
 					// Get Model root
-					XmlNode modelNode = modelConfigDoc.SelectSingleNode("model");
+					var modelNode = modelConfigDoc.SelectSingleNode("model");
 
 					// Get Model SDF file name
-					//XmlNode sdfNodeList =
-					string sdfFileName = null;
+					var sdfFileName = string.Empty;
 					foreach (var version in sdfVersions)
 					{
 						//Console.WriteLine(version);
@@ -163,12 +168,13 @@ namespace SDF
 						if (sdfNode != null)
 						{
 							sdfFileName = sdfNode.InnerText;
+							sdfVersion = version;
 							//Console.WriteLine(version + "," + sdfFileName);
 							break;
 						}
 					}
 
-					if (sdfFileName == null)
+					if (string.IsNullOrEmpty(sdfFileName))
 					{
 						Console.WriteLine(modelName + ": SDF FileName is empty!!");
 						continue;
@@ -209,11 +215,11 @@ namespace SDF
 				string uri = node.InnerText;
 				if (uri.StartsWith("model://"))
 				{
-					string modelUri = uri.Replace("model://", string.Empty);
+					var modelUri = uri.Replace("model://", string.Empty);
 					var stringArray = modelUri.Split('/');
 
 					// Get Model name from Uri
-					string modelName = stringArray[0];
+					var modelName = stringArray[0];
 
 					// remove Model name in array
 					modelUri = string.Join("/", stringArray.Skip(1));
@@ -249,12 +255,12 @@ namespace SDF
 
 				foreach (XmlNode node in nodes)
 				{
-					XmlNode modelNode = GetIncludedModel(node);
+					var modelNode = GetIncludedModel(node);
 
 					if (modelNode != null)
 					{
 						// Console.WriteLine("Node - " + modelNode);
-						XmlNode importNode = doc.ImportNode(modelNode, true);
+						var importNode = doc.ImportNode(modelNode, true);
 						node.ParentNode.ReplaceChild(importNode, node);
 					}
 					else
@@ -267,28 +273,27 @@ namespace SDF
 
 		private XmlNode GetIncludedModel(XmlNode _node)
 		{
-			XmlNode nameNode = _node.SelectSingleNode("name");
-			string name = (nameNode == null) ? null : nameNode.InnerText;
+			var nameNode = _node.SelectSingleNode("name");
+			var name = (nameNode == null) ? null : nameNode.InnerText;
 
-			XmlNode poseNode = _node.SelectSingleNode("pose");
-			string pose = (poseNode == null) ? null : poseNode.InnerText;
+			var poseNode = _node.SelectSingleNode("pose");
+			var pose = (poseNode == null) ? null : poseNode.InnerText;
 
-			XmlNode staticNode = _node.SelectSingleNode("static");
-			string isStatic = (staticNode == null) ? null : staticNode.InnerText;
+			var staticNode = _node.SelectSingleNode("static");
+			var isStatic = (staticNode == null) ? null : staticNode.InnerText;
 
-			string uri = _node.SelectSingleNode("uri").InnerText;
+			var uri = _node.SelectSingleNode("uri").InnerText;
 
 			// Console.WriteLineFormat("{0} | {1} | {2} | {3}", name, uri, pose, isStatic);
 
 			Tuple<string, string> value;
-			string modelName = uri.Replace("model://", string.Empty);
+			var modelName = uri.Replace("model://", string.Empty);
 			if (resourceModelTable.TryGetValue(modelName, out value))
 			{
 				uri = value.Item1 + "/" + value.Item2;
 			}
 
-			XmlDocument modelSdfDoc = new XmlDocument();
-			XmlNode sdfNode = null;
+			var modelSdfDoc = new XmlDocument();
 
 			try
 			{
@@ -296,13 +301,22 @@ namespace SDF
 			}
 			catch (XmlException e)
 			{
-				Console.WriteLine("Failed to Load included model(" + modelName + ") file - " + e.Message); ;
+				Console.WriteLine("Failed to Load included model(" + modelName + ") file - " + e.Message);
+				return null;
 			}
 
-			sdfNode = modelSdfDoc.SelectSingleNode("/sdf/model");
+			var sdfNode = modelSdfDoc.SelectSingleNode("/sdf/model");
 
-				if (sdfNode == null)
-					sdfNode = modelSdfDoc.SelectSingleNode("/sdf/light");
+			if (sdfNode == null)
+			{
+				sdfNode = modelSdfDoc.SelectSingleNode("/sdf/light");
+			}
+
+			var attributes = sdfNode.Attributes;
+			if (attributes.GetNamedItem("version") != null)
+			{
+				var modelSdfDocVersion = attributes.GetNamedItem("version").Value;
+			}
 
 			// Edit custom parameter
 			if (nameNode != null)
@@ -313,7 +327,9 @@ namespace SDF
 			if (poseNode != null)
 			{
 				if (sdfNode.SelectSingleNode("pose") != null)
+				{
 					sdfNode.SelectSingleNode("pose").InnerText = pose;
+				}
 
 				else
 				{
@@ -326,7 +342,9 @@ namespace SDF
 			if (staticNode != null)
 			{
 				if (sdfNode.SelectSingleNode("static") != null)
+				{
 					sdfNode.SelectSingleNode("static").InnerText = isStatic;
+				}
 				else
 				{
 					XmlElement elem = sdfNode.OwnerDocument.CreateElement("static");

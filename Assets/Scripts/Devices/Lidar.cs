@@ -194,10 +194,13 @@ namespace SensorDevices
 				{
 					var data = laserCamData[dataIndex];
 					axisRotation.y = data.CenterAngle;
+
 					laserCamera.transform.localRotation = Quaternion.Euler(axisRotation);
 					laserCamera.Render();
+
 					data.SetTextureData(laserCamera.targetTexture);
 					// data.SaveRawImageData(name);
+
 					laserCamera.enabled = false;
 
 					yield return waitForSeconds;

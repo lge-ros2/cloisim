@@ -59,7 +59,7 @@ namespace SDF
 			var ray = new Ray();
 
 			var pose = GetValue<string>("ray/pose");
-			var relative_to = GetAttribute<string>("ray/pose", "relative_to");
+			var relative_to = GetAttributeInPath<string>("ray/pose", "relative_to");
 
 			ray.ParsePose(pose, relative_to);
 
@@ -111,12 +111,17 @@ namespace SDF
 			var camera = new Camera();
 
 			var pose = GetValue<string>(cameraElement + "/pose");
-			var relative_to = GetAttribute<string>(cameraElement + "/pose", "relative_to");
+			var relative_to = GetAttributeInPath<string>(cameraElement + "/pose", "relative_to");
 
 			camera.ParsePose(pose, relative_to);
 
-			camera.name = Name;
-			camera.type = GetAttribute<string>(cameraElement, "name");
+			camera.name = GetAttributeInPath<string>(cameraElement, "name");
+			if (string.IsNullOrEmpty(camera.name))
+			{
+				camera.name = Name;
+			}
+
+			camera.type = Type;
 			camera.horizontal_fov = GetValue<double>(cameraElement + "/horizontal_fov");
 			camera.image_width = GetValue<int>(cameraElement + "/image/width");
 			camera.image_height = GetValue<int>(cameraElement + "/image/height");
@@ -126,7 +131,7 @@ namespace SDF
 
 			if (IsValidNode(cameraElement + "/save"))
 			{
-				camera.save_enabled = GetAttribute<bool>(cameraElement + "/save", "enabled", false);
+				camera.save_enabled = GetAttributeInPath<bool>(cameraElement + "/save", "enabled", false);
 				camera.save_path = GetValue<string>(cameraElement + "/save/path");
 			}
 
@@ -196,7 +201,7 @@ namespace SDF
 			var sonar = new Sonar();
 
 			var pose = GetValue<string>("sonar/pose");
-			var relative_to = GetAttribute<string>("sonar/pose", "relative_to");
+			var relative_to = GetAttributeInPath<string>("sonar/pose", "relative_to");
 
 			sonar.ParsePose(pose, relative_to);
 
@@ -220,7 +225,7 @@ namespace SDF
 			var imu = new IMU();
 
 			var pose = GetValue<string>("imu/pose");
-			var relative_to = GetAttribute<string>("imu/pose", "relative_to");
+			var relative_to = GetAttributeInPath<string>("imu/pose", "relative_to");
 
 			imu.ParsePose(pose, relative_to);
 
@@ -231,16 +236,16 @@ namespace SDF
 
 			if (IsValidNode("imu/angular_velocity"))
 			{
-				imu.angular_velocity_x.type = GetAttribute<string>("imu/angular_velocity/x/noise", "type");
-				imu.angular_velocity_y.type = GetAttribute<string>("imu/angular_velocity/y/noise", "type");
-				imu.angular_velocity_z.type = GetAttribute<string>("imu/angular_velocity/z/noise", "type");
+				imu.angular_velocity_x.type = GetAttributeInPath<string>("imu/angular_velocity/x/noise", "type");
+				imu.angular_velocity_y.type = GetAttributeInPath<string>("imu/angular_velocity/y/noise", "type");
+				imu.angular_velocity_z.type = GetAttributeInPath<string>("imu/angular_velocity/z/noise", "type");
 			}
 
 			if (IsValidNode("imu/linear_acceleration"))
 			{
-				imu.linear_acceleration_x.type = GetAttribute<string>("imu/linear_acceleration/x/noise", "type");
-				imu.linear_acceleration_y.type = GetAttribute<string>("imu/linear_acceleration/y/noise", "type");
-				imu.linear_acceleration_z.type = GetAttribute<string>("imu/linear_acceleration/z/noise", "type");
+				imu.linear_acceleration_x.type = GetAttributeInPath<string>("imu/linear_acceleration/x/noise", "type");
+				imu.linear_acceleration_y.type = GetAttributeInPath<string>("imu/linear_acceleration/y/noise", "type");
+				imu.linear_acceleration_z.type = GetAttributeInPath<string>("imu/linear_acceleration/z/noise", "type");
 			}
 			return imu;
 		}

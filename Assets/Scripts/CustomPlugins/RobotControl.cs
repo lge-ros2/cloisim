@@ -60,8 +60,8 @@ public class RobotControl : CustomPlugin
 		var debugging = GetPluginValue<bool>("debug", false);
 		micomInput.EnableDebugging = debugging;
 
-		var motorFriction = GetPluginValue<float>("motor_friction", 0.1f);
-		var brakeFriction = GetPluginValue<float>("brake_friction", 0.1f);
+		var motorFriction = GetPluginValue<float>("wheel/friction/motor", 0.1f); // Currently not used
+		var brakeFriction = GetPluginValue<float>("wheel/friction/brake", 0.1f); // Currently not used
 
 		var modelList = GetComponentsInChildren<ModelPlugin>();
 		foreach (var model in modelList)

@@ -5,8 +5,6 @@
  */
 
 using System.Collections;
-using System;
-using Unity.Collections;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -116,6 +114,7 @@ namespace SensorDevices
 		private IEnumerator CameraWorker()
 		{
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod * adjustCapturingRate);
+
 			while (true)
 			{
 				var oldCulling = GL.invertCulling;

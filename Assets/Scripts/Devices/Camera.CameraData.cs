@@ -177,7 +177,7 @@ namespace SensorDevices
 
 			public byte[] GetTextureData()
 			{
-				return cameraImage.GetRawTextureData();
+				return (cameraImage is null)? null : cameraImage.GetRawTextureData();
 			}
 
 			public void SaveRawImageData(in string path, in string name)
@@ -189,5 +189,10 @@ namespace SensorDevices
 		}
 
 		private CamData camData;
+
+		public byte[] GetCamImageData()
+		{
+			return camData.GetTextureData();
+		}
 	}
 }

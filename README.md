@@ -1,26 +1,23 @@
 # CLOiSim : Multi-Robot Simulator
 
-Happy to announce CLOiSim. It is a new multi-robot simulator to bring-up SDF(www.sdformat.org) file which contains 3d world environemnt and multi-robot descriptions. 
+Happy to announce CLOiSim. It is a new multi-robot simulator that uses an SDF(www.sdformat.org) file containing 3d world environemnts and robot descriptions.
 
-It may looks similar to Gazebo simulator, but we had a problems to load multi-robot which equipped multi-sensors in Gazebo.
-So that is why we initiated to utilize a 'Unity 3D'.
-I believe 'Unity' can provide a powerful resource handling and can see many possiblity in industrial area by Unity.
+The simulator is based on Unity 3D. It may look similar to Gazebo, where, unfortunately, we encountered performance problems while loading multiple robots equipped with multiple sensors.
 
-So, this project consist of 
+This project consists of 
 - [SDF](http://sdformat.org/spec?ver=1.7) Parser for C#
-- [SDF](http://sdformat.org/spec?ver=1.7) Implementation for Unity -> **Visual / Collision / Sensor / Physics for joints**
+- [SDF](http://sdformat.org/spec?ver=1.7) Robot Implementation for Unity -> **Visual / Collision / Sensor / Physics for joints**
 - [SDF](http://sdformat.org/spec?ver=1.7) Plugins for Unity
-- UI modules -> On screen information
-- Network modules -> transporting sensor data or control data
-- Web service -> control and manipulate simulation
+- UI modules -> Module for on-screen information
+- Network modules -> Module for transporting sensor data or control signal
+- Web service -> Module for controling simulation through a web interface
 
 
 ## Features
-Unfortunately, all sensor models are not fully developed yet.
-Because first target for simulation was 2-wheeled mobile robot with 2D lidar sensor.
-
-Here are sensor models that already implemented or ongoing.
-- [X] 2D Lidar Sensor
+The current release includes the features only for a 2-wheeled mobile robot with 2D LiDAR sensor.
+Other sensor models are work in progress.
+Here is the full list of models that is implemented or planned to be implemented.
+- [X] 2D LiDAR Sensor
 - [X] 2-Wheeled Motor
 - [X] Sonar sensor
 - [X] IMU
@@ -30,12 +27,12 @@ Here are sensor models that already implemented or ongoing.
 - [ ] 3D Lidar Sensor
 - [ ] Sensor noise model
 
-Plus, [SDF](http://sdformat.org/spec?ver=1.7) implementation only works on essenstial elements like `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
-For example, kind of optional elmenets `<lights>`, `<audio>`, `<actor>`, `<state>` and so on are not implemented yet.
+Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
+It does not support optional elmenets like `<lights>`, `<audio>`, `<actor>`, `<state>`.
 
 
 ## How it works
-It's simple. Refer to core codes in 'Assets/Scripts'.
+Refer to core codes in 'Assets/Scripts'.
 * Load SDF file -> Parse SDF(simulation description) -> Implement and realize description
 
 Shaders are also used to get depth buffer information in a few sensor model.
