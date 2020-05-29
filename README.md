@@ -23,8 +23,10 @@ Here is the full list of models that is implemented or planned to be implemented
 - [X] 2-Wheeled Motor
 - [X] Sonar sensor
 - [X] IMU
-- [ ] Camera
-- [ ] Multi Camera
+- [X] Camera
+    - [ ] Camera intrinsic parameter
+- [X] Multi-camera
+- [ ] GPS sensor model
 - [ ] Depth Camera
 - [ ] 3D Lidar Sensor
 - [ ] Sensor noise model
