@@ -68,6 +68,9 @@ If you don't want to build a project, just USE a release binary([Download linux 
 
 1. First, You need a Unity Editor to build a project. Download and install [Unity Editor](https://unity3d.com/get-unity/download)
 
+1. Install prerequisite libraries
+    - $ sudo apt-get install libvulkan1
+
 1. Open the project folder where you clone the git repository.
 
 1. You will see popup window if you open it at first time.
