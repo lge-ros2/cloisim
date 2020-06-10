@@ -16,12 +16,13 @@ public partial class MarkerVisualizer : MonoBehaviour
 	private const string mainCameraName = "Main Camera";
 	private const string commonShaderName = "UI/Unlit/Text";
 	private Shader commonShader = null;
-
 	private Camera mainCamera = null;
+
 	private GameObject rootMarkers = null;
 	private Hashtable registeredMarkers = null;
-	private Hashtable registeredObjectsForText = null;
+	private Hashtable registeredObjectsForFollowingText = null;
 
+	private Hashtable followingTextMarkers = null;
 
 #region Request
 	private VisualMarkerRequest request = null;
@@ -34,8 +35,12 @@ public partial class MarkerVisualizer : MonoBehaviour
 	MarkerVisualizer()
 	{
 		registeredMarkers = new Hashtable();
-		registeredObjectsForText = new Hashtable();
+
+		registeredObjectsForFollowingText = new Hashtable();
+		followingTextMarkers = new Hashtable();
+
 		response = new VisualMarkerResponse();
+
 		InitializeList();
 	}
 
@@ -67,20 +72,19 @@ public partial class MarkerVisualizer : MonoBehaviour
 
 	private void HandleFollowingText()
 	{
-		var texts = rootMarkers.GetComponentsInChildren<TextMeshPro>();
-		foreach (var text in texts)
+		foreach (DictionaryEntry textMarker in followingTextMarkers)
 		{
 			// Look at camera
-			var textObject = text.gameObject;
+			var textObject = (textMarker.Value as TextMeshPro).gameObject;
 			textObject.transform.LookAt(mainCamera.transform);
 
 			// Following Objects
-			var markerName = text.name;
-			var followingObject = registeredObjectsForText[markerName] as GameObject;
-			if (followingObject != null)
+			var markerName = textObject.name;
+			var followingTargetObject = registeredObjectsForFollowingText[markerName] as GameObject;
+			if (followingTargetObject != null)
 			{
 				var rectTransform = textObject.GetComponent<RectTransform>();
-				var followingObjectPosition = followingObject.transform.position;
+				var followingObjectPosition = followingTargetObject.transform.position;
 				var textPosition = rectTransform.localPosition;
 				var newPos = new Vector3(followingObjectPosition.x, textPosition.y, followingObjectPosition.z);
 				rectTransform.position = newPos;

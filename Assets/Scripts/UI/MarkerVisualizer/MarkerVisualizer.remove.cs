@@ -14,21 +14,37 @@ public partial class MarkerVisualizer : MonoBehaviour
 		foreach (var item in request.markers)
 		{
 			var markerName = item.MarkerName();
+			var markerSet = registeredMarkers[markerName] as Tuple<MarkerRequest, GameObject>;
 
-			if (registeredMarkers[markerName] == null)
+			if (markerSet == null)
 			{
 				continue;
 			}
 			else
 			{
-				var markerSet =  registeredMarkers[markerName] as Tuple<Marker, GameObject>;
 				// Debug.Log("Remove Marker: " + targetObject.name);
-				Destroy(markerSet.Item2);
+				if (markerSet.Item2 != null)
+				{
+					Destroy(markerSet.Item2);
+				}
 
 				registeredMarkers.Remove(markerName);
+
+				// remove text object if it exists.
+				RemoveFollowingObjectByText(markerName);
 			}
 		}
 
 		return true;
+	}
+
+	private void RemoveFollowingObjectByText(in string markerName)
+	{
+		// remove if empty
+		if (registeredObjectsForFollowingText[markerName] != null)
+		{
+			registeredObjectsForFollowingText.Remove(markerName);
+			followingTextMarkers.Remove(markerName);
+		}
 	}
 }

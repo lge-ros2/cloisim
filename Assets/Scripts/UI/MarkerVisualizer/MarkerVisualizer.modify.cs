@@ -126,33 +126,25 @@ public partial class MarkerVisualizer : MonoBehaviour
 		}
 		else
 		{
-			var registeredObject = registeredObjectsForText[markerName];
+			var registeredObject = registeredObjectsForFollowingText[markerName];
 			if (registeredObject != null)
 			{
 				// if following name is changed, remove exists one
 				var followingObject = registeredObject as GameObject;
+
 				if (!markerProperties.following.Equals(followingObject.name))
 				{
 					RemoveFollowingObjectByText(followingObject.name);
 				}
 			}
 
-			AddFollowingObjectByText(markerName, markerProperties.following);
+			AddFollowingObjectByText(markerName, markerProperties.following, text);
 
 			var currentPosition = markerObject.transform.position;
 			var tempPosition = markerProperties.point;
 			tempPosition.x = currentPosition.x;
 			tempPosition.z = currentPosition.z;
 			markerObject.transform.position = tempPosition;
-		}
-	}
-
-	private void RemoveFollowingObjectByText(in string markerName)
-	{
-		// remove if empty
-		if (registeredObjectsForText[markerName] != null)
-		{
-			registeredObjectsForText.Remove(markerName);
 		}
 	}
 }
