@@ -76,8 +76,7 @@ public partial class SDFImporter : SDF.Importer
 			{
 				newSensorObject.tag = "Sensor";
 				newSensorObject.name = item.Name;
-				newSensorObject.transform.localPosition = SDF2Unity.GetPosition(item.Pose.Pos);
-				newSensorObject.transform.localRotation = SDF2Unity.GetRotation(item.Pose.Rot);
+				SDFImplement.Sensor.TransformSensor(newSensorObject, item.Pose);
 #if UNITY_EDITOR
 				SceneVisibilityManager.instance.ToggleVisibility(newSensorObject, true);
 				SceneVisibilityManager.instance.DisablePicking(newSensorObject, true);
