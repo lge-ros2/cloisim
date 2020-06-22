@@ -26,7 +26,7 @@ Here is the full list of models that is implemented or planned to be implemented
 - [X] Camera
     - [ ] Camera intrinsic parameter
 - [X] Multi-camera
-- [ ] GPS sensor model
+- [X] GPS sensor
 - [ ] Depth Camera
 - [ ] 3D Lidar Sensor
 - [ ] Sensor noise model
