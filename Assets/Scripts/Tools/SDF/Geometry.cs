@@ -73,7 +73,7 @@ namespace SDF
 				string normal = GetValue<string>("plane/normal");
 				(shape as Plane).normal.SetByString(normal);
 
-				string size = GetValue<string>("plane/normal");
+				string size = GetValue<string>("plane/size");
 				(shape as Plane).size.SetByString(size);
 			}
 			else if (IsValidNode("height") ||
