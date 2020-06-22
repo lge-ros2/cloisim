@@ -178,6 +178,14 @@ namespace SDF
 			if (IsValidNode("imu/angular_velocity"))
 			{
 				imu.angular_velocity_x.type = GetAttributeInPath<string>("imu/angular_velocity/x/noise", "type");
+				imu.angular_velocity_x.mean = 0;
+				imu.angular_velocity_x.stddev = 0;
+				imu.angular_velocity_x.bias_mean = 0;
+				imu.angular_velocity_x.bias_stddev = 0;
+				imu.angular_velocity_x.dynamic_bias_stddev = 0;
+				imu.angular_velocity_x.dynamic_bias_correlation_time = 0;
+				imu.angular_velocity_x.precision = 0;
+
 				imu.angular_velocity_y.type = GetAttributeInPath<string>("imu/angular_velocity/y/noise", "type");
 				imu.angular_velocity_z.type = GetAttributeInPath<string>("imu/angular_velocity/z/noise", "type");
 			}
@@ -185,10 +193,74 @@ namespace SDF
 			if (IsValidNode("imu/linear_acceleration"))
 			{
 				imu.linear_acceleration_x.type = GetAttributeInPath<string>("imu/linear_acceleration/x/noise", "type");
+				imu.linear_acceleration_x.mean = 0;
+				imu.linear_acceleration_x.stddev = 0;
+				imu.linear_acceleration_x.bias_mean = 0;
+				imu.linear_acceleration_x.bias_stddev = 0;
+				imu.linear_acceleration_x.dynamic_bias_stddev = 0;
+				imu.linear_acceleration_x.dynamic_bias_correlation_time = 0;
+				imu.linear_acceleration_x.precision = 0;
+
 				imu.linear_acceleration_y.type = GetAttributeInPath<string>("imu/linear_acceleration/y/noise", "type");
 				imu.linear_acceleration_z.type = GetAttributeInPath<string>("imu/linear_acceleration/z/noise", "type");
 			}
+
 			return imu;
+		}
+
+		private GPS ParseGPS()
+		{
+			var gps = new GPS();
+
+			if (IsValidNode("gps/position_sensing/horizontal/noise"))
+			{
+				gps.position_sensing_horizontal_noise.type = GetAttributeInPath<string>("gps/position_sensing/horizontal/noise", "type");
+				gps.position_sensing_horizontal_noise.mean = 0;
+				gps.position_sensing_horizontal_noise.stddev = 0;
+				gps.position_sensing_horizontal_noise.bias_mean = 0;
+				gps.position_sensing_horizontal_noise.bias_stddev = 0;
+				gps.position_sensing_horizontal_noise.dynamic_bias_stddev = 0;
+				gps.position_sensing_horizontal_noise.dynamic_bias_correlation_time = 0;
+				gps.position_sensing_horizontal_noise.precision = 0;
+			}
+
+			if (IsValidNode("gps/position_sensing/vertical/noise"))
+			{
+				gps.position_sensing_vertical_noise.type = GetAttributeInPath<string>("gps/position_sensing/vertical/noise", "type");
+				gps.position_sensing_vertical_noise.mean = 0;
+				gps.position_sensing_vertical_noise.stddev = 0;
+				gps.position_sensing_vertical_noise.bias_mean = 0;
+				gps.position_sensing_vertical_noise.bias_stddev = 0;
+				gps.position_sensing_vertical_noise.dynamic_bias_stddev = 0;
+				gps.position_sensing_vertical_noise.dynamic_bias_correlation_time = 0;
+				gps.position_sensing_vertical_noise.precision = 0;
+			}
+
+			if (IsValidNode("gps/velocity_sensing/horizontal/noise"))
+			{
+				gps.velocity_sensing_horizontal_noise.type = GetAttributeInPath<string>("gps/velocity_sensing/horizontal/noise", "type");
+				gps.velocity_sensing_horizontal_noise.mean = 0;
+				gps.velocity_sensing_horizontal_noise.stddev = 0;
+				gps.velocity_sensing_horizontal_noise.bias_mean = 0;
+				gps.velocity_sensing_horizontal_noise.bias_stddev = 0;
+				gps.velocity_sensing_horizontal_noise.dynamic_bias_stddev = 0;
+				gps.velocity_sensing_horizontal_noise.dynamic_bias_correlation_time = 0;
+				gps.velocity_sensing_horizontal_noise.precision = 0;
+			}
+
+			if (IsValidNode("gps/velocity_sensing/vertical/noise"))
+			{
+				gps.velocity_sensing_vertical_noise.type = GetAttributeInPath<string>("gps/velocity_sensing/vertical/noise", "type");
+				gps.velocity_sensing_vertical_noise.mean = 0;
+				gps.velocity_sensing_vertical_noise.stddev = 0;
+				gps.velocity_sensing_vertical_noise.bias_mean = 0;
+				gps.velocity_sensing_vertical_noise.bias_stddev = 0;
+				gps.velocity_sensing_vertical_noise.dynamic_bias_stddev = 0;
+				gps.velocity_sensing_vertical_noise.dynamic_bias_correlation_time = 0;
+				gps.velocity_sensing_vertical_noise.precision = 0;
+			}
+
+			return gps;
 		}
 	}
 }

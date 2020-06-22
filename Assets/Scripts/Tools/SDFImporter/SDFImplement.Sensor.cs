@@ -141,5 +141,16 @@ public partial class SDFImplement
 
 			return imu;
 		}
+
+		public static Device AddGps(in SDF.GPS element, in GameObject targetObject)
+		{
+			var newSensorObject = new GameObject();
+			AttachSensor(newSensorObject, targetObject);
+
+			var gps = newSensorObject.AddComponent<SensorDevices.GPS>();
+			gps.deviceName = GetFrameName(newSensorObject);
+
+			return gps;
+		}
 	}
 }

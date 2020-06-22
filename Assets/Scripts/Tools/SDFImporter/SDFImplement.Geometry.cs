@@ -78,72 +78,25 @@ public partial class SDFImplement
 				var box = shape as SDF.Box;
 				mesh = ProceduralMesh.CreateBox((float)box.size.X, (float)box.size.Z, (float)box.size.Y);
 				mesh.name = "Box";
-
-				// Scaling
-				// Vector3[] vertices = mesh.vertices;
-				// for (var v = 0; v < mesh.vertexCount; v++)
-				// {
-				// 	vertices[v].x *= (float)box.size.X;
-				// 	vertices[v].y *= (float)box.size.Z;
-				// 	vertices[v].z *= (float)box.size.Y;
-				// }
-				// mesh.vertices = vertices;
 			}
 			else if (shape is SDF.Sphere)
 			{
 				var sphere = shape as SDF.Sphere;
 				mesh = ProceduralMesh.CreateSphere((float)sphere.radius);
 				mesh.name = "Sphere";
-
-				// // Scaling
-				// Vector3[] vertices = mesh.vertices;
-				// for (var v = 0; v < mesh.vertexCount; v++)
-				// {
-				// 	vertices[v] *= (float)sphere.radius;
-				// }
-				// mesh.vertices = vertices;
 			}
 			else if (shape is SDF.Cylinder)
 			{
 				var cylinder = shape as SDF.Cylinder;
 				mesh = ProceduralMesh.CreateCylinder((float)cylinder.radius, (float)cylinder.length);
 				mesh.name = "Cylinder";
-
-				// Scaling
-				// Vector3[] vertices = mesh.vertices;
-				// for (var v = 0; v < mesh.vertexCount; v++)
-				// {
-				// 	vertices[v].x *= (float)cylinder.radius;
-				// 	vertices[v].y *= (float)cylinder.length;
-				// 	vertices[v].z *= (float)cylinder.radius;
-				// }
-				// mesh.vertices = vertices;
 			}
 			else if (shape is SDF.Plane)
 			{
 				var plane = shape as SDF.Plane;
-
-				Vector3 normal = new Vector3((float)plane.normal.X, (float)plane.normal.Z, (float)plane.normal.Y);
+				var normal = new Vector3((float)plane.normal.X, (float)plane.normal.Z, (float)plane.normal.Y);
 				mesh = ProceduralMesh.CreatePlane((float)plane.size.X, (float)plane.size.Y, normal);
 				mesh.name = "Plane";
-
-				// Vector3 normal = new Vector3((float)plane.normal.X, (float)plane.normal.Z, (float)plane.normal.Y);
-				// Vector3[] normals = mesh.normals;
-				// // edit the normals in an external array
-				// for (int i = 0; i < normals.Length; i++)
-				// {
-				// 	normals[i] = normal;
-				// }
-				// mesh.normals = normals;
-
-				// // Scaling
-				// Vector3[] vertices = mesh.vertices;
-				// for (var v = 0; v < mesh.vertexCount; v++)
-				// {
-				// 	vertices[v].x *= (float)plane.size.X;
-				// 	vertices[v].z *= (float)plane.size.Y;
-				// }
-				// mesh.vertices = vertices;
 			}
 			else
 			{

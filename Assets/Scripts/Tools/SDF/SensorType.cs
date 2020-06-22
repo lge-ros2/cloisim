@@ -145,7 +145,15 @@ namespace SDF
 	}
 
 	// <contact> : TBD
-	// <gps> : TBD
+
+	public class GPS : SensorType
+	{
+		public Noise position_sensing_horizontal_noise = new Noise();
+		public Noise position_sensing_vertical_noise = new Noise();
+
+		public Noise velocity_sensing_horizontal_noise = new Noise();
+		public Noise velocity_sensing_vertical_noise = new Noise();
+	}
 
 	public class IMU : SensorType
 	{

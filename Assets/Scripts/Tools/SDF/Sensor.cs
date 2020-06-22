@@ -100,6 +100,10 @@ namespace SDF
 			{
 				sensor = ParseIMU();
 			}
+			else if (IsValidNode("gps") && Type.Equals("gps"))
+			{
+				sensor = ParseGPS();
+			}
 			else
 			{
 				Console.WriteLine("Not supported sensor type!!!!! => " + Type);
