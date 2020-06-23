@@ -35,18 +35,6 @@ namespace SensorDevices
 
 		private float sensorStartOffset = 0;
 
-		Sonar()
-		{
-			// Initialize Gazebo Message
-			sonarStamped = new gazebo.msgs.SonarStamped();
-			sonarStamped.Time = new gazebo.msgs.Time();
-			sonarStamped.Sonar = new gazebo.msgs.Sonar();
-			sonarStamped.Sonar.WorldPose = new gazebo.msgs.Pose();
-			sonarStamped.Sonar.WorldPose.Position = new gazebo.msgs.Vector3d();
-			sonarStamped.Sonar.WorldPose.Orientation = new gazebo.msgs.Quaternion();
-			sonarStamped.Sonar.Contact = new gazebo.msgs.Vector3d();
-		}
-
 		protected override void OnStart()
 		{
 			deviceName = name;
@@ -111,6 +99,14 @@ namespace SensorDevices
 
 		private void InitializeMessages()
 		{
+			sonarStamped = new gazebo.msgs.SonarStamped();
+			sonarStamped.Time = new gazebo.msgs.Time();
+			sonarStamped.Sonar = new gazebo.msgs.Sonar();
+			sonarStamped.Sonar.WorldPose = new gazebo.msgs.Pose();
+			sonarStamped.Sonar.WorldPose.Position = new gazebo.msgs.Vector3d();
+			sonarStamped.Sonar.WorldPose.Orientation = new gazebo.msgs.Quaternion();
+			sonarStamped.Sonar.Contact = new gazebo.msgs.Vector3d();
+
 			var sonar = sonarStamped.Sonar;
 			sonar.Frame = deviceName;
 			sonar.Radius = radius;

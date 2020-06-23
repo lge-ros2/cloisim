@@ -59,18 +59,6 @@ namespace SensorDevices
 
 		private LaserCamData[] laserCamData;
 
-
-		Lidar()
-		{
-			// Initialize Gazebo Message
-			laserScanStamped = new gazebo.msgs.LaserScanStamped();
-			laserScanStamped.Time = new gazebo.msgs.Time();
-			laserScanStamped.Scan = new gazebo.msgs.LaserScan();
-			laserScanStamped.Scan.WorldPose = new gazebo.msgs.Pose();
-			laserScanStamped.Scan.WorldPose.Position = new gazebo.msgs.Vector3d();
-			laserScanStamped.Scan.WorldPose.Orientation = new gazebo.msgs.Quaternion();
-		}
-
 		void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
 			if (depthMaterial)
@@ -108,6 +96,13 @@ namespace SensorDevices
 
 		private void InitializeMessages()
 		{
+			laserScanStamped = new gazebo.msgs.LaserScanStamped();
+			laserScanStamped.Time = new gazebo.msgs.Time();
+			laserScanStamped.Scan = new gazebo.msgs.LaserScan();
+			laserScanStamped.Scan.WorldPose = new gazebo.msgs.Pose();
+			laserScanStamped.Scan.WorldPose.Position = new gazebo.msgs.Vector3d();
+			laserScanStamped.Scan.WorldPose.Orientation = new gazebo.msgs.Quaternion();
+
 			var laserScan = laserScanStamped.Scan;
 			laserScan.Frame = deviceName;
 			laserScan.AngleMin = angleMin * Mathf.Deg2Rad;
@@ -199,7 +194,6 @@ namespace SensorDevices
 					laserCamera.Render();
 
 					data.SetTextureData(laserCamera.targetTexture);
-					// data.SaveRawImageData(name);
 
 					laserCamera.enabled = false;
 
