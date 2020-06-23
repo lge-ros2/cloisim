@@ -12,7 +12,7 @@ namespace SensorDevices
 {
 	public partial class GPS : Device
 	{
-		public gazebo.msgs.Gps gps = null;
+		private gazebo.msgs.Gps gps = null;
 
 		private SphericalCoordinates sphericalCoordinates = null;
 
@@ -22,8 +22,8 @@ namespace SensorDevices
 
 		public Vector3 previousSensorPosition;
 
-		// public Vector3 displayPosition;
-		// public Vector3 displayVelocity;
+		public Vector3 spherical;
+		public Vector3 gpsVelocity;
 
 		protected override void OnStart()
 		{
@@ -88,14 +88,14 @@ namespace SensorDevices
 			// TODO: Applying noise
 
 			// Convert to global frames
-			var spherical = sphericalCoordinates.SphericalFromLocal(worldPosition);
+			spherical = sphericalCoordinates.SphericalFromLocal(worldPosition);
 
 			gps.LatitudeDeg = spherical.x;
 			gps.LongitudeDeg = spherical.y;
 			gps.Altitude = spherical.z;
 
 			// Convert to global frame
-			var gpsVelocity = sphericalCoordinates.GlobalFromLocal(sensorVelocity);
+			gpsVelocity = sphericalCoordinates.GlobalFromLocal(sensorVelocity);
 
 			// Apply noise after converting to global frame
 			// TODO: Applying noise
@@ -105,9 +105,6 @@ namespace SensorDevices
 			gps.VelocityUp = gpsVelocity.z;
 
 			PushData<gazebo.msgs.Gps>(gps);
-
-			// displayPosition = spherical;
-			// displayVelocity = gpsVelocity;
 		}
 
 		float Longitude()
