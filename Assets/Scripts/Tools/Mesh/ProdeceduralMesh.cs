@@ -115,7 +115,7 @@ public class ProceduralMesh
 
 	public static Mesh CreateCone(in float topRadius = .01f, in float bottomRadius = 0.5f, in float height = 1f, in int nbSides = 18)
 	{
-		Mesh mesh = new Mesh();
+		var mesh = new Mesh();
 		mesh.Clear();
 		mesh.name = (topRadius.Equals(bottomRadius)) ? "Cylinder" : "Cone";
 
@@ -412,7 +412,7 @@ public class ProceduralMesh
 			normal = Vector3.up;
 		}
 
-		Mesh mesh = new Mesh();
+		var mesh = new Mesh();
 		mesh.Clear();
 		mesh.name = "Plane";
 
@@ -451,10 +451,10 @@ public class ProceduralMesh
 		#endregion
 
 		#region Triangles
-		int nbFaces = (resX - 1) * (resZ - 1);
+		var nbFaces = (resX - 1) * (resZ - 1);
 		int[] triangles = new int[nbFaces * 6];
-		int t = 0;
-		for (int face = 0; face < nbFaces; face++)
+
+		for (int t = 0, face = 0; face < nbFaces; face++)
 		{
 			// Retrieve lower left corner from face ind
 			int i = face % (resX - 1) + (face / (resZ - 1) * resX);
