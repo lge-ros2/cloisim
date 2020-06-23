@@ -11,9 +11,13 @@ public class MicomSensor : Device
 {
 	private gazebo.msgs.Micom micomSensorData = null;
 
-	MicomSensor()
+	protected override void OnStart()
 	{
-		// Initialize Gazebo Message
+		deviceName = "MicomSensor";
+	}
+
+	protected override void InitializeMessages()
+	{
 		micomSensorData = new gazebo.msgs.Micom();
 		micomSensorData.Time = new gazebo.msgs.Time();
 		micomSensorData.Imu = new gazebo.msgs.Imu();
@@ -24,11 +28,6 @@ public class MicomSensor : Device
 		micomSensorData.Imu.LinearAcceleration = new gazebo.msgs.Vector3d();
 		micomSensorData.Accgyro = new gazebo.msgs.Micom.AccGyro();
 		micomSensorData.Odom = new gazebo.msgs.Micom.Odometry();
-	}
-
-	protected override void OnStart()
-	{
-		deviceName = "MicomSensor";
 	}
 
 	protected override IEnumerator MainDeviceWorker()

@@ -37,8 +37,6 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
-			InitializeMessages();
-
 			if (cam)
 			{
 				cam.transform.Rotate(Vector3.up, 90.0000000000f);
@@ -48,7 +46,7 @@ namespace SensorDevices
 			}
 		}
 
-		private void InitializeMessages()
+		protected override void InitializeMessages()
 		{
 			imageStamped = new gazebo.msgs.ImageStamped();
 			imageStamped.Time = new gazebo.msgs.Time();

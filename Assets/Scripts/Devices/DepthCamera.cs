@@ -42,8 +42,6 @@ namespace SensorDevices
 		protected override void OnStart()
 		{
 			SetupDepthCamera();
-
-			base.OnStart();
 		}
 
 		private void SetupDepthCamera()

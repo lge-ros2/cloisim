@@ -76,13 +76,14 @@ namespace SensorDevices
 			return (maxAngle - minAngle) / (resolution * (totalSamples - 1));
 		}
 
+		void Awake()
+		{
+			lidarLink = transform.parent;
+		}
+
 		protected override void OnStart()
 		{
 			laserCamera = gameObject.AddComponent<UnityEngine.Camera>();
-
-			lidarLink = transform.parent;
-
-			InitializeMessages();
 
 			if (laserCamera)
 			{
@@ -94,7 +95,7 @@ namespace SensorDevices
 			}
 		}
 
-		private void InitializeMessages()
+		protected override void InitializeMessages()
 		{
 			laserScanStamped = new gazebo.msgs.LaserScanStamped();
 			laserScanStamped.Time = new gazebo.msgs.Time();

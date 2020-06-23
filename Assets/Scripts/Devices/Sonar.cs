@@ -35,11 +35,14 @@ namespace SensorDevices
 
 		private float sensorStartOffset = 0;
 
-		protected override void OnStart()
+		void Awake()
 		{
 			deviceName = name;
 			sonarLink = transform.parent;
+		}
 
+		protected override void OnStart()
+		{
 			var visualMesh = sonarLink.GetComponentInChildren<MeshFilter>();
 			sensorStartOffset = (visualMesh == null)? 0f:visualMesh.sharedMesh.bounds.max.y;
 
@@ -83,8 +86,6 @@ namespace SensorDevices
 			// 	= MeshColliderCookingOptions.EnableMeshCleaning|MeshColliderCookingOptions.WeldColocatedVertices;
 			// meshCollider.cookingOptions = cookingOptions;
 			// meshCollider.hideFlags |= HideFlags.NotEditable;
-
-			InitializeMessages();
 		}
 
 		private void TranslateDetectionArea(Mesh mesh, in float offset)
@@ -97,7 +98,7 @@ namespace SensorDevices
 			mesh.vertices = vertices;
 		}
 
-		private void InitializeMessages()
+		protected override void InitializeMessages()
 		{
 			sonarStamped = new gazebo.msgs.SonarStamped();
 			sonarStamped.Time = new gazebo.msgs.Time();

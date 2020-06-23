@@ -21,20 +21,18 @@ namespace SensorDevices
 
 		private Transform multiCamLink = null;
 
-		public MultiCamera()
-		{
-			// Initialize Gazebo Message
-			imagesStamped = new gazebo.msgs.ImagesStamped();
-			imagesStamped.Time = new gazebo.msgs.Time();
-		}
-
 		protected override void OnStart()
 		{
 			foreach (var camParameters in parameters.list)
 			{
 				AddCamera(camParameters);
-				InitializeMessages(camParameters);
+				InitializeCamMessages(camParameters);
 			}
+		}
+		protected override void InitializeMessages()
+		{
+			imagesStamped = new gazebo.msgs.ImagesStamped();
+			imagesStamped.Time = new gazebo.msgs.Time();
 		}
 
 		private void AddCamera(in SDF.Camera parameters)
@@ -56,7 +54,7 @@ namespace SensorDevices
 			cameras.Add(newCam);
 		}
 
-		private void InitializeMessages(in SDF.Camera parameters)
+		private void InitializeCamMessages(in SDF.Camera parameters)
 		{
 			var image = new gazebo.msgs.Image();
 			image.Width = (uint)parameters.image_width;

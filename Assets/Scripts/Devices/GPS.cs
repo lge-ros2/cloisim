@@ -25,17 +25,13 @@ namespace SensorDevices
 		public Vector3 spherical;
 		public Vector3 gpsVelocity;
 
-		protected override void OnStart()
+		void Awake()
 		{
+			// sensorVelocity = new Vector3();
 			gpsLink = transform.parent;
-
 			deviceName = name;
 
-			sensorVelocity = new Vector3();
-			previousSensorPosition = gpsLink.position;
-
 			var coreObject = GameObject.Find("Core");
-
 			if (coreObject == null)
 			{
 				Debug.LogError("Failed to Find 'Core'!!!!");
@@ -44,8 +40,11 @@ namespace SensorDevices
 			{
 				sphericalCoordinates = coreObject.GetComponent<SphericalCoordinates>();
 			}
+		}
 
-			InitializeMessages();
+		protected override void OnStart()
+		{
+			previousSensorPosition = gpsLink.position;
 		}
 
 		void Update()
@@ -56,7 +55,7 @@ namespace SensorDevices
 			sensorVelocity = positionDiff / Time.deltaTime;
 		}
 
-		private void InitializeMessages()
+		protected override void InitializeMessages()
 		{
 			gps = new gazebo.msgs.Gps();
 			gps.Time = new gazebo.msgs.Time();
