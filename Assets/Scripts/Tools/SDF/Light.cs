@@ -23,15 +23,15 @@ namespace SDF
 		public Light(XmlNode _node)
 			: base(_node)
 		{
-			ParseElements();
+			if (root != null)
+			{
+				ParseElements();
+			}
 		}
 
 
 		protected override void ParseElements()
 		{
-			if (root == null)
-				return;
-
 			cast_shadow = GetValue<bool>("cast_shadows");
 
 			if (IsValidNode("diffuse"))

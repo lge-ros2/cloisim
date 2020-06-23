@@ -78,7 +78,22 @@ public partial class SDFImporter : SDF.Importer
 			return;
 		}
 
-		Type pluginType = Type.GetType(plugin.Name);
+		// filtering plugin name
+		var pluginName = plugin.FileName;
+		if (pluginName.StartsWith("lib"))
+		{
+			pluginName = pluginName.Substring(3);
+		}
+
+		if (pluginName.EndsWith(".so"))
+		{
+			var foundIndex = pluginName.IndexOf(".so");
+			pluginName = pluginName.Remove(foundIndex);
+		}
+
+		Debug.Log("plugin name = " + pluginName);
+
+		var pluginType = Type.GetType(pluginName);
 		if (pluginType != null)
 		{
 			var pluginObject = (CustomPlugin)targetObject.AddComponent(pluginType);

@@ -60,14 +60,14 @@ namespace SDF
 		public Material(XmlNode _node)
 			: base(_node)
 		{
-			ParseElements();
+			if (root != null)
+			{
+				ParseElements();
+			}
 		}
 
 		protected override void ParseElements()
 		{
-			if (root == null)
-				return;
-
 			if (IsValidNode("ambient"))
 			{
 				ambient = new Color();

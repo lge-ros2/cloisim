@@ -35,14 +35,14 @@ namespace SDF
 		public Visual(XmlNode _node)
 			: base(_node)
 		{
-			ParseElements();
+			if (root != null)
+			{
+				ParseElements();
+			}
 		}
 
 		protected override void ParseElements()
 		{
-			if (root == null)
-				return;
-
 			plugins = new Plugins(root);
 
 			XmlNode matNode = GetNode("material");

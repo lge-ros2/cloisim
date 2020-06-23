@@ -24,13 +24,14 @@ namespace SDF
 		public Geometry(XmlNode _node)
 			: base(_node)
 		{
-			ParseElements();
+			if (root != null)
+			{
+				ParseElements();
+			}
 		}
 
 		protected override void ParseElements()
 		{
-			if (root == null)
-				return;
 
 			if (IsValidNode("box"))
 			{

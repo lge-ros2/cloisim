@@ -15,9 +15,12 @@ namespace SDF
 		public Plugins(XmlNode _node) : base(_node, TARGET_TAG) { }
 	}
 
-
 	public class Plugin : Entity
 	{
+		private string filename;
+
+		public string FileName => filename;
+
 		public XmlNode GetNode()
 		{
 			return GetNode(".");
@@ -26,13 +29,15 @@ namespace SDF
 		public Plugin(XmlNode _node)
 			: base(_node)
 		{
-			ParseElements();
+			if (root != null)
+			{
+				ParseElements();
+			}
 		}
 
 		protected override void ParseElements()
 		{
-			if (root == null)
-				return;
+			filename = GetAttribute<string>("filename");
 		}
 	}
 }
