@@ -57,7 +57,7 @@ Inertia factors which retrieved from SDF are NOT USED for rigidbody in Unity. Be
 
 #### Tested environement:
   - Linux - Ubuntu 18.04
-  - Current editor version is *'2019.4.0f1 (LTS)'*.
+  - Current editor version is *'2019.4.1f1 (LTS)'*.
   
 #### Release version
 If you don't want to build a project, just USE a release binary([Download linux version](https://github.com/lge-ros2/multi-robot-simulator/releases)). And go to 'Usage'
