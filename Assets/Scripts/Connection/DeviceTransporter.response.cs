@@ -18,6 +18,7 @@ public partial class DeviceTransporter
 
 		if (responseSocket != null)
 		{
+			responseSocket.Options.TcpKeepalive = true;
 			responseSocket.Bind(GetAddress(targetPort));
 			// Debug.Log("Responsor socket connecting... " + targetPort);
 			initialized = StoreTagIntoDataToSend(hashValueForReceive);
