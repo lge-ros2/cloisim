@@ -18,7 +18,7 @@ public abstract class CustomPlugin : DeviceTransporter
 
 	private XmlNode pluginData;
 
-	private BridgePortManager devicePortManager = null;
+	private BridgePortManager bridgePortManager = null;
 
 	private List<Thread> threadList = null;
 
@@ -29,9 +29,7 @@ public abstract class CustomPlugin : DeviceTransporter
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
-	protected virtual void OnReset() {
-
-	}
+	protected virtual void OnReset() { }
 
 	void OnDestroy()
 	{
@@ -57,6 +55,7 @@ public abstract class CustomPlugin : DeviceTransporter
 
 		return false;
 	}
+
 	private void StartThreads()
 	{
 		if (threadList != null)
@@ -68,6 +67,7 @@ public abstract class CustomPlugin : DeviceTransporter
 			}
 		}
 	}
+
 	public void SetPluginData(XmlNode node)
 	{
 		pluginData = node.SelectSingleNode(".");
@@ -173,7 +173,7 @@ public abstract class CustomPlugin : DeviceTransporter
 
 	protected bool PrepareDevice(in string hashKey, out ushort port, out ulong hash)
 	{
-		port = devicePortManager.AllocateSensorPort(hashKey);
+		port = bridgePortManager.AllocateSensorPort(hashKey);
 		hash = DeviceHelper.GetStringHashCode(hashKey);
 
 		if (port == 0)
@@ -250,10 +250,10 @@ public abstract class CustomPlugin : DeviceTransporter
 		}
 		else
 		{
-			devicePortManager = coreObject.GetComponent<BridgePortManager>();
-			if (devicePortManager == null)
+			bridgePortManager = coreObject.GetComponent<BridgePortManager>();
+			if (bridgePortManager == null)
 			{
-				Debug.LogError("Failed to get 'devicePortManager'!!!!");
+				Debug.LogError("Failed to get 'bridgePortManager'!!!!");
 			}
 
 			if (string.IsNullOrEmpty(modelName))

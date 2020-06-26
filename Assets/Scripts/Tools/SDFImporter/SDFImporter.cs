@@ -45,9 +45,13 @@ public partial class SDFImporter : SDF.Importer
 		childObject.transform.rotation = Quaternion.identity;
 
 		if (parentObject == null)
+		{
 			childObject.transform.SetParent(rootObject.transform, false);
+		}
 		else
+		{
 			childObject.transform.SetParent(parentObject.transform, false);
+		}
 
 		childObject.transform.localScale = Vector3.one;
 		childObject.transform.localPosition = Vector3.zero;
@@ -91,7 +95,7 @@ public partial class SDFImporter : SDF.Importer
 			pluginName = pluginName.Remove(foundIndex);
 		}
 
-		Debug.Log("plugin name = " + pluginName);
+		// Debug.Log("plugin name = " + pluginName);
 
 		var pluginType = Type.GetType(pluginName);
 		if (pluginType != null)
