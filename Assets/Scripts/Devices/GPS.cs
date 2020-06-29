@@ -27,7 +27,6 @@ namespace SensorDevices
 
 		void Awake()
 		{
-			// sensorVelocity = new Vector3();
 			gpsLink = transform.parent;
 			deviceName = name;
 
