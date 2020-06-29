@@ -26,14 +26,14 @@ namespace SDF
 		public Physics(XmlNode _node)
 			: base(_node)
 		{
-			ParseElements();
+			if (root != null)
+			{
+				ParseElements();
+			}
 		}
 
 		protected override void ParseElements()
 		{
-			if (root == null)
-				return;
-
 			max_step_size = GetValue<double>("max_step_size");
 			real_time_factor = GetValue<double>("real_time_factor");
 			real_time_update_rate = GetValue<double>("real_time_update_rate");

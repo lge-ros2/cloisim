@@ -29,14 +29,6 @@ namespace SensorDevices
 
 		public bool runningDeviceWork = true;
 
-		protected Camera()
-		{
-			// Initialize Gazebo Message
-			imageStamped = new gazebo.msgs.ImageStamped();
-			imageStamped.Time = new gazebo.msgs.Time();
-			imageStamped.Image = new gazebo.msgs.Image();
-		}
-
 		void Awake()
 		{
 			cam = gameObject.AddComponent<UnityEngine.Camera>();
@@ -45,8 +37,6 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
-			InitializeMessages();
-
 			if (cam)
 			{
 				cam.transform.Rotate(Vector3.up, 90.0000000000f);
@@ -56,8 +46,12 @@ namespace SensorDevices
 			}
 		}
 
-		private void InitializeMessages()
+		protected override void InitializeMessages()
 		{
+			imageStamped = new gazebo.msgs.ImageStamped();
+			imageStamped.Time = new gazebo.msgs.Time();
+			imageStamped.Image = new gazebo.msgs.Image();
+
 			var image = imageStamped.Image;
 			image.Width = (uint)parameters.image_width;
 			image.Height = (uint)parameters.image_height;

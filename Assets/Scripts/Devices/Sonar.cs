@@ -35,23 +35,14 @@ namespace SensorDevices
 
 		private float sensorStartOffset = 0;
 
-		Sonar()
+		void Awake()
 		{
-			// Initialize Gazebo Message
-			sonarStamped = new gazebo.msgs.SonarStamped();
-			sonarStamped.Time = new gazebo.msgs.Time();
-			sonarStamped.Sonar = new gazebo.msgs.Sonar();
-			sonarStamped.Sonar.WorldPose = new gazebo.msgs.Pose();
-			sonarStamped.Sonar.WorldPose.Position = new gazebo.msgs.Vector3d();
-			sonarStamped.Sonar.WorldPose.Orientation = new gazebo.msgs.Quaternion();
-			sonarStamped.Sonar.Contact = new gazebo.msgs.Vector3d();
+			deviceName = name;
+			sonarLink = transform.parent;
 		}
 
 		protected override void OnStart()
 		{
-			deviceName = name;
-			sonarLink = transform.parent;
-
 			var visualMesh = sonarLink.GetComponentInChildren<MeshFilter>();
 			sensorStartOffset = (visualMesh == null)? 0f:visualMesh.sharedMesh.bounds.max.y;
 
@@ -95,8 +86,6 @@ namespace SensorDevices
 			// 	= MeshColliderCookingOptions.EnableMeshCleaning|MeshColliderCookingOptions.WeldColocatedVertices;
 			// meshCollider.cookingOptions = cookingOptions;
 			// meshCollider.hideFlags |= HideFlags.NotEditable;
-
-			InitializeMessages();
 		}
 
 		private void TranslateDetectionArea(Mesh mesh, in float offset)
@@ -109,8 +98,16 @@ namespace SensorDevices
 			mesh.vertices = vertices;
 		}
 
-		private void InitializeMessages()
+		protected override void InitializeMessages()
 		{
+			sonarStamped = new gazebo.msgs.SonarStamped();
+			sonarStamped.Time = new gazebo.msgs.Time();
+			sonarStamped.Sonar = new gazebo.msgs.Sonar();
+			sonarStamped.Sonar.WorldPose = new gazebo.msgs.Pose();
+			sonarStamped.Sonar.WorldPose.Position = new gazebo.msgs.Vector3d();
+			sonarStamped.Sonar.WorldPose.Orientation = new gazebo.msgs.Quaternion();
+			sonarStamped.Sonar.Contact = new gazebo.msgs.Vector3d();
+
 			var sonar = sonarStamped.Sonar;
 			sonar.Frame = deviceName;
 			sonar.Radius = radius;

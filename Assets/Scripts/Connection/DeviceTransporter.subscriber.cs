@@ -18,13 +18,17 @@ public partial class DeviceTransporter
 
 		if (subscriberSocket != null)
 		{
-			subscriberSocket.Options.SendHighWatermark = highwatermark;
+			subscriberSocket.Options.TcpKeepalive = true;
+			subscriberSocket.Options.ReceiveHighWatermark = highwatermark;
 			subscriberSocket.Options.Linger = new TimeSpan(0);
-			subscriberSocket.Bind(GetAddress(targetPort));
-			// Debug.Log("Subscriber socket connecting... " + targetPort);
 
 		 	if (hashValueForReceive != null)
+			{
 				subscriberSocket.Subscribe(hashValueForReceive);
+			}
+
+			subscriberSocket.Bind(GetAddress(targetPort));
+			// Debug.Log("Subscriber socket connecting... " + targetPort);
 
 			initialized = true;
 		}

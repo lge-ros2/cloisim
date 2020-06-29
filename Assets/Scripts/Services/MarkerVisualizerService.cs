@@ -439,7 +439,8 @@ public class MarkerVisualizerService : WebSocketBehavior
 		}
 
 		var request = JsonUtility.FromJson<VisualMarkerRequest>(e.Data);
-		request.Print();
+
+		// request.Print();
 
 		var isSuccessful = markerVisualizer.PushRequsetMarkers(request);
 
@@ -459,7 +460,8 @@ public class MarkerVisualizerService : WebSocketBehavior
 	{
 		var response = markerVisualizer.GetResponseMarkers();
 		var responseJsonData = JsonUtility.ToJson(response, false);
-		response.Print();
+
+		// response.Print();
 
 		StringBuilder sb = new StringBuilder(responseJsonData);
 		// Debug.Log(responseJsonData);
@@ -468,6 +470,7 @@ public class MarkerVisualizerService : WebSocketBehavior
 		sb.Replace(@",""boxes"":[]", "");
 		sb.Replace(@",""spheres"":[]", "");
 		// Debug.Log(sb.ToString());
+
 		Send(sb.ToString());
 	}
 }

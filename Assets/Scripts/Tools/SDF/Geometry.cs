@@ -24,13 +24,14 @@ namespace SDF
 		public Geometry(XmlNode _node)
 			: base(_node)
 		{
-			ParseElements();
+			if (root != null)
+			{
+				ParseElements();
+			}
 		}
 
 		protected override void ParseElements()
 		{
-			if (root == null)
-				return;
 
 			if (IsValidNode("box"))
 			{
@@ -73,7 +74,7 @@ namespace SDF
 				string normal = GetValue<string>("plane/normal");
 				(shape as Plane).normal.SetByString(normal);
 
-				string size = GetValue<string>("plane/normal");
+				string size = GetValue<string>("plane/size");
 				(shape as Plane).size.SetByString(size);
 			}
 			else if (IsValidNode("height") ||

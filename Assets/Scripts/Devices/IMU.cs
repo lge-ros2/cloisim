@@ -34,30 +34,27 @@ namespace SensorDevices
 		public float samplingPeriod = 0;
 		public float timeElapsed = 0;
 
-		IMU()
+		void Awake()
 		{
-			// Initialize Gazebo Message
+			deviceName = name;
+			imuInitialRotation = transform.rotation.eulerAngles;
+			previousImuPosition = transform.position;
+			previousImuRotation = Vector3.zero;
+		}
+
+		protected override void OnStart()
+		{
+			samplingPeriod = 1/samplingRate;
+		}
+
+		protected override void InitializeMessages()
+		{
 			imu = new gazebo.msgs.Imu();
 			imu.Stamp = new gazebo.msgs.Time();
 			imu.Orientation = new gazebo.msgs.Quaternion();
 			imu.AngularVelocity = new gazebo.msgs.Vector3d();
 			imu.LinearAcceleration = new gazebo.msgs.Vector3d();
 		}
-
-		void Awake()
-		{
-		}
-
-		protected override void OnStart()
-		{
-			deviceName = name;
-			imuInitialRotation = transform.rotation.eulerAngles;
-			previousImuPosition = transform.position;
-			previousImuRotation = Vector3.zero;
-
-			samplingPeriod = 1/samplingRate;
-		}
-
 
 		void FixedUpdate()
 		{

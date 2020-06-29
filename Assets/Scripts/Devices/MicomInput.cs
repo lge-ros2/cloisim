@@ -9,8 +9,9 @@ using UnityEngine;
 
 public class MicomInput : Device
 {
-	const float MM2M = 0.001f;
-	gazebo.msgs.Param micomWritingData = null;
+	private const float MM2M = 0.001f;
+
+	private gazebo.msgs.Param micomWritingData = null;
 
 	private int wheelVelocityLeft = 0; // linear velocity in millimeter per second
 	private int wheelVelocityRight = 0; // linear velocity in millimeter per second
@@ -50,6 +51,11 @@ public class MicomInput : Device
 	protected override void OnStart()
 	{
 		deviceName = "MicomInput";
+	}
+
+	protected override void InitializeMessages()
+	{
+		micomWritingData = null;
 	}
 
 	protected override IEnumerator MainDeviceWorker()

@@ -13,7 +13,36 @@ namespace SDF
 	{
 		public string name = string.Empty;
 		public string type = string.Empty;
+	}
+
+	public class Noise
+	{
+		public Noise(in string type_ = "none")
+		{
+			type = type_;
+		}
+
+		public string type;
+		public double mean = 0;
+		public double stddev = 0;
+		public double bias_mean = 0;
+		public double bias_stddev = 0;
+		public double dynamic_bias_stddev = 0;
+		public double dynamic_bias_correlation_time = 0;
+		public double precision = 0;
+	}
+
+	// <altimeter> : TBD
+
+	public class Cameras : SensorType
+	{
+		public List<Camera> list = new List<Camera>();
+	}
+
+	public class Camera : SensorType
+	{
 		protected Pose<double> pose = new Pose<double>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+
 		protected string relative_to = string.Empty;
 
 		public Pose<double> Pose => pose;
@@ -40,29 +69,7 @@ namespace SDF
 				// );
 			}
 		}
-	}
 
-	public class Noise
-	{
-		public string type = "none";
-		public double mean = 0;
-		public double stddev = 0;
-		public double bias_mean = 0;
-		public double bias_stddev = 0;
-		public double dynamic_bias_stddev = 0;
-		public double dynamic_bias_correlation_time = 0;
-		public double precision = 0;
-	}
-
-	// <altimeter> : TBD
-
-	public class Cameras : SensorType
-	{
-		public List<Camera> list = new List<Camera>();
-	}
-
-	public class Camera : SensorType
-	{
 		public class Clip
 		{
 			public Clip() {}
@@ -75,13 +82,6 @@ namespace SDF
 
 			public double near = 0.1f;
 			public double far = 100f;
-		}
-
-		public class Noise
-		{
-			public string type = "gaussian";
-			public double mean = 0;
-			public double stddev = 0;
 		}
 
 		public class Distortion
@@ -137,7 +137,7 @@ namespace SDF
 		public string depth_camera_output = string.Empty;
 		public Clip depth_camera_clip = new Clip(1, 100);
 
-		public Noise noise = new Noise();
+		public Noise noise = new Noise("gaussian");
 
 		public Distortion distortion = new Distortion();
 
@@ -145,7 +145,15 @@ namespace SDF
 	}
 
 	// <contact> : TBD
-	// <gps> : TBD
+
+	public class GPS : SensorType
+	{
+		public Noise position_sensing_horizontal_noise = new Noise();
+		public Noise position_sensing_vertical_noise = new Noise();
+
+		public Noise velocity_sensing_horizontal_noise = new Noise();
+		public Noise velocity_sensing_vertical_noise = new Noise();
+	}
 
 	public class IMU : SensorType
 	{

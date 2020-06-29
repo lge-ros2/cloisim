@@ -15,7 +15,13 @@ public class Clock : Device
 	private gazebo.msgs.Time simTime = null;
 	private gazebo.msgs.Time realTime = null;
 
-	Clock()
+	protected override void OnStart()
+	{
+		deviceName = "Unity Clock";
+		SetUpdateRate(updateRate);
+	}
+
+	protected override void InitializeMessages()
 	{
 		simTime = new gazebo.msgs.Time();
 		realTime = new gazebo.msgs.Time();
@@ -38,12 +44,6 @@ public class Clock : Device
 		realTimeParam.Value.Type = gazebo.msgs.Any.ValueType.Time;
 		realTimeParam.Value.TimeValue = realTime;
 		timeInfo.Childrens.Add(realTimeParam);
-	}
-
-	protected override void OnStart()
-	{
-		deviceName = "Unity Clock";
-		SetUpdateRate(updateRate);
 	}
 
 	protected override IEnumerator MainDeviceWorker()

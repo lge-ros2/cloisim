@@ -66,7 +66,10 @@ public class Device : MonoBehaviour
 
 	void Start()
 	{
+		InitializeMessages();
+
 		OnStart();
+
 		StartCoroutine(MainDeviceWorker());
 
 		if (EnableVisualize)
@@ -188,8 +191,15 @@ public class Device : MonoBehaviour
 		}
 	}
 
+	protected virtual void InitializeMessages()
+	{
+		// do nothing
+		Debug.Log("Nothing to initialize message: " + name);
+	}
+
 	protected virtual void GenerateMessage()
 	{
+		// do nothing
 		Debug.Log("Need to implement!!");
 	}
 

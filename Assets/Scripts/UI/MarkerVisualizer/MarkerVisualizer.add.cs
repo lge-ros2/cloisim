@@ -7,6 +7,7 @@
 using System;
 using UnityEngine;
 using TMPro;
+
 #if UNITY_EDITOR
 using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;
 #endif
@@ -164,7 +165,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 
 			if (!string.IsNullOrEmpty(markerProperties.following))
 			{
-				AddFollowingObjectByText(markerName, markerProperties.following);
+				AddFollowingObjectByText(markerName, markerProperties.following, text);
 			}
 		}
 		else
@@ -194,9 +195,9 @@ public partial class MarkerVisualizer : MonoBehaviour
 		return alignment;
 	}
 
-	private void AddFollowingObjectByText(in string markerName, in string targetFollowingObjectName)
+	private void AddFollowingObjectByText(in string markerName, in string targetFollowingObjectName, TextMeshPro text)
 	{
-		if (registeredObjectsForText[markerName] != null)
+		if (registeredObjectsForFollowingText[markerName] != null)
 		{
 			Debug.LogWarning("Already registered!! " + markerName);
 			return;
@@ -205,8 +206,8 @@ public partial class MarkerVisualizer : MonoBehaviour
 		var followingObject = GameObject.Find(targetFollowingObjectName);
 		if (followingObject != null)
 		{
-			registeredObjectsForText.Add(markerName, followingObject);
-			var followingObjectPosition = followingObject.transform.position;
+			registeredObjectsForFollowingText.Add(markerName, followingObject);
+			followingTextMarkers.Add(markerName, text);
 		}
 	}
 }

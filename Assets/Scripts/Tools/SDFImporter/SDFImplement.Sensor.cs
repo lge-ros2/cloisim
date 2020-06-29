@@ -45,7 +45,7 @@ public partial class SDFImplement
 			}
 		}
 
-		private static void TransformSensor(in GameObject sensorObject, SDF.Pose<double> sensorPose)
+		public static void TransformSensor(in GameObject sensorObject, SDF.Pose<double> sensorPose)
 		{
 			try
 			{
@@ -63,7 +63,6 @@ public partial class SDFImplement
 		{
 			var newSensorObject = new GameObject();
 			AttachSensor(newSensorObject, targetObject);
-			TransformSensor(newSensorObject, element.Pose);
 
 			var lidar = newSensorObject.AddComponent<SensorDevices.Lidar>();
 
@@ -109,7 +108,6 @@ public partial class SDFImplement
 		{
 			var newSensorObject = new GameObject();
 			AttachSensor(newSensorObject, targetObject);
-			TransformSensor(newSensorObject, element.Pose);
 
 			var multicamera = newSensorObject.AddComponent<SensorDevices.MultiCamera>();
 			multicamera.deviceName = GetFrameName(newSensorObject);
@@ -122,7 +120,6 @@ public partial class SDFImplement
 		{
 			var newSensorObject = new GameObject();
 			AttachSensor(newSensorObject, targetObject);
-			TransformSensor(newSensorObject, element.Pose);
 
 			var sonar = newSensorObject.AddComponent<SensorDevices.Sonar>();
 			sonar.deviceName = GetFrameName(newSensorObject);
@@ -138,12 +135,22 @@ public partial class SDFImplement
 		{
 			var newSensorObject = new GameObject();
 			AttachSensor(newSensorObject, targetObject);
-			TransformSensor(newSensorObject, element.Pose);
 
 			var imu = newSensorObject.AddComponent<SensorDevices.IMU>();
 			imu.deviceName = GetFrameName(newSensorObject);
 
 			return imu;
+		}
+
+		public static Device AddGps(in SDF.GPS element, in GameObject targetObject)
+		{
+			var newSensorObject = new GameObject();
+			AttachSensor(newSensorObject, targetObject);
+
+			var gps = newSensorObject.AddComponent<SensorDevices.GPS>();
+			gps.deviceName = GetFrameName(newSensorObject);
+
+			return gps;
 		}
 	}
 }

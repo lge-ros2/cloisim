@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-// using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class ModelPlugin : MonoBehaviour
@@ -74,67 +72,6 @@ public class ModelPlugin : MonoBehaviour
 		return true;
 	}
 
-	private Bounds GetMaxBounds()
-	{
-		var b = new Bounds(gameObject.transform.position, Vector3.zero);
-		foreach (var r in GetComponentsInChildren<Renderer>())
-		{
-			b.Encapsulate(r.bounds);
-		}
-		// Debug.Log(name + ": " + b.extents + ", " + b.size + ", " + b.center + "," + b.min + "," + b.max );
-		return b;
-	}
-
-	private void CreateGizmosSelectableModelBox()
-	{
-		var modelBound = GetMaxBounds();
-
-		var newMesh = ProceduralMesh.CreateBox(modelBound.size.z, modelBound.size.y, modelBound.size.x);
-		newMesh.name = "Model Box";
-
-		// move Offset
-		List<Vector3> boxVertices = new List<Vector3>();
-		var offset = modelBound.size.y/2;
-		newMesh.GetVertices(boxVertices);
-		for (var index = 0; index < boxVertices.Count; index++)
-		{
-			var vertex = boxVertices[index];
-			vertex.y += offset;
-			boxVertices[index] = vertex;
-		}
-		newMesh.SetVertices(boxVertices);
-		newMesh.Optimize();
-
-		var meshFilter = gameObject.AddComponent<MeshFilter>();
-		meshFilter.hideFlags = HideFlags.HideInInspector;
-		meshFilter.sharedMesh = newMesh;
-
-		// make it transparent
-		var meshRenderer = gameObject.AddComponent<MeshRenderer>();
-		meshRenderer.hideFlags = HideFlags.HideInInspector;
-		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-		meshRenderer.receiveShadows = false;
-		meshRenderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
-		meshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-		meshRenderer.motionVectorGenerationMode = UnityEngine.MotionVectorGenerationMode.ForceNoMotion;
-
-		var newMaterial = new Material(Shader.Find("Standard"));
-		newMaterial.SetFloat("_Mode", 2);
-		newMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
- 		newMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-		newMaterial.SetFloat("_ZWrite", 0);
-		newMaterial.DisableKeyword("_ALPHATEST_ON");
- 		newMaterial.EnableKeyword("_ALPHABLEND_ON");
- 		newMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-		newMaterial.SetFloat("_SpecularHighlights", 0); // 0:OFF, 1:ON
-		newMaterial.SetFloat("_GlossyReflections", 0); // 0:OFF, 1:ON
-		newMaterial.color = new Color(1, 1, 1, 0);
-		newMaterial.renderQueue = 3000;
-		newMaterial.hideFlags = HideFlags.HideInInspector;
-
-		meshRenderer.material = newMaterial;
-	}
-
 	private void FindAndMakeBridgeJoint()
 	{
 		var rigidBodyChildren = GetComponentsInChildren<Rigidbody>();
@@ -158,11 +95,6 @@ public class ModelPlugin : MonoBehaviour
 		if (isTopModel)
 		{
 			FindAndMakeBridgeJoint();
-
-			if (!isStatic)
-			{
-				CreateGizmosSelectableModelBox();
-			}
 		}
 	}
 

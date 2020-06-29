@@ -59,18 +59,6 @@ namespace SensorDevices
 
 		private LaserCamData[] laserCamData;
 
-
-		Lidar()
-		{
-			// Initialize Gazebo Message
-			laserScanStamped = new gazebo.msgs.LaserScanStamped();
-			laserScanStamped.Time = new gazebo.msgs.Time();
-			laserScanStamped.Scan = new gazebo.msgs.LaserScan();
-			laserScanStamped.Scan.WorldPose = new gazebo.msgs.Pose();
-			laserScanStamped.Scan.WorldPose.Position = new gazebo.msgs.Vector3d();
-			laserScanStamped.Scan.WorldPose.Orientation = new gazebo.msgs.Quaternion();
-		}
-
 		void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
 			if (depthMaterial)
@@ -88,13 +76,14 @@ namespace SensorDevices
 			return (maxAngle - minAngle) / (resolution * (totalSamples - 1));
 		}
 
+		void Awake()
+		{
+			lidarLink = transform.parent;
+		}
+
 		protected override void OnStart()
 		{
 			laserCamera = gameObject.AddComponent<UnityEngine.Camera>();
-
-			lidarLink = transform.parent;
-
-			InitializeMessages();
 
 			if (laserCamera)
 			{
@@ -106,8 +95,15 @@ namespace SensorDevices
 			}
 		}
 
-		private void InitializeMessages()
+		protected override void InitializeMessages()
 		{
+			laserScanStamped = new gazebo.msgs.LaserScanStamped();
+			laserScanStamped.Time = new gazebo.msgs.Time();
+			laserScanStamped.Scan = new gazebo.msgs.LaserScan();
+			laserScanStamped.Scan.WorldPose = new gazebo.msgs.Pose();
+			laserScanStamped.Scan.WorldPose.Position = new gazebo.msgs.Vector3d();
+			laserScanStamped.Scan.WorldPose.Orientation = new gazebo.msgs.Quaternion();
+
 			var laserScan = laserScanStamped.Scan;
 			laserScan.Frame = deviceName;
 			laserScan.AngleMin = angleMin * Mathf.Deg2Rad;
@@ -199,7 +195,6 @@ namespace SensorDevices
 					laserCamera.Render();
 
 					data.SetTextureData(laserCamera.targetTexture);
-					// data.SaveRawImageData(name);
 
 					laserCamera.enabled = false;
 

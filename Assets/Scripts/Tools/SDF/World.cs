@@ -34,19 +34,19 @@ namespace SDF
 		// <population> : TBD
 		private Plugins plugins;
 
+		public Pose<double> GuiCameraPose => gui_camera_pose;
+
 		public World(XmlNode _node)
 			: base(_node)
 		{
-			ParseElements();
+			if (root != null)
+			{
+				ParseElements();
+			}
 		}
-
-		public Pose<double> GuiCameraPose => gui_camera_pose;
 
 		protected override void ParseElements()
 		{
-			if (root == null)
-				return;
-
 			models = new Models(root);
 			physics = new Physics(root);
 			light = new Light(root);

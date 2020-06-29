@@ -19,6 +19,7 @@ public partial class DeviceTransporter
 
 		if (publisherSocket != null)
 		{
+			publisherSocket.Options.TcpKeepalive = true;
 			publisherSocket.Options.SendHighWatermark = highwatermark;
 			publisherSocket.Options.Linger = new TimeSpan(0);
 			publisherSocket.Bind(GetAddress(targetPort));

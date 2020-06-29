@@ -45,9 +45,13 @@ public partial class SDFImporter : SDF.Importer
 		childObject.transform.rotation = Quaternion.identity;
 
 		if (parentObject == null)
+		{
 			childObject.transform.SetParent(rootObject.transform, false);
+		}
 		else
+		{
 			childObject.transform.SetParent(parentObject.transform, false);
+		}
 
 		childObject.transform.localScale = Vector3.one;
 		childObject.transform.localPosition = Vector3.zero;
@@ -78,7 +82,22 @@ public partial class SDFImporter : SDF.Importer
 			return;
 		}
 
-		Type pluginType = Type.GetType(plugin.Name);
+		// filtering plugin name
+		var pluginName = plugin.FileName;
+		if (pluginName.StartsWith("lib"))
+		{
+			pluginName = pluginName.Substring(3);
+		}
+
+		if (pluginName.EndsWith(".so"))
+		{
+			var foundIndex = pluginName.IndexOf(".so");
+			pluginName = pluginName.Remove(foundIndex);
+		}
+
+		// Debug.Log("plugin name = " + pluginName);
+
+		var pluginType = Type.GetType(pluginName);
 		if (pluginType != null)
 		{
 			var pluginObject = (CustomPlugin)targetObject.AddComponent(pluginType);

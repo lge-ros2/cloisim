@@ -54,14 +54,14 @@ namespace SDF
 		public Collision(XmlNode _node)
 			: base(_node)
 		{
-			ParseElements();
+			if (root != null)
+			{
+				ParseElements();
+			}
 		}
 
 		protected override void ParseElements()
 		{
-			if (root == null)
-				return;
-
 			XmlNode geomNode = GetNode("geometry");
 			if (geomNode != null)
 			{
