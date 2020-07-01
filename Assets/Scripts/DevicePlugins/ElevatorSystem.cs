@@ -13,7 +13,7 @@ using ProtoBuf;
 using Param = gazebo.msgs.Param;
 using Any = gazebo.msgs.Any;
 
-public partial class ElevatorSystem : CustomPlugin
+public partial class ElevatorSystem : DevicePlugin
 {
 	private enum ElevatorTaskState {DOOR_OPEN, DOOR_CLOSE, STANDBY, PROCESSING, DONE}
 

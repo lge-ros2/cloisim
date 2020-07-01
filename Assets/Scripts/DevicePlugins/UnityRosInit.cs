@@ -4,11 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Threading;
-using System;
 using UnityEngine;
 
-public class UnityRosInit : CustomPlugin
+public class UnityRosInit : DevicePlugin
 {
 	private Clock clock = null;
 

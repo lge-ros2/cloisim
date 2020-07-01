@@ -100,7 +100,7 @@ public partial class SDFImporter : SDF.Importer
 		var pluginType = Type.GetType(pluginName);
 		if (pluginType != null)
 		{
-			var pluginObject = (CustomPlugin)targetObject.AddComponent(pluginType);
+			var pluginObject = (DevicePlugin)targetObject.AddComponent(pluginType);
 			if (pluginObject != null)
 			{
 				var node = plugin.GetNode();

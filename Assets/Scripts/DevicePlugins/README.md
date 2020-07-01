@@ -1,20 +1,18 @@
-# CustomPlugins
+# DevicePlugins
 
-These plugin scripts are utilized for sensor connection.
+These plugin scripts are for sensor connection.
 
-For example, if you define a `<plugin>` element with name 'RobotControl' attribute in SDF,
-C# SDF Parser shall start to find a plugin from filename 'libRobotControl.so'.
+Each class name is important to load plugin in SDF.
 
-libRobotControl.so -> RobotControl
+For example, if it describes a name with 'RobotControl' in `<plugin>` attributesm, SDF Parser will start to find a plugin named 'RobotControl' in Unity project.
 
-
-Matching Each class name and filename is IMPORTANT to load plugin in SDF.
+Unlink gazebo, 'filename' attribute shall not be used anywhere on current project.
 
 ```
 <model>
   ...
   ...
-  <plugin name='RobotControl' filename='libRobotControl.so'>
+  <plugin name='RobotControl' filename=''>
     <PID>
       <kp>3.0</kp>
       <ki>0.2</ki>
