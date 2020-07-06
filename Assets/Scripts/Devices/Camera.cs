@@ -6,6 +6,7 @@
 
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace SensorDevices
@@ -74,7 +75,7 @@ namespace SensorDevices
 			cam.nearClipPlane = (float)parameters.clip.near;
 			cam.farClipPlane = (float)parameters.clip.far;
 
-			var targetRTname = "CameraTexture";
+			string targetRTname;
 			var targetRTdepth = 0;
 			var targetRTformat = RenderTextureFormat.ARGB32;
 			var targetRTrwmode = RenderTextureReadWrite.sRGB;
@@ -86,8 +87,21 @@ namespace SensorDevices
 				targetRTformat = RenderTextureFormat.RFloat;
 				targetRTrwmode = RenderTextureReadWrite.Linear;
 			}
+			else
+			{
+				targetRTname = "CameraTexture";
+			}
 
-			var targetRT = new RenderTexture(parameters.image_width, parameters.image_height, targetRTdepth, targetRTformat, targetRTrwmode);
+			var targetRT = new RenderTexture(parameters.image_width, parameters.image_height, targetRTdepth, targetRTformat, targetRTrwmode)
+			{
+				dimension = UnityEngine.Rendering.TextureDimension.Tex2D,
+				antiAliasing = 1,
+				useMipMap = false,
+				useDynamicScale = false,
+				wrapMode = TextureWrapMode.Clamp,
+				filterMode = FilterMode.Bilinear,
+			};
+
 			targetRT.name = targetRTname;
 			cam.targetTexture = targetRT;
 
@@ -116,7 +130,17 @@ namespace SensorDevices
 				cam.Render();
 				GL.invertCulling = oldCulling;
 
-				camData.SetTextureData(cam.targetTexture);
+				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, TextureFormat.RGB24);
+				yield return new WaitUntil(() => readback.done);
+
+				if (readback.hasError)
+				{
+					Debug.LogError("Failed to read GPU texture");
+					continue;
+				}
+				Debug.Assert(readback.done);
+
+				camData.SetTextureData(readback.GetData<byte>());
 
 				if (parameters.save_enabled)
 				{

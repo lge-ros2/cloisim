@@ -109,7 +109,6 @@ namespace SensorDevices
 		private struct CamData
 		{
 			private Texture2D cameraImage;
-			private Rect pixelSource;
 
 			public int ImageWidth
 			{
@@ -154,19 +153,6 @@ namespace SensorDevices
 				}
 
 				cameraImage = new Texture2D(width, height, textureFormat, false, isLinear);
-				pixelSource = new Rect(0, 0, width, height);
-			}
-
-			public void SetTextureData(in RenderTexture rt)
-			{
-				if (rt != null)
-				{
-					var currentRenderTexture = RenderTexture.active;
-					RenderTexture.active = rt;
-					cameraImage.ReadPixels(pixelSource, 0, 0);
-					cameraImage.Apply();
-					RenderTexture.active = currentRenderTexture;
-				}
 			}
 
 			public void SetTextureData(in NativeArray<byte> buffer)

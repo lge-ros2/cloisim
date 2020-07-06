@@ -7,6 +7,7 @@
 using System.Collections;
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace SensorDevices
@@ -194,7 +195,17 @@ namespace SensorDevices
 					laserCamera.transform.localRotation = Quaternion.Euler(axisRotation);
 					laserCamera.Render();
 
-					data.SetTextureData(laserCamera.targetTexture);
+					var readback = AsyncGPUReadback.Request(laserCamera.targetTexture, 0, TextureFormat.RGBA32);
+					yield return new WaitUntil(() => readback.done);
+
+					if (readback.hasError)
+					{
+						Debug.LogError("Failed to read GPU texture");
+						continue;
+					}
+					Debug.Assert(readback.done);
+
+					data.SetTextureData(readback.GetData<byte>());
 
 					laserCamera.enabled = false;
 
