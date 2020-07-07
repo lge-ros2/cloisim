@@ -16,7 +16,6 @@ namespace SensorDevices
 			private int index;
 			private float centerAngle;
 			private Texture2D cameraImage;
-			private Rect pixelSource;
 
 			public float CenterAngle
 			{
@@ -38,19 +37,6 @@ namespace SensorDevices
 			{
 				index = dataIndex;
 				cameraImage = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
-				pixelSource = new Rect(0, 0, width, height);
-			}
-
-			public void SetTextureData(in RenderTexture rt)
-			{
-				if (rt != null)
-				{
-					var currentRenderTexture = RenderTexture.active;
-					RenderTexture.active = rt;
-					cameraImage.ReadPixels(pixelSource, 0, 0);
-					cameraImage.Apply();
-					RenderTexture.active = currentRenderTexture;
-				}
 			}
 
 			public void SetTextureData(in NativeArray<byte> buffer)

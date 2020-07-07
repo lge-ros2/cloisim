@@ -6,7 +6,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -26,6 +25,8 @@ namespace SensorDevices
 
 		[Range(0, 100)]
 		public double radius = 0;
+
+		public double detectedDistance = 0;
 
 		private List<Vector3> meshSensorRegionVertices = new List<Vector3>();
 
@@ -68,6 +69,16 @@ namespace SensorDevices
 			meshCollider.convex = true;
 			meshCollider.isTrigger = true;
 
+			ResolveSensingArea(meshCollider);
+
+			// const MeshColliderCookingOptions cookingOptions
+			// 	= MeshColliderCookingOptions.EnableMeshCleaning|MeshColliderCookingOptions.WeldColocatedVertices;
+			// meshCollider.cookingOptions = cookingOptions;
+			// meshCollider.hideFlags |= HideFlags.NotEditable;
+		}
+
+		private void ResolveSensingArea(in MeshCollider meshCollider)
+		{
 			// preserve the vertex points of the sensing area
 			var localToWorld = sonarLink.localToWorldMatrix;
 			for (var i = 0; i < meshCollider.sharedMesh.vertices.Length; i++)
@@ -81,11 +92,6 @@ namespace SensorDevices
 
 				meshSensorRegionVertices.Add(meshCollider.sharedMesh.vertices[i]);
 			}
-
-			// const MeshColliderCookingOptions cookingOptions
-			// 	= MeshColliderCookingOptions.EnableMeshCleaning|MeshColliderCookingOptions.WeldColocatedVertices;
-			// meshCollider.cookingOptions = cookingOptions;
-			// meshCollider.hideFlags |= HideFlags.NotEditable;
 		}
 
 		private void TranslateDetectionArea(Mesh mesh, in float offset)
@@ -94,6 +100,7 @@ namespace SensorDevices
 			for (var i = 0; i < vertices.Length; i++)
 			{
 				vertices[i].y += offset;
+				vertices[i].y *= -1;
 			}
 			mesh.vertices = vertices;
 		}
@@ -157,26 +164,29 @@ namespace SensorDevices
 
 			var sonar = sonarStamped.Sonar;
 			var sensorStartPoint = sonarLink.position;
-			sensorStartPoint.z += sensorStartOffset;
+			sensorStartPoint.z -= sensorStartOffset;
 
 			var detectedRange = (float)rangeMax;
 			var contactPoint = Vector3.zero;
 			var contactDirection = Vector3.zero;
 			var localToWorld = sonarLink.localToWorldMatrix;
 
+			// Debug.Log("Hit Points: " + meshSensorRegionVertices.Count);
 			for (var i = 0; i < meshSensorRegionVertices.Count; i++)
 			{
 				var targetPoint = localToWorld.MultiplyPoint3x4(meshSensorRegionVertices[i]);
-				var direction = (targetPoint - sensorStartPoint).normalized;
+				var direction = (targetPoint - sensorStartPoint);
+
 				if (Physics.Raycast(sensorStartPoint, direction, out var hitInfo))
 				{
 					// Debug.DrawRay(sensorStartPoint, direction, Color.magenta, 0.01f);
 					// Debug.Log("Hit Point of contact: " + hitInfo.point);
 					var hitPoint = hitInfo.point;
 					var hitDistance = Vector3.Distance(sensorStartPoint, hitPoint);
+
 					if ((hitDistance < detectedRange) && (hitDistance > (float)rangeMin))
 					{
-						// Debug.Log("Hit Point of contact: " + hitInfo.point + "|" + distance.ToString("F4"));
+						// Debug.Log("Hit Point " + i + " of contact: " + hitInfo.point + "|" + hitDistance.ToString("F4"));
 						detectedRange = hitDistance;
 						contactDirection = direction;
 						contactPoint = hitPoint;
@@ -184,6 +194,7 @@ namespace SensorDevices
 				}
 			}
 
+			detectedDistance = detectedRange;
 			sonar.Range = detectedRange;
 			DeviceHelper.SetVector3d(sonar.Contact, contactPoint);
 			// Debug.Log(other.name + " |Stay| " + "," + detectedRange.ToString("F5") + ", " + contactPoint);
@@ -232,14 +243,14 @@ namespace SensorDevices
 
 			while (true)
 			{
-				sensorStartPoint.Set(sonarLink.position.x, sonarLink.position.y, sonarLink.position.z + sensorStartOffset);
+				sensorStartPoint.Set(sonarLink.position.x, sonarLink.position.y, sonarLink.position.z - sensorStartOffset);
 
 				var direction = (GetDetectedPoint() - sensorStartPoint).normalized;
 				var detectedRange = GetDetectedRange();
 
 				if (detectedRange < rangeMax && !direction.Equals(Vector3.zero))
 				{
-					Debug.DrawRay(sensorStartPoint, direction * detectedRange, Color.magenta, visualDrawDuration);
+					Debug.DrawRay(sensorStartPoint, direction * detectedRange, Color.blue, visualDrawDuration);
 				}
 				yield return waitForSeconds;
 			}

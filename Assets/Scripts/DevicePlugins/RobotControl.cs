@@ -8,7 +8,7 @@ using System.Threading;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
-public class RobotControl : CustomPlugin
+public class RobotControl : DevicePlugin
 {
 	private MicomInput micomInput = null;
 	private MicomSensor micomSensor = null;

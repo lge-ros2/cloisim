@@ -207,7 +207,7 @@ public class ModelLoader : MonoBehaviour
 			plugin.Reset();
 		}
 
-		foreach (var plugin in modelsRoot.GetComponentsInChildren<CustomPlugin>())
+		foreach (var plugin in modelsRoot.GetComponentsInChildren<DevicePlugin>())
 		{
 			plugin.Reset();
 		}

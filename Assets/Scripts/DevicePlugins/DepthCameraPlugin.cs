@@ -7,11 +7,11 @@
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
-public class MultiCameraPlugin : CustomPlugin
+public class DepthCameraPlugin : DevicePlugin
 {
 	public string partName = string.Empty;
 
-	private SensorDevices.MultiCamera cam = null;
+	private SensorDevices.DepthCamera depthCam = null;
 
 	protected override void OnAwake()
 	{
@@ -20,13 +20,13 @@ public class MultiCameraPlugin : CustomPlugin
 		string hashKey = MakeHashKey(partName);
 		if (!RegisterTxDevice(hashKey))
 		{
-			Debug.LogError("Failed to register for CameraPlugin - " + hashKey);
+			Debug.LogError("Failed to register for DepthCameraPlugin - " + hashKey);
 		}
 	}
 
 	protected override void OnStart()
 	{
-		cam = gameObject.GetComponent<SensorDevices.MultiCamera>();
+		depthCam = gameObject.GetComponent<SensorDevices.DepthCamera>();
 
 		AddThread(Sender);
 	}
@@ -36,16 +36,16 @@ public class MultiCameraPlugin : CustomPlugin
 		Stopwatch sw = new Stopwatch();
 		while (true)
 		{
-			if (cam == null)
+			if (depthCam == null)
 			{
 				continue;
 			}
 
-			var datastreamToSend = cam.PopData();
+			var datastreamToSend = depthCam.PopData();
 			sw.Restart();
 			Publish(datastreamToSend);
 			sw.Stop();
-			cam.SetTransportTime((float)sw.Elapsed.TotalSeconds);
+			depthCam.SetTransportTime((float)sw.Elapsed.TotalSeconds);
 		}
 	}
 }

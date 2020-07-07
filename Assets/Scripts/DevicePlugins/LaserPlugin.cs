@@ -7,7 +7,7 @@
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
-public class LaserPlugin : CustomPlugin
+public class LaserPlugin : DevicePlugin
 {
 	public string partName = string.Empty;
 

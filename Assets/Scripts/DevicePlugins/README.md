@@ -1,4 +1,4 @@
-# CustomPlugins
+# DevicePlugins
 
 These plugin scripts are for sensor connection.
 

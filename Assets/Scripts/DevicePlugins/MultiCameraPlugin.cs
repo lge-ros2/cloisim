@@ -7,11 +7,11 @@
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
-public class GpsPlugin : CustomPlugin
+public class MultiCameraPlugin : DevicePlugin
 {
 	public string partName = string.Empty;
 
-	private SensorDevices.GPS gps = null;
+	private SensorDevices.MultiCamera cam = null;
 
 	protected override void OnAwake()
 	{
@@ -20,13 +20,13 @@ public class GpsPlugin : CustomPlugin
 		string hashKey = MakeHashKey(partName);
 		if (!RegisterTxDevice(hashKey))
 		{
-			Debug.LogError("Failed to register for GpsPlugin - " + hashKey);
+			Debug.LogError("Failed to register for CameraPlugin - " + hashKey);
 		}
 	}
 
 	protected override void OnStart()
 	{
-		gps = gameObject.GetComponent<SensorDevices.GPS>();
+		cam = gameObject.GetComponent<SensorDevices.MultiCamera>();
 
 		AddThread(Sender);
 	}
@@ -36,16 +36,16 @@ public class GpsPlugin : CustomPlugin
 		Stopwatch sw = new Stopwatch();
 		while (true)
 		{
-			if (gps == null)
+			if (cam == null)
 			{
 				continue;
 			}
 
-			var datastreamToSend = gps.PopData();
+			var datastreamToSend = cam.PopData();
 			sw.Restart();
 			Publish(datastreamToSend);
 			sw.Stop();
-			gps.SetTransportTime((float)sw.Elapsed.TotalSeconds);
+			cam.SetTransportTime((float)sw.Elapsed.TotalSeconds);
 		}
 	}
 }

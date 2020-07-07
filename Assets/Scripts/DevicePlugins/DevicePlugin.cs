@@ -12,7 +12,7 @@ using System.Threading;
 using System;
 using UnityEngine;
 
-public abstract class CustomPlugin : DeviceTransporter
+public abstract class DevicePlugin : DeviceTransporter
 {
 	public string modelName = String.Empty;
 
@@ -22,7 +22,7 @@ public abstract class CustomPlugin : DeviceTransporter
 
 	private List<Thread> threadList = null;
 
-	protected CustomPlugin()
+	protected DevicePlugin()
 	{
 		threadList = new List<Thread>();
 	}

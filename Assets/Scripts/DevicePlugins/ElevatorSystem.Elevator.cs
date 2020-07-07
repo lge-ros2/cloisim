@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-public partial class ElevatorSystem : CustomPlugin
+public partial class ElevatorSystem : DevicePlugin
 {
 	private enum ElevatorState {STOP = 0, UPWARD, DOWNWARD};
 	private struct ElevatorEntity
