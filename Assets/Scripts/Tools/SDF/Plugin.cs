@@ -39,5 +39,22 @@ namespace SDF
 		{
 			filename = GetAttribute<string>("filename");
 		}
+
+		public string ClassName()
+		{
+			var pluginName = filename;
+			if (pluginName.StartsWith("lib"))
+			{
+				pluginName = pluginName.Substring(3);
+			}
+
+			if (pluginName.EndsWith(".so"))
+			{
+				var foundIndex = pluginName.IndexOf(".so");
+				pluginName = pluginName.Remove(foundIndex);
+			}
+
+			return pluginName;
+		}
 	}
 }

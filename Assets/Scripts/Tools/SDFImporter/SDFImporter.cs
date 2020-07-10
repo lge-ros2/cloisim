@@ -83,18 +83,7 @@ public partial class SDFImporter : SDF.Importer
 		}
 
 		// filtering plugin name
-		var pluginName = plugin.FileName;
-		if (pluginName.StartsWith("lib"))
-		{
-			pluginName = pluginName.Substring(3);
-		}
-
-		if (pluginName.EndsWith(".so"))
-		{
-			var foundIndex = pluginName.IndexOf(".so");
-			pluginName = pluginName.Remove(foundIndex);
-		}
-
+		var pluginName = plugin.ClassName();
 		// Debug.Log("plugin name = " + pluginName);
 
 		var pluginType = Type.GetType(pluginName);

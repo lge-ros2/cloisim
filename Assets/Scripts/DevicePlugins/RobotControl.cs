@@ -25,13 +25,13 @@ public class RobotControl : DevicePlugin
 		micomInput = gameObject.AddComponent<MicomInput>();
 		micomSensor = gameObject.AddComponent<MicomSensor>();
 
-		string txHashKey = MakeHashKey("MICOM", "_SENSOR");
+		var txHashKey = MakeHashKey("MICOM", "_SENSOR");
 		if (!RegisterTxDevice(txHashKey))
 		{
 			Debug.LogError("Failed to register for RobotControl TX- " + txHashKey);
 		}
 
-		string rxHashKey = MakeHashKey("MICOM", "_INPUT");
+		var rxHashKey = MakeHashKey("MICOM", "_INPUT");
 		if (!RegisterRxDevice(rxHashKey))
 		{
 			Debug.LogError("Failed to register for RobotControl RX- " + rxHashKey);

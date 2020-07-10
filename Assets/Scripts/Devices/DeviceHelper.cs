@@ -42,18 +42,16 @@ public class DeviceHelper
 	[DllImport("StdHash")]
 	public static extern ulong GetStringHashCode(string value);
 
-	public static void SetCurrentTime(gazebo.msgs.Time gazeboMsgsTime, in bool useRealTime = false)
+	public static void SetCurrentTime(in gazebo.msgs.Time gazeboMsgsTime, in bool useRealTime = false)
 	{
 		try
 		{
-			if (gazeboMsgsTime == null)
+			if (gazeboMsgsTime != null)
 			{
-				gazeboMsgsTime = new gazebo.msgs.Time();
+				var timeNow = (useRealTime)? Time.realtimeSinceStartup:Time.time;
+				gazeboMsgsTime.Sec = (int)timeNow;
+				gazeboMsgsTime.Nsec = (int)((timeNow - (float)gazeboMsgsTime.Sec) * (float)1e+9);
 			}
-
-			var timeNow = (useRealTime)? Time.realtimeSinceStartup:Time.time;
-			gazeboMsgsTime.Sec = (int)timeNow;
-			gazeboMsgsTime.Nsec = (int)((timeNow - (float)gazeboMsgsTime.Sec) * (float)1e+9);
 		}
 		catch
 		{

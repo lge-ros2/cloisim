@@ -9,8 +9,6 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class LaserPlugin : DevicePlugin
 {
-	public string partName = string.Empty;
-
 	private SensorDevices.Lidar lidar = null;
 
 	protected override void OnAwake()

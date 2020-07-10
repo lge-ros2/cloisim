@@ -9,8 +9,6 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class GpsPlugin : DevicePlugin
 {
-	public string partName = string.Empty;
-
 	private SensorDevices.GPS gps = null;
 
 	protected override void OnAwake()

@@ -57,7 +57,8 @@ public partial class ElevatorSystem : DevicePlugin
 
 	protected override void OnAwake()
 	{
-		const string partName = "ElevatorSystem";
+		partName = "ElevatorSystem";
+
 		var hashKey = modelName + partName;
 		if (!RegisterServiceDevice(hashKey))
 		{

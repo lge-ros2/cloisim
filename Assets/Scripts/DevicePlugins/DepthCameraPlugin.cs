@@ -9,8 +9,6 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class DepthCameraPlugin : DevicePlugin
 {
-	public string partName = string.Empty;
-
 	private SensorDevices.DepthCamera depthCam = null;
 
 	protected override void OnAwake()

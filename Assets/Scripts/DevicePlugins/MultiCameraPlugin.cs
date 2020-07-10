@@ -9,7 +9,6 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class MultiCameraPlugin : DevicePlugin
 {
-	public string partName = string.Empty;
 
 	private SensorDevices.MultiCamera cam = null;
 

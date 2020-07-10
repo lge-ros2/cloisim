@@ -9,8 +9,6 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class CameraPlugin : DevicePlugin
 {
-	public string partName = string.Empty;
-
 	private SensorDevices.Camera cam = null;
 
 	protected override void OnAwake()

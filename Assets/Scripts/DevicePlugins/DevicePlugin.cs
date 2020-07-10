@@ -15,6 +15,7 @@ using UnityEngine;
 public abstract class DevicePlugin : DeviceTransporter
 {
 	public string modelName = String.Empty;
+	public string partName = string.Empty;
 
 	private XmlNode pluginData;
 
