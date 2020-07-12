@@ -1,5 +1,5 @@
 // Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-Shader "Sensor/DepthShader"
+Shader "Sensor/DepthLidar"
 {
 	SubShader
 	{

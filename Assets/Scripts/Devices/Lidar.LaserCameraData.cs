@@ -58,7 +58,6 @@ namespace SensorDevices
 			}
 		}
 
-		private LaserData tempLaserData;
 
 		struct LaserData
 		{

@@ -60,6 +60,8 @@ namespace SensorDevices
 
 		private LaserCamData[] laserCamData;
 
+		private LaserData tempLaserData;
+
 		void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
 			if (depthMaterial)
@@ -130,8 +132,8 @@ namespace SensorDevices
 
 		private void SetupLaserCamera()
 		{
-			var depthShader = Shader.Find("Sensor/DepthShader");
-			depthMaterial = new Material(depthShader);
+			var shader = Shader.Find("Sensor/DepthLidar");
+			depthMaterial = new Material(shader);
 
 			laserCamera.backgroundColor = Color.white;
 			laserCamera.clearFlags = CameraClearFlags.SolidColor;
@@ -146,18 +148,23 @@ namespace SensorDevices
 			laserCamera.orthographic = false;
 			laserCamera.nearClipPlane = (float)rangeMin;
 			laserCamera.farClipPlane = (float)rangeMax;
+
 			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(laserCameraHFov, laserCameraVFov, (float)rangeMin, (float)rangeMax);
 			laserCamera.projectionMatrix = projMatrix;
 
 			var renderTextrueWidth = Mathf.CeilToInt(laserCameraHFov / laserHAngleResolution);
 			var aspectRatio = Mathf.Tan(laserCameraVFov / 2 * Mathf.Deg2Rad) / Mathf.Tan(laserCameraHFov / 2 * Mathf.Deg2Rad);
 			var renderTextrueHeight = Mathf.RoundToInt(renderTextrueWidth * aspectRatio);
-			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-			targetDepthRT.name = "LidarDepthTexture";
+			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
+			{
+				name = "LidarDepthTexture"
+			};
+
 			laserCamera.targetTexture = targetDepthRT;
+
 			laserCamera.enabled = false;
 
-			laserCamera.hideFlags |= HideFlags.NotEditable;
+			// laserCamera.hideFlags |= HideFlags.NotEditable;
 		}
 
 		private void SetupLaserCameraData()
@@ -166,6 +173,7 @@ namespace SensorDevices
 			numberOfLaserCamData = Mathf.CeilToInt(360 / laserCameraRotationAngle);
 
 			laserCamData = new LaserCamData[numberOfLaserCamData];
+			tempLaserData = new LaserData();
 
 			var targetDepthRT = laserCamera.targetTexture;
 			for (var index = 0; index < numberOfLaserCamData; index++)
@@ -175,8 +183,6 @@ namespace SensorDevices
 				data.CenterAngle = laserCameraRotationAngle * index;
 				laserCamData[index] = data;
 			}
-
-			tempLaserData = new LaserData();
 		}
 
 		private IEnumerator LaserCameraWorker()
@@ -193,6 +199,9 @@ namespace SensorDevices
 					axisRotation.y = data.CenterAngle;
 
 					laserCamera.transform.localRotation = Quaternion.Euler(axisRotation);
+
+					laserCamera.enabled = true;
+
 					laserCamera.Render();
 
 					var readback = AsyncGPUReadback.Request(laserCamera.targetTexture, 0, TextureFormat.RGBA32);
