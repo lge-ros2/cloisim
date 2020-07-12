@@ -15,7 +15,7 @@ public class LaserPlugin : DevicePlugin
 	{
 		partName = DeviceHelper.GetPartName(gameObject);
 
-		string hashKey = MakeHashKey(partName);
+		var hashKey = MakeHashKey(partName);
 		if (!RegisterTxDevice(hashKey))
 		{
 			Debug.LogError("Failed to register for LaserPlugin - " + hashKey);

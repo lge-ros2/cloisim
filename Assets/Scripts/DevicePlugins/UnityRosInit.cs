@@ -14,7 +14,7 @@ public class UnityRosInit : DevicePlugin
 	{
 		clock = gameObject.AddComponent<Clock>();
 
-		string hashKey = MakeHashKey();
+		var hashKey = MakeHashKey();
 		if (!RegisterTxDevice(hashKey))
 		{
 			Debug.LogError("Failed to register for UnityRosInit - " + hashKey);

@@ -20,8 +20,11 @@ public class DeviceHelper
 				while (!nextObject.transform.parent.Equals(nextObject.transform.root))
 				{
 					nextObject = nextObject.transform.parent.GetComponentInParent<ModelPlugin>();
+
 					if (nextObject == null)
+					{
 						return string.Empty;
+					}
 				}
 			}
 
