@@ -28,6 +28,7 @@ Here is the full list of models that is implemented or planned to be implemented
 - [X] Multi-camera
 - [X] GPS sensor
 - [ ] Depth Camera
+    - [ ] Point Cloud message
 - [ ] 3D Lidar Sensor
 - [ ] Sensor noise model
 
