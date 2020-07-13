@@ -132,7 +132,7 @@ namespace SensorDevices
 
 		private void SetupLaserCamera()
 		{
-			var shader = Shader.Find("Sensor/DepthLidar");
+			var shader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(shader);
 
 			laserCamera.backgroundColor = Color.white;

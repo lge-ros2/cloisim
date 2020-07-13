@@ -269,7 +269,6 @@ public abstract class DevicePlugin : DeviceTransporter
 	// Start is called before the first frame update
 	void Start()
 	{
-		hideFlags |= HideFlags.NotEditable;
 		// PrintPluginData();
 
 		OnStart();

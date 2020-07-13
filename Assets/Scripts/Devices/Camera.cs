@@ -30,6 +30,13 @@ namespace SensorDevices
 
 		public bool runningDeviceWork = true;
 
+		protected string targetRTname;
+		protected int targetRTdepth;
+		protected RenderTextureFormat targetRTformat;
+		protected RenderTextureReadWrite targetRTrwmode;
+		protected TextureFormat readbackDstFormat;
+
+
 		void Awake()
 		{
 			cam = gameObject.AddComponent<UnityEngine.Camera>();
@@ -42,9 +49,21 @@ namespace SensorDevices
 			{
 				cam.transform.Rotate(Vector3.up, 90.0000000000f);
 
+				SetupTexture();
 				SetupCamera();
 				StartCoroutine(CameraWorker());
 			}
+		}
+
+		protected virtual void SetupTexture()
+		{
+			// Debug.Log("This is not a Depth Camera!");
+			targetRTname = "CameraTexture";
+			targetRTdepth = 0;
+			targetRTformat = RenderTextureFormat.ARGB32;
+			targetRTrwmode = RenderTextureReadWrite.sRGB;
+
+			readbackDstFormat = TextureFormat.RGB24;
 		}
 
 		protected override void InitializeMessages()
@@ -74,26 +93,11 @@ namespace SensorDevices
 			cam.orthographic = false;
 			cam.nearClipPlane = (float)parameters.clip.near;
 			cam.farClipPlane = (float)parameters.clip.far;
-
-			string targetRTname;
-			var targetRTdepth = 0;
-			var targetRTformat = RenderTextureFormat.ARGB32;
-			var targetRTrwmode = RenderTextureReadWrite.sRGB;
-
-			if (cam.depthTextureMode.Equals(DepthTextureMode.Depth))
-			{
-				targetRTname = "CameraDepthTexture";
-				targetRTdepth = 24;
-				targetRTformat = RenderTextureFormat.RFloat;
-				targetRTrwmode = RenderTextureReadWrite.Linear;
-			}
-			else
-			{
-				targetRTname = "CameraTexture";
-			}
+			cam.cullingMask = LayerMask.GetMask("Default");
 
 			var targetRT = new RenderTexture(parameters.image_width, parameters.image_height, targetRTdepth, targetRTformat, targetRTrwmode)
 			{
+				name = targetRTname,
 				dimension = UnityEngine.Rendering.TextureDimension.Tex2D,
 				antiAliasing = 1,
 				useMipMap = false,
@@ -102,7 +106,6 @@ namespace SensorDevices
 				filterMode = FilterMode.Bilinear,
 			};
 
-			targetRT.name = targetRTname;
 			cam.targetTexture = targetRT;
 
 			var camHFov = (float)parameters.horizontal_fov * Mathf.Rad2Deg;
@@ -125,12 +128,13 @@ namespace SensorDevices
 
 			while (true)
 			{
-				var oldCulling = GL.invertCulling;
-				GL.invertCulling = !oldCulling;
-				cam.Render();
-				GL.invertCulling = oldCulling;
+				cam.enabled = true;
 
-				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, TextureFormat.RGB24);
+				GL.invertCulling = !GL.invertCulling;
+				cam.Render();
+				GL.invertCulling = !GL.invertCulling;
+
+				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, readbackDstFormat);
 				yield return new WaitUntil(() => readback.done);
 
 				if (readback.hasError)
@@ -148,6 +152,7 @@ namespace SensorDevices
 					camData.SaveRawImageData(parameters.save_path, saveName);
 					// Debug.LogFormat("{0}|{1} captured", parameters.save_path, saveName);
 				}
+
 				cam.enabled = false;
 
 				yield return waitForSeconds;

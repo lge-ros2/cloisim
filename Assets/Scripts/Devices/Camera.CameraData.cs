@@ -137,12 +137,12 @@ namespace SensorDevices
 						break;
 
 					case PixelFormat.R_FLOAT32:
-						textureFormat = TextureFormat.RFloat;
+						textureFormat = TextureFormat.ARGB32;
 						isLinear = true;
 						break;
 
 					case PixelFormat.RGB_FLOAT32:
-						textureFormat = TextureFormat.RGBAFloat;
+						textureFormat = TextureFormat.ARGB32;
 						isLinear = true;
 						break;
 
