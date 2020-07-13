@@ -26,7 +26,7 @@ namespace SensorDevices
 
 		protected UnityEngine.Camera cam = null;
 
-		public float adjustCapturingRate = 1.5f;
+		public float adjustCapturingRate = 0.95f;
 
 		public bool runningDeviceWork = true;
 
@@ -76,7 +76,7 @@ namespace SensorDevices
 			image.Width = (uint)parameters.image_width;
 			image.Height = (uint)parameters.image_height;
 			image.PixelFormat = (uint)GetPixelFormat(parameters.image_format);
-			image.Step = image.Width * GetImageDepth(parameters.image_format);
+			image.Step = image.Width * (uint)GetImageDepth(parameters.image_format);
 			image.Data = new byte[image.Height * image.Step];
 		}
 
@@ -135,6 +135,8 @@ namespace SensorDevices
 				GL.invertCulling = !GL.invertCulling;
 
 				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, readbackDstFormat);
+				cam.enabled = false;
+
 				yield return new WaitUntil(() => readback.done);
 
 				if (readback.hasError)
@@ -142,7 +144,7 @@ namespace SensorDevices
 					Debug.LogError("Failed to read GPU texture");
 					continue;
 				}
-				Debug.Assert(readback.done);
+				// Debug.Assert(request.done);
 
 				camData.SetTextureData(readback.GetData<byte>());
 
@@ -152,8 +154,6 @@ namespace SensorDevices
 					camData.SaveRawImageData(parameters.save_path, saveName);
 					// Debug.LogFormat("{0}|{1} captured", parameters.save_path, saveName);
 				}
-
-				cam.enabled = false;
 
 				yield return waitForSeconds;
 			}
@@ -176,7 +176,7 @@ namespace SensorDevices
 		{
 			var image = imageStamped.Image;
 			var imageData = camData.GetTextureData();
-			if (image.Data.Length == imageData.Length)
+			if (imageData != null && image.Data.Length == imageData.Length)
 			{
 				image.Data = imageData;
 			}

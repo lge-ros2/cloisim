@@ -49,7 +49,7 @@ namespace SensorDevices
 		private Material depthMaterial = null;
 
 		private const float defaultRotationOffset = 90.00000000000000f;
-		private const float laserCameraHFov = 45.0000000000f;
+		private const float laserCameraHFov = 120.0000000000f;
 		private const float laserCameraHFovHalf = laserCameraHFov / 2;
 		private const float laserCameraVFov = 40.0000000000f;
 
@@ -61,6 +61,8 @@ namespace SensorDevices
 		private LaserCamData[] laserCamData;
 
 		private LaserData tempLaserData;
+
+		public float adjustWaitingPeriod = 0.80f;
 
 		void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
@@ -179,7 +181,7 @@ namespace SensorDevices
 			for (var index = 0; index < numberOfLaserCamData; index++)
 			{
 				var data = new LaserCamData();
-				data.AllocateTexture(index, targetDepthRT.width, targetDepthRT.height);
+				data.AllocateBuffer(index, targetDepthRT.width, targetDepthRT.height);
 				data.CenterAngle = laserCameraRotationAngle * index;
 				laserCamData[index] = data;
 			}
@@ -187,9 +189,9 @@ namespace SensorDevices
 
 		private IEnumerator LaserCameraWorker()
 		{
-			float ScanningPeriod = (UpdatePeriod/numberOfLaserCamData);
+			var ScanningPeriod = (UpdatePeriod/numberOfLaserCamData);
 			var axisRotation = Vector3.zero;
-			var waitForSeconds = new WaitForSeconds(ScanningPeriod);
+			var waitForSeconds = new WaitForSeconds(ScanningPeriod * adjustWaitingPeriod);
 
 			while (true)
 			{
@@ -205,6 +207,8 @@ namespace SensorDevices
 					laserCamera.Render();
 
 					var readback = AsyncGPUReadback.Request(laserCamera.targetTexture, 0, TextureFormat.RGBA32);
+					laserCamera.enabled = false;
+
 					yield return new WaitUntil(() => readback.done);
 
 					if (readback.hasError)
@@ -212,11 +216,9 @@ namespace SensorDevices
 						Debug.LogError("Failed to read GPU texture");
 						continue;
 					}
-					Debug.Assert(readback.done);
+					// Debug.Assert(readback.done);
 
-					data.SetTextureData(readback.GetData<byte>());
-
-					laserCamera.enabled = false;
+					data.SetBufferData(readback.GetData<byte>());
 
 					yield return waitForSeconds;
 				}
@@ -225,6 +227,7 @@ namespace SensorDevices
 
 		protected override IEnumerator MainDeviceWorker()
 		{
+			var waitForSeconds = new WaitForSeconds(UpdatePeriod * adjustWaitingPeriod);
 			var sw = new Stopwatch();
 			while (true)
 			{
@@ -232,7 +235,7 @@ namespace SensorDevices
 				GenerateMessage();
 				sw.Stop();
 
-				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
+				yield return waitForSeconds; //new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
 			}
 		}
 
@@ -255,7 +258,7 @@ namespace SensorDevices
 				var laserScanData = laserCamData[dataIndexByAngle];
 				var centerAngleInCamData = laserScanData.CenterAngle;
 
-				tempLaserData.data = laserScanData.GetTextureData();
+				tempLaserData.data = laserScanData.GetBufferData();
 				tempLaserData.width = laserScanData.ImageWidth;
 				tempLaserData.height = laserScanData.ImageHeight;
 

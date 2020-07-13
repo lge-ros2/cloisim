@@ -31,7 +31,6 @@ namespace SensorDevices
 		}
 		protected override void SetupTexture()
 		{
-			// TODO : Need to be implemented!!!
 			var shader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(shader);
 

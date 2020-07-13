@@ -60,7 +60,7 @@ namespace SensorDevices
 			image.Width = (uint)parameters.image_width;
 			image.Height = (uint)parameters.image_height;
 			image.PixelFormat = (uint)Camera.GetPixelFormat(parameters.image_format);
-			image.Step = image.Width * Camera.GetImageDepth(parameters.image_format);
+			image.Step = image.Width * (uint)Camera.GetImageDepth(parameters.image_format);
 			image.Data = new byte[image.Height * image.Step];
 			imagesStamped.Images.Add(image);
 		}
@@ -86,8 +86,7 @@ namespace SensorDevices
 			{
 				var image = images[index];
 				var imageData = cameras[index].GetCamImageData();
-
-				if (imageData != null && (image.Data.Length == imageData.Length))
+				if (image.Data.Length == imageData.Length)
 				{
 					image.Data = imageData;
 				}

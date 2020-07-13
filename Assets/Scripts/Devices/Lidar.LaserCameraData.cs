@@ -15,7 +15,9 @@ namespace SensorDevices
 		{
 			private int index;
 			private float centerAngle;
-			private Texture2D cameraImage;
+			private int imageWidth;
+			private int imageHeight;
+			private byte[] imageBuffer;
 
 			public float CenterAngle
 			{
@@ -23,38 +25,26 @@ namespace SensorDevices
 				set => centerAngle = value;
 			}
 
-			public int ImageWidth
-			{
-				get => cameraImage.width;
-			}
+			public int ImageWidth => imageWidth;
 
-			public int ImageHeight
-			{
-				get => cameraImage.height;
-			}
+			public int ImageHeight => imageHeight;
 
-			public void AllocateTexture(in int dataIndex, in int width, in int height)
+			public void AllocateBuffer(in int dataIndex, in int width, in int height)
 			{
 				index = dataIndex;
-				cameraImage = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
+				imageWidth = width;
+				imageHeight = height;
+				imageBuffer = new byte[width * height * 4];
 			}
 
-			public void SetTextureData(in NativeArray<byte> buffer)
+			public void SetBufferData(in NativeArray<byte> buffer)
 			{
-				cameraImage.LoadRawTextureData<byte>(buffer);
-				cameraImage.Apply();
+				buffer.CopyTo(imageBuffer);
 			}
 
-			public NativeArray<byte> GetTextureData()
+			public byte[] GetBufferData()
 			{
-				return cameraImage.GetRawTextureData<byte>();
-			}
-
-			public void SaveRawImageData(in string name)
-			{
-				var bytes = cameraImage.EncodeToPNG();
-				var fileName = string.Format("./Logs/{0}_{1:00}_{2:000}", name, index, centerAngle);
-				System.IO.File.WriteAllBytes(fileName, bytes);
+				return imageBuffer;
 			}
 		}
 
@@ -62,7 +52,7 @@ namespace SensorDevices
 		struct LaserData
 		{
 			[ReadOnly]
-			public NativeArray<byte> data;
+			public byte[] data;
 
 			[ReadOnly]
 			public int width;
@@ -80,7 +70,7 @@ namespace SensorDevices
 
 			private float GetDecodedData(in int pixelOffsetX, in int pixelOffsetY)
 			{
-				if (data.IsCreated)
+				if (data != null && data.Length > 0)
 				{
 					// Decode
 					const int colorFormatUnit = 4;

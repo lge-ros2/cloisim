@@ -98,8 +98,8 @@ public class Device : MonoBehaviour
 	protected float WaitPeriod(in float messageGenerationTime = 0)
 	{
 		var waitTime = UpdatePeriod - messageGenerationTime - TransportingTime;
-		// Debug.Log("elapsedTime : "+ messageGenerationTime.ToString("F5"));
-		// Debug.Log("waitTime : "+ waitTime.ToString("F5"));
+		// Debug.LogFormat(deviceName + ": waitTime({0}) = period({1}) - elapsedTime({2}) - TransportingTime({3})",
+		// 	waitTime.ToString("F5"), UpdatePeriod.ToString("F5"), messageGenerationTime.ToString("F5"), TransportingTime.ToString("F5"));
 		return (waitTime < 0)? 0:waitTime;
 	}
 
