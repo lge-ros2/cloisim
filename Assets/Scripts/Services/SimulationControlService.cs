@@ -63,7 +63,13 @@ public class SimulationControlService : WebSocketBehavior
 		var request = JsonUtility.FromJson<SimulationControlRequest>(e.Data);
 		request.Print();
 
-		var result = targetComponent.TriggerResetService(request.command);
+		string result = string.Empty;
+
+		if (request.command.Equals("reset"))
+		{
+			var wasSuccessful = targetComponent.TriggerResetService(request.command);
+			result = (wasSuccessful)? SimulationService.SUCCESS:SimulationService.FAIL;
+		}
 
 		GenerateResponse(request, result, out var response);
 
