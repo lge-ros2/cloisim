@@ -35,6 +35,7 @@ Here is the full list of models that is implemented or planned to be implemented
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<lights>`, `<audio>`, `<actor>`, `<state>`.
 
+Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material' and 'STL(.stl)'.
 
 ## How it works
 Refer to core codes in 'Assets/Scripts'.
