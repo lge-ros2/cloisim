@@ -1,6 +1,11 @@
 // Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 Shader "Sensor/Depth"
 {
+	Properties
+	{
+		_ReverseData ("reverse depth data", Float) = 0
+	}
+
 	SubShader
 	{
 		Cull Back
@@ -19,6 +24,8 @@ Shader "Sensor/Depth"
 			Fog { Mode Off }
 
 			CGPROGRAM
+
+			float _ReverseData;
 
 			#pragma vertex vert
 			#pragma fragment frag
@@ -47,7 +54,8 @@ Shader "Sensor/Depth"
 			float4 frag(v2f_img i) : COLOR
 			{
 				float depth = UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, i.uv.xy));
-				return EncodeFloatRGBA( Linear01Depth(depth) );
+				float linearDepth = Linear01Depth(depth);
+				return EncodeFloatRGBA((_ReverseData >= 1.0)? (1.0 - linearDepth) : linearDepth);
 			}
 
 			ENDCG

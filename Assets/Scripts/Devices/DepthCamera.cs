@@ -33,6 +33,7 @@ namespace SensorDevices
 		{
 			var shader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(shader);
+			depthMaterial.SetFloat("_ReverseData", 1.0f);
 
 			if (parameters.depth_camera_output.Equals("points"))
 			{
@@ -52,6 +53,7 @@ namespace SensorDevices
 			targetRTname = "CameraDepthTexture";
 			targetRTdepth = 24;
 			targetRTrwmode = RenderTextureReadWrite.Linear;
+
 			targetRTformat = RenderTextureFormat.ARGB32;
 			readbackDstFormat = TextureFormat.RFloat;
 		}

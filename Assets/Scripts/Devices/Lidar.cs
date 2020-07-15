@@ -44,7 +44,6 @@ namespace SensorDevices
 		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.2f);
 
 		private Transform lidarLink = null;
-
 		private UnityEngine.Camera laserCamera = null;
 		private Material depthMaterial = null;
 
@@ -59,8 +58,6 @@ namespace SensorDevices
 		private int numberOfLaserCamData = 0;
 
 		private LaserCamData[] laserCamData;
-
-		private LaserData tempLaserData;
 
 		public float adjustWaitingPeriod = 0.80f;
 
@@ -175,7 +172,6 @@ namespace SensorDevices
 			numberOfLaserCamData = Mathf.CeilToInt(360 / laserCameraRotationAngle);
 
 			laserCamData = new LaserCamData[numberOfLaserCamData];
-			tempLaserData = new LaserData();
 
 			var targetDepthRT = laserCamera.targetTexture;
 			for (var index = 0; index < numberOfLaserCamData; index++)
@@ -207,9 +203,10 @@ namespace SensorDevices
 					laserCamera.Render();
 
 					var readback = AsyncGPUReadback.Request(laserCamera.targetTexture, 0, TextureFormat.RGBA32);
-					laserCamera.enabled = false;
 
 					yield return new WaitUntil(() => readback.done);
+
+					laserCamera.enabled = false;
 
 					if (readback.hasError)
 					{
@@ -258,11 +255,8 @@ namespace SensorDevices
 				var laserScanData = laserCamData[dataIndexByAngle];
 				var centerAngleInCamData = laserScanData.CenterAngle;
 
-				tempLaserData.data = laserScanData.GetBufferData();
-				tempLaserData.width = laserScanData.ImageWidth;
-				tempLaserData.height = laserScanData.ImageHeight;
+				var depthData = laserScanData.GetDepthData(convertedRayAngleH - centerAngleInCamData);
 
-				var depthData = tempLaserData.GetDepthData(convertedRayAngleH - centerAngleInCamData);
 				var rayDistance = (depthData > 0) ? depthData * (float)rangeMax : Mathf.Infinity;
 
 				// Store the laser data CCW

@@ -36,7 +36,6 @@ namespace SensorDevices
 		protected RenderTextureReadWrite targetRTrwmode;
 		protected TextureFormat readbackDstFormat;
 
-
 		void Awake()
 		{
 			cam = gameObject.AddComponent<UnityEngine.Camera>();
@@ -60,10 +59,22 @@ namespace SensorDevices
 			// Debug.Log("This is not a Depth Camera!");
 			targetRTname = "CameraTexture";
 			targetRTdepth = 0;
-			targetRTformat = RenderTextureFormat.ARGB32;
 			targetRTrwmode = RenderTextureReadWrite.sRGB;
 
-			readbackDstFormat = TextureFormat.RGB24;
+			var pixelFormat = GetPixelFormat(parameters.image_format);
+			switch (pixelFormat)
+			{
+				case PixelFormat.L_INT8:
+					targetRTformat = RenderTextureFormat.R8;
+					readbackDstFormat = TextureFormat.R8;
+					break;
+
+				case PixelFormat.RGB_INT8:
+				default:
+					targetRTformat = RenderTextureFormat.ARGB32;
+					readbackDstFormat = TextureFormat.RGB24;
+					break;
+			}
 		}
 
 		protected override void InitializeMessages()
@@ -135,9 +146,10 @@ namespace SensorDevices
 				GL.invertCulling = !GL.invertCulling;
 
 				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, readbackDstFormat);
-				cam.enabled = false;
 
 				yield return new WaitUntil(() => readback.done);
+
+				cam.enabled = false;
 
 				if (readback.hasError)
 				{
