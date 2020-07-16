@@ -60,7 +60,7 @@ public partial class SDFImporter : SDF.Importer
 
 	private void SetParentObject(GameObject childObject, string parentObjectName)
 	{
-		GameObject parentObject = GameObject.Find(parentObjectName);
+		var parentObject = GameObject.Find(parentObjectName);
 
 		if (parentObject != null)
 		{
@@ -89,12 +89,21 @@ public partial class SDFImporter : SDF.Importer
 		var pluginType = Type.GetType(pluginName);
 		if (pluginType != null)
 		{
-			var pluginObject = (DevicePlugin)targetObject.AddComponent(pluginType);
-			if (pluginObject != null)
+			var pluginObject = targetObject.AddComponent(pluginType);
+			var devicePluginObject = pluginObject as DevicePlugin;
+			var devicesPluginObject = pluginObject as DevicesPlugin;
+
+			if (devicePluginObject != null)
 			{
 				var node = plugin.GetNode();
-				pluginObject.SetPluginData(node);
-				// Debug.Log("[Plugin] added : " + plugin.Name);
+				devicePluginObject.SetPluginParameters(node);
+				// Debug.Log("[Plugin] device added : " + plugin.Name);
+			}
+			else if (devicesPluginObject != null)
+			{
+				var node = plugin.GetNode();
+				devicesPluginObject.SetPluginParameters(node);
+				// Debug.Log("[Plugin] devices added : " + plugin.Name);
 			}
 			else
 			{

@@ -123,7 +123,7 @@ namespace SDF
 			{
 				var rootDirectory = new DirectoryInfo(modelPath);
 
-				XmlDocument modelConfigDoc = new XmlDocument();
+				var modelConfigDoc = new XmlDocument();
 
 				//Console.WriteLine(">>> Model Default Path: " + modelPath);
 
