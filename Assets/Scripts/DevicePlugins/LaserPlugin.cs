@@ -13,6 +13,11 @@ public class LaserPlugin : DevicePlugin
 
 	protected override void OnAwake()
 	{
+		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
+	}
+
+	protected override void OnStart()
+	{
 		partName = DeviceHelper.GetPartName(gameObject);
 
 		var hashKey = MakeHashKey(partName);
@@ -20,11 +25,6 @@ public class LaserPlugin : DevicePlugin
 		{
 			Debug.LogError("Failed to register for LaserPlugin - " + hashKey);
 		}
-	}
-
-	protected override void OnStart()
-	{
-		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
 
 		AddThread(Sender);
 	}

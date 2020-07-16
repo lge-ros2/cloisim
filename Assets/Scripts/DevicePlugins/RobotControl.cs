@@ -25,43 +25,33 @@ public class RobotControl : DevicePlugin
 		micomInput = gameObject.AddComponent<MicomInput>();
 		micomSensor = gameObject.AddComponent<MicomSensor>();
 
-		var txHashKey = MakeHashKey("MICOM", "_SENSOR");
-		if (!RegisterTxDevice(txHashKey))
-		{
-			Debug.LogError("Failed to register for RobotControl TX- " + txHashKey);
-		}
-
-		var rxHashKey = MakeHashKey("MICOM", "_INPUT");
-		if (!RegisterRxDevice(rxHashKey))
-		{
-			Debug.LogError("Failed to register for RobotControl RX- " + rxHashKey);
-		}
+		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
 	}
 
 	protected override void OnStart()
 	{
 		const float MM2M = 0.001f;
-		var updateRate = GetPluginValue<float>("update_rate", 20);
+		var updateRate = parameters.GetValue<float>("update_rate", 20);
 		micomSensor.SetUpdateRate(updateRate);
 
-		var kp = GetPluginValue<float>("PID/kp");
-		var ki = GetPluginValue<float>("PID/ki");
-		var kd = GetPluginValue<float>("PID/kd");
+		var kp = parameters.GetValue<float>("PID/kp");
+		var ki = parameters.GetValue<float>("PID/ki");
+		var kd = parameters.GetValue<float>("PID/kd");
 
 		var pidControl = new PID(kp, ki, kd);
 
-		var wheelBase = GetPluginValue<float>("wheel/base") * MM2M;
-		wheelRadius = GetPluginValue<float>("wheel/radius") * MM2M;
+		var wheelBase = parameters.GetValue<float>("wheel/base") * MM2M;
+		wheelRadius = parameters.GetValue<float>("wheel/radius") * MM2M;
 		divideWheelRadius = 1.0f/wheelRadius; // for performacne.
 
-		var wheelNameLeft = GetPluginValue<string>("wheel/location[@type='left']");
-		var wheelNameRight = GetPluginValue<string>("wheel/location[@type='right']");
+		var wheelNameLeft = parameters.GetValue<string>("wheel/location[@type='left']");
+		var wheelNameRight = parameters.GetValue<string>("wheel/location[@type='right']");
 
-		var debugging = GetPluginValue<bool>("debug", false);
+		var debugging = parameters.GetValue<bool>("debug", false);
 		micomInput.EnableDebugging = debugging;
 
-		var motorFriction = GetPluginValue<float>("wheel/friction/motor", 0.1f); // Currently not used
-		var brakeFriction = GetPluginValue<float>("wheel/friction/brake", 0.1f); // Currently not used
+		var motorFriction = parameters.GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
+		var brakeFriction = parameters.GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
 
 		var modelList = GetComponentsInChildren<ModelPlugin>();
 		foreach (var model in modelList)
@@ -94,7 +84,17 @@ public class RobotControl : DevicePlugin
 			}
 		}
 
-		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
+		var txHashKey = MakeHashKey("MICOM", "_SENSOR");
+		if (!RegisterTxDevice(txHashKey))
+		{
+			Debug.LogError("Failed to register for RobotControl TX- " + txHashKey);
+		}
+
+		var rxHashKey = MakeHashKey("MICOM", "_INPUT");
+		if (!RegisterRxDevice(rxHashKey))
+		{
+			Debug.LogError("Failed to register for RobotControl RX- " + rxHashKey);
+		}
 
 		AddThread(Sender);
 		AddThread(Receiver);
@@ -102,7 +102,7 @@ public class RobotControl : DevicePlugin
 
 	void FixedUpdate()
 	{
-		Quaternion localRotation = transform.rotation;
+		var localRotation = transform.rotation;
 		if (imuSensor != null)
 		{
 			micomSensor.SetIMU(imuSensor);

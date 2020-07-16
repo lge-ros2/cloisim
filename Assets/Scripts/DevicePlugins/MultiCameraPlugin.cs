@@ -9,10 +9,14 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class MultiCameraPlugin : DevicePlugin
 {
-
 	private SensorDevices.MultiCamera cam = null;
 
 	protected override void OnAwake()
+	{
+		cam = gameObject.GetComponent<SensorDevices.MultiCamera>();
+	}
+
+	protected override void OnStart()
 	{
 		partName = DeviceHelper.GetPartName(gameObject);
 
@@ -21,11 +25,6 @@ public class MultiCameraPlugin : DevicePlugin
 		{
 			Debug.LogError("Failed to register for CameraPlugin - " + hashKey);
 		}
-	}
-
-	protected override void OnStart()
-	{
-		cam = gameObject.GetComponent<SensorDevices.MultiCamera>();
 
 		AddThread(Sender);
 	}

@@ -13,6 +13,11 @@ public class GpsPlugin : DevicePlugin
 
 	protected override void OnAwake()
 	{
+		gps = gameObject.GetComponent<SensorDevices.GPS>();
+	}
+
+	protected override void OnStart()
+	{
 		partName = DeviceHelper.GetPartName(gameObject);
 
 		var hashKey = MakeHashKey(partName);
@@ -20,11 +25,6 @@ public class GpsPlugin : DevicePlugin
 		{
 			Debug.LogError("Failed to register for GpsPlugin - " + hashKey);
 		}
-	}
-
-	protected override void OnStart()
-	{
-		gps = gameObject.GetComponent<SensorDevices.GPS>();
 
 		AddThread(Sender);
 	}

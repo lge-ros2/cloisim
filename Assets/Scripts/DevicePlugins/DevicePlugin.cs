@@ -4,29 +4,22 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Xml;
-using System.Linq;
-using System.IO;
 using System.Collections.Generic;
 using System.Threading;
 using System;
 using UnityEngine;
+using System.Xml;
 
 public abstract class DevicePlugin : DeviceTransporter
 {
 	public string modelName = String.Empty;
 	public string partName = string.Empty;
 
-	private XmlNode pluginData;
+	protected PluginParameters parameters;
 
 	private BridgePortManager bridgePortManager = null;
 
 	private List<Thread> threadList = null;
-
-	protected DevicePlugin()
-	{
-		threadList = new List<Thread>();
-	}
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
@@ -40,7 +33,9 @@ public abstract class DevicePlugin : DeviceTransporter
 			foreach (var thread in threadList)
 			{
 				if (thread != null && thread.IsAlive)
+				{
 					thread.Abort();
+				}
 			}
 		}
 	}
@@ -64,111 +59,22 @@ public abstract class DevicePlugin : DeviceTransporter
 			foreach (var thread in threadList)
 			{
 				if (thread != null && !thread.IsAlive)
+				{
 					thread.Start();
+				}
 			}
 		}
 	}
 
-	public void SetPluginData(XmlNode node)
+	public void SetPluginParameters(in XmlNode node)
 	{
-		pluginData = node.SelectSingleNode(".");
-	}
-
-	private static T XmlNodeToValue<T>(XmlNode node)
-	{
-		if (node == null)
+		if (parameters != null)
 		{
-			return default(T);
-		}
-		var value = node.InnerXml.Trim();
-		return SDF.Entity.ConvertValueType<T>(value);
-	}
-
-	protected T GetPluginAttribute<T>(in string xpath, in string attributeName, in T defaultValue = default(T))
-	{
-		var node = pluginData.SelectSingleNode(xpath);
-		if (node != null)
-		{
-			var attributes = node.Attributes;
-			var attributeNode = attributes[attributeName];
-			if (attributeNode != null)
-			{
-				var attributeValue = attributeNode.Value;
-				return SDF.Entity.ConvertValueType<T>(attributeValue);
-			}
-		}
-
-		return defaultValue;
-	}
-
-	protected T GetPluginValue<T>(in string xpath, T defaultValue = default(T))
-	{
-		if (string.IsNullOrEmpty(xpath) || pluginData == null)
-		{
-			return defaultValue;
-		}
-
-		try
-		{
-			var node = pluginData.SelectSingleNode(xpath);
-			return XmlNodeToValue<T>(node);
-		}
-		catch (XmlException ex)
-		{
-			Debug.LogErrorFormat("ERROR: GetPluginValue with {0} : {1} ", xpath, ex.Message);
-			return defaultValue;
-		}
-	}
-
-	protected bool GetPluginValues<T>(in string xpath, out List<T> valueList)
-	{
-		valueList = null;
-
-		var result = GetPluginValues(xpath, out var nodeList);
-		valueList = nodeList.ConvertAll(s => XmlNodeToValue<T>(s));
-
-		return result;
-	}
-
-	protected bool GetPluginValues(in string xpath, out List<XmlNode> valueList)
-	{
-		valueList = null;
-
-		if (string.IsNullOrEmpty(xpath) || pluginData == null)
-		{
-			return false;
-		}
-
-		try
-		{
-			valueList = new List<XmlNode>(pluginData.SelectNodes(xpath).Cast<XmlNode>());
-			if (valueList == null)
-			{
-				return false;
-			}
-
-			return true;
-		}
-		catch (XmlException ex)
-		{
-			Debug.LogErrorFormat("ERROR: GetPluginValue with {0} : {1} ", xpath, ex.Message);
-			return false;
-		}
-	}
-
-	protected void PrintPluginData()
-	{
-		if (pluginData != null)
-		{
-			Debug.LogWarning("Plugin Data is empty");
+			parameters.SetRootData(node);
 		}
 		else
 		{
-			// Print all SDF contents
-			StringWriter sw = new StringWriter();
-			XmlTextWriter xw = new XmlTextWriter(sw);
-			pluginData.WriteTo(xw);
-			Debug.Log(sw.ToString());
+			Debug.LogWarning("Cannot set plugin parameters");
 		}
 	}
 
@@ -243,6 +149,9 @@ public abstract class DevicePlugin : DeviceTransporter
 
 	void Awake()
 	{
+		parameters = new PluginParameters();
+		threadList = new List<Thread>();
+
 		var coreObject = GameObject.Find("Core");
 
 		if (coreObject == null)
@@ -276,7 +185,8 @@ public abstract class DevicePlugin : DeviceTransporter
 		StartThreads();
 	}
 
-	public void Reset() {
+	public void Reset()
+	{
 		OnReset();
 	}
 }

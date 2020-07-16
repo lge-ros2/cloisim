@@ -11,20 +11,22 @@ public class CameraPlugin : DevicePlugin
 {
 	private SensorDevices.Camera cam = null;
 
+	public string subPartName = string.Empty;
+
 	protected override void OnAwake()
 	{
-		partName = DeviceHelper.GetPartName(gameObject);
-
-		var hashKey = MakeHashKey(partName);
-		if (!RegisterTxDevice(hashKey))
-		{
-			Debug.LogError("Failed to register for CameraPlugin - " + hashKey);
-		}
+		cam = gameObject.GetComponent<SensorDevices.Camera>();
 	}
 
 	protected override void OnStart()
 	{
-		cam = gameObject.GetComponent<SensorDevices.Camera>();
+		partName = DeviceHelper.GetPartName(gameObject);
+
+		var hashKey = MakeHashKey(partName + subPartName);
+		if (!RegisterTxDevice(hashKey))
+		{
+			Debug.LogError("Failed to register for CameraPlugin - " + hashKey);
+		}
 
 		AddThread(Sender);
 	}

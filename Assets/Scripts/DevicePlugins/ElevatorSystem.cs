@@ -59,15 +59,16 @@ public partial class ElevatorSystem : DevicePlugin
 	{
 		partName = "ElevatorSystem";
 
+	}
+
+	protected override void OnStart()
+	{
 		var hashKey = modelName + partName;
 		if (!RegisterServiceDevice(hashKey))
 		{
 			Debug.LogError("Failed to register ElevatorSystem service - " + hashKey);
 		}
-	}
 
-	protected override void OnStart()
-	{
 		ReadFloorContext();
 		ReadElevatorContext();
 		GenerateResponseMessage();
@@ -127,20 +128,20 @@ public partial class ElevatorSystem : DevicePlugin
 		//   </doors>
 		// </elevator>
 
-		var elevatorPrefixName = GetPluginAttribute<string>("elevator", "prefix_name");
-		var elevatorSpeed = GetPluginAttribute<float>("elevator", "speed");
-		var elevatorFloor = GetPluginValue<string>("elevator/floor");
+		var elevatorPrefixName = parameters.GetAttribute<string>("elevator", "prefix_name");
+		var elevatorSpeed = parameters.GetAttribute<float>("elevator", "speed");
+		var elevatorFloor = parameters.GetValue<string>("elevator/floor");
 
-		var elevatorDoorSpeed = GetPluginAttribute<float>("elevator/doors", "speed");
-		var elevatorDoorAutoClosingTimer = GetPluginAttribute<float>("elevator/doors", "closing_timer");
+		var elevatorDoorSpeed = parameters.GetAttribute<float>("elevator/doors", "speed");
+		var elevatorDoorAutoClosingTimer = parameters.GetAttribute<float>("elevator/doors", "closing_timer");
 
-		var elevatorInsideopenOffset = GetPluginAttribute<float>("elevator/doors/inside","open_offset");
-		var elevatorInsideDoorNameLeft = GetPluginValue<string>("elevator/doors/inside/door[@name='left']");
-		var elevatorInsideDoorNameRight = GetPluginValue<string>("elevator/doors/inside/door[@name='right']");
+		var elevatorInsideopenOffset = parameters.GetAttribute<float>("elevator/doors/inside","open_offset");
+		var elevatorInsideDoorNameLeft = parameters.GetValue<string>("elevator/doors/inside/door[@name='left']");
+		var elevatorInsideDoorNameRight = parameters.GetValue<string>("elevator/doors/inside/door[@name='right']");
 
-		var elevatorOutsideopenOffset = GetPluginAttribute<float>("elevator/doors/outside","open_offset");
-		var elevatorOutsideDoorNameLeft = GetPluginValue<string>("elevator/doors/outside/door[@name='left']");
-		var elevatorOutsideDoorNameRight = GetPluginValue<string>("elevator/doors/outside/door[@name='right']");
+		var elevatorOutsideopenOffset = parameters.GetAttribute<float>("elevator/doors/outside","open_offset");
+		var elevatorOutsideDoorNameLeft = parameters.GetValue<string>("elevator/doors/outside/door[@name='left']");
+		var elevatorOutsideDoorNameRight = parameters.GetValue<string>("elevator/doors/outside/door[@name='right']");
 
 		var index = 0;
 		foreach (Transform child in transform)
@@ -173,8 +174,8 @@ public partial class ElevatorSystem : DevicePlugin
 
 	public void ReadFloorContext()
 	{
-		if (GetPluginValues<string>("floors/floor/name", out var listFloorName) &&
-			GetPluginValues<float>("floors/floor/height", out var listFloorHeight))
+		if (parameters.GetValues<string>("floors/floor/name", out var listFloorName) &&
+			parameters.GetValues<float>("floors/floor/height", out var listFloorHeight))
 		{
 			if (listFloorName.Count == listFloorHeight.Count)
 			{
