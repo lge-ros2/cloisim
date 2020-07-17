@@ -27,8 +27,9 @@ Here is the full list of models that is implemented or planned to be implemented
     - [ ] Camera intrinsic parameter
 - [X] Multi-camera
 - [X] GPS sensor
-- [ ] Depth Camera
+- [X] Depth Camera
     - [ ] Point Cloud message
+- [X] RealSense (RGB + IR1 + IR2 + Depth)
 - [ ] 3D Lidar Sensor
 - [ ] Sensor noise model
 
