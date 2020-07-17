@@ -6,7 +6,6 @@
 
 using System.Collections.Generic;
 using System.Xml;
-using System;
 using UnityEngine;
 
 public abstract class DevicesPlugin : MonoBehaviour
@@ -44,19 +43,8 @@ public abstract class DevicesPlugin : MonoBehaviour
 		}
 	}
 
-	public DevicePlugin AddDevicePlugin(in string deviceName, in string pluginTypeName)
+	public void AddDevicePlugin(in string deviceName, in DevicePlugin devicePlugin)
 	{
-		var pluginType = Type.GetType(pluginTypeName);
-		if (pluginType != null)
-		{
-			var pluginObject = gameObject.AddComponent(pluginType) as DevicePlugin;
-			devicePlugins.Add(deviceName, pluginObject);
-
-			return pluginObject as DevicePlugin;
-		}
-		else
-		{
-			return null;
-		}
+		devicePlugins.Add(deviceName, devicePlugin);
 	}
 }

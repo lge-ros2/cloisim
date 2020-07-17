@@ -4,10 +4,15 @@
  * SPDX-License-Identifier: MIT
  */
 
+using UnityEngine;
+
 public class RealSensePlugin : DevicesPlugin
 {
+	private Camera[] cameras = null;
+
 	protected override void OnAwake()
 	{
+		cameras = GetComponentsInChildren<Camera>();
 	}
 
 	protected override void OnStart()
@@ -19,26 +24,37 @@ public class RealSensePlugin : DevicesPlugin
 
 		if (rgbName != null)
 		{
-			var rgbPlugin = AddDevicePlugin(rgbName, "CameraPlugin") as CameraPlugin;
-			rgbPlugin.subPartName = rgbName;
+			FindAndAddPlugin(rgbName);
 		}
 
 		if (leftImagerName != null)
 		{
-			var leftImagerPlugin = AddDevicePlugin(leftImagerName, "CameraPlugin") as CameraPlugin;
-			leftImagerPlugin.subPartName = leftImagerName;
+			FindAndAddPlugin(leftImagerName);
 		}
 
 		if (rightImagerName != null)
 		{
-			var rightImagerPlugin = AddDevicePlugin(rightImagerName, "CameraPlugin") as CameraPlugin;
-			rightImagerPlugin.subPartName = rightImagerName;
+			FindAndAddPlugin(rightImagerName);
 		}
 
 		if (depthName != null)
 		{
-			var depthPlugin = AddDevicePlugin(depthName, "CameraPlugin") as CameraPlugin;
-			depthPlugin.subPartName = depthName;
+			FindAndAddPlugin(depthName);
+		}
+	}
+
+	void FindAndAddPlugin(in string name)
+	{
+		foreach (var camera in cameras)
+		{
+			if (camera.gameObject.name.Equals(name))
+			{
+				var plugin = camera.gameObject.AddComponent<CameraPlugin>();
+				plugin.subPartName = name;
+
+				AddDevicePlugin(name, plugin);
+				break;
+			}
 		}
 	}
 }

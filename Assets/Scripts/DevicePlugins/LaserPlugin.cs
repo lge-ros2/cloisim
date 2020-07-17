@@ -13,13 +13,12 @@ public class LaserPlugin : DevicePlugin
 
 	protected override void OnAwake()
 	{
+		partName = DeviceHelper.GetPartName(gameObject);
 		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
 	}
 
 	protected override void OnStart()
 	{
-		partName = DeviceHelper.GetPartName(gameObject);
-
 		var hashKey = MakeHashKey(partName);
 		if (!RegisterTxDevice(hashKey))
 		{

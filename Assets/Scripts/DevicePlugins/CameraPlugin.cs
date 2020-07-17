@@ -16,12 +16,11 @@ public class CameraPlugin : DevicePlugin
 	protected override void OnAwake()
 	{
 		cam = gameObject.GetComponent<SensorDevices.Camera>();
+		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
-		partName = DeviceHelper.GetPartName(gameObject);
-
 		var hashKey = MakeHashKey(partName + subPartName);
 		if (!RegisterTxDevice(hashKey))
 		{
