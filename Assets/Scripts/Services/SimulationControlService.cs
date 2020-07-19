@@ -83,10 +83,16 @@ public class SimulationControlService : WebSocketBehavior
 		}
 
 		var request = JsonConvert.DeserializeObject<SimulationControlRequest>(e.Data);
+
+		if (request == null)
+		{
+			Debug.Log("Invalid JSON format");
+			return;
+		}
+
 		request.Print();
 
 		SimulationControlResponseBase output = null;
-		string responseJsonData = String.Empty;
 
 		if (request.command.Equals("reset"))
 		{
@@ -103,12 +109,15 @@ public class SimulationControlService : WebSocketBehavior
 			output = new SimulationControlResponseSensorPortList();
 			(output as SimulationControlResponseSensorPortList).result = result;
 		}
-
-		if (output != null)
+		else
 		{
-			output.command = request.command;
-			responseJsonData = JsonConvert.SerializeObject(output, Formatting.Indented);
+			output = new SimulationControlResponseBase();
+			request.command = "Invalid Command";
 		}
+
+		output.command = request.command;
+
+		var responseJsonData = JsonConvert.SerializeObject(output, Formatting.Indented);
 
 		Send(responseJsonData);
 	}

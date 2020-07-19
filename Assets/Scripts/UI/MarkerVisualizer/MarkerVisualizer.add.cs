@@ -30,7 +30,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 				}
 
 				marker = null;
-				switch (item.markerType)
+				switch (item.type)
 				{
 					case Marker.Types.Line:
 						AddMarkerLine(markerName, item, out marker);
@@ -154,7 +154,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 
 			var text = markerObject.AddComponent<TextMeshPro>();
 			text.fontSize = (int)markerProperties.size;
-			text.alignment = GetTextAlignment(markerProperties.textAlign);
+			text.alignment = GetTextAlignment(markerProperties.align);
 			text.text = markerProperties.text;
 			text.enableWordWrapping = false;
 			text.overflowMode = TextOverflowModes.Overflow;

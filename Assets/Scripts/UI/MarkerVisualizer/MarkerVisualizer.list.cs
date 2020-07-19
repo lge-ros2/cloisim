@@ -64,7 +64,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 			var markerSet = item.Value as Tuple<MarkerRequest, GameObject>;
 			var markerRequest = markerSet.Item1;
 
-			switch (markerRequest.markerType)
+			switch (markerRequest.type)
 			{
 				case Marker.Types.Line:
 					{
@@ -121,7 +121,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 	{
 		response.group = request.group;
 		response.id = request.id;
-		response.markerType = request.markerType;
-		response.markerColor = request.markerColor;
+		response.type = request.type;
+		response.color = request.color;
 	}
 }

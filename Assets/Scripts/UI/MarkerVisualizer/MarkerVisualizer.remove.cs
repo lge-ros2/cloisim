@@ -11,6 +11,8 @@ public partial class MarkerVisualizer : MonoBehaviour
 {
 	public bool RemoveMarkers()
 	{
+		var removedCount = 0;
+
 		foreach (var item in request.markers)
 		{
 			var markerName = item.MarkerName();
@@ -29,13 +31,14 @@ public partial class MarkerVisualizer : MonoBehaviour
 				}
 
 				registeredMarkers.Remove(markerName);
+				removedCount++;
 
 				// remove text object if it exists.
 				RemoveFollowingObjectByText(markerName);
 			}
 		}
 
-		return true;
+		return (removedCount == 0)? false:true;
 	}
 
 	private void RemoveFollowingObjectByText(in string markerName)
