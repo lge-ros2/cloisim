@@ -8,14 +8,13 @@ using System.Collections.Generic;
 using System.Xml;
 using UnityEngine;
 
-public abstract class DevicesPlugin : MonoBehaviour
+public abstract class DevicesPlugin : MonoBehaviour, IDevicePlugin
 {
 	protected PluginParameters parameters;
 
 	private Dictionary<string, DevicePlugin> devicePlugins;
 
 	protected abstract void OnAwake();
-
 	protected abstract void OnStart();
 
 	void Awake()
@@ -31,6 +30,11 @@ public abstract class DevicesPlugin : MonoBehaviour
 		OnStart();
 	}
 
+	public void AddDevicePlugin(in string deviceName, in DevicePlugin devicePlugin)
+	{
+		devicePlugins.Add(deviceName, devicePlugin);
+	}
+
 	public void SetPluginParameters(in XmlNode node)
 	{
 		if (parameters != null)
@@ -43,8 +47,7 @@ public abstract class DevicesPlugin : MonoBehaviour
 		}
 	}
 
-	public void AddDevicePlugin(in string deviceName, in DevicePlugin devicePlugin)
+	public void Reset()
 	{
-		devicePlugins.Add(deviceName, devicePlugin);
 	}
 }

@@ -6,11 +6,18 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using System.IO;
 using System;
 using UnityEngine;
 using System.Xml;
 
-public abstract class DevicePlugin : DeviceTransporter
+public interface IDevicePlugin
+{
+	void SetPluginParameters(in XmlNode node);
+	void Reset();
+}
+
+public abstract class DevicePlugin : DeviceTransporter, IDevicePlugin
 {
 	public string modelName = String.Empty;
 	public string partName = String.Empty;
@@ -188,5 +195,18 @@ public abstract class DevicePlugin : DeviceTransporter
 	public void Reset()
 	{
 		OnReset();
+	}
+
+	protected void ClearMemoryStream(ref MemoryStream ms)
+	{
+		if (ms != null)
+		{
+			if (ms != null)
+			{
+				ms.SetLength(0);
+				ms.Position = 0;
+				ms.Capacity = 0;
+			}
+		}
 	}
 }
