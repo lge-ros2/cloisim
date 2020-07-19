@@ -36,7 +36,7 @@ namespace SensorDevices
 
 		private float sensorStartOffset = 0;
 
-		void Awake()
+		protected override void OnAwake()
 		{
 			deviceName = name;
 			sonarLink = transform.parent;
@@ -77,32 +77,26 @@ namespace SensorDevices
 			// meshCollider.hideFlags |= HideFlags.NotEditable;
 		}
 
-		private void ResolveSensingArea(in MeshCollider meshCollider)
+		protected override IEnumerator OnVisualize()
 		{
-			// preserve the vertex points of the sensing area
-			var localToWorld = sonarLink.localToWorldMatrix;
-			for (var i = 0; i < meshCollider.sharedMesh.vertices.Length; i++)
+			const float visualUpdatePeriod = 0.01f;
+			const float visualDrawDuration = visualUpdatePeriod * 1.01f;
+			var sensorStartPoint = Vector3.zero;
+			var waitForSeconds = new WaitForSeconds(visualUpdatePeriod);
+
+			while (true)
 			{
-				var targetPoint = meshCollider.sharedMesh.vertices[i];
-				var distance = (Vector3.zero - targetPoint).magnitude;
-				if (distance < (float)rangeMin)
+				sensorStartPoint.Set(sonarLink.position.x, sonarLink.position.y, sonarLink.position.z - sensorStartOffset);
+
+				var direction = (GetDetectedPoint() - sensorStartPoint).normalized;
+				var detectedRange = GetDetectedRange();
+
+				if (detectedRange < rangeMax && !direction.Equals(Vector3.zero))
 				{
-					continue;
+					Debug.DrawRay(sensorStartPoint, direction * detectedRange, Color.blue, visualDrawDuration);
 				}
-
-				meshSensorRegionVertices.Add(meshCollider.sharedMesh.vertices[i]);
+				yield return waitForSeconds;
 			}
-		}
-
-		private void TranslateDetectionArea(Mesh mesh, in float offset)
-		{
-			var vertices = mesh.vertices;
-			for (var i = 0; i < vertices.Length; i++)
-			{
-				vertices[i].y += offset;
-				vertices[i].y *= -1;
-			}
-			mesh.vertices = vertices;
 		}
 
 		protected override void InitializeMessages()
@@ -146,6 +140,34 @@ namespace SensorDevices
 
 			DeviceHelper.SetCurrentTime(sonarStamped.Time);
 			SetMessageData<gazebo.msgs.SonarStamped>(sonarStamped);
+		}
+
+		private void ResolveSensingArea(in MeshCollider meshCollider)
+		{
+			// preserve the vertex points of the sensing area
+			var localToWorld = sonarLink.localToWorldMatrix;
+			for (var i = 0; i < meshCollider.sharedMesh.vertices.Length; i++)
+			{
+				var targetPoint = meshCollider.sharedMesh.vertices[i];
+				var distance = (Vector3.zero - targetPoint).magnitude;
+				if (distance < (float)rangeMin)
+				{
+					continue;
+				}
+
+				meshSensorRegionVertices.Add(meshCollider.sharedMesh.vertices[i]);
+			}
+		}
+
+		private void TranslateDetectionArea(Mesh mesh, in float offset)
+		{
+			var vertices = mesh.vertices;
+			for (var i = 0; i < vertices.Length; i++)
+			{
+				vertices[i].y += offset;
+				vertices[i].y *= -1;
+			}
+			mesh.vertices = vertices;
 		}
 
 		void OnTriggerStay(Collider other)
@@ -231,28 +253,6 @@ namespace SensorDevices
 			catch
 			{
 				return Vector3.zero;
-			}
-		}
-
-		protected override IEnumerator OnVisualize()
-		{
-			const float visualUpdatePeriod = 0.01f;
-			const float visualDrawDuration = visualUpdatePeriod * 1.01f;
-			var sensorStartPoint = Vector3.zero;
-			var waitForSeconds = new WaitForSeconds(visualUpdatePeriod);
-
-			while (true)
-			{
-				sensorStartPoint.Set(sonarLink.position.x, sonarLink.position.y, sonarLink.position.z - sensorStartOffset);
-
-				var direction = (GetDetectedPoint() - sensorStartPoint).normalized;
-				var detectedRange = GetDetectedRange();
-
-				if (detectedRange < rangeMax && !direction.Equals(Vector3.zero))
-				{
-					Debug.DrawRay(sensorStartPoint, direction * detectedRange, Color.blue, visualDrawDuration);
-				}
-				yield return waitForSeconds;
 			}
 		}
 	}

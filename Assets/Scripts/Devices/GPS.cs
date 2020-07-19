@@ -25,7 +25,7 @@ namespace SensorDevices
 		public Vector3 spherical;
 		public Vector3 gpsVelocity;
 
-		void Awake()
+		protected override void OnAwake()
 		{
 			gpsLink = transform.parent;
 			deviceName = name;
@@ -44,6 +44,11 @@ namespace SensorDevices
 		protected override void OnStart()
 		{
 			previousSensorPosition = gpsLink.position;
+		}
+
+		protected override IEnumerator OnVisualize()
+		{
+			yield return null;
 		}
 
 		void Update()

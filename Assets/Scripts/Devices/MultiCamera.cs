@@ -21,6 +21,10 @@ namespace SensorDevices
 
 		private Transform multiCamLink = null;
 
+		protected override void OnAwake()
+		{
+		}
+
 		protected override void OnStart()
 		{
 			foreach (var camParameters in parameters.list)
@@ -29,10 +33,48 @@ namespace SensorDevices
 				InitializeCamMessages(camParameters);
 			}
 		}
+
+		protected override IEnumerator OnVisualize()
+		{
+			yield return null;
+		}
+
+		protected override IEnumerator MainDeviceWorker()
+		{
+			var sw = new Stopwatch();
+			while (true)
+			{
+				sw.Restart();
+				GenerateMessage();
+				sw.Stop();
+
+				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
+			}
+		}
+
 		protected override void InitializeMessages()
 		{
 			imagesStamped = new gazebo.msgs.ImagesStamped();
 			imagesStamped.Time = new gazebo.msgs.Time();
+		}
+
+		protected override void GenerateMessage()
+		{
+			var images = imagesStamped.Images;
+
+			for (int index = 0; index < images.Count; index++)
+			{
+				var image = images[index];
+				var imageData = cameras[index].GetCamImageData();
+				if (image.Data.Length == imageData.Length)
+				{
+					image.Data = imageData;
+				}
+				// Debug.Log(imagesStamped.Image.Height + "," + imagesStamped.Image.Width);
+			}
+
+			DeviceHelper.SetCurrentTime(imagesStamped.Time);
+			PushData<gazebo.msgs.ImagesStamped>(imagesStamped);
 		}
 
 		private void AddCamera(in SDF.Camera parameters)
@@ -63,38 +105,6 @@ namespace SensorDevices
 			image.Step = image.Width * (uint)Camera.GetImageDepth(parameters.image_format);
 			image.Data = new byte[image.Height * image.Step];
 			imagesStamped.Images.Add(image);
-		}
-
-		protected override IEnumerator MainDeviceWorker()
-		{
-			var sw = new Stopwatch();
-			while (true)
-			{
-				sw.Restart();
-				GenerateMessage();
-				sw.Stop();
-
-				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
-			}
-		}
-
-		protected override void GenerateMessage()
-		{
-			var images = imagesStamped.Images;
-
-			for (int index = 0; index < images.Count; index++)
-			{
-				var image = images[index];
-				var imageData = cameras[index].GetCamImageData();
-				if (image.Data.Length == imageData.Length)
-				{
-					image.Data = imageData;
-				}
-				// Debug.Log(imagesStamped.Image.Height + "," + imagesStamped.Image.Width);
-			}
-
-			DeviceHelper.SetCurrentTime(imagesStamped.Time);
-			PushData<gazebo.msgs.ImagesStamped>(imagesStamped);
 		}
 	}
 }

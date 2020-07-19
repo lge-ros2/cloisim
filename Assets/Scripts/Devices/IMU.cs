@@ -34,7 +34,7 @@ namespace SensorDevices
 		public float samplingPeriod = 0;
 		public float timeElapsed = 0;
 
-		void Awake()
+		protected override void OnAwake()
 		{
 			deviceName = name;
 			imuInitialRotation = transform.rotation.eulerAngles;
@@ -45,6 +45,11 @@ namespace SensorDevices
 		protected override void OnStart()
 		{
 			samplingPeriod = 1/samplingRate;
+		}
+
+		protected override IEnumerator OnVisualize()
+		{
+			yield return null;
 		}
 
 		protected override void InitializeMessages()

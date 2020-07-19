@@ -10,7 +10,7 @@ using System.IO;
 using UnityEngine;
 using ProtoBuf;
 
-public class Device : MonoBehaviour
+public abstract class Device : MonoBehaviour
 {
 	public string deviceName = string.Empty;
 
@@ -28,13 +28,6 @@ public class Device : MonoBehaviour
 	private bool visualize = true;
 
 	private float transportingTimeSeconds = 0;
-
-	public Device()
-	{
-		memoryStreamOutboundQueue = new BlockingCollection<MemoryStream>(maxQueue);
-		memoryStream = new MemoryStream();
-		ResetDataStream();
-	}
 
 	void OnDestroy()
 	{
@@ -64,6 +57,15 @@ public class Device : MonoBehaviour
 		set => visualize = value;
 	}
 
+	void Awake()
+	{
+		memoryStreamOutboundQueue = new BlockingCollection<MemoryStream>(maxQueue);
+		memoryStream = new MemoryStream();
+		ResetDataStream();
+
+		OnAwake();
+	}
+
 	void Start()
 	{
 		InitializeMessages();
@@ -78,22 +80,17 @@ public class Device : MonoBehaviour
 		}
 	}
 
-	protected virtual void OnStart()
-	{
-		// do nothing
-	}
+	protected abstract void OnAwake();
 
-	protected virtual IEnumerator MainDeviceWorker()
-	{
-		// do nothing
-		yield return null;
-	}
+	protected abstract void OnStart();
 
-	protected virtual IEnumerator OnVisualize()
-	{
-		// do nothing
-		yield return null;
-	}
+	protected abstract IEnumerator MainDeviceWorker();
+
+	protected abstract IEnumerator OnVisualize();
+
+	protected abstract void InitializeMessages();
+
+	protected abstract void GenerateMessage();
 
 	protected float WaitPeriod(in float messageGenerationTime = 0)
 	{
@@ -189,18 +186,6 @@ public class Device : MonoBehaviour
 			ResetDataStream();
 			return result;
 		}
-	}
-
-	protected virtual void InitializeMessages()
-	{
-		// do nothing
-		Debug.Log("Nothing to initialize message: " + name);
-	}
-
-	protected virtual void GenerateMessage()
-	{
-		// do nothing
-		Debug.Log("Need to implement!!");
 	}
 
 	protected bool PushData<T>(T instance)

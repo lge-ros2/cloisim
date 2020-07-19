@@ -78,7 +78,7 @@ namespace SensorDevices
 			return (maxAngle - minAngle) / (resolution * (totalSamples - 1));
 		}
 
-		void Awake()
+		protected override void OnAwake()
 		{
 			lidarLink = transform.parent;
 		}

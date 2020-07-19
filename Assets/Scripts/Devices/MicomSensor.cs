@@ -11,9 +11,27 @@ public class MicomSensor : Device
 {
 	private gazebo.msgs.Micom micomSensorData = null;
 
+	protected override void OnAwake()
+	{
+	}
+
 	protected override void OnStart()
 	{
 		deviceName = "MicomSensor";
+	}
+
+	protected override IEnumerator MainDeviceWorker()
+	{
+		while (true)
+		{
+			GenerateMessage();
+			yield return new WaitForSeconds(WaitPeriod());
+		}
+	}
+
+	protected override IEnumerator OnVisualize()
+	{
+		yield return null;
 	}
 
 	protected override void InitializeMessages()
@@ -29,15 +47,6 @@ public class MicomSensor : Device
 		micomSensorData.Accgyro = new gazebo.msgs.Micom.AccGyro();
 		micomSensorData.Odom = new gazebo.msgs.Micom.Odometry();
 	}
-
-	protected override IEnumerator MainDeviceWorker()
-	{
-		while (true)
-		{
-			GenerateMessage();
-			yield return new WaitForSeconds(WaitPeriod());
-		}
- 	}
 
 	protected override void GenerateMessage()
 	{
@@ -108,16 +117,21 @@ public class MicomSensor : Device
 	public bool SetOdomData(in float linearVelocityLeft, in float linearVelocityRight)
 	{
 		const float M2MM = 1000.0f;
-		var odom = micomSensorData.Odom;
 
-		if (micomSensorData == null || odom == null)
-			return false;
+		if (micomSensorData != null)
+		{
+			var odom = micomSensorData.Odom;
 
-		odom.SpeedLeft = (int)(linearVelocityLeft * Mathf.Deg2Rad * M2MM);
-		odom.SpeedRight = (int)(linearVelocityRight * Mathf.Deg2Rad * M2MM);
-		// Debug.LogFormat("Odom {0}, {1} ", linearVelocityLeft, linearVelocityRight);
-		// Debug.LogFormat("Odom {0}, {1} ", odom.SpeedLeft, odom.SpeedRight);
+			if (odom != null)
+			{
+				odom.SpeedLeft = (int)(linearVelocityLeft * Mathf.Deg2Rad * M2MM);
+				odom.SpeedRight = (int)(linearVelocityRight * Mathf.Deg2Rad * M2MM);
+				// Debug.LogFormat("Odom {0}, {1} ", linearVelocityLeft, linearVelocityRight);
+				// Debug.LogFormat("Odom {0}, {1} ", odom.SpeedLeft, odom.SpeedRight);
+				return true;
+			}
+		}
 
-		return true;
+		return false;
 	}
 }
