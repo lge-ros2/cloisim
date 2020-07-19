@@ -58,12 +58,11 @@ public partial class ElevatorSystem : DevicePlugin
 	protected override void OnAwake()
 	{
 		partName = "ElevatorSystem";
-
 	}
 
 	protected override void OnStart()
 	{
-		var hashKey = modelName + partName;
+		var hashKey = MakeHashKey(modelName, partName);
 		if (!RegisterServiceDevice(hashKey))
 		{
 			Debug.LogError("Failed to register ElevatorSystem service - " + hashKey);
@@ -536,18 +535,6 @@ public partial class ElevatorSystem : DevicePlugin
 		}
 	}
 
-	private static void ClearMemoryStream(ref MemoryStream ms)
-	{
-		if (ms != null)
-		{
-			if (ms != null)
-			{
-				ms.SetLength(0);
-				ms.Position = 0;
-				ms.Capacity = 0;
-			}
-		}
-	}
 
 #if UNITY_EDITOR
 	// just for test
