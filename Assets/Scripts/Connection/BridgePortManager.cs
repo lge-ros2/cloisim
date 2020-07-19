@@ -6,9 +6,11 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using UnityEngine;
 using System.Net.NetworkInformation;
 using System.Net;
+using System;
+using UnityEngine;
+using Newtonsoft.Json;
 
 public class BridgePortManager : DeviceTransporter
 {
@@ -66,6 +68,19 @@ public class BridgePortManager : DeviceTransporter
 
 		return port;
 	}
+
+	public List<Dictionary<string, ushort>> GetSensorPortList()
+	{
+		var tempStringListObject = new List<Dictionary<string, ushort>>();
+
+		lock (portMapTable)
+		{
+			tempStringListObject.Add(portMapTable);
+		}
+
+		return tempStringListObject;
+	}
+
 
 	public bool IsAvailablePort(in ushort port)
 	{
