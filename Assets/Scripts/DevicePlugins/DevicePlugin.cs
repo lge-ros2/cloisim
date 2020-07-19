@@ -13,7 +13,7 @@ using System.Xml;
 public abstract class DevicePlugin : DeviceTransporter
 {
 	public string modelName = String.Empty;
-	public string partName = string.Empty;
+	public string partName = String.Empty;
 
 	protected PluginParameters parameters;
 
@@ -102,7 +102,7 @@ public abstract class DevicePlugin : DeviceTransporter
 	{
 		if (PrepareDevice(hashKey, out ushort port, out ulong hash))
 		{
-			SetHashForSend(hash);
+			SetHashForPublish(hash);
 			InitializePublisher(port);
 			return true;
 		}
@@ -114,7 +114,7 @@ public abstract class DevicePlugin : DeviceTransporter
 	{
 		if (PrepareDevice(hashKey, out ushort port, out ulong hash))
 		{
-			SetHashForReceive(hash);
+			SetHashForSubscription(hash);
 			InitializeSubscriber(port);
 			return 	true;
 		}
@@ -126,10 +126,10 @@ public abstract class DevicePlugin : DeviceTransporter
 	{
 		if (PrepareDevice(hashKey, out ushort port, out ulong hash))
 		{
-			SetHashForReceive(hash);
+			SetHashForResponse(hash);
 			InitializeResponsor(port);
 
-			return 	true;
+			return true;
 		}
 
 		return true;
@@ -139,9 +139,9 @@ public abstract class DevicePlugin : DeviceTransporter
 	{
 		if (PrepareDevice(hashKey, out ushort port, out ulong hash))
 		{
-			SetHashForSend(hash);
+			SetHashForRequest(hash);
 			InitializeRequester(port);
-			return 	true;
+			return true;
 		}
 
 		return true;
