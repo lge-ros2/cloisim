@@ -56,45 +56,17 @@ And 'SDFPlugins' help physics tricky handling for jointing `<link>` ojbects by `
 Inertia factors which retrieved from SDF are NOT USED for rigidbody in Unity. Because it cause unexpected behavior with physX engine.
 
 
-## Build and Run
+## Getting Started
 
 #### Tested environement:
   - Linux - Ubuntu 18.04
   - Current editor version is *'2019.4.1f1 (LTS)'*.
   
 #### Release version
-If you don't want to build a project, just USE a release binary([Download linux version](https://github.com/lge-ros2/multi-robot-simulator/releases)). And go to 'Usage'
+If you don't want to build a project, just USE a release binary([Download linux version](https://github.com/lge-ros2/multi-robot-simulator/releases)). And just refer to 'Usage'
 
-
-#### Build guide
-
-1. First, You need a Unity Editor to build a project. Download and install [Unity Editor](https://unity3d.com/get-unity/download)
-
-1. Install prerequisite libraries
-    - $ sudo apt-get install libvulkan1
-
-1. Open the project folder where you clone the git repository.
-
-1. You will see popup window if you open it at first time.
-    - ***Don't forget to import 'Import TMP Essentials'  when TMP Importer windows popuped.***
-
-1. Select menu, **[File]** -> **[Build Settings]**
-
-1. Choose *'PC, Mac & Linux Standalone'* in Platform list
-    - Target Platform: Linux
-    - Architeture: x86_64
-    - Uncheck all options below
-    - (Optional) Compression Method: LZ4HC
-    
-1. Press the **'Build'** button.
-
-1. **Last important things!** Due to 'protobuf-net' plugin issue after build, we need a copy plugin into build output.
-   (We are investigating the issue)
-   * Change directory to root project path
-      * cd multi-robot-simulator;
-      
-   * Copy 'protobuf-net' library to output directory. Assume '/cloisim_release'.
-      * cp Assets/Plugins/protobuf-net.2.4.6/lib/net40/protobuf-net.dll /cloisim_release/CLOiSim_Data/Managed
+#### If you want to build a project
+Please visit here [build guide](https://github.com/lge-ros2/multi-robot-simulator/wiki/Build-Guide).
 
 
 ## Usage
