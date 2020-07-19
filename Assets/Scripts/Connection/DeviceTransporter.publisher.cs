@@ -12,6 +12,16 @@ using NetMQ.Sockets;
 
 public partial class DeviceTransporter
 {
+	private PublisherSocket publisherSocket = null;
+
+	private byte[] hashValueForPublish = null;
+	private byte[] dataToPublish = null;
+
+	public void SetHashForPublish(in ulong hash)
+	{
+		hashValueForPublish = BitConverter.GetBytes(hash);
+	}
+
 	protected bool InitializePublisher(in ushort targetPort)
 	{
 		var initialized = false;
@@ -24,7 +34,7 @@ public partial class DeviceTransporter
 			publisherSocket.Options.Linger = new TimeSpan(0);
 			publisherSocket.Bind(GetAddress(targetPort));
 			// Debug.Log("Publisher socket binding for - " + targetPort);
-			initialized = StoreTagIntoDataToSend(hashValueForSend);
+			initialized = StoreTag(ref dataToPublish, hashValueForPublish);
 		}
 
 		return initialized;
@@ -59,14 +69,14 @@ public partial class DeviceTransporter
 	{
 		bool wasSucessful = false;
 
-		if (StoreData(bufferToSend, bufferLength) == false)
+		if (StoreData(ref dataToPublish, bufferToSend, bufferLength) == false)
 		{
 			return wasSucessful;
 		}
 
 		if (publisherSocket != null)
 		{
-			wasSucessful = publisherSocket.TrySendFrame(dataToSend);
+			wasSucessful = publisherSocket.TrySendFrame(dataToPublish);
 			// Debug.LogFormat("Publish data({0}) length({1})", bufferToSend, bufferLength);
 		}
 		else

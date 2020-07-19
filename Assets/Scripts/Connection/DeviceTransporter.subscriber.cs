@@ -11,6 +11,10 @@ using NetMQ.Sockets;
 
 public partial class DeviceTransporter
 {
+	private SubscriberSocket subscriberSocket = null;
+
+	private byte[] hashValueForSubscription = null;
+
 	protected bool InitializeSubscriber(in ushort targetPort)
 	{
 		var initialized = false;
@@ -22,9 +26,9 @@ public partial class DeviceTransporter
 			subscriberSocket.Options.ReceiveHighWatermark = highwatermark;
 			subscriberSocket.Options.Linger = new TimeSpan(0);
 
-		 	if (hashValueForReceive != null)
+		 	if (hashValueForSubscription != null)
 			{
-				subscriberSocket.Subscribe(hashValueForReceive);
+				subscriberSocket.Subscribe(hashValueForSubscription);
 			}
 
 			subscriberSocket.Bind(GetAddress(targetPort));
@@ -36,20 +40,24 @@ public partial class DeviceTransporter
 		return initialized;
 	}
 
+	public void SetHashForSubscription(in ulong hash)
+	{
+		hashValueForSubscription = BitConverter.GetBytes(hash);
+	}
+
 	protected byte[] Subscribe()
 	{
-		byte[] frameReceived = null;
-
 		if (subscriberSocket != null)
 		{
-			frameReceived = subscriberSocket.ReceiveFrameBytes();
+			var frameReceived = subscriberSocket.ReceiveFrameBytes();
+			var receivedData = RetrieveData(frameReceived);
+			return receivedData;
 		}
 		else
 		{
 			Debug.LogWarning("Socket for subscriber is not initilized yet.");
 		}
 
-		byte[] receivedData	= RetrieveData(frameReceived);
-		return receivedData;
+		return null;
 	}
 }

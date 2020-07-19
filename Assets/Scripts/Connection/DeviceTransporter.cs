@@ -7,22 +7,12 @@
 using System;
 using System.IO;
 using UnityEngine;
-using NetMQ.Sockets;
 
 public partial class DeviceTransporter : MonoBehaviour
 {
 	public const bool isTCP = true; // Currently, NetMQ does not support UDP protocol
 	private ushort tagSize = 8;
 	public string defaultPipeAddress = "127.0.0.1";
-
-	private RequestSocket requestSocket = null;
-	private PublisherSocket publisherSocket = null;
-	private ResponseSocket responseSocket = null;
-	private SubscriberSocket subscriberSocket = null;
-
-	private byte[] hashValueForSend = null;
-	private byte[] hashValueForReceive = null;
-	private byte[] dataToSend = null;
 
 	private int highwatermark = 0;
 
@@ -78,29 +68,24 @@ public partial class DeviceTransporter : MonoBehaviour
 		return ((isTCP)?"tcp":"udp") + "://" + defaultPipeAddress + ":" + port;
 	}
 
-	public void SetHashForSend(in ulong hash)
+	private bool StoreTag(ref byte[] targetBuffer, in byte[] targetTag)
 	{
-		hashValueForSend = BitConverter.GetBytes(hash);
-	}
-
-	public void SetHashForReceive(in ulong hash)
-	{
-		hashValueForReceive = BitConverter.GetBytes(hash);
-	}
-
-	private bool StoreTagIntoDataToSend(in byte[] targetTag)
-	{
-		dataToSend = new byte[tagSize];
+		if (targetBuffer == null)
+		{
+			targetBuffer = new byte[tagSize];
+		}
 
 		if (targetTag != null)
 		{
-			if (targetTag.Length > tagSize || dataToSend == null)
+			if (targetTag.Length > tagSize || targetBuffer == null)
 			{
-				Debug.LogError("Failed to set hash value " + dataToSend);
+				Debug.LogError("Failed to set hash value " + targetBuffer);
 				return false;
 			}
 			else
-				Buffer.BlockCopy(targetTag, 0, dataToSend, 0, tagSize);
+			{
+				Buffer.BlockCopy(targetTag, 0, targetBuffer, 0, tagSize);
+			}
 		}
 
 		return true;
@@ -111,28 +96,32 @@ public partial class DeviceTransporter : MonoBehaviour
 		if (targetTag.Length == tagSize && receivedTag.Length == tagSize)
 		{
 			for (int index = 0; index < tagSize; index++)
+			{
 				if (targetTag[index] != receivedTag[index])
+				{
 					return true;
+				}
+			}
 		}
 
 		return false;
 	}
 
-	private bool StoreData(in byte[] dataToStore, in int dataToStoreLength)
+	private bool StoreData(ref byte[] targetBuffer, in byte[] dataToStore, in int dataToStoreLength)
 	{
-		if (dataToStoreLength > 0 && dataToStore != null && dataToSend != null)
+		if (dataToStoreLength > 0 && dataToStore != null && targetBuffer != null)
 		{
 			var dataLength = tagSize + dataToStoreLength;
-			Array.Resize(ref dataToSend, dataLength);
+			Array.Resize(ref targetBuffer, dataLength);
 
 			try
 			{
-				Buffer.BlockCopy(dataToStore, 0, dataToSend, tagSize, dataToStoreLength);
+				Buffer.BlockCopy(dataToStore, 0, targetBuffer, tagSize, dataToStoreLength);
 			}
 			catch (ArgumentException ex)
 			{
 				Debug.LogErrorFormat("Error: BlockCopy with buffer src({0}) dst({1}) tagSize({2}) length({3}) Send() : {4}",
-					dataToStore, dataToSend, tagSize, dataToStoreLength, ex.Message);
+					dataToStore, targetBuffer, tagSize, dataToStoreLength, ex.Message);
 			}
 		}
 		else
@@ -152,12 +141,16 @@ public partial class DeviceTransporter : MonoBehaviour
 		{
 			if (targetTag != null && tagSize > 0)
 			{
-				byte[] receivedTag = new byte[tagSize];
+				var receivedTag = new byte[tagSize];
 				try
 				{
 					Buffer.BlockCopy(receivedFrame, 0, receivedTag, 0, tagSize);
+
 					if (IsNotValidTag(receivedTag, targetTag))
+					{
+						Debug.LogWarning("It is Invalid Tag");
 						return null;
+					}
 				}
 				catch
 				{
