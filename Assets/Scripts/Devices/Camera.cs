@@ -8,12 +8,14 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
 	public partial class Camera : Device
 	{
-		protected gazebo.msgs.ImageStamped imageStamped = null;
+		protected messages.CameraSensor sensorInfo = null;
+		protected messages.ImageStamped imageStamped = null;
 
 		public SDF.Camera parameters = null;
 
@@ -36,7 +38,7 @@ namespace SensorDevices
 		protected RenderTextureReadWrite targetRTrwmode;
 		protected TextureFormat readbackDstFormat;
 
-		void Awake()
+		protected override void OnAwake()
 		{
 			cam = gameObject.AddComponent<UnityEngine.Camera>();
 			cameraLink = transform.parent;
@@ -52,6 +54,11 @@ namespace SensorDevices
 				SetupCamera();
 				StartCoroutine(CameraWorker());
 			}
+		}
+
+		protected override IEnumerator OnVisualize()
+		{
+			yield return null;
 		}
 
 		protected virtual void SetupTexture()
@@ -79,9 +86,9 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			imageStamped = new gazebo.msgs.ImageStamped();
-			imageStamped.Time = new gazebo.msgs.Time();
-			imageStamped.Image = new gazebo.msgs.Image();
+			imageStamped = new messages.ImageStamped();
+			imageStamped.Time = new messages.Time();
+			imageStamped.Image = new messages.Image();
 
 			var image = imageStamped.Image;
 			image.Width = (uint)parameters.image_width;
@@ -89,6 +96,27 @@ namespace SensorDevices
 			image.PixelFormat = (uint)GetPixelFormat(parameters.image_format);
 			image.Step = image.Width * (uint)GetImageDepth(parameters.image_format);
 			image.Data = new byte[image.Height * image.Step];
+
+			sensorInfo = new messages.CameraSensor();
+			sensorInfo.ImageSize = new messages.Vector2d();
+			sensorInfo.Distortion = new messages.Distortion();
+			sensorInfo.Distortion.Center = new messages.Vector2d();
+
+			sensorInfo.HorizontalFov = parameters.horizontal_fov;
+			sensorInfo.ImageSize.X = parameters.image_width;
+			sensorInfo.ImageSize.Y = parameters.image_height;
+			sensorInfo.ImageFormat = parameters.image_format;
+			sensorInfo.NearClip = parameters.clip.near;
+			sensorInfo.FarClip = parameters.clip.far;
+			sensorInfo.SaveEnabled = parameters.save_enabled;
+			sensorInfo.SavePath = parameters.save_path;
+			sensorInfo.Distortion.Center.X = parameters.distortion.center.X;
+			sensorInfo.Distortion.Center.Y = parameters.distortion.center.Y;
+			sensorInfo.Distortion.K1 = parameters.distortion.k1;
+			sensorInfo.Distortion.K2 = parameters.distortion.k2;
+			sensorInfo.Distortion.K3 = parameters.distortion.k3;
+			sensorInfo.Distortion.P1 = parameters.distortion.p1;
+			sensorInfo.Distortion.P2 = parameters.distortion.p2;
 		}
 
 		private void SetupCamera()
@@ -195,7 +223,12 @@ namespace SensorDevices
 			// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
 
 			DeviceHelper.SetCurrentTime(imageStamped.Time);
-			PushData<gazebo.msgs.ImageStamped>(imageStamped);
+			PushData<messages.ImageStamped>(imageStamped);
+		}
+
+		public messages.CameraSensor GetCameraInfo()
+		{
+			return sensorInfo;
 		}
 	}
 }
