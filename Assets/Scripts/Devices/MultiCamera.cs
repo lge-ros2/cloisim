@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
@@ -15,7 +16,7 @@ namespace SensorDevices
 	{
 		public List<SensorDevices.Camera> cameras = new List<SensorDevices.Camera>();
 
-		private gazebo.msgs.ImagesStamped imagesStamped;
+		private messages.ImagesStamped imagesStamped;
 
 		public SDF.Cameras parameters = null;
 
@@ -54,8 +55,8 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			imagesStamped = new gazebo.msgs.ImagesStamped();
-			imagesStamped.Time = new gazebo.msgs.Time();
+			imagesStamped = new messages.ImagesStamped();
+			imagesStamped.Time = new messages.Time();
 		}
 
 		protected override void GenerateMessage()
@@ -74,7 +75,7 @@ namespace SensorDevices
 			}
 
 			DeviceHelper.SetCurrentTime(imagesStamped.Time);
-			PushData<gazebo.msgs.ImagesStamped>(imagesStamped);
+			PushData<messages.ImagesStamped>(imagesStamped);
 		}
 
 		private void AddCamera(in SDF.Camera parameters)
@@ -98,7 +99,7 @@ namespace SensorDevices
 
 		private void InitializeCamMessages(in SDF.Camera parameters)
 		{
-			var image = new gazebo.msgs.Image();
+			var image = new messages.Image();
 			image.Width = (uint)parameters.image_width;
 			image.Height = (uint)parameters.image_height;
 			image.PixelFormat = (uint)Camera.GetPixelFormat(parameters.image_format);

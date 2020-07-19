@@ -7,12 +7,13 @@
 using System.Collections;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
 	public partial class GPS : Device
 	{
-		private gazebo.msgs.Gps gps = null;
+		private messages.Gps gps = null;
 
 		private SphericalCoordinates sphericalCoordinates = null;
 
@@ -61,8 +62,8 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			gps = new gazebo.msgs.Gps();
-			gps.Time = new gazebo.msgs.Time();
+			gps = new messages.Gps();
+			gps.Time = new messages.Time();
 			gps.LinkName = deviceName;
 		}
 
@@ -107,7 +108,7 @@ namespace SensorDevices
 			gps.VelocityNorth = gpsVelocity.y;
 			gps.VelocityUp = gpsVelocity.z;
 
-			PushData<gazebo.msgs.Gps>(gps);
+			PushData<messages.Gps>(gps);
 		}
 
 		float Longitude()

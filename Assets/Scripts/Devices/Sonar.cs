@@ -8,12 +8,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
 	public partial class Sonar : Device
 	{
-		private gazebo.msgs.SonarStamped sonarStamped = null;
+		private messages.SonarStamped sonarStamped = null;
 
 		public string geometry = string.Empty;
 
@@ -101,13 +102,13 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			sonarStamped = new gazebo.msgs.SonarStamped();
-			sonarStamped.Time = new gazebo.msgs.Time();
-			sonarStamped.Sonar = new gazebo.msgs.Sonar();
-			sonarStamped.Sonar.WorldPose = new gazebo.msgs.Pose();
-			sonarStamped.Sonar.WorldPose.Position = new gazebo.msgs.Vector3d();
-			sonarStamped.Sonar.WorldPose.Orientation = new gazebo.msgs.Quaternion();
-			sonarStamped.Sonar.Contact = new gazebo.msgs.Vector3d();
+			sonarStamped = new messages.SonarStamped();
+			sonarStamped.Time = new messages.Time();
+			sonarStamped.Sonar = new messages.Sonar();
+			sonarStamped.Sonar.WorldPose = new messages.Pose();
+			sonarStamped.Sonar.WorldPose.Position = new messages.Vector3d();
+			sonarStamped.Sonar.WorldPose.Orientation = new messages.Quaternion();
+			sonarStamped.Sonar.Contact = new messages.Vector3d();
 
 			var sonar = sonarStamped.Sonar;
 			sonar.Frame = deviceName;
@@ -139,7 +140,7 @@ namespace SensorDevices
 			DeviceHelper.SetQuaternion(sonar.WorldPose.Orientation, sonarRotation);
 
 			DeviceHelper.SetCurrentTime(sonarStamped.Time);
-			SetMessageData<gazebo.msgs.SonarStamped>(sonarStamped);
+			SetMessageData<messages.SonarStamped>(sonarStamped);
 		}
 
 		private void ResolveSensingArea(in MeshCollider meshCollider)

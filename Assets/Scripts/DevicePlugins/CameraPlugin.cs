@@ -9,6 +9,7 @@ using System.Text;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 using ProtoBuf;
+using messages = gazebo.msgs;
 
 public class CameraPlugin : DevicePlugin
 {
@@ -75,7 +76,7 @@ public class CameraPlugin : DevicePlugin
 
 				ClearMemoryStream(ref memoryStreamForCameraInfo);
 
-				Serializer.Serialize<gazebo.msgs.CameraSensor>(memoryStreamForCameraInfo, cameraInfoMessage);
+				Serializer.Serialize<messages.CameraSensor>(memoryStreamForCameraInfo, cameraInfoMessage);
 
 				SendResponse(memoryStreamForCameraInfo);
 			}

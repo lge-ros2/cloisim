@@ -6,6 +6,7 @@
 
 using System.Runtime.InteropServices;
 using UnityEngine;
+using messages = gazebo.msgs;
 
 public class DeviceHelper
 {
@@ -45,7 +46,7 @@ public class DeviceHelper
 	[DllImport("StdHash")]
 	public static extern ulong GetStringHashCode(string value);
 
-	public static void SetCurrentTime(in gazebo.msgs.Time gazeboMsgsTime, in bool useRealTime = false)
+	public static void SetCurrentTime(in messages.Time gazeboMsgsTime, in bool useRealTime = false)
 	{
 		try
 		{
@@ -62,11 +63,11 @@ public class DeviceHelper
 		}
 	}
 
-	public static void SetVector3d(gazebo.msgs.Vector3d vector3d, in Vector3 position)
+	public static void SetVector3d(messages.Vector3d vector3d, in Vector3 position)
 	{
 		if (vector3d == null)
 		{
-			vector3d = new gazebo.msgs.Vector3d();
+			vector3d = new messages.Vector3d();
 		}
 
 		vector3d.X = position.x;
@@ -74,11 +75,11 @@ public class DeviceHelper
 		vector3d.Z = position.y;
 	}
 
-	public static void SetQuaternion(gazebo.msgs.Quaternion quaternion, in Quaternion rotation)
+	public static void SetQuaternion(messages.Quaternion quaternion, in Quaternion rotation)
 	{
 		if (quaternion == null)
 		{
-			quaternion = new gazebo.msgs.Quaternion();
+			quaternion = new messages.Quaternion();
 		}
 
 		quaternion.X = rotation.x;

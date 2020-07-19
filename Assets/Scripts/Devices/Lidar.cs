@@ -9,12 +9,13 @@ using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
 	public partial class Lidar : Device
 	{
-		private gazebo.msgs.LaserScanStamped laserScanStamped = null;
+		private messages.LaserScanStamped laserScanStamped = null;
 
 		[Range(1, 2000)]
 		public uint samples = 0;
@@ -99,12 +100,12 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			laserScanStamped = new gazebo.msgs.LaserScanStamped();
-			laserScanStamped.Time = new gazebo.msgs.Time();
-			laserScanStamped.Scan = new gazebo.msgs.LaserScan();
-			laserScanStamped.Scan.WorldPose = new gazebo.msgs.Pose();
-			laserScanStamped.Scan.WorldPose.Position = new gazebo.msgs.Vector3d();
-			laserScanStamped.Scan.WorldPose.Orientation = new gazebo.msgs.Quaternion();
+			laserScanStamped = new messages.LaserScanStamped();
+			laserScanStamped.Time = new messages.Time();
+			laserScanStamped.Scan = new messages.LaserScan();
+			laserScanStamped.Scan.WorldPose = new messages.Pose();
+			laserScanStamped.Scan.WorldPose.Position = new messages.Vector3d();
+			laserScanStamped.Scan.WorldPose.Orientation = new messages.Quaternion();
 
 			var laserScan = laserScanStamped.Scan;
 			laserScan.Frame = deviceName;
@@ -266,7 +267,7 @@ namespace SensorDevices
 			}
 
 			DeviceHelper.SetCurrentTime(laserScanStamped.Time);
-			PushData<gazebo.msgs.LaserScanStamped>(laserScanStamped);
+			PushData<messages.LaserScanStamped>(laserScanStamped);
 		}
 
 		protected override IEnumerator OnVisualize()

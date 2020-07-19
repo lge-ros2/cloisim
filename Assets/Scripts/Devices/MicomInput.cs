@@ -6,12 +6,13 @@
 
 using System.Collections;
 using UnityEngine;
+using messages = gazebo.msgs;
 
 public class MicomInput : Device
 {
 	private const float MM2M = 0.001f;
 
-	private gazebo.msgs.Param micomWritingData = null;
+	private messages.Param micomWritingData = null;
 
 	private int wheelVelocityLeft = 0; // linear velocity in millimeter per second
 	private int wheelVelocityRight = 0; // linear velocity in millimeter per second
@@ -57,7 +58,7 @@ public class MicomInput : Device
 
 	protected override void GenerateMessage()
 	{
-		micomWritingData = GetMessageData<gazebo.msgs.Param>();
+		micomWritingData = GetMessageData<messages.Param>();
 
 		if (micomWritingData.Name.Equals("control_type") &&
 			micomWritingData.Value.IntValue == 1 &&

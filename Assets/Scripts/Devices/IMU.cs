@@ -7,12 +7,13 @@
 using System.Collections;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
 	public partial class IMU : Device
 	{
-		private gazebo.msgs.Imu imu = null;
+		private messages.Imu imu = null;
 
 		// <noise_angular_velocity_x>
 		// <noise_angular_velocity_y>
@@ -54,11 +55,11 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			imu = new gazebo.msgs.Imu();
-			imu.Stamp = new gazebo.msgs.Time();
-			imu.Orientation = new gazebo.msgs.Quaternion();
-			imu.AngularVelocity = new gazebo.msgs.Vector3d();
-			imu.LinearAcceleration = new gazebo.msgs.Vector3d();
+			imu = new messages.Imu();
+			imu.Stamp = new messages.Time();
+			imu.Orientation = new messages.Quaternion();
+			imu.AngularVelocity = new messages.Vector3d();
+			imu.LinearAcceleration = new messages.Vector3d();
 		}
 
 		void FixedUpdate()
@@ -102,7 +103,7 @@ namespace SensorDevices
 			DeviceHelper.SetVector3d(imu.AngularVelocity, imuAngularVelocity * Mathf.Deg2Rad);
 			DeviceHelper.SetVector3d(imu.LinearAcceleration, imuLinearAcceleration);
 			DeviceHelper.SetCurrentTime(imu.Stamp);
-			SetMessageData<gazebo.msgs.Imu>(imu);
+			SetMessageData<messages.Imu>(imu);
 		}
 
 		public Quaternion GetOrientation()

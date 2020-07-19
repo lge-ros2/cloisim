@@ -6,10 +6,11 @@
 
 using System.Collections;
 using UnityEngine;
+using messages = gazebo.msgs;
 
 public class MicomSensor : Device
 {
-	private gazebo.msgs.Micom micomSensorData = null;
+	private messages.Micom micomSensorData = null;
 
 	protected override void OnAwake()
 	{
@@ -36,23 +37,23 @@ public class MicomSensor : Device
 
 	protected override void InitializeMessages()
 	{
-		micomSensorData = new gazebo.msgs.Micom();
-		micomSensorData.Time = new gazebo.msgs.Time();
-		micomSensorData.Imu = new gazebo.msgs.Imu();
+		micomSensorData = new messages.Micom();
+		micomSensorData.Time = new messages.Time();
+		micomSensorData.Imu = new messages.Imu();
 		micomSensorData.Imu.EntityName = "IMU";
-		micomSensorData.Imu.Stamp = new gazebo.msgs.Time();
-		micomSensorData.Imu.Orientation = new gazebo.msgs.Quaternion();
-		micomSensorData.Imu.AngularVelocity = new gazebo.msgs.Vector3d();
-		micomSensorData.Imu.LinearAcceleration = new gazebo.msgs.Vector3d();
-		micomSensorData.Accgyro = new gazebo.msgs.Micom.AccGyro();
-		micomSensorData.Odom = new gazebo.msgs.Micom.Odometry();
+		micomSensorData.Imu.Stamp = new messages.Time();
+		micomSensorData.Imu.Orientation = new messages.Quaternion();
+		micomSensorData.Imu.AngularVelocity = new messages.Vector3d();
+		micomSensorData.Imu.LinearAcceleration = new messages.Vector3d();
+		micomSensorData.Accgyro = new messages.Micom.AccGyro();
+		micomSensorData.Odom = new messages.Micom.Odometry();
 	}
 
 	protected override void GenerateMessage()
 	{
 		// Temporary
 		DeviceHelper.SetCurrentTime(micomSensorData.Time);
-		PushData<gazebo.msgs.Micom>(micomSensorData);
+		PushData<messages.Micom>(micomSensorData);
 	}
 
 	public bool SetIMU(in SensorDevices.IMU imuSensor)
