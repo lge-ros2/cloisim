@@ -38,6 +38,16 @@ namespace SensorDevices
 		protected RenderTextureReadWrite targetRTrwmode;
 		protected TextureFormat readbackDstFormat;
 
+		void OnPreRender()
+		{
+			GL.invertCulling = true;
+		}
+
+		void OnPostRender()
+		{
+			GL.invertCulling = false;
+		}
+
 		protected override void OnAwake()
 		{
 			cam = gameObject.AddComponent<UnityEngine.Camera>();
@@ -169,9 +179,7 @@ namespace SensorDevices
 			{
 				cam.enabled = true;
 
-				GL.invertCulling = !GL.invertCulling;
 				cam.Render();
-				GL.invertCulling = !GL.invertCulling;
 
 				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, readbackDstFormat);
 
