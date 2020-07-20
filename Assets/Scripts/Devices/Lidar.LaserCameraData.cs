@@ -49,7 +49,7 @@ namespace SensorDevices
 
 			public float GetDepthData(in float horizontalAngle, in float verticalAngle = 0)
 			{
-				var horizontalAngleInCamData = horizontalAngle * Mathf.Deg2Rad;
+				var horizontalAngleInCamData = (horizontalAngle - centerAngle) * Mathf.Deg2Rad;
 				var verticalAngleInCamData = verticalAngle * Mathf.Deg2Rad;
 
 				var maxAngleTangent = Mathf.Tan(laserCameraHFovHalf * Mathf.Deg2Rad);
