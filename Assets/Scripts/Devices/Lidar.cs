@@ -186,9 +186,8 @@ namespace SensorDevices
 
 		private IEnumerator LaserCameraWorker()
 		{
-			var ScanningPeriod = (UpdatePeriod/numberOfLaserCamData);
 			var axisRotation = Vector3.zero;
-			var waitForSeconds = new WaitForSeconds(ScanningPeriod * adjustWaitingPeriod);
+			var waitForSeconds = new WaitForSeconds(UpdatePeriod * adjustWaitingPeriod);
 
 			while (true)
 			{
@@ -217,9 +216,9 @@ namespace SensorDevices
 					// Debug.Assert(readback.done);
 
 					data.SetBufferData(readback.GetData<byte>());
-
-					yield return waitForSeconds;
 				}
+
+				yield return waitForSeconds;
 			}
 		}
 
@@ -253,10 +252,10 @@ namespace SensorDevices
 
 				var convertedRayAngleH = (rayAngleH >= -laserCameraHFovHalf) ? rayAngleH : (360 + rayAngleH);
 				var dataIndexByAngle = (uint)Mathf.Round(convertedRayAngleH / laserCameraHFov);
-				var laserScanData = laserCamData[dataIndexByAngle];
-				var centerAngleInCamData = laserScanData.CenterAngle;
 
-				var depthData = laserScanData.GetDepthData(convertedRayAngleH - centerAngleInCamData);
+				var laserScanData = laserCamData[dataIndexByAngle];
+
+				var depthData = laserScanData.GetDepthData(convertedRayAngleH);
 
 				var rayDistance = (depthData > 0) ? depthData * (float)rangeMax : Mathf.Infinity;
 
