@@ -12,6 +12,8 @@ public partial class MarkerVisualizer : MonoBehaviour
 {
 	public bool ModifyMarkers()
 	{
+		var modifieddCount = 0;
+
 		foreach (var newMarker in request.markers)
 		{
 			var markerName = newMarker.MarkerName();
@@ -28,7 +30,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 				var markerObject = markerSet.Item2;
 				oldMarker = newMarker;
 
-				switch (newMarker.markerType)
+				switch (newMarker.type)
 				{
 					case Marker.Types.Line:
 						ModifyMarkerLine(markerObject, newMarker);
@@ -50,10 +52,12 @@ public partial class MarkerVisualizer : MonoBehaviour
 					default:
 						break;
 				}
+
+				modifieddCount++;
 			}
 		}
 
-		return true;
+		return (modifieddCount == 0)? false:true;
 	}
 
 	private void ModifyMarkerLine(in GameObject markerObject, in MarkerRequest properties)
@@ -115,7 +119,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 
 		var text = markerObject.GetComponent<TextMeshPro>();
 		text.fontSize = (int)markerProperties.size;
-		text.alignment = GetTextAlignment(markerProperties.textAlign);
+		text.alignment = GetTextAlignment(markerProperties.align);
 		text.text = markerProperties.text;
 
 		var markerName = markerObject.name;

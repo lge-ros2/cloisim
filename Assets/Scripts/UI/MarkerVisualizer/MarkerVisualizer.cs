@@ -59,7 +59,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 
 	void Update()
 	{
-		if (request != null && !request.markerCommand.Equals(VisualMarkerRequest.MarkerCommands.Unknown))
+		if (request != null && !request.command.Equals(VisualMarkerRequest.MarkerCommands.Unknown))
 		{
 			StartCoroutine(HandleRequsetMarkers());
 		}
@@ -134,7 +134,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 	{
 		var result = false;
 
-		switch (request.markerCommand)
+		switch (request.command)
 		{
 			case VisualMarkerRequest.MarkerCommands.Add:
 				result = AddMarkers();
@@ -160,7 +160,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 				break;
 		}
 
-		var command = request.markerCommand.ToString().ToLower();
+		var command = request.command.ToString().ToLower();
 		DoneMarkerRequested(command, result);
 
 		yield return null;
@@ -169,10 +169,10 @@ public partial class MarkerVisualizer : MonoBehaviour
 
 	public bool PushRequsetMarkers(in VisualMarkerRequest markerRequest)
 	{
-		if (markerRequest.markerCommand.Equals(VisualMarkerRequest.MarkerCommands.List) && markerRequest.markers.Count > 0)
+		if (markerRequest.command.Equals(VisualMarkerRequest.MarkerCommands.List) && markerRequest.markers.Count > 0)
 		{
 			request = null;
-			response.command = request.command;
+			response.command = "";//request.command;
 			response.result = SimulationService.FAIL;
 			response.lines = null;
 			response.texts = null;

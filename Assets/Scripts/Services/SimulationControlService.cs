@@ -4,15 +4,17 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using System;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using UnityEngine;
+using Newtonsoft.Json;
 
-[Serializable]
 public class SimulationControlRequest
 {
-	[SerializeField] public string command = string.Empty;
+	[JsonProperty(Order = 0)]
+	public string command = string.Empty;
 
 	public void Print()
 	{
@@ -20,13 +22,37 @@ public class SimulationControlRequest
 	}
 }
 
-[Serializable]
-public class SimulationControlResponse
-{
-	[SerializeField] public string command = string.Empty;
-	[SerializeField] public string result = string.Empty;
 
-	public void Print()
+public class SimulationControlResponseBase
+{
+	[JsonProperty(Order = 0)]
+	public string command = string.Empty;
+
+	public virtual void Print()
+	{
+		Debug.LogFormat("## {0}: {1}", this.GetType().Name, command);
+	}
+}
+
+
+public class SimulationControlResponseNormal : SimulationControlResponseBase
+{
+	[JsonProperty(Order = 1)]
+	public string result = string.Empty;
+
+	public override void Print()
+	{
+		Debug.LogFormat("## {0}: {1}, {2}", this.GetType().Name, command, result);
+	}
+}
+
+
+public class SimulationControlResponseSensorPortList : SimulationControlResponseBase
+{
+	[JsonProperty(Order = 1)]
+	public List<Dictionary<string, ushort>> result;
+
+	public override void Print()
 	{
 		Debug.LogFormat("## {0}: {1}, {2}", this.GetType().Name, command, result);
 	}
@@ -34,12 +60,8 @@ public class SimulationControlResponse
 
 public class SimulationControlService : WebSocketBehavior
 {
-	private ModelLoader targetComponent = null;
-
-	public SimulationControlService(in ModelLoader target)
-	{
-		targetComponent = target;
-	}
+	public ModelLoader modelLoaderService = null;
+	public BridgePortManager portDeviceService = null;
 
 	protected override void OnOpen()
 	{
@@ -60,26 +82,48 @@ public class SimulationControlService : WebSocketBehavior
 			return;
 		}
 
-		var request = JsonUtility.FromJson<SimulationControlRequest>(e.Data);
+		var request = JsonConvert.DeserializeObject<SimulationControlRequest>(e.Data);
+
+		if (request == null)
+		{
+			Debug.Log("Invalid JSON format");
+			return;
+		}
+
 		request.Print();
 
-		var result = targetComponent.TriggerResetService(request.command);
+		SimulationControlResponseBase output = null;
 
-		GenerateResponse(request, result, out var response);
+		if (request.command.Equals("reset"))
+		{
+			var wasSuccessful = modelLoaderService.TriggerResetService(request.command);
+			var result = (wasSuccessful)? SimulationService.SUCCESS:SimulationService.FAIL;
 
-		var responseJsonData = JsonUtility.ToJson(response, true);
+			output = new SimulationControlResponseNormal();
+			(output as SimulationControlResponseNormal).result = result;
+		}
+		else if (request.command.Equals("device_list"))
+		{
+			var result = portDeviceService.GetSensorPortList();
+
+			output = new SimulationControlResponseSensorPortList();
+			(output as SimulationControlResponseSensorPortList).result = result;
+		}
+		else
+		{
+			output = new SimulationControlResponseBase();
+			request.command = "Invalid Command";
+		}
+
+		output.command = request.command;
+
+		var responseJsonData = JsonConvert.SerializeObject(output, Formatting.Indented);
+
 		Send(responseJsonData);
 	}
 
 	protected override void OnError(ErrorEventArgs e)
 	{
 		Debug.LogFormat("{0}::OnError : {1}", GetType().Name, e.Message);
-	}
-
-	private void GenerateResponse(in SimulationControlRequest requeset, in string result, out SimulationControlResponse output)
-	{
-		output = new SimulationControlResponse();
-		output.command = requeset.command;
-		output.result = result;
 	}
 }

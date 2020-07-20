@@ -4,11 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections;
-using System;
-using Unity.Collections;
 using UnityEngine;
-using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace SensorDevices
 {
@@ -22,11 +18,6 @@ namespace SensorDevices
 
 		public bool isPointCloud = false;
 
-		private DepthCamera()
-			: base()
-		{
-		}
-
 		void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
 			if (depthMaterial)
@@ -38,17 +29,11 @@ namespace SensorDevices
 				Graphics.Blit(source, destination);
 			}
 		}
-
-		protected override void OnStart()
+		protected override void SetupTexture()
 		{
-			SetupDepthCamera();
-		}
-
-		private void SetupDepthCamera()
-		{
-			// TODO : Need to be implemented!!!
-			var depthShader = Shader.Find("Sensor/DepthCamera");
-			// depthMaterial = new Material(depthShader);
+			var shader = Shader.Find("Sensor/Depth");
+			depthMaterial = new Material(shader);
+			depthMaterial.SetFloat("_ReverseData", 1.0f);
 
 			if (parameters.depth_camera_output.Equals("points"))
 			{
@@ -64,6 +49,13 @@ namespace SensorDevices
 			cam.backgroundColor = Color.white;
 			cam.clearFlags = CameraClearFlags.SolidColor;
 			cam.depthTextureMode = DepthTextureMode.Depth;
+
+			targetRTname = "CameraDepthTexture";
+			targetRTdepth = 24;
+			targetRTrwmode = RenderTextureReadWrite.Linear;
+
+			targetRTformat = RenderTextureFormat.ARGB32;
+			readbackDstFormat = TextureFormat.RFloat;
 		}
 	}
 }

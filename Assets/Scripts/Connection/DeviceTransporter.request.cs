@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
 using System.IO;
 using UnityEngine;
 using NetMQ;
@@ -11,6 +12,16 @@ using NetMQ.Sockets;
 
 public partial class DeviceTransporter
 {
+	private RequestSocket requestSocket = null;
+
+	private byte[] hashValueForSendRequest = null;
+	private byte[] dataToSendRequest = null;
+
+	public void SetHashForRequest(in ulong hash)
+	{
+		hashValueForSendRequest = BitConverter.GetBytes(hash);
+	}
+
 	protected bool InitializeRequester(in ushort targetPort)
 	{
 		var initialized = false;
@@ -21,7 +32,7 @@ public partial class DeviceTransporter
 			requestSocket.Options.TcpKeepalive = true;
 			requestSocket.Bind(GetAddress(targetPort));
 			// Debug.Log("Requester socket connecting... " + targetPort);
-			initialized = StoreTagIntoDataToSend(hashValueForSend);
+			initialized = StoreTag(ref dataToSendRequest, hashValueForSendRequest);
 		}
 
 		return initialized;
@@ -64,14 +75,14 @@ public partial class DeviceTransporter
 	{
 		bool wasSucessful = false;
 
-		if (StoreData(bytesToSend, bytesLength) == false)
+		if (StoreData(ref dataToSendRequest, bytesToSend, bytesLength) == false)
 		{
 			return wasSucessful;
 		}
 
 		if (requestSocket != null)
 		{
-			wasSucessful = requestSocket.TrySendFrame(dataToSend);
+			wasSucessful = requestSocket.TrySendFrame(dataToSendRequest);
 		}
 		else
 		{
@@ -90,18 +101,17 @@ public partial class DeviceTransporter
 	/// <returns>It is received bytes array data through socket without hash tag.</returns>
 	protected byte[] ReceiveResponse(in bool checkTag = false)
 	{
-		byte[] frameReceived = null;
-
 		if (requestSocket != null)
 		{
-			frameReceived = requestSocket.ReceiveFrameBytes();
+			var frameReceived = requestSocket.ReceiveFrameBytes();
+			var receivedData = RetrieveData(frameReceived, (checkTag)? hashValueForSendRequest : null);
+			return receivedData;
 		}
 		else
 		{
 			Debug.LogWarning("Socket for request is not initilized yet.");
 		}
 
-		byte[] receivedData = RetrieveData(frameReceived, (checkTag)? hashValueForSend : null);
-		return receivedData;
+		return null;
 	}
 }

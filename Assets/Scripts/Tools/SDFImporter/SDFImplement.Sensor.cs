@@ -101,6 +101,7 @@ public partial class SDFImplement
 			var depthCamera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
 			depthCamera.deviceName = GetFrameName(newSensorObject);
 			depthCamera.parameters = element;
+			depthCamera.parameters.image_format = "R_FLOAT32";
 			return depthCamera;
 		}
 

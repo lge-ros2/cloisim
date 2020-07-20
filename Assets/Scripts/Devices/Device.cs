@@ -10,7 +10,7 @@ using System.IO;
 using UnityEngine;
 using ProtoBuf;
 
-public class Device : MonoBehaviour
+public abstract class Device : MonoBehaviour
 {
 	public string deviceName = string.Empty;
 
@@ -28,13 +28,6 @@ public class Device : MonoBehaviour
 	private bool visualize = true;
 
 	private float transportingTimeSeconds = 0;
-
-	public Device()
-	{
-		memoryStreamOutboundQueue = new BlockingCollection<MemoryStream>(maxQueue);
-		memoryStream = new MemoryStream();
-		ResetDataStream();
-	}
 
 	void OnDestroy()
 	{
@@ -64,6 +57,15 @@ public class Device : MonoBehaviour
 		set => visualize = value;
 	}
 
+	void Awake()
+	{
+		memoryStreamOutboundQueue = new BlockingCollection<MemoryStream>(maxQueue);
+		memoryStream = new MemoryStream();
+		ResetDataStream();
+
+		OnAwake();
+	}
+
 	void Start()
 	{
 		InitializeMessages();
@@ -78,28 +80,23 @@ public class Device : MonoBehaviour
 		}
 	}
 
-	protected virtual void OnStart()
-	{
-		// do nothing
-	}
+	protected abstract void OnAwake();
 
-	protected virtual IEnumerator MainDeviceWorker()
-	{
-		// do nothing
-		yield return null;
-	}
+	protected abstract void OnStart();
 
-	protected virtual IEnumerator OnVisualize()
-	{
-		// do nothing
-		yield return null;
-	}
+	protected abstract IEnumerator MainDeviceWorker();
+
+	protected abstract IEnumerator OnVisualize();
+
+	protected abstract void InitializeMessages();
+
+	protected abstract void GenerateMessage();
 
 	protected float WaitPeriod(in float messageGenerationTime = 0)
 	{
 		var waitTime = UpdatePeriod - messageGenerationTime - TransportingTime;
-		// Debug.Log("elapsedTime : "+ messageGenerationTime.ToString("F5"));
-		// Debug.Log("waitTime : "+ waitTime.ToString("F5"));
+		// Debug.LogFormat(deviceName + ": waitTime({0}) = period({1}) - elapsedTime({2}) - TransportingTime({3})",
+		// 	waitTime.ToString("F5"), UpdatePeriod.ToString("F5"), messageGenerationTime.ToString("F5"), TransportingTime.ToString("F5"));
 		return (waitTime < 0)? 0:waitTime;
 	}
 
@@ -189,18 +186,6 @@ public class Device : MonoBehaviour
 			ResetDataStream();
 			return result;
 		}
-	}
-
-	protected virtual void InitializeMessages()
-	{
-		// do nothing
-		Debug.Log("Nothing to initialize message: " + name);
-	}
-
-	protected virtual void GenerateMessage()
-	{
-		// do nothing
-		Debug.Log("Need to implement!!");
 	}
 
 	protected bool PushData<T>(T instance)

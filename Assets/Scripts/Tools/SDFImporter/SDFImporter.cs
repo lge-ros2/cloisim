@@ -60,7 +60,7 @@ public partial class SDFImporter : SDF.Importer
 
 	private void SetParentObject(GameObject childObject, string parentObjectName)
 	{
-		GameObject parentObject = GameObject.Find(parentObjectName);
+		var parentObject = GameObject.Find(parentObjectName);
 
 		if (parentObject != null)
 		{
@@ -83,29 +83,27 @@ public partial class SDFImporter : SDF.Importer
 		}
 
 		// filtering plugin name
-		var pluginName = plugin.FileName;
-		if (pluginName.StartsWith("lib"))
-		{
-			pluginName = pluginName.Substring(3);
-		}
-
-		if (pluginName.EndsWith(".so"))
-		{
-			var foundIndex = pluginName.IndexOf(".so");
-			pluginName = pluginName.Remove(foundIndex);
-		}
-
+		var pluginName = plugin.ClassName();
 		// Debug.Log("plugin name = " + pluginName);
 
 		var pluginType = Type.GetType(pluginName);
 		if (pluginType != null)
 		{
-			var pluginObject = (DevicePlugin)targetObject.AddComponent(pluginType);
-			if (pluginObject != null)
+			var pluginObject = targetObject.AddComponent(pluginType);
+			var devicePluginObject = pluginObject as DevicePlugin;
+			var devicesPluginObject = pluginObject as DevicesPlugin;
+
+			if (devicePluginObject != null)
 			{
 				var node = plugin.GetNode();
-				pluginObject.SetPluginData(node);
-				// Debug.Log("[Plugin] added : " + plugin.Name);
+				devicePluginObject.SetPluginParameters(node);
+				// Debug.Log("[Plugin] device added : " + plugin.Name);
+			}
+			else if (devicesPluginObject != null)
+			{
+				var node = plugin.GetNode();
+				devicesPluginObject.SetPluginParameters(node);
+				// Debug.Log("[Plugin] devices added : " + plugin.Name);
 			}
 			else
 			{

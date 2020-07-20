@@ -60,9 +60,9 @@ namespace SensorDevices
 			return parsedEnum;
 		}
 
-		static public uint GetImageDepth(in string imageFormat)
+		static public int GetImageDepth(in string imageFormat)
 		{
-			uint depth = 0;
+			int depth = 0;
 
 			if (imageFormat == null || imageFormat.Equals(string.Empty))
 			{
@@ -108,17 +108,9 @@ namespace SensorDevices
 
 		private struct CamData
 		{
+			private byte[] imageBuffer;
+
 			private Texture2D cameraImage;
-
-			public int ImageWidth
-			{
-				get => cameraImage.width;
-			}
-
-			public int ImageHeight
-			{
-				get => cameraImage.height;
-			}
 
 			public void AllocateTexture(in int width, in int height, in string imageFormat)
 			{
@@ -137,12 +129,12 @@ namespace SensorDevices
 						break;
 
 					case PixelFormat.R_FLOAT32:
-						textureFormat = TextureFormat.RFloat;
+						textureFormat = TextureFormat.ARGB32;
 						isLinear = true;
 						break;
 
 					case PixelFormat.RGB_FLOAT32:
-						textureFormat = TextureFormat.RGBAFloat;
+						textureFormat = TextureFormat.ARGB32;
 						isLinear = true;
 						break;
 
@@ -151,23 +143,24 @@ namespace SensorDevices
 						textureFormat = TextureFormat.RGB24;
 						break;
 				}
-
 				cameraImage = new Texture2D(width, height, textureFormat, false, isLinear);
 			}
 
 			public void SetTextureData(in NativeArray<byte> buffer)
 			{
-				cameraImage.LoadRawTextureData<byte>(buffer);
-				cameraImage.Apply();
+				imageBuffer = buffer.ToArray();
 			}
 
 			public byte[] GetTextureData()
 			{
-				return (cameraImage is null)? null : cameraImage.GetRawTextureData();
+				return imageBuffer;
 			}
 
 			public void SaveRawImageData(in string path, in string name)
 			{
+				cameraImage.LoadImage(imageBuffer);
+				cameraImage.Apply();
+
 				var bytes = cameraImage.EncodeToPNG();
 				var fileName = string.Format("{0}/{1}", path, name);
 				System.IO.File.WriteAllBytes(fileName, bytes);

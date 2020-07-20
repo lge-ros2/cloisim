@@ -39,6 +39,8 @@ Copyright (c) 2016 dotBunny Inc.
 websocket-sharp 1.0.3 (MIT)
 Copyright (c) 2010-2020 sta.blockhead
 
+Newtonsoft.Json 12.0.3 (MIT)
+Copyright (c) 2007 James Newton-King
 
 
 Please refer to the oss-pkg-info.yaml file for the link to download the source code of each Open Source Software.

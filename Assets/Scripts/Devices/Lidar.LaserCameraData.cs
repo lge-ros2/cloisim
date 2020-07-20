@@ -13,9 +13,13 @@ namespace SensorDevices
 	{
 		struct LaserCamData
 		{
+			const int colorFormatUnit = sizeof(float);
+
 			private int index;
 			private float centerAngle;
-			private Texture2D cameraImage;
+			private int imageWidth;
+			private int imageHeight;
+			private byte[] imageBuffer;
 
 			public float CenterAngle
 			{
@@ -23,53 +27,44 @@ namespace SensorDevices
 				set => centerAngle = value;
 			}
 
-			public int ImageWidth
-			{
-				get => cameraImage.width;
-			}
+			public int ImageWidth => imageWidth;
 
-			public int ImageHeight
-			{
-				get => cameraImage.height;
-			}
+			public int ImageHeight => imageHeight;
 
-			public void AllocateTexture(in int dataIndex, in int width, in int height)
+			public void AllocateBuffer(in int dataIndex, in int width, in int height)
 			{
 				index = dataIndex;
-				cameraImage = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
+				imageWidth = width;
+				imageHeight = height;
+				imageBuffer = new byte[width * height * colorFormatUnit];
 			}
 
-			public void SetTextureData(in NativeArray<byte> buffer)
+			public void SetBufferData(in NativeArray<byte> buffer)
 			{
-				cameraImage.LoadRawTextureData<byte>(buffer);
-				cameraImage.Apply();
+				if (imageBuffer != null)
+				{
+					buffer.CopyTo(imageBuffer);
+				}
 			}
 
-			public NativeArray<byte> GetTextureData()
+			public float GetDepthData(in float horizontalAngle, in float verticalAngle = 0)
 			{
-				return cameraImage.GetRawTextureData<byte>();
+				var horizontalAngleInCamData = horizontalAngle * Mathf.Deg2Rad;
+				var verticalAngleInCamData = verticalAngle * Mathf.Deg2Rad;
+
+				var maxAngleTangent = Mathf.Tan(laserCameraHFovHalf * Mathf.Deg2Rad);
+				var offsetY = (imageHeight * 0.5f) * (1f + (Mathf.Tan(verticalAngleInCamData) / maxAngleTangent));
+				var offsetX = (imageWidth * 0.5f) * (1f + (Mathf.Tan(horizontalAngleInCamData) / maxAngleTangent));
+
+				var decodedData = GetDecodedData((int)offsetX, (int)offsetY);
+
+				// Compensate distance
+				var compensateScale = (1f / Mathf.Cos(horizontalAngleInCamData));
+				var finalDepthData = decodedData * compensateScale;
+
+				// Cutoff
+				return (finalDepthData > 1.0f) ? 1.0f : finalDepthData;
 			}
-
-			public void SaveRawImageData(in string name)
-			{
-				var bytes = cameraImage.EncodeToPNG();
-				var fileName = string.Format("./Logs/{0}_{1:00}_{2:000}", name, index, centerAngle);
-				System.IO.File.WriteAllBytes(fileName, bytes);
-			}
-		}
-
-		private LaserData tempLaserData;
-
-		struct LaserData
-		{
-			[ReadOnly]
-			public NativeArray<byte> data;
-
-			[ReadOnly]
-			public int width;
-
-			[ReadOnly]
-			public int height;
 
 			private float DecodeChannel(in byte r, in byte g, in byte b, in byte a)
 			{
@@ -81,18 +76,17 @@ namespace SensorDevices
 
 			private float GetDecodedData(in int pixelOffsetX, in int pixelOffsetY)
 			{
-				if (data.IsCreated)
+				if (imageBuffer != null && imageBuffer.Length > 0)
 				{
 					// Decode
-					const int colorFormatUnit = 4;
 					var imageOffsetX = colorFormatUnit * pixelOffsetX;
-					var imageOffsetY = colorFormatUnit * width * pixelOffsetY;
+					var imageOffsetY = colorFormatUnit * imageWidth * pixelOffsetY;
 					var imageOffset = imageOffsetY + imageOffsetX;
 
-					byte r = data[imageOffset + 0];
-					byte g = data[imageOffset + 1];
-					byte b = data[imageOffset + 2];
-					byte a = data[imageOffset + 3];
+					byte r = imageBuffer[imageOffset + 0];
+					byte g = imageBuffer[imageOffset + 1];
+					byte b = imageBuffer[imageOffset + 2];
+					byte a = imageBuffer[imageOffset + 3];
 
 					return DecodeChannel(r, g, b, a);
 				}
@@ -100,25 +94,6 @@ namespace SensorDevices
 				{
 					return 0;
 				}
-			}
-
-			public float GetDepthData(in float horizontalAngle, in float verticalAngle = 0)
-			{
-				var horizontalAngleInCamData = horizontalAngle * Mathf.Deg2Rad;
-				var verticalAngleInCamData = verticalAngle * Mathf.Deg2Rad;
-
-				var maxAngleTangent = Mathf.Tan(laserCameraHFovHalf * Mathf.Deg2Rad);
-				var offsetY = (height * 0.5f) * (1f + (Mathf.Tan(verticalAngleInCamData) / maxAngleTangent));
-				var offsetX = (width * 0.5f) * (1f + (Mathf.Tan(horizontalAngleInCamData) / maxAngleTangent));
-
-				var decodedData = GetDecodedData((int)offsetX, (int)offsetY);
-
-				// Compensate distance
-				var compensateScale = (1f / Mathf.Cos(horizontalAngleInCamData));
-				var finalDepthData = decodedData * compensateScale;
-
-				// Cutoff
-				return (finalDepthData > 1.0f) ? 1.0f : finalDepthData;
 			}
 		}
 	}

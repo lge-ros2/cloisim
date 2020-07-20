@@ -10,6 +10,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Text;
 using System;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 public abstract class MarkerBase
 {
@@ -20,14 +22,13 @@ public abstract class MarkerBase
 
 public abstract class MarkerTypeBase : MarkerBase
 {
-	[SerializeField] public float size = 0.01f;
-	[SerializeField] public Vector3 point = Vector3.zero;
+	public float size = 0.01f;
+	public Vector3 point = Vector3.zero;
 }
 
-[Serializable]
 public class MarkerLine: MarkerTypeBase
 {
-	[SerializeField] public Vector3 endpoint = Vector3.zero;
+	public Vector3 endpoint = Vector3.zero;
 
 	public override void Print()
 	{
@@ -35,33 +36,14 @@ public class MarkerLine: MarkerTypeBase
 	}
 }
 
-[Serializable]
-public class MarkerText: MarkerTypeBase, ISerializationCallbackReceiver
+public class MarkerText: MarkerTypeBase
 {
 	public enum TextAlign : ushort {Left = 0, Center, Right};
 
-	[SerializeField] private string align = string.Empty;
-	[SerializeField] public string following = string.Empty;
-	[SerializeField] public string text = string.Empty;
-	[NonSerialized] public TextAlign textAlign = TextAlign.Left;
-
-	public void OnAfterDeserialize()
-	{
-		try
-		{
-			textAlign = (TextAlign)Enum.Parse(typeof(TextAlign), align, true);
-		}
-		catch (ArgumentException)
-		{
-			textAlign = TextAlign.Left;
-		}
-	}
-
-	public void OnBeforeSerialize()
-	{
-		align = textAlign.ToString().ToLower();
-	}
-
+	[JsonConverter(typeof(StringEnumConverter))]
+	public TextAlign align = TextAlign.Left;
+	public string following = string.Empty;
+	public string text = string.Empty;
 
 	public override void Print()
 	{
@@ -69,7 +51,6 @@ public class MarkerText: MarkerTypeBase, ISerializationCallbackReceiver
 	}
 }
 
-[Serializable]
 public class MarkerBox: MarkerTypeBase
 {
 	public override void Print()
@@ -78,7 +59,6 @@ public class MarkerBox: MarkerTypeBase
 	}
 }
 
-[Serializable]
 public class MarkerSphere: MarkerTypeBase
 {
 	public override void Print()
@@ -87,48 +67,20 @@ public class MarkerSphere: MarkerTypeBase
 	}
 }
 
-[Serializable]
-public class Marker: MarkerBase, ISerializationCallbackReceiver
+[Serializable()]
+public class Marker: MarkerBase
 {
-	[SerializeField] public string group = string.Empty;
-	[SerializeField] public int id = -1;
-	[SerializeField] private string type = string.Empty;
-	[SerializeField] private string color = string.Empty;
-
 	public enum Types : ushort {Unknown = 0, Line, Sphere, Box, Text};
-	public enum Colors : ushort
-	{Unknown = 0, Red, Green, Blue, Gray, Orange, Lime, Pink, Purple, Navy, Aqua, Cyan, Magenta, Yellow, Black};
+	public enum Colors : ushort {Unknown = 0, Red, Green, Blue, Gray, Orange, Lime, Pink, Purple, Navy, Aqua, Cyan, Magenta, Yellow, Black};
 
-	[NonSerialized] public Types markerType = Types.Unknown;
-	[NonSerialized] public Colors markerColor = Colors.Unknown;
+	public string group = string.Empty;
+	public int id = -1;
 
-	public void OnAfterDeserialize()
-	{
-		try
-		{
-			markerType = (Types)Enum.Parse(typeof(Types), type, true);
-		}
-		catch (ArgumentException)
-		{
-			markerType = Types.Unknown;
-		}
+	[JsonConverter(typeof(StringEnumConverter))]
+	public Types type = Types.Unknown;
 
-		try
-		{
-			markerColor = (Colors)Enum.Parse(typeof(Colors), color, true);
-		}
-		catch (ArgumentException)
-		{
-			markerColor = Colors.Unknown;
-		}
-	}
-
-	public void OnBeforeSerialize()
-	{
-		type = markerType.ToString().ToLower();
-
-		color = markerColor.ToString().ToLower();
-	}
+	[JsonConverter(typeof(StringEnumConverter))]
+	public Colors color = Colors.Unknown;
 
 	public string MarkerName()
 	{
@@ -138,7 +90,7 @@ public class Marker: MarkerBase, ISerializationCallbackReceiver
 	public Color GetColor()
 	{
 		Color targetColor;
-		switch (markerColor)
+		switch (color)
 		{
 			case Colors.Red:
 				targetColor = Color.red;
@@ -205,38 +157,49 @@ public class Marker: MarkerBase, ISerializationCallbackReceiver
 
 	public override void Print()
 	{
-		Debug.LogFormat("## Marker: {0}, {1}, {2}, {3}", group, id, type, color);
+		Debug.LogFormat("## Marker: {0}, {1}, {2}, Color({3})", group, id, type, color);
 	}
 }
 
-[Serializable]
 public class MarkerRequest : Marker
 {
-	[SerializeField] public MarkerLine line = null;
-	[SerializeField] public MarkerText text = null;
-	[SerializeField] public MarkerBox box = null;
-	[SerializeField] public MarkerSphere sphere = null;
+	public MarkerLine line = null;
+	public MarkerText text = null;
+	public MarkerBox box = null;
+	public MarkerSphere sphere = null;
 
 	public override void Print()
 	{
 		base.Print();
 
-		switch (markerType)
+		switch (type)
 		{
 			case Types.Line:
-				line.Print();
+				if (line != null)
+				{
+					line.Print();
+				}
 				break;
 
 			case Types.Box:
-				box.Print();
+				if (box != null)
+				{
+					box.Print();
+				}
 				break;
 
 			case Types.Text:
-				text.Print();
+				if (text != null)
+				{
+					text.Print();
+				}
 				break;
 
 			case Types.Sphere:
-				sphere.Print();
+				if (sphere != null)
+				{
+					sphere.Print();
+				}
 				break;
 
 			case Types.Unknown:
@@ -247,10 +210,9 @@ public class MarkerRequest : Marker
 	}
 }
 
-[Serializable]
 public class MarkerResponseLine : Marker
 {
-	[SerializeField] public MarkerLine marker = null;
+	public MarkerLine marker = null;
 
 	public override void Print()
 	{
@@ -259,10 +221,9 @@ public class MarkerResponseLine : Marker
 	}
 }
 
-[Serializable]
 public class MarkerResponseText : Marker
 {
-	[SerializeField] public MarkerText marker = null;
+	public MarkerText marker = null;
 
 	public override void Print()
 	{
@@ -271,10 +232,9 @@ public class MarkerResponseText : Marker
 	}
 }
 
-[Serializable]
 public class MarkerResponseSphere : Marker
 {
-	[SerializeField] public MarkerSphere marker = null;
+	public MarkerSphere marker = null;
 
 	public override void Print()
 	{
@@ -283,10 +243,9 @@ public class MarkerResponseSphere : Marker
 	}
 }
 
-[Serializable]
 public class MarkerResponseBox : Marker
 {
-	[SerializeField] public MarkerBox marker = null;
+	public MarkerBox marker = null;
 
 	public override void Print()
 	{
@@ -295,12 +254,11 @@ public class MarkerResponseBox : Marker
 	}
 }
 
-[Serializable]
 public class MarkerFilter
 {
-	[SerializeField] public string group = string.Empty;
-	[SerializeField] public int id = -1;
-	[SerializeField] public string type = string.Empty;
+	public string group = string.Empty;
+	public int id = -1;
+	public string type = string.Empty;
 
 	public bool IsEmpty()
 	{
@@ -313,64 +271,41 @@ public class MarkerFilter
 	}
 }
 
-[Serializable]
-public class VisualMarkerRequest : MarkerBase, ISerializationCallbackReceiver
+public class VisualMarkerRequest : MarkerBase
 {
-	[SerializeField] public string command = string.Empty;
-	[SerializeField] public List<MarkerRequest> markers = null;
-	[SerializeField] public MarkerFilter filter = null;
+	public enum MarkerCommands : ushort { Unknown = 0, Add, Modify, Remove, List };
 
-	public enum MarkerCommands : ushort {Unknown = 0, Add, Modify, Remove, List};
-	[NonSerialized] public MarkerCommands markerCommand = MarkerCommands.Unknown;
+	[JsonConverter(typeof(StringEnumConverter))]
+	public MarkerCommands command { get; set; }
 
-	public void OnAfterDeserialize()
-	{
-		try {
-			// Debug.Log(command);
-			markerCommand = (MarkerCommands)Enum.Parse(typeof(MarkerCommands), command, true);
-		}
-		catch (ArgumentException)
-		{
-			// Debug.Log("X" + command);
-			markerCommand = MarkerCommands.Unknown;
-		}
-	}
+	public List<MarkerRequest> markers = null;
 
-	public void OnBeforeSerialize()
-	{
-		command = markerCommand.ToString().ToLower();
-	}
+	public MarkerFilter filter = null;
 
 	public override void Print()
 	{
 		Debug.Log("====================================");
 		Debug.LogFormat("## VisualMarkers: {0}", command);
-		foreach (var marker in markers)
+		if (markers != null)
 		{
-			marker.Print();
+			foreach (var marker in markers)
+			{
+				marker.Print();
+			}
 		}
 		Debug.Log("====================================");
 	}
 }
 
-[Serializable]
 public class VisualMarkerResponse : MarkerBase
 {
-	[SerializeField] public string command = string.Empty;
-	[SerializeField] public string result = string.Empty;
+	public string command = string.Empty;
+	public string result = string.Empty;
 
-	[SerializeField] public List<MarkerResponseLine> lines = null;
-	[SerializeField] public List<MarkerResponseText> texts = null;
-	[SerializeField] public List<MarkerResponseBox> boxes = null;
-	[SerializeField] public List<MarkerResponseSphere> spheres = null;
-
-	public VisualMarkerResponse()
-	{
-		// lines = new List<MarkerResponse<MarkerLine>>();
-		// texts = new List<MarkerResponse<MarkerText>>();
-		// boxes = new List<MarkerResponse<MarkerBox>>();
-		// spheres = new List<MarkerResponse<MarkerSphere>>();
-	}
+	public List<MarkerResponseLine> lines = null;
+	public List<MarkerResponseText> texts = null;
+	public List<MarkerResponseBox> boxes = null;
+	public List<MarkerResponseSphere> spheres = null;
 
 	public override void Print()
 	{
@@ -412,7 +347,7 @@ public class VisualMarkerResponse : MarkerBase
 
 public class MarkerVisualizerService : WebSocketBehavior
 {
-	private MarkerVisualizer markerVisualizer = null;
+	public MarkerVisualizer markerVisualizer = null;
 
 	public MarkerVisualizerService(in MarkerVisualizer target)
 	{
@@ -438,9 +373,9 @@ public class MarkerVisualizerService : WebSocketBehavior
 			return;
 		}
 
-		var request = JsonUtility.FromJson<VisualMarkerRequest>(e.Data);
+		var request = JsonConvert.DeserializeObject<VisualMarkerRequest>(e.Data);
 
-		// request.Print();
+		request.Print();
 
 		var isSuccessful = markerVisualizer.PushRequsetMarkers(request);
 
@@ -459,11 +394,11 @@ public class MarkerVisualizerService : WebSocketBehavior
 	void SendResponse()
 	{
 		var response = markerVisualizer.GetResponseMarkers();
-		var responseJsonData = JsonUtility.ToJson(response, false);
+		var responseJsonData = JsonConvert.SerializeObject(response, Formatting.Indented);
 
 		// response.Print();
 
-		StringBuilder sb = new StringBuilder(responseJsonData);
+		var sb = new StringBuilder(responseJsonData);
 		// Debug.Log(responseJsonData);
 		sb.Replace(@",""lines"":[]", "");
 		sb.Replace(@",""texts"":[]", "");

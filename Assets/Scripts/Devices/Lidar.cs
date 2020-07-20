@@ -9,12 +9,13 @@ using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
 	public partial class Lidar : Device
 	{
-		private gazebo.msgs.LaserScanStamped laserScanStamped = null;
+		private messages.LaserScanStamped laserScanStamped = null;
 
 		[Range(1, 2000)]
 		public uint samples = 0;
@@ -44,12 +45,11 @@ namespace SensorDevices
 		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.2f);
 
 		private Transform lidarLink = null;
-
 		private UnityEngine.Camera laserCamera = null;
 		private Material depthMaterial = null;
 
 		private const float defaultRotationOffset = 90.00000000000000f;
-		private const float laserCameraHFov = 45.0000000000f;
+		private const float laserCameraHFov = 120.0000000000f;
 		private const float laserCameraHFovHalf = laserCameraHFov / 2;
 		private const float laserCameraVFov = 40.0000000000f;
 
@@ -59,6 +59,8 @@ namespace SensorDevices
 		private int numberOfLaserCamData = 0;
 
 		private LaserCamData[] laserCamData;
+
+		public float adjustWaitingPeriod = 0.80f;
 
 		void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
@@ -77,7 +79,7 @@ namespace SensorDevices
 			return (maxAngle - minAngle) / (resolution * (totalSamples - 1));
 		}
 
-		void Awake()
+		protected override void OnAwake()
 		{
 			lidarLink = transform.parent;
 		}
@@ -98,12 +100,12 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			laserScanStamped = new gazebo.msgs.LaserScanStamped();
-			laserScanStamped.Time = new gazebo.msgs.Time();
-			laserScanStamped.Scan = new gazebo.msgs.LaserScan();
-			laserScanStamped.Scan.WorldPose = new gazebo.msgs.Pose();
-			laserScanStamped.Scan.WorldPose.Position = new gazebo.msgs.Vector3d();
-			laserScanStamped.Scan.WorldPose.Orientation = new gazebo.msgs.Quaternion();
+			laserScanStamped = new messages.LaserScanStamped();
+			laserScanStamped.Time = new messages.Time();
+			laserScanStamped.Scan = new messages.LaserScan();
+			laserScanStamped.Scan.WorldPose = new messages.Pose();
+			laserScanStamped.Scan.WorldPose.Position = new messages.Vector3d();
+			laserScanStamped.Scan.WorldPose.Orientation = new messages.Quaternion();
 
 			var laserScan = laserScanStamped.Scan;
 			laserScan.Frame = deviceName;
@@ -130,8 +132,8 @@ namespace SensorDevices
 
 		private void SetupLaserCamera()
 		{
-			var depthShader = Shader.Find("Sensor/DepthShader");
-			depthMaterial = new Material(depthShader);
+			var shader = Shader.Find("Sensor/Depth");
+			depthMaterial = new Material(shader);
 
 			laserCamera.backgroundColor = Color.white;
 			laserCamera.clearFlags = CameraClearFlags.SolidColor;
@@ -146,18 +148,23 @@ namespace SensorDevices
 			laserCamera.orthographic = false;
 			laserCamera.nearClipPlane = (float)rangeMin;
 			laserCamera.farClipPlane = (float)rangeMax;
+
 			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(laserCameraHFov, laserCameraVFov, (float)rangeMin, (float)rangeMax);
 			laserCamera.projectionMatrix = projMatrix;
 
 			var renderTextrueWidth = Mathf.CeilToInt(laserCameraHFov / laserHAngleResolution);
 			var aspectRatio = Mathf.Tan(laserCameraVFov / 2 * Mathf.Deg2Rad) / Mathf.Tan(laserCameraHFov / 2 * Mathf.Deg2Rad);
 			var renderTextrueHeight = Mathf.RoundToInt(renderTextrueWidth * aspectRatio);
-			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-			targetDepthRT.name = "LidarDepthTexture";
+			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
+			{
+				name = "LidarDepthTexture"
+			};
+
 			laserCamera.targetTexture = targetDepthRT;
+
 			laserCamera.enabled = false;
 
-			laserCamera.hideFlags |= HideFlags.NotEditable;
+			// laserCamera.hideFlags |= HideFlags.NotEditable;
 		}
 
 		private void SetupLaserCameraData()
@@ -171,19 +178,17 @@ namespace SensorDevices
 			for (var index = 0; index < numberOfLaserCamData; index++)
 			{
 				var data = new LaserCamData();
-				data.AllocateTexture(index, targetDepthRT.width, targetDepthRT.height);
+				data.AllocateBuffer(index, targetDepthRT.width, targetDepthRT.height);
 				data.CenterAngle = laserCameraRotationAngle * index;
 				laserCamData[index] = data;
 			}
-
-			tempLaserData = new LaserData();
 		}
 
 		private IEnumerator LaserCameraWorker()
 		{
-			float ScanningPeriod = (UpdatePeriod/numberOfLaserCamData);
+			var ScanningPeriod = (UpdatePeriod/numberOfLaserCamData);
 			var axisRotation = Vector3.zero;
-			var waitForSeconds = new WaitForSeconds(ScanningPeriod);
+			var waitForSeconds = new WaitForSeconds(ScanningPeriod * adjustWaitingPeriod);
 
 			while (true)
 			{
@@ -193,21 +198,25 @@ namespace SensorDevices
 					axisRotation.y = data.CenterAngle;
 
 					laserCamera.transform.localRotation = Quaternion.Euler(axisRotation);
+
+					laserCamera.enabled = true;
+
 					laserCamera.Render();
 
 					var readback = AsyncGPUReadback.Request(laserCamera.targetTexture, 0, TextureFormat.RGBA32);
+
 					yield return new WaitUntil(() => readback.done);
+
+					laserCamera.enabled = false;
 
 					if (readback.hasError)
 					{
 						Debug.LogError("Failed to read GPU texture");
 						continue;
 					}
-					Debug.Assert(readback.done);
+					// Debug.Assert(readback.done);
 
-					data.SetTextureData(readback.GetData<byte>());
-
-					laserCamera.enabled = false;
+					data.SetBufferData(readback.GetData<byte>());
 
 					yield return waitForSeconds;
 				}
@@ -216,6 +225,7 @@ namespace SensorDevices
 
 		protected override IEnumerator MainDeviceWorker()
 		{
+			var waitForSeconds = new WaitForSeconds(UpdatePeriod * adjustWaitingPeriod);
 			var sw = new Stopwatch();
 			while (true)
 			{
@@ -223,7 +233,7 @@ namespace SensorDevices
 				GenerateMessage();
 				sw.Stop();
 
-				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
+				yield return waitForSeconds; //new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
 			}
 		}
 
@@ -246,11 +256,8 @@ namespace SensorDevices
 				var laserScanData = laserCamData[dataIndexByAngle];
 				var centerAngleInCamData = laserScanData.CenterAngle;
 
-				tempLaserData.data = laserScanData.GetTextureData();
-				tempLaserData.width = laserScanData.ImageWidth;
-				tempLaserData.height = laserScanData.ImageHeight;
+				var depthData = laserScanData.GetDepthData(convertedRayAngleH - centerAngleInCamData);
 
-				var depthData = tempLaserData.GetDepthData(convertedRayAngleH - centerAngleInCamData);
 				var rayDistance = (depthData > 0) ? depthData * (float)rangeMax : Mathf.Infinity;
 
 				// Store the laser data CCW
@@ -260,7 +267,7 @@ namespace SensorDevices
 			}
 
 			DeviceHelper.SetCurrentTime(laserScanStamped.Time);
-			PushData<gazebo.msgs.LaserScanStamped>(laserScanStamped);
+			PushData<messages.LaserScanStamped>(laserScanStamped);
 		}
 
 		protected override IEnumerator OnVisualize()

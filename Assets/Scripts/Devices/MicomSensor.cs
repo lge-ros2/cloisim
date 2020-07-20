@@ -6,28 +6,19 @@
 
 using System.Collections;
 using UnityEngine;
+using messages = gazebo.msgs;
 
 public class MicomSensor : Device
 {
-	private gazebo.msgs.Micom micomSensorData = null;
+	private messages.Micom micomSensorData = null;
+
+	protected override void OnAwake()
+	{
+	}
 
 	protected override void OnStart()
 	{
 		deviceName = "MicomSensor";
-	}
-
-	protected override void InitializeMessages()
-	{
-		micomSensorData = new gazebo.msgs.Micom();
-		micomSensorData.Time = new gazebo.msgs.Time();
-		micomSensorData.Imu = new gazebo.msgs.Imu();
-		micomSensorData.Imu.EntityName = "IMU";
-		micomSensorData.Imu.Stamp = new gazebo.msgs.Time();
-		micomSensorData.Imu.Orientation = new gazebo.msgs.Quaternion();
-		micomSensorData.Imu.AngularVelocity = new gazebo.msgs.Vector3d();
-		micomSensorData.Imu.LinearAcceleration = new gazebo.msgs.Vector3d();
-		micomSensorData.Accgyro = new gazebo.msgs.Micom.AccGyro();
-		micomSensorData.Odom = new gazebo.msgs.Micom.Odometry();
 	}
 
 	protected override IEnumerator MainDeviceWorker()
@@ -37,13 +28,32 @@ public class MicomSensor : Device
 			GenerateMessage();
 			yield return new WaitForSeconds(WaitPeriod());
 		}
- 	}
+	}
+
+	protected override IEnumerator OnVisualize()
+	{
+		yield return null;
+	}
+
+	protected override void InitializeMessages()
+	{
+		micomSensorData = new messages.Micom();
+		micomSensorData.Time = new messages.Time();
+		micomSensorData.Imu = new messages.Imu();
+		micomSensorData.Imu.EntityName = "IMU";
+		micomSensorData.Imu.Stamp = new messages.Time();
+		micomSensorData.Imu.Orientation = new messages.Quaternion();
+		micomSensorData.Imu.AngularVelocity = new messages.Vector3d();
+		micomSensorData.Imu.LinearAcceleration = new messages.Vector3d();
+		micomSensorData.Accgyro = new messages.Micom.AccGyro();
+		micomSensorData.Odom = new messages.Micom.Odometry();
+	}
 
 	protected override void GenerateMessage()
 	{
 		// Temporary
 		DeviceHelper.SetCurrentTime(micomSensorData.Time);
-		PushData<gazebo.msgs.Micom>(micomSensorData);
+		PushData<messages.Micom>(micomSensorData);
 	}
 
 	public bool SetIMU(in SensorDevices.IMU imuSensor)
@@ -108,16 +118,21 @@ public class MicomSensor : Device
 	public bool SetOdomData(in float linearVelocityLeft, in float linearVelocityRight)
 	{
 		const float M2MM = 1000.0f;
-		var odom = micomSensorData.Odom;
 
-		if (micomSensorData == null || odom == null)
-			return false;
+		if (micomSensorData != null)
+		{
+			var odom = micomSensorData.Odom;
 
-		odom.SpeedLeft = (int)(linearVelocityLeft * Mathf.Deg2Rad * M2MM);
-		odom.SpeedRight = (int)(linearVelocityRight * Mathf.Deg2Rad * M2MM);
-		// Debug.LogFormat("Odom {0}, {1} ", linearVelocityLeft, linearVelocityRight);
-		// Debug.LogFormat("Odom {0}, {1} ", odom.SpeedLeft, odom.SpeedRight);
+			if (odom != null)
+			{
+				odom.SpeedLeft = (int)(linearVelocityLeft * Mathf.Deg2Rad * M2MM);
+				odom.SpeedRight = (int)(linearVelocityRight * Mathf.Deg2Rad * M2MM);
+				// Debug.LogFormat("Odom {0}, {1} ", linearVelocityLeft, linearVelocityRight);
+				// Debug.LogFormat("Odom {0}, {1} ", odom.SpeedLeft, odom.SpeedRight);
+				return true;
+			}
+		}
 
-		return true;
+		return false;
 	}
 }

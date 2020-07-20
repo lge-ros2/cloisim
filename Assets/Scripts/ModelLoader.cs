@@ -174,23 +174,16 @@ public class ModelLoader : MonoBehaviour
 		}
 	}
 
-	public string TriggerResetService(in string command)
+	public bool TriggerResetService(in string command)
 	{
 		// Debug.Log(command);
-
-		if (command.Equals("reset"))
+		if (isResetting)
 		{
-			if (isResetting)
-			{
-				return SimulationService.FAIL;
-			}
-
-			resetTriggered = true;
-
-			return SimulationService.SUCCESS;
+			return false;
 		}
 
-		return SimulationService.FAIL;
+		resetTriggered = true;
+		return true;
 	}
 
 	private IEnumerator ResetSimulation()

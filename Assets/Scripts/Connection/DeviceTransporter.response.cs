@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
 using System.IO;
 using UnityEngine;
 using NetMQ;
@@ -11,6 +12,16 @@ using NetMQ.Sockets;
 
 public partial class DeviceTransporter
 {
+	private ResponseSocket responseSocket = null;
+
+	private byte[] hashValueForReceiveRequest = null;
+	private byte[] dataToSendResponse = null;
+
+	public void SetHashForResponse(in ulong hash)
+	{
+		hashValueForReceiveRequest = BitConverter.GetBytes(hash);
+	}
+
 	protected bool InitializeResponsor(in ushort targetPort)
 	{
 		var initialized = false;
@@ -21,7 +32,7 @@ public partial class DeviceTransporter
 			responseSocket.Options.TcpKeepalive = true;
 			responseSocket.Bind(GetAddress(targetPort));
 			// Debug.Log("Responsor socket connecting... " + targetPort);
-			initialized = StoreTagIntoDataToSend(hashValueForReceive);
+			initialized = StoreTag(ref dataToSendResponse, hashValueForReceiveRequest);
 		}
 
 		return initialized;
@@ -40,7 +51,7 @@ public partial class DeviceTransporter
 			Debug.LogWarning("Socket for response is not initilized yet.");
 		}
 
-		var receivedData = RetrieveData(frameReceived, (checkTag)? hashValueForReceive : null);
+		var receivedData = RetrieveData(frameReceived, (checkTag)? hashValueForReceiveRequest : null);
 		return receivedData;
 	}
 
@@ -73,14 +84,14 @@ public partial class DeviceTransporter
 	{
 		var wasSucessful = false;
 
-		if (StoreData(bytesToSend, bytesLength) == false)
+		if (StoreData(ref dataToSendResponse, bytesToSend, bytesLength) == false)
 		{
 			return wasSucessful;
 		}
 
 		if (responseSocket != null)
 		{
-			wasSucessful = responseSocket.TrySendFrame(dataToSend);
+			wasSucessful = responseSocket.TrySendFrame(dataToSendResponse);
 		}
 		else
 		{

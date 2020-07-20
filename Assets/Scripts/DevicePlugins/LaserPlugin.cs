@@ -9,24 +9,21 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class LaserPlugin : DevicePlugin
 {
-	public string partName = string.Empty;
-
 	private SensorDevices.Lidar lidar = null;
 
 	protected override void OnAwake()
 	{
 		partName = DeviceHelper.GetPartName(gameObject);
-
-		string hashKey = MakeHashKey(partName);
-		if (!RegisterTxDevice(hashKey))
-		{
-			Debug.LogError("Failed to register for LaserPlugin - " + hashKey);
-		}
+		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
 	}
 
 	protected override void OnStart()
 	{
-		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
+		var hashKey = MakeHashKey(partName);
+		if (!RegisterTxDevice(hashKey))
+		{
+			Debug.LogError("Failed to register for LaserPlugin - " + hashKey);
+		}
 
 		AddThread(Sender);
 	}

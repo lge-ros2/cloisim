@@ -25,8 +25,8 @@ public partial class SDFImplement
 				return;
 			}
 
-			Dictionary<string, Material> materialTable = new Dictionary<string, Material>();
-			Dictionary<string, HashSet<MeshFilter>> meshfilterTable = new Dictionary<string, HashSet<MeshFilter>>();
+			var materialTable = new Dictionary<string, Material>();
+			var meshfilterTable = new Dictionary<string, HashSet<MeshFilter>>();
 
 			foreach (var meshFilter in meshFilters)
 			{
@@ -91,7 +91,7 @@ public partial class SDFImplement
 
 		private static Mesh MergeMeshes(in MeshFilter[] mehsFilters)
 		{
-			CombineInstance[] combine = new CombineInstance[mehsFilters.Length];
+			var combine = new CombineInstance[mehsFilters.Length];
 
 			int combineIndex = 0;
 			foreach (var meshFilter in mehsFilters)

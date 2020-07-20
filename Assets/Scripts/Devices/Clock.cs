@@ -6,14 +6,19 @@
 
 using System.Collections;
 using UnityEngine;
+using messages = gazebo.msgs;
 
 public class Clock : Device
 {
 	private const float updateRate = 250f;
 
-	private gazebo.msgs.Param timeInfo = null;
-	private gazebo.msgs.Time simTime = null;
-	private gazebo.msgs.Time realTime = null;
+	private messages.Param timeInfo = null;
+	private messages.Time simTime = null;
+	private messages.Time realTime = null;
+
+	protected override void OnAwake()
+	{
+	}
 
 	protected override void OnStart()
 	{
@@ -21,27 +26,32 @@ public class Clock : Device
 		SetUpdateRate(updateRate);
 	}
 
+	protected override IEnumerator OnVisualize()
+	{
+		yield return null;
+	}
+
 	protected override void InitializeMessages()
 	{
-		simTime = new gazebo.msgs.Time();
-		realTime = new gazebo.msgs.Time();
+		simTime = new messages.Time();
+		realTime = new messages.Time();
 
-		timeInfo = new gazebo.msgs.Param();
+		timeInfo = new messages.Param();
 		timeInfo.Name = "timeInfo";
-		timeInfo.Value = new gazebo.msgs.Any();
-		timeInfo.Value.Type = gazebo.msgs.Any.ValueType.None;
+		timeInfo.Value = new messages.Any();
+		timeInfo.Value.Type = messages.Any.ValueType.None;
 
-		gazebo.msgs.Param simTimeParam = new gazebo.msgs.Param();
+		var simTimeParam = new messages.Param();
 		simTimeParam.Name = "simTime";
-		simTimeParam.Value = new gazebo.msgs.Any();
-		simTimeParam.Value.Type = gazebo.msgs.Any.ValueType.Time;
+		simTimeParam.Value = new messages.Any();
+		simTimeParam.Value.Type = messages.Any.ValueType.Time;
 		simTimeParam.Value.TimeValue = simTime;
 		timeInfo.Childrens.Add(simTimeParam);
 
-		gazebo.msgs.Param realTimeParam = new gazebo.msgs.Param();
+		var realTimeParam = new messages.Param();
 		realTimeParam.Name = "realTime";
-		realTimeParam.Value = new gazebo.msgs.Any();
-		realTimeParam.Value.Type = gazebo.msgs.Any.ValueType.Time;
+		realTimeParam.Value = new messages.Any();
+		realTimeParam.Value.Type = messages.Any.ValueType.Time;
 		realTimeParam.Value.TimeValue = realTime;
 		timeInfo.Childrens.Add(realTimeParam);
 	}
@@ -62,7 +72,7 @@ public class Clock : Device
 		{
 			DeviceHelper.SetCurrentTime(simTime, false);
 			DeviceHelper.SetCurrentTime(realTime, true);
-			PushData<gazebo.msgs.Param>(timeInfo);
+			PushData<messages.Param>(timeInfo);
 		}
 	}
 }

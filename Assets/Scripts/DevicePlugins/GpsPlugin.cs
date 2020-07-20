@@ -9,24 +9,22 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class GpsPlugin : DevicePlugin
 {
-	public string partName = string.Empty;
-
 	private SensorDevices.GPS gps = null;
 
 	protected override void OnAwake()
 	{
-		partName = DeviceHelper.GetPartName(gameObject);
-
-		string hashKey = MakeHashKey(partName);
-		if (!RegisterTxDevice(hashKey))
-		{
-			Debug.LogError("Failed to register for GpsPlugin - " + hashKey);
-		}
+		gps = gameObject.GetComponent<SensorDevices.GPS>();
 	}
 
 	protected override void OnStart()
 	{
-		gps = gameObject.GetComponent<SensorDevices.GPS>();
+		partName = DeviceHelper.GetPartName(gameObject);
+
+		var hashKey = MakeHashKey(partName);
+		if (!RegisterTxDevice(hashKey))
+		{
+			Debug.LogError("Failed to register for GpsPlugin - " + hashKey);
+		}
 
 		AddThread(Sender);
 	}
