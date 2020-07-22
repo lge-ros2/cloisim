@@ -5,7 +5,6 @@
  */
 
 using System.IO;
-using System.Text;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 using ProtoBuf;
@@ -43,6 +42,11 @@ public class CameraPlugin : DevicePlugin
 		AddThread(Sender);
 	}
 
+	void OnDestroy()
+	{
+		memoryStreamForCameraInfo.Dispose();
+	}
+
 	private void Sender()
 	{
 		Stopwatch sw = new Stopwatch();
@@ -67,19 +71,37 @@ public class CameraPlugin : DevicePlugin
 		{
 			var receivedBuffer = ReceiveRequest();
 
-			var receivedString = Encoding.UTF8.GetString(receivedBuffer, 0, receivedBuffer.Length);
+			var requestMessage = ParsingCameraInfoRequest(ref memoryStreamForCameraInfo, receivedBuffer);
 
 			// Debug.Log(subPartName + receivedString);
-			if (receivedBuffer != null && receivedString.Equals("request_camera_info"))
+			if (requestMessage != null && requestMessage.Name.Equals("request_camera_info"))
 			{
 				var cameraInfoMessage = cam.GetCameraInfo();
 
-				ClearMemoryStream(ref memoryStreamForCameraInfo);
-
-				Serializer.Serialize<messages.CameraSensor>(memoryStreamForCameraInfo, cameraInfoMessage);
+				SetCameraInfoResponse(ref memoryStreamForCameraInfo, cameraInfoMessage);
 
 				SendResponse(memoryStreamForCameraInfo);
 			}
+		}
+	}
+
+	public static messages.Param ParsingCameraInfoRequest(ref MemoryStream msCameraInfo, in byte[] receivedBuffer)
+	{
+		ClearMemoryStream(ref msCameraInfo);
+
+		msCameraInfo.Write(receivedBuffer, 0, receivedBuffer.Length);
+		msCameraInfo.Position = 0;
+
+		return Serializer.Deserialize<messages.Param>(msCameraInfo);
+	}
+
+	public static void SetCameraInfoResponse(ref MemoryStream msCameraInfo,in messages.CameraSensor sensorInfo)
+	{
+		if (sensorInfo != null)
+		{
+			ClearMemoryStream(ref msCameraInfo);
+
+			Serializer.Serialize<messages.CameraSensor>(msCameraInfo, sensorInfo);
 		}
 	}
 }

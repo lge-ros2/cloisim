@@ -4,21 +4,29 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.IO;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class MultiCameraPlugin : DevicePlugin
 {
+	private MemoryStream memoryStreamForCameraInfo = null;
 	private SensorDevices.MultiCamera cam = null;
 
 	protected override void OnAwake()
 	{
+		memoryStreamForCameraInfo = new MemoryStream();
 		cam = gameObject.GetComponent<SensorDevices.MultiCamera>();
+		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
-		partName = DeviceHelper.GetPartName(gameObject);
+		var hashServiceKey = MakeHashKey(partName, "Info");
+		if (!RegisterServiceDevice(hashServiceKey))
+		{
+			Debug.LogError("Failed to register ElevatorSystem service - " + hashServiceKey);
+		}
 
 		var hashKey = MakeHashKey(partName);
 		if (!RegisterTxDevice(hashKey))
@@ -27,6 +35,12 @@ public class MultiCameraPlugin : DevicePlugin
 		}
 
 		AddThread(Sender);
+		AddThread(Response);
+	}
+
+	void OnDestroy()
+	{
+		memoryStreamForCameraInfo.Dispose();
 	}
 
 	private void Sender()
@@ -44,6 +58,30 @@ public class MultiCameraPlugin : DevicePlugin
 			Publish(datastreamToSend);
 			sw.Stop();
 			cam.SetTransportTime((float)sw.Elapsed.TotalSeconds);
+		}
+	}
+
+	private void Response()
+	{
+		while (true)
+		{
+			var receivedBuffer = ReceiveRequest();
+
+			var requestMessage = CameraPlugin.ParsingCameraInfoRequest(ref memoryStreamForCameraInfo, receivedBuffer);
+
+			if (requestMessage != null && requestMessage.Name.Equals("request_camera_info"))
+			{
+				var cameraName = requestMessage.Value.StringValue;
+
+				if (cameraName != null)
+				{
+					var cameraInfoMessage = cam.GetCameraInfo(cameraName);
+
+					CameraPlugin.SetCameraInfoResponse(ref memoryStreamForCameraInfo, cameraInfoMessage);
+				}
+
+				SendResponse(memoryStreamForCameraInfo);
+			}
 		}
 	}
 }

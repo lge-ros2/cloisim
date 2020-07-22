@@ -67,7 +67,7 @@ namespace SensorDevices
 			{
 				var image = images[index];
 				var imageData = cameras[index].GetCamImageData();
-				if (image.Data.Length == imageData.Length)
+				if (imageData != null && image.Data.Length == imageData.Length)
 				{
 					image.Data = imageData;
 				}
@@ -81,7 +81,7 @@ namespace SensorDevices
 		private void AddCamera(in SDF.Camera parameters)
 		{
 			var newCamObject = new GameObject();
-			newCamObject.name = "Camera::" + parameters.name;
+			newCamObject.name = parameters.name;
 
 			var newCamTransform = newCamObject.transform;
 			newCamTransform.position = Vector3.zero;
@@ -106,6 +106,32 @@ namespace SensorDevices
 			image.Step = image.Width * (uint)Camera.GetImageDepth(parameters.image_format);
 			image.Data = new byte[image.Height * image.Step];
 			imagesStamped.Images.Add(image);
+		}
+
+		public messages.CameraSensor GetCameraInfo(in string cameraName)
+		{
+			for (var index = 0; index < cameras.Count; index++)
+			{
+				if (cameras[index].deviceName.Equals(("MultiCamera::" + cameraName)))
+				{
+					return GetCameraInfo(index);
+				}
+			}
+
+			return null;
+		}
+
+		public messages.CameraSensor GetCameraInfo(in int cameraIndex)
+		{
+			if (cameraIndex < cameras.Count)
+			{
+				return cameras[cameraIndex].GetCameraInfo();
+			}
+			else
+			{
+				Debug.LogWarning("unavailable camera index: " + cameraIndex);
+				return null;
+			}
 		}
 	}
 }
