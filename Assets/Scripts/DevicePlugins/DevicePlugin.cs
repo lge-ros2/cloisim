@@ -197,7 +197,7 @@ public abstract class DevicePlugin : DeviceTransporter, IDevicePlugin
 		OnReset();
 	}
 
-	protected void ClearMemoryStream(ref MemoryStream ms)
+	protected static void ClearMemoryStream(ref MemoryStream ms)
 	{
 		if (ms != null)
 		{
