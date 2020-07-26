@@ -188,7 +188,6 @@ namespace SensorDevices
 
 				readback.WaitForCompletion();
 
-
 				if (readback.hasError)
 				{
 					Debug.LogError("Failed to read GPU texture");

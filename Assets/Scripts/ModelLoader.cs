@@ -30,8 +30,9 @@ public class ModelLoader : MonoBehaviour
 	public string worldFileName;
 
 	private string filesRootDirectory = string.Empty;
-	private List<string> modelRootDirectories;
-	private List<string> worldRootDirectories;
+
+	public List<string> modelRootDirectories;
+	public List<string> worldRootDirectories;
 
 	private GameObject modelsRoot = null;
 
@@ -74,6 +75,8 @@ public class ModelLoader : MonoBehaviour
  		filesRootDirectory = "/usr/share/gazebo-9/";
 		modelRootDirectories.Add("../sample-resources/models/");
 		worldRootDirectories.Add("../sample-resources/worlds/");
+		// modelRootDirectories.Add("../../lgrs_resource/assets/models/");
+		// worldRootDirectories.Add("../../lgrs_resource/worlds/");
 #else
 		var separator = new char[] {':'};
 		filesRootDirectory = Environment.GetEnvironmentVariable("CLOISIM_FILES_PATH");
