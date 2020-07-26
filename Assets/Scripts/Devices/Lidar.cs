@@ -60,8 +60,6 @@ namespace SensorDevices
 
 		private LaserCamData[] laserCamData;
 
-		public float adjustWaitingPeriod = 0.80f;
-
 		void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
 			if (depthMaterial)
@@ -189,7 +187,8 @@ namespace SensorDevices
 		private IEnumerator LaserCameraWorker()
 		{
 			var axisRotation = Vector3.zero;
-			var waitForSeconds = new WaitForSeconds(UpdatePeriod * adjustWaitingPeriod);
+			var waitForSeconds = new WaitForSeconds(UpdatePeriod * adjustCapturingRate);
+			var readbacks = new AsyncGPUReadbackRequest[numberOfLaserCamData];
 
 			while (true)
 			{
@@ -204,20 +203,34 @@ namespace SensorDevices
 
 					laserCam.Render();
 
-					var readback = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32);
-
-					yield return new WaitUntil(() => readback.done);
+					readbacks[dataIndex] = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32);
 
 					laserCam.enabled = false;
+				}
+
+				yield return null;
+
+				for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
+				{
+					var readback = readbacks[dataIndex];
+					readback.WaitForCompletion();
 
 					if (readback.hasError)
 					{
-						Debug.LogError("Failed to read GPU texture");
+						Debug.LogError("Failed to read GPU texture, dataIndex: " + dataIndex);
 						continue;
 					}
 					// Debug.Assert(readback.done);
 
-					data.SetBufferData(readback.GetData<byte>());
+					if (readback.done)
+					{
+						var data = laserCamData[dataIndex];
+						data.SetBufferData(readback.GetData<byte>());
+					}
+					else
+					{
+						Debug.LogWarning("AsyncGPUReadBackback Request was failed, dataIndex: " + dataIndex);
+					}
 				}
 
 				yield return waitForSeconds;
@@ -226,7 +239,7 @@ namespace SensorDevices
 
 		protected override IEnumerator MainDeviceWorker()
 		{
-			var waitForSeconds = new WaitForSeconds(UpdatePeriod * adjustWaitingPeriod);
+			var waitForSeconds = new WaitForSeconds(UpdatePeriod * adjustCapturingRate);
 			var sw = new Stopwatch();
 			while (true)
 			{

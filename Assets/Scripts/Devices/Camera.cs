@@ -28,8 +28,6 @@ namespace SensorDevices
 
 		protected UnityEngine.Camera cam = null;
 
-		public float adjustCapturingRate = 0.95f;
-
 		public bool runningDeviceWork = true;
 
 		protected string targetRTname;
@@ -184,10 +182,12 @@ namespace SensorDevices
 				cam.Render();
 
 				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, readbackDstFormat);
-
-				yield return new WaitUntil(() => readback.done);
-
 				cam.enabled = false;
+
+				yield return null;
+
+				readback.WaitForCompletion();
+
 
 				if (readback.hasError)
 				{
@@ -196,13 +196,16 @@ namespace SensorDevices
 				}
 				// Debug.Assert(request.done);
 
-				camData.SetTextureData(readback.GetData<byte>());
-
-				if (parameters.save_enabled)
+				if (readback.done)
 				{
-					var saveName = name + "_" + Time.time;
-					camData.SaveRawImageData(parameters.save_path, saveName);
-					// Debug.LogFormat("{0}|{1} captured", parameters.save_path, saveName);
+					camData.SetTextureData(readback.GetData<byte>());
+
+					if (parameters.save_enabled)
+					{
+						var saveName = name + "_" + Time.time;
+						camData.SaveRawImageData(parameters.save_path, saveName);
+						// Debug.LogFormat("{0}|{1} captured", parameters.save_path, saveName);
+					}
 				}
 
 				yield return waitForSeconds;

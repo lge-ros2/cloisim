@@ -29,6 +29,8 @@ public abstract class Device : MonoBehaviour
 
 	private float transportingTimeSeconds = 0;
 
+	public float adjustCapturingRate = 0.85f;
+
 	void OnDestroy()
 	{
 		if (memoryStreamOutboundQueue.IsCompleted)
