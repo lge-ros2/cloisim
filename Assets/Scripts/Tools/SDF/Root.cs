@@ -292,9 +292,13 @@ namespace SDF
 			{
 				uri = value.Item1 + "/" + value.Item2;
 			}
+			else
+			{
+				Console.WriteLine("Not exists in database: " + uri);
+				return null;
+			}
 
 			var modelSdfDoc = new XmlDocument();
-
 			try
 			{
 				modelSdfDoc.Load(uri);

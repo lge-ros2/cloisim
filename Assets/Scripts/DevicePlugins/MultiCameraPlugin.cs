@@ -45,7 +45,7 @@ public class MultiCameraPlugin : DevicePlugin
 
 	private void Sender()
 	{
-		Stopwatch sw = new Stopwatch();
+		var sw = new Stopwatch();
 		while (true)
 		{
 			if (cam == null)

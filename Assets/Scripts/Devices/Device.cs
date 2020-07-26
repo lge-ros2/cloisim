@@ -29,6 +29,8 @@ public abstract class Device : MonoBehaviour
 
 	private float transportingTimeSeconds = 0;
 
+	public float adjustCapturingRate = 0.85f;
+
 	void OnDestroy()
 	{
 		if (memoryStreamOutboundQueue.IsCompleted)
@@ -40,8 +42,6 @@ public abstract class Device : MonoBehaviour
 	public float UpdateRate => updateRate;
 
 	public float UpdatePeriod => 1f/updateRate;
-
-	public int UpdatePeriodInMillisecond => (int)(UpdatePeriod * SEC2MSEC);
 
 	public float TransportingTime => transportingTimeSeconds;
 
@@ -211,18 +211,12 @@ public abstract class Device : MonoBehaviour
 
 	public MemoryStream PopData()
 	{
-		if (memoryStreamOutboundQueue == null)
+		if (memoryStreamOutboundQueue == null || memoryStreamOutboundQueue.Count == 0)
 		{
 			return null;
 		}
 
-		if (memoryStreamOutboundQueue.TryTake(out var item, UpdatePeriodInMillisecond))
-		{
-			return item;
-		}
-		else
-		{
-			return null;
-		}
+		var item = memoryStreamOutboundQueue.Take();
+		return item;
 	}
 }
