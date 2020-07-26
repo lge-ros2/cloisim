@@ -32,7 +32,6 @@ namespace SDF
 
 		protected override void ParseElements()
 		{
-
 			if (IsValidNode("box"))
 			{
 				Type = "box";
@@ -82,6 +81,7 @@ namespace SDF
 					 IsValidNode("polyline"))
 			{
 				Console.WriteLine("Currently not supported");
+				empty = true;
 			}
 			else if (IsValidNode("empty"))
 			{
@@ -102,17 +102,29 @@ namespace SDF
 		public Type GetShapeType()
 		{
 			if (Type.Equals("box"))
+			{
 				return typeof(Box);
+			}
 			else if (Type.Equals("mesh"))
+			{
 				return typeof(Mesh);
+			}
 			else if (Type.Equals("sphere"))
+			{
 				return typeof(Sphere);
+			}
 			else if (Type.Equals("cylinder"))
+			{
 				return typeof(Cylinder);
+			}
 			else if (Type.Equals("plane"))
+			{
 				return typeof(Plane);
+			}
 			else
+			{
 				return null;
+			}
 		}
 	}
 }

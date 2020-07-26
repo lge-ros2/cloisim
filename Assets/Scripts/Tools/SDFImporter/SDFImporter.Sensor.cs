@@ -21,7 +21,7 @@ public partial class SDFImporter : SDF.Importer
 
 		var sensorType = item.Type;
 
-		if (sensorType.Equals("ray") || sensorType.Equals("gpu_ray"))
+		if (sensorType.Equals("lidar") || sensorType.Equals("ray") || sensorType.Equals("gpu_ray"))
 		{
 			var ray = item.GetSensor() as SDF.Ray;
 			sensor = SDFImplement.Sensor.AddLidar(ray, targetObject);
@@ -56,7 +56,8 @@ public partial class SDFImporter : SDF.Importer
 			var gps = item.GetSensor() as SDF.GPS;
 			sensor = SDFImplement.Sensor.AddGps(gps, targetObject);
 		}
-		else if (sensorType.Equals("altimeter") || sensorType.Equals("contact") ||
+		else if (sensorType.Equals("air_pressure") ||
+				 sensorType.Equals("altimeter") || sensorType.Equals("contact") ||
 				 sensorType.Equals("force_torque") ||
 				 sensorType.Equals("logical_camera") || sensorType.Equals("magnetometer") ||
 				 sensorType.Equals("rfidtag") ||
