@@ -136,6 +136,8 @@ namespace SensorDevices
 
 			cam.allowHDR = true;
 			cam.allowMSAA = false;
+			cam.allowDynamicResolution = true;
+			cam.useOcclusionCulling = true;
 			cam.targetDisplay = 0;
 			cam.stereoTargetEye = StereoTargetEyeMask.None;
 
