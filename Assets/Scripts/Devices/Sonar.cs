@@ -27,11 +27,11 @@ namespace SensorDevices
 		[Range(0, 100)]
 		public double radius = 0;
 
+		public Vector3 sensorStartPoint = Vector3.zero;
+
 		public double detectedDistance = 0;
 
 		private List<Vector3> meshSensorRegionVertices = new List<Vector3>();
-
-		private float sensorTimeElapsed = 0.0f;
 
 		private Transform sonarLink = null;
 
@@ -41,12 +41,13 @@ namespace SensorDevices
 		{
 			deviceName = name;
 			sonarLink = transform.parent;
+			adjustCapturingRate = 0.95f;
 		}
 
 		protected override void OnStart()
 		{
 			var visualMesh = sonarLink.GetComponentInChildren<MeshFilter>();
-			sensorStartOffset = (visualMesh == null)? 0f:visualMesh.sharedMesh.bounds.max.y;
+			sensorStartOffset = (visualMesh == null) ? 0f : visualMesh.sharedMesh.bounds.max.y;
 
 			// Create a new sensing area
 			var meshCollider = gameObject.AddComponent<MeshCollider>();
@@ -64,7 +65,7 @@ namespace SensorDevices
 				sensorMeshOffset = (float)rangeMax/2;
 			}
 
-			TranslateDetectionArea(mesh, 0.001f + sensorStartOffset + sensorMeshOffset);
+			TranslateDetectionArea(mesh, 0.0005f + sensorStartOffset + sensorMeshOffset);
 
 			meshCollider.sharedMesh = mesh;
 			meshCollider.convex = true;
@@ -82,13 +83,10 @@ namespace SensorDevices
 		{
 			const float visualUpdatePeriod = 0.01f;
 			const float visualDrawDuration = visualUpdatePeriod * 1.01f;
-			var sensorStartPoint = Vector3.zero;
 			var waitForSeconds = new WaitForSeconds(visualUpdatePeriod);
 
 			while (true)
 			{
-				sensorStartPoint.Set(sonarLink.position.x, sonarLink.position.y, sonarLink.position.z - sensorStartOffset);
-
 				var direction = (GetDetectedPoint() - sensorStartPoint).normalized;
 				var detectedRange = GetDetectedRange();
 
@@ -134,11 +132,11 @@ namespace SensorDevices
 		{
 			var sonarPosition = sonarLink.position;
 			var sonarRotation = sonarLink.rotation;
+
 			var sonar = sonarStamped.Sonar;
 			sonar.Frame = deviceName;
 			DeviceHelper.SetVector3d(sonar.WorldPose.Position, sonarPosition);
 			DeviceHelper.SetQuaternion(sonar.WorldPose.Orientation, sonarRotation);
-
 			DeviceHelper.SetCurrentTime(sonarStamped.Time);
 			SetMessageData<messages.SonarStamped>(sonarStamped);
 		}
@@ -146,7 +144,6 @@ namespace SensorDevices
 		private void ResolveSensingArea(in MeshCollider meshCollider)
 		{
 			// preserve the vertex points of the sensing area
-			var localToWorld = sonarLink.localToWorldMatrix;
 			for (var i = 0; i < meshCollider.sharedMesh.vertices.Length; i++)
 			{
 				var targetPoint = meshCollider.sharedMesh.vertices[i];
@@ -171,6 +168,8 @@ namespace SensorDevices
 			mesh.vertices = vertices;
 		}
 
+		private float sensorTimeElapsed = 0.0f;
+
 		void OnTriggerStay(Collider other)
 		{
 			if (meshSensorRegionVertices.Count == 0)
@@ -182,17 +181,18 @@ namespace SensorDevices
 			{
 				return;
 			}
-
-			sensorTimeElapsed = 0.0f;
-
-			var sonar = sonarStamped.Sonar;
-			var sensorStartPoint = sonarLink.position;
-			sensorStartPoint.z -= sensorStartOffset;
+			else
+			{
+				sensorTimeElapsed = 0.0f;
+			}
 
 			var detectedRange = (float)rangeMax;
 			var contactPoint = Vector3.zero;
 			var contactDirection = Vector3.zero;
 			var localToWorld = sonarLink.localToWorldMatrix;
+
+			sensorStartPoint.Set(0, -sensorStartOffset, 0);
+			sensorStartPoint = localToWorld.MultiplyPoint3x4(sensorStartPoint);
 
 			// Debug.Log("Hit Points: " + meshSensorRegionVertices.Count);
 			for (var i = 0; i < meshSensorRegionVertices.Count; i++)
@@ -202,7 +202,7 @@ namespace SensorDevices
 
 				if (Physics.Raycast(sensorStartPoint, direction, out var hitInfo))
 				{
-					// Debug.DrawRay(sensorStartPoint, direction, Color.magenta, 0.01f);
+					Debug.DrawRay(sensorStartPoint, direction, Color.magenta, 0.01f);
 					// Debug.Log("Hit Point of contact: " + hitInfo.point);
 					var hitPoint = hitInfo.point;
 					var hitDistance = Vector3.Distance(sensorStartPoint, hitPoint);
@@ -218,6 +218,7 @@ namespace SensorDevices
 			}
 
 			detectedDistance = detectedRange;
+			var sonar = sonarStamped.Sonar;
 			sonar.Range = detectedRange;
 			DeviceHelper.SetVector3d(sonar.Contact, contactPoint);
 			// Debug.Log(other.name + " |Stay| " + "," + detectedRange.ToString("F5") + ", " + contactPoint);
