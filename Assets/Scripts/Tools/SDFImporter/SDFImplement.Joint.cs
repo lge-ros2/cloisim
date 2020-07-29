@@ -13,12 +13,31 @@ public partial class SDFImplement
 {
 	public class Joint
 	{
-		private static Vector3 GetAxis(SDF.Vector3<int> value)
+		private static Vector3 GetAxis(SDF.Vector3<int> value, SDF.Quaternion<double> rot = null)
 		{
-			Vector3 pos = new Vector3();
+			var pos = new Vector3();
 			pos.x = -value.X;
 			pos.y = -value.Z;
 			pos.z = -value.Y;
+
+			if (rot != null)
+			{
+				if (pos.x != 0)
+				{
+					pos.y = pos.x * Mathf.Sin((float)rot.Pitch);
+					pos.z = pos.x * Mathf.Sin((float)rot.Yaw);
+				}
+				else if (pos.y != 0)
+				{
+					pos.x = pos.y * Mathf.Sin((float)rot.Roll);
+					pos.z = pos.y * Mathf.Sin((float)rot.Yaw);
+				}
+				else if (pos.z != 0)
+				{
+					pos.x = pos.z * Mathf.Sin((float)rot.Roll);
+					pos.y = pos.z * Mathf.Sin((float)rot.Pitch);
+				}
+			}
 			return pos;
 		}
 
@@ -38,7 +57,7 @@ public partial class SDFImplement
 
 			if (jointInfo.UseLimit())
 			{
-				JointLimits jointLimits = new JointLimits();
+				var jointLimits = new JointLimits();
 				jointLimits.min = (float)jointInfo.limit_lower * Mathf.Rad2Deg;
 				jointLimits.max = (float)jointInfo.limit_upper * Mathf.Rad2Deg;
 				hingeJointComponent.useLimits = true;
@@ -100,12 +119,12 @@ public partial class SDFImplement
 			return jointComponent;
 		}
 
-		public static UEJoint AddPrismatic(in SDF.Axis jointInfo, in GameObject targetObject, in Rigidbody connectBody)
+		public static UEJoint AddPrismatic(in SDF.Axis jointInfo, in SDF.Pose<double> pose, in GameObject targetObject, in Rigidbody connectBody)
 		{
 			var jointComponent = targetObject.AddComponent<ConfigurableJoint>();
 			jointComponent.connectedBody = connectBody;
 			jointComponent.secondaryAxis = Vector3.zero;
-			jointComponent.axis = GetAxis(jointInfo.xyz);
+			jointComponent.axis = GetAxis(jointInfo.xyz, pose.Rot);
 
 			var configurableJointMotion = ConfigurableJointMotion.Free;
 
@@ -158,16 +177,16 @@ public partial class SDFImplement
 			return jointComponent;
 		}
 
-		public static void SetCommonConfiguration(UEJoint jointComponent, in GameObject linkObject)
+		public static void SetCommonConfiguration(UEJoint jointComponent, in SDF.Vector3<double> jointPosition,  in GameObject linkObject)
 		{
 			var linkTransform = linkObject.transform;
 
-			jointComponent.anchor = Vector3.zero;
+			jointComponent.anchor = SDF2Unity.GetPosition(jointPosition);
 			jointComponent.autoConfigureConnectedAnchor = false;
 
 			if (jointComponent.autoConfigureConnectedAnchor == false)
 			{
-				var connectedAnchor = new Vector3();
+				var connectedAnchor = Vector3.zero;
 				var connectedBody = jointComponent.connectedBody;
 
 				var modelObject = linkTransform.parent;
@@ -178,7 +197,7 @@ public partial class SDFImplement
 				if (Array.Exists(childRigidBodies, element => element == connectedBody))
 				{
 					// Debug.Log("Sibling connected!!!: " + linkTransform.name);
-					connectedAnchor = linkTransform.localPosition;
+					connectedAnchor = SDF2Unity.GetPosition(jointPosition) + linkTransform.localPosition;
 				}
 				else
 				{
@@ -213,7 +232,6 @@ public partial class SDFImplement
 					connectedAnchor = finalAnchor;
 				}
 
-				// Debug.LogFormat("JointObject({0}) connectedAnchor: " + connectedAnchor.ToString("F4"), linkObject.name);
 				jointComponent.connectedAnchor = connectedAnchor;
 			}
 

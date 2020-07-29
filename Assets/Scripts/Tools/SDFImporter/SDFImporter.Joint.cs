@@ -49,8 +49,8 @@ public partial class SDFImporter : SDF.Importer
 
 		var transformParent = (parentObject as GameObject).transform;
 
-		GameObject linkObjectParent = FindObjectByName(linkNameParent, transformParent);
-		GameObject linkObjectChild = FindObjectByName(linkNameChild, transformParent);
+		var linkObjectParent = FindObjectByName(linkNameParent, transformParent);
+		var linkObjectChild = FindObjectByName(linkNameChild, transformParent);
 
 		if (linkObjectChild is null || linkObjectParent is null)
 		{
@@ -76,7 +76,7 @@ public partial class SDFImporter : SDF.Importer
 		}
 		else if (joint.Type.Equals("prismatic"))
 		{
-			var prismaticJointComponent = SDFImplement.Joint.AddPrismatic(joint.Axis, linkObjectChild, rigidBodyParent);
+			var prismaticJointComponent = SDFImplement.Joint.AddPrismatic(joint.Axis, joint.Pose, linkObjectChild, rigidBodyParent);
 			jointComponent = prismaticJointComponent as Joint;
 		}
 		else if (joint.Type.Equals("revolute"))
@@ -112,7 +112,7 @@ public partial class SDFImporter : SDF.Importer
 
 		if (jointComponent != null)
 		{
-			SDFImplement.Joint.SetCommonConfiguration(jointComponent, linkObjectChild);
+			SDFImplement.Joint.SetCommonConfiguration(jointComponent, joint.Pose.Pos, linkObjectChild);
 		}
 	}
 }

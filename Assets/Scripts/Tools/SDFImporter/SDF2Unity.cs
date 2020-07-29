@@ -9,7 +9,7 @@ public class SDF2Unity
 {
 	public static Vector3 GetPosition(double x, double y, double z)
 	{
-		Vector3 pos = new Vector3();
+		var pos = new Vector3();
 		pos.x = (float)x;
 		pos.y = (float)z;
 		pos.z = (float)y;
@@ -19,7 +19,7 @@ public class SDF2Unity
 
 	public static Vector3 GetPosition(SDF.Vector3<double> value)
 	{
-		Vector3 pos = new Vector3();
+		var pos = new Vector3();
 		pos.x = (float)(value.X);
 		pos.y = (float)(value.Z);
 		pos.z = (float)(value.Y);
@@ -43,7 +43,7 @@ public class SDF2Unity
 
 	public static Vector3 GetScale(double radius)
 	{
-		Vector3 pos = new Vector3();
+		var pos = new Vector3();
 		pos.x = (float)(radius);// * 2.0f;
 		pos.y = pos.x;
 		pos.z = pos.y;
@@ -52,7 +52,7 @@ public class SDF2Unity
 
 	public static void LoadObjMesh(in GameObject targetObject, in string objPath, in string mtlPath)
 	{
-		GameObject loadedObject = new Dummiesman.OBJLoader().Load(objPath, mtlPath);
+		var loadedObject = new Dummiesman.OBJLoader().Load(objPath, mtlPath);
 
 		var meshRotation = new Vector3(90f, 180f, 0f);
 		foreach (var meshFilter in loadedObject.GetComponentsInChildren<MeshFilter>())
@@ -74,7 +74,7 @@ public class SDF2Unity
 	{
 		const string commonShader = "Standard (Specular setup)";
 
-		Mesh[] multipleMesh = Parabox.Stl.Importer.Import(objPath, Parabox.Stl.CoordinateSpace.Right, Parabox.Stl.UpAxis.Z, true);
+		var multipleMesh = Parabox.Stl.Importer.Import(objPath, Parabox.Stl.CoordinateSpace.Right, Parabox.Stl.UpAxis.Z, true);
 
 		var meshRotation = new Vector3(0.0f, 90.0f, 0.0f);
 		for (int i = 0; i < multipleMesh.Length; i++)
