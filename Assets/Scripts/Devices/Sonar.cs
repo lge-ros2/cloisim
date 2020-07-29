@@ -202,7 +202,7 @@ namespace SensorDevices
 
 				if (Physics.Raycast(sensorStartPoint, direction, out var hitInfo))
 				{
-					Debug.DrawRay(sensorStartPoint, direction, Color.magenta, 0.01f);
+					// Debug.DrawRay(sensorStartPoint, direction, Color.magenta, 0.01f);
 					// Debug.Log("Hit Point of contact: " + hitInfo.point);
 					var hitPoint = hitInfo.point;
 					var hitDistance = Vector3.Distance(sensorStartPoint, hitPoint);
