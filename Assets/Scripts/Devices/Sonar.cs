@@ -81,18 +81,16 @@ namespace SensorDevices
 
 		protected override IEnumerator OnVisualize()
 		{
-			const float visualUpdatePeriod = 0.01f;
-			const float visualDrawDuration = visualUpdatePeriod * 1.01f;
-			var waitForSeconds = new WaitForSeconds(visualUpdatePeriod);
+			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 
 			while (true)
 			{
 				var direction = (GetDetectedPoint() - sensorStartPoint).normalized;
 				var detectedRange = GetDetectedRange();
 
-				if (detectedRange < rangeMax && !direction.Equals(Vector3.zero))
+				if (detectedRange <= rangeMax && !direction.Equals(Vector3.zero))
 				{
-					Debug.DrawRay(sensorStartPoint, direction * detectedRange, Color.blue, visualDrawDuration);
+					Debug.DrawRay(sensorStartPoint, direction * detectedRange, Color.blue, UpdatePeriod);
 				}
 				yield return waitForSeconds;
 			}
@@ -203,7 +201,8 @@ namespace SensorDevices
 				if (Physics.Raycast(sensorStartPoint, direction, out var hitInfo))
 				{
 					// Debug.DrawRay(sensorStartPoint, direction, Color.magenta, 0.01f);
-					// Debug.Log("Hit Point of contact: " + hitInfo.point);
+
+					// Debug.Log("Hit Point of contact: " + hitInfo.point + " | " + sensorStartPoint.ToString("F4"));
 					var hitPoint = hitInfo.point;
 					var hitDistance = Vector3.Distance(sensorStartPoint, hitPoint);
 
