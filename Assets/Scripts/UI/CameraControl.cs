@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
- 
+
 using UnityEngine;
 
 public class CameraControl : MonoBehaviour
@@ -24,8 +24,15 @@ public class CameraControl : MonoBehaviour
 	public float shiftAdd = 20.0f; //multiplied by how long shift is held.  Basically running
 	public float maxShift = 50.0f; //Maximum speed when holding shift
 	public float camSens = 0.1f; //How sensitive it with mouse
+	public float edgeWidth = 100.0f;
+	public float edgeSens = 0.02f;
+	public float edgeSensMax = 1.0f;
+
 	private Vector3 lastMouse = new Vector3(255, 255, 255); //kind of in the middle of the screen, rather than at the top (play)
 	private float totalRun = 1.0f;
+	private float edgeSensAccumlated = 0.0f;
+
+	private Vector3 lastMousePrevious = Vector3.zero;
 
 	void LateUpdate()
 	{
@@ -36,13 +43,52 @@ public class CameraControl : MonoBehaviour
 
 		lastMouse = Input.mousePosition - lastMouse;
 		lastMouse.Set(-lastMouse.y * camSens, lastMouse.x * camSens, 0);
-		lastMouse.Set(transform.eulerAngles.x + lastMouse.x, transform.eulerAngles.y + lastMouse.y, 0);
+		lastMouse.Set(transform.eulerAngles.x + lastMouse.x, transform.eulerAngles.y + lastMouse.y , 0);
 
-		//Mouse  camera angle done.
-		if (Input.GetMouseButton(2))
+		//Mouse camera angle done.
+		if (Input.GetMouseButton(2) || Input.GetMouseButton(1))
 		{
-			// perspective move during the left click
-			transform.eulerAngles = lastMouse;
+			// perspective move during the right or wheel click
+			// Debug.Log(lastMouse.ToString("F4"));
+
+			if (edgeSensAccumlated < edgeSensMax)
+			{
+				edgeSensAccumlated += edgeSens;
+			}
+
+			if (Input.mousePosition.x < edgeWidth)
+			{
+				// Debug.Log("rotate camera left here");
+				lastMouse.y -= edgeSensAccumlated;
+				transform.eulerAngles = lastMouse;
+			}
+			else if (Input.mousePosition.x > Screen.width - edgeWidth)
+			{
+				// Debug.Log("rotate camera right here");
+				lastMouse.y += edgeSensAccumlated;
+				transform.eulerAngles = lastMouse;
+			}
+			else  if (Input.mousePosition.y < edgeWidth)
+			{
+				// Debug.Log("rotate camera down here");
+				lastMouse.x += edgeSensAccumlated;
+				transform.eulerAngles = lastMouse;
+			}
+			else if (Input.mousePosition.y > Screen.height - edgeWidth)
+			{
+				// Debug.Log("rotate camera up here");
+				lastMouse.x -= edgeSensAccumlated;
+				transform.eulerAngles = lastMouse;
+			}
+			else
+			{
+				edgeSensAccumlated = 0.0f;
+				transform.eulerAngles = lastMouse;
+			}
+		}
+		else
+		{
+			edgeSensAccumlated = 0.0f;
 		}
 
 		lastMouse = Input.mousePosition;
