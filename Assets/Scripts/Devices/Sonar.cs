@@ -81,10 +81,13 @@ namespace SensorDevices
 
 		protected override IEnumerator OnVisualize()
 		{
+			var waitForEndOfFrame = new WaitForEndOfFrame();
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 
 			while (true)
 			{
+				yield return waitForEndOfFrame;
+
 				var direction = (GetDetectedPoint() - sensorStartPoint).normalized;
 				var detectedRange = GetDetectedRange();
 
@@ -92,6 +95,7 @@ namespace SensorDevices
 				{
 					Debug.DrawRay(sensorStartPoint, direction * detectedRange, Color.blue, UpdatePeriod);
 				}
+
 				yield return waitForSeconds;
 			}
 		}
