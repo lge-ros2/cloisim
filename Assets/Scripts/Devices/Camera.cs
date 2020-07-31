@@ -228,6 +228,7 @@ namespace SensorDevices
 		{
 			var image = imageStamped.Image;
 			var imageData = camData.GetTextureData();
+
 			if (imageData != null && image.Data.Length == imageData.Length)
 			{
 				image.Data = imageData;
