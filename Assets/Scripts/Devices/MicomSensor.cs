@@ -220,8 +220,8 @@ public class MicomSensor : Device
 	{
 		var imu = micomSensorData.Imu;
 
-		if ((imuSensor == null) &&
-			(micomSensorData == null || imu == null) &&
+		if ((imuSensor == null) ||
+			(micomSensorData == null || imu == null) ||
 			(imu.Orientation == null || imu.AngularVelocity == null || imu.LinearAcceleration == null))
 		{
 			return;
