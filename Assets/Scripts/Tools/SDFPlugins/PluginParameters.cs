@@ -19,16 +19,6 @@ public class PluginParameters
 		parameters = node.SelectSingleNode(".");
 	}
 
-	private static T XmlNodeToValue<T>(in XmlNode node)
-	{
-		if (node == null)
-		{
-			return default(T);
-		}
-		var value = node.InnerXml.Trim();
-		return SDF.Entity.ConvertValueType<T>(value);
-	}
-
 	public T GetAttribute<T>(in string xpath, in string attributeName, in T defaultValue = default(T))
 	{
 		var node = parameters.SelectSingleNode(xpath);
@@ -56,7 +46,7 @@ public class PluginParameters
 		try
 		{
 			var node = parameters.SelectSingleNode(xpath);
-			return XmlNodeToValue<T>(node);
+			return SDF.Entity.ConvertXmlNodeToValue<T>(node);
 		}
 		catch (XmlException ex)
 		{
@@ -70,7 +60,7 @@ public class PluginParameters
 		valueList = null;
 
 		var result = GetValues(xpath, out var nodeList);
-		valueList = nodeList.ConvertAll(s => XmlNodeToValue<T>(s));
+		valueList = nodeList.ConvertAll(s => SDF.Entity.ConvertXmlNodeToValue<T>(s));
 
 		return result;
 	}
@@ -110,8 +100,8 @@ public class PluginParameters
 		else
 		{
 			// Print all SDF contents
-			StringWriter sw = new StringWriter();
-			XmlTextWriter xw = new XmlTextWriter(sw);
+			var sw = new StringWriter();
+			var xw = new XmlTextWriter(sw);
 			parameters.WriteTo(xw);
 			Debug.Log(sw.ToString());
 		}

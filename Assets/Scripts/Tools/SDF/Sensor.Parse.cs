@@ -22,7 +22,9 @@ namespace SDF
 				ray.horizontal.max_angle = GetValue<double>("ray/scan/horizontal/max_angle");
 
 				if (ray.horizontal.max_angle < ray.horizontal.min_angle)
+				{
 					Console.WriteLine("Must be greater or equal to min_angle");
+				}
 
 				if (IsValidNode("ray/scan/vertical"))
 				{
@@ -32,10 +34,14 @@ namespace SDF
 					ray.vertical.max_angle = GetValue<double>("ray/scan/vertical/max_angle");
 
 					if (ray.vertical.samples == 0)
+					{
 						Console.WriteLine("vertical sample cannot be zero");
+					}
 
 					if (ray.vertical.max_angle < ray.vertical.min_angle)
+					{
 						Console.WriteLine("Must be greater or equal to min_angle");
+					}
 				}
 			}
 
@@ -261,6 +267,20 @@ namespace SDF
 			}
 
 			return gps;
+		}
+
+		private Contact ParseContact()
+		{
+			var contact = new Contact();
+
+			if (GetValues<string>("contact/collision", out var collisionList))
+			{
+				contact.collision = collisionList;
+			}
+
+			contact.topic = GetValue<string>("contact/topic");
+
+			return contact;
 		}
 	}
 }

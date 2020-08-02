@@ -56,8 +56,12 @@ public partial class SDFImporter : SDF.Importer
 			var gps = item.GetSensor() as SDF.GPS;
 			sensor = SDFImplement.Sensor.AddGps(gps, targetObject);
 		}
-		else if (sensorType.Equals("air_pressure") ||
-				 sensorType.Equals("altimeter") || sensorType.Equals("contact") ||
+		else if (sensorType.Equals("contact"))
+		{
+			var contact = item.GetSensor() as SDF.Contact;
+			sensor = SDFImplement.Sensor.AddContact(contact, targetObject);
+		}
+		else if (sensorType.Equals("air_pressure") || sensorType.Equals("altimeter") ||
 				 sensorType.Equals("force_torque") ||
 				 sensorType.Equals("logical_camera") || sensorType.Equals("magnetometer") ||
 				 sensorType.Equals("rfidtag") ||
@@ -82,7 +86,8 @@ public partial class SDFImporter : SDF.Importer
 			{
 				newSensorObject.tag = "Sensor";
 				newSensorObject.name = item.Name;
-				SDFImplement.Sensor.TransformSensor(newSensorObject, item.Pose);
+				newSensorObject.transform.localPosition += SDF2Unity.GetPosition(item.Pose.Pos);
+                newSensorObject.transform.localRotation *= SDF2Unity.GetRotation(item.Pose.Rot);
 #if UNITY_EDITOR
 				SceneVisibilityManager.instance.ToggleVisibility(newSensorObject, true);
 				SceneVisibilityManager.instance.DisablePicking(newSensorObject, true);

@@ -5,6 +5,7 @@
  */
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 using System;
 
@@ -40,10 +41,10 @@ namespace SDF
 
 			//Console.WriteLine("Load {0} Info", typeof(T).Name);
 
-			XmlNodeList nodeList = node.SelectNodes(targetTag);
+			var nodeList = node.SelectNodes(targetTag);
 
 			// Console.WriteLine("Num Of model nodes: " + nodeList.Count);
-			foreach (XmlNode nodeItem in nodeList)
+			foreach (var nodeItem in nodeList)
 			{
 				//Console.WriteLine("     NAME: " + node.Attributes["name"].Value);
 				items.Add((T)Activator.CreateInstance(typeof(T), nodeItem));
@@ -124,6 +125,29 @@ namespace SDF
 			return GetValue<T>(GetNode(xpath), defaultValue);
 		}
 
+		protected bool GetValues<T>(in string xpath, out List<T> valueList)
+		{
+			var nodeList = new List<XmlNode>(GetNodes("contact/collision").Cast<XmlNode>());
+			if (nodeList == null)
+			{
+				valueList = null;
+				return false;
+			}
+
+			valueList = nodeList.ConvertAll(node =>
+			{
+				if (node == null)
+				{
+					return default(T);
+				}
+
+				var value = node.InnerXml.Trim();
+				return ConvertValueType<T>(value);
+			});
+
+			return true;
+		}
+
 		protected T GetAttribute<T>(in string attributeName, in T defaultValue = default(T))
 		{
 			var targetAttribute = attributes[attributeName];
@@ -185,7 +209,7 @@ namespace SDF
 			return (T)Convert.ChangeType(value, code);
 		}
 
-		private static T ConvertXmlNodeToValue<T>(in XmlNode node)
+		public static T ConvertXmlNodeToValue<T>(in XmlNode node)
 		{
 			if (node == null)
 			{

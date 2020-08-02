@@ -12,13 +12,13 @@ namespace SDF
 	{
 		private XmlNode root = null;
 
-		// ambient
-		// background
-		// sky
-		// shadows
-		// fog
-		// grid
-		// origin_visual
+		// <ambient> : TBD
+		// <background> : TBD
+		// <sky> : TBD
+		// <shadows> : TBD
+		// <fog> : TBD
+		// <grid> : TBD
+		// <origin_visual> : TBD
 
 		public Scene(XmlNode _node)
 		{
