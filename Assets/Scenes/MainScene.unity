@@ -3806,7 +3806,7 @@ MonoBehaviour:
   shiftAdd: 10
   maxShift: 100
   camSens: 0.25
-  edgeWidth: 100
+  edgeWidth: 30
   edgeSens: 0.05
   edgeSensMax: 1.7
 --- !u!20 &963194227
@@ -3929,12 +3929,8 @@ MonoBehaviour:
     m_Bits: 1
   SetMoveType: 116
   SetRotateType: 114
-  SetScaleType: 0
   SetAllTransformType: 121
   SetSpaceToggle: 120
-  SetPivotModeToggle: 0
-  SetCenterTypeToggle: 0
-  SetScaleTypeToggle: 0
   translationSnapping: 306
   AddSelection: 0
   RemoveSelection: 0
