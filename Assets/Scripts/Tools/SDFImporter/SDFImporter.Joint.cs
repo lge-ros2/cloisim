@@ -76,7 +76,7 @@ public partial class SDFImporter : SDF.Importer
 		}
 		else if (joint.Type.Equals("prismatic"))
 		{
-			var prismaticJointComponent = SDFImplement.Joint.AddPrismatic(joint.Axis, joint.Pose, linkObjectChild, rigidBodyParent);
+			var prismaticJointComponent = SDFImplement.Joint.AddPrismatic(joint.Axis, joint.OdePhysics, joint.Pose, linkObjectChild, rigidBodyParent);
 			jointComponent = prismaticJointComponent as Joint;
 		}
 		else if (joint.Type.Equals("revolute"))

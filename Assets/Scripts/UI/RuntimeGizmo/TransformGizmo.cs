@@ -66,7 +66,7 @@ namespace RuntimeGizmos
 		public KeyCode SetMoveType = KeyCode.T;
 		public KeyCode SetRotateType = KeyCode.R;
 		// public KeyCode SetScaleType = KeyCode.L;
-		//public KeyCode SetRectToolType = KeyCode.G;
+		// public KeyCode SetRectToolType = KeyCode.G;
 		public KeyCode SetAllTransformType = KeyCode.Y;
 		public KeyCode SetSpaceToggle = KeyCode.X;
 		// public KeyCode SetPivotModeToggle = KeyCode.Z;

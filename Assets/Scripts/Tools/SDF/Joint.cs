@@ -44,6 +44,11 @@ namespace SDF
 		}
 	}
 
+	public class OdePhysics
+	{
+		public double max_force = double.PositiveInfinity;
+	}
+
 	public class Joint : Entity
 	{
 		private string parent = string.Empty;
@@ -57,6 +62,8 @@ namespace SDF
 		private Axis axis2 = null; // for revolute2(second axis)/universal joints
 
 		// <physics> : TBD
+		private OdePhysics odePhysics = null;
+
 		// <sensor> : TBD, ???
 
 		public string ParentLinkName => parent;
@@ -66,9 +73,13 @@ namespace SDF
 		public Axis Axis => axis;
 		public Axis Axis2 => axis2;
 
+		public OdePhysics OdePhysics => odePhysics;
+
 		public Joint(XmlNode _node)
 			: base(_node)
 		{
+			odePhysics = new OdePhysics();
+
 			if (root != null)
 			{
 				ParseElements();
@@ -122,7 +133,14 @@ namespace SDF
 					axis2.limit_upper = GetValue<double>("axis2/limit/upper");
 				}
 			}
-		}
 
+			if (IsValidNode("physics/ode"))
+			{
+				if (IsValidNode("physics/ode/max_force"))
+				{
+					odePhysics.max_force = GetValue<double>("physics/ode/max_force");
+				}
+			}
+		}
 	}
 }
