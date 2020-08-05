@@ -83,7 +83,9 @@ namespace SDF
 					}
 					else
 					{
+						(Console.Out as DebugLogWriter).SetWarning(true);
 						Console.WriteLine("World file not exist: " + worldFileName);
+						(Console.Out as DebugLogWriter).SetWarning(false);
 					}
 				}
 			}
