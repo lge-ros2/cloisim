@@ -12,7 +12,7 @@ using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
-	public partial class Sonar : Device
+	public class Sonar : Device
 	{
 		private messages.SonarStamped sonarStamped = null;
 
@@ -140,7 +140,7 @@ namespace SensorDevices
 			DeviceHelper.SetVector3d(sonar.WorldPose.Position, sonarPosition);
 			DeviceHelper.SetQuaternion(sonar.WorldPose.Orientation, sonarRotation);
 			DeviceHelper.SetCurrentTime(sonarStamped.Time);
-			SetMessageData<messages.SonarStamped>(sonarStamped);
+			PushData<messages.SonarStamped>(sonarStamped);
 		}
 
 		private void ResolveSensingArea(in MeshCollider meshCollider)

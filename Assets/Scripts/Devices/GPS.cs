@@ -11,7 +11,7 @@ using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
-	public partial class GPS : Device
+	public class GPS : Device
 	{
 		private messages.Gps gps = null;
 
