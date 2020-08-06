@@ -46,10 +46,23 @@ public class RobotControl : DevicePlugin
 	{
 		if (micomInput != null && micomSensor != null)
 		{
-			var targetWheelVelocityLeft = micomInput.GetWheelVelocityLeft();
-			var targetWheelVelocityRight = micomInput.GetWheelVelocityRight();
+			switch (micomInput.ControlType)
+			{
+				case MicomInput.VelocityType.LinearAndAngular:
+					var targetLinearVelocityLeft = micomInput.GetLinearVelocity();
+					var targetAngularVelocityRight = micomInput.GetAngularVelocity();
+					micomSensor.SetTwistDrive(targetLinearVelocityLeft, targetAngularVelocityRight);
+					break;
 
-			micomSensor.SetMotorVelocity(targetWheelVelocityLeft, targetWheelVelocityRight);
+				case MicomInput.VelocityType.LeftAndRight:
+					var targetWheelLeftVelocity = micomInput.GetWheelLeftVelocity();
+					var targetWheelRightVelocity = micomInput.GetWheelRightVelocity();
+					micomSensor.SetDifferentialDrive(targetWheelLeftVelocity, targetWheelRightVelocity);
+					break;
+
+				case MicomInput.VelocityType.Unknown:
+					break;
+			}
 		}
 	}
 

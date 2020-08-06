@@ -23,7 +23,9 @@ public class MicomSensor : Device
 	// private List<SensorDevices.Magnet> magnetSensors = null;
 	// private List<SensorDevices.Switch> switchSensors = null;
 
-	public float wheelRadius = 0.0f; // in mether
+
+	private float wheelBase = 0.0f; // in meter
+	private float wheelRadius = 0.0f; // in meter
 	private float divideWheelRadius = 0.0f; // for computational performacne.
 
 	protected override void OnAwake()
@@ -50,7 +52,7 @@ public class MicomSensor : Device
 
 		var pidControl = new PID(kp, ki, kd);
 
-		var wheelBase = parameters.GetValue<float>("wheel/base") * MM2M;
+		wheelBase = parameters.GetValue<float>("wheel/base") * MM2M;
 		wheelRadius = parameters.GetValue<float>("wheel/radius") * MM2M;
 		divideWheelRadius = 1.0f/wheelRadius;
 
@@ -292,11 +294,29 @@ public class MicomSensor : Device
 		return false;
 	}
 
-	public void SetMotorVelocity(in float linearVelocityLeft, in float linearVelocityRight)
+
+	public void SetDifferentialDrive(in float linearVelocityLeft, in float linearVelocityRight)
 	{
 		var angularVelocityLeft = linearVelocityLeft * divideWheelRadius;
 		var angularVelocityRight = linearVelocityRight * divideWheelRadius;
 
+		SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
+	}
+
+	public void SetTwistDrive(in float linearVelocity, in float angularVelocity)
+	{
+		// m/s, deg/s
+		// var angularVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
+		// var angularVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
+		var angularCalculation = (angularVelocity * wheelBase * 0.5f);
+		var angularVelocityLeft = (linearVelocity - angularCalculation) * divideWheelRadius;
+		var angularVelocityRight = (linearVelocity + angularCalculation) * divideWheelRadius;
+
+		SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
+	}
+
+	private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)
+	{
 		if (motorLeft != null && motorRight != null)
 		{
 			motorLeft.SetVelocityTarget(angularVelocityLeft);
