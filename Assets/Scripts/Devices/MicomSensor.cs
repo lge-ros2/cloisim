@@ -17,11 +17,13 @@ public class MicomSensor : Device
 	private Motor motorLeft = null;
 	private Motor motorRight = null;
 
-	public SensorDevices.IMU imuSensor = null;
-	public List<SensorDevices.Sonar> ussSensors = null;
-	public List<SensorDevices.Sonar> irSensors = null;
+	private SensorDevices.IMU imuSensor = null;
+	private List<SensorDevices.Sonar> ussSensors = new List<SensorDevices.Sonar>();
+	private List<SensorDevices.Sonar> irSensors = new List<SensorDevices.Sonar>();
 	// private List<SensorDevices.Magnet> magnetSensors = null;
-	// private List<SensorDevices.Switch> switchSensors = null;
+
+	private SensorDevices.Contact bumperContact = null;
+	private List<ConfigurableJoint> bumperSensors = new List<ConfigurableJoint>();
 
 
 	private float wheelBase = 0.0f; // in meter
@@ -31,10 +33,6 @@ public class MicomSensor : Device
 	protected override void OnAwake()
 	{
 		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
-
-		ussSensors = new List<SensorDevices.Sonar>();
-		irSensors = new List<SensorDevices.Sonar>();
-
 		deviceName = "MicomSensor";
 	}
 
@@ -94,9 +92,9 @@ public class MicomSensor : Device
 
 		if (parameters.GetValues<string>("uss/sensor", out var ussList))
 		{
-			foreach (var model in modelList)
+			foreach (var uss in ussList)
 			{
-				foreach (var uss in ussList)
+				foreach (var model in modelList)
 				{
 					if (model.name.Equals(uss))
 					{
@@ -105,15 +103,15 @@ public class MicomSensor : Device
 						// Debug.Log("ussSensor found : " + sonarSensor.name);
 					}
 				}
-				micomSensorData.uss.Distances = new uint[ussList.Count];
 			}
+			micomSensorData.uss.Distances = new uint[ussList.Count];
 		}
 
 		if (parameters.GetValues<string>("ir/sensor", out var irList))
 		{
-			foreach (var model in modelList)
+			foreach (var ir in irList)
 			{
-				foreach (var ir in irList)
+				foreach (var model in modelList)
 				{
 					if (model.name.Equals(ir))
 					{
@@ -122,8 +120,8 @@ public class MicomSensor : Device
 						// Debug.Log("irSensor found : " + sonarSensor.name);
 					}
 				}
-				micomSensorData.ir.Distances = new uint[irList.Count];
 			}
+			micomSensorData.ir.Distances = new uint[irList.Count];
 		}
 
 		if (parameters.GetValues<string>("magnet/sensor", out var magnetList))
@@ -134,12 +132,41 @@ public class MicomSensor : Device
 			}
 		}
 
-		if (parameters.GetValues<string>("bumper/sensor", out var bumperList))
+		var targetContactName = parameters.GetAttribute<string>("bumper", "contact");
+		// Debug.Log(targetContactName);
+
+		var contactsInChild = GetComponentsInChildren<SensorDevices.Contact>();
+
+		foreach (var contact in contactsInChild)
 		{
-			foreach (var model in modelList)
+			if (contact.name.Equals(targetContactName))
 			{
-				// TODO: to be implemented
+				bumperContact = contact;
+				// Debug.Log("Found");
 			}
+		}
+
+		if (bumperContact != null)
+		{
+			if (parameters.GetValues<string>("bumper/joint_name", out var bumperJointNameList))
+			{
+				var linkList = GetComponentsInChildren<LinkPlugin>();
+				foreach (var link in linkList)
+				{
+					foreach (var bumperJointName in bumperJointNameList)
+					{
+						if (link.jointList.TryGetValue(bumperJointName, out var jointValue))
+						{
+							bumperSensors.Add(jointValue as ConfigurableJoint);
+							Debug.Log(bumperJointName);
+						}
+					}
+				}
+			}
+
+			var bumperCount = (bumperSensors == null || bumperSensors.Count == 0) ? 1 : bumperSensors.Count;
+
+			micomSensorData.bumper.Bumpeds = new bool[bumperCount];
 		}
 	}
 
@@ -171,6 +198,7 @@ public class MicomSensor : Device
 		micomSensorData.Odom = new messages.Micom.Odometry();
 		micomSensorData.uss = new messages.Micom.Uss();
 		micomSensorData.ir = new messages.Micom.Ir();
+		micomSensorData.bumper = new messages.Micom.Bumper();
 	}
 
 	protected override void GenerateMessage()
@@ -186,6 +214,52 @@ public class MicomSensor : Device
 		UpdateAccGyro();
 		UpdateUss();
 		UpdateIr();
+		UpdateBumper();
+	}
+
+	private void UpdateBumper()
+	{
+		if (micomSensorData == null || micomSensorData.bumper == null || bumperContact == null)
+		{
+			return;
+		}
+
+		if (bumperContact.IsContacted())
+		{
+			if (bumperSensors == null || bumperSensors.Count == 0)
+			{
+				micomSensorData.bumper.Bumpeds[0] = true;
+			}
+			else
+			{
+				var index = 0;
+				foreach (var bumperJoint in bumperSensors)
+				{
+					var threshold = bumperJoint.linearLimit.limit/2;
+
+					var normal = bumperJoint.transform.localPosition.normalized;
+					// Debug.Log(index + ": " + normal.ToString("F6"));
+
+					if (normal.x > 0 && normal.z < 0)
+					{
+						micomSensorData.bumper.Bumpeds[index] = true;
+						// Debug.Log("Left Bumped");
+					}
+					else if (normal.x < 0 && normal.z < 0)
+					{
+						micomSensorData.bumper.Bumpeds[index] = true;
+						// Debug.Log("Right Bumped");
+					}
+					else
+					{
+						micomSensorData.bumper.Bumpeds[index] = false;
+						// Debug.Log("No Bumped");
+					}
+
+					index++;
+				}
+			}
+		}
 	}
 
 	private void UpdateUss()
@@ -293,7 +367,6 @@ public class MicomSensor : Device
 
 		return false;
 	}
-
 
 	public void SetDifferentialDrive(in float linearVelocityLeft, in float linearVelocityRight)
 	{

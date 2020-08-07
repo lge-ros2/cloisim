@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 
 public class LinkPlugin : MonoBehaviour
@@ -14,13 +15,13 @@ public class LinkPlugin : MonoBehaviour
 
 	private PoseControl poseControl = null;
 
-	LinkPlugin()
-	{
-		poseControl = new PoseControl();
-	}
+	public Dictionary<string, Joint> jointList;
 
 	void Awake()
 	{
+		poseControl = new PoseControl();
+		jointList = new Dictionary<string, Joint>();
+
 		tag = "Link";
 		var modelObject = transform.parent;
 		modelPlugin = modelObject.GetComponent<ModelPlugin>();
@@ -148,26 +149,28 @@ public class LinkPlugin : MonoBehaviour
 
 	private void ScaleMassOnJoint()
 	{
-		var thisJoint = this.GetComponent<Joint>();
-
-		if (thisJoint && thisJoint.GetType() != typeof(FixedJoint))
+		var thisJoints = this.GetComponents<Joint>();
+		foreach (var thisJoint in thisJoints)
 		{
-			var connectedBody = thisJoint.connectedBody;
-			var connectedBodyObject = thisJoint.connectedBody.gameObject;
-
-			if (connectedBody && connectedBodyObject && connectedBodyObject.tag.Equals("Link"))
+			if (thisJoint && thisJoint.GetType() != typeof(FixedJoint))
 			{
-				var thisBody = GetComponent<Rigidbody>();
+				var connectedBody = thisJoint.connectedBody;
+				var connectedBodyObject = thisJoint.connectedBody.gameObject;
 
-				if (connectedBody.mass > thisBody.mass)
+				if (connectedBody && connectedBodyObject && connectedBodyObject.tag.Equals("Link"))
 				{
-					thisJoint.massScale = 1;
-					thisJoint.connectedMassScale = connectedBody.mass/thisBody.mass;
-				}
-				else
-				{
-					thisJoint.massScale = thisBody.mass/connectedBody.mass;
-					thisJoint.connectedMassScale = 1;
+					var thisBody = GetComponent<Rigidbody>();
+
+					if (connectedBody.mass > thisBody.mass)
+					{
+						thisJoint.massScale = 1;
+						thisJoint.connectedMassScale = connectedBody.mass / thisBody.mass;
+					}
+					else
+					{
+						thisJoint.massScale = thisBody.mass / connectedBody.mass;
+						thisJoint.connectedMassScale = 1;
+					}
 				}
 			}
 		}

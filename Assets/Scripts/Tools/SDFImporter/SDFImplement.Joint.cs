@@ -30,12 +30,12 @@ public partial class SDFImplement
 				else if (pos.y != 0)
 				{
 					pos.x = pos.y * Mathf.Sin((float)rot.Roll);
-					pos.z = pos.y * Mathf.Sin((float)rot.Yaw);
+					pos.z = pos.y * Mathf.Sin((float)rot.Pitch);
 				}
 				else if (pos.z != 0)
 				{
 					pos.x = pos.z * Mathf.Sin((float)rot.Roll);
-					pos.y = pos.z * Mathf.Sin((float)rot.Pitch);
+					pos.y = pos.z * Mathf.Sin((float)rot.Yaw);
 				}
 			}
 			return pos;
