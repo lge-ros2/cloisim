@@ -288,11 +288,15 @@ namespace SensorDevices
 		{
 			const float visualUpdatePeriod = 0.090f;
 			const float visualDrawDuration = visualUpdatePeriod * 1.01f;
+
 			var startAngle = defaultRotationOffset + (float)angleMin;
+			var waitForEndOfFrame = new WaitForEndOfFrame();
 			var waitForSeconds = new WaitForSeconds(visualUpdatePeriod);
 
 			while (true)
 			{
+				yield return waitForEndOfFrame;
+
 				var lidarSensorWorldPosition = lidarLink.position + transform.localPosition;
 				var rangeData = GetRangeData();
 

@@ -91,7 +91,7 @@ namespace SDF
 			foreach (var item in items)
 			{
 				// Console.WriteLine("[Visual] {0}", item.Name);
-				Object createdObject = ImportVisual(item, parentObject);
+				var createdObject = ImportVisual(item, parentObject);
 
 				ImportGeometry(item.GetGeometry(), createdObject);
 
@@ -108,7 +108,7 @@ namespace SDF
 			foreach (var item in items)
 			{
 				// Console.WriteLine("[Collision] {0}", item.Name);
-				Object createdObject = ImportCollision(item, parentObject);
+				var createdObject = ImportCollision(item, parentObject);
 
 				ImportGeometry(item.GetGeometry(), createdObject);
 
@@ -120,7 +120,7 @@ namespace SDF
 		{
 			foreach (var item in items)
 			{
-				Object createdObject = ImportSensor(item, parentObject);
+				var createdObject = ImportSensor(item, parentObject);
 
 				ImportPlugins(item.GetPlugins(), createdObject);
 			}
@@ -131,7 +131,7 @@ namespace SDF
 			foreach (var item in items)
 			{
 				// Console.WriteLine("[Link] {0}", item.Name);
-				Object createdObject = ImportLink(item, parentObject);
+				var createdObject = ImportLink(item, parentObject);
 
 				ImportVisuals(item.GetVisuals(), createdObject);
 

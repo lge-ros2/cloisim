@@ -11,7 +11,7 @@ using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
-	public partial class IMU : Device
+	public class IMU : Device
 	{
 		private messages.Imu imu = null;
 
@@ -103,7 +103,7 @@ namespace SensorDevices
 			DeviceHelper.SetVector3d(imu.AngularVelocity, imuAngularVelocity * Mathf.Deg2Rad);
 			DeviceHelper.SetVector3d(imu.LinearAcceleration, imuLinearAcceleration);
 			DeviceHelper.SetCurrentTime(imu.Stamp);
-			SetMessageData<messages.Imu>(imu);
+			PushData<messages.Imu>(imu);
 		}
 
 		public Quaternion GetOrientation()

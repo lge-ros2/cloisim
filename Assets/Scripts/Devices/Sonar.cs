@@ -12,7 +12,7 @@ using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
-	public partial class Sonar : Device
+	public class Sonar : Device
 	{
 		private messages.SonarStamped sonarStamped = null;
 
@@ -81,19 +81,21 @@ namespace SensorDevices
 
 		protected override IEnumerator OnVisualize()
 		{
-			const float visualUpdatePeriod = 0.01f;
-			const float visualDrawDuration = visualUpdatePeriod * 1.01f;
-			var waitForSeconds = new WaitForSeconds(visualUpdatePeriod);
+			var waitForEndOfFrame = new WaitForEndOfFrame();
+			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 
 			while (true)
 			{
+				yield return waitForEndOfFrame;
+
 				var direction = (GetDetectedPoint() - sensorStartPoint).normalized;
 				var detectedRange = GetDetectedRange();
 
-				if (detectedRange < rangeMax && !direction.Equals(Vector3.zero))
+				if (detectedRange <= rangeMax && !direction.Equals(Vector3.zero))
 				{
-					Debug.DrawRay(sensorStartPoint, direction * detectedRange, Color.blue, visualDrawDuration);
+					Debug.DrawRay(sensorStartPoint, direction * detectedRange, Color.blue, UpdatePeriod);
 				}
+
 				yield return waitForSeconds;
 			}
 		}
@@ -138,7 +140,7 @@ namespace SensorDevices
 			DeviceHelper.SetVector3d(sonar.WorldPose.Position, sonarPosition);
 			DeviceHelper.SetQuaternion(sonar.WorldPose.Orientation, sonarRotation);
 			DeviceHelper.SetCurrentTime(sonarStamped.Time);
-			SetMessageData<messages.SonarStamped>(sonarStamped);
+			PushData<messages.SonarStamped>(sonarStamped);
 		}
 
 		private void ResolveSensingArea(in MeshCollider meshCollider)
@@ -202,8 +204,9 @@ namespace SensorDevices
 
 				if (Physics.Raycast(sensorStartPoint, direction, out var hitInfo))
 				{
-					Debug.DrawRay(sensorStartPoint, direction, Color.magenta, 0.01f);
-					// Debug.Log("Hit Point of contact: " + hitInfo.point);
+					// Debug.DrawRay(sensorStartPoint, direction, Color.magenta, 0.01f);
+
+					// Debug.Log("Hit Point of contact: " + hitInfo.point + " | " + sensorStartPoint.ToString("F4"));
 					var hitPoint = hitInfo.point;
 					var hitDistance = Vector3.Distance(sensorStartPoint, hitPoint);
 

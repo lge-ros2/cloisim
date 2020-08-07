@@ -63,15 +63,15 @@ namespace RuntimeGizmos
 
 		//These are the same as the unity editor hotkeys
 		[Header("Key configurations")]
-		public KeyCode SetMoveType = KeyCode.W;
-		public KeyCode SetRotateType = KeyCode.E;
-		public KeyCode SetScaleType = KeyCode.R;
-		//public KeyCode SetRectToolType = KeyCode.T;
+		public KeyCode SetMoveType = KeyCode.T;
+		public KeyCode SetRotateType = KeyCode.R;
+		// public KeyCode SetScaleType = KeyCode.L;
+		// public KeyCode SetRectToolType = KeyCode.G;
 		public KeyCode SetAllTransformType = KeyCode.Y;
 		public KeyCode SetSpaceToggle = KeyCode.X;
-		public KeyCode SetPivotModeToggle = KeyCode.Z;
-		public KeyCode SetCenterTypeToggle = KeyCode.C;
-		public KeyCode SetScaleTypeToggle = KeyCode.S;
+		// public KeyCode SetPivotModeToggle = KeyCode.Z;
+		// public KeyCode SetCenterTypeToggle = KeyCode.C;
+		// public KeyCode SetScaleTypeToggle = KeyCode.S;
 		public KeyCode translationSnapping = KeyCode.LeftControl;
 		public KeyCode AddSelection = KeyCode.LeftShift;
 		public KeyCode RemoveSelection = KeyCode.LeftControl;
@@ -268,29 +268,29 @@ namespace RuntimeGizmos
 				transformType = TransformType.Move;
 			else if (Input.GetKeyDown(SetRotateType))
 				transformType = TransformType.Rotate;
-			else if (Input.GetKeyDown(SetScaleType))
-				transformType = TransformType.Scale;
+			// else if (Input.GetKeyDown(SetScaleType))
+			// 	transformType = TransformType.Scale;
 			//else if (Input.GetKeyDown(SetRectToolType)) type = TransformType.RectTool;
 			else if (Input.GetKeyDown(SetAllTransformType))
 				transformType = TransformType.All;
 
 			if (!isTransforming) translatingType = transformType;
 
-			if (Input.GetKeyDown(SetPivotModeToggle))
-			{
-				if (pivot == TransformPivot.Pivot) pivot = TransformPivot.Center;
-				else if (pivot == TransformPivot.Center) pivot = TransformPivot.Pivot;
+			// if (Input.GetKeyDown(SetPivotModeToggle))
+			// {
+			// 	if (pivot == TransformPivot.Pivot) pivot = TransformPivot.Center;
+			// 	else if (pivot == TransformPivot.Center) pivot = TransformPivot.Pivot;
 
-				SetPivotPoint();
-			}
+			// 	SetPivotPoint();
+			// }
 
-			if (Input.GetKeyDown(SetCenterTypeToggle))
-			{
-				if (centerType == CenterType.All) centerType = CenterType.Solo;
-				else if (centerType == CenterType.Solo) centerType = CenterType.All;
+			// if (Input.GetKeyDown(SetCenterTypeToggle))
+			// {
+			// 	if (centerType == CenterType.All) centerType = CenterType.Solo;
+			// 	else if (centerType == CenterType.Solo) centerType = CenterType.All;
 
-				SetPivotPoint();
-			}
+			// 	SetPivotPoint();
+			// }
 
 			if (Input.GetKeyDown(SetSpaceToggle))
 			{
@@ -300,11 +300,11 @@ namespace RuntimeGizmos
 					space = TransformSpace.Global;
 			}
 
-			if (Input.GetKeyDown(SetScaleTypeToggle))
-			{
-				if (scaleType == ScaleType.FromPoint) scaleType = ScaleType.FromPointOffset;
-				else if (scaleType == ScaleType.FromPointOffset) scaleType = ScaleType.FromPoint;
-			}
+			// if (Input.GetKeyDown(SetScaleTypeToggle))
+			// {
+			// 	if (scaleType == ScaleType.FromPoint) scaleType = ScaleType.FromPointOffset;
+			// 	else if (scaleType == ScaleType.FromPointOffset) scaleType = ScaleType.FromPoint;
+			// }
 
 			if (transformType == TransformType.Scale)
 			{

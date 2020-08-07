@@ -771,6 +771,8 @@ MonoBehaviour:
   pauseOnStart: 0
   clearAllOnStart: 1
   worldFileName: lg_seocho.world
+  modelRootDirectories: []
+  worldRootDirectories: []
 --- !u!114 &249819590
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3800,10 +3802,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blockControl: 0
-  mainSpeed: 10
-  shiftAdd: 20
-  maxShift: 50
-  camSens: 0.1
+  mainSpeed: 7
+  shiftAdd: 10
+  maxShift: 100
+  camSens: 0.25
+  edgeWidth: 30
+  edgeSens: 0.05
+  edgeSensMax: 1.7
 --- !u!20 &963194227
 Camera:
   m_ObjectHideFlags: 0
@@ -3924,12 +3929,8 @@ MonoBehaviour:
     m_Bits: 1
   SetMoveType: 116
   SetRotateType: 114
-  SetScaleType: 0
   SetAllTransformType: 121
   SetSpaceToggle: 120
-  SetPivotModeToggle: 0
-  SetCenterTypeToggle: 0
-  SetScaleTypeToggle: 0
   translationSnapping: 306
   AddSelection: 0
   RemoveSelection: 0

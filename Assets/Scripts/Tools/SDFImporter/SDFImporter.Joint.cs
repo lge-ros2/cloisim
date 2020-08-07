@@ -49,8 +49,8 @@ public partial class SDFImporter : SDF.Importer
 
 		var transformParent = (parentObject as GameObject).transform;
 
-		GameObject linkObjectParent = FindObjectByName(linkNameParent, transformParent);
-		GameObject linkObjectChild = FindObjectByName(linkNameChild, transformParent);
+		var linkObjectParent = FindObjectByName(linkNameParent, transformParent);
+		var linkObjectChild = FindObjectByName(linkNameChild, transformParent);
 
 		if (linkObjectChild is null || linkObjectParent is null)
 		{
@@ -71,13 +71,13 @@ public partial class SDFImporter : SDF.Importer
 
 		if (joint.Type.Equals("ball"))
 		{
-			var ballJointComponent = SDFImplement.Joint.AddBall(linkObjectChild, rigidBodyParent);
-			jointComponent = ballJointComponent as Joint;
+			var ballJoint = SDFImplement.Joint.AddBall(linkObjectChild, rigidBodyParent);
+			jointComponent = ballJoint as Joint;
 		}
 		else if (joint.Type.Equals("prismatic"))
 		{
-			var prismaticJointComponent = SDFImplement.Joint.AddPrismatic(joint.Axis, linkObjectChild, rigidBodyParent);
-			jointComponent = prismaticJointComponent as Joint;
+			var prismaticJoint = SDFImplement.Joint.AddPrismatic(joint.Axis, joint.OdePhysics, joint.Pose, linkObjectChild, rigidBodyParent);
+			jointComponent = prismaticJoint as Joint;
 		}
 		else if (joint.Type.Equals("revolute"))
 		{
@@ -112,7 +112,13 @@ public partial class SDFImporter : SDF.Importer
 
 		if (jointComponent != null)
 		{
-			SDFImplement.Joint.SetCommonConfiguration(jointComponent, linkObjectChild);
+			SDFImplement.Joint.SetCommonConfiguration(jointComponent, joint.Pose.Pos, linkObjectChild);
+
+			var linkPlugin = linkObjectChild.GetComponent<LinkPlugin>();
+			if (linkPlugin != null)
+			{
+				linkPlugin.jointList.Add(joint.Name, jointComponent);
+			}
 		}
 	}
 }

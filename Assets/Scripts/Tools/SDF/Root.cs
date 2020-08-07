@@ -38,8 +38,6 @@ namespace SDF
 			{
 				worldFileName = filename;
 			}
-
-			worldFileName = "/" + worldFileName;
 		}
 
 		public World World()
@@ -74,14 +72,20 @@ namespace SDF
 
 			if (doc != null && worldFileName != null && worldFileName.Length > 0)
 			{
-				// Console.WriteLine("World SDF FILE PATH: " + worldFileName);
-				foreach (var worlPath in worldDefaultPath)
+				// Console.WriteLine("World file, PATH: " + worldFileName);
+				foreach (var worldPath in worldDefaultPath)
 				{
-					var fullFilePath = worlPath + worldFileName;
+					var fullFilePath = worldPath + "/" + worldFileName;
 					if (File.Exists(@fullFilePath))
 					{
-						doc.Load(worlPath + worldFileName);
+						doc.Load(fullFilePath);
 						break;
+					}
+					else
+					{
+						(Console.Out as DebugLogWriter).SetWarning(true);
+						Console.WriteLine("World file not exist: " + worldFileName);
+						(Console.Out as DebugLogWriter).SetWarning(false);
 					}
 				}
 			}

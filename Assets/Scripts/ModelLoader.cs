@@ -31,19 +31,13 @@ public class ModelLoader : MonoBehaviour
 
 	private string filesRootDirectory = string.Empty;
 
-	public List<string> modelRootDirectories;
-	public List<string> worldRootDirectories;
+	public List<string> modelRootDirectories = new List<string>();
+	public List<string> worldRootDirectories = new List<string>();
 
 	private GameObject modelsRoot = null;
 
 	private bool isResetting = false;
 	private bool resetTriggered = false;
-
-	ModelLoader()
-	{
-		modelRootDirectories = new List<string>();
-		worldRootDirectories= new List<string>();
-	}
 
 	private void CleanAllModels()
 	{

@@ -65,7 +65,7 @@ namespace SDF
 
 			// Console.WriteLine("[{0}] P:{1} C:{2}", GetType().Name, parent, child);
 
-			if (IsValidNode("ray") && (Type.Equals("gpu_ray") || Type.Equals("ray")))
+			if (IsValidNode("ray") && (Type.Equals("gpu_ray") || Type.Equals("ray") || Type.Equals("lidar")))
 			{
 				sensor = ParseRay();
 			}
@@ -73,7 +73,7 @@ namespace SDF
 			{
 				if (Type.Equals("multicamera"))
 				{
-					Cameras cameras = new Cameras();
+					var cameras = new Cameras();
 					cameras.name = "multiple_camera";
 
 					var nodes = GetNodes("camera");
@@ -106,6 +106,10 @@ namespace SDF
 			else if (IsValidNode("gps") && Type.Equals("gps"))
 			{
 				sensor = ParseGPS();
+			}
+			else if (IsValidNode("contact") && Type.Equals("contact"))
+			{
+				sensor = ParseContact();
 			}
 			else
 			{

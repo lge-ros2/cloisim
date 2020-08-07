@@ -12,7 +12,7 @@ using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
-	public partial class MultiCamera : Device
+	public class MultiCamera : Device
 	{
 		public List<SensorDevices.Camera> cameras = new List<SensorDevices.Camera>();
 

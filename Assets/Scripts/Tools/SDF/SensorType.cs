@@ -144,7 +144,11 @@ namespace SDF
 		public Lens lens = new Lens();
 	}
 
-	// <contact> : TBD
+	public class Contact : SensorType
+	{
+		public List<string> collision = new List<string>();
+		public string topic;
+	}
 
 	public class GPS : SensorType
 	{

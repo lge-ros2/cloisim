@@ -27,7 +27,7 @@ public partial class SDFImplement
 			return frameName.Substring(2);
 		}
 
-		private static void AttachSensor(in GameObject sensorObject, in GameObject targetObject)
+		private static void AttachSensor(in GameObject sensorObject, in GameObject targetObject, SDF.Pose<double> sensorPose = null)
 		{
 			try
 			{
@@ -36,22 +36,17 @@ public partial class SDFImplement
 				sensorTransform.rotation = Quaternion.identity;
 				sensorTransform.SetParent(targetObject.transform, false);
 				sensorTransform.localScale = Vector3.one;
-				sensorTransform.localPosition = Vector3.zero;
-				sensorTransform.localRotation = Quaternion.identity;
-			}
-			catch
-			{
-				Debug.Log("sensorObject is null or Invalid obejct exist");
-			}
-		}
 
-		public static void TransformSensor(in GameObject sensorObject, SDF.Pose<double> sensorPose)
-		{
-			try
-			{
-				var sensorTransform = sensorObject.transform;
-				sensorTransform.localPosition = SDF2Unity.GetPosition(sensorPose.Pos);
-				sensorTransform.localRotation = SDF2Unity.GetRotation(sensorPose.Rot);
+				if (sensorPose == null)
+				{
+					sensorTransform.localPosition = Vector3.zero;
+					sensorTransform.localRotation = Quaternion.identity;
+				}
+				else
+				{
+					sensorTransform.localPosition = SDF2Unity.GetPosition(sensorPose.Pos);
+					sensorTransform.localRotation = SDF2Unity.GetRotation(sensorPose.Rot);
+				}
 			}
 			catch
 			{
@@ -84,8 +79,8 @@ public partial class SDFImplement
 		public static Device AddCamera(in SDF.Camera element, in GameObject targetObject)
 		{
 			var newSensorObject = new GameObject();
-			AttachSensor(newSensorObject, targetObject);
-			TransformSensor(newSensorObject, element.Pose);
+			AttachSensor(newSensorObject, targetObject, element.Pose);
+
 			var camera = newSensorObject.AddComponent<SensorDevices.Camera>();
 			camera.deviceName = GetFrameName(newSensorObject);
 			camera.parameters = element;
@@ -95,8 +90,7 @@ public partial class SDFImplement
 		public static Device AddDepthCamera(in SDF.Camera element, in GameObject targetObject)
 		{
 			var newSensorObject = new GameObject();
-			AttachSensor(newSensorObject, targetObject);
-			TransformSensor(newSensorObject, element.Pose);
+			AttachSensor(newSensorObject, targetObject, element.Pose);
 
 			var depthCamera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
 			depthCamera.deviceName = GetFrameName(newSensorObject);
@@ -152,6 +146,24 @@ public partial class SDFImplement
 			gps.deviceName = GetFrameName(newSensorObject);
 
 			return gps;
+		}
+
+		public static Device AddContact(in SDF.Contact element, in GameObject targetObject)
+		{
+			var newSensorObject = new GameObject();
+			AttachSensor(newSensorObject, targetObject);
+
+			var contact = newSensorObject.AddComponent<SensorDevices.Contact>();
+			contact.deviceName = GetFrameName(newSensorObject);
+			contact.collision = element.collision;
+			contact.topic = element.topic;
+
+			var contactTrigger = targetObject.AddComponent<SensorDevices.ContactTrigger>();
+			contactTrigger.collisionEnter = contact.CollisionEnter;
+			contactTrigger.collisionExit = contact.CollisionExit;
+			contactTrigger.collisionStay = contact.CollisionStay;
+
+			return contact;
 		}
 	}
 }
