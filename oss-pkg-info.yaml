@@ -1,6 +1,6 @@
 Open Source Package:
 - name: VSCode
-  version: 2.7
+  version: 2.9
   source: https://github.com/dotBunny/VSCode
   license: MIT
 
@@ -10,7 +10,7 @@ Open Source Package:
   license: MPL-2.0
 
 - name: NetMQ
-  version: 4.0.0
+  version: 4.0.0.207
   source: https://github.com/zeromq/netmq
   license: LGPL-3.0
 
