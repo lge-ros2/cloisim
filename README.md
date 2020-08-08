@@ -23,6 +23,7 @@ Here is the full list of models that is implemented or planned to be implemented
 - [X] 2-Wheeled Motor
 - [X] Sonar sensor
 - [X] IMU
+- [X] Contact
 - [X] Camera
     - [ ] Camera intrinsic parameter
 - [X] Multi-camera
