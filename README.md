@@ -23,6 +23,7 @@ Here is the full list of models that is implemented or planned to be implemented
 - [X] 2-Wheeled Motor
 - [X] Sonar sensor
 - [X] IMU
+- [X] Contact
 - [X] Camera
     - [ ] Camera intrinsic parameter
 - [X] Multi-camera
@@ -59,8 +60,9 @@ Inertia factors which retrieved from SDF are NOT USED for rigidbody in Unity. Be
 ## Getting Started
 
 #### Tested environement:
-  - Linux - Ubuntu 18.04
-  - Current editor version is *'2019.4.1f1 (LTS)'*.
+  - Linux: Ubuntu 18.04
+  - Intel(R) Core(TM) i7-8700K, 32GB, GeForce RTX 2070
+  - Current editor version is *'2019.4.6f1 (LTS)'*.
   
 #### Release version
 If you don't want to build a project, just USE a release binary([Download linux version](https://github.com/lge-ros2/multi-robot-simulator/releases)). And just refer to 'Usage'
