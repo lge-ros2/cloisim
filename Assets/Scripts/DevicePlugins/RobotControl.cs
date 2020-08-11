@@ -49,9 +49,9 @@ public class RobotControl : DevicePlugin
 			switch (micomInput.ControlType)
 			{
 				case MicomInput.VelocityType.LinearAndAngular:
-					var targetLinearVelocityLeft = micomInput.GetLinearVelocity();
-					var targetAngularVelocityRight = micomInput.GetAngularVelocity();
-					micomSensor.SetTwistDrive(targetLinearVelocityLeft, targetAngularVelocityRight);
+					var targetLinearVelocity = micomInput.GetLinearVelocity();
+					var targetAngularVelocity = micomInput.GetAngularVelocity();
+					micomSensor.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
 					break;
 
 				case MicomInput.VelocityType.LeftAndRight:

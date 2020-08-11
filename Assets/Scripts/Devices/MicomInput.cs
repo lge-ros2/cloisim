@@ -10,7 +10,6 @@ using messages = gazebo.msgs;
 
 public class MicomInput : Device
 {
-	private const float MM2M = 0.001f;
 	public enum VelocityType {Unknown, LinearAndAngular, LeftAndRight};
 
 	private messages.Param micomWritingData = null;
@@ -19,13 +18,11 @@ public class MicomInput : Device
 
 	public VelocityType ControlType => controlType;
 
+	private float wheelVelocityLeft = 0; // rad/s
+	private float wheelVelocityRight = 0; // rad/s
 
-	// TODO: change to float type??
-	private int wheelVelocityLeft = 0; // linear velocity in millimeter per second
-	private int wheelVelocityRight = 0; // linear velocity in millimeter per second
-
-	private int linearVelocity = 0; // linear velocity in millimeter per second
-	private int angularVelocity = 0; // angular velocit in deg per second
+	private float linearVelocity = 0; // m/s
+	private float angularVelocity = 0; // rad/s
 
 	protected override void OnAwake()
 	{
@@ -72,29 +69,28 @@ public class MicomInput : Device
 		if (micomWritingData.Name.Equals("control_type") &&
 			micomWritingData.Childrens.Count == 2)
 		{
+			var child0 = micomWritingData.Childrens[0];
+			var child1 = micomWritingData.Childrens[1];
+
 			if (micomWritingData.Value.IntValue == 0)
 			{
 				controlType = VelocityType.LinearAndAngular;
 
 				linearVelocity
-					= (!micomWritingData.Childrens[0].Name.Equals("nLinearVelocity")) ?
-					0 : micomWritingData.Childrens[0].Value.IntValue;
+					= (!child0.Name.Equals("LinearVelocity")) ? 0 : (float)child0.Value.DoubleValue;
 
 				angularVelocity
-					= (!micomWritingData.Childrens[1].Name.Equals("nAngularVelocity")) ?
-					0 : micomWritingData.Childrens[1].Value.IntValue;
+					= (!child1.Name.Equals("AngularVelocity")) ? 0 : (float)child1.Value.DoubleValue;
 			}
 			else if (micomWritingData.Value.IntValue == 1)
 			{
 				controlType = VelocityType.LeftAndRight;
 
 				wheelVelocityLeft
-					= (!micomWritingData.Childrens[0].Name.Equals("nLeftWheelVelocity")) ?
-					0 : micomWritingData.Childrens[0].Value.IntValue;
+					= (!child0.Name.Equals("LeftWheelVelocity")) ? 0 : (float)child0.Value.DoubleValue;
 
 				wheelVelocityRight
-					= (!micomWritingData.Childrens[1].Name.Equals("nRightWheelVelocity")) ?
-					0 : micomWritingData.Childrens[1].Value.IntValue;
+					= (!child1.Name.Equals("RightWheelVelocity")) ? 0 : (float)child1.Value.DoubleValue;
 			}
 			else
 			{
@@ -108,22 +104,22 @@ public class MicomInput : Device
 
 	public float GetWheelLeftVelocity()
 	{
-		return (float)wheelVelocityLeft * MM2M * Mathf.Rad2Deg;
+		return (float)wheelVelocityLeft;
 	}
 
 	public float GetWheelRightVelocity()
 	{
-		return (float)wheelVelocityRight * MM2M * Mathf.Rad2Deg;
+		return (float)wheelVelocityRight;
 	}
 
 	public float GetLinearVelocity()
 	{
-		return (float)linearVelocity * MM2M;
+		return (float)linearVelocity;
 	}
 
 	public float GetAngularVelocity()
 	{
-		return (float)angularVelocity * Mathf.Deg2Rad;
+		return (float)angularVelocity * Mathf.Rad2Deg;
 	}
 
 	public float GetVelocity(in int index)
