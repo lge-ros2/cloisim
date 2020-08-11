@@ -52,7 +52,7 @@ public class DeviceHelper
 		{
 			if (gazeboMsgsTime != null)
 			{
-				var timeNow = (useRealTime)? Time.realtimeSinceStartup:Time.time;
+				var timeNow = (useRealTime) ? Time.realtimeSinceStartup : Time.time;
 				gazeboMsgsTime.Sec = (int)timeNow;
 				gazeboMsgsTime.Nsec = (int)((timeNow - (float)gazeboMsgsTime.Sec) * (float)1e+9);
 			}
@@ -82,10 +82,10 @@ public class DeviceHelper
 			quaternion = new messages.Quaternion();
 		}
 
-		quaternion.X = rotation.x;
-		quaternion.Y = rotation.z;
-		quaternion.Z = rotation.y;
-		quaternion.W = rotation.w;
+		quaternion.X = rotation.x * Mathf.Deg2Rad;
+		quaternion.Y = rotation.z * Mathf.Deg2Rad;
+		quaternion.Z = rotation.y * Mathf.Deg2Rad;
+		quaternion.W = rotation.w * Mathf.Deg2Rad;
 	}
 
 	public static Matrix4x4 MakeCustomProjectionMatrix(in float hFov, in float vFov, in float near, in float far)

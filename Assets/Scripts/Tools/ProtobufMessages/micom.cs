@@ -50,7 +50,7 @@ namespace gazebo.msgs
                 => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
             [global::ProtoBuf.ProtoMember(1, Name = @"distance")]
-            public uint[] Distances { get; set; }
+            public double[] Distances { get; set; }
 
         }
 
@@ -62,7 +62,7 @@ namespace gazebo.msgs
                 => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
             [global::ProtoBuf.ProtoMember(1, Name = @"distance")]
-            public uint[] Distances { get; set; }
+            public double[] Distances { get; set; }
 
         }
 
@@ -86,10 +86,10 @@ namespace gazebo.msgs
                 => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
             [global::ProtoBuf.ProtoMember(1, Name = @"speed_left", IsRequired = true)]
-            public int SpeedLeft { get; set; }
+            public double SpeedLeft { get; set; }
 
             [global::ProtoBuf.ProtoMember(2, Name = @"speed_right", IsRequired = true)]
-            public int SpeedRight { get; set; }
+            public double SpeedRight { get; set; }
 
         }
 

@@ -26,8 +26,8 @@ public class MicomSensor : Device
 	private List<ConfigurableJoint> bumperSensors = new List<ConfigurableJoint>();
 
 
-	private float wheelBase = 0.0f; // in meter
-	private float wheelRadius = 0.0f; // in meter
+	private float wheelBase = 0.0f;
+	private float wheelRadius = 0.0f;
 	private float divideWheelRadius = 0.0f; // for computational performacne.
 
 	protected override void OnAwake()
@@ -38,7 +38,6 @@ public class MicomSensor : Device
 
 	protected override void OnStart()
 	{
-		const float MM2M = 0.001f;
 		var modelList = GetComponentsInChildren<ModelPlugin>();
 
 		var updateRate = parameters.GetValue<float>("update_rate", 20);
@@ -50,8 +49,8 @@ public class MicomSensor : Device
 
 		var pidControl = new PID(kp, ki, kd);
 
-		wheelBase = parameters.GetValue<float>("wheel/base") * MM2M;
-		wheelRadius = parameters.GetValue<float>("wheel/radius") * MM2M;
+		wheelBase = parameters.GetValue<float>("wheel/base");
+		wheelRadius = parameters.GetValue<float>("wheel/radius");
 		divideWheelRadius = 1.0f/wheelRadius;
 
 		var wheelNameLeft = parameters.GetValue<string>("wheel/location[@type='left']");
@@ -104,7 +103,7 @@ public class MicomSensor : Device
 					}
 				}
 			}
-			micomSensorData.uss.Distances = new uint[ussList.Count];
+			micomSensorData.uss.Distances = new double[ussList.Count];
 		}
 
 		if (parameters.GetValues<string>("ir/sensor", out var irList))
@@ -121,7 +120,7 @@ public class MicomSensor : Device
 					}
 				}
 			}
-			micomSensorData.ir.Distances = new uint[irList.Count];
+			micomSensorData.ir.Distances = new double[irList.Count];
 		}
 
 		if (parameters.GetValues<string>("magnet/sensor", out var magnetList))
@@ -269,11 +268,10 @@ public class MicomSensor : Device
 			return;
 		}
 
-		const float M2MM = 1000.0f;
 		var index = 0;
 		foreach (var uss in ussSensors)
 		{
-			micomSensorData.uss.Distances[index++] = (uint)(uss.GetDetectedRange() * M2MM);
+			micomSensorData.uss.Distances[index++] = uss.GetDetectedRange();
 		}
 	}
 
@@ -284,11 +282,10 @@ public class MicomSensor : Device
 			return;
 		}
 
-		const float M2MM = 1000.0f;
 		var index = 0;
 		foreach (var ir in irSensors)
 		{
-			micomSensorData.ir.Distances[index++] = (uint)(ir.GetDetectedRange() * M2MM);
+			micomSensorData.ir.Distances[index++] = ir.GetDetectedRange();
 		}
 	}
 
@@ -324,15 +321,15 @@ public class MicomSensor : Device
 
 	private void UpdateAccGyro()
 	{
-		var localRotation = transform.rotation;
-		var angle = localRotation.eulerAngles;
-
 		var accGyro = micomSensorData.Accgyro;
 
 		if (micomSensorData == null || accGyro == null)
 		{
 			return;
 		}
+
+		var localRotation = transform.rotation;
+		var angle = localRotation.eulerAngles * Mathf.Deg2Rad;
 
 		accGyro.AngleX = angle.x;
 		accGyro.AngleY = angle.y;
@@ -349,16 +346,14 @@ public class MicomSensor : Device
 
 	private bool SetOdomData(in float linearVelocityLeft, in float linearVelocityRight)
 	{
-		const float M2MM = 1000.0f;
-
 		if (micomSensorData != null)
 		{
 			var odom = micomSensorData.Odom;
 
 			if (odom != null)
 			{
-				odom.SpeedLeft = (int)(linearVelocityLeft * Mathf.Deg2Rad * M2MM);
-				odom.SpeedRight = (int)(linearVelocityRight * Mathf.Deg2Rad * M2MM);
+				odom.SpeedLeft = linearVelocityLeft * Mathf.Deg2Rad;
+				odom.SpeedRight = linearVelocityRight * Mathf.Deg2Rad;
 				// Debug.LogFormat("Odom {0}, {1} ", linearVelocityLeft, linearVelocityRight);
 				// Debug.LogFormat("Odom {0}, {1} ", odom.SpeedLeft, odom.SpeedRight);
 				return true;
@@ -370,22 +365,22 @@ public class MicomSensor : Device
 
 	public void SetDifferentialDrive(in float linearVelocityLeft, in float linearVelocityRight)
 	{
-		var angularVelocityLeft = linearVelocityLeft * divideWheelRadius;
-		var angularVelocityRight = linearVelocityRight * divideWheelRadius;
+		var angularVelocityLeft = linearVelocityLeft * divideWheelRadius * Mathf.Rad2Deg;
+		var angularVelocityRight = linearVelocityRight * divideWheelRadius * Mathf.Rad2Deg;
 
 		SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
 	}
 
 	public void SetTwistDrive(in float linearVelocity, in float angularVelocity)
 	{
-		// m/s, deg/s
+		// m/s, rad/s
 		// var angularVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
 		// var angularVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
 		var angularCalculation = (angularVelocity * wheelBase * 0.5f);
-		var angularVelocityLeft = (linearVelocity - angularCalculation) * divideWheelRadius;
-		var angularVelocityRight = (linearVelocity + angularCalculation) * divideWheelRadius;
+		var angularVelocityLeft = (linearVelocity - angularCalculation);
+		var angularVelocityRight = (linearVelocity + angularCalculation);
 
-		SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
+		SetDifferentialDrive(angularVelocityLeft, angularVelocityRight);
 	}
 
 	private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)

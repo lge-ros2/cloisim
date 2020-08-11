@@ -12,7 +12,6 @@ public class Motor
 	private PID pidControl = null;
 	private HingeJoint joint = null;
 	private Rigidbody rigidBody = null;
-	// private Rigidbody topRigidBody = null;
 
 	public Motor(in string name, in HingeJoint targetJoint, in PID pid)
 		: this(name, targetJoint)
@@ -30,15 +29,6 @@ public class Motor
 	{
 		joint = targetJoint;
 		rigidBody = joint.gameObject.GetComponent<Rigidbody>();
-
-		// foreach (var modelPlugin in rigidBody.gameObject.GetComponentsInParent<ModelPlugin>())
-		// {
-		// 	if (modelPlugin.IsTopModel)
-		// 	{
-		// 		topRigidBody = modelPlugin.gameObject.GetComponent<Rigidbody>();
-		// 		break;
-		// 	}
-		// }
 
 		targetJoint.useMotor = true;
 	}
@@ -73,14 +63,14 @@ public class Motor
 			return;
 		}
 
-		var motor = joint.motor;
-		float currentVelocity = GetCurrentVelocity();
-		float cmdForce = pidControl.Update(targetAngularVelocity, currentVelocity, Time.fixedDeltaTime);
+		var currentVelocity = GetCurrentVelocity();
+		var cmdForce = pidControl.Update(targetAngularVelocity, currentVelocity, Time.fixedDeltaTime);
 
 		// Debug.LogFormat("{0} Motor ({1} | {2} => {3}) max({4})",
 		// 	name, currentVelocity, targetAngularVelocity, cmdForce, rigidBody.maxAngularVelocity);
 
 		// JointMotor.targetVelocity angular velocity in degrees per second.
+		var motor = joint.motor;
 		motor.targetVelocity = targetAngularVelocity;
 		motor.force = Mathf.Round(cmdForce);
 
