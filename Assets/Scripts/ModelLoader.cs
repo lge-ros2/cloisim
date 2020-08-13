@@ -35,6 +35,7 @@ public class ModelLoader : MonoBehaviour
 	public List<string> worldRootDirectories = new List<string>();
 
 	private GameObject modelsRoot = null;
+	private Clock clock = null;
 
 	private bool isResetting = false;
 	private bool resetTriggered = false;
@@ -84,6 +85,8 @@ public class ModelLoader : MonoBehaviour
 		Application.targetFrameRate = 61;
 
 		modelsRoot = GameObject.Find(modelsRootName);
+
+		clock = GetComponent<Clock>();
 
 		ResetTransform();
 	}
@@ -148,7 +151,7 @@ public class ModelLoader : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (Input.GetKey(KeyCode.LeftControl) && Input.GetKey(KeyCode.R))
+		if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyUp(KeyCode.R))
 		{
 			resetTriggered = true;
 		}
@@ -165,7 +168,7 @@ public class ModelLoader : MonoBehaviour
 			else
 			{
 				resetTriggered = false;
-				isResetting = true;
+
 				StartCoroutine(ResetSimulation());
 			}
 		}
@@ -185,6 +188,8 @@ public class ModelLoader : MonoBehaviour
 
 	private IEnumerator ResetSimulation()
 	{
+		isResetting = true;
+
 		Debug.LogWarning("Reset positions in simulation!!!");
 
 		foreach (var plugin in modelsRoot.GetComponentsInChildren<ModelPlugin>())
@@ -202,7 +207,14 @@ public class ModelLoader : MonoBehaviour
 			plugin.Reset();
 		}
 
-		yield return new WaitForSeconds(1);
+		yield return null;
+
+		if (clock != null)
+		{
+			clock.ResetTime();
+		}
+
+		yield return new WaitForSeconds(0.5f);
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
 		isResetting = false;
 	}
