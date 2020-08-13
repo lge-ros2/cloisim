@@ -220,34 +220,34 @@ public partial class ElevatorSystem : DevicePlugin
 	private void GenerateResponseMessage()
 	{
 		var serviceNameParam = new Param
-				{
-					Name = "service_name",
-					Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
-				};
+		{
+			Name = "service_name",
+			Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
+		};
 
 		var resultParam = new Param
-				{
-					Name = "result",
-					Value = new Any { Type = Any.ValueType.Boolean, BoolValue = false }
-				};
+		{
+			Name = "result",
+			Value = new Any { Type = Any.ValueType.Boolean, BoolValue = false }
+		};
 
 		var elevatorIndexParam = new Param
-				{
-					Name = "elevator_index",
-					Value = new Any { Type = Any.ValueType.Int32, IntValue = NON_ELEVATOR_INDEX }
-				};
+		{
+			Name = "elevator_index",
+			Value = new Any { Type = Any.ValueType.Int32, IntValue = NON_ELEVATOR_INDEX }
+		};
 
 		var floorParam = new Param
-				{
-					Name = "current_floor",
-					Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
-				};
+		{
+			Name = "current_floor",
+			Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
+		};
 
 		var heightParam = new Param
-				{
-					Name = "height",
-					Value = new Any { Type = Any.ValueType.Double, DoubleValue = 0 }
-				};
+		{
+			Name = "height",
+			Value = new Any { Type = Any.ValueType.Double, DoubleValue = 0 }
+		};
 
 		responseMessage.Name = string.Empty;
 		responseMessage.Childrens.Add(serviceNameParam);
@@ -350,47 +350,49 @@ public partial class ElevatorSystem : DevicePlugin
 
 	private void HandleService(in string serviceName, string currentFloor, in string targetFloor, int elevatorIndex)
 	{
-		var result = true;
+		var result = false;
 		var height = 0f;
 
-		if (serviceName.Equals("call_elevator"))
+		switch (serviceName)
 		{
-			elevatorIndex = NON_ELEVATOR_INDEX;
-			result = GetCalledElevator(currentFloor, targetFloor, out elevatorIndex);
-			if (!result)
-			{
-				result = CallElevator(currentFloor, targetFloor);
-			}
-		}
-		else if (serviceName.Equals("get_called_elevator"))
-		{
-			result = GetCalledElevator(currentFloor, targetFloor, out elevatorIndex);
-		}
-		else if (serviceName.Equals("select_elevator_floor"))
-		{
-			result = SelectElevatorFloor(elevatorIndex, targetFloor, currentFloor);
-		}
-		else if (serviceName.Equals("request_door_open"))
-		{
-			result = RequestDoorOpen(elevatorIndex);
-		}
-		else if (serviceName.Equals("request_door_close"))
-		{
-			result = RequestDoorClose(elevatorIndex);
-		}
-		else if (serviceName.Equals("is_door_opened"))
-		{
-			result = IsElevatorDoorOpened(elevatorIndex);
-		}
-		else if (serviceName.Equals("get_elevator_information"))
-		{
-			height = GetElevatorCurrentHeight(elevatorIndex);
-			currentFloor = GetFloorName(height);
-		}
-		else
-		{
-			Debug.LogError("Unkown service name: " + serviceName);
-			result = false;
+			case "call_elevator":
+				elevatorIndex = NON_ELEVATOR_INDEX;
+				result = GetCalledElevator(currentFloor, targetFloor, out elevatorIndex);
+				if (!result)
+				{
+					result = CallElevator(currentFloor, targetFloor);
+				}
+				break;
+
+			case "get_called_elevator":
+				result = GetCalledElevator(currentFloor, targetFloor, out elevatorIndex);
+				break;
+
+			case "select_elevator_floor":
+				result = SelectElevatorFloor(elevatorIndex, targetFloor, currentFloor);
+				break;
+
+			case "request_door_open":
+				result = RequestDoorOpen(elevatorIndex);
+				break;
+
+			case "request_door_close":
+				result = RequestDoorClose(elevatorIndex);
+				break;
+
+			case "is_door_opened":
+				result = IsElevatorDoorOpened(elevatorIndex);
+				break;
+
+			case "get_elevator_information":
+				result = true;
+				height = GetElevatorCurrentHeight(elevatorIndex);
+				currentFloor = GetFloorName(height);
+				break;
+
+			default:
+				Debug.LogError("Unkown service name: " + serviceName);
+				break;
 		}
 
 		SetResponseMessage(result, elevatorIndex, currentFloor, height);
@@ -407,24 +409,25 @@ public partial class ElevatorSystem : DevicePlugin
 
 			if (elevatorTaskQueue.TryDequeue(out var task))
 			{
-				// Trigger service
-				if (task.state.Equals(ElevatorTaskState.DOOR_OPEN))
+				switch (task.state)
 				{
-					DoServiceOpenDoor(ref task);
-				}
-				else if (task.state.Equals(ElevatorTaskState.DOOR_CLOSE))
-				{
-					DoServiceCloseDoor(ref task);
-				}
-				else if (task.state.Equals(ElevatorTaskState.STANDBY))
-				{
-					DoServiceInStandby(ref task);
-				}
+					// Trigger service
+					case ElevatorTaskState.DOOR_OPEN:
+						DoServiceOpenDoor(ref task);
+						break;
 
-				// handling service
-				if (task.state.Equals(ElevatorTaskState.PROCESSING))
-				{
-					DoServiceInProcess(ref task);
+					case ElevatorTaskState.DOOR_CLOSE:
+						DoServiceCloseDoor(ref task);
+						break;
+
+					case ElevatorTaskState.STANDBY:
+						DoServiceInStandby(ref task);
+						break;
+
+					// handling service
+					case ElevatorTaskState.PROCESSING:
+						DoServiceInProcess(ref task);
+						break;
 				}
 
 				// finishing service
