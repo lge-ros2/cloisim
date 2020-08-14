@@ -41,7 +41,7 @@ namespace SensorDevices
 		{
 			deviceName = name;
 			sonarLink = transform.parent;
-			adjustCapturingRate = 0.95f;
+			waitingPeriodRatio = 0.95f;
 		}
 
 		protected override void OnStart()

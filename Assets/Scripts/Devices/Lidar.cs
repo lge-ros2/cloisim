@@ -354,7 +354,7 @@ namespace SensorDevices
 					var rayRotation = Quaternion.AngleAxis((float)(rayAngleH), lidarLink.up) * lidarLink.forward;
 					var rayStart = (rayRotation * (float)rangeMin) + lidarSensorWorldPosition;
 
-					var ccwIndex = (uint)rangeData.Length - hScanIndex - 1;
+					var ccwIndex = (uint)(rangeData.Length - hScanIndex - 1);
 					var rayData = rangeData[ccwIndex];
 
 					var rayDistance = (rayData == Mathf.Infinity) ? (float)rangeMax : (rayData - (float)rangeMin);

@@ -173,7 +173,7 @@ namespace SensorDevices
 
 		private IEnumerator CameraWorker()
 		{
-			var waitForSeconds = new WaitForSeconds(UpdatePeriod * adjustCapturingRate);
+			var waitForSeconds = new WaitForSeconds(WaitPeriod());
 
 			while (true)
 			{

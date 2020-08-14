@@ -29,7 +29,8 @@ public abstract class Device : MonoBehaviour
 
 	private float transportingTimeSeconds = 0;
 
-	public float adjustCapturingRate = 0.85f;
+	[Range(0, 1.0f)]
+	public float waitingPeriodRatio = 1.0f;
 
 	void OnDestroy()
 	{
@@ -94,10 +95,10 @@ public abstract class Device : MonoBehaviour
 
 	protected float WaitPeriod(in float messageGenerationTime = 0)
 	{
-		var waitTime = UpdatePeriod - messageGenerationTime - TransportingTime;
+		var waitTime = (UpdatePeriod * waitingPeriodRatio) - messageGenerationTime - TransportingTime;
 		// Debug.LogFormat(deviceName + ": waitTime({0}) = period({1}) - elapsedTime({2}) - TransportingTime({3})",
 		// 	waitTime.ToString("F5"), UpdatePeriod.ToString("F5"), messageGenerationTime.ToString("F5"), TransportingTime.ToString("F5"));
-		return (waitTime < 0)? 0:waitTime;
+		return (waitTime < 0) ? 0 : waitTime;
 	}
 
 	public void SetUpdateRate(in float value)
