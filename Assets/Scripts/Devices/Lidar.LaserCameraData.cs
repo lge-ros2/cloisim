@@ -22,7 +22,8 @@ namespace SensorDevices
 
 			private int imageWidth;
 			private int imageHeight;
-			private byte[] imageBuffer;
+
+			private NativeArray<byte> imageBuffer;
 
 			public double[] output;
 
@@ -33,17 +34,12 @@ namespace SensorDevices
 			{
 				imageWidth = width;
 				imageHeight = height;
-				imageBuffer = new byte[width * height * colorFormatUnitSize];
-
 				output = new double[imageWidth];
 			}
 
 			public void SetBufferData(in NativeArray<byte> buffer)
 			{
-				if (imageBuffer != null)
-				{
-					buffer.CopyTo(imageBuffer);
-				}
+				imageBuffer = buffer;
 			}
 
 			public void ResolveLaserRanges(in float rangeMax = 1.0f)
