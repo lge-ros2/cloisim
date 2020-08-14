@@ -6,6 +6,7 @@
 
 using System.Collections;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = gazebo.msgs;
 
 namespace SensorDevices
@@ -85,11 +86,14 @@ namespace SensorDevices
 
 		protected override IEnumerator MainDeviceWorker()
 		{
-			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
+			var sw = new Stopwatch();
 			while (true)
 			{
+				sw.Restart();
 				GenerateMessage();
-				yield return waitForSeconds;
+				sw.Stop();
+
+				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
 			}
 		}
 

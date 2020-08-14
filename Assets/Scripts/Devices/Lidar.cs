@@ -262,6 +262,7 @@ namespace SensorDevices
 
 		protected override IEnumerator MainDeviceWorker()
 		{
+			// var waitForSeconds = new WaitForSeconds(UpdatePeriod * adjustCapturingRate);
 			var sw = new Stopwatch();
 			while (true)
 			{
