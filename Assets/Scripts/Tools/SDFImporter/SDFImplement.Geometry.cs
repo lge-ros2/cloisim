@@ -30,18 +30,20 @@ public partial class SDFImplement
 				// var meshName = Path.GetFileNameWithoutExtension(obj.uri);
 				var fileExtension = Path.GetExtension(obj.uri).ToLower();
 
-				if (fileExtension.Equals(".obj"))
+				switch (fileExtension)
 				{
-					var mtlPath = obj.uri.Replace(fileExtension, ".mtl");
-					SDF2Unity.LoadObjMesh(targetObject, obj.uri, mtlPath);
-				}
-				else if (fileExtension.Equals(".stl"))
-				{
-					SDF2Unity.LoadStlMesh(targetObject, obj.uri);
-				}
-				else
-				{
-					Debug.LogWarning("Unknown file extension: " + fileExtension);
+					case ".obj":
+						var mtlPath = obj.uri.Replace(fileExtension, ".mtl");
+						SDF2Unity.LoadObjMesh(targetObject, obj.uri, mtlPath);
+						break;
+
+					case ".stl":
+						SDF2Unity.LoadStlMesh(targetObject, obj.uri);
+						break;
+
+					default:
+						Debug.LogWarning("Unknown file extension: " + fileExtension);
+						break;
 				}
 
 				foreach (var meshFilter in targetObject.GetComponentsInChildren<MeshFilter>())
@@ -49,7 +51,7 @@ public partial class SDFImplement
 					var mesh = meshFilter.sharedMesh;
 
 					// Scaling
-					Vector3[] vertices = mesh.vertices;
+					var vertices = mesh.vertices;
 					var scaleFactor = obj.scale;
 					for (var v = 0; v < mesh.vertexCount; v++)
 					{
