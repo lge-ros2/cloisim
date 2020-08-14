@@ -81,7 +81,7 @@ public class ModelLoader : MonoBehaviour
 		var worldPaths = worldPathEnv.Split(separator, StringSplitOptions.RemoveEmptyEntries);
 		worldRootDirectories.AddRange(worldPaths);
 #endif
-		Application.targetFrameRate = 61;
+		Application.targetFrameRate = 60;
 
 		modelsRoot = GameObject.Find(modelsRootName);
 
@@ -203,6 +203,7 @@ public class ModelLoader : MonoBehaviour
 		}
 
 		yield return new WaitForSeconds(1);
+
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
 		isResetting = false;
 	}
