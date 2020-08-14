@@ -74,13 +74,23 @@ public class CameraPlugin : DevicePlugin
 			var requestMessage = ParsingCameraInfoRequest(ref memoryStreamForCameraInfo, receivedBuffer);
 
 			// Debug.Log(subPartName + receivedString);
-			if (requestMessage != null && requestMessage.Name.Equals("request_camera_info"))
+			if (requestMessage != null)
 			{
-				var cameraInfoMessage = cam.GetCameraInfo();
+				switch (requestMessage.Name)
+				{
+					case "request_camera_info":
 
-				SetCameraInfoResponse(ref memoryStreamForCameraInfo, cameraInfoMessage);
+						var cameraInfoMessage = cam.GetCameraInfo();
 
-				SendResponse(memoryStreamForCameraInfo);
+						SetCameraInfoResponse(ref memoryStreamForCameraInfo, cameraInfoMessage);
+
+						SendResponse(memoryStreamForCameraInfo);
+
+						break;
+
+					default:
+						break;
+				}
 			}
 		}
 	}
