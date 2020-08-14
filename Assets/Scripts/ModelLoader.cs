@@ -36,7 +36,6 @@ public class ModelLoader : MonoBehaviour
 
 	private GameObject modelsRoot = null;
 	private Clock clock = null;
-	private Camera mainCamera = null;
 
 	private bool isResetting = false;
 	private bool resetTriggered = false;
@@ -83,12 +82,6 @@ public class ModelLoader : MonoBehaviour
 		var worldPaths = worldPathEnv.Split(separator, StringSplitOptions.RemoveEmptyEntries);
 		worldRootDirectories.AddRange(worldPaths);
 #endif
-
-		mainCamera = Camera.main;
-		mainCamera.depthTextureMode = DepthTextureMode.None;
-		mainCamera.allowHDR = true;
-		mainCamera.allowMSAA = true;
-
 		Application.targetFrameRate = 61;
 
 		modelsRoot = GameObject.Find(modelsRootName);
@@ -134,7 +127,7 @@ public class ModelLoader : MonoBehaviour
 
 				var importer = new SDFImporter();
 				importer.SetRootObject(modelsRoot);
-				importer.SetMainCamera(mainCamera);
+				importer.SetMainCamera(defaultCameraName);
 				importer.Start(sdf.World());
 			}
 			else

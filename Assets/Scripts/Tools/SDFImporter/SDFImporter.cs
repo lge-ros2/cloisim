@@ -9,15 +9,17 @@ using UnityEngine;
 
 public partial class SDFImporter : SDF.Importer
 {
-	private GameObject rootObject = null;
-	private UnityEngine.Camera mainCamera = null;
+	private GameObject rootObject;
+	private UnityEngine.Camera mainCamera;
 
 	public SDFImporter()
 	{
 		// Debug.Log(MethodBase.GetCurrentMethod().Name);
+		mainCamera = Camera.main;
 	}
 
 	public SDFImporter(GameObject target)
+		: this()
 	{
 		SetRootObject(target);
 	}
@@ -27,11 +29,13 @@ public partial class SDFImporter : SDF.Importer
 		rootObject = target;
 	}
 
-	public void SetMainCamera(in UnityEngine.Camera camera)
+	public void SetMainCamera(in string cameraName)
 	{
+		var newMainCamera = GameObject.Find(cameraName).GetComponent<UnityEngine.Camera>();
+
 		if (mainCamera == null)
 		{
-			mainCamera = camera;
+			mainCamera = newMainCamera;
 		}
 	}
 
