@@ -69,45 +69,47 @@ public partial class SDFImporter : SDF.Importer
 
 		Joint jointComponent = null;
 
-		if (joint.Type.Equals("ball"))
+		switch (joint.Type)
 		{
-			var ballJoint = SDFImplement.Joint.AddBall(linkObjectChild, rigidBodyParent);
-			jointComponent = ballJoint as Joint;
-		}
-		else if (joint.Type.Equals("prismatic"))
-		{
-			var prismaticJoint = SDFImplement.Joint.AddPrismatic(joint.Axis, joint.OdePhysics, joint.Pose, linkObjectChild, rigidBodyParent);
-			jointComponent = prismaticJoint as Joint;
-		}
-		else if (joint.Type.Equals("revolute"))
-		{
-			var revoluteJointComponent = SDFImplement.Joint.AddRevolute(joint.Axis, linkObjectChild, rigidBodyParent);
-			jointComponent = revoluteJointComponent as Joint;
-		}
-		else if (joint.Type.Equals("revolute2"))
-		{
-			var revolute2JointComponent = SDFImplement.Joint.AddRevolute2(joint.Axis, joint.Axis2, linkObjectChild, rigidBodyParent);
-			jointComponent = revolute2JointComponent as Joint;
-		}
-		else if (joint.Type.Equals("fixed"))
-		{
-			var fixedJointComponent = SDFImplement.Joint.AddFixed(linkObjectChild, rigidBodyParent);
-			jointComponent = fixedJointComponent as Joint;
-		}
-		else if (joint.Type.Equals("gearbox"))
-		{
-			// gearbox_ratio = GetValue<double>("gearbox_ratio");
-			// gearbox_reference_body = GetValue<string>("gearbox_reference_body");
-			Debug.LogWarning("This type[gearbox] is not supported now.");
-		}
-		else if (joint.Type.Equals("screw"))
-		{
-			// thread_pitch = GetValue<double>("thread_pitch");
-			Debug.LogWarning("This type[screw] is not supported now.");
-		}
-		else
-		{
-			Debug.LogWarningFormat("Check Joint type[{0}]", joint.Type);
+			case "ball":
+				var ballJoint = SDFImplement.Joint.AddBall(linkObjectChild, rigidBodyParent);
+				jointComponent = ballJoint as Joint;
+				break;
+
+			case "prismatic":
+				var prismaticJoint = SDFImplement.Joint.AddPrismatic(joint.Axis, joint.OdePhysics, joint.Pose, linkObjectChild, rigidBodyParent);
+				jointComponent = prismaticJoint as Joint;
+				break;
+
+			case "revolute":
+				var revoluteJointComponent = SDFImplement.Joint.AddRevolute(joint.Axis, linkObjectChild, rigidBodyParent);
+				jointComponent = revoluteJointComponent as Joint;
+				break;
+
+			case "revolute2":
+				var revolute2JointComponent = SDFImplement.Joint.AddRevolute2(joint.Axis, joint.Axis2, linkObjectChild, rigidBodyParent);
+				jointComponent = revolute2JointComponent as Joint;
+				break;
+
+			case "fixed":
+				var fixedJointComponent = SDFImplement.Joint.AddFixed(linkObjectChild, rigidBodyParent);
+				jointComponent = fixedJointComponent as Joint;
+				break;
+
+			case "gearbox":
+				// gearbox_ratio = GetValue<double>("gearbox_ratio");
+				// gearbox_reference_body = GetValue<string>("gearbox_reference_body");
+				Debug.LogWarning("This type[gearbox] is not supported now.");
+				break;
+
+			case "screw":
+				// thread_pitch = GetValue<double>("thread_pitch");
+				Debug.LogWarning("This type[screw] is not supported now.");
+				break;
+
+			default:
+				Debug.LogWarningFormat("Check Joint type[{0}]", joint.Type);
+				break;
 		}
 
 		if (jointComponent != null)
