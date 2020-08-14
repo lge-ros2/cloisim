@@ -94,31 +94,25 @@ public class SimulationControlService : WebSocketBehavior
 
 		SimulationControlResponseBase output = null;
 
-		switch (request.command)
+		if (request.command.Equals("reset"))
 		{
-			case "reset":
-				{
-					var wasSuccessful = modelLoaderService.TriggerResetService(request.command);
-					var result = (wasSuccessful) ? SimulationService.SUCCESS : SimulationService.FAIL;
+			var wasSuccessful = modelLoaderService.TriggerResetService(request.command);
+			var result = (wasSuccessful)? SimulationService.SUCCESS:SimulationService.FAIL;
 
-					output = new SimulationControlResponseNormal();
-					(output as SimulationControlResponseNormal).result = result;
-				}
-				break;
+			output = new SimulationControlResponseNormal();
+			(output as SimulationControlResponseNormal).result = result;
+		}
+		else if (request.command.Equals("device_list"))
+		{
+			var result = portDeviceService.GetSensorPortList();
 
-			case "device_list":
-				{
-					var result = portDeviceService.GetSensorPortList();
-
-					output = new SimulationControlResponseSensorPortList();
-					(output as SimulationControlResponseSensorPortList).result = result;
-				}
-				break;
-
-			default:
-				output = new SimulationControlResponseBase();
-				request.command = "Invalid Command";
-				break;
+			output = new SimulationControlResponseSensorPortList();
+			(output as SimulationControlResponseSensorPortList).result = result;
+		}
+		else
+		{
+			output = new SimulationControlResponseBase();
+			request.command = "Invalid Command";
 		}
 
 		output.command = request.command;
