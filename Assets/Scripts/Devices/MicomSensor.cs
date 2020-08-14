@@ -332,8 +332,8 @@ public class MicomSensor : Device
 		var angle = localRotation.eulerAngles * Mathf.Deg2Rad;
 
 		accGyro.AngleX = angle.x;
-		accGyro.AngleY = angle.z;
-		accGyro.AngleZ = angle.y;
+		accGyro.AngleY = angle.y;
+		accGyro.AngleZ = angle.z;
 
 		accGyro.AccX = 0;
 		accGyro.AccY = 0;
@@ -365,15 +365,15 @@ public class MicomSensor : Device
 
 	public void SetDifferentialDrive(in float linearVelocityLeft, in float linearVelocityRight)
 	{
-		var angularVelocityLeft = linearVelocityLeft * divideWheelRadius;
-		var angularVelocityRight = linearVelocityRight * divideWheelRadius;
+		var angularVelocityLeft = linearVelocityLeft * divideWheelRadius * Mathf.Rad2Deg;
+		var angularVelocityRight = linearVelocityRight * divideWheelRadius * Mathf.Rad2Deg;
 
 		SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
 	}
 
 	public void SetTwistDrive(in float linearVelocity, in float angularVelocity)
 	{
-		// m/s, deg/s
+		// m/s, rad/s
 		// var angularVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
 		// var angularVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
 		var angularCalculation = (angularVelocity * wheelBase * 0.5f);

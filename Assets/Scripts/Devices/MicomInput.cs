@@ -18,11 +18,11 @@ public class MicomInput : Device
 
 	public VelocityType ControlType => controlType;
 
-	private float wheelVelocityLeft = 0; // deg/s
-	private float wheelVelocityRight = 0; // deg/s
+	private float wheelVelocityLeft = 0; // rad/s
+	private float wheelVelocityRight = 0; // rad/s
 
 	private float linearVelocity = 0; // m/s
-	private float angularVelocity = 0; // deg/s
+	private float angularVelocity = 0; // rad/s
 
 	protected override void OnAwake()
 	{
@@ -80,17 +80,17 @@ public class MicomInput : Device
 					= (!child0.Name.Equals("LinearVelocity")) ? 0 : (float)child0.Value.DoubleValue;
 
 				angularVelocity
-					= (!child1.Name.Equals("AngularVelocity")) ? 0 : (float)child1.Value.DoubleValue * Mathf.Rad2Deg;
+					= (!child1.Name.Equals("AngularVelocity")) ? 0 : (float)child1.Value.DoubleValue;
 			}
 			else if (micomWritingData.Value.IntValue == 1)
 			{
 				controlType = VelocityType.LeftAndRight;
 
 				wheelVelocityLeft
-					= (!child0.Name.Equals("LeftWheelVelocity")) ? 0 : ((float)child0.Value.DoubleValue * Mathf.Rad2Deg);
+					= (!child0.Name.Equals("LeftWheelVelocity")) ? 0 : (float)child0.Value.DoubleValue;
 
 				wheelVelocityRight
-					= (!child1.Name.Equals("RightWheelVelocity")) ? 0 : ((float)child1.Value.DoubleValue* Mathf.Rad2Deg);
+					= (!child1.Name.Equals("RightWheelVelocity")) ? 0 : (float)child1.Value.DoubleValue;
 			}
 			else
 			{
@@ -119,7 +119,7 @@ public class MicomInput : Device
 
 	public float GetAngularVelocity()
 	{
-		return (float)angularVelocity;
+		return (float)angularVelocity * Mathf.Rad2Deg;
 	}
 
 	public float GetVelocity(in int index)
