@@ -11,7 +11,7 @@ using TMPro;
 
 public partial class MarkerVisualizer : MonoBehaviour
 {
-	private UnityEvent responseEvent = new UnityEvent();
+	private UnityEvent responseEvent;
 	private const string targetRootName = "Markers";
 	private const string mainCameraName = "Main Camera";
 	private const string commonShaderName = "UI/Unlit/Text";
@@ -19,20 +19,39 @@ public partial class MarkerVisualizer : MonoBehaviour
 	private Camera mainCamera = null;
 
 	private GameObject rootMarkers = null;
-	private Hashtable registeredMarkers = new Hashtable();
-	private Hashtable registeredObjectsForFollowingText = new Hashtable();
-	private Hashtable followingTextMarkers = new Hashtable();
+	private Hashtable registeredMarkers = null;
+	private Hashtable registeredObjectsForFollowingText = null;
+
+	private Hashtable followingTextMarkers = null;
 
 #region Request
 	private VisualMarkerRequest request = null;
 #endregion
 
 #region Response
-	private VisualMarkerResponse response = new VisualMarkerResponse();
+	private VisualMarkerResponse response = null;
 #endregion
+
+	MarkerVisualizer()
+	{
+		registeredMarkers = new Hashtable();
+
+		registeredObjectsForFollowingText = new Hashtable();
+		followingTextMarkers = new Hashtable();
+
+		response = new VisualMarkerResponse();
+
+		InitializeList();
+	}
 
 	void Awake()
 	{
+		if (responseEvent == null)
+		{
+			// Debug.Log("UnityEvent");
+			responseEvent = new UnityEvent();
+		}
+
 		rootMarkers = GameObject.Find(targetRootName);
 		commonShader = Shader.Find(commonShaderName);
 		mainCamera = GameObject.Find(mainCameraName).GetComponent<Camera>();
@@ -48,22 +67,18 @@ public partial class MarkerVisualizer : MonoBehaviour
 
 	void LateUpdate()
 	{
-		StartCoroutine(HandleFollowingText());
+		HandleFollowingText();
 	}
 
-	private IEnumerator HandleFollowingText()
+	private void HandleFollowingText()
 	{
-		var newPos = Vector3.zero;
-
 		foreach (DictionaryEntry textMarker in followingTextMarkers)
 		{
-			yield return null;
-
 			// Look at camera
 			var textObject = (textMarker.Value as TextMeshPro).gameObject;
 			textObject.transform.LookAt(mainCamera.transform);
 
-			// Text marker follows Objects
+			// Following Objects
 			var markerName = textObject.name;
 			var followingTargetObject = registeredObjectsForFollowingText[markerName] as GameObject;
 			if (followingTargetObject != null)
@@ -71,13 +86,10 @@ public partial class MarkerVisualizer : MonoBehaviour
 				var rectTransform = textObject.GetComponent<RectTransform>();
 				var followingObjectPosition = followingTargetObject.transform.position;
 				var textPosition = rectTransform.localPosition;
-
-				newPos.Set(followingObjectPosition.x, textPosition.y, followingObjectPosition.z);
+				var newPos = new Vector3(followingObjectPosition.x, textPosition.y, followingObjectPosition.z);
 				rectTransform.position = newPos;
 			}
 		}
-
-		yield return null;
 	}
 
 	public void RegisterResponseAction(in UnityAction call)
@@ -92,13 +104,17 @@ public partial class MarkerVisualizer : MonoBehaviour
 		}
 	}
 
-	private void DoneMarkerRequested(in VisualMarkerRequest.MarkerCommands command, in bool result)
+	private void DoneMarkerRequested(in string command, in bool result)
 	{
-		response.command = command.ToString().ToLower();
-		response.result = (result)? SimulationService.SUCCESS : SimulationService.FAIL;
-		responseEvent.Invoke();
+		request = null;
 
-		request = null; // remove requested message
+		response.command = command;
+		response.result = (result)? SimulationService.SUCCESS : SimulationService.FAIL;
+
+		if (result)
+		{
+			responseEvent.Invoke();
+		}
 	}
 
 	private void SetDefaultMeshRenderer(in Renderer renderer)
@@ -116,11 +132,6 @@ public partial class MarkerVisualizer : MonoBehaviour
 
 	private IEnumerator HandleRequsetMarkers()
 	{
-		if (request == null)
-		{
-			yield return null;
-		}
-
 		var result = false;
 
 		switch (request.command)
@@ -149,18 +160,19 @@ public partial class MarkerVisualizer : MonoBehaviour
 				break;
 		}
 
-
-		DoneMarkerRequested(request.command, result);
+		var command = request.command.ToString().ToLower();
+		DoneMarkerRequested(command, result);
 
 		yield return null;
 	}
+
 
 	public bool PushRequsetMarkers(in VisualMarkerRequest markerRequest)
 	{
 		if (markerRequest.command.Equals(VisualMarkerRequest.MarkerCommands.List) && markerRequest.markers.Count > 0)
 		{
 			request = null;
-			response.command = "";
+			response.command = "";//request.command;
 			response.result = SimulationService.FAIL;
 			response.lines = null;
 			response.texts = null;
