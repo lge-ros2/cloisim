@@ -146,6 +146,10 @@ namespace SDF
 					}
 					break;
 
+				case "fixed":
+					// Console.WriteLine("[{0}] P:{1} C:{2}", Type, parent, child);
+					break;
+
 				default:
 					Console.WriteLine("Invalid Type [{0}] P:{1} C:{2}", Type, parent, child);
 					break;

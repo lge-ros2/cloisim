@@ -35,6 +35,7 @@ namespace SensorDevices
 		protected RenderTextureFormat targetRTformat;
 		protected RenderTextureReadWrite targetRTrwmode;
 		protected TextureFormat readbackDstFormat;
+		private CamImageData camData;
 
 		void OnPreRender()
 		{
@@ -173,12 +174,12 @@ namespace SensorDevices
 
 		private IEnumerator CameraWorker()
 		{
-			var waitForSeconds = new WaitForSeconds(UpdatePeriod * adjustCapturingRate);
+			var image = imageStamped.Image;
+			var waitForSeconds = new WaitForSeconds(WaitPeriod());
 
 			while (true)
 			{
 				cam.enabled = true;
-
 				cam.Render();
 
 				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, readbackDstFormat);
@@ -197,13 +198,19 @@ namespace SensorDevices
 
 				if (readback.done)
 				{
-					camData.SetTextureData(readback.GetData<byte>());
+					camData.SetTextureBufferData(readback.GetData<byte>());
 
-					if (parameters.save_enabled)
+					if (image.Data.Length == camData.GetImageDataLength())
 					{
-						var saveName = name + "_" + Time.time;
-						camData.SaveRawImageData(parameters.save_path, saveName);
-						// Debug.LogFormat("{0}|{1} captured", parameters.save_path, saveName);
+						// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
+						image.Data = camData.GetImageData();
+
+						if (parameters.save_enabled)
+						{
+							var saveName = name + "_" + Time.time;
+							camData.SaveRawImageData(parameters.save_path, saveName);
+							// Debug.LogFormat("{0}|{1} captured", parameters.save_path, saveName);
+						}
 					}
 				}
 
@@ -226,15 +233,6 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			var image = imageStamped.Image;
-			var imageData = camData.GetTextureData();
-
-			if (imageData != null && image.Data.Length == imageData.Length)
-			{
-				image.Data = imageData;
-			}
-			// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
-
 			DeviceHelper.SetCurrentTime(imageStamped.Time);
 			PushData<messages.ImageStamped>(imageStamped);
 		}
@@ -242,6 +240,11 @@ namespace SensorDevices
 		public messages.CameraSensor GetCameraInfo()
 		{
 			return sensorInfo;
+		}
+
+		public messages.Image GetImageMessage()
+		{
+			return (imageStamped == null || imageStamped.Image == null)? null:imageStamped.Image;
 		}
 	}
 }

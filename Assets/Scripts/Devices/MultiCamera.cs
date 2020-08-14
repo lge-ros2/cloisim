@@ -31,7 +31,6 @@ namespace SensorDevices
 			foreach (var camParameters in parameters.list)
 			{
 				AddCamera(camParameters);
-				InitializeCamMessages(camParameters);
 			}
 		}
 
@@ -59,19 +58,25 @@ namespace SensorDevices
 			imagesStamped.Time = new messages.Time();
 		}
 
+		private void InitializeCamerasMessage()
+		{
+			foreach (var cam in cameras)
+			{
+				var image = cam.GetImageMessage();
+				if (image == null)
+				{
+					break;
+				}
+
+				imagesStamped.Images.Add(image);
+			}
+		}
+
 		protected override void GenerateMessage()
 		{
-			var images = imagesStamped.Images;
-
-			for (int index = 0; index < images.Count; index++)
+			if (imagesStamped.Images.Count != cameras.Count)
 			{
-				var image = images[index];
-				var imageData = cameras[index].GetCamImageData();
-				if (imageData != null && image.Data.Length == imageData.Length)
-				{
-					image.Data = imageData;
-				}
-				// Debug.Log(imagesStamped.Image.Height + "," + imagesStamped.Image.Width);
+				InitializeCamerasMessage();
 			}
 
 			DeviceHelper.SetCurrentTime(imagesStamped.Time);
@@ -94,18 +99,8 @@ namespace SensorDevices
 			newCam.runningDeviceWork = false;
 			newCam.deviceName = "MultiCamera::" + parameters.name;
 			newCam.parameters = parameters;
-			cameras.Add(newCam);
-		}
 
-		private void InitializeCamMessages(in SDF.Camera parameters)
-		{
-			var image = new messages.Image();
-			image.Width = (uint)parameters.image_width;
-			image.Height = (uint)parameters.image_height;
-			image.PixelFormat = (uint)Camera.GetPixelFormat(parameters.image_format);
-			image.Step = image.Width * (uint)Camera.GetImageDepth(parameters.image_format);
-			image.Data = new byte[image.Height * image.Step];
-			imagesStamped.Images.Add(image);
+			cameras.Add(newCam);
 		}
 
 		public messages.CameraSensor GetCameraInfo(in string cameraName)

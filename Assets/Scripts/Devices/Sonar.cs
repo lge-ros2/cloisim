@@ -41,7 +41,13 @@ namespace SensorDevices
 		{
 			deviceName = name;
 			sonarLink = transform.parent;
-			adjustCapturingRate = 0.95f;
+			waitingPeriodRatio = 0.95f;
+
+			var sonar = sonarStamped.Sonar;
+			sonar.Frame = deviceName;
+			sonar.Radius = radius;
+			sonar.RangeMin = rangeMin;
+			sonar.RangeMax = rangeMax;
 		}
 
 		protected override void OnStart()
@@ -109,12 +115,6 @@ namespace SensorDevices
 			sonarStamped.Sonar.WorldPose.Position = new messages.Vector3d();
 			sonarStamped.Sonar.WorldPose.Orientation = new messages.Quaternion();
 			sonarStamped.Sonar.Contact = new messages.Vector3d();
-
-			var sonar = sonarStamped.Sonar;
-			sonar.Frame = deviceName;
-			sonar.Radius = radius;
-			sonar.RangeMin = rangeMin;
-			sonar.RangeMax = rangeMax;
 		}
 
 		protected override IEnumerator MainDeviceWorker()

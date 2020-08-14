@@ -195,6 +195,8 @@ namespace SensorDevices
 			laserStartAngle = defaultRotationOffset + (float)angleMin;
 			laserEndAngle = defaultRotationOffset + (float)angleMax;
 			laserTotalAngle = (float)(angleMax - angleMin);
+
+			waitingPeriodRatio = 0.85f;
 		}
 
 		private IEnumerator LaserCameraWorker()
@@ -240,18 +242,12 @@ namespace SensorDevices
 					{
 						var data = laserCamData[dataIndex];
 						data.SetBufferData(readback.GetData<byte>());
+						data.ResolveLaserRanges((float)rangeMax);
 					}
 					else
 					{
 						Debug.LogWarning("AsyncGPUReadBackback Request was failed, dataIndex: " + dataIndex);
 					}
-				}
-
-				for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
-				{
-					yield return null;
-					var data = laserCamData[dataIndex];
-					data.ResolveLaserRanges((float)rangeMax);
 				}
 
 				sw.Stop();
@@ -268,7 +264,6 @@ namespace SensorDevices
 				sw.Restart();
 				GenerateMessage();
 				sw.Stop();
-
 				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
 			}
 		}
@@ -359,7 +354,7 @@ namespace SensorDevices
 					var rayRotation = Quaternion.AngleAxis((float)(rayAngleH), lidarLink.up) * lidarLink.forward;
 					var rayStart = (rayRotation * (float)rangeMin) + lidarSensorWorldPosition;
 
-					var ccwIndex = (uint)rangeData.Length - hScanIndex - 1;
+					var ccwIndex = (uint)(rangeData.Length - hScanIndex - 1);
 					var rayData = rangeData[ccwIndex];
 
 					var rayDistance = (rayData == Mathf.Infinity) ? (float)rangeMax : (rayData - (float)rangeMin);

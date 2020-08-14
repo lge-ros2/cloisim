@@ -122,18 +122,18 @@ namespace SensorDevices
 			return depth;
 		}
 
-		private struct CamData
+		private struct CamImageData
 		{
-			private byte[] imageBuffer;
+			private NativeArray<byte> imageBuffer;
 
 			private Texture2D cameraImage;
 
 			public void AllocateTexture(in int width, in int height, in string imageFormat)
 			{
 				var isLinear = false;
+				var textureFormat = TextureFormat.RGB24;
 
 				var format = GetPixelFormat(imageFormat);
-				var textureFormat = TextureFormat.RGB24;
 				switch (format)
 				{
 					case PixelFormat.L_INT8:
@@ -156,38 +156,36 @@ namespace SensorDevices
 
 					case PixelFormat.RGB_INT8:
 					default:
-						textureFormat = TextureFormat.RGB24;
 						break;
 				}
+
 				cameraImage = new Texture2D(width, height, textureFormat, false, isLinear);
 			}
 
-			public void SetTextureData(in NativeArray<byte> buffer)
+			public void SetTextureBufferData(in NativeArray<byte> buffer)
 			{
-				imageBuffer = buffer.ToArray();
+				imageBuffer = buffer;
 			}
 
-			public byte[] GetTextureData()
+			public int GetImageDataLength()
 			{
-				return imageBuffer;
+				return imageBuffer.Length;
+			}
+
+			public byte[] GetImageData()
+			{
+				return imageBuffer.ToArray();
 			}
 
 			public void SaveRawImageData(in string path, in string name)
 			{
-				cameraImage.LoadImage(imageBuffer);
+				cameraImage.SetPixelData(imageBuffer, 0);
 				cameraImage.Apply();
-
 				var bytes = cameraImage.EncodeToPNG();
-				var fileName = string.Format("{0}/{1}", path, name);
+				var fileName = string.Format("{0}/{1}.png", path, name);
 				System.IO.File.WriteAllBytes(fileName, bytes);
 			}
 		}
 
-		private CamData camData;
-
-		public byte[] GetCamImageData()
-		{
-			return camData.GetTextureData();
-		}
 	}
 }
