@@ -40,20 +40,11 @@ public partial class ElevatorSystem : DevicePlugin
 	private const int NON_ELEVATOR_INDEX = -1;
 
 	private bool isRunningThread = true;
-	private MemoryStream memoryStreamForService = null;
-	private Param responseMessage = null;
-	private Dictionary<string, float> floorList;
-	private Dictionary<int, ElevatorEntity> elevatorList;
-	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue;
-
-	ElevatorSystem()
-	{
-		memoryStreamForService = new MemoryStream();
-		responseMessage = new Param();
-		floorList = new Dictionary<string, float>();
-		elevatorList = new Dictionary<int, ElevatorEntity>();
-		elevatorTaskQueue = new ConcurrentQueue<ElevatorTask>();
-	}
+	private MemoryStream memoryStreamForService = new MemoryStream();
+	private Param responseMessage = new Param();
+	private Dictionary<string, float> floorList = new Dictionary<string, float>();
+	private Dictionary<int, ElevatorEntity> elevatorList = new Dictionary<int, ElevatorEntity>();
+	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue = new ConcurrentQueue<ElevatorTask>();
 
 	protected override void OnAwake()
 	{
