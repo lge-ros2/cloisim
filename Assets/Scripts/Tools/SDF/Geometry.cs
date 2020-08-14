@@ -101,25 +101,29 @@ namespace SDF
 
 		public Type GetShapeType()
 		{
-			switch (Type)
+			if (Type.Equals("box"))
 			{
-				case "box":
-					return typeof(Box);
-
-				case "mesh":
-					return typeof(Mesh);
-
-				case "sphere":
-					return typeof(Sphere);
-
-				case "cylinder":
-					return typeof(Cylinder);
-
-				case "plane":
-					return typeof(Plane);
-
-				default:
-					return null;
+				return typeof(Box);
+			}
+			else if (Type.Equals("mesh"))
+			{
+				return typeof(Mesh);
+			}
+			else if (Type.Equals("sphere"))
+			{
+				return typeof(Sphere);
+			}
+			else if (Type.Equals("cylinder"))
+			{
+				return typeof(Cylinder);
+			}
+			else if (Type.Equals("plane"))
+			{
+				return typeof(Plane);
+			}
+			else
+			{
+				return null;
 			}
 		}
 	}

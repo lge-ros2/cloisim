@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
 using System.Xml;
 
 namespace SDF
@@ -94,61 +93,53 @@ namespace SDF
 
 			// Console.WriteLine("[{0}] P:{1} C:{2}", GetType().Name, parent, child);
 
-			switch (Type)
+			if (Type.Equals("gearbox"))
 			{
-				case "gearbox":
-					gearbox_ratio = GetValue<double>("gearbox_ratio");
-					gearbox_reference_body = GetValue<string>("gearbox_reference_body");
-					break;
+				gearbox_ratio = GetValue<double>("gearbox_ratio");
+				gearbox_reference_body = GetValue<string>("gearbox_reference_body");
+			}
+			else if (Type.Equals("screw"))
+			{
+				thread_pitch = GetValue<double>("thread_pitch");
+			}
+			else if (Type.Equals("revolute") || Type.Equals("revolute2") || Type.Equals("prismatic"))
+			{
+				axis = new Axis();
+				var xyzStr = GetValue<string>("axis/xyz");
+				axis.xyz.SetByString(xyzStr);
 
-				case "screw":
-					thread_pitch = GetValue<double>("thread_pitch");
-					break;
+				if (IsValidNode("axis/limit"))
+				{
+					axis.limit_lower = GetValue<double>("axis/limit/lower");
+					axis.limit_upper = GetValue<double>("axis/limit/upper");
+				}
 
-				case "revolute":
-				case "revolute2":
-				case "prismatic":
-					axis = new Axis();
-					var xyzStr = GetValue<string>("axis/xyz");
-					axis.xyz.SetByString(xyzStr);
+				if (IsValidNode("axis/dynamics"))
+				{
+					axis.dynamics_damping = GetValue<double>("axis/dynamics/damping");
+					axis.dynamics_spring_stiffness = GetValue<double>("axis/dynamics/spring_stiffness");
+				}
+			}
 
-					if (IsValidNode("axis/limit"))
-					{
-						axis.limit_lower = GetValue<double>("axis/limit/lower");
-						axis.limit_upper = GetValue<double>("axis/limit/upper");
-					}
+			if (Type.Equals("revolute2"))
+			{
+				axis2 = new Axis();
+				var xyzStr = GetValue<string>("axis2/xyz");
+				axis2.xyz.SetByString(xyzStr);
 
-					if (IsValidNode("axis/dynamics"))
-					{
-						axis.dynamics_damping = GetValue<double>("axis/dynamics/damping");
-						axis.dynamics_spring_stiffness = GetValue<double>("axis/dynamics/spring_stiffness");
-					}
+				if (IsValidNode("axis2/limit"))
+				{
+					axis2.limit_lower = GetValue<double>("axis2/limit/lower");
+					axis2.limit_upper = GetValue<double>("axis2/limit/upper");
+				}
+			}
 
-					if (Type.Equals("revolute2"))
-					{
-						axis2 = new Axis();
-						xyzStr = GetValue<string>("axis2/xyz");
-						axis2.xyz.SetByString(xyzStr);
-
-						if (IsValidNode("axis2/limit"))
-						{
-							axis2.limit_lower = GetValue<double>("axis2/limit/lower");
-							axis2.limit_upper = GetValue<double>("axis2/limit/upper");
-						}
-					}
-
-					if (IsValidNode("physics/ode"))
-					{
-						if (IsValidNode("physics/ode/max_force"))
-						{
-							odePhysics.max_force = GetValue<double>("physics/ode/max_force");
-						}
-					}
-					break;
-
-				default:
-					Console.WriteLine("Invalid Type [{0}] P:{1} C:{2}", Type, parent, child);
-					break;
+			if (IsValidNode("physics/ode"))
+			{
+				if (IsValidNode("physics/ode/max_force"))
+				{
+					odePhysics.max_force = GetValue<double>("physics/ode/max_force");
+				}
 			}
 		}
 	}

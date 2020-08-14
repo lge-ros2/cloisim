@@ -65,75 +65,55 @@ namespace SDF
 
 			// Console.WriteLine("[{0}] P:{1} C:{2}", GetType().Name, parent, child);
 
-			switch (Type)
+			if (IsValidNode("ray") && (Type.Equals("gpu_ray") || Type.Equals("ray") || Type.Equals("lidar")))
 			{
-				case "gpu_ray":
-				case "ray":
-				case "lidar":
-					if (IsValidNode("ray"))
+				sensor = ParseRay();
+			}
+			else if (IsValidNode("camera"))
+			{
+				if (Type.Equals("multicamera"))
+				{
+					var cameras = new Cameras();
+					cameras.name = "multiple_camera";
+
+					var nodes = GetNodes("camera");
+					// Console.WriteLine("totalCamera: " + nodes.Count);
+
+					for (int index = 1; index <= nodes.Count; index++)
 					{
-						sensor = ParseRay();
+						cameras.list.Add(ParseCamera(index));
 					}
-					break;
 
-				case "multicamera":
-					if (IsValidNode("camera"))
-					{
-						var cameras = new Cameras();
-						cameras.name = "multiple_camera";
-
-						var nodes = GetNodes("camera");
-						// Console.WriteLine("totalCamera: " + nodes.Count);
-
-						for (var index = 1; index <= nodes.Count; index++)
-						{
-							cameras.list.Add(ParseCamera(index));
-						}
-
-						sensor = cameras;
-					}
-					break;
-
-				case "camera":
-				case "depth":
-				case "wideanglecamera":
-					if (IsValidNode("camera"))
-					{
-						sensor = ParseCamera();
-					}
-					break;
-
-				case "sonar":
-					if (IsValidNode("sonar"))
-					{
-						sensor = ParseSonar();
-					}
-					break;
-
-				case "imu":
-					if (IsValidNode("imu"))
-					{
-						sensor = ParseIMU();
-					}
-					break;
-
-				case "gps":
-					if (IsValidNode("gps"))
-					{
-						sensor = ParseGPS();
-					}
-					break;
-
-				case "contact":
-					if (IsValidNode("contact"))
-					{
-						sensor = ParseContact();
-					}
-					break;
-
-				default:
-					Console.WriteLine("Not supported sensor type!!!!! => " + Type);
-					break;
+					sensor = cameras;
+				}
+				else if (Type.Equals("camera") || Type.Equals("depth") || Type.Equals("wideanglecamera"))
+				{
+					sensor = ParseCamera();
+				}
+				else
+				{
+					Console.WriteLine("Not supported camera type !? => " + Type);
+				}
+			}
+			else if (IsValidNode("sonar") && Type.Equals("sonar"))
+			{
+				sensor = ParseSonar();
+			}
+			else if (IsValidNode("imu") && Type.Equals("imu"))
+			{
+				sensor = ParseIMU();
+			}
+			else if (IsValidNode("gps") && Type.Equals("gps"))
+			{
+				sensor = ParseGPS();
+			}
+			else if (IsValidNode("contact") && Type.Equals("contact"))
+			{
+				sensor = ParseContact();
+			}
+			else
+			{
+				Console.WriteLine("Not supported sensor type!!!!! => " + Type);
 			}
 
 			// Set common
