@@ -21,64 +21,57 @@ public partial class SDFImporter : SDF.Importer
 
 		var sensorType = item.Type;
 
-		switch (sensorType)
+		if (sensorType.Equals("lidar") || sensorType.Equals("ray") || sensorType.Equals("gpu_ray"))
 		{
-			case "lidar":
-			case "ray":
-			case "gpu_ray":
-				var ray = item.GetSensor() as SDF.Ray;
-				sensor = SDFImplement.Sensor.AddLidar(ray, targetObject);
-				break;
-
-			case "depth":
-				var depthCamera = item.GetSensor() as SDF.Camera;
-				sensor = SDFImplement.Sensor.AddDepthCamera(depthCamera, targetObject);
-				break;
-
-			case "camera":
-				var camera = item.GetSensor() as SDF.Camera;
-				sensor = SDFImplement.Sensor.AddCamera(camera, targetObject);
-				break;
-
-			case "multicamera":
-				var cameras = item.GetSensor() as SDF.Cameras;
-				sensor = SDFImplement.Sensor.AddMultiCamera(cameras, targetObject);
-				break;
-
-			case "imu":
-				var imu = item.GetSensor() as SDF.IMU;
-				sensor = SDFImplement.Sensor.AddImu(imu, targetObject);
-				break;
-
-			case "sonar":
-				var sonar = item.GetSensor() as SDF.Sonar;
-				sensor = SDFImplement.Sensor.AddSonar(sonar, targetObject);
-				break;
-
-			case "gps":
-				var gps = item.GetSensor() as SDF.GPS;
-				sensor = SDFImplement.Sensor.AddGps(gps, targetObject);
-				break;
-
-			case "contact":
-				var contact = item.GetSensor() as SDF.Contact;
-				sensor = SDFImplement.Sensor.AddContact(contact, targetObject);
-				break;
-
-			case "air_pressure":
-			case "altimeter":
-			case "force_torque":
-			case "logical_camera":
-			case "magnetometer":
-			case "rfidtag":
-			case "rfid":
-			case "transceiver":
-				Console.WriteLine("[Sensor] Not supported sensor name({0}) type({1})!!!!!", item.Name, sensorType);
-				break;
-
-			default:
-				Debug.LogWarningFormat("[Sensor] type({0}) is not supprted.", sensorType);
-				break;
+			var ray = item.GetSensor() as SDF.Ray;
+			sensor = SDFImplement.Sensor.AddLidar(ray, targetObject);
+		}
+		else if (sensorType.Equals("depth"))
+		{
+			var depthCamera = item.GetSensor() as SDF.Camera;
+			sensor = SDFImplement.Sensor.AddDepthCamera(depthCamera, targetObject);
+		}
+		else if (sensorType.Equals("camera"))
+		{
+			var camera = item.GetSensor() as SDF.Camera;
+			sensor = SDFImplement.Sensor.AddCamera(camera, targetObject);
+		}
+		else if (sensorType.Equals("multicamera"))
+		{
+			var cameras = item.GetSensor() as SDF.Cameras;
+			sensor = SDFImplement.Sensor.AddMultiCamera(cameras, targetObject);
+		}
+		else if (sensorType.Equals("imu"))
+		{
+			var imu = item.GetSensor() as SDF.IMU;
+			sensor = SDFImplement.Sensor.AddImu(imu, targetObject);
+		}
+		else if (sensorType.Equals("sonar"))
+		{
+			var sonar = item.GetSensor() as SDF.Sonar;
+			sensor = SDFImplement.Sensor.AddSonar(sonar, targetObject);
+		}
+		else if (sensorType.Equals("gps"))
+		{
+			var gps = item.GetSensor() as SDF.GPS;
+			sensor = SDFImplement.Sensor.AddGps(gps, targetObject);
+		}
+		else if (sensorType.Equals("contact"))
+		{
+			var contact = item.GetSensor() as SDF.Contact;
+			sensor = SDFImplement.Sensor.AddContact(contact, targetObject);
+		}
+		else if (sensorType.Equals("air_pressure") || sensorType.Equals("altimeter") ||
+				 sensorType.Equals("force_torque") ||
+				 sensorType.Equals("logical_camera") || sensorType.Equals("magnetometer") ||
+				 sensorType.Equals("rfidtag") ||
+				 sensorType.Equals("rfid") || sensorType.Equals("transceiver"))
+		{
+			Console.WriteLine("[Sensor] Not supported sensor name({0}) type({1})!!!!!", item.Name, sensorType);
+		}
+		else
+		{
+			Debug.LogWarningFormat("[Sensor] type({0}) is not supprted.", sensorType);
 		}
 
 		GameObject newSensorObject = null;
