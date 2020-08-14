@@ -12,10 +12,6 @@ namespace SDF
 {
 	public class Importer
 	{
-		public Importer()
-		{
-		}
-
 		protected virtual void ImportWorld(in World world)
 		{
 			PrintNotImported(MethodBase.GetCurrentMethod().Name, world.Name);
