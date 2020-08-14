@@ -64,13 +64,7 @@ namespace SensorDevices
 
 		protected override IEnumerator OnVisualize()
 		{
-			var waitForEndOfFrame = new WaitForEndOfFrame();
-			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
-
-			while (true)
-			{
-				yield return waitForSeconds;
-			}
+			yield return null;
 		}
 
 		protected override void InitializeMessages()

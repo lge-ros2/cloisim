@@ -12,12 +12,13 @@ using ProtoBuf;
 
 public abstract class Device : MonoBehaviour
 {
+	private const int maxQueue = 3;
+
 	public string deviceName = string.Empty;
 
-	private const int maxQueue = 3;
-	private BlockingCollection<MemoryStream> memoryStreamOutboundQueue;
+	private BlockingCollection<MemoryStream> memoryStreamOutboundQueue = new BlockingCollection<MemoryStream>(maxQueue);
 
-	private MemoryStream memoryStream = null;
+	private MemoryStream memoryStream = new MemoryStream();
 
 	protected const float SEC2MSEC = 1000.0f;
 
@@ -60,8 +61,6 @@ public abstract class Device : MonoBehaviour
 
 	void Awake()
 	{
-		memoryStreamOutboundQueue = new BlockingCollection<MemoryStream>(maxQueue);
-		memoryStream = new MemoryStream();
 		ResetDataStream();
 
 		OnAwake();
