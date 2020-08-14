@@ -69,27 +69,18 @@ public class MultiCameraPlugin : DevicePlugin
 
 			var requestMessage = CameraPlugin.ParsingCameraInfoRequest(ref memoryStreamForCameraInfo, receivedBuffer);
 
-			if (requestMessage != null)
+			if (requestMessage != null && requestMessage.Name.Equals("request_camera_info"))
 			{
-				switch (requestMessage.Name)
+				var cameraName = requestMessage.Value.StringValue;
+
+				if (cameraName != null)
 				{
-					case "request_camera_info":
+					var cameraInfoMessage = cam.GetCameraInfo(cameraName);
 
-						var cameraName = requestMessage.Value.StringValue;
-						if (cameraName != null)
-						{
-							var cameraInfoMessage = cam.GetCameraInfo(cameraName);
-
-							CameraPlugin.SetCameraInfoResponse(ref memoryStreamForCameraInfo, cameraInfoMessage);
-						}
-
-						SendResponse(memoryStreamForCameraInfo);
-
-						break;
-
-					default:
-						break;
+					CameraPlugin.SetCameraInfoResponse(ref memoryStreamForCameraInfo, cameraInfoMessage);
 				}
+
+				SendResponse(memoryStreamForCameraInfo);
 			}
 		}
 	}
