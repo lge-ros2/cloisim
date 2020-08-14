@@ -22,12 +22,16 @@ public partial class MarkerVisualizer : MonoBehaviour
 			foreach (var item in request.markers)
 			{
 				var markerName = item.MarkerName();
-
 				if (registeredMarkers[markerName] != null)
 				{
 					Debug.LogWarning(markerName + " is Already Exist in visual marker list!!!");
-					continue;
+					return false;
 				}
+			}
+
+			foreach (var item in request.markers)
+			{
+				var markerName = item.MarkerName();
 
 				marker = null;
 				switch (item.type)

@@ -11,18 +11,10 @@ using UnityEngine;
 
 public partial class MarkerVisualizer : MonoBehaviour
 {
-	private List<MarkerResponseLine> requestedMarkerLineList;
-	private List<MarkerResponseText> requestedMarkerTextList;
-	private List<MarkerResponseBox> requestedMarkerBoxList;
-	private List<MarkerResponseSphere> requestedMarkerSphereList;
-
-	public void InitializeList()
-	{
-		requestedMarkerLineList = new List<MarkerResponseLine>();
-		requestedMarkerTextList = new List<MarkerResponseText>();
-		requestedMarkerBoxList = new List<MarkerResponseBox>();
-		requestedMarkerSphereList = new List<MarkerResponseSphere>();
-	}
+	private List<MarkerResponseLine> requestedMarkerLineList = new List<MarkerResponseLine>();
+	private List<MarkerResponseText> requestedMarkerTextList = new List<MarkerResponseText>();
+	private List<MarkerResponseBox> requestedMarkerBoxList = new List<MarkerResponseBox>();
+	private List<MarkerResponseSphere> requestedMarkerSphereList = new List<MarkerResponseSphere>();
 
 	public bool ListMarkers()
 	{
