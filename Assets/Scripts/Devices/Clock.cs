@@ -10,14 +10,11 @@ using messages = gazebo.msgs;
 
 public class Clock : Device
 {
-	private const float updateRate = 100f;
+	private const float updateRate = 250f;
 
 	private messages.Param timeInfo = null;
 	private messages.Time simTime = null;
 	private messages.Time realTime = null;
-
-	private float restartedSimTime = 0;
-	private float restartedRealTime = 0;
 
 	protected override void OnAwake()
 	{
@@ -77,21 +74,5 @@ public class Clock : Device
 			DeviceHelper.SetCurrentTime(realTime, true);
 			PushData<messages.Param>(timeInfo);
 		}
-	}
-
-	public void ResetTime()
-	{
-		restartedSimTime = Time.time;
-		restartedRealTime = Time.realtimeSinceStartup;
-	}
-
-	public float GetSimTime()
-	{
-		return Time.time - restartedSimTime;
-	}
-
-	public float GetRealTime()
-	{
-		return Time.realtimeSinceStartup - restartedRealTime;
 	}
 }

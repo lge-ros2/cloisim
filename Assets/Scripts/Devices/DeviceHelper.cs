@@ -10,8 +10,6 @@ using messages = gazebo.msgs;
 
 public class DeviceHelper
 {
-	static Clock clock = null;
-
 	public static string GetModelName(in GameObject targetObject, in bool searchOnlyOneDepth = false)
 	{
 		try
@@ -54,19 +52,7 @@ public class DeviceHelper
 		{
 			if (gazeboMsgsTime != null)
 			{
-				if (clock == null)
-				{
-					var coreObject = GameObject.Find("Core");
-					if (coreObject != null)
-					{
-						clock = coreObject.GetComponent<Clock>();
-					}
-				}
-
-				var simTime = (clock == null) ? Time.time : clock.GetSimTime();
-				var realTime = (clock == null) ? Time.realtimeSinceStartup : clock.GetRealTime();
-
-				var timeNow = (useRealTime) ? realTime : simTime;
+				var timeNow = (useRealTime) ? Time.realtimeSinceStartup : Time.time;
 				gazeboMsgsTime.Sec = (int)timeNow;
 				gazeboMsgsTime.Nsec = (int)((timeNow - (float)gazeboMsgsTime.Sec) * (float)1e+9);
 			}
@@ -119,6 +105,7 @@ public class DeviceHelper
 
 		return projMatrix;
 	}
+
 
 	public static float HorizontalToVerticalFOV(in float horizontalFOV, in float aspect = 1.0f)
 	{

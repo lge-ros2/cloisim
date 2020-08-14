@@ -11,9 +11,8 @@ using TMPro;
 
 public class SimulationDisplay : MonoBehaviour
 {
-	private StringBuilder sbToPrint = new StringBuilder();
 	private TextMeshProUGUI uiText = null;
-	private Clock clock = null;
+	private StringBuilder sbToPrint;
 
 	private int frameCount = 0;
 	private float dt = 0.0F;
@@ -24,10 +23,8 @@ public class SimulationDisplay : MonoBehaviour
 	// Start is called before the first frame update
 	void Awake()
 	{
+		sbToPrint = new StringBuilder();
 		uiText = GetComponent<TextMeshProUGUI>();
-
-		var coreObject = GameObject.Find("Core");
-		clock = coreObject.GetComponent<Clock>();
 	}
 
 	void Update()
@@ -44,22 +41,30 @@ public class SimulationDisplay : MonoBehaviour
 
 	void LateUpdate()
 	{
-		var simTime = (clock == null) ? Time.time : clock.GetSimTime();
-		var realTime = (clock == null) ? Time.realtimeSinceStartup : clock.GetRealTime();
-
-		var simTs = TimeSpan.FromSeconds(simTime);
-		var realTs = TimeSpan.FromSeconds(realTime);
+		var simTs = TimeSpan.FromSeconds(Time.time);
+		// var simFixedTs = TimeSpan.FromSeconds(Time.fixedTime);
+		var realTs = TimeSpan.FromSeconds(Time.realtimeSinceStartup);
 		var diffTs1 = realTs - simTs;
+		// var diffTs2 = realTs - simFixedTs;
+		// var timeScale = Time.timeScale;
 
 		var currentSimTime = simTs.ToString(@"d\:hh\:mm\:ss\.fff");
+		// var currentFixedTime = simFixedTs.ToString(@"d\:hh\:mm\:ss\.fff");
 		var currentRealTime = realTs.ToString(@"d\:hh\:mm\:ss\.fff");
 		var diffRealSimTime = diffTs1.ToString(@"d\:hh\:mm\:ss\.fff");
+		// var diffRealFixedTime = diffTs2.ToString(@"d\:hh\:mm\:ss\.fff");
 
 		if (sbToPrint != null)
 		{
 			sbToPrint.Clear();
 			sbToPrint.Append("Version : ");
 			sbToPrint.Append(Application.version);
+
+			// sbToPrint.Append(", Real-Fixed: ");
+			// sbToPrint.Append(diffRealFixedTime);
+
+			// sbToPrint.Append(", (Time)Scale : ");
+			// sbToPrint.Append(timeScale.ToString("F1"));
 
 			sbToPrint.Append(", FPS : ");
 			sbToPrint.Append(Mathf.Round(fps));
@@ -69,12 +74,14 @@ public class SimulationDisplay : MonoBehaviour
 			sbToPrint.Append("(Time) Simulation: ");
 			sbToPrint.Append(currentSimTime);
 
+			// sbToPrint.Append(", Fixed: ");
+			// sbToPrint.Append(currentFixedTime);
+
 			sbToPrint.Append(", Real: ");
 			sbToPrint.Append(currentRealTime);
 
 			sbToPrint.Append(", (DiffTime) Real-Sim: ");
 			sbToPrint.Append(diffRealSimTime);
-
 
 			uiText.text = sbToPrint.ToString();
 		}
