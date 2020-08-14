@@ -16,8 +16,6 @@ namespace SensorDevices
 
 		private Material depthMaterial = null;
 
-		public bool isPointCloud = false;
-
 		void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
 			if (depthMaterial)
@@ -29,21 +27,23 @@ namespace SensorDevices
 				Graphics.Blit(source, destination);
 			}
 		}
+
 		protected override void SetupTexture()
 		{
 			var shader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(shader);
 			depthMaterial.SetFloat("_ReverseData", 1.0f);
 
-			if (parameters.depth_camera_output.Equals("points"))
+			switch (parameters.depth_camera_output)
 			{
-				isPointCloud = true;
-				Debug.Log("Enable Point Cloud data mode");
-				parameters.image_format = "RGB_FLOAT32";
-			}
-			else
-			{
-				parameters.image_format = "R_FLOAT32";
+				case "points":
+					Debug.Log("Enable Point Cloud data mode");
+					parameters.image_format = "RGB_FLOAT32";
+					break;
+
+				default:
+					parameters.image_format = "R_FLOAT32";
+					break;
 			}
 
 			cam.backgroundColor = Color.white;

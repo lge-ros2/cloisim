@@ -32,29 +32,37 @@ namespace SensorDevices
 			}
 
 			// Handle old format strings
-			if (imageFormat.Equals("L8") || imageFormat.Equals("L_INT8"))
+			switch (imageFormat)
 			{
-				parsedEnum = PixelFormat.L_INT8;
-			}
-			else if (imageFormat.Equals("L16") || imageFormat.Equals("L_INT16") || imageFormat.Equals("L_UINT16"))
-			{
-				// Note: we are treating unsigned and signed 16bit the same but it is
-				// better to add a L_UINT16 format to distinguish between the two
-				parsedEnum = PixelFormat.L_INT16;
-			}
-			else if (imageFormat.Equals("R8G8B8") || imageFormat.Equals("RGB_INT8"))
-			{
-				parsedEnum = PixelFormat.RGB_INT8;
-			}
-			else if (imageFormat.Equals("R16G16B16") || imageFormat.Equals("RGB_INT16")|| imageFormat.Equals("RGB_UINT16"))
-			{
-				// Note: we are treating unsigned and signed 16bit the same but it is
-				// better to add a RGB_UINT16 format to distinguish between the two
-				parsedEnum = PixelFormat.RGB_INT16;
-			}
-			else
-			{
-				parsedEnum = (PixelFormat)Enum.Parse(typeof(PixelFormat), imageFormat);
+				case "L8":
+				case "L_INT8":
+					parsedEnum = PixelFormat.L_INT8;
+					break;
+
+				case "L16":
+				case "L_INT16":
+				case "L_UINT16":
+					// Note: we are treating unsigned and signed 16bit the same but it is
+					// better to add a L_UINT16 format to distinguish between the two
+					parsedEnum = PixelFormat.L_INT16;
+					break;
+
+				case "R8G8B8":
+				case "RGB_INT8":
+					parsedEnum = PixelFormat.RGB_INT8;
+					break;
+
+				case "R16G16B16":
+				case "RGB_INT16":
+				case "RGB_UINT16":
+					// Note: we are treating unsigned and signed 16bit the same but it is
+					// better to add a RGB_UINT16 format to distinguish between the two
+					parsedEnum = PixelFormat.RGB_INT16;
+					break;
+
+				default:
+					parsedEnum = (PixelFormat)Enum.Parse(typeof(PixelFormat), imageFormat);
+					break;
 			}
 
 			return parsedEnum;
@@ -62,45 +70,53 @@ namespace SensorDevices
 
 		static public int GetImageDepth(in string imageFormat)
 		{
-			int depth = 0;
+			var depth = 0;
 
 			if (imageFormat == null || imageFormat.Equals(string.Empty))
 			{
 				return depth;
 			}
 
-			if (imageFormat.Equals("L8") || imageFormat.Equals("L_INT8"))
+			switch (imageFormat)
 			{
-				depth = 1;
-			}
-			else if (imageFormat.Equals("L16") || imageFormat.Equals("L_INT16")|| imageFormat.Equals("L_UINT16"))
-			{
-				depth = 2;
-			}
-			else if (imageFormat.Equals("R8G8B8")|| imageFormat.Equals("RGB_INT8"))
-			{
-				depth = 3;
-			}
-			else if (imageFormat.Equals("B8G8R8")|| imageFormat.Equals("BGR_INT8"))
-			{
-				depth = 3;
-			}
-			else if (imageFormat.Equals("R_FLOAT32"))
-			{
-				depth = 4;
-			}
-			else if (imageFormat.Equals("R16G16B16")|| imageFormat.Equals("RGB_INT16")|| imageFormat.Equals("RGB_UINT16"))
-			{
-				depth = 6;
-			}
-			else if (imageFormat.Equals("BAYER_RGGB8") || imageFormat.Equals("BAYER_BGGR8") ||
-					 imageFormat.Equals("BAYER_GBRG8") || imageFormat.Equals("BAYER_GRBG8"))
-			{
-				depth = 1;
-			}
-			else
-			{
-				Debug.LogErrorFormat("Error parsing image format ({0}), using default PF_R8G8B8", imageFormat);
+				case "L8":
+				case "L_INT8":
+					depth = 1;
+					break;
+
+				case "L16":
+				case "L_INT16":
+				case "L_UINT16":
+					depth = 2;
+					break;
+
+				case "R8G8B8":
+				case "RGB_INT8":
+				case "B8G8R8":
+				case "BGR_INT8":
+					depth = 3;
+					break;
+
+				case "R16G16B16":
+				case "RGB_INT16":
+				case "RGB_UINT16":
+					depth = 6;
+					break;
+
+				case "R_FLOAT32":
+					depth = 4;
+					break;
+
+				case "BAYER_RGGB8":
+				case "BAYER_BGGR8":
+				case "BAYER_GBRG8":
+				case "BAYER_GRBG8":
+					depth = 1;
+					break;
+
+				default:
+					Debug.LogErrorFormat("Error parsing image format ({0}), using default PF_R8G8B8", imageFormat);
+					break;
 			}
 
 			return depth;
