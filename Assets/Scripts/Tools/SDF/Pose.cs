@@ -42,38 +42,28 @@ namespace SDF
 			Y = _y;
 		}
 
-		public void FromString(string value)
+		public void FromString(in string value)
 		{
 			SetByString(value);
 		}
 
-		public void SetByString(string value)
+		public void SetByString(in string value)
 		{
 			if (string.IsNullOrEmpty(value))
+			{
 				return;
+			}
 
-			value = value.Trim();
-
-			var tmp = value.Split(' ');
-
-			if (tmp.Length != 2)
-				return;
-
-			TypeCode code = Type.GetTypeCode(typeof(T));
-
-			// if (typeof(T) == typeof(double))
-			// 	code = TypeCode.Double;
-			// if (typeof(T) == typeof(float))
-			// 	code = TypeCode.Single;
-			// else if (typeof(T) == typeof(int))
-			// 	code = TypeCode.Int64;
-			// else
-			// 	return;
-			if (code == TypeCode.Empty)
-				return;
-
-			X = (T)Convert.ChangeType(tmp[0], code);
-			Y = (T)Convert.ChangeType(tmp[1], code);
+			var tmp = value.Trim().Split(' ');
+			if (tmp.Length == 2)
+			{
+				var code = Type.GetTypeCode(typeof(T));
+				if (code != TypeCode.Empty)
+				{
+					X = (T)Convert.ChangeType(tmp[0], code);
+					Y = (T)Convert.ChangeType(tmp[1], code);
+				}
+			}
 		}
 	}
 
@@ -117,31 +107,29 @@ namespace SDF
 			Z = _z;
 		}
 
-		public void FromString(string value)
+		public void FromString(in string value)
 		{
 			SetByString(value);
 		}
 
-		public void SetByString(string value)
+		public void SetByString(in string value)
 		{
 			if (string.IsNullOrEmpty(value))
+			{
 				return;
+			}
 
-			value = value.Trim();
-
-			var tmp = value.Split(' ');
-
-			if (tmp.Length != 3)
-				return;
-
-			TypeCode code = Type.GetTypeCode(typeof(T));
-
-			if (code == TypeCode.Empty)
-				return;
-
-			X = (T)Convert.ChangeType(tmp[0], code);
-			Y = (T)Convert.ChangeType(tmp[1], code);
-			Z = (T)Convert.ChangeType(tmp[2], code);
+			var tmp = value.Trim().Split(' ');
+			if (tmp.Length == 3)
+			{
+				var code = Type.GetTypeCode(typeof(T));
+				if (code != TypeCode.Empty)
+				{
+					X = (T)Convert.ChangeType(tmp[0], code);
+					Y = (T)Convert.ChangeType(tmp[1], code);
+					Z = (T)Convert.ChangeType(tmp[2], code);
+				}
+			}
 		}
 	}
 
@@ -195,31 +183,31 @@ namespace SDF
 			set => yaw = value;
 		}
 
-		public void FromString(string value)
+		public void FromString(in string value)
 		{
 			SetByString(value);
 		}
 
-		public void SetByString(string value)
+		public void SetByString(in string value)
 		{
 			if (string.IsNullOrEmpty(value))
+			{
 				return;
+			}
 
-			value = value.Trim();
+			var tmp = value.Trim().Split(' ');
 
-			var tmp = value.Split(' ');
+			if (tmp.Length == 3)
+			{
+				var code = Type.GetTypeCode(typeof(T));
 
-			if (tmp.Length != 3)
-				return;
-
-			TypeCode code = Type.GetTypeCode(typeof(T));
-
-			if (code == TypeCode.Empty)
-				return;
-
-			roll = (T)Convert.ChangeType(tmp[0], code);
-			pitch = (T)Convert.ChangeType(tmp[1], code);
-			yaw = (T)Convert.ChangeType(tmp[2], code);
+				if (code != TypeCode.Empty)
+				{
+					roll = (T)Convert.ChangeType(tmp[0], code);
+					pitch = (T)Convert.ChangeType(tmp[1], code);
+					yaw = (T)Convert.ChangeType(tmp[2], code);
+				}
+			}
 		}
 	}
 
@@ -256,25 +244,24 @@ namespace SDF
 			set => rot = value;
 		}
 
-		public void FromString(string value)
+		public void FromString(in string value)
 		{
 			SetByString(value);
 		}
 
-		public void SetByString(string value)
+		public void SetByString(in string value)
 		{
 			if (string.IsNullOrEmpty(value))
+			{
 				return;
+			}
 
-			value = value.Trim();
-
-			var tmp = value.Split(' ');
-
-			if (tmp.Length != 6)
-				return;
-
-			pos.SetByString(tmp[0] + " " + tmp[1] + " " + tmp[2]);
-			rot.SetByString(tmp[3] + " " + tmp[4] + " " + tmp[5]);
+			var tmp = value.Trim().Split(' ');
+			if (tmp.Length == 6)
+			{
+				pos.SetByString(tmp[0] + " " + tmp[1] + " " + tmp[2]);
+				rot.SetByString(tmp[3] + " " + tmp[4] + " " + tmp[5]);
+			}
 		}
 
 		// public Pose(T _x, T _y, T _z, T _qx, T _qy, T _qz, T _qw)
