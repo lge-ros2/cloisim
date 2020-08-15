@@ -22,34 +22,32 @@ public abstract class DevicePlugin : DeviceTransporter, IDevicePlugin
 	public string modelName = String.Empty;
 	public string partName = String.Empty;
 
-	protected PluginParameters parameters;
-
 	private BridgePortManager bridgePortManager = null;
 
-	private List<Thread> threadList = null;
+	protected PluginParameters parameters = null;
+	protected MemoryStream msForInfoResponse = new MemoryStream();
+
+	private List<Thread> threadList = new List<Thread>();
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
-	protected virtual void OnReset() { }
+	protected virtual void OnReset() {}
 
 	void OnDestroy()
 	{
 		// Debug.Log("OnDestroy - abort thread" + name);
-		if (threadList != null)
+		foreach (var thread in threadList)
 		{
-			foreach (var thread in threadList)
+			if (thread != null && thread.IsAlive)
 			{
-				if (thread != null && thread.IsAlive)
-				{
-					thread.Abort();
-				}
+				thread.Abort();
 			}
 		}
 	}
 
 	protected bool AddThread(in ThreadStart function)
 	{
-		if (threadList != null && function != null)
+		if (function != null)
 		{
 			threadList.Add(new Thread(function));
 			// thread.Priority = System.Threading.ThreadPriority.AboveNormal;
@@ -61,14 +59,11 @@ public abstract class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	private void StartThreads()
 	{
-		if (threadList != null)
+		foreach (var thread in threadList)
 		{
-			foreach (var thread in threadList)
+			if (thread != null && !thread.IsAlive)
 			{
-				if (thread != null && !thread.IsAlive)
-				{
-					thread.Start();
-				}
+				thread.Start();
 			}
 		}
 	}
@@ -157,10 +152,8 @@ public abstract class DevicePlugin : DeviceTransporter, IDevicePlugin
 	void Awake()
 	{
 		parameters = new PluginParameters();
-		threadList = new List<Thread>();
 
 		var coreObject = GameObject.Find("Core");
-
 		if (coreObject == null)
 		{
 			Debug.LogError("Failed to Find 'Core'!!!!");
@@ -201,12 +194,9 @@ public abstract class DevicePlugin : DeviceTransporter, IDevicePlugin
 	{
 		if (ms != null)
 		{
-			if (ms != null)
-			{
-				ms.SetLength(0);
-				ms.Position = 0;
-				ms.Capacity = 0;
-			}
+			ms.SetLength(0);
+			ms.Position = 0;
+			ms.Capacity = 0;
 		}
 	}
 }

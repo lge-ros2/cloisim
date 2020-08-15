@@ -10,12 +10,10 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class MultiCameraPlugin : DevicePlugin
 {
-	private MemoryStream memoryStreamForCameraInfo = null;
 	private SensorDevices.MultiCamera cam = null;
 
 	protected override void OnAwake()
 	{
-		memoryStreamForCameraInfo = new MemoryStream();
 		cam = gameObject.GetComponent<SensorDevices.MultiCamera>();
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
@@ -36,11 +34,6 @@ public class MultiCameraPlugin : DevicePlugin
 
 		AddThread(Sender);
 		AddThread(Response);
-	}
-
-	void OnDestroy()
-	{
-		memoryStreamForCameraInfo.Dispose();
 	}
 
 	private void Sender()
@@ -67,7 +60,7 @@ public class MultiCameraPlugin : DevicePlugin
 		{
 			var receivedBuffer = ReceiveRequest();
 
-			var requestMessage = CameraPlugin.ParsingCameraInfoRequest(ref memoryStreamForCameraInfo, receivedBuffer);
+			var requestMessage = CameraPlugin.ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
 
 			if (requestMessage != null)
 			{
@@ -80,16 +73,16 @@ public class MultiCameraPlugin : DevicePlugin
 						{
 							var cameraInfoMessage = cam.GetCameraInfo(cameraName);
 
-							CameraPlugin.SetCameraInfoResponse(ref memoryStreamForCameraInfo, cameraInfoMessage);
+							CameraPlugin.SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
 						}
-
-						SendResponse(memoryStreamForCameraInfo);
 
 						break;
 
 					default:
 						break;
 				}
+
+				SendResponse(msForInfoResponse);
 			}
 		}
 	}

@@ -13,13 +13,11 @@ using messages = gazebo.msgs;
 public class CameraPlugin : DevicePlugin
 {
 	private SensorDevices.Camera cam = null;
-	private MemoryStream memoryStreamForCameraInfo = null;
 
 	public string subPartName = string.Empty;
 
 	protected override void OnAwake()
 	{
-		memoryStreamForCameraInfo = new MemoryStream();
 		cam = gameObject.GetComponent<SensorDevices.Camera>();
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
@@ -40,11 +38,6 @@ public class CameraPlugin : DevicePlugin
 
 		AddThread(Response);
 		AddThread(Sender);
-	}
-
-	void OnDestroy()
-	{
-		memoryStreamForCameraInfo.Dispose();
 	}
 
 	private void Sender()
@@ -71,7 +64,7 @@ public class CameraPlugin : DevicePlugin
 		{
 			var receivedBuffer = ReceiveRequest();
 
-			var requestMessage = ParsingCameraInfoRequest(ref memoryStreamForCameraInfo, receivedBuffer);
+			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
 
 			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
@@ -82,27 +75,30 @@ public class CameraPlugin : DevicePlugin
 
 						var cameraInfoMessage = cam.GetCameraInfo();
 
-						SetCameraInfoResponse(ref memoryStreamForCameraInfo, cameraInfoMessage);
+						SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
 
-						SendResponse(memoryStreamForCameraInfo);
+						break;
 
+					case "request_transform":
 						break;
 
 					default:
 						break;
 				}
+
+				SendResponse(msForInfoResponse);
 			}
 		}
 	}
 
-	public static messages.Param ParsingCameraInfoRequest(ref MemoryStream msCameraInfo, in byte[] receivedBuffer)
+	public static messages.Param ParsingInfoRequest(in byte[] srcReceivedBuffer, ref MemoryStream dstCameraInfoMemStream)
 	{
-		ClearMemoryStream(ref msCameraInfo);
+		ClearMemoryStream(ref dstCameraInfoMemStream);
 
-		msCameraInfo.Write(receivedBuffer, 0, receivedBuffer.Length);
-		msCameraInfo.Position = 0;
+		dstCameraInfoMemStream.Write(srcReceivedBuffer, 0, srcReceivedBuffer.Length);
+		dstCameraInfoMemStream.Position = 0;
 
-		return Serializer.Deserialize<messages.Param>(msCameraInfo);
+		return Serializer.Deserialize<messages.Param>(dstCameraInfoMemStream);
 	}
 
 	public static void SetCameraInfoResponse(ref MemoryStream msCameraInfo,in messages.CameraSensor sensorInfo)
