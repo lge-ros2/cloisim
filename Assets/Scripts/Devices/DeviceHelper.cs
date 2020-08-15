@@ -96,9 +96,9 @@ public class DeviceHelper
 			quaternion = new messages.Quaternion();
 		}
 
-		quaternion.X = rotation.x;
-		quaternion.Y = rotation.z;
-		quaternion.Z = rotation.y;
+		quaternion.X = -rotation.x;
+		quaternion.Y = -rotation.z;
+		quaternion.Z = -rotation.y;
 		quaternion.W = rotation.w;
 	}
 
