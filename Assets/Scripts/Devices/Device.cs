@@ -20,8 +20,6 @@ public abstract class Device : MonoBehaviour
 
 	private MemoryStream memoryStream = new MemoryStream();
 
-	protected const float SEC2MSEC = 1000.0f;
-
 	private float updateRate = 1;
 
 	private bool debugginOn = true;
@@ -33,17 +31,12 @@ public abstract class Device : MonoBehaviour
 	[Range(0, 1.0f)]
 	public float waitingPeriodRatio = 1.0f;
 
-	void OnDestroy()
-	{
-		if (memoryStreamOutboundQueue.IsCompleted)
-		{
-			memoryStreamOutboundQueue.Dispose();
-		}
-	}
+	private Vector3 devicePosition = Vector3.zero;
+	private Quaternion deviceRotation = Quaternion.identity;
 
 	public float UpdateRate => updateRate;
 
-	public float UpdatePeriod => 1f/updateRate;
+	public float UpdatePeriod => 1f/UpdateRate;
 
 	public float TransportingTime => transportingTimeSeconds;
 
@@ -59,6 +52,14 @@ public abstract class Device : MonoBehaviour
 		set => visualize = value;
 	}
 
+	void OnDestroy()
+	{
+		if (memoryStreamOutboundQueue.IsCompleted)
+		{
+			memoryStreamOutboundQueue.Dispose();
+		}
+	}
+
 	void Awake()
 	{
 		ResetDataStream();
@@ -68,6 +69,8 @@ public abstract class Device : MonoBehaviour
 
 	void Start()
 	{
+		SetDeviceTransform();
+
 		InitializeMessages();
 
 		OnStart();
@@ -218,5 +221,33 @@ public abstract class Device : MonoBehaviour
 
 		var item = memoryStreamOutboundQueue.Take();
 		return item;
+	}
+
+	private void SetDeviceTransform()
+	{
+		// Debug.Log(deviceName + ":" + transform.name);
+		var parentObject = this.transform.parent;
+
+		if (parentObject != null)
+		{
+			// Debug.Log(parentObject.name);
+			var modelObject = this.transform.parent.parent;
+			if (modelObject != null && modelObject.CompareTag("Model"))
+			{
+				devicePosition = modelObject.transform.localPosition;
+				deviceRotation = modelObject.transform.localRotation;
+				// Debug.Log(modelObject.name + ": " + devicePosition + ", " + deviceRotation);
+			}
+		}
+	}
+
+	public Vector3 GetDevicePosition()
+	{
+		return devicePosition;
+	}
+
+	public Quaternion GetDeviceRotation()
+	{
+		return deviceRotation;
 	}
 }

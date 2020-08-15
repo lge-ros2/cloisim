@@ -72,14 +72,15 @@ public class CameraPlugin : DevicePlugin
 				switch (requestMessage.Name)
 				{
 					case "request_camera_info":
-
 						var cameraInfoMessage = cam.GetCameraInfo();
-
 						SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
-
 						break;
 
 					case "request_transform":
+						var devicePosition = cam.GetDevicePosition();
+						var deviceRotation = cam.GetDeviceRotation();
+
+						SetTransformInfoResponse(ref msForInfoResponse, devicePosition, deviceRotation);
 						break;
 
 					default:
@@ -101,13 +102,34 @@ public class CameraPlugin : DevicePlugin
 		return Serializer.Deserialize<messages.Param>(dstCameraInfoMemStream);
 	}
 
-	public static void SetCameraInfoResponse(ref MemoryStream msCameraInfo,in messages.CameraSensor sensorInfo)
+	public static void SetCameraInfoResponse(ref MemoryStream msCameraInfo, in messages.CameraSensor sensorInfo)
 	{
-		if (sensorInfo != null)
+		if (msCameraInfo != null && sensorInfo != null)
 		{
 			ClearMemoryStream(ref msCameraInfo);
-
 			Serializer.Serialize<messages.CameraSensor>(msCameraInfo, sensorInfo);
+		}
+	}
+
+	public static void SetTransformInfoResponse(ref MemoryStream msCameraInfo, in Vector3 objectPos, in Quaternion objectRot)
+	{
+		if (msCameraInfo != null)
+		{
+			var objectPose = new messages.Pose();
+			objectPose.Position = new messages.Vector3d();
+			objectPose.Orientation = new messages.Quaternion();
+
+			DeviceHelper.SetVector3d(objectPose.Position, objectPos);
+			DeviceHelper.SetQuaternion(objectPose.Orientation, objectRot);
+
+			var objectTransformInfo = new messages.Param();
+			objectTransformInfo.Name = "transform";
+			objectTransformInfo.Value = new messages.Any();
+			objectTransformInfo.Value.Type = messages.Any.ValueType.Pose3d;
+			objectTransformInfo.Value.Pose3dValue = objectPose;
+
+			ClearMemoryStream(ref msCameraInfo);
+			Serializer.Serialize<messages.Param>(msCameraInfo, objectTransformInfo);
 		}
 	}
 }

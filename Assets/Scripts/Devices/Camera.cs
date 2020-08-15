@@ -72,6 +72,8 @@ namespace SensorDevices
 
 		protected virtual void SetupTexture()
 		{
+			cam.depthTextureMode = DepthTextureMode.None;
+
 			// Debug.Log("This is not a Depth Camera!");
 			targetRTname = "CameraTexture";
 			targetRTdepth = 0;
@@ -137,7 +139,7 @@ namespace SensorDevices
 			cam.allowMSAA = false;
 			cam.allowDynamicResolution = true;
 			cam.useOcclusionCulling = true;
-			cam.targetDisplay = 0;
+
 			cam.stereoTargetEye = StereoTargetEyeMask.None;
 
 			cam.orthographic = false;
@@ -166,6 +168,7 @@ namespace SensorDevices
 			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(camHFov, camVFov, cam.nearClipPlane, cam.farClipPlane);
 			var invertMatrix = Matrix4x4.Scale(new Vector3(1, -1, 1));
 			cam.projectionMatrix = projMatrix * invertMatrix;
+
 			cam.enabled = false;
 			// cam.hideFlags |= HideFlags.NotEditable;
 
