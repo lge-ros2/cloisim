@@ -96,10 +96,10 @@ public class DeviceHelper
 			quaternion = new messages.Quaternion();
 		}
 
-		quaternion.X = rotation.x * Mathf.Deg2Rad;
-		quaternion.Y = rotation.z * Mathf.Deg2Rad;
-		quaternion.Z = rotation.y * Mathf.Deg2Rad;
-		quaternion.W = rotation.w * Mathf.Deg2Rad;
+		quaternion.X = rotation.x;
+		quaternion.Y = rotation.z;
+		quaternion.Z = rotation.y;
+		quaternion.W = rotation.w;
 	}
 
 	public static Matrix4x4 MakeCustomProjectionMatrix(in float hFov, in float vFov, in float near, in float far)
