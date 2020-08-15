@@ -139,24 +139,26 @@ namespace SensorDevices
 			var shader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(shader);
 
-			laserCam.backgroundColor = Color.white;
-			laserCam.clearFlags = CameraClearFlags.SolidColor;
-			laserCam.depthTextureMode = DepthTextureMode.Depth;
-			laserCam.cullingMask = LayerMask.GetMask("Default");
+			laserCam.ResetWorldToCameraMatrix();
+			laserCam.ResetProjectionMatrix();
 
 			laserCam.allowHDR = true;
 			laserCam.allowMSAA = false;
 			laserCam.allowDynamicResolution = true;
 			laserCam.useOcclusionCulling = true;
-			laserCam.renderingPath = RenderingPath.DeferredLighting;
+
 			laserCam.stereoTargetEye = StereoTargetEyeMask.None;
 
 			laserCam.orthographic = false;
 			laserCam.nearClipPlane = (float)rangeMin;
 			laserCam.farClipPlane = (float)rangeMax;
+			laserCam.cullingMask = LayerMask.GetMask("Default");
 
-			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(laserCameraHFov, laserCameraVFov, (float)rangeMin, (float)rangeMax);
-			laserCam.projectionMatrix = projMatrix;
+			laserCam.backgroundColor = Color.white;
+			laserCam.clearFlags = CameraClearFlags.SolidColor;
+			laserCam.depthTextureMode = DepthTextureMode.Depth;
+
+			laserCam.renderingPath = RenderingPath.DeferredLighting;
 
 			var renderTextrueWidth = Mathf.CeilToInt(laserCameraHFov / laserHAngleResolution);
 			var aspectRatio = Mathf.Tan(laserCameraVFov / 2 * Mathf.Deg2Rad) / Mathf.Tan(laserCameraHFov / 2 * Mathf.Deg2Rad);
@@ -167,6 +169,9 @@ namespace SensorDevices
 			};
 
 			laserCam.targetTexture = targetDepthRT;
+
+			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(laserCameraHFov, laserCameraVFov, (float)rangeMin, (float)rangeMax);
+			laserCam.projectionMatrix = projMatrix;
 
 			laserCam.enabled = false;
 
