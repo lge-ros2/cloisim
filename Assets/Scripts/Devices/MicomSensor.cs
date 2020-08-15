@@ -32,13 +32,12 @@ public class MicomSensor : Device
 
 	protected override void OnAwake()
 	{
-		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
 		deviceName = "MicomSensor";
 	}
 
 	protected override void OnStart()
 	{
-		var modelList = GetComponentsInChildren<ModelPlugin>();
+		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
 
 		var updateRate = parameters.GetValue<float>("update_rate", 20);
 		SetUpdateRate(updateRate);
@@ -59,6 +58,7 @@ public class MicomSensor : Device
 		var motorFriction = parameters.GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
 		var brakeFriction = parameters.GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
 
+		var modelList = GetComponentsInChildren<ModelPlugin>();
 		foreach (var model in modelList)
 		{
 			// Debug.Log(model.name);
