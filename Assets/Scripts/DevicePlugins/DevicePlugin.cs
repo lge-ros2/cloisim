@@ -17,7 +17,7 @@ public interface IDevicePlugin
 	void Reset();
 }
 
-public abstract class DevicePlugin : DeviceTransporter, IDevicePlugin
+public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 {
 	public string modelName = String.Empty;
 	public string partName = String.Empty;
@@ -95,7 +95,7 @@ public abstract class DevicePlugin : DeviceTransporter, IDevicePlugin
 		return true;
 	}
 
-	protected string MakeHashKey(in string partName = "", string subPartName = "")
+	protected string MakeHashKey(string subPartName = "")
 	{
 		return modelName + partName + subPartName;
 	}

@@ -241,12 +241,12 @@ public abstract class Device : MonoBehaviour
 		}
 	}
 
-	public Vector3 GetDevicePosition()
+	public Vector3 GetPosition()
 	{
 		return devicePosition;
 	}
 
-	public Quaternion GetDeviceRotation()
+	public Quaternion GetRotation()
 	{
 		return deviceRotation;
 	}

@@ -19,18 +19,25 @@ public class LaserPlugin : DevicePlugin
 
 	protected override void OnStart()
 	{
-		var hashKey = MakeHashKey(partName);
+		var hashServiceKey = MakeHashKey("Info");
+		if (!RegisterServiceDevice(hashServiceKey))
+		{
+			Debug.LogError("Failed to register service - " + hashServiceKey);
+		}
+
+		var hashKey = MakeHashKey();
 		if (!RegisterTxDevice(hashKey))
 		{
 			Debug.LogError("Failed to register for LaserPlugin - " + hashKey);
 		}
 
+		AddThread(Response);
 		AddThread(Sender);
 	}
 
 	private void Sender()
 	{
-		Stopwatch sw = new Stopwatch();
+		var sw = new Stopwatch();
 		while (true)
 		{
 			if (lidar == null)
@@ -43,6 +50,36 @@ public class LaserPlugin : DevicePlugin
 			Publish(datastreamToSend);
 			sw.Stop();
 			lidar.SetTransportTime((float)sw.Elapsed.TotalSeconds);
+		}
+	}
+
+	private void Response()
+	{
+		while (true)
+		{
+			var receivedBuffer = ReceiveRequest();
+
+			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
+
+			if (requestMessage != null)
+			{
+				var device = lidar as Device;
+
+				switch (requestMessage.Name)
+				{
+					case "request_transform":
+						var devicePosition = device.GetPosition();
+						var deviceRotation = device.GetRotation();
+
+						SetTransformInfoResponse(ref msForInfoResponse, devicePosition, deviceRotation);
+						break;
+
+					default:
+						break;
+				}
+
+				SendResponse(msForInfoResponse);
+			}
 		}
 	}
 }

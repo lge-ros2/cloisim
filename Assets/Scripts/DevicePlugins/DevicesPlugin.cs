@@ -48,6 +48,4 @@ public abstract class DevicesPlugin : MonoBehaviour, IDevicePlugin
 			Debug.LogWarning("Cannot set plugin parameters");
 		}
 	}
-
-
 }

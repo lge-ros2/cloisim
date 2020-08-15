@@ -53,7 +53,7 @@ public partial class ElevatorSystem : DevicePlugin
 
 	protected override void OnStart()
 	{
-		var hashKey = MakeHashKey(partName);
+		var hashKey = MakeHashKey();
 		if (!RegisterServiceDevice(hashKey))
 		{
 			Debug.LogError("Failed to register ElevatorSystem service - " + hashKey);

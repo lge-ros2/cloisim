@@ -24,13 +24,13 @@ public class CameraPlugin : DevicePlugin
 
 	protected override void OnStart()
 	{
-		var hashServiceKey = MakeHashKey(partName, subPartName + "Info");
+		var hashServiceKey = MakeHashKey(subPartName + "Info");
 		if (!RegisterServiceDevice(hashServiceKey))
 		{
-			Debug.LogError("Failed to register ElevatorSystem service - " + hashServiceKey);
+			Debug.LogError("Failed to register service - " + hashServiceKey);
 		}
 
-		var hashTxKey = MakeHashKey(partName, subPartName);
+		var hashTxKey = MakeHashKey(subPartName);
 		if (!RegisterTxDevice(hashTxKey))
 		{
 			Debug.LogError("Failed to register for CameraPlugin - " + hashTxKey);
@@ -69,6 +69,8 @@ public class CameraPlugin : DevicePlugin
 			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
 			{
+				var device = cam as Device;
+
 				switch (requestMessage.Name)
 				{
 					case "request_camera_info":
@@ -77,8 +79,8 @@ public class CameraPlugin : DevicePlugin
 						break;
 
 					case "request_transform":
-						var devicePosition = cam.GetDevicePosition();
-						var deviceRotation = cam.GetDeviceRotation();
+						var devicePosition = device.GetPosition();
+						var deviceRotation = device.GetRotation();
 
 						SetTransformInfoResponse(ref msForInfoResponse, devicePosition, deviceRotation);
 						break;
@@ -89,47 +91,6 @@ public class CameraPlugin : DevicePlugin
 
 				SendResponse(msForInfoResponse);
 			}
-		}
-	}
-
-	public static messages.Param ParsingInfoRequest(in byte[] srcReceivedBuffer, ref MemoryStream dstCameraInfoMemStream)
-	{
-		ClearMemoryStream(ref dstCameraInfoMemStream);
-
-		dstCameraInfoMemStream.Write(srcReceivedBuffer, 0, srcReceivedBuffer.Length);
-		dstCameraInfoMemStream.Position = 0;
-
-		return Serializer.Deserialize<messages.Param>(dstCameraInfoMemStream);
-	}
-
-	public static void SetCameraInfoResponse(ref MemoryStream msCameraInfo, in messages.CameraSensor sensorInfo)
-	{
-		if (msCameraInfo != null && sensorInfo != null)
-		{
-			ClearMemoryStream(ref msCameraInfo);
-			Serializer.Serialize<messages.CameraSensor>(msCameraInfo, sensorInfo);
-		}
-	}
-
-	public static void SetTransformInfoResponse(ref MemoryStream msCameraInfo, in Vector3 objectPos, in Quaternion objectRot)
-	{
-		if (msCameraInfo != null)
-		{
-			var objectPose = new messages.Pose();
-			objectPose.Position = new messages.Vector3d();
-			objectPose.Orientation = new messages.Quaternion();
-
-			DeviceHelper.SetVector3d(objectPose.Position, objectPos);
-			DeviceHelper.SetQuaternion(objectPose.Orientation, objectRot);
-
-			var objectTransformInfo = new messages.Param();
-			objectTransformInfo.Name = "transform";
-			objectTransformInfo.Value = new messages.Any();
-			objectTransformInfo.Value.Type = messages.Any.ValueType.Pose3d;
-			objectTransformInfo.Value.Pose3dValue = objectPose;
-
-			ClearMemoryStream(ref msCameraInfo);
-			Serializer.Serialize<messages.Param>(msCameraInfo, objectTransformInfo);
 		}
 	}
 }
