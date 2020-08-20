@@ -22,9 +22,11 @@ public partial class DeviceTransporter
 
 		if (subscriberSocket != null)
 		{
+			subscriberSocket.Options.Linger = TimeSpan.FromTicks(0);
+			subscriberSocket.Options.IPv4Only = true;
 			subscriberSocket.Options.TcpKeepalive = true;
+			subscriberSocket.Options.DisableTimeWait = true;
 			subscriberSocket.Options.ReceiveHighWatermark = highwatermark;
-			subscriberSocket.Options.Linger = new TimeSpan(0);
 
 		 	if (hashValueForSubscription != null)
 			{

@@ -29,7 +29,12 @@ public partial class DeviceTransporter
 
 		if (requestSocket != null)
 		{
+			requestSocket.Options.Linger = TimeSpan.FromTicks(0);
+			requestSocket.Options.IPv4Only = true;
 			requestSocket.Options.TcpKeepalive = true;
+			requestSocket.Options.DisableTimeWait = true;
+			requestSocket.Options.SendHighWatermark = highwatermark;
+
 			requestSocket.Bind(GetAddress(targetPort));
 			// Debug.Log("Requester socket connecting... " + targetPort);
 			initialized = StoreTag(ref dataToSendRequest, hashValueForSendRequest);
@@ -68,21 +73,22 @@ public partial class DeviceTransporter
 	/// required to initialize `requestSocket`
 	/// must send request message first before receive response
 	/// </summary>
-	/// <param name="bytesToSend">message data buffer to send in bytes array</param>
-	/// <param name="bytesLength">the length of data buffer</param>
+	/// <param name="buffer">message data buffer to send in bytes array</param>
+	/// <param name="bufferLength">the length of data buffer</param>
 	/// <returns>It returns false if failed to send, otherwise returns true</returns>
-	protected bool SendRequest(in byte[] bytesToSend, in int bytesLength)
+	protected bool SendRequest(in byte[] buffer, in int bufferLength)
 	{
 		bool wasSucessful = false;
 
-		if (StoreData(ref dataToSendRequest, bytesToSend, bytesLength) == false)
+		if (StoreData(ref dataToSendRequest, buffer, bufferLength) == false)
 		{
 			return wasSucessful;
 		}
 
 		if (requestSocket != null)
 		{
-			wasSucessful = requestSocket.TrySendFrame(dataToSendRequest);
+			var dataLength = tagSize + bufferLength;
+			wasSucessful = requestSocket.TrySendFrame(dataToSendRequest, dataLength);
 		}
 		else
 		{

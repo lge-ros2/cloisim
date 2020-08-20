@@ -14,6 +14,8 @@ public partial class DeviceTransporter
 {
 	private ResponseSocket responseSocket = null;
 
+	TimeSpan timeoutForResponse = TimeSpan.FromMilliseconds(100);
+
 	private byte[] hashValueForReceiveRequest = null;
 	private byte[] dataToSendResponse = null;
 
@@ -29,7 +31,11 @@ public partial class DeviceTransporter
 
 		if (responseSocket != null)
 		{
+			responseSocket.Options.Linger = TimeSpan.FromTicks(0);
+			responseSocket.Options.IPv4Only = true;
 			responseSocket.Options.TcpKeepalive = true;
+			responseSocket.Options.DisableTimeWait = true;
+
 			responseSocket.Bind(GetAddress(targetPort));
 			// Debug.Log("Responsor socket connecting... " + targetPort);
 			initialized = StoreTag(ref dataToSendResponse, hashValueForReceiveRequest);
@@ -38,19 +44,32 @@ public partial class DeviceTransporter
 		return initialized;
 	}
 
-	protected byte[] ReceiveRequest(in bool checkTag = false)
+	protected byte[] TryReceiveRequest(in bool checkTag = false)
 	{
-		byte[] frameReceived = null;
-
-		if (responseSocket != null)
-		{
-			frameReceived = responseSocket.ReceiveFrameBytes();
-		}
-		else
+		if (responseSocket == null)
 		{
 			Debug.LogWarning("Socket for response is not initilized yet.");
+			return null;
 		}
 
+		if (responseSocket.TryReceiveFrameBytes(timeoutForResponse, out var frameReceived))
+		{
+			var receivedData = RetrieveData(frameReceived, (checkTag)? hashValueForReceiveRequest : null);
+			return receivedData;
+		}
+
+		return null;
+	}
+
+	protected byte[] ReceiveRequest(in bool checkTag = false)
+	{
+		if (responseSocket == null)
+		{
+			Debug.LogWarning("Socket for response is not initilized yet.");
+			return null;
+		}
+
+		var frameReceived = responseSocket.ReceiveFrameBytes();
 		var receivedData = RetrieveData(frameReceived, (checkTag)? hashValueForReceiveRequest : null);
 		return receivedData;
 	}
@@ -80,18 +99,19 @@ public partial class DeviceTransporter
 		return SendResponse(buffer, stringToSend.Length);
 	}
 
-	private bool SendResponse(in byte[] bytesToSend, in int bytesLength)
+	private bool SendResponse(in byte[] buffer, in int bufferLength)
 	{
 		var wasSucessful = false;
 
-		if (StoreData(ref dataToSendResponse, bytesToSend, bytesLength) == false)
+		if (StoreData(ref dataToSendResponse, buffer, bufferLength) == false)
 		{
 			return wasSucessful;
 		}
 
 		if (responseSocket != null)
 		{
-			wasSucessful = responseSocket.TrySendFrame(dataToSendResponse);
+			var dataLength = tagSize + bufferLength;
+			wasSucessful = responseSocket.TrySendFrame(dataToSendResponse, dataLength);
 		}
 		else
 		{

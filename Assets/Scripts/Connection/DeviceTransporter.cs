@@ -14,7 +14,7 @@ public partial class DeviceTransporter : MonoBehaviour
 	private ushort tagSize = 8;
 	public string defaultPipeAddress = "127.0.0.1";
 
-	private int highwatermark = 0;
+	private int highwatermark = 1000;
 
 	public DeviceTransporter()
 	{
@@ -26,8 +26,6 @@ public partial class DeviceTransporter : MonoBehaviour
 		}
 
 		SetPipeAddress(defaultPipeAddress);
-
-		highwatermark = 1000;
 	}
 
 	~DeviceTransporter()
@@ -112,7 +110,11 @@ public partial class DeviceTransporter : MonoBehaviour
 		if (dataToStoreLength > 0 && dataToStore != null && targetBuffer != null)
 		{
 			var dataLength = tagSize + dataToStoreLength;
-			Array.Resize(ref targetBuffer, dataLength);
+
+			if (dataLength > targetBuffer.Length)
+			{
+				Array.Resize(ref targetBuffer, dataLength);
+			}
 
 			try
 			{

@@ -10,6 +10,7 @@ using System.Net.NetworkInformation;
 using System.Net;
 using System;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class BridgePortManager : DeviceTransporter
 {
@@ -147,18 +148,26 @@ public class BridgePortManager : DeviceTransporter
 
 	private void PortManageWorker()
 	{
+		var sw = new Stopwatch();
+
 		// Debug.LogFormat("Start SensorPortManager - {0}::{1}", GetType().Name, MethodBase.GetCurrentMethod().Name);
 		while (true)
 		{
-			// Debug.Log("Waiting for Request Data");
-			var hashKey = ReceiveRequest();
+			sw.Restart();
 
-			var hashKeyInString = (hashKey == null) ? string.Empty : System.Text.Encoding.Default.GetString(hashKey);
-			var port = SearchSensorPort(hashKeyInString);
-			var portBuf = Convert.ToString(port);
+			var hashKey = TryReceiveRequest();
+			if (hashKey != null)
+			{
+				var hashKeyInString = System.Text.Encoding.Default.GetString(hashKey);
+				var port = SearchSensorPort(hashKeyInString);
 
-			SendResponse(portBuf);
-			Debug.LogFormat("-> Reply for {0} = {1}", hashKeyInString, port);
+				var portBuf = Convert.ToString(port);
+				SendResponse(portBuf);
+
+				sw.Stop();
+				var timeElapsed = sw.ElapsedMilliseconds;
+				Debug.LogFormat("-> Reply for {0} = {1}, {2} ms", hashKeyInString, port, timeElapsed);
+			}
 		}
 	}
 
