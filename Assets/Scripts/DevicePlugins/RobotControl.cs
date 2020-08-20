@@ -64,9 +64,9 @@ public class RobotControl : DevicePlugin
 					break;
 
 				case MicomInput.VelocityType.LeftAndRight:
-					var targetWheelLeftVelocity = micomInput.GetWheelLeftVelocity();
-					var targetWheelRightVelocity = micomInput.GetWheelRightVelocity();
-					micomSensor.SetDifferentialDrive(targetWheelLeftVelocity, targetWheelRightVelocity);
+					var targetWheelLeftLinearVelocity = micomInput.GetWheelLeftVelocity();
+					var targetWheelRightLinearVelocity = micomInput.GetWheelRightVelocity();
+					micomSensor.SetDifferentialDrive(targetWheelLeftLinearVelocity, targetWheelRightLinearVelocity);
 					break;
 
 				case MicomInput.VelocityType.Unknown:
