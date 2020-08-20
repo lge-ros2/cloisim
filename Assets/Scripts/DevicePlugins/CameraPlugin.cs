@@ -13,26 +13,24 @@ using messages = gazebo.msgs;
 public class CameraPlugin : DevicePlugin
 {
 	private SensorDevices.Camera cam = null;
-	private MemoryStream memoryStreamForCameraInfo = null;
 
 	public string subPartName = string.Empty;
 
 	protected override void OnAwake()
 	{
-		memoryStreamForCameraInfo = new MemoryStream();
 		cam = gameObject.GetComponent<SensorDevices.Camera>();
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
-		var hashServiceKey = MakeHashKey(partName, subPartName + "Info");
+		var hashServiceKey = MakeHashKey(subPartName + "Info");
 		if (!RegisterServiceDevice(hashServiceKey))
 		{
-			Debug.LogError("Failed to register ElevatorSystem service - " + hashServiceKey);
+			Debug.LogError("Failed to register service - " + hashServiceKey);
 		}
 
-		var hashTxKey = MakeHashKey(partName, subPartName);
+		var hashTxKey = MakeHashKey(subPartName);
 		if (!RegisterTxDevice(hashTxKey))
 		{
 			Debug.LogError("Failed to register for CameraPlugin - " + hashTxKey);
@@ -40,11 +38,6 @@ public class CameraPlugin : DevicePlugin
 
 		AddThread(Response);
 		AddThread(Sender);
-	}
-
-	void OnDestroy()
-	{
-		memoryStreamForCameraInfo.Dispose();
 	}
 
 	private void Sender()
@@ -71,47 +64,33 @@ public class CameraPlugin : DevicePlugin
 		{
 			var receivedBuffer = ReceiveRequest();
 
-			var requestMessage = ParsingCameraInfoRequest(ref memoryStreamForCameraInfo, receivedBuffer);
+			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
 
 			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
 			{
+				var device = cam as Device;
+
 				switch (requestMessage.Name)
 				{
 					case "request_camera_info":
-
 						var cameraInfoMessage = cam.GetCameraInfo();
+						SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
+						break;
 
-						SetCameraInfoResponse(ref memoryStreamForCameraInfo, cameraInfoMessage);
+					case "request_transform":
+						var devicePosition = device.GetPosition();
+						var deviceRotation = device.GetRotation();
 
-						SendResponse(memoryStreamForCameraInfo);
-
+						SetTransformInfoResponse(ref msForInfoResponse, devicePosition, deviceRotation);
 						break;
 
 					default:
 						break;
 				}
+
+				SendResponse(msForInfoResponse);
 			}
-		}
-	}
-
-	public static messages.Param ParsingCameraInfoRequest(ref MemoryStream msCameraInfo, in byte[] receivedBuffer)
-	{
-		ClearMemoryStream(ref msCameraInfo);
-
-		msCameraInfo.Write(receivedBuffer, 0, receivedBuffer.Length);
-		msCameraInfo.Position = 0;
-
-		return Serializer.Deserialize<messages.Param>(msCameraInfo);
-	}
-
-	public static void SetCameraInfoResponse(ref MemoryStream msCameraInfo,in messages.CameraSensor sensorInfo)
-	{
-		if (sensorInfo != null)
-		{
-			ClearMemoryStream(ref msCameraInfo);
-
-			Serializer.Serialize<messages.CameraSensor>(msCameraInfo, sensorInfo);
 		}
 	}
 }

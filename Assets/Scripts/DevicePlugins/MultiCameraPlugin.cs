@@ -10,25 +10,23 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class MultiCameraPlugin : DevicePlugin
 {
-	private MemoryStream memoryStreamForCameraInfo = null;
-	private SensorDevices.MultiCamera cam = null;
+	private SensorDevices.MultiCamera multicam = null;
 
 	protected override void OnAwake()
 	{
-		memoryStreamForCameraInfo = new MemoryStream();
-		cam = gameObject.GetComponent<SensorDevices.MultiCamera>();
+		multicam = gameObject.GetComponent<SensorDevices.MultiCamera>();
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
-		var hashServiceKey = MakeHashKey(partName, "Info");
+		var hashServiceKey = MakeHashKey("Info");
 		if (!RegisterServiceDevice(hashServiceKey))
 		{
-			Debug.LogError("Failed to register ElevatorSystem service - " + hashServiceKey);
+			Debug.LogError("Failed to register service - " + hashServiceKey);
 		}
 
-		var hashKey = MakeHashKey(partName);
+		var hashKey = MakeHashKey();
 		if (!RegisterTxDevice(hashKey))
 		{
 			Debug.LogError("Failed to register for CameraPlugin - " + hashKey);
@@ -38,26 +36,21 @@ public class MultiCameraPlugin : DevicePlugin
 		AddThread(Response);
 	}
 
-	void OnDestroy()
-	{
-		memoryStreamForCameraInfo.Dispose();
-	}
-
 	private void Sender()
 	{
 		var sw = new Stopwatch();
 		while (true)
 		{
-			if (cam == null)
+			if (multicam == null)
 			{
 				continue;
 			}
 
-			var datastreamToSend = cam.PopData();
+			var datastreamToSend = multicam.PopData();
 			sw.Restart();
 			Publish(datastreamToSend);
 			sw.Stop();
-			cam.SetTransportTime((float)sw.Elapsed.TotalSeconds);
+			multicam.SetTransportTime((float)sw.Elapsed.TotalSeconds);
 		}
 	}
 
@@ -67,29 +60,34 @@ public class MultiCameraPlugin : DevicePlugin
 		{
 			var receivedBuffer = ReceiveRequest();
 
-			var requestMessage = CameraPlugin.ParsingCameraInfoRequest(ref memoryStreamForCameraInfo, receivedBuffer);
+			var requestMessage = CameraPlugin.ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
 
 			if (requestMessage != null)
 			{
-				switch (requestMessage.Name)
+				var cameraName = requestMessage.Value.StringValue;
+				var camera = multicam.GetCamera(cameraName);
+				if (camera != null)
 				{
-					case "request_camera_info":
+					switch (requestMessage.Name)
+					{
+						case "request_camera_info":
+							var cameraInfoMessage = camera.GetCameraInfo();
+							CameraPlugin.SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
+							break;
 
-						var cameraName = requestMessage.Value.StringValue;
-						if (cameraName != null)
-						{
-							var cameraInfoMessage = cam.GetCameraInfo(cameraName);
+						case "request_transform":
+							var devicePosition = camera.GetPosition();
+							var deviceRotation = camera.GetRotation();
 
-							CameraPlugin.SetCameraInfoResponse(ref memoryStreamForCameraInfo, cameraInfoMessage);
-						}
+							SetTransformInfoResponse(ref msForInfoResponse, devicePosition, deviceRotation);
+							break;
 
-						SendResponse(memoryStreamForCameraInfo);
-
-						break;
-
-					default:
-						break;
+						default:
+							break;
+					}
 				}
+
+				SendResponse(msForInfoResponse);
 			}
 		}
 	}

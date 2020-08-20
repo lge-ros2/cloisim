@@ -7,46 +7,35 @@ using UnityEngine;
 
 public class SDF2Unity
 {
-	public static Vector3 GetPosition(double x, double y, double z)
+	public static Vector3 GetPosition(in double x, in double y, in double z)
 	{
-		var pos = new Vector3();
-		pos.x = (float)x;
-		pos.y = (float)z;
-		pos.z = (float)y;
-
+		var pos = new Vector3((float)x, (float)z, (float)y);
 		return pos;
 	}
 
-	public static Vector3 GetPosition(SDF.Vector3<double> value)
+	public static Vector3 GetPosition(in SDF.Vector3<double> value)
 	{
-		var pos = new Vector3();
-		pos.x = (float)(value.X);
-		pos.y = (float)(value.Z);
-		pos.z = (float)(value.Y);
-
+		var pos = new Vector3((float)value.X, (float)value.Z, (float)value.Y);
 		return pos;
 	}
 
-	public static Quaternion GetRotation(SDF.Quaternion<double> value)
+	public static Quaternion GetRotation(in SDF.Quaternion<double> value)
 	{
-		var roll = Mathf.Rad2Deg * (float)(value.Roll);
-		var pitch = Mathf.Rad2Deg * (float)(value.Yaw);
-		var yaw = Mathf.Rad2Deg * (float)(value.Pitch);
+		var roll = Mathf.Rad2Deg * (float)value.Roll;
+		var pitch = Mathf.Rad2Deg * (float)value.Yaw;
+		var yaw = Mathf.Rad2Deg * (float)value.Pitch;
 
 		return Quaternion.Euler(-roll, -pitch, -yaw);
 	}
 
-	public static Vector3 GetScale(SDF.Vector3<double> value)
+	public static Vector3 GetScale(in SDF.Vector3<double> value)
 	{
 		return GetPosition(value);
 	}
 
-	public static Vector3 GetScale(double radius)
+	public static Vector3 GetScale(in double radius)
 	{
-		var pos = new Vector3();
-		pos.x = (float)(radius);// * 2.0f;
-		pos.y = pos.x;
-		pos.z = pos.y;
+		var pos = new Vector3((float)radius, (float)radius, (float)radius);
 		return pos;
 	}
 

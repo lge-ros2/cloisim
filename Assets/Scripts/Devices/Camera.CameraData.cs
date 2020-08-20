@@ -186,6 +186,5 @@ namespace SensorDevices
 				System.IO.File.WriteAllBytes(fileName, bytes);
 			}
 		}
-
 	}
 }

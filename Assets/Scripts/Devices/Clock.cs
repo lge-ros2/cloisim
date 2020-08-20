@@ -21,11 +21,11 @@ public class Clock : Device
 
 	protected override void OnAwake()
 	{
+		deviceName = "Unity Clock";
 	}
 
 	protected override void OnStart()
 	{
-		deviceName = "Unity Clock";
 		SetUpdateRate(updateRate);
 	}
 

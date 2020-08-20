@@ -96,20 +96,20 @@ public class DeviceHelper
 			quaternion = new messages.Quaternion();
 		}
 
-		quaternion.X = rotation.x * Mathf.Deg2Rad;
-		quaternion.Y = rotation.z * Mathf.Deg2Rad;
-		quaternion.Z = rotation.y * Mathf.Deg2Rad;
-		quaternion.W = rotation.w * Mathf.Deg2Rad;
+		quaternion.X = -rotation.x;
+		quaternion.Y = -rotation.z;
+		quaternion.Z = -rotation.y;
+		quaternion.W = rotation.w;
 	}
 
 	public static Matrix4x4 MakeCustomProjectionMatrix(in float hFov, in float vFov, in float near, in float far)
 	{
 		// construct custom aspect ratio projection matrix
 		// math from https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/opengl-perspective-projection-matrix
-		float h = 1.0f / Mathf.Tan(hFov * Mathf.Deg2Rad / 2f);
-		float v = 1.0f / Mathf.Tan(vFov * Mathf.Deg2Rad / 2f);
-		float a = (far + near) / (near - far);
-		float b = (2.0f * far * near / (near - far));
+		var h = 1.0f / Mathf.Tan(hFov * Mathf.Deg2Rad / 2f);
+		var v = 1.0f / Mathf.Tan(vFov * Mathf.Deg2Rad / 2f);
+		var a = (far + near) / (near - far);
+		var b = (2.0f * far * near / (near - far));
 
 		var projMatrix = new Matrix4x4(
 			new Vector4(h, 0, 0, 0),

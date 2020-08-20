@@ -41,13 +41,8 @@ namespace SensorDevices
 		{
 			deviceName = name;
 			sonarLink = transform.parent;
-			waitingPeriodRatio = 0.95f;
 
-			var sonar = sonarStamped.Sonar;
-			sonar.Frame = deviceName;
-			sonar.Radius = radius;
-			sonar.RangeMin = rangeMin;
-			sonar.RangeMax = rangeMax;
+			waitingPeriodRatio = 0.95f;
 		}
 
 		protected override void OnStart()
@@ -83,6 +78,12 @@ namespace SensorDevices
 			// 	= MeshColliderCookingOptions.EnableMeshCleaning|MeshColliderCookingOptions.WeldColocatedVertices;
 			// meshCollider.cookingOptions = cookingOptions;
 			// meshCollider.hideFlags |= HideFlags.NotEditable;
+
+			var sonar = sonarStamped.Sonar;
+			sonar.Frame = deviceName;
+			sonar.Radius = radius;
+			sonar.RangeMin = rangeMin;
+			sonar.RangeMax = rangeMax;
 		}
 
 		protected override IEnumerator OnVisualize()

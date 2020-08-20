@@ -10,7 +10,7 @@ using System.Net.NetworkInformation;
 using System.Net;
 using System;
 using UnityEngine;
-using Newtonsoft.Json;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class BridgePortManager : DeviceTransporter
 {
@@ -55,10 +55,9 @@ public class BridgePortManager : DeviceTransporter
 
 		lock (portMapTable)
 		{
-			foreach (KeyValuePair<string, ushort> each in portMapTable)
+			foreach (var each in portMapTable)
 			{
-				string _Key = each.Key;
-				if (_Key == hashKey)
+				if (each.Key == hashKey)
 				{
 					port = each.Value;
 					break;
@@ -104,7 +103,7 @@ public class BridgePortManager : DeviceTransporter
 	public ushort AllocateSensorPort(string hashKey)
 	{
 		// check if already occupied
-		ushort newPort = SearchSensorPort(hashKey);
+		var newPort = SearchSensorPort(hashKey);
 
 		if (newPort != 0)
 		{
@@ -114,7 +113,7 @@ public class BridgePortManager : DeviceTransporter
 
 		// find available port number
 		// start with minimum port range
-		for (ushort index = 0; index < (maxPortRange - minPortRange); index++)
+		for (var index = 0; index < (maxPortRange - minPortRange); index++)
 		{
 			var port = (ushort)(minPortRange + index);
 			var isContained = false;
@@ -149,18 +148,26 @@ public class BridgePortManager : DeviceTransporter
 
 	private void PortManageWorker()
 	{
+		var sw = new Stopwatch();
+
 		// Debug.LogFormat("Start SensorPortManager - {0}::{1}", GetType().Name, MethodBase.GetCurrentMethod().Name);
 		while (true)
 		{
-			// Debug.Log("Waiting for Request Data");
-			var hashKey = ReceiveRequest();
+			sw.Restart();
 
-			var hashKeyInString = (hashKey == null) ? string.Empty : System.Text.Encoding.Default.GetString(hashKey);
-			var port = SearchSensorPort(hashKeyInString);
-			var portBuf = System.Convert.ToString(port);
+			var hashKey = TryReceiveRequest();
+			if (hashKey != null)
+			{
+				var hashKeyInString = System.Text.Encoding.Default.GetString(hashKey);
+				var port = SearchSensorPort(hashKeyInString);
 
-			SendResponse(portBuf);
-			Debug.LogFormat("-> Reply for {0} = {1}", hashKeyInString, port);
+				var portBuf = Convert.ToString(port);
+				SendResponse(portBuf);
+
+				sw.Stop();
+				var timeElapsed = sw.ElapsedMilliseconds;
+				Debug.LogFormat("-> Reply for {0} = {1}, {2} ms", hashKeyInString, port, timeElapsed);
+			}
 		}
 	}
 

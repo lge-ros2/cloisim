@@ -32,13 +32,12 @@ public class MicomSensor : Device
 
 	protected override void OnAwake()
 	{
-		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
 		deviceName = "MicomSensor";
 	}
 
 	protected override void OnStart()
 	{
-		var modelList = GetComponentsInChildren<ModelPlugin>();
+		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
 
 		var updateRate = parameters.GetValue<float>("update_rate", 20);
 		SetUpdateRate(updateRate);
@@ -59,6 +58,7 @@ public class MicomSensor : Device
 		var motorFriction = parameters.GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
 		var brakeFriction = parameters.GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
 
+		var modelList = GetComponentsInChildren<ModelPlugin>();
 		foreach (var model in modelList)
 		{
 			// Debug.Log(model.name);
@@ -363,26 +363,32 @@ public class MicomSensor : Device
 		return false;
 	}
 
+
+	/// <summary>Set differential driver</summary>
+	/// <remarks>rad per second for wheels</remarks>
 	public void SetDifferentialDrive(in float linearVelocityLeft, in float linearVelocityRight)
 	{
-		var angularVelocityLeft = linearVelocityLeft * divideWheelRadius;
-		var angularVelocityRight = linearVelocityRight * divideWheelRadius;
+		var angularVelocityLeft = linearVelocityLeft * divideWheelRadius * Mathf.Rad2Deg;
+		var angularVelocityRight = linearVelocityRight * divideWheelRadius * Mathf.Rad2Deg;
 
 		SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
 	}
 
 	public void SetTwistDrive(in float linearVelocity, in float angularVelocity)
 	{
-		// m/s, deg/s
-		// var angularVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
-		// var angularVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
+		// m/s, rad/s
+		// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
+		// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
 		var angularCalculation = (angularVelocity * wheelBase * 0.5f);
-		var angularVelocityLeft = (linearVelocity - angularCalculation);
-		var angularVelocityRight = (linearVelocity + angularCalculation);
+		var linearVelocityLeft = (linearVelocity - angularCalculation);
+		var linearVelocityRight = (linearVelocity + angularCalculation);
 
-		SetDifferentialDrive(angularVelocityLeft, angularVelocityRight);
+		SetDifferentialDrive(linearVelocityLeft, linearVelocityRight);
 	}
 
+
+	/// <summary>Set motor velocity</summary>
+	/// <remarks>degree per second</remarks>
 	private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)
 	{
 		if (motorLeft != null && motorRight != null)

@@ -30,6 +30,8 @@ public abstract class DevicesPlugin : MonoBehaviour, IDevicePlugin
 		OnStart();
 	}
 
+	public void Reset() { }
+
 	public void AddDevicePlugin(in string deviceName, in DevicePlugin devicePlugin)
 	{
 		devicePlugins.Add(deviceName, devicePlugin);
@@ -45,9 +47,5 @@ public abstract class DevicesPlugin : MonoBehaviour, IDevicePlugin
 		{
 			Debug.LogWarning("Cannot set plugin parameters");
 		}
-	}
-
-	public void Reset()
-	{
 	}
 }

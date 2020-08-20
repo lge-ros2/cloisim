@@ -29,9 +29,12 @@ public partial class DeviceTransporter
 
 		if (publisherSocket != null)
 		{
+			publisherSocket.Options.Linger = TimeSpan.FromTicks(0);
+			publisherSocket.Options.IPv4Only = true;
 			publisherSocket.Options.TcpKeepalive = true;
+			publisherSocket.Options.DisableTimeWait = true;
 			publisherSocket.Options.SendHighWatermark = highwatermark;
-			publisherSocket.Options.Linger = new TimeSpan(0);
+
 			publisherSocket.Bind(GetAddress(targetPort));
 			// Debug.Log("Publisher socket binding for - " + targetPort);
 			initialized = StoreTag(ref dataToPublish, hashValueForPublish);
@@ -62,26 +65,25 @@ public partial class DeviceTransporter
 	protected bool Publish(in string stringToSend)
 	{
 		var buffer = System.Text.Encoding.UTF8.GetBytes(stringToSend);
-		return Publish(buffer,stringToSend.Length);
+		return Publish(buffer, stringToSend.Length);
 	}
 
-	protected bool Publish(in byte[] bufferToSend, in int bufferLength)
+	protected bool Publish(in byte[] buffer, in int bufferLength)
 	{
-		bool wasSucessful = false;
+		var wasSucessful = false;
 
-		if (StoreData(ref dataToPublish, bufferToSend, bufferLength) == false)
+		if (StoreData(ref dataToPublish, buffer, bufferLength))
 		{
-			return wasSucessful;
-		}
-
-		if (publisherSocket != null)
-		{
-			wasSucessful = publisherSocket.TrySendFrame(dataToPublish);
-			// Debug.LogFormat("Publish data({0}) length({1})", bufferToSend, bufferLength);
-		}
-		else
-		{
-			Debug.LogWarning("Socket for publisher or response-request is not initilized yet.");
+			if (publisherSocket != null)
+			{
+				var dataLength = tagSize + bufferLength;
+				wasSucessful = publisherSocket.TrySendFrame(dataToPublish, dataLength);
+				// Debug.LogFormat("Publish data({0}) length({1})", buffer, bufferLength);
+			}
+			else
+			{
+				Debug.LogWarning("Socket for publisher or response-request is not initilized yet.");
+			}
 		}
 
 		return wasSucessful;
