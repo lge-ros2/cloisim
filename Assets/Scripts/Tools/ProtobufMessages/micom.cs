@@ -4,7 +4,8 @@
 //   Input: micom.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -41,6 +42,9 @@ namespace gazebo.msgs
 
         [global::ProtoBuf.ProtoMember(9, Name = @"battery")]
         public Battery Battery { get; set; }
+
+        [global::ProtoBuf.ProtoMember(10, Name = @"pose")]
+        public Pose Pose { get; set; }
 
         [global::ProtoBuf.ProtoContract(Name = @"USS")]
         public partial class Uss : global::ProtoBuf.IExtensible
@@ -145,4 +149,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion

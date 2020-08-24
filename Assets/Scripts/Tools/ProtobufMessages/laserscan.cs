@@ -4,7 +4,8 @@
 //   Input: laserscan.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -42,8 +43,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(9, Name = @"vertical_angle_min")]
         public double VerticalAngleMin
         {
-            get { return __pbn__VerticalAngleMin.GetValueOrDefault(); }
-            set { __pbn__VerticalAngleMin = value; }
+            get => __pbn__VerticalAngleMin.GetValueOrDefault();
+            set => __pbn__VerticalAngleMin = value;
         }
         public bool ShouldSerializeVerticalAngleMin() => __pbn__VerticalAngleMin != null;
         public void ResetVerticalAngleMin() => __pbn__VerticalAngleMin = null;
@@ -52,8 +53,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(10, Name = @"vertical_angle_max")]
         public double VerticalAngleMax
         {
-            get { return __pbn__VerticalAngleMax.GetValueOrDefault(); }
-            set { __pbn__VerticalAngleMax = value; }
+            get => __pbn__VerticalAngleMax.GetValueOrDefault();
+            set => __pbn__VerticalAngleMax = value;
         }
         public bool ShouldSerializeVerticalAngleMax() => __pbn__VerticalAngleMax != null;
         public void ResetVerticalAngleMax() => __pbn__VerticalAngleMax = null;
@@ -62,8 +63,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(11, Name = @"vertical_angle_step")]
         public double VerticalAngleStep
         {
-            get { return __pbn__VerticalAngleStep.GetValueOrDefault(); }
-            set { __pbn__VerticalAngleStep = value; }
+            get => __pbn__VerticalAngleStep.GetValueOrDefault();
+            set => __pbn__VerticalAngleStep = value;
         }
         public bool ShouldSerializeVerticalAngleStep() => __pbn__VerticalAngleStep != null;
         public void ResetVerticalAngleStep() => __pbn__VerticalAngleStep = null;
@@ -72,8 +73,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(12, Name = @"vertical_count")]
         public uint VerticalCount
         {
-            get { return __pbn__VerticalCount.GetValueOrDefault(); }
-            set { __pbn__VerticalCount = value; }
+            get => __pbn__VerticalCount.GetValueOrDefault();
+            set => __pbn__VerticalCount = value;
         }
         public bool ShouldSerializeVerticalCount() => __pbn__VerticalCount != null;
         public void ResetVerticalCount() => __pbn__VerticalCount = null;
@@ -89,4 +90,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion

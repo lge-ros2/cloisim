@@ -4,7 +4,8 @@
 //   Input: raysensor.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -18,8 +19,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(1, Name = @"display_scan")]
         public bool DisplayScan
         {
-            get { return __pbn__DisplayScan.GetValueOrDefault(); }
-            set { __pbn__DisplayScan = value; }
+            get => __pbn__DisplayScan.GetValueOrDefault();
+            set => __pbn__DisplayScan = value;
         }
         public bool ShouldSerializeDisplayScan() => __pbn__DisplayScan != null;
         public void ResetDisplayScan() => __pbn__DisplayScan = null;
@@ -28,8 +29,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(2, Name = @"horizontal_samples")]
         public int HorizontalSamples
         {
-            get { return __pbn__HorizontalSamples.GetValueOrDefault(); }
-            set { __pbn__HorizontalSamples = value; }
+            get => __pbn__HorizontalSamples.GetValueOrDefault();
+            set => __pbn__HorizontalSamples = value;
         }
         public bool ShouldSerializeHorizontalSamples() => __pbn__HorizontalSamples != null;
         public void ResetHorizontalSamples() => __pbn__HorizontalSamples = null;
@@ -38,8 +39,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(3, Name = @"horizontal_resolution")]
         public double HorizontalResolution
         {
-            get { return __pbn__HorizontalResolution.GetValueOrDefault(); }
-            set { __pbn__HorizontalResolution = value; }
+            get => __pbn__HorizontalResolution.GetValueOrDefault();
+            set => __pbn__HorizontalResolution = value;
         }
         public bool ShouldSerializeHorizontalResolution() => __pbn__HorizontalResolution != null;
         public void ResetHorizontalResolution() => __pbn__HorizontalResolution = null;
@@ -48,8 +49,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(4, Name = @"horizontal_min_angle")]
         public double HorizontalMinAngle
         {
-            get { return __pbn__HorizontalMinAngle.GetValueOrDefault(); }
-            set { __pbn__HorizontalMinAngle = value; }
+            get => __pbn__HorizontalMinAngle.GetValueOrDefault();
+            set => __pbn__HorizontalMinAngle = value;
         }
         public bool ShouldSerializeHorizontalMinAngle() => __pbn__HorizontalMinAngle != null;
         public void ResetHorizontalMinAngle() => __pbn__HorizontalMinAngle = null;
@@ -58,8 +59,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(5, Name = @"horizontal_max_angle")]
         public double HorizontalMaxAngle
         {
-            get { return __pbn__HorizontalMaxAngle.GetValueOrDefault(); }
-            set { __pbn__HorizontalMaxAngle = value; }
+            get => __pbn__HorizontalMaxAngle.GetValueOrDefault();
+            set => __pbn__HorizontalMaxAngle = value;
         }
         public bool ShouldSerializeHorizontalMaxAngle() => __pbn__HorizontalMaxAngle != null;
         public void ResetHorizontalMaxAngle() => __pbn__HorizontalMaxAngle = null;
@@ -68,8 +69,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(6, Name = @"vertical_samples")]
         public int VerticalSamples
         {
-            get { return __pbn__VerticalSamples.GetValueOrDefault(); }
-            set { __pbn__VerticalSamples = value; }
+            get => __pbn__VerticalSamples.GetValueOrDefault();
+            set => __pbn__VerticalSamples = value;
         }
         public bool ShouldSerializeVerticalSamples() => __pbn__VerticalSamples != null;
         public void ResetVerticalSamples() => __pbn__VerticalSamples = null;
@@ -78,8 +79,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(7, Name = @"vertical_resolution")]
         public double VerticalResolution
         {
-            get { return __pbn__VerticalResolution.GetValueOrDefault(); }
-            set { __pbn__VerticalResolution = value; }
+            get => __pbn__VerticalResolution.GetValueOrDefault();
+            set => __pbn__VerticalResolution = value;
         }
         public bool ShouldSerializeVerticalResolution() => __pbn__VerticalResolution != null;
         public void ResetVerticalResolution() => __pbn__VerticalResolution = null;
@@ -88,8 +89,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(8, Name = @"vertical_min_angle")]
         public double VerticalMinAngle
         {
-            get { return __pbn__VerticalMinAngle.GetValueOrDefault(); }
-            set { __pbn__VerticalMinAngle = value; }
+            get => __pbn__VerticalMinAngle.GetValueOrDefault();
+            set => __pbn__VerticalMinAngle = value;
         }
         public bool ShouldSerializeVerticalMinAngle() => __pbn__VerticalMinAngle != null;
         public void ResetVerticalMinAngle() => __pbn__VerticalMinAngle = null;
@@ -98,8 +99,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(9, Name = @"vertical_max_angle")]
         public double VerticalMaxAngle
         {
-            get { return __pbn__VerticalMaxAngle.GetValueOrDefault(); }
-            set { __pbn__VerticalMaxAngle = value; }
+            get => __pbn__VerticalMaxAngle.GetValueOrDefault();
+            set => __pbn__VerticalMaxAngle = value;
         }
         public bool ShouldSerializeVerticalMaxAngle() => __pbn__VerticalMaxAngle != null;
         public void ResetVerticalMaxAngle() => __pbn__VerticalMaxAngle = null;
@@ -108,8 +109,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(10, Name = @"range_min")]
         public double RangeMin
         {
-            get { return __pbn__RangeMin.GetValueOrDefault(); }
-            set { __pbn__RangeMin = value; }
+            get => __pbn__RangeMin.GetValueOrDefault();
+            set => __pbn__RangeMin = value;
         }
         public bool ShouldSerializeRangeMin() => __pbn__RangeMin != null;
         public void ResetRangeMin() => __pbn__RangeMin = null;
@@ -118,8 +119,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(11, Name = @"range_max")]
         public double RangeMax
         {
-            get { return __pbn__RangeMax.GetValueOrDefault(); }
-            set { __pbn__RangeMax = value; }
+            get => __pbn__RangeMax.GetValueOrDefault();
+            set => __pbn__RangeMax = value;
         }
         public bool ShouldSerializeRangeMax() => __pbn__RangeMax != null;
         public void ResetRangeMax() => __pbn__RangeMax = null;
@@ -128,8 +129,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(12, Name = @"range_resolution")]
         public double RangeResolution
         {
-            get { return __pbn__RangeResolution.GetValueOrDefault(); }
-            set { __pbn__RangeResolution = value; }
+            get => __pbn__RangeResolution.GetValueOrDefault();
+            set => __pbn__RangeResolution = value;
         }
         public bool ShouldSerializeRangeResolution() => __pbn__RangeResolution != null;
         public void ResetRangeResolution() => __pbn__RangeResolution = null;
@@ -139,4 +140,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion

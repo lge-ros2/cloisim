@@ -4,7 +4,8 @@
 //   Input: header.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -19,8 +20,8 @@ namespace gazebo.msgs
         [global::System.ComponentModel.DefaultValue("")]
         public string StrId
         {
-            get { return __pbn__StrId ?? ""; }
-            set { __pbn__StrId = value; }
+            get => __pbn__StrId ?? "";
+            set => __pbn__StrId = value;
         }
         public bool ShouldSerializeStrId() => __pbn__StrId != null;
         public void ResetStrId() => __pbn__StrId = null;
@@ -32,8 +33,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(3, Name = @"index")]
         public int Index
         {
-            get { return __pbn__Index.GetValueOrDefault(); }
-            set { __pbn__Index = value; }
+            get => __pbn__Index.GetValueOrDefault();
+            set => __pbn__Index = value;
         }
         public bool ShouldSerializeIndex() => __pbn__Index != null;
         public void ResetIndex() => __pbn__Index = null;
@@ -43,4 +44,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion
