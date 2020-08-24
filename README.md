@@ -95,6 +95,9 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 
   * *And have fun!!!*
 
+#### Debugging log
+
+  * $ tail -f  ~/.config/unity3d/LG\ Electronics/CLOiSim/Player.log 
 
 #### Control service 
 
@@ -116,7 +119,7 @@ New features or functions shall be developed on demand.
 
 - Noise models for sensor model
 
-- Performance optimization for sensor(Use DOTS by unity?)
+- Performance optimization for sensors (Use DOTS by unity?)
 
 - Upgrade quality of graphical elements
 
