@@ -68,10 +68,9 @@ public class LaserPlugin : DevicePlugin
 				switch (requestMessage.Name)
 				{
 					case "request_transform":
-						var devicePosition = device.GetPosition();
-						var deviceRotation = device.GetRotation();
+						var devicePose = device.GetPose();
 
-						SetTransformInfoResponse(ref msForInfoResponse, devicePosition, deviceRotation);
+						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
 						break;
 
 					default:

@@ -30,6 +30,12 @@ public class MicomSensor : Device
 	private float wheelRadius = 0.0f;
 	private float divideWheelRadius = 0.0f; // for computational performacne.
 
+
+	public float WheelBase => wheelBase;
+	public float WheelRadius => wheelRadius;
+
+	private Dictionary<string, Pose> partsPoseMapTable = new Dictionary<string, Pose>();
+
 	protected override void OnAwake()
 	{
 		deviceName = "MicomSensor";
@@ -37,8 +43,6 @@ public class MicomSensor : Device
 
 	protected override void OnStart()
 	{
-		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
-
 		var updateRate = parameters.GetValue<float>("update_rate", 20);
 		SetUpdateRate(updateRate);
 
@@ -67,20 +71,23 @@ public class MicomSensor : Device
 				var jointWheelLeft = model.GetComponentInChildren<HingeJoint>();
 				motorLeft = new Motor("Left", jointWheelLeft, pidControl);
 
-				var wheelLeftBody = jointWheelLeft.gameObject.GetComponent<Rigidbody>();
+				// var wheelLeftBody = jointWheelLeft.gameObject.GetComponent<Rigidbody>();
+				var wheelLeftTransform = jointWheelLeft.gameObject.transform.parent;
+				var wheelLeftPose = new Pose(wheelLeftTransform.localPosition, wheelLeftTransform.localRotation);
+				partsPoseMapTable.Add(wheelNameLeft, wheelLeftPose);
 
-				// Debug.Log("joint Wheel Left found : " + jointWheelLeft.name);
-				// Debug.Log("joint Wheel Left max angular velocity : " + jointWheelLeft.gameObject.GetComponent<Rigidbody>().maxAngularVelocity);
+				// Debug.LogFormat("joint Wheel({0}) Left max angular velocity({1})", jointWheelLeft.name, jointWheelLeft.gameObject.GetComponent<Rigidbody>().maxAngularVelocity);
 			}
 			else if (model.name.Equals(wheelNameRight))
 			{
 				var jointWheelRight = model.GetComponentInChildren<HingeJoint>();
 				motorRight = new Motor("Right", jointWheelRight, pidControl);
 
-				var wheelRightBody = jointWheelRight.gameObject.GetComponent<Rigidbody>();
+				var wheelRightTransform = jointWheelRight.gameObject.transform.parent;
+				var wheelRightPose = new Pose(wheelRightTransform.localPosition, wheelRightTransform.localRotation);
+				partsPoseMapTable.Add(wheelNameRight, wheelRightPose);
 
-				// Debug.Log("joint Wheel Right found : " + jointWheelRight.name);
-				// Debug.Log("joint Wheel Right max angular velocity : " + jointWheelRight.gameObject.GetComponent<Rigidbody>().maxAngularVelocity);
+				// Debug.LogFormat("joint Wheel({0}) Left max angular velocity({1})", jointWheelRight.name, jointWheelRight.gameObject.GetComponent<Rigidbody>().maxAngularVelocity);
 			}
 
 			if (motorLeft != null && motorRight != null)
@@ -167,6 +174,11 @@ public class MicomSensor : Device
 
 			micomSensorData.bumper.Bumpeds = new bool[bumperCount];
 		}
+
+		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
+		var imuSensorModelTransform = imuSensor.transform.parent;
+		var newPose = new Pose(imuSensorModelTransform.localPosition, imuSensorModelTransform.localRotation);
+		partsPoseMapTable.Add(imuSensor.name, newPose);
 	}
 
 	protected override IEnumerator MainDeviceWorker()
@@ -188,7 +200,7 @@ public class MicomSensor : Device
 		micomSensorData = new messages.Micom();
 		micomSensorData.Time = new messages.Time();
 		micomSensorData.Imu = new messages.Imu();
-		micomSensorData.Imu.EntityName = "IMU";
+		micomSensorData.Imu.EntityName = "imu";
 		micomSensorData.Imu.Stamp = new messages.Time();
 		micomSensorData.Imu.Orientation = new messages.Quaternion();
 		micomSensorData.Imu.AngularVelocity = new messages.Vector3d();
@@ -352,9 +364,8 @@ public class MicomSensor : Device
 
 			if (odom != null)
 			{
-				odom.SpeedLeft = linearVelocityLeft * Mathf.Deg2Rad;
-				odom.SpeedRight = linearVelocityRight * Mathf.Deg2Rad;
-				// Debug.LogFormat("Odom {0}, {1} ", linearVelocityLeft, linearVelocityRight);
+				odom.SpeedLeft = linearVelocityLeft;
+				odom.SpeedRight = linearVelocityRight;
 				// Debug.LogFormat("Odom {0}, {1} ", odom.SpeedLeft, odom.SpeedRight);
 				return true;
 			}
@@ -396,8 +407,8 @@ public class MicomSensor : Device
 			motorLeft.SetVelocityTarget(angularVelocityLeft);
 			motorRight.SetVelocityTarget(angularVelocityRight);
 
-			var linearJointVelocityLeft = motorLeft.GetCurrentVelocity() * wheelRadius;
-			var linearJointVelocityRight = motorRight.GetCurrentVelocity() * wheelRadius;
+			var linearJointVelocityLeft = wheelRadius * motorLeft.GetCurrentVelocity() * Mathf.Deg2Rad;
+			var linearJointVelocityRight = wheelRadius * motorRight.GetCurrentVelocity() * Mathf.Deg2Rad;
 
 			SetOdomData(linearJointVelocityLeft, linearJointVelocityRight);
 		}
@@ -406,5 +417,15 @@ public class MicomSensor : Device
 	public void SetPluginParameter(in PluginParameters pluginParams)
 	{
 		parameters = pluginParams;
+	}
+
+	public Pose GetPartsPose(in string targetPartsName)
+	{
+		if (partsPoseMapTable.TryGetValue(targetPartsName, out var targetPartsPose))
+		{
+			return targetPartsPose;
+		}
+
+		return Pose.identity;
 	}
 }

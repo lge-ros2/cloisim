@@ -5,14 +5,16 @@
  */
 
 using System.Threading;
+using System.IO;
 using UnityEngine;
+using ProtoBuf;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using messages = gazebo.msgs;
 
-public class RobotControl : DevicePlugin
+public class MicomPlugin : DevicePlugin
 {
 	private MicomInput micomInput = null;
 	private MicomSensor micomSensor = null;
-
 
 	protected override void OnAwake()
 	{
@@ -37,13 +39,13 @@ public class RobotControl : DevicePlugin
 		var txHashKey = MakeHashKey("_SENSOR");
 		if (!RegisterTxDevice(txHashKey))
 		{
-			Debug.LogError("Failed to register for RobotControl TX- " + txHashKey);
+			Debug.LogError("Failed to register for MicomPlugin TX- " + txHashKey);
 		}
 
 		var rxHashKey = MakeHashKey("_INPUT");
 		if (!RegisterRxDevice(rxHashKey))
 		{
-			Debug.LogError("Failed to register for RobotControl RX- " + rxHashKey);
+			Debug.LogError("Failed to register for MicomPlugin RX- " + rxHashKey);
 		}
 
 		AddThread(Response);
@@ -120,20 +122,16 @@ public class RobotControl : DevicePlugin
 			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
 			{
-				// var device = cam as Device;
-
 				switch (requestMessage.Name)
 				{
 					case "request_wheel_info":
-						// var cameraInfoMessage = cam.GetCameraInfo();
-						// SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
+						SetWheelInfoResponse(ref msForInfoResponse);
 						break;
 
 					case "request_transform":
-						// var devicePosition = device.GetPosition();
-						// var deviceRotation = device.GetRotation();
-
-						// SetTransformInfoResponse(ref msForInfoResponse, devicePosition, deviceRotation);
+						var targetPartsName = requestMessage.Value.StringValue;
+						var devicePose = micomSensor.GetPartsPose(targetPartsName);
+						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
 						break;
 
 					default:
@@ -142,6 +140,34 @@ public class RobotControl : DevicePlugin
 
 				SendResponse(msForInfoResponse);
 			}
+		}
+	}
+
+	private void SetWheelInfoResponse(ref MemoryStream msCameraInfo)
+	{
+		if (msCameraInfo != null)
+		{
+			var wheelInfo = new messages.Param();
+			wheelInfo.Name = "wheelInfo";
+			wheelInfo.Value = new messages.Any();
+			wheelInfo.Value.Type = messages.Any.ValueType.None;
+
+			var baseInfo = new messages.Param();
+			baseInfo.Name = "base";
+			baseInfo.Value = new messages.Any();
+			baseInfo.Value.Type = messages.Any.ValueType.Double;
+			baseInfo.Value.DoubleValue = micomSensor.WheelBase;
+			wheelInfo.Childrens.Add(baseInfo);
+
+			var sizeInfo = new messages.Param();
+			sizeInfo.Name = "radius";
+			sizeInfo.Value = new messages.Any();
+			sizeInfo.Value.Type = messages.Any.ValueType.Double;
+			sizeInfo.Value.DoubleValue = micomSensor.WheelRadius;
+			wheelInfo.Childrens.Add(sizeInfo);
+
+			ClearMemoryStream(ref msCameraInfo);
+			Serializer.Serialize<messages.Param>(msCameraInfo, wheelInfo);
 		}
 	}
 }

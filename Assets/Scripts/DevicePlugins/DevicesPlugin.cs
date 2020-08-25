@@ -10,18 +10,15 @@ using UnityEngine;
 
 public abstract class DevicesPlugin : MonoBehaviour, IDevicePlugin
 {
-	protected PluginParameters parameters;
+	protected PluginParameters parameters = new PluginParameters();
 
-	private Dictionary<string, DevicePlugin> devicePlugins;
+	private Dictionary<string, DevicePlugin> devicePlugins = new Dictionary<string, DevicePlugin>();
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
 
 	void Awake()
 	{
-		parameters = new PluginParameters();
-		devicePlugins = new Dictionary<string, DevicePlugin>();
-
 		OnAwake();
 	}
 

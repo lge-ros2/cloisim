@@ -13,18 +13,16 @@ public class LinkPlugin : MonoBehaviour
 
 	private ModelPlugin modelPlugin = null;
 
-	private PoseControl poseControl = null;
+	private PoseControl poseControl = new PoseControl();
 
-	public Dictionary<string, Joint> jointList;
+	public Dictionary<string, Joint> jointList = new Dictionary<string, Joint>();
 
 	void Awake()
 	{
-		poseControl = new PoseControl();
-		jointList = new Dictionary<string, Joint>();
-
 		tag = "Link";
 		var modelObject = transform.parent;
 		modelPlugin = modelObject.GetComponent<ModelPlugin>();
+
 		poseControl.SetTransform(transform);
 	}
 

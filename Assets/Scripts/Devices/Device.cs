@@ -31,8 +31,7 @@ public abstract class Device : MonoBehaviour
 	[Range(0, 1.0f)]
 	public float waitingPeriodRatio = 1.0f;
 
-	private Vector3 devicePosition = Vector3.zero;
-	private Quaternion deviceRotation = Quaternion.identity;
+	private Pose devicePose = Pose.identity;
 
 	public float UpdateRate => updateRate;
 
@@ -234,20 +233,15 @@ public abstract class Device : MonoBehaviour
 			var modelObject = this.transform.parent.parent;
 			if (modelObject != null && modelObject.CompareTag("Model"))
 			{
-				devicePosition = modelObject.transform.localPosition;
-				deviceRotation = modelObject.transform.localRotation;
+				devicePose.position = modelObject.transform.localPosition;
+				devicePose.rotation = modelObject.transform.localRotation;
 				// Debug.Log(modelObject.name + ": " + devicePosition + ", " + deviceRotation);
 			}
 		}
 	}
 
-	public Vector3 GetPosition()
+	public Pose GetPose()
 	{
-		return devicePosition;
-	}
-
-	public Quaternion GetRotation()
-	{
-		return deviceRotation;
+		return devicePose;
 	}
 }

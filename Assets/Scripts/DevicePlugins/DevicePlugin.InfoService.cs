@@ -31,7 +31,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 	}
 
-	public static void SetTransformInfoResponse(ref MemoryStream msCameraInfo, in Vector3 objectPos, in Quaternion objectRot)
+	public static void SetTransformInfoResponse(ref MemoryStream msCameraInfo, in Pose devicePose)
 	{
 		if (msCameraInfo != null)
 		{
@@ -39,8 +39,8 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 			objectPose.Position = new messages.Vector3d();
 			objectPose.Orientation = new messages.Quaternion();
 
-			DeviceHelper.SetVector3d(objectPose.Position, objectPos);
-			DeviceHelper.SetQuaternion(objectPose.Orientation, objectRot);
+			DeviceHelper.SetVector3d(objectPose.Position, devicePose.position);
+			DeviceHelper.SetQuaternion(objectPose.Orientation, devicePose.rotation);
 
 			var objectTransformInfo = new messages.Param();
 			objectTransformInfo.Name = "transform";

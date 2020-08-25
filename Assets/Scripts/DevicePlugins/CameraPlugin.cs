@@ -79,10 +79,8 @@ public class CameraPlugin : DevicePlugin
 						break;
 
 					case "request_transform":
-						var devicePosition = device.GetPosition();
-						var deviceRotation = device.GetRotation();
-
-						SetTransformInfoResponse(ref msForInfoResponse, devicePosition, deviceRotation);
+						var devicePose = device.GetPose();
+						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
 						break;
 
 					default:
