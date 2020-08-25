@@ -356,7 +356,7 @@ public class MicomSensor : Device
 		accGyro.AngulerRateZ = 0;
 	}
 
-	private bool SetOdomData(in float linearVelocityLeft, in float linearVelocityRight)
+	private bool SetOdomData(in float angularVelocityLeft, in float angularVelocityRight)
 	{
 		if (micomSensorData != null)
 		{
@@ -364,8 +364,10 @@ public class MicomSensor : Device
 
 			if (odom != null)
 			{
-				odom.SpeedLeft = linearVelocityLeft;
-				odom.SpeedRight = linearVelocityRight;
+				odom.AngularVelocityLeft = angularVelocityLeft * Mathf.Deg2Rad;
+				odom.AngularVelocityRight = angularVelocityRight * Mathf.Deg2Rad;
+				odom.LinearVelocityLeft = odom.AngularVelocityLeft * wheelRadius;
+				odom.LinearVelocityRight = odom.AngularVelocityRight * wheelRadius;
 				// Debug.LogFormat("Odom {0}, {1} ", odom.SpeedLeft, odom.SpeedRight);
 				return true;
 			}
@@ -407,10 +409,10 @@ public class MicomSensor : Device
 			motorLeft.SetVelocityTarget(angularVelocityLeft);
 			motorRight.SetVelocityTarget(angularVelocityRight);
 
-			var linearJointVelocityLeft = wheelRadius * motorLeft.GetCurrentVelocity() * Mathf.Deg2Rad;
-			var linearJointVelocityRight = wheelRadius * motorRight.GetCurrentVelocity() * Mathf.Deg2Rad;
+			var angularVelocityLeftFromMotor = motorLeft.GetCurrentVelocity();
+			var angularVelocityRightFromMotor = motorRight.GetCurrentVelocity();
 
-			SetOdomData(linearJointVelocityLeft, linearJointVelocityRight);
+			SetOdomData(angularVelocityLeftFromMotor, angularVelocityRightFromMotor);
 		}
 	}
 

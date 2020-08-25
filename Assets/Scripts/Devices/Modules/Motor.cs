@@ -49,9 +49,11 @@ public class Motor
 		pidControl = pid.Copy();
 	}
 
+	/// <summary>Get Current Joint Velocity</summary>
+	/// <remarks>degree per second</remarks>
 	public float GetCurrentVelocity()
 	{
-		return (joint)? joint.velocity:0;
+		return (joint)? (joint.velocity):0;
 	}
 
 	/// <summary>Set Target Velocity with PID control</summary>
