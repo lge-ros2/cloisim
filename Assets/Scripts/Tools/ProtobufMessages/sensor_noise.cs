@@ -4,7 +4,8 @@
 //   Input: sensor_noise.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -21,8 +22,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(2, Name = @"mean")]
         public double Mean
         {
-            get { return __pbn__Mean.GetValueOrDefault(); }
-            set { __pbn__Mean = value; }
+            get => __pbn__Mean.GetValueOrDefault();
+            set => __pbn__Mean = value;
         }
         public bool ShouldSerializeMean() => __pbn__Mean != null;
         public void ResetMean() => __pbn__Mean = null;
@@ -31,8 +32,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(3, Name = @"stddev")]
         public double Stddev
         {
-            get { return __pbn__Stddev.GetValueOrDefault(); }
-            set { __pbn__Stddev = value; }
+            get => __pbn__Stddev.GetValueOrDefault();
+            set => __pbn__Stddev = value;
         }
         public bool ShouldSerializeStddev() => __pbn__Stddev != null;
         public void ResetStddev() => __pbn__Stddev = null;
@@ -41,8 +42,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(4, Name = @"bias_mean")]
         public double BiasMean
         {
-            get { return __pbn__BiasMean.GetValueOrDefault(); }
-            set { __pbn__BiasMean = value; }
+            get => __pbn__BiasMean.GetValueOrDefault();
+            set => __pbn__BiasMean = value;
         }
         public bool ShouldSerializeBiasMean() => __pbn__BiasMean != null;
         public void ResetBiasMean() => __pbn__BiasMean = null;
@@ -51,8 +52,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(5, Name = @"bias_stddev")]
         public double BiasStddev
         {
-            get { return __pbn__BiasStddev.GetValueOrDefault(); }
-            set { __pbn__BiasStddev = value; }
+            get => __pbn__BiasStddev.GetValueOrDefault();
+            set => __pbn__BiasStddev = value;
         }
         public bool ShouldSerializeBiasStddev() => __pbn__BiasStddev != null;
         public void ResetBiasStddev() => __pbn__BiasStddev = null;
@@ -61,8 +62,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(6, Name = @"precision")]
         public double Precision
         {
-            get { return __pbn__Precision.GetValueOrDefault(); }
-            set { __pbn__Precision = value; }
+            get => __pbn__Precision.GetValueOrDefault();
+            set => __pbn__Precision = value;
         }
         public bool ShouldSerializePrecision() => __pbn__Precision != null;
         public void ResetPrecision() => __pbn__Precision = null;
@@ -83,4 +84,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion

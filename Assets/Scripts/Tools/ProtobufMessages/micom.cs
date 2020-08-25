@@ -4,7 +4,8 @@
 //   Input: micom.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -41,6 +42,9 @@ namespace gazebo.msgs
 
         [global::ProtoBuf.ProtoMember(9, Name = @"battery")]
         public Battery Battery { get; set; }
+
+        [global::ProtoBuf.ProtoMember(10, Name = @"pose")]
+        public Pose Pose { get; set; }
 
         [global::ProtoBuf.ProtoContract(Name = @"USS")]
         public partial class Uss : global::ProtoBuf.IExtensible
@@ -85,11 +89,33 @@ namespace gazebo.msgs
             global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
                 => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-            [global::ProtoBuf.ProtoMember(1, Name = @"speed_left", IsRequired = true)]
-            public double SpeedLeft { get; set; }
+            [global::ProtoBuf.ProtoMember(1, Name = @"angular_velocity_left", IsRequired = true)]
+            public double AngularVelocityLeft { get; set; }
 
-            [global::ProtoBuf.ProtoMember(2, Name = @"speed_right", IsRequired = true)]
-            public double SpeedRight { get; set; }
+            [global::ProtoBuf.ProtoMember(2, Name = @"angular_velocity_right", IsRequired = true)]
+            public double AngularVelocityRight { get; set; }
+
+            [global::ProtoBuf.ProtoMember(3, Name = @"linear_velocity_left")]
+            [global::System.ComponentModel.DefaultValue(0)]
+            public double LinearVelocityLeft
+            {
+                get => __pbn__LinearVelocityLeft ?? 0;
+                set => __pbn__LinearVelocityLeft = value;
+            }
+            public bool ShouldSerializeLinearVelocityLeft() => __pbn__LinearVelocityLeft != null;
+            public void ResetLinearVelocityLeft() => __pbn__LinearVelocityLeft = null;
+            private double? __pbn__LinearVelocityLeft;
+
+            [global::ProtoBuf.ProtoMember(4, Name = @"linear_velocity_right")]
+            [global::System.ComponentModel.DefaultValue(0)]
+            public double LinearVelocityRight
+            {
+                get => __pbn__LinearVelocityRight ?? 0;
+                set => __pbn__LinearVelocityRight = value;
+            }
+            public bool ShouldSerializeLinearVelocityRight() => __pbn__LinearVelocityRight != null;
+            public void ResetLinearVelocityRight() => __pbn__LinearVelocityRight = null;
+            private double? __pbn__LinearVelocityRight;
 
         }
 
@@ -145,4 +171,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion

@@ -4,7 +4,8 @@
 //   Input: pose.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -19,8 +20,8 @@ namespace gazebo.msgs
         [global::System.ComponentModel.DefaultValue("")]
         public string Name
         {
-            get { return __pbn__Name ?? ""; }
-            set { __pbn__Name = value; }
+            get => __pbn__Name ?? "";
+            set => __pbn__Name = value;
         }
         public bool ShouldSerializeName() => __pbn__Name != null;
         public void ResetName() => __pbn__Name = null;
@@ -29,8 +30,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(2, Name = @"id")]
         public uint Id
         {
-            get { return __pbn__Id.GetValueOrDefault(); }
-            set { __pbn__Id = value; }
+            get => __pbn__Id.GetValueOrDefault();
+            set => __pbn__Id = value;
         }
         public bool ShouldSerializeId() => __pbn__Id != null;
         public void ResetId() => __pbn__Id = null;
@@ -46,4 +47,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion

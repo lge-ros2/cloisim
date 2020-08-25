@@ -4,7 +4,8 @@
 //   Input: gps.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -33,8 +34,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(6, Name = @"velocity_east")]
         public double VelocityEast
         {
-            get { return __pbn__VelocityEast.GetValueOrDefault(); }
-            set { __pbn__VelocityEast = value; }
+            get => __pbn__VelocityEast.GetValueOrDefault();
+            set => __pbn__VelocityEast = value;
         }
         public bool ShouldSerializeVelocityEast() => __pbn__VelocityEast != null;
         public void ResetVelocityEast() => __pbn__VelocityEast = null;
@@ -43,8 +44,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(7, Name = @"velocity_north")]
         public double VelocityNorth
         {
-            get { return __pbn__VelocityNorth.GetValueOrDefault(); }
-            set { __pbn__VelocityNorth = value; }
+            get => __pbn__VelocityNorth.GetValueOrDefault();
+            set => __pbn__VelocityNorth = value;
         }
         public bool ShouldSerializeVelocityNorth() => __pbn__VelocityNorth != null;
         public void ResetVelocityNorth() => __pbn__VelocityNorth = null;
@@ -53,8 +54,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(8, Name = @"velocity_up")]
         public double VelocityUp
         {
-            get { return __pbn__VelocityUp.GetValueOrDefault(); }
-            set { __pbn__VelocityUp = value; }
+            get => __pbn__VelocityUp.GetValueOrDefault();
+            set => __pbn__VelocityUp = value;
         }
         public bool ShouldSerializeVelocityUp() => __pbn__VelocityUp != null;
         public void ResetVelocityUp() => __pbn__VelocityUp = null;
@@ -64,4 +65,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion

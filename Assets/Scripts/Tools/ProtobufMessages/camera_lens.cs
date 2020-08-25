@@ -4,7 +4,8 @@
 //   Input: camera_lens.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -21,8 +22,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(2, Name = @"c1")]
         public double C1
         {
-            get { return __pbn__C1.GetValueOrDefault(); }
-            set { __pbn__C1 = value; }
+            get => __pbn__C1.GetValueOrDefault();
+            set => __pbn__C1 = value;
         }
         public bool ShouldSerializeC1() => __pbn__C1 != null;
         public void ResetC1() => __pbn__C1 = null;
@@ -31,8 +32,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(3, Name = @"c2")]
         public double C2
         {
-            get { return __pbn__C2.GetValueOrDefault(); }
-            set { __pbn__C2 = value; }
+            get => __pbn__C2.GetValueOrDefault();
+            set => __pbn__C2 = value;
         }
         public bool ShouldSerializeC2() => __pbn__C2 != null;
         public void ResetC2() => __pbn__C2 = null;
@@ -41,8 +42,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(4, Name = @"c3")]
         public double C3
         {
-            get { return __pbn__C3.GetValueOrDefault(); }
-            set { __pbn__C3 = value; }
+            get => __pbn__C3.GetValueOrDefault();
+            set => __pbn__C3 = value;
         }
         public bool ShouldSerializeC3() => __pbn__C3 != null;
         public void ResetC3() => __pbn__C3 = null;
@@ -51,8 +52,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(5, Name = @"f")]
         public double F
         {
-            get { return __pbn__F.GetValueOrDefault(); }
-            set { __pbn__F = value; }
+            get => __pbn__F.GetValueOrDefault();
+            set => __pbn__F = value;
         }
         public bool ShouldSerializeF() => __pbn__F != null;
         public void ResetF() => __pbn__F = null;
@@ -62,8 +63,8 @@ namespace gazebo.msgs
         [global::System.ComponentModel.DefaultValue("")]
         public string Fun
         {
-            get { return __pbn__Fun ?? ""; }
-            set { __pbn__Fun = value; }
+            get => __pbn__Fun ?? "";
+            set => __pbn__Fun = value;
         }
         public bool ShouldSerializeFun() => __pbn__Fun != null;
         public void ResetFun() => __pbn__Fun = null;
@@ -72,8 +73,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(7, Name = @"scale_to_hfov")]
         public bool ScaleToHfov
         {
-            get { return __pbn__ScaleToHfov.GetValueOrDefault(); }
-            set { __pbn__ScaleToHfov = value; }
+            get => __pbn__ScaleToHfov.GetValueOrDefault();
+            set => __pbn__ScaleToHfov = value;
         }
         public bool ShouldSerializeScaleToHfov() => __pbn__ScaleToHfov != null;
         public void ResetScaleToHfov() => __pbn__ScaleToHfov = null;
@@ -82,8 +83,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(8, Name = @"cutoff_angle")]
         public double CutoffAngle
         {
-            get { return __pbn__CutoffAngle.GetValueOrDefault(); }
-            set { __pbn__CutoffAngle = value; }
+            get => __pbn__CutoffAngle.GetValueOrDefault();
+            set => __pbn__CutoffAngle = value;
         }
         public bool ShouldSerializeCutoffAngle() => __pbn__CutoffAngle != null;
         public void ResetCutoffAngle() => __pbn__CutoffAngle = null;
@@ -92,8 +93,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(9, Name = @"hfov")]
         public double Hfov
         {
-            get { return __pbn__Hfov.GetValueOrDefault(); }
-            set { __pbn__Hfov = value; }
+            get => __pbn__Hfov.GetValueOrDefault();
+            set => __pbn__Hfov = value;
         }
         public bool ShouldSerializeHfov() => __pbn__Hfov != null;
         public void ResetHfov() => __pbn__Hfov = null;
@@ -102,8 +103,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(10, Name = @"env_texture_size")]
         public int EnvTextureSize
         {
-            get { return __pbn__EnvTextureSize.GetValueOrDefault(); }
-            set { __pbn__EnvTextureSize = value; }
+            get => __pbn__EnvTextureSize.GetValueOrDefault();
+            set => __pbn__EnvTextureSize = value;
         }
         public bool ShouldSerializeEnvTextureSize() => __pbn__EnvTextureSize != null;
         public void ResetEnvTextureSize() => __pbn__EnvTextureSize = null;
@@ -113,4 +114,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion

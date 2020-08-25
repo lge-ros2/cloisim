@@ -1,6 +1,8 @@
 ﻿### Open Source Software Notice ###
 
-This product contains the open source software detailed below. Please refer to the indicated open source licenses (as are included following this notice) for the terms and conditions of their use.
+This product contains the open source software detailed below.
+Please refer to the indicated open source licenses (as are included following this notice) for the terms and conditions of their use.
+
 AsyncIO 0.1.69 (MPL-2.0)
 -
 
@@ -13,8 +15,7 @@ Copyright (c) 2011 VMware, Inc.
 ProceduralPrimitives From Unify Community Wiki  (CC-BY-SA-3.0)
 -
 
-
-Please be informed that   this  product may contain open source software listed in to tables below.
+Please be informed that this  product may contain open source software listed in to tables below.
 
 Dummiesman OBJ Importer 2 (MIT)
 Copyright (c) 2019 Dummiesman
@@ -26,9 +27,26 @@ Copyright (c) 2012 Open Source Robotics Foundation
 pb_Stl 1.0.0 (MIT)
 Copyright (c) 2016 Karl Henkel
 
-protobuf-net 2.4.6 (Apache-2.0)
-Copyright (c) Microsoft Corporation.
-Copyright (c) 2016 Google Inc.
+protobuf-net 3.0.29 (Apache-2.0)
+Copyright (c) 2008 Marc Gravell
+
+protobuf-net.Core 3.0.29 (Apache-2.0)
+Copyright (c) 2008 Marc Gravell
+
+System.Buffers 4.5.1 (MIT)
+Copyright (c) .NET Foundation and Contributors
+
+System.Collections.Immutable 1.7.1 (MIT)
+Copyright (c) .NET Foundation and Contributors
+
+System.Memory 4.5.4 (MIT)
+Copyright (c) .NET Foundation and Contributors
+
+System.Numerics.Vectors 4.5.0 (MIT)
+Copyright (c) .NET Foundation and Contributors
+
+System.Runtime.CompilerServices.Unsafe 4.5.3 (MIT)
+Copyright (c) .NET Foundation and Contributors
 
 Unity3DRuntimeTransformGizmo  (MIT)
 Copyright (c) 2016 HiddenMonk

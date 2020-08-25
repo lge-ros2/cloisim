@@ -4,7 +4,8 @@
 //   Input: distortion.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -21,8 +22,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(2, Name = @"k1")]
         public double K1
         {
-            get { return __pbn__K1.GetValueOrDefault(); }
-            set { __pbn__K1 = value; }
+            get => __pbn__K1.GetValueOrDefault();
+            set => __pbn__K1 = value;
         }
         public bool ShouldSerializeK1() => __pbn__K1 != null;
         public void ResetK1() => __pbn__K1 = null;
@@ -31,8 +32,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(3, Name = @"k2")]
         public double K2
         {
-            get { return __pbn__K2.GetValueOrDefault(); }
-            set { __pbn__K2 = value; }
+            get => __pbn__K2.GetValueOrDefault();
+            set => __pbn__K2 = value;
         }
         public bool ShouldSerializeK2() => __pbn__K2 != null;
         public void ResetK2() => __pbn__K2 = null;
@@ -41,8 +42,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(4, Name = @"k3")]
         public double K3
         {
-            get { return __pbn__K3.GetValueOrDefault(); }
-            set { __pbn__K3 = value; }
+            get => __pbn__K3.GetValueOrDefault();
+            set => __pbn__K3 = value;
         }
         public bool ShouldSerializeK3() => __pbn__K3 != null;
         public void ResetK3() => __pbn__K3 = null;
@@ -51,8 +52,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(5, Name = @"p1")]
         public double P1
         {
-            get { return __pbn__P1.GetValueOrDefault(); }
-            set { __pbn__P1 = value; }
+            get => __pbn__P1.GetValueOrDefault();
+            set => __pbn__P1 = value;
         }
         public bool ShouldSerializeP1() => __pbn__P1 != null;
         public void ResetP1() => __pbn__P1 = null;
@@ -61,8 +62,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(6, Name = @"p2")]
         public double P2
         {
-            get { return __pbn__P2.GetValueOrDefault(); }
-            set { __pbn__P2 = value; }
+            get => __pbn__P2.GetValueOrDefault();
+            set => __pbn__P2 = value;
         }
         public bool ShouldSerializeP2() => __pbn__P2 != null;
         public void ResetP2() => __pbn__P2 = null;
@@ -72,4 +73,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion

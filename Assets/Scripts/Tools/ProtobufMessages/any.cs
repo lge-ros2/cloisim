@@ -4,7 +4,8 @@
 //   Input: any.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -21,8 +22,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(2, Name = @"double_value")]
         public double DoubleValue
         {
-            get { return __pbn__DoubleValue.GetValueOrDefault(); }
-            set { __pbn__DoubleValue = value; }
+            get => __pbn__DoubleValue.GetValueOrDefault();
+            set => __pbn__DoubleValue = value;
         }
         public bool ShouldSerializeDoubleValue() => __pbn__DoubleValue != null;
         public void ResetDoubleValue() => __pbn__DoubleValue = null;
@@ -31,8 +32,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(3, Name = @"int_value")]
         public int IntValue
         {
-            get { return __pbn__IntValue.GetValueOrDefault(); }
-            set { __pbn__IntValue = value; }
+            get => __pbn__IntValue.GetValueOrDefault();
+            set => __pbn__IntValue = value;
         }
         public bool ShouldSerializeIntValue() => __pbn__IntValue != null;
         public void ResetIntValue() => __pbn__IntValue = null;
@@ -42,8 +43,8 @@ namespace gazebo.msgs
         [global::System.ComponentModel.DefaultValue("")]
         public string StringValue
         {
-            get { return __pbn__StringValue ?? ""; }
-            set { __pbn__StringValue = value; }
+            get => __pbn__StringValue ?? "";
+            set => __pbn__StringValue = value;
         }
         public bool ShouldSerializeStringValue() => __pbn__StringValue != null;
         public void ResetStringValue() => __pbn__StringValue = null;
@@ -52,8 +53,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(5, Name = @"bool_value")]
         public bool BoolValue
         {
-            get { return __pbn__BoolValue.GetValueOrDefault(); }
-            set { __pbn__BoolValue = value; }
+            get => __pbn__BoolValue.GetValueOrDefault();
+            set => __pbn__BoolValue = value;
         }
         public bool ShouldSerializeBoolValue() => __pbn__BoolValue != null;
         public void ResetBoolValue() => __pbn__BoolValue = null;
@@ -103,4 +104,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion

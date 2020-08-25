@@ -15,7 +15,7 @@ public class ModelPlugin : MonoBehaviour
 
 	public bool IsTopModel => isTopModel;
 
-	private PoseControl poseControl = null;
+	private PoseControl poseControl = new PoseControl();
 
 	public ModelPlugin GetThisInTopParent()
 	{
@@ -26,16 +26,6 @@ public class ModelPlugin : MonoBehaviour
 	public LinkPlugin[] GetLinksInChildren()
 	{
 		return GetComponentsInChildren<LinkPlugin>();
-	}
-
-	public string GetModelName()
-	{
-		return name;
-	}
-
-	ModelPlugin()
-	{
-		poseControl = new PoseControl();
 	}
 
 	void Awake()
@@ -54,7 +44,7 @@ public class ModelPlugin : MonoBehaviour
 
 		// Configure rigidbody for root object
 		var rigidBody = gameObject.AddComponent<Rigidbody>();
-		rigidBody.mass = 0.1f;
+		rigidBody.mass = 0.0001f;
 		rigidBody.drag = 0;
 		rigidBody.angularDrag = 0;
 		rigidBody.useGravity = false;
@@ -65,7 +55,7 @@ public class ModelPlugin : MonoBehaviour
 		var fixedJoint = gameObject.AddComponent<FixedJoint>();
 		fixedJoint.connectedBody = targetRigidBody;
 		fixedJoint.enableCollision = false;
-		fixedJoint.enablePreprocessing = true;
+		fixedJoint.enablePreprocessing = false;
 		fixedJoint.massScale = 1;
 		fixedJoint.connectedMassScale = 1;
 

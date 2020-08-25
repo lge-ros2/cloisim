@@ -4,7 +4,8 @@
 //   Input: color.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -28,8 +29,8 @@ namespace gazebo.msgs
         [global::System.ComponentModel.DefaultValue(1)]
         public float A
         {
-            get { return __pbn__A ?? 1; }
-            set { __pbn__A = value; }
+            get => __pbn__A ?? 1;
+            set => __pbn__A = value;
         }
         public bool ShouldSerializeA() => __pbn__A != null;
         public void ResetA() => __pbn__A = null;
@@ -39,4 +40,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion

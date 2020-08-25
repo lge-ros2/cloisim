@@ -76,10 +76,8 @@ public class MultiCameraPlugin : DevicePlugin
 							break;
 
 						case "request_transform":
-							var devicePosition = camera.GetPosition();
-							var deviceRotation = camera.GetRotation();
-
-							SetTransformInfoResponse(ref msForInfoResponse, devicePosition, deviceRotation);
+							var devicePose = camera.GetPose();
+							SetTransformInfoResponse(ref msForInfoResponse, devicePose);
 							break;
 
 						default:

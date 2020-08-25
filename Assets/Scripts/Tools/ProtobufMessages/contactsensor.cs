@@ -4,7 +4,8 @@
 //   Input: contactsensor.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -19,8 +20,8 @@ namespace gazebo.msgs
         [global::System.ComponentModel.DefaultValue("")]
         public string CollisionName
         {
-            get { return __pbn__CollisionName ?? ""; }
-            set { __pbn__CollisionName = value; }
+            get => __pbn__CollisionName ?? "";
+            set => __pbn__CollisionName = value;
         }
         public bool ShouldSerializeCollisionName() => __pbn__CollisionName != null;
         public void ResetCollisionName() => __pbn__CollisionName = null;
@@ -30,4 +31,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion

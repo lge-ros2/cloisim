@@ -1,0 +1,173 @@
+/*
+ * Copyright (c) 2020 LG Electronics Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+using System.Threading;
+using System.IO;
+using UnityEngine;
+using ProtoBuf;
+using Stopwatch = System.Diagnostics.Stopwatch;
+using messages = gazebo.msgs;
+
+public class MicomPlugin : DevicePlugin
+{
+	private MicomInput micomInput = null;
+	private MicomSensor micomSensor = null;
+
+	protected override void OnAwake()
+	{
+		micomInput = gameObject.AddComponent<MicomInput>();
+		micomSensor = gameObject.AddComponent<MicomSensor>();
+		micomSensor.SetPluginParameter(parameters);
+
+		partName = "MICOM";
+	}
+
+	protected override void OnStart()
+	{
+		var debugging = parameters.GetValue<bool>("debug", false);
+		micomInput.EnableDebugging = debugging;
+
+		var hashServiceKey = MakeHashKey("_SENSOR" + "Info");
+		if (!RegisterServiceDevice(hashServiceKey))
+		{
+			Debug.LogError("Failed to register service - " + hashServiceKey);
+		}
+
+		var txHashKey = MakeHashKey("_SENSOR");
+		if (!RegisterTxDevice(txHashKey))
+		{
+			Debug.LogError("Failed to register for MicomPlugin TX- " + txHashKey);
+		}
+
+		var rxHashKey = MakeHashKey("_INPUT");
+		if (!RegisterRxDevice(rxHashKey))
+		{
+			Debug.LogError("Failed to register for MicomPlugin RX- " + rxHashKey);
+		}
+
+		AddThread(Response);
+		AddThread(Sender);
+		AddThread(Receiver);
+	}
+
+	void FixedUpdate()
+	{
+		if (micomInput != null && micomSensor != null)
+		{
+			switch (micomInput.ControlType)
+			{
+				case MicomInput.VelocityType.LinearAndAngular:
+					var targetLinearVelocity = micomInput.GetLinearVelocity();
+					var targetAngularVelocity = micomInput.GetAngularVelocity();
+					micomSensor.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
+					break;
+
+				case MicomInput.VelocityType.LeftAndRight:
+					var targetWheelLeftLinearVelocity = micomInput.GetWheelLeftVelocity();
+					var targetWheelRightLinearVelocity = micomInput.GetWheelRightVelocity();
+					micomSensor.SetDifferentialDrive(targetWheelLeftLinearVelocity, targetWheelRightLinearVelocity);
+					break;
+
+				case MicomInput.VelocityType.Unknown:
+					break;
+			}
+		}
+	}
+
+	private void Sender()
+	{
+		var sw = new Stopwatch();
+		while (true)
+		{
+			if (micomSensor == null)
+			{
+				continue;
+			}
+
+			var datastreamToSend = micomSensor.PopData();
+			sw.Restart();
+			Publish(datastreamToSend);
+			sw.Stop();
+
+			micomSensor.SetTransportTime((float)sw.Elapsed.TotalSeconds);
+		}
+	}
+
+	private void Receiver()
+	{
+		while (true)
+		{
+			if (micomInput == null)
+			{
+				continue;
+			}
+
+			var receivedData = Subscribe();
+			micomInput.SetDataStream(receivedData);
+			Thread.SpinWait(5);
+		}
+	}
+
+	private void Response()
+	{
+		while (true)
+		{
+			var receivedBuffer = ReceiveRequest();
+
+			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
+
+			// Debug.Log(subPartName + receivedString);
+			if (requestMessage != null)
+			{
+				switch (requestMessage.Name)
+				{
+					case "request_wheel_info":
+						SetWheelInfoResponse(ref msForInfoResponse);
+						break;
+
+					case "request_transform":
+						var targetPartsName = requestMessage.Value.StringValue;
+						var devicePose = micomSensor.GetPartsPose(targetPartsName);
+						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
+						break;
+
+					default:
+						break;
+				}
+
+				SendResponse(msForInfoResponse);
+			}
+		}
+	}
+
+	private void SetWheelInfoResponse(ref MemoryStream msCameraInfo)
+	{
+		if (msCameraInfo != null)
+		{
+			var wheelInfo = new messages.Param();
+			wheelInfo.Name = "wheelInfo";
+			wheelInfo.Value = new messages.Any();
+			wheelInfo.Value.Type = messages.Any.ValueType.None;
+
+			var baseInfo = new messages.Param();
+			baseInfo.Name = "base";
+			baseInfo.Value = new messages.Any();
+			baseInfo.Value.Type = messages.Any.ValueType.Double;
+			baseInfo.Value.DoubleValue = micomSensor.WheelBase;
+			wheelInfo.Childrens.Add(baseInfo);
+
+			var sizeInfo = new messages.Param();
+			sizeInfo.Name = "radius";
+			sizeInfo.Value = new messages.Any();
+			sizeInfo.Value.Type = messages.Any.ValueType.Double;
+			sizeInfo.Value.DoubleValue = micomSensor.WheelRadius;
+			wheelInfo.Childrens.Add(sizeInfo);
+
+			ClearMemoryStream(ref msCameraInfo);
+			Serializer.Serialize<messages.Param>(msCameraInfo, wheelInfo);
+		}
+	}
+}

@@ -4,7 +4,8 @@
 //   Input: camerasensor.proto
 // </auto-generated>
 
-#pragma warning disable CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#region Designer generated code
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace gazebo.msgs
 {
 
@@ -18,8 +19,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(1, Name = @"horizontal_fov")]
         public double HorizontalFov
         {
-            get { return __pbn__HorizontalFov.GetValueOrDefault(); }
-            set { __pbn__HorizontalFov = value; }
+            get => __pbn__HorizontalFov.GetValueOrDefault();
+            set => __pbn__HorizontalFov = value;
         }
         public bool ShouldSerializeHorizontalFov() => __pbn__HorizontalFov != null;
         public void ResetHorizontalFov() => __pbn__HorizontalFov = null;
@@ -32,8 +33,8 @@ namespace gazebo.msgs
         [global::System.ComponentModel.DefaultValue("")]
         public string ImageFormat
         {
-            get { return __pbn__ImageFormat ?? ""; }
-            set { __pbn__ImageFormat = value; }
+            get => __pbn__ImageFormat ?? "";
+            set => __pbn__ImageFormat = value;
         }
         public bool ShouldSerializeImageFormat() => __pbn__ImageFormat != null;
         public void ResetImageFormat() => __pbn__ImageFormat = null;
@@ -42,8 +43,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(4, Name = @"near_clip")]
         public double NearClip
         {
-            get { return __pbn__NearClip.GetValueOrDefault(); }
-            set { __pbn__NearClip = value; }
+            get => __pbn__NearClip.GetValueOrDefault();
+            set => __pbn__NearClip = value;
         }
         public bool ShouldSerializeNearClip() => __pbn__NearClip != null;
         public void ResetNearClip() => __pbn__NearClip = null;
@@ -52,8 +53,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(5, Name = @"far_clip")]
         public double FarClip
         {
-            get { return __pbn__FarClip.GetValueOrDefault(); }
-            set { __pbn__FarClip = value; }
+            get => __pbn__FarClip.GetValueOrDefault();
+            set => __pbn__FarClip = value;
         }
         public bool ShouldSerializeFarClip() => __pbn__FarClip != null;
         public void ResetFarClip() => __pbn__FarClip = null;
@@ -62,8 +63,8 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(6, Name = @"save_enabled")]
         public bool SaveEnabled
         {
-            get { return __pbn__SaveEnabled.GetValueOrDefault(); }
-            set { __pbn__SaveEnabled = value; }
+            get => __pbn__SaveEnabled.GetValueOrDefault();
+            set => __pbn__SaveEnabled = value;
         }
         public bool ShouldSerializeSaveEnabled() => __pbn__SaveEnabled != null;
         public void ResetSaveEnabled() => __pbn__SaveEnabled = null;
@@ -73,8 +74,8 @@ namespace gazebo.msgs
         [global::System.ComponentModel.DefaultValue("")]
         public string SavePath
         {
-            get { return __pbn__SavePath ?? ""; }
-            set { __pbn__SavePath = value; }
+            get => __pbn__SavePath ?? "";
+            set => __pbn__SavePath = value;
         }
         public bool ShouldSerializeSavePath() => __pbn__SavePath != null;
         public void ResetSavePath() => __pbn__SavePath = null;
@@ -87,4 +88,5 @@ namespace gazebo.msgs
 
 }
 
-#pragma warning restore CS0612, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#endregion
