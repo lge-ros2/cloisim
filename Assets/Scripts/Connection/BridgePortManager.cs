@@ -20,15 +20,9 @@ public class BridgePortManager : DeviceTransporter
 
 	private Thread workerThread;
 
-	private Dictionary<string, ushort> portMapTable;
+	private Dictionary<string, ushort> portMapTable = new Dictionary<string, ushort>();
 
-	private IPGlobalProperties properties = null;
-
-	BridgePortManager()
-	{
-		portMapTable = new Dictionary<string, ushort>();
-		properties = IPGlobalProperties.GetIPGlobalProperties();
-	}
+	private IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
 
 	public void DeallocateSensorPort(string hashKey)
 	{
