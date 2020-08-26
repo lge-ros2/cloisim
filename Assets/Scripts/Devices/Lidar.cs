@@ -48,7 +48,6 @@ namespace SensorDevices
 		private UnityEngine.Camera laserCam = null;
 		private Material depthMaterial = null;
 
-		private const float defaultRotationOffset = 90.00000000000000f;
 		private const float laserCameraHFov = 120.0000000000f;
 		private const float laserCameraHFovHalf = laserCameraHFov / 2;
 		private const float laserCameraVFov = 40.0000000000f;
@@ -197,8 +196,8 @@ namespace SensorDevices
 				laserCamData[index] = data;
 			}
 
-			laserStartAngle = defaultRotationOffset + (float)angleMin;
-			laserEndAngle = defaultRotationOffset + (float)angleMax;
+			laserStartAngle = (float)angleMin;
+			laserEndAngle = (float)angleMax;
 			laserTotalAngle = (float)(angleMax - angleMin);
 
 			waitingPeriodRatio = 0.85f;
@@ -295,7 +294,13 @@ namespace SensorDevices
 				var outputBufferLength = data.output.Length;
 				var dataStartAngle = data.StartAngle;
 				var dataEndAngle = data.EndAngle;
-				var dataTotalAngle = dataEndAngle - dataStartAngle;
+				var dataTotalAngle = data.TotalAngle;
+
+				if (data.EndAngle > 180)
+				{
+					dataStartAngle -= 360;
+					dataEndAngle -= 360;
+				}
 
 				// start side of laser angle
 				if (dataStartAngle < laserStartAngle)
@@ -342,7 +347,7 @@ namespace SensorDevices
 			const float visualUpdatePeriod = 0.090f;
 			const float visualDrawDuration = visualUpdatePeriod * 1.01f;
 
-			var startAngle = defaultRotationOffset + (float)angleMin;
+			var startAngle = (float)angleMin;
 			var waitForEndOfFrame = new WaitForEndOfFrame();
 			var waitForSeconds = new WaitForSeconds(visualUpdatePeriod);
 

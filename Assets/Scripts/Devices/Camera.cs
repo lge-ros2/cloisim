@@ -57,8 +57,6 @@ namespace SensorDevices
 		{
 			if (cam)
 			{
-				cam.transform.Rotate(Vector3.up, 90.0000000000f);
-
 				SetupTexture();
 				SetupCamera();
 				StartCoroutine(CameraWorker());

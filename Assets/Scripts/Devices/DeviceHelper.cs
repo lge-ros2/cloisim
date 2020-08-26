@@ -84,8 +84,8 @@ public class DeviceHelper
 			vector3d = new messages.Vector3d();
 		}
 
-		vector3d.X = position.x;
-		vector3d.Y = position.z;
+		vector3d.X = position.z;
+		vector3d.Y = -position.x;
 		vector3d.Z = position.y;
 	}
 
@@ -96,10 +96,10 @@ public class DeviceHelper
 			quaternion = new messages.Quaternion();
 		}
 
-		quaternion.X = -rotation.x;
-		quaternion.Y = -rotation.z;
+		quaternion.X = rotation.w;
+		quaternion.Y = rotation.x;
 		quaternion.Z = -rotation.y;
-		quaternion.W = rotation.w;
+		quaternion.W = rotation.z;
 	}
 
 	public static Matrix4x4 MakeCustomProjectionMatrix(in float hFov, in float vFov, in float near, in float far)
@@ -127,21 +127,11 @@ public class DeviceHelper
 
 	public static bool IsSamePosition(in float A, in float B)
 	{
-		var distance = Mathf.Abs(A - B);
-		if (distance < Mathf.Epsilon)
-		{
-			return true;
-		}
-		return false;
+		return (Mathf.Abs(A - B) <= Mathf.Epsilon) ? true : false;
 	}
 
 	public static bool IsSamePosition(in Vector3 A, in Vector3 B)
 	{
-		var distance = Vector3.SqrMagnitude(A - B);
-		if (distance < Vector3.kEpsilon)
-		{
-			return true;
-		}
-		return false;
+		return (Vector3.SqrMagnitude(A - B) <= Vector3.kEpsilon) ? true : false;
 	}
 }

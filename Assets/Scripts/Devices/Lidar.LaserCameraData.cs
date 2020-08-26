@@ -29,6 +29,7 @@ namespace SensorDevices
 
 			public float StartAngle => centerAngle - maxHAngleHalf;
 			public float EndAngle => centerAngle + maxHAngleHalf;
+			public float TotalAngle => EndAngle - StartAngle;
 
 			public void AllocateBuffer(in int width, in int height)
 			{
