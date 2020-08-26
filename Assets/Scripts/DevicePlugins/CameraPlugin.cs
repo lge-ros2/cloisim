@@ -69,8 +69,6 @@ public class CameraPlugin : DevicePlugin
 			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
 			{
-				var device = cam as Device;
-
 				switch (requestMessage.Name)
 				{
 					case "request_camera_info":
@@ -79,7 +77,7 @@ public class CameraPlugin : DevicePlugin
 						break;
 
 					case "request_transform":
-						var devicePose = device.GetPose();
+						var devicePose = cam.GetPose();
 						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
 						break;
 

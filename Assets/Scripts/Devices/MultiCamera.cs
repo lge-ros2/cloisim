@@ -103,32 +103,6 @@ namespace SensorDevices
 			cameras.Add(newCam);
 		}
 
-		// public messages.CameraSensor GetCameraInfo(in string cameraName)
-		// {
-		// 	for (var index = 0; index < cameras.Count; index++)
-		// 	{
-		// 		if (cameras[index].deviceName.Equals(("MultiCamera::" + cameraName)))
-		// 		{
-		// 			return GetCameraInfo(index);
-		// 		}
-		// 	}
-
-		// 	return null;
-		// }
-
-		// public messages.CameraSensor GetCameraInfo(in int cameraIndex)
-		// {
-		// 	if (cameraIndex < cameras.Count)
-		// 	{
-		// 		return cameras[cameraIndex].GetCameraInfo();
-		// 	}
-		// 	else
-		// 	{
-		// 		Debug.LogWarning("unavailable camera index: " + cameraIndex);
-		// 		return null;
-		// 	}
-		// }
-
 		public SensorDevices.Camera GetCamera(in string cameraName)
 		{
 			var target = "MultiCamera::" + cameraName;
