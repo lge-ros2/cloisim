@@ -199,12 +199,6 @@ public class MicomSensor : Device
 	{
 		micomSensorData = new messages.Micom();
 		micomSensorData.Time = new messages.Time();
-		micomSensorData.Imu = new messages.Imu();
-		micomSensorData.Imu.EntityName = "imu";
-		micomSensorData.Imu.Stamp = new messages.Time();
-		micomSensorData.Imu.Orientation = new messages.Quaternion();
-		micomSensorData.Imu.AngularVelocity = new messages.Vector3d();
-		micomSensorData.Imu.LinearAcceleration = new messages.Vector3d();
 		micomSensorData.Accgyro = new messages.Micom.AccGyro();
 		micomSensorData.Odom = new messages.Micom.Odometry();
 		micomSensorData.uss = new messages.Micom.Uss();
@@ -305,30 +299,12 @@ public class MicomSensor : Device
 	{
 		var imu = micomSensorData.Imu;
 
-		if ((imuSensor == null) ||
-			(micomSensorData == null || imu == null) ||
-			(imu.Orientation == null || imu.AngularVelocity == null || imu.LinearAcceleration == null))
+		if (imuSensor == null || micomSensorData == null)
 		{
 			return;
 		}
 
-		var orientation = imuSensor.GetOrientation();
-		imu.Orientation.X = orientation.x;
-		imu.Orientation.Y = orientation.y;
-		imu.Orientation.Z = orientation.z;
-		imu.Orientation.W = orientation.w;
-
-		var angularVelocity = imuSensor.GetAngularVelocity();
-		imu.AngularVelocity.X = angularVelocity.x;
-		imu.AngularVelocity.Y = angularVelocity.y;
-		imu.AngularVelocity.Z = angularVelocity.z;
-
-		var linearAcceleration = imuSensor.GetLinearAcceleration();
-		imu.LinearAcceleration.X = linearAcceleration.x;
-		imu.LinearAcceleration.Y = linearAcceleration.y;
-		imu.LinearAcceleration.Z = linearAcceleration.z;
-
-		DeviceHelper.SetCurrentTime(micomSensorData.Imu.Stamp);
+		micomSensorData.Imu = imuSensor.GetImuMessage();
 	}
 
 	private void UpdateAccGyro()
