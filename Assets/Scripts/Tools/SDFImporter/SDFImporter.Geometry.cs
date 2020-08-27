@@ -15,12 +15,13 @@ public partial class SDFImporter : SDF.Importer
 	protected override void ImportGeometry(in SDF.Geometry geometry, in System.Object parentObject)
 	{
 		if (geometry == null || geometry.IsEmpty)
+		{
 			return;
+		}
 
 		var targetObject = (parentObject as GameObject);
-
-		Type t = geometry.GetShapeType();
-		SDF.ShapeType shape = geometry.GetShape();
+		var t = geometry.GetShapeType();
+		var shape = geometry.GetShape();
 
 		if (t == typeof(SDF.Mesh))
 		{

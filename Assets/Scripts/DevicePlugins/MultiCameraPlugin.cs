@@ -39,7 +39,7 @@ public class MultiCameraPlugin : DevicePlugin
 	private void Sender()
 	{
 		var sw = new Stopwatch();
-		while (true)
+		while (IsRunningThread)
 		{
 			if (multicam == null)
 			{
@@ -56,7 +56,7 @@ public class MultiCameraPlugin : DevicePlugin
 
 	private void Response()
 	{
-		while (true)
+		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
 
@@ -87,6 +87,8 @@ public class MultiCameraPlugin : DevicePlugin
 
 				SendResponse(msForInfoResponse);
 			}
+
+			ThreadWait();
 		}
 	}
 }

@@ -45,7 +45,7 @@ public partial class DeviceTransporter
 
 	protected bool SendRequest(in MemoryStream streamToSend)
 	{
-		if (isValidMemoryStream(streamToSend) == false)
+		if (!isValidMemoryStream(streamToSend))
 		{
 			return false;
 		}

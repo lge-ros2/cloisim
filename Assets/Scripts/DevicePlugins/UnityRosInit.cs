@@ -28,7 +28,7 @@ public class UnityRosInit : DevicePlugin
 
 	private void Sender()
 	{
-		while (true)
+		while (IsRunningThread)
 		{
 			if (clock == null)
 			{

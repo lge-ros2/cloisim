@@ -12,13 +12,15 @@ using ProtoBuf;
 
 public abstract class Device : MonoBehaviour
 {
-	private const int maxQueue = 3;
+	private const int maxQueue = 5;
 
 	public string deviceName = string.Empty;
 
-	private BlockingCollection<MemoryStream> memoryStreamOutboundQueue = new BlockingCollection<MemoryStream>(maxQueue);
+	private BlockingCollection<MemoryStream> outboundQueue_ = new BlockingCollection<MemoryStream>(maxQueue);
 
-	private MemoryStream memoryStream = new MemoryStream();
+	protected int timeoutForOutboundQueueInMilliseconds = 100;
+
+	private MemoryStream memoryStream_ = new MemoryStream();
 
 	private float updateRate = 1;
 
@@ -49,14 +51,6 @@ public abstract class Device : MonoBehaviour
 	{
 		get => visualize;
 		set => visualize = value;
-	}
-
-	void OnDestroy()
-	{
-		if (memoryStreamOutboundQueue.IsCompleted)
-		{
-			memoryStreamOutboundQueue.Dispose();
-		}
 	}
 
 	void Awake()
@@ -114,14 +108,16 @@ public abstract class Device : MonoBehaviour
 
 	protected bool ResetDataStream()
 	{
-		lock (memoryStream)
+		if (memoryStream_ == null)
 		{
-			if (memoryStream == null)
-				return false;
+			return false;
+		}
 
-			memoryStream.SetLength(0);
-			memoryStream.Position = 0;
-			memoryStream.Capacity = 0;
+		lock (memoryStream_)
+		{
+			memoryStream_.SetLength(0);
+			memoryStream_.Position = 0;
+			memoryStream_.Capacity = 0;
 
 			return true;
 		}
@@ -129,65 +125,69 @@ public abstract class Device : MonoBehaviour
 
 	protected MemoryStream GetDataStream()
 	{
-		if (memoryStream.CanRead)
-		{
-			return memoryStream;
-		}
-		else
-		{
-			return null;
-		}
+		return (memoryStream_.CanRead) ? memoryStream_ : null;
 	}
 
 	public void SetDataStream(in byte[] data)
 	{
-		lock (memoryStream)
+		if (data == null)
 		{
-			if (ResetDataStream())
+			return;
+		}
+
+		if (!ResetDataStream())
+		{
+			return;
+		}
+
+		lock (memoryStream_)
+		{
+			if (memoryStream_.CanWrite)
 			{
-				if (data != null)
-				{
-					if (memoryStream.CanWrite)
-					{
-						memoryStream.Write(data, 0, data.Length);
-						memoryStream.Position = 0;
-					}
-					else
-						Debug.LogError("Failed to write memory stream");
-				}
+				memoryStream_.Write(data, 0, data.Length);
+				memoryStream_.Position = 0;
+			}
+			else
+			{
+				Debug.LogError("Failed to write memory stream");
 			}
 		}
 	}
 
 	protected void SetMessageData<T>(T instance)
 	{
-		lock (memoryStream)
+		if (memoryStream_ == null)
 		{
-			if (memoryStream == null)
-			{
-				Debug.LogError("Cannot set data stream... it's null");
-				return;
-			}
+			Debug.LogError("Cannot set data stream... it's null");
+			return;
+		}
 
-			ResetDataStream();
-			Serializer.Serialize<T>(memoryStream, instance);
+		ResetDataStream();
+
+		lock (memoryStream_)
+		{
+			Serializer.Serialize<T>(memoryStream_, instance);
 		}
 	}
 
 	protected T GetMessageData<T>()
 	{
-		lock (memoryStream)
+		if (memoryStream_ == null)
 		{
-			if (memoryStream == null)
-			{
-				Debug.LogError("Cannot Get data message... it's null");
-				return default(T);
-			}
-
-			T result = Serializer.Deserialize<T>(memoryStream);
-			ResetDataStream();
-			return result;
+			Debug.LogError("Cannot Get data message... it's null");
+			return default(T);
 		}
+
+		T result;
+
+		lock (memoryStream_)
+		{
+			result = Serializer.Deserialize<T>(memoryStream_);
+		}
+
+		ResetDataStream();
+
+		return result;
 	}
 
 	protected bool PushData<T>(T instance)
@@ -198,46 +198,66 @@ public abstract class Device : MonoBehaviour
 
 	protected bool PushData()
 	{
-		if (memoryStreamOutboundQueue == null)
+		if (outboundQueue_ == null)
 		{
 			return false;
 		}
 
-		if (memoryStreamOutboundQueue.Count > maxQueue)
+		if (outboundQueue_.Count >= maxQueue)
 		{
-			Debug.LogWarningFormat("Outbound queue is reached to maximum capacity({0})!!", maxQueue);
+			// Debug.LogWarningFormat("Outbound queue is reached to maximum capacity({0})!!", maxQueue);
+
+			while (outboundQueue_.Count > maxQueue/2)
+			{
+				PopData();
+			}
 		}
 
-		return memoryStreamOutboundQueue.TryAdd(GetDataStream());
+		if (!outboundQueue_.TryAdd(GetDataStream(), timeoutForOutboundQueueInMilliseconds))
+		{
+			Debug.LogWarningFormat("failed to add at " + deviceName);
+			return false;
+		}
+
+		return true;
 	}
 
 	public MemoryStream PopData()
 	{
-		if (memoryStreamOutboundQueue == null || memoryStreamOutboundQueue.Count == 0)
+		if (outboundQueue_ != null)
 		{
-			return null;
+			if (outboundQueue_.TryTake(out var item, timeoutForOutboundQueueInMilliseconds))
+			{
+				return item;
+			}
 		}
 
-		var item = memoryStreamOutboundQueue.Take();
-		return item;
+		return null;
 	}
 
 	private void SetDeviceTransform()
 	{
 		// Debug.Log(deviceName + ":" + transform.name);
-		var parentObject = this.transform.parent;
+		var devicePosition = Vector3.zero;
+		var deviceRotation = Quaternion.identity;
+		var sensorDevicePosition = transform.localPosition;
+		var sensorDeviceRotation = transform.localRotation;
 
+		var parentObject = transform.parent;
 		if (parentObject != null)
 		{
 			// Debug.Log(parentObject.name);
-			var modelObject = this.transform.parent.parent;
+			var modelObject = parentObject.parent;
 			if (modelObject != null && modelObject.CompareTag("Model"))
 			{
-				devicePose.position = modelObject.transform.localPosition;
-				devicePose.rotation = modelObject.transform.localRotation;
-				// Debug.Log(modelObject.name + ": " + devicePosition + ", " + deviceRotation);
+				devicePosition = modelObject.transform.localPosition + sensorDevicePosition;
+				deviceRotation = modelObject.transform.localRotation * sensorDeviceRotation;
+				// Debug.Log(modelObject.name + ": " + devicePosition.ToString("F4") + ", " + deviceRotation.ToString("F4"));
 			}
 		}
+
+		devicePose.position = devicePosition;
+		devicePose.rotation = deviceRotation;
 	}
 
 	public Pose GetPose()

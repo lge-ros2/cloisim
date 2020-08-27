@@ -14,7 +14,7 @@ public partial class DeviceTransporter
 {
 	private ResponseSocket responseSocket = null;
 
-	TimeSpan timeoutForResponse = TimeSpan.FromMilliseconds(100);
+	TimeSpan timeoutForResponse = TimeSpan.FromMilliseconds(500);
 
 	private byte[] hashValueForReceiveRequest = null;
 	private byte[] dataToSendResponse = null;
@@ -44,7 +44,7 @@ public partial class DeviceTransporter
 		return initialized;
 	}
 
-	protected byte[] TryReceiveRequest(in bool checkTag = false)
+	protected byte[] ReceiveRequest(in bool checkTag = false)
 	{
 		if (responseSocket == null)
 		{
@@ -54,29 +54,15 @@ public partial class DeviceTransporter
 
 		if (responseSocket.TryReceiveFrameBytes(timeoutForResponse, out var frameReceived))
 		{
-			var receivedData = RetrieveData(frameReceived, (checkTag)? hashValueForReceiveRequest : null);
-			return receivedData;
+			return RetrieveData(frameReceived, (checkTag)? hashValueForReceiveRequest : null);
 		}
 
 		return null;
 	}
 
-	protected byte[] ReceiveRequest(in bool checkTag = false)
-	{
-		if (responseSocket == null)
-		{
-			Debug.LogWarning("Socket for response is not initilized yet.");
-			return null;
-		}
-
-		var frameReceived = responseSocket.ReceiveFrameBytes();
-		var receivedData = RetrieveData(frameReceived, (checkTag)? hashValueForReceiveRequest : null);
-		return receivedData;
-	}
-
 	protected bool SendResponse(in MemoryStream streamToSend)
 	{
-		if (isValidMemoryStream(streamToSend) == false)
+		if (!isValidMemoryStream(streamToSend))
 		{
 			return false;
 		}

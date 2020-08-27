@@ -10,6 +10,8 @@ using messages = gazebo.msgs;
 
 public class MicomInput : Device
 {
+	private MicomSensor micomForWheelDrive = null;
+
 	public enum VelocityType {Unknown, LinearAndAngular, LeftAndRight};
 
 	private messages.Param micomWritingData = null;
@@ -18,8 +20,8 @@ public class MicomInput : Device
 
 	public VelocityType ControlType => controlType;
 
-	private float wheelVelocityLeft = 0; // m/s
-	private float wheelVelocityRight = 0; // m/s
+	private float wheelLinearVelocityLeft = 0; // m/s
+	private float wheelLinearVelocityRight = 0; // m/s
 
 	private float linearVelocity = 0; // m/s
 	private float angularVelocity = 0; // rad/s
@@ -41,14 +43,8 @@ public class MicomInput : Device
 		{
 			yield return waitUntil;
 
-			try
-			{
-				GenerateMessage();
-			}
-			catch
-			{
-				Debug.LogError("MicomInput: Error");
-			}
+			GenerateMessage();
+			DoWheelDrive();
 		}
 	}
 
@@ -64,7 +60,14 @@ public class MicomInput : Device
 
 	protected override void GenerateMessage()
 	{
-		micomWritingData = GetMessageData<messages.Param>();
+		try
+		{
+			micomWritingData = GetMessageData<messages.Param>();
+		}
+		catch
+		{
+			Debug.LogWarning("GetMessageData: ERROR");
+		}
 
 		if (micomWritingData.Name.Equals("control_type") &&
 			micomWritingData.Childrens.Count == 2)
@@ -86,10 +89,10 @@ public class MicomInput : Device
 			{
 				controlType = VelocityType.LeftAndRight;
 
-				wheelVelocityLeft
+				wheelLinearVelocityLeft
 					= (!child0.Name.Equals("LeftWheelVelocity")) ? 0 : (float)child0.Value.DoubleValue;
 
-				wheelVelocityRight
+				wheelLinearVelocityRight
 					= (!child1.Name.Equals("RightWheelVelocity")) ? 0 : (float)child1.Value.DoubleValue;
 			}
 			else
@@ -98,17 +101,48 @@ public class MicomInput : Device
 				Debug.LogWarningFormat("MicomInput: Unsupported Control Type({0}", controlType);
 			}
 		}
-		// Debug.Log("MicomInput: Working OK...");
+	}
+
+	public void SetMicomSensor(in MicomSensor targetDevice)
+	{
+		micomForWheelDrive = targetDevice;
+	}
+
+	private void DoWheelDrive()
+	{
+		if (micomForWheelDrive == null)
+		{
+			Debug.LogWarning("micom device for wheel drive is not ready!!");
+			return;
+		}
+
+		switch (ControlType)
+		{
+			case MicomInput.VelocityType.LinearAndAngular:
+				var targetLinearVelocity = GetLinearVelocity();
+				var targetAngularVelocity = GetAngularVelocity();
+				micomForWheelDrive.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
+				break;
+
+			case MicomInput.VelocityType.LeftAndRight:
+				var targetWheelLeftLinearVelocity = GetWheelLeftVelocity();
+				var targetWheelRightLinearVelocity = GetWheelRightVelocity();
+				micomForWheelDrive.SetDifferentialDrive(targetWheelLeftLinearVelocity, targetWheelRightLinearVelocity);
+				break;
+
+			case MicomInput.VelocityType.Unknown:
+				break;
+		}
 	}
 
 	public float GetWheelLeftVelocity()
 	{
-		return (float)wheelVelocityLeft;
+		return (float)wheelLinearVelocityLeft;
 	}
 
 	public float GetWheelRightVelocity()
 	{
-		return (float)wheelVelocityRight;
+		return (float)wheelLinearVelocityRight;
 	}
 
 	public float GetLinearVelocity()
@@ -119,67 +153,5 @@ public class MicomInput : Device
 	public float GetAngularVelocity()
 	{
 		return (float)angularVelocity;
-	}
-
-	public float GetVelocity(in int index)
-	{
-		switch (controlType)
-		{
-		case VelocityType.LinearAndAngular:
-			return GetType0Velocity(index);
-
-		case VelocityType.LeftAndRight:
-			return GetType1Velocity(index);
-
-		case VelocityType.Unknown:
-		default:
-			Debug.LogWarning("Unknown control type!!!! nothing to get velocity");
-			break;
-		}
-
-		return 0;
-	}
-
-
-	private float GetType1Velocity(in int index)
-	{
-		var velocity = 0f;
-		switch (index)
-		{
-			case 0:
-				velocity = GetWheelLeftVelocity();
-				break;
-
-			case 1:
-				velocity = GetWheelRightVelocity();
-				break;
-
-			default:
-				Debug.LogError("Invalid index - " + index);
-				break;
-		}
-
-		return velocity;
-	}
-
-	private float GetType0Velocity(in int index)
-	{
-		var velocity = 0f;
-		switch (index)
-		{
-			case 0:
-				velocity = GetLinearVelocity();
-				break;
-
-			case 1:
-				velocity = GetAngularVelocity();
-				break;
-
-			default:
-				Debug.LogError("Invalid index - " + index);
-				break;
-		}
-
-		return velocity;
 	}
 }

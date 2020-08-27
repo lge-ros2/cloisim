@@ -176,9 +176,13 @@ public class MicomSensor : Device
 		}
 
 		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
-		var imuSensorModelTransform = imuSensor.transform.parent;
-		var newPose = new Pose(imuSensorModelTransform.localPosition, imuSensorModelTransform.localRotation);
-		partsPoseMapTable.Add(imuSensor.name, newPose);
+
+		if (imuSensor != null)
+		{
+			var imuSensorModelTransform = imuSensor.transform.parent;
+			var newPose = new Pose(imuSensorModelTransform.localPosition, imuSensorModelTransform.localRotation);
+			partsPoseMapTable.Add(imuSensor.name, newPose);
+		}
 	}
 
 	protected override IEnumerator MainDeviceWorker()
@@ -199,12 +203,6 @@ public class MicomSensor : Device
 	{
 		micomSensorData = new messages.Micom();
 		micomSensorData.Time = new messages.Time();
-		micomSensorData.Imu = new messages.Imu();
-		micomSensorData.Imu.EntityName = "imu";
-		micomSensorData.Imu.Stamp = new messages.Time();
-		micomSensorData.Imu.Orientation = new messages.Quaternion();
-		micomSensorData.Imu.AngularVelocity = new messages.Vector3d();
-		micomSensorData.Imu.LinearAcceleration = new messages.Vector3d();
 		micomSensorData.Accgyro = new messages.Micom.AccGyro();
 		micomSensorData.Odom = new messages.Micom.Odometry();
 		micomSensorData.uss = new messages.Micom.Uss();
@@ -214,7 +212,6 @@ public class MicomSensor : Device
 
 	protected override void GenerateMessage()
 	{
-		// Temporary
 		DeviceHelper.SetCurrentTime(micomSensorData.Time);
 		PushData<messages.Micom>(micomSensorData);
 	}
@@ -226,6 +223,7 @@ public class MicomSensor : Device
 		UpdateUss();
 		UpdateIr();
 		UpdateBumper();
+		UpdateOdom();
 	}
 
 	private void UpdateBumper()
@@ -305,30 +303,12 @@ public class MicomSensor : Device
 	{
 		var imu = micomSensorData.Imu;
 
-		if ((imuSensor == null) ||
-			(micomSensorData == null || imu == null) ||
-			(imu.Orientation == null || imu.AngularVelocity == null || imu.LinearAcceleration == null))
+		if (imuSensor == null || micomSensorData == null)
 		{
 			return;
 		}
 
-		var orientation = imuSensor.GetOrientation();
-		imu.Orientation.X = orientation.x;
-		imu.Orientation.Y = orientation.y;
-		imu.Orientation.Z = orientation.z;
-		imu.Orientation.W = orientation.w;
-
-		var angularVelocity = imuSensor.GetAngularVelocity();
-		imu.AngularVelocity.X = angularVelocity.x;
-		imu.AngularVelocity.Y = angularVelocity.y;
-		imu.AngularVelocity.Z = angularVelocity.z;
-
-		var linearAcceleration = imuSensor.GetLinearAcceleration();
-		imu.LinearAcceleration.X = linearAcceleration.x;
-		imu.LinearAcceleration.Y = linearAcceleration.y;
-		imu.LinearAcceleration.Z = linearAcceleration.z;
-
-		DeviceHelper.SetCurrentTime(micomSensorData.Imu.Stamp);
+		micomSensorData.Imu = imuSensor.GetImuMessage();
 	}
 
 	private void UpdateAccGyro()
@@ -356,19 +336,21 @@ public class MicomSensor : Device
 		accGyro.AngulerRateZ = 0;
 	}
 
-	private bool SetOdomData(in float angularVelocityLeft, in float angularVelocityRight)
+	public bool UpdateOdom()
 	{
 		if (micomSensorData != null)
 		{
 			var odom = micomSensorData.Odom;
-
-			if (odom != null)
+			if ((odom != null) && (motorLeft != null && motorRight != null))
 			{
+				var angularVelocityLeft = motorLeft.GetCurrentVelocity();
+				var angularVelocityRight = motorRight.GetCurrentVelocity();
+
 				odom.AngularVelocityLeft = angularVelocityLeft * Mathf.Deg2Rad;
 				odom.AngularVelocityRight = angularVelocityRight * Mathf.Deg2Rad;
 				odom.LinearVelocityLeft = odom.AngularVelocityLeft * wheelRadius;
 				odom.LinearVelocityRight = odom.AngularVelocityRight * wheelRadius;
-				// Debug.LogFormat("Odom {0}, {1} ", odom.SpeedLeft, odom.SpeedRight);
+
 				return true;
 			}
 		}
@@ -408,11 +390,6 @@ public class MicomSensor : Device
 		{
 			motorLeft.SetVelocityTarget(angularVelocityLeft);
 			motorRight.SetVelocityTarget(angularVelocityRight);
-
-			var angularVelocityLeftFromMotor = motorLeft.GetCurrentVelocity();
-			var angularVelocityRightFromMotor = motorRight.GetCurrentVelocity();
-
-			SetOdomData(angularVelocityLeftFromMotor, angularVelocityRightFromMotor);
 		}
 	}
 

@@ -38,7 +38,7 @@ public class GpsPlugin : DevicePlugin
 	private void Sender()
 	{
 		var sw = new Stopwatch();
-		while (true)
+		while (IsRunningThread)
 		{
 			if (gps == null)
 			{
@@ -54,7 +54,7 @@ public class GpsPlugin : DevicePlugin
 	}
 	private void Response()
 	{
-		while (true)
+		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
 
@@ -78,6 +78,8 @@ public class GpsPlugin : DevicePlugin
 
 				SendResponse(msForInfoResponse);
 			}
+
+			ThreadWait();
 		}
 	}
 }

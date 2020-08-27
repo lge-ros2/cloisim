@@ -9,23 +9,20 @@ public class SDF2Unity
 {
 	public static Vector3 GetPosition(in double x, in double y, in double z)
 	{
-		var pos = new Vector3((float)x, (float)z, (float)y);
-		return pos;
+		return new Vector3(-(float)y, (float)z, (float)x);
 	}
 
 	public static Vector3 GetPosition(in SDF.Vector3<double> value)
 	{
-		var pos = new Vector3((float)value.X, (float)value.Z, (float)value.Y);
-		return pos;
+		return GetPosition(value.X, value.Y, value.Z);
 	}
 
 	public static Quaternion GetRotation(in SDF.Quaternion<double> value)
 	{
-		var roll = Mathf.Rad2Deg * (float)value.Roll;
-		var pitch = Mathf.Rad2Deg * (float)value.Yaw;
-		var yaw = Mathf.Rad2Deg * (float)value.Pitch;
-
-		return Quaternion.Euler(-roll, -pitch, -yaw);
+		var roll = Mathf.Rad2Deg * (float)value.Pitch;
+		var pitch = Mathf.Rad2Deg * -(float)value.Yaw;
+		var yaw = Mathf.Rad2Deg * -(float)value.Roll;
+		return Quaternion.Euler(roll, pitch, yaw);
 	}
 
 	public static Vector3 GetScale(in SDF.Vector3<double> value)
@@ -35,15 +32,14 @@ public class SDF2Unity
 
 	public static Vector3 GetScale(in double radius)
 	{
-		var pos = new Vector3((float)radius, (float)radius, (float)radius);
-		return pos;
+		return new Vector3((float)radius, (float)radius, (float)radius);
 	}
 
 	public static void LoadObjMesh(in GameObject targetObject, in string objPath, in string mtlPath)
 	{
 		var loadedObject = new Dummiesman.OBJLoader().Load(objPath, mtlPath);
 
-		var meshRotation = new Vector3(90f, 180f, 0f);
+		var meshRotation = new Vector3(90f, 90f, 0f);
 		foreach (var meshFilter in loadedObject.GetComponentsInChildren<MeshFilter>())
 		{
 			var meshObject = meshFilter.gameObject;
@@ -65,7 +61,6 @@ public class SDF2Unity
 
 		var multipleMesh = Parabox.Stl.Importer.Import(objPath, Parabox.Stl.CoordinateSpace.Right, Parabox.Stl.UpAxis.Z, true);
 
-		var meshRotation = new Vector3(0.0f, 90.0f, 0.0f);
 		for (int i = 0; i < multipleMesh.Length; i++)
 		{
 			multipleMesh[i].name = "Mesh-" + i;
@@ -75,7 +70,6 @@ public class SDF2Unity
 
 			var meshFilter = meshObject.AddComponent<MeshFilter>();
 			meshFilter.mesh = multipleMesh[i];
-			meshFilter.transform.Rotate(meshRotation);
 
 			var meshRenderer = meshObject.AddComponent<MeshRenderer>();
 

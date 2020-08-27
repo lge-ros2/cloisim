@@ -55,6 +55,7 @@ namespace SensorDevices
 		protected override void InitializeMessages()
 		{
 			imu = new messages.Imu();
+			imu.EntityName = deviceName;
 			imu.Stamp = new messages.Time();
 			imu.Orientation = new messages.Quaternion();
 			imu.AngularVelocity = new messages.Vector3d();
@@ -66,8 +67,6 @@ namespace SensorDevices
 			// Caculate orientation and acceleration
 			var imuRotation = transform.rotation.eulerAngles - imuInitialRotation;
 			imuOrientation = Quaternion.Euler(imuRotation.x, imuRotation.y, imuRotation.z);
-			imuOrientation.Normalize();
-			imuOrientation.y *= -1.0f;
 
 			imuAngularVelocity.x = Mathf.DeltaAngle(imuRotation.x, previousImuRotation.x) / Time.fixedDeltaTime;
 			imuAngularVelocity.y = Mathf.DeltaAngle(imuRotation.y, previousImuRotation.y) / Time.fixedDeltaTime;
@@ -102,44 +101,24 @@ namespace SensorDevices
 			PushData<messages.Imu>(imu);
 		}
 
+		public messages.Imu GetImuMessage()
+		{
+			return imu;
+		}
+
 		public Quaternion GetOrientation()
 		{
-			try
-			{
-				var orientation = new Quaternion((float)imu.Orientation.X, (float)imu.Orientation.Y,
-												 (float)imu.Orientation.Z, (float)imu.Orientation.W);
-				return orientation;
-			}
-			catch
-			{
-				return Quaternion.identity;
-			}
+			return imuOrientation;
 		}
 
 		public Vector3 GetAngularVelocity()
 		{
-			try
-			{
-				var angularVelocity = new Vector3((float)imu.AngularVelocity.X, (float)imu.AngularVelocity.Y, (float)imu.AngularVelocity.Z);
-				return angularVelocity;
-			}
-			catch
-			{
-				return Vector3.zero;
-			}
+			return imuAngularVelocity;
 		}
 
 		public Vector3 GetLinearAcceleration()
 		{
-			try
-			{
-				var linearAccel = new Vector3((float)imu.LinearAcceleration.X, (float)imu.LinearAcceleration.Y, (float)imu.LinearAcceleration.Z);
-				return linearAccel;
-			}
-			catch
-			{
-				return Vector3.zero;
-			}
+			return imuLinearAcceleration;
 		}
 	}
 }

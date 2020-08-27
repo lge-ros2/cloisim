@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using messages = gazebo.msgs;
 
-public class DeviceHelper
+public partial class DeviceHelper
 {
 	static Clock clock = null;
 
@@ -84,8 +84,8 @@ public class DeviceHelper
 			vector3d = new messages.Vector3d();
 		}
 
-		vector3d.X = position.x;
-		vector3d.Y = position.z;
+		vector3d.X = position.z;
+		vector3d.Y = -position.x;
 		vector3d.Z = position.y;
 	}
 
@@ -96,52 +96,19 @@ public class DeviceHelper
 			quaternion = new messages.Quaternion();
 		}
 
-		quaternion.X = -rotation.x;
-		quaternion.Y = -rotation.z;
-		quaternion.Z = -rotation.y;
-		quaternion.W = rotation.w;
-	}
-
-	public static Matrix4x4 MakeCustomProjectionMatrix(in float hFov, in float vFov, in float near, in float far)
-	{
-		// construct custom aspect ratio projection matrix
-		// math from https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/opengl-perspective-projection-matrix
-		var h = 1.0f / Mathf.Tan(hFov * Mathf.Deg2Rad / 2f);
-		var v = 1.0f / Mathf.Tan(vFov * Mathf.Deg2Rad / 2f);
-		var a = (far + near) / (near - far);
-		var b = (2.0f * far * near / (near - far));
-
-		var projMatrix = new Matrix4x4(
-			new Vector4(h, 0, 0, 0),
-			new Vector4(0, v, 0, 0),
-			new Vector4(0, 0, a, -1),
-			new Vector4(0, 0, b, 0));
-
-		return projMatrix;
-	}
-
-	public static float HorizontalToVerticalFOV(in float horizontalFOV, in float aspect = 1.0f)
-	{
-		return Mathf.Rad2Deg * 2 * Mathf.Atan(Mathf.Tan((horizontalFOV * Mathf.Deg2Rad) / 2f) / aspect);
+		quaternion.X = -rotation.z;
+		quaternion.Y = rotation.x;
+		quaternion.Z = rotation.y;
+		quaternion.W = -rotation.w;
 	}
 
 	public static bool IsSamePosition(in float A, in float B)
 	{
-		var distance = Mathf.Abs(A - B);
-		if (distance < Mathf.Epsilon)
-		{
-			return true;
-		}
-		return false;
+		return (Mathf.Abs(A - B) <= Mathf.Epsilon) ? true : false;
 	}
 
 	public static bool IsSamePosition(in Vector3 A, in Vector3 B)
 	{
-		var distance = Vector3.SqrMagnitude(A - B);
-		if (distance < Vector3.kEpsilon)
-		{
-			return true;
-		}
-		return false;
+		return (Vector3.SqrMagnitude(A - B) <= Vector3.kEpsilon) ? true : false;
 	}
 }

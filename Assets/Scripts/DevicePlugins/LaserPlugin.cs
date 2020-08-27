@@ -5,6 +5,7 @@
  */
 
 using UnityEngine;
+using System.Threading;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class LaserPlugin : DevicePlugin
@@ -38,7 +39,7 @@ public class LaserPlugin : DevicePlugin
 	private void Sender()
 	{
 		var sw = new Stopwatch();
-		while (true)
+		while (IsRunningThread)
 		{
 			if (lidar == null)
 			{
@@ -55,7 +56,7 @@ public class LaserPlugin : DevicePlugin
 
 	private void Response()
 	{
-		while (true)
+		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
 
@@ -79,6 +80,8 @@ public class LaserPlugin : DevicePlugin
 
 				SendResponse(msForInfoResponse);
 			}
+
+			ThreadWait();
 		}
 	}
 }

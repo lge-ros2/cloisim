@@ -31,10 +31,7 @@ public partial class SDFImplement
 				var meshRotation = meshFilter.transform.localRotation;
 
 				// Debug.LogFormat("{0},{1}: {2}, {3}", meshFilter.name, meshFilter.transform.name, meshTranslation, meshRotation);
-				var meshScale = new Vector3(Mathf.Sign(meshFilter.transform.localScale.x),
-											Mathf.Sign(meshFilter.transform.localScale.y),
-											Mathf.Sign(meshFilter.transform.localScale.z));
-
+				var meshScale = meshFilter.transform.localScale;
 				meshTransformMatrix.SetTRS(meshTranslation, meshRotation, meshScale);
 
 				combine[combineIndex].transform = meshTransformMatrix;

@@ -148,15 +148,10 @@ public partial class SDFImporter : SDF.Importer
 			mainCamera.transform.localPosition = Vector3.zero;
 			mainCamera.transform.localRotation = Quaternion.identity;
 			mainCamera.transform.position = Vector3.zero;
-			mainCamera.transform.rotation = Quaternion.identity;
-			// Debug.Log("Camera position/rotation");
 
 			mainCamera.transform.Translate(SDF2Unity.GetPosition(world.GuiCameraPose.Pos));
-			var camRot = world.GuiCameraPose.Rot;
-			var camRotRoll = Mathf.Rad2Deg * (float)(camRot.Roll);
-			var camRotPitch = Mathf.Rad2Deg * (float)(camRot.Pitch);
-			var camRotYaw = Mathf.Rad2Deg * (float)(camRot.Yaw);
-			mainCamera.transform.Rotate(camRotPitch, camRotYaw, camRotRoll);
+			var rotate = SDF2Unity.GetRotation(world.GuiCameraPose.Rot);
+			mainCamera.transform.rotation = rotate;
 		}
 	}
 }

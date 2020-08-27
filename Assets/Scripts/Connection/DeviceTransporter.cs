@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
 using System.IO;
+using System;
 using UnityEngine;
 
 public partial class DeviceTransporter : MonoBehaviour
@@ -16,7 +16,7 @@ public partial class DeviceTransporter : MonoBehaviour
 
 	private int highwatermark = 1000;
 
-	public DeviceTransporter()
+	void Awake()
 	{
 		var enviromentPipeAddress = Environment.GetEnvironmentVariable("SIM_MASTER_IP");
 
@@ -28,7 +28,7 @@ public partial class DeviceTransporter : MonoBehaviour
 		SetPipeAddress(defaultPipeAddress);
 	}
 
-	~DeviceTransporter()
+	void OnDestroy()
 	{
 		if (requestSocket != null)
 		{
@@ -137,52 +137,54 @@ public partial class DeviceTransporter : MonoBehaviour
 
 	private byte[] RetrieveData(in byte[] receivedFrame, in byte[] targetTag = null)
 	{
-		byte[] retrievedData = null;
-
-		if (receivedFrame != null)
+		if (receivedFrame == null)
 		{
-			if (targetTag != null && tagSize > 0)
+			return null;
+		}
+
+		// Check Tag
+		if (targetTag != null && tagSize > 0)
+		{
+			try
 			{
 				var receivedTag = new byte[tagSize];
-				try
-				{
-					Buffer.BlockCopy(receivedFrame, 0, receivedTag, 0, tagSize);
+				Buffer.BlockCopy(receivedFrame, 0, receivedTag, 0, tagSize);
 
-					if (IsNotValidTag(receivedTag, targetTag))
-					{
-						Debug.LogWarning("It is Invalid Tag");
-						return null;
-					}
-				}
-				catch
+				if (IsNotValidTag(receivedTag, targetTag))
 				{
-					Debug.LogError("Failed to check Tag just skip!!!");
+					Debug.LogWarning("It is Invalid Tag");
+					return null;
 				}
 			}
-
-			var dataLength = receivedFrame.Length - tagSize;
-
-			if (dataLength > 0)
+			catch
 			{
-				retrievedData = new byte[dataLength];
-
-				try
-				{
-					Buffer.BlockCopy(receivedFrame, tagSize, retrievedData, 0, dataLength);
-					// Debug.LogWarning("dataReceived Length - " + dataLength + "," + topic.ToString());
-				}
-				catch
-				{
-					Debug.LogError("Error: BlockCopy with buffer @ Receiver() ");
-				}
-			}
-			else
-			{
-				Debug.LogWarning("Nothing received : " + receivedFrame.Length);
+				Debug.LogError("Failed to check Tag just skip!!!");
 			}
 		}
 
-		return retrievedData;
+		// Retrieve data
+		var dataLength = receivedFrame.Length - tagSize;
+		if (dataLength > 0)
+		{
+			try
+			{
+				var retrievedData = new byte[dataLength];
+				Buffer.BlockCopy(receivedFrame, tagSize, retrievedData, 0, dataLength);
+				// Debug.LogWarning("dataReceived Length - " + dataLength + "," + topic.ToString());
+				return retrievedData;
+			}
+			catch
+			{
+				Debug.LogError("Error: BlockCopy with buffer @ Receiver() ");
+			}
+
+		}
+		else
+		{
+			Debug.LogWarning("Nothing received : " + receivedFrame.Length);
+		}
+
+		return null;
 	}
 
 	private bool isValidMemoryStream(in MemoryStream stream)

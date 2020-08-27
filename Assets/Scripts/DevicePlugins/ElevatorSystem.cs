@@ -64,6 +64,7 @@ public partial class ElevatorSystem : DevicePlugin
 		GenerateResponseMessage();
 
 		AddThread(ServiceThread);
+
 		StartCoroutine(ServiceLoop());
 	}
 
@@ -270,16 +271,26 @@ public partial class ElevatorSystem : DevicePlugin
 		{
 			receivedBuffer = ReceiveRequest();
 
-			var receivedMessage = GetReceivedMessage(receivedBuffer);
+			if (receivedBuffer != null)
+			{
+				var receivedMessage = ParseReceivedMessage(receivedBuffer);
 
-			var streamToResponse = HandleServiceRequest(receivedMessage);
+				var streamToResponse = HandleServiceRequest(receivedMessage);
 
-			SendResponse(streamToResponse);
+				SendResponse(streamToResponse);
+			}
+
+			ThreadWait();
 		}
 	}
 
-	private Param GetReceivedMessage(in byte[] buffer)
+	private Param ParseReceivedMessage(in byte[] buffer)
 	{
+		if (buffer == null)
+		{
+			return null;
+		}
+
 		ClearMemoryStream(ref memoryStreamForService);
 
 		memoryStreamForService.Write(buffer, 0, buffer.Length);
@@ -393,6 +404,7 @@ public partial class ElevatorSystem : DevicePlugin
 	{
 		var waitForSeconds = new WaitForSeconds(Time.fixedDeltaTime);
 		var waitUntil = new WaitUntil(() => elevatorTaskQueue.IsEmpty == false);
+
 		while (true)
 		{
 			yield return waitUntil;
