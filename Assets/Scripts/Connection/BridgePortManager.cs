@@ -18,6 +18,7 @@ public class BridgePortManager : DeviceTransporter
 	public const ushort minPortRange = 49152;
 	public const ushort maxPortRange = IPEndPoint.MaxPort;
 
+	private bool runningWorkerThread = true;
 	private Thread workerThread;
 
 	private Dictionary<string, ushort> portMapTable = new Dictionary<string, ushort>();
@@ -145,23 +146,31 @@ public class BridgePortManager : DeviceTransporter
 		var sw = new Stopwatch();
 
 		// Debug.LogFormat("Start SensorPortManager - {0}::{1}", GetType().Name, MethodBase.GetCurrentMethod().Name);
-		while (true)
+		try
 		{
-			sw.Restart();
-
-			var hashKey = TryReceiveRequest();
-			if (hashKey != null)
+			while (runningWorkerThread)
 			{
-				var hashKeyInString = System.Text.Encoding.Default.GetString(hashKey);
-				var port = SearchSensorPort(hashKeyInString);
+				sw.Restart();
 
-				var portBuf = Convert.ToString(port);
-				SendResponse(portBuf);
+				var hashKey = TryReceiveRequest();
+				if (hashKey != null)
+				{
+					var hashKeyInString = System.Text.Encoding.Default.GetString(hashKey);
+					var port = SearchSensorPort(hashKeyInString);
 
-				sw.Stop();
-				var timeElapsed = sw.ElapsedMilliseconds;
-				Debug.LogFormat("-> Reply for {0} = {1}, {2} ms", hashKeyInString, port, timeElapsed);
+					var portBuf = Convert.ToString(port);
+					SendResponse(portBuf);
+
+					sw.Stop();
+					var timeElapsed = sw.ElapsedMilliseconds;
+					Debug.LogFormat("-> Reply for {0} = {1}, {2} ms", hashKeyInString, port, timeElapsed);
+				}
 			}
+		}
+		catch (ThreadInterruptedException)
+		{
+			Debug.LogWarning("Thread:Interrunpted");
+			return;
 		}
 	}
 
@@ -169,9 +178,13 @@ public class BridgePortManager : DeviceTransporter
 	{
 		if (workerThread != null)
 		{
-			workerThread.Abort();
+			runningWorkerThread = false;
+
+			if (workerThread.IsAlive)
+			{
+				workerThread.Join();
+			}
 		}
-		// Debug.LogFormat("{0}::{1}", GetType().Name, MethodBase.GetCurrentMethod().Name);
 	}
 
 	// Start is called before the first frame update
