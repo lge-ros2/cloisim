@@ -14,17 +14,11 @@ public class VisualPlugin : MonoBehaviour
 
 	private void SetShadowMode()
 	{
+		var receiveShadows = isCastingShadow;
+		var shadowCastingMode = (isCastingShadow) ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
+
 		foreach (var renderer in GetComponentsInChildren<Renderer>())
 		{
-			bool receiveShadows = false;
-			UnityEngine.Rendering.ShadowCastingMode shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-			if (isCastingShadow == true)
-			{
-				receiveShadows = true;
-				shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-			}
-
 			renderer.shadowCastingMode = shadowCastingMode;
 			renderer.receiveShadows = receiveShadows;
 		}
