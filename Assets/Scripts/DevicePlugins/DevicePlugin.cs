@@ -27,7 +27,10 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	protected PluginParameters parameters = null;
 	protected MemoryStream msForInfoResponse = new MemoryStream();
 
+	private bool runningThread = true;
 	private List<Thread> threadList = new List<Thread>();
+
+	protected bool IsRunningThread => runningThread;
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
@@ -35,12 +38,16 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	void OnDestroy()
 	{
-		// Debug.Log("OnDestroy - abort thread" + name);
+		runningThread = false;
+
 		foreach (var thread in threadList)
 		{
-			if (thread != null && thread.IsAlive)
+			if (thread != null)
 			{
-				thread.Abort();
+				if (thread.IsAlive)
+				{
+					thread.Join();
+				}
 			}
 		}
 	}
@@ -198,5 +205,10 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 			ms.Position = 0;
 			ms.Capacity = 0;
 		}
+	}
+
+	protected void ThreadWait()
+	{
+		Thread.SpinWait(1);
 	}
 }

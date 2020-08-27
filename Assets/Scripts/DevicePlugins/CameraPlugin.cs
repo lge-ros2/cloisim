@@ -42,8 +42,8 @@ public class CameraPlugin : DevicePlugin
 
 	private void Sender()
 	{
-		Stopwatch sw = new Stopwatch();
-		while (true)
+		var sw = new Stopwatch();
+		while (IsRunningThread)
 		{
 			if (cam == null)
 			{
@@ -60,7 +60,7 @@ public class CameraPlugin : DevicePlugin
 
 	private void Response()
 	{
-		while (true)
+		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
 
@@ -87,6 +87,8 @@ public class CameraPlugin : DevicePlugin
 
 				SendResponse(msForInfoResponse);
 			}
+
+			ThreadWait();
 		}
 	}
 }

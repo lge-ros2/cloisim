@@ -13,6 +13,8 @@ public partial class DeviceTransporter
 {
 	private SubscriberSocket subscriberSocket = null;
 
+	TimeSpan timeoutForSubscribe = TimeSpan.FromMilliseconds(500);
+
 	private byte[] hashValueForSubscription = null;
 
 	protected bool InitializeSubscriber(in ushort targetPort)
@@ -51,9 +53,11 @@ public partial class DeviceTransporter
 	{
 		if (subscriberSocket != null)
 		{
-			var frameReceived = subscriberSocket.ReceiveFrameBytes();
-			var receivedData = RetrieveData(frameReceived);
-			return receivedData;
+			if (subscriberSocket.TryReceiveFrameBytes(timeoutForSubscribe, out var frameReceived))
+			{
+				var receivedData = RetrieveData(frameReceived);
+				return receivedData;
+			}
 		}
 		else
 		{

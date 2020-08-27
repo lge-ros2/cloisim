@@ -152,7 +152,7 @@ public class BridgePortManager : DeviceTransporter
 			{
 				sw.Restart();
 
-				var hashKey = TryReceiveRequest();
+				var hashKey = ReceiveRequest();
 				if (hashKey != null)
 				{
 					var hashKeyInString = System.Text.Encoding.Default.GetString(hashKey);

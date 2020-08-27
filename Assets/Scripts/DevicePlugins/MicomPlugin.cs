@@ -57,7 +57,7 @@ public class MicomPlugin : DevicePlugin
 	private void Sender()
 	{
 		var sw = new Stopwatch();
-		while (true)
+		while (IsRunningThread)
 		{
 			if (micomSensor == null)
 			{
@@ -75,7 +75,7 @@ public class MicomPlugin : DevicePlugin
 
 	private void Receiver()
 	{
-		while (true)
+		while (IsRunningThread)
 		{
 			if (micomInput == null)
 			{
@@ -84,13 +84,14 @@ public class MicomPlugin : DevicePlugin
 
 			var receivedData = Subscribe();
 			micomInput.SetDataStream(receivedData);
-			Thread.SpinWait(1);
+
+			ThreadWait();
 		}
 	}
 
 	private void Response()
 	{
-		while (true)
+		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
 
@@ -117,6 +118,8 @@ public class MicomPlugin : DevicePlugin
 
 				SendResponse(msForInfoResponse);
 			}
+
+			ThreadWait();
 		}
 	}
 
