@@ -18,11 +18,12 @@ public class MicomPlugin : DevicePlugin
 
 	protected override void OnAwake()
 	{
-		micomInput = gameObject.AddComponent<MicomInput>();
+		partName = "MICOM";
+
 		micomSensor = gameObject.AddComponent<MicomSensor>();
 		micomSensor.SetPluginParameter(parameters);
-
-		partName = "MICOM";
+		micomInput = gameObject.AddComponent<MicomInput>();
+		micomInput.SetMicomSensor(micomSensor);
 	}
 
 	protected override void OnStart()
@@ -48,33 +49,9 @@ public class MicomPlugin : DevicePlugin
 			Debug.LogError("Failed to register for MicomPlugin RX- " + rxHashKey);
 		}
 
-		AddThread(Response);
-		AddThread(Sender);
 		AddThread(Receiver);
-	}
-
-	void FixedUpdate()
-	{
-		if (micomInput != null && micomSensor != null)
-		{
-			switch (micomInput.ControlType)
-			{
-				case MicomInput.VelocityType.LinearAndAngular:
-					var targetLinearVelocity = micomInput.GetLinearVelocity();
-					var targetAngularVelocity = micomInput.GetAngularVelocity();
-					micomSensor.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
-					break;
-
-				case MicomInput.VelocityType.LeftAndRight:
-					var targetWheelLeftLinearVelocity = micomInput.GetWheelLeftVelocity();
-					var targetWheelRightLinearVelocity = micomInput.GetWheelRightVelocity();
-					micomSensor.SetDifferentialDrive(targetWheelLeftLinearVelocity, targetWheelRightLinearVelocity);
-					break;
-
-				case MicomInput.VelocityType.Unknown:
-					break;
-			}
-		}
+		AddThread(Sender);
+		AddThread(Response);
 	}
 
 	private void Sender()
@@ -107,7 +84,7 @@ public class MicomPlugin : DevicePlugin
 
 			var receivedData = Subscribe();
 			micomInput.SetDataStream(receivedData);
-			Thread.SpinWait(5);
+			Thread.SpinWait(1);
 		}
 	}
 

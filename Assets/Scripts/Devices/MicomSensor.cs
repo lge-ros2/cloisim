@@ -208,7 +208,6 @@ public class MicomSensor : Device
 
 	protected override void GenerateMessage()
 	{
-		// Temporary
 		DeviceHelper.SetCurrentTime(micomSensorData.Time);
 		PushData<messages.Micom>(micomSensorData);
 	}
@@ -220,6 +219,7 @@ public class MicomSensor : Device
 		UpdateUss();
 		UpdateIr();
 		UpdateBumper();
+		UpdateOdom();
 	}
 
 	private void UpdateBumper()
@@ -332,19 +332,21 @@ public class MicomSensor : Device
 		accGyro.AngulerRateZ = 0;
 	}
 
-	private bool SetOdomData(in float angularVelocityLeft, in float angularVelocityRight)
+	public bool UpdateOdom()
 	{
 		if (micomSensorData != null)
 		{
 			var odom = micomSensorData.Odom;
-
-			if (odom != null)
+			if ((odom != null) && (motorLeft != null && motorRight != null))
 			{
+				var angularVelocityLeft = motorLeft.GetCurrentVelocity();
+				var angularVelocityRight = motorRight.GetCurrentVelocity();
+
 				odom.AngularVelocityLeft = angularVelocityLeft * Mathf.Deg2Rad;
 				odom.AngularVelocityRight = angularVelocityRight * Mathf.Deg2Rad;
 				odom.LinearVelocityLeft = odom.AngularVelocityLeft * wheelRadius;
 				odom.LinearVelocityRight = odom.AngularVelocityRight * wheelRadius;
-				// Debug.LogFormat("Odom {0}, {1} ", odom.SpeedLeft, odom.SpeedRight);
+
 				return true;
 			}
 		}
@@ -384,11 +386,6 @@ public class MicomSensor : Device
 		{
 			motorLeft.SetVelocityTarget(angularVelocityLeft);
 			motorRight.SetVelocityTarget(angularVelocityRight);
-
-			var angularVelocityLeftFromMotor = motorLeft.GetCurrentVelocity();
-			var angularVelocityRightFromMotor = motorRight.GetCurrentVelocity();
-
-			SetOdomData(angularVelocityLeftFromMotor, angularVelocityRightFromMotor);
 		}
 	}
 
