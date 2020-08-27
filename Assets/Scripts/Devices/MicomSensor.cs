@@ -176,9 +176,13 @@ public class MicomSensor : Device
 		}
 
 		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
-		var imuSensorModelTransform = imuSensor.transform.parent;
-		var newPose = new Pose(imuSensorModelTransform.localPosition, imuSensorModelTransform.localRotation);
-		partsPoseMapTable.Add(imuSensor.name, newPose);
+
+		if (imuSensor != null)
+		{
+			var imuSensorModelTransform = imuSensor.transform.parent;
+			var newPose = new Pose(imuSensorModelTransform.localPosition, imuSensorModelTransform.localRotation);
+			partsPoseMapTable.Add(imuSensor.name, newPose);
+		}
 	}
 
 	protected override IEnumerator MainDeviceWorker()
