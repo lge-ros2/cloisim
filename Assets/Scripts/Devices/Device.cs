@@ -185,6 +185,8 @@ public abstract class Device : MonoBehaviour
 			result = Serializer.Deserialize<T>(memoryStream_);
 		}
 
+		ResetDataStream();
+
 		return result;
 	}
 

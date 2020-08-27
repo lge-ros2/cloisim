@@ -43,15 +43,8 @@ public class MicomInput : Device
 		{
 			yield return waitUntil;
 
-			try
-			{
-				GenerateMessage();
-				DoWheelDrive();
-			}
-			catch
-			{
-				Debug.LogError("MicomInput: Error");
-			}
+			GenerateMessage();
+			DoWheelDrive();
 		}
 	}
 
@@ -67,7 +60,14 @@ public class MicomInput : Device
 
 	protected override void GenerateMessage()
 	{
-		micomWritingData = GetMessageData<messages.Param>();
+		try
+		{
+			micomWritingData = GetMessageData<messages.Param>();
+		}
+		catch
+		{
+			Debug.LogWarning("GetMessageData: ERROR");
+		}
 
 		if (micomWritingData.Name.Equals("control_type") &&
 			micomWritingData.Childrens.Count == 2)
@@ -101,7 +101,6 @@ public class MicomInput : Device
 				Debug.LogWarningFormat("MicomInput: Unsupported Control Type({0}", controlType);
 			}
 		}
-		// Debug.Log("MicomInput: Working OK...");
 	}
 
 	public void SetMicomSensor(in MicomSensor targetDevice)
