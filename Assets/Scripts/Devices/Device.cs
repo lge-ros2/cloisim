@@ -238,19 +238,26 @@ public abstract class Device : MonoBehaviour
 	private void SetDeviceTransform()
 	{
 		// Debug.Log(deviceName + ":" + transform.name);
-		var parentObject = this.transform.parent;
+		var devicePosition = Vector3.zero;
+		var deviceRotation = Quaternion.identity;
+		var sensorDevicePosition = transform.localPosition;
+		var sensorDeviceRotation = transform.localRotation;
 
+		var parentObject = transform.parent;
 		if (parentObject != null)
 		{
 			// Debug.Log(parentObject.name);
 			var modelObject = parentObject.parent;
 			if (modelObject != null && modelObject.CompareTag("Model"))
 			{
-				devicePose.position = modelObject.transform.localPosition;
-				devicePose.rotation = modelObject.transform.localRotation;
-				// Debug.Log(modelObject.name + ": " + devicePosition + ", " + deviceRotation);
+				devicePosition = modelObject.transform.localPosition + sensorDevicePosition;
+				deviceRotation = modelObject.transform.localRotation * sensorDeviceRotation;
+				// Debug.Log(modelObject.name + ": " + devicePosition.ToString("F4") + ", " + deviceRotation.ToString("F4"));
 			}
 		}
+
+		devicePose.position = devicePosition;
+		devicePose.rotation = deviceRotation;
 	}
 
 	public Pose GetPose()
