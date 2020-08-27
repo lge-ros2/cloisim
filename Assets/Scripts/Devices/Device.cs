@@ -218,8 +218,7 @@ public abstract class Device : MonoBehaviour
 			return null;
 		}
 
-		var item = memoryStreamOutboundQueue.Take();
-		return item;
+		return memoryStreamOutboundQueue.Take();
 	}
 
 	private void SetDeviceTransform()
@@ -230,7 +229,7 @@ public abstract class Device : MonoBehaviour
 		if (parentObject != null)
 		{
 			// Debug.Log(parentObject.name);
-			var modelObject = this.transform.parent.parent;
+			var modelObject = parentObject.parent;
 			if (modelObject != null && modelObject.CompareTag("Model"))
 			{
 				devicePose.position = modelObject.transform.localPosition;

@@ -14,6 +14,11 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 {
 	public static messages.Param ParsingInfoRequest(in byte[] srcReceivedBuffer, ref MemoryStream dstCameraInfoMemStream)
 	{
+		if (srcReceivedBuffer == null)
+		{
+			return null;
+		}
+
 		ClearMemoryStream(ref dstCameraInfoMemStream);
 
 		dstCameraInfoMemStream.Write(srcReceivedBuffer, 0, srcReceivedBuffer.Length);
@@ -24,11 +29,13 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	public static void SetCameraInfoResponse(ref MemoryStream msCameraInfo, in messages.CameraSensor sensorInfo)
 	{
-		if (msCameraInfo != null && sensorInfo != null)
+		if (msCameraInfo == null || sensorInfo == null)
 		{
-			ClearMemoryStream(ref msCameraInfo);
-			Serializer.Serialize<messages.CameraSensor>(msCameraInfo, sensorInfo);
+			return;
 		}
+
+		ClearMemoryStream(ref msCameraInfo);
+		Serializer.Serialize<messages.CameraSensor>(msCameraInfo, sensorInfo);
 	}
 
 	public static void SetTransformInfoResponse(ref MemoryStream msCameraInfo, in Pose devicePose)
