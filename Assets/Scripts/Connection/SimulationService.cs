@@ -16,9 +16,10 @@ public class SimulationService : MonoBehaviour
 
 	public string defaultWebSocketAddress = "127.0.0.1";
 	public int defaultWebSocketPort = 8080;
+
 	private WebSocketServer wsServer = null;
 
-	SimulationService()
+	void Awake()
 	{
 		var wsAddress = IPAddress.Parse(defaultWebSocketAddress);
 		wsServer = new WebSocketServer(wsAddress, defaultWebSocketPort);
