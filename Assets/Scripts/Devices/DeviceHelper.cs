@@ -96,10 +96,10 @@ public partial class DeviceHelper
 			quaternion = new messages.Quaternion();
 		}
 
-		quaternion.X = rotation.w;
+		quaternion.X = -rotation.z;
 		quaternion.Y = rotation.x;
-		quaternion.Z = -rotation.y;
-		quaternion.W = rotation.z;
+		quaternion.Z = rotation.y;
+		quaternion.W = -rotation.w;
 	}
 
 	public static bool IsSamePosition(in float A, in float B)
