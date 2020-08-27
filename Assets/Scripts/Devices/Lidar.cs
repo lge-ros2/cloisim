@@ -45,6 +45,7 @@ namespace SensorDevices
 		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.2f);
 
 		private Transform lidarLink = null;
+		private ShadowQuality originalShadowSettings_;
 		private UnityEngine.Camera laserCam = null;
 		private Material depthMaterial = null;
 
@@ -63,6 +64,7 @@ namespace SensorDevices
 		private float laserEndAngle;
 		private float laserTotalAngle;
 
+
 		void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
 			if (depthMaterial)
@@ -75,6 +77,17 @@ namespace SensorDevices
 			}
 		}
 
+		void OnPreRender()
+		{
+			QualitySettings.shadows = ShadowQuality.Disable;
+		}
+
+		private void OnPostRender()
+		{
+			QualitySettings.shadows = originalShadowSettings_;
+		}
+
+
 		private double GetAngleStep(in double minAngle, in double maxAngle, in uint totalSamples)
 		{
 			return (maxAngle - minAngle) / (resolution * (totalSamples - 1));
@@ -83,6 +96,9 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			lidarLink = transform.parent;
+
+			// store original shadow settings
+			originalShadowSettings_ = QualitySettings.shadows;
 		}
 
 		protected override void OnStart()
@@ -143,7 +159,7 @@ namespace SensorDevices
 
 			laserCam.allowHDR = true;
 			laserCam.allowMSAA = false;
-			laserCam.allowDynamicResolution = true;
+			laserCam.allowDynamicResolution = false;
 			laserCam.useOcclusionCulling = true;
 
 			laserCam.stereoTargetEye = StereoTargetEyeMask.None;
