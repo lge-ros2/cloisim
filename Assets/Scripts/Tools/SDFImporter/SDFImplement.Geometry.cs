@@ -12,60 +12,55 @@ public partial class SDFImplement
 {
 	public class Geometry
 	{
-		const string defaultShaderName = "Standard (Specular setup)";
-		private static Shader commonShader = Shader.Find(defaultShaderName);
-
 		/// <summary>Set mesh from external source</summary>
 		public static void SetMesh(in SDF.Mesh obj, in GameObject targetObject)
 		{
-			string error = string.Empty;
-
 			// file path
 			if (!File.Exists(obj.uri))
 			{
 				Debug.Log("File doesn't exist.");
+				return;
 			}
-			else
+
+			// var meshName = Path.GetFileNameWithoutExtension(obj.uri);
+			var fileExtension = Path.GetExtension(obj.uri).ToLower();
+
+			switch (fileExtension)
 			{
-				// var meshName = Path.GetFileNameWithoutExtension(obj.uri);
-				var fileExtension = Path.GetExtension(obj.uri).ToLower();
+				case ".obj":
+					var mtlPath = obj.uri.Replace(fileExtension, ".mtl");
+					SDF2Unity.LoadObjMesh(targetObject, obj.uri, mtlPath);
+					break;
 
-				switch (fileExtension)
+				case ".stl":
+					SDF2Unity.LoadStlMesh(targetObject, obj.uri);
+					break;
+
+				default:
+					Debug.LogWarning("Unknown file extension: " + fileExtension);
+					break;
+			}
+
+			foreach (var meshFilter in targetObject.GetComponentsInChildren<MeshFilter>())
+			{
+				var mesh = meshFilter.sharedMesh;
+
+				// Scaling
+				var vertices = mesh.vertices;
+				var scaleFactor = obj.scale;
+				for (var v = 0; v < mesh.vertexCount; v++)
 				{
-					case ".obj":
-						var mtlPath = obj.uri.Replace(fileExtension, ".mtl");
-						SDF2Unity.LoadObjMesh(targetObject, obj.uri, mtlPath);
-						break;
-
-					case ".stl":
-						SDF2Unity.LoadStlMesh(targetObject, obj.uri);
-						break;
-
-					default:
-						Debug.LogWarning("Unknown file extension: " + fileExtension);
-						break;
+					vertices[v].x *= (float)scaleFactor.X;
+					vertices[v].y *= (float)scaleFactor.Y;
+					vertices[v].z *= (float)scaleFactor.Z;
 				}
 
-				foreach (var meshFilter in targetObject.GetComponentsInChildren<MeshFilter>())
-				{
-					var mesh = meshFilter.sharedMesh;
+				mesh.vertices = vertices;
 
-					// Scaling
-					var vertices = mesh.vertices;
-					var scaleFactor = obj.scale;
-					for (var v = 0; v < mesh.vertexCount; v++)
-					{
-						vertices[v].x *= (float)scaleFactor.X;
-						vertices[v].y *= (float)scaleFactor.Y;
-						vertices[v].z *= (float)scaleFactor.Z;
-					}
-					mesh.vertices = vertices;
-
-					mesh.RecalculateTangents();
-					mesh.RecalculateBounds();
-					mesh.RecalculateNormals();
-					mesh.Optimize();
-				}
+				mesh.RecalculateTangents();
+				mesh.RecalculateBounds();
+				mesh.RecalculateNormals();
+				mesh.Optimize();
 			}
 		}
 
@@ -116,7 +111,7 @@ public partial class SDFImplement
 				var meshFilter = targetObject.AddComponent<MeshFilter>();
 				meshFilter.mesh = mesh;
 
-				var newMaterial = new Material(commonShader);
+				var newMaterial = new Material(SDF2Unity.commonShader);
 				newMaterial.name = mesh.name;
 
 				var meshRenderer = targetObject.AddComponent<MeshRenderer>();

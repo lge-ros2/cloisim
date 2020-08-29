@@ -13,8 +13,7 @@ public partial class SDFImplement
 	{
 		private static string GetFrameName(in GameObject currentObject)
 		{
-			string frameName = "";
-
+			var frameName = string.Empty;
 			var nextObject = currentObject.transform.parent;
 
 			do

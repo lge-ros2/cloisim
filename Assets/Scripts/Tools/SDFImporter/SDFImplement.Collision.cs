@@ -21,7 +21,7 @@ public partial class SDFImplement
 		private static Mesh MergeMeshes(in MeshFilter[] meshFilters)
 		{
 			var combine = new CombineInstance[meshFilters.Length];
-			int combineIndex = 0;
+			var combineIndex = 0;
 			foreach (var meshFilter in meshFilters)
 			{
 				combine[combineIndex].mesh = meshFilter.sharedMesh;

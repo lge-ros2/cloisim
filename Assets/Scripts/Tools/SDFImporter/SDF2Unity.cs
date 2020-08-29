@@ -7,6 +7,9 @@ using UnityEngine;
 
 public class SDF2Unity
 {
+	private static string commonShaderName = "Standard (Specular setup)";
+	public static Shader commonShader = Shader.Find(commonShaderName);
+
 	public static Vector3 GetPosition(in double x, in double y, in double z)
 	{
 		return new Vector3(-(float)y, (float)z, (float)x);
@@ -57,7 +60,7 @@ public class SDF2Unity
 
 	public static void LoadStlMesh(in GameObject targetObject, in string objPath)
 	{
-		const string commonShader = "Standard (Specular setup)";
+
 
 		var multipleMesh = Parabox.Stl.Importer.Import(objPath, Parabox.Stl.CoordinateSpace.Right, Parabox.Stl.UpAxis.Z, true);
 
@@ -73,7 +76,7 @@ public class SDF2Unity
 
 			var meshRenderer = meshObject.AddComponent<MeshRenderer>();
 
-			var newMaterial = new Material(Shader.Find(commonShader));
+			var newMaterial = new Material(commonShader);
 			newMaterial.name = multipleMesh[i].name;
 			meshRenderer.material = newMaterial;
 

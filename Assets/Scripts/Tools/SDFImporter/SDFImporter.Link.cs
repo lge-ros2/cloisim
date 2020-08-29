@@ -9,18 +9,27 @@ using UnityEngine;
 
 public partial class SDFImporter : SDF.Importer
 {
+	private static float minimumInertiaTensor = 1e-6f;
+
 	private Vector3 GetInertiaTensor(in SDF.Inertial inertia)
 	{
-		const float minimumInertiaTensor = 1e-6f;
 		// Debug.LogWarningFormat("GetInertiaTensor: {0}, {1}, {2}", inertia.ixx, inertia.iyy, inertia.izz);
 		var inertiaVector = SDF2Unity.GetPosition(inertia.ixx, inertia.iyy, inertia.izz);
 
 		if (inertiaVector.x <= minimumInertiaTensor)
+		{
 			inertiaVector.x = minimumInertiaTensor;
+		}
+
 		if (inertiaVector.y <= minimumInertiaTensor)
+		{
 			inertiaVector.y = minimumInertiaTensor;
+		}
+
 		if (inertiaVector.z <= minimumInertiaTensor)
+		{
 			inertiaVector.z = minimumInertiaTensor;
+		}
 
 		return inertiaVector;
 	}

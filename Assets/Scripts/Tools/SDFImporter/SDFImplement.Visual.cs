@@ -93,7 +93,7 @@ public partial class SDFImplement
 		{
 			var combine = new CombineInstance[mehsFilters.Length];
 
-			int combineIndex = 0;
+			var combineIndex = 0;
 			foreach (var meshFilter in mehsFilters)
 			{
 				var meshTransform = meshFilter.transform;

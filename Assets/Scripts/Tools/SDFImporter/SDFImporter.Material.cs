@@ -11,12 +11,12 @@ public partial class SDFImporter : SDF.Importer
 {
 	protected override void ImportMaterial(in SDF.Material sdfMaterial, in System.Object parentObject)
 	{
-		const string commonShader = "Standard (Specular setup)";
-
 		var targetObject = (parentObject as GameObject);
 
 		if (targetObject == null)
+		{
 			return;
+		}
 
 		foreach (var renderer in targetObject.GetComponentsInChildren<Renderer>(true))
 		{
@@ -24,7 +24,7 @@ public partial class SDFImporter : SDF.Importer
 
 			if (sharedMaterial == null)
 			{
-				sharedMaterial = new Material(Shader.Find(commonShader));
+				sharedMaterial = new Material(SDF2Unity.commonShader);
 				sharedMaterial.name = renderer.name;
 			}
 
