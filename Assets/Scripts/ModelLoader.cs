@@ -181,9 +181,8 @@ public class ModelLoader : MonoBehaviour
 		}
 	}
 
-	public bool TriggerResetService(in string command)
+	public bool TriggerResetService()
 	{
-		// Debug.Log(command);
 		if (isResetting)
 		{
 			return false;

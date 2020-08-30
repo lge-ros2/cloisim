@@ -16,6 +16,8 @@ public class SimulationControlRequest
 	[JsonProperty(Order = 0)]
 	public string command = string.Empty;
 
+	public string filter = string.Empty;
+
 	public void Print()
 	{
 		Debug.LogFormat("## {0}: {1}", this.GetType().Name, command);
@@ -50,7 +52,7 @@ public class SimulationControlResponseNormal : SimulationControlResponseBase
 public class SimulationControlResponseSensorPortList : SimulationControlResponseBase
 {
 	[JsonProperty(Order = 1)]
-	public List<Dictionary<string, ushort>> result;
+	public Dictionary<string, ushort> result;
 
 	public override void Print()
 	{
@@ -98,7 +100,7 @@ public class SimulationControlService : WebSocketBehavior
 		{
 			case "reset":
 				{
-					var wasSuccessful = modelLoaderService.TriggerResetService(request.command);
+					var wasSuccessful = modelLoaderService.TriggerResetService();
 					var result = (wasSuccessful) ? SimulationService.SUCCESS : SimulationService.FAIL;
 
 					output = new SimulationControlResponseNormal();
@@ -108,7 +110,7 @@ public class SimulationControlService : WebSocketBehavior
 
 			case "connected_devices_list":
 				{
-					var result = portDeviceService.GetSensorPortList();
+					var result = portDeviceService.GetSensorPortList(request.filter);
 
 					output = new SimulationControlResponseSensorPortList();
 					(output as SimulationControlResponseSensorPortList).result = result;

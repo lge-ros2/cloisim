@@ -4,9 +4,10 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Net.NetworkInformation;
 using System.Collections.Generic;
 using System.Threading;
-using System.Net.NetworkInformation;
+using System.Linq;
 using System.Net;
 using System;
 using UnityEngine;
@@ -63,16 +64,19 @@ public class BridgeManager : DeviceTransporter
 		return port;
 	}
 
-	public List<Dictionary<string, ushort>> GetSensorPortList()
+	public Dictionary<string, ushort> GetSensorPortList(string filter = "")
 	{
-		var tempStringListObject = new List<Dictionary<string, ushort>>();
-
-		lock (portMapTable)
+		if (string.IsNullOrEmpty(filter))
 		{
-			tempStringListObject.Add(portMapTable);
+			lock (portMapTable)
+			{
+
+				return portMapTable;
+			}
 		}
 
-		return tempStringListObject;
+		var newPortMapTable = portMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(p => p.Key, p => p.Value);
+		return newPortMapTable;
 	}
 
 
