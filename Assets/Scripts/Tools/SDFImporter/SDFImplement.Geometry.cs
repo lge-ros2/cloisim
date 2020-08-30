@@ -103,11 +103,6 @@ public partial class SDFImplement
 
 			if (mesh != null)
 			{
-				mesh.RecalculateTangents();
-				mesh.RecalculateBounds();
-				mesh.RecalculateNormals();
-				mesh.Optimize();
-
 				var meshFilter = targetObject.AddComponent<MeshFilter>();
 				meshFilter.mesh = mesh;
 

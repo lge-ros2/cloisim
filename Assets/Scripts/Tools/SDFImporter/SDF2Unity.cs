@@ -60,8 +60,6 @@ public class SDF2Unity
 
 	public static void LoadStlMesh(in GameObject targetObject, in string objPath)
 	{
-
-
 		var multipleMesh = Parabox.Stl.Importer.Import(objPath, Parabox.Stl.CoordinateSpace.Right, Parabox.Stl.UpAxis.Z, true);
 
 		for (int i = 0; i < multipleMesh.Length; i++)
@@ -84,6 +82,7 @@ public class SDF2Unity
 			child.SetParent(targetObject.transform, false);
 		}
 	}
+
 	public static bool CheckTopModel(in GameObject targetObject)
 	{
 		return CheckTopModel(targetObject.transform);

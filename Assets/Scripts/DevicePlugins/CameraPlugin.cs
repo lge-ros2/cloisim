@@ -4,11 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.IO;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
-using ProtoBuf;
-using messages = gazebo.msgs;
 
 public class CameraPlugin : DevicePlugin
 {
