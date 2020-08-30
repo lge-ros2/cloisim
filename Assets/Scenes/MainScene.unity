@@ -736,7 +736,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 249819585}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 918c1bad59e9f0fb684f7a795431a3f2, type: 3}
+  m_Script: {fileID: 11500000, guid: 7e098269c4ee980a19586b97f7947297, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   defaultPipeAddress: 127.0.0.1
@@ -2363,6 +2363,7 @@ GameObject:
   - component: {fileID: 683297085}
   - component: {fileID: 683297087}
   - component: {fileID: 683297086}
+  - component: {fileID: 683297088}
   m_Layer: 0
   m_Name: UI
   m_TagString: Untagged
@@ -2420,6 +2421,19 @@ MonoBehaviour:
   m_FirstSelected: {fileID: 0}
   m_sendNavigationEvents: 1
   m_DragThreshold: 10
+--- !u!114 &683297088
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 683297084}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d8c6ba38498e99b5957287e0f6cac91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefabs: []
 --- !u!1 &702124002
 GameObject:
   m_ObjectHideFlags: 0
