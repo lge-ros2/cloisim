@@ -106,7 +106,7 @@ public class SimulationControlService : WebSocketBehavior
 				}
 				break;
 
-			case "device_list":
+			case "connected_devices_list":
 				{
 					var result = portDeviceService.GetSensorPortList();
 
