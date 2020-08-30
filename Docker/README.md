@@ -20,21 +20,26 @@ It may differ from latest guide.
 
 Refer here for install guide [nvidia-docker](https://github.com/NVIDIA/nvidia-docker).
 
-
 ## Run Docker
 
-1. Run following command to build a image:
+### build docker image
+
+Run following command to build a image:
 
 ```shell
-$ docker build -t cloisim .
+docker build -t cloisim .
 ```
 
-2. Use following command to run CLOiSim docker container:
+### run docker container
+
+#### Option A
+
+Use following command to run CLOiSim docker container:
 
 ```shell
-$ export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample-resources/
+export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample-resources/
 
-$ docker run -ti --rm --gpus all --net=host \
+docker run -ti --rm --gpus all --net=host \
     -e DISPLAY \
     -v ${XAUTHORITY}:/tmp/.Xauthority \
     -e XAUTHORITY=/tmp/.Xauthority \
@@ -46,11 +51,13 @@ $ docker run -ti --rm --gpus all --net=host \
     cloisim lg_seocho.world
 ```
 
-or just run with target world file name in 'worlds'
+#### Option B
+
+Option B: just run with target world file name in 'worlds'
 
 ```shell
-$ export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample-resources/
-$ ./start.sh lg_seocho.world
+export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample-resources/
+./start.sh lg_seocho.world
 ```
 
 refer to [samples_resource](https://github.com/lge-ros2/sample-resources) more details about resource
