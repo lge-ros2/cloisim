@@ -5,6 +5,7 @@
  */
 
 using System.Net;
+using System;
 using UnityEngine;
 using WebSocketSharp.Server;
 
@@ -31,6 +32,7 @@ public class SimulationService : MonoBehaviour
 		InitializeServices();
 
 		wsServer.KeepClean = true;
+		wsServer.WaitTime = TimeSpan.FromMilliseconds(5000);
 		wsServer.Start();
 
 		if (wsServer.IsListening)
