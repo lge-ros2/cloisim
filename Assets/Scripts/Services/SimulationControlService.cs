@@ -62,8 +62,8 @@ public class SimulationControlResponseSensorPortList : SimulationControlResponse
 
 public class SimulationControlService : WebSocketBehavior
 {
-	public ModelLoader modelLoaderService = null;
-	public BridgeManager portDeviceService = null;
+	public ModelLoader modelLoader = null;
+	public BridgeManager bridgeManager = null;
 
 	protected override void OnOpen()
 	{
@@ -100,7 +100,7 @@ public class SimulationControlService : WebSocketBehavior
 		{
 			case "reset":
 				{
-					var wasSuccessful = modelLoaderService.TriggerResetService();
+					var wasSuccessful = modelLoader.TriggerResetService();
 					var result = (wasSuccessful) ? SimulationService.SUCCESS : SimulationService.FAIL;
 
 					output = new SimulationControlResponseNormal();
@@ -110,7 +110,7 @@ public class SimulationControlService : WebSocketBehavior
 
 			case "connected_devices_list":
 				{
-					var result = portDeviceService.GetSensorPortList(request.filter);
+					var result = bridgeManager.GetSensorPortList(request.filter);
 
 					output = new SimulationControlResponseSensorPortList();
 					(output as SimulationControlResponseSensorPortList).result = result;

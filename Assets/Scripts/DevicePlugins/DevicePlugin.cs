@@ -90,26 +90,26 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	protected bool PrepareDevice(in string hashKey, out ushort port, out ulong hash)
 	{
 		port = BridgeManager.AllocateSensorPort(hashKey);
-		hash = DeviceHelper.GetStringHashCode(hashKey);
-
 		if (port == 0)
 		{
 			Debug.LogError("Port for device is not allocated!!!!!!!!");
+			hash = 0;
 			return false;
 		}
 		// Debug.LogFormat("PrepareDevice - port({0}) hash({1})", port, hash);
 
+		hash = DeviceHelper.GetStringHashCode(hashKey);
 		return true;
 	}
 
-	protected string MakeHashKey(string subPartName = "")
+	protected string MakeHashKey(in string subPartName = "")
 	{
 		return modelName + partName + subPartName;
 	}
 
 	protected bool RegisterTxDevice(in string hashKey)
 	{
-		if (PrepareDevice(hashKey, out ushort port, out ulong hash))
+		if (PrepareDevice(hashKey, out var port, out var hash))
 		{
 			SetHashForPublish(hash);
 			InitializePublisher(port);
@@ -121,7 +121,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	protected bool RegisterRxDevice(in string hashKey)
 	{
-		if (PrepareDevice(hashKey, out ushort port, out ulong hash))
+		if (PrepareDevice(hashKey, out var port, out var hash))
 		{
 			SetHashForSubscription(hash);
 			InitializeSubscriber(port);
@@ -133,7 +133,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	protected bool RegisterServiceDevice(in string hashKey)
 	{
-		if (PrepareDevice(hashKey, out ushort port, out ulong hash))
+		if (PrepareDevice(hashKey, out var port, out var hash))
 		{
 			SetHashForResponse(hash);
 			InitializeResponsor(port);
@@ -146,7 +146,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	protected bool RegisterClientDevice(in string hashKey)
 	{
-		if (PrepareDevice(hashKey, out ushort port, out ulong hash))
+		if (PrepareDevice(hashKey, out var port, out var hash))
 		{
 			SetHashForRequest(hash);
 			InitializeRequester(port);
@@ -197,6 +197,11 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		OnReset();
 	}
 
+	protected void ThreadWait()
+	{
+		Thread.SpinWait(1);
+	}
+
 	protected static void ClearMemoryStream(ref MemoryStream ms)
 	{
 		if (ms != null)
@@ -205,10 +210,5 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 			ms.Position = 0;
 			ms.Capacity = 0;
 		}
-	}
-
-	protected void ThreadWait()
-	{
-		Thread.SpinWait(1);
 	}
 }

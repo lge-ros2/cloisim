@@ -12,6 +12,7 @@ using System.Net;
 using System;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using Encoding = System.Text.Encoding;
 
 public class BridgeManager : DeviceTransporter
 {
@@ -26,7 +27,7 @@ public class BridgeManager : DeviceTransporter
 
 	private IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
 
-	public void DeallocateSensorPort(string hashKey)
+	public void DeallocateSensorPort(in string hashKey)
 	{
 		bool isRemoved = false;
 
@@ -41,44 +42,37 @@ public class BridgeManager : DeviceTransporter
 		}
 		else
 		{
-			Debug.LogFormat("Failed to remove HashKey({0})!!!", hashKey);
+			Debug.LogWarningFormat("Failed to remove HashKey({0})!!!!", hashKey);
 		}
 	}
 
-	public ushort SearchSensorPort(string hashKey)
+	public ushort SearchSensorPort(in string hashKey)
 	{
-		ushort port = 0;
-
 		lock (portMapTable)
 		{
-			foreach (var each in portMapTable)
+			if (portMapTable.TryGetValue(hashKey, out var port))
 			{
-				if (each.Key == hashKey)
-				{
-					port = each.Value;
-					break;
-				}
+				return port;
 			}
 		}
 
-		return port;
+		return 0;
 	}
 
 	public Dictionary<string, ushort> GetSensorPortList(string filter = "")
 	{
-		if (string.IsNullOrEmpty(filter))
+		lock (portMapTable)
 		{
-			lock (portMapTable)
+			if (string.IsNullOrEmpty(filter))
 			{
-
 				return portMapTable;
 			}
+			else
+			{
+				return portMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(p => p.Key, p => p.Value);
+			}
 		}
-
-		var newPortMapTable = portMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(p => p.Key, p => p.Value);
-		return newPortMapTable;
 	}
-
 
 	public bool IsAvailablePort(in ushort port)
 	{
@@ -99,23 +93,23 @@ public class BridgeManager : DeviceTransporter
 		return true;
 	}
 
-	public ushort AllocateSensorPort(string hashKey)
+	public ushort AllocateSensorPort(in string hashKey)
 	{
 		// check if already occupied
 		var newPort = SearchSensorPort(hashKey);
 
-		if (newPort != 0)
+		if (newPort > 0)
 		{
 			Debug.LogFormat("HashKey({0}) is already occupied.", hashKey);
 			return newPort;
 		}
 
-		// find available port number
-		// start with minimum port range
+		// find available port number and start with minimum port range
 		for (var index = 0; index < (maxPortRange - minPortRange); index++)
 		{
 			var port = (ushort)(minPortRange + index);
 			var isContained = false;
+
 			lock (portMapTable)
 			{
 				isContained = portMapTable.ContainsValue(port);
@@ -129,17 +123,18 @@ public class BridgeManager : DeviceTransporter
 			}
 		}
 
-		if (newPort == 0)
-		{
-			Debug.LogFormat("Failed to allocate port for HashKey({0}).", hashKey);
-		}
-		else
+		if (newPort > 0)
 		{
 			lock (portMapTable)
 			{
-				Debug.LogFormat("Allocated for HashKey({0}), Port({1})", hashKey, newPort);
 				portMapTable.Add(hashKey, newPort);
 			}
+
+			Debug.LogFormat("Allocated for HashKey({0}), Port({1})", hashKey, newPort);
+		}
+		else
+		{
+			Debug.LogFormat("Failed to allocate port for HashKey({0}).", hashKey);
 		}
 
 		return newPort;
@@ -159,7 +154,7 @@ public class BridgeManager : DeviceTransporter
 				var hashKey = ReceiveRequest();
 				if (hashKey != null)
 				{
-					var hashKeyInString = System.Text.Encoding.Default.GetString(hashKey);
+					var hashKeyInString = Encoding.Default.GetString(hashKey);
 					var port = SearchSensorPort(hashKeyInString);
 
 					var portBuf = Convert.ToString(port);
@@ -167,7 +162,7 @@ public class BridgeManager : DeviceTransporter
 
 					sw.Stop();
 					var timeElapsed = sw.ElapsedMilliseconds;
-					Debug.LogFormat("-> Reply for {0} = {1}, {2} ms", hashKeyInString, port, timeElapsed);
+					Debug.LogFormat("-> Reply for {0} = {1} ({2} ms)", hashKeyInString, port, timeElapsed);
 				}
 			}
 		}
@@ -180,10 +175,10 @@ public class BridgeManager : DeviceTransporter
 
 	void OnDestroy()
 	{
+		runningWorkerThread = false;
+
 		if (workerThread != null)
 		{
-			runningWorkerThread = false;
-
 			if (workerThread.IsAlive)
 			{
 				workerThread.Join();
@@ -195,6 +190,7 @@ public class BridgeManager : DeviceTransporter
 	void Start()
 	{
 		SetTagSize(0);
+
 		InitializeResponsor(pipePortNumber);
 
 		workerThread = new Thread(PortManageWorker);

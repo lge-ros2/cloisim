@@ -50,13 +50,13 @@ public class SimulationService : MonoBehaviour
 			return;
 		}
 
-		var modelLoader = gameObject.GetComponent<ModelLoader>();
-		var BridgeManager = gameObject.GetComponent<BridgeManager>();
+		var modelLoaderComponent = gameObject.GetComponent<ModelLoader>();
+		var bridgeManagerComponent = gameObject.GetComponent<BridgeManager>();
 
 		wsServer.AddWebSocketService<SimulationControlService>("/control", () => new SimulationControlService()
 		{
-			modelLoaderService = modelLoader,
-			portDeviceService = BridgeManager
+			modelLoader = modelLoaderComponent,
+			bridgeManager = bridgeManagerComponent
 		});
 
 		var markerVisualizer = gameObject.GetComponent<MarkerVisualizer>();
