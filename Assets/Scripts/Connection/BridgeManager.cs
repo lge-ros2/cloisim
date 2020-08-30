@@ -12,7 +12,7 @@ using System;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
-public class BridgePortManager : DeviceTransporter
+public class BridgeManager : DeviceTransporter
 {
 	public readonly ushort pipePortNumber = 25554;
 	public const ushort minPortRange = 49152;

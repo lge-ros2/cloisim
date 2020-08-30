@@ -61,7 +61,7 @@ public class SimulationControlResponseSensorPortList : SimulationControlResponse
 public class SimulationControlService : WebSocketBehavior
 {
 	public ModelLoader modelLoaderService = null;
-	public BridgePortManager portDeviceService = null;
+	public BridgeManager portDeviceService = null;
 
 	protected override void OnOpen()
 	{

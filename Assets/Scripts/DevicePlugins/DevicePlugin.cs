@@ -22,7 +22,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	public string modelName = String.Empty;
 	public string partName = String.Empty;
 
-	private BridgePortManager bridgePortManager = null;
+	private BridgeManager BridgeManager = null;
 
 	protected PluginParameters parameters = null;
 	protected MemoryStream msForInfoResponse = new MemoryStream();
@@ -89,7 +89,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	protected bool PrepareDevice(in string hashKey, out ushort port, out ulong hash)
 	{
-		port = bridgePortManager.AllocateSensorPort(hashKey);
+		port = BridgeManager.AllocateSensorPort(hashKey);
 		hash = DeviceHelper.GetStringHashCode(hashKey);
 
 		if (port == 0)
@@ -167,10 +167,10 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 		else
 		{
-			bridgePortManager = coreObject.GetComponent<BridgePortManager>();
-			if (bridgePortManager == null)
+			BridgeManager = coreObject.GetComponent<BridgeManager>();
+			if (BridgeManager == null)
 			{
-				Debug.LogError("Failed to get 'bridgePortManager'!!!!");
+				Debug.LogError("Failed to get 'BridgeManager'!!!!");
 			}
 
 			if (string.IsNullOrEmpty(modelName))
