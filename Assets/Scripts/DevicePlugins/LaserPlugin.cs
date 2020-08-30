@@ -15,7 +15,9 @@ public class LaserPlugin : DevicePlugin
 	protected override void OnAwake()
 	{
 		partName = DeviceHelper.GetPartName(gameObject);
+
 		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
+		lidar.SetPluginParameter(parameters);
 	}
 
 	protected override void OnStart()

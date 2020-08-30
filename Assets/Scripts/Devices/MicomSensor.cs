@@ -11,7 +11,6 @@ using messages = gazebo.msgs;
 
 public class MicomSensor : Device
 {
-	private PluginParameters parameters = null;
 	private messages.Micom micomSensorData = null;
 
 	private Motor motorLeft = null;
@@ -393,10 +392,6 @@ public class MicomSensor : Device
 		}
 	}
 
-	public void SetPluginParameter(in PluginParameters pluginParams)
-	{
-		parameters = pluginParams;
-	}
 
 	public Pose GetPartsPose(in string targetPartsName)
 	{

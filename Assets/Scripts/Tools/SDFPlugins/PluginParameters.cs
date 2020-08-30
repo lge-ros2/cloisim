@@ -43,9 +43,14 @@ public class PluginParameters
 			return defaultValue;
 		}
 
+		var node = parameters.SelectSingleNode(xpath);
+		if (node == null)
+		{
+			return defaultValue;
+		}
+
 		try
 		{
-			var node = parameters.SelectSingleNode(xpath);
 			return SDF.Entity.ConvertXmlNodeToValue<T>(node);
 		}
 		catch (XmlException ex)

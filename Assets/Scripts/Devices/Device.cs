@@ -14,13 +14,16 @@ public abstract class Device : MonoBehaviour
 {
 	private const int maxQueue = 5;
 
-	public string deviceName = string.Empty;
-
 	private BlockingCollection<MemoryStream> outboundQueue_ = new BlockingCollection<MemoryStream>(maxQueue);
 
 	protected int timeoutForOutboundQueueInMilliseconds = 100;
 
 	private MemoryStream memoryStream_ = new MemoryStream();
+
+
+	public string deviceName = string.Empty;
+
+	protected PluginParameters parameters = null;
 
 	private float updateRate = 1;
 
@@ -263,5 +266,10 @@ public abstract class Device : MonoBehaviour
 	public Pose GetPose()
 	{
 		return devicePose;
+	}
+
+	public void SetPluginParameter(in PluginParameters pluginParams)
+	{
+		parameters = pluginParams;
 	}
 }
