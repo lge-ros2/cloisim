@@ -6,7 +6,7 @@ Happy to announce CLOiSim. It is a new multi-robot simulator that uses an SDF(ww
 
 The simulator is based on Unity 3D. It may look similar to Gazebo, where, unfortunately, we encountered performance problems while loading multiple robots equipped with multiple sensors.
 
-This project consists of 
+This project consists of
 - [SDF](http://sdformat.org/spec?ver=1.7) Parser for C#
 - [SDF](http://sdformat.org/spec?ver=1.7) Robot Implementation for Unity -> **Visual / Collision / Sensor / Physics for joints**
 - [SDF](http://sdformat.org/spec?ver=1.7) Plugins for Unity
@@ -33,6 +33,7 @@ Here is the full list of models that is implemented or planned to be implemented
 - [X] RealSense (RGB + IR1 + IR2 + Depth)
 - [ ] 3D Lidar Sensor
 - [ ] Sensor noise model
+- [ ] support `<Joint type="revolute2">`
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<lights>`, `<audio>`, `<actor>`, `<state>`.
@@ -63,7 +64,7 @@ Inertia factors which retrieved from SDF are NOT USED for rigidbody in Unity. Be
   - Linux: Ubuntu 18.04
   - Intel(R) Core(TM) i7-8700K, 32GB, GeForce RTX 2070
   - Current editor version is *'2019.4.6f1 (LTS)'*.
-  
+
 #### Release version
 If you don't want to build a project, just USE a release binary([Download linux version](https://github.com/lge-ros2/multi-robot-simulator/releases)). And just refer to 'Usage'
 
@@ -77,7 +78,7 @@ Please visit here [build guide](https://github.com/lge-ros2/multi-robot-simulato
 
 Set environment path like below.
 
-> *export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample-resources/models"*          
+> *export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample-resources/models"*
 > *export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample-resources/worlds"*
 
 * ***./CLOiSim.x86_64 -worldFile cloisim.world***
@@ -90,16 +91,16 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 #### After run 'CLOiSim'
 
   * *'[simdevice](https://github.com/lge-ros2/sim-device)' ros2 packages for transporting sensor data are required.*
-  
+
   * *Run bringup node in '[simdevice](https://github.com/lge-ros2/sim-device)' ros2 packages*
 
   * *And have fun!!!*
 
 #### Debugging log
 
-  * $ tail -f  ~/.config/unity3d/LG\ Electronics/CLOiSim/Player.log 
+  * $ tail -f  ~/.config/unity3d/LG\ Electronics/CLOiSim/Player.log
 
-#### Control service 
+#### Control service
 
 CLOiSim supports web-based simulation control service through websocket as an external interface.
 

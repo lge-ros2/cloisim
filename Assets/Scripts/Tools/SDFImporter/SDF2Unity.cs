@@ -17,25 +17,48 @@ public class SDF2Unity
 
 	public static Vector3 GetPosition(in SDF.Vector3<double> value)
 	{
-		return GetPosition(value.X, value.Y, value.Z);
+		return (value == null)? Vector3.zero : GetPosition(value.X, value.Y, value.Z);
+	}
+
+	public static Vector3 GetPosition(in SDF.Vector3<int> value)
+	{
+		return (value == null)? Vector3.zero : GetPosition(value.X, value.Y, value.Z);
 	}
 
 	public static Quaternion GetRotation(in SDF.Quaternion<double> value)
 	{
+		if (value == null)
+		{
+			return Quaternion.identity;
+		}
+
 		var roll = Mathf.Rad2Deg * (float)value.Pitch;
 		var pitch = Mathf.Rad2Deg * -(float)value.Yaw;
 		var yaw = Mathf.Rad2Deg * -(float)value.Roll;
 		return Quaternion.Euler(roll, pitch, yaw);
 	}
 
-	public static Vector3 GetScale(in SDF.Vector3<double> value)
-	{
-		return GetPosition(value);
-	}
+	// public static Vector3 GetScale(in SDF.Vector3<double> value)
+	// {
+	// 	return GetPosition(value);
+	// }
 
-	public static Vector3 GetScale(in double radius)
+	// public static Vector3 GetScale(in double radius)
+	// {
+	// 	return new Vector3((float)radius, (float)radius, (float)radius);
+	// }
+
+	public static Vector3 GetAxis(SDF.Vector3<int> axisValue, SDF.Quaternion<double> axisRotation = null)
 	{
-		return new Vector3((float)radius, (float)radius, (float)radius);
+		var pos = GetPosition(axisValue);
+		var rot = GetRotation(axisRotation);
+
+		if (!rot.Equals(Quaternion.identity))
+		{
+			pos = rot * pos;
+		}
+
+		return pos;
 	}
 
 	public static void LoadObjMesh(in GameObject targetObject, in string objPath, in string mtlPath)

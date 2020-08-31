@@ -13,39 +13,11 @@ public partial class SDFImplement
 {
 	public class Joint
 	{
-		private static Vector3 GetAxis(SDF.Vector3<int> value, SDF.Quaternion<double> rot = null)
-		{
-			var pos = new Vector3();
-			pos.x = -value.X;
-			pos.y = -value.Z;
-			pos.z = -value.Y;
-
-			if (rot != null)
-			{
-				if (pos.x != 0)
-				{
-					pos.y = pos.x * Mathf.Sin((float)rot.Pitch);
-					pos.z = pos.x * Mathf.Sin((float)rot.Yaw);
-				}
-				else if (pos.y != 0)
-				{
-					pos.x = pos.y * Mathf.Sin((float)rot.Roll);
-					pos.z = pos.y * Mathf.Sin((float)rot.Pitch);
-				}
-				else if (pos.z != 0)
-				{
-					pos.x = pos.z * Mathf.Sin((float)rot.Roll);
-					pos.y = pos.z * Mathf.Sin((float)rot.Yaw);
-				}
-			}
-			return pos;
-		}
-
 		public static UEJoint AddRevolute(in SDF.Axis axisInfo, in GameObject targetObject, in Rigidbody connectBody)
 		{
 			var hingeJointComponent = targetObject.AddComponent<HingeJoint>();
 			hingeJointComponent.connectedBody = connectBody;
-			hingeJointComponent.axis = GetAxis(axisInfo.xyz);
+			hingeJointComponent.axis = SDF2Unity.GetAxis(axisInfo.xyz);
 			hingeJointComponent.useMotor = false;
 
 			var jointMotor = new JointMotor();
@@ -70,10 +42,8 @@ public partial class SDFImplement
 		public static UEJoint AddRevolute2(in SDF.Axis axisInfo1, in SDF.Axis axisInfo2, in GameObject targetObject, in Rigidbody connectBody)
 		{
 			var jointComponent = targetObject.AddComponent<ConfigurableJoint>();
-
-			var confJointComponent = targetObject.AddComponent<ConfigurableJoint>();
-			confJointComponent.axis = GetAxis(axisInfo1.xyz);
-			confJointComponent.secondaryAxis = GetAxis(axisInfo2.xyz);
+			jointComponent.axis = SDF2Unity.GetAxis(axisInfo1.xyz);
+			jointComponent.secondaryAxis = SDF2Unity.GetAxis(axisInfo2.xyz);
 
 			// axisInfo1.limit_lower;
 			// axisInfo1.limit_upper;
@@ -124,7 +94,7 @@ public partial class SDFImplement
 			var jointComponent = targetObject.AddComponent<ConfigurableJoint>();
 			jointComponent.connectedBody = connectBody;
 			jointComponent.secondaryAxis = Vector3.zero;
-			jointComponent.axis = GetAxis(axisInfo.xyz, pose.Rot);
+			jointComponent.axis = SDF2Unity.GetAxis(axisInfo.xyz, pose.Rot);
 
 			var configurableJointMotion = ConfigurableJointMotion.Free;
 

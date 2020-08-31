@@ -96,9 +96,9 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 			hash = 0;
 			return false;
 		}
-		// Debug.LogFormat("PrepareDevice - port({0}) hash({1})", port, hash);
 
 		hash = DeviceHelper.GetStringHashCode(hashKey);
+		// Debug.LogFormat("PrepareDevice - port({0}) hash({1})", port, hash);
 		return true;
 	}
 
