@@ -72,8 +72,9 @@ public class Motor
 		// 	name, currentVelocity, targetAngularVelocity, cmdForce, rigidBody.maxAngularVelocity);
 
 		// JointMotor.targetVelocity angular velocity in degrees per second.
+		// Set revsered value due to differnt direction between ROS2/SDF(Right-handed)
 		var motor = joint.motor;
-		motor.targetVelocity = targetAngularVelocity;
+		motor.targetVelocity = -targetAngularVelocity;
 		motor.force = Mathf.Round(cmdForce);
 
 		if (targetAngularVelocity == 0)
