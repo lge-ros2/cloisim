@@ -20,7 +20,8 @@ RUN export CLOISIM_VERSION=$(curl -Ls -o /dev/null -w %{url_effective} --url htt
     export CLOISIM_TARGETFILE=CLOiSim-${CLOISIM_VERSION} && \
     wget -q --directory-prefix /tmp "https://github.com/lge-ros2/cloisim/releases/download/${CLOISIM_VERSION}/${CLOISIM_TARGETFILE}.tar.xz" && \
     tar -xf /tmp/${CLOISIM_TARGETFILE}.tar.xz -C /tmp && rm /tmp/${CLOISIM_TARGETFILE}.tar.xz && \
-    mv /tmp/${CLOISIM_TARGETFILE} /opt/CLOiSim
+    mv /tmp/${CLOISIM_TARGETFILE} /opt/ && \
+    ln -s /opt/${CLOISIM_TARGETFILE} /opt/CLOiSim
 
 ENV CLOISIM_FILES_PATH=/opt/resources/materials
 ENV CLOISIM_MODEL_PATH=/opt/resources/models
