@@ -11,8 +11,4 @@ namespace RuntimeGizmos
 	//Unity seems to use colliders first to use to find how much weight the object has or something to decide how much it effects the center,
 	//but for now we only look at the Renderer.bounds.center, so expect some differences between unity.
 	public enum CenterType {All, Solo}
-
-	//ScaleType.FromPoint acts as if you are using a parent transform as your new pivot and transforming that parent instead of the child.
-	//ScaleType.FromPointOffset acts as if you are scaling based on a point that is offset from the actual pivot. Its similar to unity editor scaling in Center pivot mode (though a little inaccurate if object is skewed)
-	public enum ScaleType {FromPoint, FromPointOffset}
 }

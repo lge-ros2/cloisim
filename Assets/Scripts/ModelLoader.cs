@@ -30,6 +30,7 @@ public class ModelLoader : MonoBehaviour
 	private GameObject modelsRoot = null;
 	private FollowingTargetList followingList = null;
 	private SimulationDisplay simulationDisplay = null;
+	private RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private Clock clock = null;
 	private Camera mainCamera = null;
 
@@ -93,6 +94,7 @@ public class ModelLoader : MonoBehaviour
 		var UIRoot = GameObject.Find("UI");
 		followingList = UIRoot.GetComponentInChildren<FollowingTargetList>();
 		simulationDisplay = UIRoot.GetComponentInChildren<SimulationDisplay>();
+		transformGizmo = UIRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
 
 		clock = DeviceHelper.GetGlobalClock();
 
@@ -193,6 +195,8 @@ public class ModelLoader : MonoBehaviour
 		isResetting = true;
 
 		Debug.LogWarning("Reset positions in simulation!!!");
+
+		transformGizmo?.ClearTargets();
 
 		foreach (var plugin in modelsRoot.GetComponentsInChildren<ModelPlugin>())
 		{

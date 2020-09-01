@@ -2,12 +2,11 @@ using System;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
-using CommandUndoRedo;
 
 namespace RuntimeGizmos
 {
 	//To be safe, if you are changing any transforms hierarchy, such as parenting an object to something,
-	//you should call ClearTargets before doing so just to be sure nothing unexpected happens... as well as call UndoRedoManager.Clear()
+	//you should call ClearTargets before doing so just to be sure nothing unexpected happens..
 	//For example, if you select an object that has children, move the children elsewhere, deselect the original object, then try to add those old children to the selection, I think it wont work.
 
 	[RequireComponent(typeof(Camera))]
@@ -17,18 +16,13 @@ namespace RuntimeGizmos
 		public TransformType transformType = TransformType.Move;
 		public TransformPivot pivot = TransformPivot.Pivot;
 		public CenterType centerType = CenterType.All;
-		public ScaleType scaleType = ScaleType.FromPoint;
+
 
 		[Header("Handle Properties")]
 		public float planesOpacity = .5f;
-		//public Color rectPivotColor = new Color(0, 0, 1, 0.8f);
-		//public Color rectCornerColor = new Color(0, 0, 1, 0.8f);
-		//public Color rectAnchorColor = new Color(.7f, .7f, .7f, 0.8f);
-		//public Color rectLineColor = new Color(.7f, .7f, .7f, 0.8f);
 
 		public float movementSnap = .25f;
 		public float rotationSnap = 15f;
-		public float scaleSnap = 1f;
 
 		public float handleLength = .25f;
 		public float handleWidth = .003f;
@@ -55,8 +49,6 @@ namespace RuntimeGizmos
 		//Might be poor on performance if lots of objects are selected...
 		public bool forceUpdatePivotPointOnChange = true;
 
-		public int maxUndoStored = 100;
-
 		public bool manuallyHandleGizmo;
 
 		public LayerMask selectionMask = Physics.DefaultRaycastLayers;
@@ -65,19 +57,9 @@ namespace RuntimeGizmos
 		[Header("Key configurations")]
 		public KeyCode SetMoveType = KeyCode.T;
 		public KeyCode SetRotateType = KeyCode.R;
-		// public KeyCode SetScaleType = KeyCode.L;
-		// public KeyCode SetRectToolType = KeyCode.G;
 		public KeyCode SetAllTransformType = KeyCode.Y;
 		public KeyCode SetSpaceToggle = KeyCode.X;
-		// public KeyCode SetPivotModeToggle = KeyCode.Z;
-		// public KeyCode SetCenterTypeToggle = KeyCode.C;
-		// public KeyCode SetScaleTypeToggle = KeyCode.S;
-		public KeyCode translationSnapping = KeyCode.LeftControl;
-		public KeyCode AddSelection = KeyCode.LeftShift;
-		public KeyCode RemoveSelection = KeyCode.LeftControl;
-		public KeyCode ActionKey = KeyCode.LeftShift; //Its set to shift instead of control so that while in the editor we dont accidentally undo editor changes =/
-		public KeyCode UndoAction = KeyCode.Z;
-		public KeyCode RedoAction = KeyCode.Y;
+		public KeyCode translationSnapping = KeyCode.LeftShift;
 
 		public Action onCheckForSelectedAxis;
 		public Action onDrawCustomGizmo;
@@ -138,8 +120,6 @@ namespace RuntimeGizmos
 
 		void Update()
 		{
-			HandleUndoRedo();
-
 			SetSpaceAndType();
 
 			if (manuallyHandleGizmo)
@@ -163,8 +143,8 @@ namespace RuntimeGizmos
 
 			TransformSelected();
 
-			// Clear Tagets when ESC or Ctrl+R was pressed
-			if (Input.GetKey(KeyCode.Escape) || (Input.GetKey(KeyCode.LeftControl) && Input.GetKey(KeyCode.R)))
+			// Clear Tagets when ESC
+			if (Input.GetKey(KeyCode.Escape))
 			{
 				transformType = TransformType.Move;
 				ClearTargets();
@@ -194,23 +174,6 @@ namespace RuntimeGizmos
 			}
 		}
 
-
-		void HandleUndoRedo()
-		{
-			if (maxUndoStored != UndoRedoManager.maxUndoStored) { UndoRedoManager.maxUndoStored = maxUndoStored; }
-
-			if (Input.GetKey(ActionKey))
-			{
-				if (Input.GetKeyDown(UndoAction))
-				{
-					UndoRedoManager.Undo();
-				}
-				else if (Input.GetKeyDown(RedoAction))
-				{
-					UndoRedoManager.Redo();
-				}
-			}
-		}
 
 		// We only support scaling in local space.
 		public TransformSpace GetProperTransformSpace()
@@ -259,56 +222,32 @@ namespace RuntimeGizmos
 
 		void SetSpaceAndType()
 		{
-			if (Input.GetKey(ActionKey))
-			{
-				return;
-			}
-
 			if (Input.GetKeyDown(SetMoveType))
 				transformType = TransformType.Move;
+
 			else if (Input.GetKeyDown(SetRotateType))
 				transformType = TransformType.Rotate;
-			// else if (Input.GetKeyDown(SetScaleType))
-			// 	transformType = TransformType.Scale;
-			//else if (Input.GetKeyDown(SetRectToolType)) type = TransformType.RectTool;
+
 			else if (Input.GetKeyDown(SetAllTransformType))
 				transformType = TransformType.All;
 
 			if (!isTransforming) translatingType = transformType;
 
-			// if (Input.GetKeyDown(SetPivotModeToggle))
-			// {
-			// 	if (pivot == TransformPivot.Pivot) pivot = TransformPivot.Center;
-			// 	else if (pivot == TransformPivot.Center) pivot = TransformPivot.Pivot;
-
-			// 	SetPivotPoint();
-			// }
-
-			// if (Input.GetKeyDown(SetCenterTypeToggle))
-			// {
-			// 	if (centerType == CenterType.All) centerType = CenterType.Solo;
-			// 	else if (centerType == CenterType.Solo) centerType = CenterType.All;
-
-			// 	SetPivotPoint();
-			// }
-
 			if (Input.GetKeyDown(SetSpaceToggle))
 			{
-				if (space == TransformSpace.Global)
-					space = TransformSpace.Local;
-				else if (space == TransformSpace.Local)
-					space = TransformSpace.Global;
-			}
+				switch (space)
+				{
+					case TransformSpace.Global:
+						space = TransformSpace.Local;
+						break;
 
-			// if (Input.GetKeyDown(SetScaleTypeToggle))
-			// {
-			// 	if (scaleType == ScaleType.FromPoint) scaleType = ScaleType.FromPointOffset;
-			// 	else if (scaleType == ScaleType.FromPointOffset) scaleType = ScaleType.FromPoint;
-			// }
+					case TransformSpace.Local:
+						space = TransformSpace.Global;
+						break;
 
-			if (transformType == TransformType.Scale)
-			{
-				if (pivot == TransformPivot.Pivot) scaleType = ScaleType.FromPoint; //FromPointOffset can be inaccurate and should only really be used in Center mode if desired.
+					default:
+						break;
+				}
 			}
 		}
 
@@ -338,19 +277,15 @@ namespace RuntimeGizmos
 
 			Vector3 currentSnapMovementAmount = Vector3.zero;
 			float currentSnapRotationAmount = 0;
-			float currentSnapScaleAmount = 0;
-
-			List<ICommand> transformCommands = new List<ICommand>();
-			for (int i = 0; i < targetRootsOrdered.Count; i++)
-			{
-				transformCommands.Add(new TransformCommand(this, targetRootsOrdered[i]));
-			}
 
 			while (!Input.GetMouseButtonUp(0))
 			{
 				var mouseRay = myCamera.ScreenPointToRay(Input.mousePosition);
 				var mousePosition = Geometry.LinePlaneIntersect(mouseRay.origin, mouseRay.direction, originalPivot, planeNormal);
 				var isSnapping = Input.GetKey(translationSnapping);
+
+				if (isSnapping)
+					Debug.Log("is snapping");
 
 				if (previousMousePosition != Vector3.zero && mousePosition != Vector3.zero)
 				{
@@ -415,57 +350,6 @@ namespace RuntimeGizmos
 
 						SetPivotPointOffset(movement);
 					}
-					else if (transType == TransformType.Scale)
-					{
-						Vector3 projected = (nearAxis == Axis.Any)? transform.right : projectedAxis;
-						float scaleAmount = ExtVector3.MagnitudeInDirection(mousePosition - previousMousePosition, projected) * scaleSpeedMultiplier;
-
-						if (isSnapping && scaleSnap > 0)
-						{
-							currentSnapScaleAmount += scaleAmount;
-							scaleAmount = 0;
-
-							float snapAmount = CalculateSnapAmount(scaleSnap, currentSnapScaleAmount, out var remainder);
-
-							if (snapAmount != 0)
-							{
-								scaleAmount = snapAmount;
-								currentSnapScaleAmount = remainder;
-							}
-						}
-
-						//WARNING - There is a bug in unity 5.4 and 5.5 that causes InverseTransformDirection to be affected by scale which will break negative scaling. Not tested, but updating to 5.4.2 should fix it - https://issuetracker.unity3d.com/issues/transformdirection-and-inversetransformdirection-operations-are-affected-by-scale
-						Vector3 localAxis = (GetProperTransformSpace() == TransformSpace.Local && nearAxis != Axis.Any)? mainTargetRoot.InverseTransformDirection(axis) : axis;
-
-						Vector3 targetScaleAmount = Vector3.one;
-						if (nearAxis == Axis.Any) targetScaleAmount = (ExtVector3.Abs(mainTargetRoot.localScale.normalized) * scaleAmount);
-						else targetScaleAmount = localAxis * scaleAmount;
-
-						for (int i = 0; i < targetRootsOrdered.Count; i++)
-						{
-							Transform target = targetRootsOrdered[i];
-
-							Vector3 targetScale = target.localScale + targetScaleAmount;
-
-							if (pivot == TransformPivot.Pivot)
-							{
-								target.localScale = targetScale;
-							}
-							else if (pivot == TransformPivot.Center)
-							{
-								if (scaleType == ScaleType.FromPoint)
-								{
-									target.SetScaleFrom(originalPivot, targetScale);
-								}
-								else if (scaleType == ScaleType.FromPointOffset)
-								{
-									target.SetScaleFromOffset(originalPivot, targetScale);
-								}
-							}
-						}
-
-						totalScaleAmount += scaleAmount;
-					}
 					else if (transType == TransformType.Rotate)
 					{
 						float rotateAmount = 0;
@@ -528,14 +412,6 @@ namespace RuntimeGizmos
 				yield return null;
 			}
 
-			for (int i = 0; i < transformCommands.Count; i++)
-			{
-				((TransformCommand)transformCommands[i]).StoreNewTransformValues();
-			}
-			CommandGroup commandGroup = new CommandGroup();
-			commandGroup.Set(transformCommands);
-			UndoRedoManager.Insert(commandGroup);
-
 			totalRotationAmount = Quaternion.identity;
 			totalScaleAmount = 0;
 			isTransforming = false;
@@ -563,19 +439,20 @@ namespace RuntimeGizmos
 		{
 			if (nearAxis == Axis.None && Input.GetMouseButtonDown(0))
 			{
-				bool isAdding = Input.GetKey(AddSelection);
-				bool isRemoving = Input.GetKey(RemoveSelection);
-
 				if (Physics.Raycast(myCamera.ScreenPointToRay(Input.mousePosition), out var hitInfo, Mathf.Infinity, selectionMask))
 				{
 					Transform target = null;
 					var hitObject = hitInfo.transform.gameObject;
-					var hitParentObject = hitObject.transform.parent.gameObject;
 
-					if (hitParentObject.tag.Equals("Model"))
+					var hitParentObject = hitObject.transform.parent?.gameObject;
+					if (hitParentObject != null && hitParentObject.tag.Equals("Model"))
 					{
 						// Debug.Log(hitParentObject.name + " Selected!!!!");
 						target = hitParentObject.transform;
+					}
+					else if (hitObject.tag.Equals("Props"))
+					{
+						target = hitObject.transform;
 					}
 
 					if (target == null)
@@ -584,31 +461,17 @@ namespace RuntimeGizmos
 					}
 					else
 					{
-						if (isAdding)
-						{
-							AddTarget(target);
-						}
-						else if (isRemoving)
-						{
-							RemoveTarget(target);
-						}
-						else if (!isAdding && !isRemoving)
-						{
-							ClearAndAddTarget(target);
-						}
+						ClearAndAddTarget(target);
 					}
 				}
 				else
 				{
-					if (!isAdding && !isRemoving)
-					{
-						ClearTargets();
-					}
+					ClearTargets();
 				}
 			}
 		}
 
-		public void AddTarget(Transform target, in bool addCommand = true)
+		public void AddTarget(Transform target)
 		{
 			if (target != null)
 			{
@@ -622,11 +485,6 @@ namespace RuntimeGizmos
 					return;
 				}
 
-				if (addCommand)
-				{
-					UndoRedoManager.Insert(new AddTargetCommand(this, target, targetRootsOrdered));
-				}
-
 				AddTargetRoot(target);
 				AddTargetHighlightedRenderers(target);
 
@@ -634,18 +492,13 @@ namespace RuntimeGizmos
 			}
 		}
 
-		public void RemoveTarget(Transform target, bool addCommand = true)
+		public void RemoveTarget(Transform target)
 		{
 			if (target != null)
 			{
 				if (!targetRoots.ContainsKey(target))
 				{
 					return;
-				}
-
-				if (addCommand)
-				{
-					UndoRedoManager.Insert(new RemoveTargetCommand(this, target));
 				}
 
 				RemoveTargetHighlightedRenderers(target);
@@ -655,13 +508,8 @@ namespace RuntimeGizmos
 			}
 		}
 
-		public void ClearTargets(bool addCommand = true)
+		public void ClearTargets()
 		{
-			if (addCommand)
-			{
-				UndoRedoManager.Insert(new ClearTargetsCommand(this, targetRootsOrdered));
-			}
-
 			ClearAllHighlightedRenderers();
 			targetRoots.Clear();
 			targetRootsOrdered.Clear();
@@ -670,10 +518,8 @@ namespace RuntimeGizmos
 
 		void ClearAndAddTarget(Transform target)
 		{
-			UndoRedoManager.Insert(new ClearAndAddTargetCommand(this, target, targetRootsOrdered));
-
-			ClearTargets(false);
-			AddTarget(target, false);
+			ClearTargets();
+			AddTarget(target);
 		}
 
 		void AddTargetRoot(Transform targetRoot)
