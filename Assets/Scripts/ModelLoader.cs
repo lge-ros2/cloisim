@@ -16,17 +16,10 @@ public class ModelLoader : MonoBehaviour
 	[Header("Block Loading SDF")]
 	public bool doNotLoad = false;
 
-	[Header("Pause after load models")]
-	public bool pauseOnStart = false;
-
 	[Header("Clean all models before load model")]
 	public bool clearAllOnStart = true;
 
 	[Header("World File")]
-	private string modelsRootName = "Models";
-	private string defaultCameraName = "Main Camera";
-	private string followingListName = "FollowingTargetList";
-
 	public string worldFileName;
 
 	private string filesRootDirectory = string.Empty;
@@ -35,6 +28,8 @@ public class ModelLoader : MonoBehaviour
 	public List<string> worldRootDirectories = new List<string>();
 
 	private GameObject modelsRoot = null;
+	private FollowingTargetList followingList = null;
+	private SimulationDisplay simulationDisplay = null;
 	private Clock clock = null;
 	private Camera mainCamera = null;
 
@@ -69,10 +64,13 @@ public class ModelLoader : MonoBehaviour
 	{
 #if UNITY_EDITOR
  		filesRootDirectory = "/usr/share/gazebo-9/";
+#	if true
 		modelRootDirectories.Add("../sample-resources/models/");
 		worldRootDirectories.Add("../sample-resources/worlds/");
-		// modelRootDirectories.Add("../../lgrs_resource/assets/models/");
-		// worldRootDirectories.Add("../../lgrs_resource/worlds/");
+#	else
+		modelRootDirectories.Add("../../lgrs_resource/assets/models/");
+		worldRootDirectories.Add("../../lgrs_resource/worlds/");
+#	endif
 #else
 		var separator = new char[] {':'};
 		filesRootDirectory = Environment.GetEnvironmentVariable("CLOISIM_FILES_PATH");
@@ -83,15 +81,18 @@ public class ModelLoader : MonoBehaviour
 		var worldPaths = worldPathEnv.Split(separator, StringSplitOptions.RemoveEmptyEntries);
 		worldRootDirectories.AddRange(worldPaths);
 #endif
+		Application.targetFrameRate = 61;
 
 		mainCamera = Camera.main;
 		mainCamera.depthTextureMode = DepthTextureMode.None;
 		mainCamera.allowHDR = true;
 		mainCamera.allowMSAA = true;
 
-		Application.targetFrameRate = 61;
+		modelsRoot = GameObject.Find("Models");
 
-		modelsRoot = GameObject.Find(modelsRootName);
+		var UIRoot = GameObject.Find("UI");
+		followingList = UIRoot.GetComponentInChildren<FollowingTargetList>();
+		simulationDisplay = UIRoot.GetComponentInChildren<SimulationDisplay>();
 
 		clock = GetComponent<Clock>();
 
@@ -111,49 +112,44 @@ public class ModelLoader : MonoBehaviour
 			worldFileName = newWorldFile;
 		}
 
-		StartCoroutine(LoadSdfModels());
-	}
-
-	private IEnumerator LoadSdfModels()
-	{
-		// Debug.Log("Hello CLOiSim World!!!!!");
-		Debug.Log("World: " + worldFileName);
-
-		// Main models loader
 		if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
 		{
-			var sdf = new SDF.Root();
-			sdf.SetWorldFileName(worldFileName);
-			sdf.fileDefaultPath = filesRootDirectory;
-			sdf.modelDefaultPaths.AddRange(modelRootDirectories);
-			sdf.worldDefaultPath.AddRange(worldRootDirectories);
-
-			if (sdf.DoParse())
-			{
-				yield return new WaitForSeconds(0.005f);
-
-				var importer = new SDFImporter();
-				importer.SetRootObject(modelsRoot);
-				importer.SetMainCamera(mainCamera);
-				importer.Start(sdf.World());
-			}
-			else
-			{
-				Debug.LogError("Parsing failed!!");
-			}
+			simulationDisplay?.SetEventMessage("Start to load world file: " + worldFileName);
+			StartCoroutine(LoadWorld());
 		}
+	}
 
-#if UNITY_EDITOR
-		if (pauseOnStart)
+	private IEnumerator LoadWorld()
+	{
+		// Debug.Log("Hello CLOiSim World!!!!!");
+		// Debug.Log("World: " + worldFileName);
+
+		var sdf = new SDF.Root();
+		sdf.SetWorldFileName(worldFileName);
+		sdf.fileDefaultPath = filesRootDirectory;
+		sdf.modelDefaultPaths.AddRange(modelRootDirectories);
+		sdf.worldDefaultPath.AddRange(worldRootDirectories);
+
+		if (sdf.DoParse())
 		{
-			EditorApplication.isPaused = true;
-		}
-#endif
+			yield return new WaitForSeconds(0.001f);
 
-		// for GUI
-		var followingListObject = GameObject.Find(followingListName);
-		var followingTargetList = followingListObject.GetComponent<FollowingTargetList>();
-		followingTargetList.UpdateList();
+			var importer = new SDFImporter();
+			importer.SetRootObject(modelsRoot);
+			importer.SetMainCamera(mainCamera);
+			importer.Start(sdf.World());
+
+			// for GUI
+			simulationDisplay?.ClearEventMessage();
+			followingList?.UpdateList();
+		}
+		else
+		{
+			Debug.LogError("Parsing failed!!");
+			simulationDisplay?.SetEventMessage("Failed to load world file: " + worldFileName);
+		}
+
+		yield return null;
 	}
 
 	void LateUpdate()

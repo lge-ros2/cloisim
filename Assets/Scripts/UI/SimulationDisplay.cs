@@ -15,11 +15,12 @@ public class SimulationDisplay : MonoBehaviour
 	private TextMeshProUGUI uiText = null;
 	private Clock clock = null;
 
-	private int frameCount = 0;
-	private float dt = 0.0F;
-	private float fps = 0.0F;
+	private string eventMessage = string.Empty;
 
-	private const float fpsUpdatePeriod = 0.5F;
+	private const float fpsUpdatePeriod = 0.5f;
+	private int frameCount = 0;
+	private float dT = 0.0F;
+	private float fps = 0.0F;
 
 	// Start is called before the first frame update
 	void Awake()
@@ -32,17 +33,67 @@ public class SimulationDisplay : MonoBehaviour
 
 	void Update()
 	{
-		frameCount++;
-		dt += Time.unscaledDeltaTime;
-		if (dt > fpsUpdatePeriod)
+		CalculateFPS();
+	}
+
+	void LateUpdate()
+	{
+		if (sbToPrint != null)
 		{
-			fps = frameCount / dt;
-			dt -= fpsUpdatePeriod;
+			sbToPrint.Clear();
+			sbToPrint.Append("Version : ");
+			sbToPrint.Append(Application.version);
+
+			sbToPrint.Append(", FPS : ");
+			sbToPrint.Append(Mathf.Round(fps));
+
+			if (string.IsNullOrEmpty(eventMessage))
+			{
+				InsertTimeInfo();
+			}
+			else
+			{
+				InsertEventMessage();
+			}
+
+			uiText.text = sbToPrint.ToString();
+		}
+	}
+
+	public void ClearEventMessage()
+	{
+		SetEventMessage(string.Empty);
+	}
+
+	public void SetEventMessage(in string value)
+	{
+		eventMessage = value;
+	}
+
+	private void CalculateFPS()
+	{
+		frameCount++;
+		dT += Time.unscaledDeltaTime;
+		if (dT > fpsUpdatePeriod)
+		{
+			fps = frameCount / dT;
+			dT -= fpsUpdatePeriod;
 			frameCount = 0;
 		}
 	}
 
-	void LateUpdate()
+	private void InsertEventMessage()
+	{
+		InsertNewLine();
+		sbToPrint.Append(eventMessage);
+	}
+
+	private void InsertNewLine()
+	{
+		sbToPrint.Append("\n");
+	}
+
+	private void InsertTimeInfo()
 	{
 		var simTime = (clock == null) ? Time.time : clock.GetSimTime();
 		var realTime = (clock == null) ? Time.realtimeSinceStartup : clock.GetRealTime();
@@ -55,28 +106,15 @@ public class SimulationDisplay : MonoBehaviour
 		var currentRealTime = realTs.ToString(@"d\:hh\:mm\:ss\.fff");
 		var diffRealSimTime = diffTs1.ToString(@"d\:hh\:mm\:ss\.fff");
 
-		if (sbToPrint != null)
-		{
-			sbToPrint.Clear();
-			sbToPrint.Append("Version : ");
-			sbToPrint.Append(Application.version);
+		InsertNewLine();
 
-			sbToPrint.Append(", FPS : ");
-			sbToPrint.Append(Mathf.Round(fps));
+		sbToPrint.Append("(Time) Simulation: ");
+		sbToPrint.Append(currentSimTime);
 
-			sbToPrint.Append("\n");
+		sbToPrint.Append(", Real: ");
+		sbToPrint.Append(currentRealTime);
 
-			sbToPrint.Append("(Time) Simulation: ");
-			sbToPrint.Append(currentSimTime);
-
-			sbToPrint.Append(", Real: ");
-			sbToPrint.Append(currentRealTime);
-
-			sbToPrint.Append(", (DiffTime) Real-Sim: ");
-			sbToPrint.Append(diffRealSimTime);
-
-
-			uiText.text = sbToPrint.ToString();
-		}
+		sbToPrint.Append(", (DiffTime) Real-Sim: ");
+		sbToPrint.Append(diffRealSimTime);
 	}
 }
