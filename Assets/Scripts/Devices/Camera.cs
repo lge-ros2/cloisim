@@ -17,8 +17,7 @@ namespace SensorDevices
 		protected messages.CameraSensor sensorInfo = null;
 		protected messages.ImageStamped imageStamped = null;
 
-		public SDF.Camera parameters = null;
-
+		// public SDF.Camera parameters = null;
 		// TODO : Need to be implemented!!!
 		// <noise> TBD
 		// <lens> TBD
@@ -77,7 +76,7 @@ namespace SensorDevices
 			targetRTdepth = 0;
 			targetRTrwmode = RenderTextureReadWrite.sRGB;
 
-			var pixelFormat = GetPixelFormat(parameters.image_format);
+			var pixelFormat = GetPixelFormat(GetParameters().image_format);
 			switch (pixelFormat)
 			{
 				case PixelFormat.L_INT8:
@@ -100,10 +99,10 @@ namespace SensorDevices
 			imageStamped.Image = new messages.Image();
 
 			var image = imageStamped.Image;
-			image.Width = (uint)parameters.image_width;
-			image.Height = (uint)parameters.image_height;
-			image.PixelFormat = (uint)GetPixelFormat(parameters.image_format);
-			image.Step = image.Width * (uint)GetImageDepth(parameters.image_format);
+			image.Width = (uint)GetParameters().image_width;
+			image.Height = (uint)GetParameters().image_height;
+			image.PixelFormat = (uint)GetPixelFormat(GetParameters().image_format);
+			image.Step = image.Width * (uint)GetImageDepth(GetParameters().image_format);
 			image.Data = new byte[image.Height * image.Step];
 
 			sensorInfo = new messages.CameraSensor();
@@ -111,21 +110,21 @@ namespace SensorDevices
 			sensorInfo.Distortion = new messages.Distortion();
 			sensorInfo.Distortion.Center = new messages.Vector2d();
 
-			sensorInfo.HorizontalFov = parameters.horizontal_fov;
-			sensorInfo.ImageSize.X = parameters.image_width;
-			sensorInfo.ImageSize.Y = parameters.image_height;
-			sensorInfo.ImageFormat = parameters.image_format;
-			sensorInfo.NearClip = parameters.clip.near;
-			sensorInfo.FarClip = parameters.clip.far;
-			sensorInfo.SaveEnabled = parameters.save_enabled;
-			sensorInfo.SavePath = parameters.save_path;
-			sensorInfo.Distortion.Center.X = parameters.distortion.center.X;
-			sensorInfo.Distortion.Center.Y = parameters.distortion.center.Y;
-			sensorInfo.Distortion.K1 = parameters.distortion.k1;
-			sensorInfo.Distortion.K2 = parameters.distortion.k2;
-			sensorInfo.Distortion.K3 = parameters.distortion.k3;
-			sensorInfo.Distortion.P1 = parameters.distortion.p1;
-			sensorInfo.Distortion.P2 = parameters.distortion.p2;
+			sensorInfo.HorizontalFov = GetParameters().horizontal_fov;
+			sensorInfo.ImageSize.X = GetParameters().image_width;
+			sensorInfo.ImageSize.Y = GetParameters().image_height;
+			sensorInfo.ImageFormat = GetParameters().image_format;
+			sensorInfo.NearClip = GetParameters().clip.near;
+			sensorInfo.FarClip = GetParameters().clip.far;
+			sensorInfo.SaveEnabled = GetParameters().save_enabled;
+			sensorInfo.SavePath = GetParameters().save_path;
+			sensorInfo.Distortion.Center.X = GetParameters().distortion.center.X;
+			sensorInfo.Distortion.Center.Y = GetParameters().distortion.center.Y;
+			sensorInfo.Distortion.K1 = GetParameters().distortion.k1;
+			sensorInfo.Distortion.K2 = GetParameters().distortion.k2;
+			sensorInfo.Distortion.K3 = GetParameters().distortion.k3;
+			sensorInfo.Distortion.P1 = GetParameters().distortion.p1;
+			sensorInfo.Distortion.P2 = GetParameters().distortion.p2;
 		}
 
 		private void SetupCamera()
@@ -141,11 +140,11 @@ namespace SensorDevices
 			cam.stereoTargetEye = StereoTargetEyeMask.None;
 
 			cam.orthographic = false;
-			cam.nearClipPlane = (float)parameters.clip.near;
-			cam.farClipPlane = (float)parameters.clip.far;
+			cam.nearClipPlane = (float)GetParameters().clip.near;
+			cam.farClipPlane = (float)GetParameters().clip.far;
 			cam.cullingMask = LayerMask.GetMask("Default");
 
-			var targetRT = new RenderTexture(parameters.image_width, parameters.image_height, targetRTdepth, targetRTformat, targetRTrwmode)
+			var targetRT = new RenderTexture(GetParameters().image_width, GetParameters().image_height, targetRTdepth, targetRTformat, targetRTrwmode)
 			{
 				name = targetRTname,
 				dimension = UnityEngine.Rendering.TextureDimension.Tex2D,
@@ -158,7 +157,7 @@ namespace SensorDevices
 
 			cam.targetTexture = targetRT;
 
-			var camHFov = (float)parameters.horizontal_fov * Mathf.Rad2Deg;
+			var camHFov = (float)GetParameters().horizontal_fov * Mathf.Rad2Deg;
 			var camVFov = DeviceHelper.HorizontalToVerticalFOV(camHFov, cam.aspect);
 			cam.fieldOfView = camVFov;
 
@@ -170,7 +169,7 @@ namespace SensorDevices
 			cam.enabled = false;
 			// cam.hideFlags |= HideFlags.NotEditable;
 
-			camData.AllocateTexture(parameters.image_width, parameters.image_height, parameters.image_format);
+			camData.AllocateTexture(GetParameters().image_width, GetParameters().image_height, GetParameters().image_format);
 		}
 
 		private IEnumerator CameraWorker()
@@ -206,11 +205,11 @@ namespace SensorDevices
 						// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
 						image.Data = camData.GetImageData();
 
-						if (parameters.save_enabled)
+						if (GetParameters().save_enabled)
 						{
 							var saveName = name + "_" + Time.time;
-							camData.SaveRawImageData(parameters.save_path, saveName);
-							// Debug.LogFormat("{0}|{1} captured", parameters.save_path, saveName);
+							camData.SaveRawImageData(GetParameters().save_path, saveName);
+							// Debug.LogFormat("{0}|{1} captured", GetParameters().save_path, saveName);
 						}
 					}
 				}
@@ -246,6 +245,11 @@ namespace SensorDevices
 		public messages.Image GetImageMessage()
 		{
 			return (imageStamped == null || imageStamped.Image == null)? null:imageStamped.Image;
+		}
+
+		public SDF.Camera GetParameters()
+		{
+			return deviceParameters as SDF.Camera;
 		}
 	}
 }

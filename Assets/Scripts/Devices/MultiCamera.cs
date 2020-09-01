@@ -98,7 +98,7 @@ namespace SensorDevices
 			var newCam = newCamObject.AddComponent<SensorDevices.Camera>();
 			newCam.runningDeviceWork = false;
 			newCam.deviceName = "MultiCamera::" + parameters.name;
-			newCam.parameters = parameters;
+			newCam.SetDeviceParameter(parameters as SDF.SensorType);
 
 			cameras.Add(newCam);
 		}

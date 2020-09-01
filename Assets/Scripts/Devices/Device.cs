@@ -23,7 +23,8 @@ public abstract class Device : MonoBehaviour
 
 	public string deviceName = string.Empty;
 
-	protected PluginParameters parameters = null;
+	protected SDF.SensorType deviceParameters = null;
+	protected PluginParameters pluginParameters = null;
 
 	private float updateRate = 1;
 
@@ -270,6 +271,16 @@ public abstract class Device : MonoBehaviour
 
 	public void SetPluginParameter(in PluginParameters pluginParams)
 	{
-		parameters = pluginParams;
+		pluginParameters = pluginParams;
+	}
+
+	public void SetDeviceParameter(in SDF.SensorType deviceParams)
+	{
+		deviceParameters = deviceParams;
+	}
+
+	public SDF.SensorType GetDeviceParameter()
+	{
+		return deviceParameters;
 	}
 }

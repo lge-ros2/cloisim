@@ -4,12 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections;
-using System;
 using UnityEngine;
-using UnityEngine.Rendering;
-using Stopwatch = System.Diagnostics.Stopwatch;
-using messages = gazebo.msgs;
 
 namespace SensorDevices
 {
@@ -22,9 +17,9 @@ namespace SensorDevices
 		private void DoParseFilter()
 		{
 			// Get Paramters
-			useIntensity_ = parameters.GetValue<bool>("intensity");
-			var filterAngleLower_ = parameters.GetValue<float>("filter/angle/horizontal/lower", float.NegativeInfinity);
-			var filterAngleUpper_ = parameters.GetValue<float>("filter/angle/horizontal/upper", float.PositiveInfinity);
+			useIntensity_ = pluginParameters.GetValue<bool>("intensity");
+			var filterAngleLower_ = pluginParameters.GetValue<float>("filter/angle/horizontal/lower", float.NegativeInfinity);
+			var filterAngleUpper_ = pluginParameters.GetValue<float>("filter/angle/horizontal/upper", float.PositiveInfinity);
 
 			// calculate angle filter range
 			var laserScan = laserScanStamped.Scan;
