@@ -11,10 +11,6 @@ namespace RuntimeGizmos
 
 		public CustomTransformGizmos customTranslationGizmos = new CustomTransformGizmos();
 		public CustomTransformGizmos customRotationGizmos = new CustomTransformGizmos();
-		public CustomTransformGizmos customScaleGizmos = new CustomTransformGizmos();
-
-		public bool scaleBasedOnDistance = true;
-		public float scaleMultiplier = .4f;
 
 		public int gizmoLayer = 2; //2 is the ignoreRaycast layer. Set to whatever you want.
 
@@ -38,7 +34,6 @@ namespace RuntimeGizmos
 
 			customTranslationGizmos.Init(gizmoLayer);
 			customRotationGizmos.Init(gizmoLayer);
-			customScaleGizmos.Init(gizmoLayer);
 		}
 
 		void OnEnable()
@@ -74,11 +69,6 @@ namespace RuntimeGizmos
 						selectedAxis = customRotationGizmos.GetSelectedAxis(hitInfo.collider);
 						type = TransformType.Rotate;
 					}
-					if(selectedAxis == Axis.None && transformGizmo.TransformTypeContains(TransformType.Scale))
-					{
-						selectedAxis = customScaleGizmos.GetSelectedAxis(hitInfo.collider);
-						type = TransformType.Scale;
-					}
 
 					transformGizmo.SetTranslatingAxis(type, selectedAxis);
 				}
@@ -89,7 +79,6 @@ namespace RuntimeGizmos
 		{
 			if(transformGizmo.TranslatingTypeContains(TransformType.Move)) DrawCustomGizmo(customTranslationGizmos);
 			if(transformGizmo.TranslatingTypeContains(TransformType.Rotate)) DrawCustomGizmo(customRotationGizmos);
-			if(transformGizmo.TranslatingTypeContains(TransformType.Scale)) DrawCustomGizmo(customScaleGizmos);
 		}
 
 		void DrawCustomGizmo(CustomTransformGizmos customGizmo)
@@ -97,23 +86,6 @@ namespace RuntimeGizmos
 			AxisInfo axisInfo = transformGizmo.GetAxisInfo();
 			customGizmo.SetAxis(axisInfo);
 			customGizmo.SetPosition(transformGizmo.pivotPoint);
-
-			Vector4 totalScaleMultiplier = Vector4.one;
-			if(scaleBasedOnDistance)
-			{
-				totalScaleMultiplier.w *= (scaleMultiplier * transformGizmo.GetDistanceMultiplier());
-			}
-
-			if(transformGizmo.transformingType == TransformType.Scale)
-			{
-				float totalScaleAmount = 1f + transformGizmo.totalScaleAmount;
-				if(transformGizmo.translatingAxis == Axis.Any) totalScaleMultiplier += (Vector4.one * totalScaleAmount);
-				else if(transformGizmo.translatingAxis == Axis.X) totalScaleMultiplier.x *= totalScaleAmount;
-				else if(transformGizmo.translatingAxis == Axis.Y) totalScaleMultiplier.y *= totalScaleAmount;
-				else if(transformGizmo.translatingAxis == Axis.Z) totalScaleMultiplier.z *= totalScaleAmount;
-			}
-
-			customGizmo.ScaleMultiply(totalScaleMultiplier);
 		}
 
 		void ShowProperGizmoType()
@@ -121,7 +93,6 @@ namespace RuntimeGizmos
 			bool hasSelection = transformGizmo.mainTargetRoot != null;
 			customTranslationGizmos.SetEnable(hasSelection && transformGizmo.TranslatingTypeContains(TransformType.Move));
 			customRotationGizmos.SetEnable(hasSelection && transformGizmo.TranslatingTypeContains(TransformType.Rotate));
-			customScaleGizmos.SetEnable(hasSelection && transformGizmo.TranslatingTypeContains(TransformType.Scale));
 		}
 	}
 
@@ -138,36 +109,27 @@ namespace RuntimeGizmos
 		Collider zAxisGizmoCollider;
 		Collider anyAxisGizmoCollider;
 
-		Vector3 originalXAxisScale;
-		Vector3 originalYAxisScale;
-		Vector3 originalZAxisScale;
-		Vector3 originalAnyAxisScale;
-
 		public void Init(int layer)
 		{
 			if(xAxisGizmo != null)
 			{
 				SetLayerRecursively(xAxisGizmo.gameObject, layer);
 				xAxisGizmoCollider = xAxisGizmo.GetComponentInChildren<Collider>();
-				originalXAxisScale = xAxisGizmo.localScale;
 			}
 			if(yAxisGizmo != null)
 			{
 				SetLayerRecursively(yAxisGizmo.gameObject, layer);
 				yAxisGizmoCollider = yAxisGizmo.GetComponentInChildren<Collider>();
-				originalYAxisScale = yAxisGizmo.localScale;
 			}
 			if(zAxisGizmo != null)
 			{
 				SetLayerRecursively(zAxisGizmo.gameObject, layer);
 				zAxisGizmoCollider = zAxisGizmo.GetComponentInChildren<Collider>();
-				originalZAxisScale = zAxisGizmo.localScale;
 			}
 			if(anyAxisGizmo != null)
 			{
 				SetLayerRecursively(anyAxisGizmo.gameObject, layer);
 				anyAxisGizmoCollider = anyAxisGizmo.GetComponentInChildren<Collider>();
-				originalAnyAxisScale = anyAxisGizmo.localScale;
 			}
 		}
 
@@ -195,14 +157,6 @@ namespace RuntimeGizmos
 			if(yAxisGizmo != null) yAxisGizmo.position = position;
 			if(zAxisGizmo != null) zAxisGizmo.position = position;
 			if(anyAxisGizmo != null) anyAxisGizmo.position = position;
-		}
-
-		public void ScaleMultiply(Vector4 scaleMultiplier)
-		{
-			if(xAxisGizmo != null) xAxisGizmo.localScale = Vector3.Scale(originalXAxisScale, new Vector3(scaleMultiplier.w + scaleMultiplier.x, scaleMultiplier.w, scaleMultiplier.w));
-			if(yAxisGizmo != null) yAxisGizmo.localScale = Vector3.Scale(originalYAxisScale, new Vector3(scaleMultiplier.w, scaleMultiplier.w + scaleMultiplier.y, scaleMultiplier.w));
-			if(zAxisGizmo != null) zAxisGizmo.localScale = Vector3.Scale(originalZAxisScale, new Vector3(scaleMultiplier.w, scaleMultiplier.w, scaleMultiplier.w + scaleMultiplier.z));
-			if(anyAxisGizmo != null) anyAxisGizmo.localScale = originalAnyAxisScale * scaleMultiplier.w;
 		}
 
 		public Axis GetSelectedAxis(Collider selectedCollider)

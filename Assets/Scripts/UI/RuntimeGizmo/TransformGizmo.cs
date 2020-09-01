@@ -32,10 +32,8 @@ namespace RuntimeGizmos
 		public int circleDetail = 40;
 		public float allMoveHandleLengthMultiplier = 1f;
 		public float allRotateHandleLengthMultiplier = 1.4f;
-		public float allScaleHandleLengthMultiplier = 1.6f;
 		public float minSelectedDistanceCheck = .01f;
 		public float moveSpeedMultiplier = 1f;
-		public float scaleSpeedMultiplier = 1f;
 		public float rotateSpeedMultiplier = 1f;
 		public float allRotateSpeedMultiplier = 20f;
 
@@ -67,7 +65,6 @@ namespace RuntimeGizmos
 		public Camera myCamera {get; private set;}
 
 		public bool isTransforming {get; private set;}
-		public float totalScaleAmount {get; private set;}
 		public Quaternion totalRotationAmount {get; private set;}
 		public Axis translatingAxis {get {return nearAxis;}}
 		public Axis translatingAxisPlane {get {return planeAxis;}}
@@ -174,11 +171,10 @@ namespace RuntimeGizmos
 			}
 		}
 
-
 		// We only support scaling in local space.
 		public TransformSpace GetProperTransformSpace()
 		{
-			return transformType == TransformType.Scale ? TransformSpace.Local : space;
+			return space;
 		}
 
 		public bool TransformTypeContains(TransformType type)
@@ -202,19 +198,20 @@ namespace RuntimeGizmos
 			float length = handleLength;
 			if (transformType == TransformType.All)
 			{
-				if (type == TransformType.Move) length *= allMoveHandleLengthMultiplier;
-				if (type == TransformType.Rotate) length *= allRotateHandleLengthMultiplier;
-				if (type == TransformType.Scale) length *= allScaleHandleLengthMultiplier;
+				switch (type)
+				{
+					case TransformType.Move:
+						length *= allMoveHandleLengthMultiplier;
+						break;
+					case TransformType.Rotate:
+						length *= allRotateHandleLengthMultiplier;
+						break;
+				}
 			}
 
 			if (multiplyDistanceMultiplier)
 			{
 				length *= GetDistanceMultiplier();
-			}
-
-			if (type == TransformType.Scale && isTransforming && (translatingAxis == axis || translatingAxis == Axis.Any))
-			{
-				length += totalScaleAmount;
 			}
 
 			return length;
@@ -265,7 +262,6 @@ namespace RuntimeGizmos
 		IEnumerator TransformSelected(TransformType transType)
 		{
 			isTransforming = true;
-			totalScaleAmount = 0;
 			totalRotationAmount = Quaternion.identity;
 
 			Vector3 originalPivot = pivotPoint;
@@ -413,7 +409,6 @@ namespace RuntimeGizmos
 			}
 
 			totalRotationAmount = Quaternion.identity;
-			totalScaleAmount = 0;
 			isTransforming = false;
 			SetTranslatingAxis(transformType, Axis.None);
 

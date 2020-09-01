@@ -49,10 +49,9 @@ namespace RuntimeGizmos
 			Color allColor = (nearAxis == Axis.Any)? transformingColor:this.allColor;
 
 			// Note: The order of drawing the axis decides what gets drawn over what.
-			TransformType moveOrScaleType = (transformType == TransformType.Scale || (isTransforming && translatingType == TransformType.Scale))? TransformType.Scale : TransformType.Move;
-			DrawQuads(handleLines.z, GetColor(moveOrScaleType, this.zColor, zColor, hasTranslatingAxisPlane));
-			DrawQuads(handleLines.x, GetColor(moveOrScaleType, this.xColor, xColor, hasTranslatingAxisPlane));
-			DrawQuads(handleLines.y, GetColor(moveOrScaleType, this.yColor, yColor, hasTranslatingAxisPlane));
+			DrawQuads(handleLines.z, GetColor(TransformType.Move, this.zColor, zColor, hasTranslatingAxisPlane));
+			DrawQuads(handleLines.x, GetColor(TransformType.Move, this.xColor, xColor, hasTranslatingAxisPlane));
+			DrawQuads(handleLines.y, GetColor(TransformType.Move, this.yColor, yColor, hasTranslatingAxisPlane));
 
 			DrawTriangles(handleTriangles.x, GetColor(TransformType.Move, this.xColor, xColor, hasTranslatingAxisPlane));
 			DrawTriangles(handleTriangles.y, GetColor(TransformType.Move, this.yColor, yColor, hasTranslatingAxisPlane));
@@ -61,11 +60,6 @@ namespace RuntimeGizmos
 			DrawQuads(handlePlanes.z, GetColor(TransformType.Move, this.zColor, zColor, planesOpacity, !hasTranslatingAxisPlane));
 			DrawQuads(handlePlanes.x, GetColor(TransformType.Move, this.xColor, xColor, planesOpacity, !hasTranslatingAxisPlane));
 			DrawQuads(handlePlanes.y, GetColor(TransformType.Move, this.yColor, yColor, planesOpacity, !hasTranslatingAxisPlane));
-
-			DrawQuads(handleSquares.x, GetColor(TransformType.Scale, this.xColor, xColor));
-			DrawQuads(handleSquares.y, GetColor(TransformType.Scale, this.yColor, yColor));
-			DrawQuads(handleSquares.z, GetColor(TransformType.Scale, this.zColor, zColor));
-			DrawQuads(handleSquares.all, GetColor(TransformType.Scale, this.allColor, allColor));
 
 			DrawQuads(circlesLines.all, GetColor(TransformType.Rotate, this.allColor, allColor));
 			DrawQuads(circlesLines.x, GetColor(TransformType.Rotate, this.xColor, xColor));
@@ -116,7 +110,7 @@ namespace RuntimeGizmos
 		{
 			handleLines.Clear();
 
-			if (TranslatingTypeContains(TransformType.Move) || TranslatingTypeContains(TransformType.Scale))
+			if (TranslatingTypeContains(TransformType.Move))
 			{
 				float lineWidth = handleWidth * GetDistanceMultiplier();
 
@@ -126,12 +120,6 @@ namespace RuntimeGizmos
 				if (TranslatingTypeContains(TransformType.Move))
 				{
 					xLineLength = yLineLength = zLineLength = GetHandleLength(TransformType.Move);
-				}
-				else if (TranslatingTypeContains(TransformType.Scale))
-				{
-					xLineLength = GetHandleLength(TransformType.Scale, Axis.X);
-					yLineLength = GetHandleLength(TransformType.Scale, Axis.Y);
-					zLineLength = GetHandleLength(TransformType.Scale, Axis.Z);
 				}
 
 				AddQuads(pivotPoint, axisInfo.xDirection, axisInfo.yDirection, axisInfo.zDirection, xLineLength, lineWidth, handleLines.x);
@@ -209,15 +197,6 @@ namespace RuntimeGizmos
 		void SetHandleSquares()
 		{
 			handleSquares.Clear();
-
-			if (TranslatingTypeContains(TransformType.Scale))
-			{
-				float boxSize = this.boxSize * GetDistanceMultiplier();
-				AddSquares(axisInfo.GetXAxisEnd(GetHandleLength(TransformType.Scale, Axis.X)), axisInfo.xDirection, axisInfo.yDirection, axisInfo.zDirection, boxSize, handleSquares.x);
-				AddSquares(axisInfo.GetYAxisEnd(GetHandleLength(TransformType.Scale, Axis.Y)), axisInfo.yDirection, axisInfo.xDirection, axisInfo.zDirection, boxSize, handleSquares.y);
-				AddSquares(axisInfo.GetZAxisEnd(GetHandleLength(TransformType.Scale, Axis.Z)), axisInfo.zDirection, axisInfo.xDirection, axisInfo.yDirection, boxSize, handleSquares.z);
-				AddSquares(pivotPoint - (axisInfo.xDirection * (boxSize * .5f)), axisInfo.xDirection, axisInfo.yDirection, axisInfo.zDirection, boxSize, handleSquares.all);
-			}
 		}
 
 		void AddSquares(Vector3 axisStart, Vector3 axisDirection, Vector3 axisOtherDirection1, Vector3 axisOtherDirection2, float size, List<Vector3> resultsBuffer)
