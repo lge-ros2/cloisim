@@ -30,13 +30,11 @@ public class UnityRosInit : DevicePlugin
 	{
 		while (IsRunningThread)
 		{
-			if (clock == null)
+			if (clock != null)
 			{
-				continue;
+				var datastreamToSend = clock.PopData();
+				Publish(datastreamToSend);
 			}
-
-			var datastreamToSend = clock.PopData();
-			Publish(datastreamToSend);
 		}
 	}
 }

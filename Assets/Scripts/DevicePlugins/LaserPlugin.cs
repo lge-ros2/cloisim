@@ -43,16 +43,14 @@ public class LaserPlugin : DevicePlugin
 		var sw = new Stopwatch();
 		while (IsRunningThread)
 		{
-			if (lidar == null)
+			if (lidar != null)
 			{
-				continue;
+				var datastreamToSend = lidar.PopData();
+				sw.Restart();
+				Publish(datastreamToSend);
+				sw.Stop();
+				lidar.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 			}
-
-			var datastreamToSend = lidar.PopData();
-			sw.Restart();
-			Publish(datastreamToSend);
-			sw.Stop();
-			lidar.SetTransportTime((float)sw.Elapsed.TotalSeconds);
 		}
 	}
 

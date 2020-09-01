@@ -59,17 +59,14 @@ public class MicomPlugin : DevicePlugin
 		var sw = new Stopwatch();
 		while (IsRunningThread)
 		{
-			if (micomSensor == null)
+			if (micomSensor != null)
 			{
-				continue;
+				var datastreamToSend = micomSensor.PopData();
+				sw.Restart();
+				Publish(datastreamToSend);
+				sw.Stop();
+				micomSensor.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 			}
-
-			var datastreamToSend = micomSensor.PopData();
-			sw.Restart();
-			Publish(datastreamToSend);
-			sw.Stop();
-
-			micomSensor.SetTransportTime((float)sw.Elapsed.TotalSeconds);
 		}
 	}
 
@@ -77,13 +74,11 @@ public class MicomPlugin : DevicePlugin
 	{
 		while (IsRunningThread)
 		{
-			if (micomInput == null)
+			if (micomInput != null)
 			{
-				continue;
+				var receivedData = Subscribe();
+				micomInput.SetDataStream(receivedData);
 			}
-
-			var receivedData = Subscribe();
-			micomInput.SetDataStream(receivedData);
 
 			ThreadWait();
 		}

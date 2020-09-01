@@ -104,7 +104,7 @@ public abstract class Device : MonoBehaviour
 		updateRate = value;
 	}
 
-	public void SetTransportTime(in float value)
+	public void SetTransportedTime(in float value)
 	{
 		transportingTimeSeconds = value;
 	}

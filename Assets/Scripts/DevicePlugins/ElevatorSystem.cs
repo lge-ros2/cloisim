@@ -40,7 +40,7 @@ public partial class ElevatorSystem : DevicePlugin
 	private const int NON_ELEVATOR_INDEX = -1;
 
 	private bool isRunningThread = true;
-	private MemoryStream memoryStreamForService = new MemoryStream();
+	private MemoryStream msForService = new MemoryStream();
 	private Param responseMessage = new Param();
 	private Dictionary<string, float> floorList = new Dictionary<string, float>();
 	private Dictionary<int, ElevatorEntity> elevatorList = new Dictionary<int, ElevatorEntity>();
@@ -273,8 +273,7 @@ public partial class ElevatorSystem : DevicePlugin
 
 			if (receivedBuffer != null)
 			{
-				var receivedMessage = ParseReceivedMessage(receivedBuffer);
-
+				var receivedMessage = ParsingInfoRequest(receivedBuffer, ref msForService);
 				var streamToResponse = HandleServiceRequest(receivedMessage);
 
 				SendResponse(streamToResponse);
@@ -282,21 +281,6 @@ public partial class ElevatorSystem : DevicePlugin
 
 			ThreadWait();
 		}
-	}
-
-	private Param ParseReceivedMessage(in byte[] buffer)
-	{
-		if (buffer == null)
-		{
-			return null;
-		}
-
-		ClearMemoryStream(ref memoryStreamForService);
-
-		memoryStreamForService.Write(buffer, 0, buffer.Length);
-		memoryStreamForService.Position = 0;
-
-		return Serializer.Deserialize<Param>(memoryStreamForService);
 	}
 
 	private MemoryStream HandleServiceRequest(in Param receivedMessage)
@@ -343,11 +327,11 @@ public partial class ElevatorSystem : DevicePlugin
 
 		HandleService(serviceName, currentFloor, targetFloor, elevatorIndex);
 
-		ClearMemoryStream(ref memoryStreamForService);
+		ClearMemoryStream(ref msForService);
 
-		Serializer.Serialize<Param>(memoryStreamForService, responseMessage);
+		Serializer.Serialize<Param>(msForService, responseMessage);
 
-		return memoryStreamForService;
+		return msForService;
 	}
 
 	private void HandleService(in string serviceName, string currentFloor, in string targetFloor, int elevatorIndex)

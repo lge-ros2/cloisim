@@ -41,16 +41,14 @@ public class MultiCameraPlugin : DevicePlugin
 		var sw = new Stopwatch();
 		while (IsRunningThread)
 		{
-			if (multicam == null)
+			if (multicam != null)
 			{
-				continue;
+				var datastreamToSend = multicam.PopData();
+				sw.Restart();
+				Publish(datastreamToSend);
+				sw.Stop();
+				multicam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 			}
-
-			var datastreamToSend = multicam.PopData();
-			sw.Restart();
-			Publish(datastreamToSend);
-			sw.Stop();
-			multicam.SetTransportTime((float)sw.Elapsed.TotalSeconds);
 		}
 	}
 

@@ -40,18 +40,17 @@ public class GpsPlugin : DevicePlugin
 		var sw = new Stopwatch();
 		while (IsRunningThread)
 		{
-			if (gps == null)
+			if (gps != null)
 			{
-				continue;
+				var datastreamToSend = gps.PopData();
+				sw.Restart();
+				Publish(datastreamToSend);
+				sw.Stop();
+				gps.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 			}
-
-			var datastreamToSend = gps.PopData();
-			sw.Restart();
-			Publish(datastreamToSend);
-			sw.Stop();
-			gps.SetTransportTime((float)sw.Elapsed.TotalSeconds);
 		}
 	}
+
 	private void Response()
 	{
 		while (IsRunningThread)

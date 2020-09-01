@@ -42,16 +42,14 @@ public class CameraPlugin : DevicePlugin
 		var sw = new Stopwatch();
 		while (IsRunningThread)
 		{
-			if (cam == null)
+			if (cam != null)
 			{
-				continue;
+				var datastreamToSend = cam.PopData();
+				sw.Restart();
+				Publish(datastreamToSend);
+				sw.Stop();
+				cam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 			}
-
-			var datastreamToSend = cam.PopData();
-			sw.Restart();
-			Publish(datastreamToSend);
-			sw.Stop();
-			cam.SetTransportTime((float)sw.Elapsed.TotalSeconds);
 		}
 	}
 
