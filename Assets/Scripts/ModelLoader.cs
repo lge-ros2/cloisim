@@ -94,7 +94,7 @@ public class ModelLoader : MonoBehaviour
 		followingList = UIRoot.GetComponentInChildren<FollowingTargetList>();
 		simulationDisplay = UIRoot.GetComponentInChildren<SimulationDisplay>();
 
-		clock = GetComponent<Clock>();
+		clock = DeviceHelper.GetGlobalClock();
 
 		ResetTransform();
 	}
@@ -211,10 +211,7 @@ public class ModelLoader : MonoBehaviour
 
 		yield return null;
 
-		if (clock != null)
-		{
-			clock.ResetTime();
-		}
+		clock?.ResetTime();
 
 		yield return new WaitForSeconds(0.5f);
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
