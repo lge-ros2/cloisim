@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Threading;
 using System.IO;
 using UnityEngine;
 using ProtoBuf;

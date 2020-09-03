@@ -16,6 +16,11 @@ namespace SensorDevices
 
 		private void DoParseFilter()
 		{
+			if (pluginParameters == null)
+			{
+				return;
+			}
+
 			// Get Paramters
 			useIntensity_ = pluginParameters.GetValue<bool>("intensity");
 			var filterAngleLower_ = pluginParameters.GetValue<float>("filter/angle/horizontal/lower", float.NegativeInfinity);
