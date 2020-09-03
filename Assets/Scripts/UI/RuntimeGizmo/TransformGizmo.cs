@@ -220,13 +220,17 @@ namespace RuntimeGizmos
 		void SetSpaceAndType()
 		{
 			if (Input.GetKeyDown(SetMoveType))
+			{
 				transformType = TransformType.Move;
-
+			}
 			else if (Input.GetKeyDown(SetRotateType))
+			{
 				transformType = TransformType.Rotate;
-
+			}
 			else if (Input.GetKeyDown(SetAllTransformType))
+			{
 				transformType = TransformType.All;
+			}
 
 			if (!isTransforming) translatingType = transformType;
 
@@ -264,15 +268,14 @@ namespace RuntimeGizmos
 			isTransforming = true;
 			totalRotationAmount = Quaternion.identity;
 
-			Vector3 originalPivot = pivotPoint;
-			Vector3 otherAxis1, otherAxis2;
-			Vector3 axis = GetNearAxisDirection(out otherAxis1, out otherAxis2);
-			Vector3 planeNormal = hasTranslatingAxisPlane ? axis : (transform.position - originalPivot).normalized;
-			Vector3 projectedAxis = Vector3.ProjectOnPlane(axis, planeNormal).normalized;
-			Vector3 previousMousePosition = Vector3.zero;
+			var originalPivot = pivotPoint;
+			var axis = GetNearAxisDirection(out var otherAxis1, out var otherAxis2);
+			var planeNormal = hasTranslatingAxisPlane ? axis : (transform.position - originalPivot).normalized;
+			var projectedAxis = Vector3.ProjectOnPlane(axis, planeNormal).normalized;
+			var previousMousePosition = Vector3.zero;
 
-			Vector3 currentSnapMovementAmount = Vector3.zero;
-			float currentSnapRotationAmount = 0;
+			var currentSnapMovementAmount = Vector3.zero;
+			var currentSnapRotationAmount = 0f;
 
 			while (!Input.GetMouseButtonUp(0))
 			{
@@ -280,126 +283,130 @@ namespace RuntimeGizmos
 				var mousePosition = Geometry.LinePlaneIntersect(mouseRay.origin, mouseRay.direction, originalPivot, planeNormal);
 				var isSnapping = Input.GetKey(translationSnapping);
 
-				if (isSnapping)
-					Debug.Log("is snapping");
-
 				if (previousMousePosition != Vector3.zero && mousePosition != Vector3.zero)
 				{
-					if (transType == TransformType.Move)
+					switch (transType)
 					{
-						Vector3 movement = Vector3.zero;
-
-						if (hasTranslatingAxisPlane)
-						{
-							movement = mousePosition - previousMousePosition;
-						}
-						else
-						{
-							float moveAmount = ExtVector3.MagnitudeInDirection(mousePosition - previousMousePosition, projectedAxis) * moveSpeedMultiplier;
-							movement = axis * moveAmount;
-						}
-
-						if (isSnapping && movementSnap > 0)
-						{
-							currentSnapMovementAmount += movement;
-							movement = Vector3.zero;
-
-							if (hasTranslatingAxisPlane)
+						case TransformType.Move:
 							{
-								float amountInAxis1 = ExtVector3.MagnitudeInDirection(currentSnapMovementAmount, otherAxis1);
-								float amountInAxis2 = ExtVector3.MagnitudeInDirection(currentSnapMovementAmount, otherAxis2);
+								Vector3 movement = Vector3.zero;
 
-								float snapAmount1 = CalculateSnapAmount(movementSnap, amountInAxis1, out var remainder1);
-								float snapAmount2 = CalculateSnapAmount(movementSnap, amountInAxis2, out var remainder2);
-
-								if (snapAmount1 != 0)
+								if (hasTranslatingAxisPlane)
 								{
-									var snapMove = (otherAxis1 * snapAmount1);
-									movement += snapMove;
-									currentSnapMovementAmount -= snapMove;
+									movement = mousePosition - previousMousePosition;
 								}
-								if (snapAmount2 != 0)
+								else
 								{
-									var snapMove = (otherAxis2 * snapAmount2);
-									movement += snapMove;
-									currentSnapMovementAmount -= snapMove;
+									float moveAmount = ExtVector3.MagnitudeInDirection(mousePosition - previousMousePosition, projectedAxis) * moveSpeedMultiplier;
+									movement = axis * moveAmount;
 								}
-							}
-							else
-							{
-								float snapAmount = CalculateSnapAmount(movementSnap, currentSnapMovementAmount.magnitude, out var remainder);
 
-								if (snapAmount != 0)
+								if (isSnapping && movementSnap > 0)
 								{
-									movement = currentSnapMovementAmount.normalized * snapAmount;
-									currentSnapMovementAmount = currentSnapMovementAmount.normalized * remainder;
+									currentSnapMovementAmount += movement;
+									movement = Vector3.zero;
+
+									if (hasTranslatingAxisPlane)
+									{
+										float amountInAxis1 = ExtVector3.MagnitudeInDirection(currentSnapMovementAmount, otherAxis1);
+										float amountInAxis2 = ExtVector3.MagnitudeInDirection(currentSnapMovementAmount, otherAxis2);
+
+										float snapAmount1 = CalculateSnapAmount(movementSnap, amountInAxis1, out var remainder1);
+										float snapAmount2 = CalculateSnapAmount(movementSnap, amountInAxis2, out var remainder2);
+
+										if (snapAmount1 != 0)
+										{
+											var snapMove = (otherAxis1 * snapAmount1);
+											movement += snapMove;
+											currentSnapMovementAmount -= snapMove;
+										}
+
+										if (snapAmount2 != 0)
+										{
+											var snapMove = (otherAxis2 * snapAmount2);
+											movement += snapMove;
+											currentSnapMovementAmount -= snapMove;
+										}
+									}
+									else
+									{
+										float snapAmount = CalculateSnapAmount(movementSnap, currentSnapMovementAmount.magnitude, out var remainder);
+
+										if (snapAmount != 0)
+										{
+											movement = currentSnapMovementAmount.normalized * snapAmount;
+											currentSnapMovementAmount = currentSnapMovementAmount.normalized * remainder;
+										}
+									}
 								}
+
+								for (int i = 0; i < targetRootsOrdered.Count; i++)
+								{
+									Transform target = targetRootsOrdered[i];
+
+									target.Translate(movement, Space.World);
+								}
+
+								SetPivotPointOffset(movement);
 							}
-						}
+							break;
 
-						for (int i = 0; i < targetRootsOrdered.Count; i++)
-						{
-							Transform target = targetRootsOrdered[i];
-
-							target.Translate(movement, Space.World);
-						}
-
-						SetPivotPointOffset(movement);
-					}
-					else if (transType == TransformType.Rotate)
-					{
-						float rotateAmount = 0;
-						Vector3 rotationAxis = axis;
-
-						if (nearAxis == Axis.Any)
-						{
-							Vector3 rotation = transform.TransformDirection(new Vector3(Input.GetAxis("Mouse Y"), -Input.GetAxis("Mouse X"), 0));
-							Quaternion.Euler(rotation).ToAngleAxis(out rotateAmount, out rotationAxis);
-							rotateAmount *= allRotateSpeedMultiplier;
-						}
-						else
-						{
-							if (circularRotationMethod)
+						case TransformType.Rotate:
 							{
-								float angle = Vector3.SignedAngle(previousMousePosition - originalPivot, mousePosition - originalPivot, axis);
-								rotateAmount = angle * rotateSpeedMultiplier;
+								float rotateAmount = 0;
+								Vector3 rotationAxis = axis;
+
+								if (nearAxis == Axis.Any)
+								{
+									Vector3 rotation = transform.TransformDirection(new Vector3(Input.GetAxis("Mouse Y"), -Input.GetAxis("Mouse X"), 0));
+									Quaternion.Euler(rotation).ToAngleAxis(out rotateAmount, out rotationAxis);
+									rotateAmount *= allRotateSpeedMultiplier;
+								}
+								else
+								{
+									if (circularRotationMethod)
+									{
+										float angle = Vector3.SignedAngle(previousMousePosition - originalPivot, mousePosition - originalPivot, axis);
+										rotateAmount = angle * rotateSpeedMultiplier;
+									}
+									else
+									{
+										Vector3 projected = (nearAxis == Axis.Any || ExtVector3.IsParallel(axis, planeNormal)) ? planeNormal : Vector3.Cross(axis, planeNormal);
+										rotateAmount = (ExtVector3.MagnitudeInDirection(mousePosition - previousMousePosition, projected) * (rotateSpeedMultiplier * 100f)) / GetDistanceMultiplier();
+									}
+								}
+
+								if (isSnapping && rotationSnap > 0)
+								{
+									currentSnapRotationAmount += rotateAmount;
+									rotateAmount = 0;
+
+									float snapAmount = CalculateSnapAmount(rotationSnap, currentSnapRotationAmount, out var remainder);
+
+									if (snapAmount != 0)
+									{
+										rotateAmount = snapAmount;
+										currentSnapRotationAmount = remainder;
+									}
+								}
+
+								for (int i = 0; i < targetRootsOrdered.Count; i++)
+								{
+									Transform target = targetRootsOrdered[i];
+
+									if (pivot == TransformPivot.Pivot)
+									{
+										target.Rotate(rotationAxis, rotateAmount, Space.World);
+									}
+									else if (pivot == TransformPivot.Center)
+									{
+										target.RotateAround(originalPivot, rotationAxis, rotateAmount);
+									}
+								}
+
+								totalRotationAmount *= Quaternion.Euler(rotationAxis * rotateAmount);
 							}
-							else
-							{
-								Vector3 projected = (nearAxis == Axis.Any || ExtVector3.IsParallel(axis, planeNormal))? planeNormal : Vector3.Cross(axis, planeNormal);
-								rotateAmount = (ExtVector3.MagnitudeInDirection(mousePosition - previousMousePosition, projected) * (rotateSpeedMultiplier * 100f)) / GetDistanceMultiplier();
-							}
-						}
-
-						if (isSnapping && rotationSnap > 0)
-						{
-							currentSnapRotationAmount += rotateAmount;
-							rotateAmount = 0;
-
-							float snapAmount = CalculateSnapAmount(rotationSnap, currentSnapRotationAmount, out var remainder);
-
-							if (snapAmount != 0)
-							{
-								rotateAmount = snapAmount;
-								currentSnapRotationAmount = remainder;
-							}
-						}
-
-						for (int i = 0; i < targetRootsOrdered.Count; i++)
-						{
-							Transform target = targetRootsOrdered[i];
-
-							if (pivot == TransformPivot.Pivot)
-							{
-								target.Rotate(rotationAxis, rotateAmount, Space.World);
-							}
-							else if (pivot == TransformPivot.Center)
-							{
-								target.RotateAround(originalPivot, rotationAxis, rotateAmount);
-							}
-						}
-
-						totalRotationAmount *= Quaternion.Euler(rotationAxis * rotateAmount);
+							break;
 					}
 				}
 
