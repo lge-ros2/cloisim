@@ -23,7 +23,7 @@ public class ProceduralMesh
 		var p6 = new Vector3(length * .5f, width * .5f, -height * .5f);
 		var p7 = new Vector3(-length * .5f, width * .5f, -height * .5f);
 
-		Vector3[] vertices = new Vector3[]
+		var vertices = new Vector3[]
 		{
 			p0, p1, p2, p3, // Bottom
 			p7, p4, p0, p3, // Left
@@ -42,7 +42,7 @@ public class ProceduralMesh
 		var left = Vector3.left;
 		var right = Vector3.right;
 
-		Vector3[] normales = new Vector3[]
+		var normales = new Vector3[]
 		{
 			down, down, down, down, // Bottom
 			left, left, left, left, // Left

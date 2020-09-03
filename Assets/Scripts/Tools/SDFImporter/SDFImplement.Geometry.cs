@@ -47,12 +47,12 @@ public partial class SDFImplement
 
 				// Scaling
 				var vertices = mesh.vertices;
-				var scaleFactor = obj.scale;
+				var scaleFactor = SDF2Unity.GetScale(obj.scale);
 				for (var v = 0; v < mesh.vertexCount; v++)
 				{
-					vertices[v].x *= (float)scaleFactor.X;
-					vertices[v].y *= (float)scaleFactor.Y;
-					vertices[v].z *= (float)scaleFactor.Z;
+					vertices[v].x *= scaleFactor.x;
+					vertices[v].y *= scaleFactor.y;
+					vertices[v].z *= scaleFactor.z;
 				}
 
 				mesh.vertices = vertices;

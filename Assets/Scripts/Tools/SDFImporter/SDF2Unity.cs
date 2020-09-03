@@ -40,7 +40,11 @@ public class SDF2Unity
 
 	public static Vector3 GetScale(in SDF.Vector3<double> value)
 	{
-		return GetPosition(value);
+		var scaleVector = GetPosition(value);
+		scaleVector.x = Mathf.Abs(scaleVector.x);
+		scaleVector.y = Mathf.Abs(scaleVector.y);
+		scaleVector.z = Mathf.Abs(scaleVector.z);
+		return scaleVector;
 	}
 
 	public static Vector3 GetNormal(in SDF.Vector3<int> value)
