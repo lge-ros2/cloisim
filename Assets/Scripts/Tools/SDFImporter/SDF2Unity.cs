@@ -38,15 +38,15 @@ public class SDF2Unity
 		return Quaternion.Euler(roll, pitch, yaw);
 	}
 
-	// public static Vector3 GetScale(in SDF.Vector3<double> value)
-	// {
-	// 	return GetPosition(value);
-	// }
+	public static Vector3 GetScale(in SDF.Vector3<double> value)
+	{
+		return GetPosition(value);
+	}
 
-	// public static Vector3 GetScale(in double radius)
-	// {
-	// 	return new Vector3((float)radius, (float)radius, (float)radius);
-	// }
+	public static Vector3 GetNormal(in SDF.Vector3<int> value)
+	{
+		return GetPosition(value);
+	}
 
 	public static Vector3 GetAxis(SDF.Vector3<int> axisValue, SDF.Quaternion<double> axisRotation = null)
 	{

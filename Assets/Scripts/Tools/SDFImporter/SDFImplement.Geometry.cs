@@ -74,7 +74,8 @@ public partial class SDFImplement
 			if (shape is SDF.Box)
 			{
 				var box = shape as SDF.Box;
-				mesh = ProceduralMesh.CreateBox((float)box.size.X, (float)box.size.Z, (float)box.size.Y);
+				var scale = SDF2Unity.GetScale(box.size);
+				mesh = ProceduralMesh.CreateBox(scale.x, scale.y, scale.z);
 				mesh.name = "Box";
 			}
 			else if (shape is SDF.Sphere)
@@ -92,7 +93,7 @@ public partial class SDFImplement
 			else if (shape is SDF.Plane)
 			{
 				var plane = shape as SDF.Plane;
-				var normal = new Vector3((float)plane.normal.X, (float)plane.normal.Z, (float)plane.normal.Y);
+				var normal = SDF2Unity.GetNormal(plane.normal);
 				mesh = ProceduralMesh.CreatePlane((float)plane.size.X, (float)plane.size.Y, normal);
 				mesh.name = "Plane";
 			}
