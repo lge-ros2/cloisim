@@ -79,12 +79,12 @@ public class SimulationDisplay : MonoBehaviour
 		var realTs = TimeSpan.FromSeconds(realTime);
 		var diffTs1 = realTs - simTs;
 
-		var currentSimTime = simTs.ToString(@"d\:hh\:mm\:ss\.fff");
-		var currentRealTime = realTs.ToString(@"d\:hh\:mm\:ss\.fff");
-		var diffRealSimTime = diffTs1.ToString(@"d\:hh\:mm\:ss\.fff");
+		var currentSimTime = GetBoldText(simTs.ToString(@"d\:hh\:mm\:ss\.fff"));
+		var currentRealTime = GetBoldText(realTs.ToString(@"d\:hh\:mm\:ss\.fff"));
+		var diffRealSimTime = GetBoldText(diffTs1.ToString(@"d\:hh\:mm\:ss\.fff"));
 
 		sbTimInfo.Clear();
-		sbTimInfo.AppendFormat("(Time) Simulation: {0}, Real: {1}, (Diff) Real-Sim: {2}", currentSimTime, currentRealTime, diffRealSimTime);
+		sbTimInfo.AppendFormat("Time: Simulation [{0}] | Real [{1}] | Real-Sim [{2}]", currentSimTime, currentRealTime, diffRealSimTime);
 		return sbTimInfo.ToString();
 	}
 
@@ -108,7 +108,7 @@ public class SimulationDisplay : MonoBehaviour
 		GUI.skin.label.alignment = TextAnchor.MiddleRight;
 
 		rectFps.x = Screen.width - textWidthFps - textMargin;
-		GUI.Label(rectFps, GetBoldText("FPS [" + Mathf.Round(fps).ToString("F1") + "]"));
+		GUI.Label(rectFps, "FPS [" + GetBoldText(Mathf.Round(fps).ToString("F1")) + "]");
 
 		GUI.skin.label.alignment = originSkinLabelAlign;
 
@@ -117,6 +117,6 @@ public class SimulationDisplay : MonoBehaviour
 		rectSimulationinfo.y = Screen.height - textHeight - textMargin;
 
 		var simulationInfo = (string.IsNullOrEmpty(eventMessage)) ? GetTimeInfoString() : eventMessage;
-		GUI.Label(rectSimulationinfo, GetBoldText(simulationInfo));
+		GUI.Label(rectSimulationinfo, simulationInfo);
 	}
 }
