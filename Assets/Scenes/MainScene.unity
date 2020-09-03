@@ -3787,11 +3787,9 @@ MonoBehaviour:
   transformType: 0
   pivot: 0
   centerType: 0
-  scaleType: 0
-  planesOpacity: 0.25
-  movementSnap: 0.25
+  planesOpacity: 0.2
+  movementSnap: 0.5
   rotationSnap: 10
-  scaleSnap: 1
   handleLength: 0.1
   handleWidth: 0.003
   planeSize: 0.025
@@ -3800,16 +3798,13 @@ MonoBehaviour:
   circleDetail: 50
   allMoveHandleLengthMultiplier: 1
   allRotateHandleLengthMultiplier: 1
-  allScaleHandleLengthMultiplier: 1
   minSelectedDistanceCheck: 0.01
   moveSpeedMultiplier: 1
-  scaleSpeedMultiplier: 1
   rotateSpeedMultiplier: 1
   allRotateSpeedMultiplier: 20
   useFirstSelectedAsMain: 1
   circularRotationMethod: 0
   forceUpdatePivotPointOnChange: 1
-  maxUndoStored: 100
   manuallyHandleGizmo: 0
   selectionMask:
     serializedVersion: 2
@@ -3818,16 +3813,13 @@ MonoBehaviour:
   SetRotateType: 114
   SetAllTransformType: 121
   SetSpaceToggle: 120
-  translationSnapping: 306
-  ActionKey: 0
-  UndoAction: 0
-  RedoAction: 0
+  translationSnapping: 304
   xColor: {r: 1, g: 0, b: 0, a: 0.8}
   yColor: {r: 0, g: 1, b: 0, a: 0.8}
   zColor: {r: 0, g: 0, b: 1, a: 0.8}
   allColor: {r: 0.7, g: 0.7, b: 0.7, a: 0.8}
   selectedColor: {r: 1, g: 1, b: 0, a: 0.8}
-  hoverColor: {r: 1, g: 0.75, b: 0, a: 0.8}
+  hoverColor: {r: 1, g: 0.42769694, b: 0, a: 0.57254905}
 --- !u!1 &1041446057
 GameObject:
   m_ObjectHideFlags: 0
@@ -5958,7 +5950,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -110, y: 30}
+  m_AnchoredPosition: {x: -100, y: 20}
   m_SizeDelta: {x: 180, y: 25}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1655136415
