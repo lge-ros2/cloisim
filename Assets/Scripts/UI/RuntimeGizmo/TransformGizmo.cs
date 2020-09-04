@@ -1,7 +1,7 @@
 using System;
-using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
+using UnityEngine;
 
 namespace RuntimeGizmos
 {
@@ -557,6 +557,7 @@ namespace RuntimeGizmos
 
 			childrenBuffer.Clear();
 		}
+
 		void RemoveAllChildren(Transform target)
 		{
 			childrenBuffer.Clear();
