@@ -734,7 +734,6 @@ GameObject:
   - component: {fileID: 249819591}
   - component: {fileID: 249819587}
   - component: {fileID: 249819588}
-  - component: {fileID: 249819590}
   - component: {fileID: 249819592}
   m_Layer: 0
   m_Name: Core
@@ -802,18 +801,6 @@ MonoBehaviour:
   worldFileName: lg_seocho.world
   modelRootDirectories: []
   worldRootDirectories: []
---- !u!114 &249819590
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 249819585}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6f27710de512a0490b04a13f196dea25, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &249819591
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2392,8 +2379,9 @@ GameObject:
   - component: {fileID: 683297085}
   - component: {fileID: 683297087}
   - component: {fileID: 683297086}
-  - component: {fileID: 683297088}
+  - component: {fileID: 683297090}
   - component: {fileID: 683297089}
+  - component: {fileID: 683297088}
   m_Layer: 0
   m_Name: UI
   m_TagString: Untagged
@@ -2463,7 +2451,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d8c6ba38498e99b5957287e0f6cac91, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxRayDistance: 500
+  maxRayDistance: 300
 --- !u!114 &683297089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2474,6 +2462,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cbae07c6267889cceacfaf4e676c5ccf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &683297090
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 683297084}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f27710de512a0490b04a13f196dea25, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &702124002
