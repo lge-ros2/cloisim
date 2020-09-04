@@ -12,9 +12,9 @@ public class ObjectSpawning : MonoBehaviour
 	private Dictionary<PropsType, GameObject> props = new Dictionary<PropsType, GameObject>();
 	private Camera mainCam = null;
 
-	public uint propsCount = 0;
 	private Color32 matColor = new Color32(43, 29, 14, 0);
-	public float maxRayDistance = 300;
+	public float maxRayDistance = 100;
+	private uint propsCount = 0;
 
 	[Header("GUI properties")]
 	private const int labelFontSize = 14;
@@ -188,6 +188,15 @@ public class ObjectSpawning : MonoBehaviour
 		return null;
 	}
 
+	void DrawShadow(in Rect rect, in string value)
+	{
+		GUI.color = new Color(0, 0, 0, 0.64f);
+		var rectShadow = rect;
+		rectShadow.x += 1;
+		rectShadow.y += 1;
+		GUI.Label(rectShadow, value);
+	}
+
 	void OnGUI()
 	{
 		GUI.skin.label.alignment = TextAnchor.MiddleRight;
@@ -196,26 +205,30 @@ public class ObjectSpawning : MonoBehaviour
 
 		var centerPointX = Screen.width / 2;
 
-		// GUI.color = Color.cyan;
-
 		var rectToolbar = new Rect(centerPointX - toolbarWidth / 2, topMargin, toolbarWidth, guiHeight);
+		GUI.color = Color.white;
 		toolbarSelected = GUI.Toolbar(rectToolbar, toolbarSelected, toolbarStrings);
 
 		var rectToolbarLabel = rectToolbar;
 		rectToolbarLabel.x -= 45;
 		rectToolbarLabel.width = 45;
 
+		DrawShadow(rectToolbarLabel, "Props: ");
+		GUI.color = Color.white;
 		GUI.Label(rectToolbarLabel, "Props: ");
 
 		var rectScaleLabel = rectToolbar;
 		rectScaleLabel.x += (toolbarWidth + 5);
 		rectScaleLabel.width = 50;
+		DrawShadow(rectScaleLabel, "Scale: ");
+		GUI.color = Color.white;
 		GUI.Label(rectScaleLabel, "Scale: ");
 
 		var rectScale = rectScaleLabel;
 		rectScale.x += 50;
-		rectScale.width = 30;
+		rectScale.width = 40;
 		var prevScaleFactorString = scaleFactorString;
+		GUI.color = Color.white;
 		scaleFactorString = GUI.TextField(rectScale, scaleFactorString, 5);
 
   		if (GUI.changed)
