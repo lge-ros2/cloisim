@@ -7,6 +7,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Rendering;
 using TMPro;
 
 public partial class MarkerVisualizer : MonoBehaviour
@@ -106,10 +107,10 @@ public partial class MarkerVisualizer : MonoBehaviour
 		if (renderer != null)
 		{
 			renderer.material = new Material(commonShader);
-			renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+			renderer.shadowCastingMode = ShadowCastingMode.Off;
 			renderer.receiveShadows = false;
-			renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
-			renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+			renderer.lightProbeUsage = LightProbeUsage.Off;
+			renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
 			renderer.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
 		}
 	}

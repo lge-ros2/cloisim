@@ -76,26 +76,22 @@ public partial class SDFImplement
 				var box = shape as SDF.Box;
 				var scale = SDF2Unity.GetScale(box.size);
 				mesh = ProceduralMesh.CreateBox(scale.x, scale.y, scale.z);
-				mesh.name = "Box";
 			}
 			else if (shape is SDF.Sphere)
 			{
 				var sphere = shape as SDF.Sphere;
 				mesh = ProceduralMesh.CreateSphere((float)sphere.radius);
-				mesh.name = "Sphere";
 			}
 			else if (shape is SDF.Cylinder)
 			{
 				var cylinder = shape as SDF.Cylinder;
 				mesh = ProceduralMesh.CreateCylinder((float)cylinder.radius, (float)cylinder.length);
-				mesh.name = "Cylinder";
 			}
 			else if (shape is SDF.Plane)
 			{
 				var plane = shape as SDF.Plane;
 				var normal = SDF2Unity.GetNormal(plane.normal);
 				mesh = ProceduralMesh.CreatePlane((float)plane.size.X, (float)plane.size.Y, normal);
-				mesh.name = "Plane";
 			}
 			else
 			{

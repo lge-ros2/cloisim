@@ -114,13 +114,15 @@ public class ProceduralMesh
 
 	public static Mesh CreateCylinder(in float radius = 1f, in float height = 1f, in int nbSides = 36)
 	{
-		return CreateCone(radius, radius, height, nbSides);
+		var mesh = CreateCone(radius, radius, height, nbSides);
+		mesh.name = "Cylinder";
+		return mesh;
 	}
 
 	public static Mesh CreateCone(in float topRadius = .01f, in float bottomRadius = 0.5f, in float height = 1f, in int nbSides = 18)
 	{
 		var mesh = new Mesh();
-		mesh.name = (topRadius.Equals(bottomRadius)) ? "Cylinder" : "Cone";
+		mesh.name = "Cone";
 
 		var heightHalf = height / 2;
 
@@ -166,7 +168,6 @@ public class ProceduralMesh
 		#endregion
 
 		#region Normales
-
 		// bottom + top + sides
 		var normales = new Vector3[vertices.Length];
 		vert = 0;
@@ -203,7 +204,6 @@ public class ProceduralMesh
 
 		#region UVs
 		var uvs = new Vector2[vertices.Length];
-
 		var u = 0;
 
 		// Bottom cap
@@ -225,7 +225,7 @@ public class ProceduralMesh
 		}
 
 		// Sides
-		int u_sides = 0;
+		var u_sides = 0;
 		while (u <= uvs.Length - 4)
 		{
 			var t = (float)u_sides / nbSides;
@@ -234,6 +234,7 @@ public class ProceduralMesh
 			u += 2;
 			u_sides++;
 		}
+
 		uvs[u] = new Vector2(1f, 1f);
 		uvs[u + 1] = new Vector2(1f, 0f);
 		#endregion
@@ -306,7 +307,6 @@ public class ProceduralMesh
 
 		return mesh;
 	}
-
 
 	// Longitude |||
 	// Latitude ---
