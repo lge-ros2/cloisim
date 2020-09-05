@@ -19,12 +19,13 @@ public interface IDevicePlugin
 
 public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 {
-	public string modelName = String.Empty;
-	public string partName = String.Empty;
+	public string modelName { get; protected set; } = String.Empty;
+	public string partName { get; protected set; } = String.Empty;
 
-	private BridgeManager BridgeManager = null;
+	private BridgeManager bridgeManager = null;
 
 	protected PluginParameters parameters = null;
+
 	protected MemoryStream msForInfoResponse = new MemoryStream();
 
 	private bool runningThread = true;
@@ -74,7 +75,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	private bool PrepareDevice(in string hashKey, out ushort port, out ulong hash)
 	{
-		port = BridgeManager.AllocateDevicePort(hashKey);
+		port = bridgeManager.AllocateDevicePort(hashKey);
 		if (port == 0)
 		{
 			Debug.LogError("Port for device is not allocated!!!!!!!!");
@@ -94,7 +95,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	protected bool DeregisterDevice(in string hashKey)
 	{
-		BridgeManager.DeallocateDevicePort(hashKey);
+		bridgeManager.DeallocateDevicePort(hashKey);
 		return true;
 	}
 
@@ -149,7 +150,6 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	void Awake()
 	{
-		// Debug.Log("devicePlugin");
 		InitializeTransporter();
 
 		parameters = new PluginParameters();
@@ -161,19 +161,19 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 		else
 		{
-			BridgeManager = coreObject.GetComponent<BridgeManager>();
-			if (BridgeManager == null)
+			bridgeManager = coreObject.GetComponent<BridgeManager>();
+			if (bridgeManager == null)
 			{
-				Debug.LogError("Failed to get 'BridgeManager'!!!!");
-			}
-
-			if (string.IsNullOrEmpty(modelName))
-			{
-				modelName = DeviceHelper.GetModelName(gameObject);
+				Debug.LogError("Failed to get 'bridgeManager'!!!!");
 			}
 		}
 
 		OnAwake();
+
+		if (string.IsNullOrEmpty(modelName))
+		{
+			modelName = DeviceHelper.GetModelName(gameObject);
+		}
 	}
 
 	// Start is called before the first frame update

@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-public class UnityRosInit : DevicePlugin
+public class UnityRosWorld : DevicePlugin
 {
 	private Clock clock = null;
 
@@ -14,12 +14,14 @@ public class UnityRosInit : DevicePlugin
 
 	protected override void OnAwake()
 	{
+		modelName = "World";
+
 		clock = gameObject.AddComponent<Clock>();
 
 		hashKey = MakeHashKey();
 		if (!RegisterTxDevice(hashKey))
 		{
-			Debug.LogError("Failed to register for UnityRosInit - " + hashKey);
+			Debug.LogError("Failed to register for UnityRosWorld - " + hashKey);
 		}
 	}
 
