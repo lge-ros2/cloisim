@@ -34,23 +34,8 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
+	protected abstract void OnTerminate();
 	protected virtual void OnReset() {}
-
-	void OnDestroy()
-	{
-		runningThread = false;
-
-		foreach (var thread in threadList)
-		{
-			if (thread != null)
-			{
-				if (thread.IsAlive)
-				{
-					thread.Join();
-				}
-			}
-		}
-	}
 
 	protected bool AddThread(in ThreadStart function)
 	{
@@ -87,9 +72,9 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 	}
 
-	protected bool PrepareDevice(in string hashKey, out ushort port, out ulong hash)
+	private bool PrepareDevice(in string hashKey, out ushort port, out ulong hash)
 	{
-		port = BridgeManager.AllocateSensorPort(hashKey);
+		port = BridgeManager.AllocateDevicePort(hashKey);
 		if (port == 0)
 		{
 			Debug.LogError("Port for device is not allocated!!!!!!!!");
@@ -105,6 +90,12 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	protected string MakeHashKey(in string subPartName = "")
 	{
 		return modelName + partName + subPartName;
+	}
+
+	protected bool DeregisterDevice(in string hashKey)
+	{
+		BridgeManager.DeallocateDevicePort(hashKey);
+		return true;
 	}
 
 	protected bool RegisterTxDevice(in string hashKey)
@@ -158,6 +149,9 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	void Awake()
 	{
+		// Debug.Log("devicePlugin");
+		InitializeTransporter();
+
 		parameters = new PluginParameters();
 
 		var coreObject = GameObject.Find("Core");
@@ -190,6 +184,26 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		OnStart();
 
 		StartThreads();
+	}
+
+	void OnDestroy()
+	{
+		// Debug.Log("DevicePlugin destroied");
+		runningThread = false;
+		foreach (var thread in threadList)
+		{
+			if (thread != null)
+			{
+				if (thread.IsAlive)
+				{
+					thread.Join();
+				}
+			}
+		}
+
+		DestroyTransporter();
+
+		OnTerminate();
 	}
 
 	public void Reset()

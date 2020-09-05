@@ -27,23 +27,43 @@ public class BridgeManager : DeviceTransporter
 
 	private IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
 
-	public void DeallocateSensorPort(in string hashKey)
+	void Awake()
 	{
-		bool isRemoved = false;
+		InitializeTransporter();
+	}
+
+	void OnDestroy()
+	{
+		runningWorkerThread = false;
+
+		if (workerThread != null)
+		{
+			if (workerThread.IsAlive)
+			{
+				workerThread.Join();
+			}
+		}
+
+		DestroyTransporter();
+	}
+
+	public void DeallocateDevicePort(in string hashKey)
+	{
+		var isRemoved = false;
 
 		lock (portMapTable)
 		{
 			isRemoved = portMapTable.Remove(hashKey);
 		}
 
-		if (isRemoved)
-		{
-			Debug.LogFormat("HashKey({0}) Removed.", hashKey);
-		}
-		else
+		if (!isRemoved)
 		{
 			Debug.LogWarningFormat("Failed to remove HashKey({0})!!!!", hashKey);
 		}
+		// else
+		// {
+		// 	Debug.LogFormat("HashKey({0}) Removed.", hashKey);
+		// }
 	}
 
 	public ushort SearchSensorPort(in string hashKey)
@@ -59,7 +79,7 @@ public class BridgeManager : DeviceTransporter
 		return 0;
 	}
 
-	public Dictionary<string, ushort> GetSensorPortList(string filter = "")
+	public Dictionary<string, ushort> GetDevicePortList(string filter = "")
 	{
 		lock (portMapTable)
 		{
@@ -93,7 +113,7 @@ public class BridgeManager : DeviceTransporter
 		return true;
 	}
 
-	public ushort AllocateSensorPort(in string hashKey)
+	public ushort AllocateDevicePort(in string hashKey)
 	{
 		// check if already occupied
 		var newPort = SearchSensorPort(hashKey);
@@ -170,19 +190,6 @@ public class BridgeManager : DeviceTransporter
 		{
 			Debug.LogWarning("Thread:Interrunpted");
 			return;
-		}
-	}
-
-	void OnDestroy()
-	{
-		runningWorkerThread = false;
-
-		if (workerThread != null)
-		{
-			if (workerThread.IsAlive)
-			{
-				workerThread.Join();
-			}
 		}
 	}
 

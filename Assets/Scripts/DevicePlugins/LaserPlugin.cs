@@ -12,6 +12,9 @@ public class LaserPlugin : DevicePlugin
 {
 	private SensorDevices.Lidar lidar = null;
 
+	private string hashServiceKey = string.Empty;
+	private string hashKey = string.Empty;
+
 	protected override void OnAwake()
 	{
 		partName = DeviceHelper.GetPartName(gameObject);
@@ -22,13 +25,13 @@ public class LaserPlugin : DevicePlugin
 
 	protected override void OnStart()
 	{
-		var hashServiceKey = MakeHashKey("Info");
+		hashServiceKey = MakeHashKey("Info");
 		if (!RegisterServiceDevice(hashServiceKey))
 		{
 			Debug.LogError("Failed to register service - " + hashServiceKey);
 		}
 
-		var hashKey = MakeHashKey();
+		hashKey = MakeHashKey();
 		if (!RegisterTxDevice(hashKey))
 		{
 			Debug.LogError("Failed to register for LaserPlugin - " + hashKey);
@@ -36,6 +39,12 @@ public class LaserPlugin : DevicePlugin
 
 		AddThread(Response);
 		AddThread(Sender);
+	}
+
+	protected override void OnTerminate()
+	{
+		DeregisterDevice(hashKey);
+		DeregisterDevice(hashServiceKey);
 	}
 
 	private void Sender()

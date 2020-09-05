@@ -39,12 +39,13 @@ public partial class ElevatorSystem : DevicePlugin
 
 	private const int NON_ELEVATOR_INDEX = -1;
 
-	private bool isRunningThread = true;
 	private MemoryStream msForService = new MemoryStream();
 	private Param responseMessage = new Param();
 	private Dictionary<string, float> floorList = new Dictionary<string, float>();
 	private Dictionary<int, ElevatorEntity> elevatorList = new Dictionary<int, ElevatorEntity>();
 	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue = new ConcurrentQueue<ElevatorTask>();
+
+	private string hashKey = string.Empty;
 
 	protected override void OnAwake()
 	{
@@ -53,7 +54,7 @@ public partial class ElevatorSystem : DevicePlugin
 
 	protected override void OnStart()
 	{
-		var hashKey = MakeHashKey();
+		hashKey = MakeHashKey();
 		if (!RegisterServiceDevice(hashKey))
 		{
 			Debug.LogError("Failed to register ElevatorSystem service - " + hashKey);
@@ -97,9 +98,9 @@ public partial class ElevatorSystem : DevicePlugin
 		}
 	}
 
-	void OnDestroy()
+	protected override void OnTerminate()
 	{
-		isRunningThread = false;
+		DeregisterDevice(hashKey);
 	}
 
 	public void ReadElevatorContext()
@@ -267,7 +268,7 @@ public partial class ElevatorSystem : DevicePlugin
 	{
 		byte[] receivedBuffer;
 
-		while (isRunningThread)
+		while (IsRunningThread)
 		{
 			receivedBuffer = ReceiveRequest();
 

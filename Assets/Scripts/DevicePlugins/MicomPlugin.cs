@@ -15,6 +15,10 @@ public class MicomPlugin : DevicePlugin
 	private MicomInput micomInput = null;
 	private MicomSensor micomSensor = null;
 
+	private string hashServiceKey;
+	private string hashTxKey;
+	private string hashRxKey;
+
 	protected override void OnAwake()
 	{
 		partName = "MICOM";
@@ -30,27 +34,34 @@ public class MicomPlugin : DevicePlugin
 		var debugging = parameters.GetValue<bool>("debug", false);
 		micomInput.EnableDebugging = debugging;
 
-		var hashServiceKey = MakeHashKey("_SENSOR" + "Info");
+		hashServiceKey = MakeHashKey("_SENSOR" + "Info");
 		if (!RegisterServiceDevice(hashServiceKey))
 		{
 			Debug.LogError("Failed to register service - " + hashServiceKey);
 		}
 
-		var txHashKey = MakeHashKey("_SENSOR");
-		if (!RegisterTxDevice(txHashKey))
+		hashTxKey = MakeHashKey("_SENSOR");
+		if (!RegisterTxDevice(hashTxKey))
 		{
-			Debug.LogError("Failed to register for MicomPlugin TX- " + txHashKey);
+			Debug.LogError("Failed to register for MicomPlugin TX- " + hashTxKey);
 		}
 
-		var rxHashKey = MakeHashKey("_INPUT");
-		if (!RegisterRxDevice(rxHashKey))
+		hashRxKey = MakeHashKey("_INPUT");
+		if (!RegisterRxDevice(hashRxKey))
 		{
-			Debug.LogError("Failed to register for MicomPlugin RX- " + rxHashKey);
+			Debug.LogError("Failed to register for MicomPlugin RX- " + hashRxKey);
 		}
 
 		AddThread(Receiver);
 		AddThread(Sender);
 		AddThread(Response);
+	}
+
+	protected override void OnTerminate()
+	{
+		DeregisterDevice(hashRxKey);
+		DeregisterDevice(hashTxKey);
+		DeregisterDevice(hashServiceKey);
 	}
 
 	private void Sender()

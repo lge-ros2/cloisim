@@ -11,6 +11,9 @@ public class GpsPlugin : DevicePlugin
 {
 	private SensorDevices.GPS gps = null;
 
+	private string hashServiceKey = string.Empty;
+	private string hashKey = string.Empty;
+
 	protected override void OnAwake()
 	{
 		gps = gameObject.GetComponent<SensorDevices.GPS>();
@@ -19,13 +22,13 @@ public class GpsPlugin : DevicePlugin
 
 	protected override void OnStart()
 	{
-		var hashServiceKey = MakeHashKey("Info");
+		hashServiceKey = MakeHashKey("Info");
 		if (!RegisterServiceDevice(hashServiceKey))
 		{
 			Debug.LogError("Failed to register service - " + hashServiceKey);
 		}
 
-		var hashKey = MakeHashKey();
+		hashKey = MakeHashKey();
 		if (!RegisterTxDevice(hashKey))
 		{
 			Debug.LogError("Failed to register for GpsPlugin - " + hashKey);
@@ -33,6 +36,12 @@ public class GpsPlugin : DevicePlugin
 
 		AddThread(Response);
 		AddThread(Sender);
+	}
+
+	protected override void OnTerminate()
+	{
+		DeregisterDevice(hashKey);
+		DeregisterDevice(hashServiceKey);
 	}
 
 	private void Sender()

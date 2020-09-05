@@ -15,7 +15,7 @@ public partial class DeviceTransporter : MonoBehaviour
 	public string defaultPipeAddress = "127.0.0.1";
 	private int highwatermark = 1000;
 
-	void Awake()
+	protected void InitializeTransporter()
 	{
 		var enviromentPipeAddress = Environment.GetEnvironmentVariable("SIM_BRIDGE_IP");
 
@@ -27,27 +27,17 @@ public partial class DeviceTransporter : MonoBehaviour
 		SetPipeAddress(defaultPipeAddress);
 	}
 
-	void OnDestroy()
+	protected void DestroyTransporter()
 	{
-		if (requestSocket != null)
-		{
-			requestSocket.Close();
-		}
+		// Debug.Log("DestroyTransporter");
 
-		if (responseSocket != null)
-		{
-			responseSocket.Close();
-		}
+		DestroyRequestSocket();
 
-		if (subscriberSocket != null)
-		{
-			subscriberSocket.Close();
-		}
+		DestroyResponseSocket();
 
-		if (publisherSocket != null)
-		{
-			publisherSocket.Close();
-		}
+		DestroySubscriberSocket();
+
+		DestroyPublisherSocket();
 	}
 
 	public void SetTagSize(in ushort value)
