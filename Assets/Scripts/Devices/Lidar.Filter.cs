@@ -16,15 +16,15 @@ namespace SensorDevices
 
 		private void DoParseFilter()
 		{
-			if (pluginParameters == null)
+			if (GetPluginParameters() == null)
 			{
 				return;
 			}
 
 			// Get Paramters
-			useIntensity_ = pluginParameters.GetValue<bool>("intensity");
-			var filterAngleLower_ = pluginParameters.GetValue<float>("filter/angle/horizontal/lower", float.NegativeInfinity);
-			var filterAngleUpper_ = pluginParameters.GetValue<float>("filter/angle/horizontal/upper", float.PositiveInfinity);
+			useIntensity_ = GetPluginParameters().GetValue<bool>("intensity");
+			var filterAngleLower_ = GetPluginParameters().GetValue<float>("filter/angle/horizontal/lower", float.NegativeInfinity);
+			var filterAngleUpper_ = GetPluginParameters().GetValue<float>("filter/angle/horizontal/upper", float.PositiveInfinity);
 
 			// calculate angle filter range
 			var laserScan = laserScanStamped.Scan;

@@ -12,7 +12,7 @@ using UnityEngine;
 
 public class PluginParameters
 {
-	private XmlNode parameters;
+	private XmlNode parameters = null;
 
 	public void SetRootData(in XmlNode node)
 	{

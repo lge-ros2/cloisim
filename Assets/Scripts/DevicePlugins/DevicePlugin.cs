@@ -31,7 +31,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	private BridgeManager bridgeManager = null;
 
 	public string pluginName { get; protected set; } = string.Empty;
-	protected PluginParameters parameters = null;
+	protected PluginParameters parameters = new PluginParameters();
 
 	protected MemoryStream msForInfoResponse = new MemoryStream();
 
@@ -172,8 +172,6 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	void Awake()
 	{
 		InitializeTransporter();
-
-		parameters = new PluginParameters();
 
 		var coreObject = GameObject.Find("Core");
 		if (coreObject == null)

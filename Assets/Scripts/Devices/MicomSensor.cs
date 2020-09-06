@@ -42,24 +42,24 @@ public class MicomSensor : Device
 
 	protected override void OnStart()
 	{
-		var updateRate = pluginParameters.GetValue<float>("update_rate", 20);
+		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
 		SetUpdateRate(updateRate);
 
-		var kp = pluginParameters.GetValue<float>("PID/kp");
-		var ki = pluginParameters.GetValue<float>("PID/ki");
-		var kd = pluginParameters.GetValue<float>("PID/kd");
+		var kp = GetPluginParameters().GetValue<float>("PID/kp");
+		var ki = GetPluginParameters().GetValue<float>("PID/ki");
+		var kd = GetPluginParameters().GetValue<float>("PID/kd");
 
 		var pidControl = new PID(kp, ki, kd);
 
-		wheelBase = pluginParameters.GetValue<float>("wheel/base");
-		wheelRadius = pluginParameters.GetValue<float>("wheel/radius");
+		wheelBase = GetPluginParameters().GetValue<float>("wheel/base");
+		wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
 		divideWheelRadius = 1.0f/wheelRadius;
 
-		var wheelNameLeft = pluginParameters.GetValue<string>("wheel/location[@type='left']");
-		var wheelNameRight = pluginParameters.GetValue<string>("wheel/location[@type='right']");
+		var wheelNameLeft = GetPluginParameters().GetValue<string>("wheel/location[@type='left']");
+		var wheelNameRight = GetPluginParameters().GetValue<string>("wheel/location[@type='right']");
 
-		var motorFriction = pluginParameters.GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
-		var brakeFriction = pluginParameters.GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
+		var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
+		var brakeFriction = GetPluginParameters().GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
 
 		var modelList = GetComponentsInChildren<ModelPlugin>();
 		foreach (var model in modelList)
@@ -95,7 +95,7 @@ public class MicomSensor : Device
 			}
 		}
 
-		if (pluginParameters.GetValues<string>("uss/sensor", out var ussList))
+		if (GetPluginParameters().GetValues<string>("uss/sensor", out var ussList))
 		{
 			foreach (var uss in ussList)
 			{
@@ -112,7 +112,7 @@ public class MicomSensor : Device
 			micomSensorData.uss.Distances = new double[ussList.Count];
 		}
 
-		if (pluginParameters.GetValues<string>("ir/sensor", out var irList))
+		if (GetPluginParameters().GetValues<string>("ir/sensor", out var irList))
 		{
 			foreach (var ir in irList)
 			{
@@ -129,7 +129,7 @@ public class MicomSensor : Device
 			micomSensorData.ir.Distances = new double[irList.Count];
 		}
 
-		if (pluginParameters.GetValues<string>("magnet/sensor", out var magnetList))
+		if (GetPluginParameters().GetValues<string>("magnet/sensor", out var magnetList))
 		{
 			foreach (var model in modelList)
 			{
@@ -137,7 +137,7 @@ public class MicomSensor : Device
 			}
 		}
 
-		var targetContactName = pluginParameters.GetAttribute<string>("bumper", "contact");
+		var targetContactName = GetPluginParameters().GetAttribute<string>("bumper", "contact");
 		// Debug.Log(targetContactName);
 
 		var contactsInChild = GetComponentsInChildren<SensorDevices.Contact>();
@@ -153,7 +153,7 @@ public class MicomSensor : Device
 
 		if (bumperContact != null)
 		{
-			if (pluginParameters.GetValues<string>("bumper/joint_name", out var bumperJointNameList))
+			if (GetPluginParameters().GetValues<string>("bumper/joint_name", out var bumperJointNameList))
 			{
 				var linkList = GetComponentsInChildren<LinkPlugin>();
 				foreach (var link in linkList)
