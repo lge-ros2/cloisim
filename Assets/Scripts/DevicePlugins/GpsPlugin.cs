@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class GpsPlugin : DevicePlugin

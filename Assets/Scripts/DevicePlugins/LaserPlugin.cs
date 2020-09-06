@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using UnityEngine;
-using System.Threading;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class LaserPlugin : DevicePlugin
@@ -63,6 +61,12 @@ public class LaserPlugin : DevicePlugin
 
 				switch (requestMessage.Name)
 				{
+					case "request_ros2":
+						var topic_name = parameters.GetValue<string>("ros2/topic_name");
+						var frame_id = parameters.GetValue<string>("ros2/frame_id");
+						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
+						break;
+
 					case "request_transform":
 						var devicePose = device.GetPose();
 
