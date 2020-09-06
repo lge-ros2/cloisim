@@ -12,7 +12,7 @@ using messages = gazebo.msgs;
 
 public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 {
-	public static messages.Param ParsingInfoRequest(in byte[] srcReceivedBuffer, ref MemoryStream dstCameraInfoMemStream)
+	protected static messages.Param ParsingInfoRequest(in byte[] srcReceivedBuffer, ref MemoryStream dstCameraInfoMemStream)
 	{
 		if (srcReceivedBuffer == null)
 		{
@@ -27,7 +27,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		return Serializer.Deserialize<messages.Param>(dstCameraInfoMemStream);
 	}
 
-	public static void SetCameraInfoResponse(ref MemoryStream msCameraInfo, in messages.CameraSensor sensorInfo)
+	protected static void SetCameraInfoResponse(ref MemoryStream msCameraInfo, in messages.CameraSensor sensorInfo)
 	{
 		if (msCameraInfo == null || sensorInfo == null)
 		{
@@ -38,7 +38,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		Serializer.Serialize<messages.CameraSensor>(msCameraInfo, sensorInfo);
 	}
 
-	public static void SetTransformInfoResponse(ref MemoryStream msTransformInfo, in Pose devicePose)
+	protected static void SetTransformInfoResponse(ref MemoryStream msTransformInfo, in Pose devicePose)
 	{
 		if (msTransformInfo == null)
 		{
@@ -62,7 +62,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		Serializer.Serialize<messages.Param>(msTransformInfo, objectTransformInfo);
 	}
 
-	public static void SetROS2CommonInfoResponse(ref MemoryStream msRos2Info, in string topicName, in string frameId)
+	protected static void SetROS2CommonInfoResponse(ref MemoryStream msRos2Info, in string topicName, in string frameId)
 	{
 		if (msRos2Info == null)
 		{
@@ -91,6 +91,5 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 		ClearMemoryStream(ref msRos2Info);
 		Serializer.Serialize<messages.Param>(msRos2Info, ros2CommonInfo);
-
 	}
 }
