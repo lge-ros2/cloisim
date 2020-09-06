@@ -86,18 +86,21 @@ public partial class SDFImporter : SDF.Importer
 			}
 
 			var pluginObject = targetObject.AddComponent(pluginType);
+
 			var devicePluginObject = pluginObject as DevicePlugin;
 			var devicesPluginObject = pluginObject as DevicesPlugin;
 
 			if (devicePluginObject != null)
 			{
 				var node = plugin.GetNode();
+				devicePluginObject.SetPluginName(plugin.Name);
 				devicePluginObject.SetPluginParameters(node);
 				// Debug.Log("[Plugin] device added : " + plugin.Name);
 			}
 			else if (devicesPluginObject != null)
 			{
 				var node = plugin.GetNode();
+				devicesPluginObject.SetPluginName(plugin.Name);
 				devicesPluginObject.SetPluginParameters(node);
 				// Debug.Log("[Plugin] devices added : " + plugin.Name);
 			}

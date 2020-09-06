@@ -13,14 +13,16 @@ using System.Xml;
 
 public interface IDevicePlugin
 {
+	void SetPluginName(in string name);
 	void SetPluginParameters(in XmlNode node);
 	void Reset();
 }
 
 public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 {
-	public string modelName { get; protected set; } = String.Empty;
-	public string partName { get; protected set; } = String.Empty;
+	public string pluginName { get; protected set; } = string.Empty;
+	public string modelName { get; protected set; } = string.Empty;
+	public string partName { get; protected set; } = string.Empty;
 
 	private BridgeManager bridgeManager = null;
 
@@ -29,6 +31,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	protected MemoryStream msForInfoResponse = new MemoryStream();
 
 	private bool runningThread = true;
+
 	private List<Thread> threadList = new List<Thread>();
 
 	protected bool IsRunningThread => runningThread;
@@ -59,6 +62,11 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 				thread.Start();
 			}
 		}
+	}
+
+	public void SetPluginName(in string name)
+	{
+		pluginName = name;
 	}
 
 	public void SetPluginParameters(in XmlNode node)

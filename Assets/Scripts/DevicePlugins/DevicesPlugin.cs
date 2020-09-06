@@ -10,6 +10,8 @@ using UnityEngine;
 
 public abstract class DevicesPlugin : MonoBehaviour, IDevicePlugin
 {
+	public string pluginName { get; protected set; } = string.Empty;
+
 	protected PluginParameters parameters = new PluginParameters();
 
 	private Dictionary<string, DevicePlugin> devicePlugins = new Dictionary<string, DevicePlugin>();
@@ -32,6 +34,11 @@ public abstract class DevicesPlugin : MonoBehaviour, IDevicePlugin
 	public void AddDevicePlugin(in string deviceName, in DevicePlugin devicePlugin)
 	{
 		devicePlugins.Add(deviceName, devicePlugin);
+	}
+
+	public void SetPluginName(in string name)
+	{
+		pluginName = name;
 	}
 
 	public void SetPluginParameters(in XmlNode node)
