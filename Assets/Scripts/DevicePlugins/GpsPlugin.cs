@@ -58,11 +58,16 @@ public class GpsPlugin : DevicePlugin
 			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
 			{
-				var device = gps as Device;
-
 				switch (requestMessage.Name)
 				{
+					case "request_ros2":
+						var topic_name = parameters.GetValue<string>("ros2/topic_name");
+						var frame_id = parameters.GetValue<string>("ros2/frame_id");
+						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
+						break;
+
 					case "request_transform":
+						var device = gps as Device;
 						var devicePose = device.GetPose();
 						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
 						break;
