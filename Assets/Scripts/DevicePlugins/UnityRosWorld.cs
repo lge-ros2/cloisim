@@ -14,15 +14,16 @@ public class UnityRosWorld : DevicePlugin
 
 	protected override void OnAwake()
 	{
-		modelName = "World";
-		partName = "UnityRos";
-
+		type = Type.WORLD;
 		clock = gameObject.AddComponent<Clock>();
+
+		modelName = "CLOiSimWorld";
+		partName = "UnityRos";
 	}
 
 	protected override void OnStart()
 	{
-		RegisterTxDevice();
+		RegisterTxDevice("Clock");
 
 		AddThread(Sender);
 	}

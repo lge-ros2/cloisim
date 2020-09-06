@@ -14,14 +14,15 @@ public class MultiCameraPlugin : DevicePlugin
 
 	protected override void OnAwake()
 	{
-		multicam = gameObject.GetComponent<SensorDevices.MultiCamera>();
+		type = Type.MULTICAMERA;
 		partName = DeviceHelper.GetPartName(gameObject);
+		multicam = gameObject.GetComponent<SensorDevices.MultiCamera>();
 	}
 
 	protected override void OnStart()
 	{
 		RegisterServiceDevice("Info");
-		RegisterTxDevice();
+		RegisterTxDevice("Data");
 
 		AddThread(Sender);
 		AddThread(Response);

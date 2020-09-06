@@ -17,6 +17,8 @@ public class MicomPlugin : DevicePlugin
 
 	protected override void OnAwake()
 	{
+		type = Type.MICOM;
+
 		micomSensor = gameObject.AddComponent<MicomSensor>();
 		micomSensor.SetPluginParameter(parameters);
 		micomInput = gameObject.AddComponent<MicomInput>();

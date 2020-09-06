@@ -16,11 +16,15 @@ public interface IDevicePlugin
 	void SetPluginName(in string name);
 	void SetPluginParameters(in XmlNode node);
 	void Reset();
-	enum DeviceType {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAM, MULTICAMERA};
+
 }
 
 public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 {
+	public enum Type {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
+
+	public Type type { get; protected set; }
+
 	public string modelName { get; protected set; } = string.Empty;
 	public string partName { get; protected set; } = string.Empty;
 
@@ -64,6 +68,11 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 	}
 
+	public void ChangePluginType(in Type targetType)
+	{
+		type = targetType;
+	}
+
 	public void SetPluginName(in string name)
 	{
 		pluginName = name;
@@ -83,12 +92,11 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	private bool PrepareDevice(in string subPartName, out ushort port, out ulong hash)
 	{
-		if (bridgeManager.AllocateDevice(modelName, partName, subPartName, out var hashKey, out port))
+		if (bridgeManager.AllocateDevice(type.ToString(), modelName, partName, subPartName, out var hashKey, out port))
 		{
 			hashKeyList.Add(hashKey);
 
 			hash = DeviceHelper.GetStringHashCode(hashKey);
-
 			// Debug.LogFormat("PrepareDevice - port({0}) hash({1})", port, hash);
 			return true;
 		}

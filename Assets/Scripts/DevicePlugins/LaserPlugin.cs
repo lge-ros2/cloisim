@@ -17,6 +17,7 @@ public class LaserPlugin : DevicePlugin
 
 	protected override void OnAwake()
 	{
+		type = Type.LASER;
 		partName = DeviceHelper.GetPartName(gameObject);
 
 		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
@@ -26,7 +27,7 @@ public class LaserPlugin : DevicePlugin
 	protected override void OnStart()
 	{
 		RegisterServiceDevice("Info");
-		RegisterTxDevice();
+		RegisterTxDevice("Data");
 
 		AddThread(Response);
 		AddThread(Sender);

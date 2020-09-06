@@ -16,6 +16,8 @@ public class GpsPlugin : DevicePlugin
 
 	protected override void OnAwake()
 	{
+		type = Type.GPS;
+
 		gps = gameObject.GetComponent<SensorDevices.GPS>();
 
 		partName = DeviceHelper.GetPartName(gameObject);
@@ -24,7 +26,7 @@ public class GpsPlugin : DevicePlugin
 	protected override void OnStart()
 	{
 		RegisterServiceDevice("Info");
-		RegisterTxDevice();
+		RegisterTxDevice("Data");
 
 		AddThread(Response);
 		AddThread(Sender);

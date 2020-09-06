@@ -49,12 +49,13 @@ public partial class ElevatorSystem : DevicePlugin
 
 	protected override void OnAwake()
 	{
+		type = Type.ELEVATOR;
 		partName = "ElevatorSystem";
 	}
 
 	protected override void OnStart()
 	{
-		RegisterServiceDevice();
+		RegisterServiceDevice("Control");
 
 		ReadFloorContext();
 		ReadElevatorContext();
@@ -258,11 +259,9 @@ public partial class ElevatorSystem : DevicePlugin
 
 	private void ServiceThread()
 	{
-		byte[] receivedBuffer;
-
 		while (IsRunningThread)
 		{
-			receivedBuffer = ReceiveRequest();
+			var receivedBuffer = ReceiveRequest();
 
 			if (receivedBuffer != null)
 			{

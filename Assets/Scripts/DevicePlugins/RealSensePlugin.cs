@@ -50,6 +50,7 @@ public class RealSensePlugin : DevicesPlugin
 			if (camera.gameObject.name.Equals(name))
 			{
 				var plugin = camera.gameObject.AddComponent<CameraPlugin>();
+				plugin.ChangePluginType(DevicePlugin.Type.REALSENSE);
 				plugin.subPartName = name;
 
 				AddDevicePlugin(name, plugin);

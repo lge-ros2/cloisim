@@ -15,6 +15,9 @@ public class CameraPlugin : DevicePlugin
 
 	protected override void OnAwake()
 	{
+		var isDepthCamOnly = parameters.GetValue<bool>("is_depthcam_only");
+		type = (isDepthCamOnly) ? Type.DEPTHCAMERA : Type.CAMERA;
+
 		cam = gameObject.GetComponent<SensorDevices.Camera>();
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
@@ -22,7 +25,7 @@ public class CameraPlugin : DevicePlugin
 	protected override void OnStart()
 	{
 		RegisterServiceDevice(subPartName + "Info");
-		RegisterTxDevice(subPartName);
+		RegisterTxDevice(subPartName + "Data");
 
 		AddThread(Response);
 		AddThread(Sender);

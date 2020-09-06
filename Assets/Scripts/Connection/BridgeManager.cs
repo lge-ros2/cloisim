@@ -23,7 +23,26 @@ public class BridgeManager : DeviceTransporter
 	private bool runningWorkerThread = true;
 	private Thread workerThread;
 
-	private Dictionary<string, ushort> portMapTable = new Dictionary<string, ushort>();
+	private Dictionary<string, ushort> haskKeyPortMapTable = new Dictionary<string, ushort>();
+
+	/*
+	 * ModelName, DevicePluginType, Devicename, topic : portnumber
+	 *
+	 * {
+	 * 	"ModelName":
+	 *	{
+	 * 		"DevicePluginType":
+	 * 		{
+	 * 			"PartsName":
+	 * 			{
+	 * 				"topic_name": 12345
+	 * 			}
+	 * 		}
+	 * 	},
+	 * 	...
+	 * }
+	 */
+	private Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> deviceMapTable = new Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>>();
 
 	private IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
 
@@ -51,9 +70,9 @@ public class BridgeManager : DeviceTransporter
 	{
 		var isRemoved = false;
 
-		lock (portMapTable)
+		lock (haskKeyPortMapTable)
 		{
-			isRemoved = portMapTable.Remove(hashKey);
+			isRemoved = haskKeyPortMapTable.Remove(hashKey);
 		}
 
 		if (!isRemoved)
@@ -68,9 +87,9 @@ public class BridgeManager : DeviceTransporter
 
 	public ushort SearchSensorPort(in string hashKey)
 	{
-		lock (portMapTable)
+		lock (haskKeyPortMapTable)
 		{
-			if (portMapTable.TryGetValue(hashKey, out var port))
+			if (haskKeyPortMapTable.TryGetValue(hashKey, out var port))
 			{
 				return port;
 			}
@@ -79,17 +98,32 @@ public class BridgeManager : DeviceTransporter
 		return 0;
 	}
 
+	public Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> GetDeviceMapList(string filter = "")
+	{
+		lock (deviceMapTable)
+		{
+			// if (string.IsNullOrEmpty(filter))
+			{
+				return deviceMapTable;
+			}
+			// else
+			{
+				// return haskKeyPortMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(p => p.Key, p => p.Value);
+			}
+		}
+	}
+
 	public Dictionary<string, ushort> GetDevicePortList(string filter = "")
 	{
-		lock (portMapTable)
+		lock (haskKeyPortMapTable)
 		{
 			if (string.IsNullOrEmpty(filter))
 			{
-				return portMapTable;
+				return haskKeyPortMapTable;
 			}
 			else
 			{
-				return portMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(p => p.Key, p => p.Value);
+				return haskKeyPortMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(p => p.Key, p => p.Value);
 			}
 		}
 	}
@@ -113,14 +147,57 @@ public class BridgeManager : DeviceTransporter
 		return true;
 	}
 
-	public bool AllocateDevice(in string modelName, in string partName, in string subPartName, out string hashKey, out ushort port)
+	public bool AllocateDevice(in string deviceType, in string modelName, in string partName, in string subPartName, out string hashKey, out ushort port)
 	{
 		hashKey = modelName + partName + subPartName;
+		if (string.IsNullOrEmpty(hashKey))
+		{
+			Debug.LogError("Impossible empty hashKey");
+			port = 0;
+			return false;
+		}
 
 		port = AllocateDevicePort(hashKey);
 
 		if (port > 0)
 		{
+			if (deviceMapTable.TryGetValue(modelName, out var devicesTypeMapTable))
+			{
+				if (devicesTypeMapTable.TryGetValue(deviceType, out var partsMapTable))
+				{
+					if (partsMapTable.TryGetValue(partName, out var portsMapTable))
+					{
+						portsMapTable.Add(subPartName, port);
+					}
+					else
+					{
+						var newPortsMapTable = new Dictionary<string, ushort>();
+						newPortsMapTable.Add(subPartName, port);
+						partsMapTable.Add(partName, newPortsMapTable);
+					}
+				}
+				else
+				{
+					var portsMapTable = new Dictionary<string, ushort>();
+					portsMapTable.Add(subPartName, port);
+					var newPartsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
+					newPartsMapTable.Add(partName, portsMapTable);
+
+					devicesTypeMapTable.Add(deviceType, newPartsMapTable);
+				}
+			}
+			else
+			{
+				var portsMapTable = new Dictionary<string, ushort>();
+				portsMapTable.Add(subPartName, port);
+				var partsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
+				partsMapTable.Add(partName, portsMapTable);
+				var devicesTypeMap = new Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>();
+				devicesTypeMap.Add(deviceType, partsMapTable);
+
+				deviceMapTable.Add(modelName, devicesTypeMap);
+			}
+
 			return true;
 		}
 
@@ -144,9 +221,9 @@ public class BridgeManager : DeviceTransporter
 			var port = (ushort)(minPortRange + index);
 			var isContained = false;
 
-			lock (portMapTable)
+			lock (haskKeyPortMapTable)
 			{
-				isContained = portMapTable.ContainsValue(port);
+				isContained = haskKeyPortMapTable.ContainsValue(port);
 			}
 
 			// check if already binded
@@ -159,9 +236,9 @@ public class BridgeManager : DeviceTransporter
 
 		if (newPort > 0)
 		{
-			lock (portMapTable)
+			lock (haskKeyPortMapTable)
 			{
-				portMapTable.Add(hashKey, newPort);
+				haskKeyPortMapTable.Add(hashKey, newPort);
 			}
 
 			Debug.LogFormat("Allocated for HashKey({0}), Port({1})", hashKey, newPort);
