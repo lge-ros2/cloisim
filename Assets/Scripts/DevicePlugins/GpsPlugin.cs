@@ -17,31 +17,17 @@ public class GpsPlugin : DevicePlugin
 	protected override void OnAwake()
 	{
 		gps = gameObject.GetComponent<SensorDevices.GPS>();
+
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
-		hashServiceKey = MakeHashKey("Info");
-		if (!RegisterServiceDevice(hashServiceKey))
-		{
-			Debug.LogError("Failed to register service - " + hashServiceKey);
-		}
-
-		hashKey = MakeHashKey();
-		if (!RegisterTxDevice(hashKey))
-		{
-			Debug.LogError("Failed to register for GpsPlugin - " + hashKey);
-		}
+		RegisterServiceDevice("Info");
+		RegisterTxDevice();
 
 		AddThread(Response);
 		AddThread(Sender);
-	}
-
-	protected override void OnTerminate()
-	{
-		DeregisterDevice(hashKey);
-		DeregisterDevice(hashServiceKey);
 	}
 
 	private void Sender()

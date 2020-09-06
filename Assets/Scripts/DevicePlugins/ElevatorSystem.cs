@@ -54,14 +54,11 @@ public partial class ElevatorSystem : DevicePlugin
 
 	protected override void OnStart()
 	{
-		hashKey = MakeHashKey();
-		if (!RegisterServiceDevice(hashKey))
-		{
-			Debug.LogError("Failed to register ElevatorSystem service - " + hashKey);
-		}
+		RegisterServiceDevice();
 
 		ReadFloorContext();
 		ReadElevatorContext();
+
 		GenerateResponseMessage();
 
 		AddThread(ServiceThread);
@@ -96,11 +93,6 @@ public partial class ElevatorSystem : DevicePlugin
 				Debug.LogFormat("Empty task Queue: {0}, {1}, {2}",result.elevatorIndex, result.fromFloor, result.toFloor);
 			}
 		}
-	}
-
-	protected override void OnTerminate()
-	{
-		DeregisterDevice(hashKey);
 	}
 
 	public void ReadElevatorContext()

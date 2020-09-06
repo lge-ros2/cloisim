@@ -13,9 +13,6 @@ public class CameraPlugin : DevicePlugin
 
 	public string subPartName = string.Empty;
 
-	private string hashServiceKey = string.Empty;
-	private string hashTxKey = string.Empty;
-
 	protected override void OnAwake()
 	{
 		cam = gameObject.GetComponent<SensorDevices.Camera>();
@@ -24,26 +21,11 @@ public class CameraPlugin : DevicePlugin
 
 	protected override void OnStart()
 	{
-		hashServiceKey = MakeHashKey(subPartName + "Info");
-		if (!RegisterServiceDevice(hashServiceKey))
-		{
-			Debug.LogError("Failed to register service - " + hashServiceKey);
-		}
-
-		hashTxKey = MakeHashKey(subPartName);
-		if (!RegisterTxDevice(hashTxKey))
-		{
-			Debug.LogError("Failed to register for CameraPlugin - " + hashTxKey);
-		}
+		RegisterServiceDevice(subPartName + "Info");
+		RegisterTxDevice(subPartName);
 
 		AddThread(Response);
 		AddThread(Sender);
-	}
-
-	protected override void OnTerminate()
-	{
-		DeregisterDevice(hashServiceKey);
-		DeregisterDevice(hashTxKey);
 	}
 
 	private void Sender()

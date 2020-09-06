@@ -20,25 +20,24 @@ public interface IDevicePlugin
 
 public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 {
-	public string pluginName { get; protected set; } = string.Empty;
 	public string modelName { get; protected set; } = string.Empty;
 	public string partName { get; protected set; } = string.Empty;
 
 	private BridgeManager bridgeManager = null;
 
+	public string pluginName { get; protected set; } = string.Empty;
 	protected PluginParameters parameters = null;
 
 	protected MemoryStream msForInfoResponse = new MemoryStream();
 
 	private bool runningThread = true;
-
 	private List<Thread> threadList = new List<Thread>();
+	private List<string> hashKeyList = new List<string>();
 
 	protected bool IsRunningThread => runningThread;
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
-	protected abstract void OnTerminate();
 	protected virtual void OnReset() {}
 
 	protected bool AddThread(in ThreadStart function)
@@ -96,7 +95,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		return true;
 	}
 
-	protected string MakeHashKey(in string subPartName = "")
+	private string MakeHashKey(in string subPartName = "")
 	{
 		return modelName + partName + subPartName;
 	}
@@ -107,53 +106,80 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		return true;
 	}
 
-	protected bool RegisterTxDevice(in string hashKey)
+	protected bool RegisterTxDevice(in string subHashKey = "")
 	{
+		var hashKey = MakeHashKey(subHashKey);
+
 		if (PrepareDevice(hashKey, out var port, out var hash))
 		{
 			SetHashForPublish(hash);
 			InitializePublisher(port);
+
+			hashKeyList.Add(hashKey);
+
 			return true;
 		}
+
+		Debug.LogError("Failed to register Tx Device - " + hashKey);
 
 		return false;
 	}
 
-	protected bool RegisterRxDevice(in string hashKey)
+	protected bool RegisterRxDevice(in string subHashKey = "")
 	{
+		var hashKey = MakeHashKey(subHashKey);
+
 		if (PrepareDevice(hashKey, out var port, out var hash))
 		{
 			SetHashForSubscription(hash);
 			InitializeSubscriber(port);
+
+			hashKeyList.Add(hashKey);
+
 			return 	true;
 		}
 
-		return true;
+		Debug.LogError("Failed to register Rx Device - " + hashKey);
+
+		return false;
 	}
 
-	protected bool RegisterServiceDevice(in string hashKey)
+	protected bool RegisterServiceDevice(in string subHashKey = "")
 	{
+		var hashKey = MakeHashKey(subHashKey);
+
 		if (PrepareDevice(hashKey, out var port, out var hash))
 		{
 			SetHashForResponse(hash);
 			InitializeResponsor(port);
 
+			hashKeyList.Add(hashKey);
+
 			return true;
 		}
 
-		return true;
+		Debug.LogError("Failed to register service device - " + hashKey);
+
+		return false;
 	}
 
-	protected bool RegisterClientDevice(in string hashKey)
+	protected bool RegisterClientDevice(in string subHashKey = "")
 	{
+		var hashKey = MakeHashKey(subHashKey);
+
 		if (PrepareDevice(hashKey, out var port, out var hash))
 		{
 			SetHashForRequest(hash);
 			InitializeRequester(port);
+
+			hashKeyList.Add(hashKey);
+
 			return true;
 		}
 
-		return true;
+		Debug.LogError("Failed to register client device - " + hashKey);
+
+		return false;
 	}
 
 	void Awake()
@@ -177,16 +203,21 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 
 		OnAwake();
-
-		if (string.IsNullOrEmpty(modelName))
-		{
-			modelName = DeviceHelper.GetModelName(gameObject);
-		}
 	}
 
 	// Start is called before the first frame update
 	void Start()
 	{
+		if (string.IsNullOrEmpty(modelName))
+		{
+			modelName = DeviceHelper.GetModelName(gameObject);
+		}
+
+		if (string.IsNullOrEmpty(partName))
+		{
+			partName = pluginName;
+		}
+
 		// PrintPluginData();
 
 		OnStart();
@@ -211,7 +242,10 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 		DestroyTransporter();
 
-		OnTerminate();
+		foreach (var hashKey in hashKeyList)
+		{
+			DeregisterDevice(hashKey);
+		}
 	}
 
 	public void Reset()

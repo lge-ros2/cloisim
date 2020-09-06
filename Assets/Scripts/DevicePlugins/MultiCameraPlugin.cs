@@ -12,9 +12,6 @@ public class MultiCameraPlugin : DevicePlugin
 {
 	private SensorDevices.MultiCamera multicam = null;
 
-	private string hashServiceKey = string.Empty;
-	private string hashKey = string.Empty;
-
 	protected override void OnAwake()
 	{
 		multicam = gameObject.GetComponent<SensorDevices.MultiCamera>();
@@ -23,26 +20,11 @@ public class MultiCameraPlugin : DevicePlugin
 
 	protected override void OnStart()
 	{
-		hashServiceKey = MakeHashKey("Info");
-		if (!RegisterServiceDevice(hashServiceKey))
-		{
-			Debug.LogError("Failed to register service - " + hashServiceKey);
-		}
-
-		hashKey = MakeHashKey();
-		if (!RegisterTxDevice(hashKey))
-		{
-			Debug.LogError("Failed to register for CameraPlugin - " + hashKey);
-		}
+		RegisterServiceDevice("Info");
+		RegisterTxDevice();
 
 		AddThread(Sender);
 		AddThread(Response);
-	}
-
-	protected override void OnTerminate()
-	{
-		DeregisterDevice(hashServiceKey);
-		DeregisterDevice(hashKey);
 	}
 
 	private void Sender()
