@@ -17,7 +17,7 @@ public class UnityRosWorld : DevicePlugin
 		type = Type.WORLD;
 		clock = gameObject.AddComponent<Clock>();
 
-		modelName = "CLOiSimWorld";
+		modelName = "World";
 		partName = "UnityRos";
 	}
 
