@@ -126,7 +126,7 @@ public class SimulationControlService : WebSocketBehavior
 
 			case "device_list":
 				{
-					var result = bridgeManager.GetDeviceMapList();
+					var result = bridgeManager.GetDeviceMapList(request.filter);
 					output = new SimulationControlResponseDeviceList();
 					(output as SimulationControlResponseDeviceList).result = result;
 				}

@@ -102,13 +102,13 @@ public class BridgeManager : DeviceTransporter
 	{
 		lock (deviceMapTable)
 		{
-			// if (string.IsNullOrEmpty(filter))
+			if (string.IsNullOrEmpty(filter))
 			{
 				return deviceMapTable;
 			}
-			// else
+			else
 			{
-				// return haskKeyPortMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(p => p.Key, p => p.Value);
+				return deviceMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(p => p.Key, p => p.Value);
 			}
 		}
 	}
