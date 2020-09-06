@@ -63,6 +63,12 @@ public class CameraPlugin : DevicePlugin
 			{
 				switch (requestMessage.Name)
 				{
+					case "request_ros2":
+						var topic_name = parameters.GetValue<string>("ros2/topic_name");
+						var frame_id = parameters.GetValue<string>("ros2/frame_id");
+						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
+						break;
+
 					case "request_camera_info":
 						var cameraInfoMessage = cam.GetCameraInfo();
 						SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
