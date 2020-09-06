@@ -80,9 +80,12 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 	}
 
-	private bool PrepareDevice(in string hashKey, out ushort port, out ulong hash)
+	private bool PrepareDevice(in string subPartName, out ushort port, out ulong hash)
 	{
+		var hashKey = MakeHashKey(subPartName);
+
 		port = bridgeManager.AllocateDevicePort(hashKey);
+
 		if (port == 0)
 		{
 			Debug.LogError("Port for device is not allocated!!!!!!!!");
@@ -91,6 +94,9 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 
 		hash = DeviceHelper.GetStringHashCode(hashKey);
+
+		hashKeyList.Add(hashKey);
+
 		// Debug.LogFormat("PrepareDevice - port({0}) hash({1})", port, hash);
 		return true;
 	}
@@ -106,78 +112,58 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		return true;
 	}
 
-	protected bool RegisterTxDevice(in string subHashKey = "")
+	protected bool RegisterTxDevice(in string subPartName = "")
 	{
-		var hashKey = MakeHashKey(subHashKey);
-
-		if (PrepareDevice(hashKey, out var port, out var hash))
+		if (PrepareDevice(subPartName, out var port, out var hash))
 		{
 			SetHashForPublish(hash);
 			InitializePublisher(port);
-
-			hashKeyList.Add(hashKey);
-
 			return true;
 		}
 
-		Debug.LogError("Failed to register Tx Device - " + hashKey);
+		Debug.LogErrorFormat("Failed to register Tx device {0}, {1}", modelName, partName);
 
 		return false;
 	}
 
-	protected bool RegisterRxDevice(in string subHashKey = "")
+	protected bool RegisterRxDevice(in string subPartName = "")
 	{
-		var hashKey = MakeHashKey(subHashKey);
-
-		if (PrepareDevice(hashKey, out var port, out var hash))
+		if (PrepareDevice(subPartName, out var port, out var hash))
 		{
 			SetHashForSubscription(hash);
 			InitializeSubscriber(port);
-
-			hashKeyList.Add(hashKey);
-
-			return 	true;
+			return true;
 		}
 
-		Debug.LogError("Failed to register Rx Device - " + hashKey);
+		Debug.LogErrorFormat("Failed to register Rx device {0}, {1}", modelName, partName);
 
 		return false;
 	}
 
-	protected bool RegisterServiceDevice(in string subHashKey = "")
+	protected bool RegisterServiceDevice(in string subPartName = "")
 	{
-		var hashKey = MakeHashKey(subHashKey);
-
-		if (PrepareDevice(hashKey, out var port, out var hash))
+		if (PrepareDevice(subPartName, out var port, out var hash))
 		{
 			SetHashForResponse(hash);
 			InitializeResponsor(port);
-
-			hashKeyList.Add(hashKey);
-
 			return true;
 		}
 
-		Debug.LogError("Failed to register service device - " + hashKey);
+		Debug.LogErrorFormat("Failed to register service device {0}, {1}", modelName, partName);
 
 		return false;
 	}
 
-	protected bool RegisterClientDevice(in string subHashKey = "")
+	protected bool RegisterClientDevice(in string subPartName = "")
 	{
-		var hashKey = MakeHashKey(subHashKey);
-
-		if (PrepareDevice(hashKey, out var port, out var hash))
+		if (PrepareDevice(subPartName, out var port, out var hash))
 		{
 			SetHashForRequest(hash);
 			InitializeRequester(port);
-
-			hashKeyList.Add(hashKey);
-
 			return true;
 		}
 
-		Debug.LogError("Failed to register client device - " + hashKey);
+		Debug.LogErrorFormat("Failed to register client device {0}, {1}", modelName, partName);
 
 		return false;
 	}
