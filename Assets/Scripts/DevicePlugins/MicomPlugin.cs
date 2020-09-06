@@ -5,7 +5,6 @@
  */
 
 using System.IO;
-using UnityEngine;
 using ProtoBuf;
 using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = gazebo.msgs;
@@ -82,12 +81,16 @@ public class MicomPlugin : DevicePlugin
 			{
 				switch (requestMessage.Name)
 				{
+					case "request_ros2":
+						SetROS2TransformInfoResponse(ref msForInfoResponse);
+						break;
+
 					case "request_wheel_info":
 						SetWheelInfoResponse(ref msForInfoResponse);
 						break;
 
 					case "request_transform":
-						var targetPartsName = requestMessage.Value.StringValue;
+						var targetPartsName = (requestMessage.Value == null) ? string.Empty : requestMessage.Value.StringValue;
 						var devicePose = micomSensor.GetPartsPose(targetPartsName);
 						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
 						break;
@@ -103,31 +106,86 @@ public class MicomPlugin : DevicePlugin
 		}
 	}
 
-	private void SetWheelInfoResponse(ref MemoryStream msCameraInfo)
+	private void SetROS2TransformInfoResponse(ref MemoryStream msRos2Info)
 	{
-		if (msCameraInfo != null)
+		if (msRos2Info == null)
 		{
-			var wheelInfo = new messages.Param();
-			wheelInfo.Name = "wheelInfo";
-			wheelInfo.Value = new messages.Any();
-			wheelInfo.Value.Type = messages.Any.ValueType.None;
-
-			var baseInfo = new messages.Param();
-			baseInfo.Name = "base";
-			baseInfo.Value = new messages.Any();
-			baseInfo.Value.Type = messages.Any.ValueType.Double;
-			baseInfo.Value.DoubleValue = micomSensor.WheelBase;
-			wheelInfo.Childrens.Add(baseInfo);
-
-			var sizeInfo = new messages.Param();
-			sizeInfo.Name = "radius";
-			sizeInfo.Value = new messages.Any();
-			sizeInfo.Value.Type = messages.Any.ValueType.Double;
-			sizeInfo.Value.DoubleValue = micomSensor.WheelRadius;
-			wheelInfo.Childrens.Add(sizeInfo);
-
-			ClearMemoryStream(ref msCameraInfo);
-			Serializer.Serialize<messages.Param>(msCameraInfo, wheelInfo);
+			return;
 		}
+
+		var ros2CommonInfo = new messages.Param();
+		ros2CommonInfo.Name = "ros2";
+		ros2CommonInfo.Value = new messages.Any();
+		ros2CommonInfo.Value.Type = messages.Any.ValueType.None;
+
+		var ros2TransformInfo = new messages.Param();
+		ros2TransformInfo.Name = "transform_name";
+		ros2TransformInfo.Value = new messages.Any();
+		ros2TransformInfo.Value.Type = messages.Any.ValueType.None;
+		ros2CommonInfo.Childrens.Add(ros2TransformInfo);
+
+		var imu_name = parameters.GetValue<string>("ros2/transform_name/imu");
+		var imuInfo = new messages.Param();
+		imuInfo.Name = "imu";
+		imuInfo.Value = new messages.Any();
+		imuInfo.Value.Type = messages.Any.ValueType.String;
+		imuInfo.Value.StringValue = imu_name;
+		ros2TransformInfo.Childrens.Add(imuInfo);
+
+		var wheelsInfo = new messages.Param();
+		wheelsInfo.Name = "wheels";
+		wheelsInfo.Value = new messages.Any();
+		wheelsInfo.Value.Type = messages.Any.ValueType.String;
+		wheelsInfo.Value.StringValue = imu_name;
+		ros2TransformInfo.Childrens.Add(wheelsInfo);
+
+		var wheel_left_name = parameters.GetValue<string>("ros2/transform_name/wheels/left");
+		var wheelLeftInfo = new messages.Param();
+		wheelLeftInfo.Name = "left";
+		wheelLeftInfo.Value = new messages.Any();
+		wheelLeftInfo.Value.Type = messages.Any.ValueType.String;
+		wheelLeftInfo.Value.StringValue = wheel_left_name;
+		wheelsInfo.Childrens.Add(wheelLeftInfo);
+
+		var wheel_right_name = parameters.GetValue<string>("ros2/transform_name/wheels/right");
+		var wheelRightInfo = new messages.Param();
+		wheelRightInfo.Name = "right";
+		wheelRightInfo.Value = new messages.Any();
+		wheelRightInfo.Value.Type = messages.Any.ValueType.String;
+		wheelRightInfo.Value.StringValue = wheel_left_name;
+		wheelsInfo.Childrens.Add(wheelRightInfo);
+
+		ClearMemoryStream(ref msRos2Info);
+		Serializer.Serialize<messages.Param>(msRos2Info, ros2TransformInfo);
+	}
+
+	private void SetWheelInfoResponse(ref MemoryStream msWheelInfo)
+	{
+		if (msWheelInfo == null)
+		{
+			return;
+		}
+
+		var wheelInfo = new messages.Param();
+		wheelInfo.Name = "wheelInfo";
+		wheelInfo.Value = new messages.Any();
+		wheelInfo.Value.Type = messages.Any.ValueType.None;
+
+		var baseInfo = new messages.Param();
+		baseInfo.Name = "base";
+		baseInfo.Value = new messages.Any();
+		baseInfo.Value.Type = messages.Any.ValueType.Double;
+		baseInfo.Value.DoubleValue = micomSensor.WheelBase;
+		wheelInfo.Childrens.Add(baseInfo);
+
+		var sizeInfo = new messages.Param();
+		sizeInfo.Name = "radius";
+		sizeInfo.Value = new messages.Any();
+		sizeInfo.Value.Type = messages.Any.ValueType.Double;
+		sizeInfo.Value.DoubleValue = micomSensor.WheelRadius;
+		wheelInfo.Childrens.Add(sizeInfo);
+
+		ClearMemoryStream(ref msWheelInfo);
+		Serializer.Serialize<messages.Param>(msWheelInfo, wheelInfo);
 	}
 }
