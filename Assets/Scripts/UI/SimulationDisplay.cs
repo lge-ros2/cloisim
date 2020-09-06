@@ -129,7 +129,7 @@ public class SimulationDisplay : MonoBehaviour
 
 		var fpsString = "FPS [" + GetBoldText(Mathf.Round(fps).ToString("F1")) + "]";
 		DrawShadow(rectFps, fpsString);
-		GUI.color = Color.blue;
+		GUI.color = Color.cyan;
 		GUI.Label(rectFps, fpsString);
 	}
 }
