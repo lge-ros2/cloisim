@@ -242,7 +242,7 @@ namespace SensorDevices
 			return sensorInfo;
 		}
 
-		public messages.Image GetImageMessage()
+		public messages.Image GetImageDataMessage()
 		{
 			return (imageStamped == null || imageStamped.Image == null)? null:imageStamped.Image;
 		}

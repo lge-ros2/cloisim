@@ -58,25 +58,19 @@ namespace SensorDevices
 			imagesStamped.Time = new messages.Time();
 		}
 
-		private void InitializeCamerasMessage()
-		{
-			foreach (var cam in cameras)
-			{
-				var image = cam.GetImageMessage();
-				if (image == null)
-				{
-					break;
-				}
-
-				imagesStamped.Images.Add(image);
-			}
-		}
-
 		protected override void GenerateMessage()
 		{
 			if (imagesStamped.Images.Count != cameras.Count)
 			{
-				InitializeCamerasMessage();
+				foreach (var cam in cameras)
+				{
+					// Set images data only once
+					var image = cam.GetImageDataMessage();
+					if (image != null)
+					{
+						imagesStamped.Images.Add(image);
+					}
+				}
 			}
 
 			DeviceHelper.SetCurrentTime(imagesStamped.Time);

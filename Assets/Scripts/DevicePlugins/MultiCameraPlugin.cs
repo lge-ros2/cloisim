@@ -37,7 +37,7 @@ public class MultiCameraPlugin : DevicePlugin
 		{
 			if (multicam != null)
 			{
-				var datastreamToSend = multicam.PopData();
+ 				var datastreamToSend = multicam.PopData();
 				sw.Restart();
 				Publish(datastreamToSend);
 				sw.Stop();
