@@ -47,7 +47,7 @@ public class BridgeManager : DeviceTransporter
 		DestroyTransporter();
 	}
 
-	public void DeallocateDevicePort(in string hashKey)
+	public void DeallocateDevice(in string hashKey)
 	{
 		var isRemoved = false;
 
@@ -60,10 +60,10 @@ public class BridgeManager : DeviceTransporter
 		{
 			Debug.LogWarningFormat("Failed to remove HashKey({0})!!!!", hashKey);
 		}
-		// else
-		// {
-		// 	Debug.LogFormat("HashKey({0}) Removed.", hashKey);
-		// }
+		else
+		{
+			// Debug.LogFormat("HashKey({0}) Removed.", hashKey);
+		}
 	}
 
 	public ushort SearchSensorPort(in string hashKey)
@@ -111,6 +111,20 @@ public class BridgeManager : DeviceTransporter
 		}
 
 		return true;
+	}
+
+	public bool AllocateDevice(in string modelName, in string partName, in string subPartName, out string hashKey, out ushort port)
+	{
+		hashKey = modelName + partName + subPartName;
+
+		port = AllocateDevicePort(hashKey);
+
+		if (port > 0)
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 	public ushort AllocateDevicePort(in string hashKey)

@@ -16,6 +16,7 @@ public interface IDevicePlugin
 	void SetPluginName(in string name);
 	void SetPluginParameters(in XmlNode node);
 	void Reset();
+	enum DeviceType {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAM, MULTICAMERA};
 }
 
 public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
@@ -82,33 +83,25 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	private bool PrepareDevice(in string subPartName, out ushort port, out ulong hash)
 	{
-		var hashKey = MakeHashKey(subPartName);
-
-		port = bridgeManager.AllocateDevicePort(hashKey);
-
-		if (port == 0)
+		if (bridgeManager.AllocateDevice(modelName, partName, subPartName, out var hashKey, out port))
 		{
-			Debug.LogError("Port for device is not allocated!!!!!!!!");
-			hash = 0;
-			return false;
+			hashKeyList.Add(hashKey);
+
+			hash = DeviceHelper.GetStringHashCode(hashKey);
+
+			// Debug.LogFormat("PrepareDevice - port({0}) hash({1})", port, hash);
+			return true;
 		}
 
-		hash = DeviceHelper.GetStringHashCode(hashKey);
-
-		hashKeyList.Add(hashKey);
-
-		// Debug.LogFormat("PrepareDevice - port({0}) hash({1})", port, hash);
-		return true;
+		Debug.LogError("Port for device is not allocated!!!!!!!! - " + hashKey);
+		hash = 0;
+		return false;
 	}
 
-	private string MakeHashKey(in string subPartName = "")
-	{
-		return modelName + partName + subPartName;
-	}
 
 	protected bool DeregisterDevice(in string hashKey)
 	{
-		bridgeManager.DeallocateDevicePort(hashKey);
+		bridgeManager.DeallocateDevice(hashKey);
 		return true;
 	}
 
