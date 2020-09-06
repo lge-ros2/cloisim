@@ -16,7 +16,12 @@ public class SimulationControlRequest
 	[JsonProperty(Order = 0)]
 	public string command = string.Empty;
 
+	[JsonProperty(Order = 1)]
+	public bool indent = false;
+
+	[JsonProperty(Order = 2)]
 	public string filter = string.Empty;
+
 
 	public void Print()
 	{
@@ -48,8 +53,19 @@ public class SimulationControlResponseNormal : SimulationControlResponseBase
 	}
 }
 
+public class SimulationControlResponseDeviceList : SimulationControlResponseBase
+{
+	[JsonProperty(Order = 1)]
+	public Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> result;
 
-public class SimulationControlResponseSensorPortList : SimulationControlResponseBase
+	public override void Print()
+	{
+		Debug.LogFormat("## {0}: {1}, {2}", this.GetType().Name, command, result);
+	}
+}
+
+
+public class SimulationControlResponseTopicList : SimulationControlResponseBase
 {
 	[JsonProperty(Order = 1)]
 	public Dictionary<string, ushort> result;
@@ -108,12 +124,20 @@ public class SimulationControlService : WebSocketBehavior
 				}
 				break;
 
-			case "connected_devices_list":
+			case "device_list":
 				{
-					var result = bridgeManager.GetSensorPortList(request.filter);
+					var result = bridgeManager.GetDeviceMapList();
+					output = new SimulationControlResponseDeviceList();
+					(output as SimulationControlResponseDeviceList).result = result;
+				}
+				break;
 
-					output = new SimulationControlResponseSensorPortList();
-					(output as SimulationControlResponseSensorPortList).result = result;
+			case "topic_list":
+				{
+					var result = bridgeManager.GetDevicePortList(request.filter);
+
+					output = new SimulationControlResponseTopicList();
+					(output as SimulationControlResponseTopicList).result = result;
 				}
 				break;
 
@@ -125,8 +149,7 @@ public class SimulationControlService : WebSocketBehavior
 
 		output.command = request.command;
 
-		var responseJsonData = JsonConvert.SerializeObject(output, Formatting.Indented);
-
+		var responseJsonData = JsonConvert.SerializeObject(output, (request.indent) ? Formatting.Indented : Formatting.None);
 		Send(responseJsonData);
 	}
 
