@@ -12,6 +12,17 @@ public partial class DeviceHelper
 {
 	static Clock clock = null;
 
+	public static Clock GetGlobalClock()
+	{
+		if (clock == null)
+		{
+			var coreObject = GameObject.Find("Core");
+			clock = coreObject?.GetComponent<Clock>();
+		}
+
+		return clock;
+	}
+
 	public static string GetModelName(in GameObject targetObject, in bool searchOnlyOneDepth = false)
 	{
 		try

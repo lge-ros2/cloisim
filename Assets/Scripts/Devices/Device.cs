@@ -14,13 +14,17 @@ public abstract class Device : MonoBehaviour
 {
 	private const int maxQueue = 5;
 
-	public string deviceName = string.Empty;
-
 	private BlockingCollection<MemoryStream> outboundQueue_ = new BlockingCollection<MemoryStream>(maxQueue);
 
 	protected int timeoutForOutboundQueueInMilliseconds = 100;
 
 	private MemoryStream memoryStream_ = new MemoryStream();
+
+
+	public string deviceName = string.Empty;
+
+	protected SDF.SensorType deviceParameters = null;
+	private PluginParameters pluginParameters = null;
 
 	private float updateRate = 1;
 
@@ -101,7 +105,7 @@ public abstract class Device : MonoBehaviour
 		updateRate = value;
 	}
 
-	public void SetTransportTime(in float value)
+	public void SetTransportedTime(in float value)
 	{
 		transportingTimeSeconds = value;
 	}
@@ -263,5 +267,25 @@ public abstract class Device : MonoBehaviour
 	public Pose GetPose()
 	{
 		return devicePose;
+	}
+
+	public void SetPluginParameter(in PluginParameters pluginParams)
+	{
+		pluginParameters = pluginParams;
+	}
+
+	protected PluginParameters GetPluginParameters()
+	{
+		return pluginParameters;
+	}
+
+	public void SetDeviceParameter(in SDF.SensorType deviceParams)
+	{
+		deviceParameters = deviceParams;
+	}
+
+	public SDF.SensorType GetDeviceParameter()
+	{
+		return deviceParameters;
 	}
 }

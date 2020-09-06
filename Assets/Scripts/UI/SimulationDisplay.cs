@@ -7,42 +7,71 @@
 using System;
 using System.Text;
 using UnityEngine;
-using TMPro;
 
 public class SimulationDisplay : MonoBehaviour
 {
-	private StringBuilder sbToPrint = new StringBuilder();
-	private TextMeshProUGUI uiText = null;
 	private Clock clock = null;
+	private string eventMessage = string.Empty;
+	private StringBuilder sbTimInfo = new StringBuilder();
 
+	[Header("fps")]
+	private const float fpsUpdatePeriod = 0.5f;
 	private int frameCount = 0;
-	private float dt = 0.0F;
+	private float dT = 0.0F;
 	private float fps = 0.0F;
 
-	private const float fpsUpdatePeriod = 0.5F;
+	[Header("GUI properties")]
+	private const int labelFontSize = 15;
+
+	private const int textLeftMargin = 10;
+	private const int textTopMargin = 10;
+
+	private const int textHeight = 22;
+
+	private const int textWidthFps = 80;
+	private const int textWidthVersion = 50;
+	private const int textWidthSimulation = 600;
+
+	[Header("Rect")]
+	private Rect rectVersion = new Rect(textLeftMargin, textTopMargin, textWidthVersion, textHeight);
+	private Rect rectFps = new Rect(Screen.width - textWidthFps - textLeftMargin, textTopMargin, textWidthFps, textHeight);
+	private Rect rectSimulationinfo = new Rect(textLeftMargin, Screen.height - textHeight - textTopMargin, textWidthSimulation, textHeight);
 
 	// Start is called before the first frame update
 	void Awake()
 	{
-		uiText = GetComponent<TextMeshProUGUI>();
-
 		var coreObject = GameObject.Find("Core");
-		clock = coreObject.GetComponent<Clock>();
+		clock = DeviceHelper.GetGlobalClock();
 	}
 
 	void Update()
 	{
+		CalculateFPS();
+	}
+
+	public void ClearEventMessage()
+	{
+		SetEventMessage(string.Empty);
+	}
+
+	public void SetEventMessage(in string value)
+	{
+		eventMessage = value;
+	}
+
+	private void CalculateFPS()
+	{
 		frameCount++;
-		dt += Time.unscaledDeltaTime;
-		if (dt > fpsUpdatePeriod)
+		dT += Time.unscaledDeltaTime;
+		if (dT > fpsUpdatePeriod)
 		{
-			fps = frameCount / dt;
-			dt -= fpsUpdatePeriod;
+			fps = frameCount / dT;
+			dT -= fpsUpdatePeriod;
 			frameCount = 0;
 		}
 	}
 
-	void LateUpdate()
+	private string GetTimeInfoString()
 	{
 		var simTime = (clock == null) ? Time.time : clock.GetSimTime();
 		var realTime = (clock == null) ? Time.realtimeSinceStartup : clock.GetRealTime();
@@ -51,32 +80,56 @@ public class SimulationDisplay : MonoBehaviour
 		var realTs = TimeSpan.FromSeconds(realTime);
 		var diffTs1 = realTs - simTs;
 
-		var currentSimTime = simTs.ToString(@"d\:hh\:mm\:ss\.fff");
-		var currentRealTime = realTs.ToString(@"d\:hh\:mm\:ss\.fff");
-		var diffRealSimTime = diffTs1.ToString(@"d\:hh\:mm\:ss\.fff");
+		var currentSimTime = GetBoldText(simTs.ToString(@"d\:hh\:mm\:ss\.fff"));
+		var currentRealTime = GetBoldText(realTs.ToString(@"d\:hh\:mm\:ss\.fff"));
+		var diffRealSimTime = GetBoldText(diffTs1.ToString(@"d\:hh\:mm\:ss\.fff"));
 
-		if (sbToPrint != null)
-		{
-			sbToPrint.Clear();
-			sbToPrint.Append("Version : ");
-			sbToPrint.Append(Application.version);
+		sbTimInfo.Clear();
+		sbTimInfo.AppendFormat("Time: Simulation [{0}] | Real [{1}] | Real-Sim [{2}]", currentSimTime, currentRealTime, diffRealSimTime);
+		return sbTimInfo.ToString();
+	}
 
-			sbToPrint.Append(", FPS : ");
-			sbToPrint.Append(Mathf.Round(fps));
+	private string GetBoldText(in string value)
+	{
+		return ("<b>" + value + "</b>");
+	}
 
-			sbToPrint.Append("\n");
+	void DrawShadow(in Rect rect, in string value)
+	{
+		GUI.color = new Color(0, 0, 0, 0.34f);
+		var rectShadow = rect;
+		rectShadow.x += 1;
+		rectShadow.y += 1;
+		GUI.Label(rectShadow, value);
+	}
 
-			sbToPrint.Append("(Time) Simulation: ");
-			sbToPrint.Append(currentSimTime);
+	void OnGUI()
+	{
+		GUI.skin.label.alignment = TextAnchor.MiddleLeft;
+		GUI.skin.label.fontSize = labelFontSize;
 
-			sbToPrint.Append(", Real: ");
-			sbToPrint.Append(currentRealTime);
+		// version info
+		var versionString = GetBoldText(Application.version);
+		DrawShadow(rectVersion, versionString);
+		GUI.color = Color.green;
+		GUI.Label(rectVersion, versionString);
 
-			sbToPrint.Append(", (DiffTime) Real-Sim: ");
-			sbToPrint.Append(diffRealSimTime);
+		// Simulation time info or event message
+		rectSimulationinfo.y = Screen.height - textHeight - textTopMargin;
 
+		var simulationInfo = (string.IsNullOrEmpty(eventMessage)) ? GetTimeInfoString() : eventMessage;
+		DrawShadow(rectSimulationinfo, simulationInfo);
+		GUI.color = Color.black;
+		GUI.Label(rectSimulationinfo, simulationInfo);
 
-			uiText.text = sbToPrint.ToString();
-		}
+		// fps info
+		GUI.skin.label.alignment = TextAnchor.MiddleRight;
+
+		rectFps.x = Screen.width - textWidthFps - textLeftMargin;
+
+		var fpsString = "FPS [" + GetBoldText(Mathf.Round(fps).ToString("F1")) + "]";
+		DrawShadow(rectFps, fpsString);
+		GUI.color = Color.cyan;
+		GUI.Label(rectFps, fpsString);
 	}
 }

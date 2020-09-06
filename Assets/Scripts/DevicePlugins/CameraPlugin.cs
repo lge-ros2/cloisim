@@ -4,11 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.IO;
-using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
-using ProtoBuf;
-using messages = gazebo.msgs;
 
 public class CameraPlugin : DevicePlugin
 {
@@ -18,23 +14,21 @@ public class CameraPlugin : DevicePlugin
 
 	protected override void OnAwake()
 	{
+		type = Type.CAMERA;
 		cam = gameObject.GetComponent<SensorDevices.Camera>();
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
-		var hashServiceKey = MakeHashKey(subPartName + "Info");
-		if (!RegisterServiceDevice(hashServiceKey))
+		var isDepthCamOnly = parameters.GetValue<bool>("is_depthcam_only");
+		if (isDepthCamOnly)
 		{
-			Debug.LogError("Failed to register service - " + hashServiceKey);
+			ChangePluginType(Type.DEPTHCAMERA);
 		}
 
-		var hashTxKey = MakeHashKey(subPartName);
-		if (!RegisterTxDevice(hashTxKey))
-		{
-			Debug.LogError("Failed to register for CameraPlugin - " + hashTxKey);
-		}
+		RegisterServiceDevice(subPartName + "Info");
+		RegisterTxDevice(subPartName + "Data");
 
 		AddThread(Response);
 		AddThread(Sender);
@@ -45,16 +39,14 @@ public class CameraPlugin : DevicePlugin
 		var sw = new Stopwatch();
 		while (IsRunningThread)
 		{
-			if (cam == null)
+			if (cam != null)
 			{
-				continue;
+				var datastreamToSend = cam.PopData();
+				sw.Restart();
+				Publish(datastreamToSend);
+				sw.Stop();
+				cam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 			}
-
-			var datastreamToSend = cam.PopData();
-			sw.Restart();
-			Publish(datastreamToSend);
-			sw.Stop();
-			cam.SetTransportTime((float)sw.Elapsed.TotalSeconds);
 		}
 	}
 
@@ -71,6 +63,12 @@ public class CameraPlugin : DevicePlugin
 			{
 				switch (requestMessage.Name)
 				{
+					case "request_ros2":
+						var topic_name = parameters.GetValue<string>("ros2/topic_name");
+						var frame_id = parameters.GetValue<string>("ros2/frame_id");
+						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
+						break;
+
 					case "request_camera_info":
 						var cameraInfoMessage = cam.GetCameraInfo();
 						SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);

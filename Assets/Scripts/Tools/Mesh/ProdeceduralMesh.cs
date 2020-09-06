@@ -4,10 +4,12 @@ using UnityEngine;
 /// <summary>https://wiki.unity3d.com/index.php/ProceduralPrimitives</summary>
 public class ProceduralMesh
 {
+	private const float _pi = Mathf.PI;
+	private const float _2pi = _pi * 2f;
+
 	public static Mesh CreateBox(in float length = 1f, in float width = 1f, in float height = 1f)
 	{
-		Mesh mesh = new Mesh();
-		mesh.Clear();
+		var mesh = new Mesh();
 		mesh.name = "Box";
 
 		#region Vertices
@@ -21,7 +23,7 @@ public class ProceduralMesh
 		var p6 = new Vector3(length * .5f, width * .5f, -height * .5f);
 		var p7 = new Vector3(-length * .5f, width * .5f, -height * .5f);
 
-		Vector3[] vertices = new Vector3[]
+		var vertices = new Vector3[]
 		{
 			p0, p1, p2, p3, // Bottom
 			p7, p4, p0, p3, // Left
@@ -40,7 +42,7 @@ public class ProceduralMesh
 		var left = Vector3.left;
 		var right = Vector3.right;
 
-		Vector3[] normales = new Vector3[]
+		var normales = new Vector3[]
 		{
 			down, down, down, down, // Bottom
 			left, left, left, left, // Left
@@ -52,12 +54,12 @@ public class ProceduralMesh
 		#endregion
 
 		#region UVs
-		Vector2 _00 = new Vector2(0f, 0f);
-		Vector2 _10 = new Vector2(1f, 0f);
-		Vector2 _01 = new Vector2(0f, 1f);
-		Vector2 _11 = new Vector2(1f, 1f);
+		var _00 = new Vector2(0f, 0f);
+		var _10 = new Vector2(1f, 0f);
+		var _01 = new Vector2(0f, 1f);
+		var _11 = new Vector2(1f, 1f);
 
-		Vector2[] uvs = new Vector2[]
+		var uvs = new Vector2[]
 		{
 			_11, _01, _00, _10, // Bottom
 			_11, _01, _00, _10, // Left
@@ -69,7 +71,7 @@ public class ProceduralMesh
 		#endregion
 
 		#region Triangles
-		int[] triangles = new int[]
+		var triangles = new int[]
 		{
 			// Bottom
 			3, 1, 0,
@@ -102,7 +104,9 @@ public class ProceduralMesh
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
+		mesh.RecalculateTangents();
 		mesh.RecalculateBounds();
+		mesh.RecalculateNormals();
 		mesh.Optimize();
 
 		return mesh;
@@ -110,25 +114,26 @@ public class ProceduralMesh
 
 	public static Mesh CreateCylinder(in float radius = 1f, in float height = 1f, in int nbSides = 36)
 	{
-		return CreateCone(radius, radius, height, nbSides);
+		var mesh = CreateCone(radius, radius, height, nbSides);
+		mesh.name = "Cylinder";
+		return mesh;
 	}
 
 	public static Mesh CreateCone(in float topRadius = .01f, in float bottomRadius = 0.5f, in float height = 1f, in int nbSides = 18)
 	{
 		var mesh = new Mesh();
-		mesh.Clear();
-		mesh.name = (topRadius.Equals(bottomRadius)) ? "Cylinder" : "Cone";
+		mesh.name = "Cone";
 
-		float heightHalf = height / 2;
+		var heightHalf = height / 2;
+
 		const int nbHeightSeg = 1; // Not implemented yet
 
-		int nbVerticesCap = nbSides + 1;
+		var nbVerticesCap = nbSides + 1;
 
 		#region Vertices
 		// bottom + top + sides
-		Vector3[] vertices = new Vector3[nbVerticesCap + nbVerticesCap + nbSides * nbHeightSeg * 2 + 2];
-		int vert = 0;
-		float _2pi = Mathf.PI * 2f;
+		var vertices = new Vector3[nbVerticesCap + nbVerticesCap + nbSides * nbHeightSeg * 2 + 2];
+		var vert = 0;
 
 		// Bottom cap
 		vertices[vert++] = new Vector3(0f, -heightHalf, 0f);
@@ -143,7 +148,7 @@ public class ProceduralMesh
 		vertices[vert++] = new Vector3(0f, heightHalf, 0f);
 		while (vert <= nbSides * 2 + 1)
 		{
-			float rad = (float)(vert - nbSides - 1) / nbSides * _2pi;
+			var rad = (float)(vert - nbSides - 1) / nbSides * _2pi;
 			vertices[vert] = new Vector3(Mathf.Cos(rad) * topRadius, heightHalf, Mathf.Sin(rad) * topRadius);
 			vert++;
 		}
@@ -152,7 +157,7 @@ public class ProceduralMesh
 		int v = 0;
 		while (vert <= vertices.Length - 4)
 		{
-			float rad = (float)v / nbSides * _2pi;
+			var rad = (float)v / nbSides * _2pi;
 			vertices[vert] = new Vector3(Mathf.Cos(rad) * topRadius, heightHalf, Mathf.Sin(rad) * topRadius);
 			vertices[vert + 1] = new Vector3(Mathf.Cos(rad) * bottomRadius, -heightHalf, Mathf.Sin(rad) * bottomRadius);
 			vert += 2;
@@ -163,9 +168,8 @@ public class ProceduralMesh
 		#endregion
 
 		#region Normales
-
 		// bottom + top + sides
-		Vector3[] normales = new Vector3[vertices.Length];
+		var normales = new Vector3[vertices.Length];
 		vert = 0;
 
 		// Bottom cap
@@ -184,9 +188,9 @@ public class ProceduralMesh
 		v = 0;
 		while (vert <= vertices.Length - 4)
 		{
-			float rad = (float)v / nbSides * _2pi;
-			float cos = Mathf.Cos(rad);
-			float sin = Mathf.Sin(rad);
+			var rad = (float)v / nbSides * _2pi;
+			var cos = Mathf.Cos(rad);
+			var sin = Mathf.Sin(rad);
 
 			normales[vert] = new Vector3(cos, 0f, sin);
 			normales[vert + 1] = normales[vert];
@@ -199,14 +203,14 @@ public class ProceduralMesh
 		#endregion
 
 		#region UVs
-		Vector2[] uvs = new Vector2[vertices.Length];
+		var uvs = new Vector2[vertices.Length];
+		var u = 0;
 
 		// Bottom cap
-		int u = 0;
 		uvs[u++] = new Vector2(0.5f, 0.5f);
 		while (u <= nbSides)
 		{
-			float rad = (float)u / nbSides * _2pi;
+			var rad = (float)u / nbSides * _2pi;
 			uvs[u] = new Vector2(Mathf.Cos(rad) * .5f + .5f, Mathf.Sin(rad) * .5f + .5f);
 			u++;
 		}
@@ -215,32 +219,33 @@ public class ProceduralMesh
 		uvs[u++] = new Vector2(0.5f, 0.5f);
 		while (u <= nbSides * 2 + 1)
 		{
-			float rad = (float)u / nbSides * _2pi;
+			var rad = (float)u / nbSides * _2pi;
 			uvs[u] = new Vector2(Mathf.Cos(rad) * .5f + .5f, Mathf.Sin(rad) * .5f + .5f);
 			u++;
 		}
 
 		// Sides
-		int u_sides = 0;
+		var u_sides = 0;
 		while (u <= uvs.Length - 4)
 		{
-			float t = (float)u_sides / nbSides;
+			var t = (float)u_sides / nbSides;
 			uvs[u] = new Vector3(t, 1f);
 			uvs[u + 1] = new Vector3(t, 0f);
 			u += 2;
 			u_sides++;
 		}
+
 		uvs[u] = new Vector2(1f, 1f);
 		uvs[u + 1] = new Vector2(1f, 0f);
 		#endregion
 
 		#region Triangles
-		int nbTriangles = nbSides + nbSides + nbSides * 2;
-		int[] triangles = new int[nbTriangles * 3 + 3];
+		var nbTriangles = nbSides + nbSides + nbSides * 2;
+		var triangles = new int[nbTriangles * 3 + 3];
 
 		// Bottom cap
-		int tri = 0;
-		int i = 0;
+		var tri = 0;
+		var i = 0;
 		while (tri < nbSides - 1)
 		{
 			triangles[i] = 0;
@@ -303,32 +308,28 @@ public class ProceduralMesh
 		return mesh;
 	}
 
-
 	// Longitude |||
 	// Latitude ---
 	public static Mesh CreateSphere(in float radius = 1f, int nbLong = 24, int nbLat = 16)
 	{
-		Mesh mesh = new Mesh();
-		mesh.Clear();
+		var mesh = new Mesh();
 		mesh.name = "Sphere";
 
 		#region Vertices
-		Vector3[] vertices = new Vector3[(nbLong + 1) * nbLat + 2];
-		float _pi = Mathf.PI;
-		float _2pi = _pi * 2f;
+		var vertices = new Vector3[(nbLong + 1) * nbLat + 2];
 
 		vertices[0] = Vector3.up * radius;
-		for (int lat = 0; lat < nbLat; lat++)
+		for (var lat = 0; lat < nbLat; lat++)
 		{
-			float a1 = _pi * (float)(lat + 1) / (nbLat + 1);
-			float sin1 = Mathf.Sin(a1);
-			float cos1 = Mathf.Cos(a1);
+			var a1 = _pi * (float)(lat + 1) / (nbLat + 1);
+			var sin1 = Mathf.Sin(a1);
+			var cos1 = Mathf.Cos(a1);
 
-			for (int lon = 0; lon <= nbLong; lon++)
+			for (var lon = 0; lon <= nbLong; lon++)
 			{
-				float a2 = _2pi * (float)(lon == nbLong ? 0 : lon) / nbLong;
-				float sin2 = Mathf.Sin(a2);
-				float cos2 = Mathf.Cos(a2);
+				var a2 = _2pi * (float)(lon == nbLong ? 0 : lon) / nbLong;
+				var sin2 = Mathf.Sin(a2);
+				var cos2 = Mathf.Cos(a2);
 
 				vertices[lon + lat * (nbLong + 1) + 1] = new Vector3(sin1 * cos2, cos1, sin1 * sin2) * radius;
 			}
@@ -337,29 +338,36 @@ public class ProceduralMesh
 		#endregion
 
 		#region Normales
-		Vector3[] normales = new Vector3[vertices.Length];
-		for (int n = 0; n < vertices.Length; n++)
+		var normales = new Vector3[vertices.Length];
+		for (var n = 0; n < vertices.Length; n++)
+		{
 			normales[n] = vertices[n].normalized;
+		}
 		#endregion
 
 		#region UVs
-		Vector2[] uvs = new Vector2[vertices.Length];
+		var uvs = new Vector2[vertices.Length];
 		uvs[0] = Vector2.up;
 		uvs[uvs.Length - 1] = Vector2.zero;
-		for (int lat = 0; lat < nbLat; lat++)
-			for (int lon = 0; lon <= nbLong; lon++)
+
+		for (var lat = 0; lat < nbLat; lat++)
+		{
+			for (var lon = 0; lon <= nbLong; lon++)
+			{
 				uvs[lon + lat * (nbLong + 1) + 1] = new Vector2((float)lon / nbLong, 1f - (float)(lat + 1) / (nbLat + 1));
+			}
+		}
 		#endregion
 
 		#region Triangles
-		int nbFaces = vertices.Length;
-		int nbTriangles = nbFaces * 2;
-		int nbIndexes = nbTriangles * 3;
-		int[] triangles = new int[nbIndexes];
+		var nbFaces = vertices.Length;
+		var nbTriangles = nbFaces * 2;
+		var nbIndexes = nbTriangles * 3;
+		var triangles = new int[nbIndexes];
 
 		//Top Cap
-		int i = 0;
-		for (int lon = 0; lon < nbLong; lon++)
+		var i = 0;
+		for (var lon = 0; lon < nbLong; lon++)
 		{
 			triangles[i++] = lon + 2;
 			triangles[i++] = lon + 1;
@@ -367,12 +375,12 @@ public class ProceduralMesh
 		}
 
 		//Middle
-		for (int lat = 0; lat < nbLat - 1; lat++)
+		for (var lat = 0; lat < nbLat - 1; lat++)
 		{
-			for (int lon = 0; lon < nbLong; lon++)
+			for (var lon = 0; lon < nbLong; lon++)
 			{
-				int current = lon + lat * (nbLong + 1) + 1;
-				int next = current + nbLong + 1;
+				var current = lon + lat * (nbLong + 1) + 1;
+				var next = current + nbLong + 1;
 
 				triangles[i++] = current;
 				triangles[i++] = current + 1;
@@ -385,7 +393,7 @@ public class ProceduralMesh
 		}
 
 		//Bottom Cap
-		for (int lon = 0; lon < nbLong; lon++)
+		for (var lon = 0; lon < nbLong; lon++)
 		{
 			triangles[i++] = vertices.Length - 1;
 			triangles[i++] = vertices.Length - (lon + 2) - 1;
@@ -398,7 +406,9 @@ public class ProceduralMesh
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
+		mesh.RecalculateTangents();
 		mesh.RecalculateBounds();
+		mesh.RecalculateNormals();
 		mesh.Optimize();
 
 		return mesh;
@@ -413,37 +423,37 @@ public class ProceduralMesh
 		}
 
 		var mesh = new Mesh();
-		mesh.Clear();
 		mesh.name = "Plane";
 
 		#region Vertices
-		Vector3[] vertices = new Vector3[resX * resZ];
-		for (int z = 0; z < resZ; z++)
+		var vertices = new Vector3[resX * resZ];
+		for (var z = 0; z < resZ; z++)
 		{
 			// [ -length / 2, length / 2 ]
-			float zPos = ((float)z / (resZ - 1) - .5f) * length;
-			for (int x = 0; x < resX; x++)
+			var zPos = ((float)z / (resZ - 1) - .5f) * length;
+
+			for (var x = 0; x < resX; x++)
 			{
 				// [ -width / 2, width / 2 ]
-				float xPos = ((float)x / (resX - 1) - .5f) * width;
+				var xPos = ((float)x / (resX - 1) - .5f) * width;
 				vertices[x + z * resX] = new Vector3(xPos, 0f, zPos);
 			}
 		}
 		#endregion
 
 		#region Normales
-		Vector3[] normales = new Vector3[vertices.Length];
-		for (int n = 0; n < normales.Length; n++)
+		var normales = new Vector3[vertices.Length];
+		for (var n = 0; n < normales.Length; n++)
 		{
 			normales[n] = normal;
 		}
 		#endregion
 
 		#region UVs
-		Vector2[] uvs = new Vector2[vertices.Length];
-		for (int v = 0; v < resZ; v++)
+		var uvs = new Vector2[vertices.Length];
+		for (var v = 0; v < resZ; v++)
 		{
-			for (int u = 0; u < resX; u++)
+			for (var u = 0; u < resX; u++)
 			{
 				uvs[u + v * resX] = new Vector2((float)u / (resX - 1), (float)v / (resZ - 1));
 			}
@@ -452,12 +462,12 @@ public class ProceduralMesh
 
 		#region Triangles
 		var nbFaces = (resX - 1) * (resZ - 1);
-		int[] triangles = new int[nbFaces * 6];
+		var triangles = new int[nbFaces * 6];
 
 		for (int t = 0, face = 0; face < nbFaces; face++)
 		{
 			// Retrieve lower left corner from face ind
-			int i = face % (resX - 1) + (face / (resZ - 1) * resX);
+			var i = face % (resX - 1) + (face / (resZ - 1) * resX);
 
 			triangles[t++] = i + resX;
 			triangles[t++] = i + 1;
@@ -474,7 +484,9 @@ public class ProceduralMesh
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
+		mesh.RecalculateTangents();
 		mesh.RecalculateBounds();
+		mesh.RecalculateNormals();
 		mesh.Optimize();
 
 		return mesh;

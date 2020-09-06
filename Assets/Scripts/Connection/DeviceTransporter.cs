@@ -13,12 +13,11 @@ public partial class DeviceTransporter : MonoBehaviour
 	public const bool isTCP = true; // Currently, NetMQ does not support UDP protocol
 	private ushort tagSize = 8;
 	public string defaultPipeAddress = "127.0.0.1";
-
 	private int highwatermark = 1000;
 
-	void Awake()
+	protected void InitializeTransporter()
 	{
-		var enviromentPipeAddress = Environment.GetEnvironmentVariable("SIM_MASTER_IP");
+		var enviromentPipeAddress = Environment.GetEnvironmentVariable("SIM_BRIDGE_IP");
 
 		if (!string.IsNullOrEmpty(enviromentPipeAddress))
 		{
@@ -28,27 +27,17 @@ public partial class DeviceTransporter : MonoBehaviour
 		SetPipeAddress(defaultPipeAddress);
 	}
 
-	void OnDestroy()
+	protected void DestroyTransporter()
 	{
-		if (requestSocket != null)
-		{
-			requestSocket.Close();
-		}
+		// Debug.Log("DestroyTransporter");
 
-		if (responseSocket != null)
-		{
-			responseSocket.Close();
-		}
+		DestroyRequestSocket();
 
-		if (subscriberSocket != null)
-		{
-			subscriberSocket.Close();
-		}
+		DestroyResponseSocket();
 
-		if (publisherSocket != null)
-		{
-			publisherSocket.Close();
-		}
+		DestroySubscriberSocket();
+
+		DestroyPublisherSocket();
 	}
 
 	public void SetTagSize(in ushort value)
@@ -93,7 +82,7 @@ public partial class DeviceTransporter : MonoBehaviour
 	{
 		if (targetTag.Length == tagSize && receivedTag.Length == tagSize)
 		{
-			for (int index = 0; index < tagSize; index++)
+			for (var index = 0; index < tagSize; index++)
 			{
 				if (targetTag[index] != receivedTag[index])
 				{

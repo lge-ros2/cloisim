@@ -34,15 +34,16 @@ namespace SensorDevices
 			depthMaterial = new Material(shader);
 			depthMaterial.SetFloat("_ReverseData", 1.0f);
 
-			switch (parameters.depth_camera_output)
+			var camParameters = (deviceParameters as SDF.Camera);
+			switch (camParameters.depth_camera_output)
 			{
 				case "points":
 					Debug.Log("Enable Point Cloud data mode");
-					parameters.image_format = "RGB_FLOAT32";
+					camParameters.image_format = "RGB_FLOAT32";
 					break;
 
 				default:
-					parameters.image_format = "R_FLOAT32";
+					camParameters.image_format = "R_FLOAT32";
 					break;
 			}
 

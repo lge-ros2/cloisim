@@ -13,8 +13,7 @@ public partial class SDFImplement
 	{
 		private static string GetFrameName(in GameObject currentObject)
 		{
-			string frameName = "";
-
+			var frameName = string.Empty;
 			var nextObject = currentObject.transform.parent;
 
 			do
@@ -83,7 +82,7 @@ public partial class SDFImplement
 
 			var camera = newSensorObject.AddComponent<SensorDevices.Camera>();
 			camera.deviceName = GetFrameName(newSensorObject);
-			camera.parameters = element;
+			camera.SetDeviceParameter(element as SDF.SensorType);
 			return camera;
 		}
 
@@ -94,8 +93,10 @@ public partial class SDFImplement
 
 			var depthCamera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
 			depthCamera.deviceName = GetFrameName(newSensorObject);
-			depthCamera.parameters = element;
-			depthCamera.parameters.image_format = "R_FLOAT32";
+
+			element.image_format = "R_FLOAT32";
+			depthCamera.SetDeviceParameter(element as SDF.SensorType);
+
 			return depthCamera;
 		}
 

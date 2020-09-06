@@ -161,35 +161,26 @@ namespace RuntimeGizmos
 			float distanceMultiplier = GetDistanceMultiplier();
 			float handleMinSelectedDistanceCheck = (this.minSelectedDistanceCheck + handleWidth) * distanceMultiplier;
 
-			if (nearAxis == Axis.None && (TransformTypeContains(TransformType.Move) || TransformTypeContains(TransformType.Scale)))
+			if (nearAxis == Axis.None && TransformTypeContains(TransformType.Move))
 			{
-				//Important to check scale lines before move lines since in TransformType.All the move planes would block the scales center scale all gizmo.
-				if (nearAxis == Axis.None && TransformTypeContains(TransformType.Scale))
+				//Important to check the planes first before the handle tip since it makes selecting the planes easier.
+				float planeMinSelectedDistanceCheck = (this.minSelectedDistanceCheck + planeSize) * distanceMultiplier;
+				HandleNearestPlanes(TransformType.Move, handlePlanes, planeMinSelectedDistanceCheck);
+
+				if (nearAxis != Axis.None)
 				{
-					float tipMinSelectedDistanceCheck = (this.minSelectedDistanceCheck + boxSize) * distanceMultiplier;
-					HandleNearestPlanes(TransformType.Scale, handleSquares, tipMinSelectedDistanceCheck);
+					planeAxis = nearAxis;
+				}
+				else
+				{
+					float tipMinSelectedDistanceCheck = (this.minSelectedDistanceCheck + triangleSize) * distanceMultiplier;
+					HandleNearestLines(TransformType.Move, handleTriangles, tipMinSelectedDistanceCheck);
 				}
 
-				if (nearAxis == Axis.None && TransformTypeContains(TransformType.Move))
-				{
-					//Important to check the planes first before the handle tip since it makes selecting the planes easier.
-					float planeMinSelectedDistanceCheck = (this.minSelectedDistanceCheck + planeSize) * distanceMultiplier;
-					HandleNearestPlanes(TransformType.Move, handlePlanes, planeMinSelectedDistanceCheck);
-
-					if (nearAxis != Axis.None)
-					{
-						planeAxis = nearAxis;
-					}
-					else
-					{
-						float tipMinSelectedDistanceCheck = (this.minSelectedDistanceCheck + triangleSize) * distanceMultiplier;
-						HandleNearestLines(TransformType.Move, handleTriangles, tipMinSelectedDistanceCheck);
-					}
-				}
 
 				if (nearAxis == Axis.None)
 				{
-					//Since Move and Scale share the same handle line, we give Move the priority.
+					//Since Move share the same handle line, we give Move the priority.
 					TransformType transType = transformType == TransformType.All ? TransformType.Move : transformType;
 					HandleNearestLines(transType, handleLines, handleMinSelectedDistanceCheck);
 				}
@@ -223,8 +214,7 @@ namespace RuntimeGizmos
 
 		void HandleNearest(TransformType type, float xClosestDistance, float yClosestDistance, float zClosestDistance, float allClosestDistance, float minSelectedDistanceCheck)
 		{
-			if (type == TransformType.Scale && allClosestDistance <= minSelectedDistanceCheck) SetTranslatingAxis(type, Axis.Any);
-			else if (xClosestDistance <= minSelectedDistanceCheck && xClosestDistance <= yClosestDistance && xClosestDistance <= zClosestDistance) SetTranslatingAxis(type, Axis.X);
+			if (xClosestDistance <= minSelectedDistanceCheck && xClosestDistance <= yClosestDistance && xClosestDistance <= zClosestDistance) SetTranslatingAxis(type, Axis.X);
 			else if (yClosestDistance <= minSelectedDistanceCheck && yClosestDistance <= xClosestDistance && yClosestDistance <= zClosestDistance) SetTranslatingAxis(type, Axis.Y);
 			else if (zClosestDistance <= minSelectedDistanceCheck && zClosestDistance <= xClosestDistance && zClosestDistance <= yClosestDistance) SetTranslatingAxis(type, Axis.Z);
 			else if (type == TransformType.Rotate && mainTargetRoot != null)

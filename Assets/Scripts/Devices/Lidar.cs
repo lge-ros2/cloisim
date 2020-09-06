@@ -99,14 +99,16 @@ namespace SensorDevices
 
 			// store original shadow settings
 			originalShadowSettings_ = QualitySettings.shadows;
+
+			laserCam = gameObject.AddComponent<UnityEngine.Camera>();
 		}
 
 		protected override void OnStart()
 		{
-			laserCam = gameObject.AddComponent<UnityEngine.Camera>();
-
 			if (laserCam)
 			{
+				DoParseFilter();
+
 				SetupLaserCamera();
 
 				SetupLaserCameraData();
@@ -354,6 +356,8 @@ namespace SensorDevices
 				}
 			}
 
+			DoLaserAngleFilter();
+
 			DeviceHelper.SetCurrentTime(laserScanStamped.Time);
 			PushData<messages.LaserScanStamped>(laserScanStamped);
 		}
@@ -383,10 +387,12 @@ namespace SensorDevices
 					var ccwIndex = (uint)(rangeData.Length - hScanIndex - 1);
 					var rayData = rangeData[ccwIndex];
 
-					var rayDistance = (rayData == Mathf.Infinity) ? (float)rangeMax : (rayData - (float)rangeMin);
-					var rayDirection = rayRotation * rayDistance;
-
-					Debug.DrawRay(rayStart, rayDirection, rayColor, visualDrawDuration, true);
+					if (rayData > 0)
+					{
+						var rayDistance = (rayData == Mathf.Infinity) ? (float)rangeMax : (rayData - (float)rangeMin);
+						var rayDirection = rayRotation * rayDistance;
+						Debug.DrawRay(rayStart, rayDirection, rayColor, visualDrawDuration, true);
+					}
 				}
 
 				yield return waitForSeconds;

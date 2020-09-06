@@ -19,6 +19,14 @@ public partial class DeviceTransporter
 	private byte[] hashValueForReceiveRequest = null;
 	private byte[] dataToSendResponse = null;
 
+	private void DestroyResponseSocket()
+	{
+		if (responseSocket != null)
+		{
+			responseSocket.Close();
+		}
+	}
+
 	public void SetHashForResponse(in ulong hash)
 	{
 		hashValueForReceiveRequest = BitConverter.GetBytes(hash);

@@ -19,11 +19,6 @@ namespace RuntimeGizmos
 				}
 				else if (type == TransformType.Rotate)
 				{
-						return true;
-				}
-				//else if(type == TransformType.RectTool) return false;
-				else if(type == TransformType.Scale && space == TransformSpace.Local)
-				{
 					return true;
 				}
 			}

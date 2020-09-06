@@ -17,6 +17,14 @@ public partial class DeviceTransporter
 
 	private byte[] hashValueForSubscription = null;
 
+	private void DestroySubscriberSocket()
+	{
+		if (subscriberSocket != null)
+		{
+			subscriberSocket.Close();
+		}
+	}
+
 	protected bool InitializeSubscriber(in ushort targetPort)
 	{
 		var initialized = false;

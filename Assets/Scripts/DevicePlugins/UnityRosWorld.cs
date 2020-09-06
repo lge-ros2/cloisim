@@ -6,23 +6,25 @@
 
 using UnityEngine;
 
-public class UnityRosInit : DevicePlugin
+public class UnityRosWorld : DevicePlugin
 {
 	private Clock clock = null;
 
+	private string hashKey = string.Empty;
+
 	protected override void OnAwake()
 	{
+		type = Type.WORLD;
 		clock = gameObject.AddComponent<Clock>();
 
-		var hashKey = MakeHashKey();
-		if (!RegisterTxDevice(hashKey))
-		{
-			Debug.LogError("Failed to register for UnityRosInit - " + hashKey);
-		}
+		modelName = "World";
+		partName = "UnityRos";
 	}
 
 	protected override void OnStart()
 	{
+		RegisterTxDevice("Clock");
+
 		AddThread(Sender);
 	}
 
@@ -30,13 +32,11 @@ public class UnityRosInit : DevicePlugin
 	{
 		while (IsRunningThread)
 		{
-			if (clock == null)
+			if (clock != null)
 			{
-				continue;
+				var datastreamToSend = clock.PopData();
+				Publish(datastreamToSend);
 			}
-
-			var datastreamToSend = clock.PopData();
-			Publish(datastreamToSend);
 		}
 	}
 }

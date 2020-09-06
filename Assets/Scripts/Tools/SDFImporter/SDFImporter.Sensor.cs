@@ -81,13 +81,11 @@ public partial class SDFImporter : SDF.Importer
 				break;
 		}
 
-		GameObject newSensorObject = null;
-
 		if (sensor)
 		{
 			sensor.SetUpdateRate((float)item.UpdateRate());
 			sensor.EnableVisualize = item.Visualize();
-			newSensorObject = sensor.gameObject;
+			var newSensorObject = sensor.gameObject;
 
 			if (newSensorObject != null)
 			{
@@ -99,9 +97,10 @@ public partial class SDFImporter : SDF.Importer
 				SceneVisibilityManager.instance.ToggleVisibility(newSensorObject, true);
 				SceneVisibilityManager.instance.DisablePicking(newSensorObject, true);
 #endif
+				return (newSensorObject as System.Object);
 			}
 		}
 
-		return (newSensorObject as System.Object);
+		return null;
 	}
 }

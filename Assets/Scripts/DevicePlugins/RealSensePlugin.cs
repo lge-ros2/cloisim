@@ -4,15 +4,23 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
+using ProtoBuf;
+using Stopwatch = System.Diagnostics.Stopwatch;
+using messages = gazebo.msgs;
 
 public class RealSensePlugin : DevicesPlugin
 {
 	private Camera[] cameras = null;
+	private List<string> activatedModules = new List<string>();
 
 	protected override void OnAwake()
 	{
+		type = Type.REALSENSE;
 		cameras = GetComponentsInChildren<Camera>();
+		partName = name;
 	}
 
 	protected override void OnStart()
@@ -41,20 +49,80 @@ public class RealSensePlugin : DevicesPlugin
 		{
 			FindAndAddPlugin(depthName);
 		}
+
+		RegisterServiceDevice("Info");
+
+		AddThread(Response);
 	}
 
-	void FindAndAddPlugin(in string name)
+	private void FindAndAddPlugin(in string name)
 	{
 		foreach (var camera in cameras)
 		{
 			if (camera.gameObject.name.Equals(name))
 			{
 				var plugin = camera.gameObject.AddComponent<CameraPlugin>();
+				plugin.ChangePluginType(DevicePlugin.Type.REALSENSE);
 				plugin.subPartName = name;
 
 				AddDevicePlugin(name, plugin);
+				activatedModules.Add(name);
 				break;
 			}
 		}
+	}
+
+	private void Response()
+	{
+		while (IsRunningThread)
+		{
+			var receivedBuffer = ReceiveRequest();
+
+			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
+
+			// Debug.Log(subPartName + receivedString);
+			if (requestMessage != null)
+			{
+				switch (requestMessage.Name)
+				{
+					case "request_module_list":
+						SetModuleListInfoResponse(ref msForInfoResponse, activatedModules);
+						break;
+
+					default:
+						break;
+				}
+
+				SendResponse(msForInfoResponse);
+			}
+
+			ThreadWait();
+		}
+	}
+
+	protected static void SetModuleListInfoResponse(ref MemoryStream msModuleInfo, in List<string> modules)
+	{
+		if (msModuleInfo == null)
+		{
+			return;
+		}
+
+		var modulesInfo = new messages.Param();
+		modulesInfo.Name = "activated_modules";
+		modulesInfo.Value = new messages.Any();
+		modulesInfo.Value.Type = messages.Any.ValueType.None;
+
+		foreach (var module in modules)
+		{
+			var moduleInfo = new messages.Param();
+			moduleInfo.Name = "module";
+			moduleInfo.Value = new messages.Any();
+			moduleInfo.Value.Type = messages.Any.ValueType.String;
+			moduleInfo.Value.StringValue = module;
+			modulesInfo.Childrens.Add(moduleInfo);
+		}
+
+		ClearMemoryStream(ref msModuleInfo);
+		Serializer.Serialize<messages.Param>(msModuleInfo, modulesInfo);
 	}
 }

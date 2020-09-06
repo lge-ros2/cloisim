@@ -4,33 +4,28 @@
  * SPDX-License-Identifier: MIT
  */
 
-using UnityEngine;
-using System.Threading;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class LaserPlugin : DevicePlugin
 {
 	private SensorDevices.Lidar lidar = null;
 
+	private string hashServiceKey = string.Empty;
+	private string hashKey = string.Empty;
+
 	protected override void OnAwake()
 	{
+		type = Type.LASER;
 		partName = DeviceHelper.GetPartName(gameObject);
+
 		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
+		lidar.SetPluginParameter(parameters);
 	}
 
 	protected override void OnStart()
 	{
-		var hashServiceKey = MakeHashKey("Info");
-		if (!RegisterServiceDevice(hashServiceKey))
-		{
-			Debug.LogError("Failed to register service - " + hashServiceKey);
-		}
-
-		var hashKey = MakeHashKey();
-		if (!RegisterTxDevice(hashKey))
-		{
-			Debug.LogError("Failed to register for LaserPlugin - " + hashKey);
-		}
+		RegisterServiceDevice("Info");
+		RegisterTxDevice("Data");
 
 		AddThread(Response);
 		AddThread(Sender);
@@ -41,16 +36,14 @@ public class LaserPlugin : DevicePlugin
 		var sw = new Stopwatch();
 		while (IsRunningThread)
 		{
-			if (lidar == null)
+			if (lidar != null)
 			{
-				continue;
+				var datastreamToSend = lidar.PopData();
+				sw.Restart();
+				Publish(datastreamToSend);
+				sw.Stop();
+				lidar.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 			}
-
-			var datastreamToSend = lidar.PopData();
-			sw.Restart();
-			Publish(datastreamToSend);
-			sw.Stop();
-			lidar.SetTransportTime((float)sw.Elapsed.TotalSeconds);
 		}
 	}
 
@@ -68,6 +61,12 @@ public class LaserPlugin : DevicePlugin
 
 				switch (requestMessage.Name)
 				{
+					case "request_ros2":
+						var topic_name = parameters.GetValue<string>("ros2/topic_name");
+						var frame_id = parameters.GetValue<string>("ros2/frame_id");
+						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
+						break;
+
 					case "request_transform":
 						var devicePose = device.GetPose();
 

@@ -114,6 +114,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 			markerObject = new GameObject(markerName);
 			markerObject.transform.position = markerProperties.point;
 			markerObject.transform.localScale.Set(markerProperties.size, markerProperties.size, markerProperties.size);
+
 			var meshFilter = markerObject.AddComponent<MeshFilter>();
 			meshFilter.mesh = ProceduralMesh.CreateBox();
 
@@ -133,15 +134,15 @@ public partial class MarkerVisualizer : MonoBehaviour
 		if (markerProperties != null)
 		{
 			markerObject = new GameObject(markerName);
+			markerObject.transform.position = markerProperties.point;
+			markerObject.transform.localScale.Set(markerProperties.size, markerProperties.size, markerProperties.size);
 
 			var meshFilter = markerObject.AddComponent<MeshFilter>();
 			meshFilter.mesh = ProceduralMesh.CreateSphere(1, 12, 12);
+
 			var meshRenderer = markerObject.AddComponent<MeshRenderer>();
 			SetDefaultMeshRenderer(meshRenderer);
 			meshRenderer.material.color = properties.GetColor();
-
-			markerObject.transform.position = markerProperties.point;
-			markerObject.transform.localScale.Set(markerProperties.size, markerProperties.size, markerProperties.size);
 		}
 		else
 		{

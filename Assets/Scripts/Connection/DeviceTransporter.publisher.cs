@@ -17,6 +17,14 @@ public partial class DeviceTransporter
 	private byte[] hashValueForPublish = null;
 	private byte[] dataToPublish = null;
 
+	private void DestroyPublisherSocket()
+	{
+		if (publisherSocket != null)
+		{
+			publisherSocket.Close();
+		}
+	}
+
 	public void SetHashForPublish(in ulong hash)
 	{
 		hashValueForPublish = BitConverter.GetBytes(hash);

@@ -4,9 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using System.IO;
-using UnityEngine;
+using ProtoBuf;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using messages = gazebo.msgs;
 
 public class MultiCameraPlugin : DevicePlugin
 {
@@ -14,23 +16,15 @@ public class MultiCameraPlugin : DevicePlugin
 
 	protected override void OnAwake()
 	{
-		multicam = gameObject.GetComponent<SensorDevices.MultiCamera>();
+		type = Type.MULTICAMERA;
 		partName = DeviceHelper.GetPartName(gameObject);
+		multicam = gameObject.GetComponent<SensorDevices.MultiCamera>();
 	}
 
 	protected override void OnStart()
 	{
-		var hashServiceKey = MakeHashKey("Info");
-		if (!RegisterServiceDevice(hashServiceKey))
-		{
-			Debug.LogError("Failed to register service - " + hashServiceKey);
-		}
-
-		var hashKey = MakeHashKey();
-		if (!RegisterTxDevice(hashKey))
-		{
-			Debug.LogError("Failed to register for CameraPlugin - " + hashKey);
-		}
+		RegisterServiceDevice("Info");
+		RegisterTxDevice("Data");
 
 		AddThread(Sender);
 		AddThread(Response);
@@ -41,16 +35,14 @@ public class MultiCameraPlugin : DevicePlugin
 		var sw = new Stopwatch();
 		while (IsRunningThread)
 		{
-			if (multicam == null)
+			if (multicam != null)
 			{
-				continue;
+ 				var datastreamToSend = multicam.PopData();
+				sw.Restart();
+				Publish(datastreamToSend);
+				sw.Stop();
+				multicam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 			}
-
-			var datastreamToSend = multicam.PopData();
-			sw.Restart();
-			Publish(datastreamToSend);
-			sw.Stop();
-			multicam.SetTransportTime((float)sw.Elapsed.TotalSeconds);
 		}
 	}
 
@@ -64,25 +56,35 @@ public class MultiCameraPlugin : DevicePlugin
 
 			if (requestMessage != null)
 			{
-				var cameraName = requestMessage.Value.StringValue;
-				var camera = multicam.GetCamera(cameraName);
-				if (camera != null)
+				var cameraName = (requestMessage.Value == null) ? string.Empty : requestMessage.Value.StringValue;
+
+				switch (requestMessage.Name)
 				{
-					switch (requestMessage.Name)
-					{
-						case "request_camera_info":
+					case "request_ros2":
+						if (parameters.GetValues<string>("ros2/frames_id/frame_id", out var frames_id))
+						{
+							SetROS2FramesIdInfoResponse(ref msForInfoResponse, frames_id);
+						}
+						break;
+
+					case "request_camera_info":
+						{
+							var camera = multicam.GetCamera(cameraName);
 							var cameraInfoMessage = camera.GetCameraInfo();
 							CameraPlugin.SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
-							break;
+						}
+						break;
 
-						case "request_transform":
+					case "request_transform":
+						{
+							var camera = multicam.GetCamera(cameraName);
 							var devicePose = camera.GetPose();
 							SetTransformInfoResponse(ref msForInfoResponse, devicePose);
-							break;
+						}
+						break;
 
-						default:
-							break;
-					}
+					default:
+						break;
 				}
 
 				SendResponse(msForInfoResponse);
@@ -90,5 +92,37 @@ public class MultiCameraPlugin : DevicePlugin
 
 			ThreadWait();
 		}
+	}
+
+	private void SetROS2FramesIdInfoResponse(ref MemoryStream msForInfoResponse, in List<string> frames_id)
+	{
+		if (msForInfoResponse == null)
+		{
+			return;
+		}
+
+		var ros2CommonInfo = new messages.Param();
+		ros2CommonInfo.Name = "ros2";
+		ros2CommonInfo.Value = new messages.Any();
+		ros2CommonInfo.Value.Type = messages.Any.ValueType.None;
+
+		var ros2FramesIdInfo = new messages.Param();
+		ros2FramesIdInfo.Name = "frames_id";
+		ros2FramesIdInfo.Value = new messages.Any();
+		ros2FramesIdInfo.Value.Type = messages.Any.ValueType.None;
+		ros2CommonInfo.Childrens.Add(ros2FramesIdInfo);
+
+		foreach (var frame_id in frames_id)
+		{
+			var ros2FrameId = new messages.Param();
+			ros2FrameId.Name = "frame_id";
+			ros2FrameId.Value = new messages.Any();
+			ros2FrameId.Value.Type = messages.Any.ValueType.String;
+			ros2FrameId.Value.StringValue = frame_id;
+			ros2FramesIdInfo.Childrens.Add(ros2FrameId);
+		}
+
+		ClearMemoryStream(ref msForInfoResponse);
+		Serializer.Serialize<messages.Param>(msForInfoResponse, ros2CommonInfo);
 	}
 }

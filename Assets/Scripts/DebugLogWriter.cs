@@ -11,11 +11,11 @@ public class DebugLogWriter : System.IO.TextWriter
 	private bool isSkip = false;
 	private bool isWarning = false;
 
-	public void SetSkip(in bool value) {
+	public void SetSkip(in bool value)
 	{
 		isSkip = value;
 	}
-}
+
 	public void SetWarning(in bool value)
 	{
 		isWarning = value;
@@ -48,7 +48,9 @@ public class DebugLogWriter : System.IO.TextWriter
 	public override void WriteLine(string value)
 	{
 		if (isSkip || value == null)
+		{
 			return;
+		}
 
 		base.WriteLine(value);
 

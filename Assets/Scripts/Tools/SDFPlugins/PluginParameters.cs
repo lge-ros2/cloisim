@@ -12,7 +12,7 @@ using UnityEngine;
 
 public class PluginParameters
 {
-	private XmlNode parameters;
+	private XmlNode parameters = null;
 
 	public void SetRootData(in XmlNode node)
 	{
@@ -43,9 +43,14 @@ public class PluginParameters
 			return defaultValue;
 		}
 
+		var node = parameters.SelectSingleNode(xpath);
+		if (node == null)
+		{
+			return defaultValue;
+		}
+
 		try
 		{
-			var node = parameters.SelectSingleNode(xpath);
 			return SDF.Entity.ConvertXmlNodeToValue<T>(node);
 		}
 		catch (XmlException ex)

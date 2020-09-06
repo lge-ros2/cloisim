@@ -7,6 +7,9 @@ using UnityEngine;
 
 public class SDF2Unity
 {
+	private static string commonShaderName = "Standard (Specular setup)";
+	public static Shader commonShader = Shader.Find(commonShaderName);
+
 	public static Vector3 GetPosition(in double x, in double y, in double z)
 	{
 		return new Vector3(-(float)y, (float)z, (float)x);
@@ -14,11 +17,21 @@ public class SDF2Unity
 
 	public static Vector3 GetPosition(in SDF.Vector3<double> value)
 	{
-		return GetPosition(value.X, value.Y, value.Z);
+		return (value == null)? Vector3.zero : GetPosition(value.X, value.Y, value.Z);
+	}
+
+	public static Vector3 GetPosition(in SDF.Vector3<int> value)
+	{
+		return (value == null)? Vector3.zero : GetPosition(value.X, value.Y, value.Z);
 	}
 
 	public static Quaternion GetRotation(in SDF.Quaternion<double> value)
 	{
+		if (value == null)
+		{
+			return Quaternion.identity;
+		}
+
 		var roll = Mathf.Rad2Deg * (float)value.Pitch;
 		var pitch = Mathf.Rad2Deg * -(float)value.Yaw;
 		var yaw = Mathf.Rad2Deg * -(float)value.Roll;
@@ -27,12 +40,29 @@ public class SDF2Unity
 
 	public static Vector3 GetScale(in SDF.Vector3<double> value)
 	{
+		var scaleVector = GetPosition(value);
+		scaleVector.x = Mathf.Abs(scaleVector.x);
+		scaleVector.y = Mathf.Abs(scaleVector.y);
+		scaleVector.z = Mathf.Abs(scaleVector.z);
+		return scaleVector;
+	}
+
+	public static Vector3 GetNormal(in SDF.Vector3<int> value)
+	{
 		return GetPosition(value);
 	}
 
-	public static Vector3 GetScale(in double radius)
+	public static Vector3 GetAxis(SDF.Vector3<int> axisValue, SDF.Quaternion<double> axisRotation = null)
 	{
-		return new Vector3((float)radius, (float)radius, (float)radius);
+		var pos = GetPosition(axisValue);
+		var rot = GetRotation(axisRotation);
+
+		if (!rot.Equals(Quaternion.identity))
+		{
+			pos = rot * pos;
+		}
+
+		return pos;
 	}
 
 	public static void LoadObjMesh(in GameObject targetObject, in string objPath, in string mtlPath)
@@ -57,8 +87,6 @@ public class SDF2Unity
 
 	public static void LoadStlMesh(in GameObject targetObject, in string objPath)
 	{
-		const string commonShader = "Standard (Specular setup)";
-
 		var multipleMesh = Parabox.Stl.Importer.Import(objPath, Parabox.Stl.CoordinateSpace.Right, Parabox.Stl.UpAxis.Z, true);
 
 		for (int i = 0; i < multipleMesh.Length; i++)
@@ -73,7 +101,7 @@ public class SDF2Unity
 
 			var meshRenderer = meshObject.AddComponent<MeshRenderer>();
 
-			var newMaterial = new Material(Shader.Find(commonShader));
+			var newMaterial = new Material(commonShader);
 			newMaterial.name = multipleMesh[i].name;
 			meshRenderer.material = newMaterial;
 
@@ -81,6 +109,7 @@ public class SDF2Unity
 			child.SetParent(targetObject.transform, false);
 		}
 	}
+
 	public static bool CheckTopModel(in GameObject targetObject)
 	{
 		return CheckTopModel(targetObject.transform);

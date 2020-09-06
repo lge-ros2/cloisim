@@ -39,28 +39,27 @@ public partial class ElevatorSystem : DevicePlugin
 
 	private const int NON_ELEVATOR_INDEX = -1;
 
-	private bool isRunningThread = true;
-	private MemoryStream memoryStreamForService = new MemoryStream();
+	private MemoryStream msForService = new MemoryStream();
 	private Param responseMessage = new Param();
 	private Dictionary<string, float> floorList = new Dictionary<string, float>();
 	private Dictionary<int, ElevatorEntity> elevatorList = new Dictionary<int, ElevatorEntity>();
 	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue = new ConcurrentQueue<ElevatorTask>();
 
+	private string hashKey = string.Empty;
+
 	protected override void OnAwake()
 	{
+		type = Type.ELEVATOR;
 		partName = "ElevatorSystem";
 	}
 
 	protected override void OnStart()
 	{
-		var hashKey = MakeHashKey();
-		if (!RegisterServiceDevice(hashKey))
-		{
-			Debug.LogError("Failed to register ElevatorSystem service - " + hashKey);
-		}
+		RegisterServiceDevice("Control");
 
 		ReadFloorContext();
 		ReadElevatorContext();
+
 		GenerateResponseMessage();
 
 		AddThread(ServiceThread);
@@ -95,11 +94,6 @@ public partial class ElevatorSystem : DevicePlugin
 				Debug.LogFormat("Empty task Queue: {0}, {1}, {2}",result.elevatorIndex, result.fromFloor, result.toFloor);
 			}
 		}
-	}
-
-	void OnDestroy()
-	{
-		isRunningThread = false;
 	}
 
 	public void ReadElevatorContext()
@@ -265,16 +259,13 @@ public partial class ElevatorSystem : DevicePlugin
 
 	private void ServiceThread()
 	{
-		byte[] receivedBuffer;
-
-		while (isRunningThread)
+		while (IsRunningThread)
 		{
-			receivedBuffer = ReceiveRequest();
+			var receivedBuffer = ReceiveRequest();
 
 			if (receivedBuffer != null)
 			{
-				var receivedMessage = ParseReceivedMessage(receivedBuffer);
-
+				var receivedMessage = ParsingInfoRequest(receivedBuffer, ref msForService);
 				var streamToResponse = HandleServiceRequest(receivedMessage);
 
 				SendResponse(streamToResponse);
@@ -282,21 +273,6 @@ public partial class ElevatorSystem : DevicePlugin
 
 			ThreadWait();
 		}
-	}
-
-	private Param ParseReceivedMessage(in byte[] buffer)
-	{
-		if (buffer == null)
-		{
-			return null;
-		}
-
-		ClearMemoryStream(ref memoryStreamForService);
-
-		memoryStreamForService.Write(buffer, 0, buffer.Length);
-		memoryStreamForService.Position = 0;
-
-		return Serializer.Deserialize<Param>(memoryStreamForService);
 	}
 
 	private MemoryStream HandleServiceRequest(in Param receivedMessage)
@@ -343,11 +319,11 @@ public partial class ElevatorSystem : DevicePlugin
 
 		HandleService(serviceName, currentFloor, targetFloor, elevatorIndex);
 
-		ClearMemoryStream(ref memoryStreamForService);
+		ClearMemoryStream(ref msForService);
 
-		Serializer.Serialize<Param>(memoryStreamForService, responseMessage);
+		Serializer.Serialize<Param>(msForService, responseMessage);
 
-		return memoryStreamForService;
+		return msForService;
 	}
 
 	private void HandleService(in string serviceName, string currentFloor, in string targetFloor, int elevatorIndex)

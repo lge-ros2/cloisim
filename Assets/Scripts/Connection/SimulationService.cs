@@ -5,6 +5,7 @@
  */
 
 using System.Net;
+using System;
 using UnityEngine;
 using WebSocketSharp.Server;
 
@@ -31,6 +32,7 @@ public class SimulationService : MonoBehaviour
 		InitializeServices();
 
 		wsServer.KeepClean = true;
+		wsServer.WaitTime = TimeSpan.FromMilliseconds(5000);
 		wsServer.Start();
 
 		if (wsServer.IsListening)
@@ -50,13 +52,13 @@ public class SimulationService : MonoBehaviour
 			return;
 		}
 
-		var modelLoader = gameObject.GetComponent<ModelLoader>();
-		var bridgePortManager = gameObject.GetComponent<BridgePortManager>();
+		var modelLoaderComponent = gameObject.GetComponent<ModelLoader>();
+		var bridgeManagerComponent = gameObject.GetComponent<BridgeManager>();
 
 		wsServer.AddWebSocketService<SimulationControlService>("/control", () => new SimulationControlService()
 		{
-			modelLoaderService = modelLoader,
-			portDeviceService = bridgePortManager
+			modelLoader = modelLoaderComponent,
+			bridgeManager = bridgeManagerComponent
 		});
 
 		var markerVisualizer = gameObject.GetComponent<MarkerVisualizer>();

@@ -72,12 +72,6 @@ public partial class SDFImporter : SDF.Importer
 	{
 		var targetObject = (parentObject as GameObject);
 
-		if (targetObject == null)
-		{
-			Debug.LogError("[Plugin] targetObject is empty");
-			return;
-		}
-
 		// filtering plugin name
 		var pluginName = plugin.ClassName();
 		// Debug.Log("plugin name = " + pluginName);
@@ -85,19 +79,28 @@ public partial class SDFImporter : SDF.Importer
 		var pluginType = Type.GetType(pluginName);
 		if (pluginType != null)
 		{
+			if (targetObject == null)
+			{
+				Debug.LogError("[Plugin] targetObject is empty");
+				return;
+			}
+
 			var pluginObject = targetObject.AddComponent(pluginType);
+
 			var devicePluginObject = pluginObject as DevicePlugin;
 			var devicesPluginObject = pluginObject as DevicesPlugin;
 
 			if (devicePluginObject != null)
 			{
 				var node = plugin.GetNode();
+				devicePluginObject.SetPluginName(plugin.Name);
 				devicePluginObject.SetPluginParameters(node);
 				// Debug.Log("[Plugin] device added : " + plugin.Name);
 			}
 			else if (devicesPluginObject != null)
 			{
 				var node = plugin.GetNode();
+				devicesPluginObject.SetPluginName(plugin.Name);
 				devicesPluginObject.SetPluginParameters(node);
 				// Debug.Log("[Plugin] devices added : " + plugin.Name);
 			}

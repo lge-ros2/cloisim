@@ -4,32 +4,28 @@
  * SPDX-License-Identifier: MIT
  */
 
-using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class GpsPlugin : DevicePlugin
 {
 	private SensorDevices.GPS gps = null;
 
+	private string hashServiceKey = string.Empty;
+	private string hashKey = string.Empty;
+
 	protected override void OnAwake()
 	{
+		type = Type.GPS;
+
 		gps = gameObject.GetComponent<SensorDevices.GPS>();
+
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
-		var hashServiceKey = MakeHashKey("Info");
-		if (!RegisterServiceDevice(hashServiceKey))
-		{
-			Debug.LogError("Failed to register service - " + hashServiceKey);
-		}
-
-		var hashKey = MakeHashKey();
-		if (!RegisterTxDevice(hashKey))
-		{
-			Debug.LogError("Failed to register for GpsPlugin - " + hashKey);
-		}
+		RegisterServiceDevice("Info");
+		RegisterTxDevice("Data");
 
 		AddThread(Response);
 		AddThread(Sender);
@@ -40,18 +36,17 @@ public class GpsPlugin : DevicePlugin
 		var sw = new Stopwatch();
 		while (IsRunningThread)
 		{
-			if (gps == null)
+			if (gps != null)
 			{
-				continue;
+				var datastreamToSend = gps.PopData();
+				sw.Restart();
+				Publish(datastreamToSend);
+				sw.Stop();
+				gps.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 			}
-
-			var datastreamToSend = gps.PopData();
-			sw.Restart();
-			Publish(datastreamToSend);
-			sw.Stop();
-			gps.SetTransportTime((float)sw.Elapsed.TotalSeconds);
 		}
 	}
+
 	private void Response()
 	{
 		while (IsRunningThread)
@@ -63,11 +58,16 @@ public class GpsPlugin : DevicePlugin
 			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
 			{
-				var device = gps as Device;
-
 				switch (requestMessage.Name)
 				{
+					case "request_ros2":
+						var topic_name = parameters.GetValue<string>("ros2/topic_name");
+						var frame_id = parameters.GetValue<string>("ros2/frame_id");
+						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
+						break;
+
 					case "request_transform":
+						var device = gps as Device;
 						var devicePose = device.GetPose();
 						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
 						break;
