@@ -8,7 +8,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.mathematics": {
-      "version": "1.1.0",
+      "version": "1.2.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
@@ -31,7 +31,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.textmeshpro": {
-      "version": "2.0.1",
+      "version": "2.1.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
