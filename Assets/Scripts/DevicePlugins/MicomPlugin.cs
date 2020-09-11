@@ -8,6 +8,7 @@ using System.IO;
 using ProtoBuf;
 using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = gazebo.msgs;
+using Any = gazebo.msgs.Any;
 
 public class MicomPlugin : DevicePlugin
 {
@@ -115,44 +116,34 @@ public class MicomPlugin : DevicePlugin
 
 		var ros2CommonInfo = new messages.Param();
 		ros2CommonInfo.Name = "ros2";
-		ros2CommonInfo.Value = new messages.Any();
-		ros2CommonInfo.Value.Type = messages.Any.ValueType.None;
+		ros2CommonInfo.Value = new Any { Type = Any.ValueType.None };
 
 		var ros2TransformInfo = new messages.Param();
 		ros2TransformInfo.Name = "transform_name";
-		ros2TransformInfo.Value = new messages.Any();
-		ros2TransformInfo.Value.Type = messages.Any.ValueType.None;
+		ros2TransformInfo.Value = new Any { Type = Any.ValueType.None };
 		ros2CommonInfo.Childrens.Add(ros2TransformInfo);
 
 		var imu_name = parameters.GetValue<string>("ros2/transform_name/imu");
 		var imuInfo = new messages.Param();
 		imuInfo.Name = "imu";
-		imuInfo.Value = new messages.Any();
-		imuInfo.Value.Type = messages.Any.ValueType.String;
-		imuInfo.Value.StringValue = imu_name;
+		imuInfo.Value = new Any { Type = Any.ValueType.String, StringValue = imu_name };
 		ros2TransformInfo.Childrens.Add(imuInfo);
 
 		var wheelsInfo = new messages.Param();
 		wheelsInfo.Name = "wheels";
-		wheelsInfo.Value = new messages.Any();
-		wheelsInfo.Value.Type = messages.Any.ValueType.String;
-		wheelsInfo.Value.StringValue = imu_name;
+		wheelsInfo.Value = new Any { Type = Any.ValueType.None };
 		ros2TransformInfo.Childrens.Add(wheelsInfo);
 
 		var wheel_left_name = parameters.GetValue<string>("ros2/transform_name/wheels/left");
 		var wheelLeftInfo = new messages.Param();
 		wheelLeftInfo.Name = "left";
-		wheelLeftInfo.Value = new messages.Any();
-		wheelLeftInfo.Value.Type = messages.Any.ValueType.String;
-		wheelLeftInfo.Value.StringValue = wheel_left_name;
+		wheelLeftInfo.Value = new Any { Type = Any.ValueType.String, StringValue = wheel_left_name };
 		wheelsInfo.Childrens.Add(wheelLeftInfo);
 
 		var wheel_right_name = parameters.GetValue<string>("ros2/transform_name/wheels/right");
 		var wheelRightInfo = new messages.Param();
 		wheelRightInfo.Name = "right";
-		wheelRightInfo.Value = new messages.Any();
-		wheelRightInfo.Value.Type = messages.Any.ValueType.String;
-		wheelRightInfo.Value.StringValue = wheel_left_name;
+		wheelRightInfo.Value = new Any { Type = Any.ValueType.String, StringValue = wheel_right_name };
 		wheelsInfo.Childrens.Add(wheelRightInfo);
 
 		ClearMemoryStream(ref msRos2Info);
@@ -168,21 +159,16 @@ public class MicomPlugin : DevicePlugin
 
 		var wheelInfo = new messages.Param();
 		wheelInfo.Name = "wheelInfo";
-		wheelInfo.Value = new messages.Any();
-		wheelInfo.Value.Type = messages.Any.ValueType.None;
+		wheelInfo.Value = new Any { Type = Any.ValueType.None };
 
 		var baseInfo = new messages.Param();
 		baseInfo.Name = "base";
-		baseInfo.Value = new messages.Any();
-		baseInfo.Value.Type = messages.Any.ValueType.Double;
-		baseInfo.Value.DoubleValue = micomSensor.WheelBase;
+		baseInfo.Value = new Any { Type = Any.ValueType.Double, DoubleValue = micomSensor.WheelBase };
 		wheelInfo.Childrens.Add(baseInfo);
 
 		var sizeInfo = new messages.Param();
 		sizeInfo.Name = "radius";
-		sizeInfo.Value = new messages.Any();
-		sizeInfo.Value.Type = messages.Any.ValueType.Double;
-		sizeInfo.Value.DoubleValue = micomSensor.WheelRadius;
+		sizeInfo.Value = new Any { Type = Any.ValueType.Double, DoubleValue = micomSensor.WheelRadius };
 		wheelInfo.Childrens.Add(sizeInfo);
 
 		ClearMemoryStream(ref msWheelInfo);

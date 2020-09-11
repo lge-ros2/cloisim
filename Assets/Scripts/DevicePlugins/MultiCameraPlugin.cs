@@ -9,6 +9,7 @@ using System.IO;
 using ProtoBuf;
 using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = gazebo.msgs;
+using Any = gazebo.msgs.Any;
 
 public class MultiCameraPlugin : DevicePlugin
 {
@@ -103,22 +104,18 @@ public class MultiCameraPlugin : DevicePlugin
 
 		var ros2CommonInfo = new messages.Param();
 		ros2CommonInfo.Name = "ros2";
-		ros2CommonInfo.Value = new messages.Any();
-		ros2CommonInfo.Value.Type = messages.Any.ValueType.None;
+		ros2CommonInfo.Value = new Any { Type = Any.ValueType.None };
 
 		var ros2FramesIdInfo = new messages.Param();
 		ros2FramesIdInfo.Name = "frames_id";
-		ros2FramesIdInfo.Value = new messages.Any();
-		ros2FramesIdInfo.Value.Type = messages.Any.ValueType.None;
+		ros2FramesIdInfo.Value = new Any { Type = Any.ValueType.None };
 		ros2CommonInfo.Childrens.Add(ros2FramesIdInfo);
 
 		foreach (var frame_id in frames_id)
 		{
 			var ros2FrameId = new messages.Param();
 			ros2FrameId.Name = "frame_id";
-			ros2FrameId.Value = new messages.Any();
-			ros2FrameId.Value.Type = messages.Any.ValueType.String;
-			ros2FrameId.Value.StringValue = frame_id;
+			ros2FrameId.Value = new Any { Type = Any.ValueType.String, StringValue = frame_id };
 			ros2FramesIdInfo.Childrens.Add(ros2FrameId);
 		}
 
