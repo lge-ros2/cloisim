@@ -25,14 +25,14 @@ public class RealSensePlugin : DevicesPlugin
 
 	protected override void OnStart()
 	{
-		var rgbName = parameters.GetValue<string>("activate/module[@name='rgb']");
+		var colorName = parameters.GetValue<string>("activate/module[@name='color']");
 		var leftImagerName = parameters.GetValue<string>("activate/module[@name='left_imager']");
 		var rightImagerName = parameters.GetValue<string>("activate/module[@name='right_imager']");
 		var depthName = parameters.GetValue<string>("activate/module[@name='depth']");
 
-		if (rgbName != null)
+		if (colorName != null)
 		{
-			FindAndAddPlugin(rgbName);
+			FindAndAddPlugin(colorName);
 		}
 
 		if (leftImagerName != null)
