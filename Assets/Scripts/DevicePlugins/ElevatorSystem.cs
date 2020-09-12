@@ -45,7 +45,7 @@ public partial class ElevatorSystem : DevicePlugin
 	private Dictionary<int, ElevatorEntity> elevatorList = new Dictionary<int, ElevatorEntity>();
 	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue = new ConcurrentQueue<ElevatorTask>();
 
-	private string hashKey = string.Empty;
+	private string elevatorSystemName = string.Empty;
 
 	protected override void OnAwake()
 	{
@@ -99,6 +99,7 @@ public partial class ElevatorSystem : DevicePlugin
 	public void ReadElevatorContext()
 	{
 		// ex) plugin parameters example
+		// <system_name>ElevatorSystem_00</system_name>
 		// <elevator prefix_name="Elevator_" speed="2">
 		//   <floor>floor_collision</floor>
 		//   <doors speed="0.6" closing_timer="10.0">
@@ -112,7 +113,7 @@ public partial class ElevatorSystem : DevicePlugin
 		//     </outside>
 		//   </doors>
 		// </elevator>
-
+		elevatorSystemName = parameters.GetValue<string>("system_name");
 		var elevatorPrefixName = parameters.GetAttribute<string>("elevator", "prefix_name");
 		var elevatorSpeed = parameters.GetAttribute<float>("elevator", "speed");
 		var elevatorFloor = parameters.GetValue<string>("elevator/floor");
@@ -243,12 +244,6 @@ public partial class ElevatorSystem : DevicePlugin
 		responseMessage.Childrens.Add(heightParam);
 	}
 
-	private void SetResponseMessage(in string elevatorSystemName, in string serviceName)
-	{
-		responseMessage.Name = elevatorSystemName;
-		responseMessage.Childrens[0].Value.StringValue = serviceName;
-	}
-
 	private void SetResponseMessage(in bool result, in int elevatorIndex, in string currentFloor, in float height)
 	{
 		responseMessage.Childrens[1].Value.BoolValue = result;
@@ -265,21 +260,41 @@ public partial class ElevatorSystem : DevicePlugin
 
 			if (receivedBuffer != null)
 			{
-				var receivedMessage = ParsingInfoRequest(receivedBuffer, ref msForService);
-				var streamToResponse = HandleServiceRequest(receivedMessage);
+				var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForService);
 
-				SendResponse(streamToResponse);
+				if (requestMessage.Name.Equals("request_system_name"))
+				{
+					SetSystemNameResponse(requestMessage);
+					SendResponse(msForService);
+				}
+				else
+				{
+					var streamToResponse = HandleServiceRequest(requestMessage);
+					SendResponse(streamToResponse);
+				}
 			}
 
 			ThreadWait();
 		}
 	}
 
+	private void SetSystemNameResponse(in Param receivedMessage)
+	{
+		var response = new Param();
+		response.Name = "request_system_name";
+		response.Value = new Any { Type = Any.ValueType.String, StringValue = elevatorSystemName };
+		ClearMemoryStream(ref msForService);
+		Serializer.Serialize<Param>(msForService, response);
+	}
+
 	private MemoryStream HandleServiceRequest(in Param receivedMessage)
 	{
 		Param param = null;
 
-		var elevatorSystemName = receivedMessage.Name;
+		if (!elevatorSystemName.Equals(receivedMessage.Name))
+		{
+			Debug.LogWarningFormat("It's differnt elevator system name({0}) vs received({1})", elevatorSystemName, receivedMessage.Name);
+		}
 
 		var serviceName = string.Empty;
 		param = receivedMessage.Childrens[0];
@@ -313,9 +328,10 @@ public partial class ElevatorSystem : DevicePlugin
 			elevatorIndex = param.Value.IntValue;
 		}
 
-		Debug.LogFormat("Parsed {0} {1} {2} {3} {4}", elevatorSystemName, serviceName, currentFloor, targetFloor, elevatorIndex);
+		// Debug.LogFormat("Parsed {0} {1} {2} {3} {4}", elevatorSystemName, serviceName, currentFloor, targetFloor, elevatorIndex);
 
-		SetResponseMessage(elevatorSystemName, serviceName);
+		responseMessage.Name = elevatorSystemName;
+		responseMessage.Childrens[0].Value.StringValue = serviceName;
 
 		HandleService(serviceName, currentFloor, targetFloor, elevatorIndex);
 
