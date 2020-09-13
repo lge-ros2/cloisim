@@ -9,6 +9,7 @@ using System.IO;
 using UnityEngine;
 using ProtoBuf;
 using messages = gazebo.msgs;
+using Any = gazebo.msgs.Any;
 
 public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 {
@@ -54,9 +55,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 		var objectTransformInfo = new messages.Param();
 		objectTransformInfo.Name = "transform";
-		objectTransformInfo.Value = new messages.Any();
-		objectTransformInfo.Value.Type = messages.Any.ValueType.Pose3d;
-		objectTransformInfo.Value.Pose3dValue = objectPose;
+		objectTransformInfo.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = objectPose };
 
 		ClearMemoryStream(ref msTransformInfo);
 		Serializer.Serialize<messages.Param>(msTransformInfo, objectTransformInfo);
@@ -71,20 +70,15 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 		var ros2CommonInfo = new messages.Param();
 		ros2CommonInfo.Name = "ros2";
-		ros2CommonInfo.Value = new messages.Any();
-		ros2CommonInfo.Value.Type = messages.Any.ValueType.None;
+		ros2CommonInfo.Value = new Any { Type = Any.ValueType.None };
 
 		var ros2TopicName = new messages.Param();
 		ros2TopicName.Name = "topic_name";
-		ros2TopicName.Value = new messages.Any();
-		ros2TopicName.Value.Type = messages.Any.ValueType.String;
-		ros2TopicName.Value.StringValue = topicName;
+		ros2TopicName.Value = new Any { Type = Any.ValueType.String, StringValue = topicName };
 
 		var ros2FrameId = new messages.Param();
 		ros2FrameId.Name = "frame_id";
-		ros2FrameId.Value = new messages.Any();
-		ros2FrameId.Value.Type = messages.Any.ValueType.String;
-		ros2FrameId.Value.StringValue = frameId;
+		ros2FrameId.Value = new Any { Type = Any.ValueType.String, StringValue = frameId };
 
 		ros2CommonInfo.Childrens.Add(ros2TopicName);
 		ros2CommonInfo.Childrens.Add(ros2FrameId);

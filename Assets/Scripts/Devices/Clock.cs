@@ -7,6 +7,7 @@
 using System.Collections;
 using UnityEngine;
 using messages = gazebo.msgs;
+using Any = gazebo.msgs.Any;
 
 public class Clock : Device
 {
@@ -41,21 +42,16 @@ public class Clock : Device
 
 		timeInfo = new messages.Param();
 		timeInfo.Name = "timeInfo";
-		timeInfo.Value = new messages.Any();
-		timeInfo.Value.Type = messages.Any.ValueType.None;
+		timeInfo.Value = new Any { Type = Any.ValueType.None };
 
 		var simTimeParam = new messages.Param();
 		simTimeParam.Name = "simTime";
-		simTimeParam.Value = new messages.Any();
-		simTimeParam.Value.Type = messages.Any.ValueType.Time;
-		simTimeParam.Value.TimeValue = simTime;
+		simTimeParam.Value = new Any { Type = Any.ValueType.Time, TimeValue = simTime };
 		timeInfo.Childrens.Add(simTimeParam);
 
 		var realTimeParam = new messages.Param();
 		realTimeParam.Name = "realTime";
-		realTimeParam.Value = new messages.Any();
-		realTimeParam.Value.Type = messages.Any.ValueType.Time;
-		realTimeParam.Value.TimeValue = realTime;
+		realTimeParam.Value = new Any { Type = Any.ValueType.Time, TimeValue = realTime };
 		timeInfo.Childrens.Add(realTimeParam);
 	}
 

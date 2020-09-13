@@ -8,8 +8,8 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using ProtoBuf;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = gazebo.msgs;
+using Any = gazebo.msgs.Any;
 
 public class RealSensePlugin : DevicesPlugin
 {
@@ -25,14 +25,14 @@ public class RealSensePlugin : DevicesPlugin
 
 	protected override void OnStart()
 	{
-		var rgbName = parameters.GetValue<string>("activate/module[@name='rgb']");
+		var colorName = parameters.GetValue<string>("activate/module[@name='color']");
 		var leftImagerName = parameters.GetValue<string>("activate/module[@name='left_imager']");
 		var rightImagerName = parameters.GetValue<string>("activate/module[@name='right_imager']");
 		var depthName = parameters.GetValue<string>("activate/module[@name='depth']");
 
-		if (rgbName != null)
+		if (colorName != null)
 		{
-			FindAndAddPlugin(rgbName);
+			FindAndAddPlugin(colorName);
 		}
 
 		if (leftImagerName != null)
@@ -109,16 +109,13 @@ public class RealSensePlugin : DevicesPlugin
 
 		var modulesInfo = new messages.Param();
 		modulesInfo.Name = "activated_modules";
-		modulesInfo.Value = new messages.Any();
-		modulesInfo.Value.Type = messages.Any.ValueType.None;
+		modulesInfo.Value = new Any { Type = Any.ValueType.None };
 
 		foreach (var module in modules)
 		{
 			var moduleInfo = new messages.Param();
 			moduleInfo.Name = "module";
-			moduleInfo.Value = new messages.Any();
-			moduleInfo.Value.Type = messages.Any.ValueType.String;
-			moduleInfo.Value.StringValue = module;
+			moduleInfo.Value = new Any { Type = Any.ValueType.String, StringValue = module };
 			modulesInfo.Childrens.Add(moduleInfo);
 		}
 

@@ -3,13 +3,15 @@
  *
  * SPDX-License-Identifier: MIT
  */
- 
+
 using UnityEngine;
 using TMPro;
 
 public class FollowingTargetList : MonoBehaviour
 {
 	private TMP_Dropdown dropdown = null;
+	private TMP_Dropdown.OptionData emptyOption_ = null;
+
 
 	private GameObject modelRoot = null;
 
@@ -28,6 +30,8 @@ public class FollowingTargetList : MonoBehaviour
 		if (dropdown != null)
 		{
 			dropdown.onValueChanged.AddListener(OnDropDownValueChanged);
+
+			emptyOption_ = new TMP_Dropdown.OptionData("-- unfollowing --");
 		}
 	}
 
@@ -45,7 +49,7 @@ public class FollowingTargetList : MonoBehaviour
 		}
 	}
 
-	public void UpdateList()
+	public void UpdateList(in int selectIndex = 0)
 	{
 		if (dropdown == null)
 		{
@@ -54,8 +58,7 @@ public class FollowingTargetList : MonoBehaviour
 		}
 
 		dropdown.options.Clear();
-		var emptyOption = new TMP_Dropdown.OptionData() { text = "-- unfollowing --" };
-		dropdown.options.Add(emptyOption);
+		dropdown.options.Add(emptyOption_);
 
 		if (modelRoot != null)
 		{
@@ -70,7 +73,7 @@ public class FollowingTargetList : MonoBehaviour
 			}
 		}
 
-		dropdown.value = 0;
+		dropdown.value = selectIndex;
 		dropdown.Select();
 		dropdown.RefreshShownValue();
 	}
