@@ -14,11 +14,12 @@ namespace SDF
 {
 	public class Root
 	{
-		private Dictionary<string, Tuple<string, string>> resourceModelTable = null; // Model Name, (Model Path, Model File)
+		// {Model Name, (Model Path, Model File)}
+		private Dictionary<string, Tuple<string, string>> resourceModelTable = new Dictionary<string, Tuple<string, string>>();
 
 		private string[] sdfVersions = {"1.7", "1.6", "1.5", "1.4", "1.3", "1.2", string.Empty};
 
-		private XmlDocument doc = null;
+		private XmlDocument doc = new XmlDocument();
 
 		private string sdfVersion = "1.7";
 
@@ -26,11 +27,23 @@ namespace SDF
 
 		public string fileDefaultPath = String.Empty;
 
-		public List<string> modelDefaultPaths = null;
+		public List<string> modelDefaultPaths = new List<string>();
 
-		public List<string> worldDefaultPath = null;
+		public List<string> worldDefaultPath = new List<string>();
 
 		private string worldFileName = string.Empty;
+
+		public Root()
+			: this("")
+		{
+		}
+
+		public Root(string filename)
+		{
+			Console.SetOut(new DebugLogWriter());
+
+			SetWorldFileName(filename);
+		}
 
 		public void SetWorldFileName(in string filename)
 		{
@@ -43,26 +56,6 @@ namespace SDF
 		public World World()
 		{
 			return world;
-		}
-
-		public Root()
-			: this("")
-		{
-		}
-
-		public Root(string filename)
-		{
-			Console.SetOut(new DebugLogWriter());
-
-			modelDefaultPaths = new List<string>();
-			worldDefaultPath = new List<string>();
-			doc = new XmlDocument();
-			resourceModelTable = new Dictionary<string, Tuple<string, string>>();
-
-			SetWorldFileName(filename);
-
-			modelDefaultPaths.Clear();
-			worldDefaultPath.Clear();
 		}
 
 		public bool DoParse()
@@ -122,13 +115,19 @@ namespace SDF
 				return;
 			}
 
+			var modelConfigDoc = new XmlDocument();
+
 			// Loop model paths
 			foreach (var modelPath in modelDefaultPaths)
 			{
+
+				if (!Directory.Exists(modelPath))
+				{
+					Console.WriteLine("Directory does not exists: " + modelPath);
+					continue;
+				}
+
 				var rootDirectory = new DirectoryInfo(modelPath);
-
-				var modelConfigDoc = new XmlDocument();
-
 				//Console.WriteLine(">>> Model Default Path: " + modelPath);
 
 				// Loop models
@@ -144,6 +143,7 @@ namespace SDF
 
 					if (!File.Exists(modelConfig))
 					{
+						Console.WriteLine("File does not exists: " + modelConfig);
 						continue;
 					}
 
