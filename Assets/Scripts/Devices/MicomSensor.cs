@@ -342,8 +342,10 @@ public class MicomSensor : Device
 			var odom = micomSensorData.Odom;
 			if ((odom != null) && (motorLeft != null && motorRight != null))
 			{
-				var angularVelocityLeft = motorLeft.GetCurrentVelocity();
-				var angularVelocityRight = motorRight.GetCurrentVelocity();
+				// Set revsered value due to differnt direction
+				// Left-handed -> Right-handed direction of rotation
+				var angularVelocityLeft = -motorLeft.GetCurrentVelocity();
+				var angularVelocityRight = -motorRight.GetCurrentVelocity();
 
 				odom.AngularVelocityLeft = angularVelocityLeft * Mathf.Deg2Rad;
 				odom.AngularVelocityRight = angularVelocityRight * Mathf.Deg2Rad;
@@ -387,11 +389,12 @@ public class MicomSensor : Device
 	{
 		if (motorLeft != null && motorRight != null)
 		{
-			motorLeft.SetVelocityTarget(angularVelocityLeft);
-			motorRight.SetVelocityTarget(angularVelocityRight);
+			// Set revsered value due to differnt direction
+			// Right-handed -> Left-handed direction of rotation
+			motorLeft.SetVelocityTarget(-angularVelocityLeft);
+			motorRight.SetVelocityTarget(-angularVelocityRight);
 		}
 	}
-
 
 	public Pose GetPartsPose(in string targetPartsName)
 	{
