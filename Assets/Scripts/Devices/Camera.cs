@@ -49,6 +49,11 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			cam = gameObject.AddComponent<UnityEngine.Camera>();
+
+			// for controlling targetDisplay
+			cam.targetDisplay = -1;
+			cam.stereoTargetEye = StereoTargetEyeMask.None;
+
 			cameraLink = transform.parent;
 		}
 
@@ -133,7 +138,7 @@ namespace SensorDevices
 			cam.ResetProjectionMatrix();
 
 			cam.allowHDR = true;
-			cam.allowMSAA = false;
+			cam.allowMSAA = true;
 			cam.allowDynamicResolution = true;
 			cam.useOcclusionCulling = true;
 

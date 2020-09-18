@@ -147,7 +147,7 @@ public class MicomPlugin : DevicePlugin
 		wheelsInfo.Childrens.Add(wheelRightInfo);
 
 		ClearMemoryStream(ref msRos2Info);
-		Serializer.Serialize<messages.Param>(msRos2Info, ros2TransformInfo);
+		Serializer.Serialize<messages.Param>(msRos2Info, ros2CommonInfo);
 	}
 
 	private void SetWheelInfoResponse(ref MemoryStream msWheelInfo)

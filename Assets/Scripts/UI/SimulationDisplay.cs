@@ -25,8 +25,7 @@ public class SimulationDisplay : MonoBehaviour
 
 	private const int textLeftMargin = 10;
 	private const int textTopMargin = 10;
-
-	private const int textHeight = 22;
+	private const int textHeight = 23;
 
 	private const int textWidthFps = 80;
 	private const int textWidthVersion = 50;
