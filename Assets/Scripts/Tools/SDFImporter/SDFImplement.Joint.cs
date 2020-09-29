@@ -30,8 +30,8 @@ public partial class SDFImplement
 			if (axisInfo.UseLimit())
 			{
 				var jointLimits = new JointLimits();
-				jointLimits.min = (float)axisInfo.limit_lower * Mathf.Rad2Deg;
-				jointLimits.max = (float)axisInfo.limit_upper * Mathf.Rad2Deg;
+				jointLimits.min = -(float)axisInfo.limit_upper * Mathf.Rad2Deg;
+				jointLimits.max = -(float)axisInfo.limit_lower * Mathf.Rad2Deg;
 				hingeJointComponent.useLimits = true;
 				hingeJointComponent.limits = jointLimits;
 			}
