@@ -14,19 +14,23 @@ public class CameraPlugin : DevicePlugin
 
 	protected override void OnAwake()
 	{
-		type = Type.CAMERA;
-		cam = gameObject.GetComponent<SensorDevices.Camera>();
+		var depthcam = gameObject.GetComponent<SensorDevices.DepthCamera>();
+		if (depthcam is null)
+		{
+			ChangePluginType(Type.CAMERA);
+			cam = gameObject.GetComponent<SensorDevices.Camera>();
+		}
+		else
+		{
+			ChangePluginType(Type.DEPTHCAMERA);
+			cam = depthcam;
+		}
+
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
-		var isDepthCamOnly = parameters.GetValue<bool>("is_depthcam_only");
-		if (isDepthCamOnly)
-		{
-			ChangePluginType(Type.DEPTHCAMERA);
-		}
-
 		RegisterServiceDevice(subPartName + "Info");
 		RegisterTxDevice(subPartName + "Data");
 
