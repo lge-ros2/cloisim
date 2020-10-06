@@ -1230,6 +1230,12 @@
             The types to consider as part of this operation.
             </summary>
         </member>
+        <member name="P:ProtoBuf.Meta.SchemaGenerationOptions.Origin">
+            <summary>
+            The file that defines this type (as used with <c>import</c> in .proto); when non-empty, only
+            types in the same <c>Origin</c> are included; this option is inferred if <c>null</c>.
+            </summary>
+        </member>
         <member name="T:ProtoBuf.Meta.SchemaGenerationFlags">
             <summary>
             Additional flags to control schema generation
@@ -1673,10 +1679,11 @@
             <summary>
             Applies a protocol-buffer stream to an existing instance (which may be null).
             </summary>
-            <typeparam name="T">The type (including inheritance) to consider.</typeparam>
+            <param name="type">The type (including inheritance) to consider.</param>
             <param name="userState">Additional information about this serialization operation.</param>
             <param name="source">The binary stream to apply to the instance (cannot be null).</param>
             <param name="value">The existing instance to be modified (can be null).</param>
+            <param name="length">The number of bytes to consider (no limit if omitted).</param>
             <returns>The updated instance; this may be different to the instance argument if
             either the original instance was null, or the stream defines a known sub-type of the
             original instance.</returns>
@@ -1685,7 +1692,7 @@
             <summary>
             Applies a protocol-buffer stream to an existing instance (which may be null).
             </summary>
-            <typeparam name="T">The type (including inheritance) to consider.</typeparam>
+            <param name="type">The type (including inheritance) to consider.</param>
             <param name="userState">Additional information about this serialization operation.</param>
             <param name="source">The binary stream to apply to the instance (cannot be null).</param>
             <param name="value">The existing instance to be modified (can be null).</param>
@@ -1697,7 +1704,7 @@
             <summary>
             Applies a protocol-buffer stream to an existing instance (which may be null).
             </summary>
-            <typeparam name="T">The type (including inheritance) to consider.</typeparam>
+            <param name="type">The type (including inheritance) to consider.</param>
             <param name="userState">Additional information about this serialization operation.</param>
             <param name="source">The binary stream to apply to the instance (cannot be null).</param>
             <param name="value">The existing instance to be modified (can be null).</param>
@@ -1709,7 +1716,7 @@
             <summary>
             Applies a protocol-buffer stream to an existing instance (which may be null).
             </summary>
-            <typeparam name="T">The type (including inheritance) to consider.</typeparam>
+            <param name="type">The type (including inheritance) to consider.</param>
             <param name="userState">Additional information about this serialization operation.</param>
             <param name="source">The binary stream to apply to the instance (cannot be null).</param>
             <param name="value">The existing instance to be modified (can be null).</param>
@@ -2037,7 +2044,12 @@
         </member>
         <member name="P:ProtoBuf.ProtoContractAttribute.Name">
             <summary>
-            Gets or sets the defined name of the type.
+            Gets or sets the defined name of the type. This can be fully qualified , for example <c>.foo.bar.someType</c> if required.
+            </summary>
+        </member>
+        <member name="P:ProtoBuf.ProtoContractAttribute.Origin">
+            <summary>
+            Gets or sets the file that defines this type (as used with <c>import</c> in .proto)
             </summary>
         </member>
         <member name="P:ProtoBuf.ProtoContractAttribute.ImplicitFirstTag">
@@ -2103,6 +2115,11 @@
         <member name="P:ProtoBuf.ProtoContractAttribute.IsGroup">
             <summary>
             Indicates whether this type should always be treated as a "group" (rather than a string-prefixed sub-message)
+            </summary>
+        </member>
+        <member name="P:ProtoBuf.ProtoContractAttribute.IgnoreUnknownSubTypes">
+            <summary>
+            Gets or sets a value indicating whether unknown sub-types should cause serialization failure
             </summary>
         </member>
         <member name="P:ProtoBuf.ProtoContractAttribute.EnumPassthru">
@@ -2885,6 +2902,11 @@
             Reads a value or sub-item from the input reader
             </summary>
         </member>
+        <member name="M:ProtoBuf.ProtoReader.State.GetSerializer``1">
+            <summary>
+            Gets the serializer associated with a specific type
+            </summary>
+        </member>
         <member name="M:ProtoBuf.ProtoReader.State.ReadBaseType``2(``1,ProtoBuf.Serializers.ISubTypeSerializer{``0})">
             <summary>
             Reads a sub-item from the input reader
@@ -3143,6 +3165,11 @@
         <member name="M:ProtoBuf.ProtoWriter.State.WriteBaseType``1(``0,ProtoBuf.Serializers.ISubTypeSerializer{``0})">
             <summary>
             Writes a base-type to the input writer
+            </summary>
+        </member>
+        <member name="M:ProtoBuf.ProtoWriter.State.GetSerializer``1">
+            <summary>
+            Gets the serializer associated with a specific type
             </summary>
         </member>
         <member name="P:ProtoBuf.ProtoWriter.State.Context">

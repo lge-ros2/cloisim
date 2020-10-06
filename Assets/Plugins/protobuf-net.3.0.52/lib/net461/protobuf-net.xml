@@ -55,7 +55,7 @@
         </member>
         <member name="P:ProtoBuf.Internal.Serializers.IRuntimeProtoSerializerNode.ReturnsValue">
             <summary>
-            Now all Read operations return a value (although most do); if false no
+            Not all Read operations return a value (although most do); if false no
             value should be expected.
             </summary>
         </member>
@@ -281,6 +281,11 @@
             Gets or sets the name of this contract.
             </summary>
         </member>
+        <member name="P:ProtoBuf.Meta.MetaType.Origin">
+            <summary>
+            Gets or sets the file that defines this type (as used with <c>import</c> in .proto)
+            </summary>
+        </member>
         <member name="M:ProtoBuf.Meta.MetaType.SetFactory(System.Reflection.MethodInfo)">
             <summary>
             Designate a factory-method to use to create instances of this type
@@ -345,7 +350,7 @@
         <member name="M:ProtoBuf.Meta.MetaType.Add(System.Int32,System.String,System.Object)">
             <summary>
             Adds a member (by name) to the MetaType
-            </summary>        
+            </summary>
         </member>
         <member name="M:ProtoBuf.Meta.MetaType.Add(System.Int32,System.String,System.Type,System.Type)">
             <summary>
@@ -406,6 +411,11 @@
             <summary>
             Gets or sets a value indicating that this type should NOT be treated as a list, even if it has
             familiar list-like characteristics (enumerable, add, etc)
+            </summary>
+        </member>
+        <member name="P:ProtoBuf.Meta.MetaType.IgnoreUnknownSubTypes">
+            <summary>
+            Gets or sets a value indicating whether unknown sub-types should cause serialization failure
             </summary>
         </member>
         <member name="P:ProtoBuf.Meta.MetaType.SerializerType">
@@ -768,6 +778,21 @@
             <summary>
             Promotes this model instance to be the default model; the default model is used by <see cref="T:ProtoBuf.Serializer"/> and <see cref="T:ProtoBuf.Serializer.NonGeneric"/>.
             </summary>
+        </member>
+        <member name="M:ProtoBuf.Meta.RuntimeTypeModel.SetSurrogate``2(System.Func{``0,``1},System.Func{``1,``0},ProtoBuf.DataFormat,ProtoBuf.CompatibilityLevel)">
+            <summary>
+            Treat all values of <typeparamref name="TUnderlying"/> (non-serializable)
+            as though they were the surrogate <typeparamref name="TSurrogate"/> (serializable);
+            if custom conversion operators are provided, they are used in place of implicit
+            or explicit conversion operators.
+            </summary>
+            <typeparam name="TUnderlying">The non-serializable type to provide custom support for</typeparam>
+            <typeparam name="TSurrogate">The serializable type that should be used instead</typeparam>
+            <param name="underlyingToSurrogate">Custom conversion operation</param>
+            <param name="surrogateToUnderlying">Custom conversion operation</param>
+            <param name="dataFormat">The <see cref="T:ProtoBuf.DataFormat"/> to use</param>
+            <param name="compatibilityLevel">The <see cref="T:ProtoBuf.CompatibilityLevel"/> to assume for this type</param>
+            <returns>The original model (for chaining).</returns>
         </member>
         <member name="T:ProtoBuf.Meta.LockContentedEventArgs">
             <summary>
