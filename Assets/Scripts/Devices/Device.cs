@@ -37,6 +37,8 @@ public abstract class Device : MonoBehaviour
 	[Range(0, 1.0f)]
 	public float waitingPeriodRatio = 1.0f;
 
+	private Pose deviceModelPose = Pose.identity;
+	private Pose deviceLinkPose = Pose.identity;
 	private Pose devicePose = Pose.identity;
 
 	public float UpdateRate => updateRate;
@@ -66,7 +68,7 @@ public abstract class Device : MonoBehaviour
 
 	void Start()
 	{
-		SetDeviceTransform();
+		StorePose();
 
 		InitializeMessages();
 
@@ -239,34 +241,47 @@ public abstract class Device : MonoBehaviour
 		return null;
 	}
 
-	private void SetDeviceTransform()
+	private void StorePose()
 	{
 		// Debug.Log(deviceName + ":" + transform.name);
 		var devicePosition = Vector3.zero;
 		var deviceRotation = Quaternion.identity;
-		var sensorDevicePosition = transform.localPosition;
-		var sensorDeviceRotation = transform.localRotation;
 
-		var parentObject = transform.parent;
-		if (parentObject != null)
+		var parentLinkObject = transform.parent;
+		if (parentLinkObject != null && parentLinkObject.CompareTag("Link"))
 		{
-			// Debug.Log(parentObject.name);
-			var modelObject = parentObject.parent;
-			if (modelObject != null && modelObject.CompareTag("Model"))
+			deviceLinkPose.position = parentLinkObject.localPosition;
+			deviceLinkPose.rotation = parentLinkObject.localRotation;
+			// Debug.Log(parentLinkObject.name + ": " + deviceLinkPose.position.ToString("F4") + ", " + deviceLinkPose.rotation.ToString("F4"));
+
+			var parentModelObject = parentLinkObject.parent;
+			if (parentModelObject != null && parentModelObject.CompareTag("Model"))
 			{
-				devicePosition = modelObject.transform.localPosition + sensorDevicePosition;
-				deviceRotation = modelObject.transform.localRotation * sensorDeviceRotation;
-				// Debug.Log(modelObject.name + ": " + devicePosition.ToString("F4") + ", " + deviceRotation.ToString("F4"));
+				deviceModelPose.position = parentModelObject.localPosition;
+				deviceModelPose.rotation = parentModelObject.localRotation;
+				// Debug.Log(parentModelObject.name + ": " + deviceModelPose.position.ToString("F4") + ", " + deviceModelPose.rotation.ToString("F4"));
 			}
 		}
 
-		devicePose.position = devicePosition;
-		devicePose.rotation = deviceRotation;
+		devicePose.position = transform.localPosition;
+		devicePose.rotation = transform.localRotation;
 	}
 
-	public Pose GetPose()
+	public Pose GetPose(in bool includingParent = true)
 	{
-		return devicePose;
+		var finalPose = devicePose;
+
+		if (includingParent)
+		{
+			finalPose.position += deviceLinkPose.position;
+			finalPose.rotation *= deviceLinkPose.rotation;
+
+			finalPose.position += deviceModelPose.position;
+			finalPose.rotation *= deviceModelPose.rotation;
+		}
+		// Debug.Log(name + ": " + finalPose.position.ToString("F4") + ", " + finalPose.rotation.ToString("F4"));
+
+		return finalPose;
 	}
 
 	public void SetPluginParameter(in PluginParameters pluginParams)

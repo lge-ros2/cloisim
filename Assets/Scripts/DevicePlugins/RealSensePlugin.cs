@@ -89,6 +89,11 @@ public class RealSensePlugin : DevicesPlugin
 						SetModuleListInfoResponse(ref msForInfoResponse, activatedModules);
 						break;
 
+					case "request_transform":
+						var devicePose = GetPose();
+						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
+						break;
+
 					default:
 						break;
 				}

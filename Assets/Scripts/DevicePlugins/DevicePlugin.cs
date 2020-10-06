@@ -15,7 +15,6 @@ public interface IDevicePlugin
 	void SetPluginName(in string name);
 	void SetPluginParameters(in XmlNode node);
 	void Reset();
-
 }
 
 public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
@@ -24,10 +23,12 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	public Type type { get; protected set; }
 
+	private BridgeManager bridgeManager = null;
+
 	public string modelName { get; protected set; } = string.Empty;
 	public string partName { get; protected set; } = string.Empty;
 
-	private BridgeManager bridgeManager = null;
+	private Pose devicePluginPose = Pose.identity;
 
 	public string pluginName { get; protected set; } = string.Empty;
 	protected PluginParameters parameters = new PluginParameters();
@@ -67,7 +68,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 	}
 
-	public void ChangePluginType(in Type targetType)
+	public void ChangePluginType(in DevicePlugin.Type targetType)
 	{
 		type = targetType;
 	}
@@ -87,6 +88,11 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		{
 			Debug.LogWarning("Cannot set plugin parameters");
 		}
+	}
+
+	public Pose GetPose()
+	{
+		return devicePluginPose;
 	}
 
 	private bool PrepareDevice(in string subPartName, out ushort port, out ulong hash)
@@ -192,6 +198,8 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	// Start is called before the first frame update
 	void Start()
 	{
+		StorePose();
+
 		if (string.IsNullOrEmpty(modelName))
 		{
 			modelName = DeviceHelper.GetModelName(gameObject);
@@ -241,6 +249,14 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	{
 		Thread.SpinWait(1);
 	}
+
+	private void StorePose()
+	{
+		// Debug.Log(deviceName + ":" + transform.name);
+		devicePluginPose.position = transform.localPosition;
+		devicePluginPose.rotation = transform.localRotation;
+	}
+
 
 	protected static void ClearMemoryStream(ref MemoryStream ms)
 	{
