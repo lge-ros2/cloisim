@@ -146,6 +146,7 @@ namespace SDF
 					}
 					break;
 
+				case "ball":
 				case "fixed":
 					// Console.WriteLine("[{0}] P:{1} C:{2}", Type, parent, child);
 					break;
