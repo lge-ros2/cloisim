@@ -108,7 +108,7 @@ public partial class DeviceHelper
 		}
 
 		quaternion.X = -rotation.z;
-		quaternion.Y = rotation.x;
+		quaternion.Y = -rotation.x;
 		quaternion.Z = rotation.y;
 		quaternion.W = -rotation.w;
 	}
