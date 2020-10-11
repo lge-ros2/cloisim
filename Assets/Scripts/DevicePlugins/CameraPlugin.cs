@@ -12,6 +12,11 @@ public class CameraPlugin : DevicePlugin
 
 	public string subPartName = string.Empty;
 
+	public SensorDevices.Camera GetCamera()
+	{
+		return cam;
+	}
+
 	protected override void OnAwake()
 	{
 		var depthcam = gameObject.GetComponent<SensorDevices.DepthCamera>();

@@ -28,23 +28,27 @@ namespace SensorDevices
 			}
 		}
 
+		public void ReverseDepthData(in bool reverse)
+		{
+			if (depthMaterial != null)
+			{
+				depthMaterial.SetFloat("_ReverseData", (reverse)? 1.0f:0.0f);
+			}
+		}
+
 		protected override void SetupTexture()
 		{
 			var shader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(shader);
-			depthMaterial.SetFloat("_ReverseData", 1.0f);
+
+			ReverseDepthData(true);
 
 			var camParameters = (deviceParameters as SDF.Camera);
-			switch (camParameters.depth_camera_output)
-			{
-				case "points":
-					Debug.Log("Enable Point Cloud data mode");
-					camParameters.image_format = "RGB_FLOAT32";
-					break;
 
-				default:
-					camParameters.image_format = "R_FLOAT32";
-					break;
+			if (camParameters.depth_camera_output.Equals("points"))
+			{
+				Debug.Log("Enable Point Cloud data mode - NOT SUPPORT YET!");
+				camParameters.image_format = "RGB_FLOAT32";
 			}
 
 			cam.backgroundColor = Color.white;
@@ -54,9 +58,24 @@ namespace SensorDevices
 			targetRTname = "CameraDepthTexture";
 			targetRTdepth = 24;
 			targetRTrwmode = RenderTextureReadWrite.Linear;
-
 			targetRTformat = RenderTextureFormat.ARGB32;
-			readbackDstFormat = TextureFormat.RFloat;
+
+			var pixelFormat = GetPixelFormat(camParameters.image_format);
+			switch (pixelFormat)
+			{
+				case PixelFormat.L_INT16:
+					readbackDstFormat = TextureFormat.R16;
+					break;
+
+				case PixelFormat.R_FLOAT16:
+					readbackDstFormat = TextureFormat.RHalf;
+					break;
+
+				case PixelFormat.R_FLOAT32:
+				default:
+					readbackDstFormat = TextureFormat.RFloat;
+					break;
+			}
 		}
 	}
 }

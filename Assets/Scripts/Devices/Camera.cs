@@ -104,10 +104,11 @@ namespace SensorDevices
 			imageStamped.Image = new messages.Image();
 
 			var image = imageStamped.Image;
+			var pixelFormat = GetPixelFormat(GetParameters().image_format);
 			image.Width = (uint)GetParameters().image_width;
 			image.Height = (uint)GetParameters().image_height;
-			image.PixelFormat = (uint)GetPixelFormat(GetParameters().image_format);
-			image.Step = image.Width * (uint)GetImageDepth(GetParameters().image_format);
+			image.PixelFormat = (uint)pixelFormat;
+			image.Step = image.Width * (uint)GetImageDepth(pixelFormat);
 			image.Data = new byte[image.Height * image.Step];
 
 			sensorInfo = new messages.CameraSensor();

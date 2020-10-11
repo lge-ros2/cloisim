@@ -9,7 +9,7 @@ Shader "Sensor/Depth"
 	SubShader
 	{
 		Cull Back
-		ZWrite Off
+		ZWrite On
 		ZTest LEqual
 
 		Tags
@@ -29,11 +29,10 @@ Shader "Sensor/Depth"
 
 			#pragma vertex vert
 			#pragma fragment frag
-			#pragma target 3.0
+			#pragma target 4.0
 			#include "UnityCG.cginc"
 
 			uniform sampler2D _CameraDepthTexture;
-			// uniform float4x4 _ViewProjInv;
 			uniform half4 _MainTex_TexelSize;
 
 			v2f_img vert(appdata_img v)
@@ -43,10 +42,10 @@ Shader "Sensor/Depth"
 				o.uv = MultiplyUV(UNITY_MATRIX_TEXTURE0, v.texcoord);
 
 				// why do we need this? cause sometimes the image I get is flipped. see: http://docs.unity3d.com/Manual/SL-PlatformDifferences.html
-			#if UNITY_UV_STARTS_AT_TOP
+				#if UNITY_UV_STARTS_AT_TOP
 				if (_MainTex_TexelSize.y < 0)
 					o.uv.y = 1 - o.uv.y;
-			#endif
+				#endif
 
 				return o;
 			}
