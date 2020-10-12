@@ -138,6 +138,7 @@ public class ObjectSpawning : MonoBehaviour
 		{
 			spawnedObject = Instantiate(targetObject);
 			spawnedObject.name = propsName;
+			spawnedObject.SetActive(true);
 			var meshFilter = spawnedObject.GetComponentInChildren<MeshFilter>();
 			mesh = meshFilter.sharedMesh;
 		}
