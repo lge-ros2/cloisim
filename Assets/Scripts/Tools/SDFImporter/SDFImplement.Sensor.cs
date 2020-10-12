@@ -94,7 +94,29 @@ public partial class SDFImplement
 			var depthCamera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
 			depthCamera.deviceName = GetFrameName(newSensorObject);
 
-			element.image_format = "R_FLOAT32";
+			if (string.IsNullOrEmpty(element.image_format))
+			{
+				element.image_format = "R_FLOAT32";
+			}
+			else
+			{
+				switch (element.image_format)
+				{
+					case "L16":
+					case "R_FLOAT16":
+					case "R_FLOAT32":
+					case "L_INT16":
+					case "L_UINT16":
+						// Debug.Log("Supporting data type for Depth camera");
+						break;
+
+					default:
+						Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image_format);
+						element.image_format = "R_FLOAT32";
+						break;
+				}
+			}
+
 			depthCamera.SetDeviceParameter(element as SDF.SensorType);
 
 			return depthCamera;

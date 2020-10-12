@@ -89,7 +89,7 @@ namespace SensorDevices
 					var b = imageBuffer[imageOffset + 2];
 					var a = imageBuffer[imageOffset + 3];
 
-					return DecodeChannel(r, g, b, a);
+					return DecodeFloatRGBA(r, g, b, a);
 				}
 				else
 				{
@@ -97,7 +97,7 @@ namespace SensorDevices
 				}
 			}
 
-			private float DecodeChannel(in byte r, in byte g, in byte b, in byte a)
+			private float DecodeFloatRGBA(in byte r, in byte g, in byte b, in byte a)
 			{
 				// decodedData = (r / 255f) + (g / 255f) / 255f + (b / 255f) / 65025f;
 				// decodedData = (r * 0.0039215686f) + (g * 0.0000153787f) + (b * 0.0000000603f);

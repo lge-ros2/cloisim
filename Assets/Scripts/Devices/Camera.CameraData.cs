@@ -68,54 +68,46 @@ namespace SensorDevices
 			return parsedEnum;
 		}
 
-		static public int GetImageDepth(in string imageFormat)
+		static public int GetImageDepth(in PixelFormat pixelFormat)
 		{
 			var depth = 0;
 
-			if (imageFormat == null || imageFormat.Equals(string.Empty))
+			if (pixelFormat.Equals(PixelFormat.UNKNOWN_PIXEL_FORMAT))
 			{
 				return depth;
 			}
 
-			switch (imageFormat)
+			switch (pixelFormat)
 			{
-				case "L8":
-				case "L_INT8":
+				case PixelFormat.L_INT8:
+				case PixelFormat.BAYER_GBRG8:
+				case PixelFormat.BAYER_GRBG8:
+				case PixelFormat.BAYER_RGGB8:
+				case PixelFormat.BAYER_RGGR8:
 					depth = 1;
 					break;
 
-				case "L16":
-				case "L_INT16":
-				case "L_UINT16":
+				case PixelFormat.L_INT16:
+				case PixelFormat.R_FLOAT16:
 					depth = 2;
 					break;
 
-				case "R8G8B8":
-				case "RGB_INT8":
-				case "B8G8R8":
-				case "BGR_INT8":
+				case PixelFormat.RGB_INT8:
+				case PixelFormat.BGR_INT8:
 					depth = 3;
 					break;
 
-				case "R16G16B16":
-				case "RGB_INT16":
-				case "RGB_UINT16":
+				case PixelFormat.RGB_INT16:
+				case PixelFormat.BGR_INT16:
 					depth = 6;
 					break;
 
-				case "R_FLOAT32":
+				case PixelFormat.R_FLOAT32:
 					depth = 4;
 					break;
 
-				case "BAYER_RGGB8":
-				case "BAYER_BGGR8":
-				case "BAYER_GBRG8":
-				case "BAYER_GRBG8":
-					depth = 1;
-					break;
-
 				default:
-					Debug.LogErrorFormat("Error parsing image format ({0}), using default PF_R8G8B8", imageFormat);
+					Debug.LogErrorFormat("Error parsing image format ({0})", pixelFormat);
 					break;
 			}
 
