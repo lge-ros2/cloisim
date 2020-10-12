@@ -5,7 +5,6 @@
  */
 
 using System.Collections.Generic;
-using System;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using UnityEngine;
