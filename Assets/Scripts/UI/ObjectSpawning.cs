@@ -127,8 +127,10 @@ public class ObjectSpawning : MonoBehaviour
 
 			if (mesh != null)
 			{
-				var newPropsObject = CreateProps(propsName, mesh);
-				props.Add(type, newPropsObject);
+				var newTempPropsObject = CreateProps(propsName, mesh);
+				props.Add(type, newTempPropsObject);
+				newTempPropsObject.hideFlags = HideFlags.HideAndDontSave;
+				newTempPropsObject.SetActive(false);
 			}
 		}
 
@@ -140,7 +142,7 @@ public class ObjectSpawning : MonoBehaviour
 			mesh = meshFilter.sharedMesh;
 		}
 
-		position.y += mesh.bounds.size.y / 2 + 0.01f;
+		position.y += mesh.bounds.size.y / 2 + 0.001f;
 
 		var spawanedObjectTransform = spawnedObject.transform;
 		spawanedObjectTransform.position = position;
