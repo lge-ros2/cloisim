@@ -50,7 +50,7 @@ public partial class ElevatorSystem : DevicePlugin
 	protected override void OnAwake()
 	{
 		type = Type.ELEVATOR;
-		partName = "ElevatorSystem";
+		partName = "elevator_system";
 	}
 
 	protected override void OnStart()
