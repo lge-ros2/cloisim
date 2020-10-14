@@ -49,7 +49,7 @@ public class DoorsControl : MonoBehaviour
 		else
 		{
 			closedDoorPositionLeft = doorLeft.CurrentPosition();
-			openedDoorPositionLeft = Vector3.right * openOffset;
+			openedDoorPositionLeft = Vector3.forward * openOffset;
 		}
 	}
 
@@ -65,7 +65,7 @@ public class DoorsControl : MonoBehaviour
 		else
 		{
 			closedDoorPositionRight = doorRight.CurrentPosition();
-			openedDoorPositionRight = Vector3.left * openOffset;
+			openedDoorPositionRight = Vector3.back * openOffset;
 		}
 	}
 
@@ -81,8 +81,8 @@ public class DoorsControl : MonoBehaviour
 
 	public void Open()
 	{
-		doorLeft.SetTargetPosition(Vector3.right, openOffset);
-		doorRight.SetTargetPosition(Vector3.left, openOffset);
+		doorLeft.SetTargetPosition(Vector3.forward, openOffset);
+		doorRight.SetTargetPosition(Vector3.back, openOffset);
 
 		if (IsClosed() && !IsMoving())
 		{
@@ -92,8 +92,8 @@ public class DoorsControl : MonoBehaviour
 
 	public void Close()
 	{
-		doorLeft.SetTargetPosition(Vector3.left, openOffset, true);
-		doorRight.SetTargetPosition(Vector3.right, openOffset, true);
+		doorLeft.SetTargetPosition(Vector3.back, openOffset, true);
+		doorRight.SetTargetPosition(Vector3.forward, openOffset, true);
 
 		if (IsOpened() && !IsMoving())
 		{
