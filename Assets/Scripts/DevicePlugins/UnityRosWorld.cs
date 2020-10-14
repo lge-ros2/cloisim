@@ -18,7 +18,7 @@ public class UnityRosWorld : DevicePlugin
 		clock = gameObject.AddComponent<Clock>();
 
 		modelName = "World";
-		partName = "UnityRos";
+		partName = "unity_ros";
 	}
 
 	protected override void OnStart()
