@@ -513,7 +513,7 @@ public partial class ElevatorSystem : DevicePlugin
 			}
 			else
 			{
-				Debug.LogErrorFormat("Wrong:: elevator is not arrived yet Select floor: {0}, {1}, {2}", entity.Name, task.fromFloor, task.toFloor);
+				Debug.LogWarningFormat("Wrong:: elevator is not arrived yet Select floor: {0}, {1}, {2}", entity.Name, task.fromFloor, task.toFloor);
 				task.state = ElevatorTaskState.DONE;
 			}
 		}

@@ -13,18 +13,57 @@ public class Actuator
 	private const float lerpEpsilon = 0.009f;
 	private Vector3 currentVelocity = Vector3.zero; // only for SmoothDamp
 
+	private Vector3 initialPose = Vector3.zero;
 	private Transform targetTransform = null;
 
 	private MovingType movingType = MovingType.MoveTowards;
 
 	private Vector3 targetPosition = Vector3.zero;
 
+	#region Parameters
+	private Vector3 rodDirection = Vector3.zero;
+	private float minOffset = 0f;
+	private float maxOffset = 0f;
+	private Vector3 minPosition = Vector3.zero;
+	private Vector3 maxPosition = Vector3.zero;
+	#endregion
+
 	private float distanceEpsilon = Vector3.kEpsilon;
 	private float maxMovingSpeed = 1;
 	private bool isMoving = false;
 	public bool IsMoving => isMoving;
 
-	public Vector3 TargetPosition => targetPosition;
+	public void SetDirection(in Vector3 direction)
+	{
+		rodDirection = direction;
+		RecalculateInitialPoseByRodDirection();
+	}
+
+	public void SetMinOffset(in float offset)
+	{
+		if (minOffset > maxOffset)
+		{
+			Debug.LogWarningFormat("minOffset({0}) cannot be lower than maxOffset({1})", minOffset, maxOffset);
+		}
+		else
+		{
+			minOffset = offset;
+			minPosition = rodDirection * minOffset;
+		}
+	}
+
+	public void SetMaxOffset(in float offset)
+	{
+		if (maxOffset < minOffset)
+		{
+			Debug.LogWarningFormat("maxOffset({0}) cannot be lower than minOffset({1})", maxOffset, minOffset);
+		}
+		else
+		{
+			maxOffset = offset;
+			maxPosition = rodDirection * maxOffset;
+		}
+	}
 
 	public void SetTarget(in string name)
 	{
@@ -47,6 +86,19 @@ public class Actuator
 	public void SetTarget(in Transform target)
 	{
 		targetTransform = target;
+	}
+
+	public void SetInitialPose(in Vector3 targetPosition)
+	{
+		initialPose = targetPosition;
+		RecalculateInitialPoseByRodDirection();
+	}
+
+	private void RecalculateInitialPoseByRodDirection()
+	{
+		initialPose.x -= (initialPose.x * rodDirection.x);
+		initialPose.y -= (initialPose.y * rodDirection.y);
+		initialPose.z -= (initialPose.z * rodDirection.z);
 	}
 
 	public void SetMaxSpeed(in float value)
@@ -90,32 +142,20 @@ public class Actuator
 	//     Set target position before drive.
 	//
 	// Parameters:
-	//   direction: Vector3.up/down/forwad/back/left/right
 	//   offset: target offset
-	//   relative: if true, target shall move from current position,
-	//             otherwise target shall be set absolute offset along with direction
 	//
-	public void SetTargetPosition(in Vector3 direction, in float offset, in bool relative = false)
+	public void SetTargetPosition(float offset)
 	{
-		var targetValue = (direction * offset);
-
-		if (relative)
+		if (offset < minOffset)
 		{
-			targetPosition = CurrentPosition() + targetValue;
+			offset = minOffset;
 		}
-		else
+		else if (offset > maxOffset)
 		{
-			targetPosition = CurrentPosition();
-			SetZeroOnDirection(ref targetPosition, direction);
-			targetPosition += targetValue;
+			offset = maxOffset;
 		}
 
-		// Debug.Log("SetTargetPosition: " + targetPosition.ToString("F5"));
-	}
-
-	public void SetTargetPosition(in Vector3 absolutePosition)
-	{
-		targetPosition = absolutePosition;
+		targetPosition = initialPose + (rodDirection * offset);
 	}
 
 	public void Drive()
@@ -149,7 +189,7 @@ public class Actuator
 		targetTransform.localPosition = nextPosition;
 
 		// check if it arrived
-		var distance = Vector3.SqrMagnitude(targetPosition - nextPosition);
+		var distance = Vector3.Distance(targetPosition, nextPosition);
  		if (distance < distanceEpsilon)
 		{
 			// final touch
@@ -160,32 +200,18 @@ public class Actuator
 		}
 	}
 
+	public bool IsReachedMin()
+	{
+		return IsSamePosition(minPosition);
+	}
+
+	public bool IsReachedMax()
+	{
+		return IsSamePosition(maxPosition);
+	}
+
 	public bool IsSamePosition(in Vector3 checkPosition)
 	{
 		return DeviceHelper.IsSamePosition(CurrentPosition(), checkPosition);
-	}
-
-	public bool IsSamePosition(in Vector3 checkDirection, in float checkOffset)
-	{
-		var tempTarget = CurrentPosition();
-		SetZeroOnDirection(ref tempTarget, checkDirection);
-		tempTarget += (checkDirection * checkOffset);
-		return DeviceHelper.IsSamePosition(CurrentPosition(), tempTarget);
-	}
-
-	public static void SetZeroOnDirection(ref Vector3 target, in Vector3 direction)
-	{
-		if (direction.Equals(Vector3.left) || direction.Equals(Vector3.right))
-		{
-			target.x = 0;
-		}
-		else if (direction.Equals(Vector3.up) || direction.Equals(Vector3.down))
-		{
-			target.y = 0;
-		}
-		else if (direction.Equals(Vector3.forward) || direction.Equals(Vector3.back))
-		{
-			target.z = 0;
-		}
 	}
 }

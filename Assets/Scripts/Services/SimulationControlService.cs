@@ -21,13 +21,11 @@ public class SimulationControlRequest
 	[JsonProperty(Order = 2)]
 	public string filter = string.Empty;
 
-
 	public void Print()
 	{
 		Debug.LogFormat("## {0}: {1}", this.GetType().Name, command);
 	}
 }
-
 
 public class SimulationControlResponseBase
 {
@@ -39,7 +37,6 @@ public class SimulationControlResponseBase
 		Debug.LogFormat("## {0}: {1}", this.GetType().Name, command);
 	}
 }
-
 
 public class SimulationControlResponseNormal : SimulationControlResponseBase
 {
@@ -62,7 +59,6 @@ public class SimulationControlResponseDeviceList : SimulationControlResponseBase
 		Debug.LogFormat("## {0}: {1}, {2}", this.GetType().Name, command, result);
 	}
 }
-
 
 public class SimulationControlResponseTopicList : SimulationControlResponseBase
 {

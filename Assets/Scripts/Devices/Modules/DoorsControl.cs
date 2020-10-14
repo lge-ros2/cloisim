@@ -9,13 +9,10 @@ using UnityEngine;
 
 public class DoorsControl : MonoBehaviour
 {
-	private Actuator doorLeft = null;
-	private Actuator doorRight = null;
+	private Actuator doorLeft = new Actuator();
+	private Actuator doorRight = new Actuator();
 
-	private Vector3 closedDoorPositionLeft = Vector3.zero;
-	private Vector3 closedDoorPositionRight = Vector3.zero;
-	private Vector3 openedDoorPositionLeft = Vector3.zero;
-	private Vector3 openedDoorPositionRight = Vector3.zero;
+	private Coroutine operatingDoor = null;
 
 	private Vector3 doorTargetPositionLeft = Vector3.zero;
 	private Vector3 doorTargetPositionRight = Vector3.zero;
@@ -23,50 +20,28 @@ public class DoorsControl : MonoBehaviour
 	public float speed = 0.1f;
 	public float openOffset = 1;
 
-	public DoorsControl()
-	{
-		doorLeft = new Actuator();
-		doorRight = new Actuator();
-	}
-
 	void Start()
 	{
 		doorLeft.SetMovingType(Actuator.MovingType.MoveTowards);
 		doorLeft.SetMaxSpeed(speed);
+		doorLeft.SetDirection(Vector3.forward);
+		doorLeft.SetMaxOffset(openOffset);
+		doorLeft.SetMinOffset(0);
 		doorRight.SetMovingType(Actuator.MovingType.MoveTowards);
 		doorRight.SetMaxSpeed(speed);
+		doorRight.SetDirection(Vector3.back);
+		doorRight.SetMaxOffset(openOffset);
+		doorRight.SetMinOffset(0);
 	}
 
 	public void SetLeftDoor(in Transform targetTransform)
 	{
 		doorLeft.SetTarget(targetTransform);
-
-		if (targetTransform == null)
-		{
-			closedDoorPositionLeft = Vector3.zero;
-			openedDoorPositionLeft = Vector3.zero;
-		}
-		else
-		{
-			closedDoorPositionLeft = doorLeft.CurrentPosition();
-			openedDoorPositionLeft = Vector3.forward * openOffset;
-		}
 	}
 
 	public void SetRightDoor(in Transform targetTransform)
 	{
 		doorRight.SetTarget(targetTransform);
-
-		if (targetTransform == null)
-		{
-			closedDoorPositionRight = Vector3.zero;
-			openedDoorPositionRight = Vector3.zero;
-		}
-		else
-		{
-			closedDoorPositionRight = doorRight.CurrentPosition();
-			openedDoorPositionRight = Vector3.back * openOffset;
-		}
 	}
 
 	public Vector3 GetLeftDoorPosition()
@@ -81,30 +56,32 @@ public class DoorsControl : MonoBehaviour
 
 	public void Open()
 	{
-		doorLeft.SetTargetPosition(Vector3.forward, openOffset);
-		doorRight.SetTargetPosition(Vector3.back, openOffset);
+		doorLeft.SetTargetPosition(openOffset);
+		doorRight.SetTargetPosition(openOffset);
 
-		if (IsClosed() && !IsMoving())
+		if (operatingDoor != null)
 		{
-			StartCoroutine(MoveTo());
+			StopCoroutine(operatingDoor);
 		}
+
+		operatingDoor = StartCoroutine(Operate());
 	}
 
 	public void Close()
 	{
-		doorLeft.SetTargetPosition(Vector3.back, openOffset, true);
-		doorRight.SetTargetPosition(Vector3.forward, openOffset, true);
+		doorLeft.SetTargetPosition(-openOffset);
+		doorRight.SetTargetPosition(-openOffset);
 
-		if (IsOpened() && !IsMoving())
+		if (operatingDoor != null)
 		{
-			StartCoroutine(MoveTo());
+			StopCoroutine(operatingDoor);
 		}
+		operatingDoor = StartCoroutine(Operate());
 	}
-
 
 	public bool IsOpened()
 	{
-		if (doorLeft.IsSamePosition(openedDoorPositionLeft) && doorRight.IsSamePosition(openedDoorPositionRight))
+		if (doorLeft.IsReachedMax() && doorRight.IsReachedMax())
 		{
 			return true;
 		}
@@ -114,7 +91,7 @@ public class DoorsControl : MonoBehaviour
 
 	public bool IsClosed()
 	{
-		if (doorLeft.IsSamePosition(closedDoorPositionLeft) && doorRight.IsSamePosition(closedDoorPositionRight))
+		if (doorLeft.IsReachedMin() && doorRight.IsReachedMin())
 		{
 			return true;
 		}
@@ -122,17 +99,7 @@ public class DoorsControl : MonoBehaviour
 		return false;
 	}
 
-	public bool IsMoving()
-	{
-		if (doorLeft.IsMoving || doorRight.IsMoving)
-		{
-			return true;
-		}
-
-		return false;
-	}
-
-	private IEnumerator MoveTo()
+	private IEnumerator Operate()
 	{
 		var waitForFixedUpdate = new WaitForFixedUpdate();
 
