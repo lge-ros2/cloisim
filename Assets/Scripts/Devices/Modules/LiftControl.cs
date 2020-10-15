@@ -11,41 +11,40 @@ using UnityEngine.Events;
 
 public class LiftControl : MonoBehaviour
 {
-	private Actuator lift;
+	private const float MAX_HEIGHT = 1000f;
+	private const float MIN_HEIGHT = -1000f;
 
-	private HashSet<GameObject> hashsetAllTopModels;
-	private HashSet<GameObject> hashsetLiftingObjects;
+	private Actuator lift = new Actuator();
 
-	private UnityEvent finishedLiftingEvent;
+	private HashSet<GameObject> hashsetAllTopModels = new HashSet<GameObject>();
+	private HashSet<GameObject> hashsetLiftingObjects = new HashSet<GameObject>();
+
+	private UnityEvent finishedLiftingEvent = new UnityEvent();
 	private GameObject rootModel = null;
 	private Transform rootModelTransform = null;
 
 	public string floorColliderName = string.Empty;
 	private MeshCollider floorCollider = null;
-	private Vector3 targetPosition = Vector3.zero;
 
 	public float speed = 1;
 	public bool IsMoving => lift.IsMoving;
 
-	LiftControl()
-	{
-		lift = new Actuator();
-		hashsetAllTopModels = new HashSet<GameObject>();
-		hashsetLiftingObjects = new HashSet<GameObject>();
-	}
-
 	void Awake()
 	{
-		lift.SetTarget(transform);
 		rootModel = GameObject.Find("Models");
-		rootModelTransform = rootModel.transform;
-		finishedLiftingEvent = new UnityEvent();
 	}
 
 	void Start()
 	{
+		rootModelTransform = rootModel.transform;
+
+		lift.SetTarget(transform);
+		lift.SetInitialPose(transform.localPosition);
 		lift.SetMovingType(Actuator.MovingType.SmoothDamp);
 		lift.SetMaxSpeed(speed);
+		lift.SetDirection(Vector3.up);
+		lift.SetMaxOffset(MAX_HEIGHT);
+		lift.SetMinOffset(MIN_HEIGHT);
 		// Debug.Log(name + "::" + speed);
 
 		FindFloorRegionInLift();
@@ -132,12 +131,12 @@ public class LiftControl : MonoBehaviour
 		{
 			DetectObjectsToLiftAndLiftIt();
 
-			lift.SetTargetPosition(Vector3.up, targetHeight);
-			StartCoroutine(RunLifting());
+			lift.SetTargetPosition(targetHeight);
+			StartCoroutine(DoLifting());
 		}
 	}
 
-	private IEnumerator RunLifting()
+	private IEnumerator DoLifting()
 	{
 		var waitForFixedUpdate = new WaitForFixedUpdate();
 		yield return waitForFixedUpdate;
