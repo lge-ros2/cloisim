@@ -29,8 +29,6 @@ public class LinkPlugin : MonoBehaviour
 	// Start is called before the first frame update
 	void Start()
 	{
-		RemoveFixedJointAndRigidBodyParts();
-
 		// Handle self collision
 		if (!isSelfCollide)
 		{
@@ -170,25 +168,6 @@ public class LinkPlugin : MonoBehaviour
 						thisJoint.connectedMassScale = 1;
 					}
 				}
-			}
-		}
-	}
-
-	private void RemoveFixedJointAndRigidBodyParts()
-	{
-		if (TryGetComponent<FixedJoint>(out var fixedJoint))
-		{
-			GameObject.Destroy(fixedJoint);
-
-			if (TryGetComponent<Rigidbody>(out var rigidbody))
-			{
-				rigidbody.isKinematic = true;
-				GameObject.Destroy(rigidbody);
-				transform.localPosition = Vector3.zero;
-				transform.localRotation = Quaternion.identity;
-
-				Debug.LogWarningFormat("[{0}] fixedJoint including Rigidbody will not be implemented as a joint. " +
-								"Only transform parenting for better performance", name);
 			}
 		}
 	}
