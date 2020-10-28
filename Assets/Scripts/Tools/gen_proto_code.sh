@@ -11,7 +11,7 @@ PROTOGEN="protogen"
 
 ## 2. check and edit here
 ##    set the location of protobuf messages in absolute path
-PROTO_MSGS_PATH="../../../../sim-device/driver_sim/msgs/"
+PROTO_MSGS_PATH="../../../../sim_device/driver_sim_interfaces/msgs/"
 
 
 ## 3. target protobuf message

@@ -9,7 +9,7 @@ using System.Collections;
 using UnityEngine;
 using messages = gazebo.msgs;
 
-public class MicomSensor : Device
+public partial class MicomSensor : Device
 {
 	private messages.Micom micomSensorData = null;
 
@@ -202,8 +202,12 @@ public class MicomSensor : Device
 	{
 		micomSensorData = new messages.Micom();
 		micomSensorData.Time = new messages.Time();
-		micomSensorData.Accgyro = new messages.Micom.AccGyro();
 		micomSensorData.Odom = new messages.Micom.Odometry();
+		micomSensorData.Odom.AngularVelocity = new messages.Micom.Odometry.Wheel();
+		micomSensorData.Odom.LinearVelocity = new messages.Micom.Odometry.Wheel();
+		micomSensorData.Odom.Pose = new messages.Vector3d();
+		micomSensorData.Odom.TwistLinear = new messages.Vector3d();
+		micomSensorData.Odom.TwistAngular = new messages.Vector3d();
 		micomSensorData.uss = new messages.Micom.Uss();
 		micomSensorData.ir = new messages.Micom.Ir();
 		micomSensorData.bumper = new messages.Micom.Bumper();
@@ -218,7 +222,6 @@ public class MicomSensor : Device
 	void FixedUpdate()
 	{
 		UpdateIMU();
-		UpdateAccGyro();
 		UpdateUss();
 		UpdateIr();
 		UpdateBumper();
@@ -310,31 +313,6 @@ public class MicomSensor : Device
 		micomSensorData.Imu = imuSensor.GetImuMessage();
 	}
 
-	private void UpdateAccGyro()
-	{
-		var accGyro = micomSensorData.Accgyro;
-
-		if (micomSensorData == null || accGyro == null)
-		{
-			return;
-		}
-
-		var localRotation = transform.rotation;
-		var angle = localRotation.eulerAngles * Mathf.Deg2Rad;
-
-		accGyro.AngleX = angle.x;
-		accGyro.AngleY = angle.z;
-		accGyro.AngleZ = angle.y;
-
-		accGyro.AccX = 0;
-		accGyro.AccY = 0;
-		accGyro.AccZ = 0;
-
-		accGyro.AngulerRateX = 0;
-		accGyro.AngulerRateY = 0;
-		accGyro.AngulerRateZ = 0;
-	}
-
 	public bool UpdateOdom()
 	{
 		if (micomSensorData != null)
@@ -347,10 +325,10 @@ public class MicomSensor : Device
 				var angularVelocityLeft = -motorLeft.GetCurrentVelocity();
 				var angularVelocityRight = -motorRight.GetCurrentVelocity();
 
-				odom.AngularVelocityLeft = angularVelocityLeft * Mathf.Deg2Rad;
-				odom.AngularVelocityRight = angularVelocityRight * Mathf.Deg2Rad;
-				odom.LinearVelocityLeft = odom.AngularVelocityLeft * wheelRadius;
-				odom.LinearVelocityRight = odom.AngularVelocityRight * wheelRadius;
+				odom.AngularVelocity.Left = angularVelocityLeft * Mathf.Deg2Rad;
+				odom.AngularVelocity.Right = angularVelocityRight * Mathf.Deg2Rad;
+				odom.LinearVelocity.Left = odom.AngularVelocity.Left * wheelRadius;
+				odom.LinearVelocity.Right = odom.AngularVelocity.Right * wheelRadius;
 
 				return true;
 			}
