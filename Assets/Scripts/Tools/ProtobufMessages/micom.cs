@@ -31,19 +31,16 @@ namespace gazebo.msgs
         [global::ProtoBuf.ProtoMember(5)]
         public Magnet magnet { get; set; }
 
-        [global::ProtoBuf.ProtoMember(6, Name = @"accgyro")]
-        public AccGyro Accgyro { get; set; }
-
-        [global::ProtoBuf.ProtoMember(7, Name = @"imu")]
+        [global::ProtoBuf.ProtoMember(6, Name = @"imu")]
         public Imu Imu { get; set; }
 
-        [global::ProtoBuf.ProtoMember(8)]
+        [global::ProtoBuf.ProtoMember(7)]
         public Bumper bumper { get; set; }
 
-        [global::ProtoBuf.ProtoMember(9, Name = @"battery")]
+        [global::ProtoBuf.ProtoMember(8, Name = @"battery")]
         public Battery Battery { get; set; }
 
-        [global::ProtoBuf.ProtoMember(10, Name = @"pose")]
+        [global::ProtoBuf.ProtoMember(9, Name = @"pose")]
         public Pose Pose { get; set; }
 
         [global::ProtoBuf.ProtoContract(Name = @"USS")]
@@ -71,6 +68,45 @@ namespace gazebo.msgs
         }
 
         [global::ProtoBuf.ProtoContract()]
+        public partial class Odometry : global::ProtoBuf.IExtensible
+        {
+            private global::ProtoBuf.IExtension __pbn__extensionData;
+            global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+                => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+            [global::ProtoBuf.ProtoMember(1, Name = @"angular_velocity", IsRequired = true)]
+            public Wheel AngularVelocity { get; set; }
+
+            [global::ProtoBuf.ProtoMember(2, Name = @"linear_velocity")]
+            public Wheel LinearVelocity { get; set; }
+
+            [global::ProtoBuf.ProtoMember(3, Name = @"pose")]
+            public Vector3d Pose { get; set; }
+
+            [global::ProtoBuf.ProtoMember(4, Name = @"twist_linear")]
+            public Vector3d TwistLinear { get; set; }
+
+            [global::ProtoBuf.ProtoMember(5, Name = @"twist_angular")]
+            public Vector3d TwistAngular { get; set; }
+
+            [global::ProtoBuf.ProtoContract()]
+            public partial class Wheel : global::ProtoBuf.IExtensible
+            {
+                private global::ProtoBuf.IExtension __pbn__extensionData;
+                global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+                    => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+                [global::ProtoBuf.ProtoMember(1, Name = @"left", IsRequired = true)]
+                public double Left { get; set; }
+
+                [global::ProtoBuf.ProtoMember(2, Name = @"right", IsRequired = true)]
+                public double Right { get; set; }
+
+            }
+
+        }
+
+        [global::ProtoBuf.ProtoContract()]
         public partial class Magnet : global::ProtoBuf.IExtensible
         {
             private global::ProtoBuf.IExtension __pbn__extensionData;
@@ -79,79 +115,6 @@ namespace gazebo.msgs
 
             [global::ProtoBuf.ProtoMember(1, Name = @"detected")]
             public bool[] Detecteds { get; set; }
-
-        }
-
-        [global::ProtoBuf.ProtoContract()]
-        public partial class Odometry : global::ProtoBuf.IExtensible
-        {
-            private global::ProtoBuf.IExtension __pbn__extensionData;
-            global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
-                => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
-
-            [global::ProtoBuf.ProtoMember(1, Name = @"angular_velocity_left", IsRequired = true)]
-            public double AngularVelocityLeft { get; set; }
-
-            [global::ProtoBuf.ProtoMember(2, Name = @"angular_velocity_right", IsRequired = true)]
-            public double AngularVelocityRight { get; set; }
-
-            [global::ProtoBuf.ProtoMember(3, Name = @"linear_velocity_left")]
-            [global::System.ComponentModel.DefaultValue(0)]
-            public double LinearVelocityLeft
-            {
-                get => __pbn__LinearVelocityLeft ?? 0;
-                set => __pbn__LinearVelocityLeft = value;
-            }
-            public bool ShouldSerializeLinearVelocityLeft() => __pbn__LinearVelocityLeft != null;
-            public void ResetLinearVelocityLeft() => __pbn__LinearVelocityLeft = null;
-            private double? __pbn__LinearVelocityLeft;
-
-            [global::ProtoBuf.ProtoMember(4, Name = @"linear_velocity_right")]
-            [global::System.ComponentModel.DefaultValue(0)]
-            public double LinearVelocityRight
-            {
-                get => __pbn__LinearVelocityRight ?? 0;
-                set => __pbn__LinearVelocityRight = value;
-            }
-            public bool ShouldSerializeLinearVelocityRight() => __pbn__LinearVelocityRight != null;
-            public void ResetLinearVelocityRight() => __pbn__LinearVelocityRight = null;
-            private double? __pbn__LinearVelocityRight;
-
-        }
-
-        [global::ProtoBuf.ProtoContract()]
-        public partial class AccGyro : global::ProtoBuf.IExtensible
-        {
-            private global::ProtoBuf.IExtension __pbn__extensionData;
-            global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
-                => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
-
-            [global::ProtoBuf.ProtoMember(1, Name = @"angle_x", IsRequired = true)]
-            public double AngleX { get; set; }
-
-            [global::ProtoBuf.ProtoMember(2, Name = @"angle_y", IsRequired = true)]
-            public double AngleY { get; set; }
-
-            [global::ProtoBuf.ProtoMember(3, Name = @"angle_z", IsRequired = true)]
-            public double AngleZ { get; set; }
-
-            [global::ProtoBuf.ProtoMember(4, Name = @"anguler_rate_x", IsRequired = true)]
-            public double AngulerRateX { get; set; }
-
-            [global::ProtoBuf.ProtoMember(5, Name = @"anguler_rate_y", IsRequired = true)]
-            public double AngulerRateY { get; set; }
-
-            [global::ProtoBuf.ProtoMember(6, Name = @"anguler_rate_z", IsRequired = true)]
-            public double AngulerRateZ { get; set; }
-
-            [global::ProtoBuf.ProtoMember(7, Name = @"acc_x", IsRequired = true)]
-            public double AccX { get; set; }
-
-            [global::ProtoBuf.ProtoMember(8, Name = @"acc_y", IsRequired = true)]
-            public double AccY { get; set; }
-
-            [global::ProtoBuf.ProtoMember(9, Name = @"acc_z", IsRequired = true)]
-            public double AccZ { get; set; }
 
         }
 
