@@ -66,13 +66,13 @@ namespace SensorDevices
 				sensorMeshOffset = (float)rangeMax/2;
 			}
 
-			TranslateDetectionArea(mesh, 0.0005f + sensorStartOffset + sensorMeshOffset);
+			TranslateDetectionArea(mesh, 0.0001f + sensorStartOffset + sensorMeshOffset + (float)rangeMin);
 
 			meshCollider.sharedMesh = mesh;
 			meshCollider.convex = true;
 			meshCollider.isTrigger = true;
 
-			ResolveSensingArea(meshCollider);
+			ResolveSensingArea(meshCollider.sharedMesh);
 
 			// const MeshColliderCookingOptions cookingOptions
 			// 	= MeshColliderCookingOptions.EnableMeshCleaning|MeshColliderCookingOptions.WeldColocatedVertices;
@@ -95,11 +95,12 @@ namespace SensorDevices
 			{
 				yield return waitForEndOfFrame;
 
-				var direction = (GetDetectedPoint() - sensorStartPoint).normalized;
-				var detectedRange = GetDetectedRange();
+				var detectedPoint = GetDetectedPoint();
 
-				if (detectedRange <= rangeMax && !direction.Equals(Vector3.zero))
+				if (!detectedPoint.Equals(Vector3.zero))
 				{
+					var direction = (GetDetectedPoint() - sensorStartPoint).normalized;
+					var detectedRange = GetDetectedRange();
 					Debug.DrawRay(sensorStartPoint, direction * detectedRange, Color.blue, UpdatePeriod);
 				}
 
@@ -144,19 +145,19 @@ namespace SensorDevices
 			PushData<messages.SonarStamped>(sonarStamped);
 		}
 
-		private void ResolveSensingArea(in MeshCollider meshCollider)
+		private void ResolveSensingArea(Mesh targetMesh)
 		{
 			// preserve the vertex points of the sensing area
-			for (var i = 0; i < meshCollider.sharedMesh.vertices.Length; i++)
+			for (var i = 0; i < targetMesh.vertices.Length; i++)
 			{
-				var targetPoint = meshCollider.sharedMesh.vertices[i];
+				var targetPoint = targetMesh.vertices[i];
 				var distance = (Vector3.zero - targetPoint).magnitude;
 				if (distance < (float)rangeMin)
 				{
 					continue;
 				}
 
-				meshSensorRegionVertices.Add(meshCollider.sharedMesh.vertices[i]);
+				meshSensorRegionVertices.Add(targetMesh.vertices[i]);
 			}
 		}
 
@@ -194,7 +195,7 @@ namespace SensorDevices
 			var contactDirection = Vector3.zero;
 			var localToWorld = sonarLink.localToWorldMatrix;
 
-			sensorStartPoint.Set(0, -sensorStartOffset, 0);
+			sensorStartPoint.Set(0, -(sensorStartOffset + (float)rangeMin), 0);
 			sensorStartPoint = localToWorld.MultiplyPoint3x4(sensorStartPoint);
 
 			// Debug.Log("Hit Points: " + meshSensorRegionVertices.Count);
@@ -225,7 +226,7 @@ namespace SensorDevices
 			var sonar = sonarStamped.Sonar;
 			sonar.Range = detectedRange;
 			DeviceHelper.SetVector3d(sonar.Contact, contactPoint);
-			// Debug.Log(other.name + " |Stay| " + "," + detectedRange.ToString("F5") + ", " + contactPoint);
+			// Debug.Log(deviceName + ": " + other.name + " |Stay| " + detectedRange.ToString("F5") + " | " + contactPoint);
 		}
 
 		void OnTriggerExit(Collider other)
@@ -253,7 +254,7 @@ namespace SensorDevices
 			try
 			{
 				var contactPoint = sonarStamped.Sonar.Contact;
-				var point = new Vector3((float)contactPoint.X, (float)contactPoint.Z, (float)contactPoint.Y);
+				var point = SDF2Unity.GetPosition(contactPoint.X, contactPoint.Y, contactPoint.Z);
 				return point;
 			}
 			catch
