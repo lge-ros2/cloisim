@@ -76,8 +76,8 @@ public partial class SDFImporter : SDF.Importer
 
 			rigidBody.velocity = Vector3.zero;
 			rigidBody.angularVelocity = Vector3.zero;
-			rigidBody.drag = 0.0f;
-			rigidBody.angularDrag = 0.08f;
+			rigidBody.drag = 0.05f;
+			rigidBody.angularDrag = 0.10f;
 
 			rigidBody.useGravity = link.Gravity;
 			rigidBody.isKinematic = link.Kinematic;
