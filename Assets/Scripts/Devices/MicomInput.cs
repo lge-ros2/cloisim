@@ -75,25 +75,28 @@ public class MicomInput : Device
 			var child0 = micomWritingData.Childrens[0];
 			var child1 = micomWritingData.Childrens[1];
 
+			// Set reversed value due to differnt direction
+			// Right-handed -> Left-handed direction of rotation
+
 			if (micomWritingData.Value.IntValue == 0)
 			{
 				controlType = VelocityType.LinearAndAngular;
 
 				linearVelocity
-					= (!child0.Name.Equals("LinearVelocity")) ? 0 : (float)child0.Value.DoubleValue;
+					= (!child0.Name.Equals("LinearVelocity")) ? 0 : (float)-child0.Value.DoubleValue;
 
 				angularVelocity
-					= (!child1.Name.Equals("AngularVelocity")) ? 0 : (float)child1.Value.DoubleValue;
+					= (!child1.Name.Equals("AngularVelocity")) ? 0 : (float)-child1.Value.DoubleValue;
 			}
 			else if (micomWritingData.Value.IntValue == 1)
 			{
 				controlType = VelocityType.LeftAndRight;
 
 				wheelLinearVelocityLeft
-					= (!child0.Name.Equals("LeftWheelVelocity")) ? 0 : (float)child0.Value.DoubleValue;
+					= (!child0.Name.Equals("LeftWheelVelocity")) ? 0 : (float)-child0.Value.DoubleValue;
 
 				wheelLinearVelocityRight
-					= (!child1.Name.Equals("RightWheelVelocity")) ? 0 : (float)child1.Value.DoubleValue;
+					= (!child1.Name.Equals("RightWheelVelocity")) ? 0 : (float)-child1.Value.DoubleValue;
 			}
 			else
 			{

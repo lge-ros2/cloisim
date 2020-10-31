@@ -9,21 +9,26 @@ using System;
 [Serializable]
 public class PID
 {
-	private float pFactor, iFactor, dFactor;
+	private float pFactor_, iFactor_, dFactor_;
 	private float integral = 0;
 	private float lastError = 0;
 
 	public PID(in float pFactor, in float iFactor, in float dFactor)
 	{
-		this.pFactor = pFactor;
-		this.iFactor = iFactor;
-		this.dFactor = dFactor;
+		Change(pFactor, iFactor, dFactor);
 	}
 
 	public PID Copy()
 	{
-		var newPID = new PID(pFactor, iFactor, dFactor);
+		var newPID = new PID(pFactor_, iFactor_, dFactor_);
 		return newPID;
+	}
+
+	public void Change(in float pFactor, in float iFactor, in float dFactor)
+	{
+		this.pFactor_ = pFactor;
+		this.iFactor_ = iFactor;
+		this.dFactor_ = dFactor;
 	}
 
 	public void Reset()
@@ -34,14 +39,13 @@ public class PID
 
 	public float Update(in float setpoint, in float actual, in float timeFrame)
 	{
-		float present = Math.Abs(setpoint - actual);
+		var present = Math.Abs(setpoint - actual);
 		integral += present * timeFrame;
 
-		float deriv = (present - lastError) / timeFrame;
+		var derive = (present - lastError) / timeFrame;
 		lastError = present;
 
-		var cmd = present * pFactor + integral * iFactor + deriv * dFactor;
-
+		var cmd = present * pFactor_ + integral * iFactor_ + derive * dFactor_;
 		return Math.Abs(cmd);
 	}
 }
