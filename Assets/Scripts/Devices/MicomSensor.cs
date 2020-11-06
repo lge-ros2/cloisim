@@ -25,9 +25,9 @@ public partial class MicomSensor : Device
 	private SensorDevices.Contact bumperContact = null;
 	private List<ConfigurableJoint> bumperSensors = new List<ConfigurableJoint>();
 
-	public float kp_;
-	public float ki_;
-	public float kd_;
+	public float _PGain;
+	public float _IGain;
+	public float _DGain;
 
 	private float wheelBase = 0.0f;
 	private float wheelRadius = 0.0f;
@@ -48,11 +48,9 @@ public partial class MicomSensor : Device
 		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
 		SetUpdateRate(updateRate);
 
-		kp_ = GetPluginParameters().GetValue<float>("PID/kp");
-		ki_ = GetPluginParameters().GetValue<float>("PID/ki");
-		kd_ = GetPluginParameters().GetValue<float>("PID/kd");
-
-		var pidControl = new PID(kp_, ki_, kd_);
+		_PGain = GetPluginParameters().GetValue<float>("PID/kp");
+		_IGain = GetPluginParameters().GetValue<float>("PID/ki");
+		_DGain = GetPluginParameters().GetValue<float>("PID/kd");
 
 		wheelBase = GetPluginParameters().GetValue<float>("wheel/base");
 		wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
@@ -71,7 +69,9 @@ public partial class MicomSensor : Device
 			if (model.name.Equals(wheelNameLeft))
 			{
 				var jointWheelLeft = model.GetComponentInChildren<HingeJoint>();
-				motorLeft = new Motor("Left", jointWheelLeft, pidControl);
+				motorLeft = gameObject.AddComponent<Motor>();
+				motorLeft.SetTargetJoint(jointWheelLeft);
+				motorLeft.SetPID(_PGain, _IGain, _DGain);
 
 				var wheelLeftTransform = jointWheelLeft.gameObject.transform.parent;
 				var wheelLeftPose = new Pose(wheelLeftTransform.localPosition, wheelLeftTransform.localRotation);
@@ -82,7 +82,9 @@ public partial class MicomSensor : Device
 			else if (model.name.Equals(wheelNameRight))
 			{
 				var jointWheelRight = model.GetComponentInChildren<HingeJoint>();
-				motorRight = new Motor("Right", jointWheelRight, pidControl);
+				motorRight = gameObject.AddComponent<Motor>();  // new Motor("Right", jointWheelRight, pidControl);
+				motorRight.SetTargetJoint(jointWheelRight);
+				motorRight.SetPID(_PGain, _IGain, _DGain);
 
 				var wheelRightTransform = jointWheelRight.gameObject.transform.parent;
 				var wheelRightPose = new Pose(wheelRightTransform.localPosition, wheelRightTransform.localRotation);
@@ -228,12 +230,12 @@ public partial class MicomSensor : Device
 	{
 		if (motorLeft != null)
 		{
-			motorLeft.GetPID().Change(kp_, ki_, kd_);
+			motorLeft.GetPID().Change(_PGain, _IGain, _DGain);
 		}
 
 		if (motorRight != null)
 		{
-			motorRight.GetPID().Change(kp_, ki_, kd_);
+			motorRight.GetPID().Change(_PGain, _IGain, _DGain);
 		}
 	}
 
