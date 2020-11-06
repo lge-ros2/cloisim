@@ -9,21 +9,27 @@ using System;
 [Serializable]
 public class PID
 {
-	private float pFactor, iFactor, dFactor;
+	private float pGain_, iGain_, dGain_;
 	private float integral = 0;
 	private float lastError = 0;
+	private float outputMax = 1000f;
 
-	public PID(in float pFactor, in float iFactor, in float dFactor)
+	public PID(in float pGain, in float iGain, in float dGain)
 	{
-		this.pFactor = pFactor;
-		this.iFactor = iFactor;
-		this.dFactor = dFactor;
+		Change(pGain, iGain, dGain);
 	}
 
 	public PID Copy()
 	{
-		var newPID = new PID(pFactor, iFactor, dFactor);
+		var newPID = new PID(pGain_, iGain_, dGain_);
 		return newPID;
+	}
+
+	public void Change(in float pGain, in float iGain, in float dGain)
+	{
+		this.pGain_ = pGain;
+		this.iGain_ = iGain;
+		this.dGain_ = dGain;
 	}
 
 	public void Reset()
@@ -32,16 +38,18 @@ public class PID
 		lastError = 0;
 	}
 
-	public float Update(in float setpoint, in float actual, in float timeFrame)
+	public float Update(in float setpoint, in float actual, in float deltaTime)
 	{
-		float present = Math.Abs(setpoint - actual);
-		integral += present * timeFrame;
+		var error = setpoint - actual;
 
-		float deriv = (present - lastError) / timeFrame;
-		lastError = present;
+		integral += error * deltaTime;
 
-		var cmd = present * pFactor + integral * iFactor + deriv * dFactor;
+		var derive = (deltaTime == 0f)? 0f : ((error - lastError) / deltaTime);
 
-		return Math.Abs(cmd);
+		lastError = error;
+
+		var output = error * pGain_ + integral * iGain_ + derive * dGain_;
+
+		return (output > outputMax)? Math.Abs(outputMax): Math.Abs(output);
 	}
 }

@@ -4,49 +4,35 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections;
 using UnityEngine;
 
-public class Motor
+public class Motor : MonoBehaviour
 {
-	private string name = string.Empty;
 	private PID pidControl = null;
 	private HingeJoint joint = null;
-	private Rigidbody rigidBody = null;
+	private Rigidbody _motorBody;
 
-	public Motor(in string name, in HingeJoint targetJoint, in PID pid)
-		: this(name, targetJoint)
-	{
-		SetPID(pid);
-	}
+	private float _lastAngle = 0f;
+	private float _targetAngularVelocity = 0f;
+	private float _commandForce = 0f;
+	private bool _enableMotor = false;
 
-	public Motor(in string name, in HingeJoint targetJoint)
-		: this(targetJoint)
-	{
-		SetName(name);
-	}
-
-	public Motor(in HingeJoint targetJoint)
+	public void SetTargetJoint(in HingeJoint targetJoint)
 	{
 		joint = targetJoint;
-		rigidBody = joint.gameObject.GetComponent<Rigidbody>();
-
-		targetJoint.useMotor = true;
+		joint.useMotor = true;
+		_motorBody = joint.GetComponent<Rigidbody>();
 	}
 
-	public Motor(in HingeJoint targetJoint, in PID pid)
-		: this(targetJoint)
+	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
 	{
-		SetPID(pid);
+		pidControl = new PID(pFactor, iFactor, dFactor);
 	}
 
-	public void SetName(in string value)
+	public PID GetPID()
 	{
-		name = value;
-	}
-
-	public void SetPID(in PID pid)
-	{
-		pidControl = pid.Copy();
+		return pidControl;
 	}
 
 	/// <summary>Get Current Joint Velocity</summary>
@@ -60,28 +46,61 @@ public class Motor
 	/// <remarks>degree per second</remarks>
 	public void SetVelocityTarget(in float targetAngularVelocity)
 	{
+		_lastAngle = joint.angle;
+
+		if (targetAngularVelocity.Equals(float.Epsilon) || targetAngularVelocity == 0f)
+		{
+			_enableMotor = false;
+			_commandForce = 0f;
+			_targetAngularVelocity = 0f;
+		}
+		else
+		{
+			_enableMotor = true;
+			_targetAngularVelocity = targetAngularVelocity;
+		}
+
+		pidControl.Reset();
+	}
+
+	void FixedUpdate()
+	{
 		if (joint == null)
 		{
 			return;
 		}
 
-		var currentVelocity = GetCurrentVelocity();
-		var cmdForce = pidControl.Update(targetAngularVelocity, currentVelocity, Time.fixedDeltaTime);
-
-		// Debug.LogFormat("{0} Motor ({1} | {2} => {3}) max({4})",
-		// 	name, currentVelocity, targetAngularVelocity, cmdForce, rigidBody.maxAngularVelocity);
-
-		// JointMotor.targetVelocity angular velocity in degrees per second.
 		var motor = joint.motor;
-		motor.targetVelocity = targetAngularVelocity;
-		motor.force = Mathf.Round(cmdForce);
 
-		if (targetAngularVelocity == 0)
+		var currentAngle = joint.angle;
+
+		if (currentAngle < 0f)
 		{
-			pidControl.Reset();
+			currentAngle = 360f + currentAngle;
 		}
+
+		var errorAngle = _lastAngle - currentAngle;
+
+		_lastAngle = currentAngle;
+
+		if (_enableMotor)
+		{
+			var targetAngle = _targetAngularVelocity * Time.fixedDeltaTime;
+			_commandForce = pidControl.Update(targetAngle, errorAngle, Time.fixedDeltaTime);
+		}
+
+		// targetVelocity angular velocity in degrees per second.
+		motor.targetVelocity = _targetAngularVelocity;
+		motor.force = _commandForce;
 
 		// Should set the JointMotor value to update
 		joint.motor = motor;
+
+		if (!_enableMotor)
+		{
+			_motorBody.velocity = Vector3.zero;
+			_motorBody.angularVelocity = Vector3.zero;
+			// Debug.Log(_motorBody.transform.parent.name + ": vel " + _motorBody.velocity + ", angvel " + _motorBody.angularVelocity);
+		}
 	}
 }

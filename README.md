@@ -67,11 +67,11 @@ Inertia factors which retrieved from SDF are NOT USED for rigidbody in Unity. Be
 
 - Linux: Ubuntu 18.04
 - Intel(R) Core(TM) i7-8700K, 32GB, GeForce RTX 2070
-- Current editor version is *'2019.4.6f1 (LTS)'*.
+- Current editor version is *'2019.4.13f1 (LTS)'*.
 
 ### Release version
 
-If you don't want to build a project, just USE a release binary([Download linux version](https://github.com/lge-ros2/multi-robot-simulator/releases)). And just refer to 'Usage'
+If you don't want to build a project, just USE a release binary([Download linux version](https://github.com/lge-ros2/cloisim/releases)). And just refer to 'Usage'
 
 ### If you want to build a project
 
@@ -90,15 +90,15 @@ export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample-resources/worlds"
 
 - ***./CLOiSim.x86_64 -worldFile cloisim.world***
 
-or you can execute '***./run.sh***' script in release [binary](https://github.com/lge-ros2/multi-robot-simulator/releases) version.
+or you can execute '***./run.sh***' script in release [binary](https://github.com/lge-ros2/cloisim/releases) version.
 
 - ***./run.sh cloisim.world***
 
 #### After run 'CLOiSim'
 
-- *'[simdevice](https://github.com/lge-ros2/sim-device)' ros2 packages for transporting sensor data are required.*
+- *'[sim_device](https://github.com/lge-ros2/sim_device)' ros2 packages for transporting sensor data are required.*
 
-- *Run bringup node in '[simdevice](https://github.com/lge-ros2/sim-device)' ros2 packages*
+- *Run bringup node in '[sim_device](https://github.com/lge-ros2/sim_device)' ros2 packages*
 
 - And *have fun!!!*
 
@@ -116,7 +116,7 @@ websocket service path: ***ws://127.0.0.1:8080/{service-name}***
 
 Just send a request data as a JSON format.
 
-Read [detail guide](https://github.com/lge-ros2/multi-robot-simulator/wiki/Usage#control-service)
+Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-service)
 
 ## Future Plan
 
@@ -135,6 +135,6 @@ New features or functions shall be developed on demand.
 - Change physics engine (havok or something else...) to find a stable one.
 
 - **If you have any troubles or issues, please don't hesitate to create a new issue on 'Issues'.**
-  <https://github.com/lge-ros2/multi-robot-simulator/issues>
+  <https://github.com/lge-ros2/cloisim/issues>
 
 감사합니다. Thank you

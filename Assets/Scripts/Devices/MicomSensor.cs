@@ -7,6 +7,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = gazebo.msgs;
 
 public partial class MicomSensor : Device
@@ -24,11 +25,13 @@ public partial class MicomSensor : Device
 	private SensorDevices.Contact bumperContact = null;
 	private List<ConfigurableJoint> bumperSensors = new List<ConfigurableJoint>();
 
+	public float _PGain;
+	public float _IGain;
+	public float _DGain;
 
 	private float wheelBase = 0.0f;
 	private float wheelRadius = 0.0f;
 	private float divideWheelRadius = 0.0f; // for computational performacne.
-
 
 	public float WheelBase => wheelBase;
 	public float WheelRadius => wheelRadius;
@@ -45,11 +48,9 @@ public partial class MicomSensor : Device
 		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
 		SetUpdateRate(updateRate);
 
-		var kp = GetPluginParameters().GetValue<float>("PID/kp");
-		var ki = GetPluginParameters().GetValue<float>("PID/ki");
-		var kd = GetPluginParameters().GetValue<float>("PID/kd");
-
-		var pidControl = new PID(kp, ki, kd);
+		_PGain = GetPluginParameters().GetValue<float>("PID/kp");
+		_IGain = GetPluginParameters().GetValue<float>("PID/ki");
+		_DGain = GetPluginParameters().GetValue<float>("PID/kd");
 
 		wheelBase = GetPluginParameters().GetValue<float>("wheel/base");
 		wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
@@ -68,9 +69,10 @@ public partial class MicomSensor : Device
 			if (model.name.Equals(wheelNameLeft))
 			{
 				var jointWheelLeft = model.GetComponentInChildren<HingeJoint>();
-				motorLeft = new Motor("Left", jointWheelLeft, pidControl);
+				motorLeft = gameObject.AddComponent<Motor>();
+				motorLeft.SetTargetJoint(jointWheelLeft);
+				motorLeft.SetPID(_PGain, _IGain, _DGain);
 
-				// var wheelLeftBody = jointWheelLeft.gameObject.GetComponent<Rigidbody>();
 				var wheelLeftTransform = jointWheelLeft.gameObject.transform.parent;
 				var wheelLeftPose = new Pose(wheelLeftTransform.localPosition, wheelLeftTransform.localRotation);
 				partsPoseMapTable.Add(wheelNameLeft, wheelLeftPose);
@@ -80,7 +82,9 @@ public partial class MicomSensor : Device
 			else if (model.name.Equals(wheelNameRight))
 			{
 				var jointWheelRight = model.GetComponentInChildren<HingeJoint>();
-				motorRight = new Motor("Right", jointWheelRight, pidControl);
+				motorRight = gameObject.AddComponent<Motor>();  // new Motor("Right", jointWheelRight, pidControl);
+				motorRight.SetTargetJoint(jointWheelRight);
+				motorRight.SetPID(_PGain, _IGain, _DGain);
 
 				var wheelRightTransform = jointWheelRight.gameObject.transform.parent;
 				var wheelRightPose = new Pose(wheelRightTransform.localPosition, wheelRightTransform.localRotation);
@@ -186,10 +190,13 @@ public partial class MicomSensor : Device
 
 	protected override IEnumerator MainDeviceWorker()
 	{
+		var sw = new Stopwatch();
 		while (true)
 		{
+			sw.Restart();
 			GenerateMessage();
-			yield return new WaitForSeconds(WaitPeriod());
+			sw.Stop();
+			yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
 		}
 	}
 
@@ -217,6 +224,19 @@ public partial class MicomSensor : Device
 	{
 		DeviceHelper.SetCurrentTime(micomSensorData.Time);
 		PushData<messages.Micom>(micomSensorData);
+	}
+
+	void Update()
+	{
+		if (motorLeft != null)
+		{
+			motorLeft.GetPID().Change(_PGain, _IGain, _DGain);
+		}
+
+		if (motorRight != null)
+		{
+			motorRight.GetPID().Change(_PGain, _IGain, _DGain);
+		}
 	}
 
 	void FixedUpdate()
@@ -320,23 +340,22 @@ public partial class MicomSensor : Device
 			var odom = micomSensorData.Odom;
 			if ((odom != null) && (motorLeft != null && motorRight != null))
 			{
-				// Set revsered value due to differnt direction
-				// Left-handed -> Right-handed direction of rotation
-				var angularVelocityLeft = -motorLeft.GetCurrentVelocity();
-				var angularVelocityRight = -motorRight.GetCurrentVelocity();
+				var angularVelocityLeft = motorLeft.GetCurrentVelocity();
+				var angularVelocityRight = motorRight.GetCurrentVelocity();
 
-				odom.AngularVelocity.Left = angularVelocityLeft * Mathf.Deg2Rad;
-				odom.AngularVelocity.Right = angularVelocityRight * Mathf.Deg2Rad;
+				// Set reversed value due to different direction
+				// Left-handed -> Right-handed direction of rotation
+				odom.AngularVelocity.Left = -angularVelocityLeft * Mathf.Deg2Rad;
+				odom.AngularVelocity.Right = -angularVelocityRight * Mathf.Deg2Rad;
 				odom.LinearVelocity.Left = odom.AngularVelocity.Left * wheelRadius;
 				odom.LinearVelocity.Right = odom.AngularVelocity.Right * wheelRadius;
-
+				// Debug.LogFormat("Odom: {0}, {1}", odom.AngularVelocity.Left, odom.AngularVelocity.Right);
 				return true;
 			}
 		}
 
 		return false;
 	}
-
 
 	/// <summary>Set differential driver</summary>
 	/// <remarks>rad per second for wheels</remarks>
@@ -360,17 +379,14 @@ public partial class MicomSensor : Device
 		SetDifferentialDrive(linearVelocityLeft, linearVelocityRight);
 	}
 
-
 	/// <summary>Set motor velocity</summary>
 	/// <remarks>degree per second</remarks>
 	private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)
 	{
 		if (motorLeft != null && motorRight != null)
 		{
-			// Set revsered value due to differnt direction
-			// Right-handed -> Left-handed direction of rotation
-			motorLeft.SetVelocityTarget(-angularVelocityLeft);
-			motorRight.SetVelocityTarget(-angularVelocityRight);
+			motorLeft.SetVelocityTarget(angularVelocityLeft);
+			motorRight.SetVelocityTarget(angularVelocityRight);
 		}
 	}
 
