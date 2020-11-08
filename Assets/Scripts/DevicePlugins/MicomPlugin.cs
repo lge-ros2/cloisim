@@ -39,6 +39,11 @@ public class MicomPlugin : DevicePlugin
 		AddThread(Response);
 	}
 
+	protected override void OnReset()
+	{
+		micomSensor.Reset();
+	}
+
 	private void Sender()
 	{
 		var sw = new Stopwatch();

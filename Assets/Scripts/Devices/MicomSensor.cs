@@ -226,7 +226,7 @@ public partial class MicomSensor : Device
 		PushData<messages.Micom>(micomSensorData);
 	}
 
-	void Update()
+	void FixedUpdate()
 	{
 		if (motorLeft != null)
 		{
@@ -237,10 +237,7 @@ public partial class MicomSensor : Device
 		{
 			motorRight.GetPID().Change(_PGain, _IGain, _DGain);
 		}
-	}
 
-	void FixedUpdate()
-	{
 		UpdateIMU();
 		UpdateUss();
 		UpdateIr();
@@ -349,6 +346,21 @@ public partial class MicomSensor : Device
 				odom.AngularVelocity.Right = -angularVelocityRight * Mathf.Deg2Rad;
 				odom.LinearVelocity.Left = odom.AngularVelocity.Left * wheelRadius;
 				odom.LinearVelocity.Right = odom.AngularVelocity.Right * wheelRadius;
+
+				if (imuSensor != null)
+				{
+					var imuOrientation = imuSensor.GetOrientation();
+					var yaw = imuOrientation.eulerAngles.y * Mathf.Deg2Rad;
+					CalculateOdometry(Time.fixedDeltaTime, (float)odom.AngularVelocity.Left, (float)odom.AngularVelocity.Right, yaw);
+				}
+
+				odom.Pose.X = _odomPose.x;
+				odom.Pose.Y = _odomPose.y;
+				odom.Pose.Z = _odomPose.z;
+
+				odom.TwistLinear.X = _odomVelocity.x;
+				odom.TwistAngular.Z = _odomVelocity.y;
+
 				// Debug.LogFormat("Odom: {0}, {1}", odom.AngularVelocity.Left, odom.AngularVelocity.Right);
 				return true;
 			}
