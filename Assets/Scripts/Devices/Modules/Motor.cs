@@ -98,7 +98,7 @@ public class Motor : MonoBehaviour
 
 		if (!_enableMotor)
 		{
-			_motorBody.velocity = Vector3.zero;
+			_motorBody.velocity = Vector3.up * _motorBody.velocity.y;
 			_motorBody.angularVelocity = Vector3.zero;
 			// Debug.Log(_motorBody.transform.parent.name + ": vel " + _motorBody.velocity + ", angvel " + _motorBody.angularVelocity);
 		}
