@@ -3,9 +3,10 @@
  *
  * SPDX-License-Identifier: MIT
  */
+
 using UnityEngine;
 
-public class SDF2Unity
+public partial class SDF2Unity
 {
 	private static string commonShaderName = "Standard (Specular setup)";
 	public static Shader commonShader = Shader.Find(commonShaderName);
@@ -63,51 +64,6 @@ public class SDF2Unity
 		}
 
 		return pos;
-	}
-
-	public static void LoadObjMesh(in GameObject targetObject, in string objPath, in string mtlPath)
-	{
-		var loadedObject = new Dummiesman.OBJLoader().Load(objPath, mtlPath);
-
-		var meshRotation = new Vector3(90f, 90f, 0f);
-		foreach (var meshFilter in loadedObject.GetComponentsInChildren<MeshFilter>())
-		{
-			var meshObject = meshFilter.gameObject;
-			meshObject.hideFlags |= HideFlags.NotEditable;
-
-			meshFilter.transform.localScale = -meshFilter.transform.localScale;
-			meshFilter.transform.Rotate(meshRotation);
-
-			var child = meshObject.transform;
-			child.SetParent(targetObject.transform, false);
-		}
-
-		GameObject.Destroy(loadedObject);
-	}
-
-	public static void LoadStlMesh(in GameObject targetObject, in string objPath)
-	{
-		var multipleMesh = Parabox.Stl.Importer.Import(objPath, Parabox.Stl.CoordinateSpace.Right, Parabox.Stl.UpAxis.Z, true);
-
-		for (int i = 0; i < multipleMesh.Length; i++)
-		{
-			multipleMesh[i].name = "Mesh-" + i;
-
-			var meshObject = new GameObject(multipleMesh[i].name);
-			meshObject.hideFlags |= HideFlags.NotEditable;
-
-			var meshFilter = meshObject.AddComponent<MeshFilter>();
-			meshFilter.mesh = multipleMesh[i];
-
-			var meshRenderer = meshObject.AddComponent<MeshRenderer>();
-
-			var newMaterial = new Material(commonShader);
-			newMaterial.name = multipleMesh[i].name;
-			meshRenderer.material = newMaterial;
-
-			var child = meshObject.transform;
-			child.SetParent(targetObject.transform, false);
-		}
 	}
 
 	public static bool CheckTopModel(in GameObject targetObject)

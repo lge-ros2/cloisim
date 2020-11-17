@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
 using UnityEngine;
 #if UNITY_EDITOR
 using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;

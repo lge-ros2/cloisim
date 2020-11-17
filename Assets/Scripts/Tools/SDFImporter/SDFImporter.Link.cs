@@ -104,6 +104,7 @@ public partial class SDFImporter : SDF.Importer
 			foreach (var meshCollider in meshColliders)
 			{
 				meshCollider.convex = false;
+				// Debug.LogWarning("Make convex false:" + meshCollider.name);
 			}
 		}
 	}
