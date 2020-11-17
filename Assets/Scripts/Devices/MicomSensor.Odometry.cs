@@ -63,7 +63,7 @@ public partial class MicomSensor : Device
 		var w = deltaTheta / duration; // w = rotational velocity [rad/s]
 
 		_odomVelocity.x = v;
-		_odomVelocity.y = -w; // Set reversed value due to different direction (Left-handed -> Right-handed direction of rotation)
+		_odomVelocity.y = w;
 
 		_lastTheta = theta;
 	}
