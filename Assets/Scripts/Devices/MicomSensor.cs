@@ -354,12 +354,15 @@ public partial class MicomSensor : Device
 					CalculateOdometry(Time.fixedDeltaTime, (float)odom.AngularVelocity.Left, (float)odom.AngularVelocity.Right, yaw);
 				}
 
+				// Set reversed value due to different direction (Left-handed -> Right-handed direction of rotation)
 				odom.Pose.X = _odomPose.x;
-				odom.Pose.Y = _odomPose.y;
-				odom.Pose.Z = _odomPose.z;
+				odom.Pose.Y = -_odomPose.y;
+				odom.Pose.Z = -_odomPose.z;
 
 				odom.TwistLinear.X = _odomVelocity.x;
-				odom.TwistAngular.Z = _odomVelocity.y;
+
+				// Set reversed value due to different direction (Left-handed -> Right-handed direction of rotation)
+				odom.TwistAngular.Z = -_odomVelocity.y;
 
 				// Debug.LogFormat("Odom: {0}, {1}", odom.AngularVelocity.Left, odom.AngularVelocity.Right);
 				return true;
