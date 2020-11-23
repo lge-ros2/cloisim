@@ -22,8 +22,11 @@ public partial class MicomSensor : Device
 	{
 		_odomPose.Set(0, 0, 0);
 		_odomVelocity.Set(0, 0);
+		_lastTheta = 0.0f;
 	}
 
+	/// <summary>Calculate odometry on this robot</summary>
+	/// <remarks>rad per second for `theta`</remarks>
 	private void CalculateOdometry(in float duration, in float angularVelocityLeftWheel, in float angularVelocityRightWheel, in float theta)
 	{
 		// circumference of wheel [rad] per step time.
@@ -44,9 +47,10 @@ public partial class MicomSensor : Device
 		// Debug.LogFormat("theta:{0} lastTheta:{1} deltaTheta:{2}", theta, _lastTheta, deltaTheta);
 
 		// compute odometric pose
-		var poseLinear = wheelRadius * (wheelCircumLeft + wheelCircumRight) / 2.0f;
-		_odomPose.x += poseLinear * Mathf.Cos(_odomPose.z + (deltaTheta / 2.0f));
-		_odomPose.y += poseLinear * Mathf.Sin(_odomPose.z + (deltaTheta / 2.0f));
+		var poseLinear = wheelRadius * (wheelCircumLeft + wheelCircumRight) * 0.5f;
+		var halfDeltaTheta = deltaTheta * 0.5f;
+		_odomPose.x += poseLinear * Mathf.Cos(_odomPose.z + halfDeltaTheta);
+		_odomPose.y += poseLinear * Mathf.Sin(_odomPose.z + halfDeltaTheta);
 		_odomPose.z += deltaTheta;
 
 		if (_odomPose.z > _PI)

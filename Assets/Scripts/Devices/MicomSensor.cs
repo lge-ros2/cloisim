@@ -32,6 +32,7 @@ public partial class MicomSensor : Device
 	private float wheelBase = 0.0f;
 	private float wheelRadius = 0.0f;
 	private float divideWheelRadius = 0.0f; // for computational performacne.
+	public float compensateForRotation = 1.05f; // compensate velocity for rotation motion
 
 	public float WheelBase => wheelBase;
 	public float WheelRadius => wheelRadius;
@@ -242,7 +243,7 @@ public partial class MicomSensor : Device
 		UpdateUss();
 		UpdateIr();
 		UpdateBumper();
-		UpdateOdom();
+		UpdateOdom(Time.fixedDeltaTime);
 	}
 
 	private void UpdateBumper()
@@ -330,7 +331,7 @@ public partial class MicomSensor : Device
 		micomSensorData.Imu = imuSensor.GetImuMessage();
 	}
 
-	public bool UpdateOdom()
+	public bool UpdateOdom(in float duration)
 	{
 		if (micomSensorData != null)
 		{
@@ -350,8 +351,8 @@ public partial class MicomSensor : Device
 				if (imuSensor != null)
 				{
 					var imuOrientation = imuSensor.GetOrientation();
-					var yaw = imuOrientation.eulerAngles.y * Mathf.Deg2Rad;
-					CalculateOdometry(Time.fixedDeltaTime, (float)odom.AngularVelocity.Left, (float)odom.AngularVelocity.Right, yaw);
+					var yaw = imuOrientation.y * Mathf.Deg2Rad;
+					CalculateOdometry(duration, (float)odom.AngularVelocity.Left, (float)odom.AngularVelocity.Right, yaw);
 				}
 
 				// Set reversed value due to different direction (Left-handed -> Right-handed direction of rotation)
@@ -400,8 +401,10 @@ public partial class MicomSensor : Device
 	{
 		if (motorLeft != null && motorRight != null)
 		{
-			motorLeft.SetVelocityTarget(angularVelocityLeft);
-			motorRight.SetVelocityTarget(angularVelocityRight);
+			var compensateVelocityRatio = (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight))? compensateForRotation:1.0f;
+
+			motorLeft.SetVelocityTarget(angularVelocityLeft * compensateVelocityRatio);
+			motorRight.SetVelocityTarget(angularVelocityRight * compensateVelocityRatio);
 		}
 	}
 

@@ -106,9 +106,9 @@ namespace SensorDevices
 			return imu;
 		}
 
-		public Quaternion GetOrientation()
+		public Vector3 GetOrientation()
 		{
-			return imuOrientation;
+			return imuOrientation.eulerAngles;
 		}
 
 		public Vector3 GetAngularVelocity()

@@ -15,8 +15,19 @@ public class Motor : MonoBehaviour
 
 	private float _lastAngle = 0f;
 	private float _targetAngularVelocity = 0f;
+	private float _targetAngularVelocityCompensation = 0f;
+
 	private float _commandForce = 0f;
 	private bool _enableMotor = false;
+
+	private int _maxStopTry = 20;
+	private int _stopCount = 0;
+	private bool _directionSwitched = false;
+
+	public string GetMotorName()
+	{
+		return (_motorBody == null)? string.Empty:_motorBody.transform.parent.name;
+	}
 
 	public void SetTargetJoint(in HingeJoint targetJoint)
 	{
@@ -57,7 +68,22 @@ public class Motor : MonoBehaviour
 		else
 		{
 			_enableMotor = true;
-			_targetAngularVelocity = targetAngularVelocity;
+
+			if (_targetAngularVelocity != 0)
+			{
+				if (Mathf.Sign(_targetAngularVelocity) == Mathf.Sign(targetAngularVelocity))
+				{
+					_directionSwitched = false;
+				}
+				else
+				{
+					_stopCount = _maxStopTry;
+					_directionSwitched = true;
+					Debug.Log(GetMotorName() + " - direction switched");
+				}
+			}
+
+			_targetAngularVelocity = targetAngularVelocity ;
 		}
 
 		pidControl.Reset();
@@ -79,28 +105,89 @@ public class Motor : MonoBehaviour
 			currentAngle = 360f + currentAngle;
 		}
 
-		var errorAngle = _lastAngle - currentAngle;
-
+		var rotatedAngle = _lastAngle - currentAngle;
 		_lastAngle = currentAngle;
+
+
+		var currentVelocity = rotatedAngle / Time.fixedDeltaTime;
 
 		if (_enableMotor)
 		{
 			var targetAngle = _targetAngularVelocity * Time.fixedDeltaTime;
-			_commandForce = pidControl.Update(targetAngle, errorAngle, Time.fixedDeltaTime);
+			_commandForce = pidControl.Update(targetAngle, rotatedAngle, Time.fixedDeltaTime);
+
+			// Debug.Log(GetMotorName() + ", " + targetAngle  .ToString("F4") + " , " + errorAngle.ToString("F4") + "|" +
+			// 		_targetAngularVelocity.ToString("F4") + " -> " + currentVelocity.ToString("F4") + "," + GetCurrentVelocity().ToString("F4"));
 		}
 
-		// targetVelocity angular velocity in degrees per second.
-		motor.targetVelocity = _targetAngularVelocity;
+		// Compensate target angular velocity
+		// if (_targetAngularVelocity != 0)
+		// {
+		// 	if ((_targetAngularVelocity > 0 && (int)(currentVelocity) < (int)(_targetAngularVelocity)) ||
+		// 		(_targetAngularVelocity < 0 && (int)(currentVelocity) > (int)(_targetAngularVelocity)))
+		// 	{
+		// 		Debug.Log(GetMotorName() + "_test: (" + _targetAngularVelocityCompensation + ")"+ (int)(currentVelocity) + ", " + (int)(_targetAngularVelocity ));
+		// 		_targetAngularVelocityCompensation += 0.5f;
+		// 	}
+		// 	else
+		// 	{
+		// 		_targetAngularVelocityCompensation -= 0.5f;
+		// 	}
+		// }
+		// else
+		// {
+		// 	Debug.Log(GetMotorName() + "_stop:" + _targetAngularVelocityCompensation.ToString("F5") + ", " );
+		// 	if (_targetAngularVelocityCompensation < float.Epsilon && _targetAngularVelocityCompensation > -float.Epsilon)
+		// 	{
+		// 		_targetAngularVelocityCompensation = 0f;
+		// 	}
+		// 	else
+		// 	{
+		// 		_targetAngularVelocityCompensation -= 0.5f;
+		// 	}
+		// }
+
+		var compensatedTargetAngularVelocity = _targetAngularVelocity + ((_targetAngularVelocity < 0)? -1:1) * _targetAngularVelocityCompensation;
+
+		// targetVelocity angular velocity in degrees per second.l
+		motor.targetVelocity = compensatedTargetAngularVelocity;
 		motor.force = _commandForce;
+
+		// do stop motion of motor when motor disabled
+		if (!_enableMotor)
+		{
+			Stop();
+		}
+		else
+		{
+			// Improve motion for rapid direction change
+			if (_directionSwitched)
+			{
+				Stop();
+
+				motor.targetVelocity = 0;
+				motor.force = 0;
+
+				if (_stopCount-- == 0)
+				{
+					_directionSwitched = false;
+				}
+			}
+
+			// Compenstate torque when target velocity is too low
+			// var scale = _motorBody.angularVelocity;
+			// scale.y *= comp;
+			// _motorBody.angularVelocity = scale;
+		}
 
 		// Should set the JointMotor value to update
 		joint.motor = motor;
+	}
 
-		if (!_enableMotor)
-		{
-			_motorBody.velocity = Vector3.up * _motorBody.velocity.y;
-			_motorBody.angularVelocity = Vector3.zero;
-			// Debug.Log(_motorBody.transform.parent.name + ": vel " + _motorBody.velocity + ", angvel " + _motorBody.angularVelocity);
-		}
+	public void Stop()
+	{
+		_motorBody.velocity = Vector3.up * _motorBody.velocity.y;
+		_motorBody.angularVelocity = Vector3.zero;
+		// Debug.Log(GetMotorName() + ": vel " + _motorBody.velocity + ", angvel " + _motorBody.angularVelocity);
 	}
 }
