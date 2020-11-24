@@ -114,34 +114,60 @@ public partial class SDFImplement
 				material.name = "SDF Surface Friction";
 				material.dynamicFriction = (float)surface.friction2;
 				material.staticFriction = (float)surface.friction;
-				material.frictionCombine = PhysicMaterialCombine.Average;
 				material.bounciness = 0.000f;
+				material.frictionCombine = PhysicMaterialCombine.Average;
 				material.bounceCombine = PhysicMaterialCombine.Minimum;
 			}
 			else
 			{
 				// Rubber Material
+				material.name = "Rubber";
+				material.dynamicFriction = 0.8f;
+				material.staticFriction = 0.9f;
+				material.bounciness = 0.8f;
+				material.frictionCombine = PhysicMaterialCombine.Maximum;
+				material.bounceCombine = PhysicMaterialCombine.Average;
+#if false
+				// Stone Material
 				material.name = "Stone";
-				material.dynamicFriction = 0.32f;
-				material.staticFriction = 0.4f;
+				material.dynamicFriction = 0.6f;
+				material.staticFriction = 0.6f;
+				material.bounciness = 0.0f;
 				material.frictionCombine = PhysicMaterialCombine.Average;
-				material.bounciness = 0.00f;
-				material.bounceCombine = PhysicMaterialCombine.Minimum;
+				material.bounceCombine = PhysicMaterialCombine.Average;
 
-				// Rubber Material
-				// material.name = "Tire";
-				// material.dynamicFriction = 0.7f;
-				// material.staticFriction = 0.8f;
-				// material.frictionCombine = PhysicMaterialCombine.Average;
-				// material.bounciness = 0.01f;
-				// material.bounceCombine = PhysicMaterialCombine.Minimum;
+				// Ice Material
+				material.name = "Ice";
+				material.dynamicFriction = 0.05f;
+				material.staticFriction = 0.1f;
+				material.bounciness = 0.05f;
+				material.frictionCombine = PhysicMaterialCombine.Multiply;
+				material.bounceCombine = PhysicMaterialCombine.Multiply;
+
+				// Wood Material
+				material.name = "Wood";
+				material.dynamicFriction = 0.475f;
+				material.staticFriction = 0.475f;
+				material.bounciness = 0f;
+				material.frictionCombine = PhysicMaterialCombine.Average;
+				material.bounceCombine = PhysicMaterialCombine.Average;
 
 				// Metal Material
-				// material.dynamicFriction = 1.0f;
-				// material.staticFriction = 0.9f;
-				// material.frictionCombine = PhysicMaterialCombine.Minimum;
-				// material.bounciness = 0.1f;
-				// material.bounceCombine = PhysicMaterialCombine.Minimum;
+				material.name = "Metal";
+				material.dynamicFriction = 0.15f;
+				material.staticFriction = 0.2f;
+				material.bounciness = 0f;
+				material.frictionCombine = PhysicMaterialCombine.Minimum;
+				material.bounceCombine = PhysicMaterialCombine.Average;
+
+				// Mud Material
+				material.name = "Mud";
+				material.dynamicFriction = 1f;
+				material.staticFriction = 0.9f;
+				material.bounciness = 0f;
+				material.frictionCombine = PhysicMaterialCombine.Minimum;
+				material.bounceCombine = PhysicMaterialCombine.Minimum;
+#endif
 			}
 
 			// Set physics materials
