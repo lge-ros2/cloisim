@@ -14,8 +14,19 @@ public partial class MicomSensor : Device
 {
 	private messages.Micom micomSensorData = null;
 
+#region Motor Related
 	private Motor motorLeft = null;
 	private Motor motorRight = null;
+
+	public float _PGain;
+	public float _IGain;
+	public float _DGain;
+
+	private float wheelBase = 0.0f;
+	private float wheelRadius = 0.0f;
+	private float divideWheelRadius = 0.0f; // for computational performacne.
+	public float compensateForRotation = 1.15f; // compensate velocity for rotation motion
+#endregion
 
 	private SensorDevices.IMU imuSensor = null;
 	private List<SensorDevices.Sonar> ussSensors = new List<SensorDevices.Sonar>();
@@ -25,19 +36,10 @@ public partial class MicomSensor : Device
 	private SensorDevices.Contact bumperContact = null;
 	private List<ConfigurableJoint> bumperSensors = new List<ConfigurableJoint>();
 
-	public float _PGain;
-	public float _IGain;
-	public float _DGain;
-
-	private float wheelBase = 0.0f;
-	private float wheelRadius = 0.0f;
-	private float divideWheelRadius = 0.0f; // for computational performacne.
-	public float compensateForRotation = 1.05f; // compensate velocity for rotation motion
+	private Dictionary<string, Pose> partsPoseMapTable = new Dictionary<string, Pose>();
 
 	public float WheelBase => wheelBase;
 	public float WheelRadius => wheelRadius;
-
-	private Dictionary<string, Pose> partsPoseMapTable = new Dictionary<string, Pose>();
 
 	protected override void OnAwake()
 	{
