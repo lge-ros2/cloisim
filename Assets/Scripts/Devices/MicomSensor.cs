@@ -25,7 +25,7 @@ public partial class MicomSensor : Device
 	private float wheelBase = 0.0f;
 	private float wheelRadius = 0.0f;
 	private float divideWheelRadius = 0.0f; // for computational performacne.
-	public float compensateForRotation = 1.15f; // compensate velocity for rotation motion
+	public float compensateRatioForMotion = 1.15f; // compensate velocity for rotation motion
 #endregion
 
 	private SensorDevices.IMU imuSensor = null;
@@ -403,10 +403,8 @@ public partial class MicomSensor : Device
 	{
 		if (motorLeft != null && motorRight != null)
 		{
-			var compensateVelocityRatio = (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight))? compensateForRotation:1.0f;
-
-			motorLeft.SetVelocityTarget(angularVelocityLeft * compensateVelocityRatio);
-			motorRight.SetVelocityTarget(angularVelocityRight * compensateVelocityRatio);
+			motorLeft.SetVelocityTarget(angularVelocityLeft * compensateRatioForMotion);
+			motorRight.SetVelocityTarget(angularVelocityRight * compensateRatioForMotion);
 		}
 	}
 
