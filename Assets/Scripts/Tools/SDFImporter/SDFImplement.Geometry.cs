@@ -84,7 +84,8 @@ public partial class SDFImplement
 			else if (shape is SDF.Cylinder)
 			{
 				var cylinder = shape as SDF.Cylinder;
-				mesh = ProceduralMesh.CreateCylinder((float)cylinder.radius, (float)cylinder.length, 48);
+				mesh = ProceduralMesh.CreateCylinder((float)cylinder.radius, (float)cylinder.length, 72);
+
 			}
 			else if (shape is SDF.Plane)
 			{
