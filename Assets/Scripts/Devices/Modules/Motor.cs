@@ -9,20 +9,111 @@ using UnityEngine;
 
 public class Motor : MonoBehaviour
 {
+	public class RapidChangeControl
+	{
+		private bool _directionSwitched = false;
+		private int _maxWaitCount = 20;
+		private int _waitForStopCount = 0;
+
+		public void SetDirectionSwitched(in bool switched)
+		{
+			_directionSwitched = switched;
+
+			if (_directionSwitched)
+			{
+				_waitForStopCount = _maxWaitCount;
+			}
+		}
+
+		public bool DirectionSwitched()
+		{
+			return _directionSwitched;
+		}
+
+		public void Wait()
+		{
+			if (_waitForStopCount-- <= 0)
+			{
+				SetDirectionSwitched(false);
+			}
+		}
+	}
+
+	public class MotorMotionFeedback
+	{
+		public float compensatingVelocityIncrease = 0.3f;
+		public float compensatingVelocityDecrease = 0.7f;
+		
+		private bool _isRotating = false;
+		private float _currentTwistAngularVelocity = 0;
+		private float _targetTwistAngularVelocity = 0;
+
+		private float _compensateValue = 0;
+
+		public void SetMotionRotating(in bool enable)
+		{
+			_isRotating = enable;
+		}
+
+		public void SetRotatingVelocity(in float currentTwistAngularVelocity)
+		{
+			_currentTwistAngularVelocity = currentTwistAngularVelocity;
+		}
+
+		public void SetRotatingTargetVelocity(in float targetTwistAngularVelocity)
+		{
+			_targetTwistAngularVelocity = targetTwistAngularVelocity;
+		}
+
+		public bool IsTargetReached()
+		{
+			const float accuracy = 1000f;
+			// Debug.Log(" is target reached: " + _currentTwistAngularVelocity + ", " + _targetTwistAngularVelocity);
+			return ((int)Mathf.Abs(_currentTwistAngularVelocity * accuracy) >= (int)Mathf.Abs(_targetTwistAngularVelocity * accuracy));
+		}
+
+		public float Compensate()
+		{
+			if (_isRotating)
+			{
+				if (IsTargetReached() == false)
+				{
+					_compensateValue += compensatingVelocityIncrease;
+					// Debug.Log("_test: it is low speed, " + _currentTwistAngularVelocity + " < " + _targetTwistAngularVelocity);
+				}
+				else
+				{
+					_compensateValue -= compensatingVelocityDecrease;
+					
+					if (_compensateValue < 0)
+					{
+						_compensateValue = 0;
+					}
+				}
+			}
+			else
+			{
+				_compensateValue = 0;
+			}
+		
+			return _compensateValue;
+		}
+	}
+
 	private PID pidControl = null;
 	private HingeJoint joint = null;
 	private Rigidbody _motorBody;
 
+	private bool _enableMotor = false;
 	private float _lastAngle = 0f;
 	private float _targetAngularVelocity = 0f;
-	private float _targetAngularVelocityCompensation = 0f;
+	
+	public float compensatingRatio = 1.125f; // compensting target velocity
 
-	private float _commandForce = 0f;
-	private bool _enableMotor = false;
-
-	private int _maxStopTry = 15;
-	private int _stopCount = 0;
-	private bool _directionSwitched = false;
+	private RapidChangeControl _rapidControl = new RapidChangeControl();
+	private MotorMotionFeedback _feedback = new MotorMotionFeedback();
+	
+	public MotorMotionFeedback Feedback => _feedback;
 
 	public string GetMotorName()
 	{
@@ -72,23 +163,20 @@ public class Motor : MonoBehaviour
 			{
 				if (Mathf.Sign(_targetAngularVelocity) == Mathf.Sign(targetAngularVelocity))
 				{
-					_directionSwitched = false;
+					_rapidControl.SetDirectionSwitched(false);
 				}
 				else
 				{
-					_stopCount = _maxStopTry;
-					_directionSwitched = true;
-					Debug.Log(GetMotorName() + " - direction switched");
+					_rapidControl.SetDirectionSwitched(true);
+					// Debug.Log(GetMotorName() + " - direction switched");
 				}
 			}
 
-			_targetAngularVelocity = targetAngularVelocity ;
+			_targetAngularVelocity = targetAngularVelocity * compensatingRatio;
 		}
 
 		pidControl.Reset();
 	}
-
-	private int _reachedTargetCount = 0;
 
 	void FixedUpdate()
 	{
@@ -104,39 +192,18 @@ public class Motor : MonoBehaviour
 		_lastAngle = currentAngle;
 
 		var currentVelocity = rotatedAngle / Time.fixedDeltaTime;
-		// var currentVelocity = GetCurrentVelocity();
+		
+		var targetAngle = _targetAngularVelocity * Time.fixedDeltaTime;
 
 		// Compensate target angular velocity
+		var targetAngularVelocityCompensation = 0f;
 		if (_targetAngularVelocity != 0)
 		{
-			if (((currentVelocity > 0) == (_targetAngularVelocity > 0) && currentVelocity < _targetAngularVelocity) ||
-				((currentVelocity < 0) == (_targetAngularVelocity < 0) && currentVelocity > _targetAngularVelocity))
-			{
-				_targetAngularVelocityCompensation += 0.5f;
-				Debug.Log(GetMotorName() + "_test: it is low speed, " + joint.angle + "-> " + rotatedAngle + ", (" + _targetAngularVelocityCompensation + ") "+ (currentVelocity) + " < " + (_targetAngularVelocity));
-				_reachedTargetCount = 0;
-			}
-			else
-			{
-				_reachedTargetCount++;
-
-				if (_reachedTargetCount > 50)
-				{
-
-				Debug.Log(GetMotorName() + "_test: reached target speed speed");
-				_targetAngularVelocityCompensation -= 0.1f;
-
-				// if (_targetAngularVelocityCompensation < 0)
-					_targetAngularVelocityCompensation = 0;
-				}
-			}
-		}
-		else
-		{
-			_targetAngularVelocityCompensation = 0;
+			targetAngularVelocityCompensation = _feedback.Compensate();
 		}
 
-		var compensatedTargetAngularVelocity = _targetAngularVelocity + Mathf.Sign(_targetAngularVelocity) * _targetAngularVelocityCompensation;
+		var commandForce = 0f;
+		var compensatedTargetAngularVelocity = _targetAngularVelocity + Mathf.Sign(_targetAngularVelocity) * targetAngularVelocityCompensation;
 
 		// do stop motion of motor when motor disabled
 		if (!_enableMotor)
@@ -145,28 +212,23 @@ public class Motor : MonoBehaviour
 		}
 		else
 		{
-			var targetAngle = _targetAngularVelocity * Time.fixedDeltaTime;
-			_commandForce = pidControl.Update(targetAngle, rotatedAngle, Time.fixedDeltaTime);
+			commandForce = pidControl.Update(targetAngle, rotatedAngle, Time.fixedDeltaTime); 
 
-			// Debug.Log(GetMotorName() + ", " + _targetAngularVelocity + " + " + _targetAngularVelocityCompensation + " = " + compensatedTargetAngularVelocity);
+			// Debug.Log(GetMotorName() + ", " + _targetAngularVelocity + " +- " + targetAngularVelocityCompensation + " = " + compensatedTargetAngularVelocity);
 
 			// Improve motion for rapid direction change
-			if (_directionSwitched)
+			if (_rapidControl.DirectionSwitched())
 			{
 				Stop();
-
+				commandForce = 0;
 				compensatedTargetAngularVelocity = 0;
-
-				if (_stopCount-- == 0)
-				{
-					_directionSwitched = false;
-				}
+				_rapidControl.Wait();
 			}
 		}
 
 		// targetVelocity angular velocity in degrees per second.
 		motor.targetVelocity = compensatedTargetAngularVelocity;
-		motor.force = _commandForce;
+		motor.force = commandForce;
 
 		// Should set the JointMotor value to update
 		joint.motor = motor;
@@ -177,7 +239,5 @@ public class Motor : MonoBehaviour
 		_motorBody.velocity = Vector3.up * _motorBody.velocity.y;
 		_motorBody.angularVelocity = Vector3.zero;
 		// Debug.Log(GetMotorName() + ": vel " + _motorBody.velocity + ", angvel " + _motorBody.angularVelocity);
-
-		_commandForce = 0;
 	}
 }

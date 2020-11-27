@@ -24,8 +24,7 @@ public partial class MicomSensor : Device
 
 	private float wheelBase = 0.0f;
 	private float wheelRadius = 0.0f;
-	private float divideWheelRadius = 0.0f; // for computational performacne.
-	public float compensateRatioForMotion = 1.15f; // compensate velocity for rotation motion
+	private float divideWheelRadius = 0.0f; // for computational performance
 #endregion
 
 	private SensorDevices.IMU imuSensor = null;
@@ -323,8 +322,6 @@ public partial class MicomSensor : Device
 
 	private void UpdateIMU()
 	{
-		var imu = micomSensorData.Imu;
-
 		if (imuSensor == null || micomSensorData == null)
 		{
 			return;
@@ -367,6 +364,8 @@ public partial class MicomSensor : Device
 				// Set reversed value due to different direction (Left-handed -> Right-handed direction of rotation)
 				odom.TwistAngular.Z = -_odomVelocity.y;
 
+				motorLeft.Feedback.SetRotatingVelocity(_odomVelocity.y);
+				motorRight.Feedback.SetRotatingVelocity(_odomVelocity.y);
 				// Debug.LogFormat("Odom: {0}, {1}", odom.AngularVelocity.Left, odom.AngularVelocity.Right);
 				return true;
 			}
@@ -387,6 +386,9 @@ public partial class MicomSensor : Device
 
 	public void SetTwistDrive(in float linearVelocity, in float angularVelocity)
 	{
+		motorLeft.Feedback.SetRotatingTargetVelocity(angularVelocity);
+		motorRight.Feedback.SetRotatingTargetVelocity(angularVelocity);
+		
 		// m/s, rad/s
 		// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
 		// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
@@ -403,8 +405,13 @@ public partial class MicomSensor : Device
 	{
 		if (motorLeft != null && motorRight != null)
 		{
-			motorLeft.SetVelocityTarget(angularVelocityLeft * compensateRatioForMotion);
-			motorRight.SetVelocityTarget(angularVelocityRight * compensateRatioForMotion);
+			var isRotating = (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight));
+
+			motorLeft.Feedback.SetMotionRotating(isRotating);
+			motorRight.Feedback.SetMotionRotating(isRotating);
+
+			motorLeft.SetVelocityTarget(angularVelocityLeft);
+			motorRight.SetVelocityTarget(angularVelocityRight);
 		}
 	}
 
