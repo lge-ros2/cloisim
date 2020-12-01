@@ -77,7 +77,6 @@ public class MicomInput : Device
 
 			// Set reversed value due to differnt direction
 			// Right-handed -> Left-handed direction of rotation
-
 			if (micomWritingData.Value.IntValue == 0)
 			{
 				controlType = VelocityType.LinearAndAngular;
@@ -87,6 +86,8 @@ public class MicomInput : Device
 
 				angularVelocity
 					= (!child1.Name.Equals("AngularVelocity")) ? 0 : (float)-child1.Value.DoubleValue;
+
+				// Debug.Log(linearVelocity.ToString("F10") + ", " + (-child0.Value.DoubleValue).ToString("F10") + " | " + angularVelocity.ToString("F10") + ", " + (-child1.Value.DoubleValue).ToString("F10"));
 			}
 			else if (micomWritingData.Value.IntValue == 1)
 			{
@@ -125,12 +126,14 @@ public class MicomInput : Device
 				var targetLinearVelocity = GetLinearVelocity();
 				var targetAngularVelocity = GetAngularVelocity();
 				micomForWheelDrive.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
+				micomForWheelDrive.UpdateMotorFeedback(targetAngularVelocity);
 				break;
 
 			case MicomInput.VelocityType.LeftAndRight:
 				var targetWheelLeftLinearVelocity = GetWheelLeftVelocity();
 				var targetWheelRightLinearVelocity = GetWheelRightVelocity();
 				micomForWheelDrive.SetDifferentialDrive(targetWheelLeftLinearVelocity, targetWheelRightLinearVelocity);
+				micomForWheelDrive.UpdateMotorFeedback(targetWheelLeftLinearVelocity, targetWheelRightLinearVelocity);
 				break;
 
 			case MicomInput.VelocityType.Unknown:
@@ -140,21 +143,21 @@ public class MicomInput : Device
 
 	public float GetWheelLeftVelocity()
 	{
-		return (float)wheelLinearVelocityLeft;
+		return wheelLinearVelocityLeft;
 	}
 
 	public float GetWheelRightVelocity()
 	{
-		return (float)wheelLinearVelocityRight;
+		return wheelLinearVelocityRight;
 	}
 
 	public float GetLinearVelocity()
 	{
-		return (float)linearVelocity;
+		return linearVelocity;
 	}
 
 	public float GetAngularVelocity()
 	{
-		return (float)angularVelocity;
+		return angularVelocity;
 	}
 }

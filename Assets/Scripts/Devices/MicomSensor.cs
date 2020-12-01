@@ -14,8 +14,18 @@ public partial class MicomSensor : Device
 {
 	private messages.Micom micomSensorData = null;
 
+#region Motor Related
 	private Motor motorLeft = null;
 	private Motor motorRight = null;
+
+	public float _PGain;
+	public float _IGain;
+	public float _DGain;
+
+	private float wheelBase = 0.0f;
+	private float wheelRadius = 0.0f;
+	private float divideWheelRadius = 0.0f; // for computational performance
+#endregion
 
 	private SensorDevices.IMU imuSensor = null;
 	private List<SensorDevices.Sonar> ussSensors = new List<SensorDevices.Sonar>();
@@ -25,18 +35,10 @@ public partial class MicomSensor : Device
 	private SensorDevices.Contact bumperContact = null;
 	private List<ConfigurableJoint> bumperSensors = new List<ConfigurableJoint>();
 
-	public float _PGain;
-	public float _IGain;
-	public float _DGain;
-
-	private float wheelBase = 0.0f;
-	private float wheelRadius = 0.0f;
-	private float divideWheelRadius = 0.0f; // for computational performacne.
+	private Dictionary<string, Pose> partsPoseMapTable = new Dictionary<string, Pose>();
 
 	public float WheelBase => wheelBase;
 	public float WheelRadius => wheelRadius;
-
-	private Dictionary<string, Pose> partsPoseMapTable = new Dictionary<string, Pose>();
 
 	protected override void OnAwake()
 	{
@@ -242,7 +244,7 @@ public partial class MicomSensor : Device
 		UpdateUss();
 		UpdateIr();
 		UpdateBumper();
-		UpdateOdom();
+		UpdateOdom(Time.fixedDeltaTime);
 	}
 
 	private void UpdateBumper()
@@ -320,8 +322,6 @@ public partial class MicomSensor : Device
 
 	private void UpdateIMU()
 	{
-		var imu = micomSensorData.Imu;
-
 		if (imuSensor == null || micomSensorData == null)
 		{
 			return;
@@ -330,7 +330,7 @@ public partial class MicomSensor : Device
 		micomSensorData.Imu = imuSensor.GetImuMessage();
 	}
 
-	public bool UpdateOdom()
+	public bool UpdateOdom(in float duration)
 	{
 		if (micomSensorData != null)
 		{
@@ -350,8 +350,8 @@ public partial class MicomSensor : Device
 				if (imuSensor != null)
 				{
 					var imuOrientation = imuSensor.GetOrientation();
-					var yaw = imuOrientation.eulerAngles.y * Mathf.Deg2Rad;
-					CalculateOdometry(Time.fixedDeltaTime, (float)odom.AngularVelocity.Left, (float)odom.AngularVelocity.Right, yaw);
+					var yaw = imuOrientation.y * Mathf.Deg2Rad;
+					CalculateOdometry(duration, (float)odom.AngularVelocity.Left, (float)odom.AngularVelocity.Right, yaw);
 				}
 
 				// Set reversed value due to different direction (Left-handed -> Right-handed direction of rotation)
@@ -364,6 +364,8 @@ public partial class MicomSensor : Device
 				// Set reversed value due to different direction (Left-handed -> Right-handed direction of rotation)
 				odom.TwistAngular.Z = -_odomVelocity.y;
 
+				motorLeft.Feedback.SetRotatingVelocity(_odomVelocity.y);
+				motorRight.Feedback.SetRotatingVelocity(_odomVelocity.y);
 				// Debug.LogFormat("Odom: {0}, {1}", odom.AngularVelocity.Left, odom.AngularVelocity.Right);
 				return true;
 			}
@@ -394,12 +396,32 @@ public partial class MicomSensor : Device
 		SetDifferentialDrive(linearVelocityLeft, linearVelocityRight);
 	}
 
+	public void UpdateMotorFeedback(in float linearVelocityLeft, in float linearVelocityRight)
+	{
+		var linearVelocity = (linearVelocityLeft + linearVelocityRight) * 0.5f;
+		var angularVelocity = (linearVelocityRight - linearVelocity) / (wheelBase * 0.5f);
+
+		motorLeft.Feedback.SetRotatingTargetVelocity(angularVelocity);
+		motorRight.Feedback.SetRotatingTargetVelocity(angularVelocity);
+	}
+
+	public void UpdateMotorFeedback(in float angularVelocity)
+	{
+		motorLeft.Feedback.SetRotatingTargetVelocity(angularVelocity);
+		motorRight.Feedback.SetRotatingTargetVelocity(angularVelocity);
+	}
+
 	/// <summary>Set motor velocity</summary>
 	/// <remarks>degree per second</remarks>
 	private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)
 	{
 		if (motorLeft != null && motorRight != null)
 		{
+			var isRotating = (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight));
+
+			motorLeft.Feedback.SetMotionRotating(isRotating);
+			motorRight.Feedback.SetMotionRotating(isRotating);
+
 			motorLeft.SetVelocityTarget(angularVelocityLeft);
 			motorRight.SetVelocityTarget(angularVelocityRight);
 		}

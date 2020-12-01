@@ -9,14 +9,116 @@ using UnityEngine;
 
 public class Motor : MonoBehaviour
 {
+	public class RapidChangeControl
+	{
+		private bool _directionSwitched = false;
+		private int _maxWaitCount = 20;
+		private int _waitForStopCount = 0;
+
+		public void SetDirectionSwitched(in bool switched)
+		{
+			_directionSwitched = switched;
+
+			if (_directionSwitched)
+			{
+				_waitForStopCount = _maxWaitCount;
+			}
+		}
+
+		public bool DirectionSwitched()
+		{
+			return _directionSwitched;
+		}
+
+		public void Wait()
+		{
+			if (_waitForStopCount-- <= 0)
+			{
+				SetDirectionSwitched(false);
+			}
+		}
+	}
+
+	public class MotorMotionFeedback
+	{
+		public float compensatingVelocityIncrease = 0.3f;
+		public float compensatingVelocityDecrease = 0.7f;
+		
+		private bool _isRotating = false;
+		private float _currentTwistAngularVelocity = 0;
+		private float _targetTwistAngularVelocity = 0;
+
+		private float _compensateValue = 0;
+
+		public void SetMotionRotating(in bool enable)
+		{
+			_isRotating = enable;
+		}
+
+		public void SetRotatingVelocity(in float currentTwistAngularVelocity)
+		{
+			_currentTwistAngularVelocity = currentTwistAngularVelocity;
+		}
+
+		public void SetRotatingTargetVelocity(in float targetTwistAngularVelocity)
+		{
+			_targetTwistAngularVelocity = targetTwistAngularVelocity;
+		}
+
+		public bool IsTargetReached()
+		{
+			const float accuracy = 1000f;
+			// Debug.Log(" is target reached: " + _currentTwistAngularVelocity + ", " + _targetTwistAngularVelocity);
+			return ((int)Mathf.Abs(_currentTwistAngularVelocity * accuracy) >= (int)Mathf.Abs(_targetTwistAngularVelocity * accuracy));
+		}
+
+		public float Compensate()
+		{
+			if (_isRotating)
+			{
+				if (IsTargetReached() == false)
+				{
+					_compensateValue += compensatingVelocityIncrease;
+					// Debug.Log("_test: it is low speed, " + _currentTwistAngularVelocity + " < " + _targetTwistAngularVelocity);
+				}
+				else
+				{
+					_compensateValue -= compensatingVelocityDecrease;
+					
+					if (_compensateValue < 0)
+					{
+						_compensateValue = 0;
+					}
+				}
+			}
+			else
+			{
+				_compensateValue = 0;
+			}
+		
+			return _compensateValue;
+		}
+	}
+
 	private PID pidControl = null;
 	private HingeJoint joint = null;
 	private Rigidbody _motorBody;
 
+	private bool _enableMotor = false;
 	private float _lastAngle = 0f;
 	private float _targetAngularVelocity = 0f;
-	private float _commandForce = 0f;
-	private bool _enableMotor = false;
+	
+	public float compensatingRatio = 1.125f; // compensting target velocity
+
+	private RapidChangeControl _rapidControl = new RapidChangeControl();
+	private MotorMotionFeedback _feedback = new MotorMotionFeedback();
+	
+	public MotorMotionFeedback Feedback => _feedback;
+
+	public string GetMotorName()
+	{
+		return (_motorBody == null)? string.Empty:_motorBody.transform.parent.name;
+	}
 
 	public void SetTargetJoint(in HingeJoint targetJoint)
 	{
@@ -51,13 +153,26 @@ public class Motor : MonoBehaviour
 		if (targetAngularVelocity.Equals(float.Epsilon) || targetAngularVelocity == 0f)
 		{
 			_enableMotor = false;
-			_commandForce = 0f;
 			_targetAngularVelocity = 0f;
 		}
 		else
 		{
 			_enableMotor = true;
-			_targetAngularVelocity = targetAngularVelocity;
+
+			if (_targetAngularVelocity != 0)
+			{
+				if (Mathf.Sign(_targetAngularVelocity) == Mathf.Sign(targetAngularVelocity))
+				{
+					_rapidControl.SetDirectionSwitched(false);
+				}
+				else
+				{
+					_rapidControl.SetDirectionSwitched(true);
+					// Debug.Log(GetMotorName() + " - direction switched");
+				}
+			}
+
+			_targetAngularVelocity = targetAngularVelocity * compensatingRatio;
 		}
 
 		pidControl.Reset();
@@ -72,35 +187,57 @@ public class Motor : MonoBehaviour
 
 		var motor = joint.motor;
 
-		var currentAngle = joint.angle;
-
-		if (currentAngle < 0f)
-		{
-			currentAngle = 360f + currentAngle;
-		}
-
-		var errorAngle = _lastAngle - currentAngle;
-
+		var currentAngle = joint.angle + 180f;
+		var rotatedAngle = _lastAngle - currentAngle;
 		_lastAngle = currentAngle;
 
-		if (_enableMotor)
+		var currentVelocity = rotatedAngle / Time.fixedDeltaTime;
+		
+		var targetAngle = _targetAngularVelocity * Time.fixedDeltaTime;
+
+		// Compensate target angular velocity
+		var targetAngularVelocityCompensation = 0f;
+		if (_targetAngularVelocity != 0)
 		{
-			var targetAngle = _targetAngularVelocity * Time.fixedDeltaTime;
-			_commandForce = pidControl.Update(targetAngle, errorAngle, Time.fixedDeltaTime);
+			targetAngularVelocityCompensation = _feedback.Compensate();
+		}
+
+		var commandForce = 0f;
+		var compensatedTargetAngularVelocity = _targetAngularVelocity + Mathf.Sign(_targetAngularVelocity) * targetAngularVelocityCompensation;
+
+		// do stop motion of motor when motor disabled
+		if (!_enableMotor)
+		{
+			Stop();
+		}
+		else
+		{
+			commandForce = pidControl.Update(targetAngle, rotatedAngle, Time.fixedDeltaTime); 
+
+			// Debug.Log(GetMotorName() + ", " + _targetAngularVelocity + " +- " + targetAngularVelocityCompensation + " = " + compensatedTargetAngularVelocity);
+
+			// Improve motion for rapid direction change
+			if (_rapidControl.DirectionSwitched())
+			{
+				Stop();
+				commandForce = 0;
+				compensatedTargetAngularVelocity = 0;
+				_rapidControl.Wait();
+			}
 		}
 
 		// targetVelocity angular velocity in degrees per second.
-		motor.targetVelocity = _targetAngularVelocity;
-		motor.force = _commandForce;
+		motor.targetVelocity = compensatedTargetAngularVelocity;
+		motor.force = commandForce;
 
 		// Should set the JointMotor value to update
 		joint.motor = motor;
+	}
 
-		if (!_enableMotor)
-		{
-			_motorBody.velocity = Vector3.up * _motorBody.velocity.y;
-			_motorBody.angularVelocity = Vector3.zero;
-			// Debug.Log(_motorBody.transform.parent.name + ": vel " + _motorBody.velocity + ", angvel " + _motorBody.angularVelocity);
-		}
+	public void Stop()
+	{
+		_motorBody.velocity = Vector3.up * _motorBody.velocity.y;
+		_motorBody.angularVelocity = Vector3.zero;
+		// Debug.Log(GetMotorName() + ": vel " + _motorBody.velocity + ", angvel " + _motorBody.angularVelocity);
 	}
 }
