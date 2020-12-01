@@ -386,9 +386,6 @@ public partial class MicomSensor : Device
 
 	public void SetTwistDrive(in float linearVelocity, in float angularVelocity)
 	{
-		motorLeft.Feedback.SetRotatingTargetVelocity(angularVelocity);
-		motorRight.Feedback.SetRotatingTargetVelocity(angularVelocity);
-		
 		// m/s, rad/s
 		// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
 		// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
@@ -397,6 +394,21 @@ public partial class MicomSensor : Device
 		var linearVelocityRight = (linearVelocity + angularCalculation);
 
 		SetDifferentialDrive(linearVelocityLeft, linearVelocityRight);
+	}
+
+	public void UpdateMotorFeedback(in float linearVelocityLeft, in float linearVelocityRight)
+	{
+		var linearVelocity = (linearVelocityLeft + linearVelocityRight) * 0.5f;
+		var angularVelocity = (linearVelocityRight - linearVelocity) / (wheelBase * 0.5f);
+
+		motorLeft.Feedback.SetRotatingTargetVelocity(angularVelocity);
+		motorRight.Feedback.SetRotatingTargetVelocity(angularVelocity);
+	}
+
+	public void UpdateMotorFeedback(in float angularVelocity)
+	{
+		motorLeft.Feedback.SetRotatingTargetVelocity(angularVelocity);
+		motorRight.Feedback.SetRotatingTargetVelocity(angularVelocity);
 	}
 
 	/// <summary>Set motor velocity</summary>

@@ -126,12 +126,14 @@ public class MicomInput : Device
 				var targetLinearVelocity = GetLinearVelocity();
 				var targetAngularVelocity = GetAngularVelocity();
 				micomForWheelDrive.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
+				micomForWheelDrive.UpdateMotorFeedback(targetAngularVelocity);
 				break;
 
 			case MicomInput.VelocityType.LeftAndRight:
 				var targetWheelLeftLinearVelocity = GetWheelLeftVelocity();
 				var targetWheelRightLinearVelocity = GetWheelRightVelocity();
 				micomForWheelDrive.SetDifferentialDrive(targetWheelLeftLinearVelocity, targetWheelRightLinearVelocity);
+				micomForWheelDrive.UpdateMotorFeedback(targetWheelLeftLinearVelocity, targetWheelRightLinearVelocity);
 				break;
 
 			case MicomInput.VelocityType.Unknown:
