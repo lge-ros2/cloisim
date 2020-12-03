@@ -120,7 +120,6 @@ namespace SDF
 			// Loop model paths
 			foreach (var modelPath in modelDefaultPaths)
 			{
-
 				if (!Directory.Exists(modelPath))
 				{
 					Console.WriteLine("Directory does not exists: " + modelPath);

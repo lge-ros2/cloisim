@@ -17,7 +17,7 @@ public partial class SDFImplement
 			// file path
 			if (!File.Exists(obj.uri))
 			{
-				Debug.Log("File doesn't exist.");
+				Debug.Log("File doesn't exist. - " + obj.uri);
 				return;
 			}
 
@@ -27,16 +27,14 @@ public partial class SDFImplement
 			switch (fileExtension)
 			{
 				case ".obj":
-					var mtlPath = obj.uri.Replace(fileExtension, ".mtl");
-					SDF2Unity.LoadObjMesh(targetObject, obj.uri, mtlPath);
-					break;
-
 				case ".stl":
-					SDF2Unity.LoadStlMesh(targetObject, obj.uri);
+				case ".dae":
+					var loadedObject = SDF2Unity.LoadMeshObject(obj.uri);
+					loadedObject.transform.SetParent(targetObject.transform, false);
 					break;
 
 				default:
-					Debug.LogWarning("Unknown file extension: " + fileExtension);
+					Debug.LogWarning("Unsupported file extension: " + fileExtension + " -> " + obj.uri);
 					break;
 			}
 

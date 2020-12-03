@@ -12,7 +12,7 @@ using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;
 
 public partial class SDFImporter : SDF.Importer
 {
-	private bool enableOptimization = true;
+	private bool enableOptimization = false;
 
 	protected override System.Object ImportVisual(in SDF.Visual visual, in System.Object parentObject)
 	{
