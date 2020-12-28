@@ -87,6 +87,71 @@ namespace SDF
 					}
 				}
 			}
+
+			if (IsValidNode("audio"))
+			{
+				Console.WriteLine("<audio> tag is NOT supported yet.");
+			}
+
+			if (IsValidNode("wind"))
+			{
+				Console.WriteLine("<wind> tag is NOT supported yet.");
+			}
+
+			if (IsValidNode("magnetic_field"))
+			{
+				Console.WriteLine("<magnetic_field> tag is NOT supported yet.");
+			}
+
+			if (IsValidNode("atmosphere"))
+			{
+				Console.WriteLine("<atmosphere> tag is NOT supported yet.");
+			}
+
+			if (IsValidNode("physics"))
+			{
+				Console.WriteLine("<physics> tag is NOT supported yet.");
+			}
+
+			if (IsValidNode("scene"))
+			{
+				Console.WriteLine("<scene> tag is NOT supported yet.");
+			}
+
+			if (IsValidNode("light"))
+			{
+				Console.WriteLine("<light> tag is NOT supported yet.");
+			}
+
+			if (IsValidNode("frame"))
+			{
+				Console.WriteLine("<frame> tag is NOT supported yet.");
+			}
+
+			if (IsValidNode("actor"))
+			{
+				Console.WriteLine("<actor> tag is NOT supported yet.");
+			}
+
+			if (IsValidNode("road"))
+			{
+				Console.WriteLine("<road> tag is NOT supported yet.");
+			}
+
+			if (IsValidNode("spherical_coordinates"))
+			{
+				Console.WriteLine("<spherical_coordinates> tag is NOT supported yet.");
+			}
+
+			if (IsValidNode("state"))
+			{
+				Console.WriteLine("<state> tag is NOT supported yet.");
+			}
+
+			if (IsValidNode("population"))
+			{
+				Console.WriteLine("<population> tag is NOT supported yet.");
+			}
 		}
 
 		public List<Model> GetModels()
