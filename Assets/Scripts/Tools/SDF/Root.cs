@@ -63,6 +63,7 @@ namespace SDF
 			// Console.WriteLine("Loading World File from SDF!!!!!");
 			updateResourceModelTable();
 
+			var worldFound = false;
 			if (doc != null && worldFileName != null && worldFileName.Length > 0)
 			{
 				// Console.WriteLine("World file, PATH: " + worldFileName);
@@ -72,20 +73,18 @@ namespace SDF
 					if (File.Exists(@fullFilePath))
 					{
 						doc.Load(fullFilePath);
+						worldFound = true;
 						break;
-					}
-					else
-					{
-						(Console.Out as DebugLogWriter).SetWarning(true);
-						Console.WriteLine("World file not exist: " + worldFileName);
-						(Console.Out as DebugLogWriter).SetWarning(false);
 					}
 				}
 			}
-
-			if (!doc.HasChildNodes)
+			
+			if (!worldFound)
 			{
-				return false;
+				(Console.Out as DebugLogWriter).SetWarning(true);
+                Console.WriteLine("World file not exist: " + worldFileName);
+                (Console.Out as DebugLogWriter).SetWarning(false);
+                return false;
 			}
 
 			replaceAllIncludedModel();
