@@ -88,6 +88,7 @@ export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample-resources/models"
 export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample-resources/worlds"
 ```
 
+- ***export LD_LIBRARY_PATH=./CLOiSim_Data/Plugins/:$LD_LIBRARY_PATH***
 - ***./CLOiSim.x86_64 -worldFile cloisim.world***
 
 or you can execute '***./run.sh***' script in release [binary](https://github.com/lge-ros2/cloisim/releases) version.
