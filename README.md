@@ -34,8 +34,10 @@ Here is the full list of models that is implemented or planned to be implemented
   - [ ] Point Cloud message
 - [X] RealSense (RGB + IR1 + IR2 + Depth)
 - [ ] 3D Lidar Sensor
-- [ ] Sensor noise model
-- [ ] support `<Joint type="revolute2">`
+- [ ] Sensor noise models
+- [ ] Physics
+  - [ ] Support all physics parameters in SDF specification
+  - [X] Support `<Joint type="revolute2">`
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<lights>`, `<audio>`, `<actor>`, `<state>`.
@@ -46,7 +48,7 @@ Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material'
 
 Refer to core codes in 'Assets/Scripts'.
 
-* Load SDF file -> Parse SDF(simulation description) -> Implement and realize description
+- Load SDF file -> Parse SDF(simulation description) -> Implement and realize description
 
 Shaders are also used to get depth buffer information in a few sensor model.
 
