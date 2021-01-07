@@ -20,8 +20,6 @@ namespace SensorDevices
 
 		public SDF.Cameras parameters = null;
 
-		private Transform multiCamLink = null;
-
 		protected override void OnAwake()
 		{
 		}
