@@ -8,7 +8,7 @@ using UnityEngine;
 
 public partial class SDF2Unity
 {
-	private static string commonShaderName = "Standard (Specular setup)";
+	private static readonly string commonShaderName = "Standard (Specular setup)";
 	public static Shader commonShader = Shader.Find(commonShaderName);
 
 	public static Vector3 GetPosition(in double x, in double y, in double z)

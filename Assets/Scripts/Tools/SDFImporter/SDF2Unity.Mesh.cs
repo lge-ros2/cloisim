@@ -13,9 +13,9 @@ public partial class SDF2Unity
 {
 	class MeshMaterialSet
 	{
-		private string _meshName;
-		private Mesh _mesh;
-		private Material _material;
+		private readonly string _meshName;
+		private readonly Mesh _mesh;
+		private readonly Material _material;
 
 		public MeshMaterialSet(in string meshName, in Mesh mesh, in Material material)
 		{
@@ -29,9 +29,9 @@ public partial class SDF2Unity
 		public string MeshName => _meshName;
 	}
 
-	private static Assimp.AssimpContext importer = new Assimp.AssimpContext();
+	private static readonly Assimp.AssimpContext importer = new Assimp.AssimpContext();
 
-	private static Assimp.PostProcessSteps postProcessFlags =
+	private static readonly Assimp.PostProcessSteps postProcessFlags =
 				Assimp.PostProcessSteps.OptimizeGraph |
 				Assimp.PostProcessSteps.OptimizeMeshes |
 				Assimp.PostProcessSteps.SortByPrimitiveType |
@@ -75,7 +75,7 @@ public partial class SDF2Unity
 			if (sceneMat.HasTextureDiffuse)
 			{
 				var filePath = sceneMat.TextureDiffuse.FilePath;
-				var texturePaths = new List<string>();
+				var texturePaths = new List<string>(){};
 				texturePaths.Add(Path.Combine(parentPath, filePath));
 				texturePaths.Add(Path.Combine(parentPath, "../", filePath));
 				texturePaths.Add(Path.Combine(parentPath, "../materials/", filePath));

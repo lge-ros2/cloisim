@@ -15,8 +15,9 @@ public partial class SDFImplement
 {
 	public class Collision
 	{
-		private static bool enableMergeCollider = true;
-		private static MeshColliderCookingOptions cookingOptions =
+		private static readonly bool enableMergeCollider = true;
+
+		private static readonly MeshColliderCookingOptions cookingOptions =
 				MeshColliderCookingOptions.EnableMeshCleaning|
 				MeshColliderCookingOptions.CookForFasterSimulation|
 				MeshColliderCookingOptions.WeldColocatedVertices|
