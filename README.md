@@ -44,6 +44,8 @@ It does not support optional elmenets like `<lights>`, `<audio>`, `<actor>`, `<s
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material' and 'STL(.stl)'.
 
+<video src="https://user-images.githubusercontent.com/21001946/103972179-d0415000-51af-11eb-824b-3d77051664d5.mp4" controls="controls" class="d-block rounded-bottom-2 width-fit" style="max-width:100%"></video>
+
 ## How it works
 
 Refer to core codes in 'Assets/Scripts'.
@@ -120,6 +122,8 @@ websocket service path: ***ws://127.0.0.1:8080/{service-name}***
 Just send a request data as a JSON format.
 
 Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-service)
+
+<video src="https://user-images.githubusercontent.com/21001946/103973626-2f549400-51b3-11eb-8d1f-0945d40c700b.mp4" controls="controls" class="d-block rounded-bottom-2 width-fit" style="max-width:100%;"></video>
 
 ## Future Plan
 
