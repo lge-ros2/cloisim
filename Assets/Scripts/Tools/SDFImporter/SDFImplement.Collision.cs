@@ -42,19 +42,6 @@ public partial class SDFImplement
 
 				combine[combineIndex].transform = meshTransformMatrix;
 				combineIndex++;
-
-				// if (meshFilter.TryGetComponent<MeshRenderer>(out var meshRenderer))
-				// {
-				// 	GameObject.Destroy(meshRenderer);
-				// }
-
-				// GameObject.Destroy(meshFilter);
-
-				// var meshObject = meshFilter.gameObject;
-				// if (meshObject.transform.parent.CompareTag("Collision"))
-				// {
-				// 	GameObject.Destroy(meshObject);
-				// }
 			}
 
 			var newCombinedMesh = new Mesh();
@@ -107,18 +94,6 @@ public partial class SDFImplement
 				{
 					GameObject.Destroy(childTransform.gameObject);
 				}
-				// if (meshFilter.TryGetComponent<MeshRenderer>(out var meshRenderer))
-				// {
-				// 	GameObject.Destroy(meshRenderer);
-				// }
-
-				// GameObject.Destroy(meshFilter);
-
-				// var meshObject = meshFilter.gameObject;
-				// if (meshObject.transform.parent.CompareTag("Collision"))
-				// {
-				// 	GameObject.Destroy(meshObject);
-				// }
 
 				mergedMesh.name = targetObject.name;
 
