@@ -13,9 +13,9 @@ public partial class SDF2Unity
 {
 	class MeshMaterialSet
 	{
-		private string _meshName;
-		private Mesh _mesh;
-		private Material _material;
+		private readonly string _meshName;
+		private readonly Mesh _mesh;
+		private readonly Material _material;
 
 		public MeshMaterialSet(in string meshName, in Mesh mesh, in Material material)
 		{
@@ -29,11 +29,11 @@ public partial class SDF2Unity
 		public string MeshName => _meshName;
 	}
 
-	private static Assimp.AssimpContext importer = new Assimp.AssimpContext();
+	private static readonly Assimp.AssimpContext importer = new Assimp.AssimpContext();
 
-	private static Assimp.PostProcessSteps postProcessFlags =
-				// Assimp.PostProcessSteps.OptimizeGraph |
-				// Assimp.PostProcessSteps.OptimizeMeshes |
+	private static readonly Assimp.PostProcessSteps postProcessFlags =
+				Assimp.PostProcessSteps.OptimizeGraph |
+				Assimp.PostProcessSteps.OptimizeMeshes |
 				Assimp.PostProcessSteps.SortByPrimitiveType |
 				Assimp.PostProcessSteps.RemoveRedundantMaterials |
 				Assimp.PostProcessSteps.ImproveCacheLocality |
@@ -75,7 +75,7 @@ public partial class SDF2Unity
 			if (sceneMat.HasTextureDiffuse)
 			{
 				var filePath = sceneMat.TextureDiffuse.FilePath;
-				var texturePaths = new List<string>();
+				var texturePaths = new List<string>(){};
 				texturePaths.Add(Path.Combine(parentPath, filePath));
 				texturePaths.Add(Path.Combine(parentPath, "../", filePath));
 				texturePaths.Add(Path.Combine(parentPath, "../materials/", filePath));
@@ -238,7 +238,12 @@ public partial class SDF2Unity
 		return rootObject;
 	}
 
-	public static GameObject LoadMeshObject(in string meshPath, in float scaleX = 1, in float scaleY = 1, in float scaleZ = 1)
+	public static GameObject LoadMeshObject(in string meshPath, in Vector3 eulerRotation)
+	{
+		return LoadMeshObject(meshPath, eulerRotation, Vector3.one);
+	}
+
+	public static GameObject LoadMeshObject(in string meshPath, in Vector3 eulerRotation, in Vector3 scale)
 	{
 		if (!File.Exists(meshPath))
 		{
@@ -267,10 +272,10 @@ public partial class SDF2Unity
 		}
 
 		// Create GameObjects from nodes
-		var nodeObject = ConvertAssimpNodeToGameObject(scene.RootNode, meshMats, scaleX, scaleY, scaleZ);
+		var nodeObject = ConvertAssimpNodeToGameObject(scene.RootNode, meshMats, scale.x, scale.y, scale.z);
 
 		// Rotate meshes for Unity world since all 3D object meshes are oriented to gazebo coordinates
-		var meshRotation = Quaternion.Euler(90f, -90f, 0f);
+		var meshRotation = Quaternion.Euler(eulerRotation.x, eulerRotation.y, eulerRotation.z);
 		foreach (var meshFilter in nodeObject.GetComponentsInChildren<MeshFilter>())
 		{
 			var sharedMesh = meshFilter.sharedMesh;

@@ -15,40 +15,33 @@ public partial class SDFImplement
 {
 	public class Collision
 	{
-		private static bool enableMergeCollider = true;
-		private static MeshColliderCookingOptions cookingOptions = MeshColliderCookingOptions.EnableMeshCleaning|MeshColliderCookingOptions.WeldColocatedVertices;
+		private static readonly bool enableMergeCollider = true;
 
-		private static Mesh MergeMeshes(in MeshFilter[] meshFilters)
+		private static readonly MeshColliderCookingOptions cookingOptions =
+				MeshColliderCookingOptions.EnableMeshCleaning|
+				MeshColliderCookingOptions.CookForFasterSimulation|
+				MeshColliderCookingOptions.WeldColocatedVertices|
+				MeshColliderCookingOptions.UseFastMidphase;
+
+		private static Mesh MergeMeshes(in MeshFilter[] meshFilters, in Quaternion meshRootRotation, in Vector3 meshRootScale)
 		{
+			var meshTransformMatrix = new Matrix4x4();
+
 			var combine = new CombineInstance[meshFilters.Length];
 			var combineIndex = 0;
 			foreach (var meshFilter in meshFilters)
 			{
 				combine[combineIndex].mesh = meshFilter.sharedMesh;
 
-				var meshTransformMatrix = new Matrix4x4();
 				var meshTranslation = meshFilter.transform.localPosition;
-				var meshRotation = meshFilter.transform.localRotation;
-
+				var meshRotation = meshFilter.transform.localRotation * meshRootRotation;
+				var meshScale = Vector3.Scale(meshFilter.transform.localScale, meshRootScale);
 				// Debug.LogFormat("{0},{1}: {2}, {3}", meshFilter.name, meshFilter.transform.name, meshTranslation, meshRotation);
-				var meshScale = meshFilter.transform.localScale;
+
 				meshTransformMatrix.SetTRS(meshTranslation, meshRotation, meshScale);
 
 				combine[combineIndex].transform = meshTransformMatrix;
 				combineIndex++;
-
-				if (meshFilter.TryGetComponent<MeshRenderer>(out var meshRenderer))
-				{
-					GameObject.Destroy(meshRenderer);
-				}
-
-				GameObject.Destroy(meshFilter);
-
-				var meshObject = meshFilter.gameObject;
-				if (meshObject.transform.parent.CompareTag("Collision"))
-				{
-					GameObject.Destroy(meshObject);
-				}
 			}
 
 			var newCombinedMesh = new Mesh();
@@ -90,7 +83,17 @@ public partial class SDFImplement
 			{
 				var meshCollider = targetObject.AddComponent<MeshCollider>();
 
-				var mergedMesh = MergeMeshes(meshFilters);
+				var childTransform = (targetObject.transform.childCount > 0)? targetObject.transform.GetChild(0):null;
+				var meshRootRotation = (childTransform == null)? Quaternion.identity:childTransform.localRotation;
+				var meshRootScale = (childTransform == null)? Vector3.one:childTransform.localScale;
+
+				var mergedMesh = MergeMeshes(meshFilters, meshRootRotation, meshRootScale);
+
+				// remove all child objects after merge the meshes for colloision
+				if (childTransform != null)
+				{
+					GameObject.Destroy(childTransform.gameObject);
+				}
 
 				mergedMesh.name = targetObject.name;
 

@@ -34,19 +34,23 @@ Here is the full list of models that is implemented or planned to be implemented
   - [ ] Point Cloud message
 - [X] RealSense (RGB + IR1 + IR2 + Depth)
 - [ ] 3D Lidar Sensor
-- [ ] Sensor noise model
-- [ ] support `<Joint type="revolute2">`
+- [ ] Sensor noise models
+- [ ] Physics
+  - [ ] Support all physics parameters in SDF specification
+  - [X] Support `<Joint type="revolute2">`
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<lights>`, `<audio>`, `<actor>`, `<state>`.
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material' and 'STL(.stl)'.
 
+[![unity_ros2_lidar](https://user-images.githubusercontent.com/21001946/103977264-3a5ff200-51bc-11eb-8053-643420568fc6.png)](https://user-images.githubusercontent.com/21001946/103972179-d0415000-51af-11eb-824b-3d77051664d5.mp4)
+
 ## How it works
 
 Refer to core codes in 'Assets/Scripts'.
 
-* Load SDF file -> Parse SDF(simulation description) -> Implement and realize description
+- Load SDF file -> Parse SDF(simulation description) -> Implement and realize description
 
 Shaders are also used to get depth buffer information in a few sensor model.
 
@@ -88,6 +92,7 @@ export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample-resources/models"
 export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample-resources/worlds"
 ```
 
+- ***export LD_LIBRARY_PATH=./CLOiSim_Data/Plugins/:$LD_LIBRARY_PATH***
 - ***./CLOiSim.x86_64 -worldFile cloisim.world***
 
 or you can execute '***./run.sh***' script in release [binary](https://github.com/lge-ros2/cloisim/releases) version.
@@ -117,6 +122,8 @@ websocket service path: ***ws://127.0.0.1:8080/{service-name}***
 Just send a request data as a JSON format.
 
 Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-service)
+
+[![unity_ros2_nav2](https://user-images.githubusercontent.com/21001946/103977271-3f24a600-51bc-11eb-95b2-f4edbd0468b8.png)](https://user-images.githubusercontent.com/21001946/103973626-2f549400-51b3-11eb-8d1f-0945d40c700b.mp4)
 
 ## Future Plan
 

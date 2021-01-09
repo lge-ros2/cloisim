@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 # configuration for Nvidia capability
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -11,7 +11,7 @@ ADD https://gitlab.com/nvidia/container-images/vulkan/raw/master/nvidia_icd.json
 RUN apt-get update -qq && \
     apt-get upgrade -qq -y && \
     apt-get install --no-install-recommends -qq -y \
-        xz-utils wget curl ca-certificates libgl1 libvulkan1 \
+        xz-utils wget curl ca-certificates libgl1 libvulkan1 libc6-dev libminizip-dev \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
