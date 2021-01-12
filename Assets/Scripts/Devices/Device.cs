@@ -20,7 +20,6 @@ public abstract class Device : MonoBehaviour
 
 	private MemoryStream memoryStream_ = new MemoryStream();
 
-
 	public string deviceName = string.Empty;
 
 	protected SDF.SensorType deviceParameters = null;

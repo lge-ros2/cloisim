@@ -15,6 +15,8 @@ This project consists of
 - Network modules -> Module for transporting sensor data or control signal
 - Web service -> Module for controling simulation through a web interface
 
+[![unity_multirobot](https://user-images.githubusercontent.com/21001946/104274319-e159cc00-54e3-11eb-907d-6ae49f3ed8af.png)](https://user-images.githubusercontent.com/21001946/104274159-96d84f80-54e3-11eb-9975-9d4bbbbdd586.mp4)
+
 ## Features
 
 The current release includes the features only for a 2-wheeled mobile robot with 2D LiDAR sensor.
