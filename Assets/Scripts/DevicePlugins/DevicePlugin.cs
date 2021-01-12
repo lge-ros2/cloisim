@@ -111,7 +111,6 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		return false;
 	}
 
-
 	protected bool DeregisterDevice(in string hashKey)
 	{
 		bridgeManager.DeallocateDevice(hashKey);
@@ -217,6 +216,11 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		StartThreads();
 	}
 
+	public void Reset()
+	{
+		OnReset();
+	}
+
 	void OnDestroy()
 	{
 		// Debug.Log("DevicePlugin destroied");
@@ -240,11 +244,6 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 	}
 
-	public void Reset()
-	{
-		OnReset();
-	}
-
 	protected void ThreadWait()
 	{
 		Thread.SpinWait(1);
@@ -256,7 +255,6 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		devicePluginPose.position = transform.localPosition;
 		devicePluginPose.rotation = transform.localRotation;
 	}
-
 
 	protected static void ClearMemoryStream(ref MemoryStream ms)
 	{

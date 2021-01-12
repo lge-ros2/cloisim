@@ -20,8 +20,9 @@ public partial class MicomSensor : Device
 
 	public void Reset()
 	{
-		_odomPose.Set(0, 0, 0);
+		imuSensor.Reset();
 		_odomVelocity.Set(0, 0);
+		_odomPose.Set(0, 0, 0);
 		_lastTheta = 0.0f;
 	}
 

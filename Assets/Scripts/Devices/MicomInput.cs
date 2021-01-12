@@ -69,7 +69,7 @@ public class MicomInput : Device
 			Debug.LogWarning("GetMessageData: ERROR");
 		}
 
-		if (micomWritingData.Name.Equals("control_type") &&
+		if (micomWritingData.Name.Equals("control") &&
 			micomWritingData.Childrens.Count == 2)
 		{
 			var child0 = micomWritingData.Childrens[0];
@@ -103,6 +103,14 @@ public class MicomInput : Device
 			{
 				controlType = VelocityType.Unknown;
 				Debug.LogWarningFormat("MicomInput: Unsupported Control Type({0}", controlType);
+			}
+		}
+		else if (micomWritingData.Name.Equals("command"))
+		{
+			if (micomWritingData.Value.StringValue.Equals("reset_odometry"))
+			{
+				micomForWheelDrive.Reset();
+				Debug.Log("MicomInput::command(reset_odometry)");
 			}
 		}
 	}

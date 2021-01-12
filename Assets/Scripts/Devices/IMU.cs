@@ -37,14 +37,20 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			deviceName = name;
-			imuInitialRotation = transform.rotation.eulerAngles;
-			previousImuPosition = transform.position;
-			previousImuRotation = Vector3.zero;
+			Reset();
 		}
 
 		protected override void OnStart()
 		{
 			samplingPeriod = 1/samplingRate;
+		}
+
+		public void Reset()
+		{
+			// Debug.Log("IMU Reset");
+			imuInitialRotation = transform.rotation.eulerAngles;
+			previousImuPosition = transform.position;
+			previousImuRotation = Vector3.zero;
 		}
 
 		protected override IEnumerator OnVisualize()
