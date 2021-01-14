@@ -6,7 +6,7 @@
 
 using System.Collections;
 using UnityEngine;
-using messages = gazebo.msgs;
+using messages = cloisim.msgs;
 
 namespace SensorDevices
 {

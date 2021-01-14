@@ -8,8 +8,8 @@ using System.Collections.Generic;
 using System.IO;
 using ProtoBuf;
 using Stopwatch = System.Diagnostics.Stopwatch;
-using messages = gazebo.msgs;
-using Any = gazebo.msgs.Any;
+using messages = cloisim.msgs;
+using Any = cloisim.msgs.Any;
 
 public class MultiCameraPlugin : DevicePlugin
 {

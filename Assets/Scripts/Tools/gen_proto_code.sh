@@ -11,8 +11,7 @@ PROTOGEN="protogen"
 
 ## 2. check and edit here
 ##    set the location of protobuf messages in absolute path
-PROTO_MSGS_PATH="../../../../sim_device/driver_sim_interfaces/msgs/"
-
+PROTO_MSGS_PATH="../../../../cloi3_ws/src/cloisim_ros/cloisim_ros_protobuf_msgs/msgs/"
 
 ## 3. target protobuf message
 ##
@@ -22,8 +21,7 @@ TARGET_PROTO_MSGS=""
 MSG="header any param param_v color "
 MSG+="time vector2d vector3d quaternion pose pose_v poses_stamped "
 MSG+="image images_stamped image_stamped camerasensor distortion camera_lens "
-MSG+="laserscan laserscan_stamped raysensor "
-MSG+="pointcloud "
+MSG+="laserscan laserscan_stamped raysensor pointcloud "
 MSG+="micom battery "
 MSG+="contact contacts contactsensor wrench wrench_stamped joint_wrench "
 MSG+="gps gps_sensor "

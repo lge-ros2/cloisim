@@ -8,7 +8,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Stopwatch = System.Diagnostics.Stopwatch;
-using messages = gazebo.msgs;
+using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
@@ -167,7 +167,7 @@ namespace SensorDevices
 			var camVFov = DeviceHelper.HorizontalToVerticalFOV(camHFov, cam.aspect);
 			cam.fieldOfView = camVFov;
 
-			// Invert projection matrix for gazebo msg
+			// Invert projection matrix for cloisim msg
 			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(camHFov, camVFov, cam.nearClipPlane, cam.farClipPlane);
 			var invertMatrix = Matrix4x4.Scale(new Vector3(1, -1, 1));
 			cam.projectionMatrix = projMatrix * invertMatrix;

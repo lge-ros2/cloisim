@@ -7,7 +7,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
-using messages = gazebo.msgs;
+using messages = cloisim.msgs;
 
 public partial class MicomSensor : Device
 {
