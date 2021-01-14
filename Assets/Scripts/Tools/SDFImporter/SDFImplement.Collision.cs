@@ -94,6 +94,18 @@ public partial class SDFImplement
 				{
 					GameObject.Destroy(childTransform.gameObject);
 				}
+				else
+				{
+					if (targetObject.TryGetComponent<MeshRenderer>(out var meshRenderer))
+					{
+						GameObject.Destroy(meshRenderer);
+					}
+
+					if (targetObject.TryGetComponent<MeshFilter>(out var meshFilter))
+					{
+						GameObject.Destroy(meshFilter);
+					}
+				}
 
 				mergedMesh.name = targetObject.name;
 
