@@ -35,13 +35,13 @@ namespace SDF
 			cast_shadow = GetValue<bool>("cast_shadows");
 
 			if (IsValidNode("diffuse"))
-				diffuse.SetByString(GetValue<string>("diffuse"));
+				diffuse.FromString(GetValue<string>("diffuse"));
 
 			if (IsValidNode("specular"))
-				diffuse.SetByString(GetValue<string>("specular"));
+				diffuse.FromString(GetValue<string>("specular"));
 
 			if (IsValidNode("direction"))
-				direction.SetByString(GetValue<string>("direction"));
+				direction.FromString(GetValue<string>("direction"));
 		}
 	}
 }

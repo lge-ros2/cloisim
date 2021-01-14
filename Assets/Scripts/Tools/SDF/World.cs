@@ -55,7 +55,7 @@ namespace SDF
 			var gravityStr = GetValue<string>("static");
 
 			gravity = new Vector3<double>();
-			gravity.SetByString(gravityStr);
+			gravity.FromString(gravityStr);
 
 			// Console.WriteLine("{0}", GetType().Name);
 

@@ -112,7 +112,7 @@ namespace SDF
 				inertial.iyz = GetValue<double>("inertial/inertia/iyz");
 				inertial.izz = GetValue<double>("inertial/inertia/izz");
 				var poseStr = GetValue<string>("inertial/pose");
-				inertial.pose.SetByString(poseStr);
+				inertial.pose.FromString(poseStr);
 				// Console.WriteLine("Link Mass: " + inertial.mass);
 			}
 		}

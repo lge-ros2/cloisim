@@ -110,7 +110,7 @@ namespace SDF
 				case "prismatic":
 					axis = new Axis();
 					var xyzStr = GetValue<string>("axis/xyz");
-					axis.xyz.SetByString(xyzStr);
+					axis.xyz.FromString(xyzStr);
 
 					if (IsValidNode("axis/limit"))
 					{
@@ -128,7 +128,7 @@ namespace SDF
 					{
 						axis2 = new Axis();
 						xyzStr = GetValue<string>("axis2/xyz");
-						axis2.xyz.SetByString(xyzStr);
+						axis2.xyz.FromString(xyzStr);
 
 						if (IsValidNode("axis2/limit"))
 						{

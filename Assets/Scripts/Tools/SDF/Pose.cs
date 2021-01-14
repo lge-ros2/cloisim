@@ -44,11 +44,6 @@ namespace SDF
 
 		public void FromString(in string value)
 		{
-			SetByString(value);
-		}
-
-		public void SetByString(in string value)
-		{
 			if (string.IsNullOrEmpty(value))
 			{
 				return;
@@ -108,11 +103,6 @@ namespace SDF
 		}
 
 		public void FromString(in string value)
-		{
-			SetByString(value);
-		}
-
-		public void SetByString(in string value)
 		{
 			if (string.IsNullOrEmpty(value))
 			{
@@ -185,11 +175,6 @@ namespace SDF
 
 		public void FromString(in string value)
 		{
-			SetByString(value);
-		}
-
-		public void SetByString(in string value)
-		{
 			if (string.IsNullOrEmpty(value))
 			{
 				return;
@@ -246,11 +231,6 @@ namespace SDF
 
 		public void FromString(in string value)
 		{
-			SetByString(value);
-		}
-
-		public void SetByString(in string value)
-		{
 			if (string.IsNullOrEmpty(value))
 			{
 				return;
@@ -259,8 +239,8 @@ namespace SDF
 			var tmp = value.Trim().Split(' ');
 			if (tmp.Length == 6)
 			{
-				pos.SetByString(tmp[0] + " " + tmp[1] + " " + tmp[2]);
-				rot.SetByString(tmp[3] + " " + tmp[4] + " " + tmp[5]);
+				pos.FromString(tmp[0] + " " + tmp[1] + " " + tmp[2]);
+				rot.FromString(tmp[3] + " " + tmp[4] + " " + tmp[5]);
 			}
 		}
 

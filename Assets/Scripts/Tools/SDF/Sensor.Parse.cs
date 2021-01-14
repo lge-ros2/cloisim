@@ -113,7 +113,7 @@ namespace SDF
 				camera.distortion.k3 = GetValue<double>(cameraElement + "/distortion/k3");
 				camera.distortion.p1 = GetValue<double>(cameraElement + "/distortion/p1");
 				camera.distortion.p2 = GetValue<double>(cameraElement + "/distortion/p2");
-				camera.distortion.center.SetByString(GetValue<string>(cameraElement + "/distortion/center"));
+				camera.distortion.center.FromString(GetValue<string>(cameraElement + "/distortion/center"));
 			}
 
 			if (IsValidNode(cameraElement + "/lens"))
