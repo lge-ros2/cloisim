@@ -78,6 +78,7 @@ public class SimulationControlService : WebSocketBehavior
 
 	protected override void OnOpen()
 	{
+		Log.Level = LogLevel.Fatal;
 		Debug.Log("Open SimulationControlService");
 	}
 

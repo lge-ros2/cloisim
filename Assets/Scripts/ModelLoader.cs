@@ -222,7 +222,7 @@ public class ModelLoader : MonoBehaviour
 	}
 
 	/// <summary>
-	/// Eg:  CLOiSim.x86_64 -worldFile gazebo.world
+	/// Eg:  CLOiSim.x86_64 -worldFile lg_seocho.world
 	/// read the "-worldFile" command line argument
 	/// </summary>
 	private static string GetArgument(in string name)

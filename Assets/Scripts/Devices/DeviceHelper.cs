@@ -10,7 +10,7 @@ using messages = cloisim.msgs;
 
 public partial class DeviceHelper
 {
-	static Clock clock = null;
+	private static Clock clock = null;
 
 	public static Clock GetGlobalClock()
 	{
