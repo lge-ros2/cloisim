@@ -5,20 +5,30 @@ Dockerfile creates minimal image with Vulkan capabilities, and downloads latest 
 
 ## Prerequisite
 
-Make sure you if NVIDIA Container Toolkit is already installed on your machine.
+Make sure you if NVIDIA Container Toolkit and Docker are already installed on your machine.
 
+### docker
 ```shell
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
 
-sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
-sudo systemctl restart docker
 ```
 
+### nvidia-docker
+
+Refer here for install guide [nvidia-docker2](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker).
 It may differ from latest guide.
 
-Refer here for install guide [nvidia-docker](https://github.com/NVIDIA/nvidia-docker).
+```shell
+$ distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+   && curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add - \
+   && curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+
+$ sudo apt-get update
+$ sudo apt-get install -y nvidia-docker2
+$ sudo systemctl restart docker
+
+### test if it installed successfully
+$ sudo docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
+```
 
 ## Run Docker
 
