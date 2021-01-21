@@ -22,7 +22,7 @@ public class Clock : Device
 
 	protected override void OnAwake()
 	{
-		deviceName = "Unity Clock";
+		deviceName = "World Clock";
 	}
 
 	protected override void OnStart()
@@ -54,7 +54,7 @@ public class Clock : Device
 		realTimeParam.Value = new Any { Type = Any.ValueType.Time, TimeValue = realTime };
 		timeInfo.Childrens.Add(realTimeParam);
 	}
-	
+
 	protected override IEnumerator MainDeviceWorker()
 	{
 		var waitForSeconds = new WaitForSeconds(UpdatePeriod);

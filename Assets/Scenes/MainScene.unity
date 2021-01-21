@@ -777,10 +777,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 249819585}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c6aaa9474a43dce5a9841e90e5846a04, type: 3}
+  m_Script: {fileID: 11500000, guid: a6319b2d05cfd18189eb02f180656d91, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultPipeAddress: 127.0.0.1
+  bridgeAddress: 127.0.0.1
 --- !u!114 &249819589
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -811,7 +811,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   defaultWebSocketAddress: 127.0.0.1
-  defaultWebSocketPort: 8080
+  defaultWebSocketServicePort: 8080
 --- !u!114 &249819592
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3085,8 +3085,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blockControl: 0
-  mainSpeed: 12
-  shiftAdd: 10
+  mainSpeed: 3
+  shiftAdd: 15
   maxShift: 100
   camSens: 0.25
   edgeWidth: 30
