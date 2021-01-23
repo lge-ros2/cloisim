@@ -3086,8 +3086,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   blockControl: 0
   mainSpeed: 3
-  shiftAdd: 15
-  maxShift: 100
+  shiftAdd: 5
+  maxShift: 50
   camSens: 0.25
   edgeWidth: 30
   edgeSens: 0.05
