@@ -55,7 +55,7 @@ namespace SDF
 			var gravityStr = GetValue<string>("static");
 
 			gravity = new Vector3<double>();
-			gravity.SetByString(gravityStr);
+			gravity.FromString(gravityStr);
 
 			// Console.WriteLine("{0}", GetType().Name);
 
@@ -70,11 +70,10 @@ namespace SDF
 					{
 						var value = GetValue<string>("gui/camera/pose").ToLower();
 						// Console.WriteLine(value);
+
 						// x y z roll pitch yaw
 						string[] poseStr = value.Split(' ');
 
-						// Convert Axis
-						// gazebo x y z => unity x z y
 						gui_camera_pose = new Pose<double>();
 						gui_camera_pose.Pos.X = Convert.ToDouble(poseStr[0]);
 						gui_camera_pose.Pos.Y = Convert.ToDouble(poseStr[1]);

@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-public class UnityRosWorld : DevicePlugin
+public class CLOiSimWorld : DevicePlugin
 {
 	private Clock clock = null;
 
@@ -18,7 +18,7 @@ public class UnityRosWorld : DevicePlugin
 		clock = gameObject.AddComponent<Clock>();
 
 		modelName = "World";
-		partName = "unity_ros";
+		partName = "cloisim_ros";
 	}
 
 	protected override void OnStart()

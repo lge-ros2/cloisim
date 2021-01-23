@@ -7,7 +7,7 @@
 using System.Collections;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
-using messages = gazebo.msgs;
+using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
@@ -85,7 +85,7 @@ namespace SensorDevices
 		{
 			DeviceHelper.SetCurrentTime(gps.Time);
 
-			// Get postion in Cartesian gazebo frame
+			// Get postion in Cartesian frame
 			var worldPosition = gpsLink.position;
 
 			// Apply position noise before converting to global frame

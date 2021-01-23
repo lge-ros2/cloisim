@@ -16,7 +16,7 @@ namespace SDF
 		public double B = 0.0;
 		public double A = 1.0;
 
-		public void SetByString(string value)
+		public void FromString(string value)
 		{
 			if (string.IsNullOrEmpty(value))
 				return;
@@ -71,25 +71,25 @@ namespace SDF
 			if (IsValidNode("ambient"))
 			{
 				ambient = new Color();
-				ambient.SetByString(GetValue<string>("ambient"));
+				ambient.FromString(GetValue<string>("ambient"));
 			}
 
 			if (IsValidNode("diffuse"))
 			{
 				diffuse = new Color();
-				diffuse.SetByString(GetValue<string>("diffuse"));
+				diffuse.FromString(GetValue<string>("diffuse"));
 			}
 
 			if (IsValidNode("specular"))
 			{
 				specular = new Color();
-				specular.SetByString(GetValue<string>("specular"));
+				specular.FromString(GetValue<string>("specular"));
 			}
 
 			if (IsValidNode("emissive"))
 			{
 				emissive = new Color();
-				emissive.SetByString(GetValue<string>("emissive"));
+				emissive.FromString(GetValue<string>("emissive"));
 			}
 		}
 	}

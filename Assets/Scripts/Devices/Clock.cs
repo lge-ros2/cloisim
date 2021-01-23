@@ -6,8 +6,8 @@
 
 using System.Collections;
 using UnityEngine;
-using messages = gazebo.msgs;
-using Any = gazebo.msgs.Any;
+using messages = cloisim.msgs;
+using Any = cloisim.msgs.Any;
 
 public class Clock : Device
 {
@@ -22,7 +22,7 @@ public class Clock : Device
 
 	protected override void OnAwake()
 	{
-		deviceName = "Unity Clock";
+		deviceName = "World Clock";
 	}
 
 	protected override void OnStart()

@@ -10,8 +10,8 @@ using System.Collections;
 using System.IO;
 using UnityEngine;
 using ProtoBuf;
-using Param = gazebo.msgs.Param;
-using Any = gazebo.msgs.Any;
+using Param = cloisim.msgs.Param;
+using Any = cloisim.msgs.Any;
 
 public partial class ElevatorSystem : DevicePlugin
 {

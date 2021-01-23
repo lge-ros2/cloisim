@@ -81,6 +81,15 @@ public class ModelLoader : MonoBehaviour
 		var worldPaths = worldPathEnv.Split(separator, StringSplitOptions.RemoveEmptyEntries);
 		worldRootDirectories.AddRange(worldPaths);
 #endif
+
+		// Load Library for Assimp
+#if UNITY_EDITOR
+		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/linux-x64/native";
+#else
+		var assimpLibraryPath = "./CLOiSim_Data/Plugins";
+#endif
+		Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath + "/libassimp");
+
 		Application.targetFrameRate = 61;
 
 		mainCamera = Camera.main;
@@ -222,7 +231,7 @@ public class ModelLoader : MonoBehaviour
 	}
 
 	/// <summary>
-	/// Eg:  CLOiSim.x86_64 -worldFile gazebo.world
+	/// Eg:  CLOiSim.x86_64 -worldFile lg_seocho.world
 	/// read the "-worldFile" command line argument
 	/// </summary>
 	private static string GetArgument(in string name)

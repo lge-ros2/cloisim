@@ -6,11 +6,11 @@
 
 using System.Runtime.InteropServices;
 using UnityEngine;
-using messages = gazebo.msgs;
+using messages = cloisim.msgs;
 
 public partial class DeviceHelper
 {
-	static Clock clock = null;
+	private static Clock clock = null;
 
 	public static Clock GetGlobalClock()
 	{
@@ -59,11 +59,11 @@ public partial class DeviceHelper
 	[DllImport("StdHash")]
 	public static extern ulong GetStringHashCode(string value);
 
-	public static void SetCurrentTime(in messages.Time gazeboMsgsTime, in bool useRealTime = false)
+	public static void SetCurrentTime(in messages.Time msgTime, in bool useRealTime = false)
 	{
 		try
 		{
-			if (gazeboMsgsTime != null)
+			if (msgTime != null)
 			{
 				if (clock == null)
 				{
@@ -78,8 +78,8 @@ public partial class DeviceHelper
 				var realTime = (clock == null) ? Time.realtimeSinceStartup : clock.GetRealTime();
 
 				var timeNow = (useRealTime) ? realTime : simTime;
-				gazeboMsgsTime.Sec = (int)timeNow;
-				gazeboMsgsTime.Nsec = (int)((timeNow - (float)gazeboMsgsTime.Sec) * (float)1e+9);
+				msgTime.Sec = (int)timeNow;
+				msgTime.Nsec = (int)((timeNow - (float)msgTime.Sec) * (float)1e+9);
 			}
 		}
 		catch

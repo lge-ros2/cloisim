@@ -8,7 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
-using messages = gazebo.msgs;
+using messages = cloisim.msgs;
 
 namespace SensorDevices
 {

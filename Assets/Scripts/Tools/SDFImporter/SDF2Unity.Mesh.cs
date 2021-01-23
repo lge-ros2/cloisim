@@ -274,7 +274,7 @@ public partial class SDF2Unity
 		// Create GameObjects from nodes
 		var nodeObject = ConvertAssimpNodeToGameObject(scene.RootNode, meshMats, scale.x, scale.y, scale.z);
 
-		// Rotate meshes for Unity world since all 3D object meshes are oriented to gazebo coordinates
+		// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
 		var meshRotation = Quaternion.Euler(eulerRotation.x, eulerRotation.y, eulerRotation.z);
 		foreach (var meshFilter in nodeObject.GetComponentsInChildren<MeshFilter>())
 		{

@@ -6,7 +6,7 @@
 
 using System.Runtime.InteropServices;
 using UnityEngine;
-using messages = gazebo.msgs;
+using messages = cloisim.msgs;
 
 public partial class DeviceHelper
 {

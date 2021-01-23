@@ -12,19 +12,17 @@ public partial class DeviceTransporter : MonoBehaviour
 {
 	public const bool isTCP = true; // Currently, NetMQ does not support UDP protocol
 	private ushort tagSize = 8;
-	public string defaultPipeAddress = "127.0.0.1";
+	public string bridgeAddress = "127.0.0.1";
 	private int highwatermark = 1000;
 
 	protected void InitializeTransporter()
 	{
-		var enviromentPipeAddress = Environment.GetEnvironmentVariable("SIM_BRIDGE_IP");
+		var enviromentBridgeAddress = Environment.GetEnvironmentVariable("CLOISIM_BRIDGE_IP");
 
-		if (!string.IsNullOrEmpty(enviromentPipeAddress))
+		if (!string.IsNullOrEmpty(enviromentBridgeAddress))
 		{
-			defaultPipeAddress = enviromentPipeAddress;
+			SetPipeAddress(enviromentBridgeAddress);
 		}
-
-		SetPipeAddress(defaultPipeAddress);
 	}
 
 	protected void DestroyTransporter()
@@ -45,14 +43,14 @@ public partial class DeviceTransporter : MonoBehaviour
 		tagSize = value;
 	}
 
-	public void SetPipeAddress(in string pipeAddress)
+	public void SetPipeAddress(in string address)
 	{
-		defaultPipeAddress = pipeAddress;
+		bridgeAddress = address;
 	}
 
 	private string GetAddress(in ushort port)
 	{
-		return ((isTCP)?"tcp":"udp") + "://" + defaultPipeAddress + ":" + port;
+		return ((isTCP)?"tcp":"udp") + "://" + bridgeAddress + ":" + port;
 	}
 
 	private bool StoreTag(ref byte[] targetBuffer, in byte[] targetTag)

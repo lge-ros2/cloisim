@@ -16,14 +16,14 @@ public class SimulationService : MonoBehaviour
 	public const string Delimiter = "!%!";
 
 	public string defaultWebSocketAddress = "127.0.0.1";
-	public int defaultWebSocketPort = 8080;
+	public int defaultWebSocketServicePort = 8080;
 
 	private WebSocketServer wsServer = null;
 
 	void Awake()
 	{
 		var wsAddress = IPAddress.Parse(defaultWebSocketAddress);
-		wsServer = new WebSocketServer(wsAddress, defaultWebSocketPort);
+		wsServer = new WebSocketServer(wsAddress, defaultWebSocketServicePort);
 	}
 
 	// Start is called before the first frame update
@@ -57,12 +57,16 @@ public class SimulationService : MonoBehaviour
 
 		wsServer.AddWebSocketService<SimulationControlService>("/control", () => new SimulationControlService()
 		{
+			IgnoreExtensions = true,
 			modelLoader = modelLoaderComponent,
 			bridgeManager = bridgeManagerComponent
 		});
 
 		var markerVisualizer = gameObject.GetComponent<MarkerVisualizer>();
-		wsServer.AddWebSocketService<MarkerVisualizerService>("/markers", () => new MarkerVisualizerService(markerVisualizer));
+		wsServer.AddWebSocketService<MarkerVisualizerService>("/markers", () => new MarkerVisualizerService(markerVisualizer)
+		{
+			IgnoreExtensions = true
+		});
 	}
 
 	void OnDestroy()

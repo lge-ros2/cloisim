@@ -37,7 +37,7 @@ namespace SDF
 				Type = "box";
 				shape = new Box();
 				string sizeStr = GetValue<string>("box/size");
-				(shape as Box).size.SetByString(sizeStr);
+				(shape as Box).size.FromString(sizeStr);
 			}
 			else if (IsValidNode("mesh"))
 			{
@@ -49,7 +49,7 @@ namespace SDF
 				if (string.IsNullOrEmpty(scale))
 					(shape as Mesh).scale.Set(1.0f, 1.0f, 1.0f);
 				else
-					(shape as Mesh).scale.SetByString(scale);
+					(shape as Mesh).scale.FromString(scale);
 
 				// Console.WriteLine("mesh uri : " + (shape as Mesh).uri + ", scale:" + scale);
 			}
@@ -71,10 +71,10 @@ namespace SDF
 				Type = "plane";
 				shape = new Plane();
 				string normal = GetValue<string>("plane/normal");
-				(shape as Plane).normal.SetByString(normal);
+				(shape as Plane).normal.FromString(normal);
 
 				string size = GetValue<string>("plane/size");
-				(shape as Plane).size.SetByString(size);
+				(shape as Plane).size.FromString(size);
 			}
 			else if (IsValidNode("height") ||
 					 IsValidNode("image") ||

@@ -5,20 +5,49 @@ Dockerfile creates minimal image with Vulkan capabilities, and downloads latest 
 
 ## Prerequisite
 
-Make sure you if NVIDIA Container Toolkit is already installed on your machine.
+Make sure you if NVIDIA Container Toolkit and Docker are already installed on your machine.
+
+### docker
+Please refer to [here](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) for latest guideline
 
 ```shell
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+$ sudo apt-get update
 
-sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
-sudo systemctl restart docker
+$ sudo apt-get install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg-agent \
+    software-properties-common
+
+$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+$ sudo add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
+
+$ sudo apt-get update
+$ sudo apt-get install docker-ce docker-ce-cli containerd.io
 ```
 
+### nvidia-docker
+
+Refer here for install guide [nvidia-docker2](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker).
 It may differ from latest guide.
 
-Refer here for install guide [nvidia-docker](https://github.com/NVIDIA/nvidia-docker).
+```shell
+$ distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+   && curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add - \
+   && curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+
+$ sudo apt-get update
+$ sudo apt-get install -y nvidia-docker2
+$ sudo systemctl restart docker
+
+### test if it installed successfully
+$ sudo docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
+```
 
 ## Run Docker
 
@@ -31,6 +60,22 @@ docker build -t cloisim .
 ```
 
 ### run docker container
+
+You can change paths for resources in docker run command.
+
+For example,
+
+change to
+
+```shell
+-v ${CLOISIM_RESOURCES_PATH}/assets/models:/opt/resources/models/
+```
+
+instead of
+
+```shell
+-v ${CLOISIM_RESOURCES_PATH}/models:/opt/resources/models/
+```
 
 #### Option A
 
@@ -62,6 +107,6 @@ export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample-resources/
 
 refer to [samples_resource](https://github.com/lge-ros2/sample-resources) more details about resource
 
----------------------------
+-------------------------------
 
-This docker image has been tested on __Ubuntu 18.04__.
+This docker image has been tested on __Ubuntu 20.04__.

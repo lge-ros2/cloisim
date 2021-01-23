@@ -8,8 +8,8 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using ProtoBuf;
-using messages = gazebo.msgs;
-using Any = gazebo.msgs.Any;
+using messages = cloisim.msgs;
+using Any = cloisim.msgs.Any;
 
 public class RealSensePlugin : DevicesPlugin
 {

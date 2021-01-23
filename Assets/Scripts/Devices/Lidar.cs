@@ -9,7 +9,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Stopwatch = System.Diagnostics.Stopwatch;
-using messages = gazebo.msgs;
+using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
