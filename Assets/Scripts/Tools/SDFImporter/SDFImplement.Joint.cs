@@ -51,6 +51,8 @@ public partial class SDFImplement
 			// axisInfo2.limit_lower;
 			// axisInfo2.limit_upper;
 
+			jointComponent.projectionMode = JointProjectionMode.PositionAndRotation;
+
 			return jointComponent;
 		}
 
@@ -85,6 +87,8 @@ public partial class SDFImplement
 			jointComponent.xDrive = zeroJointDriver;
 			jointComponent.yDrive = zeroJointDriver;
 			jointComponent.zDrive = zeroJointDriver;
+
+			jointComponent.projectionMode = JointProjectionMode.PositionAndRotation;
 
 			return jointComponent;
 		}
@@ -143,6 +147,8 @@ public partial class SDFImplement
 
 			jointComponent.angularXDrive = zeroJointDriver;
 			jointComponent.angularYZDrive = zeroJointDriver;
+
+			jointComponent.projectionMode = JointProjectionMode.PositionAndRotation;
 
 			return jointComponent;
 		}
@@ -206,7 +212,7 @@ public partial class SDFImplement
 			}
 
 			jointComponent.enableCollision = false;
-			jointComponent.enablePreprocessing = true;
+			jointComponent.enablePreprocessing = false;
 
 			jointComponent.breakForce = Mathf.Infinity;
 			jointComponent.breakTorque = Mathf.Infinity;

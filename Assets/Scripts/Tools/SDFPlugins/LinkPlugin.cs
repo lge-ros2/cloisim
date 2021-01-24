@@ -47,8 +47,6 @@ public class LinkPlugin : MonoBehaviour
 				MakeStaticLink();
 			}
 		}
-
-		ScaleMassOnJoint();
 	}
 
 	void OnJointBreak(float breakForce)
@@ -139,35 +137,6 @@ public class LinkPlugin : MonoBehaviour
 			if (childRigidBody != null)
 			{
 				childRigidBody.isKinematic = true;
-			}
-		}
-	}
-
-	private void ScaleMassOnJoint()
-	{
-		var thisJoints = this.GetComponents<Joint>();
-		foreach (var thisJoint in thisJoints)
-		{
-			if (thisJoint && thisJoint.GetType() != typeof(FixedJoint))
-			{
-				var connectedBody = thisJoint.connectedBody;
-				var connectedBodyObject = thisJoint.connectedBody.gameObject;
-
-				if (connectedBody && connectedBodyObject && connectedBodyObject.tag.Equals("Link"))
-				{
-					var thisBody = GetComponent<Rigidbody>();
-
-					if (connectedBody.mass > thisBody.mass)
-					{
-						thisJoint.massScale = 1;
-						thisJoint.connectedMassScale = connectedBody.mass / thisBody.mass;
-					}
-					else
-					{
-						thisJoint.massScale = thisBody.mass / connectedBody.mass;
-						thisJoint.connectedMassScale = 1;
-					}
-				}
 			}
 		}
 	}
