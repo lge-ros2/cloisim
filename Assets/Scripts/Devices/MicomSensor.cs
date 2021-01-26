@@ -401,8 +401,7 @@ public partial class MicomSensor : Device
 		var linearVelocity = (linearVelocityLeft + linearVelocityRight) * 0.5f;
 		var angularVelocity = (linearVelocityRight - linearVelocity) / (wheelBase * 0.5f);
 
-		motorLeft.Feedback.SetRotatingTargetVelocity(angularVelocity);
-		motorRight.Feedback.SetRotatingTargetVelocity(angularVelocity);
+		UpdateMotorFeedback(angularVelocity);
 	}
 
 	public void UpdateMotorFeedback(in float angularVelocity)
