@@ -12,7 +12,7 @@ public class PID
 	private float pGain_, iGain_, dGain_;
 	private float integral = 0;
 	private float lastError = 0;
-	private float outputMax = 1000f;
+	private float outputMax = 500f;
 
 	public PID(in float pGain, in float iGain, in float dGain)
 	{
