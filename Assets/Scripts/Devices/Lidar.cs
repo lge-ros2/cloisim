@@ -42,7 +42,7 @@ namespace SensorDevices
 		public double verticalAngleMax = 0;
 
 		[ColorUsage(true)]
-		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.2f);
+		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.15f);
 
 		private Transform lidarLink = null;
 		private ShadowQuality originalShadowSettings_;
@@ -180,7 +180,7 @@ namespace SensorDevices
 			var renderTextrueWidth = Mathf.CeilToInt(laserCameraHFov / laserHAngleResolution);
 			var aspectRatio = Mathf.Tan(laserCameraVFov / 2 * Mathf.Deg2Rad) / Mathf.Tan(laserCameraHFov / 2 * Mathf.Deg2Rad);
 			var renderTextrueHeight = Mathf.CeilToInt(renderTextrueWidth * aspectRatio);
-			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
+			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 16, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
 			{
 				name = "LidarDepthTexture"
 			};
@@ -336,10 +336,10 @@ namespace SensorDevices
 					dstBufferOffset = (int)samples - (Mathf.CeilToInt(samples * ((dataStartAngle - laserStartAngle) / laserTotalAngle)) + copyLength);
 				}
 				// end side of laser angle
-				else if (dataEndAngle > laserEndAngle)
+				else if (dataEndAngle >= laserEndAngle)
 				{
 					var srcLengthRatio = (laserEndAngle - dataStartAngle) / dataTotalAngle;
-					copyLength = Mathf.FloorToInt(outputBufferLength * srcLengthRatio);
+					copyLength = Mathf.CeilToInt(outputBufferLength * srcLengthRatio);
 					srcBufferOffset = outputBufferLength - copyLength;
 					dstBufferOffset = 0;
 				}
