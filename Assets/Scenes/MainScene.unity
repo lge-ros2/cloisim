@@ -780,7 +780,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a6319b2d05cfd18189eb02f180656d91, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bridgeAddress: 127.0.0.1
 --- !u!114 &249819589
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -810,7 +809,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b35ad012dfd6abcba18e5bd9503dd4f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultWebSocketAddress: 127.0.0.1
   defaultWebSocketServicePort: 8080
 --- !u!114 &249819592
 MonoBehaviour:
@@ -3115,7 +3113,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.6
+  near clip plane: 0.2
   far clip plane: 500
   field of view: 60
   orthographic: 0
