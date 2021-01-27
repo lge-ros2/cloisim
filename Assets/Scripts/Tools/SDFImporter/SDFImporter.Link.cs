@@ -76,13 +76,13 @@ public partial class SDFImporter : SDF.Importer
 
 			rigidBody.velocity = Vector3.zero;
 			rigidBody.angularVelocity = Vector3.zero;
-			rigidBody.drag = 0.05f;
-			rigidBody.angularDrag = 0.10f;
+			rigidBody.drag = 0.1f;
+			rigidBody.angularDrag = 0.50f;
 
 			rigidBody.useGravity = link.Gravity;
 			rigidBody.isKinematic = link.Kinematic;
 
-			rigidBody.mass = (float)(link.Inertial.mass);
+			rigidBody.mass = (float)link.Inertial.mass;
 
 			// rigidBody.ResetCenterOfMass();
 			// rigidBody.ResetInertiaTensor();
