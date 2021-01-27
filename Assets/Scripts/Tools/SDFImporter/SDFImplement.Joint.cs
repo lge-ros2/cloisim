@@ -158,58 +158,7 @@ public partial class SDFImplement
 			var linkTransform = linkObject.transform;
 
 			jointComponent.anchor = SDF2Unity.GetPosition(jointPosition);
-			jointComponent.autoConfigureConnectedAnchor = false;
-
-			if (jointComponent.autoConfigureConnectedAnchor == false)
-			{
-				var connectedAnchor = Vector3.zero;
-				var connectedBody = jointComponent.connectedBody;
-
-				var modelObject = linkTransform.parent;
-				var childRigidBodies = modelObject.GetComponentsInChildren<Rigidbody>(false);
-
-				// if linkObject is connected to the other object(sibling) which is in modelObject(parent),
-				// use the current position of linkObject itself.
-				if (Array.Exists(childRigidBodies, element => element == connectedBody))
-				{
-					// Debug.Log("Sibling connected!!!: " + linkTransform.name);
-					connectedAnchor = SDF2Unity.GetPosition(jointPosition) + linkTransform.localPosition;
-				}
-				else
-				{
-					var finalAnchor = modelObject.transform.localPosition;
-
-					var targetConnectedBody = connectedBody;
-					while (targetConnectedBody != null)
-					{
-						var targetModelObject = targetConnectedBody.transform.parent;
-
-						// check whether targetModelObject is top or not
-						if (SDF2Unity.CheckTopModel(targetModelObject))
-						{
-							break;
-						}
-						else
-						{
-							var targetConnectedBodyTransform = targetModelObject.localPosition;
-							finalAnchor -= targetConnectedBodyTransform;
-
-							if (targetConnectedBody.gameObject.TryGetComponent<UEJoint>(out var joint))
-							{
-								targetConnectedBody = joint.connectedBody;
-							}
-							else
-							{
-								break;
-							}
-						}
-					}
-
-					connectedAnchor = finalAnchor;
-				}
-
-				jointComponent.connectedAnchor = connectedAnchor;
-			}
+			jointComponent.autoConfigureConnectedAnchor = true;
 
 			jointComponent.enableCollision = false;
 			jointComponent.enablePreprocessing = false;
