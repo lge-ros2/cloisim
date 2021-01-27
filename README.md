@@ -71,9 +71,11 @@ Inertia factors which retrieved from SDF are NOT USED for rigidbody in Unity. Be
 
 ### Tested environement
 
-- Linux: Ubuntu 18.04
-- Intel(R) Core(TM) i7-8700K, 32GB, GeForce RTX 2070
-- Current editor version is *'2019.4.13f1 (LTS)'*.
+- Latest Unity Editor Version: *'2019.4.18f1 (LTS)'*.
+- Linux: Ubuntu 20.04.1
+- Processor: AMD® Ryzen 9 3900x 12-core processor × 24
+- Memory: 32GB
+- Graphics: NVIDIA Corporation TU102 [GeForce RTX 2080 Ti]
 
 ### Release version
 
@@ -142,6 +144,8 @@ New features or functions shall be developed on demand.
 - Upgrade quality of graphical elements
 
 - Change physics engine (havok or something else...) to find a stable one.
+
+- Change Unity Editor version to 2020.3 (LTS)
 
 - **If you have any troubles or issues, please don't hesitate to create a new issue on 'Issues'.**
   <https://github.com/lge-ros2/cloisim/issues>
