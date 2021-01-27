@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Net;
 using System;
 using UnityEngine;
 using WebSocketSharp.Server;
@@ -15,15 +14,13 @@ public class SimulationService : MonoBehaviour
 	public const string FAIL = "fail";
 	public const string Delimiter = "!%!";
 
-	public string defaultWebSocketAddress = "127.0.0.1";
 	public int defaultWebSocketServicePort = 8080;
 
 	private WebSocketServer wsServer = null;
 
 	void Awake()
 	{
-		var wsAddress = IPAddress.Parse(defaultWebSocketAddress);
-		wsServer = new WebSocketServer(wsAddress, defaultWebSocketServicePort);
+		wsServer = new WebSocketServer(defaultWebSocketServicePort);
 	}
 
 	// Start is called before the first frame update
