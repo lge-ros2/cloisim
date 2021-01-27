@@ -175,8 +175,6 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	void Awake()
 	{
-		InitializeTransporter();
-
 		var coreObject = GameObject.Find("Core");
 		if (coreObject == null)
 		{
