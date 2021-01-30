@@ -2,7 +2,7 @@
 
 ![Multi-robot](https://user-images.githubusercontent.com/21001946/82773215-75572480-9e7c-11ea-85a2-a3838fa1e190.png)
 
-Happy to announce CLOiSim. It is a new multi-robot simulator that uses an SDF(www.sdformat.org) file containing 3d world environemnts and robot descriptions.
+Happy to announce CLOiSim. It is a new multi-robot simulator that uses an [SDF](www.sdformat.org) file containing 3d world environemnts and robot descriptions.
 
 The simulator is based on Unity 3D. It may look similar to Gazebo, where, unfortunately, we encountered performance problems while loading multiple robots equipped with multiple sensors.
 
@@ -56,16 +56,22 @@ Refer to core codes in 'Assets/Scripts'.
 
 Shaders are also used to get depth buffer information in a few sensor model.
 
-Default physics engine 'Nvidia PhysX' is used for physics. and retrieve physics parameters from `<ode>` in sdf.
-And 'SDFPlugins' help physics tricky handling for jointing `<link>` ojbects by `<joint>` element. Because there are quite big constraints in terms of 'mass' relationship between rigidbody in PhysX engine.
+Default physics engine 'Nvidia PhysX' is used for physics. And it retrieves some of physics parameters from `<ode>` in sdf.
+'SDFPlugins' help physics tricky handling for jointing `<link>` ojbects by `<joint>` element.
 
-- You could find details about these struggling issue with PhysX in unity forums. -> [this thread](https://forum.unity.com/threads/ape-deepmotion-avatar-physics-engine-for-robust-joints-and-powerful-motors.259889/)
-  - Mass ratio between two joined rigid bodies is limited to less than 1:10 in order to maintain joint stability
-  - Motors are soft and cannot deliver enough power to drive multi-level articulated robotics
-  - Wheels wobble around their joint axis under heavy load
-  - Simulation step size (time interval) has to be reduced to too small to provide the needed accuracy which kills the performance
+We've deceided to change a solver type of physics engine since new solver "TGS(Temporal Gauss Seidel)" is intorduced recently(PhysX 4.1).
 
-Inertia factors which retrieved from SDF are NOT USED for rigidbody in Unity. Because it cause unexpected behavior with physX engine.
+So from latest version([CLOiSim-1.11.0](https://github.com/lge-ros2/cloisim/releases/tag/1.11.0)), there is NO more constaints for rigidbodies by PGS(Projected Gauss Seidel) solver type.
+
+In previous with PGS solver has big constraints in terms of 'mass' relationship between rigidbodies.
+
+- ~~You could find details about these struggling issue with PhysX in unity forums. -> [this thread](https://forum.unity.com/threads/ape-deepmotion-avatar-physics-engine-for-robust-joints-and-powerful-motors.259889/)~~
+  - ~~Mass ratio between two joined rigid bodies is limited to less than 1:10 in order to maintain joint stability~~
+  - ~~Motors are soft and cannot deliver enough power to drive multi-level articulated robotics~~
+  - ~~Wheels wobble around their joint axis under heavy load~~
+  - ~~Simulation step size (time interval) has to be reduced to too small to provide the needed accuracy which kills the performance~~
+
+But inertia factors which retrieved from SDF are still NOT USED for rigidbody in Unity. Because it could cause unexpected behavior with physX engine.
 
 ## Getting Started
 
@@ -145,7 +151,7 @@ New features or functions shall be developed on demand.
 
 - Change physics engine (havok or something else...) to find a stable one.
 
-- Change Unity Editor version to 2020.3 (LTS)
+- Change Unity Editor version to 2020.3 (LTS) to utilize 'articulation body'.
 
 - **If you have any troubles or issues, please don't hesitate to create a new issue on 'Issues'.**
   <https://github.com/lge-ros2/cloisim/issues>
