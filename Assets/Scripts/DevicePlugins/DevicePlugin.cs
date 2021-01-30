@@ -31,7 +31,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	private Pose devicePluginPose = Pose.identity;
 
 	public string pluginName { get; protected set; } = string.Empty;
-	protected PluginParameters parameters = new PluginParameters();
+	protected SDF.Helper.PluginParameters parameters = new SDF.Helper.PluginParameters();
 
 	protected MemoryStream msForInfoResponse = new MemoryStream();
 

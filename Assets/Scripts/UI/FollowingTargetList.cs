@@ -62,12 +62,12 @@ public class FollowingTargetList : MonoBehaviour
 
 		if (modelRoot != null)
 		{
-			foreach (var modelPlugin in modelRoot.GetComponentsInChildren<ModelPlugin>())
+			foreach (var modelHelper in modelRoot.GetComponentsInChildren<SDF.Helper.Model>())
 			{
-				if (modelPlugin.IsTopModel && !(modelPlugin.isStatic))
+				if (modelHelper.isTopModel && !(modelHelper.isStatic))
 				{
 					var newOption = new TMP_Dropdown.OptionData();
-					newOption.text = modelPlugin.name;
+					newOption.text = modelHelper.name;
 					dropdown.options.Add(newOption);
 				}
 			}

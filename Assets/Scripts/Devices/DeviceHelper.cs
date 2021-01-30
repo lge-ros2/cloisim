@@ -18,6 +18,11 @@ public partial class DeviceHelper
 		{
 			var coreObject = GameObject.Find("Core");
 			clock = coreObject?.GetComponent<Clock>();
+
+			if (clock == null)
+			{
+					clock = coreObject.AddComponent<Clock>();
+			}
 		}
 
 		return clock;
@@ -27,13 +32,13 @@ public partial class DeviceHelper
 	{
 		try
 		{
-			var nextObject = targetObject.GetComponentInParent<ModelPlugin>();
+			var nextObject = targetObject.GetComponentInParent<SDF.Helper.Model>();
 
 			if (searchOnlyOneDepth == false)
 			{
 				while (!nextObject.transform.parent.Equals(nextObject.transform.root))
 				{
-					nextObject = nextObject.transform.parent.GetComponentInParent<ModelPlugin>();
+					nextObject = nextObject.transform.parent.GetComponentInParent<SDF.Helper.Model>();
 
 					if (nextObject == null)
 					{
@@ -59,33 +64,16 @@ public partial class DeviceHelper
 	[DllImport("StdHash")]
 	public static extern ulong GetStringHashCode(string value);
 
-	public static void SetCurrentTime(in messages.Time msgTime, in bool useRealTime = false)
+	public static void SetCurrentTime(messages.Time msgTime, in bool useRealTime = false)
 	{
-		try
+		if (msgTime == null)
 		{
-			if (msgTime != null)
-			{
-				if (clock == null)
-				{
-					var coreObject = GameObject.Find("Core");
-					if (coreObject != null)
-					{
-						clock = coreObject.GetComponent<Clock>();
-					}
-				}
-
-				var simTime = (clock == null) ? Time.time : clock.GetSimTime();
-				var realTime = (clock == null) ? Time.realtimeSinceStartup : clock.GetRealTime();
-
-				var timeNow = (useRealTime) ? realTime : simTime;
-				msgTime.Sec = (int)timeNow;
-				msgTime.Nsec = (int)((timeNow - (float)msgTime.Sec) * (float)1e+9);
-			}
+			msgTime = new messages.Time();
 		}
-		catch
-		{
-			Debug.LogError("time message is not initialized yet.");
-		}
+
+		var timeNow = (useRealTime) ? GetGlobalClock().GetRealTime() : GetGlobalClock().GetSimTime();
+		msgTime.Sec = (int)timeNow;
+		msgTime.Nsec = (int)((timeNow - (float)msgTime.Sec) * (float)1e+9);
 	}
 
 	public static void SetVector3d(messages.Vector3d vector3d, in Vector3 position)

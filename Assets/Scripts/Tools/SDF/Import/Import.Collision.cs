@@ -1,0 +1,52 @@
+/*
+ * Copyright (c) 2020 LG Electronics Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+using UE = UnityEngine;
+#if UNITY_EDITOR
+using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;
+#endif
+
+namespace SDF
+{
+	namespace Import
+	{
+		public partial class Loader : Base
+		{
+			protected override System.Object ImportCollision(in SDF.Collision collision, in System.Object parentObject)
+			{
+				var targetObject = (parentObject as UE.GameObject);
+				var newCollisionObject = new UE.GameObject(collision.Name);
+				newCollisionObject.tag = "Collision";
+
+				SetParentObject(newCollisionObject, targetObject);
+
+				return newCollisionObject as System.Object;
+			}
+
+			protected override void PostImportCollision(in SDF.Collision collision, in System.Object targetObject)
+			{
+				var collisionObject = (targetObject as UE.GameObject);
+
+				// Make collision region for Collision
+				if (collisionObject.CompareTag("Collision"))
+				{
+					Implement.Collision.Make(collisionObject);
+
+#if UNITY_EDITOR
+					SceneVisibilityManager.instance.ToggleVisibility(collisionObject, true);
+					SceneVisibilityManager.instance.DisablePicking(collisionObject, true);
+#endif
+				}
+
+				// Due to making collision function, it should be called after make collision regioin
+				collisionObject.transform.localPosition = SDF2Unity.GetPosition(collision.Pose.Pos);
+				collisionObject.transform.localRotation = SDF2Unity.GetRotation(collision.Pose.Rot);
+
+				Implement.Collision.SetPhysicalMaterial(collision.GetSurface(), collisionObject);
+			}
+		}
+	}
+}

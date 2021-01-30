@@ -49,13 +49,13 @@ public class SimulationService : MonoBehaviour
 			return;
 		}
 
-		var modelLoaderComponent = gameObject.GetComponent<ModelLoader>();
+		var mainComponent = gameObject.GetComponent<Main>();
 		var bridgeManagerComponent = gameObject.GetComponent<BridgeManager>();
 
 		wsServer.AddWebSocketService<SimulationControlService>("/control", () => new SimulationControlService()
 		{
 			IgnoreExtensions = true,
-			modelLoader = modelLoaderComponent,
+			main = mainComponent,
 			bridgeManager = bridgeManagerComponent
 		});
 

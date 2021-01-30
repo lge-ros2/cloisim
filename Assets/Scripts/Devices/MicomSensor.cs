@@ -64,7 +64,7 @@ public partial class MicomSensor : Device
 		var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
 		var brakeFriction = GetPluginParameters().GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
 
-		var modelList = GetComponentsInChildren<ModelPlugin>();
+		var modelList = GetComponentsInChildren<SDF.Helper.Model>();
 		foreach (var model in modelList)
 		{
 			// Debug.Log(model.name);
@@ -161,7 +161,7 @@ public partial class MicomSensor : Device
 		{
 			if (GetPluginParameters().GetValues<string>("bumper/joint_name", out var bumperJointNameList))
 			{
-				var linkList = GetComponentsInChildren<LinkPlugin>();
+				var linkList = GetComponentsInChildren<SDF.Helper.Link>();
 				foreach (var link in linkList)
 				{
 					foreach (var bumperJointName in bumperJointNameList)

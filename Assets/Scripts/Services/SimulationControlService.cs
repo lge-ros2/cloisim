@@ -73,7 +73,7 @@ public class SimulationControlResponseTopicList : SimulationControlResponseBase
 
 public class SimulationControlService : WebSocketBehavior
 {
-	public ModelLoader modelLoader = null;
+	public Main main = null;
 	public BridgeManager bridgeManager = null;
 
 	protected override void OnOpen()
@@ -112,7 +112,7 @@ public class SimulationControlService : WebSocketBehavior
 		{
 			case "reset":
 				{
-					var wasSuccessful = modelLoader.TriggerResetService();
+					var wasSuccessful = main.TriggerResetService();
 					var result = (wasSuccessful) ? SimulationService.SUCCESS : SimulationService.FAIL;
 
 					output = new SimulationControlResponseNormal();
