@@ -447,7 +447,7 @@ namespace RuntimeGizmos
 					var hitObject = hitInfo.transform.gameObject;
 
 					var hitParentObject = hitObject.transform.parent?.gameObject;
-					if (hitParentObject != null && hitParentObject.tag.Equals("Model"))
+					if (hitParentObject != null && hitParentObject.tag.Equals("Model") && hitParentObject.GetComponent<SDF.Helper.Model>().isTopModel)
 					{
 						// Debug.Log(hitParentObject.name + " Selected!!!!");
 						target = hitParentObject.transform;

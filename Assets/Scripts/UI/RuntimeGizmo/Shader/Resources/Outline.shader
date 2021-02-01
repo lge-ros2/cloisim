@@ -2,8 +2,8 @@
 
 Shader "Custom/Outline" {
 	Properties {
-		_OutlineColor ("Outline Color", Color) = (1, .3, 0, 0.20)
-		_Outline ("Outline width", Range (0, 1)) = .02
+		_OutlineColor ("Outline Color", Color) = (1, .25, 0, 0.15)
+		_Outline ("Outline width", Range (0, 1)) = .01
 	}
 
 	SubShader {

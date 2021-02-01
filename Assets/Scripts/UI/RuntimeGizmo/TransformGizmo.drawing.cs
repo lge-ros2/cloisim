@@ -412,7 +412,7 @@ namespace RuntimeGizmos
 			renderers.Clear();
 			if (target != null)
 			{
-				target.GetComponentsInChildren<Renderer>(true, renderers);
+				target.GetComponentsInChildren<Renderer>(false, renderers);
 			}
 		}
 
@@ -467,7 +467,7 @@ namespace RuntimeGizmos
 
 				for (int i = 0; i < renderersBuffer.Count; i++)
 				{
-					Renderer render = renderersBuffer[i];
+					var render = renderersBuffer[i];
 
 					if (!highlightedRenderers.Contains(render))
 					{
