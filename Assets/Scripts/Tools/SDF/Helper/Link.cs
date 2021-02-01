@@ -64,7 +64,7 @@ namespace SDF
 				for (var index = 0; index < collisionInfo.contactCount; index++)
 				{
 					var contact = collisionInfo.contacts[index];
-					UE.Debug.DrawRay(contact.point, contact.normal * 1.2f, UE.Color.blue);
+					UE.Debug.DrawRay(contact.point, contact.normal, UE.Color.blue);
 					// Debug.Log(name + " |Stay| " + "," + contact.point + ", " + contact.separation.ToString("F5"));
 				}
 			}
