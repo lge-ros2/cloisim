@@ -160,7 +160,7 @@ namespace SDF
 				jointComponent.autoConfigureConnectedAnchor = true;
 
 				jointComponent.enableCollision = false;
-				jointComponent.enablePreprocessing = false;
+				jointComponent.enablePreprocessing = true;
 
 				jointComponent.breakForce = UE.Mathf.Infinity;
 				jointComponent.breakTorque = UE.Mathf.Infinity;

@@ -96,6 +96,9 @@ namespace SDF
 					// rigidBody.inertiaTensor = GetInertiaTensor(link.Inertial);
 					// rigidBody.inertiaTensorRotation = Quaternion.identity;
 					// Debug.Log(rigidBody.name + " => Center Of Mass: " + rigidBody.centerOfMass.ToString("F6") + ", intertia: " + rigidBody.inertiaTensor.ToString("F6") + ", " + rigidBody.inertiaTensorRotation.ToString("F6"));
+					Debug.Log(rigidBody.name + " => sleep threshold: " + rigidBody.sleepThreshold + ", " + rigidBody.sleepVelocity + ", " + rigidBody.sleepAngularVelocity);
+					Debug.Log(rigidBody.name + " => is sleeping: " + rigidBody.IsSleeping());
+					// rigidBody.Sleep();
 				}
 				else
 				{

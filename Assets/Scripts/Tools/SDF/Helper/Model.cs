@@ -52,7 +52,7 @@ namespace SDF
 
 				// Configure rigidbody for root object
 				var rigidBody = gameObject.AddComponent<UE.Rigidbody>();
-				rigidBody.mass = 0.0001f;
+				rigidBody.mass = 0.0000001f;
 				rigidBody.drag = 0;
 				rigidBody.angularDrag = 0;
 				rigidBody.useGravity = false;
@@ -63,7 +63,7 @@ namespace SDF
 				var fixedJoint = gameObject.AddComponent<UE.FixedJoint>();
 				fixedJoint.connectedBody = targetRigidBody;
 				fixedJoint.enableCollision = false;
-				fixedJoint.enablePreprocessing = false;
+				fixedJoint.enablePreprocessing = true;
 				fixedJoint.massScale = 1;
 				fixedJoint.connectedMassScale = 1;
 
