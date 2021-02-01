@@ -35,11 +35,6 @@ public class ObjectSpawning : MonoBehaviour
 		mainCam = Camera.main;
 	}
 
-	// Start is called before the first frame update
-	void Start()
-	{
-	}
-
 	private GameObject CreateProps(in string name, in Mesh targetMesh)
 	{
 		var newObject = new GameObject(name);

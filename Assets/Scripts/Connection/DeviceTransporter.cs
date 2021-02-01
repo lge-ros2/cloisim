@@ -10,7 +10,6 @@ using UnityEngine;
 
 public partial class DeviceTransporter : MonoBehaviour
 {
-	public const bool isTCP = true; // Currently, NetMQ does not support UDP protocol
 	private ushort tagSize = 8;
 	private int highwatermark = 1000;
 
@@ -34,7 +33,7 @@ public partial class DeviceTransporter : MonoBehaviour
 
 	private string GetAddress(in ushort port)
 	{
-		return ((isTCP)?"tcp":"udp") + "://*:" + port;
+		return "tcp://*:" + port;
 	}
 
 	private bool StoreTag(ref byte[] targetBuffer, in byte[] targetTag)
