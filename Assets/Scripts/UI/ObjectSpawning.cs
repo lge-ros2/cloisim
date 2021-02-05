@@ -35,11 +35,6 @@ public class ObjectSpawning : MonoBehaviour
 		mainCam = Camera.main;
 	}
 
-	// Start is called before the first frame update
-	void Start()
-	{
-	}
-
 	private GameObject CreateProps(in string name, in Mesh targetMesh)
 	{
 		var newObject = new GameObject(name);
@@ -200,6 +195,9 @@ public class ObjectSpawning : MonoBehaviour
 		GUI.Label(rectShadow, value);
 	}
 
+	private string prevScaleFactorString;
+	private bool checkScaleFactorFocused = false;
+	private bool doCheckScaleFactorValue = false;
 	void OnGUI()
 	{
 		GUI.skin.label.alignment = TextAnchor.MiddleRight;
@@ -230,13 +228,27 @@ public class ObjectSpawning : MonoBehaviour
 		var rectScale = rectScaleLabel;
 		rectScale.x += 50;
 		rectScale.width = 40;
-		var prevScaleFactorString = scaleFactorString;
 		GUI.color = Color.white;
+		GUI.SetNextControlName("ScaleField");
 		scaleFactorString = GUI.TextField(rectScale, scaleFactorString, 5);
 
-  		if (GUI.changed)
+		if (checkScaleFactorFocused && !GUI.GetNameOfFocusedControl().Equals("ScaleField"))
 		{
-			if (string.IsNullOrEmpty(scaleFactorString))
+			doCheckScaleFactorValue = true;
+			checkScaleFactorFocused = false;
+			// Debug.Log("Focused out!!");
+		}
+		else if (!checkScaleFactorFocused && GUI.GetNameOfFocusedControl().Equals("ScaleField"))
+		{
+			// Debug.Log("Focused!!!");
+			checkScaleFactorFocused = true;
+			prevScaleFactorString = scaleFactorString;
+		}
+
+		if (doCheckScaleFactorValue)
+		{
+			// Debug.Log("Do check!! previous " + prevScaleFactorString);
+			if (string.IsNullOrEmpty(scaleFactorString) )
 			{
 				scaleFactorString = prevScaleFactorString;
 			}
@@ -244,13 +256,13 @@ public class ObjectSpawning : MonoBehaviour
 			{
 				if (float.TryParse(scaleFactorString, out var scaleFactor))
 				{
-					if (scaleFactor < 0.3f)
+					if (scaleFactor < 0.1f)
 					{
-						scaleFactorString = "0.3";
+						scaleFactorString = "0.1";
 					}
-					else if (scaleFactor > 2f)
+					else if (scaleFactor > 5f)
 					{
-						scaleFactorString = "2";
+						scaleFactorString = "5";
 					}
 				}
 				else
@@ -258,6 +270,7 @@ public class ObjectSpawning : MonoBehaviour
 					scaleFactorString = prevScaleFactorString;
 				}
 			}
+			doCheckScaleFactorValue = false;
 		}
 	}
 }

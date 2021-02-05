@@ -13,7 +13,7 @@ public partial class DeviceTransporter
 {
 	private SubscriberSocket subscriberSocket = null;
 
-	TimeSpan timeoutForSubscribe = TimeSpan.FromMilliseconds(500);
+	private TimeSpan timeoutForSubscribe = TimeSpan.FromMilliseconds(500);
 
 	private byte[] hashValueForSubscription = null;
 

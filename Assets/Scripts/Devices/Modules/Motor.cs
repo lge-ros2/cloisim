@@ -12,7 +12,7 @@ public class Motor : MonoBehaviour
 	public class RapidChangeControl
 	{
 		private bool _directionSwitched = false;
-		private int _maxWaitCount = 20;
+		private const int _maxWaitCount = 20;
 		private int _waitForStopCount = 0;
 
 		public void SetDirectionSwitched(in bool switched)
@@ -41,14 +41,16 @@ public class Motor : MonoBehaviour
 
 	public class MotorMotionFeedback
 	{
-		public float compensatingVelocityIncrease = 0.3f;
-		public float compensatingVelocityDecrease = 0.7f;
-		
+		public float compensatingVelocityIncrease = 0.25f;
+		public float compensatingVelocityDecrease = 0.65f;
+
 		private bool _isRotating = false;
 		private float _currentTwistAngularVelocity = 0;
 		private float _targetTwistAngularVelocity = 0;
 
 		private float _compensateValue = 0;
+
+		public bool IsMotionRotating => _isRotating;
 
 		public void SetMotionRotating(in bool enable)
 		{
@@ -74,7 +76,7 @@ public class Motor : MonoBehaviour
 
 		public float Compensate()
 		{
-			if (_isRotating)
+			if (IsMotionRotating)
 			{
 				if (IsTargetReached() == false)
 				{
@@ -84,7 +86,7 @@ public class Motor : MonoBehaviour
 				else
 				{
 					_compensateValue -= compensatingVelocityDecrease;
-					
+
 					if (_compensateValue < 0)
 					{
 						_compensateValue = 0;
@@ -95,7 +97,7 @@ public class Motor : MonoBehaviour
 			{
 				_compensateValue = 0;
 			}
-		
+
 			return _compensateValue;
 		}
 	}
@@ -107,12 +109,12 @@ public class Motor : MonoBehaviour
 	private bool _enableMotor = false;
 	private float _lastAngle = 0f;
 	private float _targetAngularVelocity = 0f;
-	
-	public float compensatingRatio = 1.125f; // compensting target velocity
+
+	public const float compensatingRatio = 1.25f; // compensting target velocity
 
 	private RapidChangeControl _rapidControl = new RapidChangeControl();
 	private MotorMotionFeedback _feedback = new MotorMotionFeedback();
-	
+
 	public MotorMotionFeedback Feedback => _feedback;
 
 	public string GetMotorName()
@@ -159,7 +161,7 @@ public class Motor : MonoBehaviour
 		{
 			_enableMotor = true;
 
-			if (_targetAngularVelocity != 0)
+			if (_targetAngularVelocity != 0 && _feedback.IsMotionRotating)
 			{
 				if (Mathf.Sign(_targetAngularVelocity) == Mathf.Sign(targetAngularVelocity))
 				{
@@ -172,7 +174,9 @@ public class Motor : MonoBehaviour
 				}
 			}
 
-			_targetAngularVelocity = targetAngularVelocity * compensatingRatio;
+			const float compensateThreshold = 10.0f;
+
+			_targetAngularVelocity = targetAngularVelocity * ((Mathf.Abs(targetAngularVelocity) < compensateThreshold)? compensatingRatio:1.0f);
 		}
 
 		pidControl.Reset();
@@ -192,7 +196,7 @@ public class Motor : MonoBehaviour
 		_lastAngle = currentAngle;
 
 		var currentVelocity = rotatedAngle / Time.fixedDeltaTime;
-		
+
 		var targetAngle = _targetAngularVelocity * Time.fixedDeltaTime;
 
 		// Compensate target angular velocity
@@ -212,7 +216,7 @@ public class Motor : MonoBehaviour
 		}
 		else
 		{
-			commandForce = pidControl.Update(targetAngle, rotatedAngle, Time.fixedDeltaTime); 
+			commandForce = pidControl.Update(targetAngle, rotatedAngle, Time.fixedDeltaTime);
 
 			// Debug.Log(GetMotorName() + ", " + _targetAngularVelocity + " +- " + targetAngularVelocityCompensation + " = " + compensatedTargetAngularVelocity);
 

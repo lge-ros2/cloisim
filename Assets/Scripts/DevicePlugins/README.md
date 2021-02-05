@@ -6,7 +6,7 @@ Each class name is important to load plugin in SDF. Class name should be exact t
 
 For example, if it describes a name with 'RobotControl' in `<plugin>` attributesm, SDF Parser will start to find a filename in plugin element as 'RobotControl' in Unity project.
 
-```
+```xml
 <model>
   ...
   ...

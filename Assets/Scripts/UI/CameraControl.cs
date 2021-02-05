@@ -32,8 +32,6 @@ public class CameraControl : MonoBehaviour
 	private float totalRun = 1.0f;
 	private float edgeSensAccumlated = 0.0f;
 
-	private Vector3 lastMousePrevious = Vector3.zero;
-
 	void LateUpdate()
 	{
 		if (blockControl)
@@ -93,8 +91,7 @@ public class CameraControl : MonoBehaviour
 
 		lastMouse = Input.mousePosition;
 
-		//Keyboard commands
-		//float f = 0.0f;
+		// Keyboard commands
 		var p = GetBaseInput();
 		if (Input.GetKey(KeyCode.LeftShift))
 		{
@@ -115,7 +112,7 @@ public class CameraControl : MonoBehaviour
 		var newPosition = transform.position;
 		if (Input.GetKey(KeyCode.Space))
 		{
-			//If player wants to move on X and Z axis only
+			// If player wants to move on X and Z axis only
 			transform.Translate(p);
 			newPosition.x = transform.position.x;
 			newPosition.z = transform.position.z;
@@ -130,35 +127,35 @@ public class CameraControl : MonoBehaviour
 	private Vector3 GetBaseInput()
 	{
 		//returns the basic values, if it's 0 than it's not active.
-		Vector3 p_Velocity = new Vector3();
+		var baseDirection = new Vector3();
 
-		if (Input.GetKey(KeyCode.W))
+		if (Input.GetKey(KeyCode.W) || Input.GetAxis("Mouse ScrollWheel") > 0)
 		{
-			p_Velocity += new Vector3(0, 0, 1);
+			baseDirection += new Vector3(0, 0, 1);
 		}
-		else if (Input.GetKey(KeyCode.S))
+		else if (Input.GetKey(KeyCode.S) || Input.GetAxis("Mouse ScrollWheel") < 0)
 		{
-			p_Velocity += new Vector3(0, 0, -1);
+			baseDirection += new Vector3(0, 0, -1);
 		}
 
 		if (Input.GetKey(KeyCode.A))
 		{
-			p_Velocity += new Vector3(-1, 0, 0);
+			baseDirection += new Vector3(-1, 0, 0);
 		}
 		else if (Input.GetKey(KeyCode.D))
 		{
-			p_Velocity += new Vector3(1, 0, 0);
+			baseDirection += new Vector3(1, 0, 0);
 		}
 
 		if (Input.GetKey(KeyCode.Q))
 		{
-			p_Velocity += new Vector3(0, 1, 0);
+			baseDirection += new Vector3(0, 1, 0);
 		}
 		else if (Input.GetKey(KeyCode.Z))
 		{
-			p_Velocity += new Vector3(0, -1, 0);
+			baseDirection += new Vector3(0, -1, 0);
 		}
 
-		return p_Velocity;
+		return baseDirection;
 	}
 }

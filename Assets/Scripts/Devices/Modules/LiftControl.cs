@@ -85,12 +85,12 @@ public class LiftControl : MonoBehaviour
 			return;
 		}
 
-		var allModelPlugins = rootModel.GetComponentsInChildren<ModelPlugin>();
-		foreach (var modelPlugin in allModelPlugins)
+		var allModelHelpers = rootModel.GetComponentsInChildren<SDF.Helper.Model>();
+		foreach (var modelHelper in allModelHelpers)
 		{
-			if (modelPlugin.IsTopModel)
+			if (modelHelper.isTopModel)
 			{
-				hashsetAllTopModels.Add(modelPlugin.gameObject);
+				hashsetAllTopModels.Add(modelHelper.gameObject);
 			}
 		}
 	}

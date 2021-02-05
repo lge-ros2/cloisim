@@ -14,7 +14,7 @@ public partial class DeviceTransporter
 {
 	private ResponseSocket responseSocket = null;
 
-	TimeSpan timeoutForResponse = TimeSpan.FromMilliseconds(500);
+	private TimeSpan timeoutForResponse = TimeSpan.FromMilliseconds(500);
 
 	private byte[] hashValueForReceiveRequest = null;
 	private byte[] dataToSendResponse = null;
