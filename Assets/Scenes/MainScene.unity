@@ -831,7 +831,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isTopModel: 1
   isStatic: 0
-  articulationBody: {fileID: 0}
 --- !u!1 &249819585
 GameObject:
   m_ObjectHideFlags: 0
@@ -903,8 +902,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 009f9fd72f864e0feb5c2bbc723e437e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  doNotLoad: 1
-  clearAllOnStart: 0
+  doNotLoad: 0
+  clearAllOnStart: 1
   worldFileName: seocho_tower_elevator.world
   modelRootDirectories: []
   worldRootDirectories: []
@@ -2207,7 +2206,7 @@ ArticulationBody:
   m_GameObject: {fileID: 747390629}
   m_Enabled: 1
   m_Mass: 80
-  m_ParentAnchorPosition: {x: 0, y: 0.008000016, z: 0}
+  m_ParentAnchorPosition: {x: 0, y: 0.007999986, z: 0}
   m_ParentAnchorRotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
   m_AnchorPosition: {x: 0, y: 0, z: 0}
   m_AnchorRotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
@@ -2415,7 +2414,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isTopModel: 1
   isStatic: 0
-  articulationBody: {fileID: 0}
 --- !u!1 &779420288
 GameObject:
   m_ObjectHideFlags: 0
@@ -5385,7 +5383,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isTopModel: 0
   isStatic: 0
-  articulationBody: {fileID: 0}
 --- !u!1 &1750713662
 GameObject:
   m_ObjectHideFlags: 0
@@ -5558,7 +5555,7 @@ ArticulationBody:
   m_GameObject: {fileID: 1756567517}
   m_Enabled: 1
   m_Mass: 2
-  m_ParentAnchorPosition: {x: -0.48000002, y: -0.19999999, z: 0.3}
+  m_ParentAnchorPosition: {x: -0.48000002, y: -0.22, z: 0.3}
   m_ParentAnchorRotation: {x: -0.000000027186823, y: -0.00000001496002, z: 0.70710677,
     w: 0.70710677}
   m_AnchorPosition: {x: 0, y: 0, z: 0}
@@ -5909,7 +5906,7 @@ ArticulationBody:
   m_GameObject: {fileID: 1884339980}
   m_Enabled: 1
   m_Mass: 2
-  m_ParentAnchorPosition: {x: 0.48000002, y: -0.19999999, z: 0.3}
+  m_ParentAnchorPosition: {x: 0.48000002, y: -0.22, z: 0.3}
   m_ParentAnchorRotation: {x: 0.000000046449244, y: -0.00000013074293, z: 0.70710677,
     w: 0.70710677}
   m_AnchorPosition: {x: 0, y: 0, z: 0}
@@ -6163,7 +6160,7 @@ ArticulationBody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2106501632}
   m_Enabled: 1
-  m_Mass: 0.0000001
+  m_Mass: 0.000000001
   m_ParentAnchorPosition: {x: 0, y: 0, z: 0}
   m_ParentAnchorRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
   m_AnchorPosition: {x: 0, y: 0, z: 0}
@@ -6219,7 +6216,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isTopModel: 1
   isStatic: 0
-  articulationBody: {fileID: 0}
 --- !u!1 &2133470735
 GameObject:
   m_ObjectHideFlags: 0
