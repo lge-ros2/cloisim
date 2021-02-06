@@ -343,8 +343,13 @@ namespace RuntimeGizmos
 								for (int i = 0; i < targetRootsOrdered.Count; i++)
 								{
 									Transform target = targetRootsOrdered[i];
-
 									target.Translate(movement, Space.World);
+
+									var articulationBody = target.GetComponent<ArticulationBody>();
+									if (articulationBody != null && articulationBody.isRoot)
+									{
+										articulationBody.TeleportRoot(target.localPosition, target.localRotation);
+									}
 								}
 
 								SetPivotPointOffset(movement);
@@ -401,6 +406,12 @@ namespace RuntimeGizmos
 									else if (pivot == TransformPivot.Center)
 									{
 										target.RotateAround(originalPivot, rotationAxis, rotateAmount);
+									}
+
+									var articulationBody = target.GetComponent<ArticulationBody>();
+									if (articulationBody != null && articulationBody.isRoot)
+									{
+										articulationBody.TeleportRoot(target.localPosition, target.localRotation);
 									}
 								}
 
