@@ -65,14 +65,6 @@ We've deceided to change a solver type of physics engine since new solver "TGS(T
 
 So from latest version([CLOiSim-1.11.0](https://github.com/lge-ros2/cloisim/releases/tag/1.11.0)), there is NO more constaints for rigidbodies by PGS(Projected Gauss Seidel) solver type.
 
-In previous with PGS solver has big constraints in terms of 'mass' relationship between rigidbodies.
-
-- ~~You could find details about these struggling issue with PhysX in unity forums. -> [this thread](https://forum.unity.com/threads/ape-deepmotion-avatar-physics-engine-for-robust-joints-and-powerful-motors.259889/)~~
-  - ~~Mass ratio between two joined rigid bodies is limited to less than 1:10 in order to maintain joint stability~~
-  - ~~Motors are soft and cannot deliver enough power to drive multi-level articulated robotics~~
-  - ~~Wheels wobble around their joint axis under heavy load~~
-  - ~~Simulation step size (time interval) has to be reduced to too small to provide the needed accuracy which kills the performance~~
-
 But inertia factors which retrieved from SDF are still NOT USED for rigidbody in Unity. Because it could cause unexpected behavior with physX engine.
 
 ## Getting Started
