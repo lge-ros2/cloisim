@@ -51,7 +51,7 @@ public class Main: MonoBehaviour
 		}
 	}
 
-	private void ResetTransform()
+	private void ResetRootModelsTransform()
 	{
 		if (modelsRoot != null)
 		{
@@ -106,7 +106,7 @@ public class Main: MonoBehaviour
 
 		clock = DeviceHelper.GetGlobalClock();
 
-		ResetTransform();
+		ResetRootModelsTransform();
 	}
 
 	void Start()
@@ -206,8 +206,7 @@ public class Main: MonoBehaviour
 	private IEnumerator ResetSimulation()
 	{
 		isResetting = true;
-
-		Debug.LogWarning("Reset positions in simulation!!!");
+		// Debug.LogWarning("Reset positions in simulation!!!");
 
 		transformGizmo?.ClearTargets();
 
