@@ -8,6 +8,9 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Collections;
 using System.IO;
+#if UNITY_EDITOR
+using System.Linq;
+#endif
 using UnityEngine;
 using ProtoBuf;
 using Param = cloisim.msgs.Param;
@@ -19,33 +22,37 @@ public partial class ElevatorSystem : DevicePlugin
 
 	private struct ElevatorTask
 	{
-		public ElevatorTaskState state;
-		public int elevatorIndex;
-		public string fromFloor;
-		public float fromFloorHeight;
-		public string toFloor;
-		public float toFloorHeight;
+		public struct Floor
+		{
+			public string name;
+			public float height;
+		}
 
-		public ElevatorTask(in int index)
+		public ElevatorTaskState state;
+		public string elevatorIndex;
+		public Floor from;
+		public Floor to;
+
+		public ElevatorTask(in string index = "")
 		{
 			state = ElevatorTaskState.STANDBY;
 			elevatorIndex = index;
-			fromFloor = string.Empty;
-			fromFloorHeight = float.NaN;
-			toFloor = string.Empty;
-			toFloorHeight = float.NaN;
+			from.name = string.Empty;
+			from.height = float.NaN;
+			to.name = string.Empty;
+			to.height = float.NaN;
 		}
 	}
-
-	private const int NON_ELEVATOR_INDEX = -1;
 
 	private MemoryStream msForService = new MemoryStream();
 	private Param responseMessage = new Param();
 	private Dictionary<string, float> floorList = new Dictionary<string, float>();
-	private Dictionary<int, ElevatorEntity> elevatorList = new Dictionary<int, ElevatorEntity>();
+	private Dictionary<string, ElevatorEntity> elevatorList = new Dictionary<string, ElevatorEntity>();
 	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue = new ConcurrentQueue<ElevatorTask>();
 
 	private string elevatorSystemName = string.Empty;
+
+	private string initialFloor = string.Empty;
 
 	protected override void OnAwake()
 	{
@@ -69,8 +76,6 @@ public partial class ElevatorSystem : DevicePlugin
 
 	protected override void OnReset()
 	{
-		const string initialFloor = "B1F";
-
 		var targetFloorHeight = GetFloorHeight(initialFloor);
 
 		if (!float.IsNaN(targetFloorHeight))
@@ -78,7 +83,7 @@ public partial class ElevatorSystem : DevicePlugin
 			foreach (var item in elevatorList)
 			{
 				var elevator = item.Value;
-				elevator.SetHeight(targetFloorHeight);
+				elevator.Control.Height =targetFloorHeight;
 			}
 		}
 		else
@@ -89,9 +94,9 @@ public partial class ElevatorSystem : DevicePlugin
 		// empty the task queue
 		while (elevatorTaskQueue.Count > 0)
 		{
-			if (elevatorTaskQueue.TryDequeue(out var result))
+			if (elevatorTaskQueue.TryDequeue(out var task))
 			{
-				Debug.LogFormat("Empty task Queue: {0}, {1}, {2}",result.elevatorIndex, result.fromFloor, result.toFloor);
+				Debug.LogFormat("Empty task Queue: {0}, {1}, {2}", task.elevatorIndex, task.from.name, task.to.name);
 			}
 		}
 	}
@@ -130,7 +135,7 @@ public partial class ElevatorSystem : DevicePlugin
 		var elevatorOutsideDoorNameRight = parameters.GetValue<string>("elevator/doors/outside/door[@name='right']");
 
 		var index = 0;
-		foreach (Transform child in transform)
+		foreach (var child in this.GetComponentsInChildren<Transform>())
 		{
 			var objectName = child.name;
 			if (objectName.StartsWith(elevatorPrefixName))
@@ -151,7 +156,10 @@ public partial class ElevatorSystem : DevicePlugin
 				elevatorControl.doorAutoClosingTimer = elevatorDoorAutoClosingTimer;
 
 				var elevatorEntity = new ElevatorEntity(objectName, elevatorControl);
-				elevatorList.Add(index, elevatorEntity);
+
+				// TODO: will chnage to object name
+				// elevatorList.Add(objectName, elevatorEntity);
+				elevatorList.Add(index.ToString(), elevatorEntity);
 
 				index++;
 			}
@@ -160,11 +168,14 @@ public partial class ElevatorSystem : DevicePlugin
 
 	public void ReadFloorContext()
 	{
+		this.initialFloor = "B1F";
 		if (parameters.GetValues<string>("floors/floor/name", out var listFloorName) &&
-			parameters.GetValues<float>("floors/floor/height", out var listFloorHeight))
+				parameters.GetValues<float>("floors/floor/height", out var listFloorHeight))
 		{
 			if (listFloorName.Count == listFloorHeight.Count)
 			{
+				initialFloor = listFloorName[0];
+
 				var count = listFloorName.Count;
 				while (count-- > 0)
 				{
@@ -221,7 +232,7 @@ public partial class ElevatorSystem : DevicePlugin
 		var elevatorIndexParam = new Param
 		{
 			Name = "elevator_index",
-			Value = new Any { Type = Any.ValueType.Int32, IntValue = NON_ELEVATOR_INDEX }
+			Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
 		};
 
 		var floorParam = new Param
@@ -244,10 +255,10 @@ public partial class ElevatorSystem : DevicePlugin
 		responseMessage.Childrens.Add(heightParam);
 	}
 
-	private void SetResponseMessage(in bool result, in int elevatorIndex, in string currentFloor, in float height)
+	private void SetResponseMessage(in bool result, in string elevatorIndex, in string currentFloor, in float height)
 	{
 		responseMessage.Childrens[1].Value.BoolValue = result;
-		responseMessage.Childrens[2].Value.IntValue = elevatorIndex;
+		responseMessage.Childrens[2].Value.StringValue = elevatorIndex;
 		responseMessage.Childrens[3].Value.StringValue = currentFloor;
 		responseMessage.Childrens[4].Value.DoubleValue = height;
 	}
@@ -299,7 +310,7 @@ public partial class ElevatorSystem : DevicePlugin
 		var serviceName = string.Empty;
 		param = receivedMessage.Childrens[0];
 		if (param.Name.Equals("service_name") &&
-			param.Value.Type.Equals(Any.ValueType.String))
+				param.Value.Type.Equals(Any.ValueType.String))
 		{
 			serviceName = param.Value.StringValue;
 		}
@@ -307,7 +318,7 @@ public partial class ElevatorSystem : DevicePlugin
 		var currentFloor = string.Empty;
 		param = receivedMessage.Childrens[1];
 		if (param.Name.Equals("current_floor") &&
-			param.Value.Type.Equals(Any.ValueType.String))
+				param.Value.Type.Equals(Any.ValueType.String))
 		{
 			currentFloor = param.Value.StringValue;
 		}
@@ -315,17 +326,17 @@ public partial class ElevatorSystem : DevicePlugin
 		var targetFloor = string.Empty;
 		param = receivedMessage.Childrens[2];
 		if (param.Name.Equals("target_floor") &&
-			param.Value.Type.Equals(Any.ValueType.String))
+				param.Value.Type.Equals(Any.ValueType.String))
 		{
 			targetFloor = param.Value.StringValue;
 		}
 
-		var elevatorIndex = NON_ELEVATOR_INDEX;
+		var elevatorIndex = string.Empty;
 		param = receivedMessage.Childrens[3];
 		if (param.Name.Equals("elevator_index") &&
-			param.Value.Type.Equals(Any.ValueType.Int32))
+				param.Value.Type.Equals(Any.ValueType.String))
 		{
-			elevatorIndex = param.Value.IntValue;
+			elevatorIndex = param.Value.StringValue;
 		}
 
 		// Debug.LogFormat("Parsed {0} {1} {2} {3} {4}", elevatorSystemName, serviceName, currentFloor, targetFloor, elevatorIndex);
@@ -342,7 +353,7 @@ public partial class ElevatorSystem : DevicePlugin
 		return msForService;
 	}
 
-	private void HandleService(in string serviceName, string currentFloor, in string targetFloor, int elevatorIndex)
+	private void HandleService(in string serviceName, string currentFloor, in string targetFloor, string elevatorIndex)
 	{
 		var result = false;
 		var height = 0f;
@@ -350,11 +361,10 @@ public partial class ElevatorSystem : DevicePlugin
 		switch (serviceName)
 		{
 			case "call_elevator":
-				elevatorIndex = NON_ELEVATOR_INDEX;
 				result = GetCalledElevator(currentFloor, targetFloor, out elevatorIndex);
 				if (!result)
 				{
-					result = CallElevator(currentFloor, targetFloor);
+					result = CallElevator(targetFloor, currentFloor);
 				}
 				break;
 
@@ -363,7 +373,15 @@ public partial class ElevatorSystem : DevicePlugin
 				break;
 
 			case "select_elevator_floor":
-				result = SelectElevatorFloor(elevatorIndex, targetFloor, currentFloor);
+				if (string.IsNullOrEmpty(elevatorIndex))
+				{
+					Debug.LogWarning("must set elevator index!!");
+					result = false;
+				}
+				else
+				{
+					result = CallElevator(currentFloor, targetFloor, elevatorIndex);
+				}
 				break;
 
 			case "request_door_open":
@@ -439,30 +457,30 @@ public partial class ElevatorSystem : DevicePlugin
 
 	private void DoServiceOpenDoor(ref ElevatorTask task)
 	{
-		var entity = elevatorList[task.elevatorIndex];
-		entity.Elevator.OpenDoor();
+		var elevator = elevatorList[task.elevatorIndex];
+		elevator.Control.OpenDoor();
 		task.state = ElevatorTaskState.DONE;
 	}
 
 	private void DoServiceCloseDoor(ref ElevatorTask task)
 	{
-		var entity = elevatorList[task.elevatorIndex];
-		entity.Elevator.CloseDoor();
+		var elevator = elevatorList[task.elevatorIndex];
+		elevator.Control.CloseDoor();
 		task.state = ElevatorTaskState.DONE;
 	}
 
 	private void DoServiceInStandby(ref ElevatorTask task)
 	{
 		// new call
-		if (task.elevatorIndex <= NON_ELEVATOR_INDEX)
+		if (string.IsNullOrEmpty(task.elevatorIndex))
 		{
 			// check if the elevator is already arrived
 			foreach (var elevatorItem in elevatorList)
 			{
 				var elevator = elevatorItem.Value;
-				if (elevator.State.Equals(ElevatorState.STOP) && elevator.IsArrived(task.fromFloorHeight))
+				if (elevator.State.Equals(ElevatorState.STOP) && elevator.Control.IsArrived(task.to.height))
 				{
-					Debug.LogFormat("Already arrived: {0}, {1}, {2} => {3}", elevator.Name, task.fromFloor, task.toFloor, task.fromFloorHeight);
+					Debug.LogFormat("Already arrived: {0}, from: {1}({2}), to: {3}", elevator.Name, task.from.name, task.from.height, task.to.name);
 					task.state = ElevatorTaskState.DONE;
 					return;
 				}
@@ -473,9 +491,9 @@ public partial class ElevatorSystem : DevicePlugin
 			{
 				if (!otherTask.Equals(task) && otherTask.state.Equals(ElevatorTaskState.PROCESSING))
 				{
-					if (otherTask.toFloor.Equals(task.fromFloor))
+					if (otherTask.to.name.Equals(task.to.name))
 					{
-						Debug.LogFormat("Already moving: {0}, {1}, {2}", task.fromFloor, task.toFloor, task.fromFloorHeight);
+						Debug.LogFormat("Already moving: {0}, from {1}, to {2}", task.elevatorIndex, task.to.name, task.from.name);
 						task.state = ElevatorTaskState.DONE;
 						return;
 					}
@@ -485,15 +503,13 @@ public partial class ElevatorSystem : DevicePlugin
 			// find a new elevator among the elevators at rest and move!!
 			foreach (var elevatorItem in elevatorList)
 			{
-				var entity = elevatorItem.Value;
-				if (entity.State.Equals(ElevatorState.STOP))
+				var elevator = elevatorItem.Value;
+				if (elevator.State.Equals(ElevatorState.STOP))
 				{
-					var elevatorIndex = elevatorItem.Key;
-					task.elevatorIndex = elevatorIndex;
+					task.elevatorIndex = elevatorItem.Key;
+					elevator.MoveElevatorTo(task.to.height);
 
-					entity.MoveElevatorTo(task.fromFloorHeight);
-
-					Debug.LogFormat("Move floor: {0}, {1}, {2} => {3} == {4}", entity.Name, task.fromFloor, task.toFloor, task.fromFloorHeight, entity.Height);
+					Debug.LogFormat("move : {0}, from: {1}, to: {2}", elevator.Name, task.from.name, task.to.name);
 
 					task.state = ElevatorTaskState.PROCESSING;
 					break;
@@ -503,17 +519,17 @@ public partial class ElevatorSystem : DevicePlugin
 		// select floor
 		else
 		{
-			var entity = elevatorList[task.elevatorIndex];
-			Debug.LogFormat("Select floor: {0}, {1}, {2} => {3} == {4}", entity.Name, task.fromFloor, task.toFloor, task.fromFloorHeight, entity.Height);
+			var elevator = elevatorList[task.elevatorIndex];
+			Debug.LogFormat("Select floor: {0}, from: {1}, to: {2}", elevator.Name, task.from.name, task.to.name, task.from.height);
 
-			if (entity.Elevator.IsArrived(task.fromFloorHeight))
+			if (elevator.Control.IsArrived(task.from.height))
 			{
-				entity.MoveElevatorTo(task.toFloorHeight);
+				elevator.MoveElevatorTo(task.from.height, task.to.height);
 				task.state = ElevatorTaskState.PROCESSING;
 			}
 			else
 			{
-				Debug.LogWarningFormat("Wrong:: elevator is not arrived yet Select floor: {0}, {1}, {2}", entity.Name, task.fromFloor, task.toFloor);
+				Debug.LogWarningFormat("Wrong:: elevator is not arrived yet Select floor: {0}, {1}, {2}", elevator.Name, task.from.name, task.to.name);
 				task.state = ElevatorTaskState.DONE;
 			}
 		}
@@ -523,19 +539,18 @@ public partial class ElevatorSystem : DevicePlugin
 	{
 		// check if the elevator arrived
 		var elevatorIndex = task.elevatorIndex;
-		var entity = elevatorList[elevatorIndex];
+		var elevator = elevatorList[elevatorIndex];
 
-		if (entity.Elevator.IsArrived(task.toFloorHeight))
+		if (elevator.Control.IsArrived(task.to.height))
 		{
-			entity.SetState(ElevatorState.STOP);
+			elevator.SetState(ElevatorState.STOP);
 
 			task.state = ElevatorTaskState.DONE;
 		}
 	}
 
-
 #if UNITY_EDITOR
-	// just for test
+	// just for test....
 	private KeyCode[] numKeyCodes = {
 		 KeyCode.Alpha0,
 		 KeyCode.Alpha1,
@@ -555,7 +570,15 @@ public partial class ElevatorSystem : DevicePlugin
 		{
 			if (Input.GetKeyUp(numKey))
 			{
-				var elevatorIndex = (int)numKey - (int)(KeyCode.Alpha0);
+				var index = (int)numKey - (int)(KeyCode.Alpha0);
+
+				if (index >= elevatorList.Keys.Count)
+				{
+					Debug.LogFormat("{0} elevator does not exist.");
+					break;
+				}
+
+				var elevatorIndex = elevatorList.Keys.ElementAt(index);
 				Debug.Log("Test elevatorIndex: " + elevatorIndex);
 
 				if (Input.GetKey(KeyCode.LeftAlt) && Input.GetKey(KeyCode.LeftShift))
@@ -574,11 +597,11 @@ public partial class ElevatorSystem : DevicePlugin
 				}
 				else if (Input.GetKey(KeyCode.LeftAlt))
 				{
-					SelectElevatorFloor(elevatorIndex, "B1F", "25F");
+					CallElevator("25F", "B1F", elevatorIndex);
 				}
 				else if (Input.GetKey(KeyCode.LeftShift))
 				{
-					SelectElevatorFloor(elevatorIndex, "25F", "B1F");
+					CallElevator("B1F", "25F", elevatorIndex);
 				}
 				else
 				{
