@@ -39,6 +39,7 @@ public class ObjectSpawning : MonoBehaviour
 	{
 		var newObject = new GameObject(name);
 		newObject.tag = "Props";
+		newObject.isStatic = true;
 
 		var meshFilter = newObject.AddComponent<MeshFilter>();
 		meshFilter.mesh = targetMesh;
