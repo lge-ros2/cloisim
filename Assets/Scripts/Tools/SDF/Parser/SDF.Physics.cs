@@ -16,12 +16,14 @@ namespace SDF
 		private double real_time_update_rate = 1000.0;
 		private int max_contacts = 20;
 
+		//
 		// <dart> : TBD
 		// <simbody> : TBD
 		// <bullet> : TBD
 		// <ode> - solver
 		//       - constraints
-		// <PhysX> : TBD - new feature??
+		// <physx> : TBD - I want to add an element as a new feature in SDFormat specification
+		//
 
 		public Physics(XmlNode _node)
 			: base(_node)
@@ -38,9 +40,6 @@ namespace SDF
 			real_time_factor = GetValue<double>("real_time_factor");
 			real_time_update_rate = GetValue<double>("real_time_update_rate");
 			max_contacts = GetValue<int>("max_contacts");
-
-			// Console.WriteLine("[{0}] {1} {2} {3} {4}", GetType().Name,
-			// 	isStatic, isSelfCollide, allowAutoDisable, enableWind);
 		}
 	}
 }

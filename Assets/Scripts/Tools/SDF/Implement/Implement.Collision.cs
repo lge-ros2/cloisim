@@ -127,9 +127,9 @@ namespace SDF
 					material.name = "SDF Surface Friction";
 					material.dynamicFriction = (float)surface.friction2;
 					material.staticFriction = (float)surface.friction;
-					material.bounciness = 0.000f;
+					material.bounciness = (float)surface.bounce_restitution_coefficient;
 					material.frictionCombine = UE.PhysicMaterialCombine.Average;
-					material.bounceCombine = UE.PhysicMaterialCombine.Minimum;
+					material.bounceCombine = UE.PhysicMaterialCombine.Average;
 				}
 				else
 				{
