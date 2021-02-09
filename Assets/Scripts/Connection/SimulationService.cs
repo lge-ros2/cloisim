@@ -5,6 +5,7 @@
  */
 
 using System;
+using System.Text;
 using UnityEngine;
 using WebSocketSharp.Server;
 
@@ -20,7 +21,9 @@ public class SimulationService : MonoBehaviour
 
 	void Awake()
 	{
-		wsServer = new WebSocketServer(defaultWebSocketServicePort);
+		var envServicePort = Environment.GetEnvironmentVariable("CLOISIM_SERVICE_PORT");
+		var servicePort = (envServicePort == null || envServicePort.Equals(""))? defaultWebSocketServicePort : int.Parse(envServicePort);
+		wsServer = new WebSocketServer(servicePort);
 	}
 
 	// Start is called before the first frame update
@@ -34,11 +37,17 @@ public class SimulationService : MonoBehaviour
 
 		if (wsServer.IsListening)
 		{
-			Debug.LogFormat("Listening on port {0}, and providing services:", wsServer.Port);
+			var wsLog = new StringBuilder();
+			wsLog.AppendFormat("Listening on port {0}, and providing services are:", wsServer.Port);
+			wsLog.AppendLine();
+
 			foreach (var path in wsServer.WebSocketServices.Paths)
 			{
-				Debug.LogFormat(" - {0}", path);
+				wsLog.AppendFormat(" - {0}", path);
+				wsLog.AppendLine();
 			}
+
+			Debug.Log(wsLog);
 		}
 	}
 
