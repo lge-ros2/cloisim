@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 LG Electronics Inc.
+ * Copyright (c) 2021 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -163,6 +163,7 @@ namespace SDF
 				{
 					// Console.WriteLine("[Model][{0}][{1}]", item.Name, parentObject);
 					Object child = ImportModel(item, parentObject);
+
 					ImportLinks(item.GetLinks(), child);
 
 					// Add nested models
@@ -186,16 +187,14 @@ namespace SDF
 
 			private void PrintNotImported(in string methodName, in string name)
 			{
-				(Console.Out as DebugLogWriter).SetWarning(true);
+				(Console.Out as DebugLogWriter).SetWarningOnce();
 				Console.WriteLine("[{0}][{1}] Not Imported yet", methodName, name);
-				(Console.Out as DebugLogWriter).SetWarning(false);
 			}
 
 			private void PrintNotImported(in string methodName)
 			{
-				(Console.Out as DebugLogWriter).SetWarning(true);
+				(Console.Out as DebugLogWriter).SetWarningOnce();
 				Console.WriteLine("[{0}] Not Imported yet", methodName);
-				(Console.Out as DebugLogWriter).SetWarning(false);
 			}
 		}
 	}

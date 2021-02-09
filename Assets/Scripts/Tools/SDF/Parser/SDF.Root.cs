@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using System.Linq;
+using System.Text;
 using System;
 
 namespace SDF
@@ -78,13 +79,12 @@ namespace SDF
 					}
 				}
 			}
-			
+
 			if (!worldFound)
 			{
-				(Console.Out as DebugLogWriter).SetWarning(true);
-                Console.WriteLine("World file not exist: " + worldFileName);
-                (Console.Out as DebugLogWriter).SetWarning(false);
-                return false;
+				(Console.Out as DebugLogWriter).SetWarningOnce();
+				Console.WriteLine("World file not exist: " + worldFileName);
+				return false;
 			}
 
 			replaceAllIncludedModel();
@@ -113,6 +113,9 @@ namespace SDF
 				Console.WriteLine("ERROR: Resource model table is not initialized!!!!");
 				return;
 			}
+
+			var failedModelTableList = new StringBuilder();
+			var numberOfFailedModelTable = 0;
 
 			var modelConfigDoc = new XmlDocument();
 
@@ -190,7 +193,9 @@ namespace SDF
 						// Console.WriteLine(modelName + ", " + modelValue);
 						if (resourceModelTable.ContainsKey(modelName))
 						{
-							Console.WriteLine(modelName + " is already registred. Cannot register => " + modelValue);
+							failedModelTableList.AppendLine("");
+							failedModelTableList.Append(modelName + " => Cannot register" + modelValue);
+							numberOfFailedModelTable++;
 						}
 						else
 						{
@@ -202,6 +207,13 @@ namespace SDF
 						Console.WriteLine(e.Message);
 					}
 				}
+			}
+
+			if (numberOfFailedModelTable > 0)
+			{
+				failedModelTableList.Insert(0, "All failed models(" + numberOfFailedModelTable + ") are already registered.");
+				(Console.Out as DebugLogWriter).SetWarningOnce();
+				Console.WriteLine(failedModelTableList);
 			}
 
 			Console.WriteLine("Total Models: " + resourceModelTable.Count);
