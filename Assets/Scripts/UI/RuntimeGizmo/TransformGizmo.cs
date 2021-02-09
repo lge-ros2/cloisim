@@ -49,8 +49,6 @@ namespace RuntimeGizmos
 
 		public bool manuallyHandleGizmo;
 
-		public LayerMask selectionMask = Physics.DefaultRaycastLayers;
-
 		//These are the same as the unity editor hotkeys
 		[Header("Key configurations")]
 		public KeyCode SetMoveType = KeyCode.T;
@@ -450,15 +448,15 @@ namespace RuntimeGizmos
 
 		void GetTarget()
 		{
-			if (nearAxis == Axis.None && Input.GetMouseButtonDown(0))
+			if (nearAxis == Axis.None && !Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButtonDown(0))
 			{
-				if (Physics.Raycast(myCamera.ScreenPointToRay(Input.mousePosition), out var hitInfo, Mathf.Infinity, selectionMask))
+				if (Physics.Raycast(myCamera.ScreenPointToRay(Input.mousePosition), out var hitInfo, Mathf.Infinity))
 				{
 					Transform target = null;
 					var hitObject = hitInfo.transform.gameObject;
 
-					var hitParentObject = hitObject.transform.parent?.gameObject;
-					if (hitParentObject != null && hitParentObject.tag.Equals("Model") && hitParentObject.GetComponent<SDF.Helper.Model>().isTopModel)
+					var hitParentObject = hitObject.transform.parent?.GetComponentInParent<SDF.Helper.Model>();
+					if (hitParentObject != null && hitParentObject.tag.Equals("Model") && hitParentObject.isTopModel)
 					{
 						// Debug.Log(hitParentObject.name + " Selected!!!!");
 						target = hitParentObject.transform;
