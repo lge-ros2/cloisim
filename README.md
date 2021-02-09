@@ -63,7 +63,7 @@ Default physics engine 'Nvidia PhysX' is used for physics. And it retrieves some
 
 We've deceided to change a solver type of physics engine since new solver "TGS(Temporal Gauss Seidel)" is intorduced recently(PhysX 4.1).
 
-So from latest version([CLOiSim-1.11.0](https://github.com/lge-ros2/cloisim/releases/tag/1.11.0)), there is NO more constaints for rigidbodies by PGS(Projected Gauss Seidel) solver type.
+So there is NO more constaints for rigidbodies by PGS(Projected Gauss Seidel) solver type since latest version([CLOiSim-1.11.0](https://github.com/lge-ros2/cloisim/releases/tag/1.11.0)).
 
 But inertia factors which retrieved from SDF are still NOT USED for rigidbody in Unity. Because it could cause unexpected behavior with physX engine.
 
@@ -105,9 +105,9 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 
 #### After run 'CLOiSim'
 
-- *'[sim_device](https://github.com/lge-ros2/sim_device)' ros2 packages for transporting sensor data are required.*
+- *'[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' ros2 packages for transporting sensor data are required.*
 
-- *Run bringup node in '[sim_device](https://github.com/lge-ros2/sim_device)' ros2 packages*
+- *Run bringup node in '[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' ros2 packages*
 
 - And *have fun!!!*
 
@@ -138,15 +138,13 @@ New features or functions shall be developed on demand.
 
 - Add new sensor models and enhance sensor performance
 
+- introduce programmable c++ plugin
+
 - Noise models for sensor model
 
 - Performance optimization for sensors (Use DOTS by unity?)
 
 - Upgrade quality of graphical elements
-
-- Change physics engine (havok or something else...) to find a stable one.
-
-- Change Unity Editor version to 2020.3 (LTS) to utilize 'articulation body'.
 
 - **If you have any troubles or issues, please don't hesitate to create a new issue on 'Issues'.**
   <https://github.com/lge-ros2/cloisim/issues>
