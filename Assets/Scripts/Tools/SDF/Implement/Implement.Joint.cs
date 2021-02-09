@@ -5,6 +5,7 @@
  */
 
 using UE = UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace SDF
 {
@@ -12,158 +13,170 @@ namespace SDF
 	{
 		public class Joint
 		{
-			public static UE.Joint AddRevolute(in SDF.Axis axisInfo, in UE.GameObject targetObject, in UE.Rigidbody connectBody)
+			public static void SetArticulationBodyAnchor(in UE.ArticulationBody body, in UE.Pose parentAnchor)
 			{
-				var hingeJointComponent = targetObject.AddComponent<UE.HingeJoint>();
-				hingeJointComponent.connectedBody = connectBody;
-				hingeJointComponent.axis = SDF2Unity.GetAxis(axisInfo.xyz);
-				hingeJointComponent.useMotor = false;
-
-				var jointMotor = new UE.JointMotor();
-				jointMotor.targetVelocity = 0;
-				jointMotor.force = 0;
-				jointMotor.freeSpin = false;
-
-				hingeJointComponent.motor = jointMotor;
-
-				if (axisInfo.UseLimit())
+				if (body == null)
 				{
-					var jointLimits = new UE.JointLimits();
-					jointLimits.min = -(float)axisInfo.limit_upper * UE.Mathf.Rad2Deg;
-					jointLimits.max = -(float)axisInfo.limit_lower * UE.Mathf.Rad2Deg;
-					hingeJointComponent.useLimits = true;
-					hingeJointComponent.limits = jointLimits;
+					Debug.LogWarning("Articulation Body is NULL");
+					return;
 				}
 
-				return hingeJointComponent;
+				body.anchorPosition = UE.Vector3.zero;
+				body.anchorRotation = UE.Quaternion.identity;
+				body.parentAnchorPosition = parentAnchor.position;
+				body.parentAnchorRotation = parentAnchor.rotation;
 			}
 
-			public static UE.Joint AddRevolute2(in SDF.Axis axisInfo1, in SDF.Axis axisInfo2, in UE.GameObject targetObject, in UE.Rigidbody connectBody)
+			public static void MakeRevolute(in UE.ArticulationBody body, in SDF.Axis axis)
 			{
-				var jointComponent = targetObject.AddComponent<UE.ConfigurableJoint>();
-				jointComponent.axis = SDF2Unity.GetAxis(axisInfo1.xyz);
-				jointComponent.secondaryAxis = SDF2Unity.GetAxis(axisInfo2.xyz);
+				body.jointType = UE.ArticulationJointType.SphericalJoint;
 
-				// axisInfo1.limit_lower;
-				// axisInfo1.limit_upper;
-
-				// axisInfo2.limit_lower;
-				// axisInfo2.limit_upper;
-
-				jointComponent.projectionMode = UE.JointProjectionMode.PositionAndRotation;
-
-				return jointComponent;
-			}
-
-			public static UE.Joint AddFixed(in UE.GameObject targetObject, in UE.Rigidbody connectBody)
-			{
-				var jointComponent = targetObject.AddComponent<UE.FixedJoint>();
-				jointComponent.connectedBody = connectBody;
-				return jointComponent;
-			}
-
-			public static UE.Joint AddBall(in UE.GameObject targetObject, in UE.Rigidbody connectBody)
-			{
-				var jointComponent = targetObject.AddComponent<UE.ConfigurableJoint>();
-				jointComponent.connectedBody = connectBody;
-				jointComponent.axis = new UE.Vector3(1, 0, 0);
-				jointComponent.secondaryAxis = new UE.Vector3(0, 1, 0);
-
-				var configurableJointMotion = UE.ConfigurableJointMotion.Free;
-
-				jointComponent.xMotion = UE.ConfigurableJointMotion.Locked;
-				jointComponent.yMotion = UE.ConfigurableJointMotion.Locked;
-				jointComponent.zMotion = UE.ConfigurableJointMotion.Locked;
-				jointComponent.angularXMotion = configurableJointMotion;
-				jointComponent.angularYMotion = configurableJointMotion;
-				jointComponent.angularZMotion = configurableJointMotion;
-
-				var zeroJointDriver = new UE.JointDrive();
-				zeroJointDriver.positionSpring = 0;
-				zeroJointDriver.positionDamper = 0;
-				zeroJointDriver.maximumForce = 0;
-
-				jointComponent.xDrive = zeroJointDriver;
-				jointComponent.yDrive = zeroJointDriver;
-				jointComponent.zDrive = zeroJointDriver;
-
-				jointComponent.projectionMode = UE.JointProjectionMode.PositionAndRotation;
-
-				return jointComponent;
-			}
-
-			public static UE.Joint AddPrismatic(in SDF.Axis axisInfo, in SDF.OdePhysics physicsInfo, in SDF.Pose<double> pose, in UE.GameObject targetObject, in UE.Rigidbody connectBody)
-			{
-				var jointComponent = targetObject.AddComponent<UE.ConfigurableJoint>();
-				jointComponent.connectedBody = connectBody;
-				jointComponent.secondaryAxis = UE.Vector3.zero;
-				jointComponent.axis = SDF2Unity.GetAxis(axisInfo.xyz, pose.Rot);
-
-				var configurableJointMotion = UE.ConfigurableJointMotion.Free;
-
-				if (axisInfo.UseLimit())
+				if (axis.dynamics != null)
 				{
-					// Debug.LogWarningFormat("limit uppper{0}, lower{1}", axisInfo.limit_upper, axisInfo.limit_lower);
-					configurableJointMotion = UE.ConfigurableJointMotion.Limited;
-					var linearLimit = new UE.SoftJointLimit();
-					linearLimit.limit = (float)(axisInfo.limit_upper);
-
-					jointComponent.linearLimit = linearLimit;
+					body.jointFriction = (float)axis.dynamics.friction;
 				}
 
-				var linearLimitSpring = new UE.SoftJointLimitSpring();
-				linearLimitSpring.spring = 0;
-				linearLimitSpring.damper = 0;
-				jointComponent.linearLimitSpring = linearLimitSpring;
+				var drive = new UE.ArticulationDrive();
 
-				var softJointLimit = new UE.SoftJointLimit();
-				softJointLimit.limit = (float)(axisInfo.limit_upper - axisInfo.limit_lower);
-				softJointLimit.bounciness = 0.000f;
-				softJointLimit.contactDistance = 0.0f;
-				jointComponent.linearLimit = softJointLimit;
+				if (axis.limit.Use())
+				{
+					drive.lowerLimit = (float)axis.limit.lower * UE.Mathf.Rad2Deg;
+					drive.upperLimit = (float)axis.limit.upper * UE.Mathf.Rad2Deg;
+				}
 
-				var jointDrive = new UE.JointDrive();
-				jointDrive.positionSpring = (float)axisInfo.dynamics_spring_stiffness;
-				jointDrive.positionDamper = (float)axisInfo.dynamics_damping;
-				jointDrive.maximumForce = (float)physicsInfo.max_force;
+				drive.forceLimit = float.MaxValue;
 
-				var zeroJointDriver = new UE.JointDrive();
-				zeroJointDriver.positionSpring = 0;
-				zeroJointDriver.positionDamper = 0;
-				zeroJointDriver.maximumForce = 0;
+				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
 
-				// joint's local x axis...
-				jointComponent.xMotion = configurableJointMotion;
-				jointComponent.xDrive = jointDrive;
-				jointComponent.yMotion = UE.ConfigurableJointMotion.Locked;
-				jointComponent.yDrive = zeroJointDriver;
-				jointComponent.zMotion = UE.ConfigurableJointMotion.Locked;
-				jointComponent.zDrive = zeroJointDriver;
-
-				jointComponent.angularXMotion = UE.ConfigurableJointMotion.Locked;
-				jointComponent.angularYMotion = UE.ConfigurableJointMotion.Locked;
-				jointComponent.angularZMotion = UE.ConfigurableJointMotion.Locked;
-
-				jointComponent.angularXDrive = zeroJointDriver;
-				jointComponent.angularYZDrive = zeroJointDriver;
-
-				jointComponent.projectionMode = UE.JointProjectionMode.PositionAndRotation;
-
-				return jointComponent;
+				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
+				{
+					body.xDrive = drive;
+					body.twistLock = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.swingYLock = UE.ArticulationDofLock.LockedMotion;
+					body.swingZLock = UE.ArticulationDofLock.LockedMotion;
+				}
+				else if (jointAxis.Equals(UE.Vector3.up) || jointAxis.Equals(UE.Vector3.down))
+				{
+					body.yDrive = drive;
+					body.twistLock = UE.ArticulationDofLock.LockedMotion;
+					body.swingYLock = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.swingZLock = UE.ArticulationDofLock.LockedMotion;
+				}
+				else if (jointAxis.Equals(UE.Vector3.forward) || jointAxis.Equals(UE.Vector3.back))
+				{
+					body.zDrive = drive;
+					body.twistLock = UE.ArticulationDofLock.LockedMotion;
+					body.swingYLock = UE.ArticulationDofLock.LockedMotion;
+					body.swingZLock = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+				}
 			}
 
-			public static void SetCommonConfiguration(UE.Joint jointComponent, in SDF.Vector3<double> jointPosition, in UE.GameObject linkObject)
+			public static void MakeRevolute2(in UE.ArticulationBody body, in SDF.Axis axis1, in SDF.Axis axis2)
 			{
-				var linkTransform = linkObject.transform;
+				MakeRevolute(body, axis1);
 
-				jointComponent.anchor = SDF2Unity.GetPosition(jointPosition);
-				jointComponent.autoConfigureConnectedAnchor = true;
+				var drive = new UE.ArticulationDrive();
 
-				jointComponent.enableCollision = false;
-				jointComponent.enablePreprocessing = false;
+				if (axis2.limit.Use())
+				{
+					drive.lowerLimit = (float)axis2.limit.lower * UE.Mathf.Rad2Deg;
+					drive.upperLimit = (float)axis2.limit.upper * UE.Mathf.Rad2Deg;
+				}
 
-				jointComponent.breakForce = UE.Mathf.Infinity;
-				jointComponent.breakTorque = UE.Mathf.Infinity;
+				drive.forceLimit = float.MaxValue;
+
+				var joint2Axis = SDF2Unity.GetAxis(axis2.xyz);
+				if (joint2Axis.Equals(UE.Vector3.right))
+				{
+					body.xDrive = drive;
+					body.twistLock = (axis2.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+				}
+				else if (joint2Axis.Equals(UE.Vector3.up))
+				{
+					body.yDrive = drive;
+					body.swingYLock = (axis2.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+				}
+				else if (joint2Axis.Equals(UE.Vector3.forward))
+				{
+					body.zDrive = drive;
+					body.swingZLock = (axis2.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+				}
+			}
+
+			public static void MakeFixed(in UE.ArticulationBody body)
+			{
+				body.jointType = UE.ArticulationJointType.FixedJoint;
+			}
+
+			public static void MakeBall(in UE.ArticulationBody body)
+			{
+				body.jointType = UE.ArticulationJointType.SphericalJoint;
+
+				body.swingYLock = UE.ArticulationDofLock.FreeMotion;
+				body.swingZLock = UE.ArticulationDofLock.FreeMotion;
+				body.twistLock = UE.ArticulationDofLock.FreeMotion;
+			}
+
+			public static void MakePrismatic(in UE.ArticulationBody body, in SDF.Axis axis, in SDF.Joint.Physics.ODE physicsInfo, in SDF.Pose<double> pose)
+			{
+				body.jointType = UE.ArticulationJointType.PrismaticJoint;
+				body.parentAnchorRotation *= SDF2Unity.GetRotation(pose.Rot);
+
+				var drive = new UE.ArticulationDrive();
+
+				if (axis.limit.Use())
+				{
+					// Debug.LogWarningFormat("limit uppper{0}, lower{1}", axis.limit.upper, axis.limit.lower);
+					drive.lowerLimit = (float)(axis.limit.lower);
+					drive.upperLimit = (float)(axis.limit.upper);
+				}
+
+				drive.forceLimit = (float)physicsInfo.max_force;
+
+				if (axis.dynamics != null)
+				{
+					drive.stiffness = (float)axis.dynamics.spring_stiffness;
+					drive.damping = (float)axis.dynamics.damping;
+					body.jointFriction = (float)axis.dynamics.friction;
+				}
+
+				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
+
+				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
+				{
+					if (jointAxis.Equals(UE.Vector3.back))
+					{
+						body.anchorRotation *= UE.Quaternion.Euler(0, 180, 0);
+					}
+
+					body.xDrive = drive;
+					body.linearLockX = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.linearLockY = UE.ArticulationDofLock.LockedMotion;
+					body.linearLockZ = UE.ArticulationDofLock.LockedMotion;
+				}
+				else if (jointAxis.Equals(UE.Vector3.up) || jointAxis.Equals(UE.Vector3.down))
+				{
+					if (jointAxis.Equals(UE.Vector3.back))
+					{
+						body.anchorRotation *= UE.Quaternion.Euler(0, 0, 180);
+					}
+
+					body.yDrive = drive;
+					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
+					body.linearLockY = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.linearLockZ = UE.ArticulationDofLock.LockedMotion;
+				}
+				else if (jointAxis.Equals(UE.Vector3.forward) || jointAxis.Equals(UE.Vector3.back))
+				{
+					if (jointAxis.Equals(UE.Vector3.back))
+					{
+						body.anchorRotation *= UE.Quaternion.Euler(0, 180, 0);
+					}
+					body.zDrive = drive;
+					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
+					body.linearLockY = UE.ArticulationDofLock.LockedMotion;
+					body.linearLockZ = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+				}
 			}
 		}
 	}

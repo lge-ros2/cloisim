@@ -18,7 +18,7 @@ namespace SDF
 			[UE.Header("SDF Properties")]
 			public bool isSelfCollide = false;
 
-			public Dictionary<string, UE.Joint> jointList = new Dictionary<string, UE.Joint>();
+			public Dictionary<string, UE.ArticulationBody> jointList = new Dictionary<string, UE.ArticulationBody>();
 
 			new void Awake()
 			{
@@ -41,14 +41,6 @@ namespace SDF
 					EnableSelfCollision();
 				}
 
-				// if parent model has static option, make it all static in child
-				if (_modelHelper != null)
-				{
-					if (_modelHelper.isStatic)
-					{
-						MakeStaticLink();
-					}
-				}
 			}
 
 			void OnJointBreak(float breakForce)
@@ -127,19 +119,6 @@ namespace SDF
 				foreach (var joint in GetComponentsInChildren<UE.Joint>())
 				{
 					joint.enableCollision = true;
-				}
-			}
-
-			private void MakeStaticLink()
-			{
-				foreach (var child in GetComponentsInChildren<UE.Transform>())
-				{
-					child.gameObject.isStatic = true;
-					var childRigidBody = child.GetComponentInChildren<UE.Rigidbody>();
-					if (childRigidBody != null)
-					{
-						childRigidBody.isKinematic = true;
-					}
 				}
 			}
 		}

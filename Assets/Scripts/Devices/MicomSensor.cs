@@ -15,9 +15,10 @@ public partial class MicomSensor : Device
 	private messages.Micom micomSensorData = null;
 
 #region Motor Related
-	private Motor motorLeft = null;
-	private Motor motorRight = null;
+	private string _wheelNameLeft = string.Empty;
+	private string _wheelNameRight = string.Empty;
 
+	private Dictionary<string, Motor> _motors = new Dictionary<string, Motor>();
 	public float _PGain;
 	public float _IGain;
 	public float _DGain;
@@ -33,7 +34,7 @@ public partial class MicomSensor : Device
 	// private List<SensorDevices.Magnet> magnetSensors = null;
 
 	private SensorDevices.Contact bumperContact = null;
-	private List<ConfigurableJoint> bumperSensors = new List<ConfigurableJoint>();
+	private List<ArticulationBody> bumperSensors = new List<ArticulationBody>();
 
 	private Dictionary<string, Pose> partsPoseMapTable = new Dictionary<string, Pose>();
 
@@ -58,8 +59,8 @@ public partial class MicomSensor : Device
 		wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
 		divideWheelRadius = 1.0f/wheelRadius;
 
-		var wheelNameLeft = GetPluginParameters().GetValue<string>("wheel/location[@type='left']");
-		var wheelNameRight = GetPluginParameters().GetValue<string>("wheel/location[@type='right']");
+		_wheelNameLeft = GetPluginParameters().GetValue<string>("wheel/location[@type='left']");
+		_wheelNameRight = GetPluginParameters().GetValue<string>("wheel/location[@type='right']");
 
 		var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
 		var brakeFriction = GetPluginParameters().GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
@@ -68,36 +69,15 @@ public partial class MicomSensor : Device
 		foreach (var model in modelList)
 		{
 			// Debug.Log(model.name);
-			if (model.name.Equals(wheelNameLeft))
+			if (model.name.Equals(_wheelNameLeft) || model.name.Equals(_wheelNameRight))
 			{
-				var jointWheelLeft = model.GetComponentInChildren<HingeJoint>();
-				motorLeft = gameObject.AddComponent<Motor>();
-				motorLeft.SetTargetJoint(jointWheelLeft);
-				motorLeft.SetPID(_PGain, _IGain, _DGain);
+				var motorObject = model.gameObject;
+				var motor = gameObject.AddComponent<Motor>();
+				motor.SetTargetJoint(motorObject);
+				motor.SetPID(_PGain, _IGain, _DGain);
+				_motors.Add(model.name, motor);
 
-				var wheelLeftTransform = jointWheelLeft.gameObject.transform.parent;
-				var wheelLeftPose = new Pose(wheelLeftTransform.localPosition, wheelLeftTransform.localRotation);
-				partsPoseMapTable.Add(wheelNameLeft, wheelLeftPose);
-
-				// Debug.LogFormat("joint Wheel({0}) Left max angular velocity({1})", jointWheelLeft.name, jointWheelLeft.gameObject.GetComponent<Rigidbody>().maxAngularVelocity);
-			}
-			else if (model.name.Equals(wheelNameRight))
-			{
-				var jointWheelRight = model.GetComponentInChildren<HingeJoint>();
-				motorRight = gameObject.AddComponent<Motor>();  // new Motor("Right", jointWheelRight, pidControl);
-				motorRight.SetTargetJoint(jointWheelRight);
-				motorRight.SetPID(_PGain, _IGain, _DGain);
-
-				var wheelRightTransform = jointWheelRight.gameObject.transform.parent;
-				var wheelRightPose = new Pose(wheelRightTransform.localPosition, wheelRightTransform.localRotation);
-				partsPoseMapTable.Add(wheelNameRight, wheelRightPose);
-
-				// Debug.LogFormat("joint Wheel({0}) Left max angular velocity({1})", jointWheelRight.name, jointWheelRight.gameObject.GetComponent<Rigidbody>().maxAngularVelocity);
-			}
-
-			if (motorLeft != null && motorRight != null)
-			{
-				break;
+				SetPartsInitialPose(model.name, motorObject);
 			}
 		}
 
@@ -166,10 +146,17 @@ public partial class MicomSensor : Device
 				{
 					foreach (var bumperJointName in bumperJointNameList)
 					{
-						if (link.jointList.TryGetValue(bumperJointName, out var jointValue))
+						if (link.jointList.TryGetValue(bumperJointName, out var articulationBody))
 						{
-							bumperSensors.Add(jointValue as ConfigurableJoint);
-							Debug.Log(bumperJointName);
+							if (articulationBody.jointType == ArticulationJointType.PrismaticJoint)
+							{
+								bumperSensors.Add(articulationBody);
+								Debug.Log(bumperJointName);
+							}
+							else
+							{
+								Debug.Log(bumperJointName + " is not a prismatic joint type!!!");
+							}
 						}
 					}
 				}
@@ -184,9 +171,7 @@ public partial class MicomSensor : Device
 
 		if (imuSensor != null)
 		{
-			var imuSensorModelTransform = imuSensor.transform.parent;
-			var newPose = new Pose(imuSensorModelTransform.localPosition, imuSensorModelTransform.localRotation);
-			partsPoseMapTable.Add(imuSensor.name, newPose);
+			SetPartsInitialPose(imuSensor.name, imuSensor.gameObject);
 		}
 	}
 
@@ -230,14 +215,9 @@ public partial class MicomSensor : Device
 
 	void FixedUpdate()
 	{
-		if (motorLeft != null)
+		foreach (var motor in _motors.Values)
 		{
-			motorLeft.GetPID().Change(_PGain, _IGain, _DGain);
-		}
-
-		if (motorRight != null)
-		{
-			motorRight.GetPID().Change(_PGain, _IGain, _DGain);
+			motor.GetPID().Change(_PGain, _IGain, _DGain);
 		}
 
 		UpdateIMU();
@@ -263,11 +243,15 @@ public partial class MicomSensor : Device
 			else
 			{
 				var index = 0;
-				foreach (var bumperJoint in bumperSensors)
+				foreach (var bumperBody in bumperSensors)
 				{
-					var threshold = bumperJoint.linearLimit.limit/2;
+					// TODO:
+					// var articulationDrive = (bumperBody.xDrive != null)? bumper.
 
-					var normal = bumperJoint.transform.localPosition.normalized;
+					// bumper.xDrive.upperLimit
+					// var threshold = bumperBody.linearLimit.limit/2;
+
+					var normal = bumperBody.transform.localPosition.normalized;
 					// Debug.Log(index + ": " + normal.ToString("F6"));
 
 					if (normal.x > 0 && normal.z < 0)
@@ -335,8 +319,17 @@ public partial class MicomSensor : Device
 		if (micomSensorData != null)
 		{
 			var odom = micomSensorData.Odom;
-			if ((odom != null) && (motorLeft != null && motorRight != null))
+			if ((odom != null))
 			{
+				var motorLeft = _motors[_wheelNameRight];
+				var motorRight = _motors[_wheelNameRight];
+
+				if (motorLeft == null || motorRight == null)
+				{
+					Debug.Log("cannot find motor object");
+					return false;
+				}
+
 				var angularVelocityLeft = motorLeft.GetCurrentVelocity();
 				var angularVelocityRight = motorRight.GetCurrentVelocity();
 
@@ -366,7 +359,9 @@ public partial class MicomSensor : Device
 
 				motorLeft.Feedback.SetRotatingVelocity(_odomVelocity.y);
 				motorRight.Feedback.SetRotatingVelocity(_odomVelocity.y);
+				// Debug.LogFormat("jointvel: {0}, {1}", angularVelocityLeft * Mathf.Deg2Rad, angularVelocityRight * Mathf.Deg2Rad);
 				// Debug.LogFormat("Odom: {0}, {1}", odom.AngularVelocity.Left, odom.AngularVelocity.Right);
+
 				return true;
 			}
 		}
@@ -406,24 +401,42 @@ public partial class MicomSensor : Device
 
 	public void UpdateMotorFeedback(in float angularVelocity)
 	{
-		motorLeft.Feedback.SetRotatingTargetVelocity(angularVelocity);
-		motorRight.Feedback.SetRotatingTargetVelocity(angularVelocity);
+		foreach (var motor in _motors.Values)
+		{
+			motor.Feedback.SetRotatingTargetVelocity(angularVelocity);
+		}
 	}
 
 	/// <summary>Set motor velocity</summary>
 	/// <remarks>degree per second</remarks>
 	private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)
 	{
-		if (motorLeft != null && motorRight != null)
+		var isRotating = (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight));
+
+		foreach (var motor in _motors.Values)
 		{
-			var isRotating = (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight));
+			motor.Feedback.SetMotionRotating(isRotating);
+		}
 
-			motorLeft.Feedback.SetMotionRotating(isRotating);
-			motorRight.Feedback.SetMotionRotating(isRotating);
+		var motorLeft = _motors[_wheelNameRight];
+		var motorRight = _motors[_wheelNameRight];
 
+		if (motorLeft == null)
+		{
 			motorLeft.SetVelocityTarget(angularVelocityLeft);
+		}
+
+		if (motorRight != null)
+		{
 			motorRight.SetVelocityTarget(angularVelocityRight);
 		}
+	}
+
+	private void SetPartsInitialPose(in string name, in GameObject targetObject)
+	{
+		var targetParentTransform = targetObject.transform.parent;
+		var initialPose = new Pose(targetParentTransform.localPosition, targetParentTransform.localRotation);
+		partsPoseMapTable.Add(name, initialPose);
 	}
 
 	public Pose GetPartsPose(in string targetPartsName)

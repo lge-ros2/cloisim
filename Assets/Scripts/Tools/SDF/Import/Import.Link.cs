@@ -13,7 +13,7 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private static float minimumInertiaTensor = 1e-6f;
+			private static float minimumInertiaTensor = (float)1e-6;
 
 			private UE.Vector3 GetInertiaTensor(in SDF.Inertial inertia)
 			{
@@ -68,37 +68,33 @@ namespace SDF
 
 				var disableConvex = false;
 
-				if (link.Inertial != null)
+				// skip to create articulation body when mass is ZERO
+				if (link.Inertial != null && link.Inertial.mass != 0)
 				{
-					var rigidBody = linkObject.AddComponent<UE.Rigidbody>(); // Add the rigidbody.
+					var articulationBody = linkObject.AddComponent<UE.ArticulationBody>();
 
 					foreach (var collider in linkObject.GetComponentsInChildren<UE.Collider>())
 					{
-						if (collider.attachedRigidbody == null)
+						if (collider.attachedArticulationBody == null)
 						{
-							Debug.LogWarningFormat(linkObject.name + " > " + collider.name + " [=] null Rigidbody ");
+							Debug.LogWarningFormat(linkObject.name + " > " + collider.name + " [=] null ArticulationBody ");
 						}
 					}
 
-					rigidBody.velocity = UE.Vector3.zero;
-					rigidBody.angularVelocity = UE.Vector3.zero;
-					rigidBody.drag = 0.1f;
-					rigidBody.angularDrag = 0.50f;
+					articulationBody.velocity = UE.Vector3.zero;
+					articulationBody.angularVelocity = UE.Vector3.zero;
 
-					rigidBody.useGravity = link.Gravity;
-					rigidBody.isKinematic = link.Kinematic;
+					articulationBody.useGravity = (link.Kinematic)? false:link.Gravity;
 
-					rigidBody.mass = (float)link.Inertial.mass;
+					articulationBody.mass = (float)link.Inertial.mass;
 
-					// rigidBody.ResetCenterOfMass();
-					// rigidBody.ResetInertiaTensor();
-					rigidBody.centerOfMass = SDF2Unity.GetPosition(link.Inertial.pose.Pos);
-					// rigidBody.inertiaTensor = GetInertiaTensor(link.Inertial);
-					// rigidBody.inertiaTensorRotation = Quaternion.identity;
-					// Debug.Log(rigidBody.name + " => Center Of Mass: " + rigidBody.centerOfMass.ToString("F6") + ", intertia: " + rigidBody.inertiaTensor.ToString("F6") + ", " + rigidBody.inertiaTensorRotation.ToString("F6"));
-					Debug.Log(rigidBody.name + " => sleep threshold: " + rigidBody.sleepThreshold + ", " + rigidBody.sleepVelocity + ", " + rigidBody.sleepAngularVelocity);
-					Debug.Log(rigidBody.name + " => is sleeping: " + rigidBody.IsSleeping());
-					// rigidBody.Sleep();
+					articulationBody.centerOfMass = SDF2Unity.GetPosition(link.Inertial.pose.Pos);
+
+					// TODO: NOT Recommended to use innertia values from SDF
+					// articulationBody.inertiaTensor = GetInertiaTensor(link.Inertial);
+					// articulationBody.inertiaTensorRotation = Quaternion.identity;
+					// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
+					// Debug.Log("Create link body " + linkObject.name);
 				}
 				else
 				{

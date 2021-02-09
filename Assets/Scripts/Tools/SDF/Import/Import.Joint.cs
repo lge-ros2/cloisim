@@ -13,86 +13,140 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private static UE.GameObject FindObjectByName(string name, UE.Transform target)
+			private static UE.Transform FindTransformByName(in string name, UE.GameObject targetObject)
 			{
-				UE.GameObject objectFound = null;
+				UE.Transform foundLinkObject = null;
+
+				var rootTransform = targetObject.transform;
+
+				while (!rootTransform.parent.Equals(targetObject.transform.root))
+				{
+					rootTransform = rootTransform.parent;
+				}
 
 				if (name.Contains("::"))
 				{
-					name = name.Replace("::", ":");
-					var tmp = name.Split(':');
-					if (tmp.Length == 2)
+					var splittedName = name.Replace("::", ":").Split(':');
+					if (splittedName.Length == 2)
 					{
-						var obj = target.Find(tmp[0]);
-						if (obj != null)
+						UE.Transform modelTransform = null;
+
+						foreach (var modelObject in rootTransform.GetComponentsInChildren<SDF.Helper.Model>())
 						{
-							var obj2 = obj.Find(tmp[1]);
-							if (obj2 != null)
-								objectFound = obj2.gameObject;
+							if (modelObject.name.Equals(splittedName[0]))
+							{
+								modelTransform = modelObject.transform;
+								break;
+							}
+						}
+
+						if (modelTransform != null)
+						{
+							var linkTransform = modelTransform.Find(splittedName[1]);
+							if (linkTransform != null)
+							{
+								foundLinkObject = linkTransform;
+							}
 						}
 					}
 				}
 				else
 				{
-					var obj = target.Find(name);
-					if (obj != null)
+					// foreach (var linkObject in rootTransform.GetComponentsInChildren<SDF.Helper.Link>())
 					{
-						objectFound = obj.gameObject;
+						var transform = targetObject.transform.Find(name);
+						if (transform != null)
+						{
+							foundLinkObject = transform;
+							// break;
+						}
 					}
 				}
 
-				return objectFound;
+				return foundLinkObject;
 			}
 
 			protected override void ImportJoint(in Joint joint, in System.Object parentObject)
 			{
-				var linkNameParent = joint.ParentLinkName;
-				var linkNameChild = joint.ChildLinkName;
+				var targetObject = (parentObject as UE.GameObject);
 
-				// Debug.LogFormat("[Joint] {0}, Connection: {1} <= {2}", joint.Name, linkNameParent, linkNameChild);
+				// Debug.LogFormat("[Joint] {0}, {1} <= {2}", joint.Name, joint.ParentLinkName, joint.ChildLinkName);
 
-				var transformParent = (parentObject as UE.GameObject).transform;
+				var linkObjectParent = FindTransformByName(joint.ParentLinkName, targetObject);
+				var linkObjectChild = FindTransformByName(joint.ChildLinkName, targetObject);
 
-				var linkObjectParent = FindObjectByName(linkNameParent, transformParent);
-				var linkObjectChild = FindObjectByName(linkNameChild, transformParent);
+				if (linkObjectParent is null)
+				{
+					Debug.LogErrorFormat("parent Link object is NULL!!! {0}", joint.ParentLinkName);
+					return;
+				}
+
+				if (linkObjectChild is null)
+				{
+					Debug.LogErrorFormat("child Link object is NULL!!! {0}", joint.ChildLinkName);
+					return;
+				}
+
+				var articulationBodyChild = linkObjectChild.GetComponent<UE.ArticulationBody>();
+
+				// articulationBodyChild.enabled = false;
 
 				if (linkObjectChild is null || linkObjectParent is null)
 				{
-					UE.Debug.LogErrorFormat("Link object is NULL!!! child({0}) parent({1})", linkObjectChild, linkObjectParent);
+					Debug.LogErrorFormat("RigidBody of Link is NULL!!! child({0}) parent({1})", linkObjectChild, linkObjectParent);
 					return;
 				}
-
-				var rigidBodyChild = linkObjectChild.GetComponent<UE.Rigidbody>();
-				var rigidBodyParent = linkObjectParent.GetComponent<UE.Rigidbody>();
-
-				if (rigidBodyChild is null || rigidBodyParent is null)
+				else
 				{
-					Debug.LogErrorFormat("RigidBody of Link is NULL!!! child({0}) parent({1})", rigidBodyChild, rigidBodyParent);
-					return;
-				}
+					var childModelTransform = linkObjectChild.parent;
+					var parentModelTransform = linkObjectParent.parent;
 
-				UE.Joint jointComponent = null;
+					var anchorPose = new UE.Pose();
+
+					if (childModelTransform.Equals(parentModelTransform))
+					{
+						linkObjectChild.SetParent(linkObjectParent);
+
+						// Set anchor pose
+						anchorPose.position = linkObjectParent.localPosition;
+						anchorPose.rotation = linkObjectParent.localRotation;
+						// anchorPose.position += linkObjectChild.localPosition;
+						// anchorPose.rotation *= linkObjectChild.localRotation;
+					}
+					else
+					{
+						childModelTransform.SetParent(linkObjectParent);
+
+						// Set anchor pose
+						anchorPose.position = childModelTransform.localPosition;
+						anchorPose.rotation = childModelTransform.localRotation;
+						anchorPose.position += linkObjectChild.localPosition;
+						anchorPose.rotation *= linkObjectChild.localRotation;
+					}
+
+					Implement.Joint.SetArticulationBodyAnchor(articulationBodyChild, anchorPose);
+				}
 
 				switch (joint.Type)
 				{
 					case "ball":
-						jointComponent = Implement.Joint.AddBall(linkObjectChild, rigidBodyParent);
+						Implement.Joint.MakeBall(articulationBodyChild);
 						break;
 
 					case "prismatic":
-						jointComponent = Implement.Joint.AddPrismatic(joint.Axis, joint.OdePhysics, joint.Pose, linkObjectChild, rigidBodyParent);
+						Implement.Joint.MakePrismatic(articulationBodyChild, joint.Axis, joint.PhysicsODE, joint.Pose);
 						break;
 
 					case "revolute":
-						jointComponent = Implement.Joint.AddRevolute(joint.Axis, linkObjectChild, rigidBodyParent);
+						Implement.Joint.MakeRevolute(articulationBodyChild, joint.Axis);
 						break;
 
 					case "revolute2":
-						jointComponent = Implement.Joint.AddRevolute2(joint.Axis, joint.Axis2, linkObjectChild, rigidBodyParent);
+						Implement.Joint.MakeRevolute2(articulationBodyChild, joint.Axis, joint.Axis2);
 						break;
 
 					case "fixed":
-						jointComponent = Implement.Joint.AddFixed(linkObjectChild, rigidBodyParent);
+						Implement.Joint.MakeFixed(articulationBodyChild);
 						break;
 
 					case "gearbox":
@@ -111,15 +165,12 @@ namespace SDF
 						break;
 				}
 
-				if (jointComponent != null)
-				{
-					Implement.Joint.SetCommonConfiguration(jointComponent, joint.Pose.Pos, linkObjectChild);
+				// articulationBodyChild.enabled = true;
 
-					var linkPlugin = linkObjectChild.GetComponent<Helper.Link>();
-					if (linkPlugin != null)
-					{
-						linkPlugin.jointList.Add(joint.Name, jointComponent);
-					}
+				var linkPlugin = linkObjectChild.GetComponent<Helper.Link>();
+				if (linkPlugin != null)
+				{
+					linkPlugin.jointList.Add(joint.Name, articulationBodyChild);
 				}
 			}
 		}

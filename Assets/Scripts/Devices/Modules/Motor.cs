@@ -103,8 +103,7 @@ public class Motor : MonoBehaviour
 	}
 
 	private PID pidControl = null;
-	private HingeJoint joint = null;
-	private Rigidbody _motorBody;
+	private ArticulationBody _motorBody;
 
 	private bool _enableMotor = false;
 	private float _lastAngle = 0f;
@@ -122,11 +121,22 @@ public class Motor : MonoBehaviour
 		return (_motorBody == null)? string.Empty:_motorBody.transform.parent.name;
 	}
 
-	public void SetTargetJoint(in HingeJoint targetJoint)
+	public void SetTargetJoint(in GameObject target)
 	{
-		joint = targetJoint;
-		joint.useMotor = true;
-		_motorBody = joint.GetComponent<Rigidbody>();
+		var body = target.GetComponentInChildren<ArticulationBody>();
+		SetTargetJoint(body);
+	}
+
+	public void SetTargetJoint(in ArticulationBody body)
+	{
+		if (body.jointType.Equals(ArticulationJointType.RevoluteJoint) || body.jointType.Equals(ArticulationJointType.SphericalJoint))
+		{
+			_motorBody = body;
+		}
+		else
+		{
+			Debug.LogWarningFormat("joint type({0}) is not revolte!!", body.jointType);
+		}
 	}
 
 	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
@@ -143,14 +153,17 @@ public class Motor : MonoBehaviour
 	/// <remarks>degree per second</remarks>
 	public float GetCurrentVelocity()
 	{
-		return (joint)? (joint.velocity):0;
+		Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
+			_motorBody.jointVelocity[0], _motorBody.jointAcceleration[0], _motorBody.jointForce[0], _motorBody.jointFriction, _motorBody.jointPosition[0]);
+
+		return (_motorBody)? (_motorBody.jointVelocity[0]):0;
 	}
 
 	/// <summary>Set Target Velocity with PID control</summary>
 	/// <remarks>degree per second</remarks>
 	public void SetVelocityTarget(in float targetAngularVelocity)
 	{
-		_lastAngle = joint.angle;
+		// _lastAngle = joint.angle;
 
 		if (targetAngularVelocity.Equals(float.Epsilon) || targetAngularVelocity == 0f)
 		{
@@ -184,20 +197,18 @@ public class Motor : MonoBehaviour
 
 	void FixedUpdate()
 	{
-		if (joint == null)
-		{
-			return;
-		}
+		// if (joint == null)
+		// {
+			// return;
+		// }
 
-		var motor = joint.motor;
+		// var motor = joint.motor;
 
-		var currentAngle = joint.angle + 180f;
-		var rotatedAngle = _lastAngle - currentAngle;
-		_lastAngle = currentAngle;
+		// var currentAngle = joint.angle + 180f;
+		// var rotatedAngle = _lastAngle - currentAngle;
+		// _lastAngle = currentAngle;
 
-		var currentVelocity = rotatedAngle / Time.fixedDeltaTime;
-
-		var targetAngle = _targetAngularVelocity * Time.fixedDeltaTime;
+		var currentVelocity = _motorBody.jointVelocity[0];
 
 		// Compensate target angular velocity
 		var targetAngularVelocityCompensation = 0f;
@@ -216,7 +227,7 @@ public class Motor : MonoBehaviour
 		}
 		else
 		{
-			commandForce = pidControl.Update(targetAngle, rotatedAngle, Time.fixedDeltaTime);
+			commandForce = pidControl.Update(_targetAngularVelocity, currentVelocity, Time.fixedDeltaTime);
 
 			// Debug.Log(GetMotorName() + ", " + _targetAngularVelocity + " +- " + targetAngularVelocityCompensation + " = " + compensatedTargetAngularVelocity);
 
@@ -231,11 +242,14 @@ public class Motor : MonoBehaviour
 		}
 
 		// targetVelocity angular velocity in degrees per second.
-		motor.targetVelocity = compensatedTargetAngularVelocity;
-		motor.force = commandForce;
+		var xDrive = _motorBody.xDrive;
 
+		xDrive.targetVelocity = compensatedTargetAngularVelocity;
+		xDrive.damping = commandForce;
+
+		_motorBody.xDrive = xDrive;
 		// Should set the JointMotor value to update
-		joint.motor = motor;
+		// joint.motor = motor;
 	}
 
 	public void Stop()

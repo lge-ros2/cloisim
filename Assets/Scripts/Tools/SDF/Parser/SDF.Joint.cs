@@ -14,44 +14,55 @@ namespace SDF
 		private const string TARGET_TAG = "joint";
 		public Joints() : base(TARGET_TAG) {}
 		public Joints(XmlNode _node) : base(_node, TARGET_TAG) {}
-
 	}
 
 	public class Axis
 	{
+		/// <summary>An element specifying physical properties of the joint. These values are used to specify modeling properties of the joint, particularly useful for simulation.</summary>
+		public class Dynamics
+		{
+			public double damping; // The physical velocity dependent viscous damping coefficient of the joint.
+			public double friction; // The physical static friction value of the joint.
+			public double spring_reference; // The spring reference position for this joint axis.
+			public double spring_stiffness; // The spring stiffness for this joint axis.
+		}
+
+		/// <summary>specifies the limits of this joint</summary>
+		public class Limit
+		{
+			public double lower = -1e+16; // Specifies the lower joint limit (radians for revolute joints, meters for prismatic joints). Omit if joint is continuous.
+			public double upper = 1e+16; // Specifies the upper joint limit (radians for revolute joints, meters for prismatic joints). Omit if joint is continuous.
+			public double effort = -1; // A value for enforcing the maximum joint effort applied. Limit is not enforced if value is negative.
+			public double velocity = -1; // A value for enforcing the maximum joint velocity.
+			public double stiffness = 1e+08; // Joint stop stiffness.
+			public double dissipation = 1; // Joint stop dissipation.
+			public bool Use()
+			{
+				return (lower.Equals(-1e+16) && upper.Equals(1e+16))? false:true;
+			}
+		}
+
 		public double initial_position = 0.0;
 
 		public Vector3<int> xyz = new Vector3<int>();
 
 		public bool use_parent_model_frame = false;
 
-		public double dynamics_damping = 0.0f;
+		public Dynamics dynamics = null;
 
-		// public double dynamics_friction = 0.0;
-		// dynamics_spring_reference
-		public double dynamics_spring_stiffness = 0.0;
-
-		public double limit_lower = -1e+16; // radians for revolute joints meters for prismatic joints
-		public double limit_upper = 1e+16; // radians for revolute joints meters for prismatic joints
-
-		// limit_effort
-		// limit_velocity
-		// limit_stiffness
-		// limit_dissipation
-
-		public bool UseLimit()
-		{
-			return (limit_lower.Equals(-1e+16) && limit_upper.Equals(1e+16))? false:true;
-		}
-	}
-
-	public class OdePhysics
-	{
-		public double max_force = double.PositiveInfinity;
+		public Limit limit = new Limit();
 	}
 
 	public class Joint : Entity
 	{
+		public class Physics
+		{
+			public class ODE
+			{
+				public double max_force = double.PositiveInfinity;
+			}
+		}
+
 		private string parent = string.Empty;
 		private string child = string.Empty;
 
@@ -63,7 +74,7 @@ namespace SDF
 		private Axis axis2 = null; // for revolute2(second axis)/universal joints
 
 		// <physics> : TBD
-		private OdePhysics odePhysics = null;
+		private Physics.ODE ode = null;
 
 		// <sensor> : TBD, ???
 
@@ -74,12 +85,12 @@ namespace SDF
 		public Axis Axis => axis;
 		public Axis Axis2 => axis2;
 
-		public OdePhysics OdePhysics => odePhysics;
+		public Physics.ODE PhysicsODE => ode;
 
 		public Joint(XmlNode _node)
 			: base(_node)
 		{
-			odePhysics = new OdePhysics();
+			ode = new Physics.ODE();
 
 			if (root != null)
 			{
@@ -114,14 +125,16 @@ namespace SDF
 
 					if (IsValidNode("axis/limit"))
 					{
-						axis.limit_lower = GetValue<double>("axis/limit/lower");
-						axis.limit_upper = GetValue<double>("axis/limit/upper");
+						axis.limit.lower = GetValue<double>("axis/limit/lower");
+						axis.limit.upper = GetValue<double>("axis/limit/upper");
 					}
 
 					if (IsValidNode("axis/dynamics"))
 					{
-						axis.dynamics_damping = GetValue<double>("axis/dynamics/damping");
-						axis.dynamics_spring_stiffness = GetValue<double>("axis/dynamics/spring_stiffness");
+						axis.dynamics = new Axis.Dynamics();
+						axis.dynamics.damping = GetValue<double>("axis/dynamics/damping");
+						axis.dynamics.spring_stiffness = GetValue<double>("axis/dynamics/spring_stiffness");
+						axis.dynamics.friction = GetValue<double>("axis/dynamics/friction");
 					}
 
 					if (Type.Equals("revolute2"))
@@ -130,10 +143,18 @@ namespace SDF
 						xyzStr = GetValue<string>("axis2/xyz");
 						axis2.xyz.FromString(xyzStr);
 
+						if (IsValidNode("axis2/dynamics"))
+						{
+							axis2.dynamics = new Axis.Dynamics();
+							axis2.dynamics.damping = GetValue<double>("axis2/dynamics/damping");
+							axis2.dynamics.spring_stiffness = GetValue<double>("axis2/dynamics/spring_stiffness");
+							axis.dynamics.friction = GetValue<double>("axis2/dynamics/friction");
+						}
+
 						if (IsValidNode("axis2/limit"))
 						{
-							axis2.limit_lower = GetValue<double>("axis2/limit/lower");
-							axis2.limit_upper = GetValue<double>("axis2/limit/upper");
+							axis2.limit.lower = GetValue<double>("axis2/limit/lower");
+							axis2.limit.upper = GetValue<double>("axis2/limit/upper");
 						}
 					}
 
@@ -141,7 +162,7 @@ namespace SDF
 					{
 						if (IsValidNode("physics/ode/max_force"))
 						{
-							odePhysics.max_force = GetValue<double>("physics/ode/max_force");
+							ode.max_force = GetValue<double>("physics/ode/max_force");
 						}
 					}
 					break;
