@@ -218,7 +218,6 @@ GameObject:
   - component: {fileID: 25597964}
   - component: {fileID: 25597965}
   - component: {fileID: 25597966}
-  - component: {fileID: 25597967}
   m_Layer: 0
   m_Name: LeftWheel
   m_TagString: Link
@@ -305,18 +304,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isSelfCollide: 0
---- !u!114 &25597967
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 25597963}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc6371eed5210059c947038911df37dd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &34803206
 GameObject:
   m_ObjectHideFlags: 0
@@ -2206,11 +2193,11 @@ ArticulationBody:
   m_GameObject: {fileID: 747390629}
   m_Enabled: 1
   m_Mass: 80
-  m_ParentAnchorPosition: {x: 0, y: 0.007999986, z: 0}
-  m_ParentAnchorRotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
+  m_ParentAnchorPosition: {x: 0, y: 0.008, z: 0}
+  m_ParentAnchorRotation: {x: 0, y: 0, z: 0, w: 1}
   m_AnchorPosition: {x: 0, y: 0, z: 0}
-  m_AnchorRotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
-  m_ComputeParentAnchor: 1
+  m_AnchorRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_ComputeParentAnchor: 0
   m_ArticulationJointType: 0
   m_LinearX: 2
   m_LinearY: 2
@@ -2616,7 +2603,6 @@ GameObject:
   - component: {fileID: 876502905}
   - component: {fileID: 876502906}
   - component: {fileID: 876502907}
-  - component: {fileID: 876502908}
   m_Layer: 0
   m_Name: RightWheel
   m_TagString: Link
@@ -2703,18 +2689,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isSelfCollide: 0
---- !u!114 &876502908
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 876502904}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc6371eed5210059c947038911df37dd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &887438904
 GameObject:
   m_ObjectHideFlags: 0
@@ -3036,9 +3010,6 @@ MonoBehaviour:
   circularRotationMethod: 0
   forceUpdatePivotPointOnChange: 1
   manuallyHandleGizmo: 0
-  selectionMask:
-    serializedVersion: 2
-    m_Bits: 1
   SetMoveType: 116
   SetRotateType: 114
   SetAllTransformType: 121
@@ -4531,10 +4502,10 @@ ArticulationBody:
   m_Enabled: 1
   m_Mass: 3
   m_ParentAnchorPosition: {x: 0, y: -0.37, z: -0.6}
-  m_ParentAnchorRotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
+  m_ParentAnchorRotation: {x: 0, y: 0, z: 0, w: 1}
   m_AnchorPosition: {x: 0, y: 0, z: 0}
-  m_AnchorRotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
-  m_ComputeParentAnchor: 1
+  m_AnchorRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_ComputeParentAnchor: 0
   m_ArticulationJointType: 3
   m_LinearX: 2
   m_LinearY: 2
@@ -5556,11 +5527,10 @@ ArticulationBody:
   m_Enabled: 1
   m_Mass: 2
   m_ParentAnchorPosition: {x: -0.48000002, y: -0.22, z: 0.3}
-  m_ParentAnchorRotation: {x: -0.000000027186823, y: -0.00000001496002, z: 0.70710677,
-    w: 0.70710677}
+  m_ParentAnchorRotation: {x: 0, y: 0, z: 0, w: 1}
   m_AnchorPosition: {x: 0, y: 0, z: 0}
-  m_AnchorRotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
-  m_ComputeParentAnchor: 1
+  m_AnchorRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_ComputeParentAnchor: 0
   m_ArticulationJointType: 1
   m_LinearX: 0
   m_LinearY: 1
@@ -5675,7 +5645,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1791041572}
-  m_LocalRotation: {x: 0.000000027186825, y: 0.000000014960023, z: 0.7071068, w: 0.7071068}
+  m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
   m_LocalPosition: {x: -0.1399999, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
@@ -5907,11 +5877,10 @@ ArticulationBody:
   m_Enabled: 1
   m_Mass: 2
   m_ParentAnchorPosition: {x: 0.48000002, y: -0.22, z: 0.3}
-  m_ParentAnchorRotation: {x: 0.000000046449244, y: -0.00000013074293, z: 0.70710677,
-    w: 0.70710677}
+  m_ParentAnchorRotation: {x: 0, y: 0, z: 0, w: 1}
   m_AnchorPosition: {x: 0, y: 0, z: 0}
-  m_AnchorRotation: {x: 0, y: 0, z: 0.70710677, w: 0.70710677}
-  m_ComputeParentAnchor: 1
+  m_AnchorRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_ComputeParentAnchor: 0
   m_ArticulationJointType: 1
   m_LinearX: 0
   m_LinearY: 1
