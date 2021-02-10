@@ -44,7 +44,7 @@ namespace SDF
 
 		public double initial_position = 0.0;
 
-		public Vector3<int> xyz = new Vector3<int>();
+		public Vector3<int> xyz = new Vector3<int>(0, 0, 1);
 
 		public bool use_parent_model_frame = false;
 

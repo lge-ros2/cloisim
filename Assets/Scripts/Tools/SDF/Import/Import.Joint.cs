@@ -89,8 +89,6 @@ namespace SDF
 
 				var articulationBodyChild = linkObjectChild.GetComponent<UE.ArticulationBody>();
 
-				// articulationBodyChild.enabled = false;
-
 				if (linkObjectChild is null || linkObjectParent is null)
 				{
 					Debug.LogErrorFormat("RigidBody of Link is NULL!!! child({0}) parent({1})", linkObjectChild, linkObjectParent);
@@ -98,28 +96,26 @@ namespace SDF
 				}
 				else
 				{
-					var childModelTransform = linkObjectChild.parent;
-					var parentModelTransform = linkObjectParent.parent;
+					var modelTransformChild = linkObjectChild.parent;
+					var modelTransformParent = linkObjectParent.parent;
 
 					var anchorPose = new UE.Pose();
 
-					if (childModelTransform.Equals(parentModelTransform))
+					if (modelTransformChild.Equals(modelTransformParent))
 					{
 						linkObjectChild.SetParent(linkObjectParent);
 
 						// Set anchor pose
 						anchorPose.position = linkObjectParent.localPosition;
 						anchorPose.rotation = linkObjectParent.localRotation;
-						// anchorPose.position += linkObjectChild.localPosition;
-						// anchorPose.rotation *= linkObjectChild.localRotation;
 					}
 					else
 					{
-						childModelTransform.SetParent(linkObjectParent);
+						modelTransformChild.SetParent(linkObjectParent);
 
 						// Set anchor pose
-						anchorPose.position = childModelTransform.localPosition;
-						anchorPose.rotation = childModelTransform.localRotation;
+						anchorPose.position = modelTransformChild.localPosition;
+						anchorPose.rotation = modelTransformChild.localRotation;
 						anchorPose.position += linkObjectChild.localPosition;
 						anchorPose.rotation *= linkObjectChild.localRotation;
 					}
@@ -164,8 +160,6 @@ namespace SDF
 						Debug.LogWarningFormat("Check Joint type[{0}]", joint.Type);
 						break;
 				}
-
-				// articulationBodyChild.enabled = true;
 
 				var linkPlugin = linkObjectChild.GetComponent<Helper.Link>();
 				if (linkPlugin != null)

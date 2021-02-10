@@ -107,7 +107,7 @@ public class Motor : MonoBehaviour
 
 	private bool _enableMotor = false;
 	private float _lastAngle = 0f;
-	private float _targetAngularVelocity = 0f;
+	public float _targetAngularVelocity = 0f;
 
 	public const float compensatingRatio = 1.25f; // compensting target velocity
 
@@ -153,11 +153,13 @@ public class Motor : MonoBehaviour
 	/// <remarks>degree per second</remarks>
 	public float GetCurrentVelocity()
 	{
-		Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
-			_motorBody.jointVelocity[0], _motorBody.jointAcceleration[0], _motorBody.jointForce[0], _motorBody.jointFriction, _motorBody.jointPosition[0]);
-
+		// Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
+			// _motorBody.jointVelocity[0], _motorBody.jointAcceleration[0], _motorBody.jointForce[0], _motorBody.jointFriction, _motorBody.jointPosition[0]);
+		currentMotorVelocity = _motorBody.jointVelocity[0];
 		return (_motorBody)? (_motorBody.jointVelocity[0]):0;
 	}
+
+	public float currentMotorVelocity;
 
 	/// <summary>Set Target Velocity with PID control</summary>
 	/// <remarks>degree per second</remarks>

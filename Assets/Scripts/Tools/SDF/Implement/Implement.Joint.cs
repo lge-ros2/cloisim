@@ -40,8 +40,7 @@ namespace SDF
 
 				if (axis.limit.Use())
 				{
-					drive.lowerLimit = (float)axis.limit.lower * UE.Mathf.Rad2Deg;
-					drive.upperLimit = (float)axis.limit.upper * UE.Mathf.Rad2Deg;
+					SetRevoluteArticulationDriveLimit(ref drive, axis.limit);
 				}
 
 				drive.forceLimit = float.MaxValue;
@@ -50,6 +49,10 @@ namespace SDF
 
 				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
 				{
+					if (jointAxis.Equals(UE.Vector3.left))
+					{
+						ReverseArticulationBodyAxis(body, UE.Vector3.up * 180);
+					}
 					body.xDrive = drive;
 					body.twistLock = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.swingYLock = UE.ArticulationDofLock.LockedMotion;
@@ -57,6 +60,10 @@ namespace SDF
 				}
 				else if (jointAxis.Equals(UE.Vector3.up) || jointAxis.Equals(UE.Vector3.down))
 				{
+					if (jointAxis.Equals(UE.Vector3.down))
+					{
+						ReverseArticulationBodyAxis(body, UE.Vector3.forward * 180);
+					}
 					body.yDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
 					body.swingYLock = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
@@ -64,6 +71,10 @@ namespace SDF
 				}
 				else if (jointAxis.Equals(UE.Vector3.forward) || jointAxis.Equals(UE.Vector3.back))
 				{
+					if (jointAxis.Equals(UE.Vector3.back))
+					{
+						ReverseArticulationBodyAxis(body, UE.Vector3.right * 180);
+					}
 					body.zDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
 					body.swingYLock = UE.ArticulationDofLock.LockedMotion;
@@ -79,25 +90,36 @@ namespace SDF
 
 				if (axis2.limit.Use())
 				{
-					drive.lowerLimit = (float)axis2.limit.lower * UE.Mathf.Rad2Deg;
-					drive.upperLimit = (float)axis2.limit.upper * UE.Mathf.Rad2Deg;
+					SetRevoluteArticulationDriveLimit(ref drive, axis2.limit);
 				}
 
 				drive.forceLimit = float.MaxValue;
 
 				var joint2Axis = SDF2Unity.GetAxis(axis2.xyz);
-				if (joint2Axis.Equals(UE.Vector3.right))
+				if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
 				{
+					if (joint2Axis.Equals(UE.Vector3.left))
+					{
+						ReverseArticulationBodyAxis(body, UE.Vector3.up * 180);
+					}
 					body.xDrive = drive;
 					body.twistLock = (axis2.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
-				else if (joint2Axis.Equals(UE.Vector3.up))
+				else if (joint2Axis.Equals(UE.Vector3.up) || joint2Axis.Equals(UE.Vector3.down))
 				{
+					if (joint2Axis.Equals(UE.Vector3.down))
+					{
+						ReverseArticulationBodyAxis(body, UE.Vector3.forward * 180);
+					}
 					body.yDrive = drive;
 					body.swingYLock = (axis2.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
-				else if (joint2Axis.Equals(UE.Vector3.forward))
+				else if (joint2Axis.Equals(UE.Vector3.forward) || joint2Axis.Equals(UE.Vector3.back))
 				{
+					if (joint2Axis.Equals(UE.Vector3.back))
+					{
+						ReverseArticulationBodyAxis(body, UE.Vector3.right * 180);
+					}
 					body.zDrive = drive;
 					body.swingZLock = (axis2.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
@@ -144,9 +166,9 @@ namespace SDF
 
 				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
 				{
-					if (jointAxis.Equals(UE.Vector3.back))
+					if (jointAxis.Equals(UE.Vector3.left))
 					{
-						body.anchorRotation *= UE.Quaternion.Euler(0, 180, 0);
+						ReverseArticulationBodyAxis(body, UE.Vector3.up * 180);
 					}
 
 					body.xDrive = drive;
@@ -156,9 +178,9 @@ namespace SDF
 				}
 				else if (jointAxis.Equals(UE.Vector3.up) || jointAxis.Equals(UE.Vector3.down))
 				{
-					if (jointAxis.Equals(UE.Vector3.back))
+					if (jointAxis.Equals(UE.Vector3.down))
 					{
-						body.anchorRotation *= UE.Quaternion.Euler(0, 0, 180);
+						ReverseArticulationBodyAxis(body, UE.Vector3.forward * 180);
 					}
 
 					body.yDrive = drive;
@@ -170,13 +192,25 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.back))
 					{
-						body.anchorRotation *= UE.Quaternion.Euler(0, 180, 0);
+						ReverseArticulationBodyAxis(body, UE.Vector3.right * 180);
 					}
 					body.zDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockY = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockZ = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
+			}
+
+			private static void ReverseArticulationBodyAxis(in UE.ArticulationBody body, in UE.Vector3 euler)
+			{
+				body.anchorRotation *= UE.Quaternion.Euler(euler);
+				body.parentAnchorRotation *= UE.Quaternion.Euler(euler);
+			}
+
+			private static void SetRevoluteArticulationDriveLimit(ref UE.ArticulationDrive drive, in SDF.Axis.Limit limit)
+			{
+				drive.lowerLimit = -(float)limit.upper * UE.Mathf.Rad2Deg;
+				drive.upperLimit = -(float)limit.lower * UE.Mathf.Rad2Deg;
 			}
 		}
 	}

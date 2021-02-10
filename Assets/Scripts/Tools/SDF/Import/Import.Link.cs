@@ -66,8 +66,6 @@ namespace SDF
 					return;
 				}
 
-				var disableConvex = false;
-
 				// skip to create articulation body when mass is ZERO
 				if (link.Inertial != null && link.Inertial.mass != 0)
 				{
@@ -98,12 +96,8 @@ namespace SDF
 				}
 				else
 				{
-					// If the child does not have rigidbody, collider of child would disable convex.
-					disableConvex = true;
-				}
+					// If the child does not have articulation body, collider of child would disable convex.
 
-				if (disableConvex)
-				{
 					// Sholud be handled after set parent object!!
 					var meshColliders = linkObject.GetComponentsInChildren<UE.MeshCollider>();
 					foreach (var meshCollider in meshColliders)
