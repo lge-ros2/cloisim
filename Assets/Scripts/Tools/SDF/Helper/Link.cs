@@ -31,6 +31,8 @@ namespace SDF
 			// Start is called before the first frame update
 			void Start()
 			{
+				_modelHelper.ConfigureArticulationBody();
+
 				// Handle self collision
 				if (!isSelfCollide)
 				{

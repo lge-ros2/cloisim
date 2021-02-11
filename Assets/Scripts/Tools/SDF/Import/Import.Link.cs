@@ -81,11 +81,8 @@ namespace SDF
 
 					articulationBody.velocity = UE.Vector3.zero;
 					articulationBody.angularVelocity = UE.Vector3.zero;
-
 					articulationBody.useGravity = (link.Kinematic)? false:link.Gravity;
-
 					articulationBody.mass = (float)link.Inertial.mass;
-
 					articulationBody.centerOfMass = SDF2Unity.GetPosition(link.Inertial.pose.Pos);
 
 					// TODO: NOT Recommended to use innertia values from SDF

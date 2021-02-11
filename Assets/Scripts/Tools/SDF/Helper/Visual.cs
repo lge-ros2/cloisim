@@ -20,7 +20,7 @@ namespace SDF
 				base.Awake();
 			}
 
-			void Start()
+			new void Start()
 			{
 				SetShadowMode();
 			}

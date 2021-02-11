@@ -26,6 +26,8 @@ namespace SDF
 			{
 				if (isTopModel)
 				{
+					ConfigureArticulationBody();
+
 					if (isStatic)
 					{
 						// if parent model has static option, make it all static in child

@@ -18,13 +18,14 @@ namespace SDF
 			/// <remarks>should add root body first</remarks>
 			private void MakeRootArticulationBody(in GameObject targetObject)
 			{
-				if (targetObject.GetComponent<UE.ArticulationBody>() != null)
-				{
-					return;
-				}
+				var articulationBody = targetObject.GetComponent<UE.ArticulationBody>();
 
 				// Configure articulation body for root object
-				var articulationBody = targetObject.AddComponent<UE.ArticulationBody>();
+				if (articulationBody == null)
+				{
+					articulationBody = targetObject.AddComponent<UE.ArticulationBody>();
+				}
+
 				articulationBody.mass = 0.000000001f;
 				articulationBody.useGravity = false;
 				articulationBody.immovable = false;
