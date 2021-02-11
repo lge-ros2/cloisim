@@ -341,12 +341,19 @@ namespace RuntimeGizmos
 								for (int i = 0; i < targetRootsOrdered.Count; i++)
 								{
 									Transform target = targetRootsOrdered[i];
-									target.Translate(movement, Space.World);
 
 									var articulationBody = target.GetComponent<ArticulationBody>();
 									if (articulationBody != null && articulationBody.isRoot)
 									{
-										articulationBody.TeleportRoot(target.localPosition, target.localRotation);
+										var newPose = new Pose(target.transform.position, target.transform.rotation);
+										newPose.position += movement;
+
+										articulationBody.Sleep();
+										articulationBody.TeleportRoot(newPose.position, newPose.rotation);
+									}
+									else
+									{
+										target.Translate(movement, Space.World);
 									}
 								}
 
@@ -397,19 +404,40 @@ namespace RuntimeGizmos
 								{
 									Transform target = targetRootsOrdered[i];
 
-									if (pivot == TransformPivot.Pivot)
-									{
-										target.Rotate(rotationAxis, rotateAmount, Space.World);
-									}
-									else if (pivot == TransformPivot.Center)
-									{
-										target.RotateAround(originalPivot, rotationAxis, rotateAmount);
-									}
-
 									var articulationBody = target.GetComponent<ArticulationBody>();
 									if (articulationBody != null && articulationBody.isRoot)
 									{
-										articulationBody.TeleportRoot(target.localPosition, target.localRotation);
+										var newPose = new Pose(target.transform.position, target.transform.rotation);
+
+										if (pivot == TransformPivot.Pivot)
+										{
+											var targetRotation = Quaternion.AngleAxis(rotateAmount, rotationAxis);
+											newPose.rotation *= targetRotation;
+											// target.Rotate(rotationAxis, , Space.World);
+										}
+										else if (pivot == TransformPivot.Center)
+										{
+											// Rotate Around
+											var rot = Quaternion.AngleAxis(rotateAmount, rotationAxis);
+											var dir = newPose.position - originalPivot; // find current direction relative to center
+											dir = rot * dir; // rotate the direction
+
+											newPose.position += dir;
+											newPose.rotation *= rot; // rotate object to keep looking at the center
+										}
+										articulationBody.Sleep();
+										articulationBody.TeleportRoot(newPose.position, newPose.rotation);
+									}
+									else
+									{
+										if (pivot == TransformPivot.Pivot)
+										{
+											target.Rotate(rotationAxis, rotateAmount, Space.World);
+										}
+										else if (pivot == TransformPivot.Center)
+										{
+											target.RotateAround(originalPivot, rotationAxis, rotateAmount);
+										}
 									}
 								}
 
