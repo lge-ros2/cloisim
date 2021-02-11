@@ -33,7 +33,6 @@ namespace SDF
 				articulationBody.angularDamping = 0;
 				articulationBody.ResetCenterOfMass();
 				articulationBody.ResetInertiaTensor();
-				articulationBody.inertiaTensor = new UE.Vector3(.000001f, .000001f, .000001f);
 				articulationBody.solverIterations = 0;
 				articulationBody.solverVelocityIterations = 0;
 				// UE.Debug.Log(targetObject.name + " Create root articulation body");
