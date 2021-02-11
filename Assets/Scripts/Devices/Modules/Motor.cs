@@ -157,7 +157,6 @@ public class Motor : MonoBehaviour
 	{
 		// Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
 			// _motorBody.jointVelocity[0], _motorBody.jointAcceleration[0], _motorBody.jointForce[0], _motorBody.jointFriction, _motorBody.jointPosition[0]);
-		currentMotorVelocity = (_motorBody)? (_motorBody.jointVelocity[0]):0;
 		return currentMotorVelocity;
 	}
 
@@ -200,18 +199,20 @@ public class Motor : MonoBehaviour
 
 	void FixedUpdate()
 	{
-		// if (joint == null)
-		// {
-			// return;
-		// }
+		if (!_motorBody.jointType.Equals(ArticulationJointType.RevoluteJoint) && !_motorBody.jointType.Equals(ArticulationJointType.SphericalJoint))
+		{
+			Debug.LogWarning("Articulation Joint Type is wonrg => " + _motorBody.jointType);
+			return;
+		}
 
 		// var motor = joint.motor;
-
 		// var currentAngle = joint.angle + 180f;
 		// var rotatedAngle = _lastAngle - currentAngle;
 		// _lastAngle = currentAngle;
 
-		var currentVelocity = _motorBody.jointVelocity[0];
+		currentMotorVelocity = (_motorBody)? (_motorBody.jointVelocity[0]):0;
+
+		var drive = GetDrive();
 
 		// Compensate target angular velocity
 		var targetAngularVelocityCompensation = 0f;
@@ -230,7 +231,7 @@ public class Motor : MonoBehaviour
 		}
 		else
 		{
-			commandForce = pidControl.Update(_targetAngularVelocity, currentVelocity, Time.fixedDeltaTime);
+			commandForce = pidControl.Update(_targetAngularVelocity, currentMotorVelocity, Time.fixedDeltaTime);
 
 			// Debug.Log(GetMotorName() + ", " + _targetAngularVelocity + " +- " + targetAngularVelocityCompensation + " = " + compensatedTargetAngularVelocity);
 
@@ -245,14 +246,9 @@ public class Motor : MonoBehaviour
 		}
 
 		// targetVelocity angular velocity in degrees per second.
-		var xDrive = _motorBody.xDrive;
-
-		xDrive.targetVelocity = compensatedTargetAngularVelocity;
-		xDrive.damping = commandForce;
-
-		_motorBody.xDrive = xDrive;
-		// Should set the JointMotor value to update
-		// joint.motor = motor;
+		drive.targetVelocity = compensatedTargetAngularVelocity;
+		drive.damping = commandForce;
+		SetDrive(drive);
 	}
 
 	public void Stop()
@@ -260,5 +256,55 @@ public class Motor : MonoBehaviour
 		_motorBody.velocity = Vector3.up * _motorBody.velocity.y;
 		_motorBody.angularVelocity = Vector3.zero;
 		// Debug.Log(GetMotorName() + ": vel " + _motorBody.velocity + ", angvel " + _motorBody.angularVelocity);
+	}
+
+	private ArticulationDrive GetDrive()
+	{
+		var drive = new ArticulationDrive();
+
+		if (_motorBody.jointType.Equals(ArticulationJointType.RevoluteJoint))
+		{
+			drive = _motorBody.xDrive;
+		}
+		else if (_motorBody.jointType.Equals(ArticulationJointType.SphericalJoint))
+		{
+			if (!_motorBody.twistLock.Equals(ArticulationDofLock.LockedMotion))
+			{
+				drive = _motorBody.xDrive;
+			}
+			else if (!_motorBody.swingYLock.Equals(ArticulationDofLock.LockedMotion))
+			{
+				drive = _motorBody.yDrive;
+			}
+			else if (!_motorBody.swingZLock.Equals(ArticulationDofLock.LockedMotion))
+			{
+				drive = _motorBody.zDrive;
+			}
+		}
+
+		return drive;
+	}
+
+	private void SetDrive(in ArticulationDrive drive)
+	{
+		if (_motorBody.jointType.Equals(ArticulationJointType.RevoluteJoint))
+		{
+			_motorBody.xDrive = drive;
+		}
+		else if (_motorBody.jointType.Equals(ArticulationJointType.SphericalJoint))
+		{
+			if (!_motorBody.twistLock.Equals(ArticulationDofLock.LockedMotion))
+			{
+				_motorBody.xDrive = drive;
+			}
+			else if (!_motorBody.swingYLock.Equals(ArticulationDofLock.LockedMotion))
+			{
+				_motorBody.yDrive = drive;
+			}
+			else if (!_motorBody.swingZLock.Equals(ArticulationDofLock.LockedMotion))
+			{
+				_motorBody.zDrive = drive;
+			}
+		}
 	}
 }
