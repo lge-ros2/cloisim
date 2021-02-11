@@ -109,6 +109,8 @@ public class Motor : MonoBehaviour
 	private float _lastAngle = 0f;
 	public float _targetAngularVelocity = 0f;
 
+	public float currentMotorVelocity;
+
 	public const float compensatingRatio = 1.25f; // compensting target velocity
 
 	private RapidChangeControl _rapidControl = new RapidChangeControl();
@@ -155,11 +157,10 @@ public class Motor : MonoBehaviour
 	{
 		// Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
 			// _motorBody.jointVelocity[0], _motorBody.jointAcceleration[0], _motorBody.jointForce[0], _motorBody.jointFriction, _motorBody.jointPosition[0]);
-		currentMotorVelocity = _motorBody.jointVelocity[0];
-		return (_motorBody)? (_motorBody.jointVelocity[0]):0;
+		currentMotorVelocity = (_motorBody)? (_motorBody.jointVelocity[0]):0;
+		return currentMotorVelocity;
 	}
 
-	public float currentMotorVelocity;
 
 	/// <summary>Set Target Velocity with PID control</summary>
 	/// <remarks>degree per second</remarks>
@@ -167,7 +168,7 @@ public class Motor : MonoBehaviour
 	{
 		// _lastAngle = joint.angle;
 
-		if (targetAngularVelocity.Equals(float.Epsilon) || targetAngularVelocity == 0f)
+		if (Mathf.Abs(targetAngularVelocity) < float.Epsilon || targetAngularVelocity == 0f)
 		{
 			_enableMotor = false;
 			_targetAngularVelocity = 0f;

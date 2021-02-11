@@ -321,7 +321,7 @@ public partial class MicomSensor : Device
 			var odom = micomSensorData.Odom;
 			if ((odom != null))
 			{
-				var motorLeft = _motors[_wheelNameRight];
+				var motorLeft = _motors[_wheelNameLeft];
 				var motorRight = _motors[_wheelNameRight];
 
 				if (motorLeft == null || motorRight == null)
@@ -418,10 +418,10 @@ public partial class MicomSensor : Device
 			motor.Feedback.SetMotionRotating(isRotating);
 		}
 
-		var motorLeft = _motors[_wheelNameRight];
+		var motorLeft = _motors[_wheelNameLeft];
 		var motorRight = _motors[_wheelNameRight];
 
-		if (motorLeft == null)
+		if (motorLeft != null)
 		{
 			motorLeft.SetVelocityTarget(angularVelocityLeft);
 		}
