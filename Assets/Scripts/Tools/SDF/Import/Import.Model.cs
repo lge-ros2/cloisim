@@ -26,16 +26,16 @@ namespace SDF
 					articulationBody = targetObject.AddComponent<UE.ArticulationBody>();
 				}
 
-				articulationBody.mass = 0.000000001f;
+				articulationBody.mass = 0.000000000001f;
 				articulationBody.useGravity = false;
 				articulationBody.immovable = false;
 				articulationBody.linearDamping = 0;
 				articulationBody.angularDamping = 0;
 				articulationBody.ResetCenterOfMass();
 				articulationBody.ResetInertiaTensor();
-				articulationBody.inertiaTensor = new UE.Vector3(0.000001f, 0.000001f, 0.000001f);
-				articulationBody.enabled = true;
-
+				articulationBody.inertiaTensor = new UE.Vector3(.000001f, .000001f, .000001f);
+				articulationBody.solverIterations = 0;
+				articulationBody.solverVelocityIterations = 0;
 				// UE.Debug.Log(targetObject.name + " Create root articulation body");
 			}
 
@@ -68,6 +68,10 @@ namespace SDF
 				}
 
 				return newModelObject as System.Object;
+			}
+
+			protected override void AfterImportModel(in SDF.Model model, in System.Object parentObject)
+			{
 			}
 		}
 	}

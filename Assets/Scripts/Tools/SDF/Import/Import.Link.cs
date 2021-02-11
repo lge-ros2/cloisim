@@ -56,7 +56,7 @@ namespace SDF
 				return newLinkObject as System.Object;
 			}
 
-			protected override void PostImportLink(in SDF.Link link, in System.Object targetObject)
+			protected override void AfterImportLink(in SDF.Link link, in System.Object targetObject)
 			{
 				var linkObject = (targetObject as UE.GameObject);
 
@@ -84,6 +84,7 @@ namespace SDF
 					articulationBody.useGravity = (link.Kinematic)? false:link.Gravity;
 					articulationBody.mass = (float)link.Inertial.mass;
 					articulationBody.centerOfMass = SDF2Unity.GetPosition(link.Inertial.pose.Pos);
+					articulationBody.jointType = UE.ArticulationJointType.FixedJoint;
 
 					// TODO: NOT Recommended to use innertia values from SDF
 					// articulationBody.inertiaTensor = GetInertiaTensor(link.Inertial);
@@ -94,7 +95,6 @@ namespace SDF
 				else
 				{
 					// If the child does not have articulation body, collider of child would disable convex.
-
 					// Sholud be handled after set parent object!!
 					var meshColliders = linkObject.GetComponentsInChildren<UE.MeshCollider>();
 					foreach (var meshCollider in meshColliders)

@@ -106,8 +106,8 @@ namespace SDF
 						linkObjectChild.SetParent(linkObjectParent);
 
 						// Set anchor pose
-						anchorPose.position = linkObjectParent.localPosition;
-						anchorPose.rotation = linkObjectParent.localRotation;
+						anchorPose.position = linkObjectChild.localPosition;
+						anchorPose.rotation = linkObjectChild.localRotation;
 					}
 					else
 					{
