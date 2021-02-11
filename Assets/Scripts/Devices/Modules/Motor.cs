@@ -106,10 +106,10 @@ public class Motor : MonoBehaviour
 	private ArticulationBody _motorBody;
 
 	private bool _enableMotor = false;
-	private float _lastAngle = 0f;
-	public float _targetAngularVelocity = 0f;
 
-	public float currentMotorVelocity;
+	public float _targetAngularVelocity = 0;
+	public float _targetTorque = 0;
+	public float _currentMotorVelocity;
 
 	public const float compensatingRatio = 1.25f; // compensting target velocity
 
@@ -157,7 +157,7 @@ public class Motor : MonoBehaviour
 	{
 		// Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
 			// _motorBody.jointVelocity[0], _motorBody.jointAcceleration[0], _motorBody.jointForce[0], _motorBody.jointFriction, _motorBody.jointPosition[0]);
-		return currentMotorVelocity;
+		return _currentMotorVelocity;
 	}
 
 
@@ -165,12 +165,11 @@ public class Motor : MonoBehaviour
 	/// <remarks>degree per second</remarks>
 	public void SetVelocityTarget(in float targetAngularVelocity)
 	{
-		// _lastAngle = joint.angle;
-
 		if (Mathf.Abs(targetAngularVelocity) < float.Epsilon || targetAngularVelocity == 0f)
 		{
 			_enableMotor = false;
 			_targetAngularVelocity = 0f;
+			_motorBody.AddTorque(Vector3.one * 0);
 		}
 		else
 		{
@@ -205,12 +204,7 @@ public class Motor : MonoBehaviour
 			return;
 		}
 
-		// var motor = joint.motor;
-		// var currentAngle = joint.angle + 180f;
-		// var rotatedAngle = _lastAngle - currentAngle;
-		// _lastAngle = currentAngle;
-
-		currentMotorVelocity = (_motorBody)? (_motorBody.jointVelocity[0]):0;
+		_currentMotorVelocity = (_motorBody)? (_motorBody.jointVelocity[0]):0;
 
 		var drive = GetDrive();
 
@@ -231,7 +225,7 @@ public class Motor : MonoBehaviour
 		}
 		else
 		{
-			commandForce = pidControl.Update(_targetAngularVelocity, currentMotorVelocity, Time.fixedDeltaTime);
+			commandForce = pidControl.Update(_targetAngularVelocity, _currentMotorVelocity, Time.fixedDeltaTime);
 
 			// Debug.Log(GetMotorName() + ", " + _targetAngularVelocity + " +- " + targetAngularVelocityCompensation + " = " + compensatedTargetAngularVelocity);
 
