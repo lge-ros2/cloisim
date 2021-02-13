@@ -178,7 +178,7 @@ public class ObjectSpawning : MonoBehaviour
 		if (Physics.Raycast(screenPoint2Ray, out var hit, maxRayDistance))
 		{
 			var parent = hit.transform.parent;
-			if (parent.name.Equals("Props") && hit.transform.tag.Equals("Props"))
+			if (parent.name.Equals("Props") && hit.transform.CompareTag("Props"))
 			{
 				return hit.transform;
 			}
