@@ -116,8 +116,6 @@ namespace SDF
 						// Set anchor pose
 						anchorPose.position = modelTransformChild.localPosition;
 						anchorPose.rotation = modelTransformChild.localRotation;
-						anchorPose.position += linkObjectChild.localPosition;
-						anchorPose.rotation *= linkObjectChild.localRotation;
 					}
 
 					Implement.Joint.SetArticulationBodyAnchor(articulationBodyChild, anchorPose);

@@ -51,7 +51,7 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.left))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.up * 180);
+						ReverseArticulationBodyAxis(body, UE.Vector3.forward * 180);
 					}
 					body.xDrive = drive;
 					body.twistLock = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
@@ -62,7 +62,7 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.down))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.forward * 180);
+						ReverseArticulationBodyAxis(body, UE.Vector3.right * 180);
 					}
 					body.yDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
@@ -73,7 +73,7 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.back))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.right * 180);
+						ReverseArticulationBodyAxis(body, UE.Vector3.up * 180);
 					}
 					body.zDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
@@ -100,7 +100,7 @@ namespace SDF
 				{
 					if (joint2Axis.Equals(UE.Vector3.left))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.up * 180);
+						ReverseArticulationBodyAxis(body, UE.Vector3.forward * 180);
 					}
 					body.xDrive = drive;
 					body.twistLock = (axis2.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
@@ -109,7 +109,7 @@ namespace SDF
 				{
 					if (joint2Axis.Equals(UE.Vector3.down))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.forward * 180);
+						ReverseArticulationBodyAxis(body, UE.Vector3.right * 180);
 					}
 					body.yDrive = drive;
 					body.swingYLock = (axis2.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
@@ -118,7 +118,7 @@ namespace SDF
 				{
 					if (joint2Axis.Equals(UE.Vector3.back))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.right * 180);
+						ReverseArticulationBodyAxis(body, UE.Vector3.up * 180);
 					}
 					body.zDrive = drive;
 					body.swingZLock = (axis2.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
@@ -168,7 +168,7 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.left))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.up * 180);
+						ReverseArticulationBodyAxis(body, UE.Vector3.forward * 180);
 					}
 
 					body.xDrive = drive;
@@ -180,7 +180,7 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.down))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.forward * 180);
+						ReverseArticulationBodyAxis(body, UE.Vector3.right * 180);
 					}
 
 					body.yDrive = drive;
@@ -192,7 +192,7 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.back))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.right * 180);
+						ReverseArticulationBodyAxis(body, UE.Vector3.up * 180);
 					}
 					body.zDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
