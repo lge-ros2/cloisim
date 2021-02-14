@@ -9,27 +9,30 @@ using System;
 [Serializable]
 public class PID
 {
-	private float pGain_, iGain_, dGain_;
+	private float _pGain, _iGain, _dGain;
 	private float integral = 0;
 	private float lastError = 0;
-	private float outputMax = 500f;
+	private float _outputMax;
+	private float _outputMin;
 
-	public PID(in float pGain, in float iGain, in float dGain)
+	public PID(in float pGain, in float iGain, in float dGain, in float outputMax = 500, in float outputMin = -500)
 	{
 		Change(pGain, iGain, dGain);
+		this._outputMax = outputMax;
+		this._outputMin = outputMin;
 	}
 
 	public PID Copy()
 	{
-		var newPID = new PID(pGain_, iGain_, dGain_);
+		var newPID = new PID(_pGain, _iGain, _dGain);
 		return newPID;
 	}
 
 	public void Change(in float pGain, in float iGain, in float dGain)
 	{
-		this.pGain_ = pGain;
-		this.iGain_ = iGain;
-		this.dGain_ = dGain;
+		this._pGain = pGain;
+		this._iGain = iGain;
+		this._dGain = dGain;
 	}
 
 	public void Reset()
@@ -38,9 +41,10 @@ public class PID
 		lastError = 0;
 	}
 
-	public float Update(in float setpoint, in float actual, in float deltaTime)
+	public float Update(in float target, in float actual, in float deltaTime)
 	{
-		var error = setpoint - actual;
+		// var error = target - actual;
+		var error = actual - target;
 
 		integral += error * deltaTime;
 
@@ -48,8 +52,15 @@ public class PID
 
 		lastError = error;
 
-		var output = error * pGain_ + integral * iGain_ + derive * dGain_;
+		var output = error * _pGain + integral * _iGain + derive * _dGain;
 
-		return (output > outputMax)? Math.Abs(outputMax): Math.Abs(output);
+		if (output > 0)
+		{
+			return (output > _outputMax)? _outputMax: output;
+		}
+		else
+		{
+			return (output < _outputMin)? _outputMin: output;
+		}
 	}
 }
