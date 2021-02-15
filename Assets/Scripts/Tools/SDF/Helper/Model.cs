@@ -26,7 +26,7 @@ namespace SDF
 			{
 				if (isTopModel)
 				{
-					ConfigureArticulationBody();
+					SetArticulationBody();
 
 					if (isStatic)
 					{

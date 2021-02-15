@@ -27,11 +27,11 @@ namespace SDF
 				}
 			}
 
-			public void ConfigureArticulationBody()
+			public void SetArticulationBody()
 			{
 				if (_poseControl != null)
 				{
-					_poseControl.ConfigureArticulationBody();
+					_poseControl.SetArticulationBody();
 				}
 			}
 

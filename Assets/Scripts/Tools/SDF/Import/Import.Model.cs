@@ -26,7 +26,7 @@ namespace SDF
 					articulationBody = targetObject.AddComponent<UE.ArticulationBody>();
 				}
 
-				articulationBody.mass = 0.000000000001f;
+				articulationBody.mass = 0.000000000000001f;
 				articulationBody.useGravity = false;
 				articulationBody.immovable = false;
 				articulationBody.linearDamping = 0;

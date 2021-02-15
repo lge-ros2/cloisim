@@ -24,7 +24,7 @@ namespace SDF
 				_targetTransform = target;
 			}
 
-			public void ConfigureArticulationBody()
+			public void SetArticulationBody()
 			{
 				_articulationBody = _targetTransform.GetComponent<UE.ArticulationBody>();
 			}

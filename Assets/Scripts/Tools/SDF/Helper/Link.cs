@@ -33,7 +33,7 @@ namespace SDF
 			{
 				if (_modelHelper != null)
 				{
-					_modelHelper.ConfigureArticulationBody();
+					_modelHelper.SetArticulationBody();
 				}
 
 				// Handle self collision
