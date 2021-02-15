@@ -238,10 +238,14 @@ namespace SensorDevices
 
 					laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
 
-					laserCam.enabled = true;
-					laserCam.Render();
 
-					readbacks[dataIndex] = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32);
+					laserCam.enabled = true;
+
+					if (laserCam.isActiveAndEnabled)
+					{
+						laserCam.Render();
+						readbacks[dataIndex] = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32);
+					}
 
 					laserCam.enabled = false;
 				}
