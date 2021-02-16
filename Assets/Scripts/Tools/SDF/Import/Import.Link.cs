@@ -86,6 +86,16 @@ namespace SDF
 					articulationBody.centerOfMass = SDF2Unity.GetPosition(link.Inertial.pose.Pos);
 					articulationBody.jointType = UE.ArticulationJointType.FixedJoint;
 
+					var childCollider = articulationBody.transform.GetComponentInChildren<UE.Collider>();
+					if (childCollider != null && childCollider.transform.parent.Equals(articulationBody.transform))
+					{
+						articulationBody.ResetInertiaTensor();
+					}
+					else
+					{
+						articulationBody.inertiaTensor = new UE.Vector3(0.000001f, 0.000001f, 0.000001f);
+					}
+
 					// TODO: NOT Recommended to use innertia values from SDF
 					// articulationBody.inertiaTensor = GetInertiaTensor(link.Inertial);
 					// articulationBody.inertiaTensorRotation = Quaternion.identity;
