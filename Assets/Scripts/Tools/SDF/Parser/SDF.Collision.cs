@@ -97,7 +97,7 @@ namespace SDF
 				{
 					surface.bounce = new Surface.Bounce();
 					surface.bounce.restitution_coefficient = GetValue<double>("surface/bounce/restitution_coefficient");
-					surface.bounce.restitution_coefficient = GetValue<double>("surface/bounce/threshold");
+					surface.bounce.threshold = GetValue<double>("surface/bounce/threshold");
 				}
 
 				if (IsValidNode("surface/friction"))
