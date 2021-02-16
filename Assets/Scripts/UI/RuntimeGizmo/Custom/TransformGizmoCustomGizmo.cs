@@ -41,6 +41,7 @@ namespace RuntimeGizmos
 			transformGizmo.onCheckForSelectedAxis += CheckForSelectedAxis;
 			transformGizmo.onDrawCustomGizmo += OnDrawCustomGizmos;
 		}
+
 		void OnDisable()
 		{
 			transformGizmo.onCheckForSelectedAxis -= CheckForSelectedAxis;

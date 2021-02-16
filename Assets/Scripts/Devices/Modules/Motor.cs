@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections;
-using System.Collections.Generic;
+// using System.Collections;
+// using System.Collections.Generic;
 using UnityEngine;
 
 public class Motor : MonoBehaviour
@@ -108,14 +108,13 @@ public class Motor : MonoBehaviour
 	public MotorMotionFeedback Feedback => _feedback;
 
 	private PID _pidControl = null;
-	private ArticulationBody _motorBody;
+	private ArticulationBody _motorBody = null;
 
 	private bool _enableMotor = false;
 
 	public float _targetAngularVelocity = 0;
 	public float _targetTorque = 0;
 	public float _currentMotorVelocity;
-	// public float _currentMotorForce;
 
 	public const float compensatingRatio = 1.25f; // compensting target velocity
 
@@ -206,7 +205,7 @@ public class Motor : MonoBehaviour
 
 		_currentMotorVelocity = GetJointVelocity();
 		// Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
-			// _motorBody.jointVelocity[0], _motorBody.jointAcceleration[0], _motorBody.jointForce[0], _motorBody.jointFriction, _motorBody.jointPosition[0]);
+		// 	_motorBody.jointVelocity[0], _motorBody.jointAcceleration[0], _motorBody.jointForce[0], _motorBody.jointFriction, _motorBody.jointPosition[0]);
 
 		// Compensate target angular velocity
 		var targetAngularVelocityCompensation = 0f;
@@ -215,7 +214,6 @@ public class Motor : MonoBehaviour
 			targetAngularVelocityCompensation = _feedback.Compensate();
 		}
 
-		// var commandForce = 0f;
 		var compensatedTargetAngularVelocity = _targetAngularVelocity + Mathf.Sign(_targetAngularVelocity) * targetAngularVelocityCompensation;
 
 		// do stop motion of motor when motor disabled

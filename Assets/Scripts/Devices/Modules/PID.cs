@@ -22,12 +22,6 @@ public class PID
 		this._outputMin = outputMin;
 	}
 
-	public PID Copy()
-	{
-		var newPID = new PID(_pGain, _iGain, _dGain);
-		return newPID;
-	}
-
 	public void Change(in float pGain, in float iGain, in float dGain)
 	{
 		this._pGain = pGain;
@@ -43,10 +37,9 @@ public class PID
 
 	public float Update(in float target, in float actual, in float deltaTime)
 	{
-		// var error = target - actual;
 		var error = actual - target;
 
-		integral += error * deltaTime;
+		integral += (error * deltaTime);
 
 		var derive = (deltaTime == 0f)? 0f : ((error - lastError) / deltaTime);
 
@@ -54,13 +47,6 @@ public class PID
 
 		var output = error * _pGain + integral * _iGain + derive * _dGain;
 
-		if (output > 0)
-		{
-			return (output > _outputMax)? _outputMax: output;
-		}
-		else
-		{
-			return (output < _outputMin)? _outputMin: output;
-		}
+		return UnityEngine.Mathf.Clamp(output, _outputMin, _outputMax);;
 	}
 }

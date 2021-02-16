@@ -20,7 +20,6 @@ public class ArticulationBodyConstantForce : MonoBehaviour
 
   public float[] jointPosition;
 
-
 	// Start is called before the first frame update
 	void Start()
 	{
