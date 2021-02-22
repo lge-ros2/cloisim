@@ -69,7 +69,6 @@ namespace SDF
 			protected override void ImportJoint(in Joint joint, in System.Object parentObject)
 			{
 				var targetObject = (parentObject as UE.GameObject);
-
 				// Debug.LogFormat("[Joint] {0}, {1} <= {2}", joint.Name, joint.ParentLinkName, joint.ChildLinkName);
 
 				var linkObjectParent = FindTransformByName(joint.ParentLinkName, targetObject);
