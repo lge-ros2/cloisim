@@ -15,7 +15,7 @@ public class PID
 	private float _outputMax;
 	private float _outputMin;
 
-	public PID(in float pGain, in float iGain, in float dGain, in float outputMax = 500, in float outputMin = -500)
+	public PID(in float pGain, in float iGain, in float dGain, in float outputMax = 1000, in float outputMin = -1000)
 	{
 		Change(pGain, iGain, dGain);
 		this._outputMax = outputMax;
