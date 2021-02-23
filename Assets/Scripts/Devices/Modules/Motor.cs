@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-// using System.Collections;
-// using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Motor : MonoBehaviour
@@ -13,11 +12,16 @@ public class Motor : MonoBehaviour
 	public class RapidChangeControl
 	{
 		private bool _directionSwitched = false;
-		private const int _maxWaitCount = 20;
+		private const int _maxWaitCount = 30;
 		private int _waitForStopCount = 0;
 
 		public void SetDirectionSwitched(in bool switched)
 		{
+			// if (switched)
+			// {
+			// 	Debug.Log(GetMotorName() + " - direction switched");
+			// }
+
 			_directionSwitched = switched;
 
 			if (_directionSwitched)
@@ -42,8 +46,8 @@ public class Motor : MonoBehaviour
 
 	public class MotorMotionFeedback
 	{
-		public float compensatingVelocityIncrease = 0.25f;
-		public float compensatingVelocityDecrease = 0.65f;
+		public float compensatingVelocityIncrease = 0.20f;
+		public float compensatingVelocityDecrease = 0.60f;
 
 		private bool _isRotating = false;
 		private float _currentTwistAngularVelocity = 0;
@@ -116,7 +120,7 @@ public class Motor : MonoBehaviour
 	public float _targetTorque = 0;
 	public float _currentMotorVelocity;
 
-	public const float compensatingRatio = 1.25f; // compensting target velocity
+	public const float compensatingRatio = 1.20f; // compensting target velocity
 
 	public string GetMotorName()
 	{
@@ -175,10 +179,6 @@ public class Motor : MonoBehaviour
 			if (_targetAngularVelocity != 0 && _feedback.IsMotionRotating)
 			{
 				var directionSwitch = (Mathf.Sign(_targetAngularVelocity) == Mathf.Sign(targetAngularVelocity)) ? false : true;
-				// if (directionSwitch)
-				// {
-				// 	Debug.Log(GetMotorName() + " - direction switched");
-				// }
 				_rapidControl.SetDirectionSwitched(directionSwitch);
 			}
 
@@ -208,18 +208,14 @@ public class Motor : MonoBehaviour
 		// 	_motorBody.jointVelocity[0], _motorBody.jointAcceleration[0], _motorBody.jointForce[0], _motorBody.jointFriction, _motorBody.jointPosition[0]);
 
 		// Compensate target angular velocity
-		var targetAngularVelocityCompensation = 0f;
-		if (_targetAngularVelocity != 0)
-		{
-			targetAngularVelocityCompensation = _feedback.Compensate();
-		}
+		var targetAngularVelocityCompensation = (_targetAngularVelocity != 0) ? (Mathf.Sign(_targetAngularVelocity) * _feedback.Compensate()) : 0;
 
-		var compensatedTargetAngularVelocity = _targetAngularVelocity + Mathf.Sign(_targetAngularVelocity) * targetAngularVelocityCompensation;
+		var compensatedTargetAngularVelocity = _targetAngularVelocity + targetAngularVelocityCompensation;
 
 		// do stop motion of motor when motor disabled
 		if (_enableMotor)
 		{
-			_targetTorque = _pidControl.Update(_targetAngularVelocity, _currentMotorVelocity, Time.fixedDeltaTime);
+			_targetTorque = Mathf.Abs(_pidControl.Update(compensatedTargetAngularVelocity, _currentMotorVelocity, Time.fixedDeltaTime));
 
 			// Debug.Log(GetMotorName() + ", " + _targetAngularVelocity + " <=> " + _currentMotorVelocity);
 
@@ -227,22 +223,21 @@ public class Motor : MonoBehaviour
 			if (_rapidControl.DirectionSwitched())
 			{
 				Stop();
-				_targetTorque = 0;
 				compensatedTargetAngularVelocity = 0;
 				_rapidControl.Wait();
 			}
+
+			SetTargetVelocityAndForce(compensatedTargetAngularVelocity, _targetTorque);
 		}
 		else
 		{
 			Stop();
 		}
-
-		SetTargetVelocityAndForce(compensatedTargetAngularVelocity, _targetTorque);
 	}
 
 	public void Stop()
 	{
-		_motorBody.velocity = Vector3.up * _motorBody.velocity.y;
+		_motorBody.velocity = Vector3.zero;
 		_motorBody.angularVelocity = Vector3.zero;
 
 		SetJointForce(0);
@@ -306,8 +301,8 @@ public class Motor : MonoBehaviour
 		// Arccording to document(https://docs.unity3d.com/2020.2/Documentation/ScriptReference/ArticulationDrive.html)
 		// F = stiffness * (currentPosition - target) - damping * (currentVelocity - targetVelocity).
 		var drive = GetDrive();
-		drive.targetVelocity = targetVelocity;
 		drive.damping = targetForce;
+		drive.targetVelocity = targetVelocity;
 		SetDrive(drive);
 	}
 
@@ -331,12 +326,23 @@ public class Motor : MonoBehaviour
 		}
 	}
 
-	private float _prevJointVelocity = 0;
+	private const int _maxQueueForPrevJointVelocities = 5;
+	private float _prevJointVelocitySum = 0;
+	private Queue<float> _prevJointVelocities = new Queue<float>(_maxQueueForPrevJointVelocities);
+
 	private float GetJointVelocity()
 	{
 		var currentJointVelocity = _motorBody.jointVelocity[0] * Mathf.Rad2Deg;
-		var averageJointVelocity = (_prevJointVelocity + currentJointVelocity)/2;
-		_prevJointVelocity = currentJointVelocity;
+		_prevJointVelocities.Enqueue(currentJointVelocity);
+		_prevJointVelocitySum += currentJointVelocity;
+
+		var averageJointVelocity = 0f;
+		if (_prevJointVelocities.Count == _maxQueueForPrevJointVelocities)
+		{
+			averageJointVelocity = _prevJointVelocitySum/(float)_maxQueueForPrevJointVelocities;
+			_prevJointVelocitySum -= _prevJointVelocities.Dequeue();
+		}
+
 		return (_motorBody) ? (averageJointVelocity) : 0;
 	}
 }
