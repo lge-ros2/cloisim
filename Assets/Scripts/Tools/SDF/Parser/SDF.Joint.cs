@@ -33,7 +33,7 @@ namespace SDF
 			public double lower = -1e+16; // Specifies the lower joint limit (radians for revolute joints, meters for prismatic joints). Omit if joint is continuous.
 			public double upper = 1e+16; // Specifies the upper joint limit (radians for revolute joints, meters for prismatic joints). Omit if joint is continuous.
 			public double effort = -1; // A value for enforcing the maximum joint effort applied. Limit is not enforced if value is negative.
-			public double velocity = -1; // A value for enforcing the maximum joint velocity.
+			public double velocity = -1; // (not implemented) An attribute for enforcing the maximum joint velocity.
 			public double stiffness = 1e+08; // Joint stop stiffness.
 			public double dissipation = 1; // Joint stop dissipation.
 			public bool Use()

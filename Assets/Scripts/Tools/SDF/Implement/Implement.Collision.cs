@@ -130,7 +130,7 @@ namespace SDF
 						if (surface.friction.ode != null)
 						{
 							material.staticFriction = (float)surface.friction.ode.mu;
-							material.dynamicFriction = (float)surface.friction.ode.mu * 0.5f;
+							material.dynamicFriction = (float)surface.friction.ode.mu * 0.70f;
 						}
 					}
 
