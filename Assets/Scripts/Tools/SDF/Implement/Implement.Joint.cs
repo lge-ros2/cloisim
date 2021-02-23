@@ -35,6 +35,10 @@ namespace SDF
 				{
 					body.jointFriction = (float)axis.dynamics.friction;
 				}
+				else
+				{
+					body.jointFriction = 0;
+				}
 
 				var drive = new UE.ArticulationDrive();
 
@@ -43,7 +47,7 @@ namespace SDF
 					SetRevoluteArticulationDriveLimit(ref drive, axis.limit);
 				}
 
-				drive.forceLimit = float.MaxValue;
+				drive.forceLimit = float.PositiveInfinity;
 
 				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
 
@@ -93,7 +97,7 @@ namespace SDF
 					SetRevoluteArticulationDriveLimit(ref drive, axis2.limit);
 				}
 
-				drive.forceLimit = float.MaxValue;
+				drive.forceLimit = float.PositiveInfinity;
 
 				var joint2Axis = SDF2Unity.GetAxis(axis2.xyz);
 				if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
@@ -128,6 +132,9 @@ namespace SDF
 			public static void MakeFixed(in UE.ArticulationBody body)
 			{
 				body.jointType = UE.ArticulationJointType.FixedJoint;
+				body.linearDamping = 0;
+				body.angularDamping = 0;
+				body.jointFriction = 0;
 			}
 
 			public static void MakeBall(in UE.ArticulationBody body)
