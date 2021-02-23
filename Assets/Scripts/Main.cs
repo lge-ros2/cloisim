@@ -65,13 +65,10 @@ public class Main: MonoBehaviour
 	{
 #if UNITY_EDITOR
  		filesRootDirectory = "/usr/share/gazebo-9/";
-		modelRootDirectories.Add("../sample_resources/models/");
-		worldRootDirectories.Add("../sample_resources/worlds/");
-		modelRootDirectories.Add("../lgrs_resource/assets/models/");
-		worldRootDirectories.Add("../lgrs_resource/worlds/");
-		modelRootDirectories.Add("../../lgrs_resource/assets/models/");
-		worldRootDirectories.Add("../../lgrs_resource/worlds/");
 #else
+		modelRootDirectories.Clear();
+		worldRootDirectories.Clear();
+
 		var separator = new char[] {':'};
 		filesRootDirectory = Environment.GetEnvironmentVariable("CLOISIM_FILES_PATH");
 		var modelPathEnv = Environment.GetEnvironmentVariable("CLOISIM_MODEL_PATH");
