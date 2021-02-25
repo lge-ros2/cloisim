@@ -41,12 +41,12 @@ public class PID
 
 		integral += (error * deltaTime);
 
-		var derive = (deltaTime == 0f)? 0f : ((error - lastError) / deltaTime);
+		var derive = (deltaTime == 0)? 0 : ((error - lastError) / deltaTime);
 
 		lastError = error;
 
-		var output = error * _pGain + integral * _iGain + derive * _dGain;
+		var output = (error * _pGain) + (integral * _iGain) + (derive * _dGain);
 
-		return UnityEngine.Mathf.Clamp(output, _outputMin, _outputMax);;
+		return UnityEngine.Mathf.Clamp(output, _outputMin, _outputMax);
 	}
 }
