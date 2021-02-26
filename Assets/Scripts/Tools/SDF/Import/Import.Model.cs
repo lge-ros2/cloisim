@@ -26,7 +26,7 @@ namespace SDF
 					articulationBody = targetObject.AddComponent<UE.ArticulationBody>();
 				}
 
-				articulationBody.mass = 1e-15f;
+				articulationBody.mass = 1e-17f;
 				articulationBody.useGravity = false;
 				articulationBody.immovable = false;
 				articulationBody.linearDamping = 0;
@@ -69,8 +69,10 @@ namespace SDF
 				return newModelObject as System.Object;
 			}
 
-			protected override void AfterImportModel(in SDF.Model model, in System.Object parentObject)
+			protected override void AfterImportModel(in SDF.Model model, in System.Object targetObject)
 			{
+				// var modelObject = (targetObject as UE.GameObject);
+				// var articulationBody = modelObject.GetComponent<UE.ArticulationBody>();
 			}
 		}
 	}
