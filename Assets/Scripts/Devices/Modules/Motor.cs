@@ -166,7 +166,7 @@ public class Motor : MonoBehaviour
 	/// <remarks>degree per second</remarks>
 	public void SetVelocityTarget(in float targetAngularVelocity)
 	{
-		if (Mathf.Abs(targetAngularVelocity) < float.Epsilon || targetAngularVelocity == 0f)
+		if (Mathf.Abs(targetAngularVelocity) < float.Epsilon || targetAngularVelocity == 0)
 		{
 			_enableMotor = false;
 			_targetAngularVelocity = 0;
@@ -186,8 +186,6 @@ public class Motor : MonoBehaviour
 
 			_targetAngularVelocity = targetAngularVelocity * ((Mathf.Abs(targetAngularVelocity) < compensateThreshold)? compensatingRatio:1.0f);
 		}
-
-		_pidControl.Reset();
 	}
 
 	void FixedUpdate()
@@ -243,6 +241,8 @@ public class Motor : MonoBehaviour
 		SetJointForce(0);
 		SetJointVelocity(0);
 		SetTargetVelocityAndForce(0, 0);
+
+		_pidControl.Reset();
 	}
 
 	private ArticulationDrive GetDrive()
@@ -326,7 +326,7 @@ public class Motor : MonoBehaviour
 		}
 	}
 
-	private const int _maxQueueForPrevJointVelocities = 5;
+	private const int _maxQueueForPrevJointVelocities = 7;
 	private float _prevJointVelocitySum = 0;
 	private Queue<float> _prevJointVelocities = new Queue<float>(_maxQueueForPrevJointVelocities);
 
