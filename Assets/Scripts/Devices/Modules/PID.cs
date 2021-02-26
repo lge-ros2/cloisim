@@ -12,12 +12,14 @@ public class PID
 	private float _pGain, _iGain, _dGain;
 	private float integral = 0;
 	private float lastError = 0;
-	private float _outputMax;
-	private float _outputMin;
+	private float _integralMax, _integralMin;
+	private float _outputMax, _outputMin;
 
-	public PID(in float pGain, in float iGain, in float dGain, in float outputMax = 1000, in float outputMin = -1000)
+	public PID(in float pGain, in float iGain, in float dGain, in float integralMax = 100, in float integralMin = -100, in float outputMax = 1000, in float outputMin = -1000)
 	{
 		Change(pGain, iGain, dGain);
+		this._integralMax = integralMax;
+		this._integralMin = integralMin;
 		this._outputMax = outputMax;
 		this._outputMin = outputMin;
 	}
@@ -37,9 +39,19 @@ public class PID
 
 	public float Update(in float target, in float actual, in float deltaTime)
 	{
-		var error = actual - target;
+		var error = target - actual;
 
 		integral += (error * deltaTime);
+
+		// Limit iTerm so that the limit is meaningful in the output
+		if (integral > _integralMax)
+		{
+			integral = _integralMax / _iGain;
+		}
+		else if (integral < _integralMin)
+		{
+			integral = _integralMin / _iGain;
+		}
 
 		var derive = (deltaTime == 0)? 0 : ((error - lastError) / deltaTime);
 
