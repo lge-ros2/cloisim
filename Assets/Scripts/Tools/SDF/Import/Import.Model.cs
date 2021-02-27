@@ -71,8 +71,14 @@ namespace SDF
 
 			protected override void AfterImportModel(in SDF.Model model, in System.Object targetObject)
 			{
-				// var modelObject = (targetObject as UE.GameObject);
-				// var articulationBody = modelObject.GetComponent<UE.ArticulationBody>();
+				var modelObject = (targetObject as UE.GameObject);
+				var articulationBody = modelObject.GetComponent<UE.ArticulationBody>();
+
+				if (articulationBody)
+				{
+					articulationBody.ResetCenterOfMass();
+					articulationBody.ResetInertiaTensor();
+				}
 			}
 		}
 	}
