@@ -147,7 +147,7 @@ public class Motor : MonoBehaviour
 
 	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
 	{
-		_pidControl = new PID(pFactor, iFactor, dFactor);
+		_pidControl = new PID(pFactor, iFactor, dFactor, 50, -50, 200, -200);
 	}
 
 	public PID GetPID()
@@ -162,7 +162,7 @@ public class Motor : MonoBehaviour
 		return _currentMotorVelocity;
 	}
 
-	/// <summary>Set Target Velocity with PID control</summary>
+	/// <summary>Set Target Velocity wmotorLeftith PID control</summary>
 	/// <remarks>degree per second</remarks>
 	public void SetVelocityTarget(in float targetAngularVelocity)
 	{
@@ -170,7 +170,6 @@ public class Motor : MonoBehaviour
 		{
 			_enableMotor = false;
 			_targetAngularVelocity = 0;
-			_targetTorque = 0;
 		}
 		else
 		{
@@ -184,7 +183,7 @@ public class Motor : MonoBehaviour
 
 			const float compensateThreshold = 10.0f;
 
-			_targetAngularVelocity = targetAngularVelocity * ((Mathf.Abs(targetAngularVelocity) < compensateThreshold)? compensatingRatio:1.0f);
+			_targetAngularVelocity = targetAngularVelocity * ((Mathf.Abs(targetAngularVelocity) < compensateThreshold) ? compensatingRatio : 1.0f);
 		}
 	}
 
@@ -238,7 +237,8 @@ public class Motor : MonoBehaviour
 		_motorBody.velocity = Vector3.zero;
 		_motorBody.angularVelocity = Vector3.zero;
 
-		SetJointForce(0);
+		_targetTorque = 0;
+
 		SetJointVelocity(0);
 		SetTargetVelocityAndForce(0, 0);
 
@@ -304,16 +304,6 @@ public class Motor : MonoBehaviour
 		drive.damping = targetForce;
 		drive.targetVelocity = targetVelocity;
 		SetDrive(drive);
-	}
-
-	private void SetJointForce(in float force)
-	{
-		if (_motorBody != null)
-		{
-			var jointForce = _motorBody.jointForce;
-			jointForce[0] = force;
-			_motorBody.jointForce = jointForce;
-		}
 	}
 
 	private void SetJointVelocity(in float velocity)
