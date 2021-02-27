@@ -30,8 +30,8 @@ namespace SDF
 			public static void MakeRevolute(in UE.ArticulationBody body, in SDF.Axis axis)
 			{
 				body.jointType = UE.ArticulationJointType.SphericalJoint;
-				body.linearDamping = 0;
-				body.angularDamping = 0;
+				body.linearDamping = 0.05f;
+				body.angularDamping = 0.05f;
 
 				if (axis.dynamics != null)
 				{
@@ -134,16 +134,16 @@ namespace SDF
 			public static void MakeFixed(in UE.ArticulationBody body)
 			{
 				body.jointType = UE.ArticulationJointType.FixedJoint;
-				body.linearDamping = 0;
-				body.angularDamping = 0;
+				body.linearDamping = 0.05f;
+				body.angularDamping = 0.05f;
 				body.jointFriction = 0;
 			}
 
 			public static void MakeBall(in UE.ArticulationBody body)
 			{
 				body.jointType = UE.ArticulationJointType.SphericalJoint;
-				body.linearDamping = 0;
-				body.angularDamping = 0;
+				body.linearDamping = 0.05f;
+				body.angularDamping = 0.05f;
 
 				body.swingYLock = UE.ArticulationDofLock.FreeMotion;
 				body.swingZLock = UE.ArticulationDofLock.FreeMotion;
@@ -155,8 +155,17 @@ namespace SDF
 				body.jointType = UE.ArticulationJointType.PrismaticJoint;
 				body.parentAnchorRotation *= SDF2Unity.GetRotation(pose.Rot);
 
-				body.linearDamping = 0;
-				body.angularDamping = 0;
+				body.linearDamping = 0.05f;
+				body.angularDamping = 0.05f;
+
+				if (axis.dynamics != null)
+				{
+					body.jointFriction = (float)axis.dynamics.friction;
+				}
+				else
+				{
+					body.jointFriction = 0;
+				}
 
 				var drive = new UE.ArticulationDrive();
 
