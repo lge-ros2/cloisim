@@ -18,6 +18,10 @@ namespace SDF
 			[UE.Header("SDF Properties")]
 			public bool isSelfCollide = false;
 
+			public bool drawInertia = false;
+
+			private UE.ArticulationBody artBody;
+
 			public Dictionary<string, UE.ArticulationBody> jointList = new Dictionary<string, UE.ArticulationBody>();
 
 			new void Awake()
@@ -36,6 +40,8 @@ namespace SDF
 					_modelHelper.SetArticulationBody();
 				}
 
+				artBody = this.GetComponent<UE.ArticulationBody>();
+
 				// Handle self collision
 				if (!isSelfCollide)
 				{
@@ -44,6 +50,27 @@ namespace SDF
 				else
 				{
 					EnableSelfCollision();
+				}
+			}
+
+			void OnDrawGizmos()
+			{
+				if (artBody && drawInertia)
+				{
+					UE.Gizmos.color = new UE.Color(0.35f, 0.0f, 0.1f, 0.1f);
+
+					var region = artBody.inertiaTensor;
+					if (region.x > 1f || region.y > 1f || region.z > 1f)
+					{
+						region = region.normalized;
+					}
+					else
+					{
+						region.Set(region.magnitude/region.x, region.magnitude/region.y, region.magnitude/region.z);
+						region = region.normalized;
+					}
+
+					UE.Gizmos.DrawCube(transform.position, region);
 				}
 			}
 
