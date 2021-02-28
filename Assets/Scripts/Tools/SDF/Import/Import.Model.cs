@@ -76,8 +76,11 @@ namespace SDF
 
 				if (articulationBody)
 				{
-					articulationBody.inertiaTensor = UE.Vector3.one * 1e-6f;
-					articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
+					var modelHelper = modelObject.GetComponent<Helper.Model>();
+					if (modelHelper.isTopModel && !modelHelper.isStatic)
+					{
+						modelObject.AddComponent<ArticulationBodyConstantForce>();
+					}
 				}
 			}
 		}

@@ -83,7 +83,6 @@ namespace SDF
 					var childCollider = articulationBody.transform.GetComponentInChildren<UE.Collider>();
 					if (childCollider != null && childCollider.transform.parent.Equals(articulationBody.transform))
 					{
-						// articulationBody.ResetInertiaTensor();
 						if (link.Inertial.inertia != null)
 						{
 							var momentum = GetInertiaTensor(link.Inertial.inertia);
