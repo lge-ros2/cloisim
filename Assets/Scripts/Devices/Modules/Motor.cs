@@ -147,7 +147,7 @@ public class Motor : MonoBehaviour
 
 	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
 	{
-		_pidControl = new PID(pFactor, iFactor, dFactor, 50, -50, 200, -200);
+		_pidControl = new PID(pFactor, iFactor, dFactor, 50, -50, 300, -300);
 	}
 
 	public PID GetPID()
@@ -316,7 +316,7 @@ public class Motor : MonoBehaviour
 		}
 	}
 
-	private const int _maxQueueForPrevJointVelocities = 7;
+	private const int _maxQueueForPrevJointVelocities = 3;
 	private float _prevJointVelocitySum = 0;
 	private Queue<float> _prevJointVelocities = new Queue<float>(_maxQueueForPrevJointVelocities);
 

@@ -19,9 +19,8 @@ public partial class MicomSensor : Device
 	private string _wheelNameRight = string.Empty;
 
 	private Dictionary<string, Motor> _motors = new Dictionary<string, Motor>();
-	public float _PGain;
-	public float _IGain;
-	public float _DGain;
+
+	public float _PGain, _IGain, _DGain;
 
 	private float wheelBase = 0.0f;
 	private float wheelRadius = 0.0f;
