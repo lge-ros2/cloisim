@@ -49,7 +49,7 @@ namespace SDF
 					SetRevoluteArticulationDriveLimit(ref drive, axis.limit);
 				}
 
-				drive.forceLimit = float.PositiveInfinity;
+				drive.forceLimit = float.MaxValue;
 
 				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
 
@@ -99,7 +99,7 @@ namespace SDF
 					SetRevoluteArticulationDriveLimit(ref drive, axis2.limit);
 				}
 
-				drive.forceLimit = float.PositiveInfinity;
+				drive.forceLimit = float.MaxValue;
 
 				var joint2Axis = SDF2Unity.GetAxis(axis2.xyz);
 				if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
@@ -176,7 +176,14 @@ namespace SDF
 					drive.upperLimit = (float)(axis.limit.upper);
 				}
 
-				drive.forceLimit = (float)physicsInfo.max_force;
+				if (physicsInfo != null)
+				{
+					drive.forceLimit = (float)physicsInfo.max_force;
+				}
+				else
+				{
+					drive.forceLimit = float.MaxValue;
+				}
 
 				if (axis.dynamics != null)
 				{

@@ -59,7 +59,7 @@ namespace SDF
 		{
 			public class ODE
 			{
-				public double max_force = double.PositiveInfinity;
+				public double max_force = 0;
 			}
 		}
 
@@ -90,8 +90,6 @@ namespace SDF
 		public Joint(XmlNode _node)
 			: base(_node)
 		{
-			ode = new Physics.ODE();
-
 			if (root != null)
 			{
 				ParseElements();
@@ -160,6 +158,8 @@ namespace SDF
 
 					if (IsValidNode("physics/ode"))
 					{
+						ode = new Physics.ODE();
+
 						if (IsValidNode("physics/ode/max_force"))
 						{
 							ode.max_force = GetValue<double>("physics/ode/max_force");
