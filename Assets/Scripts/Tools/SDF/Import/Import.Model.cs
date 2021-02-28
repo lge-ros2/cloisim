@@ -26,7 +26,7 @@ namespace SDF
 					articulationBody = targetObject.AddComponent<UE.ArticulationBody>();
 				}
 
-				articulationBody.mass = 1e-17f;
+				articulationBody.mass = 1e-20f;
 				articulationBody.useGravity = false;
 				articulationBody.immovable = false;
 				articulationBody.linearDamping = 0;
@@ -76,8 +76,8 @@ namespace SDF
 
 				if (articulationBody)
 				{
-					articulationBody.ResetCenterOfMass();
-					articulationBody.ResetInertiaTensor();
+					articulationBody.inertiaTensor = UE.Vector3.one * 1e-6f;
+					articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
 				}
 			}
 		}
