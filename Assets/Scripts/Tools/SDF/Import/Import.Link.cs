@@ -13,7 +13,7 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private UE.Pose GetInertiaTensor(in SDF.Inertial inertia)
+			private UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia inertia)
 			{
 				UE.Pose inertiaMomentum = UE.Pose.identity;
 				var inertiaVector = new UE.Vector3((float)inertia.iyy, (float)inertia.izz, (float)inertia.ixx);
@@ -80,16 +80,21 @@ namespace SDF
 					articulationBody.centerOfMass = SDF2Unity.GetPosition(link.Inertial.pose.Pos);
 					articulationBody.jointType = UE.ArticulationJointType.FixedJoint;
 
-					articulationBody.ResetInertiaTensor();
-
 					var childCollider = articulationBody.transform.GetComponentInChildren<UE.Collider>();
 					if (childCollider != null && childCollider.transform.parent.Equals(articulationBody.transform))
 					{
-
-						var momentum = GetInertiaTensor(link.Inertial);
-						articulationBody.inertiaTensor = momentum.position;
-						articulationBody.inertiaTensorRotation = momentum.rotation;
-						// articulationBody.inertiaTensorRotation = UE.Quaternion.Euler(0, 360, 0);
+						// articulationBody.ResetInertiaTensor();
+						if (link.Inertial.inertia != null)
+						{
+							var momentum = GetInertiaTensor(link.Inertial.inertia);
+							articulationBody.inertiaTensor = momentum.position;
+							articulationBody.inertiaTensorRotation = momentum.rotation;
+						}
+						else
+						{
+							articulationBody.inertiaTensor = UE.Vector3.one;
+							articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
+						}
 					}
 					else
 					{
