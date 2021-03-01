@@ -216,7 +216,7 @@ public class BridgeManager : MonoBehaviour
 				haskKeyPortMapTable.Add(hashKey, newPort);
 			}
 
-			Debug.LogFormat("Allocated for HashKey({0}), Port({1})", hashKey, newPort);
+			Debug.LogFormat("Allocated for HashKey({0}) Port({1})", hashKey, newPort);
 		}
 		else
 		{

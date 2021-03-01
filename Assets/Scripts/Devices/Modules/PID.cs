@@ -9,27 +9,26 @@ using System;
 [Serializable]
 public class PID
 {
-	private float pGain_, iGain_, dGain_;
+	private float _pGain, _iGain, _dGain;
 	private float integral = 0;
 	private float lastError = 0;
-	private float outputMax = 500f;
+	private float _integralMax, _integralMin;
+	private float _outputMax, _outputMin;
 
-	public PID(in float pGain, in float iGain, in float dGain)
+	public PID(in float pGain, in float iGain, in float dGain, in float integralMax = 100, in float integralMin = -100, in float outputMax = 1000, in float outputMin = -1000)
 	{
 		Change(pGain, iGain, dGain);
-	}
-
-	public PID Copy()
-	{
-		var newPID = new PID(pGain_, iGain_, dGain_);
-		return newPID;
+		this._integralMax = integralMax;
+		this._integralMin = integralMin;
+		this._outputMax = outputMax;
+		this._outputMin = outputMin;
 	}
 
 	public void Change(in float pGain, in float iGain, in float dGain)
 	{
-		this.pGain_ = pGain;
-		this.iGain_ = iGain;
-		this.dGain_ = dGain;
+		this._pGain = pGain;
+		this._iGain = iGain;
+		this._dGain = dGain;
 	}
 
 	public void Reset()
@@ -38,18 +37,28 @@ public class PID
 		lastError = 0;
 	}
 
-	public float Update(in float setpoint, in float actual, in float deltaTime)
+	public float Update(in float target, in float actual, in float deltaTime)
 	{
-		var error = setpoint - actual;
+		var error = target - actual;
 
-		integral += error * deltaTime;
+		integral += (error * deltaTime);
 
-		var derive = (deltaTime == 0f)? 0f : ((error - lastError) / deltaTime);
+		// Limit iTerm so that the limit is meaningful in the output
+		if (integral > _integralMax)
+		{
+			integral = _integralMax / _iGain;
+		}
+		else if (integral < _integralMin)
+		{
+			integral = _integralMin / _iGain;
+		}
+
+		var derive = (deltaTime == 0)? 0 : ((error - lastError) / deltaTime);
 
 		lastError = error;
 
-		var output = error * pGain_ + integral * iGain_ + derive * dGain_;
+		var output = (error * _pGain) + (integral * _iGain) + (derive * _dGain);
 
-		return (output > outputMax)? Math.Abs(outputMax): Math.Abs(output);
+		return UnityEngine.Mathf.Clamp(output, _outputMin, _outputMax);
 	}
 }

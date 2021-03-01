@@ -83,7 +83,7 @@ instead of
 Use following command to run CLOiSim docker container:
 
 ```shell
-export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample-resources/
+export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample_resources/
 
 docker run -ti --rm --gpus all --net=host \
     -e DISPLAY \
@@ -102,11 +102,11 @@ docker run -ti --rm --gpus all --net=host \
 Option B: just run with target world file name in 'worlds'
 
 ```shell
-export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample-resources/
+export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample_resources/
 ./start.sh lg_seocho.world
 ```
 
-refer to [samples_resource](https://github.com/lge-ros2/sample-resources) more details about resource
+refer to [samples_resource](https://github.com/lge-ros2/sample_resources) more details about resource
 
 -------------------------------
 

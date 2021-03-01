@@ -39,6 +39,7 @@ public class ObjectSpawning : MonoBehaviour
 	{
 		var newObject = new GameObject(name);
 		newObject.tag = "Props";
+		newObject.isStatic = true;
 
 		var meshFilter = newObject.AddComponent<MeshFilter>();
 		meshFilter.mesh = targetMesh;
@@ -177,7 +178,7 @@ public class ObjectSpawning : MonoBehaviour
 		if (Physics.Raycast(screenPoint2Ray, out var hit, maxRayDistance))
 		{
 			var parent = hit.transform.parent;
-			if (parent.name.Equals("Props") && hit.transform.tag.Equals("Props"))
+			if (parent.name.Equals("Props") && hit.transform.CompareTag("Props"))
 			{
 				return hit.transform;
 			}

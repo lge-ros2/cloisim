@@ -16,9 +16,9 @@ public class DebugLogWriter : System.IO.TextWriter
 		isSkip = value;
 	}
 
-	public void SetWarning(in bool value)
+	public void SetWarningOnce()
 	{
-		isWarning = value;
+		isWarning = true;
 	}
 
 	public DebugLogWriter()
@@ -38,6 +38,7 @@ public class DebugLogWriter : System.IO.TextWriter
 		if (isWarning)
 		{
 			Debug.LogWarning(value);
+			isWarning = false;
 		}
 		else
 		{
@@ -57,6 +58,7 @@ public class DebugLogWriter : System.IO.TextWriter
 		if (isWarning)
 		{
 			Debug.LogWarning(value);
+			isWarning = false;
 		}
 		else
 		{

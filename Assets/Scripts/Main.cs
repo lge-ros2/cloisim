@@ -51,7 +51,7 @@ public class Main: MonoBehaviour
 		}
 	}
 
-	private void ResetTransform()
+	private void ResetRootModelsTransform()
 	{
 		if (modelsRoot != null)
 		{
@@ -65,13 +65,10 @@ public class Main: MonoBehaviour
 	{
 #if UNITY_EDITOR
  		filesRootDirectory = "/usr/share/gazebo-9/";
-		modelRootDirectories.Add("../sample_resources/models/");
-		worldRootDirectories.Add("../sample_resources/worlds/");
-		modelRootDirectories.Add("../lgrs_resource/assets/models/");
-		worldRootDirectories.Add("../lgrs_resource/worlds/");
-		modelRootDirectories.Add("../../lgrs_resource/assets/models/");
-		worldRootDirectories.Add("../../lgrs_resource/worlds/");
 #else
+		modelRootDirectories.Clear();
+		worldRootDirectories.Clear();
+
 		var separator = new char[] {':'};
 		filesRootDirectory = Environment.GetEnvironmentVariable("CLOISIM_FILES_PATH");
 		var modelPathEnv = Environment.GetEnvironmentVariable("CLOISIM_MODEL_PATH");
@@ -106,7 +103,7 @@ public class Main: MonoBehaviour
 
 		clock = DeviceHelper.GetGlobalClock();
 
-		ResetTransform();
+		ResetRootModelsTransform();
 	}
 
 	void Start()
@@ -206,8 +203,7 @@ public class Main: MonoBehaviour
 	private IEnumerator ResetSimulation()
 	{
 		isResetting = true;
-
-		Debug.LogWarning("Reset positions in simulation!!!");
+		// Debug.LogWarning("Reset positions in simulation!!!");
 
 		transformGizmo?.ClearTargets();
 

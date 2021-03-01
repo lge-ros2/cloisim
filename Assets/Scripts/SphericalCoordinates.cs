@@ -403,7 +403,7 @@ public class SphericalCoordinates : MonoBehaviour
 
 	public Vector3 GlobalFromLocal(in Vector3 xyz)
 	{
-		return VelocityTransform(ToECEF(xyz), CoordinateType.LOCAL, CoordinateType.GLOBAL);;
+		return VelocityTransform(ToECEF(xyz), CoordinateType.LOCAL, CoordinateType.GLOBAL);
 	}
 
 	public Vector3 LocalFromGlobal(in Vector3 xyz)

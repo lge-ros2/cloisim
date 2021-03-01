@@ -13,29 +13,23 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private static float minimumInertiaTensor = 1e-6f;
-
-			private UE.Vector3 GetInertiaTensor(in SDF.Inertial inertia)
+			private UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia inertia)
 			{
-				// Debug.LogWarningFormat("GetInertiaTensor: {0}, {1}, {2}", inertia.ixx, inertia.iyy, inertia.izz);
-				var inertiaVector = SDF2Unity.GetPosition(inertia.ixx, inertia.iyy, inertia.izz);
-
-				if (inertiaVector.x <= minimumInertiaTensor)
+				UE.Pose inertiaMomentum = UE.Pose.identity;
+				var inertiaVector = new UE.Vector3((float)inertia.iyy, (float)inertia.izz, (float)inertia.ixx);
+				const float minimumInertiaTensor = 1e-6f;
+				for (var index = 0; index < 3; index++)
 				{
-					inertiaVector.x = minimumInertiaTensor;
+					if (inertiaVector[index] <= minimumInertiaTensor)
+					{
+						inertiaVector[index] = minimumInertiaTensor;
+					}
 				}
 
-				if (inertiaVector.y <= minimumInertiaTensor)
-				{
-					inertiaVector.y = minimumInertiaTensor;
-				}
+				inertiaMomentum.position = inertiaVector;
+				inertiaMomentum.rotation = UE.Quaternion.identity;
 
-				if (inertiaVector.z <= minimumInertiaTensor)
-				{
-					inertiaVector.z = minimumInertiaTensor;
-				}
-
-				return inertiaVector;
+				return inertiaMomentum;
 			}
 
 			protected override System.Object ImportLink(in SDF.Link link, in System.Object parentObject)
@@ -56,7 +50,7 @@ namespace SDF
 				return newLinkObject as System.Object;
 			}
 
-			protected override void PostImportLink(in SDF.Link link, in System.Object targetObject)
+			protected override void AfterImportLink(in SDF.Link link, in System.Object targetObject)
 			{
 				var linkObject = (targetObject as UE.GameObject);
 
@@ -66,48 +60,53 @@ namespace SDF
 					return;
 				}
 
-				var disableConvex = false;
-
-				if (link.Inertial != null)
+				// skip to create articulation body when mass is ZERO
+				if (link.Inertial != null && link.Inertial.mass != 0)
 				{
-					var rigidBody = linkObject.AddComponent<UE.Rigidbody>(); // Add the rigidbody.
+					var articulationBody = linkObject.AddComponent<UE.ArticulationBody>();
 
 					foreach (var collider in linkObject.GetComponentsInChildren<UE.Collider>())
 					{
-						if (collider.attachedRigidbody == null)
+						if (collider.attachedArticulationBody == null)
 						{
-							Debug.LogWarningFormat(linkObject.name + " > " + collider.name + " [=] null Rigidbody ");
+							Debug.LogWarningFormat(linkObject.name + " > " + collider.name + " [=] null ArticulationBody ");
 						}
 					}
 
-					rigidBody.velocity = UE.Vector3.zero;
-					rigidBody.angularVelocity = UE.Vector3.zero;
-					rigidBody.drag = 0.1f;
-					rigidBody.angularDrag = 0.50f;
+					articulationBody.velocity = UE.Vector3.zero;
+					articulationBody.angularVelocity = UE.Vector3.zero;
+					articulationBody.useGravity = (link.Kinematic)? false:link.Gravity;
+					articulationBody.mass = (float)link.Inertial.mass;
+					articulationBody.centerOfMass = SDF2Unity.GetPosition(link.Inertial.pose.Pos);
+					articulationBody.jointType = UE.ArticulationJointType.FixedJoint;
 
-					rigidBody.useGravity = link.Gravity;
-					rigidBody.isKinematic = link.Kinematic;
+					var childCollider = articulationBody.transform.GetComponentInChildren<UE.Collider>();
+					if (childCollider != null && childCollider.transform.parent.Equals(articulationBody.transform))
+					{
+						if (link.Inertial.inertia != null)
+						{
+							var momentum = GetInertiaTensor(link.Inertial.inertia);
+							articulationBody.inertiaTensor = momentum.position;
+							articulationBody.inertiaTensorRotation = momentum.rotation;
+						}
+						else
+						{
+							articulationBody.inertiaTensor = UE.Vector3.one;
+							articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
+						}
+					}
+					else
+					{
+						articulationBody.inertiaTensor = UE.Vector3.one * 1e-6f;
+						articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
+					}
 
-					rigidBody.mass = (float)link.Inertial.mass;
-
-					// rigidBody.ResetCenterOfMass();
-					// rigidBody.ResetInertiaTensor();
-					rigidBody.centerOfMass = SDF2Unity.GetPosition(link.Inertial.pose.Pos);
-					// rigidBody.inertiaTensor = GetInertiaTensor(link.Inertial);
-					// rigidBody.inertiaTensorRotation = Quaternion.identity;
-					// Debug.Log(rigidBody.name + " => Center Of Mass: " + rigidBody.centerOfMass.ToString("F6") + ", intertia: " + rigidBody.inertiaTensor.ToString("F6") + ", " + rigidBody.inertiaTensorRotation.ToString("F6"));
-					Debug.Log(rigidBody.name + " => sleep threshold: " + rigidBody.sleepThreshold + ", " + rigidBody.sleepVelocity + ", " + rigidBody.sleepAngularVelocity);
-					Debug.Log(rigidBody.name + " => is sleeping: " + rigidBody.IsSleeping());
-					// rigidBody.Sleep();
+					// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
+					// Debug.Log("Create link body " + linkObject.name);
 				}
 				else
 				{
-					// If the child does not have rigidbody, collider of child would disable convex.
-					disableConvex = true;
-				}
-
-				if (disableConvex)
-				{
+					// If the child does not have articulation body, collider of child would disable convex.
 					// Sholud be handled after set parent object!!
 					var meshColliders = linkObject.GetComponentsInChildren<UE.MeshCollider>();
 					foreach (var meshCollider in meshColliders)

@@ -49,7 +49,7 @@ namespace SDF
 
 		public void ParsePose(in string poseString, in string relativeTo = "")
 		{
-			relative_to = (string.IsNullOrEmpty(relativeTo))? string.Empty:relativeTo;
+			relative_to = (string.IsNullOrEmpty(relativeTo)) ? "__model__" : relativeTo;
 
 			if (!string.IsNullOrEmpty(poseString))
 			{

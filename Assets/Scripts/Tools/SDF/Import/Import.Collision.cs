@@ -26,7 +26,7 @@ namespace SDF
 				return newCollisionObject as System.Object;
 			}
 
-			protected override void PostImportCollision(in SDF.Collision collision, in System.Object targetObject)
+			protected override void AfterImportCollision(in SDF.Collision collision, in System.Object targetObject)
 			{
 				var collisionObject = (targetObject as UE.GameObject);
 
