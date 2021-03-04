@@ -45,6 +45,7 @@ namespace SensorDevices
 		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.15f);
 
 		private Transform lidarLink = null;
+		// private Pose lidarSensorInitPose = new Pose();
 		private ShadowQuality originalShadowSettings_;
 		private UnityEngine.Camera laserCam = null;
 		private Material depthMaterial = null;
@@ -96,6 +97,9 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			lidarLink = transform.parent;
+
+			// lidarSensorInitPose.position = transform.localPosition;
+			// lidarSensorInitPose.rotation = transform.localRotation;
 
 			// store original shadow settings
 			originalShadowSettings_ = QualitySettings.shadows;
@@ -177,9 +181,9 @@ namespace SensorDevices
 
 			laserCam.renderingPath = RenderingPath.DeferredLighting;
 
-			var renderTextrueWidth = Mathf.CeilToInt(laserCameraHFov / laserHAngleResolution);
+			var renderTextrueWidth = Mathf.FloorToInt(laserCameraHFov / laserHAngleResolution);
 			var aspectRatio = Mathf.Tan(laserCameraVFov / 2 * Mathf.Deg2Rad) / Mathf.Tan(laserCameraHFov / 2 * Mathf.Deg2Rad);
-			var renderTextrueHeight = Mathf.CeilToInt(renderTextrueWidth * aspectRatio);
+			var renderTextrueHeight = Mathf.FloorToInt(renderTextrueWidth * aspectRatio);
 			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 16, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
 			{
 				name = "LidarDepthTexture"
@@ -331,6 +335,11 @@ namespace SensorDevices
 					var srcLengthratio = Mathf.Abs((dataStartAngle - laserStartAngle) / dataTotalAngle);
 					copyLength = outputBufferLength - Mathf.FloorToInt(outputBufferLength * srcLengthratio);
 					dstBufferOffset = (int)samples - copyLength;
+
+					if (copyLength < 0 || dstBufferOffset < 0)
+					{
+						doCopy = false;
+					}
 				}
 				// middle of laser angle
 				else if (dataStartAngle >= laserStartAngle && dataEndAngle < laserEndAngle)
@@ -338,6 +347,11 @@ namespace SensorDevices
 					srcBufferOffset = 0;
 					copyLength = outputBufferLength;
 					dstBufferOffset = (int)samples - (Mathf.CeilToInt(samples * ((dataStartAngle - laserStartAngle) / laserTotalAngle)) + copyLength);
+
+					if (copyLength < 0 || dstBufferOffset < 0)
+					{
+						doCopy = false;
+					}
 				}
 				// end side of laser angle
 				else if (dataEndAngle >= laserEndAngle)
@@ -346,6 +360,11 @@ namespace SensorDevices
 					copyLength = Mathf.CeilToInt(outputBufferLength * srcLengthRatio);
 					srcBufferOffset = outputBufferLength - copyLength;
 					dstBufferOffset = 0;
+
+					if (copyLength < 0 || srcBufferOffset < 0)
+					{
+						doCopy = false;
+					}
 				}
 				else
 				{
