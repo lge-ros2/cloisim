@@ -16,57 +16,57 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportSensor(in SDF.Sensor item, in System.Object parentObject)
+			protected override System.Object ImportSensor(in SDF.Sensor sensor, in System.Object parentObject)
 			{
 				// Console.WriteLine("[Sensor] {0}", item.Name);
 				var targetObject = (parentObject as UE.GameObject);
 
-				Device sensor = null;
+				Device device = null;
 
-				var sensorType = item.Type;
+				var sensorType = sensor.Type;
 
 				switch (sensorType)
 				{
 					case "lidar":
 					case "ray":
 					case "gpu_ray":
-						var ray = item.GetSensor() as SDF.Ray;
-						sensor = Implement.Sensor.AddLidar(ray, targetObject);
+						var ray = sensor.GetSensor() as SDF.Ray;
+						device = Implement.Sensor.AddLidar(ray, targetObject);
 						break;
 
 					case "depth":
-						var depthCamera = item.GetSensor() as SDF.Camera;
-						sensor = Implement.Sensor.AddDepthCamera(depthCamera, targetObject);
+						var depthCamera = sensor.GetSensor() as SDF.Camera;
+						device = Implement.Sensor.AddDepthCamera(depthCamera, targetObject);
 						break;
 
 					case "camera":
-						var camera = item.GetSensor() as SDF.Camera;
-						sensor = Implement.Sensor.AddCamera(camera, targetObject);
+						var camera = sensor.GetSensor() as SDF.Camera;
+						device = Implement.Sensor.AddCamera(camera, targetObject);
 						break;
 
 					case "multicamera":
-						var cameras = item.GetSensor() as SDF.Cameras;
-						sensor = Implement.Sensor.AddMultiCamera(cameras, targetObject);
+						var cameras = sensor.GetSensor() as SDF.Cameras;
+						device = Implement.Sensor.AddMultiCamera(cameras, targetObject);
 						break;
 
 					case "imu":
-						var imu = item.GetSensor() as SDF.IMU;
-						sensor = Implement.Sensor.AddImu(imu, targetObject);
+						var imu = sensor.GetSensor() as SDF.IMU;
+						device = Implement.Sensor.AddImu(imu, targetObject);
 						break;
 
 					case "sonar":
-						var sonar = item.GetSensor() as SDF.Sonar;
-						sensor = Implement.Sensor.AddSonar(sonar, targetObject);
+						var sonar = sensor.GetSensor() as SDF.Sonar;
+						device = Implement.Sensor.AddSonar(sonar, targetObject);
 						break;
 
 					case "gps":
-						var gps = item.GetSensor() as SDF.GPS;
-						sensor = Implement.Sensor.AddGps(gps, targetObject);
+						var gps = sensor.GetSensor() as SDF.GPS;
+						device = Implement.Sensor.AddGps(gps, targetObject);
 						break;
 
 					case "contact":
-						var contact = item.GetSensor() as SDF.Contact;
-						sensor = Implement.Sensor.AddContact(contact, targetObject);
+						var contact = sensor.GetSensor() as SDF.Contact;
+						device = Implement.Sensor.AddContact(contact, targetObject);
 						break;
 
 					case "air_pressure":
@@ -77,7 +77,7 @@ namespace SDF
 					case "rfidtag":
 					case "rfid":
 					case "transceiver":
-						Debug.LogWarningFormat("[Sensor] Not supported sensor name({0}) type({1})!!!!!", item.Name, sensorType);
+						Debug.LogWarningFormat("[Sensor] Not supported sensor name({0}) type({1})!!!!!", sensor.Name, sensorType);
 						break;
 
 					default:
@@ -85,18 +85,19 @@ namespace SDF
 						break;
 				}
 
-				if (sensor)
+				if (device)
 				{
-					sensor.SetUpdateRate((float)item.UpdateRate());
-					sensor.EnableVisualize = item.Visualize();
-					var newSensorObject = sensor.gameObject;
+					device.SetUpdateRate((float)sensor.UpdateRate());
+					device.EnableVisualize = sensor.Visualize();
+
+					var newSensorObject = device.gameObject;
 
 					if (newSensorObject != null)
 					{
 						newSensorObject.tag = "Sensor";
-						newSensorObject.name = item.Name;
-						newSensorObject.transform.localPosition += SDF2Unity.GetPosition(item.Pose.Pos);
-						newSensorObject.transform.localRotation *= SDF2Unity.GetRotation(item.Pose.Rot);
+						newSensorObject.name = sensor.Name;
+						newSensorObject.transform.localPosition += SDF2Unity.GetPosition(sensor.Pose.Pos);
+						newSensorObject.transform.localRotation *= SDF2Unity.GetRotation(sensor.Pose.Rot);
 #if UNITY_EDITOR
 						SceneVisibilityManager.instance.ToggleVisibility(newSensorObject, true);
 						SceneVisibilityManager.instance.DisablePicking(newSensorObject, true);
