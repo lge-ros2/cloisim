@@ -45,7 +45,7 @@ namespace SensorDevices
 		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.15f);
 
 		private Transform lidarLink = null;
-		// private Pose lidarSensorInitPose = new Pose();
+		private Pose lidarSensorInitPose = new Pose();
 		private ShadowQuality originalShadowSettings_;
 		private UnityEngine.Camera laserCam = null;
 		private Material depthMaterial = null;
@@ -98,9 +98,6 @@ namespace SensorDevices
 		{
 			lidarLink = transform.parent;
 
-			// lidarSensorInitPose.position = transform.localPosition;
-			// lidarSensorInitPose.rotation = transform.localRotation;
-
 			// store original shadow settings
 			originalShadowSettings_ = QualitySettings.shadows;
 
@@ -111,6 +108,9 @@ namespace SensorDevices
 		{
 			if (laserCam)
 			{
+				lidarSensorInitPose.position = transform.localPosition;
+				lidarSensorInitPose.rotation = transform.localRotation;
+
 				DoParseFilter();
 
 				SetupLaserCamera();
@@ -240,8 +240,7 @@ namespace SensorDevices
 					var data = laserCamData[dataIndex];
 					axisRotation.y = data.centerAngle;
 
-					laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
-
+					laserCam.transform.localRotation = lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
 
 					laserCam.enabled = true;
 
@@ -300,8 +299,8 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			var lidarPosition = lidarLink.position + transform.localPosition;
-			var lidarRotation = lidarLink.rotation;
+			var lidarPosition = lidarLink.position + lidarSensorInitPose.position;
+			var lidarRotation = lidarLink.rotation * lidarSensorInitPose.rotation;
 
 			var laserScan = laserScanStamped.Scan;
 
@@ -398,13 +397,13 @@ namespace SensorDevices
 			{
 				yield return waitForEndOfFrame;
 
-				var lidarSensorWorldPosition = lidarLink.position + transform.localPosition;
+				var lidarSensorWorldPosition = lidarLink.position + lidarSensorInitPose.position;
 				var rangeData = GetRangeData();
 
 				for (var hScanIndex = 0; hScanIndex < rangeData.Length; hScanIndex++)
 				{
 					var rayAngleH = ((laserHAngleResolution * hScanIndex)) + startAngle;
-					var rayRotation = Quaternion.AngleAxis((float)(rayAngleH), lidarLink.up) * lidarLink.forward;
+					var rayRotation = (Quaternion.AngleAxis((float)rayAngleH, transform.up)) * lidarLink.forward;
 					var rayStart = (rayRotation * (float)rangeMin) + lidarSensorWorldPosition;
 
 					var ccwIndex = (uint)(rangeData.Length - hScanIndex - 1);
