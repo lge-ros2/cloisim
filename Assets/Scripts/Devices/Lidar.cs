@@ -181,9 +181,9 @@ namespace SensorDevices
 
 			laserCam.renderingPath = RenderingPath.DeferredLighting;
 
-			var renderTextrueWidth = Mathf.FloorToInt(laserCameraHFov / laserHAngleResolution);
+			var renderTextrueWidth = Mathf.CeilToInt(laserCameraHFov / laserHAngleResolution);
 			var aspectRatio = Mathf.Tan(laserCameraVFov / 2 * Mathf.Deg2Rad) / Mathf.Tan(laserCameraHFov / 2 * Mathf.Deg2Rad);
-			var renderTextrueHeight = Mathf.FloorToInt(renderTextrueWidth * aspectRatio);
+			var renderTextrueHeight = Mathf.CeilToInt(renderTextrueWidth * aspectRatio);
 			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 16, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
 			{
 				name = "LidarDepthTexture"
