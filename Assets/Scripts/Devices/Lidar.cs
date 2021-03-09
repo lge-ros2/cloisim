@@ -240,6 +240,7 @@ namespace SensorDevices
 
 					laserCam.transform.localRotation = lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
 
+
 					laserCam.enabled = true;
 
 					if (laserCam.isActiveAndEnabled)
