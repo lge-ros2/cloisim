@@ -45,9 +45,12 @@ namespace SDF
 				}
 			}
 
-			ray.range_min = GetValue<double>("ray/range/min");
-			ray.range_max = GetValue<double>("ray/range/max"); ;
-			ray.range_resolution = GetValue<double>("ray/range/resolution"); ;
+			if (IsValidNode("ray/range"))
+			{
+				ray.range.min = GetValue<double>("ray/range/min");
+				ray.range.max = GetValue<double>("ray/range/max"); ;
+				ray.range.resolution = GetValue<double>("ray/range/resolution");
+			}
 
 			if (IsValidNode("ray/noise"))
 			{

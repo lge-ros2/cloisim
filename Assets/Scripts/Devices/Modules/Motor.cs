@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Motor : MonoBehaviour
@@ -120,8 +119,6 @@ public class Motor : MonoBehaviour
 	public float _targetTorque = 0;
 	public float _currentMotorVelocity;
 
-	public const float compensatingRatio = 1.20f; // compensting target velocity
-
 	public string GetMotorName()
 	{
 		return (_motorBody == null)? string.Empty:_motorBody.transform.parent.name;
@@ -135,6 +132,7 @@ public class Motor : MonoBehaviour
 
 	public void SetTargetJoint(in ArticulationBody body)
 	{
+
 		if (body.jointType.Equals(ArticulationJointType.RevoluteJoint) || body.jointType.Equals(ArticulationJointType.SphericalJoint))
 		{
 			_motorBody = body;
@@ -166,25 +164,29 @@ public class Motor : MonoBehaviour
 	/// <remarks>degree per second</remarks>
 	public void SetVelocityTarget(in float targetAngularVelocity)
 	{
+		var compensatingVelocityRatio = 0f;
+
 		if (Mathf.Abs(targetAngularVelocity) < float.Epsilon || targetAngularVelocity == 0)
 		{
 			_enableMotor = false;
-			_targetAngularVelocity = 0;
 		}
 		else
 		{
 			_enableMotor = true;
 
-			if (_targetAngularVelocity != 0 && _feedback.IsMotionRotating)
+			if (_feedback.IsMotionRotating)
 			{
 				var directionSwitch = (Mathf.Sign(_targetAngularVelocity) == Mathf.Sign(targetAngularVelocity)) ? false : true;
 				_rapidControl.SetDirectionSwitched(directionSwitch);
 			}
 
 			const float compensateThreshold = 10.0f;
+			const float compensatingRatio = 1.20f;
 
-			_targetAngularVelocity = targetAngularVelocity * ((Mathf.Abs(targetAngularVelocity) < compensateThreshold) ? compensatingRatio : 1.0f);
+			compensatingVelocityRatio =  ((Mathf.Abs(targetAngularVelocity) < compensateThreshold) ? compensatingRatio : 1.0f);
 		}
+
+			_targetAngularVelocity = targetAngularVelocity * compensatingVelocityRatio;
 	}
 
 	void FixedUpdate()
@@ -204,14 +206,14 @@ public class Motor : MonoBehaviour
 		// Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
 		// 	_motorBody.jointVelocity[0], _motorBody.jointAcceleration[0], _motorBody.jointForce[0], _motorBody.jointFriction, _motorBody.jointPosition[0]);
 
-		// Compensate target angular velocity
-		var targetAngularVelocityCompensation = (_targetAngularVelocity != 0) ? (Mathf.Sign(_targetAngularVelocity) * _feedback.Compensate()) : 0;
-
-		var compensatedTargetAngularVelocity = _targetAngularVelocity + targetAngularVelocityCompensation;
-
 		// do stop motion of motor when motor disabled
 		if (_enableMotor)
 		{
+			// Compensate target angular velocity
+			var targetAngularVelocityCompensation = (_targetAngularVelocity != 0) ? (Mathf.Sign(_targetAngularVelocity) * _feedback.Compensate()) : 0;
+
+			var compensatedTargetAngularVelocity = _targetAngularVelocity + targetAngularVelocityCompensation;
+
 			_targetTorque = Mathf.Abs(_pidControl.Update(compensatedTargetAngularVelocity, _currentMotorVelocity, Time.fixedDeltaTime));
 
 			// Debug.Log(GetMotorName() + ", " + _targetAngularVelocity + " <=> " + _currentMotorVelocity);
@@ -234,15 +236,16 @@ public class Motor : MonoBehaviour
 
 	public void Stop()
 	{
-		_motorBody.velocity = Vector3.zero;
-		_motorBody.angularVelocity = Vector3.zero;
-
 		_targetTorque = 0;
 
 		SetJointVelocity(0);
 		SetTargetVelocityAndForce(0, 0);
 
 		_pidControl.Reset();
+		_rapidControl.SetDirectionSwitched(false);
+
+		_motorBody.velocity = Vector3.zero;
+		_motorBody.angularVelocity = Vector3.zero;
 	}
 
 	private ArticulationDrive GetDrive()
@@ -293,6 +296,10 @@ public class Motor : MonoBehaviour
 				_motorBody.zDrive = drive;
 			}
 		}
+		else
+		{
+			Stop();
+		}
 	}
 
 	private void SetTargetVelocityAndForce(in float targetVelocity, in float targetForce)
@@ -316,23 +323,20 @@ public class Motor : MonoBehaviour
 		}
 	}
 
-	private const int _maxQueueForPrevJointVelocities = 3;
-	private float _prevJointVelocitySum = 0;
-	private Queue<float> _prevJointVelocities = new Queue<float>(_maxQueueForPrevJointVelocities);
+	public float _prevJointPosition = 0;
 
 	private float GetJointVelocity()
 	{
-		var currentJointVelocity = _motorBody.jointVelocity[0] * Mathf.Rad2Deg;
-		_prevJointVelocities.Enqueue(currentJointVelocity);
-		_prevJointVelocitySum += currentJointVelocity;
-
-		var averageJointVelocity = 0f;
-		if (_prevJointVelocities.Count == _maxQueueForPrevJointVelocities)
+		if (_motorBody == null)
 		{
-			averageJointVelocity = _prevJointVelocitySum/(float)_maxQueueForPrevJointVelocities;
-			_prevJointVelocitySum -= _prevJointVelocities.Dequeue();
+			return 0;
 		}
 
-		return (_motorBody) ? (averageJointVelocity) : 0;
+		// calculate velocity using joint position is more accurate than joint velocity
+		var jointPosition = _motorBody.jointPosition[0] * Mathf.Rad2Deg;
+		var jointVelocity = (Mathf.DeltaAngle(_prevJointPosition, jointPosition) / Time.fixedDeltaTime);
+		_prevJointPosition = jointPosition;
+
+		return jointVelocity;
 	}
 }

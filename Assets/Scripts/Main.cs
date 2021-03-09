@@ -138,6 +138,7 @@ public class Main: MonoBehaviour
 		// Debug.Log("World: " + worldFileName);
 
 		var sdf = new SDF.Root();
+		sdf.SetTargetLogOutput(simulationDisplay);
 		sdf.SetWorldFileName(worldFileName);
 		sdf.fileDefaultPath = filesRootDirectory;
 		sdf.modelDefaultPaths.AddRange(modelRootDirectories);
@@ -157,8 +158,9 @@ public class Main: MonoBehaviour
 		}
 		else
 		{
-			Debug.LogError("Parsing failed!!");
-			simulationDisplay?.SetEventMessage("Failed to load world file: " + worldFileName);
+			var errorMessage = "Parsing failed!!!, failed to load world file: " + worldFileName;
+			Debug.LogError(errorMessage);
+			simulationDisplay?.SetEventMessage(errorMessage);
 		}
 
 		yield return null;

@@ -117,6 +117,11 @@ namespace SDF
 						anchorPose.rotation = modelTransformChild.localRotation;
 					}
 
+					var jointPosition = SDF2Unity.GetPosition(joint.Pose.Pos);
+					var jointRotation = SDF2Unity.GetRotation(joint.Pose.Rot);
+					anchorPose.position += jointPosition;
+					anchorPose.rotation *= jointRotation;
+
 					Implement.Joint.SetArticulationBodyAnchor(articulationBodyChild, anchorPose);
 				}
 

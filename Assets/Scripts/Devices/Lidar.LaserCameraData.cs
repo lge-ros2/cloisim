@@ -35,7 +35,10 @@ namespace SensorDevices
 			{
 				imageWidth = width;
 				imageHeight = height;
+
 				output = new double[imageWidth];
+				// TODO: vertical ray
+				// output = new double[imageWidth * imageHeight];
 			}
 
 			public void SetBufferData(in NativeArray<byte> buffer)
