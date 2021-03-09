@@ -189,11 +189,15 @@ public class ObjectSpawning : MonoBehaviour
 
 	void DrawShadow(in Rect rect, in string value)
 	{
-		GUI.color = new Color(0, 0, 0, 0.64f);
+		var prevColor = GUI.skin.label.normal.textColor;
+
+		GUI.skin.label.normal.textColor = new Color(0, 0, 0, 0.64f);
 		var rectShadow = rect;
 		rectShadow.x += 1;
 		rectShadow.y += 1;
 		GUI.Label(rectShadow, value);
+
+		GUI.skin.label.normal.textColor = prevColor;
 	}
 
 	private string prevScaleFactorString;
@@ -201,14 +205,16 @@ public class ObjectSpawning : MonoBehaviour
 	private bool doCheckScaleFactorValue = false;
 	void OnGUI()
 	{
+		var originLabelColor = GUI.skin.label.normal.textColor;
+
 		GUI.skin.label.alignment = TextAnchor.MiddleRight;
 		GUI.skin.label.fontSize = labelFontSize;
-		GUI.skin.textField.alignment = TextAnchor.MiddleCenter;
+		GUI.skin.label.alignment = TextAnchor.MiddleCenter;
 
 		var centerPointX = Screen.width / 2;
 
 		var rectToolbar = new Rect(centerPointX - toolbarWidth / 2, topMargin, toolbarWidth, guiHeight);
-		GUI.color = Color.white;
+		GUI.skin.label.normal.textColor = Color.white;
 		toolbarSelected = GUI.Toolbar(rectToolbar, toolbarSelected, toolbarStrings);
 
 		var rectToolbarLabel = rectToolbar;
@@ -216,20 +222,20 @@ public class ObjectSpawning : MonoBehaviour
 		rectToolbarLabel.width = 45;
 
 		DrawShadow(rectToolbarLabel, "Props: ");
-		GUI.color = Color.white;
+		GUI.skin.label.normal.textColor = Color.white;
 		GUI.Label(rectToolbarLabel, "Props: ");
 
 		var rectScaleLabel = rectToolbar;
 		rectScaleLabel.x += (toolbarWidth + 5);
 		rectScaleLabel.width = 50;
 		DrawShadow(rectScaleLabel, "Scale: ");
-		GUI.color = Color.white;
+		GUI.skin.label.normal.textColor = Color.white;
 		GUI.Label(rectScaleLabel, "Scale: ");
 
 		var rectScale = rectScaleLabel;
 		rectScale.x += 50;
 		rectScale.width = 40;
-		GUI.color = Color.white;
+		GUI.skin.label.normal.textColor = Color.white;
 		GUI.SetNextControlName("ScaleField");
 		scaleFactorString = GUI.TextField(rectScale, scaleFactorString, 5);
 
@@ -273,5 +279,7 @@ public class ObjectSpawning : MonoBehaviour
 			}
 			doCheckScaleFactorValue = false;
 		}
+
+		GUI.skin.label.normal.textColor = originLabelColor;
 	}
 }

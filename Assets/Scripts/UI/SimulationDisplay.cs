@@ -30,11 +30,13 @@ public class SimulationDisplay : MonoBehaviour
 	private const int textWidthFps = 80;
 	private const int textWidthVersion = 50;
 	private const int textWidthSimulation = 600;
+	private const int textWidthEvent = 600;
 
 	[Header("Rect")]
 	private Rect rectVersion = new Rect(textLeftMargin, textTopMargin, textWidthVersion, textHeight);
 	private Rect rectFps = new Rect(Screen.width - textWidthFps - textLeftMargin, textTopMargin, textWidthFps, textHeight);
 	private Rect rectSimulationinfo = new Rect(textLeftMargin, Screen.height - textHeight - textTopMargin, textWidthSimulation, textHeight);
+	private Rect rectEventMessage = new Rect(textLeftMargin, Screen.height - (textHeight*2) - textTopMargin, textWidthEvent, textHeight);
 
 	// Start is called before the first frame update
 	void Awake()
@@ -95,40 +97,55 @@ public class SimulationDisplay : MonoBehaviour
 
 	void DrawShadow(in Rect rect, in string value)
 	{
-		GUI.color = new Color(0, 0, 0, 0.34f);
+		var prevColor = GUI.skin.label.normal.textColor;
+
+		GUI.skin.label.normal.textColor = new Color(0, 0, 0, 0.34f);
 		var rectShadow = rect;
 		rectShadow.x += 1;
 		rectShadow.y += 1;
 		GUI.Label(rectShadow, value);
+
+		GUI.skin.label.normal.textColor = prevColor;
 	}
 
 	void OnGUI()
 	{
+		var originLabelColor = GUI.skin.label.normal.textColor;
+
 		GUI.skin.label.alignment = TextAnchor.MiddleLeft;
 		GUI.skin.label.fontSize = labelFontSize;
+		GUI.skin.label.wordWrap = true;
 
 		// version info
 		var versionString = GetBoldText(Application.version);
 		DrawShadow(rectVersion, versionString);
-		GUI.color = Color.green;
+		GUI.skin.label.normal.textColor = Color.green;
 		GUI.Label(rectVersion, versionString);
 
-		// Simulation time info or event message
-		rectSimulationinfo.y = Screen.height - textHeight - textTopMargin;
-
-		var simulationInfo = (string.IsNullOrEmpty(eventMessage)) ? GetTimeInfoString() : eventMessage;
+		// Simulation time info
+		var simulationInfo = GetTimeInfoString();
 		DrawShadow(rectSimulationinfo, simulationInfo);
-		GUI.color = Color.black;
+		GUI.skin.label.normal.textColor = Color.black;
 		GUI.Label(rectSimulationinfo, simulationInfo);
+
+		// error message or event message
+		var originLabelSkin = GUI.skin.label;
+
+		GUI.skin.label.wordWrap = false;
+		GUI.skin.label.clipping = TextClipping.Overflow;
+		DrawShadow(rectEventMessage, eventMessage);
+		GUI.skin.label.normal.textColor = Color.red;
+		GUI.Label(rectEventMessage, eventMessage);
+
+		GUI.skin.label = originLabelSkin;
 
 		// fps info
 		GUI.skin.label.alignment = TextAnchor.MiddleRight;
-
-		rectFps.x = Screen.width - textWidthFps - textLeftMargin;
-
 		var fpsString = "FPS [" + GetBoldText(Mathf.Round(fps).ToString("F1")) + "]";
 		DrawShadow(rectFps, fpsString);
-		GUI.color = Color.cyan;
+		GUI.skin.label.normal.textColor = Color.cyan;
 		GUI.Label(rectFps, fpsString);
+
+		GUI.skin.label.normal.textColor = originLabelColor;
 	}
 }
