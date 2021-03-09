@@ -204,12 +204,16 @@ namespace SDF
 			public double max_angle = 0.0;
 		}
 
+		public class Range
+		{
+			public double min = 0;
+			public double max = 0;
+			public double resolution = 0;
+		}
+
 		public Scan horizontal = new Scan(640);
 		public Scan vertical = new Scan(1);
-
-		public double range_min = 0.0;
-		public double range_max = 0.0;
-		public double range_resolution = 0.0;
+		public Range range = new Range();
 
 		public string noise_type = "gaussian";
 		public double noise_mean = 0.0;

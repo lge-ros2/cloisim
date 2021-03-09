@@ -63,8 +63,8 @@ namespace SDF
 
 				lidar.deviceName = GetFrameName(newSensorObject);
 				lidar.samples = element.horizontal.samples;
-				lidar.rangeMin = element.range_min;
-				lidar.rangeMax = element.range_max;
+				lidar.rangeMin = element.range.min;
+				lidar.rangeMax = element.range.max;
 				lidar.angleMin = element.horizontal.min_angle * Mathf.Rad2Deg;
 				lidar.angleMax = element.horizontal.max_angle * Mathf.Rad2Deg;
 				lidar.resolution = element.horizontal.resolution;
