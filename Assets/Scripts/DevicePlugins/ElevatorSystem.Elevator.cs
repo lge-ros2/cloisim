@@ -13,29 +13,19 @@ public partial class ElevatorSystem : DevicePlugin
 	{
 		private ElevatorState state;
 		private string name;
-		private ElevatorControl elevator;
+		private ElevatorControl control;
 
 		public ElevatorEntity(in string elevatorName, in ElevatorControl elevatorControl)
 		{
-			state = ElevatorState.STOP;
-			name = elevatorName;
-			elevator = elevatorControl;
+			this.state = ElevatorState.STOP;
+			this.name = elevatorName;
+			this.control = elevatorControl;
 		}
 
 		public ElevatorState State => state;
 		public string Name => name;
-		public float Height => elevator.Height;
-		public ElevatorControl Elevator => elevator;
-
-		public void SetHeight(in float targetHeight)
-		{
-			elevator.Height = targetHeight;
-		}
-
-		public bool IsArrived(in float targetHeight)
-		{
-			return elevator.IsArrived(targetHeight);
-		}
+		public float Height => control.Height;
+		public ElevatorControl Control => control;
 
 		public void SetState(in float from, in float to)
 		{
@@ -60,90 +50,73 @@ public partial class ElevatorSystem : DevicePlugin
 
 		public void MoveElevatorTo(in float to)
 		{
-			var from = Height;
-			SetState(from, to);
-			elevator.MoveTo(to);
+			SetState(this.Height, to);
+			control.MoveTo(to);
 		}
 
-		public void MoveElevatorTo(in float to, in float from)
+		public void MoveElevatorTo(in float from, in float to)
 		{
 			SetState(from, to);
-			elevator.MoveTo(to);
+			control.MoveTo(to);
 		}
 	};
 
-	private bool RequestDoorOpen(in int elevatorIndex)
+	private bool RequestDoorOpen(in string elevatorIndex)
 	{
 		var task = new ElevatorTask(elevatorIndex);
 		task.state = ElevatorTaskState.DOOR_OPEN;
 		elevatorTaskQueue.Enqueue(task);
-
 		return true;
 	}
 
-	private bool RequestDoorClose(in int elevatorIndex)
+	private bool RequestDoorClose(in string elevatorIndex)
 	{
 		var task = new ElevatorTask(elevatorIndex);
 		task.state = ElevatorTaskState.DOOR_CLOSE;
 		elevatorTaskQueue.Enqueue(task);
-
 		return true;
 	}
 
-	private bool IsElevatorDoorOpened(in int elevatorIndex)
+	private bool IsElevatorDoorOpened(in string elevatorIndex)
 	{
-		var entity = elevatorList[elevatorIndex];
-		return entity.Elevator.IsDoorOpened();
+		var elevator = elevatorList[elevatorIndex];
+		return elevator.Control.IsDoorOpened();
 	}
 
-	private float GetElevatorCurrentHeight(in int elevatorIndex)
+	private float GetElevatorCurrentHeight(in string elevatorIndex)
 	{
-		var entity = elevatorList[elevatorIndex];
-		return entity.Height;
+		var elevator = elevatorList[elevatorIndex];
+		return elevator.Control.Height;
 	}
 
-	private bool SelectElevatorFloor(in int elevatorIndex, in string toTargetFloor, in string fromCurrentFloor)
+	private bool CallElevator(in string fromCurrentFloor, in string toTargetFloor, in string elevatorIndex = "")
 	{
-		var targetFloorHeight = GetFloorHeight(toTargetFloor);
-		if (float.IsNaN(targetFloorHeight))
+		var task = new ElevatorTask(elevatorIndex);
+		task.to.name = toTargetFloor;
+		task.to.height = GetFloorHeight(task.to.name);
+		task.from.name = fromCurrentFloor;
+		task.from.height = GetFloorHeight(task.from.name);
+
+		if (float.IsNaN(task.to.height) || float.IsNaN(task.from.height))
 		{
 			return false;
 		}
 
-		var task = new ElevatorTask(elevatorIndex);
-		task.toFloor = toTargetFloor;
-		task.toFloorHeight = targetFloorHeight;
-		task.fromFloor = fromCurrentFloor;
-		task.fromFloorHeight = GetFloorHeight(task.fromFloor);
 		elevatorTaskQueue.Enqueue(task);
-
-		return true;
-	}
-
-	private bool CallElevator(in string currentFloor, in string targetFloor)
-	{
-		var task = new ElevatorTask(NON_ELEVATOR_INDEX);
-		task.toFloor = targetFloor;
-		task.toFloorHeight = GetFloorHeight(task.toFloor);
-		task.fromFloor = currentFloor;
-		task.fromFloorHeight = GetFloorHeight(task.fromFloor);
-		elevatorTaskQueue.Enqueue(task);
-
 		// Debug.Log("Call elevator: " + task.elevatorIndex);
-
 		return true;
 	}
 
-	private bool GetCalledElevator(in string currentFloor, in string targetFloor, out int elevatorIndex)
+	private bool GetCalledElevator(in string currentFloor, in string targetFloor, out string elevatorIndex)
 	{
-		elevatorIndex = NON_ELEVATOR_INDEX;
+		elevatorIndex = string.Empty;
 
 		var currentFloorHeight = GetFloorHeight(currentFloor);
 		// If not, try to find in stopped elevator
 		foreach (var elevatorItem in elevatorList)
 		{
 			var elevator = elevatorItem.Value;
-			if (elevator.State.Equals(ElevatorState.STOP) && elevator.IsArrived(currentFloorHeight))
+			if (elevator.State.Equals(ElevatorState.STOP) && elevator.Control.IsArrived(currentFloorHeight))
 			{
 				elevatorIndex = elevatorItem.Key;
 				Debug.Log("Already elevator is stopped " + elevatorIndex);
@@ -154,7 +127,7 @@ public partial class ElevatorSystem : DevicePlugin
 		// Try to find in task queue
 		foreach (var task in elevatorTaskQueue)
 		{
-			if (task.toFloor.Equals(currentFloor) && task.state.Equals(ElevatorTaskState.PROCESSING))
+			if (task.to.name.Equals(currentFloor) && task.state.Equals(ElevatorTaskState.PROCESSING))
 			{
 				elevatorIndex = task.elevatorIndex;
 				Debug.Log("Calling elevator " + elevatorIndex);

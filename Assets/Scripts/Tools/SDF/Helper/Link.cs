@@ -18,7 +18,11 @@ namespace SDF
 			[UE.Header("SDF Properties")]
 			public bool isSelfCollide = false;
 
-			public Dictionary<string, UE.Joint> jointList = new Dictionary<string, UE.Joint>();
+			public bool drawInertia = false;
+
+			private UE.ArticulationBody artBody;
+
+			public Dictionary<string, UE.ArticulationBody> jointList = new Dictionary<string, UE.ArticulationBody>();
 
 			new void Awake()
 			{
@@ -31,6 +35,13 @@ namespace SDF
 			// Start is called before the first frame update
 			void Start()
 			{
+				if (_modelHelper != null)
+				{
+					_modelHelper.SetArticulationBody();
+				}
+
+				artBody = this.GetComponent<UE.ArticulationBody>();
+
 				// Handle self collision
 				if (!isSelfCollide)
 				{
@@ -40,14 +51,26 @@ namespace SDF
 				{
 					EnableSelfCollision();
 				}
+			}
 
-				// if parent model has static option, make it all static in child
-				if (_modelHelper != null)
+			void OnDrawGizmos()
+			{
+				if (artBody && drawInertia)
 				{
-					if (_modelHelper.isStatic)
+					UE.Gizmos.color = new UE.Color(0.35f, 0.0f, 0.1f, 0.1f);
+
+					var region = artBody.inertiaTensor;
+					if (region.x > 1f || region.y > 1f || region.z > 1f)
 					{
-						MakeStaticLink();
+						region = region.normalized;
 					}
+					else
+					{
+						region.Set(region.magnitude/region.x, region.magnitude/region.y, region.magnitude/region.z);
+						region = region.normalized;
+					}
+
+					UE.Gizmos.DrawCube(transform.position, region);
 				}
 			}
 
@@ -127,19 +150,6 @@ namespace SDF
 				foreach (var joint in GetComponentsInChildren<UE.Joint>())
 				{
 					joint.enableCollision = true;
-				}
-			}
-
-			private void MakeStaticLink()
-			{
-				foreach (var child in GetComponentsInChildren<UE.Transform>())
-				{
-					child.gameObject.isStatic = true;
-					var childRigidBody = child.GetComponentInChildren<UE.Rigidbody>();
-					if (childRigidBody != null)
-					{
-						childRigidBody.isKinematic = true;
-					}
 				}
 			}
 		}

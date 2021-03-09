@@ -45,6 +45,7 @@ namespace SensorDevices
 		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.15f);
 
 		private Transform lidarLink = null;
+		private Pose lidarSensorInitPose = new Pose();
 		private ShadowQuality originalShadowSettings_;
 		private UnityEngine.Camera laserCam = null;
 		private Material depthMaterial = null;
@@ -87,10 +88,9 @@ namespace SensorDevices
 			QualitySettings.shadows = originalShadowSettings_;
 		}
 
-
 		private double GetAngleStep(in double minAngle, in double maxAngle, in uint totalSamples)
 		{
-			return (maxAngle - minAngle) / (resolution * (totalSamples - 1));
+			return (maxAngle - minAngle) / (resolution * totalSamples);
 		}
 
 		protected override void OnAwake()
@@ -107,6 +107,9 @@ namespace SensorDevices
 		{
 			if (laserCam)
 			{
+				lidarSensorInitPose.position = transform.localPosition;
+				lidarSensorInitPose.rotation = transform.localRotation;
+
 				DoParseFilter();
 
 				SetupLaserCamera();
@@ -131,16 +134,15 @@ namespace SensorDevices
 			laserScan.AngleMin = angleMin * Mathf.Deg2Rad;
 			laserScan.AngleMax = angleMax * Mathf.Deg2Rad;
 			laserScan.AngleStep = GetAngleStep(laserScan.AngleMin, laserScan.AngleMax, samples);
+			laserScan.Count = samples;
+
 			laserScan.RangeMin = rangeMin;
 			laserScan.RangeMax = rangeMax;
-			laserScan.Count = samples;
 
 			laserScan.VerticalAngleMin = verticalAngleMin * Mathf.Deg2Rad;
 			laserScan.VerticalAngleMax = verticalAngleMax * Mathf.Deg2Rad;
+			laserScan.VerticalAngleStep = (verticalAngleMin == 0 && verticalAngleMax == 0) ? 1 : GetAngleStep(laserScan.VerticalAngleMin, laserScan.VerticalAngleMax, verticalSamples);
 			laserScan.VerticalCount = verticalSamples;
-			laserScan.VerticalAngleStep
-				= (verticalAngleMin == 0 && verticalAngleMax == 0) ?
-					1 : GetAngleStep(laserScan.VerticalAngleMin, laserScan.VerticalAngleMax, verticalSamples);
 
 			laserScan.Ranges = new double[samples];
 			laserScan.Intensities = new double[samples];
@@ -236,12 +238,15 @@ namespace SensorDevices
 					var data = laserCamData[dataIndex];
 					axisRotation.y = data.centerAngle;
 
-					laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
+					laserCam.transform.localRotation = lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
 
 					laserCam.enabled = true;
-					laserCam.Render();
 
-					readbacks[dataIndex] = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32);
+					if (laserCam.isActiveAndEnabled)
+					{
+						laserCam.Render();
+						readbacks[dataIndex] = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32);
+					}
 
 					laserCam.enabled = false;
 				}
@@ -292,8 +297,8 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			var lidarPosition = lidarLink.position + transform.localPosition;
-			var lidarRotation = lidarLink.rotation;
+			var lidarPosition = lidarLink.position + lidarSensorInitPose.position;
+			var lidarRotation = lidarLink.rotation * lidarSensorInitPose.rotation;
 
 			var laserScan = laserScanStamped.Scan;
 
@@ -327,6 +332,11 @@ namespace SensorDevices
 					var srcLengthratio = Mathf.Abs((dataStartAngle - laserStartAngle) / dataTotalAngle);
 					copyLength = outputBufferLength - Mathf.FloorToInt(outputBufferLength * srcLengthratio);
 					dstBufferOffset = (int)samples - copyLength;
+
+					if (copyLength < 0 || dstBufferOffset < 0)
+					{
+						doCopy = false;
+					}
 				}
 				// middle of laser angle
 				else if (dataStartAngle >= laserStartAngle && dataEndAngle < laserEndAngle)
@@ -334,6 +344,11 @@ namespace SensorDevices
 					srcBufferOffset = 0;
 					copyLength = outputBufferLength;
 					dstBufferOffset = (int)samples - (Mathf.CeilToInt(samples * ((dataStartAngle - laserStartAngle) / laserTotalAngle)) + copyLength);
+
+					if (copyLength < 0 || dstBufferOffset < 0)
+					{
+						doCopy = false;
+					}
 				}
 				// end side of laser angle
 				else if (dataEndAngle >= laserEndAngle)
@@ -342,6 +357,11 @@ namespace SensorDevices
 					copyLength = Mathf.CeilToInt(outputBufferLength * srcLengthRatio);
 					srcBufferOffset = outputBufferLength - copyLength;
 					dstBufferOffset = 0;
+
+					if (copyLength < 0 || srcBufferOffset < 0)
+					{
+						doCopy = false;
+					}
 				}
 				else
 				{
@@ -375,13 +395,13 @@ namespace SensorDevices
 			{
 				yield return waitForEndOfFrame;
 
-				var lidarSensorWorldPosition = lidarLink.position + transform.localPosition;
+				var lidarSensorWorldPosition = lidarLink.position + lidarSensorInitPose.position;
 				var rangeData = GetRangeData();
 
 				for (var hScanIndex = 0; hScanIndex < rangeData.Length; hScanIndex++)
 				{
 					var rayAngleH = ((laserHAngleResolution * hScanIndex)) + startAngle;
-					var rayRotation = Quaternion.AngleAxis((float)(rayAngleH), lidarLink.up) * lidarLink.forward;
+					var rayRotation = (Quaternion.AngleAxis((float)rayAngleH, transform.up)) * lidarLink.forward;
 					var rayStart = (rayRotation * (float)rangeMin) + lidarSensorWorldPosition;
 
 					var ccwIndex = (uint)(rangeData.Length - hScanIndex - 1);

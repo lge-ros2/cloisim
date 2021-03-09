@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2020 LG Electronics Inc.
+ * Copyright (c) 2021 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
  */
 
 using System;
-using UnityEngine;
 using UE = UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace SDF
 {
@@ -14,26 +14,26 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private GameObject _rootObject = null;
-			private UE.Camera mainCamera = null;
+			private UE.GameObject _rootObject = null;
+			private UE.Camera _mainCamera = null;
 
-			public Loader(GameObject rootObject)
+			public Loader(UE.GameObject rootObject)
 			{
 				_rootObject = rootObject;
 			}
 
 			public void SetMainCamera(in UE.Camera camera)
 			{
-				if (mainCamera == null)
+				if (_mainCamera == null)
 				{
-					mainCamera = camera;
+					_mainCamera = camera;
 				}
 			}
 
-			private void SetParentObject(GameObject childObject, GameObject parentObject)
+			private void SetParentObject(UE.GameObject childObject, UE.GameObject parentObject)
 			{
-				childObject.transform.position = Vector3.zero;
-				childObject.transform.rotation = Quaternion.identity;
+				childObject.transform.position = UE.Vector3.zero;
+				childObject.transform.rotation = UE.Quaternion.identity;
 
 				if (parentObject == null)
 				{
@@ -44,14 +44,14 @@ namespace SDF
 					childObject.transform.SetParent(parentObject.transform, false);
 				}
 
-				childObject.transform.localScale = Vector3.one;
-				childObject.transform.localPosition = Vector3.zero;
-				childObject.transform.localRotation = Quaternion.identity;
+				childObject.transform.localScale = UE.Vector3.one;
+				childObject.transform.localPosition = UE.Vector3.zero;
+				childObject.transform.localRotation = UE.Quaternion.identity;
 			}
 
-			private void SetParentObject(GameObject childObject, string parentObjectName)
+			private void SetParentObject(UE.GameObject childObject, in string parentObjectName)
 			{
-				var parentObject = GameObject.Find(parentObjectName);
+				var parentObject = UE.GameObject.Find(parentObjectName);
 
 				if (parentObject != null)
 				{
@@ -65,7 +65,7 @@ namespace SDF
 
 			protected override void ImportPlugin(in SDF.Plugin plugin, in System.Object parentObject)
 			{
-				var targetObject = (parentObject as GameObject);
+				var targetObject = (parentObject as UE.GameObject);
 
 				// filtering plugin name
 				var pluginName = plugin.ClassName();
@@ -110,31 +110,6 @@ namespace SDF
 				}
 			}
 
-			protected override System.Object ImportModel(in SDF.Model model, in System.Object parentObject)
-			{
-				if (model == null)
-				{
-					return null;
-				}
-
-				var targetObject = (parentObject as GameObject);
-				var newModelObject = new GameObject(model.Name);
-				newModelObject.tag = "Model";
-
-				SetParentObject(newModelObject, targetObject);
-
-				// Apply attributes
-				var localPosition = SDF2Unity.GetPosition(model.Pose.Pos);
-				var localRotation = SDF2Unity.GetRotation(model.Pose.Rot);
-				// Debug.Log(newModelObject.name + "::" + localPosition + ", " + localRotation);
-
-				var modelHelper = newModelObject.AddComponent<Helper.Model>();
-				modelHelper.isStatic = model.IsStatic;
-				modelHelper.SetPose(localPosition, localRotation);
-
-				return newModelObject as System.Object;
-			}
-
 			protected override void ImportWorld(in SDF.World world)
 			{
 				if (world == null)
@@ -145,13 +120,14 @@ namespace SDF
 				// Debug.Log("Import World");
 				if (world.GuiCameraPose != null)
 				{
-					mainCamera.transform.localPosition = Vector3.zero;
-					mainCamera.transform.localRotation = Quaternion.identity;
-					mainCamera.transform.position = Vector3.zero;
+					_mainCamera.transform.localPosition = UE.Vector3.zero;
+					_mainCamera.transform.localRotation = UE.Quaternion.identity;
+					_mainCamera.transform.position = UE.Vector3.zero;
 
-					mainCamera.transform.Translate(SDF2Unity.GetPosition(world.GuiCameraPose.Pos));
 					var rotate = SDF2Unity.GetRotation(world.GuiCameraPose.Rot);
-					mainCamera.transform.rotation = rotate;
+					var translate = SDF2Unity.GetPosition(world.GuiCameraPose.Pos);
+					_mainCamera.transform.Translate(translate);
+					_mainCamera.transform.rotation = rotate;
 				}
 			}
 		}

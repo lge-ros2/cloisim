@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 LG Electronics Inc.
+ * Copyright (c) 2021 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -41,7 +41,7 @@ namespace SDF
 				return null;
 			}
 
-			protected virtual void PostImportVisual(in SDF.Visual visual, in System.Object targetObject)
+			protected virtual void AfterImportVisual(in SDF.Visual visual, in System.Object targetObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, visual.Name);
 			}
@@ -52,7 +52,7 @@ namespace SDF
 				return null;
 			}
 
-			protected virtual void PostImportCollision(in Collision collision, in Object targetObject)
+			protected virtual void AfterImportCollision(in Collision collision, in Object targetObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, collision.Name);
 			}
@@ -63,7 +63,7 @@ namespace SDF
 				return null;
 			}
 
-			protected virtual void PostImportLink(in Link link, in Object targetObject)
+			protected virtual void AfterImportLink(in Link link, in Object targetObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, link.Name);
 			}
@@ -72,6 +72,11 @@ namespace SDF
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, model.Name);
 				return null;
+			}
+
+			protected virtual void AfterImportModel(in Model model, in Object targetObject)
+			{
+				PrintNotImported(MethodBase.GetCurrentMethod().Name, model.Name);
 			}
 
 			protected virtual void ImportGeometry(in Geometry geometry, in Object parentObject)
@@ -97,7 +102,7 @@ namespace SDF
 
 					ImportPlugins(item.GetPlugins(), createdObject);
 
-					PostImportVisual(item, createdObject);
+					AfterImportVisual(item, createdObject);
 				}
 			}
 
@@ -110,7 +115,7 @@ namespace SDF
 
 					ImportGeometry(item.GetGeometry(), createdObject);
 
-					PostImportCollision(item, createdObject);
+					AfterImportCollision(item, createdObject);
 				}
 			}
 
@@ -137,7 +142,7 @@ namespace SDF
 
 					ImportSensors(item.GetSensors(), createdObject);
 
-					PostImportLink(item, createdObject);
+					AfterImportLink(item, createdObject);
 				}
 			}
 
@@ -162,17 +167,20 @@ namespace SDF
 				foreach (var item in items)
 				{
 					// Console.WriteLine("[Model][{0}][{1}]", item.Name, parentObject);
-					Object child = ImportModel(item, parentObject);
-					ImportLinks(item.GetLinks(), child);
+					var createdObject = ImportModel(item, parentObject);
+
+					ImportLinks(item.GetLinks(), createdObject);
 
 					// Add nested models
-					ImportModels(item.GetModels(), child);
+					ImportModels(item.GetModels(), createdObject);
 
 					// Joint should be added after all links of model loaded!!!
-					ImportJoints(item.GetJoints(), child);
+					ImportJoints(item.GetJoints(), createdObject);
 
 					// Plugin should be added after all links of model loaded!!!
-					ImportPlugins(item.GetPlugins(), child);
+					ImportPlugins(item.GetPlugins(), createdObject);
+
+					AfterImportModel(item, createdObject);
 				}
 			}
 
@@ -186,16 +194,14 @@ namespace SDF
 
 			private void PrintNotImported(in string methodName, in string name)
 			{
-				(Console.Out as DebugLogWriter).SetWarning(true);
+				(Console.Out as DebugLogWriter).SetWarningOnce();
 				Console.WriteLine("[{0}][{1}] Not Imported yet", methodName, name);
-				(Console.Out as DebugLogWriter).SetWarning(false);
 			}
 
 			private void PrintNotImported(in string methodName)
 			{
-				(Console.Out as DebugLogWriter).SetWarning(true);
+				(Console.Out as DebugLogWriter).SetWarningOnce();
 				Console.WriteLine("[{0}] Not Imported yet", methodName);
-				(Console.Out as DebugLogWriter).SetWarning(false);
 			}
 		}
 	}

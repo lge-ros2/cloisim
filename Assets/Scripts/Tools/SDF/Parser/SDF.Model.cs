@@ -70,10 +70,12 @@ namespace SDF
 		{
 			return models.GetData();
 		}
+
 		public List<Link> GetLinks()
 		{
 			return links.GetData();
 		}
+
 		public List<Joint> GetJoints()
 		{
 			return joints.GetData();

@@ -35,7 +35,7 @@ namespace SDF
 				return newVisualObject as System.Object;
 			}
 
-			protected override void PostImportVisual(in SDF.Visual visual, in System.Object targetObject)
+			protected override void AfterImportVisual(in SDF.Visual visual, in System.Object targetObject)
 			{
 				var visualObject = (targetObject as UE.GameObject);
 

@@ -186,17 +186,27 @@ public class Actuator
 				break;
 		}
 
-		targetTransform.localPosition = nextPosition;
-
-		// check if it arrived
-		var distance = Vector3.Distance(targetPosition, nextPosition);
- 		if (distance < distanceEpsilon)
+		if (float.IsNaN(nextPosition.x) || float.IsNaN(nextPosition.y) || float.IsNaN(nextPosition.z))
 		{
-			// final touch
-			targetTransform.localPosition = targetPosition;
+			Debug.Log("next position is NaN, Stop moving");
 
 			// stop
 			isMoving = false;
+		}
+		else
+		{
+			targetTransform.localPosition = nextPosition;
+
+			// check if it arrived
+			var distance = Vector3.Distance(targetPosition, nextPosition);
+			if (distance < distanceEpsilon)
+			{
+				// final touch
+				targetTransform.localPosition = targetPosition;
+
+				// stop
+				isMoving = false;
+			}
 		}
 	}
 

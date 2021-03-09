@@ -186,9 +186,13 @@ namespace SensorDevices
 			while (true)
 			{
 				cam.enabled = true;
-				cam.Render();
 
+				if (cam.isActiveAndEnabled)
+				{
+					cam.Render();
+				}
 				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, readbackDstFormat);
+
 				cam.enabled = false;
 
 				yield return null;

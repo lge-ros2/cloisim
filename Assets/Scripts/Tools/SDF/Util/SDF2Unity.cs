@@ -36,6 +36,7 @@ public partial class SDF2Unity
 		var roll = Mathf.Rad2Deg * (float)value.Pitch;
 		var pitch = Mathf.Rad2Deg * -(float)value.Yaw;
 		var yaw = Mathf.Rad2Deg * -(float)value.Roll;
+
 		return Quaternion.Euler(roll, pitch, yaw);
 	}
 
@@ -53,17 +54,9 @@ public partial class SDF2Unity
 		return GetPosition(value);
 	}
 
-	public static Vector3 GetAxis(SDF.Vector3<int> axisValue, SDF.Quaternion<double> axisRotation = null)
+	public static Vector3 GetAxis(SDF.Vector3<int> axis)
 	{
-		var pos = GetPosition(axisValue);
-		var rot = GetRotation(axisRotation);
-
-		if (!rot.Equals(Quaternion.identity))
-		{
-			pos = rot * pos;
-		}
-
-		return pos;
+		return GetPosition(axis);
 	}
 
 	public static bool CheckTopModel(in GameObject targetObject)

@@ -74,11 +74,6 @@ namespace SensorDevices
 
 			ResolveSensingArea(meshCollider.sharedMesh);
 
-			// const MeshColliderCookingOptions cookingOptions
-			// 	= MeshColliderCookingOptions.EnableMeshCleaning|MeshColliderCookingOptions.WeldColocatedVertices;
-			// meshCollider.cookingOptions = cookingOptions;
-			// meshCollider.hideFlags |= HideFlags.NotEditable;
-
 			var sonar = sonarStamped.Sonar;
 			sonar.Frame = deviceName;
 			sonar.Radius = radius;

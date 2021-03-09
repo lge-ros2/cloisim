@@ -15,7 +15,8 @@ This project consists of
 - Network modules -> Module for transporting sensor data or control signal
 - Web service -> Module for controling simulation through a web interface
 
-[![cloisim](https://user-images.githubusercontent.com/21001946/104274319-e159cc00-54e3-11eb-907d-6ae49f3ed8af.png)](https://user-images.githubusercontent.com/21001946/104274159-96d84f80-54e3-11eb-9975-9d4bbbbdd586.mp4)
+![cloisim_multirobot](https://user-images.githubusercontent.com/21001946/107105748-3a124f80-686b-11eb-8ac8-74377696e641.gif)
+[video link](https://user-images.githubusercontent.com/21001946/104274159-96d84f80-54e3-11eb-9975-9d4bbbbdd586.mp4)
 
 ## Features
 
@@ -46,7 +47,8 @@ It does not support optional elmenets like `<lights>`, `<audio>`, `<actor>`, `<s
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material' and 'STL(.stl)'.
 
-[![cloisim_ros2_lidar](https://user-images.githubusercontent.com/21001946/103977264-3a5ff200-51bc-11eb-8053-643420568fc6.png)](https://user-images.githubusercontent.com/21001946/103972179-d0415000-51af-11eb-824b-3d77051664d5.mp4)
+![cloisim_lidar_ros](https://user-images.githubusercontent.com/21001946/107105540-42b65600-686a-11eb-8797-7d937b108c11.gif)
+[video link](https://user-images.githubusercontent.com/21001946/103972179-d0415000-51af-11eb-824b-3d77051664d5.mp4)
 
 ## How it works
 
@@ -61,15 +63,7 @@ Default physics engine 'Nvidia PhysX' is used for physics. And it retrieves some
 
 We've deceided to change a solver type of physics engine since new solver "TGS(Temporal Gauss Seidel)" is intorduced recently(PhysX 4.1).
 
-So from latest version([CLOiSim-1.11.0](https://github.com/lge-ros2/cloisim/releases/tag/1.11.0)), there is NO more constaints for rigidbodies by PGS(Projected Gauss Seidel) solver type.
-
-In previous with PGS solver has big constraints in terms of 'mass' relationship between rigidbodies.
-
-- ~~You could find details about these struggling issue with PhysX in unity forums. -> [this thread](https://forum.unity.com/threads/ape-deepmotion-avatar-physics-engine-for-robust-joints-and-powerful-motors.259889/)~~
-  - ~~Mass ratio between two joined rigid bodies is limited to less than 1:10 in order to maintain joint stability~~
-  - ~~Motors are soft and cannot deliver enough power to drive multi-level articulated robotics~~
-  - ~~Wheels wobble around their joint axis under heavy load~~
-  - ~~Simulation step size (time interval) has to be reduced to too small to provide the needed accuracy which kills the performance~~
+So there is NO more constaints for rigidbodies by PGS(Projected Gauss Seidel) solver type since latest version([CLOiSim-1.11.0](https://github.com/lge-ros2/cloisim/releases/tag/1.11.0)).
 
 But inertia factors which retrieved from SDF are still NOT USED for rigidbody in Unity. Because it could cause unexpected behavior with physX engine.
 
@@ -77,7 +71,7 @@ But inertia factors which retrieved from SDF are still NOT USED for rigidbody in
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2019.4.18f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.2.6f1 (LTS)'*.
 - Linux: Ubuntu 20.04.1
 - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
 - Memory: 32GB
@@ -98,12 +92,11 @@ Please visit here [build guide](https://github.com/lge-ros2/multi-robot-simulato
 Set environment path like below.
 
 ```shell
-export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample-resources/models"
-export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample-resources/worlds"
+export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample_resources/models"
+export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample_resources/worlds"
 ```
 
-- ***export LD_LIBRARY_PATH=./CLOiSim_Data/Plugins/:$LD_LIBRARY_PATH***
-- ***./CLOiSim.x86_64 -worldFile cloisim.world***
+- ***./CLOiSim.x86_64 -world cloisim.world***
 
 or you can execute '***./run.sh***' script in release [binary](https://github.com/lge-ros2/cloisim/releases) version.
 
@@ -111,9 +104,9 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 
 #### After run 'CLOiSim'
 
-- *'[sim_device](https://github.com/lge-ros2/sim_device)' ros2 packages for transporting sensor data are required.*
+- *'[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' ros2 packages for transporting sensor data are required.*
 
-- *Run bringup node in '[sim_device](https://github.com/lge-ros2/sim_device)' ros2 packages*
+- *Run bringup node in '[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' ros2 packages*
 
 - And *have fun!!!*
 
@@ -133,7 +126,8 @@ Just send a request data as a JSON format.
 
 Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-service)
 
-[![cloisim_ros2_nav2](https://user-images.githubusercontent.com/21001946/103977271-3f24a600-51bc-11eb-95b2-f4edbd0468b8.png)](https://user-images.githubusercontent.com/21001946/103973626-2f549400-51b3-11eb-8d1f-0945d40c700b.mp4)
+![cloisim_nav2_ros2](https://user-images.githubusercontent.com/21001946/107105530-37fbc100-686a-11eb-9ff8-f3cf45012d9b.gif)
+[video link](https://user-images.githubusercontent.com/21001946/103973626-2f549400-51b3-11eb-8d1f-0945d40c700b.mp4)
 
 ## Future Plan
 
@@ -143,15 +137,13 @@ New features or functions shall be developed on demand.
 
 - Add new sensor models and enhance sensor performance
 
+- introduce programmable c++ plugin
+
 - Noise models for sensor model
 
 - Performance optimization for sensors (Use DOTS by unity?)
 
 - Upgrade quality of graphical elements
-
-- Change physics engine (havok or something else...) to find a stable one.
-
-- Change Unity Editor version to 2020.3 (LTS) to utilize 'articulation body'.
 
 - **If you have any troubles or issues, please don't hesitate to create a new issue on 'Issues'.**
   <https://github.com/lge-ros2/cloisim/issues>

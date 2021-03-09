@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using UE = UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace SDF
 {
@@ -14,27 +15,19 @@ namespace SDF
 		public class PoseControl
 		{
 			private UE.Transform _targetTransform = null;
+			private UE.ArticulationBody _articulationBody = null;
+
 			private List<UE.Pose> _poseList = new List<UE.Pose>();
-			private bool isWorldPosition = false;
 
 			public PoseControl(in UE.Transform target)
 			{
 				_targetTransform = target;
-				// SetTransform(target);
 			}
 
-			public void SetWorldPosition(in bool enable)
+			public void SetArticulationBody()
 			{
-				isWorldPosition = enable;
+				_articulationBody = _targetTransform.GetComponent<UE.ArticulationBody>();
 			}
-
-			// public void SetTransform(in UE.Transform target)
-			// {
-			// 	if (target != null)
-			// 	{
-			// 		_targetTransform = target;
-			// 	}
-			// }
 
 			public void Add(in UE.Vector3 newPosition, in UE.Quaternion newRotation)
 			{
@@ -48,16 +41,15 @@ namespace SDF
 
 			public void Reset(in int targetFrame = 0)
 			{
-				// Debug.LogFormat("Reset Transform isWorldPos({0})!!", isWorldPosition);
 				if (_poseList.Count == 0)
 				{
-					UE.Debug.LogWarning("Nothing to reset, pose List is empty");
+					Debug.LogWarning("Nothing to reset, pose List is empty");
 					return;
 				}
 
 				if (targetFrame >= _poseList.Count)
 				{
-					UE.Debug.LogWarningFormat("exceed target frame({0}) in _poseList({1})", targetFrame, _poseList.Count);
+					Debug.LogWarningFormat("exceed target frame({0}) in _poseList({1})", targetFrame, _poseList.Count);
 					return;
 				}
 
@@ -65,15 +57,14 @@ namespace SDF
 				{
 					var targetPose = Get(targetFrame);
 
-					if (isWorldPosition)
+					_targetTransform.localPosition = targetPose.position; ;
+					_targetTransform.localRotation = targetPose.rotation; ;
+
+					if (_articulationBody != null)
 					{
-						_targetTransform.position = targetPose.position;
-						_targetTransform.rotation = targetPose.rotation;
-					}
-					else
-					{
-						_targetTransform.localPosition = targetPose.position;;
-						_targetTransform.localRotation = targetPose.rotation;;
+						_articulationBody.TeleportRoot(targetPose.position, targetPose.rotation);
+						_articulationBody.velocity = UE.Vector3.zero;
+						_articulationBody.angularVelocity = UE.Vector3.zero;
 					}
 				}
 			}

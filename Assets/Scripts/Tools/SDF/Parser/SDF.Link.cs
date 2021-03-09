@@ -12,34 +12,25 @@ namespace SDF
 {
 	public class Inertial
 	{
+		public class Inertia
+		{
+			public double ixx;
+			public double ixy;
+			public double ixz;
+			public double iyy;
+			public double iyz;
+			public double izz;
+		}
+
 		public double mass;
-		public double ixx;
-		public double ixy;
-		public double ixz;
-		public double iyy;
-		public double iyz;
-		public double izz;
+
+		public Inertia inertia;
 
 		public Pose<double> pose;
-
-		public bool hasInertia()
-		{
-			if (ixx == 0.0f && iyy == 0.0f && izz == 0.0f &&
-				ixy == 0.0f && ixz == 0.0f && iyz == 0.0f)
-				return false;
-			else
-				return true;
-		}
 
 		public Inertial(double _mass = 0.0)
 		{
 			mass = _mass;
-			ixx = 0.0;
-			ixy = 0.0;
-			ixz = 0.0;
-			iyy = 0.0;
-			iyz = 0.0;
-			izz = 0.0;
 			pose = new Pose<double>();
 		}
 	}
@@ -105,12 +96,18 @@ namespace SDF
 			{
 				inertial = new Inertial();
 				inertial.mass = GetValue<double>("inertial/mass");
-				inertial.ixx = GetValue<double>("inertial/inertia/ixx");
-				inertial.ixy = GetValue<double>("inertial/inertia/ixy");
-				inertial.ixz = GetValue<double>("inertial/inertia/ixz");
-				inertial.iyy = GetValue<double>("inertial/inertia/iyy");
-				inertial.iyz = GetValue<double>("inertial/inertia/iyz");
-				inertial.izz = GetValue<double>("inertial/inertia/izz");
+
+				if (IsValidNode("inertial/inertia"))
+				{
+					Inertial.inertia = new Inertial.Inertia();
+					Inertial.inertia.ixx = GetValue<double>("inertial/inertia/ixx");
+					Inertial.inertia.ixy = GetValue<double>("inertial/inertia/ixy");
+					Inertial.inertia.ixz = GetValue<double>("inertial/inertia/ixz");
+					Inertial.inertia.iyy = GetValue<double>("inertial/inertia/iyy");
+					Inertial.inertia.iyz = GetValue<double>("inertial/inertia/iyz");
+					Inertial.inertia.izz = GetValue<double>("inertial/inertia/izz");
+				}
+
 				var poseStr = GetValue<string>("inertial/pose");
 				inertial.pose.FromString(poseStr);
 				// Console.WriteLine("Link Mass: " + inertial.mass);
