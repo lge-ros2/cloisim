@@ -295,50 +295,10 @@ public class Motor : MonoBehaviour
 			{
 				_motorBody.zDrive = drive;
 			}
-
-			SetTargetVelocityAndForce(compensatedTargetAngularVelocity, _targetTorque);
 		}
 		else
 		{
 			Stop();
-		}
-	}
-
-	public void Stop()
-	{
-		_motorBody.velocity = Vector3.zero;
-		_motorBody.angularVelocity = Vector3.zero;
-
-		_targetTorque = 0;
-
-		SetJointVelocity(0);
-		SetTargetVelocityAndForce(0, 0);
-
-		_pidControl.Reset();
-	}
-
-	private ArticulationDrive GetDrive()
-	{
-		var drive = new ArticulationDrive();
-
-		if (_motorBody.jointType.Equals(ArticulationJointType.RevoluteJoint))
-		{
-			drive = _motorBody.xDrive;
-		}
-		else if (_motorBody.jointType.Equals(ArticulationJointType.SphericalJoint))
-		{
-			if (!_motorBody.twistLock.Equals(ArticulationDofLock.LockedMotion))
-			{
-				drive = _motorBody.xDrive;
-			}
-			else if (!_motorBody.swingYLock.Equals(ArticulationDofLock.LockedMotion))
-			{
-				drive = _motorBody.yDrive;
-			}
-			else if (!_motorBody.swingZLock.Equals(ArticulationDofLock.LockedMotion))
-			{
-				drive = _motorBody.zDrive;
-			}
 		}
 	}
 
@@ -362,7 +322,7 @@ public class Motor : MonoBehaviour
 			_motorBody.jointVelocity = jointVelocity;
 		}
 	}
-  
+
 	public float _prevJointPosition = 0;
 
 	private float GetJointVelocity()
