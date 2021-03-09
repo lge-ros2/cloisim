@@ -69,8 +69,8 @@ namespace SDF
 				lidar.angleMax = element.horizontal.max_angle * Mathf.Rad2Deg;
 				lidar.resolution = element.horizontal.resolution;
 				lidar.verticalSamples = element.vertical.samples;
-				lidar.verticalAngleMin = element.vertical.min_angle;
-				lidar.verticalAngleMax = element.vertical.max_angle;
+				lidar.verticalAngleMin = element.vertical.min_angle * Mathf.Rad2Deg;
+				lidar.verticalAngleMax = element.vertical.max_angle * Mathf.Rad2Deg;
 				// lidar.hideFlags = HideFlags.NotEditable;
 
 				return lidar;

@@ -88,10 +88,9 @@ namespace SensorDevices
 			QualitySettings.shadows = originalShadowSettings_;
 		}
 
-
 		private double GetAngleStep(in double minAngle, in double maxAngle, in uint totalSamples)
 		{
-			return (maxAngle - minAngle) / (resolution * (totalSamples - 1));
+			return (maxAngle - minAngle) / (resolution * totalSamples);
 		}
 
 		protected override void OnAwake()
@@ -135,16 +134,15 @@ namespace SensorDevices
 			laserScan.AngleMin = angleMin * Mathf.Deg2Rad;
 			laserScan.AngleMax = angleMax * Mathf.Deg2Rad;
 			laserScan.AngleStep = GetAngleStep(laserScan.AngleMin, laserScan.AngleMax, samples);
+			laserScan.Count = samples;
+
 			laserScan.RangeMin = rangeMin;
 			laserScan.RangeMax = rangeMax;
-			laserScan.Count = samples;
 
 			laserScan.VerticalAngleMin = verticalAngleMin * Mathf.Deg2Rad;
 			laserScan.VerticalAngleMax = verticalAngleMax * Mathf.Deg2Rad;
+			laserScan.VerticalAngleStep = (verticalAngleMin == 0 && verticalAngleMax == 0) ? 1 : GetAngleStep(laserScan.VerticalAngleMin, laserScan.VerticalAngleMax, verticalSamples);
 			laserScan.VerticalCount = verticalSamples;
-			laserScan.VerticalAngleStep
-				= (verticalAngleMin == 0 && verticalAngleMax == 0) ?
-					1 : GetAngleStep(laserScan.VerticalAngleMin, laserScan.VerticalAngleMax, verticalSamples);
 
 			laserScan.Ranges = new double[samples];
 			laserScan.Intensities = new double[samples];
