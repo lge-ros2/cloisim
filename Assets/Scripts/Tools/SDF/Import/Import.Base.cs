@@ -89,6 +89,13 @@ namespace SDF
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, sdfMaterial.Name);
 			}
 
+			protected virtual Object ImportActor(in Actor actor)
+			{
+				PrintNotImported(MethodBase.GetCurrentMethod().Name, actor.Name);
+				return null;
+			}
+
+
 			private void ImportVisuals(IReadOnlyList<Visual> items, in Object parentObject)
 			{
 				foreach (var item in items)
@@ -184,12 +191,22 @@ namespace SDF
 				}
 			}
 
+			private void ImportActors(IReadOnlyList<Actor> items)
+			{
+				foreach (var item in items)
+				{
+					ImportActor(item);
+				}
+			}
+
 			public void DoImport(in World _world)
 			{
 				ImportWorld(_world);
 
 				// Console.WriteLine("Import Models({0})/Links/Joints", _world.GetModels().Count);
 				ImportModels(_world.GetModels());
+
+				ImportActors(_world.GetActors());
 			}
 
 			private void PrintNotImported(in string methodName, in string name)

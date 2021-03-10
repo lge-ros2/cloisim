@@ -4,13 +4,24 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
+using System.Xml;
+using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public partial class SDF2Unity
 {
+	private static List<string> possibleMaterialPaths = new List<string>()
+	{
+		"",
+		"/textures/",
+		"../",
+		"../materials/", "../materials/textures/",
+		"../../materials/", "../../materials/textures/"
+	};
+
 	class MeshMaterialSet
 	{
 		private readonly string _meshName;
@@ -31,17 +42,6 @@ public partial class SDF2Unity
 
 	private static readonly Assimp.AssimpContext importer = new Assimp.AssimpContext();
 
-	private static readonly Assimp.PostProcessSteps postProcessFlags =
-				Assimp.PostProcessSteps.OptimizeGraph |
-				Assimp.PostProcessSteps.OptimizeMeshes |
-				Assimp.PostProcessSteps.SortByPrimitiveType |
-				Assimp.PostProcessSteps.RemoveRedundantMaterials |
-				Assimp.PostProcessSteps.ImproveCacheLocality |
-				// Assimp.PostProcessSteps.SplitLargeMeshes |
-				// Assimp.PostProcessSteps.GenerateSmoothNormals |
-				Assimp.PostProcessSteps.Triangulate |
-				Assimp.PostProcessSteps.MakeLeftHanded;
-
 	private static List<Material> LoadMaterials(in string parentPath, in List<Assimp.Material> sceneMaterials)
 	{
 		var materials = new List<Material>();
@@ -49,6 +49,8 @@ public partial class SDF2Unity
 		foreach (var sceneMat in sceneMaterials)
 		{
 			var mat = new Material(commonShader);
+
+			mat.name = sceneMat.Name;
 
 			// Albedo
 			if (sceneMat.HasColorDiffuse)
@@ -76,10 +78,11 @@ public partial class SDF2Unity
 			{
 				var filePath = sceneMat.TextureDiffuse.FilePath;
 				var texturePaths = new List<string>(){};
-				texturePaths.Add(Path.Combine(parentPath, filePath));
-				texturePaths.Add(Path.Combine(parentPath, "../", filePath));
-				texturePaths.Add(Path.Combine(parentPath, "../materials/", filePath));
-				texturePaths.Add(Path.Combine(parentPath, "../materials/textures/", filePath));
+
+				foreach (var matPath in possibleMaterialPaths)
+				{
+					texturePaths.Add(Path.Combine(parentPath, matPath, filePath));
+				}
 
 				byte[] byteArray = null;
 				foreach (var texturePath in texturePaths)
@@ -122,32 +125,38 @@ public partial class SDF2Unity
 
 		foreach (var sceneMesh in sceneMeshes)
 		{
-			var vertices = new Queue<Vector3>();
-			var normals = new Queue<Vector3>();
-			var uvs = new Queue<Vector2>();
-			var indices = new Queue<int>();
+			var newMesh = new Mesh();
 
 			// Vertices
 			if (sceneMesh.HasVertices)
 			{
+				newMesh.indexFormat = (sceneMesh.VertexCount >= UInt16.MaxValue) ? IndexFormat.UInt32 : IndexFormat.UInt16;
+
+				var vertices = new Queue<Vector3>();
 				foreach (var v in sceneMesh.Vertices)
 				{
 					vertices.Enqueue(new Vector3(v.X, v.Y, v.Z));
 				}
+
+				newMesh.vertices = vertices.ToArray();
 			}
 
-			// Normals
-			if (sceneMesh.HasNormals)
+			// UV (texture coordinate)
+			if (sceneMesh.HasTextureCoords(0))
 			{
-				foreach (var n in sceneMesh.Normals)
+				var uvs = new Queue<Vector2>();
+				foreach (var uv in sceneMesh.TextureCoordinateChannels[0])
 				{
-					normals.Enqueue(new Vector3(n.X, n.Y, n.Z));
+					uvs.Enqueue(new Vector2(uv.X, uv.Y));
 				}
+
+				newMesh.uv = uvs.ToArray();
 			}
 
 			// Triangles
 			if (sceneMesh.HasFaces)
 			{
+				var indices = new Queue<int>();
 				foreach (var face in sceneMesh.Faces)
 				{
 					if (face.IndexCount == 3)
@@ -157,33 +166,102 @@ public partial class SDF2Unity
 						indices.Enqueue(face.Indices[0]);
 					}
 				}
+
+				newMesh.triangles = indices.ToArray();
 			}
 
-			// UV (texture coordinate)
-			if (sceneMesh.HasTextureCoords(0))
+			// Normals
+			if (sceneMesh.HasNormals)
 			{
-				foreach (var uv in sceneMesh.TextureCoordinateChannels[0])
+				var normals = new Queue<Vector3>();
+				foreach (var n in sceneMesh.Normals)
 				{
-					uvs.Enqueue(new Vector2(uv.X, uv.Y));
+					normals.Enqueue(new Vector3(n.X, n.Y, n.Z));
 				}
+
+				newMesh.normals = normals.ToArray();
 			}
 
-			var newMesh = new Mesh();
-
-			if (vertices.Count >= UInt16.MaxValue)
+			if (sceneMesh.HasBones)
 			{
-				newMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-			}
-			else
-			{
-				newMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt16;
+				var bones = new BoneWeight[newMesh.vertexCount];
+				var bindPoses = new List<Matrix4x4>();
+
+				Debug.Log(newMesh.name + ": vertexCount=" + newMesh.vertexCount + " or " + sceneMesh.VertexCount + ", boneCount=" + sceneMesh.BoneCount);
+				var boneIndex = 0;
+				foreach (var bone in sceneMesh.Bones)
+				{
+					var bindPose = new Matrix4x4();
+					bone.OffsetMatrix.Decompose(out var scaling, out var rotation, out var translation);
+					var pos = new Vector3(translation.X, translation.Y, translation.Z);
+					var q = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
+					var s = new Vector3(scaling.X, scaling.Y, scaling.Z);
+
+					bindPose.SetTRS(pos, q, s);
+					bindPoses.Add(bindPose);
+
+					if (bone.HasVertexWeights)
+					{
+						Debug.Log(bone.Name + " - " + bone.VertexWeightCount);
+
+						foreach (var vertexWeight in bone.VertexWeights)
+						{
+							Debug.Log("vertexID=" + vertexWeight.VertexID + ", weight=" + vertexWeight.Weight);
+							if (vertexWeight.VertexID >= bones.LongLength)
+							{
+								Debug.LogWarning("exceeded vertex id = " + vertexWeight.VertexID + ", length=" + bones.LongLength);
+							}
+							else
+							{
+								var boneWeight = bones[vertexWeight.VertexID];
+
+								boneWeight.boneIndex0 = boneIndex++ % 4;
+								boneWeight.weight0 = vertexWeight.Weight;
+							}
+						}
+					}
+				}
+
+				if (bones.LongLength != newMesh.vertexCount)
+				{
+					Debug.Log("different!!!, bone count:" + bones.LongLength + ", vertexCount: " + newMesh.vertexCount);
+				}
+				else
+				{
+					newMesh.bindposes = bindPoses.ToArray();
+					newMesh.boneWeights = bones;
+				}
+
+				// // var boneList = new List<BoneWeight>();
+				// // int numBones = 0;
+				// foreach (var bone in sceneMesh.Bones)
+				// {
+				// 	// var boneIndex = numBones++;
+				// 	// Debug.Log(bone.Name + " - " + bone.Name + " :: " + bone.VertexWeightCount);
+				// 	foreach (var vertexWeight in bone.VertexWeights)
+				// 	{
+				// 		var vId = vertexWeight.VertexID;
+				// 		var weight = vertexWeight.Weight;
+
+				// 		for (int k = 0; k < 8; k++)
+				// 		{
+				// 			var vectorId = k / 4;
+				// 			var elementId = k % 4;
+
+				// 			// // push_back 효과를 구현
+				// 			// if (boneWeights[vectorId][elementId] == 0.0f)
+				// 			// {
+				// 			// 	boneIds[vectorId][elementId] = vId;
+				// 			// 	boneWeights[vectorId][elementId] = weight;
+
+				// 			// 	break;
+				// 			// }
+				// 		}
+				// 	}
+				// }
 			}
 
-			newMesh.vertices = vertices.ToArray();
-			newMesh.normals = normals.ToArray();
-			newMesh.triangles = indices.ToArray();
-			newMesh.uv = uvs.ToArray();
-			newMesh.Optimize();
+			newMesh.RecalculateBounds();
 
 			meshMats.Add(new MeshMaterialSet(sceneMesh.Name, newMesh, materials[sceneMesh.MaterialIndex]));
 			// Debug.Log("Done - " + sceneMesh.Name + ", " + vertices.Count + " : " + sceneMesh.MaterialIndex);
@@ -192,7 +270,7 @@ public partial class SDF2Unity
 		return meshMats;
 	}
 
-	private static GameObject ConvertAssimpNodeToGameObject(in Assimp.Node node, in List<MeshMaterialSet> meshMats, in float scaleX = 1, in float scaleY = 1, in float scaleZ = 1)
+	private static GameObject ConvertAssimpNodeToMeshObject(in Assimp.Node node, in List<MeshMaterialSet> meshMats, in float scaleX = 1, in float scaleY = 1, in float scaleZ = 1)
 	{
 		var rootObject = new GameObject(node.Name);
 		// Debug.Log("RootObject: " + rootObject.name);
@@ -205,11 +283,11 @@ public partial class SDF2Unity
 				var meshMat = meshMats[index];
 
 				var subObject = new GameObject(meshMat.MeshName);
-				subObject.AddComponent<MeshFilter>();
-				subObject.AddComponent<MeshRenderer>();
+				var meshFilter = subObject.AddComponent<MeshFilter>();
+				var meshRenderer = subObject.AddComponent<MeshRenderer>();
 
-				subObject.GetComponent<MeshFilter>().mesh = meshMat.Mesh;
-				subObject.GetComponent<MeshRenderer>().material = meshMat.Material;
+				meshFilter.mesh = meshMat.Mesh;
+				meshRenderer.material = meshMat.Material;
 
 				subObject.transform.SetParent(rootObject.transform, true);
 				subObject.transform.localScale = new Vector3(scaleX, scaleY, scaleZ);
@@ -230,7 +308,7 @@ public partial class SDF2Unity
 			foreach (var child in node.Children)
 			{
 				// Debug.Log(" => Child Object: " + child.Name);
-				var childObject = ConvertAssimpNodeToGameObject(child, meshMats, scaleX, scaleY, scaleZ);
+				var childObject = ConvertAssimpNodeToMeshObject(child, meshMats, scaleX, scaleY, scaleZ);
 				childObject.transform.SetParent(rootObject.transform, false);
 			}
 		}
@@ -238,21 +316,101 @@ public partial class SDF2Unity
 		return rootObject;
 	}
 
-	public static GameObject LoadMeshObject(in string meshPath, in Vector3 eulerRotation)
+	private static bool CheckFileSupport(in string fileExtension)
 	{
-		return LoadMeshObject(meshPath, eulerRotation, Vector3.one);
+		var isFileSupported = true;
+
+		switch (fileExtension)
+		{
+			case ".dae":
+			case ".obj":
+			case ".stl":
+				break;
+
+			default:
+				isFileSupported = false;
+				break;
+		}
+
+		return isFileSupported;
 	}
 
-	public static GameObject LoadMeshObject(in string meshPath, in Vector3 eulerRotation, in Vector3 scale)
+	private static Vector3 GetRotationByFileExtension(in string fileExtension, in string meshPath)
+	{
+		var eulerRotation = Vector3.zero;
+
+		switch (fileExtension)
+		{
+			case ".dae":
+				{
+					var xmlDoc = new XmlDocument();
+					xmlDoc.Load(meshPath);
+
+					var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+					nsmgr.AddNamespace("ns", xmlDoc.DocumentElement.NamespaceURI);
+
+					var up_axis_node = xmlDoc.SelectSingleNode("/ns:COLLADA/ns:asset/ns:up_axis", nsmgr);
+					// var unit_node = xmlDoc.SelectSingleNode("/ns:COLLADA/ns:asset/ns:unit", nsmgr);
+					var up_axis = up_axis_node.InnerText.ToUpper();
+
+					// Debug.Log("up_axis: "+ up_axis + ", unit meter: " + unit_node.Attributes["meter"].Value + ", name: " + unit_node.Attributes["name"].Value);
+					if (up_axis.Equals("Y_UP"))
+					{
+						eulerRotation.Set(90f, -90f, 0f);
+					}
+				}
+				break;
+
+			case ".obj":
+			case ".stl":
+				eulerRotation.Set(90f, -90f, 0f);
+				break;
+
+			default:
+				break;
+		}
+
+		return eulerRotation;
+	}
+
+
+	public static GameObject LoadMeshObject(in string meshPath)
+	{
+		return LoadMeshObject(meshPath, Vector3.one);
+	}
+
+	public static GameObject LoadMeshObject(in string meshPath, in Vector3 scale)
 	{
 		if (!File.Exists(meshPath))
 		{
+			Debug.Log("File doesn't exist: " + meshPath);
 			return null;
 		}
+
+		var postProcessFlags =
+			Assimp.PostProcessSteps.OptimizeGraph |
+			Assimp.PostProcessSteps.OptimizeMeshes |
+			Assimp.PostProcessSteps.JoinIdenticalVertices |
+			Assimp.PostProcessSteps.SortByPrimitiveType |
+			Assimp.PostProcessSteps.RemoveRedundantMaterials |
+			Assimp.PostProcessSteps.ImproveCacheLocality |
+			// Assimp.PostProcessSteps.SplitLargeMeshes |
+			// Assimp.PostProcessSteps.GenerateSmoothNormals |
+			Assimp.PostProcessSteps.Triangulate |
+			Assimp.PostProcessSteps.MakeLeftHanded;
 
 		var scene = importer.ImportFile(meshPath, postProcessFlags);
 		if (scene == null)
 		{
+			return null;
+		}
+
+		var fileExtension = Path.GetExtension(meshPath).ToLower();
+		var eulerRotation = GetRotationByFileExtension(fileExtension, meshPath);
+
+		if (!CheckFileSupport(fileExtension))
+		{
+			Debug.LogWarning("Unsupported file extension: " + fileExtension + " -> " + meshPath);
 			return null;
 		}
 
@@ -272,7 +430,7 @@ public partial class SDF2Unity
 		}
 
 		// Create GameObjects from nodes
-		var nodeObject = ConvertAssimpNodeToGameObject(scene.RootNode, meshMats, scale.x, scale.y, scale.z);
+		var nodeObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMats, scale.x, scale.y, scale.z);
 
 		// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
 		var meshRotation = Quaternion.Euler(eulerRotation.x, eulerRotation.y, eulerRotation.z);

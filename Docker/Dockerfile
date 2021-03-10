@@ -23,7 +23,7 @@ RUN export CLOISIM_VERSION=$(curl -Ls -o /dev/null -w %{url_effective} --url htt
     mv /tmp/${CLOISIM_TARGETFILE} /opt/ && \
     ln -s /opt/${CLOISIM_TARGETFILE} /opt/CLOiSim
 
-ENV CLOISIM_FILES_PATH=/opt/resources/materials \
+ENV CLOISIM_FILES_PATH=/opt/resources/media \
     CLOISIM_MODEL_PATH=/opt/resources/models \
     CLOISIM_WORLD_PATH=/opt/resources/worlds
 

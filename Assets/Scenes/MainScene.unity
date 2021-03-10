@@ -913,6 +913,8 @@ MonoBehaviour:
   - ../sample_resources/worlds/
   - ../lgrs_resource/worlds/
   - ../../lgrs_resource/worlds/
+  fileRootDirectories:
+  - ../sample_resources/media/
 --- !u!114 &249819591
 MonoBehaviour:
   m_ObjectHideFlags: 0

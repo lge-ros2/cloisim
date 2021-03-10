@@ -92,11 +92,16 @@ Please visit here [build guide](https://github.com/lge-ros2/multi-robot-simulato
 Set environment path like below.
 
 ```shell
+export CLOISIM_FILES_PATH="/home/Unity/cloisim/sample_resources/media"
 export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample_resources/models"
 export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample_resources/worlds"
 ```
 
-- ***./CLOiSim.x86_64 -world cloisim.world***
+Run CLOiSim
+
+```shell
+./CLOiSim.x86_64 -world lg_seocho.world
+```
 
 or you can execute '***./run.sh***' script in release [binary](https://github.com/lge-ros2/cloisim/releases) version.
 

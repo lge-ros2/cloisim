@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.IO;
-using System.Xml;
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -18,53 +16,13 @@ namespace SDF
 			/// <summary>Set mesh from external source</summary>
 			public static void SetMesh(in SDF.Mesh obj, in UE.GameObject targetObject)
 			{
-				// file path
-				if (!File.Exists(obj.uri))
+				var loadedObject = SDF2Unity.LoadMeshObject(obj.uri);
+				if (loadedObject == null)
 				{
-					Debug.Log("File doesn't exist. - " + obj.uri);
-					return;
+					Debug.LogError("Cannot load mesh: " + obj.uri);
 				}
-
-				var isFileSupported = true;
-				var fileExtension = Path.GetExtension(obj.uri).ToLower();
-				var eulerRotation = UE.Vector3.zero;
-
-				switch (fileExtension)
+				else
 				{
-					case ".dae":
-						{
-							var xmlDoc = new XmlDocument();
-							xmlDoc.Load(obj.uri);
-
-							var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
-							nsmgr.AddNamespace("ns", xmlDoc.DocumentElement.NamespaceURI);
-
-							var up_axis_node = xmlDoc.SelectSingleNode("/ns:COLLADA/ns:asset/ns:up_axis", nsmgr);
-							// var unit_node = xmlDoc.SelectSingleNode("/ns:COLLADA/ns:asset/ns:unit", nsmgr);
-							var up_axis = up_axis_node.InnerText.ToUpper();
-
-							// Debug.Log("up_axis: "+ up_axis + ", unit meter: " + unit_node.Attributes["meter"].Value + ", name: " + unit_node.Attributes["name"].Value);
-							if (up_axis.Equals("Y_UP"))
-							{
-								eulerRotation.Set(90f, -90f, 0f);
-							}
-						}
-						break;
-
-					case ".obj":
-					case ".stl":
-						eulerRotation.Set(90f, -90f, 0f);
-						break;
-
-					default:
-						Debug.LogWarning("Unsupported file extension: " + fileExtension + " -> " + obj.uri);
-						isFileSupported = false;
-						break;
-				}
-
-				if (isFileSupported)
-				{
-					var loadedObject = SDF2Unity.LoadMeshObject(obj.uri, eulerRotation);
 					loadedObject.transform.SetParent(targetObject.transform, false);
 
 					foreach (var meshFilter in targetObject.GetComponentsInChildren<UE.MeshFilter>())
