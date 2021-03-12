@@ -10,10 +10,12 @@ using UnityEngine;
 
 public partial class SDF2Unity
 {
+	private static Dictionary<string, int> boneNameIndexMap = new Dictionary<string, int>();
+
 	private static GameObject GetBonesFromAssimpNode(in Assimp.Node node, in float scaleX = 1, in float scaleY = 1, in float scaleZ = 1)
 	{
 		var rootObject = new GameObject(node.Name);
-		// Debug.Log("RootObject: " + rootObject.name);
+		// Debug.Log("Bone Object: " + rootObject.name);
 
 		node.Transform.Decompose(out var nodeScale, out var nodeQuat, out var nodeTranslation);
 		// Debug.Log(node.Name + ", " + nodeScale + ", " + nodeQuat + ", " + nodeTranslation);
@@ -50,15 +52,15 @@ public partial class SDF2Unity
 		}
 
 		var postProcessFlags =
-			Assimp.PostProcessSteps.OptimizeGraph |
-			Assimp.PostProcessSteps.OptimizeMeshes |
+			// Assimp.PostProcessSteps.OptimizeGraph |
+			// Assimp.PostProcessSteps.OptimizeMeshes |
 			Assimp.PostProcessSteps.JoinIdenticalVertices |
-			Assimp.PostProcessSteps.SortByPrimitiveType |
+			// Assimp.PostProcessSteps.SortByPrimitiveType |
 			Assimp.PostProcessSteps.RemoveRedundantMaterials |
-			Assimp.PostProcessSteps.ImproveCacheLocality |
-			// Assimp.PostProcessSteps.SplitLargeMeshes |
-			// Assimp.PostProcessSteps.GenerateSmoothNormals |
+			// Assimp.PostProcessSteps.ImproveCacheLocality |
 			Assimp.PostProcessSteps.Triangulate |
+			// Assimp.PostProcessSteps.SplitByBoneCount |
+			Assimp.PostProcessSteps.CalculateTangentSpace |
 			Assimp.PostProcessSteps.MakeLeftHanded;
 
 		var scene = importer.ImportFile(meshPath, postProcessFlags);
@@ -76,6 +78,42 @@ public partial class SDF2Unity
 			return;
 		}
 
+		// Check structure
+		var rootNode = scene.RootNode;
+		if (rootNode.ChildCount != 2)
+		{
+			Debug.LogError("file(" + meshPath + ") has wrong number of children: " + rootNode.ChildCount);
+			return;
+		}
+
+		// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
+		var meshRotation = Quaternion.Euler(eulerRotation.x, eulerRotation.y, eulerRotation.z);
+
+		var meshObject = new GameObject(rootNode.Children[1].Name);
+		meshObject.transform.SetParent(targetObject.transform, false);
+
+		var skinnedMeshRenderer = meshObject.AddComponent<SkinnedMeshRenderer>();
+
+		// Bone
+		var bonesObject = GetBonesFromAssimpNode(rootNode.Children[0]);
+
+		foreach (var transform in bonesObject.GetComponentsInChildren<Transform>())
+		{
+			// transform.localRotation = meshRotation * transform.localRotation;
+		}
+
+		bonesObject.transform.SetParent(targetObject.transform, false);
+		var rootBoneObject = bonesObject.transform.GetChild(0);
+		skinnedMeshRenderer.rootBone = rootBoneObject;
+		skinnedMeshRenderer.bones = rootBoneObject.GetComponentsInChildren<Transform>();
+
+		var boneIndex = 0;
+		foreach (var bone in skinnedMeshRenderer.bones)
+		{
+			Debug.Log("Bone Index: " + bone.name + "=" + boneIndex);
+			boneNameIndexMap.Add(bone.name, boneIndex++);
+		}
+
 		// Meshes
 		List<MeshMaterialSet> meshMats = null;
 		if (scene.HasMeshes)
@@ -91,14 +129,6 @@ public partial class SDF2Unity
 			meshMats = LoadMeshes(scene.Meshes, meshMaterials);
 		}
 
-		// bone
-		var rootNode = scene.RootNode;
-		if (rootNode.ChildCount != 2)
-		{
-			Debug.LogError("file(" + meshPath + ") has wrong number of children: " + rootNode.ChildCount);
-			return;
-		}
-
 		var materials = new List<Material>();
 		var combine = new CombineInstance[meshMats.Count];
 		var combineIndex = 0;
@@ -112,22 +142,12 @@ public partial class SDF2Unity
 
 		var combinedMesh = new Mesh();
 		combinedMesh.CombineMeshes(combine, false);
-
-		combinedMesh.Optimize();
-		combinedMesh.RecalculateTangents();
-		combinedMesh.RecalculateBounds();
-		combinedMesh.RecalculateNormals();
-
-		var bonesObject = GetBonesFromAssimpNode(rootNode.Children[0]);
-		bonesObject.transform.SetParent(targetObject.transform, false);
-
-		var meshObject = new GameObject(rootNode.Children[1].Name);
-		meshObject.transform.SetParent(targetObject.transform, false);
 		combinedMesh.name = meshObject.name;
-
-		var skinnedMeshRenderer = meshObject.AddComponent<SkinnedMeshRenderer>();
+		// combinedMesh.Optimize();
+		// combinedMesh.RecalculateTangents();
+		combinedMesh.RecalculateBounds();
+		// combinedMesh.RecalculateNormals();
 		skinnedMeshRenderer.sharedMesh = combinedMesh;
-		skinnedMeshRenderer.rootBone = bonesObject.transform.GetChild(0);
-		skinnedMeshRenderer.materials = materials.ToArray();
+		skinnedMeshRenderer.sharedMaterials = materials.ToArray();
 	}
 }

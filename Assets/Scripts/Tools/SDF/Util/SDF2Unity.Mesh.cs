@@ -115,6 +115,12 @@ public partial class SDF2Unity
 
 	private static List<MeshMaterialSet> LoadMeshes(in List<Assimp.Mesh> sceneMeshes, in List<Material> materials)
 	{
+		return LoadMeshes(sceneMeshes, materials, Quaternion.identity);
+	}
+
+
+	private static List<MeshMaterialSet> LoadMeshes(in List<Assimp.Mesh> sceneMeshes, in List<Material> materials, in Quaternion meshRotation)
+	{
 		if (materials == null)
 		{
 			Debug.LogWarning("material list is empty");
@@ -135,7 +141,9 @@ public partial class SDF2Unity
 				var vertices = new Queue<Vector3>();
 				foreach (var v in sceneMesh.Vertices)
 				{
-					vertices.Enqueue(new Vector3(v.X, v.Y, v.Z));
+					var vertex = new Vector3(v.X, v.Y, v.Z);
+					vertex = meshRotation * vertex;
+					vertices.Enqueue(vertex);
 				}
 
 				newMesh.vertices = vertices.ToArray();
@@ -182,13 +190,32 @@ public partial class SDF2Unity
 				newMesh.normals = normals.ToArray();
 			}
 
+			if (sceneMesh.HasTangentBasis)
+			{
+				var tangents = new Queue<Vector4>();
+				foreach (var t in sceneMesh.Tangents)
+				{
+					tangents.Enqueue(new Vector4(t.X, t.Y, t.Z, 1));
+				}
+				newMesh.tangents = tangents.ToArray();
+			}
+
+			// Bones
 			if (sceneMesh.HasBones)
 			{
 				var bones = new BoneWeight[newMesh.vertexCount];
+				for (var i = 0; i < bones.LongLength; ++i)
+				{
+					bones[i].boneIndex0 = -1;
+					bones[i].boneIndex1 = -1;
+					bones[i].boneIndex2 = -1;
+					bones[i].boneIndex3 = -1;
+				}
+
 				var bindPoses = new List<Matrix4x4>();
 
 				Debug.Log(newMesh.name + ": vertexCount=" + newMesh.vertexCount + " or " + sceneMesh.VertexCount + ", boneCount=" + sceneMesh.BoneCount);
-				var boneIndex = 0;
+
 				foreach (var bone in sceneMesh.Bones)
 				{
 					var bindPose = new Matrix4x4();
@@ -198,15 +225,18 @@ public partial class SDF2Unity
 					var s = new Vector3(scaling.X, scaling.Y, scaling.Z);
 
 					bindPose.SetTRS(pos, q, s);
+
 					bindPoses.Add(bindPose);
 
 					if (bone.HasVertexWeights)
 					{
 						Debug.Log(bone.Name + " - " + bone.VertexWeightCount);
 
+						boneNameIndexMap.TryGetValue(bone.Name, out var boneIndex);
+
 						foreach (var vertexWeight in bone.VertexWeights)
 						{
-							Debug.Log("vertexID=" + vertexWeight.VertexID + ", weight=" + vertexWeight.Weight);
+							// Debug.Log("vertexID=" + vertexWeight.VertexID + ", weight=" + vertexWeight.Weight);
 							if (vertexWeight.VertexID >= bones.LongLength)
 							{
 								Debug.LogWarning("exceeded vertex id = " + vertexWeight.VertexID + ", length=" + bones.LongLength);
@@ -215,8 +245,27 @@ public partial class SDF2Unity
 							{
 								var boneWeight = bones[vertexWeight.VertexID];
 
-								boneWeight.boneIndex0 = boneIndex++ % 4;
-								boneWeight.weight0 = vertexWeight.Weight;
+								if (boneWeight.boneIndex0 == -1)
+								{
+									boneWeight.boneIndex0 = boneIndex;
+									boneWeight.weight0 = vertexWeight.Weight;
+								}
+								else if (boneWeight.boneIndex1 == -1)
+								{
+									boneWeight.boneIndex1 = boneIndex;
+									boneWeight.weight1 = vertexWeight.Weight;
+								}
+								else if (boneWeight.boneIndex2 == -1)
+								{
+									boneWeight.boneIndex2 = boneIndex;
+									boneWeight.weight2 = vertexWeight.Weight;
+								}
+								else if (boneWeight.boneIndex3 == -1)
+								{
+									boneWeight.boneIndex3 = boneIndex;
+									boneWeight.weight3 = vertexWeight.Weight;
+								}
+								bones[vertexWeight.VertexID] = boneWeight;
 							}
 						}
 					}
@@ -231,37 +280,12 @@ public partial class SDF2Unity
 					newMesh.bindposes = bindPoses.ToArray();
 					newMesh.boneWeights = bones;
 				}
-
-				// // var boneList = new List<BoneWeight>();
-				// // int numBones = 0;
-				// foreach (var bone in sceneMesh.Bones)
-				// {
-				// 	// var boneIndex = numBones++;
-				// 	// Debug.Log(bone.Name + " - " + bone.Name + " :: " + bone.VertexWeightCount);
-				// 	foreach (var vertexWeight in bone.VertexWeights)
-				// 	{
-				// 		var vId = vertexWeight.VertexID;
-				// 		var weight = vertexWeight.Weight;
-
-				// 		for (int k = 0; k < 8; k++)
-				// 		{
-				// 			var vectorId = k / 4;
-				// 			var elementId = k % 4;
-
-				// 			// // push_back 효과를 구현
-				// 			// if (boneWeights[vectorId][elementId] == 0.0f)
-				// 			// {
-				// 			// 	boneIds[vectorId][elementId] = vId;
-				// 			// 	boneWeights[vectorId][elementId] = weight;
-
-				// 			// 	break;
-				// 			// }
-				// 		}
-				// 	}
-				// }
 			}
 
-			newMesh.RecalculateBounds();
+			// newMesh.Optimize();
+			// newMesh.RecalculateNormals();
+			// newMesh.RecalculateTangents();
+			// newMesh.RecalculateBounds();
 
 			meshMats.Add(new MeshMaterialSet(sceneMesh.Name, newMesh, materials[sceneMesh.MaterialIndex]));
 			// Debug.Log("Done - " + sceneMesh.Name + ", " + vertices.Count + " : " + sceneMesh.MaterialIndex);
@@ -394,8 +418,6 @@ public partial class SDF2Unity
 			Assimp.PostProcessSteps.SortByPrimitiveType |
 			Assimp.PostProcessSteps.RemoveRedundantMaterials |
 			Assimp.PostProcessSteps.ImproveCacheLocality |
-			// Assimp.PostProcessSteps.SplitLargeMeshes |
-			// Assimp.PostProcessSteps.GenerateSmoothNormals |
 			Assimp.PostProcessSteps.Triangulate |
 			Assimp.PostProcessSteps.MakeLeftHanded;
 
@@ -426,26 +448,14 @@ public partial class SDF2Unity
 		List<MeshMaterialSet> meshMats = null;
 		if (scene.HasMeshes)
 		{
-			meshMats = LoadMeshes(scene.Meshes, materials);
+			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
+			var meshRotation = Quaternion.Euler(eulerRotation.x, eulerRotation.y, eulerRotation.z);
+
+			meshMats = LoadMeshes(scene.Meshes, materials, meshRotation);
 		}
 
 		// Create GameObjects from nodes
 		var nodeObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMats, scale.x, scale.y, scale.z);
-
-		// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
-		var meshRotation = Quaternion.Euler(eulerRotation.x, eulerRotation.y, eulerRotation.z);
-		foreach (var meshFilter in nodeObject.GetComponentsInChildren<MeshFilter>())
-		{
-			var sharedMesh = meshFilter.sharedMesh;
-
-			var vertices = sharedMesh.vertices;
-			for (var index = 0; index < sharedMesh.vertexCount; index++)
-			{
-				vertices[index] = meshRotation * vertices[index];
-			}
-
-			sharedMesh.vertices = vertices;
-		}
 
 		return nodeObject;
 	}
