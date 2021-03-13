@@ -21,7 +21,8 @@ namespace SDF
 					return null;
 				}
 
-				var newActorObject = new GameObject(actor.Name);
+				var newActorObject = Implement.Actor.CreateSkin(actor.skin);
+				newActorObject.name = actor.Name;
 				newActorObject.tag = "Actor";
 
 				SetParentObject(newActorObject, null);
@@ -34,8 +35,6 @@ namespace SDF
 				var actorHelper = newActorObject.AddComponent<Helper.Actor>();
 				actorHelper.isStatic = true;
 				actorHelper.SetPose(localPosition, localRotation);
-
-				Implement.Actor.SetSkin(actor.skin, newActorObject);
 
 				foreach (var animation in actor.animations)
 				{

@@ -15,9 +15,9 @@ namespace SDF
 	{
 		public class Actor
 		{
-			public static void SetSkin(in SDF.Actor.Skin skin, in UE.GameObject targetObject)
+			public static UE.GameObject CreateSkin(in SDF.Actor.Skin skin)
 			{
-				SDF2Unity.LoadSkinObject(targetObject, skin.filename);
+				return SDF2Unity.LoadSkinObject(skin.filename);
 			}
 
 			public static void SetAnimation(in SDF.Actor.Animation animation, in UE.GameObject targetObject)

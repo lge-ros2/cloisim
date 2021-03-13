@@ -7,40 +7,89 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using System.Linq;
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 public partial class SDF2Unity
 {
-	private static List<string> possibleMaterialPaths = new List<string>()
+	public class BoneWeightItem
 	{
-		"",
-		"/textures/",
-		"../",
-		"../materials/", "../materials/textures/",
-		"../../materials/", "../../materials/textures/"
-	};
+		public List<Tuple<int, float>> items = new List<Tuple<int, float>>(4);
 
-	class MeshMaterialSet
-	{
-		private readonly string _meshName;
-		private readonly Mesh _mesh;
-		private readonly Material _material;
-
-		public MeshMaterialSet(in string meshName, in Mesh mesh, in Material material)
+		public void AddPair(in int index, in float weight)
 		{
-			_meshName = meshName;
-			_mesh = mesh;
-			_material = material;
+			items.Add(new Tuple<int, float>(index, weight));
+			// if (items.Count == 2)
+			// {
+			// 	Debug.Log("legnth 2");
+			// }
 		}
 
-		public Mesh Mesh => _mesh;
-		public Material Material => _material;
-		public string MeshName => _meshName;
-	}
+		public List<Tuple<int, float>> Sort()
+		{
+			var sortedItems = items.OrderByDescending(x => x.Item2);
+			return sortedItems.ToList();
+		}
+	};
 
-	private static readonly Assimp.AssimpContext importer = new Assimp.AssimpContext();
+	public class BoneWeightItemList
+	{
+		private BoneWeightItem[] vertexBoneWeightList;
+
+		public BoneWeightItemList(in int length)
+		{
+			vertexBoneWeightList = new BoneWeightItem[length];
+			for (var i = 0; i < vertexBoneWeightList.Length; i++)
+			{
+				vertexBoneWeightList[i] = new BoneWeightItem();
+			}
+		}
+
+		public BoneWeightItem GetItem(in int index)
+		{
+			return vertexBoneWeightList[index];
+		}
+
+		public int Length => vertexBoneWeightList.Length;
+
+		public BoneWeight[] GetBoneWeightsArray()
+		{
+			var bones = new BoneWeight[vertexBoneWeightList.Length];
+			for (var i = 0; i < vertexBoneWeightList.Length; i++)
+			{
+				bones[i] = new BoneWeight();
+
+				var temp = vertexBoneWeightList[i].Sort();
+
+				if (temp.Count > 0)
+				{
+					bones[i].boneIndex0 = temp[0].Item1;
+					bones[i].weight0 = temp[0].Item2;
+				}
+
+				if (temp.Count > 1)
+				{
+					bones[i].boneIndex1 = temp[1].Item1;
+					bones[i].weight1 = temp[1].Item2;
+				}
+
+				if (temp.Count > 2)
+				{
+					bones[i].boneIndex2 = temp[2].Item1;
+					bones[i].weight2 = temp[2].Item2;
+				}
+
+				if (temp.Count > 3)
+				{
+					bones[i].boneIndex3 = temp[3].Item1;
+					bones[i].weight3 = temp[3].Item2;
+				}
+			}
+			return bones;
+		}
+	};
 
 	private static List<Material> LoadMaterials(in string parentPath, in List<Assimp.Material> sceneMaterials)
 	{
@@ -113,25 +162,20 @@ public partial class SDF2Unity
 		return materials;
 	}
 
-	private static List<MeshMaterialSet> LoadMeshes(in List<Assimp.Mesh> sceneMeshes, in List<Material> materials)
+	private static List<MeshMaterialSet> LoadMeshes(in List<Assimp.Mesh> sceneMeshes)
 	{
-		return LoadMeshes(sceneMeshes, materials, Quaternion.identity);
+		return LoadMeshes(sceneMeshes, Quaternion.identity);
 	}
 
-
-	private static List<MeshMaterialSet> LoadMeshes(in List<Assimp.Mesh> sceneMeshes, in List<Material> materials, in Quaternion meshRotation)
+	private static List<MeshMaterialSet> LoadMeshes(in List<Assimp.Mesh> sceneMeshes, in Quaternion meshRotation)
 	{
-		if (materials == null)
-		{
-			Debug.LogWarning("material list is empty");
-			return null;
-		}
-
 		var meshMats = new List<MeshMaterialSet>();
 
 		foreach (var sceneMesh in sceneMeshes)
 		{
 			var newMesh = new Mesh();
+
+			newMesh.name = sceneMesh.Name;
 
 			// Vertices
 			if (sceneMesh.HasVertices)
@@ -190,6 +234,7 @@ public partial class SDF2Unity
 				newMesh.normals = normals.ToArray();
 			}
 
+			// Tangent
 			if (sceneMesh.HasTangentBasis)
 			{
 				var tangents = new Queue<Vector4>();
@@ -203,92 +248,77 @@ public partial class SDF2Unity
 			// Bones
 			if (sceneMesh.HasBones)
 			{
-				var bones = new BoneWeight[newMesh.vertexCount];
-				for (var i = 0; i < bones.LongLength; ++i)
-				{
-					bones[i].boneIndex0 = -1;
-					bones[i].boneIndex1 = -1;
-					bones[i].boneIndex2 = -1;
-					bones[i].boneIndex3 = -1;
-				}
+				var bindPoses = new Queue<Matrix4x4>();
 
-				var bindPoses = new List<Matrix4x4>();
-
-				Debug.Log(newMesh.name + ": vertexCount=" + newMesh.vertexCount + " or " + sceneMesh.VertexCount + ", boneCount=" + sceneMesh.BoneCount);
+				var boneWeightList = new BoneWeightItemList(newMesh.vertexCount);
+				// Debug.Log(newMesh.name + ": vertexCount=" + newMesh.vertexCount + " or " + sceneMesh.VertexCount + ", boneCount=" + sceneMesh.BoneCount + ", " + sceneMesh.Bones.Count);
 
 				foreach (var bone in sceneMesh.Bones)
 				{
-					var bindPose = new Matrix4x4();
-					bone.OffsetMatrix.Decompose(out var scaling, out var rotation, out var translation);
+					boneNameIndexMap.TryGetValue(bone.Name, out var tupleBone);
+					var boneIndex = tupleBone.Item1;
+					// Debug.Log(bone.Name + ", index= " + boneIndex + "--------------- " + bone.OffsetMatrix.ToString());
+
+					var offsetMat = bone.OffsetMatrix;
+					offsetMat.Decompose(out var scaling, out var rotation, out var translation);
 					var pos = new Vector3(translation.X, translation.Y, translation.Z);
 					var q = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
 					var s = new Vector3(scaling.X, scaling.Y, scaling.Z);
+					// Debug.Log(bone.Name + " - " + pos + q + s);
+					var finalMat = new Matrix4x4();
+					finalMat.SetTRS(pos, q, s);
 
-					bindPose.SetTRS(pos, q, s);
+					var jointNode = tupleBone.Item2;
 
-					bindPoses.Add(bindPose);
+					var localToWorldMat = jointNode.localToWorldMatrix;
+					var worldToLocalMat = jointNode.worldToLocalMatrix;
+					var parentLocalToWorldMat = jointNode.parent.localToWorldMatrix;
+					var parentworldToLocalMat = jointNode.parent.worldToLocalMatrix;
+
+					bindPoses.Enqueue(finalMat);
+
+					boneIndexPose[boneIndex] = finalMat;
+					Debug.Log(boneIndex + " \n" + finalMat);
+
+
+					// if (boneIndexPose.TryGetValue(boneIndex, out var currentMat))
+					// {
+					// 	currentMat = currentMat * finalMat;
+					// }
+					// else
+					// {
+					// 	boneIndexPose.Add(boneIndex, finalMat);
+					// }
 
 					if (bone.HasVertexWeights)
 					{
-						Debug.Log(bone.Name + " - " + bone.VertexWeightCount);
-
-						boneNameIndexMap.TryGetValue(bone.Name, out var boneIndex);
-
+						// Debug.Log("BoneName to Index " + bone.Name + " => " + boneIndex + ", weight count=" + bone.VertexWeights.Count);
 						foreach (var vertexWeight in bone.VertexWeights)
 						{
-							// Debug.Log("vertexID=" + vertexWeight.VertexID + ", weight=" + vertexWeight.Weight);
-							if (vertexWeight.VertexID >= bones.LongLength)
+							if (vertexWeight.Weight > 0)
 							{
-								Debug.LogWarning("exceeded vertex id = " + vertexWeight.VertexID + ", length=" + bones.LongLength);
+								var boneWeight = boneWeightList.GetItem(vertexWeight.VertexID);
+								boneWeight.AddPair(boneIndex, vertexWeight.Weight);
+								// Debug.LogWarning(boneWeight.items.Count + " -- vid: " + vertexWeight.VertexID + "," + boneIndex + ", " + vertexWeight.Weight);
 							}
 							else
 							{
-								var boneWeight = bones[vertexWeight.VertexID];
-
-								if (boneWeight.boneIndex0 == -1)
-								{
-									boneWeight.boneIndex0 = boneIndex;
-									boneWeight.weight0 = vertexWeight.Weight;
-								}
-								else if (boneWeight.boneIndex1 == -1)
-								{
-									boneWeight.boneIndex1 = boneIndex;
-									boneWeight.weight1 = vertexWeight.Weight;
-								}
-								else if (boneWeight.boneIndex2 == -1)
-								{
-									boneWeight.boneIndex2 = boneIndex;
-									boneWeight.weight2 = vertexWeight.Weight;
-								}
-								else if (boneWeight.boneIndex3 == -1)
-								{
-									boneWeight.boneIndex3 = boneIndex;
-									boneWeight.weight3 = vertexWeight.Weight;
-								}
-								bones[vertexWeight.VertexID] = boneWeight;
+								Debug.LogWarning("weight is zero!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1");
 							}
 						}
 					}
+					Debug.LogWarning("bone index=" + boneIndex + ", bonename=" + bone.Name + ", bindpose number=" + bindPoses.Count);
+					// Debug.Log(finalMat);
 				}
 
-				if (bones.LongLength != newMesh.vertexCount)
-				{
-					Debug.Log("different!!!, bone count:" + bones.LongLength + ", vertexCount: " + newMesh.vertexCount);
-				}
-				else
-				{
-					newMesh.bindposes = bindPoses.ToArray();
-					newMesh.boneWeights = bones;
-				}
+				Debug.LogWarning("bone weight number:" + boneWeightList.Length + ", bindpose number=" + bindPoses.Count);
+				newMesh.bindposes = bindPoses.ToArray();
+				// newMesh.bindposes = bindPoses2;
+				newMesh.boneWeights = boneWeightList.GetBoneWeightsArray();
 			}
 
-			// newMesh.Optimize();
-			// newMesh.RecalculateNormals();
-			// newMesh.RecalculateTangents();
-			// newMesh.RecalculateBounds();
-
-			meshMats.Add(new MeshMaterialSet(sceneMesh.Name, newMesh, materials[sceneMesh.MaterialIndex]));
-			// Debug.Log("Done - " + sceneMesh.Name + ", " + vertices.Count + " : " + sceneMesh.MaterialIndex);
+			meshMats.Add(new MeshMaterialSet(newMesh, sceneMesh.MaterialIndex));
+			// Debug.Log("Done - " + sceneMesh.Name + ", " + newMesh.vertexCount + " : " + sceneMesh.MaterialIndex + ", " + newMesh.bindposes.LongLength);
 		}
 
 		return meshMats;
@@ -306,7 +336,7 @@ public partial class SDF2Unity
 			{
 				var meshMat = meshMats[index];
 
-				var subObject = new GameObject(meshMat.MeshName);
+				var subObject = new GameObject(meshMat.Mesh.name);
 				var meshFilter = subObject.AddComponent<MeshFilter>();
 				var meshRenderer = subObject.AddComponent<MeshRenderer>();
 
@@ -340,64 +370,6 @@ public partial class SDF2Unity
 		return rootObject;
 	}
 
-	private static bool CheckFileSupport(in string fileExtension)
-	{
-		var isFileSupported = true;
-
-		switch (fileExtension)
-		{
-			case ".dae":
-			case ".obj":
-			case ".stl":
-				break;
-
-			default:
-				isFileSupported = false;
-				break;
-		}
-
-		return isFileSupported;
-	}
-
-	private static Vector3 GetRotationByFileExtension(in string fileExtension, in string meshPath)
-	{
-		var eulerRotation = Vector3.zero;
-
-		switch (fileExtension)
-		{
-			case ".dae":
-				{
-					var xmlDoc = new XmlDocument();
-					xmlDoc.Load(meshPath);
-
-					var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
-					nsmgr.AddNamespace("ns", xmlDoc.DocumentElement.NamespaceURI);
-
-					var up_axis_node = xmlDoc.SelectSingleNode("/ns:COLLADA/ns:asset/ns:up_axis", nsmgr);
-					// var unit_node = xmlDoc.SelectSingleNode("/ns:COLLADA/ns:asset/ns:unit", nsmgr);
-					var up_axis = up_axis_node.InnerText.ToUpper();
-
-					// Debug.Log("up_axis: "+ up_axis + ", unit meter: " + unit_node.Attributes["meter"].Value + ", name: " + unit_node.Attributes["name"].Value);
-					if (up_axis.Equals("Y_UP"))
-					{
-						eulerRotation.Set(90f, -90f, 0f);
-					}
-				}
-				break;
-
-			case ".obj":
-			case ".stl":
-				eulerRotation.Set(90f, -90f, 0f);
-				break;
-
-			default:
-				break;
-		}
-
-		return eulerRotation;
-	}
-
-
 	public static GameObject LoadMeshObject(in string meshPath)
 	{
 		return LoadMeshObject(meshPath, Vector3.one);
@@ -411,15 +383,22 @@ public partial class SDF2Unity
 			return null;
 		}
 
+		// var colladaIgnoreConfig = new Assimp.Configs.ColladaIgnoreUpDirectionConfig(false);
+		// importer.SetConfig(colladaIgnoreConfig);
+
 		var postProcessFlags =
 			Assimp.PostProcessSteps.OptimizeGraph |
 			Assimp.PostProcessSteps.OptimizeMeshes |
+			Assimp.PostProcessSteps.CalculateTangentSpace |
 			Assimp.PostProcessSteps.JoinIdenticalVertices |
-			Assimp.PostProcessSteps.SortByPrimitiveType |
 			Assimp.PostProcessSteps.RemoveRedundantMaterials |
-			Assimp.PostProcessSteps.ImproveCacheLocality |
 			Assimp.PostProcessSteps.Triangulate |
+			Assimp.PostProcessSteps.SortByPrimitiveType |
+			Assimp.PostProcessSteps.ValidateDataStructure |
+			Assimp.PostProcessSteps.FindInvalidData |
 			Assimp.PostProcessSteps.MakeLeftHanded;
+
+		// logstream.Attach();
 
 		var scene = importer.ImportFile(meshPath, postProcessFlags);
 		if (scene == null)
@@ -451,7 +430,14 @@ public partial class SDF2Unity
 			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
 			var meshRotation = Quaternion.Euler(eulerRotation.x, eulerRotation.y, eulerRotation.z);
 
-			meshMats = LoadMeshes(scene.Meshes, materials, meshRotation);
+			// meshMats = LoadMeshes(scene.Meshes, meshRotation);
+			meshMats = LoadMeshes(scene.Meshes);
+		}
+
+		// match materials
+		foreach (var meshMat in meshMats)
+		{
+			meshMat.SetMaterial(materials[meshMat.MaterialIndex]);
 		}
 
 		// Create GameObjects from nodes
