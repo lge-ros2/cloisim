@@ -4,10 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-// using System.Collections.Generic;
-// using System.Linq;
 using UE = UnityEngine;
-// using Debug = UnityEngine.Debug;
 
 namespace SDF
 {
@@ -17,7 +14,7 @@ namespace SDF
 		{
 			public static UE.GameObject CreateSkin(in SDF.Actor.Skin skin)
 			{
-				return SDF2Unity.LoadSkinObject(skin.filename);
+				return MeshLoader.CreateSkinObject(skin.filename);
 			}
 
 			public static void SetAnimation(in SDF.Actor.Animation animation, in UE.GameObject targetObject)

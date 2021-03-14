@@ -16,7 +16,7 @@ namespace SDF
 			/// <summary>Set mesh from external source</summary>
 			public static void SetMesh(in SDF.Mesh obj, in UE.GameObject targetObject)
 			{
-				var loadedObject = SDF2Unity.LoadMeshObject(obj.uri);
+				var loadedObject = MeshLoader.CreateMeshObject(obj.uri);
 				if (loadedObject == null)
 				{
 					Debug.LogError("Cannot load mesh: " + obj.uri);
