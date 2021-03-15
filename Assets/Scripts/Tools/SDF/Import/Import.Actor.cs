@@ -39,12 +39,12 @@ namespace SDF
 				actorHelper.isStatic = true;
 				actorHelper.SetPose(localPosition, localRotation);
 
-				// foreach (var animation in actor.animations)
-				// {
-				// 	Implement.Actor.SetAnimation(animation, newActorObject);
-				// }
+				foreach (var animation in actor.animations)
+				{
+					Implement.Actor.SetAnimation(animation, newActorObject);
+				}
 
-				// Implement.Actor.SetScript(actor.script, newActorObject);
+				Implement.Actor.SetScript(actor.script, newActorObject);
 
 				return newActorObject as System.Object;
 			}

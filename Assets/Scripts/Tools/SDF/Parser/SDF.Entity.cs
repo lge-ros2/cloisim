@@ -95,7 +95,6 @@ namespace SDF
 			protected set => name = value;
 		}
 
-
 		public string Type
 		{
 			get => type;

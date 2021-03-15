@@ -19,8 +19,25 @@ namespace SDF
 
 			public static void SetAnimation(in SDF.Actor.Animation animation, in UE.GameObject targetObject)
 			{
-				// var animationObject = SDF2Unity.LoadMeshObject(animation.filename);
+				if (targetObject == null)
+				{
+					return;
+				}
+
+				var animationComponent = targetObject.GetComponent<UE.Animation>();
+				if (animationComponent == null)
+				{
+					animationComponent = targetObject.AddComponent<UE.Animation>();
+				}
+
+				var animationClips = MeshLoader.LoadAnimations(animation.Name, animation.filename);
+				foreach (var animationClip in animationClips)
+				{
+					animationComponent.AddClip(animationClip, animationClip.name);
+				}
+				// var animationObject = MeshLoader.LoadMeshObject(animation.filename);
 				// animationObject.transform.SetParent(targetObject.transform);
+				// animationComponent.AddClip()
 			}
 
 			public static void SetScript(in SDF.Actor.Script script, in UE.GameObject targetObject)
