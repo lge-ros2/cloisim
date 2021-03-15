@@ -12,8 +12,9 @@ using UnityEngine.Rendering;
 
 public partial class MeshLoader
 {
-	private static List<Material> LoadMaterials(in string parentPath, in List<Assimp.Material> sceneMaterials)
+	private static List<Material> LoadMaterials(in string meshPath, in List<Assimp.Material> sceneMaterials)
 	{
+		var parentPath = Directory.GetParent(meshPath).FullName;
 		var materials = new List<Material>();
 
 		foreach (var sceneMat in sceneMaterials)
@@ -198,13 +199,11 @@ public partial class MeshLoader
 			}
 		}
 
-		node.Transform.Decompose(out var nodeScale, out var nodeQuat, out var nodeTranslation);
-		// Debug.Log(node.Name + ", " + nodeScale + ", " + nodeQuat + ", " + nodeTranslation);
-
 		// Convert Assimp transfrom into Unity transform
-		rootObject.transform.localPosition = new Vector3(nodeTranslation.X, nodeTranslation.Y, nodeTranslation.Z);
-		rootObject.transform.localRotation = new Quaternion(nodeQuat.X, nodeQuat.Y, nodeQuat.Z, nodeQuat.W);
-		rootObject.transform.localScale = new Vector3(nodeScale.X, nodeScale.Y, nodeScale.Z);
+		var nodeTransform = ConvertAssimpMatrix4x4ToUnity(node.Transform);
+		rootObject.transform.localPosition = nodeTransform.GetColumn(3);
+		rootObject.transform.localRotation = nodeTransform.rotation;
+		rootObject.transform.localScale = nodeTransform.lossyScale;
 
 		if (node.HasChildren)
 		{
@@ -236,8 +235,7 @@ public partial class MeshLoader
 		List<Material> materials = null;
 		if (scene.HasMaterials)
 		{
-			var parentPath = Directory.GetParent(meshPath).FullName;
-			materials = LoadMaterials(parentPath, scene.Materials);
+			materials = LoadMaterials(meshPath, scene.Materials);
 		}
 
 		// Meshes

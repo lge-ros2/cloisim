@@ -127,17 +127,8 @@ public partial class MeshLoader
 					boneNameIndexMap.TryGetValue(bone.Name, out var tupleBone);
 					var boneIndex = tupleBone.Item1;
 					// Debug.Log(bone.Name + ", index= " + boneIndex + "--------------- " + bone.OffsetMatrix.ToString());
-
-					var offsetMat = bone.OffsetMatrix;
-					offsetMat.Decompose(out var scaling, out var rotation, out var translation);
-					var pos = new Vector3(translation.X, translation.Y, translation.Z);
-					var q = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
-					var s = new Vector3(scaling.X, scaling.Y, scaling.Z);
-					// Debug.Log(bone.Name + " - " + pos + q + s);
-					var finalMat = new Matrix4x4();
-					finalMat.SetTRS(pos, q, s);
-
-					bindPoseList.SetBindPose(boneIndex, finalMat);
+					var bindPoseMat = ConvertAssimpMatrix4x4ToUnity(bone.OffsetMatrix);
+					bindPoseList.SetBindPose(boneIndex, bindPoseMat);
 
 					if (bone.HasVertexWeights)
 					{
@@ -173,10 +164,10 @@ public partial class MeshLoader
 		// Debug.Log("Bone Object: " + rootObject.name);
 
 		// Convert Assimp transfrom into Unity transform
-		node.Transform.Decompose(out var nodeScale, out var nodeQuat, out var nodeTranslation);
-		rootObject.transform.localPosition = new Vector3(nodeTranslation.X, nodeTranslation.Y, nodeTranslation.Z);
-		rootObject.transform.localRotation = new Quaternion(nodeQuat.X, nodeQuat.Y, nodeQuat.Z, nodeQuat.W);
-		rootObject.transform.localScale = new Vector3(nodeScale.X, nodeScale.Y, nodeScale.Z);
+		var nodeTransform = ConvertAssimpMatrix4x4ToUnity(node.Transform);
+		rootObject.transform.localPosition = nodeTransform.GetColumn(3);
+		rootObject.transform.localRotation = nodeTransform.rotation;
+		rootObject.transform.localScale = nodeTransform.lossyScale;
 		// Debug.Log(node.Name + ", " + nodeScale + ", " + nodeQuat + ", " + nodeTranslation);
 
 		var boneIndex = boneMapIndex++;
@@ -218,30 +209,24 @@ public partial class MeshLoader
 
 		boneMapIndex = -1;
 		boneNameIndexMap.Clear();
-
 		var rootObject = GetBonesFromAssimpNode(rootNode, Vector3.one);
-		// foreach (var transform in rootObject.GetComponentsInChildren<Transform>())
-		{
-			// transform.localRotation = meshRotation * transform.localRotation;
-		}
 
 		var meshObject = rootObject.transform.GetChild(1).gameObject;
 		var skinnedMeshRenderer = meshObject.AddComponent<SkinnedMeshRenderer>();
 
 		var rootBoneTransform = rootObject.transform.GetChild(0);
+		var boneRotation = meshRotation * Quaternion.Euler(0, 0, -90);
+		rootBoneTransform.localRotation *= boneRotation;
 		skinnedMeshRenderer.rootBone = rootBoneTransform;
 
 		var bones = rootBoneTransform.GetComponentsInChildren<Transform>();
 		skinnedMeshRenderer.bones = bones;
 
-		// bindPoseList = new BindPoseList(bones.Length);
-
 		// Materials
 		List<Material> materials = null;
 		if (scene.HasMaterials)
 		{
-			var parentPath = Directory.GetParent(meshPath).FullName;
-			materials = LoadMaterials(parentPath, scene.Materials);
+			materials = LoadMaterials(meshPath, scene.Materials);
 		}
 
 		// Meshes
@@ -249,6 +234,8 @@ public partial class MeshLoader
 		BindPoseList bindPoseList = null;
 		if (scene.HasMeshes)
 		{
+			// additional rotation for skin loading
+			meshRotation *= Quaternion.Euler(00, 90, 270);
 			meshMatList = LoadMeshes(scene.Meshes, meshRotation);
 			meshMatList.SetMaterials(materials);
 

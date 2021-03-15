@@ -52,14 +52,6 @@ public partial class MeshLoader
 
 		public void Add(in MeshMaterialSet meshMatSet)
 		{
-			// if (meshMatList.TryGetValue(materialIndex, out var value))
-			// {
-			// 	value.Add(meshMatSet);
-			// }
-			// else
-			// {
-			// 	meshMatList.Add(materialIndex, new List<MeshMaterialSet>(){meshMatSet});
-			// }
 			meshMatList.Add(meshMatSet);
 		}
 
@@ -68,16 +60,11 @@ public partial class MeshLoader
 			foreach (var meshMatSet in meshMatList)
 			{
 				meshMatSet.Material = materials[meshMatSet.MaterialIndex];
-				// foreach (var meshMat in meshMatSet.Value)
-				// {
-				// 	meshMat.Material = materials[meshMatSet.Key];
-				// }
 			}
 		}
 
 		public MeshMaterialSet Get(in int index)
 		{
-			// return meshMatList[materialIndex][0];
 			return meshMatList[index];
 		}
 	}
@@ -108,25 +95,6 @@ public partial class MeshLoader
 		switch (fileExtension)
 		{
 			case ".dae":
-				{
-					var xmlDoc = new XmlDocument();
-					xmlDoc.Load(meshPath);
-
-					var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
-					nsmgr.AddNamespace("ns", xmlDoc.DocumentElement.NamespaceURI);
-
-					var up_axis_node = xmlDoc.SelectSingleNode("/ns:COLLADA/ns:asset/ns:up_axis", nsmgr);
-					// var unit_node = xmlDoc.SelectSingleNode("/ns:COLLADA/ns:asset/ns:unit", nsmgr);
-					var up_axis = up_axis_node.InnerText.ToUpper();
-
-					// Debug.Log("up_axis: "+ up_axis + ", unit meter: " + unit_node.Attributes["meter"].Value + ", name: " + unit_node.Attributes["name"].Value);
-					if (up_axis.Equals("Y_UP"))
-					{
-						eulerRotation.Set(90f, -90f, 0f);
-					}
-				}
-				break;
-
 			case ".obj":
 			case ".stl":
 				eulerRotation.Set(90f, -90f, 0f);
@@ -137,6 +105,15 @@ public partial class MeshLoader
 		}
 
 		return eulerRotation;
+	}
+
+	private static Matrix4x4 ConvertAssimpMatrix4x4ToUnity(in Assimp.Matrix4x4 assimpMatrix)
+	{
+		assimpMatrix.Decompose(out var scaling, out var rotation, out var translation);
+		var pos = new Vector3(translation.X, translation.Y, translation.Z);
+		var q = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
+		var s = new Vector3(scaling.X, scaling.Y, scaling.Z);
+		return Matrix4x4.TRS(pos, q, s);;
 	}
 
 	private static readonly Assimp.AssimpContext importer = new Assimp.AssimpContext();
@@ -157,10 +134,18 @@ public partial class MeshLoader
 			return null;
 		}
 
-		// var colladaIgnoreConfig = new Assimp.Configs.ColladaIgnoreUpDirectionConfig(true);
-		// importer.SetConfig(colladaIgnoreConfig);
+		var colladaIgnoreConfig = new Assimp.Configs.ColladaIgnoreUpDirectionConfig(true);
+		importer.SetConfig(colladaIgnoreConfig);
 
 		// logstream.Attach();
+
+		var fileExtension = Path.GetExtension(targetPath).ToLower();
+
+		if (!CheckFileSupport(fileExtension))
+		{
+			Debug.LogWarning("Unsupported file extension: " + fileExtension + " -> " + targetPath);
+			return null;
+		}
 
 		const Assimp.PostProcessSteps postProcessFlags =
 			Assimp.PostProcessSteps.OptimizeGraph |
@@ -177,14 +162,6 @@ public partial class MeshLoader
 		var scene = importer.ImportFile(targetPath, postProcessFlags);
 		if (scene == null)
 		{
-			return null;
-		}
-
-		var fileExtension = Path.GetExtension(targetPath).ToLower();
-
-		if (!CheckFileSupport(fileExtension))
-		{
-			Debug.LogWarning("Unsupported file extension: " + fileExtension + " -> " + targetPath);
 			return null;
 		}
 
