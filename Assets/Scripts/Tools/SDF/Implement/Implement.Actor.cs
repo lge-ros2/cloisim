@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UE = UnityEngine;
 
 namespace SDF
@@ -12,9 +13,42 @@ namespace SDF
 	{
 		public class Actor
 		{
-			public static UE.GameObject CreateSkin(in SDF.Actor.Skin skin)
+			private static string GetGameObjectPath(UE.Transform transform, UE.Transform rootTransform = null)
 			{
-				return MeshLoader.CreateSkinObject(skin.filename);
+				var path = transform.name;
+				while (transform != rootTransform)
+				{
+					transform = transform.parent;
+					path = transform.name + "/" + path;
+				}
+				return path;
+			}
+
+			private static Dictionary<string, string> GetBoneHierachy(in UE.Transform rootBone)
+			{
+				var relativePaths = new Dictionary<string, string>();
+
+				foreach (var transform in rootBone.GetComponentsInChildren<UE.Transform>())
+				{
+					var relativePath = GetGameObjectPath(transform, rootBone);
+
+					try
+					{
+						// UE.Debug.Log(transform.name + " :: " + relativePath);
+						relativePaths.Add(transform.name, relativePath);
+					}
+					catch
+					{
+						UE.Debug.Log("Failed to add " + transform.name);
+					}
+				}
+
+				return relativePaths;
+			}
+
+			public static UE.GameObject CreateSkin(in SDF.Actor.Skin skin, out UE.Quaternion boneRotation)
+			{
+				return MeshLoader.CreateSkinObject(skin.filename, out boneRotation);
 			}
 
 			public static void SetAnimation(in SDF.Actor.Animation animation, in UE.GameObject targetObject)
@@ -30,12 +64,30 @@ namespace SDF
 					animationComponent = targetObject.AddComponent<UE.Animation>();
 				}
 
-				var animationClips = MeshLoader.LoadAnimations(animation.Name, animation.filename);
+				var skinnedMeshRenderer = targetObject.GetComponentInChildren<UE.SkinnedMeshRenderer>();
+
+				var relativePaths = GetBoneHierachy(skinnedMeshRenderer.rootBone);
+
+				var actorHelper = targetObject.GetComponent<SDF.Helper.Actor>();
+				var boneRotation = actorHelper.BoneRotation;
+
+ 				var animationClips = MeshLoader.LoadAnimations(animation.filename, relativePaths, boneRotation);
 				foreach (var animationClip in animationClips)
 				{
-					animationComponent.AddClip(animationClip, animationClip.name);
+					UE.Debug.Log("animation clip name: " + animationClip.name);
+
+					// if (animation.interpolate_x)
+					{
+						// animationClip.EnsureQuaternionContinuity();
+					}
+					animationComponent.AddClip(animationClip, animationClip.name);//, 1, 100, true);
 					animationComponent.clip = animationClip;
 				}
+
+				animationComponent.wrapMode = UE.WrapMode.Loop;
+				animationComponent.animatePhysics = false;
+				animationComponent.playAutomatically = true;
+				animationComponent.Play();
 			}
 
 			public static void SetScript(in SDF.Actor.Script script, in UE.GameObject targetObject)

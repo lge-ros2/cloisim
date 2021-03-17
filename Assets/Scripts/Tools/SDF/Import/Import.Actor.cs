@@ -19,7 +19,7 @@ namespace SDF
 					return null;
 				}
 
-				var newActorObject = Implement.Actor.CreateSkin(actor.skin);
+				var newActorObject = Implement.Actor.CreateSkin(actor.skin, out var boneRotation);
 				if (newActorObject == null)
 				{
 					return null;
@@ -38,6 +38,7 @@ namespace SDF
 				var actorHelper = newActorObject.AddComponent<Helper.Actor>();
 				actorHelper.isStatic = true;
 				actorHelper.SetPose(localPosition, localRotation);
+				actorHelper.BoneRotation = boneRotation;
 
 				foreach (var animation in actor.animations)
 				{
