@@ -41,6 +41,8 @@ Here is the full list of models that is implemented or planned to be implemented
 - [ ] Physics
   - [ ] Support all physics parameters in SDF specification
   - [X] Support `<Joint type="revolute2">`
+- [X] Actors
+  - [ ] interpolate_x in `<animation>`
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<lights>`, `<audio>`, `<actor>`, `<state>`.
@@ -68,6 +70,12 @@ So there is NO more constaints for rigidbodies by PGS(Projected Gauss Seidel) so
 But inertia factors which retrieved from SDF are still NOT USED for rigidbody in Unity. Because it could cause unexpected behavior with physX engine.
 
 ## Getting Started
+
+### Minimum requirement
+
+- Processor: testing and looking for the minimum
+- Memory: testing and looking for the minimum
+- Graphics: testing and looking for the minimum
 
 ### Tested environement
 
