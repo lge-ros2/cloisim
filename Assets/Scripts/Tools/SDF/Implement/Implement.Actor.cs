@@ -6,8 +6,6 @@
 
 using System.Collections.Generic;
 using System;
-// using System.Collections;
-// using System.Collections.Generic;
 using UE = UnityEngine;
 
 namespace SDF
@@ -27,9 +25,9 @@ namespace SDF
 				return path;
 			}
 
-			private static Dictionary<string, Tuple<string, UE.Transform>> GetBoneHierachy(in UE.Transform rootBone)
+			private static Dictionary<string, string> GetBoneHierachy(in UE.Transform rootBone)
 			{
-				var relativePaths = new Dictionary<string, Tuple<string, UE.Transform>>();
+				var relativePaths = new Dictionary<string, string>();
 
 				foreach (var transform in rootBone.GetComponentsInChildren<UE.Transform>())
 				{
@@ -37,8 +35,8 @@ namespace SDF
 
 					try
 					{
-						UE.Debug.Log(transform.name + " :: " + relativePath);
-						relativePaths.Add(transform.name, new Tuple<string, UE.Transform>(relativePath, transform));
+						// UE.Debug.Log(transform.name + " :: " + relativePath);
+						relativePaths.Add(transform.name, relativePath);
 					}
 					catch
 					{
@@ -49,12 +47,12 @@ namespace SDF
 				return relativePaths;
 			}
 
-			public static UE.GameObject CreateSkin(in SDF.Actor.Skin skin, out UE.Quaternion boneRotation)
+			public static UE.GameObject CreateSkin(in SDF.Actor.Skin skin)
 			{
-				return MeshLoader.CreateSkinObject(skin.filename, out boneRotation);
+				return MeshLoader.CreateSkinObject(skin.filename);
 			}
 
-			public static void SetAnimation(in SDF.Actor.Animation animation, in UE.GameObject targetObject)
+			public static void SetAnimation(in UE.GameObject targetObject, in SDF.Actor.Animation animation)
 			{
 				if (targetObject == null)
 				{
@@ -68,23 +66,21 @@ namespace SDF
 				}
 
 				var skinnedMeshRenderer = targetObject.GetComponentInChildren<UE.SkinnedMeshRenderer>();
-
 				var relativePaths = GetBoneHierachy(skinnedMeshRenderer.rootBone);
 
-				var actorHelper = targetObject.GetComponent<SDF.Helper.Actor>();
-				var boneRotation = UE.Quaternion.identity;//actorHelper.BoneRotation;
-
-				var animationClips = MeshLoader.LoadAnimations(animation.filename, relativePaths, boneRotation);
+				var animationClips = MeshLoader.LoadAnimations(animation.filename, relativePaths);
 				foreach (var animationClip in animationClips)
 				{
-					UE.Debug.Log("animation clip name: " + animationClip.name);
-					animationComponent.AddClip(animationClip, animationClip.name);//, 1, 100, true);
+					// UE.Debug.Log("animation clip name: " + animationClip.name);
+					animationComponent.AddClip(animationClip, animationClip.name);
+					// animationClip.EnsureQuaternionContinuity();
 					animationComponent.clip = animationClip;
 				}
 
-				// animationComponent.wrapMode = UE.WrapMode.Loop;
+				animationComponent.wrapMode = UE.WrapMode.Loop;
 				animationComponent.animatePhysics = false;
-				// animationComponent.Play();
+				animationComponent.playAutomatically = true;
+				animationComponent.Play();
 			}
 
 			public static void SetScript(in SDF.Actor.Script script, in UE.GameObject targetObject)

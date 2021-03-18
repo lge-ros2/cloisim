@@ -15,8 +15,6 @@ namespace SDF
 			[UE.Header("SDF Properties")]
 			public bool isStatic = false;
 
-			private UE.Quaternion _boneRotation = UE.Quaternion.identity;
-
 			new void Awake()
 			{
 				base.Awake();
@@ -28,12 +26,6 @@ namespace SDF
 
 			void LateUpdate()
 			{
-			}
-
-			public UE.Quaternion BoneRotation
-			{
-				get => _boneRotation;
-				set => _boneRotation = value;
 			}
 		}
 	}

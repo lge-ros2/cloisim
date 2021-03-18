@@ -187,15 +187,8 @@ public partial class MeshLoader
 		return rootObject;
 	}
 
-	public static GameObject CreateSkinObject(in string meshPath, out Quaternion boneRotation)
+	public static GameObject CreateSkinObject(in string meshPath)
 	{
-		return CreateSkinObject(meshPath, Vector3.one, out boneRotation);
-	}
-
-	public static GameObject CreateSkinObject(in string meshPath, in Vector3 scale, out Quaternion boneRotation)
-	{
-		boneRotation = Quaternion.identity;
-
 		var scene = GetScene(meshPath, out var meshRotation);
 		if (scene == null)
 		{
@@ -218,8 +211,8 @@ public partial class MeshLoader
 		var skinnedMeshRenderer = meshObject.AddComponent<SkinnedMeshRenderer>();
 
 		var rootBoneTransform = rootObject.transform.GetChild(0).GetChild(0);
-		boneRotation = Quaternion.Euler(0, 0, -90);
-		rootBoneTransform.localRotation *= boneRotation;
+		var rootBoneRotation = Quaternion.Euler(0, 0, -90);
+		rootBoneTransform.localRotation *= rootBoneRotation;
 		skinnedMeshRenderer.rootBone = rootBoneTransform;
 
 		var bones = rootBoneTransform.GetComponentsInChildren<Transform>();
