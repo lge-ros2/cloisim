@@ -12,7 +12,7 @@ using UnityEngine;
 
 public partial class MeshLoader
 {
-	private static int boneMapIndex = -1;
+	private static int boneMapIndex;
 	private static Dictionary<string, Tuple<int, Transform>> boneNameIndexMap = new Dictionary<string, Tuple<int, Transform>>();
 
 	public class BindPoseList
@@ -109,6 +109,7 @@ public partial class MeshLoader
 
 	private static BindPoseList LoadBones(in List<Assimp.Mesh> sceneMeshes, in int totalBones, in MeshMaterialList meshMatList)
 	{
+		var bindPoseRotation = Quaternion.Euler(0, 90, -90);
 		var bindPoseList = new BindPoseList(totalBones);
 		var meshIndex = 0;
 		foreach (var sceneMesh in sceneMeshes)
@@ -127,7 +128,7 @@ public partial class MeshLoader
 					boneNameIndexMap.TryGetValue(bone.Name, out var tupleBone);
 					var boneIndex = tupleBone.Item1;
 					// Debug.Log(bone.Name + ", index= " + boneIndex + "--------------- " + bone.OffsetMatrix.ToString());
-					var bindPoseMat = ConvertAssimpMatrix4x4ToUnity(bone.OffsetMatrix);
+					var bindPoseMat = ConvertAssimpMatrix4x4ToUnity(bone.OffsetMatrix, bindPoseRotation);
 					bindPoseList.SetBindPose(boneIndex, bindPoseMat);
 
 					if (bone.HasVertexWeights)
@@ -209,15 +210,15 @@ public partial class MeshLoader
 			return null;
 		}
 
-		boneMapIndex = -1;
+		boneMapIndex = -2;
 		boneNameIndexMap.Clear();
 		var rootObject = GetBonesFromAssimpNode(rootNode, Vector3.one);
 
 		var meshObject = rootObject.transform.GetChild(1).gameObject;
 		var skinnedMeshRenderer = meshObject.AddComponent<SkinnedMeshRenderer>();
 
-		var rootBoneTransform = rootObject.transform.GetChild(0);
-		boneRotation = meshRotation * Quaternion.Euler(0, 0, -90);
+		var rootBoneTransform = rootObject.transform.GetChild(0).GetChild(0);
+		boneRotation = Quaternion.Euler(0, 0, -90);
 		rootBoneTransform.localRotation *= boneRotation;
 		skinnedMeshRenderer.rootBone = rootBoneTransform;
 
@@ -237,7 +238,6 @@ public partial class MeshLoader
 		if (scene.HasMeshes)
 		{
 			// additional rotation for skin loading
-			meshRotation *= Quaternion.Euler(00, 90, 270);
 			meshMatList = LoadMeshes(scene.Meshes, meshRotation);
 			meshMatList.SetMaterials(materials);
 

@@ -5,6 +5,9 @@
  */
 
 using System.Collections.Generic;
+using System;
+// using System.Collections;
+// using System.Collections.Generic;
 using UE = UnityEngine;
 
 namespace SDF
@@ -24,18 +27,18 @@ namespace SDF
 				return path;
 			}
 
-			private static Dictionary<string, string> GetBoneHierachy(in UE.Transform rootBone)
+			private static Dictionary<string, Tuple<string, UE.Transform>> GetBoneHierachy(in UE.Transform rootBone)
 			{
-				var relativePaths = new Dictionary<string, string>();
+				var relativePaths = new Dictionary<string, Tuple<string, UE.Transform>>();
 
 				foreach (var transform in rootBone.GetComponentsInChildren<UE.Transform>())
 				{
-					var relativePath = GetGameObjectPath(transform, rootBone);
+					var relativePath = GetGameObjectPath(transform, rootBone.parent);
 
 					try
 					{
-						// UE.Debug.Log(transform.name + " :: " + relativePath);
-						relativePaths.Add(transform.name, relativePath);
+						UE.Debug.Log(transform.name + " :: " + relativePath);
+						relativePaths.Add(transform.name, new Tuple<string, UE.Transform>(relativePath, transform));
 					}
 					catch
 					{
@@ -69,25 +72,19 @@ namespace SDF
 				var relativePaths = GetBoneHierachy(skinnedMeshRenderer.rootBone);
 
 				var actorHelper = targetObject.GetComponent<SDF.Helper.Actor>();
-				var boneRotation = actorHelper.BoneRotation;
+				var boneRotation = UE.Quaternion.identity;//actorHelper.BoneRotation;
 
- 				var animationClips = MeshLoader.LoadAnimations(animation.filename, relativePaths, boneRotation);
+				var animationClips = MeshLoader.LoadAnimations(animation.filename, relativePaths, boneRotation);
 				foreach (var animationClip in animationClips)
 				{
 					UE.Debug.Log("animation clip name: " + animationClip.name);
-
-					// if (animation.interpolate_x)
-					{
-						// animationClip.EnsureQuaternionContinuity();
-					}
 					animationComponent.AddClip(animationClip, animationClip.name);//, 1, 100, true);
 					animationComponent.clip = animationClip;
 				}
 
-				animationComponent.wrapMode = UE.WrapMode.Loop;
+				// animationComponent.wrapMode = UE.WrapMode.Loop;
 				animationComponent.animatePhysics = false;
-				animationComponent.playAutomatically = true;
-				animationComponent.Play();
+				// animationComponent.Play();
 			}
 
 			public static void SetScript(in SDF.Actor.Script script, in UE.GameObject targetObject)

@@ -45,7 +45,7 @@ namespace SDF
 					Implement.Actor.SetAnimation(animation, newActorObject);
 				}
 
-				Implement.Actor.SetScript(actor.script, newActorObject);
+				// Implement.Actor.SetScript(actor.script, newActorObject);
 
 				return newActorObject as System.Object;
 			}
