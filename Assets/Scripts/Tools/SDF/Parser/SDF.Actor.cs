@@ -86,9 +86,6 @@ namespace SDF
 
 					// Description: The time in seconds, counted from the beginning of the script, when the pose should be reached.
 					public double time = 0;
-
-					// pose
-					// Description: The pose which should be reached at the given time.
 				}
 
 				// Description: Unique id for a trajectory.
@@ -104,7 +101,7 @@ namespace SDF
 			public bool loop = true;
 
 			// Description: This is the time to wait before starting the script. If running in a loop, this time will be waited before starting each cycle.
-			public bool delay_start = false;
+			public double delay_start = 0;
 
 			// Description: Set to true if the animation should start as soon as the simulation starts playing. It is useful to set this to false if the animation should only start playing only when triggered by a plugin, for example.
 			public bool auto_start = true;
@@ -159,7 +156,7 @@ namespace SDF
 			if (IsValidNode("script"))
 			{
 				script.loop = GetValue<bool>("script/loop");
-				script.delay_start = GetValue<bool>("script/delay_start");
+				script.delay_start = GetValue<double>("script/delay_start");
 				script.auto_start = GetValue<bool>("script/auto_start");
 
 				if (IsValidNode("script/trajectory"))

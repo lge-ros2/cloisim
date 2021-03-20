@@ -73,7 +73,6 @@ namespace SDF
 				{
 					// UE.Debug.Log("animation clip name: " + animationClip.name);
 					animationComponent.AddClip(animationClip, animationClip.name);
-					// animationClip.EnsureQuaternionContinuity();
 					animationComponent.clip = animationClip;
 				}
 
@@ -81,22 +80,6 @@ namespace SDF
 				animationComponent.animatePhysics = false;
 				animationComponent.playAutomatically = true;
 				animationComponent.Play();
-			}
-
-			public static void SetScript(in SDF.Actor.Script script, in UE.GameObject targetObject)
-			{
-				//
-				// script
-				//
-				//  <script>
-				//   <loop>true</loop>
-				//   <delay_start>0.000000</delay_start>
-				//   <auto_start>true</auto_start>
-				//   <trajectory id="0" type="walking">
-				//     <waypoint>
-				//       <time>0.000000</time>
-				//       <pose>0.000000 1.000000 0.000000 0.000000 0.000000 0.000000</pose>
-				//     </waypoint>
 			}
 		}
 	}
