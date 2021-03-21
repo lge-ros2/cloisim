@@ -95,7 +95,6 @@ namespace SDF
 			protected set => name = value;
 		}
 
-
 		public string Type
 		{
 			get => type;
@@ -127,7 +126,7 @@ namespace SDF
 
 		protected bool GetValues<T>(in string xpath, out List<T> valueList)
 		{
-			var nodeList = new List<XmlNode>(GetNodes("contact/collision").Cast<XmlNode>());
+			var nodeList = new List<XmlNode>(GetNodes(xpath).Cast<XmlNode>());
 			if (nodeList == null)
 			{
 				valueList = null;

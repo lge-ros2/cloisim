@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2020 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
@@ -22,10 +22,9 @@ public class Main: MonoBehaviour
 	[Header("World File")]
 	public string worldFileName;
 
-	private string filesRootDirectory = string.Empty;
-
 	public List<string> modelRootDirectories = new List<string>();
 	public List<string> worldRootDirectories = new List<string>();
+	public List<string> fileRootDirectories = new List<string>();
 
 	private GameObject modelsRoot = null;
 	private FollowingTargetList followingList = null;
@@ -64,16 +63,21 @@ public class Main: MonoBehaviour
 	void Awake()
 	{
 #if UNITY_EDITOR
- 		filesRootDirectory = "/usr/share/gazebo-9/";
 #else
 		modelRootDirectories.Clear();
 		worldRootDirectories.Clear();
+		fileRootDirectories.Clear();
 
 		var separator = new char[] {':'};
-		filesRootDirectory = Environment.GetEnvironmentVariable("CLOISIM_FILES_PATH");
+
+		var filePathEnv = Environment.GetEnvironmentVariable("CLOISIM_FILES_PATH");
+		var filePaths = filePathEnv.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+		fileRootDirectories.AddRange(filePaths);
+
 		var modelPathEnv = Environment.GetEnvironmentVariable("CLOISIM_MODEL_PATH");
 		var modelPaths = modelPathEnv.Split(separator, StringSplitOptions.RemoveEmptyEntries);
 		modelRootDirectories.AddRange(modelPaths);
+
 		var worldPathEnv = Environment.GetEnvironmentVariable("CLOISIM_WORLD_PATH");
 		var worldPaths = worldPathEnv.Split(separator, StringSplitOptions.RemoveEmptyEntries);
 		worldRootDirectories.AddRange(worldPaths);
@@ -140,9 +144,9 @@ public class Main: MonoBehaviour
 		var sdf = new SDF.Root();
 		sdf.SetTargetLogOutput(simulationDisplay);
 		sdf.SetWorldFileName(worldFileName);
-		sdf.fileDefaultPath = filesRootDirectory;
+		sdf.fileDefaultPaths.AddRange(fileRootDirectories);
 		sdf.modelDefaultPaths.AddRange(modelRootDirectories);
-		sdf.worldDefaultPath.AddRange(worldRootDirectories);
+		sdf.worldDefaultPaths.AddRange(worldRootDirectories);
 
 		if (sdf.DoParse())
 		{

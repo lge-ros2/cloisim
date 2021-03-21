@@ -132,7 +132,6 @@ public class Motor : MonoBehaviour
 
 	public void SetTargetJoint(in ArticulationBody body)
 	{
-
 		if (body.jointType.Equals(ArticulationJointType.RevoluteJoint) || body.jointType.Equals(ArticulationJointType.SphericalJoint))
 		{
 			_motorBody = body;
@@ -295,10 +294,6 @@ public class Motor : MonoBehaviour
 			{
 				_motorBody.zDrive = drive;
 			}
-		}
-		else
-		{
-			Stop();
 		}
 	}
 

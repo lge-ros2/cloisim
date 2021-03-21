@@ -48,6 +48,26 @@ namespace SDF
 					_poseControl.Add(position, rotation);
 				}
 			}
+
+			public void AddPose(in UE.Vector3 position)
+			{
+				AddPose(position, UE.Quaternion.identity);
+			}
+
+			public void AddPose(in UE.Quaternion rotation)
+			{
+				AddPose(UE.Vector3.zero, rotation);
+			}
+
+			public UE.Pose GetPose(in int targetFrame = 0)
+			{
+				return _poseControl.Get(targetFrame);
+			}
+
+			public int GetPoseCount()
+			{
+				return _poseControl.Count;
+			}
 		}
 	}
 }

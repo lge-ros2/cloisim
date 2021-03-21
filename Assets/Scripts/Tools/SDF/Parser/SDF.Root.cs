@@ -26,11 +26,11 @@ namespace SDF
 
 		private World world = null;
 
-		public string fileDefaultPath = String.Empty;
+		public List<string> fileDefaultPaths = new List<string>();
 
 		public List<string> modelDefaultPaths = new List<string>();
 
-		public List<string> worldDefaultPath = new List<string>();
+		public List<string> worldDefaultPaths = new List<string>();
 
 		private string worldFileName = string.Empty;
 
@@ -75,12 +75,21 @@ namespace SDF
 			if (doc != null && worldFileName != null && worldFileName.Length > 0)
 			{
 				// Console.WriteLine("World file, PATH: " + worldFileName);
-				foreach (var worldPath in worldDefaultPath)
+				foreach (var worldPath in worldDefaultPaths)
 				{
 					var fullFilePath = worldPath + "/" + worldFileName;
 					if (File.Exists(@fullFilePath))
 					{
-						doc.Load(fullFilePath);
+						try
+						{
+							doc.Load(fullFilePath);
+						}
+						catch (XmlException ex)
+						{
+							var errorMessage = "Failed to Load file(" + fullFilePath + ") file - " + ex.Message;
+							Console.WriteLine(errorMessage);
+							simulationDisplay?.SetEventMessage(errorMessage);
+						}
 						worldFound = true;
 						break;
 					}
@@ -96,10 +105,12 @@ namespace SDF
 
 			replaceAllIncludedModel();
 
-			ConvertUriToAbsolutePath();
+			ConvertPathToAbsolutePath("uri");
+			ConvertPathToAbsolutePath("filename");
 
 			// Console.WriteLine("Load World");
 			var worldNode = doc.SelectSingleNode("/sdf/world");
+
 			world = new World(worldNode);
 
 			// Console.WriteLine("Load Completed!!!");
@@ -227,13 +238,13 @@ namespace SDF
 		}
 
 		// Converting media/file uri
-		private void ConvertUriToAbsolutePath()
+		private void ConvertPathToAbsolutePath(in string target_element)
 		{
-			XmlNodeList nodeList = doc.SelectNodes("//uri");
+			var nodeList = doc.SelectNodes("//" + target_element);
 			// Console.WriteLine("Num Of uri nodes: " + nodeList.Count);
 			foreach (XmlNode node in nodeList)
 			{
-				string uri = node.InnerText;
+				var uri = node.InnerText;
 				if (uri.StartsWith("model://"))
 				{
 					var modelUri = uri.Replace("model://", string.Empty);
@@ -253,12 +264,19 @@ namespace SDF
 				}
 				else if (uri.StartsWith("file://"))
 				{
-					string mediaUri = uri.Replace("file://", fileDefaultPath);
-					node.InnerText = mediaUri;
+					foreach (var filePath in fileDefaultPaths)
+					{
+						var fileUri = uri.Replace("file://", filePath + "/");
+						if (File.Exists(@fileUri))
+						{
+							node.InnerText = fileUri;
+							break;
+						}
+					}
 				}
 				else
 				{
-					Console.WriteLine("Cannot convert uri: " + uri);
+					Console.WriteLine("Cannot convert: " + uri);
 				}
 			}
 		}

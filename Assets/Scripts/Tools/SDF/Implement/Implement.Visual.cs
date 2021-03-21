@@ -105,10 +105,10 @@ namespace SDF
 
 				var newCombinedMesh = new UE.Mesh();
 				newCombinedMesh.CombineMeshes(combine, true);
+				newCombinedMesh.Optimize();
 				newCombinedMesh.RecalculateBounds();
 				newCombinedMesh.RecalculateNormals();
 				newCombinedMesh.RecalculateTangents();
-				newCombinedMesh.Optimize();
 
 				return newCombinedMesh;
 			}

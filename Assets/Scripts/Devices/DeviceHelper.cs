@@ -21,7 +21,7 @@ public partial class DeviceHelper
 
 			if (clock == null)
 			{
-					clock = coreObject.AddComponent<Clock>();
+				clock = coreObject.AddComponent<Clock>();
 			}
 		}
 
@@ -56,6 +56,7 @@ public partial class DeviceHelper
 		}
 	}
 
+
 	public static string GetPartName(in GameObject targetObject)
 	{
 		return GetModelName(targetObject, true);
@@ -73,7 +74,7 @@ public partial class DeviceHelper
 
 		var timeNow = (useRealTime) ? GetGlobalClock().GetRealTime() : GetGlobalClock().GetSimTime();
 		msgTime.Sec = (int)timeNow;
-		msgTime.Nsec = (int)((timeNow - (float)msgTime.Sec) * (float)1e+9);
+		msgTime.Nsec = (int)((timeNow - (double)msgTime.Sec) * (double)1e+9);
 	}
 
 	public static void SetVector3d(messages.Vector3d vector3d, in Vector3 position)

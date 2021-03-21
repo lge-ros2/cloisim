@@ -30,7 +30,7 @@ public class SimulationDisplay : MonoBehaviour
 	private const int textWidthFps = 80;
 	private const int textWidthVersion = 50;
 	private const int textWidthSimulation = 600;
-	private const int textWidthEvent = 600;
+	private const int textWidthEvent = 800;
 
 	[Header("Rect")]
 	private Rect rectVersion = new Rect(textLeftMargin, textTopMargin, textWidthVersion, textHeight);
@@ -124,6 +124,7 @@ public class SimulationDisplay : MonoBehaviour
 
 		// Simulation time info
 		var simulationInfo = GetTimeInfoString();
+		rectSimulationinfo.y = Screen.height - textHeight - textTopMargin;
 		DrawShadow(rectSimulationinfo, simulationInfo);
 		GUI.skin.label.normal.textColor = Color.black;
 		GUI.Label(rectSimulationinfo, simulationInfo);
@@ -131,8 +132,9 @@ public class SimulationDisplay : MonoBehaviour
 		// error message or event message
 		var originLabelSkin = GUI.skin.label;
 
-		GUI.skin.label.wordWrap = false;
+		GUI.skin.label.wordWrap = true;
 		GUI.skin.label.clipping = TextClipping.Overflow;
+		rectEventMessage.y = Screen.height - (textHeight*2) - textTopMargin;
 		DrawShadow(rectEventMessage, eventMessage);
 		GUI.skin.label.normal.textColor = Color.red;
 		GUI.Label(rectEventMessage, eventMessage);

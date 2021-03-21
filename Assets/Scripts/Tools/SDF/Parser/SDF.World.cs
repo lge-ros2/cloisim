@@ -27,11 +27,13 @@ namespace SDF
 		// <light> : TBD
 		private Light light = null;
 		private Models models = null;
-		// <actor> : TBD
+		private Actors actors = null;
+
 		// <road> : TBD
 		// <spherical_coordinates> : TBD
 		// <state> : TBD
 		// <population> : TBD
+
 		private Plugins plugins;
 
 		public Pose<double> GuiCameraPose => gui_camera_pose;
@@ -129,7 +131,7 @@ namespace SDF
 
 			if (IsValidNode("actor"))
 			{
-				// Console.WriteLine("<actor> tag is NOT supported yet.");
+				actors = new Actors(root);
 			}
 
 			if (IsValidNode("road"))
@@ -161,6 +163,11 @@ namespace SDF
 		public List<Plugin> GetPlugins()
 		{
 			return plugins.GetData();
+		}
+
+		public List<Actor> GetActors()
+		{
+			return actors.GetData();
 		}
 	}
 }
