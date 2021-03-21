@@ -80,7 +80,16 @@ namespace SDF
 					var fullFilePath = worldPath + "/" + worldFileName;
 					if (File.Exists(@fullFilePath))
 					{
-						doc.Load(fullFilePath);
+						try
+						{
+							doc.Load(fullFilePath);
+						}
+						catch (XmlException ex)
+						{
+							var errorMessage = "Failed to Load file(" + fullFilePath + ") file - " + ex.Message;
+							Console.WriteLine(errorMessage);
+							simulationDisplay?.SetEventMessage(errorMessage);
+						}
 						worldFound = true;
 						break;
 					}
