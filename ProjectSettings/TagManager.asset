@@ -9,6 +9,7 @@ TagManager:
   - Visual
   - Collision
   - Sensor
+  - Actor
   - Marker
   - Props
   layers:

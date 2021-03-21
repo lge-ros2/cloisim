@@ -125,23 +125,20 @@ namespace SDF
 
 	public class Quaternion<T>
 	{
+		// private T w;
 		// private T x;
 		// private T y;
 		// private T z;
-		// private T w;
 		private T roll;
 		private T pitch;
 		private T yaw;
 
-		// public Quaternion(T _qx, T _qy, T _qz, T _qw)
+		// public Quaternion(T _qw, T _qx, T _qy, T _qz)
 		// {
+		// 	w = _qw;
 		// 	x = _qx;
 		// 	y = _qy;
 		// 	z = _qz;
-		// 	w = _qw;
-		//  roll = arctan(2*(x*y + z*w), 1 - 2*(y^2 * z^2));
-		//  pitch = arcsin(2*(x*z - w*y));
-		//  yaw = arctan(2*(x*w + y*z), 1 - 2*(y^2 * z^2));
 		// }
 
 		public Quaternion()
@@ -167,6 +164,7 @@ namespace SDF
 			get => pitch;
 			set => pitch = value;
 		}
+
 		public T Yaw
 		{
 			get => yaw;

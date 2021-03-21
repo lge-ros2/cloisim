@@ -48,6 +48,11 @@ namespace SDF
 					_poseControl.Add(position, rotation);
 				}
 			}
+
+			public UE.Pose GetPose(in int targetFrame = 0)
+			{
+				return _poseControl.Get(targetFrame);
+			}
 		}
 	}
 }

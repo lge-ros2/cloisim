@@ -41,6 +41,8 @@ Here is the full list of models that is implemented or planned to be implemented
 - [ ] Physics
   - [ ] Support all physics parameters in SDF specification
   - [X] Support `<Joint type="revolute2">`
+- [X] Actors
+  - [ ] interpolate_x in `<animation>`
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<lights>`, `<audio>`, `<actor>`, `<state>`.
@@ -69,6 +71,12 @@ But inertia factors which retrieved from SDF are still NOT USED for rigidbody in
 
 ## Getting Started
 
+### Minimum requirement
+
+- Processor: testing and looking for the minimum
+- Memory: testing and looking for the minimum
+- Graphics: testing and looking for the minimum
+
 ### Tested environement
 
 - Latest Unity Editor Version: *'2020.2.6f1 (LTS)'*.
@@ -92,11 +100,16 @@ Please visit here [build guide](https://github.com/lge-ros2/multi-robot-simulato
 Set environment path like below.
 
 ```shell
+export CLOISIM_FILES_PATH="/home/Unity/cloisim/sample_resources/media"
 export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample_resources/models"
 export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample_resources/worlds"
 ```
 
-- ***./CLOiSim.x86_64 -world cloisim.world***
+Run CLOiSim
+
+```shell
+./CLOiSim.x86_64 -world lg_seocho.world
+```
 
 or you can execute '***./run.sh***' script in release [binary](https://github.com/lge-ros2/cloisim/releases) version.
 
