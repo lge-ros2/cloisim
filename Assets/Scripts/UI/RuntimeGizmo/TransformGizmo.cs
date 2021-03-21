@@ -474,6 +474,7 @@ namespace RuntimeGizmos
 
 					var hitParentObject = hitObject.transform.parent?.GetComponentInParent<SDF.Helper.Model>();
 					var hitParentActor = hitObject.transform?.GetComponent<SDF.Helper.Actor>();
+          
 					if (hitParentObject != null && hitParentObject.CompareTag("Model") && hitParentObject.isTopModel)
 					{
 						// Debug.Log(hitParentObject.name + " Selected!!!!");

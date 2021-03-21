@@ -235,6 +235,7 @@ public class ObjectSpawning : MonoBehaviour
 		var rectScale = rectScaleLabel;
 		rectScale.x += 50;
 		rectScale.width = 40;
+    
 		GUI.SetNextControlName("ScaleField");
 		GUI.skin.textField.normal.textColor = Color.white;
 		GUI.skin.textField.alignment = TextAnchor.MiddleCenter;
