@@ -45,7 +45,7 @@ Here is the full list of models that is implemented or planned to be implemented
   - [ ] interpolate_x in `<animation>`
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
-It does not support optional elmenets like `<lights>`, `<audio>`, `<actor>`, `<state>`.
+It does not support optional elmenets like `<lights>`, `<audio>`, `<state>`.
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material' and 'STL(.stl)'.
 
@@ -79,7 +79,7 @@ But inertia factors which retrieved from SDF are still NOT USED for rigidbody in
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.2.6f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.3.0f1 (LTS)'*.
 - Linux: Ubuntu 20.04.1
 - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
 - Memory: 32GB
