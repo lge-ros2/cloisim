@@ -17,8 +17,8 @@ public class Clock : Device
 	private messages.Time simTime = null;
 	private messages.Time realTime = null;
 
-	private float restartedSimTime = 0;
-	private float restartedRealTime = 0;
+	private double restartedSimTime = 0;
+	private double restartedRealTime = 0;
 
 	protected override void OnAwake()
 	{
@@ -77,17 +77,17 @@ public class Clock : Device
 
 	public void ResetTime()
 	{
-		restartedSimTime = Time.time;
-		restartedRealTime = Time.realtimeSinceStartup;
+		restartedSimTime = Time.timeAsDouble;
+		restartedRealTime = Time.realtimeSinceStartupAsDouble;
 	}
 
-	public float GetSimTime()
+	public double GetSimTime()
 	{
-		return Time.time - restartedSimTime;
+		return Time.timeAsDouble - restartedSimTime;
 	}
 
-	public float GetRealTime()
+	public double GetRealTime()
 	{
-		return Time.realtimeSinceStartup - restartedRealTime;
+		return Time.realtimeSinceStartupAsDouble - restartedRealTime;
 	}
 }
