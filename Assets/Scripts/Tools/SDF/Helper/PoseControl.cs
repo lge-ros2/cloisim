@@ -19,6 +19,8 @@ namespace SDF
 
 			private List<UE.Pose> _poseList = new List<UE.Pose>();
 
+			public int Count => _poseList.Count;
+
 			public PoseControl(in UE.Transform target)
 			{
 				_targetTransform = target;

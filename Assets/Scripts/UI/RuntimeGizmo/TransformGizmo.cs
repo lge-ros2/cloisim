@@ -353,7 +353,15 @@ namespace RuntimeGizmos
 									}
 									else
 									{
-										target.Translate(movement, Space.World);
+										var actor = target.GetComponent<SDF.Helper.Actor>();
+										if (actor != null && actor.IsFollowingWaypoint)
+										{
+											actor.AddPose(movement);
+										}
+										else
+										{
+											target.Translate(movement, Space.World);
+										}
 									}
 								}
 
@@ -465,10 +473,15 @@ namespace RuntimeGizmos
 					var hitObject = hitInfo.transform.gameObject;
 
 					var hitParentObject = hitObject.transform.parent?.GetComponentInParent<SDF.Helper.Model>();
+					var hitParentActor = hitObject.transform?.GetComponent<SDF.Helper.Actor>();
 					if (hitParentObject != null && hitParentObject.CompareTag("Model") && hitParentObject.isTopModel)
 					{
 						// Debug.Log(hitParentObject.name + " Selected!!!!");
 						target = hitParentObject.transform;
+					}
+					else if (hitParentActor != null && hitParentActor.CompareTag("Actor"))
+					{
+						target = hitParentActor.transform;
 					}
 					else if (hitObject.tag.Equals("Props"))
 					{

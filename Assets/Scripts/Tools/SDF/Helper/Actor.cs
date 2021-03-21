@@ -35,6 +35,7 @@ namespace SDF
 			private bool _followingWaypoint = false;
 			private UE.Pose nextTargetPose = new UE.Pose();
 
+			public bool IsFollowingWaypoint => _followingWaypoint;
 
 			new void Awake()
 			{
@@ -43,12 +44,9 @@ namespace SDF
 
 			void Start()
 			{
-				if (_script != null)
+				if (_script != null && _script.auto_start && _script.trajectories.Count > 0)
 				{
-					if (_script.auto_start)
-					{
-						StartWaypointFollowing();
-					}
+					StartWaypointFollowing();
 				}
 			}
 
@@ -114,12 +112,27 @@ namespace SDF
 				nextTargetPose.position = newPosition;
 				nextTargetPose.rotation = newRotation;
 
-				var initPose = GetPose();
+				var initPose = GetAllPose();
 				transform.localPosition = initPose.position + nextTargetPose.position;
 				transform.localRotation = nextTargetPose.rotation * initPose.rotation;
 
 				return CurrentActorPose();
 			}
+
+			private UE.Pose GetAllPose()
+			{
+				var totalPose = new UE.Pose(UE.Vector3.zero, UE.Quaternion.identity);
+
+				for (var i = 0; i < GetPoseCount(); i++)
+				{
+					var pose = GetPose(i);
+					totalPose.position += pose.position;
+					totalPose.rotation *= pose.rotation;
+				}
+
+				return totalPose;
+			}
+
 
 			public void SetScript(in SDF.Actor.Script script)
 			{
