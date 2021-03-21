@@ -44,10 +44,10 @@ namespace SDF
 
 				var newCombinedMesh = new UE.Mesh();
 				newCombinedMesh.CombineMeshes(combine, true);
+				newCombinedMesh.Optimize();
 				newCombinedMesh.RecalculateTangents();
 				newCombinedMesh.RecalculateBounds();
 				newCombinedMesh.RecalculateNormals();
-				newCombinedMesh.Optimize();
 
 				return newCombinedMesh;
 			}
