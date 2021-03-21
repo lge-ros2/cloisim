@@ -235,8 +235,9 @@ public class ObjectSpawning : MonoBehaviour
 		var rectScale = rectScaleLabel;
 		rectScale.x += 50;
 		rectScale.width = 40;
-		GUI.skin.label.normal.textColor = Color.white;
 		GUI.SetNextControlName("ScaleField");
+		GUI.skin.textField.normal.textColor = Color.white;
+		GUI.skin.textField.alignment = TextAnchor.MiddleCenter;
 		scaleFactorString = GUI.TextField(rectScale, scaleFactorString, 5);
 
 		if (checkScaleFactorFocused && !GUI.GetNameOfFocusedControl().Equals("ScaleField"))
