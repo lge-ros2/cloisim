@@ -210,6 +210,8 @@ public partial class MeshLoader
 		var meshObject = rootObject.transform.GetChild(1).gameObject;
 		var skinnedMeshRenderer = meshObject.AddComponent<SkinnedMeshRenderer>();
 
+		skinnedMeshRenderer.updateWhenOffscreen = true;
+
 		var rootBoneTransform = rootObject.transform.GetChild(0).GetChild(0);
 		var rootBoneRotation = Quaternion.Euler(0, 0, -90);
 		rootBoneTransform.localRotation *= rootBoneRotation;

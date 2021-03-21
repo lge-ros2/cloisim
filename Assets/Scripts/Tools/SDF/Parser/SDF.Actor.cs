@@ -73,6 +73,8 @@ namespace SDF
 						var waypoint = new Trajectory.Waypoint(nodeItem);
 						waypoints.Add(waypoint);
 					}
+
+					waypoints.Sort((waypointA, waypointB) => waypointA.time.CompareTo(waypointB.time));
 				}
 
 				// Description: Each point in the trajectory.

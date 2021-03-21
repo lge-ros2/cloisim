@@ -49,11 +49,13 @@ namespace SDF
 				var skinnedMeshRenderer = newActorObject.GetComponentInChildren<SkinnedMeshRenderer>();
 
 				var capsuleCollider = newActorObject.AddComponent<CapsuleCollider>();
+
 				var localBound = skinnedMeshRenderer.localBounds;
-				capsuleCollider.center = localBound.extents;
-				capsuleCollider.radius = localBound.extents.magnitude;
-				capsuleCollider.height = localBound.max.y - localBound.min.y;
+				const float sizeRatio = 0.85f;
 				capsuleCollider.direction = 1;
+				capsuleCollider.center = new Vector3(0, localBound.extents.y, 0);
+				capsuleCollider.radius = localBound.center.magnitude * sizeRatio;
+				capsuleCollider.height = (localBound.max.y - localBound.min.y) * sizeRatio;
 
 				return newActorObject as System.Object;
 			}
