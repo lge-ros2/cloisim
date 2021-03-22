@@ -283,7 +283,7 @@ namespace SensorDevices
 			}
 		}
 
-		protected override IEnumerator MainDeviceWorker()
+		protected override IEnumerator DeviceCoroutine()
 		{
 			var sw = new Stopwatch();
 			while (true)

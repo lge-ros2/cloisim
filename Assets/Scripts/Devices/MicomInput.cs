@@ -35,7 +35,7 @@ public class MicomInput : Device
 	{
 	}
 
-	protected override IEnumerator MainDeviceWorker()
+	protected override IEnumerator DeviceCoroutine()
 	{
 		var waitUntil = new WaitUntil(() => GetDataStream().Length > 0);
 

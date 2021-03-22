@@ -73,7 +73,7 @@ public abstract class Device : MonoBehaviour
 
 		OnStart();
 
-		StartCoroutine(MainDeviceWorker());
+		StartCoroutine(DeviceCoroutine());
 
 		if (EnableVisualize)
 		{
@@ -85,7 +85,7 @@ public abstract class Device : MonoBehaviour
 
 	protected abstract void OnStart();
 
-	protected abstract IEnumerator MainDeviceWorker();
+	protected abstract IEnumerator DeviceCoroutine();
 
 	protected abstract IEnumerator OnVisualize();
 

@@ -55,7 +55,7 @@ public class Clock : Device
 		timeInfo.Childrens.Add(realTimeParam);
 	}
 
-	protected override IEnumerator MainDeviceWorker()
+	protected override IEnumerator DeviceCoroutine()
 	{
 		var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 		while (true)

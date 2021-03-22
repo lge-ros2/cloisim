@@ -73,7 +73,7 @@ namespace SensorDevices
 			contacts.Time = new messages.Time();
 		}
 
-		protected override IEnumerator MainDeviceWorker()
+		protected override IEnumerator DeviceCoroutine()
 		{
 			var sw = new Stopwatch();
 			while (true)

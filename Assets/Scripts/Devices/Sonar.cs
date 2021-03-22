@@ -114,7 +114,7 @@ namespace SensorDevices
 			sonarStamped.Sonar.Contact = new messages.Vector3d();
 		}
 
-		protected override IEnumerator MainDeviceWorker()
+		protected override IEnumerator DeviceCoroutine()
 		{
 			var sw = new Stopwatch();
 			while (true)

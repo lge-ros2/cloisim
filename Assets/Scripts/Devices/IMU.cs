@@ -88,7 +88,7 @@ namespace SensorDevices
 			previousLinearVelocity = currentLinearVelocity;
 		}
 
-		protected override IEnumerator MainDeviceWorker()
+		protected override IEnumerator DeviceCoroutine()
 		{
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 			while (true)

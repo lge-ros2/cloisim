@@ -37,7 +37,7 @@ namespace SensorDevices
 			yield return null;
 		}
 
-		protected override IEnumerator MainDeviceWorker()
+		protected override IEnumerator DeviceCoroutine()
 		{
 			var sw = new Stopwatch();
 			while (true)
