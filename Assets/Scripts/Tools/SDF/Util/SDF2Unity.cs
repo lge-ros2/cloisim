@@ -18,26 +18,22 @@ public partial class SDF2Unity
 
 	public static Vector3 GetPosition(in SDF.Vector3<double> value)
 	{
-		return (value == null)? Vector3.zero : GetPosition(value.X, value.Y, value.Z);
+		return (value == null) ? Vector3.zero : GetPosition(value.X, value.Y, value.Z);
 	}
 
 	public static Vector3 GetPosition(in SDF.Vector3<int> value)
 	{
-		return (value == null)? Vector3.zero : GetPosition(value.X, value.Y, value.Z);
+		return (value == null) ? Vector3.zero : GetPosition(value.X, value.Y, value.Z);
 	}
 
 	public static Quaternion GetRotation(in SDF.Quaternion<double> value)
 	{
-		if (value == null)
-		{
-			return Quaternion.identity;
-		}
+		return (value == null) ? Quaternion.identity : GetRotation(value.W, value.X, value.Y, value.Z);
+	}
 
-		var roll = Mathf.Rad2Deg * (float)value.Pitch;
-		var pitch = Mathf.Rad2Deg * -(float)value.Yaw;
-		var yaw = Mathf.Rad2Deg * -(float)value.Roll;
-
-		return Quaternion.Euler(roll, pitch, yaw);
+	public static Quaternion GetRotation(in double w, in double x, in double y, in double z)
+	{
+		return new Quaternion((float)y, (float)-z, (float)-x, (float)w);
 	}
 
 	public static Vector3 GetScale(in SDF.Vector3<double> value)
