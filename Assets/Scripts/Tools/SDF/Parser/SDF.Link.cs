@@ -74,10 +74,6 @@ namespace SDF
 		public Link(XmlNode _node)
 			: base(_node)
 		{
-			if (root != null)
-			{
-				ParseElements();
-			}
 		}
 
 		protected override void ParseElements()
