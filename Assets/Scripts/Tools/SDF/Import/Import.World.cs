@@ -18,10 +18,10 @@ namespace SDF
 				}
 
 				// Debug.Log("Import World");
-				if (world.GuiCameraPose != null)
+				if (world.GUI.camera.Pose != null)
 				{
-					_mainCamera.transform.localPosition = SDF2Unity.GetPosition(world.GuiCameraPose.Pos);
-					_mainCamera.transform.localRotation = SDF2Unity.GetRotation(world.GuiCameraPose.Rot);
+					_mainCamera.transform.localPosition = SDF2Unity.GetPosition(world.GUI.camera.Pose.Pos);
+					_mainCamera.transform.localRotation = SDF2Unity.GetRotation(world.GUI.camera.Pose.Rot);
 				}
 			}
 		}
