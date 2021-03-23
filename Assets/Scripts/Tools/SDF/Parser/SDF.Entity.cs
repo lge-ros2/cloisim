@@ -79,6 +79,8 @@ namespace SDF
 			Type = (attributes["type"] != null) ? attributes["type"].Value : default_type;
 
 			ParsePose();
+
+			ParseElements();
 		}
 
 		public string Name

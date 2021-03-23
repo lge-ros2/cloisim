@@ -59,14 +59,6 @@ namespace SDF
 				public Camera(XmlNode _node)
 				: base(_node, "user_camera")
 				{
-					if (root != null)
-					{
-						ParseElements();
-					}
-				}
-
-				protected override void ParseElements()
-				{
 				}
 			}
 
@@ -100,10 +92,6 @@ namespace SDF
 		public World(XmlNode _node)
 			: base(_node)
 		{
-			if (root != null)
-			{
-				ParseElements();
-			}
 		}
 
 		protected override void ParseElements()

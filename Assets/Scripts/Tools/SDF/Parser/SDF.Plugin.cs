@@ -29,10 +29,6 @@ namespace SDF
 		public Plugin(XmlNode _node)
 			: base(_node)
 		{
-			if (root != null)
-			{
-				ParseElements();
-			}
 		}
 
 		protected override void ParseElements()
