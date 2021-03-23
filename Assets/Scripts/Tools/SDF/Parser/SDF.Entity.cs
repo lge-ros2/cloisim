@@ -69,21 +69,14 @@ namespace SDF
 
 		protected Pose<double> pose = new Pose<double>();
 
-		protected Entity(XmlNode node)
+		protected Entity(XmlNode node, in string default_name = "__default__", in string default_type = "__default__")
 		{
 			// Console.WriteLine("[{0}] Name: {1}, Type: {2}", GetType().Name, name, type);
 			root = node;
 			attributes = root.Attributes;
 
-			if (attributes["name"] != null)
-			{
-				Name = attributes["name"].Value;
-			}
-
-			if (attributes["type"] != null)
-			{
-				Type = attributes["type"].Value;
-			}
+			Name = (attributes["name"] != null) ? attributes["name"].Value : default_name;
+			Type = (attributes["type"] != null) ? attributes["type"].Value : default_type;
 
 			ParsePose();
 		}

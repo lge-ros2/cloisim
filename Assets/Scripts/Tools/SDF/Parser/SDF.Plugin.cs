@@ -17,7 +17,7 @@ namespace SDF
 
 	public class Plugin : Entity
 	{
-		private string filename;
+		private string filename = "__default__";
 
 		public string FileName => filename;
 
