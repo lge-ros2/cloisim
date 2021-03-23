@@ -50,6 +50,7 @@ namespace SDF
 		protected override void ParseElements()
 		{
 			models = new Models(root);
+			actors = new Actors(root);
 			physics = new Physics(root);
 			light = new Light(root);
 			plugins = new Plugins(root);
@@ -74,15 +75,11 @@ namespace SDF
 						// Console.WriteLine(value);
 
 						// x y z roll pitch yaw
-						string[] poseStr = value.Split(' ');
+						var poseStr = value.Split(' ');
 
 						gui_camera_pose = new Pose<double>();
-						gui_camera_pose.Pos.X = Convert.ToDouble(poseStr[0]);
-						gui_camera_pose.Pos.Y = Convert.ToDouble(poseStr[1]);
-						gui_camera_pose.Pos.Z = Convert.ToDouble(poseStr[2]);
-						gui_camera_pose.Rot.Roll = Convert.ToDouble(poseStr[3]);
-						gui_camera_pose.Rot.Pitch = Convert.ToDouble(poseStr[4]);
-						gui_camera_pose.Rot.Yaw = Convert.ToDouble(poseStr[5]);
+						gui_camera_pose.Pos.Set(poseStr[0], poseStr[1], poseStr[2]);
+						gui_camera_pose.Rot.Set(poseStr[3], poseStr[4], poseStr[5]);
 
 						// Console.WriteLine(gui_camera_pose);
 					}
@@ -127,11 +124,6 @@ namespace SDF
 			if (IsValidNode("frame"))
 			{
 				// Console.WriteLine("<frame> tag is NOT supported yet.");
-			}
-
-			if (IsValidNode("actor"))
-			{
-				actors = new Actors(root);
 			}
 
 			if (IsValidNode("road"))
