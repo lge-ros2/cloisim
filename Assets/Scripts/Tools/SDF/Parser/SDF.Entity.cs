@@ -232,7 +232,7 @@ namespace SDF
 
 		protected virtual void ParseElements()
 		{
-			Console.WriteLine("[{0}] Nothing to parse", GetType().Name);
+			// Console.WriteLine("[{0}] Nothing to parse", GetType().Name);
 		}
 	}
 }
