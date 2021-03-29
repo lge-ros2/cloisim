@@ -179,16 +179,26 @@
             <summary>Compare a member to an enum value</summary>
         </member>
         <member name="M:ProtoBuf.Meta.EnumMember.ToString">
-            <summary>See object.ToString</summary>
+            <inheritdoc/>
         </member>
         <member name="M:ProtoBuf.Meta.EnumMember.GetHashCode">
-            <summary>See object.GetHashCode</summary>
+            <inheritdoc/>
         </member>
         <member name="M:ProtoBuf.Meta.EnumMember.Equals(System.Object)">
-            <summary>See object.Equals</summary>
+            <inheritdoc/>
         </member>
         <member name="M:ProtoBuf.Meta.EnumMember.Equals(ProtoBuf.Meta.EnumMember)">
             <summary>Compare two enum-member definitions</summary>
+        </member>
+        <member name="M:ProtoBuf.Meta.EnumMember.op_Equality(ProtoBuf.Meta.EnumMember,ProtoBuf.Meta.EnumMember)">
+            <summary>
+            Indicates whether two values are considered equal.
+            </summary>
+        </member>
+        <member name="M:ProtoBuf.Meta.EnumMember.op_Inequality(ProtoBuf.Meta.EnumMember,ProtoBuf.Meta.EnumMember)">
+            <summary>
+            Indicates whether two values are considered equal.
+            </summary>
         </member>
         <member name="M:ProtoBuf.Meta.EnumMember.Create``1(``0)">
             <summary>
