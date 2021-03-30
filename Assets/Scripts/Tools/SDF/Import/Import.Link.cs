@@ -13,10 +13,12 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia inertia)
+			private UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia  inertia)
 			{
-				UE.Pose inertiaMomentum = UE.Pose.identity;
-				var inertiaVector = new UE.Vector3((float)inertia.iyy, (float)inertia.izz, (float)inertia.ixx);
+				var inertiaMomentum = UE.Pose.identity;
+				var inertiaVector = SDF2Unity.GetScalar((float)inertia.ixx, (float)inertia.iyy, (float)inertia.izz);
+				var inertiaRotationVector = SDF2Unity.GetScalar((float)inertia.ixy, (float)inertia.iyz, (float)inertia.ixz);
+
 				const float minimumInertiaTensor = 1e-6f;
 				for (var index = 0; index < 3; index++)
 				{
@@ -24,10 +26,15 @@ namespace SDF
 					{
 						inertiaVector[index] = minimumInertiaTensor;
 					}
+
+					if (inertiaRotationVector[index] <= minimumInertiaTensor)
+					{
+						inertiaRotationVector[index] = minimumInertiaTensor;
+					}
 				}
 
 				inertiaMomentum.position = inertiaVector;
-				inertiaMomentum.rotation = UE.Quaternion.identity;
+				inertiaMomentum.rotation = UE.Quaternion.Euler(inertiaRotationVector.x, inertiaRotationVector.y, inertiaRotationVector.z);
 
 				return inertiaMomentum;
 			}

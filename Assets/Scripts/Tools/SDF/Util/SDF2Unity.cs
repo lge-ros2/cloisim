@@ -11,6 +11,11 @@ public partial class SDF2Unity
 	private static readonly string commonShaderName = "Standard (Specular setup)";
 	public static Shader commonShader = Shader.Find(commonShaderName);
 
+	public static Vector3 GetScalar(in double x, in double y, in double z)
+	{
+		return new Vector3(Mathf.Abs((float)y), Mathf.Abs((float)z), Mathf.Abs((float)x));
+	}
+
 	public static Vector3 GetPosition(in double x, in double y, in double z)
 	{
 		return new Vector3(-(float)y, (float)z, (float)x);
