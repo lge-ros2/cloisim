@@ -72,7 +72,7 @@ public partial class DeviceHelper
 			msgTime = new messages.Time();
 		}
 
-		var timeNow = (useRealTime) ? GetGlobalClock().GetRealTime() : GetGlobalClock().GetSimTime();
+		var timeNow = (useRealTime) ? GetGlobalClock().RealTime : GetGlobalClock().SimTime;
 		msgTime.Sec = (int)timeNow;
 		msgTime.Nsec = (int)((timeNow - (double)msgTime.Sec) * (double)1e+9);
 	}

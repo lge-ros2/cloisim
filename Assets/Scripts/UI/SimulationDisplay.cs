@@ -74,8 +74,8 @@ public class SimulationDisplay : MonoBehaviour
 
 	private string GetTimeInfoString()
 	{
-		var simTime = (clock == null) ? Time.time : clock.GetSimTime();
-		var realTime = (clock == null) ? Time.realtimeSinceStartup : clock.GetRealTime();
+		var simTime = (clock == null) ? Time.time : clock.SimTime;
+		var realTime = (clock == null) ? Time.realtimeSinceStartup : clock.RealTime;
 
 		var simTs = TimeSpan.FromSeconds(simTime);
 		var realTs = TimeSpan.FromSeconds(realTime);

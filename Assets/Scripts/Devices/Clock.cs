@@ -20,6 +20,9 @@ public class Clock : Device
 	private double restartedSimTime = 0;
 	private double restartedRealTime = 0;
 
+	private double currentSimTime = 0;
+	private double currentRealTime = 0;
+
 	protected override void OnAwake()
 	{
 		deviceName = "World Clock";
@@ -75,19 +78,19 @@ public class Clock : Device
 		}
 	}
 
+	private void Update()
+	{
+		currentSimTime = Time.timeAsDouble - restartedSimTime;
+		currentRealTime = Time.realtimeSinceStartupAsDouble - restartedRealTime;
+	}
+
 	public void ResetTime()
 	{
 		restartedSimTime = Time.timeAsDouble;
 		restartedRealTime = Time.realtimeSinceStartupAsDouble;
 	}
 
-	public double GetSimTime()
-	{
-		return Time.timeAsDouble - restartedSimTime;
-	}
+	public double SimTime => currentSimTime;
 
-	public double GetRealTime()
-	{
-		return Time.realtimeSinceStartupAsDouble - restartedRealTime;
-	}
+	public double RealTime => currentRealTime;
 }
