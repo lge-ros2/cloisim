@@ -55,6 +55,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
+			_mode = Mode.TX;
 			deviceName = name;
 		}
 
@@ -62,28 +63,10 @@ namespace SensorDevices
 		{
 		}
 
-		protected override IEnumerator OnVisualize()
-		{
-			yield return null;
-		}
-
 		protected override void InitializeMessages()
 		{
 			contacts = new messages.Contacts();
 			contacts.Time = new messages.Time();
-		}
-
-		protected override IEnumerator DeviceCoroutine()
-		{
-			var sw = new Stopwatch();
-			while (true)
-			{
-				sw.Restart();
-				GenerateMessage();
-				sw.Stop();
-
-				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
-			}
 		}
 
 		protected override void GenerateMessage()

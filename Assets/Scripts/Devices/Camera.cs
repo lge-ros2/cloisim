@@ -7,7 +7,6 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -26,8 +25,6 @@ namespace SensorDevices
 		protected Transform cameraLink = null;
 
 		protected UnityEngine.Camera cam = null;
-
-		public bool runningDeviceWork = true;
 
 		protected string targetRTname;
 		protected int targetRTdepth;
@@ -48,6 +45,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
+			_mode = Mode.TX;
 			cam = gameObject.AddComponent<UnityEngine.Camera>();
 
 			// for controlling targetDisplay
@@ -65,11 +63,6 @@ namespace SensorDevices
 				SetupCamera();
 				StartCoroutine(CameraWorker());
 			}
-		}
-
-		protected override IEnumerator OnVisualize()
-		{
-			yield return null;
 		}
 
 		protected virtual void SetupTexture()
@@ -225,19 +218,6 @@ namespace SensorDevices
 				}
 
 				yield return waitForSeconds;
-			}
-		}
-
-		protected override IEnumerator DeviceCoroutine()
-		{
-			var sw = new Stopwatch();
-			while (runningDeviceWork)
-			{
-				sw.Restart();
-				GenerateMessage();
-				sw.Stop();
-
-				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
 			}
 		}
 

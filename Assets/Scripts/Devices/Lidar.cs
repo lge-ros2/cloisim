@@ -95,6 +95,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
+			_mode = Mode.TX;
 			lidarLink = transform.parent;
 
 			// store original shadow settings
@@ -279,18 +280,6 @@ namespace SensorDevices
 
 				sw.Stop();
 
-				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
-			}
-		}
-
-		protected override IEnumerator DeviceCoroutine()
-		{
-			var sw = new Stopwatch();
-			while (true)
-			{
-				sw.Restart();
-				GenerateMessage();
-				sw.Stop();
 				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
 			}
 		}

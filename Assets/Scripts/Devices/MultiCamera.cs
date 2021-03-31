@@ -22,6 +22,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
+			_mode = Mode.TX;
 		}
 
 		protected override void OnStart()
@@ -29,24 +30,6 @@ namespace SensorDevices
 			foreach (var camParameters in parameters.list)
 			{
 				AddCamera(camParameters);
-			}
-		}
-
-		protected override IEnumerator OnVisualize()
-		{
-			yield return null;
-		}
-
-		protected override IEnumerator DeviceCoroutine()
-		{
-			var sw = new Stopwatch();
-			while (true)
-			{
-				sw.Restart();
-				GenerateMessage();
-				sw.Stop();
-
-				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
 			}
 		}
 
@@ -88,7 +71,7 @@ namespace SensorDevices
 			newCamTransform.SetParent(this.transform, false);
 
 			var newCam = newCamObject.AddComponent<SensorDevices.Camera>();
-			newCam.runningDeviceWork = false;
+			newCam._mode = Mode.NONE;
 			newCam.deviceName = "MultiCamera::" + parameters.name;
 			newCam.SetDeviceParameter(parameters as SDF.SensorType);
 

@@ -28,6 +28,7 @@ public class MicomInput : Device
 
 	protected override void OnAwake()
 	{
+		_mode = Mode.RX;
 		deviceName = "MicomInput";
 	}
 
@@ -35,22 +36,9 @@ public class MicomInput : Device
 	{
 	}
 
-	protected override IEnumerator DeviceCoroutine()
+	protected override void ProcessDeviceCoroutine()
 	{
-		var waitUntil = new WaitUntil(() => GetDataStream().Length > 0);
-
-		while (true)
-		{
-			yield return waitUntil;
-
-			GenerateMessage();
-			DoWheelDrive();
-		}
-	}
-
-	protected override IEnumerator OnVisualize()
-	{
-		yield return null;
+		DoWheelDrive();
 	}
 
 	protected override void InitializeMessages()

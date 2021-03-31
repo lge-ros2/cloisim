@@ -42,6 +42,7 @@ public partial class MicomSensor : Device
 
 	protected override void OnAwake()
 	{
+		_mode = Mode.TX;
 		deviceName = "MicomSensor";
 	}
 
@@ -171,18 +172,6 @@ public partial class MicomSensor : Device
 		if (imuSensor != null)
 		{
 			SetPartsInitialPose(imuSensor.name, imuSensor.gameObject);
-		}
-	}
-
-	protected override IEnumerator DeviceCoroutine()
-	{
-		var sw = new Stopwatch();
-		while (true)
-		{
-			sw.Restart();
-			GenerateMessage();
-			sw.Stop();
-			yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
 		}
 	}
 
