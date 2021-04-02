@@ -151,7 +151,7 @@ namespace SensorDevices
 				useMipMap = false,
 				useDynamicScale = false,
 				wrapMode = TextureWrapMode.Clamp,
-				filterMode = FilterMode.Bilinear,
+				filterMode = FilterMode.Bilinear
 			};
 
 			cam.targetTexture = targetRT;
@@ -173,51 +173,55 @@ namespace SensorDevices
 
 		private IEnumerator CameraWorker()
 		{
-			var image = imageStamped.Image;
 			var waitForSeconds = new WaitForSeconds(WaitPeriod());
 
 			while (true)
 			{
 				cam.enabled = true;
 
+				// Debug.Log("start render and request ");
 				if (cam.isActiveAndEnabled)
 				{
 					cam.Render();
 				}
-				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, readbackDstFormat);
+				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
 
 				cam.enabled = false;
 
 				yield return null;
-
 				readback.WaitForCompletion();
 
-				if (readback.hasError)
-				{
-					Debug.LogError("Failed to read GPU texture");
-					continue;
-				}
-				// Debug.Assert(request.done);
+				yield return waitForSeconds;
+			}
+		}
 
-				if (readback.done)
-				{
-					camData.SetTextureBufferData(readback.GetData<byte>());
+		protected virtual void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
+		{
+			if (request.hasError)
+			{
+				Debug.LogError("Failed to read GPU texture");
+				return;
+			}
+			// Debug.Assert(request.done);
 
-					if (image.Data.Length == camData.GetImageDataLength())
+			if (request.done)
+			{
+				camData.SetTextureBufferData(request.GetData<byte>());
+				var image = imageStamped.Image;
+				if (image.Data.Length == camData.GetImageDataLength())
+				{
+					var imageData = camData.GetImageData();
+					BufferDepthScaling(ref imageData);
+					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
+					image.Data = imageData;
+
+					if (GetParameters().save_enabled)
 					{
-						// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
-						image.Data = camData.GetImageData();
-
-						if (GetParameters().save_enabled)
-						{
-							var saveName = name + "_" + Time.time;
-							camData.SaveRawImageData(GetParameters().save_path, saveName);
-							// Debug.LogFormat("{0}|{1} captured", GetParameters().save_path, saveName);
-						}
+						var saveName = name + "_" + Time.time;
+						camData.SaveRawImageData(GetParameters().save_path, saveName);
+						// Debug.LogFormat("{0}|{1} captured", GetParameters().save_path, saveName);
 					}
 				}
-
-				yield return waitForSeconds;
 			}
 		}
 

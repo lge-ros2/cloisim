@@ -16,6 +16,8 @@ namespace SensorDevices
 
 		private Material depthMaterial = null;
 
+		public uint depthScale = 1;
+
 		void OnRenderImage(RenderTexture source, RenderTexture destination)
 		{
 			if (depthMaterial)
@@ -75,6 +77,27 @@ namespace SensorDevices
 				default:
 					readbackDstFormat = TextureFormat.RFloat;
 					break;
+			}
+		}
+
+		protected override void BufferDepthScaling(ref byte[] buffer)
+		{
+			if (readbackDstFormat.Equals(TextureFormat.R16))
+			{
+				// Debug.Log("sacling depth buffer");
+				var depthMin = GetParameters().clip.near;
+				var depthMax = GetParameters().clip.far;
+
+ 				for (var i = 0; i < buffer.Length; i += sizeof(ushort))
+				{
+					var depthDataInUInt16 = (ushort)buffer[i] << 8 | (ushort)buffer[i + 1];
+					var depthDataRatio = (double)depthDataInUInt16 / (double)ushort.MaxValue;
+					var scaledDepthData = (ushort)(depthDataRatio * depthMax * (double)depthScale);
+					// Debug.Log( (ushort)buffer[i]<< 8 + "," + buffer[i+1] + "|" + depthDataInUInt16  + " => " + scaledDepthData);
+					// restore scaled depth data
+					buffer[i] = (byte)(scaledDepthData >> 8);
+					buffer[i + 1] = (byte)(scaledDepthData);
+				}
 			}
 		}
 	}
