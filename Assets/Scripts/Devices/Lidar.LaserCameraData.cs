@@ -6,6 +6,7 @@
 
 using UnityEngine;
 using Unity.Collections;
+using Unity.Jobs;
 
 namespace SensorDevices
 {
@@ -13,7 +14,7 @@ namespace SensorDevices
 	{
 		const int colorFormatUnitSize = sizeof(float);
 
-		struct LaserCamData
+		struct LaserCamData : IJobParallelFor
 		{
 			public float maxHAngleHalf;
 			public float maxHAngleHalfTangent;
@@ -106,6 +107,13 @@ namespace SensorDevices
 				// decodedData = (r * 0.0039215686f) + (g * 0.0000153787f) + (b * 0.0000000603f);
 				// decodedData = (r / 255f) + (g / 255f) / 255f + (b / 255f) / 65025f + (a / 255f) / 16581375f;
 				return (r * 0.0039215686f) + (g * 0.0000153787f) + (b * 0.0000000603f) + (a * 0.0000000002f);
+			}
+
+			// The code actually running on the job
+			public void Execute(int i)
+			{
+				// Move the positions based on delta time and velocity
+				position[i] = position[i] + velocity[i] * deltaTime;
 			}
 		}
 	}
