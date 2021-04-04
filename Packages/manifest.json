@@ -2,7 +2,7 @@
   "dependencies": {
     "com.unity.ide.vscode": "1.2.3",
     "com.unity.mathematics": "1.2.1",
-    "com.unity.render-pipelines.core": "10.3.2",
+    "com.unity.render-pipelines.core": "10.4.0",
     "com.unity.searcher": "4.3.2",
     "com.unity.textmeshpro": "3.0.4",
     "com.unity.toolchain.linux-x86_64": "0.1.18-preview",

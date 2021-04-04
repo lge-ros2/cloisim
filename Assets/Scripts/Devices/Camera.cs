@@ -7,7 +7,6 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -26,8 +25,6 @@ namespace SensorDevices
 		protected Transform cameraLink = null;
 
 		protected UnityEngine.Camera cam = null;
-
-		public bool runningDeviceWork = true;
 
 		protected string targetRTname;
 		protected int targetRTdepth;
@@ -48,6 +45,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
+			_mode = Mode.TX;
 			cam = gameObject.AddComponent<UnityEngine.Camera>();
 
 			// for controlling targetDisplay
@@ -65,11 +63,6 @@ namespace SensorDevices
 				SetupCamera();
 				StartCoroutine(CameraWorker());
 			}
-		}
-
-		protected override IEnumerator OnVisualize()
-		{
-			yield return null;
 		}
 
 		protected virtual void SetupTexture()
@@ -158,7 +151,7 @@ namespace SensorDevices
 				useMipMap = false,
 				useDynamicScale = false,
 				wrapMode = TextureWrapMode.Clamp,
-				filterMode = FilterMode.Bilinear,
+				filterMode = FilterMode.Bilinear
 			};
 
 			cam.targetTexture = targetRT;
@@ -180,64 +173,58 @@ namespace SensorDevices
 
 		private IEnumerator CameraWorker()
 		{
-			var image = imageStamped.Image;
 			var waitForSeconds = new WaitForSeconds(WaitPeriod());
 
 			while (true)
 			{
 				cam.enabled = true;
 
+				// Debug.Log("start render and request ");
 				if (cam.isActiveAndEnabled)
 				{
 					cam.Render();
 				}
-				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, readbackDstFormat);
+				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
 
 				cam.enabled = false;
 
 				yield return null;
-
 				readback.WaitForCompletion();
-
-				if (readback.hasError)
-				{
-					Debug.LogError("Failed to read GPU texture");
-					continue;
-				}
-				// Debug.Assert(request.done);
-
-				if (readback.done)
-				{
-					camData.SetTextureBufferData(readback.GetData<byte>());
-
-					if (image.Data.Length == camData.GetImageDataLength())
-					{
-						// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
-						image.Data = camData.GetImageData();
-
-						if (GetParameters().save_enabled)
-						{
-							var saveName = name + "_" + Time.time;
-							camData.SaveRawImageData(GetParameters().save_path, saveName);
-							// Debug.LogFormat("{0}|{1} captured", GetParameters().save_path, saveName);
-						}
-					}
-				}
 
 				yield return waitForSeconds;
 			}
 		}
 
-		protected override IEnumerator MainDeviceWorker()
+		protected virtual void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
 		{
-			var sw = new Stopwatch();
-			while (runningDeviceWork)
+			if (request.hasError)
 			{
-				sw.Restart();
-				GenerateMessage();
-				sw.Stop();
+				Debug.LogError("Failed to read GPU texture");
+				return;
+			}
+			// Debug.Assert(request.done);
 
-				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
+			if (request.done)
+			{
+				camData.SetTextureBufferData(request.GetData<byte>());
+				var image = imageStamped.Image;
+				if (image.Data.Length == camData.GetImageDataLength())
+				{
+					var imageData = camData.GetImageData();
+
+					camData.Dispose();
+
+					BufferDepthScaling(ref imageData);
+					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
+					image.Data = imageData;
+
+					if (GetParameters().save_enabled)
+					{
+						var saveName = name + "_" + Time.time;
+						camData.SaveRawImageData(GetParameters().save_path, saveName);
+						// Debug.LogFormat("{0}|{1} captured", GetParameters().save_path, saveName);
+					}
+				}
 			}
 		}
 

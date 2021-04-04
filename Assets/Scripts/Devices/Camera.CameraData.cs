@@ -154,7 +154,7 @@ namespace SensorDevices
 				cameraImage = new Texture2D(width, height, textureFormat, false, isLinear);
 			}
 
-			public void SetTextureBufferData(in NativeArray<byte> buffer)
+			public void SetTextureBufferData(NativeArray<byte> buffer)
 			{
 				imageBuffer = buffer;
 			}
@@ -177,6 +177,15 @@ namespace SensorDevices
 				var fileName = string.Format("{0}/{1}.png", path, name);
 				System.IO.File.WriteAllBytes(fileName, bytes);
 			}
+
+			public void Dispose()
+			{
+				imageBuffer.Dispose();
+			}
+		}
+
+		protected virtual void BufferDepthScaling(ref byte[] buffer)
+		{
 		}
 	}
 }

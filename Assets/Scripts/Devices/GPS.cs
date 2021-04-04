@@ -28,6 +28,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
+			_mode = Mode.TX;
 			gpsLink = transform.parent;
 			deviceName = name;
 
@@ -47,11 +48,6 @@ namespace SensorDevices
 			previousSensorPosition = gpsLink.position;
 		}
 
-		protected override IEnumerator OnVisualize()
-		{
-			yield return null;
-		}
-
 		void Update()
 		{
 			var positionDiff = gpsLink.position - previousSensorPosition;
@@ -65,20 +61,6 @@ namespace SensorDevices
 			gps = new messages.Gps();
 			gps.Time = new messages.Time();
 			gps.LinkName = deviceName;
-		}
-
-		protected override IEnumerator MainDeviceWorker()
-		{
-			var sw = new Stopwatch();
-
-			while (true)
-			{
-				sw.Restart();
-				GenerateMessage();
-				sw.Stop();
-
-				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
-			}
 		}
 
 		protected override void GenerateMessage()

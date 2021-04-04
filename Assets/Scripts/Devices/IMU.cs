@@ -36,6 +36,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
+			_mode = Mode.TX;
 			deviceName = name;
 			Reset();
 		}
@@ -51,11 +52,6 @@ namespace SensorDevices
 			imuInitialRotation = transform.rotation.eulerAngles;
 			previousImuPosition = transform.position;
 			previousImuRotation = Vector3.zero;
-		}
-
-		protected override IEnumerator OnVisualize()
-		{
-			yield return null;
 		}
 
 		protected override void InitializeMessages()
@@ -86,16 +82,6 @@ namespace SensorDevices
 			previousImuRotation = imuRotation;
 			previousImuPosition = currentPosition;
 			previousLinearVelocity = currentLinearVelocity;
-		}
-
-		protected override IEnumerator MainDeviceWorker()
-		{
-			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
-			while (true)
-			{
-				GenerateMessage();
-				yield return waitForSeconds;
-			}
 		}
 
 		protected override void GenerateMessage()

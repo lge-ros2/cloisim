@@ -7,11 +7,16 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.IO;
+using Stopwatch = System.Diagnostics.Stopwatch;
 using UnityEngine;
 using ProtoBuf;
 
 public abstract class Device : MonoBehaviour
 {
+	public enum Mode { NONE, TX, RX };
+
+	public Mode _mode = Mode.NONE;
+
 	private const int maxQueue = 5;
 
 	private BlockingCollection<MemoryStream> outboundQueue_ = new BlockingCollection<MemoryStream>(maxQueue);
@@ -73,7 +78,21 @@ public abstract class Device : MonoBehaviour
 
 		OnStart();
 
-		StartCoroutine(MainDeviceWorker());
+		switch (_mode)
+		{
+			case Mode.TX:
+				StartCoroutine(DeviceCoroutineTx());
+				break;
+
+			case Mode.RX:
+				StartCoroutine(DeviceCoroutineRx());
+				break;
+
+			case Mode.NONE:
+			default:
+				Debug.LogWarning("Device Mode is None");
+				break;
+		}
 
 		if (EnableVisualize)
 		{
@@ -85,13 +104,39 @@ public abstract class Device : MonoBehaviour
 
 	protected abstract void OnStart();
 
-	protected abstract IEnumerator MainDeviceWorker();
+	protected virtual void ProcessDeviceCoroutine() { }
 
-	protected abstract IEnumerator OnVisualize();
+	protected virtual IEnumerator OnVisualize()
+	{
+		yield return null;
+	}
 
 	protected abstract void InitializeMessages();
 
 	protected abstract void GenerateMessage();
+
+	private IEnumerator DeviceCoroutineTx()
+	{
+		var waitForSeconds = new WaitForSeconds(WaitPeriod());
+		while (true)
+		{
+			ProcessDeviceCoroutine();
+			GenerateMessage();
+			yield return waitForSeconds;
+		}
+	}
+
+	private IEnumerator DeviceCoroutineRx()
+	{
+		var waitUntil = new WaitUntil(() => GetDataStream().Length > 0);
+		while (true)
+		{
+			yield return waitUntil;
+
+			GenerateMessage();
+			ProcessDeviceCoroutine();
+		}
+	}
 
 	protected float WaitPeriod(in float messageGenerationTime = 0)
 	{

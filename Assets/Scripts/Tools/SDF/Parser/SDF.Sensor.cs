@@ -51,10 +51,6 @@ namespace SDF
 		public Sensor(XmlNode node)
 			: base(node)
 		{
-			if (root != null)
-			{
-				ParseElements();
-			}
 		}
 
 		protected override void ParseElements()

@@ -23,10 +23,6 @@ namespace SDF
 		public Light(XmlNode _node)
 			: base(_node)
 		{
-			if (root != null)
-			{
-				ParseElements();
-			}
 		}
 
 
