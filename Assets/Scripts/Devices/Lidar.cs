@@ -319,7 +319,7 @@ namespace SensorDevices
 				{
 					srcBufferOffset = 0;
 					var srcLengthratio = Mathf.Abs((dataStartAngle - laserStartAngle) / dataTotalAngle);
-					copyLength = outputBufferLength - Mathf.FloorToInt(outputBufferLength * srcLengthratio);
+					copyLength = outputBufferLength - Mathf.CeilToInt(outputBufferLength * srcLengthratio);
 					dstBufferOffset = (int)samples - copyLength;
 
 					if (copyLength < 0 || dstBufferOffset < 0)
