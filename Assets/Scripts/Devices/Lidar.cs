@@ -243,7 +243,7 @@ namespace SensorDevices
 			laserEndAngle = (float)angleMax;
 			laserTotalAngle = (float)(angleMax - angleMin);
 
-			waitingPeriodRatio = 0.85f;
+			waitingPeriodRatio = 0.80f;
 		}
 
 		private IEnumerator LaserCameraWorker()
