@@ -211,6 +211,9 @@ namespace SensorDevices
 				if (image.Data.Length == camData.GetImageDataLength())
 				{
 					var imageData = camData.GetImageData();
+
+					camData.Dispose();
+
 					BufferDepthScaling(ref imageData);
 					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
 					image.Data = imageData;
