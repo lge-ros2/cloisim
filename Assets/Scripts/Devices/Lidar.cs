@@ -6,8 +6,9 @@
 
 using System.Collections;
 using System;
-using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine;
+using Unity.Jobs;
 using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 
@@ -41,6 +42,8 @@ namespace SensorDevices
 		[Range(0, 30)]
 		public double verticalAngleMax = 0;
 
+		public const int batchSize = 16;
+
 		[ColorUsage(true)]
 		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.15f);
 
@@ -59,6 +62,7 @@ namespace SensorDevices
 
 		private int numberOfLaserCamData = 0;
 
+		private DepthCamBuffer[] depthCamBuffers;
 		private LaserCamData[] laserCamData;
 
 		private float laserStartAngle;
@@ -118,6 +122,19 @@ namespace SensorDevices
 				SetupLaserCameraData();
 
 				StartCoroutine(LaserCameraWorker());
+			}
+		}
+
+		private void OnDestroy()
+		{
+			// Debug.LogWarning("Destroy");
+			// Important!! Native arrays must be disposed manually.
+			for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
+			{
+				var data = laserCamData[dataIndex];
+				data.DeallocateBuffer();
+				var depthBuffer = depthCamBuffers[dataIndex];
+				depthBuffer.DeallocateDepthBuffer();
 			}
 		}
 
@@ -204,15 +221,20 @@ namespace SensorDevices
 			numberOfLaserCamData = Mathf.CeilToInt(360 / laserCameraRotationAngle);
 
 			laserCamData = new LaserCamData[numberOfLaserCamData];
+			depthCamBuffers = new DepthCamBuffer[numberOfLaserCamData];
 
 			var targetDepthRT = laserCam.targetTexture;
 			for (var index = 0; index < numberOfLaserCamData; index++)
 			{
+				var depthCamBuffer = new DepthCamBuffer();
+				depthCamBuffer.AllocateDepthBuffer(targetDepthRT.width, targetDepthRT.height);
+				depthCamBuffers[index] = depthCamBuffer;
+
 				var data = new LaserCamData();
 				data.angleResolutionH = laserHAngleResolution;
-				data.maxHAngleHalf = laserCameraHFovHalf;
-				data.maxHAngleHalfTangent = Mathf.Tan(laserCameraHFovHalf * Mathf.Deg2Rad);
+				data.SetMaxHorizontalHalfAngle(laserCameraHFovHalf);
 				data.centerAngle = laserCameraRotationAngle * index;
+				data.rangeMax = (float)rangeMax;
 				data.AllocateBuffer(targetDepthRT.width, targetDepthRT.height);
 				laserCamData[index] = data;
 			}
@@ -230,6 +252,7 @@ namespace SensorDevices
 			var readbacks = new AsyncGPUReadbackRequest[numberOfLaserCamData];
 			var sw = new Stopwatch();
 
+			// var targetDepthRT = laserCam.targetTexture;
 			while (true)
 			{
 				sw.Restart();
@@ -268,9 +291,17 @@ namespace SensorDevices
 
 					if (readback.done)
 					{
+						var depthCamBuffer = depthCamBuffers[dataIndex];
+						depthCamBuffer.imageBuffer = readback.GetData<byte>();
+
+						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), batchSize);
+						jobHandleDepthCamBuffer.Complete();
+
 						var data = laserCamData[dataIndex];
-						data.SetBufferData(readback.GetData<byte>());
-						data.ResolveLaserRanges((float)rangeMax);
+						data.depthBuffer = depthCamBuffer.depthBuffer;
+
+						var jobHandle = data.Schedule(data.OutputLength(), batchSize);
+						jobHandle.Complete();
 					}
 					else
 					{
@@ -303,7 +334,7 @@ namespace SensorDevices
 			{
 				doCopy = true;
 				var data = laserCamData[dataIndex];
-				var outputBufferLength = data.output.Length;
+				var outputBufferLength = data.OutputLength();
 				var dataStartAngle = data.StartAngle;
 				var dataEndAngle = data.EndAngle;
 				var dataTotalAngle = data.TotalAngle;
@@ -361,7 +392,8 @@ namespace SensorDevices
 				if (doCopy)
 				{
 					// Store CCW direction for ROS2 sensor data
-					Array.Copy(data.output, srcBufferOffset, laserScan.Ranges, dstBufferOffset, copyLength);
+					var outputs = data.GetOutputs();
+					Array.Copy(outputs, srcBufferOffset, laserScan.Ranges, dstBufferOffset, copyLength);
 				}
 			}
 

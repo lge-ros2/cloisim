@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
 using UnityEngine;
 using Unity.Collections;
 using Unity.Jobs;
@@ -14,81 +15,46 @@ namespace SensorDevices
 	{
 		const int colorFormatUnitSize = sizeof(float);
 
-		struct LaserCamData : IJobParallelFor
+		struct DepthCamBuffer : IJobParallelFor
 		{
-			public float maxHAngleHalf;
-			public float maxHAngleHalfTangent;
-			public float angleResolutionH;
-			public float centerAngle;
-
 			private int imageWidth;
 			private int imageHeight;
 
-			private NativeArray<byte> imageBuffer;
+			[ReadOnly]
+			public NativeArray<byte> imageBuffer;
 
-			public double[] output;
+			public NativeArray<float> depthBuffer;
 
-			public float StartAngle => centerAngle - maxHAngleHalf;
-			public float EndAngle => centerAngle + maxHAngleHalf;
-			public float TotalAngle => EndAngle - StartAngle;
-
-			public void AllocateBuffer(in int width, in int height)
+			public void AllocateDepthBuffer(in int width, in int height)
 			{
 				imageWidth = width;
 				imageHeight = height;
 
-				output = new double[imageWidth];
-				// TODO: vertical ray
-				// output = new double[imageWidth * imageHeight];
+				var dataLength = imageWidth * imageHeight;
+				depthBuffer = new NativeArray<float>(dataLength, Allocator.Persistent);
 			}
 
-			public void SetBufferData(in NativeArray<byte> buffer)
+			public void DeallocateDepthBuffer()
 			{
-				imageBuffer = buffer;
+				depthBuffer.Dispose();
 			}
 
-			public void ResolveLaserRanges(in float rangeMax = 1.0f)
+			public int Length()
 			{
-				for (var index = 0; index < output.Length; index++)
+				return depthBuffer.Length;
+			}
+
+			public void Execute(int i)
+			{
+				depthBuffer[i] = GetDecodedData(i);
+			}
+
+			private float GetDecodedData(in int index)
+			{
+				var imageOffset = index * colorFormatUnitSize;
+				if (imageBuffer != null && imageOffset < imageBuffer.Length)
 				{
-					var rayAngleH = angleResolutionH * index;
-					var depthData = GetDepthData(rayAngleH);
-					var rayDistance = (depthData > 0) ? depthData * rangeMax : Mathf.Infinity;
-
-					// CCW for ROS2 message direction
-					var ccwIndex = output.Length - index - 1;
-					output[ccwIndex] = rayDistance;
-				}
-			}
-
-			private float GetDepthData(in float horizontalAngle, in float verticalAngle = 0)
-			{
-				var horizontalAngleInCamData = (horizontalAngle - maxHAngleHalf) * Mathf.Deg2Rad;
-				var verticalAngleInCamData = verticalAngle * Mathf.Deg2Rad;
-
-				var offsetX = (imageWidth * 0.5f) * (1f + Mathf.Tan(horizontalAngleInCamData)/maxHAngleHalfTangent);
-				var offsetY = (imageHeight * 0.5f) * (1f + Mathf.Tan(verticalAngleInCamData)/maxHAngleHalfTangent);
-
-				var decodedData = GetDecodedData((int)offsetX, (int)offsetY);
-
-				// Compensate distance
-				var compensateScale = (1f / Mathf.Cos(horizontalAngleInCamData));
-				var finalDepthData = decodedData * compensateScale;
-
-				// Cutoff
-				return (finalDepthData > 1.0f) ? 1.0f : finalDepthData;
-			}
-
-			private float GetDecodedData(in int pixelOffsetX, in int pixelOffsetY)
-			{
-				if (imageBuffer != null && imageBuffer.Length > 0)
-				{
-					// Decode
-					var imageOffsetX = colorFormatUnitSize * pixelOffsetX;
-					var imageOffsetY = colorFormatUnitSize * imageWidth * pixelOffsetY;
-					var imageOffset = imageOffsetY + imageOffsetX;
-
-					var r = imageBuffer[imageOffset + 0];
+					var r = imageBuffer[imageOffset];
 					var g = imageBuffer[imageOffset + 1];
 					var b = imageBuffer[imageOffset + 2];
 					var a = imageBuffer[imageOffset + 3];
@@ -108,12 +74,105 @@ namespace SensorDevices
 				// decodedData = (r / 255f) + (g / 255f) / 255f + (b / 255f) / 65025f + (a / 255f) / 16581375f;
 				return (r * 0.0039215686f) + (g * 0.0000153787f) + (b * 0.0000000603f) + (a * 0.0000000002f);
 			}
+		}
+
+		struct LaserCamData : IJobParallelFor
+		{
+			private float maxHAngleHalf;
+			private float maxHAngleHalfTangent;
+			public float angleResolutionH;
+			public float centerAngle;
+			public float rangeMax;
+
+			private int horizontalBufferLength;
+			private int verticalBufferLength;
+
+			[ReadOnly]
+			public NativeArray<float> depthBuffer;
+
+			private NativeArray<double> laserDataOutput;
+
+			public float StartAngle => centerAngle - maxHAngleHalf;
+			public float EndAngle => centerAngle + maxHAngleHalf;
+			public float TotalAngle => EndAngle - StartAngle;
+
+			public void AllocateBuffer(in int bufferWidth, in int bufferHeight)
+			{
+				horizontalBufferLength = bufferWidth;
+				verticalBufferLength = bufferHeight;
+
+				// TODO: vertical ray
+				var dataLength = horizontalBufferLength; //* verticalBufferLength;
+				laserDataOutput = new NativeArray<double>(dataLength, Allocator.Persistent);
+			}
+
+			public void DeallocateBuffer()
+			{
+				laserDataOutput.Dispose();
+			}
+
+			public int OutputLength()
+			{
+				return laserDataOutput.Length;
+			}
+
+			public void SetMaxHorizontalHalfAngle(in float angle)
+			{
+				maxHAngleHalf = angle;
+				maxHAngleHalfTangent = Mathf.Tan(maxHAngleHalf * Mathf.Deg2Rad);
+			}
+
+			private float GetDepthRange(in int offsetX, in int offsetY)
+			{
+				var bufferOffset = (horizontalBufferLength * offsetY) + offsetX;
+				return depthBuffer[bufferOffset];
+			}
+
+			private float GetDepthData(in float horizontalAngle, in float verticalAngle = 0)
+			{
+				var horizontalAngleInCamData = (horizontalAngle - maxHAngleHalf) * Mathf.Deg2Rad;
+				var verticalAngleInCamData = verticalAngle * Mathf.Deg2Rad;
+
+				var offsetX = Mathf.FloorToInt((horizontalBufferLength * 0.5f) * (1f + Mathf.Tan(horizontalAngleInCamData)/maxHAngleHalfTangent));
+				var offsetY = Mathf.FloorToInt((verticalBufferLength * 0.5f) * (1f + Mathf.Tan(verticalAngleInCamData)/maxHAngleHalfTangent));
+
+				var depthRange = GetDepthRange(offsetX, offsetY);
+
+				// Compensate distance
+				var compensateScale = (1f / Mathf.Cos(horizontalAngleInCamData));
+				var finalDepthData = depthRange * compensateScale;
+
+				// Cutoff
+				return (finalDepthData > 1.0f) ? 1.0f : finalDepthData;
+			}
+
+			private void ResolveLaserRange(in int index)
+			{
+				if (index >= OutputLength())
+				{
+					Debug.Log("index exceeded range " + index + " / " + OutputLength());
+					return;
+				}
+
+				var rayAngleH = angleResolutionH * index;
+				var depthData = GetDepthData(rayAngleH);
+				var rayDistance = (depthData > 0) ? depthData * rangeMax : Mathf.Infinity;
+
+				laserDataOutput[index] = (double)rayDistance;
+			}
 
 			// The code actually running on the job
 			public void Execute(int i)
 			{
-				// Move the positions based on delta time and velocity
-				position[i] = position[i] + velocity[i] * deltaTime;
+				ResolveLaserRange(i);
+			}
+
+			public double[] GetOutputs()
+			{
+				var outputArray = laserDataOutput.ToArray();
+				// CCW for ROS2 message direction
+				Array.Reverse(outputArray);
+				return outputArray;
 			}
 		}
 	}
