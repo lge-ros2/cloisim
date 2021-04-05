@@ -24,23 +24,25 @@ The current release includes the features only for a 2-wheeled mobile robot with
 Other sensor models are work in progress.
 Here is the full list of models that is implemented or planned to be implemented.
 
-- [X] 2D LiDAR Sensor
-- [X] 2-Wheeled Motor
-- [X] Sonar sensor
-- [X] IMU
-- [X] Contact
-- [X] Camera
-  - [ ] Camera intrinsic parameter
-- [X] Multi-camera
-- [X] GPS sensor
-- [X] Depth Camera
-  - [ ] Point Cloud message
-- [X] RealSense (RGB + IR1 + IR2 + Depth)
-- [ ] 3D Lidar Sensor
-- [ ] Sensor noise models
-- [ ] Physics
-  - [ ] Support all physics parameters in SDF specification
-  - [X] Support `<Joint type="revolute2">`
+- [X] Driving models
+  - [X] 2-Wheeled Motor
+- [X] Sensor models
+  - [X] 2D LiDAR Sensor
+  - [X] Sonar sensor
+  - [X] IMU
+  - [X] Contact
+  - [X] Camera
+    - [ ] Camera intrinsic parameter
+  - [X] Depth Camera
+  - [X] Multi-camera
+  - [X] RealSense (RGB + IR1 + IR2 + Depth)
+  - [X] GPS sensor
+  - [ ] 3D Lidar Sensor
+    - [ ] Point Cloud message
+  - [ ] Sensor noise models
+  - [ ] Physics
+    - [ ] Support all physics parameters in SDF specification
+    - [X] Support `<Joint type="revolute2">`
 - [X] Worlds
   - [X] Actors
     - [ ] interpolate_x in `<animation>`
