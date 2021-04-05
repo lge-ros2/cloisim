@@ -41,11 +41,14 @@ Here is the full list of models that is implemented or planned to be implemented
 - [ ] Physics
   - [ ] Support all physics parameters in SDF specification
   - [X] Support `<Joint type="revolute2">`
-- [X] Actors
-  - [ ] interpolate_x in `<animation>`
+- [X] Worlds
+  - [X] Actors
+    - [ ] interpolate_x in `<animation>`
+  - [X] Lights
+  - [X] Spherical Coordinates
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
-It does not support optional elmenets like `<lights>`, `<audio>`, `<state>`.
+It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<road>`, `<population>`.
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material' and 'STL(.stl)'.
 
