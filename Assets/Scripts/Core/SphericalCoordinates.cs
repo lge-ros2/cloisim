@@ -25,7 +25,8 @@ public class SphericalCoordinates : MonoBehaviour
 
 	public enum SurfaceType { EARTH_WGS84 };
 
-	public enum CoordinateType {
+	public enum CoordinateType
+	{
 		SPHERICAL = 1, // Latitude, Longitude and Altitude by SurfaceType
 		ECEF = 2, // Earth centered, earth fixed Cartesian
 		GLOBAL = 3, // Local tangent plane (East, North, Up)
@@ -50,13 +51,6 @@ public class SphericalCoordinates : MonoBehaviour
 	// Second eccentricity ellipse parameter
 	private float ellP;
 
-	public SurfaceType surfaceType;
-
-	public float latitudeReference = 0; // in degree
-	public float longitudeReference = 0; // in degree
-	public float elevationReference = 0; // in degree
-	public float headingOffset = 0; // in degree
-
 	// ECEF (earth-centered, earth-fixed)
 	private Matrix4x4 matrixECEFToGlobal;
 	private Matrix4x4 matrixGlobalToECEF;
@@ -65,6 +59,13 @@ public class SphericalCoordinates : MonoBehaviour
 	private float sinHea;
 
 	private Vector3 origin; // It is ECEF coordinates
+
+	public SurfaceType surfaceType;
+
+	public float latitudeReference = 0; // in degree
+	public float longitudeReference = 0; // in degree
+	public float elevationReference = 0; // in degree
+	public float headingOffset = 0; // in degree
 
 	void Awake()
 	{
