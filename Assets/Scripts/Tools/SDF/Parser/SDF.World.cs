@@ -69,7 +69,7 @@ namespace SDF
 			private Plugins plugins;
 		}
 
-		private class SphericalCoordinates
+		public class SphericalCoordinates
 		{
 			// Description: Name of planetary surface model, used to determine the surface altitude at a given latitude and longitude. The default is an ellipsoid model of the earth based on the WGS-84 standard. It is used in Gazebo's GPS sensor implementation.
 			public string surface_model = "EARTH_WGS84";
@@ -98,7 +98,7 @@ namespace SDF
 		// <magnetic_field> : TBD
 		// <atmosphere> : TBD
 
-		private Gui gui = null;
+		public Gui gui = null;
 
 		private Physics physics = null;
 
@@ -113,7 +113,7 @@ namespace SDF
 
 		// <road> : TBD
 
-		private SphericalCoordinates spherical_coordinates = null;
+		public SphericalCoordinates spherical_coordinates = null;
 
 		// <state> : TBD
 		// <population> : TBD
@@ -262,6 +262,9 @@ namespace SDF
 			return actors.GetData();
 		}
 
-		public Gui GUI => gui;
+		public List<Light> GetLights()
+		{
+			return lights.GetData();
+		}
 	}
 }

@@ -52,7 +52,7 @@ namespace SDF
 
 		public Attenuation attenuation = null;
 
-		private Vector3<int> direction = new Vector3<int>();
+		private Vector3<double> direction = new Vector3<double>();
 
 		private Spot spot = null;
 
