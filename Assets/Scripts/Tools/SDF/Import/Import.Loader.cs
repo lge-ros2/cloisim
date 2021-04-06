@@ -15,19 +15,10 @@ namespace SDF
 		public partial class Loader : Base
 		{
 			private UE.GameObject _rootObject = null;
-			private UE.Camera _mainCamera = null;
 
 			public Loader(UE.GameObject rootObject)
 			{
 				_rootObject = rootObject;
-			}
-
-			public void SetMainCamera(in UE.Camera camera)
-			{
-				if (_mainCamera == null)
-				{
-					_mainCamera = camera;
-				}
 			}
 
 			private void SetParentObject(UE.GameObject childObject, UE.GameObject parentObject)

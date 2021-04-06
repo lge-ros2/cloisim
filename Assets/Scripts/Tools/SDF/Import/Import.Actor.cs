@@ -12,7 +12,7 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportActor(in SDF.Actor actor)
+			protected override System.Object ImportActor(in Actor actor)
 			{
 				if (actor == null)
 				{

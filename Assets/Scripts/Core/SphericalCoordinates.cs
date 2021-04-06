@@ -60,12 +60,14 @@ public class SphericalCoordinates : MonoBehaviour
 
 	private Vector3 origin; // It is ECEF coordinates
 
-	public SurfaceType surfaceType;
+	private SurfaceType surfaceType;
 
-	public float latitudeReference = 0; // in degree
-	public float longitudeReference = 0; // in degree
-	public float elevationReference = 0; // in degree
-	public float headingOffset = 0; // in degree
+	private float latitudeReference = 0; // in degree
+	private float longitudeReference = 0; // in degree
+	private float elevationReference = 0; // in meters
+	private float headingOffset = 0; // in degree
+
+	public SurfaceType Surface_Type => surfaceType;
 
 	void Awake()
 	{
@@ -119,7 +121,6 @@ public class SphericalCoordinates : MonoBehaviour
 		sinHea = Mathf.Sin(headingOffset * Mathf.Deg2Rad);
 
 		// Cache the ECEF coordinate of the origin
-		// origin.Set(latitudeReference * Mathf.Deg2Rad, elevationReference, longitudeReference * Mathf.Deg2Rad);
 		origin.Set(latitudeReference * Mathf.Deg2Rad, longitudeReference * Mathf.Deg2Rad, elevationReference);
 		origin = PositionTransform(origin, CoordinateType.SPHERICAL, CoordinateType.ECEF);
 	}
@@ -256,7 +257,7 @@ public class SphericalCoordinates : MonoBehaviour
 		return tmpPosition;
 	}
 
-	// /// Based on Haversine formula (http://en.wikipedia.org/wiki/Haversine_formula).
+	// Based on Haversine formula (http://en.wikipedia.org/wiki/Haversine_formula).
 	// float Distance(in Angle _latA, in Angle _lonA, in Angle _latB, in Angle _lonB)
 	// {
 	// 	Angle dLat = _latB - _latA;
@@ -338,42 +339,13 @@ public class SphericalCoordinates : MonoBehaviour
 		return tmpVelocity;
 	}
 
-	public void SetCoordinatesReference(in float latitudeAngle, in float longitudeAngle, in float elevationAngle, in float headingAngle)
+	public void SetCoordinatesReference(in float latitudeAngle, in float longitudeAngle, in float elevation, in float headingAngle)
 	{
 		// Set the coordinate transform parameters in degree
 		latitudeReference = latitudeAngle;
 		longitudeReference = longitudeAngle;
-		elevationReference = elevationAngle;
-		headingOffset = headingAngle;
-
-		UpdateTransformation();
-	}
-
-	public void SetLatitudeReference(in float angle)
-	{
-		latitudeReference = angle;
-
-		UpdateTransformation();
-	}
-
-
-	public void SetLongitudeReference(in float angle)
-	{
-		longitudeReference = angle;
-
-		UpdateTransformation();
-	}
-
-	public void SetElevationReference(in float elevation)
-	{
 		elevationReference = elevation;
-
-		UpdateTransformation();
-	}
-
-	public void SetHeadingOffset(in float angle)
-	{
-		headingOffset = angle;
+		headingOffset = headingAngle;
 
 		UpdateTransformation();
 	}
@@ -383,6 +355,7 @@ public class SphericalCoordinates : MonoBehaviour
 		var convertedXYZ = ToECEF(xyz);
 		convertedXYZ.x *= Mathf.Deg2Rad;
 		convertedXYZ.y *= Mathf.Deg2Rad;
+
 		var result = PositionTransform(convertedXYZ, CoordinateType.LOCAL, CoordinateType.SPHERICAL);
 		result.x *= Mathf.Rad2Deg;
 		result.y *= Mathf.Rad2Deg;
@@ -395,6 +368,7 @@ public class SphericalCoordinates : MonoBehaviour
 		var convertedXYZ = ToECEF(xyz);
 		convertedXYZ.x *= Mathf.Deg2Rad;
 		convertedXYZ.y *= Mathf.Deg2Rad;
+
 		var result = PositionTransform(convertedXYZ, CoordinateType.SPHERICAL, CoordinateType.LOCAL);
 		result.x *= Mathf.Rad2Deg;
 		result.y *= Mathf.Rad2Deg;

@@ -10,22 +10,40 @@ using messages = cloisim.msgs;
 
 public partial class DeviceHelper
 {
-	private static Clock clock = null;
+	private static Clock _clock = null;
+
+	private static SphericalCoordinates _sphericalCoordinates = null;
 
 	public static Clock GetGlobalClock()
 	{
-		if (clock == null)
+		if (_clock == null)
 		{
 			var coreObject = GameObject.Find("Core");
-			clock = coreObject?.GetComponent<Clock>();
+			_clock = coreObject?.GetComponent<Clock>();
 
-			if (clock == null)
+			if (_clock == null)
 			{
-				clock = coreObject.AddComponent<Clock>();
+				_clock = coreObject.AddComponent<Clock>();
 			}
 		}
 
-		return clock;
+		return _clock;
+	}
+
+	public static SphericalCoordinates GetSphericalCoordinates()
+	{
+		if (_sphericalCoordinates == null)
+		{
+			var coreObject = GameObject.Find("Core");
+			_sphericalCoordinates = coreObject?.GetComponent<SphericalCoordinates>();
+
+			if (_sphericalCoordinates == null)
+			{
+				_sphericalCoordinates = coreObject.AddComponent<SphericalCoordinates>();
+			}
+		}
+
+		return _sphericalCoordinates;
 	}
 
 	public static string GetModelName(in GameObject targetObject, in bool searchOnlyOneDepth = false)

@@ -29,6 +29,15 @@ namespace SDF
 					}
 				}
 
+				if (world.spherical_coordinates != null)
+				{
+					var sphericalCoordinates = DeviceHelper.GetSphericalCoordinates();
+
+					var sphericalReference = world.spherical_coordinates;
+
+					sphericalCoordinates.SetCoordinatesReference((float)sphericalReference.latitude_deg, (float)sphericalReference.longitude_deg, (float)sphericalReference.elevation, (float)sphericalReference.heading_deg);
+				}
+
 				if (world.GetLights().Count > 0)
 				{
 					ImportLights(world.GetLights());
