@@ -174,7 +174,9 @@ public class Main: MonoBehaviour
 		{
 			yield return new WaitForSeconds(0.001f);
 
-			var loader = new SDF.Import.Loader(modelsRoot);
+			var loader = new SDF.Import.Loader();
+			loader.SetRootModels(modelsRoot);
+			loader.SetRootLights(lightsRoot);
 			loader.StartImport(sdf.World());
 
 			// for GUI

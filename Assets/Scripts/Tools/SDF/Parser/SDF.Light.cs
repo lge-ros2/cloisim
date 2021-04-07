@@ -46,15 +46,15 @@ namespace SDF
 			public double falloff = 0;
 		}
 
-		private bool cast_shadow = false;
+		public bool cast_shadow = false;
 		public Color diffuse = new Color(1, 1, 1, 1);
 		public Color specular = new Color(0.1, 0.1, 0.1, 1.0);
 
 		public Attenuation attenuation = null;
 
-		private Vector3<double> direction = new Vector3<double>();
+		public Vector3<double> direction = new Vector3<double>();
 
-		private Spot spot = null;
+		public Spot spot = null;
 
 		// attributes: name
 		// Description: A unique name for the light.
