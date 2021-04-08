@@ -116,7 +116,7 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 
 - ***./run.sh cloisim.world***
 
-#### Run cloisim_ros after running 'CLOiSim'
+#### Run 'cloisim_ros' after running CLOiSim
 
 - *'[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' You need to run this package in order to publish sensor data in ROS2.*
 
