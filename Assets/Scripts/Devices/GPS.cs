@@ -66,21 +66,23 @@ namespace SensorDevices
 			// TODO: Applying noise
 
 			// Convert to global frames
-			spherical = sphericalCoordinates.SphericalFromLocal(worldPosition);
+			var convertedPosition = DeviceHelper.Convert.Position(worldPosition);
+			spherical = sphericalCoordinates.SphericalFromLocal(convertedPosition);
 
-			gps.LatitudeDeg = spherical.z;
-			gps.LongitudeDeg = -spherical.x;
-			gps.Altitude = spherical.y;
+			gps.LatitudeDeg = spherical.x;
+			gps.LongitudeDeg = spherical.y;
+			gps.Altitude = spherical.z;
 
 			// Convert to global frame
-			gpsVelocity = sphericalCoordinates.GlobalFromLocal(sensorVelocity);
+			var convertedVelocity = DeviceHelper.Convert.Position(sensorVelocity);
+			gpsVelocity = sphericalCoordinates.GlobalFromLocal(convertedVelocity);
 
 			// Apply noise after converting to global frame
 			// TODO: Applying noise
 
-			gps.VelocityEast = gpsVelocity.z;
-			gps.VelocityNorth = -gpsVelocity.x;
-			gps.VelocityUp = gpsVelocity.y;
+			gps.VelocityEast = gpsVelocity.x;
+			gps.VelocityNorth = gpsVelocity.y;
+			gps.VelocityUp = gpsVelocity.z;
 
 			PushData<messages.Gps>(gps);
 		}

@@ -101,10 +101,11 @@ public partial class DeviceHelper
 		{
 			vector3d = new messages.Vector3d();
 		}
+		var converted = Convert.Position(position);
 
-		vector3d.X = position.z;
-		vector3d.Y = -position.x;
-		vector3d.Z = position.y;
+		vector3d.X = converted.x;
+		vector3d.Y = converted.y;
+		vector3d.Z = converted.z;
 	}
 
 	public static void SetQuaternion(messages.Quaternion quaternion, in Quaternion rotation)
@@ -128,5 +129,16 @@ public partial class DeviceHelper
 	public static bool IsSamePosition(in Vector3 A, in Vector3 B)
 	{
 		return (Vector3.SqrMagnitude(A - B) <= Vector3.kEpsilon) ? true : false;
+	}
+
+	public static class Convert
+	{
+		/// <summary>
+		/// Convert to right handed coordinates
+		/// </summary>
+		public static Vector3 Position(in Vector3 position)
+		{
+			return new Vector3(position.z, -position.x, position.y);
+		}
 	}
 }

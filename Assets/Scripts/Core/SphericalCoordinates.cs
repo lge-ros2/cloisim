@@ -270,6 +270,8 @@ public class SphericalCoordinates : MonoBehaviour
 	// }
 
 	//
+	// <summary>based on right handed system</summary>
+	//
 	// Parameters:
 	//    velocity: ECEF x, y, z in radian,
 	//
@@ -350,6 +352,7 @@ public class SphericalCoordinates : MonoBehaviour
 		UpdateTransformation();
 	}
 
+	/// <summary>based on right handed system</summary>
 	public Vector3 SphericalFromLocal(in Vector3 xyz)
 	{
 		var convertedXYZ = ToECEF(xyz);
@@ -363,6 +366,7 @@ public class SphericalCoordinates : MonoBehaviour
 		return result;
 	}
 
+	/// <summary>based on right handed system</summary>
 	public Vector3 LocalFromSpherical(in Vector3 xyz)
 	{
 		var convertedXYZ = ToECEF(xyz);
@@ -376,11 +380,13 @@ public class SphericalCoordinates : MonoBehaviour
 		return result;
 	}
 
+	/// <summary>based on right handed system</summary>
 	public Vector3 GlobalFromLocal(in Vector3 xyz)
 	{
 		return VelocityTransform(ToECEF(xyz), CoordinateType.LOCAL, CoordinateType.GLOBAL);
 	}
 
+	/// <summary>based on right handed system</summary>
 	public Vector3 LocalFromGlobal(in Vector3 xyz)
 	{
 		return VelocityTransform(ToECEF(xyz), CoordinateType.GLOBAL, CoordinateType.LOCAL);
@@ -388,8 +394,6 @@ public class SphericalCoordinates : MonoBehaviour
 
 	private Vector3 ToECEF(in Vector3 xyz)
 	{
-		var ecef = xyz;
-		ecef.Set(xyz.x, xyz.z, xyz.y);
-		return ecef;
+		return new Vector3(xyz.x, xyz.z, xyz.y);
 	}
 }
