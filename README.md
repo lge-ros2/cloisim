@@ -118,11 +118,11 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 
 #### Run 'cloisim_ros' after running CLOiSim
 
-- *'[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' You need to run this package in order to publish sensor data in ROS2.*
+- *You need to run this package in order to publish sensor data in ROS2.*
 
 - *Run bringup node in '[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' ros2 packages*
 
-- And that's it. *Have fun!!!*
+- That's it. *Have fun!!!*
 
 #### Debugging log
 
