@@ -104,6 +104,7 @@ export CLOISIM_FILES_PATH="/home/Unity/cloisim/sample_resources/media"
 export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample_resources/models"
 export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample_resources/worlds"
 ```
+You can find the sample resources [here](https://github.com/lge-ros2/sample_resources)
 
 Run CLOiSim
 
@@ -115,13 +116,13 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 
 - ***./run.sh cloisim.world***
 
-#### After run 'CLOiSim'
+#### Run cloisim_ros after running 'CLOiSim'
 
 - *'[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' You need to run this package in order to publish sensor data in ROS2.*
 
 - *Run bringup node in '[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' ros2 packages*
 
-- And *have fun!!!*
+- And that's it. *Have fun!!!*
 
 #### Debugging log
 
