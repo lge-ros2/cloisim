@@ -47,6 +47,7 @@ Here is the full list of models that is implemented or planned to be implemented
   - [X] Actors
     - [ ] interpolate_x in `<animation>`
   - [X] Lights
+    - [ ] supporting `<specular>`, `<attenuation/linear>`, `<attenuation/contant>`, `<attenuation/quadratic>`, `<spot/falloff>`
   - [X] Spherical Coordinates
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
