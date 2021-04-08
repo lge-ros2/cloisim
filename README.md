@@ -4,7 +4,7 @@
 
 Happy to announce CLOiSim. It is a new multi-robot simulator that uses an [SDF](www.sdformat.org) file containing 3d world environemnts and robot descriptions.
 
-The simulator is based on Unity 3D. It may look similar to Gazebo, where, unfortunately, we encountered performance problems while loading multiple robots equipped with multiple sensors.
+The simulator is based on Unity 3D. It may look similar to Gazebo, where, unfortunately, we encountered performance problems while loading multiple robots equipped with multiple sensors. Hence, CLOiSim.
 
 This project consists of
 
@@ -117,7 +117,7 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 
 #### After run 'CLOiSim'
 
-- *'[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' ros2 packages for transporting sensor data are required.*
+- *'[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' You need to run this package in order to publish sensor data in ROS2.*
 
 - *Run bringup node in '[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' ros2 packages*
 
