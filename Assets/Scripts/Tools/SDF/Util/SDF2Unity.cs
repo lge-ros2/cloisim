@@ -70,6 +70,11 @@ public partial class SDF2Unity
 		return GetPosition(axis);
 	}
 
+	public static Vector3 GetDirection(SDF.Vector3<double> direction)
+	{
+		return GetPosition(direction);
+	}
+
 	public static bool CheckTopModel(in GameObject targetObject)
 	{
 		return CheckTopModel(targetObject.transform);
