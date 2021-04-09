@@ -24,28 +24,34 @@ The current release includes the features only for a 2-wheeled mobile robot with
 Other sensor models are work in progress.
 Here is the full list of models that is implemented or planned to be implemented.
 
-- [X] 2D LiDAR Sensor
-- [X] 2-Wheeled Motor
-- [X] Sonar sensor
-- [X] IMU
-- [X] Contact
-- [X] Camera
-  - [ ] Camera intrinsic parameter
-- [X] Multi-camera
-- [X] GPS sensor
-- [X] Depth Camera
-  - [ ] Point Cloud message
-- [X] RealSense (RGB + IR1 + IR2 + Depth)
-- [ ] 3D Lidar Sensor
-- [ ] Sensor noise models
-- [ ] Physics
-  - [ ] Support all physics parameters in SDF specification
-  - [X] Support `<Joint type="revolute2">`
-- [X] Actors
-  - [ ] interpolate_x in `<animation>`
+- [X] Driving models
+  - [X] 2-Wheeled Motor
+- [X] Sensor models
+  - [X] 2D LiDAR Sensor
+  - [X] Sonar sensor
+  - [X] IMU
+  - [X] Contact
+  - [X] Camera
+    - [ ] Camera intrinsic parameter
+  - [X] Depth Camera
+  - [X] Multi-camera
+  - [X] RealSense (RGB + IR1 + IR2 + Depth)
+  - [X] GPS sensor
+  - [ ] 3D Lidar Sensor
+    - [ ] Point Cloud message
+  - [ ] Sensor noise models
+  - [ ] Physics
+    - [ ] Support all physics parameters in SDF specification
+    - [X] Support `<Joint type="revolute2">`
+- [X] Worlds
+  - [X] Actors
+    - [ ] interpolate_x in `<animation>`
+  - [X] Lights
+    - [ ] supporting `<specular>`, `<attenuation/linear>`, `<attenuation/contant>`, `<attenuation/quadratic>`, `<spot/falloff>`
+  - [X] Spherical Coordinates
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
-It does not support optional elmenets like `<lights>`, `<audio>`, `<state>`.
+It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<road>`, `<population>`.
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material' and 'STL(.stl)'.
 

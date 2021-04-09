@@ -32,15 +32,7 @@ namespace SensorDevices
 			gpsLink = transform.parent;
 			deviceName = name;
 
-			var coreObject = GameObject.Find("Core");
-			if (coreObject == null)
-			{
-				Debug.LogError("Failed to Find 'Core'!!!!");
-			}
-			else
-			{
-				sphericalCoordinates = coreObject.GetComponent<SphericalCoordinates>();
-			}
+			sphericalCoordinates = DeviceHelper.GetSphericalCoordinates();
 		}
 
 		protected override void OnStart()
@@ -74,14 +66,16 @@ namespace SensorDevices
 			// TODO: Applying noise
 
 			// Convert to global frames
-			spherical = sphericalCoordinates.SphericalFromLocal(worldPosition);
+			var convertedPosition = DeviceHelper.Convert.Position(worldPosition);
+			spherical = sphericalCoordinates.SphericalFromLocal(convertedPosition);
 
 			gps.LatitudeDeg = spherical.x;
 			gps.LongitudeDeg = spherical.y;
 			gps.Altitude = spherical.z;
 
 			// Convert to global frame
-			gpsVelocity = sphericalCoordinates.GlobalFromLocal(sensorVelocity);
+			var convertedVelocity = DeviceHelper.Convert.Position(sensorVelocity);
+			gpsVelocity = sphericalCoordinates.GlobalFromLocal(convertedVelocity);
 
 			// Apply noise after converting to global frame
 			// TODO: Applying noise
@@ -93,39 +87,22 @@ namespace SensorDevices
 			PushData<messages.Gps>(gps);
 		}
 
-		float Longitude()
-		{
-			return (float)gps.LongitudeDeg;
-		}
+		public double Longitude => gps.LongitudeDeg;
 
-		float Latitude()
-		{
-			return (float)gps.LatitudeDeg;
-		}
+		public double Latitude => gps.LatitudeDeg;
 
-		double Altitude()
-		{
-			return (float)gps.Altitude;
-		}
+		public double Altitude => gps.Altitude;
 
-		Vector3 VelocityENU()
+		public double VelocityEast => gps.VelocityEast;
+
+		public double VelocityNorth => gps.VelocityNorth;
+
+		public double VelocityUp => gps.VelocityUp;
+
+		public Vector3 VelocityENU()
 		{
 			return new Vector3((float)gps.VelocityEast, (float)gps.VelocityNorth, (float)gps.VelocityUp);
 		}
 
-		double VelocityEast()
-		{
-			return (float)gps.VelocityEast;
-		}
-
-		double VelocityNorth()
-		{
-			return (float)gps.VelocityNorth;
-		}
-
-		float VelocityUp()
-		{
-			return (float)gps.VelocityUp;
-		}
 	}
 }

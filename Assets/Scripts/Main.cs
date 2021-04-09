@@ -16,7 +16,7 @@ public class Main: MonoBehaviour
 	[Header("Block Loading SDF")]
 	public bool doNotLoad = false;
 
-	[Header("Clean all models before load model")]
+	[Header("Clean all models and lights before load model")]
 	public bool clearAllOnStart = true;
 
 	[Header("World File")]
@@ -27,11 +27,11 @@ public class Main: MonoBehaviour
 	public List<string> fileRootDirectories = new List<string>();
 
 	private GameObject modelsRoot = null;
+	private GameObject lightsRoot = null;
 	private FollowingTargetList followingList = null;
 	private SimulationDisplay simulationDisplay = null;
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private Clock clock = null;
-	private Camera mainCamera = null;
 
 	private bool isResetting = false;
 	private bool resetTriggered = false;
@@ -48,6 +48,26 @@ public class Main: MonoBehaviour
 
 			GameObject.Destroy(child.gameObject, 0.00001f);
 		}
+	}
+
+	private void CleanAllLights()
+	{
+		foreach (var child in lightsRoot.GetComponentsInChildren<Transform>())
+		{
+			// skip root gameobject
+			if (child.gameObject == lightsRoot)
+			{
+				continue;
+			}
+
+			GameObject.Destroy(child.gameObject, 0.00001f);
+		}
+	}
+
+	private void CleanAllResources()
+	{
+		CleanAllLights();
+		CleanAllModels();
 	}
 
 	private void ResetRootModelsTransform()
@@ -93,12 +113,14 @@ public class Main: MonoBehaviour
 
 		Application.targetFrameRate = 61;
 
-		mainCamera = Camera.main;
+		var mainCamera = Camera.main;
 		mainCamera.depthTextureMode = DepthTextureMode.None;
 		mainCamera.allowHDR = true;
 		mainCamera.allowMSAA = true;
 
 		modelsRoot = GameObject.Find("Models");
+
+		lightsRoot = GameObject.Find("Lights");
 
 		var UIRoot = GameObject.Find("UI");
 		followingList = UIRoot.GetComponentInChildren<FollowingTargetList>();
@@ -114,7 +136,7 @@ public class Main: MonoBehaviour
 	{
 		if (clearAllOnStart)
 		{
-			CleanAllModels();
+			CleanAllResources();
 		}
 
 		var newWorldFilename = GetArgument("-world");
@@ -152,9 +174,10 @@ public class Main: MonoBehaviour
 		{
 			yield return new WaitForSeconds(0.001f);
 
-			var loader = new SDF.Import.Loader(modelsRoot);
-			loader.SetMainCamera(mainCamera);
-			loader.DoImport(sdf.World());
+			var loader = new SDF.Import.Loader();
+			loader.SetRootModels(modelsRoot);
+			loader.SetRootLights(lightsRoot);
+			loader.StartImport(sdf.World());
 
 			// for GUI
 			simulationDisplay?.ClearEventMessage();

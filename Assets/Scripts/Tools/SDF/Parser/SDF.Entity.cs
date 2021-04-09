@@ -20,13 +20,13 @@ namespace SDF
 
 		private string targetTag = string.Empty;
 
-		protected Entities(string _tag)
+		protected Entities(string tag)
 		{
-			targetTag = _tag;
+			targetTag = tag;
 		}
 
-		protected Entities(XmlNode node, string _tag)
-			: this(_tag)
+		protected Entities(XmlNode node, in string tag)
+			: this(tag)
 		{
 			LoadData(node);
 		}

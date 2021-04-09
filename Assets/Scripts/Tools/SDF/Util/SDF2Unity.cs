@@ -11,6 +11,11 @@ public partial class SDF2Unity
 	private static readonly string commonShaderName = "Standard (Specular setup)";
 	public static Shader commonShader = Shader.Find(commonShaderName);
 
+	public static Color GetColor(in SDF.Color value)
+	{
+		return new Color((float)value.R, (float)value.G, (float)value.B, (float)value.A);
+	}
+
 	public static Vector3 GetScalar(in double x, in double y, in double z)
 	{
 		return new Vector3(Mathf.Abs((float)y), Mathf.Abs((float)z), Mathf.Abs((float)x));
@@ -29,6 +34,11 @@ public partial class SDF2Unity
 	public static Vector3 GetPosition(in SDF.Vector3<int> value)
 	{
 		return (value == null) ? Vector3.zero : GetPosition(value.X, value.Y, value.Z);
+	}
+
+	public static Quaternion GetRotation(in SDF.Vector3<double> value)
+	{
+		return GetRotation(new SDF.Quaternion<double>(value.X, value.Y, value.Z));
 	}
 
 	public static Quaternion GetRotation(in SDF.Quaternion<double> value)
@@ -58,6 +68,11 @@ public partial class SDF2Unity
 	public static Vector3 GetAxis(SDF.Vector3<int> axis)
 	{
 		return GetPosition(axis);
+	}
+
+	public static Vector3 GetDirection(SDF.Vector3<double> direction)
+	{
+		return GetPosition(direction);
 	}
 
 	public static bool CheckTopModel(in GameObject targetObject)

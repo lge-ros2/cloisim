@@ -25,7 +25,8 @@ public class SphericalCoordinates : MonoBehaviour
 
 	public enum SurfaceType { EARTH_WGS84 };
 
-	public enum CoordinateType {
+	public enum CoordinateType
+	{
 		SPHERICAL = 1, // Latitude, Longitude and Altitude by SurfaceType
 		ECEF = 2, // Earth centered, earth fixed Cartesian
 		GLOBAL = 3, // Local tangent plane (East, North, Up)
@@ -50,13 +51,6 @@ public class SphericalCoordinates : MonoBehaviour
 	// Second eccentricity ellipse parameter
 	private float ellP;
 
-	public SurfaceType surfaceType;
-
-	public float latitudeReference = 0; // in degree
-	public float longitudeReference = 0; // in degree
-	public float elevationReference = 0; // in degree
-	public float headingOffset = 0; // in degree
-
 	// ECEF (earth-centered, earth-fixed)
 	private Matrix4x4 matrixECEFToGlobal;
 	private Matrix4x4 matrixGlobalToECEF;
@@ -65,6 +59,15 @@ public class SphericalCoordinates : MonoBehaviour
 	private float sinHea;
 
 	private Vector3 origin; // It is ECEF coordinates
+
+	private SurfaceType surfaceType;
+
+	private float latitudeReference = 0; // in degree
+	private float longitudeReference = 0; // in degree
+	private float elevationReference = 0; // in meters
+	private float headingOffset = 0; // in degree
+
+	public SurfaceType Surface_Type => surfaceType;
 
 	void Awake()
 	{
@@ -118,7 +121,6 @@ public class SphericalCoordinates : MonoBehaviour
 		sinHea = Mathf.Sin(headingOffset * Mathf.Deg2Rad);
 
 		// Cache the ECEF coordinate of the origin
-		// origin.Set(latitudeReference * Mathf.Deg2Rad, elevationReference, longitudeReference * Mathf.Deg2Rad);
 		origin.Set(latitudeReference * Mathf.Deg2Rad, longitudeReference * Mathf.Deg2Rad, elevationReference);
 		origin = PositionTransform(origin, CoordinateType.SPHERICAL, CoordinateType.ECEF);
 	}
@@ -255,7 +257,7 @@ public class SphericalCoordinates : MonoBehaviour
 		return tmpPosition;
 	}
 
-	// /// Based on Haversine formula (http://en.wikipedia.org/wiki/Haversine_formula).
+	// Based on Haversine formula (http://en.wikipedia.org/wiki/Haversine_formula).
 	// float Distance(in Angle _latA, in Angle _lonA, in Angle _latB, in Angle _lonB)
 	// {
 	// 	Angle dLat = _latB - _latA;
@@ -267,6 +269,8 @@ public class SphericalCoordinates : MonoBehaviour
 	// 	return d;
 	// }
 
+	//
+	// <summary>based on right handed system</summary>
 	//
 	// Parameters:
 	//    velocity: ECEF x, y, z in radian,
@@ -337,51 +341,24 @@ public class SphericalCoordinates : MonoBehaviour
 		return tmpVelocity;
 	}
 
-	public void SetCoordinatesReference(in float latitudeAngle, in float longitudeAngle, in float elevationAngle, in float headingAngle)
+	public void SetCoordinatesReference(in float latitudeAngle, in float longitudeAngle, in float elevation, in float headingAngle)
 	{
 		// Set the coordinate transform parameters in degree
 		latitudeReference = latitudeAngle;
 		longitudeReference = longitudeAngle;
-		elevationReference = elevationAngle;
+		elevationReference = elevation;
 		headingOffset = headingAngle;
 
 		UpdateTransformation();
 	}
 
-	public void SetLatitudeReference(in float angle)
-	{
-		latitudeReference = angle;
-
-		UpdateTransformation();
-	}
-
-
-	public void SetLongitudeReference(in float angle)
-	{
-		longitudeReference = angle;
-
-		UpdateTransformation();
-	}
-
-	public void SetElevationReference(in float elevation)
-	{
-		elevationReference = elevation;
-
-		UpdateTransformation();
-	}
-
-	public void SetHeadingOffset(in float angle)
-	{
-		headingOffset = angle;
-
-		UpdateTransformation();
-	}
-
+	/// <summary>based on right handed system</summary>
 	public Vector3 SphericalFromLocal(in Vector3 xyz)
 	{
 		var convertedXYZ = ToECEF(xyz);
 		convertedXYZ.x *= Mathf.Deg2Rad;
 		convertedXYZ.y *= Mathf.Deg2Rad;
+
 		var result = PositionTransform(convertedXYZ, CoordinateType.LOCAL, CoordinateType.SPHERICAL);
 		result.x *= Mathf.Rad2Deg;
 		result.y *= Mathf.Rad2Deg;
@@ -389,11 +366,13 @@ public class SphericalCoordinates : MonoBehaviour
 		return result;
 	}
 
+	/// <summary>based on right handed system</summary>
 	public Vector3 LocalFromSpherical(in Vector3 xyz)
 	{
 		var convertedXYZ = ToECEF(xyz);
 		convertedXYZ.x *= Mathf.Deg2Rad;
 		convertedXYZ.y *= Mathf.Deg2Rad;
+
 		var result = PositionTransform(convertedXYZ, CoordinateType.SPHERICAL, CoordinateType.LOCAL);
 		result.x *= Mathf.Rad2Deg;
 		result.y *= Mathf.Rad2Deg;
@@ -401,11 +380,13 @@ public class SphericalCoordinates : MonoBehaviour
 		return result;
 	}
 
+	/// <summary>based on right handed system</summary>
 	public Vector3 GlobalFromLocal(in Vector3 xyz)
 	{
 		return VelocityTransform(ToECEF(xyz), CoordinateType.LOCAL, CoordinateType.GLOBAL);
 	}
 
+	/// <summary>based on right handed system</summary>
 	public Vector3 LocalFromGlobal(in Vector3 xyz)
 	{
 		return VelocityTransform(ToECEF(xyz), CoordinateType.GLOBAL, CoordinateType.LOCAL);
@@ -413,8 +394,6 @@ public class SphericalCoordinates : MonoBehaviour
 
 	private Vector3 ToECEF(in Vector3 xyz)
 	{
-		var ecef = xyz;
-		ecef.Set(xyz.x, xyz.z, xyz.y);
-		return ecef;
+		return new Vector3(xyz.x, xyz.z, xyz.y);
 	}
 }

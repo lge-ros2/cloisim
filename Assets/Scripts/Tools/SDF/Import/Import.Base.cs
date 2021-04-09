@@ -95,6 +95,11 @@ namespace SDF
 				return null;
 			}
 
+			protected virtual Object ImportLight(in Light light)
+			{
+				PrintNotImported(MethodBase.GetCurrentMethod().Name, light.Name);
+				return null;
+			}
 
 			private void ImportVisuals(IReadOnlyList<Visual> items, in Object parentObject)
 			{
@@ -199,14 +204,22 @@ namespace SDF
 				}
 			}
 
-			public void DoImport(in World _world)
+			protected void ImportLights(IReadOnlyCollection<Light> items)
 			{
-				ImportWorld(_world);
+				foreach (var item in items)
+				{
+					ImportLight(item);
+				}
+			}
 
-				// Console.WriteLine("Import Models({0})/Links/Joints", _world.GetModels().Count);
-				ImportModels(_world.GetModels());
+			public void StartImport(in World world)
+			{
+				// Console.WriteLine("Import Models({0})/Links/Joints", world.GetModels().Count);
+				ImportWorld(world);
 
-				ImportActors(_world.GetActors());
+				ImportModels(world.GetModels());
+
+				ImportActors(world.GetActors());
 			}
 
 			private void PrintNotImported(in string methodName, in string name)

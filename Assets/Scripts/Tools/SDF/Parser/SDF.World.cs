@@ -12,14 +12,6 @@ namespace SDF
 {
 	public class World : Entity
 	{
-		// <audio> : TBD
-		// <wind> : TBD
-		Vector3<double> gravity = null;
-
-		// <magnetic_field> : TBD
-		// <atmosphere> : TBD
-		// <gui> : TBD
-
 		public class Gui
 		{
 			public class Camera : Entity
@@ -48,7 +40,6 @@ namespace SDF
 					public bool inherit_yaw = false;
 				}
 
- 				// defualt name "user_camera"
 				public string view_controller = "orbit";
 
 				// Description: Set the type of projection for the camera. Valid values are "perspective" and "orthographic".
@@ -60,6 +51,14 @@ namespace SDF
 				: base(_node, "user_camera")
 				{
 				}
+
+				protected override void ParseElements()
+				{
+					if (IsValidNode("projection_type"))
+					{
+						projection_type = GetValue<string>("projection_type");
+					}
+				}
 			}
 
 			public bool fullscreen;
@@ -70,24 +69,57 @@ namespace SDF
 			private Plugins plugins;
 		}
 
-		private Gui gui = null;
+		public class SphericalCoordinates
+		{
+			// Description: Name of planetary surface model, used to determine the surface altitude at a given latitude and longitude. The default is an ellipsoid model of the earth based on the WGS-84 standard. It is used in Gazebo's GPS sensor implementation.
+			public string surface_model = "EARTH_WGS84";
 
-		// <physics> : TBD
+			// Description: This field identifies how Gazebo world frame is aligned in Geographical sense. The final Gazebo world frame orientation is obtained by rotating a frame aligned with following notation by the field heading_deg (Note that heading_deg corresponds to positive yaw rotation in the NED frame, so it's inverse specifies positive Z-rotation in ENU or NWU). Options are: - ENU (East-North-Up) - NED (North-East-Down) - NWU (North-West-Up) For example, world frame specified by setting world_orientation="ENU" and heading_deg=-90° is effectively equivalent to NWU with heading of 0°.
+			public string world_frame_orientation = "ENU";
+
+			// Description: Geodetic latitude at origin of gazebo reference frame, specified in units of degrees.
+			public double latitude_deg = 0;
+
+			// Description: Longitude at origin of gazebo reference frame, specified in units of degrees.
+			public double longitude_deg = 0;
+
+			// Description: Elevation of origin of gazebo reference frame, specified in meters.
+			public double elevation = 0;
+
+			// Description: Heading offset of gazebo reference frame, measured as angle between Gazebo world frame and the world_frame_orientation type (ENU/NED/NWU). Rotations about the downward-vector (e.g. North to East) are positive. The direction of rotation is chosen to be consistent with compass heading convention (e.g. 0 degrees points North and 90 degrees points East, positive rotation indicates counterclockwise rotation when viewed from top-down direction). The angle is specified in degrees.
+			public double heading_deg = 0;
+		}
+
+		// <audio> : TBD
+		// <wind> : TBD
+
+		Vector3<double> gravity = null;
+
+		// <magnetic_field> : TBD
+		// <atmosphere> : TBD
+
+		public Gui gui = null;
+
 		private Physics physics = null;
+
 		// <scene> : TBD
-		// <light> : TBD
-		private Light light = null;
+
+		private Lights lights = null;
+
+		// <frame> : TBD
+
 		private Models models = null;
 		private Actors actors = null;
 
 		// <road> : TBD
-		// <spherical_coordinates> : TBD
+
+		public SphericalCoordinates spherical_coordinates = null;
+
 		// <state> : TBD
 		// <population> : TBD
 
 		private Plugins plugins;
 
-		// public Pose<double> GuiCameraPose => gui_camera_pose;
 
 		public World(XmlNode _node)
 			: base(_node)
@@ -99,7 +131,7 @@ namespace SDF
 			models = new Models(root);
 			actors = new Actors(root);
 			physics = new Physics(root);
-			light = new Light(root);
+			lights = new Lights(root);
 			plugins = new Plugins(root);
 
 			var gravityStr = GetValue<string>("static");
@@ -156,6 +188,7 @@ namespace SDF
 			if (IsValidNode("light"))
 			{
 				// Console.WriteLine("<light> tag is NOT supported yet.");
+
 			}
 
 			if (IsValidNode("frame"))
@@ -170,7 +203,37 @@ namespace SDF
 
 			if (IsValidNode("spherical_coordinates"))
 			{
-				// Console.WriteLine("<spherical_coordinates> tag is NOT supported yet.");
+				spherical_coordinates = new SphericalCoordinates();
+
+				if (IsValidNode("spherical_coordinates/surface_model"))
+				{
+					spherical_coordinates.surface_model = GetValue<string>("spherical_coordinates/surface_model");
+				}
+
+				if (IsValidNode("spherical_coordinates/world_frame_orientation"))
+				{
+					spherical_coordinates.world_frame_orientation = GetValue<string>("spherical_coordinates/world_frame_orientation");
+				}
+
+				if (IsValidNode("spherical_coordinates/latitude_deg"))
+				{
+					spherical_coordinates.latitude_deg = GetValue<double>("spherical_coordinates/latitude_deg");
+				}
+
+				if (IsValidNode("spherical_coordinates/longitude_deg"))
+				{
+					spherical_coordinates.longitude_deg = GetValue<double>("spherical_coordinates/longitude_deg");
+				}
+
+				if (IsValidNode("spherical_coordinates/elevation"))
+				{
+					spherical_coordinates.elevation = GetValue<double>("spherical_coordinates/elevation");
+				}
+
+				if (IsValidNode("spherical_coordinates/heading_deg"))
+				{
+					spherical_coordinates.heading_deg = GetValue<double>("spherical_coordinates/heading_deg");
+				}
 			}
 
 			if (IsValidNode("state"))
@@ -199,6 +262,9 @@ namespace SDF
 			return actors.GetData();
 		}
 
-		public Gui GUI => gui;
+		public List<Light> GetLights()
+		{
+			return lights.GetData();
+		}
 	}
 }
