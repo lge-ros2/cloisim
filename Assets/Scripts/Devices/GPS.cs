@@ -23,8 +23,8 @@ namespace SensorDevices
 
 		public Vector3 previousSensorPosition;
 
-		public Vector3 spherical;
-		public Vector3 gpsVelocity;
+		public Vector3 _gpsCoordinates;
+		public Vector3 _gpsVelocity;
 
 		protected override void OnAwake()
 		{
@@ -40,7 +40,7 @@ namespace SensorDevices
 			previousSensorPosition = gpsLink.position;
 		}
 
-		void Update()
+		protected override void ProcessDeviceCoroutine()
 		{
 			var positionDiff = gpsLink.position - previousSensorPosition;
 			previousSensorPosition = gpsLink.position;
@@ -67,24 +67,26 @@ namespace SensorDevices
 
 			// Convert to global frames
 			var convertedPosition = DeviceHelper.Convert.Position(worldPosition);
-			spherical = sphericalCoordinates.SphericalFromLocal(convertedPosition);
+			_gpsCoordinates = sphericalCoordinates.SphericalFromLocal(convertedPosition);
 
-			gps.LatitudeDeg = spherical.x;
-			gps.LongitudeDeg = spherical.y;
-			gps.Altitude = spherical.z;
+			gps.LatitudeDeg = _gpsCoordinates.x;
+			gps.LongitudeDeg = _gpsCoordinates.y;
+			gps.Altitude = _gpsCoordinates.z;
 
 			// Convert to global frame
 			var convertedVelocity = DeviceHelper.Convert.Position(sensorVelocity);
-			gpsVelocity = sphericalCoordinates.GlobalFromLocal(convertedVelocity);
+			_gpsVelocity = sphericalCoordinates.GlobalFromLocal(convertedVelocity);
 
 			// Apply noise after converting to global frame
 			// TODO: Applying noise
 
-			gps.VelocityEast = gpsVelocity.x;
-			gps.VelocityNorth = gpsVelocity.y;
-			gps.VelocityUp = gpsVelocity.z;
+			gps.VelocityEast = _gpsVelocity.x;
+			gps.VelocityNorth = _gpsVelocity.y;
+			gps.VelocityUp = _gpsVelocity.z;
 
 			PushData<messages.Gps>(gps);
+
+			Debug.Log(_gpsCoordinates.ToString("F8"));
 		}
 
 		public double Longitude => gps.LongitudeDeg;
