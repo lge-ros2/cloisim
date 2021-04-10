@@ -4,9 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections;
 using UnityEngine;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -21,10 +19,10 @@ namespace SensorDevices
 
 		private Vector3 sensorVelocity;
 
-		public Vector3 previousSensorPosition;
+		private Vector3 _previousSensorPosition;
 
-		public Vector3 spherical;
-		public Vector3 gpsVelocity;
+		private Vector3 _gpsCoordinates;
+		private Vector3 _gpsVelocity;
 
 		protected override void OnAwake()
 		{
@@ -37,13 +35,13 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
-			previousSensorPosition = gpsLink.position;
+			_previousSensorPosition = gpsLink.position;
 		}
 
-		void Update()
+		protected override void ProcessDeviceCoroutine()
 		{
-			var positionDiff = gpsLink.position - previousSensorPosition;
-			previousSensorPosition = gpsLink.position;
+			var positionDiff = gpsLink.position - _previousSensorPosition;
+			_previousSensorPosition = gpsLink.position;
 
 			sensorVelocity = positionDiff / Time.deltaTime;
 		}
@@ -67,24 +65,26 @@ namespace SensorDevices
 
 			// Convert to global frames
 			var convertedPosition = DeviceHelper.Convert.Position(worldPosition);
-			spherical = sphericalCoordinates.SphericalFromLocal(convertedPosition);
+			_gpsCoordinates = sphericalCoordinates.SphericalFromLocal(convertedPosition);
 
-			gps.LatitudeDeg = spherical.x;
-			gps.LongitudeDeg = spherical.y;
-			gps.Altitude = spherical.z;
+			gps.LatitudeDeg = _gpsCoordinates.x;
+			gps.LongitudeDeg = _gpsCoordinates.y;
+			gps.Altitude = _gpsCoordinates.z;
 
 			// Convert to global frame
 			var convertedVelocity = DeviceHelper.Convert.Position(sensorVelocity);
-			gpsVelocity = sphericalCoordinates.GlobalFromLocal(convertedVelocity);
+			_gpsVelocity = sphericalCoordinates.GlobalFromLocal(convertedVelocity);
 
 			// Apply noise after converting to global frame
 			// TODO: Applying noise
 
-			gps.VelocityEast = gpsVelocity.x;
-			gps.VelocityNorth = gpsVelocity.y;
-			gps.VelocityUp = gpsVelocity.z;
+			gps.VelocityEast = _gpsVelocity.x;
+			gps.VelocityNorth = _gpsVelocity.y;
+			gps.VelocityUp = _gpsVelocity.z;
 
 			PushData<messages.Gps>(gps);
+
+			Debug.Log(Latitude + ", " + Longitude);
 		}
 
 		public double Longitude => gps.LongitudeDeg;

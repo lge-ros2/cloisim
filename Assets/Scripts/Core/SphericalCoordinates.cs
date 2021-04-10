@@ -14,13 +14,13 @@ public class SphericalCoordinates : MonoBehaviour
 		// wikipedia: World_Geodetic_System#A_new_World_Geodetic_System:_WGS_84
 
 		// a: Equatorial radius. Semi-major axis of the WGS84 spheroid (meters).
-		public const float EarthWGS84AxisEquatorial = 6378137.0f;
+		public const float EarthAxisEquatorial = 6378137.0f;
 
 		// b: Polar radius. Semi-minor axis of the wgs84 spheroid (meters).
-		public const float EarthWGS84AxisPolar = 6356752.314245f;
+		public const float EarthAxisPolar = 6356752.314245f;
 
 		// if: WGS84 inverse flattening parameter (no units)
-		public const float EarthWGS84Flattening = 1.0f / 298.257223563f;
+		public const float EarthFlattening = 1.0f / 298.257223563f;
 	}
 
 	public enum SurfaceType { EARTH_WGS84 };
@@ -34,7 +34,7 @@ public class SphericalCoordinates : MonoBehaviour
 	};
 
 	// Radius of the Earth (meters).
-	private const float EarthRadius = 6371000.0f;
+	// private const float EarthRadius = 6371000.0f;
 
 	// Semi-major axis ellipse parameter
 	private float ellA;
@@ -52,29 +52,27 @@ public class SphericalCoordinates : MonoBehaviour
 	private float ellP;
 
 	// ECEF (earth-centered, earth-fixed)
-	private Matrix4x4 matrixECEFToGlobal;
-	private Matrix4x4 matrixGlobalToECEF;
+	private Matrix4x4 matrixECEFToGlobal = new Matrix4x4();
+	private Matrix4x4 matrixGlobalToECEF = new Matrix4x4();
 
 	private float cosHea;
 	private float sinHea;
 
-	private Vector3 origin; // It is ECEF coordinates
+	private Vector3 origin = new Vector3(); // It is ECEF coordinates
 
 	private SurfaceType surfaceType;
 
-	private float latitudeReference = 0; // in degree
-	private float longitudeReference = 0; // in degree
+	private float latitudeReference = 0; // in radian
+	private float longitudeReference = 0; // in radian
 	private float elevationReference = 0; // in meters
-	private float headingOffset = 0; // in degree
+	private float headingOffset = 0; // in radian
+
+	private float haedingOrientationOffset = 0; // in degree
 
 	public SurfaceType Surface_Type => surfaceType;
 
 	void Awake()
 	{
-		matrixECEFToGlobal = new Matrix4x4();
-		matrixGlobalToECEF = new Matrix4x4();
-		origin = new Vector3();
-
 		SetSurfaceType(SurfaceType.EARTH_WGS84);
 
 		UpdateTransformation();
@@ -83,10 +81,10 @@ public class SphericalCoordinates : MonoBehaviour
 	private void UpdateTransformation()
 	{
 		// Cache trig results
-		var cosLat = Mathf.Cos(latitudeReference * Mathf.Deg2Rad);
-		var sinLat = Mathf.Sin(latitudeReference * Mathf.Deg2Rad);
-		var cosLon = Mathf.Cos(longitudeReference * Mathf.Deg2Rad);
-		var sinLon = Mathf.Sin(longitudeReference * Mathf.Deg2Rad);
+		var cosLat = Mathf.Cos(latitudeReference);
+		var sinLat = Mathf.Sin(latitudeReference);
+		var cosLon = Mathf.Cos(longitudeReference);
+		var sinLon = Mathf.Sin(longitudeReference);
 
 		// Create a rotation matrix that moves ECEF to GLOBAL
 		// Transformations_between_ECEF_and_ENU_coordinates
@@ -94,7 +92,7 @@ public class SphericalCoordinates : MonoBehaviour
 		// https://en.wikipedia.org/wiki/ECEF
 		matrixECEFToGlobal.m00 = -sinLon;
 		matrixECEFToGlobal.m01 = cosLon;
-		matrixECEFToGlobal.m02 = 0.0f;
+		matrixECEFToGlobal.m02 = 0;
 		matrixECEFToGlobal.m10 = -cosLon * sinLat;
 		matrixECEFToGlobal.m11 = -sinLon * sinLat;
 		matrixECEFToGlobal.m12 = cosLat;
@@ -117,12 +115,42 @@ public class SphericalCoordinates : MonoBehaviour
 		matrixGlobalToECEF.m22 = sinLat;
 
 		// Cache heading transforms
-		cosHea = Mathf.Cos(headingOffset * Mathf.Deg2Rad);
-		sinHea = Mathf.Sin(headingOffset * Mathf.Deg2Rad);
+		cosHea = Mathf.Cos(headingOffset);
+		sinHea = Mathf.Sin(headingOffset);
 
 		// Cache the ECEF coordinate of the origin
-		origin.Set(latitudeReference * Mathf.Deg2Rad, longitudeReference * Mathf.Deg2Rad, elevationReference);
+		origin.Set(latitudeReference, longitudeReference, elevationReference);
 		origin = PositionTransform(origin, CoordinateType.SPHERICAL, CoordinateType.ECEF);
+	}
+
+	public void SetWorldOrientation(in string orientation)
+	{
+		// world frame: world_orientation="ENU" with heading_deg=-90° == "NWU" with heading of 0°.
+
+		switch (orientation)
+		{
+			case "NWU":
+				haedingOrientationOffset = 0;
+				break;
+
+			case "NED":
+				Debug.LogWarning("need to check NED orientaion");
+				haedingOrientationOffset = 0;
+				break;
+
+			case "ENU":
+			case "":
+			default:
+				haedingOrientationOffset = -90;
+				break;
+		}
+
+	}
+
+	public void SetSurfaceType(in string type)
+	{
+		var surfaceType = (SurfaceType)System.Enum.Parse(typeof(SurfaceType), type);
+		SetSurfaceType(surfaceType);
 	}
 
 	public void SetSurfaceType(in SurfaceType type)
@@ -134,13 +162,13 @@ public class SphericalCoordinates : MonoBehaviour
 			case SurfaceType.EARTH_WGS84:
 				{
 					// Set the semi-major axis
-					ellA = WGS84.EarthWGS84AxisEquatorial;
+					ellA = WGS84.EarthAxisEquatorial;
 
 					// Set the semi-minor axis
-					ellB = WGS84.EarthWGS84AxisPolar;
+					ellB = WGS84.EarthAxisPolar;
 
 					// Set the flattening parameter
-					ellF = WGS84.EarthWGS84Flattening;
+					ellF = WGS84.EarthFlattening;
 
 					// Set the first eccentricity ellipse parameter
 					// https://en.wikipedia.org/wiki/Eccentricity_(mathematics)#Ellipses
@@ -154,11 +182,13 @@ public class SphericalCoordinates : MonoBehaviour
 				}
 
 			default:
-				Debug.LogFormat("Unknown surface type[{0}]", type);
+				Debug.LogWarningFormat("Unknown surface type[{0}]", type);
 				break;
 		}
 	}
 
+	//
+	/// <summary> Convert between positions in SPHERICAL/ECEF/LOCAL/GLOBAL frame</summary>
 	//
 	// Parameters:
 	//    position: ECEF x, y, z in radian,
@@ -225,9 +255,7 @@ public class SphericalCoordinates : MonoBehaviour
 
 				tmpPosition.x = lat;
 				tmpPosition.y = lon;
-
-				// Now calculate y
-				tmpPosition.z = p / Mathf.Cos(lat) - nCurvature;
+				tmpPosition.z = (p / Mathf.Cos(lat) - nCurvature);
 
 				break;
 
@@ -270,7 +298,7 @@ public class SphericalCoordinates : MonoBehaviour
 	// }
 
 	//
-	// <summary>based on right handed system</summary>
+	/// <summary>based on right handed system</summary>
 	//
 	// Parameters:
 	//    velocity: ECEF x, y, z in radian,
@@ -285,7 +313,7 @@ public class SphericalCoordinates : MonoBehaviour
 		}
 
 		// Intermediate data type
-		Vector3 tmpVelocity = velocity;
+		var tmpVelocity = velocity;
 
 		// First, convert to an ECEF vector
 		switch (input)
@@ -344,10 +372,10 @@ public class SphericalCoordinates : MonoBehaviour
 	public void SetCoordinatesReference(in float latitudeAngle, in float longitudeAngle, in float elevation, in float headingAngle)
 	{
 		// Set the coordinate transform parameters in degree
-		latitudeReference = latitudeAngle;
-		longitudeReference = longitudeAngle;
+		latitudeReference = latitudeAngle * Mathf.Deg2Rad;
+		longitudeReference = longitudeAngle * Mathf.Deg2Rad;
 		elevationReference = elevation;
-		headingOffset = headingAngle;
+		headingOffset = (headingAngle + haedingOrientationOffset) * Mathf.Deg2Rad;
 
 		UpdateTransformation();
 	}
@@ -355,11 +383,7 @@ public class SphericalCoordinates : MonoBehaviour
 	/// <summary>based on right handed system</summary>
 	public Vector3 SphericalFromLocal(in Vector3 xyz)
 	{
-		var convertedXYZ = ToECEF(xyz);
-		convertedXYZ.x *= Mathf.Deg2Rad;
-		convertedXYZ.y *= Mathf.Deg2Rad;
-
-		var result = PositionTransform(convertedXYZ, CoordinateType.LOCAL, CoordinateType.SPHERICAL);
+		var result = PositionTransform(xyz, CoordinateType.LOCAL, CoordinateType.SPHERICAL);
 		result.x *= Mathf.Rad2Deg;
 		result.y *= Mathf.Rad2Deg;
 
@@ -369,7 +393,7 @@ public class SphericalCoordinates : MonoBehaviour
 	/// <summary>based on right handed system</summary>
 	public Vector3 LocalFromSpherical(in Vector3 xyz)
 	{
-		var convertedXYZ = ToECEF(xyz);
+		var convertedXYZ = xyz;
 		convertedXYZ.x *= Mathf.Deg2Rad;
 		convertedXYZ.y *= Mathf.Deg2Rad;
 
@@ -383,17 +407,36 @@ public class SphericalCoordinates : MonoBehaviour
 	/// <summary>based on right handed system</summary>
 	public Vector3 GlobalFromLocal(in Vector3 xyz)
 	{
-		return VelocityTransform(ToECEF(xyz), CoordinateType.LOCAL, CoordinateType.GLOBAL);
+		return VelocityTransform(xyz, CoordinateType.LOCAL, CoordinateType.GLOBAL);
 	}
 
 	/// <summary>based on right handed system</summary>
 	public Vector3 LocalFromGlobal(in Vector3 xyz)
 	{
-		return VelocityTransform(ToECEF(xyz), CoordinateType.GLOBAL, CoordinateType.LOCAL);
+		return VelocityTransform(xyz, CoordinateType.GLOBAL, CoordinateType.LOCAL);
 	}
 
-	private Vector3 ToECEF(in Vector3 xyz)
+	public void SetLatitudeReference(in float angle)
 	{
-		return new Vector3(xyz.x, xyz.z, xyz.y);
+		latitudeReference = angle * Mathf.Deg2Rad;
+		UpdateTransformation();
+	}
+
+	public void SetLongitudeReference(in float angle)
+	{
+		longitudeReference = angle * Mathf.Deg2Rad;
+		UpdateTransformation();
+	}
+
+	public void SetElevationReference(in float elevation)
+	{
+		elevationReference = elevation;
+		UpdateTransformation();
+	}
+
+	public void SetHeadingOffset(in float angle)
+	{
+		headingOffset = (angle + haedingOrientationOffset) * Mathf.Deg2Rad;
+		UpdateTransformation();
 	}
 }

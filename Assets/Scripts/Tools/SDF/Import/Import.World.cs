@@ -31,11 +31,15 @@ namespace SDF
 
 				if (world.spherical_coordinates != null)
 				{
-					var sphericalCoordinates = DeviceHelper.GetSphericalCoordinates();
+					var sphericalCoordinatesCore = DeviceHelper.GetSphericalCoordinates();
 
-					var sphericalReference = world.spherical_coordinates;
+					var sphericalCoordinates = world.spherical_coordinates;
 
-					sphericalCoordinates.SetCoordinatesReference((float)sphericalReference.latitude_deg, (float)sphericalReference.longitude_deg, (float)sphericalReference.elevation, (float)sphericalReference.heading_deg);
+					sphericalCoordinatesCore.SetSurfaceType(sphericalCoordinates.surface_model);
+
+					sphericalCoordinatesCore.SetWorldOrientation(sphericalCoordinates.world_frame_orientation);
+
+					sphericalCoordinatesCore.SetCoordinatesReference((float)sphericalCoordinates.latitude_deg, (float)sphericalCoordinates.longitude_deg, (float)sphericalCoordinates.elevation, (float)sphericalCoordinates.heading_deg);
 				}
 
 				if (world.GetLights().Count > 0)

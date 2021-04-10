@@ -114,11 +114,12 @@ public partial class DeviceHelper
 		{
 			quaternion = new messages.Quaternion();
 		}
+		var converted = Convert.Rotation(rotation);
 
-		quaternion.X = -rotation.z;
-		quaternion.Y = -rotation.x;
-		quaternion.Z = rotation.y;
-		quaternion.W = -rotation.w;
+		quaternion.X = converted.x;
+		quaternion.Y = converted.y;
+		quaternion.Z = converted.z;
+		quaternion.W = converted.w;
 	}
 
 	public static bool IsSamePosition(in float A, in float B)
@@ -139,6 +140,11 @@ public partial class DeviceHelper
 		public static Vector3 Position(in Vector3 position)
 		{
 			return new Vector3(position.z, -position.x, position.y);
+		}
+
+		public static Quaternion Rotation(in Quaternion rotation)
+		{
+			return new Quaternion(-rotation.z, -rotation.x, rotation.y, -rotation.w);
 		}
 	}
 }
