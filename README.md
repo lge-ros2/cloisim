@@ -4,7 +4,7 @@
 
 Happy to announce CLOiSim. It is a new multi-robot simulator that uses an [SDF](www.sdformat.org) file containing 3d world environemnts and robot descriptions.
 
-The simulator is based on Unity 3D. It may look similar to Gazebo, where, unfortunately, we encountered performance problems while loading multiple robots equipped with multiple sensors.
+The simulator is based on Unity 3D. It may look similar to Gazebo, where, unfortunately, we encountered performance problems while loading multiple robots equipped with multiple sensors. Hence, CLOiSim.
 
 This project consists of
 
@@ -38,7 +38,7 @@ Here is the full list of models that is implemented or planned to be implemented
   - [X] RealSense (RGB + IR1 + IR2 + Depth)
   - [X] GPS sensor
   - [ ] 3D Lidar Sensor
-    - [ ] Point Cloud message
+    - [ ] Point Cloud
   - [ ] Sensor noise models
   - [ ] Physics
     - [ ] Support all physics parameters in SDF specification
@@ -85,7 +85,7 @@ But inertia factors which retrieved from SDF are still NOT USED for rigidbody in
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.0f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.3.3f1 (LTS)'*.
 - Linux: Ubuntu 20.04.1
 - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
 - Memory: 32GB
@@ -97,17 +97,19 @@ If you don't want to build a project, just USE a release binary([Download linux 
 
 ### If you want to build a project
 
-Please visit here [build guide](https://github.com/lge-ros2/multi-robot-simulator/wiki/Build-Guide).
+Please visit here [build guide](https://github.com/lge-ros2/cloisim/wiki/Build-Guide).
 
 ## Usage
 
 ### Run 'CLOiSim'
 
-Set environment path like below.
+Set environment path like below. You can find the sample resources [here](https://github.com/lge-ros2/sample_resources)
+
+Multiple path can be set by :(colon).
 
 ```shell
 export CLOISIM_FILES_PATH="/home/Unity/cloisim/sample_resources/media"
-export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample_resources/models"
+export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample_resources/models:/home/Unity/cloisim/another_resources/models"
 export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample_resources/worlds"
 ```
 
@@ -121,13 +123,13 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 
 - ***./run.sh cloisim.world***
 
-#### After run 'CLOiSim'
+#### Run 'cloisim_ros' after running CLOiSim
 
-- *'[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' ros2 packages for transporting sensor data are required.*
+- *You need to run this package in order to publish sensor data in ROS2.*
 
 - *Run bringup node in '[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' ros2 packages*
 
-- And *have fun!!!*
+- That's it. *Have fun!!!*
 
 #### Debugging log
 
