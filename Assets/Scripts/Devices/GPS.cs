@@ -4,9 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections;
 using UnityEngine;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -21,10 +19,10 @@ namespace SensorDevices
 
 		private Vector3 sensorVelocity;
 
-		public Vector3 previousSensorPosition;
+		private Vector3 _previousSensorPosition;
 
-		public Vector3 _gpsCoordinates;
-		public Vector3 _gpsVelocity;
+		private Vector3 _gpsCoordinates;
+		private Vector3 _gpsVelocity;
 
 		protected override void OnAwake()
 		{
@@ -37,13 +35,13 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
-			previousSensorPosition = gpsLink.position;
+			_previousSensorPosition = gpsLink.position;
 		}
 
 		protected override void ProcessDeviceCoroutine()
 		{
-			var positionDiff = gpsLink.position - previousSensorPosition;
-			previousSensorPosition = gpsLink.position;
+			var positionDiff = gpsLink.position - _previousSensorPosition;
+			_previousSensorPosition = gpsLink.position;
 
 			sensorVelocity = positionDiff / Time.deltaTime;
 		}
@@ -86,7 +84,7 @@ namespace SensorDevices
 
 			PushData<messages.Gps>(gps);
 
-			Debug.Log(_gpsCoordinates.ToString("F8"));
+			Debug.Log(Latitude + ", " + Longitude);
 		}
 
 		public double Longitude => gps.LongitudeDeg;
