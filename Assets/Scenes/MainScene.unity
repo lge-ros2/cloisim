@@ -842,7 +842,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   doNotLoad: 0
   clearAllOnStart: 1
-  worldFileName: lg_seocho.world
+  worldFileName: lg_seocho_with_actors.world
   modelRootDirectories:
   - ../sample_resources/models/
   - ../lgrs_resource/assets/models/
@@ -1964,7 +1964,7 @@ GameObject:
   - component: {fileID: 683297090}
   - component: {fileID: 683297089}
   - component: {fileID: 683297088}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: UI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
