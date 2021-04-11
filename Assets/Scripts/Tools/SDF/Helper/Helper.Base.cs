@@ -27,6 +27,14 @@ namespace SDF
 				}
 			}
 
+			public void SetArticulationBody()
+			{
+				if (_poseControl != null)
+				{
+					_poseControl.SetArticulationBody();
+				}
+			}
+
 			public void SetPose(in UE.Vector3 position, in UE.Quaternion rotation)
 			{
 				AddPose(position, rotation);
