@@ -89,16 +89,14 @@ namespace SDF
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, sdfMaterial.Name);
 			}
 
-			protected virtual Object ImportActor(in Actor actor)
+			protected virtual void ImportActor(in Actor actor)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, actor.Name);
-				return null;
 			}
 
-			protected virtual Object ImportLight(in Light light)
+			protected virtual void ImportLight(in Light light)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, light.Name);
-				return null;
 			}
 
 			private void ImportVisuals(IReadOnlyList<Visual> items, in Object parentObject)
@@ -174,7 +172,7 @@ namespace SDF
 				}
 			}
 
-			private void ImportModels(IReadOnlyList<Model> items, in Object parentObject = null)
+			protected void ImportModels(IReadOnlyList<Model> items, in Object parentObject = null)
 			{
 				foreach (var item in items)
 				{
@@ -194,9 +192,10 @@ namespace SDF
 
 					AfterImportModel(item, createdObject);
 				}
+
 			}
 
-			private void ImportActors(IReadOnlyList<Actor> items)
+			protected void ImportActors(IReadOnlyList<Actor> items)
 			{
 				foreach (var item in items)
 				{
@@ -204,7 +203,7 @@ namespace SDF
 				}
 			}
 
-			protected void ImportLights(IReadOnlyCollection<Light> items)
+			protected void ImportLights(IReadOnlyList<Light> items)
 			{
 				foreach (var item in items)
 				{

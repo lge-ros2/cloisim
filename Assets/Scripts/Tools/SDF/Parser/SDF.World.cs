@@ -185,12 +185,6 @@ namespace SDF
 				// Console.WriteLine("<scene> tag is NOT supported yet.");
 			}
 
-			if (IsValidNode("light"))
-			{
-				// Console.WriteLine("<light> tag is NOT supported yet.");
-
-			}
-
 			if (IsValidNode("frame"))
 			{
 				// Console.WriteLine("<frame> tag is NOT supported yet.");
