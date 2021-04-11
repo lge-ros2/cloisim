@@ -24,10 +24,6 @@ namespace SDF
 		public Geometry(XmlNode _node)
 			: base(_node)
 		{
-			if (root != null)
-			{
-				ParseElements();
-			}
 		}
 
 		protected override void ParseElements()
@@ -36,7 +32,7 @@ namespace SDF
 			{
 				Type = "box";
 				shape = new Box();
-				string sizeStr = GetValue<string>("box/size");
+				var sizeStr = GetValue<string>("box/size");
 				(shape as Box).size.FromString(sizeStr);
 			}
 			else if (IsValidNode("mesh"))
@@ -44,7 +40,7 @@ namespace SDF
 				Type = "mesh";
 				shape = new Mesh();
 				(shape as Mesh).uri = GetValue<string>("mesh/uri");
-				string scale = GetValue<string>("mesh/scale");
+				var scale = GetValue<string>("mesh/scale");
 
 				if (string.IsNullOrEmpty(scale))
 					(shape as Mesh).scale.Set(1.0f, 1.0f, 1.0f);
@@ -70,10 +66,10 @@ namespace SDF
 			{
 				Type = "plane";
 				shape = new Plane();
-				string normal = GetValue<string>("plane/normal");
+				var normal = GetValue<string>("plane/normal");
 				(shape as Plane).normal.FromString(normal);
 
-				string size = GetValue<string>("plane/size");
+				var size = GetValue<string>("plane/size");
 				(shape as Plane).size.FromString(size);
 			}
 			else if (IsValidNode("height") ||

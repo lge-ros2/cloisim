@@ -12,17 +12,17 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportActor(in SDF.Actor actor)
+			protected override void ImportActor(in Actor actor)
 			{
 				if (actor == null)
 				{
-					return null;
+					return;
 				}
 
 				var newActorObject = Implement.Actor.CreateSkin(actor.skin);
 				if (newActorObject == null)
 				{
-					return null;
+					return;
 				}
 
 				newActorObject.name = actor.Name;
@@ -56,8 +56,6 @@ namespace SDF
 				capsuleCollider.center = new Vector3(0, localBound.extents.y, 0);
 				capsuleCollider.radius = localBound.center.magnitude * sizeRatio;
 				capsuleCollider.height = (localBound.max.y - localBound.min.y) * sizeRatio;
-
-				return newActorObject as System.Object;
 			}
 		}
 	}

@@ -10,22 +10,40 @@ using messages = cloisim.msgs;
 
 public partial class DeviceHelper
 {
-	private static Clock clock = null;
+	private static Clock _clock = null;
+
+	private static SphericalCoordinates _sphericalCoordinates = null;
 
 	public static Clock GetGlobalClock()
 	{
-		if (clock == null)
+		if (_clock == null)
 		{
 			var coreObject = GameObject.Find("Core");
-			clock = coreObject?.GetComponent<Clock>();
+			_clock = coreObject?.GetComponent<Clock>();
 
-			if (clock == null)
+			if (_clock == null)
 			{
-				clock = coreObject.AddComponent<Clock>();
+				_clock = coreObject.AddComponent<Clock>();
 			}
 		}
 
-		return clock;
+		return _clock;
+	}
+
+	public static SphericalCoordinates GetSphericalCoordinates()
+	{
+		if (_sphericalCoordinates == null)
+		{
+			var coreObject = GameObject.Find("Core");
+			_sphericalCoordinates = coreObject?.GetComponent<SphericalCoordinates>();
+
+			if (_sphericalCoordinates == null)
+			{
+				_sphericalCoordinates = coreObject.AddComponent<SphericalCoordinates>();
+			}
+		}
+
+		return _sphericalCoordinates;
 	}
 
 	public static string GetModelName(in GameObject targetObject, in bool searchOnlyOneDepth = false)
@@ -72,7 +90,7 @@ public partial class DeviceHelper
 			msgTime = new messages.Time();
 		}
 
-		var timeNow = (useRealTime) ? GetGlobalClock().GetRealTime() : GetGlobalClock().GetSimTime();
+		var timeNow = (useRealTime) ? GetGlobalClock().RealTime : GetGlobalClock().SimTime;
 		msgTime.Sec = (int)timeNow;
 		msgTime.Nsec = (int)((timeNow - (double)msgTime.Sec) * (double)1e+9);
 	}
@@ -83,10 +101,11 @@ public partial class DeviceHelper
 		{
 			vector3d = new messages.Vector3d();
 		}
+		var converted = Convert.Position(position);
 
-		vector3d.X = position.z;
-		vector3d.Y = -position.x;
-		vector3d.Z = position.y;
+		vector3d.X = converted.x;
+		vector3d.Y = converted.y;
+		vector3d.Z = converted.z;
 	}
 
 	public static void SetQuaternion(messages.Quaternion quaternion, in Quaternion rotation)
@@ -95,11 +114,12 @@ public partial class DeviceHelper
 		{
 			quaternion = new messages.Quaternion();
 		}
+		var converted = Convert.Rotation(rotation);
 
-		quaternion.X = -rotation.z;
-		quaternion.Y = -rotation.x;
-		quaternion.Z = rotation.y;
-		quaternion.W = -rotation.w;
+		quaternion.X = converted.x;
+		quaternion.Y = converted.y;
+		quaternion.Z = converted.z;
+		quaternion.W = converted.w;
 	}
 
 	public static bool IsSamePosition(in float A, in float B)
@@ -110,5 +130,21 @@ public partial class DeviceHelper
 	public static bool IsSamePosition(in Vector3 A, in Vector3 B)
 	{
 		return (Vector3.SqrMagnitude(A - B) <= Vector3.kEpsilon) ? true : false;
+	}
+
+	public static class Convert
+	{
+		/// <summary>
+		/// Convert to right handed coordinates
+		/// </summary>
+		public static Vector3 Position(in Vector3 position)
+		{
+			return new Vector3(position.z, -position.x, position.y);
+		}
+
+		public static Quaternion Rotation(in Quaternion rotation)
+		{
+			return new Quaternion(-rotation.z, -rotation.x, rotation.y, -rotation.w);
+		}
 	}
 }

@@ -17,7 +17,7 @@ namespace SDF
 
 	public class Plugin : Entity
 	{
-		private string filename;
+		private string filename = "__default__";
 
 		public string FileName => filename;
 
@@ -29,10 +29,6 @@ namespace SDF
 		public Plugin(XmlNode _node)
 			: base(_node)
 		{
-			if (root != null)
-			{
-				ParseElements();
-			}
 		}
 
 		protected override void ParseElements()

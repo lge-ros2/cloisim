@@ -9,6 +9,7 @@ TagManager:
   - Visual
   - Collision
   - Sensor
+  - Light
   - Actor
   - Marker
   - Props
@@ -16,7 +17,7 @@ TagManager:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Plane
   - Water
   - UI
   - 

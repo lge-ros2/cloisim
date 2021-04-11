@@ -16,12 +16,6 @@ public class RealSensePlugin : DevicesPlugin
 	private Camera[] cameras = null;
 	private List<string> activatedModules = new List<string>();
 
-	#region Parameters
-	private double depthRangeMin;
-	private double depthRangeMax;
-	private uint depthScale;
-	#endregion
-
 	protected override void OnAwake()
 	{
 		type = Type.REALSENSE;
@@ -31,7 +25,7 @@ public class RealSensePlugin : DevicesPlugin
 
 	protected override void OnStart()
 	{
-		depthScale = parameters.GetValue<uint>("configuration/depth_scale", 1000);
+		var depthScale = parameters.GetValue<uint>("configuration/depth_scale", 1000);
 
 		var colorName = parameters.GetValue<string>("activate/module[@name='color']");
 		var leftImagerName = parameters.GetValue<string>("activate/module[@name='left_imager']");
@@ -61,8 +55,7 @@ public class RealSensePlugin : DevicesPlugin
 			if (depthCamera != null)
 			{
 				depthCamera.ReverseDepthData(false);
-				depthRangeMin = depthCamera.GetParameters().clip.near;
-				depthRangeMax = depthCamera.GetParameters().clip.far;
+				depthCamera.depthScale = depthScale;
 			}
 		}
 
@@ -103,10 +96,6 @@ public class RealSensePlugin : DevicesPlugin
 			{
 				switch (requestMessage.Name)
 				{
-					case "request_realsense_parameters":
-						SetConfigurationInfoResponse(ref msForInfoResponse);
-						break;
-
 					case "request_module_list":
 						SetModuleListInfoResponse(ref msForInfoResponse);
 						break;
@@ -125,34 +114,6 @@ public class RealSensePlugin : DevicesPlugin
 
 			ThreadWait();
 		}
-	}
-
-	private void SetConfigurationInfoResponse(ref MemoryStream msModuleInfo)
-	{
-		if (msModuleInfo == null)
-		{
-			return;
-		}
-
-		var paramInfo = new messages.Param();
-		var modulesInfo = new messages.Param();
-		modulesInfo.Name = "parameters";
-		modulesInfo.Value = new Any { Type = Any.ValueType.None };
-
-		paramInfo.Name = "depth_range_min";
-		paramInfo.Value = new Any { Type = Any.ValueType.Double, DoubleValue = depthRangeMin };
-		modulesInfo.Childrens.Add(paramInfo);
-
-		paramInfo.Name = "depth_range_max";
-		paramInfo.Value = new Any { Type = Any.ValueType.Double, DoubleValue = depthRangeMax };
-		modulesInfo.Childrens.Add(paramInfo);
-
-		paramInfo.Name = "depth_scale";
-		paramInfo.Value = new Any { Type = Any.ValueType.Int32, IntValue = (int)depthScale };
-		modulesInfo.Childrens.Add(paramInfo);
-
-		ClearMemoryStream(ref msModuleInfo);
-		Serializer.Serialize<messages.Param>(msModuleInfo, modulesInfo);
 	}
 
 	private void SetModuleListInfoResponse(ref MemoryStream msModuleInfo)

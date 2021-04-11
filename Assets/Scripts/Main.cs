@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2020 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
@@ -16,7 +16,7 @@ public class Main: MonoBehaviour
 	[Header("Block Loading SDF")]
 	public bool doNotLoad = false;
 
-	[Header("Clean all models before load model")]
+	[Header("Clean all models and lights before load model")]
 	public bool clearAllOnStart = true;
 
 	[Header("World File")]
@@ -27,11 +27,11 @@ public class Main: MonoBehaviour
 	public List<string> fileRootDirectories = new List<string>();
 
 	private GameObject modelsRoot = null;
+	private GameObject lightsRoot = null;
 	private FollowingTargetList followingList = null;
 	private SimulationDisplay simulationDisplay = null;
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private Clock clock = null;
-	private Camera mainCamera = null;
 
 	private bool isResetting = false;
 	private bool resetTriggered = false;
@@ -50,6 +50,26 @@ public class Main: MonoBehaviour
 		}
 	}
 
+	private void CleanAllLights()
+	{
+		foreach (var child in lightsRoot.GetComponentsInChildren<Transform>())
+		{
+			// skip root gameobject
+			if (child.gameObject == lightsRoot)
+			{
+				continue;
+			}
+
+			GameObject.Destroy(child.gameObject, 0.00001f);
+		}
+	}
+
+	private void CleanAllResources()
+	{
+		CleanAllLights();
+		CleanAllModels();
+	}
+
 	private void ResetRootModelsTransform()
 	{
 		if (modelsRoot != null)
@@ -60,28 +80,56 @@ public class Main: MonoBehaviour
 		}
 	}
 
-	void Awake()
+	private void GetResourcesPaths()
 	{
-#if UNITY_EDITOR
-#else
-		modelRootDirectories.Clear();
-		worldRootDirectories.Clear();
-		fileRootDirectories.Clear();
-
-		var separator = new char[] {':'};
+		var separator = new char[] { ':' };
 
 		var filePathEnv = Environment.GetEnvironmentVariable("CLOISIM_FILES_PATH");
-		var filePaths = filePathEnv.Split(separator, StringSplitOptions.RemoveEmptyEntries);
-		fileRootDirectories.AddRange(filePaths);
+		var filePaths = filePathEnv?.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+
+		if (filePaths == null)
+		{
+			Debug.LogWarning("CLOISIM_FILES_PATH is null. It will use default path. \n" + String.Join(", ", fileRootDirectories));
+		}
+		else
+		{
+			fileRootDirectories.Clear();
+			fileRootDirectories.AddRange(filePaths);
+			Debug.Log("Files Directory Paths: " + String.Join(", ", fileRootDirectories));
+		}
 
 		var modelPathEnv = Environment.GetEnvironmentVariable("CLOISIM_MODEL_PATH");
-		var modelPaths = modelPathEnv.Split(separator, StringSplitOptions.RemoveEmptyEntries);
-		modelRootDirectories.AddRange(modelPaths);
+		var modelPaths = modelPathEnv?.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+
+		if (modelPaths == null)
+		{
+			Debug.LogWarning("CLOISIM_MODEL_PATH is null. It will use default path. \n" + String.Join(", ", modelRootDirectories));
+		}
+		else
+		{
+			modelRootDirectories.Clear();
+			modelRootDirectories.AddRange(modelPaths);
+			Debug.Log("Models Directory Paths: " + String.Join(", ", modelRootDirectories));
+		}
 
 		var worldPathEnv = Environment.GetEnvironmentVariable("CLOISIM_WORLD_PATH");
-		var worldPaths = worldPathEnv.Split(separator, StringSplitOptions.RemoveEmptyEntries);
-		worldRootDirectories.AddRange(worldPaths);
-#endif
+		var worldPaths = worldPathEnv?.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+
+		if (worldPaths == null)
+		{
+			Debug.LogWarning("CLOISIM_WORLD_PATH is null. It will use default path. \n" + String.Join(", ", worldRootDirectories));
+		}
+		else
+		{
+			worldRootDirectories.Clear();
+			worldRootDirectories.AddRange(worldPaths);
+			Debug.Log("World Directory Paths: " + String.Join(", ", worldRootDirectories));
+		}
+	}
+
+	void Awake()
+	{
+		GetResourcesPaths();
 
 		// Load Library for Assimp
 #if UNITY_EDITOR
@@ -93,14 +141,17 @@ public class Main: MonoBehaviour
 
 		Application.targetFrameRate = 61;
 
-		mainCamera = Camera.main;
+		var mainCamera = Camera.main;
 		mainCamera.depthTextureMode = DepthTextureMode.None;
 		mainCamera.allowHDR = true;
 		mainCamera.allowMSAA = true;
 
 		modelsRoot = GameObject.Find("Models");
 
+		lightsRoot = GameObject.Find("Lights");
+
 		var UIRoot = GameObject.Find("UI");
+
 		followingList = UIRoot.GetComponentInChildren<FollowingTargetList>();
 		simulationDisplay = UIRoot.GetComponentInChildren<SimulationDisplay>();
 		transformGizmo = UIRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
@@ -114,7 +165,7 @@ public class Main: MonoBehaviour
 	{
 		if (clearAllOnStart)
 		{
-			CleanAllModels();
+			CleanAllResources();
 		}
 
 		var newWorldFilename = GetArgument("-world");
@@ -139,7 +190,7 @@ public class Main: MonoBehaviour
 	private IEnumerator LoadWorld()
 	{
 		// Debug.Log("Hello CLOiSim World!!!!!");
-		// Debug.Log("World: " + worldFileName);
+		Debug.Log("Target World: " + worldFileName);
 
 		var sdf = new SDF.Root();
 		sdf.SetTargetLogOutput(simulationDisplay);
@@ -152,9 +203,11 @@ public class Main: MonoBehaviour
 		{
 			yield return new WaitForSeconds(0.001f);
 
-			var loader = new SDF.Import.Loader(modelsRoot);
-			loader.SetMainCamera(mainCamera);
-			loader.DoImport(sdf.World());
+			var loader = new SDF.Import.Loader();
+			loader.SetRootModels(modelsRoot);
+			loader.SetRootLights(lightsRoot);
+
+			yield return loader.StartImport(sdf.World());
 
 			// for GUI
 			simulationDisplay?.ClearEventMessage();
@@ -213,22 +266,25 @@ public class Main: MonoBehaviour
 
 		transformGizmo?.ClearTargets();
 
-		foreach (var plugin in modelsRoot.GetComponentsInChildren<SDF.Helper.Model>())
+		foreach (var helper in modelsRoot.GetComponentsInChildren<SDF.Helper.Actor>())
 		{
-			plugin.Reset();
+			helper.Reset();
 		}
 
-		foreach (var plugin in modelsRoot.GetComponentsInChildren<SDF.Helper.Link>())
+		foreach (var helper in modelsRoot.GetComponentsInChildren<SDF.Helper.Model>())
 		{
-			plugin.Reset();
+			helper.Reset();
+		}
+
+		foreach (var helper in modelsRoot.GetComponentsInChildren<SDF.Helper.Link>())
+		{
+			helper.Reset();
 		}
 
 		foreach (var plugin in modelsRoot.GetComponentsInChildren<DevicePlugin>())
 		{
 			plugin.Reset();
 		}
-
-		yield return null;
 
 		clock?.ResetTime();
 

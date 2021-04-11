@@ -4,9 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections;
 using UnityEngine;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -21,41 +19,29 @@ namespace SensorDevices
 
 		private Vector3 sensorVelocity;
 
-		public Vector3 previousSensorPosition;
+		private Vector3 _previousSensorPosition;
 
-		public Vector3 spherical;
-		public Vector3 gpsVelocity;
+		private Vector3 _gpsCoordinates;
+		private Vector3 _gpsVelocity;
 
 		protected override void OnAwake()
 		{
+			_mode = Mode.TX;
 			gpsLink = transform.parent;
 			deviceName = name;
 
-			var coreObject = GameObject.Find("Core");
-			if (coreObject == null)
-			{
-				Debug.LogError("Failed to Find 'Core'!!!!");
-			}
-			else
-			{
-				sphericalCoordinates = coreObject.GetComponent<SphericalCoordinates>();
-			}
+			sphericalCoordinates = DeviceHelper.GetSphericalCoordinates();
 		}
 
 		protected override void OnStart()
 		{
-			previousSensorPosition = gpsLink.position;
+			_previousSensorPosition = gpsLink.position;
 		}
 
-		protected override IEnumerator OnVisualize()
+		protected override void ProcessDeviceCoroutine()
 		{
-			yield return null;
-		}
-
-		void Update()
-		{
-			var positionDiff = gpsLink.position - previousSensorPosition;
-			previousSensorPosition = gpsLink.position;
+			var positionDiff = gpsLink.position - _previousSensorPosition;
+			_previousSensorPosition = gpsLink.position;
 
 			sensorVelocity = positionDiff / Time.deltaTime;
 		}
@@ -65,20 +51,6 @@ namespace SensorDevices
 			gps = new messages.Gps();
 			gps.Time = new messages.Time();
 			gps.LinkName = deviceName;
-		}
-
-		protected override IEnumerator MainDeviceWorker()
-		{
-			var sw = new Stopwatch();
-
-			while (true)
-			{
-				sw.Restart();
-				GenerateMessage();
-				sw.Stop();
-
-				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
-			}
 		}
 
 		protected override void GenerateMessage()
@@ -92,58 +64,43 @@ namespace SensorDevices
 			// TODO: Applying noise
 
 			// Convert to global frames
-			spherical = sphericalCoordinates.SphericalFromLocal(worldPosition);
+			var convertedPosition = DeviceHelper.Convert.Position(worldPosition);
+			_gpsCoordinates = sphericalCoordinates.SphericalFromLocal(convertedPosition);
 
-			gps.LatitudeDeg = spherical.x;
-			gps.LongitudeDeg = spherical.y;
-			gps.Altitude = spherical.z;
+			gps.LatitudeDeg = _gpsCoordinates.x;
+			gps.LongitudeDeg = _gpsCoordinates.y;
+			gps.Altitude = _gpsCoordinates.z;
 
 			// Convert to global frame
-			gpsVelocity = sphericalCoordinates.GlobalFromLocal(sensorVelocity);
+			var convertedVelocity = DeviceHelper.Convert.Position(sensorVelocity);
+			_gpsVelocity = sphericalCoordinates.GlobalFromLocal(convertedVelocity);
 
 			// Apply noise after converting to global frame
 			// TODO: Applying noise
 
-			gps.VelocityEast = gpsVelocity.x;
-			gps.VelocityNorth = gpsVelocity.y;
-			gps.VelocityUp = gpsVelocity.z;
+			gps.VelocityEast = _gpsVelocity.x;
+			gps.VelocityNorth = _gpsVelocity.y;
+			gps.VelocityUp = _gpsVelocity.z;
 
 			PushData<messages.Gps>(gps);
 		}
 
-		float Longitude()
-		{
-			return (float)gps.LongitudeDeg;
-		}
+		public double Longitude => gps.LongitudeDeg;
 
-		float Latitude()
-		{
-			return (float)gps.LatitudeDeg;
-		}
+		public double Latitude => gps.LatitudeDeg;
 
-		double Altitude()
-		{
-			return (float)gps.Altitude;
-		}
+		public double Altitude => gps.Altitude;
 
-		Vector3 VelocityENU()
+		public double VelocityEast => gps.VelocityEast;
+
+		public double VelocityNorth => gps.VelocityNorth;
+
+		public double VelocityUp => gps.VelocityUp;
+
+		public Vector3 VelocityENU()
 		{
 			return new Vector3((float)gps.VelocityEast, (float)gps.VelocityNorth, (float)gps.VelocityUp);
 		}
 
-		double VelocityEast()
-		{
-			return (float)gps.VelocityEast;
-		}
-
-		double VelocityNorth()
-		{
-			return (float)gps.VelocityNorth;
-		}
-
-		float VelocityUp()
-		{
-			return (float)gps.VelocityUp;
-		}
 	}
 }

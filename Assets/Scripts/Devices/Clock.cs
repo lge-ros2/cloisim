@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections;
 using UnityEngine;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
@@ -20,19 +19,22 @@ public class Clock : Device
 	private double restartedSimTime = 0;
 	private double restartedRealTime = 0;
 
+	private double currentSimTime = 0;
+	private double currentRealTime = 0;
+
+	public double SimTime => currentSimTime;
+
+	public double RealTime => currentRealTime;
+
 	protected override void OnAwake()
 	{
+		_mode = Mode.TX;
 		deviceName = "World Clock";
 	}
 
 	protected override void OnStart()
 	{
 		SetUpdateRate(updateRate);
-	}
-
-	protected override IEnumerator OnVisualize()
-	{
-		yield return null;
 	}
 
 	protected override void InitializeMessages()
@@ -55,16 +57,6 @@ public class Clock : Device
 		timeInfo.Childrens.Add(realTimeParam);
 	}
 
-	protected override IEnumerator MainDeviceWorker()
-	{
-		var waitForSeconds = new WaitForSeconds(UpdatePeriod);
-		while (true)
-		{
-			GenerateMessage();
-			yield return waitForSeconds;
-		}
-	}
-
 	protected override void GenerateMessage()
 	{
 		if (timeInfo != null)
@@ -75,19 +67,15 @@ public class Clock : Device
 		}
 	}
 
+	private void FixedUpdate()
+	{
+		currentSimTime = Time.timeAsDouble - restartedSimTime;
+		currentRealTime = Time.realtimeSinceStartupAsDouble - restartedRealTime;
+	}
+
 	public void ResetTime()
 	{
 		restartedSimTime = Time.timeAsDouble;
 		restartedRealTime = Time.realtimeSinceStartupAsDouble;
-	}
-
-	public double GetSimTime()
-	{
-		return Time.timeAsDouble - restartedSimTime;
-	}
-
-	public double GetRealTime()
-	{
-		return Time.realtimeSinceStartupAsDouble - restartedRealTime;
 	}
 }

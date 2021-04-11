@@ -470,22 +470,35 @@ namespace RuntimeGizmos
 				if (Physics.Raycast(myCamera.ScreenPointToRay(Input.mousePosition), out var hitInfo, Mathf.Infinity))
 				{
 					Transform target = null;
-					var hitObject = hitInfo.transform.gameObject;
+					var hitObject = hitInfo.transform;
 
-					var hitParentObject = hitObject.transform.parent?.GetComponentInParent<SDF.Helper.Model>();
-					var hitParentActor = hitObject.transform?.GetComponent<SDF.Helper.Actor>();
-					if (hitParentObject != null && hitParentObject.CompareTag("Model") && hitParentObject.isTopModel)
-					{
-						// Debug.Log(hitParentObject.name + " Selected!!!!");
-						target = hitParentObject.transform;
-					}
-					else if (hitParentActor != null && hitParentActor.CompareTag("Actor"))
-					{
-						target = hitParentActor.transform;
-					}
-					else if (hitObject.tag.Equals("Props"))
+					if (hitObject.tag.Equals("Props"))
 					{
 						target = hitObject.transform;
+					}
+					else
+					{
+						var hitParentActor = hitObject?.GetComponent<SDF.Helper.Actor>();
+
+						if (hitParentActor != null && hitParentActor.CompareTag("Actor"))
+						{
+							target = hitParentActor.transform;
+						}
+						else
+						{
+							// avoid plane object
+							if (!hitObject.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex))
+							{
+								var hitParentLinkHelper = hitObject.parent?.GetComponent<SDF.Helper.Link>();
+								var hitTopModelHelper = hitParentLinkHelper.TopModel;
+
+								if (hitTopModelHelper != null && !(hitTopModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
+								{
+									// Debug.Log(hitParentObject.name + " Selected!!!!");
+									target = (hitTopModelHelper.hasRootArticulationBody) ? hitTopModelHelper.transform : hitParentLinkHelper.Model.transform;
+								}
+							}
+						}
 					}
 
 					if (target == null)

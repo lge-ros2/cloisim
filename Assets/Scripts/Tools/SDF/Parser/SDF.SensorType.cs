@@ -41,27 +41,21 @@ namespace SDF
 
 	public class Camera : SensorType
 	{
-		protected Pose<double> pose = new Pose<double>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-
-		protected string relative_to = string.Empty;
+		protected Pose<double> pose = new Pose<double>();
 
 		public Pose<double> Pose => pose;
 
 		public void ParsePose(in string poseString, in string relativeTo = "")
 		{
-			relative_to = (string.IsNullOrEmpty(relativeTo)) ? "__model__" : relativeTo;
+			pose.relative_to = (string.IsNullOrEmpty(relativeTo)) ? "__model__" : relativeTo;
 
 			if (!string.IsNullOrEmpty(poseString))
 			{
 				// x y z roll pitch yaw
 				var poseInfo = poseString.Split(' ');
 
-				pose.Pos.X = Convert.ToDouble(poseInfo[0]);
-				pose.Pos.Y = Convert.ToDouble(poseInfo[1]);
-				pose.Pos.Z = Convert.ToDouble(poseInfo[2]);
-				pose.Rot.Roll = Convert.ToDouble(poseInfo[3]);
-				pose.Rot.Pitch = Convert.ToDouble(poseInfo[4]);
-				pose.Rot.Yaw = Convert.ToDouble(poseInfo[5]);
+				pose.Pos.Set(poseInfo[0], poseInfo[1], poseInfo[2]);
+				pose.Rot.Set(poseInfo[3], poseInfo[4], poseInfo[5]);
 
 				// Console.WriteLine("Pose {0} {1} {2} {3} {4} {5}",
 				// 	pose.Pos.X, pose.Pos.Y, pose.Pos.Z,
@@ -91,7 +85,7 @@ namespace SDF
 			public double k3 = 0;
 			public double p1 = 0;
 			public double p2 = 0;
-			public SDF.Vector2<double> center = new SDF.Vector2<double>(0.0f, 0.0f);
+			public SDF.Vector2<double> center = new SDF.Vector2<double>();
 		}
 
 		public class Lens

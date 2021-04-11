@@ -24,28 +24,34 @@ The current release includes the features only for a 2-wheeled mobile robot with
 Other sensor models are work in progress.
 Here is the full list of models that is implemented or planned to be implemented.
 
-- [X] 2D LiDAR Sensor
-- [X] 2-Wheeled Motor
-- [X] Sonar sensor
-- [X] IMU
-- [X] Contact
-- [X] Camera
-  - [ ] Camera intrinsic parameter
-- [X] Multi-camera
-- [X] GPS sensor
-- [X] Depth Camera
-  - [ ] Point Cloud message
-- [X] RealSense (RGB + IR1 + IR2 + Depth)
-- [ ] 3D Lidar Sensor
-- [ ] Sensor noise models
-- [ ] Physics
-  - [ ] Support all physics parameters in SDF specification
-  - [X] Support `<Joint type="revolute2">`
-- [X] Actors
-  - [ ] interpolate_x in `<animation>`
+- [X] Driving models
+  - [X] 2-Wheeled Motor
+- [X] Sensor models
+  - [X] 2D LiDAR Sensor
+  - [X] Sonar sensor
+  - [X] IMU
+  - [X] Contact
+  - [X] Camera
+    - [ ] Camera intrinsic parameter
+  - [X] Depth Camera
+  - [X] Multi-camera
+  - [X] RealSense (RGB + IR1 + IR2 + Depth)
+  - [X] GPS sensor
+  - [ ] 3D Lidar Sensor
+    - [ ] Point Cloud
+  - [ ] Sensor noise models
+  - [ ] Physics
+    - [ ] Support all physics parameters in SDF specification
+    - [X] Support `<Joint type="revolute2">`
+- [X] Worlds
+  - [X] Actors
+    - [ ] interpolate_x in `<animation>`
+  - [X] Lights
+    - [ ] supporting `<specular>`, `<attenuation/linear>`, `<attenuation/contant>`, `<attenuation/quadratic>`, `<spot/falloff>`
+  - [X] Spherical Coordinates
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
-It does not support optional elmenets like `<lights>`, `<audio>`, `<state>`.
+It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<road>`, `<population>`.
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material' and 'STL(.stl)'.
 
@@ -79,7 +85,7 @@ But inertia factors which retrieved from SDF are still NOT USED for rigidbody in
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.0f1 (LTS)'*
+- Latest Unity Editor Version: *'2020.3.3f1 (LTS)'*.
 - Linux: Ubuntu 20.04.1
 - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
 - Memory: 32GB
@@ -91,7 +97,7 @@ If you don't want to build a project, just USE a release binary([Download linux 
 
 ### If you want to build a project
 
-Please visit here [build guide](https://github.com/lge-ros2/multi-robot-simulator/wiki/Build-Guide).
+Please visit here [build guide](https://github.com/lge-ros2/cloisim/wiki/Build-Guide).
 
 ## Usage
 
@@ -99,11 +105,14 @@ Please visit here [build guide](https://github.com/lge-ros2/multi-robot-simulato
 
 Set environment path like below. You can find the sample resources [here](https://github.com/lge-ros2/sample_resources)
 
+Multiple path can be set by :(colon).
+
 ```shell
 export CLOISIM_FILES_PATH="/home/Unity/cloisim/sample_resources/media"
-export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample_resources/models"
+export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample_resources/models:/home/Unity/cloisim/another_resources/models"
 export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample_resources/worlds"
 ```
+
 Run CLOiSim
 
 ```shell

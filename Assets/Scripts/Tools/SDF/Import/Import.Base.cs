@@ -89,12 +89,15 @@ namespace SDF
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, sdfMaterial.Name);
 			}
 
-			protected virtual Object ImportActor(in Actor actor)
+			protected virtual void ImportActor(in Actor actor)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, actor.Name);
-				return null;
 			}
 
+			protected virtual void ImportLight(in Light light)
+			{
+				PrintNotImported(MethodBase.GetCurrentMethod().Name, light.Name);
+			}
 
 			private void ImportVisuals(IReadOnlyList<Visual> items, in Object parentObject)
 			{
@@ -169,7 +172,7 @@ namespace SDF
 				}
 			}
 
-			private void ImportModels(IReadOnlyList<Model> items, in Object parentObject = null)
+			protected void ImportModels(IReadOnlyList<Model> items, in Object parentObject = null)
 			{
 				foreach (var item in items)
 				{
@@ -189,9 +192,10 @@ namespace SDF
 
 					AfterImportModel(item, createdObject);
 				}
+
 			}
 
-			private void ImportActors(IReadOnlyList<Actor> items)
+			protected void ImportActors(IReadOnlyList<Actor> items)
 			{
 				foreach (var item in items)
 				{
@@ -199,14 +203,20 @@ namespace SDF
 				}
 			}
 
-			public void DoImport(in World _world)
+			protected void ImportLights(IReadOnlyList<Light> items)
 			{
-				ImportWorld(_world);
+				foreach (var item in items)
+				{
+					ImportLight(item);
+				}
+			}
 
-				// Console.WriteLine("Import Models({0})/Links/Joints", _world.GetModels().Count);
-				ImportModels(_world.GetModels());
+			public IEnumerator<World> StartImport(World world)
+			{
+				// Console.WriteLine("Import Models({0})/Links/Joints", world.GetModels().Count);
+				ImportWorld(world);
 
-				ImportActors(_world.GetActors());
+				yield return null;
 			}
 
 			private void PrintNotImported(in string methodName, in string name)

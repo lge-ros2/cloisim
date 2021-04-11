@@ -20,13 +20,13 @@ namespace SDF
 
 		private string targetTag = string.Empty;
 
-		protected Entities(string _tag)
+		protected Entities(string tag)
 		{
-			targetTag = _tag;
+			targetTag = tag;
 		}
 
-		protected Entities(XmlNode node, string _tag)
-			: this(_tag)
+		protected Entities(XmlNode node, in string tag)
+			: this(tag)
 		{
 			LoadData(node);
 		}
@@ -67,26 +67,20 @@ namespace SDF
 		private string name = string.Empty;
 		private string type = string.Empty;
 
-		protected Pose<double> pose = new Pose<double>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-		protected string relative_to = string.Empty; // TBD : for SDF 1.7
+		protected Pose<double> pose = new Pose<double>();
 
-		protected Entity(XmlNode node)
+		protected Entity(XmlNode node, in string default_name = "__default__", in string default_type = "__default__")
 		{
 			// Console.WriteLine("[{0}] Name: {1}, Type: {2}", GetType().Name, name, type);
 			root = node;
 			attributes = root.Attributes;
 
-			if (attributes["name"] != null)
-			{
-				Name = attributes["name"].Value;
-			}
-
-			if (attributes["type"] != null)
-			{
-				Type = attributes["type"].Value;
-			}
+			Name = (attributes["name"] != null) ? attributes["name"].Value : default_name;
+			Type = (attributes["type"] != null) ? attributes["type"].Value : default_type;
 
 			ParsePose();
+
+			ParseElements();
 		}
 
 		public string Name
@@ -179,24 +173,6 @@ namespace SDF
 		{
 			var code = System.Type.GetTypeCode(typeof(T));
 
-			// if (typeof(T) == typeof(double))
-			// 	code = TypeCode.Double;
-			// if (typeof(T) == typeof(float))
-			// 	code = TypeCode.Single;
-			// else if (typeof(T) == typeof(int))
-			// 	code = TypeCode.Int32;
-			// else if (typeof(T) == typeof(uint))
-			// 	code = TypeCode.UInt32;
-			// else if (typeof(T) == typeof(string))
-			// 	code = TypeCode.String;
-			// else if (typeof(T) == typeof(bool))
-			// {
-			// 	code = TypeCode.Boolean;
-			// 	value = (value == "1")? "true":"false";
-			// }
-			// else
-			// 	return (T)defaultValue;
-
 			if (code == TypeCode.Boolean)
 			{
 				if (Char.IsNumber(value, 0))
@@ -237,20 +213,15 @@ namespace SDF
 		{
 			var value = GetValue<string>("pose");
 
-			// TBD : for SDF 1.7
-			relative_to = GetAttributeInPath<string>("pose", "relative_to");
-
 			if (value != null)
 			{
-				// x y z roll pitch yaw
-				string[] poseStr = value.Split(' ');
+				pose.relative_to = GetAttributeInPath<string>("pose", "relative_to");
 
-				pose.Pos.X = Convert.ToDouble(poseStr[0]);
-				pose.Pos.Y = Convert.ToDouble(poseStr[1]);
-				pose.Pos.Z = Convert.ToDouble(poseStr[2]);
-				pose.Rot.Roll = Convert.ToDouble(poseStr[3]);
-				pose.Rot.Pitch = Convert.ToDouble(poseStr[4]);
-				pose.Rot.Yaw = Convert.ToDouble(poseStr[5]);
+				// x y z roll pitch yaw
+				var poseStr = value.Split(' ');
+
+				pose.Pos.Set(poseStr[0], poseStr[1], poseStr[2]);
+				pose.Rot.Set(poseStr[3], poseStr[4], poseStr[5]);
 
 				// Console.WriteLine("Pose {0} {1} {2} {3} {4} {5}",
 				// 	pose.Pos.X, pose.Pos.Y, pose.Pos.Z,
@@ -261,7 +232,7 @@ namespace SDF
 
 		protected virtual void ParseElements()
 		{
-			Console.WriteLine("[{0}] Nothing to parse", GetType().Name);
+			// Console.WriteLine("[{0}] Nothing to parse", GetType().Name);
 		}
 	}
 }

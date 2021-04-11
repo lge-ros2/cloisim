@@ -39,6 +39,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
+			_mode = Mode.TX;
 			deviceName = name;
 			sonarLink = transform.parent;
 
@@ -112,19 +113,6 @@ namespace SensorDevices
 			sonarStamped.Sonar.WorldPose.Position = new messages.Vector3d();
 			sonarStamped.Sonar.WorldPose.Orientation = new messages.Quaternion();
 			sonarStamped.Sonar.Contact = new messages.Vector3d();
-		}
-
-		protected override IEnumerator MainDeviceWorker()
-		{
-			var sw = new Stopwatch();
-			while (true)
-			{
-				sw.Restart();
-				GenerateMessage();
-				sw.Stop();
-
-				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
-			}
 		}
 
 		protected override void GenerateMessage()

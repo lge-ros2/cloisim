@@ -32,8 +32,8 @@ namespace SensorDevices
 
 			if (numberOfBeams == laserScan.Intensities.Length)
 			{
-				var filterLowerBeamIndexRatio = (filterAngleLower_ - laserScan.AngleMin) / (laserScan.AngleMax - laserScan.AngleMin);
-				var filterUpperBeamIndexRatio = (filterAngleUpper_ - laserScan.AngleMin) / (laserScan.AngleMax - laserScan.AngleMin);
+				var filterLowerBeamIndexRatio = ((double)filterAngleLower_ - laserScan.AngleMin) / (laserScan.AngleMax - laserScan.AngleMin);
+				var filterUpperBeamIndexRatio = ((double)filterAngleUpper_ - laserScan.AngleMin) / (laserScan.AngleMax - laserScan.AngleMin);
 
 				filterLowerBeamIndex_ = (laserScan.AngleMin >= filterAngleLower_) ? (int?)null : (int)((double)numberOfBeams * filterLowerBeamIndexRatio);
 				filterUpperBeamIndex_ = (laserScan.AngleMax <= filterAngleUpper_) ? (int?)null : (int)((double)numberOfBeams * filterUpperBeamIndexRatio);

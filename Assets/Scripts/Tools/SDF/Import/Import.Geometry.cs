@@ -26,7 +26,7 @@ namespace SDF
 				var t = geometry.GetShapeType();
 				var shape = geometry.GetShape();
 
-				if (t == typeof(SDF.Mesh))
+				if (t.Equals(typeof(SDF.Mesh)))
 				{
 					var mesh = shape as SDF.Mesh;
 					Implement.Geometry.SetMesh(mesh, targetObject);

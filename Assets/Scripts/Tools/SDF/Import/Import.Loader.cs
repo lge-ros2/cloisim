@@ -14,20 +14,17 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private UE.GameObject _rootObject = null;
-			private UE.Camera _mainCamera = null;
+			private UE.GameObject _rootObjectModels = null;
+			private UE.GameObject _rootObjectLights = null;
 
-			public Loader(UE.GameObject rootObject)
+			public void SetRootModels(in UE.GameObject root)
 			{
-				_rootObject = rootObject;
+				_rootObjectModels = root;
 			}
 
-			public void SetMainCamera(in UE.Camera camera)
+			public void SetRootLights(in UE.GameObject root)
 			{
-				if (_mainCamera == null)
-				{
-					_mainCamera = camera;
-				}
+				_rootObjectLights = root;
 			}
 
 			private void SetParentObject(UE.GameObject childObject, UE.GameObject parentObject)
@@ -35,32 +32,12 @@ namespace SDF
 				childObject.transform.position = UE.Vector3.zero;
 				childObject.transform.rotation = UE.Quaternion.identity;
 
-				if (parentObject == null)
-				{
-					childObject.transform.SetParent(_rootObject.transform, false);
-				}
-				else
-				{
-					childObject.transform.SetParent(parentObject.transform, false);
-				}
+				var targetParentTransform = (parentObject == null) ? _rootObjectModels.transform : parentObject.transform;
+				childObject.transform.SetParent(targetParentTransform, false);
 
 				childObject.transform.localScale = UE.Vector3.one;
 				childObject.transform.localPosition = UE.Vector3.zero;
 				childObject.transform.localRotation = UE.Quaternion.identity;
-			}
-
-			private void SetParentObject(UE.GameObject childObject, in string parentObjectName)
-			{
-				var parentObject = UE.GameObject.Find(parentObjectName);
-
-				if (parentObject != null)
-				{
-					SetParentObject(childObject, parentObject);
-				}
-				else
-				{
-					Debug.Log("There is no parent Object: " + parentObjectName);
-				}
 			}
 
 			protected override void ImportPlugin(in SDF.Plugin plugin, in System.Object parentObject)
@@ -107,27 +84,6 @@ namespace SDF
 				else
 				{
 					Debug.LogWarningFormat("[Plugin] No plugin({0}) exist", plugin.Name);
-				}
-			}
-
-			protected override void ImportWorld(in SDF.World world)
-			{
-				if (world == null)
-				{
-					return;
-				}
-
-				// Debug.Log("Import World");
-				if (world.GuiCameraPose != null)
-				{
-					_mainCamera.transform.localPosition = UE.Vector3.zero;
-					_mainCamera.transform.localRotation = UE.Quaternion.identity;
-					_mainCamera.transform.position = UE.Vector3.zero;
-
-					var rotate = SDF2Unity.GetRotation(world.GuiCameraPose.Rot);
-					var translate = SDF2Unity.GetPosition(world.GuiCameraPose.Pos);
-					_mainCamera.transform.Translate(translate);
-					_mainCamera.transform.rotation = rotate;
 				}
 			}
 		}
