@@ -13,11 +13,11 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportLight(in Light light)
+			protected override void ImportLight(in Light light)
 			{
 				if (light == null)
 				{
-					return null;
+					return;
 				}
 
 				var newLightObject = new UE.GameObject();
@@ -67,8 +67,6 @@ namespace SDF
 
 				newLightObject.transform.localPosition = localPosition;
 				newLightObject.transform.localRotation *= localRotation;
-
-				return newLightObject as System.Object;
 			}
 		}
 	}
