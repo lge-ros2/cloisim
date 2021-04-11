@@ -64,9 +64,12 @@ namespace SDF
 
 					if (_articulationBody != null)
 					{
-						_articulationBody.TeleportRoot(targetPose.position, targetPose.rotation);
-						_articulationBody.velocity = UE.Vector3.zero;
-						_articulationBody.angularVelocity = UE.Vector3.zero;
+						if (_articulationBody.isRoot)
+						{
+							_articulationBody.TeleportRoot(targetPose.position, targetPose.rotation);
+							_articulationBody.velocity = UE.Vector3.zero;
+							_articulationBody.angularVelocity = UE.Vector3.zero;
+						}
 					}
 				}
 			}
