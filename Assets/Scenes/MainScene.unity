@@ -219,8 +219,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f9694630fd757ed38508aa2d402926b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isSelfCollide: 0
   drawInertia: 0
+  isSelfCollide: 0
 --- !u!1 &25597963
 GameObject:
   m_ObjectHideFlags: 0
@@ -317,8 +317,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f9694630fd757ed38508aa2d402926b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isSelfCollide: 0
   drawInertia: 0
+  isSelfCollide: 0
 --- !u!1 &34803206
 GameObject:
   m_ObjectHideFlags: 0
@@ -768,6 +768,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isTopModel: 1
+  hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &249819585
 GameObject:
@@ -1234,8 +1235,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f9694630fd757ed38508aa2d402926b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isSelfCollide: 0
   drawInertia: 0
+  isSelfCollide: 0
 --- !u!135 &402915479
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1898,8 +1899,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f9694630fd757ed38508aa2d402926b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isSelfCollide: 0
   drawInertia: 0
+  isSelfCollide: 0
 --- !u!171741748 &635764732
 ArticulationBody:
   m_ObjectHideFlags: 0
@@ -2486,6 +2487,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isTopModel: 1
+  hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &779420288
 GameObject:
@@ -2869,8 +2871,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f9694630fd757ed38508aa2d402926b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isSelfCollide: 0
   drawInertia: 0
+  isSelfCollide: 0
 --- !u!1 &887438904
 GameObject:
   m_ObjectHideFlags: 0
@@ -5389,6 +5391,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isTopModel: 0
+  hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &1750713662
 GameObject:
@@ -5753,8 +5756,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f9694630fd757ed38508aa2d402926b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isSelfCollide: 0
   drawInertia: 0
+  isSelfCollide: 0
 --- !u!1 &1835497263
 GameObject:
   m_ObjectHideFlags: 0
@@ -6235,6 +6238,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isTopModel: 1
+  hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &2133470735
 GameObject:
