@@ -64,7 +64,7 @@ public class FollowingTargetList : MonoBehaviour
 		{
 			foreach (var modelHelper in modelRoot.GetComponentsInChildren<SDF.Helper.Model>())
 			{
-				if (modelHelper.isTopModel && !modelHelper.isStatic)
+				if (modelHelper.isTopModel && !modelHelper.isStatic && modelHelper.hasRootArticulationBody)
 				{
 					var newOption = new TMP_Dropdown.OptionData();
 					newOption.text = modelHelper.name;
