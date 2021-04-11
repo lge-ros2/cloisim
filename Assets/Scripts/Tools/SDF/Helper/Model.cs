@@ -13,9 +13,10 @@ namespace SDF
 		public class Model : Base
 		{
 			public bool isTopModel;
+			public bool hasRootArticulationBody;
 
 			[UE.Header("SDF Properties")]
-			public bool isStatic = false;
+			public bool isStatic;
 
 			new void Awake()
 			{
@@ -36,7 +37,7 @@ namespace SDF
 
 			private void ConvertToStaticLink()
 			{
-				this.gameObject.isStatic = true;
+				gameObject.isStatic = true;
 
 				foreach (var childGameObject in GetComponentsInChildren<UE.Transform>())
 				{

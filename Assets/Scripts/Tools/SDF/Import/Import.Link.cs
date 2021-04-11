@@ -13,23 +13,24 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
+			public static readonly float MinimumInertiaTensor = 1e-6f;
+
 			private UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia  inertia)
 			{
 				var inertiaMomentum = UE.Pose.identity;
 				var inertiaVector = SDF2Unity.GetScalar((float)inertia.ixx, (float)inertia.iyy, (float)inertia.izz);
 				var inertiaRotationVector = SDF2Unity.GetScalar((float)inertia.ixy, (float)inertia.iyz, (float)inertia.ixz);
 
-				const float minimumInertiaTensor = 1e-6f;
 				for (var index = 0; index < 3; index++)
 				{
-					if (inertiaVector[index] <= minimumInertiaTensor)
+					if (inertiaVector[index] <= MinimumInertiaTensor)
 					{
-						inertiaVector[index] = minimumInertiaTensor;
+						inertiaVector[index] = MinimumInertiaTensor;
 					}
 
-					if (inertiaRotationVector[index] <= minimumInertiaTensor)
+					if (inertiaRotationVector[index] <= MinimumInertiaTensor)
 					{
-						inertiaRotationVector[index] = minimumInertiaTensor;
+						inertiaRotationVector[index] = MinimumInertiaTensor;
 					}
 				}
 
@@ -50,9 +51,9 @@ namespace SDF
 				var localPosition = SDF2Unity.GetPosition(link.Pose.Pos);
 				var localRotation = SDF2Unity.GetRotation(link.Pose.Rot);
 
-				var linkPlugin = newLinkObject.AddComponent<Helper.Link>();
-				linkPlugin.isSelfCollide = link.SelfCollide;
-				linkPlugin.SetPose(localPosition, localRotation);
+				var linkHelper = newLinkObject.AddComponent<Helper.Link>();
+				linkHelper.isSelfCollide = link.SelfCollide;
+				linkHelper.SetPose(localPosition, localRotation);
 
 				return newLinkObject as System.Object;
 			}
@@ -67,8 +68,10 @@ namespace SDF
 					return;
 				}
 
+				var linkHelper = linkObject.GetComponent<Helper.Link>();
+
 				// skip to create articulation body when mass is ZERO
-				if (link.Inertial != null && link.Inertial.mass != 0)
+				if (!linkHelper.Model.isStatic && link.Inertial != null && link.Inertial.mass != 0)
 				{
 					var articulationBody = linkObject.AddComponent<UE.ArticulationBody>();
 
@@ -104,7 +107,7 @@ namespace SDF
 					}
 					else
 					{
-						articulationBody.inertiaTensor = UE.Vector3.one * 1e-6f;
+						articulationBody.inertiaTensor = UE.Vector3.one * MinimumInertiaTensor;
 						articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
 					}
 

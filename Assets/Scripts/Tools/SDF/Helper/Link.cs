@@ -15,11 +15,10 @@ namespace SDF
 		{
 			private Model _topModel = null;
 			private Model _modelHelper = null;
+			public bool drawInertia = false;
 
 			[UE.Header("SDF Properties")]
 			public bool isSelfCollide = false;
-
-			public bool drawInertia = false;
 
 			private UE.ArticulationBody _artBody = null;
 
@@ -27,12 +26,13 @@ namespace SDF
 
 			public Model TopModel => _topModel;
 
+			public Model Model => _modelHelper;
+
 			new void Awake()
 			{
 				base.Awake();
 
-				var modelObject = transform.parent;
-				_modelHelper = modelObject.GetComponent<Model>();
+				_modelHelper = transform.parent?.GetComponent<Model>();
 			}
 
 			// Start is called before the first frame update

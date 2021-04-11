@@ -491,10 +491,11 @@ namespace RuntimeGizmos
 							{
 								var hitParentLinkHelper = hitObject.parent?.GetComponent<SDF.Helper.Link>();
 								var hitTopModelHelper = hitParentLinkHelper.TopModel;
-								if (hitTopModelHelper != null)
+
+								if (hitTopModelHelper != null && !(hitTopModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
 								{
 									// Debug.Log(hitParentObject.name + " Selected!!!!");
-									target = hitTopModelHelper.transform;
+									target = (hitTopModelHelper.hasRootArticulationBody) ? hitTopModelHelper.transform : hitParentLinkHelper.Model.transform;
 								}
 							}
 						}
