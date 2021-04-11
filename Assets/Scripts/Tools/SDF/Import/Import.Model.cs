@@ -57,7 +57,7 @@ namespace SDF
 				// Debug.Log(newModelObject.name + "::" + localPosition + ", " + localRotation);
 
 				var modelHelper = newModelObject.AddComponent<Helper.Model>();
-				modelHelper.isTopModel = SDF2Unity.CheckTopModel(newModelObject);
+				modelHelper.isTopModel = SDF2Unity.IsTopModel(newModelObject);
 				modelHelper.isStatic = model.IsStatic;
 				modelHelper.SetPose(localPosition, localRotation);
 
