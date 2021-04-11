@@ -13,6 +13,7 @@ namespace SDF
 	{
 		public class Link : Base
 		{
+			private Model _topModel = null;
 			private Model _modelHelper = null;
 
 			[UE.Header("SDF Properties")]
@@ -20,9 +21,11 @@ namespace SDF
 
 			public bool drawInertia = false;
 
-			private UE.ArticulationBody artBody;
+			private UE.ArticulationBody _artBody = null;
 
 			public Dictionary<string, UE.ArticulationBody> jointList = new Dictionary<string, UE.ArticulationBody>();
+
+			public Model TopModel => _topModel;
 
 			new void Awake()
 			{
@@ -35,12 +38,21 @@ namespace SDF
 			// Start is called before the first frame update
 			void Start()
 			{
+				foreach (var modelHelper in GetComponentsInParent<Model>())
+				{
+					if (modelHelper.isTopModel)
+					{
+						_topModel = modelHelper;
+						break;
+					}
+				}
+
+				_artBody = GetComponent<UE.ArticulationBody>();
+
 				if (_modelHelper != null)
 				{
 					_modelHelper.SetArticulationBody();
 				}
-
-				artBody = this.GetComponent<UE.ArticulationBody>();
 
 				// Handle self collision
 				if (!isSelfCollide)
@@ -55,11 +67,11 @@ namespace SDF
 
 			void OnDrawGizmos()
 			{
-				if (artBody && drawInertia)
+				if (_artBody && drawInertia)
 				{
 					UE.Gizmos.color = new UE.Color(0.35f, 0.0f, 0.1f, 0.1f);
 
-					var region = artBody.inertiaTensor;
+					var region = _artBody.inertiaTensor;
 					if (region.x > 1f || region.y > 1f || region.z > 1f)
 					{
 						region = region.normalized;

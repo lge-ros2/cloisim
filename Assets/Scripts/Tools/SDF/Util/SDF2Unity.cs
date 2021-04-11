@@ -75,12 +75,12 @@ public partial class SDF2Unity
 		return GetPosition(direction);
 	}
 
-	public static bool CheckTopModel(in GameObject targetObject)
+	public static bool IsTopModel(in GameObject targetObject)
 	{
-		return CheckTopModel(targetObject.transform);
+		return IsTopModel(targetObject.transform);
 	}
 
-	public static bool CheckTopModel(in Transform targetTransform)
+	public static bool IsTopModel(in Transform targetTransform)
 	{
 		return targetTransform.parent.Equals(targetTransform.root);
 	}
