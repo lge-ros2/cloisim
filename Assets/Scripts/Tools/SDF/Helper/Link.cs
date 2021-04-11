@@ -38,25 +38,15 @@ namespace SDF
 			// Start is called before the first frame update
 			void Start()
 			{
-				foreach (var modelHelper in GetComponentsInParent<Model>())
-				{
-					if (modelHelper.isTopModel)
-					{
-						_topModel = modelHelper;
-						break;
-					}
-				}
+				var modelHelpers = GetComponentsInParent(typeof(Model));
+				_topModel = (Model)modelHelpers[modelHelpers.Length - 1];
 
 				_artBody = GetComponent<UE.ArticulationBody>();
 
 				// Handle self collision
 				if (!isSelfCollide)
 				{
-					IgnoreSelfCollision(_modelHelper);
-				}
-				else
-				{
-					EnableSelfCollision();
+					IgnoreSelfCollision();
 				}
 			}
 
@@ -120,15 +110,14 @@ namespace SDF
 				return GetComponentsInChildren<UE.Collider>();
 			}
 
-			private void IgnoreSelfCollision(in Model targetModelHelper)
+			private void IgnoreSelfCollision()
 			{
-				if (targetModelHelper == null)
+				if (_topModel == null)
 				{
 					return;
 				}
 
-				var topParentModel = targetModelHelper.GetThisInTopParent();
-				var otherLinkPlugins = topParentModel.GetLinksInChildren();
+				var otherLinkPlugins = _topModel.GetComponentsInChildren<Link>();
 				var thisColliders = GetCollidersInChildren();
 
 				foreach (var otherLinkPlugin in otherLinkPlugins)
@@ -147,16 +136,6 @@ namespace SDF
 							// Debug.Log("Ignore Collision(" + name + "): " + thisCollider.name + " <-> " + otherCollider.name);
 						}
 					}
-				}
-			}
-
-			private void EnableSelfCollision()
-			{
-				var thisColliders = GetCollidersInChildren();
-
-				foreach (var joint in GetComponentsInChildren<UE.Joint>())
-				{
-					joint.enableCollision = true;
 				}
 			}
 		}

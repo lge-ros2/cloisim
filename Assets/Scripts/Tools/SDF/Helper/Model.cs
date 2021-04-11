@@ -34,17 +34,6 @@ namespace SDF
 				}
 			}
 
-			public Model GetThisInTopParent()
-			{
-				var modelHelpers = GetComponentsInParent(typeof(Model));
-				return (Model)modelHelpers[modelHelpers.Length - 1];
-			}
-
-			public Link[] GetLinksInChildren()
-			{
-				return GetComponentsInChildren<Link>();
-			}
-
 			private void ConvertToStaticLink()
 			{
 				this.gameObject.isStatic = true;
