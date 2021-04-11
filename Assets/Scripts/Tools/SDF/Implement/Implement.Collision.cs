@@ -13,6 +13,8 @@ namespace SDF
 	{
 		public class Collision
 		{
+			public static readonly int PlaneLayerIndex = UE.LayerMask.NameToLayer("Plane");
+
 			private static readonly bool enableMergeCollider = true;
 
 			private static readonly MCCookingOptions cookingOptions =

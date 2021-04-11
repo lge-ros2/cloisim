@@ -37,7 +37,7 @@ namespace SDF
 
 					if (collision.GetGeometry().GetShapeType().Equals(typeof(Plane)))
 					{
-						collisionObject.layer = UE.LayerMask.NameToLayer("Plane");
+						collisionObject.layer = Implement.Collision.PlaneLayerIndex;
 					}
 
 #if UNITY_EDITOR
