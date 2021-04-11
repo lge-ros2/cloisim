@@ -13,15 +13,6 @@ namespace SDF
 	{
 		public class Actor : Base
 		{
-			private const float distanceEpsilon = UE.Vector3.kEpsilon * 10;
-			private const float angleEpsilon = UE.Quaternion.kEpsilon * 50000;
-
-			[UE.Header("SDF Properties")]
-			public bool isStatic = false;
-			private SDF.Actor.Script _script = null;
-
-			private double elapsedTimeSinceAnimationStarted = 0;
-
 			private struct waypointToward
 			{
 				public float linearSpeed;
@@ -30,16 +21,34 @@ namespace SDF
 				public UE.Quaternion rotateTo;
 			};
 
+			private const float distanceEpsilon = UE.Vector3.kEpsilon * 10;
+			private const float angleEpsilon = UE.Quaternion.kEpsilon * 50000;
+
 			private List<waypointToward> waypointTowards = new List<waypointToward>();
 			private int waypointTowardsIndex = 0;
+			private double elapsedTimeSinceAnimationStarted = 0;
 			private bool _followingWaypoint = false;
-			private UE.Pose nextTargetPose = new UE.Pose();
+			private UE.Pose trgetPose = new UE.Pose();
+
+			[UE.Header("SDF Properties")]
+			public bool isStatic = false;
+			private SDF.Actor.Script _script = null;
 
 			public bool IsFollowingWaypoint => _followingWaypoint;
 
 			new void Awake()
 			{
 				base.Awake();
+			}
+
+			public new void Reset()
+			{
+				base.Reset();
+
+				var animationComponent = GetComponent<UE.Animation>();
+				animationComponent.Rewind();
+
+				RestartWayPointFollowing();
 			}
 
 			void Start()
@@ -84,6 +93,7 @@ namespace SDF
 
 					if (_script.loop && waypointTowardsIndex >= waypointTowards.Count)
 					{
+						StopWaypointFollowing();
 						StartWaypointFollowing();
 						// UE.Debug.Log("Loop again");
 					}
@@ -93,28 +103,41 @@ namespace SDF
 			private void StartWaypointFollowing()
 			{
 				_followingWaypoint = true;
-				waypointTowardsIndex = 0;
-				elapsedTimeSinceAnimationStarted = 0;
 			}
 
 			private void StopWaypointFollowing()
 			{
 				_followingWaypoint = false;
+				waypointTowardsIndex = 0;
+				elapsedTimeSinceAnimationStarted = 0;
+			}
+
+			private void RestartWayPointFollowing()
+			{
+				StopWaypointFollowing();
+
+				if (waypointTowards.Count > 0)
+				{
+					var waypoint = waypointTowards[waypointTowardsIndex];
+					SetActorPose(waypoint.tranlateTo, waypoint.rotateTo);
+				}
+
+				StartWaypointFollowing();
 			}
 
 			private UE.Pose CurrentActorPose()
 			{
-				return nextTargetPose;
+				return trgetPose;
 			}
 
 			private UE.Pose SetActorPose(in UE.Vector3 newPosition, in UE.Quaternion newRotation)
 			{
-				nextTargetPose.position = newPosition;
-				nextTargetPose.rotation = newRotation;
+				trgetPose.position = newPosition;
+				trgetPose.rotation = newRotation;
 
 				var initPose = GetAllPose();
-				transform.localPosition = initPose.position + nextTargetPose.position;
-				transform.localRotation = nextTargetPose.rotation * initPose.rotation;
+				transform.localPosition = initPose.position + trgetPose.position;
+				transform.localRotation = trgetPose.rotation * initPose.rotation;
 
 				return CurrentActorPose();
 			}
@@ -154,6 +177,7 @@ namespace SDF
 							lastRotation = SDF2Unity.GetRotation(firstWayPoint.Pose.Rot);
 							startIndex = 1;
 						}
+
 						SetActorPose(lastPosition, lastRotation);
 
 						var lastTime = 0f;
