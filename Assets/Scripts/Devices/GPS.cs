@@ -83,8 +83,6 @@ namespace SensorDevices
 			gps.VelocityUp = _gpsVelocity.z;
 
 			PushData<messages.Gps>(gps);
-
-			Debug.Log(Latitude + ", " + Longitude);
 		}
 
 		public double Longitude => gps.LongitudeDeg;
