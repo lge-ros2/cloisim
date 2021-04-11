@@ -42,10 +42,13 @@ namespace SDF
 					sphericalCoordinatesCore.SetCoordinatesReference((float)sphericalCoordinates.latitude_deg, (float)sphericalCoordinates.longitude_deg, (float)sphericalCoordinates.elevation, (float)sphericalCoordinates.heading_deg);
 				}
 
-				if (world.GetLights().Count > 0)
-				{
-					ImportLights(world.GetLights());
-				}
+				var lights = world.GetLights();
+				var actors = world.GetActors();
+				var models = world.GetModels();
+
+				ImportLights(lights);
+				ImportActors(actors);
+				ImportModels(models);
 			}
 		}
 	}

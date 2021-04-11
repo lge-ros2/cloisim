@@ -215,10 +215,6 @@ namespace SDF
 			{
 				// Console.WriteLine("Import Models({0})/Links/Joints", world.GetModels().Count);
 				ImportWorld(world);
-
-				ImportModels(world.GetModels());
-
-				ImportActors(world.GetActors());
 			}
 
 			private void PrintNotImported(in string methodName, in string name)
