@@ -211,10 +211,12 @@ namespace SDF
 				}
 			}
 
-			public void StartImport(in World world)
+			public IEnumerator<World> StartImport(World world)
 			{
 				// Console.WriteLine("Import Models({0})/Links/Joints", world.GetModels().Count);
 				ImportWorld(world);
+
+				yield return null;
 			}
 
 			private void PrintNotImported(in string methodName, in string name)
