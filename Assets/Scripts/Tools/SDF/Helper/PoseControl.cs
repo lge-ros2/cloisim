@@ -26,11 +26,6 @@ namespace SDF
 				_targetTransform = target;
 			}
 
-			public void SetArticulationBody()
-			{
-				_articulationBody = _targetTransform.GetComponent<UE.ArticulationBody>();
-			}
-
 			public void Add(in UE.Vector3 newPosition, in UE.Quaternion newRotation)
 			{
 				_poseList.Add(new UE.Pose(newPosition, newRotation));
@@ -59,8 +54,13 @@ namespace SDF
 				{
 					var targetPose = Get(targetFrame);
 
-					_targetTransform.localPosition = targetPose.position; ;
-					_targetTransform.localRotation = targetPose.rotation; ;
+					_targetTransform.localPosition = targetPose.position;
+					_targetTransform.localRotation = targetPose.rotation;
+
+					if (_articulationBody == null)
+					{
+						_articulationBody = _targetTransform.GetComponent<UE.ArticulationBody>();
+					}
 
 					if (_articulationBody != null)
 					{

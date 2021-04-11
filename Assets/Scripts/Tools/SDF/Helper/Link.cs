@@ -49,11 +49,6 @@ namespace SDF
 
 				_artBody = GetComponent<UE.ArticulationBody>();
 
-				if (_modelHelper != null)
-				{
-					_modelHelper.SetArticulationBody();
-				}
-
 				// Handle self collision
 				if (!isSelfCollide)
 				{
