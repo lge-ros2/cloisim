@@ -24,7 +24,7 @@ namespace SDF
 
 		private string sdfVersion = "1.7";
 
-		private World world = null;
+		private World _world = null;
 
 		public List<string> fileDefaultPaths = new List<string>();
 
@@ -63,7 +63,7 @@ namespace SDF
 
 		public World World()
 		{
-			return world;
+			return _world;
 		}
 
 		public bool DoParse()
@@ -111,7 +111,7 @@ namespace SDF
 			// Console.WriteLine("Load World");
 			var worldNode = doc.SelectSingleNode("/sdf/world");
 
-			world = new World(worldNode);
+			_world = new World(worldNode);
 
 			// Console.WriteLine("Load Completed!!!");
 
