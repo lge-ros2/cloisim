@@ -12,7 +12,7 @@ PlayerSettings:
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
-  companyName: LG Electronics
+  companyName: LGElectronics.AdvancedRoboticsLab
   productName: CLOiSim
   defaultCursor: {fileID: 2800000, guid: 8c59cc8e2487aff97b53248ea15b74c0, type: 3}
   cursorHotspot: {x: 3, y: 3}
@@ -146,7 +146,7 @@ PlayerSettings:
   androidSupportedAspectRatio: 1
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
-    Standalone: com.LGElectronics.CLOiSim
+    Standalone: com.LGElectronics.AdvancedRoboticsLab.CLOiSim
   buildNumber:
     Standalone: 0
     iPhone: 0
