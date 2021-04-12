@@ -13,6 +13,7 @@ public class SimulationDisplay : MonoBehaviour
 	private Clock clock = null;
 	private string eventMessage = string.Empty;
 	private StringBuilder sbTimInfo = new StringBuilder();
+	private string _fpsString = string.Empty;
 
 	[Header("fps")]
 	private const float fpsUpdatePeriod = 0.5f;
@@ -48,6 +49,11 @@ public class SimulationDisplay : MonoBehaviour
 	void Update()
 	{
 		CalculateFPS();
+	}
+
+	void LateUpdate()
+	{
+		_fpsString = "FPS [" + GetBoldText(Mathf.Round(fps).ToString("F1")) + "]";
 	}
 
 	public void ClearEventMessage()
@@ -143,10 +149,10 @@ public class SimulationDisplay : MonoBehaviour
 
 		// fps info
 		GUI.skin.label.alignment = TextAnchor.MiddleRight;
-		var fpsString = "FPS [" + GetBoldText(Mathf.Round(fps).ToString("F1")) + "]";
-		DrawShadow(rectFps, fpsString);
+		rectFps.x = Screen.width - textWidthFps - textLeftMargin;
+		DrawShadow(rectFps, _fpsString);
 		GUI.skin.label.normal.textColor = Color.cyan;
-		GUI.Label(rectFps, fpsString);
+		GUI.Label(rectFps, _fpsString);
 
 		GUI.skin.label.normal.textColor = originLabelColor;
 	}
