@@ -20,11 +20,11 @@ public class MicomInput : Device
 
 	public VelocityType ControlType => controlType;
 
-	private float wheelLinearVelocityLeft = 0; // m/s
-	private float wheelLinearVelocityRight = 0; // m/s
+	private float _wheelLinearVelocityLeft = 0; // m/s
+	private float _wheelLinearVelocityRight = 0; // m/s
 
-	private float linearVelocity = 0; // m/s
-	private float angularVelocity = 0; // rad/s
+	private float _linearVelocity = 0; // m/s
+	private float _angularVelocity = 0; // rad/s
 
 	protected override void OnAwake()
 	{
@@ -34,6 +34,15 @@ public class MicomInput : Device
 
 	protected override void OnStart()
 	{
+	}
+
+	public void Reset()
+	{
+		ResetDataStream();
+		_wheelLinearVelocityLeft = 0;
+		_wheelLinearVelocityRight = 0;
+		_linearVelocity = 0;
+		_angularVelocity = 0;
 	}
 
 	protected override void ProcessDeviceCoroutine()
@@ -69,10 +78,10 @@ public class MicomInput : Device
 			{
 				controlType = VelocityType.LinearAndAngular;
 
-				linearVelocity
+				_linearVelocity
 					= (!child0.Name.Equals("LinearVelocity")) ? 0 : (float)-child0.Value.DoubleValue;
 
-				angularVelocity
+				_angularVelocity
 					= (!child1.Name.Equals("AngularVelocity")) ? 0 : (float)-child1.Value.DoubleValue;
 
 				// Debug.Log(linearVelocity.ToString("F10") + ", " + (-child0.Value.DoubleValue).ToString("F10") + " | " + angularVelocity.ToString("F10") + ", " + (-child1.Value.DoubleValue).ToString("F10"));
@@ -81,10 +90,10 @@ public class MicomInput : Device
 			{
 				controlType = VelocityType.LeftAndRight;
 
-				wheelLinearVelocityLeft
+				_wheelLinearVelocityLeft
 					= (!child0.Name.Equals("LeftWheelVelocity")) ? 0 : (float)-child0.Value.DoubleValue;
 
-				wheelLinearVelocityRight
+				_wheelLinearVelocityRight
 					= (!child1.Name.Equals("RightWheelVelocity")) ? 0 : (float)-child1.Value.DoubleValue;
 			}
 			else
@@ -139,21 +148,21 @@ public class MicomInput : Device
 
 	public float GetWheelLeftVelocity()
 	{
-		return wheelLinearVelocityLeft;
+		return _wheelLinearVelocityLeft;
 	}
 
 	public float GetWheelRightVelocity()
 	{
-		return wheelLinearVelocityRight;
+		return _wheelLinearVelocityRight;
 	}
 
 	public float GetLinearVelocity()
 	{
-		return linearVelocity;
+		return _linearVelocity;
 	}
 
 	public float GetAngularVelocity()
 	{
-		return angularVelocity;
+		return _angularVelocity;
 	}
 }

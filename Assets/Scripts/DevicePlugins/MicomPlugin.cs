@@ -42,6 +42,7 @@ public class MicomPlugin : DevicePlugin
 	protected override void OnReset()
 	{
 		micomSensor.Reset();
+		micomInput.Reset();
 	}
 
 	private void Sender()
