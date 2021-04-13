@@ -36,7 +36,6 @@ namespace SDF
 				// Debug.Log(newActorObject.name + "::" + localPosition + ", " + localRotation);
 
 				var actorHelper = newActorObject.AddComponent<Helper.Actor>();
-				actorHelper.isStatic = true;
 				actorHelper.SetPose(localPosition, localRotation);
 
 				if (actor.animations != null)
@@ -49,10 +48,9 @@ namespace SDF
 
 				actorHelper.SetScript(actor.script);
 
-				var skinnedMeshRenderer = newActorObject.GetComponentInChildren<SkinnedMeshRenderer>();
-
 				var capsuleCollider = newActorObject.AddComponent<CapsuleCollider>();
 
+				var skinnedMeshRenderer = newActorObject.GetComponentInChildren<SkinnedMeshRenderer>();
 				var localBound = skinnedMeshRenderer.localBounds;
 				const float sizeRatio = 0.85f;
 				capsuleCollider.direction = 1;
