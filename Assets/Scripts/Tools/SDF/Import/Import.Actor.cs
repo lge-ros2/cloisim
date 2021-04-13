@@ -39,9 +39,12 @@ namespace SDF
 				actorHelper.isStatic = true;
 				actorHelper.SetPose(localPosition, localRotation);
 
-				foreach (var animation in actor.animations)
+				if (actor.animations != null)
 				{
-					Implement.Actor.SetAnimation(newActorObject, animation);
+					foreach (var animation in actor.animations)
+					{
+						Implement.Actor.SetAnimation(newActorObject, animation);
+					}
 				}
 
 				actorHelper.SetScript(actor.script);
