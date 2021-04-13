@@ -18,12 +18,16 @@ namespace SDF
 
 	public class Visual : Entity
 	{
+		public class Meta
+		{
+			public int layer;
+		}
+
 		private bool cast_shadows = true;
 		private double laser_retro = 0.0;
 		private double transparency = 0.0;
 
-		// <meta> : TBD
-		// <meta>/<layer> : TBD
+		private Meta meta;
 
 		private Material material;
 
@@ -41,16 +45,23 @@ namespace SDF
 		{
 			plugins = new Plugins(root);
 
-			XmlNode matNode = GetNode("material");
+			var matNode = GetNode("material");
 			if (matNode != null)
 			{
 				material = new Material(matNode);
 			}
 
-			XmlNode geomNode = GetNode("geometry");
+			var geomNode = GetNode("geometry");
 			if (geomNode != null)
 			{
 				geometry = new Geometry(geomNode);
+			}
+
+			var metaNode = GetNode("meta");
+			if (metaNode != null)
+			{
+				meta = new Meta();
+				meta.layer = GetValue<int>("meta/layer");
 			}
 
 			cast_shadows = GetValue<bool>("cast_shadows");
@@ -58,6 +69,11 @@ namespace SDF
 			transparency = GetValue<double>("transparency");
 
 			// Console.WriteLine("[{0}] P:{1} C:{2}", GetType().Name, parent, child);
+		}
+
+		public int GetMetaLayer()
+		{
+			return (meta == null) ? -1 : meta.layer;
 		}
 
 		public Geometry GetGeometry()

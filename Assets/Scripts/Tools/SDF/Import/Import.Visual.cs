@@ -28,9 +28,10 @@ namespace SDF
 				var localPosition = SDF2Unity.GetPosition(visual.Pose.Pos);
 				var localRotation = SDF2Unity.GetRotation(visual.Pose.Rot);
 
-				var visualPlugin = newVisualObject.AddComponent<Helper.Visual>();
-				visualPlugin.isCastingShadow = visual.CastShadow;
-				visualPlugin.SetPose(localPosition, localRotation);
+				var visualHelper = newVisualObject.AddComponent<Helper.Visual>();
+				visualHelper.isCastingShadow = visual.CastShadow;
+				visualHelper.metaLayer = visual.GetMetaLayer();
+				visualHelper.SetPose(localPosition, localRotation);
 
 				return newVisualObject as System.Object;
 			}
