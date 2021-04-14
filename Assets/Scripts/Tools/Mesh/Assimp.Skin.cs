@@ -166,10 +166,10 @@ public partial class MeshLoader
 
 		// Convert Assimp transfrom into Unity transform
 		var nodeTransform = ConvertAssimpMatrix4x4ToUnity(node.Transform);
-		rootObject.transform.localPosition = nodeTransform.GetColumn(3);
-		rootObject.transform.localRotation = nodeTransform.rotation;
+		rootObject.transform.position = nodeTransform.GetColumn(3);
+		rootObject.transform.rotation = nodeTransform.rotation;
 		rootObject.transform.localScale = nodeTransform.lossyScale * scale;
-		// Debug.Log(node.Name + ", " + nodeScale + ", " + nodeQuat + ", " + nodeTranslation);
+		// Debug.Log(node.Name + ", " + rootObject.transform.position + ", " + rootObject.transform.rotation + ", " + rootObject.transform.localScale);
 
 		var boneIndex = boneMapIndex++;
 		boneNameIndexMap.Add(node.Name, new Tuple<int, Transform>(boneIndex, rootObject.transform));
@@ -180,7 +180,7 @@ public partial class MeshLoader
 			foreach (var child in node.Children)
 			{
 				var childObject = GetBonesFromAssimpNode(child, scale);
-				childObject.transform.SetParent(rootObject.transform, false);
+				childObject.transform.SetParent(rootObject.transform, true);
 			}
 		}
 
@@ -212,12 +212,12 @@ public partial class MeshLoader
 		var skinnedMeshRenderer = meshObject.AddComponent<SkinnedMeshRenderer>();
 		skinnedMeshRenderer.updateWhenOffscreen = true;
 
-		var rootBoneTransform = rootObject.transform.GetChild(0).GetChild(0);
-		var rootBoneRotation = Quaternion.Euler(0, 0, -90);
+		var rootBoneTransform = rootObject.transform.GetChild(0);
+		var rootBoneRotation = Quaternion.Euler(90, 0, 0);
 		rootBoneTransform.localRotation *= rootBoneRotation;
-		skinnedMeshRenderer.rootBone = rootBoneTransform;
+		skinnedMeshRenderer.rootBone = rootBoneTransform.GetChild(0);
 
-		var bones = rootBoneTransform.GetComponentsInChildren<Transform>();
+		var bones = skinnedMeshRenderer.rootBone.GetComponentsInChildren<Transform>();
 		skinnedMeshRenderer.bones = bones;
 
 		// Materials
