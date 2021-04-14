@@ -17,15 +17,19 @@ namespace SDF
 			public static void SetMesh(in SDF.Mesh obj, in UE.GameObject targetObject)
 			{
 				var loadedObject = MeshLoader.CreateMeshObject(obj.uri);
-				loadedObject.name = "geometry(mesh)";
+
 				if (loadedObject == null)
 				{
 					Debug.LogError("Cannot load mesh: " + obj.uri);
 				}
 				else
 				{
+					loadedObject.name = "geometry(mesh)";
 					loadedObject.transform.SetParent(targetObject.transform, false);
-					loadedObject.transform.localScale = SDF2Unity.GetScale(obj.scale);
+					var loadedObjectScale = loadedObject.transform.localScale;
+					loadedObjectScale.Scale(SDF2Unity.GetScale(obj.scale));
+					loadedObject.transform.localScale = loadedObjectScale;
+					// Debug.Log(loadedObject.name + ", " + SDF2Unity.GetScale(obj.scale).ToString("F6") + " => " + loadedObject.transform.localScale.ToString("F6"));
 				}
 			}
 

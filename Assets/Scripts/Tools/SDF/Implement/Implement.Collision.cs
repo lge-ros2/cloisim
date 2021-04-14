@@ -15,7 +15,7 @@ namespace SDF
 		{
 			public static readonly int PlaneLayerIndex = UE.LayerMask.NameToLayer("Plane");
 
-			private static readonly bool enableMergeCollider = true;
+			private static readonly bool EnableMergeCollider = true;
 
 			private static readonly MCCookingOptions cookingOptions =
 					MCCookingOptions.EnableMeshCleaning |
@@ -79,7 +79,7 @@ namespace SDF
 			{
 				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
 
-				if (enableMergeCollider)
+				if (EnableMergeCollider)
 				{
 					var meshCollider = targetObject.AddComponent<UE.MeshCollider>();
 
