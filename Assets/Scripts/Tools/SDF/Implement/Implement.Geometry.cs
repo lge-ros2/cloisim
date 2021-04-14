@@ -17,6 +17,7 @@ namespace SDF
 			public static void SetMesh(in SDF.Mesh obj, in UE.GameObject targetObject)
 			{
 				var loadedObject = MeshLoader.CreateMeshObject(obj.uri);
+				loadedObject.name = "geometry(mesh)";
 				if (loadedObject == null)
 				{
 					Debug.LogError("Cannot load mesh: " + obj.uri);
