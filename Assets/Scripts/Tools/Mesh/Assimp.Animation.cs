@@ -120,7 +120,7 @@ public partial class MeshLoader
 		return clipName;
 	}
 
-	public static List<AnimationClip> LoadAnimations(in string filePath, in Dictionary<string, string> relativePaths)
+	public static List<AnimationClip> LoadAnimations(in string filePath, in Dictionary<string, string> relativePaths, in float scale = 1)
 	{
 		var animationClipList = new List<AnimationClip>();
 
@@ -202,7 +202,7 @@ public partial class MeshLoader
 						// Debug.Log("ScalingKeyCount=" + node.ScalingKeyCount);
 						foreach (var scalingKey in node.ScalingKeys)
 						{
-							var vectorKey = scalingKey.Value;
+							var vectorKey = scalingKey.Value * scale;
 							keyFramesScale.Add((float)scalingKey.Time, vectorKey.X, vectorKey.Y, vectorKey.Z);
 							// Debug.Log("["+node.NodeName+"]ScalingKey: " + (float)scalingKey.Time + ", " + vectorKey.X + ", " + vectorKey.Y + ", " + vectorKey.Z);
 						}

@@ -159,7 +159,7 @@ public partial class MeshLoader
 		return bindPoseList;
 	}
 
-	private static GameObject GetBonesFromAssimpNode(in Assimp.Node node, in Vector3 scale)
+	private static GameObject GetBonesFromAssimpNode(in Assimp.Node node, in float scale)
 	{
 		var rootObject = new GameObject(node.Name);
 		// Debug.Log("Bone Object: " + rootObject.name);
@@ -168,7 +168,7 @@ public partial class MeshLoader
 		var nodeTransform = ConvertAssimpMatrix4x4ToUnity(node.Transform);
 		rootObject.transform.localPosition = nodeTransform.GetColumn(3);
 		rootObject.transform.localRotation = nodeTransform.rotation;
-		rootObject.transform.localScale = nodeTransform.lossyScale;
+		rootObject.transform.localScale = nodeTransform.lossyScale * scale;
 		// Debug.Log(node.Name + ", " + nodeScale + ", " + nodeQuat + ", " + nodeTranslation);
 
 		var boneIndex = boneMapIndex++;
@@ -187,7 +187,7 @@ public partial class MeshLoader
 		return rootObject;
 	}
 
-	public static GameObject CreateSkinObject(in string meshPath)
+	public static GameObject CreateSkinObject(in string meshPath, in float scale)
 	{
 		var scene = GetScene(meshPath, out var meshRotation);
 		if (scene == null)
@@ -205,11 +205,11 @@ public partial class MeshLoader
 
 		boneMapIndex = -2;
 		boneNameIndexMap.Clear();
-		var rootObject = GetBonesFromAssimpNode(rootNode, Vector3.one);
+		var rootObject = GetBonesFromAssimpNode(rootNode, scale);
 
 		var meshObject = rootObject.transform.GetChild(1).gameObject;
-		var skinnedMeshRenderer = meshObject.AddComponent<SkinnedMeshRenderer>();
 
+		var skinnedMeshRenderer = meshObject.AddComponent<SkinnedMeshRenderer>();
 		skinnedMeshRenderer.updateWhenOffscreen = true;
 
 		var rootBoneTransform = rootObject.transform.GetChild(0).GetChild(0);

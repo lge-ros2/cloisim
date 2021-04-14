@@ -19,7 +19,7 @@ namespace SDF
 					return;
 				}
 
-				var newActorObject = Implement.Actor.CreateSkin(actor.skin);
+				var newActorObject = Implement.Actor.CreateSkin(actor.skin, (float)actor.skin.scale);
 				if (newActorObject == null)
 				{
 					return;

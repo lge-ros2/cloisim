@@ -47,9 +47,9 @@ namespace SDF
 				return relativePaths;
 			}
 
-			public static UE.GameObject CreateSkin(in SDF.Actor.Skin skin)
+			public static UE.GameObject CreateSkin(in SDF.Actor.Skin skin, in float scale = 1)
 			{
-				return MeshLoader.CreateSkinObject(skin.filename);
+				return MeshLoader.CreateSkinObject(skin.filename, scale);
 			}
 
 			public static void SetAnimation(in UE.GameObject targetObject, in SDF.Actor.Animation animation)
@@ -68,7 +68,7 @@ namespace SDF
 				var skinnedMeshRenderer = targetObject.GetComponentInChildren<UE.SkinnedMeshRenderer>();
 				var relativePaths = GetBoneHierachy(skinnedMeshRenderer.rootBone);
 
-				var animationClips = MeshLoader.LoadAnimations(animation.filename, relativePaths);
+				var animationClips = MeshLoader.LoadAnimations(animation.filename, relativePaths, (float)animation.scale);
 				foreach (var animationClip in animationClips)
 				{
 					// UE.Debug.Log("animation clip name: " + animationClip.name);
