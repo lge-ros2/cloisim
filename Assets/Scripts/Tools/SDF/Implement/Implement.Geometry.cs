@@ -25,28 +25,7 @@ namespace SDF
 				else
 				{
 					loadedObject.transform.SetParent(targetObject.transform, false);
-
-					foreach (var meshFilter in targetObject.GetComponentsInChildren<UE.MeshFilter>())
-					{
-						var mesh = meshFilter.sharedMesh;
-
-						// Scaling
-						var vertices = mesh.vertices;
-						var scaleFactor = SDF2Unity.GetScale(obj.scale);
-						for (var v = 0; v < mesh.vertexCount; v++)
-						{
-							vertices[v].x *= scaleFactor.x;
-							vertices[v].y *= scaleFactor.y;
-							vertices[v].z *= scaleFactor.z;
-						}
-
-						mesh.vertices = vertices;
-
-						mesh.RecalculateTangents();
-						mesh.RecalculateBounds();
-						mesh.RecalculateNormals();
-						mesh.Optimize();
-					}
+					loadedObject.transform.localScale = SDF2Unity.GetScale(obj.scale);
 				}
 			}
 

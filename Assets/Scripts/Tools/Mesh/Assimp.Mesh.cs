@@ -174,7 +174,7 @@ public partial class MeshLoader
 		return meshMatList;
 	}
 
-	private static GameObject ConvertAssimpNodeToMeshObject(in Assimp.Node node, in MeshMaterialList meshMatList, in Vector3 scale)
+	private static GameObject ConvertAssimpNodeToMeshObject(in Assimp.Node node, in MeshMaterialList meshMatList)
 	{
 		var rootObject = new GameObject(node.Name);
 		// Debug.Log("RootObject: " + rootObject.name);
@@ -194,7 +194,6 @@ public partial class MeshLoader
 				meshRenderer.material = meshMat.Material;
 
 				subObject.transform.SetParent(rootObject.transform, true);
-				subObject.transform.localScale = scale;
 				// Debug.Log("Sub Object: " + subObject.name);
 			}
 		}
@@ -210,7 +209,7 @@ public partial class MeshLoader
 			foreach (var child in node.Children)
 			{
 				// Debug.Log(" => Child Object: " + child.Name);
-				var childObject = ConvertAssimpNodeToMeshObject(child, meshMatList, scale);
+				var childObject = ConvertAssimpNodeToMeshObject(child, meshMatList);
 				childObject.transform.SetParent(rootObject.transform, false);
 			}
 		}
@@ -219,11 +218,6 @@ public partial class MeshLoader
 	}
 
 	public static GameObject CreateMeshObject(in string meshPath)
-	{
-		return CreateMeshObject(meshPath, Vector3.one);
-	}
-
-	public static GameObject CreateMeshObject(in string meshPath, in Vector3 scale)
 	{
 		var scene = GetScene(meshPath, out var meshRotation);
 		if (scene == null)
@@ -247,8 +241,6 @@ public partial class MeshLoader
 		}
 
 		// Create GameObjects from nodes
-		var nodeObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList, scale);
-
-		return nodeObject;
+		return ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList);
 	}
 }
