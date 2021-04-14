@@ -210,14 +210,14 @@ public class Main: MonoBehaviour
 			yield return loader.StartImport(sdf.World());
 
 			// for GUI
-			simulationDisplay?.ClearEventMessage();
+			simulationDisplay?.ClearLogMessage();
 			followingList?.UpdateList();
 		}
 		else
 		{
 			var errorMessage = "Parsing failed!!!, failed to load world file: " + worldFileName;
 			Debug.LogError(errorMessage);
-			simulationDisplay?.SetEventMessage(errorMessage);
+			simulationDisplay?.SetErrorMessage(errorMessage);
 		}
 
 		yield return null;

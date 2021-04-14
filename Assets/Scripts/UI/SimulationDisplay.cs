@@ -33,11 +33,13 @@ public class SimulationDisplay : MonoBehaviour
 	private const int textWidthSimulation = 600;
 	private const int textWidthEvent = 800;
 
+	private Color logMessageColor = Color.red;
+
 	[Header("Rect")]
 	private Rect rectVersion = new Rect(textLeftMargin, textTopMargin, textWidthVersion, textHeight);
 	private Rect rectFps = new Rect(Screen.width - textWidthFps - textLeftMargin, textTopMargin, textWidthFps, textHeight);
 	private Rect rectSimulationinfo = new Rect(textLeftMargin, Screen.height - textHeight - textTopMargin, textWidthSimulation, textHeight);
-	private Rect rectEventMessage = new Rect(textLeftMargin, Screen.height - (textHeight*2) - textTopMargin, textWidthEvent, textHeight);
+	private Rect rectLogMessage = new Rect(textLeftMargin, Screen.height - (textHeight*2) - textTopMargin, textWidthEvent, textHeight);
 
 	// Start is called before the first frame update
 	void Awake()
@@ -56,13 +58,20 @@ public class SimulationDisplay : MonoBehaviour
 		_fpsString = "FPS [" + GetBoldText(Mathf.Round(fps).ToString("F1")) + "]";
 	}
 
-	public void ClearEventMessage()
+	public void ClearLogMessage()
 	{
-		SetEventMessage(string.Empty);
+		eventMessage = string.Empty;
 	}
 
 	public void SetEventMessage(in string value)
 	{
+		logMessageColor = Color.green;
+		eventMessage = value;
+	}
+
+	public void SetErrorMessage(in string value)
+	{
+		logMessageColor = Color.red;
 		eventMessage = value;
 	}
 
@@ -135,15 +144,15 @@ public class SimulationDisplay : MonoBehaviour
 		GUI.skin.label.normal.textColor = Color.black;
 		GUI.Label(rectSimulationinfo, simulationInfo);
 
-		// error message or event message
+		// log: error message or event message
 		var originLabelSkin = GUI.skin.label;
 
 		GUI.skin.label.wordWrap = true;
 		GUI.skin.label.clipping = TextClipping.Overflow;
-		rectEventMessage.y = Screen.height - (textHeight*2) - textTopMargin;
-		DrawShadow(rectEventMessage, eventMessage);
-		GUI.skin.label.normal.textColor = Color.red;
-		GUI.Label(rectEventMessage, eventMessage);
+		rectLogMessage.y = Screen.height - (textHeight*2) - textTopMargin;
+		DrawShadow(rectLogMessage, eventMessage);
+		GUI.skin.label.normal.textColor = logMessageColor;
+		GUI.Label(rectLogMessage, eventMessage);
 
 		GUI.skin.label = originLabelSkin;
 
