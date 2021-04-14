@@ -52,11 +52,11 @@ namespace SDF
 
 				var skinnedMeshRenderer = newActorObject.GetComponentInChildren<SkinnedMeshRenderer>();
 				var localBound = skinnedMeshRenderer.localBounds;
-				const float sizeRatio = 0.85f;
+				const float sizeRatio = 0.8f;
 				capsuleCollider.direction = 1;
-				capsuleCollider.center = new Vector3(0, localBound.extents.y, 0);
-				capsuleCollider.radius = localBound.center.magnitude * sizeRatio;
-				capsuleCollider.height = (localBound.max.y - localBound.min.y) * sizeRatio;
+				capsuleCollider.radius = Mathf.Min(localBound.extents.x, localBound.extents.y) * sizeRatio;
+  				capsuleCollider.center = new Vector3(0, localBound.extents.z + capsuleCollider.radius, 0);
+				capsuleCollider.height = localBound.size.z + capsuleCollider.radius * 2;
 			}
 		}
 	}
