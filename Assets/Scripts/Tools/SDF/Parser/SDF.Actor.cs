@@ -36,10 +36,13 @@ namespace SDF
 			public Animation(in XmlNode _node)
 				: base(_node)
 			{
-				this.name = GetAttribute<string>("name");
-				this.filename = GetValue<string>("filename");
-				this.scale = GetValue<double>("scale");
-				this.interpolate_x = GetValue<bool>("interpolate_x");
+				name = GetAttribute<string>("name");
+				filename = GetValue<string>("filename");
+				if (IsValidNode("scale"))
+				{
+					scale = GetValue<double>("scale");
+				}
+				interpolate_x = GetValue<bool>("interpolate_x");
 			}
 
 			// Description: Unique name for animation.
@@ -136,7 +139,10 @@ namespace SDF
 			{
 				skin = new Skin();
 				skin.filename = GetValue<string>("skin/filename");
-				skin.scale = GetValue<double>("script/scale");
+				if (IsValidNode("script/scale"))
+				{
+					skin.scale = GetValue<double>("script/scale");
+				}
 			}
 
 			if (IsValidNode("animation"))
