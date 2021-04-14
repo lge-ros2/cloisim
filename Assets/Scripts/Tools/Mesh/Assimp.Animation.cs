@@ -5,7 +5,6 @@
  */
 
 using System.Collections.Generic;
-using System;
 using UnityEngine;
 
 public partial class MeshLoader
@@ -15,21 +14,18 @@ public partial class MeshLoader
 		private List<Keyframe> X;
 		private List<Keyframe> Y;
 		private List<Keyframe> Z;
-		private Quaternion _boneRotation;
 
-		public KeyFramesPosition(in Quaternion boneRotation)
+		public KeyFramesPosition()
 		{
 			X = new List<Keyframe>();
 			Y = new List<Keyframe>();
 			Z = new List<Keyframe>();
-			_boneRotation = boneRotation;
 		}
 
 		public void Add(in float time, in float x, in float y, in float z)
 		{
 			// convert to unity coordinates
 			var newPos = new Vector3(x, y, z);
-			newPos = _boneRotation * newPos;
 
 			X.Add(new Keyframe(time, newPos.x));
 			Y.Add(new Keyframe(time, newPos.y));
@@ -50,21 +46,18 @@ public partial class MeshLoader
 		protected List<Keyframe> X;
 		protected List<Keyframe> Y;
 		protected List<Keyframe> Z;
-		private Quaternion _boneRotation;
 
-		public KeyFramesScale(in Quaternion boneRotation)
+		public KeyFramesScale()
 		{
 			X = new List<Keyframe>();
 			Y = new List<Keyframe>();
 			Z = new List<Keyframe>();
-			_boneRotation = boneRotation;
 		}
 
 		public void Add(in float time, in float x, in float y, in float z)
 		{
 			// convert to unity coordinates
 			var newScale = new Vector3(x, y, z);
-			newScale = _boneRotation * newScale;
 
 			X.Add(new Keyframe(time, Mathf.Abs(newScale.x)));
 			Y.Add(new Keyframe(time, Mathf.Abs(newScale.y)));
@@ -86,11 +79,9 @@ public partial class MeshLoader
 		public List<Keyframe> Y;
 		public List<Keyframe> Z;
 		public List<Keyframe> W;
-		private Quaternion _boneRotation;
 
-		public KeyFramesRotation(in Quaternion boneRotation)
+		public KeyFramesRotation()
 		{
-			_boneRotation = boneRotation;
 			X = new List<Keyframe>();
 			Y = new List<Keyframe>();
 			Z = new List<Keyframe>();
@@ -100,7 +91,6 @@ public partial class MeshLoader
 		public void Add(in float time, in float x, in float y, in float z, in float w)
 		{
 			var rotationKey = new Quaternion(x, y, z, w);
-			rotationKey = _boneRotation * rotationKey;
 
 			X.Add(new Keyframe(time, rotationKey.x));
 			Y.Add(new Keyframe(time, rotationKey.y));
@@ -163,7 +153,6 @@ public partial class MeshLoader
 				}
 				else if (animation.HasNodeAnimations)
 				{
-					var boneRotation = Quaternion.Euler(90, 0, 0); // apply rotation for only first bone
 					var isRoot = true;
 					foreach (var node in animation.NodeAnimationChannels)
 					{
@@ -171,7 +160,7 @@ public partial class MeshLoader
 						// Debug.Log(relativeName + ", " + node.PreState + ", " + node.PostState);
 
 						// Debug.Log("PositionKeyCount=" + node.PositionKeyCount);
-						var keyFramesPos = new KeyFramesPosition(boneRotation);
+						var keyFramesPos = new KeyFramesPosition();
 						foreach (var positionKey in node.PositionKeys)
 						{
 							var vectorKey = positionKey.Value;
@@ -190,7 +179,7 @@ public partial class MeshLoader
 						clip.SetCurve(relativeName, typeof(Transform), "localPosition.y", curveY);
 						clip.SetCurve(relativeName, typeof(Transform), "localPosition.z", curveZ);
 
-						var keyFramesRot = new KeyFramesRotation(boneRotation);
+						var keyFramesRot = new KeyFramesRotation();
 						// Debug.Log("RotationKeyCount=" + node.RotationKeyCount);
 						foreach (var rotationKey in node.RotationKeys)
 						{
@@ -209,7 +198,7 @@ public partial class MeshLoader
 						clip.SetCurve(relativeName, typeof(Transform), "localRotation.z", curveRotZ);
 						clip.SetCurve(relativeName, typeof(Transform), "localRotation.w", curveRotW);
 
-						var keyFramesScale = new KeyFramesScale(boneRotation);
+						var keyFramesScale = new KeyFramesScale();
 						// Debug.Log("ScalingKeyCount=" + node.ScalingKeyCount);
 						foreach (var scalingKey in node.ScalingKeys)
 						{
@@ -226,7 +215,6 @@ public partial class MeshLoader
 						clip.SetCurve(relativeName, typeof(Transform), "localScale.y", curveScaleY);
 						clip.SetCurve(relativeName, typeof(Transform), "localScale.z", curveScaleZ);
 
-						boneRotation = Quaternion.identity;
 						isRoot = false;
 					}
 				}
