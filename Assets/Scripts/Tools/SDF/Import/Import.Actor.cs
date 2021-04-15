@@ -19,7 +19,7 @@ namespace SDF
 					return;
 				}
 
-				var newActorObject = Implement.Actor.CreateSkin(actor.skin, (float)actor.skin.scale);
+				var newActorObject = Implement.Actor.CreateSkin(actor.skin);
 				if (newActorObject == null)
 				{
 					return;
@@ -37,6 +37,8 @@ namespace SDF
 
 				var actorHelper = newActorObject.AddComponent<Helper.Actor>();
 				actorHelper.SetPose(localPosition, localRotation);
+
+				newActorObject.transform.localScale = Vector3.one * (float)actor.skin.scale;
 
 				if (actor.animations != null)
 				{

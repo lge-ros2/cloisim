@@ -158,7 +158,7 @@ public partial class MeshLoader
 		return bindPoseList;
 	}
 
-	private static GameObject GetBonesFromAssimpNode(in Assimp.Node node, in float scale)
+	private static GameObject GetBonesFromAssimpNode(in Assimp.Node node)
 	{
 		var rootObject = new GameObject(node.Name);
 		// Debug.Log("Bone Object: " + rootObject.name);
@@ -167,7 +167,7 @@ public partial class MeshLoader
 		var nodeTransform = ConvertAssimpMatrix4x4ToUnity(node.Transform);
 		rootObject.transform.position = nodeTransform.GetColumn(3);
 		rootObject.transform.rotation = nodeTransform.rotation;
-		rootObject.transform.localScale = nodeTransform.lossyScale * scale;
+		rootObject.transform.localScale = nodeTransform.lossyScale;
 		// Debug.Log(node.Name + ", " + rootObject.transform.position + ", " + rootObject.transform.rotation + ", " + rootObject.transform.localScale);
 
 		var boneIndex = boneMapIndex++;
@@ -178,7 +178,7 @@ public partial class MeshLoader
 		{
 			foreach (var child in node.Children)
 			{
-				var childObject = GetBonesFromAssimpNode(child, scale);
+				var childObject = GetBonesFromAssimpNode(child);
 				childObject.transform.SetParent(rootObject.transform, true);
 			}
 		}
@@ -186,7 +186,7 @@ public partial class MeshLoader
 		return rootObject;
 	}
 
-	public static GameObject CreateSkinObject(in string meshPath, in float scale)
+	public static GameObject CreateSkinObject(in string meshPath)
 	{
 		var scene = GetScene(meshPath, out var meshRotation);
 		if (scene == null)
@@ -204,7 +204,7 @@ public partial class MeshLoader
 
 		boneMapIndex = -2;
 		boneNameIndexMap.Clear();
-		var rootObject = GetBonesFromAssimpNode(rootNode, scale);
+		var rootObject = GetBonesFromAssimpNode(rootNode);
 
 		var meshObject = rootObject.transform.GetChild(1).gameObject;
 

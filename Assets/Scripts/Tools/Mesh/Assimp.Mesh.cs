@@ -237,10 +237,8 @@ public partial class MeshLoader
 		var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList);
 		createdMeshObject.name = "geometry(mesh)";
 		var existingRotation = createdMeshObject.transform.localRotation.eulerAngles;
+		createdMeshObject.transform.localRotation = Quaternion.Euler(existingRotation + meshRotation.eulerAngles);
 		// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + ", " + existingRotation.ToString("F6") );
-		existingRotation += meshRotation.eulerAngles;
-
-		createdMeshObject.transform.localRotation = Quaternion.Euler(existingRotation);
 		return createdMeshObject;
 	}
 }
