@@ -71,7 +71,7 @@ namespace SDF
 				var linkHelper = linkObject.GetComponent<Helper.Link>();
 
 				// skip to create articulation body when mass is ZERO
-				if (!linkHelper.Model.isStatic && link.Inertial != null && link.Inertial.mass != 0)
+				if (!linkHelper.Model.isStatic && link.Inertial != null && link.Inertial.mass > 0)
 				{
 					var articulationBody = linkObject.AddComponent<UE.ArticulationBody>();
 

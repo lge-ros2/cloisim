@@ -88,16 +88,16 @@ public partial class MeshLoader
 		return isFileSupported;
 	}
 
-	private static Vector3 GetRotationByFileExtension(in string fileExtension, in string meshPath)
+	private static Quaternion GetRotationByFileExtension(in string fileExtension, in string meshPath)
 	{
-		var eulerRotation = Vector3.zero;
+		var eulerRotation = Quaternion.identity;
 
 		switch (fileExtension)
 		{
 			case ".dae":
 			case ".obj":
 			case ".stl":
-				eulerRotation.Set(90f, -90f, 0f);
+				eulerRotation = Quaternion.Euler(90, -90, 0);
 				break;
 
 			default:
@@ -117,7 +117,6 @@ public partial class MeshLoader
 		assimpMatrix.Decompose(out var scaling, out var rotation, out var translation);
 		var pos = new Vector3(translation.X, translation.Y, translation.Z);
 		var q = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
-		q *= targetRotation;
 		var s = new Vector3(scaling.X, scaling.Y, scaling.Z);
 		return Matrix4x4.TRS(pos, q, s);
 	}
@@ -172,8 +171,7 @@ public partial class MeshLoader
 		}
 
 		// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
-		var eulerRotation = GetRotationByFileExtension(fileExtension, targetPath);
-		meshRotation = Quaternion.Euler(eulerRotation.x, eulerRotation.y, eulerRotation.z);
+		meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
 
 		return scene;
 	}

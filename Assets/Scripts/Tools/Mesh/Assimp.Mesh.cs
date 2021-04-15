@@ -236,11 +236,18 @@ public partial class MeshLoader
 		MeshMaterialList meshMatList = null;
 		if (scene.HasMeshes)
 		{
-			meshMatList = LoadMeshes(scene.Meshes, meshRotation);
+			meshMatList = LoadMeshes(scene.Meshes);
 			meshMatList.SetMaterials(materials);
 		}
 
 		// Create GameObjects from nodes
-		return ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList);
+		var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList);
+		createdMeshObject.name = "geometry(mesh)";
+		var existingRotation = createdMeshObject.transform.localRotation.eulerAngles;
+		// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + ", " + existingRotation.ToString("F6") );
+		existingRotation += meshRotation.eulerAngles;
+
+		createdMeshObject.transform.localRotation = Quaternion.Euler(existingRotation);
+		return createdMeshObject;
 	}
 }
