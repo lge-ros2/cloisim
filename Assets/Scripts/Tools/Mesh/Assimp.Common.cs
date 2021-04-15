@@ -109,11 +109,6 @@ public partial class MeshLoader
 
 	private static Matrix4x4 ConvertAssimpMatrix4x4ToUnity(in Assimp.Matrix4x4 assimpMatrix)
 	{
-		return ConvertAssimpMatrix4x4ToUnity(assimpMatrix, Quaternion.identity);
-	}
-
-	private static Matrix4x4 ConvertAssimpMatrix4x4ToUnity(in Assimp.Matrix4x4 assimpMatrix, in Quaternion targetRotation)
-	{
 		assimpMatrix.Decompose(out var scaling, out var rotation, out var translation);
 		var pos = new Vector3(translation.X, translation.Y, translation.Z);
 		var q = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);

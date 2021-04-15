@@ -86,11 +86,6 @@ public partial class MeshLoader
 
 	private static MeshMaterialList LoadMeshes(in List<Assimp.Mesh> sceneMeshes)
 	{
-		return LoadMeshes(sceneMeshes, Quaternion.identity);
-	}
-
-	private static MeshMaterialList LoadMeshes(in List<Assimp.Mesh> sceneMeshes, in Quaternion meshRotation)
-	{
 		var meshMatList = new MeshMaterialList();
 
 		foreach (var sceneMesh in sceneMeshes)
@@ -107,9 +102,7 @@ public partial class MeshLoader
 				var vertices = new Queue<Vector3>();
 				foreach (var v in sceneMesh.Vertices)
 				{
-					var vertex = new Vector3(v.X, v.Y, v.Z);
-					vertex = meshRotation * vertex;
-					vertices.Enqueue(vertex);
+					vertices.Enqueue(new Vector3(v.X, v.Y, v.Z));
 				}
 
 				newMesh.vertices = vertices.ToArray();
