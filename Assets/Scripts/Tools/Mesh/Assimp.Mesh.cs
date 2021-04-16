@@ -238,9 +238,13 @@ public partial class MeshLoader
 		createdMeshObject.name = "geometry(mesh)";
 
 		// rotate final mesh object
-		var existingRotation = createdMeshObject.transform.localRotation.eulerAngles;
-		createdMeshObject.transform.localRotation = Quaternion.Euler(existingRotation + meshRotation.eulerAngles);
-		// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + ", " + existingRotation.ToString("F6") );
+		createdMeshObject.transform.localRotation = meshRotation * createdMeshObject.transform.localRotation;
+		// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + " =>" + createdMeshObject.transform.localRotation.eulerAngles);
+
+		// change axis of position (y <-> z)
+		var existingPosition = createdMeshObject.transform.localPosition;
+		createdMeshObject.transform.localPosition = new Vector3(-existingPosition.y, -existingPosition.z, existingPosition.x);
+		// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + createdMeshObject.transform.localPosition.ToString("F6") + ", " + existingPosition.ToString("F6") );
 
 		// change axis of scale (y <-> z)
 		var existingScale = createdMeshObject.transform.localScale;

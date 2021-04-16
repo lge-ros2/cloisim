@@ -5,9 +5,6 @@
  */
 
 using UE = UnityEngine;
-#if UNITY_EDITOR
-using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;
-#endif
 
 namespace SDF
 {
@@ -42,10 +39,6 @@ namespace SDF
 				}
 
 				targetObject.SetActive(true);
-
-#if UNITY_EDITOR
-				SceneVisibilityManager.instance.DisablePicking(targetObject, true);
-#endif
 			}
 		}
 	}
