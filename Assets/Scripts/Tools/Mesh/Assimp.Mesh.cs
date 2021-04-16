@@ -170,7 +170,6 @@ public partial class MeshLoader
 	private static GameObject ConvertAssimpNodeToMeshObject(in Assimp.Node node, in MeshMaterialList meshMatList)
 	{
 		var rootObject = new GameObject(node.Name);
-		// Debug.Log("RootObject: " + rootObject.name);
 
 		// Set Mesh
 		if (node.HasMeshes)
@@ -196,6 +195,7 @@ public partial class MeshLoader
 		rootObject.transform.localPosition = nodeTransform.GetColumn(3);
 		rootObject.transform.localRotation = nodeTransform.rotation;
 		rootObject.transform.localScale = nodeTransform.lossyScale;
+		// Debug.Log("RootObject: " + rootObject.name + "; " + rootObject.transform.localScale.ToString("F7"));
 
 		if (node.HasChildren)
 		{
@@ -236,9 +236,16 @@ public partial class MeshLoader
 		// Create GameObjects from nodes
 		var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList);
 		createdMeshObject.name = "geometry(mesh)";
+
+		// rotate final mesh object
 		var existingRotation = createdMeshObject.transform.localRotation.eulerAngles;
 		createdMeshObject.transform.localRotation = Quaternion.Euler(existingRotation + meshRotation.eulerAngles);
 		// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + ", " + existingRotation.ToString("F6") );
+
+		// change axis of scale (y <-> z)
+		var existingScale = createdMeshObject.transform.localScale;
+		createdMeshObject.transform.localScale = new Vector3(existingScale.x, existingScale.z, existingScale.y);
+
 		return createdMeshObject;
 	}
 }
