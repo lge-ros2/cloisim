@@ -43,7 +43,10 @@ namespace SDF
 
 				foreach (var childArticulationBody in GetComponentsInChildren<UE.ArticulationBody>())
 				{
-					childArticulationBody.immovable = true;
+					if (childArticulationBody.isRoot)
+					{
+						childArticulationBody.immovable = true;
+					}
 				}
 			}
 		}
