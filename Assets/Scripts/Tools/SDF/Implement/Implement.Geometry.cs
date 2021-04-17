@@ -24,7 +24,6 @@ namespace SDF
 				}
 				else
 				{
-					loadedObject.name = "geometry(mesh)";
 					loadedObject.transform.SetParent(targetObject.transform, false);
 					var loadedObjectScale = loadedObject.transform.localScale;
 					loadedObjectScale.Scale(SDF2Unity.GetScale(obj.scale));

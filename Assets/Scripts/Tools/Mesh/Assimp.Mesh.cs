@@ -86,11 +86,6 @@ public partial class MeshLoader
 
 	private static MeshMaterialList LoadMeshes(in List<Assimp.Mesh> sceneMeshes)
 	{
-		return LoadMeshes(sceneMeshes, Quaternion.identity);
-	}
-
-	private static MeshMaterialList LoadMeshes(in List<Assimp.Mesh> sceneMeshes, in Quaternion meshRotation)
-	{
 		var meshMatList = new MeshMaterialList();
 
 		foreach (var sceneMesh in sceneMeshes)
@@ -107,9 +102,7 @@ public partial class MeshLoader
 				var vertices = new Queue<Vector3>();
 				foreach (var v in sceneMesh.Vertices)
 				{
-					var vertex = new Vector3(v.X, v.Y, v.Z);
-					vertex = meshRotation * vertex;
-					vertices.Enqueue(vertex);
+					vertices.Enqueue(new Vector3(v.X, v.Y, v.Z));
 				}
 
 				newMesh.vertices = vertices.ToArray();
@@ -177,7 +170,6 @@ public partial class MeshLoader
 	private static GameObject ConvertAssimpNodeToMeshObject(in Assimp.Node node, in MeshMaterialList meshMatList)
 	{
 		var rootObject = new GameObject(node.Name);
-		// Debug.Log("RootObject: " + rootObject.name);
 
 		// Set Mesh
 		if (node.HasMeshes)
@@ -203,6 +195,7 @@ public partial class MeshLoader
 		rootObject.transform.localPosition = nodeTransform.GetColumn(3);
 		rootObject.transform.localRotation = nodeTransform.rotation;
 		rootObject.transform.localScale = nodeTransform.lossyScale;
+		// Debug.Log("RootObject: " + rootObject.name + "; " + rootObject.transform.localScale.ToString("F7"));
 
 		if (node.HasChildren)
 		{
@@ -236,11 +229,27 @@ public partial class MeshLoader
 		MeshMaterialList meshMatList = null;
 		if (scene.HasMeshes)
 		{
-			meshMatList = LoadMeshes(scene.Meshes, meshRotation);
+			meshMatList = LoadMeshes(scene.Meshes);
 			meshMatList.SetMaterials(materials);
 		}
 
 		// Create GameObjects from nodes
-		return ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList);
+		var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList);
+		createdMeshObject.name = "geometry(mesh)";
+
+		// rotate final mesh object
+		createdMeshObject.transform.localRotation = meshRotation * createdMeshObject.transform.localRotation;
+		// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + " =>" + createdMeshObject.transform.localRotation.eulerAngles);
+
+		// change axis of position (y <-> z)
+		var existingPosition = createdMeshObject.transform.localPosition;
+		createdMeshObject.transform.localPosition = new Vector3(-existingPosition.y, -existingPosition.z, existingPosition.x);
+		// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + createdMeshObject.transform.localPosition.ToString("F6") + ", " + existingPosition.ToString("F6") );
+
+		// change axis of scale (y <-> z)
+		var existingScale = createdMeshObject.transform.localScale;
+		createdMeshObject.transform.localScale = new Vector3(existingScale.x, existingScale.z, existingScale.y);
+
+		return createdMeshObject;
 	}
 }

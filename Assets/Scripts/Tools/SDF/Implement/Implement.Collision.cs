@@ -17,13 +17,13 @@ namespace SDF
 
 			private static readonly bool EnableMergeCollider = true;
 
-			private static readonly MCCookingOptions cookingOptions =
+			private static readonly MCCookingOptions CookingOptions =
 					MCCookingOptions.EnableMeshCleaning |
 					MCCookingOptions.CookForFasterSimulation |
 					MCCookingOptions.WeldColocatedVertices |
 					MCCookingOptions.UseFastMidphase;
 
-			private static UE.Mesh MergeMeshes(in UE.MeshFilter[] meshFilters, in UE.Quaternion meshRootRotation, in UE.Vector3 meshRootScale)
+			private static UE.Mesh MergeMeshes(in UE.MeshFilter[] meshFilters)
 			{
 				var meshTransformMatrix = new UE.Matrix4x4();
 
@@ -34,8 +34,8 @@ namespace SDF
 					combine[combineIndex].mesh = meshFilter.sharedMesh;
 
 					var meshTranslation = meshFilter.transform.localPosition;
-					var meshRotation = meshFilter.transform.localRotation * meshRootRotation;
-					var meshScale = UE.Vector3.Scale(meshFilter.transform.localScale, meshRootScale);
+					var meshRotation = meshFilter.transform.localRotation;
+					var meshScale = meshFilter.transform.localScale;
 					// Debug.LogFormat("{0},{1}: {2}, {3}", meshFilter.name, meshFilter.transform.name, meshTranslation, meshRotation);
 
 					meshTransformMatrix.SetTRS(meshTranslation, meshRotation, meshScale);
@@ -63,7 +63,7 @@ namespace SDF
 
 					meshCollider.sharedMesh = meshFilter.sharedMesh;
 					meshCollider.convex = true;
-					meshCollider.cookingOptions = cookingOptions;
+					meshCollider.cookingOptions = CookingOptions;
 					meshCollider.hideFlags |= UE.HideFlags.NotEditable;
 
 					if (meshObject.TryGetComponent<UE.MeshRenderer>(out var meshRenderer))
@@ -81,18 +81,17 @@ namespace SDF
 
 				if (EnableMergeCollider)
 				{
-					var meshCollider = targetObject.AddComponent<UE.MeshCollider>();
-
-					var childTransform = (targetObject.transform.childCount > 0) ? targetObject.transform.GetChild(0) : null;
-					var meshRootRotation = (childTransform == null) ? UE.Quaternion.identity : childTransform.localRotation;
-					var meshRootScale = (childTransform == null) ? UE.Vector3.one : childTransform.localScale;
-
-					var mergedMesh = MergeMeshes(meshFilters, meshRootRotation, meshRootScale);
+					var mergedMesh = MergeMeshes(meshFilters);
+					mergedMesh.name = targetObject.name;
 
 					// remove all child objects after merge the meshes for colloision
-					if (childTransform != null)
+					if (targetObject.transform.childCount > 0)
 					{
-						UE.GameObject.Destroy(childTransform.gameObject);
+						foreach (var meshFilter in meshFilters)
+						{
+							// UE.Debug.Log(childGeometry.gameObject.name);
+							UE.GameObject.Destroy(meshFilter.gameObject);
+						}
 					}
 					else
 					{
@@ -107,11 +106,10 @@ namespace SDF
 						}
 					}
 
-					mergedMesh.name = targetObject.name;
-
+					var meshCollider = targetObject.AddComponent<UE.MeshCollider>();
 					meshCollider.sharedMesh = mergedMesh;
 					meshCollider.convex = true;
-					meshCollider.cookingOptions = cookingOptions;
+					meshCollider.cookingOptions = CookingOptions;
 					meshCollider.hideFlags |= UE.HideFlags.NotEditable;
 				}
 				else

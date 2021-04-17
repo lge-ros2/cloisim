@@ -489,7 +489,7 @@ namespace RuntimeGizmos
 							// avoid plane object
 							if (!hitObject.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex))
 							{
-								var hitParentLinkHelper = hitObject.parent?.GetComponent<SDF.Helper.Link>();
+								var hitParentLinkHelper = hitObject.GetComponentInParent<SDF.Helper.Link>();
 								var hitTopModelHelper = hitParentLinkHelper.TopModel;
 
 								if (hitTopModelHelper != null && !(hitTopModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))

@@ -47,9 +47,9 @@ namespace SDF
 				return relativePaths;
 			}
 
-			public static UE.GameObject CreateSkin(in SDF.Actor.Skin skin, in float scale = 1)
+			public static UE.GameObject CreateSkin(in SDF.Actor.Skin skin)
 			{
-				return MeshLoader.CreateSkinObject(skin.filename, scale);
+				return MeshLoader.CreateSkinObject(skin.filename);
 			}
 
 			public static void SetAnimation(in UE.GameObject targetObject, in SDF.Actor.Animation animation)
