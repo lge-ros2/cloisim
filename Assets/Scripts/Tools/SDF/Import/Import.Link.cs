@@ -101,14 +101,6 @@ namespace SDF
 				var articulationBody = linkObject.AddComponent<UE.ArticulationBody>();
 				var linkHelper = linkObject.GetComponent<SDF.Helper.Link>();
 
-				// foreach (var collider in linkObject.GetComponentsInChildren<UE.Collider>())
-				// {
-				// 	if (collider.attachedArticulationBody == null)
-				// 	{
-
-				// 	}
-				// }
-
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
 				articulationBody.useGravity = linkHelper.useGravity;
