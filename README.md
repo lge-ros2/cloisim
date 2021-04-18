@@ -27,18 +27,19 @@ Here is the full list of models that is implemented or planned to be implemented
 - [X] Driving models
   - [X] 2-Wheeled Motor
 - [X] Sensor models
-  - [X] 2D LiDAR Sensor
+  - [X] LiDAR Sensor
+    - [X] 2D
+    - [ ] 3D  
   - [X] Sonar sensor
   - [X] IMU
   - [X] Contact
   - [X] Camera
     - [ ] Camera intrinsic parameter
   - [X] Depth Camera
+    - [ ] Point Cloud
   - [X] Multi-camera
   - [X] RealSense (RGB + IR1 + IR2 + Depth)
   - [X] GPS sensor
-  - [ ] 3D Lidar Sensor
-    - [ ] Point Cloud
   - [ ] Sensor noise models
   - [ ] Physics
     - [ ] Support all physics parameters in SDF specification
