@@ -15,6 +15,8 @@ namespace SDF
 			[UE.Header("SDF Properties")]
 			public bool isCastingShadow = true;
 
+			public int metaLayer = -1;
+
 			new void Awake()
 			{
 				base.Awake();

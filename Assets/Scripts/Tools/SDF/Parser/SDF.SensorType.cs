@@ -64,18 +64,16 @@ namespace SDF
 			}
 		}
 
-		public class Clip
+		public struct Clip
 		{
-			public Clip() {}
-
-			public Clip(in double near, in double far)
+			public Clip(in double near = 0.1d, in double far = 100d)
 			{
-				this.near = 0.1f;
-				this.far = 0.1f;
+				this.near = near;
+				this.far = far;
 			}
 
-			public double near = 0.1f;
-			public double far = 100f;
+			public double near;
+			public double far;
 		}
 
 		public class Distortion
@@ -123,13 +121,13 @@ namespace SDF
 		public int image_height = 240;
 		public string image_format = "R8G8B8";
 
-		public Clip clip = new Clip(1, 10);
+		public Clip clip = new Clip();
 
 		public bool save_enabled = false;
 		public string save_path = string.Empty;
 
 		public string depth_camera_output = string.Empty;
-		public Clip depth_camera_clip = new Clip(1, 100);
+		public Clip depth_camera_clip = new Clip();
 
 		public Noise noise = new Noise("gaussian");
 

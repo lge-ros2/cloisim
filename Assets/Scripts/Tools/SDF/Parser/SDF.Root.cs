@@ -88,7 +88,7 @@ namespace SDF
 						{
 							var errorMessage = "Failed to Load file(" + fullFilePath + ") file - " + ex.Message;
 							Console.WriteLine(errorMessage);
-							simulationDisplay?.SetEventMessage(errorMessage);
+							simulationDisplay?.SetErrorMessage(errorMessage);
 						}
 						worldFound = true;
 						break;
@@ -346,7 +346,7 @@ namespace SDF
 			{
 				var errorMessage = "Failed to Load included model(" + modelName + ") file - " + e.Message;
 				Console.WriteLine(errorMessage);
-				simulationDisplay?.SetEventMessage(errorMessage);
+				simulationDisplay?.SetErrorMessage(errorMessage);
 				return null;
 			}
 

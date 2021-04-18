@@ -36,26 +36,29 @@ namespace SDF
 				// Debug.Log(newActorObject.name + "::" + localPosition + ", " + localRotation);
 
 				var actorHelper = newActorObject.AddComponent<Helper.Actor>();
-				actorHelper.isStatic = true;
 				actorHelper.SetPose(localPosition, localRotation);
 
-				foreach (var animation in actor.animations)
+				newActorObject.transform.localScale = Vector3.one * (float)actor.skin.scale;
+
+				if (actor.animations != null)
 				{
-					Implement.Actor.SetAnimation(newActorObject, animation);
+					foreach (var animation in actor.animations)
+					{
+						Implement.Actor.SetAnimation(newActorObject, animation);
+					}
 				}
 
 				actorHelper.SetScript(actor.script);
 
-				var skinnedMeshRenderer = newActorObject.GetComponentInChildren<SkinnedMeshRenderer>();
-
 				var capsuleCollider = newActorObject.AddComponent<CapsuleCollider>();
 
+				var skinnedMeshRenderer = newActorObject.GetComponentInChildren<SkinnedMeshRenderer>();
 				var localBound = skinnedMeshRenderer.localBounds;
-				const float sizeRatio = 0.85f;
+				const float sizeRatio = 0.8f;
 				capsuleCollider.direction = 1;
-				capsuleCollider.center = new Vector3(0, localBound.extents.y, 0);
-				capsuleCollider.radius = localBound.center.magnitude * sizeRatio;
-				capsuleCollider.height = (localBound.max.y - localBound.min.y) * sizeRatio;
+				capsuleCollider.radius = Mathf.Min(localBound.extents.x, localBound.extents.y) * sizeRatio;
+  				capsuleCollider.center = new Vector3(0, localBound.extents.z + capsuleCollider.radius, 0);
+				capsuleCollider.height = localBound.size.z + capsuleCollider.radius * 2;
 			}
 		}
 	}

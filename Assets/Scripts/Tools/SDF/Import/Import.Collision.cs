@@ -33,7 +33,13 @@ namespace SDF
 				// Make collision region for Collision
 				if (collisionObject.CompareTag("Collision"))
 				{
-					Implement.Collision.Make(collisionObject);
+					var geometryObject = (collisionObject.transform.childCount == 0) ? collisionObject : collisionObject.transform.GetChild(0).gameObject;
+					Implement.Collision.Make(geometryObject);
+
+					if (collision.GetGeometry().GetShapeType().Equals(typeof(Plane)))
+					{
+						collisionObject.layer = Implement.Collision.PlaneLayerIndex;
+					}
 
 					if (collision.GetGeometry().GetShapeType().Equals(typeof(Plane)))
 					{

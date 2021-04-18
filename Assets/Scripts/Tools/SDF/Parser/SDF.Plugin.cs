@@ -38,7 +38,7 @@ namespace SDF
 
 		public string ClassName()
 		{
-			var pluginName = filename;
+			var pluginName = FileName;
 			if (pluginName.StartsWith("lib"))
 			{
 				pluginName = pluginName.Substring(3);

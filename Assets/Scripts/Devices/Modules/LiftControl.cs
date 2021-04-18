@@ -58,21 +58,13 @@ public class LiftControl : MonoBehaviour
 
 	private void FindFloorRegionInLift()
 	{
-		foreach (Transform child in transform)
+		var colliders = transform.GetComponentsInChildren<MeshCollider>();
+		foreach (var collider in colliders)
 		{
-			if (floorCollider != null)
+			if (collider.name.Equals(floorColliderName))
 			{
-				break;
-			}
-
-			foreach (Transform grandChild in child.transform)
-			{
-				if (grandChild.name.Equals(floorColliderName))
-				{
-					floorCollider = grandChild.GetComponent<MeshCollider>();
-					floorCollider.convex = false;
-					break;
-				}
+				floorCollider = collider;
+				floorCollider.convex = false;
 			}
 		}
 	}

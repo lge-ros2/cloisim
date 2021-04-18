@@ -22,8 +22,7 @@ namespace SDF
 		private bool always_on = false;
 		private double update_rate = 0.0;
 		private bool visualize = false;
-
-		// <topic> : TBD
+		private string topic = "__default__";
 
 		private SensorType sensor = null;
 		private Plugins plugins = null;
@@ -58,6 +57,7 @@ namespace SDF
 			always_on = GetValue<bool>("always_on");
 			update_rate = GetValue<double>("update_rate");
 			visualize = GetValue<bool>("visualize");
+			topic = GetValue<string>("topic");
 
 			// Console.WriteLine("[{0}] P:{1} C:{2}", GetType().Name, parent, child);
 

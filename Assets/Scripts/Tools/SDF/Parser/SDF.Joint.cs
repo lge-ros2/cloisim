@@ -112,6 +112,7 @@ namespace SDF
 
 				case "revolute":
 				case "revolute2":
+				case "universal":
 				case "prismatic":
 					axis = new Axis();
 					var xyzStr = GetValue<string>("axis/xyz");
@@ -131,7 +132,7 @@ namespace SDF
 						axis.dynamics.friction = GetValue<double>("axis/dynamics/friction");
 					}
 
-					if (Type.Equals("revolute2"))
+					if (Type.Equals("revolute2") || Type.Equals("universal"))
 					{
 						axis2 = new Axis();
 						xyzStr = GetValue<string>("axis2/xyz");

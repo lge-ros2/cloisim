@@ -86,8 +86,16 @@ namespace SDF
 			camera.image_width = GetValue<int>(cameraElement + "/image/width");
 			camera.image_height = GetValue<int>(cameraElement + "/image/height");
 			camera.image_format = GetValue<string>(cameraElement + "/image/format");
-			camera.clip.near = GetValue<double>(cameraElement + "/clip/near");
-			camera.clip.far = GetValue<double>(cameraElement + "/clip/far");
+
+			if (IsValidNode(cameraElement + "/clip/near"))
+			{
+				camera.clip.near = GetValue<double>(cameraElement + "/clip/near");
+			}
+
+			if (IsValidNode(cameraElement + "/clip/far"))
+			{
+				camera.clip.far = GetValue<double>(cameraElement + "/clip/far");
+			}
 
 			if (IsValidNode(cameraElement + "/save"))
 			{
@@ -98,8 +106,16 @@ namespace SDF
 			if (IsValidNode(cameraElement + "/depth_camera"))
 			{
 				camera.depth_camera_output = GetValue<string>(cameraElement + "/depth_camera/output");
-				camera.depth_camera_clip.near = GetValue<double>(cameraElement + "/depth_camera/clip/near");
-				camera.depth_camera_clip.far = GetValue<double>(cameraElement + "/depth_camera/clip/far");
+
+				if (IsValidNode(cameraElement + "/depth_camera/clip/near"))
+				{
+					camera.depth_camera_clip.near = GetValue<double>(cameraElement + "/depth_camera/clip/near");
+				}
+
+				if (IsValidNode(cameraElement + "/depth_camera/clip/far"))
+				{
+					camera.depth_camera_clip.far = GetValue<double>(cameraElement + "/depth_camera/clip/far");
+				}
 			}
 
 			if (IsValidNode(cameraElement + "/noise"))

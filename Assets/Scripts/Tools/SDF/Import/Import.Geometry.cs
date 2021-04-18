@@ -5,9 +5,6 @@
  */
 
 using UE = UnityEngine;
-#if UNITY_EDITOR
-using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;
-#endif
 
 namespace SDF
 {
@@ -26,14 +23,16 @@ namespace SDF
 				var t = geometry.GetShapeType();
 				var shape = geometry.GetShape();
 
+				UE.GameObject geometryObject = null;
+
 				if (t.Equals(typeof(SDF.Mesh)))
 				{
 					var mesh = shape as SDF.Mesh;
-					Implement.Geometry.SetMesh(mesh, targetObject);
+					geometryObject = Implement.Geometry.GenerateMeshObject(mesh);
 				}
 				else if (t.IsSubclassOf(typeof(SDF.ShapeType)))
 				{
-					Implement.Geometry.SetMesh(shape, targetObject);
+					geometryObject = Implement.Geometry.GenerateMeshObject(shape);
 				}
 				else
 				{
@@ -41,11 +40,12 @@ namespace SDF
 					return;
 				}
 
-				targetObject.SetActive(true);
+				if (geometryObject != null)
+				{
+					geometryObject.transform.SetParent(targetObject.transform, false);
+				}
 
-#if UNITY_EDITOR
-				SceneVisibilityManager.instance.DisablePicking(targetObject, true);
-#endif
+				targetObject.SetActive(true);
 			}
 		}
 	}

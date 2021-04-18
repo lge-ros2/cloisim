@@ -68,7 +68,7 @@ namespace SDF
 				var skinnedMeshRenderer = targetObject.GetComponentInChildren<UE.SkinnedMeshRenderer>();
 				var relativePaths = GetBoneHierachy(skinnedMeshRenderer.rootBone);
 
-				var animationClips = MeshLoader.LoadAnimations(animation.filename, relativePaths);
+				var animationClips = MeshLoader.LoadAnimations(animation.filename, relativePaths, (float)animation.scale);
 				foreach (var animationClip in animationClips)
 				{
 					// UE.Debug.Log("animation clip name: " + animationClip.name);

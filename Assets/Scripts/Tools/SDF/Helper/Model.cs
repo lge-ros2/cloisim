@@ -25,13 +25,10 @@ namespace SDF
 
 			void Start()
 			{
-				if (isTopModel)
+				if (isStatic)
 				{
-					if (isStatic)
-					{
-						// if parent model has static option, make it all static in child
-						ConvertToStaticLink();
-					}
+					// if parent model has static option, make it all static in children
+					ConvertToStaticLink();
 				}
 			}
 
@@ -42,6 +39,14 @@ namespace SDF
 				foreach (var childGameObject in GetComponentsInChildren<UE.Transform>())
 				{
 					childGameObject.gameObject.isStatic = true;
+				}
+
+				foreach (var childArticulationBody in GetComponentsInChildren<UE.ArticulationBody>())
+				{
+					if (childArticulationBody.isRoot)
+					{
+						childArticulationBody.immovable = true;
+					}
 				}
 			}
 		}
