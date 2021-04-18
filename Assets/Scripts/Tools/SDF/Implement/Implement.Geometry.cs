@@ -14,7 +14,7 @@ namespace SDF
 		public class Geometry
 		{
 			/// <summary>Set mesh from external source</summary>
-			public static void SetMesh(in SDF.Mesh obj, in UE.GameObject targetObject)
+			public static UE.GameObject GenerateMeshObject(in SDF.Mesh obj)
 			{
 				var loadedObject = MeshLoader.CreateMeshObject(obj.uri);
 
@@ -24,18 +24,19 @@ namespace SDF
 				}
 				else
 				{
-					loadedObject.transform.SetParent(targetObject.transform, false);
 					var loadedObjectScale = loadedObject.transform.localScale;
 					loadedObjectScale.Scale(SDF2Unity.GetScale(obj.scale));
 					loadedObject.transform.localScale = loadedObjectScale;
 					// Debug.Log(loadedObject.name + ", " + SDF2Unity.GetScale(obj.scale).ToString("F6") + " => " + loadedObject.transform.localScale.ToString("F6"));
 				}
+
+				return loadedObject;
 			}
 
 			//
 			// Summary: Set primitive mesh
 			//
-			public static void SetMesh(in SDF.ShapeType shape, in UE.GameObject targetObject)
+			public static UE.GameObject GenerateMeshObject(in SDF.ShapeType shape)
 			{
 				UE.Mesh mesh = null;
 
@@ -67,17 +68,21 @@ namespace SDF
 					Debug.Log("Wrong ShapeType!!!");
 				}
 
+				var createdObject = new UE.GameObject("geometry(primitive mesh)");
+
 				if (mesh != null)
 				{
-					var meshFilter = targetObject.AddComponent<UE.MeshFilter>();
+					var meshFilter = createdObject.AddComponent<UE.MeshFilter>();
 					meshFilter.mesh = mesh;
 
 					var newMaterial = new UE.Material(SDF2Unity.commonShader);
 					newMaterial.name = mesh.name;
 
-					var meshRenderer = targetObject.AddComponent<UE.MeshRenderer>();
+					var meshRenderer = createdObject.AddComponent<UE.MeshRenderer>();
 					meshRenderer.material = newMaterial;
 				}
+
+				return createdObject;
 			}
 		}
 	}

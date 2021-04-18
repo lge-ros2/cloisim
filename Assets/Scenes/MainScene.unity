@@ -221,6 +221,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawInertia: 0
   isSelfCollide: 0
+  useGravity: 0
 --- !u!1 &25597963
 GameObject:
   m_ObjectHideFlags: 0
@@ -319,6 +320,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawInertia: 0
   isSelfCollide: 0
+  useGravity: 0
 --- !u!1 &34803206
 GameObject:
   m_ObjectHideFlags: 0
@@ -1239,6 +1241,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawInertia: 0
   isSelfCollide: 0
+  useGravity: 0
 --- !u!135 &402915479
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1903,6 +1906,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawInertia: 0
   isSelfCollide: 0
+  useGravity: 0
 --- !u!171741748 &635764732
 ArticulationBody:
   m_ObjectHideFlags: 0
@@ -2875,6 +2879,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawInertia: 0
   isSelfCollide: 0
+  useGravity: 0
 --- !u!1 &887438904
 GameObject:
   m_ObjectHideFlags: 0
@@ -5760,6 +5765,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawInertia: 0
   isSelfCollide: 0
+  useGravity: 0
 --- !u!1 &1835497263
 GameObject:
   m_ObjectHideFlags: 0

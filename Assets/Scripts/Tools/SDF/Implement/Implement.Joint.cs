@@ -15,12 +15,6 @@ namespace SDF
 		{
 			public static void SetArticulationBodyAnchor(in UE.ArticulationBody body, in UE.Pose parentAnchor)
 			{
-				if (body == null)
-				{
-					Debug.LogWarning("Articulation Body is NULL");
-					return;
-				}
-
 				body.anchorPosition = UE.Vector3.zero;
 				body.anchorRotation = UE.Quaternion.identity;
 				body.parentAnchorPosition = parentAnchor.position;

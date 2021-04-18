@@ -20,6 +20,8 @@ namespace SDF
 			[UE.Header("SDF Properties")]
 			public bool isSelfCollide = false;
 
+			public bool useGravity = false;
+
 			private UE.ArticulationBody _artBody = null;
 
 			public Dictionary<string, UE.ArticulationBody> jointList = new Dictionary<string, UE.ArticulationBody>();

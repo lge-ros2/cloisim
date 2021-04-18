@@ -95,12 +95,13 @@ namespace SDF
 				}
 				else
 				{
-					var modelTransformChild = linkObjectChild.parent;
 					var modelTransformParent = linkObjectParent.parent;
+					var modelTransformChild = linkObjectChild.parent;
+					var modelHelperChild = modelTransformChild.GetComponent<SDF.Helper.Model>();
 
 					var anchorPose = new UE.Pose();
 
-					if (modelTransformChild.Equals(modelTransformParent))
+					if (modelTransformChild.Equals(modelTransformParent) || modelHelperChild.isTopModel)
 					{
 						linkObjectChild.SetParent(linkObjectParent);
 
@@ -122,51 +123,57 @@ namespace SDF
 					anchorPose.position += jointPosition;
 					anchorPose.rotation *= jointRotation;
 
+					if (articulationBodyChild == null)
+					{
+						Debug.LogWarning("Articulation Body is NULL, will create an articulation body for linking");
+						articulationBodyChild = CreateArticulationBody(linkObjectChild.gameObject);
+					}
+
 					Implement.Joint.SetArticulationBodyAnchor(articulationBodyChild, anchorPose);
-				}
+					switch (joint.Type)
+					{
+						case "ball":
+							Implement.Joint.MakeBall(articulationBodyChild);
+							break;
 
-				switch (joint.Type)
-				{
-					case "ball":
-						Implement.Joint.MakeBall(articulationBodyChild);
-						break;
+						case "prismatic":
+							Implement.Joint.MakePrismatic(articulationBodyChild, joint.Axis, joint.PhysicsODE, joint.Pose);
+							break;
 
-					case "prismatic":
-						Implement.Joint.MakePrismatic(articulationBodyChild, joint.Axis, joint.PhysicsODE, joint.Pose);
-						break;
+						case "revolute":
+							Implement.Joint.MakeRevolute(articulationBodyChild, joint.Axis);
+							break;
 
-					case "revolute":
-						Implement.Joint.MakeRevolute(articulationBodyChild, joint.Axis);
-						break;
+						case "universal":
+						case "revolute2":
+							Implement.Joint.MakeRevolute2(articulationBodyChild, joint.Axis, joint.Axis2);
+							break;
 
-					case "revolute2":
-						Implement.Joint.MakeRevolute2(articulationBodyChild, joint.Axis, joint.Axis2);
-						break;
+						case "fixed":
+							Implement.Joint.MakeFixed(articulationBodyChild);
+							break;
 
-					case "fixed":
-						Implement.Joint.MakeFixed(articulationBodyChild);
-						break;
+						case "gearbox":
+							// gearbox_ratio = GetValue<double>("gearbox_ratio");
+							// gearbox_reference_body = GetValue<string>("gearbox_reference_body");
+							Debug.LogWarning("This type[gearbox] is not supported now.");
+							break;
 
-					case "gearbox":
-						// gearbox_ratio = GetValue<double>("gearbox_ratio");
-						// gearbox_reference_body = GetValue<string>("gearbox_reference_body");
-						Debug.LogWarning("This type[gearbox] is not supported now.");
-						break;
+						case "screw":
+							// thread_pitch = GetValue<double>("thread_pitch");
+							Debug.LogWarning("This type[screw] is not supported now.");
+							break;
 
-					case "screw":
-						// thread_pitch = GetValue<double>("thread_pitch");
-						Debug.LogWarning("This type[screw] is not supported now.");
-						break;
+						default:
+							Debug.LogWarningFormat("Check Joint type[{0}]", joint.Type);
+							break;
+					}
 
-					default:
-						Debug.LogWarningFormat("Check Joint type[{0}]", joint.Type);
-						break;
-				}
-
-				var linkPlugin = linkObjectChild.GetComponent<Helper.Link>();
-				if (linkPlugin != null)
-				{
-					linkPlugin.jointList.Add(joint.Name, articulationBodyChild);
+					var linkPlugin = linkObjectChild.GetComponent<Helper.Link>();
+					if (linkPlugin != null)
+					{
+						linkPlugin.jointList.Add(joint.Name, articulationBodyChild);
+					}
 				}
 			}
 		}
