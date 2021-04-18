@@ -85,7 +85,7 @@ But inertia factors which retrieved from SDF are still NOT USED for rigidbody in
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.3f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.3.4f1 (LTS)'*.
 - Linux: Ubuntu 20.04.1
 - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
 - Memory: 32GB
