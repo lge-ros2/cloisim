@@ -85,7 +85,6 @@ namespace SDF
 					foreach (var meshCollider in meshColliders)
 					{
 						meshCollider.convex = false;
-						// Debug.LogWarning("Make convex false:" + meshCollider.name);
 					}
 				}
 			}
@@ -98,6 +97,13 @@ namespace SDF
 					return null;
 				}
 
+				// If the child has collider, collider of child with articulation body would enable convex.
+				var meshColliders = linkObject.GetComponentsInChildren<UE.MeshCollider>();
+				foreach (var meshCollider in meshColliders)
+				{
+					meshCollider.convex = true;
+				}
+
 				var articulationBody = linkObject.AddComponent<UE.ArticulationBody>();
 				var linkHelper = linkObject.GetComponent<SDF.Helper.Link>();
 
@@ -105,7 +111,7 @@ namespace SDF
 				articulationBody.angularVelocity = UE.Vector3.zero;
 				articulationBody.useGravity = linkHelper.useGravity;
 				articulationBody.jointType = UE.ArticulationJointType.FixedJoint;
-				articulationBody.mass = (inertial == null) ? 0 : (float)inertial.mass;
+				articulationBody.mass = (float)((inertial == null) ? 1e-35f : inertial.mass);
 
 				if (inertial == null)
 				{
@@ -139,7 +145,7 @@ namespace SDF
 					articulationBody.inertiaTensor = UE.Vector3.one * MinimumInertiaTensor;
 					articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
 
-					Debug.LogWarningFormat(articulationBody.name + " > " + childMeshCollider?.name + " child is null.");
+					Debug.LogWarningFormat(articulationBody.name + " => no mesh collider exists in child");
 				}
 
 				// Debug.Log("Create link body " + linkObject.name);
