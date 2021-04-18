@@ -123,7 +123,6 @@ namespace SDF
 					anchorPose.position += jointPosition;
 					anchorPose.rotation *= jointRotation;
 
-
 					if (articulationBodyChild == null)
 					{
 						Debug.LogWarning("Articulation Body is NULL, will create an articulation body for linking");
