@@ -75,11 +75,8 @@ namespace SDF
 					var meshFilter = createdObject.AddComponent<UE.MeshFilter>();
 					meshFilter.mesh = mesh;
 
-					var newMaterial = new UE.Material(SDF2Unity.commonShader);
-					newMaterial.name = mesh.name;
-
 					var meshRenderer = createdObject.AddComponent<UE.MeshRenderer>();
-					meshRenderer.material = newMaterial;
+					meshRenderer.material = SDF2Unity.GetNewMaterial(mesh.name);
 				}
 
 				return createdObject;

@@ -44,7 +44,7 @@ public class ObjectSpawning : MonoBehaviour
 		var meshFilter = newObject.AddComponent<MeshFilter>();
 		meshFilter.mesh = targetMesh;
 
-		var newMaterial = new Material(SDF2Unity.commonShader);
+		var newMaterial = new Material(SDF2Unity.CommonShader);
 		newMaterial.name = targetMesh.name;
 		newMaterial.color = matColor;
 

@@ -51,11 +51,14 @@ namespace SDF
 	{
 		// <script> : TBD
 		// <shader> : TBD
+		// <render_order> : TBD
 		// <lighting> : TBD
 		public Color ambient = null;
 		public Color diffuse = null;
 		public Color specular = null;
 		public Color emissive = null;
+		// <double_sided> : TBD
+		// <pbr>: TBD
 
 		public Material(XmlNode _node)
 			: base(_node)

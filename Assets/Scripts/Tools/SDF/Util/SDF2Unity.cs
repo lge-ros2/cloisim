@@ -8,8 +8,40 @@ using UnityEngine;
 
 public partial class SDF2Unity
 {
-	private static readonly string commonShaderName = "Standard (Specular setup)";
-	public static Shader commonShader = Shader.Find(commonShaderName);
+	private static readonly string commonShaderName = "Universal Render Pipeline/Lit";
+	public static Shader CommonShader = Shader.Find(commonShaderName);
+
+	public static Material GetNewMaterial(in string name = "")
+	{
+		var newMaterial = new Material(SDF2Unity.CommonShader);
+		newMaterial.SetFloat("_WorkflowMode", 0f); // set to specular mode
+		newMaterial.SetFloat("_Surface", 0f);
+		newMaterial.SetFloat("_Blend", 0f);
+		newMaterial.SetFloat("_AlphaClip", 0f);
+		newMaterial.SetFloat("_SpecularHighlights", 1f);
+		newMaterial.SetFloat("_Cull", 0f);
+		newMaterial.SetFloat("_ZWrite", 1f);
+		newMaterial.SetFloat("_SpecularHighlights", 1f);
+		newMaterial.SetFloat("_Smoothness", 0f);
+		newMaterial.SetFloat("_SmoothnessTextureChannel", 1f);
+		newMaterial.SetFloat("_EnvironmentReflections", 1f);
+		newMaterial.SetFloat("_GlossyReflections", 0f);
+		newMaterial.SetFloat("_Glossiness", 0f);
+		newMaterial.SetFloat("_GlossMapScale", 0f);
+		newMaterial.SetFloat("_ReceiveShadows", 1f);
+		newMaterial.EnableKeyword("UNITY_HDR_ON");
+		newMaterial.EnableKeyword("_EMISSION");
+		newMaterial.EnableKeyword("_ALPHATEST_ON");
+		newMaterial.EnableKeyword("_ALPHABLEND_ON");
+		newMaterial.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+		newMaterial.EnableKeyword("_SPECGLOSSMAP");
+
+		newMaterial.name = name;
+		newMaterial.enableInstancing = true;
+		newMaterial.renderQueue = -1;
+
+		return newMaterial;
+	}
 
 	public static Color GetColor(in SDF.Color value)
 	{
