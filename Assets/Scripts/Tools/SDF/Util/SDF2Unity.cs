@@ -13,32 +13,33 @@ public partial class SDF2Unity
 
 	public static Material GetNewMaterial(in string name = "")
 	{
+		var defaultEmissionColor = Color.white - Color.black;
 		var newMaterial = new Material(SDF2Unity.CommonShader);
 		newMaterial.SetFloat("_WorkflowMode", 0f); // set to specular mode
 		newMaterial.SetFloat("_Surface", 0f);
-		newMaterial.SetFloat("_Blend", 0f);
+		newMaterial.SetFloat("_Mode", 0f);
 		newMaterial.SetFloat("_AlphaClip", 0f);
-		newMaterial.SetFloat("_SpecularHighlights", 1f);
 		newMaterial.SetFloat("_Cull", 0f);
 		newMaterial.SetFloat("_ZWrite", 1f);
 		newMaterial.SetFloat("_SpecularHighlights", 1f);
-		newMaterial.SetFloat("_Smoothness", 0f);
+		newMaterial.SetFloat("_Smoothness", 0.5f);
 		newMaterial.SetFloat("_SmoothnessTextureChannel", 1f);
 		newMaterial.SetFloat("_EnvironmentReflections", 1f);
 		newMaterial.SetFloat("_GlossyReflections", 0f);
 		newMaterial.SetFloat("_Glossiness", 0f);
 		newMaterial.SetFloat("_GlossMapScale", 0f);
 		newMaterial.SetFloat("_ReceiveShadows", 1f);
+		newMaterial.EnableKeyword("_SPECGLOSSMAP");
+		newMaterial.EnableKeyword("_SPECULAR_SETUP");
 		newMaterial.EnableKeyword("UNITY_HDR_ON");
 		newMaterial.EnableKeyword("_EMISSION");
-		newMaterial.EnableKeyword("_ALPHATEST_ON");
-		newMaterial.EnableKeyword("_ALPHABLEND_ON");
-		newMaterial.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-		newMaterial.EnableKeyword("_SPECGLOSSMAP");
+		newMaterial.SetColor("_EmissionColor", defaultEmissionColor);
 
 		newMaterial.name = name;
 		newMaterial.enableInstancing = true;
 		newMaterial.renderQueue = -1;
+
+		// newMaterial.hideFlags |= HideFlags.NotEditable;
 
 		return newMaterial;
 	}

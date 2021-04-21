@@ -77,6 +77,7 @@ namespace SDF
 
 					var meshRenderer = createdObject.AddComponent<UE.MeshRenderer>();
 					meshRenderer.material = SDF2Unity.GetNewMaterial(mesh.name);
+					meshRenderer.allowOcclusionWhenDynamic = true;
 				}
 
 				return createdObject;

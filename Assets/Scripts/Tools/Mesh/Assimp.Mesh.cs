@@ -44,40 +44,34 @@ public partial class MeshLoader
 		{
 			var mat = SDF2Unity.GetNewMaterial(sceneMat.Name);
 
-			var colorAmbientAndDiffuse = Color.clear;
-
 			if (sceneMat.HasColorAmbient)
 			{
-				colorAmbientAndDiffuse += MeshLoader.GetColor(sceneMat.ColorAmbient);
-				Debug.Log(sceneMat.Name + ": HasColorAmbient " + MeshLoader.GetColor(sceneMat.ColorAmbient));
+				// Debug.Log(sceneMat.Name + ": ColorAmbient but not support. " + 	MeshLoader.GetColor(sceneMat.ColorAmbient);
 			}
 
 			if (sceneMat.HasColorDiffuse)
 			{
-				colorAmbientAndDiffuse += MeshLoader.GetColor(sceneMat.ColorDiffuse);
-				Debug.Log(sceneMat.Name + ": HasColorDiffuse " + MeshLoader.GetColor(sceneMat.ColorDiffuse));
+				var diffuseColor = MeshLoader.GetColor(sceneMat.ColorDiffuse);
+				mat.SetColor("_BaseColor", diffuseColor);
 			}
-
-			// mat.SetColor("_BaseColor", colorAmbientAndDiffuse);
-			mat.color = colorAmbientAndDiffuse;
-			Debug.Log(sceneMat.Name + ": colorAmbientAndDiffuse " + colorAmbientAndDiffuse);
 
 			// Emission
 			if (sceneMat.HasColorEmissive)
 			{
 				mat.SetColor("_EmissionColor", MeshLoader.GetColor(sceneMat.ColorEmissive));
+				Debug.Log(sceneMat.Name + ": HasColorEmissive " + MeshLoader.GetColor(sceneMat.ColorEmissive));
 			}
 
 			if (sceneMat.HasColorSpecular)
 			{
 				mat.SetColor("_SpecColor", MeshLoader.GetColor(sceneMat.ColorSpecular));
+				Debug.Log(sceneMat.Name + ": HasColorSpecular " + MeshLoader.GetColor(sceneMat.ColorSpecular));
 			}
 
 			if (sceneMat.HasColorTransparent)
 			{
 				// Debug.Log(sceneMat.Name + ": HasColorTransparent but not support. " + sceneMat.ColorTransparent);
 				mat.SetColor("_TransparentColor", MeshLoader.GetColor(sceneMat.ColorTransparent));
-				// Debug.Log("=>" + mat.GetColor("_TransparentColor"));
 			}
 
 			// Reflectivity
@@ -110,8 +104,8 @@ public partial class MeshLoader
 					var textureFullPath = Path.Combine(textureDirectory, filePath);
 					if (File.Exists(textureFullPath))
 					{
-						// mat.SetTexture("_BaseMap", GetTexture(textureFullPath));
-						mat.mainTexture = GetTexture(textureFullPath);
+						mat.SetTexture("_BaseMap", GetTexture(textureFullPath));
+						// mat.mainTexture = GetTexture(textureFullPath);
 					}
 				}
 			}
@@ -258,10 +252,11 @@ public partial class MeshLoader
 
 				var subObject = new GameObject(meshMat.Mesh.name);
 				var meshFilter = subObject.AddComponent<MeshFilter>();
-				var meshRenderer = subObject.AddComponent<MeshRenderer>();
-
 				meshFilter.mesh = meshMat.Mesh;
+
+				var meshRenderer = subObject.AddComponent<MeshRenderer>();
 				meshRenderer.material = meshMat.Material;
+				meshRenderer.allowOcclusionWhenDynamic = true;
 
 				subObject.transform.SetParent(rootObject.transform, true);
 				// Debug.Log("Sub Object: " + subObject.name);

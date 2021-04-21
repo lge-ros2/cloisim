@@ -16,7 +16,7 @@ namespace SDF
 			{
 				var targetObject = (parentObject as UE.GameObject);
 
-				if (targetObject == null)
+				if (targetObject == null || sdfMaterial == null)
 				{
 					return;
 				}
@@ -31,45 +31,25 @@ namespace SDF
 						continue;
 					}
 
-					if (sdfMaterial != null)
+					if (sdfMaterial.ambient != null)
 					{
-						var colorAmbientAndDiffuse = UE.Color.clear;
-
-						if (sdfMaterial.ambient != null)
-						{
-							colorAmbientAndDiffuse += SDF2Unity.GetColor(sdfMaterial.ambient);
-						}
-
-						if (sdfMaterial.diffuse != null)
-						{
-							colorAmbientAndDiffuse += SDF2Unity.GetColor(sdfMaterial.diffuse);
-						}
-
-						// sharedMaterial.SetColor("_BaseColor", colorAmbientAndDiffuse);
-						sharedMaterial.color = colorAmbientAndDiffuse;
-
-						if (sdfMaterial.emissive != null)
-						{
-							sharedMaterial.SetColor("_EmissionColor", SDF2Unity.GetColor(sdfMaterial.emissive));
-						}
-						else
-						{
-							sharedMaterial.SetColor("_EmissionColor", UE.Color.black);
-						}
-
-						if (sdfMaterial.specular != null)
-						{
-							sharedMaterial.SetColor("_SpecColor", SDF2Unity.GetColor(sdfMaterial.specular));
-						}
-						else
-						{
-							sharedMaterial.SetColor("_SpecColor", UE.Color.black);
-						}
+						UE.Debug.Log(sharedMaterial.name + ": ambient but not support. " + 	SDF2Unity.GetColor(sdfMaterial.ambient));
 					}
 
-					renderer.sharedMaterial = sharedMaterial;
+					if (sdfMaterial.diffuse != null)
+					{
+						sharedMaterial.SetColor("_BaseColor", SDF2Unity.GetColor(sdfMaterial.diffuse));
+					}
 
-					// sharedMaterial.hideFlags |= UE.HideFlags.NotEditable;
+					if (sdfMaterial.emissive != null)
+					{
+						sharedMaterial.SetColor("_EmissionColor", SDF2Unity.GetColor(sdfMaterial.emissive));
+					}
+
+					if (sdfMaterial.specular != null)
+					{
+						sharedMaterial.SetColor("_SpecColor", SDF2Unity.GetColor(sdfMaterial.specular));
+					}
 				}
 			}
 		}
