@@ -35,7 +35,10 @@ namespace RuntimeGizmos
 
 		private void EndCameraRendering(ScriptableRenderContext context, Camera camera)
 		{
-			OnPostRender();
+			if (camera.Equals(Camera.main))
+			{
+				OnPostRender();
+			}
 		}
 
 		void OnPostRender()
