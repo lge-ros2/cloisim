@@ -53,19 +53,28 @@ public partial class MeshLoader
 			{
 				var diffuseColor = MeshLoader.GetColor(sceneMat.ColorDiffuse);
 				mat.SetColor("_BaseColor", diffuseColor);
+
+				if (diffuseColor.a < 1)
+				{
+					SDF2Unity.SetMaterialTransparent(mat);
+				}
+				else
+				{
+					SDF2Unity.SetMaterialOpaque(mat);
+				}
 			}
 
 			// Emission
 			if (sceneMat.HasColorEmissive)
 			{
 				mat.SetColor("_EmissionColor", MeshLoader.GetColor(sceneMat.ColorEmissive));
-				Debug.Log(sceneMat.Name + ": HasColorEmissive " + MeshLoader.GetColor(sceneMat.ColorEmissive));
+				// Debug.Log(sceneMat.Name + ": HasColorEmissive " + MeshLoader.GetColor(sceneMat.ColorEmissive));
 			}
 
 			if (sceneMat.HasColorSpecular)
 			{
 				mat.SetColor("_SpecColor", MeshLoader.GetColor(sceneMat.ColorSpecular));
-				Debug.Log(sceneMat.Name + ": HasColorSpecular " + MeshLoader.GetColor(sceneMat.ColorSpecular));
+				// Debug.Log(sceneMat.Name + ": HasColorSpecular " + MeshLoader.GetColor(sceneMat.ColorSpecular));
 			}
 
 			if (sceneMat.HasColorTransparent)

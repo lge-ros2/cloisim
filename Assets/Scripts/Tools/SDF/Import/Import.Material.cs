@@ -38,7 +38,17 @@ namespace SDF
 
 					if (sdfMaterial.diffuse != null)
 					{
-						sharedMaterial.SetColor("_BaseColor", SDF2Unity.GetColor(sdfMaterial.diffuse));
+						var diffuseColor = SDF2Unity.GetColor(sdfMaterial.diffuse);
+						sharedMaterial.SetColor("_BaseColor", diffuseColor);
+
+						if (diffuseColor.a < 1)
+						{
+							SDF2Unity.SetMaterialTransparent(sharedMaterial);
+						}
+						else
+						{
+							SDF2Unity.SetMaterialOpaque(sharedMaterial);
+						}
 					}
 
 					if (sdfMaterial.emissive != null)
