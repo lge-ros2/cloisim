@@ -3,10 +3,10 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -17,6 +17,7 @@ namespace SensorDevices
 		protected messages.ImageStamped imageStamped = null;
 
 		// public SDF.Camera parameters = null;
+
 		// TODO : Need to be implemented!!!
 		// <noise> TBD
 		// <lens> TBD
@@ -24,7 +25,8 @@ namespace SensorDevices
 
 		protected Transform cameraLink = null;
 
-		protected UnityEngine.Camera cam = null;
+		protected UnityEngine.Camera _cam = null;
+		protected UniversalAdditionalCameraData _universalCamData = null;
 
 		protected string targetRTname;
 		protected int targetRTdepth;
@@ -33,31 +35,49 @@ namespace SensorDevices
 		protected TextureFormat readbackDstFormat;
 		private CamImageData camData;
 
-		void OnPreRender()
+		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
-			GL.invertCulling = true;
+			if (camera.Equals(_cam))
+			{
+				// This is where you can write custom rendering code. Customize this method to customize your SRP.
+				// Create and schedule a command to clear the current render target
+				var cmdBuffer = new CommandBuffer();
+				cmdBuffer.SetInvertCulling(true);
+				context.ExecuteCommandBuffer(cmdBuffer);
+				// Tell the Scriptable Render Context to tell the graphics API to perform the scheduled commands
+				cmdBuffer.Release();
+				context.Submit();
+			}
 		}
 
-		void OnPostRender()
+		protected void OnEndCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
-			GL.invertCulling = false;
+			if (camera.Equals(_cam))
+			{
+				var cmdBuffer = new CommandBuffer();
+				cmdBuffer.SetInvertCulling(false);
+				context.ExecuteCommandBuffer(cmdBuffer);
+				cmdBuffer.Release();
+				context.Submit();
+			}
 		}
 
 		protected override void OnAwake()
 		{
 			_mode = Mode.TX;
-			cam = gameObject.AddComponent<UnityEngine.Camera>();
+			_cam = gameObject.AddComponent<UnityEngine.Camera>();
+			_universalCamData = _cam.GetUniversalAdditionalCameraData();
 
 			// for controlling targetDisplay
-			cam.targetDisplay = -1;
-			cam.stereoTargetEye = StereoTargetEyeMask.None;
+			_cam.targetDisplay = -1;
+			_cam.stereoTargetEye = StereoTargetEyeMask.None;
 
 			cameraLink = transform.parent;
 		}
 
 		protected override void OnStart()
 		{
-			if (cam)
+			if (_cam)
 			{
 				SetupTexture();
 				SetupCamera();
@@ -67,10 +87,13 @@ namespace SensorDevices
 
 		protected virtual void SetupTexture()
 		{
-			cam.depthTextureMode = DepthTextureMode.None;
+			_cam.depthTextureMode = DepthTextureMode.None;
+			_universalCamData.requiresColorTexture = true;
+			_universalCamData.requiresDepthTexture = false;
+			_universalCamData.renderShadows = true;
 
 			// Debug.Log("This is not a Depth Camera!");
-			targetRTname = "CameraTexture";
+			targetRTname = "CameraColorTexture";
 			targetRTdepth = 0;
 			targetRTrwmode = RenderTextureReadWrite.sRGB;
 
@@ -128,20 +151,20 @@ namespace SensorDevices
 
 		private void SetupCamera()
 		{
-			cam.ResetWorldToCameraMatrix();
-			cam.ResetProjectionMatrix();
+			_cam.ResetWorldToCameraMatrix();
+			_cam.ResetProjectionMatrix();
 
-			cam.allowHDR = true;
-			cam.allowMSAA = true;
-			cam.allowDynamicResolution = true;
-			cam.useOcclusionCulling = true;
+			_cam.allowHDR = true;
+			_cam.allowMSAA = true;
+			_cam.allowDynamicResolution = true;
+			_cam.useOcclusionCulling = true;
 
-			cam.stereoTargetEye = StereoTargetEyeMask.None;
+			_cam.stereoTargetEye = StereoTargetEyeMask.None;
 
-			cam.orthographic = false;
-			cam.nearClipPlane = (float)GetParameters().clip.near;
-			cam.farClipPlane = (float)GetParameters().clip.far;
-			cam.cullingMask = LayerMask.GetMask("Default");
+			_cam.orthographic = false;
+			_cam.nearClipPlane = (float)GetParameters().clip.near;
+			_cam.farClipPlane = (float)GetParameters().clip.far;
+			_cam.cullingMask = LayerMask.GetMask("Default");
 
 			var targetRT = new RenderTexture(GetParameters().image_width, GetParameters().image_height, targetRTdepth, targetRTformat, targetRTrwmode)
 			{
@@ -154,21 +177,32 @@ namespace SensorDevices
 				filterMode = FilterMode.Bilinear
 			};
 
-			cam.targetTexture = targetRT;
+			_cam.targetTexture = targetRT;
 
 			var camHFov = (float)GetParameters().horizontal_fov * Mathf.Rad2Deg;
-			var camVFov = DeviceHelper.HorizontalToVerticalFOV(camHFov, cam.aspect);
-			cam.fieldOfView = camVFov;
+			var camVFov = DeviceHelper.HorizontalToVerticalFOV(camHFov, _cam.aspect);
+			_cam.fieldOfView = camVFov;
 
 			// Invert projection matrix for cloisim msg
-			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(camHFov, camVFov, cam.nearClipPlane, cam.farClipPlane);
+			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(camHFov, camVFov, _cam.nearClipPlane, _cam.farClipPlane);
 			var invertMatrix = Matrix4x4.Scale(new Vector3(1, -1, 1));
-			cam.projectionMatrix = projMatrix * invertMatrix;
+			_cam.projectionMatrix = projMatrix * invertMatrix;
 
-			cam.enabled = false;
-			// cam.hideFlags |= HideFlags.NotEditable;
+			_universalCamData.enabled = false;
+			_universalCamData.renderPostProcessing = true;
+			_cam.enabled = false;
+
+			RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+			RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
+
+			_cam.hideFlags |= HideFlags.NotEditable;
 
 			camData.AllocateTexture(GetParameters().image_width, GetParameters().image_height, GetParameters().image_format);
+		}
+		void OnDestroy()
+		{
+			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
+			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 		}
 
 		private IEnumerator CameraWorker()
@@ -177,16 +211,18 @@ namespace SensorDevices
 
 			while (true)
 			{
-				cam.enabled = true;
+				_universalCamData.enabled = true;
+				_cam.enabled = true;
 
 				// Debug.Log("start render and request ");
-				if (cam.isActiveAndEnabled)
+				if (_cam.isActiveAndEnabled)
 				{
-					cam.Render();
+					_cam.Render();
 				}
-				var readback = AsyncGPUReadback.Request(cam.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
+				var readback = AsyncGPUReadback.Request(_cam.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
 
-				cam.enabled = false;
+				_universalCamData.enabled = false;
+				_cam.enabled = false;
 
 				yield return null;
 				readback.WaitForCompletion();

@@ -5,30 +5,15 @@
  */
 
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace SensorDevices
 {
-	public partial class DepthCamera : Camera
+	public class DepthCamera : Camera
 	{
-		// <noise> TBD
-		// <lens> TBD
-		// <distortion> TBD
-
 		private Material depthMaterial = null;
 
 		public uint depthScale = 1;
-
-		void OnRenderImage(RenderTexture source, RenderTexture destination)
-		{
-			if (depthMaterial)
-			{
-				Graphics.Blit(source, destination, depthMaterial);
-			}
-			else
-			{
-				Graphics.Blit(source, destination);
-			}
-		}
 
 		public void ReverseDepthData(in bool reverse)
 		{
@@ -40,8 +25,13 @@ namespace SensorDevices
 
 		protected override void SetupTexture()
 		{
-			var shader = Shader.Find("Sensor/Depth");
-			depthMaterial = new Material(shader);
+			// var passId = new ShaderTagId("Sensor/Depth");
+
+			// _DepthTexture.Init("_CameraDepthTexture");
+			// _DepthPrepass = new DepthOnlyPass(RenderPassEvent.BeforeRenderingPrepasses, RenderQueueRange.opaque, 1);
+
+			var _depthShader = Shader.Find("Sensor/Depth");
+			depthMaterial = new Material(_depthShader);
 
 			ReverseDepthData(true);
 
@@ -53,12 +43,16 @@ namespace SensorDevices
 				camParameters.image_format = "RGB_FLOAT32";
 			}
 
-			cam.backgroundColor = Color.white;
-			cam.clearFlags = CameraClearFlags.SolidColor;
-			cam.depthTextureMode = DepthTextureMode.Depth;
+			_cam.backgroundColor = Color.white;
+			_cam.clearFlags = CameraClearFlags.SolidColor;
+
+			_cam.depthTextureMode = DepthTextureMode.Depth;
+			_universalCamData.requiresColorTexture = false;
+			_universalCamData.requiresDepthTexture = true;
+			_universalCamData.renderShadows = false;
 
 			targetRTname = "CameraDepthTexture";
-			targetRTdepth = 24;
+			targetRTdepth = 32;
 			targetRTrwmode = RenderTextureReadWrite.Linear;
 			targetRTformat = RenderTextureFormat.ARGB32;
 
@@ -78,6 +72,15 @@ namespace SensorDevices
 					readbackDstFormat = TextureFormat.RFloat;
 					break;
 			}
+
+			var cb = new CommandBuffer();
+			var tempTextureId = Shader.PropertyToID("_RenderImageCameraDepthTexture");
+			cb.GetTemporaryRT(tempTextureId, -1, -1);
+			cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
+			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
+			cb.ReleaseTemporaryRT(tempTextureId);
+			_cam.AddCommandBuffer(CameraEvent.AfterEverything, cb);
+			cb.Release();
 		}
 
 		protected override void BufferDepthScaling(ref byte[] buffer)

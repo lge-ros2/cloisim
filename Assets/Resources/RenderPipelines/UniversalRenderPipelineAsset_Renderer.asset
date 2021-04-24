@@ -34,7 +34,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   m_DefaultStencilState:
     overrideStencilState: 0
-    stencilReference: 0
+    stencilReference: 15
     stencilCompareFunction: 8
     passOperation: 2
     failOperation: 0
