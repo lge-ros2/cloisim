@@ -411,8 +411,8 @@ namespace RuntimeGizmos
 		{
 			if (lineMaterial == null)
 			{
-				lineMaterial = Resources.Load<Material>("Lines");
-				outlineMaterial = Resources.Load<Material>("Outline");
+				lineMaterial = Resources.Load<Material>("Materials/Lines");
+				outlineMaterial = Resources.Load<Material>("Materials/Outline");
 			}
 		}
 
