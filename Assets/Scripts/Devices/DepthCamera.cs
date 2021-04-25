@@ -11,6 +11,8 @@ namespace SensorDevices
 {
 	public class DepthCamera : Camera
 	{
+		ComputeShader _computeShader;
+
 		private Material depthMaterial = null;
 
 		public uint depthScale = 1;
@@ -19,16 +21,13 @@ namespace SensorDevices
 		{
 			if (depthMaterial != null)
 			{
-				depthMaterial.SetFloat("_ReverseData", (reverse)? 1.0f:0.0f);
+				depthMaterial.SetFloat("_ReverseData", (reverse) ? 1 : 0);
 			}
 		}
 
 		protected override void SetupTexture()
 		{
-			// var passId = new ShaderTagId("Sensor/Depth");
-
-			// _DepthTexture.Init("_CameraDepthTexture");
-			// _DepthPrepass = new DepthOnlyPass(RenderPassEvent.BeforeRenderingPrepasses, RenderQueueRange.opaque, 1);
+			_computeShader = Instantiate(Resources.Load<ComputeShader>("Shader/DepthBufferScaling"));
 
 			var _depthShader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(_depthShader);
@@ -78,8 +77,9 @@ namespace SensorDevices
 			cb.GetTemporaryRT(tempTextureId, -1, -1);
 			cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
 			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
-			cb.ReleaseTemporaryRT(tempTextureId);
 			_cam.AddCommandBuffer(CameraEvent.AfterEverything, cb);
+
+			cb.ReleaseTemporaryRT(tempTextureId);
 			cb.Release();
 		}
 
@@ -87,20 +87,21 @@ namespace SensorDevices
 		{
 			if (readbackDstFormat.Equals(TextureFormat.R16))
 			{
-				// Debug.Log("sacling depth buffer");
-				var depthMin = GetParameters().clip.near;
-				var depthMax = GetParameters().clip.far;
+				var kernelIndex = _computeShader.FindKernel("CSDepthBufferScaling");
 
- 				for (var i = 0; i < buffer.Length; i += sizeof(ushort))
-				{
-					var depthDataInUInt16 = (ushort)buffer[i] << 8 | (ushort)buffer[i + 1];
-					var depthDataRatio = (double)depthDataInUInt16 / (double)ushort.MaxValue;
-					var scaledDepthData = (ushort)(depthDataRatio * depthMax * (double)depthScale);
-					// Debug.Log( (ushort)buffer[i]<< 8 + "," + buffer[i+1] + "|" + depthDataInUInt16  + " => " + scaledDepthData);
-					// restore scaled depth data
-					buffer[i] = (byte)(scaledDepthData >> 8);
-					buffer[i + 1] = (byte)(scaledDepthData);
-				}
+				_computeShader.SetFloat("_DepthMin", (float)GetParameters().clip.near);
+				_computeShader.SetFloat("_DepthMax", (float)GetParameters().clip.far);
+				_computeShader.SetFloat("_DepthScale", (float)depthScale);
+
+				var computeBuffer = new ComputeBuffer(buffer.Length, sizeof(byte));
+				_computeShader.SetBuffer(kernelIndex, "_Buffer", computeBuffer);
+				computeBuffer.SetData(buffer);
+
+				var threadGroupX = GetParameters().image_width/16;
+				var threadGroupY = GetParameters().image_height/8;
+				_computeShader.Dispatch(kernelIndex, threadGroupX, threadGroupY, 1);
+				computeBuffer.GetData(buffer);
+				computeBuffer.Release();
 			}
 		}
 	}

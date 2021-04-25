@@ -1,0 +1,34 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSDepthBufferScaling
+
+#define MaxValue16Bits 65535.0f;
+#define THREADS 16
+#define GROUPS 8
+
+RWByteAddressBuffer _Buffer;
+
+float _DepthMin;
+float _DepthMax;
+float _DepthScale;
+
+uint getDepthDataIn16BitsScaled(uint depthData)
+{
+    float depthDataRatio = (float)depthData / MaxValue16Bits;
+
+    uint scaledDepthData = (uint)(depthDataRatio * _DepthMax * _DepthScale);
+    uint finalData = ((scaledDepthData & 0xff) << 8) | (scaledDepthData >> 8);
+    return finalData;
+}
+
+[numthreads(THREADS, GROUPS, 1)]
+void CSDepthBufferScaling(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x + id.y;
+    uint data = _Buffer.Load(index);
+
+    uint part1 = getDepthDataIn16BitsScaled(data & 0xffff);
+    uint part2 = getDepthDataIn16BitsScaled(data >> 16);
+
+    uint finalData = (part2 << 16) | (part1 & 0xffff);
+    _Buffer.Store(index, finalData);
+}

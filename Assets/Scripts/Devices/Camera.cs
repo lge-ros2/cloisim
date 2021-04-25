@@ -174,7 +174,8 @@ namespace SensorDevices
 				useMipMap = false,
 				useDynamicScale = false,
 				wrapMode = TextureWrapMode.Clamp,
-				filterMode = FilterMode.Bilinear
+				filterMode = FilterMode.Bilinear,
+				enableRandomWrite = true
 			};
 
 			_cam.targetTexture = targetRT;
