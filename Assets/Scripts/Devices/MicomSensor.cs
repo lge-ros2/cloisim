@@ -308,8 +308,17 @@ public partial class MicomSensor : Device
 			var odom = micomSensorData.Odom;
 			if ((odom != null))
 			{
-				var motorLeft = _motors[_wheelNameLeft];
-				var motorRight = _motors[_wheelNameRight];
+				if (!_motors.TryGetValue(_wheelNameLeft, out var motorLeft))
+				{
+					Debug.Log("cannot find motor object: " + _wheelNameLeft);
+					return false;
+				}
+
+				if (!_motors.TryGetValue(_wheelNameRight, out var motorRight))
+				{
+					Debug.Log("cannot find motor object: " + _wheelNameRight);
+					return false;
+				}
 
 				if (motorLeft == null || motorRight == null)
 				{
