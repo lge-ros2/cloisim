@@ -29,7 +29,7 @@ Here is the full list of models that is implemented or planned to be implemented
 - [X] Sensor models
   - [X] LiDAR Sensor
     - [X] 2D
-    - [ ] 3D  
+    - [ ] 3D
   - [X] Sonar sensor
   - [X] IMU
   - [X] Contact
@@ -86,8 +86,8 @@ But inertia factors which retrieved from SDF are still NOT USED for rigidbody in
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.4f1 (LTS)'*.
-- Linux: Ubuntu 20.04.1
+- Latest Unity Editor Version: *'2020.3.5f1 (LTS)'*.
+- Linux: Ubuntu 20.04.2 LTS
 - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
 - Memory: 32GB
 - Graphics: NVIDIA Corporation TU102 [GeForce RTX 2080 Ti]
