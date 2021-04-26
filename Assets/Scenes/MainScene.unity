@@ -207,6 +207,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!114 &10540289
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -306,6 +307,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!114 &25597966
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -757,6 +759,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 0
+  m_CollisionDetectionMode: 0
 --- !u!114 &223905747
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -845,7 +848,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   doNotLoad: 0
   clearAllOnStart: 1
-  worldFileName: lg_seocho_with_actors.world
+  worldFileName: empty.world
   modelRootDirectories:
   - ../sample_resources/models/
   - ../lgrs_resource/assets/models/
@@ -1227,6 +1230,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!114 &402915478
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1678,6 +1682,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!65 &568997915
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1957,6 +1962,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!1 &683297084
 GameObject:
   m_ObjectHideFlags: 0
@@ -2149,6 +2155,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!65 &702124006
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2389,6 +2396,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!1 &774957603
 GameObject:
   m_ObjectHideFlags: 0
@@ -2480,6 +2488,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!114 &774957606
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2719,6 +2728,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!65 &849325914
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2865,6 +2875,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!114 &876502907
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3329,6 +3340,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!65 &1041446061
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3975,6 +3987,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!65 &1314072913
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4152,6 +4165,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!65 &1411001347
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4474,6 +4488,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!65 &1525198634
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4620,6 +4635,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!65 &1564278301
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4797,6 +4813,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!65 &1614905075
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -5259,6 +5276,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!1 &1705138703
 GameObject:
   m_ObjectHideFlags: 0
@@ -5418,6 +5436,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!114 &1721554204
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5579,6 +5598,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!1 &1756567517
 GameObject:
   m_ObjectHideFlags: 0
@@ -5646,6 +5666,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!4 &1756567521
 Transform:
   m_ObjectHideFlags: 0
@@ -5784,6 +5805,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!114 &1791041575
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5945,6 +5967,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!1 &1884339980
 GameObject:
   m_ObjectHideFlags: 0
@@ -6012,6 +6035,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 1
+  m_CollisionDetectionMode: 0
 --- !u!4 &1884339984
 Transform:
   m_ObjectHideFlags: 0
@@ -6266,6 +6290,7 @@ ArticulationBody:
   m_JointFriction: 0.05
   m_Immovable: 0
   m_UseGravity: 0
+  m_CollisionDetectionMode: 0
 --- !u!114 &2106501635
 MonoBehaviour:
   m_ObjectHideFlags: 0
