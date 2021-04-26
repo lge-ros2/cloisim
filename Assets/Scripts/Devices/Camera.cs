@@ -200,6 +200,7 @@ namespace SensorDevices
 
 			camData.AllocateTexture(GetParameters().image_width, GetParameters().image_height, GetParameters().image_format);
 		}
+
 		void OnDestroy()
 		{
 			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;

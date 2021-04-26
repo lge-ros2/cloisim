@@ -11,7 +11,7 @@ namespace SensorDevices
 {
 	public class DepthCamera : Camera
 	{
-		ComputeShader _computeShader;
+		private ComputeShader _computeShader;
 
 		private Material depthMaterial = null;
 
@@ -29,8 +29,8 @@ namespace SensorDevices
 		{
 			_computeShader = Instantiate(Resources.Load<ComputeShader>("Shader/DepthBufferScaling"));
 
-			var _depthShader = Shader.Find("Sensor/Depth");
-			depthMaterial = new Material(_depthShader);
+			var depthShader = Shader.Find("Sensor/Depth");
+			depthMaterial = new Material(depthShader);
 
 			ReverseDepthData(true);
 
