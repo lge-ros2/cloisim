@@ -6,6 +6,7 @@
 
 using System.Collections;
 using System;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
 using UnityEngine;
 using Unity.Jobs;
@@ -49,8 +50,8 @@ namespace SensorDevices
 
 		private Transform lidarLink = null;
 		private Pose lidarSensorInitPose = new Pose();
-		private ShadowQuality originalShadowSettings_;
-		private UnityEngine.Camera laserCam = null;
+
+		private UnityEngine.Camera _laserCam = null;
 		private Material depthMaterial = null;
 
 		private const float laserCameraHFov = 120.0000000000f;
@@ -69,29 +70,6 @@ namespace SensorDevices
 		private float laserEndAngle;
 		private float laserTotalAngle;
 
-
-		void OnRenderImage(RenderTexture source, RenderTexture destination)
-		{
-			if (depthMaterial)
-			{
-				Graphics.Blit(source, destination, depthMaterial);
-			}
-			else
-			{
-				Graphics.Blit(source, destination);
-			}
-		}
-
-		void OnPreRender()
-		{
-			QualitySettings.shadows = ShadowQuality.Disable;
-		}
-
-		private void OnPostRender()
-		{
-			QualitySettings.shadows = originalShadowSettings_;
-		}
-
 		private double GetAngleStep(in double minAngle, in double maxAngle, in uint totalSamples)
 		{
 			return (maxAngle - minAngle) / (resolution * totalSamples);
@@ -102,15 +80,12 @@ namespace SensorDevices
 			_mode = Mode.TX;
 			lidarLink = transform.parent;
 
-			// store original shadow settings
-			originalShadowSettings_ = QualitySettings.shadows;
-
-			laserCam = gameObject.AddComponent<UnityEngine.Camera>();
+			_laserCam = gameObject.AddComponent<UnityEngine.Camera>();
 		}
 
 		protected override void OnStart()
 		{
-			if (laserCam)
+			if (_laserCam)
 			{
 				lidarSensorInitPose.position = transform.localPosition;
 				lidarSensorInitPose.rotation = transform.localRotation;
@@ -176,26 +151,26 @@ namespace SensorDevices
 			var shader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(shader);
 
-			laserCam.ResetWorldToCameraMatrix();
-			laserCam.ResetProjectionMatrix();
+			_laserCam.ResetWorldToCameraMatrix();
+			_laserCam.ResetProjectionMatrix();
 
-			laserCam.allowHDR = true;
-			laserCam.allowMSAA = false;
-			laserCam.allowDynamicResolution = false;
-			laserCam.useOcclusionCulling = true;
+			_laserCam.allowHDR = true;
+			_laserCam.allowMSAA = false;
+			_laserCam.allowDynamicResolution = false;
+			_laserCam.useOcclusionCulling = true;
 
-			laserCam.stereoTargetEye = StereoTargetEyeMask.None;
+			_laserCam.stereoTargetEye = StereoTargetEyeMask.None;
 
-			laserCam.orthographic = false;
-			laserCam.nearClipPlane = (float)rangeMin;
-			laserCam.farClipPlane = (float)rangeMax;
-			laserCam.cullingMask = LayerMask.GetMask("Default");
+			_laserCam.orthographic = false;
+			_laserCam.nearClipPlane = (float)rangeMin;
+			_laserCam.farClipPlane = (float)rangeMax;
+			_laserCam.cullingMask = LayerMask.GetMask("Default");
 
-			laserCam.backgroundColor = Color.white;
-			laserCam.clearFlags = CameraClearFlags.SolidColor;
-			laserCam.depthTextureMode = DepthTextureMode.Depth;
+			_laserCam.backgroundColor = Color.white;
+			_laserCam.clearFlags = CameraClearFlags.SolidColor;
+			_laserCam.depthTextureMode = DepthTextureMode.Depth;
 
-			laserCam.renderingPath = RenderingPath.DeferredLighting;
+			_laserCam.renderingPath = RenderingPath.DeferredLighting;
 
 			var renderTextrueWidth = Mathf.CeilToInt(laserCameraHFov / laserHAngleResolution);
 			var aspectRatio = Mathf.Tan(laserCameraVFov / 2 * Mathf.Deg2Rad) / Mathf.Tan(laserCameraHFov / 2 * Mathf.Deg2Rad);
@@ -205,14 +180,28 @@ namespace SensorDevices
 				name = "LidarDepthTexture"
 			};
 
-			laserCam.targetTexture = targetDepthRT;
+			_laserCam.targetTexture = targetDepthRT;
 
 			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(laserCameraHFov, laserCameraVFov, (float)rangeMin, (float)rangeMax);
-			laserCam.projectionMatrix = projMatrix;
+			_laserCam.projectionMatrix = projMatrix;
 
-			laserCam.enabled = false;
+			var universalLaserCamData = _laserCam.GetUniversalAdditionalCameraData();
+			universalLaserCamData.requiresColorTexture = false;
+			universalLaserCamData.requiresDepthTexture = true;
+			universalLaserCamData.renderShadows = false;
 
-			// laserCam.hideFlags |= HideFlags.NotEditable;
+			var cb = new CommandBuffer();
+			var tempTextureId = Shader.PropertyToID("_RenderImageCameraDepthTexture");
+			cb.GetTemporaryRT(tempTextureId, -1, -1);
+			cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
+			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
+			_laserCam.AddCommandBuffer(CameraEvent.AfterEverything, cb);
+
+			cb.ReleaseTemporaryRT(tempTextureId);
+			cb.Release();
+
+			_laserCam.enabled = false;
+			// _laserCam.hideFlags |= HideFlags.NotEditable;
 		}
 
 		private void SetupLaserCameraData()
@@ -223,7 +212,7 @@ namespace SensorDevices
 			laserCamData = new LaserCamData[numberOfLaserCamData];
 			depthCamBuffers = new DepthCamBuffer[numberOfLaserCamData];
 
-			var targetDepthRT = laserCam.targetTexture;
+			var targetDepthRT = _laserCam.targetTexture;
 			for (var index = 0; index < numberOfLaserCamData; index++)
 			{
 				var depthCamBuffer = new DepthCamBuffer();
@@ -252,7 +241,7 @@ namespace SensorDevices
 			var readbacks = new AsyncGPUReadbackRequest[numberOfLaserCamData];
 			var sw = new Stopwatch();
 
-			// var targetDepthRT = laserCam.targetTexture;
+			// var targetDepthRT = _laserCam.targetTexture;
 			while (true)
 			{
 				sw.Restart();
@@ -262,17 +251,17 @@ namespace SensorDevices
 					var data = laserCamData[dataIndex];
 					axisRotation.y = data.centerAngle;
 
-					laserCam.transform.localRotation = lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
+					_laserCam.transform.localRotation = lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
 
-					laserCam.enabled = true;
+					_laserCam.enabled = true;
 
-					if (laserCam.isActiveAndEnabled)
+					if (_laserCam.isActiveAndEnabled)
 					{
-						laserCam.Render();
-						readbacks[dataIndex] = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32);
+						_laserCam.Render();
+						readbacks[dataIndex] = AsyncGPUReadback.Request(_laserCam.targetTexture, 0, TextureFormat.RGBA32);
 					}
 
-					laserCam.enabled = false;
+					_laserCam.enabled = false;
 				}
 
 				yield return null;

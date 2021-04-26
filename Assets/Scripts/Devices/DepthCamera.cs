@@ -5,43 +5,32 @@
  */
 
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace SensorDevices
 {
-	public partial class DepthCamera : Camera
+	public class DepthCamera : Camera
 	{
-		// <noise> TBD
-		// <lens> TBD
-		// <distortion> TBD
+		ComputeShader _computeShader;
 
 		private Material depthMaterial = null;
 
 		public uint depthScale = 1;
 
-		void OnRenderImage(RenderTexture source, RenderTexture destination)
-		{
-			if (depthMaterial)
-			{
-				Graphics.Blit(source, destination, depthMaterial);
-			}
-			else
-			{
-				Graphics.Blit(source, destination);
-			}
-		}
-
 		public void ReverseDepthData(in bool reverse)
 		{
 			if (depthMaterial != null)
 			{
-				depthMaterial.SetFloat("_ReverseData", (reverse)? 1.0f:0.0f);
+				depthMaterial.SetFloat("_ReverseData", (reverse) ? 1 : 0);
 			}
 		}
 
 		protected override void SetupTexture()
 		{
-			var shader = Shader.Find("Sensor/Depth");
-			depthMaterial = new Material(shader);
+			_computeShader = Instantiate(Resources.Load<ComputeShader>("Shader/DepthBufferScaling"));
+
+			var _depthShader = Shader.Find("Sensor/Depth");
+			depthMaterial = new Material(_depthShader);
 
 			ReverseDepthData(true);
 
@@ -53,12 +42,16 @@ namespace SensorDevices
 				camParameters.image_format = "RGB_FLOAT32";
 			}
 
-			cam.backgroundColor = Color.white;
-			cam.clearFlags = CameraClearFlags.SolidColor;
-			cam.depthTextureMode = DepthTextureMode.Depth;
+			_cam.backgroundColor = Color.white;
+			_cam.clearFlags = CameraClearFlags.SolidColor;
+
+			_cam.depthTextureMode = DepthTextureMode.Depth;
+			_universalCamData.requiresColorTexture = false;
+			_universalCamData.requiresDepthTexture = true;
+			_universalCamData.renderShadows = false;
 
 			targetRTname = "CameraDepthTexture";
-			targetRTdepth = 24;
+			targetRTdepth = 32;
 			targetRTrwmode = RenderTextureReadWrite.Linear;
 			targetRTformat = RenderTextureFormat.ARGB32;
 
@@ -78,26 +71,37 @@ namespace SensorDevices
 					readbackDstFormat = TextureFormat.RFloat;
 					break;
 			}
+
+			var cb = new CommandBuffer();
+			var tempTextureId = Shader.PropertyToID("_RenderImageCameraDepthTexture");
+			cb.GetTemporaryRT(tempTextureId, -1, -1);
+			cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
+			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
+			_cam.AddCommandBuffer(CameraEvent.AfterEverything, cb);
+
+			cb.ReleaseTemporaryRT(tempTextureId);
+			cb.Release();
 		}
 
 		protected override void BufferDepthScaling(ref byte[] buffer)
 		{
 			if (readbackDstFormat.Equals(TextureFormat.R16))
 			{
-				// Debug.Log("sacling depth buffer");
-				var depthMin = GetParameters().clip.near;
-				var depthMax = GetParameters().clip.far;
+				var kernelIndex = _computeShader.FindKernel("CSDepthBufferScaling");
 
- 				for (var i = 0; i < buffer.Length; i += sizeof(ushort))
-				{
-					var depthDataInUInt16 = (ushort)buffer[i] << 8 | (ushort)buffer[i + 1];
-					var depthDataRatio = (double)depthDataInUInt16 / (double)ushort.MaxValue;
-					var scaledDepthData = (ushort)(depthDataRatio * depthMax * (double)depthScale);
-					// Debug.Log( (ushort)buffer[i]<< 8 + "," + buffer[i+1] + "|" + depthDataInUInt16  + " => " + scaledDepthData);
-					// restore scaled depth data
-					buffer[i] = (byte)(scaledDepthData >> 8);
-					buffer[i + 1] = (byte)(scaledDepthData);
-				}
+				_computeShader.SetFloat("_DepthMin", (float)GetParameters().clip.near);
+				_computeShader.SetFloat("_DepthMax", (float)GetParameters().clip.far);
+				_computeShader.SetFloat("_DepthScale", (float)depthScale);
+
+				var computeBuffer = new ComputeBuffer(buffer.Length, sizeof(byte));
+				_computeShader.SetBuffer(kernelIndex, "_Buffer", computeBuffer);
+				computeBuffer.SetData(buffer);
+
+				var threadGroupX = GetParameters().image_width/16;
+				var threadGroupY = GetParameters().image_height/8;
+				_computeShader.Dispatch(kernelIndex, threadGroupX, threadGroupY, 1);
+				computeBuffer.GetData(buffer);
+				computeBuffer.Release();
 			}
 		}
 	}

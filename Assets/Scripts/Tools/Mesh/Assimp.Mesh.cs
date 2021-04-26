@@ -12,70 +12,151 @@ using UnityEngine.Rendering;
 
 public partial class MeshLoader
 {
+	private static Texture2D GetTexture(in string textureFullPath)
+	{
+		if (!string.IsNullOrEmpty(textureFullPath))
+		{
+			var byteArray = File.ReadAllBytes(textureFullPath);
+			if (byteArray != null)
+			{
+				var texture = new Texture2D(2, 2);
+				if (texture.LoadImage(byteArray))
+				{
+					return texture;
+				}
+				else
+				{
+					throw new Exception("Cannot find texture file: " + textureFullPath);
+				}
+			}
+		}
+
+		return null;
+	}
+
 	private static List<Material> LoadMaterials(in string meshPath, in List<Assimp.Material> sceneMaterials)
 	{
 		var parentPath = Directory.GetParent(meshPath).FullName;
+		var textureDirectories = GetRootTexturePaths(parentPath);
 		var materials = new List<Material>();
 
 		foreach (var sceneMat in sceneMaterials)
 		{
-			var mat = new Material(SDF2Unity.commonShader);
+			var mat = SDF2Unity.GetNewMaterial(sceneMat.Name);
 
-			mat.name = sceneMat.Name;
+			if (sceneMat.HasColorAmbient)
+			{
+				// Debug.Log(sceneMat.Name + ": ColorAmbient but not support. " + 	MeshLoader.GetColor(sceneMat.ColorAmbient);
+			}
 
-			// Albedo
 			if (sceneMat.HasColorDiffuse)
 			{
-				var color = new Color(sceneMat.ColorDiffuse.R, sceneMat.ColorDiffuse.G, sceneMat.ColorDiffuse.B, sceneMat.ColorDiffuse.A);
-				mat.color = color;
+				var diffuseColor = MeshLoader.GetColor(sceneMat.ColorDiffuse);
+				mat.SetColor("_BaseColor", diffuseColor);
+
+				if (diffuseColor.a < 1)
+				{
+					SDF2Unity.SetMaterialTransparent(mat);
+				}
+				else
+				{
+					SDF2Unity.SetMaterialOpaque(mat);
+				}
 			}
 
 			// Emission
 			if (sceneMat.HasColorEmissive)
 			{
-				var color = new Color(sceneMat.ColorEmissive.R, sceneMat.ColorEmissive.G, sceneMat.ColorEmissive.B, sceneMat.ColorEmissive.A);
-				mat.SetColor("_EmissionColor", color);
-				mat.EnableKeyword("_EMISSION");
+				mat.SetColor("_EmissionColor", MeshLoader.GetColor(sceneMat.ColorEmissive));
+				// Debug.Log(sceneMat.Name + ": HasColorEmissive " + MeshLoader.GetColor(sceneMat.ColorEmissive));
+			}
+
+			if (sceneMat.HasColorSpecular)
+			{
+				mat.SetColor("_SpecColor", MeshLoader.GetColor(sceneMat.ColorSpecular));
+				// Debug.Log(sceneMat.Name + ": HasColorSpecular " + MeshLoader.GetColor(sceneMat.ColorSpecular));
+			}
+
+			if (sceneMat.HasColorTransparent)
+			{
+				// Debug.Log(sceneMat.Name + ": HasColorTransparent but not support. " + sceneMat.ColorTransparent);
+				mat.SetColor("_TransparentColor", MeshLoader.GetColor(sceneMat.ColorTransparent));
 			}
 
 			// Reflectivity
 			if (sceneMat.HasReflectivity)
 			{
-				mat.SetFloat("_Glossiness", sceneMat.Reflectivity);
+				if (sceneMat.HasColorReflective)
+				{
+					// Debug.Log(sceneMat.Name + ": HasColorReflective but not support. " + sceneMat.ColorReflective);
+					mat.SetColor("_ReflectColor", MeshLoader.GetColor(sceneMat.ColorReflective));
+				}
+			}
+
+			if (sceneMat.HasShininess)
+			{
+				mat.SetFloat("_Glossiness", sceneMat.Shininess);
 			}
 
 			// Texture
+			if (sceneMat.HasTextureAmbient)
+			{
+				Debug.Log(sceneMat.Name + ": HasTextureAmbient but not support. " + sceneMat.TextureAmbient.FilePath);
+			}
+
 			if (sceneMat.HasTextureDiffuse)
 			{
 				var filePath = sceneMat.TextureDiffuse.FilePath;
-				var texturePaths = new List<string>(){};
 
-				foreach (var matPath in possibleMaterialPaths)
+				foreach (var textureDirectory in textureDirectories)
 				{
-					texturePaths.Add(Path.Combine(parentPath, matPath, filePath));
-				}
-
-				byte[] byteArray = null;
-				foreach (var texturePath in texturePaths)
-				{
-					if (File.Exists(texturePath))
+					var textureFullPath = Path.Combine(textureDirectory, filePath);
+					if (File.Exists(textureFullPath))
 					{
-						byteArray = File.ReadAllBytes(texturePath);
-						if (byteArray != null)
-						{
-							break;
-						}
+						mat.SetTexture("_BaseMap", GetTexture(textureFullPath));
+						// mat.mainTexture = GetTexture(textureFullPath);
 					}
 				}
+			}
 
-				var texture = new Texture2D(2, 2);
-				var isLoaded = texture.LoadImage(byteArray);
-				if (!isLoaded)
-				{
-					throw new Exception("Cannot find texture file: " + filePath);
-				}
+			if (sceneMat.HasTextureDisplacement)
+			{
+				Debug.Log(sceneMat.Name + ": HasTextureDisplacement but not support. " + sceneMat.TextureDisplacement.FilePath);
+			}
 
-				mat.SetTexture("_MainTex", texture);
+			if (sceneMat.HasTextureEmissive)
+			{
+				Debug.Log(sceneMat.Name + ": HasTextureEmissive but not support. " + sceneMat.TextureEmissive.FilePath);
+			}
+
+			if (sceneMat.HasTextureHeight)
+			{
+				Debug.Log(sceneMat.Name + ": HasTextureHeight but not support. " + sceneMat.TextureHeight.FilePath);
+			}
+
+			if (sceneMat.HasTextureLightMap)
+			{
+				Debug.Log(sceneMat.Name + ": HasTextureLightMap but not support. " + sceneMat.TextureLightMap.FilePath);
+			}
+
+			if (sceneMat.HasTextureNormal)
+			{
+				Debug.Log(sceneMat.Name + ": HasTextureNormal but not support. " + sceneMat.TextureNormal.FilePath);
+			}
+
+			if (sceneMat.HasTextureOpacity)
+			{
+				Debug.Log(sceneMat.Name + ": HasTextureOpacity but not support. " + sceneMat.TextureOpacity.FilePath);
+			}
+
+			if (sceneMat.HasTextureReflection)
+			{
+				Debug.Log(sceneMat.Name + ": HasTextureReflection but not support. " + sceneMat.TextureReflection.FilePath);
+			}
+
+			if (sceneMat.HasTextureSpecular)
+			{
+				Debug.Log(sceneMat.Name + ": HasTextureSpecular but not support. " + sceneMat.TextureSpecular.FilePath);
 			}
 
 			materials.Add(mat);
@@ -180,10 +261,11 @@ public partial class MeshLoader
 
 				var subObject = new GameObject(meshMat.Mesh.name);
 				var meshFilter = subObject.AddComponent<MeshFilter>();
-				var meshRenderer = subObject.AddComponent<MeshRenderer>();
-
 				meshFilter.mesh = meshMat.Mesh;
+
+				var meshRenderer = subObject.AddComponent<MeshRenderer>();
 				meshRenderer.material = meshMat.Material;
+				meshRenderer.allowOcclusionWhenDynamic = true;
 
 				subObject.transform.SetParent(rootObject.transform, true);
 				// Debug.Log("Sub Object: " + subObject.name);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace RuntimeGizmos
 {
@@ -99,6 +100,7 @@ namespace RuntimeGizmos
 		void OnEnable()
 		{
 			forceUpdatePivotCoroutine = StartCoroutine(ForceUpdatePivotPointAtEndOfFrame());
+			RenderPipelineManager.endCameraRendering += EndCameraRendering;
 		}
 
 		void OnDisable()
@@ -106,6 +108,7 @@ namespace RuntimeGizmos
 			ClearTargets(); //Just so things gets cleaned up, such as removing any materials we placed on objects.
 
 			StopCoroutine(forceUpdatePivotCoroutine);
+			RenderPipelineManager.endCameraRendering -= EndCameraRendering;
 		}
 
 		void OnDestroy()

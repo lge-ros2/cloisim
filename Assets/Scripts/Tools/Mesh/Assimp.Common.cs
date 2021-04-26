@@ -5,14 +5,18 @@
  */
 
 using System.Collections.Generic;
-using System.Xml;
 using System.IO;
 using System;
 using UnityEngine;
 
 public partial class MeshLoader
 {
-	private static List<string> possibleMaterialPaths = new List<string>()
+	private static Color GetColor(Assimp.Color4D color)
+	{
+		return (color == null) ? Color.clear : new Color(color.R, color.G, color.B, color.A);
+	}
+
+	private static List<string> MaterialSearchPaths = new List<string>()
 		{
 			"",
 			"/textures/",
@@ -20,6 +24,18 @@ public partial class MeshLoader
 			"../materials/", "../materials/textures/",
 			"../../materials/", "../../materials/textures/"
 		};
+
+	private static List<string> GetRootTexturePaths(in string parentPath)
+	{
+		var texturePaths = new List<string>(){};
+
+		foreach (var matPath in MaterialSearchPaths)
+		{
+			texturePaths.Add(Path.Combine(parentPath, matPath));
+		}
+
+		return texturePaths;
+	}
 
 	class MeshMaterialSet
 	{

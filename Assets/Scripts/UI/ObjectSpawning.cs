@@ -11,8 +11,6 @@ public class ObjectSpawning : MonoBehaviour
 
 	private Dictionary<PropsType, GameObject> props = new Dictionary<PropsType, GameObject>();
 	private Camera mainCam = null;
-
-	private Color32 matColor = new Color32(43, 29, 14, 0);
 	public float maxRayDistance = 100;
 	private uint propsCount = 0;
 
@@ -44,9 +42,9 @@ public class ObjectSpawning : MonoBehaviour
 		var meshFilter = newObject.AddComponent<MeshFilter>();
 		meshFilter.mesh = targetMesh;
 
-		var newMaterial = new Material(SDF2Unity.commonShader);
+		var newMaterial = new Material(SDF2Unity.CommonShader);
 		newMaterial.name = targetMesh.name;
-		newMaterial.color = matColor;
+		newMaterial.color = Random.ColorHSV(0f, 1f, 0.7f, 0.8f, 0.5f, 0.6f);
 
 		var meshRenderer = newObject.AddComponent<MeshRenderer>();
 		meshRenderer.material = newMaterial;
