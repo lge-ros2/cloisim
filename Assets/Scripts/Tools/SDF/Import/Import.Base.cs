@@ -14,6 +14,8 @@ namespace SDF
 	{
 		public partial class Base
 		{
+			private Dictionary<Joint, Object> _jointObjectList = new Dictionary<Joint, Object>();
+
 			protected virtual void ImportWorld(in World world)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, world.Name);
@@ -166,9 +168,10 @@ namespace SDF
 
 			private void ImportJoints(IReadOnlyList<Joint> items, Object parentObject)
 			{
+				// Joints should be handled after all links of model loaded due to articulation body.
 				foreach (var item in items)
 				{
-					ImportJoint(item, parentObject);
+					_jointObjectList.Add(item, parentObject);
 				}
 			}
 
@@ -186,11 +189,9 @@ namespace SDF
 
 					AfterImportModel(item, createdObject);
 
-					// Joints and Plugins should be added after all links of model loaded!!!
 					ImportJoints(item.GetJoints(), createdObject);
 					ImportPlugins(item.GetPlugins(), createdObject);
 				}
-
 			}
 
 			protected void ImportActors(IReadOnlyList<Actor> items)
@@ -217,6 +218,11 @@ namespace SDF
 				ImportLights(world.GetLights());
 				ImportModels(world.GetModels());
 				ImportActors(world.GetActors());
+
+				foreach (var jointObject in _jointObjectList)
+				{
+					ImportJoint(jointObject.Key, jointObject.Value);
+				}
 
 				yield return null;
 			}
