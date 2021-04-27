@@ -33,7 +33,6 @@ namespace SDF
 			new void Awake()
 			{
 				base.Awake();
-
 				_modelHelper = transform.parent?.GetComponent<Model>();
 			}
 
@@ -59,15 +58,11 @@ namespace SDF
 					UE.Gizmos.color = new UE.Color(0.35f, 0.0f, 0.1f, 0.1f);
 
 					var region = _artBody.inertiaTensor;
-					if (region.x > 1f || region.y > 1f || region.z > 1f)
-					{
-						region = region.normalized;
-					}
-					else
+					if (region.x < 1f && region.y < 1f && region.z < 1f)
 					{
 						region.Set(region.magnitude/region.x, region.magnitude/region.y, region.magnitude/region.z);
-						region = region.normalized;
 					}
+					region = region.normalized;
 
 					UE.Gizmos.DrawCube(transform.position, region);
 				}

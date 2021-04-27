@@ -27,14 +27,7 @@ namespace SDF
 				body.linearDamping = 0.05f;
 				body.angularDamping = 0.05f;
 
-				if (axis.dynamics != null)
-				{
-					body.jointFriction = (float)axis.dynamics.friction;
-				}
-				else
-				{
-					body.jointFriction = 0;
-				}
+				body.jointFriction = (axis.dynamics != null) ? (float)axis.dynamics.friction : 0;
 
 				var drive = new UE.ArticulationDrive();
 
