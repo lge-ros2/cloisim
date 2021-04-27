@@ -184,13 +184,11 @@ namespace SDF
 					// Add nested models
 					ImportModels(item.GetModels(), createdObject);
 
-					// Joint should be added after all links of model loaded!!!
-					ImportJoints(item.GetJoints(), createdObject);
-
-					// Plugin should be added after all links of model loaded!!!
-					ImportPlugins(item.GetPlugins(), createdObject);
-
 					AfterImportModel(item, createdObject);
+
+					// Joints and Plugins should be added after all links of model loaded!!!
+					ImportJoints(item.GetJoints(), createdObject);
+					ImportPlugins(item.GetPlugins(), createdObject);
 				}
 
 			}
@@ -215,6 +213,10 @@ namespace SDF
 			{
 				// Console.WriteLine("Import Models({0})/Links/Joints", world.GetModels().Count);
 				ImportWorld(world);
+
+				ImportLights(world.GetLights());
+				ImportModels(world.GetModels());
+				ImportActors(world.GetActors());
 
 				yield return null;
 			}
