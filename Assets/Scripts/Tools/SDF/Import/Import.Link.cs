@@ -77,16 +77,6 @@ namespace SDF
 				{
 					CreateArticulationBody(linkObject, inertial);
 				}
-				else
-				{
-					// If the child does not have articulation body, collider of child would disable convex.
-					// Sholud be handled after set parent object!!
-					var meshColliders = linkObject.GetComponentsInChildren<UE.MeshCollider>();
-					foreach (var meshCollider in meshColliders)
-					{
-						meshCollider.convex = false;
-					}
-				}
 			}
 
 			private static UE.ArticulationBody CreateArticulationBody(in UE.GameObject linkObject, in Inertial inertial = null)
@@ -97,16 +87,9 @@ namespace SDF
 					return null;
 				}
 
-				// If the child has collider, collider of child with articulation body would enable convex.
-				var meshColliders = linkObject.GetComponentsInChildren<UE.MeshCollider>();
-				foreach (var meshCollider in meshColliders)
-				{
-					meshCollider.convex = true;
-				}
-
-				var articulationBody = linkObject.AddComponent<UE.ArticulationBody>();
 				var linkHelper = linkObject.GetComponent<SDF.Helper.Link>();
 
+				var articulationBody = linkObject.AddComponent<UE.ArticulationBody>();
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
 				articulationBody.useGravity = linkHelper.useGravity;
@@ -123,11 +106,9 @@ namespace SDF
 					// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
 				}
 
-				var childMeshCollider = articulationBody.transform.GetComponentInChildren<UE.MeshCollider>();
-				if (childMeshCollider != null && childMeshCollider.GetComponentInParent<UE.ArticulationBody>().transform.Equals(articulationBody.transform))
+				var meshCollider = linkObject.GetComponentInChildren<UE.Collider>();
+				if (meshCollider != null && meshCollider.GetComponentInParent<UE.ArticulationBody>().transform.Equals(articulationBody.transform))
 				{
-					childMeshCollider.convex = true;
-
 					if (inertial?.inertia != null)
 					{
 						var momentum = GetInertiaTensor(inertial?.inertia);
@@ -149,7 +130,6 @@ namespace SDF
 				}
 
 				// Debug.Log("Create link body " + linkObject.name);
-
 				return articulationBody;
 			}
 		}
