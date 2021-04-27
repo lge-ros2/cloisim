@@ -41,6 +41,8 @@ namespace SDF
 
 					sphericalCoordinatesCore.SetCoordinatesReference((float)sphericalCoordinates.latitude_deg, (float)sphericalCoordinates.longitude_deg, (float)sphericalCoordinates.elevation, (float)sphericalCoordinates.heading_deg);
 				}
+
+				UnityEngine.Physics.gravity = SDF2Unity.GetDirection(world.gravity);
 			}
 		}
 	}
