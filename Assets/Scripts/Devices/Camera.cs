@@ -201,8 +201,9 @@ namespace SensorDevices
 			camData.AllocateTexture(GetParameters().image_width, GetParameters().image_height, GetParameters().image_format);
 		}
 
-		void OnDestroy()
+		protected void OnDestroy()
 		{
+			// Debug.Log("OnDestroy(Camera)");
 			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
 			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 		}
@@ -250,11 +251,12 @@ namespace SensorDevices
 				{
 					var imageData = camData.GetImageData();
 
-					camData.Dispose();
+					PostProcessing(ref imageData);
 
-					BufferDepthScaling(ref imageData);
 					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
 					image.Data = imageData;
+
+					camData.Dispose();
 
 					if (GetParameters().save_enabled)
 					{
@@ -270,6 +272,10 @@ namespace SensorDevices
 		{
 			DeviceHelper.SetCurrentTime(imageStamped.Time);
 			PushData<messages.ImageStamped>(imageStamped);
+		}
+
+		protected virtual void PostProcessing(ref byte[] buffer)
+		{
 		}
 
 		public messages.CameraSensor GetCameraInfo()

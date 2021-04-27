@@ -183,9 +183,5 @@ namespace SensorDevices
 				imageBuffer.Dispose();
 			}
 		}
-
-		protected virtual void BufferDepthScaling(ref byte[] buffer)
-		{
-		}
 	}
 }

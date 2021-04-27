@@ -12,6 +12,7 @@ namespace SensorDevices
 	public class DepthCamera : Camera
 	{
 		private ComputeShader _computeShader;
+		private int _kernelIndex;
 
 		private Material depthMaterial = null;
 
@@ -25,9 +26,18 @@ namespace SensorDevices
 			}
 		}
 
+		new void OnDestroy()
+		{
+			// Debug.Log("OnDestroy(Depth Camera)");
+			Destroy(_computeShader);
+
+			base.OnDestroy();
+		}
+
 		protected override void SetupTexture()
 		{
 			_computeShader = Instantiate(Resources.Load<ComputeShader>("Shader/DepthBufferScaling"));
+			_kernelIndex = _computeShader.FindKernel("CSDepthBufferScaling");
 
 			var depthShader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(depthShader);
@@ -83,23 +93,21 @@ namespace SensorDevices
 			cb.Release();
 		}
 
-		protected override void BufferDepthScaling(ref byte[] buffer)
+		protected override void PostProcessing(ref byte[] buffer)
 		{
 			if (readbackDstFormat.Equals(TextureFormat.R16))
 			{
-				var kernelIndex = _computeShader.FindKernel("CSDepthBufferScaling");
-
 				_computeShader.SetFloat("_DepthMin", (float)GetParameters().clip.near);
 				_computeShader.SetFloat("_DepthMax", (float)GetParameters().clip.far);
 				_computeShader.SetFloat("_DepthScale", (float)depthScale);
 
 				var computeBuffer = new ComputeBuffer(buffer.Length, sizeof(byte));
-				_computeShader.SetBuffer(kernelIndex, "_Buffer", computeBuffer);
+				_computeShader.SetBuffer(_kernelIndex, "_Buffer", computeBuffer);
 				computeBuffer.SetData(buffer);
 
 				var threadGroupX = GetParameters().image_width/16;
 				var threadGroupY = GetParameters().image_height/8;
-				_computeShader.Dispatch(kernelIndex, threadGroupX, threadGroupY, 1);
+				_computeShader.Dispatch(_kernelIndex, threadGroupX, threadGroupY, 1);
 				computeBuffer.GetData(buffer);
 				computeBuffer.Release();
 			}
