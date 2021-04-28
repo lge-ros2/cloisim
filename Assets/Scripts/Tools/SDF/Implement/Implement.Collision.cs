@@ -31,7 +31,7 @@ namespace SDF
 					var meshCollider = meshObject.AddComponent<UE.MeshCollider>();
 
 					meshCollider.sharedMesh = meshFilter.sharedMesh;
-					meshCollider.convex = true;
+					meshCollider.convex = false;
 					meshCollider.cookingOptions = CookingOptions;
 					meshCollider.hideFlags |= UE.HideFlags.NotEditable;
 
@@ -77,7 +77,7 @@ namespace SDF
 
 					var meshCollider = targetObject.AddComponent<UE.MeshCollider>();
 					meshCollider.sharedMesh = mergedMesh;
-					meshCollider.convex = true;
+					meshCollider.convex = false;
 					meshCollider.cookingOptions = CookingOptions;
 					meshCollider.hideFlags |= UE.HideFlags.NotEditable;
 				}
