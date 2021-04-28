@@ -789,6 +789,7 @@ GameObject:
   - component: {fileID: 249819587}
   - component: {fileID: 249819588}
   - component: {fileID: 249819592}
+  - component: {fileID: 249819590}
   m_Layer: 0
   m_Name: Core
   m_TagString: Untagged
@@ -831,7 +832,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 249819585}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1bfd49299954c160c9f6466560865f7a, type: 3}
+  m_Script: {fileID: 11500000, guid: 3d4df46fee6c47f9987df939da8e9f96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &249819589
@@ -848,7 +849,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   doNotLoad: 0
   clearAllOnStart: 1
-  worldFileName: empty.world
+  worldFileName: lg_seocho_with_actors.world
   modelRootDirectories:
   - ../sample_resources/models/
   - ../lgrs_resource/assets/models/
@@ -861,6 +862,19 @@ MonoBehaviour:
   - ../sample_resources/media/
   - ../lgrs_resource/assets
   - ../../lgrs_resource/assets
+--- !u!114 &249819590
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 249819585}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9c9f03b6dda7067f8bbe5424519c5b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxRayDistance: 100
 --- !u!114 &249819591
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1976,7 +1990,6 @@ GameObject:
   - component: {fileID: 683297086}
   - component: {fileID: 683297090}
   - component: {fileID: 683297089}
-  - component: {fileID: 683297088}
   m_Layer: 5
   m_Name: UI
   m_TagString: Untagged
@@ -2034,19 +2047,6 @@ MonoBehaviour:
   m_FirstSelected: {fileID: 0}
   m_sendNavigationEvents: 1
   m_DragThreshold: 10
---- !u!114 &683297088
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 683297084}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7d8c6ba38498e99b5957287e0f6cac91, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxRayDistance: 300
 --- !u!114 &683297089
 MonoBehaviour:
   m_ObjectHideFlags: 0
