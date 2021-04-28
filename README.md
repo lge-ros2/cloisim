@@ -76,6 +76,8 @@ So there is NO more constaints for rigidbodies by PGS(Projected Gauss Seidel) so
 
 But inertia factors which retrieved from SDF are still NOT USED for rigidbody in Unity. Because it could cause unexpected behavior with physX engine.
 
+For the performance in terms of collision handling, designing collision geometry properly may important.
+
 ## Getting Started
 
 ### Minimum requirement
