@@ -24,10 +24,9 @@ public class SimulationDisplay : MonoBehaviour
 
 	[Header("GUI properties")]
 	private const int labelFontSize = 15;
-
+	private const int topMargin = 6;
 	private const int textLeftMargin = 10;
-	private const int textTopMargin = 10;
-	private const int textHeight = 23;
+	private const int textHeight = 18;
 
 	private const int textWidthFps = 75;
 	private const int textWidthVersion = 50;
@@ -36,17 +35,7 @@ public class SimulationDisplay : MonoBehaviour
 
 	private Color logMessageColor = Color.red;
 
-	// private const int labelFontSize = 14;
-	private const int TextWidth = 45;
-	private Rect labelRect  = new Rect(Screen.width / 2 - TextWidth / 2, 10, TextWidth, 22);
 
-	private const float guiHeight = 25f;
-	private const float topMargin = 10f;
-	private const float toolbarWidth = 190f;
-	private string[] toolbarStrings = new string[] { "Box", "Cylinder", "Sphere" };
-
-	private string scaleFactorString = "0.5";
-	private int toolbarSelected = 0;
 
 	[Header("Rect")]
 	private Rect _rectVersion;
@@ -54,11 +43,16 @@ public class SimulationDisplay : MonoBehaviour
 	private Rect _rectFPS;
 	private Rect _rectLogMessage;
 
+	[Header("Properties for Props menu")]
+	private const float guiHeight = 25f;
+	private const float toolbarWidth = 190f;
+	private string[] toolbarStrings = new string[] { "Box", "Cylinder", "Sphere" };
+	private string scaleFactorString = "0.5";
+	private int toolbarSelected = 0;
 	private string prevScaleFactorString;
 	private bool checkScaleFactorFocused = false;
 	private bool doCheckScaleFactorValue = false;
-
-	// private Texture2D consoleBackground;
+	private Texture2D textureBackground;
 
 	// Start is called before the first frame update
 	void Awake()
@@ -67,15 +61,15 @@ public class SimulationDisplay : MonoBehaviour
 		_objectSpawning = coreObject.GetComponent<ObjectSpawning>();
 		clock = DeviceHelper.GetGlobalClock();
 
-		// consoleBackground = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
-    	// consoleBackground.SetPixel(0, 0, new Color(0, 0, 0, 0.25f));
-    	// consoleBackground.Apply(); // not sure if this is necessary
+		textureBackground = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
+		textureBackground.SetPixel(0, 0, new Color(0, 0, 0, 0.25f));
+		textureBackground.Apply(); // not sure if this is necessary
 
-		_rectVersion = new Rect(textLeftMargin, textTopMargin, textWidthVersion, textHeight);
-		_rectSimulationInfo = new Rect(textLeftMargin, Screen.height - textHeight - textTopMargin, textWidthSimulationInfo, textHeight);
-		_rectFPS = new Rect(textWidthSimulationInfo + _rectSimulationInfo.x,  Screen.height - textHeight - textTopMargin, textWidthFps, textHeight);
-		// _rectFPS = new Rect(Screen.width - textWidthFps - textLeftMargin, textTopMargin, textWidthFps, textHeight);
-		_rectLogMessage = new Rect(textLeftMargin, Screen.height - (textHeight*2) - textTopMargin, textWidthEvent, textHeight);
+		_rectVersion = new Rect(textLeftMargin, topMargin, textWidthVersion, textHeight);
+		_rectSimulationInfo = new Rect(textLeftMargin, Screen.height - textHeight - topMargin, textWidthSimulationInfo, textHeight);
+		_rectFPS = new Rect(_rectSimulationInfo.width + _rectSimulationInfo.x,  Screen.height - textHeight - topMargin, textWidthFps, textHeight);
+		// _rectFPS = new Rect(Screen.width - textWidthFps - textLeftMargin, topMargin, textWidthFps, textHeight);
+		_rectLogMessage = new Rect(textLeftMargin, Screen.height - (textHeight*2) - topMargin, textWidthEvent, textHeight);
 	}
 
 	void Update()
@@ -163,18 +157,18 @@ public class SimulationDisplay : MonoBehaviour
 		var versionString = GetBoldText(Application.version);
 		DrawShadow(_rectVersion, versionString);
 		GUI.skin.label.normal.textColor = Color.green;
+		// GUI.skin.label.normal.background = textureBackground;
 		GUI.Label(_rectVersion, versionString);
 
 		// Simulation time info
 		var simulationInfo = GetTimeInfoString();
-		_rectSimulationInfo.y = Screen.height - textHeight - textTopMargin;
+		_rectSimulationInfo.y = Screen.height - textHeight - topMargin;
 		DrawShadow(_rectSimulationInfo, simulationInfo);
 		GUI.skin.label.normal.textColor = Color.black;
-		// GUI.skin.label.normal.background = consoleBackground;
 		GUI.Label(_rectSimulationInfo, simulationInfo);
 
 		// fps info
-		_rectFPS.y = Screen.height - textHeight - textTopMargin;
+		_rectFPS.y = Screen.height - textHeight - topMargin;
 		DrawShadow(_rectFPS, _fpsString);
 		GUI.skin.label.normal.textColor = Color.blue;
 		GUI.Label(_rectFPS, _fpsString);
@@ -186,7 +180,7 @@ public class SimulationDisplay : MonoBehaviour
 
 		GUI.skin.label.wordWrap = true;
 		GUI.skin.label.clipping = TextClipping.Overflow;
-		_rectLogMessage.y = Screen.height - (textHeight*2) - textTopMargin;
+		_rectLogMessage.y = Screen.height - (textHeight*2) - topMargin;
 		DrawShadow(_rectLogMessage, eventMessage);
 		GUI.skin.label.normal.textColor = logMessageColor;
 		GUI.Label(_rectLogMessage, eventMessage);
