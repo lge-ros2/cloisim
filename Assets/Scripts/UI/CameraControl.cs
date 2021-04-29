@@ -20,6 +20,14 @@ public class CameraControl : MonoBehaviour
 
 	public bool blockControl = false;
 
+	private bool _verticalMovementLock = false;
+
+	public bool VerticalMovementLock
+	{
+		set => _verticalMovementLock = value;
+		get => _verticalMovementLock;
+	}
+
 	public float mainSpeed = 10.0f; //regular speed
 	public float shiftAdd = 20.0f; //multiplied by how long shift is held.  Basically running
 	public float maxShift = 50.0f; //Maximum speed when holding shift
@@ -37,6 +45,12 @@ public class CameraControl : MonoBehaviour
 		if (blockControl)
 		{
 			return;
+		}
+
+		if (Input.GetKeyUp(KeyCode.Space))
+		{
+			_verticalMovementLock = !_verticalMovementLock;
+			// Debug.Log(_verticalMovementLock);
 		}
 
 		lastMouse = Input.mousePosition - lastMouse;
@@ -110,7 +124,7 @@ public class CameraControl : MonoBehaviour
 		p *= Time.deltaTime;
 
 		var newPosition = transform.position;
-		if (Input.GetKey(KeyCode.Space))
+		if (_verticalMovementLock)
 		{
 			// If player wants to move on X and Z axis only
 			transform.Translate(p);

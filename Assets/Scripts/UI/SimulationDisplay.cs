@@ -1,4 +1,4 @@
-/*
+	/*
  * Copyright (c) 2020 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
@@ -12,6 +12,7 @@ public class SimulationDisplay : MonoBehaviour
 {
 	private Clock clock = null;
 	private ObjectSpawning _objectSpawning = null;
+	private CameraControl _cameraControl = null;
 	private string eventMessage = string.Empty;
 	private StringBuilder sbTimInfo = new StringBuilder();
 	private string _fpsString = string.Empty;
@@ -23,10 +24,10 @@ public class SimulationDisplay : MonoBehaviour
 	private float fps = 0.0F;
 
 	[Header("GUI properties")]
-	private const int labelFontSize = 15;
+	private const int labelFontSize = 14;
 	private const int topMargin = 6;
 	private const int textLeftMargin = 10;
-	private const int textHeight = 18;
+	private const int textHeight = 19;
 
 	private const int textWidthFps = 75;
 	private const int textWidthVersion = 50;
@@ -35,13 +36,15 @@ public class SimulationDisplay : MonoBehaviour
 
 	private Color logMessageColor = Color.red;
 
-
-
 	[Header("Rect")]
 	private Rect _rectVersion;
 	private Rect _rectSimulationInfo;
 	private Rect _rectFPS;
 	private Rect _rectLogMessage;
+	private Rect _rectDialog;
+	private Rect _rectToolbar;
+	private Rect _rectHelpButton;
+	private Rect _rectHelpStatus;
 
 	[Header("Properties for Props menu")]
 	private const float guiHeight = 25f;
@@ -54,11 +57,17 @@ public class SimulationDisplay : MonoBehaviour
 	private bool doCheckScaleFactorValue = false;
 	private Texture2D textureBackground;
 
+	[Header("Help dialog")]
+	private String _helpContents;
+	private const int buttonWidthHelp = 65;
+	private const int helpStatusWidth = buttonWidthHelp * 2;
+
 	// Start is called before the first frame update
 	void Awake()
 	{
 		var coreObject = GameObject.Find("Core");
 		_objectSpawning = coreObject.GetComponent<ObjectSpawning>();
+		_cameraControl = GetComponentInChildren<CameraControl>();
 		clock = DeviceHelper.GetGlobalClock();
 
 		textureBackground = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
@@ -68,8 +77,17 @@ public class SimulationDisplay : MonoBehaviour
 		_rectVersion = new Rect(textLeftMargin, topMargin, textWidthVersion, textHeight);
 		_rectSimulationInfo = new Rect(textLeftMargin, Screen.height - textHeight - topMargin, textWidthSimulationInfo, textHeight);
 		_rectFPS = new Rect(_rectSimulationInfo.width + _rectSimulationInfo.x,  Screen.height - textHeight - topMargin, textWidthFps, textHeight);
-		// _rectFPS = new Rect(Screen.width - textWidthFps - textLeftMargin, topMargin, textWidthFps, textHeight);
 		_rectLogMessage = new Rect(textLeftMargin, Screen.height - (textHeight*2) - topMargin, textWidthEvent, textHeight);
+
+		_rectDialog = new Rect();
+
+		_rectToolbar = new Rect(0, topMargin, toolbarWidth, guiHeight);
+
+		_rectHelpButton = new Rect(Screen.width - buttonWidthHelp - textLeftMargin, topMargin, buttonWidthHelp, guiHeight);
+
+		_rectHelpStatus = new Rect(Screen.width -_rectHelpButton.width - helpStatusWidth - textLeftMargin, topMargin, helpStatusWidth, textHeight * 1.1f);
+
+		UpdateHelpContents();
 	}
 
 	void Update()
@@ -80,6 +98,59 @@ public class SimulationDisplay : MonoBehaviour
 	void LateUpdate()
 	{
 		_fpsString = "FPS [" + GetBoldText(Mathf.Round(fps).ToString("F1")) + "]";
+	}
+
+	private void UpdateHelpContents()
+	{
+		var sb = new StringBuilder();
+		sb.AppendLine("How to manipulate");
+
+// 		General
+// Ctrl + R : Reset simulation Ctrl + Shift + R : simulation Full reset like restart
+
+// Object spawning
+// Choose one of model on the top of screen.[Box], [Cylinder], [Sphere]
+
+// Pressing 'Left-Ctrl' Key,
+
+// Spawning:
+// (+) Click the left mouse button on the pointer
+// Remove:
+// (+) Click the right mouse button on the object already spawned
+// Object Control
+// After select object you want,
+
+// T : Translation
+// (+) Shift : Snapping
+// R : Rotation
+// (+) Shift : Snapping
+// Y : Translation + Rotation
+// (+) Shift : Snapping
+// X : Change manipulation space
+// Camera Following mode
+// Choose one object from the list on the bottom right corner.
+
+// if you want cancel the following mode, choose '--unfollowing--' menu from the list.
+
+// Camera control
+// Camera control is quite intuitive like a FPS game.
+
+// W/S/A/D
+
+// W or Mouse Scroll Up: Move Forward
+// S or Mouse Scroll Down: Move Backward
+// A: Move Left(sidestep left)
+// D: Move Right(sidestep right)
+// (+) Space: moving only on current plane(X,Z axis)
+// Q/Z
+
+// Q: Move upward
+// Z: Move downward
+// Mouse pointer with pressing "center button" on the mouse
+
+// Moves screen view-port
+
+		_helpContents= sb.ToString();
 	}
 
 	public void ClearLogMessage()
@@ -190,17 +261,14 @@ public class SimulationDisplay : MonoBehaviour
 
 	private void DrawPropsMenus()
 	{
-		GUI.skin.label.alignment = TextAnchor.MiddleRight;
 		GUI.skin.label.fontSize = labelFontSize;
 		GUI.skin.label.alignment = TextAnchor.MiddleCenter;
 
-		var centerPointX = Screen.width / 2;
-
-		var rectToolbar = new Rect(centerPointX - toolbarWidth / 2, topMargin, toolbarWidth, guiHeight);
 		GUI.skin.label.normal.textColor = Color.white;
-		toolbarSelected = GUI.Toolbar(rectToolbar, toolbarSelected, toolbarStrings);
+		_rectToolbar.x = Screen.width * 0.5f - toolbarWidth * 0.5f;
+		toolbarSelected = GUI.Toolbar(_rectToolbar, toolbarSelected, toolbarStrings);
 
-		var rectToolbarLabel = rectToolbar;
+		var rectToolbarLabel = _rectToolbar;
 		rectToolbarLabel.x -= 45;
 		rectToolbarLabel.width = 45;
 
@@ -208,7 +276,7 @@ public class SimulationDisplay : MonoBehaviour
 		GUI.skin.label.normal.textColor = Color.white;
 		GUI.Label(rectToolbarLabel, "Props: ");
 
-		var rectScaleLabel = rectToolbar;
+		var rectScaleLabel = _rectToolbar;
 		rectScaleLabel.x += (toolbarWidth + 7);
 		rectScaleLabel.width = 50;
 		DrawShadow(rectScaleLabel, "Scale: ");
@@ -265,14 +333,49 @@ public class SimulationDisplay : MonoBehaviour
 			doCheckScaleFactorValue = false;
 		}
 
-		_objectSpawning.SetPropType(toolbarSelected);
-		_objectSpawning.SetScaleFactor(scaleFactorString);
+		_objectSpawning?.SetPropType(toolbarSelected);
+		_objectSpawning?.SetScaleFactor(scaleFactorString);
 	}
 
-	private void DrawHelpers()
+	private void DrawHelpDialog()
 	{
+		GUI.skin.label.fontSize = labelFontSize;
+		var dialogWidth = Screen.width * 0.8f;
+		var dialogHeight = Screen.height * 0.8f;
+		_rectDialog.x = Screen.width * 0.5f - dialogWidth * 0.5f;
+		_rectDialog.y = Screen.height * 0.5f - dialogHeight * 0.5f;
+		_rectDialog.width = dialogWidth;
+		_rectDialog.height = dialogHeight;
 
+		GUILayout.BeginArea(_rectDialog);
+		GUILayout.TextArea(_helpContents);
+		GUILayout.EndArea();
 	}
+
+	private void DrawHelpInfo()
+	{
+		GUI.skin.label.fontSize = labelFontSize;
+
+		_rectHelpButton.x = Screen.width - buttonWidthHelp - textLeftMargin;
+		GUILayout.BeginArea(_rectHelpButton);
+		if (GUILayout.Button("Help(F1)"))
+		{
+			_popupHelpDialog = !_popupHelpDialog;
+		}
+		GUILayout.EndArea();
+
+		GUI.skin.label.fontSize = (int)(labelFontSize * 0.8f);
+		GUI.skin.label.alignment = TextAnchor.MiddleLeft;
+
+		var helpStatus = "Vertical Camera Lock " + ((_cameraControl.VerticalMovementLock)? "[X]":"[  ]");
+		_rectHelpStatus.x = Screen.width -_rectHelpButton.width - helpStatusWidth - textLeftMargin;
+		DrawShadow(_rectHelpStatus, helpStatus);
+		GUILayout.BeginArea(_rectHelpStatus);
+		GUILayout.Label(helpStatus);
+		GUILayout.EndArea();
+	}
+
+	private bool _popupHelpDialog = false;
 
 	void OnGUI()
 	{
@@ -282,7 +385,25 @@ public class SimulationDisplay : MonoBehaviour
 
 		DrawPropsMenus();
 
-		DrawHelpers();
+		DrawHelpInfo();
+
+		if (Event.current.type.Equals(EventType.KeyUp))
+		{
+			if (Event.current.keyCode.CompareTo(KeyCode.F1) == 0)
+			{
+				_popupHelpDialog = !_popupHelpDialog;
+			}
+			else if (Event.current.keyCode.CompareTo(KeyCode.Escape) == 0)
+			{
+				_popupHelpDialog = false;
+			}
+		}
+
+		if (_popupHelpDialog)
+		{
+			Debug.Log("Show Help dialog");
+			DrawHelpDialog();
+		}
 
 		GUI.skin.label.normal.textColor = originLabelColor;
 	}
