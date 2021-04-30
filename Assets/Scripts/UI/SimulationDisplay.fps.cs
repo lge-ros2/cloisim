@@ -39,4 +39,12 @@ public partial class SimulationDisplay : MonoBehaviour
 			frameCount = 0;
 		}
 	}
+
+	private void DrawFPSText()
+	{
+		_rectFPS.y = Screen.height - textHeight - topMargin;
+		DrawShadow(_rectFPS, _fpsString);
+		GUI.skin.label.normal.textColor = Color.blue;
+		GUI.Label(_rectFPS, _fpsString);
+	}
 }

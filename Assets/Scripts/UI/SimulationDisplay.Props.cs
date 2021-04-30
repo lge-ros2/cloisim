@@ -24,6 +24,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	{
 		GUI.skin.label.fontSize = labelFontSize;
 		GUI.skin.label.alignment = TextAnchor.MiddleCenter;
+		GUI.skin.label.padding = new RectOffset(0, 0, 0, 0);
 
 		GUI.skin.label.normal.textColor = Color.white;
 		_rectToolbar.x = Screen.width * 0.5f - toolbarWidth * 0.5f;

@@ -51,7 +51,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		clock = DeviceHelper.GetGlobalClock();
 
 		textureBackground = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
-		textureBackground.SetPixel(0, 0, new Color(0, 0, 0, 0.25f));
+		textureBackground.SetPixel(0, 0, new Color(0, 0, 0, 0.35f));
 		textureBackground.Apply(); // not sure if this is necessary
 
 		_rectVersion = new Rect(textLeftMargin, topMargin, textWidthVersion, textHeight);
@@ -59,12 +59,10 @@ public partial class SimulationDisplay : MonoBehaviour
 		_rectFPS = new Rect(_rectSimulationInfo.width + _rectSimulationInfo.x,  Screen.height - textHeight - topMargin, textWidthFps, textHeight);
 		_rectLogMessage = new Rect(textLeftMargin, Screen.height - (textHeight*2) - topMargin, textWidthEvent, textHeight);
 
-		_rectDialog = new Rect();
-
 		_rectToolbar = new Rect(0, topMargin, toolbarWidth, guiHeight);
 
+		_rectDialog = new Rect();
 		_rectHelpButton = new Rect(Screen.width - buttonWidthHelp - textLeftMargin, topMargin, buttonWidthHelp, guiHeight);
-
 		_rectHelpStatus = new Rect(Screen.width -_rectHelpButton.width - helpStatusWidth - textLeftMargin, topMargin, helpStatusWidth, textHeight * 1.1f);
 
 		UpdateHelpContents();
@@ -143,11 +141,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		GUI.skin.label.normal.textColor = Color.black;
 		GUI.Label(_rectSimulationInfo, simulationInfo);
 
-		// fps info
-		_rectFPS.y = Screen.height - textHeight - topMargin;
-		DrawShadow(_rectFPS, _fpsString);
-		GUI.skin.label.normal.textColor = Color.blue;
-		GUI.Label(_rectFPS, _fpsString);
+		DrawFPSText();
 
 		// logging: error message or event message
 		var originLabelSkin = GUI.skin.label;
@@ -188,6 +182,11 @@ public partial class SimulationDisplay : MonoBehaviour
 		{
 			// Debug.Log("Show Help dialog");
 			DrawHelpDialog();
+			_cameraControl.blockMouseWheelControl = true;
+		}
+		else
+		{
+			_cameraControl.blockMouseWheelControl = false;
 		}
 
 		GUI.skin.label.normal.textColor = originLabelColor;
