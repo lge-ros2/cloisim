@@ -76,7 +76,7 @@ public partial class MicomSensor : Device
 				motor.SetPID(_PGain, _IGain, _DGain);
 				_motors.Add(model.name, motor);
 
-				SetPartsInitialPose(model.name, motorObject);
+				SetInitialPartsPose(model.name, motorObject);
 			}
 		}
 
@@ -170,7 +170,7 @@ public partial class MicomSensor : Device
 
 		if (imuSensor != null)
 		{
-			SetPartsInitialPose(imuSensor.name, imuSensor.gameObject);
+			SetInitialPartsPose(imuSensor.name, imuSensor.gameObject);
 		}
 	}
 
@@ -428,10 +428,11 @@ public partial class MicomSensor : Device
 		}
 	}
 
-	private void SetPartsInitialPose(in string name, in GameObject targetObject)
+	private void SetInitialPartsPose(in string name, in GameObject targetObject)
 	{
-		var targetParentTransform = targetObject.transform.parent;
-		var initialPose = new Pose(targetParentTransform.localPosition, targetParentTransform.localRotation);
+		var targetTransform = (targetObject.CompareTag("Model")) ? targetObject.transform : targetObject.transform.parent;
+		var initialPose = new Pose(targetTransform.localPosition, targetTransform.localRotation);
+		// Debug.Log(name + " " + initialPose.ToString("F9"));
 		partsPoseMapTable.Add(name, initialPose);
 	}
 
