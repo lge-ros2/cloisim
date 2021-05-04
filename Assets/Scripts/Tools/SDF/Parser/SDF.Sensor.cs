@@ -63,9 +63,10 @@ namespace SDF
 
 			switch (Type)
 			{
-				case "gpu_ray":
 				case "ray":
 				case "lidar":
+				case "gpu_ray":
+				case "gpu_lidar":
 					if (IsValidNode("ray"))
 					{
 						sensor = ParseRay();
