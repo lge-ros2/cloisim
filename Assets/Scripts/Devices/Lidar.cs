@@ -137,13 +137,22 @@ namespace SensorDevices
 			laserScan.VerticalAngleStep = (verticalAngleMin == 0 && verticalAngleMax == 0) ? 1 : GetAngleStep(laserScan.VerticalAngleMin, laserScan.VerticalAngleMax, verticalSamples);
 			laserScan.VerticalCount = verticalSamples;
 
-			laserScan.Ranges = new double[samples];
-			laserScan.Intensities = new double[samples];
-			Array.Clear(laserScan.Ranges, 0, (int)samples);
-			Array.Clear(laserScan.Intensities, 0, (int)samples);
+			var totalSamples = samples * verticalSamples;
+			// Debug.Log(samples + " x " + verticalSamples + " = " + totalSamples);
+
+			laserScan.Ranges = new double[totalSamples];
+			laserScan.Intensities = new double[totalSamples];
+			Array.Clear(laserScan.Ranges, 0, laserScan.Ranges.Length);
+			Array.Clear(laserScan.Intensities, 0, laserScan.Intensities.Length);
+			for (var i = 0; i < totalSamples; i++)
+			{
+				laserScan.Ranges[i] = double.NaN;
+				laserScan.Intensities[i] = double.NaN;
+			}
 
 			laserHAngleResolution = (float)(laserScan.AngleStep * Mathf.Rad2Deg);
 			laserVAngleResolution = (float)(laserScan.VerticalAngleStep * Mathf.Rad2Deg);
+			// Debug.Log("H resolution: " + laserHAngleResolution + ", V resolution: " + laserVAngleResolution);
 		}
 
 		private void SetupLaserCamera()
