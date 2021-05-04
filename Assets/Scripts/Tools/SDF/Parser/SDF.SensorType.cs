@@ -17,9 +17,9 @@ namespace SDF
 
 	public class Noise
 	{
-		public Noise(in string type_ = "none")
+		public Noise(in string type = "none")
 		{
-			type = type_;
+			this.type = type;
 		}
 
 		public string type;
