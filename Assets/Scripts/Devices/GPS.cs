@@ -26,7 +26,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
-			_mode = Mode.TX;
+			Mode = ModeType.TX;
 			gpsLink = transform.parent;
 			deviceName = name;
 

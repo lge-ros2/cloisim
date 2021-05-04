@@ -77,7 +77,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
-			_mode = Mode.TX;
+			Mode = ModeType.TX;
 			lidarLink = transform.parent;
 
 			_laserCam = gameObject.AddComponent<UnityEngine.Camera>();

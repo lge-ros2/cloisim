@@ -13,9 +13,9 @@ using ProtoBuf;
 
 public abstract class Device : MonoBehaviour
 {
-	public enum Mode { NONE, TX, RX };
+	public enum ModeType { NONE, TX, RX };
 
-	public Mode _mode = Mode.NONE;
+	public ModeType Mode = ModeType.NONE;
 
 	private const int maxQueue = 5;
 
@@ -78,17 +78,17 @@ public abstract class Device : MonoBehaviour
 
 		OnStart();
 
-		switch (_mode)
+		switch (Mode)
 		{
-			case Mode.TX:
+			case ModeType.TX:
 				StartCoroutine(DeviceCoroutineTx());
 				break;
 
-			case Mode.RX:
+			case ModeType.RX:
 				StartCoroutine(DeviceCoroutineRx());
 				break;
 
-			case Mode.NONE:
+			case ModeType.NONE:
 			default:
 				Debug.LogWarning("Device Mode is None");
 				break;

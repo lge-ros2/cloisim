@@ -28,7 +28,7 @@ public class Clock : Device
 
 	protected override void OnAwake()
 	{
-		_mode = Mode.TX;
+		Mode = ModeType.TX;
 		deviceName = "World Clock";
 	}
 

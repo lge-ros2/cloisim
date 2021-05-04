@@ -64,7 +64,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
-			_mode = Mode.TX;
+			Mode = ModeType.TX;
 			_cam = gameObject.AddComponent<UnityEngine.Camera>();
 			_universalCamData = _cam.GetUniversalAdditionalCameraData();
 
