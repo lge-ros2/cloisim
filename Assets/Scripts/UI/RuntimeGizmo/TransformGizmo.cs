@@ -357,7 +357,7 @@ namespace RuntimeGizmos
 									else
 									{
 										var actor = target.GetComponent<SDF.Helper.Actor>();
-										if (actor != null && actor.IsFollowingWaypoint)
+										if (actor != null && actor.HasWayPoints)
 										{
 											actor.AddPose(movement);
 										}
