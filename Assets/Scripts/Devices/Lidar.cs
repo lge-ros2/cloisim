@@ -19,31 +19,41 @@ namespace SensorDevices
 	{
 		private messages.LaserScanStamped laserScanStamped = null;
 
-		[Range(1, 2000)]
-		public uint samples = 0;
+		readonly public struct MinMax
+		{
+			public readonly double min;
+			public readonly double max;
+			public readonly double range;
 
-		[Range(0, 100)]
-		public double rangeMin = 0.0f;
+			public MinMax(in double min = 0, in double max = 0)
+			{
+				this.min = min;
+				this.max = max;
+				this.range = max - min;
+			}
+		}
 
-		[Range(0, 100)]
-		public double rangeMax = 0.0f;
+		readonly public struct Scan
+		{
+			public readonly uint samples;
+			public readonly double resolution;
+			public readonly MinMax angle; // degree
+			public readonly double angleStep;
 
-		[Range(-180, 0)]
-		public double angleMin = 0.0f;
+			public Scan(in uint samples, in double angleMinRad, in double angleMaxRad, in double resolution = 0)
+			{
+				this.samples = samples;
+				this.resolution = resolution;
+				this.angle = new MinMax(angleMinRad * Mathf.Rad2Deg, angleMaxRad * Mathf.Rad2Deg);
+				this.angleStep = (angle.max - angle.min) / (resolution * samples);
+			}
+		}
 
-		[Range(0, 180)]
-		public double angleMax = 0.0f;
-		public double resolution = 1;
+		public MinMax range;
 
-		public uint verticalSamples = 1;
+		public Scan horizontal;
 
-		[Range(-30, 0)]
-		public double verticalAngleMin = 0;
-
-		[Range(0, 30)]
-		public double verticalAngleMax = 0;
-
-		public const int batchSize = 16;
+		public Scan vertical;
 
 		[ColorUsage(true)]
 		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.15f);
@@ -58,22 +68,24 @@ namespace SensorDevices
 		private const float laserCameraHFovHalf = laserCameraHFov / 2;
 		private const float laserCameraVFov = 40.0000000000f;
 
-		private float laserHAngleResolution = 0;
-		private float laserVAngleResolution = 0;
+		public struct AngleResolution
+		{
+			public float H;
+			public float V;
+
+			public AngleResolution(in float angleResolutionH = 0, in float angleResolutionV = 0)
+			{
+				this.H = angleResolutionH;
+				this.V = angleResolutionV;
+			}
+		}
+
+		private AngleResolution laserAngleResolution = new AngleResolution();
 
 		private int numberOfLaserCamData = 0;
 
 		private DepthCamBuffer[] depthCamBuffers;
 		private LaserCamData[] laserCamData;
-
-		private float laserStartAngle;
-		private float laserEndAngle;
-		private float laserTotalAngle;
-
-		private double GetAngleStep(in double minAngle, in double maxAngle, in uint totalSamples)
-		{
-			return (maxAngle - minAngle) / (resolution * totalSamples);
-		}
 
 		protected override void OnAwake()
 		{
@@ -81,6 +93,8 @@ namespace SensorDevices
 			lidarLink = transform.parent;
 
 			laserCam = gameObject.AddComponent<UnityEngine.Camera>();
+
+			waitingPeriodRatio = 0.80f;
 		}
 
 		protected override void OnStart()
@@ -124,21 +138,21 @@ namespace SensorDevices
 
 			var laserScan = laserScanStamped.Scan;
 			laserScan.Frame = deviceName;
-			laserScan.AngleMin = angleMin * Mathf.Deg2Rad;
-			laserScan.AngleMax = angleMax * Mathf.Deg2Rad;
-			laserScan.AngleStep = GetAngleStep(laserScan.AngleMin, laserScan.AngleMax, samples);
-			laserScan.Count = samples;
+			laserScan.Count = horizontal.samples;
+			laserScan.AngleMin = horizontal.angle.min * Mathf.Deg2Rad;
+			laserScan.AngleMax = horizontal.angle.max * Mathf.Deg2Rad;
+			laserScan.AngleStep = horizontal.angleStep * Mathf.Deg2Rad;
 
-			laserScan.RangeMin = rangeMin;
-			laserScan.RangeMax = rangeMax;
+			laserScan.RangeMin = range.min;
+			laserScan.RangeMax = range.max;
 
-			laserScan.VerticalAngleMin = verticalAngleMin * Mathf.Deg2Rad;
-			laserScan.VerticalAngleMax = verticalAngleMax * Mathf.Deg2Rad;
-			laserScan.VerticalAngleStep = (verticalAngleMin == 0 && verticalAngleMax == 0) ? 1 : GetAngleStep(laserScan.VerticalAngleMin, laserScan.VerticalAngleMax, verticalSamples);
-			laserScan.VerticalCount = verticalSamples;
+			laserScan.VerticalCount = (vertical.Equals(default(Scan))) ? 1 : vertical.samples;
+			laserScan.VerticalAngleMin = vertical.angle.min * Mathf.Deg2Rad;
+			laserScan.VerticalAngleMax = vertical.angle.max * Mathf.Deg2Rad;
+			laserScan.VerticalAngleStep = (vertical.Equals(default(Scan))) ? 1 : (vertical.angleStep * Mathf.Deg2Rad);
 
-			var totalSamples = samples * verticalSamples;
-			// Debug.Log(samples + " x " + verticalSamples + " = " + totalSamples);
+			var totalSamples = laserScan.Count * laserScan.VerticalCount;
+			// Debug.Log(samples + " x " + vertical.samples + " = " + totalSamples);
 
 			laserScan.Ranges = new double[totalSamples];
 			laserScan.Intensities = new double[totalSamples];
@@ -150,8 +164,8 @@ namespace SensorDevices
 				laserScan.Intensities[i] = double.NaN;
 			}
 
-			laserHAngleResolution = (float)(laserScan.AngleStep * Mathf.Rad2Deg);
-			laserVAngleResolution = (float)(laserScan.VerticalAngleStep * Mathf.Rad2Deg);
+			laserAngleResolution.H = (float)(laserScan.AngleStep * Mathf.Rad2Deg);
+			laserAngleResolution.V = (float)(laserScan.VerticalAngleStep * Mathf.Rad2Deg);
 			// Debug.Log("H resolution: " + laserHAngleResolution + ", V resolution: " + laserVAngleResolution);
 		}
 
@@ -171,8 +185,8 @@ namespace SensorDevices
 			laserCam.stereoTargetEye = StereoTargetEyeMask.None;
 
 			laserCam.orthographic = false;
-			laserCam.nearClipPlane = (float)rangeMin;
-			laserCam.farClipPlane = (float)rangeMax;
+			laserCam.nearClipPlane = (float)range.min;
+			laserCam.farClipPlane = (float)range.max;
 			laserCam.cullingMask = LayerMask.GetMask("Default");
 
 			laserCam.backgroundColor = Color.white;
@@ -181,8 +195,8 @@ namespace SensorDevices
 
 			laserCam.renderingPath = RenderingPath.DeferredLighting;
 
-			var renderTextrueWidth = Mathf.CeilToInt(laserCameraHFov / laserHAngleResolution);
-			var aspectRatio = Mathf.Tan(laserCameraVFov / 2 * Mathf.Deg2Rad) / Mathf.Tan(laserCameraHFov / 2 * Mathf.Deg2Rad);
+			var renderTextrueWidth = Mathf.CeilToInt(laserCameraHFov / laserAngleResolution.H);
+			var aspectRatio = Mathf.Tan(laserCameraVFov * 0.5f * Mathf.Deg2Rad) / Mathf.Tan(laserCameraHFov * 0.5f * Mathf.Deg2Rad);
 			var renderTextrueHeight = Mathf.CeilToInt(renderTextrueWidth * aspectRatio);
 			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 16, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
 			{
@@ -191,7 +205,7 @@ namespace SensorDevices
 
 			laserCam.targetTexture = targetDepthRT;
 
-			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(laserCameraHFov, laserCameraVFov, (float)rangeMin, (float)rangeMax);
+			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(laserCameraHFov, laserCameraVFov, (float)range.min, (float)range.max);
 			laserCam.projectionMatrix = projMatrix;
 
 			var universalLaserCamData = laserCam.GetUniversalAdditionalCameraData();
@@ -229,28 +243,23 @@ namespace SensorDevices
 				depthCamBuffers[index] = depthCamBuffer;
 
 				var data = new LaserCamData();
-				data.angleResolutionH = laserHAngleResolution;
+				data.angleResolutionH = laserAngleResolution.H;
 				data.SetMaxHorizontalHalfAngle(laserCameraHFovHalf);
 				data.centerAngle = laserCameraRotationAngle * index;
-				data.rangeMax = (float)rangeMax;
+				data.rangeMax = (float)range.max;
 				data.AllocateBuffer(targetDepthRT.width, targetDepthRT.height);
 				laserCamData[index] = data;
 			}
 
-			laserStartAngle = (float)angleMin;
-			laserEndAngle = (float)angleMax;
-			laserTotalAngle = (float)(angleMax - angleMin);
-
-			waitingPeriodRatio = 0.80f;
 		}
 
 		private IEnumerator LaserCameraWorker()
 		{
+			const int batchSize = 16;
 			var axisRotation = Vector3.zero;
 			var readbacks = new AsyncGPUReadbackRequest[numberOfLaserCamData];
 			var sw = new Stopwatch();
 
-			// var targetDepthRT = laserCam.targetTexture;
 			while (true)
 			{
 				sw.Restart();
@@ -328,6 +337,10 @@ namespace SensorDevices
 			var copyLength = 0;
 			var doCopy = true;
 
+			var laserStartAngle = (float)horizontal.angle.min;
+			var laserEndAngle = (float)horizontal.angle.max;
+			var laserTotalAngle = (float)horizontal.angle.range;
+
 			for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
 			{
 				doCopy = true;
@@ -349,7 +362,7 @@ namespace SensorDevices
 					srcBufferOffset = 0;
 					var srcLengthratio = Mathf.Abs((dataStartAngle - laserStartAngle) / dataTotalAngle);
 					copyLength = outputBufferLength - Mathf.FloorToInt(outputBufferLength * srcLengthratio);
-					dstBufferOffset = (int)samples - copyLength;
+					dstBufferOffset = (int)horizontal.samples - copyLength;
 
 					if (copyLength < 0 || dstBufferOffset < 0)
 					{
@@ -361,7 +374,7 @@ namespace SensorDevices
 				{
 					srcBufferOffset = 0;
 					copyLength = outputBufferLength;
-					dstBufferOffset = (int)samples - (Mathf.CeilToInt(samples * ((dataStartAngle - laserStartAngle) / laserTotalAngle)) + copyLength);
+					dstBufferOffset = (int)horizontal.samples - (Mathf.CeilToInt(horizontal.samples * ((dataStartAngle - laserStartAngle) / laserTotalAngle)) + copyLength);
 
 					if (copyLength < 0 || dstBufferOffset < 0)
 					{
@@ -406,7 +419,7 @@ namespace SensorDevices
 			const float visualUpdatePeriod = 0.090f;
 			const float visualDrawDuration = visualUpdatePeriod * 1.01f;
 
-			var startAngle = (float)angleMin;
+			var startAngle = (float)horizontal.angle.min;
 			var waitForEndOfFrame = new WaitForEndOfFrame();
 			var waitForSeconds = new WaitForSeconds(visualUpdatePeriod);
 
@@ -419,16 +432,16 @@ namespace SensorDevices
 
 				for (var hScanIndex = 0; hScanIndex < rangeData.Length; hScanIndex++)
 				{
-					var rayAngleH = ((laserHAngleResolution * hScanIndex)) + startAngle;
+					var rayAngleH = ((laserAngleResolution.H * hScanIndex)) + startAngle;
 					var rayRotation = (Quaternion.AngleAxis((float)rayAngleH, transform.up)) * lidarLink.forward;
-					var rayStart = (rayRotation * (float)rangeMin) + lidarSensorWorldPosition;
+					var rayStart = (rayRotation * (float)range.min) + lidarSensorWorldPosition;
 
 					var ccwIndex = (uint)(rangeData.Length - hScanIndex - 1);
 					var rayData = rangeData[ccwIndex];
 
 					if (rayData > 0)
 					{
-						var rayDistance = (rayData == Mathf.Infinity) ? (float)rangeMax : (rayData - (float)rangeMin);
+						var rayDistance = (rayData == Mathf.Infinity) ? (float)range.max : (rayData - (float)range.min);
 						var rayDirection = rayRotation * rayDistance;
 						Debug.DrawRay(rayStart, rayDirection, rayColor, visualDrawDuration, true);
 					}
