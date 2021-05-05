@@ -102,12 +102,12 @@ public class LidarVisualizer : MonoBehaviour
 			}
 		}
 
-		uint nSample = targetLidar.samples;
-		float fResolution = (float)targetLidar.resolution;
-		float fMin_Angle = (float)targetLidar.angleMin; // -180 ~ 0
-		float fMax_Angle = (float)targetLidar.angleMax; //    0 ~ 180
-		float fRange_Min = (float)targetLidar.rangeMin;
-		float fRange_Max = (float)targetLidar.rangeMax;
+		uint nSample = targetLidar.horizontal.samples;
+		float fResolution = (float)targetLidar.horizontal.resolution;
+		float fMin_Angle = (float)targetLidar.horizontal.angle.min; // -180 ~ 0
+		float fMax_Angle = (float)targetLidar.horizontal.angle.max; //    0 ~ 180
+		float fRange_Min = (float)targetLidar.range.min;
+		float fRange_Max = (float)targetLidar.range.max;
 
 		// Transparency
 		var lidarNormalColor = new Color(1, 0, 0, 1f); // normal Lidar pixel color

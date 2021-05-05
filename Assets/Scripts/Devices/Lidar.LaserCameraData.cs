@@ -17,24 +17,25 @@ namespace SensorDevices
 
 		struct DepthCamBuffer : IJobParallelFor
 		{
-			private int imageWidth;
-			private int imageHeight;
+			private readonly int imageWidth;
+			private readonly int imageHeight;
 
 			[ReadOnly]
 			public NativeArray<byte> imageBuffer;
-
 			public NativeArray<float> depthBuffer;
 
-			public void AllocateDepthBuffer(in int width, in int height)
+			public DepthCamBuffer(in int width, in int height)
 			{
-				imageWidth = width;
-				imageHeight = height;
+				this.imageWidth = width;
+				this.imageHeight = height;
+				this.imageBuffer = default(NativeArray<byte>);
+				this.depthBuffer = default(NativeArray<float>);
 
 				var dataLength = imageWidth * imageHeight;
 				depthBuffer = new NativeArray<float>(dataLength, Allocator.Persistent);
 			}
 
-			public void DeallocateDepthBuffer()
+			public void Deallocate()
 			{
 				depthBuffer.Dispose();
 			}
@@ -80,33 +81,38 @@ namespace SensorDevices
 		{
 			private float maxHAngleHalf;
 			private float maxHAngleHalfTangent;
-			public float angleResolutionH;
+			public AngleResolution angleResolution;
 			public float centerAngle;
 			public float rangeMax;
 
-			private int horizontalBufferLength;
-			private int verticalBufferLength;
+			public readonly int horizontalBufferLength;
+			public readonly int verticalBufferLength;
 
 			[ReadOnly]
 			public NativeArray<float> depthBuffer;
 
 			private NativeArray<double> laserDataOutput;
 
-			public float StartAngle => centerAngle - maxHAngleHalf;
-			public float EndAngle => centerAngle + maxHAngleHalf;
-			public float TotalAngle => EndAngle - StartAngle;
+			public readonly float StartAngleH => centerAngle - maxHAngleHalf;
+			public readonly float EndAngleH => centerAngle + maxHAngleHalf;
+			public readonly float TotalAngleH => EndAngleH - StartAngleH;
 
-			public void AllocateBuffer(in int bufferWidth, in int bufferHeight)
+			public LaserCamData(in int bufferWidth, in int bufferHeight, in AngleResolution angleResolution)
 			{
-				horizontalBufferLength = bufferWidth;
-				verticalBufferLength = bufferHeight;
+				this.maxHAngleHalf = 0;
+				this.maxHAngleHalfTangent = 0;
+				this.angleResolution = angleResolution;
+				this.centerAngle = 0;
+				this.rangeMax = 0;
+				this.horizontalBufferLength = bufferWidth;
+				this.verticalBufferLength = bufferHeight;
+				this.depthBuffer = default(NativeArray<float>);
 
-				// TODO: vertical ray
-				var dataLength = horizontalBufferLength; //* verticalBufferLength;
-				laserDataOutput = new NativeArray<double>(dataLength, Allocator.Persistent);
+				var dataLength = horizontalBufferLength * verticalBufferLength;
+				this.laserDataOutput = new NativeArray<double>(dataLength, Allocator.Persistent);
 			}
 
-			public void DeallocateBuffer()
+			public void Deallocate()
 			{
 				laserDataOutput.Dispose();
 			}
@@ -125,6 +131,7 @@ namespace SensorDevices
 			private float GetDepthRange(in int offsetX, in int offsetY)
 			{
 				var bufferOffset = (horizontalBufferLength * offsetY) + offsetX;
+				// Debug.LogFormat("OffsetX: {0}, OffsetY: {1}", offsetX, offsetY);
 				return depthBuffer[bufferOffset];
 			}
 
@@ -154,7 +161,12 @@ namespace SensorDevices
 					return;
 				}
 
-				var rayAngleH = angleResolutionH * index;
+				var indexH = index % horizontalBufferLength;
+				var indexV = index / horizontalBufferLength;
+				// Debug.Log("H: " + indexH + ", V:" + indexV);
+
+				var rayAngleH = angleResolution.H * indexH;
+				var rayAngleV = angleResolution.V * indexV;
 				var depthData = GetDepthData(rayAngleH);
 				var rayDistance = (depthData > 0) ? depthData * rangeMax : Mathf.Infinity;
 

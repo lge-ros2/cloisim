@@ -52,13 +52,13 @@ namespace SensorDevices
 				camParameters.image_format = "RGB_FLOAT32";
 			}
 
-			_cam.backgroundColor = Color.white;
-			_cam.clearFlags = CameraClearFlags.SolidColor;
+			camSensor.backgroundColor = Color.white;
+			camSensor.clearFlags = CameraClearFlags.SolidColor;
 
-			_cam.depthTextureMode = DepthTextureMode.Depth;
-			_universalCamData.requiresColorTexture = false;
-			_universalCamData.requiresDepthTexture = true;
-			_universalCamData.renderShadows = false;
+			camSensor.depthTextureMode = DepthTextureMode.Depth;
+			universalCamData.requiresColorTexture = false;
+			universalCamData.requiresDepthTexture = true;
+			universalCamData.renderShadows = false;
 
 			targetRTname = "CameraDepthTexture";
 			targetRTdepth = 32;
@@ -87,7 +87,7 @@ namespace SensorDevices
 			cb.GetTemporaryRT(tempTextureId, -1, -1);
 			cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
 			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
-			_cam.AddCommandBuffer(CameraEvent.AfterEverything, cb);
+			camSensor.AddCommandBuffer(CameraEvent.AfterEverything, cb);
 
 			cb.ReleaseTemporaryRT(tempTextureId);
 			cb.Release();

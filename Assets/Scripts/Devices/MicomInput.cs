@@ -28,7 +28,7 @@ public class MicomInput : Device
 
 	protected override void OnAwake()
 	{
-		_mode = Mode.RX;
+		Mode = ModeType.RX;
 		deviceName = "MicomInput";
 	}
 

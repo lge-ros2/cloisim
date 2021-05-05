@@ -209,7 +209,7 @@ namespace SDF
 		{
 			try
 			{
-				return ConvertXmlNodeToValue<T>(tagNode);
+				return (tagNode == null) ? defaultValue : ConvertXmlNodeToValue<T>(tagNode);
 			}
 			catch (Exception ex)
 			{
