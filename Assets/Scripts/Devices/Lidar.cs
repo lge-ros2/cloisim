@@ -40,7 +40,7 @@ namespace SensorDevices
 			public readonly MinMax angle; // degree
 			public readonly double angleStep;
 
-			public Scan(in uint samples, in double angleMinRad, in double angleMaxRad, in double resolution = 0)
+			public Scan(in uint samples, in double angleMinRad, in double angleMaxRad, in double resolution = 1)
 			{
 				this.samples = samples;
 				this.resolution = resolution;
@@ -121,9 +121,10 @@ namespace SensorDevices
 			for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
 			{
 				var data = laserCamData[dataIndex];
-				data.DeallocateBuffer();
+				data.Deallocate();
+
 				var depthBuffer = depthCamBuffers[dataIndex];
-				depthBuffer.DeallocateDepthBuffer();
+				depthBuffer.Deallocate();
 			}
 		}
 
@@ -236,8 +237,7 @@ namespace SensorDevices
 			var targetDepthRT = laserCam.targetTexture;
 			for (var index = 0; index < numberOfLaserCamData; index++)
 			{
-				var depthCamBuffer = new DepthCamBuffer();
-				depthCamBuffer.AllocateDepthBuffer(targetDepthRT.width, targetDepthRT.height);
+				var depthCamBuffer = new DepthCamBuffer(targetDepthRT.width, targetDepthRT.height);
 				depthCamBuffers[index] = depthCamBuffer;
 
 				var data = new LaserCamData(targetDepthRT.width, targetDepthRT.height, laserAngleResolution);

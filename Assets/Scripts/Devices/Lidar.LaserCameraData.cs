@@ -17,24 +17,25 @@ namespace SensorDevices
 
 		struct DepthCamBuffer : IJobParallelFor
 		{
-			private int imageWidth;
-			private int imageHeight;
+			private readonly int imageWidth;
+			private readonly int imageHeight;
 
 			[ReadOnly]
 			public NativeArray<byte> imageBuffer;
-
 			public NativeArray<float> depthBuffer;
 
-			public void AllocateDepthBuffer(in int width, in int height)
+			public DepthCamBuffer(in int width, in int height)
 			{
-				imageWidth = width;
-				imageHeight = height;
+				this.imageWidth = width;
+				this.imageHeight = height;
+				this.imageBuffer = default(NativeArray<byte>);
+				this.depthBuffer = default(NativeArray<float>);
 
 				var dataLength = imageWidth * imageHeight;
 				depthBuffer = new NativeArray<float>(dataLength, Allocator.Persistent);
 			}
 
-			public void DeallocateDepthBuffer()
+			public void Deallocate()
 			{
 				depthBuffer.Dispose();
 			}
@@ -113,7 +114,7 @@ namespace SensorDevices
 				this.laserDataOutput = new NativeArray<double>(dataLength, Allocator.Persistent);
 			}
 
-			public void DeallocateBuffer()
+			public void Deallocate()
 			{
 				laserDataOutput.Dispose();
 			}
