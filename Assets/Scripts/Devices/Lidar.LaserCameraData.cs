@@ -85,17 +85,17 @@ namespace SensorDevices
 			public float centerAngle;
 			public float rangeMax;
 
-			private int horizontalBufferLength;
-			private int verticalBufferLength;
+			public readonly int horizontalBufferLength;
+			public readonly int verticalBufferLength;
 
 			[ReadOnly]
 			public NativeArray<float> depthBuffer;
 
 			private NativeArray<double> laserDataOutput;
 
-			public float StartAngle => centerAngle - maxHAngleHalf;
-			public float EndAngle => centerAngle + maxHAngleHalf;
-			public float TotalAngle => EndAngle - StartAngle;
+			public readonly float StartAngleH => centerAngle - maxHAngleHalf;
+			public readonly float EndAngleH => centerAngle + maxHAngleHalf;
+			public readonly float TotalAngleH => EndAngleH - StartAngleH;
 
 			public LaserCamData(in int bufferWidth, in int bufferHeight, in AngleResolution angleResolution)
 			{
@@ -108,9 +108,7 @@ namespace SensorDevices
 				this.verticalBufferLength = bufferHeight;
 				this.depthBuffer = default(NativeArray<float>);
 
-				// TODO: vertical ray
-				var dataLength = horizontalBufferLength; //* verticalBufferLength;
-
+				var dataLength = horizontalBufferLength * verticalBufferLength;
 				this.laserDataOutput = new NativeArray<double>(dataLength, Allocator.Persistent);
 			}
 
@@ -133,6 +131,7 @@ namespace SensorDevices
 			private float GetDepthRange(in int offsetX, in int offsetY)
 			{
 				var bufferOffset = (horizontalBufferLength * offsetY) + offsetX;
+				// Debug.LogFormat("OffsetX: {0}, OffsetY: {1}", offsetX, offsetY);
 				return depthBuffer[bufferOffset];
 			}
 
@@ -162,7 +161,12 @@ namespace SensorDevices
 					return;
 				}
 
-				var rayAngleH = angleResolution.H * index;
+				var indexH = index % horizontalBufferLength;
+				var indexV = index / horizontalBufferLength;
+				// Debug.Log("H: " + indexH + ", V:" + indexV);
+
+				var rayAngleH = angleResolution.H * indexH;
+				var rayAngleV = angleResolution.V * indexV;
 				var depthData = GetDepthData(rayAngleH);
 				var rayDistance = (depthData > 0) ? depthData * rangeMax : Mathf.Infinity;
 
