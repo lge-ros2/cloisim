@@ -91,6 +91,7 @@ namespace SensorDevices
 		private DepthCamBuffer[] depthCamBuffers;
 		private LaserCamData[] laserCamData;
 
+
 		[ColorUsage(true)]
 		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.15f);
 
@@ -208,7 +209,7 @@ namespace SensorDevices
 
 			var renderTextrueWidth = Mathf.CeilToInt(LaserCameraHFov / laserAngleResolution.H);
 			var renderTextrueHeight = (laserAngleResolution.V == 1) ? 1 : Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
-			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
+			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 16, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
 			{
 				name = "LidarDepthTexture"
 			};
@@ -263,7 +264,7 @@ namespace SensorDevices
 
 		private IEnumerator LaserCameraWorker()
 		{
-			const int batchSize = 16;
+			const int batchSize = 64;
 			var axisRotation = Vector3.zero;
 			var readbacks = new AsyncGPUReadbackRequest[numberOfLaserCamData];
 			var sw = new Stopwatch();
@@ -359,7 +360,6 @@ namespace SensorDevices
 			{
 				var data = laserCamData[dataIndex];
 				var srcBuffer = data.GetOutputs();
-				// var srcBufferLength = data.OutputLength();
 				var srcBufferHorizontalLength = data.horizontalBufferLength;
 				var dataStartAngle = data.StartAngleH;
 				var dataEndAngle = data.EndAngleH;
