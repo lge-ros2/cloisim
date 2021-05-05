@@ -49,14 +49,27 @@ namespace SensorDevices
 			}
 		}
 
+		readonly public struct AngleResolution
+		{
+			public readonly float H; // degree
+			public readonly float V; // degree
+
+			public AngleResolution(in float angleRadResolutionH = 0, in float angleRadResolutionV = 0)
+			{
+				this.H = angleRadResolutionH * Mathf.Rad2Deg;
+				this.V = angleRadResolutionV * Mathf.Rad2Deg;
+			}
+		}
+
+		private const float LaserCameraHFov = 120.0000000000f;
+		private const float LaserCameraVFov = 50.0000000000f;
+
+
 		public MinMax range;
 
 		public Scan horizontal;
 
 		public Scan vertical;
-
-		[ColorUsage(true)]
-		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.15f);
 
 		private Transform lidarLink = null;
 		private Pose lidarSensorInitPose = new Pose();
@@ -64,28 +77,15 @@ namespace SensorDevices
 		private UnityEngine.Camera laserCam = null;
 		private Material depthMaterial = null;
 
-		private const float laserCameraHFov = 120.0000000000f;
-		private const float laserCameraHFovHalf = laserCameraHFov / 2;
-		private const float laserCameraVFov = 40.0000000000f;
-
-		public struct AngleResolution
-		{
-			public float H;
-			public float V;
-
-			public AngleResolution(in float angleResolutionH = 0, in float angleResolutionV = 0)
-			{
-				this.H = angleResolutionH;
-				this.V = angleResolutionV;
-			}
-		}
-
-		private AngleResolution laserAngleResolution = new AngleResolution();
+		private AngleResolution laserAngleResolution;
 
 		private int numberOfLaserCamData = 0;
 
 		private DepthCamBuffer[] depthCamBuffers;
 		private LaserCamData[] laserCamData;
+
+		[ColorUsage(true)]
+		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.15f);
 
 		protected override void OnAwake()
 		{
@@ -164,8 +164,7 @@ namespace SensorDevices
 				laserScan.Intensities[i] = double.NaN;
 			}
 
-			laserAngleResolution.H = (float)(laserScan.AngleStep * Mathf.Rad2Deg);
-			laserAngleResolution.V = (float)(laserScan.VerticalAngleStep * Mathf.Rad2Deg);
+			laserAngleResolution = new AngleResolution((float)laserScan.AngleStep, (float)laserScan.VerticalAngleStep);
 			// Debug.Log("H resolution: " + laserHAngleResolution + ", V resolution: " + laserVAngleResolution);
 		}
 
@@ -187,7 +186,7 @@ namespace SensorDevices
 			laserCam.orthographic = false;
 			laserCam.nearClipPlane = (float)range.min;
 			laserCam.farClipPlane = (float)range.max;
-			laserCam.cullingMask = LayerMask.GetMask("Default");
+			laserCam.cullingMask = LayerMask.GetMask("Default") | LayerMask.GetMask("Plane");
 
 			laserCam.backgroundColor = Color.white;
 			laserCam.clearFlags = CameraClearFlags.SolidColor;
@@ -195,17 +194,16 @@ namespace SensorDevices
 
 			laserCam.renderingPath = RenderingPath.DeferredLighting;
 
-			var renderTextrueWidth = Mathf.CeilToInt(laserCameraHFov / laserAngleResolution.H);
-			var aspectRatio = Mathf.Tan(laserCameraVFov * 0.5f * Mathf.Deg2Rad) / Mathf.Tan(laserCameraHFov * 0.5f * Mathf.Deg2Rad);
-			var renderTextrueHeight = Mathf.CeilToInt(renderTextrueWidth * aspectRatio);
-			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 16, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
+			var renderTextrueWidth = Mathf.CeilToInt(LaserCameraHFov / laserAngleResolution.H);
+			var renderTextrueHeight = Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
+			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
 			{
 				name = "LidarDepthTexture"
 			};
 
 			laserCam.targetTexture = targetDepthRT;
 
-			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(laserCameraHFov, laserCameraVFov, (float)range.min, (float)range.max);
+			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(LaserCameraHFov, LaserCameraVFov, (float)range.min, (float)range.max);
 			laserCam.projectionMatrix = projMatrix;
 
 			var universalLaserCamData = laserCam.GetUniversalAdditionalCameraData();
@@ -229,7 +227,7 @@ namespace SensorDevices
 
 		private void SetupLaserCameraData()
 		{
-			const float laserCameraRotationAngle = laserCameraHFov;
+			const float laserCameraRotationAngle = LaserCameraHFov;
 			numberOfLaserCamData = Mathf.CeilToInt(360 / laserCameraRotationAngle);
 
 			laserCamData = new LaserCamData[numberOfLaserCamData];
@@ -242,15 +240,12 @@ namespace SensorDevices
 				depthCamBuffer.AllocateDepthBuffer(targetDepthRT.width, targetDepthRT.height);
 				depthCamBuffers[index] = depthCamBuffer;
 
-				var data = new LaserCamData();
-				data.angleResolutionH = laserAngleResolution.H;
-				data.SetMaxHorizontalHalfAngle(laserCameraHFovHalf);
+				var data = new LaserCamData(targetDepthRT.width, targetDepthRT.height, laserAngleResolution);
+				data.SetMaxHorizontalHalfAngle(LaserCameraHFov * 0.5f);
 				data.centerAngle = laserCameraRotationAngle * index;
 				data.rangeMax = (float)range.max;
-				data.AllocateBuffer(targetDepthRT.width, targetDepthRT.height);
 				laserCamData[index] = data;
 			}
-
 		}
 
 		private IEnumerator LaserCameraWorker()
