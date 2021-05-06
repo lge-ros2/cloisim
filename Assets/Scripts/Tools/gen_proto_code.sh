@@ -18,7 +18,7 @@ PROTO_MSGS_PATH="../../../../cloi3_ws/src/cloisim_ros/cloisim_ros_protobuf_msgs/
 # TARGET_PROTO_MSGS="*.proto"
 TARGET_PROTO_MSGS=""
 
-MSG="header any param param_v color "
+MSG="header any param param_v color empty "
 MSG+="time vector2d vector3d quaternion pose pose_v poses_stamped "
 MSG+="image images_stamped image_stamped camerasensor distortion camera_lens "
 MSG+="laserscan laserscan_stamped raysensor pointcloud "
