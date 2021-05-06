@@ -181,10 +181,7 @@ namespace SensorDevices
 
 			public double[] GetOutputs()
 			{
-				var outputArray = laserDataOutput.ToArray();
-				// CCW for ROS2 message direction
-				Array.Reverse(outputArray);
-				return outputArray;
+				return laserDataOutput.ToArray();
 			}
 		}
 	}

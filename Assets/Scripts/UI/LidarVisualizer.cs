@@ -76,12 +76,12 @@ public class LidarVisualizer : MonoBehaviour
 	private void SetTextureSize(in int size)
 	{
 		textureSize = size;
-		centerPosition = textureSize/2;
+		centerPosition = textureSize / 2;
 	}
 
 	private bool IsCenterRegion(in int index, in uint totalSamples)
 	{
-		return (index > (totalSamples * 3/7) && index < (totalSamples * 4/7))? true:false;
+		return (index > (totalSamples * 3 / 7) && index < (totalSamples * 4 / 7)) ? true : false;
 	}
 
 	private IEnumerator DrawLidarVisualizer()
@@ -102,18 +102,18 @@ public class LidarVisualizer : MonoBehaviour
 			}
 		}
 
-		uint nSample = targetLidar.horizontal.samples;
-		float fResolution = (float)targetLidar.horizontal.resolution;
-		float fMin_Angle = (float)targetLidar.horizontal.angle.min; // -180 ~ 0
-		float fMax_Angle = (float)targetLidar.horizontal.angle.max; //    0 ~ 180
-		float fRange_Min = (float)targetLidar.range.min;
-		float fRange_Max = (float)targetLidar.range.max;
+		var samples = targetLidar.horizontal.samples;
+		var resolution = (float)targetLidar.horizontal.resolution;
+		var angleMin = (float)targetLidar.horizontal.angle.min; // -180 ~ 0
+		var angleMax = (float)targetLidar.horizontal.angle.max; //    0 ~ 180
+		var rangeMin = (float)targetLidar.range.min;
+		var rangeMax = (float)targetLidar.range.max;
 
 		// Transparency
 		var lidarNormalColor = new Color(1, 0, 0, 1f); // normal Lidar pixel color
 		var lidarCenterColor = new Color(1, 1, 0, 1f); // Center Lidar pixel color
 
-		float fResolutionAngle = (Mathf.Abs(fMin_Angle) + Mathf.Abs(fMax_Angle)) / nSample;
+		float resolutionAngle = (Mathf.Abs(angleMin) + Mathf.Abs(angleMax)) / samples;
 		var rayDirection = Vector3.forward;
 		waitForSeconds = new WaitForSeconds(updateRate);
 
@@ -125,11 +125,11 @@ public class LidarVisualizer : MonoBehaviour
 			var distances = targetLidar.GetRangeData();
 			for (var index = 0; index < distances.Length; index++)
 			{
-				rayDirection = Quaternion.AngleAxis((fMin_Angle+(fResolutionAngle*index)),Vector3.up)*transform.forward;
+				rayDirection = Quaternion.AngleAxis((angleMin + (resolutionAngle * index)), Vector3.up) * transform.forward;
 
-				var fDistRate = distances[index] / fRange_Max;
+				var fDistRate = (float)distances[index] / rangeMax;
 
-				var pixelColor = (IsCenterRegion(index, nSample))? lidarCenterColor:lidarNormalColor;
+				var pixelColor = (IsCenterRegion(index, samples)) ? lidarCenterColor : lidarNormalColor;
 
 				targetTexture.SetPixel(
 						(int)(rayDirection.x * fDistRate * centerPosition) + centerPosition,

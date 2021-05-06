@@ -111,6 +111,8 @@ namespace SensorDevices
 					readbackDstFormat = TextureFormat.RGB24;
 					break;
 			}
+
+
 		}
 
 		protected override void InitializeMessages()

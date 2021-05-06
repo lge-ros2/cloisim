@@ -201,17 +201,16 @@ namespace SensorDevices
 			laserCam.farClipPlane = (float)range.max;
 			laserCam.cullingMask = LayerMask.GetMask("Default") | LayerMask.GetMask("Plane");
 
-			laserCam.backgroundColor = Color.white;
-			laserCam.clearFlags = CameraClearFlags.SolidColor;
+			laserCam.clearFlags = CameraClearFlags.Color;
 			laserCam.depthTextureMode = DepthTextureMode.Depth;
 
 			laserCam.renderingPath = RenderingPath.DeferredLighting;
 
 			var renderTextrueWidth = Mathf.CeilToInt(LaserCameraHFov / laserAngleResolution.H);
-			var renderTextrueHeight = (laserAngleResolution.V == 1) ? 1 : Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
-			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 16, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
+			var renderTextrueHeight = renderTextrueWidth;//(laserAngleResolution.V == 1) ? 1 : Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
+			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
 			{
-				name = "LidarDepthTexture"
+				name = "LidarDepthTexture",
 			};
 
 			laserCam.targetTexture = targetDepthRT;
@@ -464,7 +463,7 @@ namespace SensorDevices
 					var rayStart = (rayRotation * rangeMin) + lidarSensorWorldPosition;
 
 					var ccwIndex = (uint)(rangeData.Length - scanIndex - 1);
-					var rayData = rangeData[ccwIndex];
+					var rayData = (float)rangeData[ccwIndex];
 
 					if (rayData > 0)
 					{
@@ -478,16 +477,15 @@ namespace SensorDevices
 			}
 		}
 
-		public float[] GetRangeData()
+		public double[] GetRangeData()
 		{
 			try
 			{
-				var temp = Array.ConvertAll(laserScanStamped.Scan.Ranges, item => (float)item);
-				return temp;
+				return laserScanStamped.Scan.Ranges;
 			}
 			catch
 			{
-				return new float[0];
+				return new double[0];
 			}
 		}
 	}

@@ -3,14 +3,19 @@ Shader "Sensor/Depth"
 {
 	Properties
 	{
-		_ReverseData ("reverse depth data", Float) = 0
+		_ReverseData ("reverse depth data", Int) = 0
+		_FlipX ("horizontal flip", Int) = 1
 	}
 
 	SubShader
 	{
-		Cull Back
-		ZWrite On
-		ZTest LEqual
+		Pass
+		{
+			Cull Back
+			ZWrite On
+			ZTest LEqual
+			ColorMask 0
+		}
 
 		Tags
 		{
@@ -25,7 +30,8 @@ Shader "Sensor/Depth"
 
 			CGPROGRAM
 
-			float _ReverseData;
+			int _ReverseData;
+			int _FlipX;
 
 			#pragma vertex vert
 			#pragma fragment frag
@@ -47,6 +53,9 @@ Shader "Sensor/Depth"
 					o.uv.y = 1 - o.uv.y;
 				#endif
 
+				if (_FlipX > 0)
+					o.uv.x = 1 - o.uv.x;
+
 				return o;
 			}
 
@@ -54,7 +63,7 @@ Shader "Sensor/Depth"
 			{
 				float depth = UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, i.uv.xy));
 				float linearDepth = Linear01Depth(depth);
-				return EncodeFloatRGBA((_ReverseData >= 1.0)? (1.0 - linearDepth) : linearDepth);
+				return EncodeFloatRGBA((_ReverseData > 0)? (1.0 - linearDepth) : linearDepth);
 			}
 
 			ENDCG

@@ -22,7 +22,15 @@ namespace SensorDevices
 		{
 			if (depthMaterial != null)
 			{
-				depthMaterial.SetFloat("_ReverseData", (reverse) ? 1 : 0);
+				depthMaterial.SetInt("_ReverseData", (reverse) ? 1 : 0);
+			}
+		}
+
+		public void FlipXDepthData(in bool flip)
+		{
+			if (depthMaterial != null)
+			{
+				depthMaterial.SetInt("_FlipX", (flip) ? 1 : 0);
 			}
 		}
 
@@ -43,6 +51,7 @@ namespace SensorDevices
 			depthMaterial = new Material(depthShader);
 
 			ReverseDepthData(true);
+			FlipXDepthData(false);
 
 			var camParameters = (deviceParameters as SDF.Camera);
 
