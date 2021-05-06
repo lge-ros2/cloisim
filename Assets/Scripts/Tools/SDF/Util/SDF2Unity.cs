@@ -34,6 +34,11 @@ public partial class SDF2Unity
 		return (value == null) ? Vector3.zero : GetPosition(value.X, value.Y, value.Z);
 	}
 
+	public static Quaternion GetRotation(in double x, in double y, in double z)
+	{
+		return GetRotation(new SDF.Quaternion<double>(x, y, z));
+	}
+
 	public static Quaternion GetRotation(in SDF.Vector3<double> value)
 	{
 		return GetRotation(new SDF.Quaternion<double>(value.X, value.Y, value.Z));
