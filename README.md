@@ -88,7 +88,7 @@ For the performance in terms of collision handling, designing collision geometry
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.5f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.3.6f1 (LTS)'*.
 - Linux: Ubuntu 20.04.2 LTS
 - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
 - Memory: 32GB
