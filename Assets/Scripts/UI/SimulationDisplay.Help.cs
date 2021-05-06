@@ -11,12 +11,12 @@ using UnityEngine;
 public partial class SimulationDisplay : MonoBehaviour
 {
 	[Header("Help dialog")]
-	private GUIContent _helpContents = new GUIContent();
-	private float _helpContentsHeight;
+	private GUIContent helpContents = new GUIContent();
+	private float helpContentsHeight;
 	private const int buttonWidthHelp = 65;
 	private const int helpStatusWidth = buttonWidthHelp * 2;
-	private bool _popupHelpDialog = false;
-	private Vector2 _scrollPosition = Vector2.zero;
+	private bool popupHelpDialog = false;
+	private Vector2 scrollPosition = Vector2.zero;
 
 	private void UpdateHelpContents()
 	{
@@ -60,46 +60,55 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine("  Moving cursor pressing <b>center button</b> or <b>rigth button</b> on the mouse");
 		sb.AppendLine("");
 
-		_helpContentsHeight = 50 * labelFontSize;
-		_helpContents.text = sb.ToString();
+		helpContentsHeight = 50 * labelFontSize;
+		helpContents.text = sb.ToString();
 	}
 
 	private void DrawHelpDialog()
 	{
 		var dialogWidth = Screen.width * 0.8f;
-		var dialogHeight = Screen.height * 0.8f;
-		_rectDialog.x = Screen.width * 0.5f - dialogWidth * 0.5f;
-		_rectDialog.y = Screen.height * 0.5f - dialogHeight * 0.5f;
-		_rectDialog.width = dialogWidth;
-		_rectDialog.height = dialogHeight;
+		var dialogHeight = Screen.height * 0.85f;
+		rectDialog.x = Screen.width * 0.5f - dialogWidth * 0.5f;
+		rectDialog.y = Screen.height * 0.5f - dialogHeight * 0.5f;
+		rectDialog.width = dialogWidth;
+		rectDialog.height = dialogHeight;
 
 		var style = new GUIStyle();
 		style.alignment = TextAnchor.UpperLeft;
-		style.padding = new RectOffset(30, 30, 20, 20);
+		style.padding = new RectOffset(30, 30, 30, 30);
 		style.fontSize = labelFontSize;
 		style.richText = true;
 		style.wordWrap = true;
+		style.normal.textColor = Color.white;
 		style.normal.background = textureBackground;
 
-		_scrollPosition = GUI.BeginScrollView(_rectDialog, _scrollPosition, new Rect(0, 0, _rectDialog.width - 20, _helpContentsHeight), false, true);
-		GUI.Label(new Rect(0, 0, _rectDialog.width - 16, _helpContentsHeight), _helpContents, style);
+		scrollPosition = GUI.BeginScrollView(rectDialog, scrollPosition, new Rect(0, 0, rectDialog.width - 20, helpContentsHeight), false, true);
+		GUI.Label(new Rect(0, 0, rectDialog.width - 16, helpContentsHeight), helpContents, style);
 		GUI.EndScrollView();
 	}
 
 	private void DrawHelpInfo()
 	{
-		_rectHelpButton.x = Screen.width - buttonWidthHelp - textLeftMargin;
-		if (GUI.Button(_rectHelpButton, "Help(F1)"))
+		var style = new GUIStyle();
+		style.fontSize = labelFontSize;
+		style.wordWrap = true;
+		style.clipping = TextClipping.Overflow;
+		style.stretchHeight = false;
+		style.stretchWidth = false;
+
+		rectHelpButton.x = Screen.width - buttonWidthHelp - textLeftMargin;
+		GUI.skin.button.normal.textColor = Color.white;
+		GUI.skin.button.alignment = TextAnchor.MiddleCenter;
+		if (GUI.Button(rectHelpButton, "Help(F1)"))
 		{
-			_popupHelpDialog = !_popupHelpDialog;
+			popupHelpDialog = !popupHelpDialog;
 		}
 
-		GUI.skin.label.fontSize = (int)(labelFontSize * 0.8f);
-		GUI.skin.label.alignment = TextAnchor.MiddleLeft;
-
-		var helpStatus = "Vertical Camera Lock " + ((_cameraControl.VerticalMovementLock)? "[X]":"[  ]");
-		_rectHelpStatus.x = Screen.width -_rectHelpButton.width - helpStatusWidth - textLeftMargin;
-		DrawShadow(_rectHelpStatus, helpStatus);
-		GUI.Label(_rectHelpStatus, helpStatus);
+		style.fontSize = (int)(labelFontSize * 0.8f);
+		style.alignment = TextAnchor.MiddleLeft;
+		style.normal.textColor = Color.white;
+		var helpStatus = "Vertical Camera Lock " + ((cameraControl.VerticalMovementLock)? "[X]":"[  ]");
+		rectHelpStatus.x = Screen.width -rectHelpButton.width - helpStatusWidth - textLeftMargin;
+		DrawLabelWithShadow(rectHelpStatus, helpStatus, style);
 	}
 }

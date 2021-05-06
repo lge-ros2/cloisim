@@ -25,7 +25,7 @@ public partial class SimulationDisplay : MonoBehaviour
 
 	void LateUpdate()
 	{
-		_fpsString = "FPS [" + GetBoldText(Mathf.Round(fps).ToString("F1")) + "]";
+		_fpsString = "FPS [" + Mathf.Round(fps).ToString("F1") + "]";
 	}
 
 	private void CalculateFPS()
@@ -40,11 +40,10 @@ public partial class SimulationDisplay : MonoBehaviour
 		}
 	}
 
-	private void DrawFPSText()
+	private void DrawFPSText(GUIStyle style)
 	{
-		_rectFPS.y = Screen.height - textHeight - topMargin;
-		DrawShadow(_rectFPS, _fpsString);
-		GUI.skin.label.normal.textColor = Color.blue;
-		GUI.Label(_rectFPS, _fpsString);
+		rectFps.y = Screen.height - textHeight - bottomMargin;
+		style.normal.textColor = new Color(0.1f, 0.1f, 0.8f, 1);
+		DrawLabelWithShadow(rectFps, _fpsString, style);
 	}
 }

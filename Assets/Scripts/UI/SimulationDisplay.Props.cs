@@ -22,28 +22,32 @@ public partial class SimulationDisplay : MonoBehaviour
 
 	private void DrawPropsMenus()
 	{
-		GUI.skin.label.fontSize = labelFontSize;
-		GUI.skin.label.alignment = TextAnchor.MiddleCenter;
-		GUI.skin.label.padding = new RectOffset(0, 0, 0, 0);
+		var style = new GUIStyle();
+		style.fontSize = labelFontSize;
+		style.wordWrap = true;
+		style.padding = new RectOffset(0, 0, 0, 0);
+		style.alignment = TextAnchor.MiddleCenter;
+		style.clipping = TextClipping.Overflow;
+		style.stretchHeight = false;
+		style.stretchWidth = false;
 
-		GUI.skin.label.normal.textColor = Color.white;
-		_rectToolbar.x = Screen.width * 0.5f - toolbarWidth * 0.5f;
-		toolbarSelected = GUI.Toolbar(_rectToolbar, toolbarSelected, toolbarStrings);
 
-		var rectToolbarLabel = _rectToolbar;
+		style.normal.textColor = Color.white;
+		rectToolbar.x = Screen.width * 0.5f - toolbarWidth * 0.5f;
+		toolbarSelected = GUI.Toolbar(rectToolbar, toolbarSelected, toolbarStrings);
+
+		var rectToolbarLabel = rectToolbar;
 		rectToolbarLabel.x -= 45;
 		rectToolbarLabel.width = 45;
 
-		DrawShadow(rectToolbarLabel, "Props: ");
-		GUI.skin.label.normal.textColor = Color.white;
-		GUI.Label(rectToolbarLabel, "Props: ");
+		style.normal.textColor = Color.white;
+		DrawLabelWithShadow(rectToolbarLabel, "Props: ", style);
 
-		var rectScaleLabel = _rectToolbar;
+		var rectScaleLabel = rectToolbar;
 		rectScaleLabel.x += (toolbarWidth + 7);
 		rectScaleLabel.width = 50;
-		DrawShadow(rectScaleLabel, "Scale: ");
-		GUI.skin.label.normal.textColor = Color.white;
-		GUI.Label(rectScaleLabel, "Scale: ");
+		style.normal.textColor = Color.white;
+		DrawLabelWithShadow(rectScaleLabel, "Scale: ", style);
 
 		var rectScale = rectScaleLabel;
 		rectScale.x += 50;
@@ -95,7 +99,7 @@ public partial class SimulationDisplay : MonoBehaviour
 			doCheckScaleFactorValue = false;
 		}
 
-		_objectSpawning?.SetPropType(toolbarSelected);
-		_objectSpawning?.SetScaleFactor(scaleFactorString);
+		objectSpawning?.SetPropType(toolbarSelected);
+		objectSpawning?.SetScaleFactor(scaleFactorString);
 	}
 }
