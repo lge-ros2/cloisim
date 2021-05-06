@@ -20,7 +20,7 @@ namespace RuntimeGizmos
 
 
 		[Header("Handle Properties")]
-		public float planesOpacity = .5f;
+		public float planesOpacity = .8f;
 
 		public float movementSnap = .25f;
 		public float rotationSnap = 15f;
