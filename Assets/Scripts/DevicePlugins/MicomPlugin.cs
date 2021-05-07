@@ -102,6 +102,11 @@ public class MicomPlugin : DevicePlugin
 						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
 						break;
 
+					case "reset_odometry":
+						micomSensor.Reset();
+						SetEmptyResponse(ref msForInfoResponse);
+						break;
+
 					default:
 						break;
 				}
