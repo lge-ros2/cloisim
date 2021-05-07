@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Threading;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.IO;
@@ -13,11 +14,10 @@ using ProtoBuf;
 
 public abstract class Device : MonoBehaviour
 {
-	public enum ModeType { NONE, TX, RX };
+	public enum ModeType { NONE, TX, RX, TX_THREAD, RX_THREAD };
+	private const int maxQueue = 5;
 
 	public ModeType Mode = ModeType.NONE;
-
-	private const int maxQueue = 5;
 
 	private BlockingCollection<MemoryStream> outboundQueue_ = new BlockingCollection<MemoryStream>(maxQueue);
 
@@ -33,7 +33,6 @@ public abstract class Device : MonoBehaviour
 	private float updateRate = 1;
 
 	private bool debugginOn = true;
-
 	private bool visualize = true;
 
 	private float transportingTimeSeconds = 0;
@@ -44,6 +43,9 @@ public abstract class Device : MonoBehaviour
 	private Pose deviceModelPose = Pose.identity;
 	private Pose deviceLinkPose = Pose.identity;
 	private Pose devicePose = Pose.identity;
+
+	private Thread txThread;
+	private Thread rxThread;
 
 	public float UpdateRate => updateRate;
 
@@ -86,6 +88,16 @@ public abstract class Device : MonoBehaviour
 
 			case ModeType.RX:
 				StartCoroutine(DeviceCoroutineRx());
+				break;
+
+			case ModeType.TX_THREAD:
+				txThread = new Thread(DeviceThreadTx);
+				txThread.Start();
+				break;
+
+			case ModeType.RX_THREAD:
+				rxThread = new Thread(DeviceThreadRx);
+				rxThread.Start();
 				break;
 
 			case ModeType.NONE:
@@ -138,12 +150,39 @@ public abstract class Device : MonoBehaviour
 		}
 	}
 
+	private void DeviceThreadTx()
+	{
+		while (true)
+		{
+			ProcessDeviceCoroutine();
+			GenerateMessage();
+			Thread.Sleep(WaitPeriodInMilliseconds());
+		}
+	}
+
+	private void DeviceThreadRx()
+	{
+		while (true)
+		{
+			if (GetDataStream().Length > 0)
+			{
+				GenerateMessage();
+				ProcessDeviceCoroutine();
+			}
+		}
+	}
+
 	protected float WaitPeriod(in float messageGenerationTime = 0)
 	{
 		var waitTime = (UpdatePeriod * waitingPeriodRatio) - messageGenerationTime - TransportingTime;
 		// Debug.LogFormat(deviceName + ": waitTime({0}) = period({1}) - elapsedTime({2}) - TransportingTime({3})",
 		// 	waitTime.ToString("F5"), UpdatePeriod.ToString("F5"), messageGenerationTime.ToString("F5"), TransportingTime.ToString("F5"));
 		return (waitTime < 0) ? 0 : waitTime;
+	}
+
+	protected int WaitPeriodInMilliseconds()
+	{
+		return (int)(WaitPeriod() * 1000f);
 	}
 
 	public void SetUpdateRate(in float value)
