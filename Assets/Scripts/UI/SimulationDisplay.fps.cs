@@ -43,7 +43,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private void DrawFPSText(GUIStyle style)
 	{
 		rectFps.y = Screen.height - textHeight - bottomMargin;
-		style.normal.textColor = new Color(0.1f, 0.1f, 0.8f, 1);
+		style.normal.textColor = new Color(0.05f, 0.05f, 0.9f, 1);
 		DrawLabelWithShadow(rectFps, _fpsString, style);
 	}
 }
