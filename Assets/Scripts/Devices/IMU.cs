@@ -37,7 +37,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
-			Mode = ModeType.TX;
+			Mode = ModeType.TX_THREAD;
 			deviceName = name;
 			Reset();
 		}
