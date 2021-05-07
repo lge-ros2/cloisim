@@ -154,7 +154,6 @@ public abstract class Device : MonoBehaviour
 	{
 		while (true)
 		{
-			ProcessDeviceCoroutine();
 			GenerateMessage();
 			Thread.Sleep(WaitPeriodInMilliseconds());
 		}
@@ -167,7 +166,6 @@ public abstract class Device : MonoBehaviour
 			if (GetDataStream().Length > 0)
 			{
 				GenerateMessage();
-				ProcessDeviceCoroutine();
 			}
 		}
 	}
