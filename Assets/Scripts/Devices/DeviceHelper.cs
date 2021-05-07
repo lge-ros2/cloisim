@@ -10,24 +10,18 @@ using messages = cloisim.msgs;
 
 public partial class DeviceHelper
 {
-	private static Clock _clock = null;
+	private static Clock globalClock = null;
 
 	private static SphericalCoordinates _sphericalCoordinates = null;
 
+	public static void SetGlobalClock(in Clock clock)
+	{
+		globalClock = clock;
+	}
+
 	public static Clock GetGlobalClock()
 	{
-		if (_clock == null)
-		{
-			var coreObject = GameObject.Find("Core");
-			_clock = coreObject?.GetComponent<Clock>();
-
-			if (_clock == null)
-			{
-				_clock = coreObject.AddComponent<Clock>();
-			}
-		}
-
-		return _clock;
+		return globalClock;
 	}
 
 	public static SphericalCoordinates GetSphericalCoordinates()
