@@ -86,4 +86,15 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		ClearMemoryStream(ref msRos2Info);
 		Serializer.Serialize<messages.Param>(msRos2Info, ros2CommonInfo);
 	}
+
+	protected static void SetEmptyResponse(ref MemoryStream msRos2Info)
+	{
+		if (msRos2Info != null)
+		{
+			var emptyMessage = new messages.Empty();
+			emptyMessage.Unused = true;
+			ClearMemoryStream(ref msRos2Info);
+			Serializer.Serialize<messages.Empty>(msRos2Info, emptyMessage);
+		}
+	}
 }
