@@ -44,7 +44,7 @@ Here is the full list of models that is implemented or planned to be implemented
   - [ ] Physics
     - [ ] Support all physics parameters in SDF specification
     - [X] Support `<Joint type="revolute2">`
-- [X] Worlds
+- [ ] Worlds
   - [X] Actors
     - [ ] interpolate_x in `<animation>`
   - [X] Lights
@@ -54,7 +54,8 @@ Here is the full list of models that is implemented or planned to be implemented
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<road>`, `<population>`.
 
-Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material' and 'STL(.stl)'.
+Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material', 'Collada(.dae) including animation' and 'STL(.stl)'.
+`<ambient>` elements in `<materal>` and ambient properies in mesh files are not support in CLOiSim.
 
 ![cloisim_lidar_ros](https://user-images.githubusercontent.com/21001946/107105540-42b65600-686a-11eb-8797-7d937b108c11.gif)
 [video link](https://user-images.githubusercontent.com/21001946/103972179-d0415000-51af-11eb-824b-3d77051664d5.mp4)
