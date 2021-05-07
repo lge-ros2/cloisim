@@ -347,6 +347,7 @@ namespace SensorDevices
 			var copyLength = 0;
 			var doCopy = true;
 
+			const int bufferUnitSize = sizeof(double);
 			var laserSamplesH = (int)horizontal.samples;
 			var laserStartAngleH = (float)horizontal.angle.min;
 			var laserEndAngleH = (float)horizontal.angle.max;
@@ -421,7 +422,7 @@ namespace SensorDevices
 
 					if (doCopy)
 					{
-						Array.Copy(srcBuffer, srcBufferOffset, laserScan.Ranges, dstBufferOffset, copyLength);
+						Buffer.BlockCopy(srcBuffer, srcBufferOffset * bufferUnitSize, laserScan.Ranges, dstBufferOffset * bufferUnitSize, copyLength * bufferUnitSize);
 					}
 				}
 			}
