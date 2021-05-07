@@ -183,8 +183,6 @@ namespace SensorDevices
 
 		private void SetupLaserCamera()
 		{
-			var shader = Shader.Find("Sensor/Depth");
-			depthMaterial = new Material(shader);
 
 			laserCam.ResetWorldToCameraMatrix();
 			laserCam.ResetProjectionMatrix();
@@ -207,7 +205,7 @@ namespace SensorDevices
 			laserCam.renderingPath = RenderingPath.DeferredLighting;
 
 			var renderTextrueWidth = Mathf.CeilToInt(LaserCameraHFov / laserAngleResolution.H);
-			var renderTextrueHeight = renderTextrueWidth;//(laserAngleResolution.V == 1) ? 1 : Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
+			var renderTextrueHeight = (laserAngleResolution.V == 1) ? 1 : Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
 			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
 			{
 				name = "LidarDepthTexture",
@@ -223,6 +221,10 @@ namespace SensorDevices
 			universalLaserCamData.requiresDepthTexture = true;
 			universalLaserCamData.renderShadows = false;
 
+			var shader = Shader.Find("Sensor/Depth");
+			depthMaterial = new Material(shader);
+			// Store CCW direction for ROS2 sensor data
+			depthMaterial.SetInt("_FlipX", 1);
 			var cb = new CommandBuffer();
 			var tempTextureId = Shader.PropertyToID("_RenderImageCameraDepthTexture");
 			cb.GetTemporaryRT(tempTextureId, -1, -1);
@@ -419,7 +421,6 @@ namespace SensorDevices
 
 					if (doCopy)
 					{
-						// Store CCW direction for ROS2 sensor data
 						Array.Copy(srcBuffer, srcBufferOffset, laserScan.Ranges, dstBufferOffset, copyLength);
 					}
 				}
