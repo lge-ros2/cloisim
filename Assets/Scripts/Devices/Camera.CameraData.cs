@@ -114,13 +114,13 @@ namespace SensorDevices
 			return depth;
 		}
 
-		private struct CamImageData
+		private struct CameraImageData
 		{
 			private NativeArray<byte> imageBuffer;
 
 			private Texture2D cameraImage;
 
-			public void AllocateTexture(in int width, in int height, in string imageFormat)
+			public CameraImageData(in int width, in int height, in string imageFormat)
 			{
 				var isLinear = false;
 				var textureFormat = TextureFormat.RGB24;
@@ -151,6 +151,7 @@ namespace SensorDevices
 						break;
 				}
 
+				imageBuffer = default(NativeArray<byte>);
 				cameraImage = new Texture2D(width, height, textureFormat, false, isLinear);
 			}
 

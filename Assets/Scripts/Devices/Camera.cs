@@ -33,7 +33,7 @@ namespace SensorDevices
 		protected RenderTextureFormat targetRTformat;
 		protected RenderTextureReadWrite targetRTrwmode;
 		protected TextureFormat readbackDstFormat;
-		private CamImageData camData;
+		private CameraImageData camImageData;
 
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
@@ -64,7 +64,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
-			Mode = ModeType.TX;
+			Mode = ModeType.TX_THREAD;
 			camSensor = gameObject.AddComponent<UnityEngine.Camera>();
 			universalCamData = camSensor.GetUniversalAdditionalCameraData();
 
@@ -200,7 +200,7 @@ namespace SensorDevices
 
 			camSensor.hideFlags |= HideFlags.NotEditable;
 
-			camData.AllocateTexture(GetParameters().image_width, GetParameters().image_height, GetParameters().image_format);
+			camImageData = new CameraImageData(GetParameters().image_width, GetParameters().image_height, GetParameters().image_format);
 		}
 
 		protected void OnDestroy()
@@ -247,23 +247,23 @@ namespace SensorDevices
 
 			if (request.done)
 			{
-				camData.SetTextureBufferData(request.GetData<byte>());
+				camImageData.SetTextureBufferData(request.GetData<byte>());
 				var image = imageStamped.Image;
-				if (image.Data.Length == camData.GetImageDataLength())
+				if (image.Data.Length == camImageData.GetImageDataLength())
 				{
-					var imageData = camData.GetImageData();
+					var imageData = camImageData.GetImageData();
 
 					PostProcessing(ref imageData);
 
 					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
 					image.Data = imageData;
 
-					camData.Dispose();
+					camImageData.Dispose();
 
 					if (GetParameters().save_enabled)
 					{
 						var saveName = name + "_" + Time.time;
-						camData.SaveRawImageData(GetParameters().save_path, saveName);
+						camImageData.SaveRawImageData(GetParameters().save_path, saveName);
 						// Debug.LogFormat("{0}|{1} captured", GetParameters().save_path, saveName);
 					}
 				}
@@ -276,9 +276,7 @@ namespace SensorDevices
 			PushData<messages.ImageStamped>(imageStamped);
 		}
 
-		protected virtual void PostProcessing(ref byte[] buffer)
-		{
-		}
+		protected virtual void PostProcessing(ref byte[] buffer) { }
 
 		public messages.CameraSensor GetCameraInfo()
 		{
