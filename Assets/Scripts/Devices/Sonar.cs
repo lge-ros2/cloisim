@@ -39,7 +39,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
-			_mode = Mode.TX;
+			Mode = ModeType.TX;
 			deviceName = name;
 			sonarLink = transform.parent;
 

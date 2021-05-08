@@ -7,7 +7,6 @@
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 
 public partial class MicomSensor : Device
@@ -42,7 +41,7 @@ public partial class MicomSensor : Device
 
 	protected override void OnAwake()
 	{
-		_mode = Mode.TX;
+		Mode = ModeType.TX_THREAD;
 		deviceName = "MicomSensor";
 	}
 
@@ -77,7 +76,7 @@ public partial class MicomSensor : Device
 				motor.SetPID(_PGain, _IGain, _DGain);
 				_motors.Add(model.name, motor);
 
-				SetPartsInitialPose(model.name, motorObject);
+				SetInitialPartsPose(model.name, motorObject);
 			}
 		}
 
@@ -171,7 +170,7 @@ public partial class MicomSensor : Device
 
 		if (imuSensor != null)
 		{
-			SetPartsInitialPose(imuSensor.name, imuSensor.gameObject);
+			SetInitialPartsPose(imuSensor.name, imuSensor.gameObject);
 		}
 	}
 
@@ -309,8 +308,17 @@ public partial class MicomSensor : Device
 			var odom = micomSensorData.Odom;
 			if ((odom != null))
 			{
-				var motorLeft = _motors[_wheelNameLeft];
-				var motorRight = _motors[_wheelNameRight];
+				if (!_motors.TryGetValue(_wheelNameLeft, out var motorLeft))
+				{
+					Debug.Log("cannot find motor object: " + _wheelNameLeft);
+					return false;
+				}
+
+				if (!_motors.TryGetValue(_wheelNameRight, out var motorRight))
+				{
+					Debug.Log("cannot find motor object: " + _wheelNameRight);
+					return false;
+				}
 
 				if (motorLeft == null || motorRight == null)
 				{
@@ -420,10 +428,11 @@ public partial class MicomSensor : Device
 		}
 	}
 
-	private void SetPartsInitialPose(in string name, in GameObject targetObject)
+	private void SetInitialPartsPose(in string name, in GameObject targetObject)
 	{
-		var targetParentTransform = targetObject.transform.parent;
-		var initialPose = new Pose(targetParentTransform.localPosition, targetParentTransform.localRotation);
+		var targetTransform = (targetObject.CompareTag("Model")) ? targetObject.transform : targetObject.transform.parent;
+		var initialPose = new Pose(targetTransform.localPosition, targetTransform.localRotation);
+		// Debug.Log(name + " " + initialPose.ToString("F9"));
 		partsPoseMapTable.Add(name, initialPose);
 	}
 

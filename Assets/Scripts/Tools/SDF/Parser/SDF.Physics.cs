@@ -22,7 +22,7 @@ namespace SDF
 		// <bullet> : TBD
 		// <ode> - solver
 		//       - constraints
-		// <physx> : TBD - I want to add an element as a new feature in SDFormat specification
+		// <physx> : TBD - I want to propose a new element in SDFormat specification
 		//
 
 		public Physics(XmlNode _node)

@@ -30,7 +30,6 @@ namespace SDF
 		private Meta meta;
 
 		private Material material;
-
 		private Geometry geometry;
 		private Plugins plugins;
 
@@ -51,11 +50,7 @@ namespace SDF
 				material = new Material(matNode);
 			}
 
-			var geomNode = GetNode("geometry");
-			if (geomNode != null)
-			{
-				geometry = new Geometry(geomNode);
-			}
+			geometry = new Geometry( GetNode("geometry"));
 
 			var metaNode = GetNode("meta");
 			if (metaNode != null)

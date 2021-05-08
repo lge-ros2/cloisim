@@ -23,37 +23,6 @@ namespace SDF
 					MCCookingOptions.WeldColocatedVertices |
 					MCCookingOptions.UseFastMidphase;
 
-			private static UE.Mesh MergeMeshes(in UE.MeshFilter[] meshFilters)
-			{
-				var meshTransformMatrix = new UE.Matrix4x4();
-
-				var combine = new UE.CombineInstance[meshFilters.Length];
-				var combineIndex = 0;
-				foreach (var meshFilter in meshFilters)
-				{
-					combine[combineIndex].mesh = meshFilter.sharedMesh;
-
-					var meshTranslation = meshFilter.transform.localPosition;
-					var meshRotation = meshFilter.transform.localRotation;
-					var meshScale = meshFilter.transform.localScale;
-					// Debug.LogFormat("{0},{1}: {2}, {3}", meshFilter.name, meshFilter.transform.name, meshTranslation, meshRotation);
-
-					meshTransformMatrix.SetTRS(meshTranslation, meshRotation, meshScale);
-
-					combine[combineIndex].transform = meshTransformMatrix;
-					combineIndex++;
-				}
-
-				var newCombinedMesh = new UE.Mesh();
-				newCombinedMesh.CombineMeshes(combine, true);
-				newCombinedMesh.Optimize();
-				newCombinedMesh.RecalculateTangents();
-				newCombinedMesh.RecalculateBounds();
-				newCombinedMesh.RecalculateNormals();
-
-				return newCombinedMesh;
-			}
-
 			private static void KeepUnmergedMeshes(in UE.MeshFilter[] meshFilters)
 			{
 				foreach (var meshFilter in meshFilters)
@@ -62,7 +31,7 @@ namespace SDF
 					var meshCollider = meshObject.AddComponent<UE.MeshCollider>();
 
 					meshCollider.sharedMesh = meshFilter.sharedMesh;
-					meshCollider.convex = true;
+					meshCollider.convex = false;
 					meshCollider.cookingOptions = CookingOptions;
 					meshCollider.hideFlags |= UE.HideFlags.NotEditable;
 
@@ -81,7 +50,7 @@ namespace SDF
 
 				if (EnableMergeCollider)
 				{
-					var mergedMesh = MergeMeshes(meshFilters);
+					var mergedMesh = SDF2Unity.MergeMeshes(meshFilters);
 					mergedMesh.name = targetObject.name;
 
 					// remove all child objects after merge the meshes for colloision
@@ -108,7 +77,7 @@ namespace SDF
 
 					var meshCollider = targetObject.AddComponent<UE.MeshCollider>();
 					meshCollider.sharedMesh = mergedMesh;
-					meshCollider.convex = true;
+					meshCollider.convex = false;
 					meshCollider.cookingOptions = CookingOptions;
 					meshCollider.hideFlags |= UE.HideFlags.NotEditable;
 				}

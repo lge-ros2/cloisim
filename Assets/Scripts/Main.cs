@@ -141,6 +141,7 @@ public class Main: MonoBehaviour
 
 		Application.targetFrameRate = 61;
 
+
 		var mainCamera = Camera.main;
 		mainCamera.depthTextureMode = DepthTextureMode.None;
 		mainCamera.allowHDR = true;
@@ -156,7 +157,8 @@ public class Main: MonoBehaviour
 		simulationDisplay = UIRoot.GetComponentInChildren<SimulationDisplay>();
 		transformGizmo = UIRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
 
-		clock = DeviceHelper.GetGlobalClock();
+		clock = GetComponent<Clock>();
+		DeviceHelper.SetGlobalClock(clock);
 
 		ResetRootModelsTransform();
 	}

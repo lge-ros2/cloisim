@@ -73,10 +73,19 @@ namespace SDF
 		{
 			// Console.WriteLine("[{0}] Name: {1}, Type: {2}", GetType().Name, name, type);
 			root = node;
-			attributes = root.Attributes;
 
-			Name = (attributes["name"] != null) ? attributes["name"].Value : default_name;
-			Type = (attributes["type"] != null) ? attributes["type"].Value : default_type;
+			if (root != null)
+			{
+				attributes = root.Attributes;
+
+				Name = (attributes["name"] != null) ? attributes["name"].Value : default_name;
+				Type = (attributes["type"] != null) ? attributes["type"].Value : default_type;
+			}
+			else
+			{
+				Name = default_name;
+				Type = default_type;
+			}
 
 			ParsePose();
 
@@ -200,7 +209,7 @@ namespace SDF
 		{
 			try
 			{
-				return ConvertXmlNodeToValue<T>(tagNode);
+				return (tagNode == null) ? defaultValue : ConvertXmlNodeToValue<T>(tagNode);
 			}
 			catch (Exception ex)
 			{

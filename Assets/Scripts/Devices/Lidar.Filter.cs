@@ -32,8 +32,9 @@ namespace SensorDevices
 
 			if (numberOfBeams == laserScan.Intensities.Length)
 			{
-				var filterLowerBeamIndexRatio = ((double)filterAngleLower_ - laserScan.AngleMin) / (laserScan.AngleMax - laserScan.AngleMin);
-				var filterUpperBeamIndexRatio = ((double)filterAngleUpper_ - laserScan.AngleMin) / (laserScan.AngleMax - laserScan.AngleMin);
+				var scanRange = laserScan.AngleMax - laserScan.AngleMin;
+				var filterLowerBeamIndexRatio = ((double)filterAngleLower_ - laserScan.AngleMin) / scanRange;
+				var filterUpperBeamIndexRatio = ((double)filterAngleUpper_ - laserScan.AngleMin) / scanRange;
 
 				filterLowerBeamIndex_ = (laserScan.AngleMin >= filterAngleLower_) ? (int?)null : (int)((double)numberOfBeams * filterLowerBeamIndexRatio);
 				filterUpperBeamIndex_ = (laserScan.AngleMax <= filterAngleUpper_) ? (int?)null : (int)((double)numberOfBeams * filterUpperBeamIndexRatio);
@@ -67,8 +68,8 @@ namespace SensorDevices
 
 				if (doFilter)
 				{
-					laserScan.Ranges[index] = 0;
-					laserScan.Intensities[index] = 0;
+					laserScan.Ranges[index] = double.NaN;
+					laserScan.Intensities[index] = double.NaN;
 				}
 			}
 		}

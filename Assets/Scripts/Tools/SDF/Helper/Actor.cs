@@ -34,7 +34,7 @@ namespace SDF
 			public bool isStatic = false;
 			private SDF.Actor.Script _script = null;
 
-			public bool IsFollowingWaypoint => _followingWaypoint;
+			public bool HasWayPoints => (_script.trajectories.Count > 0);
 
 			new void Awake()
 			{

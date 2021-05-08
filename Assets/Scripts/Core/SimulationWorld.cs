@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-public class CLOiSimWorld : DevicePlugin
+public class SimulationWorld : DevicePlugin
 {
 	private Clock clock = null;
 

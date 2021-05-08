@@ -22,6 +22,7 @@ namespace SensorDevices
 		// <noise_linear_acceleration_z>
 
 		private Vector3 imuInitialRotation = Vector3.zero;
+		private Vector3 lastImuInitialRotation = Vector3.zero;
 		private Quaternion imuOrientation = Quaternion.identity;
 		private Vector3 imuAngularVelocity = Vector3.zero;
 		private Vector3 imuLinearAcceleration = Vector3.zero;
@@ -36,7 +37,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
-			_mode = Mode.TX;
+			Mode = ModeType.TX_THREAD;
 			deviceName = name;
 			Reset();
 		}
@@ -49,8 +50,7 @@ namespace SensorDevices
 		public void Reset()
 		{
 			// Debug.Log("IMU Reset");
-			imuInitialRotation = transform.rotation.eulerAngles;
-			previousImuPosition = transform.position;
+			imuInitialRotation = lastImuInitialRotation;
 			previousImuRotation = Vector3.zero;
 		}
 
@@ -67,7 +67,8 @@ namespace SensorDevices
 		void FixedUpdate()
 		{
 			// Caculate orientation and acceleration
-			var imuRotation = transform.rotation.eulerAngles - imuInitialRotation;
+			lastImuInitialRotation = transform.rotation.eulerAngles;
+			var imuRotation = lastImuInitialRotation - imuInitialRotation;
 			imuOrientation = Quaternion.Euler(imuRotation.x, imuRotation.y, imuRotation.z);
 
 			imuAngularVelocity.x = Mathf.DeltaAngle(imuRotation.x, previousImuRotation.x) / Time.fixedDeltaTime;
@@ -78,6 +79,7 @@ namespace SensorDevices
 			var currentLinearVelocity = (currentPosition - previousImuPosition) / Time.fixedDeltaTime;
 			imuLinearAcceleration = (currentLinearVelocity - previousLinearVelocity) / Time.fixedDeltaTime;
 			imuLinearAcceleration.y += (-Physics.gravity.y);
+
 
 			previousImuRotation = imuRotation;
 			previousImuPosition = currentPosition;

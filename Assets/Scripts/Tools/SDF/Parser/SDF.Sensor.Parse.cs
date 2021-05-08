@@ -28,15 +28,11 @@ namespace SDF
 
 				if (IsValidNode("ray/scan/vertical"))
 				{
-					ray.vertical.samples = GetValue<uint>("ray/scan/vertical/samples");
-					ray.vertical.resolution = GetValue<double>("ray/scan/vertical/resolution");
+					ray.vertical = new Ray.Scan(1);
+					ray.vertical.samples = GetValue<uint>("ray/scan/vertical/samples", 1);
+					ray.vertical.resolution = GetValue<double>("ray/scan/vertical/resolution", 1);
 					ray.vertical.min_angle = GetValue<double>("ray/scan/vertical/min_angle");
 					ray.vertical.max_angle = GetValue<double>("ray/scan/vertical/max_angle");
-
-					if (ray.vertical.samples == 0)
-					{
-						Console.WriteLine("vertical sample cannot be zero");
-					}
 
 					if (ray.vertical.max_angle < ray.vertical.min_angle)
 					{

@@ -10,7 +10,7 @@ using Any = cloisim.msgs.Any;
 
 public class Clock : Device
 {
-	private const float updateRate = 100f;
+	private const float updateRate = 50;
 
 	private messages.Param timeInfo = null;
 	private messages.Time simTime = null;
@@ -28,7 +28,7 @@ public class Clock : Device
 
 	protected override void OnAwake()
 	{
-		_mode = Mode.TX;
+		Mode = ModeType.TX_THREAD;
 		deviceName = "World Clock";
 	}
 

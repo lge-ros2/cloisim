@@ -1,4 +1,4 @@
-/*
+	/*
  * Copyright (c) 2020 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
@@ -8,54 +8,73 @@ using System;
 using System.Text;
 using UnityEngine;
 
-public class SimulationDisplay : MonoBehaviour
+public partial class SimulationDisplay : MonoBehaviour
 {
 	private Clock clock = null;
+	private ObjectSpawning objectSpawning = null;
+	private CameraControl cameraControl = null;
 	private string eventMessage = string.Empty;
-	private StringBuilder sbTimInfo = new StringBuilder();
-	private string _fpsString = string.Empty;
+	private StringBuilder sbTimeInfo = null;
 
-	[Header("fps")]
-	private const float fpsUpdatePeriod = 0.5f;
-	private int frameCount = 0;
-	private float dT = 0.0F;
-	private float fps = 0.0F;
 
 	[Header("GUI properties")]
-	private const int labelFontSize = 15;
-
+	private const int labelFontSize = 14;
+	private const int topMargin = 6;
+	private const int bottomMargin = 10;
 	private const int textLeftMargin = 10;
-	private const int textTopMargin = 10;
-	private const int textHeight = 23;
+	private const int textHeight = 19;
 
-	private const int textWidthFps = 80;
+	private const int textWidthFps = 75;
 	private const int textWidthVersion = 50;
-	private const int textWidthSimulation = 600;
+	private const int textWidthSimulationInfo = 550;
 	private const int textWidthEvent = 800;
 
 	private Color logMessageColor = Color.red;
 
 	[Header("Rect")]
-	private Rect rectVersion = new Rect(textLeftMargin, textTopMargin, textWidthVersion, textHeight);
-	private Rect rectFps = new Rect(Screen.width - textWidthFps - textLeftMargin, textTopMargin, textWidthFps, textHeight);
-	private Rect rectSimulationinfo = new Rect(textLeftMargin, Screen.height - textHeight - textTopMargin, textWidthSimulation, textHeight);
-	private Rect rectLogMessage = new Rect(textLeftMargin, Screen.height - (textHeight*2) - textTopMargin, textWidthEvent, textHeight);
+	private Rect rectVersion;
+	private Rect rectSimulationInfo;
+	private Rect rectFps;
+	private Rect rectLogMessage;
+	private Rect rectDialog;
+	private Rect rectToolbar;
+	private Rect rectHelpButton;
+	private Rect rectHelpStatus;
+
+	private GUIStyle style;
+	private Texture2D textureBackground;
 
 	// Start is called before the first frame update
 	void Awake()
 	{
 		var coreObject = GameObject.Find("Core");
+		objectSpawning = coreObject.GetComponent<ObjectSpawning>();
+		cameraControl = GetComponentInChildren<CameraControl>();
 		clock = DeviceHelper.GetGlobalClock();
-	}
+		sbTimeInfo = new StringBuilder();
 
-	void Update()
-	{
-		CalculateFPS();
-	}
+		textureBackground = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
+		textureBackground.SetPixel(0, 0, new Color(0, 0, 0, 0.75f));
+		textureBackground.Apply(); // not sure if this is necessary
 
-	void LateUpdate()
-	{
-		_fpsString = "FPS [" + GetBoldText(Mathf.Round(fps).ToString("F1")) + "]";
+		rectVersion = new Rect(textLeftMargin, topMargin, textWidthVersion, textHeight);
+		rectSimulationInfo = new Rect(textLeftMargin, Screen.height - textHeight - bottomMargin, textWidthSimulationInfo, textHeight);
+		rectFps = new Rect(rectSimulationInfo.width + rectSimulationInfo.x,  Screen.height - textHeight - bottomMargin, textWidthFps, textHeight);
+		rectLogMessage = new Rect(textLeftMargin, Screen.height - (textHeight * 2) - bottomMargin, textWidthEvent, textHeight);
+
+		rectToolbar = new Rect(0, topMargin, toolbarWidth, guiHeight);
+
+		rectDialog = new Rect();
+		rectHelpButton = new Rect(Screen.width - buttonWidthHelp - textLeftMargin, topMargin, buttonWidthHelp, guiHeight);
+		rectHelpStatus = new Rect(Screen.width -rectHelpButton.width - helpStatusWidth - textLeftMargin, topMargin, helpStatusWidth, textHeight * 1.1f);
+
+		style = new GUIStyle();
+
+		padding = new RectOffset(30, 30, 30, 30);
+		zeroPadding = new RectOffset(0, 0, 0, 0);
+
+		InitPropsMenu();
+		UpdateHelpContents();
 	}
 
 	public void ClearLogMessage()
@@ -75,18 +94,6 @@ public class SimulationDisplay : MonoBehaviour
 		eventMessage = value;
 	}
 
-	private void CalculateFPS()
-	{
-		frameCount++;
-		dT += Time.unscaledDeltaTime;
-		if (dT > fpsUpdatePeriod)
-		{
-			fps = frameCount / dT;
-			dT -= fpsUpdatePeriod;
-			frameCount = 0;
-		}
-	}
-
 	private string GetTimeInfoString()
 	{
 		var simTime = (clock == null) ? Time.time : clock.SimTime;
@@ -100,9 +107,9 @@ public class SimulationDisplay : MonoBehaviour
 		var currentRealTime = GetBoldText(realTs.ToString(@"d\:hh\:mm\:ss\.fff"));
 		var diffRealSimTime = GetBoldText(diffTs1.ToString(@"d\:hh\:mm\:ss\.fff"));
 
-		sbTimInfo.Clear();
-		sbTimInfo.AppendFormat("Time: Simulation [{0}] | Real [{1}] | Real-Sim [{2}]", currentSimTime, currentRealTime, diffRealSimTime);
-		return sbTimInfo.ToString();
+		sbTimeInfo.Clear();
+		sbTimeInfo.AppendFormat("Time: Simulation [{0}] | Real [{1}] | Real-Sim [{2}]", currentSimTime, currentRealTime, diffRealSimTime);
+		return sbTimeInfo.ToString();
 	}
 
 	private string GetBoldText(in string value)
@@ -110,59 +117,77 @@ public class SimulationDisplay : MonoBehaviour
 		return ("<b>" + value + "</b>");
 	}
 
-	void DrawShadow(in Rect rect, in string value)
+	private void DrawLabelWithShadow(in Rect rect, in string value, GUIStyle style)
 	{
-		var prevColor = GUI.skin.label.normal.textColor;
+		var styleShadow = new GUIStyle(style);
+		styleShadow.normal.textColor = new Color(0, 0, 0, 0.85f);
 
-		GUI.skin.label.normal.textColor = new Color(0, 0, 0, 0.34f);
 		var rectShadow = rect;
 		rectShadow.x += 1;
 		rectShadow.y += 1;
-		GUI.Label(rectShadow, value);
+		GUI.Label(rectShadow, value, styleShadow);
+		GUI.Label(rect, value, style);
+	}
 
-		GUI.skin.label.normal.textColor = prevColor;
+	private void DrawText()
+	{
+		style.alignment = TextAnchor.MiddleLeft;
+		style.normal.textColor = new Color(0, 0, 0, 0.85f);
+		style.fontSize = labelFontSize;
+		style.wordWrap = true;
+		style.clipping = TextClipping.Overflow;
+		style.stretchHeight = false;
+		style.stretchWidth = false;
+
+		// version info
+		var versionString = GetBoldText(Application.version);
+		style.normal.textColor = Color.green;
+		DrawLabelWithShadow(rectVersion, versionString, style);
+
+		// Simulation time info
+		var simulationInfo = GetTimeInfoString();
+		rectSimulationInfo.y = Screen.height - textHeight - bottomMargin;
+		style.normal.textColor = new Color(0.9f, 0.9f, 0.9f, 1);
+		DrawLabelWithShadow(rectSimulationInfo, simulationInfo, style);
+
+		DrawFPSText(style);
+
+		// logging: error message or event message
+		rectLogMessage.y = Screen.height - (textHeight * 2) - bottomMargin;
+		style.normal.textColor = logMessageColor;
+		DrawLabelWithShadow(rectLogMessage, eventMessage, style);
 	}
 
 	void OnGUI()
 	{
-		var originLabelColor = GUI.skin.label.normal.textColor;
+		DrawText();
 
-		GUI.skin.label.alignment = TextAnchor.MiddleLeft;
-		GUI.skin.label.fontSize = labelFontSize;
-		GUI.skin.label.wordWrap = true;
+		DrawPropsMenus();
 
-		// version info
-		var versionString = GetBoldText(Application.version);
-		DrawShadow(rectVersion, versionString);
-		GUI.skin.label.normal.textColor = Color.green;
-		GUI.Label(rectVersion, versionString);
+		DrawHelpInfo();
 
-		// Simulation time info
-		var simulationInfo = GetTimeInfoString();
-		rectSimulationinfo.y = Screen.height - textHeight - textTopMargin;
-		DrawShadow(rectSimulationinfo, simulationInfo);
-		GUI.skin.label.normal.textColor = Color.black;
-		GUI.Label(rectSimulationinfo, simulationInfo);
+		if (Event.current.type.Equals(EventType.KeyUp))
+		{
+			var keyCode = Event.current.keyCode;
+			if (keyCode.CompareTo(KeyCode.F1) == 0)
+			{
+				popupHelpDialog = !popupHelpDialog;
+			}
+			else if (keyCode.CompareTo(KeyCode.Escape) == 0)
+			{
+				popupHelpDialog = false;
+			}
+		}
 
-		// log: error message or event message
-		var originLabelSkin = GUI.skin.label;
-
-		GUI.skin.label.wordWrap = true;
-		GUI.skin.label.clipping = TextClipping.Overflow;
-		rectLogMessage.y = Screen.height - (textHeight*2) - textTopMargin;
-		DrawShadow(rectLogMessage, eventMessage);
-		GUI.skin.label.normal.textColor = logMessageColor;
-		GUI.Label(rectLogMessage, eventMessage);
-
-		GUI.skin.label = originLabelSkin;
-
-		// fps info
-		GUI.skin.label.alignment = TextAnchor.MiddleRight;
-		rectFps.x = Screen.width - textWidthFps - textLeftMargin;
-		DrawShadow(rectFps, _fpsString);
-		GUI.skin.label.normal.textColor = Color.cyan;
-		GUI.Label(rectFps, _fpsString);
-
-		GUI.skin.label.normal.textColor = originLabelColor;
+		if (popupHelpDialog)
+		{
+			// Debug.Log("Show Help dialog");
+			DrawHelpDialog();
+			cameraControl.blockMouseWheelControl = true;
+		}
+		else
+		{
+			cameraControl.blockMouseWheelControl = false;
+		}
 	}
 }
