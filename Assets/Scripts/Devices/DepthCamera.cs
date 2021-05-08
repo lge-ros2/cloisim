@@ -11,8 +11,8 @@ namespace SensorDevices
 {
 	public class DepthCamera : Camera
 	{
-		private ComputeShader _computeShader;
-		private int _kernelIndex;
+		private ComputeShader computeShader;
+		private int kernelIndex;
 
 		private Material depthMaterial = null;
 
@@ -37,15 +37,15 @@ namespace SensorDevices
 		new void OnDestroy()
 		{
 			// Debug.Log("OnDestroy(Depth Camera)");
-			Destroy(_computeShader);
+			Destroy(computeShader);
 
 			base.OnDestroy();
 		}
 
 		protected override void SetupTexture()
 		{
-			_computeShader = Instantiate(Resources.Load<ComputeShader>("Shader/DepthBufferScaling"));
-			_kernelIndex = _computeShader.FindKernel("CSDepthBufferScaling");
+			computeShader = Instantiate(Resources.Load<ComputeShader>("Shader/DepthBufferScaling"));
+			kernelIndex = computeShader.FindKernel("CSDepthBufferScaling");
 
 			var depthShader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(depthShader);
@@ -106,17 +106,17 @@ namespace SensorDevices
 		{
 			if (readbackDstFormat.Equals(TextureFormat.R16))
 			{
-				_computeShader.SetFloat("_DepthMin", (float)GetParameters().clip.near);
-				_computeShader.SetFloat("_DepthMax", (float)GetParameters().clip.far);
-				_computeShader.SetFloat("_DepthScale", (float)depthScale);
+				computeShader.SetFloat("_DepthMin", (float)GetParameters().clip.near);
+				computeShader.SetFloat("_DepthMax", (float)GetParameters().clip.far);
+				computeShader.SetFloat("_DepthScale", (float)depthScale);
 
 				var computeBuffer = new ComputeBuffer(buffer.Length, sizeof(byte));
-				_computeShader.SetBuffer(_kernelIndex, "_Buffer", computeBuffer);
+				computeShader.SetBuffer(kernelIndex, "_Buffer", computeBuffer);
 				computeBuffer.SetData(buffer);
 
 				var threadGroupX = GetParameters().image_width/16;
 				var threadGroupY = GetParameters().image_height/8;
-				_computeShader.Dispatch(_kernelIndex, threadGroupX, threadGroupY, 1);
+				computeShader.Dispatch(kernelIndex, threadGroupX, threadGroupY, 1);
 				computeBuffer.GetData(buffer);
 				computeBuffer.Release();
 			}
