@@ -103,8 +103,6 @@ namespace SensorDevices
 			lidarLink = transform.parent;
 
 			laserCam = gameObject.AddComponent<UnityEngine.Camera>();
-
-			waitingPeriodRatio = 0.80f;
 		}
 
 		protected override void OnStart()
