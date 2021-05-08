@@ -68,7 +68,8 @@ public class SimulationService : MonoBehaviour
 			bridgeManager = bridgeManagerComponent
 		});
 
-		var markerVisualizer = gameObject.GetComponent<MarkerVisualizer>();
+		var UIRoot = GameObject.Find("UI");
+		var markerVisualizer = UIRoot.GetComponent<MarkerVisualizer>();
 		wsServer.AddWebSocketService<MarkerVisualizerService>("/markers", () => new MarkerVisualizerService(markerVisualizer)
 		{
 			IgnoreExtensions = true

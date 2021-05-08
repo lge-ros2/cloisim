@@ -104,10 +104,10 @@ public class ProceduralMesh
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
-		mesh.Optimize();
+		mesh.RecalculateNormals();
 		mesh.RecalculateTangents();
 		mesh.RecalculateBounds();
-		mesh.RecalculateNormals();
+		mesh.Optimize();
 
 		return mesh;
 	}
@@ -300,10 +300,10 @@ public class ProceduralMesh
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
-		mesh.Optimize();
+		mesh.RecalculateNormals();
 		mesh.RecalculateTangents();
 		mesh.RecalculateBounds();
-		mesh.RecalculateNormals();
+		mesh.Optimize();
 
 		return mesh;
 	}
@@ -406,10 +406,10 @@ public class ProceduralMesh
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
-		mesh.Optimize();
+		mesh.RecalculateNormals();
 		mesh.RecalculateTangents();
 		mesh.RecalculateBounds();
-		mesh.RecalculateNormals();
+		mesh.Optimize();
 
 		return mesh;
 	}
@@ -484,10 +484,10 @@ public class ProceduralMesh
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
-		mesh.Optimize();
+		mesh.RecalculateNormals();
 		mesh.RecalculateTangents();
 		mesh.RecalculateBounds();
-		mesh.RecalculateNormals();
+		mesh.Optimize();
 
 		return mesh;
 	}

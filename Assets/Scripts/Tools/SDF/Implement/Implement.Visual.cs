@@ -72,7 +72,7 @@ namespace SDF
 					}
 
 					var mehsFilters = meshfilterSet.Value.ToArray();
-					var mergedMesh = MergeMeshes(mehsFilters);
+					var mergedMesh = SDF2Unity.MergeMeshes(mehsFilters);
 
 					var newName = meshfilterSet.Key.Replace("(Instance)", "Combined").Trim();
 					var newVisualObject = new UE.GameObject(newName);
@@ -86,31 +86,6 @@ namespace SDF
 
 					newVisualObject.transform.SetParent(targetObject.transform, false);
 				}
-			}
-
-			private static UE.Mesh MergeMeshes(in UE.MeshFilter[] mehsFilters)
-			{
-				var combine = new UE.CombineInstance[mehsFilters.Length];
-
-				var combineIndex = 0;
-				foreach (var meshFilter in mehsFilters)
-				{
-					var meshTransform = meshFilter.transform;
-					var matrix = UE.Matrix4x4.identity;
-					matrix.SetTRS(meshTransform.localPosition, meshTransform.localRotation, meshTransform.localScale);
-					combine[combineIndex].mesh = meshFilter.sharedMesh;
-					combine[combineIndex].transform = matrix;
-					combineIndex++;
-				}
-
-				var newCombinedMesh = new UE.Mesh();
-				newCombinedMesh.CombineMeshes(combine, true);
-				newCombinedMesh.Optimize();
-				newCombinedMesh.RecalculateBounds();
-				newCombinedMesh.RecalculateNormals();
-				newCombinedMesh.RecalculateTangents();
-
-				return newCombinedMesh;
 			}
 		}
 	}

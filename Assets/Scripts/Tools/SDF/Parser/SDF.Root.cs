@@ -177,7 +177,7 @@ namespace SDF
 					}
 
 					// Get Model name
-					var modelName = subDirectory.Name; //modelNode["name"].InnerText;
+					var modelName = subDirectory.Name;
 
 					// Get Model root
 					var modelNode = modelConfigDoc.SelectSingleNode("model");

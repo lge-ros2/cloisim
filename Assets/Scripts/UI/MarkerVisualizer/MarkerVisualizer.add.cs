@@ -168,6 +168,9 @@ public partial class MarkerVisualizer : MonoBehaviour
 			rectTransform.position = markerProperties.point;
 			rectTransform.localScale  = new Vector3(-1, 1, 1);
 
+			var meshRenderer = markerObject.GetComponent<MeshRenderer>();
+			meshRenderer.material.color = properties.GetColor();
+
 			if (!string.IsNullOrEmpty(markerProperties.following))
 			{
 				AddFollowingObjectByText(markerName, markerProperties.following, text);

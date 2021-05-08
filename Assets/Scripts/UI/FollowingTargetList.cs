@@ -10,8 +10,7 @@ using TMPro;
 public class FollowingTargetList : MonoBehaviour
 {
 	private TMP_Dropdown dropdown = null;
-	private TMP_Dropdown.OptionData emptyOption_ = null;
-
+	private TMP_Dropdown.OptionData emptyOption = null;
 
 	private GameObject modelRoot = null;
 
@@ -31,7 +30,7 @@ public class FollowingTargetList : MonoBehaviour
 		{
 			dropdown.onValueChanged.AddListener(OnDropDownValueChanged);
 
-			emptyOption_ = new TMP_Dropdown.OptionData("-- unfollowing --");
+			emptyOption = new TMP_Dropdown.OptionData("-- unfollowing --");
 		}
 	}
 
@@ -58,7 +57,7 @@ public class FollowingTargetList : MonoBehaviour
 		}
 
 		dropdown.options.Clear();
-		dropdown.options.Add(emptyOption_);
+		dropdown.options.Add(emptyOption);
 
 		if (modelRoot != null)
 		{

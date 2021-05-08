@@ -119,11 +119,6 @@ public class Motor : MonoBehaviour
 	public float _targetTorque = 0;
 	public float _currentMotorVelocity;
 
-	public string GetMotorName()
-	{
-		return (_motorBody == null)? string.Empty:_motorBody.transform.parent.name;
-	}
-
 	public void SetTargetJoint(in GameObject target)
 	{
 		var body = target.GetComponentInChildren<ArticulationBody>();
@@ -138,7 +133,7 @@ public class Motor : MonoBehaviour
 		}
 		else
 		{
-			Debug.LogWarningFormat("joint type({0}) is not revolte!!", body.jointType);
+			Debug.LogWarningFormat("joint type({0}) is not 'revolute'!!", body.jointType);
 		}
 	}
 

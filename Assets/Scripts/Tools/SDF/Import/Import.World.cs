@@ -42,13 +42,7 @@ namespace SDF
 					sphericalCoordinatesCore.SetCoordinatesReference((float)sphericalCoordinates.latitude_deg, (float)sphericalCoordinates.longitude_deg, (float)sphericalCoordinates.elevation, (float)sphericalCoordinates.heading_deg);
 				}
 
-				var lights = world.GetLights();
-				var actors = world.GetActors();
-				var models = world.GetModels();
-
-				ImportLights(lights);
-				ImportActors(actors);
-				ImportModels(models);
+				UnityEngine.Physics.gravity = SDF2Unity.GetDirection(world.gravity);
 			}
 		}
 	}

@@ -29,7 +29,11 @@ namespace SDF
 				{
 					case "lidar":
 					case "ray":
+						Debug.LogWarning("CPU based lidar or ray does not support. It will change to GPU based sensor.");
+						goto case "gpu_lidar";
+
 					case "gpu_ray":
+					case "gpu_lidar":
 						var ray = sensor.GetSensor() as SDF.Ray;
 						device = Implement.Sensor.AddLidar(ray, targetObject);
 						break;

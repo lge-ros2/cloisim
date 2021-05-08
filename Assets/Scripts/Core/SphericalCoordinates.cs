@@ -69,8 +69,6 @@ public class SphericalCoordinates : MonoBehaviour
 
 	private float haedingOrientationOffset = 0; // in degree
 
-	public SurfaceType Surface_Type => surfaceType;
-
 	void Awake()
 	{
 		SetSurfaceType(SurfaceType.EARTH_WGS84);
