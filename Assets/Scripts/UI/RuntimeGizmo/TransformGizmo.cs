@@ -114,6 +114,7 @@ namespace RuntimeGizmos
 		void OnDestroy()
 		{
 			ClearAllHighlightedRenderers();
+			Resources.UnloadUnusedAssets();
 		}
 
 		void Update()
