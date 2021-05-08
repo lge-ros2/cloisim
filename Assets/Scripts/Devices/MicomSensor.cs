@@ -41,7 +41,7 @@ public partial class MicomSensor : Device
 
 	protected override void OnAwake()
 	{
-		Mode = ModeType.TX;
+		Mode = ModeType.TX_THREAD;
 		deviceName = "MicomSensor";
 	}
 
