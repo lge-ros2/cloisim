@@ -44,8 +44,10 @@ public abstract class Device : MonoBehaviour
 	private Pose deviceLinkPose = Pose.identity;
 	private Pose devicePose = Pose.identity;
 
-	private Thread txThread;
-	private Thread rxThread;
+	private Thread txThread = null;
+	private Thread rxThread = null;
+
+	private	bool runningDevice = false;
 
 	public float UpdateRate => updateRate;
 
@@ -80,6 +82,8 @@ public abstract class Device : MonoBehaviour
 
 		OnStart();
 
+		runningDevice = true;
+
 		switch (Mode)
 		{
 			case ModeType.TX:
@@ -102,6 +106,7 @@ public abstract class Device : MonoBehaviour
 
 			case ModeType.NONE:
 			default:
+				runningDevice = false;
 				Debug.LogWarning("Device Mode is None");
 				break;
 		}
@@ -109,6 +114,46 @@ public abstract class Device : MonoBehaviour
 		if (EnableVisualize)
 		{
 			StartCoroutine(OnVisualize());
+		}
+	}
+
+	void OnDestroy()
+	{
+		runningDevice = false;
+
+		switch (Mode)
+		{
+			case ModeType.TX:
+				StopCoroutine(DeviceCoroutineTx());
+				Debug.Log("Stop TX device coroutine " + name);
+				break;
+
+			case ModeType.RX:
+				StopCoroutine(DeviceCoroutineRx());
+				Debug.Log("Stop TX device coroutine " + name);
+				break;
+
+			case ModeType.TX_THREAD:
+				if (txThread != null && txThread.IsAlive)
+				{
+					txThread.Join();
+					txThread.Abort();
+					Debug.Log("Stop TX device thread " + name);
+				}
+				break;
+
+			case ModeType.RX_THREAD:
+				if (rxThread != null && rxThread.IsAlive)
+				{
+					rxThread.Join();
+					rxThread.Abort();
+					Debug.Log("Stop RX device thread: " + name);
+				}
+				break;
+
+			case ModeType.NONE:
+			default:
+				break;
 		}
 	}
 
@@ -130,7 +175,7 @@ public abstract class Device : MonoBehaviour
 	private IEnumerator DeviceCoroutineTx()
 	{
 		var waitForSeconds = new WaitForSeconds(WaitPeriod());
-		while (true)
+		while (runningDevice)
 		{
 			ProcessDeviceCoroutine();
 			GenerateMessage();
@@ -141,7 +186,7 @@ public abstract class Device : MonoBehaviour
 	private IEnumerator DeviceCoroutineRx()
 	{
 		var waitUntil = new WaitUntil(() => GetDataStream().Length > 0);
-		while (true)
+		while (runningDevice)
 		{
 			yield return waitUntil;
 
@@ -152,7 +197,7 @@ public abstract class Device : MonoBehaviour
 
 	private void DeviceThreadTx()
 	{
-		while (true)
+		while (runningDevice)
 		{
 			GenerateMessage();
 			Thread.Sleep(WaitPeriodInMilliseconds());
@@ -161,7 +206,7 @@ public abstract class Device : MonoBehaviour
 
 	private void DeviceThreadRx()
 	{
-		while (true)
+		while (runningDevice)
 		{
 			if (GetDataStream().Length > 0)
 			{
