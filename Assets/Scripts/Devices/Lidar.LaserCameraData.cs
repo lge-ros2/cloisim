@@ -77,6 +77,16 @@ namespace SensorDevices
 			}
 		}
 
+		struct LaserDataOutput
+		{
+			public double[] data;
+
+			public LaserDataOutput(in int length = 0)
+			{
+        data = (length == 0) ? null : new double[length];
+			}
+		}
+
 		struct LaserCamData : IJobParallelFor
 		{
 			private float maxHAngleHalf;
@@ -91,7 +101,8 @@ namespace SensorDevices
 			[ReadOnly]
 			public NativeArray<float> depthBuffer;
 
-			private NativeArray<double> laserDataOutput;
+			private NativeArray<double> laserData;
+
 
 			public readonly float StartAngleH => centerAngle - maxHAngleHalf;
 			public readonly float EndAngleH => centerAngle + maxHAngleHalf;
@@ -109,17 +120,17 @@ namespace SensorDevices
 				this.depthBuffer = default(NativeArray<float>);
 
 				var dataLength = horizontalBufferLength * verticalBufferLength;
-				this.laserDataOutput = new NativeArray<double>(dataLength, Allocator.Persistent);
+				this.laserData = new NativeArray<double>(dataLength, Allocator.Persistent);
 			}
 
 			public void Deallocate()
 			{
-				laserDataOutput.Dispose();
+				laserData.Dispose();
 			}
 
 			public int OutputLength()
 			{
-				return laserDataOutput.Length;
+				return laserData.Length;
 			}
 
 			public void SetMaxHorizontalHalfAngle(in float angle)
@@ -170,7 +181,7 @@ namespace SensorDevices
 				var depthData = GetDepthData(rayAngleH);
 				var rayDistance = (depthData > 0) ? depthData * rangeMax : Mathf.Infinity;
 
-				laserDataOutput[index] = (double)rayDistance;
+				laserData[index] = (double)rayDistance;
 			}
 
 			// The code actually running on the job
@@ -179,9 +190,9 @@ namespace SensorDevices
 				ResolveLaserRange(i);
 			}
 
-			public double[] GetOutputs()
+			public double[] GetLaserData()
 			{
-				return laserDataOutput.ToArray();
+				return laserData.ToArray();
 			}
 		}
 	}

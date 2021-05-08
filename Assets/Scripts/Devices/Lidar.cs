@@ -80,6 +80,7 @@ namespace SensorDevices
 
 		private Transform lidarLink = null;
 		private Pose lidarSensorInitPose = new Pose();
+		private Pose lidarSensorPose = new Pose();
 
 		private UnityEngine.Camera laserCam = null;
 		private Material depthMaterial = null;
@@ -90,6 +91,7 @@ namespace SensorDevices
 
 		private DepthCamBuffer[] depthCamBuffers;
 		private LaserCamData[] laserCamData;
+		private LaserDataOutput[] laserDataOutput;
 
 
 		[ColorUsage(true)]
@@ -97,7 +99,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
-			Mode = ModeType.TX;
+			Mode = ModeType.TX_THREAD;
 			lidarLink = transform.parent;
 
 			laserCam = gameObject.AddComponent<UnityEngine.Camera>();
@@ -246,6 +248,7 @@ namespace SensorDevices
 
 			laserCamData = new LaserCamData[numberOfLaserCamData];
 			depthCamBuffers = new DepthCamBuffer[numberOfLaserCamData];
+			laserDataOutput = new LaserDataOutput[numberOfLaserCamData];
 
 			var targetDepthRT = laserCam.targetTexture;
 			var width = targetDepthRT.width;
@@ -273,6 +276,10 @@ namespace SensorDevices
 			while (true)
 			{
 				sw.Restart();
+
+				// Update lidar sensor pose
+				lidarSensorPose.position = lidarLink.position;
+				lidarSensorPose.rotation = lidarLink.rotation;
 
 				for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
 				{
@@ -319,6 +326,8 @@ namespace SensorDevices
 
 						var jobHandle = data.Schedule(data.OutputLength(), batchSize);
 						jobHandle.Complete();
+
+						laserDataOutput[dataIndex].data = data.GetLaserData();
 					}
 					else
 					{
@@ -334,8 +343,8 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			var lidarPosition = lidarLink.position + lidarSensorInitPose.position;
-			var lidarRotation = lidarLink.rotation * lidarSensorInitPose.rotation;
+			var lidarPosition = lidarSensorPose.position + lidarSensorInitPose.position;
+			var lidarRotation = lidarSensorPose.rotation * lidarSensorInitPose.rotation;
 
 			var laserScan = laserScanStamped.Scan;
 
@@ -361,11 +370,16 @@ namespace SensorDevices
 			for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
 			{
 				var data = laserCamData[dataIndex];
-				var srcBuffer = data.GetOutputs();
+				var srcBuffer = laserDataOutput[dataIndex].data;
 				var srcBufferHorizontalLength = data.horizontalBufferLength;
 				var dataStartAngle = data.StartAngleH;
 				var dataEndAngle = data.EndAngleH;
 				var dataTotalAngle = data.TotalAngleH;
+
+				if (srcBuffer == null)
+				{
+					continue;
+				}
 
 				for (var sampleIndexV = 0; sampleIndexV < laserSamplesV; sampleIndexV++, doCopy = true)
 				{
