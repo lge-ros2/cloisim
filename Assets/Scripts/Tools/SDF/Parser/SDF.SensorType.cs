@@ -17,9 +17,9 @@ namespace SDF
 
 	public class Noise
 	{
-		public Noise(in string type_ = "none")
+		public Noise(in string type = "none")
 		{
-			type = type_;
+			this.type = type;
 		}
 
 		public string type;
@@ -204,7 +204,7 @@ namespace SDF
 		}
 
 		public Scan horizontal = new Scan(640);
-		public Scan vertical = new Scan(1);
+		public Scan vertical = null;
 		public Range range = new Range();
 
 		public string noise_type = "gaussian";

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Threading;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.IO;
@@ -13,11 +14,10 @@ using ProtoBuf;
 
 public abstract class Device : MonoBehaviour
 {
-	public enum Mode { NONE, TX, RX };
-
-	public Mode _mode = Mode.NONE;
-
+	public enum ModeType { NONE, TX, RX, TX_THREAD, RX_THREAD };
 	private const int maxQueue = 5;
+
+	public ModeType Mode = ModeType.NONE;
 
 	private BlockingCollection<MemoryStream> outboundQueue_ = new BlockingCollection<MemoryStream>(maxQueue);
 
@@ -33,7 +33,6 @@ public abstract class Device : MonoBehaviour
 	private float updateRate = 1;
 
 	private bool debugginOn = true;
-
 	private bool visualize = true;
 
 	private float transportingTimeSeconds = 0;
@@ -44,6 +43,11 @@ public abstract class Device : MonoBehaviour
 	private Pose deviceModelPose = Pose.identity;
 	private Pose deviceLinkPose = Pose.identity;
 	private Pose devicePose = Pose.identity;
+
+	private Thread txThread = null;
+	private Thread rxThread = null;
+
+	private	bool runningDevice = false;
 
 	public float UpdateRate => updateRate;
 
@@ -78,18 +82,31 @@ public abstract class Device : MonoBehaviour
 
 		OnStart();
 
-		switch (_mode)
+		runningDevice = true;
+
+		switch (Mode)
 		{
-			case Mode.TX:
+			case ModeType.TX:
 				StartCoroutine(DeviceCoroutineTx());
 				break;
 
-			case Mode.RX:
+			case ModeType.RX:
 				StartCoroutine(DeviceCoroutineRx());
 				break;
 
-			case Mode.NONE:
+			case ModeType.TX_THREAD:
+				txThread = new Thread(DeviceThreadTx);
+				txThread.Start();
+				break;
+
+			case ModeType.RX_THREAD:
+				rxThread = new Thread(DeviceThreadRx);
+				rxThread.Start();
+				break;
+
+			case ModeType.NONE:
 			default:
+				runningDevice = false;
 				Debug.LogWarning("Device Mode is None");
 				break;
 		}
@@ -97,6 +114,46 @@ public abstract class Device : MonoBehaviour
 		if (EnableVisualize)
 		{
 			StartCoroutine(OnVisualize());
+		}
+	}
+
+	void OnDestroy()
+	{
+		runningDevice = false;
+
+		switch (Mode)
+		{
+			case ModeType.TX:
+				StopCoroutine(DeviceCoroutineTx());
+				Debug.Log("Stop TX device coroutine " + name);
+				break;
+
+			case ModeType.RX:
+				StopCoroutine(DeviceCoroutineRx());
+				Debug.Log("Stop TX device coroutine " + name);
+				break;
+
+			case ModeType.TX_THREAD:
+				if (txThread != null && txThread.IsAlive)
+				{
+					txThread.Join();
+					txThread.Abort();
+					Debug.Log("Stop TX device thread " + name);
+				}
+				break;
+
+			case ModeType.RX_THREAD:
+				if (rxThread != null && rxThread.IsAlive)
+				{
+					rxThread.Join();
+					rxThread.Abort();
+					Debug.Log("Stop RX device thread: " + name);
+				}
+				break;
+
+			case ModeType.NONE:
+			default:
+				break;
 		}
 	}
 
@@ -118,7 +175,7 @@ public abstract class Device : MonoBehaviour
 	private IEnumerator DeviceCoroutineTx()
 	{
 		var waitForSeconds = new WaitForSeconds(WaitPeriod());
-		while (true)
+		while (runningDevice)
 		{
 			ProcessDeviceCoroutine();
 			GenerateMessage();
@@ -129,12 +186,32 @@ public abstract class Device : MonoBehaviour
 	private IEnumerator DeviceCoroutineRx()
 	{
 		var waitUntil = new WaitUntil(() => GetDataStream().Length > 0);
-		while (true)
+		while (runningDevice)
 		{
 			yield return waitUntil;
 
 			GenerateMessage();
 			ProcessDeviceCoroutine();
+		}
+	}
+
+	private void DeviceThreadTx()
+	{
+		while (runningDevice)
+		{
+			GenerateMessage();
+			Thread.Sleep(WaitPeriodInMilliseconds());
+		}
+	}
+
+	private void DeviceThreadRx()
+	{
+		while (runningDevice)
+		{
+			if (GetDataStream().Length > 0)
+			{
+				GenerateMessage();
+			}
 		}
 	}
 
@@ -144,6 +221,11 @@ public abstract class Device : MonoBehaviour
 		// Debug.LogFormat(deviceName + ": waitTime({0}) = period({1}) - elapsedTime({2}) - TransportingTime({3})",
 		// 	waitTime.ToString("F5"), UpdatePeriod.ToString("F5"), messageGenerationTime.ToString("F5"), TransportingTime.ToString("F5"));
 		return (waitTime < 0) ? 0 : waitTime;
+	}
+
+	protected int WaitPeriodInMilliseconds()
+	{
+		return (int)(WaitPeriod() * 1000f);
 	}
 
 	public void SetUpdateRate(in float value)

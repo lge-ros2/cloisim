@@ -22,7 +22,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
-			_mode = Mode.TX;
+			Mode = ModeType.TX;
 		}
 
 		protected override void OnStart()
@@ -71,7 +71,7 @@ namespace SensorDevices
 			newCamTransform.SetParent(this.transform, false);
 
 			var newCam = newCamObject.AddComponent<SensorDevices.Camera>();
-			newCam._mode = Mode.NONE;
+			newCam.Mode = ModeType.NONE;
 			newCam.deviceName = "MultiCamera::" + parameters.name;
 			newCam.SetDeviceParameter(parameters as SDF.SensorType);
 

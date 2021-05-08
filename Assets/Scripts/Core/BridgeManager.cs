@@ -12,8 +12,9 @@ using UnityEngine;
 
 public class BridgeManager : MonoBehaviour
 {
-	public const ushort minPortRange = 49152;
-	public const ushort maxPortRange = IPEndPoint.MaxPort;
+	private const ushort MinPortRange = 49152;
+	private const ushort MaxPortRange = IPEndPoint.MaxPort;
+	private SimulationDisplay simulationDisplay = null;
 
 	private Dictionary<string, ushort> haskKeyPortMapTable = new Dictionary<string, ushort>();
 
@@ -37,6 +38,12 @@ public class BridgeManager : MonoBehaviour
 	private Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> deviceMapTable = new Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>>();
 
 	private IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
+
+	void Awake()
+	{
+		var UIRoot = GameObject.Find("UI");
+		simulationDisplay = UIRoot.GetComponentInChildren<SimulationDisplay>();
+	}
 
 	public void DeallocateDevice(in string hashKey)
 	{
@@ -183,14 +190,16 @@ public class BridgeManager : MonoBehaviour
 
 		if (newPort > 0)
 		{
-			Debug.LogFormat("HashKey({0}) is already occupied.", hashKey);
-			return newPort;
+			var errorMessage = string.Format("HashKey({0}) is already occupied.", hashKey);
+			Debug.Log(errorMessage);
+			simulationDisplay?.SetErrorMessage(errorMessage);
+			return 0;
 		}
 
 		// find available port number and start with minimum port range
-		for (var index = 0; index < (maxPortRange - minPortRange); index++)
+		for (var index = 0; index < (MaxPortRange - MinPortRange); index++)
 		{
-			var port = (ushort)(minPortRange + index);
+			var port = (ushort)(MinPortRange + index);
 			var isContained = false;
 
 			lock (haskKeyPortMapTable)

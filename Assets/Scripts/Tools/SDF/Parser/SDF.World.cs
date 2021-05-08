@@ -93,7 +93,7 @@ namespace SDF
 		// <audio> : TBD
 		// <wind> : TBD
 
-		Vector3<double> gravity = null;
+		public Vector3<double> gravity = new Vector3<double>();
 
 		// <magnetic_field> : TBD
 		// <atmosphere> : TBD
@@ -134,9 +134,7 @@ namespace SDF
 			lights = new Lights(root);
 			plugins = new Plugins(root);
 
-			var gravityStr = GetValue<string>("static");
-
-			gravity = new Vector3<double>();
+			var gravityStr = (IsValidNode("gravity"))? GetValue<string>("gravity"): "0 0 -9.8";
 			gravity.FromString(gravityStr);
 
 			// Console.WriteLine("{0}", GetType().Name);

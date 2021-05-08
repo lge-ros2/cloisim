@@ -39,6 +39,8 @@ namespace SDF
 					if (collision.GetGeometry().GetShapeType().Equals(typeof(Plane)))
 					{
 						collisionObject.layer = Implement.Collision.PlaneLayerIndex;
+						var collider = collisionObject.GetComponentInChildren<UE.MeshCollider>();
+						collider.convex = false;
 					}
 
 					if (collision.GetGeometry().GetShapeType().Equals(typeof(Plane)))

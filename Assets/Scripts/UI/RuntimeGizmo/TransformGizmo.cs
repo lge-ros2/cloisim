@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace RuntimeGizmos
 {
@@ -19,7 +20,7 @@ namespace RuntimeGizmos
 
 
 		[Header("Handle Properties")]
-		public float planesOpacity = .5f;
+		public float planesOpacity = .8f;
 
 		public float movementSnap = .25f;
 		public float rotationSnap = 15f;
@@ -99,6 +100,7 @@ namespace RuntimeGizmos
 		void OnEnable()
 		{
 			forceUpdatePivotCoroutine = StartCoroutine(ForceUpdatePivotPointAtEndOfFrame());
+			RenderPipelineManager.endCameraRendering += EndCameraRendering;
 		}
 
 		void OnDisable()
@@ -106,11 +108,13 @@ namespace RuntimeGizmos
 			ClearTargets(); //Just so things gets cleaned up, such as removing any materials we placed on objects.
 
 			StopCoroutine(forceUpdatePivotCoroutine);
+			RenderPipelineManager.endCameraRendering -= EndCameraRendering;
 		}
 
 		void OnDestroy()
 		{
 			ClearAllHighlightedRenderers();
+			Resources.UnloadUnusedAssets();
 		}
 
 		void Update()
@@ -354,7 +358,7 @@ namespace RuntimeGizmos
 									else
 									{
 										var actor = target.GetComponent<SDF.Helper.Actor>();
-										if (actor != null && actor.IsFollowingWaypoint)
+										if (actor != null && actor.HasWayPoints)
 										{
 											actor.AddPose(movement);
 										}
@@ -489,8 +493,8 @@ namespace RuntimeGizmos
 							// avoid plane object
 							if (!hitObject.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex))
 							{
-								var hitParentLinkHelper = hitObject.GetComponentInParent<SDF.Helper.Link>();
-								var hitTopModelHelper = hitParentLinkHelper.TopModel;
+								var hitParentLinkHelper = hitObject?.GetComponentInParent<SDF.Helper.Link>();
+								var hitTopModelHelper = hitParentLinkHelper?.TopModel;
 
 								if (hitTopModelHelper != null && !(hitTopModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
 								{

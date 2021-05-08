@@ -1,5 +1,6 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace RuntimeGizmos
 {
@@ -32,6 +33,14 @@ namespace RuntimeGizmos
 		private static Material lineMaterial;
 		private static Material outlineMaterial;
 
+		private void EndCameraRendering(ScriptableRenderContext context, Camera camera)
+		{
+			if (camera.Equals(Camera.main))
+			{
+				OnPostRender();
+			}
+		}
+
 		void OnPostRender()
 		{
 			if (mainTargetRoot == null || manuallyHandleGizmo)
@@ -39,32 +48,33 @@ namespace RuntimeGizmos
 				return;
 			}
 
-			lineMaterial.SetPass(0);
+			if (lineMaterial.SetPass(0))
+			{
+				var transformingColor = (isTransforming) ? selectedColor : hoverColor;
 
-			var transformingColor = (isTransforming)? selectedColor : hoverColor;
+				var xColor = (nearAxis == Axis.X) ? transformingColor : this.xColor;
+				var yColor = (nearAxis == Axis.Y) ? transformingColor : this.yColor;
+				var zColor = (nearAxis == Axis.Z) ? transformingColor : this.zColor;
+				var allColor = (nearAxis == Axis.Any) ? transformingColor : this.allColor;
 
-			Color xColor = (nearAxis == Axis.X)? transformingColor:this.xColor;
-			Color yColor = (nearAxis == Axis.Y)? transformingColor:this.yColor;
-			Color zColor = (nearAxis == Axis.Z)? transformingColor:this.zColor;
-			Color allColor = (nearAxis == Axis.Any)? transformingColor:this.allColor;
+				// Note: The order of drawing the axis decides what gets drawn over what.
+				DrawQuads(handleLines.z, GetColor(TransformType.Move, this.zColor, zColor, hasTranslatingAxisPlane));
+				DrawQuads(handleLines.x, GetColor(TransformType.Move, this.xColor, xColor, hasTranslatingAxisPlane));
+				DrawQuads(handleLines.y, GetColor(TransformType.Move, this.yColor, yColor, hasTranslatingAxisPlane));
 
-			// Note: The order of drawing the axis decides what gets drawn over what.
-			DrawQuads(handleLines.z, GetColor(TransformType.Move, this.zColor, zColor, hasTranslatingAxisPlane));
-			DrawQuads(handleLines.x, GetColor(TransformType.Move, this.xColor, xColor, hasTranslatingAxisPlane));
-			DrawQuads(handleLines.y, GetColor(TransformType.Move, this.yColor, yColor, hasTranslatingAxisPlane));
+				DrawTriangles(handleTriangles.x, GetColor(TransformType.Move, this.xColor, xColor, hasTranslatingAxisPlane));
+				DrawTriangles(handleTriangles.y, GetColor(TransformType.Move, this.yColor, yColor, hasTranslatingAxisPlane));
+				DrawTriangles(handleTriangles.z, GetColor(TransformType.Move, this.zColor, zColor, hasTranslatingAxisPlane));
 
-			DrawTriangles(handleTriangles.x, GetColor(TransformType.Move, this.xColor, xColor, hasTranslatingAxisPlane));
-			DrawTriangles(handleTriangles.y, GetColor(TransformType.Move, this.yColor, yColor, hasTranslatingAxisPlane));
-			DrawTriangles(handleTriangles.z, GetColor(TransformType.Move, this.zColor, zColor, hasTranslatingAxisPlane));
+				DrawQuads(handlePlanes.z, GetColor(TransformType.Move, this.zColor, zColor, planesOpacity, !hasTranslatingAxisPlane));
+				DrawQuads(handlePlanes.x, GetColor(TransformType.Move, this.xColor, xColor, planesOpacity, !hasTranslatingAxisPlane));
+				DrawQuads(handlePlanes.y, GetColor(TransformType.Move, this.yColor, yColor, planesOpacity, !hasTranslatingAxisPlane));
 
-			DrawQuads(handlePlanes.z, GetColor(TransformType.Move, this.zColor, zColor, planesOpacity, !hasTranslatingAxisPlane));
-			DrawQuads(handlePlanes.x, GetColor(TransformType.Move, this.xColor, xColor, planesOpacity, !hasTranslatingAxisPlane));
-			DrawQuads(handlePlanes.y, GetColor(TransformType.Move, this.yColor, yColor, planesOpacity, !hasTranslatingAxisPlane));
-
-			DrawQuads(circlesLines.all, GetColor(TransformType.Rotate, this.allColor, allColor));
-			DrawQuads(circlesLines.x, GetColor(TransformType.Rotate, this.xColor, xColor));
-			DrawQuads(circlesLines.y, GetColor(TransformType.Rotate, this.yColor, yColor));
-			DrawQuads(circlesLines.z, GetColor(TransformType.Rotate, this.zColor, zColor));
+				DrawQuads(circlesLines.all, GetColor(TransformType.Rotate, this.allColor, allColor));
+				DrawQuads(circlesLines.x, GetColor(TransformType.Rotate, this.xColor, xColor));
+				DrawQuads(circlesLines.y, GetColor(TransformType.Rotate, this.yColor, yColor));
+				DrawQuads(circlesLines.z, GetColor(TransformType.Rotate, this.zColor, zColor));
+			}
 		}
 
 		Color GetColor(TransformType type, Color normalColor, Color nearColor, bool forceUseNormal = false)
@@ -401,8 +411,8 @@ namespace RuntimeGizmos
 		{
 			if (lineMaterial == null)
 			{
-				lineMaterial = new Material(Shader.Find("Custom/Lines"));
-				outlineMaterial = new Material(Shader.Find("Custom/Outline"));
+				lineMaterial = Resources.Load<Material>("Materials/Lines");
+				outlineMaterial = Resources.Load<Material>("Materials/Outline");
 			}
 		}
 

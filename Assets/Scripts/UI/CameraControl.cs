@@ -20,6 +20,16 @@ public class CameraControl : MonoBehaviour
 
 	public bool blockControl = false;
 
+	public bool blockMouseWheelControl = false;
+
+	private bool _verticalMovementLock = false;
+
+	public bool VerticalMovementLock
+	{
+		set => _verticalMovementLock = value;
+		get => _verticalMovementLock;
+	}
+
 	public float mainSpeed = 10.0f; //regular speed
 	public float shiftAdd = 20.0f; //multiplied by how long shift is held.  Basically running
 	public float maxShift = 50.0f; //Maximum speed when holding shift
@@ -27,6 +37,7 @@ public class CameraControl : MonoBehaviour
 	public float edgeWidth = 100.0f;
 	public float edgeSens = 0.02f;
 	public float edgeSensMax = 1.0f;
+	public float wheelMoveAmp = 50f;
 
 	private Vector3 lastMouse = new Vector3(255, 255, 255); //kind of in the middle of the screen, rather than at the top (play)
 	private float totalRun = 1.0f;
@@ -37,6 +48,12 @@ public class CameraControl : MonoBehaviour
 		if (blockControl)
 		{
 			return;
+		}
+
+		if (Input.GetKeyUp(KeyCode.Space))
+		{
+			_verticalMovementLock = !_verticalMovementLock;
+			// Debug.Log(_verticalMovementLock);
 		}
 
 		lastMouse = Input.mousePosition - lastMouse;
@@ -110,7 +127,7 @@ public class CameraControl : MonoBehaviour
 		p *= Time.deltaTime;
 
 		var newPosition = transform.position;
-		if (Input.GetKey(KeyCode.Space))
+		if (_verticalMovementLock)
 		{
 			// If player wants to move on X and Z axis only
 			transform.Translate(p);
@@ -129,11 +146,21 @@ public class CameraControl : MonoBehaviour
 		//returns the basic values, if it's 0 than it's not active.
 		var baseDirection = new Vector3();
 
-		if (Input.GetKey(KeyCode.W) || Input.GetAxis("Mouse ScrollWheel") > 0)
+		if (!blockMouseWheelControl)
+		{
+			var scrollWheel = Input.GetAxis("Mouse ScrollWheel");
+			if (scrollWheel != 0)
+			{
+				baseDirection += new Vector3(0, 0, scrollWheel * wheelMoveAmp);
+				// Debug.Log(scrollWheel.ToString("F4"));
+			}
+		}
+
+		if (Input.GetKey(KeyCode.W))
 		{
 			baseDirection += new Vector3(0, 0, 1);
 		}
-		else if (Input.GetKey(KeyCode.S) || Input.GetAxis("Mouse ScrollWheel") < 0)
+		else if (Input.GetKey(KeyCode.S))
 		{
 			baseDirection += new Vector3(0, 0, -1);
 		}

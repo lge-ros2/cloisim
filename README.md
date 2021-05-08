@@ -27,23 +27,24 @@ Here is the full list of models that is implemented or planned to be implemented
 - [X] Driving models
   - [X] 2-Wheeled Motor
 - [X] Sensor models
-  - [X] 2D LiDAR Sensor
+  - [X] LiDAR Sensor
+    - [X] 2D
+    - [ ] 3D
   - [X] Sonar sensor
   - [X] IMU
   - [X] Contact
   - [X] Camera
     - [ ] Camera intrinsic parameter
   - [X] Depth Camera
+    - [ ] Point Cloud
   - [X] Multi-camera
   - [X] RealSense (RGB + IR1 + IR2 + Depth)
   - [X] GPS sensor
-  - [ ] 3D Lidar Sensor
-    - [ ] Point Cloud
   - [ ] Sensor noise models
   - [ ] Physics
     - [ ] Support all physics parameters in SDF specification
     - [X] Support `<Joint type="revolute2">`
-- [X] Worlds
+- [ ] Worlds
   - [X] Actors
     - [ ] interpolate_x in `<animation>`
   - [X] Lights
@@ -53,7 +54,8 @@ Here is the full list of models that is implemented or planned to be implemented
 Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<road>`, `<population>`.
 
-Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material' and 'STL(.stl)'.
+Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material', 'Collada(.dae) including animation' and 'STL(.stl)'.
+`<ambient>` elements in `<materal>` and ambient properies in mesh files are not support in CLOiSim.
 
 ![cloisim_lidar_ros](https://user-images.githubusercontent.com/21001946/107105540-42b65600-686a-11eb-8797-7d937b108c11.gif)
 [video link](https://user-images.githubusercontent.com/21001946/103972179-d0415000-51af-11eb-824b-3d77051664d5.mp4)
@@ -75,6 +77,8 @@ So there is NO more constaints for rigidbodies by PGS(Projected Gauss Seidel) so
 
 But inertia factors which retrieved from SDF are still NOT USED for rigidbody in Unity. Because it could cause unexpected behavior with physX engine.
 
+For the performance in terms of collision handling, designing collision geometry properly may important.
+
 ## Getting Started
 
 ### Minimum requirement
@@ -85,8 +89,8 @@ But inertia factors which retrieved from SDF are still NOT USED for rigidbody in
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.4f1 (LTS)'*.
-- Linux: Ubuntu 20.04.1
+- Latest Unity Editor Version: *'2020.3.7f1 (LTS)'*.
+- Linux: Ubuntu 20.04.2 LTS
 - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
 - Memory: 32GB
 - Graphics: NVIDIA Corporation TU102 [GeForce RTX 2080 Ti]
