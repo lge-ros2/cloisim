@@ -14,7 +14,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private ObjectSpawning objectSpawning = null;
 	private CameraControl cameraControl = null;
 	private string eventMessage = string.Empty;
-	private StringBuilder sbTimInfo = new StringBuilder();
+	private StringBuilder sbTimeInfo = null;
 
 
 	[Header("GUI properties")]
@@ -41,6 +41,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private Rect rectHelpButton;
 	private Rect rectHelpStatus;
 
+	private GUIStyle style;
 	private Texture2D textureBackground;
 
 	// Start is called before the first frame update
@@ -50,6 +51,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		objectSpawning = coreObject.GetComponent<ObjectSpawning>();
 		cameraControl = GetComponentInChildren<CameraControl>();
 		clock = DeviceHelper.GetGlobalClock();
+		sbTimeInfo = new StringBuilder();
 
 		textureBackground = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
 		textureBackground.SetPixel(0, 0, new Color(0, 0, 0, 0.75f));
@@ -66,6 +68,12 @@ public partial class SimulationDisplay : MonoBehaviour
 		rectHelpButton = new Rect(Screen.width - buttonWidthHelp - textLeftMargin, topMargin, buttonWidthHelp, guiHeight);
 		rectHelpStatus = new Rect(Screen.width -rectHelpButton.width - helpStatusWidth - textLeftMargin, topMargin, helpStatusWidth, textHeight * 1.1f);
 
+		style = new GUIStyle();
+
+		padding = new RectOffset(30, 30, 30, 30);
+		zeroPadding = new RectOffset(0, 0, 0, 0);
+
+		InitPropsMenu();
 		UpdateHelpContents();
 	}
 
@@ -99,9 +107,9 @@ public partial class SimulationDisplay : MonoBehaviour
 		var currentRealTime = GetBoldText(realTs.ToString(@"d\:hh\:mm\:ss\.fff"));
 		var diffRealSimTime = GetBoldText(diffTs1.ToString(@"d\:hh\:mm\:ss\.fff"));
 
-		sbTimInfo.Clear();
-		sbTimInfo.AppendFormat("Time: Simulation [{0}] | Real [{1}] | Real-Sim [{2}]", currentSimTime, currentRealTime, diffRealSimTime);
-		return sbTimInfo.ToString();
+		sbTimeInfo.Clear();
+		sbTimeInfo.AppendFormat("Time: Simulation [{0}] | Real [{1}] | Real-Sim [{2}]", currentSimTime, currentRealTime, diffRealSimTime);
+		return sbTimeInfo.ToString();
 	}
 
 	private string GetBoldText(in string value)
@@ -123,7 +131,6 @@ public partial class SimulationDisplay : MonoBehaviour
 
 	private void DrawText()
 	{
-		var style = new GUIStyle();
 		style.alignment = TextAnchor.MiddleLeft;
 		style.normal.textColor = new Color(0, 0, 0, 0.85f);
 		style.fontSize = labelFontSize;
@@ -153,8 +160,6 @@ public partial class SimulationDisplay : MonoBehaviour
 
 	void OnGUI()
 	{
-		var originLabelColor = GUI.skin.label.normal.textColor;
-
 		DrawText();
 
 		DrawPropsMenus();
@@ -163,11 +168,12 @@ public partial class SimulationDisplay : MonoBehaviour
 
 		if (Event.current.type.Equals(EventType.KeyUp))
 		{
-			if (Event.current.keyCode.CompareTo(KeyCode.F1) == 0)
+			var keyCode = Event.current.keyCode;
+			if (keyCode.CompareTo(KeyCode.F1) == 0)
 			{
 				popupHelpDialog = !popupHelpDialog;
 			}
-			else if (Event.current.keyCode.CompareTo(KeyCode.Escape) == 0)
+			else if (keyCode.CompareTo(KeyCode.Escape) == 0)
 			{
 				popupHelpDialog = false;
 			}
@@ -183,7 +189,5 @@ public partial class SimulationDisplay : MonoBehaviour
 		{
 			cameraControl.blockMouseWheelControl = false;
 		}
-
-		GUI.skin.label.normal.textColor = originLabelColor;
 	}
 }

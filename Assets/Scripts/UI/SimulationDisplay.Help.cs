@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
 using System.Text;
 using UnityEngine;
 
@@ -17,6 +16,9 @@ public partial class SimulationDisplay : MonoBehaviour
 	private const int helpStatusWidth = buttonWidthHelp * 2;
 	private bool popupHelpDialog = false;
 	private Vector2 scrollPosition = Vector2.zero;
+
+	private RectOffset padding;
+	private Rect viewRect;
 
 	private void UpdateHelpContents()
 	{
@@ -71,6 +73,8 @@ public partial class SimulationDisplay : MonoBehaviour
 
 		helpContentsHeight = 58 * labelFontSize;
 		helpContents.text = sb.ToString();
+
+		viewRect = new Rect(0, 0, rectDialog.width - 20, helpContentsHeight);
 	}
 
 	private void DrawHelpDialog()
@@ -82,23 +86,25 @@ public partial class SimulationDisplay : MonoBehaviour
 		rectDialog.width = dialogWidth;
 		rectDialog.height = dialogHeight;
 
-		var style = new GUIStyle();
 		style.alignment = TextAnchor.UpperLeft;
-		style.padding = new RectOffset(30, 30, 30, 30);
+		style.padding = padding;
 		style.fontSize = labelFontSize;
 		style.richText = true;
 		style.wordWrap = true;
 		style.normal.textColor = Color.white;
 		style.normal.background = textureBackground;
 
-		scrollPosition = GUI.BeginScrollView(rectDialog, scrollPosition, new Rect(0, 0, rectDialog.width - 20, helpContentsHeight), false, true);
+		viewRect.width = rectDialog.width - 20;
+		scrollPosition = GUI.BeginScrollView(rectDialog, scrollPosition, viewRect, false, true);
 		GUI.Label(new Rect(0, 0, rectDialog.width - 16, helpContentsHeight), helpContents, style);
 		GUI.EndScrollView();
+
+		style.padding = zeroPadding;
+		style.normal.background = null;
 	}
 
 	private void DrawHelpInfo()
 	{
-		var style = new GUIStyle();
 		style.fontSize = labelFontSize;
 		style.wordWrap = true;
 		style.clipping = TextClipping.Overflow;

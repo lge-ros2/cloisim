@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
-using System.Text;
 using UnityEngine;
 
 public partial class SimulationDisplay : MonoBehaviour
@@ -13,24 +11,28 @@ public partial class SimulationDisplay : MonoBehaviour
 	[Header("Properties for Props menu")]
 	private const float guiHeight = 25f;
 	private const float toolbarWidth = 190f;
-	private string[] toolbarStrings = new string[] { "Box", "Cylinder", "Sphere" };
+	private string[] toolbarStrings;
 	private string scaleFactorString = "0.5";
 	private int toolbarSelected = 0;
 	private string prevScaleFactorString;
 	private bool checkScaleFactorFocused = false;
 	private bool doCheckScaleFactorValue = false;
+	private RectOffset zeroPadding;
+
+	private void InitPropsMenu()
+	{
+		toolbarStrings = new string[] { "Box", "Cylinder", "Sphere" };
+	}
 
 	private void DrawPropsMenus()
 	{
-		var style = new GUIStyle();
 		style.fontSize = labelFontSize;
 		style.wordWrap = true;
-		style.padding = new RectOffset(0, 0, 0, 0);
+		style.padding = zeroPadding;
 		style.alignment = TextAnchor.MiddleCenter;
 		style.clipping = TextClipping.Overflow;
 		style.stretchHeight = false;
 		style.stretchWidth = false;
-
 
 		style.normal.textColor = Color.white;
 		rectToolbar.x = Screen.width * 0.5f - toolbarWidth * 0.5f;
