@@ -1,4 +1,4 @@
-# DevicePlugins
+# CLOiSimPlugin
 
 These plugin scripts are for sensor connection.
 

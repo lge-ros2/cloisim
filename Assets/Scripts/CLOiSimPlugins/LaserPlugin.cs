@@ -6,7 +6,7 @@
 
 using Stopwatch = System.Diagnostics.Stopwatch;
 
-public class LaserPlugin : DevicePlugin
+public class LaserPlugin : CLOiSimPlugin
 {
 	private SensorDevices.Lidar lidar = null;
 

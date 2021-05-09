@@ -16,7 +16,7 @@ using ProtoBuf;
 using Param = cloisim.msgs.Param;
 using Any = cloisim.msgs.Any;
 
-public partial class ElevatorSystem : DevicePlugin
+public partial class ElevatorSystem : CLOiSimPlugin
 {
 	private enum ElevatorTaskState {DOOR_OPEN, DOOR_CLOSE, STANDBY, PROCESSING, DONE}
 

@@ -6,26 +6,38 @@
 
 using Stopwatch = System.Diagnostics.Stopwatch;
 
-public class GpsPlugin : DevicePlugin
+public class CameraPlugin : CLOiSimPlugin
 {
-	private SensorDevices.GPS gps = null;
+	private SensorDevices.Camera cam = null;
 
-	private string hashServiceKey = string.Empty;
-	private string hashKey = string.Empty;
+	public string subPartName = string.Empty;
+
+	public SensorDevices.Camera GetCamera()
+	{
+		return cam;
+	}
 
 	protected override void OnAwake()
 	{
-		type = Type.GPS;
-
-		gps = gameObject.GetComponent<SensorDevices.GPS>();
+		var depthcam = gameObject.GetComponent<SensorDevices.DepthCamera>();
+		if (depthcam is null)
+		{
+			ChangePluginType(Type.CAMERA);
+			cam = gameObject.GetComponent<SensorDevices.Camera>();
+		}
+		else
+		{
+			ChangePluginType(Type.DEPTHCAMERA);
+			cam = depthcam;
+		}
 
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
-		RegisterServiceDevice("Info");
-		RegisterTxDevice("Data");
+		RegisterServiceDevice(subPartName + "Info");
+		RegisterTxDevice(subPartName + "Data");
 
 		AddThread(Response);
 		AddThread(Sender);
@@ -36,13 +48,13 @@ public class GpsPlugin : DevicePlugin
 		var sw = new Stopwatch();
 		while (IsRunningThread)
 		{
-			if (gps != null)
+			if (cam != null)
 			{
-				var datastreamToSend = gps.PopData();
+				var datastreamToSend = cam.PopData();
 				sw.Restart();
 				Publish(datastreamToSend);
 				sw.Stop();
-				gps.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				cam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 			}
 		}
 	}
@@ -66,9 +78,14 @@ public class GpsPlugin : DevicePlugin
 						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
 						break;
 
+					case "request_camera_info":
+						var cameraInfoMessage = cam.GetCameraInfo();
+						SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
+						break;
+
 					case "request_transform":
-						var device = gps as Device;
-						var devicePose = device.GetPose();
+						var isSubParts = string.IsNullOrEmpty(subPartName);
+						var devicePose = cam.GetPose(isSubParts);
 						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
 						break;
 

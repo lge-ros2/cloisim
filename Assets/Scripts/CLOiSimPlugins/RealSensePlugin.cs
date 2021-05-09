@@ -11,7 +11,7 @@ using ProtoBuf;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
-public class RealSensePlugin : DevicesPlugin
+public class RealSensePlugin : CLOiSimMultiPlugin
 {
 	private Camera[] cameras = null;
 	private List<string> activatedModules = new List<string>();
@@ -71,10 +71,10 @@ public class RealSensePlugin : DevicesPlugin
 			if (camera.gameObject.name.Equals(name))
 			{
 				var plugin = camera.gameObject.AddComponent<CameraPlugin>();
-				plugin.ChangePluginType(DevicePlugin.Type.REALSENSE);
+				plugin.ChangePluginType(CLOiSimPlugin.Type.REALSENSE);
 				plugin.subPartName = name;
 
-				AddDevicePlugin(name, plugin);
+				AddCLOiSimPlugin(name, plugin);
 				activatedModules.Add(name);
 				return plugin;
 			}

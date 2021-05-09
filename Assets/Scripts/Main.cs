@@ -283,7 +283,7 @@ public class Main: MonoBehaviour
 			helper.Reset();
 		}
 
-		foreach (var plugin in modelsRoot.GetComponentsInChildren<DevicePlugin>())
+		foreach (var plugin in modelsRoot.GetComponentsInChildren<CLOiSimPlugin>())
 		{
 			plugin.Reset();
 		}

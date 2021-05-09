@@ -11,7 +11,7 @@ using ProtoBuf;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
-public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
+public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 {
 	protected static messages.Param ParsingInfoRequest(in byte[] srcReceivedBuffer, ref MemoryStream dstCameraInfoMemStream)
 	{

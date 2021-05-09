@@ -10,14 +10,14 @@ using System.IO;
 using UnityEngine;
 using System.Xml;
 
-public interface IDevicePlugin
+public interface ICLOiSimPlugin
 {
 	void SetPluginName(in string name);
 	void SetPluginParameters(in XmlNode node);
 	void Reset();
 }
 
-public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
+public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 {
 	public enum Type {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
 
@@ -28,7 +28,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	public string modelName { get; protected set; } = string.Empty;
 	public string partName { get; protected set; } = string.Empty;
 
-	private Pose devicePluginPose = Pose.identity;
+	private Pose pluginPose = Pose.identity;
 
 	public string pluginName { get; protected set; } = string.Empty;
 	protected SDF.Helper.PluginParameters parameters = new SDF.Helper.PluginParameters();
@@ -68,7 +68,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 	}
 
-	public void ChangePluginType(in DevicePlugin.Type targetType)
+	public void ChangePluginType(in CLOiSimPlugin.Type targetType)
 	{
 		type = targetType;
 	}
@@ -92,7 +92,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	public Pose GetPose()
 	{
-		return devicePluginPose;
+		return pluginPose;
 	}
 
 	private bool PrepareDevice(in string subPartName, out ushort port, out ulong hash)
@@ -221,7 +221,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	void OnDestroy()
 	{
-		// Debug.Log("DevicePlugin destroied");
+		// Debug.Log("CLOiSimPlugin destroied");
 		runningThread = false;
 		foreach (var thread in threadList)
 		{
@@ -250,8 +250,8 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	private void StorePose()
 	{
 		// Debug.Log(deviceName + ":" + transform.name);
-		devicePluginPose.position = transform.localPosition;
-		devicePluginPose.rotation = transform.localRotation;
+		pluginPose.position = transform.localPosition;
+		pluginPose.rotation = transform.localRotation;
 	}
 
 	protected static void ClearMemoryStream(ref MemoryStream ms)

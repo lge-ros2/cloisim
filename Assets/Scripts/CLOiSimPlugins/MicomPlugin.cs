@@ -10,7 +10,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
-public class MicomPlugin : DevicePlugin
+public class MicomPlugin : CLOiSimPlugin
 {
 	private MicomInput micomInput = null;
 	private MicomSensor micomSensor = null;
