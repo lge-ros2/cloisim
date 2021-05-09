@@ -11,8 +11,8 @@ namespace SensorDevices
 {
 	public class DepthCamera : Camera
 	{
-		private ComputeShader computeShader;
-		private int kernelIndex;
+		private ComputeShader computeShader = null;
+		private int kernelIndex = -1;
 
 		private Material depthMaterial = null;
 
@@ -38,6 +38,7 @@ namespace SensorDevices
 		{
 			// Debug.Log("OnDestroy(Depth Camera)");
 			Destroy(computeShader);
+			computeShader = null;
 
 			base.OnDestroy();
 		}
@@ -104,7 +105,7 @@ namespace SensorDevices
 
 		protected override void PostProcessing(ref byte[] buffer)
 		{
-			if (readbackDstFormat.Equals(TextureFormat.R16))
+			if (readbackDstFormat.Equals(TextureFormat.R16) && computeShader != null)
 			{
 				computeShader.SetFloat("_DepthMin", (float)GetParameters().clip.near);
 				computeShader.SetFloat("_DepthMax", (float)GetParameters().clip.far);
