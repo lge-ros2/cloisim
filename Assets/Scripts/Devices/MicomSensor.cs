@@ -21,7 +21,7 @@ public partial class MicomSensor : Device
 
 	public float _PGain, _IGain, _DGain;
 
-	private float wheelBase = 0.0f;
+	private float wheelTread = 0.0f;
 	private float wheelRadius = 0.0f;
 	private float divideWheelRadius = 0.0f; // for computational performance
 #endregion
@@ -36,7 +36,7 @@ public partial class MicomSensor : Device
 
 	private Dictionary<string, Pose> partsPoseMapTable = new Dictionary<string, Pose>();
 
-	public float WheelBase => wheelBase;
+	public float WheelBase => wheelTread;
 	public float WheelRadius => wheelRadius;
 
 	protected override void OnAwake()
@@ -54,7 +54,7 @@ public partial class MicomSensor : Device
 		_IGain = GetPluginParameters().GetValue<float>("PID/ki");
 		_DGain = GetPluginParameters().GetValue<float>("PID/kd");
 
-		wheelBase = GetPluginParameters().GetValue<float>("wheel/base");
+		wheelTread = GetPluginParameters().GetValue<float>("wheel/tread");
 		wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
 		divideWheelRadius = 1.0f/wheelRadius;
 
@@ -378,9 +378,9 @@ public partial class MicomSensor : Device
 	public void SetTwistDrive(in float linearVelocity, in float angularVelocity)
 	{
 		// m/s, rad/s
-		// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
-		// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelBase)) / (2 * wheelRadius);
-		var angularCalculation = (angularVelocity * wheelBase * 0.5f);
+		// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelTread)) / (2 * wheelRadius);
+		// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelTread)) / (2 * wheelRadius);
+		var angularCalculation = (angularVelocity * wheelTread * 0.5f);
 		var linearVelocityLeft = (linearVelocity - angularCalculation);
 		var linearVelocityRight = (linearVelocity + angularCalculation);
 
@@ -390,7 +390,7 @@ public partial class MicomSensor : Device
 	public void UpdateMotorFeedback(in float linearVelocityLeft, in float linearVelocityRight)
 	{
 		var linearVelocity = (linearVelocityLeft + linearVelocityRight) * 0.5f;
-		var angularVelocity = (linearVelocityRight - linearVelocity) / (wheelBase * 0.5f);
+		var angularVelocity = (linearVelocityRight - linearVelocity) / (wheelTread * 0.5f);
 
 		UpdateMotorFeedback(angularVelocity);
 	}

@@ -173,7 +173,7 @@ public class MicomPlugin : CLOiSimPlugin
 		wheelInfo.Value = new Any { Type = Any.ValueType.None };
 
 		var baseInfo = new messages.Param();
-		baseInfo.Name = "base";
+		baseInfo.Name = "tread";
 		baseInfo.Value = new Any { Type = Any.ValueType.Double, DoubleValue = micomSensor.WheelBase };
 		wheelInfo.Childrens.Add(baseInfo);
 
