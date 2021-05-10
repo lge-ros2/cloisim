@@ -80,7 +80,6 @@ namespace SensorDevices
 			imuLinearAcceleration = (currentLinearVelocity - previousLinearVelocity) / Time.fixedDeltaTime;
 			imuLinearAcceleration.y += (-Physics.gravity.y);
 
-
 			previousImuRotation = imuRotation;
 			previousImuPosition = currentPosition;
 			previousLinearVelocity = currentLinearVelocity;
