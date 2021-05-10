@@ -161,7 +161,7 @@ public abstract class Device : MonoBehaviour
 
 	protected abstract void OnStart();
 
-	protected virtual void ProcessDeviceCoroutine() { }
+	protected virtual void ProcessDevice() { }
 
 	protected virtual IEnumerator OnVisualize()
 	{
@@ -177,7 +177,7 @@ public abstract class Device : MonoBehaviour
 		var waitForSeconds = new WaitForSeconds(WaitPeriod());
 		while (runningDevice)
 		{
-			ProcessDeviceCoroutine();
+			ProcessDevice();
 			GenerateMessage();
 			yield return waitForSeconds;
 		}
@@ -191,7 +191,7 @@ public abstract class Device : MonoBehaviour
 			yield return waitUntil;
 
 			GenerateMessage();
-			ProcessDeviceCoroutine();
+			ProcessDevice();
 		}
 	}
 
@@ -199,6 +199,7 @@ public abstract class Device : MonoBehaviour
 	{
 		while (runningDevice)
 		{
+			ProcessDevice();
 			GenerateMessage();
 			Thread.Sleep(WaitPeriodInMilliseconds());
 		}
@@ -211,6 +212,7 @@ public abstract class Device : MonoBehaviour
 			if (GetDataStream().Length > 0)
 			{
 				GenerateMessage();
+				ProcessDevice();
 			}
 		}
 	}
