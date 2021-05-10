@@ -4,7 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using System.Collections;
+using System.Linq;
 using System;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
@@ -88,7 +90,7 @@ namespace SensorDevices
 		private AngleResolution laserAngleResolution;
 
 		private int numberOfLaserCamData = 0;
-
+		private Dictionary<AsyncGPUReadbackRequest, int> readbacks = new Dictionary<AsyncGPUReadbackRequest, int>();
 		private DepthCamBuffer[] depthCamBuffers;
 		private LaserCamData[] laserCamData;
 		private LaserDataOutput[] laserDataOutput;
@@ -124,13 +126,14 @@ namespace SensorDevices
 
 		private void OnDestroy()
 		{
-			// Debug.LogWarning("Destroy");
+      // Debug.LogWarning("Destroy");
 			// Important!! Native arrays must be disposed manually.
-			for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
+			for (var i = 0; i < readbacks.Count; i++)
 			{
-				var data = laserCamData[dataIndex];
-				data.Deallocate();
+  			var item = readbacks.ElementAt(i);
+				item.Key.WaitForCompletion();
 
+				var dataIndex = item.Value;
 				var depthBuffer = depthCamBuffers[dataIndex];
 				depthBuffer.Deallocate();
 			}
@@ -183,7 +186,6 @@ namespace SensorDevices
 
 		private void SetupLaserCamera()
 		{
-
 			laserCam.ResetWorldToCameraMatrix();
 			laserCam.ResetProjectionMatrix();
 
@@ -266,15 +268,11 @@ namespace SensorDevices
 
 		private IEnumerator LaserCameraWorker()
 		{
-			const int batchSize = 64;
 			var axisRotation = Vector3.zero;
-			var readbacks = new AsyncGPUReadbackRequest[numberOfLaserCamData];
-			var sw = new Stopwatch();
+			var waitForSeconds = new WaitForSeconds(WaitPeriod());
 
 			while (true)
 			{
-				sw.Restart();
-
 				// Update lidar sensor pose
 				lidarSensorPose.position = lidarLink.position;
 				lidarSensorPose.rotation = lidarLink.rotation;
@@ -291,51 +289,53 @@ namespace SensorDevices
 					if (laserCam.isActiveAndEnabled)
 					{
 						laserCam.Render();
-						readbacks[dataIndex] = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32);
+						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32, OnCompleteAsyncReadback);
+						readbacks.Add(readbackRequest, dataIndex);
 					}
 
 					laserCam.enabled = false;
 				}
 
-				yield return null;
+				yield return waitForSeconds;
+			}
+		}
 
-				for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
+		protected void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
+		{
+			if (request.hasError)
+			{
+				Debug.LogError("Failed to read GPU texture");
+				return;
+			}
+			// Debug.Assert(request.done);
+
+			if (request.done)
+			{
+				if (readbacks.TryGetValue(request, out var dataIndex))
 				{
-					var readback = readbacks[dataIndex];
-					readback.WaitForCompletion();
+					const int batchSize = 64;
+					var depthCamBuffer = depthCamBuffers[dataIndex];
+					depthCamBuffer.imageBuffer = request.GetData<byte>();
 
-					if (readback.hasError)
+					if (depthCamBuffer.depthBuffer.IsCreated)
 					{
-						Debug.LogError("Failed to read GPU texture, dataIndex: " + dataIndex);
-						continue;
-					}
-					// Debug.Assert(readback.done);
-
-					if (readback.done)
-					{
-						var depthCamBuffer = depthCamBuffers[dataIndex];
-						depthCamBuffer.imageBuffer = readback.GetData<byte>();
-
 						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), batchSize);
 						jobHandleDepthCamBuffer.Complete();
 
 						var data = laserCamData[dataIndex];
 						data.depthBuffer = depthCamBuffer.depthBuffer;
+						data.Allocate();
 
 						var jobHandle = data.Schedule(data.OutputLength(), batchSize);
 						jobHandle.Complete();
 
 						laserDataOutput[dataIndex].data = data.GetLaserData();
+
+						data.Deallocate();
 					}
-					else
-					{
-						Debug.LogWarning("AsyncGPUReadBackback Request was failed, dataIndex: " + dataIndex);
-					}
+
+					readbacks.Remove(request);
 				}
-
-				sw.Stop();
-
-				yield return new WaitForSeconds(WaitPeriod((float)sw.Elapsed.TotalSeconds));
 			}
 		}
 
