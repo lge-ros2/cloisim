@@ -35,17 +35,18 @@ namespace SensorDevices
 		protected TextureFormat readbackDstFormat;
 		private CameraImageData camImageData;
 
+		private CommandBuffer cmdBuffer;
+
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
 			if (camera.Equals(camSensor))
 			{
 				// This is where you can write custom rendering code. Customize this method to customize your SRP.
 				// Create and schedule a command to clear the current render target
-				var cmdBuffer = new CommandBuffer();
 				cmdBuffer.SetInvertCulling(true);
 				context.ExecuteCommandBuffer(cmdBuffer);
 				// Tell the Scriptable Render Context to tell the graphics API to perform the scheduled commands
-				cmdBuffer.Release();
+				cmdBuffer.Clear();
 				context.Submit();
 			}
 		}
@@ -54,10 +55,9 @@ namespace SensorDevices
 		{
 			if (camera.Equals(camSensor))
 			{
-				var cmdBuffer = new CommandBuffer();
 				cmdBuffer.SetInvertCulling(false);
 				context.ExecuteCommandBuffer(cmdBuffer);
-				cmdBuffer.Release();
+				cmdBuffer.Clear();
 				context.Submit();
 			}
 		}
@@ -65,6 +65,7 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
+			cmdBuffer = new CommandBuffer();
 			camSensor = gameObject.AddComponent<UnityEngine.Camera>();
 			universalCamData = camSensor.GetUniversalAdditionalCameraData();
 
@@ -111,8 +112,6 @@ namespace SensorDevices
 					readbackDstFormat = TextureFormat.RGB24;
 					break;
 			}
-
-
 		}
 
 		protected override void InitializeMessages()
@@ -236,7 +235,7 @@ namespace SensorDevices
 			}
 		}
 
-		protected virtual void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
+		protected void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
 		{
 			if (request.hasError)
 			{
