@@ -4,7 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.IO;
+using ProtoBuf;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using messages = cloisim.msgs;
+using Any = cloisim.msgs.Any;
 
 public class LaserPlugin : CLOiSimPlugin
 {
@@ -67,6 +71,10 @@ public class LaserPlugin : CLOiSimPlugin
 						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
 						break;
 
+					case "request_output_type":
+						SetOutputTypeResponse(ref msForInfoResponse);
+						break;
+
 					case "request_transform":
 						var devicePose = device.GetPose();
 
@@ -82,5 +90,16 @@ public class LaserPlugin : CLOiSimPlugin
 
 			ThreadWait();
 		}
+	}
+
+	private void SetOutputTypeResponse(ref MemoryStream msInfo)
+	{
+		var output_type = parameters.GetValue<string>("output_type", "LaserScan");
+		var outputTypeInfo = new messages.Param();
+		outputTypeInfo.Name = "output_type";
+		outputTypeInfo.Value = new Any { Type = Any.ValueType.String, StringValue = output_type };
+
+		ClearMemoryStream(ref msInfo);
+		Serializer.Serialize<messages.Param>(msInfo, outputTypeInfo);
 	}
 }
