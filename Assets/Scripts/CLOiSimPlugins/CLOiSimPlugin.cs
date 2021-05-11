@@ -23,7 +23,7 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 
 	public Type type { get; protected set; }
 
-	private BridgeManager bridgeManager = null;
+	private static BridgeManager bridgeManager = null;
 
 	public string modelName { get; protected set; } = string.Empty;
 	public string partName { get; protected set; } = string.Empty;
@@ -41,9 +41,18 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 
 	protected bool IsRunningThread => runningThread;
 
+	public void Stop() { runningThread = false; }
+
+	private Device device = null;
+
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
 	protected virtual void OnReset() {}
+
+	public void SetDevice(in Device device)
+	{
+		this.device = device;
+	}
 
 	protected bool AddThread(in ThreadStart function)
 	{
@@ -182,10 +191,13 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 		}
 		else
 		{
-			bridgeManager = coreObject.GetComponent<BridgeManager>();
 			if (bridgeManager == null)
 			{
-				Debug.LogError("Failed to get 'bridgeManager'!!!!");
+				bridgeManager = coreObject.GetComponent<BridgeManager>();
+				if (bridgeManager == null)
+				{
+					Debug.LogError("Failed to get 'bridgeManager'!!!!");
+				}
 			}
 		}
 
@@ -221,7 +233,6 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 
 	void OnDestroy()
 	{
-		// Debug.Log("CLOiSimPlugin destroied");
 		runningThread = false;
 		foreach (var thread in threadList)
 		{
@@ -230,6 +241,7 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 				if (thread.IsAlive)
 				{
 					thread.Join();
+					thread.Abort();
 				}
 			}
 		}
@@ -240,6 +252,8 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 		{
 			DeregisterDevice(hashKey);
 		}
+
+		// Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
 	}
 
 	protected void ThreadWait()

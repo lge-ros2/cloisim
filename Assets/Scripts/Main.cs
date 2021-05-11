@@ -252,6 +252,14 @@ public class Main: MonoBehaviour
 		}
 	}
 
+	private void OnDestroy()
+	{
+		foreach (var worldPlugin in GetComponents<CLOiSimPlugin>())
+		{
+			worldPlugin.Stop();
+		}
+	}
+
 	public bool TriggerResetService()
 	{
 		if (isResetting)

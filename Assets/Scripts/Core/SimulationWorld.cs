@@ -16,6 +16,7 @@ public class SimulationWorld : CLOiSimPlugin
 	{
 		type = Type.WORLD;
 		clock = gameObject.AddComponent<Clock>();
+		SetDevice(clock);
 
 		modelName = "World";
 		partName = "cloisim_world";

@@ -8,7 +8,6 @@ using System.Threading;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.IO;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using UnityEngine;
 using ProtoBuf;
 
@@ -21,7 +20,7 @@ public abstract class Device : MonoBehaviour
 
 	private BlockingCollection<MemoryStream> outboundQueue_ = new BlockingCollection<MemoryStream>(maxQueue);
 
-	protected int timeoutForOutboundQueueInMilliseconds = 100;
+	private const int TimeoutForOutboundQueueInMilliseconds = 100;
 
 	private MemoryStream memoryStream_ = new MemoryStream();
 
@@ -66,6 +65,8 @@ public abstract class Device : MonoBehaviour
 		get => visualize;
 		set => visualize = value;
 	}
+
+	public bool IsDeviceRunning => runningDevice;
 
 	void Awake()
 	{
@@ -117,7 +118,7 @@ public abstract class Device : MonoBehaviour
 		}
 	}
 
-	void OnDestroy()
+	protected void OnDestroy()
 	{
 		runningDevice = false;
 
@@ -125,12 +126,12 @@ public abstract class Device : MonoBehaviour
 		{
 			case ModeType.TX:
 				StopCoroutine(DeviceCoroutineTx());
-				Debug.Log("Stop TX device coroutine " + name);
+				Debug.Log("Stop TX device coroutine: " + name);
 				break;
 
 			case ModeType.RX:
 				StopCoroutine(DeviceCoroutineRx());
-				Debug.Log("Stop TX device coroutine " + name);
+				Debug.Log("Stop TX device coroutine: " + name);
 				break;
 
 			case ModeType.TX_THREAD:
@@ -138,7 +139,7 @@ public abstract class Device : MonoBehaviour
 				{
 					txThread.Join();
 					txThread.Abort();
-					Debug.Log("Stop TX device thread " + name);
+					Debug.Log("Stop TX device thread: " + name);
 				}
 				break;
 
@@ -155,6 +156,9 @@ public abstract class Device : MonoBehaviour
 			default:
 				break;
 		}
+
+		memoryStream_.Dispose();
+		outboundQueue_.Dispose();
 	}
 
 	protected abstract void OnAwake();
@@ -332,7 +336,7 @@ public abstract class Device : MonoBehaviour
 
 	protected bool PushData()
 	{
-		if (outboundQueue_ == null)
+		if (outboundQueue_ == null || runningDevice == false)
 		{
 			return false;
 		}
@@ -347,7 +351,7 @@ public abstract class Device : MonoBehaviour
 			}
 		}
 
-		if (!outboundQueue_.TryAdd(GetDataStream(), timeoutForOutboundQueueInMilliseconds))
+		if (!outboundQueue_.TryAdd(GetDataStream(), TimeoutForOutboundQueueInMilliseconds))
 		{
 			Debug.LogWarningFormat("failed to add at " + deviceName);
 			return false;
@@ -360,7 +364,7 @@ public abstract class Device : MonoBehaviour
 	{
 		if (outboundQueue_ != null)
 		{
-			if (outboundQueue_.TryTake(out var item, timeoutForOutboundQueueInMilliseconds))
+			if (outboundQueue_.TryTake(out var item, TimeoutForOutboundQueueInMilliseconds))
 			{
 				return item;
 			}
