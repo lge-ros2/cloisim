@@ -50,11 +50,13 @@ public class CameraPlugin : CLOiSimPlugin
 		{
 			if (cam != null)
 			{
-				var datastreamToSend = cam.PopData();
-				sw.Restart();
-				Publish(datastreamToSend);
-				sw.Stop();
-				cam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				if (cam.PopDeviceMessage(out var dataStreamToSend))
+				{
+					sw.Restart();
+					Publish(dataStreamToSend);
+					sw.Stop();
+					cam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				}
 			}
 		}
 	}

@@ -11,8 +11,6 @@ public class MicomInput : Device
 {
 	private MicomSensor micomForWheelDrive = null;
 
-	private messages.Twist micomWritingData = null;
-
 	private Vector3 linearVelocity = Vector3.zero; // m/s
 	private Vector3 angularVelocity = Vector3.zero; // rad/s
 
@@ -28,7 +26,7 @@ public class MicomInput : Device
 
 	public void Reset()
 	{
-		ResetDataStream();
+		FlushDeviceMessageQueue();
 		linearVelocity = Vector3.zero;
 		angularVelocity = Vector3.zero;
 	}
@@ -40,23 +38,23 @@ public class MicomInput : Device
 
 	protected override void InitializeMessages()
 	{
-		micomWritingData = null;
 	}
 
 	protected override void GenerateMessage()
 	{
 		try
 		{
-			micomWritingData = GetMessageData<messages.Twist>();
+			if (PopDeviceMessage<messages.Twist>(out var micomWritingData))
+			{
+				// Right-handed -> Left-handed direction of rotation
+				linearVelocity = -SDF2Unity.GetPosition(micomWritingData.Linear.X, micomWritingData.Linear.Y, micomWritingData.Linear.Z);
+				angularVelocity = -SDF2Unity.GetPosition(micomWritingData.Angular.X, micomWritingData.Angular.Y, micomWritingData.Angular.Z);
+			}
 		}
 		catch
 		{
 			Debug.LogWarning("GetMessageData: ERROR");
 		}
-
-		// Right-handed -> Left-handed direction of rotation
-		linearVelocity = -SDF2Unity.GetPosition(micomWritingData.Linear.X, micomWritingData.Linear.Y, micomWritingData.Linear.Z);
-		angularVelocity = -SDF2Unity.GetPosition(micomWritingData.Angular.X, micomWritingData.Angular.Y, micomWritingData.Angular.Z);
 	}
 
 	public void SetMicomSensor(in MicomSensor targetDevice)

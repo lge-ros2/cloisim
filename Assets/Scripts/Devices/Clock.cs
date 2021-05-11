@@ -63,7 +63,7 @@ public class Clock : Device
 		{
 			DeviceHelper.SetCurrentTime(simTime, false);
 			DeviceHelper.SetCurrentTime(realTime, true);
-			PushData<messages.Param>(timeInfo);
+			PushDeviceMessage<messages.Param>(timeInfo);
 		}
 	}
 

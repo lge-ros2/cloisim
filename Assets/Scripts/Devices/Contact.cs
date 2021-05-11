@@ -72,7 +72,7 @@ namespace SensorDevices
 		protected override void GenerateMessage()
 		{
 			DeviceHelper.SetCurrentTime(contacts.Time);
-			PushData<messages.Contacts>(contacts);
+			PushDeviceMessage<messages.Contacts>(contacts);
 			// if (contacts.contact.Count > 0)
 			// {
 			// 	Debug.Log(contacts.contact[0].Depths.Length + " : " + contacts.contact[0].Normals.Count);

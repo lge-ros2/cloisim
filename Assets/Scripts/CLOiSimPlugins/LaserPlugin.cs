@@ -42,11 +42,13 @@ public class LaserPlugin : CLOiSimPlugin
 		{
 			if (lidar != null)
 			{
-				var datastreamToSend = lidar.PopData();
-				sw.Restart();
-				Publish(datastreamToSend);
-				sw.Stop();
-				lidar.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				if (lidar.PopDeviceMessage(out var dataStreamToSend))
+				{
+					sw.Restart();
+					Publish(dataStreamToSend);
+					sw.Stop();
+					lidar.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				}
 			}
 		}
 	}

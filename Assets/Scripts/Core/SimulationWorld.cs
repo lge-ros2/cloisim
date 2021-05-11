@@ -35,8 +35,10 @@ public class SimulationWorld : CLOiSimPlugin
 		{
 			if (clock != null)
 			{
-				var datastreamToSend = clock.PopData();
-				Publish(datastreamToSend);
+				if (clock.PopDeviceMessage(out var dataStreamToSend))
+				{
+					Publish(dataStreamToSend);
+				}
 			}
 		}
 	}

@@ -197,7 +197,7 @@ public partial class MicomSensor : Device
 	protected override void GenerateMessage()
 	{
 		DeviceHelper.SetCurrentTime(micomSensorData.Time);
-		PushData<messages.Micom>(micomSensorData);
+		PushDeviceMessage<messages.Micom>(micomSensorData);
 	}
 
 	void FixedUpdate()

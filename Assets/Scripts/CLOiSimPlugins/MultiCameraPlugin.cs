@@ -38,11 +38,13 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		{
 			if (multicam != null)
 			{
- 				var datastreamToSend = multicam.PopData();
-				sw.Restart();
-				Publish(datastreamToSend);
-				sw.Stop();
-				multicam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				if (multicam.PopDeviceMessage(out var dataStreamToSend))
+				{
+					sw.Restart();
+					Publish(dataStreamToSend);
+					sw.Stop();
+					multicam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				}
 			}
 		}
 	}

@@ -85,7 +85,7 @@ namespace SensorDevices
 			DeviceHelper.SetVector3d(imu.AngularVelocity, imuAngularVelocity * Mathf.Deg2Rad);
 			DeviceHelper.SetVector3d(imu.LinearAcceleration, imuLinearAcceleration);
 			DeviceHelper.SetCurrentTime(imu.Stamp);
-			PushData<messages.Imu>(imu);
+			PushDeviceMessage<messages.Imu>(imu);
 		}
 
 		public messages.Imu GetImuMessage()

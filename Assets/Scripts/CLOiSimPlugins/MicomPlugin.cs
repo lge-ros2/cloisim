@@ -52,11 +52,13 @@ public class MicomPlugin : CLOiSimPlugin
 		{
 			if (micomSensor != null)
 			{
-				var datastreamToSend = micomSensor.PopData();
-				sw.Restart();
-				Publish(datastreamToSend);
-				sw.Stop();
-				micomSensor.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				if (micomSensor.PopDeviceMessage(out var dataStreamToSend))
+				{
+					sw.Restart();
+					Publish(dataStreamToSend);
+					sw.Stop();
+					micomSensor.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				}
 			}
 		}
 	}
@@ -68,7 +70,7 @@ public class MicomPlugin : CLOiSimPlugin
 			if (micomInput != null)
 			{
 				var receivedData = Subscribe();
-				micomInput.SetDataStream(receivedData);
+				micomInput.PushDeviceMessage(receivedData);
 			}
 
 			ThreadWait();

@@ -446,7 +446,7 @@ namespace SensorDevices
 			DoLaserAngleFilter();
 
 			DeviceHelper.SetCurrentTime(laserScanStamped.Time);
-			PushData<messages.LaserScanStamped>(laserScanStamped);
+			PushDeviceMessage<messages.LaserScanStamped>(laserScanStamped);
 		}
 
 		protected override IEnumerator OnVisualize()

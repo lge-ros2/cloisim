@@ -54,7 +54,7 @@ namespace SensorDevices
 			}
 
 			DeviceHelper.SetCurrentTime(imagesStamped.Time);
-			PushData<messages.ImagesStamped>(imagesStamped);
+			PushDeviceMessage<messages.ImagesStamped>(imagesStamped);
 		}
 
 		private void AddCamera(in SDF.Camera parameters)

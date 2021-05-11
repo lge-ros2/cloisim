@@ -11,18 +11,144 @@ using System.IO;
 using UnityEngine;
 using ProtoBuf;
 
+public class DeviceMessage : MemoryStream
+{
+	public DeviceMessage()
+	{
+		Reset();
+	}
+
+	public DeviceMessage GetMessage()
+	{
+		return (CanRead) ? this : null;
+	}
+
+	public void GetMessage(out DeviceMessage message)
+	{
+		message = (CanRead) ? this : null;
+	}
+
+	public bool SetMessage(in byte[] data)
+	{
+		if (data == null)
+		{
+			return false;
+		}
+
+		Reset();
+
+		lock (this)
+		{
+			if (CanWrite)
+			{
+				Write(data, 0, data.Length);
+				Position = 0;
+			}
+			else
+			{
+				Debug.LogError("Failed to write memory stream");
+			}
+		}
+		return true;
+	}
+
+	public void SetMessage<T>(T instance)
+	{
+		Reset();
+
+		lock (this)
+		{
+			Serializer.Serialize<T>(this, instance);
+		}
+	}
+
+	public T GetMessage<T>()
+	{
+		T result;
+
+		lock (this)
+		{
+			result = Serializer.Deserialize<T>(this);
+		}
+
+		Reset();
+
+		return result;
+	}
+
+	public void Reset()
+	{
+		lock (this)
+		{
+			SetLength(0);
+			Position = 0;
+			Capacity = 0;
+		}
+	}
+}
+
+public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
+{
+	private const int MaxQueue = 5;
+	private const int TimeoutFordeviceMessageQueueInMilliseconds = 100;
+
+	public DeviceMessageQueue()
+		: base(MaxQueue)
+	{
+	}
+
+	public void Flush()
+	{
+		while (Count > 0)
+		{
+			Pop(out var item);
+		}
+	}
+
+	private void FlushHalf()
+	{
+		while (Count > MaxQueue / 2)
+		{
+			Pop(out var item);
+		}
+	}
+
+	public bool Push(in DeviceMessage data)
+	{
+		if (Count >= MaxQueue)
+		{
+			// Debug.LogWarningFormat("Outbound queue is reached to maximum capacity({0})!!", maxQueue);
+			FlushHalf();
+		}
+
+		if (TryAdd(data, TimeoutFordeviceMessageQueueInMilliseconds))
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	public bool Pop(out DeviceMessage item)
+	{
+		if (TryTake(out item, TimeoutFordeviceMessageQueueInMilliseconds))
+		{
+			return true;
+		}
+
+		return false;
+	}
+}
+
+
 public abstract class Device : MonoBehaviour
 {
 	public enum ModeType { NONE, TX, RX, TX_THREAD, RX_THREAD };
-	private const int maxQueue = 5;
 
 	public ModeType Mode = ModeType.NONE;
 
-	private BlockingCollection<MemoryStream> outboundQueue_ = new BlockingCollection<MemoryStream>(maxQueue);
-
-	private const int TimeoutForOutboundQueueInMilliseconds = 100;
-
-	private MemoryStream memoryStream_ = new MemoryStream();
+	private DeviceMessageQueue deviceMessageQueue = new DeviceMessageQueue();
+	private DeviceMessage deviceMessage = new DeviceMessage();
 
 	public string deviceName = string.Empty;
 
@@ -46,11 +172,11 @@ public abstract class Device : MonoBehaviour
 	private Thread txThread = null;
 	private Thread rxThread = null;
 
-	private	bool runningDevice = false;
+	private bool runningDevice = false;
 
 	public float UpdateRate => updateRate;
 
-	public float UpdatePeriod => 1f/UpdateRate;
+	public float UpdatePeriod => 1f / UpdateRate;
 
 	public float TransportingTime => transportingTimeSeconds;
 
@@ -70,8 +196,6 @@ public abstract class Device : MonoBehaviour
 
 	void Awake()
 	{
-		ResetDataStream();
-
 		OnAwake();
 	}
 
@@ -157,8 +281,8 @@ public abstract class Device : MonoBehaviour
 				break;
 		}
 
-		memoryStream_.Dispose();
-		outboundQueue_.Dispose();
+		deviceMessage.Dispose();
+		deviceMessageQueue.Dispose();
 	}
 
 	protected abstract void OnAwake();
@@ -189,11 +313,10 @@ public abstract class Device : MonoBehaviour
 
 	private IEnumerator DeviceCoroutineRx()
 	{
-		var waitUntil = new WaitUntil(() => GetDataStream().Length > 0);
+		var waitUntil = new WaitUntil(() => deviceMessage.Length > 0);
 		while (runningDevice)
 		{
 			yield return waitUntil;
-
 			GenerateMessage();
 			ProcessDevice();
 		}
@@ -213,12 +336,43 @@ public abstract class Device : MonoBehaviour
 	{
 		while (runningDevice)
 		{
-			if (GetDataStream().Length > 0)
+			if (deviceMessage.Length > 0)
 			{
 				GenerateMessage();
 				ProcessDevice();
 			}
 		}
+	}
+
+	public bool PushDeviceMessage<T>(T instance)
+	{
+		deviceMessage.SetMessage<T>(instance);
+		deviceMessage.GetMessage(out var message);
+		return deviceMessageQueue.Push(message);
+	}
+
+	public bool PushDeviceMessage(in byte[] data)
+	{
+		deviceMessage.SetMessage(data);
+		deviceMessage.GetMessage(out var message);
+		return deviceMessageQueue.Push(message);
+	}
+
+	public bool PopDeviceMessage<T>(out T instance)
+	{
+		var result = deviceMessageQueue.Pop(out var data);
+		instance = data.GetMessage<T>();
+		return result;
+	}
+
+	public bool PopDeviceMessage(out DeviceMessage data)
+	{
+		return deviceMessageQueue.Pop(out data);
+	}
+
+	public void FlushDeviceMessageQueue()
+	{
+		deviceMessageQueue.Flush();
 	}
 
 	protected float WaitPeriod(in float messageGenerationTime = 0)
@@ -242,135 +396,6 @@ public abstract class Device : MonoBehaviour
 	public void SetTransportedTime(in float value)
 	{
 		transportingTimeSeconds = value;
-	}
-
-	protected bool ResetDataStream()
-	{
-		if (memoryStream_ == null)
-		{
-			return false;
-		}
-
-		lock (memoryStream_)
-		{
-			memoryStream_.SetLength(0);
-			memoryStream_.Position = 0;
-			memoryStream_.Capacity = 0;
-
-			return true;
-		}
-	}
-
-	protected MemoryStream GetDataStream()
-	{
-		return (memoryStream_.CanRead) ? memoryStream_ : null;
-	}
-
-	public void SetDataStream(in byte[] data)
-	{
-		if (data == null)
-		{
-			return;
-		}
-
-		if (!ResetDataStream())
-		{
-			return;
-		}
-
-		lock (memoryStream_)
-		{
-			if (memoryStream_.CanWrite)
-			{
-				memoryStream_.Write(data, 0, data.Length);
-				memoryStream_.Position = 0;
-			}
-			else
-			{
-				Debug.LogError("Failed to write memory stream");
-			}
-		}
-	}
-
-	protected void SetMessageData<T>(T instance)
-	{
-		if (memoryStream_ == null)
-		{
-			Debug.LogError("Cannot set data stream... it's null");
-			return;
-		}
-
-		ResetDataStream();
-
-		lock (memoryStream_)
-		{
-			Serializer.Serialize<T>(memoryStream_, instance);
-		}
-	}
-
-	protected T GetMessageData<T>()
-	{
-		if (memoryStream_ == null)
-		{
-			Debug.LogError("Cannot Get data message... it's null");
-			return default(T);
-		}
-
-		T result;
-
-		lock (memoryStream_)
-		{
-			result = Serializer.Deserialize<T>(memoryStream_);
-		}
-
-		ResetDataStream();
-
-		return result;
-	}
-
-	protected bool PushData<T>(T instance)
-	{
-		SetMessageData<T>(instance);
-		return PushData();
-	}
-
-	protected bool PushData()
-	{
-		if (outboundQueue_ == null || runningDevice == false)
-		{
-			return false;
-		}
-
-		if (outboundQueue_.Count >= maxQueue)
-		{
-			// Debug.LogWarningFormat("Outbound queue is reached to maximum capacity({0})!!", maxQueue);
-
-			while (outboundQueue_.Count > maxQueue/2)
-			{
-				PopData();
-			}
-		}
-
-		if (!outboundQueue_.TryAdd(GetDataStream(), TimeoutForOutboundQueueInMilliseconds))
-		{
-			Debug.LogWarningFormat("failed to add at " + deviceName);
-			return false;
-		}
-
-		return true;
-	}
-
-	public MemoryStream PopData()
-	{
-		if (outboundQueue_ != null)
-		{
-			if (outboundQueue_.TryTake(out var item, TimeoutForOutboundQueueInMilliseconds))
-			{
-				return item;
-			}
-		}
-
-		return null;
 	}
 
 	private void StorePose()

@@ -38,11 +38,13 @@ public class GpsPlugin : CLOiSimPlugin
 		{
 			if (gps != null)
 			{
-				var datastreamToSend = gps.PopData();
-				sw.Restart();
-				Publish(datastreamToSend);
-				sw.Stop();
-				gps.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				if (gps.PopDeviceMessage(out var dataStreamToSend))
+				{
+					sw.Restart();
+					Publish(dataStreamToSend);
+					sw.Stop();
+					gps.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				}
 			}
 		}
 	}

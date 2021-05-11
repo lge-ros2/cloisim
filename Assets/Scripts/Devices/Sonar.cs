@@ -125,7 +125,7 @@ namespace SensorDevices
 			DeviceHelper.SetVector3d(sonar.WorldPose.Position, sonarPosition);
 			DeviceHelper.SetQuaternion(sonar.WorldPose.Orientation, sonarRotation);
 			DeviceHelper.SetCurrentTime(sonarStamped.Time);
-			PushData<messages.SonarStamped>(sonarStamped);
+			PushDeviceMessage<messages.SonarStamped>(sonarStamped);
 		}
 
 		private void ResolveSensingArea(Mesh targetMesh)
