@@ -57,23 +57,23 @@ namespace SDF
 						return;
 					}
 
-					var pluginObject = targetObject.AddComponent(pluginType);
+					var pluginComponent = targetObject.AddComponent(pluginType);
 
-					var devicePluginObject = pluginObject as DevicePlugin;
-					var devicesPluginObject = pluginObject as DevicesPlugin;
+					var pluginObject = pluginComponent as CLOiSimPlugin;
+					var multiPluginObject = pluginComponent as CLOiSimMultiPlugin;
 
-					if (devicePluginObject != null)
+					if (pluginObject != null)
 					{
 						var node = plugin.GetNode();
-						devicePluginObject.SetPluginName(plugin.Name);
-						devicePluginObject.SetPluginParameters(node);
+						pluginObject.SetPluginName(plugin.Name);
+						pluginObject.SetPluginParameters(node);
 						// Debug.Log("[Plugin] device added : " + plugin.Name);
 					}
-					else if (devicesPluginObject != null)
+					else if (multiPluginObject != null)
 					{
 						var node = plugin.GetNode();
-						devicesPluginObject.SetPluginName(plugin.Name);
-						devicesPluginObject.SetPluginParameters(node);
+						multiPluginObject.SetPluginName(plugin.Name);
+						multiPluginObject.SetPluginParameters(node);
 						// Debug.Log("[Plugin] devices added : " + plugin.Name);
 					}
 					else

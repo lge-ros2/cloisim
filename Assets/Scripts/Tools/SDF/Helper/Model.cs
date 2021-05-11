@@ -49,6 +49,17 @@ namespace SDF
 					}
 				}
 			}
+
+			void OnDestroy()
+			{
+				if (isTopModel)
+				{
+					foreach (var plugin in GetComponentsInChildren<CLOiSimPlugin>())
+					{
+						plugin.Stop();
+					}
+				}
+			}
 		}
 	}
 }

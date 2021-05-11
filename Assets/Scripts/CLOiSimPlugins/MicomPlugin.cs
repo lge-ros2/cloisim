@@ -10,7 +10,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
-public class MicomPlugin : DevicePlugin
+public class MicomPlugin : CLOiSimPlugin
 {
 	private MicomInput micomInput = null;
 	private MicomSensor micomSensor = null;
@@ -173,7 +173,7 @@ public class MicomPlugin : DevicePlugin
 		wheelInfo.Value = new Any { Type = Any.ValueType.None };
 
 		var baseInfo = new messages.Param();
-		baseInfo.Name = "base";
+		baseInfo.Name = "tread";
 		baseInfo.Value = new Any { Type = Any.ValueType.Double, DoubleValue = micomSensor.WheelBase };
 		wheelInfo.Childrens.Add(baseInfo);
 

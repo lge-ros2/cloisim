@@ -6,38 +6,26 @@
 
 using Stopwatch = System.Diagnostics.Stopwatch;
 
-public class CameraPlugin : DevicePlugin
+public class GpsPlugin : CLOiSimPlugin
 {
-	private SensorDevices.Camera cam = null;
+	private SensorDevices.GPS gps = null;
 
-	public string subPartName = string.Empty;
-
-	public SensorDevices.Camera GetCamera()
-	{
-		return cam;
-	}
+	private string hashServiceKey = string.Empty;
+	private string hashKey = string.Empty;
 
 	protected override void OnAwake()
 	{
-		var depthcam = gameObject.GetComponent<SensorDevices.DepthCamera>();
-		if (depthcam is null)
-		{
-			ChangePluginType(Type.CAMERA);
-			cam = gameObject.GetComponent<SensorDevices.Camera>();
-		}
-		else
-		{
-			ChangePluginType(Type.DEPTHCAMERA);
-			cam = depthcam;
-		}
+		type = Type.GPS;
+
+		gps = gameObject.GetComponent<SensorDevices.GPS>();
 
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
-		RegisterServiceDevice(subPartName + "Info");
-		RegisterTxDevice(subPartName + "Data");
+		RegisterServiceDevice("Info");
+		RegisterTxDevice("Data");
 
 		AddThread(Response);
 		AddThread(Sender);
@@ -48,13 +36,13 @@ public class CameraPlugin : DevicePlugin
 		var sw = new Stopwatch();
 		while (IsRunningThread)
 		{
-			if (cam != null)
+			if (gps != null)
 			{
-				var datastreamToSend = cam.PopData();
+				var datastreamToSend = gps.PopData();
 				sw.Restart();
 				Publish(datastreamToSend);
 				sw.Stop();
-				cam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				gps.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 			}
 		}
 	}
@@ -78,14 +66,9 @@ public class CameraPlugin : DevicePlugin
 						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
 						break;
 
-					case "request_camera_info":
-						var cameraInfoMessage = cam.GetCameraInfo();
-						SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
-						break;
-
 					case "request_transform":
-						var isSubParts = string.IsNullOrEmpty(subPartName);
-						var devicePose = cam.GetPose(isSubParts);
+						var device = gps as Device;
+						var devicePose = device.GetPose();
 						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
 						break;
 

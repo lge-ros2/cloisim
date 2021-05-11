@@ -6,26 +6,38 @@
 
 using Stopwatch = System.Diagnostics.Stopwatch;
 
-public class LaserPlugin : DevicePlugin
+public class CameraPlugin : CLOiSimPlugin
 {
-	private SensorDevices.Lidar lidar = null;
+	private SensorDevices.Camera cam = null;
 
-	private string hashServiceKey = string.Empty;
-	private string hashKey = string.Empty;
+	public string subPartName = string.Empty;
+
+	public SensorDevices.Camera GetCamera()
+	{
+		return cam;
+	}
 
 	protected override void OnAwake()
 	{
-		type = Type.LASER;
-		partName = DeviceHelper.GetPartName(gameObject);
+		var depthcam = gameObject.GetComponent<SensorDevices.DepthCamera>();
+		if (depthcam is null)
+		{
+			ChangePluginType(Type.CAMERA);
+			cam = gameObject.GetComponent<SensorDevices.Camera>();
+		}
+		else
+		{
+			ChangePluginType(Type.DEPTHCAMERA);
+			cam = depthcam;
+		}
 
-		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
-		lidar.SetPluginParameter(parameters);
+		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
-		RegisterServiceDevice("Info");
-		RegisterTxDevice("Data");
+		RegisterServiceDevice(subPartName + "Info");
+		RegisterTxDevice(subPartName + "Data");
 
 		AddThread(Response);
 		AddThread(Sender);
@@ -36,13 +48,13 @@ public class LaserPlugin : DevicePlugin
 		var sw = new Stopwatch();
 		while (IsRunningThread)
 		{
-			if (lidar != null)
+			if (cam != null)
 			{
-				var datastreamToSend = lidar.PopData();
+				var datastreamToSend = cam.PopData();
 				sw.Restart();
 				Publish(datastreamToSend);
 				sw.Stop();
-				lidar.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				cam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 			}
 		}
 	}
@@ -55,10 +67,9 @@ public class LaserPlugin : DevicePlugin
 
 			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
 
+			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
 			{
-				var device = lidar as Device;
-
 				switch (requestMessage.Name)
 				{
 					case "request_ros2":
@@ -67,9 +78,14 @@ public class LaserPlugin : DevicePlugin
 						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
 						break;
 
-					case "request_transform":
-						var devicePose = device.GetPose();
+					case "request_camera_info":
+						var cameraInfoMessage = cam.GetCameraInfo();
+						SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
+						break;
 
+					case "request_transform":
+						var isSubParts = string.IsNullOrEmpty(subPartName);
+						var devicePose = cam.GetPose(isSubParts);
 						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
 						break;
 

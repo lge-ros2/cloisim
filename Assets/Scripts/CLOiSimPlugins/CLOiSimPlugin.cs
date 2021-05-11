@@ -10,25 +10,25 @@ using System.IO;
 using UnityEngine;
 using System.Xml;
 
-public interface IDevicePlugin
+public interface ICLOiSimPlugin
 {
 	void SetPluginName(in string name);
 	void SetPluginParameters(in XmlNode node);
 	void Reset();
 }
 
-public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
+public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 {
 	public enum Type {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
 
 	public Type type { get; protected set; }
 
-	private BridgeManager bridgeManager = null;
+	private static BridgeManager bridgeManager = null;
 
 	public string modelName { get; protected set; } = string.Empty;
 	public string partName { get; protected set; } = string.Empty;
 
-	private Pose devicePluginPose = Pose.identity;
+	private Pose pluginPose = Pose.identity;
 
 	public string pluginName { get; protected set; } = string.Empty;
 	protected SDF.Helper.PluginParameters parameters = new SDF.Helper.PluginParameters();
@@ -41,9 +41,18 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	protected bool IsRunningThread => runningThread;
 
+	public void Stop() { runningThread = false; }
+
+	private Device device = null;
+
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
 	protected virtual void OnReset() {}
+
+	public void SetDevice(in Device device)
+	{
+		this.device = device;
+	}
 
 	protected bool AddThread(in ThreadStart function)
 	{
@@ -68,7 +77,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 	}
 
-	public void ChangePluginType(in DevicePlugin.Type targetType)
+	public void ChangePluginType(in CLOiSimPlugin.Type targetType)
 	{
 		type = targetType;
 	}
@@ -92,7 +101,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	public Pose GetPose()
 	{
-		return devicePluginPose;
+		return pluginPose;
 	}
 
 	private bool PrepareDevice(in string subPartName, out ushort port, out ulong hash)
@@ -182,10 +191,13 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		}
 		else
 		{
-			bridgeManager = coreObject.GetComponent<BridgeManager>();
 			if (bridgeManager == null)
 			{
-				Debug.LogError("Failed to get 'bridgeManager'!!!!");
+				bridgeManager = coreObject.GetComponent<BridgeManager>();
+				if (bridgeManager == null)
+				{
+					Debug.LogError("Failed to get 'bridgeManager'!!!!");
+				}
 			}
 		}
 
@@ -221,7 +233,6 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 
 	void OnDestroy()
 	{
-		// Debug.Log("DevicePlugin destroied");
 		runningThread = false;
 		foreach (var thread in threadList)
 		{
@@ -230,6 +241,7 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 				if (thread.IsAlive)
 				{
 					thread.Join();
+					thread.Abort();
 				}
 			}
 		}
@@ -240,6 +252,8 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 		{
 			DeregisterDevice(hashKey);
 		}
+
+		// Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
 	}
 
 	protected void ThreadWait()
@@ -250,8 +264,8 @@ public abstract partial class DevicePlugin : DeviceTransporter, IDevicePlugin
 	private void StorePose()
 	{
 		// Debug.Log(deviceName + ":" + transform.name);
-		devicePluginPose.position = transform.localPosition;
-		devicePluginPose.rotation = transform.localRotation;
+		pluginPose.position = transform.localPosition;
+		pluginPose.rotation = transform.localRotation;
 	}
 
 	protected static void ClearMemoryStream(ref MemoryStream ms)

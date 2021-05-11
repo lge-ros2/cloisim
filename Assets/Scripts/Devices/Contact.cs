@@ -80,7 +80,6 @@ namespace SensorDevices
 			contacts.contact.Clear();
 		}
 
-
 		public void CollisionEnter(Collision other)
 		{
 			if (other.contactCount > 0)

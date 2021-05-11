@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-public partial class ElevatorSystem : DevicePlugin
+public partial class ElevatorSystem : CLOiSimPlugin
 {
 	private enum ElevatorState {STOP = 0, UPWARD, DOWNWARD};
 	private struct ElevatorEntity
