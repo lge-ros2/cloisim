@@ -81,6 +81,8 @@ public class SimulationService : MonoBehaviour
 		if (wsServer != null)
 		{
 			Debug.Log("Stop WebSocket Server");
+			wsServer.RemoveWebSocketService("/control");
+			wsServer.RemoveWebSocketService("/markers");
 			wsServer.Stop();
 		}
 	}
