@@ -12,7 +12,7 @@ public partial class DeviceHelper
 {
 	private static Clock globalClock = null;
 
-	private static SphericalCoordinates _sphericalCoordinates = null;
+	private static SphericalCoordinates globalSphericalCoordinates = null;
 
 	public static void SetGlobalClock(in Clock clock)
 	{
@@ -24,20 +24,14 @@ public partial class DeviceHelper
 		return globalClock;
 	}
 
-	public static SphericalCoordinates GetSphericalCoordinates()
+	public static void SetGlobalSphericalCoordinates(in SphericalCoordinates sphericalCoordinates)
 	{
-		if (_sphericalCoordinates == null)
-		{
-			var coreObject = GameObject.Find("Core");
-			_sphericalCoordinates = coreObject?.GetComponent<SphericalCoordinates>();
+		globalSphericalCoordinates = sphericalCoordinates;
+	}
 
-			if (_sphericalCoordinates == null)
-			{
-				_sphericalCoordinates = coreObject.AddComponent<SphericalCoordinates>();
-			}
-		}
-
-		return _sphericalCoordinates;
+	public static SphericalCoordinates GetGlobalSphericalCoordinates()
+	{
+		return globalSphericalCoordinates;
 	}
 
 	public static string GetModelName(in GameObject targetObject, in bool searchOnlyOneDepth = false)

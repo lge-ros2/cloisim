@@ -141,7 +141,6 @@ public class Main: MonoBehaviour
 
 		Application.targetFrameRate = 61;
 
-
 		var mainCamera = Camera.main;
 		mainCamera.depthTextureMode = DepthTextureMode.None;
 		mainCamera.allowHDR = true;
@@ -159,6 +158,9 @@ public class Main: MonoBehaviour
 
 		clock = GetComponent<Clock>();
 		DeviceHelper.SetGlobalClock(clock);
+
+		var sphericalCoordinates = GetComponent<SphericalCoordinates>();
+		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
 
 		ResetRootModelsTransform();
 	}
