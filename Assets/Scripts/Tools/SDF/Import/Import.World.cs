@@ -31,7 +31,7 @@ namespace SDF
 
 				if (world.spherical_coordinates != null)
 				{
-					var sphericalCoordinatesCore = DeviceHelper.GetSphericalCoordinates();
+					var sphericalCoordinatesCore = DeviceHelper.GetGlobalSphericalCoordinates();
 
 					var sphericalCoordinates = world.spherical_coordinates;
 

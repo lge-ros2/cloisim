@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;

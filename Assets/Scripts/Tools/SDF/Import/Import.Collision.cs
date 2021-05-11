@@ -43,11 +43,6 @@ namespace SDF
 						collider.convex = false;
 					}
 
-					if (collision.GetGeometry().GetShapeType().Equals(typeof(Plane)))
-					{
-						collisionObject.layer = Implement.Collision.PlaneLayerIndex;
-					}
-
 #if UNITY_EDITOR
 					SceneVisibilityManager.instance.ToggleVisibility(collisionObject, true);
 					SceneVisibilityManager.instance.DisablePicking(collisionObject, true);

@@ -20,30 +20,29 @@ This project consists of
 
 ## Features
 
-The current release includes the features only for a 2-wheeled mobile robot with 2D LiDAR sensor.
+The current release includes the features only for marked items in the list below.
 Other sensor models are work in progress.
-Here is the full list of models that is implemented or planned to be implemented.
+Here are the list of items that is implemented(marked) or planned to be implemented.
 
 - [X] Driving models
   - [X] 2-Wheeled Motor
 - [X] Sensor models
   - [X] LiDAR Sensor
     - [X] 2D
-    - [ ] 3D
+    - [X] 3D
   - [X] Sonar sensor
   - [X] IMU
   - [X] Contact
   - [X] Camera
     - [ ] Camera intrinsic parameter
-  - [X] Depth Camera
-    - [ ] Point Cloud
-  - [X] Multi-camera
-  - [X] RealSense (RGB + IR1 + IR2 + Depth)
+    - [X] Depth Camera
+    - [ ] Multi-camera
+    - [X] RealSense (RGB + IR1 + IR2 + Depth)
   - [X] GPS sensor
   - [ ] Sensor noise models
-  - [ ] Physics
-    - [ ] Support all physics parameters in SDF specification
-    - [X] Support `<Joint type="revolute2">`
+- [ ] Physics
+  - [ ] Support all physics parameters in SDF specification
+  - [X] Support `<Joint type="revolute2">`
 - [ ] Worlds
   - [X] Actors
     - [ ] interpolate_x in `<animation>`
@@ -97,7 +96,7 @@ For the performance in terms of collision handling, designing collision geometry
 
 ### Release version
 
-If you don't want to build a project, just USE a release binary([Download linux version](https://github.com/lge-ros2/cloisim/releases)). And just refer to 'Usage'
+If you don't want to build a project, just USE a release binary([Download linux version](https://github.com/lge-ros2/cloisim/releases)). And just refer to '[Usage](https://github.com/lge-ros2/cloisim#usage)' section.
 
 ### If you want to build a project
 
@@ -166,7 +165,7 @@ New features or functions shall be developed on demand.
 
 - Noise models for sensor model
 
-- Performance optimization for sensors (Use DOTS by unity?)
+- Performance optimization for sensors (Use DOT by unity?)
 
 - Upgrade quality of graphical elements
 

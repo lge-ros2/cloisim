@@ -41,7 +41,7 @@ namespace SDF
 				base.Awake();
 			}
 
-			public new void Reset()
+			new void Reset()
 			{
 				base.Reset();
 

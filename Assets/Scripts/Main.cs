@@ -141,7 +141,6 @@ public class Main: MonoBehaviour
 
 		Application.targetFrameRate = 61;
 
-
 		var mainCamera = Camera.main;
 		mainCamera.depthTextureMode = DepthTextureMode.None;
 		mainCamera.allowHDR = true;
@@ -159,6 +158,9 @@ public class Main: MonoBehaviour
 
 		clock = GetComponent<Clock>();
 		DeviceHelper.SetGlobalClock(clock);
+
+		var sphericalCoordinates = GetComponent<SphericalCoordinates>();
+		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
 
 		ResetRootModelsTransform();
 	}
@@ -250,6 +252,14 @@ public class Main: MonoBehaviour
 		}
 	}
 
+	private void OnDestroy()
+	{
+		foreach (var worldPlugin in GetComponents<CLOiSimPlugin>())
+		{
+			worldPlugin.Stop();
+		}
+	}
+
 	public bool TriggerResetService()
 	{
 		if (isResetting)
@@ -283,7 +293,7 @@ public class Main: MonoBehaviour
 			helper.Reset();
 		}
 
-		foreach (var plugin in modelsRoot.GetComponentsInChildren<DevicePlugin>())
+		foreach (var plugin in modelsRoot.GetComponentsInChildren<CLOiSimPlugin>())
 		{
 			plugin.Reset();
 		}

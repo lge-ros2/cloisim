@@ -11,7 +11,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
-public class MultiCameraPlugin : DevicePlugin
+public class MultiCameraPlugin : CLOiSimPlugin
 {
 	private SensorDevices.MultiCamera multicam = null;
 

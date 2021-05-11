@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+<<<<<<< HEAD:Assets/Scripts/Tools/ProtobufMessages/empty.cs.meta
+guid: 652522a7738deb4a28d2a00cd6124ba9
+=======
+guid: 22d467b9629d777928a29d70a23813d7
+>>>>>>> develop:Assets/Scripts/CLOiSimPlugins/CLOiSimPlugin.InfoService.cs.meta
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

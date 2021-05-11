@@ -5,7 +5,6 @@
  */
 
 using System.Collections.Generic;
-using System;
 using UE = UnityEngine;
 
 namespace SDF
