@@ -202,11 +202,13 @@ namespace SensorDevices
 			camImageData = new CameraImageData(GetParameters().image_width, GetParameters().image_height, GetParameters().image_format);
 		}
 
-		protected void OnDestroy()
+		new void OnDestroy()
 		{
 			// Debug.Log("OnDestroy(Camera)");
 			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
 			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+
+			base.OnDestroy();
 		}
 
 		private IEnumerator CameraWorker()

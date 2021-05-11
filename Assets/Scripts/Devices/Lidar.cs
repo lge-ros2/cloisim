@@ -123,7 +123,7 @@ namespace SensorDevices
 			}
 		}
 
-		private void OnDestroy()
+		new void OnDestroy()
 		{
       // Debug.LogWarning("Destroy");
 			// Important!! Native arrays must be disposed manually.
@@ -132,6 +132,8 @@ namespace SensorDevices
   			var item = readbacks.ElementAt(i);
 				item.Key.WaitForCompletion();
 			}
+
+			base.OnDestroy();
 		}
 
 		protected override void InitializeMessages()

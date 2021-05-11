@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -31,10 +30,6 @@ namespace SensorDevices
 		private Vector3 previousImuRotation = Vector3.zero;
 		private Vector3 previousLinearVelocity = Vector3.zero;
 
-		public float samplingRate = 100f;
-		public float samplingPeriod = 0;
-		public float timeElapsed = 0;
-
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
@@ -44,7 +39,6 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
-			samplingPeriod = 1/samplingRate;
 		}
 
 		public void Reset()
