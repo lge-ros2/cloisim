@@ -19,12 +19,12 @@ public class BridgeManager : MonoBehaviour
 	private Dictionary<string, ushort> haskKeyPortMapTable = new Dictionary<string, ushort>();
 
 	/*
-	 * ModelName, DevicePluginType, Devicename, topic : portnumber
+	 * ModelName, CLOiSimPluginType, Devicename, topic : portnumber
 	 *
 	 * {
 	 * 	"ModelName":
 	 *	{
-	 * 		"DevicePluginType":
+	 * 		"CLOiSimPluginType":
 	 * 		{
 	 * 			"PartsName":
 	 * 			{

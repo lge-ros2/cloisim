@@ -33,7 +33,7 @@ public class MicomInput : Device
 		angularVelocity = Vector3.zero;
 	}
 
-	protected override void ProcessDeviceCoroutine()
+	protected override void ProcessDevice()
 	{
 		DoWheelDrive();
 	}
@@ -55,7 +55,6 @@ public class MicomInput : Device
 		}
 
 		// Right-handed -> Left-handed direction of rotation
-
 		linearVelocity = -SDF2Unity.GetPosition(micomWritingData.Linear.X, micomWritingData.Linear.Y, micomWritingData.Linear.Z);
 		angularVelocity = -SDF2Unity.GetPosition(micomWritingData.Angular.X, micomWritingData.Angular.Y, micomWritingData.Angular.Z);
 	}

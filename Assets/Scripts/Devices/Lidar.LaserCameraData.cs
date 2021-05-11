@@ -30,14 +30,17 @@ namespace SensorDevices
 				this.imageHeight = height;
 				this.imageBuffer = default(NativeArray<byte>);
 				this.depthBuffer = default(NativeArray<float>);
+			}
 
+			public void Allocate()
+			{
 				var dataLength = imageWidth * imageHeight;
-				depthBuffer = new NativeArray<float>(dataLength, Allocator.Persistent);
+				this.depthBuffer = new NativeArray<float>(dataLength, Allocator.TempJob);
 			}
 
 			public void Deallocate()
 			{
-				depthBuffer.Dispose();
+				this.depthBuffer.Dispose();
 			}
 
 			public int Length()
@@ -103,7 +106,6 @@ namespace SensorDevices
 
 			private NativeArray<double> laserData;
 
-
 			public readonly float StartAngleH => centerAngle - maxHAngleHalf;
 			public readonly float EndAngleH => centerAngle + maxHAngleHalf;
 			public readonly float TotalAngleH => EndAngleH - StartAngleH;
@@ -118,14 +120,18 @@ namespace SensorDevices
 				this.horizontalBufferLength = bufferWidth;
 				this.verticalBufferLength = bufferHeight;
 				this.depthBuffer = default(NativeArray<float>);
+				this.laserData = default(NativeArray<double>);
+			}
 
+			public void Allocate()
+			{
 				var dataLength = horizontalBufferLength * verticalBufferLength;
-				this.laserData = new NativeArray<double>(dataLength, Allocator.Persistent);
+				this.laserData = new NativeArray<double>(dataLength, Allocator.TempJob);
 			}
 
 			public void Deallocate()
 			{
-				laserData.Dispose();
+				this.laserData.Dispose();
 			}
 
 			public int OutputLength()

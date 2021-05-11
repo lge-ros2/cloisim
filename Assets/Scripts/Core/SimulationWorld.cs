@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-public class SimulationWorld : DevicePlugin
+public class SimulationWorld : CLOiSimPlugin
 {
 	private Clock clock = null;
 
@@ -16,6 +16,7 @@ public class SimulationWorld : DevicePlugin
 	{
 		type = Type.WORLD;
 		clock = gameObject.AddComponent<Clock>();
+		SetDevice(clock);
 
 		modelName = "World";
 		partName = "cloisim_world";

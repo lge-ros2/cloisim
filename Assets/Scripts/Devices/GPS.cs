@@ -30,7 +30,7 @@ namespace SensorDevices
 			gpsLink = transform.parent;
 			deviceName = name;
 
-			sphericalCoordinates = DeviceHelper.GetSphericalCoordinates();
+			sphericalCoordinates = DeviceHelper.GetGlobalSphericalCoordinates();
 		}
 
 		protected override void OnStart()

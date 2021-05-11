@@ -219,8 +219,10 @@ public class Motor : MonoBehaviour
 				compensatedTargetAngularVelocity = 0;
 				_rapidControl.Wait();
 			}
-
-			SetTargetVelocityAndForce(compensatedTargetAngularVelocity, _targetTorque);
+			else
+			{
+				SetTargetVelocityAndForce(compensatedTargetAngularVelocity, _targetTorque);
+			}
 		}
 		else
 		{
@@ -244,7 +246,7 @@ public class Motor : MonoBehaviour
 
 	private ArticulationDrive GetDrive()
 	{
-		var drive = new ArticulationDrive();
+		ArticulationDrive drive;
 
 		if (_motorBody.jointType.Equals(ArticulationJointType.RevoluteJoint))
 		{
@@ -264,6 +266,14 @@ public class Motor : MonoBehaviour
 			{
 				drive = _motorBody.zDrive;
 			}
+			else
+			{
+				drive = new ArticulationDrive();
+			}
+		}
+		else
+		{
+			drive = new ArticulationDrive();
 		}
 
 		return drive;

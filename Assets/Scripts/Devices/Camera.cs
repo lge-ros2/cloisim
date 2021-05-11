@@ -35,17 +35,18 @@ namespace SensorDevices
 		protected TextureFormat readbackDstFormat;
 		private CameraImageData camImageData;
 
+		private CommandBuffer cmdBuffer;
+
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
 			if (camera.Equals(camSensor))
 			{
 				// This is where you can write custom rendering code. Customize this method to customize your SRP.
 				// Create and schedule a command to clear the current render target
-				var cmdBuffer = new CommandBuffer();
 				cmdBuffer.SetInvertCulling(true);
 				context.ExecuteCommandBuffer(cmdBuffer);
 				// Tell the Scriptable Render Context to tell the graphics API to perform the scheduled commands
-				cmdBuffer.Release();
+				cmdBuffer.Clear();
 				context.Submit();
 			}
 		}
@@ -54,10 +55,9 @@ namespace SensorDevices
 		{
 			if (camera.Equals(camSensor))
 			{
-				var cmdBuffer = new CommandBuffer();
 				cmdBuffer.SetInvertCulling(false);
 				context.ExecuteCommandBuffer(cmdBuffer);
-				cmdBuffer.Release();
+				cmdBuffer.Clear();
 				context.Submit();
 			}
 		}
@@ -65,6 +65,7 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
+			cmdBuffer = new CommandBuffer();
 			camSensor = gameObject.AddComponent<UnityEngine.Camera>();
 			universalCamData = camSensor.GetUniversalAdditionalCameraData();
 
@@ -111,8 +112,6 @@ namespace SensorDevices
 					readbackDstFormat = TextureFormat.RGB24;
 					break;
 			}
-
-
 		}
 
 		protected override void InitializeMessages()
@@ -203,11 +202,13 @@ namespace SensorDevices
 			camImageData = new CameraImageData(GetParameters().image_width, GetParameters().image_height, GetParameters().image_format);
 		}
 
-		protected void OnDestroy()
+		new void OnDestroy()
 		{
 			// Debug.Log("OnDestroy(Camera)");
 			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
 			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+
+			base.OnDestroy();
 		}
 
 		private IEnumerator CameraWorker()
@@ -236,7 +237,7 @@ namespace SensorDevices
 			}
 		}
 
-		protected virtual void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
+		protected void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
 		{
 			if (request.hasError)
 			{
@@ -247,7 +248,8 @@ namespace SensorDevices
 
 			if (request.done)
 			{
-				camImageData.SetTextureBufferData(request.GetData<byte>());
+				var readbackData = request.GetData<byte>();
+				camImageData.SetTextureBufferData(readbackData);
 				var image = imageStamped.Image;
 				if (image.Data.Length == camImageData.GetImageDataLength())
 				{
@@ -258,8 +260,6 @@ namespace SensorDevices
 					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
 					image.Data = imageData;
 
-					camImageData.Dispose();
-
 					if (GetParameters().save_enabled)
 					{
 						var saveName = name + "_" + Time.time;
@@ -267,6 +267,7 @@ namespace SensorDevices
 						// Debug.LogFormat("{0}|{1} captured", GetParameters().save_path, saveName);
 					}
 				}
+				readbackData.Dispose();
 			}
 		}
 

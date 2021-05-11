@@ -17,6 +17,8 @@ namespace SDF
 			private Model _modelHelper = null;
 			public bool drawInertia = false;
 
+			private bool drawContact = true;
+
 			[UE.Header("SDF Properties")]
 			public bool isSelfCollide = false;
 
@@ -25,6 +27,8 @@ namespace SDF
 			private UE.ArticulationBody _artBody = null;
 
 			public Dictionary<string, UE.ArticulationBody> jointList = new Dictionary<string, UE.ArticulationBody>();
+
+			private List<UE.ContactPoint> contactPointList = new List<UE.ContactPoint>();
 
 			public Model TopModel => _topModel;
 
@@ -66,6 +70,16 @@ namespace SDF
 
 					UE.Gizmos.DrawCube(transform.position, region);
 				}
+
+				if (drawContact && contactPointList.Count > 0)
+				{
+					// Debug-draw all contact points and normals
+					foreach (var contact in contactPointList)
+					{
+						UE.Debug.DrawRay(contact.point, contact.normal, UE.Color.cyan, 0, true);
+					}
+					contactPointList.Clear();
+				}
 			}
 
 			void OnJointBreak(float breakForce)
@@ -76,30 +90,7 @@ namespace SDF
 			void OnCollisionStay(UE.Collision collisionInfo)
 			{
 				// Debug.Log(name + " |Stay| " + collisionInfo.gameObject.name);
-
-				// Debug-draw all contact points and normals
-				for (var index = 0; index < collisionInfo.contactCount; index++)
-				{
-					var contact = collisionInfo.contacts[index];
-					UE.Debug.DrawRay(contact.point, contact.normal, UE.Color.blue);
-					// Debug.Log(name + " |Stay| " + "," + contact.point + ", " + contact.separation.ToString("F5"));
-				}
-			}
-
-			void OnCollisionEnter(UE.Collision collisionInfo)
-			{
-				// for (var index = 0; index < collisionInfo.contactCount; index++)
-				// {
-				// 	var contact = collisionInfo.contacts[index];
-				// 	Debug.DrawRay(contact.point, contact.normal * 1.5f, Color.red, 0.1f);
-				// 	// Debug.Log(name + " |Enter| " + "," + contact.point + ", " + contact.separation.ToString("F5"));
-				// }
-				// Debug.Log(name + " |Enter| " + collisionInfo.gameObject.name);
-			}
-
-			void OnCollisionExit(UE.Collision collisionInfo)
-			{
-				// Debug.Log(name + " |Exit| " + collisionInfo.gameObject.name);
+				contactPointList.AddRange(collisionInfo.contacts);
 			}
 
 			private UE.Collider[] GetCollidersInChildren()

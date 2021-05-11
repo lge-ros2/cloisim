@@ -1,4 +1,4 @@
-# DevicePlugins
+# CLOiSimPlugin
 
 These plugin scripts are for sensor connection.
 
@@ -17,7 +17,7 @@ For example, if it describes a name with 'RobotControl' in `<plugin>` attributes
       <kd>0.0</kd>
     </PID>
     <wheel>
-      <base>449</base>
+      <tread>449</tread>
       <radius>95.5</radius>
       <location type="left">LeftWheel</location>
       <location type="right">RightWheel</location>
