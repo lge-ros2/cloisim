@@ -178,11 +178,6 @@ namespace SensorDevices
 				var fileName = string.Format("{0}/{1}.png", path, name);
 				System.IO.File.WriteAllBytes(fileName, bytes);
 			}
-
-			public void Dispose()
-			{
-				imageBuffer.Dispose();
-			}
 		}
 	}
 }

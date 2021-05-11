@@ -246,7 +246,8 @@ namespace SensorDevices
 
 			if (request.done)
 			{
-				camImageData.SetTextureBufferData(request.GetData<byte>());
+				var readbackData = request.GetData<byte>();
+				camImageData.SetTextureBufferData(readbackData);
 				var image = imageStamped.Image;
 				if (image.Data.Length == camImageData.GetImageDataLength())
 				{
@@ -257,8 +258,6 @@ namespace SensorDevices
 					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
 					image.Data = imageData;
 
-					camImageData.Dispose();
-
 					if (GetParameters().save_enabled)
 					{
 						var saveName = name + "_" + Time.time;
@@ -266,6 +265,7 @@ namespace SensorDevices
 						// Debug.LogFormat("{0}|{1} captured", GetParameters().save_path, saveName);
 					}
 				}
+				readbackData.Dispose();
 			}
 		}
 
