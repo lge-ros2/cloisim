@@ -29,14 +29,18 @@ namespace SensorDevices
 				this.imageWidth = width;
 				this.imageHeight = height;
 				this.imageBuffer = default(NativeArray<byte>);
+				this.depthBuffer = default(NativeArray<float>);
+			}
 
+			public void Allocate()
+			{
 				var dataLength = imageWidth * imageHeight;
-				this.depthBuffer = new NativeArray<float>(dataLength, Allocator.Persistent);
+				this.depthBuffer = new NativeArray<float>(dataLength, Allocator.TempJob);
 			}
 
 			public void Deallocate()
 			{
-				depthBuffer.Dispose();
+				this.depthBuffer.Dispose();
 			}
 
 			public int Length()

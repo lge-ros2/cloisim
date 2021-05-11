@@ -132,10 +132,6 @@ namespace SensorDevices
 			{
   			var item = readbacks.ElementAt(i);
 				item.Key.WaitForCompletion();
-
-				var dataIndex = item.Value;
-				var depthBuffer = depthCamBuffers[dataIndex];
-				depthBuffer.Deallocate();
 			}
 		}
 
@@ -255,8 +251,7 @@ namespace SensorDevices
 			var height = targetDepthRT.height;
 			for (var index = 0; index < numberOfLaserCamData; index++)
 			{
-				var depthCamBuffer = new DepthCamBuffer(width, height);
-				depthCamBuffers[index] = depthCamBuffer;
+				depthCamBuffers[index] = new DepthCamBuffer(width, height);
 
 				var data = new LaserCamData(width, height, laserAngleResolution);
 				data.SetMaxHorizontalHalfAngle(LaserCameraHFov * 0.5f);
@@ -314,25 +309,33 @@ namespace SensorDevices
 				if (readbacks.TryGetValue(request, out var dataIndex))
 				{
 					const int batchSize = 64;
+
 					var depthCamBuffer = depthCamBuffers[dataIndex];
-					depthCamBuffer.imageBuffer = request.GetData<byte>();
 
-					if (depthCamBuffer.depthBuffer.IsCreated)
-					{
-						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), batchSize);
-						jobHandleDepthCamBuffer.Complete();
+					var readbackData = request.GetData<byte>();
+					depthCamBuffer.imageBuffer = readbackData;
+					depthCamBuffer.Allocate();
 
-						var data = laserCamData[dataIndex];
-						data.depthBuffer = depthCamBuffer.depthBuffer;
-						data.Allocate();
+          if (depthCamBuffer.depthBuffer.IsCreated)
+          {
+            var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), batchSize);
+            jobHandleDepthCamBuffer.Complete();
 
-						var jobHandle = data.Schedule(data.OutputLength(), batchSize);
-						jobHandle.Complete();
+            var data = laserCamData[dataIndex];
+            data.depthBuffer = depthCamBuffer.depthBuffer;
+            data.Allocate();
 
-						laserDataOutput[dataIndex].data = data.GetLaserData();
+            var jobHandle = data.Schedule(data.OutputLength(), batchSize);
+            jobHandle.Complete();
 
-						data.Deallocate();
-					}
+            laserDataOutput[dataIndex].data = data.GetLaserData();
+
+            data.Deallocate();
+          }
+
+          depthCamBuffer.Deallocate();
+
+					readbackData.Dispose();
 
 					readbacks.Remove(request);
 				}
