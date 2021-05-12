@@ -162,23 +162,27 @@ public abstract class Device : MonoBehaviour
 
 	protected abstract void OnStart();
 
-	protected virtual void ProcessDevice() { }
 
 	protected virtual IEnumerator OnVisualize()
 	{
 		yield return null;
 	}
 
-	protected abstract void InitializeMessages();
+	protected virtual void InitializeMessages() { }
 
-	protected abstract void GenerateMessage();
+
+	// Used for RX
+	protected virtual void ProcessDevice() { }
+
+
+	// Used for TX
+	protected virtual void GenerateMessage() { }
 
 	private IEnumerator DeviceCoroutineTx()
 	{
 		var waitForSeconds = new WaitForSeconds(WaitPeriod());
 		while (runningDevice)
 		{
-			ProcessDevice();
 			GenerateMessage();
 			yield return waitForSeconds;
 		}
@@ -186,11 +190,10 @@ public abstract class Device : MonoBehaviour
 
 	private IEnumerator DeviceCoroutineRx()
 	{
-		var waitUntil = new WaitUntil(() => deviceMessage.Length > 0);
+		var waitUntil = new WaitUntil(() => deviceMessageQueue.Count > 0);
 		while (runningDevice)
 		{
 			yield return waitUntil;
-			GenerateMessage();
 			ProcessDevice();
 		}
 	}
@@ -199,7 +202,6 @@ public abstract class Device : MonoBehaviour
 	{
 		while (runningDevice)
 		{
-			ProcessDevice();
 			GenerateMessage();
 			Thread.Sleep(WaitPeriodInMilliseconds());
 		}
@@ -209,9 +211,8 @@ public abstract class Device : MonoBehaviour
 	{
 		while (runningDevice)
 		{
-			if (deviceMessage.Length > 0)
+			if (deviceMessageQueue.Count > 0)
 			{
-				GenerateMessage();
 				ProcessDevice();
 			}
 		}
@@ -226,16 +227,30 @@ public abstract class Device : MonoBehaviour
 
 	public bool PushDeviceMessage(in byte[] data)
 	{
-		deviceMessage.SetMessage(data);
-		deviceMessage.GetMessage(out var message);
-		return deviceMessageQueue.Push(message);
+		if (deviceMessage.SetMessage(data))
+		{
+			deviceMessage.GetMessage(out var message);
+			return deviceMessageQueue.Push(message);
+		}
+
+		return false;
 	}
 
 	public bool PopDeviceMessage<T>(out T instance)
 	{
-		var result = deviceMessageQueue.Pop(out var data);
-		instance = data.GetMessage<T>();
-		return result;
+		try
+		{
+			var result = deviceMessageQueue.Pop(out var data);
+			instance = data.GetMessage<T>();
+			return result;
+		}
+		catch
+		{
+			instance = default(T);
+			Debug.LogWarning("PopDeviceMessage<T>(): ERROR");
+		}
+
+		return false;
 	}
 
 	public bool PopDeviceMessage(out DeviceMessage data)

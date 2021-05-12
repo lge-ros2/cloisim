@@ -21,6 +21,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 		micomSensor = gameObject.AddComponent<MicomSensor>();
 		micomSensor.SetPluginParameter(parameters);
+
 		micomInput = gameObject.AddComponent<MicomInput>();
 		micomInput.SetMicomSensor(micomSensor);
 	}
@@ -65,13 +66,10 @@ public class MicomPlugin : CLOiSimPlugin
 
 	private void Receiver()
 	{
-		while (IsRunningThread)
+		while (IsRunningThread && micomInput != null)
 		{
-			if (micomInput != null)
-			{
-				var receivedData = Subscribe();
-				micomInput.PushDeviceMessage(receivedData);
-			}
+			var receivedData = Subscribe();
+			micomInput.PushDeviceMessage(receivedData);
 
 			ThreadWait();
 		}
