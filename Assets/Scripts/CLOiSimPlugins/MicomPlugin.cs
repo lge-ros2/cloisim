@@ -32,36 +32,18 @@ public class MicomPlugin : CLOiSimPlugin
 		micomInput.EnableDebugging = debugging;
 
 		RegisterServiceDevice("Info");
-		RegisterTxDevice("Tx");
 		RegisterRxDevice("Rx");
+		RegisterTxDevice("Tx");
 
-		AddThread(Receiver);
-		AddThread(Sender);
 		AddThread(Response);
+		AddThread(Receiver);
+		AddThread(SenderThread, micomSensor as System.Object);
 	}
 
 	protected override void OnReset()
 	{
 		micomSensor.Reset();
 		micomInput.Reset();
-	}
-
-	private void Sender()
-	{
-		var sw = new Stopwatch();
-		while (IsRunningThread)
-		{
-			if (micomSensor != null)
-			{
-				if (micomSensor.PopDeviceMessage(out var dataStreamToSend))
-				{
-					sw.Restart();
-					Publish(dataStreamToSend);
-					sw.Stop();
-					micomSensor.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
-				}
-			}
-		}
 	}
 
 	private void Receiver()
@@ -71,12 +53,14 @@ public class MicomPlugin : CLOiSimPlugin
 			var receivedData = Subscribe();
 			micomInput.PushDeviceMessage(receivedData);
 
-			ThreadWait();
+			WaitThread();
 		}
 	}
 
 	private void Response()
 	{
+		var msForInfoResponse = new MemoryStream();
+
 		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
@@ -114,7 +98,7 @@ public class MicomPlugin : CLOiSimPlugin
 				SendResponse(msForInfoResponse);
 			}
 
-			ThreadWait();
+			WaitThread();
 		}
 	}
 

@@ -170,10 +170,8 @@ public abstract class Device : MonoBehaviour
 
 	protected virtual void InitializeMessages() { }
 
-
 	// Used for RX
 	protected virtual void ProcessDevice() { }
-
 
 	// Used for TX
 	protected virtual void GenerateMessage() { }

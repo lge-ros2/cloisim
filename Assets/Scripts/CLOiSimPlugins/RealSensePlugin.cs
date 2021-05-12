@@ -112,7 +112,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 				SendResponse(msForInfoResponse);
 			}
 
-			ThreadWait();
+			WaitThread();
 		}
 	}
 

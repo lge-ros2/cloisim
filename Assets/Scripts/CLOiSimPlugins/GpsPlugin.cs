@@ -28,10 +28,10 @@ public class GpsPlugin : CLOiSimPlugin
 		RegisterTxDevice("Data");
 
 		AddThread(Response);
-		AddThread(Sender);
+		AddThread(SenderThread);
 	}
 
-	private void Sender()
+	private void SenderThread()
 	{
 		var sw = new Stopwatch();
 		while (IsRunningThread)
@@ -81,7 +81,7 @@ public class GpsPlugin : CLOiSimPlugin
 				SendResponse(msForInfoResponse);
 			}
 
-			ThreadWait();
+			WaitThread();
 		}
 	}
 }

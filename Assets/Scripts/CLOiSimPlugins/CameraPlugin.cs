@@ -40,25 +40,7 @@ public class CameraPlugin : CLOiSimPlugin
 		RegisterTxDevice(subPartName + "Data");
 
 		AddThread(Response);
-		AddThread(Sender);
-	}
-
-	private void Sender()
-	{
-		var sw = new Stopwatch();
-		while (IsRunningThread)
-		{
-			if (cam != null)
-			{
-				if (cam.PopDeviceMessage(out var dataStreamToSend))
-				{
-					sw.Restart();
-					Publish(dataStreamToSend);
-					sw.Stop();
-					cam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
-				}
-			}
-		}
+		AddThread(SenderThread, cam as System.Object);
 	}
 
 	private void Response()
@@ -98,7 +80,7 @@ public class CameraPlugin : CLOiSimPlugin
 				SendResponse(msForInfoResponse);
 			}
 
-			ThreadWait();
+			WaitThread();
 		}
 	}
 }

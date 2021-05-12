@@ -26,20 +26,6 @@ public class SimulationWorld : CLOiSimPlugin
 	{
 		RegisterTxDevice("Clock");
 
-		AddThread(Sender);
-	}
-
-	private void Sender()
-	{
-		while (IsRunningThread)
-		{
-			if (clock != null)
-			{
-				if (clock.PopDeviceMessage(out var dataStreamToSend))
-				{
-					Publish(dataStreamToSend);
-				}
-			}
-		}
+		AddThread(SenderThread, clock as System.Object);
 	}
 }

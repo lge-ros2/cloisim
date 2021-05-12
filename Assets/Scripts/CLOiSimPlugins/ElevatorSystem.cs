@@ -285,7 +285,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 				}
 			}
 
-			ThreadWait();
+			WaitThread();
 		}
 	}
 

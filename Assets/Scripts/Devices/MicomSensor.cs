@@ -13,19 +13,6 @@ public partial class MicomSensor : Device
 {
 	private messages.Micom micomSensorData = null;
 
-#region Motor Related
-	private string _wheelNameLeft = string.Empty;
-	private string _wheelNameRight = string.Empty;
-
-	private Dictionary<string, Motor> _motors = new Dictionary<string, Motor>();
-
-	public float _PGain, _IGain, _DGain;
-
-	private float wheelTread = 0.0f;
-	private float wheelRadius = 0.0f;
-	private float divideWheelRadius = 0.0f; // for computational performance
-#endregion
-
 	private SensorDevices.IMU imuSensor = null;
 	private List<SensorDevices.Sonar> ussSensors = new List<SensorDevices.Sonar>();
 	private List<SensorDevices.Sonar> irSensors = new List<SensorDevices.Sonar>();
@@ -35,9 +22,6 @@ public partial class MicomSensor : Device
 	private List<ArticulationBody> bumperSensors = new List<ArticulationBody>();
 
 	private Dictionary<string, Pose> partsPoseMapTable = new Dictionary<string, Pose>();
-
-	public float WheelBase => wheelTread;
-	public float WheelRadius => wheelRadius;
 
 	protected override void OnAwake()
 	{
@@ -58,8 +42,8 @@ public partial class MicomSensor : Device
 		wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
 		divideWheelRadius = 1.0f/wheelRadius;
 
-		_wheelNameLeft = GetPluginParameters().GetValue<string>("wheel/location[@type='left']");
-		_wheelNameRight = GetPluginParameters().GetValue<string>("wheel/location[@type='right']");
+		wheelNameLeft = GetPluginParameters().GetValue<string>("wheel/location[@type='left']");
+		wheelNameRight = GetPluginParameters().GetValue<string>("wheel/location[@type='right']");
 
 		var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
 		var brakeFriction = GetPluginParameters().GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
@@ -68,7 +52,7 @@ public partial class MicomSensor : Device
 		foreach (var model in modelList)
 		{
 			// Debug.Log(model.name);
-			if (model.name.Equals(_wheelNameLeft) || model.name.Equals(_wheelNameRight))
+			if (model.name.Equals(wheelNameLeft) || model.name.Equals(wheelNameRight))
 			{
 				var motorObject = model.gameObject;
 				var motor = gameObject.AddComponent<Motor>();
@@ -308,15 +292,15 @@ public partial class MicomSensor : Device
 			var odom = micomSensorData.Odom;
 			if ((odom != null))
 			{
-				if (!_motors.TryGetValue(_wheelNameLeft, out var motorLeft))
+				if (!_motors.TryGetValue(wheelNameLeft, out var motorLeft))
 				{
-					Debug.Log("cannot find motor object: " + _wheelNameLeft);
+					Debug.Log("cannot find motor object: " + wheelNameLeft);
 					return false;
 				}
 
-				if (!_motors.TryGetValue(_wheelNameRight, out var motorRight))
+				if (!_motors.TryGetValue(wheelNameRight, out var motorRight))
 				{
-					Debug.Log("cannot find motor object: " + _wheelNameRight);
+					Debug.Log("cannot find motor object: " + wheelNameRight);
 					return false;
 				}
 
@@ -363,86 +347,5 @@ public partial class MicomSensor : Device
 		}
 
 		return false;
-	}
-
-	/// <summary>Set differential driver</summary>
-	/// <remarks>rad per second for wheels</remarks>
-	public void SetDifferentialDrive(in float linearVelocityLeft, in float linearVelocityRight)
-	{
-		var angularVelocityLeft = linearVelocityLeft * divideWheelRadius * Mathf.Rad2Deg;
-		var angularVelocityRight = linearVelocityRight * divideWheelRadius * Mathf.Rad2Deg;
-
-		SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
-	}
-
-	public void SetTwistDrive(in float linearVelocity, in float angularVelocity)
-	{
-		// m/s, rad/s
-		// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelTread)) / (2 * wheelRadius);
-		// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelTread)) / (2 * wheelRadius);
-		var angularCalculation = (angularVelocity * wheelTread * 0.5f);
-		var linearVelocityLeft = (linearVelocity - angularCalculation);
-		var linearVelocityRight = (linearVelocity + angularCalculation);
-
-		SetDifferentialDrive(linearVelocityLeft, linearVelocityRight);
-	}
-
-	public void UpdateMotorFeedback(in float linearVelocityLeft, in float linearVelocityRight)
-	{
-		var linearVelocity = (linearVelocityLeft + linearVelocityRight) * 0.5f;
-		var angularVelocity = (linearVelocityRight - linearVelocity) / (wheelTread * 0.5f);
-
-		UpdateMotorFeedback(angularVelocity);
-	}
-
-	public void UpdateMotorFeedback(in float angularVelocity)
-	{
-		foreach (var motor in _motors.Values)
-		{
-			motor.Feedback.SetRotatingTargetVelocity(angularVelocity);
-		}
-	}
-
-	/// <summary>Set motor velocity</summary>
-	/// <remarks>degree per second</remarks>
-	private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)
-	{
-		var isRotating = (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight));
-
-		foreach (var motor in _motors.Values)
-		{
-			motor.Feedback.SetMotionRotating(isRotating);
-		}
-
-		var motorLeft = _motors[_wheelNameLeft];
-		var motorRight = _motors[_wheelNameRight];
-
-		if (motorLeft != null)
-		{
-			motorLeft.SetVelocityTarget(angularVelocityLeft);
-		}
-
-		if (motorRight != null)
-		{
-			motorRight.SetVelocityTarget(angularVelocityRight);
-		}
-	}
-
-	private void SetInitialPartsPose(in string name, in GameObject targetObject)
-	{
-		var targetTransform = (targetObject.CompareTag("Model")) ? targetObject.transform : targetObject.transform.parent;
-		var initialPose = new Pose(targetTransform.localPosition, targetTransform.localRotation);
-		// Debug.Log(name + " " + initialPose.ToString("F9"));
-		partsPoseMapTable.Add(name, initialPose);
-	}
-
-	public Pose GetPartsPose(in string targetPartsName)
-	{
-		if (partsPoseMapTable.TryGetValue(targetPartsName, out var targetPartsPose))
-		{
-			return targetPartsPose;
-		}
-
-		return Pose.identity;
 	}
 }

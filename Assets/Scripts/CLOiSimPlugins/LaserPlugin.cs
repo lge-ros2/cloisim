@@ -32,25 +32,7 @@ public class LaserPlugin : CLOiSimPlugin
 		RegisterTxDevice("Data");
 
 		AddThread(Response);
-		AddThread(Sender);
-	}
-
-	private void Sender()
-	{
-		var sw = new Stopwatch();
-		while (IsRunningThread)
-		{
-			if (lidar != null)
-			{
-				if (lidar.PopDeviceMessage(out var dataStreamToSend))
-				{
-					sw.Restart();
-					Publish(dataStreamToSend);
-					sw.Stop();
-					lidar.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
-				}
-			}
-		}
+		AddThread(SenderThread, lidar as System.Object);
 	}
 
 	private void Response()
@@ -90,7 +72,7 @@ public class LaserPlugin : CLOiSimPlugin
 				SendResponse(msForInfoResponse);
 			}
 
-			ThreadWait();
+			WaitThread();
 		}
 	}
 

@@ -27,26 +27,8 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 
-		AddThread(Sender);
+		AddThread(SenderThread, multicam as System.Object);
 		AddThread(Response);
-	}
-
-	private void Sender()
-	{
-		var sw = new Stopwatch();
-		while (IsRunningThread)
-		{
-			if (multicam != null)
-			{
-				if (multicam.PopDeviceMessage(out var dataStreamToSend))
-				{
-					sw.Restart();
-					Publish(dataStreamToSend);
-					sw.Stop();
-					multicam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
-				}
-			}
-		}
 	}
 
 	private void Response()
@@ -93,7 +75,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 				SendResponse(msForInfoResponse);
 			}
 
-			ThreadWait();
+			WaitThread();
 		}
 	}
 

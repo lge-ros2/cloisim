@@ -50,11 +50,17 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 
 	public bool Pop(out DeviceMessage item)
 	{
-		if (TryTake(out item, TimeoutFordeviceMessageQueueInMilliseconds))
+		try
 		{
-			return true;
+			if (TryTake(out item, TimeoutFordeviceMessageQueueInMilliseconds))
+			{
+				return true;
+			}
 		}
-
+		catch
+		{
+			item = default(DeviceMessage);
+		}
 		return false;
 	}
 }

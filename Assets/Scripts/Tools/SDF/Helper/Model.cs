@@ -56,7 +56,7 @@ namespace SDF
 				{
 					foreach (var plugin in GetComponentsInChildren<CLOiSimPlugin>())
 					{
-						plugin.Stop();
+						plugin.StopThread();
 					}
 				}
 			}
