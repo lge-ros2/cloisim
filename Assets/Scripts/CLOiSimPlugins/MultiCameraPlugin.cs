@@ -33,11 +33,12 @@ public class MultiCameraPlugin : CLOiSimPlugin
 
 	private void Response()
 	{
+		var dmInfoResponse = new DeviceMessage();
 		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
 
-			var requestMessage = CameraPlugin.ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
+			var requestMessage = CameraPlugin.ParsingInfoRequest(receivedBuffer, ref dmInfoResponse);
 
 			if (requestMessage != null)
 			{
@@ -48,7 +49,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 					case "request_ros2":
 						if (parameters.GetValues<string>("ros2/frames_id/frame_id", out var frames_id))
 						{
-							SetROS2FramesIdInfoResponse(ref msForInfoResponse, frames_id);
+							SetROS2FramesIdInfoResponse(ref dmInfoResponse, frames_id);
 						}
 						break;
 
@@ -56,7 +57,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 						{
 							var camera = multicam.GetCamera(cameraName);
 							var cameraInfoMessage = camera.GetCameraInfo();
-							CameraPlugin.SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
+							CameraPlugin.SetCameraInfoResponse(ref dmInfoResponse, cameraInfoMessage);
 						}
 						break;
 
@@ -64,7 +65,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 						{
 							var camera = multicam.GetCamera(cameraName);
 							var devicePose = camera.GetPose();
-							SetTransformInfoResponse(ref msForInfoResponse, devicePose);
+							SetTransformInfoResponse(ref dmInfoResponse, devicePose);
 						}
 						break;
 
@@ -72,16 +73,16 @@ public class MultiCameraPlugin : CLOiSimPlugin
 						break;
 				}
 
-				SendResponse(msForInfoResponse);
+				SendResponse(dmInfoResponse);
 			}
 
 			WaitThread();
 		}
 	}
 
-	private void SetROS2FramesIdInfoResponse(ref MemoryStream msForInfoResponse, in List<string> frames_id)
+	private void SetROS2FramesIdInfoResponse(ref DeviceMessage dmInfoResponse, in List<string> frames_id)
 	{
-		if (msForInfoResponse == null)
+		if (dmInfoResponse == null)
 		{
 			return;
 		}
@@ -103,7 +104,6 @@ public class MultiCameraPlugin : CLOiSimPlugin
 			ros2FramesIdInfo.Childrens.Add(ros2FrameId);
 		}
 
-		ClearMemoryStream(ref msForInfoResponse);
-		Serializer.Serialize<messages.Param>(msForInfoResponse, ros2CommonInfo);
+		dmInfoResponse.SetMessage<messages.Param>(ros2CommonInfo);
 	}
 }

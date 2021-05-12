@@ -59,13 +59,13 @@ public class MicomPlugin : CLOiSimPlugin
 
 	private void Response()
 	{
-		var msForInfoResponse = new MemoryStream();
+		var dmInfoResponse = new DeviceMessage();
 
 		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
 
-			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
+			var requestMessage = ParsingInfoRequest(receivedBuffer, ref dmInfoResponse);
 
 			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
@@ -73,36 +73,36 @@ public class MicomPlugin : CLOiSimPlugin
 				switch (requestMessage.Name)
 				{
 					case "request_ros2":
-						SetROS2TransformInfoResponse(ref msForInfoResponse);
+						SetROS2TransformInfoResponse(ref dmInfoResponse);
 						break;
 
 					case "request_wheel_info":
-						SetWheelInfoResponse(ref msForInfoResponse);
+						SetWheelInfoResponse(ref dmInfoResponse);
 						break;
 
 					case "request_transform":
 						var targetPartsName = (requestMessage.Value == null) ? string.Empty : requestMessage.Value.StringValue;
 						var devicePose = micomSensor.GetPartsPose(targetPartsName);
-						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
+						SetTransformInfoResponse(ref dmInfoResponse, devicePose);
 						break;
 
 					case "reset_odometry":
 						micomSensor.Reset();
-						SetEmptyResponse(ref msForInfoResponse);
+						SetEmptyResponse(ref dmInfoResponse);
 						break;
 
 					default:
 						break;
 				}
 
-				SendResponse(msForInfoResponse);
+				SendResponse(dmInfoResponse);
 			}
 
 			WaitThread();
 		}
 	}
 
-	private void SetROS2TransformInfoResponse(ref MemoryStream msRos2Info)
+	private void SetROS2TransformInfoResponse(ref DeviceMessage msRos2Info)
 	{
 		if (msRos2Info == null)
 		{
@@ -141,11 +141,10 @@ public class MicomPlugin : CLOiSimPlugin
 		wheelRightInfo.Value = new Any { Type = Any.ValueType.String, StringValue = wheel_right_name };
 		wheelsInfo.Childrens.Add(wheelRightInfo);
 
-		ClearMemoryStream(ref msRos2Info);
-		Serializer.Serialize<messages.Param>(msRos2Info, ros2CommonInfo);
+		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
 	}
 
-	private void SetWheelInfoResponse(ref MemoryStream msWheelInfo)
+	private void SetWheelInfoResponse(ref DeviceMessage msWheelInfo)
 	{
 		if (msWheelInfo == null)
 		{
@@ -166,7 +165,6 @@ public class MicomPlugin : CLOiSimPlugin
 		sizeInfo.Value = new Any { Type = Any.ValueType.Double, DoubleValue = micomSensor.WheelRadius };
 		wheelInfo.Childrens.Add(sizeInfo);
 
-		ClearMemoryStream(ref msWheelInfo);
-		Serializer.Serialize<messages.Param>(msWheelInfo, wheelInfo);
+		msWheelInfo.SetMessage<messages.Param>(wheelInfo);
 	}
 }

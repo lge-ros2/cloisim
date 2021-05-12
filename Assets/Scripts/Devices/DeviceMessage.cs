@@ -77,6 +77,7 @@ public class DeviceMessage : MemoryStream
 	{
 		lock (this)
 		{
+			Flush();
 			SetLength(0);
 			Position = 0;
 			Capacity = 0;

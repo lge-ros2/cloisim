@@ -37,11 +37,12 @@ public class LaserPlugin : CLOiSimPlugin
 
 	private void Response()
 	{
+		var dmInfoResponse = new DeviceMessage();
 		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
 
-			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
+			var requestMessage = ParsingInfoRequest(receivedBuffer, ref dmInfoResponse);
 
 			if (requestMessage != null)
 			{
@@ -52,38 +53,37 @@ public class LaserPlugin : CLOiSimPlugin
 					case "request_ros2":
 						var topic_name = parameters.GetValue<string>("ros2/topic_name");
 						var frame_id = parameters.GetValue<string>("ros2/frame_id");
-						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
+						SetROS2CommonInfoResponse(ref dmInfoResponse, topic_name, frame_id);
 						break;
 
 					case "request_output_type":
-						SetOutputTypeResponse(ref msForInfoResponse);
+						SetOutputTypeResponse(ref dmInfoResponse);
 						break;
 
 					case "request_transform":
 						var devicePose = device.GetPose();
 
-						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
+						SetTransformInfoResponse(ref dmInfoResponse, devicePose);
 						break;
 
 					default:
 						break;
 				}
 
-				SendResponse(msForInfoResponse);
+				SendResponse(dmInfoResponse);
 			}
 
 			WaitThread();
 		}
 	}
 
-	private void SetOutputTypeResponse(ref MemoryStream msInfo)
+	private void SetOutputTypeResponse(ref DeviceMessage msInfo)
 	{
 		var output_type = parameters.GetValue<string>("output_type", "LaserScan");
 		var outputTypeInfo = new messages.Param();
 		outputTypeInfo.Name = "output_type";
 		outputTypeInfo.Value = new Any { Type = Any.ValueType.String, StringValue = output_type };
 
-		ClearMemoryStream(ref msInfo);
-		Serializer.Serialize<messages.Param>(msInfo, outputTypeInfo);
+		msInfo.SetMessage<messages.Param>(outputTypeInfo);
 	}
 }

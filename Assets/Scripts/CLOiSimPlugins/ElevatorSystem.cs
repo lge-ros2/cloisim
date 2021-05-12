@@ -13,8 +13,7 @@ using System.Linq;
 #endif
 using UnityEngine;
 using ProtoBuf;
-using Param = cloisim.msgs.Param;
-using Any = cloisim.msgs.Any;
+using messages = cloisim.msgs;
 
 public partial class ElevatorSystem : CLOiSimPlugin
 {
@@ -44,8 +43,8 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		}
 	}
 
-	private MemoryStream msForService = new MemoryStream();
-	private Param responseMessage = new Param();
+	private DeviceMessage msForService = new DeviceMessage();
+	private messages.Param responseMessage = new messages.Param();
 	private Dictionary<string, float> floorList = new Dictionary<string, float>();
 	private Dictionary<string, ElevatorEntity> elevatorList = new Dictionary<string, ElevatorEntity>();
 	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue = new ConcurrentQueue<ElevatorTask>();
@@ -217,34 +216,34 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	private void GenerateResponseMessage()
 	{
-		var serviceNameParam = new Param
+		var serviceNameParam = new messages.Param
 		{
 			Name = "service_name",
-			Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
+			Value = new messages.Any { Type = messages.Any.ValueType.String, StringValue = string.Empty }
 		};
 
-		var resultParam = new Param
+		var resultParam = new messages.Param
 		{
 			Name = "result",
-			Value = new Any { Type = Any.ValueType.Boolean, BoolValue = false }
+			Value = new messages.Any { Type = messages.Any.ValueType.Boolean, BoolValue = false }
 		};
 
-		var elevatorIndexParam = new Param
+		var elevatorIndexParam = new messages.Param
 		{
 			Name = "elevator_index",
-			Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
+			Value = new messages.Any { Type = messages.Any.ValueType.String, StringValue = string.Empty }
 		};
 
-		var floorParam = new Param
+		var floorParam = new messages.Param
 		{
 			Name = "current_floor",
-			Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
+			Value = new messages.Any { Type = messages.Any.ValueType.String, StringValue = string.Empty }
 		};
 
-		var heightParam = new Param
+		var heightParam = new messages.Param
 		{
 			Name = "height",
-			Value = new Any { Type = Any.ValueType.Double, DoubleValue = 0 }
+			Value = new messages.Any { Type = messages.Any.ValueType.Double, DoubleValue = 0 }
 		};
 
 		responseMessage.Name = string.Empty;
@@ -289,18 +288,17 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		}
 	}
 
-	private void SetSystemNameResponse(in Param receivedMessage)
+	private void SetSystemNameResponse(in messages.Param receivedMessage)
 	{
-		var response = new Param();
+		var response = new messages.Param();
 		response.Name = "request_system_name";
-		response.Value = new Any { Type = Any.ValueType.String, StringValue = elevatorSystemName };
-		ClearMemoryStream(ref msForService);
-		Serializer.Serialize<Param>(msForService, response);
+		response.Value = new messages.Any { Type = messages.Any.ValueType.String, StringValue = elevatorSystemName };
+		msForService.SetMessage<messages.Param>(response);
 	}
 
-	private MemoryStream HandleServiceRequest(in Param receivedMessage)
+	private MemoryStream HandleServiceRequest(in messages.Param receivedMessage)
 	{
-		Param param = null;
+		messages.Param param = null;
 
 		if (!elevatorSystemName.Equals(receivedMessage.Name))
 		{
@@ -310,7 +308,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var serviceName = string.Empty;
 		param = receivedMessage.Childrens[0];
 		if (param.Name.Equals("service_name") &&
-				param.Value.Type.Equals(Any.ValueType.String))
+				param.Value.Type.Equals(messages.Any.ValueType.String))
 		{
 			serviceName = param.Value.StringValue;
 		}
@@ -318,7 +316,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var currentFloor = string.Empty;
 		param = receivedMessage.Childrens[1];
 		if (param.Name.Equals("current_floor") &&
-				param.Value.Type.Equals(Any.ValueType.String))
+				param.Value.Type.Equals(messages.Any.ValueType.String))
 		{
 			currentFloor = param.Value.StringValue;
 		}
@@ -326,7 +324,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var targetFloor = string.Empty;
 		param = receivedMessage.Childrens[2];
 		if (param.Name.Equals("target_floor") &&
-				param.Value.Type.Equals(Any.ValueType.String))
+				param.Value.Type.Equals(messages.Any.ValueType.String))
 		{
 			targetFloor = param.Value.StringValue;
 		}
@@ -334,7 +332,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var elevatorIndex = string.Empty;
 		param = receivedMessage.Childrens[3];
 		if (param.Name.Equals("elevator_index") &&
-				param.Value.Type.Equals(Any.ValueType.String))
+				param.Value.Type.Equals(messages.Any.ValueType.String))
 		{
 			elevatorIndex = param.Value.StringValue;
 		}
@@ -346,9 +344,9 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 		HandleService(serviceName, currentFloor, targetFloor, elevatorIndex);
 
-		ClearMemoryStream(ref msForService);
+		ClearDeviceMessage(ref msForService);
 
-		Serializer.Serialize<Param>(msForService, responseMessage);
+		Serializer.Serialize<messages.Param>(msForService, responseMessage);
 
 		return msForService;
 	}

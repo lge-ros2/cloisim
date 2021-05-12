@@ -85,11 +85,12 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 	private void Response()
 	{
+		var dmInfoResponse = new DeviceMessage();
 		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
 
-			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
+			var requestMessage = ParsingInfoRequest(receivedBuffer, ref dmInfoResponse);
 
 			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
@@ -97,26 +98,26 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 				switch (requestMessage.Name)
 				{
 					case "request_module_list":
-						SetModuleListInfoResponse(ref msForInfoResponse);
+						SetModuleListInfoResponse(ref dmInfoResponse);
 						break;
 
 					case "request_transform":
 						var devicePose = GetPose();
-						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
+						SetTransformInfoResponse(ref dmInfoResponse, devicePose);
 						break;
 
 					default:
 						break;
 				}
 
-				SendResponse(msForInfoResponse);
+				SendResponse(dmInfoResponse);
 			}
 
 			WaitThread();
 		}
 	}
 
-	private void SetModuleListInfoResponse(ref MemoryStream msModuleInfo)
+	private void SetModuleListInfoResponse(ref DeviceMessage msModuleInfo)
 	{
 		if (msModuleInfo == null)
 		{
@@ -135,7 +136,6 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 			modulesInfo.Childrens.Add(moduleInfo);
 		}
 
-		ClearMemoryStream(ref msModuleInfo);
-		Serializer.Serialize<messages.Param>(msModuleInfo, modulesInfo);
+		msModuleInfo.SetMessage<messages.Param>(modulesInfo);
 	}
 }

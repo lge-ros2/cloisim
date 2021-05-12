@@ -34,8 +34,6 @@ public abstract partial class CLOiSimPlugin : CommonThread, ICLOiSimPlugin
 	public string pluginName { get; protected set; } = string.Empty;
 	protected SDF.Helper.PluginParameters parameters = new SDF.Helper.PluginParameters();
 
-	protected MemoryStream msForInfoResponse = new MemoryStream();
-
 	private List<string> hashKeyList = new List<string>();
 
 	private Device device = null;
@@ -224,13 +222,8 @@ public abstract partial class CLOiSimPlugin : CommonThread, ICLOiSimPlugin
 		pluginPose.rotation = transform.localRotation;
 	}
 
-	protected static void ClearMemoryStream(ref MemoryStream ms)
+	protected static void ClearDeviceMessage(ref DeviceMessage dm)
 	{
-		if (ms != null)
-		{
-			ms.SetLength(0);
-			ms.Position = 0;
-			ms.Capacity = 0;
-		}
+		dm.Reset();
 	}
 }

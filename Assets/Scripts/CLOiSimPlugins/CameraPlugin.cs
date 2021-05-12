@@ -45,11 +45,13 @@ public class CameraPlugin : CLOiSimPlugin
 
 	private void Response()
 	{
+		var dmInfoResponse = new DeviceMessage();
+
 		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
 
-			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
+			var requestMessage = ParsingInfoRequest(receivedBuffer, ref dmInfoResponse);
 
 			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
@@ -59,25 +61,25 @@ public class CameraPlugin : CLOiSimPlugin
 					case "request_ros2":
 						var topic_name = parameters.GetValue<string>("ros2/topic_name");
 						var frame_id = parameters.GetValue<string>("ros2/frame_id");
-						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
+						SetROS2CommonInfoResponse(ref dmInfoResponse, topic_name, frame_id);
 						break;
 
 					case "request_camera_info":
 						var cameraInfoMessage = cam.GetCameraInfo();
-						SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
+						SetCameraInfoResponse(ref dmInfoResponse, cameraInfoMessage);
 						break;
 
 					case "request_transform":
 						var isSubParts = string.IsNullOrEmpty(subPartName);
 						var devicePose = cam.GetPose(isSubParts);
-						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
+						SetTransformInfoResponse(ref dmInfoResponse, devicePose);
 						break;
 
 					default:
 						break;
 				}
 
-				SendResponse(msForInfoResponse);
+				SendResponse(dmInfoResponse);
 			}
 
 			WaitThread();
