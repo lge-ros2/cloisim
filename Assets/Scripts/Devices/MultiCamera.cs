@@ -71,7 +71,7 @@ namespace SensorDevices
 
 			var newCam = newCamObject.AddComponent<SensorDevices.Camera>();
 			newCam.Mode = ModeType.NONE;
-			newCam.deviceName = "MultiCamera::" + parameters.name;
+			newCam.DeviceName = "MultiCamera::" + parameters.name;
 			newCam.SetDeviceParameter(parameters as SDF.SensorType);
 
 			cameras.Add(newCam);
@@ -80,7 +80,7 @@ namespace SensorDevices
 		public SensorDevices.Camera GetCamera(in string cameraName)
 		{
 			var target = "MultiCamera::" + cameraName;
-			return cameras.Find(x => x.deviceName.Equals(target));
+			return cameras.Find(x => x.DeviceName.Equals(target));
 		}
 
 		public SensorDevices.Camera GetCamera(in int cameraIndex)

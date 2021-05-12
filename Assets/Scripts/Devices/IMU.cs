@@ -33,7 +33,7 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
-			deviceName = name;
+			DeviceName = name;
 			Reset();
 		}
 
@@ -51,7 +51,7 @@ namespace SensorDevices
 		protected override void InitializeMessages()
 		{
 			imu = new messages.Imu();
-			imu.EntityName = deviceName;
+			imu.EntityName = DeviceName;
 			imu.Stamp = new messages.Time();
 			imu.Orientation = new messages.Quaternion();
 			imu.AngularVelocity = new messages.Vector3d();

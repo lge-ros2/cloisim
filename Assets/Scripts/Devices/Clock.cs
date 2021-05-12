@@ -29,7 +29,7 @@ public class Clock : Device
 	protected override void OnAwake()
 	{
 		Mode = ModeType.TX_THREAD;
-		deviceName = "World Clock";
+		DeviceName = "World Clock";
 	}
 
 	protected override void OnStart()

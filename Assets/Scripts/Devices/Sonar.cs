@@ -40,7 +40,7 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX;
-			deviceName = name;
+			DeviceName = name;
 			sonarLink = transform.parent;
 
 			waitingPeriodRatio = 0.95f;
@@ -76,7 +76,7 @@ namespace SensorDevices
 			ResolveSensingArea(meshCollider.sharedMesh);
 
 			var sonar = sonarStamped.Sonar;
-			sonar.Frame = deviceName;
+			sonar.Frame = DeviceName;
 			sonar.Radius = radius;
 			sonar.RangeMin = rangeMin;
 			sonar.RangeMax = rangeMax;
@@ -121,7 +121,7 @@ namespace SensorDevices
 			var sonarRotation = sonarLink.rotation;
 
 			var sonar = sonarStamped.Sonar;
-			sonar.Frame = deviceName;
+			sonar.Frame = DeviceName;
 			DeviceHelper.SetVector3d(sonar.WorldPose.Position, sonarPosition);
 			DeviceHelper.SetQuaternion(sonar.WorldPose.Orientation, sonarRotation);
 			DeviceHelper.SetCurrentTime(sonarStamped.Time);

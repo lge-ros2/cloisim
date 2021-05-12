@@ -146,7 +146,7 @@ namespace SensorDevices
 			laserScanStamped.Scan.WorldPose.Orientation = new messages.Quaternion();
 
 			var laserScan = laserScanStamped.Scan;
-			laserScan.Frame = deviceName;
+			laserScan.Frame = DeviceName;
 			laserScan.Count = horizontal.samples;
 			laserScan.AngleMin = horizontal.angle.min * Mathf.Deg2Rad;
 			laserScan.AngleMax = horizontal.angle.max * Mathf.Deg2Rad;

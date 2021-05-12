@@ -56,7 +56,7 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX;
-			deviceName = name;
+			DeviceName = name;
 		}
 
 		protected override void OnStart()

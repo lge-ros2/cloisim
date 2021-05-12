@@ -6,140 +6,7 @@
 
 using System.Threading;
 using System.Collections;
-using System.Collections.Concurrent;
-using System.IO;
 using UnityEngine;
-using ProtoBuf;
-
-public class DeviceMessage : MemoryStream
-{
-	public DeviceMessage()
-	{
-		Reset();
-	}
-
-	public DeviceMessage GetMessage()
-	{
-		return (CanRead) ? this : null;
-	}
-
-	public void GetMessage(out DeviceMessage message)
-	{
-		message = (CanRead) ? this : null;
-	}
-
-	public bool SetMessage(in byte[] data)
-	{
-		if (data == null)
-		{
-			return false;
-		}
-
-		Reset();
-
-		lock (this)
-		{
-			if (CanWrite)
-			{
-				Write(data, 0, data.Length);
-				Position = 0;
-			}
-			else
-			{
-				Debug.LogError("Failed to write memory stream");
-			}
-		}
-		return true;
-	}
-
-	public void SetMessage<T>(T instance)
-	{
-		Reset();
-
-		lock (this)
-		{
-			Serializer.Serialize<T>(this, instance);
-		}
-	}
-
-	public T GetMessage<T>()
-	{
-		T result;
-
-		lock (this)
-		{
-			result = Serializer.Deserialize<T>(this);
-		}
-
-		Reset();
-
-		return result;
-	}
-
-	public void Reset()
-	{
-		lock (this)
-		{
-			SetLength(0);
-			Position = 0;
-			Capacity = 0;
-		}
-	}
-}
-
-public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
-{
-	private const int MaxQueue = 5;
-	private const int TimeoutFordeviceMessageQueueInMilliseconds = 100;
-
-	public DeviceMessageQueue()
-		: base(MaxQueue)
-	{
-	}
-
-	public void Flush()
-	{
-		while (Count > 0)
-		{
-			Pop(out var item);
-		}
-	}
-
-	private void FlushHalf()
-	{
-		while (Count > MaxQueue / 2)
-		{
-			Pop(out var item);
-		}
-	}
-
-	public bool Push(in DeviceMessage data)
-	{
-		if (Count >= MaxQueue)
-		{
-			// Debug.LogWarningFormat("Outbound queue is reached to maximum capacity({0})!!", maxQueue);
-			FlushHalf();
-		}
-
-		if (TryAdd(data, TimeoutFordeviceMessageQueueInMilliseconds))
-		{
-			return true;
-		}
-
-		return false;
-	}
-
-	public bool Pop(out DeviceMessage item)
-	{
-		if (TryTake(out item, TimeoutFordeviceMessageQueueInMilliseconds))
-		{
-			return true;
-		}
-
-		return false;
-	}
-}
-
 
 public abstract class Device : MonoBehaviour
 {
@@ -150,10 +17,10 @@ public abstract class Device : MonoBehaviour
 	private DeviceMessageQueue deviceMessageQueue = new DeviceMessageQueue();
 	private DeviceMessage deviceMessage = new DeviceMessage();
 
-	public string deviceName = string.Empty;
-
 	protected SDF.SensorType deviceParameters = null;
 	private SDF.Helper.PluginParameters pluginParameters = null;
+
+	private string deviceName = string.Empty;
 
 	private float updateRate = 1;
 
@@ -179,6 +46,12 @@ public abstract class Device : MonoBehaviour
 	public float UpdatePeriod => 1f / UpdateRate;
 
 	public float TransportingTime => transportingTimeSeconds;
+
+	public string DeviceName
+	{
+		get => deviceName;
+		set => deviceName = value;
+	}
 
 	public bool EnableDebugging
 	{
