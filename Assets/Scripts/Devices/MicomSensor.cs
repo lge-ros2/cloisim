@@ -31,12 +31,13 @@ public partial class MicomSensor : Device
 
 	protected override void OnStart()
 	{
+		Debug.Log("Start MicomSensor");
 		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
 		SetUpdateRate(updateRate);
 
-		_PGain = GetPluginParameters().GetValue<float>("PID/kp");
-		_IGain = GetPluginParameters().GetValue<float>("PID/ki");
-		_DGain = GetPluginParameters().GetValue<float>("PID/kd");
+		pidGainP = GetPluginParameters().GetValue<float>("PID/kp");
+		pidGainI = GetPluginParameters().GetValue<float>("PID/ki");
+		pidGainD = GetPluginParameters().GetValue<float>("PID/kd");
 
 		wheelTread = GetPluginParameters().GetValue<float>("wheel/tread");
 		wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
@@ -57,7 +58,7 @@ public partial class MicomSensor : Device
 				var motorObject = model.gameObject;
 				var motor = gameObject.AddComponent<Motor>();
 				motor.SetTargetJoint(motorObject);
-				motor.SetPID(_PGain, _IGain, _DGain);
+				motor.SetPID(pidGainP, pidGainI, pidGainD);
 				_motors.Add(model.name, motor);
 
 				SetInitialPartsPose(model.name, motorObject);
@@ -188,7 +189,7 @@ public partial class MicomSensor : Device
 	{
 		foreach (var motor in _motors.Values)
 		{
-			motor.GetPID().Change(_PGain, _IGain, _DGain);
+			motor.GetPID().Change(pidGainP, pidGainI, pidGainD);
 		}
 
 		UpdateIMU();

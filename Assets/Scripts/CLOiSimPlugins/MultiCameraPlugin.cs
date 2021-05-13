@@ -5,9 +5,6 @@
  */
 
 using System.Collections.Generic;
-using System.IO;
-using ProtoBuf;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
@@ -46,7 +43,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 				switch (requestMessage.Name)
 				{
 					case "request_ros2":
-						if (parameters.GetValues<string>("ros2/frames_id/frame_id", out var frames_id))
+						if (GetPluginParameters().GetValues<string>("ros2/frames_id/frame_id", out var frames_id))
 						{
 							SetROS2FramesIdInfoResponse(ref dmInfoResponse, frames_id);
 						}

@@ -18,7 +18,7 @@ public abstract class Device : MonoBehaviour
 	private DeviceMessage deviceMessage = new DeviceMessage();
 
 	protected SDF.SensorType deviceParameters = null;
-	private SDF.Helper.PluginParameters pluginParameters = null;
+	private SDF.Plugin pluginParameters = null;
 
 	private string deviceName = string.Empty;
 
@@ -327,12 +327,12 @@ public abstract class Device : MonoBehaviour
 		return finalPose;
 	}
 
-	public void SetPluginParameter(in SDF.Helper.PluginParameters pluginParams)
+	public void SetPluginParameters(in SDF.Plugin plugin)
 	{
-		pluginParameters = pluginParams;
+		pluginParameters = plugin;
 	}
 
-	protected SDF.Helper.PluginParameters GetPluginParameters()
+	public SDF.Plugin GetPluginParameters()
 	{
 		return pluginParameters;
 	}
@@ -340,10 +340,5 @@ public abstract class Device : MonoBehaviour
 	public void SetDeviceParameter(in SDF.SensorType deviceParams)
 	{
 		deviceParameters = deviceParams;
-	}
-
-	public SDF.SensorType GetDeviceParameter()
-	{
-		return deviceParameters;
 	}
 }

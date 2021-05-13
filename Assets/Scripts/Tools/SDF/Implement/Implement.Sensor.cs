@@ -83,7 +83,7 @@ namespace SDF
 
 				var camera = newSensorObject.AddComponent<SensorDevices.Camera>();
 				camera.DeviceName = GetFrameName(newSensorObject);
-				camera.SetDeviceParameter(element as SDF.SensorType);
+				camera.SetDeviceParameter(element);
 				return camera;
 			}
 
@@ -118,7 +118,7 @@ namespace SDF
 					}
 				}
 
-				depthCamera.SetDeviceParameter(element as SDF.SensorType);
+				depthCamera.SetDeviceParameter(element);
 
 				return depthCamera;
 			}
@@ -130,7 +130,7 @@ namespace SDF
 
 				var multicamera = newSensorObject.AddComponent<SensorDevices.MultiCamera>();
 				multicamera.DeviceName = GetFrameName(newSensorObject);
-				multicamera.parameters = element;
+				multicamera.SetDeviceParameter(element);
 
 				return multicamera;
 			}

@@ -4,10 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
-using System.Collections;
 using UnityEngine;
-using messages = cloisim.msgs;
 
 public partial class MicomSensor : Device
 {

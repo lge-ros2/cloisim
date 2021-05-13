@@ -7,12 +7,10 @@
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Collections;
-using System.IO;
 #if UNITY_EDITOR
 using System.Linq;
 #endif
 using UnityEngine;
-using ProtoBuf;
 using messages = cloisim.msgs;
 
 public partial class ElevatorSystem : CLOiSimPlugin
@@ -117,21 +115,21 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		//     </outside>
 		//   </doors>
 		// </elevator>
-		elevatorSystemName = parameters.GetValue<string>("system_name");
-		var elevatorPrefixName = parameters.GetAttribute<string>("elevator", "prefix_name");
-		var elevatorSpeed = parameters.GetAttribute<float>("elevator", "speed");
-		var elevatorFloor = parameters.GetValue<string>("elevator/floor");
+		elevatorSystemName = GetPluginParameters().GetValue<string>("system_name");
+		var elevatorPrefixName = GetPluginParameters().GetAttribute<string>("elevator", "prefix_name");
+		var elevatorSpeed = GetPluginParameters().GetAttributeInPath<float>("elevator", "speed");
+		var elevatorFloor = GetPluginParameters().GetValue<string>("elevator/floor");
 
-		var elevatorDoorSpeed = parameters.GetAttribute<float>("elevator/doors", "speed");
-		var elevatorDoorAutoClosingTimer = parameters.GetAttribute<float>("elevator/doors", "closing_timer");
+		var elevatorDoorSpeed = GetPluginParameters().GetAttributeInPath<float>("elevator/doors", "speed");
+		var elevatorDoorAutoClosingTimer = GetPluginParameters().GetAttributeInPath<float>("elevator/doors", "closing_timer");
 
-		var elevatorInsideopenOffset = parameters.GetAttribute<float>("elevator/doors/inside","open_offset");
-		var elevatorInsideDoorNameLeft = parameters.GetValue<string>("elevator/doors/inside/door[@name='left']");
-		var elevatorInsideDoorNameRight = parameters.GetValue<string>("elevator/doors/inside/door[@name='right']");
+		var elevatorInsideopenOffset = GetPluginParameters().GetAttributeInPath<float>("elevator/doors/inside","open_offset");
+		var elevatorInsideDoorNameLeft = GetPluginParameters().GetValue<string>("elevator/doors/inside/door[@name='left']");
+		var elevatorInsideDoorNameRight = GetPluginParameters().GetValue<string>("elevator/doors/inside/door[@name='right']");
 
-		var elevatorOutsideopenOffset = parameters.GetAttribute<float>("elevator/doors/outside","open_offset");
-		var elevatorOutsideDoorNameLeft = parameters.GetValue<string>("elevator/doors/outside/door[@name='left']");
-		var elevatorOutsideDoorNameRight = parameters.GetValue<string>("elevator/doors/outside/door[@name='right']");
+		var elevatorOutsideopenOffset = GetPluginParameters().GetAttributeInPath<float>("elevator/doors/outside","open_offset");
+		var elevatorOutsideDoorNameLeft = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='left']");
+		var elevatorOutsideDoorNameRight = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='right']");
 
 		var index = 0;
 		foreach (var child in this.GetComponentsInChildren<Transform>())
@@ -168,8 +166,8 @@ public partial class ElevatorSystem : CLOiSimPlugin
 	public void ReadFloorContext()
 	{
 		this.initialFloor = "B1F";
-		if (parameters.GetValues<string>("floors/floor/name", out var listFloorName) &&
-				parameters.GetValues<float>("floors/floor/height", out var listFloorHeight))
+		if (GetPluginParameters().GetValues<string>("floors/floor/name", out var listFloorName) &&
+			GetPluginParameters().GetValues<float>("floors/floor/height", out var listFloorHeight))
 		{
 			if (listFloorName.Count == listFloorHeight.Count)
 			{

@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using Stopwatch = System.Diagnostics.Stopwatch;
-
 public class CameraPlugin : CLOiSimPlugin
 {
 	private SensorDevices.Camera cam = null;
@@ -58,8 +56,8 @@ public class CameraPlugin : CLOiSimPlugin
 				switch (requestMessage.Name)
 				{
 					case "request_ros2":
-						var topic_name = parameters.GetValue<string>("ros2/topic_name");
-						var frame_id = parameters.GetValue<string>("ros2/frame_id");
+						var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name");
+						var frame_id = GetPluginParameters().GetValue<string>("ros2/frame_id");
 						SetROS2CommonInfoResponse(ref dmInfoResponse, topic_name, frame_id);
 						break;
 

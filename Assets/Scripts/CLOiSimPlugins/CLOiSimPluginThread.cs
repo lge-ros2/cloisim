@@ -105,7 +105,7 @@ public class CLOiSimPluginThread : DeviceTransporter
 	protected void ResponseThread(System.Object deviceParam)
 	{
 		var dmInfoResponse = new DeviceMessage();
-
+		var device = deviceParam as Device;
 		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
@@ -114,13 +114,13 @@ public class CLOiSimPluginThread : DeviceTransporter
 			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
 			{
-				// switch (requestMessage.Name)
-				// {
-				// 	case "request_ros2":
-				// 		var topic_name = parameters.GetValue<string>("ros2/topic_name");
-				// 		var frame_id = parameters.GetValue<string>("ros2/frame_id");
-				// 		SetROS2CommonInfoResponse(ref dmInfoResponse, topic_name, frame_id);
-				// 		break;
+				switch (requestMessage.Name)
+				{
+					case "request_ros2":
+						var topic_name = device.GetPluginParameters().GetValue<string>("ros2/topic_name");
+						var frame_id = device.GetPluginParameters().GetValue<string>("ros2/frame_id");
+						// SetROS2CommonInfoResponse(ref dmInfoResponse, topic_name, frame_id);
+						break;
 
 				// 	case "request_camera_info":
 				// 		var cameraInfoMessage = cam.GetCameraInfo();
@@ -133,13 +133,13 @@ public class CLOiSimPluginThread : DeviceTransporter
 				// 		SetTransformInfoResponse(ref dmInfoResponse, devicePose);
 				// 		break;
 
-				// 	default:
-				// 		// HandleCustomRequestMessage();
-				// 		break;
-				// }
+					default:
+						// HandleCustomRequestMessage();
+						break;
+				}
 
-				SendResponse(dmInfoResponse);
 			}
+			SendResponse(dmInfoResponse);
 
 			WaitThread();
 		}

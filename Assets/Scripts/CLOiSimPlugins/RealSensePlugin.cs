@@ -5,9 +5,7 @@
  */
 
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
-using ProtoBuf;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
@@ -25,12 +23,12 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 	protected override void OnStart()
 	{
-		var depthScale = parameters.GetValue<uint>("configuration/depth_scale", 1000);
+		var depthScale = GetPluginParameters().GetValue<uint>("configuration/depth_scale", 1000);
 
-		var colorName = parameters.GetValue<string>("activate/module[@name='color']");
-		var leftImagerName = parameters.GetValue<string>("activate/module[@name='left_imager']");
-		var rightImagerName = parameters.GetValue<string>("activate/module[@name='right_imager']");
-		var depthName = parameters.GetValue<string>("activate/module[@name='depth']");
+		var colorName = GetPluginParameters().GetValue<string>("activate/module[@name='color']");
+		var leftImagerName = GetPluginParameters().GetValue<string>("activate/module[@name='left_imager']");
+		var rightImagerName = GetPluginParameters().GetValue<string>("activate/module[@name='right_imager']");
+		var depthName = GetPluginParameters().GetValue<string>("activate/module[@name='depth']");
 
 		if (colorName != null)
 		{

@@ -5,9 +5,7 @@
  */
 
 using System.Collections.Generic;
-using System.Collections;
 using UnityEngine;
-using messages = cloisim.msgs;
 
 public partial class MicomSensor : Device
 {
@@ -17,7 +15,7 @@ public partial class MicomSensor : Device
 
 	private Dictionary<string, Motor> _motors = new Dictionary<string, Motor>();
 
-	public float _PGain, _IGain, _DGain;
+	public float pidGainP, pidGainI, pidGainD;
 
 	private float wheelTread = 0.0f;
 	private float wheelRadius = 0.0f;

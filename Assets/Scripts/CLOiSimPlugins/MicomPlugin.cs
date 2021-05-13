@@ -4,9 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.IO;
-using ProtoBuf;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
@@ -18,17 +15,16 @@ public class MicomPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		type = Type.MICOM;
-
 		micomSensor = gameObject.AddComponent<MicomSensor>();
-		micomSensor.SetPluginParameter(parameters);
-
 		micomInput = gameObject.AddComponent<MicomInput>();
 		micomInput.SetMicomSensor(micomSensor);
 	}
 
 	protected override void OnStart()
 	{
-		var debugging = parameters.GetValue<bool>("debug", false);
+		micomSensor.SetPluginParameters(GetPluginParameters());
+
+		var debugging = GetPluginParameters().GetValue<bool>("debug", false);
 		micomInput.EnableDebugging = debugging;
 
 		RegisterServiceDevice("Info");
@@ -117,7 +113,7 @@ public class MicomPlugin : CLOiSimPlugin
 		ros2TransformInfo.Value = new Any { Type = Any.ValueType.None };
 		ros2CommonInfo.Childrens.Add(ros2TransformInfo);
 
-		var imu_name = parameters.GetValue<string>("ros2/transform_name/imu");
+		var imu_name = GetPluginParameters().GetValue<string>("ros2/transform_name/imu");
 		var imuInfo = new messages.Param();
 		imuInfo.Name = "imu";
 		imuInfo.Value = new Any { Type = Any.ValueType.String, StringValue = imu_name };
@@ -128,13 +124,13 @@ public class MicomPlugin : CLOiSimPlugin
 		wheelsInfo.Value = new Any { Type = Any.ValueType.None };
 		ros2TransformInfo.Childrens.Add(wheelsInfo);
 
-		var wheel_left_name = parameters.GetValue<string>("ros2/transform_name/wheels/left");
+		var wheel_left_name = GetPluginParameters().GetValue<string>("ros2/transform_name/wheels/left");
 		var wheelLeftInfo = new messages.Param();
 		wheelLeftInfo.Name = "left";
 		wheelLeftInfo.Value = new Any { Type = Any.ValueType.String, StringValue = wheel_left_name };
 		wheelsInfo.Childrens.Add(wheelLeftInfo);
 
-		var wheel_right_name = parameters.GetValue<string>("ros2/transform_name/wheels/right");
+		var wheel_right_name = GetPluginParameters().GetValue<string>("ros2/transform_name/wheels/right");
 		var wheelRightInfo = new messages.Param();
 		wheelRightInfo.Name = "right";
 		wheelRightInfo.Value = new Any { Type = Any.ValueType.String, StringValue = wheel_right_name };

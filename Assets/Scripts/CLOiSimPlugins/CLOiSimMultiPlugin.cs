@@ -5,8 +5,6 @@
  */
 
 using System.Collections.Generic;
-using System.Xml;
-using UnityEngine;
 
 public abstract class CLOiSimMultiPlugin : CLOiSimPlugin
 {

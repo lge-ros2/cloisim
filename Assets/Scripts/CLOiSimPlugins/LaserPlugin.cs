@@ -4,9 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.IO;
-using ProtoBuf;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
@@ -23,7 +20,10 @@ public class LaserPlugin : CLOiSimPlugin
 		partName = DeviceHelper.GetPartName(gameObject);
 
 		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
-		lidar.SetPluginParameter(parameters);
+
+		var  temp = GetPluginParameters();
+		UnityEngine.Debug.Log(temp);
+		lidar.SetPluginParameters(temp);
 	}
 
 	protected override void OnStart()
@@ -52,8 +52,8 @@ public class LaserPlugin : CLOiSimPlugin
 				switch (requestMessage.Name)
 				{
 					case "request_ros2":
-						var topic_name = parameters.GetValue<string>("ros2/topic_name");
-						var frame_id = parameters.GetValue<string>("ros2/frame_id");
+						var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name");
+						var frame_id = GetPluginParameters().GetValue<string>("ros2/frame_id");
 						SetROS2CommonInfoResponse(ref dmInfoResponse, topic_name, frame_id);
 						break;
 
@@ -80,7 +80,7 @@ public class LaserPlugin : CLOiSimPlugin
 
 	private void SetOutputTypeResponse(ref DeviceMessage msInfo)
 	{
-		var output_type = parameters.GetValue<string>("output_type", "LaserScan");
+		var output_type = GetPluginParameters().GetValue<string>("output_type", "LaserScan");
 		var outputTypeInfo = new messages.Param();
 		outputTypeInfo.Name = "output_type";
 		outputTypeInfo.Value = new Any { Type = Any.ValueType.String, StringValue = output_type };

@@ -5,23 +5,24 @@
  */
 
 using System.Collections.Generic;
-using System.Threading;
-using System.Xml;
-using System.IO;
+// using System.Threading;
+// using System.Xml;
+// using System.IO;
 using System;
 using UnityEngine;
 
 public interface ICLOiSimPlugin
 {
-	void SetPluginName(in string name);
-	void SetPluginParameters(in XmlNode node);
+	// public enum Type {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
+	// void SetPluginName(in string name);
+	void SetPluginParameters(in SDF.Plugin node);
+	SDF.Plugin GetPluginParameters();
 	void Reset();
 }
 
 public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugin
 {
 	public enum Type {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
-
 	public Type type { get; protected set; }
 
 	private static BridgeManager bridgeManager = null;
@@ -31,8 +32,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 	private Pose pluginPose = Pose.identity;
 
-	public string pluginName { get; protected set; } = string.Empty;
-	protected SDF.Helper.PluginParameters parameters = new SDF.Helper.PluginParameters();
+	private SDF.Plugin pluginParameters;
 
 	private List<string> hashKeyList = new List<string>();
 
@@ -47,26 +47,19 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 		this.device = device;
 	}
 
-	public void ChangePluginType(in CLOiSimPlugin.Type targetType)
+	public void ChangePluginType(in Type targetType)
 	{
 		type = targetType;
 	}
 
-	public void SetPluginName(in string name)
+	public void SetPluginParameters(in SDF.Plugin plugin)
 	{
-		pluginName = name;
+		pluginParameters = plugin;
 	}
 
-	public void SetPluginParameters(in XmlNode node)
+	public SDF.Plugin GetPluginParameters()
 	{
-		if (parameters != null)
-		{
-			parameters.SetRootData(node);
-		}
-		else
-		{
-			Debug.LogWarning("Cannot set plugin parameters");
-		}
+		return pluginParameters;
 	}
 
 	private bool PrepareDevice(in string subPartName, out ushort port, out ulong hash)
@@ -181,10 +174,8 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 		if (string.IsNullOrEmpty(partName))
 		{
-			partName = pluginName;
+			partName = pluginParameters.Name;
 		}
-
-		// PrintPluginData();
 
 		OnStart();
 
