@@ -16,7 +16,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 	protected override void OnAwake()
 	{
-		type = Type.REALSENSE;
+		type = ICLOiSimPlugin.Type.REALSENSE;
 		cameras = GetComponentsInChildren<Camera>();
 		partName = name;
 	}
@@ -69,7 +69,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 			if (camera.gameObject.name.Equals(name))
 			{
 				var plugin = camera.gameObject.AddComponent<CameraPlugin>();
-				plugin.ChangePluginType(CLOiSimPlugin.Type.REALSENSE);
+				plugin.ChangePluginType(ICLOiSimPlugin.Type.REALSENSE);
 				plugin.subPartName = name;
 
 				AddCLOiSimPlugin(name, plugin);

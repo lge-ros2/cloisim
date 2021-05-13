@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using UnityEngine;
-
 public class SimulationWorld : CLOiSimPlugin
 {
 	private Clock clock = null;
@@ -14,7 +12,7 @@ public class SimulationWorld : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = Type.WORLD;
+		type = ICLOiSimPlugin.Type.WORLD;
 		clock = gameObject.AddComponent<Clock>();
 		SetDevice(clock);
 

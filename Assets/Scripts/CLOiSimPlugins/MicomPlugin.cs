@@ -14,7 +14,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = Type.MICOM;
+		type = ICLOiSimPlugin.Type.MICOM;
 		micomSensor = gameObject.AddComponent<MicomSensor>();
 		micomInput = gameObject.AddComponent<MicomInput>();
 		micomInput.SetMicomSensor(micomSensor);

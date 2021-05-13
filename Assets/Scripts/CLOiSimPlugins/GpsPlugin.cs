@@ -15,7 +15,7 @@ public class GpsPlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = Type.GPS;
+		type = ICLOiSimPlugin.Type.GPS;
 
 		gps = gameObject.GetComponent<SensorDevices.GPS>();
 

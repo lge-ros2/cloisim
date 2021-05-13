@@ -53,7 +53,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = Type.ELEVATOR;
+		type = ICLOiSimPlugin.Type.ELEVATOR;
 		partName = "elevator_system";
 	}
 
@@ -305,7 +305,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var serviceName = string.Empty;
 		param = receivedMessage.Childrens[0];
 		if (param.Name.Equals("service_name") &&
-				param.Value.Type.Equals(messages.Any.ValueType.String))
+			param.Value.Type.Equals(messages.Any.ValueType.String))
 		{
 			serviceName = param.Value.StringValue;
 		}
@@ -313,7 +313,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var currentFloor = string.Empty;
 		param = receivedMessage.Childrens[1];
 		if (param.Name.Equals("current_floor") &&
-				param.Value.Type.Equals(messages.Any.ValueType.String))
+			param.Value.Type.Equals(messages.Any.ValueType.String))
 		{
 			currentFloor = param.Value.StringValue;
 		}
@@ -321,7 +321,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var targetFloor = string.Empty;
 		param = receivedMessage.Childrens[2];
 		if (param.Name.Equals("target_floor") &&
-				param.Value.Type.Equals(messages.Any.ValueType.String))
+			param.Value.Type.Equals(messages.Any.ValueType.String))
 		{
 			targetFloor = param.Value.StringValue;
 		}
@@ -329,7 +329,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var elevatorIndex = string.Empty;
 		param = receivedMessage.Childrens[3];
 		if (param.Name.Equals("elevator_index") &&
-				param.Value.Type.Equals(messages.Any.ValueType.String))
+			param.Value.Type.Equals(messages.Any.ValueType.String))
 		{
 			elevatorIndex = param.Value.StringValue;
 		}

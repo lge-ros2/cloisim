@@ -16,7 +16,7 @@ public class LaserPlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = Type.LASER;
+		type = ICLOiSimPlugin.Type.LASER;
 		partName = DeviceHelper.GetPartName(gameObject);
 
 		lidar = gameObject.GetComponent<SensorDevices.Lidar>();

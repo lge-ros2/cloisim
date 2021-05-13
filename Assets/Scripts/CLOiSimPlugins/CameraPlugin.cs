@@ -20,12 +20,12 @@ public class CameraPlugin : CLOiSimPlugin
 		var depthcam = gameObject.GetComponent<SensorDevices.DepthCamera>();
 		if (depthcam is null)
 		{
-			ChangePluginType(Type.CAMERA);
+			ChangePluginType(ICLOiSimPlugin.Type.CAMERA);
 			cam = gameObject.GetComponent<SensorDevices.Camera>();
 		}
 		else
 		{
-			ChangePluginType(Type.DEPTHCAMERA);
+			ChangePluginType(ICLOiSimPlugin.Type.DEPTHCAMERA);
 			cam = depthcam;
 		}
 

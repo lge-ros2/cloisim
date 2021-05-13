@@ -5,16 +5,12 @@
  */
 
 using System.Collections.Generic;
-// using System.Threading;
-// using System.Xml;
-// using System.IO;
 using System;
 using UnityEngine;
 
 public interface ICLOiSimPlugin
 {
-	// public enum Type {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
-	// void SetPluginName(in string name);
+	public enum Type {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
 	void SetPluginParameters(in SDF.Plugin node);
 	SDF.Plugin GetPluginParameters();
 	void Reset();
@@ -22,8 +18,7 @@ public interface ICLOiSimPlugin
 
 public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugin
 {
-	public enum Type {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
-	public Type type { get; protected set; }
+	public ICLOiSimPlugin.Type type { get; protected set; }
 
 	private static BridgeManager bridgeManager = null;
 
@@ -47,7 +42,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 		this.device = device;
 	}
 
-	public void ChangePluginType(in Type targetType)
+	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)
 	{
 		type = targetType;
 	}
