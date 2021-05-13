@@ -18,7 +18,7 @@ public interface ICLOiSimPlugin
 	void Reset();
 }
 
-public abstract partial class CLOiSimPlugin : CommonThread, ICLOiSimPlugin
+public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugin
 {
 	public enum Type {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
 

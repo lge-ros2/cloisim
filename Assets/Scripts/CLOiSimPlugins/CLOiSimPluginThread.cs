@@ -9,7 +9,7 @@ using System.Threading;
 using messages = cloisim.msgs;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
-public class CommonThread : DeviceTransporter
+public class CLOiSimPluginThread : DeviceTransporter
 {
 	private bool runningThread = true;
 	protected bool IsRunningThread => runningThread;

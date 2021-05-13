@@ -9,7 +9,7 @@ using UnityEngine;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
-public abstract partial class CLOiSimPlugin : CommonThread, ICLOiSimPlugin
+public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugin
 {
 
 	protected static void SetCameraInfoResponse(ref DeviceMessage msCameraInfo, in messages.CameraSensor sensorInfo)
