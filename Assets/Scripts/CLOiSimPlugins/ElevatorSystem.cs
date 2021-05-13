@@ -267,11 +267,10 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
+			var requestMessage = ParsingRequestMessage(receivedBuffer);
 
-			if (receivedBuffer != null)
+			if (requestMessage != null)
 			{
-				var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForService);
-
 				if (requestMessage.Name.Equals("request_system_name"))
 				{
 					SetSystemNameResponse(requestMessage);
@@ -296,7 +295,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		msForService.SetMessage<messages.Param>(response);
 	}
 
-	private MemoryStream HandleServiceRequest(in messages.Param receivedMessage)
+	private DeviceMessage HandleServiceRequest(in messages.Param receivedMessage)
 	{
 		messages.Param param = null;
 
@@ -344,9 +343,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 		HandleService(serviceName, currentFloor, targetFloor, elevatorIndex);
 
-		ClearDeviceMessage(ref msForService);
-
-		Serializer.Serialize<messages.Param>(msForService, responseMessage);
+		msForService.SetMessage<messages.Param>(responseMessage);
 
 		return msForService;
 	}

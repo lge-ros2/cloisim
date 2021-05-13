@@ -35,6 +35,7 @@ public class LaserPlugin : CLOiSimPlugin
 		AddThread(SenderThread, lidar as System.Object);
 	}
 
+
 	private void Response()
 	{
 		var dmInfoResponse = new DeviceMessage();
@@ -42,7 +43,7 @@ public class LaserPlugin : CLOiSimPlugin
 		{
 			var receivedBuffer = ReceiveRequest();
 
-			var requestMessage = ParsingInfoRequest(receivedBuffer, ref dmInfoResponse);
+			var requestMessage = ParsingRequestMessage(receivedBuffer);
 
 			if (requestMessage != null)
 			{

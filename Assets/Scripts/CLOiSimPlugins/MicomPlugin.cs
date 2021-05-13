@@ -64,8 +64,7 @@ public class MicomPlugin : CLOiSimPlugin
 		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
-
-			var requestMessage = ParsingInfoRequest(receivedBuffer, ref dmInfoResponse);
+			var requestMessage = ParsingRequestMessage(receivedBuffer);
 
 			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)

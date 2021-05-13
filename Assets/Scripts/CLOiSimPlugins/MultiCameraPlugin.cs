@@ -37,8 +37,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
-
-			var requestMessage = CameraPlugin.ParsingInfoRequest(receivedBuffer, ref dmInfoResponse);
+			var requestMessage = CameraPlugin.ParsingRequestMessage(receivedBuffer);
 
 			if (requestMessage != null)
 			{

@@ -5,28 +5,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.IO;
 using UnityEngine;
-using ProtoBuf;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
 public abstract partial class CLOiSimPlugin : CommonThread, ICLOiSimPlugin
 {
-	protected static messages.Param ParsingInfoRequest(in byte[] srcReceivedBuffer, ref DeviceMessage dstCameraInfoMemStream)
-	{
-		if (srcReceivedBuffer == null)
-		{
-			return null;
-		}
-
-		ClearDeviceMessage(ref dstCameraInfoMemStream);
-
-		dstCameraInfoMemStream.Write(srcReceivedBuffer, 0, srcReceivedBuffer.Length);
-		dstCameraInfoMemStream.Position = 0;
-
-		return Serializer.Deserialize<messages.Param>(dstCameraInfoMemStream);
-	}
 
 	protected static void SetCameraInfoResponse(ref DeviceMessage msCameraInfo, in messages.CameraSensor sensorInfo)
 	{
@@ -36,7 +20,6 @@ public abstract partial class CLOiSimPlugin : CommonThread, ICLOiSimPlugin
 		}
 
 		msCameraInfo.SetMessage<messages.CameraSensor>(sensorInfo);
-
 	}
 
 	protected static void SetTransformInfoResponse(ref DeviceMessage msTransformInfo, in Pose devicePose)

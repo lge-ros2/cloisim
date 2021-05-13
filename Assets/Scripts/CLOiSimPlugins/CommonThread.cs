@@ -6,9 +6,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using System.IO;
-using UnityEngine;
-using System.Xml;
+using messages = cloisim.msgs;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class CommonThread : DeviceTransporter
@@ -104,8 +102,63 @@ public class CommonThread : DeviceTransporter
 		}
 	}
 
+	protected void ResponseThread(System.Object deviceParam)
+	{
+		var dmInfoResponse = new DeviceMessage();
+
+		while (IsRunningThread)
+		{
+			var receivedBuffer = ReceiveRequest();
+			var requestMessage = ParsingRequestMessage(receivedBuffer);
+
+			// Debug.Log(subPartName + receivedString);
+			if (requestMessage != null)
+			{
+				// switch (requestMessage.Name)
+				// {
+				// 	case "request_ros2":
+				// 		var topic_name = parameters.GetValue<string>("ros2/topic_name");
+				// 		var frame_id = parameters.GetValue<string>("ros2/frame_id");
+				// 		SetROS2CommonInfoResponse(ref dmInfoResponse, topic_name, frame_id);
+				// 		break;
+
+				// 	case "request_camera_info":
+				// 		var cameraInfoMessage = cam.GetCameraInfo();
+				// 		SetCameraInfoResponse(ref dmInfoResponse, cameraInfoMessage);
+				// 		break;
+
+				// 	case "request_transform":
+				// 		var isSubParts = string.IsNullOrEmpty(subPartName);
+				// 		var devicePose = cam.GetPose(isSubParts);
+				// 		SetTransformInfoResponse(ref dmInfoResponse, devicePose);
+				// 		break;
+
+				// 	default:
+				// 		// HandleCustomRequestMessage();
+				// 		break;
+				// }
+
+				SendResponse(dmInfoResponse);
+			}
+
+			WaitThread();
+		}
+	}
+
 	protected void WaitThread(in int iteration = 1)
 	{
 		Thread.SpinWait(iteration);
+
+	}
+	protected static messages.Param ParsingRequestMessage(in byte[] infoBuffer)
+	{
+		if (infoBuffer != null)
+		{
+			var deviceMessage = new DeviceMessage();
+			deviceMessage.SetMessage(infoBuffer);
+			return deviceMessage.GetMessage<messages.Param>();
+		}
+
+		return null;
 	}
 }

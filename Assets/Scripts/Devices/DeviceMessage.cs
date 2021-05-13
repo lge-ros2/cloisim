@@ -17,12 +17,12 @@ public class DeviceMessage : MemoryStream
 
 	public DeviceMessage GetMessage()
 	{
-		return (CanRead) ? this : null;
+		return (IsValid()) ? this : null;
 	}
 
 	public void GetMessage(out DeviceMessage message)
 	{
-		message = (CanRead) ? this : null;
+		message = (IsValid()) ? this : null;
 	}
 
 	public bool SetMessage(in byte[] data)
@@ -82,5 +82,10 @@ public class DeviceMessage : MemoryStream
 			Position = 0;
 			Capacity = 0;
 		}
+	}
+
+	public bool IsValid()
+	{
+		return (CanRead && Length > 0);
 	}
 }
