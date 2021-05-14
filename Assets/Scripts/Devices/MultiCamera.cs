@@ -18,7 +18,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
-			Mode = ModeType.TX;
+			Mode = ModeType.TX_THREAD;
 		}
 
 		protected override void OnStart()
