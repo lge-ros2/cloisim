@@ -29,6 +29,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 	private SDF.Plugin pluginParameters;
 
 	private List<string> hashKeyList = new List<string>();
+	protected Device targetDevice = null;
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
@@ -195,13 +196,8 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 	private void StorePose()
 	{
-		// Debug.Log(deviceName + ":" + transform.name);
 		pluginPose.position = transform.localPosition;
 		pluginPose.rotation = transform.localRotation;
-	}
-
-	protected static void ClearDeviceMessage(ref DeviceMessage dm)
-	{
-		dm.Reset();
+		// Debug.Log(modelName + ":" + transform.name + ", " + pluginPose.position + ", " + pluginPose.rotation);
 	}
 }

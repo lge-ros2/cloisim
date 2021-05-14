@@ -9,27 +9,22 @@ using Any = cloisim.msgs.Any;
 
 public class LaserPlugin : CLOiSimPlugin
 {
-	private SensorDevices.Lidar lidar = null;
-
-	private string hashServiceKey = string.Empty;
-	private string hashKey = string.Empty;
-
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.LASER;
 		partName = DeviceHelper.GetPartName(gameObject);
 
-		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
+		targetDevice = gameObject.GetComponent<SensorDevices.Lidar>();
 	}
 
 	protected override void OnStart()
 	{
-		lidar.SetPluginParameters(GetPluginParameters());
+		targetDevice.SetPluginParameters(GetPluginParameters());
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 
 		AddThread(RequestThread);
-		AddThread(SenderThread, lidar);
+		AddThread(SenderThread, targetDevice);
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
@@ -41,7 +36,7 @@ public class LaserPlugin : CLOiSimPlugin
 				break;
 
 			case "request_transform":
-				var devicePose = lidar.GetPose();
+				var devicePose = targetDevice.GetPose();
 				SetTransformInfoResponse(ref response, devicePose);
 				break;
 

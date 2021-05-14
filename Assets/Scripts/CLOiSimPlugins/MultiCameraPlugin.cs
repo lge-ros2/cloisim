@@ -10,13 +10,11 @@ using Any = cloisim.msgs.Any;
 
 public class MultiCameraPlugin : CLOiSimPlugin
 {
-	private SensorDevices.MultiCamera multicam = null;
-
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.MULTICAMERA;
 		partName = DeviceHelper.GetPartName(gameObject);
-		multicam = gameObject.GetComponent<SensorDevices.MultiCamera>();
+		targetDevice = gameObject.GetComponent<SensorDevices.MultiCamera>();
 	}
 
 	protected override void OnStart()
@@ -24,59 +22,35 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 
-		AddThread(SenderThread, multicam);
+		AddThread(SenderThread, targetDevice);
 		AddThread(RequestThread);
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
 	{
 		var cameraName = requestValue;
+		var multicam = targetDevice as SensorDevices.MultiCamera;
+		var camera = multicam.GetCamera(cameraName);
+
+		if (camera == null)
+		{
+			UnityEngine.Debug.LogWarning("cannot find camera from multicamera: " + cameraName);
+			return;
+		}
+
 		switch (requestType)
 		{
 			case "request_camera_info":
-				{
-					var camera = multicam.GetCamera(cameraName);
-					var cameraInfoMessage = camera.GetCameraInfo();
-					CameraPlugin.SetCameraInfoResponse(ref response, cameraInfoMessage);
-				}
+				var cameraInfoMessage = camera.GetCameraInfo();
+				CameraPlugin.SetCameraInfoResponse(ref response, cameraInfoMessage);
 				break;
 
 			case "request_transform":
-				{
-					var camera = multicam.GetCamera(cameraName);
-					var devicePose = camera.GetPose();
-					SetTransformInfoResponse(ref response, devicePose);
-				}
+				var devicePose = camera.GetPose();
+				SetTransformInfoResponse(ref response, devicePose);
 				break;
 			default:
 				break;
 		}
-	}
-
-	private void SetROS2FramesIdInfoResponse(ref DeviceMessage dmInfoResponse, in List<string> frames_id)
-	{
-		if (dmInfoResponse == null)
-		{
-			return;
-		}
-
-		var ros2CommonInfo = new messages.Param();
-		ros2CommonInfo.Name = "ros2";
-		ros2CommonInfo.Value = new Any { Type = Any.ValueType.None };
-
-		var ros2FramesIdInfo = new messages.Param();
-		ros2FramesIdInfo.Name = "frames_id";
-		ros2FramesIdInfo.Value = new Any { Type = Any.ValueType.None };
-		ros2CommonInfo.Childrens.Add(ros2FramesIdInfo);
-
-		foreach (var frame_id in frames_id)
-		{
-			var ros2FrameId = new messages.Param();
-			ros2FrameId.Name = "frame_id";
-			ros2FrameId.Value = new Any { Type = Any.ValueType.String, StringValue = frame_id };
-			ros2FramesIdInfo.Childrens.Add(ros2FrameId);
-		}
-
-		dmInfoResponse.SetMessage<messages.Param>(ros2CommonInfo);
 	}
 }

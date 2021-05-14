@@ -13,6 +13,7 @@ public abstract class Device : MonoBehaviour
 	public enum ModeType { NONE, TX, RX, TX_THREAD, RX_THREAD };
 
 	public ModeType Mode = ModeType.NONE;
+	private bool isSubParts = false;
 
 	private DeviceMessageQueue deviceMessageQueue = new DeviceMessageQueue();
 	private DeviceMessage deviceMessage = new DeviceMessage();
@@ -65,7 +66,10 @@ public abstract class Device : MonoBehaviour
 		set => visualize = value;
 	}
 
-	public bool IsDeviceRunning => runningDevice;
+	public void SetSubParts(in bool value)
+	{
+		isSubParts = value;
+	}
 
 	void Awake()
 	{
@@ -310,11 +314,11 @@ public abstract class Device : MonoBehaviour
 		devicePose.rotation = transform.localRotation;
 	}
 
-	public Pose GetPose(in bool includingParent = true)
+	public Pose GetPose()
 	{
 		var finalPose = devicePose;
 
-		if (includingParent)
+		if (!isSubParts)
 		{
 			finalPose.position += deviceLinkPose.position;
 			finalPose.rotation *= deviceLinkPose.rotation;

@@ -11,13 +11,13 @@ using Any = cloisim.msgs.Any;
 
 public class RealSensePlugin : CLOiSimMultiPlugin
 {
-	private Camera[] cameras = null;
+	private SensorDevices.Camera[] cameras = null;
 	private List<string> activatedModules = new List<string>();
 
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.REALSENSE;
-		cameras = GetComponentsInChildren<Camera>();
+		cameras = GetComponentsInChildren<SensorDevices.Camera>();
 		partName = name;
 	}
 
@@ -66,11 +66,13 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 	{
 		foreach (var camera in cameras)
 		{
-			if (camera.gameObject.name.Equals(name))
+			if (camera.name.Equals(name))
 			{
 				var plugin = camera.gameObject.AddComponent<CameraPlugin>();
 				plugin.ChangePluginType(ICLOiSimPlugin.Type.REALSENSE);
 				plugin.subPartName = name;
+
+				camera.SetSubParts(true);
 
 				AddCLOiSimPlugin(name, plugin);
 				activatedModules.Add(name);

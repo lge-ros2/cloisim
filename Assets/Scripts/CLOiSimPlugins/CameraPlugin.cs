@@ -6,13 +6,11 @@
 
 public class CameraPlugin : CLOiSimPlugin
 {
-	private SensorDevices.Camera cam = null;
-
 	public string subPartName = string.Empty;
 
 	public SensorDevices.Camera GetCamera()
 	{
-		return cam;
+		return targetDevice as SensorDevices.Camera;
 	}
 
 	protected override void OnAwake()
@@ -21,12 +19,12 @@ public class CameraPlugin : CLOiSimPlugin
 		if (depthcam is null)
 		{
 			ChangePluginType(ICLOiSimPlugin.Type.CAMERA);
-			cam = gameObject.GetComponent<SensorDevices.Camera>();
+			targetDevice = gameObject.GetComponent<SensorDevices.Camera>();
 		}
 		else
 		{
 			ChangePluginType(ICLOiSimPlugin.Type.DEPTHCAMERA);
-			cam = depthcam;
+			targetDevice = depthcam;
 		}
 
 		partName = DeviceHelper.GetPartName(gameObject);
@@ -38,7 +36,7 @@ public class CameraPlugin : CLOiSimPlugin
 		RegisterTxDevice(subPartName + "Data");
 
 		AddThread(RequestThread);
-		AddThread(SenderThread, cam);
+		AddThread(SenderThread, targetDevice);
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
@@ -46,13 +44,13 @@ public class CameraPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_camera_info":
+				var cam = targetDevice as SensorDevices.Camera;
 				var cameraInfoMessage = cam.GetCameraInfo();
 				SetCameraInfoResponse(ref response, cameraInfoMessage);
 				break;
 
 			case "request_transform":
-				var isSubParts = string.IsNullOrEmpty(subPartName);
-				var devicePose = cam.GetPose(isSubParts);
+				var devicePose = targetDevice.GetPose();
 				SetTransformInfoResponse(ref response, devicePose);
 				break;
 

@@ -18,11 +18,12 @@ public class MicomPlugin : CLOiSimPlugin
 		micomSensor = gameObject.AddComponent<MicomSensor>();
 		micomInput = gameObject.AddComponent<MicomInput>();
 		micomInput.SetMicomSensor(micomSensor);
+		targetDevice = micomSensor;
 	}
 
 	protected override void OnStart()
 	{
-		micomSensor.SetPluginParameters(GetPluginParameters());
+		targetDevice.SetPluginParameters(GetPluginParameters());
 
 		var debugging = GetPluginParameters().GetValue<bool>("debug", false);
 		micomInput.EnableDebugging = debugging;
@@ -32,7 +33,7 @@ public class MicomPlugin : CLOiSimPlugin
 		RegisterTxDevice("Tx");
 
 		AddThread(RequestThread);
-		AddThread(SenderThread, micomSensor);
+		AddThread(SenderThread, targetDevice);
 		AddThread(Receiver);
 	}
 

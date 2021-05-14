@@ -8,17 +8,10 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class GpsPlugin : CLOiSimPlugin
 {
-	private SensorDevices.GPS gps = null;
-
-	private string hashServiceKey = string.Empty;
-	private string hashKey = string.Empty;
-
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.GPS;
-
-		gps = gameObject.GetComponent<SensorDevices.GPS>();
-
+		targetDevice = gameObject.GetComponent<SensorDevices.GPS>();
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
@@ -28,7 +21,7 @@ public class GpsPlugin : CLOiSimPlugin
 		RegisterTxDevice("Data");
 
 		AddThread(RequestThread);
-		AddThread(SenderThread, gps);
+		AddThread(SenderThread, targetDevice);
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
@@ -36,8 +29,7 @@ public class GpsPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_transform":
-				var device = gps as Device;
-				var devicePose = device.GetPose();
+				var devicePose = targetDevice.GetPose();
 				SetTransformInfoResponse(ref response, devicePose);
 				break;
 
