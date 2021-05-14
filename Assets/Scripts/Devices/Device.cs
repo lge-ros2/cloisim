@@ -109,7 +109,7 @@ public abstract class Device : MonoBehaviour
 			case ModeType.NONE:
 			default:
 				runningDevice = false;
-				Debug.LogWarning("Device Mode is None");
+				Debug.LogWarning("Device(" + name + ") Mode is None");
 				break;
 		}
 
