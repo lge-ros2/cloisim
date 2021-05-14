@@ -166,6 +166,8 @@ public abstract class Device : MonoBehaviour
 
 	protected abstract void OnStart();
 
+	protected virtual void OnReset() {}
+
 
 	protected virtual IEnumerator OnVisualize()
 	{
@@ -260,9 +262,13 @@ public abstract class Device : MonoBehaviour
 		return deviceMessageQueue.Pop(out data);
 	}
 
-	public void FlushDeviceMessageQueue()
+	public void Reset()
 	{
+		// Debug.Log("Reset(): flush message queue");
+		deviceMessage.Reset();
 		deviceMessageQueue.Flush();
+
+		OnReset();
 	}
 
 	protected float WaitPeriod(in float messageGenerationTime = 0)
