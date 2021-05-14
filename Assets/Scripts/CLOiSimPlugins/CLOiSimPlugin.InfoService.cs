@@ -74,9 +74,10 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 	{
 		if (msRos2Info != null)
 		{
-			var emptyMessage = new messages.Empty();
-			emptyMessage.Unused = true;
-			msRos2Info.SetMessage<messages.Empty>(emptyMessage);
+			var emptyMessage = new messages.Param();
+			emptyMessage.Name = "reset_odometry";
+			emptyMessage.Value = new Any { Type = Any.ValueType.Boolean, BoolValue = true };
+			msRos2Info.SetMessage<messages.Param>(emptyMessage);
 		}
 	}
 
