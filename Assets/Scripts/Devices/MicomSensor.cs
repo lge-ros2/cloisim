@@ -31,7 +31,6 @@ public partial class MicomSensor : Device
 
 	protected override void OnStart()
 	{
-		Debug.Log("Start MicomSensor");
 		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
 		SetUpdateRate(updateRate);
 
@@ -348,5 +347,23 @@ public partial class MicomSensor : Device
 		}
 
 		return false;
+	}
+
+	private void SetInitialPartsPose(in string name, in GameObject targetObject)
+	{
+		var targetTransform = (targetObject.CompareTag("Model")) ? targetObject.transform : targetObject.transform.parent;
+		var initialPose = new Pose(targetTransform.localPosition, targetTransform.localRotation);
+		// Debug.Log(name + " " + initialPose.ToString("F9"));
+		partsPoseMapTable.Add(name, initialPose);
+	}
+
+	public Pose GetPartsPose(in string targetPartsName)
+	{
+		if (partsPoseMapTable.TryGetValue(targetPartsName, out var targetPartsPose))
+		{
+			return targetPartsPose;
+		}
+
+		return Pose.identity;
 	}
 }
