@@ -327,6 +327,9 @@ public abstract class Device : MonoBehaviour
 		return finalPose;
 	}
 
+	/// <summary>
+	/// This method should be called in OnStart()
+	/// </summary>
 	public void SetPluginParameters(in SDF.Plugin plugin)
 	{
 		pluginParameters = plugin;

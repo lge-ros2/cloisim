@@ -20,13 +20,11 @@ public class LaserPlugin : CLOiSimPlugin
 		partName = DeviceHelper.GetPartName(gameObject);
 
 		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
-		lidar.SetPluginParameters(GetPluginParameters());
-
-		UnityEngine.Debug.Log(lidar.GetPluginParameters());
 	}
 
 	protected override void OnStart()
 	{
+		lidar.SetPluginParameters(GetPluginParameters());
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 
