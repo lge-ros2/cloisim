@@ -58,13 +58,13 @@ namespace SensorDevices
 		private void AddCamera(in SDF.Camera parameters)
 		{
 			var newCamObject = new GameObject();
-			newCamObject.name = GetPluginParameters().Name;
+			newCamObject.name = parameters.name;
 
 			var newCamTransform = newCamObject.transform;
 			newCamTransform.position = Vector3.zero;
 			newCamTransform.rotation = Quaternion.identity;
-			newCamTransform.localPosition = SDF2Unity.GetPosition(GetPluginParameters().Pose.Pos);
-			newCamTransform.localRotation = SDF2Unity.GetRotation(GetPluginParameters().Pose.Rot);
+			newCamTransform.localPosition = SDF2Unity.GetPosition(parameters.Pose.Pos);
+			newCamTransform.localRotation = SDF2Unity.GetRotation(parameters.Pose.Rot);
 			newCamTransform.SetParent(this.transform, false);
 
 			var newCam = newCamObject.AddComponent<SensorDevices.Camera>();
