@@ -125,11 +125,11 @@ namespace SensorDevices
 
 		new void OnDestroy()
 		{
-      // Debug.LogWarning("Destroy");
+			// Debug.LogWarning("Destroy");
 			// Important!! Native arrays must be disposed manually.
 			for (var i = 0; i < readbacks.Count; i++)
 			{
-  			var item = readbacks.ElementAt(i);
+				var item = readbacks.ElementAt(i);
 				item.Key.WaitForCompletion();
 			}
 
@@ -146,7 +146,7 @@ namespace SensorDevices
 			laserScanStamped.Scan.WorldPose.Orientation = new messages.Quaternion();
 
 			var laserScan = laserScanStamped.Scan;
-			laserScan.Frame = deviceName;
+			laserScan.Frame = DeviceName;
 			laserScan.Count = horizontal.samples;
 			laserScan.AngleMin = horizontal.angle.min * Mathf.Deg2Rad;
 			laserScan.AngleMax = horizontal.angle.max * Mathf.Deg2Rad;
@@ -317,24 +317,24 @@ namespace SensorDevices
 					depthCamBuffer.imageBuffer = readbackData;
 					depthCamBuffer.Allocate();
 
-          if (depthCamBuffer.depthBuffer.IsCreated)
-          {
-            var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), batchSize);
-            jobHandleDepthCamBuffer.Complete();
+					if (depthCamBuffer.depthBuffer.IsCreated)
+					{
+						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), batchSize);
+						jobHandleDepthCamBuffer.Complete();
 
-            var data = laserCamData[dataIndex];
-            data.depthBuffer = depthCamBuffer.depthBuffer;
-            data.Allocate();
+						var data = laserCamData[dataIndex];
+						data.depthBuffer = depthCamBuffer.depthBuffer;
+						data.Allocate();
 
-            var jobHandle = data.Schedule(data.OutputLength(), batchSize);
-            jobHandle.Complete();
+						var jobHandle = data.Schedule(data.OutputLength(), batchSize);
+						jobHandle.Complete();
 
-            laserDataOutput[dataIndex].data = data.GetLaserData();
+						laserDataOutput[dataIndex].data = data.GetLaserData();
 
-            data.Deallocate();
-          }
+						data.Deallocate();
+					}
 
-          depthCamBuffer.Deallocate();
+					depthCamBuffer.Deallocate();
 
 					readbackData.Dispose();
 
@@ -446,7 +446,7 @@ namespace SensorDevices
 			DoLaserAngleFilter();
 
 			DeviceHelper.SetCurrentTime(laserScanStamped.Time);
-			PushData<messages.LaserScanStamped>(laserScanStamped);
+			PushDeviceMessage<messages.LaserScanStamped>(laserScanStamped);
 		}
 
 		protected override IEnumerator OnVisualize()

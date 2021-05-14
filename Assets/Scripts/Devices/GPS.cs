@@ -28,7 +28,7 @@ namespace SensorDevices
 		{
 			Mode = ModeType.TX_THREAD;
 			gpsLink = transform.parent;
-			deviceName = name;
+			DeviceName = name;
 
 			sphericalCoordinates = DeviceHelper.GetGlobalSphericalCoordinates();
 		}
@@ -52,7 +52,7 @@ namespace SensorDevices
 		{
 			gps = new messages.Gps();
 			gps.Time = new messages.Time();
-			gps.LinkName = deviceName;
+			gps.LinkName = DeviceName;
 		}
 
 		protected override void GenerateMessage()
@@ -81,7 +81,7 @@ namespace SensorDevices
 			gps.VelocityNorth = gpsVelocity.y;
 			gps.VelocityUp = gpsVelocity.z;
 
-			PushData<messages.Gps>(gps);
+			PushDeviceMessage<messages.Gps>(gps);
 		}
 
 		public double Longitude => gps.LongitudeDeg;

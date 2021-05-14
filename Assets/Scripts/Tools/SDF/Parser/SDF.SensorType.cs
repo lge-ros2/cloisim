@@ -36,7 +36,12 @@ namespace SDF
 
 	public class Cameras : SensorType
 	{
-		public List<Camera> list = new List<Camera>();
+		public List<Camera> cameras = new List<Camera>();
+
+		public void	Add(in Camera item)
+		{
+			cameras.Add(item);
+		}
 	}
 
 	public class Camera : SensorType

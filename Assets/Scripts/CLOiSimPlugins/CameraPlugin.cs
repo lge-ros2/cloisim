@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using Stopwatch = System.Diagnostics.Stopwatch;
-
 public class CameraPlugin : CLOiSimPlugin
 {
 	private SensorDevices.Camera cam = null;
@@ -22,12 +20,12 @@ public class CameraPlugin : CLOiSimPlugin
 		var depthcam = gameObject.GetComponent<SensorDevices.DepthCamera>();
 		if (depthcam is null)
 		{
-			ChangePluginType(Type.CAMERA);
+			ChangePluginType(ICLOiSimPlugin.Type.CAMERA);
 			cam = gameObject.GetComponent<SensorDevices.Camera>();
 		}
 		else
 		{
-			ChangePluginType(Type.DEPTHCAMERA);
+			ChangePluginType(ICLOiSimPlugin.Type.DEPTHCAMERA);
 			cam = depthcam;
 		}
 
@@ -39,64 +37,27 @@ public class CameraPlugin : CLOiSimPlugin
 		RegisterServiceDevice(subPartName + "Info");
 		RegisterTxDevice(subPartName + "Data");
 
-		AddThread(Response);
-		AddThread(Sender);
+		AddThread(RequestThread);
+		AddThread(SenderThread, cam);
 	}
 
-	private void Sender()
+	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
 	{
-		var sw = new Stopwatch();
-		while (IsRunningThread)
+		switch (requestType)
 		{
-			if (cam != null)
-			{
-				var datastreamToSend = cam.PopData();
-				sw.Restart();
-				Publish(datastreamToSend);
-				sw.Stop();
-				cam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
-			}
-		}
-	}
+			case "request_camera_info":
+				var cameraInfoMessage = cam.GetCameraInfo();
+				SetCameraInfoResponse(ref response, cameraInfoMessage);
+				break;
 
-	private void Response()
-	{
-		while (IsRunningThread)
-		{
-			var receivedBuffer = ReceiveRequest();
+			case "request_transform":
+				var isSubParts = string.IsNullOrEmpty(subPartName);
+				var devicePose = cam.GetPose(isSubParts);
+				SetTransformInfoResponse(ref response, devicePose);
+				break;
 
-			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
-
-			// Debug.Log(subPartName + receivedString);
-			if (requestMessage != null)
-			{
-				switch (requestMessage.Name)
-				{
-					case "request_ros2":
-						var topic_name = parameters.GetValue<string>("ros2/topic_name");
-						var frame_id = parameters.GetValue<string>("ros2/frame_id");
-						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
-						break;
-
-					case "request_camera_info":
-						var cameraInfoMessage = cam.GetCameraInfo();
-						SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
-						break;
-
-					case "request_transform":
-						var isSubParts = string.IsNullOrEmpty(subPartName);
-						var devicePose = cam.GetPose(isSubParts);
-						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
-						break;
-
-					default:
-						break;
-				}
-
-				SendResponse(msForInfoResponse);
-			}
-
-			ThreadWait();
+			default:
+				break;
 		}
 	}
 }

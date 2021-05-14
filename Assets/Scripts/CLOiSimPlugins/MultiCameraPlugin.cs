@@ -5,9 +5,6 @@
  */
 
 using System.Collections.Generic;
-using System.IO;
-using ProtoBuf;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
@@ -17,7 +14,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = Type.MULTICAMERA;
+		type = ICLOiSimPlugin.Type.MULTICAMERA;
 		partName = DeviceHelper.GetPartName(gameObject);
 		multicam = gameObject.GetComponent<SensorDevices.MultiCamera>();
 	}
@@ -27,77 +24,45 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 
-		AddThread(Sender);
-		AddThread(Response);
+		AddThread(SenderThread, multicam);
+		AddThread(RequestThread);
 	}
 
-	private void Sender()
+	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
 	{
-		var sw = new Stopwatch();
-		while (IsRunningThread)
+		var cameraName = requestValue;
+		switch (requestType)
 		{
-			if (multicam != null)
-			{
- 				var datastreamToSend = multicam.PopData();
-				sw.Restart();
-				Publish(datastreamToSend);
-				sw.Stop();
-				multicam.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
-			}
-		}
-	}
-
-	private void Response()
-	{
-		while (IsRunningThread)
-		{
-			var receivedBuffer = ReceiveRequest();
-
-			var requestMessage = CameraPlugin.ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
-
-			if (requestMessage != null)
-			{
-				var cameraName = (requestMessage.Value == null) ? string.Empty : requestMessage.Value.StringValue;
-
-				switch (requestMessage.Name)
+			case "request_ros2":
+				if (GetPluginParameters().GetValues<string>("ros2/frames_id/frame_id", out var frames_id))
 				{
-					case "request_ros2":
-						if (parameters.GetValues<string>("ros2/frames_id/frame_id", out var frames_id))
-						{
-							SetROS2FramesIdInfoResponse(ref msForInfoResponse, frames_id);
-						}
-						break;
-
-					case "request_camera_info":
-						{
-							var camera = multicam.GetCamera(cameraName);
-							var cameraInfoMessage = camera.GetCameraInfo();
-							CameraPlugin.SetCameraInfoResponse(ref msForInfoResponse, cameraInfoMessage);
-						}
-						break;
-
-					case "request_transform":
-						{
-							var camera = multicam.GetCamera(cameraName);
-							var devicePose = camera.GetPose();
-							SetTransformInfoResponse(ref msForInfoResponse, devicePose);
-						}
-						break;
-
-					default:
-						break;
+					SetROS2FramesIdInfoResponse(ref response, frames_id);
 				}
+				break;
 
-				SendResponse(msForInfoResponse);
-			}
+			case "request_camera_info":
+				{
+					var camera = multicam.GetCamera(cameraName);
+					var cameraInfoMessage = camera.GetCameraInfo();
+					CameraPlugin.SetCameraInfoResponse(ref response, cameraInfoMessage);
+				}
+				break;
 
-			ThreadWait();
+			case "request_transform":
+				{
+					var camera = multicam.GetCamera(cameraName);
+					var devicePose = camera.GetPose();
+					SetTransformInfoResponse(ref response, devicePose);
+				}
+				break;
+			default:
+				break;
 		}
 	}
 
-	private void SetROS2FramesIdInfoResponse(ref MemoryStream msForInfoResponse, in List<string> frames_id)
+	private void SetROS2FramesIdInfoResponse(ref DeviceMessage dmInfoResponse, in List<string> frames_id)
 	{
-		if (msForInfoResponse == null)
+		if (dmInfoResponse == null)
 		{
 			return;
 		}
@@ -119,7 +84,6 @@ public class MultiCameraPlugin : CLOiSimPlugin
 			ros2FramesIdInfo.Childrens.Add(ros2FrameId);
 		}
 
-		ClearMemoryStream(ref msForInfoResponse);
-		Serializer.Serialize<messages.Param>(msForInfoResponse, ros2CommonInfo);
+		dmInfoResponse.SetMessage<messages.Param>(ros2CommonInfo);
 	}
 }

@@ -15,7 +15,7 @@ public class GpsPlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = Type.GPS;
+		type = ICLOiSimPlugin.Type.GPS;
 
 		gps = gameObject.GetComponent<SensorDevices.GPS>();
 
@@ -27,59 +27,22 @@ public class GpsPlugin : CLOiSimPlugin
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 
-		AddThread(Response);
-		AddThread(Sender);
+		AddThread(RequestThread);
+		AddThread(SenderThread, gps);
 	}
 
-	private void Sender()
+	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
 	{
-		var sw = new Stopwatch();
-		while (IsRunningThread)
+		switch (requestType)
 		{
-			if (gps != null)
-			{
-				var datastreamToSend = gps.PopData();
-				sw.Restart();
-				Publish(datastreamToSend);
-				sw.Stop();
-				gps.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
-			}
-		}
-	}
+			case "request_transform":
+				var device = gps as Device;
+				var devicePose = device.GetPose();
+				SetTransformInfoResponse(ref response, devicePose);
+				break;
 
-	private void Response()
-	{
-		while (IsRunningThread)
-		{
-			var receivedBuffer = ReceiveRequest();
-
-			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
-
-			// Debug.Log(subPartName + receivedString);
-			if (requestMessage != null)
-			{
-				switch (requestMessage.Name)
-				{
-					case "request_ros2":
-						var topic_name = parameters.GetValue<string>("ros2/topic_name");
-						var frame_id = parameters.GetValue<string>("ros2/frame_id");
-						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
-						break;
-
-					case "request_transform":
-						var device = gps as Device;
-						var devicePose = device.GetPose();
-						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
-						break;
-
-					default:
-						break;
-				}
-
-				SendResponse(msForInfoResponse);
-			}
-
-			ThreadWait();
+			default:
+				break;
 		}
 	}
 }

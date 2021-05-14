@@ -4,19 +4,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-using UnityEngine;
-
 public class SimulationWorld : CLOiSimPlugin
 {
 	private Clock clock = null;
-
 	private string hashKey = string.Empty;
 
 	protected override void OnAwake()
 	{
-		type = Type.WORLD;
+		type = ICLOiSimPlugin.Type.WORLD;
 		clock = gameObject.AddComponent<Clock>();
-		SetDevice(clock);
 
 		modelName = "World";
 		partName = "cloisim_world";
@@ -26,18 +22,6 @@ public class SimulationWorld : CLOiSimPlugin
 	{
 		RegisterTxDevice("Clock");
 
-		AddThread(Sender);
-	}
-
-	private void Sender()
-	{
-		while (IsRunningThread)
-		{
-			if (clock != null)
-			{
-				var datastreamToSend = clock.PopData();
-				Publish(datastreamToSend);
-			}
-		}
+		AddThread(SenderThread, clock);
 	}
 }

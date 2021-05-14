@@ -7,14 +7,11 @@
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Collections;
-using System.IO;
 #if UNITY_EDITOR
 using System.Linq;
 #endif
 using UnityEngine;
-using ProtoBuf;
-using Param = cloisim.msgs.Param;
-using Any = cloisim.msgs.Any;
+using messages = cloisim.msgs;
 
 public partial class ElevatorSystem : CLOiSimPlugin
 {
@@ -44,8 +41,8 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		}
 	}
 
-	private MemoryStream msForService = new MemoryStream();
-	private Param responseMessage = new Param();
+	private DeviceMessage msForService = new DeviceMessage();
+	private messages.Param responseMessage = new messages.Param();
 	private Dictionary<string, float> floorList = new Dictionary<string, float>();
 	private Dictionary<string, ElevatorEntity> elevatorList = new Dictionary<string, ElevatorEntity>();
 	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue = new ConcurrentQueue<ElevatorTask>();
@@ -56,7 +53,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = Type.ELEVATOR;
+		type = ICLOiSimPlugin.Type.ELEVATOR;
 		partName = "elevator_system";
 	}
 
@@ -118,21 +115,21 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		//     </outside>
 		//   </doors>
 		// </elevator>
-		elevatorSystemName = parameters.GetValue<string>("system_name");
-		var elevatorPrefixName = parameters.GetAttribute<string>("elevator", "prefix_name");
-		var elevatorSpeed = parameters.GetAttribute<float>("elevator", "speed");
-		var elevatorFloor = parameters.GetValue<string>("elevator/floor");
+		elevatorSystemName = GetPluginParameters().GetValue<string>("system_name");
+		var elevatorPrefixName = GetPluginParameters().GetAttribute<string>("elevator", "prefix_name");
+		var elevatorSpeed = GetPluginParameters().GetAttributeInPath<float>("elevator", "speed");
+		var elevatorFloor = GetPluginParameters().GetValue<string>("elevator/floor");
 
-		var elevatorDoorSpeed = parameters.GetAttribute<float>("elevator/doors", "speed");
-		var elevatorDoorAutoClosingTimer = parameters.GetAttribute<float>("elevator/doors", "closing_timer");
+		var elevatorDoorSpeed = GetPluginParameters().GetAttributeInPath<float>("elevator/doors", "speed");
+		var elevatorDoorAutoClosingTimer = GetPluginParameters().GetAttributeInPath<float>("elevator/doors", "closing_timer");
 
-		var elevatorInsideopenOffset = parameters.GetAttribute<float>("elevator/doors/inside","open_offset");
-		var elevatorInsideDoorNameLeft = parameters.GetValue<string>("elevator/doors/inside/door[@name='left']");
-		var elevatorInsideDoorNameRight = parameters.GetValue<string>("elevator/doors/inside/door[@name='right']");
+		var elevatorInsideopenOffset = GetPluginParameters().GetAttributeInPath<float>("elevator/doors/inside","open_offset");
+		var elevatorInsideDoorNameLeft = GetPluginParameters().GetValue<string>("elevator/doors/inside/door[@name='left']");
+		var elevatorInsideDoorNameRight = GetPluginParameters().GetValue<string>("elevator/doors/inside/door[@name='right']");
 
-		var elevatorOutsideopenOffset = parameters.GetAttribute<float>("elevator/doors/outside","open_offset");
-		var elevatorOutsideDoorNameLeft = parameters.GetValue<string>("elevator/doors/outside/door[@name='left']");
-		var elevatorOutsideDoorNameRight = parameters.GetValue<string>("elevator/doors/outside/door[@name='right']");
+		var elevatorOutsideopenOffset = GetPluginParameters().GetAttributeInPath<float>("elevator/doors/outside","open_offset");
+		var elevatorOutsideDoorNameLeft = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='left']");
+		var elevatorOutsideDoorNameRight = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='right']");
 
 		var index = 0;
 		foreach (var child in this.GetComponentsInChildren<Transform>())
@@ -169,8 +166,8 @@ public partial class ElevatorSystem : CLOiSimPlugin
 	public void ReadFloorContext()
 	{
 		this.initialFloor = "B1F";
-		if (parameters.GetValues<string>("floors/floor/name", out var listFloorName) &&
-				parameters.GetValues<float>("floors/floor/height", out var listFloorHeight))
+		if (GetPluginParameters().GetValues<string>("floors/floor/name", out var listFloorName) &&
+			GetPluginParameters().GetValues<float>("floors/floor/height", out var listFloorHeight))
 		{
 			if (listFloorName.Count == listFloorHeight.Count)
 			{
@@ -217,34 +214,34 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	private void GenerateResponseMessage()
 	{
-		var serviceNameParam = new Param
+		var serviceNameParam = new messages.Param
 		{
 			Name = "service_name",
-			Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
+			Value = new messages.Any { Type = messages.Any.ValueType.String, StringValue = string.Empty }
 		};
 
-		var resultParam = new Param
+		var resultParam = new messages.Param
 		{
 			Name = "result",
-			Value = new Any { Type = Any.ValueType.Boolean, BoolValue = false }
+			Value = new messages.Any { Type = messages.Any.ValueType.Boolean, BoolValue = false }
 		};
 
-		var elevatorIndexParam = new Param
+		var elevatorIndexParam = new messages.Param
 		{
 			Name = "elevator_index",
-			Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
+			Value = new messages.Any { Type = messages.Any.ValueType.String, StringValue = string.Empty }
 		};
 
-		var floorParam = new Param
+		var floorParam = new messages.Param
 		{
 			Name = "current_floor",
-			Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
+			Value = new messages.Any { Type = messages.Any.ValueType.String, StringValue = string.Empty }
 		};
 
-		var heightParam = new Param
+		var heightParam = new messages.Param
 		{
 			Name = "height",
-			Value = new Any { Type = Any.ValueType.Double, DoubleValue = 0 }
+			Value = new messages.Any { Type = messages.Any.ValueType.Double, DoubleValue = 0 }
 		};
 
 		responseMessage.Name = string.Empty;
@@ -268,11 +265,10 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
+			var requestMessage = ParsingRequestMessage(receivedBuffer);
 
-			if (receivedBuffer != null)
+			if (requestMessage != null)
 			{
-				var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForService);
-
 				if (requestMessage.Name.Equals("request_system_name"))
 				{
 					SetSystemNameResponse(requestMessage);
@@ -285,22 +281,21 @@ public partial class ElevatorSystem : CLOiSimPlugin
 				}
 			}
 
-			ThreadWait();
+			WaitThread();
 		}
 	}
 
-	private void SetSystemNameResponse(in Param receivedMessage)
+	private void SetSystemNameResponse(in messages.Param receivedMessage)
 	{
-		var response = new Param();
+		var response = new messages.Param();
 		response.Name = "request_system_name";
-		response.Value = new Any { Type = Any.ValueType.String, StringValue = elevatorSystemName };
-		ClearMemoryStream(ref msForService);
-		Serializer.Serialize<Param>(msForService, response);
+		response.Value = new messages.Any { Type = messages.Any.ValueType.String, StringValue = elevatorSystemName };
+		msForService.SetMessage<messages.Param>(response);
 	}
 
-	private MemoryStream HandleServiceRequest(in Param receivedMessage)
+	private DeviceMessage HandleServiceRequest(in messages.Param receivedMessage)
 	{
-		Param param = null;
+		messages.Param param = null;
 
 		if (!elevatorSystemName.Equals(receivedMessage.Name))
 		{
@@ -310,7 +305,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var serviceName = string.Empty;
 		param = receivedMessage.Childrens[0];
 		if (param.Name.Equals("service_name") &&
-				param.Value.Type.Equals(Any.ValueType.String))
+			param.Value.Type.Equals(messages.Any.ValueType.String))
 		{
 			serviceName = param.Value.StringValue;
 		}
@@ -318,7 +313,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var currentFloor = string.Empty;
 		param = receivedMessage.Childrens[1];
 		if (param.Name.Equals("current_floor") &&
-				param.Value.Type.Equals(Any.ValueType.String))
+			param.Value.Type.Equals(messages.Any.ValueType.String))
 		{
 			currentFloor = param.Value.StringValue;
 		}
@@ -326,7 +321,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var targetFloor = string.Empty;
 		param = receivedMessage.Childrens[2];
 		if (param.Name.Equals("target_floor") &&
-				param.Value.Type.Equals(Any.ValueType.String))
+			param.Value.Type.Equals(messages.Any.ValueType.String))
 		{
 			targetFloor = param.Value.StringValue;
 		}
@@ -334,7 +329,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var elevatorIndex = string.Empty;
 		param = receivedMessage.Childrens[3];
 		if (param.Name.Equals("elevator_index") &&
-				param.Value.Type.Equals(Any.ValueType.String))
+			param.Value.Type.Equals(messages.Any.ValueType.String))
 		{
 			elevatorIndex = param.Value.StringValue;
 		}
@@ -346,9 +341,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 		HandleService(serviceName, currentFloor, targetFloor, elevatorIndex);
 
-		ClearMemoryStream(ref msForService);
-
-		Serializer.Serialize<Param>(msForService, responseMessage);
+		msForService.SetMessage<messages.Param>(responseMessage);
 
 		return msForService;
 	}

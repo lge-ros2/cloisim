@@ -5,23 +5,19 @@
  */
 
 using System.Collections.Generic;
-using System.Threading;
-using System.IO;
 using UnityEngine;
-using System.Xml;
 
 public interface ICLOiSimPlugin
 {
-	void SetPluginName(in string name);
-	void SetPluginParameters(in XmlNode node);
+	public enum Type {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
+	void SetPluginParameters(in SDF.Plugin node);
+	SDF.Plugin GetPluginParameters();
 	void Reset();
 }
 
-public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
+public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugin
 {
-	public enum Type {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
-
-	public Type type { get; protected set; }
+	public ICLOiSimPlugin.Type type { get; protected set; }
 
 	private static BridgeManager bridgeManager = null;
 
@@ -30,78 +26,27 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 
 	private Pose pluginPose = Pose.identity;
 
-	public string pluginName { get; protected set; } = string.Empty;
-	protected SDF.Helper.PluginParameters parameters = new SDF.Helper.PluginParameters();
+	private SDF.Plugin pluginParameters;
 
-	protected MemoryStream msForInfoResponse = new MemoryStream();
-
-	private bool runningThread = true;
-	private List<Thread> threadList = new List<Thread>();
 	private List<string> hashKeyList = new List<string>();
-
-	protected bool IsRunningThread => runningThread;
-
-	public void Stop() { runningThread = false; }
-
-	private Device device = null;
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
 	protected virtual void OnReset() {}
 
-	public void SetDevice(in Device device)
-	{
-		this.device = device;
-	}
-
-	protected bool AddThread(in ThreadStart function)
-	{
-		if (function != null)
-		{
-			threadList.Add(new Thread(function));
-			// thread.Priority = System.Threading.ThreadPriority.AboveNormal;
-			return true;
-		}
-
-		return false;
-	}
-
-	private void StartThreads()
-	{
-		foreach (var thread in threadList)
-		{
-			if (thread != null && !thread.IsAlive)
-			{
-				thread.Start();
-			}
-		}
-	}
-
-	public void ChangePluginType(in CLOiSimPlugin.Type targetType)
+	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)
 	{
 		type = targetType;
 	}
 
-	public void SetPluginName(in string name)
+	public void SetPluginParameters(in SDF.Plugin plugin)
 	{
-		pluginName = name;
+		pluginParameters = plugin;
 	}
 
-	public void SetPluginParameters(in XmlNode node)
+	public SDF.Plugin GetPluginParameters()
 	{
-		if (parameters != null)
-		{
-			parameters.SetRootData(node);
-		}
-		else
-		{
-			Debug.LogWarning("Cannot set plugin parameters");
-		}
-	}
-
-	public Pose GetPose()
-	{
-		return pluginPose;
+		return pluginParameters;
 	}
 
 	private bool PrepareDevice(in string subPartName, out ushort port, out ulong hash)
@@ -216,10 +161,8 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 
 		if (string.IsNullOrEmpty(partName))
 		{
-			partName = pluginName;
+			partName = pluginParameters.Name;
 		}
-
-		// PrintPluginData();
 
 		OnStart();
 
@@ -231,20 +174,9 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 		OnReset();
 	}
 
-	void OnDestroy()
+	protected new void OnDestroy()
 	{
-		runningThread = false;
-		foreach (var thread in threadList)
-		{
-			if (thread != null)
-			{
-				if (thread.IsAlive)
-				{
-					thread.Join();
-					thread.Abort();
-				}
-			}
-		}
+		base.OnDestroy();
 
 		DestroyTransporter();
 
@@ -253,12 +185,12 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 			DeregisterDevice(hashKey);
 		}
 
-		// Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
+		Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
 	}
 
-	protected void ThreadWait()
+	public Pose GetPose()
 	{
-		Thread.SpinWait(1);
+		return pluginPose;
 	}
 
 	private void StorePose()
@@ -268,13 +200,8 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 		pluginPose.rotation = transform.localRotation;
 	}
 
-	protected static void ClearMemoryStream(ref MemoryStream ms)
+	protected static void ClearDeviceMessage(ref DeviceMessage dm)
 	{
-		if (ms != null)
-		{
-			ms.SetLength(0);
-			ms.Position = 0;
-			ms.Capacity = 0;
-		}
+		dm.Reset();
 	}
 }

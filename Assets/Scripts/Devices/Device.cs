@@ -6,28 +6,21 @@
 
 using System.Threading;
 using System.Collections;
-using System.Collections.Concurrent;
-using System.IO;
 using UnityEngine;
-using ProtoBuf;
 
 public abstract class Device : MonoBehaviour
 {
 	public enum ModeType { NONE, TX, RX, TX_THREAD, RX_THREAD };
-	private const int maxQueue = 5;
 
 	public ModeType Mode = ModeType.NONE;
 
-	private BlockingCollection<MemoryStream> outboundQueue_ = new BlockingCollection<MemoryStream>(maxQueue);
-
-	private const int TimeoutForOutboundQueueInMilliseconds = 100;
-
-	private MemoryStream memoryStream_ = new MemoryStream();
-
-	public string deviceName = string.Empty;
+	private DeviceMessageQueue deviceMessageQueue = new DeviceMessageQueue();
+	private DeviceMessage deviceMessage = new DeviceMessage();
 
 	protected SDF.SensorType deviceParameters = null;
-	private SDF.Helper.PluginParameters pluginParameters = null;
+	private SDF.Plugin pluginParameters = null;
+
+	private string deviceName = string.Empty;
 
 	private float updateRate = 1;
 
@@ -46,13 +39,19 @@ public abstract class Device : MonoBehaviour
 	private Thread txThread = null;
 	private Thread rxThread = null;
 
-	private	bool runningDevice = false;
+	private bool runningDevice = false;
 
 	public float UpdateRate => updateRate;
 
-	public float UpdatePeriod => 1f/UpdateRate;
+	public float UpdatePeriod => 1f / UpdateRate;
 
 	public float TransportingTime => transportingTimeSeconds;
+
+	public string DeviceName
+	{
+		get => deviceName;
+		set => deviceName = value;
+	}
 
 	public bool EnableDebugging
 	{
@@ -70,8 +69,6 @@ public abstract class Device : MonoBehaviour
 
 	void Awake()
 	{
-		ResetDataStream();
-
 		OnAwake();
 	}
 
@@ -157,31 +154,33 @@ public abstract class Device : MonoBehaviour
 				break;
 		}
 
-		memoryStream_.Dispose();
-		outboundQueue_.Dispose();
+		deviceMessage.Dispose();
+		deviceMessageQueue.Dispose();
 	}
 
 	protected abstract void OnAwake();
 
 	protected abstract void OnStart();
 
-	protected virtual void ProcessDevice() { }
 
 	protected virtual IEnumerator OnVisualize()
 	{
 		yield return null;
 	}
 
-	protected abstract void InitializeMessages();
+	protected virtual void InitializeMessages() { }
 
-	protected abstract void GenerateMessage();
+	// Used for RX
+	protected virtual void ProcessDevice() { }
+
+	// Used for TX
+	protected virtual void GenerateMessage() { }
 
 	private IEnumerator DeviceCoroutineTx()
 	{
 		var waitForSeconds = new WaitForSeconds(WaitPeriod());
 		while (runningDevice)
 		{
-			ProcessDevice();
 			GenerateMessage();
 			yield return waitForSeconds;
 		}
@@ -189,12 +188,10 @@ public abstract class Device : MonoBehaviour
 
 	private IEnumerator DeviceCoroutineRx()
 	{
-		var waitUntil = new WaitUntil(() => GetDataStream().Length > 0);
+		var waitUntil = new WaitUntil(() => deviceMessageQueue.Count > 0);
 		while (runningDevice)
 		{
 			yield return waitUntil;
-
-			GenerateMessage();
 			ProcessDevice();
 		}
 	}
@@ -203,7 +200,6 @@ public abstract class Device : MonoBehaviour
 	{
 		while (runningDevice)
 		{
-			ProcessDevice();
 			GenerateMessage();
 			Thread.Sleep(WaitPeriodInMilliseconds());
 		}
@@ -213,12 +209,56 @@ public abstract class Device : MonoBehaviour
 	{
 		while (runningDevice)
 		{
-			if (GetDataStream().Length > 0)
+			if (deviceMessageQueue.Count > 0)
 			{
-				GenerateMessage();
 				ProcessDevice();
 			}
 		}
+	}
+
+	public bool PushDeviceMessage<T>(T instance)
+	{
+		deviceMessage.SetMessage<T>(instance);
+		deviceMessage.GetMessage(out var message);
+		return deviceMessageQueue.Push(message);
+	}
+
+	public bool PushDeviceMessage(in byte[] data)
+	{
+		if (deviceMessage.SetMessage(data))
+		{
+			deviceMessage.GetMessage(out var message);
+			return deviceMessageQueue.Push(message);
+		}
+
+		return false;
+	}
+
+	public bool PopDeviceMessage<T>(out T instance)
+	{
+		try
+		{
+			var result = deviceMessageQueue.Pop(out var data);
+			instance = data.GetMessage<T>();
+			return result;
+		}
+		catch
+		{
+			instance = default(T);
+			Debug.LogWarning("PopDeviceMessage<T>(): ERROR");
+		}
+
+		return false;
+	}
+
+	public bool PopDeviceMessage(out DeviceMessage data)
+	{
+		return deviceMessageQueue.Pop(out data);
+	}
+
+	public void FlushDeviceMessageQueue()
+	{
+		deviceMessageQueue.Flush();
 	}
 
 	protected float WaitPeriod(in float messageGenerationTime = 0)
@@ -242,135 +282,6 @@ public abstract class Device : MonoBehaviour
 	public void SetTransportedTime(in float value)
 	{
 		transportingTimeSeconds = value;
-	}
-
-	protected bool ResetDataStream()
-	{
-		if (memoryStream_ == null)
-		{
-			return false;
-		}
-
-		lock (memoryStream_)
-		{
-			memoryStream_.SetLength(0);
-			memoryStream_.Position = 0;
-			memoryStream_.Capacity = 0;
-
-			return true;
-		}
-	}
-
-	protected MemoryStream GetDataStream()
-	{
-		return (memoryStream_.CanRead) ? memoryStream_ : null;
-	}
-
-	public void SetDataStream(in byte[] data)
-	{
-		if (data == null)
-		{
-			return;
-		}
-
-		if (!ResetDataStream())
-		{
-			return;
-		}
-
-		lock (memoryStream_)
-		{
-			if (memoryStream_.CanWrite)
-			{
-				memoryStream_.Write(data, 0, data.Length);
-				memoryStream_.Position = 0;
-			}
-			else
-			{
-				Debug.LogError("Failed to write memory stream");
-			}
-		}
-	}
-
-	protected void SetMessageData<T>(T instance)
-	{
-		if (memoryStream_ == null)
-		{
-			Debug.LogError("Cannot set data stream... it's null");
-			return;
-		}
-
-		ResetDataStream();
-
-		lock (memoryStream_)
-		{
-			Serializer.Serialize<T>(memoryStream_, instance);
-		}
-	}
-
-	protected T GetMessageData<T>()
-	{
-		if (memoryStream_ == null)
-		{
-			Debug.LogError("Cannot Get data message... it's null");
-			return default(T);
-		}
-
-		T result;
-
-		lock (memoryStream_)
-		{
-			result = Serializer.Deserialize<T>(memoryStream_);
-		}
-
-		ResetDataStream();
-
-		return result;
-	}
-
-	protected bool PushData<T>(T instance)
-	{
-		SetMessageData<T>(instance);
-		return PushData();
-	}
-
-	protected bool PushData()
-	{
-		if (outboundQueue_ == null || runningDevice == false)
-		{
-			return false;
-		}
-
-		if (outboundQueue_.Count >= maxQueue)
-		{
-			// Debug.LogWarningFormat("Outbound queue is reached to maximum capacity({0})!!", maxQueue);
-
-			while (outboundQueue_.Count > maxQueue/2)
-			{
-				PopData();
-			}
-		}
-
-		if (!outboundQueue_.TryAdd(GetDataStream(), TimeoutForOutboundQueueInMilliseconds))
-		{
-			Debug.LogWarningFormat("failed to add at " + deviceName);
-			return false;
-		}
-
-		return true;
-	}
-
-	public MemoryStream PopData()
-	{
-		if (outboundQueue_ != null)
-		{
-			if (outboundQueue_.TryTake(out var item, TimeoutForOutboundQueueInMilliseconds))
-			{
-				return item;
-			}
-		}
-
-		return null;
 	}
 
 	private void StorePose()
@@ -416,12 +327,12 @@ public abstract class Device : MonoBehaviour
 		return finalPose;
 	}
 
-	public void SetPluginParameter(in SDF.Helper.PluginParameters pluginParams)
+	public void SetPluginParameters(in SDF.Plugin plugin)
 	{
-		pluginParameters = pluginParams;
+		pluginParameters = plugin;
 	}
 
-	protected SDF.Helper.PluginParameters GetPluginParameters()
+	public SDF.Plugin GetPluginParameters()
 	{
 		return pluginParameters;
 	}
@@ -429,10 +340,5 @@ public abstract class Device : MonoBehaviour
 	public void SetDeviceParameter(in SDF.SensorType deviceParams)
 	{
 		deviceParameters = deviceParams;
-	}
-
-	public SDF.SensorType GetDeviceParameter()
-	{
-		return deviceParameters;
 	}
 }

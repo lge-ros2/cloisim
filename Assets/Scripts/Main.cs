@@ -256,7 +256,7 @@ public class Main: MonoBehaviour
 	{
 		foreach (var worldPlugin in GetComponents<CLOiSimPlugin>())
 		{
-			worldPlugin.Stop();
+			worldPlugin.StopThread();
 		}
 	}
 

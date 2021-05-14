@@ -61,7 +61,7 @@ namespace SDF
 
 				var lidar = newSensorObject.AddComponent<SensorDevices.Lidar>();
 
-				lidar.deviceName = GetFrameName(newSensorObject);
+				lidar.DeviceName = GetFrameName(newSensorObject);
 				lidar.range = new SensorDevices.Lidar.MinMax(element.range.min, element.range.max);
 				var horizontal = element.horizontal;
 				lidar.horizontal = new SensorDevices.Lidar.Scan(horizontal.samples, horizontal.min_angle, horizontal.max_angle, horizontal.resolution);
@@ -82,8 +82,8 @@ namespace SDF
 				AttachSensor(newSensorObject, targetObject, element.Pose);
 
 				var camera = newSensorObject.AddComponent<SensorDevices.Camera>();
-				camera.deviceName = GetFrameName(newSensorObject);
-				camera.SetDeviceParameter(element as SDF.SensorType);
+				camera.DeviceName = GetFrameName(newSensorObject);
+				camera.SetDeviceParameter(element);
 				return camera;
 			}
 
@@ -93,7 +93,7 @@ namespace SDF
 				AttachSensor(newSensorObject, targetObject, element.Pose);
 
 				var depthCamera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
-				depthCamera.deviceName = GetFrameName(newSensorObject);
+				depthCamera.DeviceName = GetFrameName(newSensorObject);
 
 				if (string.IsNullOrEmpty(element.image_format))
 				{
@@ -118,7 +118,7 @@ namespace SDF
 					}
 				}
 
-				depthCamera.SetDeviceParameter(element as SDF.SensorType);
+				depthCamera.SetDeviceParameter(element);
 
 				return depthCamera;
 			}
@@ -129,8 +129,8 @@ namespace SDF
 				AttachSensor(newSensorObject, targetObject);
 
 				var multicamera = newSensorObject.AddComponent<SensorDevices.MultiCamera>();
-				multicamera.deviceName = GetFrameName(newSensorObject);
-				multicamera.parameters = element;
+				multicamera.DeviceName = GetFrameName(newSensorObject);
+				multicamera.SetDeviceParameter(element);
 
 				return multicamera;
 			}
@@ -141,7 +141,7 @@ namespace SDF
 				AttachSensor(newSensorObject, targetObject);
 
 				var sonar = newSensorObject.AddComponent<SensorDevices.Sonar>();
-				sonar.deviceName = GetFrameName(newSensorObject);
+				sonar.DeviceName = GetFrameName(newSensorObject);
 				sonar.geometry = element.geometry;
 				sonar.rangeMin = element.min;
 				sonar.rangeMax = element.max;
@@ -156,7 +156,7 @@ namespace SDF
 				AttachSensor(newSensorObject, targetObject);
 
 				var imu = newSensorObject.AddComponent<SensorDevices.IMU>();
-				imu.deviceName = GetFrameName(newSensorObject);
+				imu.DeviceName = GetFrameName(newSensorObject);
 
 				return imu;
 			}
@@ -167,7 +167,7 @@ namespace SDF
 				AttachSensor(newSensorObject, targetObject);
 
 				var gps = newSensorObject.AddComponent<SensorDevices.GPS>();
-				gps.deviceName = GetFrameName(newSensorObject);
+				gps.DeviceName = GetFrameName(newSensorObject);
 
 				return gps;
 			}
@@ -178,7 +178,7 @@ namespace SDF
 				AttachSensor(newSensorObject, targetObject);
 
 				var contact = newSensorObject.AddComponent<SensorDevices.Contact>();
-				contact.deviceName = GetFrameName(newSensorObject);
+				contact.DeviceName = GetFrameName(newSensorObject);
 				contact.collision = element.collision;
 				contact.topic = element.topic;
 

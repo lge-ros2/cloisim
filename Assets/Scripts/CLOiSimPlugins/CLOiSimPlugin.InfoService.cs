@@ -5,41 +5,24 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.IO;
 using UnityEngine;
-using ProtoBuf;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
-public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
+public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugin
 {
-	protected static messages.Param ParsingInfoRequest(in byte[] srcReceivedBuffer, ref MemoryStream dstCameraInfoMemStream)
-	{
-		if (srcReceivedBuffer == null)
-		{
-			return null;
-		}
 
-		ClearMemoryStream(ref dstCameraInfoMemStream);
-
-		dstCameraInfoMemStream.Write(srcReceivedBuffer, 0, srcReceivedBuffer.Length);
-		dstCameraInfoMemStream.Position = 0;
-
-		return Serializer.Deserialize<messages.Param>(dstCameraInfoMemStream);
-	}
-
-	protected static void SetCameraInfoResponse(ref MemoryStream msCameraInfo, in messages.CameraSensor sensorInfo)
+	protected static void SetCameraInfoResponse(ref DeviceMessage msCameraInfo, in messages.CameraSensor sensorInfo)
 	{
 		if (msCameraInfo == null || sensorInfo == null)
 		{
 			return;
 		}
 
-		ClearMemoryStream(ref msCameraInfo);
-		Serializer.Serialize<messages.CameraSensor>(msCameraInfo, sensorInfo);
+		msCameraInfo.SetMessage<messages.CameraSensor>(sensorInfo);
 	}
 
-	protected static void SetTransformInfoResponse(ref MemoryStream msTransformInfo, in Pose devicePose)
+	protected static void SetTransformInfoResponse(ref DeviceMessage msTransformInfo, in Pose devicePose)
 	{
 		if (msTransformInfo == null)
 		{
@@ -57,11 +40,10 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 		objectTransformInfo.Name = "transform";
 		objectTransformInfo.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = objectPose };
 
-		ClearMemoryStream(ref msTransformInfo);
-		Serializer.Serialize<messages.Param>(msTransformInfo, objectTransformInfo);
+		msTransformInfo.SetMessage<messages.Param>(objectTransformInfo);
 	}
 
-	protected static void SetROS2CommonInfoResponse(ref MemoryStream msRos2Info, in string topicName, in string frameId)
+	protected static void SetROS2CommonInfoResponse(ref DeviceMessage msRos2Info, in string topicName, in string frameId)
 	{
 		if (msRos2Info == null)
 		{
@@ -83,18 +65,40 @@ public abstract partial class CLOiSimPlugin : DeviceTransporter, ICLOiSimPlugin
 		ros2CommonInfo.Childrens.Add(ros2TopicName);
 		ros2CommonInfo.Childrens.Add(ros2FrameId);
 
-		ClearMemoryStream(ref msRos2Info);
-		Serializer.Serialize<messages.Param>(msRos2Info, ros2CommonInfo);
+		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
 	}
 
-	protected static void SetEmptyResponse(ref MemoryStream msRos2Info)
+	protected static void SetEmptyResponse(ref DeviceMessage msRos2Info)
 	{
 		if (msRos2Info != null)
 		{
 			var emptyMessage = new messages.Empty();
 			emptyMessage.Unused = true;
-			ClearMemoryStream(ref msRos2Info);
-			Serializer.Serialize<messages.Empty>(msRos2Info, emptyMessage);
+			msRos2Info.SetMessage<messages.Empty>(emptyMessage);
 		}
 	}
+
+	protected override void HandleRequestMessage(in string requestType, in string requestValue,  ref DeviceMessage response)
+	{
+		if (response == null)
+		{
+			Debug.Log("DeviceMessage for response is null");
+			return;
+		}
+
+		switch (requestType)
+		{
+			case "request_ros2":
+				var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name");
+				var frame_id = GetPluginParameters().GetValue<string>("ros2/frame_id");
+				SetROS2CommonInfoResponse(ref response, topic_name, frame_id);
+				break;
+
+			default:
+				HandleCustomRequestMessage(requestType, requestValue, ref response);
+				break;
+		}
+	}
+
+	protected virtual void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response) { }
 }
