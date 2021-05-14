@@ -33,13 +33,6 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		var cameraName = requestValue;
 		switch (requestType)
 		{
-			case "request_ros2":
-				if (GetPluginParameters().GetValues<string>("ros2/frames_id/frame_id", out var frames_id))
-				{
-					SetROS2FramesIdInfoResponse(ref response, frames_id);
-				}
-				break;
-
 			case "request_camera_info":
 				{
 					var camera = multicam.GetCamera(cameraName);

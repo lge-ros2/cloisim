@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
@@ -43,7 +44,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 		msTransformInfo.SetMessage<messages.Param>(objectTransformInfo);
 	}
 
-	protected static void SetROS2CommonInfoResponse(ref DeviceMessage msRos2Info, in string topicName, in string frameId)
+	protected static void SetROS2CommonInfoResponse(ref DeviceMessage msRos2Info, in string topicName, in List<string> frameIdList)
 	{
 		if (msRos2Info == null)
 		{
@@ -57,13 +58,15 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 		var ros2TopicName = new messages.Param();
 		ros2TopicName.Name = "topic_name";
 		ros2TopicName.Value = new Any { Type = Any.ValueType.String, StringValue = topicName };
-
-		var ros2FrameId = new messages.Param();
-		ros2FrameId.Name = "frame_id";
-		ros2FrameId.Value = new Any { Type = Any.ValueType.String, StringValue = frameId };
-
 		ros2CommonInfo.Childrens.Add(ros2TopicName);
-		ros2CommonInfo.Childrens.Add(ros2FrameId);
+
+		foreach (var frameId in frameIdList)
+		{
+			var ros2FrameId = new messages.Param();
+			ros2FrameId.Name = "frame_id";
+			ros2FrameId.Value = new Any { Type = Any.ValueType.String, StringValue = frameId };
+			ros2CommonInfo.Childrens.Add(ros2FrameId);
+		}
 
 		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
 	}
@@ -90,8 +93,8 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 		{
 			case "request_ros2":
 				var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name");
-				var frame_id = GetPluginParameters().GetValue<string>("ros2/frame_id");
-				SetROS2CommonInfoResponse(ref response, topic_name, frame_id);
+				GetPluginParameters().GetValues<string>("ros2/frame_id", out var frameIdList);
+				SetROS2CommonInfoResponse(ref response, topic_name, frameIdList);
 				break;
 
 			default:
