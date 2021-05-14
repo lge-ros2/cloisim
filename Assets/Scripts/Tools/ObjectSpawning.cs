@@ -129,7 +129,7 @@ public class ObjectSpawning : MonoBehaviour
 		newObject.isStatic = true;
 
 		var meshFilter = newObject.AddComponent<MeshFilter>();
-		meshFilter.mesh = targetMesh;
+		meshFilter.sharedMesh = targetMesh;
 
 		var newMaterial = new Material(SDF2Unity.CommonShader);
 		newMaterial.name = targetMesh.name;

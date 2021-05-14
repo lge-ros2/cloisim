@@ -73,10 +73,10 @@ namespace SDF
 				if (mesh != null)
 				{
 					var meshFilter = createdObject.AddComponent<UE.MeshFilter>();
-					meshFilter.mesh = mesh;
+					meshFilter.sharedMesh = mesh;
 
 					var meshRenderer = createdObject.AddComponent<UE.MeshRenderer>();
-					meshRenderer.material = SDF2Unity.GetNewMaterial(mesh.name);
+					meshRenderer.sharedMaterial = SDF2Unity.GetNewMaterial(mesh.name);
 					meshRenderer.allowOcclusionWhenDynamic = true;
 				}
 

@@ -89,7 +89,7 @@ public partial class SDF2Unity
 		}
 
 		var newCombinedMesh = new Mesh();
-		newCombinedMesh.CombineMeshes(combine, true);
+		newCombinedMesh.CombineMeshes(combine, false, true);
 		newCombinedMesh.RecalculateNormals();
 		newCombinedMesh.RecalculateTangents();
 		newCombinedMesh.RecalculateBounds();
