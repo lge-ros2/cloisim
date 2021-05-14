@@ -41,12 +41,12 @@ public class Main: MonoBehaviour
 		foreach (var child in modelsRoot.GetComponentsInChildren<Transform>())
 		{
 			// skip root gameobject
-			if (child.gameObject == modelsRoot)
+			if (child == null || child.gameObject == null || child.gameObject == modelsRoot)
 			{
 				continue;
 			}
 
-			GameObject.Destroy(child.gameObject, 0.00001f);
+			GameObject.Destroy(child.gameObject);
 		}
 	}
 
@@ -60,7 +60,7 @@ public class Main: MonoBehaviour
 				continue;
 			}
 
-			GameObject.Destroy(child.gameObject, 0.00001f);
+			GameObject.Destroy(child.gameObject);
 		}
 	}
 
@@ -205,7 +205,7 @@ public class Main: MonoBehaviour
 
 		if (sdf.DoParse())
 		{
-			yield return new WaitForSeconds(0.001f);
+			yield return new WaitForSeconds(0.0001f);
 
 			var loader = new SDF.Import.Loader();
 			loader.SetRootModels(modelsRoot);
@@ -252,8 +252,9 @@ public class Main: MonoBehaviour
 		}
 	}
 
-	private void OnDestroy()
+	void OnDestroy()
 	{
+		Debug.Log("Destroy Main");
 		foreach (var worldPlugin in GetComponents<CLOiSimPlugin>())
 		{
 			worldPlugin.StopThread();
