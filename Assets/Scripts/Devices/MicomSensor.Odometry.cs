@@ -15,9 +15,12 @@ public partial class MicomSensor : Device
 	private Vector3 _odomPose = Vector3.zero;
 	private Vector2 _odomVelocity = Vector2.zero;
 
-	public void Reset()
+	protected override void OnReset()
 	{
-		imuSensor.Reset();
+		if (imuSensor != null)
+		{
+			imuSensor.Reset();
+		}
 		_odomVelocity.Set(0, 0);
 		_odomPose.Set(0, 0, 0);
 		_lastTheta = 0.0f;

@@ -9,16 +9,10 @@ using Any = cloisim.msgs.Any;
 
 public class MicomPlugin : CLOiSimPlugin
 {
-	private MicomInput micomInput = null;
-	private MicomSensor micomSensor = null;
-
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.MICOM;
-		micomSensor = gameObject.AddComponent<MicomSensor>();
-		micomInput = gameObject.AddComponent<MicomInput>();
-		micomInput.SetMicomSensor(micomSensor);
-		targetDevice = micomSensor;
+		targetDevice = gameObject.AddComponent<Micom>();
 	}
 
 	protected override void OnStart()
@@ -26,32 +20,20 @@ public class MicomPlugin : CLOiSimPlugin
 		targetDevice.SetPluginParameters(GetPluginParameters());
 
 		var debugging = GetPluginParameters().GetValue<bool>("debug", false);
-		micomInput.EnableDebugging = debugging;
+		targetDevice.EnableDebugging = debugging;
 
 		RegisterServiceDevice("Info");
 		RegisterRxDevice("Rx");
 		RegisterTxDevice("Tx");
 
 		AddThread(RequestThread);
-		AddThread(SenderThread, targetDevice);
-		AddThread(Receiver);
+		AddThread(SenderThread, (targetDevice as Micom).GetSensor());
+		AddThread(ReceiverThread, (targetDevice as Micom).GetInput());
 	}
 
 	protected override void OnReset()
 	{
-		micomSensor.Reset();
-		micomInput.Reset();
-	}
-
-	private void Receiver()
-	{
-		while (IsRunningThread && micomInput != null)
-		{
-			var receivedData = Subscribe();
-			micomInput.PushDeviceMessage(receivedData);
-
-			WaitThread();
-		}
+		targetDevice.Reset();
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
@@ -67,12 +49,13 @@ public class MicomPlugin : CLOiSimPlugin
 				break;
 
 			case "request_transform":
+				var micomSensor = (targetDevice as Micom).GetSensor();
 				var devicePose = micomSensor.GetPartsPose(requestValue);
 				SetTransformInfoResponse(ref response, devicePose);
 				break;
 
 			case "reset_odometry":
-				micomSensor.Reset();
+				targetDevice.Reset();
 				SetEmptyResponse(ref response);
 				break;
 
@@ -129,6 +112,7 @@ public class MicomPlugin : CLOiSimPlugin
 		{
 			return;
 		}
+		var micomSensor = (targetDevice as Micom).GetSensor();
 
 		var wheelInfo = new messages.Param();
 		wheelInfo.Name = "wheelInfo";

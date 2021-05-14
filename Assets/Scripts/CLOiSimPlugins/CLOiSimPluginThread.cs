@@ -102,10 +102,22 @@ public class CLOiSimPluginThread : DeviceTransporter
 		}
 	}
 
+	protected void ReceiverThread(System.Object deviceParam)
+	{
+		var device = deviceParam as Device;
+		while (IsRunningThread && device != null)
+		{
+			var receivedData = Subscribe();
+			device.PushDeviceMessage(receivedData);
+
+			WaitThread();
+		}
+	}
+
 	protected void RequestThread()
 	{
 		var dmResponse = new DeviceMessage();
-		while (IsRunningThread)
+		while (runningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
 			var requestMessage = ParsingRequestMessage(receivedBuffer);

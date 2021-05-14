@@ -21,9 +21,8 @@ public class MicomInput : Device
 	{
 	}
 
-	public void Reset()
+	protected override void OnReset()
 	{
-		FlushDeviceMessageQueue();
 		DoWheelDrive(Vector3.zero, Vector3.zero);
 	}
 
