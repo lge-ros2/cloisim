@@ -266,6 +266,7 @@ namespace SensorDevices
 		{
 			var axisRotation = Vector3.zero;
 			var waitForSeconds = new WaitForSeconds(WaitPeriod());
+			var waitForEndOfFrame = new WaitForEndOfFrame();
 
 			while (true)
 			{
@@ -287,6 +288,7 @@ namespace SensorDevices
 						laserCam.Render();
 						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32, OnCompleteAsyncReadback);
 						readbacks.Add(readbackRequest, dataIndex);
+						yield return waitForEndOfFrame;
 					}
 
 					laserCam.enabled = false;
