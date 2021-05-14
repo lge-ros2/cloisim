@@ -77,4 +77,28 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 			msRos2Info.SetMessage<messages.Empty>(emptyMessage);
 		}
 	}
+
+	protected override void HandleRequestMessage(in string requestType, in string requestValue,  ref DeviceMessage response)
+	{
+		if (response == null)
+		{
+			Debug.Log("DeviceMessage for response is null");
+			return;
+		}
+
+		switch (requestType)
+		{
+			case "request_ros2":
+				var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name");
+				var frame_id = GetPluginParameters().GetValue<string>("ros2/frame_id");
+				SetROS2CommonInfoResponse(ref response, topic_name, frame_id);
+				break;
+
+			default:
+				HandleCustomRequestMessage(requestType, requestValue, ref response);
+				break;
+		}
+	}
+
+	protected virtual void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response) { }
 }

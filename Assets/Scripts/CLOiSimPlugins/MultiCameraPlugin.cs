@@ -24,55 +24,39 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 
-		AddThread(SenderThread, multicam as System.Object);
-		AddThread(Response);
+		AddThread(SenderThread, multicam);
+		AddThread(RequestThread);
 	}
 
-	private void Response()
+	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
 	{
-		var dmInfoResponse = new DeviceMessage();
-		while (IsRunningThread)
+		var cameraName = requestValue;
+		switch (requestType)
 		{
-			var receivedBuffer = ReceiveRequest();
-			var requestMessage = CameraPlugin.ParsingRequestMessage(receivedBuffer);
-
-			if (requestMessage != null)
-			{
-				var cameraName = (requestMessage.Value == null) ? string.Empty : requestMessage.Value.StringValue;
-
-				switch (requestMessage.Name)
+			case "request_ros2":
+				if (GetPluginParameters().GetValues<string>("ros2/frames_id/frame_id", out var frames_id))
 				{
-					case "request_ros2":
-						if (GetPluginParameters().GetValues<string>("ros2/frames_id/frame_id", out var frames_id))
-						{
-							SetROS2FramesIdInfoResponse(ref dmInfoResponse, frames_id);
-						}
-						break;
-
-					case "request_camera_info":
-						{
-							var camera = multicam.GetCamera(cameraName);
-							var cameraInfoMessage = camera.GetCameraInfo();
-							CameraPlugin.SetCameraInfoResponse(ref dmInfoResponse, cameraInfoMessage);
-						}
-						break;
-
-					case "request_transform":
-						{
-							var camera = multicam.GetCamera(cameraName);
-							var devicePose = camera.GetPose();
-							SetTransformInfoResponse(ref dmInfoResponse, devicePose);
-						}
-						break;
-
-					default:
-						break;
+					SetROS2FramesIdInfoResponse(ref response, frames_id);
 				}
+				break;
 
-				SendResponse(dmInfoResponse);
-			}
+			case "request_camera_info":
+				{
+					var camera = multicam.GetCamera(cameraName);
+					var cameraInfoMessage = camera.GetCameraInfo();
+					CameraPlugin.SetCameraInfoResponse(ref response, cameraInfoMessage);
+				}
+				break;
 
-			WaitThread();
+			case "request_transform":
+				{
+					var camera = multicam.GetCamera(cameraName);
+					var devicePose = camera.GetPose();
+					SetTransformInfoResponse(ref response, devicePose);
+				}
+				break;
+			default:
+				break;
 		}
 	}
 

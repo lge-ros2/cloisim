@@ -33,11 +33,11 @@ public class CLOiSimPluginThread : DeviceTransporter
 		return false;
 	}
 
-	protected bool AddThread(in ParameterizedThreadStart function, in System.Object paramObject)
+	protected bool AddThread(in ParameterizedThreadStart function, in Device paramDeviceObject)
 	{
 		if (function != null)
 		{
-			threadList.Add((new Thread(function), paramObject));
+			threadList.Add((new Thread(function), paramDeviceObject as System.Object));
 			// thread.Priority = System.Threading.ThreadPriority.AboveNormal;
 			return true;
 		}
@@ -102,54 +102,27 @@ public class CLOiSimPluginThread : DeviceTransporter
 		}
 	}
 
-	protected void ResponseThread(System.Object deviceParam)
+	protected void RequestThread()
 	{
-		var dmInfoResponse = new DeviceMessage();
-		var device = deviceParam as Device;
+		var dmResponse = new DeviceMessage();
 		while (IsRunningThread)
 		{
 			var receivedBuffer = ReceiveRequest();
 			var requestMessage = ParsingRequestMessage(receivedBuffer);
 
-			// Debug.Log(subPartName + receivedString);
 			if (requestMessage != null)
 			{
-				switch (requestMessage.Name)
-				{
-					case "request_ros2":
-						var topic_name = device.GetPluginParameters().GetValue<string>("ros2/topic_name");
-						var frame_id = device.GetPluginParameters().GetValue<string>("ros2/frame_id");
-						// SetROS2CommonInfoResponse(ref dmInfoResponse, topic_name, frame_id);
-						break;
-
-				// 	case "request_camera_info":
-				// 		var cameraInfoMessage = cam.GetCameraInfo();
-				// 		SetCameraInfoResponse(ref dmInfoResponse, cameraInfoMessage);
-				// 		break;
-
-				// 	case "request_transform":
-				// 		var isSubParts = string.IsNullOrEmpty(subPartName);
-				// 		var devicePose = cam.GetPose(isSubParts);
-				// 		SetTransformInfoResponse(ref dmInfoResponse, devicePose);
-				// 		break;
-
-					default:
-						// HandleCustomRequestMessage();
-						break;
-				}
-
+				var requesteValue = (requestMessage.Value == null) ? string.Empty : requestMessage.Value.StringValue;
+				HandleRequestMessage(requestMessage.Name, requesteValue, ref dmResponse);
+				SendResponse(dmResponse);
 			}
-			SendResponse(dmInfoResponse);
 
 			WaitThread();
 		}
 	}
 
-	protected void WaitThread(in int iteration = 1)
-	{
-		Thread.SpinWait(iteration);
+	protected virtual void HandleRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response) { }
 
-	}
 	protected static messages.Param ParsingRequestMessage(in byte[] infoBuffer)
 	{
 		if (infoBuffer != null)
@@ -161,4 +134,11 @@ public class CLOiSimPluginThread : DeviceTransporter
 
 		return null;
 	}
+
+	protected void WaitThread(in int iteration = 1)
+	{
+		Thread.SpinWait(iteration);
+
+	}
+
 }

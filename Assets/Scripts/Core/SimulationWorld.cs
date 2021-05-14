@@ -7,14 +7,12 @@
 public class SimulationWorld : CLOiSimPlugin
 {
 	private Clock clock = null;
-
 	private string hashKey = string.Empty;
 
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.WORLD;
 		clock = gameObject.AddComponent<Clock>();
-		SetDevice(clock);
 
 		modelName = "World";
 		partName = "cloisim_world";
@@ -24,6 +22,6 @@ public class SimulationWorld : CLOiSimPlugin
 	{
 		RegisterTxDevice("Clock");
 
-		AddThread(SenderThread, clock as System.Object);
+		AddThread(SenderThread, clock);
 	}
 }

@@ -59,7 +59,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 		RegisterServiceDevice("Info");
 
-		AddThread(Response);
+		AddThread(RequestThread);
 	}
 
 	private CameraPlugin FindAndAddCameraPlugin(in string name)
@@ -81,36 +81,21 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		return null;
 	}
 
-	private void Response()
+	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
 	{
-		var dmInfoResponse = new DeviceMessage();
-		while (IsRunningThread)
+		switch (requestType)
 		{
-			var receivedBuffer = ReceiveRequest();
-			var requestMessage = ParsingRequestMessage(receivedBuffer);
+			case "request_module_list":
+				SetModuleListInfoResponse(ref response);
+				break;
 
-			// Debug.Log(subPartName + receivedString);
-			if (requestMessage != null)
-			{
-				switch (requestMessage.Name)
-				{
-					case "request_module_list":
-						SetModuleListInfoResponse(ref dmInfoResponse);
-						break;
+			case "request_transform":
+				var devicePose = GetPose();
+				SetTransformInfoResponse(ref response, devicePose);
+				break;
 
-					case "request_transform":
-						var devicePose = GetPose();
-						SetTransformInfoResponse(ref dmInfoResponse, devicePose);
-						break;
-
-					default:
-						break;
-				}
-
-				SendResponse(dmInfoResponse);
-			}
-
-			WaitThread();
+			default:
+				break;
 		}
 	}
 

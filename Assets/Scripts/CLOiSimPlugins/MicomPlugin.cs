@@ -31,9 +31,9 @@ public class MicomPlugin : CLOiSimPlugin
 		RegisterRxDevice("Rx");
 		RegisterTxDevice("Tx");
 
-		AddThread(Response);
+		AddThread(RequestThread);
+		AddThread(SenderThread, micomSensor);
 		AddThread(Receiver);
-		AddThread(SenderThread, micomSensor as System.Object);
 	}
 
 	protected override void OnReset()
@@ -53,51 +53,34 @@ public class MicomPlugin : CLOiSimPlugin
 		}
 	}
 
-	private void Response()
+	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
 	{
-		var dmInfoResponse = new DeviceMessage();
-
-		while (IsRunningThread)
+		switch (requestType)
 		{
-			var receivedBuffer = ReceiveRequest();
-			var requestMessage = ParsingRequestMessage(receivedBuffer);
+			case "request_transform_name":
+				SetTransformNameResponse(ref response);
+				break;
 
-			// Debug.Log(subPartName + receivedString);
-			if (requestMessage != null)
-			{
-				switch (requestMessage.Name)
-				{
-					case "request_ros2":
-						SetROS2TransformInfoResponse(ref dmInfoResponse);
-						break;
+			case "request_wheel_info":
+				SetWheelInfoResponse(ref response);
+				break;
 
-					case "request_wheel_info":
-						SetWheelInfoResponse(ref dmInfoResponse);
-						break;
+			case "request_transform":
+				var devicePose = micomSensor.GetPartsPose(requestValue);
+				SetTransformInfoResponse(ref response, devicePose);
+				break;
 
-					case "request_transform":
-						var targetPartsName = (requestMessage.Value == null) ? string.Empty : requestMessage.Value.StringValue;
-						var devicePose = micomSensor.GetPartsPose(targetPartsName);
-						SetTransformInfoResponse(ref dmInfoResponse, devicePose);
-						break;
+			case "reset_odometry":
+				micomSensor.Reset();
+				SetEmptyResponse(ref response);
+				break;
 
-					case "reset_odometry":
-						micomSensor.Reset();
-						SetEmptyResponse(ref dmInfoResponse);
-						break;
-
-					default:
-						break;
-				}
-
-				SendResponse(dmInfoResponse);
-			}
-
-			WaitThread();
+			default:
+				break;
 		}
 	}
 
-	private void SetROS2TransformInfoResponse(ref DeviceMessage msRos2Info)
+	private void SetTransformNameResponse(ref DeviceMessage msRos2Info)
 	{
 		if (msRos2Info == null)
 		{

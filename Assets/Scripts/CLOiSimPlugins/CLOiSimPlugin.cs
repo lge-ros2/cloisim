@@ -5,7 +5,6 @@
  */
 
 using System.Collections.Generic;
-using System;
 using UnityEngine;
 
 public interface ICLOiSimPlugin
@@ -31,16 +30,9 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 	private List<string> hashKeyList = new List<string>();
 
-	private Device device = null;
-
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
 	protected virtual void OnReset() {}
-
-	public void SetDevice(in Device device)
-	{
-		this.device = device;
-	}
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)
 	{

@@ -37,49 +37,27 @@ public class CameraPlugin : CLOiSimPlugin
 		RegisterServiceDevice(subPartName + "Info");
 		RegisterTxDevice(subPartName + "Data");
 
-		AddThread(Response);
-		AddThread(SenderThread, cam as System.Object);
+		AddThread(RequestThread);
+		AddThread(SenderThread, cam);
 	}
 
-	private void Response()
+	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
 	{
-		var dmInfoResponse = new DeviceMessage();
-
-		while (IsRunningThread)
+		switch (requestType)
 		{
-			var receivedBuffer = ReceiveRequest();
-			var requestMessage = ParsingRequestMessage(receivedBuffer);
+			case "request_camera_info":
+				var cameraInfoMessage = cam.GetCameraInfo();
+				SetCameraInfoResponse(ref response, cameraInfoMessage);
+				break;
 
-			// Debug.Log(subPartName + receivedString);
-			if (requestMessage != null)
-			{
-				switch (requestMessage.Name)
-				{
-					case "request_ros2":
-						var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name");
-						var frame_id = GetPluginParameters().GetValue<string>("ros2/frame_id");
-						SetROS2CommonInfoResponse(ref dmInfoResponse, topic_name, frame_id);
-						break;
+			case "request_transform":
+				var isSubParts = string.IsNullOrEmpty(subPartName);
+				var devicePose = cam.GetPose(isSubParts);
+				SetTransformInfoResponse(ref response, devicePose);
+				break;
 
-					case "request_camera_info":
-						var cameraInfoMessage = cam.GetCameraInfo();
-						SetCameraInfoResponse(ref dmInfoResponse, cameraInfoMessage);
-						break;
-
-					case "request_transform":
-						var isSubParts = string.IsNullOrEmpty(subPartName);
-						var devicePose = cam.GetPose(isSubParts);
-						SetTransformInfoResponse(ref dmInfoResponse, devicePose);
-						break;
-
-					default:
-						break;
-				}
-
-				SendResponse(dmInfoResponse);
-			}
-
-			WaitThread();
+			default:
+				break;
 		}
 	}
 }
