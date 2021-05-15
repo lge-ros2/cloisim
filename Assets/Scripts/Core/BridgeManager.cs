@@ -41,7 +41,7 @@ public class BridgeManager : MonoBehaviour
 
 	void Awake()
 	{
-		var UIRoot = GameObject.Find("UI");
+		var UIRoot = Main.UIObject;
 		simulationDisplay = UIRoot.GetComponentInChildren<SimulationDisplay>();
 	}
 

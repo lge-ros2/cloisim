@@ -130,7 +130,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 	void Awake()
 	{
-		var coreObject = GameObject.Find("Core");
+		var coreObject = Main.CoreObject;
 		if (coreObject == null)
 		{
 			Debug.LogError("Failed to Find 'Core'!!!!");

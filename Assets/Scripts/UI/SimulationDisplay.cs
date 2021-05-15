@@ -47,7 +47,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	// Start is called before the first frame update
 	void Awake()
 	{
-		var coreObject = GameObject.Find("Core");
+		var coreObject = Main.CoreObject;
 		objectSpawning = coreObject.GetComponent<ObjectSpawning>();
 		cameraControl = GetComponentInChildren<CameraControl>();
 		clock = DeviceHelper.GetGlobalClock();
