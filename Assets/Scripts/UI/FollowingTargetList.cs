@@ -19,7 +19,7 @@ public class FollowingTargetList : MonoBehaviour
 
 	void Awake()
 	{
-		modelRoot = GameObject.Find("Models");
+		modelRoot = GameObject.Find("World");
 		dropdown = GetComponent<TMP_Dropdown>();
 		followingCamera = gameObject.transform.root.GetComponentInChildren<FollowingCamera>();
 	}

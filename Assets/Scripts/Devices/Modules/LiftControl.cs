@@ -31,7 +31,7 @@ public class LiftControl : MonoBehaviour
 
 	void Awake()
 	{
-		rootModel = GameObject.Find("Models");
+		rootModel = GameObject.Find("World");
 	}
 
 	void Start()

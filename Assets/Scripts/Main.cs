@@ -146,7 +146,7 @@ public class Main: MonoBehaviour
 		mainCamera.allowHDR = true;
 		mainCamera.allowMSAA = true;
 
-		modelsRoot = GameObject.Find("Models");
+		modelsRoot = GameObject.Find("World");
 
 		lightsRoot = GameObject.Find("Lights");
 
