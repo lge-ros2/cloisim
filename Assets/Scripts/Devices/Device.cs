@@ -42,9 +42,7 @@ public abstract class Device : MonoBehaviour
 
 	private bool runningDevice = false;
 
-	public float UpdateRate => updateRate;
-
-	public float UpdatePeriod => 1f / UpdateRate;
+	public float UpdatePeriod => 1f / updateRate;
 
 	public float TransportingTime => transportingTimeSeconds;
 

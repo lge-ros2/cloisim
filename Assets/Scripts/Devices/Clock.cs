@@ -10,8 +10,6 @@ using Any = cloisim.msgs.Any;
 
 public class Clock : Device
 {
-	private const float updateRate = 50;
-
 	private messages.Param timeInfo = null;
 	private messages.Time simTime = null;
 	private messages.Time realTime = null;
@@ -28,13 +26,8 @@ public class Clock : Device
 
 	protected override void OnAwake()
 	{
-		Mode = ModeType.TX_THREAD;
+		Mode = ModeType.NONE;
 		DeviceName = "World Clock";
-	}
-
-	protected override void OnStart()
-	{
-		SetUpdateRate(updateRate);
 	}
 
 	protected override void InitializeMessages()
@@ -57,20 +50,17 @@ public class Clock : Device
 		timeInfo.Childrens.Add(realTimeParam);
 	}
 
-	protected override void GenerateMessage()
+	private void FixedUpdate()
 	{
+		currentSimTime = Time.timeAsDouble - restartedSimTime;
+		currentRealTime = Time.realtimeSinceStartupAsDouble - restartedRealTime;
+		// Debug.Log(currentRealTime.ToString("F6") + ", " + currentSimTime.ToString("F6"));
 		if (timeInfo != null)
 		{
 			DeviceHelper.SetCurrentTime(simTime, false);
 			DeviceHelper.SetCurrentTime(realTime, true);
 			PushDeviceMessage<messages.Param>(timeInfo);
 		}
-	}
-
-	private void FixedUpdate()
-	{
-		currentSimTime = Time.timeAsDouble - restartedSimTime;
-		currentRealTime = Time.realtimeSinceStartupAsDouble - restartedRealTime;
 	}
 
 	public void ResetTime()
