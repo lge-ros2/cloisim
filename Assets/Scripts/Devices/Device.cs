@@ -162,7 +162,7 @@ public abstract class Device : MonoBehaviour
 
 	protected abstract void OnAwake();
 
-	protected abstract void OnStart();
+	protected virtual void OnStart() {}
 
 	protected virtual void OnReset() {}
 
