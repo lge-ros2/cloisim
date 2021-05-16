@@ -19,7 +19,7 @@ public class FollowingTargetList : MonoBehaviour
 
 	void Awake()
 	{
-		modelRoot = GameObject.Find("Models");
+		modelRoot = Main.WorldRoot;
 		dropdown = GetComponent<TMP_Dropdown>();
 		followingCamera = gameObject.transform.root.GetComponentInChildren<FollowingCamera>();
 	}
@@ -63,7 +63,7 @@ public class FollowingTargetList : MonoBehaviour
 		{
 			foreach (var modelHelper in modelRoot.GetComponentsInChildren<SDF.Helper.Model>())
 			{
-				if (modelHelper.isTopModel && !modelHelper.isStatic && modelHelper.hasRootArticulationBody)
+				if (modelHelper.IsFirstChild && !modelHelper.isStatic && modelHelper.hasRootArticulationBody)
 				{
 					var newOption = new TMP_Dropdown.OptionData();
 					newOption.text = modelHelper.name;

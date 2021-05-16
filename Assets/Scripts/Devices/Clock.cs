@@ -6,15 +6,10 @@
 
 using UnityEngine;
 using messages = cloisim.msgs;
-using Any = cloisim.msgs.Any;
 
 public class Clock : Device
 {
-	private const float updateRate = 50;
-
-	private messages.Param timeInfo = null;
-	private messages.Time simTime = null;
-	private messages.Time realTime = null;
+	private messages.WorldStatistics worldStat = null;
 
 	private double restartedSimTime = 0;
 	private double restartedRealTime = 0;
@@ -28,49 +23,26 @@ public class Clock : Device
 
 	protected override void OnAwake()
 	{
-		Mode = ModeType.TX_THREAD;
+		Mode = ModeType.NONE;
 		DeviceName = "World Clock";
-	}
-
-	protected override void OnStart()
-	{
-		SetUpdateRate(updateRate);
 	}
 
 	protected override void InitializeMessages()
 	{
-		simTime = new messages.Time();
-		realTime = new messages.Time();
-
-		timeInfo = new messages.Param();
-		timeInfo.Name = "timeInfo";
-		timeInfo.Value = new Any { Type = Any.ValueType.None };
-
-		var simTimeParam = new messages.Param();
-		simTimeParam.Name = "simTime";
-		simTimeParam.Value = new Any { Type = Any.ValueType.Time, TimeValue = simTime };
-		timeInfo.Childrens.Add(simTimeParam);
-
-		var realTimeParam = new messages.Param();
-		realTimeParam.Name = "realTime";
-		realTimeParam.Value = new Any { Type = Any.ValueType.Time, TimeValue = realTime };
-		timeInfo.Childrens.Add(realTimeParam);
-	}
-
-	protected override void GenerateMessage()
-	{
-		if (timeInfo != null)
-		{
-			DeviceHelper.SetCurrentTime(simTime, false);
-			DeviceHelper.SetCurrentTime(realTime, true);
-			PushDeviceMessage<messages.Param>(timeInfo);
-		}
+		worldStat = new messages.WorldStatistics();
+		worldStat.SimTime = new messages.Time();
+		worldStat.PauseTime = new messages.Time();
+		worldStat.RealTime = new messages.Time();
 	}
 
 	private void FixedUpdate()
 	{
 		currentSimTime = Time.timeAsDouble - restartedSimTime;
 		currentRealTime = Time.realtimeSinceStartupAsDouble - restartedRealTime;
+
+		DeviceHelper.SetCurrentTime(worldStat.SimTime, false);
+		DeviceHelper.SetCurrentTime(worldStat.RealTime, true);
+		PushDeviceMessage<messages.WorldStatistics>(worldStat);
 	}
 
 	public void ResetTime()

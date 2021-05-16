@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System;
 using UnityEngine.SceneManagement;
 using UnityEngine;
-using UnityEditor;
 
 public class Main: MonoBehaviour
 {
@@ -26,22 +25,28 @@ public class Main: MonoBehaviour
 	public List<string> worldRootDirectories = new List<string>();
 	public List<string> fileRootDirectories = new List<string>();
 
-	private GameObject modelsRoot = null;
-	private GameObject lightsRoot = null;
+	private static GameObject coreObject = null;
+	private static GameObject worldRoot = null;
+	private static GameObject lightsRoot = null;
+	private static GameObject uiRoot = null;
+
 	private FollowingTargetList followingList = null;
 	private SimulationDisplay simulationDisplay = null;
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
-	private Clock clock = null;
 
 	private bool isResetting = false;
 	private bool resetTriggered = false;
 
+	public static GameObject WorldRoot => worldRoot;
+	public static GameObject CoreObject => coreObject;
+	public static GameObject UIObject => uiRoot;
+
 	private void CleanAllModels()
 	{
-		foreach (var child in modelsRoot.GetComponentsInChildren<Transform>())
+		foreach (var child in worldRoot.GetComponentsInChildren<Transform>())
 		{
 			// skip root gameobject
-			if (child == null || child.gameObject == null || child.gameObject == modelsRoot)
+			if (child == null || child.gameObject == null || child.gameObject == worldRoot)
 			{
 				continue;
 			}
@@ -72,11 +77,11 @@ public class Main: MonoBehaviour
 
 	private void ResetRootModelsTransform()
 	{
-		if (modelsRoot != null)
+		if (worldRoot != null)
 		{
-			modelsRoot.transform.localRotation = Quaternion.identity;
-			modelsRoot.transform.localPosition = Vector3.zero;
-			modelsRoot.transform.localScale = Vector3.one;
+			worldRoot.transform.localRotation = Quaternion.identity;
+			worldRoot.transform.localPosition = Vector3.zero;
+			worldRoot.transform.localScale = Vector3.one;
 		}
 	}
 
@@ -146,27 +151,33 @@ public class Main: MonoBehaviour
 		mainCamera.allowHDR = true;
 		mainCamera.allowMSAA = true;
 
-		modelsRoot = GameObject.Find("Models");
+		coreObject = GameObject.Find("Core");
+		if (coreObject == null)
+		{
+			Debug.LogError("Failed to Find 'Core'!!!!");
+		}
+
+		worldRoot = GameObject.Find("World");
 
 		lightsRoot = GameObject.Find("Lights");
 
-		var UIRoot = GameObject.Find("UI");
+		uiRoot = GameObject.Find("UI");
 
-		followingList = UIRoot.GetComponentInChildren<FollowingTargetList>();
-		simulationDisplay = UIRoot.GetComponentInChildren<SimulationDisplay>();
-		transformGizmo = UIRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
-
-		clock = GetComponent<Clock>();
-		DeviceHelper.SetGlobalClock(clock);
+		var simWorld = gameObject.AddComponent<SimulationWorld>();
+		DeviceHelper.SetGlobalClock(simWorld.GetClock());
 
 		var sphericalCoordinates = GetComponent<SphericalCoordinates>();
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
 
-		ResetRootModelsTransform();
+		followingList = uiRoot.GetComponentInChildren<FollowingTargetList>();
+		simulationDisplay = uiRoot.GetComponentInChildren<SimulationDisplay>();
+		transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
 	}
 
 	void Start()
 	{
+		ResetRootModelsTransform();
+
 		if (clearAllOnStart)
 		{
 			CleanAllResources();
@@ -208,7 +219,7 @@ public class Main: MonoBehaviour
 			yield return new WaitForSeconds(0.0001f);
 
 			var loader = new SDF.Import.Loader();
-			loader.SetRootModels(modelsRoot);
+			loader.SetRootModels(worldRoot);
 			loader.SetRootLights(lightsRoot);
 
 			yield return loader.StartImport(sdf.World());
@@ -279,27 +290,27 @@ public class Main: MonoBehaviour
 
 		transformGizmo?.ClearTargets();
 
-		foreach (var helper in modelsRoot.GetComponentsInChildren<SDF.Helper.Actor>())
+		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Actor>())
 		{
 			helper.Reset();
 		}
 
-		foreach (var helper in modelsRoot.GetComponentsInChildren<SDF.Helper.Model>())
+		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Model>())
 		{
 			helper.Reset();
 		}
 
-		foreach (var helper in modelsRoot.GetComponentsInChildren<SDF.Helper.Link>())
+		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Link>())
 		{
 			helper.Reset();
 		}
 
-		foreach (var plugin in modelsRoot.GetComponentsInChildren<CLOiSimPlugin>())
+		foreach (var plugin in worldRoot.GetComponentsInChildren<CLOiSimPlugin>())
 		{
 			plugin.Reset();
 		}
 
-		clock?.ResetTime();
+		DeviceHelper.GetGlobalClock()?.ResetTime();
 
 		yield return new WaitForSeconds(0.5f);
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");

@@ -9,7 +9,7 @@ using UnityEngine;
 
 public interface ICLOiSimPlugin
 {
-	public enum Type {WORLD, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
+	public enum Type {WORLD, GROUNDTRUTH, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
 	void SetPluginParameters(in SDF.Plugin node);
 	SDF.Plugin GetPluginParameters();
 	void Reset();
@@ -130,7 +130,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 	void Awake()
 	{
-		var coreObject = GameObject.Find("Core");
+		var coreObject = Main.CoreObject;
 		if (coreObject == null)
 		{
 			Debug.LogError("Failed to Find 'Core'!!!!");

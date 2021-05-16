@@ -14,11 +14,12 @@ namespace SDF
 	{
 		public partial class Base
 		{
-			private Dictionary<Joint, Object> _jointObjectList = new Dictionary<Joint, Object>();
+			private Dictionary<Joint, Object> jointObjectList = new Dictionary<Joint, Object>();
 
-			protected virtual void ImportWorld(in World world)
+			protected virtual Object ImportWorld(in World world)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, world.Name);
+				return null;
 			}
 
 			protected virtual void ImportPlugin(in Plugin plugin, in Object parentObject)
@@ -171,7 +172,7 @@ namespace SDF
 				// Joints should be handled after all links of model loaded due to articulation body.
 				foreach (var item in items)
 				{
-					_jointObjectList.Add(item, parentObject);
+					jointObjectList.Add(item, parentObject);
 				}
 			}
 
@@ -213,13 +214,13 @@ namespace SDF
 			public IEnumerator<World> StartImport(World world)
 			{
 				// Console.WriteLine("Import Models({0})/Links/Joints", world.GetModels().Count);
-				ImportWorld(world);
+				var worldObject = ImportWorld(world);
 
-				ImportLights(world.GetLights());
 				ImportModels(world.GetModels());
 				ImportActors(world.GetActors());
+				ImportPlugins(world.GetPlugins(), worldObject);
 
-				foreach (var jointObject in _jointObjectList)
+				foreach (var jointObject in jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
 				}

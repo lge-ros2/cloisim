@@ -59,11 +59,10 @@ namespace SDF
 				// Debug.Log(newModelObject.name + "::" + localPosition + ", " + localRotation);
 
 				var modelHelper = newModelObject.AddComponent<Helper.Model>();
-				modelHelper.isTopModel = SDF2Unity.IsTopModel(newModelObject);
 				modelHelper.isStatic = model.IsStatic;
 				modelHelper.SetPose(localPosition, localRotation);
 
-				if (modelHelper.isTopModel && !modelHelper.isStatic)
+				if (modelHelper.IsFirstChild && !modelHelper.isStatic)
 				{
 					MakeRootArticulationBody(newModelObject);
 				}
@@ -76,7 +75,7 @@ namespace SDF
 				var modelObject = (targetObject as UE.GameObject);
 
 				var modelHelper = modelObject.GetComponent<Helper.Model>();
-				if (modelHelper.isTopModel && !modelHelper.isStatic)
+				if (modelHelper.IsFirstChild && !modelHelper.isStatic)
 				{
 					var childArticulationBodies = modelObject.GetComponentsInChildren<UE.ArticulationBody>();
 

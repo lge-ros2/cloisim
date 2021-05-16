@@ -14,61 +14,66 @@ namespace SDF
 	{
 		public class PoseControl
 		{
-			private UE.Transform _targetTransform = null;
-			private UE.ArticulationBody _articulationBody = null;
+			private UE.Transform targetTransform = null;
+			private UE.ArticulationBody articulationBody = null;
 
-			private List<UE.Pose> _poseList = new List<UE.Pose>();
+			private List<UE.Pose> poseList = new List<UE.Pose>();
 
-			public int Count => _poseList.Count;
+			public int Count => poseList.Count;
 
 			public PoseControl(in UE.Transform target)
 			{
-				_targetTransform = target;
+				targetTransform = target;
 			}
 
 			public void Add(in UE.Vector3 newPosition, in UE.Quaternion newRotation)
 			{
-				_poseList.Add(new UE.Pose(newPosition, newRotation));
+				poseList.Add(new UE.Pose(newPosition, newRotation));
 			}
 
 			public UE.Pose Get(in int targetFrame = 0)
 			{
-				return _poseList[targetFrame];
+				return poseList[targetFrame];
+			}
+
+			public void ClearPose()
+			{
+				poseList.Clear();
 			}
 
 			public void Reset(in int targetFrame = 0)
 			{
-				if (_poseList.Count == 0)
+				if (poseList.Count == 0)
 				{
-					Debug.LogWarning("Nothing to reset, pose List is empty");
+					// Debug.LogWarning("Nothing to reset, pose List is empty");
 					return;
 				}
 
-				if (targetFrame >= _poseList.Count)
+				if (targetFrame >= poseList.Count)
 				{
-					Debug.LogWarningFormat("exceed target frame({0}) in _poseList({1})", targetFrame, _poseList.Count);
+					Debug.LogWarningFormat("exceed target frame({0}) in poseList({1})", targetFrame, poseList.Count);
 					return;
 				}
 
-				if (_targetTransform != null)
+				if (targetTransform != null)
 				{
 					var targetPose = Get(targetFrame);
 
-					_targetTransform.localPosition = targetPose.position;
-					_targetTransform.localRotation = targetPose.rotation;
+					targetTransform.localPosition = targetPose.position;
+					targetTransform.localRotation = targetPose.rotation;
 
-					if (_articulationBody == null)
+					if (articulationBody == null)
 					{
-						_articulationBody = _targetTransform.GetComponent<UE.ArticulationBody>();
+						articulationBody = targetTransform.GetComponent<UE.ArticulationBody>();
 					}
 
-					if (_articulationBody != null)
+					if (articulationBody != null)
 					{
-						if (_articulationBody.isRoot)
+						if (articulationBody.isRoot)
 						{
-							_articulationBody.TeleportRoot(targetPose.position, targetPose.rotation);
-							_articulationBody.velocity = UE.Vector3.zero;
-							_articulationBody.angularVelocity = UE.Vector3.zero;
+							articulationBody.TeleportRoot(targetPose.position, targetPose.rotation);
+							articulationBody.velocity = UE.Vector3.zero;
+							articulationBody.angularVelocity = UE.Vector3.zero;
 						}
 					}
 				}

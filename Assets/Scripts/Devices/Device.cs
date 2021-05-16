@@ -42,9 +42,7 @@ public abstract class Device : MonoBehaviour
 
 	private bool runningDevice = false;
 
-	public float UpdateRate => updateRate;
-
-	public float UpdatePeriod => 1f / UpdateRate;
+	public float UpdatePeriod => 1f / updateRate;
 
 	public float TransportingTime => transportingTimeSeconds;
 
@@ -109,7 +107,7 @@ public abstract class Device : MonoBehaviour
 			case ModeType.NONE:
 			default:
 				runningDevice = false;
-				Debug.LogWarning("Device(" + name + ") Mode is None");
+				// Debug.LogWarning("Device(" + name + ") Mode is None");
 				break;
 		}
 
@@ -164,7 +162,7 @@ public abstract class Device : MonoBehaviour
 
 	protected abstract void OnAwake();
 
-	protected abstract void OnStart();
+	protected virtual void OnStart() {}
 
 	protected virtual void OnReset() {}
 
