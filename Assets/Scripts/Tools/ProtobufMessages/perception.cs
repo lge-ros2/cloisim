@@ -28,8 +28,8 @@ namespace cloisim.msgs
         [global::ProtoBuf.ProtoMember(4, Name = @"velocity", IsRequired = true)]
         public Vector3d Velocity { get; set; }
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"points")]
-        public global::System.Collections.Generic.List<Vector3d> Points { get; } = new global::System.Collections.Generic.List<Vector3d>();
+        [global::ProtoBuf.ProtoMember(5, Name = @"foot_prints")]
+        public global::System.Collections.Generic.List<Vector3d> FootPrints { get; } = new global::System.Collections.Generic.List<Vector3d>();
 
     }
 
