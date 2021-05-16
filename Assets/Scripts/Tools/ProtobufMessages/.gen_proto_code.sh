@@ -15,8 +15,8 @@ PROTOGEN="protogen"
 
 ## 2. check and edit here
 ##    set the location of protobuf messages in absolute path
-PROTO_MSGS_PATH="../../../../../cloi3_ws/src/cloisim_ros/cloisim_ros_protobuf_msgs/msgs/"
-# PROTO_MSGS_PATH="../../../../../../../cloi3/src/cloisim_ros/cloisim_ros_protobuf_msgs/msgs/"
+# PROTO_MSGS_PATH="../../../../../cloi3_ws/src/cloisim_ros/cloisim_ros_protobuf_msgs/msgs/"
+PROTO_MSGS_PATH="../../../../../../../cloi3/src/cloisim_ros/cloisim_ros_protobuf_msgs/msgs/"
 
 ## 3. target protobuf message
 ##
@@ -34,6 +34,8 @@ MSG+="imu imu_sensor "
 MSG+="sonar sonar_stamped "
 MSG+="sensor_noise "
 MSG+="world_stats log_playback_stats "
+MSG+="request response "
+MSG+="perception perception_v "
 # MSG+=" "
 
 for i in $MSG
