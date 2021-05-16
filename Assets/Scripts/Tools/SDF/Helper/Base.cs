@@ -41,7 +41,7 @@ namespace SDF
 			{
 				isFirstChild = SDF2Unity.IsRootModel(this.gameObject);
 				poseControl = new PoseControl(this.transform);
-				position = transform.position;
+				Reset();
 			}
 
 			public void Reset()
@@ -50,12 +50,26 @@ namespace SDF
 				{
 					poseControl.Reset();
 				}
+
+				velocity = UE.Vector3.zero;
+				position = transform.position;
+			}
+
+			public void SetPose(in UE.Pose pose)
+			{
+				SetPose(pose.position, pose.rotation);
 			}
 
 			public void SetPose(in UE.Vector3 position, in UE.Quaternion rotation)
 			{
+				poseControl.ClearPose();
 				AddPose(position, rotation);
 				Reset();
+			}
+
+			public void AddPose(in UE.Pose pose)
+			{
+				AddPose(pose.position, pose.rotation);
 			}
 
 			public void AddPose(in UE.Vector3 position, in UE.Quaternion rotation)

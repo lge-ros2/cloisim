@@ -34,7 +34,7 @@ namespace SDF
 
 			public Model Model => parentModelHelper;
 
-			new void Awake()
+			new protected void Awake()
 			{
 				base.Awake();
 				parentModelHelper = transform.parent?.GetComponent<Model>();

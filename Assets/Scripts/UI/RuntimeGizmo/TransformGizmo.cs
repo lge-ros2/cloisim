@@ -342,7 +342,7 @@ namespace RuntimeGizmos
 									}
 								}
 
-								for (int i = 0; i < targetRootsOrdered.Count; i++)
+								for (int i = 0; i <targetRootsOrdered.Count; i++)
 								{
 									Transform target = targetRootsOrdered[i];
 

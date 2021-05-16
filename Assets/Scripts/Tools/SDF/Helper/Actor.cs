@@ -36,7 +36,7 @@ namespace SDF
 
 			public bool HasWayPoints => (_script.trajectories.Count > 0);
 
-			new void Reset()
+			new public void Reset()
 			{
 				base.Reset();
 
@@ -57,9 +57,12 @@ namespace SDF
 
 				if (capsuleCollider != null)
 				{
+					var convertedPoint = UE.Vector3.zero;
+
 					var bounds = capsuleCollider.bounds;
-					footprint.Add(bounds.min);
-					footprint.Add(bounds.max);
+					footprint.Add(DeviceHelper.Convert.Position(bounds.min));
+					footprint.Add(bounds.center-bounds.extents);
+					footprint.Add(DeviceHelper.Convert.Position(bounds.max));
 				}
 			}
 
@@ -122,6 +125,9 @@ namespace SDF
 
 				if (waypointTowards.Count > 0)
 				{
+					var initPose = GetPose(0);
+					SetPose(initPose);
+
 					var waypoint = waypointTowards[waypointTowardsIndex];
 					SetActorPose(waypoint.tranlateTo, waypoint.rotateTo);
 				}
@@ -159,7 +165,6 @@ namespace SDF
 
 				return totalPose;
 			}
-
 
 			public void SetScript(in SDF.Actor.Script script)
 			{
