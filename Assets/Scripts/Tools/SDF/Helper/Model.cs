@@ -24,6 +24,18 @@ namespace SDF
 					// if parent model has static option, make it all static in children
 					ConvertToStaticLink();
 				}
+
+				if (IsFirstChild)
+				{
+					var meshFilter = gameObject.GetComponentInChildren<UE.MeshFilter>();
+
+					if (meshFilter != null)
+					{
+						var bounds = meshFilter.sharedMesh.bounds;
+						footprint.Add(bounds.min);
+						footprint.Add(bounds.max);
+					}
+				}
 			}
 
 			private void ConvertToStaticLink()

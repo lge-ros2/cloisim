@@ -52,6 +52,15 @@ namespace SDF
 				{
 					StartWaypointFollowing();
 				}
+
+				var capsuleCollider = gameObject.GetComponentInChildren<UE.CapsuleCollider>();
+
+				if (capsuleCollider != null)
+				{
+					var bounds = capsuleCollider.bounds;
+					footprint.Add(bounds.min);
+					footprint.Add(bounds.max);
+				}
 			}
 
 			void LateUpdate()

@@ -14,21 +14,34 @@ namespace SDF
 		public class Base: UE.MonoBehaviour
 		{
 			private PoseControl poseControl = null;
+
 			private bool isFirstChild = false;
 
-			private UE.Vector3 velocity = UE.Vector3.zero;
-			private UE.Vector3 position = UE.Vector3.zero;
-			private List<UE.Vector3> footprint = new List<UE.Vector3>();
+			protected UE.Vector3 velocity = UE.Vector3.zero;
+			protected UE.Vector3 position = UE.Vector3.zero;
+			protected List<UE.Vector3> footprint = new List<UE.Vector3>();
 
 			public bool IsFirstChild => isFirstChild;
-			public UE.Vector3 Velocity => velocity;
-			public UE.Vector3 Position => position;
+
+			public UE.Vector3 Velocity
+			{
+				get => velocity;
+				set => velocity = value;
+			}
+
+			public UE.Vector3 Position
+			{
+				get => position;
+				set => position = value;
+			}
+
 			public List<UE.Vector3> FootPrints => footprint;
 
 			protected void Awake()
 			{
 				isFirstChild = SDF2Unity.IsRootModel(this.gameObject);
 				poseControl = new PoseControl(this.transform);
+				position = transform.position;
 			}
 
 			public void Reset()
