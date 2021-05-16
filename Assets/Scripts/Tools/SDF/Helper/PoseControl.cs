@@ -45,7 +45,7 @@ namespace SDF
 			{
 				if (poseList.Count == 0)
 				{
-					Debug.LogWarning("Nothing to reset, pose List is empty");
+					// Debug.LogWarning("Nothing to reset, pose List is empty");
 					return;
 				}
 
