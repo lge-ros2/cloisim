@@ -9,6 +9,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	private GameObject propsRoot = null;
 	private Camera mainCam = null;
+	private RuntimeGizmos.TransformGizmo transformGizmo = null;
 
 	private Quaternion _cylinderRotationAngle = Quaternion.AngleAxis(90, Vector3.forward);
 
@@ -16,51 +17,61 @@ public class ObjectSpawning : MonoBehaviour
 	public float maxRayDistance = 100;
 	private uint propsCount = 0;
 
-	private string _scaleFactorString = "0.5";
-	private int _propType = 0;
+	private string scaleFactorString = "0.5";
+	private int propType = 0;
 
 	public void SetScaleFactor(in string value)
 	{
-		_scaleFactorString = value;
+		scaleFactorString = value;
 	}
 
 	public void SetPropType(in int value)
 	{
-		_propType = value;
+		propType = value;
 	}
 
 	void Awake()
 	{
 		propsRoot = GameObject.Find("Props");
 		mainCam = Camera.main;
+		transformGizmo = Main.Gizmos;
 	}
 
 	// Update is called once per frame
 	void LateUpdate()
 	{
-		if (Input.GetKey(KeyCode.LeftControl))
+		var leftControlPressed = Input.GetKey(KeyCode.LeftControl);
+
+		if (leftControlPressed && Input.GetMouseButtonDown(0))
 		{
-			if (Input.GetMouseButtonDown(0))
+			// Add On left click spawn
+			// selected prefab and align its rotation to a surface normal
+			var spawnData = GetPositionAndNormalOnClick();
+			if (spawnData[0] != Vector3.zero)
 			{
-				// Add On left click spawn
-				// selected prefab and align its rotation to a surface normal
-				var spawnData = GetPositionAndNormalOnClick();
-				if (spawnData[0] != Vector3.zero)
-				{
-					var scaleFactor = float.Parse(_scaleFactorString);
-					var propsScale = Vector3.one * scaleFactor;
-					StartCoroutine(SpawnTargetObject((PropsType)_propType, spawnData[0], spawnData[1], propsScale));
-				}
+				var scaleFactor = float.Parse(scaleFactorString);
+				var propsScale = Vector3.one * scaleFactor;
+				StartCoroutine(SpawnTargetObject((PropsType)propType, spawnData[0], spawnData[1], propsScale));
 			}
-			else if (Input.GetMouseButtonDown(1))
+		}
+		else if ((leftControlPressed && Input.GetMouseButtonDown(1)))
+		{
+			// Remove spawned prefab when holding left control and right clicking
+			var selectedPropsTransform = GetTransformOnClick();
+			if (selectedPropsTransform)
 			{
-				// Remove spawned prefab when holding left shift and left clicking
-				var selectedPropsTransform = GetTransformOnClick();
-				if (selectedPropsTransform)
-				{
-					StartCoroutine(DeleteTargetObject(selectedPropsTransform));
-				}
+				StartCoroutine(DeleteTargetObject(selectedPropsTransform));
 			}
+		}
+		else if (Input.GetKey(KeyCode.Delete))
+		{
+			transformGizmo.GetSelectedTargets(out var list);
+
+			foreach (var target in list)
+			{
+				StartCoroutine(DeleteTargetObject(target));
+			}
+			transformGizmo.ClearTargets();
 		}
 	}
 
@@ -153,7 +164,10 @@ public class ObjectSpawning : MonoBehaviour
 
 	private IEnumerator DeleteTargetObject(Transform targetObjectTransform)
 	{
-		Destroy(targetObjectTransform.gameObject);
+		if (targetObjectTransform.CompareTag("Props"))
+		{
+			Destroy(targetObjectTransform.gameObject);
+		}
 		yield return null;
 	}
 

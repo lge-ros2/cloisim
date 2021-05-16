@@ -46,11 +46,8 @@ namespace SDF
 			Console.SetOut(new DebugLogWriter());
 
 			SetWorldFileName(filename);
-		}
 
-		public void SetTargetLogOutput(in SimulationDisplay target)
-		{
-			simulationDisplay = target;
+			simulationDisplay = Main.Display;
 		}
 
 		public void SetWorldFileName(in string filename)

@@ -98,11 +98,14 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		foreach (var trackingObjectItem in trackingObjectList)
 		{
 			var trackingObject = trackingObjectItem.Value;
-			var newPosition = trackingObject.transform.position;
+			if (trackingObject != null)
+			{
+				var newPosition = trackingObject.transform.position;
 
-			trackingObject.Velocity = (newPosition - trackingObject.Position) / UE.Time.deltaTime;
-			trackingObject.Position = newPosition;
-			// UE.Debug.Log(trackingObject.name + ": " + trackingObject.Velocity + ", " + trackingObject.Position);
+				trackingObject.Velocity = (newPosition - trackingObject.Position) / UE.Time.deltaTime;
+				trackingObject.Position = newPosition;
+				// UE.Debug.Log(trackingObject.name + ": " + trackingObject.Velocity + ", " + trackingObject.Position);
+			}
 		}
 	}
 

@@ -511,7 +511,18 @@ namespace RuntimeGizmos
 					}
 					else
 					{
-						ClearAndAddTarget(target);
+						if (targetRoots.ContainsKey(target))
+						{
+							RemoveTarget(target);
+						}
+						else if (Input.GetKey(KeyCode.LeftShift))
+						{
+							AddTarget(target);
+						}
+						else
+						{
+							ClearAndAddTarget(target);
+						}
 					}
 				}
 				else
@@ -519,6 +530,11 @@ namespace RuntimeGizmos
 					ClearTargets();
 				}
 			}
+		}
+
+		public void GetSelectedTargets(out List<Transform> list)
+		{
+			list = targetRootsOrdered;
 		}
 
 		public void AddTarget(Transform target)

@@ -772,7 +772,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb1f25bcbdf8dbeb2910354dd18778b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isTopModel: 1
   hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &249819585
@@ -788,7 +787,6 @@ GameObject:
   - component: {fileID: 249819587}
   - component: {fileID: 249819591}
   - component: {fileID: 249819592}
-  - component: {fileID: 249819590}
   m_Layer: 0
   m_Name: Core
   m_TagString: Untagged
@@ -849,19 +847,6 @@ MonoBehaviour:
   - ../sample_resources/media/
   - ../lgrs_resource/assets
   - ../../lgrs_resource/assets
---- !u!114 &249819590
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 249819585}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d9c9f03b6dda7067f8bbe5424519c5b6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxRayDistance: 100
 --- !u!114 &249819591
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2488,7 +2473,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb1f25bcbdf8dbeb2910354dd18778b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isTopModel: 1
   hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &779420288
@@ -5438,7 +5422,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb1f25bcbdf8dbeb2910354dd18778b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isTopModel: 0
   hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &1750713662
@@ -6292,7 +6275,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb1f25bcbdf8dbeb2910354dd18778b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isTopModel: 1
   hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &2133470735

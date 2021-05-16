@@ -31,8 +31,8 @@ public class Main: MonoBehaviour
 	private static GameObject uiRoot = null;
 
 	private FollowingTargetList followingList = null;
-	private SimulationDisplay simulationDisplay = null;
-	private RuntimeGizmos.TransformGizmo transformGizmo = null;
+	private static SimulationDisplay simulationDisplay = null;
+	private static RuntimeGizmos.TransformGizmo transformGizmo = null;
 
 	private bool isResetting = false;
 	private bool resetTriggered = false;
@@ -40,6 +40,8 @@ public class Main: MonoBehaviour
 	public static GameObject WorldRoot => worldRoot;
 	public static GameObject CoreObject => coreObject;
 	public static GameObject UIObject => uiRoot;
+	public static RuntimeGizmos.TransformGizmo Gizmos => transformGizmo;
+	public static SimulationDisplay Display => simulationDisplay;
 
 	private void CleanAllModels()
 	{
@@ -172,6 +174,8 @@ public class Main: MonoBehaviour
 		followingList = uiRoot.GetComponentInChildren<FollowingTargetList>();
 		simulationDisplay = uiRoot.GetComponentInChildren<SimulationDisplay>();
 		transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
+
+		gameObject.AddComponent<ObjectSpawning>();
 	}
 
 	void Start()
@@ -208,7 +212,6 @@ public class Main: MonoBehaviour
 		Debug.Log("Target World: " + worldFileName);
 
 		var sdf = new SDF.Root();
-		sdf.SetTargetLogOutput(simulationDisplay);
 		sdf.SetWorldFileName(worldFileName);
 		sdf.fileDefaultPaths.AddRange(fileRootDirectories);
 		sdf.modelDefaultPaths.AddRange(modelRootDirectories);
