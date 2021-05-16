@@ -150,7 +150,10 @@ public class CLOiSimPluginThread : DeviceTransporter
 	protected void WaitThread(in int iteration = 1)
 	{
 		Thread.SpinWait(iteration);
-
 	}
 
+	protected void SleepThread(in int millisecondsTimeout = 1)
+	{
+		Thread.Sleep(millisecondsTimeout);
+	}
 }
