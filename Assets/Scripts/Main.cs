@@ -33,7 +33,6 @@ public class Main: MonoBehaviour
 	private FollowingTargetList followingList = null;
 	private SimulationDisplay simulationDisplay = null;
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
-	private Clock clock = null;
 
 	private bool isResetting = false;
 	private bool resetTriggered = false;
