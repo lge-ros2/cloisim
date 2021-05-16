@@ -55,6 +55,15 @@ namespace SDF
 				position = transform.position;
 			}
 
+			protected void SetFootPrint(in UE.Vector3[] cornerPoints)
+			{
+				foreach (var cornerPoint in cornerPoints)
+				{
+					// UE.Debug.Log(cornerPoint.ToString("F6"));
+					footprint.Add(cornerPoint);
+				}
+			}
+
 			public void SetPose(in UE.Pose pose)
 			{
 				SetPose(pose.position, pose.rotation);
@@ -98,6 +107,36 @@ namespace SDF
 			public int GetPoseCount()
 			{
 				return poseControl.Count;
+			}
+
+			public static UE.Vector3[] GetBoundCornerPointsByExtents(in UE.Vector3 extents)
+			{
+				var cornerPoints = new UE.Vector3[] {
+							extents,
+							extents,
+							extents,
+							extents,
+							extents * -1,
+							extents * -1,
+							extents * -1,
+							extents * -1
+						};
+
+				cornerPoints[1].x *= -1;
+
+				cornerPoints[2].x *= -1;
+				cornerPoints[2].z *= -1;
+
+				cornerPoints[3].z *= -1;
+
+				cornerPoints[5].x *= -1;
+
+				cornerPoints[6].x *= -1;
+				cornerPoints[6].z *= -1;
+
+				cornerPoints[7].z *= -1;
+
+				return cornerPoints;
 			}
 		}
 	}

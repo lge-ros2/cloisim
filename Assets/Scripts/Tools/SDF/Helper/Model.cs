@@ -27,14 +27,22 @@ namespace SDF
 
 				if (IsFirstChild)
 				{
-					var meshFilter = gameObject.GetComponentInChildren<UE.MeshFilter>();
-
-					if (meshFilter != null)
+					var meshColliders = gameObject.GetComponentsInChildren<UE.MeshCollider>();
+					var combine = new UE.CombineInstance[meshColliders.Length];
+					for (var i = 0; i < combine.Length; i++)
 					{
-						var bounds = meshFilter.sharedMesh.bounds;
-						footprint.Add(bounds.min);
-						footprint.Add(bounds.max);
+						combine[i].mesh = meshColliders[i].sharedMesh;
+						combine[i].transform = meshColliders[i].transform.localToWorldMatrix;
 					}
+
+					var combinedMesh = new UE.Mesh();
+					combinedMesh.CombineMeshes(combine, true, true);
+					combinedMesh.RecalculateBounds();
+					combinedMesh.Optimize();
+					// UE.Debug.Log(gameObject.name + ", " + combinedMesh.bounds.size + ", " + combinedMesh.bounds.extents+ ", " + combinedMesh.bounds.center);
+
+					var cornerPoints = GetBoundCornerPointsByExtents(combinedMesh.bounds.extents);
+					SetFootPrint(cornerPoints);
 				}
 			}
 

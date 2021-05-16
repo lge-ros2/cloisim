@@ -57,12 +57,9 @@ namespace SDF
 
 				if (capsuleCollider != null)
 				{
-					var convertedPoint = UE.Vector3.zero;
-
 					var bounds = capsuleCollider.bounds;
-					footprint.Add(DeviceHelper.Convert.Position(bounds.min));
-					footprint.Add(bounds.center-bounds.extents);
-					footprint.Add(DeviceHelper.Convert.Position(bounds.max));
+					var cornerPoints = GetBoundCornerPointsByExtents(bounds.extents);
+					SetFootPrint(cornerPoints);
 				}
 			}
 
