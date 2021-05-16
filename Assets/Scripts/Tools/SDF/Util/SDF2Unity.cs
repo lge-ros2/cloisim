@@ -78,12 +78,12 @@ public partial class SDF2Unity
 		return GetPosition(direction);
 	}
 
-	public static bool IsTopModel(in GameObject targetObject)
+	public static bool IsRootModel(in GameObject targetObject)
 	{
-		return IsTopModel(targetObject.transform);
+		return IsRootModel(targetObject.transform);
 	}
 
-	public static bool IsTopModel(in Transform targetTransform)
+	public static bool IsRootModel(in Transform targetTransform)
 	{
 		return targetTransform.parent.Equals(targetTransform.root);
 	}

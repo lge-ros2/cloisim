@@ -494,12 +494,12 @@ namespace RuntimeGizmos
 							if (!hitObject.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex))
 							{
 								var hitParentLinkHelper = hitObject?.GetComponentInParent<SDF.Helper.Link>();
-								var hitTopModelHelper = hitParentLinkHelper?.TopModel;
+								var hitRootModelHelper = hitParentLinkHelper?.RootModel;
 
-								if (hitTopModelHelper != null && !(hitTopModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
+								if (hitRootModelHelper != null && !(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
 								{
 									// Debug.Log(hitParentObject.name + " Selected!!!!");
-									target = (hitTopModelHelper.hasRootArticulationBody) ? hitTopModelHelper.transform : hitParentLinkHelper.Model.transform;
+									target = (hitRootModelHelper.hasRootArticulationBody) ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
 								}
 							}
 						}

@@ -183,7 +183,6 @@ public class Main: MonoBehaviour
 			CleanAllResources();
 		}
 
-
 		var newWorldFilename = GetArgument("-world");
 
 		if (string.IsNullOrEmpty(newWorldFilename))

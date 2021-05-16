@@ -13,8 +13,8 @@ namespace SDF
 	{
 		public class Link : Base
 		{
-			private Model _topModel = null;
-			private Model _modelHelper = null;
+			private Model rootModel = null;
+			private Model parentModelHelper = null;
 			public bool drawInertia = false;
 
 			private bool drawContact = true;
@@ -30,21 +30,21 @@ namespace SDF
 
 			private List<UE.ContactPoint> contactPointList = new List<UE.ContactPoint>();
 
-			public Model TopModel => _topModel;
+			public Model RootModel => rootModel;
 
-			public Model Model => _modelHelper;
+			public Model Model => parentModelHelper;
 
 			new void Awake()
 			{
 				base.Awake();
-				_modelHelper = transform.parent?.GetComponent<Model>();
+				parentModelHelper = transform.parent?.GetComponent<Model>();
 			}
 
 			// Start is called before the first frame update
 			void Start()
 			{
 				var modelHelpers = GetComponentsInParent(typeof(Model));
-				_topModel = (Model)modelHelpers[modelHelpers.Length - 1];
+				rootModel = (Model)modelHelpers[modelHelpers.Length - 1];
 
 				_artBody = GetComponent<UE.ArticulationBody>();
 
@@ -100,12 +100,12 @@ namespace SDF
 
 			private void IgnoreSelfCollision()
 			{
-				if (_topModel == null)
+				if (rootModel == null)
 				{
 					return;
 				}
 
-				var otherLinkPlugins = _topModel.GetComponentsInChildren<Link>();
+				var otherLinkPlugins = rootModel.GetComponentsInChildren<Link>();
 				var thisColliders = GetCollidersInChildren();
 
 				foreach (var otherLinkPlugin in otherLinkPlugins)

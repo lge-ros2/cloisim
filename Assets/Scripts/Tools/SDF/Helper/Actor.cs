@@ -36,11 +36,6 @@ namespace SDF
 
 			public bool HasWayPoints => (_script.trajectories.Count > 0);
 
-			new void Awake()
-			{
-				base.Awake();
-			}
-
 			new void Reset()
 			{
 				base.Reset();

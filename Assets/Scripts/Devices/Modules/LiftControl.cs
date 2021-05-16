@@ -80,7 +80,7 @@ public class LiftControl : MonoBehaviour
 		var allModelHelpers = rootModel.GetComponentsInChildren<SDF.Helper.Model>();
 		foreach (var modelHelper in allModelHelpers)
 		{
-			if (modelHelper.isTopModel)
+			if (modelHelper.IsFirstChild)
 			{
 				hashsetAllTopModels.Add(modelHelper.gameObject);
 			}

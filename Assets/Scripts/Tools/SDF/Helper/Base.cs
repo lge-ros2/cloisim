@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UE = UnityEngine;
 
 namespace SDF
@@ -12,18 +13,29 @@ namespace SDF
 	{
 		public class Base: UE.MonoBehaviour
 		{
-			private PoseControl _poseControl = null;
+			private PoseControl poseControl = null;
+			private bool isFirstChild = false;
+
+			private UE.Vector3 velocity = UE.Vector3.zero;
+			private UE.Vector3 position = UE.Vector3.zero;
+			private List<UE.Vector3> footprint = new List<UE.Vector3>();
+
+			public bool IsFirstChild => isFirstChild;
+			public UE.Vector3 Velocity => velocity;
+			public UE.Vector3 Position => position;
+			public List<UE.Vector3> FootPrints => footprint;
 
 			protected void Awake()
 			{
-				_poseControl = new PoseControl(this.transform);
+				isFirstChild = SDF2Unity.IsRootModel(this.gameObject);
+				poseControl = new PoseControl(this.transform);
 			}
 
 			public void Reset()
 			{
-				if (_poseControl != null)
+				if (poseControl != null)
 				{
-					_poseControl.Reset();
+					poseControl.Reset();
 				}
 			}
 
@@ -35,9 +47,9 @@ namespace SDF
 
 			public void AddPose(in UE.Vector3 position, in UE.Quaternion rotation)
 			{
-				if (_poseControl != null)
+				if (poseControl != null)
 				{
-					_poseControl.Add(position, rotation);
+					poseControl.Add(position, rotation);
 				}
 			}
 
@@ -53,12 +65,12 @@ namespace SDF
 
 			public UE.Pose GetPose(in int targetFrame = 0)
 			{
-				return _poseControl.Get(targetFrame);
+				return poseControl.Get(targetFrame);
 			}
 
 			public int GetPoseCount()
 			{
-				return _poseControl.Count;
+				return poseControl.Count;
 			}
 		}
 	}
