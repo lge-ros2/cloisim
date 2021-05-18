@@ -44,10 +44,6 @@ public class MicomPlugin : CLOiSimPlugin
 				SetTransformNameResponse(ref response);
 				break;
 
-			case "request_wheel_info":
-				SetWheelInfoResponse(ref response);
-				break;
-
 			case "request_transform":
 				var micomSensor = (targetDevice as Micom).GetSensor();
 				var devicePose = micomSensor.GetPartsPose(requestValue);
@@ -104,30 +100,5 @@ public class MicomPlugin : CLOiSimPlugin
 		wheelsInfo.Childrens.Add(wheelRightInfo);
 
 		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
-	}
-
-	private void SetWheelInfoResponse(ref DeviceMessage msWheelInfo)
-	{
-		if (msWheelInfo == null)
-		{
-			return;
-		}
-		var micomSensor = (targetDevice as Micom).GetSensor();
-
-		var wheelInfo = new messages.Param();
-		wheelInfo.Name = "wheelInfo";
-		wheelInfo.Value = new Any { Type = Any.ValueType.None };
-
-		var baseInfo = new messages.Param();
-		baseInfo.Name = "tread";
-		baseInfo.Value = new Any { Type = Any.ValueType.Double, DoubleValue = micomSensor.WheelBase };
-		wheelInfo.Childrens.Add(baseInfo);
-
-		var sizeInfo = new messages.Param();
-		sizeInfo.Name = "radius";
-		sizeInfo.Value = new Any { Type = Any.ValueType.Double, DoubleValue = micomSensor.WheelRadius };
-		wheelInfo.Childrens.Add(sizeInfo);
-
-		msWheelInfo.SetMessage<messages.Param>(wheelInfo);
 	}
 }

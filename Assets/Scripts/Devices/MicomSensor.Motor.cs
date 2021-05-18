@@ -22,9 +22,6 @@ public partial class MicomSensor : Device
 	private float divideWheelRadius = 0.0f; // for computational performance
 #endregion
 
-	public float WheelBase => wheelTread;
-	public float WheelRadius => wheelRadius;
-
 	/// <summary>Set differential driver</summary>
 	/// <remarks>rad per second for wheels</remarks>
 	public void SetDifferentialDrive(in float linearVelocityLeft, in float linearVelocityRight)
