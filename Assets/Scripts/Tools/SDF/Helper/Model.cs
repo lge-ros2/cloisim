@@ -24,26 +24,6 @@ namespace SDF
 					// if parent model has static option, make it all static in children
 					ConvertToStaticLink();
 				}
-
-				if (IsFirstChild)
-				{
-					var meshColliders = gameObject.GetComponentsInChildren<UE.MeshCollider>();
-					var combine = new UE.CombineInstance[meshColliders.Length];
-					for (var i = 0; i < combine.Length; i++)
-					{
-						combine[i].mesh = meshColliders[i].sharedMesh;
-						combine[i].transform = meshColliders[i].transform.localToWorldMatrix;
-					}
-
-					var combinedMesh = new UE.Mesh();
-					combinedMesh.CombineMeshes(combine, true, true);
-					combinedMesh.RecalculateBounds();
-					combinedMesh.Optimize();
-					// UE.Debug.Log(gameObject.name + ", " + combinedMesh.bounds.size + ", " + combinedMesh.bounds.extents+ ", " + combinedMesh.bounds.center);
-
-					var cornerPoints = GetBoundCornerPointsByExtents(combinedMesh.bounds.extents);
-					SetFootPrint(cornerPoints);
-				}
 			}
 
 			private void ConvertToStaticLink()

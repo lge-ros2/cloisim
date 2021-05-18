@@ -52,15 +52,6 @@ namespace SDF
 				{
 					StartWaypointFollowing();
 				}
-
-				var capsuleCollider = gameObject.GetComponentInChildren<UE.CapsuleCollider>();
-
-				if (capsuleCollider != null)
-				{
-					var bounds = capsuleCollider.bounds;
-					var cornerPoints = GetBoundCornerPointsByExtents(bounds.extents);
-					SetFootPrint(cornerPoints);
-				}
 			}
 
 			void LateUpdate()

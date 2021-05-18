@@ -16,19 +16,25 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"tracking_id", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(1, Name = @"header", IsRequired = true)]
+        public Header Header { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"tracking_id", IsRequired = true)]
         public int TrackingId { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"class_id", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(3, Name = @"class_id", IsRequired = true)]
         public int ClassId { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"position", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(4, Name = @"position", IsRequired = true)]
         public Vector3d Position { get; set; }
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"velocity", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(5, Name = @"velocity", IsRequired = true)]
         public Vector3d Velocity { get; set; }
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"footprints")]
+        [global::ProtoBuf.ProtoMember(6, Name = @"size", IsRequired = true)]
+        public Vector3d Size { get; set; }
+
+        [global::ProtoBuf.ProtoMember(7, Name = @"footprint")]
         public global::System.Collections.Generic.List<Vector3d> Footprints { get; } = new global::System.Collections.Generic.List<Vector3d>();
 
     }

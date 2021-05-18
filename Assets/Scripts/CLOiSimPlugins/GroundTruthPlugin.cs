@@ -10,16 +10,73 @@ using messages = cloisim.msgs;
 
 public class GroundTruthPlugin : CLOiSimPlugin
 {
+	// public static UE.Vector3[] GetBoundCornerPointsByExtents(in UE.Vector3 extents)
+	// {
+	// 	var cornerPoints = new UE.Vector3[] {
+	// 						extents,
+	// 						extents,
+	// 						extents,
+	// 						extents,
+	// 						extents * -1,
+	// 						extents * -1,
+	// 						extents * -1,
+	// 						extents * -1
+	// 					};
+
+	// 	cornerPoints[1].x *= -1;
+
+	// 	cornerPoints[2].x *= -1;
+	// 	cornerPoints[2].z *= -1;
+
+	// 	cornerPoints[3].z *= -1;
+
+	// 	cornerPoints[5].x *= -1;
+
+	// 	cornerPoints[6].x *= -1;
+	// 	cornerPoints[6].z *= -1;
+
+	// 	cornerPoints[7].z *= -1;
+
+	// 	return cornerPoints;
+	// }
+
+	public struct ObjectTracking
+	{
+		public UE.Transform rootTransform;
+		public UE.Vector3 velocity;
+		public UE.Vector3 position;
+		public UE.Vector3 size;
+		public List<UE.Vector3> footprint;
+
+		public ObjectTracking(UE.GameObject gameObject)
+		{
+			rootTransform = gameObject.transform;
+			velocity = UE.Vector3.zero;
+			position = UE.Vector3.zero;
+			size = UE.Vector3.zero;
+			footprint = new List<UE.Vector3>();
+		}
+
+		// protected void SetFootPrint(in UE.Vector3[] cornerPoints)
+		// {
+		// 	foreach (var cornerPoint in cornerPoints)
+		// 	{
+		// 		// UE.Debug.Log(cornerPoint.ToString("F6"));
+		// 		footprint.Add(cornerPoint);
+		// 	}
+		// }
+	}
+
 	private Dictionary<string, SDF.Helper.Base> allLoadedModelList = new Dictionary<string, SDF.Helper.Base>();
-	private Dictionary<int, SDF.Helper.Base> trackingObjectList = new Dictionary<int, SDF.Helper.Base>();
+	private Dictionary<int, ObjectTracking> trackingObjectList = new Dictionary<int, ObjectTracking>();
 	private messages.PerceptionV perceptions;
 	private int sleepPeriodForPublishInMilliseconds = 1000;
 
-	private SDF.Helper.Base GetTrackingObject(in string modelName)
+	private UE.GameObject GetTrackingObject(in string modelName)
 	{
 		if (allLoadedModelList.TryGetValue(modelName, out var model))
 		{
-			return model;
+			return model.gameObject;
 		}
 
 		return null;
@@ -70,14 +127,47 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			perception.ClassId = classId;
 			perception.Position = new messages.Vector3d();
 			perception.Velocity = new messages.Vector3d();
+			perception.Size = new messages.Vector3d();
 
-			var trackingObject = GetTrackingObject(target);
-			if (trackingObject != null)
+			var trackingGameObject = GetTrackingObject(target);
+			if (trackingGameObject != null)
 			{
-				trackingObjectList.Add(trackingId, trackingObject);
-				UE.Debug.LogFormat("TrackingObject: {0}, trackingId:{1}, classId:{2}", target, trackingId, classId);
+				var trackingObject = new ObjectTracking(trackingGameObject);
 
-				foreach (var footprint in trackingObject.FootPrints)
+				trackingObjectList.Add(trackingId, trackingObject);
+				UE.Debug.LogFormat("TrackingObject: {0}, trackingId: {1}, classId: {2}", target, trackingId, classId);
+
+
+				// {
+				// 	var meshColliders = gameObject.GetComponentsInChildren<UE.MeshCollider>();
+				// 	var combine = new UE.CombineInstance[meshColliders.Length];
+				// 	for (var i = 0; i < combine.Length; i++)
+				// 	{
+				// 		combine[i].mesh = meshColliders[i].sharedMesh;
+				// 		combine[i].transform = meshColliders[i].transform.localToWorldMatrix;
+				// 	}
+
+				// 	var combinedMesh = new UE.Mesh();
+				// 	combinedMesh.CombineMeshes(combine, true, true);
+				// 	combinedMesh.RecalculateBounds();
+				// 	combinedMesh.Optimize();
+				// 	// UE.Debug.Log(gameObject.name + ", " + combinedMesh.bounds.size + ", " + combinedMesh.bounds.extents+ ", " + combinedMesh.bounds.center);
+
+				// 	var cornerPoints = GetBoundCornerPointsByExtents(combinedMesh.bounds.extents);
+				// 	SetFootPrint(cornerPoints);
+				// }
+
+				// var capsuleCollider = gameObject.GetComponentInChildren<UE.CapsuleCollider>();
+
+				// if (capsuleCollider != null)
+				// {
+				// 	var bounds = capsuleCollider.bounds;
+				// 	var cornerPoints = GetBoundCornerPointsByExtents(bounds.extents);
+				// 	SetFootPrint(cornerPoints);
+				// }
+
+
+				foreach (var footprint in trackingObject.footprint)
 				{
 					var point = new messages.Vector3d();
 					DeviceHelper.SetVector3d(point, footprint);
@@ -93,17 +183,26 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		AddThread(PublishThread);
 	}
 
+	protected override void OnReset()
+	{
+		foreach (var trackingObjectItem in trackingObjectList)
+		{
+			var trackingObject = trackingObjectItem.Value;
+			trackingObject.velocity = UE.Vector3.zero;
+			trackingObject.position = transform.position;
+		}
+	}
+
 	void Update()
 	{
 		foreach (var trackingObjectItem in trackingObjectList)
 		{
 			var trackingObject = trackingObjectItem.Value;
-			if (trackingObject != null)
+			if (trackingObject.rootTransform != null)
 			{
-				var newPosition = trackingObject.transform.position;
-
-				trackingObject.Velocity = (newPosition - trackingObject.Position) / UE.Time.deltaTime;
-				trackingObject.Position = newPosition;
+				var newPosition = trackingObject.rootTransform.position;
+				trackingObject.velocity = (newPosition - trackingObject.position) / UE.Time.deltaTime;
+				trackingObject.position = newPosition;
 				// UE.Debug.Log(trackingObject.name + ": " + trackingObject.Velocity + ", " + trackingObject.Position);
 			}
 		}
@@ -114,17 +213,17 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		var deviceMessage = new DeviceMessage();
 		while (IsRunningThread)
 		{
-			DeviceHelper.SetCurrentTime(perceptions.Header.Stamp);
-
 			foreach (var perception in perceptions.Perceptions)
 			{
-				if (trackingObjectList.TryGetValue(perception.TrackingId, out var model))
+				if (trackingObjectList.TryGetValue(perception.TrackingId, out var trackingObject))
 				{
-					DeviceHelper.SetVector3d(perception.Position, model.Position);
-					DeviceHelper.SetVector3d(perception.Velocity, model.Velocity);
+					DeviceHelper.SetCurrentTime(perception.Header.Stamp);
+					DeviceHelper.SetVector3d(perception.Position, trackingObject.position);
+					DeviceHelper.SetVector3d(perception.Velocity, trackingObject.velocity);
 				}
 			}
 
+			DeviceHelper.SetCurrentTime(perceptions.Header.Stamp);
 			deviceMessage.SetMessage<messages.PerceptionV>(perceptions);
 			Publish(deviceMessage);
 
