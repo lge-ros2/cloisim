@@ -12,7 +12,7 @@ public class SimulationWorld : CLOiSimPlugin
 		targetDevice = gameObject.AddComponent<Clock>();
 
 		modelName = "World";
-		partName = "cloisim";
+		partName = "cloisim_clock";
 	}
 
 	protected override void OnStart()
