@@ -123,6 +123,8 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			var classId = GetPluginParameters().GetAttributeInPath<int>("list/target[text()='" + target + "']", "class_id");
 
 			var perception = new messages.Perception();
+			perception.Header = new messages.Header();
+			perception.Header.Stamp = new messages.Time();
 			perception.TrackingId = trackingId;
 			perception.ClassId = classId;
 			perception.Position = new messages.Vector3d();
@@ -134,38 +136,49 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			{
 				var trackingObject = new ObjectTracking(trackingGameObject);
 
-				trackingObjectList.Add(trackingId, trackingObject);
-				UE.Debug.LogFormat("TrackingObject: {0}, trackingId: {1}, classId: {2}", target, trackingId, classId);
+				var colliders = gameObject.GetComponentsInChildren<UE.MeshCollider>();
 
+				var capsuleCollider = gameObject.GetComponentInChildren<UE.CapsuleCollider>();
+				if (capsuleCollider != null)
+				{
+					// trackingObject.footprint.Add();
+				}
+				else
+				{
+					var meshColliders = gameObject.GetComponentsInChildren<UE.MeshCollider>();
+					if (meshColliders != null)
+					{
+						var combine = new UE.CombineInstance[meshColliders.Length];
+						for (var i = 0; i < combine.Length; i++)
+						{
+							combine[i].mesh = meshColliders[i].sharedMesh;
+							combine[i].transform = meshColliders[i].transform.localToWorldMatrix;
+						}
+
+						var combinedMesh = new UE.Mesh();
+						combinedMesh.CombineMeshes(combine, true, true);
+						combinedMesh.RecalculateBounds();
+						combinedMesh.Optimize();
+						// UE.Debug.Log(gameObject.name + ", " + combinedMesh.bounds.size + ", " + combinedMesh.bounds.extents+ ", " + combinedMesh.bounds.center);
+
+						// if ()
+						// {
+						// }
+					}
+				}
 
 				// {
-				// 	var meshColliders = gameObject.GetComponentsInChildren<UE.MeshCollider>();
-				// 	var combine = new UE.CombineInstance[meshColliders.Length];
-				// 	for (var i = 0; i < combine.Length; i++)
-				// 	{
-				// 		combine[i].mesh = meshColliders[i].sharedMesh;
-				// 		combine[i].transform = meshColliders[i].transform.localToWorldMatrix;
-				// 	}
-
-				// 	var combinedMesh = new UE.Mesh();
-				// 	combinedMesh.CombineMeshes(combine, true, true);
-				// 	combinedMesh.RecalculateBounds();
-				// 	combinedMesh.Optimize();
-				// 	// UE.Debug.Log(gameObject.name + ", " + combinedMesh.bounds.size + ", " + combinedMesh.bounds.extents+ ", " + combinedMesh.bounds.center);
-
 				// 	var cornerPoints = GetBoundCornerPointsByExtents(combinedMesh.bounds.extents);
 				// 	SetFootPrint(cornerPoints);
 				// }
-
-				// var capsuleCollider = gameObject.GetComponentInChildren<UE.CapsuleCollider>();
-
 				// if (capsuleCollider != null)
 				// {
 				// 	var bounds = capsuleCollider.bounds;
 				// 	var cornerPoints = GetBoundCornerPointsByExtents(bounds.extents);
 				// 	SetFootPrint(cornerPoints);
 				// }
-
+				trackingObjectList.Add(trackingId, trackingObject);
+				UE.Debug.LogFormat("TrackingObject: {0}, trackingId: {1}, classId: {2}", target, trackingId, classId);
 
 				foreach (var footprint in trackingObject.footprint)
 				{
@@ -189,15 +202,15 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		{
 			var trackingObject = trackingObjectItem.Value;
 			trackingObject.velocity = UE.Vector3.zero;
-			trackingObject.position = transform.position;
+			trackingObject.position = UE.Vector3.zero;
 		}
 	}
 
 	void Update()
 	{
-		foreach (var trackingObjectItem in trackingObjectList)
+		for (var i = 0; i < trackingObjectList.Count; i++)
 		{
-			var trackingObject = trackingObjectItem.Value;
+			var trackingObject = trackingObjectList[i];
 			if (trackingObject.rootTransform != null)
 			{
 				var newPosition = trackingObject.rootTransform.position;
@@ -205,6 +218,8 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				trackingObject.position = newPosition;
 				// UE.Debug.Log(trackingObject.name + ": " + trackingObject.Velocity + ", " + trackingObject.Position);
 			}
+
+			trackingObjectList[i] = trackingObject;
 		}
 	}
 
