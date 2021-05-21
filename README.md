@@ -137,7 +137,7 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 #### Debugging log
 
 ```shell
-tail -f  ~/.config/unity3d/LG\ Electronics/CLOiSim/Player.log
+tail -f  ~/.config/unity3d/LGElectronics.AdvancedRoboticsLab/CLOiSim/Player.log
 ```
 
 #### Control service
