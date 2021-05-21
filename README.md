@@ -98,6 +98,8 @@ For the performance in terms of collision handling, designing collision geometry
 
 If you don't want to build a project, just USE a release binary([Download linux version](https://github.com/lge-ros2/cloisim/releases)). And just refer to '[Usage](https://github.com/lge-ros2/cloisim#usage)' section.
 
+In terms of branch, 'main' is release(stable) version, and 'develop' is used for development(on-going).
+
 ### If you want to build a project
 
 Please visit here [build guide](https://github.com/lge-ros2/cloisim/wiki/Build-Guide).
