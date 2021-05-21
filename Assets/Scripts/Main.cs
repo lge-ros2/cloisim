@@ -180,6 +180,13 @@ public class Main: MonoBehaviour
 
 	void Start()
 	{
+		if (!SystemInfo.supportsAsyncGPUReadback)
+		{
+			Debug.LogError("This API does not support AsyncGPURreadback.");
+			simulationDisplay?.SetErrorMessage("This API does not support AsyncGPURreadback.");
+			return;
+		}
+
 		ResetRootModelsTransform();
 
 		if (clearAllOnStart)
