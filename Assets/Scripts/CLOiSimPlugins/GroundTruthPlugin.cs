@@ -10,61 +10,60 @@ using messages = cloisim.msgs;
 
 public class GroundTruthPlugin : CLOiSimPlugin
 {
-	// public static UE.Vector3[] GetBoundCornerPointsByExtents(in UE.Vector3 extents)
-	// {
-	// 	var cornerPoints = new UE.Vector3[] {
-	// 						extents,
-	// 						extents,
-	// 						extents,
-	// 						extents,
-	// 						extents * -1,
-	// 						extents * -1,
-	// 						extents * -1,
-	// 						extents * -1
-	// 					};
-
-	// 	cornerPoints[1].x *= -1;
-
-	// 	cornerPoints[2].x *= -1;
-	// 	cornerPoints[2].z *= -1;
-
-	// 	cornerPoints[3].z *= -1;
-
-	// 	cornerPoints[5].x *= -1;
-
-	// 	cornerPoints[6].x *= -1;
-	// 	cornerPoints[6].z *= -1;
-
-	// 	cornerPoints[7].z *= -1;
-
-	// 	return cornerPoints;
-	// }
+	private const bool DrawObjectsInfo = false;
 
 	public struct ObjectTracking
 	{
-		public UE.Transform rootTransform;
+		private UE.Transform rootTransform;
 		public UE.Vector3 velocity;
 		public UE.Vector3 position;
+		public UE.Quaternion rotation;
 		public UE.Vector3 size;
-		public List<UE.Vector3> footprint;
+		private List<UE.Vector3> footprint;
+		private List<UE.Vector3> rotatedFootprint;
 
 		public ObjectTracking(UE.GameObject gameObject)
 		{
-			rootTransform = gameObject.transform;
-			velocity = UE.Vector3.zero;
-			position = UE.Vector3.zero;
-			size = UE.Vector3.zero;
-			footprint = new List<UE.Vector3>();
+			this.rootTransform = gameObject.transform;
+			this.velocity = UE.Vector3.zero;
+			this.position = UE.Vector3.zero;
+			this.rotation = UE.Quaternion.identity;
+			this.size = UE.Vector3.zero;
+			this.footprint = new List<UE.Vector3>();
+			this.rotatedFootprint = new List<UE.Vector3>();
 		}
 
-		// protected void SetFootPrint(in UE.Vector3[] cornerPoints)
-		// {
-		// 	foreach (var cornerPoint in cornerPoints)
-		// 	{
-		// 		// UE.Debug.Log(cornerPoint.ToString("F6"));
-		// 		footprint.Add(cornerPoint);
-		// 	}
-		// }
+		public void Update()
+		{
+			if (this.rootTransform != null)
+			{
+				var newPosition = this.rootTransform.position;
+				this.velocity = (newPosition - this.position) / UE.Time.deltaTime;
+				this.position = newPosition;
+				this.rotation = this.rootTransform.rotation;
+				// UE.Debug.Log(this.rootTransform.name + ": " + this.Velocity + ", " + this.Position);
+			}
+		}
+
+		public List<UE.Vector3> Footprint()
+		{
+			rotatedFootprint.Clear();
+			for (var i = 0; i < this.footprint.Count; i++)
+			{
+				rotatedFootprint.Add(this.rotation * footprint[i]);
+			}
+			return this.rotatedFootprint;
+		}
+
+		public void Set2DFootprint(in UE.Vector3[] vertices)
+		{
+			this.footprint.AddRange(vertices);
+		}
+
+		public void Add2DFootprint(in UE.Vector3 vertex)
+		{
+			this.footprint.Add(vertex);
+		}
 	}
 
 	private Dictionary<string, SDF.Helper.Base> allLoadedModelList = new Dictionary<string, SDF.Helper.Base>();
@@ -109,6 +108,29 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		perceptions.Header.Stamp = new messages.Time();
 	}
 
+	private void OnDrawGizmos()
+	{
+		if (DrawObjectsInfo)
+		{
+			var prevColor = UE.Gizmos.color;
+			foreach (var objectItem in trackingObjectList)
+			{
+				var trackingObject = objectItem.Value;
+
+				UE.Gizmos.color = UE.Color.red;
+				UE.Gizmos.DrawSphere(trackingObject.position, 0.05f);
+
+				UE.Gizmos.color = UE.Color.yellow;
+				foreach (var vertex in trackingObject.Footprint())
+				{
+					UE.Gizmos.DrawSphere(vertex + trackingObject.position, 0.015f);
+				}
+			}
+
+			UE.Gizmos.color = prevColor;
+		}
+	}
+
 	protected override void OnStart()
 	{
 		GetPluginParameters();
@@ -136,56 +158,66 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			{
 				var trackingObject = new ObjectTracking(trackingGameObject);
 
-				var colliders = gameObject.GetComponentsInChildren<UE.MeshCollider>();
-
-				var capsuleCollider = gameObject.GetComponentInChildren<UE.CapsuleCollider>();
+				var capsuleCollider = trackingGameObject.GetComponentInChildren<UE.CapsuleCollider>();
 				if (capsuleCollider != null)
 				{
-					// trackingObject.footprint.Add();
+					var radius = capsuleCollider.radius;
+
+					for (var theta = 0f; theta < UE.Mathf.PI * 2; theta += 0.17f)
+					{
+						var x = UE.Mathf.Cos(theta) * radius;
+ 						var z = UE.Mathf.Sin(theta) * radius;
+						trackingObject.Add2DFootprint(new UE.Vector3(x, 0, z));
+					}
+
+					trackingObject.size = capsuleCollider.bounds.size;
 				}
 				else
 				{
-					var meshColliders = gameObject.GetComponentsInChildren<UE.MeshCollider>();
-					if (meshColliders != null)
+					var meshFilters = trackingGameObject.GetComponentsInChildren<UE.MeshFilter>();
+					if (meshFilters != null)
 					{
-						var combine = new UE.CombineInstance[meshColliders.Length];
+						var combine = new UE.CombineInstance[meshFilters.Length];
 						for (var i = 0; i < combine.Length; i++)
 						{
-							combine[i].mesh = meshColliders[i].sharedMesh;
-							combine[i].transform = meshColliders[i].transform.localToWorldMatrix;
+							combine[i].mesh = meshFilters[i].sharedMesh;
+							combine[i].transform  = meshFilters[i].transform.localToWorldMatrix;
 						}
 
 						var combinedMesh = new UE.Mesh();
 						combinedMesh.CombineMeshes(combine, true, true);
 						combinedMesh.RecalculateBounds();
+						combinedMesh.RecalculateNormals();
+						combinedMesh.RecalculateTangents();
 						combinedMesh.Optimize();
 						// UE.Debug.Log(gameObject.name + ", " + combinedMesh.bounds.size + ", " + combinedMesh.bounds.extents+ ", " + combinedMesh.bounds.center);
+						// trackingGameObject.AddComponent<UE.MeshFilter>().sharedMesh = combinedMesh;
 
-						// if ()
-						// {
-						// }
+						// move offset and projection to 2D
+						var vertices = combinedMesh.vertices;
+						for (var i = 0; i < vertices.Length; i++)
+						{
+							vertices[i] -= combinedMesh.bounds.center;
+							vertices[i].y = 0;
+						}
+
+						var convexHullMeshData = DeviceHelper.SolveConvexHull2D(vertices);
+
+						const int lowLevel = 10;
+						var lowConvexHullMeshData = new UE.Vector3[convexHullMeshData.Length / lowLevel];
+						for (var i = 0; i < convexHullMeshData.Length; i += lowLevel)
+						{
+							// UE.Debug.Log(convexHullMeshData[i].ToString("F8"));
+							lowConvexHullMeshData[i / lowLevel] = convexHullMeshData[i];
+						}
+
+						trackingObject.Set2DFootprint(convexHullMeshData);
+
+						trackingObject.size = combinedMesh.bounds.size;
 					}
 				}
 
-				// {
-				// 	var cornerPoints = GetBoundCornerPointsByExtents(combinedMesh.bounds.extents);
-				// 	SetFootPrint(cornerPoints);
-				// }
-				// if (capsuleCollider != null)
-				// {
-				// 	var bounds = capsuleCollider.bounds;
-				// 	var cornerPoints = GetBoundCornerPointsByExtents(bounds.extents);
-				// 	SetFootPrint(cornerPoints);
-				// }
 				trackingObjectList.Add(trackingId, trackingObject);
-				UE.Debug.LogFormat("TrackingObject: {0}, trackingId: {1}, classId: {2}", target, trackingId, classId);
-
-				foreach (var footprint in trackingObject.footprint)
-				{
-					var point = new messages.Vector3d();
-					DeviceHelper.SetVector3d(point, footprint);
-					perception.Footprints.Add(point);
-				}
 			}
 
 			perceptions.Perceptions.Add(perception);
@@ -211,13 +243,8 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		for (var i = 0; i < trackingObjectList.Count; i++)
 		{
 			var trackingObject = trackingObjectList[i];
-			if (trackingObject.rootTransform != null)
-			{
-				var newPosition = trackingObject.rootTransform.position;
-				trackingObject.velocity = (newPosition - trackingObject.position) / UE.Time.deltaTime;
-				trackingObject.position = newPosition;
-				// UE.Debug.Log(trackingObject.name + ": " + trackingObject.Velocity + ", " + trackingObject.Position);
-			}
+			trackingObject.Update();
+
 
 			trackingObjectList[i] = trackingObject;
 		}
@@ -235,6 +262,14 @@ public class GroundTruthPlugin : CLOiSimPlugin
 					DeviceHelper.SetCurrentTime(perception.Header.Stamp);
 					DeviceHelper.SetVector3d(perception.Position, trackingObject.position);
 					DeviceHelper.SetVector3d(perception.Velocity, trackingObject.velocity);
+					DeviceHelper.SetVector3d(perception.Size, trackingObject.size);
+
+					foreach (var footprint in trackingObject.Footprint())
+					{
+						var point = new messages.Vector3d();
+						DeviceHelper.SetVector3d(point, footprint);
+						perception.Footprints.Add(point);
+					}
 				}
 			}
 

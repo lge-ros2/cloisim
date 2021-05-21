@@ -5,6 +5,7 @@
  */
 
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -134,5 +135,74 @@ public partial class DeviceHelper
 		{
 			return new Quaternion(-rotation.z, -rotation.x, rotation.y, -rotation.w);
 		}
+	}
+
+	public static Vector3[] SolveConvexHull2D(in Vector3[] points)
+	{
+		var result = new List<Vector3>();
+
+		int leftMostIndex = 0;
+		for (var i = 1; i < points.Length; i++)
+		{
+			if (points[leftMostIndex].x > points[i].x)
+			{
+				leftMostIndex = i;
+			}
+		}
+		result.Add(points[leftMostIndex]);
+
+		var collinearPoints = new List<Vector3>();
+		var current = points[leftMostIndex];
+
+		while (true)
+		{
+			var nextTarget = points[0];
+			for (int i = 1; i < points.Length; i++)
+			{
+				if (points[i] == current)
+				{
+					continue;
+				}
+
+				var x1 = current.x - nextTarget.x;
+				var x2 = current.x - points[i].x;
+				var z1 = current.z - nextTarget.z;
+				var z2 = current.z - points[i].z;
+
+				var val = (z2 * x1) - (z1 * x2);
+				if (val > 0)
+				{
+					nextTarget = points[i];
+					collinearPoints = new List<Vector3>();
+				}
+				else if (val == 0)
+				{
+					if (Vector3.Distance(current, nextTarget) < Vector3.Distance(current, points[i]))
+					{
+						collinearPoints.Add(nextTarget);
+						nextTarget = points[i];
+					}
+					else
+					{
+						collinearPoints.Add(points[i]);
+					}
+				}
+			}
+
+			foreach (var t in collinearPoints)
+			{
+				result.Add(t);
+			}
+
+			if (nextTarget == points[leftMostIndex])
+			{
+				break;
+			}
+
+			result.Add(nextTarget);
+			current = nextTarget;
+		}
+
+		return result.ToArray();
 	}
 }
