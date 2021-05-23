@@ -51,7 +51,7 @@ namespace SDF
 				return MeshLoader.CreateSkinObject(skin.filename);
 			}
 
-			public static void SetAnimation(in UE.GameObject targetObject, in SDF.Actor.Animation animation)
+			public static void SetAnimation(in UE.GameObject targetObject, in SDF.Actor.Animation animation, in bool autoStart, in bool loop)
 			{
 				if (targetObject == null)
 				{
@@ -67,18 +67,26 @@ namespace SDF
 				var skinnedMeshRenderer = targetObject.GetComponentInChildren<UE.SkinnedMeshRenderer>();
 				var relativePaths = GetBoneHierachy(skinnedMeshRenderer.rootBone);
 
-				var animationClips = MeshLoader.LoadAnimations(animation.filename, relativePaths, (float)animation.scale);
-				foreach (var animationClip in animationClips)
+				var animationClip = MeshLoader.LoadAnimation(animation.name, animation.filename, relativePaths, (float)animation.scale);
+				if (animationClip != null)
 				{
-					// UE.Debug.Log("animation clip name: " + animationClip.name);
+					// UE.Debug.Log("animation clip name: " + clipName);
 					animationComponent.AddClip(animationClip, animationClip.name);
 					animationComponent.clip = animationClip;
 				}
 
-				animationComponent.wrapMode = UE.WrapMode.Loop;
+				animationComponent.wrapMode = (loop) ? UE.WrapMode.Loop : UE.WrapMode.Once;
 				animationComponent.animatePhysics = false;
-				animationComponent.playAutomatically = true;
-				animationComponent.Play();
+				animationComponent.playAutomatically = autoStart;
+
+				if (autoStart)
+				{
+					animationComponent.Play();
+				}
+				else
+				{
+					animationComponent.Stop();
+				}
 			}
 		}
 	}

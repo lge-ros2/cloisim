@@ -42,9 +42,10 @@ namespace SDF
 
 				if (actor.animations != null)
 				{
+					var script = actor.script;
 					foreach (var animation in actor.animations)
 					{
-						Implement.Actor.SetAnimation(newActorObject, animation);
+						Implement.Actor.SetAnimation(newActorObject, animation, script.auto_start, script.loop);
 					}
 				}
 
