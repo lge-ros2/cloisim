@@ -5,13 +5,12 @@
  */
 
 using System.Collections.Generic;
+using System.Collections;
 using UE = UnityEngine;
 using messages = cloisim.msgs;
 
 public class GroundTruthPlugin : CLOiSimPlugin
 {
-	private const bool DrawObjectsInfo = false;
-
 	public struct ObjectTracking
 	{
 		private UE.Transform rootTransform;
@@ -20,7 +19,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		public UE.Quaternion rotation;
 		public UE.Vector3 size;
 		private List<UE.Vector3> footprint;
-		private List<UE.Vector3> rotatedFootprint;
+		private ArrayList rotatedFootprint;
 
 		public ObjectTracking(UE.GameObject gameObject)
 		{
@@ -30,7 +29,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			this.rotation = UE.Quaternion.identity;
 			this.size = UE.Vector3.zero;
 			this.footprint = new List<UE.Vector3>();
-			this.rotatedFootprint = new List<UE.Vector3>();
+			this.rotatedFootprint = new ArrayList();
 		}
 
 		public void Update()
@@ -42,27 +41,37 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				this.position = newPosition;
 				this.rotation = this.rootTransform.rotation;
 				// UE.Debug.Log(this.rootTransform.name + ": " + this.Velocity + ", " + this.Position);
+
+				lock(this.rotatedFootprint.SyncRoot)
+				{
+					for (var i = 0; i < this.footprint.Count; i++)
+					{
+						rotatedFootprint[i] = this.rotation * footprint[i];
+					}
+				}
 			}
 		}
 
-		public List<UE.Vector3> Footprint()
+		public UE.Vector3[] Footprint()
 		{
-			rotatedFootprint.Clear();
-			for (var i = 0; i < this.footprint.Count; i++)
+			UE.Vector3[] footprintList;
+			lock(this.rotatedFootprint.SyncRoot)
 			{
-				rotatedFootprint.Add(this.rotation * footprint[i]);
+				footprintList = (UE.Vector3[])rotatedFootprint.ToArray(typeof(UE.Vector3));
 			}
-			return this.rotatedFootprint;
+			return footprintList;
 		}
 
 		public void Set2DFootprint(in UE.Vector3[] vertices)
 		{
 			this.footprint.AddRange(vertices);
+			this.rotatedFootprint.AddRange(vertices);
 		}
 
 		public void Add2DFootprint(in UE.Vector3 vertex)
 		{
 			this.footprint.Add(vertex);
+			this.rotatedFootprint.Add(vertex);
 		}
 	}
 
@@ -106,29 +115,6 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		perceptions = new messages.PerceptionV();
 		perceptions.Header = new messages.Header();
 		perceptions.Header.Stamp = new messages.Time();
-	}
-
-	private void OnDrawGizmos()
-	{
-		if (DrawObjectsInfo)
-		{
-			var prevColor = UE.Gizmos.color;
-			foreach (var objectItem in trackingObjectList)
-			{
-				var trackingObject = objectItem.Value;
-
-				UE.Gizmos.color = UE.Color.red;
-				UE.Gizmos.DrawSphere(trackingObject.position, 0.05f);
-
-				UE.Gizmos.color = UE.Color.yellow;
-				foreach (var vertex in trackingObject.Footprint())
-				{
-					UE.Gizmos.DrawSphere(vertex + trackingObject.position, 0.015f);
-				}
-			}
-
-			UE.Gizmos.color = prevColor;
-		}
 	}
 
 	protected override void OnStart()
@@ -212,11 +198,14 @@ public class GroundTruthPlugin : CLOiSimPlugin
 							lowConvexHullMeshData[i / lowLevel] = convexHullMeshData[i];
 						}
 
-						trackingObject.Set2DFootprint(convexHullMeshData);
+						trackingObject.Set2DFootprint(lowConvexHullMeshData);
 
 						trackingObject.size = combinedMesh.bounds.size;
 					}
 				}
+
+				perception.Footprints.Capacity = trackingObject.Footprint().Length;
+
 
 				trackingObjectList.Add(trackingId, trackingObject);
 			}
@@ -239,14 +228,34 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		}
 	}
 
+#if UNITY_EDITOR
+	private void OnDrawGizmos()
+	{
+		var prevColor = UE.Gizmos.color;
+		foreach (var objectItem in trackingObjectList)
+		{
+			var trackingObject = objectItem.Value;
+
+			UE.Gizmos.color = UE.Color.red;
+			UE.Gizmos.DrawSphere(trackingObject.position, 0.05f);
+
+			UE.Gizmos.color = UE.Color.yellow;
+			foreach (var vertex in trackingObject.Footprint())
+			{
+				UE.Gizmos.DrawSphere(vertex + trackingObject.position, 0.015f);
+			}
+		}
+
+		UE.Gizmos.color = prevColor;
+	}
+#endif
+
 	void Update()
 	{
 		for (var i = 0; i < trackingObjectList.Count; i++)
 		{
 			var trackingObject = trackingObjectList[i];
 			trackingObject.Update();
-
-
 			trackingObjectList[i] = trackingObject;
 		}
 	}
@@ -265,11 +274,20 @@ public class GroundTruthPlugin : CLOiSimPlugin
 					DeviceHelper.SetVector3d(perception.Velocity, trackingObject.velocity);
 					DeviceHelper.SetVector3d(perception.Size, trackingObject.size);
 
-					foreach (var footprint in trackingObject.Footprint())
+					var footprint = trackingObject.Footprint();
+					for (var i = 0; i < footprint.Length; i++)
 					{
 						var point = new messages.Vector3d();
-						DeviceHelper.SetVector3d(point, footprint);
-						perception.Footprints.Add(point);
+						DeviceHelper.SetVector3d(point, footprint[i]);
+
+						if (i < perception.Footprints.Count)
+						{
+							perception.Footprints[i] = point;
+						}
+						else
+						{
+							perception.Footprints.Add(point);
+						}
 					}
 				}
 			}

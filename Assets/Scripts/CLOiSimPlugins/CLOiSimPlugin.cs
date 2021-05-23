@@ -186,7 +186,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 			DeregisterDevice(hashKey);
 		}
 
-		Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
+		// Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
 	}
 
 	public Pose GetPose()
