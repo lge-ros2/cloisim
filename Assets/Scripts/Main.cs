@@ -208,6 +208,7 @@ public class Main: MonoBehaviour
 
 		if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
 		{
+			simulationDisplay?.ClearLogMessage();
 			simulationDisplay?.SetEventMessage("Start to load world file: " + worldFileName);
 			StartCoroutine(LoadWorld());
 		}
@@ -240,7 +241,7 @@ public class Main: MonoBehaviour
 		}
 		else
 		{
-			var errorMessage = "Parsing failed!!!, failed to load world file: " + worldFileName;
+			var errorMessage = "Parsing failed!!! Failed to load world file: " + worldFileName;
 			Debug.LogError(errorMessage);
 			simulationDisplay?.SetErrorMessage(errorMessage);
 		}

@@ -13,9 +13,8 @@ public partial class SimulationDisplay : MonoBehaviour
 	private Clock clock = null;
 	private ObjectSpawning objectSpawning = null;
 	private CameraControl cameraControl = null;
-	private string eventMessage = string.Empty;
-	private StringBuilder sbTimeInfo = null;
-
+	private StringBuilder eventMessage = new StringBuilder();
+	private StringBuilder sbTimeInfo = new StringBuilder();
 
 	[Header("GUI properties")]
 	private const int labelFontSize = 14;
@@ -51,7 +50,6 @@ public partial class SimulationDisplay : MonoBehaviour
 		objectSpawning = coreObject.GetComponent<ObjectSpawning>();
 		cameraControl = GetComponentInChildren<CameraControl>();
 		clock = DeviceHelper.GetGlobalClock();
-		sbTimeInfo = new StringBuilder();
 
 		textureBackground = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
 		textureBackground.SetPixel(0, 0, new Color(0, 0, 0, 0.75f));
@@ -79,19 +77,19 @@ public partial class SimulationDisplay : MonoBehaviour
 
 	public void ClearLogMessage()
 	{
-		eventMessage = string.Empty;
+		eventMessage.Clear();
 	}
 
 	public void SetEventMessage(in string value)
 	{
 		logMessageColor = Color.green;
-		eventMessage = value;
+		eventMessage.AppendLine(value);
 	}
 
 	public void SetErrorMessage(in string value)
 	{
 		logMessageColor = Color.red;
-		eventMessage = value;
+		eventMessage.AppendLine(value);
 	}
 
 	private string GetTimeInfoString()
@@ -155,7 +153,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		// logging: error message or event message
 		rectLogMessage.y = Screen.height - (textHeight * 2) - bottomMargin;
 		style.normal.textColor = logMessageColor;
-		DrawLabelWithShadow(rectLogMessage, eventMessage, style);
+		DrawLabelWithShadow(rectLogMessage, eventMessage.ToString(), style);
 	}
 
 	void OnGUI()
