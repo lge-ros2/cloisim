@@ -185,6 +185,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 						}
 
 						var combinedMesh = new UE.Mesh();
+						combinedMesh.indexFormat = UE.Rendering.IndexFormat.UInt32;
 						combinedMesh.CombineMeshes(combine, true, true);
 						combinedMesh.RecalculateBounds();
 						combinedMesh.RecalculateNormals();
