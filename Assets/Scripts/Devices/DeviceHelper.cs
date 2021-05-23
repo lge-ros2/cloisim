@@ -64,7 +64,6 @@ public partial class DeviceHelper
 		}
 	}
 
-
 	public static string GetPartName(in GameObject targetObject)
 	{
 		return GetModelName(targetObject, true);

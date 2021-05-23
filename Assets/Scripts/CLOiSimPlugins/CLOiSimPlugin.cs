@@ -9,7 +9,7 @@ using UnityEngine;
 
 public interface ICLOiSimPlugin
 {
-	public enum Type {WORLD, GROUNDTRUTH, ELEVATOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
+	public enum Type {WORLD, GROUNDTRUTH, ELEVATOR, ACTOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
 	void SetPluginParameters(in SDF.Plugin node);
 	SDF.Plugin GetPluginParameters();
 	void Reset();
@@ -21,6 +21,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 	private static BridgeManager bridgeManager = null;
 
+	public string pluginName { get; set; } = string.Empty;
 	public string modelName { get; protected set; } = string.Empty;
 	public string partName { get; protected set; } = string.Empty;
 
@@ -28,7 +29,8 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 	private SDF.Plugin pluginParameters;
 
-	private List<string> hashKeyList = new List<string>();
+	private List<string> allocatedDeviceHashKeys = new List<string>();
+
 	protected Device targetDevice = null;
 
 	protected abstract void OnAwake();
@@ -54,7 +56,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 	{
 		if (bridgeManager.AllocateDevice(type.ToString(), modelName, partName, subPartName, out var hashKey, out port))
 		{
-			hashKeyList.Add(hashKey);
+			allocatedDeviceHashKeys.Add(hashKey);
 
 			hash = DeviceHelper.GetStringHashCode(hashKey);
 			// Debug.LogFormat("PrepareDevice - port({0}) hash({1})", port, hash);
@@ -181,7 +183,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 		DestroyTransporter();
 
-		foreach (var hashKey in hashKeyList)
+		foreach (var hashKey in allocatedDeviceHashKeys)
 		{
 			DeregisterDevice(hashKey);
 		}

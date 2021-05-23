@@ -126,9 +126,15 @@ public class BridgeManager : MonoBehaviour
 		return true;
 	}
 
+	private static string MakeHashKey(in string modelName, in string partName, in string subPartName)
+	{
+		return modelName + partName + subPartName;
+	}
+
 	public bool AllocateDevice(in string deviceType, in string modelName, in string partName, in string subPartName, out string hashKey, out ushort port)
 	{
-		hashKey = modelName + partName + subPartName;
+		hashKey = BridgeManager.MakeHashKey(modelName, partName, subPartName);
+
 		if (string.IsNullOrEmpty(hashKey))
 		{
 			Debug.LogError("Impossible empty hashKey");
