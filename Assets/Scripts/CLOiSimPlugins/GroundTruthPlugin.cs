@@ -148,8 +148,8 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				if (capsuleCollider != null)
 				{
 					var radius = capsuleCollider.radius;
-
-					for (var theta = 0f; theta < UE.Mathf.PI * 2; theta += 0.17f)
+					const float angleResolution = 0.34906585f;
+					for (var theta = 0f; theta < UE.Mathf.PI * 2; theta += angleResolution)
 					{
 						var x = UE.Mathf.Cos(theta) * radius;
  						var z = UE.Mathf.Sin(theta) * radius;
@@ -189,16 +189,24 @@ public class GroundTruthPlugin : CLOiSimPlugin
 						}
 
 						var convexHullMeshData = DeviceHelper.SolveConvexHull2D(vertices);
-
-						const int lowLevel = 10;
-						var lowConvexHullMeshData = new UE.Vector3[convexHullMeshData.Length / lowLevel];
-						for (var i = 0; i < convexHullMeshData.Length; i += lowLevel)
+						if (convexHullMeshData.Length > 0)
 						{
-							// UE.Debug.Log(convexHullMeshData[i].ToString("F8"));
-							lowConvexHullMeshData[i / lowLevel] = convexHullMeshData[i];
-						}
+							const float minimumDistance = 0.065f;
+							var lowConvexHullMeshData = new List<UE.Vector3>();
+							var prevPoint = convexHullMeshData[0];
+							for (var i = 1; i < convexHullMeshData.Length; i++)
+							{
+								if (UE.Vector3.Distance(prevPoint, convexHullMeshData[i]) > minimumDistance)
+								{
+									lowConvexHullMeshData.Add(convexHullMeshData[i]);
+									// UE.Debug.Log(convexHullMeshData[i].ToString("F8"));
+									prevPoint = convexHullMeshData[i];
+								}
+							}
+							// UE.Debug.Log("convexhull footprint count: " + convexHullMeshData.Length + " => low: " + lowConvexHullMeshData.Count);
 
-						trackingObject.Set2DFootprint(lowConvexHullMeshData);
+							trackingObject.Set2DFootprint(lowConvexHullMeshData.ToArray());
+						}
 
 						trackingObject.size = combinedMesh.bounds.size;
 					}

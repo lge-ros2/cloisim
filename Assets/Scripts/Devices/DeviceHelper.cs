@@ -6,6 +6,7 @@
 
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -203,6 +204,8 @@ public partial class DeviceHelper
 			current = nextTarget;
 		}
 
-		return result.ToArray();
+		var sortedList = result.OrderBy(point => Mathf.Atan2(point.z, point.x));
+
+		return sortedList.ToArray();
 	}
 }
