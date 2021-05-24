@@ -119,8 +119,6 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		GetPluginParameters();
-
 		var publishFrequency = GetPluginParameters().GetValue<float>("publish_frequency", 1);
 		sleepPeriodForPublishInMilliseconds = (int)(1f / publishFrequency * 1000f);
 		GetPluginParameters().GetValues<string>("list/target", out var targetList);
