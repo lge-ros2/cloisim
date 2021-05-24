@@ -9,6 +9,7 @@ using System.Text;
 using UnityEngine;
 using WebSocketSharp.Server;
 
+[DefaultExecutionOrder(100)]
 public class SimulationService : MonoBehaviour
 {
 	public const string SUCCESS = "ok";

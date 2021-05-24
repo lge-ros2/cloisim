@@ -10,6 +10,7 @@ using System;
 using UnityEngine.SceneManagement;
 using UnityEngine;
 
+[DefaultExecutionOrder(30)]
 public class Main: MonoBehaviour
 {
 	[Header("Block Loading SDF")]
