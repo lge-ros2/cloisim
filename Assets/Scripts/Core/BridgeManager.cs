@@ -10,7 +10,7 @@ using System.Linq;
 using System.Net;
 using UnityEngine;
 
-[DefaultExecutionOrder(10)]
+[DefaultExecutionOrder(35)]
 public class BridgeManager : MonoBehaviour
 {
 	private const ushort MinPortRange = 49152;

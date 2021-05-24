@@ -6,7 +6,6 @@
 
 using System.Collections.Generic;
 using System.Collections;
-using System.Linq;
 using System;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
@@ -127,10 +126,9 @@ namespace SensorDevices
 		{
 			// Debug.LogWarning("Destroy");
 			// Important!! Native arrays must be disposed manually.
-			for (var i = 0; i < readbacks.Count; i++)
+			foreach (var readback in readbacks)
 			{
-				var item = readbacks.ElementAt(i);
-				item.Key.WaitForCompletion();
+				readback.Key.WaitForCompletion();
 			}
 
 			base.OnDestroy();
