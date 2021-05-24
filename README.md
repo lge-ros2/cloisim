@@ -10,7 +10,7 @@ This project consists of
 
 - [SDF](http://sdformat.org/spec?ver=1.7) Parser for C#
 - [SDF](http://sdformat.org/spec?ver=1.7) Robot Implementation for Unity -> **Visual / Collision / Sensor / Physics for joints**
-- [SDF](http://sdformat.org/spec?ver=1.7) Plugins for Unity
+- [SDF](http://sdformat.org/spec?ver=1.7) Plugins for Unity3D
 - UI modules -> Module for on-screen information
 - Network modules -> Module for transporting sensor data or control signal
 - Web service -> Module for controling simulation through a web interface
@@ -19,6 +19,8 @@ This project consists of
 [video link](https://user-images.githubusercontent.com/21001946/104274159-96d84f80-54e3-11eb-9975-9d4bbbbdd586.mp4)
 
 ## Features
+
+### Sensors
 
 The current release includes the features only for marked items in the list below.
 Other sensor models are work in progress.
@@ -58,6 +60,35 @@ Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material'
 
 ![cloisim_lidar_ros](https://user-images.githubusercontent.com/21001946/107105540-42b65600-686a-11eb-8797-7d937b108c11.gif)
 [video link](https://user-images.githubusercontent.com/21001946/103972179-d0415000-51af-11eb-824b-3d77051664d5.mp4)
+
+### Sensor Plugins
+
+It called 'CLOiSimPlugin'. And below plugins could be utilized through write an element on SDF.
+
+Plugin name should be written in filename attribute and it's case sensitive.
+
+For example,
+
+```xml
+<plugin name="actor_plugin" filename="libActorPlugin.so" />
+```
+
+more details in [here](https://github.com/lge-ros2/cloisim/tree/main/Assets/Scripts/CLOiSimPlugins)).
+
+#### Model Specific
+
+- LaserPlugin: help to publish 2D or 3D lidar data
+- CameraPlugin: help to publish 2D color image data or depth image data
+- MltiCameraPlugin: help to publish multiple color image data
+- RealSensePlugin:
+- MicomPlugin:
+- GpsPlugin:
+- ActorPlugin:
+
+#### World Specific
+
+- ElevatorSystemPlugin:
+- GroundTruthPlugin:
 
 ## How it works
 
