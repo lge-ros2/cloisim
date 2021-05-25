@@ -1975,6 +1975,7 @@ GameObject:
   - component: {fileID: 683297086}
   - component: {fileID: 683297090}
   - component: {fileID: 683297089}
+  - component: {fileID: 683297088}
   m_Layer: 5
   m_Name: UI
   m_TagString: Untagged
@@ -2032,6 +2033,18 @@ MonoBehaviour:
   m_FirstSelected: {fileID: 0}
   m_sendNavigationEvents: 1
   m_DragThreshold: 10
+--- !u!114 &683297088
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 683297084}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f36ccde904b2caf1a9710801807136b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &683297089
 MonoBehaviour:
   m_ObjectHideFlags: 0

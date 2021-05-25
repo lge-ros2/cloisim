@@ -5,7 +5,6 @@
  */
 
 using System.Collections.Generic;
-using System.Collections;
 using UnityEngine;
 
 [DefaultExecutionOrder(600)]
