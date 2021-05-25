@@ -23,8 +23,11 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		// The center of the build
 		private Vector3 m_BoundCenter;
 
-		public NavMeshTrack(in Vector3 boundCenter, in Vector3 boundSize)
+		private NavMeshSourceTag m_NavMeshSourceTag;
+
+		public NavMeshTrack(in NavMeshSourceTag navMeshSourceTag, in Vector3 boundCenter, in Vector3 boundSize)
 		{
+			m_NavMeshSourceTag = navMeshSourceTag;
 			m_BoundCenter = boundCenter;
 			m_BoundSize = boundSize;
 		}
@@ -43,6 +46,11 @@ public class WorldNavMeshBuilder : MonoBehaviour
 			return new Bounds(Quantize(m_BoundCenter, 0.1f * m_BoundSize), m_BoundSize);
 		}
 
+		public void Collect(ref List<NavMeshBuildSource> sources)
+		{
+			m_NavMeshSourceTag.Collect(ref sources);
+		}
+
 		public void Draw()
 		{
 			Gizmos.color = Color.yellow;
@@ -54,14 +62,15 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		}
 	}
 
-	private static List<NavMeshTrack> m_NavMeshTracks = new List<NavMeshTrack>();
+	private List<NavMeshTrack> m_NavMeshTracks = new List<NavMeshTrack>();
 
 	private NavMeshData m_NavMesh;
 	private AsyncOperation m_Operation;
 	private NavMeshDataInstance m_Instance;
+	private NavMeshBuildSettings m_defaultBuildSettings;
 	private List<NavMeshBuildSource> m_Sources = new List<NavMeshBuildSource>();
 
-	public static void AddNavMeshTracks(in Transform transform)
+	public void AddNavMeshTracks(in Transform transform, in NavMeshSourceTag navMeshSourceTag)
 	{
 		var bounds = new Bounds(transform.position, Vector3.zero);
 		var renderers = transform.GetComponentsInChildren<Renderer>();
@@ -72,7 +81,7 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		}
 		// Debug.Log("Final: " + bounds.center + ", " + bounds.size);
 
-		var navMeshTrack = new NavMeshTrack(bounds.center, bounds.size);
+		var navMeshTrack = new NavMeshTrack(navMeshSourceTag, bounds.center, bounds.size);
 		m_NavMeshTracks.Add(navMeshTrack);
 	}
 
@@ -90,6 +99,7 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		// Construct and add navmesh
 		m_NavMesh = new NavMeshData();
 		m_Instance = NavMesh.AddNavMeshData(m_NavMesh);
+		m_defaultBuildSettings = NavMesh.GetSettingsByID(0);
 
 		UpdateNavMesh(false);
 	}
@@ -100,27 +110,23 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		m_Instance.Remove();
 	}
 
-
-	void UpdateNavMesh(bool asyncUpdate = false)
+	public void UpdateNavMesh(bool asyncUpdate = false)
 	{
-		NavMeshSourceTag.Collect(ref m_Sources);
-		var defaultBuildSettings = NavMesh.GetSettingsByID(0);
-
 		foreach (var navMeshTrack in m_NavMeshTracks)
 		{
+			navMeshTrack.Collect(ref m_Sources);
 			var bounds = navMeshTrack.QuantizedBounds();
 
 			if (asyncUpdate)
 			{
-				m_Operation = NavMeshBuilder.UpdateNavMeshDataAsync(m_NavMesh, defaultBuildSettings, m_Sources, bounds);
+				m_Operation = NavMeshBuilder.UpdateNavMeshDataAsync(m_NavMesh, m_defaultBuildSettings, m_Sources, bounds);
 			}
 			else
 			{
-				NavMeshBuilder.UpdateNavMeshData(m_NavMesh, defaultBuildSettings, m_Sources, bounds);
+				NavMeshBuilder.UpdateNavMeshData(m_NavMesh, m_defaultBuildSettings, m_Sources, bounds);
 			}
 		}
 	}
-
 
 	void OnDrawGizmosSelected()
 	{
