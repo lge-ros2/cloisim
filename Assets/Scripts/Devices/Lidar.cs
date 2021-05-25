@@ -122,18 +122,6 @@ namespace SensorDevices
 			}
 		}
 
-		new void OnDestroy()
-		{
-			// Debug.LogWarning("Destroy");
-			// Important!! Native arrays must be disposed manually.
-			foreach (var readback in readbacks)
-			{
-				readback.Key.WaitForCompletion();
-			}
-
-			base.OnDestroy();
-		}
-
 		protected override void InitializeMessages()
 		{
 			laserScanStamped = new messages.LaserScanStamped();
