@@ -77,6 +77,12 @@ namespace SDF
 				return null;
 			}
 
+			protected virtual System.Object ImportActor(in Actor actor)
+			{
+				PrintNotImported(MethodBase.GetCurrentMethod().Name, actor.Name);
+				return null;
+			}
+
 			protected virtual void AfterImportModel(in Model model, in Object targetObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, model.Name);
@@ -90,11 +96,6 @@ namespace SDF
 			protected virtual void ImportMaterial(in Material sdfMaterial, in Object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, sdfMaterial.Name);
-			}
-
-			protected virtual void ImportActor(in Actor actor)
-			{
-				PrintNotImported(MethodBase.GetCurrentMethod().Name, actor.Name);
 			}
 
 			protected virtual void ImportLight(in Light light)
@@ -199,7 +200,9 @@ namespace SDF
 			{
 				foreach (var item in items)
 				{
-					ImportActor(item);
+					var createdObject = ImportActor(item);
+
+					ImportPlugins(item.GetPlugins(), createdObject);
 				}
 			}
 

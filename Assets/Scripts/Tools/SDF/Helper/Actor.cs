@@ -11,6 +11,7 @@ namespace SDF
 {
 	namespace Helper
 	{
+		[UE.DefaultExecutionOrder(590)]
 		public class Actor : Base
 		{
 			private struct waypointToward
@@ -34,6 +35,9 @@ namespace SDF
 			public bool isStatic = false;
 			private SDF.Actor.Script script = null;
 
+			private UE.CapsuleCollider capsuleCollider = null;
+			private UE.SkinnedMeshRenderer skinMeshRenderer = null;
+
 			public bool HasWayPoints => (script.trajectories != null && script.trajectories.Count > 0);
 
 			new public void Reset()
@@ -51,6 +55,20 @@ namespace SDF
 				if (script != null && script.auto_start && HasWayPoints)
 				{
 					StartWaypointFollowing();
+				}
+
+				capsuleCollider = GetComponentInChildren<UE.CapsuleCollider>();
+				skinMeshRenderer = GetComponentInChildren<UE.SkinnedMeshRenderer>();
+
+				if (capsuleCollider != null && skinMeshRenderer != null)
+				{
+					const float sizeRatio = 0.8f;
+					var bounds = skinMeshRenderer.localBounds;
+					capsuleCollider.radius = UE.Mathf.Min(bounds.extents.x, bounds.extents.z) * sizeRatio;;
+					capsuleCollider.height = bounds.size.y;
+					var center = capsuleCollider.center;
+					center.y = bounds.extents.y;
+					capsuleCollider.center = center;
 				}
 			}
 
