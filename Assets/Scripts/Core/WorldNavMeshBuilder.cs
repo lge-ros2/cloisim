@@ -16,17 +16,16 @@ public class WorldNavMeshBuilder : MonoBehaviour
 {
 	public class NavMeshTrack
 	{
-		// The center of the build
-		private Transform m_Tracked;
 
 		// The size of the build bounds
-		public Vector3 m_BoundSize = Vector3.zero;
+		private Vector3 m_BoundSize = Vector3.zero;
 
-		private Vector3 Center => m_Tracked.position;
+		// The center of the build
+		private Vector3 m_BoundCenter;
 
-		public NavMeshTrack(in Transform transform, in Vector3 boundSize)
+		public NavMeshTrack(in Vector3 boundCenter, in Vector3 boundSize)
 		{
-			m_Tracked = transform;
+			m_BoundCenter = boundCenter;
 			m_BoundSize = boundSize;
 		}
 
@@ -41,7 +40,7 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		public Bounds QuantizedBounds()
 		{
 			// Quantize the bounds to update only when theres a 10% change in size
-			return new Bounds(Quantize(Center, 0.1f * m_BoundSize), m_BoundSize);
+			return new Bounds(Quantize(m_BoundCenter, 0.1f * m_BoundSize), m_BoundSize);
 		}
 
 		public void Draw()
@@ -51,16 +50,31 @@ public class WorldNavMeshBuilder : MonoBehaviour
 			Gizmos.DrawWireCube(bounds.center, bounds.size);
 
 			Gizmos.color = Color.green;
-			Gizmos.DrawWireCube(Center, m_BoundSize);
+			Gizmos.DrawWireCube(m_BoundCenter, m_BoundSize);
 		}
 	}
 
-	private List<NavMeshTrack> m_NavMeshTracks = new List<NavMeshTrack>();
+	private static List<NavMeshTrack> m_NavMeshTracks = new List<NavMeshTrack>();
 
 	private NavMeshData m_NavMesh;
 	private AsyncOperation m_Operation;
 	private NavMeshDataInstance m_Instance;
 	private List<NavMeshBuildSource> m_Sources = new List<NavMeshBuildSource>();
+
+	public static void AddNavMeshTracks(in Transform transform)
+	{
+		var bounds = new Bounds(transform.position, Vector3.zero);
+		var renderers = transform.GetComponentsInChildren<Renderer>();
+		foreach (var renderer in renderers)
+		{
+			// Debug.Log(renderer.bounds.center + ", " + renderer.bounds.size);
+			bounds.Encapsulate(renderer.bounds);
+		}
+		// Debug.Log("Final: " + bounds.center + ", " + bounds.size);
+
+		var navMeshTrack = new NavMeshTrack(bounds.center, bounds.size);
+		m_NavMeshTracks.Add(navMeshTrack);
+	}
 
 	IEnumerator Start()
 	{
@@ -73,7 +87,6 @@ public class WorldNavMeshBuilder : MonoBehaviour
 
 	void OnEnable()
 	{
-		Debug.Log("enable " + typeof(WorldNavMeshBuilder));
 		// Construct and add navmesh
 		m_NavMesh = new NavMeshData();
 		m_Instance = NavMesh.AddNavMeshData(m_NavMesh);
@@ -86,6 +99,7 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		// Unload navmesh and clear handle
 		m_Instance.Remove();
 	}
+
 
 	void UpdateNavMesh(bool asyncUpdate = false)
 	{
