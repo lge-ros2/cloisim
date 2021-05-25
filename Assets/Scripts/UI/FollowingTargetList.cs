@@ -7,6 +7,7 @@
 using UnityEngine;
 using TMPro;
 
+[DefaultExecutionOrder(45)]
 public class FollowingTargetList : MonoBehaviour
 {
 	private TMP_Dropdown dropdown = null;
@@ -38,14 +39,9 @@ public class FollowingTargetList : MonoBehaviour
 	{
 		var selected = dropdown.options[choice];
 
-		if (choice > 0 && followingCamera != null)
-		{
-			followingCamera.SetTargetObject(selected.text);
-		}
-		else
-		{
-			followingCamera.SetTargetObject(null);
-		}
+		var target = (choice > 0 && followingCamera != null) ? selected.text : null;
+
+		followingCamera.SetTargetObject(target);
 	}
 
 	public void UpdateList(in int selectIndex = 0)
