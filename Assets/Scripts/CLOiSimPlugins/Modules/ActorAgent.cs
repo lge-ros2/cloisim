@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -13,15 +14,24 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class ActorAgent : MonoBehaviour
 {
+	public enum Type {STANDBY, MOVING};
+
+	private Type currentType = Type.STANDBY;
+
 	private NavMeshAgent m_Agent;
+	private Animation m_Animation;
 
 	public float goalTolerance = 0.1f;
 
 	public float m_MaxTargetRange = 10f;
 
-	private bool isRandomWalking = false;
+	private bool isRandomWalking = true;
 
-	private Vector3 m_TargetDestination = Vector3.zero;
+	private Dictionary<Type, string> motionTypeAnimations = new Dictionary<Type, string>()
+	{
+		{Type.STANDBY, ""},
+		{Type.MOVING, ""}
+	};
 
 	public bool RandomWalking
 	{
@@ -29,27 +39,115 @@ public class ActorAgent : MonoBehaviour
 		set => isRandomWalking = value;
 	}
 
-	void Start()
+	void Awake()
 	{
 		m_Agent = GetComponent<NavMeshAgent>();
+		m_Animation = GetComponent<Animation>();
+		m_Agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+	}
+
+	void Start()
+	{
+		var capsuleCollider = gameObject.GetComponent<CapsuleCollider>();
+
+		if (capsuleCollider)
+		{
+			SetObstacleSize(capsuleCollider.radius, capsuleCollider.height);
+		}
+
+		Stop();
 	}
 
 	void LateUpdate()
 	{
-		if (m_Agent.pathPending || m_Agent.remainingDistance > goalTolerance)
+		if (m_Agent == null || m_Agent.pathStatus.Equals(NavMeshPathStatus.PathInvalid))
 		{
+			Debug.LogWarning("agent is null or path status is invalid");
 			return;
 		}
-		else
+
+		if (!m_Agent.pathPending)
 		{
-			if (isRandomWalking)
+			if (m_Agent.remainingDistance < goalTolerance)
 			{
-				m_Agent.destination = Random.Range(0, m_MaxTargetRange) * Random.insideUnitCircle;
+				// Debug.LogWarning("remainingDistance:" + m_Agent.remainingDistance);
+				Stop();
+
+				if (isRandomWalking)
+				{
+					var nextTarget = m_MaxTargetRange * Random.insideUnitCircle;
+					// Debug.Log("next random moving: " + nextTarget.ToString("F7"));
+					AssignTargetDestination(nextTarget);
+				}
 			}
-			else
+		}
+		// else
+		// {
+		// 	Debug.LogWarning("pathPending");
+		// }
+	}
+
+	public void Stop()
+	{
+		// Debug.Log("stop");
+		m_Agent.isStopped = true;
+		m_Agent.SetDestination(transform.position);
+		SetAnimationMotion(Type.STANDBY);
+	}
+
+	public void AssignTargetDestination(in Vector3 point)
+	{
+	 	Stop();
+		SetAnimationMotion(Type.MOVING);
+		m_Agent.isStopped = false;
+		m_Agent.SetDestination(point);
+	}
+
+	public void SetMotionType(in Type type, in string animationName)
+	{
+		if (motionTypeAnimations.ContainsKey(type))
+		{
+			motionTypeAnimations[type] = animationName;
+		}
+	}
+
+	private void SetAnimationMotion(in Type motionType)
+	{
+		if (m_Animation)
+		{
+			var animationName = motionTypeAnimations[motionType];
+
+			if (currentType != motionType)
 			{
-				m_Agent.destination = m_TargetDestination;
+				var targetClip = m_Animation.GetClip(animationName);
+				if (targetClip != null)
+				{
+					m_Animation.clip = targetClip;
+					m_Animation.Stop();
+					m_Animation.Play();
+				}
+
+				currentType = motionType;
 			}
+		}
+	}
+
+	public void SetObstacleSize(in float radius, in float height)
+	{
+		if (m_Agent)
+		{
+			m_Agent.radius = radius;
+			m_Agent.height = height;
+		}
+	}
+
+	public void SetSteering(in float speed, in float angularSpeed, in float acceleration)
+	{
+		if (m_Agent)
+		{
+			m_Agent.speed = speed;
+			m_Agent.angularSpeed = angularSpeed;
+			m_Agent.acceleration = acceleration;
 		}
 	}
 }

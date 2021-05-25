@@ -14,7 +14,7 @@ using System.Collections.Generic;
 public class NavMeshSourceTag : MonoBehaviour
 {
 	// Global containers for all active mesh/terrain tags
-	public static List<MeshFilter> m_meshFilters = new List<MeshFilter>();
+	private List<MeshFilter> m_meshFilters = new List<MeshFilter>();
 
 	void OnEnable()
 	{
@@ -41,7 +41,7 @@ public class NavMeshSourceTag : MonoBehaviour
 	}
 
 	// Collect all the navmesh build sources for enabled objects tagged by this component
-	public static void Collect(ref List<NavMeshBuildSource> sources)
+	public void Collect(ref List<NavMeshBuildSource> sources)
 	{
 		sources.Clear();
 
