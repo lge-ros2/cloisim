@@ -40,13 +40,23 @@ public partial class DeviceHelper
 	{
 		try
 		{
-			var nextObject = targetObject.GetComponentInParent<SDF.Helper.Model>();
+			var nextObject = targetObject.GetComponentInParent<SDF.Helper.Model>() as SDF.Helper.Base;
+
+			if (nextObject == null)
+			{
+				nextObject = targetObject.GetComponentInParent<SDF.Helper.Actor>() as SDF.Helper.Base;
+			}
+
+			if (nextObject == null)
+			{
+				return string.Empty;
+			}
 
 			if (searchOnlyOneDepth == false)
 			{
 				while (!nextObject.transform.parent.Equals(nextObject.transform.root))
 				{
-					nextObject = nextObject.transform.parent.GetComponentInParent<SDF.Helper.Model>();
+					nextObject = nextObject.transform.parent.GetComponentInParent<SDF.Helper.Base>();
 
 					if (nextObject == null)
 					{
