@@ -151,6 +151,11 @@ public partial class DeviceHelper
 	{
 		var result = new List<Vector3>();
 
+		if (points.Length == 0)
+		{
+			return result.ToArray();
+		}
+
 		int leftMostIndex = 0;
 		for (var i = 1; i < points.Length; i++)
 		{
