@@ -81,14 +81,8 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 		}
 	}
 
-	protected override void HandleRequestMessage(in string requestType, in string requestValue,  ref DeviceMessage response)
+	protected override void HandleRequestMessage(in string requestType, in messages.Any requestValue, ref DeviceMessage response)
 	{
-		if (response == null)
-		{
-			Debug.Log("DeviceMessage for response is null");
-			return;
-		}
-
 		switch (requestType)
 		{
 			case "request_ros2":
@@ -98,7 +92,8 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 				break;
 
 			default:
-				HandleCustomRequestMessage(requestType, requestValue, ref response);
+				var value = (requestValue == null) ? string.Empty : requestValue.StringValue;
+				HandleCustomRequestMessage(requestType, value, ref response);
 				break;
 		}
 	}

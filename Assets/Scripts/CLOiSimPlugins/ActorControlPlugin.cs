@@ -7,6 +7,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
+using messages = cloisim.msgs;
 
 public class ActorControlPlugin : CLOiSimPlugin
 {
@@ -21,32 +22,32 @@ public class ActorControlPlugin : CLOiSimPlugin
 	protected override void OnStart()
 	{
 		// update actorAgentlist
+		foreach (var actorAgent in Main.WorldRoot.GetComponentsInChildren<ActorAgent>())
+		{
+			if (!actorAgent.RandomWalking)
+			{
+				actorAgentList.Add(actorAgent.name, actorAgent);
+			}
+		}
 
 		RegisterServiceDevice("Control");
-		AddThread(ControlThread);
+		AddThread(RequestThread);
 	}
 
-	private void ControlThread()
+	protected override void HandleRequestMessage(in string requestType, in messages.Any requestValue, ref DeviceMessage response)
 	{
-		var dmResponse = new DeviceMessage();
-		while (IsRunningThread)
-		{
-			var receivedBuffer = ReceiveRequest();
-			var requestMessage = ParsingRequestMessage(receivedBuffer);
+		// switch (requestType)
+		// {
+		// 	case "request_ros2":
+		// 		var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name");
+		// 		GetPluginParameters().GetValues<string>("ros2/frame_id", out var frameIdList);
+		// 		SetROS2CommonInfoResponse(ref response, topic_name, frameIdList);
+		// 		break;
 
-			if (requestMessage != null)
-			{
-				var targetName = requestMessage.Name;
-
-				if (requestMessage.Value != null)
-				{
-					var requesteValue = requestMessage.Value.Vector3dValue;
-					// HandleRequestMessage(requestMessage.Name, requesteValue, ref dmResponse);
-				}
-				SendResponse(dmResponse);
-			}
-
-			WaitThread();
-		}
+		// 	default:
+		// 		var value = requestValue.StringValue;
+		// 		HandleCustomRequestMessage(requestType, value, ref response);
+		// 		break;
+		// }
 	}
 }

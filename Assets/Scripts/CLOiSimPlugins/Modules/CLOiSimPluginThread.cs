@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using UnityEngine;
 using messages = cloisim.msgs;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -124,8 +125,14 @@ public class CLOiSimPluginThread : DeviceTransporter
 
 			if (requestMessage != null)
 			{
-				var requesteValue = (requestMessage.Value == null) ? string.Empty : requestMessage.Value.StringValue;
-				HandleRequestMessage(requestMessage.Name, requesteValue, ref dmResponse);
+				if (dmResponse != null)
+				{
+					HandleRequestMessage(requestMessage.Name, requestMessage.Value, ref dmResponse);
+				}
+				else
+				{
+					Debug.Log("DeviceMessage for response is null");
+				}
 				SendResponse(dmResponse);
 			}
 
@@ -133,7 +140,7 @@ public class CLOiSimPluginThread : DeviceTransporter
 		}
 	}
 
-	protected virtual void HandleRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response) { }
+	protected virtual void HandleRequestMessage(in string requestType, in messages.Any requestValue, ref DeviceMessage response) { }
 
 	protected static messages.Param ParsingRequestMessage(in byte[] infoBuffer)
 	{
