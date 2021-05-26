@@ -4,54 +4,102 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.IO;
+using ProtoBuf;
+using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
 public class LaserPlugin : CLOiSimPlugin
 {
+	private SensorDevices.Lidar lidar = null;
+
+	private string hashServiceKey = string.Empty;
+	private string hashKey = string.Empty;
+
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.LASER;
+		type = Type.LASER;
 		partName = DeviceHelper.GetPartName(gameObject);
 
-		targetDevice = gameObject.GetComponent<SensorDevices.Lidar>();
+		lidar = gameObject.GetComponent<SensorDevices.Lidar>();
+		lidar.SetPluginParameter(parameters);
 	}
 
 	protected override void OnStart()
 	{
-		targetDevice.SetPluginParameters(GetPluginParameters());
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 
-		AddThread(RequestThread);
-		AddThread(SenderThread, targetDevice);
+		AddThread(Response);
+		AddThread(Sender);
 	}
 
-	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
+	private void Sender()
 	{
-		switch (requestType)
+		var sw = new Stopwatch();
+		while (IsRunningThread)
 		{
-			case "request_output_type":
-				SetOutputTypeResponse(ref response);
-				break;
-
-			case "request_transform":
-				var devicePose = targetDevice.GetPose();
-				SetTransformInfoResponse(ref response, devicePose);
-				break;
-
-			default:
-				break;
+			if (lidar != null)
+			{
+				var datastreamToSend = lidar.PopData();
+				sw.Restart();
+				Publish(datastreamToSend);
+				sw.Stop();
+				lidar.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+			}
 		}
 	}
 
-	private void SetOutputTypeResponse(ref DeviceMessage msInfo)
+	private void Response()
 	{
-		var output_type = GetPluginParameters().GetValue<string>("output_type", "LaserScan");
+		while (IsRunningThread)
+		{
+			var receivedBuffer = ReceiveRequest();
+
+			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
+
+			if (requestMessage != null)
+			{
+				var device = lidar as Device;
+
+				switch (requestMessage.Name)
+				{
+					case "request_ros2":
+						var topic_name = parameters.GetValue<string>("ros2/topic_name");
+						var frame_id = parameters.GetValue<string>("ros2/frame_id");
+						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
+						break;
+
+					case "request_output_type":
+						SetOutputTypeResponse(ref msForInfoResponse);
+						break;
+
+					case "request_transform":
+						var devicePose = device.GetPose();
+
+						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
+						break;
+
+					default:
+						break;
+				}
+
+				SendResponse(msForInfoResponse);
+			}
+
+			ThreadWait();
+		}
+	}
+
+	private void SetOutputTypeResponse(ref MemoryStream msInfo)
+	{
+		var output_type = parameters.GetValue<string>("output_type", "LaserScan");
 		var outputTypeInfo = new messages.Param();
 		outputTypeInfo.Name = "output_type";
 		outputTypeInfo.Value = new Any { Type = Any.ValueType.String, StringValue = output_type };
 
-		msInfo.SetMessage<messages.Param>(outputTypeInfo);
+		ClearMemoryStream(ref msInfo);
+		Serializer.Serialize<messages.Param>(msInfo, outputTypeInfo);
 	}
 }

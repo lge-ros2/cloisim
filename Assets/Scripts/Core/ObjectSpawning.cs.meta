@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<< HEAD:Assets/Scripts/Core/ObjectSpawning.cs.meta
 guid: 9254e22a9efa570f19d809e24e838005
+=======
+guid: d9c9f03b6dda7067f8bbe5424519c5b6
+>>>>>>> main-to-develop:Assets/Scripts/Tools/ObjectSpawning.cs.meta
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2

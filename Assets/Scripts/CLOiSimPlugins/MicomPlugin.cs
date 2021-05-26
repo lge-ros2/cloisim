@@ -4,63 +4,121 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.IO;
+using ProtoBuf;
+using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
 public class MicomPlugin : CLOiSimPlugin
 {
+	private MicomInput micomInput = null;
+	private MicomSensor micomSensor = null;
+
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.MICOM;
-		targetDevice = gameObject.AddComponent<Micom>();
+		type = Type.MICOM;
+
+		micomSensor = gameObject.AddComponent<MicomSensor>();
+		micomSensor.SetPluginParameter(parameters);
+		micomInput = gameObject.AddComponent<MicomInput>();
+		micomInput.SetMicomSensor(micomSensor);
 	}
 
 	protected override void OnStart()
 	{
-		targetDevice.SetPluginParameters(GetPluginParameters());
-
-		var debugging = GetPluginParameters().GetValue<bool>("debug", false);
-		targetDevice.EnableDebugging = debugging;
+		var debugging = parameters.GetValue<bool>("debug", false);
+		micomInput.EnableDebugging = debugging;
 
 		RegisterServiceDevice("Info");
-		RegisterRxDevice("Rx");
 		RegisterTxDevice("Tx");
+		RegisterRxDevice("Rx");
 
-		AddThread(RequestThread);
-		AddThread(SenderThread, (targetDevice as Micom).GetSensor());
-		AddThread(ReceiverThread, (targetDevice as Micom).GetInput());
+		AddThread(Receiver);
+		AddThread(Sender);
+		AddThread(Response);
 	}
 
 	protected override void OnReset()
 	{
-		targetDevice.Reset();
+		micomSensor.Reset();
+		micomInput.Reset();
 	}
 
-	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
+	private void Sender()
 	{
-		switch (requestType)
+		var sw = new Stopwatch();
+		while (IsRunningThread)
 		{
-			case "request_transform_name":
-				SetTransformNameResponse(ref response);
-				break;
-
-			case "request_transform":
-				var micomSensor = (targetDevice as Micom).GetSensor();
-				var devicePose = micomSensor.GetPartsPose(requestValue);
-				SetTransformInfoResponse(ref response, devicePose);
-				break;
-
-			case "reset_odometry":
-				targetDevice.Reset();
-				SetEmptyResponse(ref response);
-				break;
-
-			default:
-				break;
+			if (micomSensor != null)
+			{
+				var datastreamToSend = micomSensor.PopData();
+				sw.Restart();
+				Publish(datastreamToSend);
+				sw.Stop();
+				micomSensor.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+			}
 		}
 	}
 
-	private void SetTransformNameResponse(ref DeviceMessage msRos2Info)
+	private void Receiver()
+	{
+		while (IsRunningThread)
+		{
+			if (micomInput != null)
+			{
+				var receivedData = Subscribe();
+				micomInput.SetDataStream(receivedData);
+			}
+
+			ThreadWait();
+		}
+	}
+
+	private void Response()
+	{
+		while (IsRunningThread)
+		{
+			var receivedBuffer = ReceiveRequest();
+
+			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
+
+			// Debug.Log(subPartName + receivedString);
+			if (requestMessage != null)
+			{
+				switch (requestMessage.Name)
+				{
+					case "request_ros2":
+						SetROS2TransformInfoResponse(ref msForInfoResponse);
+						break;
+
+					case "request_wheel_info":
+						SetWheelInfoResponse(ref msForInfoResponse);
+						break;
+
+					case "request_transform":
+						var targetPartsName = (requestMessage.Value == null) ? string.Empty : requestMessage.Value.StringValue;
+						var devicePose = micomSensor.GetPartsPose(targetPartsName);
+						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
+						break;
+
+					case "reset_odometry":
+						micomSensor.Reset();
+						SetEmptyResponse(ref msForInfoResponse);
+						break;
+
+					default:
+						break;
+				}
+
+				SendResponse(msForInfoResponse);
+			}
+
+			ThreadWait();
+		}
+	}
+
+	private void SetROS2TransformInfoResponse(ref MemoryStream msRos2Info)
 	{
 		if (msRos2Info == null)
 		{
@@ -76,7 +134,7 @@ public class MicomPlugin : CLOiSimPlugin
 		ros2TransformInfo.Value = new Any { Type = Any.ValueType.None };
 		ros2CommonInfo.Childrens.Add(ros2TransformInfo);
 
-		var imu_name = GetPluginParameters().GetValue<string>("ros2/transform_name/imu");
+		var imu_name = parameters.GetValue<string>("ros2/transform_name/imu");
 		var imuInfo = new messages.Param();
 		imuInfo.Name = "imu";
 		imuInfo.Value = new Any { Type = Any.ValueType.String, StringValue = imu_name };
@@ -87,18 +145,44 @@ public class MicomPlugin : CLOiSimPlugin
 		wheelsInfo.Value = new Any { Type = Any.ValueType.None };
 		ros2TransformInfo.Childrens.Add(wheelsInfo);
 
-		var wheel_left_name = GetPluginParameters().GetValue<string>("ros2/transform_name/wheels/left");
+		var wheel_left_name = parameters.GetValue<string>("ros2/transform_name/wheels/left");
 		var wheelLeftInfo = new messages.Param();
 		wheelLeftInfo.Name = "left";
 		wheelLeftInfo.Value = new Any { Type = Any.ValueType.String, StringValue = wheel_left_name };
 		wheelsInfo.Childrens.Add(wheelLeftInfo);
 
-		var wheel_right_name = GetPluginParameters().GetValue<string>("ros2/transform_name/wheels/right");
+		var wheel_right_name = parameters.GetValue<string>("ros2/transform_name/wheels/right");
 		var wheelRightInfo = new messages.Param();
 		wheelRightInfo.Name = "right";
 		wheelRightInfo.Value = new Any { Type = Any.ValueType.String, StringValue = wheel_right_name };
 		wheelsInfo.Childrens.Add(wheelRightInfo);
 
-		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
+		ClearMemoryStream(ref msRos2Info);
+		Serializer.Serialize<messages.Param>(msRos2Info, ros2CommonInfo);
+	}
+
+	private void SetWheelInfoResponse(ref MemoryStream msWheelInfo)
+	{
+		if (msWheelInfo == null)
+		{
+			return;
+		}
+
+		var wheelInfo = new messages.Param();
+		wheelInfo.Name = "wheelInfo";
+		wheelInfo.Value = new Any { Type = Any.ValueType.None };
+
+		var baseInfo = new messages.Param();
+		baseInfo.Name = "tread";
+		baseInfo.Value = new Any { Type = Any.ValueType.Double, DoubleValue = micomSensor.WheelBase };
+		wheelInfo.Childrens.Add(baseInfo);
+
+		var sizeInfo = new messages.Param();
+		sizeInfo.Name = "radius";
+		sizeInfo.Value = new Any { Type = Any.ValueType.Double, DoubleValue = micomSensor.WheelRadius };
+		wheelInfo.Childrens.Add(sizeInfo);
+
+		ClearMemoryStream(ref msWheelInfo);
+		Serializer.Serialize<messages.Param>(msWheelInfo, wheelInfo);
 	}
 }

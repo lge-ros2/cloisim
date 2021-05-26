@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<< HEAD:Assets/Scripts/CLOiSimPlugins/GroundTruthPlugin.cs.meta
 guid: 1b749ccace56dfab79b1e4e700de3ffa
+=======
+guid: 3d4df46fee6c47f9987df939da8e9f96
+>>>>>>> main-to-develop:Assets/Scripts/Core/SimulationWorld.cs.meta
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2

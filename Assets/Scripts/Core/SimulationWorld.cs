@@ -3,29 +3,41 @@
  *
  * SPDX-License-Identifier: MIT
  */
- using UnityEngine;
 
-[DefaultExecutionOrder(600)]
+using UnityEngine;
+
 public class SimulationWorld : CLOiSimPlugin
 {
+	private Clock clock = null;
+
+	private string hashKey = string.Empty;
+
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.WORLD;
-		targetDevice = gameObject.AddComponent<Clock>();
+		type = Type.WORLD;
+		clock = gameObject.AddComponent<Clock>();
+		SetDevice(clock);
 
 		modelName = "World";
-		partName = "cloisim_clock";
+		partName = "cloisim_world";
 	}
 
 	protected override void OnStart()
 	{
 		RegisterTxDevice("Clock");
 
-		AddThread(SenderThread, targetDevice);
+		AddThread(Sender);
 	}
 
-	public Clock GetClock()
+	private void Sender()
 	{
-		return targetDevice as Clock;
+		while (IsRunningThread)
+		{
+			if (clock != null)
+			{
+				var datastreamToSend = clock.PopData();
+				Publish(datastreamToSend);
+			}
+		}
 	}
 }

@@ -6,6 +6,7 @@
 
 using UnityEngine;
 using messages = cloisim.msgs;
+using Any = cloisim.msgs.Any;
 
 public class Clock : Device
 {

@@ -8,10 +8,17 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 public class GpsPlugin : CLOiSimPlugin
 {
+	private SensorDevices.GPS gps = null;
+
+	private string hashServiceKey = string.Empty;
+	private string hashKey = string.Empty;
+
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.GPS;
-		targetDevice = gameObject.GetComponent<SensorDevices.GPS>();
+		type = Type.GPS;
+
+		gps = gameObject.GetComponent<SensorDevices.GPS>();
+
 		partName = DeviceHelper.GetPartName(gameObject);
 	}
 
@@ -20,21 +27,59 @@ public class GpsPlugin : CLOiSimPlugin
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 
-		AddThread(RequestThread);
-		AddThread(SenderThread, targetDevice);
+		AddThread(Response);
+		AddThread(Sender);
 	}
 
-	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
+	private void Sender()
 	{
-		switch (requestType)
+		var sw = new Stopwatch();
+		while (IsRunningThread)
 		{
-			case "request_transform":
-				var devicePose = targetDevice.GetPose();
-				SetTransformInfoResponse(ref response, devicePose);
-				break;
+			if (gps != null)
+			{
+				var datastreamToSend = gps.PopData();
+				sw.Restart();
+				Publish(datastreamToSend);
+				sw.Stop();
+				gps.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+			}
+		}
+	}
 
-			default:
-				break;
+	private void Response()
+	{
+		while (IsRunningThread)
+		{
+			var receivedBuffer = ReceiveRequest();
+
+			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
+
+			// Debug.Log(subPartName + receivedString);
+			if (requestMessage != null)
+			{
+				switch (requestMessage.Name)
+				{
+					case "request_ros2":
+						var topic_name = parameters.GetValue<string>("ros2/topic_name");
+						var frame_id = parameters.GetValue<string>("ros2/frame_id");
+						SetROS2CommonInfoResponse(ref msForInfoResponse, topic_name, frame_id);
+						break;
+
+					case "request_transform":
+						var device = gps as Device;
+						var devicePose = device.GetPose();
+						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
+						break;
+
+					default:
+						break;
+				}
+
+				SendResponse(msForInfoResponse);
+			}
+
+			ThreadWait();
 		}
 	}
 }
