@@ -252,7 +252,6 @@ namespace SensorDevices
 		{
 			var axisRotation = Vector3.zero;
 			var waitForSeconds = new WaitForSeconds(WaitPeriod());
-			var waitForEndOfFrame = new WaitForEndOfFrame();
 
 			while (true)
 			{
@@ -274,7 +273,7 @@ namespace SensorDevices
 						laserCam.Render();
 						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32, OnCompleteAsyncReadback);
 						readbacks.Add(readbackRequest, dataIndex);
-						yield return waitForEndOfFrame;
+						yield return null;
 					}
 
 					laserCam.enabled = false;
@@ -444,7 +443,6 @@ namespace SensorDevices
 
 			var startAngleH = (float)horizontal.angle.min;
 			var startAngleV = (float)vertical.angle.min;
-			var waitForEndOfFrame = new WaitForEndOfFrame();
 			var waitForSeconds = new WaitForSeconds(visualUpdatePeriod);
 
 			var horizontalSamples = horizontal.samples;
@@ -453,8 +451,6 @@ namespace SensorDevices
 
 			while (true)
 			{
-				yield return waitForEndOfFrame;
-
 				var lidarSensorWorldPosition = lidarLink.position + lidarSensorInitPose.position;
 				var rangeData = GetRangeData();
 
