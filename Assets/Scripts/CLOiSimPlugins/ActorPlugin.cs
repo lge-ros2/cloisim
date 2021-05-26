@@ -14,9 +14,10 @@ public class ActorPlugin : CLOiSimPlugin
 
 	private static void UpdateStaticModelList()
 	{
-		if (StaticModelList.Count == 0)
+		var models = Main.WorldRoot.GetComponentsInChildren<SDF.Helper.Model>();
+
+		if (StaticModelList.Count != models.Length)
 		{
-			var models = Main.WorldRoot.GetComponentsInChildren<SDF.Helper.Model>();
 			foreach (var model in models)
 			{
 				if (model.isStatic)

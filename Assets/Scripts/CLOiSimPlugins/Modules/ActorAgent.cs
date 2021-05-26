@@ -11,6 +11,7 @@ using UnityEngine.AI;
 /// <summary>
 /// Walk to a random position and repeat or specify the destination
 /// </summary>
+[DefaultExecutionOrder(601)]
 [RequireComponent(typeof(NavMeshAgent))]
 public class ActorAgent : MonoBehaviour
 {
