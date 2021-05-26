@@ -40,7 +40,7 @@ namespace SDF
 					{
 						var node = plugin.GetNode();
 						pluginObject.SetPluginParameters(plugin);
-						// Debug.Log("[Plugin] device added : " + plugin.Name);
+						// Debug.Log("[Plugin] added : " + plugin.Name);
 					}
 					else if (multiPluginObject != null)
 					{
