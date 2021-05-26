@@ -258,7 +258,6 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	void Update()
 	{
-		// foreach (var item in trackingObjectList.Count)
 		var keys = new List<int>(trackingObjectList.Keys);
 		for (var i = 0; i < trackingObjectList.Count; i++)
 		{
