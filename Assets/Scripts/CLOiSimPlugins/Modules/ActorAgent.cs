@@ -62,7 +62,7 @@ public class ActorAgent : MonoBehaviour
 	{
 		if (m_Agent == null || m_Agent.pathStatus.Equals(NavMeshPathStatus.PathInvalid))
 		{
-			Debug.LogWarning("agent is null or path status is invalid");
+			// Debug.LogWarning("agent is null or path status is invalid");
 			return;
 		}
 
@@ -89,18 +89,25 @@ public class ActorAgent : MonoBehaviour
 
 	public void Stop()
 	{
-		// Debug.Log("stop");
-		m_Agent.isStopped = true;
-		m_Agent.SetDestination(transform.position);
-		SetAnimationMotion(Type.STANDBY);
+		if (m_Agent && m_Agent.isOnNavMesh)
+		{
+			// Debug.Log("stop");
+			m_Agent.isStopped = true;
+			m_Agent.SetDestination(transform.position);
+			SetAnimationMotion(Type.STANDBY);
+		}
 	}
 
 	public void AssignTargetDestination(in Vector3 point)
 	{
 	 	Stop();
-		SetAnimationMotion(Type.MOVING);
-		m_Agent.isStopped = false;
-		m_Agent.SetDestination(point);
+
+		if (m_Agent && m_Agent.isOnNavMesh)
+		{
+			SetAnimationMotion(Type.MOVING);
+			m_Agent.isStopped = false;
+			m_Agent.SetDestination(point);
+		}
 	}
 
 	public void SetMotionType(in Type type, in string animationName)
