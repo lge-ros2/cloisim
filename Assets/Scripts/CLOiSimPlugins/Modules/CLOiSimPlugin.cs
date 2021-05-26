@@ -15,6 +15,7 @@ public interface ICLOiSimPlugin
 	void Reset();
 }
 
+[DefaultExecutionOrder(560)]
 public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugin
 {
 	public ICLOiSimPlugin.Type type { get; protected set; }

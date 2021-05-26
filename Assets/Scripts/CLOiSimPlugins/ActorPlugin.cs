@@ -44,12 +44,12 @@ public class ActorPlugin : CLOiSimPlugin
 	{
 		type = ICLOiSimPlugin.Type.ACTOR;
 		partName = "actorplugin";
+
+		UpdateStaticModelList();
 	}
 
 	protected override void OnStart()
 	{
-		UpdateStaticModelList();
-
 		var actorHelper = GetComponent<SDF.Helper.Actor>();
 
 		if (actorHelper.HasWayPoints)
@@ -83,12 +83,12 @@ public class ActorPlugin : CLOiSimPlugin
 
 		Main.WorldNavMeshBuilder.UpdateNavMesh(false);
 
-		var actorAgent = gameObject.AddComponent<ActorAgent>();
 		var motionSpeed = GetPluginParameters().GetValue<float>("default/steering/speed", 1.0f);
 		var motionAngularSpeed = GetPluginParameters().GetValue<float>("default/steering/angular_speed", 2.09f) * Mathf.Rad2Deg;
 		var motionAcceleration = GetPluginParameters().GetValue<float>("default/steering/acceleration", 8.0f);
 
 		// Debug.Log("speed:" + motionSpeed + ", angularspeed: " + motionAngularSpeed + ", acceleration: " + motionAcceleration);
+		var actorAgent = gameObject.AddComponent<ActorAgent>();
 		actorAgent.SetSteering(motionSpeed, motionAngularSpeed, motionAcceleration);
 
 		var motionStandby = GetPluginParameters().GetValue<string>("motion/standby");
