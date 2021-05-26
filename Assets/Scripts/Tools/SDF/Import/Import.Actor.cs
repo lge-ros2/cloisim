@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using UnityEngine.AI;
 using UnityEngine;
 
 namespace SDF
@@ -53,6 +54,11 @@ namespace SDF
 
 				var capsuleCollider = newActorObject.AddComponent<CapsuleCollider>();
 				capsuleCollider.direction = 1;
+
+				var navMeshAgent = newActorObject.AddComponent<NavMeshAgent>();
+				navMeshAgent.speed = 0;
+				navMeshAgent.angularSpeed = 0;
+				navMeshAgent.acceleration = 0;
 
 				return newActorObject as System.Object;
 			}

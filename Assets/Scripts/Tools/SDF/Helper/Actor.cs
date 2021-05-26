@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using UE = UnityEngine;
+using UEAI = UnityEngine.AI;
 
 namespace SDF
 {
@@ -69,6 +70,13 @@ namespace SDF
 					var center = capsuleCollider.center;
 					center.y = bounds.extents.y;
 					capsuleCollider.center = center;
+
+					var navAgent = GetComponentInChildren<UEAI.NavMeshAgent>();
+					if (navAgent != null)
+					{
+						navAgent.radius = capsuleCollider.radius;
+						navAgent.height = capsuleCollider.height;
+					}
 				}
 			}
 

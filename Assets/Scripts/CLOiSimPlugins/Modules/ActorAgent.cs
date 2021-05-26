@@ -48,13 +48,6 @@ public class ActorAgent : MonoBehaviour
 
 	void Start()
 	{
-		var capsuleCollider = gameObject.GetComponent<CapsuleCollider>();
-
-		if (capsuleCollider)
-		{
-			SetObstacleSize(capsuleCollider.radius, capsuleCollider.height);
-		}
-
 		Stop();
 	}
 
@@ -136,15 +129,6 @@ public class ActorAgent : MonoBehaviour
 
 				currentType = motionType;
 			}
-		}
-	}
-
-	public void SetObstacleSize(in float radius, in float height)
-	{
-		if (m_Agent)
-		{
-			m_Agent.radius = radius;
-			m_Agent.height = height;
 		}
 	}
 
