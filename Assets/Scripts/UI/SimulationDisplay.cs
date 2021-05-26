@@ -17,6 +17,8 @@ public partial class SimulationDisplay : MonoBehaviour
 	private StringBuilder eventMessage = new StringBuilder();
 	private StringBuilder sbTimeInfo = new StringBuilder();
 
+	private Vector3 pointInfo = Vector3.zero;
+
 	[Header("GUI properties")]
 	private const int labelFontSize = 14;
 	private const int topMargin = 6;
@@ -25,6 +27,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private const int textHeight = 19;
 
 	private const int textWidthFps = 75;
+	private const int TextWidthPointInfo = 300;
 	private const int textWidthVersion = 50;
 	private const int textWidthSimulationInfo = 550;
 	private const int textWidthEvent = 800;
@@ -35,6 +38,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private Rect rectVersion;
 	private Rect rectSimulationInfo;
 	private Rect rectFps;
+	private Rect rectPointInfo;
 	private Rect rectLogMessage;
 	private Rect rectDialog;
 	private Rect rectToolbar;
@@ -59,6 +63,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		rectVersion = new Rect(textLeftMargin, topMargin, textWidthVersion, textHeight);
 		rectSimulationInfo = new Rect(textLeftMargin, Screen.height - textHeight - bottomMargin, textWidthSimulationInfo, textHeight);
 		rectFps = new Rect(rectSimulationInfo.width + rectSimulationInfo.x,  Screen.height - textHeight - bottomMargin, textWidthFps, textHeight);
+		rectPointInfo = new Rect(rectFps.width + rectFps.x,  Screen.height - textHeight - bottomMargin, TextWidthPointInfo, textHeight);
 		rectLogMessage = new Rect(textLeftMargin, Screen.height - (textHeight * 2) - bottomMargin, textWidthEvent, textHeight);
 
 		rectToolbar = new Rect(0, topMargin, toolbarWidth, guiHeight);
@@ -111,6 +116,18 @@ public partial class SimulationDisplay : MonoBehaviour
 		return sbTimeInfo.ToString();
 	}
 
+	public void SetPointInfo(in Vector3 point)
+	{
+		this.pointInfo = point;
+	}
+
+	private void DrawPointInfoText(GUIStyle style)
+	{
+		rectPointInfo.y = Screen.height - textHeight - bottomMargin;
+		style.normal.textColor = new Color(1.0f, 0.93f, 0.0f, 1);
+		DrawLabelWithShadow(rectPointInfo, "HitPoint " + pointInfo.ToString("F4"), style);
+	}
+
 	private string GetBoldText(in string value)
 	{
 		return ("<b>" + value + "</b>");
@@ -150,6 +167,8 @@ public partial class SimulationDisplay : MonoBehaviour
 		DrawLabelWithShadow(rectSimulationInfo, simulationInfo, style);
 
 		DrawFPSText(style);
+
+		DrawPointInfoText(style);
 
 		// logging: error message or event message
 		rectLogMessage.y = Screen.height - (textHeight * 2) - bottomMargin;

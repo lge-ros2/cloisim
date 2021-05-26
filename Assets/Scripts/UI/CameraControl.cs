@@ -61,7 +61,16 @@ public class CameraControl : MonoBehaviour
 		lastMouse.Set(transform.eulerAngles.x + lastMouse.x, transform.eulerAngles.y + lastMouse.y , 0);
 
 		//Mouse camera angle done.
-		if (Input.GetMouseButton(2) || Input.GetMouseButton(1))
+		if (Input.GetMouseButton(0))
+		{
+			var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+			if (Physics.Raycast(ray.origin, ray.direction, out var hitInfo))
+			{
+				var sdfPoint = DeviceHelper.Convert.Position(hitInfo.point);
+				Main.Display.SetPointInfo(sdfPoint);
+			}
+		}
+		else if (Input.GetMouseButton(2) || Input.GetMouseButton(1))
 		{
 			// perspective move during the right or wheel click
 			// Debug.Log(lastMouse.ToString("F4"));
