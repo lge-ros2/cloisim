@@ -1,7 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.Rendering;
+using UnityEngine;
 
 public class ObjectSpawning : MonoBehaviour
 {
@@ -119,9 +120,15 @@ public class ObjectSpawning : MonoBehaviour
 			spawnedObject.SetActive(true);
 			var meshFilter = spawnedObject.GetComponentInChildren<MeshFilter>();
 			mesh = meshFilter.sharedMesh;
+
+			var meshRender = spawnedObject.GetComponentInChildren<MeshRenderer>();
+			meshRender.material.color = Random.ColorHSV(0f, 1f, 0.7f, 1f, 0.6f, 1f);
 		}
 
-		position.y += mesh.bounds.size.y / 2 + 0.001f;
+		if (mesh != null)
+		{
+			position.y += mesh.bounds.extents.y + 0.001f;
+		}
 
 		var spawanedObjectTransform = spawnedObject.transform;
 		spawanedObjectTransform.position = position;
@@ -144,7 +151,9 @@ public class ObjectSpawning : MonoBehaviour
 
 		var newMaterial = new Material(SDF2Unity.CommonShader);
 		newMaterial.name = targetMesh.name;
-		newMaterial.color = Random.ColorHSV(0f, 1f, 0.7f, 1f, 0.6f, 1f);
+		newMaterial.color = Color.white;
+
+		Debug.Log(Random.ColorHSV(0f, 1f, 0.7f, 1f, 0.6f, 1f));
 
 		var meshRenderer = newObject.AddComponent<MeshRenderer>();
 		meshRenderer.material = newMaterial;
@@ -157,7 +166,12 @@ public class ObjectSpawning : MonoBehaviour
 		meshCollider.isTrigger = false;
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
-		rigidBody.drag = 0.001f;
+		rigidBody.drag = 0.5f;
+		rigidBody.angularDrag= 0.8f;
+
+		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
+		navMeshObstacle.carving = true;
+		navMeshObstacle.size = targetMesh.bounds.size;
 
 		return newObject;
 	}

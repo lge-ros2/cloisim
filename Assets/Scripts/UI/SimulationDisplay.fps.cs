@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
-using System.Text;
 using UnityEngine;
 
 public partial class SimulationDisplay : MonoBehaviour

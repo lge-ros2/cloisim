@@ -10,6 +10,7 @@ using System;
 using UnityEngine.SceneManagement;
 using UnityEngine;
 
+[DefaultExecutionOrder(30)]
 public class Main: MonoBehaviour
 {
 	[Header("Block Loading SDF")]
@@ -25,13 +26,15 @@ public class Main: MonoBehaviour
 	public List<string> worldRootDirectories = new List<string>();
 	public List<string> fileRootDirectories = new List<string>();
 
+	private FollowingTargetList followingList = null;
+
 	private static GameObject coreObject = null;
 	private static GameObject worldRoot = null;
 	private static GameObject lightsRoot = null;
 	private static GameObject uiRoot = null;
 
-	private FollowingTargetList followingList = null;
 	private static SimulationDisplay simulationDisplay = null;
+	private static WorldNavMeshBuilder worldNavMeshBuilder = null;
 	private static RuntimeGizmos.TransformGizmo transformGizmo = null;
 
 	private bool isResetting = false;
@@ -42,6 +45,7 @@ public class Main: MonoBehaviour
 	public static GameObject UIObject => uiRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => transformGizmo;
 	public static SimulationDisplay Display => simulationDisplay;
+	public static WorldNavMeshBuilder WorldNavMeshBuilder => worldNavMeshBuilder;
 
 	private void CleanAllModels()
 	{
@@ -165,6 +169,8 @@ public class Main: MonoBehaviour
 
 		uiRoot = GameObject.Find("UI");
 
+		worldNavMeshBuilder = worldRoot.GetComponent<WorldNavMeshBuilder>();
+
 		var simWorld = gameObject.AddComponent<SimulationWorld>();
 		DeviceHelper.SetGlobalClock(simWorld.GetClock());
 
@@ -173,6 +179,7 @@ public class Main: MonoBehaviour
 
 		followingList = uiRoot.GetComponentInChildren<FollowingTargetList>();
 		simulationDisplay = uiRoot.GetComponentInChildren<SimulationDisplay>();
+
 		transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
 
 		gameObject.AddComponent<ObjectSpawning>();

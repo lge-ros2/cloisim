@@ -119,8 +119,6 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		GetPluginParameters();
-
 		var publishFrequency = GetPluginParameters().GetValue<float>("publish_frequency", 1);
 		sleepPeriodForPublishInMilliseconds = (int)(1f / publishFrequency * 1000f);
 		GetPluginParameters().GetValues<string>("list/target", out var targetList);
@@ -145,7 +143,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				var trackingObject = new ObjectTracking(trackingGameObject);
 
 				var capsuleCollider = trackingGameObject.GetComponentInChildren<UE.CapsuleCollider>();
-				if (capsuleCollider != null)
+				if (capsuleCollider != null && trackingGameObject.CompareTag("Actor"))
 				{
 					var radius = capsuleCollider.radius;
 					const float angleResolution = 0.34906585f;
@@ -161,7 +159,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				else
 				{
 					var meshFilters = trackingGameObject.GetComponentsInChildren<UE.MeshFilter>();
-					if (meshFilters != null)
+					if (meshFilters != null && trackingGameObject.CompareTag("Model"))
 					{
 						var combine = new UE.CombineInstance[meshFilters.Length];
 						for (var i = 0; i < combine.Length; i++)
@@ -260,11 +258,13 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	void Update()
 	{
+		var keys = new List<int>(trackingObjectList.Keys);
 		for (var i = 0; i < trackingObjectList.Count; i++)
 		{
-			var trackingObject = trackingObjectList[i];
+			var key = keys[i];
+			var trackingObject = trackingObjectList[key];
 			trackingObject.Update();
-			trackingObjectList[i] = trackingObject;
+			trackingObjectList[key] = trackingObject;
 		}
 	}
 

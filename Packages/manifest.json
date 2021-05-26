@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.unity.ai.navigation.components": "https://github.com/Unity-Technologies/NavMeshComponents.git#package",
     "com.unity.ide.vscode": "1.2.3",
     "com.unity.mathematics": "1.2.1",
     "com.unity.render-pipelines.universal": "10.5.0",

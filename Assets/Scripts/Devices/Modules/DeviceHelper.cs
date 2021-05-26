@@ -40,13 +40,23 @@ public partial class DeviceHelper
 	{
 		try
 		{
-			var nextObject = targetObject.GetComponentInParent<SDF.Helper.Model>();
+			var nextObject = targetObject.GetComponentInParent<SDF.Helper.Model>() as SDF.Helper.Base;
+
+			if (nextObject == null)
+			{
+				nextObject = targetObject.GetComponentInParent<SDF.Helper.Actor>() as SDF.Helper.Base;
+			}
+
+			if (nextObject == null)
+			{
+				return string.Empty;
+			}
 
 			if (searchOnlyOneDepth == false)
 			{
 				while (!nextObject.transform.parent.Equals(nextObject.transform.root))
 				{
-					nextObject = nextObject.transform.parent.GetComponentInParent<SDF.Helper.Model>();
+					nextObject = nextObject.transform.parent.GetComponentInParent<SDF.Helper.Base>();
 
 					if (nextObject == null)
 					{
@@ -63,7 +73,6 @@ public partial class DeviceHelper
 			return string.Empty;
 		}
 	}
-
 
 	public static string GetPartName(in GameObject targetObject)
 	{
@@ -141,6 +150,11 @@ public partial class DeviceHelper
 	public static Vector3[] SolveConvexHull2D(in Vector3[] points)
 	{
 		var result = new List<Vector3>();
+
+		if (points.Length == 0)
+		{
+			return result.ToArray();
+		}
 
 		int leftMostIndex = 0;
 		for (var i = 1; i < points.Length; i++)

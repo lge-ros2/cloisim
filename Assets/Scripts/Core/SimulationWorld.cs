@@ -3,7 +3,9 @@
  *
  * SPDX-License-Identifier: MIT
  */
+ using UnityEngine;
 
+[DefaultExecutionOrder(600)]
 public class SimulationWorld : CLOiSimPlugin
 {
 	protected override void OnAwake()

@@ -8,6 +8,7 @@ using System;
 using System.Text;
 using UnityEngine;
 
+[DefaultExecutionOrder(50)]
 public partial class SimulationDisplay : MonoBehaviour
 {
 	private Clock clock = null;

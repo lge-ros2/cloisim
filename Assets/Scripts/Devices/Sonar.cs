@@ -84,13 +84,10 @@ namespace SensorDevices
 
 		protected override IEnumerator OnVisualize()
 		{
-			var waitForEndOfFrame = new WaitForEndOfFrame();
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 
 			while (true)
 			{
-				yield return waitForEndOfFrame;
-
 				var detectedPoint = GetDetectedPoint();
 
 				if (!detectedPoint.Equals(Vector3.zero))

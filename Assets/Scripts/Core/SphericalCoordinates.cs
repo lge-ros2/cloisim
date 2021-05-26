@@ -6,6 +6,7 @@
 
 using UnityEngine;
 
+[DefaultExecutionOrder(550)]
 public class SphericalCoordinates : MonoBehaviour
 {
 	// Parameters for EARTH_WGS84 model
