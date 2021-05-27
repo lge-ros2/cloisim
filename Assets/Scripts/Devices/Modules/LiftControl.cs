@@ -31,7 +31,7 @@ public class LiftControl : MonoBehaviour
 
 	void Awake()
 	{
-		rootModel = GameObject.Find("Models");
+		rootModel = Main.WorldRoot;
 	}
 
 	void Start()
@@ -80,7 +80,7 @@ public class LiftControl : MonoBehaviour
 		var allModelHelpers = rootModel.GetComponentsInChildren<SDF.Helper.Model>();
 		foreach (var modelHelper in allModelHelpers)
 		{
-			if (modelHelper.isTopModel)
+			if (modelHelper.IsFirstChild)
 			{
 				hashsetAllTopModels.Add(modelHelper.gameObject);
 			}

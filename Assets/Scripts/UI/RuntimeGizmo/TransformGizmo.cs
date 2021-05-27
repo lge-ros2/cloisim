@@ -342,7 +342,7 @@ namespace RuntimeGizmos
 									}
 								}
 
-								for (int i = 0; i < targetRootsOrdered.Count; i++)
+								for (int i = 0; i <targetRootsOrdered.Count; i++)
 								{
 									Transform target = targetRootsOrdered[i];
 
@@ -494,12 +494,12 @@ namespace RuntimeGizmos
 							if (!hitObject.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex))
 							{
 								var hitParentLinkHelper = hitObject?.GetComponentInParent<SDF.Helper.Link>();
-								var hitTopModelHelper = hitParentLinkHelper?.TopModel;
+								var hitRootModelHelper = hitParentLinkHelper?.RootModel;
 
-								if (hitTopModelHelper != null && !(hitTopModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
+								if (hitRootModelHelper != null && !(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
 								{
 									// Debug.Log(hitParentObject.name + " Selected!!!!");
-									target = (hitTopModelHelper.hasRootArticulationBody) ? hitTopModelHelper.transform : hitParentLinkHelper.Model.transform;
+									target = (hitRootModelHelper.hasRootArticulationBody) ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
 								}
 							}
 						}
@@ -511,7 +511,18 @@ namespace RuntimeGizmos
 					}
 					else
 					{
-						ClearAndAddTarget(target);
+						if (targetRoots.ContainsKey(target))
+						{
+							RemoveTarget(target);
+						}
+						else if (Input.GetKey(KeyCode.LeftShift))
+						{
+							AddTarget(target);
+						}
+						else
+						{
+							ClearAndAddTarget(target);
+						}
 					}
 				}
 				else
@@ -519,6 +530,11 @@ namespace RuntimeGizmos
 					ClearTargets();
 				}
 			}
+		}
+
+		public void GetSelectedTargets(out List<Transform> list)
+		{
+			list = targetRootsOrdered;
 		}
 
 		public void AddTarget(Transform target)

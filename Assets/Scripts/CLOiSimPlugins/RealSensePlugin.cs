@@ -5,32 +5,29 @@
  */
 
 using System.Collections.Generic;
-using System.IO;
-using UnityEngine;
-using ProtoBuf;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
 public class RealSensePlugin : CLOiSimMultiPlugin
 {
-	private Camera[] cameras = null;
+	private SensorDevices.Camera[] cameras = null;
 	private List<string> activatedModules = new List<string>();
 
 	protected override void OnAwake()
 	{
-		type = Type.REALSENSE;
-		cameras = GetComponentsInChildren<Camera>();
+		type = ICLOiSimPlugin.Type.REALSENSE;
+		cameras = GetComponentsInChildren<SensorDevices.Camera>();
 		partName = name;
 	}
 
 	protected override void OnStart()
 	{
-		var depthScale = parameters.GetValue<uint>("configuration/depth_scale", 1000);
+		var depthScale = GetPluginParameters().GetValue<uint>("configuration/depth_scale", 1000);
 
-		var colorName = parameters.GetValue<string>("activate/module[@name='color']");
-		var leftImagerName = parameters.GetValue<string>("activate/module[@name='left_imager']");
-		var rightImagerName = parameters.GetValue<string>("activate/module[@name='right_imager']");
-		var depthName = parameters.GetValue<string>("activate/module[@name='depth']");
+		var colorName = GetPluginParameters().GetValue<string>("activate/module[@name='color']");
+		var leftImagerName = GetPluginParameters().GetValue<string>("activate/module[@name='left_imager']");
+		var rightImagerName = GetPluginParameters().GetValue<string>("activate/module[@name='right_imager']");
+		var depthName = GetPluginParameters().GetValue<string>("activate/module[@name='depth']");
 
 		if (colorName != null)
 		{
@@ -61,18 +58,20 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 		RegisterServiceDevice("Info");
 
-		AddThread(Response);
+		AddThread(RequestThread);
 	}
 
 	private CameraPlugin FindAndAddCameraPlugin(in string name)
 	{
 		foreach (var camera in cameras)
 		{
-			if (camera.gameObject.name.Equals(name))
+			if (camera.name.Equals(name))
 			{
 				var plugin = camera.gameObject.AddComponent<CameraPlugin>();
-				plugin.ChangePluginType(CLOiSimPlugin.Type.REALSENSE);
+				plugin.ChangePluginType(ICLOiSimPlugin.Type.REALSENSE);
 				plugin.subPartName = name;
+
+				camera.SetSubParts(true);
 
 				AddCLOiSimPlugin(name, plugin);
 				activatedModules.Add(name);
@@ -83,40 +82,25 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		return null;
 	}
 
-	private void Response()
+	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
 	{
-		while (IsRunningThread)
+		switch (requestType)
 		{
-			var receivedBuffer = ReceiveRequest();
+			case "request_module_list":
+				SetModuleListInfoResponse(ref response);
+				break;
 
-			var requestMessage = ParsingInfoRequest(receivedBuffer, ref msForInfoResponse);
+			case "request_transform":
+				var devicePose = GetPose();
+				SetTransformInfoResponse(ref response, devicePose);
+				break;
 
-			// Debug.Log(subPartName + receivedString);
-			if (requestMessage != null)
-			{
-				switch (requestMessage.Name)
-				{
-					case "request_module_list":
-						SetModuleListInfoResponse(ref msForInfoResponse);
-						break;
-
-					case "request_transform":
-						var devicePose = GetPose();
-						SetTransformInfoResponse(ref msForInfoResponse, devicePose);
-						break;
-
-					default:
-						break;
-				}
-
-				SendResponse(msForInfoResponse);
-			}
-
-			ThreadWait();
+			default:
+				break;
 		}
 	}
 
-	private void SetModuleListInfoResponse(ref MemoryStream msModuleInfo)
+	private void SetModuleListInfoResponse(ref DeviceMessage msModuleInfo)
 	{
 		if (msModuleInfo == null)
 		{
@@ -135,7 +119,6 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 			modulesInfo.Childrens.Add(moduleInfo);
 		}
 
-		ClearMemoryStream(ref msModuleInfo);
-		Serializer.Serialize<messages.Param>(msModuleInfo, modulesInfo);
+		msModuleInfo.SetMessage<messages.Param>(modulesInfo);
 	}
 }

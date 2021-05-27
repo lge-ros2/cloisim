@@ -11,52 +11,34 @@ public class MicomInput : Device
 {
 	private MicomSensor micomForWheelDrive = null;
 
-	private messages.Twist micomWritingData = null;
-
-	private Vector3 linearVelocity = Vector3.zero; // m/s
-	private Vector3 angularVelocity = Vector3.zero; // rad/s
-
 	protected override void OnAwake()
 	{
 		Mode = ModeType.RX_THREAD;
-		deviceName = "MicomInput";
+		DeviceName = "MicomInput";
 	}
 
 	protected override void OnStart()
 	{
 	}
 
-	public void Reset()
+	protected override void OnReset()
 	{
-		ResetDataStream();
-		linearVelocity = Vector3.zero;
-		angularVelocity = Vector3.zero;
+		DoWheelDrive(Vector3.zero, Vector3.zero);
 	}
 
 	protected override void ProcessDevice()
 	{
-		DoWheelDrive();
-	}
-
-	protected override void InitializeMessages()
-	{
-		micomWritingData = null;
-	}
-
-	protected override void GenerateMessage()
-	{
-		try
+		if (PopDeviceMessage<messages.Twist>(out var micomWritingData))
 		{
-			micomWritingData = GetMessageData<messages.Twist>();
-		}
-		catch
-		{
-			Debug.LogWarning("GetMessageData: ERROR");
-		}
+			var linear = micomWritingData.Linear;
+			var angular = micomWritingData.Angular;
 
-		// Right-handed -> Left-handed direction of rotation
-		linearVelocity = -SDF2Unity.GetPosition(micomWritingData.Linear.X, micomWritingData.Linear.Y, micomWritingData.Linear.Z);
-		angularVelocity = -SDF2Unity.GetPosition(micomWritingData.Angular.X, micomWritingData.Angular.Y, micomWritingData.Angular.Z);
+			// Right-handed -> Left-handed direction of rotation
+			var linearVelocity = -SDF2Unity.GetPosition(linear.X, linear.Y, linear.Z);
+			var angularVelocity = -SDF2Unity.GetPosition(angular.X, angular.Y, angular.Z);
+
+			DoWheelDrive(linearVelocity, angularVelocity);
+		}
 	}
 
 	public void SetMicomSensor(in MicomSensor targetDevice)
@@ -64,7 +46,9 @@ public class MicomInput : Device
 		micomForWheelDrive = targetDevice;
 	}
 
-	private void DoWheelDrive()
+	/// <param name="linearVelocity">m/s</param>
+	/// <param name="angularVelocity">rad/s</param>
+	private void DoWheelDrive(in Vector3 linearVelocity, in Vector3 angularVelocity)
 	{
 		if (micomForWheelDrive == null)
 		{

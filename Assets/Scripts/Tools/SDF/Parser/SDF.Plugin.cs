@@ -36,7 +36,7 @@ namespace SDF
 			filename = GetAttribute<string>("filename");
 		}
 
-		public string ClassName()
+		public string LibraryName()
 		{
 			var pluginName = FileName;
 			if (pluginName.StartsWith("lib"))

@@ -101,7 +101,7 @@ namespace SDF
 				var modelHelperChild = modelTransformChild.GetComponent<SDF.Helper.Model>();
 
 				var anchorPose = new UE.Pose();
-				if (modelTransformChild.Equals(modelTransformParent) || modelHelperChild.isTopModel)
+				if (modelTransformChild.Equals(modelTransformParent) || modelHelperChild.IsFirstChild)
 				{
 					linkObjectChild.SetParent(linkObjectParent);
 

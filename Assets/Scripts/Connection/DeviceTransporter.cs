@@ -156,9 +156,4 @@ public partial class DeviceTransporter : MonoBehaviour
 
 		return null;
 	}
-
-	private bool isValidMemoryStream(in MemoryStream stream)
-	{
-		return (stream != null && stream.CanRead && stream.Length > 0);
-	}
 }

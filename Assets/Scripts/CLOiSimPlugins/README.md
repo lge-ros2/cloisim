@@ -2,7 +2,7 @@
 
 These plugin scripts are for sensor connection.
 
-Each class name is important to load plugin in SDF. Class name should be exact to filename which means if the class name is 'SensorPlugin' filename would be a  'libSensorPlugin.so'.
+Each class name is important to load plugin in SDF. Class name should be exact to filename which means if the class name is 'SensorPlugin' filename would be a 'libSensorPlugin.so'. But 'lib' or '.so' words can be skipped.
 
 For example, if it describes a name with 'RobotControl' in `<plugin>` attributesm, SDF Parser will start to find a filename in plugin element as 'RobotControl' in Unity project.
 

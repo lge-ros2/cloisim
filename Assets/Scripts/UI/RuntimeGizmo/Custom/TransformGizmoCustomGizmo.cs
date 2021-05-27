@@ -54,8 +54,7 @@ namespace RuntimeGizmos
 
 			if(Input.GetMouseButtonDown(0))
 			{
-				RaycastHit hitInfo;
-				if(Physics.Raycast(transformGizmo.myCamera.ScreenPointToRay(Input.mousePosition), out hitInfo, Mathf.Infinity, mask))
+				if(Physics.Raycast(transformGizmo.myCamera.ScreenPointToRay(Input.mousePosition), out var hitInfo, Mathf.Infinity, mask))
 				{
 					Axis selectedAxis = Axis.None;
 					TransformType type = transformGizmo.transformType;

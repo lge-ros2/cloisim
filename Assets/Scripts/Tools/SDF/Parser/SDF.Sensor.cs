@@ -84,7 +84,7 @@ namespace SDF
 
 						for (var index = 1; index <= nodes.Count; index++)
 						{
-							cameras.list.Add(ParseCamera(index));
+							cameras.Add(ParseCamera(index));
 						}
 
 						sensor = cameras;

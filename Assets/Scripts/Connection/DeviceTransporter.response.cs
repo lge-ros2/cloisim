@@ -5,7 +5,6 @@
  */
 
 using System;
-using System.IO;
 using UnityEngine;
 using NetMQ;
 using NetMQ.Sockets;
@@ -68,23 +67,15 @@ public partial class DeviceTransporter
 		return null;
 	}
 
-	protected bool SendResponse(in MemoryStream streamToSend)
+	protected bool SendResponse(in DeviceMessage messageToSend)
 	{
-		if (!isValidMemoryStream(streamToSend))
+		if (messageToSend.IsValid())
 		{
-			return false;
+			var buffer = messageToSend.GetBuffer();
+			var bufferLength = (int)messageToSend.Length;
+			return SendResponse(buffer, bufferLength);
 		}
-
-		byte[] buffer = null;
-		int bufferLength = 0;
-
-		lock (streamToSend)
-		{
-			buffer = streamToSend.GetBuffer();
-			bufferLength = (int)streamToSend.Length;
-		}
-
-		return SendResponse(buffer, bufferLength);
+		return false;
 	}
 
 	protected bool SendResponse(in string stringToSend)
