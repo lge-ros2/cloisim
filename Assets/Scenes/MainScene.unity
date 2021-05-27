@@ -539,8 +539,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 126105769}
+  - component: {fileID: 126105770}
   m_Layer: 0
-  m_Name: Models
+  m_Name: World
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -565,6 +566,18 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &126105770
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 126105768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be8cb11b3f09b3a1aba92262370480ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &162674478
 GameObject:
   m_ObjectHideFlags: 0
@@ -772,7 +785,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb1f25bcbdf8dbeb2910354dd18778b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isTopModel: 1
   hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &249819585
@@ -787,9 +799,7 @@ GameObject:
   - component: {fileID: 249819589}
   - component: {fileID: 249819587}
   - component: {fileID: 249819591}
-  - component: {fileID: 249819588}
   - component: {fileID: 249819592}
-  - component: {fileID: 249819590}
   m_Layer: 0
   m_Name: Core
   m_TagString: Untagged
@@ -823,18 +833,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c59b1e39547cd88118e6581bba9cc704, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &249819588
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 249819585}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3d4df46fee6c47f9987df939da8e9f96, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &249819589
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -862,19 +860,6 @@ MonoBehaviour:
   - ../sample_resources/media/
   - ../lgrs_resource/assets
   - ../../lgrs_resource/assets
---- !u!114 &249819590
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 249819585}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d9c9f03b6dda7067f8bbe5424519c5b6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxRayDistance: 100
 --- !u!114 &249819591
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1990,6 +1975,7 @@ GameObject:
   - component: {fileID: 683297086}
   - component: {fileID: 683297090}
   - component: {fileID: 683297089}
+  - component: {fileID: 683297088}
   m_Layer: 5
   m_Name: UI
   m_TagString: Untagged
@@ -2047,6 +2033,18 @@ MonoBehaviour:
   m_FirstSelected: {fileID: 0}
   m_sendNavigationEvents: 1
   m_DragThreshold: 10
+--- !u!114 &683297088
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 683297084}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f36ccde904b2caf1a9710801807136b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &683297089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2501,7 +2499,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb1f25bcbdf8dbeb2910354dd18778b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isTopModel: 1
   hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &779420288
@@ -5451,7 +5448,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb1f25bcbdf8dbeb2910354dd18778b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isTopModel: 0
   hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &1750713662
@@ -6305,7 +6301,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb1f25bcbdf8dbeb2910354dd18778b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isTopModel: 1
   hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &2133470735

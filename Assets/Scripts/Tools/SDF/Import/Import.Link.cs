@@ -106,8 +106,8 @@ namespace SDF
 					// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
 				}
 
-				var meshCollider = linkObject.GetComponentInChildren<UE.MeshCollider>();
-				if (meshCollider != null && meshCollider.GetComponentInParent<UE.ArticulationBody>().transform.Equals(articulationBody.transform))
+				var meshColliders = linkObject.GetComponentsInChildren<UE.MeshCollider>();
+				if (meshColliders.Length > 0)
 				{
 					if (inertial?.inertia != null)
 					{
@@ -121,7 +121,10 @@ namespace SDF
 						articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
 					}
 
-					meshCollider.convex = true;
+					foreach (var meshCollider in meshColliders)
+					{
+						meshCollider.convex = true;
+					}
 				}
 				else
 				{

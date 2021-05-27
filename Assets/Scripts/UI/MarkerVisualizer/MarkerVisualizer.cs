@@ -58,7 +58,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 
 		foreach (DictionaryEntry textMarker in followingTextMarkers)
 		{
-			// yield return null;
+			yield return null;
 
 			// Look at camera
 			var textObject = (textMarker.Value as TextMeshPro).gameObject;

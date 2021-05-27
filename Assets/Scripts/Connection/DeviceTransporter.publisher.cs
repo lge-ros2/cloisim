@@ -51,23 +51,15 @@ public partial class DeviceTransporter
 		return initialized;
 	}
 
-	protected bool Publish(in MemoryStream streamToSend)
+	protected bool Publish(in DeviceMessage messageToSend)
 	{
-		if (!isValidMemoryStream(streamToSend))
+		if (messageToSend.IsValid())
 		{
-			return false;
+			var buffer = messageToSend.GetBuffer();
+			var bufferLength = (int)messageToSend.Length;
+			return Publish(buffer, bufferLength);
 		}
-
-		byte[] buffer = null;
-		int bufferLength = 0;
-
-		lock (streamToSend)
-		{
-			buffer = streamToSend.GetBuffer();
-			bufferLength = (int)streamToSend.Length;
-		}
-
-		return Publish(buffer, bufferLength);
+		return false;
 	}
 
 	protected bool Publish(in string stringToSend)

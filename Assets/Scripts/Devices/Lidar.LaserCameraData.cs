@@ -86,7 +86,7 @@ namespace SensorDevices
 
 			public LaserDataOutput(in int length = 0)
 			{
-        data = (length == 0) ? null : new double[length];
+				data = (length == 0) ? null : new double[length];
 			}
 		}
 

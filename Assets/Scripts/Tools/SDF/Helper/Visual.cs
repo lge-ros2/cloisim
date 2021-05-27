@@ -17,11 +17,6 @@ namespace SDF
 
 			public int metaLayer = -1;
 
-			new void Awake()
-			{
-				base.Awake();
-			}
-
 			void Start()
 			{
 				SetShadowMode();

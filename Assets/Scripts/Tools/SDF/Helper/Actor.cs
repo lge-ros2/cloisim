@@ -6,11 +6,13 @@
 
 using System.Collections.Generic;
 using UE = UnityEngine;
+using UEAI = UnityEngine.AI;
 
 namespace SDF
 {
 	namespace Helper
 	{
+		[UE.DefaultExecutionOrder(590)]
 		public class Actor : Base
 		{
 			private struct waypointToward
@@ -21,8 +23,8 @@ namespace SDF
 				public UE.Quaternion rotateTo;
 			};
 
-			private const float distanceEpsilon = UE.Vector3.kEpsilon * 10;
-			private const float angleEpsilon = UE.Quaternion.kEpsilon * 50000;
+			private const float DistanceEpsilon = UE.Vector3.kEpsilon * 10;
+			private const float AngleEpsilon = UE.Quaternion.kEpsilon * 50000;
 
 			private List<waypointToward> waypointTowards = new List<waypointToward>();
 			private int waypointTowardsIndex = 0;
@@ -32,16 +34,14 @@ namespace SDF
 
 			[UE.Header("SDF Properties")]
 			public bool isStatic = false;
-			private SDF.Actor.Script _script = null;
+			private SDF.Actor.Script script = null;
 
-			public bool HasWayPoints => (_script.trajectories.Count > 0);
+			private UE.CapsuleCollider capsuleCollider = null;
+			private UE.SkinnedMeshRenderer skinMeshRenderer = null;
 
-			new void Awake()
-			{
-				base.Awake();
-			}
+			public bool HasWayPoints => (script.trajectories != null && script.trajectories.Count > 0);
 
-			new void Reset()
+			new public void Reset()
 			{
 				base.Reset();
 
@@ -53,9 +53,30 @@ namespace SDF
 
 			void Start()
 			{
-				if (_script != null && _script.auto_start && _script.trajectories.Count > 0)
+				if (script != null && script.auto_start && HasWayPoints)
 				{
 					StartWaypointFollowing();
+				}
+
+				capsuleCollider = GetComponentInChildren<UE.CapsuleCollider>();
+				skinMeshRenderer = GetComponentInChildren<UE.SkinnedMeshRenderer>();
+
+				if (capsuleCollider != null && skinMeshRenderer != null)
+				{
+					const float sizeRatio = 0.8f;
+					var bounds = skinMeshRenderer.localBounds;
+					capsuleCollider.radius = UE.Mathf.Min(bounds.extents.x, bounds.extents.z) * sizeRatio;;
+					capsuleCollider.height = bounds.size.y;
+					var center = capsuleCollider.center;
+					center.y = bounds.extents.y;
+					capsuleCollider.center = center;
+
+					var navAgent = GetComponentInChildren<UEAI.NavMeshAgent>();
+					if (navAgent != null)
+					{
+						navAgent.radius = capsuleCollider.radius;
+						navAgent.height = capsuleCollider.height;
+					}
 				}
 			}
 
@@ -63,7 +84,7 @@ namespace SDF
 			{
 				if (_followingWaypoint && waypointTowardsIndex < waypointTowards.Count)
 				{
-					if (elapsedTimeSinceAnimationStarted < _script.delay_start)
+					if (elapsedTimeSinceAnimationStarted < script.delay_start)
 					{
 						elapsedTimeSinceAnimationStarted += UE.Time.timeAsDouble;
 						// UE.Debug.Log("waiting for start: " + elapsedTimeSinceAnimationStarted);
@@ -85,13 +106,13 @@ namespace SDF
 					var diffPos = UE.Vector3.Distance(nextPose.position, moveTo);
 					var diffRot = UE.Quaternion.Angle(nextPose.rotation, rotateTo);
 					// UE.Debug.Log("pos diff:" + diffPos + ", rot diff: " + diffRot);
-					if ((diffPos < distanceEpsilon) && (diffRot < angleEpsilon))
+					if ((diffPos < DistanceEpsilon) && (diffRot < AngleEpsilon))
 					{
 						waypointTowardsIndex++;
 						// UE.Debug.Log("go next waypoint: " + waypointTowardsIndex);
 					}
 
-					if (_script.loop && waypointTowardsIndex >= waypointTowards.Count)
+					if (script.loop && waypointTowardsIndex >= waypointTowards.Count)
 					{
 						StopWaypointFollowing();
 						StartWaypointFollowing();
@@ -118,6 +139,9 @@ namespace SDF
 
 				if (waypointTowards.Count > 0)
 				{
+					var initPose = GetPose(0);
+					SetPose(initPose);
+
 					var waypoint = waypointTowards[waypointTowardsIndex];
 					SetActorPose(waypoint.tranlateTo, waypoint.rotateTo);
 				}
@@ -156,52 +180,54 @@ namespace SDF
 				return totalPose;
 			}
 
-
 			public void SetScript(in SDF.Actor.Script script)
 			{
-				_script = script;
+				this.script = script;
 
-				foreach (var trajectory in _script.trajectories)
+				if (this.script.trajectories != null)
 				{
-					// UE.Debug.LogFormat("id:{0} type:{1} tension:{2}", trajectory.id, trajectory.Type, trajectory.tension);
-					if (trajectory.waypoints.Count > 0)
+					foreach (var trajectory in script.trajectories)
 					{
-						var lastPosition = UE.Vector3.zero;
-						var lastRotation = UE.Quaternion.identity;
-						var startIndex = 0;
-						var firstWayPoint = trajectory.waypoints[0];
-
-						if (firstWayPoint.time == 0)
+						// UE.Debug.LogFormat("id:{0} type:{1} tension:{2}", trajectory.id, trajectory.Type, trajectory.tension);
+						if (trajectory.waypoints.Count > 0)
 						{
-							lastPosition = SDF2Unity.GetPosition(firstWayPoint.Pose.Pos);
-							lastRotation = SDF2Unity.GetRotation(firstWayPoint.Pose.Rot);
-							startIndex = 1;
-						}
+							var lastPosition = UE.Vector3.zero;
+							var lastRotation = UE.Quaternion.identity;
+							var startIndex = 0;
+							var firstWayPoint = trajectory.waypoints[0];
 
-						SetActorPose(lastPosition, lastRotation);
+							if (firstWayPoint.time == 0)
+							{
+								lastPosition = SDF2Unity.GetPosition(firstWayPoint.Pose.Pos);
+								lastRotation = SDF2Unity.GetRotation(firstWayPoint.Pose.Rot);
+								startIndex = 1;
+							}
 
-						var lastTime = 0f;
-						for (var i = startIndex; i < trajectory.waypoints.Count; i++)
-						{
-							var waypoint = trajectory.waypoints[i];
-							// UE.Debug.Log("Time: " + waypoint.time + ", Position: " + SDF2Unity.GetPosition(waypoint.Pose.Pos) + ", Rotation: " + SDF2Unity.GetRotation(waypoint.Pose.Rot));
+							SetActorPose(lastPosition, lastRotation);
 
-							var waypointToward = new waypointToward();
-							var nextTime = (float)waypoint.time;
-							var nextPosition = SDF2Unity.GetPosition(waypoint.Pose.Pos);
-							var nextRotation = SDF2Unity.GetRotation(waypoint.Pose.Rot);
+							var lastTime = 0f;
+							for (var i = startIndex; i < trajectory.waypoints.Count; i++)
+							{
+								var waypoint = trajectory.waypoints[i];
+								// UE.Debug.Log("Time: " + waypoint.time + ", Position: " + SDF2Unity.GetPosition(waypoint.Pose.Pos) + ", Rotation: " + SDF2Unity.GetRotation(waypoint.Pose.Rot));
 
-							waypointToward.linearSpeed = UE.Vector3.Distance(nextPosition, lastPosition) / (nextTime - lastTime);
-							waypointToward.angularSpeed = UE.Quaternion.Angle(nextRotation, lastRotation) / (nextTime - lastTime);
-							waypointToward.tranlateTo = nextPosition;
-							waypointToward.rotateTo = nextRotation;
+								var waypointToward = new waypointToward();
+								var nextTime = (float)waypoint.time;
+								var nextPosition = SDF2Unity.GetPosition(waypoint.Pose.Pos);
+								var nextRotation = SDF2Unity.GetRotation(waypoint.Pose.Rot);
 
-							waypointTowards.Add(waypointToward);
-							// UE.Debug.Log("\t Speed(linear/angular): (" + waypointToward.linearSpeed + "/" + waypointToward.angularSpeed + ", pos: " + waypointToward.tranlateTo + ", rot:" + waypointToward.rotateTo);
+								waypointToward.linearSpeed = UE.Vector3.Distance(nextPosition, lastPosition) / (nextTime - lastTime);
+								waypointToward.angularSpeed = UE.Quaternion.Angle(nextRotation, lastRotation) / (nextTime - lastTime);
+								waypointToward.tranlateTo = nextPosition;
+								waypointToward.rotateTo = nextRotation;
 
-							lastTime = nextTime;
-							lastPosition = nextPosition;
-							lastRotation = nextRotation;
+								waypointTowards.Add(waypointToward);
+								// UE.Debug.Log("\t Speed(linear/angular): (" + waypointToward.linearSpeed + "/" + waypointToward.angularSpeed + ", pos: " + waypointToward.tranlateTo + ", rot:" + waypointToward.rotateTo);
+
+								lastTime = nextTime;
+								lastPosition = nextPosition;
+								lastRotation = nextRotation;
+							}
 						}
 					}
 				}

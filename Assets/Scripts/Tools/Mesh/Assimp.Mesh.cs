@@ -261,10 +261,10 @@ public partial class MeshLoader
 
 				var subObject = new GameObject(meshMat.Mesh.name);
 				var meshFilter = subObject.AddComponent<MeshFilter>();
-				meshFilter.mesh = meshMat.Mesh;
+				meshFilter.sharedMesh = meshMat.Mesh;
 
 				var meshRenderer = subObject.AddComponent<MeshRenderer>();
-				meshRenderer.material = meshMat.Material;
+				meshRenderer.sharedMaterial = meshMat.Material;
 				meshRenderer.allowOcclusionWhenDynamic = true;
 
 				subObject.transform.SetParent(rootObject.transform, true);

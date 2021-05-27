@@ -6,7 +6,6 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -17,16 +16,15 @@ namespace SensorDevices
 
 		private messages.ImagesStamped imagesStamped;
 
-		public SDF.Cameras parameters = null;
-
 		protected override void OnAwake()
 		{
-			Mode = ModeType.TX;
+			Mode = ModeType.TX_THREAD;
 		}
 
 		protected override void OnStart()
 		{
-			foreach (var camParameters in parameters.list)
+			var multiCamera = (deviceParameters as SDF.Cameras);
+			foreach (var camParameters in multiCamera.cameras)
 			{
 				AddCamera(camParameters);
 			}
@@ -54,7 +52,7 @@ namespace SensorDevices
 			}
 
 			DeviceHelper.SetCurrentTime(imagesStamped.Time);
-			PushData<messages.ImagesStamped>(imagesStamped);
+			PushDeviceMessage<messages.ImagesStamped>(imagesStamped);
 		}
 
 		private void AddCamera(in SDF.Camera parameters)
@@ -71,8 +69,8 @@ namespace SensorDevices
 
 			var newCam = newCamObject.AddComponent<SensorDevices.Camera>();
 			newCam.Mode = ModeType.NONE;
-			newCam.deviceName = "MultiCamera::" + parameters.name;
-			newCam.SetDeviceParameter(parameters as SDF.SensorType);
+			newCam.DeviceName = "MultiCamera::" + newCamObject.name ;
+			newCam.SetDeviceParameter(parameters);
 
 			cameras.Add(newCam);
 		}
@@ -80,7 +78,7 @@ namespace SensorDevices
 		public SensorDevices.Camera GetCamera(in string cameraName)
 		{
 			var target = "MultiCamera::" + cameraName;
-			return cameras.Find(x => x.deviceName.Equals(target));
+			return cameras.Find(x => x.DeviceName.Equals(target));
 		}
 
 		public SensorDevices.Camera GetCamera(in int cameraIndex)

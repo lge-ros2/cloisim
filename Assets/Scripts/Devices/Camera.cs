@@ -274,7 +274,7 @@ namespace SensorDevices
 		protected override void GenerateMessage()
 		{
 			DeviceHelper.SetCurrentTime(imageStamped.Time);
-			PushData<messages.ImageStamped>(imageStamped);
+			PushDeviceMessage<messages.ImageStamped>(imageStamped);
 		}
 
 		protected virtual void PostProcessing(ref byte[] buffer) { }

@@ -9,6 +9,7 @@ using System.Text;
 using UnityEngine;
 using WebSocketSharp.Server;
 
+[DefaultExecutionOrder(100)]
 public class SimulationService : MonoBehaviour
 {
 	public const string SUCCESS = "ok";
@@ -68,7 +69,7 @@ public class SimulationService : MonoBehaviour
 			bridgeManager = bridgeManagerComponent
 		});
 
-		var UIRoot = GameObject.Find("UI");
+		var UIRoot = Main.UIObject;
 		var markerVisualizer = UIRoot.GetComponent<MarkerVisualizer>();
 		wsServer.AddWebSocketService<MarkerVisualizerService>("/markers", () => new MarkerVisualizerService(markerVisualizer)
 		{
