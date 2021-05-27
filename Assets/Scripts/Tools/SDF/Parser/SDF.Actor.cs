@@ -111,7 +111,7 @@ namespace SDF
 			// Description: Set to true if the animation should start as soon as the simulation starts playing. It is useful to set this to false if the animation should only start playing only when triggered by a plugin, for example.
 			public bool auto_start = true;
 
-			public List<Trajectory> trajectories = new List<Trajectory>();
+			public List<Trajectory> trajectories = null;
 		}
 
 		public Skin skin = null;
@@ -165,6 +165,7 @@ namespace SDF
 
 				if (IsValidNode("script/trajectory"))
 				{
+					script.trajectories = new List<Script.Trajectory>();
 					var nodeList = GetNodes("script/trajectory");
 					foreach (XmlNode nodeItem in nodeList)
 					{

@@ -33,7 +33,7 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
-			deviceName = name;
+			DeviceName = name;
 			Reset();
 		}
 
@@ -41,7 +41,7 @@ namespace SensorDevices
 		{
 		}
 
-		public void Reset()
+		protected override void OnReset()
 		{
 			// Debug.Log("IMU Reset");
 			imuInitialRotation = lastImuInitialRotation;
@@ -51,7 +51,7 @@ namespace SensorDevices
 		protected override void InitializeMessages()
 		{
 			imu = new messages.Imu();
-			imu.EntityName = deviceName;
+			imu.EntityName = DeviceName;
 			imu.Stamp = new messages.Time();
 			imu.Orientation = new messages.Quaternion();
 			imu.AngularVelocity = new messages.Vector3d();
@@ -74,7 +74,6 @@ namespace SensorDevices
 			imuLinearAcceleration = (currentLinearVelocity - previousLinearVelocity) / Time.fixedDeltaTime;
 			imuLinearAcceleration.y += (-Physics.gravity.y);
 
-
 			previousImuRotation = imuRotation;
 			previousImuPosition = currentPosition;
 			previousLinearVelocity = currentLinearVelocity;
@@ -86,7 +85,7 @@ namespace SensorDevices
 			DeviceHelper.SetVector3d(imu.AngularVelocity, imuAngularVelocity * Mathf.Deg2Rad);
 			DeviceHelper.SetVector3d(imu.LinearAcceleration, imuLinearAcceleration);
 			DeviceHelper.SetCurrentTime(imu.Stamp);
-			PushData<messages.Imu>(imu);
+			PushDeviceMessage<messages.Imu>(imu);
 		}
 
 		public messages.Imu GetImuMessage()

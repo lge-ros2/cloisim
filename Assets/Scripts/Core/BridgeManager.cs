@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net;
 using UnityEngine;
 
+[DefaultExecutionOrder(35)]
 public class BridgeManager : MonoBehaviour
 {
 	private const ushort MinPortRange = 49152;
@@ -41,7 +42,7 @@ public class BridgeManager : MonoBehaviour
 
 	void Awake()
 	{
-		var UIRoot = GameObject.Find("UI");
+		var UIRoot = Main.UIObject;
 		simulationDisplay = UIRoot.GetComponentInChildren<SimulationDisplay>();
 	}
 
@@ -126,9 +127,15 @@ public class BridgeManager : MonoBehaviour
 		return true;
 	}
 
+	private static string MakeHashKey(in string modelName, in string partName, in string subPartName)
+	{
+		return modelName + partName + subPartName;
+	}
+
 	public bool AllocateDevice(in string deviceType, in string modelName, in string partName, in string subPartName, out string hashKey, out ushort port)
 	{
-		hashKey = modelName + partName + subPartName;
+		hashKey = BridgeManager.MakeHashKey(modelName, partName, subPartName);
+
 		if (string.IsNullOrEmpty(hashKey))
 		{
 			Debug.LogError("Impossible empty hashKey");

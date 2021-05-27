@@ -10,11 +10,11 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportWorld(in SDF.World world)
+			protected override System.Object ImportWorld(in SDF.World world)
 			{
 				if (world == null)
 				{
-					return;
+					return null;
 				}
 
 				// Debug.Log("Import World");
@@ -43,6 +43,11 @@ namespace SDF
 				}
 
 				UnityEngine.Physics.gravity = SDF2Unity.GetDirection(world.gravity);
+
+
+				ImportLights(world.GetLights());
+
+				return Main.WorldRoot;
 			}
 		}
 	}

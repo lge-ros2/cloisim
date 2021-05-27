@@ -79,7 +79,7 @@ namespace SDF
 
 					var meshFilter = newVisualObject.AddComponent<UE.MeshFilter>();
 					mergedMesh.name = newName;
-					meshFilter.mesh = mergedMesh;
+					meshFilter.sharedMesh = mergedMesh;
 
 					var meshRenderer = newVisualObject.AddComponent<UE.MeshRenderer>();
 					meshRenderer.material = material;

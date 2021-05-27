@@ -39,53 +39,6 @@ namespace SDF
 				childObject.transform.localPosition = UE.Vector3.zero;
 				childObject.transform.localRotation = UE.Quaternion.identity;
 			}
-
-			protected override void ImportPlugin(in SDF.Plugin plugin, in System.Object parentObject)
-			{
-				var targetObject = (parentObject as UE.GameObject);
-
-				// filtering plugin name
-				var pluginName = plugin.ClassName();
-				// Debug.Log("plugin name = " + pluginName);
-
-				var pluginType = Type.GetType(pluginName);
-				if (pluginType != null)
-				{
-					if (targetObject == null)
-					{
-						Debug.LogError("[Plugin] targetObject is empty");
-						return;
-					}
-
-					var pluginComponent = targetObject.AddComponent(pluginType);
-
-					var pluginObject = pluginComponent as CLOiSimPlugin;
-					var multiPluginObject = pluginComponent as CLOiSimMultiPlugin;
-
-					if (pluginObject != null)
-					{
-						var node = plugin.GetNode();
-						pluginObject.SetPluginName(plugin.Name);
-						pluginObject.SetPluginParameters(node);
-						// Debug.Log("[Plugin] device added : " + plugin.Name);
-					}
-					else if (multiPluginObject != null)
-					{
-						var node = plugin.GetNode();
-						multiPluginObject.SetPluginName(plugin.Name);
-						multiPluginObject.SetPluginParameters(node);
-						// Debug.Log("[Plugin] devices added : " + plugin.Name);
-					}
-					else
-					{
-						Debug.LogError("[Plugin] failed to add : " + plugin.Name);
-					}
-				}
-				else
-				{
-					Debug.LogWarningFormat("[Plugin] No plugin({0}) exist", plugin.Name);
-				}
-			}
 		}
 	}
 }

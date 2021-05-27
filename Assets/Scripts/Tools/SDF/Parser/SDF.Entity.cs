@@ -122,12 +122,12 @@ namespace SDF
 			return (root == null)? null:root.SelectNodes(xpath);
 		}
 
-		protected T GetValue<T>(in string xpath, in T defaultValue = default(T))
+		public T GetValue<T>(in string xpath, in T defaultValue = default(T))
 		{
 			return GetValue<T>(GetNode(xpath), defaultValue);
 		}
 
-		protected bool GetValues<T>(in string xpath, out List<T> valueList)
+		public bool GetValues<T>(in string xpath, out List<T> valueList)
 		{
 			var nodeList = new List<XmlNode>(GetNodes(xpath).Cast<XmlNode>());
 			if (nodeList == null)
@@ -150,7 +150,7 @@ namespace SDF
 			return true;
 		}
 
-		protected T GetAttribute<T>(in string attributeName, in T defaultValue = default(T))
+		public T GetAttribute<T>(in string attributeName, in T defaultValue = default(T))
 		{
 			var targetAttribute = attributes[attributeName];
 			if (targetAttribute == null)
@@ -161,7 +161,7 @@ namespace SDF
 			return ConvertValueType<T>(attributes[attributeName].Value);
 		}
 
-		protected T GetAttributeInPath<T>(in string xpath, in string attributeName, in T defaultValue = default(T))
+		public T GetAttributeInPath<T>(in string xpath, in string attributeName, in T defaultValue = default(T))
 		{
 			var node = GetNode(xpath);
 			if (node != null)

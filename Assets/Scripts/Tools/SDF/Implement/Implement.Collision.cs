@@ -56,10 +56,11 @@ namespace SDF
 					// remove all child objects after merge the meshes for colloision
 					if (targetObject.transform.childCount > 0)
 					{
-						foreach (var meshFilter in meshFilters)
+						for (var i = 0; i < targetObject.transform.childCount; i++)
 						{
-							// UE.Debug.Log(childGeometry.gameObject.name);
-							UE.GameObject.Destroy(meshFilter.gameObject);
+							var childObject = targetObject.transform.GetChild(i).gameObject;
+							// UE.Debug.Log(childObjet.name);
+							UE.GameObject.Destroy(childObject);
 						}
 					}
 					else

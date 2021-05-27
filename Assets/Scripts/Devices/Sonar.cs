@@ -39,7 +39,7 @@ namespace SensorDevices
 
 		protected override void OnAwake()
 		{
-			Mode = ModeType.TX;
+			_mode = Mode.TX;
 			deviceName = name;
 			sonarLink = transform.parent;
 
@@ -76,7 +76,7 @@ namespace SensorDevices
 			ResolveSensingArea(meshCollider.sharedMesh);
 
 			var sonar = sonarStamped.Sonar;
-			sonar.Frame = deviceName;
+			sonar.Frame = DeviceName;
 			sonar.Radius = radius;
 			sonar.RangeMin = rangeMin;
 			sonar.RangeMax = rangeMax;
@@ -84,13 +84,10 @@ namespace SensorDevices
 
 		protected override IEnumerator OnVisualize()
 		{
-			var waitForEndOfFrame = new WaitForEndOfFrame();
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 
 			while (true)
 			{
-				yield return waitForEndOfFrame;
-
 				var detectedPoint = GetDetectedPoint();
 
 				if (!detectedPoint.Equals(Vector3.zero))
@@ -121,11 +118,11 @@ namespace SensorDevices
 			var sonarRotation = sonarLink.rotation;
 
 			var sonar = sonarStamped.Sonar;
-			sonar.Frame = deviceName;
+			sonar.Frame = DeviceName;
 			DeviceHelper.SetVector3d(sonar.WorldPose.Position, sonarPosition);
 			DeviceHelper.SetQuaternion(sonar.WorldPose.Orientation, sonarRotation);
 			DeviceHelper.SetCurrentTime(sonarStamped.Time);
-			PushData<messages.SonarStamped>(sonarStamped);
+			PushDeviceMessage<messages.SonarStamped>(sonarStamped);
 		}
 
 		private void ResolveSensingArea(Mesh targetMesh)

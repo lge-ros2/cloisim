@@ -6,7 +6,6 @@
 
 using System.Collections.Generic;
 using System.Collections;
-using System.Linq;
 using System;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
@@ -123,19 +122,6 @@ namespace SensorDevices
 			}
 		}
 
-		new void OnDestroy()
-		{
-      // Debug.LogWarning("Destroy");
-			// Important!! Native arrays must be disposed manually.
-			for (var i = 0; i < readbacks.Count; i++)
-			{
-  			var item = readbacks.ElementAt(i);
-				item.Key.WaitForCompletion();
-			}
-
-			base.OnDestroy();
-		}
-
 		protected override void InitializeMessages()
 		{
 			laserScanStamped = new messages.LaserScanStamped();
@@ -146,7 +132,7 @@ namespace SensorDevices
 			laserScanStamped.Scan.WorldPose.Orientation = new messages.Quaternion();
 
 			var laserScan = laserScanStamped.Scan;
-			laserScan.Frame = deviceName;
+			laserScan.Frame = DeviceName;
 			laserScan.Count = horizontal.samples;
 			laserScan.AngleMin = horizontal.angle.min * Mathf.Deg2Rad;
 			laserScan.AngleMax = horizontal.angle.max * Mathf.Deg2Rad;
@@ -287,6 +273,7 @@ namespace SensorDevices
 						laserCam.Render();
 						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32, OnCompleteAsyncReadback);
 						readbacks.Add(readbackRequest, dataIndex);
+						yield return null;
 					}
 
 					laserCam.enabled = false;
@@ -317,24 +304,24 @@ namespace SensorDevices
 					depthCamBuffer.imageBuffer = readbackData;
 					depthCamBuffer.Allocate();
 
-          if (depthCamBuffer.depthBuffer.IsCreated)
-          {
-            var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), batchSize);
-            jobHandleDepthCamBuffer.Complete();
+					if (depthCamBuffer.depthBuffer.IsCreated)
+					{
+						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), batchSize);
+						jobHandleDepthCamBuffer.Complete();
 
-            var data = laserCamData[dataIndex];
-            data.depthBuffer = depthCamBuffer.depthBuffer;
-            data.Allocate();
+						var data = laserCamData[dataIndex];
+						data.depthBuffer = depthCamBuffer.depthBuffer;
+						data.Allocate();
 
-            var jobHandle = data.Schedule(data.OutputLength(), batchSize);
-            jobHandle.Complete();
+						var jobHandle = data.Schedule(data.OutputLength(), batchSize);
+						jobHandle.Complete();
 
-            laserDataOutput[dataIndex].data = data.GetLaserData();
+						laserDataOutput[dataIndex].data = data.GetLaserData();
 
-            data.Deallocate();
-          }
+						data.Deallocate();
+					}
 
-          depthCamBuffer.Deallocate();
+					depthCamBuffer.Deallocate();
 
 					readbackData.Dispose();
 
@@ -446,7 +433,7 @@ namespace SensorDevices
 			DoLaserAngleFilter();
 
 			DeviceHelper.SetCurrentTime(laserScanStamped.Time);
-			PushData<messages.LaserScanStamped>(laserScanStamped);
+			PushDeviceMessage<messages.LaserScanStamped>(laserScanStamped);
 		}
 
 		protected override IEnumerator OnVisualize()
@@ -456,7 +443,6 @@ namespace SensorDevices
 
 			var startAngleH = (float)horizontal.angle.min;
 			var startAngleV = (float)vertical.angle.min;
-			var waitForEndOfFrame = new WaitForEndOfFrame();
 			var waitForSeconds = new WaitForSeconds(visualUpdatePeriod);
 
 			var horizontalSamples = horizontal.samples;
@@ -465,8 +451,6 @@ namespace SensorDevices
 
 			while (true)
 			{
-				yield return waitForEndOfFrame;
-
 				var lidarSensorWorldPosition = lidarLink.position + lidarSensorInitPose.position;
 				var rangeData = GetRangeData();
 

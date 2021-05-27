@@ -12,16 +12,10 @@ namespace SDF
 	{
 		public class Model : Base
 		{
-			public bool isTopModel;
 			public bool hasRootArticulationBody;
 
 			[UE.Header("SDF Properties")]
 			public bool isStatic;
-
-			new void Awake()
-			{
-				base.Awake();
-			}
 
 			void Start()
 			{
@@ -52,11 +46,11 @@ namespace SDF
 
 			void OnDestroy()
 			{
-				if (isTopModel)
+				if (IsFirstChild)
 				{
 					foreach (var plugin in GetComponentsInChildren<CLOiSimPlugin>())
 					{
-						plugin.Stop();
+						plugin.StopThread();
 					}
 				}
 			}

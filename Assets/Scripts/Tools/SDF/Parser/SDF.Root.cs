@@ -46,11 +46,8 @@ namespace SDF
 			Console.SetOut(new DebugLogWriter());
 
 			SetWorldFileName(filename);
-		}
 
-		public void SetTargetLogOutput(in SimulationDisplay target)
-		{
-			simulationDisplay = target;
+			simulationDisplay = Main.Display;
 		}
 
 		public void SetWorldFileName(in string filename)
@@ -72,7 +69,7 @@ namespace SDF
 			updateResourceModelTable();
 
 			var worldFound = false;
-			if (doc != null && worldFileName != null && worldFileName.Length > 0)
+			if (worldFileName != null && worldFileName.Length > 0)
 			{
 				// Console.WriteLine("World file, PATH: " + worldFileName);
 				foreach (var worldPath in worldDefaultPaths)
@@ -83,13 +80,34 @@ namespace SDF
 						try
 						{
 							doc.Load(fullFilePath);
+
+							replaceAllIncludedModel();
+
+							ConvertPathToAbsolutePath("uri");
+							ConvertPathToAbsolutePath("filename");
+
+							// Console.WriteLine("Load World");
+							var worldNode = doc.SelectSingleNode("/sdf/world");
+
+							_world = new World(worldNode);
+
+							// Console.WriteLine("Load Completed!!!");
+
+							// Print all SDF contents
+							// StringWriter sw = new StringWriter();
+							// XmlTextWriter xw = new XmlTextWriter(sw);
+							// doc.WriteTo(xw);
+							// Console.WriteLine(sw.ToString());
+
 						}
 						catch (XmlException ex)
 						{
 							var errorMessage = "Failed to Load file(" + fullFilePath + ") file - " + ex.Message;
 							Console.WriteLine(errorMessage);
 							simulationDisplay?.SetErrorMessage(errorMessage);
+							return false;
 						}
+
 						worldFound = true;
 						break;
 					}
@@ -102,24 +120,6 @@ namespace SDF
 				Console.WriteLine("World file not exist: " + worldFileName);
 				return false;
 			}
-
-			replaceAllIncludedModel();
-
-			ConvertPathToAbsolutePath("uri");
-			ConvertPathToAbsolutePath("filename");
-
-			// Console.WriteLine("Load World");
-			var worldNode = doc.SelectSingleNode("/sdf/world");
-
-			_world = new World(worldNode);
-
-			// Console.WriteLine("Load Completed!!!");
-
-			// Print all SDF contents
-			// StringWriter sw = new StringWriter();
-			// XmlTextWriter xw = new XmlTextWriter(sw);
-			// doc.WriteTo(xw);
-			// Console.WriteLine(sw.ToString());
 
 			return true;
 		}

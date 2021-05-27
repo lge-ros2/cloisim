@@ -8,14 +8,16 @@ using System;
 using System.Text;
 using UnityEngine;
 
+[DefaultExecutionOrder(50)]
 public partial class SimulationDisplay : MonoBehaviour
 {
 	private Clock clock = null;
 	private ObjectSpawning objectSpawning = null;
 	private CameraControl cameraControl = null;
-	private string eventMessage = string.Empty;
-	private StringBuilder sbTimeInfo = null;
+	private StringBuilder eventMessage = new StringBuilder();
+	private StringBuilder sbTimeInfo = new StringBuilder();
 
+	private Vector3 pointInfo = Vector3.zero;
 
 	[Header("GUI properties")]
 	private const int labelFontSize = 14;
@@ -25,6 +27,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private const int textHeight = 19;
 
 	private const int textWidthFps = 75;
+	private const int TextWidthPointInfo = 300;
 	private const int textWidthVersion = 50;
 	private const int textWidthSimulationInfo = 550;
 	private const int textWidthEvent = 800;
@@ -35,6 +38,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private Rect rectVersion;
 	private Rect rectSimulationInfo;
 	private Rect rectFps;
+	private Rect rectPointInfo;
 	private Rect rectLogMessage;
 	private Rect rectDialog;
 	private Rect rectToolbar;
@@ -47,11 +51,10 @@ public partial class SimulationDisplay : MonoBehaviour
 	// Start is called before the first frame update
 	void Awake()
 	{
-		var coreObject = GameObject.Find("Core");
+		var coreObject = Main.CoreObject;
 		objectSpawning = coreObject.GetComponent<ObjectSpawning>();
 		cameraControl = GetComponentInChildren<CameraControl>();
 		clock = DeviceHelper.GetGlobalClock();
-		sbTimeInfo = new StringBuilder();
 
 		textureBackground = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
 		textureBackground.SetPixel(0, 0, new Color(0, 0, 0, 0.75f));
@@ -60,6 +63,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		rectVersion = new Rect(textLeftMargin, topMargin, textWidthVersion, textHeight);
 		rectSimulationInfo = new Rect(textLeftMargin, Screen.height - textHeight - bottomMargin, textWidthSimulationInfo, textHeight);
 		rectFps = new Rect(rectSimulationInfo.width + rectSimulationInfo.x,  Screen.height - textHeight - bottomMargin, textWidthFps, textHeight);
+		rectPointInfo = new Rect(rectFps.width + rectFps.x,  Screen.height - textHeight - bottomMargin, TextWidthPointInfo, textHeight);
 		rectLogMessage = new Rect(textLeftMargin, Screen.height - (textHeight * 2) - bottomMargin, textWidthEvent, textHeight);
 
 		rectToolbar = new Rect(0, topMargin, toolbarWidth, guiHeight);
@@ -79,19 +83,19 @@ public partial class SimulationDisplay : MonoBehaviour
 
 	public void ClearLogMessage()
 	{
-		eventMessage = string.Empty;
+		eventMessage.Clear();
 	}
 
 	public void SetEventMessage(in string value)
 	{
 		logMessageColor = Color.green;
-		eventMessage = value;
+		eventMessage.AppendLine(value);
 	}
 
 	public void SetErrorMessage(in string value)
 	{
 		logMessageColor = Color.red;
-		eventMessage = value;
+		eventMessage.AppendLine(value);
 	}
 
 	private string GetTimeInfoString()
@@ -110,6 +114,18 @@ public partial class SimulationDisplay : MonoBehaviour
 		sbTimeInfo.Clear();
 		sbTimeInfo.AppendFormat("Time: Simulation [{0}] | Real [{1}] | Real-Sim [{2}]", currentSimTime, currentRealTime, diffRealSimTime);
 		return sbTimeInfo.ToString();
+	}
+
+	public void SetPointInfo(in Vector3 point)
+	{
+		this.pointInfo = point;
+	}
+
+	private void DrawPointInfoText(GUIStyle style)
+	{
+		rectPointInfo.y = Screen.height - textHeight - bottomMargin;
+		style.normal.textColor = new Color(1.0f, 0.93f, 0.0f, 1);
+		DrawLabelWithShadow(rectPointInfo, "HitPoint " + pointInfo.ToString("F4"), style);
 	}
 
 	private string GetBoldText(in string value)
@@ -152,10 +168,12 @@ public partial class SimulationDisplay : MonoBehaviour
 
 		DrawFPSText(style);
 
+		DrawPointInfoText(style);
+
 		// logging: error message or event message
 		rectLogMessage.y = Screen.height - (textHeight * 2) - bottomMargin;
 		style.normal.textColor = logMessageColor;
-		DrawLabelWithShadow(rectLogMessage, eventMessage, style);
+		DrawLabelWithShadow(rectLogMessage, eventMessage.ToString(), style);
 	}
 
 	void OnGUI()

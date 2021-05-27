@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using UnityEngine.AI;
 using UnityEngine;
 
 namespace SDF
@@ -12,17 +13,17 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportActor(in Actor actor)
+			protected override System.Object ImportActor(in Actor actor)
 			{
 				if (actor == null)
 				{
-					return;
+					return null;
 				}
 
 				var newActorObject = Implement.Actor.CreateSkin(actor.skin);
 				if (newActorObject == null)
 				{
-					return;
+					return null;
 				}
 
 				newActorObject.name = actor.Name;
@@ -40,25 +41,26 @@ namespace SDF
 
 				newActorObject.transform.localScale = Vector3.one * (float)actor.skin.scale;
 
+				var script = actor.script;
 				if (actor.animations != null)
 				{
 					foreach (var animation in actor.animations)
 					{
-						Implement.Actor.SetAnimation(newActorObject, animation);
+						Implement.Actor.SetAnimation(newActorObject, animation, script.auto_start, script.loop);
 					}
 				}
 
-				actorHelper.SetScript(actor.script);
+				actorHelper.SetScript(script);
 
 				var capsuleCollider = newActorObject.AddComponent<CapsuleCollider>();
-
-				var skinnedMeshRenderer = newActorObject.GetComponentInChildren<SkinnedMeshRenderer>();
-				var localBound = skinnedMeshRenderer.localBounds;
-				const float sizeRatio = 0.8f;
 				capsuleCollider.direction = 1;
-				capsuleCollider.radius = Mathf.Min(localBound.extents.x, localBound.extents.y) * sizeRatio;
-  				capsuleCollider.center = new Vector3(0, localBound.extents.z + capsuleCollider.radius, 0);
-				capsuleCollider.height = localBound.size.z + capsuleCollider.radius * 2;
+
+				var navMeshAgent = newActorObject.AddComponent<NavMeshAgent>();
+				navMeshAgent.speed = 0;
+				navMeshAgent.angularSpeed = 0;
+				navMeshAgent.acceleration = 0;
+
+				return newActorObject as System.Object;
 			}
 		}
 	}
