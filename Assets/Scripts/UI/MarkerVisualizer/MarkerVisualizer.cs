@@ -39,7 +39,12 @@ public partial class MarkerVisualizer : MonoBehaviour
 		mainCamera = GameObject.Find(mainCameraName).GetComponent<Camera>();
 	}
 
-	void Update()
+	void Start()
+	{
+		StartCoroutine(HandleFollowingText());
+	}
+
+	void LateUpdate()
 	{
 		if (request != null && !request.command.Equals(VisualMarkerRequest.MarkerCommands.Unknown))
 		{
@@ -47,41 +52,42 @@ public partial class MarkerVisualizer : MonoBehaviour
 		}
 	}
 
-	void LateUpdate()
-	{
-		StartCoroutine(HandleFollowingText());
-	}
-
 	private IEnumerator HandleFollowingText()
 	{
+		const float UpdatePeriodForFollowingText = 0.3f;
+		var waitForSecs = new WaitForSeconds(UpdatePeriodForFollowingText);
 		var newPos = Vector3.zero;
-
-		foreach (DictionaryEntry textMarker in followingTextMarkers)
+		while (true)
 		{
-			yield return null;
-
-			// Look at camera
-			var textObject = (textMarker.Value as TextMeshPro).gameObject;
-			textObject.transform.LookAt(mainCamera.transform);
-
-			yield return null;
-
-			// Text marker follows Objects
-			var markerName = textObject.name;
-			var followingTargetObject = registeredObjectsForFollowingText[markerName] as GameObject;
-
-			yield return null;
-
-			if (followingTargetObject != null)
+			foreach (DictionaryEntry textMarker in followingTextMarkers)
 			{
-				var rectTransform = textObject.GetComponent<RectTransform>();
-				var followingObjectPosition = followingTargetObject.transform.position;
-				var textPosition = rectTransform.localPosition;
+				yield return null;
 
-				newPos.Set(followingObjectPosition.x, textPosition.y, followingObjectPosition.z);
-				rectTransform.position = newPos;
+				// Look at camera
+				var textObject = (textMarker.Value as TextMeshPro).gameObject;
+				textObject.transform.LookAt(mainCamera.transform);
+
+				yield return null;
+
+				// Text marker follows Objects
+				var markerName = textObject.name;
+				var followingTargetObject = registeredObjectsForFollowingText[markerName] as GameObject;
+
+				yield return null;
+
+				if (followingTargetObject != null)
+				{
+					var rectTransform = textObject.GetComponent<RectTransform>();
+					var followingObjectPosition = followingTargetObject.transform.position;
+					var textPosition = rectTransform.localPosition;
+
+					newPos.Set(followingObjectPosition.x, textPosition.y, followingObjectPosition.z);
+					rectTransform.position = newPos;
+				}
+				yield return null;
 			}
-			yield return null;
+
+			yield return waitForSecs;
 		}
 	}
 
