@@ -28,7 +28,7 @@ namespace SDF
 
 			public Dictionary<string, UE.ArticulationBody> jointList = new Dictionary<string, UE.ArticulationBody>();
 
-			private List<UE.ContactPoint> contactPointList = new List<UE.ContactPoint>();
+			private UE.ContactPoint[] contactPoints = null;
 
 			public Model RootModel => rootModel;
 
@@ -71,14 +71,13 @@ namespace SDF
 					UE.Gizmos.DrawCube(transform.position, region);
 				}
 
-				if (drawContact && contactPointList.Count > 0)
+				if (drawContact && contactPoints != null && contactPoints.Length > 0)
 				{
 					// Debug-draw all contact points and normals
-					foreach (var contact in contactPointList)
+					foreach (var contact in contactPoints)
 					{
 						UE.Debug.DrawRay(contact.point, contact.normal, UE.Color.cyan, 0, true);
 					}
-					contactPointList.Clear();
 				}
 			}
 
@@ -90,7 +89,7 @@ namespace SDF
 			void OnCollisionStay(UE.Collision collisionInfo)
 			{
 				// Debug.Log(name + " |Stay| " + collisionInfo.gameObject.name);
-				contactPointList.AddRange(collisionInfo.contacts);
+				contactPoints = collisionInfo.contacts;
 			}
 
 			private UE.Collider[] GetCollidersInChildren()
