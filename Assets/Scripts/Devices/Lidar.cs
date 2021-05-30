@@ -15,6 +15,7 @@ using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
+	[RequireComponent(typeof(UnityEngine.Camera))]
 	public partial class Lidar : Device
 	{
 		private messages.LaserScanStamped laserScanStamped = null;
@@ -103,7 +104,7 @@ namespace SensorDevices
 			Mode = ModeType.TX_THREAD;
 			lidarLink = transform.parent;
 
-			laserCam = gameObject.AddComponent<UnityEngine.Camera>();
+			laserCam = GetComponent<UnityEngine.Camera>();
 		}
 
 		protected override void OnStart()

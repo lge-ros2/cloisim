@@ -4,11 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections;
 using System.Collections.Generic;
 using System;
 using UnityEngine;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 
 namespace SensorDevices

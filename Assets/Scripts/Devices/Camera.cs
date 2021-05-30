@@ -11,6 +11,7 @@ using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
+	[RequireComponent(typeof(UnityEngine.Camera))]
 	public partial class Camera : Device
 	{
 		protected messages.CameraSensor sensorInfo = null;
@@ -66,7 +67,7 @@ namespace SensorDevices
 		{
 			Mode = ModeType.TX_THREAD;
 			cmdBuffer = new CommandBuffer();
-			camSensor = gameObject.AddComponent<UnityEngine.Camera>();
+			camSensor = GetComponent<UnityEngine.Camera>();
 			universalCamData = camSensor.GetUniversalAdditionalCameraData();
 
 			// for controlling targetDisplay

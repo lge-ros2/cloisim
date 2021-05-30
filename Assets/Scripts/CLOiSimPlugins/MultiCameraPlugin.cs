@@ -4,10 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
-using messages = cloisim.msgs;
-using Any = cloisim.msgs.Any;
-
 public class MultiCameraPlugin : CLOiSimPlugin
 {
 	protected override void OnAwake()
