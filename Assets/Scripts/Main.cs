@@ -234,8 +234,6 @@ public class Main: MonoBehaviour
 
 		if (sdf.DoParse())
 		{
-			yield return new WaitForSeconds(0.0001f);
-
 			var loader = new SDF.Import.Loader();
 			loader.SetRootModels(worldRoot);
 			loader.SetRootLights(lightsRoot);
@@ -330,7 +328,7 @@ public class Main: MonoBehaviour
 
 		DeviceHelper.GetGlobalClock()?.ResetTime();
 
-		yield return new WaitForSeconds(0.5f);
+		yield return new WaitForSeconds(0.2f);
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
 		isResetting = false;
 	}
