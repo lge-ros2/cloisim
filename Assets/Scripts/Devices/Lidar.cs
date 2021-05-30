@@ -467,24 +467,27 @@ namespace SensorDevices
 				var lidarSensorWorldPosition = lidarLink.position + lidarSensorInitPose.position;
 				var rangeData = GetRangeData();
 
-				for (var scanIndex = 0; scanIndex < rangeData.Length; scanIndex++)
+				if (rangeData != null)
 				{
-					var scanIndexH = scanIndex % horizontalSamples;
-					var scanIndexV = scanIndex / horizontalSamples;
-					var rayAngleH = ((laserAngleResolution.H * scanIndexH)) + startAngleH;
-					var rayAngleV = ((laserAngleResolution.V * scanIndexV)) + startAngleV;
-
-					var rayRotation = Quaternion.AngleAxis((float)rayAngleH, transform.up) * Quaternion.AngleAxis((float)rayAngleV, transform.forward) * lidarLink.forward;
-					var rayStart = (rayRotation * rangeMin) + lidarSensorWorldPosition;
-
-					var ccwIndex = (uint)(rangeData.Length - scanIndex - 1);
-					var rayData = (float)rangeData[ccwIndex];
-
-					if (rayData > 0)
+					for (var scanIndex = 0; scanIndex < rangeData.Length; scanIndex++)
 					{
-						var rayDistance = (rayData == Mathf.Infinity) ? rangeMax : (rayData - rangeMin);
-						var rayDirection = rayRotation * rayDistance;
-						Debug.DrawRay(rayStart, rayDirection, rayColor, visualDrawDuration, true);
+						var scanIndexH = scanIndex % horizontalSamples;
+						var scanIndexV = scanIndex / horizontalSamples;
+						var rayAngleH = ((laserAngleResolution.H * scanIndexH)) + startAngleH;
+						var rayAngleV = ((laserAngleResolution.V * scanIndexV)) + startAngleV;
+
+						var rayRotation = Quaternion.AngleAxis((float)rayAngleH, transform.up) * Quaternion.AngleAxis((float)rayAngleV, transform.forward) * lidarLink.forward;
+						var rayStart = (rayRotation * rangeMin) + lidarSensorWorldPosition;
+
+						var ccwIndex = (uint)(rangeData.Length - scanIndex - 1);
+						var rayData = (float)rangeData[ccwIndex];
+
+						if (rayData > 0)
+						{
+							var rayDistance = (rayData == Mathf.Infinity) ? rangeMax : (rayData - rangeMin);
+							var rayDirection = rayRotation * rayDistance;
+							Debug.DrawRay(rayStart, rayDirection, rayColor, visualDrawDuration, true);
+						}
 					}
 				}
 
@@ -500,7 +503,7 @@ namespace SensorDevices
 			}
 			catch
 			{
-				return new double[0];
+				return null;
 			}
 		}
 	}
