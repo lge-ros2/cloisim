@@ -21,11 +21,6 @@ namespace SDF
 
 		public string FileName => filename;
 
-		public XmlNode GetNode()
-		{
-			return GetNode(".");
-		}
-
 		public Plugin(XmlNode _node)
 			: base(_node)
 		{
