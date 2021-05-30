@@ -6,8 +6,8 @@
 
 public class Micom : Device
 {
-	private MicomInput micomInput = null;
 	private MicomSensor micomSensor = null;
+	private MicomInput micomInput = null;
 
 	public bool debugging = false;
 
@@ -15,18 +15,10 @@ public class Micom : Device
 	{
 		Mode = ModeType.NONE;
 		DeviceName = "Micom";
-
-		micomSensor = gameObject.AddComponent<MicomSensor>();
-		micomInput = gameObject.AddComponent<MicomInput>();
-		micomInput.SetMicomSensor(micomSensor);
 	}
 
 	protected override void OnStart()
 	{
-		micomInput.SetPluginParameters(GetPluginParameters());
-		micomSensor.SetPluginParameters(GetPluginParameters());
-		micomInput.EnableDebugging = EnableDebugging;
-		micomSensor.EnableDebugging = EnableDebugging;
 	}
 
 	protected override void OnReset()
@@ -37,11 +29,25 @@ public class Micom : Device
 
 	public MicomInput GetInput()
 	{
+		if (micomInput == null)
+		{
+			micomInput = gameObject.AddComponent<MicomInput>();
+			micomInput.SetMicomSensor(GetSensor());
+			micomInput.EnableDebugging = EnableDebugging;
+		}
+
 		return micomInput;
 	}
 
 	public MicomSensor GetSensor()
 	{
+		if (micomSensor == null)
+		{
+			micomSensor = gameObject.AddComponent<MicomSensor>();
+			micomSensor.SetPluginParameters(GetPluginParameters());
+			micomSensor.EnableDebugging = EnableDebugging;
+		}
+
 		return micomSensor;
 	}
 }

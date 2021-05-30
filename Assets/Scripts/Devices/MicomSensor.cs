@@ -31,6 +31,23 @@ public partial class MicomSensor : Device
 
 	protected override void OnStart()
 	{
+		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
+
+		if (imuSensor != null)
+		{
+			SetInitialPartsPose(imuSensor.name, imuSensor.gameObject);
+		}
+
+		SetupMicom();
+	}
+
+	protected override IEnumerator OnVisualize()
+	{
+		yield return null;
+	}
+
+	private void SetupMicom()
+	{
 		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
 		SetUpdateRate(updateRate);
 
@@ -149,18 +166,6 @@ public partial class MicomSensor : Device
 
 			micomSensorData.bumper.Bumpeds = new bool[bumperCount];
 		}
-
-		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
-
-		if (imuSensor != null)
-		{
-			SetInitialPartsPose(imuSensor.name, imuSensor.gameObject);
-		}
-	}
-
-	protected override IEnumerator OnVisualize()
-	{
-		yield return null;
 	}
 
 	protected override void InitializeMessages()
