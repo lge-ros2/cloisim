@@ -17,8 +17,6 @@ public class MicomPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		targetDevice.SetPluginParameters(GetPluginParameters());
-
 		var debugging = GetPluginParameters().GetValue<bool>("debug", false);
 		targetDevice.EnableDebugging = debugging;
 
