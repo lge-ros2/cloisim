@@ -9,6 +9,8 @@ using Any = cloisim.msgs.Any;
 
 public class LaserPlugin : CLOiSimPlugin
 {
+	private LaserFilter laserFilter = null;
+
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.LASER;
@@ -19,7 +21,14 @@ public class LaserPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		targetDevice.SetPluginParameters(GetPluginParameters());
+		if (GetPluginParameters().IsValidNode("filter"))
+		{
+			var lidar = targetDevice as SensorDevices.Lidar;
+			var filterAngleLower = GetPluginParameters().GetValue<double>("filter/angle/horizontal/lower", double.NegativeInfinity);
+			var filterAngleUpper = GetPluginParameters().GetValue<double>("filter/angle/horizontal/upper", double.PositiveInfinity);
+			lidar.SetupLaserFilter(filterAngleLower, filterAngleUpper);
+		}
+
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 

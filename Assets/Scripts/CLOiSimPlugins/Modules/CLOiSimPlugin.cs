@@ -156,6 +156,11 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 	// Start is called before the first frame update
 	void Start()
 	{
+		if (targetDevice != null)
+		{
+			targetDevice.SetPluginParameters(pluginParameters);
+		}
+
 		StorePose();
 
 		if (string.IsNullOrEmpty(modelName))

@@ -93,6 +93,7 @@ namespace SensorDevices
 		private LaserCamData[] laserCamData;
 		private LaserDataOutput[] laserDataOutput;
 
+		private LaserFilter laserFilter = null;
 
 		[ColorUsage(true)]
 		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.15f);
@@ -111,8 +112,6 @@ namespace SensorDevices
 			{
 				lidarSensorInitPose.position = transform.localPosition;
 				lidarSensorInitPose.rotation = transform.localRotation;
-
-				DoParseFilter();
 
 				SetupLaserCamera();
 
@@ -220,8 +219,8 @@ namespace SensorDevices
 			cb.ReleaseTemporaryRT(tempTextureId);
 			cb.Release();
 
-			laserCam.enabled = false;
 			// laserCam.hideFlags |= HideFlags.NotEditable;
+			laserCam.enabled = false;
 		}
 
 		private void SetupLaserCameraData()
@@ -245,6 +244,17 @@ namespace SensorDevices
 				data.centerAngle = laserCameraRotationAngle * index;
 				data.rangeMax = (float)range.max;
 				laserCamData[index] = data;
+			}
+		}
+
+		public void SetupLaserFilter(in double filterAngleLower, in double filterAngleUpper)
+		{
+			if (GetPluginParameters() != null)
+			{
+				// Get Paramters
+				var useIntensity = GetPluginParameters().GetValue<bool>("intensity");
+				laserFilter = new LaserFilter(laserScanStamped.Scan, useIntensity);
+				laserFilter.SetupFilter(filterAngleLower, filterAngleUpper);
 			}
 		}
 
@@ -430,7 +440,10 @@ namespace SensorDevices
 				}
 			}
 
-			DoLaserAngleFilter();
+			if (laserFilter != null)
+			{
+				laserFilter.DoFilter(ref laserScan);
+			}
 
 			DeviceHelper.SetCurrentTime(laserScanStamped.Time);
 			PushDeviceMessage<messages.LaserScanStamped>(laserScanStamped);
