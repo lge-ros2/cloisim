@@ -16,8 +16,6 @@ public class WorldNavMeshBuilder : MonoBehaviour
 {
 	public class NavMeshTrack
 	{
-		private Vector3 quatizedVector = Vector3.zero;
-		private Bounds quantizedBounds = new Bounds();
 
 		// The size of the build bounds
 		private Vector3 m_BoundSize = Vector3.zero;
@@ -39,16 +37,13 @@ public class WorldNavMeshBuilder : MonoBehaviour
 			var x = quant.x * Mathf.Floor(v.x / quant.x);
 			var y = quant.y * Mathf.Floor(v.y / quant.y);
 			var z = quant.z * Mathf.Floor(v.z / quant.z);
-			quatizedVector.Set(x, y, z);
-			return quatizedVector;
+			return new Vector3(x, y, z);
 		}
 
 		public Bounds QuantizedBounds()
 		{
 			// Quantize the bounds to update only when theres a 10% change in size
-			quantizedBounds.center = Quantize(m_BoundCenter, 0.1f * m_BoundSize);
-			quantizedBounds.size = m_BoundSize;
-			return quantizedBounds;
+			return new Bounds(Quantize(m_BoundCenter, 0.1f * m_BoundSize), m_BoundSize);
 		}
 
 		public void Collect(ref List<NavMeshBuildSource> sources)
