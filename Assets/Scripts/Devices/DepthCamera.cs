@@ -51,6 +51,13 @@ namespace SensorDevices
 			var depthShader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(depthShader);
 
+			if (computeShader != null)
+			{
+				computeShader.SetFloat("_DepthMin", (float)GetParameters().clip.near);
+				computeShader.SetFloat("_DepthMax", (float)GetParameters().clip.far);
+				computeShader.SetFloat("_DepthScale", (float)depthScale);
+			}
+
 			ReverseDepthData(true);
 			FlipXDepthData(false);
 
@@ -107,10 +114,6 @@ namespace SensorDevices
 		{
 			if (readbackDstFormat.Equals(TextureFormat.R16) && computeShader != null)
 			{
-				computeShader.SetFloat("_DepthMin", (float)GetParameters().clip.near);
-				computeShader.SetFloat("_DepthMax", (float)GetParameters().clip.far);
-				computeShader.SetFloat("_DepthScale", (float)depthScale);
-
 				var computeBuffer = new ComputeBuffer(buffer.Length, sizeof(byte));
 				computeShader.SetBuffer(kernelIndex, "_Buffer", computeBuffer);
 				computeBuffer.SetData(buffer);
