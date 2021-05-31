@@ -6,6 +6,20 @@
 
 public class Micom : Device
 {
+	public struct WheelInfo
+	{
+		public float wheelRadius;
+		public float wheelTread;
+		public float divideWheelRadius; // for computational performance
+
+		public WheelInfo(in float radius = 0.1f, in float tread = 0)
+		{
+			this.wheelRadius = radius;
+			this.wheelTread = tread;
+			this.divideWheelRadius = 1.0f / wheelRadius;
+		}
+	}
+
 	private MicomSensor micomSensor = null;
 	private MicomInput micomInput = null;
 
@@ -32,7 +46,7 @@ public class Micom : Device
 		if (micomInput == null)
 		{
 			micomInput = gameObject.AddComponent<MicomInput>();
-			micomInput.SetMicomSensor(GetSensor());
+			micomInput.SetMotorControl(GetSensor().MotorControl);
 			micomInput.EnableDebugging = EnableDebugging;
 		}
 
