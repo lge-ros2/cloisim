@@ -121,6 +121,12 @@ namespace SensorDevices
 				StartCoroutine(LaserCameraWorker());
 			}
 		}
+		protected new void OnDestroy()
+		{
+			StopCoroutine(LaserCameraWorker());
+
+			base.OnDestroy();
+		}
 
 		protected override void InitializeMessages()
 		{

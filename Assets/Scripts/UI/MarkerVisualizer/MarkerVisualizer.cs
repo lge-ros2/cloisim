@@ -52,6 +52,11 @@ public partial class MarkerVisualizer : MonoBehaviour
 		}
 	}
 
+	void OnDestroy()
+	{
+		StopCoroutine(HandleFollowingText());
+	}
+
 	private IEnumerator HandleFollowingText()
 	{
 		const float UpdatePeriodForFollowingText = 0.3f;

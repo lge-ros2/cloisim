@@ -44,6 +44,11 @@ public class LidarVisualizer : MonoBehaviour
 		StartCoroutine(DrawLidarVisualizer());
 	}
 
+	void OnDestroy()
+	{
+		StopCoroutine(DrawLidarVisualizer());
+	}
+
 	private void ClearTexture(in Texture2D targetTexture)
 	{
 		for (int i = 0; i < targetTexture.width; i++)

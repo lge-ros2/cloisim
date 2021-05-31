@@ -71,6 +71,13 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		StartCoroutine(ServiceLoop());
 	}
 
+	protected new void OnDestroy()
+	{
+		StopCoroutine(ServiceLoop());
+
+		base.OnDestroy();
+	}
+
 	protected override void OnReset()
 	{
 		var targetFloorHeight = GetFloorHeight(initialFloor);
