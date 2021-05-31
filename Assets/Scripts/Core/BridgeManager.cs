@@ -7,6 +7,7 @@
 using System.Net.NetworkInformation;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Net;
 using UnityEngine;
 
@@ -16,6 +17,7 @@ public class BridgeManager : MonoBehaviour
 	private const ushort MinPortRange = 49152;
 	private const ushort MaxPortRange = IPEndPoint.MaxPort;
 	private SimulationDisplay simulationDisplay = null;
+	private StringBuilder sbLogs = new StringBuilder();
 
 	private Dictionary<string, ushort> haskKeyPortMapTable = new Dictionary<string, ushort>();
 
@@ -44,6 +46,7 @@ public class BridgeManager : MonoBehaviour
 	{
 		var UIRoot = Main.UIObject;
 		simulationDisplay = UIRoot.GetComponentInChildren<SimulationDisplay>();
+		ClearLog();
 	}
 
 	public void DeallocateDevice(in string hashKey)
@@ -229,13 +232,25 @@ public class BridgeManager : MonoBehaviour
 				haskKeyPortMapTable.Add(hashKey, newPort);
 			}
 
-			Debug.LogFormat("Allocated for HashKey({0}) Port({1})", hashKey, newPort);
+			sbLogs.AppendFormat("Allocated for HashKey({0}) Port({1})", hashKey, newPort);
 		}
 		else
 		{
-			Debug.LogFormat("Failed to allocate port for HashKey({0}).", hashKey);
+			sbLogs.AppendFormat("Failed to allocate port for HashKey({0}).", hashKey);
 		}
+		sbLogs.AppendLine("");
 
 		return newPort;
+	}
+
+	public void PrintLog()
+	{
+		Debug.Log(sbLogs);
+	}
+
+	public void ClearLog()
+	{
+		sbLogs.Clear();
+		sbLogs.AppendLine("<Allocated information in BridgeManager>");
 	}
 }
