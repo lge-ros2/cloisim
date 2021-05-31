@@ -250,8 +250,7 @@ public partial class MicomSensor : Device
 			}
 			else
 			{
-				var index = 0;
-				foreach (var bumperBody in bumperSensors)
+				for (var index = 0; index < bumperSensors.Count; index++)
 				{
 					// TODO:
 					// var articulationDrive = (bumperBody.xDrive != null)? bumper.
@@ -259,7 +258,7 @@ public partial class MicomSensor : Device
 					// bumper.xDrive.upperLimit
 					// var threshold = bumperBody.linearLimit.limit/2;
 
-					var normal = bumperBody.transform.localPosition.normalized;
+					var normal = bumperSensors[index].transform.localPosition.normalized;
 					// Debug.Log(index + ": " + normal.ToString("F6"));
 
 					if (normal.x > 0 && normal.z < 0)
@@ -277,8 +276,6 @@ public partial class MicomSensor : Device
 						micomSensorData.bumper.Bumpeds[index] = false;
 						// Debug.Log("No Bumped");
 					}
-
-					index++;
 				}
 			}
 		}
@@ -291,10 +288,9 @@ public partial class MicomSensor : Device
 			return;
 		}
 
-		var index = 0;
-		foreach (var uss in ussSensors)
+		for (var index = 0; index < ussSensors.Count; index++)
 		{
-			micomSensorData.uss.Distances[index++] = uss.GetDetectedRange();
+			micomSensorData.uss.Distances[index] = ussSensors[index].GetDetectedRange();
 		}
 	}
 
@@ -305,10 +301,9 @@ public partial class MicomSensor : Device
 			return;
 		}
 
-		var index = 0;
-		foreach (var ir in irSensors)
+		for (var index = 0; index < irSensors.Count; index++)
 		{
-			micomSensorData.ir.Distances[index++] = ir.GetDetectedRange();
+			micomSensorData.ir.Distances[index] = irSensors[index].GetDetectedRange();
 		}
 	}
 

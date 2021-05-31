@@ -74,10 +74,10 @@ public class WorldNavMeshBuilder : MonoBehaviour
 	{
 		var bounds = new Bounds(transform.position, Vector3.zero);
 		var renderers = transform.GetComponentsInChildren<Renderer>();
-		foreach (var renderer in renderers)
+		for (var i = 0; i < renderers.Length; i++)
 		{
 			// Debug.Log(renderer.bounds.center + ", " + renderer.bounds.size);
-			bounds.Encapsulate(renderer.bounds);
+			bounds.Encapsulate(renderers[i].bounds);
 		}
 		// Debug.Log("Final: " + bounds.center + ", " + bounds.size);
 
@@ -112,10 +112,10 @@ public class WorldNavMeshBuilder : MonoBehaviour
 
 	public void UpdateNavMesh(bool asyncUpdate = false)
 	{
-		foreach (var navMeshTrack in m_NavMeshTracks)
+		for (var i = 0; i < m_NavMeshTracks.Count; i++)
 		{
-			navMeshTrack.Collect(ref m_Sources);
-			var bounds = navMeshTrack.QuantizedBounds();
+			m_NavMeshTracks[i].Collect(ref m_Sources);
+			var bounds = m_NavMeshTracks[i].QuantizedBounds();
 
 			if (asyncUpdate)
 			{

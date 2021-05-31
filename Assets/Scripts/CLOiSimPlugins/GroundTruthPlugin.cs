@@ -273,8 +273,9 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		var deviceMessage = new DeviceMessage();
 		while (IsRunningThread)
 		{
-			foreach (var perception in perceptions.Perceptions)
+			for (var index = 0; index < perceptions.Perceptions.Count; index++)
 			{
+				var perception = perceptions.Perceptions[index];
 				if (trackingObjectList.TryGetValue(perception.TrackingId, out var trackingObject))
 				{
 					DeviceHelper.SetCurrentTime(perception.Header.Stamp);

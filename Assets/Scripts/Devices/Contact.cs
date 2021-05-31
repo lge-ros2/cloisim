@@ -96,8 +96,9 @@ namespace SensorDevices
 			newContact.World = "default";
 			DeviceHelper.SetCurrentTime(newContact.Time);
 
-			foreach (var collisionContact in other.contacts)
+			for (var i = 0; i < other.contacts.Length; i++)
 			{
+				var collisionContact = other.contacts[i];
 				var collision1 = collisionContact.thisCollider.name;
 				var collision2 = collisionContact.otherCollider.name;
 
