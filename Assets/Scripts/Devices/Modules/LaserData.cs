@@ -11,11 +11,23 @@ using Unity.Jobs;
 
 namespace SensorDevices
 {
-	public partial class Lidar : Device
+	public static class LaserData
 	{
-		const int colorFormatUnitSize = sizeof(float);
+		const int ColorFormatUnitSize = sizeof(float);
 
-		struct DepthCamBuffer : IJobParallelFor
+		public struct AngleResolution
+		{
+			public readonly float H; // degree
+			public readonly float V; // degree
+
+			public AngleResolution(in float angleResolutionH = 0, in float angleResolutionV = 0)
+			{
+				this.H = angleResolutionH;
+				this.V = angleResolutionV;
+			}
+		}
+
+		public struct DepthCamBuffer : IJobParallelFor
 		{
 			private readonly int imageWidth;
 			private readonly int imageHeight;
@@ -55,7 +67,7 @@ namespace SensorDevices
 
 			private float GetDecodedData(in int index)
 			{
-				var imageOffset = index * colorFormatUnitSize;
+				var imageOffset = index * ColorFormatUnitSize;
 				if (imageBuffer != null && imageOffset < imageBuffer.Length)
 				{
 					var r = imageBuffer[imageOffset];
@@ -80,7 +92,7 @@ namespace SensorDevices
 			}
 		}
 
-		struct LaserDataOutput
+		public struct LaserDataOutput
 		{
 			public double[] data;
 
@@ -90,7 +102,7 @@ namespace SensorDevices
 			}
 		}
 
-		struct LaserCamData : IJobParallelFor
+		public struct LaserCamData : IJobParallelFor
 		{
 			private float maxHAngleHalf;
 			private float maxHAngleHalfTangent;
