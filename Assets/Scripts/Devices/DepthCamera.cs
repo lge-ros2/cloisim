@@ -82,18 +82,18 @@ namespace SensorDevices
 			targetRTrwmode = RenderTextureReadWrite.Linear;
 			targetRTformat = RenderTextureFormat.ARGB32;
 
-			var pixelFormat = GetPixelFormat(camParameters.image_format);
+			var pixelFormat = CameraData.GetPixelFormat(camParameters.image_format);
 			switch (pixelFormat)
 			{
-				case PixelFormat.L_INT16:
+				case CameraData.PixelFormat.L_INT16:
 					readbackDstFormat = TextureFormat.R16;
 					break;
 
-				case PixelFormat.R_FLOAT16:
+				case CameraData.PixelFormat.R_FLOAT16:
 					readbackDstFormat = TextureFormat.RHalf;
 					break;
 
-				case PixelFormat.R_FLOAT32:
+				case CameraData.PixelFormat.R_FLOAT32:
 				default:
 					readbackDstFormat = TextureFormat.RFloat;
 					break;
