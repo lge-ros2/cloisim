@@ -7,13 +7,14 @@
 
 RWByteAddressBuffer _Buffer;
 
+float _dividedMaxValue16Bits = 1 / MaxValue16Bits;
 float _DepthMin;
 float _DepthMax;
 float _DepthScale;
 
 uint getDepthDataIn16BitsScaled(uint depthData)
 {
-	float depthDataRatio = (float)depthData / MaxValue16Bits;
+	float depthDataRatio = (float)depthData * _dividedMaxValue16Bits;
 
 	uint scaledDepthData = (uint)(depthDataRatio * _DepthMax * _DepthScale);
 	uint finalData = ((scaledDepthData & 0xff) << 8) | (scaledDepthData >> 8);
