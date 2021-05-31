@@ -10,7 +10,7 @@ public class GpsPlugin : CLOiSimPlugin
 	{
 		type = ICLOiSimPlugin.Type.GPS;
 		targetDevice = gameObject.GetComponent<SensorDevices.GPS>();
-		partName = DeviceHelper.GetPartName(gameObject);
+		partsName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()

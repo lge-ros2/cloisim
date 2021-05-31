@@ -24,7 +24,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 	public string pluginName { get; set; } = string.Empty;
 	public string modelName { get; protected set; } = string.Empty;
-	public string partName { get; protected set; } = string.Empty;
+	public string partsName { get; protected set; } = string.Empty;
 
 	private Pose pluginPose = Pose.identity;
 
@@ -55,7 +55,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 	private bool PrepareDevice(in string subPartName, out ushort port, out ulong hash)
 	{
-		if (bridgeManager.AllocateDevice(type.ToString(), modelName, partName, subPartName, out var hashKey, out port))
+		if (bridgeManager.AllocateDevice(type.ToString(), modelName, partsName, subPartName, out var hashKey, out port))
 		{
 			allocatedDeviceHashKeys.Add(hashKey);
 
@@ -84,7 +84,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 			return true;
 		}
 
-		Debug.LogErrorFormat("Failed to register Tx device {0}, {1}", modelName, partName);
+		Debug.LogErrorFormat("Failed to register Tx device {0}, {1}", modelName, partsName);
 
 		return false;
 	}
@@ -98,7 +98,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 			return true;
 		}
 
-		Debug.LogErrorFormat("Failed to register Rx device {0}, {1}", modelName, partName);
+		Debug.LogErrorFormat("Failed to register Rx device {0}, {1}", modelName, partsName);
 
 		return false;
 	}
@@ -112,7 +112,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 			return true;
 		}
 
-		Debug.LogErrorFormat("Failed to register service device {0}, {1}", modelName, partName);
+		Debug.LogErrorFormat("Failed to register service device {0}, {1}", modelName, partsName);
 
 		return false;
 	}
@@ -126,7 +126,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 			return true;
 		}
 
-		Debug.LogErrorFormat("Failed to register client device {0}, {1}", modelName, partName);
+		Debug.LogErrorFormat("Failed to register client device {0}, {1}", modelName, partsName);
 
 		return false;
 	}
@@ -168,9 +168,9 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 			modelName = DeviceHelper.GetModelName(gameObject);
 		}
 
-		if (string.IsNullOrEmpty(partName))
+		if (string.IsNullOrEmpty(partsName))
 		{
-			partName = pluginParameters.Name;
+			partsName = pluginParameters.Name;
 		}
 
 		OnStart();

@@ -15,7 +15,7 @@ public class SimulationWorld : CLOiSimPlugin
 		targetDevice = gameObject.GetComponent<Clock>();
 
 		modelName = "World";
-		partName = "cloisim";
+		partsName = "cloisim";
 	}
 
 	protected override void OnStart()

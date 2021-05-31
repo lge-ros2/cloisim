@@ -27,7 +27,7 @@ public class CameraPlugin : CLOiSimPlugin
 			targetDevice = depthcam;
 		}
 
-		partName = DeviceHelper.GetPartName(gameObject);
+		partsName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()

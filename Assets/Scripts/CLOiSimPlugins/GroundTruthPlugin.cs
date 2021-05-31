@@ -100,7 +100,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		type = ICLOiSimPlugin.Type.GROUNDTRUTH;
 
 		modelName = "GroundTruth";
-		partName = "tracking";
+		partsName = "tracking";
 
 		var worldRoot = Main.WorldRoot;
 		foreach (var model in worldRoot.GetComponentsInChildren<SDF.Helper.Model>())
