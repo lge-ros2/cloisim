@@ -32,6 +32,11 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			this.rotatedFootprint = new ArrayList();
 		}
 
+		public UE.GameObject GetGameObject()
+		{
+			return (this.rootTransform != null) ? this.rootTransform.gameObject : null;
+		}
+
 		public void Update()
 		{
 			if (this.rootTransform != null)
@@ -42,7 +47,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				this.rotation = this.rootTransform.rotation;
 				// UE.Debug.Log(this.rootTransform.name + ": " + this.Velocity + ", " + this.Position);
 
-				lock(this.rotatedFootprint.SyncRoot)
+				lock (this.rotatedFootprint.SyncRoot)
 				{
 					for (var i = 0; i < this.footprint.Count; i++)
 					{
@@ -55,7 +60,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		public UE.Vector3[] Footprint()
 		{
 			UE.Vector3[] footprintList;
-			lock(this.rotatedFootprint.SyncRoot)
+			lock (this.rotatedFootprint.SyncRoot)
 			{
 				footprintList = (UE.Vector3[])rotatedFootprint.ToArray(typeof(UE.Vector3));
 			}
@@ -77,7 +82,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	private Dictionary<string, SDF.Helper.Base> allLoadedModelList = new Dictionary<string, SDF.Helper.Base>();
 	private Dictionary<int, ObjectTracking> trackingObjectList = new Dictionary<int, ObjectTracking>();
-	private messages.PerceptionV perceptions;
+	private messages.PerceptionV messagePerceptions;
 	private int sleepPeriodForPublishInMilliseconds = 1000;
 
 	private UE.GameObject GetTrackingObject(in string modelName)
@@ -112,9 +117,83 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			allLoadedModelList.Add(actor.name, actor);
 		}
 
-		perceptions = new messages.PerceptionV();
-		perceptions.Header = new messages.Header();
-		perceptions.Header.Stamp = new messages.Time();
+		messagePerceptions = new messages.PerceptionV();
+		messagePerceptions.Header = new messages.Header();
+		messagePerceptions.Header.Stamp = new messages.Time();
+	}
+
+	private void CalculateFootprint(ref ObjectTracking trackingObject)
+	{
+		var trackingGameObject = trackingObject.GetGameObject();
+
+		var capsuleCollider = trackingGameObject.GetComponentInChildren<UE.CapsuleCollider>();
+		if (capsuleCollider != null && trackingGameObject.CompareTag("Actor"))
+		{
+			var radius = capsuleCollider.radius;
+
+			const float angleResolution = 0.34906585f;
+			for (var theta = 0f; theta < UE.Mathf.PI * 2; theta += angleResolution)
+			{
+				var x = UE.Mathf.Cos(theta) * radius;
+				var z = UE.Mathf.Sin(theta) * radius;
+				trackingObject.Add2DFootprint(new UE.Vector3(x, 0, z));
+			}
+
+			trackingObject.size = capsuleCollider.bounds.size;
+		}
+		else
+		{
+			var meshFilters = trackingGameObject.GetComponentsInChildren<UE.MeshFilter>();
+			if (meshFilters != null && trackingGameObject.CompareTag("Model"))
+			{
+				var combine = new UE.CombineInstance[meshFilters.Length];
+				for (var i = 0; i < combine.Length; i++)
+				{
+					combine[i].mesh = meshFilters[i].sharedMesh;
+					combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
+				}
+
+				var combinedMesh = new UE.Mesh();
+				combinedMesh.indexFormat = UE.Rendering.IndexFormat.UInt32;
+				combinedMesh.CombineMeshes(combine, true, true);
+				combinedMesh.RecalculateBounds();
+				combinedMesh.RecalculateNormals();
+				combinedMesh.RecalculateTangents();
+				combinedMesh.Optimize();
+				// UE.Debug.Log(gameObject.name + ", " + combinedMesh.bounds.size + ", " + combinedMesh.bounds.extents+ ", " + combinedMesh.bounds.center);
+				// trackingGameObject.AddComponent<UE.MeshFilter>().sharedMesh = combinedMesh;
+
+				// move offset and projection to 2D
+				var vertices = combinedMesh.vertices;
+				for (var i = 0; i < vertices.Length; i++)
+				{
+					vertices[i] -= combinedMesh.bounds.center;
+					vertices[i].y = 0;
+				}
+
+				var convexHullMeshData = DeviceHelper.SolveConvexHull2D(vertices);
+				if (convexHullMeshData.Length > 0)
+				{
+					const float minimumDistance = 0.065f;
+					var lowConvexHullMeshData = new List<UE.Vector3>();
+					var prevPoint = convexHullMeshData[0];
+					for (var i = 1; i < convexHullMeshData.Length; i++)
+					{
+						if (UE.Vector3.Distance(prevPoint, convexHullMeshData[i]) > minimumDistance)
+						{
+							lowConvexHullMeshData.Add(convexHullMeshData[i]);
+							// UE.Debug.Log(convexHullMeshData[i].ToString("F8"));
+							prevPoint = convexHullMeshData[i];
+						}
+					}
+					// UE.Debug.Log("convexhull footprint count: " + convexHullMeshData.Length + " => low: " + lowConvexHullMeshData.Count);
+
+					trackingObject.Set2DFootprint(lowConvexHullMeshData.ToArray());
+				}
+
+				trackingObject.size = combinedMesh.bounds.size;
+			}
+		}
 	}
 
 	protected override void OnStart()
@@ -140,88 +219,17 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			var trackingGameObject = GetTrackingObject(target);
 			if (trackingGameObject != null)
 			{
-				var trackingObject = new ObjectTracking(trackingGameObject);
-
-				var capsuleCollider = trackingGameObject.GetComponentInChildren<UE.CapsuleCollider>();
-				if (capsuleCollider != null && trackingGameObject.CompareTag("Actor"))
-				{
-					var radius = capsuleCollider.radius;
-					const float angleResolution = 0.34906585f;
-					for (var theta = 0f; theta < UE.Mathf.PI * 2; theta += angleResolution)
-					{
-						var x = UE.Mathf.Cos(theta) * radius;
- 						var z = UE.Mathf.Sin(theta) * radius;
-						trackingObject.Add2DFootprint(new UE.Vector3(x, 0, z));
-					}
-
-					trackingObject.size = capsuleCollider.bounds.size;
-				}
-				else
-				{
-					var meshFilters = trackingGameObject.GetComponentsInChildren<UE.MeshFilter>();
-					if (meshFilters != null && trackingGameObject.CompareTag("Model"))
-					{
-						var combine = new UE.CombineInstance[meshFilters.Length];
-						for (var i = 0; i < combine.Length; i++)
-						{
-							combine[i].mesh = meshFilters[i].sharedMesh;
-							combine[i].transform  = meshFilters[i].transform.localToWorldMatrix;
-						}
-
-						var combinedMesh = new UE.Mesh();
-						combinedMesh.indexFormat = UE.Rendering.IndexFormat.UInt32;
-						combinedMesh.CombineMeshes(combine, true, true);
-						combinedMesh.RecalculateBounds();
-						combinedMesh.RecalculateNormals();
-						combinedMesh.RecalculateTangents();
-						combinedMesh.Optimize();
-						// UE.Debug.Log(gameObject.name + ", " + combinedMesh.bounds.size + ", " + combinedMesh.bounds.extents+ ", " + combinedMesh.bounds.center);
-						// trackingGameObject.AddComponent<UE.MeshFilter>().sharedMesh = combinedMesh;
-
-						// move offset and projection to 2D
-						var vertices = combinedMesh.vertices;
-						for (var i = 0; i < vertices.Length; i++)
-						{
-							vertices[i] -= combinedMesh.bounds.center;
-							vertices[i].y = 0;
-						}
-
-						var convexHullMeshData = DeviceHelper.SolveConvexHull2D(vertices);
-						if (convexHullMeshData.Length > 0)
-						{
-							const float minimumDistance = 0.065f;
-							var lowConvexHullMeshData = new List<UE.Vector3>();
-							var prevPoint = convexHullMeshData[0];
-							for (var i = 1; i < convexHullMeshData.Length; i++)
-							{
-								if (UE.Vector3.Distance(prevPoint, convexHullMeshData[i]) > minimumDistance)
-								{
-									lowConvexHullMeshData.Add(convexHullMeshData[i]);
-									// UE.Debug.Log(convexHullMeshData[i].ToString("F8"));
-									prevPoint = convexHullMeshData[i];
-								}
-							}
-							// UE.Debug.Log("convexhull footprint count: " + convexHullMeshData.Length + " => low: " + lowConvexHullMeshData.Count);
-
-							trackingObject.Set2DFootprint(lowConvexHullMeshData.ToArray());
-						}
-
-						trackingObject.size = combinedMesh.bounds.size;
-					}
-				}
-
-				perception.Footprints.Capacity = trackingObject.Footprint().Length;
-
-
-				trackingObjectList.Add(trackingId, trackingObject);
+				trackingObjectList.Add(trackingId, new ObjectTracking(trackingGameObject));
 			}
 
-			perceptions.Perceptions.Add(perception);
+			messagePerceptions.Perceptions.Add(perception);
 		}
 
 		RegisterTxDevice("Data");
 
 		AddThread(PublishThread);
+
+		StartCoroutine(DoUpdateFootprint());
 	}
 
 	protected override void OnReset()
@@ -256,7 +264,23 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	}
 #endif
 
-	void Update()
+	IEnumerator DoUpdateFootprint()
+	{
+		yield return new UE.WaitForEndOfFrame();
+
+		for (var i = 0; i < messagePerceptions.Perceptions.Count; i++)
+		{
+			var perception = messagePerceptions.Perceptions[i];
+			var trackingId = perception.TrackingId;
+			var trackingObject = trackingObjectList[trackingId];
+
+			CalculateFootprint(ref trackingObject);
+
+			perception.Footprints.Capacity = trackingObject.Footprint().Length;
+		}
+	}
+
+	void LateUpdate()
 	{
 		var keys = new List<int>(trackingObjectList.Keys);
 		for (var i = 0; i < trackingObjectList.Count; i++)
@@ -273,9 +297,9 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		var deviceMessage = new DeviceMessage();
 		while (IsRunningThread)
 		{
-			for (var index = 0; index < perceptions.Perceptions.Count; index++)
+			for (var index = 0; index < messagePerceptions.Perceptions.Count; index++)
 			{
-				var perception = perceptions.Perceptions[index];
+				var perception = messagePerceptions.Perceptions[index];
 				if (trackingObjectList.TryGetValue(perception.TrackingId, out var trackingObject))
 				{
 					DeviceHelper.SetCurrentTime(perception.Header.Stamp);
@@ -301,8 +325,8 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				}
 			}
 
-			DeviceHelper.SetCurrentTime(perceptions.Header.Stamp);
-			deviceMessage.SetMessage<messages.PerceptionV>(perceptions);
+			DeviceHelper.SetCurrentTime(messagePerceptions.Header.Stamp);
+			deviceMessage.SetMessage<messages.PerceptionV>(messagePerceptions);
 			Publish(deviceMessage);
 
 			SleepThread(sleepPeriodForPublishInMilliseconds);
