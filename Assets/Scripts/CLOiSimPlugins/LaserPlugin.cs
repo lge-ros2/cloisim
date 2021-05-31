@@ -9,8 +9,6 @@ using Any = cloisim.msgs.Any;
 
 public class LaserPlugin : CLOiSimPlugin
 {
-	private LaserFilter laserFilter = null;
-
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.LASER;

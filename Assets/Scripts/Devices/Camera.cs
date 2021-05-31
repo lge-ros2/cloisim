@@ -220,7 +220,6 @@ namespace SensorDevices
 
 			while (true)
 			{
-				universalCamData.enabled = true;
 				camSensor.enabled = true;
 
 				// Debug.Log("start render and request ");
@@ -230,7 +229,6 @@ namespace SensorDevices
 				}
 				var readback = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
 
-				universalCamData.enabled = false;
 				camSensor.enabled = false;
 
 				yield return null;
@@ -252,7 +250,7 @@ namespace SensorDevices
 			if (request.done)
 			{
 				var readbackData = request.GetData<byte>();
-				camImageData.SetTextureBufferData(readbackData);
+				camImageData.SetTextureBufferData(ref readbackData);
 				var image = imageStamped.Image;
 				if (image.Data.Length == camImageData.GetImageDataLength())
 				{
