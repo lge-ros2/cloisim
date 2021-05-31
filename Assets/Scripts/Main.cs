@@ -256,8 +256,6 @@ public class Main: MonoBehaviour
 		}
 
 		bridgeManager.PrintLog();
-
-		yield return null;
 	}
 
 	void LateUpdate()
