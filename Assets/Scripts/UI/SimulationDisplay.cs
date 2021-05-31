@@ -16,6 +16,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private CameraControl cameraControl = null;
 	private StringBuilder eventMessage = new StringBuilder();
 	private StringBuilder sbTimeInfo = new StringBuilder();
+	private StringBuilder sbPointInfo = new StringBuilder();
 
 	private Vector3 pointInfo = Vector3.zero;
 
@@ -125,7 +126,9 @@ public partial class SimulationDisplay : MonoBehaviour
 	{
 		rectPointInfo.y = Screen.height - textHeight - bottomMargin;
 		style.normal.textColor = new Color(1.0f, 0.93f, 0.0f, 1);
-		DrawLabelWithShadow(rectPointInfo, "HitPoint " + pointInfo.ToString("F4"), style);
+		sbPointInfo.AppendFormat("HitPoint {0}", pointInfo.ToString("F4"));
+		DrawLabelWithShadow(rectPointInfo, sbPointInfo.ToString(), style);
+		sbPointInfo.Clear();
 	}
 
 	private string GetBoldText(in string value)

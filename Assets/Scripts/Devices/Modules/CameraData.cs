@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace SensorDevices
 {
-	public partial class Camera : Device
+	public static class CameraData
 	{
 		public enum PixelFormat
 		{
@@ -22,7 +22,7 @@ namespace SensorDevices
 			PIXEL_FORMAT_COUNT
 		};
 
-		static public PixelFormat GetPixelFormat(in string imageFormat)
+		public static PixelFormat GetPixelFormat(in string imageFormat)
 		{
 			var parsedEnum = PixelFormat.UNKNOWN_PIXEL_FORMAT;
 
@@ -68,7 +68,7 @@ namespace SensorDevices
 			return parsedEnum;
 		}
 
-		static public int GetImageDepth(in PixelFormat pixelFormat)
+		public static int GetImageDepth(in PixelFormat pixelFormat)
 		{
 			var depth = 0;
 
@@ -114,13 +114,13 @@ namespace SensorDevices
 			return depth;
 		}
 
-		private struct CameraImageData
+		public struct ImageData
 		{
 			private NativeArray<byte> imageBuffer;
 
 			private Texture2D cameraImage;
 
-			public CameraImageData(in int width, in int height, in string imageFormat)
+			public ImageData(in int width, in int height, in string imageFormat)
 			{
 				var isLinear = false;
 				var textureFormat = TextureFormat.RGB24;
@@ -155,7 +155,7 @@ namespace SensorDevices
 				cameraImage = new Texture2D(width, height, textureFormat, false, isLinear);
 			}
 
-			public void SetTextureBufferData(NativeArray<byte> buffer)
+			public void SetTextureBufferData(ref NativeArray<byte> buffer)
 			{
 				imageBuffer = buffer;
 			}

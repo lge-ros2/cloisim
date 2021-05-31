@@ -15,6 +15,7 @@ using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
+	[RequireComponent(typeof(UnityEngine.Camera))]
 	public partial class Lidar : Device
 	{
 		private messages.LaserScanStamped laserScanStamped = null;
@@ -56,17 +57,6 @@ namespace SensorDevices
 			}
 		}
 
-		readonly public struct AngleResolution
-		{
-			public readonly float H; // degree
-			public readonly float V; // degree
-
-			public AngleResolution(in float angleResolutionH = 0, in float angleResolutionV = 0)
-			{
-				this.H = angleResolutionH;
-				this.V = angleResolutionV;
-			}
-		}
 
 		private const float LaserCameraHFov = 120.0000000000f;
 		private const float LaserCameraVFov = 50.0000000000f;
@@ -85,13 +75,13 @@ namespace SensorDevices
 		private UnityEngine.Camera laserCam = null;
 		private Material depthMaterial = null;
 
-		private AngleResolution laserAngleResolution;
+		private LaserData.AngleResolution laserAngleResolution;
 
 		private int numberOfLaserCamData = 0;
 		private Dictionary<AsyncGPUReadbackRequest, int> readbacks = new Dictionary<AsyncGPUReadbackRequest, int>();
-		private DepthCamBuffer[] depthCamBuffers;
-		private LaserCamData[] laserCamData;
-		private LaserDataOutput[] laserDataOutput;
+		private LaserData.DepthCamBuffer[] depthCamBuffers;
+		private LaserData.LaserCamData[] laserCamData;
+		private LaserData.LaserDataOutput[] laserDataOutput;
 
 		private LaserFilter laserFilter = null;
 
@@ -103,7 +93,7 @@ namespace SensorDevices
 			Mode = ModeType.TX_THREAD;
 			lidarLink = transform.parent;
 
-			laserCam = gameObject.AddComponent<UnityEngine.Camera>();
+			laserCam = GetComponent<UnityEngine.Camera>();
 		}
 
 		protected override void OnStart()
@@ -119,6 +109,12 @@ namespace SensorDevices
 
 				StartCoroutine(LaserCameraWorker());
 			}
+		}
+		protected new void OnDestroy()
+		{
+			StopCoroutine(LaserCameraWorker());
+
+			base.OnDestroy();
 		}
 
 		protected override void InitializeMessages()
@@ -162,7 +158,7 @@ namespace SensorDevices
 				laserScan.Intensities[i] = double.NaN;
 			}
 
- 			laserAngleResolution = new AngleResolution((float)horizontal.angleStep, (float)vertical.angleStep);
+ 			laserAngleResolution = new LaserData.AngleResolution((float)horizontal.angleStep, (float)vertical.angleStep);
 			// Debug.Log("H resolution: " + laserHAngleResolution + ", V resolution: " + laserVAngleResolution);
 		}
 
@@ -228,18 +224,18 @@ namespace SensorDevices
 			const float laserCameraRotationAngle = LaserCameraHFov;
 			numberOfLaserCamData = Mathf.CeilToInt(360 / laserCameraRotationAngle);
 
-			laserCamData = new LaserCamData[numberOfLaserCamData];
-			depthCamBuffers = new DepthCamBuffer[numberOfLaserCamData];
-			laserDataOutput = new LaserDataOutput[numberOfLaserCamData];
+			laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
+			depthCamBuffers = new LaserData.DepthCamBuffer[numberOfLaserCamData];
+			laserDataOutput = new LaserData.LaserDataOutput[numberOfLaserCamData];
 
 			var targetDepthRT = laserCam.targetTexture;
 			var width = targetDepthRT.width;
 			var height = targetDepthRT.height;
 			for (var index = 0; index < numberOfLaserCamData; index++)
 			{
-				depthCamBuffers[index] = new DepthCamBuffer(width, height);
+				depthCamBuffers[index] = new LaserData.DepthCamBuffer(width, height);
 
-				var data = new LaserCamData(width, height, laserAngleResolution);
+				var data = new LaserData.LaserCamData(width, height, laserAngleResolution);
 				data.SetMaxHorizontalHalfAngle(LaserCameraHFov * 0.5f);
 				data.centerAngle = laserCameraRotationAngle * index;
 				data.rangeMax = (float)range.max;
@@ -467,24 +463,27 @@ namespace SensorDevices
 				var lidarSensorWorldPosition = lidarLink.position + lidarSensorInitPose.position;
 				var rangeData = GetRangeData();
 
-				for (var scanIndex = 0; scanIndex < rangeData.Length; scanIndex++)
+				if (rangeData != null)
 				{
-					var scanIndexH = scanIndex % horizontalSamples;
-					var scanIndexV = scanIndex / horizontalSamples;
-					var rayAngleH = ((laserAngleResolution.H * scanIndexH)) + startAngleH;
-					var rayAngleV = ((laserAngleResolution.V * scanIndexV)) + startAngleV;
-
-					var rayRotation = Quaternion.AngleAxis((float)rayAngleH, transform.up) * Quaternion.AngleAxis((float)rayAngleV, transform.forward) * lidarLink.forward;
-					var rayStart = (rayRotation * rangeMin) + lidarSensorWorldPosition;
-
-					var ccwIndex = (uint)(rangeData.Length - scanIndex - 1);
-					var rayData = (float)rangeData[ccwIndex];
-
-					if (rayData > 0)
+					for (var scanIndex = 0; scanIndex < rangeData.Length; scanIndex++)
 					{
-						var rayDistance = (rayData == Mathf.Infinity) ? rangeMax : (rayData - rangeMin);
-						var rayDirection = rayRotation * rayDistance;
-						Debug.DrawRay(rayStart, rayDirection, rayColor, visualDrawDuration, true);
+						var scanIndexH = scanIndex % horizontalSamples;
+						var scanIndexV = scanIndex / horizontalSamples;
+						var rayAngleH = ((laserAngleResolution.H * scanIndexH)) + startAngleH;
+						var rayAngleV = ((laserAngleResolution.V * scanIndexV)) + startAngleV;
+
+						var rayRotation = Quaternion.AngleAxis((float)rayAngleH, transform.up) * Quaternion.AngleAxis((float)rayAngleV, transform.forward) * lidarLink.forward;
+						var rayStart = (rayRotation * rangeMin) + lidarSensorWorldPosition;
+
+						var ccwIndex = (uint)(rangeData.Length - scanIndex - 1);
+						var rayData = (float)rangeData[ccwIndex];
+
+						if (rayData > 0)
+						{
+							var rayDistance = (rayData == Mathf.Infinity) ? rangeMax : (rayData - rangeMin);
+							var rayDirection = rayRotation * rayDistance;
+							Debug.DrawRay(rayStart, rayDirection, rayColor, visualDrawDuration, true);
+						}
 					}
 				}
 
@@ -500,7 +499,7 @@ namespace SensorDevices
 			}
 			catch
 			{
-				return new double[0];
+				return null;
 			}
 		}
 	}

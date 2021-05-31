@@ -185,8 +185,6 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 	protected new void OnDestroy()
 	{
-		base.OnDestroy();
-
 		DestroyTransporter();
 
 		foreach (var hashKey in allocatedDeviceHashKeys)
@@ -194,6 +192,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 			DeregisterDevice(hashKey);
 		}
 
+		base.OnDestroy();
 		// Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
 	}
 

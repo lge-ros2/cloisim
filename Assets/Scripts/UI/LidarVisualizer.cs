@@ -44,6 +44,11 @@ public class LidarVisualizer : MonoBehaviour
 		StartCoroutine(DrawLidarVisualizer());
 	}
 
+	void OnDestroy()
+	{
+		StopCoroutine(DrawLidarVisualizer());
+	}
+
 	private void ClearTexture(in Texture2D targetTexture)
 	{
 		for (int i = 0; i < targetTexture.width; i++)
@@ -123,18 +128,21 @@ public class LidarVisualizer : MonoBehaviour
 			DrawCenterMarker(targetTexture);
 
 			var distances = targetLidar.GetRangeData();
-			for (var index = 0; index < distances.Length; index++)
+			if (distances != null)
 			{
-				rayDirection = Quaternion.AngleAxis((angleMin + (resolutionAngle * index)), Vector3.up) * transform.forward;
+				for (var index = 0; index < distances.Length; index++)
+				{
+					rayDirection = Quaternion.AngleAxis((angleMin + (resolutionAngle * index)), Vector3.up) * transform.forward;
 
-				var fDistRate = (float)distances[index] / rangeMax;
+					var fDistRate = (float)distances[index] / rangeMax;
 
-				var pixelColor = (IsCenterRegion(index, samples)) ? lidarCenterColor : lidarNormalColor;
+					var pixelColor = (IsCenterRegion(index, samples)) ? lidarCenterColor : lidarNormalColor;
 
-				targetTexture.SetPixel(
-						(int)(rayDirection.x * fDistRate * centerPosition) + centerPosition,
-						(int)(rayDirection.z * fDistRate * centerPosition) + centerPosition,
-						pixelColor);
+					targetTexture.SetPixel(
+							(int)(rayDirection.x * fDistRate * centerPosition) + centerPosition,
+							(int)(rayDirection.z * fDistRate * centerPosition) + centerPosition,
+							pixelColor);
+				}
 			}
 
 			targetTexture.Apply();

@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-public class Motor : MonoBehaviour
+public class Motor
 {
 	public class RapidChangeControl
 	{
@@ -183,7 +183,7 @@ public class Motor : MonoBehaviour
 			_targetAngularVelocity = targetAngularVelocity * compensatingVelocityRatio;
 	}
 
-	void FixedUpdate()
+	public void Update()
 	{
 		if (_motorBody == null)
 		{

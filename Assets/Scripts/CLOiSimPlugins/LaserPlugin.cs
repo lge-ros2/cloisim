@@ -9,14 +9,12 @@ using Any = cloisim.msgs.Any;
 
 public class LaserPlugin : CLOiSimPlugin
 {
-	private LaserFilter laserFilter = null;
-
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.LASER;
 		partName = DeviceHelper.GetPartName(gameObject);
 
-		targetDevice = gameObject.GetComponent<SensorDevices.Lidar>();
+		targetDevice = GetComponent<SensorDevices.Lidar>();
 	}
 
 	protected override void OnStart()

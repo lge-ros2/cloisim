@@ -38,6 +38,7 @@ namespace SDF
 
 			private UE.CapsuleCollider capsuleCollider = null;
 			private UE.SkinnedMeshRenderer skinMeshRenderer = null;
+			private UEAI.NavMeshAgent navMeshAgent = null;
 
 			public bool HasWayPoints => (script.trajectories != null && script.trajectories.Count > 0);
 
@@ -53,35 +54,43 @@ namespace SDF
 
 			void Start()
 			{
-				if (script != null && script.auto_start && HasWayPoints)
-				{
-					StartWaypointFollowing();
-				}
-
 				capsuleCollider = GetComponentInChildren<UE.CapsuleCollider>();
 				skinMeshRenderer = GetComponentInChildren<UE.SkinnedMeshRenderer>();
 
-				if (capsuleCollider != null && skinMeshRenderer != null)
+				if (script != null && script.auto_start && HasWayPoints)
 				{
-					const float sizeRatio = 0.8f;
-					var bounds = skinMeshRenderer.localBounds;
-					capsuleCollider.radius = UE.Mathf.Min(bounds.extents.x, bounds.extents.z) * sizeRatio;;
-					capsuleCollider.height = bounds.size.y;
-					var center = capsuleCollider.center;
-					center.y = bounds.extents.y;
-					capsuleCollider.center = center;
-
-					var navAgent = GetComponentInChildren<UEAI.NavMeshAgent>();
-					if (navAgent != null)
-					{
-						navAgent.radius = capsuleCollider.radius;
-						navAgent.height = capsuleCollider.height;
-					}
+					StartWaypointFollowing();
 				}
 			}
 
 			void LateUpdate()
 			{
+				if (capsuleCollider != null && skinMeshRenderer != null)
+				{
+					const float sizeRatio = 0.7f;
+					var localBounds = skinMeshRenderer.localBounds;
+					var bounds = skinMeshRenderer.bounds;
+					capsuleCollider.radius = UE.Mathf.Min(bounds.extents.x, bounds.extents.z) * sizeRatio;
+					capsuleCollider.height = bounds.size.y;
+					var center = capsuleCollider.center;
+					center.y = bounds.extents.y;
+					capsuleCollider.center = center;
+
+					if (navMeshAgent != null)
+					{
+						navMeshAgent.radius = capsuleCollider.radius;
+						navMeshAgent.height = capsuleCollider.height;
+					}
+					else
+					{
+						navMeshAgent = gameObject.GetComponent<UEAI.NavMeshAgent>();
+						if (navMeshAgent == null)
+						{
+							navMeshAgent = gameObject.AddComponent<UEAI.NavMeshAgent>();
+						}
+					}
+				}
+
 				if (_followingWaypoint && waypointTowardsIndex < waypointTowards.Count)
 				{
 					if (elapsedTimeSinceAnimationStarted < script.delay_start)

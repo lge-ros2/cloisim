@@ -120,13 +120,8 @@ public class ActorAgent : MonoBehaviour
 
 			if (currentType != motionType)
 			{
-				var targetClip = m_Animation.GetClip(animationName);
-				if (targetClip != null)
-				{
-					m_Animation.clip = targetClip;
-					m_Animation.Stop();
-					m_Animation.Play();
-				}
+				m_Animation.Stop();
+				m_Animation.Play(animationName);
 
 				currentType = motionType;
 			}

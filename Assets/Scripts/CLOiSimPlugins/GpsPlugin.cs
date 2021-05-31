@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using Stopwatch = System.Diagnostics.Stopwatch;
-
 public class GpsPlugin : CLOiSimPlugin
 {
 	protected override void OnAwake()

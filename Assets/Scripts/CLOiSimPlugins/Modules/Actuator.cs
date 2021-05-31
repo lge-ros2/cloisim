@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections;
 using UnityEngine;
 
 public class Actuator

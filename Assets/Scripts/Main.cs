@@ -36,6 +36,7 @@ public class Main: MonoBehaviour
 	private static SimulationDisplay simulationDisplay = null;
 	private static WorldNavMeshBuilder worldNavMeshBuilder = null;
 	private static RuntimeGizmos.TransformGizmo transformGizmo = null;
+	private static BridgeManager bridgeManager = null;
 
 	private bool isResetting = false;
 	private bool resetTriggered = false;
@@ -46,6 +47,7 @@ public class Main: MonoBehaviour
 	public static RuntimeGizmos.TransformGizmo Gizmos => transformGizmo;
 	public static SimulationDisplay Display => simulationDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => worldNavMeshBuilder;
+	public static BridgeManager BridgeManager => bridgeManager;
 
 	private void CleanAllModels()
 	{
@@ -183,6 +185,8 @@ public class Main: MonoBehaviour
 		transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
 
 		gameObject.AddComponent<ObjectSpawning>();
+
+		bridgeManager = CoreObject.GetComponent<BridgeManager>();
 	}
 
 	void Start()
@@ -234,8 +238,6 @@ public class Main: MonoBehaviour
 
 		if (sdf.DoParse())
 		{
-			yield return new WaitForSeconds(0.0001f);
-
 			var loader = new SDF.Import.Loader();
 			loader.SetRootModels(worldRoot);
 			loader.SetRootLights(lightsRoot);
@@ -253,7 +255,7 @@ public class Main: MonoBehaviour
 			simulationDisplay?.SetErrorMessage(errorMessage);
 		}
 
-		yield return null;
+		bridgeManager.PrintLog();
 	}
 
 	void LateUpdate()
@@ -330,7 +332,7 @@ public class Main: MonoBehaviour
 
 		DeviceHelper.GetGlobalClock()?.ResetTime();
 
-		yield return new WaitForSeconds(0.5f);
+		yield return new WaitForSeconds(0.2f);
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
 		isResetting = false;
 	}
