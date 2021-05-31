@@ -67,7 +67,7 @@ namespace SDF
 			{
 				if (capsuleCollider != null && skinMeshRenderer != null)
 				{
-					const float sizeRatio = 0.8f;
+					const float sizeRatio = 0.7f;
 					var localBounds = skinMeshRenderer.localBounds;
 					var bounds = skinMeshRenderer.bounds;
 					capsuleCollider.radius = UE.Mathf.Min(bounds.extents.x, bounds.extents.z) * sizeRatio;
