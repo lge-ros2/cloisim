@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
 using UnityEngine;
 using Unity.Collections;
 using Unity.Jobs;
@@ -164,7 +163,7 @@ namespace SensorDevices
 				return depthBuffer[bufferOffset];
 			}
 
-			private float GetDepthData(in float horizontalAngle, in float verticalAngle = 0)
+			private float GetDepthData(in float horizontalAngle, in float verticalAngle)
 			{
 				var horizontalAngleInCamData = (horizontalAngle - maxHAngleHalf) * Mathf.Deg2Rad;
 				var verticalAngleInCamData = verticalAngle * Mathf.Deg2Rad;
@@ -179,7 +178,7 @@ namespace SensorDevices
 				var finalDepthData = depthRange * compensateScale;
 
 				// Cutoff
-				return (finalDepthData > 1.0f) ? 1.0f : finalDepthData;
+				return finalDepthData;
 			}
 
 			private void ResolveLaserRange(in int index)
@@ -196,8 +195,8 @@ namespace SensorDevices
 
 				var rayAngleH = angleResolution.H * indexH;
 				var rayAngleV = angleResolution.V * indexV;
-				var depthData = GetDepthData(rayAngleH);
-				var rayDistance = (depthData > 0) ? depthData * rangeMax : Mathf.Infinity;
+				var depthData = GetDepthData(rayAngleH, rayAngleV);
+				var rayDistance = (depthData > 1f) ? Mathf.Infinity : (depthData * rangeMax);
 
 				laserData[index] = (double)rayDistance;
 			}
