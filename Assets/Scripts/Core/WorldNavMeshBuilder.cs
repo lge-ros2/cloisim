@@ -6,6 +6,7 @@
 
 using UnityEngine;
 using UnityEngine.AI;
+using Unity.Jobs.LowLevel.Unsafe;
 using System.Collections;
 using System.Collections.Generic;
 using NavMeshBuilder = UnityEngine.AI.NavMeshBuilder;
@@ -100,6 +101,13 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		m_NavMesh = new NavMeshData();
 		m_Instance = NavMesh.AddNavMeshData(m_NavMesh);
 		m_defaultBuildSettings = NavMesh.GetSettingsByID(0);
+		m_defaultBuildSettings.overrideTileSize = true;
+		m_defaultBuildSettings.tileSize = 512;
+		m_defaultBuildSettings.preserveTilesOutsideBounds = true;
+		m_defaultBuildSettings.voxelSize = 3;
+		m_defaultBuildSettings.minRegionArea = 1;
+		m_defaultBuildSettings.maxJobWorkers = (uint)JobsUtility.JobWorkerCount;
+		NavMesh.pathfindingIterationsPerFrame = 25;
 
 		UpdateNavMesh(false);
 	}
