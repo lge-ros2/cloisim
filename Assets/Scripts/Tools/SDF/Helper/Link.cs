@@ -28,7 +28,7 @@ namespace SDF
 
 			public Dictionary<string, UE.ArticulationBody> jointList = new Dictionary<string, UE.ArticulationBody>();
 
-			private List<UE.ContactPoint> contactPointList = new List<UE.ContactPoint>();
+			private List<UE.ContactPoint> collisionContacts = new List<UE.ContactPoint>();
 
 			public Model RootModel => rootModel;
 
@@ -71,14 +71,21 @@ namespace SDF
 					UE.Gizmos.DrawCube(transform.position, region);
 				}
 
-				if (drawContact && contactPointList.Count > 0)
+				lock(this.collisionContacts)
 				{
-					// Debug-draw all contact points and normals
-					foreach (var contact in contactPointList)
+					if (drawContact && collisionContacts != null && collisionContacts.Count > 0)
 					{
-						UE.Debug.DrawRay(contact.point, contact.normal, UE.Color.cyan, 0, true);
+						var contactColor = UE.Color.cyan;
+						contactColor.b = UE.Random.Range(0.5f, 1.0f);
+
+						// Debug-draw all contact points and normals
+						for (var i = 0; i < collisionContacts.Count; i++)
+						{
+							var contact = collisionContacts[i];
+							UE.Debug.DrawRay(contact.point, contact.normal, contactColor);
+						}
+						collisionContacts.Clear();
 					}
-					contactPointList.Clear();
 				}
 			}
 
@@ -87,11 +94,16 @@ namespace SDF
 				UE.Debug.Log("A joint has just been broken!, force: " + breakForce);
 			}
 
+#if UNITY_EDITOR
 			void OnCollisionStay(UE.Collision collisionInfo)
 			{
-				// Debug.Log(name + " |Stay| " + collisionInfo.gameObject.name);
-				contactPointList.AddRange(collisionInfo.contacts);
+				lock(this.collisionContacts)
+				{
+					// UE.Debug.Log(name + " |Stay| " + collisionInfo.gameObject.name);
+					collisionInfo.GetContacts(this.collisionContacts);
+				}
 			}
+#endif
 
 			private UE.Collider[] GetCollidersInChildren()
 			{

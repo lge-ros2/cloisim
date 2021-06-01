@@ -6,15 +6,16 @@
  using UnityEngine;
 
 [DefaultExecutionOrder(600)]
+[RequireComponent(typeof(Clock))]
 public class SimulationWorld : CLOiSimPlugin
 {
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.WORLD;
-		targetDevice = gameObject.AddComponent<Clock>();
+		targetDevice = gameObject.GetComponent<Clock>();
 
 		modelName = "World";
-		partName = "cloisim_clock";
+		partsName = "cloisim";
 	}
 
 	protected override void OnStart()

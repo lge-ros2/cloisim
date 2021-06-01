@@ -38,13 +38,11 @@ namespace SDF
 
 					if (pluginObject != null)
 					{
-						var node = plugin.GetNode();
 						pluginObject.SetPluginParameters(plugin);
 						// Debug.Log("[Plugin] added : " + plugin.Name);
 					}
 					else if (multiPluginObject != null)
 					{
-						var node = plugin.GetNode();
 						multiPluginObject.SetPluginParameters(plugin);
 						// Debug.Log("[Plugin] devices added : " + plugin.Name);
 					}

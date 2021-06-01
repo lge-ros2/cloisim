@@ -38,6 +38,9 @@ namespace SDF
 
 			private UE.CapsuleCollider capsuleCollider = null;
 			private UE.SkinnedMeshRenderer skinMeshRenderer = null;
+			private UEAI.NavMeshAgent navMeshAgent = null;
+
+			private bool completeSetSize = false;
 
 			public bool HasWayPoints => (script.trajectories != null && script.trajectories.Count > 0);
 
@@ -53,35 +56,54 @@ namespace SDF
 
 			void Start()
 			{
+				capsuleCollider = GetComponentInChildren<UE.CapsuleCollider>();
+				skinMeshRenderer = GetComponentInChildren<UE.SkinnedMeshRenderer>();
+
 				if (script != null && script.auto_start && HasWayPoints)
 				{
 					StartWaypointFollowing();
 				}
+			}
 
-				capsuleCollider = GetComponentInChildren<UE.CapsuleCollider>();
-				skinMeshRenderer = GetComponentInChildren<UE.SkinnedMeshRenderer>();
+			private bool SetAgentColliderSize()
+			{
+				const float SizeRatio = 0.85f;
 
-				if (capsuleCollider != null && skinMeshRenderer != null)
+				var complete = false;
+
+				var localBounds = skinMeshRenderer.localBounds;
+				var bounds = skinMeshRenderer.bounds;
+				capsuleCollider.radius = UE.Mathf.Min(bounds.extents.x, bounds.extents.z) * SizeRatio;
+				capsuleCollider.height = bounds.size.y;
+				var center = capsuleCollider.center;
+				center.y = bounds.extents.y;
+				capsuleCollider.center = center;
+
+				if (navMeshAgent != null)
 				{
-					const float sizeRatio = 0.8f;
-					var bounds = skinMeshRenderer.localBounds;
-					capsuleCollider.radius = UE.Mathf.Min(bounds.extents.x, bounds.extents.z) * sizeRatio;;
-					capsuleCollider.height = bounds.size.y;
-					var center = capsuleCollider.center;
-					center.y = bounds.extents.y;
-					capsuleCollider.center = center;
-
-					var navAgent = GetComponentInChildren<UEAI.NavMeshAgent>();
-					if (navAgent != null)
+					navMeshAgent.radius = capsuleCollider.radius;
+					navMeshAgent.height = capsuleCollider.height;
+					complete = true;
+				}
+				else
+				{
+					navMeshAgent = gameObject.GetComponent<UEAI.NavMeshAgent>();
+					if (navMeshAgent == null)
 					{
-						navAgent.radius = capsuleCollider.radius;
-						navAgent.height = capsuleCollider.height;
+						navMeshAgent = gameObject.AddComponent<UEAI.NavMeshAgent>();
 					}
 				}
+
+				return complete;
 			}
 
 			void LateUpdate()
 			{
+				if (capsuleCollider != null && skinMeshRenderer != null && completeSetSize == false)
+				{
+					completeSetSize = SetAgentColliderSize();
+				}
+
 				if (_followingWaypoint && waypointTowardsIndex < waypointTowards.Count)
 				{
 					if (elapsedTimeSinceAnimationStarted < script.delay_start)

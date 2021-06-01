@@ -4,16 +4,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
-using messages = cloisim.msgs;
-using Any = cloisim.msgs.Any;
-
 public class MultiCameraPlugin : CLOiSimPlugin
 {
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.MULTICAMERA;
-		partName = DeviceHelper.GetPartName(gameObject);
+		partsName = DeviceHelper.GetPartName(gameObject);
 		targetDevice = gameObject.GetComponent<SensorDevices.MultiCamera>();
 	}
 
@@ -23,7 +19,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		RegisterTxDevice("Data");
 
 		AddThread(SenderThread, targetDevice);
-		AddThread(RequestThread);
+		AddThread(ServiceThread);
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)

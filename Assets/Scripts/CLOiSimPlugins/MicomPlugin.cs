@@ -17,8 +17,6 @@ public class MicomPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		targetDevice.SetPluginParameters(GetPluginParameters());
-
 		var debugging = GetPluginParameters().GetValue<bool>("debug", false);
 		targetDevice.EnableDebugging = debugging;
 
@@ -26,7 +24,7 @@ public class MicomPlugin : CLOiSimPlugin
 		RegisterRxDevice("Rx");
 		RegisterTxDevice("Tx");
 
-		AddThread(RequestThread);
+		AddThread(ServiceThread);
 		AddThread(SenderThread, (targetDevice as Micom).GetSensor());
 		AddThread(ReceiverThread, (targetDevice as Micom).GetInput());
 	}

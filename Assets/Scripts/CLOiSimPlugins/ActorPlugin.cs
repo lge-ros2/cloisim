@@ -43,7 +43,7 @@ public class ActorPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.ACTOR;
-		partName = "actorplugin";
+		partsName = "actorplugin";
 
 		UpdateStaticModelList();
 	}

@@ -43,17 +43,6 @@ namespace SDF
 					}
 				}
 			}
-
-			void OnDestroy()
-			{
-				if (IsFirstChild)
-				{
-					foreach (var plugin in GetComponentsInChildren<CLOiSimPlugin>())
-					{
-						plugin.StopThread();
-					}
-				}
-			}
 		}
 	}
 }

@@ -124,6 +124,7 @@ public partial class MeshLoader
 		{
 			// Debug.Log("Total Animations = " + scene.AnimationCount);
 			var lastAnimationTime = 0f;
+			const float AnimationSpeedTimeRatio = 0.8f;
 			foreach (var animation in scene.Animations)
 			{
 				clip.legacy = true;
@@ -154,7 +155,7 @@ public partial class MeshLoader
 						foreach (var positionKey in node.PositionKeys)
 						{
 							var vectorKey = positionKey.Value;
-							lastPostionKeyTime = lastAnimationTime + (float)positionKey.Time;
+							lastPostionKeyTime = lastAnimationTime + ((float)positionKey.Time * AnimationSpeedTimeRatio);
 							keyFramesPos.Add(lastPostionKeyTime, vectorKey.X, vectorKey.Y, vectorKey.Z);
 							// Debug.Log("["+node.NodeName+"] PositionKey: " + lastPostionKeyTime + "..." + (float)positionKey.Time + ", " + vectorKey.X + ", " + vectorKey.Y + ", " + vectorKey.Z);
 						}
@@ -176,7 +177,7 @@ public partial class MeshLoader
 						foreach (var rotationKey in node.RotationKeys)
 						{
 							var vectorKey = rotationKey.Value;
-							lastRotationKeyTime = lastAnimationTime + (float)rotationKey.Time;
+							lastRotationKeyTime = lastAnimationTime + ((float)rotationKey.Time * AnimationSpeedTimeRatio);
 							keyFramesRot.Add(lastRotationKeyTime, vectorKey.X, vectorKey.Y, vectorKey.Z, vectorKey.W);
 							// Debug.Log("["+node.NodeName+"] RotationKey: " + lastRotationKeyTime + "..." +  (float)rotationKey.Time + ", " + vectorKey.X + ", " + vectorKey.Y + ", " + vectorKey.Z + ", " + vectorKey.W);
 						}
@@ -197,7 +198,7 @@ public partial class MeshLoader
 						foreach (var scalingKey in node.ScalingKeys)
 						{
 							var vectorKey = scalingKey.Value * scale;
-							lastScalingKeyTime = lastAnimationTime + (float)scalingKey.Time;
+							lastScalingKeyTime = lastAnimationTime + ((float)scalingKey.Time * AnimationSpeedTimeRatio);
 							keyFramesScale.Add(lastScalingKeyTime, vectorKey.X, vectorKey.Y, vectorKey.Z);
 							// Debug.Log("["+node.NodeName+"] ScalingKey: " + lastScalingKeyTime + "..." + (float)scalingKey.Time + ", " + vectorKey.X + ", " + vectorKey.Y + ", " + vectorKey.Z);
 						}

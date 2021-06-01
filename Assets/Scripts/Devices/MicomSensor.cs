@@ -23,6 +23,9 @@ public partial class MicomSensor : Device
 
 	private Dictionary<string, Pose> partsPoseMapTable = new Dictionary<string, Pose>();
 
+	private MotorControl motorControl = new MotorControl();
+	public MotorControl MotorControl => this.motorControl;
+
 	protected override void OnAwake()
 	{
 		Mode = ModeType.TX_THREAD;
@@ -31,19 +34,37 @@ public partial class MicomSensor : Device
 
 	protected override void OnStart()
 	{
+		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
+
+		if (imuSensor != null)
+		{
+			SetInitialPartsPose(imuSensor.name, imuSensor.gameObject);
+		}
+
+		SetupMicom();
+	}
+
+	protected override IEnumerator OnVisualize()
+	{
+		yield return null;
+	}
+
+	private void SetupMicom()
+	{
 		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
 		SetUpdateRate(updateRate);
 
-		pidGainP = GetPluginParameters().GetValue<float>("PID/kp");
-		pidGainI = GetPluginParameters().GetValue<float>("PID/ki");
-		pidGainD = GetPluginParameters().GetValue<float>("PID/kd");
+		var P = GetPluginParameters().GetValue<float>("PID/kp");
+		var I = GetPluginParameters().GetValue<float>("PID/ki");
+		var D = GetPluginParameters().GetValue<float>("PID/kd");
+		motorControl.SetPID(P, I, D);
 
-		wheelTread = GetPluginParameters().GetValue<float>("wheel/tread");
-		wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
-		divideWheelRadius = 1.0f/wheelRadius;
+		var wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
+		var wheelTread = GetPluginParameters().GetValue<float>("wheel/tread");
+		motorControl.SetWheelInfo(wheelRadius, wheelTread);
 
-		wheelNameLeft = GetPluginParameters().GetValue<string>("wheel/location[@type='left']");
-		wheelNameRight = GetPluginParameters().GetValue<string>("wheel/location[@type='right']");
+		var wheelNameLeft = GetPluginParameters().GetValue<string>("wheel/location[@type='left']");
+		var wheelNameRight = GetPluginParameters().GetValue<string>("wheel/location[@type='right']");
 
 		var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
 		var brakeFriction = GetPluginParameters().GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
@@ -51,17 +72,27 @@ public partial class MicomSensor : Device
 		var modelList = GetComponentsInChildren<SDF.Helper.Model>();
 		foreach (var model in modelList)
 		{
+			var wheelLocation = MotorControl.WheelLocation.NONE;
 			// Debug.Log(model.name);
-			if (model.name.Equals(wheelNameLeft) || model.name.Equals(wheelNameRight))
-			{
-				var motorObject = model.gameObject;
-				var motor = gameObject.AddComponent<Motor>();
-				motor.SetTargetJoint(motorObject);
-				motor.SetPID(pidGainP, pidGainI, pidGainD);
-				_motors.Add(model.name, motor);
 
-				SetInitialPartsPose(model.name, motorObject);
+			if (model.name.Equals(wheelNameLeft))
+			{
+				wheelLocation = MotorControl.WheelLocation.LEFT;
 			}
+			else if(model.name.Equals(wheelNameRight))
+			{
+				wheelLocation = MotorControl.WheelLocation.RIGHT;
+			}
+			else
+			{
+				continue;
+			}
+
+			var motorObject = model.gameObject;
+
+			motorControl.AddWheelInfo(wheelLocation, motorObject);
+
+			SetInitialPartsPose(model.name, motorObject);
 		}
 
 		if (GetPluginParameters().GetValues<string>("uss/sensor", out var ussList))
@@ -149,18 +180,19 @@ public partial class MicomSensor : Device
 
 			micomSensorData.bumper.Bumpeds = new bool[bumperCount];
 		}
-
-		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
-
-		if (imuSensor != null)
-		{
-			SetInitialPartsPose(imuSensor.name, imuSensor.gameObject);
-		}
 	}
 
-	protected override IEnumerator OnVisualize()
+	protected override void OnReset()
 	{
-		yield return null;
+		if (imuSensor != null)
+		{
+			imuSensor.Reset();
+		}
+
+		if (motorControl != null)
+		{
+			motorControl.Reset();
+		}
 	}
 
 	protected override void InitializeMessages()
@@ -186,16 +218,21 @@ public partial class MicomSensor : Device
 
 	void FixedUpdate()
 	{
-		foreach (var motor in _motors.Values)
+		var motorLeft = motorControl.GetMotor(MotorControl.WheelLocation.LEFT);
+		var motorRight = motorControl.GetMotor(MotorControl.WheelLocation.RIGHT);
+
+		if (motorLeft != null && motorRight != null)
 		{
-			motor.GetPID().Change(pidGainP, pidGainI, pidGainD);
+			motorLeft.Update();
+			motorRight.Update();
 		}
 
 		UpdateIMU();
 		UpdateUss();
 		UpdateIr();
 		UpdateBumper();
-		UpdateOdom(Time.fixedDeltaTime);
+
+		motorControl.UpdateOdometry(micomSensorData.Odom, Time.fixedDeltaTime, imuSensor);
 	}
 
 	private void UpdateBumper()
@@ -213,8 +250,7 @@ public partial class MicomSensor : Device
 			}
 			else
 			{
-				var index = 0;
-				foreach (var bumperBody in bumperSensors)
+				for (var index = 0; index < bumperSensors.Count; index++)
 				{
 					// TODO:
 					// var articulationDrive = (bumperBody.xDrive != null)? bumper.
@@ -222,7 +258,7 @@ public partial class MicomSensor : Device
 					// bumper.xDrive.upperLimit
 					// var threshold = bumperBody.linearLimit.limit/2;
 
-					var normal = bumperBody.transform.localPosition.normalized;
+					var normal = bumperSensors[index].transform.localPosition.normalized;
 					// Debug.Log(index + ": " + normal.ToString("F6"));
 
 					if (normal.x > 0 && normal.z < 0)
@@ -240,8 +276,6 @@ public partial class MicomSensor : Device
 						micomSensorData.bumper.Bumpeds[index] = false;
 						// Debug.Log("No Bumped");
 					}
-
-					index++;
 				}
 			}
 		}
@@ -254,10 +288,9 @@ public partial class MicomSensor : Device
 			return;
 		}
 
-		var index = 0;
-		foreach (var uss in ussSensors)
+		for (var index = 0; index < ussSensors.Count; index++)
 		{
-			micomSensorData.uss.Distances[index++] = uss.GetDetectedRange();
+			micomSensorData.uss.Distances[index] = ussSensors[index].GetDetectedRange();
 		}
 	}
 
@@ -268,10 +301,9 @@ public partial class MicomSensor : Device
 			return;
 		}
 
-		var index = 0;
-		foreach (var ir in irSensors)
+		for (var index = 0; index < irSensors.Count; index++)
 		{
-			micomSensorData.ir.Distances[index++] = ir.GetDetectedRange();
+			micomSensorData.ir.Distances[index] = irSensors[index].GetDetectedRange();
 		}
 	}
 

@@ -106,7 +106,7 @@ namespace SDF
 
 		public Pose<double> Pose => pose;
 
-		protected bool IsValidNode(in string xpath)
+		public bool IsValidNode(in string xpath)
 		{
 			var node = GetNode(xpath);
 			return (node == null)? false:GetNode(xpath).HasChildNodes;
