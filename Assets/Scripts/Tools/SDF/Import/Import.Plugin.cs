@@ -31,8 +31,6 @@ namespace SDF
 						return;
 					}
 
-					targetObject.SetActive(false);
-
 					var pluginComponent = targetObject.AddComponent(pluginType);
 
 					var pluginObject = pluginComponent as CLOiSimPlugin;
@@ -52,8 +50,6 @@ namespace SDF
 					{
 						Debug.LogError("[Plugin] failed to add : " + plugin.Name);
 					}
-
-					targetObject.SetActive(true);
 				}
 				else
 				{
