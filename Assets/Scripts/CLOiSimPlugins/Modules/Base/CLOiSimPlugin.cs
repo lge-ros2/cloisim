@@ -181,8 +181,6 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 
 	protected new void OnDestroy()
 	{
-		DestroyTransporter();
-
 		foreach (var hashKey in allocatedDeviceHashKeys)
 		{
 			DeregisterDevice(hashKey);

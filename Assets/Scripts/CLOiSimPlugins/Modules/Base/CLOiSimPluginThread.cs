@@ -17,9 +17,11 @@ public class CLOiSimPluginThread : Transporter
 
 	private List<(Thread, System.Object)> threadList = new List<(Thread, System.Object)>();
 
-	protected void OnDestroy()
+	protected new void OnDestroy()
 	{
 		StopThread();
+
+		base.OnDestroy();
 	}
 
 	protected bool AddThread(in ThreadStart function)
@@ -98,9 +100,11 @@ public class CLOiSimPluginThread : Transporter
 				if (device.PopDeviceMessage(out var dataStreamToSend))
 				{
 					sw.Restart();
-					Publisher.Publish(dataStreamToSend);
-					sw.Stop();
-					device.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+					if (Publisher.Publish(dataStreamToSend))
+					{
+						sw.Stop();
+						device.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+					}
 				}
 			}
 		}
@@ -144,7 +148,7 @@ public class CLOiSimPluginThread : Transporter
 
 					if (requestMessage != null && dmResponse != null)
 					{
-						HandleRequestMessage(requestMessage.Name, requestMessage.Value, ref dmResponse);
+						HandleRequestMessage(requestMessage, ref dmResponse);
 					}
 					else
 					{
@@ -164,6 +168,10 @@ public class CLOiSimPluginThread : Transporter
 	}
 
 	protected virtual void HandleRequestMessage(in string requestType, in messages.Any requestValue, ref DeviceMessage response) { }
+	protected virtual void HandleRequestMessage(in messages.Param requestMessage, ref DeviceMessage response)
+	{
+		HandleRequestMessage(requestMessage.Name, requestMessage.Value, ref response);
+	}
 
 	protected static messages.Param ParsingRequestMessage(in byte[] infoBuffer)
 	{

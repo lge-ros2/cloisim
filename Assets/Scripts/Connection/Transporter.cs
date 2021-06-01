@@ -47,6 +47,11 @@ public class Transporter : MonoBehaviour
 		return requestor.Initialize(targetPort);
 	}
 
+	protected void OnDestroy()
+	{
+		DestroyTransporter();
+	}
+
 	protected void DestroyTransporter()
 	{
 		// Debug.Log("DestroyTransporter");

@@ -46,7 +46,7 @@ public class Subscriber : SubscriberSocket
 
 	public byte[] Subscribe()
 	{
-		if (this.IsDisposed)
+		if (IsDisposed)
 		{
 			(Console.Out as DebugLogWriter).SetWarningOnce();
 			Console.WriteLine("Socket for subscriber is not ready yet.");
