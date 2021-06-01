@@ -295,41 +295,44 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	protected void PublishThread()
 	{
 		var deviceMessage = new DeviceMessage();
-		while (IsRunningThread)
+		if (Publisher != null)
 		{
-			for (var index = 0; index < messagePerceptions.Perceptions.Count; index++)
+			while (IsRunningThread)
 			{
-				var perception = messagePerceptions.Perceptions[index];
-				if (trackingObjectList.TryGetValue(perception.TrackingId, out var trackingObject))
+				for (var index = 0; index < messagePerceptions.Perceptions.Count; index++)
 				{
-					DeviceHelper.SetCurrentTime(perception.Header.Stamp);
-					DeviceHelper.SetVector3d(perception.Position, trackingObject.position);
-					DeviceHelper.SetVector3d(perception.Velocity, trackingObject.velocity);
-					DeviceHelper.SetVector3d(perception.Size, trackingObject.size);
-
-					var footprint = trackingObject.Footprint();
-					for (var i = 0; i < footprint.Length; i++)
+					var perception = messagePerceptions.Perceptions[index];
+					if (trackingObjectList.TryGetValue(perception.TrackingId, out var trackingObject))
 					{
-						var point = new messages.Vector3d();
-						DeviceHelper.SetVector3d(point, footprint[i]);
+						DeviceHelper.SetCurrentTime(perception.Header.Stamp);
+						DeviceHelper.SetVector3d(perception.Position, trackingObject.position);
+						DeviceHelper.SetVector3d(perception.Velocity, trackingObject.velocity);
+						DeviceHelper.SetVector3d(perception.Size, trackingObject.size);
 
-						if (i < perception.Footprints.Count)
+						var footprint = trackingObject.Footprint();
+						for (var i = 0; i < footprint.Length; i++)
 						{
-							perception.Footprints[i] = point;
-						}
-						else
-						{
-							perception.Footprints.Add(point);
+							var point = new messages.Vector3d();
+							DeviceHelper.SetVector3d(point, footprint[i]);
+
+							if (i < perception.Footprints.Count)
+							{
+								perception.Footprints[i] = point;
+							}
+							else
+							{
+								perception.Footprints.Add(point);
+							}
 						}
 					}
 				}
+
+				DeviceHelper.SetCurrentTime(messagePerceptions.Header.Stamp);
+				deviceMessage.SetMessage<messages.PerceptionV>(messagePerceptions);
+				Publisher.Publish(deviceMessage);
+
+				SleepThread(sleepPeriodForPublishInMilliseconds);
 			}
-
-			DeviceHelper.SetCurrentTime(messagePerceptions.Header.Stamp);
-			deviceMessage.SetMessage<messages.PerceptionV>(messagePerceptions);
-			Publish(deviceMessage);
-
-			SleepThread(sleepPeriodForPublishInMilliseconds);
 		}
 	}
 }

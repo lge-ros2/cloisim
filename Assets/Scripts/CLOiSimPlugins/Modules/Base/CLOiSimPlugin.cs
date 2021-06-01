@@ -79,8 +79,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 	{
 		if (PrepareDevice(subPartName, out var port, out var hash))
 		{
-			SetHashForPublish(hash);
-			InitializePublisher(port);
+			InitializePublisher(port, hash);
 			return true;
 		}
 
@@ -93,8 +92,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 	{
 		if (PrepareDevice(subPartName, out var port, out var hash))
 		{
-			SetHashForSubscription(hash);
-			InitializeSubscriber(port);
+			InitializeSubscriber(port, hash);
 			return true;
 		}
 
@@ -107,8 +105,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 	{
 		if (PrepareDevice(subPartName, out var port, out var hash))
 		{
-			SetHashForResponse(hash);
-			InitializeResponsor(port);
+			InitializeResponsor(port, hash);
 			return true;
 		}
 
@@ -121,8 +118,7 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 	{
 		if (PrepareDevice(subPartName, out var port, out var hash))
 		{
-			SetHashForRequest(hash);
-			InitializeRequester(port);
+			InitializeRequester(port, hash);
 			return true;
 		}
 

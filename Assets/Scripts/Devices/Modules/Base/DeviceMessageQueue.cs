@@ -9,7 +9,7 @@ using System.Collections.Concurrent;
 public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 {
 	private const int MaxQueue = 5;
-	private const int TimeoutFordeviceMessageQueueInMilliseconds = 100;
+	private const int TimeoutInMilliseconds = 100;
 
 	public DeviceMessageQueue()
 		: base(MaxQueue)
@@ -40,7 +40,7 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 			FlushHalf();
 		}
 
-		if (TryAdd(data, TimeoutFordeviceMessageQueueInMilliseconds))
+		if (TryAdd(data, TimeoutInMilliseconds))
 		{
 			return true;
 		}
@@ -52,7 +52,7 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 	{
 		try
 		{
-			if (TryTake(out item, TimeoutFordeviceMessageQueueInMilliseconds))
+			if (TryTake(out item, TimeoutInMilliseconds))
 			{
 				return true;
 			}

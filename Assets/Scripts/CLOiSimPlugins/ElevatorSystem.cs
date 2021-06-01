@@ -269,26 +269,33 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	private void ServiceThread()
 	{
-		while (IsRunningThread)
+		if (Responsor != null)
 		{
-			var receivedBuffer = ReceiveRequest();
-			var requestMessage = ParsingRequestMessage(receivedBuffer);
-
-			if (requestMessage != null)
+			while (IsRunningThread)
 			{
-				if (requestMessage.Name.Equals("request_system_name"))
-				{
-					SetSystemNameResponse(requestMessage);
-					SendResponse(msForService);
-				}
-				else
-				{
-					var streamToResponse = HandleServiceRequest(requestMessage);
-					SendResponse(streamToResponse);
-				}
-			}
+				var receivedBuffer = Responsor.ReceiveRequest();
 
-			WaitThread();
+				if (receivedBuffer != null)
+				{
+					var requestMessage = ParsingRequestMessage(receivedBuffer);
+
+					if (requestMessage != null)
+					{
+						if (requestMessage.Name.Equals("request_system_name"))
+						{
+							SetSystemNameResponse(requestMessage);
+						}
+						else
+						{
+							HandleServiceRequest(requestMessage);
+						}
+					}
+
+					Responsor.SendResponse(msForService);
+				}
+
+				WaitThread();
+			}
 		}
 	}
 
@@ -300,7 +307,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		msForService.SetMessage<messages.Param>(response);
 	}
 
-	private DeviceMessage HandleServiceRequest(in messages.Param receivedMessage)
+	private void HandleServiceRequest(in messages.Param receivedMessage)
 	{
 		messages.Param param = null;
 
@@ -349,8 +356,6 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		HandleService(serviceName, currentFloor, targetFloor, elevatorIndex);
 
 		msForService.SetMessage<messages.Param>(responseMessage);
-
-		return msForService;
 	}
 
 	private void HandleService(in string serviceName, string currentFloor, in string targetFloor, string elevatorIndex)

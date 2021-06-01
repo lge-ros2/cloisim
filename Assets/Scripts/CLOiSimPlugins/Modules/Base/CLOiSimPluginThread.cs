@@ -10,7 +10,7 @@ using UnityEngine;
 using messages = cloisim.msgs;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
-public class CLOiSimPluginThread : DeviceTransporter
+public class CLOiSimPluginThread : Transporter
 {
 	private bool runningThread = true;
 	protected bool IsRunningThread => runningThread;
@@ -89,54 +89,77 @@ public class CLOiSimPluginThread : DeviceTransporter
 
 	protected void SenderThread(System.Object deviceParam)
 	{
-		var sw = new Stopwatch();
-		var device = deviceParam as Device;
-		while (runningThread && device != null)
+		if (Publisher != null)
 		{
-			if (device.PopDeviceMessage(out var dataStreamToSend))
+			var sw = new Stopwatch();
+			var device = deviceParam as Device;
+			while (runningThread && device != null)
 			{
-				sw.Restart();
-				Publish(dataStreamToSend);
-				sw.Stop();
-				device.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				if (device.PopDeviceMessage(out var dataStreamToSend))
+				{
+					sw.Restart();
+					Publisher.Publish(dataStreamToSend);
+					sw.Stop();
+					device.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+				}
 			}
+		}
+		else
+		{
+			Debug.LogWarning("publihser is null");
 		}
 	}
 
 	protected void ReceiverThread(System.Object deviceParam)
 	{
-		var device = deviceParam as Device;
-		while (IsRunningThread && device != null)
+		if (Subscriber != null)
 		{
-			var receivedData = Subscribe();
-			device.PushDeviceMessage(receivedData);
+			var device = deviceParam as Device;
+			while (IsRunningThread && device != null)
+			{
+				var receivedData = Subscriber.Subscribe();
+				device.PushDeviceMessage(receivedData);
 
-			WaitThread();
+				WaitThread();
+			}
+		}
+		else
+		{
+			Debug.LogWarning("Subscriber is null");
 		}
 	}
 
 	protected void RequestThread()
 	{
-		var dmResponse = new DeviceMessage();
-		while (runningThread)
+		if (Responsor != null)
 		{
-			var receivedBuffer = ReceiveRequest();
-			var requestMessage = ParsingRequestMessage(receivedBuffer);
-
-			if (requestMessage != null)
+			var dmResponse = new DeviceMessage();
+			while (runningThread)
 			{
-				if (dmResponse != null)
-				{
-					HandleRequestMessage(requestMessage.Name, requestMessage.Value, ref dmResponse);
-				}
-				else
-				{
-					Debug.Log("DeviceMessage for response is null");
-				}
-				SendResponse(dmResponse);
-			}
+				var receivedBuffer = Responsor.ReceiveRequest();
 
-			WaitThread();
+				if (receivedBuffer != null)
+				{
+					var requestMessage = ParsingRequestMessage(receivedBuffer);
+
+					if (requestMessage != null && dmResponse != null)
+					{
+						HandleRequestMessage(requestMessage.Name, requestMessage.Value, ref dmResponse);
+					}
+					else
+					{
+						Debug.Log("DeviceMessage for response or requestMesasge is null");
+					}
+
+					Responsor.SendResponse(dmResponse);
+				}
+
+				WaitThread();
+			}
+		}
+		else
+		{
+			Debug.LogWarning("Responsor is null");
 		}
 	}
 
