@@ -272,11 +272,21 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		{
 			var perception = messagePerceptions.Perceptions[i];
 			var trackingId = perception.TrackingId;
-			var trackingObject = trackingObjectList[trackingId];
+			try
+			{
+				var trackingObject = trackingObjectList[trackingId];
+				CalculateFootprint(ref trackingObject);
 
-			CalculateFootprint(ref trackingObject);
-
-			perception.Footprints.Capacity = trackingObject.Footprint().Length;
+				perception.Footprints.Capacity = trackingObject.Footprint().Length;
+			}
+			catch
+			{
+				UE.Debug.LogWarning(trackingId + " is wrong object to get");
+				// foreach (var track in trackingObjectList)
+				// {
+				// 	UE.Debug.Log(track.Key + ", " + track.Value.GetGameObject().name);
+				// }
+			}
 		}
 	}
 
