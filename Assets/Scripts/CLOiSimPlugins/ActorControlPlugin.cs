@@ -29,7 +29,7 @@ public class ActorControlPlugin : CLOiSimPlugin
 	{
 
 		RegisterServiceDevice("Control");
-		AddThread(RequestThread);
+		AddThread(ServiceThread);
 	}
 
 	void LateUpdate()

@@ -133,7 +133,7 @@ public class CLOiSimPluginThread : Transporter
 		}
 	}
 
-	protected void RequestThread()
+	protected void ServiceThread()
 	{
 		if (Responsor != null)
 		{

@@ -62,7 +62,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		ReadFloorContext();
 		ReadElevatorContext();
 
-		AddThread(RequestThread);
+		AddThread(ServiceThread);
 
 		StartCoroutine(ServiceLoop());
 	}

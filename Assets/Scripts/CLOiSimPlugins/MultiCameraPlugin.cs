@@ -19,7 +19,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		RegisterTxDevice("Data");
 
 		AddThread(SenderThread, targetDevice);
-		AddThread(RequestThread);
+		AddThread(ServiceThread);
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)

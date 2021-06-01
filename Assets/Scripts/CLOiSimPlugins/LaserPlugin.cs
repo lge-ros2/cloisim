@@ -30,7 +30,7 @@ public class LaserPlugin : CLOiSimPlugin
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 
-		AddThread(RequestThread);
+		AddThread(ServiceThread);
 		AddThread(SenderThread, targetDevice);
 	}
 

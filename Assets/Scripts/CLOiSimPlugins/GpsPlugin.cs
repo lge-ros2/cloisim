@@ -18,7 +18,7 @@ public class GpsPlugin : CLOiSimPlugin
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 
-		AddThread(RequestThread);
+		AddThread(ServiceThread);
 		AddThread(SenderThread, targetDevice);
 	}
 

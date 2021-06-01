@@ -24,7 +24,7 @@ public class MicomPlugin : CLOiSimPlugin
 		RegisterRxDevice("Rx");
 		RegisterTxDevice("Tx");
 
-		AddThread(RequestThread);
+		AddThread(ServiceThread);
 		AddThread(SenderThread, (targetDevice as Micom).GetSensor());
 		AddThread(ReceiverThread, (targetDevice as Micom).GetInput());
 	}

@@ -35,7 +35,7 @@ public class CameraPlugin : CLOiSimPlugin
 		RegisterServiceDevice(subPartName + "Info");
 		RegisterTxDevice(subPartName + "Data");
 
-		AddThread(RequestThread);
+		AddThread(ServiceThread);
 		AddThread(SenderThread, targetDevice);
 	}
 
