@@ -43,8 +43,6 @@ namespace SDF
 
 		public Root(string filename)
 		{
-			Console.SetOut(new DebugLogWriter());
-
 			SetWorldFileName(filename);
 
 			simulationDisplay = Main.Display;
