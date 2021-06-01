@@ -51,6 +51,13 @@ namespace SensorDevices
 			var depthShader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(depthShader);
 
+			if (computeShader != null)
+			{
+				computeShader.SetFloat("_DepthMin", (float)GetParameters().clip.near);
+				computeShader.SetFloat("_DepthMax", (float)GetParameters().clip.far);
+				computeShader.SetFloat("_DepthScale", (float)depthScale);
+			}
+
 			ReverseDepthData(true);
 			FlipXDepthData(false);
 
@@ -75,18 +82,18 @@ namespace SensorDevices
 			targetRTrwmode = RenderTextureReadWrite.Linear;
 			targetRTformat = RenderTextureFormat.ARGB32;
 
-			var pixelFormat = GetPixelFormat(camParameters.image_format);
+			var pixelFormat = CameraData.GetPixelFormat(camParameters.image_format);
 			switch (pixelFormat)
 			{
-				case PixelFormat.L_INT16:
+				case CameraData.PixelFormat.L_INT16:
 					readbackDstFormat = TextureFormat.R16;
 					break;
 
-				case PixelFormat.R_FLOAT16:
+				case CameraData.PixelFormat.R_FLOAT16:
 					readbackDstFormat = TextureFormat.RHalf;
 					break;
 
-				case PixelFormat.R_FLOAT32:
+				case CameraData.PixelFormat.R_FLOAT32:
 				default:
 					readbackDstFormat = TextureFormat.RFloat;
 					break;
@@ -107,10 +114,6 @@ namespace SensorDevices
 		{
 			if (readbackDstFormat.Equals(TextureFormat.R16) && computeShader != null)
 			{
-				computeShader.SetFloat("_DepthMin", (float)GetParameters().clip.near);
-				computeShader.SetFloat("_DepthMax", (float)GetParameters().clip.far);
-				computeShader.SetFloat("_DepthScale", (float)depthScale);
-
 				var computeBuffer = new ComputeBuffer(buffer.Length, sizeof(byte));
 				computeShader.SetBuffer(kernelIndex, "_Buffer", computeBuffer);
 				computeBuffer.SetData(buffer);

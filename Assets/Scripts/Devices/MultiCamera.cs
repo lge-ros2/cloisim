@@ -40,10 +40,10 @@ namespace SensorDevices
 		{
 			if (imagesStamped.Images.Count != cameras.Count)
 			{
-				foreach (var cam in cameras)
+				for (var i = 0; i < cameras.Count; i++)
 				{
 					// Set images data only once
-					var image = cam.GetImageDataMessage();
+					var image = cameras[i].GetImageDataMessage();
 					if (image != null)
 					{
 						imagesStamped.Images.Add(image);

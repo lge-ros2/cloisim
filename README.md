@@ -80,15 +80,15 @@ more details in [here](https://github.com/lge-ros2/cloisim/tree/main/Assets/Scri
 - LaserPlugin: help to publish 2D or 3D lidar data
 - CameraPlugin: help to publish 2D color image data or depth image data
 - MltiCameraPlugin: help to publish multiple color image data
-- RealSensePlugin:
-- MicomPlugin:
-- GpsPlugin:
-- ActorPlugin:
+- RealSensePlugin: can handle ir1(left), ir2(right), depth, color
+- MicomPlugin: control micom input/output(sensor)
+- GpsPlugin: gps position in world
+- ActorPlugin: actor control using AI(Unity) components
 
 #### World Specific
 
-- ElevatorSystemPlugin:
-- GroundTruthPlugin:
+- ElevatorSystemPlugin: control(lifting, cal) elevators
+- GroundTruthPlugin: retrieve all information(position, size, velocity) for objects
 
 ## How it works
 
@@ -119,7 +119,7 @@ For the performance in terms of collision handling, designing collision geometry
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.9f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.3.10f1 (LTS)'*.
 - Linux: Ubuntu 20.04.2 LTS
 - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
 - Memory: 32GB

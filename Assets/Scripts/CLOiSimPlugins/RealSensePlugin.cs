@@ -17,7 +17,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 	{
 		type = ICLOiSimPlugin.Type.REALSENSE;
 		cameras = GetComponentsInChildren<SensorDevices.Camera>();
-		partName = name;
+		partsName = name;
 	}
 
 	protected override void OnStart()
@@ -58,7 +58,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 		RegisterServiceDevice("Info");
 
-		AddThread(RequestThread);
+		AddThread(ServiceThread);
 	}
 
 	private CameraPlugin FindAndAddCameraPlugin(in string name)

@@ -4,15 +4,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-using Stopwatch = System.Diagnostics.Stopwatch;
-
 public class GpsPlugin : CLOiSimPlugin
 {
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.GPS;
 		targetDevice = gameObject.GetComponent<SensorDevices.GPS>();
-		partName = DeviceHelper.GetPartName(gameObject);
+		partsName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
@@ -20,7 +18,7 @@ public class GpsPlugin : CLOiSimPlugin
 		RegisterServiceDevice("Info");
 		RegisterTxDevice("Data");
 
-		AddThread(RequestThread);
+		AddThread(ServiceThread);
 		AddThread(SenderThread, targetDevice);
 	}
 

@@ -11,7 +11,8 @@ using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
-	public partial class Camera : Device
+	[RequireComponent(typeof(UnityEngine.Camera))]
+	public class Camera : Device
 	{
 		protected messages.CameraSensor sensorInfo = null;
 		protected messages.ImageStamped imageStamped = null;
@@ -33,7 +34,7 @@ namespace SensorDevices
 		protected RenderTextureFormat targetRTformat;
 		protected RenderTextureReadWrite targetRTrwmode;
 		protected TextureFormat readbackDstFormat;
-		private CameraImageData camImageData;
+		private CameraData.ImageData camImageData;
 
 		private CommandBuffer cmdBuffer;
 
@@ -66,7 +67,7 @@ namespace SensorDevices
 		{
 			Mode = ModeType.TX_THREAD;
 			cmdBuffer = new CommandBuffer();
-			camSensor = gameObject.AddComponent<UnityEngine.Camera>();
+			camSensor = GetComponent<UnityEngine.Camera>();
 			universalCamData = camSensor.GetUniversalAdditionalCameraData();
 
 			// for controlling targetDisplay
@@ -98,15 +99,15 @@ namespace SensorDevices
 			targetRTdepth = 0;
 			targetRTrwmode = RenderTextureReadWrite.sRGB;
 
-			var pixelFormat = GetPixelFormat(GetParameters().image_format);
+			var pixelFormat = CameraData.GetPixelFormat(GetParameters().image_format);
 			switch (pixelFormat)
 			{
-				case PixelFormat.L_INT8:
+				case CameraData.PixelFormat.L_INT8:
 					targetRTformat = RenderTextureFormat.R8;
 					readbackDstFormat = TextureFormat.R8;
 					break;
 
-				case PixelFormat.RGB_INT8:
+				case CameraData.PixelFormat.RGB_INT8:
 				default:
 					targetRTformat = RenderTextureFormat.ARGB32;
 					readbackDstFormat = TextureFormat.RGB24;
@@ -121,11 +122,11 @@ namespace SensorDevices
 			imageStamped.Image = new messages.Image();
 
 			var image = imageStamped.Image;
-			var pixelFormat = GetPixelFormat(GetParameters().image_format);
+			var pixelFormat = CameraData.GetPixelFormat(GetParameters().image_format);
 			image.Width = (uint)GetParameters().image_width;
 			image.Height = (uint)GetParameters().image_height;
 			image.PixelFormat = (uint)pixelFormat;
-			image.Step = image.Width * (uint)GetImageDepth(pixelFormat);
+			image.Step = image.Width * (uint)CameraData.GetImageDepth(pixelFormat);
 			image.Data = new byte[image.Height * image.Step];
 
 			sensorInfo = new messages.CameraSensor();
@@ -199,11 +200,13 @@ namespace SensorDevices
 
 			camSensor.hideFlags |= HideFlags.NotEditable;
 
-			camImageData = new CameraImageData(GetParameters().image_width, GetParameters().image_height, GetParameters().image_format);
+			camImageData = new CameraData.ImageData(GetParameters().image_width, GetParameters().image_height, GetParameters().image_format);
 		}
 
-		new void OnDestroy()
+		protected new void OnDestroy()
 		{
+			StopCoroutine(CameraWorker());
+
 			// Debug.Log("OnDestroy(Camera)");
 			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
 			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
@@ -217,7 +220,6 @@ namespace SensorDevices
 
 			while (true)
 			{
-				universalCamData.enabled = true;
 				camSensor.enabled = true;
 
 				// Debug.Log("start render and request ");
@@ -227,7 +229,6 @@ namespace SensorDevices
 				}
 				var readback = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
 
-				universalCamData.enabled = false;
 				camSensor.enabled = false;
 
 				yield return null;
@@ -249,7 +250,7 @@ namespace SensorDevices
 			if (request.done)
 			{
 				var readbackData = request.GetData<byte>();
-				camImageData.SetTextureBufferData(readbackData);
+				camImageData.SetTextureBufferData(ref readbackData);
 				var image = imageStamped.Image;
 				if (image.Data.Length == camImageData.GetImageDataLength())
 				{

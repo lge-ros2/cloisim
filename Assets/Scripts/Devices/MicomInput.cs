@@ -9,7 +9,7 @@ using messages = cloisim.msgs;
 
 public class MicomInput : Device
 {
-	private MicomSensor micomForWheelDrive = null;
+	private MotorControl motorControl = null;
 
 	protected override void OnAwake()
 	{
@@ -41,16 +41,16 @@ public class MicomInput : Device
 		}
 	}
 
-	public void SetMicomSensor(in MicomSensor targetDevice)
+	public void SetMotorControl(in MotorControl motorControl)
 	{
-		micomForWheelDrive = targetDevice;
+		this.motorControl = motorControl;
 	}
 
 	/// <param name="linearVelocity">m/s</param>
 	/// <param name="angularVelocity">rad/s</param>
 	private void DoWheelDrive(in Vector3 linearVelocity, in Vector3 angularVelocity)
 	{
-		if (micomForWheelDrive == null)
+		if (motorControl == null)
 		{
 			Debug.LogWarning("micom device for wheel drive is not ready!!");
 			return;
@@ -58,7 +58,7 @@ public class MicomInput : Device
 
 		var targetLinearVelocity = linearVelocity.z;
 		var targetAngularVelocity = angularVelocity.y;
-		micomForWheelDrive.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
-		micomForWheelDrive.UpdateMotorFeedback(targetAngularVelocity);
+		motorControl.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
+		motorControl.UpdateMotorFeedback(targetAngularVelocity);
 	}
 }

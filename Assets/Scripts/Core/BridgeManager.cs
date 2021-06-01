@@ -7,6 +7,7 @@
 using System.Net.NetworkInformation;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Net;
 using UnityEngine;
 
@@ -16,6 +17,7 @@ public class BridgeManager : MonoBehaviour
 	private const ushort MinPortRange = 49152;
 	private const ushort MaxPortRange = IPEndPoint.MaxPort;
 	private SimulationDisplay simulationDisplay = null;
+	private StringBuilder sbLogs = new StringBuilder();
 
 	private Dictionary<string, ushort> haskKeyPortMapTable = new Dictionary<string, ushort>();
 
@@ -44,6 +46,7 @@ public class BridgeManager : MonoBehaviour
 	{
 		var UIRoot = Main.UIObject;
 		simulationDisplay = UIRoot.GetComponentInChildren<SimulationDisplay>();
+		ClearLog();
 	}
 
 	public void DeallocateDevice(in string hashKey)
@@ -127,14 +130,14 @@ public class BridgeManager : MonoBehaviour
 		return true;
 	}
 
-	private static string MakeHashKey(in string modelName, in string partName, in string subPartName)
+	private static string MakeHashKey(in string modelName, in string partsName, in string subPartName)
 	{
-		return modelName + partName + subPartName;
+		return modelName + partsName + subPartName;
 	}
 
-	public bool AllocateDevice(in string deviceType, in string modelName, in string partName, in string subPartName, out string hashKey, out ushort port)
+	public bool AllocateDevice(in string deviceType, in string modelName, in string partsName, in string subPartName, out string hashKey, out ushort port)
 	{
-		hashKey = BridgeManager.MakeHashKey(modelName, partName, subPartName);
+		hashKey = BridgeManager.MakeHashKey(modelName, partsName, subPartName);
 
 		if (string.IsNullOrEmpty(hashKey))
 		{
@@ -151,7 +154,7 @@ public class BridgeManager : MonoBehaviour
 			{
 				if (devicesTypeMapTable.TryGetValue(deviceType, out var partsMapTable))
 				{
-					if (partsMapTable.TryGetValue(partName, out var portsMapTable))
+					if (partsMapTable.TryGetValue(partsName, out var portsMapTable))
 					{
 						portsMapTable.Add(subPartName, port);
 					}
@@ -159,7 +162,7 @@ public class BridgeManager : MonoBehaviour
 					{
 						var newPortsMapTable = new Dictionary<string, ushort>();
 						newPortsMapTable.Add(subPartName, port);
-						partsMapTable.Add(partName, newPortsMapTable);
+						partsMapTable.Add(partsName, newPortsMapTable);
 					}
 				}
 				else
@@ -167,7 +170,7 @@ public class BridgeManager : MonoBehaviour
 					var portsMapTable = new Dictionary<string, ushort>();
 					portsMapTable.Add(subPartName, port);
 					var newPartsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
-					newPartsMapTable.Add(partName, portsMapTable);
+					newPartsMapTable.Add(partsName, portsMapTable);
 
 					devicesTypeMapTable.Add(deviceType, newPartsMapTable);
 				}
@@ -177,7 +180,7 @@ public class BridgeManager : MonoBehaviour
 				var portsMapTable = new Dictionary<string, ushort>();
 				portsMapTable.Add(subPartName, port);
 				var partsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
-				partsMapTable.Add(partName, portsMapTable);
+				partsMapTable.Add(partsName, portsMapTable);
 				var devicesTypeMap = new Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>();
 				devicesTypeMap.Add(deviceType, partsMapTable);
 
@@ -229,13 +232,25 @@ public class BridgeManager : MonoBehaviour
 				haskKeyPortMapTable.Add(hashKey, newPort);
 			}
 
-			Debug.LogFormat("Allocated for HashKey({0}) Port({1})", hashKey, newPort);
+			sbLogs.AppendFormat("Allocated for HashKey({0}) Port({1})", hashKey, newPort);
 		}
 		else
 		{
-			Debug.LogFormat("Failed to allocate port for HashKey({0}).", hashKey);
+			sbLogs.AppendFormat("Failed to allocate port for HashKey({0}).", hashKey);
 		}
+		sbLogs.AppendLine("");
 
 		return newPort;
+	}
+
+	public void PrintLog()
+	{
+		Debug.Log(sbLogs);
+	}
+
+	public void ClearLog()
+	{
+		sbLogs.Clear();
+		sbLogs.AppendLine("<Allocated information in BridgeManager>");
 	}
 }
