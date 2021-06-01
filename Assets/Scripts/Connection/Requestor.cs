@@ -63,7 +63,7 @@ public class Requestor : RequestSocket
 	/// <returns>It returns false if failed to send, otherwise returns true</returns>
 	public bool SendRequest(in byte[] buffer, in int bufferLength)
 	{
-		if (!this.IsDisposed && TransportHelper.StoreData(ref dataToSendRequest, buffer, bufferLength) )
+		if (!IsDisposed && TransportHelper.StoreData(ref dataToSendRequest, buffer, bufferLength) )
 		{
 			var dataLength = TransportHelper.TagSize + bufferLength;
 			return this.TrySendFrame(dataToSendRequest, dataLength);
@@ -86,7 +86,7 @@ public class Requestor : RequestSocket
 	/// <returns>It is received bytes array data through socket without hash tag.</returns>
 	public byte[] ReceiveResponse(in bool checkTag = false)
 	{
-		if (!this.IsDisposed)
+		if (!IsDisposed)
 		{
 			var frameReceived = this.ReceiveFrameBytes();
 			return TransportHelper.RetrieveData(frameReceived, (checkTag)? hashValue : null);;
