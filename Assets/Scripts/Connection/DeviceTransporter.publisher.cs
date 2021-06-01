@@ -4,9 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.IO;
 using System;
-using UnityEngine;
 using NetMQ;
 using NetMQ.Sockets;
 
@@ -22,6 +20,7 @@ public partial class DeviceTransporter
 		if (publisherSocket != null)
 		{
 			publisherSocket.Close();
+			publisherSocket = null;
 		}
 	}
 
@@ -44,7 +43,8 @@ public partial class DeviceTransporter
 			publisherSocket.Options.SendHighWatermark = highwatermark;
 
 			publisherSocket.Bind(GetAddress(targetPort));
-			// Debug.Log("Publisher socket binding for - " + targetPort);
+			// publisherSocket.BindRandomPort(GetAddress());
+			// Console.WriteLine("Publisher socket binding for - " + targetPort);
 			initialized = StoreTag(ref dataToPublish, hashValueForPublish);
 		}
 
@@ -74,7 +74,7 @@ public partial class DeviceTransporter
 
 		if (StoreData(ref dataToPublish, buffer, bufferLength))
 		{
-			if (publisherSocket != null)
+			if (publisherSocket != null && !publisherSocket.IsDisposed)
 			{
 				var dataLength = tagSize + bufferLength;
 				wasSucessful = publisherSocket.TrySendFrame(dataToPublish, dataLength);
@@ -82,7 +82,8 @@ public partial class DeviceTransporter
 			}
 			else
 			{
-				Debug.LogWarning("Socket for publisher or response-request is not initilized yet.");
+				(Console.Out as DebugLogWriter).SetWarningOnce();
+			Console.WriteLine("Socket for publisher is not ready yet.");
 			}
 		}
 

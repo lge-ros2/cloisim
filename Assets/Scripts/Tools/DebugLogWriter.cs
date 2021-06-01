@@ -10,6 +10,7 @@ public class DebugLogWriter : System.IO.TextWriter
 {
 	private bool isSkip = false;
 	private bool isWarning = false;
+	private bool isError = false;
 
 	public void SetSkip(in bool value)
 	{
@@ -19,6 +20,11 @@ public class DebugLogWriter : System.IO.TextWriter
 	public void SetWarningOnce()
 	{
 		isWarning = true;
+	}
+
+	public void SetErrorOnce()
+	{
+		isError = true;
 	}
 
 	public DebugLogWriter()
@@ -35,15 +41,7 @@ public class DebugLogWriter : System.IO.TextWriter
 
 		base.Write(value);
 
-		if (isWarning)
-		{
-			Debug.LogWarning(value);
-			isWarning = false;
-		}
-		else
-		{
-			Debug.Log(value);
-		}
+		Print(value);
 	}
 
 	public override void WriteLine(string value)
@@ -55,10 +53,20 @@ public class DebugLogWriter : System.IO.TextWriter
 
 		base.WriteLine(value);
 
+		Print(value);
+	}
+
+	private void Print(in string value)
+	{
 		if (isWarning)
 		{
 			Debug.LogWarning(value);
 			isWarning = false;
+		}
+		else if (isError)
+		{
+			Debug.LogError(value);
+			isError = false;
 		}
 		else
 		{

@@ -5,7 +5,6 @@
  */
 
 using System;
-using UnityEngine;
 using NetMQ;
 using NetMQ.Sockets;
 
@@ -23,6 +22,7 @@ public partial class DeviceTransporter
 		if (responseSocket != null)
 		{
 			responseSocket.Close();
+			responseSocket = null;
 		}
 	}
 
@@ -53,17 +53,18 @@ public partial class DeviceTransporter
 
 	protected byte[] ReceiveRequest(in bool checkTag = false)
 	{
-		if (responseSocket == null)
+		if (responseSocket != null && !responseSocket.IsDisposed)
 		{
-			Debug.LogWarning("Socket for response is not initilized yet.");
-			return null;
+			if (responseSocket.TryReceiveFrameBytes(timeoutForResponse, out var frameReceived))
+			{
+				return RetrieveData(frameReceived, (checkTag) ? hashValueForReceiveRequest : null);
+			}
 		}
-
-		if (responseSocket.TryReceiveFrameBytes(timeoutForResponse, out var frameReceived))
+		else
 		{
-			return RetrieveData(frameReceived, (checkTag)? hashValueForReceiveRequest : null);
+			(Console.Out as DebugLogWriter).SetWarningOnce();
+			Console.WriteLine("Socket for response is not ready.");
 		}
-
 		return null;
 	}
 
@@ -100,7 +101,8 @@ public partial class DeviceTransporter
 		}
 		else
 		{
-			Debug.LogWarning("Socket for response is not initilized yet.");
+			(Console.Out as DebugLogWriter).SetWarningOnce();
+			Console.WriteLine("Socket for response is not ready yet.");
 		}
 
 		return wasSucessful;

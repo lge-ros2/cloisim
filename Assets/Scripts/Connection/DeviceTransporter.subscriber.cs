@@ -5,7 +5,6 @@
  */
 
 using System;
-using UnityEngine;
 using NetMQ;
 using NetMQ.Sockets;
 
@@ -22,6 +21,7 @@ public partial class DeviceTransporter
 		if (subscriberSocket != null)
 		{
 			subscriberSocket.Close();
+			subscriberSocket = null;
 		}
 	}
 
@@ -44,7 +44,7 @@ public partial class DeviceTransporter
 			}
 
 			subscriberSocket.Bind(GetAddress(targetPort));
-			// Debug.Log("Subscriber socket connecting... " + targetPort);
+			// Console.WriteLine("Subscriber socket connecting... " + targetPort);
 
 			initialized = true;
 		}
@@ -59,7 +59,7 @@ public partial class DeviceTransporter
 
 	protected byte[] Subscribe()
 	{
-		if (subscriberSocket != null)
+		if (subscriberSocket != null && !subscriberSocket.IsDisposed)
 		{
 			if (subscriberSocket.TryReceiveFrameBytes(timeoutForSubscribe, out var frameReceived))
 			{
@@ -69,7 +69,8 @@ public partial class DeviceTransporter
 		}
 		else
 		{
-			Debug.LogWarning("Socket for subscriber is not initilized yet.");
+			(Console.Out as DebugLogWriter).SetWarningOnce();
+			Console.WriteLine("Socket for subscriber is not ready yet.");
 		}
 
 		return null;

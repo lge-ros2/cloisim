@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.IO;
 using System;
 using UnityEngine;
 
@@ -33,7 +32,12 @@ public partial class DeviceTransporter : MonoBehaviour
 
 	private string GetAddress(in ushort port)
 	{
-		return "tcp://*:" + port;
+		return GetAddress() + ":" + port;
+	}
+
+	private string GetAddress()
+	{
+		return "tcp://*";
 	}
 
 	private bool StoreTag(ref byte[] targetBuffer, in byte[] targetTag)
