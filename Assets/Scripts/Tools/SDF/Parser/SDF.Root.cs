@@ -18,7 +18,7 @@ namespace SDF
 		// {Model Name, (Model Path, Model File)}
 		private Dictionary<string, Tuple<string, string>> resourceModelTable = new Dictionary<string, Tuple<string, string>>();
 
-		private string[] sdfVersions = {"1.7", "1.6", "1.5", "1.4", "1.3", "1.2", string.Empty};
+		private string[] sdfVersions = {"1.8", "1.7", "1.6", "1.5", "1.4", "1.3", "1.2", string.Empty};
 
 		private XmlDocument doc = new XmlDocument();
 
