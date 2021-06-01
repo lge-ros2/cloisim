@@ -5,8 +5,6 @@
  */
 
 using System;
-using System.IO;
-using UnityEngine;
 using NetMQ;
 using NetMQ.Sockets;
 
@@ -22,6 +20,7 @@ public partial class DeviceTransporter
 		if (requestSocket != null)
 		{
 			requestSocket.Close();
+			requestSocket = null;
 		}
 	}
 
@@ -44,7 +43,7 @@ public partial class DeviceTransporter
 			requestSocket.Options.SendHighWatermark = highwatermark;
 
 			requestSocket.Bind(GetAddress(targetPort));
-			// Debug.Log("Requester socket connecting... " + targetPort);
+			// Console.WriteLine("Requester socket connecting... " + targetPort);
 			initialized = StoreTag(ref dataToSendRequest, hashValueForSendRequest);
 		}
 
@@ -86,14 +85,15 @@ public partial class DeviceTransporter
 			return wasSucessful;
 		}
 
-		if (requestSocket != null)
+		if (requestSocket != null && !requestSocket.IsDisposed)
 		{
 			var dataLength = tagSize + bufferLength;
 			wasSucessful = requestSocket.TrySendFrame(dataToSendRequest, dataLength);
 		}
 		else
 		{
-			Debug.LogWarning("Socket for request is not initilized yet.");
+			(Console.Out as DebugLogWriter).SetWarningOnce();
+			Console.WriteLine("Socket for request is not ready yet.");
 		}
 
 		return wasSucessful;
@@ -116,7 +116,8 @@ public partial class DeviceTransporter
 		}
 		else
 		{
-			Debug.LogWarning("Socket for request is not initilized yet.");
+			(Console.Out as DebugLogWriter).SetWarningOnce();
+			Console.WriteLine("Socket for request is not initilized yet.");
 		}
 
 		return null;
