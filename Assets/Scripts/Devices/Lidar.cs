@@ -85,9 +85,6 @@ namespace SensorDevices
 
 		private LaserFilter laserFilter = null;
 
-		[ColorUsage(true)]
-		public Color rayColor = new Color(1, 0.1f, 0.1f, 0.15f);
-
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
@@ -447,16 +444,18 @@ namespace SensorDevices
 
 		protected override IEnumerator OnVisualize()
 		{
-			const float visualUpdatePeriod = 0.090f;
-			const float visualDrawDuration = visualUpdatePeriod * 1.01f;
+			var visualDrawDuration = UpdatePeriod * 1.03f;
 
 			var startAngleH = (float)horizontal.angle.min;
 			var startAngleV = (float)vertical.angle.min;
-			var waitForSeconds = new WaitForSeconds(visualUpdatePeriod);
+			var angleRangeV = vertical.angle.range;
+			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 
 			var horizontalSamples = horizontal.samples;
 			var rangeMin = (float)range.min;
 			var rangeMax = (float)range.max;
+
+			var rayColor = Color.red;
 
 			while (true)
 			{
@@ -469,6 +468,7 @@ namespace SensorDevices
 					{
 						var scanIndexH = scanIndex % horizontalSamples;
 						var scanIndexV = scanIndex / horizontalSamples;
+
 						var rayAngleH = ((laserAngleResolution.H * scanIndexH)) + startAngleH;
 						var rayAngleV = ((laserAngleResolution.V * scanIndexV)) + startAngleV;
 
@@ -478,9 +478,11 @@ namespace SensorDevices
 						var ccwIndex = (uint)(rangeData.Length - scanIndex - 1);
 						var rayData = (float)rangeData[ccwIndex];
 
-						if (rayData > 0)
+						if (rayData > 0 && rayData < rangeMax)
 						{
-							var rayDistance = (rayData == Mathf.Infinity) ? rangeMax : (rayData - rangeMin);
+							rayColor.g = rayAngleV/(float)angleRangeV;
+
+							var rayDistance = rayData - rangeMin;
 							var rayDirection = rayRotation * rayDistance;
 							Debug.DrawRay(rayStart, rayDirection, rayColor, visualDrawDuration, true);
 						}
