@@ -54,7 +54,7 @@ namespace SDF
 				}
 			}
 
-			public static Device AddLidar(in SDF.Ray element, in GameObject targetObject)
+			public static Device AddLidar(in SDF.Lidar element, in GameObject targetObject)
 			{
 				var newSensorObject = new GameObject();
 				AttachSensor(newSensorObject, targetObject);
@@ -157,6 +157,17 @@ namespace SDF
 
 				var imu = newSensorObject.AddComponent<SensorDevices.IMU>();
 				imu.DeviceName = GetFrameName(newSensorObject);
+
+				// element.angular_velocity_x_noise;
+				// element.angular_velocity_y_noise;
+				// element.angular_velocity_z_noise;
+
+
+				// element.linear_acceleration_x_noise;
+				// element.linear_acceleration_y_noise;
+				// element.linear_acceleration_z_noise;
+
+				// imu.n
 
 				return imu;
 			}

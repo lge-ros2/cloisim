@@ -67,9 +67,13 @@ namespace SDF
 				case "gpu_ray":
 				case "lidar":
 				case "gpu_lidar":
-					if (IsValidNode("lidar") || IsValidNode("ray"))
+					if (IsValidNode("lidar"))
 					{
-						sensor = ParseRay();
+						sensor = ParseLidar();
+					}
+					else if (IsValidNode("ray"))
+					{
+						sensor = ParseLidar("ray");
 					}
 					break;
 

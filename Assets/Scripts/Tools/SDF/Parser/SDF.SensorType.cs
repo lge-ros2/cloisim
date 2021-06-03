@@ -190,7 +190,7 @@ namespace SDF
 		public Noise z = null;
 	}
 
-	public class Ray : SensorType
+	public class Lidar : SensorType
 	{
 		public class Scan
 		{

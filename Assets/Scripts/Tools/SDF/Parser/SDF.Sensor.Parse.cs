@@ -10,54 +10,54 @@ namespace SDF
 {
 	public partial class Sensor : Entity
 	{
-		private Ray ParseRay()
+		private Lidar ParseLidar(in string element_path = "lidar")
 		{
-			var ray = new Ray();
+			var lidar = new Lidar();
 
-			if (IsValidNode("ray/scan"))
+			if (IsValidNode(element_path + "/scan"))
 			{
-				ray.horizontal.samples = GetValue<uint>("ray/scan/horizontal/samples");
-				ray.horizontal.resolution = GetValue<double>("ray/scan/horizontal/resolution");
-				ray.horizontal.min_angle = GetValue<double>("ray/scan/horizontal/min_angle");
-				ray.horizontal.max_angle = GetValue<double>("ray/scan/horizontal/max_angle");
+				lidar.horizontal.samples = GetValue<uint>(element_path + "/scan/horizontal/samples");
+				lidar.horizontal.resolution = GetValue<double>(element_path + "/scan/horizontal/resolution");
+				lidar.horizontal.min_angle = GetValue<double>(element_path + "/scan/horizontal/min_angle");
+				lidar.horizontal.max_angle = GetValue<double>(element_path + "/scan/horizontal/max_angle");
 
-				if (ray.horizontal.max_angle < ray.horizontal.min_angle)
+				if (lidar.horizontal.max_angle < lidar.horizontal.min_angle)
 				{
 					Console.WriteLine("Must be greater or equal to min_angle");
 				}
 
-				if (IsValidNode("ray/scan/vertical"))
+				if (IsValidNode(element_path + "/scan/vertical"))
 				{
-					ray.vertical = new Ray.Scan(1);
-					ray.vertical.samples = GetValue<uint>("ray/scan/vertical/samples", 1);
-					ray.vertical.resolution = GetValue<double>("ray/scan/vertical/resolution", 1);
-					ray.vertical.min_angle = GetValue<double>("ray/scan/vertical/min_angle");
-					ray.vertical.max_angle = GetValue<double>("ray/scan/vertical/max_angle");
+					lidar.vertical = new Lidar.Scan(1);
+					lidar.vertical.samples = GetValue<uint>(element_path + "/scan/vertical/samples", 1);
+					lidar.vertical.resolution = GetValue<double>(element_path + "/scan/vertical/resolution", 1);
+					lidar.vertical.min_angle = GetValue<double>(element_path + "/scan/vertical/min_angle");
+					lidar.vertical.max_angle = GetValue<double>(element_path + "/scan/vertical/max_angle");
 
-					if (ray.vertical.max_angle < ray.vertical.min_angle)
+					if (lidar.vertical.max_angle < lidar.vertical.min_angle)
 					{
 						Console.WriteLine("Must be greater or equal to min_angle");
 					}
 				}
 			}
 
-			if (IsValidNode("ray/range"))
+			if (IsValidNode(element_path + "/range"))
 			{
-				ray.range.min = GetValue<double>("ray/range/min");
-				ray.range.max = GetValue<double>("ray/range/max"); ;
-				ray.range.resolution = GetValue<double>("ray/range/resolution");
+				lidar.range.min = GetValue<double>(element_path + "/range/min");
+				lidar.range.max = GetValue<double>(element_path + "/range/max"); ;
+				lidar.range.resolution = GetValue<double>(element_path + "/range/resolution");
 			}
 
-			if (IsValidNode("ray/noise"))
+			if (IsValidNode(element_path + "/noise"))
 			{
-				ray.noise = new Noise();
-				ParseNoise(ref ray.noise, "ray");
+				lidar.noise = new Noise();
+				ParseNoise(ref lidar.noise, element_path);
 			}
 
 			// Console.WriteLine("[{0}] {1} ", GetType().Name, root.InnerXml);
-			// Console.WriteLine("[{0}] samples: {1} ", GetType().Name, ray.scan_horizontal_sample);
+			// Console.WriteLine("[{0}] samples: {1} ", GetType().Name, lidar.scan_horizontal_sample);
 
-			return ray;
+			return lidar;
 		}
 
 		private Camera ParseCamera(in int index = 1)
