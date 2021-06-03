@@ -134,11 +134,11 @@ namespace SDF
 		public string depth_camera_output = string.Empty;
 		public Clip depth_camera_clip = new Clip();
 
-		public Noise noise = new Noise("gaussian");
+		public Noise noise = null;
 
-		public Distortion distortion = new Distortion();
+		public Distortion distortion = null;
 
-		public Lens lens = new Lens();
+		public Lens lens = null;
 	}
 
 	public class Contact : SensorType
@@ -149,11 +149,15 @@ namespace SDF
 
 	public class GPS : SensorType
 	{
-		public Noise position_sensing_horizontal_noise = new Noise();
-		public Noise position_sensing_vertical_noise = new Noise();
+		public class SensingNoise
+		{
+			public Noise horizontal_noise = null;
+			public Noise vertical_noise = null;
+		}
 
-		public Noise velocity_sensing_horizontal_noise = new Noise();
-		public Noise velocity_sensing_vertical_noise = new Noise();
+		public SensingNoise position_sensing = null;
+
+		public SensingNoise velocity_sensing = null;
 	}
 
 	public class IMU : SensorType
@@ -169,12 +173,12 @@ namespace SDF
 
 		public OrientationReferenceFrame orientation_reference_frame = new OrientationReferenceFrame();
 
-		public Noise angular_velocity_x = new Noise();
-		public Noise angular_velocity_y = new Noise();
-		public Noise angular_velocity_z = new Noise();
-		public Noise linear_acceleration_x = new Noise();
-		public Noise linear_acceleration_y = new Noise();
-		public Noise linear_acceleration_z = new Noise();
+		public Noise angular_velocity_x_noise = null;
+		public Noise angular_velocity_y_noise = null;
+		public Noise angular_velocity_z_noise = null;
+		public Noise linear_acceleration_x_noise = null;
+		public Noise linear_acceleration_y_noise = null;
+		public Noise linear_acceleration_z_noise = null;
 	}
 
 
@@ -182,9 +186,9 @@ namespace SDF
 
 	public class Magnetometer : SensorType
 	{
-		public Noise x = new Noise();
-		public Noise y = new Noise();
-		public Noise z = new Noise();
+		public Noise x = null;
+		public Noise y = null;
+		public Noise z = null;
 	}
 
 	public class Ray : SensorType
@@ -211,10 +215,7 @@ namespace SDF
 		public Scan horizontal = new Scan(640);
 		public Scan vertical = null;
 		public Range range = new Range();
-
-		public string noise_type = "gaussian";
-		public double noise_mean = 0.0;
-		public double noise_stddev = 0.0;
+		public Noise noise = null;
 	}
 
 	// <rfidtag> : TBD

@@ -50,9 +50,8 @@ namespace SDF
 
 			if (IsValidNode("ray/noise"))
 			{
-				ray.noise_type = GetValue<string>("ray/noise/type");
-				ray.noise_mean = GetValue<double>("ray/noise/mean");
-				ray.noise_stddev = GetValue<double>("ray/noise/stddev"); ;
+				ray.noise = new Noise();
+				ParseNoise(ref ray.noise, "ray");
 			}
 
 			// Console.WriteLine("[{0}] {1} ", GetType().Name, root.InnerXml);
@@ -116,13 +115,14 @@ namespace SDF
 
 			if (IsValidNode(cameraElement + "/noise"))
 			{
-				camera.noise.type = GetValue<string>(cameraElement + "/noise/type");
-				camera.noise.mean = GetValue<double>(cameraElement + "/noise/mean");
-				camera.noise.stddev = GetValue<double>(cameraElement + "/noise/stddev");
+				camera.noise = new Noise("gaussian");
+
+				ParseNoise(ref camera.noise, cameraElement);
 			}
 
 			if (IsValidNode(cameraElement + "/distortion"))
 			{
+				camera.distortion = new Camera.Distortion();
 				camera.distortion.k1 = GetValue<double>(cameraElement + "/distortion/k1");
 				camera.distortion.k2 = GetValue<double>(cameraElement + "/distortion/k2");
 				camera.distortion.k3 = GetValue<double>(cameraElement + "/distortion/k3");
@@ -133,6 +133,7 @@ namespace SDF
 
 			if (IsValidNode(cameraElement + "/lens"))
 			{
+				camera.lens = new Camera.Lens();
 				camera.lens.type = GetValue<string>(cameraElement + "/lens/type");
 				camera.lens.scale_to_hfov = GetValue<bool>(cameraElement + "/lens/scale_to_hfov");
 
@@ -198,32 +199,44 @@ namespace SDF
 
 			if (IsValidNode("imu/angular_velocity"))
 			{
-				imu.angular_velocity_x.type = GetAttributeInPath<string>("imu/angular_velocity/x/noise", "type");
-				imu.angular_velocity_x.mean = 0;
-				imu.angular_velocity_x.stddev = 0;
-				imu.angular_velocity_x.bias_mean = 0;
-				imu.angular_velocity_x.bias_stddev = 0;
-				imu.angular_velocity_x.dynamic_bias_stddev = 0;
-				imu.angular_velocity_x.dynamic_bias_correlation_time = 0;
-				imu.angular_velocity_x.precision = 0;
+				if (IsValidNode("imu/angular_velocity/x"))
+				{
+					imu.angular_velocity_x_noise = new Noise();
+					ParseNoise(ref imu.angular_velocity_x_noise, "imu/angular_velocity/x");
+				}
 
-				imu.angular_velocity_y.type = GetAttributeInPath<string>("imu/angular_velocity/y/noise", "type");
-				imu.angular_velocity_z.type = GetAttributeInPath<string>("imu/angular_velocity/z/noise", "type");
+				if (IsValidNode("imu/angular_velocity/y"))
+				{
+					imu.angular_velocity_y_noise = new Noise();
+					ParseNoise(ref imu.angular_velocity_y_noise, "imu/angular_velocity/y");
+				}
+
+				if (IsValidNode("imu/angular_velocity/z"))
+				{
+					imu.angular_velocity_z_noise = new Noise();
+					ParseNoise(ref imu.angular_velocity_z_noise, "imu/angular_velocity/z");
+				}
 			}
 
 			if (IsValidNode("imu/linear_acceleration"))
 			{
-				imu.linear_acceleration_x.type = GetAttributeInPath<string>("imu/linear_acceleration/x/noise", "type");
-				imu.linear_acceleration_x.mean = 0;
-				imu.linear_acceleration_x.stddev = 0;
-				imu.linear_acceleration_x.bias_mean = 0;
-				imu.linear_acceleration_x.bias_stddev = 0;
-				imu.linear_acceleration_x.dynamic_bias_stddev = 0;
-				imu.linear_acceleration_x.dynamic_bias_correlation_time = 0;
-				imu.linear_acceleration_x.precision = 0;
+				if (IsValidNode("imu/linear_acceleration/x"))
+				{
+					imu.linear_acceleration_x_noise = new Noise();
+					ParseNoise(ref imu.linear_acceleration_x_noise, "imu/linear_acceleration/x");
+				}
 
-				imu.linear_acceleration_y.type = GetAttributeInPath<string>("imu/linear_acceleration/y/noise", "type");
-				imu.linear_acceleration_z.type = GetAttributeInPath<string>("imu/linear_acceleration/z/noise", "type");
+				if (IsValidNode("imu/linear_acceleration/y"))
+				{
+					imu.linear_acceleration_y_noise = new Noise();
+					ParseNoise(ref imu.linear_acceleration_y_noise, "imu/linear_acceleration/y");
+				}
+
+				if (IsValidNode("imu/linear_acceleration/z"))
+				{
+					imu.linear_acceleration_z_noise = new Noise();
+					ParseNoise(ref imu.linear_acceleration_z_noise, "imu/linear_acceleration/z");
+				}
 			}
 
 			return imu;
@@ -233,52 +246,38 @@ namespace SDF
 		{
 			var gps = new GPS();
 
-			if (IsValidNode("gps/position_sensing/horizontal/noise"))
+			if (IsValidNode("gps/position_sensing"))
 			{
-				gps.position_sensing_horizontal_noise.type = GetAttributeInPath<string>("gps/position_sensing/horizontal/noise", "type");
-				gps.position_sensing_horizontal_noise.mean = 0;
-				gps.position_sensing_horizontal_noise.stddev = 0;
-				gps.position_sensing_horizontal_noise.bias_mean = 0;
-				gps.position_sensing_horizontal_noise.bias_stddev = 0;
-				gps.position_sensing_horizontal_noise.dynamic_bias_stddev = 0;
-				gps.position_sensing_horizontal_noise.dynamic_bias_correlation_time = 0;
-				gps.position_sensing_horizontal_noise.precision = 0;
+				gps.position_sensing = new GPS.SensingNoise();
+
+				if (IsValidNode("gps/position_sensing/horizontal/noise"))
+				{
+					gps.position_sensing.horizontal_noise = new Noise();
+					ParseNoise(ref gps.position_sensing.horizontal_noise, "gps/position_sensing/horizontal");
+				}
+
+				if (IsValidNode("gps/position_sensing/vertical/noise"))
+				{
+					gps.position_sensing.vertical_noise = new Noise();
+					ParseNoise(ref gps.position_sensing.vertical_noise, "gps/position_sensing/vertical");
+				}
 			}
 
-			if (IsValidNode("gps/position_sensing/vertical/noise"))
+			if (IsValidNode("gps/velocity_sensing"))
 			{
-				gps.position_sensing_vertical_noise.type = GetAttributeInPath<string>("gps/position_sensing/vertical/noise", "type");
-				gps.position_sensing_vertical_noise.mean = 0;
-				gps.position_sensing_vertical_noise.stddev = 0;
-				gps.position_sensing_vertical_noise.bias_mean = 0;
-				gps.position_sensing_vertical_noise.bias_stddev = 0;
-				gps.position_sensing_vertical_noise.dynamic_bias_stddev = 0;
-				gps.position_sensing_vertical_noise.dynamic_bias_correlation_time = 0;
-				gps.position_sensing_vertical_noise.precision = 0;
-			}
+				gps.velocity_sensing = new GPS.SensingNoise();
 
-			if (IsValidNode("gps/velocity_sensing/horizontal/noise"))
-			{
-				gps.velocity_sensing_horizontal_noise.type = GetAttributeInPath<string>("gps/velocity_sensing/horizontal/noise", "type");
-				gps.velocity_sensing_horizontal_noise.mean = 0;
-				gps.velocity_sensing_horizontal_noise.stddev = 0;
-				gps.velocity_sensing_horizontal_noise.bias_mean = 0;
-				gps.velocity_sensing_horizontal_noise.bias_stddev = 0;
-				gps.velocity_sensing_horizontal_noise.dynamic_bias_stddev = 0;
-				gps.velocity_sensing_horizontal_noise.dynamic_bias_correlation_time = 0;
-				gps.velocity_sensing_horizontal_noise.precision = 0;
-			}
+				if (IsValidNode("gps/velocity_sensing/horizontal/noise"))
+				{
+					gps.velocity_sensing.horizontal_noise = new Noise();
+					ParseNoise(ref gps.velocity_sensing.horizontal_noise, "gps/velocity_sensing/horizontal");
+				}
 
-			if (IsValidNode("gps/velocity_sensing/vertical/noise"))
-			{
-				gps.velocity_sensing_vertical_noise.type = GetAttributeInPath<string>("gps/velocity_sensing/vertical/noise", "type");
-				gps.velocity_sensing_vertical_noise.mean = 0;
-				gps.velocity_sensing_vertical_noise.stddev = 0;
-				gps.velocity_sensing_vertical_noise.bias_mean = 0;
-				gps.velocity_sensing_vertical_noise.bias_stddev = 0;
-				gps.velocity_sensing_vertical_noise.dynamic_bias_stddev = 0;
-				gps.velocity_sensing_vertical_noise.dynamic_bias_correlation_time = 0;
-				gps.velocity_sensing_vertical_noise.precision = 0;
+				if (IsValidNode("gps/velocity_sensing/vertical/noise"))
+				{
+					gps.velocity_sensing.vertical_noise = new Noise();
+					ParseNoise(ref gps.velocity_sensing.vertical_noise, "gps/velocity_sensing/vertical");
+				}
 			}
 
 			return gps;
@@ -296,6 +295,18 @@ namespace SDF
 			contact.topic = GetValue<string>("contact/topic");
 
 			return contact;
+		}
+
+		private void ParseNoise(ref Noise noise, in string targetPathName)
+		{
+			noise.type = GetAttributeInPath<string>(targetPathName + "/noise", "type");
+			noise.mean = GetValue<double>(targetPathName + "/noise/mean", 0);
+			noise.stddev = GetValue<double>(targetPathName + "/noise/stddev", 0);
+			noise.bias_mean = GetValue<double>(targetPathName + "/noise/bias_mean", 0);
+			noise.bias_stddev = GetValue<double>(targetPathName + "/noise/bias_stddev", 0);
+			noise.dynamic_bias_stddev = GetValue<double>(targetPathName + "/noise/dynamic_bias_stddev", 0);
+			noise.dynamic_bias_correlation_time = GetValue<double>(targetPathName + "/noise/dynamic_bias_correlation_time", 0);
+			noise.precision = GetValue<double>(targetPathName + "/noise/precesion", 0);
 		}
 	}
 }
