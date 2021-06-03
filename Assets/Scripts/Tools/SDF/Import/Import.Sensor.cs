@@ -40,10 +40,11 @@ namespace SDF
 						goto case "gpu_lidar";
 
 					case "gpu_lidar":
-						var ray = sensor.GetSensor() as SDF.Lidar;
-						device = Implement.Sensor.AddLidar(ray, targetObject);
+						var lidar = sensor.GetSensor() as SDF.Lidar;
+						device = Implement.Sensor.AddLidar(lidar, targetObject);
 						break;
 
+					case "depth_camera":
 					case "depth":
 						var depthCamera = sensor.GetSensor() as SDF.Camera;
 						device = Implement.Sensor.AddDepthCamera(depthCamera, targetObject);

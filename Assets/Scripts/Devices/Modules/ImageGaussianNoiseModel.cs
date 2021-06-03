@@ -6,7 +6,10 @@
 
 public class ImageGaussianNoiseModel : GaussianNoiseModel
 {
+	public override void Apply(ref float[] data)
+	{
 
+	}
 }
 
 // void ImageGaussianNoiseModel::Load(sdf::ElementPtr _sdf)

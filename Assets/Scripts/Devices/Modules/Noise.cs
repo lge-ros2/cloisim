@@ -4,91 +4,125 @@
  * SPDX-License-Identifier: MIT
  */
 
-public class Noise
+namespace SensorDevices
 {
-	public enum Type
+	public class Noise
 	{
-		NONE,
-		CUSTOM,
-		GAUSSIAN
-	};
-
-	private Type noiseType;
-	private string sensorType;
-
-	private NoiseModel noiseModel = null;
-
-	public Type NoiseType
-	{
-		get => noiseType;
-		set => noiseType = value;
-	}
-
-	public Noise(in string noiseType, in string sensorType)
-	{
-		SetNoiseModel(noiseType, sensorType);
-	}
-
-	public void SetNoiseModel(in string noiseType, in string sensorType)
-	{
-		// Check for 'gaussian' noise. The 'gaussian_quantized' type is kept for
-		// backward compatibility.
-		switch (noiseType)
+		public enum Type
 		{
-			case "gaussian":
-			case "gaussian_quantized":
+			NONE,
+			CUSTOM,
+			GAUSSIAN
+		};
 
-				switch (sensorType)
-				{
-					case "camera":
-					case "depth":
-					case "multicamera":
-					case "wideanglecamera":
-						noiseModel = new ImageGaussianNoiseModel();
-						break;
-					default:
-						noiseModel = new GaussianNoiseModel();
-						break;
-				}
-				// GZ_ASSERT(noise->GetNoiseType() == Noise::GAUSSIAN,
-				// 	"Noise type should be 'gaussian'");
+		private readonly SDF.Noise noise;
 
-				break;
+		private Type noiseType;
 
-			case "none":
-			case "custom":
-				// Return empty noise if 'none' or 'custom' is specified.
-				// if 'custom', the type will be set once the user calls the
-				// SetCustomNoiseCallback function.
-				noiseModel = new CustomNoiseModel();
-				// noise.reset(new Noise(Noise::NONE));
-				// GZ_ASSERT(noise->GetNoiseType() == Noise::NONE,
-				// 	"Noise type should be 'none'");
-				break;
-
-			default:
-				System.Console.WriteLine("Unrecognized noise type: " + noiseType);
-				break;
+		public Type NoiseType
+		{
+			get => noiseType;
+			set => noiseType = value;
 		}
-	}
 
-	public void Apply(ref float[] dataArray)
-	{
-		// if (this->type == NONE)
-		// 	return _in;
-		// else if (this->type == CUSTOM)
-		// {
-		// 	if (this->customNoiseCallback)
-		// 		return this->customNoiseCallback(_in);
-		// 	else
-		// 	{
-		// 		gzerr << "Custom noise callback function not set!"
-		// 			<< " Please call SetCustomNoiseCallback within a sensor plugin."
-		// 			<< std::endl;
-		// 		return _in;
-		// 	}
-		// }
-		// else
-		// 	return this->ApplyImpl(_in);
+		private NoiseModel noiseModel = null;
+
+		public Noise(in SDF.Noise noise, in string sensorType)
+		{
+			this.noise = noise;
+
+			switch (noise.type)
+			{
+				case "gaussian":
+				case "gaussian_quantized":
+					this.noiseType = Type.GAUSSIAN;
+					break;
+
+				case "custom":
+					this.noiseType = Type.CUSTOM;
+					break;
+
+				case "none":
+				default:
+					this.noiseType = Type.NONE;
+					break;
+			}
+
+			SetNoiseModel(sensorType);
+		}
+
+		public void SetNoiseModel(in string sensorType)
+		{
+			// Check for 'gaussian' noise. The 'gaussian_quantized' type is kept for
+			// backward compatibility.
+			switch (NoiseType)
+			{
+				case Type.GAUSSIAN:
+
+					switch (sensorType)
+					{
+						case "camera":
+						case "depth":
+						case "multicamera":
+						case "wideanglecamera":
+							noiseModel = new ImageGaussianNoiseModel();
+							break;
+						default:
+							noiseModel = new GaussianNoiseModel();
+							break;
+					}
+
+					break;
+
+				case Type.CUSTOM:
+					// Return empty noise if 'none' or 'custom' is specified.
+					// if 'custom', the type will be set once the user calls the SetCustomNoiseCallback function.
+					noiseModel = new CustomNoiseModel();
+					break;
+
+				case Type.NONE:
+					noiseModel =  null;
+					break;
+
+				default:
+					System.Console.WriteLine("Unrecognized noise type: " + noiseType);
+					break;
+			}
+		}
+
+		public void Apply(ref float[] dataArray)
+		{
+			switch (noiseType)
+			{
+				case Type.NONE:
+
+					break;
+
+				case Type.GAUSSIAN:
+
+					break;
+
+				case Type.CUSTOM:
+
+					break;
+
+				default:
+					break;
+			}
+			// if (this->type == NONE)
+			// 	return _in;
+			// else if (this->type == CUSTOM)
+			// {
+			// 	if (this->customNoiseCallback)
+			// 		return this->customNoiseCallback(_in);
+			// 	else
+			// 	{
+			// 		gzerr << "Custom noise callback function not set!" << " Please call SetCustomNoiseCallback within a sensor plugin." << std::endl;
+			// 		return _in;
+			// 	}
+			// }
+			// else
+			// 	return this->ApplyImpl(_in);
+		}
 	}
 }

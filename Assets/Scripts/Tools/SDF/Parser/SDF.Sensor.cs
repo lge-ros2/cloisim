@@ -96,6 +96,7 @@ namespace SDF
 					break;
 
 				case "camera":
+				case "depth_camera":
 				case "depth":
 					if (IsValidNode("camera"))
 					{
