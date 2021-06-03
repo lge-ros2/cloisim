@@ -17,10 +17,7 @@ namespace SensorDevices
 		protected messages.CameraSensor sensorInfo = null;
 		protected messages.ImageStamped imageStamped = null;
 
-		// public SDF.Camera parameters = null;
-
 		// TODO : Need to be implemented!!!
-		// <noise> TBD
 		// <lens> TBD
 		// <distortion> TBD
 
@@ -35,8 +32,8 @@ namespace SensorDevices
 		protected RenderTextureReadWrite targetRTrwmode;
 		protected TextureFormat readbackDstFormat;
 		private CameraData.ImageData camImageData;
-
 		private CommandBuffer cmdBuffer;
+		private Noise noise = null;
 
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
@@ -142,13 +139,17 @@ namespace SensorDevices
 			sensorInfo.FarClip = GetParameters().clip.far;
 			sensorInfo.SaveEnabled = GetParameters().save_enabled;
 			sensorInfo.SavePath = GetParameters().save_path;
-			sensorInfo.Distortion.Center.X = GetParameters().distortion.center.X;
-			sensorInfo.Distortion.Center.Y = GetParameters().distortion.center.Y;
-			sensorInfo.Distortion.K1 = GetParameters().distortion.k1;
-			sensorInfo.Distortion.K2 = GetParameters().distortion.k2;
-			sensorInfo.Distortion.K3 = GetParameters().distortion.k3;
-			sensorInfo.Distortion.P1 = GetParameters().distortion.p1;
-			sensorInfo.Distortion.P2 = GetParameters().distortion.p2;
+
+			if (GetParameters().distortion != null)
+			{
+				sensorInfo.Distortion.Center.X = GetParameters().distortion.center.X;
+				sensorInfo.Distortion.Center.Y = GetParameters().distortion.center.Y;
+				sensorInfo.Distortion.K1 = GetParameters().distortion.k1;
+				sensorInfo.Distortion.K2 = GetParameters().distortion.k2;
+				sensorInfo.Distortion.K3 = GetParameters().distortion.k3;
+				sensorInfo.Distortion.P1 = GetParameters().distortion.p1;
+				sensorInfo.Distortion.P2 = GetParameters().distortion.p2;
+			}
 		}
 
 		private void SetupCamera()

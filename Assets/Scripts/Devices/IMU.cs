@@ -13,13 +13,6 @@ namespace SensorDevices
 	{
 		private messages.Imu imu = null;
 
-		// <noise_angular_velocity_x>
-		// <noise_angular_velocity_y>
-		// <noise_angular_velocity_z>
-		// <noise_linear_acceleration_x>
-		// <noise_linear_acceleration_y>
-		// <noise_linear_acceleration_z>
-
 		private Vector3 imuInitialRotation = Vector3.zero;
 		private Vector3 lastImuInitialRotation = Vector3.zero;
 		private Quaternion imuOrientation = Quaternion.identity;
@@ -29,6 +22,14 @@ namespace SensorDevices
 		private Vector3 previousImuPosition = Vector3.zero;
 		private Vector3 previousImuRotation = Vector3.zero;
 		private Vector3 previousLinearVelocity = Vector3.zero;
+
+		private Noise noise = null;
+		// <noise_angular_velocity_x>
+		// <noise_angular_velocity_y>
+		// <noise_angular_velocity_z>
+		// <noise_linear_acceleration_x>
+		// <noise_linear_acceleration_y>
+		// <noise_linear_acceleration_z>
 
 		protected override void OnAwake()
 		{

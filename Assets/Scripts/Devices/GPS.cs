@@ -23,6 +23,7 @@ namespace SensorDevices
 		private Vector3 previousSensorPosition;
 		private Vector3 gpsCoordinates;
 		private Vector3 gpsVelocity;
+		private Noise noise = null;
 
 		protected override void OnAwake()
 		{
