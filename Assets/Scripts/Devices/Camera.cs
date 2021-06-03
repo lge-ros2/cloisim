@@ -33,7 +33,7 @@ namespace SensorDevices
 		protected TextureFormat readbackDstFormat;
 		private CameraData.ImageData camImageData;
 		private CommandBuffer cmdBuffer;
-		private Noise noise = null;
+		public Noise noise = null;
 
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{

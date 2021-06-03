@@ -12,7 +12,7 @@ namespace SensorDevices
 {
 	public class MultiCamera : Device
 	{
-		public List<SensorDevices.Camera> cameras = new List<SensorDevices.Camera>();
+		private List<SensorDevices.Camera> cameras = new List<SensorDevices.Camera>();
 
 		private messages.ImagesStamped imagesStamped;
 
@@ -23,11 +23,6 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
-			var multiCamera = (deviceParameters as SDF.Cameras);
-			foreach (var camParameters in multiCamera.cameras)
-			{
-				AddCamera(camParameters);
-			}
 		}
 
 		protected override void InitializeMessages()
@@ -55,23 +50,8 @@ namespace SensorDevices
 			PushDeviceMessage<messages.ImagesStamped>(imagesStamped);
 		}
 
-		private void AddCamera(in SDF.Camera parameters)
+		public void AddCamera(in SensorDevices.Camera newCam)
 		{
-			var newCamObject = new GameObject();
-			newCamObject.name = parameters.name;
-
-			var newCamTransform = newCamObject.transform;
-			newCamTransform.position = Vector3.zero;
-			newCamTransform.rotation = Quaternion.identity;
-			newCamTransform.localPosition = SDF2Unity.GetPosition(parameters.Pose.Pos);
-			newCamTransform.localRotation = SDF2Unity.GetRotation(parameters.Pose.Rot);
-			newCamTransform.SetParent(this.transform, false);
-
-			var newCam = newCamObject.AddComponent<SensorDevices.Camera>();
-			newCam.Mode = ModeType.NONE;
-			newCam.DeviceName = "MultiCamera::" + newCamObject.name ;
-			newCam.SetDeviceParameter(parameters);
-
 			cameras.Add(newCam);
 		}
 

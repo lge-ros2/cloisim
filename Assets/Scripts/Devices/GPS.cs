@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -23,7 +24,18 @@ namespace SensorDevices
 		private Vector3 previousSensorPosition;
 		private Vector3 gpsCoordinates;
 		private Vector3 gpsVelocity;
-		private Noise noise = null;
+
+		public Dictionary<string, Noise> position_sensing_noises = new Dictionary<string, Noise>()
+		{
+			{"horizontal", null},
+			{"vertical", null}
+		};
+
+		public Dictionary<string, Noise> velocity_sensing_noises = new Dictionary<string, Noise>()
+		{
+			{"horizontal", null},
+			{"vertical", null}
+		};
 
 		protected override void OnAwake()
 		{

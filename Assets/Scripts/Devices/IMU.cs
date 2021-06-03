@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -23,13 +24,19 @@ namespace SensorDevices
 		private Vector3 previousImuRotation = Vector3.zero;
 		private Vector3 previousLinearVelocity = Vector3.zero;
 
-		private Noise noise = null;
-		// <noise_angular_velocity_x>
-		// <noise_angular_velocity_y>
-		// <noise_angular_velocity_z>
-		// <noise_linear_acceleration_x>
-		// <noise_linear_acceleration_y>
-		// <noise_linear_acceleration_z>
+		public Dictionary<string, Noise> angular_velocity_noises = new Dictionary<string, Noise>()
+		{
+			{"x", null},
+			{"y", null},
+			{"z", null}
+		};
+
+		public Dictionary<string, Noise> linear_acceleration_noises = new Dictionary<string, Noise>()
+		{
+			{"x", null},
+			{"y", null},
+			{"z", null}
+		};
 
 		protected override void OnAwake()
 		{

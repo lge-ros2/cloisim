@@ -84,7 +84,7 @@ namespace SensorDevices
 		private LaserData.LaserCamData[] laserCamData;
 		private LaserData.LaserDataOutput[] laserDataOutput;
 		private LaserFilter laserFilter = null;
-		private Noise noise = null;
+		public Noise noise = null;
 
 		protected override void OnAwake()
 		{

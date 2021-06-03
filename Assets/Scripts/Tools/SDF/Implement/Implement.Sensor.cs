@@ -71,7 +71,8 @@ namespace SDF
 				{
 					lidar.vertical = new SensorDevices.Lidar.Scan(vertical.samples, vertical.min_angle, vertical.max_angle, vertical.resolution);
 				}
-				// lidar.hideFlags = HideFlags.NotEditable;
+
+				lidar.noise = new SensorDevices.Noise(element.noise);
 
 				return lidar;
 			}
@@ -84,6 +85,9 @@ namespace SDF
 				var camera = newSensorObject.AddComponent<SensorDevices.Camera>();
 				camera.DeviceName = GetFrameName(newSensorObject);
 				camera.SetDeviceParameter(element);
+
+				camera.noise = new SensorDevices.Noise(element.noise);
+
 				return camera;
 			}
 
@@ -120,6 +124,8 @@ namespace SDF
 
 				depthCamera.SetDeviceParameter(element);
 
+				depthCamera.noise = new SensorDevices.Noise(element.noise);
+
 				return depthCamera;
 			}
 
@@ -131,6 +137,21 @@ namespace SDF
 				var multicamera = newSensorObject.AddComponent<SensorDevices.MultiCamera>();
 				multicamera.DeviceName = GetFrameName(newSensorObject);
 				multicamera.SetDeviceParameter(element);
+
+				foreach (var camParam in element.cameras)
+				{
+					var newCamObject = new GameObject();
+					newCamObject.name = camParam.name;
+
+					AttachSensor(newCamObject, newSensorObject, camParam.Pose);
+
+					var newCam = newCamObject.AddComponent<SensorDevices.Camera>();
+					newCam.Mode = Device.ModeType.NONE;
+					newCam.DeviceName = "MultiCamera::" + newCamObject.name;
+					newCam.SetDeviceParameter(camParam);
+
+					multicamera.AddCamera(newCam);
+				}
 
 				return multicamera;
 			}
@@ -158,16 +179,13 @@ namespace SDF
 				var imu = newSensorObject.AddComponent<SensorDevices.IMU>();
 				imu.DeviceName = GetFrameName(newSensorObject);
 
-				// element.angular_velocity_x_noise;
-				// element.angular_velocity_y_noise;
-				// element.angular_velocity_z_noise;
+				imu.angular_velocity_noises["x"] = new SensorDevices.Noise(element.angular_velocity_x_noise);
+				imu.angular_velocity_noises["y"] = new SensorDevices.Noise(element.angular_velocity_y_noise);
+				imu.angular_velocity_noises["z"] = new SensorDevices.Noise(element.angular_velocity_z_noise);
 
-
-				// element.linear_acceleration_x_noise;
-				// element.linear_acceleration_y_noise;
-				// element.linear_acceleration_z_noise;
-
-				// imu.n
+				imu.linear_acceleration_noises["x"] = new SensorDevices.Noise(element.linear_acceleration_x_noise);
+				imu.linear_acceleration_noises["y"] = new SensorDevices.Noise(element.linear_acceleration_y_noise);
+				imu.linear_acceleration_noises["z"] = new SensorDevices.Noise(element.linear_acceleration_z_noise);
 
 				return imu;
 			}
@@ -179,6 +197,12 @@ namespace SDF
 
 				var gps = newSensorObject.AddComponent<SensorDevices.GPS>();
 				gps.DeviceName = GetFrameName(newSensorObject);
+
+				gps.position_sensing_noises["horizontal"] = new SensorDevices.Noise(element.position_sensing.horizontal_noise);
+				gps.position_sensing_noises["vertical"] = new SensorDevices.Noise(element.position_sensing.vertical_noise);
+
+				gps.velocity_sensing_noises["horizontal"] = new SensorDevices.Noise(element.velocity_sensing.horizontal_noise);
+				gps.velocity_sensing_noises["vertical"] = new SensorDevices.Noise(element.velocity_sensing.vertical_noise);
 
 				return gps;
 			}
