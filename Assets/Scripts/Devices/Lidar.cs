@@ -56,7 +56,8 @@ namespace SensorDevices
 				this.angleStep = 1;
 			}
 		}
-
+		private const float DEG180 = Mathf.PI * Mathf.Rad2Deg;
+		private const float DEG360 = DEG180 * 2;
 
 		private const float LaserCameraHFov = 120.0000000000f;
 		private const float LaserCameraVFov = 50.0000000000f;
@@ -82,8 +83,8 @@ namespace SensorDevices
 		private LaserData.DepthCamBuffer[] depthCamBuffers;
 		private LaserData.LaserCamData[] laserCamData;
 		private LaserData.LaserDataOutput[] laserDataOutput;
-
 		private LaserFilter laserFilter = null;
+		public Noise noise = null;
 
 		protected override void OnAwake()
 		{
@@ -214,12 +215,18 @@ namespace SensorDevices
 
 			// laserCam.hideFlags |= HideFlags.NotEditable;
 			laserCam.enabled = false;
+
+			if (noise != null)
+			{
+				noise.SetClampMin(range.min);
+				noise.SetClampMax(range.max);
+			}
 		}
 
 		private void SetupLaserCameraData()
 		{
 			const float laserCameraRotationAngle = LaserCameraHFov;
-			numberOfLaserCamData = Mathf.CeilToInt(360 / laserCameraRotationAngle);
+			numberOfLaserCamData = Mathf.CeilToInt(DEG360 / laserCameraRotationAngle);
 
 			laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
 			depthCamBuffers = new LaserData.DepthCamBuffer[numberOfLaserCamData];
@@ -321,6 +328,11 @@ namespace SensorDevices
 
 						laserDataOutput[dataIndex].data = data.GetLaserData();
 
+						if (noise != null)
+						{
+							noise.Apply<double>(ref laserDataOutput[dataIndex].data);
+						}
+
 						data.Deallocate();
 					}
 
@@ -364,28 +376,28 @@ namespace SensorDevices
 				var data = laserCamData[dataIndex];
 				var srcBuffer = laserDataOutput[dataIndex].data;
 				var srcBufferHorizontalLength = data.horizontalBufferLength;
-				var dataStartAngle = data.StartAngleH;
-				var dataEndAngle = data.EndAngleH;
-				var dataTotalAngle = data.TotalAngleH;
+				var dataStartAngleH = data.StartAngleH;
+				var dataEndAngleH = data.EndAngleH;
+				var dataTotalAngleH = data.TotalAngleH;
 
 				if (srcBuffer == null)
 				{
 					continue;
 				}
 
+				if (dataEndAngleH > DEG180)
+				{
+					dataStartAngleH -= DEG360;
+					dataEndAngleH -= DEG360;
+				}
+
 				for (var sampleIndexV = 0; sampleIndexV < laserSamplesV; sampleIndexV++, doCopy = true)
 				{
-					if (dataEndAngle > 180)
-					{
-						dataStartAngle -= 360;
-						dataEndAngle -= 360;
-					}
-
 					// start side of laser angle
-					if (dataStartAngle < laserStartAngleH)
+					if (dataStartAngleH < laserStartAngleH)
 					{
 						srcBufferOffset = srcBufferHorizontalLength * sampleIndexV;
-						var srcLengthratio = Mathf.Abs((dataStartAngle - laserStartAngleH) / dataTotalAngle);
+						var srcLengthratio = Mathf.Abs((dataStartAngleH - laserStartAngleH) / dataTotalAngleH);
 						copyLength = srcBufferHorizontalLength - Mathf.FloorToInt(srcBufferHorizontalLength * srcLengthratio);
 						dstBufferOffset = (laserSamplesH * (sampleIndexV + 1)) - copyLength;
 
@@ -395,11 +407,11 @@ namespace SensorDevices
 						}
 					}
 					// middle of laser angle
-					else if (dataStartAngle >= laserStartAngleH && dataEndAngle < laserEndAngleH)
+					else if (dataStartAngleH >= laserStartAngleH && dataEndAngleH < laserEndAngleH)
 					{
 						srcBufferOffset = srcBufferHorizontalLength * sampleIndexV; ;
 						copyLength = srcBufferHorizontalLength;
-						dstBufferOffset = (laserSamplesH * (sampleIndexV + 1)) - (Mathf.CeilToInt(laserSamplesH * ((dataStartAngle - laserStartAngleH) / laserTotalAngleH)) + copyLength);
+						dstBufferOffset = (laserSamplesH * (sampleIndexV + 1)) - (Mathf.CeilToInt(laserSamplesH * ((dataStartAngleH - laserStartAngleH) / laserTotalAngleH)) + copyLength);
 
 						if (copyLength < 0 || dstBufferOffset < 0)
 						{
@@ -407,9 +419,9 @@ namespace SensorDevices
 						}
 					}
 					// end side of laser angle
-					else if (dataEndAngle >= laserEndAngleH)
+					else if (dataEndAngleH >= laserEndAngleH)
 					{
-						var srcLengthRatio = (laserEndAngleH - dataStartAngle) / dataTotalAngle;
+						var srcLengthRatio = (laserEndAngleH - dataStartAngleH) / dataTotalAngleH;
 						copyLength = Mathf.CeilToInt(srcBufferHorizontalLength * srcLengthRatio);
 
 						srcBufferOffset = (srcBufferHorizontalLength * (sampleIndexV + 1)) - copyLength;

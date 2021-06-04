@@ -555,7 +555,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 			{
 				var index = (int)numKey - (int)(KeyCode.Alpha0);
 
-				if (index >= elevatorList.Keys.Count)
+				if (elevatorList.Keys.Count == 0 || index >= elevatorList.Keys.Count)
 				{
 					Debug.LogFormat("{0} elevator does not exist.");
 					break;

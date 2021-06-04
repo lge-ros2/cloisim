@@ -42,7 +42,10 @@ Here are the list of items that is implemented(marked) or planned to be implemen
     - [X] RealSense (RGB + IR1 + IR2 + Depth)
   - [X] GPS sensor
   - [ ] Sensor noise models
-    - [ ] Gaussian
+    - [X] Gaussian
+      - [X] GPS, IMU
+      - [X] Lidar
+      - [ ] Camera
     - [ ] Custom
 - [ ] Physics
   - [ ] Support all physics parameters in SDF specification
