@@ -15,7 +15,7 @@ namespace SensorDevices
 			GAUSSIAN
 		};
 
-		private readonly SDF.Noise noise;
+		private readonly SDF.Noise parameter;
 
 		private Type noiseType;
 
@@ -29,7 +29,7 @@ namespace SensorDevices
 
 		public Noise(in SDF.Noise noise, in string sensorType)
 		{
-			this.noise = noise;
+			this.parameter = noise;
 
 			switch (noise.type)
 			{
@@ -65,10 +65,10 @@ namespace SensorDevices
 						case "depth":
 						case "multicamera":
 						case "wideanglecamera":
-							noiseModel = new ImageGaussianNoiseModel();
+							noiseModel = new ImageGaussianNoiseModel(this.parameter);
 							break;
 						default:
-							noiseModel = new GaussianNoiseModel();
+							noiseModel = new GaussianNoiseModel(this.parameter);
 							break;
 					}
 
@@ -77,7 +77,7 @@ namespace SensorDevices
 				case Type.CUSTOM:
 					// Return empty noise if 'none' or 'custom' is specified.
 					// if 'custom', the type will be set once the user calls the SetCustomNoiseCallback function.
-					noiseModel = new CustomNoiseModel();
+					noiseModel = new CustomNoiseModel(this.parameter);
 					break;
 
 				case Type.NONE:
@@ -90,39 +90,56 @@ namespace SensorDevices
 			}
 		}
 
-		public void Apply(ref float[] dataArray)
+		public void SetClampMin(in double val)
+		{
+			if (noiseModel != null)
+			{
+				noiseModel.SetClampMin(val);
+			}
+		}
+
+		public void SetClampMax(in double val)
+		{
+			if (noiseModel != null)
+			{
+				noiseModel.SetClampMax(val);
+			}
+		}
+
+		public void Apply<T>(ref T data, in float deltaTime = 0)
 		{
 			switch (noiseType)
 			{
-				case Type.NONE:
-
-					break;
-
 				case Type.GAUSSIAN:
-
+					noiseModel.Apply<T>(ref data, deltaTime);
 					break;
 
 				case Type.CUSTOM:
-
+					noiseModel.Apply<T>(ref data, deltaTime);
 					break;
 
+				case Type.NONE:
 				default:
 					break;
 			}
-			// if (this->type == NONE)
-			// 	return _in;
-			// else if (this->type == CUSTOM)
-			// {
-			// 	if (this->customNoiseCallback)
-			// 		return this->customNoiseCallback(_in);
-			// 	else
-			// 	{
-			// 		gzerr << "Custom noise callback function not set!" << " Please call SetCustomNoiseCallback within a sensor plugin." << std::endl;
-			// 		return _in;
-			// 	}
-			// }
-			// else
-			// 	return this->ApplyImpl(_in);
+		}
+
+		public void Apply<T>(ref T[] dataArray, in float deltaTime = 0)
+		{
+			switch (noiseType)
+			{
+				case Type.GAUSSIAN:
+					noiseModel.Apply<T>(ref dataArray, deltaTime);
+					break;
+
+				case Type.CUSTOM:
+					noiseModel.Apply<T>(ref dataArray, deltaTime);
+					break;
+
+				case Type.NONE:
+				default:
+					break;
+			}
 		}
 	}
 }

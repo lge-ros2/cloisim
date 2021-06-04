@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+
+using System.IO;
 using System;
 
 namespace SDF
@@ -299,14 +301,20 @@ namespace SDF
 
 		private void ParseNoise(ref Noise noise, in string targetPathName)
 		{
-			noise.type = GetAttributeInPath<string>(targetPathName + "/noise", "type");
-			noise.mean = GetValue<double>(targetPathName + "/noise/mean", 0);
-			noise.stddev = GetValue<double>(targetPathName + "/noise/stddev", 0);
-			noise.bias_mean = GetValue<double>(targetPathName + "/noise/bias_mean", 0);
-			noise.bias_stddev = GetValue<double>(targetPathName + "/noise/bias_stddev", 0);
-			noise.dynamic_bias_stddev = GetValue<double>(targetPathName + "/noise/dynamic_bias_stddev", 0);
-			noise.dynamic_bias_correlation_time = GetValue<double>(targetPathName + "/noise/dynamic_bias_correlation_time", 0);
-			noise.precision = GetValue<double>(targetPathName + "/noise/precesion", 0);
+			var noiseXPath = Path.Combine(targetPathName, "noise");
+			var type = GetAttributeInPath<string>(noiseXPath, "type");
+			noise.type = (type == null)? GetValue<string>(Path.Combine(noiseXPath, "type"), "none"): type;
+			noise.mean = GetValue<double>(Path.Combine(noiseXPath, "mean"), 0);
+			noise.stddev = GetValue<double>(Path.Combine(noiseXPath, "stddev"), 0);
+			noise.bias_mean = GetValue<double>(Path.Combine(noiseXPath, "bias_mean"), 0);
+			noise.bias_stddev = GetValue<double>(Path.Combine(noiseXPath, "bias_stddev"), 0);
+			noise.dynamic_bias_stddev = GetValue<double>(Path.Combine(noiseXPath, "dynamic_bias_stddev"), 0);
+			noise.dynamic_bias_correlation_time = GetValue<double>(Path.Combine(noiseXPath, "dynamic_bias_correlation_time"), 0);
+
+			if (IsValidNode(Path.Combine(noiseXPath, "precesion")))
+			{
+				noise.precision = GetValue<double>(Path.Combine(noiseXPath, "precesion"), 0);
+			}
 		}
 	}
 }

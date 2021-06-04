@@ -28,7 +28,7 @@ namespace SDF
 		public double bias_stddev = 0;
 		public double dynamic_bias_stddev = 0;
 		public double dynamic_bias_correlation_time = 0;
-		public double precision = 0;
+		public double precision = double.NaN;
 	}
 
 	// <altimeter> : TBD

@@ -176,8 +176,6 @@ namespace SensorDevices
 				// Compensate distance
 				var compensateScale = (1f / Mathf.Cos(horizontalAngleInCamData));
 				var finalDepthData = depthRange * compensateScale;
-
-				// Cutoff
 				return finalDepthData;
 			}
 
@@ -197,7 +195,6 @@ namespace SensorDevices
 				var rayAngleV = angleResolution.V * indexV;
 				var depthData = GetDepthData(rayAngleH, rayAngleV);
 				var rayDistance = (depthData > 1f) ? Mathf.Infinity : (depthData * rangeMax);
-
 				laserData[index] = (double)rayDistance;
 			}
 

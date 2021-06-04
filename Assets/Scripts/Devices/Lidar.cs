@@ -215,6 +215,12 @@ namespace SensorDevices
 
 			// laserCam.hideFlags |= HideFlags.NotEditable;
 			laserCam.enabled = false;
+
+			if (noise != null)
+			{
+				noise.SetClampMin(range.min);
+				noise.SetClampMax(range.max);
+			}
 		}
 
 		private void SetupLaserCameraData()
@@ -321,6 +327,11 @@ namespace SensorDevices
 						jobHandle.Complete();
 
 						laserDataOutput[dataIndex].data = data.GetLaserData();
+
+						if (noise != null)
+						{
+							noise.Apply<double>(ref laserDataOutput[dataIndex].data);
+						}
 
 						data.Deallocate();
 					}
