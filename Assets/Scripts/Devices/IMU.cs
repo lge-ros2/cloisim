@@ -77,10 +77,42 @@ namespace SensorDevices
 			imuAngularVelocity.y = Mathf.DeltaAngle(imuRotation.y, previousImuRotation.y) / Time.fixedDeltaTime;
 			imuAngularVelocity.z = Mathf.DeltaAngle(imuRotation.z, previousImuRotation.z) / Time.fixedDeltaTime;
 
+			// apply noise
+			if (angular_velocity_noises["x"] != null)
+			{
+				angular_velocity_noises["x"].Apply<float>(ref imuAngularVelocity.x);
+			}
+
+			if (angular_velocity_noises["y"] != null)
+			{
+				angular_velocity_noises["y"].Apply<float>(ref imuAngularVelocity.y);
+			}
+
+			if (angular_velocity_noises["z"] != null)
+			{
+				angular_velocity_noises["z"].Apply<float>(ref imuAngularVelocity.z);
+			}
+
 			var currentPosition = transform.position;
 			var currentLinearVelocity = (currentPosition - previousImuPosition) / Time.fixedDeltaTime;
 			imuLinearAcceleration = (currentLinearVelocity - previousLinearVelocity) / Time.fixedDeltaTime;
 			imuLinearAcceleration.y += (-Physics.gravity.y);
+
+			// apply noise
+			if (linear_acceleration_noises["x"] != null)
+			{
+				linear_acceleration_noises["x"].Apply<float>(ref imuLinearAcceleration.x);
+			}
+
+			if (linear_acceleration_noises["y"] != null)
+			{
+				linear_acceleration_noises["y"].Apply<float>(ref imuLinearAcceleration.y);
+			}
+
+			if (linear_acceleration_noises["z"] != null)
+			{
+				linear_acceleration_noises["z"].Apply<float>(ref imuLinearAcceleration.z);
+			}
 
 			previousImuRotation = imuRotation;
 			previousImuPosition = currentPosition;
