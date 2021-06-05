@@ -117,16 +117,21 @@ namespace SensorDevices
 
 			private NativeArray<double> laserData;
 
-			public readonly float StartAngleH => centerAngle - maxHAngleHalf;
-			public readonly float EndAngleH => centerAngle + maxHAngleHalf;
-			public readonly float TotalAngleH => EndAngleH - StartAngleH;
+			public float StartAngleH;
+			public float EndAngleH;
+			public float TotalAngleH;
 
-			public LaserCamData(in int bufferWidth, in int bufferHeight, in AngleResolution angleResolution)
+			public LaserCamData(in int bufferWidth, in int bufferHeight, in AngleResolution angleResolution, in float centerAngle, in float halfHFovAngle)
 			{
-				this.maxHAngleHalf = 0;
-				this.maxHAngleHalfTangent = 0;
+				this.maxHAngleHalf = halfHFovAngle;
+				this.maxHAngleHalfTangent = Mathf.Tan(maxHAngleHalf * Mathf.Deg2Rad);
 				this.angleResolution = angleResolution;
-				this.centerAngle = 0;
+
+				this.centerAngle = centerAngle;
+				this.StartAngleH = centerAngle - maxHAngleHalf;
+				this.EndAngleH = centerAngle + maxHAngleHalf;
+ 				this.TotalAngleH = this.maxHAngleHalf * 2f;
+
 				this.rangeMax = 0;
 				this.horizontalBufferLength = bufferWidth;
 				this.verticalBufferLength = bufferHeight;
@@ -150,12 +155,6 @@ namespace SensorDevices
 				return laserData.Length;
 			}
 
-			public void SetMaxHorizontalHalfAngle(in float angle)
-			{
-				maxHAngleHalf = angle;
-				maxHAngleHalfTangent = Mathf.Tan(maxHAngleHalf * Mathf.Deg2Rad);
-			}
-
 			private float GetDepthRange(in int offsetX, in int offsetY)
 			{
 				var bufferOffset = (horizontalBufferLength * offsetY) + offsetX;
@@ -176,8 +175,6 @@ namespace SensorDevices
 				// Compensate distance
 				var compensateScale = (1f / Mathf.Cos(horizontalAngleInCamData));
 				var finalDepthData = depthRange * compensateScale;
-
-				// Cutoff
 				return finalDepthData;
 			}
 
@@ -185,7 +182,7 @@ namespace SensorDevices
 			{
 				if (index >= OutputLength())
 				{
-					Debug.Log("index exceeded range " + index + " / " + OutputLength());
+					Debug.LogWarning("index exceeded range " + index + " / " + OutputLength());
 					return;
 				}
 
@@ -197,7 +194,6 @@ namespace SensorDevices
 				var rayAngleV = angleResolution.V * indexV;
 				var depthData = GetDepthData(rayAngleH, rayAngleV);
 				var rayDistance = (depthData > 1f) ? Mathf.Infinity : (depthData * rangeMax);
-
 				laserData[index] = (double)rayDistance;
 			}
 

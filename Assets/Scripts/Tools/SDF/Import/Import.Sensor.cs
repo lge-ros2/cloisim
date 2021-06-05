@@ -27,17 +27,24 @@ namespace SDF
 
 				switch (sensorType)
 				{
-					case "lidar":
 					case "ray":
+						Debug.LogWarning("It is preferred to use 'lidar' since 'ray' will be deprecated.");
+						goto case "lidar";
+
+					case "lidar":
 						Debug.LogWarning("CPU based lidar or ray does not support. It will change to GPU based sensor.");
 						goto case "gpu_lidar";
 
 					case "gpu_ray":
+						Debug.LogWarning("It is preferred to use 'gpu_lidar' since 'gpu_ray' will be deprecated.");
+						goto case "gpu_lidar";
+
 					case "gpu_lidar":
-						var ray = sensor.GetSensor() as SDF.Ray;
-						device = Implement.Sensor.AddLidar(ray, targetObject);
+						var lidar = sensor.GetSensor() as SDF.Lidar;
+						device = Implement.Sensor.AddLidar(lidar, targetObject);
 						break;
 
+					case "depth_camera":
 					case "depth":
 						var depthCamera = sensor.GetSensor() as SDF.Camera;
 						device = Implement.Sensor.AddDepthCamera(depthCamera, targetObject);
@@ -78,9 +85,12 @@ namespace SDF
 					case "force_torque":
 					case "logical_camera":
 					case "magnetometer":
-					case "rfidtag":
 					case "rfid":
-					case "transceiver":
+					case "rfidtag":
+					case "rgbd_camera":
+					case "thermal_camera":
+					case "wireless_receiver":
+					case "wireless_transmitter":
 						Debug.LogWarningFormat("[Sensor] Not supported sensor name({0}) type({1})!!!!!", sensor.Name, sensorType);
 						break;
 

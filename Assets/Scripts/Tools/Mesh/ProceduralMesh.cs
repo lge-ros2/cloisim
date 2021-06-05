@@ -1,78 +1,101 @@
-using System;
+/*
+ * Copyright (c) 2020 LG Electronics Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>https://wiki.unity3d.com/index.php/ProceduralPrimitives</summary>
 public class ProceduralMesh
 {
-	private const float _pi = Mathf.PI;
-	private const float _2pi = _pi * 2f;
+	private enum Type {BOX, CYLINDER, SPHERE, PLANE};
+
+	private static Dictionary<Type, Mesh> MeshObjectCache = new Dictionary<Type, Mesh>();
+
+	private const float PI = Mathf.PI;
+	private const float PI2 = PI * 2f;
 
 	public static Mesh CreateBox(in float length = 1f, in float width = 1f, in float height = 1f)
 	{
-		var mesh = new Mesh();
-		mesh.name = "Box";
+		Mesh mesh;
 
-		#region Vertices
-		var p0 = new Vector3(-length * .5f, -width * .5f, height * .5f);
-		var p1 = new Vector3(length * .5f, -width * .5f, height * .5f);
-		var p2 = new Vector3(length * .5f, -width * .5f, -height * .5f);
-		var p3 = new Vector3(-length * .5f, -width * .5f, -height * .5f);
-
-		var p4 = new Vector3(-length * .5f, width * .5f, height * .5f);
-		var p5 = new Vector3(length * .5f, width * .5f, height * .5f);
-		var p6 = new Vector3(length * .5f, width * .5f, -height * .5f);
-		var p7 = new Vector3(-length * .5f, width * .5f, -height * .5f);
-
-		var vertices = new Vector3[]
+		if (!MeshObjectCache.ContainsKey(Type.BOX))
 		{
+			mesh = new Mesh();
+
+			#region Vertices
+			var p0 = new Vector3(-.5f, -.5f, .5f);
+			var p1 = new Vector3(.5f, -.5f, .5f);
+			var p2 = new Vector3(.5f, -.5f, -.5f);
+			var p3 = new Vector3(-.5f, -.5f, -.5f);
+
+			var p4 = new Vector3(-.5f, .5f, .5f);
+			var p5 = new Vector3(.5f, .5f, .5f);
+			var p6 = new Vector3(.5f, .5f, -.5f);
+			var p7 = new Vector3(-.5f, .5f, -.5f);
+
+			// var p0 = new Vector3(-length * .5f, -width * .5f, height * .5f);
+			// var p1 = new Vector3(length * .5f, -width * .5f, height * .5f);
+			// var p2 = new Vector3(length * .5f, -width * .5f, -height * .5f);
+			// var p3 = new Vector3(-length * .5f, -width * .5f, -height * .5f);
+
+			// var p4 = new Vector3(-length * .5f, width * .5f, height * .5f);
+			// var p5 = new Vector3(length * .5f, width * .5f, height * .5f);
+			// var p6 = new Vector3(length * .5f, width * .5f, -height * .5f);
+			// var p7 = new Vector3(-length * .5f, width * .5f, -height * .5f);
+
+			var vertices = new Vector3[]
+			{
 			p0, p1, p2, p3, // Bottom
 			p7, p4, p0, p3, // Left
 			p4, p5, p1, p0, // Front
 			p6, p7, p3, p2, // Back
 			p5, p6, p2, p1, // Right
 			p7, p6, p5, p4 // Top
-		};
-		#endregion
+			};
+			#endregion
 
-		#region Normales
-		var up = Vector3.up;
-		var down = Vector3.down;
-		var front = Vector3.forward;
-		var back = Vector3.back;
-		var left = Vector3.left;
-		var right = Vector3.right;
+			#region Normales
+			var up = Vector3.up;
+			var down = Vector3.down;
+			var front = Vector3.forward;
+			var back = Vector3.back;
+			var left = Vector3.left;
+			var right = Vector3.right;
 
-		var normales = new Vector3[]
-		{
+			var normales = new Vector3[]
+			{
 			down, down, down, down, // Bottom
 			left, left, left, left, // Left
 			front, front, front, front, // Front
 			back, back, back, back, // Back
 			right, right, right, right, // Right
 			up, up, up, up // Top
-		};
-		#endregion
+			};
+			#endregion
 
-		#region UVs
-		var _00 = new Vector2(0f, 0f);
-		var _10 = new Vector2(1f, 0f);
-		var _01 = new Vector2(0f, 1f);
-		var _11 = new Vector2(1f, 1f);
+			#region UVs
+			var _00 = new Vector2(0f, 0f);
+			var _10 = new Vector2(1f, 0f);
+			var _01 = new Vector2(0f, 1f);
+			var _11 = new Vector2(1f, 1f);
 
-		var uvs = new Vector2[]
-		{
+			var uvs = new Vector2[]
+			{
 			_11, _01, _00, _10, // Bottom
 			_11, _01, _00, _10, // Left
 			_11, _01, _00, _10, // Front
 			_11, _01, _00, _10, // Back
 			_11, _01, _00, _10, // Right
 			_11, _01, _00, _10, // Top
-		};
-		#endregion
+			};
+			#endregion
 
-		#region Triangles
-		var triangles = new int[]
-		{
+			#region Triangles
+			var triangles = new int[]
+			{
 			// Bottom
 			3, 1, 0,
 			3, 2, 1,
@@ -96,26 +119,55 @@ public class ProceduralMesh
 			// Top
 			3 + 4 * 5, 1 + 4 * 5, 0 + 4 * 5,
 			3 + 4 * 5, 2 + 4 * 5, 1 + 4 * 5,
-		};
-		#endregion
+			};
+			#endregion
 
-		mesh.vertices = vertices;
-		mesh.normals = normales;
-		mesh.uv = uvs;
-		mesh.triangles = triangles;
+			mesh.vertices = vertices;
+			mesh.normals = normales;
+			mesh.uv = uvs;
+			mesh.triangles = triangles;
 
-		mesh.RecalculateNormals();
-		mesh.RecalculateTangents();
-		mesh.RecalculateBounds();
-		mesh.Optimize();
+			MeshObjectCache.Add(Type.BOX, mesh);
+		}
+
+		mesh = Object.Instantiate(MeshObjectCache[Type.BOX]);
+		mesh.name = "Box";
+
+		var meshVertices = mesh.vertices;
+		for (var i = 0; i < mesh.vertexCount; i++)
+		{
+			var vertex = meshVertices[i];
+			vertex.Scale(new Vector3(length, width, height));
+			meshVertices[i] = vertex;
+		}
+		mesh.vertices = meshVertices;
 
 		return mesh;
 	}
 
 	public static Mesh CreateCylinder(in float radius = 1f, in float height = 1f, in int nbSides = 36)
 	{
-		var mesh = CreateCone(radius, radius, height, nbSides);
+		Mesh mesh;
+
+		if (!MeshObjectCache.ContainsKey(Type.CYLINDER))
+		{
+			mesh = CreateCone(1, 1, 1, nbSides);
+			mesh.name = "Cylinder";
+			MeshObjectCache.Add(Type.CYLINDER, mesh);
+		}
+
+		mesh = Object.Instantiate(MeshObjectCache[Type.CYLINDER]);
 		mesh.name = "Cylinder";
+
+		var meshVertices = mesh.vertices;
+		for (var i = 0; i < mesh.vertexCount; i++)
+		{
+			var vertex = meshVertices[i];
+			vertex.Scale(new Vector3(radius, height, radius));
+			meshVertices[i] = vertex;
+		}
+		mesh.vertices = meshVertices;
+
 		return mesh;
 	}
 
@@ -139,7 +191,7 @@ public class ProceduralMesh
 		vertices[vert++] = new Vector3(0f, -heightHalf, 0f);
 		while (vert <= nbSides)
 		{
-			float rad = (float)vert / nbSides * _2pi;
+			float rad = (float)vert / nbSides * PI2;
 			vertices[vert] = new Vector3(Mathf.Cos(rad) * bottomRadius, -heightHalf, Mathf.Sin(rad) * bottomRadius);
 			vert++;
 		}
@@ -148,7 +200,7 @@ public class ProceduralMesh
 		vertices[vert++] = new Vector3(0f, heightHalf, 0f);
 		while (vert <= nbSides * 2 + 1)
 		{
-			var rad = (float)(vert - nbSides - 1) / nbSides * _2pi;
+			var rad = (float)(vert - nbSides - 1) / nbSides * PI2;
 			vertices[vert] = new Vector3(Mathf.Cos(rad) * topRadius, heightHalf, Mathf.Sin(rad) * topRadius);
 			vert++;
 		}
@@ -157,7 +209,7 @@ public class ProceduralMesh
 		int v = 0;
 		while (vert <= vertices.Length - 4)
 		{
-			var rad = (float)v / nbSides * _2pi;
+			var rad = (float)v / nbSides * PI2;
 			vertices[vert] = new Vector3(Mathf.Cos(rad) * topRadius, heightHalf, Mathf.Sin(rad) * topRadius);
 			vertices[vert + 1] = new Vector3(Mathf.Cos(rad) * bottomRadius, -heightHalf, Mathf.Sin(rad) * bottomRadius);
 			vert += 2;
@@ -188,7 +240,7 @@ public class ProceduralMesh
 		v = 0;
 		while (vert <= vertices.Length - 4)
 		{
-			var rad = (float)v / nbSides * _2pi;
+			var rad = (float)v / nbSides * PI2;
 			var cos = Mathf.Cos(rad);
 			var sin = Mathf.Sin(rad);
 
@@ -210,7 +262,7 @@ public class ProceduralMesh
 		uvs[u++] = new Vector2(0.5f, 0.5f);
 		while (u <= nbSides)
 		{
-			var rad = (float)u / nbSides * _2pi;
+			var rad = (float)u / nbSides * PI2;
 			uvs[u] = new Vector2(Mathf.Cos(rad) * .5f + .5f, Mathf.Sin(rad) * .5f + .5f);
 			u++;
 		}
@@ -219,7 +271,7 @@ public class ProceduralMesh
 		uvs[u++] = new Vector2(0.5f, 0.5f);
 		while (u <= nbSides * 2 + 1)
 		{
-			var rad = (float)u / nbSides * _2pi;
+			var rad = (float)u / nbSides * PI2;
 			uvs[u] = new Vector2(Mathf.Cos(rad) * .5f + .5f, Mathf.Sin(rad) * .5f + .5f);
 			u++;
 		}
@@ -300,11 +352,6 @@ public class ProceduralMesh
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
-		mesh.RecalculateNormals();
-		mesh.RecalculateTangents();
-		mesh.RecalculateBounds();
-		mesh.Optimize();
-
 		return mesh;
 	}
 
@@ -312,104 +359,119 @@ public class ProceduralMesh
 	// Latitude ---
 	public static Mesh CreateSphere(in float radius = 1f, int nbLong = 24, int nbLat = 16)
 	{
-		var mesh = new Mesh();
-		mesh.name = "Sphere";
+		Mesh mesh;
 
-		#region Vertices
-		var vertices = new Vector3[(nbLong + 1) * nbLat + 2];
-
-		vertices[0] = Vector3.up * radius;
-		for (var lat = 0; lat < nbLat; lat++)
+		if (!MeshObjectCache.ContainsKey(Type.SPHERE))
 		{
-			var a1 = _pi * (float)(lat + 1) / (nbLat + 1);
-			var sin1 = Mathf.Sin(a1);
-			var cos1 = Mathf.Cos(a1);
+			const float UnitRadius = 1f;
+			mesh = new Mesh();
+			mesh.name = "Sphere";
 
-			for (var lon = 0; lon <= nbLong; lon++)
+			#region Vertices
+			var vertices = new Vector3[(nbLong + 1) * nbLat + 2];
+
+			vertices[0] = Vector3.up * UnitRadius;
+			for (var lat = 0; lat < nbLat; lat++)
 			{
-				var a2 = _2pi * (float)(lon == nbLong ? 0 : lon) / nbLong;
-				var sin2 = Mathf.Sin(a2);
-				var cos2 = Mathf.Cos(a2);
+				var a1 = PI * (float)(lat + 1) / (nbLat + 1);
+				var sin1 = Mathf.Sin(a1);
+				var cos1 = Mathf.Cos(a1);
 
-				vertices[lon + lat * (nbLong + 1) + 1] = new Vector3(sin1 * cos2, cos1, sin1 * sin2) * radius;
+				for (var lon = 0; lon <= nbLong; lon++)
+				{
+					var a2 = PI2 * (float)(lon == nbLong ? 0 : lon) / nbLong;
+					var sin2 = Mathf.Sin(a2);
+					var cos2 = Mathf.Cos(a2);
+
+					vertices[lon + lat * (nbLong + 1) + 1] = new Vector3(sin1 * cos2, cos1, sin1 * sin2) * UnitRadius;
+				}
 			}
-		}
-		vertices[vertices.Length - 1] = Vector3.up * -radius;
-		#endregion
+			vertices[vertices.Length - 1] = Vector3.up * -UnitRadius;
+			#endregion
 
-		#region Normales
-		var normales = new Vector3[vertices.Length];
-		for (var n = 0; n < vertices.Length; n++)
-		{
-			normales[n] = vertices[n].normalized;
-		}
-		#endregion
-
-		#region UVs
-		var uvs = new Vector2[vertices.Length];
-		uvs[0] = Vector2.up;
-		uvs[uvs.Length - 1] = Vector2.zero;
-
-		for (var lat = 0; lat < nbLat; lat++)
-		{
-			for (var lon = 0; lon <= nbLong; lon++)
+			#region Normales
+			var normales = new Vector3[vertices.Length];
+			for (var n = 0; n < vertices.Length; n++)
 			{
-				uvs[lon + lat * (nbLong + 1) + 1] = new Vector2((float)lon / nbLong, 1f - (float)(lat + 1) / (nbLat + 1));
+				normales[n] = vertices[n].normalized;
 			}
-		}
-		#endregion
+			#endregion
 
-		#region Triangles
-		var nbFaces = vertices.Length;
-		var nbTriangles = nbFaces * 2;
-		var nbIndexes = nbTriangles * 3;
-		var triangles = new int[nbIndexes];
+			#region UVs
+			var uvs = new Vector2[vertices.Length];
+			uvs[0] = Vector2.up;
+			uvs[uvs.Length - 1] = Vector2.zero;
 
-		//Top Cap
-		var i = 0;
-		for (var lon = 0; lon < nbLong; lon++)
-		{
-			triangles[i++] = lon + 2;
-			triangles[i++] = lon + 1;
-			triangles[i++] = 0;
-		}
+			for (var lat = 0; lat < nbLat; lat++)
+			{
+				for (var lon = 0; lon <= nbLong; lon++)
+				{
+					uvs[lon + lat * (nbLong + 1) + 1] = new Vector2((float)lon / nbLong, 1f - (float)(lat + 1) / (nbLat + 1));
+				}
+			}
+			#endregion
 
-		//Middle
-		for (var lat = 0; lat < nbLat - 1; lat++)
-		{
+			#region Triangles
+			var nbFaces = vertices.Length;
+			var nbTriangles = nbFaces * 2;
+			var nbIndexes = nbTriangles * 3;
+			var triangles = new int[nbIndexes];
+
+			//Top Cap
+			var i = 0;
 			for (var lon = 0; lon < nbLong; lon++)
 			{
-				var current = lon + lat * (nbLong + 1) + 1;
-				var next = current + nbLong + 1;
-
-				triangles[i++] = current;
-				triangles[i++] = current + 1;
-				triangles[i++] = next + 1;
-
-				triangles[i++] = current;
-				triangles[i++] = next + 1;
-				triangles[i++] = next;
+				triangles[i++] = lon + 2;
+				triangles[i++] = lon + 1;
+				triangles[i++] = 0;
 			}
+
+			//Middle
+			for (var lat = 0; lat < nbLat - 1; lat++)
+			{
+				for (var lon = 0; lon < nbLong; lon++)
+				{
+					var current = lon + lat * (nbLong + 1) + 1;
+					var next = current + nbLong + 1;
+
+					triangles[i++] = current;
+					triangles[i++] = current + 1;
+					triangles[i++] = next + 1;
+
+					triangles[i++] = current;
+					triangles[i++] = next + 1;
+					triangles[i++] = next;
+				}
+			}
+
+			//Bottom Cap
+			for (var lon = 0; lon < nbLong; lon++)
+			{
+				triangles[i++] = vertices.Length - 1;
+				triangles[i++] = vertices.Length - (lon + 2) - 1;
+				triangles[i++] = vertices.Length - (lon + 1) - 1;
+			}
+			#endregion
+
+			mesh.vertices = vertices;
+			mesh.normals = normales;
+			mesh.uv = uvs;
+			mesh.triangles = triangles;
+
+			MeshObjectCache.Add(Type.SPHERE, mesh);
 		}
 
-		//Bottom Cap
-		for (var lon = 0; lon < nbLong; lon++)
+		mesh = Object.Instantiate(MeshObjectCache[Type.SPHERE]);
+		mesh.name = "Sphere";
+
+		var meshVertices = mesh.vertices;
+		for (var i = 0; i < mesh.vertexCount; i++)
 		{
-			triangles[i++] = vertices.Length - 1;
-			triangles[i++] = vertices.Length - (lon + 2) - 1;
-			triangles[i++] = vertices.Length - (lon + 1) - 1;
+			var vertex = meshVertices[i];
+			vertex.Scale(new Vector3(radius, radius, radius));
+			meshVertices[i] = vertex;
 		}
-		#endregion
-
-		mesh.vertices = vertices;
-		mesh.normals = normales;
-		mesh.uv = uvs;
-		mesh.triangles = triangles;
-
-		mesh.RecalculateNormals();
-		mesh.RecalculateTangents();
-		mesh.RecalculateBounds();
-		mesh.Optimize();
+		mesh.vertices = meshVertices;
 
 		return mesh;
 	}
@@ -417,77 +479,95 @@ public class ProceduralMesh
 	// 2 minimum
 	public static Mesh CreatePlane(in float length = 1f, in float width = 1f, Vector3 normal = default(Vector3), in int resX = 2, in int resZ = 2)
 	{
-		if (normal.Equals(default(Vector3)))
+		Mesh mesh;
+
+		if (!MeshObjectCache.ContainsKey(Type.PLANE))
 		{
-			normal = Vector3.up;
+
+			if (normal.Equals(default(Vector3)))
+			{
+				normal = Vector3.up;
+			}
+
+			mesh = new Mesh();
+			mesh.name = "Plane";
+
+			const float UnitSizeLength = 1f, UnitySizeWidth = 1f;
+
+			#region Vertices
+			var vertices = new Vector3[resX * resZ];
+			for (var z = 0; z < resZ; z++)
+			{
+				// [ -length / 2, length / 2 ]
+				var zPos = ((float)z / (resZ - 1) - .5f) * UnitSizeLength;
+
+				for (var x = 0; x < resX; x++)
+				{
+					// [ -width / 2, width / 2 ]
+					var xPos = ((float)x / (resX - 1) - .5f) * UnitySizeWidth;
+					vertices[x + z * resX] = new Vector3(xPos, 0f, zPos);
+				}
+			}
+			#endregion
+
+			#region Normales
+			var normales = new Vector3[vertices.Length];
+			for (var n = 0; n < normales.Length; n++)
+			{
+				normales[n] = normal;
+			}
+			#endregion
+
+			#region UVs
+			var uvs = new Vector2[vertices.Length];
+			for (var v = 0; v < resZ; v++)
+			{
+				for (var u = 0; u < resX; u++)
+				{
+					uvs[u + v * resX] = new Vector2((float)u / (resX - 1), (float)v / (resZ - 1));
+				}
+			}
+			#endregion
+
+			#region Triangles
+			var nbFaces = (resX - 1) * (resZ - 1);
+			var triangles = new int[nbFaces * 6];
+
+			for (int t = 0, face = 0; face < nbFaces; face++)
+			{
+				// Retrieve lower left corner from face ind
+				var i = face % (resX - 1) + (face / (resZ - 1) * resX);
+
+				triangles[t++] = i + resX;
+				triangles[t++] = i + 1;
+				triangles[t++] = i;
+
+				triangles[t++] = i + resX;
+				triangles[t++] = i + resX + 1;
+				triangles[t++] = i + 1;
+			}
+			#endregion
+
+			mesh.vertices = vertices;
+			mesh.normals = normales;
+			mesh.uv = uvs;
+			mesh.triangles = triangles;
+
+			MeshObjectCache.Add(Type.PLANE, mesh);
 		}
 
-		var mesh = new Mesh();
+		mesh = Object.Instantiate(MeshObjectCache[Type.PLANE]);
 		mesh.name = "Plane";
 
-		#region Vertices
-		var vertices = new Vector3[resX * resZ];
-		for (var z = 0; z < resZ; z++)
+		var meshVertices = mesh.vertices;
+		for (var i = 0; i < mesh.vertexCount; i++)
 		{
-			// [ -length / 2, length / 2 ]
-			var zPos = ((float)z / (resZ - 1) - .5f) * length;
-
-			for (var x = 0; x < resX; x++)
-			{
-				// [ -width / 2, width / 2 ]
-				var xPos = ((float)x / (resX - 1) - .5f) * width;
-				vertices[x + z * resX] = new Vector3(xPos, 0f, zPos);
-			}
+			var vertex = meshVertices[i];
+			vertex.Scale(new Vector3(width, 1, length));
+			meshVertices[i] = vertex;
 		}
-		#endregion
+		mesh.vertices = meshVertices;
 
-		#region Normales
-		var normales = new Vector3[vertices.Length];
-		for (var n = 0; n < normales.Length; n++)
-		{
-			normales[n] = normal;
-		}
-		#endregion
-
-		#region UVs
-		var uvs = new Vector2[vertices.Length];
-		for (var v = 0; v < resZ; v++)
-		{
-			for (var u = 0; u < resX; u++)
-			{
-				uvs[u + v * resX] = new Vector2((float)u / (resX - 1), (float)v / (resZ - 1));
-			}
-		}
-		#endregion
-
-		#region Triangles
-		var nbFaces = (resX - 1) * (resZ - 1);
-		var triangles = new int[nbFaces * 6];
-
-		for (int t = 0, face = 0; face < nbFaces; face++)
-		{
-			// Retrieve lower left corner from face ind
-			var i = face % (resX - 1) + (face / (resZ - 1) * resX);
-
-			triangles[t++] = i + resX;
-			triangles[t++] = i + 1;
-			triangles[t++] = i;
-
-			triangles[t++] = i + resX;
-			triangles[t++] = i + resX + 1;
-			triangles[t++] = i + 1;
-		}
-		#endregion
-
-		mesh.vertices = vertices;
-		mesh.normals = normales;
-		mesh.uv = uvs;
-		mesh.triangles = triangles;
-
-		mesh.RecalculateNormals();
-		mesh.RecalculateTangents();
-		mesh.RecalculateBounds();
-		mesh.Optimize();
 
 		return mesh;
 	}

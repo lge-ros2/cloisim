@@ -42,6 +42,11 @@ Here are the list of items that is implemented(marked) or planned to be implemen
     - [X] RealSense (RGB + IR1 + IR2 + Depth)
   - [X] GPS sensor
   - [ ] Sensor noise models
+    - [X] Gaussian
+      - [X] GPS, IMU
+      - [X] Lidar
+      - [ ] Camera
+    - [ ] Custom
 - [ ] Physics
   - [ ] Support all physics parameters in SDF specification
   - [X] Support `<Joint type="revolute2">`
@@ -119,7 +124,7 @@ For the performance in terms of collision handling, designing collision geometry
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.10f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.3.11f1 (LTS)'*.
 - Linux: Ubuntu 20.04.2 LTS
 - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
 - Memory: 32GB

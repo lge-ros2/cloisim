@@ -72,6 +72,11 @@ namespace SDF
 
 				if (mesh != null)
 				{
+					mesh.RecalculateNormals();
+					mesh.RecalculateTangents();
+					mesh.RecalculateBounds();
+					mesh.Optimize();
+
 					var meshFilter = createdObject.AddComponent<UE.MeshFilter>();
 					meshFilter.sharedMesh = mesh;
 
