@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -23,6 +24,18 @@ namespace SensorDevices
 		private Vector3 previousSensorPosition;
 		private Vector3 gpsCoordinates;
 		private Vector3 gpsVelocity;
+
+		public Dictionary<string, Noise> position_sensing_noises = new Dictionary<string, Noise>()
+		{
+			{"horizontal", null},
+			{"vertical", null}
+		};
+
+		public Dictionary<string, Noise> velocity_sensing_noises = new Dictionary<string, Noise>()
+		{
+			{"horizontal", null},
+			{"vertical", null}
+		};
 
 		protected override void OnAwake()
 		{
@@ -59,12 +72,20 @@ namespace SensorDevices
 		{
 			DeviceHelper.SetCurrentTime(gps.Time);
 
-			// Apply position noise before converting to global frame
-			// TODO: Applying noise
-
 			// Convert to global frames
 			var convertedPosition = DeviceHelper.Convert.Position(worldPosition);
 			gpsCoordinates = sphericalCoordinates.SphericalFromLocal(convertedPosition);
+
+			// Apply noise after converting to global frame
+			if (position_sensing_noises["horizontal"] != null)
+			{
+				position_sensing_noises["horizontal"].Apply<float>(ref gpsCoordinates.x);
+			}
+
+			if (position_sensing_noises["vertical"] != null)
+			{
+				position_sensing_noises["vertical"].Apply<float>(ref gpsCoordinates.y);
+			}
 
 			gps.LatitudeDeg = gpsCoordinates.x;
 			gps.LongitudeDeg = gpsCoordinates.y;
@@ -75,10 +96,18 @@ namespace SensorDevices
 			gpsVelocity = sphericalCoordinates.GlobalFromLocal(convertedVelocity);
 
 			// Apply noise after converting to global frame
-			// TODO: Applying noise
+			if (velocity_sensing_noises["horizontal"] != null)
+			{
+				velocity_sensing_noises["horizontal"].Apply<float>(ref gpsVelocity.x);
+			}
 
-			gps.VelocityEast = gpsVelocity.x;
-			gps.VelocityNorth = gpsVelocity.y;
+			if (velocity_sensing_noises["vertical"] != null)
+			{
+				velocity_sensing_noises["vertical"].Apply<float>(ref gpsVelocity.y);
+			}
+
+			gps.VelocityNorth = gpsVelocity.x;
+			gps.VelocityEast = gpsVelocity.y;
 			gps.VelocityUp = gpsVelocity.z;
 
 			PushDeviceMessage<messages.Gps>(gps);

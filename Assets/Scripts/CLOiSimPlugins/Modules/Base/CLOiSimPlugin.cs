@@ -9,7 +9,7 @@ using UnityEngine;
 
 public interface ICLOiSimPlugin
 {
-	public enum Type {WORLD, GROUNDTRUTH, ELEVATOR, ACTOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
+	enum Type {WORLD, GROUNDTRUTH, ELEVATOR, ACTOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
 	void SetPluginParameters(in SDF.Plugin node);
 	SDF.Plugin GetPluginParameters();
 	void Reset();

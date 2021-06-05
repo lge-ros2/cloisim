@@ -8,6 +8,8 @@ public class ObjectSpawning : MonoBehaviour
 {
 	public enum PropsType {BOX = 0, CYLINDER = 1, SPHERE = 2};
 
+	private static PhysicMaterial PropsPhysicalMaterial = null;
+
 	private GameObject propsRoot = null;
 	private Camera mainCam = null;
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
@@ -33,9 +35,16 @@ public class ObjectSpawning : MonoBehaviour
 
 	void Awake()
 	{
+		PropsPhysicalMaterial = Resources.Load<PhysicMaterial>("Materials/Props");
 		propsRoot = GameObject.Find("Props");
 		mainCam = Camera.main;
 		transformGizmo = Main.Gizmos;
+	}
+
+
+	void OnDestroy()
+	{
+		Resources.UnloadAsset(PropsPhysicalMaterial);
 	}
 
 	// Update is called once per frame
@@ -162,6 +171,7 @@ public class ObjectSpawning : MonoBehaviour
 
 		var meshCollider = newObject.AddComponent<MeshCollider>();
 		meshCollider.sharedMesh = targetMesh;
+		meshCollider.sharedMaterial = PropsPhysicalMaterial;
 		meshCollider.convex = true;
 		meshCollider.isTrigger = false;
 

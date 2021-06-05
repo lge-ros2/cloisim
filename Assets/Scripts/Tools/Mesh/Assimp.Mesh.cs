@@ -12,6 +12,8 @@ using UnityEngine.Rendering;
 
 public partial class MeshLoader
 {
+	private static Dictionary<string, GameObject> GameObjectCache = new Dictionary<string, GameObject>();
+
 	private static Texture2D GetTexture(in string textureFullPath)
 	{
 		if (!string.IsNullOrEmpty(textureFullPath))
@@ -294,44 +296,57 @@ public partial class MeshLoader
 
 	public static GameObject CreateMeshObject(in string meshPath)
 	{
-		var scene = GetScene(meshPath, out var meshRotation);
-		if (scene == null)
+		GameObject meshObject = null;
+
+		if (!GameObjectCache.ContainsKey(meshPath))
 		{
-			return null;
+			var scene = GetScene(meshPath, out var meshRotation);
+			if (scene == null)
+			{
+				return null;
+			}
+
+			// Materials
+			List<Material> materials = null;
+			if (scene.HasMaterials)
+			{
+				materials = LoadMaterials(meshPath, scene.Materials);
+			}
+
+			// Meshes
+			MeshMaterialList meshMatList = null;
+			if (scene.HasMeshes)
+			{
+				meshMatList = LoadMeshes(scene.Meshes);
+				meshMatList.SetMaterials(materials);
+			}
+
+			// Create GameObjects from nodes
+			var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList);
+			createdMeshObject.name = "geometry(mesh)";
+
+			// rotate final mesh object
+			createdMeshObject.transform.localRotation = meshRotation * createdMeshObject.transform.localRotation;
+			// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + " =>" + createdMeshObject.transform.localRotation.eulerAngles);
+
+			// change axis of position (y <-> z)
+			var existingPosition = createdMeshObject.transform.localPosition;
+			createdMeshObject.transform.localPosition = new Vector3(-existingPosition.y, -existingPosition.z, existingPosition.x);
+			// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + createdMeshObject.transform.localPosition.ToString("F6") + ", " + existingPosition.ToString("F6") );
+
+			// change axis of scale (y <-> z)
+			var existingScale = createdMeshObject.transform.localScale;
+			createdMeshObject.transform.localScale = new Vector3(existingScale.x, existingScale.z, existingScale.y);
+
+			GameObjectCache.Add(meshPath, createdMeshObject);
+			GameObject.DontDestroyOnLoad(createdMeshObject);
+			createdMeshObject.SetActive(false);
 		}
 
-		// Materials
-		List<Material> materials = null;
-		if (scene.HasMaterials)
-		{
-			materials = LoadMaterials(meshPath, scene.Materials);
-		}
+		meshObject = GameObject.Instantiate(GameObjectCache[meshPath]);
+		meshObject.SetActive(true);
+		meshObject.name = "geometry(mesh)";
 
-		// Meshes
-		MeshMaterialList meshMatList = null;
-		if (scene.HasMeshes)
-		{
-			meshMatList = LoadMeshes(scene.Meshes);
-			meshMatList.SetMaterials(materials);
-		}
-
-		// Create GameObjects from nodes
-		var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList);
-		createdMeshObject.name = "geometry(mesh)";
-
-		// rotate final mesh object
-		createdMeshObject.transform.localRotation = meshRotation * createdMeshObject.transform.localRotation;
-		// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + " =>" + createdMeshObject.transform.localRotation.eulerAngles);
-
-		// change axis of position (y <-> z)
-		var existingPosition = createdMeshObject.transform.localPosition;
-		createdMeshObject.transform.localPosition = new Vector3(-existingPosition.y, -existingPosition.z, existingPosition.x);
-		// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + createdMeshObject.transform.localPosition.ToString("F6") + ", " + existingPosition.ToString("F6") );
-
-		// change axis of scale (y <-> z)
-		var existingScale = createdMeshObject.transform.localScale;
-		createdMeshObject.transform.localScale = new Vector3(existingScale.x, existingScale.z, existingScale.y);
-
-		return createdMeshObject;
+		return meshObject;
 	}
 }

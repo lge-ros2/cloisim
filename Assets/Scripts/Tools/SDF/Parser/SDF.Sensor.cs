@@ -64,12 +64,16 @@ namespace SDF
 			switch (Type)
 			{
 				case "ray":
-				case "lidar":
 				case "gpu_ray":
+				case "lidar":
 				case "gpu_lidar":
-					if (IsValidNode("ray"))
+					if (IsValidNode("lidar"))
 					{
-						sensor = ParseRay();
+						sensor = ParseLidar();
+					}
+					else if (IsValidNode("ray"))
+					{
+						sensor = ParseLidar("ray");
 					}
 					break;
 
@@ -92,8 +96,8 @@ namespace SDF
 					break;
 
 				case "camera":
+				case "depth_camera":
 				case "depth":
-				case "wideanglecamera":
 					if (IsValidNode("camera"))
 					{
 						sensor = ParseCamera();
@@ -128,8 +132,22 @@ namespace SDF
 					}
 					break;
 
-				default:
+				case "air_pressure":
+				case "altimeter":
+				case "force_torque":
+				case "logical_camera":
+				case "magnetometer":
+				case "rfid":
+				case "rfidtag":
+				case "rgbd_camera":
+				case "thermal_camera":
+				case "wireless_receiver":
+				case "wireless_transmitter":
 					Console.WriteLine("Not supported sensor type!!!!! => " + Type);
+					break;
+
+				default:
+					Console.WriteLine("Invalid sensor type!!!!! => " + Type);
 					break;
 			}
 

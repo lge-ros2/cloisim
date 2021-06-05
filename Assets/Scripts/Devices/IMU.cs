@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -12,13 +13,6 @@ namespace SensorDevices
 	public class IMU : Device
 	{
 		private messages.Imu imu = null;
-
-		// <noise_angular_velocity_x>
-		// <noise_angular_velocity_y>
-		// <noise_angular_velocity_z>
-		// <noise_linear_acceleration_x>
-		// <noise_linear_acceleration_y>
-		// <noise_linear_acceleration_z>
 
 		private Vector3 imuInitialRotation = Vector3.zero;
 		private Vector3 lastImuInitialRotation = Vector3.zero;
@@ -29,6 +23,20 @@ namespace SensorDevices
 		private Vector3 previousImuPosition = Vector3.zero;
 		private Vector3 previousImuRotation = Vector3.zero;
 		private Vector3 previousLinearVelocity = Vector3.zero;
+
+		public Dictionary<string, Noise> angular_velocity_noises = new Dictionary<string, Noise>()
+		{
+			{"x", null},
+			{"y", null},
+			{"z", null}
+		};
+
+		public Dictionary<string, Noise> linear_acceleration_noises = new Dictionary<string, Noise>()
+		{
+			{"x", null},
+			{"y", null},
+			{"z", null}
+		};
 
 		protected override void OnAwake()
 		{
@@ -69,10 +77,42 @@ namespace SensorDevices
 			imuAngularVelocity.y = Mathf.DeltaAngle(imuRotation.y, previousImuRotation.y) / Time.fixedDeltaTime;
 			imuAngularVelocity.z = Mathf.DeltaAngle(imuRotation.z, previousImuRotation.z) / Time.fixedDeltaTime;
 
+			// apply noise
+			if (angular_velocity_noises["x"] != null)
+			{
+				angular_velocity_noises["x"].Apply<float>(ref imuAngularVelocity.x, Time.fixedDeltaTime);
+			}
+
+			if (angular_velocity_noises["y"] != null)
+			{
+				angular_velocity_noises["y"].Apply<float>(ref imuAngularVelocity.y, Time.fixedDeltaTime);
+			}
+
+			if (angular_velocity_noises["z"] != null)
+			{
+				angular_velocity_noises["z"].Apply<float>(ref imuAngularVelocity.z, Time.fixedDeltaTime);
+			}
+
 			var currentPosition = transform.position;
 			var currentLinearVelocity = (currentPosition - previousImuPosition) / Time.fixedDeltaTime;
 			imuLinearAcceleration = (currentLinearVelocity - previousLinearVelocity) / Time.fixedDeltaTime;
 			imuLinearAcceleration.y += (-Physics.gravity.y);
+
+			// apply noise
+			if (linear_acceleration_noises["x"] != null)
+			{
+				linear_acceleration_noises["x"].Apply<float>(ref imuLinearAcceleration.x, Time.fixedDeltaTime);
+			}
+
+			if (linear_acceleration_noises["y"] != null)
+			{
+				linear_acceleration_noises["y"].Apply<float>(ref imuLinearAcceleration.y, Time.fixedDeltaTime);
+			}
+
+			if (linear_acceleration_noises["z"] != null)
+			{
+				linear_acceleration_noises["z"].Apply<float>(ref imuLinearAcceleration.z, Time.fixedDeltaTime);
+			}
 
 			previousImuRotation = imuRotation;
 			previousImuPosition = currentPosition;
