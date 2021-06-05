@@ -84,16 +84,3 @@ public class NoiseModel : INoiseModel
 			this.clampMax : ((clampMin != double.NegativeInfinity && value < clampMin) ? clampMin : value);
 	}
 }
-
-public class CustomNoiseModel : NoiseModel
-{
-	public CustomNoiseModel(in SDF.Noise parameter)
-		: base(parameter)
-	{
-	}
-
-	public override void Apply<T>(ref T data, in float deltaTime = 0)
-	{
-		// TODO: TBD
-	}
-}
