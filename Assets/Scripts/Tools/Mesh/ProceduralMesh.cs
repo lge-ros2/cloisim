@@ -127,15 +127,10 @@ public class ProceduralMesh
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
-			mesh.RecalculateNormals();
-			mesh.RecalculateTangents();
-			mesh.RecalculateBounds();
-			mesh.Optimize();
-
 			MeshObjectCache.Add(Type.BOX, mesh);
 		}
 
-		mesh = GameObject.Instantiate(MeshObjectCache[Type.BOX]);
+		mesh = Object.Instantiate(MeshObjectCache[Type.BOX]);
 		mesh.name = "Box";
 
 		var meshVertices = mesh.vertices;
@@ -161,7 +156,7 @@ public class ProceduralMesh
 			MeshObjectCache.Add(Type.CYLINDER, mesh);
 		}
 
-		mesh = GameObject.Instantiate(MeshObjectCache[Type.CYLINDER]);
+		mesh = Object.Instantiate(MeshObjectCache[Type.CYLINDER]);
 		mesh.name = "Cylinder";
 
 		var meshVertices = mesh.vertices;
@@ -357,11 +352,6 @@ public class ProceduralMesh
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
-		mesh.RecalculateNormals();
-		mesh.RecalculateTangents();
-		mesh.RecalculateBounds();
-		mesh.Optimize();
-
 		return mesh;
 	}
 
@@ -468,15 +458,10 @@ public class ProceduralMesh
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
-			mesh.RecalculateNormals();
-			mesh.RecalculateTangents();
-			mesh.RecalculateBounds();
-			mesh.Optimize();
-
 			MeshObjectCache.Add(Type.SPHERE, mesh);
 		}
 
-		mesh = GameObject.Instantiate(MeshObjectCache[Type.SPHERE]);
+		mesh = Object.Instantiate(MeshObjectCache[Type.SPHERE]);
 		mesh.name = "Sphere";
 
 		var meshVertices = mesh.vertices;
@@ -568,15 +553,10 @@ public class ProceduralMesh
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
-			mesh.RecalculateNormals();
-			mesh.RecalculateTangents();
-			mesh.RecalculateBounds();
-			mesh.Optimize();
-
 			MeshObjectCache.Add(Type.PLANE, mesh);
 		}
 
-		mesh = GameObject.Instantiate(MeshObjectCache[Type.PLANE]);
+		mesh = Object.Instantiate(MeshObjectCache[Type.PLANE]);
 		mesh.name = "Plane";
 
 		var meshVertices = mesh.vertices;
