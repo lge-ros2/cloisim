@@ -71,17 +71,15 @@ namespace SensorDevices
 							noiseModel = new GaussianNoiseModel(this.parameter);
 							break;
 					}
-
 					break;
 
 				case Type.CUSTOM:
 					// Return empty noise if 'none' or 'custom' is specified.
-					// if 'custom', the type will be set once the user calls the SetCustomNoiseCallback function.
 					noiseModel = new CustomNoiseModel(this.parameter);
 					break;
 
 				case Type.NONE:
-					noiseModel =  null;
+					noiseModel = null;
 					break;
 
 				default:
@@ -108,37 +106,43 @@ namespace SensorDevices
 
 		public void Apply<T>(ref T data, in float deltaTime = 0)
 		{
-			switch (noiseType)
+			if (noiseModel != null)
 			{
-				case Type.GAUSSIAN:
-					noiseModel.Apply<T>(ref data, deltaTime);
-					break;
+				switch (noiseType)
+				{
+					case Type.GAUSSIAN:
+						noiseModel.Apply<T>(ref data, deltaTime);
+						break;
 
-				case Type.CUSTOM:
-					noiseModel.Apply<T>(ref data, deltaTime);
-					break;
+					case Type.CUSTOM:
+						noiseModel.Apply<T>(ref data, deltaTime);
+						break;
 
-				case Type.NONE:
-				default:
-					break;
+					case Type.NONE:
+					default:
+						break;
+				}
 			}
 		}
 
 		public void Apply<T>(ref T[] dataArray, in float deltaTime = 0)
 		{
-			switch (noiseType)
+			if (noiseModel != null)
 			{
-				case Type.GAUSSIAN:
-					noiseModel.Apply<T>(ref dataArray, deltaTime);
-					break;
+			switch (noiseType)
+				{
+					case Type.GAUSSIAN:
+						noiseModel.Apply<T>(ref dataArray, deltaTime);
+						break;
 
-				case Type.CUSTOM:
-					noiseModel.Apply<T>(ref dataArray, deltaTime);
-					break;
+					case Type.CUSTOM:
+						noiseModel.Apply<T>(ref dataArray, deltaTime);
+						break;
 
-				case Type.NONE:
-				default:
-					break;
+					case Type.NONE:
+					default:
+						break;
+				}
 			}
 		}
 	}

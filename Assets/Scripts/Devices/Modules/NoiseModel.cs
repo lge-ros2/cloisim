@@ -57,7 +57,7 @@ public class NoiseModel : INoiseModel
 	{
 		for (var i = 0; i < data.LongLength; i++)
 		{
-			Apply<T>(ref data, deltaTime);
+			Apply<T>(ref data[i], deltaTime);
 		}
 	}
 
