@@ -11,6 +11,7 @@ namespace SensorDevices
 {
 	public class DepthCamera : Camera
 	{
+		private static ComputeShader ComputeShaderDepthBuffer = null;
 		private ComputeShader computeShader = null;
 		private int kernelIndex = -1;
 
@@ -40,12 +41,20 @@ namespace SensorDevices
 			Destroy(computeShader);
 			computeShader = null;
 
+			Resources.UnloadAsset(ComputeShaderDepthBuffer);
+			Resources.UnloadUnusedAssets();
+
 			base.OnDestroy();
 		}
 
 		protected override void SetupTexture()
 		{
-			computeShader = Instantiate(Resources.Load<ComputeShader>("Shader/DepthBufferScaling"));
+			if (ComputeShaderDepthBuffer == null)
+			{
+				ComputeShaderDepthBuffer= Resources.Load<ComputeShader>("Shader/DepthBufferScaling");
+			}
+
+			computeShader = Instantiate(ComputeShaderDepthBuffer);
 			kernelIndex = computeShader.FindKernel("CSDepthBufferScaling");
 
 			var depthShader = Shader.Find("Sensor/Depth");
