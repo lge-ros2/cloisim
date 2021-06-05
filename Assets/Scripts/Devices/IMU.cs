@@ -80,17 +80,17 @@ namespace SensorDevices
 			// apply noise
 			if (angular_velocity_noises["x"] != null)
 			{
-				angular_velocity_noises["x"].Apply<float>(ref imuAngularVelocity.x);
+				angular_velocity_noises["x"].Apply<float>(ref imuAngularVelocity.x, Time.fixedDeltaTime);
 			}
 
 			if (angular_velocity_noises["y"] != null)
 			{
-				angular_velocity_noises["y"].Apply<float>(ref imuAngularVelocity.y);
+				angular_velocity_noises["y"].Apply<float>(ref imuAngularVelocity.y, Time.fixedDeltaTime);
 			}
 
 			if (angular_velocity_noises["z"] != null)
 			{
-				angular_velocity_noises["z"].Apply<float>(ref imuAngularVelocity.z);
+				angular_velocity_noises["z"].Apply<float>(ref imuAngularVelocity.z, Time.fixedDeltaTime);
 			}
 
 			var currentPosition = transform.position;
@@ -101,17 +101,17 @@ namespace SensorDevices
 			// apply noise
 			if (linear_acceleration_noises["x"] != null)
 			{
-				linear_acceleration_noises["x"].Apply<float>(ref imuLinearAcceleration.x);
+				linear_acceleration_noises["x"].Apply<float>(ref imuLinearAcceleration.x, Time.fixedDeltaTime);
 			}
 
 			if (linear_acceleration_noises["y"] != null)
 			{
-				linear_acceleration_noises["y"].Apply<float>(ref imuLinearAcceleration.y);
+				linear_acceleration_noises["y"].Apply<float>(ref imuLinearAcceleration.y, Time.fixedDeltaTime);
 			}
 
 			if (linear_acceleration_noises["z"] != null)
 			{
-				linear_acceleration_noises["z"].Apply<float>(ref imuLinearAcceleration.z);
+				linear_acceleration_noises["z"].Apply<float>(ref imuLinearAcceleration.z, Time.fixedDeltaTime);
 			}
 
 			previousImuRotation = imuRotation;
