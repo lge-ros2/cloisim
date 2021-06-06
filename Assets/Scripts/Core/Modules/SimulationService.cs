@@ -10,26 +10,25 @@ using UnityEngine;
 using WebSocketSharp.Server;
 
 [DefaultExecutionOrder(100)]
-public class SimulationService : MonoBehaviour
+public class SimulationService
 {
 	public const string SUCCESS = "ok";
 	public const string FAIL = "fail";
 	public const string Delimiter = "!%!";
+	public const string SERVICE_PORT_ENVIRONMENT_NAME = "CLOISIM_SERVICE_PORT";
 
-	public int defaultWebSocketServicePort = 8080;
+	public int defaultWebSocketServicePort;
 
 	private WebSocketServer wsServer = null;
 
-	void Awake()
+	public SimulationService(in int port = 8080)
 	{
-		var envServicePort = Environment.GetEnvironmentVariable("CLOISIM_SERVICE_PORT");
-		var servicePort = (envServicePort == null || envServicePort.Equals(""))? defaultWebSocketServicePort : int.Parse(envServicePort);
-		wsServer = new WebSocketServer(servicePort);
-	}
+		this.defaultWebSocketServicePort = port;
 
-	// Start is called before the first frame update
-	void Start()
-	{
+		var envServicePort = Environment.GetEnvironmentVariable(SERVICE_PORT_ENVIRONMENT_NAME);
+		var servicePort = (envServicePort == null || envServicePort.Equals("")) ? defaultWebSocketServicePort : int.Parse(envServicePort);
+		wsServer = new WebSocketServer(servicePort);
+
 		InitializeServices();
 
 		wsServer.KeepClean = true;
@@ -59,14 +58,9 @@ public class SimulationService : MonoBehaviour
 			return;
 		}
 
-		var mainComponent = gameObject.GetComponent<Main>();
-		var bridgeManagerComponent = gameObject.GetComponent<BridgeManager>();
-
 		wsServer.AddWebSocketService<SimulationControlService>("/control", () => new SimulationControlService()
 		{
-			IgnoreExtensions = true,
-			main = mainComponent,
-			bridgeManager = bridgeManagerComponent
+			IgnoreExtensions = true
 		});
 
 		var UIRoot = Main.UIObject;
