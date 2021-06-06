@@ -2,6 +2,25 @@
  * Copyright (c) 2020 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
+ *
+ *
+ * Description for deviceMapTable
+ * ModelName, CLOiSimPluginType, Devicename, topic : portnumber
+ *
+ *	{
+ *		"ModelName":
+ *		{
+ *			"CLOiSimPluginType":
+ *				{
+ *					"PartsName":
+ *					{
+ *						"topic_name": 12345
+ *					}
+ *				}
+ *			},
+ *			...
+ *		}
+ *	}
  */
 
 using System.Net.NetworkInformation;
@@ -9,47 +28,38 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Net;
-using UnityEngine;
+using System;
 
-[DefaultExecutionOrder(35)]
-public class BridgeManager
+public class BridgeManager : IDisposable
 {
 	private const ushort MinPortRange = 49152;
 	private const ushort MaxPortRange = IPEndPoint.MaxPort;
-	private SimulationDisplay simulationDisplay = null;
-	private StringBuilder sbLogs = new StringBuilder();
+	private static SimulationDisplay simulationDisplay = null;
+	private static StringBuilder sbLogs = new StringBuilder();
 
-	private Dictionary<string, ushort> haskKeyPortMapTable = new Dictionary<string, ushort>();
+	private static Dictionary<string, ushort> haskKeyPortMapTable = new Dictionary<string, ushort>();
+	private static Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> deviceMapTable = new Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>>();
 
-	/*
-	 * ModelName, CLOiSimPluginType, Devicename, topic : portnumber
-	 *
-	 * {
-	 * 	"ModelName":
-	 *	{
-	 * 		"CLOiSimPluginType":
-	 * 		{
-	 * 			"PartsName":
-	 * 			{
-	 * 				"topic_name": 12345
-	 * 			}
-	 * 		}
-	 * 	},
-	 * 	...
-	 * }
-	 */
-	private Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> deviceMapTable = new Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>>();
+	private static IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
 
-	private IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
-
-	void Awake()
+	public BridgeManager()
 	{
-		var UIRoot = Main.UIObject;
-		simulationDisplay = UIRoot.GetComponentInChildren<SimulationDisplay>();
+		simulationDisplay = Main.Display;
 		ClearLog();
 	}
 
-	public void DeallocateDevice(in string hashKey)
+	~BridgeManager()
+	{
+		Dispose();
+	}
+
+	public void Dispose()
+	{
+		ClearLog();
+		GC.SuppressFinalize(this);
+	}
+
+	public static void DeallocateDevice(in string hashKey)
 	{
 		var isRemoved = false;
 
@@ -60,15 +70,16 @@ public class BridgeManager
 
 		if (!isRemoved)
 		{
-			Debug.LogWarningFormat("Failed to remove HashKey({0})!!!!", hashKey);
+			(Console.Out as DebugLogWriter).SetWarningOnce();
+			Console.WriteLine("Failed to remove HashKey({0})!!!!", hashKey);
 		}
 		else
 		{
-			// Debug.LogFormat("HashKey({0}) Removed.", hashKey);
+			// Console.WriteLine("HashKey({0}) Removed.", hashKey);
 		}
 	}
 
-	public ushort SearchSensorPort(in string hashKey)
+	public static ushort SearchSensorPort(in string hashKey)
 	{
 		lock (haskKeyPortMapTable)
 		{
@@ -111,7 +122,7 @@ public class BridgeManager
 		}
 	}
 
-	public bool IsAvailablePort(in ushort port)
+	public static bool IsAvailablePort(in ushort port)
 	{
 		if (properties != null)
 		{
@@ -135,13 +146,14 @@ public class BridgeManager
 		return modelName + partsName + subPartName;
 	}
 
-	public bool AllocateDevice(in string deviceType, in string modelName, in string partsName, in string subPartName, out string hashKey, out ushort port)
+	public static bool AllocateDevice(in string deviceType, in string modelName, in string partsName, in string subPartName, out string hashKey, out ushort port)
 	{
-		hashKey = BridgeManager.MakeHashKey(modelName, partsName, subPartName);
+		hashKey = MakeHashKey(modelName, partsName, subPartName);
 
 		if (string.IsNullOrEmpty(hashKey))
 		{
-			Debug.LogError("Impossible empty hashKey");
+			(Console.Out as DebugLogWriter).SetErrorOnce();
+			Console.WriteLine("Impossible empty hashKey");
 			port = 0;
 			return false;
 		}
@@ -193,7 +205,7 @@ public class BridgeManager
 		return false;
 	}
 
-	public ushort AllocateDevicePort(in string hashKey)
+	public static ushort AllocateDevicePort(in string hashKey)
 	{
 		// check if already occupied
 		var newPort = SearchSensorPort(hashKey);
@@ -201,7 +213,8 @@ public class BridgeManager
 		if (newPort > 0)
 		{
 			var errorMessage = string.Format("HashKey({0}) is already occupied.", hashKey);
-			Debug.Log(errorMessage);
+			(Console.Out as DebugLogWriter).SetErrorOnce();
+			Console.WriteLine(errorMessage);
 			simulationDisplay?.SetErrorMessage(errorMessage);
 			return 0;
 		}
@@ -245,7 +258,7 @@ public class BridgeManager
 
 	public void PrintLog()
 	{
-		Debug.Log(sbLogs);
+		Console.WriteLine(sbLogs);
 	}
 
 	public void ClearLog()

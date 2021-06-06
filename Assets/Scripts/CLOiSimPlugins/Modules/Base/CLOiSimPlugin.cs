@@ -20,8 +20,6 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
 	public ICLOiSimPlugin.Type type { get; protected set; }
 
-	private static BridgeManager bridgeManager = null;
-
 	public string pluginName { get; set; } = string.Empty;
 	public string modelName { get; protected set; } = string.Empty;
 	public string partsName { get; protected set; } = string.Empty;
@@ -55,12 +53,6 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	void Awake()
 	{
-		bridgeManager = Main.BridgeManager;
-		if (bridgeManager == null)
-		{
-			Debug.LogError("Failed to get 'bridgeManager'!!!!");
-		}
-
 		SetCustomHandleRequestMessage();
 
 		OnAwake();
@@ -103,7 +95,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			DeregisterDevice(hashKey);
 		}
 
-		thread.Stop();
+		thread.Dispose();
 		// Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
 	}
 

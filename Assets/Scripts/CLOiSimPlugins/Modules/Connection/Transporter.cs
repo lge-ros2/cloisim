@@ -4,7 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-public class Transporter
+using System;
+
+public class Transporter : IDisposable
 {
 	private Publisher publisher = null;
 	private Subscriber subscriber = null;
@@ -47,7 +49,12 @@ public class Transporter
 
 	~Transporter()
 	{
-		// UnityEngine.Debug.Log("Destruct DestroyTransporter");
+		Dispose();
+	}
+
+	public virtual void Dispose()
+	{
+		// Console.WriteLine("Destruct DestroyTransporter");
 		DestroyTransporter();
 		System.GC.SuppressFinalize(this);
 	}

@@ -15,7 +15,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	private bool PrepareDevice(in string subPartName, out ushort port, out ulong hash)
 	{
-		if (bridgeManager.AllocateDevice(type.ToString(), modelName, partsName, subPartName, out var hashKey, out port))
+		if (BridgeManager.AllocateDevice(type.ToString(), modelName, partsName, subPartName, out var hashKey, out port))
 		{
 			allocatedDeviceHashKeys.Add(hashKey);
 
@@ -29,9 +29,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return false;
 	}
 
-	protected bool DeregisterDevice(in string hashKey)
+	protected static bool DeregisterDevice(in string hashKey)
 	{
-		bridgeManager.DeallocateDevice(hashKey);
+		BridgeManager.DeallocateDevice(hashKey);
 		return true;
 	}
 
