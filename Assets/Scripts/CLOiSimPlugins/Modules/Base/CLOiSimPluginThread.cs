@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using System;
 using UnityEngine;
 using messages = cloisim.msgs;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -26,9 +27,14 @@ public class CLOiSimPluginThread : Transporter
 
 	~CLOiSimPluginThread()
 	{
-		Debug.Log("Destroy Thread");
+		Dispose();
+	}
+
+	public override void Dispose()
+	{
+		// Debug.Log("Destroy Thread");
 		Stop();
-		System.GC.SuppressFinalize(this);
+		base.Dispose();
 	}
 
 	public bool Add(in ThreadStart function)
