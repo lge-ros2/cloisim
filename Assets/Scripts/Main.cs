@@ -290,12 +290,6 @@ public class Main: MonoBehaviour
 		}
 	}
 
-	void OnDestroy()
-	{
-		// Debug.Log("Destroy Main");
-		CleanAllModels();
-	}
-
 	public static bool TriggerResetService()
 	{
 		if (isResetting)
