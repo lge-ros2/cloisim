@@ -30,8 +30,6 @@ public abstract class Device : MonoBehaviour
 
 	private float transportingTimeSeconds = 0;
 
-	public float waitingPeriodRatio = 1.0f;
-
 	private Pose deviceModelPose = Pose.identity;
 	private Pose deviceLinkPose = Pose.identity;
 	private Pose devicePose = Pose.identity;
@@ -268,7 +266,7 @@ public abstract class Device : MonoBehaviour
 
 	protected float WaitPeriod(in float messageGenerationTime = 0)
 	{
-		var waitTime = (UpdatePeriod * waitingPeriodRatio) - messageGenerationTime - transportingTimeSeconds;
+		var waitTime = UpdatePeriod - messageGenerationTime - transportingTimeSeconds;
 		// Debug.LogFormat(deviceName + ": waitTime({0}) = period({1}) - elapsedTime({2}) - TransportingTime({3})",
 		// 	waitTime.ToString("F5"), UpdatePeriod.ToString("F5"), messageGenerationTime.ToString("F5"), TransportingTime.ToString("F5"));
 		return (waitTime < 0) ? 0 : waitTime;
