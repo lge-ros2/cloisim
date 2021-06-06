@@ -52,6 +52,17 @@ public class SimulationService
 		}
 	}
 
+	~SimulationService()
+	{
+		if (wsServer != null)
+		{
+			Debug.Log("Stop WebSocket Server");
+			wsServer.RemoveWebSocketService("/control");
+			wsServer.RemoveWebSocketService("/markers");
+			wsServer.Stop();
+		}
+	}
+
 	private void InitializeServices()
 	{
 		if (wsServer == null)
@@ -70,16 +81,5 @@ public class SimulationService
 		{
 			IgnoreExtensions = true
 		});
-	}
-
-	void OnDestroy()
-	{
-		if (wsServer != null)
-		{
-			Debug.Log("Stop WebSocket Server");
-			wsServer.RemoveWebSocketService("/control");
-			wsServer.RemoveWebSocketService("/markers");
-			wsServer.Stop();
-		}
 	}
 }
