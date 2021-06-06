@@ -34,7 +34,7 @@ public class LaserPlugin : CLOiSimPlugin
 		AddThread(SenderThread, targetDevice);
 	}
 
-	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
+	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
 	{
 		switch (requestType)
 		{

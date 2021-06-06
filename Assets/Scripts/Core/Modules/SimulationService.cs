@@ -28,11 +28,12 @@ public class SimulationService
 		var envServicePort = Environment.GetEnvironmentVariable(SERVICE_PORT_ENVIRONMENT_NAME);
 		var servicePort = (envServicePort == null || envServicePort.Equals("")) ? defaultWebSocketServicePort : int.Parse(envServicePort);
 		wsServer = new WebSocketServer(servicePort);
+		wsServer.ReuseAddress = true;
+		wsServer.KeepClean = true;
+		wsServer.WaitTime = TimeSpan.FromMilliseconds(5000);
 
 		InitializeServices();
 
-		wsServer.KeepClean = true;
-		wsServer.WaitTime = TimeSpan.FromMilliseconds(5000);
 		wsServer.Start();
 
 		if (wsServer.IsListening)

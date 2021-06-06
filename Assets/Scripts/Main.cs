@@ -292,11 +292,8 @@ public class Main: MonoBehaviour
 
 	void OnDestroy()
 	{
-		Debug.Log("Destroy Main");
-		foreach (var worldPlugin in GetComponents<CLOiSimPlugin>())
-		{
-			worldPlugin.StopThread();
-		}
+		// Debug.Log("Destroy Main");
+		CleanAllModels();
 	}
 
 	public static bool TriggerResetService()

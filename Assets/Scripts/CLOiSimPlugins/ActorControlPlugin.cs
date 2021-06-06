@@ -7,6 +7,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
+using Any = cloisim.msgs.Any;
 
 [DefaultExecutionOrder(605)]
 public class ActorControlPlugin : CLOiSimPlugin
@@ -56,7 +57,7 @@ public class ActorControlPlugin : CLOiSimPlugin
 		}
 	}
 
-	protected override void HandleRequestMessage(in string requestType, in messages.Any requestValue, ref DeviceMessage response)
+	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
 	{
 		var moveResponse = new messages.Param();
 		moveResponse.Name = "result";
@@ -73,7 +74,7 @@ public class ActorControlPlugin : CLOiSimPlugin
 			}
 		}
 
-		moveResponse.Value = new messages.Any { Type = messages.Any.ValueType.Boolean, BoolValue = result };
+		moveResponse.Value = new Any { Type = Any.ValueType.Boolean, BoolValue = result };
 		response.SetMessage<messages.Param>(moveResponse);
 	}
 }

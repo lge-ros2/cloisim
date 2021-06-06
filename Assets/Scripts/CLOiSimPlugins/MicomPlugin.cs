@@ -34,7 +34,7 @@ public class MicomPlugin : CLOiSimPlugin
 		targetDevice.Reset();
 	}
 
-	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
+	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
 	{
 		switch (requestType)
 		{
@@ -44,7 +44,8 @@ public class MicomPlugin : CLOiSimPlugin
 
 			case "request_transform":
 				var micomSensor = (targetDevice as Micom).GetSensor();
-				var devicePose = micomSensor.GetPartsPose(requestValue);
+				var transformPartsName = requestValue.StringValue;
+				var devicePose = micomSensor.GetPartsPose(transformPartsName);
 				SetTransformInfoResponse(ref response, devicePose);
 				break;
 
