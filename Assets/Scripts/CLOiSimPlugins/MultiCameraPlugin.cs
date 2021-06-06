@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+using Any = cloisim.msgs.Any;
+
 public class MultiCameraPlugin : CLOiSimPlugin
 {
 	protected override void OnAwake()
@@ -22,9 +24,9 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		AddThread(ServiceThread);
 	}
 
-	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
+	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
 	{
-		var cameraName = requestValue;
+		var cameraName = requestValue.StringValue;
 		var multicam = targetDevice as SensorDevices.MultiCamera;
 		var camera = multicam.GetCamera(cameraName);
 

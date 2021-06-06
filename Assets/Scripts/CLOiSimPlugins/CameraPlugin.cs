@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+using Any = cloisim.msgs.Any;
+
 public class CameraPlugin : CLOiSimPlugin
 {
 	public string subPartName = string.Empty;
@@ -39,7 +41,7 @@ public class CameraPlugin : CLOiSimPlugin
 		AddThread(SenderThread, targetDevice);
 	}
 
-	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
+	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
 	{
 		switch (requestType)
 		{

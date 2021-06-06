@@ -5,9 +5,9 @@
  */
 
 using UnityEngine;
+using System;
 
-[DefaultExecutionOrder(550)]
-public class SphericalCoordinates : MonoBehaviour
+public class SphericalCoordinates
 {
 	// Parameters for EARTH_WGS84 model
 	public class WGS84
@@ -15,13 +15,13 @@ public class SphericalCoordinates : MonoBehaviour
 		// wikipedia: World_Geodetic_System#A_new_World_Geodetic_System:_WGS_84
 
 		// a: Equatorial radius. Semi-major axis of the WGS84 spheroid (meters).
-		public const float EarthAxisEquatorial = 6378137.0f;
+		public const double EarthAxisEquatorial = 6378137d;
 
 		// b: Polar radius. Semi-minor axis of the wgs84 spheroid (meters).
-		public const float EarthAxisPolar = 6356752.314245f;
+		public const double EarthAxisPolar = 6356752.314245d;
 
 		// if: WGS84 inverse flattening parameter (no units)
-		public const float EarthFlattening = 1.0f / 298.257223563f;
+		public const double EarthFlattening = 1d / 298.257223563d;
 	}
 
 	public enum SurfaceType { EARTH_WGS84 };
@@ -35,40 +35,40 @@ public class SphericalCoordinates : MonoBehaviour
 	};
 
 	// Radius of the Earth (meters).
-	// private const float EarthRadius = 6371000.0f;
+	// private const double EarthRadius = 6371000.0d;
 
 	// Semi-major axis ellipse parameter
-	private float ellA;
+	private double ellA;
 
 	// Semi-minor axis ellipse parameter
-	private float ellB;
+	private double ellB;
 
 	// Flattening ellipse parameter
-	private float ellF;
+	private double ellF;
 
 	// First eccentricity ellipse parameter
-	private float ellE;
+	private double ellE;
 
 	// Second eccentricity ellipse parameter
-	private float ellP;
+	private double ellP;
 
 	// ECEF (earth-centered, earth-fixed)
-	private Matrix4x4 matrixECEFToGlobal = new Matrix4x4();
-	private Matrix4x4 matrixGlobalToECEF = new Matrix4x4();
+	private Matrix4x4d matrixECEFToGlobal = Matrix4x4d.zero;
+	private Matrix4x4d matrixGlobalToECEF = Matrix4x4d.zero;
 
-	private float cosHea;
-	private float sinHea;
+	private double cosHea;
+	private double sinHea;
 
-	private Vector3 origin = new Vector3(); // It is ECEF coordinates
+	private Vector3d origin = Vector3d.zero; // It is ECEF coordinates
 
 	private SurfaceType surfaceType;
 
-	private float latitudeReference = 0; // in radian
-	private float longitudeReference = 0; // in radian
-	private float elevationReference = 0; // in meters
-	private float headingOffset = 0; // in radian
+	private double latitudeReference = 0; // in radian
+	private double longitudeReference = 0; // in radian
+	private double elevationReference = 0; // in meters
+	private double headingOffset = 0; // in radian
 
-	private float haedingOrientationOffset = 0; // in degree
+	private double haedingOrientationOffset = 0; // in degree
 
 	void Awake()
 	{
@@ -80,10 +80,10 @@ public class SphericalCoordinates : MonoBehaviour
 	private void UpdateTransformation()
 	{
 		// Cache trig results
-		var cosLat = Mathf.Cos(latitudeReference);
-		var sinLat = Mathf.Sin(latitudeReference);
-		var cosLon = Mathf.Cos(longitudeReference);
-		var sinLon = Mathf.Sin(longitudeReference);
+		var cosLat = Math.Cos(latitudeReference);
+		var sinLat = Math.Sin(latitudeReference);
+		var cosLon = Math.Cos(longitudeReference);
+		var sinLon = Math.Sin(longitudeReference);
 
 		// Create a rotation matrix that moves ECEF to GLOBAL
 		// Transformations_between_ECEF_and_ENU_coordinates
@@ -91,10 +91,11 @@ public class SphericalCoordinates : MonoBehaviour
 		// https://en.wikipedia.org/wiki/ECEF
 		matrixECEFToGlobal.m00 = -sinLon;
 		matrixECEFToGlobal.m01 = cosLon;
-		matrixECEFToGlobal.m02 = 0;
+
 		matrixECEFToGlobal.m10 = -cosLon * sinLat;
 		matrixECEFToGlobal.m11 = -sinLon * sinLat;
 		matrixECEFToGlobal.m12 = cosLat;
+
 		matrixECEFToGlobal.m20 = cosLon * cosLat;
 		matrixECEFToGlobal.m21 = sinLon * cosLat;
 		matrixECEFToGlobal.m22 = sinLat;
@@ -106,16 +107,20 @@ public class SphericalCoordinates : MonoBehaviour
 		matrixGlobalToECEF.m00 = -sinLon;
 		matrixGlobalToECEF.m01 = -cosLon * sinLat;
 		matrixGlobalToECEF.m02 = cosLon * cosLat;
+
 		matrixGlobalToECEF.m10 = cosLon;
 		matrixGlobalToECEF.m11 = -sinLon * sinLat;
 		matrixGlobalToECEF.m12 = sinLon * cosLat;
-		matrixGlobalToECEF.m20 = 0;
+
 		matrixGlobalToECEF.m21 = cosLat;
 		matrixGlobalToECEF.m22 = sinLat;
 
 		// Cache heading transforms
-		cosHea = Mathf.Cos(headingOffset);
-		sinHea = Mathf.Sin(headingOffset);
+		// -- note that we have to negate the heading in order to preserve backward compatibility.
+		// ie. Gazebo has traditionally expressed positive angle as a CLOCKWISE rotation that takes the GLOBAL
+		// frame to the LOCAL frame. However, right hand coordinate systems require this to be expressed as an ANTI-CLOCKWISE rotation. So, we negate it.
+		cosHea = Math.Cos(-headingOffset);
+		sinHea = Math.Sin(-headingOffset);
 
 		// Cache the ECEF coordinate of the origin
 		origin.Set(latitudeReference, longitudeReference, elevationReference);
@@ -143,7 +148,6 @@ public class SphericalCoordinates : MonoBehaviour
 				haedingOrientationOffset = -90;
 				break;
 		}
-
 	}
 
 	public void SetSurfaceType(in string type)
@@ -161,21 +165,25 @@ public class SphericalCoordinates : MonoBehaviour
 			case SurfaceType.EARTH_WGS84:
 				{
 					// Set the semi-major axis
-					ellA = WGS84.EarthAxisEquatorial;
+					this.ellA = WGS84.EarthAxisEquatorial;
 
 					// Set the semi-minor axis
-					ellB = WGS84.EarthAxisPolar;
+					this.ellB = WGS84.EarthAxisPolar;
 
 					// Set the flattening parameter
-					ellF = WGS84.EarthFlattening;
+					this.ellF = WGS84.EarthFlattening;
 
 					// Set the first eccentricity ellipse parameter
 					// https://en.wikipedia.org/wiki/Eccentricity_(mathematics)#Ellipses
-					ellE = Mathf.Sqrt(1.0f - Mathf.Pow(ellB, 2) / Mathf.Pow(ellA, 2));
+					// this.ellE = Math.Sqrt(1f - Math.Pow(this.ellB, 2) / Math.Pow(ellA, 2));
+					this.ellE = Math.Sqrt(1d - Math.Pow(this.ellB/this.ellA, 2));
 
 					// Set the second eccentricity ellipse parameter
 					// https://en.wikipedia.org/wiki/Eccentricity_(mathematics)#Ellipses
-					ellP = Mathf.Sqrt(Mathf.Pow(ellA, 2) / Mathf.Pow(ellB, 2) - 1.0f);
+					// this.ellP = Math.Sqrt(Math.Pow(ellA, 2) / Math.Pow(ellB, 2) - 1d);
+					this.ellP = Math.Sqrt(Math.Pow(this.ellA/this.ellB, 2) - 1d);
+
+					_ = this.ellF;
 
 					break;
 				}
@@ -192,19 +200,19 @@ public class SphericalCoordinates : MonoBehaviour
 	// Parameters:
 	//    position: ECEF x, y, z in radian,
 	//
-	private Vector3 PositionTransform(in Vector3 position, in CoordinateType input, in CoordinateType output)
+	private Vector3d PositionTransform(in Vector3d position, in CoordinateType input, in CoordinateType output)
 	{
+		var tmpPosition = new Vector3d(position);
+
 		// Cache trig results
-		var cosLat = Mathf.Cos(position.x);
-		var sinLat = Mathf.Sin(position.x);
-		var cosLon = Mathf.Cos(position.y);
-		var sinLon = Mathf.Sin(position.y);
+		var cosLat = Math.Cos(tmpPosition.x);
+		var sinLat = Math.Sin(tmpPosition.x);
+		var cosLon = Math.Cos(tmpPosition.y);
+		var sinLon = Math.Sin(tmpPosition.y);
 
 		// Radius of planet curvature (meters)
-		var curvature = 1.0f - Mathf.Pow(ellE, 2) * Mathf.Pow(sinLat, 2);
-		curvature = ellA / Mathf.Sqrt(curvature);
-
-		var tmpPosition = position;
+		var curvature = 1d - Math.Pow(this.ellE, 2) * Math.Pow(sinLat, 2);
+		curvature = this.ellA / Math.Sqrt(curvature);
 
 		// Convert whatever arrives to a more flexible ECEF coordinate
 		switch (input)
@@ -218,12 +226,15 @@ public class SphericalCoordinates : MonoBehaviour
 
 			case CoordinateType.GLOBAL:
 				tmpPosition = origin + matrixGlobalToECEF.MultiplyVector(tmpPosition);
+				// Debug.LogFormat("input GLOBAL origin: {0}, {1}", origin.ToString("F9"), tmpPosition.ToString("F9"));
 				break;
 
 			case CoordinateType.SPHERICAL:
-				tmpPosition.x = (position.z + curvature) * cosLat * cosLon;
-				tmpPosition.y = (position.z + curvature) * cosLat * sinLon;
-				tmpPosition.z = (Mathf.Pow(ellB, 2) / Mathf.Pow(ellA, 2) * curvature + position.z) * sinLat;
+				var curvatureOffset = (double)position.z + curvature;
+				tmpPosition.x = curvatureOffset * cosLat * cosLon;
+				tmpPosition.y = curvatureOffset * cosLat * sinLon;
+				// tmpPosition.z = (Math.Pow(this.ellB, 2) / Math.Pow(this.ellA, 2) * curvature + position.z) * sinLat;
+				tmpPosition.z = (Math.Pow(this.ellB/this.ellA, 2) * curvature + position.z) * sinLat;
 				break;
 
 			// Do nothing
@@ -239,22 +250,20 @@ public class SphericalCoordinates : MonoBehaviour
 		switch (output)
 		{
 			case CoordinateType.SPHERICAL:
-
 				// Convert from ECEF to SPHERICAL
-				var p = Mathf.Sqrt(Mathf.Pow(tmpPosition.x, 2) + Mathf.Pow(tmpPosition.y, 2));
-				var theta = Mathf.Atan((tmpPosition.z * ellA) / (p * ellB));
+				var p = Math.Sqrt(Math.Pow(tmpPosition.x, 2) + Math.Pow(tmpPosition.y, 2));
+				var theta = Math.Atan((tmpPosition.z * this.ellA) / (p * this.ellB));
 
 				// Calculate latitude and longitude
-				var lat = Mathf.Atan((tmpPosition.z + Mathf.Pow(ellP, 2) * ellB * Mathf.Pow(Mathf.Sin(theta), 3)) / (p - Mathf.Pow(ellE, 2) * ellA * Mathf.Pow(Mathf.Cos(theta), 3)));
-				var lon = Mathf.Atan2(tmpPosition.y, tmpPosition.x);
+				var lat = Math.Atan((tmpPosition.z + Math.Pow(this.ellP, 2) * this.ellB * Math.Pow(Math.Sin(theta), 3)) / (p - Math.Pow(this.ellE, 2) * this.ellA * Math.Pow(Math.Cos(theta), 3)));
+				var lon = Math.Atan2(tmpPosition.y, tmpPosition.x);
 
 				// Recalculate radius of planet curvature at the current latitude.
-				var nCurvature = 1.0f - Mathf.Pow(ellE, 2) * Mathf.Pow(Mathf.Sin(lat), 2);
-				nCurvature = ellA / Mathf.Sqrt(nCurvature);
+				var nCurvature = 1d - Math.Pow(ellE, 2) * Math.Pow(Math.Sin(lat), 2);
+				nCurvature = ellA / Math.Sqrt(nCurvature);
 
-				tmpPosition.x = lat;
-				tmpPosition.y = lon;
-				tmpPosition.z = (p / Mathf.Cos(lat) - nCurvature);
+				tmpPosition.Set(lat, lon, p / Math.Cos(lat) - nCurvature);
+				// Debug.LogFormat("output SPHERICAL {0}", tmpPosition.ToString("F9"));
 
 				break;
 
@@ -266,7 +275,6 @@ public class SphericalCoordinates : MonoBehaviour
 			// Convert from ECEF TO LOCAL
 			case CoordinateType.LOCAL:
 				tmpPosition = matrixECEFToGlobal.MultiplyVector(tmpPosition - origin);
-
 				tmpPosition.Set(tmpPosition.x * cosHea - tmpPosition.y * sinHea,
 								tmpPosition.x * sinHea + tmpPosition.y * cosHea,
 								tmpPosition.z);
@@ -285,14 +293,14 @@ public class SphericalCoordinates : MonoBehaviour
 	}
 
 	// Based on Haversine formula (http://en.wikipedia.org/wiki/Haversine_formula).
-	// float Distance(in Angle _latA, in Angle _lonA, in Angle _latB, in Angle _lonB)
+	// double Distance(in Angle _latA, in Angle _lonA, in Angle _latB, in Angle _lonB)
 	// {
 	// 	Angle dLat = _latB - _latA;
 	// 	Angle dLon = _lonB - _lonA;
 
-	// 	float a = Mathf.Sin(dLat * Mathf.Deg2Rad / 2) * Mathf.Sin(dLat * Mathf.Deg2Rad / 2) + Mathf.Sin(dLon * Mathf.Deg2Rad / 2) * Mathf.Sin(dLon * Mathf.Deg2Rad / 2) * Mathf.Cos(_latA * Mathf.Deg2Rad) * Mathf.Cos(_latB * Mathf.Deg2Rad);
-	// 	float c = 2 * Mathf.Atan2(Mathf.Sqrt(a), Mathf.Sqrt(1 - a));
-	// 	float d = EarthRadius * c;
+	// 	double a = Math.Sin(dLat * Math.Deg2Rad / 2) * Math.Sin(dLat * Math.Deg2Rad / 2) + Math.Sin(dLon * Math.Deg2Rad / 2) * Math.Sin(dLon * Math.Deg2Rad / 2) * Math.Cos(_latA * Math.Deg2Rad) * Math.Cos(_latB * Math.Deg2Rad);
+	// 	double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+	// 	double d = EarthRadius * c;
 	// 	return d;
 	// }
 
@@ -302,7 +310,7 @@ public class SphericalCoordinates : MonoBehaviour
 	// Parameters:
 	//    velocity: ECEF x, y, z in radian,
 	//
-	private Vector3 VelocityTransform(in Vector3 velocity, in CoordinateType input, in CoordinateType output)
+	private Vector3d VelocityTransform(in Vector3d velocity, in CoordinateType input, in CoordinateType output)
 	{
 		// Sanity check -- velocity should not be expressed in spherical coordinates
 		if (input == CoordinateType.SPHERICAL || output == CoordinateType.SPHERICAL)
@@ -312,7 +320,7 @@ public class SphericalCoordinates : MonoBehaviour
 		}
 
 		// Intermediate data type
-		var tmpVelocity = velocity;
+		var tmpVelocity = new Vector3d(velocity);
 
 		// First, convert to an ECEF vector
 		switch (input)
@@ -368,7 +376,7 @@ public class SphericalCoordinates : MonoBehaviour
 		return tmpVelocity;
 	}
 
-	public void SetCoordinatesReference(in float latitudeAngle, in float longitudeAngle, in float elevation, in float headingAngle)
+	public void SetCoordinatesReference(in double latitudeAngle, in double longitudeAngle, in double elevation, in double headingAngle)
 	{
 		// Set the coordinate transform parameters in degree
 		latitudeReference = latitudeAngle * Mathf.Deg2Rad;
@@ -380,7 +388,7 @@ public class SphericalCoordinates : MonoBehaviour
 	}
 
 	/// <summary>based on right handed system</summary>
-	public Vector3 SphericalFromLocal(in Vector3 xyz)
+	public Vector3d SphericalFromLocal(in Vector3 xyz)
 	{
 		var result = PositionTransform(xyz, CoordinateType.LOCAL, CoordinateType.SPHERICAL);
 		result.x *= Mathf.Rad2Deg;
@@ -390,7 +398,7 @@ public class SphericalCoordinates : MonoBehaviour
 	}
 
 	/// <summary>based on right handed system</summary>
-	public Vector3 LocalFromSpherical(in Vector3 xyz)
+	public Vector3d LocalFromSpherical(in Vector3 xyz)
 	{
 		var convertedXYZ = xyz;
 		convertedXYZ.x *= Mathf.Deg2Rad;
@@ -404,36 +412,36 @@ public class SphericalCoordinates : MonoBehaviour
 	}
 
 	/// <summary>based on right handed system</summary>
-	public Vector3 GlobalFromLocal(in Vector3 xyz)
+	public Vector3d GlobalFromLocal(in Vector3 xyz)
 	{
 		return VelocityTransform(xyz, CoordinateType.LOCAL, CoordinateType.GLOBAL);
 	}
 
 	/// <summary>based on right handed system</summary>
-	public Vector3 LocalFromGlobal(in Vector3 xyz)
+	public Vector3d LocalFromGlobal(in Vector3 xyz)
 	{
 		return VelocityTransform(xyz, CoordinateType.GLOBAL, CoordinateType.LOCAL);
 	}
 
-	public void SetLatitudeReference(in float angle)
+	public void SetLatitudeReference(in double angle)
 	{
 		latitudeReference = angle * Mathf.Deg2Rad;
 		UpdateTransformation();
 	}
 
-	public void SetLongitudeReference(in float angle)
+	public void SetLongitudeReference(in double angle)
 	{
 		longitudeReference = angle * Mathf.Deg2Rad;
 		UpdateTransformation();
 	}
 
-	public void SetElevationReference(in float elevation)
+	public void SetElevationReference(in double elevation)
 	{
 		elevationReference = elevation;
 		UpdateTransformation();
 	}
 
-	public void SetHeadingOffset(in float angle)
+	public void SetHeadingOffset(in double angle)
 	{
 		headingOffset = (angle + haedingOrientationOffset) * Mathf.Deg2Rad;
 		UpdateTransformation();

@@ -12,7 +12,7 @@ using System.Net;
 using UnityEngine;
 
 [DefaultExecutionOrder(35)]
-public class BridgeManager : MonoBehaviour
+public class BridgeManager
 {
 	private const ushort MinPortRange = 49152;
 	private const ushort MaxPortRange = IPEndPoint.MaxPort;

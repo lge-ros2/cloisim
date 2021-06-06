@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+using Any = cloisim.msgs.Any;
+
 public class GpsPlugin : CLOiSimPlugin
 {
 	protected override void OnAwake()
@@ -22,7 +24,7 @@ public class GpsPlugin : CLOiSimPlugin
 		AddThread(SenderThread, targetDevice);
 	}
 
-	protected override void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response)
+	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
 	{
 		switch (requestType)
 		{

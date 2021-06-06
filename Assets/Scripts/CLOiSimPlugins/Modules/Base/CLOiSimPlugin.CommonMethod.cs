@@ -10,7 +10,7 @@ using UnityEngine;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
-public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugin
+public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
 	protected static void SetCameraInfoResponse(ref DeviceMessage msCameraInfo, in messages.CameraSensor sensorInfo)
 	{
@@ -81,22 +81,30 @@ public abstract partial class CLOiSimPlugin : CLOiSimPluginThread, ICLOiSimPlugi
 		}
 	}
 
-	protected override void HandleRequestMessage(in string requestType, in messages.Any requestValue, ref DeviceMessage response)
+	private void SetCustomHandleRequestMessage()
 	{
-		switch (requestType)
+		thread.HandleRequestTypeValue = delegate (in string requestType, in Any requestValue, ref DeviceMessage response)
 		{
-			case "request_ros2":
-				var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name");
-				GetPluginParameters().GetValues<string>("ros2/frame_id", out var frameIdList);
-				SetROS2CommonInfoResponse(ref response, topic_name, frameIdList);
-				break;
+			switch (requestType)
+			{
+				case "request_ros2":
+					var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name");
+					GetPluginParameters().GetValues<string>("ros2/frame_id", out var frameIdList);
+					SetROS2CommonInfoResponse(ref response, topic_name, frameIdList);
+					break;
 
-			default:
-				var value = (requestValue == null) ? string.Empty : requestValue.StringValue;
-				HandleCustomRequestMessage(requestType, value, ref response);
-				break;
-		}
+				default:
+					HandleCustomRequestMessage(requestType, requestValue, ref response);
+					break;
+			}
+		};
+
+		thread.HandleRequestTypeChildren = delegate (in string requestType, in List<messages.Param> requestChildren, ref DeviceMessage response)
+		{
+			HandleCustomRequestMessage(requestType, requestChildren, ref response);
+		};
 	}
 
-	protected virtual void HandleCustomRequestMessage(in string requestType, in string requestValue, ref DeviceMessage response) { }
+	protected virtual void HandleCustomRequestMessage(in string requestType, in List<messages.Param> requestChildren, ref DeviceMessage response) { }
+	protected virtual void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response) { }
 }

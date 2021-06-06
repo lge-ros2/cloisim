@@ -307,7 +307,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		var deviceMessage = new DeviceMessage();
 		if (Publisher != null)
 		{
-			while (IsRunningThread)
+			while (PluginThread.IsRunning)
 			{
 				for (var index = 0; index < messagePerceptions.Perceptions.Count; index++)
 				{
@@ -341,7 +341,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				deviceMessage.SetMessage<messages.PerceptionV>(messagePerceptions);
 				Publisher.Publish(deviceMessage);
 
-				SleepThread(sleepPeriodForPublishInMilliseconds);
+				CLOiSimPluginThread.Sleep(sleepPeriodForPublishInMilliseconds);
 			}
 		}
 	}

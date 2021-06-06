@@ -797,9 +797,6 @@ GameObject:
   m_Component:
   - component: {fileID: 249819586}
   - component: {fileID: 249819589}
-  - component: {fileID: 249819587}
-  - component: {fileID: 249819591}
-  - component: {fileID: 249819592}
   m_Layer: 0
   m_Name: Core
   m_TagString: Untagged
@@ -821,18 +818,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &249819587
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 249819585}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c59b1e39547cd88118e6581bba9cc704, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &249819589
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -860,31 +845,6 @@ MonoBehaviour:
   - ../sample_resources/media/
   - ../lgrs_resource/assets
   - ../../lgrs_resource/assets
---- !u!114 &249819591
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 249819585}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 562b840bb8ebb9636981539c4e7f2488, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  defaultWebSocketServicePort: 8080
---- !u!114 &249819592
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 249819585}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e1248a39f7dec77738075120f1d9cae0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &314493398
 GameObject:
   m_ObjectHideFlags: 0
