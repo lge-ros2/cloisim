@@ -18,12 +18,12 @@ namespace SensorDevices
 
 		private Transform gpsLink = null;
 
-		private Vector3 worldPosition;
-		private Vector3 sensorVelocity;
+		public Vector3 worldPosition;
+		public Vector3 sensorVelocity;
 
 		private Vector3 previousSensorPosition;
-		private Vector3 gpsCoordinates;
-		private Vector3 gpsVelocity;
+		public Vector3d gpsCoordinates;
+		public Vector3d gpsVelocity;
 
 		public Dictionary<string, Noise> position_sensing_noises = new Dictionary<string, Noise>()
 		{
@@ -74,17 +74,18 @@ namespace SensorDevices
 
 			// Convert to global frames
 			var convertedPosition = DeviceHelper.Convert.Position(worldPosition);
+
 			gpsCoordinates = sphericalCoordinates.SphericalFromLocal(convertedPosition);
 
 			// Apply noise after converting to global frame
 			if (position_sensing_noises["horizontal"] != null)
 			{
-				position_sensing_noises["horizontal"].Apply<float>(ref gpsCoordinates.x);
+				position_sensing_noises["horizontal"].Apply<double>(ref gpsCoordinates.x);
 			}
 
 			if (position_sensing_noises["vertical"] != null)
 			{
-				position_sensing_noises["vertical"].Apply<float>(ref gpsCoordinates.y);
+				position_sensing_noises["vertical"].Apply<double>(ref gpsCoordinates.y);
 			}
 
 			gps.LatitudeDeg = gpsCoordinates.x;
@@ -98,12 +99,12 @@ namespace SensorDevices
 			// Apply noise after converting to global frame
 			if (velocity_sensing_noises["horizontal"] != null)
 			{
-				velocity_sensing_noises["horizontal"].Apply<float>(ref gpsVelocity.x);
+				velocity_sensing_noises["horizontal"].Apply<double>(ref gpsVelocity.x);
 			}
 
 			if (velocity_sensing_noises["vertical"] != null)
 			{
-				velocity_sensing_noises["vertical"].Apply<float>(ref gpsVelocity.y);
+				velocity_sensing_noises["vertical"].Apply<double>(ref gpsVelocity.y);
 			}
 
 			gps.VelocityNorth = gpsVelocity.x;

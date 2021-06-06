@@ -36,10 +36,14 @@ public class Main: MonoBehaviour
 	private static SimulationDisplay simulationDisplay = null;
 	private static WorldNavMeshBuilder worldNavMeshBuilder = null;
 	private static RuntimeGizmos.TransformGizmo transformGizmo = null;
-	private static BridgeManager bridgeManager = null;
 
-	private bool isResetting = false;
-	private bool resetTriggered = false;
+#region "Non-Component class"
+	private static BridgeManager bridgeManager = null;
+	private static SimulationService simulationService = null;
+#endregion
+
+	private static bool isResetting = false;
+	private static bool resetTriggered = false;
 
 	public static GameObject WorldRoot => worldRoot;
 	public static GameObject CoreObject => coreObject;
@@ -173,10 +177,13 @@ public class Main: MonoBehaviour
 
 		worldNavMeshBuilder = worldRoot.GetComponent<WorldNavMeshBuilder>();
 
+		Main.bridgeManager = new BridgeManager();
+		Main.simulationService = new SimulationService();
+
 		var simWorld = gameObject.AddComponent<SimulationWorld>();
 		DeviceHelper.SetGlobalClock(simWorld.GetClock());
 
-		var sphericalCoordinates = GetComponent<SphericalCoordinates>();
+		var sphericalCoordinates = new SphericalCoordinates();
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
 
 		followingList = uiRoot.GetComponentInChildren<FollowingTargetList>();
@@ -185,8 +192,6 @@ public class Main: MonoBehaviour
 		transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
 
 		gameObject.AddComponent<ObjectSpawning>();
-
-		bridgeManager = CoreObject.GetComponent<BridgeManager>();
 	}
 
 	void Start()
@@ -287,14 +292,11 @@ public class Main: MonoBehaviour
 
 	void OnDestroy()
 	{
-		Debug.Log("Destroy Main");
-		foreach (var worldPlugin in GetComponents<CLOiSimPlugin>())
-		{
-			worldPlugin.StopThread();
-		}
+		// Debug.Log("Destroy Main");
+		CleanAllModels();
 	}
 
-	public bool TriggerResetService()
+	public static bool TriggerResetService()
 	{
 		if (isResetting)
 		{

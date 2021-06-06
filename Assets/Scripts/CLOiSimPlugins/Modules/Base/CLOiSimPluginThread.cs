@@ -9,46 +9,55 @@ using System.Threading;
 using UnityEngine;
 using messages = cloisim.msgs;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using Any = cloisim.msgs.Any;
 
 public class CLOiSimPluginThread : Transporter
 {
 	private bool runningThread = true;
-	protected bool IsRunningThread => runningThread;
+	public bool IsRunning => runningThread;
 
 	private List<(Thread, System.Object)> threadList = new List<(Thread, System.Object)>();
 
-	protected new void OnDestroy()
-	{
-		StopThread();
+	public delegate void RefAction<T1, T2, T3>(in T1 arg1, in T2 arg2, ref T3 arg3);
+	public delegate void RefAction<T1, T2>(in T1 arg1, ref T2 arg3);
 
-		base.OnDestroy();
+	public RefAction<string, messages.Any, DeviceMessage> HandleRequestTypeValue = delegate (in string requestType, in Any requestValue, ref DeviceMessage response) { };
+	public RefAction<string, List<messages.Param>, DeviceMessage> HandleRequestTypeChildren = delegate (in string requestType, in List<messages.Param> requestChildren, ref DeviceMessage response) { };
+
+	~CLOiSimPluginThread()
+	{
+		Debug.Log("Destroy Thread");
+		Stop();
+		System.GC.SuppressFinalize(this);
 	}
 
-	protected bool AddThread(in ThreadStart function)
+	public bool Add(in ThreadStart function)
 	{
 		if (function != null)
 		{
-			threadList.Add((new Thread(function), null));
-			// thread.Priority = System.Threading.ThreadPriority.AboveNormal;
+			var thread = new Thread(function);
+			thread.Priority = System.Threading.ThreadPriority.AboveNormal;
+			threadList.Add((thread, null));
 			return true;
 		}
 
 		return false;
 	}
 
-	protected bool AddThread(in ParameterizedThreadStart function, in Device paramDeviceObject)
+	public bool Add(in ParameterizedThreadStart function, in Device paramDeviceObject)
 	{
 		if (function != null)
 		{
-			threadList.Add((new Thread(function), paramDeviceObject as System.Object));
-			// thread.Priority = System.Threading.ThreadPriority.AboveNormal;
+			var thread = new Thread(function);
+			thread.Priority = System.Threading.ThreadPriority.AboveNormal;
+			threadList.Add((thread, paramDeviceObject as System.Object));
 			return true;
 		}
 
 		return false;
 	}
 
-	protected void StartThreads()
+	public void Start()
 	{
 		runningThread = true;
 
@@ -71,7 +80,7 @@ public class CLOiSimPluginThread : Transporter
 		}
 	}
 
-	public void StopThread()
+	public void Stop()
 	{
 		runningThread = false;
 
@@ -87,15 +96,16 @@ public class CLOiSimPluginThread : Transporter
 				}
 			}
 		}
+		threadList.Clear();
 	}
 
-	protected void SenderThread(System.Object deviceParam)
+	public void Sender(System.Object deviceParam)
 	{
 		if (Publisher != null)
 		{
 			var sw = new Stopwatch();
 			var device = deviceParam as Device;
-			while (runningThread && device != null)
+			while (IsRunning && device != null)
 			{
 				if (device.PopDeviceMessage(out var dataStreamToSend))
 				{
@@ -114,17 +124,17 @@ public class CLOiSimPluginThread : Transporter
 		}
 	}
 
-	protected void ReceiverThread(System.Object deviceParam)
+	public void Receiver(System.Object deviceParam)
 	{
 		if (Subscriber != null)
 		{
 			var device = deviceParam as Device;
-			while (IsRunningThread && device != null)
+			while (IsRunning && device != null)
 			{
 				var receivedData = Subscriber.Subscribe();
 				device.PushDeviceMessage(receivedData);
 
-				WaitThread();
+				Wait();
 			}
 		}
 		else
@@ -133,12 +143,12 @@ public class CLOiSimPluginThread : Transporter
 		}
 	}
 
-	protected void ServiceThread()
+	public void Service()
 	{
 		if (Responsor != null)
 		{
 			var dmResponse = new DeviceMessage();
-			while (runningThread)
+			while (IsRunning)
 			{
 				var receivedBuffer = Responsor.ReceiveRequest();
 
@@ -148,7 +158,8 @@ public class CLOiSimPluginThread : Transporter
 
 					if (requestMessage != null && dmResponse != null)
 					{
-						HandleRequestMessage(requestMessage, ref dmResponse);
+						HandleRequestTypeValue(requestMessage.Name, requestMessage.Value, ref dmResponse);
+						HandleRequestTypeChildren(requestMessage.Name, requestMessage.Childrens, ref dmResponse);
 					}
 					else
 					{
@@ -158,19 +169,13 @@ public class CLOiSimPluginThread : Transporter
 					Responsor.SendResponse(dmResponse);
 				}
 
-				WaitThread();
+				Wait();
 			}
 		}
 		else
 		{
 			Debug.LogWarning("Responsor is null");
 		}
-	}
-
-	protected virtual void HandleRequestMessage(in string requestType, in messages.Any requestValue, ref DeviceMessage response) { }
-	protected virtual void HandleRequestMessage(in messages.Param requestMessage, ref DeviceMessage response)
-	{
-		HandleRequestMessage(requestMessage.Name, requestMessage.Value, ref response);
 	}
 
 	protected static messages.Param ParsingRequestMessage(in byte[] infoBuffer)
@@ -185,12 +190,12 @@ public class CLOiSimPluginThread : Transporter
 		return null;
 	}
 
-	protected void WaitThread(in int iteration = 1)
+	public static void Wait(in int iteration = 1)
 	{
 		Thread.SpinWait(iteration);
 	}
 
-	protected void SleepThread(in int millisecondsTimeout = 1)
+	public static void Sleep(in int millisecondsTimeout = 1)
 	{
 		Thread.Sleep(millisecondsTimeout);
 	}

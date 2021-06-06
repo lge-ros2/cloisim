@@ -42,8 +42,6 @@ namespace SensorDevices
 			Mode = ModeType.TX;
 			DeviceName = name;
 			sonarLink = transform.parent;
-
-			waitingPeriodRatio = 0.95f;
 		}
 
 		protected override void OnStart()
