@@ -26,7 +26,7 @@ public class CLOiSimPluginThread : Transporter
 
 	~CLOiSimPluginThread()
 	{
-		Debug.Log("Destroy Thread");
+		// Debug.Log("Destroy Thread");
 		Stop();
 		System.GC.SuppressFinalize(this);
 	}
