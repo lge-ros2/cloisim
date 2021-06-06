@@ -95,7 +95,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			DeregisterDevice(hashKey);
 		}
 
-		thread.Stop();
+		thread.Dispose();
 		// Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
 	}
 

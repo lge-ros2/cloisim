@@ -30,7 +30,7 @@ using System.Text;
 using System.Net;
 using System;
 
-public class BridgeManager
+public class BridgeManager : IDisposable
 {
 	private const ushort MinPortRange = 49152;
 	private const ushort MaxPortRange = IPEndPoint.MaxPort;
@@ -50,9 +50,13 @@ public class BridgeManager
 
 	~BridgeManager()
 	{
+		Dispose();
+	}
+
+	public void Dispose()
+	{
 		ClearLog();
-		haskKeyPortMapTable.Clear();
-		deviceMapTable.Clear();
+		GC.SuppressFinalize(this);
 	}
 
 	public static void DeallocateDevice(in string hashKey)

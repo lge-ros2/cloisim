@@ -9,8 +9,7 @@ using System.Text;
 using UnityEngine;
 using WebSocketSharp.Server;
 
-[DefaultExecutionOrder(100)]
-public class SimulationService
+public class SimulationService : IDisposable
 {
 	public const string SUCCESS = "ok";
 	public const string FAIL = "fail";
@@ -54,13 +53,21 @@ public class SimulationService
 
 	~SimulationService()
 	{
+		Dispose();
+	}
+
+	public void Dispose()
+	{
 		if (wsServer != null)
 		{
 			Debug.Log("Stop WebSocket Server");
 			wsServer.RemoveWebSocketService("/control");
 			wsServer.RemoveWebSocketService("/markers");
 			wsServer.Stop();
+			wsServer = null;
 		}
+
+		GC.SuppressFinalize(this);
 	}
 
 	private void InitializeServices()

@@ -351,4 +351,10 @@ public class Main: MonoBehaviour
 		}
 		return null;
 	}
+
+	void OnDestroy()
+	{
+		Main.bridgeManager.Dispose();
+		Main.simulationService.Dispose();
+	}
 }
