@@ -32,19 +32,15 @@ namespace SensorDevices
 		protected RenderTextureReadWrite targetRTrwmode;
 		protected TextureFormat readbackDstFormat;
 		private CameraData.ImageData camImageData;
-		private CommandBuffer cmdBuffer;
+		private CommandBuffer cmdBufferBegin;
+		private CommandBuffer cmdBufferEnd;
 		public Noise noise = null;
 
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
 			if (camera.Equals(camSensor))
 			{
-				// This is where you can write custom rendering code. Customize this method to customize your SRP.
-				// Create and schedule a command to clear the current render target
-				cmdBuffer.SetInvertCulling(true);
-				context.ExecuteCommandBuffer(cmdBuffer);
-				// Tell the Scriptable Render Context to tell the graphics API to perform the scheduled commands
-				cmdBuffer.Clear();
+				context.ExecuteCommandBuffer(cmdBufferBegin);
 				context.Submit();
 			}
 		}
@@ -53,9 +49,7 @@ namespace SensorDevices
 		{
 			if (camera.Equals(camSensor))
 			{
-				cmdBuffer.SetInvertCulling(false);
-				context.ExecuteCommandBuffer(cmdBuffer);
-				cmdBuffer.Clear();
+				context.ExecuteCommandBuffer(cmdBufferEnd);
 				context.Submit();
 			}
 		}
@@ -63,7 +57,12 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
-			cmdBuffer = new CommandBuffer();
+			cmdBufferBegin = new CommandBuffer();
+			cmdBufferBegin.SetInvertCulling(true);
+
+			cmdBufferEnd = new CommandBuffer();
+			cmdBufferEnd.SetInvertCulling(false);
+
 			camSensor = GetComponent<UnityEngine.Camera>();
 			universalCamData = camSensor.GetUniversalAdditionalCameraData();
 
@@ -199,7 +198,7 @@ namespace SensorDevices
 			RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
 			RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
 
-			camSensor.hideFlags |= HideFlags.NotEditable;
+			// camSensor.hideFlags |= HideFlags.NotEditable;
 
 			camImageData = new CameraData.ImageData(GetParameters().image_width, GetParameters().image_height, GetParameters().image_format);
 		}
