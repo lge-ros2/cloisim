@@ -483,7 +483,6 @@ public class ProceduralMesh
 
 		if (!MeshObjectCache.ContainsKey(Type.PLANE))
 		{
-
 			if (normal.Equals(default(Vector3)))
 			{
 				normal = Vector3.up;
@@ -568,6 +567,123 @@ public class ProceduralMesh
 		}
 		mesh.vertices = meshVertices;
 
+
+		return mesh;
+	}
+
+	public static Mesh CreateCapsule(in float radius = 0.5f, in float length = 2f, int segments = 24)
+	{
+		Mesh mesh = new Mesh();
+		mesh.name = "Capsule";
+
+		// make segments an even number
+		if (segments % 2 != 0)
+		{
+			segments++;
+		}
+
+		// extra vertex on the seam
+		var points = segments + 1;
+
+		// calculate points around a circle
+		var pX = new float[points];
+		var pZ = new float[points];
+		var pY = new float[points];
+		var pR = new float[points];
+
+		var calcH = 0f;
+		var calcV = 0f;
+
+		for (var i = 0; i < points; i++)
+		{
+			pX[i] = Mathf.Sin(calcH * Mathf.Deg2Rad);
+			pZ[i] = Mathf.Cos(calcH * Mathf.Deg2Rad);
+			pY[i] = Mathf.Cos(calcV * Mathf.Deg2Rad);
+			pR[i] = Mathf.Sin(calcV * Mathf.Deg2Rad);
+
+			calcH += 360f / (float)segments;
+			calcV += 180f / (float)segments;
+		}
+
+		// Vertices and UVs
+		var vertices = new Vector3[points * (points + 1)];
+		var uvs = new Vector2[vertices.Length];
+		var ind = 0;
+
+		// Y-offset is half the height minus the diameter
+		var yOff = (length - (radius * 2f)) * 0.5f;
+		if (yOff < 0)
+		{
+			yOff = 0;
+		}
+
+		// uv calculations
+		var stepX = 1f / ((float)(points - 1));
+		float uvX, uvY;
+
+		// Top Hemisphere
+		var top = Mathf.CeilToInt((float)points * 0.5f);
+
+		for (int y = 0; y < top; y++)
+		{
+			for (int x = 0; x < points; x++)
+			{
+				vertices[ind] = new Vector3(pX[x] * pR[y], pY[y], pZ[x] * pR[y]) * radius;
+				vertices[ind].y = yOff + vertices[ind].y;
+
+				uvX = 1f - (stepX * (float)x);
+				uvY = (vertices[ind].y + (length * 0.5f)) / length;
+				uvs[ind] = new Vector2(uvX, uvY);
+
+				ind++;
+			}
+		}
+
+		// Bottom Hemisphere
+		var btm = Mathf.FloorToInt((float)points * 0.5f);
+
+		for (var y = btm; y < points; y++)
+		{
+			for (var x = 0; x < points; x++)
+			{
+				vertices[ind] = new Vector3(pX[x] * pR[y], pY[y], pZ[x] * pR[y]) * radius;
+				vertices[ind].y = -yOff + vertices[ind].y;
+
+				uvX = 1f - (stepX * (float)x);
+				uvY = (vertices[ind].y + (length * 0.5f)) / length;
+				uvs[ind] = new Vector2(uvX, uvY);
+
+				ind++;
+			}
+		}
+
+		// Triangles
+		var triangles = new int[(segments * (segments + 1) * 2 * 3)];
+
+		for (int y = 0, t = 0; y < segments + 1; y++)
+		{
+			for (var x = 0; x < segments; x++, t += 6)
+			{
+				triangles[t + 0] = ((y + 0) * (segments + 1)) + x + 0;
+				triangles[t + 1] = ((y + 1) * (segments + 1)) + x + 0;
+				triangles[t + 2] = ((y + 1) * (segments + 1)) + x + 1;
+
+				triangles[t + 3] = ((y + 0) * (segments + 1)) + x + 1;
+				triangles[t + 4] = ((y + 0) * (segments + 1)) + x + 0;
+				triangles[t + 5] = ((y + 1) * (segments + 1)) + x + 1;
+			}
+		}
+
+		var normales = new Vector3[vertices.Length];
+		for (var n = 0; n < vertices.Length; n++)
+		{
+			normales[n] = vertices[n].normalized;
+		}
+
+		mesh.vertices = vertices;
+		mesh.normals = normales;
+		mesh.uv = uvs;
+		mesh.triangles = triangles;
 
 		return mesh;
 	}
