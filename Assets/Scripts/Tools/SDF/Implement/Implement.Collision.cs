@@ -34,57 +34,55 @@ namespace SDF
 					meshCollider.convex = false;
 					meshCollider.cookingOptions = CookingOptions;
 					meshCollider.hideFlags |= UE.HideFlags.NotEditable;
-
-					if (meshObject.TryGetComponent<UE.MeshRenderer>(out var meshRenderer))
-					{
-						UE.GameObject.Destroy(meshRenderer);
-					}
-
-					UE.GameObject.Destroy(meshFilter);
 				}
 			}
 
 			public static void Make(UE.GameObject targetObject)
 			{
-				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
-
-				if (EnableMergeCollider)
+				if (targetObject.GetComponent<UE.Collider>() == null)
 				{
-					var mergedMesh = SDF2Unity.MergeMeshes(meshFilters);
-					mergedMesh.name = targetObject.name;
+					var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
 
-					// remove all child objects after merge the meshes for colloision
-					if (targetObject.transform.childCount > 0)
+					if (EnableMergeCollider)
 					{
-						for (var i = 0; i < targetObject.transform.childCount; i++)
+						var mergedMesh = SDF2Unity.MergeMeshes(meshFilters);
+						mergedMesh.name = targetObject.name;
+
+						// remove all child objects after merge the meshes for colloision
+						if (targetObject.transform.childCount > 0)
 						{
-							var childObject = targetObject.transform.GetChild(i).gameObject;
-							// UE.Debug.Log(childObjet.name);
-							UE.GameObject.Destroy(childObject);
+							for (var i = 0; i < targetObject.transform.childCount; i++)
+							{
+								var childObject = targetObject.transform.GetChild(i).gameObject;
+								// UE.Debug.Log(childObjet.name);
+								UE.GameObject.Destroy(childObject);
+							}
 						}
+
+						var meshCollider = targetObject.AddComponent<UE.MeshCollider>();
+						meshCollider.sharedMesh = mergedMesh;
+						meshCollider.convex = false;
+						meshCollider.cookingOptions = CookingOptions;
+						meshCollider.hideFlags |= UE.HideFlags.NotEditable;
 					}
 					else
 					{
-						if (targetObject.TryGetComponent<UE.MeshRenderer>(out var meshRenderer))
-						{
-							UE.GameObject.Destroy(meshRenderer);
-						}
-
-						if (targetObject.TryGetComponent<UE.MeshFilter>(out var meshFilter))
-						{
-							UE.GameObject.Destroy(meshFilter);
-						}
+						KeepUnmergedMeshes(meshFilters);
 					}
-
-					var meshCollider = targetObject.AddComponent<UE.MeshCollider>();
-					meshCollider.sharedMesh = mergedMesh;
-					meshCollider.convex = false;
-					meshCollider.cookingOptions = CookingOptions;
-					meshCollider.hideFlags |= UE.HideFlags.NotEditable;
 				}
 				else
 				{
-					KeepUnmergedMeshes(meshFilters);
+					var meshRenderers = targetObject.GetComponentsInChildren<UE.MeshRenderer>();
+					foreach (var meshRender in meshRenderers)
+					{
+						UE.GameObject.Destroy(meshRender);
+					}
+
+					var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
+					foreach (var meshFilter in meshFilters)
+					{
+						UE.GameObject.Destroy(meshFilter);
+					}
 				}
 			}
 
@@ -164,7 +162,7 @@ namespace SDF
 				}
 
 				// Set physics materials
-				foreach (var meshCollider in targetObject.GetComponentsInChildren<UE.MeshCollider>())
+				foreach (var meshCollider in targetObject.GetComponentsInChildren<UE.Collider>())
 				{
 					meshCollider.material = material;
 				}

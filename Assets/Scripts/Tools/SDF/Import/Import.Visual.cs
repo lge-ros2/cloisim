@@ -43,6 +43,13 @@ namespace SDF
 				// Optimize geometry and materials
 				if (visualObject.CompareTag("Visual"))
 				{
+					// remove all colliders
+					var colliders = visualObject.GetComponentsInChildren<UE.Collider>();
+					foreach (var collider in colliders)
+					{
+						UE.GameObject.Destroy(collider);
+					}
+
 					if (enableOptimization)
 					{
 						Implement.Visual.OptimizeMeshes(visualObject);

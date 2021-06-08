@@ -192,7 +192,7 @@ public class Motor
 		}
 		else if (!_motorBody.jointType.Equals(ArticulationJointType.RevoluteJoint) && !_motorBody.jointType.Equals(ArticulationJointType.SphericalJoint))
 		{
-			Debug.LogWarning("Articulation Joint Type is wonrg => " + _motorBody.jointType);
+			Debug.LogWarning("Articulation Joint Type is wrong => " + _motorBody.jointType);
 			return;
 		}
 
