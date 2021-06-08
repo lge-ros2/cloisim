@@ -25,12 +25,12 @@ namespace SDF
 
 				UE.GameObject geometryObject = null;
 
-				if (t.Equals(typeof(SDF.Mesh)))
+				if (t != null && t.Equals(typeof(SDF.Mesh)))
 				{
 					var mesh = shape as SDF.Mesh;
 					geometryObject = Implement.Geometry.GenerateMeshObject(mesh);
 				}
-				else if (t.IsSubclassOf(typeof(SDF.ShapeType)))
+				else if (t != null && typeof(SDF.ShapeType).IsAssignableFrom(t))
 				{
 					geometryObject = Implement.Geometry.GenerateMeshObject(shape);
 				}
