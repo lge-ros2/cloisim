@@ -29,11 +29,6 @@ public class MicomPlugin : CLOiSimPlugin
 		AddThread(ReceiverThread, (targetDevice as Micom).GetInput());
 	}
 
-	protected override void OnReset()
-	{
-		targetDevice.Reset();
-	}
-
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
 	{
 		switch (requestType)
