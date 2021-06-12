@@ -25,8 +25,8 @@ public class MicomPlugin : CLOiSimPlugin
 		RegisterTxDevice("Tx");
 
 		AddThread(ServiceThread);
+		AddThread(ReceiverThread, (targetDevice as Micom).GetCommand());
 		AddThread(SenderThread, (targetDevice as Micom).GetSensor());
-		AddThread(ReceiverThread, (targetDevice as Micom).GetInput());
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)

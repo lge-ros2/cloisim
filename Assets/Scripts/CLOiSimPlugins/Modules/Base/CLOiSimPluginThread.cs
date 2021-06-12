@@ -6,7 +6,6 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using System;
 using UnityEngine;
 using messages = cloisim.msgs;
 using Stopwatch = System.Diagnostics.Stopwatch;

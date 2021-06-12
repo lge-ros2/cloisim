@@ -66,8 +66,17 @@ public partial class MicomSensor : Device
 		var wheelNameLeft = GetPluginParameters().GetValue<string>("wheel/location[@type='left']");
 		var wheelNameRight = GetPluginParameters().GetValue<string>("wheel/location[@type='right']");
 
+		// TODO: to be utilized
 		var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
 		var brakeFriction = GetPluginParameters().GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
+
+		if (GetPluginParameters().GetValues<string>("control/joint", out var jointControls))
+		{
+			foreach (var jointControl in jointControls)
+			{
+				Debug.Log(jointControl);
+			}
+		}
 
 		var modelList = GetComponentsInChildren<SDF.Helper.Model>();
 		foreach (var model in modelList)

@@ -21,7 +21,7 @@ public class Micom : Device
 	}
 
 	private MicomSensor micomSensor = null;
-	private MicomInput micomInput = null;
+	private MicomCommand micomCommand = null;
 
 	public bool debugging = false;
 
@@ -38,19 +38,19 @@ public class Micom : Device
 	protected override void OnReset()
 	{
 		micomSensor.Reset();
-		micomInput.Reset();
+		micomCommand.Reset();
 	}
 
-	public MicomInput GetInput()
+	public MicomCommand GetCommand()
 	{
-		if (micomInput == null)
+		if (micomCommand == null)
 		{
-			micomInput = gameObject.AddComponent<MicomInput>();
-			micomInput.SetMotorControl(GetSensor().MotorControl);
-			micomInput.EnableDebugging = EnableDebugging;
+			micomCommand = gameObject.AddComponent<MicomCommand>();
+			micomCommand.SetMotorControl(GetSensor().MotorControl);
+			micomCommand.EnableDebugging = EnableDebugging;
 		}
 
-		return micomInput;
+		return micomCommand;
 	}
 
 	public MicomSensor GetSensor()

@@ -7,14 +7,14 @@
 using UnityEngine;
 using messages = cloisim.msgs;
 
-public class MicomInput : Device
+public class MicomCommand : Device
 {
 	private MotorControl motorControl = null;
 
 	protected override void OnAwake()
 	{
 		Mode = ModeType.RX_THREAD;
-		DeviceName = "MicomInput";
+		DeviceName = "MicomCommand";
 	}
 
 	protected override void OnStart()
@@ -39,6 +39,10 @@ public class MicomInput : Device
 
 			DoWheelDrive(linearVelocity, angularVelocity);
 		}
+		else
+		{
+			Debug.LogWarning("ERROR: failed to pop deevice message");
+		}
 	}
 
 	public void SetMotorControl(in MotorControl motorControl)
@@ -60,5 +64,9 @@ public class MicomInput : Device
 		var targetAngularVelocity = angularVelocity.y;
 		motorControl.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
 		motorControl.UpdateMotorFeedback(targetAngularVelocity);
+	}
+
+	private void DoJointControl(in string jointName, in float jointVelocity, in float duration)
+	{
 	}
 }
