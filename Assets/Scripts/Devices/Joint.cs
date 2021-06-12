@@ -6,16 +6,18 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using messages = cloisim.msgs;
 
-public class Joints : Device
+public class Joint : Device
 {
 	private Dictionary<string, ArticulationBody> jointBodyTable = new Dictionary<string, ArticulationBody>();
 
+	private JointCommand jointCommand = null;
+	private JointState jointState = null;
+
 	protected override void OnAwake()
 	{
-		Mode = ModeType.RX_THREAD;
-		DeviceName = "Joints";
+		Mode = ModeType.NONE;
+		DeviceName = "Joint";
 	}
 
 	protected override void OnStart()
@@ -42,18 +44,23 @@ public class Joints : Device
 		return false;
 	}
 
-	protected override void ProcessDevice()
+	public JointCommand GetCommand()
 	{
-		if (PopDeviceMessage<messages.JointCmd>(out var jointCommand))
+		if (jointCommand == null)
 		{
-			var linear = jointCommand.Name;
-			// var angular = jointCommand.Angular;
-
-			// Right-handed -> Left-handed direction of rotation
-			// var linearVelocity = -SDF2Unity.GetPosition(linear.X, linear.Y, linear.Z);
-			// var angularVelocity = -SDF2Unity.GetPosition(angular.X, angular.Y, angular.Z);
-
-			// DoWheelDrive(linearVelocity, angularVelocity);
+			jointCommand = gameObject.AddComponent<JointCommand>();
 		}
+
+		return jointCommand;
+	}
+
+	public JointState GetState()
+	{
+		if (jointState == null)
+		{
+			jointState = gameObject.AddComponent<JointState>();
+		}
+
+		return jointState;
 	}
 }

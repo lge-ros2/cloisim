@@ -13,7 +13,7 @@ public class JointControlPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.JOINTCONTROL;
-		targetDevice = gameObject.AddComponent<Joints>();
+		targetDevice = gameObject.AddComponent<Joint>();
 	}
 
 	protected override void OnStart()
@@ -21,8 +21,8 @@ public class JointControlPlugin : CLOiSimPlugin
 		RegisterRxDevice("Rx");
 		RegisterTxDevice("Tx");
 
-		AddThread(SenderThread, targetDevice);
 		AddThread(ReceiverThread, targetDevice);
+		AddThread(SenderThread, targetDevice);
 
 		LoadJoints();
 	}
@@ -35,7 +35,7 @@ public class JointControlPlugin : CLOiSimPlugin
 	{
 		if (GetPluginParameters().GetValues<string>("joints/link", out var links))
 		{
-			var joints = targetDevice as Joints;
+			var joints = targetDevice as Joint;
 			foreach (var link in links)
 			{
 				if (joints != null)
@@ -53,10 +53,10 @@ public class JointControlPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_transform":
-				var micomSensor = (targetDevice as Micom).GetSensor();
-				var transformPartsName = requestValue.StringValue;
-				var devicePose = micomSensor.GetPartsPose(transformPartsName);
-				SetTransformInfoResponse(ref response, devicePose);
+				var jointState = (targetDevice as Joint).GetState();
+				// var transformPartsName = requestValue.StringValue;
+				// var devicePose = jointState.GetPartsPose(transformPartsName);
+				// SetTransformInfoResponse(ref response, devicePose);
 				break;
 
 			default:
