@@ -12,8 +12,29 @@ namespace SensorDevices
 {
 	public class JointCommand : Device
 	{
+		struct Command
+		{
+			public JointControl joint;
+			public float targetPosition;
+			public float targetVelocity;
+
+			public Command(in JointControl joint, in float targetPosition, in float targetVelocity)
+			{
+				this.joint = joint;
+				this.targetPosition = 0;
+				this.targetVelocity = 0;
+				Set(targetPosition, targetVelocity);
+			}
+
+			public void Set(in float targetPosition, in float targetVelocity)
+			{
+				this.targetPosition = targetPosition * (this.joint.IsRevoluteType() ? Mathf.Rad2Deg : 1);
+				this.targetVelocity = targetVelocity * (this.joint.IsRevoluteType() ? Mathf.Rad2Deg : 1);
+			}
+		}
+
 		private JointState jointState = null;
-		private List<string> jointControlLinkNames = new List<string>();
+		private Queue<Command> jointCommandQueue = new Queue<Command>();
 
 		protected override void OnAwake()
 		{
@@ -38,17 +59,11 @@ namespace SensorDevices
 
 				if (jointControl != null)
 				{
-					var effort = (float)jointCommand.Force;
 					var targetPosition = (float)jointCommand.Position.Target;
 					var targetVelocity = (float)jointCommand.Velocity.Target;
-					var duration = (float)(targetPosition / targetVelocity);
 
-					// jointControl.SetCommand(effort, targetPosition, targetVelocity, duration);
-
-					if (!jointControlLinkNames.Contains(linkName))
-					{
-						jointControlLinkNames.Add(linkName);
-					}
+					var newCommand = new Command(jointControl, targetPosition, targetVelocity);
+					jointCommandQueue.Enqueue(newCommand);
 				}
 			}
 		}
@@ -60,11 +75,10 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			for (var i = 0; i < jointControlLinkNames.Count; i++)
+			while (jointCommandQueue.Count > 0)
 			{
-				var linkName = jointControlLinkNames[i];
-				var jointControl = jointState.GetJointControl(linkName);
-				// jointControl.Drive();
+				var command = jointCommandQueue.Dequeue();
+				command.joint.Drive(JointControl.DriveType.POSITION_AND_VELOCITY, command.targetPosition, command.targetVelocity);
 			}
 		}
 	}

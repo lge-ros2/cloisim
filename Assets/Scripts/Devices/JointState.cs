@@ -19,7 +19,7 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
-			DeviceName = "JointsState";
+			DeviceName = "JointState";
 		}
 
 		protected override void OnStart()
@@ -64,7 +64,7 @@ namespace SensorDevices
 
 		public JointControl GetJointControl(in string targetLinkName)
 		{
-			return jointControlTable[targetLinkName];
+			return jointControlTable.ContainsKey(targetLinkName) ? jointControlTable[targetLinkName] : null;
 		}
 	}
 }

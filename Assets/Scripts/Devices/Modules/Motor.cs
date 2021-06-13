@@ -122,9 +122,9 @@ public class Motor : JointControl
 	public Motor(in GameObject gameObject)
 		: base(gameObject)
 	{
-		if (!jointType.Equals(ArticulationJointType.RevoluteJoint) && !jointType.Equals(ArticulationJointType.SphericalJoint))
+		if (!IsRevoluteType())
 		{
-			Debug.LogWarningFormat("joint type({0}) is not 'revolute'!!", joint.jointType);
+			Debug.LogWarningFormat("joint type({0}) is not 'revolute'!!", Type);
 		}
 	}
 
@@ -176,20 +176,9 @@ public class Motor : JointControl
 
 	public void Update()
 	{
-		if (this.joint == null)
-		{
-			Debug.LogWarning("motor Body is empty, please set target body first");
-			return;
-		}
-		else if (!this.jointType.Equals(ArticulationJointType.RevoluteJoint) && !this.jointType.Equals(ArticulationJointType.SphericalJoint))
-		{
-			Debug.LogWarning("Articulation Joint Type is wrong => " + this.joint.jointType);
-			return;
-		}
-
 		_currentMotorVelocity = GetMotorVelocity();
 		// Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
-		// 	this.joint.jointVelocity[0], this.joint.jointAcceleration[0], this.joint.jointForce[0], this.joint.jointFriction, this.joint.jointPosition[0]);
+		// 	Body.jointVelocity[0], Body.jointAcceleration[0], Body.jointForce[0], Body.jointFriction, Body.jointPosition[0]);
 
 		// do stop motion of motor when motor disabled
 		if (_enableMotor)
@@ -237,7 +226,7 @@ public class Motor : JointControl
 
 	private void SetTargetForceAndVelocity(in float targetForce, in float targetVelocity)
 	{
-		Drive(targetForce, targetVelocity);
+		Drive(JointControl.DriveType.FORCE_AND_VELOCITY, targetForce, targetVelocity);
 	}
 
 	private float GetMotorVelocity()
