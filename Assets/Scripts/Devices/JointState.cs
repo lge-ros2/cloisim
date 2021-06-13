@@ -12,7 +12,7 @@ namespace SensorDevices
 {
 	public class JointState : Device
 	{
-		private Dictionary<string, ArticulationBody> jointBodyTable = new Dictionary<string, ArticulationBody>();
+		private Dictionary<string, JointControl> jointControlTable = new Dictionary<string, JointControl>();
 
 		private messages.JointStateV jointStates = null;
 
@@ -53,12 +53,18 @@ namespace SensorDevices
 			{
 				if (childArticulatinoBody.name.Equals(linkName))
 				{
-					jointBodyTable.Add(linkName, childArticulatinoBody);
+					var jointControl = new JointControl(childArticulatinoBody);
+					jointControlTable.Add(linkName, jointControl);
 					return true;
 				}
 			}
 
 			return false;
+		}
+
+		public JointControl GetJointControl(in string targetLinkName)
+		{
+			return jointControlTable[targetLinkName];
 		}
 	}
 }

@@ -53,8 +53,7 @@ public class MotorControl
 
 	public void AddWheelInfo(in WheelLocation location, in GameObject targetMotorObject)
 	{
-		var motor = new Motor();
-		motor.SetTargetJoint(targetMotorObject);
+		var motor = new Motor(targetMotorObject);
 		motor.SetPID(pidGainP, pidGainI, pidGainD);
 
 		wheelList[location] = motor;
