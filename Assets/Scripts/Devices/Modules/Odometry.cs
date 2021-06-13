@@ -9,19 +9,36 @@ using messages = cloisim.msgs;
 
 public class Odometry
 {
+	public struct WheelInfo
+	{
+		public float wheelRadius;
+		public float wheelTread;
+		public float inverseWheelRadius; // for computational performance
+
+		public WheelInfo(in float radius = 0.1f, in float tread = 0)
+		{
+			this.wheelRadius = radius;
+			this.wheelTread = tread;
+			this.inverseWheelRadius = 1.0f / wheelRadius;
+		}
+	}
+
 	private const float _PI = Mathf.PI;
 	private const float _2_PI = _PI * 2.0f;
 
 	private MotorControl motorControl = null;
-	private Micom.WheelInfo wheelInfo;
+	private WheelInfo wheelInfo;
 
 	private float lastImuYaw = 0f;
 	private Vector3 _odomPose = Vector3.zero;
 	private Vector2 _odomVelocity = Vector2.zero;
 
-	public Odometry(Micom.WheelInfo wheelInfo)
+	public float WheelTread => this.wheelInfo.wheelTread;
+	public float InverseWheelRadius => this.wheelInfo.inverseWheelRadius;
+
+	public Odometry(in float radius, in float tread)
 	{
-		this.wheelInfo = wheelInfo;
+		this.wheelInfo = new WheelInfo(radius, tread);;
 	}
 
 	public void SetMotorControl(in MotorControl motorControl)

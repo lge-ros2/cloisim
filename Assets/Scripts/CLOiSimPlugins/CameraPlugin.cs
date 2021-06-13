@@ -8,11 +8,23 @@ using Any = cloisim.msgs.Any;
 
 public class CameraPlugin : CLOiSimPlugin
 {
-	public string subPartName = string.Empty;
+	private SensorDevices.Camera cam = null;
+	private string subPartsName = string.Empty;
 
 	public SensorDevices.Camera GetCamera()
 	{
-		return targetDevice as SensorDevices.Camera;
+		return cam;
+	}
+
+	public SensorDevices.DepthCamera GetDepthCamera()
+	{
+		return GetCamera() as SensorDevices.DepthCamera;
+	}
+
+	public string SubPartsName
+	{
+		get => this.subPartsName;
+		set => this.subPartsName = value;
 	}
 
 	protected override void OnAwake()
@@ -21,12 +33,14 @@ public class CameraPlugin : CLOiSimPlugin
 		if (depthcam is null)
 		{
 			ChangePluginType(ICLOiSimPlugin.Type.CAMERA);
-			targetDevice = gameObject.GetComponent<SensorDevices.Camera>();
+			cam = gameObject.GetComponent<SensorDevices.Camera>();
+			attachedDevices.Add("Camera", cam);
 		}
 		else
 		{
 			ChangePluginType(ICLOiSimPlugin.Type.DEPTHCAMERA);
-			targetDevice = depthcam;
+			cam = depthcam;
+			attachedDevices.Add("DepthCamera", cam);
 		}
 
 		partsName = DeviceHelper.GetPartName(gameObject);
@@ -34,11 +48,11 @@ public class CameraPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		RegisterServiceDevice(subPartName + "Info");
-		RegisterTxDevice(subPartName + "Data");
+		RegisterServiceDevice(subPartsName + "Info");
+		RegisterTxDevice(subPartsName + "Data");
 
 		AddThread(ServiceThread);
-		AddThread(SenderThread, targetDevice);
+		AddThread(SenderThread, cam);
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
@@ -46,13 +60,12 @@ public class CameraPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_camera_info":
-				var cam = targetDevice as SensorDevices.Camera;
 				var cameraInfoMessage = cam.GetCameraInfo();
 				SetCameraInfoResponse(ref response, cameraInfoMessage);
 				break;
 
 			case "request_transform":
-				var devicePose = targetDevice.GetPose();
+				var devicePose = cam.GetPose();
 				SetTransformInfoResponse(ref response, devicePose);
 				break;
 

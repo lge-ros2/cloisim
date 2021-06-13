@@ -8,34 +8,37 @@ using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
 
-public class JointCommand : Device
+namespace SensorDevices
 {
-	private Dictionary<string, ArticulationBody> jointBodyTable = new Dictionary<string, ArticulationBody>();
-
-	protected override void OnAwake()
+	public class JointCommand : Device
 	{
-		Mode = ModeType.RX_THREAD;
-		DeviceName = "JointCommand";
-	}
+		private Dictionary<string, ArticulationBody> jointBodyTable = new Dictionary<string, ArticulationBody>();
 
-	protected override void OnStart()
-	{
-	}
-
-	protected override void OnReset()
-	{
-	}
-
-	protected override void ProcessDevice()
-	{
-		if (PopDeviceMessage<messages.JointCmd>(out var jointCommand))
+		protected override void OnAwake()
 		{
-			var linkName = jointCommand.Name;
-			var effort = jointCommand.Force;
-			var targetPosition = jointCommand.Position.Target;
-			var targetVelocity = jointCommand.Velocity.Target;
-			var duration = targetVelocity/targetPosition;
+			Mode = ModeType.RX_THREAD;
+			DeviceName = "JointCommand";
+		}
 
+		protected override void OnStart()
+		{
+		}
+
+		protected override void OnReset()
+		{
+		}
+
+		protected override void ProcessDevice()
+		{
+			if (PopDeviceMessage<messages.JointCmd>(out var jointCommand))
+			{
+				var linkName = jointCommand.Name;
+				var effort = jointCommand.Force;
+				var targetPosition = jointCommand.Position.Target;
+				var targetVelocity = jointCommand.Velocity.Target;
+				var duration = targetVelocity / targetPosition;
+
+			}
 		}
 	}
 }

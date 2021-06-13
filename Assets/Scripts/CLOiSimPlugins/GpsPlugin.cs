@@ -8,10 +8,12 @@ using Any = cloisim.msgs.Any;
 
 public class GpsPlugin : CLOiSimPlugin
 {
+	private SensorDevices.GPS gps = null;
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.GPS;
-		targetDevice = gameObject.GetComponent<SensorDevices.GPS>();
+		gps = gameObject.GetComponent<SensorDevices.GPS>();
+		attachedDevices.Add("GPS", gps);
 		partsName = DeviceHelper.GetPartName(gameObject);
 	}
 
@@ -21,7 +23,7 @@ public class GpsPlugin : CLOiSimPlugin
 		RegisterTxDevice("Data");
 
 		AddThread(ServiceThread);
-		AddThread(SenderThread, targetDevice);
+		AddThread(SenderThread, gps);
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
@@ -29,7 +31,7 @@ public class GpsPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_transform":
-				var devicePose = targetDevice.GetPose();
+				var devicePose = gps.GetPose();
 				SetTransformInfoResponse(ref response, devicePose);
 				break;
 

@@ -13,9 +13,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	protected Requestor Requestor => thread.Requestor;
 	protected Responsor Responsor => thread.Responsor;
 
-	private bool PrepareDevice(in string subPartName, out ushort port, out ulong hash)
+	private bool PrepareDevice(in string subPartsName, out ushort port, out ulong hash)
 	{
-		if (BridgeManager.AllocateDevice(type.ToString(), modelName, partsName, subPartName, out var hashKey, out port))
+		if (BridgeManager.AllocateDevice(type.ToString(), modelName, partsName, subPartsName, out var hashKey, out port))
 		{
 			allocatedDeviceHashKeys.Add(hashKey);
 
@@ -35,9 +35,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return true;
 	}
 
-	protected bool RegisterTxDevice(in string subPartName = "")
+	protected bool RegisterTxDevice(in string subPartsName = "")
 	{
-		if (PrepareDevice(subPartName, out var port, out var hash))
+		if (PrepareDevice(subPartsName, out var port, out var hash))
 		{
 			thread.InitializePublisher(port, hash);
 			return true;
@@ -48,9 +48,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return false;
 	}
 
-	protected bool RegisterRxDevice(in string subPartName = "")
+	protected bool RegisterRxDevice(in string subPartsName = "")
 	{
-		if (PrepareDevice(subPartName, out var port, out var hash))
+		if (PrepareDevice(subPartsName, out var port, out var hash))
 		{
 			thread.InitializeSubscriber(port, hash);
 			return true;
@@ -61,9 +61,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return false;
 	}
 
-	protected bool RegisterServiceDevice(in string subPartName = "")
+	protected bool RegisterServiceDevice(in string subPartsName = "")
 	{
-		if (PrepareDevice(subPartName, out var port, out var hash))
+		if (PrepareDevice(subPartsName, out var port, out var hash))
 		{
 			thread.InitializeResponsor(port, hash);
 			return true;
@@ -74,9 +74,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return false;
 	}
 
-	protected bool RegisterClientDevice(in string subPartName = "")
+	protected bool RegisterClientDevice(in string subPartsName = "")
 	{
-		if (PrepareDevice(subPartName, out var port, out var hash))
+		if (PrepareDevice(subPartsName, out var port, out var hash))
 		{
 			thread.InitializeRequester(port, hash);
 			return true;

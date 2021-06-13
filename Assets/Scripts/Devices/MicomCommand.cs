@@ -7,66 +7,65 @@
 using UnityEngine;
 using messages = cloisim.msgs;
 
-public class MicomCommand : Device
+namespace SensorDevices
 {
-	private MotorControl motorControl = null;
-
-	protected override void OnAwake()
+	public class MicomCommand : Device
 	{
-		Mode = ModeType.RX_THREAD;
-		DeviceName = "MicomCommand";
-	}
+		private MotorControl motorControl = null;
 
-	protected override void OnStart()
-	{
-	}
-
-	protected override void OnReset()
-	{
-		DoWheelDrive(Vector3.zero, Vector3.zero);
-	}
-
-	protected override void ProcessDevice()
-	{
-		if (PopDeviceMessage<messages.Twist>(out var micomWritingData))
+		protected override void OnAwake()
 		{
-			var linear = micomWritingData.Linear;
-			var angular = micomWritingData.Angular;
-
-			// Right-handed -> Left-handed direction of rotation
-			var linearVelocity = -SDF2Unity.GetPosition(linear.X, linear.Y, linear.Z);
-			var angularVelocity = -SDF2Unity.GetPosition(angular.X, angular.Y, angular.Z);
-
-			DoWheelDrive(linearVelocity, angularVelocity);
-		}
-		else
-		{
-			Debug.LogWarning("ERROR: failed to pop deevice message");
-		}
-	}
-
-	public void SetMotorControl(in MotorControl motorControl)
-	{
-		this.motorControl = motorControl;
-	}
-
-	/// <param name="linearVelocity">m/s</param>
-	/// <param name="angularVelocity">rad/s</param>
-	private void DoWheelDrive(in Vector3 linearVelocity, in Vector3 angularVelocity)
-	{
-		if (motorControl == null)
-		{
-			Debug.LogWarning("micom device for wheel drive is not ready!!");
-			return;
+			Mode = ModeType.RX_THREAD;
+			DeviceName = "MicomCommand";
 		}
 
-		var targetLinearVelocity = linearVelocity.z;
-		var targetAngularVelocity = angularVelocity.y;
-		motorControl.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
-		motorControl.UpdateMotorFeedback(targetAngularVelocity);
-	}
+		protected override void OnStart()
+		{
+		}
 
-	private void DoJointControl(in string jointName, in float jointVelocity, in float duration)
-	{
+		protected override void OnReset()
+		{
+			DoWheelDrive(Vector3.zero, Vector3.zero);
+		}
+
+		public void SetMotorControl(in MotorControl motorControl)
+		{
+			this.motorControl = motorControl;
+		}
+
+		protected override void ProcessDevice()
+		{
+			if (PopDeviceMessage<messages.Twist>(out var micomWritingData))
+			{
+				var linear = micomWritingData.Linear;
+				var angular = micomWritingData.Angular;
+
+				// Right-handed -> Left-handed direction of rotation
+				var linearVelocity = -SDF2Unity.GetPosition(linear.X, linear.Y, linear.Z);
+				var angularVelocity = -SDF2Unity.GetPosition(angular.X, angular.Y, angular.Z);
+
+				DoWheelDrive(linearVelocity, angularVelocity);
+			}
+			else
+			{
+				Debug.LogWarning("ERROR: failed to pop deevice message");
+			}
+		}
+
+		/// <param name="linearVelocity">m/s</param>
+		/// <param name="angularVelocity">rad/s</param>
+		private void DoWheelDrive(in Vector3 linearVelocity, in Vector3 angularVelocity)
+		{
+			if (motorControl == null)
+			{
+				Debug.LogWarning("micom device for wheel drive is not ready!!");
+				return;
+			}
+
+			var targetLinearVelocity = linearVelocity.z;
+			var targetAngularVelocity = angularVelocity.y;
+			motorControl.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
+			motorControl.UpdateMotorFeedback(targetAngularVelocity);
+		}
 	}
 }

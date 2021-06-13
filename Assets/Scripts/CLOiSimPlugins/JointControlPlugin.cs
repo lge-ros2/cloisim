@@ -10,10 +10,17 @@ using Any = cloisim.msgs.Any;
 
 public class JointControlPlugin : CLOiSimPlugin
 {
+	private SensorDevices.JointCommand jointCommand = null;
+	private SensorDevices.JointState jointState = null;
+
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.JOINTCONTROL;
-		targetDevice = gameObject.AddComponent<Joint>();
+		jointCommand = gameObject.AddComponent<SensorDevices.JointCommand>();
+		jointState = gameObject.AddComponent<SensorDevices.JointState>();
+
+		attachedDevices.Add("command", jointCommand);
+		attachedDevices.Add("states", jointState);
 	}
 
 	protected override void OnStart()
@@ -21,8 +28,8 @@ public class JointControlPlugin : CLOiSimPlugin
 		RegisterRxDevice("Rx");
 		RegisterTxDevice("Tx");
 
-		AddThread(ReceiverThread, targetDevice);
-		AddThread(SenderThread, targetDevice);
+		AddThread(ReceiverThread, jointCommand);
+		AddThread(SenderThread, jointState);
 
 		LoadJoints();
 	}
@@ -35,12 +42,11 @@ public class JointControlPlugin : CLOiSimPlugin
 	{
 		if (GetPluginParameters().GetValues<string>("joints/link", out var links))
 		{
-			var joints = targetDevice as Joint;
 			foreach (var link in links)
 			{
-				if (joints != null)
+				if (jointState != null)
 				{
-					joints.AddTarget(link);
+					jointState.AddTarget(link);
 					Debug.Log(link);
 				}
 			}
@@ -53,7 +59,7 @@ public class JointControlPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_transform":
-				var jointState = (targetDevice as Joint).GetState();
+				// var jointState = (attachedDevices as Joint).GetState();
 				// var transformPartsName = requestValue.StringValue;
 				// var devicePose = jointState.GetPartsPose(transformPartsName);
 				// SetTransformInfoResponse(ref response, devicePose);

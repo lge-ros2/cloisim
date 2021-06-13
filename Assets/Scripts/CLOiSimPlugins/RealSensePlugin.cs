@@ -47,7 +47,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		if (depthName != null)
 		{
 			var plugin = FindAndAddCameraPlugin(depthName);
-			var depthCamera = plugin.GetCamera() as SensorDevices.DepthCamera;
+			var depthCamera = plugin.GetDepthCamera();
 
 			if (depthCamera != null)
 			{
@@ -69,7 +69,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 			{
 				var plugin = camera.gameObject.AddComponent<CameraPlugin>();
 				plugin.ChangePluginType(ICLOiSimPlugin.Type.REALSENSE);
-				plugin.subPartName = name;
+				plugin.SubPartsName = name;
 
 				camera.SetSubParts(true);
 

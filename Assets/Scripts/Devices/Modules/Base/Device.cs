@@ -25,7 +25,7 @@ public abstract class Device : MonoBehaviour
 
 	private float updateRate = 1;
 
-	private bool debugginOn = true;
+	private bool debuggingOn = true;
 	private bool visualize = true;
 
 	private float transportingTimeSeconds = 0;
@@ -49,8 +49,8 @@ public abstract class Device : MonoBehaviour
 
 	public bool EnableDebugging
 	{
-		get => debugginOn;
-		set => debugginOn = value;
+		get => debuggingOn;
+		set => debuggingOn = value;
 	}
 
 	public bool EnableVisualize

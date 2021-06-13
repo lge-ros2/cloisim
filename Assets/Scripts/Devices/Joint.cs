@@ -7,60 +7,46 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Joint : Device
+namespace SensorDevices
 {
-	private Dictionary<string, ArticulationBody> jointBodyTable = new Dictionary<string, ArticulationBody>();
-
-	private JointCommand jointCommand = null;
-	private JointState jointState = null;
-
-	protected override void OnAwake()
+	public class Joint : Device
 	{
-		Mode = ModeType.NONE;
-		DeviceName = "Joint";
-	}
 
-	protected override void OnStart()
-	{
-	}
+		private JointCommand jointCommand = null;
+		private JointState jointState = null;
 
-	protected override void OnReset()
-	{
-	}
-
-	public bool AddTarget(in string linkName)
-	{
-		var childArticulationBodies = gameObject.GetComponentsInChildren<ArticulationBody>();
-
-		foreach (var childArticulatinoBody in childArticulationBodies)
+		protected override void OnAwake()
 		{
-			if (childArticulatinoBody.name.Equals(linkName))
+			Mode = ModeType.NONE;
+			DeviceName = "Joint";
+		}
+
+		protected override void OnStart()
+		{
+		}
+
+		protected override void OnReset()
+		{
+		}
+
+		public JointCommand GetCommand()
+		{
+			if (jointCommand == null)
 			{
-				jointBodyTable.Add(linkName, childArticulatinoBody);
-				return true;
+				jointCommand = gameObject.AddComponent<JointCommand>();
 			}
+
+			return jointCommand;
 		}
 
-		return false;
-	}
-
-	public JointCommand GetCommand()
-	{
-		if (jointCommand == null)
+		public JointState GetState()
 		{
-			jointCommand = gameObject.AddComponent<JointCommand>();
+			if (jointState == null)
+			{
+				jointState = gameObject.AddComponent<JointState>();
+			}
+
+			return jointState;
 		}
-
-		return jointCommand;
-	}
-
-	public JointState GetState()
-	{
-		if (jointState == null)
-		{
-			jointState = gameObject.AddComponent<JointState>();
-		}
-
-		return jointState;
 	}
 }

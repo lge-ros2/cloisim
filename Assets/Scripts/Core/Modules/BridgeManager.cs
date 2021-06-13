@@ -141,14 +141,14 @@ public class BridgeManager : IDisposable
 		return true;
 	}
 
-	private static string MakeHashKey(in string modelName, in string partsName, in string subPartName)
+	private static string MakeHashKey(in string modelName, in string partsName, in string subPartsName)
 	{
-		return modelName + partsName + subPartName;
+		return modelName + partsName + subPartsName;
 	}
 
-	public static bool AllocateDevice(in string deviceType, in string modelName, in string partsName, in string subPartName, out string hashKey, out ushort port)
+	public static bool AllocateDevice(in string deviceType, in string modelName, in string partsName, in string subPartsName, out string hashKey, out ushort port)
 	{
-		hashKey = MakeHashKey(modelName, partsName, subPartName);
+		hashKey = MakeHashKey(modelName, partsName, subPartsName);
 
 		if (string.IsNullOrEmpty(hashKey))
 		{
@@ -168,19 +168,19 @@ public class BridgeManager : IDisposable
 				{
 					if (partsMapTable.TryGetValue(partsName, out var portsMapTable))
 					{
-						portsMapTable.Add(subPartName, port);
+						portsMapTable.Add(subPartsName, port);
 					}
 					else
 					{
 						var newPortsMapTable = new Dictionary<string, ushort>();
-						newPortsMapTable.Add(subPartName, port);
+						newPortsMapTable.Add(subPartsName, port);
 						partsMapTable.Add(partsName, newPortsMapTable);
 					}
 				}
 				else
 				{
 					var portsMapTable = new Dictionary<string, ushort>();
-					portsMapTable.Add(subPartName, port);
+					portsMapTable.Add(subPartsName, port);
 					var newPartsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
 					newPartsMapTable.Add(partsName, portsMapTable);
 
@@ -190,7 +190,7 @@ public class BridgeManager : IDisposable
 			else
 			{
 				var portsMapTable = new Dictionary<string, ushort>();
-				portsMapTable.Add(subPartName, port);
+				portsMapTable.Add(subPartsName, port);
 				var partsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
 				partsMapTable.Add(partsName, portsMapTable);
 				var devicesTypeMap = new Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>();
