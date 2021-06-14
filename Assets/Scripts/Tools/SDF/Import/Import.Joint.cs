@@ -132,7 +132,7 @@ namespace SDF
 						break;
 
 					case "prismatic":
-						Implement.Joint.MakePrismatic(articulationBodyChild, joint.Axis, joint.PhysicsODE, joint.Pose);
+						Implement.Joint.MakePrismatic(articulationBodyChild, joint.Axis, joint.Pose);
 						break;
 
 					case "revolute":
