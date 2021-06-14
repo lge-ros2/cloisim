@@ -60,6 +60,16 @@ public class Articulation
 		return (this.joint == null) ? 0 : this.joint.jointPosition[index];
 	}
 
+	public float GetJointForce(in int index = 0)
+	{
+		return (this.joint == null) ? 0 : this.joint.jointForce[index];
+	}
+
+	public float GetJointVelocity(in int index = 0)
+	{
+		return (this.joint == null) ? 0 : this.joint.jointVelocity[index];
+	}
+
 	/// <param name="target">force or torque desired for FORCE_AND_VELOCITY type and position for POSITION_AND_VELOCITY.</param>
 	/// <param name="targetVelocity">angular velocity in degrees per second.</param>
 	public void Drive(in DriveType type, in float target, in float targetVelocity)

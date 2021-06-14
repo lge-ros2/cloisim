@@ -5,6 +5,7 @@
  */
 
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -12,9 +13,11 @@ namespace SensorDevices
 {
 	public class JointState : Device
 	{
-		private Dictionary<string, Articulation> articulationTable = new Dictionary<string, Articulation>();
+		private Dictionary<string, Tuple<Articulation, messages.JointState>> articulationTable = new Dictionary<string, Tuple<Articulation, messages.JointState>>();
 
-		private messages.JointStateV jointStates = null;
+		private messages.JointStateV jointStateV = null;
+
+		private List<messages.JointState> jointStateList = new List<messages.JointState>();
 
 		protected override void OnAwake()
 		{
@@ -32,17 +35,15 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			jointStates = new messages.JointStateV();
-			jointStates.Header = new messages.Header();
-			jointStates.Header.Stamp = new messages.Time();
+			jointStateV = new messages.JointStateV();
+			jointStateV.Header = new messages.Header();
+			jointStateV.Header.Stamp = new messages.Time();
 		}
 
 		protected override void GenerateMessage()
 		{
-			DeviceHelper.SetCurrentTime(jointStates.Header.Stamp);
-
-
-			PushDeviceMessage<messages.JointStateV>(jointStates);
+			DeviceHelper.SetCurrentTime(jointStateV.Header.Stamp);
+			PushDeviceMessage<messages.JointStateV>(jointStateV);
 		}
 
 		public bool AddTarget(in string linkName)
@@ -54,7 +55,12 @@ namespace SensorDevices
 				if (childArticulatinoBody.name.Equals(linkName))
 				{
 					var articulation = new Articulation(childArticulatinoBody);
-					articulationTable.Add(linkName, articulation);
+
+					var jointState = new messages.JointState();
+					jointState.Name = linkName;
+
+					articulationTable.Add(linkName, new Tuple<Articulation, messages.JointState>(articulation, jointState));
+					jointStateV.JointStates.Add(jointState);
 					return true;
 				}
 			}
@@ -64,7 +70,20 @@ namespace SensorDevices
 
 		public Articulation GetArticulation(in string targetLinkName)
 		{
-			return articulationTable.ContainsKey(targetLinkName) ? articulationTable[targetLinkName] : null;
+			return articulationTable.ContainsKey(targetLinkName) ? articulationTable[targetLinkName].Item1 : null;
+		}
+
+		void FixedUpdate()
+		{
+			foreach (var item in articulationTable.Values)
+			{
+				var articulation = item.Item1;
+				var jointState = item.Item2;
+
+				jointState.Effort = articulation.GetJointForce();
+				jointState.Position = articulation.GetJointPosition();
+				jointState.Velocity = articulation.GetJointVelocity();
+			}
 		}
 	}
 }

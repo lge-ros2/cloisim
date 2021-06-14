@@ -41,6 +41,9 @@ public class JointControlPlugin : CLOiSimPlugin
 
 	private void LoadJoints()
 	{
+		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
+		jointState.SetUpdateRate(updateRate);
+
 		if (GetPluginParameters().GetValues<string>("joints/link", out var links))
 		{
 			foreach (var link in links)
@@ -53,7 +56,6 @@ public class JointControlPlugin : CLOiSimPlugin
 			}
 		}
 	}
-
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
 	{
