@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-public class Motor : JointControl
+public class Motor : Articulation
 {
 	public class RapidChangeControl
 	{
@@ -226,7 +226,7 @@ public class Motor : JointControl
 
 	private void SetTargetForceAndVelocity(in float targetForce, in float targetVelocity)
 	{
-		Drive(JointControl.DriveType.FORCE_AND_VELOCITY, targetForce, targetVelocity);
+		Drive(Articulation.DriveType.FORCE_AND_VELOCITY, targetForce, targetVelocity);
 	}
 
 	private float GetMotorVelocity()

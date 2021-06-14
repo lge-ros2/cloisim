@@ -14,11 +14,11 @@ namespace SensorDevices
 	{
 		struct Command
 		{
-			public JointControl joint;
+			public Articulation joint;
 			public float targetPosition;
 			public float targetVelocity;
 
-			public Command(in JointControl joint, in float targetPosition, in float targetVelocity)
+			public Command(in Articulation joint, in float targetPosition, in float targetVelocity)
 			{
 				this.joint = joint;
 				this.targetPosition = 0;
@@ -55,14 +55,14 @@ namespace SensorDevices
 			if (PopDeviceMessage<messages.JointCmd>(out var jointCommand))
 			{
 				var linkName = jointCommand.Name;
-				var jointControl = jointState.GetJointControl(linkName);
+				var articulation = jointState.GetArticulation(linkName);
 
-				if (jointControl != null)
+				if (articulation != null)
 				{
 					var targetPosition = (float)jointCommand.Position.Target;
 					var targetVelocity = (float)jointCommand.Velocity.Target;
 
-					var newCommand = new Command(jointControl, targetPosition, targetVelocity);
+					var newCommand = new Command(articulation, targetPosition, targetVelocity);
 					jointCommandQueue.Enqueue(newCommand);
 				}
 			}
@@ -78,7 +78,7 @@ namespace SensorDevices
 			while (jointCommandQueue.Count > 0)
 			{
 				var command = jointCommandQueue.Dequeue();
-				command.joint.Drive(JointControl.DriveType.POSITION_AND_VELOCITY, command.targetPosition, command.targetVelocity);
+				command.joint.Drive(Articulation.DriveType.POSITION_AND_VELOCITY, command.targetPosition, command.targetVelocity);
 			}
 		}
 	}

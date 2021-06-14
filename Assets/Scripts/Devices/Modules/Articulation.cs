@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-public class JointControl
+public class Articulation
 {
 	public enum DriveType {NONE, FORCE_AND_VELOCITY, POSITION_AND_VELOCITY};
 	private DriveType driveType = DriveType.NONE;
@@ -16,13 +16,13 @@ public class JointControl
 
 	public ArticulationJointType Type => jointType;
 
-	public JointControl(in ArticulationBody joint)
+	public Articulation(in ArticulationBody joint)
 	{
 		this.joint = joint;
 		this.jointType = this.joint.jointType;
 	}
 
-	public JointControl(in GameObject target)
+	public Articulation(in GameObject target)
 	{
 		var body = target.GetComponentInChildren<ArticulationBody>();
 		this.joint = body;

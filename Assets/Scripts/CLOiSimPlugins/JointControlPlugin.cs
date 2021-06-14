@@ -60,7 +60,7 @@ public class JointControlPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_transform":
-				// var jointState = (attachedDevices as Joint).GetState();
+				// var jointState = (attachedDevices as Articulation).GetState();
 				// var transformPartsName = requestValue.StringValue;
 				// var devicePose = jointState.GetPartsPose(transformPartsName);
 				// SetTransformInfoResponse(ref response, devicePose);
