@@ -50,11 +50,12 @@ namespace SensorDevices
 		{
 			var childArticulationBodies = gameObject.GetComponentsInChildren<ArticulationBody>();
 
-			foreach (var childArticulatinoBody in childArticulationBodies)
+			foreach (var childArticulationBody in childArticulationBodies)
 			{
-				if (childArticulatinoBody.name.Equals(linkName))
+				if (childArticulationBody.name.Equals(linkName))
 				{
-					var articulation = new Articulation(childArticulatinoBody);
+					var articulation = new Articulation(childArticulationBody);
+					articulation.SetDriveType(Articulation.DriveType.POSITION_AND_VELOCITY);
 
 					var jointState = new messages.JointState();
 					jointState.Name = linkName;
@@ -80,7 +81,7 @@ namespace SensorDevices
 				var articulation = item.Item1;
 				var jointState = item.Item2;
 
-				jointState.Effort = articulation.GetJointForce();
+				jointState.Effort = articulation.GetEffort();
 				jointState.Position = articulation.GetJointPosition();
 				jointState.Velocity = articulation.GetJointVelocity();
 			}

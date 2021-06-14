@@ -125,6 +125,8 @@ public class Motor : Articulation
 		{
 			Debug.LogWarningFormat("joint type({0}) is not 'revolute'!!", Type);
 		}
+
+		SetDriveType(DriveType.FORCE_AND_VELOCITY);
 	}
 
 	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
@@ -217,9 +219,8 @@ public class Motor : Articulation
 		Reset();
 	}
 
-
 	private void SetTargetForceAndVelocity(in float targetForce, in float targetVelocity)
 	{
-		Drive(Articulation.DriveType.FORCE_AND_VELOCITY, targetForce, targetVelocity);
+		Drive(targetForce, targetVelocity);
 	}
 }

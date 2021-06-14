@@ -55,27 +55,51 @@ public class Articulation
 		}
 	}
 
-	/// <returns>in radian for angular and in meters for linear</param>
-	public float GetJointPosition(in int index = 0)
+	private int GetValidIndex(in int index)
 	{
+		return (index >= this.joint.dofCount) ? (this.joint.dofCount - 1) : index;
+	}
+
+	/// <returns>in radian for angular and in meters for linear</param>
+	public float GetJointPosition(int index = 0)
+	{
+		index = GetValidIndex(index);
 		return (this.joint == null) ? 0 : this.joint.jointPosition[index];
 	}
 
 	/// <returns>torque for angular and force for linear</param>
-	public float GetJointForce(in int index = 0)
+	public float GetJointForce(int index = 0)
 	{
+		index = GetValidIndex(index);
+		// Debug.Log(this.joint.name + ": " + this.joint.dofCount + ", " + this.joint.jointAcceleration[0] + ", " + this.joint.jointForce[0]);
 		return (this.joint == null) ? 0 : this.joint.jointForce[index];
 	}
 
 	/// <returns>in radian for angular and in meters for linear</param>
-	public float GetJointVelocity(in int index = 0)
+	public float GetJointVelocity(int index = 0)
 	{
+		index = GetValidIndex(index);
 		return (this.joint == null) ? 0 : this.joint.jointVelocity[index];
 	}
 
+	/// <returns>torque for angular and force for linear</param>
+	public float GetEffort()
+	{
+		var drive = DeviceHelper.GetDrive(ref this.joint);
+		var F = drive.stiffness * (GetJointPosition() - drive.target) - drive.damping * (GetJointVelocity() - drive.targetVelocity);
+		// Debug.Log(this.joint.name + ": Calculated force = " + F);
+		return F;
+	}
+
+	// public void Update()
+	// {
+	// 	var drive = DeviceHelper.GetDrive(ref this.joint);
+	// 	DeviceHelper.SetDrive(ref this.joint, drive);
+	// }
+
 	/// <param name="target">force or torque desired for FORCE_AND_VELOCITY type and position for POSITION_AND_VELOCITY.</param>
 	/// <param name="targetVelocity">angular velocity in degrees per second.</param>
-	public void Drive(in DriveType type, in float target, in float targetVelocity)
+	public void Drive(in float target, in float targetVelocity)
 	{
 		if (this.joint == null)
 		{
@@ -87,7 +111,7 @@ public class Articulation
 		// F = stiffness * (currentPosition - target) - damping * (currentVelocity - targetVelocity).
 		var drive = DeviceHelper.GetDrive(ref this.joint);
 
-		switch (type)
+		switch (this.driveType)
 		{
 			case DriveType.FORCE_AND_VELOCITY:
 				drive.damping = target;
@@ -96,7 +120,9 @@ public class Articulation
 				drive.target = target;
 				break;
 		}
+
 		drive.targetVelocity = targetVelocity;
+
 		DeviceHelper.SetDrive(ref this.joint, drive);
 	}
 }
