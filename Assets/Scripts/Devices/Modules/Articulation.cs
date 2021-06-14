@@ -55,16 +55,19 @@ public class Articulation
 		}
 	}
 
+	/// <returns>in radian for angular and in meters for linear</param>
 	public float GetJointPosition(in int index = 0)
 	{
 		return (this.joint == null) ? 0 : this.joint.jointPosition[index];
 	}
 
+	/// <returns>torque for angular and force for linear</param>
 	public float GetJointForce(in int index = 0)
 	{
 		return (this.joint == null) ? 0 : this.joint.jointForce[index];
 	}
 
+	/// <returns>in radian for angular and in meters for linear</param>
 	public float GetJointVelocity(in int index = 0)
 	{
 		return (this.joint == null) ? 0 : this.joint.jointVelocity[index];

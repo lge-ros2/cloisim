@@ -117,7 +117,6 @@ public class Motor : Articulation
 	private float _targetAngularVelocity = 0;
 	private float _targetTorque = 0;
 	private float _currentMotorVelocity = 0;
-	private float _prevJointPosition = 0;
 
 	public Motor(in GameObject gameObject)
 		: base(gameObject)
@@ -133,13 +132,8 @@ public class Motor : Articulation
 		_pidControl = new PID(pFactor, iFactor, dFactor, 50, -50, 300, -300);
 	}
 
-	public PID GetPID()
-	{
-		return _pidControl;
-	}
-
 	/// <summary>Get Current Joint Velocity</summary>
-	/// <remarks>degree per second</remarks>
+	/// <remarks>radian per second</remarks>
 	public float GetCurrentVelocity()
 	{
 		return _currentMotorVelocity;
@@ -176,7 +170,7 @@ public class Motor : Articulation
 
 	public void Update()
 	{
-		_currentMotorVelocity = GetMotorVelocity();
+		_currentMotorVelocity = GetJointVelocity();
 		// Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
 		// 	Body.jointVelocity[0], Body.jointAcceleration[0], Body.jointForce[0], Body.jointFriction, Body.jointPosition[0]);
 
@@ -227,15 +221,5 @@ public class Motor : Articulation
 	private void SetTargetForceAndVelocity(in float targetForce, in float targetVelocity)
 	{
 		Drive(Articulation.DriveType.FORCE_AND_VELOCITY, targetForce, targetVelocity);
-	}
-
-	private float GetMotorVelocity()
-	{
-		// calculate velocity using joint position is more accurate than joint velocity
-		var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
-		var jointVelocity = (Mathf.DeltaAngle(_prevJointPosition, jointPosition) / Time.fixedDeltaTime);
-		_prevJointPosition = jointPosition;
-
-		return jointVelocity;
 	}
 }

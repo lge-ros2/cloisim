@@ -107,8 +107,8 @@ public class Odometry
 
 		// Set reversed value due to different direction
 		// Left-handed -> Right-handed direction of rotation
-		odomMessage.AngularVelocity.Left = -angularVelocityLeft * Mathf.Deg2Rad;
-		odomMessage.AngularVelocity.Right = -angularVelocityRight * Mathf.Deg2Rad;
+		odomMessage.AngularVelocity.Left = -angularVelocityLeft;
+		odomMessage.AngularVelocity.Right = -angularVelocityRight;
 		odomMessage.LinearVelocity.Left = odomMessage.AngularVelocity.Left * wheelInfo.wheelRadius;
 		odomMessage.LinearVelocity.Right = odomMessage.AngularVelocity.Right * wheelInfo.wheelRadius;
 
