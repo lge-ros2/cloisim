@@ -47,7 +47,12 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		objectTransformInfo.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = objectPose };
 
 		if (!string.IsNullOrEmpty(parentLinkName))
-		{}
+		{
+			var parentLinkParam = new messages.Param();
+			parentLinkParam.Name = "parent_frame_id";
+			parentLinkParam.Value = new Any { Type = Any.ValueType.String, StringValue = parentLinkName };
+			objectTransformInfo.Childrens.Add(parentLinkParam);
+		}
 
 		msTransformInfo.SetMessage<messages.Param>(objectTransformInfo);
 	}
