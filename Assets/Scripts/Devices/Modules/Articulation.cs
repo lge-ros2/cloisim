@@ -91,12 +91,6 @@ public class Articulation
 		return F;
 	}
 
-	// public void Update()
-	// {
-	// 	var drive = DeviceHelper.GetDrive(ref this.joint);
-	// 	DeviceHelper.SetDrive(ref this.joint, drive);
-	// }
-
 	/// <param name="target">force or torque desired for FORCE_AND_VELOCITY type and position for POSITION_AND_VELOCITY.</param>
 	/// <param name="targetVelocity">angular velocity in degrees per second.</param>
 	public void Drive(in float target, in float targetVelocity)

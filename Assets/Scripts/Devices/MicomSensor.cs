@@ -23,8 +23,6 @@ namespace SensorDevices
 		private SensorDevices.Contact bumperContact = null;
 		private List<ArticulationBody> bumperSensors = new List<ArticulationBody>();
 
-		private Dictionary<string, Pose> partsPoseMapTable = new Dictionary<string, Pose>();
-
 		private MotorControl motorControl = new MotorControl();
 		public MotorControl MotorControl => this.motorControl;
 
@@ -40,7 +38,7 @@ namespace SensorDevices
 
 			if (imuSensor != null)
 			{
-				SetInitialPartsPose(imuSensor.name, imuSensor.gameObject);
+				SetSubPartsPose(imuSensor.name, imuSensor.transform);
 			}
 		}
 
@@ -95,7 +93,7 @@ namespace SensorDevices
 
 				motorControl.AddWheelInfo(wheelLocation, motorObject);
 
-				SetInitialPartsPose(model.name, motorObject);
+				SetSubPartsPose(model.name, motorObject.transform);
 			}
 
 			if (GetPluginParameters().GetValues<string>("uss/sensor", out var ussList))
@@ -318,24 +316,6 @@ namespace SensorDevices
 			}
 
 			micomSensorData.Imu = imuSensor.GetImuMessage();
-		}
-
-		private void SetInitialPartsPose(in string name, in GameObject targetObject)
-		{
-			var targetTransform = (targetObject.CompareTag("Model")) ? targetObject.transform : targetObject.transform.parent;
-			var initialPose = new Pose(targetTransform.localPosition, targetTransform.localRotation);
-			// Debug.Log(name + " " + initialPose.ToString("F9"));
-			partsPoseMapTable.Add(name, initialPose);
-		}
-
-		public Pose GetPartsPose(in string targetPartsName)
-		{
-			if (partsPoseMapTable.TryGetValue(targetPartsName, out var targetPartsPose))
-			{
-				return targetPartsPose;
-			}
-
-			return Pose.identity;
 		}
 	}
 }

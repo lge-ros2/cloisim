@@ -47,7 +47,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 			case "request_transform":
 				var transformPartsName = requestValue.StringValue;
-				var devicePose = this.micomSensor.GetPartsPose(transformPartsName);
+				var devicePose = this.micomSensor.GetSubPartsPose(transformPartsName);
 				SetTransformInfoResponse(ref response, devicePose);
 				break;
 
