@@ -5,7 +5,6 @@
  */
 
 using UnityEngine;
-using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
 public class JointControlPlugin : CLOiSimPlugin
@@ -20,15 +19,17 @@ public class JointControlPlugin : CLOiSimPlugin
 		jointCommand = gameObject.AddComponent<SensorDevices.JointCommand>();
 		jointCommand.SetJointState(jointState);
 
-		attachedDevices.Add("command", jointCommand);
-		attachedDevices.Add("states", jointState);
+		attachedDevices.Add("Command", jointCommand);
+		attachedDevices.Add("States", jointState);
 	}
 
 	protected override void OnStart()
 	{
+		RegisterServiceDevice("Info");
 		RegisterRxDevice("Rx");
 		RegisterTxDevice("Tx");
 
+		AddThread(ServiceThread);
 		AddThread(ReceiverThread, jointCommand);
 		AddThread(SenderThread, jointState);
 
@@ -51,7 +52,7 @@ public class JointControlPlugin : CLOiSimPlugin
 				if (jointState != null)
 				{
 					jointState.AddTarget(link);
-					Debug.Log(link);
+					// Debug.Log(link);
 				}
 			}
 		}
@@ -62,10 +63,10 @@ public class JointControlPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_transform":
-				// var jointState = (attachedDevices as Articulation).GetState();
 				// var transformPartsName = requestValue.StringValue;
-				// var devicePose = jointState.GetPartsPose(transformPartsName);
-				// SetTransformInfoResponse(ref response, devicePose);
+				// var devicePose = jointState.GetSubPartsPose(transformPartsName);
+				// var deviceName = cam.DeviceName;
+				// SetTransformInfoResponse(ref response, deviceName, devicePose);
 				break;
 
 			default:

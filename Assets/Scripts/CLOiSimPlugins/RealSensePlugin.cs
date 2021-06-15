@@ -92,7 +92,8 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 			case "request_transform":
 				var devicePose = GetPose();
-				SetTransformInfoResponse(ref response, devicePose);
+				var deviceName = "RealSense";
+				SetTransformInfoResponse(ref response, deviceName, devicePose);
 				break;
 
 			default:

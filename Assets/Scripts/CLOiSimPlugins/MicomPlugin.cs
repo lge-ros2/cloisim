@@ -46,9 +46,10 @@ public class MicomPlugin : CLOiSimPlugin
 				break;
 
 			case "request_transform":
-				var transformPartsName = requestValue.StringValue;
-				var devicePose = this.micomSensor.GetSubPartsPose(transformPartsName);
-				SetTransformInfoResponse(ref response, devicePose);
+				var devicePartsName = requestValue.StringValue;
+				var devicePose = this.micomSensor.GetSubPartsPose(devicePartsName);
+				SetTransformInfoResponse(ref response, devicePartsName, devicePose);
+
 				break;
 
 			case "reset_odometry":

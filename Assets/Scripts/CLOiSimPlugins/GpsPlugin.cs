@@ -9,6 +9,7 @@ using Any = cloisim.msgs.Any;
 public class GpsPlugin : CLOiSimPlugin
 {
 	private SensorDevices.GPS gps = null;
+
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.GPS;
@@ -32,7 +33,8 @@ public class GpsPlugin : CLOiSimPlugin
 		{
 			case "request_transform":
 				var devicePose = gps.GetPose();
-				SetTransformInfoResponse(ref response, devicePose);
+				var deviceName = gps.DeviceName;
+				SetTransformInfoResponse(ref response, deviceName, devicePose);
 				break;
 
 			default:

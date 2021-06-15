@@ -22,7 +22,12 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		msCameraInfo.SetMessage<messages.CameraSensor>(sensorInfo);
 	}
 
-	protected static void SetTransformInfoResponse(ref DeviceMessage msTransformInfo, in Pose devicePose)
+	protected static void SetTransformInfoResponse(ref DeviceMessage msTransformInfo, in string deviceName, in Pose devicePose)
+	{
+		SetTransformInfoResponse(ref msTransformInfo, deviceName, devicePose, null);
+	}
+
+	protected static void SetTransformInfoResponse(ref DeviceMessage msTransformInfo, in string deviceName, in Pose devicePose, in string parentLinkName)
 	{
 		if (msTransformInfo == null)
 		{
@@ -30,6 +35,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		}
 
 		var objectPose = new messages.Pose();
+		objectPose.Name = deviceName;
 		objectPose.Position = new messages.Vector3d();
 		objectPose.Orientation = new messages.Quaternion();
 
@@ -39,6 +45,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		var objectTransformInfo = new messages.Param();
 		objectTransformInfo.Name = "transform";
 		objectTransformInfo.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = objectPose };
+
+		if (!string.IsNullOrEmpty(parentLinkName))
+		{}
 
 		msTransformInfo.SetMessage<messages.Param>(objectTransformInfo);
 	}

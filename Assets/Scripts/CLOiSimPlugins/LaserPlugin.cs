@@ -46,7 +46,8 @@ public class LaserPlugin : CLOiSimPlugin
 
 			case "request_transform":
 				var devicePose = lidar.GetPose();
-				SetTransformInfoResponse(ref response, devicePose);
+				var deviceName = lidar.DeviceName;
+				SetTransformInfoResponse(ref response, deviceName, devicePose);
 				break;
 
 			default:
