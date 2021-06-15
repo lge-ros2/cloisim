@@ -62,20 +62,18 @@ namespace SensorDevices
 
 			if (computeShader != null)
 			{
-				computeShader.SetFloat("_DepthMin", (float)GetParameters().clip.near);
-				computeShader.SetFloat("_DepthMax", (float)GetParameters().clip.far);
+				computeShader.SetFloat("_DepthMin", (float)camParameter.clip.near);
+				computeShader.SetFloat("_DepthMax", (float)camParameter.clip.far);
 				computeShader.SetFloat("_DepthScale", (float)depthScale);
 			}
 
 			ReverseDepthData(true);
 			FlipXDepthData(false);
 
-			var camParameters = (deviceParameters as SDF.Camera);
-
-			if (camParameters.depth_camera_output.Equals("points"))
+			if (camParameter.depth_camera_output.Equals("points"))
 			{
 				Debug.Log("Enable Point Cloud data mode - NOT SUPPORT YET!");
-				camParameters.image_format = "RGB_FLOAT32";
+				camParameter.image_format = "RGB_FLOAT32";
 			}
 
 			camSensor.backgroundColor = Color.white;
@@ -91,7 +89,7 @@ namespace SensorDevices
 			targetRTrwmode = RenderTextureReadWrite.Linear;
 			targetRTformat = RenderTextureFormat.ARGB32;
 
-			var pixelFormat = CameraData.GetPixelFormat(camParameters.image_format);
+			var pixelFormat = CameraData.GetPixelFormat(camParameter.image_format);
 			switch (pixelFormat)
 			{
 				case CameraData.PixelFormat.L_INT16:
@@ -127,8 +125,8 @@ namespace SensorDevices
 				computeShader.SetBuffer(kernelIndex, "_Buffer", computeBuffer);
 				computeBuffer.SetData(buffer);
 
-				var threadGroupX = GetParameters().image_width/16;
-				var threadGroupY = GetParameters().image_height/8;
+				var threadGroupX = camParameter.image_width/16;
+				var threadGroupY = camParameter.image_height/8;
 				computeShader.Dispatch(kernelIndex, threadGroupX, threadGroupY, 1);
 				computeBuffer.GetData(buffer);
 				computeBuffer.Release();
