@@ -56,9 +56,10 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 			}
 		}
 
-		RegisterServiceDevice("Info");
-
-		AddThread(ServiceThread);
+		if (RegisterServiceDevice(out var portService, "Info"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 	}
 
 	private CameraPlugin FindAndAddCameraPlugin(in string name)

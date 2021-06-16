@@ -6,17 +6,30 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using System;
 using UnityEngine;
 using messages = cloisim.msgs;
 using Stopwatch = System.Diagnostics.Stopwatch;
 using Any = cloisim.msgs.Any;
 
-public class CLOiSimPluginThread : Transporter
+public class CLOiSimPluginThread : IDisposable
 {
+	public class ParamObject
+	{
+		public ushort targetPort;
+		public System.Object paramObject;
+
+		public ParamObject(in ushort targetPort, in System.Object paramObject)
+		{
+			this.targetPort = targetPort;
+			this.paramObject = paramObject;
+		}
+	}
+
+	private List<(Thread, ParamObject)> threadList = new List<(Thread, ParamObject)>();
+
 	private bool runningThread = true;
 	public bool IsRunning => runningThread;
-
-	private List<(Thread, System.Object)> threadList = new List<(Thread, System.Object)>();
 
 	public delegate void RefAction<T1, T2, T3>(in T1 arg1, in T2 arg2, ref T3 arg3);
 	public delegate void RefAction<T1, T2>(in T1 arg1, ref T2 arg3);
@@ -26,36 +39,24 @@ public class CLOiSimPluginThread : Transporter
 
 	~CLOiSimPluginThread()
 	{
+		// Debug.Log("Destroy Thread");
 		Dispose();
 	}
 
-	public override void Dispose()
+	public virtual void Dispose()
 	{
-		// Debug.Log("Destroy Thread");
+		// Debug.Log("Dispose Thread");
 		Stop();
-		base.Dispose();
 	}
 
-	public bool Add(in ThreadStart function)
+	public bool Add(in ushort targetPortForThread, in ParameterizedThreadStart function, in System.Object paramObject = null)
 	{
 		if (function != null)
 		{
 			var thread = new Thread(function);
+			var threadObject = new ParamObject(targetPortForThread, paramObject);
 			thread.Priority = System.Threading.ThreadPriority.AboveNormal;
-			threadList.Add((thread, null));
-			return true;
-		}
-
-		return false;
-	}
-
-	public bool Add(in ParameterizedThreadStart function, in Device paramDeviceObject)
-	{
-		if (function != null)
-		{
-			var thread = new Thread(function);
-			thread.Priority = System.Threading.ThreadPriority.AboveNormal;
-			threadList.Add((thread, paramDeviceObject as System.Object));
+			threadList.Add((thread, threadObject));
 			return true;
 		}
 
@@ -71,16 +72,8 @@ public class CLOiSimPluginThread : Transporter
 			var thread = threadTuple.Item1;
 			if (thread != null && !thread.IsAlive)
 			{
-				var paramObject = threadTuple.Item2;
-
-				if (paramObject == null)
-				{
-					thread.Start();
-				}
-				else
-				{
-					thread.Start(paramObject);
-				}
+				var threadObject = threadTuple.Item2;
+				thread.Start(threadObject);
 			}
 		}
 	}
@@ -104,86 +97,81 @@ public class CLOiSimPluginThread : Transporter
 		threadList.Clear();
 	}
 
-	public void Sender(System.Object deviceParam)
+	public void Sender(Publisher publisher, Device device)
 	{
-		if (Publisher != null)
+		if (publisher == null)
 		{
-			var sw = new Stopwatch();
-			var device = deviceParam as Device;
-			while (IsRunning && device != null)
+			Debug.LogWarning("Publisher is null");
+			return;
+		}
+
+		var sw = new Stopwatch();
+		while (IsRunning && device != null)
+		{
+			if (device.PopDeviceMessage(out var dataStreamToSend))
 			{
-				if (device.PopDeviceMessage(out var dataStreamToSend))
+				sw.Restart();
+				if (publisher.Publish(dataStreamToSend))
 				{
-					sw.Restart();
-					if (Publisher.Publish(dataStreamToSend))
-					{
-						sw.Stop();
-						device.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
-					}
+					sw.Stop();
+					device.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
 				}
 			}
 		}
-		else
-		{
-			Debug.LogWarning("publihser is null");
-		}
 	}
 
-	public void Receiver(System.Object deviceParam)
+	public void Receiver(Subscriber subscriber, Device device)
 	{
-		if (Subscriber != null)
-		{
-			var device = deviceParam as Device;
-			while (IsRunning && device != null)
-			{
-				var receivedData = Subscriber.Subscribe();
-				device.PushDeviceMessage(receivedData);
-
-				Wait();
-			}
-		}
-		else
+		if (subscriber == null)
 		{
 			Debug.LogWarning("Subscriber is null");
+			return;
+		}
+
+		while (IsRunning && device != null)
+		{
+			var receivedData = subscriber.Subscribe();
+			device.PushDeviceMessage(receivedData);
+
+			Wait();
 		}
 	}
 
-	public void Service()
+	public void Service(Responsor responsor)
 	{
-		if (Responsor != null)
-		{
-			var dmResponse = new DeviceMessage();
-			while (IsRunning)
-			{
-				var receivedBuffer = Responsor.ReceiveRequest();
-
-				if (receivedBuffer != null)
-				{
-					var requestMessage = ParsingRequestMessage(receivedBuffer);
-
-					if (requestMessage != null && dmResponse != null)
-					{
-						HandleRequestTypeValue(requestMessage.Name, requestMessage.Value, ref dmResponse);
-						HandleRequestTypeChildren(requestMessage.Name, requestMessage.Childrens, ref dmResponse);
-					}
-					else
-					{
-						Debug.Log("DeviceMessage for response or requestMesasge is null");
-					}
-
-					Responsor.SendResponse(dmResponse);
-				}
-
-				Wait();
-			}
-		}
-		else
+		if (responsor == null)
 		{
 			Debug.LogWarning("Responsor is null");
+			return;
+		}
+
+		var dmResponse = new DeviceMessage();
+		while (IsRunning)
+		{
+			var receivedBuffer = responsor.ReceiveRequest();
+
+			if (receivedBuffer != null)
+			{
+				var requestMessage = CLOiSimPluginThread.ParsingRequestMessage(receivedBuffer);
+
+				if (requestMessage != null && dmResponse != null)
+				{
+					HandleRequestTypeValue(requestMessage.Name, requestMessage.Value, ref dmResponse);
+					HandleRequestTypeChildren(requestMessage.Name, requestMessage.Childrens, ref dmResponse);
+				}
+				else
+				{
+					Debug.Log("DeviceMessage for response or requestMesasge is null");
+				}
+
+				responsor.SendResponse(dmResponse);
+			}
+
+			Wait();
 		}
 	}
 
-	protected static messages.Param ParsingRequestMessage(in byte[] infoBuffer)
+	private static messages.Param ParsingRequestMessage(in byte[] infoBuffer)
 	{
 		if (infoBuffer != null)
 		{

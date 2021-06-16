@@ -29,11 +29,15 @@ public class LaserPlugin : CLOiSimPlugin
 			lidar.SetupLaserFilter(filterAngleLower, filterAngleUpper);
 		}
 
-		RegisterServiceDevice("Info");
-		RegisterTxDevice("Data");
+		if (RegisterServiceDevice(out var portService, "Info"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 
-		AddThread(ServiceThread);
-		AddThread(SenderThread, lidar);
+		if (RegisterTxDevice(out var portTx, "Data"))
+		{
+			AddThread(portTx, SenderThread, lidar);
+		}
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)

@@ -48,11 +48,15 @@ public class CameraPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		RegisterServiceDevice(subPartsName + "Info");
-		RegisterTxDevice(subPartsName + "Data");
+		if (RegisterServiceDevice(out var portService, subPartsName + "Info"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 
-		AddThread(ServiceThread);
-		AddThread(SenderThread, cam);
+		if (RegisterTxDevice(out var portTx, subPartsName + "Data"))
+		{
+			AddThread(portTx, SenderThread, cam);
+		}
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)

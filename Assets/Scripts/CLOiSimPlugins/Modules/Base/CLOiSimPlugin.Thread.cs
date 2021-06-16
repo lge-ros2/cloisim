@@ -11,31 +11,33 @@ using UnityEngine;
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
 	private CLOiSimPluginThread thread = new CLOiSimPluginThread();
-
 	protected CLOiSimPluginThread PluginThread => thread;
 
-	protected bool AddThread(in ThreadStart function)
+	protected bool AddThread(in ushort targetPortForThread, in ParameterizedThreadStart function, in Device paramDeviceObject = null)
 	{
-		return thread.Add(function);
+		return thread.Add(targetPortForThread, function, paramDeviceObject);
 	}
 
-	protected bool AddThread(in ParameterizedThreadStart function, in Device paramDeviceObject)
+	protected void SenderThread(System.Object threadObject)
 	{
-		return thread.Add(function, paramDeviceObject);
+		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
+		var publisher = this.transport.Get<Publisher>(paramObject.targetPort);
+		var deviceParam = paramObject.paramObject as Device;
+		thread.Sender(publisher, deviceParam);
 	}
 
-	protected void SenderThread(System.Object deviceParam)
+	protected void ReceiverThread(System.Object threadObject)
 	{
-		thread.Sender(deviceParam);
+		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
+		var subscriber = this.transport.Get<Subscriber>(paramObject.targetPort);
+		var deviceParam = paramObject.paramObject as Device;
+		thread.Receiver(subscriber, deviceParam);
 	}
 
-	protected void ReceiverThread(System.Object deviceParam)
+	protected void ServiceThread(System.Object threadObject)
 	{
-		thread.Receiver(deviceParam);
-	}
-
-	protected void ServiceThread()
-	{
-		thread.Service();
+		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
+		var responsor = this.transport.Get<Responsor>(paramObject.targetPort);
+		thread.Service(responsor);
 	}
 }

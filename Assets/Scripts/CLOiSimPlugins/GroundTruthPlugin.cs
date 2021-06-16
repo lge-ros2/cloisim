@@ -225,9 +225,10 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			messagePerceptions.Perceptions.Add(perception);
 		}
 
-		RegisterTxDevice("Data");
-
-		AddThread(PublishThread);
+		if (RegisterTxDevice(out var portTx, "Data"))
+		{
+			AddThread(portTx, PublishThread);
+		}
 
 		StartCoroutine(DoUpdateFootprint());
 	}
@@ -302,10 +303,13 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		}
 	}
 
-	protected void PublishThread()
+	protected void PublishThread(System.Object threadObject)
 	{
+		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
+		var publisher = GetTransport().Get<Publisher>(paramObject.targetPort);
+
 		var deviceMessage = new DeviceMessage();
-		if (Publisher != null)
+		if (publisher != null)
 		{
 			while (PluginThread.IsRunning)
 			{
@@ -339,7 +343,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 				DeviceHelper.SetCurrentTime(messagePerceptions.Header.Stamp);
 				deviceMessage.SetMessage<messages.PerceptionV>(messagePerceptions);
-				Publisher.Publish(deviceMessage);
+				publisher.Publish(deviceMessage);
 
 				CLOiSimPluginThread.Sleep(sleepPeriodForPublishInMilliseconds);
 			}

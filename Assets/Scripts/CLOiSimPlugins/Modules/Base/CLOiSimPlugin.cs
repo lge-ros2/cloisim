@@ -36,6 +36,18 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	protected abstract void OnStart();
 	protected virtual void OnReset() {}
 
+	protected void OnDestroy()
+	{
+		foreach (var hashKey in allocatedDeviceHashKeys)
+		{
+			DeregisterDevice(hashKey);
+		}
+
+		thread.Dispose();
+		transport.Dispose();
+		// Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
+	}
+
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)
 	{
 		type = targetType;
@@ -91,17 +103,6 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		}
 
 		OnReset();
-	}
-
-	protected void OnDestroy()
-	{
-		foreach (var hashKey in allocatedDeviceHashKeys)
-		{
-			DeregisterDevice(hashKey);
-		}
-
-		thread.Dispose();
-		// Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
 	}
 
 	public Pose GetPose()

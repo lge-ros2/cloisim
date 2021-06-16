@@ -25,13 +25,20 @@ public class JointControlPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		RegisterServiceDevice("Info");
-		RegisterRxDevice("Rx");
-		RegisterTxDevice("Tx");
+		if (RegisterServiceDevice(out var portService, "Info"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 
-		AddThread(ServiceThread);
-		AddThread(ReceiverThread, jointCommand);
-		AddThread(SenderThread, jointState);
+		if (RegisterRxDevice(out var portRx, "Rx"))
+		{
+			AddThread(portRx, ReceiverThread, jointCommand);
+		}
+
+		if (RegisterTxDevice(out var portTx, "Tx"))
+		{
+			AddThread(portTx, SenderThread, jointState);
+		}
 
 		LoadJoints();
 	}

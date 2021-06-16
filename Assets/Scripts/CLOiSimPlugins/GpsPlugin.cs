@@ -20,11 +20,15 @@ public class GpsPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		RegisterServiceDevice("Info");
-		RegisterTxDevice("Data");
+		if (RegisterServiceDevice(out var portService, "Info"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 
-		AddThread(ServiceThread);
-		AddThread(SenderThread, gps);
+		if (RegisterTxDevice(out var portTx, "Data"))
+		{
+			AddThread(portTx, SenderThread, gps);
+		}
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)

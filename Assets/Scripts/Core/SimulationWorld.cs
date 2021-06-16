@@ -24,9 +24,10 @@ public class SimulationWorld : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		RegisterTxDevice("Clock");
-
-		AddThread(SenderThread, clock);
+		if (RegisterTxDevice(out var portTx, "Clock"))
+		{
+			AddThread(portTx, SenderThread, clock);
+		}
 	}
 
 	public Clock GetClock()

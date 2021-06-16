@@ -22,11 +22,15 @@ public class MultiCameraPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		RegisterServiceDevice("Info");
-		RegisterTxDevice("Data");
+		if (RegisterServiceDevice(out var portService, "Info"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 
-		AddThread(SenderThread, multiCam);
-		AddThread(ServiceThread);
+		if (RegisterTxDevice(out var portTx, "Data"))
+		{
+			AddThread(portTx, SenderThread, multiCam);
+		}
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)

@@ -28,13 +28,20 @@ public class MicomPlugin : CLOiSimPlugin
 	{
 		micomSensor.SetupMicom();
 
-		RegisterServiceDevice("Info");
-		RegisterRxDevice("Rx");
-		RegisterTxDevice("Tx");
+		if (RegisterServiceDevice(out var portService, "Info"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 
-		AddThread(ServiceThread);
-		AddThread(ReceiverThread, micomCommand);
-		AddThread(SenderThread, micomSensor);
+		if (RegisterRxDevice(out var portRx, "Rx"))
+		{
+			AddThread(portRx, ReceiverThread, micomCommand);
+		}
+
+		if (RegisterTxDevice(out var portTx, "Tx"))
+		{
+			AddThread(portTx, SenderThread, micomSensor);
+		}
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
