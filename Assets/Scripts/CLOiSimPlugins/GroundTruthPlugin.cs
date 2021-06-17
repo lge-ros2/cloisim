@@ -303,7 +303,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		}
 	}
 
-	protected void PublishThread(System.Object threadObject)
+	private void PublishThread(System.Object threadObject)
 	{
 		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
 		var publisher = GetTransport().Get<Publisher>(paramObject.targetPort);

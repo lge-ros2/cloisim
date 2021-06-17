@@ -46,7 +46,7 @@ namespace SensorDevices
 			PushDeviceMessage<messages.JointStateV>(jointStateV);
 		}
 
-		public bool AddTarget(in string linkName)
+		public bool AddTarget(in string linkName, out SDF.Helper.Link link)
 		{
 			var childArticulationBodies = gameObject.GetComponentsInChildren<ArticulationBody>();
 
@@ -61,11 +61,15 @@ namespace SensorDevices
 					jointState.Name = linkName;
 
 					articulationTable.Add(linkName, new Tuple<Articulation, messages.JointState>(articulation, jointState));
+
 					jointStateV.JointStates.Add(jointState);
+
+					link = articulation.gameObject.GetComponentInChildren<SDF.Helper.Link>();
 					return true;
 				}
 			}
 
+			link = null;
 			return false;
 		}
 

@@ -15,6 +15,7 @@ public class Articulation
 	private ArticulationJointType jointType = ArticulationJointType.FixedJoint;
 
 	public ArticulationJointType Type => jointType;
+	public GameObject gameObject => this.joint.gameObject;
 
 	public Articulation(in ArticulationBody joint)
 	{

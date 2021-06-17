@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-using UnityEngine;
-using Any = cloisim.msgs.Any;
+using System.Collections.Generic;
 
 public class JointControlPlugin : CLOiSimPlugin
 {
+	private List<TF> tfList = new List<TF>();
 	private SensorDevices.JointCommand jointCommand = null;
 	private SensorDevices.JointState jointState = null;
 
@@ -25,11 +25,6 @@ public class JointControlPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		if (RegisterServiceDevice(out var portService, "Info"))
-		{
-			AddThread(portService, ServiceThread);
-		}
-
 		if (RegisterRxDevice(out var portRx, "Rx"))
 		{
 			AddThread(portRx, ReceiverThread, jointCommand);
@@ -38,6 +33,11 @@ public class JointControlPlugin : CLOiSimPlugin
 		if (RegisterTxDevice(out var portTx, "Tx"))
 		{
 			AddThread(portTx, SenderThread, jointState);
+		}
+
+		if (RegisterTxDevice(out var portTf, "Tf"))
+		{
+			AddThread(portTf, PublishTfThread, tfList);
 		}
 
 		LoadJoints();
@@ -54,33 +54,20 @@ public class JointControlPlugin : CLOiSimPlugin
 
 		if (GetPluginParameters().GetValues<string>("joints/link", out var links))
 		{
-			foreach (var link in links)
+			foreach (var linkName in links)
 			{
 				if (jointState != null)
 				{
-					jointState.AddTarget(link);
-					// Debug.Log(link);
+					var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("joints/link[text()='" + linkName + "']", "parent_frame_id", "base_link");
+
+					if (jointState.AddTarget(linkName, out var targetLink))
+					{
+						var tf = new TF(targetLink, linkName, parentFrameId);
+						tfList.Add(tf);
+						// Debug.Log(link);
+					}
 				}
 			}
-		}
-	}
-
-	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
-	{
-		switch (requestType)
-		{
-			case "request_transform_list":
-				break;
-
-			case "request_transform":
-				// var transformPartsName = requestValue.StringValue;
-				// var devicePose = jointState.GetSubPartsPose(transformPartsName);
-				// var deviceName = cam.DeviceName;
-				// SetTransformInfoResponse(ref response, deviceName, devicePose);
-				break;
-
-			default:
-				break;
 		}
 	}
 }

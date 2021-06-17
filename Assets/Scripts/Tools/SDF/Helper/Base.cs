@@ -40,14 +40,14 @@ namespace SDF
 
 			public void SetPose(in UE.Vector3 position, in UE.Quaternion rotation)
 			{
-				poseControl.ClearPose();
-				AddPose(position, rotation);
-				Reset();
-			}
+				if (poseControl != null)
+				{
+					poseControl.ClearPose();
+				}
 
-			public void AddPose(in UE.Pose pose)
-			{
-				AddPose(pose.position, pose.rotation);
+				AddPose(position, rotation);
+
+				Reset();
 			}
 
 			public void AddPose(in UE.Vector3 position, in UE.Quaternion rotation)

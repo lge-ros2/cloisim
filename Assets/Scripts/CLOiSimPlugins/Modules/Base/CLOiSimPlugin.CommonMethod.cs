@@ -12,6 +12,49 @@ using Any = cloisim.msgs.Any;
 
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
+	protected void PublishTfThread(System.Object threadObject)
+	{
+		var paramsObject = threadObject as CLOiSimPluginThread.ParamObject;
+		var publisher = GetTransport().Get<Publisher>(paramsObject.targetPort);
+		var tfList = paramsObject.paramObject as List<TF>;
+
+		var tfMessage = new messages.TransformStamped();
+		tfMessage.Header = new messages.Header();
+		tfMessage.Header.Stamp = new messages.Time();
+		tfMessage.Transform = new messages.Pose();
+		tfMessage.Transform.Position = new messages.Vector3d();
+		tfMessage.Transform.Orientation = new messages.Quaternion();
+
+		var deviceMessage = new DeviceMessage();
+		if (publisher != null)
+		{
+			const float publishFrequency = 50;
+			const int updatePeriod = (int)(1f / publishFrequency * 1000f);
+
+			while (PluginThread.IsRunning)
+			{
+				DeviceHelper.SetCurrentTime(tfMessage.Header.Stamp);
+
+				for (var i = 0; i < tfList.Count; i++)
+				{
+					tfMessage.Header.StrId = tfList[i].parentFrameId;
+					tfMessage.Transform.Name = tfList[i].childFrameId;
+
+					var tfLink = tfList[i].link;
+					var tfPose = tfLink.GetPose();
+
+					DeviceHelper.SetVector3d(tfMessage.Transform.Position, tfPose.position);
+					DeviceHelper.SetQuaternion(tfMessage.Transform.Orientation, tfPose.rotation);
+
+					deviceMessage.SetMessage<messages.TransformStamped>(tfMessage);
+					publisher.Publish(deviceMessage);
+				}
+
+				CLOiSimPluginThread.Sleep(updatePeriod);
+			}
+		}
+	}
+
 	protected static void SetCameraInfoResponse(ref DeviceMessage msCameraInfo, in messages.CameraSensor sensorInfo)
 	{
 		if (msCameraInfo == null || sensorInfo == null)
