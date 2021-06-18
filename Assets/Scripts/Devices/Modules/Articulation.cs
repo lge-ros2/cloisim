@@ -65,7 +65,7 @@ public class Articulation
 	public float GetJointPosition(int index = 0)
 	{
 		index = GetValidIndex(index);
-		return (this.joint == null) ? 0 : this.joint.jointPosition[index];
+		return (this.joint == null || index == -1) ? 0 : this.joint.jointPosition[index];
 	}
 
 	/// <returns>torque for angular and force for linear</param>
@@ -73,14 +73,14 @@ public class Articulation
 	{
 		index = GetValidIndex(index);
 		// Debug.Log(this.joint.name + ": " + this.joint.dofCount + ", " + this.joint.jointAcceleration[0] + ", " + this.joint.jointForce[0]);
-		return (this.joint == null) ? 0 : this.joint.jointForce[index];
+		return (this.joint == null || index == -1) ? 0 : this.joint.jointForce[index];
 	}
 
 	/// <returns>in radian for angular and in meters for linear</param>
 	public float GetJointVelocity(int index = 0)
 	{
 		index = GetValidIndex(index);
-		return (this.joint == null) ? 0 : this.joint.jointVelocity[index];
+		return (this.joint == null || index == -1) ? 0 : this.joint.jointVelocity[index];
 	}
 
 	/// <returns>torque for angular and force for linear</param>
