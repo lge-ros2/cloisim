@@ -55,6 +55,11 @@ namespace SDF
 				}
 			}
 
+			void LateUpdate()
+			{
+				SetPose(transform.localPosition, transform.localRotation);
+			}
+
 			void OnDrawGizmos()
 			{
 				if (_artBody && drawInertia)

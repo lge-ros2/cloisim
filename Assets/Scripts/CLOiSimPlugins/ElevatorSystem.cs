@@ -58,12 +58,14 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		RegisterServiceDevice("Control");
+		if (RegisterServiceDevice(out var portService, "Control"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 
 		ReadFloorContext();
 		ReadElevatorContext();
 
-		AddThread(ServiceThread);
 
 		StartCoroutine(ServiceLoop());
 	}

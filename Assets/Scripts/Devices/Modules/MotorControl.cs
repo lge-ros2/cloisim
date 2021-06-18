@@ -22,7 +22,6 @@ public class MotorControl
 
 	private float pidGainP, pidGainI, pidGainD;
 
-	private Micom.WheelInfo wheelInfo;
 	private Odometry odometry = null;
 #endregion
 
@@ -36,9 +35,7 @@ public class MotorControl
 
 	public void SetWheelInfo(in float radius, in float tread)
 	{
-		wheelInfo = new Micom.WheelInfo(radius, tread);
-
-		this.odometry = new Odometry(wheelInfo);
+		this.odometry = new Odometry(radius, tread);
 		this.odometry.SetMotorControl(this);
 	}
 
@@ -56,8 +53,7 @@ public class MotorControl
 
 	public void AddWheelInfo(in WheelLocation location, in GameObject targetMotorObject)
 	{
-		var motor = new Motor();
-		motor.SetTargetJoint(targetMotorObject);
+		var motor = new Motor(targetMotorObject);
 		motor.SetPID(pidGainP, pidGainI, pidGainD);
 
 		wheelList[location] = motor;
@@ -67,8 +63,8 @@ public class MotorControl
 	/// <remarks>rad per second for wheels</remarks>
 	public void SetDifferentialDrive(in float linearVelocityLeft, in float linearVelocityRight)
 	{
-		var angularVelocityLeft = linearVelocityLeft * wheelInfo.divideWheelRadius * Mathf.Rad2Deg;
-		var angularVelocityRight = linearVelocityRight * wheelInfo.divideWheelRadius * Mathf.Rad2Deg;
+		var angularVelocityLeft = linearVelocityLeft * odometry.InverseWheelRadius * Mathf.Rad2Deg;
+		var angularVelocityRight = linearVelocityRight * odometry.InverseWheelRadius * Mathf.Rad2Deg;
 
 		SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
 	}
@@ -78,7 +74,7 @@ public class MotorControl
 		// m/s, rad/s
 		// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelTread)) / (2 * wheelRadius);
 		// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelTread)) / (2 * wheelRadius);
-		var angularCalculation = (angularVelocity * wheelInfo.wheelTread * 0.5f);
+		var angularCalculation = (angularVelocity * odometry.WheelTread * 0.5f);
 		var linearVelocityLeft = (linearVelocity - angularCalculation);
 		var linearVelocityRight = (linearVelocity + angularCalculation);
 
@@ -88,7 +84,7 @@ public class MotorControl
 	public void UpdateMotorFeedback(in float linearVelocityLeft, in float linearVelocityRight)
 	{
 		var linearVelocity = (linearVelocityLeft + linearVelocityRight) * 0.5f;
-		var angularVelocity = (linearVelocityRight - linearVelocity) / (wheelInfo.wheelTread * 0.5f);
+		var angularVelocity = (linearVelocityRight - linearVelocity) / (odometry.WheelTread * 0.5f);
 
 		UpdateMotorFeedback(angularVelocity);
 	}
@@ -127,6 +123,6 @@ public class MotorControl
 
 	public bool UpdateOdometry(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor)
 	{
-		return odometry.Update(odomMessage, duration, imuSensor);
+		return (odometry != null) ? odometry.Update(odomMessage, duration, imuSensor) : false;
 	}
 }

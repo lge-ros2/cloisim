@@ -12,6 +12,53 @@ using Any = cloisim.msgs.Any;
 
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
+	protected void PublishTfThread(System.Object threadObject)
+	{
+		var paramsObject = threadObject as CLOiSimPluginThread.ParamObject;
+		var publisher = GetTransport().Get<Publisher>(paramsObject.targetPort);
+		var tfList = paramsObject.paramObject as List<TF>;
+
+		var tfMessage = new messages.TransformStamped();
+		tfMessage.Header = new messages.Header();
+		tfMessage.Header.Stamp = new messages.Time();
+		tfMessage.Transform = new messages.Pose();
+		tfMessage.Transform.Position = new messages.Vector3d();
+		tfMessage.Transform.Orientation = new messages.Quaternion();
+
+		var deviceMessage = new DeviceMessage();
+		if (publisher != null)
+		{
+			const float publishFrequency = 50;
+			const int updatePeriod = (int)(1f / publishFrequency * 1000f);
+			int updatePeriodPerEachTf = (int)(updatePeriod / tfList.Count);
+
+			while (PluginThread.IsRunning)
+			{
+
+				for (var i = 0; i < tfList.Count; i++)
+				{
+					var tf = tfList[i];
+
+					DeviceHelper.SetCurrentTime(tfMessage.Header.Stamp);
+
+					tfMessage.Header.StrId = tf.parentFrameId;
+					tfMessage.Transform.Name = tf.childFrameId;
+
+					var tfLink = tf.link;
+					var tfPose = tfLink.GetPose();
+
+					DeviceHelper.SetVector3d(tfMessage.Transform.Position, tfPose.position);
+					DeviceHelper.SetQuaternion(tfMessage.Transform.Orientation, tfPose.rotation);
+
+					deviceMessage.SetMessage<messages.TransformStamped>(tfMessage);
+					publisher.Publish(deviceMessage);
+					// Debug.Log(tfMessage.Header.Stamp.Sec + "." + tfMessage.Header.Stamp.Nsec + ": " + tfMessage.Header.StrId + ", " + tfMessage.Transform.Name) ;
+					CLOiSimPluginThread.Sleep(updatePeriodPerEachTf);
+				}
+			}
+		}
+	}
+
 	protected static void SetCameraInfoResponse(ref DeviceMessage msCameraInfo, in messages.CameraSensor sensorInfo)
 	{
 		if (msCameraInfo == null || sensorInfo == null)
@@ -22,7 +69,12 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		msCameraInfo.SetMessage<messages.CameraSensor>(sensorInfo);
 	}
 
-	protected static void SetTransformInfoResponse(ref DeviceMessage msTransformInfo, in Pose devicePose)
+	protected static void SetTransformInfoResponse(ref DeviceMessage msTransformInfo, in string deviceName, in Pose devicePose)
+	{
+		SetTransformInfoResponse(ref msTransformInfo, deviceName, devicePose, null);
+	}
+
+	protected static void SetTransformInfoResponse(ref DeviceMessage msTransformInfo, in string deviceName, in Pose devicePose, in string parentLinkName)
 	{
 		if (msTransformInfo == null)
 		{
@@ -30,6 +82,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		}
 
 		var objectPose = new messages.Pose();
+		objectPose.Name = deviceName;
 		objectPose.Position = new messages.Vector3d();
 		objectPose.Orientation = new messages.Quaternion();
 
@@ -39,6 +92,14 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		var objectTransformInfo = new messages.Param();
 		objectTransformInfo.Name = "transform";
 		objectTransformInfo.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = objectPose };
+
+		if (!string.IsNullOrEmpty(parentLinkName))
+		{
+			var parentLinkParam = new messages.Param();
+			parentLinkParam.Name = "parent_frame_id";
+			parentLinkParam.Value = new Any { Type = Any.ValueType.String, StringValue = parentLinkName };
+			objectTransformInfo.Childrens.Add(parentLinkParam);
+		}
 
 		msTransformInfo.SetMessage<messages.Param>(objectTransformInfo);
 	}

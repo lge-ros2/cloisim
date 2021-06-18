@@ -5,7 +5,6 @@
  */
 
 using UE = UnityEngine;
-using Debug = UnityEngine.Debug;
 
 namespace SDF
 {
@@ -36,7 +35,18 @@ namespace SDF
 					SetRevoluteArticulationDriveLimit(ref drive, axis.limit);
 				}
 
-				drive.forceLimit = float.MaxValue;
+				drive.forceLimit = (axis.limit.effort > -1) ? (float)axis.limit.effort : float.MaxValue;
+
+				if (axis.dynamics != null)
+				{
+					drive.stiffness = (float)axis.dynamics.spring_stiffness;
+					drive.damping = (float)axis.dynamics.damping;
+					body.jointFriction = (float)axis.dynamics.friction;
+				}
+				else
+				{
+					body.jointFriction = 0;
+				}
 
 				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
 
@@ -86,7 +96,7 @@ namespace SDF
 					SetRevoluteArticulationDriveLimit(ref drive, axis2.limit);
 				}
 
-				drive.forceLimit = float.MaxValue;
+				drive.forceLimit = (axis2.limit.effort > -1) ? (float)axis2.limit.effort : float.MaxValue;
 
 				var joint2Axis = SDF2Unity.GetAxis(axis2.xyz);
 				if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
@@ -137,22 +147,13 @@ namespace SDF
 				body.twistLock = UE.ArticulationDofLock.FreeMotion;
 			}
 
-			public static void MakePrismatic(in UE.ArticulationBody body, in SDF.Axis axis, in SDF.Joint.Physics.ODE physicsInfo, in SDF.Pose<double> pose)
+			public static void MakePrismatic(in UE.ArticulationBody body, in SDF.Axis axis, in SDF.Pose<double> pose)
 			{
 				body.jointType = UE.ArticulationJointType.PrismaticJoint;
 				body.parentAnchorRotation *= SDF2Unity.GetRotation(pose.Rot);
 
 				body.linearDamping = 0.05f;
 				body.angularDamping = 0.05f;
-
-				if (axis.dynamics != null)
-				{
-					body.jointFriction = (float)axis.dynamics.friction;
-				}
-				else
-				{
-					body.jointFriction = 0;
-				}
 
 				var drive = new UE.ArticulationDrive();
 
@@ -163,20 +164,17 @@ namespace SDF
 					drive.upperLimit = (float)(axis.limit.upper);
 				}
 
-				if (physicsInfo != null)
-				{
-					drive.forceLimit = (float)physicsInfo.max_force;
-				}
-				else
-				{
-					drive.forceLimit = float.MaxValue;
-				}
+				drive.forceLimit = (axis.limit.effort > -1) ? (float)axis.limit.effort : float.MaxValue;
 
 				if (axis.dynamics != null)
 				{
 					drive.stiffness = (float)axis.dynamics.spring_stiffness;
 					drive.damping = (float)axis.dynamics.damping;
 					body.jointFriction = (float)axis.dynamics.friction;
+				}
+				else
+				{
+					body.jointFriction = 0;
 				}
 
 				var jointAxis = SDF2Unity.GetAxis(axis.xyz);

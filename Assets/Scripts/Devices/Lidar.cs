@@ -56,13 +56,12 @@ namespace SensorDevices
 				this.angleStep = 1;
 			}
 		}
+
 		private const float DEG180 = Mathf.PI * Mathf.Rad2Deg;
 		private const float DEG360 = DEG180 * 2;
-		// private const float DEG60 = LaserCameraHFov * 0.5f;
 
 		private const float LaserCameraHFov = 120.0000000000f;
 		private const float LaserCameraVFov = 50.0000000000f;
-
 
 		public MinMax range;
 

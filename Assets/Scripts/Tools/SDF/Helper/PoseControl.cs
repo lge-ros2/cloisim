@@ -18,7 +18,6 @@ namespace SDF
 			private UE.ArticulationBody articulationBody = null;
 
 			private List<UE.Pose> poseList = new List<UE.Pose>();
-
 			public int Count => poseList.Count;
 
 			public PoseControl(in UE.Transform target)

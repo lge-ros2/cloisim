@@ -9,10 +9,14 @@
 [RequireComponent(typeof(Clock))]
 public class SimulationWorld : CLOiSimPlugin
 {
+	private Clock clock = null;
+
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.WORLD;
-		targetDevice = gameObject.GetComponent<Clock>();
+
+		clock = gameObject.GetComponent<Clock>();
+		attachedDevices.Add("Clock", clock);
 
 		modelName = "World";
 		partsName = "cloisim";
@@ -20,13 +24,14 @@ public class SimulationWorld : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		RegisterTxDevice("Clock");
-
-		AddThread(SenderThread, targetDevice);
+		if (RegisterTxDevice(out var portTx, "Clock"))
+		{
+			AddThread(portTx, SenderThread, clock);
+		}
 	}
 
 	public Clock GetClock()
 	{
-		return targetDevice as Clock;
+		return clock;
 	}
 }

@@ -87,7 +87,7 @@ namespace SDF
 
 				var camera = newSensorObject.AddComponent<SensorDevices.Camera>();
 				camera.DeviceName = GetFrameName(newSensorObject);
-				camera.SetDeviceParameter(element);
+				camera.SetCamParameter(element);
 
 				if (element.noise != null)
 				{
@@ -128,7 +128,7 @@ namespace SDF
 					}
 				}
 
-				depthCamera.SetDeviceParameter(element);
+				depthCamera.SetCamParameter(element);
 
 				if (element.noise != null)
 				{
@@ -145,7 +145,6 @@ namespace SDF
 
 				var multicamera = newSensorObject.AddComponent<SensorDevices.MultiCamera>();
 				multicamera.DeviceName = GetFrameName(newSensorObject);
-				multicamera.SetDeviceParameter(element);
 
 				foreach (var camParam in element.cameras)
 				{
@@ -157,7 +156,7 @@ namespace SDF
 					var newCam = newCamObject.AddComponent<SensorDevices.Camera>();
 					newCam.Mode = Device.ModeType.NONE;
 					newCam.DeviceName = "MultiCamera::" + newCamObject.name;
-					newCam.SetDeviceParameter(camParam);
+					newCam.SetCamParameter(camParam);
 
 					if (camParam.noise != null)
 					{

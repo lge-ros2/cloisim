@@ -91,7 +91,7 @@ public partial class DeviceHelper
 
 		var timeNow = (useRealTime) ? GetGlobalClock().RealTime : GetGlobalClock().SimTime;
 		msgTime.Sec = (int)timeNow;
-		msgTime.Nsec = (int)((timeNow - (double)msgTime.Sec) * (double)1e+9);
+		msgTime.Nsec = (int)((timeNow - (double)msgTime.Sec) * 1e+9);
 	}
 
 	public static void SetVector3d(messages.Vector3d vector3d, in Vector3 position)

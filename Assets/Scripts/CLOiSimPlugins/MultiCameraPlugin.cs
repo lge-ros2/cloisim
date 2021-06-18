@@ -8,27 +8,35 @@ using Any = cloisim.msgs.Any;
 
 public class MultiCameraPlugin : CLOiSimPlugin
 {
+	private SensorDevices.MultiCamera multiCam = null;
+
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.MULTICAMERA;
 		partsName = DeviceHelper.GetPartName(gameObject);
-		targetDevice = gameObject.GetComponent<SensorDevices.MultiCamera>();
+
+		multiCam = gameObject.GetComponent<SensorDevices.MultiCamera>();
+
+		attachedDevices.Add("MultiCamera", multiCam);
 	}
 
 	protected override void OnStart()
 	{
-		RegisterServiceDevice("Info");
-		RegisterTxDevice("Data");
+		if (RegisterServiceDevice(out var portService, "Info"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 
-		AddThread(SenderThread, targetDevice);
-		AddThread(ServiceThread);
+		if (RegisterTxDevice(out var portTx, "Data"))
+		{
+			AddThread(portTx, SenderThread, multiCam);
+		}
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
 	{
 		var cameraName = requestValue.StringValue;
-		var multicam = targetDevice as SensorDevices.MultiCamera;
-		var camera = multicam.GetCamera(cameraName);
+		var camera = multiCam.GetCamera(cameraName);
 
 		if (camera == null)
 		{
@@ -45,7 +53,8 @@ public class MultiCameraPlugin : CLOiSimPlugin
 
 			case "request_transform":
 				var devicePose = camera.GetPose();
-				SetTransformInfoResponse(ref response, devicePose);
+				var deviceName = camera.DeviceName;
+				SetTransformInfoResponse(ref response, deviceName, devicePose);
 				break;
 			default:
 				break;

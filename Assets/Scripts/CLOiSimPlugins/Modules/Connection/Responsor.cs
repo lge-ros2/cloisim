@@ -15,11 +15,6 @@ public class Responsor : ResponseSocket
 	private byte[] hashValue = null;
 	private byte[] dataToSendResponse = null;
 
-	public void Destroy()
-	{
-		this.Close();
-	}
-
 	public void SetHash(in ulong hash)
 	{
 		hashValue = BitConverter.GetBytes(hash);

@@ -13,13 +13,13 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private static UE.Transform FindTransformByName(in string name, UE.GameObject targetObject)
+			private static UE.Transform FindTransformByName(in string name, UE.Transform targetTransform)
 			{
 				UE.Transform foundLinkObject = null;
 
-				var rootTransform = targetObject.transform;
+				var rootTransform = targetTransform;
 
-				while (!rootTransform.parent.Equals(targetObject.transform.root))
+				while (!rootTransform.parent.Equals(targetTransform.root))
 				{
 					rootTransform = rootTransform.parent;
 				}
@@ -52,10 +52,14 @@ namespace SDF
 				}
 				else
 				{
-					var transform = targetObject.transform.Find(name);
-					if (transform != null)
+					// UE.Debug.Log(name + ", Find  => " + targetTransform.name + ", " + rootTransform.name);
+					foreach (var transform in targetTransform.GetComponentsInChildren<UE.Transform>())
 					{
-						foundLinkObject = transform;
+						if (transform.name.Equals(name))
+						{
+							foundLinkObject = transform;
+							break;
+						}
 					}
 				}
 
@@ -67,8 +71,8 @@ namespace SDF
 				var targetObject = (parentObject as UE.GameObject);
 				// Debug.LogFormat("[Joint] {0}, {1} <= {2}", joint.Name, joint.ParentLinkName, joint.ChildLinkName);
 
-				var linkObjectParent = FindTransformByName(joint.ParentLinkName, targetObject);
-				var linkObjectChild = FindTransformByName(joint.ChildLinkName, targetObject);
+				var linkObjectParent = FindTransformByName(joint.ParentLinkName, targetObject.transform);
+				var linkObjectChild = FindTransformByName(joint.ChildLinkName, targetObject.transform);
 
 				if (linkObjectParent is null)
 				{
@@ -132,7 +136,7 @@ namespace SDF
 						break;
 
 					case "prismatic":
-						Implement.Joint.MakePrismatic(articulationBodyChild, joint.Axis, joint.PhysicsODE, joint.Pose);
+						Implement.Joint.MakePrismatic(articulationBodyChild, joint.Axis, joint.Pose);
 						break;
 
 					case "revolute":

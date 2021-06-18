@@ -37,6 +37,7 @@ MSG+="world_stats log_playback_stats "
 MSG+="request response "
 MSG+="perception perception_v "
 MSG+="pid joint_cmd wrench joint_wrench joint_state joint_state_v "
+MSG+="transform_stamped "
 # MSG+=" "
 
 for i in $MSG

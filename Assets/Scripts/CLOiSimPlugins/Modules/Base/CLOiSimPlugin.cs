@@ -9,7 +9,7 @@ using UnityEngine;
 
 public interface ICLOiSimPlugin
 {
-	enum Type {WORLD, GROUNDTRUTH, ELEVATOR, ACTOR, MICOM, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
+	enum Type {WORLD, GROUNDTRUTH, ELEVATOR, ACTOR, MICOM, JOINTCONTROL, GPS, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE};
 	void SetPluginParameters(in SDF.Plugin node);
 	SDF.Plugin GetPluginParameters();
 	void Reset();
@@ -30,11 +30,23 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	private List<string> allocatedDeviceHashKeys = new List<string>();
 
-	protected Device targetDevice = null;
+	protected Dictionary<string, Device> attachedDevices = new Dictionary<string, Device>();
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
 	protected virtual void OnReset() {}
+
+	protected void OnDestroy()
+	{
+		foreach (var hashKey in allocatedDeviceHashKeys)
+		{
+			DeregisterDevice(hashKey);
+		}
+
+		thread.Dispose();
+		transport.Dispose();
+		// Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
+	}
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)
 	{
@@ -61,9 +73,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	// Start is called before the first frame update
 	void Start()
 	{
-		if (targetDevice != null)
+		foreach (var device in attachedDevices.Values)
 		{
-			targetDevice.SetPluginParameters(pluginParameters);
+			device.SetPluginParameters(pluginParameters);
 		}
 
 		StorePose();
@@ -85,18 +97,12 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	public void Reset()
 	{
-		OnReset();
-	}
-
-	protected void OnDestroy()
-	{
-		foreach (var hashKey in allocatedDeviceHashKeys)
+		foreach (var device in attachedDevices.Values)
 		{
-			DeregisterDevice(hashKey);
+			device.Reset();
 		}
 
-		thread.Dispose();
-		// Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
+		OnReset();
 	}
 
 	public Pose GetPose()

@@ -9,29 +9,39 @@ using Any = cloisim.msgs.Any;
 
 public class MicomPlugin : CLOiSimPlugin
 {
+	private SensorDevices.MicomSensor micomSensor = null;
+	private SensorDevices.MicomCommand micomCommand = null;
+
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.MICOM;
-		targetDevice = gameObject.AddComponent<Micom>();
+		micomSensor = gameObject.AddComponent<SensorDevices.MicomSensor>();
+
+		micomCommand = gameObject.AddComponent<SensorDevices.MicomCommand>();
+		micomCommand.SetMotorControl(micomSensor.MotorControl);
+
+		attachedDevices.Add("Sensor", micomSensor);
+		attachedDevices.Add("Command", micomCommand);
 	}
 
 	protected override void OnStart()
 	{
-		var debugging = GetPluginParameters().GetValue<bool>("debug", false);
-		targetDevice.EnableDebugging = debugging;
+		micomSensor.SetupMicom();
 
-		RegisterServiceDevice("Info");
-		RegisterRxDevice("Rx");
-		RegisterTxDevice("Tx");
+		if (RegisterServiceDevice(out var portService, "Info"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 
-		AddThread(ServiceThread);
-		AddThread(SenderThread, (targetDevice as Micom).GetSensor());
-		AddThread(ReceiverThread, (targetDevice as Micom).GetInput());
-	}
+		if (RegisterRxDevice(out var portRx, "Rx"))
+		{
+			AddThread(portRx, ReceiverThread, micomCommand);
+		}
 
-	protected override void OnReset()
-	{
-		targetDevice.Reset();
+		if (RegisterTxDevice(out var portTx, "Tx"))
+		{
+			AddThread(portTx, SenderThread, micomSensor);
+		}
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
@@ -43,14 +53,14 @@ public class MicomPlugin : CLOiSimPlugin
 				break;
 
 			case "request_transform":
-				var micomSensor = (targetDevice as Micom).GetSensor();
-				var transformPartsName = requestValue.StringValue;
-				var devicePose = micomSensor.GetPartsPose(transformPartsName);
-				SetTransformInfoResponse(ref response, devicePose);
+				var devicePartsName = requestValue.StringValue;
+				var devicePose = this.micomSensor.GetSubPartsPose(devicePartsName);
+				SetTransformInfoResponse(ref response, devicePartsName, devicePose);
+
 				break;
 
 			case "reset_odometry":
-				targetDevice.Reset();
+				Reset();
 				SetEmptyResponse(ref response);
 				break;
 
