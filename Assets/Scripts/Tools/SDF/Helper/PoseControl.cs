@@ -32,7 +32,7 @@ namespace SDF
 
 			public UE.Pose Get(in int targetFrame = 0)
 			{
-				return poseList[targetFrame];
+				return (targetFrame < poseList.Count) ? poseList[targetFrame] : UE.Pose.identity;
 			}
 
 			public void ClearPose()
