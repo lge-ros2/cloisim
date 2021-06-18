@@ -26,8 +26,9 @@ The current release includes the features only for marked items in the list belo
 Other sensor models are work in progress.
 Here are the list of items that is implemented(marked) or planned to be implemented.
 
-- [X] Driving models
-  - [X] 2-Wheeled Motor
+- [X] Joint models
+  - [X] 2-Wheeled Motor driving
+  - [X] Joint control
 - [X] Sensor models
   - [X] LiDAR Sensor
     - [X] 2D
@@ -124,7 +125,7 @@ For the performance in terms of collision handling, designing collision geometry
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.11f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.3.12f1 (LTS)'*.
 - Linux: Ubuntu 20.04.2 LTS
 - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
 - Memory: 32GB
