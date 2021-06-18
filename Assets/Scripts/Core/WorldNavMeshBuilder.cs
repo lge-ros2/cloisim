@@ -63,6 +63,8 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		}
 	}
 
+	public static int AgentTypeId = 0;
+
 	private List<NavMeshTrack> m_NavMeshTracks = new List<NavMeshTrack>();
 
 	private NavMeshData m_NavMesh;
@@ -100,14 +102,17 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		// Construct and add navmesh
 		m_NavMesh = new NavMeshData();
 		m_Instance = NavMesh.AddNavMeshData(m_NavMesh);
-		m_defaultBuildSettings = NavMesh.GetSettingsByID(0);
+
+		m_defaultBuildSettings = NavMesh.GetSettingsByID(AgentTypeId);
+		// Debug.Log(m_defaultBuildSettings.tileSize + " | " + JobsUtility.JobWorkerCount + "| "+ m_defaultBuildSettings.maxJobWorkers + " | " + NavMesh.pathfindingIterationsPerFrame);
 		m_defaultBuildSettings.overrideTileSize = true;
-		m_defaultBuildSettings.tileSize = 512;
-		m_defaultBuildSettings.preserveTilesOutsideBounds = true;
-		m_defaultBuildSettings.voxelSize = 3;
-		m_defaultBuildSettings.minRegionArea = 1;
-		m_defaultBuildSettings.maxJobWorkers = (uint)JobsUtility.JobWorkerCount;
-		NavMesh.pathfindingIterationsPerFrame = 25;
+        m_defaultBuildSettings.tileSize = 512 + 128;
+		m_defaultBuildSettings.preserveTilesOutsideBounds = false;
+		m_defaultBuildSettings.overrideVoxelSize = true;
+		m_defaultBuildSettings.voxelSize = 0.1f;
+		m_defaultBuildSettings.minRegionArea = 5;
+		m_defaultBuildSettings.maxJobWorkers = (uint)JobsUtility.JobWorkerCount/2;
+		NavMesh.pathfindingIterationsPerFrame = 10;
 
 		UpdateNavMesh(false);
 	}
