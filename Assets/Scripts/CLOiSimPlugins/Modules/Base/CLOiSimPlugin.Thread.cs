@@ -23,6 +23,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
 		var publisher = this.transport.Get<Publisher>(paramObject.targetPort);
 		var deviceParam = paramObject.paramObject as Device;
+
 		thread.Sender(publisher, deviceParam);
 	}
 
@@ -31,6 +32,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
 		var subscriber = this.transport.Get<Subscriber>(paramObject.targetPort);
 		var deviceParam = paramObject.paramObject as Device;
+
 		thread.Receiver(subscriber, deviceParam);
 	}
 
@@ -38,6 +40,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	{
 		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
 		var responsor = this.transport.Get<Responsor>(paramObject.targetPort);
+
 		thread.Service(responsor);
 	}
 }

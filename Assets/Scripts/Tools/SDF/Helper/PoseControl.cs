@@ -27,31 +27,48 @@ namespace SDF
 
 			public void Add(in UE.Vector3 newPosition, in UE.Quaternion newRotation)
 			{
-				poseList.Add(new UE.Pose(newPosition, newRotation));
+				lock (poseList)
+				{
+					poseList.Add(new UE.Pose(newPosition, newRotation));
+				}
 			}
 
 			public UE.Pose Get(in int targetFrame = 0)
 			{
-				return (targetFrame < poseList.Count) ? poseList[targetFrame] : UE.Pose.identity;
+				var getPose = UE.Pose.identity;
+
+				lock (poseList)
+				{
+					if (targetFrame < poseList.Count)
+						getPose = poseList[targetFrame];
+				}
+
+				return getPose;
 			}
 
 			public void ClearPose()
 			{
-				poseList.Clear();
+				lock (poseList)
+				{
+					poseList.Clear();
+				}
 			}
 
 			public void Reset(in int targetFrame = 0)
 			{
-				if (poseList.Count == 0)
+				lock (poseList)
 				{
-					// Debug.LogWarning("Nothing to reset, pose List is empty");
-					return;
-				}
+					if (poseList.Count == 0)
+					{
+						// Debug.LogWarning("Nothing to reset, pose List is empty");
+						return;
+					}
 
-				if (targetFrame >= poseList.Count)
-				{
-					Debug.LogWarningFormat("exceed target frame({0}) in poseList({1})", targetFrame, poseList.Count);
-					return;
+					if (targetFrame >= poseList.Count)
+					{
+						Debug.LogWarningFormat("exceed target frame({0}) in poseList({1})", targetFrame, poseList.Count);
+						return;
+					}
 				}
 
 				if (targetTransform != null)

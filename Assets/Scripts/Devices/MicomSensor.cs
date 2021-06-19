@@ -35,11 +35,6 @@ namespace SensorDevices
 		protected override void OnStart()
 		{
 			imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
-
-			if (imuSensor != null)
-			{
-				SetSubPartsPose(imuSensor.name, imuSensor.transform);
-			}
 		}
 
 		protected override IEnumerator OnVisualize()
@@ -69,8 +64,6 @@ namespace SensorDevices
 
 				var motorObject = model.gameObject;
 				motorControl.AddWheelInfo(wheelLocation, motorObject);
-
-				SetSubPartsPose(model.name, motorObject.transform);
 				// Debug.Log(model.name);
 			}
 		}

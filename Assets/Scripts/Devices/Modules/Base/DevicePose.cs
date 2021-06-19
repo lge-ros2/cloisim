@@ -11,8 +11,6 @@ public class DevicePose
 {
 	private bool isSubParts = false;
 
-	private Dictionary<string, Pose> otherPartsPoseTable = new Dictionary<string, Pose>();
-
 	private Pose deviceModelPose = Pose.identity;
 	private Pose deviceLinkPose = Pose.identity;
 	private Pose devicePose = Pose.identity;
@@ -21,14 +19,6 @@ public class DevicePose
 	{
 		set => isSubParts = value;
 		get => isSubParts;
-	}
-
-	public void Store(in string partsName, in Transform targetTransform)
-	{
-		var modelTransform = (targetTransform.CompareTag("Model")) ? targetTransform : targetTransform.parent;
-		var initialPose = new Pose(modelTransform.localPosition, modelTransform.localRotation);
-		// Debug.Log(name + " " + initialPose.ToString("F9"));
-		otherPartsPoseTable.Add(partsName, initialPose);
 	}
 
 	public void Store(in Transform targetTransform)
@@ -72,15 +62,5 @@ public class DevicePose
 		// Debug.Log(name + ": " + finalPose.position.ToString("F4") + ", " + finalPose.rotation.ToString("F4"));
 
 		return finalPose;
-	}
-
-	public Pose Get(in string partsName)
-	{
-		if (otherPartsPoseTable.TryGetValue(partsName, out var targetPartsPose))
-		{
-			return targetPartsPose;
-		}
-
-		return Pose.identity;
 	}
 }
