@@ -10,8 +10,8 @@ public class Motor : Articulation
 {
 	public class RapidChangeControl
 	{
-		private bool _directionSwitched = false;
 		private const int _maxWaitCount = 30;
+		private bool _directionSwitched = false;
 		private int _waitForStopCount = 0;
 
 		public void SetDirectionSwitched(in bool switched)

@@ -106,7 +106,7 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		m_defaultBuildSettings = NavMesh.GetSettingsByID(AgentTypeId);
 		// Debug.Log(m_defaultBuildSettings.tileSize + " | " + JobsUtility.JobWorkerCount + "| "+ m_defaultBuildSettings.maxJobWorkers + " | " + NavMesh.pathfindingIterationsPerFrame);
 		m_defaultBuildSettings.overrideTileSize = true;
-        m_defaultBuildSettings.tileSize = 512 + 128;
+		m_defaultBuildSettings.tileSize = 512 + 128;
 		m_defaultBuildSettings.preserveTilesOutsideBounds = false;
 		m_defaultBuildSettings.overrideVoxelSize = true;
 		m_defaultBuildSettings.voxelSize = 0.1f;

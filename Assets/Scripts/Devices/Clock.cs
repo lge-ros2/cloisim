@@ -19,8 +19,8 @@ public class Clock : Device
 	private double restartedSimTime = 0;
 	private double restartedRealTime = 0;
 
-	public double currentSimTime = 0;
-	public double currentRealTime = 0;
+	private double currentSimTime = 0;
+	private double currentRealTime = 0;
 
 	public double SimTime => currentSimTime;
 

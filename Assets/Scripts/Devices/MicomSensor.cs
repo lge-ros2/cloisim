@@ -47,34 +47,12 @@ namespace SensorDevices
 			yield return null;
 		}
 
-		public void SetupMicom()
+		public void SetWheel(in string wheelNameLeft, in string wheelNameRight)
 		{
-			EnableDebugging = GetPluginParameters().GetValue<bool>("debug", false);
-
-			var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
-			SetUpdateRate(updateRate);
-
-			var P = GetPluginParameters().GetValue<float>("PID/kp");
-			var I = GetPluginParameters().GetValue<float>("PID/ki");
-			var D = GetPluginParameters().GetValue<float>("PID/kd");
-			motorControl.SetPID(P, I, D);
-
-			var wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
-			var wheelTread = GetPluginParameters().GetValue<float>("wheel/tread");
-			motorControl.SetWheelInfo(wheelRadius, wheelTread);
-
-			var wheelNameLeft = GetPluginParameters().GetValue<string>("wheel/location[@type='left']");
-			var wheelNameRight = GetPluginParameters().GetValue<string>("wheel/location[@type='right']");
-
-			// TODO: to be utilized
-			var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
-			var brakeFriction = GetPluginParameters().GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
-
 			var modelList = GetComponentsInChildren<SDF.Helper.Model>();
 			foreach (var model in modelList)
 			{
 				var wheelLocation = MotorControl.WheelLocation.NONE;
-				// Debug.Log(model.name);
 
 				if (model.name.Equals(wheelNameLeft))
 				{
@@ -90,95 +68,104 @@ namespace SensorDevices
 				}
 
 				var motorObject = model.gameObject;
-
 				motorControl.AddWheelInfo(wheelLocation, motorObject);
 
 				SetSubPartsPose(model.name, motorObject.transform);
+				// Debug.Log(model.name);
 			}
+		}
 
-			if (GetPluginParameters().GetValues<string>("uss/sensor", out var ussList))
-			{
-				foreach (var uss in ussList)
-				{
-					foreach (var model in modelList)
-					{
-						if (model.name.Equals(uss))
-						{
-							var sonarSensor = model.GetComponentInChildren<SensorDevices.Sonar>();
-							ussSensors.Add(sonarSensor);
-							// Debug.Log("ussSensor found : " + sonarSensor.name);
-						}
-					}
-				}
-				micomSensorData.uss.Distances = new double[ussList.Count];
-			}
+		public void SetMotorConfiguration(in float wheelRadius, in float wheelTread, in float P, in float I, in float D)
+		{
+			motorControl.SetPID(P, I, D);
+			motorControl.SetWheelInfo(wheelRadius, wheelTread);
+		}
 
-			if (GetPluginParameters().GetValues<string>("ir/sensor", out var irList))
-			{
-				foreach (var ir in irList)
-				{
-					foreach (var model in modelList)
-					{
-						if (model.name.Equals(ir))
-						{
-							var sonarSensor = model.GetComponentInChildren<SensorDevices.Sonar>();
-							irSensors.Add(sonarSensor);
-							// Debug.Log("irSensor found : " + sonarSensor.name);
-						}
-					}
-				}
-				micomSensorData.ir.Distances = new double[irList.Count];
-			}
-
-			if (GetPluginParameters().GetValues<string>("magnet/sensor", out var magnetList))
+		public void SetUSS(in List<string> ussList)
+		{
+			var modelList = GetComponentsInChildren<SDF.Helper.Model>();
+			foreach (var uss in ussList)
 			{
 				foreach (var model in modelList)
 				{
-					// TODO: to be implemented
+					if (model.name.Equals(uss))
+					{
+						var sonarSensor = model.GetComponentInChildren<SensorDevices.Sonar>();
+						ussSensors.Add(sonarSensor);
+						// Debug.Log("ussSensor found : " + sonarSensor.name);
+					}
 				}
 			}
+			micomSensorData.uss.Distances = new double[ussList.Count];
+		}
 
-			var targetContactName = GetPluginParameters().GetAttribute<string>("bumper", "contact");
+		public void SetIRSensor(in List<string> irList)
+		{
+			var modelList = GetComponentsInChildren<SDF.Helper.Model>();
+			foreach (var ir in irList)
+			{
+				foreach (var model in modelList)
+				{
+					if (model.name.Equals(ir))
+					{
+						var sonarSensor = model.GetComponentInChildren<SensorDevices.Sonar>();
+						irSensors.Add(sonarSensor);
+						// Debug.Log("irSensor found : " + sonarSensor.name);
+					}
+				}
+			}
+			micomSensorData.ir.Distances = new double[irList.Count];
+		}
+
+		public void SetMagnet(in List<string> magnetList)
+		{
+			var modelList = GetComponentsInChildren<SDF.Helper.Model>();
+			foreach (var model in modelList)
+			{
+				// TODO: to be implemented
+			}
+		}
+
+		public void SetBumper(in string contactName)
+		{
 			// Debug.Log(targetContactName);
-
 			var contactsInChild = GetComponentsInChildren<SensorDevices.Contact>();
 
 			foreach (var contact in contactsInChild)
 			{
-				if (contact.name.Equals(targetContactName))
+				if (contact.name.Equals(contactName))
 				{
 					bumperContact = contact;
 					// Debug.Log("Found");
 				}
 			}
+		}
 
+		public void SetBumperSensor(in List<string> bumperJointNameList)
+		{
 			if (bumperContact != null)
 			{
-				if (GetPluginParameters().GetValues<string>("bumper/joint_name", out var bumperJointNameList))
+				var linkList = GetComponentsInChildren<SDF.Helper.Link>();
+				foreach (var link in linkList)
 				{
-					var linkList = GetComponentsInChildren<SDF.Helper.Link>();
-					foreach (var link in linkList)
+					foreach (var bumperJointName in bumperJointNameList)
 					{
-						foreach (var bumperJointName in bumperJointNameList)
+						if (link.jointList.TryGetValue(bumperJointName, out var articulationBody))
 						{
-							if (link.jointList.TryGetValue(bumperJointName, out var articulationBody))
+							if (articulationBody.jointType == ArticulationJointType.PrismaticJoint)
 							{
-								if (articulationBody.jointType == ArticulationJointType.PrismaticJoint)
-								{
-									bumperSensors.Add(articulationBody);
-									Debug.Log(bumperJointName);
-								}
-								else
-								{
-									Debug.Log(bumperJointName + " is not a prismatic joint type!!!");
-								}
+								bumperSensors.Add(articulationBody);
+								Debug.Log(bumperJointName);
+							}
+							else
+							{
+								Debug.Log(bumperJointName + " is not a prismatic joint type!!!");
 							}
 						}
 					}
 				}
 
-				var bumperCount = (bumperSensors == null || bumperSensors.Count == 0) ? 1 : bumperSensors.Count;
-
+				var bumperCount = bumperSensors.Count;
 				micomSensorData.bumper.Bumpeds = new bool[bumperCount];
 			}
 		}

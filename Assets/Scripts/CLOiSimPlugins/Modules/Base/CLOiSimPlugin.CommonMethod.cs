@@ -26,7 +26,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		tfMessage.Transform.Orientation = new messages.Quaternion();
 
 		var deviceMessage = new DeviceMessage();
-		if (publisher != null)
+		if (publisher != null && tfList.Count > 0)
 		{
 			const float publishFrequency = 50;
 			const int updatePeriod = (int)(1f / publishFrequency * 1000f);
@@ -34,7 +34,6 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 			while (PluginThread.IsRunning)
 			{
-
 				for (var i = 0; i < tfList.Count; i++)
 				{
 					var tf = tfList[i];
