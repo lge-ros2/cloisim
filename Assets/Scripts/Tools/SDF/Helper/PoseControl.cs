@@ -33,6 +33,18 @@ namespace SDF
 				}
 			}
 
+			public void Set(in UE.Vector3 newPosition, in UE.Quaternion newRotation, in int targetFrame = 0)
+			{
+				if (targetFrame < poseList.Count)
+				{
+					poseList[targetFrame] = new UE.Pose(newPosition, newRotation);
+				}
+				else
+				{
+					Add(newPosition, newRotation);
+				}
+			}
+
 			public UE.Pose Get(in int targetFrame = 0)
 			{
 				var getPose = UE.Pose.identity;
@@ -40,17 +52,55 @@ namespace SDF
 				lock (poseList)
 				{
 					if (targetFrame < poseList.Count)
+					{
 						getPose = poseList[targetFrame];
+					}
 				}
 
 				return getPose;
 			}
 
-			public void ClearPose()
+			public void Clear()
 			{
 				lock (poseList)
 				{
 					poseList.Clear();
+				}
+			}
+
+			private void ResetArticulationBody()
+			{
+				if (articulationBody != null)
+				{
+					articulationBody.velocity = UE.Vector3.zero;
+					articulationBody.angularVelocity = UE.Vector3.zero;
+
+					var zeroSpace = new UE.ArticulationReducedSpace();
+					zeroSpace.dofCount = articulationBody.dofCount;
+					for (var i = 0; i < articulationBody.dofCount; i++)
+					{
+						zeroSpace[i] = 0;
+					}
+
+					articulationBody.jointPosition = zeroSpace;
+					articulationBody.jointVelocity = zeroSpace;
+					articulationBody.jointAcceleration = zeroSpace;
+					articulationBody.jointForce = zeroSpace;
+
+					var xDrive = articulationBody.xDrive;
+					xDrive.target = 0;
+					xDrive.targetVelocity = 0;
+					articulationBody.xDrive = xDrive;
+
+					var yDrive = articulationBody.yDrive;
+					yDrive.target = 0;
+					yDrive.targetVelocity = 0;
+					articulationBody.yDrive = yDrive;
+
+					var zDrive = articulationBody.zDrive;
+					zDrive.target = 0;
+					zDrive.targetVelocity = 0;
+					articulationBody.zDrive = zDrive;
 				}
 			}
 
@@ -75,9 +125,6 @@ namespace SDF
 				{
 					var targetPose = Get(targetFrame);
 
-					targetTransform.localPosition = targetPose.position;
-					targetTransform.localRotation = targetPose.rotation;
-
 					if (articulationBody == null)
 					{
 						articulationBody = targetTransform.GetComponent<UE.ArticulationBody>();
@@ -88,9 +135,14 @@ namespace SDF
 						if (articulationBody.isRoot)
 						{
 							articulationBody.TeleportRoot(targetPose.position, targetPose.rotation);
-							articulationBody.velocity = UE.Vector3.zero;
-							articulationBody.angularVelocity = UE.Vector3.zero;
 						}
+
+						ResetArticulationBody();
+					}
+					else
+					{
+						targetTransform.localPosition = targetPose.position;
+						targetTransform.localRotation = targetPose.rotation;
 					}
 				}
 			}

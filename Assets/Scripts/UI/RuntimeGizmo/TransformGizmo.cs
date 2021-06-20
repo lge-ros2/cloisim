@@ -351,7 +351,6 @@ namespace RuntimeGizmos
 									{
 										var newPose = new Pose(target.transform.position, target.transform.rotation);
 										newPose.position += movement;
-
 										articulationBody.Sleep();
 										articulationBody.TeleportRoot(newPose.position, newPose.rotation);
 									}
@@ -360,7 +359,9 @@ namespace RuntimeGizmos
 										var actor = target.GetComponent<SDF.Helper.Actor>();
 										if (actor != null && actor.HasWayPoints)
 										{
-											actor.AddPose(movement);
+											var newPose = (actor.GetPoseCount() == 1) ? actor.GetPose(0) : actor.GetPose(1);
+											newPose.position += movement;
+											actor.SetPose(newPose, 1);
 										}
 										else
 										{

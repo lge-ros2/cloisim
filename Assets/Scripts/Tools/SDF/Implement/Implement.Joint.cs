@@ -12,6 +12,38 @@ namespace SDF
 	{
 		public class Joint
 		{
+			public static UE.Pose SetArticulationBodyRelationship(in SDF.Joint joint, UE.Transform linkParent, UE.Transform linkChild)
+			{
+				var modelTransformParent = linkParent.parent;
+				var modelTransformChild = linkChild.parent;
+				var modelHelperChild = modelTransformChild.GetComponent<SDF.Helper.Model>();
+
+				var anchorPose = new UE.Pose();
+				if (modelTransformChild.Equals(modelTransformParent) || modelHelperChild.IsFirstChild)
+				{
+					linkChild.SetParent(linkParent);
+
+					// Set anchor pose
+					anchorPose.position = linkChild.localPosition;
+					anchorPose.rotation = linkChild.localRotation;
+				}
+				else
+				{
+					modelTransformChild.SetParent(linkParent);
+
+					// Set anchor pose
+					anchorPose.position = modelTransformChild.localPosition;
+					anchorPose.rotation = modelTransformChild.localRotation;
+				}
+
+				var jointPosition = SDF2Unity.GetPosition(joint.Pose.Pos);
+				var jointRotation = SDF2Unity.GetRotation(joint.Pose.Rot);
+				anchorPose.position += jointPosition;
+				anchorPose.rotation *= jointRotation;
+
+				return anchorPose;
+			}
+
 			public static void SetArticulationBodyAnchor(in UE.ArticulationBody body, in UE.Pose parentAnchor)
 			{
 				body.anchorPosition = UE.Vector3.zero;
@@ -49,6 +81,7 @@ namespace SDF
 				}
 
 				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
+				// UE.Debug.LogWarning(body.transform.parent.name + "::" + body.name + " = " + jointAxis + " - revolute");
 
 				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
 				{
@@ -178,6 +211,7 @@ namespace SDF
 				}
 
 				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
+				// UE.Debug.LogWarning(body.transform.parent.name + "::" + body.name + " = " + jointAxis + " - Prismatic");
 
 				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
 				{
@@ -209,6 +243,7 @@ namespace SDF
 					{
 						ReverseArticulationBodyAxis(body, UE.Vector3.up);
 					}
+					
 					body.zDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockY = UE.ArticulationDofLock.LockedMotion;

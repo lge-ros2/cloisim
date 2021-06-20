@@ -27,55 +27,46 @@ namespace SDF
 
 			public void Reset()
 			{
+				ResetPose();
+			}
+
+			public void ClearPose()
+			{
+				if (poseControl != null)
+				{
+					poseControl.Clear();
+				}
+			}
+
+			public void SetPose(in UE.Pose pose, in int targetFrame = 0)
+			{
+				SetPose(pose.position, pose.rotation, targetFrame);
+			}
+
+			public void SetPose(in UE.Vector3 position, in UE.Quaternion rotation, in int targetFrame = 0)
+			{
+				if (poseControl != null)
+				{
+					poseControl.Set(position, rotation, targetFrame);
+				}
+			}
+
+			public void ResetPose()
+			{
 				if (poseControl != null)
 				{
 					poseControl.Reset();
 				}
 			}
 
-			public void SetPose(in UE.Pose pose)
-			{
-				SetPose(pose.position, pose.rotation);
-			}
-
-			public void SetPose(in UE.Vector3 position, in UE.Quaternion rotation)
-			{
-				if (poseControl != null)
-				{
-					poseControl.ClearPose();
-				}
-
-				AddPose(position, rotation);
-
-				Reset();
-			}
-
-			public void AddPose(in UE.Vector3 position, in UE.Quaternion rotation)
-			{
-				if (poseControl != null)
-				{
-					poseControl.Add(position, rotation);
-				}
-			}
-
-			public void AddPose(in UE.Vector3 position)
-			{
-				AddPose(position, UE.Quaternion.identity);
-			}
-
-			public void AddPose(in UE.Quaternion rotation)
-			{
-				AddPose(UE.Vector3.zero, rotation);
-			}
-
 			public UE.Pose GetPose(in int targetFrame = 0)
 			{
-				return poseControl.Get(targetFrame);
+				return (poseControl != null) ? poseControl.Get(targetFrame) : UE.Pose.identity;
 			}
 
 			public int GetPoseCount()
 			{
-				return poseControl.Count;
+				return (poseControl != null) ? poseControl.Count : 0;
 			}
 		}
 	}

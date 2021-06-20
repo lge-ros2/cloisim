@@ -11,7 +11,7 @@ using UnityEngine;
 
 public class MicomPlugin : CLOiSimPlugin
 {
-	private Dictionary<string, (Pose, string)> otherPartsPoseTable = new Dictionary<string, (Pose, string)>();
+	private List<TF> staticTfList = new List<TF>();
 	private List<TF> tfList = new List<TF>();
 	private SensorDevices.MicomCommand micomCommand = null;
 	private SensorDevices.MicomSensor micomSensor = null;
@@ -108,25 +108,27 @@ public class MicomPlugin : CLOiSimPlugin
 
 		if (GetPluginParameters().GetValues<string>("ros2/static_transforms/link", out var staticLinks))
 		{
-			foreach (var linkName in staticLinks)
+			foreach (var link in staticLinks)
 			{
-				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("ros2/static_transforms/link[text()='" + linkName + "']", "parent_frame_id", "base_link");
+				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("ros2/static_transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
+
+				var modelName = string.Empty;
+				var linkName = link;
+				if (link.Contains("::"))
+				{
+					var splittedName = link.Replace("::", ":").Split(':');
+					modelName = splittedName[0];
+					linkName = splittedName[1];
+				}
 
 				foreach (var linkHelper in linkHelpers)
 				{
-					if (linkHelper.name.Equals(linkName))
+					if ((string.IsNullOrEmpty(modelName) || (!string.IsNullOrEmpty(modelName) && linkHelper.Model.name.Equals(modelName))) &&
+						linkHelper.name.Equals(linkName))
 					{
-						var initialTfPose = linkHelper.GetPose();
-
-						if (!linkHelper.Model.Equals(linkHelper.RootModel))
-						{
-							initialTfPose = initialTfPose.GetTransformedBy(linkHelper.Model.GetPose());
-						}
-
-						StorePose(linkName, parentFrameId, initialTfPose);
-
-						Debug.Log(linkName + " : TF static added");
-						break;
+						var tf = new TF(linkHelper, link.Replace("::", "_"), parentFrameId.Replace("::", "_"));
+						staticTfList.Add(tf);
+						Debug.Log(link + " : TF static added");
 					}
 				}
 			}
@@ -152,7 +154,7 @@ public class MicomPlugin : CLOiSimPlugin
 					if ((string.IsNullOrEmpty(modelName) || (!string.IsNullOrEmpty(modelName) && linkHelper.Model.name.Equals(modelName))) &&
 						linkHelper.name.Equals(linkName))
 					{
-						var tf = new TF(linkHelper, link.Replace("::", "_"), parentFrameId);
+						var tf = new TF(linkHelper, link.Replace("::", "_"),  parentFrameId.Replace("::", "_"));
 						tfList.Add(tf);
 						Debug.Log(modelName + "::" + linkName + " : TF added");
 						break;
@@ -168,12 +170,6 @@ public class MicomPlugin : CLOiSimPlugin
 		{
 			case "request_static_transforms":
 				SetStaticTransformsResponse(ref response);
-				break;
-
-			case "request_transform":
-				var devicePartsName = requestValue.StringValue;
-				var devicePose = GetPose(devicePartsName, out var parentLinkName);
-				SetTransformInfoResponse(ref response, devicePartsName, devicePose, parentLinkName);
 				break;
 
 			case "reset_odometry":
@@ -197,38 +193,36 @@ public class MicomPlugin : CLOiSimPlugin
 		ros2CommonInfo.Name = "static_transforms";
 		ros2CommonInfo.Value = new Any { Type = Any.ValueType.None };
 
-		if (GetPluginParameters().GetValues<string>("ros2/static_transforms/link", out var staticLinks))
+		foreach (var staticTf in staticTfList)
 		{
-			var ros2StaticTransformLink = new messages.Param();
+			var staticTransformLink = new messages.Param();
+			staticTransformLink.Name = "parent_frame_id";
+			staticTransformLink.Value = new Any { Type = Any.ValueType.String, StringValue = staticTf.parentFrameId };
 
-			foreach (var linkName in staticLinks)
 			{
-				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("ros2/static_transforms/link[text()='" + linkName + "']", "parent_frame_id", "base_link");
+				var pose = staticTf.GetPose();
 
-				ros2StaticTransformLink.Name = linkName;
-				ros2StaticTransformLink.Value = new Any { Type = Any.ValueType.String, StringValue = parentFrameId };
+				var staticTransformChildFrameId = new messages.Param();
+				staticTransformChildFrameId.Name = "child_frame_id";
+				staticTransformChildFrameId.Value = new Any { Type = Any.ValueType.String, StringValue = staticTf.childFrameId };
+				staticTransformLink.Childrens.Add(staticTransformChildFrameId);
 
-				ros2CommonInfo.Childrens.Add(ros2StaticTransformLink);
+				var staticTransformPosition = new messages.Param();
+				staticTransformPosition.Name = "position";
+				staticTransformPosition.Value = new Any { Type = Any.ValueType.Vector3d, Vector3dValue = new messages.Vector3d()};
+				DeviceHelper.SetVector3d(staticTransformPosition.Value.Vector3dValue, pose.position);
+				staticTransformLink.Childrens.Add(staticTransformPosition);
+
+				var staticTransformRotation = new messages.Param();
+				staticTransformRotation.Name = "orientation";
+				staticTransformRotation.Value = new Any { Type = Any.ValueType.Quaterniond, QuaternionValue = new messages.Quaternion() };
+				DeviceHelper.SetQuaternion(staticTransformRotation.Value.QuaternionValue, pose.rotation);
+				staticTransformLink.Childrens.Add(staticTransformRotation);
 			}
+
+			ros2CommonInfo.Childrens.Add(staticTransformLink);
 		}
 
 		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
-	}
-
-
-	public void StorePose(in string targetLinkName, in string parentLinkName, in Pose initialPose)
-	{
-		otherPartsPoseTable.Add(targetLinkName, (initialPose, parentLinkName));
-	}
-
-	public Pose GetPose(in string targetLinkName, out string parentLinkName)
-	{
-		if (otherPartsPoseTable.TryGetValue(targetLinkName, out var item))
-		{
-			parentLinkName = item.Item2;
-			return item.Item1;
-		}
-		parentLinkName = null;
-		return Pose.identity;
 	}
 }

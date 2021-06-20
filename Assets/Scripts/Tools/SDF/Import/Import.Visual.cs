@@ -32,6 +32,7 @@ namespace SDF
 				visualHelper.isCastingShadow = visual.CastShadow;
 				visualHelper.metaLayer = visual.GetMetaLayer();
 				visualHelper.SetPose(localPosition, localRotation);
+				visualHelper.ResetPose();
 
 				return newVisualObject as System.Object;
 			}
