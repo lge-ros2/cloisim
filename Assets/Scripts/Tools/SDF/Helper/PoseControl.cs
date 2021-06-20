@@ -68,6 +68,42 @@ namespace SDF
 				}
 			}
 
+			private void ResetArticulationBody()
+			{
+				if (articulationBody != null)
+				{
+					articulationBody.velocity = UE.Vector3.zero;
+					articulationBody.angularVelocity = UE.Vector3.zero;
+
+					var zeroSpace = new UE.ArticulationReducedSpace();
+					zeroSpace.dofCount = articulationBody.dofCount;
+					for (var i = 0; i < articulationBody.dofCount; i++)
+					{
+						zeroSpace[i] = 0;
+					}
+
+					articulationBody.jointPosition = zeroSpace;
+					articulationBody.jointVelocity = zeroSpace;
+					articulationBody.jointAcceleration = zeroSpace;
+					articulationBody.jointForce = zeroSpace;
+
+					var xDrive = articulationBody.xDrive;
+					xDrive.target = 0;
+					xDrive.targetVelocity = 0;
+					articulationBody.xDrive = xDrive;
+
+					var yDrive = articulationBody.yDrive;
+					yDrive.target = 0;
+					yDrive.targetVelocity = 0;
+					articulationBody.yDrive = yDrive;
+
+					var zDrive = articulationBody.zDrive;
+					zDrive.target = 0;
+					zDrive.targetVelocity = 0;
+					articulationBody.zDrive = zDrive;
+				}
+			}
+
 			public void Reset(in int targetFrame = 0)
 			{
 				lock (poseList)
@@ -88,10 +124,6 @@ namespace SDF
 				if (targetTransform != null)
 				{
 					var targetPose = Get(targetFrame);
-					// Debug.Log(targetTransform.name + " Reset " + targetPose);
-
-					targetTransform.localPosition = targetPose.position;
-					targetTransform.localRotation = targetPose.rotation;
 
 					if (articulationBody == null)
 					{
@@ -103,9 +135,14 @@ namespace SDF
 						if (articulationBody.isRoot)
 						{
 							articulationBody.TeleportRoot(targetPose.position, targetPose.rotation);
-							articulationBody.velocity = UE.Vector3.zero;
-							articulationBody.angularVelocity = UE.Vector3.zero;
 						}
+
+						ResetArticulationBody();
+					}
+					else
+					{
+						targetTransform.localPosition = targetPose.position;
+						targetTransform.localRotation = targetPose.rotation;
 					}
 				}
 			}

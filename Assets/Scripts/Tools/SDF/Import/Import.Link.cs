@@ -55,6 +55,7 @@ namespace SDF
 				linkHelper.isSelfCollide = link.SelfCollide;
 				linkHelper.useGravity = (link.Kinematic) ? false : link.Gravity;
 				linkHelper.SetPose(localPosition, localRotation);
+
 				linkHelper.ResetPose();
 
 				return newLinkObject as System.Object;
