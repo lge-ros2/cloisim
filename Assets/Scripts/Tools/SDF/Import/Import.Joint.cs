@@ -146,7 +146,15 @@ namespace SDF
 				var linkHelper = linkObjectChild.GetComponent<Helper.Link>();
 				if (linkHelper != null)
 				{
-					linkHelper.AddJointInfo(joint.Name, joint.Axis, articulationBodyChild);
+					if (joint.Axis != null)
+					{
+						linkHelper.JointAxis = SDF2Unity.GetAxis(joint.Axis.xyz);
+					}
+
+					if (joint.Axis2 != null)
+					{
+						linkHelper.JointAxis2 = SDF2Unity.GetAxis(joint.Axis2.xyz);
+					}
 
 					// set adjusted position for pose control
 					var localPosition = linkHelper.transform.localPosition;

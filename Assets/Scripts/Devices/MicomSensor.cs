@@ -143,18 +143,7 @@ namespace SensorDevices
 				{
 					foreach (var bumperJointName in bumperJointNameList)
 					{
-						if (link.GetJointInfo(bumperJointName, out var axisInfo, out var articulationBody))
-						{
-							if (articulationBody.jointType == ArticulationJointType.PrismaticJoint)
-							{
-								bumperSensors.Add(articulationBody);
-								Debug.Log(bumperJointName);
-							}
-							else
-							{
-								Debug.Log(bumperJointName + " is not a prismatic joint type!!!");
-							}
-						}
+						// TODO: to be implemented
 					}
 				}
 
@@ -233,30 +222,26 @@ namespace SensorDevices
 				{
 					for (var index = 0; index < bumperSensors.Count; index++)
 					{
-						// TODO:
-						// var articulationDrive = (bumperBody.xDrive != null)? bumper.
+						// TODO: to be implemented
 
-						// bumper.xDrive.upperLimit
-						// var threshold = bumperBody.linearLimit.limit/2;
+						// var normal = bumperSensors[index].transform.localPosition.normalized;
+						// // Debug.Log(index + ": " + normal.ToString("F6"));
 
-						var normal = bumperSensors[index].transform.localPosition.normalized;
-						// Debug.Log(index + ": " + normal.ToString("F6"));
-
-						if (normal.x > 0 && normal.z < 0)
-						{
-							micomSensorData.bumper.Bumpeds[index] = true;
-							// Debug.Log("Left Bumped");
-						}
-						else if (normal.x < 0 && normal.z < 0)
-						{
-							micomSensorData.bumper.Bumpeds[index] = true;
-							// Debug.Log("Right Bumped");
-						}
-						else
-						{
-							micomSensorData.bumper.Bumpeds[index] = false;
-							// Debug.Log("No Bumped");
-						}
+						// if (normal.x > 0 && normal.z < 0)
+						// {
+						// 	micomSensorData.bumper.Bumpeds[index] = true;
+						// 	// Debug.Log("Left Bumped");
+						// }
+						// else if (normal.x < 0 && normal.z < 0)
+						// {
+						// 	micomSensorData.bumper.Bumpeds[index] = true;
+						// 	// Debug.Log("Right Bumped");
+						// }
+						// else
+						// {
+						// 	micomSensorData.bumper.Bumpeds[index] = false;
+						// 	// Debug.Log("No Bumped");
+						// }
 					}
 				}
 			}

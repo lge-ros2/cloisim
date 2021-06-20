@@ -243,6 +243,7 @@ namespace SDF
 					{
 						ReverseArticulationBodyAxis(body, UE.Vector3.up);
 					}
+					
 					body.zDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockY = UE.ArticulationDofLock.LockedMotion;
