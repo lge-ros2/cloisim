@@ -12,6 +12,38 @@ namespace SDF
 	{
 		public class Joint
 		{
+			public static UE.Pose SetArticulationBodyRelationship(in SDF.Joint joint, UE.Transform linkParent, UE.Transform linkChild)
+			{
+				var modelTransformParent = linkParent.parent;
+				var modelTransformChild = linkChild.parent;
+				var modelHelperChild = modelTransformChild.GetComponent<SDF.Helper.Model>();
+
+				var anchorPose = new UE.Pose();
+				if (modelTransformChild.Equals(modelTransformParent) || modelHelperChild.IsFirstChild)
+				{
+					linkChild.SetParent(linkParent);
+
+					// Set anchor pose
+					anchorPose.position = linkChild.localPosition;
+					anchorPose.rotation = linkChild.localRotation;
+				}
+				else
+				{
+					modelTransformChild.SetParent(linkParent);
+
+					// Set anchor pose
+					anchorPose.position = modelTransformChild.localPosition;
+					anchorPose.rotation = modelTransformChild.localRotation;
+				}
+
+				var jointPosition = SDF2Unity.GetPosition(joint.Pose.Pos);
+				var jointRotation = SDF2Unity.GetRotation(joint.Pose.Rot);
+				anchorPose.position += jointPosition;
+				anchorPose.rotation *= jointRotation;
+
+				return anchorPose;
+			}
+
 			public static void SetArticulationBodyAnchor(in UE.ArticulationBody body, in UE.Pose parentAnchor)
 			{
 				body.anchorPosition = UE.Vector3.zero;
