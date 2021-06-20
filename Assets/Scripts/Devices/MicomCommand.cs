@@ -40,9 +40,8 @@ namespace SensorDevices
 				var linear = micomWritingData.Linear;
 				var angular = micomWritingData.Angular;
 
-				// Right-handed -> Left-handed direction of rotation
-				var linearVelocity = -SDF2Unity.GetPosition(linear.X, linear.Y, linear.Z);
-				var angularVelocity = -SDF2Unity.GetPosition(angular.X, angular.Y, angular.Z);
+				var linearVelocity = SDF2Unity.GetPosition(linear.X, linear.Y, linear.Z);
+				var angularVelocity = SDF2Unity.GetPosition(angular.X, angular.Y, angular.Z);
 
 				DoWheelDrive(linearVelocity, angularVelocity);
 			}

@@ -145,6 +145,11 @@ public partial class DeviceHelper
 		{
 			return new Quaternion(-rotation.z, -rotation.x, rotation.y, -rotation.w);
 		}
+
+		public static float CurveOrientation(in float value)
+		{
+			return -value;
+		}
 	}
 
 	public static Vector3[] SolveConvexHull2D(in Vector3[] points)

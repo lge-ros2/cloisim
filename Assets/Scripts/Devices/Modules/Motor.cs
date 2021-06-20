@@ -164,7 +164,7 @@ public class Motor : Articulation
 			const float compensateThreshold = 10.0f;
 			const float compensatingRatio = 1.20f;
 
-			compensatingVelocityRatio =  ((Mathf.Abs(targetAngularVelocity) < compensateThreshold) ? compensatingRatio : 1.0f);
+			compensatingVelocityRatio = ((Mathf.Abs(targetAngularVelocity) < compensateThreshold) ? compensatingRatio : 1.0f);
 		}
 
 		_targetAngularVelocity = targetAngularVelocity * compensatingVelocityRatio;

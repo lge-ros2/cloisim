@@ -82,6 +82,11 @@ public partial class SDF2Unity
 		return GetPosition(direction);
 	}
 
+	public static float CurveOrientation(in float value)
+	{
+		return -value;
+	}
+
 	public static bool IsRootModel(in GameObject targetObject)
 	{
 		return IsRootModel(targetObject.transform);

@@ -75,8 +75,9 @@ public class MotorControl
 		// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelTread)) / (2 * wheelRadius);
 		// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelTread)) / (2 * wheelRadius);
 		var angularCalculation = (angularVelocity * odometry.WheelTread * 0.5f);
-		var linearVelocityLeft = (linearVelocity - angularCalculation);
-		var linearVelocityRight = (linearVelocity + angularCalculation);
+
+		var linearVelocityLeft = SDF2Unity.CurveOrientation(linearVelocity - angularCalculation);
+		var linearVelocityRight = SDF2Unity.CurveOrientation(linearVelocity + angularCalculation);
 
 		SetDifferentialDrive(linearVelocityLeft, linearVelocityRight);
 	}
