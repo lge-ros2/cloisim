@@ -51,7 +51,8 @@ public class MicomPlugin : CLOiSimPlugin
 			AddThread(portTf, PublishTfThread, tfList);
 		}
 
-		LoadTFs();
+		LoadStaticTF();
+		LoadTF();
 	}
 
 	private void SetupMicom()
@@ -102,7 +103,7 @@ public class MicomPlugin : CLOiSimPlugin
 		}
 	}
 
-	private void LoadTFs()
+	private void LoadStaticTF()
 	{
 		var linkHelpers = GetComponentsInChildren<SDF.Helper.Link>();
 
@@ -126,14 +127,19 @@ public class MicomPlugin : CLOiSimPlugin
 					if ((string.IsNullOrEmpty(modelName) || (!string.IsNullOrEmpty(modelName) && linkHelper.Model.name.Equals(modelName))) &&
 						linkHelper.name.Equals(linkName))
 					{
-						var tf = new TF(linkHelper, link.Replace("::", "_"), parentFrameId.Replace("::", "_"));
+						var tf = new TF(linkHelper, link.Replace("::", "_"), parentFrameId);
 						staticTfList.Add(tf);
-						Debug.Log(link + " : TF static added");
+						Debug.Log(modelName + "::" + linkName + " : static TF added");
+						break;
 					}
 				}
 			}
 		}
+	}
 
+	private void LoadTF()
+	{
+		var linkHelpers = GetComponentsInChildren<SDF.Helper.Link>();
 		if (GetPluginParameters().GetValues<string>("ros2/transforms/link", out var links))
 		{
 			foreach (var link in links)
@@ -154,7 +160,7 @@ public class MicomPlugin : CLOiSimPlugin
 					if ((string.IsNullOrEmpty(modelName) || (!string.IsNullOrEmpty(modelName) && linkHelper.Model.name.Equals(modelName))) &&
 						linkHelper.name.Equals(linkName))
 					{
-						var tf = new TF(linkHelper, link.Replace("::", "_"),  parentFrameId.Replace("::", "_"));
+						var tf = new TF(linkHelper, link.Replace("::", "_"), parentFrameId);
 						tfList.Add(tf);
 						Debug.Log(modelName + "::" + linkName + " : TF added");
 						break;
@@ -193,34 +199,32 @@ public class MicomPlugin : CLOiSimPlugin
 		ros2CommonInfo.Name = "static_transforms";
 		ros2CommonInfo.Value = new Any { Type = Any.ValueType.None };
 
-		foreach (var staticTf in staticTfList)
+		foreach (var tf in staticTfList)
 		{
-			var staticTransformLink = new messages.Param();
-			staticTransformLink.Name = "parent_frame_id";
-			staticTransformLink.Value = new Any { Type = Any.ValueType.String, StringValue = staticTf.parentFrameId };
+			var ros2StaticTransformLink = new messages.Param();
+			ros2StaticTransformLink.Name = "parent_frame_id";
+			ros2StaticTransformLink.Value = new Any { Type = Any.ValueType.String, StringValue = tf.parentFrameId };
 
 			{
-				var pose = staticTf.GetPose();
+				var tfPose = tf.GetPose();
 
-				var staticTransformChildFrameId = new messages.Param();
-				staticTransformChildFrameId.Name = "child_frame_id";
-				staticTransformChildFrameId.Value = new Any { Type = Any.ValueType.String, StringValue = staticTf.childFrameId };
-				staticTransformLink.Childrens.Add(staticTransformChildFrameId);
+				var poseMessage = new messages.Pose();
+				poseMessage.Position = new messages.Vector3d();
+				poseMessage.Orientation = new messages.Quaternion();
 
-				var staticTransformPosition = new messages.Param();
-				staticTransformPosition.Name = "position";
-				staticTransformPosition.Value = new Any { Type = Any.ValueType.Vector3d, Vector3dValue = new messages.Vector3d()};
-				DeviceHelper.SetVector3d(staticTransformPosition.Value.Vector3dValue, pose.position);
-				staticTransformLink.Childrens.Add(staticTransformPosition);
+				poseMessage.Name = tf.childFrameId;
+				DeviceHelper.SetVector3d(poseMessage.Position, tfPose.position);
+				DeviceHelper.SetQuaternion(poseMessage.Orientation, tfPose.rotation);
 
-				var staticTransformRotation = new messages.Param();
-				staticTransformRotation.Name = "orientation";
-				staticTransformRotation.Value = new Any { Type = Any.ValueType.Quaterniond, QuaternionValue = new messages.Quaternion() };
-				DeviceHelper.SetQuaternion(staticTransformRotation.Value.QuaternionValue, pose.rotation);
-				staticTransformLink.Childrens.Add(staticTransformRotation);
+				var ros2StaticTransformElement = new messages.Param();
+				ros2StaticTransformElement.Name = "pose";
+				ros2StaticTransformElement.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = poseMessage};
+
+				ros2StaticTransformLink.Childrens.Add(ros2StaticTransformElement);
+				// Debug.Log(poseMessage.Name + ", " + poseMessage.Position + ", " + poseMessage.Orientation);
 			}
 
-			ros2CommonInfo.Childrens.Add(staticTransformLink);
+			ros2CommonInfo.Childrens.Add(ros2StaticTransformLink);
 		}
 
 		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
