@@ -31,7 +31,8 @@ public class Odometry
 
 	private float lastImuYaw = 0f;
 	private Vector3 _odomPose = Vector3.zero;
-	private Vector2 _odomVelocity = Vector2.zero;
+	private float odomTranslationalVelocity = 0;
+	private float odomRotationalVelocity = 0;
 
 	public float WheelTread => this.wheelInfo.wheelTread;
 	public float InverseWheelRadius => this.wheelInfo.inverseWheelRadius;
@@ -48,7 +49,8 @@ public class Odometry
 
 	public void Reset()
 	{
-		_odomVelocity.Set(0, 0);
+		odomTranslationalVelocity = 0;
+		odomRotationalVelocity = 0;
 		_odomPose.Set(0, 0, 0);
 		lastImuYaw = 0.0f;
 	}
@@ -66,25 +68,26 @@ public class Odometry
 		// compute odometric pose
 		var poseLinear = wheelInfo.wheelRadius * (wheelCircumLeft + wheelCircumRight) * 0.5f;
 		var halfDeltaTheta = deltaTheta * 0.5f;
-		_odomPose.x += poseLinear * Mathf.Cos(_odomPose.z + halfDeltaTheta);
-		_odomPose.y += poseLinear * Mathf.Sin(_odomPose.z + halfDeltaTheta);
-		_odomPose.z += deltaTheta;
 
-		if (_odomPose.z > _PI)
+		_odomPose.x += poseLinear * Mathf.Sin(_odomPose.y + halfDeltaTheta);
+		_odomPose.z += poseLinear * Mathf.Cos(_odomPose.y + halfDeltaTheta);
+		_odomPose.y += deltaTheta;
+
+		if (_odomPose.y > _PI)
 		{
-			_odomPose.z -= _2_PI;
+			_odomPose.y -= _2_PI;
 		}
-		else if (_odomPose.z < -_PI)
+		else if (_odomPose.y < -_PI)
 		{
-			_odomPose.z += _2_PI;
+			_odomPose.y += _2_PI;
 		}
 
 		// compute odometric instantaneouse velocity
 		var v = poseLinear / duration; // v = translational velocity [m/s]
 		var w = deltaTheta / duration; // w = rotational velocity [rad/s]
 
-		_odomVelocity.x = v;
-		_odomVelocity.y = w;
+		odomTranslationalVelocity = v;
+		odomRotationalVelocity = w;
 	}
 
 	public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor)
@@ -105,10 +108,8 @@ public class Odometry
 		var angularVelocityLeft = motorLeft.GetCurrentVelocity();
 		var angularVelocityRight = motorRight.GetCurrentVelocity();
 
-		// Set reversed value due to different direction
-		// Left-handed -> Right-handed direction of rotation
-		odomMessage.AngularVelocity.Left = -angularVelocityLeft;
-		odomMessage.AngularVelocity.Right = -angularVelocityRight;
+		odomMessage.AngularVelocity.Left = DeviceHelper.Convert.CurveOrientation(angularVelocityLeft);
+		odomMessage.AngularVelocity.Right = DeviceHelper.Convert.CurveOrientation(angularVelocityRight);
 		odomMessage.LinearVelocity.Left = odomMessage.AngularVelocity.Left * wheelInfo.wheelRadius;
 		odomMessage.LinearVelocity.Right = odomMessage.AngularVelocity.Right * wheelInfo.wheelRadius;
 
@@ -138,18 +139,13 @@ public class Odometry
 
 		CalculateOdometry(duration, (float)odomMessage.AngularVelocity.Left, (float)odomMessage.AngularVelocity.Right, deltaTheta);
 
-		// Set reversed value due to different direction (Left-handed -> Right-handed direction of rotation)
-		odomMessage.Pose.X = _odomPose.x;
-		odomMessage.Pose.Y = -_odomPose.y;
-		odomMessage.Pose.Z = -_odomPose.z;
+		DeviceHelper.SetVector3d(odomMessage.Pose, _odomPose);
 
-		odomMessage.TwistLinear.X = _odomVelocity.x;
+		odomMessage.TwistLinear.X = odomTranslationalVelocity;
+		odomMessage.TwistAngular.Z = DeviceHelper.Convert.CurveOrientation(odomRotationalVelocity);
 
-		// Set reversed value due to different direction (Left-handed -> Right-handed direction of rotation)
-		odomMessage.TwistAngular.Z = -_odomVelocity.y;
-
-		motorLeft.Feedback.SetRotatingVelocity(_odomVelocity.y);
-		motorRight.Feedback.SetRotatingVelocity(_odomVelocity.y);
+		motorLeft.Feedback.SetRotatingVelocity(odomRotationalVelocity);
+		motorRight.Feedback.SetRotatingVelocity(odomRotationalVelocity);
 		// Debug.LogFormat("jointvel: {0}, {1}", angularVelocityLeft * Mathf.Deg2Rad, angularVelocityRight * Mathf.Deg2Rad);
 		// Debug.LogFormat("Odom: {0}, {1}", odomMessage.AngularVelocity.Left, odomMessage.AngularVelocity.Right);
 
