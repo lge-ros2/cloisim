@@ -88,7 +88,7 @@ namespace SDF
 				if (targetTransform != null)
 				{
 					var targetPose = Get(targetFrame);
-					Debug.Log(targetTransform.name + " Reset " + targetPose);
+					// Debug.Log(targetTransform.name + " Reset " + targetPose);
 
 					targetTransform.localPosition = targetPose.position;
 					targetTransform.localRotation = targetPose.rotation;
