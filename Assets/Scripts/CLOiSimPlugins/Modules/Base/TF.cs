@@ -25,16 +25,17 @@ public class TF
 		var tfLink = this.link;
 		var tfPose = tfLink.GetPose(targetPoseFrame);
 
+		tfPose.rotation *= Quaternion.AngleAxis(180, Vector3.up);
+
 		if (!tfLink.Model.Equals(tfLink.RootModel))
 		{
 			var modelPose = tfLink.Model.GetPose(targetPoseFrame);
 
+			modelPose.rotation *= Quaternion.AngleAxis(180, Vector3.up);
+
 			tfPose.position = tfPose.position + modelPose.position;
 			tfPose.rotation = tfPose.rotation * modelPose.rotation;
 		}
-
-		// due to different rotation direction
-		tfPose.rotation *= Quaternion.AngleAxis(180, Vector3.up);
 
 		return tfPose;
 	}
