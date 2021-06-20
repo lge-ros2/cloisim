@@ -38,7 +38,6 @@ public class Subscriber : SubscriberSocket
 		return true;
 	}
 
-
 	public byte[] Subscribe()
 	{
 		if (IsDisposed)

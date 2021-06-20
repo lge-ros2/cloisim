@@ -55,7 +55,7 @@ public class CLOiSimPluginThread : IDisposable
 		{
 			var thread = new Thread(function);
 			var threadObject = new ParamObject(targetPortForThread, paramObject);
-			thread.Priority = System.Threading.ThreadPriority.AboveNormal;
+			// thread.Priority = System.Threading.ThreadPriority.AboveNormal;
 			threadList.Add((thread, threadObject));
 			return true;
 		}

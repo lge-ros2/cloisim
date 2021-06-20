@@ -26,33 +26,34 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		tfMessage.Transform.Orientation = new messages.Quaternion();
 
 		var deviceMessage = new DeviceMessage();
-		if (publisher != null)
+		if (publisher != null && tfList.Count > 0)
 		{
 			const float publishFrequency = 50;
 			const int updatePeriod = (int)(1f / publishFrequency * 1000f);
 			int updatePeriodPerEachTf = (int)(updatePeriod / tfList.Count);
+			// Debug.Log(updatePeriod + " , " + updatePeriodPerEachTf);
 
 			while (PluginThread.IsRunning)
 			{
-
 				for (var i = 0; i < tfList.Count; i++)
 				{
 					var tf = tfList[i];
 
-					DeviceHelper.SetCurrentTime(tfMessage.Header.Stamp);
-
 					tfMessage.Header.StrId = tf.parentFrameId;
 					tfMessage.Transform.Name = tf.childFrameId;
 
-					var tfLink = tf.link;
-					var tfPose = tfLink.GetPose();
+					var tfPose = tf.GetPose();
 
+					DeviceHelper.SetCurrentTime(tfMessage.Header.Stamp);
 					DeviceHelper.SetVector3d(tfMessage.Transform.Position, tfPose.position);
 					DeviceHelper.SetQuaternion(tfMessage.Transform.Orientation, tfPose.rotation);
 
 					deviceMessage.SetMessage<messages.TransformStamped>(tfMessage);
-					publisher.Publish(deviceMessage);
 					// Debug.Log(tfMessage.Header.Stamp.Sec + "." + tfMessage.Header.Stamp.Nsec + ": " + tfMessage.Header.StrId + ", " + tfMessage.Transform.Name) ;
+					if (publisher.Publish(deviceMessage) == false)
+					{
+						Debug.Log(tfMessage.Header.StrId  + ", " + tfMessage.Transform.Name + " error to sent TF!!");
+					}
 					CLOiSimPluginThread.Sleep(updatePeriodPerEachTf);
 				}
 			}

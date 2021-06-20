@@ -298,14 +298,4 @@ public abstract class Device : MonoBehaviour
 	{
 		return devicePose.Get();
 	}
-
-	public void SetSubPartsPose(in string partsName, in Transform targetTransform)
-	{
-		devicePose.Store(partsName, targetTransform);
-	}
-
-	public Pose GetSubPartsPose(in string targetPartsName)
-	{
-		return devicePose.Get(targetPartsName);
-	}
 }
