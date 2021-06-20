@@ -8,6 +8,8 @@ using UnityEngine;
 
 public class TF
 {
+	private const int targetPoseFrame = 1;
+
 	public string parentFrameId = string.Empty;
 	public string childFrameId = string.Empty;
 	public SDF.Helper.Link link = null;
@@ -21,11 +23,11 @@ public class TF
 	public Pose GetPose()
 	{
 		var tfLink = this.link;
-		var tfPose = tfLink.GetPose();
+		var tfPose = tfLink.GetPose(targetPoseFrame);
 
 		if (!tfLink.Model.Equals(tfLink.RootModel))
 		{
-			tfPose = tfPose.GetTransformedBy(tfLink.Model.GetPose());
+			tfPose = tfPose.GetTransformedBy(tfLink.Model.GetPose(targetPoseFrame));
 		}
 
 		return tfPose;

@@ -171,7 +171,7 @@ namespace SDF
 				var linkPlugin = linkObjectChild.GetComponent<Helper.Link>();
 				if (linkPlugin != null)
 				{
-					linkPlugin.jointList.Add(joint.Name, articulationBodyChild);
+					linkPlugin.AddJointInfo(joint.Name, joint.Axis, articulationBodyChild);
 				}
 			}
 		}

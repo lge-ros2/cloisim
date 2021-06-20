@@ -143,7 +143,7 @@ namespace SensorDevices
 				{
 					foreach (var bumperJointName in bumperJointNameList)
 					{
-						if (link.jointList.TryGetValue(bumperJointName, out var articulationBody))
+						if (link.GetJointInfo(bumperJointName, out var axisInfo, out var articulationBody))
 						{
 							if (articulationBody.jointType == ArticulationJointType.PrismaticJoint)
 							{

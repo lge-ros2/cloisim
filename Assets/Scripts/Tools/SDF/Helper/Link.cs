@@ -26,7 +26,7 @@ namespace SDF
 
 			private UE.ArticulationBody _artBody = null;
 
-			public Dictionary<string, UE.ArticulationBody> jointList = new Dictionary<string, UE.ArticulationBody>();
+			private Dictionary<string, (SDF.Axis, UE.ArticulationBody)> jointList = new Dictionary<string, (SDF.Axis, UE.ArticulationBody)>();
 
 			private List<UE.ContactPoint> collisionContacts = new List<UE.ContactPoint>();
 
@@ -57,7 +57,7 @@ namespace SDF
 
 			void LateUpdate()
 			{
-				SetPose(transform.localPosition, transform.localRotation);
+				SetPose(transform.localPosition, transform.localRotation, 1);
 			}
 
 			void OnDrawGizmos()
@@ -142,6 +142,24 @@ namespace SDF
 						}
 					}
 				}
+			}
+
+			public void AddJointInfo(in string jointName, in SDF.Axis axisInfo, in UE.ArticulationBody articulationBody)
+			{
+				jointList.Add(jointName, (axisInfo, articulationBody));
+			}
+
+			public bool GetJointInfo(in string jointName, out SDF.Axis axisInfo, out UE.ArticulationBody articulationBody)
+			{
+				if (jointList.TryGetValue(jointName, out var item))
+				{
+					axisInfo = item.Item1;
+					articulationBody = item.Item2;
+					return true;
+				}
+				axisInfo = null;
+				articulationBody = null;
+				return false;
 			}
 		}
 	}

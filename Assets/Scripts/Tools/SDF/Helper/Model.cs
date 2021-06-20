@@ -43,6 +43,11 @@ namespace SDF
 					}
 				}
 			}
+
+			void LateUpdate()
+			{
+				SetPose(transform.localPosition, transform.localRotation, 1);
+			}
 		}
 	}
 }

@@ -49,6 +49,7 @@ namespace SDF
 				}
 
 				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
+				// UE.Debug.LogWarning(body.transform.parent.name + "::" + body.name + " = " + jointAxis + " - revolute");
 
 				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
 				{
@@ -178,6 +179,7 @@ namespace SDF
 				}
 
 				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
+				// UE.Debug.LogWarning(body.transform.parent.name + "::" + body.name + " = " + jointAxis + " - Prismatic");
 
 				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
 				{
