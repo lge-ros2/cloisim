@@ -27,8 +27,14 @@ public class TF
 
 		if (!tfLink.Model.Equals(tfLink.RootModel))
 		{
-			tfPose = tfPose.GetTransformedBy(tfLink.Model.GetPose(targetPoseFrame));
+			var modelPose = tfLink.Model.GetPose(targetPoseFrame);
+
+			tfPose.position = tfPose.position + modelPose.position;
+			tfPose.rotation = tfPose.rotation * modelPose.rotation;
 		}
+
+		// due to different rotation direction
+		tfPose.rotation *= Quaternion.AngleAxis(180, Vector3.up);
 
 		return tfPose;
 	}
