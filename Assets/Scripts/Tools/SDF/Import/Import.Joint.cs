@@ -143,10 +143,20 @@ namespace SDF
 						break;
 				}
 
-				var linkPlugin = linkObjectChild.GetComponent<Helper.Link>();
-				if (linkPlugin != null)
+				var linkHelper = linkObjectChild.GetComponent<Helper.Link>();
+				if (linkHelper != null)
 				{
-					linkPlugin.AddJointInfo(joint.Name, joint.Axis, articulationBodyChild);
+					linkHelper.AddJointInfo(joint.Name, joint.Axis, articulationBodyChild);
+
+					// set adjusted position for pose control
+					var localPosition = linkHelper.transform.localPosition;
+					var localRotation = linkHelper.transform.localRotation;
+					linkHelper.SetPose(localPosition, localRotation);
+
+					var modelHelper = linkHelper.Model;
+					localPosition = modelHelper.transform.localPosition;
+					localRotation = modelHelper.transform.localRotation;
+					modelHelper.SetPose(localPosition, localRotation);
 				}
 			}
 		}
