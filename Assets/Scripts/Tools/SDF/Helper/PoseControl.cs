@@ -33,6 +33,18 @@ namespace SDF
 				}
 			}
 
+			public void Set(in UE.Vector3 newPosition, in UE.Quaternion newRotation, in int targetFrame = 0)
+			{
+				if (targetFrame < poseList.Count)
+				{
+					poseList[targetFrame] = new UE.Pose(newPosition, newRotation);
+				}
+				else
+				{
+					Add(newPosition, newRotation);
+				}
+			}
+
 			public UE.Pose Get(in int targetFrame = 0)
 			{
 				var getPose = UE.Pose.identity;
@@ -40,13 +52,15 @@ namespace SDF
 				lock (poseList)
 				{
 					if (targetFrame < poseList.Count)
+					{
 						getPose = poseList[targetFrame];
+					}
 				}
 
 				return getPose;
 			}
 
-			public void ClearPose()
+			public void Clear()
 			{
 				lock (poseList)
 				{
@@ -74,6 +88,7 @@ namespace SDF
 				if (targetTransform != null)
 				{
 					var targetPose = Get(targetFrame);
+					Debug.Log(targetTransform.name + " Reset " + targetPose);
 
 					targetTransform.localPosition = targetPose.position;
 					targetTransform.localRotation = targetPose.rotation;
