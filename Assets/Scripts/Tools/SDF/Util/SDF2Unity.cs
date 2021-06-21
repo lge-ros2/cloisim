@@ -86,14 +86,4 @@ public partial class SDF2Unity
 	{
 		return -value;
 	}
-
-	public static bool IsRootModel(in GameObject targetObject)
-	{
-		return IsRootModel(targetObject.transform);
-	}
-
-	public static bool IsRootModel(in Transform targetTransform)
-	{
-		return targetTransform.parent.Equals(targetTransform.root);
-	}
 }

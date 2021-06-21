@@ -15,8 +15,8 @@ public class TF
 	public SDF.Helper.Link link = null;
 	public TF(in SDF.Helper.Link link, in string childFrameId, in string parentFrameId = "base_link")
 	{
-		this.parentFrameId = parentFrameId;
-		this.childFrameId = childFrameId;
+		this.parentFrameId = parentFrameId.Replace("::", "_");
+		this.childFrameId = childFrameId.Replace("::", "_");
 		this.link = link;
 	}
 

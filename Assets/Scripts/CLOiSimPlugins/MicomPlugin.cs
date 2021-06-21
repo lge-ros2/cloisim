@@ -113,21 +113,14 @@ public class MicomPlugin : CLOiSimPlugin
 			{
 				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("ros2/static_transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
 
-				var modelName = string.Empty;
-				var linkName = link;
-				if (link.Contains("::"))
-				{
-					var splittedName = link.Replace("::", ":").Split(':');
-					modelName = splittedName[0];
-					linkName = splittedName[1];
-				}
+				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(link);
 
 				foreach (var linkHelper in linkHelpers)
 				{
 					if ((string.IsNullOrEmpty(modelName) || (!string.IsNullOrEmpty(modelName) && linkHelper.Model.name.Equals(modelName))) &&
 						linkHelper.name.Equals(linkName))
 					{
-						var tf = new TF(linkHelper, link.Replace("::", "_"), parentFrameId);
+						var tf = new TF(linkHelper, link, parentFrameId);
 						staticTfList.Add(tf);
 						Debug.Log(modelName + "::" + linkName + " : static TF added");
 						break;
@@ -146,21 +139,14 @@ public class MicomPlugin : CLOiSimPlugin
 			{
 				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("ros2/transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
 
-				var modelName = string.Empty;
-				var linkName = link;
-				if (link.Contains("::"))
-				{
-					var splittedName = link.Replace("::", ":").Split(':');
-					modelName = splittedName[0];
-					linkName = splittedName[1];
-				}
+				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(link);
 
 				foreach (var linkHelper in linkHelpers)
 				{
 					if ((string.IsNullOrEmpty(modelName) || (!string.IsNullOrEmpty(modelName) && linkHelper.Model.name.Equals(modelName))) &&
 						linkHelper.name.Equals(linkName))
 					{
-						var tf = new TF(linkHelper, link.Replace("::", "_"), parentFrameId);
+						var tf = new TF(linkHelper, link, parentFrameId);
 						tfList.Add(tf);
 						Debug.Log(modelName + "::" + linkName + " : TF added");
 						break;

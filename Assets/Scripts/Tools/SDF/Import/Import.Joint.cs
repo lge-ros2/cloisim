@@ -24,33 +24,9 @@ namespace SDF
 					rootTransform = rootTransform.parent;
 				}
 
-				if (name.Contains("::"))
-				{
-					var splittedName = name.Replace("::", ":").Split(':');
-					if (splittedName.Length == 2)
-					{
-						UE.Transform modelTransform = null;
+				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(name);
 
-						foreach (var modelObject in rootTransform.GetComponentsInChildren<SDF.Helper.Model>())
-						{
-							if (modelObject.name.Equals(splittedName[0]))
-							{
-								modelTransform = modelObject.transform;
-								break;
-							}
-						}
-
-						if (modelTransform != null)
-						{
-							var linkTransform = modelTransform.Find(splittedName[1]);
-							if (linkTransform != null)
-							{
-								foundLinkObject = linkTransform;
-							}
-						}
-					}
-				}
-				else
+				if (string.IsNullOrEmpty(modelName))
 				{
 					// UE.Debug.Log(name + ", Find  => " + targetTransform.name + ", " + rootTransform.name);
 					foreach (var transform in targetTransform.GetComponentsInChildren<UE.Transform>())
@@ -59,6 +35,28 @@ namespace SDF
 						{
 							foundLinkObject = transform;
 							break;
+						}
+					}
+				}
+				else
+				{
+					UE.Transform modelTransform = null;
+
+					foreach (var modelObject in rootTransform.GetComponentsInChildren<SDF.Helper.Model>())
+					{
+						if (modelObject.name.Equals(modelName))
+						{
+							modelTransform = modelObject.transform;
+							break;
+						}
+					}
+
+					if (modelTransform != null)
+					{
+						var linkTransform = modelTransform.Find(linkName);
+						if (linkTransform != null)
+						{
+							foundLinkObject = linkTransform;
 						}
 					}
 				}
