@@ -19,7 +19,7 @@ namespace SDF
 
 				var rootTransform = targetTransform;
 
-				while (!rootTransform.parent.Equals(targetTransform.root))
+				while (!SDF2Unity.IsRootModel(rootTransform))
 				{
 					rootTransform = rootTransform.parent;
 				}

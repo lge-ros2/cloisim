@@ -54,7 +54,7 @@ public partial class DeviceHelper
 
 			if (searchOnlyOneDepth == false)
 			{
-				while (!nextObject.transform.parent.Equals(nextObject.transform.root))
+				while (!SDF2Unity.IsRootModel(nextObject.transform))
 				{
 					nextObject = nextObject.transform.parent.GetComponentInParent<SDF.Helper.Base>();
 
