@@ -11,29 +11,29 @@ public class Articulation
 	public enum DriveType {NONE, FORCE_AND_VELOCITY, POSITION_AND_VELOCITY};
 	private DriveType driveType = DriveType.NONE;
 
-	private ArticulationBody joint = null;
+	private ArticulationBody jointBody = null;
 	private ArticulationJointType jointType = ArticulationJointType.FixedJoint;
 
 	public ArticulationJointType Type => jointType;
-	public GameObject gameObject => this.joint.gameObject;
+	public GameObject gameObject => this.jointBody.gameObject;
 
-	public Articulation(in ArticulationBody joint)
+	public Articulation(in ArticulationBody jointBody)
 	{
-		this.joint = joint;
-		this.jointType = this.joint.jointType;
+		this.jointBody = jointBody;
+		this.jointType = this.jointBody.jointType;
 	}
 
 	public Articulation(in GameObject target)
 	{
 		var body = target.GetComponentInChildren<ArticulationBody>();
-		this.joint = body;
-		this.jointType = this.joint.jointType;
+		this.jointBody = body;
+		this.jointType = this.jointBody.jointType;
 	}
 
 	public void Reset()
 	{
-		this.joint.velocity = Vector3.zero;
-		this.joint.angularVelocity = Vector3.zero;
+		this.jointBody.velocity = Vector3.zero;
+		this.jointBody.angularVelocity = Vector3.zero;
 	}
 
 	public void SetDriveType(in DriveType type)
@@ -48,47 +48,47 @@ public class Articulation
 
 	protected void SetJointVelocity(in float velocity, in int targetDegree = 0)
 	{
-		if (this.joint != null)
+		if (this.jointBody != null)
 		{
-			var jointVelocity = this.joint.jointVelocity;
+			var jointVelocity = this.jointBody.jointVelocity;
 			jointVelocity[targetDegree] = velocity;
-			this.joint.jointVelocity = jointVelocity;
+			this.jointBody.jointVelocity = jointVelocity;
 		}
 	}
 
 	private int GetValidIndex(in int index)
 	{
-		return (index >= this.joint.dofCount) ? (this.joint.dofCount - 1) : index;
+		return (index >= this.jointBody.dofCount) ? (this.jointBody.dofCount - 1) : index;
 	}
 
 	/// <returns>in radian for angular and in meters for linear</param>
 	public float GetJointPosition(int index = 0)
 	{
 		index = GetValidIndex(index);
-		return (this.joint == null || index == -1) ? 0 : this.joint.jointPosition[index];
+		return (this.jointBody == null || index == -1) ? 0 : this.jointBody.jointPosition[index];
 	}
 
 	/// <returns>torque for angular and force for linear</param>
 	public float GetJointForce(int index = 0)
 	{
 		index = GetValidIndex(index);
-		// Debug.Log(this.joint.name + ": " + this.joint.dofCount + ", " + this.joint.jointAcceleration[0] + ", " + this.joint.jointForce[0]);
-		return (this.joint == null || index == -1) ? 0 : this.joint.jointForce[index];
+		// Debug.Log(this.jointBody.name + ": " + this.jointBody.dofCount + ", " + this.jointBody.jointAcceleration[0] + ", " + this.jointBody.jointForce[0]);
+		return (this.jointBody == null || index == -1) ? 0 : this.jointBody.jointForce[index];
 	}
 
 	/// <returns>in radian for angular and in meters for linear</param>
 	public float GetJointVelocity(int index = 0)
 	{
 		index = GetValidIndex(index);
-		return (this.joint == null || index == -1) ? 0 : this.joint.jointVelocity[index];
+		return (this.jointBody == null || index == -1) ? 0 : this.jointBody.jointVelocity[index];
 	}
 
 	/// <returns>torque for angular and force for linear</param>
 	public float GetEffort()
 	{
-		var drive = DeviceHelper.GetDrive(ref this.joint);
+		var drive = DeviceHelper.GetDrive(ref this.jointBody);
 		var F = drive.stiffness * (GetJointPosition() - drive.target) - drive.damping * (GetJointVelocity() - drive.targetVelocity);
-		// Debug.Log(this.joint.name + ": Calculated force = " + F);
+		// Debug.Log(this.jointBody.name + ": Calculated force = " + F);
 		return F;
 	}
 
@@ -96,7 +96,7 @@ public class Articulation
 	/// <param name="targetVelocity">angular velocity in degrees per second.</param>
 	public void Drive(in float target, in float targetVelocity)
 	{
-		if (this.joint == null)
+		if (this.jointBody == null)
 		{
 			Debug.LogWarning("ArticulationBody is empty, please set target body first");
 			return;
@@ -104,7 +104,7 @@ public class Articulation
 
 		// Arccording to document(https://docs.unity3d.com/2020.3/Documentation/ScriptReference/ArticulationDrive.html)
 		// F = stiffness * (currentPosition - target) - damping * (currentVelocity - targetVelocity).
-		var drive = DeviceHelper.GetDrive(ref this.joint);
+		var drive = DeviceHelper.GetDrive(ref this.jointBody);
 
 		switch (this.driveType)
 		{
@@ -118,6 +118,6 @@ public class Articulation
 
 		drive.targetVelocity = targetVelocity;
 
-		DeviceHelper.SetDrive(ref this.joint, drive);
+		DeviceHelper.SetDrive(ref this.jointBody, drive);
 	}
 }
