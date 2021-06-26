@@ -29,7 +29,7 @@ public class TF
 		{
 			var modelPose = tfLink.Model.GetPose(targetPoseFrame);
 
-			modelPose.rotation *= Quaternion.AngleAxis(180, Vector3.up);
+			modelPose.rotation = Quaternion.AngleAxis(180, Vector3.left) * modelPose.rotation;
 
 			tfPose.position = tfPose.position + modelPose.position;
 			tfPose.rotation = tfPose.rotation * modelPose.rotation;
