@@ -25,8 +25,6 @@ public class TF
 		var tfLink = this.link;
 		var tfPose = tfLink.GetPose(targetPoseFrame);
 
-		tfPose.rotation *= Quaternion.AngleAxis(180, Vector3.up);
-
 		if (!tfLink.Model.Equals(tfLink.RootModel))
 		{
 			var modelPose = tfLink.Model.GetPose(targetPoseFrame);
