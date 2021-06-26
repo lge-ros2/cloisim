@@ -58,6 +58,15 @@ namespace SDF
 								UE.GameObject.Destroy(childObject);
 							}
 						}
+						else
+						{
+							for (var i = 0; i < meshFilters.Length; i++)
+							{
+								var meshRenderer = meshFilters[i].GetComponent<UE.MeshRenderer>();
+								UE.GameObject.Destroy(meshRenderer);
+								UE.GameObject.Destroy(meshFilters[i]);
+							}
+						}
 
 						var meshCollider = targetObject.AddComponent<UE.MeshCollider>();
 						meshCollider.sharedMesh = mergedMesh;
