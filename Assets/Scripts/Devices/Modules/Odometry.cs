@@ -60,18 +60,20 @@ public class Odometry
 	private void CalculateOdometry(in float duration, in float angularVelocityLeftWheel, in float angularVelocityRightWheel, in float deltaTheta)
 	{
 		// circumference of wheel [rad] per step time.
-		var wheelCircumLeft = angularVelocityLeftWheel * duration;
-		var wheelCircumRight = angularVelocityRightWheel * duration;
+		var wheelCircumLeft = DeviceHelper.Convert.CurveOrientation(angularVelocityLeftWheel) * duration;
+		var wheelCircumRight = DeviceHelper.Convert.CurveOrientation(angularVelocityRightWheel) * duration;
 
 		// Debug.LogFormat("theta:{0} lastTheta:{1} deltaTheta:{2}", theta, _lastTheta, deltaTheta);
 
 		// compute odometric pose
 		var poseLinear = wheelInfo.wheelRadius * (wheelCircumLeft + wheelCircumRight) * 0.5f;
-		var halfDeltaTheta = deltaTheta * 0.5f;
 
-		_odomPose.x += poseLinear * Mathf.Sin(_odomPose.y + halfDeltaTheta);
+		var halfDeltaTheta = deltaTheta * 0.5f;
 		_odomPose.z += poseLinear * Mathf.Cos(_odomPose.y + halfDeltaTheta);
+		_odomPose.x += poseLinear * Mathf.Sin(_odomPose.y + halfDeltaTheta);
 		_odomPose.y += deltaTheta;
+
+		// Debug.LogFormat("({0}, {1}, {2}) = {3} {4} {5}, L: {6}, R: {7}, {8}", _odomPose.z, _odomPose.x, _odomPose.y, poseLinear, Mathf.Sin(_odomPose.y + halfDeltaTheta), Mathf.Cos(_odomPose.y + halfDeltaTheta), wheelCircumLeft, wheelCircumRight, halfDeltaTheta);
 
 		if (_odomPose.y > _PI)
 		{
@@ -83,11 +85,9 @@ public class Odometry
 		}
 
 		// compute odometric instantaneouse velocity
-		var v = poseLinear / duration; // v = translational velocity [m/s]
-		var w = deltaTheta / duration; // w = rotational velocity [rad/s]
-
-		odomTranslationalVelocity = v;
-		odomRotationalVelocity = w;
+		var divideDuration = 1f/duration;
+		odomTranslationalVelocity = poseLinear * divideDuration; // translational velocity [m/s]
+		odomRotationalVelocity = deltaTheta * divideDuration; // rotational velocity [rad/s]
 	}
 
 	public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor)
@@ -137,7 +137,7 @@ public class Odometry
 			deltaTheta = yaw * duration;
 		}
 
-		CalculateOdometry(duration, (float)odomMessage.AngularVelocity.Left, (float)odomMessage.AngularVelocity.Right, deltaTheta);
+		CalculateOdometry(duration, angularVelocityLeft, angularVelocityRight, deltaTheta);
 
 		DeviceHelper.SetVector3d(odomMessage.Pose, _odomPose);
 
@@ -146,7 +146,7 @@ public class Odometry
 
 		motorLeft.Feedback.SetRotatingVelocity(odomRotationalVelocity);
 		motorRight.Feedback.SetRotatingVelocity(odomRotationalVelocity);
-		// Debug.LogFormat("jointvel: {0}, {1}", angularVelocityLeft * Mathf.Deg2Rad, angularVelocityRight * Mathf.Deg2Rad);
+		// Debug.LogFormat("jointvel: {0}, {1}", angularVelocityLeft, angularVelocityRight);
 		// Debug.LogFormat("Odom: {0}, {1}", odomMessage.AngularVelocity.Left, odomMessage.AngularVelocity.Right);
 
 		return true;

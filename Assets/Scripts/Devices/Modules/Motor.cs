@@ -116,7 +116,8 @@ public class Motor : Articulation
 
 	private float _targetAngularVelocity = 0;
 	private float _targetTorque = 0;
-	private float _currentMotorVelocity = 0;
+	private float _currentMotorVelocity = 0; // degree per seconds
+	private float _prevJointPosition = 0;
 
 	public Motor(in GameObject gameObject)
 		: base(gameObject)
@@ -138,7 +139,7 @@ public class Motor : Articulation
 	/// <remarks>radian per second</remarks>
 	public float GetCurrentVelocity()
 	{
-		return _currentMotorVelocity;
+		return _currentMotorVelocity * Mathf.Deg2Rad;
 	}
 
 	/// <summary>Set Target Velocity wmotorLeftith PID control</summary>
@@ -170,9 +171,9 @@ public class Motor : Articulation
 		_targetAngularVelocity = targetAngularVelocity * compensatingVelocityRatio;
 	}
 
-	public void Update()
+	public void Update(in float duration)
 	{
-		_currentMotorVelocity = GetJointVelocity();
+		_currentMotorVelocity = GetMotorVelocity(duration);
 		// Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
 		// 	Body.jointVelocity[0], Body.jointAcceleration[0], Body.jointForce[0], Body.jointFriction, Body.jointPosition[0]);
 
@@ -184,7 +185,7 @@ public class Motor : Articulation
 
 			var compensatedTargetAngularVelocity = _targetAngularVelocity + targetAngularVelocityCompensation;
 
-			_targetTorque = Mathf.Abs(_pidControl.Update(compensatedTargetAngularVelocity, _currentMotorVelocity, Time.fixedDeltaTime));
+			_targetTorque = Mathf.Abs(_pidControl.Update(compensatedTargetAngularVelocity, _currentMotorVelocity, duration));
 
 			// Debug.Log(GetMotorName() + ", " + _targetAngularVelocity + " <=> " + _currentMotorVelocity);
 
@@ -197,7 +198,7 @@ public class Motor : Articulation
 			}
 			else
 			{
-				SetTargetForceAndVelocity(_targetTorque, compensatedTargetAngularVelocity);
+				Drive(_targetTorque, compensatedTargetAngularVelocity);
 			}
 		}
 		else
@@ -211,7 +212,7 @@ public class Motor : Articulation
 		_targetTorque = 0;
 
 		SetJointVelocity(0);
-		SetTargetForceAndVelocity(0, 0);
+		Drive(0, 0);
 
 		_pidControl.Reset();
 		_rapidControl.SetDirectionSwitched(false);
@@ -219,8 +220,13 @@ public class Motor : Articulation
 		Reset();
 	}
 
-	private void SetTargetForceAndVelocity(in float targetForce, in float targetVelocity)
+	private float GetMotorVelocity(in float duration)
 	{
-		Drive(targetForce, targetVelocity);
+		// calculate velocity using joint position is more accurate than joint velocity
+		var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
+		var motorVelocity = Mathf.DeltaAngle(_prevJointPosition, jointPosition) / duration;
+		_prevJointPosition = jointPosition;
+
+		return motorVelocity;
 	}
 }

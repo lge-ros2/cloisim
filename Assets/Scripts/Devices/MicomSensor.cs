@@ -193,8 +193,8 @@ namespace SensorDevices
 
 			if (motorLeft != null && motorRight != null)
 			{
-				motorLeft.Update();
-				motorRight.Update();
+				motorLeft.Update(Time.fixedDeltaTime);
+				motorRight.Update(Time.fixedDeltaTime);
 			}
 
 			UpdateIMU();
