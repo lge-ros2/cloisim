@@ -132,10 +132,10 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		m_Instance = NavMesh.AddNavMeshData(m_NavMesh);
 
 		m_defaultBuildSettings = NavMesh.GetSettingsByID(AgentTypeId);
-		Debug.Log(m_defaultBuildSettings.tileSize + " | " + JobsUtility.JobWorkerCount + "| "+ m_defaultBuildSettings.maxJobWorkers + " | " + NavMesh.pathfindingIterationsPerFrame);
-		Debug.Log(m_defaultBuildSettings.voxelSize + " | " + m_defaultBuildSettings.minRegionArea);
-		Debug.Log(m_defaultBuildSettings.agentClimb + " | " + m_defaultBuildSettings.agentHeight);
-		Debug.Log(m_defaultBuildSettings.agentSlope + " | " + m_defaultBuildSettings.agentRadius);
+		// Debug.Log(m_defaultBuildSettings.tileSize + " | " + JobsUtility.JobWorkerCount + "| "+ m_defaultBuildSettings.maxJobWorkers + " | " + NavMesh.pathfindingIterationsPerFrame);
+		// Debug.Log(m_defaultBuildSettings.voxelSize + " | " + m_defaultBuildSettings.minRegionArea);
+		// Debug.Log(m_defaultBuildSettings.agentClimb + " | " + m_defaultBuildSettings.agentHeight);
+		// Debug.Log(m_defaultBuildSettings.agentSlope + " | " + m_defaultBuildSettings.agentRadius);
 		m_defaultBuildSettings.overrideTileSize = true;
 		m_defaultBuildSettings.tileSize = 512;
 		m_defaultBuildSettings.preserveTilesOutsideBounds = false;
