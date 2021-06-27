@@ -44,16 +44,17 @@ namespace SensorDevices
 
 		public void SetWheel(in string wheelNameLeft, in string wheelNameRight)
 		{
-			var modelList = GetComponentsInChildren<SDF.Helper.Model>();
-			foreach (var model in modelList)
+			var linkList = GetComponentsInChildren<SDF.Helper.Link>();
+			foreach (var link in linkList)
 			{
 				var wheelLocation = MotorControl.WheelLocation.NONE;
 
-				if (model.name.Equals(wheelNameLeft))
+				if (link.name.Equals(wheelNameLeft) || link.Model.name.Equals(wheelNameLeft))
 				{
 					wheelLocation = MotorControl.WheelLocation.LEFT;
+
 				}
-				else if (model.name.Equals(wheelNameRight))
+				else if (link.name.Equals(wheelNameRight) || link.Model.name.Equals(wheelNameRight))
 				{
 					wheelLocation = MotorControl.WheelLocation.RIGHT;
 				}
@@ -62,9 +63,11 @@ namespace SensorDevices
 					continue;
 				}
 
-				var motorObject = model.gameObject;
-				motorControl.AddWheelInfo(wheelLocation, motorObject);
-				// Debug.Log(model.name);
+				if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
+				{
+					var motorObject = (link.gameObject != null)? link.gameObject : link.Model.gameObject;
+					motorControl.AddWheelInfo(wheelLocation, motorObject);
+				}
 			}
 		}
 

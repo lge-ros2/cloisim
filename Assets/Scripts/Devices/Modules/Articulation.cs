@@ -19,15 +19,16 @@ public class Articulation
 
 	public Articulation(in ArticulationBody jointBody)
 	{
-		this.jointBody = jointBody;
-		this.jointType = this.jointBody.jointType;
+		if (jointBody != null)
+		{
+			this.jointBody = jointBody;
+			this.jointType = this.jointBody.jointType;
+		}
 	}
 
 	public Articulation(in GameObject target)
+		: this(target.GetComponentInChildren<ArticulationBody>())
 	{
-		var body = target.GetComponentInChildren<ArticulationBody>();
-		this.jointBody = body;
-		this.jointType = this.jointBody.jointType;
 	}
 
 	public void Reset()
