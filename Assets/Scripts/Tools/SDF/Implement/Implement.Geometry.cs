@@ -38,6 +38,8 @@ namespace SDF
 			//
 			public static UE.GameObject GenerateMeshObject(in SDF.ShapeType shape)
 			{
+				var createdObject = new UE.GameObject("geometry(primitive mesh)");
+
 				UE.Mesh mesh = null;
 
 				if (shape is SDF.Box)
@@ -45,17 +47,31 @@ namespace SDF
 					var box = shape as SDF.Box;
 					var scale = SDF2Unity.GetScale(box.size);
 					mesh = ProceduralMesh.CreateBox(scale.x, scale.y, scale.z);
+
+					var boxCollider = createdObject.AddComponent<UE.BoxCollider>();
+					boxCollider.size = scale;
 				}
 				else if (shape is SDF.Sphere)
 				{
 					var sphere = shape as SDF.Sphere;
 					mesh = ProceduralMesh.CreateSphere((float)sphere.radius);
+
+					var sphereCollider = createdObject.AddComponent<UE.SphereCollider>();
+					sphereCollider.radius = (float)sphere.radius;
+				}
+				else if (shape is SDF.Capsule)
+				{
+					var capsule = shape as SDF.Capsule;
+					mesh = ProceduralMesh.CreateCapsule((float)capsule.radius, (float)capsule.length);
+
+					var capsuleCollider = createdObject.AddComponent<UE.CapsuleCollider>();
+					capsuleCollider.radius = (float)capsule.radius;
+					capsuleCollider.height = (float)capsule.length;
 				}
 				else if (shape is SDF.Cylinder)
 				{
 					var cylinder = shape as SDF.Cylinder;
 					mesh = ProceduralMesh.CreateCylinder((float)cylinder.radius, (float)cylinder.length);
-
 				}
 				else if (shape is SDF.Plane)
 				{
@@ -67,8 +83,6 @@ namespace SDF
 				{
 					Debug.Log("Wrong ShapeType!!!");
 				}
-
-				var createdObject = new UE.GameObject("geometry(primitive mesh)");
 
 				if (mesh != null)
 				{

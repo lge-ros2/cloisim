@@ -28,7 +28,11 @@ namespace SDF
 
 		protected override void ParseElements()
 		{
-			if (IsValidNode("box"))
+			if (IsValidNode("empty"))
+			{
+				empty = true;
+			}
+			else if (IsValidNode("box"))
 			{
 				Type = "box";
 				shape = new Box();
@@ -43,9 +47,13 @@ namespace SDF
 				var scale = GetValue<string>("mesh/scale");
 
 				if (string.IsNullOrEmpty(scale))
+				{
 					(shape as Mesh).scale.Set(1.0f, 1.0f, 1.0f);
+				}
 				else
+				{
 					(shape as Mesh).scale.FromString(scale);
+				}
 
 				// Console.WriteLine("mesh uri : " + (shape as Mesh).uri + ", scale:" + scale);
 			}
@@ -59,8 +67,8 @@ namespace SDF
 			{
 				Type = "cylinder";
 				shape = new Cylinder();
-				(shape as Cylinder).length = GetValue<double>("cylinder/length");
 				(shape as Cylinder).radius = GetValue<double>("cylinder/radius");
+				(shape as Cylinder).length = GetValue<double>("cylinder/length");
 			}
 			else if (IsValidNode("plane"))
 			{
@@ -72,15 +80,44 @@ namespace SDF
 				var size = GetValue<string>("plane/size");
 				(shape as Plane).size.FromString(size);
 			}
-			else if (IsValidNode("height") ||
-					 IsValidNode("image") ||
+			else if (IsValidNode("capsule"))
+			{
+				Type = "capsule";
+				shape = new Capsule();
+				(shape as Capsule).radius = GetValue<double>("capsule/radius");
+				(shape as Capsule).length = GetValue<double>("capsule/length");
+			}
+			else if (IsValidNode("ellipsoid"))
+			{
+				Type = "ellipsoid";
+				shape = new Ellipsoid();
+
+				var radii = GetValue<string>("ellipsoid/radii");
+
+				if (string.IsNullOrEmpty(radii))
+				{
+					(shape as Ellipsoid).radii.Set(1.0f, 1.0f, 1.0f);
+				}
+				else
+				{
+					(shape as Ellipsoid).radii.FromString(radii);
+				}
+			}
+			else if (IsValidNode("image"))
+			{
+				Type = "image";
+				shape = new Image();
+
+				(shape as Image).uri = GetValue<string>("image/uri");
+				(shape as Image).scale = GetValue<double>("image/scale");
+				(shape as Image).threshold = GetValue<int>("image/threshold");
+				(shape as Image).height = GetValue<double>("image/height");
+				(shape as Image).granularity = GetValue<int>("image/granularity");
+			}
+			else if (IsValidNode("heightmap") ||
 					 IsValidNode("polyline"))
 			{
 				Console.WriteLine("Currently not supported");
-				empty = true;
-			}
-			else if (IsValidNode("empty"))
-			{
 				empty = true;
 			}
 			else
@@ -97,26 +134,7 @@ namespace SDF
 
 		public Type GetShapeType()
 		{
-			switch (Type)
-			{
-				case "box":
-					return typeof(Box);
-
-				case "mesh":
-					return typeof(Mesh);
-
-				case "sphere":
-					return typeof(Sphere);
-
-				case "cylinder":
-					return typeof(Cylinder);
-
-				case "plane":
-					return typeof(Plane);
-
-				default:
-					return null;
-			}
+			return shape?.GetType();
 		}
 	}
 }

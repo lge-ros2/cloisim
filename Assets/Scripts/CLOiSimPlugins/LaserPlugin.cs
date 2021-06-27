@@ -9,29 +9,35 @@ using Any = cloisim.msgs.Any;
 
 public class LaserPlugin : CLOiSimPlugin
 {
+	private SensorDevices.Lidar lidar = null;
+
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.LASER;
 		partsName = DeviceHelper.GetPartName(gameObject);
 
-		targetDevice = GetComponent<SensorDevices.Lidar>();
+		lidar = GetComponent<SensorDevices.Lidar>();
+		attachedDevices.Add("LIDAR", lidar);
 	}
 
 	protected override void OnStart()
 	{
 		if (GetPluginParameters().IsValidNode("filter"))
 		{
-			var lidar = targetDevice as SensorDevices.Lidar;
 			var filterAngleLower = GetPluginParameters().GetValue<double>("filter/angle/horizontal/lower", double.NegativeInfinity);
 			var filterAngleUpper = GetPluginParameters().GetValue<double>("filter/angle/horizontal/upper", double.PositiveInfinity);
 			lidar.SetupLaserFilter(filterAngleLower, filterAngleUpper);
 		}
 
-		RegisterServiceDevice("Info");
-		RegisterTxDevice("Data");
+		if (RegisterServiceDevice(out var portService, "Info"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 
-		AddThread(ServiceThread);
-		AddThread(SenderThread, targetDevice);
+		if (RegisterTxDevice(out var portTx, "Data"))
+		{
+			AddThread(portTx, SenderThread, lidar);
+		}
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
@@ -43,8 +49,9 @@ public class LaserPlugin : CLOiSimPlugin
 				break;
 
 			case "request_transform":
-				var devicePose = targetDevice.GetPose();
-				SetTransformInfoResponse(ref response, devicePose);
+				var devicePose = lidar.GetPose();
+				var deviceName = lidar.DeviceName;
+				SetTransformInfoResponse(ref response, deviceName, devicePose);
 				break;
 
 			default:

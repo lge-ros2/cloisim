@@ -13,11 +13,6 @@ public class Publisher : PublisherSocket
 	private byte[] hashValue = null;
 	private byte[] dataToPublish = null;
 
-	public void Destroy()
-	{
-		this.Close();
-	}
-
 	public void SetHash(in ulong hash)
 	{
 		hashValue = BitConverter.GetBytes(hash);

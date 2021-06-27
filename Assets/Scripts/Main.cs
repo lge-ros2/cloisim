@@ -329,9 +329,9 @@ public class Main: MonoBehaviour
 		}
 
 		DeviceHelper.GetGlobalClock()?.ResetTime();
-
-		yield return new WaitForSeconds(0.2f);
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
+		yield return new WaitForSeconds(0.15f);
+
 		isResetting = false;
 	}
 

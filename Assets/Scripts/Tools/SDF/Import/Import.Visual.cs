@@ -32,6 +32,7 @@ namespace SDF
 				visualHelper.isCastingShadow = visual.CastShadow;
 				visualHelper.metaLayer = visual.GetMetaLayer();
 				visualHelper.SetPose(localPosition, localRotation);
+				visualHelper.ResetPose();
 
 				return newVisualObject as System.Object;
 			}
@@ -43,6 +44,13 @@ namespace SDF
 				// Optimize geometry and materials
 				if (visualObject.CompareTag("Visual"))
 				{
+					// remove all colliders
+					var colliders = visualObject.GetComponentsInChildren<UE.Collider>();
+					foreach (var collider in colliders)
+					{
+						UE.GameObject.Destroy(collider);
+					}
+
 					if (enableOptimization)
 					{
 						Implement.Visual.OptimizeMeshes(visualObject);

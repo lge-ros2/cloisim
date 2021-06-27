@@ -14,6 +14,7 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class Camera : Device
 	{
+		protected SDF.Camera camParameter = null;
 		protected messages.CameraSensor sensorInfo = null;
 		protected messages.ImageStamped imageStamped = null;
 
@@ -32,19 +33,15 @@ namespace SensorDevices
 		protected RenderTextureReadWrite targetRTrwmode;
 		protected TextureFormat readbackDstFormat;
 		private CameraData.ImageData camImageData;
-		private CommandBuffer cmdBuffer;
+		private CommandBuffer cmdBufferBegin;
+		private CommandBuffer cmdBufferEnd;
 		public Noise noise = null;
 
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
 			if (camera.Equals(camSensor))
 			{
-				// This is where you can write custom rendering code. Customize this method to customize your SRP.
-				// Create and schedule a command to clear the current render target
-				cmdBuffer.SetInvertCulling(true);
-				context.ExecuteCommandBuffer(cmdBuffer);
-				// Tell the Scriptable Render Context to tell the graphics API to perform the scheduled commands
-				cmdBuffer.Clear();
+				context.ExecuteCommandBuffer(cmdBufferBegin);
 				context.Submit();
 			}
 		}
@@ -53,17 +50,25 @@ namespace SensorDevices
 		{
 			if (camera.Equals(camSensor))
 			{
-				cmdBuffer.SetInvertCulling(false);
-				context.ExecuteCommandBuffer(cmdBuffer);
-				cmdBuffer.Clear();
+				context.ExecuteCommandBuffer(cmdBufferEnd);
 				context.Submit();
 			}
+		}
+
+		public void SetCamParameter(in SDF.Camera param)
+		{
+			camParameter = param;
 		}
 
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
-			cmdBuffer = new CommandBuffer();
+			cmdBufferBegin = new CommandBuffer();
+			cmdBufferBegin.SetInvertCulling(true);
+
+			cmdBufferEnd = new CommandBuffer();
+			cmdBufferEnd.SetInvertCulling(false);
+
 			camSensor = GetComponent<UnityEngine.Camera>();
 			universalCamData = camSensor.GetUniversalAdditionalCameraData();
 
@@ -96,7 +101,7 @@ namespace SensorDevices
 			targetRTdepth = 0;
 			targetRTrwmode = RenderTextureReadWrite.sRGB;
 
-			var pixelFormat = CameraData.GetPixelFormat(GetParameters().image_format);
+			var pixelFormat = CameraData.GetPixelFormat(camParameter.image_format);
 			switch (pixelFormat)
 			{
 				case CameraData.PixelFormat.L_INT8:
@@ -119,9 +124,9 @@ namespace SensorDevices
 			imageStamped.Image = new messages.Image();
 
 			var image = imageStamped.Image;
-			var pixelFormat = CameraData.GetPixelFormat(GetParameters().image_format);
-			image.Width = (uint)GetParameters().image_width;
-			image.Height = (uint)GetParameters().image_height;
+			var pixelFormat = CameraData.GetPixelFormat(camParameter.image_format);
+			image.Width = (uint)camParameter.image_width;
+			image.Height = (uint)camParameter.image_height;
 			image.PixelFormat = (uint)pixelFormat;
 			image.Step = image.Width * (uint)CameraData.GetImageDepth(pixelFormat);
 			image.Data = new byte[image.Height * image.Step];
@@ -131,24 +136,24 @@ namespace SensorDevices
 			sensorInfo.Distortion = new messages.Distortion();
 			sensorInfo.Distortion.Center = new messages.Vector2d();
 
-			sensorInfo.HorizontalFov = GetParameters().horizontal_fov;
-			sensorInfo.ImageSize.X = GetParameters().image_width;
-			sensorInfo.ImageSize.Y = GetParameters().image_height;
-			sensorInfo.ImageFormat = GetParameters().image_format;
-			sensorInfo.NearClip = GetParameters().clip.near;
-			sensorInfo.FarClip = GetParameters().clip.far;
-			sensorInfo.SaveEnabled = GetParameters().save_enabled;
-			sensorInfo.SavePath = GetParameters().save_path;
+			sensorInfo.HorizontalFov = camParameter.horizontal_fov;
+			sensorInfo.ImageSize.X = camParameter.image_width;
+			sensorInfo.ImageSize.Y = camParameter.image_height;
+			sensorInfo.ImageFormat = camParameter.image_format;
+			sensorInfo.NearClip = camParameter.clip.near;
+			sensorInfo.FarClip = camParameter.clip.far;
+			sensorInfo.SaveEnabled = camParameter.save_enabled;
+			sensorInfo.SavePath = camParameter.save_path;
 
-			if (GetParameters().distortion != null)
+			if (camParameter.distortion != null)
 			{
-				sensorInfo.Distortion.Center.X = GetParameters().distortion.center.X;
-				sensorInfo.Distortion.Center.Y = GetParameters().distortion.center.Y;
-				sensorInfo.Distortion.K1 = GetParameters().distortion.k1;
-				sensorInfo.Distortion.K2 = GetParameters().distortion.k2;
-				sensorInfo.Distortion.K3 = GetParameters().distortion.k3;
-				sensorInfo.Distortion.P1 = GetParameters().distortion.p1;
-				sensorInfo.Distortion.P2 = GetParameters().distortion.p2;
+				sensorInfo.Distortion.Center.X = camParameter.distortion.center.X;
+				sensorInfo.Distortion.Center.Y = camParameter.distortion.center.Y;
+				sensorInfo.Distortion.K1 = camParameter.distortion.k1;
+				sensorInfo.Distortion.K2 = camParameter.distortion.k2;
+				sensorInfo.Distortion.K3 = camParameter.distortion.k3;
+				sensorInfo.Distortion.P1 = camParameter.distortion.p1;
+				sensorInfo.Distortion.P2 = camParameter.distortion.p2;
 			}
 		}
 
@@ -165,11 +170,11 @@ namespace SensorDevices
 			camSensor.stereoTargetEye = StereoTargetEyeMask.None;
 
 			camSensor.orthographic = false;
-			camSensor.nearClipPlane = (float)GetParameters().clip.near;
-			camSensor.farClipPlane = (float)GetParameters().clip.far;
+			camSensor.nearClipPlane = (float)camParameter.clip.near;
+			camSensor.farClipPlane = (float)camParameter.clip.far;
 			camSensor.cullingMask = LayerMask.GetMask("Default");
 
-			var targetRT = new RenderTexture(GetParameters().image_width, GetParameters().image_height, targetRTdepth, targetRTformat, targetRTrwmode)
+			var targetRT = new RenderTexture(camParameter.image_width, camParameter.image_height, targetRTdepth, targetRTformat, targetRTrwmode)
 			{
 				name = targetRTname,
 				dimension = UnityEngine.Rendering.TextureDimension.Tex2D,
@@ -177,13 +182,13 @@ namespace SensorDevices
 				useMipMap = false,
 				useDynamicScale = false,
 				wrapMode = TextureWrapMode.Clamp,
-				filterMode = FilterMode.Bilinear,
+				filterMode = FilterMode.Point,
 				enableRandomWrite = true
 			};
 
 			camSensor.targetTexture = targetRT;
 
-			var camHFov = (float)GetParameters().horizontal_fov * Mathf.Rad2Deg;
+			var camHFov = (float)camParameter.horizontal_fov * Mathf.Rad2Deg;
 			var camVFov = DeviceHelper.HorizontalToVerticalFOV(camHFov, camSensor.aspect);
 			camSensor.fieldOfView = camVFov;
 
@@ -199,9 +204,9 @@ namespace SensorDevices
 			RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
 			RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
 
-			camSensor.hideFlags |= HideFlags.NotEditable;
+			// camSensor.hideFlags |= HideFlags.NotEditable;
 
-			camImageData = new CameraData.ImageData(GetParameters().image_width, GetParameters().image_height, GetParameters().image_format);
+			camImageData = new CameraData.ImageData(camParameter.image_width, camParameter.image_height, camParameter.image_format);
 		}
 
 		protected new void OnDestroy()
@@ -262,11 +267,11 @@ namespace SensorDevices
 					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
 					image.Data = imageData;
 
-					if (GetParameters().save_enabled)
+					if (camParameter.save_enabled)
 					{
 						var saveName = name + "_" + Time.time;
-						camImageData.SaveRawImageData(GetParameters().save_path, saveName);
-						// Debug.LogFormat("{0}|{1} captured", GetParameters().save_path, saveName);
+						camImageData.SaveRawImageData(camParameter.save_path, saveName);
+						// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
 					}
 				}
 				readbackData.Dispose();
@@ -289,11 +294,6 @@ namespace SensorDevices
 		public messages.Image GetImageDataMessage()
 		{
 			return (imageStamped == null || imageStamped.Image == null)? null:imageStamped.Image;
-		}
-
-		public SDF.Camera GetParameters()
-		{
-			return deviceParameters as SDF.Camera;
 		}
 	}
 }

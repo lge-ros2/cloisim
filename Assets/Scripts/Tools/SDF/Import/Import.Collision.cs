@@ -53,7 +53,7 @@ namespace SDF
 				collisionObject.transform.localPosition = SDF2Unity.GetPosition(collision.Pose.Pos);
 				collisionObject.transform.localRotation = SDF2Unity.GetRotation(collision.Pose.Rot);
 
-				Implement.Collision.SetPhysicalMaterial(collision.GetSurface(), collisionObject);
+				Implement.Collision.SetSurfaceFriction(collision.GetSurface(), collisionObject);
 			}
 		}
 	}

@@ -129,20 +129,21 @@ public class LiftControl : MonoBehaviour
 	}
 
 	private IEnumerator DoLifting()
-	{
-		var waitForFixedUpdate = new WaitForFixedUpdate();
-		yield return waitForFixedUpdate;
+	{;
+		var waitForEOF = new WaitForEndOfFrame();
 
 		do
 		{
-			yield return waitForFixedUpdate;
 			lift.Drive();
+			yield return waitForEOF;
 
 		} while(lift.IsMoving);
 
 		DropLiftedObjects();
 
 		finishedLiftingEvent.Invoke();
+
+		yield return null;
 	}
 
 // #if UNITY_EDITOR

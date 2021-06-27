@@ -25,10 +25,22 @@ namespace SDF
 			public bool useGravity = false;
 
 			private UE.ArticulationBody _artBody = null;
-
-			public Dictionary<string, UE.ArticulationBody> jointList = new Dictionary<string, UE.ArticulationBody>();
+			private UE.Vector3 jointAxis = UE.Vector3.zero;
+			private UE.Vector3 jointAxis2 = UE.Vector3.zero;
 
 			private List<UE.ContactPoint> collisionContacts = new List<UE.ContactPoint>();
+
+			public UE.Vector3 JointAxis
+			{
+				get => this.jointAxis;
+				set => this.jointAxis = value;
+			}
+
+			public UE.Vector3 JointAxis2
+			{
+				get => this.jointAxis2;
+				set => this.jointAxis2 = value;
+			}
 
 			public Model RootModel => rootModel;
 
@@ -53,6 +65,11 @@ namespace SDF
 				{
 					IgnoreSelfCollision();
 				}
+			}
+
+			void LateUpdate()
+			{
+				SetPose(transform.localPosition, transform.localRotation, 1);
 			}
 
 			void OnDrawGizmos()

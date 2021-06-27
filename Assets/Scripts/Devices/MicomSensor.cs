@@ -9,94 +9,77 @@ using System.Collections;
 using UnityEngine;
 using messages = cloisim.msgs;
 
-public partial class MicomSensor : Device
+namespace SensorDevices
 {
-	private messages.Micom micomSensorData = null;
-
-	private SensorDevices.IMU imuSensor = null;
-	private List<SensorDevices.Sonar> ussSensors = new List<SensorDevices.Sonar>();
-	private List<SensorDevices.Sonar> irSensors = new List<SensorDevices.Sonar>();
-	// private List<SensorDevices.Magnet> magnetSensors = null;
-
-	private SensorDevices.Contact bumperContact = null;
-	private List<ArticulationBody> bumperSensors = new List<ArticulationBody>();
-
-	private Dictionary<string, Pose> partsPoseMapTable = new Dictionary<string, Pose>();
-
-	private MotorControl motorControl = new MotorControl();
-	public MotorControl MotorControl => this.motorControl;
-
-	protected override void OnAwake()
+	public partial class MicomSensor : Device
 	{
-		Mode = ModeType.TX_THREAD;
-		DeviceName = "MicomSensor";
-	}
+		private messages.Micom micomSensorData = null;
 
-	protected override void OnStart()
-	{
-		imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
+		private SensorDevices.IMU imuSensor = null;
+		private List<SensorDevices.Sonar> ussSensors = new List<SensorDevices.Sonar>();
+		private List<SensorDevices.Sonar> irSensors = new List<SensorDevices.Sonar>();
+		// private List<SensorDevices.Magnet> magnetSensors = null;
 
-		if (imuSensor != null)
+		private SensorDevices.Contact bumperContact = null;
+		private List<ArticulationBody> bumperSensors = new List<ArticulationBody>();
+
+		private MotorControl motorControl = new MotorControl();
+		public MotorControl MotorControl => this.motorControl;
+
+		protected override void OnAwake()
 		{
-			SetInitialPartsPose(imuSensor.name, imuSensor.gameObject);
+			Mode = ModeType.TX_THREAD;
+			DeviceName = "MicomSensor";
 		}
 
-		SetupMicom();
-	}
-
-	protected override IEnumerator OnVisualize()
-	{
-		yield return null;
-	}
-
-	private void SetupMicom()
-	{
-		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
-		SetUpdateRate(updateRate);
-
-		var P = GetPluginParameters().GetValue<float>("PID/kp");
-		var I = GetPluginParameters().GetValue<float>("PID/ki");
-		var D = GetPluginParameters().GetValue<float>("PID/kd");
-		motorControl.SetPID(P, I, D);
-
-		var wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
-		var wheelTread = GetPluginParameters().GetValue<float>("wheel/tread");
-		motorControl.SetWheelInfo(wheelRadius, wheelTread);
-
-		var wheelNameLeft = GetPluginParameters().GetValue<string>("wheel/location[@type='left']");
-		var wheelNameRight = GetPluginParameters().GetValue<string>("wheel/location[@type='right']");
-
-		var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
-		var brakeFriction = GetPluginParameters().GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
-
-		var modelList = GetComponentsInChildren<SDF.Helper.Model>();
-		foreach (var model in modelList)
+		protected override void OnStart()
 		{
-			var wheelLocation = MotorControl.WheelLocation.NONE;
-			// Debug.Log(model.name);
-
-			if (model.name.Equals(wheelNameLeft))
-			{
-				wheelLocation = MotorControl.WheelLocation.LEFT;
-			}
-			else if(model.name.Equals(wheelNameRight))
-			{
-				wheelLocation = MotorControl.WheelLocation.RIGHT;
-			}
-			else
-			{
-				continue;
-			}
-
-			var motorObject = model.gameObject;
-
-			motorControl.AddWheelInfo(wheelLocation, motorObject);
-
-			SetInitialPartsPose(model.name, motorObject);
+			imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
 		}
 
-		if (GetPluginParameters().GetValues<string>("uss/sensor", out var ussList))
+		protected override IEnumerator OnVisualize()
 		{
+			yield return null;
+		}
+
+		public void SetWheel(in string wheelNameLeft, in string wheelNameRight)
+		{
+			var linkList = GetComponentsInChildren<SDF.Helper.Link>();
+			foreach (var link in linkList)
+			{
+				var wheelLocation = MotorControl.WheelLocation.NONE;
+
+				if (link.name.Equals(wheelNameLeft) || link.Model.name.Equals(wheelNameLeft))
+				{
+					wheelLocation = MotorControl.WheelLocation.LEFT;
+
+				}
+				else if (link.name.Equals(wheelNameRight) || link.Model.name.Equals(wheelNameRight))
+				{
+					wheelLocation = MotorControl.WheelLocation.RIGHT;
+				}
+				else
+				{
+					continue;
+				}
+
+				if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
+				{
+					var motorObject = (link.gameObject != null)? link.gameObject : link.Model.gameObject;
+					motorControl.AddWheelInfo(wheelLocation, motorObject);
+				}
+			}
+		}
+
+		public void SetMotorConfiguration(in float wheelRadius, in float wheelTread, in float P, in float I, in float D)
+		{
+			motorControl.SetPID(P, I, D);
+			motorControl.SetWheelInfo(wheelRadius, wheelTread);
+		}
+
+		public void SetUSS(in List<string> ussList)
+		{
+			var modelList = GetComponentsInChildren<SDF.Helper.Model>();
 			foreach (var uss in ussList)
 			{
 				foreach (var model in modelList)
@@ -112,8 +95,9 @@ public partial class MicomSensor : Device
 			micomSensorData.uss.Distances = new double[ussList.Count];
 		}
 
-		if (GetPluginParameters().GetValues<string>("ir/sensor", out var irList))
+		public void SetIRSensor(in List<string> irList)
 		{
+			var modelList = GetComponentsInChildren<SDF.Helper.Model>();
 			foreach (var ir in irList)
 			{
 				foreach (var model in modelList)
@@ -129,209 +113,177 @@ public partial class MicomSensor : Device
 			micomSensorData.ir.Distances = new double[irList.Count];
 		}
 
-		if (GetPluginParameters().GetValues<string>("magnet/sensor", out var magnetList))
+		public void SetMagnet(in List<string> magnetList)
 		{
+			var modelList = GetComponentsInChildren<SDF.Helper.Model>();
 			foreach (var model in modelList)
 			{
 				// TODO: to be implemented
 			}
 		}
 
-		var targetContactName = GetPluginParameters().GetAttribute<string>("bumper", "contact");
-		// Debug.Log(targetContactName);
-
-		var contactsInChild = GetComponentsInChildren<SensorDevices.Contact>();
-
-		foreach (var contact in contactsInChild)
+		public void SetBumper(in string contactName)
 		{
-			if (contact.name.Equals(targetContactName))
+			// Debug.Log(targetContactName);
+			var contactsInChild = GetComponentsInChildren<SensorDevices.Contact>();
+
+			foreach (var contact in contactsInChild)
 			{
-				bumperContact = contact;
-				// Debug.Log("Found");
+				if (contact.name.Equals(contactName))
+				{
+					bumperContact = contact;
+					// Debug.Log("Found");
+				}
 			}
 		}
 
-		if (bumperContact != null)
+		public void SetBumperSensor(in List<string> bumperJointNameList)
 		{
-			if (GetPluginParameters().GetValues<string>("bumper/joint_name", out var bumperJointNameList))
+			if (bumperContact != null)
 			{
 				var linkList = GetComponentsInChildren<SDF.Helper.Link>();
 				foreach (var link in linkList)
 				{
 					foreach (var bumperJointName in bumperJointNameList)
 					{
-						if (link.jointList.TryGetValue(bumperJointName, out var articulationBody))
-						{
-							if (articulationBody.jointType == ArticulationJointType.PrismaticJoint)
-							{
-								bumperSensors.Add(articulationBody);
-								Debug.Log(bumperJointName);
-							}
-							else
-							{
-								Debug.Log(bumperJointName + " is not a prismatic joint type!!!");
-							}
-						}
+						// TODO: to be implemented
 					}
 				}
+
+				var bumperCount = bumperSensors.Count;
+				micomSensorData.bumper.Bumpeds = new bool[bumperCount];
+			}
+		}
+
+		protected override void OnReset()
+		{
+			if (imuSensor != null)
+			{
+				imuSensor.Reset();
 			}
 
-			var bumperCount = (bumperSensors == null || bumperSensors.Count == 0) ? 1 : bumperSensors.Count;
-
-			micomSensorData.bumper.Bumpeds = new bool[bumperCount];
-		}
-	}
-
-	protected override void OnReset()
-	{
-		if (imuSensor != null)
-		{
-			imuSensor.Reset();
-		}
-
-		if (motorControl != null)
-		{
-			motorControl.Reset();
-		}
-	}
-
-	protected override void InitializeMessages()
-	{
-		micomSensorData = new messages.Micom();
-		micomSensorData.Time = new messages.Time();
-		micomSensorData.Odom = new messages.Micom.Odometry();
-		micomSensorData.Odom.AngularVelocity = new messages.Micom.Odometry.Wheel();
-		micomSensorData.Odom.LinearVelocity = new messages.Micom.Odometry.Wheel();
-		micomSensorData.Odom.Pose = new messages.Vector3d();
-		micomSensorData.Odom.TwistLinear = new messages.Vector3d();
-		micomSensorData.Odom.TwistAngular = new messages.Vector3d();
-		micomSensorData.uss = new messages.Micom.Uss();
-		micomSensorData.ir = new messages.Micom.Ir();
-		micomSensorData.bumper = new messages.Micom.Bumper();
-	}
-
-	protected override void GenerateMessage()
-	{
-		DeviceHelper.SetCurrentTime(micomSensorData.Time);
-		PushDeviceMessage<messages.Micom>(micomSensorData);
-	}
-
-	void FixedUpdate()
-	{
-		var motorLeft = motorControl.GetMotor(MotorControl.WheelLocation.LEFT);
-		var motorRight = motorControl.GetMotor(MotorControl.WheelLocation.RIGHT);
-
-		if (motorLeft != null && motorRight != null)
-		{
-			motorLeft.Update();
-			motorRight.Update();
-		}
-
-		UpdateIMU();
-		UpdateUss();
-		UpdateIr();
-		UpdateBumper();
-
-		motorControl.UpdateOdometry(micomSensorData.Odom, Time.fixedDeltaTime, imuSensor);
-	}
-
-	private void UpdateBumper()
-	{
-		if (micomSensorData == null || micomSensorData.bumper == null || bumperContact == null)
-		{
-			return;
-		}
-
-		if (bumperContact.IsContacted())
-		{
-			if (bumperSensors == null || bumperSensors.Count == 0)
+			if (motorControl != null)
 			{
-				micomSensorData.bumper.Bumpeds[0] = true;
+				motorControl.Reset();
 			}
-			else
+		}
+
+		protected override void InitializeMessages()
+		{
+			micomSensorData = new messages.Micom();
+			micomSensorData.Time = new messages.Time();
+			micomSensorData.Odom = new messages.Micom.Odometry();
+			micomSensorData.Odom.AngularVelocity = new messages.Micom.Odometry.Wheel();
+			micomSensorData.Odom.LinearVelocity = new messages.Micom.Odometry.Wheel();
+			micomSensorData.Odom.Pose = new messages.Vector3d();
+			micomSensorData.Odom.TwistLinear = new messages.Vector3d();
+			micomSensorData.Odom.TwistAngular = new messages.Vector3d();
+			micomSensorData.uss = new messages.Micom.Uss();
+			micomSensorData.ir = new messages.Micom.Ir();
+			micomSensorData.bumper = new messages.Micom.Bumper();
+		}
+
+		protected override void GenerateMessage()
+		{
+			DeviceHelper.SetCurrentTime(micomSensorData.Time);
+			PushDeviceMessage<messages.Micom>(micomSensorData);
+		}
+
+		void FixedUpdate()
+		{
+			var motorLeft = motorControl.GetMotor(MotorControl.WheelLocation.LEFT);
+			var motorRight = motorControl.GetMotor(MotorControl.WheelLocation.RIGHT);
+
+			if (motorLeft != null && motorRight != null)
 			{
-				for (var index = 0; index < bumperSensors.Count; index++)
+				motorLeft.Update(Time.fixedDeltaTime);
+				motorRight.Update(Time.fixedDeltaTime);
+			}
+
+			UpdateIMU();
+			UpdateUss();
+			UpdateIr();
+			UpdateBumper();
+
+			motorControl.UpdateOdometry(micomSensorData.Odom, Time.fixedDeltaTime, imuSensor);
+		}
+
+		private void UpdateBumper()
+		{
+			if (micomSensorData == null || micomSensorData.bumper == null || bumperContact == null)
+			{
+				return;
+			}
+
+			if (bumperContact.IsContacted())
+			{
+				if (bumperSensors == null || bumperSensors.Count == 0)
 				{
-					// TODO:
-					// var articulationDrive = (bumperBody.xDrive != null)? bumper.
-
-					// bumper.xDrive.upperLimit
-					// var threshold = bumperBody.linearLimit.limit/2;
-
-					var normal = bumperSensors[index].transform.localPosition.normalized;
-					// Debug.Log(index + ": " + normal.ToString("F6"));
-
-					if (normal.x > 0 && normal.z < 0)
+					micomSensorData.bumper.Bumpeds[0] = true;
+				}
+				else
+				{
+					for (var index = 0; index < bumperSensors.Count; index++)
 					{
-						micomSensorData.bumper.Bumpeds[index] = true;
-						// Debug.Log("Left Bumped");
-					}
-					else if (normal.x < 0 && normal.z < 0)
-					{
-						micomSensorData.bumper.Bumpeds[index] = true;
-						// Debug.Log("Right Bumped");
-					}
-					else
-					{
-						micomSensorData.bumper.Bumpeds[index] = false;
-						// Debug.Log("No Bumped");
+						// TODO: to be implemented
+
+						// var normal = bumperSensors[index].transform.localPosition.normalized;
+						// // Debug.Log(index + ": " + normal.ToString("F6"));
+
+						// if (normal.x > 0 && normal.z < 0)
+						// {
+						// 	micomSensorData.bumper.Bumpeds[index] = true;
+						// 	// Debug.Log("Left Bumped");
+						// }
+						// else if (normal.x < 0 && normal.z < 0)
+						// {
+						// 	micomSensorData.bumper.Bumpeds[index] = true;
+						// 	// Debug.Log("Right Bumped");
+						// }
+						// else
+						// {
+						// 	micomSensorData.bumper.Bumpeds[index] = false;
+						// 	// Debug.Log("No Bumped");
+						// }
 					}
 				}
 			}
 		}
-	}
 
-	private void UpdateUss()
-	{
-		if ((micomSensorData == null || micomSensorData.uss == null))
+		private void UpdateUss()
 		{
-			return;
+			if ((micomSensorData == null || micomSensorData.uss == null))
+			{
+				return;
+			}
+
+			for (var index = 0; index < ussSensors.Count; index++)
+			{
+				micomSensorData.uss.Distances[index] = ussSensors[index].GetDetectedRange();
+			}
 		}
 
-		for (var index = 0; index < ussSensors.Count; index++)
+		private void UpdateIr()
 		{
-			micomSensorData.uss.Distances[index] = ussSensors[index].GetDetectedRange();
-		}
-	}
+			if ((micomSensorData == null || micomSensorData.ir == null))
+			{
+				return;
+			}
 
-	private void UpdateIr()
-	{
-		if ((micomSensorData == null || micomSensorData.ir == null))
-		{
-			return;
-		}
-
-		for (var index = 0; index < irSensors.Count; index++)
-		{
-			micomSensorData.ir.Distances[index] = irSensors[index].GetDetectedRange();
-		}
-	}
-
-	private void UpdateIMU()
-	{
-		if (imuSensor == null || micomSensorData == null)
-		{
-			return;
+			for (var index = 0; index < irSensors.Count; index++)
+			{
+				micomSensorData.ir.Distances[index] = irSensors[index].GetDetectedRange();
+			}
 		}
 
-		micomSensorData.Imu = imuSensor.GetImuMessage();
-	}
-
-	private void SetInitialPartsPose(in string name, in GameObject targetObject)
-	{
-		var targetTransform = (targetObject.CompareTag("Model")) ? targetObject.transform : targetObject.transform.parent;
-		var initialPose = new Pose(targetTransform.localPosition, targetTransform.localRotation);
-		// Debug.Log(name + " " + initialPose.ToString("F9"));
-		partsPoseMapTable.Add(name, initialPose);
-	}
-
-	public Pose GetPartsPose(in string targetPartsName)
-	{
-		if (partsPoseMapTable.TryGetValue(targetPartsName, out var targetPartsPose))
+		private void UpdateIMU()
 		{
-			return targetPartsPose;
-		}
+			if (imuSensor == null || micomSensorData == null)
+			{
+				return;
+			}
 
-		return Pose.identity;
+			micomSensorData.Imu = imuSensor.GetImuMessage();
+		}
 	}
 }

@@ -4,47 +4,67 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using System;
+using NetMQ;
 
 public class Transporter : IDisposable
 {
-	private Publisher publisher = null;
-	private Subscriber subscriber = null;
-	private Requestor requestor = null;
-	private Responsor responsor = null;
+	private Dictionary<ushort, NetMQSocket> transportList = new Dictionary<ushort, NetMQSocket>();
 
-	public Publisher Publisher => this.publisher;
-	public Subscriber Subscriber => this.subscriber;
-	public Requestor Requestor => this.requestor;
-	public Responsor Responsor => this.responsor;
+	public T Get<T>(in ushort targetPort) where T : class
+	{
+		return (transportList.ContainsKey(targetPort)) ? transportList[targetPort] as T : null;
+	}
 
 	public bool InitializePublisher(in ushort targetPort, in ulong hash)
 	{
-		publisher = new Publisher();
+		var publisher = new Publisher();
 		publisher.SetHash(hash);
-		return publisher.Initialize(targetPort);
+
+		if (publisher.Initialize(targetPort))
+		{
+			transportList.Add(targetPort, publisher);
+			return true;
+		}
+		return false;
 	}
 
 	public bool InitializeSubscriber(in ushort targetPort, in ulong hash)
 	{
-		subscriber = new Subscriber();
+		var subscriber = new Subscriber();
 		subscriber.SetHash(hash);
-		return subscriber.Initialize(targetPort);
+		if (subscriber.Initialize(targetPort))
+		{
+			transportList.Add(targetPort, subscriber);
+			return true;
+		}
+		return false;
 	}
 
 	public bool InitializeResponsor(in ushort targetPort, in ulong hash)
 	{
-		responsor = new Responsor();
+		var responsor = new Responsor();
 		responsor.SetHash(hash);
-		return responsor.Initialize(targetPort);
+		if (responsor.Initialize(targetPort))
+		{
+			transportList.Add(targetPort, responsor);
+			return true;
+		}
+		return false;
 	}
 
 	public bool InitializeRequester(in ushort targetPort, in ulong hash)
 	{
 
-		requestor = new Requestor();
+		var requestor = new Requestor();
 		requestor.SetHash(hash);
-		return requestor.Initialize(targetPort);
+		if (requestor.Initialize(targetPort))
+		{
+			transportList.Add(targetPort, requestor);
+			return true;
+		}
+		return false;
 	}
 
 	~Transporter()
@@ -55,31 +75,12 @@ public class Transporter : IDisposable
 	public virtual void Dispose()
 	{
 		// Console.WriteLine("Destruct DestroyTransporter");
-		DestroyTransporter();
+		foreach (var item in transportList)
+		{
+			var transporter = item.Value;
+			transporter.Close();
+		}
 		System.GC.SuppressFinalize(this);
-	}
-
-	public void DestroyTransporter()
-	{
-		if (publisher != null)
-		{
-			publisher.Destroy();
-		}
-
-		if (subscriber != null)
-		{
-			subscriber.Destroy();
-		}
-
-		if (requestor != null)
-		{
-			requestor.Destroy();
-		}
-
-		if (responsor != null)
-		{
-			responsor.Destroy();
-		}
 	}
 
 	public static string GetAddress(in ushort port)

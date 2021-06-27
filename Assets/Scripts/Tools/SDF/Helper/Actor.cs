@@ -30,7 +30,7 @@ namespace SDF
 			private int waypointTowardsIndex = 0;
 			private double elapsedTimeSinceAnimationStarted = 0;
 			private bool _followingWaypoint = false;
-			private UE.Pose trgetPose = new UE.Pose();
+			private UE.Pose targetPose = new UE.Pose();
 
 			[UE.Header("SDF Properties")]
 			public bool isStatic = false;
@@ -123,10 +123,11 @@ namespace SDF
 					var currentPose = CurrentActorPose();
 					var nextPosition = UE.Vector3.MoveTowards(currentPose.position, moveTo, linearSpeed * deltaTime);
 					var nextRotation = UE.Quaternion.RotateTowards(currentPose.rotation, rotateTo, angularSpeed * deltaTime);
-					var nextPose = SetActorPose(nextPosition, nextRotation);
 
-					var diffPos = UE.Vector3.Distance(nextPose.position, moveTo);
-					var diffRot = UE.Quaternion.Angle(nextPose.rotation, rotateTo);
+					SetActorPose(nextPosition, nextRotation);
+
+					var diffPos = UE.Vector3.Distance(nextPosition, moveTo);
+					var diffRot = UE.Quaternion.Angle(nextRotation, rotateTo);
 					// UE.Debug.Log("pos diff:" + diffPos + ", rot diff: " + diffRot);
 					if ((diffPos < DistanceEpsilon) && (diffRot < AngleEpsilon))
 					{
@@ -162,8 +163,8 @@ namespace SDF
 				if (waypointTowards.Count > 0)
 				{
 					var initPose = GetPose(0);
+					ClearPose();
 					SetPose(initPose);
-
 					var waypoint = waypointTowards[waypointTowardsIndex];
 					SetActorPose(waypoint.tranlateTo, waypoint.rotateTo);
 				}
@@ -173,33 +174,19 @@ namespace SDF
 
 			private UE.Pose CurrentActorPose()
 			{
-				return trgetPose;
+				return targetPose;
 			}
 
-			private UE.Pose SetActorPose(in UE.Vector3 newPosition, in UE.Quaternion newRotation)
+			private void SetActorPose(in UE.Vector3 newPosition, in UE.Quaternion newRotation)
 			{
-				trgetPose.position = newPosition;
-				trgetPose.rotation = newRotation;
+				targetPose.position = newPosition;
+				targetPose.rotation = newRotation;
 
-				var initPose = GetAllPose();
-				transform.localPosition = initPose.position + trgetPose.position;
-				transform.localRotation = trgetPose.rotation * initPose.rotation;
+				var initPose = (GetPoseCount() == 1) ? GetPose(0) : GetPose(1);
+				// UE.Debug.Log(GetPoseCount() + " , " + initPose + ", 0: " + GetPose(0) + ", 1: " + GetPose(1));
 
-				return CurrentActorPose();
-			}
-
-			private UE.Pose GetAllPose()
-			{
-				var totalPose = new UE.Pose(UE.Vector3.zero, UE.Quaternion.identity);
-
-				for (var i = 0; i < GetPoseCount(); i++)
-				{
-					var pose = GetPose(i);
-					totalPose.position += pose.position;
-					totalPose.rotation *= pose.rotation;
-				}
-
-				return totalPose;
+				transform.localPosition = initPose.position + targetPose.position;
+				transform.localRotation = targetPose.rotation * initPose.rotation;
 			}
 
 			public void SetScript(in SDF.Actor.Script script)
