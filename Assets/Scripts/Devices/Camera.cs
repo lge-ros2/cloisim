@@ -182,7 +182,7 @@ namespace SensorDevices
 				useMipMap = false,
 				useDynamicScale = false,
 				wrapMode = TextureWrapMode.Clamp,
-				filterMode = FilterMode.Bilinear,
+				filterMode = FilterMode.Point,
 				enableRandomWrite = true
 			};
 
