@@ -4,48 +4,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
 using UnityEngine;
 
 [DefaultExecutionOrder(600)]
 public class ActorPlugin : CLOiSimPlugin
 {
-	public static Dictionary<string, List<SDF.Helper.Model>> StaticModelList = new Dictionary<string, List<SDF.Helper.Model>>();
-
-	private static void UpdateStaticModelList()
-	{
-		var models = Main.WorldRoot.GetComponentsInChildren<SDF.Helper.Model>();
-
-		if (StaticModelList.Count != models.Length)
-		{
-			foreach (var model in models)
-			{
-				if (model.isStatic)
-				{
-					if (StaticModelList.TryGetValue(model.name, out var list))
-					{
-						list.Add(model);
-					}
-					else
-					{
-						var newModelList = new List<SDF.Helper.Model>() { model };
-						StaticModelList.Add(model.name, newModelList);
-					}
-				}
-			}
-		}
-		else
-		{
-			Debug.LogWarning("Already static model list updated.");
-		}
-	}
-
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.ACTOR;
 		partsName = "actorplugin";
-
-		UpdateStaticModelList();
 	}
 
 	protected override void OnStart()
@@ -70,15 +37,7 @@ public class ActorPlugin : CLOiSimPlugin
 
 		foreach (var zone in zoneList)
 		{
-			// Debug.Log("zone model: " + zone);
-			if (StaticModelList.TryGetValue(zone, out var modelList))
-			{
-				foreach (var model in modelList)
-				{
-					var meshSourceTag = model.gameObject.AddComponent<NavMeshSourceTag>();
-					Main.WorldNavMeshBuilder.AddNavMeshTracks(model.transform, meshSourceTag);
-				}
-			}
+			Main.WorldNavMeshBuilder.AddNavMeshZone(zone);
 		}
 
 		Main.WorldNavMeshBuilder.UpdateNavMesh(false);

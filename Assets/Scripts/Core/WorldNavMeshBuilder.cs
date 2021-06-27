@@ -15,16 +15,15 @@ using NavMeshBuilder = UnityEngine.AI.NavMeshBuilder;
 [DefaultExecutionOrder(-102)]
 public class WorldNavMeshBuilder : MonoBehaviour
 {
-	public class NavMeshTrack
+	private class NavMeshTrack
 	{
+		private Vector3 m_BoundSize = Vector3.zero; // The size of the build bounds
 
-		// The size of the build bounds
-		private Vector3 m_BoundSize = Vector3.zero;
-
-		// The center of the build
-		private Vector3 m_BoundCenter;
+		private Vector3 m_BoundCenter; // The center of the build
 
 		private NavMeshSourceTag m_NavMeshSourceTag;
+
+		public string Name => m_NavMeshSourceTag.name;
 
 		public NavMeshTrack(in NavMeshSourceTag navMeshSourceTag, in Vector3 boundCenter, in Vector3 boundSize)
 		{
@@ -73,8 +72,37 @@ public class WorldNavMeshBuilder : MonoBehaviour
 	private NavMeshBuildSettings m_defaultBuildSettings;
 	private List<NavMeshBuildSource> m_Sources = new List<NavMeshBuildSource>();
 
-	public void AddNavMeshTracks(in Transform transform, in NavMeshSourceTag navMeshSourceTag)
+	public void AddNavMeshZone(in string zone)
 	{
+		var alreadyAdded = false;
+		for (var i = 0; i < m_NavMeshTracks.Count; i++)
+		{
+			if (zone.Equals(m_NavMeshTracks[i].Name))
+			{
+				alreadyAdded = true;
+				break;
+			}
+		}
+
+		if (!alreadyAdded)
+		{
+			var models = Main.WorldRoot.GetComponentsInChildren<SDF.Helper.Model>();
+
+			foreach (var model in models)
+			{
+				if (model.isStatic && model.name.Equals(zone))
+				{
+					AddNavMeshTracks(model.transform);
+					break;
+				}
+			}
+		}
+	}
+
+	public void AddNavMeshTracks(in Transform transform)
+	{
+		var navMeshSourceTag = transform.gameObject.AddComponent<NavMeshSourceTag>();
+
 		var bounds = new Bounds(transform.position, Vector3.zero);
 		var renderers = transform.GetComponentsInChildren<Renderer>();
 		for (var i = 0; i < renderers.Length; i++)
@@ -104,15 +132,18 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		m_Instance = NavMesh.AddNavMeshData(m_NavMesh);
 
 		m_defaultBuildSettings = NavMesh.GetSettingsByID(AgentTypeId);
-		// Debug.Log(m_defaultBuildSettings.tileSize + " | " + JobsUtility.JobWorkerCount + "| "+ m_defaultBuildSettings.maxJobWorkers + " | " + NavMesh.pathfindingIterationsPerFrame);
+		Debug.Log(m_defaultBuildSettings.tileSize + " | " + JobsUtility.JobWorkerCount + "| "+ m_defaultBuildSettings.maxJobWorkers + " | " + NavMesh.pathfindingIterationsPerFrame);
+		Debug.Log(m_defaultBuildSettings.voxelSize + " | " + m_defaultBuildSettings.minRegionArea);
+		Debug.Log(m_defaultBuildSettings.agentClimb + " | " + m_defaultBuildSettings.agentHeight);
+		Debug.Log(m_defaultBuildSettings.agentSlope + " | " + m_defaultBuildSettings.agentRadius);
 		m_defaultBuildSettings.overrideTileSize = true;
-		m_defaultBuildSettings.tileSize = 512 + 128;
+		m_defaultBuildSettings.tileSize = 512;
 		m_defaultBuildSettings.preserveTilesOutsideBounds = false;
 		m_defaultBuildSettings.overrideVoxelSize = true;
-		m_defaultBuildSettings.voxelSize = 0.1f;
-		m_defaultBuildSettings.minRegionArea = 5;
-		m_defaultBuildSettings.maxJobWorkers = (uint)JobsUtility.JobWorkerCount/2;
-		NavMesh.pathfindingIterationsPerFrame = 10;
+		m_defaultBuildSettings.voxelSize /= 2f;
+		m_defaultBuildSettings.minRegionArea = 1f;
+		m_defaultBuildSettings.maxJobWorkers = (uint)JobsUtility.JobWorkerCount;
+		NavMesh.pathfindingIterationsPerFrame = 5;
 
 		UpdateNavMesh(false);
 	}
@@ -123,7 +154,7 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		m_Instance.Remove();
 	}
 
-	public void UpdateNavMesh(bool asyncUpdate = false)
+	public void UpdateNavMesh(in bool asyncUpdate = false)
 	{
 		for (var i = 0; i < m_NavMeshTracks.Count; i++)
 		{
