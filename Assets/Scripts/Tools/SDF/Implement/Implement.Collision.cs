@@ -17,6 +17,9 @@ namespace SDF
 
 			private static readonly bool EnableMergeCollider = true;
 
+			private static readonly float ThresholdFrictionCombineMultiply = 0.01f;
+			private static readonly float DynamicFrictionRatio = 0.90f;
+
 			private static readonly MCCookingOptions CookingOptions =
 					MCCookingOptions.EnableMeshCleaning |
 					MCCookingOptions.CookForFasterSimulation |
@@ -95,7 +98,7 @@ namespace SDF
 				}
 			}
 
-			public static void SetPhysicalMaterial(in SDF.Surface surface, in UE.GameObject targetObject)
+			public static void SetSurfaceFriction(in SDF.Surface surface, in UE.GameObject targetObject)
 			{
 				var material = new UE.PhysicMaterial();
 
@@ -107,12 +110,12 @@ namespace SDF
 						if (surface.friction.ode != null)
 						{
 							material.staticFriction = (float)surface.friction.ode.mu;
-							material.dynamicFriction = (float)surface.friction.ode.mu * 0.70f;
+							material.dynamicFriction = (float)surface.friction.ode.mu * DynamicFrictionRatio;
 						}
 					}
 
 					material.bounciness = (surface.bounce == null)? 0:(float)surface.bounce.restitution_coefficient;
-					material.frictionCombine = UE.PhysicMaterialCombine.Average;
+					material.frictionCombine = ((float)surface.friction.ode.mu2 <= ThresholdFrictionCombineMultiply) ? UE.PhysicMaterialCombine.Multiply : UE.PhysicMaterialCombine.Average;
 					material.bounceCombine = UE.PhysicMaterialCombine.Average;
 				}
 				else
