@@ -101,19 +101,19 @@ public class DoorsControl : MonoBehaviour
 
 	private IEnumerator Operate()
 	{
-		var waitForFixedUpdate = new WaitForFixedUpdate();
-
 		// Debug.Log(name + "::" + doorTargetPositionLeft.ToString("F5"));
 		// Debug.Log(name + "::" + doorTargetPositionRight.ToString("F5"));
+		var waitForEOF = new WaitForEndOfFrame();
 
 		do
 		{
 			doorLeft.Drive();
 			doorRight.Drive();
-
-			yield return waitForFixedUpdate;
+			yield return waitForEOF;
 
 		} while (doorLeft.IsMoving || doorRight.IsMoving);
+
+		yield return null;
 	}
 
 // #if UNITY_EDITOR
