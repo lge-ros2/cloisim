@@ -7,9 +7,7 @@
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Collections;
-#if UNITY_EDITOR
-using System.Linq;
-#endif
+
 using UnityEngine;
 using Any = cloisim.msgs.Any;
 using Param = cloisim.msgs.Param;
@@ -42,8 +40,10 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		}
 	}
 
+	private Elevator elevators = new Elevator();
+
 	private Dictionary<string, float> floorList = new Dictionary<string, float>();
-	private Dictionary<string, ElevatorEntity> elevatorList = new Dictionary<string, ElevatorEntity>();
+
 	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue = new ConcurrentQueue<ElevatorTask>();
 
 	private string elevatorSystemName = string.Empty;
@@ -58,12 +58,14 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		RegisterServiceDevice("Control");
+		if (RegisterServiceDevice(out var portService, "Control"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 
 		ReadFloorContext();
 		ReadElevatorContext();
 
-		AddThread(ServiceThread);
 
 		StartCoroutine(ServiceLoop());
 	}
@@ -81,11 +83,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 		if (!float.IsNaN(targetFloorHeight))
 		{
-			foreach (var item in elevatorList)
-			{
-				var elevator = item.Value;
-				elevator.Control.Height =targetFloorHeight;
-			}
+			elevators.Reset(targetFloorHeight);
 		}
 		else
 		{
@@ -135,7 +133,6 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var elevatorOutsideDoorNameLeft = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='left']");
 		var elevatorOutsideDoorNameRight = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='right']");
 
-		var index = 0;
 		foreach (var child in this.GetComponentsInChildren<SDF.Helper.Model>())
 		{
 			var objectName = child.name;
@@ -156,13 +153,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 				elevatorControl.outsideDoorsControl.openOffset = elevatorOutsideopenOffset;
 				elevatorControl.doorAutoClosingTimer = elevatorDoorAutoClosingTimer;
 
-				var elevatorEntity = new ElevatorEntity(objectName, elevatorControl);
-
-				// TODO: will chnage to object name
-				// elevatorList.Add(objectName, elevatorEntity);
-				elevatorList.Add(index.ToString(), elevatorEntity);
-
-				index++;
+				elevators.AddEntity(objectName, elevatorControl);
 			}
 		}
 	}
@@ -382,12 +373,12 @@ public partial class ElevatorSystem : CLOiSimPlugin
 				break;
 
 			case "is_door_opened":
-				result = IsElevatorDoorOpened(elevatorIndex);
+				result = elevators.IsDoorOpened(elevatorIndex);
 				break;
 
 			case "get_elevator_information":
 				result = true;
-				height = GetElevatorCurrentHeight(elevatorIndex);
+				height = elevators.GetCurrentHeight(elevatorIndex);
 				currentFloor = GetFloorName(height);
 				break;
 
@@ -446,33 +437,31 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	private void DoServiceOpenDoor(ref ElevatorTask task)
 	{
-		var elevator = elevatorList[task.elevatorIndex];
-		elevator.Control.OpenDoor();
+		elevators.GetEntity(task.elevatorIndex, out var elevatorEntity);
+		elevatorEntity.Control.OpenDoor();
 		task.state = ElevatorTaskState.DONE;
 	}
 
 	private void DoServiceCloseDoor(ref ElevatorTask task)
 	{
-		var elevator = elevatorList[task.elevatorIndex];
-		elevator.Control.CloseDoor();
+		elevators.GetEntity(task.elevatorIndex, out var elevatorEntity);
+		elevatorEntity.Control.CloseDoor();
 		task.state = ElevatorTaskState.DONE;
 	}
 
 	private void DoServiceInStandby(ref ElevatorTask task)
 	{
+		var elevatorName = task.elevatorIndex;
+
 		// new call
-		if (string.IsNullOrEmpty(task.elevatorIndex))
+		if (string.IsNullOrEmpty(elevatorName))
 		{
 			// check if the elevator is already arrived
-			foreach (var elevatorItem in elevatorList)
+			if (elevators.FindAlreadyStoppedEntity(task.to.height, out elevatorName))
 			{
-				var elevator = elevatorItem.Value;
-				if (elevator.State.Equals(ElevatorState.STOP) && elevator.Control.IsArrived(task.to.height))
-				{
-					Debug.LogFormat("Already arrived: {0}, from: {1}({2}), to: {3}", elevator.Name, task.from.name, task.from.height, task.to.name);
-					task.state = ElevatorTaskState.DONE;
-					return;
-				}
+				Debug.LogFormat("Already arrived: {0}, from: {1}({2}), to: {3}", elevatorName, task.from.name, task.from.height, task.to.name);
+				task.state = ElevatorTaskState.DONE;
+				return;
 			}
 
 			// check if the elevator is already moving to target
@@ -482,7 +471,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 				{
 					if (otherTask.to.name.Equals(task.to.name))
 					{
-						Debug.LogFormat("Already moving: {0}, from {1}, to {2}", task.elevatorIndex, task.to.name, task.from.name);
+						Debug.LogFormat("Already moving: {0}, from {1}, to {2}", elevatorName, task.to.name, task.from.name);
 						task.state = ElevatorTaskState.DONE;
 						return;
 					}
@@ -490,35 +479,23 @@ public partial class ElevatorSystem : CLOiSimPlugin
 			}
 
 			// find a new elevator among the elevators at rest and move!!
-			foreach (var elevatorItem in elevatorList)
+			if (elevators.FindAvailableElevatorAndMoveTo(task.to.height, out elevatorName))
 			{
-				var elevator = elevatorItem.Value;
-				if (elevator.State.Equals(ElevatorState.STOP))
-				{
-					task.elevatorIndex = elevatorItem.Key;
-					elevator.MoveElevatorTo(task.to.height);
-
-					Debug.LogFormat("move : {0}, from: {1}, to: {2}", elevator.Name, task.from.name, task.to.name);
-
-					task.state = ElevatorTaskState.PROCESSING;
-					break;
-				}
+				task.elevatorIndex = elevatorName;
+				Debug.LogFormat("move : {0}, from: {1}, to: {2}", elevatorName, task.from.name, task.to.name);
+				task.state = ElevatorTaskState.PROCESSING;
 			}
 		}
 		// select floor
 		else
 		{
-			var elevator = elevatorList[task.elevatorIndex];
-			Debug.LogFormat("Select floor: {0}, from: {1}, to: {2}", elevator.Name, task.from.name, task.to.name, task.from.height);
-
-			if (elevator.Control.IsArrived(task.from.height))
+			if (elevators.MoveTo(elevatorName, task.from.height, task.to.height))
 			{
-				elevator.MoveElevatorTo(task.from.height, task.to.height);
 				task.state = ElevatorTaskState.PROCESSING;
 			}
 			else
 			{
-				Debug.LogWarningFormat("Wrong:: elevator is not arrived yet Select floor: {0}, {1}, {2}", elevator.Name, task.from.name, task.to.name);
+				Debug.LogWarningFormat("Wrong:: elevator is not arrived yet Select floor: {0}, {1}, {2}", elevatorName, task.from.name, task.to.name);
 				task.state = ElevatorTaskState.DONE;
 			}
 		}
@@ -526,16 +503,74 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	private void DoServiceInProcess(ref ElevatorTask task)
 	{
+		var elevatorName = task.elevatorIndex;
+
 		// check if the elevator arrived
-		var elevatorIndex = task.elevatorIndex;
-		var elevator = elevatorList[elevatorIndex];
-
-		if (elevator.Control.IsArrived(task.to.height))
+		if (elevators.IsArrived(elevatorName, task.to.height))
 		{
-			elevator.SetState(ElevatorState.STOP);
-
 			task.state = ElevatorTaskState.DONE;
 		}
+	}
+
+	private bool RequestDoorOpen(in string elevatorIndex)
+	{
+		var task = new ElevatorTask(elevatorIndex);
+		task.state = ElevatorTaskState.DOOR_OPEN;
+		elevatorTaskQueue.Enqueue(task);
+		return true;
+	}
+
+	private bool RequestDoorClose(in string elevatorIndex)
+	{
+		var task = new ElevatorTask(elevatorIndex);
+		task.state = ElevatorTaskState.DOOR_CLOSE;
+		elevatorTaskQueue.Enqueue(task);
+		return true;
+	}
+
+	private bool CallElevator(in string fromCurrentFloor, in string toTargetFloor, in string elevatorIndex = "")
+	{
+		var task = new ElevatorTask(elevatorIndex);
+		task.to.name = toTargetFloor;
+		task.to.height = GetFloorHeight(task.to.name);
+		task.from.name = fromCurrentFloor;
+		task.from.height = GetFloorHeight(task.from.name);
+
+		if (float.IsNaN(task.to.height) || float.IsNaN(task.from.height))
+		{
+			return false;
+		}
+
+		elevatorTaskQueue.Enqueue(task);
+		// Debug.Log("Call elevator: " + task.elevatorIndex);
+		return true;
+	}
+
+	private bool GetCalledElevator(in string currentFloor, in string targetFloor, out string elevatorName)
+	{
+		elevatorName = string.Empty;
+
+		var currentFloorHeight = GetFloorHeight(currentFloor);
+
+		// If not, try to find in stopped elevator
+		if (elevators.FindAlreadyStoppedEntity(currentFloorHeight, out elevatorName))
+		{
+			Debug.Log("Already elevator is stopped: " + elevatorName);
+			return true;
+		}
+
+		// Try to find in task queue
+		foreach (var task in elevatorTaskQueue)
+		{
+			if (task.to.name.Equals(currentFloor) && task.state.Equals(ElevatorTaskState.PROCESSING))
+			{
+				elevatorName = task.elevatorIndex;
+				Debug.Log("Calling elevator " + elevatorName);
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 #if UNITY_EDITOR
@@ -561,22 +596,16 @@ public partial class ElevatorSystem : CLOiSimPlugin
 			{
 				var index = (int)numKey - (int)(KeyCode.Alpha0);
 
-				if (elevatorList.Keys.Count == 0 || index >= elevatorList.Keys.Count)
-				{
-					Debug.LogFormat("{0} elevator does not exist.");
-					break;
-				}
-
-				var elevatorIndex = elevatorList.Keys.ElementAt(index);
-				Debug.Log("Test elevatorIndex: " + elevatorIndex);
+				var elevatorName = elevators.GetEntityNameByIndex(index);
+				Debug.Log("Test elevatorIndex: " + elevatorName);
 
 				if (Input.GetKey(KeyCode.LeftAlt) && Input.GetKey(KeyCode.LeftShift))
 				{
-					RequestDoorClose(elevatorIndex);
+					RequestDoorClose(elevatorName);
 				}
 				else if (Input.GetKey(KeyCode.Tab) && Input.GetKey(KeyCode.LeftShift))
 				{
-					var result = GetCalledElevator("B1F", "25F", out elevatorIndex);
+					var result = GetCalledElevator("B1F", "25F", out elevatorName);
 					// Debug.Log(elevatorIndex + " - " + result);
 				}
 				else if (Input.GetKey(KeyCode.Tab))
@@ -586,15 +615,15 @@ public partial class ElevatorSystem : CLOiSimPlugin
 				}
 				else if (Input.GetKey(KeyCode.LeftAlt))
 				{
-					CallElevator("25F", "B1F", elevatorIndex);
+					CallElevator("25F", "B1F", elevatorName);
 				}
 				else if (Input.GetKey(KeyCode.LeftShift))
 				{
-					CallElevator("B1F", "25F", elevatorIndex);
+					CallElevator("B1F", "25F", elevatorName);
 				}
 				else
 				{
-					RequestDoorOpen(elevatorIndex);
+					RequestDoorOpen(elevatorName);
 				}
 			}
 		}

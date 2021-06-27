@@ -4,53 +4,168 @@
  * SPDX-License-Identifier: MIT
  */
 
-using messages = cloisim.msgs;
+using System.Collections.Generic;
 using Any = cloisim.msgs.Any;
+using messages = cloisim.msgs;
+using UnityEngine;
 
 public class MicomPlugin : CLOiSimPlugin
 {
+	private List<TF> staticTfList = new List<TF>();
+	private List<TF> tfList = new List<TF>();
+	private SensorDevices.MicomCommand micomCommand = null;
+	private SensorDevices.MicomSensor micomSensor = null;
+
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.MICOM;
-		targetDevice = gameObject.AddComponent<Micom>();
+		micomSensor = gameObject.AddComponent<SensorDevices.MicomSensor>();
+		micomCommand = gameObject.AddComponent<SensorDevices.MicomCommand>();
+		micomCommand.SetMotorControl(micomSensor.MotorControl);
+
+		attachedDevices.Add("Command", micomCommand);
+		attachedDevices.Add("Sensor", micomSensor);
 	}
 
 	protected override void OnStart()
 	{
-		var debugging = GetPluginParameters().GetValue<bool>("debug", false);
-		targetDevice.EnableDebugging = debugging;
+		SetupMicom();
 
-		RegisterServiceDevice("Info");
-		RegisterRxDevice("Rx");
-		RegisterTxDevice("Tx");
+		if (RegisterServiceDevice(out var portService, "Info"))
+		{
+			AddThread(portService, ServiceThread);
+		}
 
-		AddThread(ServiceThread);
-		AddThread(SenderThread, (targetDevice as Micom).GetSensor());
-		AddThread(ReceiverThread, (targetDevice as Micom).GetInput());
+		if (RegisterRxDevice(out var portRx, "Rx"))
+		{
+			AddThread(portRx, ReceiverThread, micomCommand);
+		}
+
+		if (RegisterTxDevice(out var portTx, "Tx"))
+		{
+			AddThread(portTx, SenderThread, micomSensor);
+		}
+
+		if (RegisterTxDevice(out var portTf, "Tf"))
+		{
+			AddThread(portTf, PublishTfThread, tfList);
+		}
+
+		LoadStaticTF();
+		LoadTF();
 	}
 
-	protected override void OnReset()
+	private void SetupMicom()
 	{
-		targetDevice.Reset();
+		micomSensor.EnableDebugging = GetPluginParameters().GetValue<bool>("debug", false);
+
+		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
+		micomSensor.SetUpdateRate(updateRate);
+
+		var wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
+		var wheelTread = GetPluginParameters().GetValue<float>("wheel/tread");
+		var P = GetPluginParameters().GetValue<float>("wheel/PID/kp");
+		var I = GetPluginParameters().GetValue<float>("wheel/PID/ki");
+		var D = GetPluginParameters().GetValue<float>("wheel/PID/kd");
+
+		micomSensor.SetMotorConfiguration(wheelRadius, wheelTread, P, I, D);
+
+		var wheelNameLeft = GetPluginParameters().GetValue<string>("wheel/location[@type='left']");
+		var wheelNameRight = GetPluginParameters().GetValue<string>("wheel/location[@type='right']");
+
+		// TODO: to be utilized
+		var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f); // Currently not used
+		var brakeFriction = GetPluginParameters().GetValue<float>("wheel/friction/brake", 0.1f); // Currently not used
+
+		micomSensor.SetWheel(wheelNameLeft, wheelNameRight);
+
+		if (GetPluginParameters().GetValues<string>("uss/sensor", out var ussList))
+		{
+			micomSensor.SetUSS(ussList);
+		}
+
+		if (GetPluginParameters().GetValues<string>("ir/sensor", out var irList))
+		{
+			micomSensor.SetIRSensor(irList);
+		}
+
+		if (GetPluginParameters().GetValues<string>("magnet/sensor", out var magnetList))
+		{
+			micomSensor.SetMagnet(magnetList);
+		}
+
+		var targetContactName = GetPluginParameters().GetAttribute<string>("bumper", "contact");
+		micomSensor.SetBumper(targetContactName);
+
+		if (GetPluginParameters().GetValues<string>("bumper/joint_name", out var bumperJointNameList))
+		{
+			micomSensor.SetBumperSensor(bumperJointNameList);
+		}
+	}
+
+	private void LoadStaticTF()
+	{
+		var linkHelpers = GetComponentsInChildren<SDF.Helper.Link>();
+
+		if (GetPluginParameters().GetValues<string>("ros2/static_transforms/link", out var staticLinks))
+		{
+			foreach (var link in staticLinks)
+			{
+				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("ros2/static_transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
+
+				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(link);
+
+				foreach (var linkHelper in linkHelpers)
+				{
+					if ((string.IsNullOrEmpty(modelName) || (!string.IsNullOrEmpty(modelName) && linkHelper.Model.name.Equals(modelName))) &&
+						linkHelper.name.Equals(linkName))
+					{
+						var tf = new TF(linkHelper, link, parentFrameId);
+						staticTfList.Add(tf);
+						Debug.Log(modelName + "::" + linkName + " : static TF added");
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	private void LoadTF()
+	{
+		var linkHelpers = GetComponentsInChildren<SDF.Helper.Link>();
+		if (GetPluginParameters().GetValues<string>("ros2/transforms/link", out var links))
+		{
+			foreach (var link in links)
+			{
+				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("ros2/transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
+
+				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(link);
+
+				foreach (var linkHelper in linkHelpers)
+				{
+					if ((string.IsNullOrEmpty(modelName) || (!string.IsNullOrEmpty(modelName) && linkHelper.Model.name.Equals(modelName))) &&
+						linkHelper.name.Equals(linkName))
+					{
+						var tf = new TF(linkHelper, link, parentFrameId);
+						tfList.Add(tf);
+						Debug.Log(modelName + "::" + linkName + " : TF added");
+						break;
+					}
+				}
+			}
+		}
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
 	{
 		switch (requestType)
 		{
-			case "request_transform_name":
-				SetTransformNameResponse(ref response);
-				break;
-
-			case "request_transform":
-				var micomSensor = (targetDevice as Micom).GetSensor();
-				var transformPartsName = requestValue.StringValue;
-				var devicePose = micomSensor.GetPartsPose(transformPartsName);
-				SetTransformInfoResponse(ref response, devicePose);
+			case "request_static_transforms":
+				SetStaticTransformsResponse(ref response);
 				break;
 
 			case "reset_odometry":
-				targetDevice.Reset();
+				Reset();
 				SetEmptyResponse(ref response);
 				break;
 
@@ -59,7 +174,7 @@ public class MicomPlugin : CLOiSimPlugin
 		}
 	}
 
-	private void SetTransformNameResponse(ref DeviceMessage msRos2Info)
+	private void SetStaticTransformsResponse(ref DeviceMessage msRos2Info)
 	{
 		if (msRos2Info == null)
 		{
@@ -67,36 +182,36 @@ public class MicomPlugin : CLOiSimPlugin
 		}
 
 		var ros2CommonInfo = new messages.Param();
-		ros2CommonInfo.Name = "ros2";
+		ros2CommonInfo.Name = "static_transforms";
 		ros2CommonInfo.Value = new Any { Type = Any.ValueType.None };
 
-		var ros2TransformInfo = new messages.Param();
-		ros2TransformInfo.Name = "transform_name";
-		ros2TransformInfo.Value = new Any { Type = Any.ValueType.None };
-		ros2CommonInfo.Childrens.Add(ros2TransformInfo);
+		foreach (var tf in staticTfList)
+		{
+			var ros2StaticTransformLink = new messages.Param();
+			ros2StaticTransformLink.Name = "parent_frame_id";
+			ros2StaticTransformLink.Value = new Any { Type = Any.ValueType.String, StringValue = tf.parentFrameId };
 
-		var imu_name = GetPluginParameters().GetValue<string>("ros2/transform_name/imu");
-		var imuInfo = new messages.Param();
-		imuInfo.Name = "imu";
-		imuInfo.Value = new Any { Type = Any.ValueType.String, StringValue = imu_name };
-		ros2TransformInfo.Childrens.Add(imuInfo);
+			{
+				var tfPose = tf.GetPose();
 
-		var wheelsInfo = new messages.Param();
-		wheelsInfo.Name = "wheels";
-		wheelsInfo.Value = new Any { Type = Any.ValueType.None };
-		ros2TransformInfo.Childrens.Add(wheelsInfo);
+				var poseMessage = new messages.Pose();
+				poseMessage.Position = new messages.Vector3d();
+				poseMessage.Orientation = new messages.Quaternion();
 
-		var wheel_left_name = GetPluginParameters().GetValue<string>("ros2/transform_name/wheels/left");
-		var wheelLeftInfo = new messages.Param();
-		wheelLeftInfo.Name = "left";
-		wheelLeftInfo.Value = new Any { Type = Any.ValueType.String, StringValue = wheel_left_name };
-		wheelsInfo.Childrens.Add(wheelLeftInfo);
+				poseMessage.Name = tf.childFrameId;
+				DeviceHelper.SetVector3d(poseMessage.Position, tfPose.position);
+				DeviceHelper.SetQuaternion(poseMessage.Orientation, tfPose.rotation);
 
-		var wheel_right_name = GetPluginParameters().GetValue<string>("ros2/transform_name/wheels/right");
-		var wheelRightInfo = new messages.Param();
-		wheelRightInfo.Name = "right";
-		wheelRightInfo.Value = new Any { Type = Any.ValueType.String, StringValue = wheel_right_name };
-		wheelsInfo.Childrens.Add(wheelRightInfo);
+				var ros2StaticTransformElement = new messages.Param();
+				ros2StaticTransformElement.Name = "pose";
+				ros2StaticTransformElement.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = poseMessage};
+
+				ros2StaticTransformLink.Childrens.Add(ros2StaticTransformElement);
+				// Debug.Log(poseMessage.Name + ", " + poseMessage.Position + ", " + poseMessage.Orientation);
+			}
+
+			ros2CommonInfo.Childrens.Add(ros2StaticTransformLink);
+		}
 
 		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
 	}

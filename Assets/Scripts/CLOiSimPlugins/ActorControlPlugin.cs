@@ -28,9 +28,10 @@ public class ActorControlPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-
-		RegisterServiceDevice("Control");
-		AddThread(ServiceThread);
+		if (RegisterServiceDevice(out var port, "Control"))
+		{
+			AddThread(port, ServiceThread);
+		}
 	}
 
 	void LateUpdate()

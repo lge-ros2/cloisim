@@ -44,7 +44,8 @@ public class ActorAgent : MonoBehaviour
 	{
 		m_Agent = GetComponent<NavMeshAgent>();
 		m_Animation = GetComponent<Animation>();
-		m_Agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+		m_Agent.obstacleAvoidanceType = ObstacleAvoidanceType.MedQualityObstacleAvoidance;
+		m_Agent.agentTypeID = WorldNavMeshBuilder.AgentTypeId;
 	}
 
 	void Start()

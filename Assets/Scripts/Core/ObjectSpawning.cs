@@ -64,7 +64,7 @@ public class ObjectSpawning : MonoBehaviour
 				StartCoroutine(SpawnTargetObject((PropsType)propType, spawnData[0], spawnData[1], propsScale));
 			}
 		}
-		else if ((leftControlPressed && Input.GetMouseButtonDown(1)))
+		else if (leftControlPressed && Input.GetMouseButtonDown(1))
 		{
 			// Remove spawned prefab when holding left control and right clicking
 			var selectedPropsTransform = GetTransformOnClick();
@@ -77,10 +77,12 @@ public class ObjectSpawning : MonoBehaviour
 		{
 			transformGizmo.GetSelectedTargets(out var list);
 
-			foreach (var target in list)
+			for (var i = 0; i < list.Count; i++)
 			{
+				var target = list[i];
 				StartCoroutine(DeleteTargetObject(target));
 			}
+
 			transformGizmo.ClearTargets();
 		}
 	}
@@ -162,7 +164,7 @@ public class ObjectSpawning : MonoBehaviour
 		newMaterial.name = targetMesh.name;
 		newMaterial.color = Color.white;
 
-		Debug.Log(Random.ColorHSV(0f, 1f, 0.7f, 1f, 0.6f, 1f));
+		// Debug.Log(Random.ColorHSV(0f, 1f, 0.7f, 1f, 0.6f, 1f));
 
 		var meshRenderer = newObject.AddComponent<MeshRenderer>();
 		meshRenderer.material = newMaterial;
@@ -190,6 +192,7 @@ public class ObjectSpawning : MonoBehaviour
 	{
 		if (targetObjectTransform.CompareTag("Props"))
 		{
+			transformGizmo.GetSelectedTargets(out var list);
 			Destroy(targetObjectTransform.gameObject);
 		}
 		yield return null;

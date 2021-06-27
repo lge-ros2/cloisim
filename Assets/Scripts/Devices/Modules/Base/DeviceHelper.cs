@@ -54,7 +54,7 @@ public partial class DeviceHelper
 
 			if (searchOnlyOneDepth == false)
 			{
-				while (!nextObject.transform.parent.Equals(nextObject.transform.root))
+				while (!SDF2Unity.IsRootModel(nextObject.transform))
 				{
 					nextObject = nextObject.transform.parent.GetComponentInParent<SDF.Helper.Base>();
 
@@ -91,7 +91,7 @@ public partial class DeviceHelper
 
 		var timeNow = (useRealTime) ? GetGlobalClock().RealTime : GetGlobalClock().SimTime;
 		msgTime.Sec = (int)timeNow;
-		msgTime.Nsec = (int)((timeNow - (double)msgTime.Sec) * (double)1e+9);
+		msgTime.Nsec = (int)((timeNow - (double)msgTime.Sec) * 1e+9);
 	}
 
 	public static void SetVector3d(messages.Vector3d vector3d, in Vector3 position)
@@ -144,6 +144,11 @@ public partial class DeviceHelper
 		public static Quaternion Rotation(in Quaternion rotation)
 		{
 			return new Quaternion(-rotation.z, -rotation.x, rotation.y, -rotation.w);
+		}
+
+		public static float CurveOrientation(in float value)
+		{
+			return -value;
 		}
 	}
 

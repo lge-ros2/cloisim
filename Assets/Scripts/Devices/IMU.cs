@@ -52,7 +52,7 @@ namespace SensorDevices
 		protected override void OnReset()
 		{
 			// Debug.Log("IMU Reset");
-			imuInitialRotation = lastImuInitialRotation;
+			imuInitialRotation = Vector3.zero;
 			previousImuRotation = Vector3.zero;
 		}
 

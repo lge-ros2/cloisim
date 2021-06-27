@@ -13,11 +13,6 @@ public class Requestor : RequestSocket
 	private byte[] hashValue = null;
 	private byte[] dataToSendRequest = null;
 
-	public void Destroy()
-	{
-		this.Close();
-	}
-
 	public void SetHash(in ulong hash)
 	{
 		hashValue = BitConverter.GetBytes(hash);

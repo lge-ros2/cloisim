@@ -14,11 +14,6 @@ public class Subscriber : SubscriberSocket
 
 	private byte[] hashValue = null;
 
-	public void Destroy()
-	{
-		Close();
-	}
-
 	public void SetHash(in ulong hash)
 	{
 		hashValue = BitConverter.GetBytes(hash);
@@ -42,7 +37,6 @@ public class Subscriber : SubscriberSocket
 
 		return true;
 	}
-
 
 	public byte[] Subscribe()
 	{

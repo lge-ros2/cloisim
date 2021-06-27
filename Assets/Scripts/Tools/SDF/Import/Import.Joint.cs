@@ -13,49 +13,51 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private static UE.Transform FindTransformByName(in string name, UE.GameObject targetObject)
+			private static UE.Transform FindTransformByName(in string name, UE.Transform targetTransform)
 			{
 				UE.Transform foundLinkObject = null;
 
-				var rootTransform = targetObject.transform;
+				var rootTransform = targetTransform;
 
-				while (!rootTransform.parent.Equals(targetObject.transform.root))
+				while (!SDF2Unity.IsRootModel(rootTransform))
 				{
 					rootTransform = rootTransform.parent;
 				}
 
-				if (name.Contains("::"))
+				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(name);
+
+				if (string.IsNullOrEmpty(modelName))
 				{
-					var splittedName = name.Replace("::", ":").Split(':');
-					if (splittedName.Length == 2)
+					// UE.Debug.Log(name + ", Find  => " + targetTransform.name + ", " + rootTransform.name);
+					foreach (var transform in targetTransform.GetComponentsInChildren<UE.Transform>())
 					{
-						UE.Transform modelTransform = null;
-
-						foreach (var modelObject in rootTransform.GetComponentsInChildren<SDF.Helper.Model>())
+						if (transform.name.Equals(name))
 						{
-							if (modelObject.name.Equals(splittedName[0]))
-							{
-								modelTransform = modelObject.transform;
-								break;
-							}
-						}
-
-						if (modelTransform != null)
-						{
-							var linkTransform = modelTransform.Find(splittedName[1]);
-							if (linkTransform != null)
-							{
-								foundLinkObject = linkTransform;
-							}
+							foundLinkObject = transform;
+							break;
 						}
 					}
 				}
 				else
 				{
-					var transform = targetObject.transform.Find(name);
-					if (transform != null)
+					UE.Transform modelTransform = null;
+
+					foreach (var modelObject in rootTransform.GetComponentsInChildren<SDF.Helper.Model>())
 					{
-						foundLinkObject = transform;
+						if (modelObject.name.Equals(modelName))
+						{
+							modelTransform = modelObject.transform;
+							break;
+						}
+					}
+
+					if (modelTransform != null)
+					{
+						var linkTransform = modelTransform.Find(linkName);
+						if (linkTransform != null)
+						{
+							foundLinkObject = linkTransform;
+						}
 					}
 				}
 
@@ -67,8 +69,8 @@ namespace SDF
 				var targetObject = (parentObject as UE.GameObject);
 				// Debug.LogFormat("[Joint] {0}, {1} <= {2}", joint.Name, joint.ParentLinkName, joint.ChildLinkName);
 
-				var linkObjectParent = FindTransformByName(joint.ParentLinkName, targetObject);
-				var linkObjectChild = FindTransformByName(joint.ChildLinkName, targetObject);
+				var linkObjectParent = FindTransformByName(joint.ParentLinkName, targetObject.transform);
+				var linkObjectChild = FindTransformByName(joint.ChildLinkName, targetObject.transform);
 
 				if (linkObjectParent is null)
 				{
@@ -96,32 +98,7 @@ namespace SDF
 					articulationBodyChild = CreateArticulationBody(linkObjectChild.gameObject);
 				}
 
-				var modelTransformParent = linkObjectParent.parent;
-				var modelTransformChild = linkObjectChild.parent;
-				var modelHelperChild = modelTransformChild.GetComponent<SDF.Helper.Model>();
-
-				var anchorPose = new UE.Pose();
-				if (modelTransformChild.Equals(modelTransformParent) || modelHelperChild.IsFirstChild)
-				{
-					linkObjectChild.SetParent(linkObjectParent);
-
-					// Set anchor pose
-					anchorPose.position = linkObjectChild.localPosition;
-					anchorPose.rotation = linkObjectChild.localRotation;
-				}
-				else
-				{
-					modelTransformChild.SetParent(linkObjectParent);
-
-					// Set anchor pose
-					anchorPose.position = modelTransformChild.localPosition;
-					anchorPose.rotation = modelTransformChild.localRotation;
-				}
-
-				var jointPosition = SDF2Unity.GetPosition(joint.Pose.Pos);
-				var jointRotation = SDF2Unity.GetRotation(joint.Pose.Rot);
-				anchorPose.position += jointPosition;
-				anchorPose.rotation *= jointRotation;
+				var anchorPose = Implement.Joint.SetArticulationBodyRelationship(joint, linkObjectParent, linkObjectChild);
 
 				Implement.Joint.SetArticulationBodyAnchor(articulationBodyChild, anchorPose);
 
@@ -132,7 +109,7 @@ namespace SDF
 						break;
 
 					case "prismatic":
-						Implement.Joint.MakePrismatic(articulationBodyChild, joint.Axis, joint.PhysicsODE, joint.Pose);
+						Implement.Joint.MakePrismatic(articulationBodyChild, joint.Axis, joint.Pose);
 						break;
 
 					case "revolute":
@@ -164,10 +141,28 @@ namespace SDF
 						break;
 				}
 
-				var linkPlugin = linkObjectChild.GetComponent<Helper.Link>();
-				if (linkPlugin != null)
+				var linkHelper = linkObjectChild.GetComponent<Helper.Link>();
+				if (linkHelper != null)
 				{
-					linkPlugin.jointList.Add(joint.Name, articulationBodyChild);
+					if (joint.Axis != null)
+					{
+						linkHelper.JointAxis = SDF2Unity.GetAxis(joint.Axis.xyz);
+					}
+
+					if (joint.Axis2 != null)
+					{
+						linkHelper.JointAxis2 = SDF2Unity.GetAxis(joint.Axis2.xyz);
+					}
+
+					// set adjusted position for pose control
+					var localPosition = linkHelper.transform.localPosition;
+					var localRotation = linkHelper.transform.localRotation;
+					linkHelper.SetPose(localPosition, localRotation);
+
+					var modelHelper = linkHelper.Model;
+					localPosition = modelHelper.transform.localPosition;
+					localRotation = modelHelper.transform.localRotation;
+					modelHelper.SetPose(localPosition, localRotation);
 				}
 			}
 		}

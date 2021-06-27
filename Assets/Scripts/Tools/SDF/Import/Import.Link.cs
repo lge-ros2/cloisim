@@ -56,6 +56,8 @@ namespace SDF
 				linkHelper.useGravity = (link.Kinematic) ? false : link.Gravity;
 				linkHelper.SetPose(localPosition, localRotation);
 
+				linkHelper.ResetPose();
+
 				return newLinkObject as System.Object;
 			}
 
@@ -112,8 +114,8 @@ namespace SDF
 					// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
 				}
 
-				var meshColliders = linkObject.GetComponentsInChildren<UE.MeshCollider>();
-				if (meshColliders.Length > 0)
+				var colliders = linkObject.GetComponentsInChildren<UE.Collider>();
+				if (colliders.Length > 0)
 				{
 					if (inertial?.inertia != null)
 					{
@@ -127,9 +129,15 @@ namespace SDF
 						articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
 					}
 
-					foreach (var meshCollider in meshColliders)
+					// handling mesh collider
+					foreach (var collider in colliders)
 					{
-						meshCollider.convex = true;
+						var meshCollider = collider as UE.MeshCollider;
+
+						if (meshCollider != null)
+						{
+							meshCollider.convex = true;
+						}
 					}
 				}
 				else

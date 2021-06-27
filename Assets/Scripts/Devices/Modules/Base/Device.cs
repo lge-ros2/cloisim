@@ -13,26 +13,20 @@ public abstract class Device : MonoBehaviour
 	public enum ModeType { NONE, TX, RX, TX_THREAD, RX_THREAD };
 
 	public ModeType Mode = ModeType.NONE;
-	private bool isSubParts = false;
-
 	private DeviceMessageQueue deviceMessageQueue = new DeviceMessageQueue();
 	private DeviceMessage deviceMessage = new DeviceMessage();
+	private DevicePose devicePose = new DevicePose();
 
-	protected SDF.SensorType deviceParameters = null;
 	private SDF.Plugin pluginParameters = null;
 
 	private string deviceName = string.Empty;
 
 	private float updateRate = 1;
 
-	private bool debugginOn = true;
+	private bool debuggingOn = true;
 	private bool visualize = true;
 
 	private float transportingTimeSeconds = 0;
-
-	private Pose deviceModelPose = Pose.identity;
-	private Pose deviceLinkPose = Pose.identity;
-	private Pose devicePose = Pose.identity;
 
 	private Thread txThread = null;
 	private Thread rxThread = null;
@@ -49,8 +43,8 @@ public abstract class Device : MonoBehaviour
 
 	public bool EnableDebugging
 	{
-		get => debugginOn;
-		set => debugginOn = value;
+		get => debuggingOn;
+		set => debuggingOn = value;
 	}
 
 	public bool EnableVisualize
@@ -61,7 +55,7 @@ public abstract class Device : MonoBehaviour
 
 	public void SetSubParts(in bool value)
 	{
-		isSubParts = value;
+		devicePose.SubParts = value;
 	}
 
 	void Awake()
@@ -71,7 +65,7 @@ public abstract class Device : MonoBehaviour
 
 	void Start()
 	{
-		StorePose();
+		devicePose.Store(this.transform);
 
 		InitializeMessages();
 
@@ -287,49 +281,6 @@ public abstract class Device : MonoBehaviour
 		transportingTimeSeconds = value;
 	}
 
-	private void StorePose()
-	{
-		// Debug.Log(deviceName + ":" + transform.name);
-		var devicePosition = Vector3.zero;
-		var deviceRotation = Quaternion.identity;
-
-		var parentLinkObject = transform.parent;
-		if (parentLinkObject != null && parentLinkObject.CompareTag("Link"))
-		{
-			deviceLinkPose.position = parentLinkObject.localPosition;
-			deviceLinkPose.rotation = parentLinkObject.localRotation;
-			// Debug.Log(parentLinkObject.name + ": " + deviceLinkPose.position.ToString("F4") + ", " + deviceLinkPose.rotation.ToString("F4"));
-
-			var parentModelObject = parentLinkObject.parent;
-			if (parentModelObject != null && parentModelObject.CompareTag("Model"))
-			{
-				deviceModelPose.position = parentModelObject.localPosition;
-				deviceModelPose.rotation = parentModelObject.localRotation;
-				// Debug.Log(parentModelObject.name + ": " + deviceModelPose.position.ToString("F4") + ", " + deviceModelPose.rotation.ToString("F4"));
-			}
-		}
-
-		devicePose.position = transform.localPosition;
-		devicePose.rotation = transform.localRotation;
-	}
-
-	public Pose GetPose()
-	{
-		var finalPose = devicePose;
-
-		if (!isSubParts)
-		{
-			finalPose.position += deviceLinkPose.position;
-			finalPose.rotation *= deviceLinkPose.rotation;
-
-			finalPose.position += deviceModelPose.position;
-			finalPose.rotation *= deviceModelPose.rotation;
-		}
-		// Debug.Log(name + ": " + finalPose.position.ToString("F4") + ", " + finalPose.rotation.ToString("F4"));
-
-		return finalPose;
-	}
-
 	/// <summary>
 	/// This method should be called in OnStart()
 	/// </summary>
@@ -343,8 +294,8 @@ public abstract class Device : MonoBehaviour
 		return pluginParameters;
 	}
 
-	public void SetDeviceParameter(in SDF.SensorType deviceParams)
+	public Pose GetPose()
 	{
-		deviceParameters = deviceParams;
+		return devicePose.Get();
 	}
 }
