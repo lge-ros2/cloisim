@@ -453,7 +453,7 @@ namespace RuntimeGizmos
 			SetPivotPoint();
 		}
 
-		float CalculateSnapAmount(float snapValue, float currentAmount, out float remainder)
+		float CalculateSnapAmount(in float snapValue, in float currentAmount, out float remainder)
 		{
 			remainder = 0;
 			if (snapValue <= 0) return currentAmount;
@@ -538,7 +538,7 @@ namespace RuntimeGizmos
 			list = targetRootsOrdered;
 		}
 
-		public void AddTarget(Transform target)
+		public void AddTarget(in Transform target)
 		{
 			if (target != null)
 			{
@@ -559,7 +559,7 @@ namespace RuntimeGizmos
 			}
 		}
 
-		public void RemoveTarget(Transform target)
+		public void RemoveTarget(in Transform target)
 		{
 			if (target != null)
 			{
@@ -583,13 +583,13 @@ namespace RuntimeGizmos
 			children.Clear();
 		}
 
-		void ClearAndAddTarget(Transform target)
+		void ClearAndAddTarget(in Transform target)
 		{
 			ClearTargets();
 			AddTarget(target);
 		}
 
-		void AddTargetRoot(Transform targetRoot)
+		void AddTargetRoot(in Transform targetRoot)
 		{
 			targetRoots.Add(targetRoot, new TargetInfo());
 			targetRootsOrdered.Add(targetRoot);
@@ -597,7 +597,7 @@ namespace RuntimeGizmos
 			AddAllChildren(targetRoot);
 		}
 
-		void RemoveTargetRoot(Transform targetRoot)
+		void RemoveTargetRoot(in Transform targetRoot)
 		{
 			if (targetRoots.Remove(targetRoot))
 			{
@@ -607,7 +607,7 @@ namespace RuntimeGizmos
 			}
 		}
 
-		void AddAllChildren(Transform target)
+		void AddAllChildren(in Transform target)
 		{
 			childrenBuffer.Clear();
 			target.GetComponentsInChildren<Transform>(true, childrenBuffer);
@@ -623,7 +623,7 @@ namespace RuntimeGizmos
 			childrenBuffer.Clear();
 		}
 
-		void RemoveAllChildren(Transform target)
+		void RemoveAllChildren(in Transform target)
 		{
 			childrenBuffer.Clear();
 			target.GetComponentsInChildren<Transform>(true, childrenBuffer);
