@@ -59,7 +59,12 @@ public class MicomPlugin : CLOiSimPlugin
 	{
 		micomSensor.EnableDebugging = GetPluginParameters().GetValue<bool>("debug", false);
 
-		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
+		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20f);
+		if (updateRate.Equals(0))
+		{
+			Debug.LogWarning("Update rate for micom CANNOT be 0. Set to default value 20 Hz");
+			updateRate = 20f;
+		}
 		micomSensor.SetUpdateRate(updateRate);
 
 		var wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");

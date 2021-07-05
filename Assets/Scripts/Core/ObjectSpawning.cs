@@ -117,7 +117,7 @@ public class ObjectSpawning : MonoBehaviour
 
 			if (mesh != null)
 			{
-				var newTempPropsObject = CreateProps(propsName, mesh);
+				var newTempPropsObject = CreateProps(propsName, mesh, scale);
 				props.Add(type, newTempPropsObject);
 				newTempPropsObject.hideFlags = HideFlags.HideAndDontSave;
 				newTempPropsObject.SetActive(false);
@@ -151,7 +151,7 @@ public class ObjectSpawning : MonoBehaviour
 		yield return null;
 	}
 
-	private GameObject CreateProps(in string name, in Mesh targetMesh)
+	private GameObject CreateProps(in string name, in Mesh targetMesh, in Vector3 scale)
 	{
 		var newObject = new GameObject(name);
 		newObject.tag = "Props";
@@ -183,7 +183,8 @@ public class ObjectSpawning : MonoBehaviour
 
 		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
 		navMeshObstacle.carving = true;
-		navMeshObstacle.size = targetMesh.bounds.size;
+		// navMeshObstacle.size = targetMesh.bounds.size;
+		navMeshObstacle.size = scale;
 
 		return newObject;
 	}

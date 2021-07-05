@@ -122,6 +122,10 @@ namespace SDF
 					{
 						axis.limit.lower = GetValue<double>("axis/limit/lower");
 						axis.limit.upper = GetValue<double>("axis/limit/upper");
+						axis.limit.effort = GetValue<double>("axis/limit/effort");
+						axis.limit.velocity = GetValue<double>("axis/limit/velocity");
+						axis.limit.stiffness = GetValue<double>("axis/limit/stiffness");
+						axis.limit.dissipation = GetValue<double>("axis/limit/dissipation");
 					}
 
 					if (IsValidNode("axis/dynamics"))
@@ -150,6 +154,10 @@ namespace SDF
 						{
 							axis2.limit.lower = GetValue<double>("axis2/limit/lower");
 							axis2.limit.upper = GetValue<double>("axis2/limit/upper");
+							axis2.limit.effort = GetValue<double>("axis2/limit/effort");
+							axis2.limit.velocity = GetValue<double>("axis2/limit/velocity");
+							axis2.limit.stiffness = GetValue<double>("axis2/limit/stiffness");
+							axis2.limit.dissipation = GetValue<double>("axis2/limit/dissipation");
 						}
 					}
 

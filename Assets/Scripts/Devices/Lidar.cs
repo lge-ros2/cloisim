@@ -46,8 +46,13 @@ namespace SensorDevices
 				this.samples = samples;
 				this.resolution = resolution;
 				this.angle = new MinMax(angleMinRad * Mathf.Rad2Deg, angleMaxRad * Mathf.Rad2Deg);
-				this.angleStep = (angle.max - angle.min) / (resolution * samples);
+
+				var residual = (angle.range - 360d < double.Epsilon ) ? 0 : 1;
+				var rangeCount = resolution * samples - residual;
+
+				this.angleStep = (rangeCount <= 0) ? 0 : ((angle.range) / rangeCount);
 			}
+
 			public Scan(in uint samples)
 			{
 				this.samples = samples;

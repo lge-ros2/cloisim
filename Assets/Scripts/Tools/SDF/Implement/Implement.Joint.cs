@@ -67,7 +67,7 @@ namespace SDF
 					SetRevoluteArticulationDriveLimit(ref drive, axis.limit);
 				}
 
-				drive.forceLimit = (axis.limit.effort > -1) ? (float)axis.limit.effort : float.MaxValue;
+				drive.forceLimit = (axis.limit.effort > -1d) ? (float)axis.limit.effort : float.MaxValue;
 
 				if (axis.dynamics != null)
 				{
@@ -129,7 +129,7 @@ namespace SDF
 					SetRevoluteArticulationDriveLimit(ref drive, axis2.limit);
 				}
 
-				drive.forceLimit = (axis2.limit.effort > -1) ? (float)axis2.limit.effort : float.MaxValue;
+				drive.forceLimit = (axis2.limit.effort > -1d) ? (float)axis2.limit.effort : float.MaxValue;
 
 				var joint2Axis = SDF2Unity.GetAxis(axis2.xyz);
 				if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
@@ -197,7 +197,7 @@ namespace SDF
 					drive.upperLimit = (float)(axis.limit.upper);
 				}
 
-				drive.forceLimit = (axis.limit.effort > -1) ? (float)axis.limit.effort : float.MaxValue;
+				drive.forceLimit = (axis.limit.effort > -1d) ? (float)axis.limit.effort : float.MaxValue;
 
 				if (axis.dynamics != null)
 				{
@@ -243,7 +243,7 @@ namespace SDF
 					{
 						ReverseArticulationBodyAxis(body, UE.Vector3.up);
 					}
-					
+
 					body.zDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockY = UE.ArticulationDofLock.LockedMotion;
