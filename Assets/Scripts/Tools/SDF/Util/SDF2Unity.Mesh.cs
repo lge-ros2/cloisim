@@ -78,15 +78,18 @@ public partial class SDF2Unity
 	{
 		var meshTransformMatrix = Matrix4x4.identity;
 		var combine = new CombineInstance[meshFilters.Length];
+		var totalVertexCount = 0;
 		for (var combineIndex = 0; combineIndex < meshFilters.Length; combineIndex++)
 		{
 			var meshFilter = meshFilters[combineIndex];
 			combine[combineIndex].mesh = meshFilter.sharedMesh;
+			totalVertexCount += meshFilter.sharedMesh.vertexCount;
 			combine[combineIndex].transform = Matrix4x4.identity;
 			// Debug.LogFormat("{0},{1}: {2}, {3}", meshFilter.name, meshFilter.transform.name, meshTranslation, meshRotation);
 		}
 
 		var newCombinedMesh = new Mesh();
+		newCombinedMesh.indexFormat = (totalVertexCount >= System.UInt16.MaxValue) ? IndexFormat.UInt32 : IndexFormat.UInt16;
 		newCombinedMesh.CombineMeshes(combine, false, true);
 		newCombinedMesh.RecalculateNormals();
 		newCombinedMesh.RecalculateTangents();
