@@ -39,7 +39,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] Camera
     - [ ] Camera intrinsic parameter
     - [X] Depth Camera
-    - [ ] Multi-camera
+    - [X] Multi-camera
     - [X] RealSense (RGB + IR1 + IR2 + Depth)
   - [X] GPS sensor
   - [ ] Sensor noise models
@@ -111,8 +111,6 @@ We've deceided to change a solver type of physics engine since new solver "TGS(T
 
 So there is NO more constaints for rigidbodies by PGS(Projected Gauss Seidel) solver type since latest version([CLOiSim-1.11.0](https://github.com/lge-ros2/cloisim/releases/tag/1.11.0)).
 
-But inertia factors which retrieved from SDF are still NOT USED for rigidbody in Unity. Because it could cause unexpected behavior with physX engine.
-
 For the performance in terms of collision handling, designing collision geometry properly may important.
 
 ## Getting Started
@@ -125,7 +123,7 @@ For the performance in terms of collision handling, designing collision geometry
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.12f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.3.13f1 (LTS)'*.
 - Linux: Ubuntu 20.04.2 LTS
 - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
 - Memory: 32GB
@@ -201,8 +199,6 @@ New features or functions shall be developed on demand.
 - Add new sensor models and enhance sensor performance
 
 - introduce programmable c++ plugin
-
-- Noise models for sensor model
 
 - Performance optimization for sensors (Use DOT by unity?)
 
