@@ -26,7 +26,7 @@ public class ActorPlugin : CLOiSimPlugin
 		}
 
 		var defaultMotion = GetPluginParameters().GetValue<string>("default/motion", "random");
-		if (!defaultMotion.Equals("random") && !defaultMotion.Equals("assign"))
+		if (!defaultMotion.Equals("random") && !defaultMotion.Equals("manual"))
 		{
 			Debug.LogWarningFormat("Failed to ActorPlugin: default motion type({0}) is invalid", defaultMotion);
 			return;
@@ -56,7 +56,7 @@ public class ActorPlugin : CLOiSimPlugin
 		actorAgent.SetMotionType(ActorAgent.Type.STANDBY, motionStandby);
 		actorAgent.SetMotionType(ActorAgent.Type.MOVING, motionMoving);
 
-		actorAgent.RandomWalking = (defaultMotion.Equals("assign")) ? false : true;
+		actorAgent.RandomWalking = (defaultMotion.Equals("manual")) ? false : true;
 
 		// actorAgent.AssignTargetDestination(new Vector3(35.8297f, -6.361397f, -35.49258f));
 	}
