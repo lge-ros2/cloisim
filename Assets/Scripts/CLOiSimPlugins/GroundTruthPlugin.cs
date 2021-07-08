@@ -146,6 +146,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			var meshFilters = trackingGameObject.GetComponentsInChildren<UE.MeshFilter>();
 			if (meshFilters != null && trackingGameObject.CompareTag("Model"))
 			{
+				var initialRotation = trackingGameObject.transform.rotation;
 				var combine = new UE.CombineInstance[meshFilters.Length];
 				for (var i = 0; i < combine.Length; i++)
 				{
@@ -169,6 +170,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				{
 					vertices[i] -= combinedMesh.bounds.center;
 					vertices[i].y = 0;
+					vertices[i] = initialRotation * vertices[i];
 				}
 
 				var convexHullMeshData = DeviceHelper.SolveConvexHull2D(vertices);

@@ -29,20 +29,22 @@ namespace SensorDevices
 		{
 			imagesStamped = new messages.ImagesStamped();
 			imagesStamped.Time = new messages.Time();
+
+			for (var i = 0; i < cameras.Count; i++)
+			{
+				imagesStamped.Images.Add(new messages.Image());
+			}
 		}
 
 		protected override void GenerateMessage()
 		{
-			if (imagesStamped.Images.Count != cameras.Count)
+			for (var i = 0; i < cameras.Count; i++)
 			{
-				for (var i = 0; i < cameras.Count; i++)
+				// Set images data only once
+				var image = cameras[i].GetImageDataMessage();
+				if (image != null && i < imagesStamped.Images.Count)
 				{
-					// Set images data only once
-					var image = cameras[i].GetImageDataMessage();
-					if (image != null)
-					{
-						imagesStamped.Images.Add(image);
-					}
+					imagesStamped.Images[i] = image;
 				}
 			}
 

@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
 using UnityEngine;
 
 public class DevicePose

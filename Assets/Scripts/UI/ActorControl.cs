@@ -33,7 +33,7 @@ public class ActorControl : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (Input.GetMouseButtonDown(1))
+		if (Input.GetMouseButton(1))
 		{
 			Main.Gizmos.GetSelectedTargets(out var list);
 
