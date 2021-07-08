@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(StdHash)
 
+set(CMAKE_CXX_STANDARD 14)
+add_compile_options(-Wall -Wextra -Wpedantic -Wdeprecated -fPIC)
 add_compile_options(-static-libstdc++ -static-libgcc -O3)
 
 add_library(${CMAKE_PROJECT_NAME} SHARED hash.cpp)

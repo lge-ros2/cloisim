@@ -10,16 +10,16 @@
 #include <string>
 
 #if __linux__
-# define LibraryExport
+# define DllExport
 #else
-# define LibraryExport __declspec(dllexport)
+# define DllExport __declspec(dllexport)
 #endif
 
 extern "C"
 {
-  LibraryExport uint64_t GetStringHashCode(const char* string)
+  DllExport uint64_t GetStringHashCode(const char* string)
   {
-    return std::hash<std::string>{}(string);
+    return std::hash<std::string>{}(std::string(string));
   }
 }
 #endif

@@ -8,6 +8,7 @@ cd build
 cmake ../
 make
 make install
+rm *
 ```
 
 ## for Windows
@@ -19,4 +20,5 @@ cd build
 cmake ../ -D CMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++
 make
 make install
+rm *
 ```
