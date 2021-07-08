@@ -13,7 +13,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private GUIContent helpContents = new GUIContent();
 	private float helpContentsHeight;
 	private const int buttonWidthHelp = 65;
-	private const int helpStatusWidth = buttonWidthHelp * 2;
+	private const int helpStatusWidth = buttonWidthHelp * 4;
 	private bool popupHelpDialog = false;
 	private Vector2 scrollPosition = Vector2.zero;
 
@@ -33,15 +33,17 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine("");
 		sb.AppendLine(" - Object Control");
 		sb.AppendLine("");
+		sb.AppendLine("    <b>O</b>: Make it 'static objects' movable, static objects are unselectable in default.");
+		sb.AppendLine("");
 		sb.AppendLine("    Selection/Deselection: Mouse <b>Left click</b>");
 		sb.AppendLine("      Multiple Selection/Deseletion: + <b>Left Shift</b>");
 		sb.AppendLine("");
 		sb.AppendLine("    After select object you want, press the key as following.");
-		sb.AppendLine("      <b>T</b> : Translation");
-		sb.AppendLine("      <b>R</b> : Rotation");
-		sb.AppendLine("      <b>Y</b> : Translation + Rotation");
-		sb.AppendLine("      <b>X</b> : Change manipulation space");
-		sb.AppendLine("      <b>X</b> : Change manipulation space");
+		sb.AppendLine("      <b>T</b>: Translation");
+		sb.AppendLine("      <b>R</b>: Rotation");
+		sb.AppendLine("      <b>Y</b>: Translation + Rotation");
+		sb.AppendLine("      <b>X</b>: Change manipulation space");
+		sb.AppendLine("      <b>X</b>: Change manipulation space");
 		sb.AppendLine("      Move <b>Axis Arrow</b> or <b>plane handle</b>: move the object");
 		sb.AppendLine("        Snapping(optional): + <b>Shift</b>");
 		sb.AppendLine("");
@@ -126,10 +128,11 @@ public partial class SimulationDisplay : MonoBehaviour
 		}
 
 		style.fontSize = (int)(labelFontSize * 0.8f);
-		style.alignment = TextAnchor.MiddleLeft;
+		style.alignment = TextAnchor.MiddleRight;
 		style.normal.textColor = Color.white;
-		var helpStatus = "Vertical Camera Lock " + ((cameraControl.VerticalMovementLock)? "[X]":"[  ]");
-		rectHelpStatus.x = Screen.width -rectHelpButton.width - helpStatusWidth - textLeftMargin;
-		DrawLabelWithShadow(rectHelpStatus, helpStatus, style);
+		var helpStatusMsg = "Vertical Camera Moving Lock(Space) " + ((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
+		// var helpStatusMsg2 = "\nStatic Object Selectable(O) " + ((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
+		rectHelpStatus.x = Screen.width - rectHelpButton.width - helpStatusWidth - textLeftMargin - textLeftMargin;
+		DrawLabelWithShadow(rectHelpStatus, helpStatusMsg, style);
 	}
 }
