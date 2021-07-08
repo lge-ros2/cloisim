@@ -27,10 +27,10 @@ public partial class SimulationDisplay : MonoBehaviour
 	private const int textLeftMargin = 10;
 	private const int textHeight = 19;
 
-	private const int textWidthFps = 75;
+	private const int textWidthFps = 80;
 	private const int TextWidthPointInfo = 300;
 	private const int textWidthVersion = 50;
-	private const int textWidthSimulationInfo = 500;
+	private const int textWidthSimulationInfo = 510;
 	private const int textWidthEvent = 800;
 
 	private Color logMessageColor = Color.red;
@@ -113,7 +113,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		var diffRealSimTime = GetBoldText(diffTs1.ToString(@"d\:hh\:mm\:ss\.fff"));
 
 		sbTimeInfo.Clear();
-		sbTimeInfo.AppendFormat("Time: Sim [{0}] | Real [{1}] | Real-Sim [{2}]", currentSimTime, currentRealTime, diffRealSimTime);
+		sbTimeInfo.AppendFormat("Time: Sim [{0}]  Real[{1}]  Real-Sim [{2}]", currentSimTime, currentRealTime, diffRealSimTime);
 		return sbTimeInfo.ToString();
 	}
 
