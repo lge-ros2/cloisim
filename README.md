@@ -89,6 +89,7 @@ more details in [here](https://github.com/lge-ros2/cloisim/tree/main/Assets/Scri
 - RealSensePlugin: can handle ir1(left), ir2(right), depth, color
 - MicomPlugin: control micom input/output(sensor)
 - GpsPlugin: gps position in world
+- GroundTruthPlugin: Retrieve GroundTruth information
 - ActorPlugin: actor control using AI(Unity) components
 
 #### World Specific
@@ -124,10 +125,18 @@ For the performance in terms of collision handling, designing collision geometry
 ### Tested environement
 
 - Latest Unity Editor Version: *'2020.3.13f1 (LTS)'*.
-- Linux: Ubuntu 20.04.2 LTS
-- Processor: AMD® Ryzen 9 3900x 12-core processor × 24
-- Memory: 32GB
-- Graphics: NVIDIA Corporation TU102 [GeForce RTX 2080 Ti]
+
+- Linux Machine
+  - OS: Ubuntu 20.04.2 LTS
+  - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
+  - Memory: 32GB
+  - Graphics: NVIDIA Corporation TU102 [GeForce RTX 2080 Ti]
+
+- Windows Machine
+  - OS: Windows 10 20H2
+  - Processor: AMD® Ryzen 9 5900HS 8-core processor x 16
+  - Memory: 32GB
+  - Graphics: NVIDIA GeForce RTX3060 Laptop GPU
 
 ### Release version
 
