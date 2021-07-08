@@ -146,6 +146,11 @@ public partial class DeviceHelper
 			return new Quaternion(-rotation.z, -rotation.x, rotation.y, -rotation.w);
 		}
 
+		public static Vector3 Reverse(in Vector3 value)
+		{
+			return -value;
+		}
+
 		public static float CurveOrientation(in float value)
 		{
 			return -value;
