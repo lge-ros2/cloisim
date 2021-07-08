@@ -109,17 +109,17 @@ namespace SDF
 		public bool IsValidNode(in string xpath)
 		{
 			var node = GetNode(xpath);
-			return (node == null)? false:GetNode(xpath).HasChildNodes;
+			return (node == null) ? false : GetNode(xpath).HasChildNodes;
 		}
 
 		protected XmlNode GetNode(in string xpath)
 		{
-			return (root == null)? null:root.SelectSingleNode(xpath);
+			return (root == null) ? null : root.SelectSingleNode(xpath);
 		}
 
 		protected XmlNodeList GetNodes(in string xpath)
 		{
-			return (root == null)? null:root.SelectNodes(xpath);
+			return (root == null) ? null : root.SelectNodes(xpath);
 		}
 
 		public T GetValue<T>(in string xpath, in T defaultValue = default(T))

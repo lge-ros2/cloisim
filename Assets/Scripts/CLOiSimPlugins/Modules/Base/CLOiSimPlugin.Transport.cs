@@ -22,7 +22,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			allocatedDeviceHashKeys.Add(hashKey);
 
 			hash = DeviceHelper.GetStringHashCode(hashKey);
-			// Debug.LogFormat("PrepareDevice - port({0}) hash({1})", port, hash);
+			// Debug.LogFormat("PrepareDevice - port({0}) hash({1:X})", port, hash);
 			return true;
 		}
 

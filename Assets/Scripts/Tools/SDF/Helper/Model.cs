@@ -5,6 +5,7 @@
  */
 
 using UE = UnityEngine;
+using UEAI = UnityEngine.AI;
 
 namespace SDF
 {
@@ -23,6 +24,25 @@ namespace SDF
 				{
 					// if parent model has static option, make it all static in children
 					ConvertToStaticLink();
+				}
+				else
+				{
+					if (hasRootArticulationBody)
+					{
+						var navMeshObstacle = gameObject.AddComponent<UEAI.NavMeshObstacle>();
+						navMeshObstacle.carving = true;
+						navMeshObstacle.carveOnlyStationary = false;
+
+						var bounds = new UE.Bounds();
+						var renderers = transform.GetComponentsInChildren<UE.Renderer>();
+						for (var i = 0; i < renderers.Length; i++)
+						{
+							bounds.size = UE.Vector3.Max(bounds.size, renderers[i].bounds.size);
+						}
+						bounds.size = transform.rotation * bounds.size;
+						navMeshObstacle.carvingMoveThreshold = 0.2f;
+						navMeshObstacle.size = bounds.size * 0.7f;
+					}
 				}
 			}
 

@@ -66,7 +66,6 @@ namespace SDF
 		{
 			var cameraElement = "camera["+ index +"]";
 			var camera = new Camera();
-
 			var pose = GetValue<string>(cameraElement + "/pose");
 			var relative_to = GetAttributeInPath<string>(cameraElement + "/pose", "relative_to");
 
@@ -301,19 +300,20 @@ namespace SDF
 
 		private void ParseNoise(ref Noise noise, in string targetPathName)
 		{
-			var noiseXPath = Path.Combine(targetPathName, "noise");
-			var type = GetAttributeInPath<string>(noiseXPath, "type");
-			noise.type = (type == null)? GetValue<string>(Path.Combine(noiseXPath, "type"), "none"): type;
-			noise.mean = GetValue<double>(Path.Combine(noiseXPath, "mean"), 0);
-			noise.stddev = GetValue<double>(Path.Combine(noiseXPath, "stddev"), 0);
-			noise.bias_mean = GetValue<double>(Path.Combine(noiseXPath, "bias_mean"), 0);
-			noise.bias_stddev = GetValue<double>(Path.Combine(noiseXPath, "bias_stddev"), 0);
-			noise.dynamic_bias_stddev = GetValue<double>(Path.Combine(noiseXPath, "dynamic_bias_stddev"), 0);
-			noise.dynamic_bias_correlation_time = GetValue<double>(Path.Combine(noiseXPath, "dynamic_bias_correlation_time"), 0);
+			var noiseXPath = targetPathName + "/noise";
 
-			if (IsValidNode(Path.Combine(noiseXPath, "precesion")))
+			var type = GetAttributeInPath<string>(noiseXPath, "type");
+			noise.type = (type == null)? GetValue<string>(noiseXPath + "/type", "none"): type;
+			noise.mean = GetValue<double>(noiseXPath + "/mean", 0);
+			noise.stddev = GetValue<double>(noiseXPath + "/stddev", 0);
+			noise.bias_mean = GetValue<double>(noiseXPath + "/bias_mean", 0);
+			noise.bias_stddev = GetValue<double>(noiseXPath + "/bias_stddev", 0);
+			noise.dynamic_bias_stddev = GetValue<double>(noiseXPath + "/dynamic_bias_stddev", 0);
+			noise.dynamic_bias_correlation_time = GetValue<double>(noiseXPath + "/dynamic_bias_correlation_time", 0);
+
+			if (IsValidNode(noiseXPath + "/precesion"))
 			{
-				noise.precision = GetValue<double>(Path.Combine(noiseXPath, "precesion"), 0);
+				noise.precision = GetValue<double>(noiseXPath + "/precesion", 0);
 			}
 		}
 	}

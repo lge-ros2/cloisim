@@ -150,11 +150,19 @@ public class Main: MonoBehaviour
 
 		// Load Library for Assimp
 #if UNITY_EDITOR
-		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/linux-x64/native";
+#	if UNITY_EDITOR_LINUX
+		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/linux-x64/native/libassimp";
+#	else
+		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/win-x64/native/assimp";
+#	endif
 #else
-		var assimpLibraryPath = "./CLOiSim_Data/Plugins";
+#	if UNITY_STANDALONE_WIN
+		var assimpLibraryPath = "./CLOiSim_Data/Plugins/x86_64/assimp";
+#	else
+		var assimpLibraryPath = "./CLOiSim_Data/Plugins/libassimp";
+#	endif
 #endif
-		Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath + "/libassimp");
+		Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath);
 
 		Application.targetFrameRate = 61;
 
