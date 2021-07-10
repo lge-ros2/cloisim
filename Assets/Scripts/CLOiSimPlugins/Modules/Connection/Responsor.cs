@@ -15,7 +15,12 @@ public class Responsor : ResponseSocket
 	private byte[] hashValue = null;
 	private byte[] dataToSendResponse = null;
 
-	public void SetHash(in ulong hash)
+	public Responsor(in ulong hash)
+	{
+		SetHash(hash);
+	}
+
+	private void SetHash(in ulong hash)
 	{
 		hashValue = BitConverter.GetBytes(hash);
 	}

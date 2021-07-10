@@ -33,8 +33,6 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine("");
 		sb.AppendLine(" - Object Control");
 		sb.AppendLine("");
-		sb.AppendLine("    <b>O</b>: Make it 'static objects' movable, static objects are unselectable in default.");
-		sb.AppendLine("");
 		sb.AppendLine("    Selection/Deselection: Mouse <b>Left click</b>");
 		sb.AppendLine("      Multiple Selection/Deseletion: + <b>Left Shift</b>");
 		sb.AppendLine("");

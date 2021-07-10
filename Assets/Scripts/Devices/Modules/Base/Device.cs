@@ -232,7 +232,7 @@ public abstract class Device : MonoBehaviour
 		try
 		{
 			var result = deviceMessageQueue.Pop(out var data);
-			instance = data.GetMessage<T>();
+			instance = (result) ? data.GetMessage<T>() : default(T);
 			return result;
 		}
 		catch
