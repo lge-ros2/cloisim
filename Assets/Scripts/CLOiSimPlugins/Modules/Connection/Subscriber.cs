@@ -14,7 +14,12 @@ public class Subscriber : SubscriberSocket
 
 	private byte[] hashValue = null;
 
-	public void SetHash(in ulong hash)
+	public Subscriber(in ulong hash)
+	{
+		SetHash(hash);
+	}
+
+	private void SetHash(in ulong hash)
 	{
 		hashValue = BitConverter.GetBytes(hash);
 	}

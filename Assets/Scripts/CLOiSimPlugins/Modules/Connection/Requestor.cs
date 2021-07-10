@@ -13,7 +13,12 @@ public class Requestor : RequestSocket
 	private byte[] hashValue = null;
 	private byte[] dataToSendRequest = null;
 
-	public void SetHash(in ulong hash)
+	public Requestor(in ulong hash)
+	{
+		SetHash(hash);
+	}
+
+	private void SetHash(in ulong hash)
 	{
 		hashValue = BitConverter.GetBytes(hash);
 	}
