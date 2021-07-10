@@ -19,8 +19,7 @@ public class Transporter : IDisposable
 
 	public bool InitializePublisher(in ushort targetPort, in ulong hash)
 	{
-		var publisher = new Publisher();
-		publisher.SetHash(hash);
+		var publisher = new Publisher(hash);
 
 		if (publisher.Initialize(targetPort))
 		{
@@ -32,8 +31,8 @@ public class Transporter : IDisposable
 
 	public bool InitializeSubscriber(in ushort targetPort, in ulong hash)
 	{
-		var subscriber = new Subscriber();
-		subscriber.SetHash(hash);
+		var subscriber = new Subscriber(hash);
+
 		if (subscriber.Initialize(targetPort))
 		{
 			transportList.Add(targetPort, subscriber);
@@ -44,8 +43,8 @@ public class Transporter : IDisposable
 
 	public bool InitializeResponsor(in ushort targetPort, in ulong hash)
 	{
-		var responsor = new Responsor();
-		responsor.SetHash(hash);
+		var responsor = new Responsor(hash);
+
 		if (responsor.Initialize(targetPort))
 		{
 			transportList.Add(targetPort, responsor);
@@ -57,8 +56,8 @@ public class Transporter : IDisposable
 	public bool InitializeRequester(in ushort targetPort, in ulong hash)
 	{
 
-		var requestor = new Requestor();
-		requestor.SetHash(hash);
+		var requestor = new Requestor(hash);
+
 		if (requestor.Initialize(targetPort))
 		{
 			transportList.Add(targetPort, requestor);

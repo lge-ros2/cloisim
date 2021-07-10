@@ -164,6 +164,10 @@ public class Main: MonoBehaviour
 #endif
 		Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath);
 
+		// Calling this method is required for windows version
+		// refer o https://thomas.trocha.com/blog/netmq-on-unity3d/
+		AsyncIO.ForceDotNet.Force();
+
 		Application.targetFrameRate = 61;
 
 		var mainCamera = Camera.main;
