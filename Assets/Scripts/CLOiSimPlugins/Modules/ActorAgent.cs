@@ -24,7 +24,7 @@ public class ActorAgent : MonoBehaviour
 
 	public float goalTolerance = 0.1f;
 
-	public float m_MaxTargetRange = 10f;
+	public float m_MaxTargetRange = 5f;
 
 	private bool isRandomWalking = true;
 
