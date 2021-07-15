@@ -324,17 +324,22 @@ public class Main: MonoBehaviour
 
 		transformGizmo?.ClearTargets();
 
+		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Visual>())
+		{
+			helper.Reset();
+		}
+
 		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Actor>())
 		{
 			helper.Reset();
 		}
 
-		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Model>())
+		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Link>())
 		{
 			helper.Reset();
 		}
 
-		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Link>())
+		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Model>())
 		{
 			helper.Reset();
 		}
