@@ -178,13 +178,16 @@ public class ObjectSpawning : MonoBehaviour
 		meshCollider.isTrigger = false;
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
-		rigidBody.drag = 0.5f;
-		rigidBody.angularDrag= 0.8f;
+		rigidBody.drag = 0.8f;
+		rigidBody.angularDrag = 0.8f;
 
 		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
 		navMeshObstacle.carving = true;
 		// navMeshObstacle.size = targetMesh.bounds.size;
-		navMeshObstacle.size = scale;
+		navMeshObstacle.size = Vector3.one;
+		navMeshObstacle.carvingMoveThreshold = 0.1f;
+		navMeshObstacle.carvingTimeToStationary = 0.2f;
+		navMeshObstacle.carveOnlyStationary = true;
 
 		return newObject;
 	}
