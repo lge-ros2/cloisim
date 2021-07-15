@@ -31,7 +31,7 @@ namespace SDF
 					{
 						var navMeshObstacle = gameObject.AddComponent<UEAI.NavMeshObstacle>();
 						navMeshObstacle.carving = true;
-						navMeshObstacle.carveOnlyStationary = false;
+						navMeshObstacle.carveOnlyStationary = isStatic ? true : false;
 
 						var bounds = new UE.Bounds();
 						var renderers = transform.GetComponentsInChildren<UE.Renderer>();
