@@ -88,7 +88,6 @@ namespace SDF
 					}
 					else if (childArticulationBodies.Length > 1)
 					{
-						modelObject.AddComponent<ArticulationBodyConstantForce>();
 						modelHelper.hasRootArticulationBody = true;
 					}
 				}
