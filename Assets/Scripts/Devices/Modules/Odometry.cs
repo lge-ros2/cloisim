@@ -115,7 +115,6 @@ public class Odometry
 		else
 		{
 			var yaw = (float)((angularVelocityRight - angularVelocityLeft) * wheelInfo.wheelRadius  / wheelInfo.wheelTread);
-				// odomMessage.LinearVelocity.Right - odomMessage.LinearVelocity.Left) / wheelInfo.wheelTread);
 			deltaTheta = yaw * duration;
 		}
 
@@ -132,7 +131,7 @@ public class Odometry
 
 		DeviceHelper.SetVector3d(odomMessage.Pose, DeviceHelper.Convert.Reverse(_odomPose));
 
-		odomMessage.TwistLinear.X = odomTranslationalVelocity;
+		odomMessage.TwistLinear.X = DeviceHelper.Convert.CurveOrientation(odomTranslationalVelocity);
 		odomMessage.TwistAngular.Z = DeviceHelper.Convert.CurveOrientation(odomRotationalVelocity);
 
 		motorLeft.Feedback.SetRotatingVelocity(odomRotationalVelocity);
