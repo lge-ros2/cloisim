@@ -90,9 +90,16 @@ public class WorldNavMeshBuilder : MonoBehaviour
 
 			foreach (var model in models)
 			{
-				if (model.isStatic && model.name.Equals(zone))
+				if (model.name.Equals(zone))
 				{
-					AddNavMeshTracks(model.transform);
+					if (model.isStatic)
+					{
+						AddNavMeshTracks(model.transform);
+					}
+					else
+					{
+						Debug.LogWarning("It is not static model, cannot generate NavMesh for " + model.name);
+					}
 					break;
 				}
 			}

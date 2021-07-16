@@ -5,6 +5,7 @@
  */
 
 using System.Collections.Generic;
+using System.Collections;
 using UE = UnityEngine;
 using UEAI = UnityEngine.AI;
 
@@ -15,6 +16,8 @@ namespace SDF
 		[UE.DefaultExecutionOrder(590)]
 		public class Actor : Base
 		{
+			private static int AvoidancePriorityNumber = 0;
+
 			private struct waypointToward
 			{
 				public float linearSpeed;
@@ -40,8 +43,6 @@ namespace SDF
 			private UE.SkinnedMeshRenderer skinMeshRenderer = null;
 			private UEAI.NavMeshAgent navMeshAgent = null;
 
-			private bool completeSetSize = false;
-
 			public bool HasWayPoints => (script.trajectories != null && script.trajectories.Count > 0);
 
 			new public void Reset()
@@ -63,47 +64,43 @@ namespace SDF
 				{
 					StartWaypointFollowing();
 				}
+
+				StartCoroutine(SetAgentColliderSize());
 			}
 
-			private bool SetAgentColliderSize()
+			private IEnumerator SetAgentColliderSize()
 			{
-				const float SizeRatio = 0.85f;
-
-				var complete = false;
+				yield return new UE.WaitForFixedUpdate();
 
 				var localBounds = skinMeshRenderer.localBounds;
 				var bounds = skinMeshRenderer.bounds;
-				capsuleCollider.radius = UE.Mathf.Min(bounds.extents.x, bounds.extents.z) * SizeRatio;
+				var radius = UE.Mathf.Min(bounds.extents.x, bounds.extents.z);
+				capsuleCollider.radius = radius;
 				capsuleCollider.height = bounds.size.y;
 				var center = capsuleCollider.center;
 				center.y = bounds.extents.y;
 				capsuleCollider.center = center;
 
-				if (navMeshAgent != null)
+				navMeshAgent = gameObject.GetComponent<UEAI.NavMeshAgent>();
+				if (navMeshAgent == null)
 				{
-					navMeshAgent.radius = capsuleCollider.radius;
-					navMeshAgent.height = capsuleCollider.height;
-					complete = true;
-				}
-				else
-				{
-					navMeshAgent = gameObject.GetComponent<UEAI.NavMeshAgent>();
-					if (navMeshAgent == null)
-					{
-						navMeshAgent = gameObject.AddComponent<UEAI.NavMeshAgent>();
-					}
+					navMeshAgent = gameObject.AddComponent<UEAI.NavMeshAgent>();
 				}
 
-				return complete;
+				const float agentMarginRatio = 1.5f;
+				navMeshAgent.radius = radius * agentMarginRatio;
+				navMeshAgent.height = capsuleCollider.height;
+				navMeshAgent.obstacleAvoidanceType = UEAI.ObstacleAvoidanceType.MedQualityObstacleAvoidance;
+				navMeshAgent.avoidancePriority = AvoidancePriorityNumber++;
+				navMeshAgent.autoBraking = true;
+				navMeshAgent.autoRepath = true;
+				navMeshAgent.autoTraverseOffMeshLink = false;
+
+				yield return null;
 			}
 
 			void LateUpdate()
 			{
-				if (capsuleCollider != null && skinMeshRenderer != null && completeSetSize == false)
-				{
-					completeSetSize = SetAgentColliderSize();
-				}
-
 				if (_followingWaypoint && waypointTowardsIndex < waypointTowards.Count)
 				{
 					if (elapsedTimeSinceAnimationStarted < script.delay_start)

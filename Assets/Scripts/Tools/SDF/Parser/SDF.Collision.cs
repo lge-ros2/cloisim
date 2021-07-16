@@ -49,13 +49,13 @@ namespace SDF
 				public double rolling_friction = 1; // Coefficient of rolling friction
 			}
 
-			public ODE ode;
-			public Bullet bullet;
+			public ODE ode = null;
+			public Bullet bullet = null;
 		}
 
-		public Bounce bounce;
+		public Bounce bounce = null;
 
-		public Friction friction;
+		public Friction friction = null;
 
 		// <contact> : TBD
 		// <soft_contact> : TBD

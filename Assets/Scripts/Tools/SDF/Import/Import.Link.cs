@@ -55,7 +55,6 @@ namespace SDF
 				linkHelper.isSelfCollide = link.SelfCollide;
 				linkHelper.useGravity = (link.Kinematic) ? false : link.Gravity;
 				linkHelper.SetPose(localPosition, localRotation);
-
 				linkHelper.ResetPose();
 
 				return newLinkObject as System.Object;
@@ -99,6 +98,8 @@ namespace SDF
 				articulationBody.mass = (inertial == null) ? 1e-35f : (float)inertial.mass;
 				articulationBody.linearDamping = 0.05f;
 				articulationBody.angularDamping = 0.05f;
+				articulationBody.velocity = UE.Vector3.zero;
+				articulationBody.angularVelocity = UE.Vector3.zero;
 				articulationBody.ResetCenterOfMass();
 				articulationBody.ResetInertiaTensor();
 				articulationBody.jointType = UE.ArticulationJointType.FixedJoint;

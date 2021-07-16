@@ -13,7 +13,7 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private const float DefaultLightIntensity = 30;
+			private const float DefaultLightIntensity = 50;
 
 			protected override void ImportLight(in Light light)
 			{
@@ -36,6 +36,7 @@ namespace SDF
 				lightComponent.shadowResolution = UE.Rendering.LightShadowResolution.Medium;
 
 				lightComponent.color = SDF2Unity.GetColor(light.diffuse);
+				lightComponent.cullingMask = UE.LayerMask.GetMask("Default") | UE.LayerMask.GetMask("Plane");
 				// SDF2Unity.GetColor(light.specular);
 
 				var direction = SDF2Unity.GetDirection(light.direction);
@@ -53,7 +54,7 @@ namespace SDF
 						lightComponent.spotAngle = (float)light.spot.outer_angle * Mathf.Rad2Deg;
 						lightComponent.innerSpotAngle = (float)light.spot.inner_angle * Mathf.Rad2Deg;
 						lightComponent.range = (float)light.attenuation.range;
-						lightComponent.intensity = DefaultLightIntensity;
+						lightComponent.intensity = (light.intensity.Equals(1)) ? DefaultLightIntensity : (float)light.intensity;
 						break;
 
 					case "point":
@@ -61,7 +62,7 @@ namespace SDF
 						lightComponent.type = UE.LightType.Point;
 						lightComponent.range = (float)light.attenuation.range;
 						lightComponent.transform.localRotation = UE.Quaternion.LookRotation(UE.Vector3.down, direction);
-						lightComponent.intensity = DefaultLightIntensity;
+						lightComponent.intensity = (light.intensity.Equals(1)) ? DefaultLightIntensity : (float)light.intensity;
 						break;
 				}
 

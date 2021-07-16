@@ -19,7 +19,8 @@ namespace SDF
 	public class Model : Entity
 	{
 		private Models models;
-		private string canonical_link = string.Empty;
+		private string canonical_link = string.Empty; // TODO: need to handle, from v1.7
+		private string placement_frame = string.Empty; // TODO: need to handle,from v1.8
 		private bool isStatic = false;
 		private bool isSelfCollide = false;
 		private bool allowAutoDisable = false;
@@ -53,6 +54,7 @@ namespace SDF
 			plugins = new Plugins(root);
 
 			canonical_link = GetAttribute<string>("canonical_link");
+			placement_frame = GetAttribute<string>("placement_frame");
 			isStatic = GetValue<bool>("static");
 			isSelfCollide = GetValue<bool>("self_collide");
 			allowAutoDisable = GetValue<bool>("allow_auto_disable");
