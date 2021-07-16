@@ -46,8 +46,6 @@ namespace SDF
 
 			private void AddNavMeshObstalceForRobot()
 			{
-				const float NavMeshObstacleRobotScale = 0.5f;
-
 				var bounds = new UE.Bounds();
 				var renderers = transform.GetComponentsInChildren<UE.Renderer>();
 				for (var i = 0; i < renderers.Length; i++)
@@ -61,7 +59,7 @@ namespace SDF
 				navMeshObstacle.carvingMoveThreshold = CarvingMoveThreshold;
 				navMeshObstacle.carvingTimeToStationary = CarvingTimeToStationary;
 
-				navMeshObstacle.size = transform.rotation * bounds.size * NavMeshObstacleRobotScale;
+				navMeshObstacle.size = transform.rotation * bounds.size;
 			}
 
 			private void AddNavMeshObstalceForNonRobot()
