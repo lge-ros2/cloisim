@@ -83,19 +83,19 @@ more details in [here](https://github.com/lge-ros2/cloisim/tree/main/Assets/Scri
 
 #### Model Specific
 
-- LaserPlugin: help to publish 2D or 3D lidar data
-- CameraPlugin: help to publish 2D color image data or depth image data
-- MltiCameraPlugin: help to publish multiple color image data
-- RealSensePlugin: can handle ir1(left), ir2(right), depth, color
-- MicomPlugin: control micom input/output(sensor)
-- GpsPlugin: gps position in world
-- GroundTruthPlugin: Retrieve GroundTruth information
-- ActorPlugin: actor control using AI(Unity) components
+- `LaserPlugin`: help to publish 2D or 3D lidar data
+- `CameraPlugin`: help to publish 2D color image data or depth image data
+- `MultiCameraPlugin`: help to publish multiple color image data
+- `RealSensePlugin`: can handle ir1(left), ir2(right), depth, color
+- `MicomPlugin`: control micom input/output(sensor)
+- `GpsPlugin`: gps position in world
+- `ActorPlugin`: add actor control functionality using AI(Unity) components
 
 #### World Specific
 
-- ElevatorSystemPlugin: control(lifting, cal) elevators
-- GroundTruthPlugin: retrieve all information(position, size, velocity) for objects
+- `ElevatorSystemPlugin`: control(lifting, cal) elevators
+- `GroundTruthPlugin`: retrieve all information(position, size, velocity) for objects
+- `ActorControlPlugin`: controls actor using AI(Unity) components(actor which loaded `ActorPlugin`)
 
 ## How it works
 
@@ -124,7 +124,7 @@ For the performance in terms of collision handling, designing collision geometry
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.13f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.3.14f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 20.04.2 LTS

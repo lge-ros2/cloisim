@@ -24,7 +24,7 @@ public class ActorAgent : MonoBehaviour
 
 	public float goalTolerance = 0.1f;
 
-	public float m_MaxTargetRange = 10f;
+	public float m_MaxTargetRange = 5f;
 
 	private bool isRandomWalking = true;
 
@@ -46,6 +46,7 @@ public class ActorAgent : MonoBehaviour
 		m_Animation = GetComponent<Animation>();
 		m_Agent.obstacleAvoidanceType = ObstacleAvoidanceType.MedQualityObstacleAvoidance;
 		m_Agent.agentTypeID = WorldNavMeshBuilder.AgentTypeId;
+		m_Agent.autoTraverseOffMeshLink = false;
 	}
 
 	void Start()

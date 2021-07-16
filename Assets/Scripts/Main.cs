@@ -152,13 +152,17 @@ public class Main: MonoBehaviour
 #if UNITY_EDITOR
 #	if UNITY_EDITOR_LINUX
 		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/linux-x64/native/libassimp";
-#	else
+#	elif UNITY_EDITOR_OSX // TODO: need to be verified,
+		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/osx-x64/native/libassimp";
+#	else // == UNITY_EDITOR_WIN
 		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/win-x64/native/assimp";
 #	endif
 #else
 #	if UNITY_STANDALONE_WIN
 		var assimpLibraryPath = "./CLOiSim_Data/Plugins/x86_64/assimp";
-#	else
+#	elif UNITY_STANDALONE_OSX // TODO: need to be verified,
+		var assimpLibraryPath = "./Contents/PlugIns/libassimp";
+#	else // == UNITY_STANDALONE_LINUX
 		var assimpLibraryPath = "./CLOiSim_Data/Plugins/libassimp";
 #	endif
 #endif
@@ -320,17 +324,22 @@ public class Main: MonoBehaviour
 
 		transformGizmo?.ClearTargets();
 
+		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Visual>())
+		{
+			helper.Reset();
+		}
+
 		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Actor>())
 		{
 			helper.Reset();
 		}
 
-		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Model>())
+		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Link>())
 		{
 			helper.Reset();
 		}
 
-		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Link>())
+		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Model>())
 		{
 			helper.Reset();
 		}
@@ -368,5 +377,7 @@ public class Main: MonoBehaviour
 	{
 		Main.bridgeManager.Dispose();
 		Main.simulationService.Dispose();
+
+		Assimp.Unmanaged.AssimpLibrary.Instance.FreeLibrary();
 	}
 }

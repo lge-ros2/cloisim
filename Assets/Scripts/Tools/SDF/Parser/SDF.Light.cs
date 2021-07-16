@@ -47,6 +47,7 @@ namespace SDF
 		}
 
 		public bool cast_shadow = false;
+		public double intensity = 1; // from 1.8 spec
 		public Color diffuse = new Color(1, 1, 1, 1);
 		public Color specular = new Color(0.1, 0.1, 0.1, 1.0);
 
@@ -69,6 +70,11 @@ namespace SDF
 		protected override void ParseElements()
 		{
 			cast_shadow = GetValue<bool>("cast_shadows");
+
+			if (IsValidNode("intensity"))
+			{
+				intensity = GetValue<double>("intensity");
+			}
 
 			if (IsValidNode("diffuse"))
 			{
