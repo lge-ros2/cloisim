@@ -183,7 +183,6 @@ public class ObjectSpawning : MonoBehaviour
 
 		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
 		navMeshObstacle.carving = true;
-		// navMeshObstacle.size = targetMesh.bounds.size;
 		navMeshObstacle.size = Vector3.one;
 		navMeshObstacle.carvingMoveThreshold = 0.1f;
 		navMeshObstacle.carvingTimeToStationary = 0.2f;
