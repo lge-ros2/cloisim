@@ -13,6 +13,9 @@ namespace SDF
 	{
 		public class Model : Base
 		{
+			private float CarvingMoveThreshold = 0.1f;
+			private float CarvingTimeToStationary = 0.3f;
+
 			public bool hasRootArticulationBody;
 
 			[UE.Header("SDF Properties")]
@@ -29,21 +32,70 @@ namespace SDF
 				{
 					if (hasRootArticulationBody)
 					{
-						var navMeshObstacle = gameObject.AddComponent<UEAI.NavMeshObstacle>();
-						navMeshObstacle.carving = true;
-						navMeshObstacle.carveOnlyStationary = isStatic ? true : false;
-
-						var bounds = new UE.Bounds();
-						var renderers = transform.GetComponentsInChildren<UE.Renderer>();
-						for (var i = 0; i < renderers.Length; i++)
+						if (IsRobotModel())
 						{
-							bounds.size = UE.Vector3.Max(bounds.size, renderers[i].bounds.size);
+							AddNavMeshObstalceForRobot();
 						}
-						bounds.size = transform.rotation * bounds.size;
-						navMeshObstacle.carvingMoveThreshold = 0.2f;
-						navMeshObstacle.size = bounds.size * 0.7f;
+						else
+						{
+							AddNavMeshObstalceForNonRobot();
+						}
 					}
 				}
+			}
+
+			private void AddNavMeshObstalceForRobot()
+			{
+				const float NavMeshObstacleRobotScale = 0.5f;
+
+				var bounds = new UE.Bounds();
+				var renderers = transform.GetComponentsInChildren<UE.Renderer>();
+				for (var i = 0; i < renderers.Length; i++)
+				{
+					bounds.Encapsulate(renderers[i].bounds.size);
+				}
+
+				var navMeshObstacle = gameObject.AddComponent<UEAI.NavMeshObstacle>();
+				navMeshObstacle.carving = true;
+				navMeshObstacle.carveOnlyStationary = false;
+				navMeshObstacle.carvingMoveThreshold = CarvingMoveThreshold;
+				navMeshObstacle.carvingTimeToStationary = CarvingTimeToStationary;
+
+				navMeshObstacle.size = transform.rotation * bounds.size * NavMeshObstacleRobotScale;
+			}
+
+			private void AddNavMeshObstalceForNonRobot()
+			{
+				var colliders = transform.GetComponentsInChildren<UE.Collider>();
+				for (var i = 0; i < colliders.Length; i++)
+				{
+					var parentObject = colliders[i].transform.parent;
+					if (parentObject != null && parentObject.CompareTag("Collision"))
+					{
+						var navMeshObstacle = parentObject.gameObject.AddComponent<UEAI.NavMeshObstacle>();
+						navMeshObstacle.carving = true;
+						navMeshObstacle.carveOnlyStationary = true;
+						navMeshObstacle.carvingMoveThreshold = CarvingMoveThreshold;
+						navMeshObstacle.carvingTimeToStationary = CarvingTimeToStationary;
+
+						navMeshObstacle.size = transform.rotation * colliders[i].bounds.size;
+					}
+				}
+			}
+
+			private bool IsRobotModel()
+			{
+				var artBodies = GetComponentsInChildren<UE.ArticulationBody>();
+				var artMaxIndex = 0;
+				foreach (var artBody in artBodies)
+				{
+					if (artBody.index > artMaxIndex)
+					{
+						artMaxIndex = artBody.index;
+					}
+				}
+
+				return (artMaxIndex > 1) ? true : false;
 			}
 
 			private void ConvertToStaticLink()
