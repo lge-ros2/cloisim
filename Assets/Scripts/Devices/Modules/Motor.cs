@@ -5,6 +5,7 @@
  */
 
 using UnityEngine;
+using UnityEngine.Assertions.Comparers;
 
 public class Motor : Articulation
 {
@@ -148,7 +149,7 @@ public class Motor : Articulation
 	{
 		var compensatingVelocityRatio = 0f;
 
-		if (Mathf.Abs(targetAngularVelocity) < float.Epsilon || targetAngularVelocity == 0)
+		if (Mathf.Abs(targetAngularVelocity) < Quaternion.kEpsilon)
 		{
 			_enableMotor = false;
 		}
@@ -227,6 +228,6 @@ public class Motor : Articulation
 		var motorVelocity = Mathf.DeltaAngle(_prevJointPosition, jointPosition) / duration;
 		_prevJointPosition = jointPosition;
 
-		return motorVelocity;
+		return (Mathf.Approximately(motorVelocity, Quaternion.kEpsilon)) ? 0 : motorVelocity;
 	}
 }
