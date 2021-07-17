@@ -20,59 +20,18 @@ namespace SensorDevices
 	{
 		private messages.LaserScanStamped laserScanStamped = null;
 
-		readonly public struct MinMax
-		{
-			public readonly double min;
-			public readonly double max;
-			public readonly double range;
-
-			public MinMax(in double min = 0, in double max = 0)
-			{
-				this.min = min;
-				this.max = max;
-				this.range = max - min;
-			}
-		}
-
-		readonly public struct Scan
-		{
-			public readonly uint samples;
-			public readonly double resolution;
-			public readonly MinMax angle; // degree
-			public readonly double angleStep;
-
-			public Scan(in uint samples, in double angleMinRad, in double angleMaxRad, in double resolution = 1)
-			{
-				this.samples = samples;
-				this.resolution = resolution;
-				this.angle = new MinMax(angleMinRad * Mathf.Rad2Deg, angleMaxRad * Mathf.Rad2Deg);
-
-				var residual = (angle.range - 360d < double.Epsilon ) ? 0 : 1;
-				var rangeCount = resolution * samples - residual;
-
-				this.angleStep = (rangeCount <= 0) ? 0 : ((angle.range) / rangeCount);
-			}
-
-			public Scan(in uint samples)
-			{
-				this.samples = samples;
-				this.resolution = 1;
-				this.angle = new MinMax();
-				this.angleStep = 1;
-			}
-		}
-
 		private const float DEG180 = Mathf.PI * Mathf.Rad2Deg;
 		private const float DEG360 = DEG180 * 2;
 
 		private const float LaserCameraHFov = 120.0000000000f;
 		private const float LaserCameraVFov = 50.0000000000f;
+		private const float LaserCameraHFovHalf = LaserCameraHFov * 0.5f;
 
-		public MinMax range;
+		public LaserData.MinMax range;
 
-		public Scan horizontal;
+		public LaserData.Scan horizontal;
 
-		public Scan vertical;
+		public LaserData.Scan vertical;
 
 		private Transform lidarLink = null;
 		private Pose lidarSensorInitPose = new Pose();
@@ -139,9 +98,9 @@ namespace SensorDevices
 			laserScan.RangeMin = range.min;
 			laserScan.RangeMax = range.max;
 
-			if (vertical.Equals(default(Scan)))
+			if (vertical.Equals(default(LaserData.Scan)))
 			{
-				vertical = new Scan(1);
+				vertical = new LaserData.Scan(1);
 			}
 			laserScan.VerticalCount = vertical.samples;
 			laserScan.VerticalAngleMin = vertical.angle.min * Mathf.Deg2Rad;
@@ -178,7 +137,7 @@ namespace SensorDevices
 			laserCam.stereoTargetEye = StereoTargetEyeMask.None;
 
 			laserCam.orthographic = false;
-			laserCam.nearClipPlane = (float)range.min;
+			laserCam.nearClipPlane = (float)range.min * Mathf.Sin((90f - LaserCameraHFovHalf) * Mathf.Deg2Rad);
 			laserCam.farClipPlane = (float)range.max;
 			laserCam.cullingMask = LayerMask.GetMask("Default") | LayerMask.GetMask("Plane");
 
@@ -203,7 +162,7 @@ namespace SensorDevices
 
 			laserCam.targetTexture = targetDepthRT;
 
-			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(LaserCameraHFov, LaserCameraVFov, (float)range.min, (float)range.max);
+			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(LaserCameraHFov, LaserCameraVFov, laserCam.nearClipPlane, laserCam.farClipPlane);
 			laserCam.projectionMatrix = projMatrix;
 
 			var universalLaserCamData = laserCam.GetUniversalAdditionalCameraData();
@@ -247,29 +206,37 @@ namespace SensorDevices
 			var targetDepthRT = laserCam.targetTexture;
 			var width = targetDepthRT.width;
 			var height = targetDepthRT.height;
-			var halfLaserCamHFov = LaserCameraHFov * 0.5f;
-			var centerAngleOffset = (horizontal.angle.min < 0) ? 0f : halfLaserCamHFov;
+			var centerAngleOffset = (horizontal.angle.min < 0) ? 0f : LaserCameraHFovHalf;
 
 			for (var index = 0; index < numberOfLaserCamData; index++)
 			{
 				depthCamBuffers[index] = new LaserData.DepthCamBuffer(width, height);
 
 				var centerAngle = laserCameraRotationAngle * index + centerAngleOffset;
-				var data = new LaserData.LaserCamData(width, height, laserAngleResolution, centerAngle, halfLaserCamHFov);
-				data.rangeMax = (float)range.max;
+				var data = new LaserData.LaserCamData(width, height, laserAngleResolution, centerAngle, LaserCameraHFovHalf);
+				data.range = range;
 				laserCamData[index] = data;
 			}
 		}
 
-		public void SetupLaserFilter(in double filterAngleLower, in double filterAngleUpper)
+		public void SetupLaserAngleFilter(in double filterAngleLower, in double filterAngleUpper, in bool useIntensity = false)
 		{
-			if (GetPluginParameters() != null)
+			if (laserFilter == null)
 			{
-				// Get Paramters
-				var useIntensity = GetPluginParameters().GetValue<bool>("intensity");
 				laserFilter = new LaserFilter(laserScanStamped.Scan, useIntensity);
-				laserFilter.SetupFilter(filterAngleLower, filterAngleUpper);
 			}
+
+			laserFilter.SetupAngleFilter(filterAngleLower, filterAngleUpper);
+		}
+
+		public void SetupLaserRangeFilter(in double filterRangeMin, in double filterRangeMax, in bool useIntensity = false)
+		{
+			if (laserFilter == null)
+			{
+				laserFilter = new LaserFilter(laserScanStamped.Scan, useIntensity);
+			}
+
+			laserFilter.SetupRangeFilter(filterRangeMin, filterRangeMax);
 		}
 
 		private IEnumerator LaserCameraWorker()
@@ -473,7 +440,7 @@ namespace SensorDevices
 
 		protected override IEnumerator OnVisualize()
 		{
-			var visualDrawDuration = UpdatePeriod * 1.03f;
+			var visualDrawDuration = UpdatePeriod * 2.01f;
 
 			var startAngleH = (float)horizontal.angle.min;
 			var startAngleV = (float)vertical.angle.min;
@@ -488,7 +455,7 @@ namespace SensorDevices
 
 			while (true)
 			{
-				var lidarSensorWorldPosition = lidarLink.position + lidarSensorInitPose.position;
+				var rayStart = lidarLink.position + lidarSensorInitPose.position;
 				var rangeData = GetRangeData();
 
 				if (rangeData != null)
@@ -501,18 +468,15 @@ namespace SensorDevices
 						var rayAngleH = ((laserAngleResolution.H * scanIndexH)) + startAngleH;
 						var rayAngleV = ((laserAngleResolution.V * scanIndexV)) + startAngleV;
 
-						var rayRotation = Quaternion.AngleAxis((float)rayAngleH, transform.up) * Quaternion.AngleAxis((float)rayAngleV, transform.forward) * lidarLink.forward;
-						var rayStart = (rayRotation * rangeMin) + lidarSensorWorldPosition;
-
 						var ccwIndex = (uint)(rangeData.Length - scanIndex - 1);
 						var rayData = (float)rangeData[ccwIndex];
 
-						if (rayData > 0 && rayData < rangeMax)
+						if (rayData != float.NaN && rayData <= rangeMax)
 						{
 							rayColor.g = rayAngleV/(float)angleRangeV;
 
-							var rayDistance = rayData - rangeMin;
-							var rayDirection = rayRotation * rayDistance;
+							var rayRotation = Quaternion.AngleAxis((float)rayAngleH, transform.up) * Quaternion.AngleAxis((float)rayAngleV, transform.forward) * lidarLink.forward;
+							var rayDirection = rayRotation * (rayData);
 							Debug.DrawRay(rayStart, rayDirection, rayColor, visualDrawDuration, true);
 						}
 					}
