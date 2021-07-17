@@ -62,14 +62,14 @@ namespace SDF
 				var lidar = newSensorObject.AddComponent<SensorDevices.Lidar>();
 
 				lidar.DeviceName = GetFrameName(newSensorObject);
-				lidar.range = new SensorDevices.Lidar.MinMax(element.range.min, element.range.max);
+				lidar.range = new SensorDevices.LaserData.MinMax(element.range.min, element.range.max);
 				var horizontal = element.horizontal;
-				lidar.horizontal = new SensorDevices.Lidar.Scan(horizontal.samples, horizontal.min_angle, horizontal.max_angle, horizontal.resolution);
+				lidar.horizontal = new SensorDevices.LaserData.Scan(horizontal.samples, horizontal.min_angle, horizontal.max_angle, horizontal.resolution);
 
 				var vertical = element.vertical;
 				if (vertical != null)
 				{
-					lidar.vertical = new SensorDevices.Lidar.Scan(vertical.samples, vertical.min_angle, vertical.max_angle, vertical.resolution);
+					lidar.vertical = new SensorDevices.LaserData.Scan(vertical.samples, vertical.min_angle, vertical.max_angle, vertical.resolution);
 				}
 
 				if (element.noise != null)

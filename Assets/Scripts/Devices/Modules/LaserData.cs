@@ -12,6 +12,48 @@ namespace SensorDevices
 {
 	public static class LaserData
 	{
+		readonly public struct MinMax
+		{
+			public readonly double min;
+			public readonly double max;
+			public readonly double range;
+
+			public MinMax(in double min = 0, in double max = 0)
+			{
+				this.min = min;
+				this.max = max;
+				this.range = max - min;
+			}
+		}
+
+		readonly public struct Scan
+		{
+			public readonly uint samples;
+			public readonly double resolution;
+			public readonly MinMax angle; // degree
+			public readonly double angleStep;
+
+			public Scan(in uint samples, in double angleMinRad, in double angleMaxRad, in double resolution = 1)
+			{
+				this.samples = samples;
+				this.resolution = resolution;
+				this.angle = new MinMax(angleMinRad * Mathf.Rad2Deg, angleMaxRad * Mathf.Rad2Deg);
+
+				var residual = (angle.range - 360d < double.Epsilon ) ? 0 : 1;
+				var rangeCount = resolution * samples - residual;
+
+				this.angleStep = (rangeCount <= 0) ? 0 : ((angle.range) / rangeCount);
+			}
+
+			public Scan(in uint samples)
+			{
+				this.samples = samples;
+				this.resolution = 1;
+				this.angle = new MinMax();
+				this.angleStep = 1;
+			}
+		}
+
 		const int ColorFormatUnitSize = sizeof(float);
 
 		public struct AngleResolution
@@ -107,7 +149,7 @@ namespace SensorDevices
 			private float maxHAngleHalfTangent;
 			public AngleResolution angleResolution;
 			public float centerAngle;
-			public float rangeMax;
+			public MinMax range;
 
 			public readonly int horizontalBufferLength;
 			public readonly int verticalBufferLength;
@@ -132,7 +174,7 @@ namespace SensorDevices
 				this.EndAngleH = centerAngle + maxHAngleHalf;
  				this.TotalAngleH = this.maxHAngleHalf * 2f;
 
-				this.rangeMax = 0;
+				this.range = new MinMax();
 				this.horizontalBufferLength = bufferWidth;
 				this.verticalBufferLength = bufferHeight;
 				this.depthBuffer = default(NativeArray<float>);
@@ -193,7 +235,14 @@ namespace SensorDevices
 				var rayAngleH = angleResolution.H * indexH;
 				var rayAngleV = angleResolution.V * indexV;
 				var depthData = GetDepthData(rayAngleH, rayAngleV);
-				var rayDistance = (depthData > 1f) ? Mathf.Infinity : (depthData * rangeMax);
+
+				// filter range
+				var rayDistance = (depthData > 1f) ? Mathf.Infinity : (depthData * range.max);
+				if (rayDistance < range.min)
+				{
+					rayDistance = double.NaN;
+				}
+
 				laserData[index] = (double)rayDistance;
 			}
 

@@ -67,10 +67,17 @@ public class Odometry
 
 		// compute odometric pose
 		var poseLinear = wheelInfo.wheelRadius * (wheelCircumLeft + wheelCircumRight) * 0.5f;
+		poseLinear = Mathf.Approximately(poseLinear, Quaternion.kEpsilon) ? 0 : poseLinear;
 
 		var halfDeltaTheta = deltaTheta * 0.5f;
-		_odomPose.z += poseLinear * Mathf.Cos(_odomPose.y + halfDeltaTheta);
-		_odomPose.x += poseLinear * Mathf.Sin(_odomPose.y + halfDeltaTheta);
+		var poseZ = poseLinear * Mathf.Cos(_odomPose.y + halfDeltaTheta);
+		poseZ = Mathf.Approximately(poseZ, Quaternion.kEpsilon) ? 0 : poseZ;
+
+		var poseX = poseLinear * Mathf.Sin(_odomPose.y + halfDeltaTheta);
+		poseX = Mathf.Approximately(poseX, Quaternion.kEpsilon) ? 0 : poseX;
+
+		_odomPose.z += poseZ;
+		_odomPose.x += poseX;
 		_odomPose.y += deltaTheta;
 
 		// Debug.LogFormat("({0}, {1}, {2}) = {3} {4} {5}, L: {6}, R: {7}, {8}", _odomPose.z, _odomPose.x, _odomPose.y, poseLinear, Mathf.Sin(_odomPose.y + halfDeltaTheta), Mathf.Cos(_odomPose.y + halfDeltaTheta), wheelCircumLeft, wheelCircumRight, halfDeltaTheta)
@@ -115,7 +122,6 @@ public class Odometry
 		else
 		{
 			var yaw = (float)((angularVelocityRight - angularVelocityLeft) * wheelInfo.wheelRadius  / wheelInfo.wheelTread);
-				// odomMessage.LinearVelocity.Right - odomMessage.LinearVelocity.Left) / wheelInfo.wheelTread);
 			deltaTheta = yaw * duration;
 		}
 
@@ -128,11 +134,13 @@ public class Odometry
 			deltaTheta += _2_PI;
 		}
 
+		deltaTheta = Mathf.Approximately(deltaTheta, Quaternion.kEpsilon) ? 0 : deltaTheta;
+
 		CalculateOdometry(duration, angularVelocityLeft, angularVelocityRight, deltaTheta);
 
 		DeviceHelper.SetVector3d(odomMessage.Pose, DeviceHelper.Convert.Reverse(_odomPose));
 
-		odomMessage.TwistLinear.X = odomTranslationalVelocity;
+		odomMessage.TwistLinear.X = DeviceHelper.Convert.CurveOrientation(odomTranslationalVelocity);
 		odomMessage.TwistAngular.Z = DeviceHelper.Convert.CurveOrientation(odomRotationalVelocity);
 
 		motorLeft.Feedback.SetRotatingVelocity(odomRotationalVelocity);
