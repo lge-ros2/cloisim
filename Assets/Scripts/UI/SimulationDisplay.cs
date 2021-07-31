@@ -14,9 +14,10 @@ public partial class SimulationDisplay : MonoBehaviour
 	private Clock clock = null;
 	private ObjectSpawning objectSpawning = null;
 	private CameraControl cameraControl = null;
+
 	private StringBuilder eventMessage = new StringBuilder();
-	private StringBuilder sbTimeInfo = new StringBuilder();
-	private StringBuilder sbPointInfo = new StringBuilder();
+	private StringBuilder sbTimeInfo = new StringBuilder(78);
+	private StringBuilder sbPointInfo = new StringBuilder(38);
 
 	private Vector3 pointInfo = Vector3.zero;
 
@@ -27,10 +28,10 @@ public partial class SimulationDisplay : MonoBehaviour
 	private const int textLeftMargin = 10;
 	private const int textHeight = 19;
 
-	private const int textWidthFps = 80;
+	private const int textWidthFps = 70;
 	private const int TextWidthPointInfo = 300;
 	private const int textWidthVersion = 50;
-	private const int textWidthSimulationInfo = 510;
+	private const int textWidthSimulationInfo = 490;
 	private const int textWidthEvent = 800;
 
 	private Color logMessageColor = Color.red;
@@ -49,9 +50,14 @@ public partial class SimulationDisplay : MonoBehaviour
 	private GUIStyle style;
 	private Texture2D textureBackground;
 
+	[Header("Data")]
+	private string versionInfo;
+
 	// Start is called before the first frame update
 	void Awake()
 	{
+		versionInfo = Application.version;
+
 		var coreObject = Main.CoreObject;
 		objectSpawning = coreObject.GetComponent<ObjectSpawning>();
 		cameraControl = GetComponentInChildren<CameraControl>();
@@ -101,19 +107,18 @@ public partial class SimulationDisplay : MonoBehaviour
 
 	private string GetTimeInfoString()
 	{
-		var simTime = (clock == null) ? Time.time : clock.SimTime;
-		var realTime = (clock == null) ? Time.realtimeSinceStartup : clock.RealTime;
-
-		var simTs = TimeSpan.FromSeconds(simTime);
-		var realTs = TimeSpan.FromSeconds(realTime);
-		var diffTs1 = realTs - simTs;
-
-		var currentSimTime = GetBoldText(simTs.ToString(@"d\:hh\:mm\:ss\.fff"));
-		var currentRealTime = GetBoldText(realTs.ToString(@"d\:hh\:mm\:ss\.fff"));
-		var diffRealSimTime = GetBoldText(diffTs1.ToString(@"d\:hh\:mm\:ss\.fff"));
+		var currentSimTime = (clock == null) ? string.Empty : clock.ToHMS().SimTime.ToString();
+		var currentRealTime = (clock == null) ? string.Empty : clock.ToHMS().RealTime.ToString();
+		var diffRealSimTime = (clock == null) ? string.Empty : clock.ToHMS().DiffTime.ToString();
 
 		sbTimeInfo.Clear();
-		sbTimeInfo.AppendFormat("Time: Sim [{0}]  Real[{1}]  Real-Sim [{2}]", currentSimTime, currentRealTime, diffRealSimTime);
+		sbTimeInfo.Append("Time: Sim [");
+		sbTimeInfo.Append(currentSimTime);
+		sbTimeInfo.Append("] Real[");
+		sbTimeInfo.Append(currentRealTime);
+		sbTimeInfo.Append("] Real-Sim [");
+		sbTimeInfo.Append(diffRealSimTime);
+		sbTimeInfo.Append("]");
 		return sbTimeInfo.ToString();
 	}
 
@@ -122,21 +127,31 @@ public partial class SimulationDisplay : MonoBehaviour
 		this.pointInfo = point;
 	}
 
-	private void DrawPointInfoText(GUIStyle style)
+	private void DrawPointInfoText()
 	{
 		rectPointInfo.y = Screen.height - textHeight - bottomMargin;
+		style.fontStyle = FontStyle.Bold;
 		style.normal.textColor = new Color(1.0f, 0.93f, 0.0f, 1);
-		sbPointInfo.AppendFormat("HitPoint {0}", pointInfo.ToString("F4"));
-		DrawLabelWithShadow(rectPointInfo, sbPointInfo.ToString(), style);
 		sbPointInfo.Clear();
+		sbPointInfo.Append("HitPoint (");
+		sbPointInfo.Append(pointInfo.x);
+		sbPointInfo.Append(", ");
+		sbPointInfo.Append(pointInfo.y);
+		sbPointInfo.Append(", ");
+		sbPointInfo.Append(pointInfo.z);
+		sbPointInfo.Append(")");
+		DrawLabelWithShadow(rectPointInfo, sbPointInfo.ToString());
 	}
 
-	private string GetBoldText(in string value)
+	private void DrawTimeInfoText()
 	{
-		return ("<b>" + value + "</b>");
+		var simulationInfo = GetTimeInfoString();
+		rectSimulationInfo.y = Screen.height - textHeight - bottomMargin;
+		style.normal.textColor = new Color(0.9f, 0.9f, 0.9f, 1);
+		DrawLabelWithShadow(rectSimulationInfo, simulationInfo);
 	}
 
-	private void DrawLabelWithShadow(in Rect rect, in string value, GUIStyle style)
+	private void DrawLabelWithShadow(in Rect rect, in string value)
 	{
 		var styleShadow = new GUIStyle(style);
 		styleShadow.normal.textColor = new Color(0, 0, 0, 0.85f);
@@ -152,6 +167,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	{
 		style.alignment = TextAnchor.MiddleLeft;
 		style.normal.textColor = new Color(0, 0, 0, 0.85f);
+		style.fontStyle = FontStyle.Bold;
 		style.fontSize = labelFontSize;
 		style.wordWrap = true;
 		style.clipping = TextClipping.Overflow;
@@ -159,24 +175,19 @@ public partial class SimulationDisplay : MonoBehaviour
 		style.stretchWidth = false;
 
 		// version info
-		var versionString = GetBoldText(Application.version);
 		style.normal.textColor = Color.green;
-		DrawLabelWithShadow(rectVersion, versionString, style);
+		DrawLabelWithShadow(rectVersion, versionInfo);
 
-		// Simulation time info
-		var simulationInfo = GetTimeInfoString();
-		rectSimulationInfo.y = Screen.height - textHeight - bottomMargin;
-		style.normal.textColor = new Color(0.9f, 0.9f, 0.9f, 1);
-		DrawLabelWithShadow(rectSimulationInfo, simulationInfo, style);
+		DrawTimeInfoText();
 
-		DrawFPSText(style);
+		DrawFPSText();
 
-		DrawPointInfoText(style);
+		DrawPointInfoText();
 
 		// logging: error message or event message
 		rectLogMessage.y = Screen.height - (textHeight * 2) - bottomMargin;
 		style.normal.textColor = logMessageColor;
-		DrawLabelWithShadow(rectLogMessage, eventMessage.ToString(), style);
+		DrawLabelWithShadow(rectLogMessage, eventMessage.ToString());
 	}
 
 	void OnGUI()

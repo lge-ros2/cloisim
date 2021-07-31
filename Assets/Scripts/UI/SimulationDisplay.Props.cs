@@ -11,7 +11,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	[Header("Properties for Props menu")]
 	private const float guiHeight = 25f;
 	private const float toolbarWidth = 190f;
-	private string[] toolbarStrings;
+	private readonly string[] toolbarStrings = new string[] { "Box", "Cylinder", "Sphere" };
 	private string scaleFactorString = "0.5";
 	private int toolbarSelected = 0;
 	private string prevScaleFactorString;
@@ -21,7 +21,7 @@ public partial class SimulationDisplay : MonoBehaviour
 
 	private void InitPropsMenu()
 	{
-		toolbarStrings = new string[] { "Box", "Cylinder", "Sphere" };
+		// toolbarStrings = new string[] { "Box", "Cylinder", "Sphere" };
 	}
 
 	private void DrawPropsMenus()
@@ -43,13 +43,13 @@ public partial class SimulationDisplay : MonoBehaviour
 		rectToolbarLabel.width = 45;
 
 		style.normal.textColor = Color.white;
-		DrawLabelWithShadow(rectToolbarLabel, "Props: ", style);
+		DrawLabelWithShadow(rectToolbarLabel, "Props: ");
 
 		var rectScaleLabel = rectToolbar;
 		rectScaleLabel.x += (toolbarWidth + 7);
 		rectScaleLabel.width = 50;
 		style.normal.textColor = Color.white;
-		DrawLabelWithShadow(rectScaleLabel, "Scale: ", style);
+		DrawLabelWithShadow(rectScaleLabel, "Scale: ");
 
 		var rectScale = rectScaleLabel;
 		rectScale.x += 50;
