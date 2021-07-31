@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Collections;
+using System.Linq;
 using UE = UnityEngine;
 using messages = cloisim.msgs;
 
@@ -295,10 +296,9 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	void LateUpdate()
 	{
-		var keys = new List<int>(trackingObjectList.Keys);
-		for (var i = 0; i < trackingObjectList.Count; i++)
+		var keys = trackingObjectList.Keys.ToArray();
+		foreach (var key in keys)
 		{
-			var key = keys[i];
 			var trackingObject = trackingObjectList[key];
 			trackingObject.Update();
 			trackingObjectList[key] = trackingObject;
