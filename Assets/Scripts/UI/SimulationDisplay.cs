@@ -31,7 +31,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private const int textWidthFps = 70;
 	private const int TextWidthPointInfo = 300;
 	private const int textWidthVersion = 50;
-	private const int textWidthSimulationInfo = 490;
+	private const int textWidthSimulationInfo = 500;
 	private const int textWidthEvent = 800;
 
 	private Color logMessageColor = Color.red;
