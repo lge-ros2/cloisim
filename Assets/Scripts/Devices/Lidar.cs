@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
 using System.Collections;
 using System;
 using UnityEngine.Rendering.Universal;
@@ -20,6 +19,7 @@ namespace SensorDevices
 	{
 		private messages.LaserScanStamped laserScanStamped = null;
 
+		private const int BatchSize = 8;
 		private const float DEG180 = Mathf.PI * Mathf.Rad2Deg;
 		private const float DEG360 = DEG180 * 2;
 
@@ -304,8 +304,6 @@ namespace SensorDevices
 
 				if (dataIndex > -1)
 				{
-					const int batchSize = 64;
-
 					var depthCamBuffer = depthCamBuffers[dataIndex];
 
 					var readbackData = request.GetData<byte>();
@@ -314,14 +312,14 @@ namespace SensorDevices
 
 					if (depthCamBuffer.depthBuffer.IsCreated)
 					{
-						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), batchSize);
+						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
 						jobHandleDepthCamBuffer.Complete();
 
 						var data = laserCamData[dataIndex];
 						data.depthBuffer = depthCamBuffer.depthBuffer;
 						data.Allocate();
 
-						var jobHandle = data.Schedule(data.OutputLength(), batchSize);
+						var jobHandle = data.Schedule(data.OutputLength(), BatchSize);
 						jobHandle.Complete();
 
 						laserDataOutput[dataIndex].data = data.GetLaserData();
