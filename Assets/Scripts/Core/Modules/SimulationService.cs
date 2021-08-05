@@ -33,17 +33,20 @@ public class SimulationService : IDisposable
 
 		InitializeServices();
 
-		wsServer.Start();
+ 		wsServer.Start();
 
 		if (wsServer.IsListening)
 		{
 			var wsLog = new StringBuilder();
-			wsLog.AppendFormat("Listening on port {0}, and providing services are:", wsServer.Port);
+			wsLog.Append("Listening on port ");
+			wsLog.Append(wsServer.Port);
+			wsLog.Append(", and providing services are:");
 			wsLog.AppendLine();
 
 			foreach (var path in wsServer.WebSocketServices.Paths)
 			{
-				wsLog.AppendFormat(" - {0}", path);
+				wsLog.Append(" - ");
+				wsLog.Append(path);
 				wsLog.AppendLine();
 			}
 

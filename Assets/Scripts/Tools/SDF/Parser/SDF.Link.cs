@@ -60,8 +60,10 @@ namespace SDF
 		private Sensors sensors;
 
 		// <projector> : TBD
-		// <audio source> : TBD
+		// <audio_sink> : TBD
+		// <audio_source> : TBD
 		// <battery> : TBD
+		// <light> : TBD
 
 		public bool Gravity => gravity;
 

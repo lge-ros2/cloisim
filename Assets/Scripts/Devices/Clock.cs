@@ -5,6 +5,8 @@
  */
 
 using UnityEngine;
+using System;
+using System.Text;
 using messages = cloisim.msgs;
 
 public class Clock : Device
@@ -12,8 +14,8 @@ public class Clock : Device
 	private messages.WorldStatistics worldStat = null;
 
 #region Filter times
-	private messages.Time prevSimTime = new messages.Time();
-	private messages.Time prevRealTime = new messages.Time();
+	private double prevSimTime = 0f;
+	private double prevRealTime = 0f;
 #endregion
 
 	private double restartedSimTime = 0;
@@ -22,9 +24,55 @@ public class Clock : Device
 	private double currentSimTime = 0;
 	private double currentRealTime = 0;
 
+#region time in hms format
+	public class HMS
+	{
+		private StringBuilder simTime = new StringBuilder(18);
+		private StringBuilder realTime = new StringBuilder(18);
+		private StringBuilder diffTime = new StringBuilder(18);
+
+		public void SetSimTime(in TimeSpan ts)
+		{
+			SetTimeString(ref this.simTime, ts);
+		}
+
+		public void SetRealTime(in TimeSpan ts)
+		{
+			SetTimeString(ref this.realTime, ts);
+		}
+
+		public void SetDiffTime(in TimeSpan ts)
+		{
+			SetTimeString(ref this.diffTime, ts);
+		}
+
+		private void SetTimeString(ref StringBuilder target, in TimeSpan ts)
+		{
+			target.Clear();
+			target.Append(ts.Days.ToString());
+			target.Append("d ");
+			target.Append(ts.Hours.ToString());
+			target.Append(":");
+			target.Append(ts.Minutes.ToString());
+			target.Append(":");
+			target.Append(ts.Seconds.ToString());
+			target.Append(".");
+			target.Append(ts.Milliseconds.ToString());
+		}
+
+		public string SimTime => simTime.ToString();
+		public string RealTime => realTime.ToString();
+		public string DiffTime => diffTime.ToString();
+	}
+
+	private HMS hms = new HMS();
+#endregion
+
 	public double SimTime => currentSimTime;
 
 	public double RealTime => currentRealTime;
+
+	public HMS ToHMS() => hms;
 
 	protected override void OnAwake()
 	{
@@ -41,10 +89,21 @@ public class Clock : Device
 		worldStat.RealTime = new messages.Time();
 	}
 
-	private void FixedUpdate()
+	void FixedUpdate()
 	{
 		currentSimTime = Time.timeAsDouble - restartedSimTime;
 		currentRealTime = Time.realtimeSinceStartupAsDouble - restartedRealTime;
+	}
+
+	void LateUpdate()
+	{
+		var simTs = TimeSpan.FromSeconds(SimTime);
+		var realTs = TimeSpan.FromSeconds(RealTime);
+		var diffTs = realTs - simTs;
+
+		hms.SetSimTime(simTs);
+		hms.SetRealTime(realTs);
+		hms.SetDiffTime(diffTs);
 	}
 
 	protected override void GenerateMessage()
@@ -53,23 +112,20 @@ public class Clock : Device
 		DeviceHelper.SetCurrentTime(worldStat.RealTime, true);
 
 		// filter same clock info
-		if (prevSimTime.Sec.Equals(worldStat.SimTime.Sec) && prevSimTime.Nsec >= worldStat.SimTime.Nsec)
+		if (prevSimTime >= SimTime)
 		{
-			// Debug.LogWarningFormat("previous sim time is same {0}.{1} >= {2}.{3}", prevSimTime.Sec, prevSimTime.Nsec, worldStat.SimTime.Sec, worldStat.SimTime.Nsec);
+			// Debug.LogWarningFormat("Filter SimTime, Prev:{0} >= Current:{1}", prevSimTime, SimTime);
 		}
-		else if (prevRealTime.Sec.Equals(worldStat.RealTime.Sec) && prevRealTime.Nsec >= worldStat.RealTime.Nsec)
+		else if (prevRealTime >= RealTime)
 		{
-			// Debug.LogWarningFormat("previous real time is same {0}.{1} >= {2}.{3}", prevRealTime.Sec, prevRealTime.Nsec, worldStat.RealTime.Sec, worldStat.RealTime.Nsec);
+			// Debug.LogWarningFormat("Filter RealTime, Prev:{0} >= Current:{1}", prevRealTime, RealTime);
 		}
 		else
 		{
 			PushDeviceMessage<messages.WorldStatistics>(worldStat);
+			prevSimTime = SimTime;
+			prevRealTime = RealTime;
 		}
-
-		prevSimTime.Sec = worldStat.SimTime.Sec;
-		prevSimTime.Nsec = worldStat.SimTime.Nsec;
-		prevRealTime.Sec = worldStat.RealTime.Sec;
-		prevRealTime.Nsec = worldStat.RealTime.Nsec;
 	}
 
 	public void ResetTime()

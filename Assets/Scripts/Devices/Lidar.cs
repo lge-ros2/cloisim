@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
 using System.Collections;
 using System;
 using UnityEngine.Rendering.Universal;
@@ -20,6 +19,7 @@ namespace SensorDevices
 	{
 		private messages.LaserScanStamped laserScanStamped = null;
 
+		private const int BatchSize = 8;
 		private const float DEG180 = Mathf.PI * Mathf.Rad2Deg;
 		private const float DEG360 = DEG180 * 2;
 
@@ -43,7 +43,7 @@ namespace SensorDevices
 		private LaserData.AngleResolution laserAngleResolution;
 
 		private int numberOfLaserCamData = 0;
-		private Dictionary<AsyncGPUReadbackRequest, int> readbacks = new Dictionary<AsyncGPUReadbackRequest, int>();
+		private AsyncGPUReadbackRequest[] readbacks;
 		private LaserData.DepthCamBuffer[] depthCamBuffers;
 		private LaserData.LaserCamData[] laserCamData;
 		private LaserData.LaserDataOutput[] laserDataOutput;
@@ -141,7 +141,7 @@ namespace SensorDevices
 			laserCam.farClipPlane = (float)range.max;
 			laserCam.cullingMask = LayerMask.GetMask("Default") | LayerMask.GetMask("Plane");
 
-			laserCam.clearFlags = CameraClearFlags.Color;
+			laserCam.clearFlags = CameraClearFlags.Nothing;
 			laserCam.depthTextureMode = DepthTextureMode.Depth;
 
 			laserCam.renderingPath = RenderingPath.DeferredLighting;
@@ -166,9 +166,15 @@ namespace SensorDevices
 			laserCam.projectionMatrix = projMatrix;
 
 			var universalLaserCamData = laserCam.GetUniversalAdditionalCameraData();
+			universalLaserCamData.renderShadows = false;
+			universalLaserCamData.allowXRRendering = false;
+			universalLaserCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
+			universalLaserCamData.renderType = CameraRenderType.Base;
+			universalLaserCamData.requiresColorOption = CameraOverrideOption.Off;
+			universalLaserCamData.requiresDepthOption = CameraOverrideOption.Off;
 			universalLaserCamData.requiresColorTexture = false;
 			universalLaserCamData.requiresDepthTexture = true;
-			universalLaserCamData.renderShadows = false;
+			universalLaserCamData.cameraStack.Clear();
 
 			var shader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(shader);
@@ -199,6 +205,7 @@ namespace SensorDevices
 			const float laserCameraRotationAngle = LaserCameraHFov;
 			numberOfLaserCamData = Mathf.CeilToInt(DEG360 / laserCameraRotationAngle);
 
+			readbacks = new AsyncGPUReadbackRequest[numberOfLaserCamData];
 			laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
 			depthCamBuffers = new LaserData.DepthCamBuffer[numberOfLaserCamData];
 			laserDataOutput = new LaserData.LaserDataOutput[numberOfLaserCamData];
@@ -263,7 +270,7 @@ namespace SensorDevices
 					{
 						laserCam.Render();
 						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32, OnCompleteAsyncReadback);
-						readbacks.Add(readbackRequest, dataIndex);
+						readbacks[dataIndex] = readbackRequest;
 						yield return null;
 					}
 
@@ -285,10 +292,18 @@ namespace SensorDevices
 
 			if (request.done)
 			{
-				if (readbacks.TryGetValue(request, out var dataIndex))
+				var dataIndex = -1;
+				for (var i = 0; i < readbacks.Length; i++)
 				{
-					const int batchSize = 64;
+					if (request.Equals(readbacks[i]))
+					{
+						dataIndex = i;
+						break;
+					}
+				}
 
+				if (dataIndex > -1)
+				{
 					var depthCamBuffer = depthCamBuffers[dataIndex];
 
 					var readbackData = request.GetData<byte>();
@@ -297,14 +312,14 @@ namespace SensorDevices
 
 					if (depthCamBuffer.depthBuffer.IsCreated)
 					{
-						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), batchSize);
+						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
 						jobHandleDepthCamBuffer.Complete();
 
 						var data = laserCamData[dataIndex];
 						data.depthBuffer = depthCamBuffer.depthBuffer;
 						data.Allocate();
 
-						var jobHandle = data.Schedule(data.OutputLength(), batchSize);
+						var jobHandle = data.Schedule(data.OutputLength(), BatchSize);
 						jobHandle.Complete();
 
 						laserDataOutput[dataIndex].data = data.GetLaserData();
@@ -320,8 +335,10 @@ namespace SensorDevices
 					depthCamBuffer.Deallocate();
 
 					readbackData.Dispose();
-
-					readbacks.Remove(request);
+				}
+				else
+				{
+					Debug.LogWarning("Wrong data Index: " + dataIndex);
 				}
 			}
 		}
