@@ -94,7 +94,7 @@ namespace SDF
 
 				if (articulationBodyChild == null)
 				{
-					Debug.LogWarning("Articulation Body is NULL, will create an articulation body for linking");
+					Debug.LogWarning("Articulation Body is NULL, will create an articulation body for linking, parent: " + linkObjectParent.name + ", child: " + linkObjectChild.name);
 					articulationBodyChild = CreateArticulationBody(linkObjectChild.gameObject);
 				}
 
