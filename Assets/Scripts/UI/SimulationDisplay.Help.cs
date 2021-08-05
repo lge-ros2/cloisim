@@ -131,6 +131,6 @@ public partial class SimulationDisplay : MonoBehaviour
 		var helpStatusMsg = "Vertical Camera Moving Lock(Space) " + ((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
 		// var helpStatusMsg2 = "\nStatic Object Selectable(O) " + ((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
 		rectHelpStatus.x = Screen.width - rectHelpButton.width - helpStatusWidth - textLeftMargin - textLeftMargin;
-		DrawLabelWithShadow(rectHelpStatus, helpStatusMsg, style);
+		DrawLabelWithShadow(rectHelpStatus, helpStatusMsg);
 	}
 }

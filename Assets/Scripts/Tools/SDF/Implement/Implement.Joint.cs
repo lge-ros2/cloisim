@@ -21,7 +21,7 @@ namespace SDF
 				var anchorPose = new UE.Pose();
 				if (modelTransformChild.Equals(modelTransformParent) || modelHelperChild.IsFirstChild)
 				{
-					linkChild.SetParent(linkParent);
+					linkChild.SetParent(linkParent, false);
 
 					// Set anchor pose
 					anchorPose.position = linkChild.localPosition;

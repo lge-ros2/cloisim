@@ -100,7 +100,8 @@ public class Main: MonoBehaviour
 	private void GetResourcesPaths()
 	{
 		var separator = new char[] { ':' };
-
+#if UNITY_EDITOR
+#else
 		var filePathEnv = Environment.GetEnvironmentVariable("CLOISIM_FILES_PATH");
 		var filePaths = filePathEnv?.Split(separator, StringSplitOptions.RemoveEmptyEntries);
 
@@ -142,6 +143,7 @@ public class Main: MonoBehaviour
 			worldRootDirectories.AddRange(worldPaths);
 			Debug.Log("World Directory Paths: " + String.Join(", ", worldRootDirectories));
 		}
+#endif
 	}
 
 	void Awake()

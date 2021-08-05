@@ -4,11 +4,12 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Text;
 using UnityEngine;
 
 public partial class SimulationDisplay : MonoBehaviour
 {
-	private string _fpsString = string.Empty;
+	private StringBuilder _fpsString = new StringBuilder(9);
 
 	[Header("fps")]
 	private const float fpsUpdatePeriod = 0.5f;
@@ -23,7 +24,13 @@ public partial class SimulationDisplay : MonoBehaviour
 
 	void LateUpdate()
 	{
-		_fpsString = "FPS [" + Mathf.Round(fps).ToString("F1") + "]";
+		if (_fpsString != null)
+		{
+			_fpsString.Clear();
+			_fpsString.Append("FPS [");
+			_fpsString.Append(Mathf.Round(fps).ToString());
+			_fpsString.Append("]");
+		}
 	}
 
 	private void CalculateFPS()
@@ -38,10 +45,14 @@ public partial class SimulationDisplay : MonoBehaviour
 		}
 	}
 
-	private void DrawFPSText(GUIStyle style)
+	private void DrawFPSText()
 	{
 		rectFps.y = Screen.height - textHeight - bottomMargin;
+		style.fontStyle = FontStyle.Normal;
 		style.normal.textColor = new Color(0.05f, 0.05f, 0.9f, 1);
-		DrawLabelWithShadow(rectFps, _fpsString, style);
+		if (_fpsString != null)
+		{
+			DrawLabelWithShadow(rectFps, _fpsString.ToString());
+		}
 	}
 }
