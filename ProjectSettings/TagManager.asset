@@ -13,6 +13,7 @@ TagManager:
   - Actor
   - Marker
   - Props
+  - Geometry
   layers:
   - Default
   - TransparentFX
