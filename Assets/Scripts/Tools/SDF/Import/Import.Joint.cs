@@ -74,13 +74,13 @@ namespace SDF
 
 				if (linkObjectParent is null)
 				{
-					Debug.LogErrorFormat("parent Link object is NULL!!! {0}", joint.ParentLinkName);
+					Debug.LogWarningFormat("parent Link object is NULL!!! {0}", joint.ParentLinkName);
 					return;
 				}
 
 				if (linkObjectChild is null)
 				{
-					Debug.LogErrorFormat("child Link object is NULL!!! {0}", joint.ChildLinkName);
+					Debug.LogWarningFormat("child Link object is NULL!!! {0}", joint.ChildLinkName);
 					return;
 				}
 
@@ -88,7 +88,7 @@ namespace SDF
 
 				if (linkObjectChild is null || linkObjectParent is null)
 				{
-					Debug.LogErrorFormat("RigidBody of Link is NULL!!! child({0}) parent({1})", linkObjectChild, linkObjectParent);
+					Debug.LogWarningFormat("RigidBody of Link is NULL!!! child({0}) parent({1})", linkObjectChild, linkObjectParent);
 					return;
 				}
 

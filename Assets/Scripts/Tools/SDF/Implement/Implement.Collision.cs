@@ -42,59 +42,40 @@ namespace SDF
 
 			public static void Make(UE.GameObject targetObject)
 			{
+				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
+
 				if (targetObject.GetComponent<UE.Collider>() == null)
 				{
-					var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
+					KeepUnmergedMeshes(meshFilters);
 
 					if (EnableMergeCollider)
 					{
-						var mergedMesh = SDF2Unity.MergeMeshes(meshFilters);
-						mergedMesh.name = targetObject.name;
+						var geometryWorldToLocalMatrix = targetObject.transform.worldToLocalMatrix;
+						var meshColliders = targetObject.GetComponentsInChildren<UE.MeshCollider>();
+						var mergedMesh = SDF2Unity.MergeMeshes(meshColliders, geometryWorldToLocalMatrix);
 
-						// remove all child objects after merge the meshes for colloision
-						if (targetObject.transform.childCount > 0)
+						var transformObjects = targetObject.GetComponentsInChildren<UE.Transform>();
+						for (var index = 1; index < transformObjects.Length; index++)
 						{
-							for (var i = 0; i < targetObject.transform.childCount; i++)
-							{
-								var childObject = targetObject.transform.GetChild(i).gameObject;
-								// UE.Debug.Log(childObjet.name);
-								UE.GameObject.Destroy(childObject);
-							}
-						}
-						else
-						{
-							for (var i = 0; i < meshFilters.Length; i++)
-							{
-								var meshRenderer = meshFilters[i].GetComponent<UE.MeshRenderer>();
-								UE.GameObject.Destroy(meshRenderer);
-								UE.GameObject.Destroy(meshFilters[i]);
-							}
+							UE.GameObject.Destroy(transformObjects[index].gameObject);
 						}
 
-						var meshCollider = targetObject.AddComponent<UE.MeshCollider>();
-						meshCollider.sharedMesh = mergedMesh;
-						meshCollider.convex = false;
-						meshCollider.cookingOptions = CookingOptions;
-						meshCollider.hideFlags |= UE.HideFlags.NotEditable;
-					}
-					else
-					{
-						KeepUnmergedMeshes(meshFilters);
+						var combinedMeshCollider = targetObject.AddComponent<UE.MeshCollider>();
+						combinedMeshCollider.sharedMesh = mergedMesh;
+						combinedMeshCollider.convex = false;
+						combinedMeshCollider.cookingOptions = CookingOptions;
+						combinedMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
 					}
 				}
-				else
-				{
-					var meshRenderers = targetObject.GetComponentsInChildren<UE.MeshRenderer>();
-					foreach (var meshRender in meshRenderers)
-					{
-						UE.GameObject.Destroy(meshRender);
-					}
 
-					var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
-					foreach (var meshFilter in meshFilters)
+				for (var i = 0; i < meshFilters.Length; i++)
+				{
+					var meshRenderer = meshFilters[i].GetComponent<UE.MeshRenderer>();
+					if (meshRenderer != null)
 					{
-						UE.GameObject.Destroy(meshFilter);
+						UE.GameObject.Destroy(meshRenderer);
 					}
+					UE.GameObject.Destroy(meshFilters[i]);
 				}
 			}
 

@@ -215,8 +215,9 @@ namespace SensorDevices
 				var depthRange = GetDepthRange(offsetX, offsetY);
 
 				// Compensate distance
-				var compensateScale = (1f / Mathf.Cos(horizontalAngleInCamData));
-				var finalDepthData = depthRange * compensateScale;
+				var compensateScaleHorizontal = (1f / Mathf.Cos(horizontalAngleInCamData));
+				var compensateScaleVertical = (1f / Mathf.Cos(verticalAngleInCamData));
+				var finalDepthData = depthRange * compensateScaleHorizontal * compensateScaleVertical;
 				return finalDepthData;
 			}
 

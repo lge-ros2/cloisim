@@ -39,6 +39,7 @@ namespace SDF
 			public static UE.GameObject GenerateMeshObject(in SDF.ShapeType shape)
 			{
 				var createdObject = new UE.GameObject("geometry(primitive mesh)");
+				createdObject.tag = "Geometry";
 
 				UE.Mesh mesh = null;
 

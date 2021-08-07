@@ -323,7 +323,6 @@ public partial class MeshLoader
 
 			// Create GameObjects from nodes
 			var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList);
-			createdMeshObject.name = "geometry(mesh)";
 
 			// rotate final mesh object
 			createdMeshObject.transform.localRotation = meshRotation * createdMeshObject.transform.localRotation;
@@ -346,6 +345,7 @@ public partial class MeshLoader
 		meshObject = GameObject.Instantiate(GameObjectCache[meshPath]);
 		meshObject.SetActive(true);
 		meshObject.name = "geometry(mesh)";
+		meshObject.tag = "Geometry";
 
 		return meshObject;
 	}

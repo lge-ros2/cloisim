@@ -148,6 +148,7 @@ namespace SDF
 					{
 						axis.dynamics = new Axis.Dynamics();
 						axis.dynamics.damping = GetValue<double>("axis/dynamics/damping");
+						axis.dynamics.spring_reference = GetValue<double>("axis/dynamics/spring_reference");
 						axis.dynamics.spring_stiffness = GetValue<double>("axis/dynamics/spring_stiffness");
 						axis.dynamics.friction = GetValue<double>("axis/dynamics/friction");
 					}
@@ -162,6 +163,7 @@ namespace SDF
 						{
 							axis2.dynamics = new Axis.Dynamics();
 							axis2.dynamics.damping = GetValue<double>("axis2/dynamics/damping");
+							axis2.dynamics.spring_reference = GetValue<double>("axis2/dynamics/spring_reference");
 							axis2.dynamics.spring_stiffness = GetValue<double>("axis2/dynamics/spring_stiffness");
 							axis.dynamics.friction = GetValue<double>("axis2/dynamics/friction");
 						}
