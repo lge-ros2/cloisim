@@ -44,6 +44,7 @@ namespace SDF
 			{
 				if (targetObject.GetComponent<UE.Collider>() == null)
 				{
+					bool removeMeshRenderAndFilter = true;
 					var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
 
 					if (EnableMergeCollider)
@@ -54,20 +55,13 @@ namespace SDF
 						// remove all child objects after merge the meshes for colloision
 						if (targetObject.transform.childCount > 0)
 						{
+							removeMeshRenderAndFilter = false;
+
 							for (var i = 0; i < targetObject.transform.childCount; i++)
 							{
 								var childObject = targetObject.transform.GetChild(i).gameObject;
 								// UE.Debug.Log(childObjet.name);
 								UE.GameObject.Destroy(childObject);
-							}
-						}
-						else
-						{
-							for (var i = 0; i < meshFilters.Length; i++)
-							{
-								var meshRenderer = meshFilters[i].GetComponent<UE.MeshRenderer>();
-								UE.GameObject.Destroy(meshRenderer);
-								UE.GameObject.Destroy(meshFilters[i]);
 							}
 						}
 
@@ -80,6 +74,16 @@ namespace SDF
 					else
 					{
 						KeepUnmergedMeshes(meshFilters);
+					}
+
+					if (removeMeshRenderAndFilter)
+					{
+						for (var i = 0; i < meshFilters.Length; i++)
+						{
+							var meshRenderer = meshFilters[i].GetComponent<UE.MeshRenderer>();
+							UE.GameObject.Destroy(meshRenderer);
+							UE.GameObject.Destroy(meshFilters[i]);
+						}
 					}
 				}
 				else
