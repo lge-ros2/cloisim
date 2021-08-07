@@ -94,6 +94,7 @@ public partial class MeshLoader
 			case ".dae":
 			case ".obj":
 			case ".stl":
+			case ".fbx":
 				break;
 
 			default:
@@ -114,6 +115,9 @@ public partial class MeshLoader
 			case ".obj":
 			case ".stl":
 				eulerRotation =  Quaternion.Euler(90, 0, 0) * Quaternion.Euler(0, 0, 0) * Quaternion.Euler(0, 0, 90);
+				goto case ".fbx";
+
+			case ".fbx":
 				break;
 			default:
 				break;
