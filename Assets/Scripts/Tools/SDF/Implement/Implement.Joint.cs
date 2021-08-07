@@ -72,6 +72,7 @@ namespace SDF
 				if (axis.dynamics != null)
 				{
 					drive.stiffness = (float)axis.dynamics.spring_stiffness;
+					drive.target = SDF2Unity.CurveOrientation((float)axis.dynamics.spring_reference * UE.Mathf.Rad2Deg);
 					drive.damping = (float)axis.dynamics.damping;
 					body.jointFriction = (float)axis.dynamics.friction;
 				}
@@ -202,6 +203,7 @@ namespace SDF
 				if (axis.dynamics != null)
 				{
 					drive.stiffness = (float)axis.dynamics.spring_stiffness;
+					drive.target = (float)axis.dynamics.spring_reference;
 					drive.damping = (float)axis.dynamics.damping;
 					body.jointFriction = (float)axis.dynamics.friction;
 				}
@@ -259,8 +261,8 @@ namespace SDF
 
 			private static void SetRevoluteArticulationDriveLimit(ref UE.ArticulationDrive drive, in SDF.Axis.Limit limit)
 			{
-				drive.lowerLimit = -(float)limit.upper * UE.Mathf.Rad2Deg;
-				drive.upperLimit = -(float)limit.lower * UE.Mathf.Rad2Deg;
+				drive.lowerLimit = SDF2Unity.CurveOrientation((float)limit.upper * UE.Mathf.Rad2Deg);
+				drive.upperLimit = SDF2Unity.CurveOrientation((float)limit.lower * UE.Mathf.Rad2Deg);
 			}
 		}
 	}
