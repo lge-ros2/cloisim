@@ -124,7 +124,7 @@ For the performance in terms of collision handling, designing collision geometry
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.15f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.3.15f2 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 20.04.2 LTS
