@@ -77,7 +77,8 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine("            @ Let me know if you are stuck in any trouble :)");
 		sb.AppendLine("");
 
-		helpContentsHeight = 58 * labelFontSize;
+  		var lines = sb.ToString().Split(new string[] {System.Environment.NewLine }, System.StringSplitOptions.None).Length;
+		helpContentsHeight = (int)(lines * labelFontSize * 1.2);
 		helpContents.text = sb.ToString();
 
 		viewRect = new Rect(0, 0, rectDialog.width - 20, helpContentsHeight);
