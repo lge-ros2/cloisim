@@ -148,7 +148,8 @@ namespace SensorDevices
 
 			var renderTextrueWidth = Mathf.CeilToInt(LaserCameraHFov / laserAngleResolution.H);
 			var renderTextrueHeight = (laserAngleResolution.V == 1) ? 1 : Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
-			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
+
+			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
 			{
 				name = "LidarDepthTexture",
 				dimension = UnityEngine.Rendering.TextureDimension.Tex2D,
@@ -156,8 +157,8 @@ namespace SensorDevices
 				useMipMap = false,
 				useDynamicScale = false,
 				wrapMode = TextureWrapMode.Clamp,
-				filterMode = FilterMode.Trilinear,
-				enableRandomWrite = true
+				filterMode = FilterMode.Point,
+				enableRandomWrite = false
 			};
 
 			laserCam.targetTexture = targetDepthRT;
