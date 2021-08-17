@@ -34,7 +34,6 @@ namespace SDF
 
 		private string worldFileName = string.Empty;
 
-		private SimulationDisplay simulationDisplay = null;
 
 		public Root()
 			: this("")
@@ -45,7 +44,6 @@ namespace SDF
 		{
 			SetWorldFileName(filename);
 
-			simulationDisplay = Main.Display;
 		}
 
 		public void SetWorldFileName(in string filename)
@@ -101,8 +99,8 @@ namespace SDF
 						catch (XmlException ex)
 						{
 							var errorMessage = "Failed to Load file(" + fullFilePath + ") file - " + ex.Message;
+							(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
 							Console.WriteLine(errorMessage);
-							simulationDisplay?.SetErrorMessage(errorMessage);
 							return false;
 						}
 
@@ -343,8 +341,8 @@ namespace SDF
 			catch (XmlException e)
 			{
 				var errorMessage = "Failed to Load included model(" + modelName + ") file - " + e.Message;
+				(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
 				Console.WriteLine(errorMessage);
-				simulationDisplay?.SetErrorMessage(errorMessage);
 				return null;
 			}
 

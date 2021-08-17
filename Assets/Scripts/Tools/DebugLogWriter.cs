@@ -11,10 +11,18 @@ public class DebugLogWriter : System.IO.TextWriter
 	private bool isSkip = false;
 	private bool isWarning = false;
 	private bool isError = false;
+	private bool showOnDisplay = false;
+	private SimulationDisplay simulationDisplay = null;
+
 
 	public void SetSkip(in bool value)
 	{
 		isSkip = value;
+	}
+
+	public void SetShowOnDisplayOnce()
+	{
+		showOnDisplay = true;
 	}
 
 	public void SetWarningOnce()
@@ -30,6 +38,8 @@ public class DebugLogWriter : System.IO.TextWriter
 	public DebugLogWriter()
 	{
 		//Debug.Log("Initialized!!!");
+
+		simulationDisplay = Main.Display;
 	}
 
 	public override void Write(string value)
@@ -71,6 +81,12 @@ public class DebugLogWriter : System.IO.TextWriter
 		else
 		{
 			Debug.Log(value);
+		}
+
+		if (showOnDisplay)
+		{
+			simulationDisplay?.SetErrorMessage(value);
+			showOnDisplay = false;
 		}
 	}
 
