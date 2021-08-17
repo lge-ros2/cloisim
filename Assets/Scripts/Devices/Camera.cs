@@ -198,7 +198,16 @@ namespace SensorDevices
 			camSensor.projectionMatrix = projMatrix * invertMatrix;
 
 			universalCamData.enabled = false;
-			universalCamData.renderPostProcessing = true;
+			universalCamData.renderPostProcessing = false;
+			universalCamData.allowXRRendering = false;
+			universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
+			universalCamData.renderType = CameraRenderType.Base;
+			universalCamData.requiresColorOption = CameraOverrideOption.On;
+			universalCamData.requiresDepthOption = CameraOverrideOption.Off;
+			universalCamData.requiresColorTexture = true;
+			universalCamData.requiresDepthTexture = false;
+			universalCamData.renderShadows = true;
+			universalCamData.cameraStack.Clear();
 			camSensor.enabled = false;
 
 			RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
@@ -232,13 +241,13 @@ namespace SensorDevices
 				if (camSensor.isActiveAndEnabled)
 				{
 					camSensor.Render();
+
+					var readback = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
+					camSensor.enabled = false;
+
+					yield return null;
+					readback.WaitForCompletion();
 				}
-				var readback = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
-
-				camSensor.enabled = false;
-
-				yield return null;
-				readback.WaitForCompletion();
 
 				yield return waitForSeconds;
 			}
@@ -249,23 +258,19 @@ namespace SensorDevices
 			if (request.hasError)
 			{
 				Debug.LogError("Failed to read GPU texture");
-				return;
 			}
-			// Debug.Assert(request.done);
-
-			if (request.done)
+			else if (request.done)
 			{
 				var readbackData = request.GetData<byte>();
 				camImageData.SetTextureBufferData(ref readbackData);
 				var image = imageStamped.Image;
 				if (image.Data.Length == camImageData.GetImageDataLength())
 				{
-					var imageData = camImageData.GetImageData();
+					camImageData.StoreImageData(image.Data);
 
-					PostProcessing(ref imageData);
+					PostProcessing(image.Data);
 
 					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
-					image.Data = imageData;
 
 					if (camParameter.save_enabled)
 					{
@@ -284,7 +289,7 @@ namespace SensorDevices
 			PushDeviceMessage<messages.ImageStamped>(imageStamped);
 		}
 
-		protected virtual void PostProcessing(ref byte[] buffer) { }
+		protected virtual void PostProcessing(byte[] buffer) { }
 
 		public messages.CameraSensor GetCameraInfo()
 		{

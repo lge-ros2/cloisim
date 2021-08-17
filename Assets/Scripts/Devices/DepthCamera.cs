@@ -117,7 +117,7 @@ namespace SensorDevices
 			cb.Release();
 		}
 
-		protected override void PostProcessing(ref byte[] buffer)
+		protected override void PostProcessing(byte[] buffer)
 		{
 			if (readbackDstFormat.Equals(TextureFormat.R16) && computeShader != null)
 			{
