@@ -66,6 +66,8 @@ public class Clock : Device
 	}
 
 	private HMS hms = new HMS();
+
+	private int hmsUpdateIndex = 0;
 #endregion
 
 	public double SimTime => currentSimTime;
@@ -101,9 +103,20 @@ public class Clock : Device
 		var realTs = TimeSpan.FromSeconds(RealTime);
 		var diffTs = realTs - simTs;
 
-		hms.SetSimTime(simTs);
-		hms.SetRealTime(realTs);
-		hms.SetDiffTime(diffTs);
+		switch (hmsUpdateIndex++)
+		{
+			case 0:
+				hms.SetSimTime(simTs);
+				break;
+			case 1:
+				hms.SetRealTime(realTs);
+				break;
+			case 2:
+			default:
+				hms.SetDiffTime(diffTs);
+				break;
+		}
+		hmsUpdateIndex %= 3;
 	}
 
 	protected override void GenerateMessage()
