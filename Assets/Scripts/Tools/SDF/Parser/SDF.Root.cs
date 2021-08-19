@@ -101,6 +101,7 @@ namespace SDF
 							var errorMessage = "Failed to Load file(" + fullFilePath + ") file - " + ex.Message;
 							(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
 							Console.WriteLine(errorMessage);
+
 							return false;
 						}
 
@@ -112,8 +113,7 @@ namespace SDF
 
 			if (!worldFound)
 			{
-				(Console.Out as DebugLogWriter).SetWarningOnce();
-				Console.WriteLine("World file not exist: " + worldFileName);
+				Console.Error.WriteLine("World file not exist: " + worldFileName);
 				return false;
 			}
 
@@ -226,8 +226,7 @@ namespace SDF
 			if (numberOfFailedModelTable > 0)
 			{
 				failedModelTableList.Insert(0, "All failed models(" + numberOfFailedModelTable + ") are already registered.");
-				(Console.Out as DebugLogWriter).SetWarningOnce();
-				Console.WriteLine(failedModelTableList);
+				Console.Error.WriteLine(failedModelTableList);
 			}
 
 			Console.WriteLine("Total Models: " + resourceModelTable.Count);

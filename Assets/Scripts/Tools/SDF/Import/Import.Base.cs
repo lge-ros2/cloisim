@@ -233,14 +233,12 @@ namespace SDF
 
 			private void PrintNotImported(in string methodName, in string name)
 			{
-				(Console.Out as DebugLogWriter).SetWarningOnce();
-				Console.WriteLine("[{0}][{1}] Not Imported yet", methodName, name);
+				Console.Error.WriteLine("[{0}][{1}] Not Imported yet", methodName, name);
 			}
 
 			private void PrintNotImported(in string methodName)
 			{
-				(Console.Out as DebugLogWriter).SetWarningOnce();
-				Console.WriteLine("[{0}] Not Imported yet", methodName);
+				Console.Error.WriteLine("[{0}] Not Imported yet", methodName);
 			}
 		}
 	}

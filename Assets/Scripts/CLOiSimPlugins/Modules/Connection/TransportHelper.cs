@@ -32,8 +32,7 @@ public static class TransportHelper
 		{
 			if (targetTag.Length > TagSize || targetBuffer == null)
 			{
-				(Console.Out as DebugLogWriter).SetErrorOnce();
-				Console.WriteLine("Failed to set hash value " + targetBuffer);
+				Console.Error.WriteLine("Failed to set hash value " + targetBuffer);
 				return false;
 			}
 			else
@@ -78,15 +77,13 @@ public static class TransportHelper
 			}
 			catch (ArgumentException ex)
 			{
-				(Console.Out as DebugLogWriter).SetErrorOnce();
-				Console.WriteLine("Error: BlockCopy with buffer src({0}) dst({1}) tagSize({2}) length({3}) Send() : {4}",
+				Console.Error.WriteLine("Error: BlockCopy with buffer src({0}) dst({1}) tagSize({2}) length({3}) Send() : {4}",
 					dataToStore, targetBuffer, TagSize, dataToStoreLength, ex.Message);
 			}
 		}
 		else
 		{
-			(Console.Out as DebugLogWriter).SetWarningOnce();
-			Console.WriteLine("Nothing to do : " + dataToStoreLength);
+			Console.Error.WriteLine("Nothing to do : " + dataToStoreLength);
 			return false;
 		}
 
@@ -107,15 +104,13 @@ public static class TransportHelper
 
 					if (IsNotValidTag(receivedTag, targetTag))
 					{
-						(Console.Out as DebugLogWriter).SetWarningOnce();
-						Console.WriteLine("It is Invalid Tag");
+						Console.Error.WriteLine("It is Invalid Tag");
 						return null;
 					}
 				}
 				catch
 				{
-					(Console.Out as DebugLogWriter).SetErrorOnce();
-					Console.WriteLine("Failed to check Tag just skip!!!");
+					Console.Error.WriteLine("Failed to check Tag just skip!!!");
 				}
 			}
 
@@ -132,15 +127,13 @@ public static class TransportHelper
 				}
 				catch
 				{
-					(Console.Out as DebugLogWriter).SetErrorOnce();
-					Console.WriteLine("Error: BlockCopy with buffer @ Receiver() ");
+					Console.Error.WriteLine("Error: BlockCopy with buffer @ Receiver() ");
 				}
 
 			}
 			else
 			{
-				(Console.Out as DebugLogWriter).SetWarningOnce();
-				Console.WriteLine("Nothing received : " + receivedFrame.Length);
+				Console.Error.WriteLine("Nothing received : " + receivedFrame.Length);
 			}
 		}
 
