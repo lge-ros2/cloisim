@@ -30,6 +30,7 @@ public partial class InfoDisplay : MonoBehaviour
 			if (inputField.name.CompareTo("FPS") == 0)
 			{
 				_inputFieldFPS = inputField;
+				_inputFieldFPS.enabled = false;
 			}
 			else if (inputField.name.CompareTo("SimTime") == 0)
 			{
@@ -84,11 +85,11 @@ public partial class InfoDisplay : MonoBehaviour
 	public void SetPointInfo(in Vector3 point)
 	{
 		_pointInfo.Clear();
-		_pointInfo.Append(point.x);
+		_pointInfo.Append(System.Math.Truncate(point.x * 10000)/10000);
 		_pointInfo.Append(", ");
-		_pointInfo.Append(point.y);
+		_pointInfo.Append(System.Math.Truncate(point.y * 10000)/10000);
 		_pointInfo.Append(", ");
-		_pointInfo.Append(point.z);
+		_pointInfo.Append(System.Math.Truncate(point.z * 10000)/10000);
 	}
 
 	private void UpdateHitPoint()
