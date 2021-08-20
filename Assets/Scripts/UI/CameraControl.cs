@@ -67,7 +67,7 @@ public class CameraControl : MonoBehaviour
 			if (Physics.Raycast(ray.origin, ray.direction, out var hitInfo))
 			{
 				var sdfPoint = DeviceHelper.Convert.Position(hitInfo.point);
-				Main.Display.SetPointInfo(sdfPoint);
+				Main.InfoDisplay.SetPointInfo(sdfPoint);
 			}
 		}
 		else if (Input.GetMouseButton(2) || Input.GetMouseButton(1))

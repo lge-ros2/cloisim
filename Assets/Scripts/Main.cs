@@ -34,6 +34,7 @@ public class Main: MonoBehaviour
 	private static GameObject uiRoot = null;
 
 	private static SimulationDisplay simulationDisplay = null;
+	private static InfoDisplay _infoDisplay = null;
 	private static WorldNavMeshBuilder worldNavMeshBuilder = null;
 	private static RuntimeGizmos.TransformGizmo transformGizmo = null;
 
@@ -50,6 +51,7 @@ public class Main: MonoBehaviour
 	public static GameObject UIObject => uiRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => transformGizmo;
 	public static SimulationDisplay Display => simulationDisplay;
+	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => worldNavMeshBuilder;
 	public static BridgeManager BridgeManager => bridgeManager;
 
@@ -206,6 +208,7 @@ public class Main: MonoBehaviour
 
 		followingList = uiRoot.GetComponentInChildren<FollowingTargetList>();
 		simulationDisplay = uiRoot.GetComponentInChildren<SimulationDisplay>();
+		_infoDisplay = uiRoot.GetComponentInChildren<InfoDisplay>();
 
 		transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
 
@@ -381,6 +384,9 @@ public class Main: MonoBehaviour
 		Main.bridgeManager.Dispose();
 		Main.simulationService.Dispose();
 
-		Assimp.Unmanaged.AssimpLibrary.Instance.FreeLibrary();
+		if (Assimp.Unmanaged.AssimpLibrary.Instance.IsLibraryLoaded)
+		{
+			Assimp.Unmanaged.AssimpLibrary.Instance.FreeLibrary();
+		}
 	}
 }
