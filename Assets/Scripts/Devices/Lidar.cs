@@ -5,6 +5,7 @@
  */
 
 using System.Collections;
+using System.Collections.Generic;
 using System;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
@@ -43,12 +44,28 @@ namespace SensorDevices
 		private LaserData.AngleResolution laserAngleResolution;
 
 		private int numberOfLaserCamData = 0;
-		private AsyncGPUReadbackRequest[] readbacks;
+
+		struct AsyncLaserWork
+		{
+			public int dataIndex;
+			public AsyncGPUReadbackRequest request;
+
+			public AsyncLaserWork(in int dataIndex, in AsyncGPUReadbackRequest request)
+			{
+				this.dataIndex = dataIndex;
+				this.request = request;
+			}
+		}
+		private List<AsyncLaserWork> readbackList = new List<AsyncLaserWork>();
+
 		private LaserData.DepthCamBuffer[] depthCamBuffers;
 		private LaserData.LaserCamData[] laserCamData;
 		private LaserData.LaserDataOutput[] laserDataOutput;
 		private LaserFilter laserFilter = null;
 		public Noise noise = null;
+
+		private bool _startLaserWork = false;
+		private float _lastTimeLaserWork = 0f;
 
 		protected override void OnAwake()
 		{
@@ -69,12 +86,12 @@ namespace SensorDevices
 
 				SetupLaserCameraData();
 
-				StartCoroutine(LaserCameraWorker());
+				_startLaserWork = true;
 			}
 		}
 		protected new void OnDestroy()
 		{
-			StopCoroutine(LaserCameraWorker());
+			_startLaserWork = false;
 
 			base.OnDestroy();
 		}
@@ -206,7 +223,6 @@ namespace SensorDevices
 			const float laserCameraRotationAngle = LaserCameraHFov;
 			numberOfLaserCamData = Mathf.CeilToInt(DEG360 / laserCameraRotationAngle);
 
-			readbacks = new AsyncGPUReadbackRequest[numberOfLaserCamData];
 			laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
 			depthCamBuffers = new LaserData.DepthCamBuffer[numberOfLaserCamData];
 			laserDataOutput = new LaserData.LaserDataOutput[numberOfLaserCamData];
@@ -247,16 +263,22 @@ namespace SensorDevices
 			laserFilter.SetupRangeFilter(filterRangeMin, filterRangeMax);
 		}
 
-		private IEnumerator LaserCameraWorker()
+		void Update()
 		{
-			var axisRotation = Vector3.zero;
-			var waitForSeconds = new WaitForSeconds(WaitPeriod());
-
-			while (true)
+			if (_startLaserWork)
 			{
-				// Update lidar sensor pose
+				LaserCameraWorker();
+			}
+		}
+
+		private void LaserCameraWorker()
+		{
+			if (Time.time - _lastTimeLaserWork >= WaitPeriod(0.0001f))
+			{
 				lidarSensorPose.position = lidarLink.position;
 				lidarSensorPose.rotation = lidarLink.rotation;
+
+				var axisRotation = Vector3.zero;
 
 				for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
 				{
@@ -271,15 +293,18 @@ namespace SensorDevices
 					{
 						laserCam.Render();
 						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32, OnCompleteAsyncReadback);
-						readbacks[dataIndex] = readbackRequest;
-						yield return null;
+						readbackList.Add(new AsyncLaserWork(dataIndex, readbackRequest));
 					}
 
 					laserCam.enabled = false;
 				}
-
-				yield return waitForSeconds;
 			}
+			else
+			{
+				readbackList.RemoveAll(value => value.request.done == true);
+			}
+
+			_lastTimeLaserWork = Time.time;
 		}
 
 		protected void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
@@ -289,16 +314,14 @@ namespace SensorDevices
 				Debug.LogError("Failed to read GPU texture");
 				return;
 			}
-			// Debug.Assert(request.done);
-
-			if (request.done)
+			else if (request.done)
 			{
 				var dataIndex = -1;
-				for (var i = 0; i < readbacks.Length; i++)
+				for (var i = 0; i < readbackList.Count; i++)
 				{
-					if (request.Equals(readbacks[i]))
+					if (request.Equals(readbackList[i].request))
 					{
-						dataIndex = i;
+						dataIndex = readbackList[i].dataIndex;
 						break;
 					}
 				}
