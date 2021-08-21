@@ -10,7 +10,7 @@ using TMPro;
 
 public partial class InfoDisplay : MonoBehaviour
 {
-	private const float fpsUpdatePeriod = 0.5f;
+	private const float fpsUpdatePeriod = 0.25f;
 	private int frameCount = 0;
 	private float dT = 0.0F;
 	private float fps = 0.0F;
