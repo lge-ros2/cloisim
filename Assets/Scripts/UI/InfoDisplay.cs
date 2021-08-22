@@ -5,13 +5,13 @@
  */
 
 using UnityEngine;
-using System.Text;
+using System;
 using TMPro;
 
 [DefaultExecutionOrder(50)]
 public partial class InfoDisplay : MonoBehaviour
 {
-	private StringBuilder _pointInfo = new StringBuilder(30);
+	private string _pointInfo = "000.0000, 000.0000, 000.0000";
 	private Clock _clock = null;
 	private TMP_InputField _inputFieldSim = null;
 	private TMP_InputField _inputFieldReal = null;
@@ -49,8 +49,6 @@ public partial class InfoDisplay : MonoBehaviour
 				_inputFieldHitPoint = inputField;
 			}
 		}
-
-		_pointInfo.Append("000.0000, 000.0000, 000.0000");
 	}
 
 	void LateUpdate()
@@ -62,9 +60,9 @@ public partial class InfoDisplay : MonoBehaviour
 
 	void UpdateTime()
 	{
-		var currentSimTime = (_clock == null) ? string.Empty : _clock.ToHMS().SimTime.ToString();
-		var currentRealTime = (_clock == null) ? string.Empty : _clock.ToHMS().RealTime.ToString();
-		var diffRealSimTime = (_clock == null) ? string.Empty : _clock.ToHMS().DiffTime.ToString();
+		var currentSimTime = (_clock == null) ? string.Empty : _clock.ToHMS().SimTime;
+		var currentRealTime = (_clock == null) ? string.Empty : _clock.ToHMS().RealTime;
+		var diffRealSimTime = (_clock == null) ? string.Empty : _clock.ToHMS().DiffTime;
 
 		if (_inputFieldSim != null)
 		{
@@ -84,19 +82,17 @@ public partial class InfoDisplay : MonoBehaviour
 
 	public void SetPointInfo(in Vector3 point)
 	{
-		_pointInfo.Clear();
-		_pointInfo.Append(System.Math.Truncate(point.x * 10000)/10000);
-		_pointInfo.Append(", ");
-		_pointInfo.Append(System.Math.Truncate(point.y * 10000)/10000);
-		_pointInfo.Append(", ");
-		_pointInfo.Append(System.Math.Truncate(point.z * 10000)/10000);
+		var ptX = System.Math.Truncate(point.x * 10000)/10000;
+		var ptY = System.Math.Truncate(point.y * 10000)/10000;
+		var ptZ = System.Math.Truncate(point.z * 10000)/10000;
+		_pointInfo = String.Concat(ptX.ToString(), ", ", ptY.ToString(), ", ", ptZ.ToString());
 	}
 
 	private void UpdateHitPoint()
 	{
 		if (_inputFieldHitPoint != null)
 		{
-			_inputFieldHitPoint.text = _pointInfo.ToString();
+			_inputFieldHitPoint.text = _pointInfo;
 		}
 	}
 }

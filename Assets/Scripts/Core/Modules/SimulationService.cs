@@ -38,15 +38,12 @@ public class SimulationService : IDisposable
 		if (wsServer.IsListening)
 		{
 			var wsLog = new StringBuilder();
-			wsLog.Append("Listening on port ");
-			wsLog.Append(wsServer.Port);
-			wsLog.Append(", and providing services are:");
+			wsLog.Append(String.Concat("Listening on port ", wsServer.Port, ", and providing services are:"));
 			wsLog.AppendLine();
 
 			foreach (var path in wsServer.WebSocketServices.Paths)
 			{
-				wsLog.Append(" - ");
-				wsLog.Append(path);
+				wsLog.Append(String.Concat(" - ", path));
 				wsLog.AppendLine();
 			}
 

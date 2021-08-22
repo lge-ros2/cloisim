@@ -27,42 +27,37 @@ public class Clock : Device
 #region time in hms format
 	public class HMS
 	{
-		private StringBuilder simTime = new StringBuilder(18);
-		private StringBuilder realTime = new StringBuilder(18);
-		private StringBuilder diffTime = new StringBuilder(18);
+		private string _simTime = string.Empty;
+		private string _realTime = string.Empty;
+		private string _diffTime = string.Empty;
 
 		public void SetSimTime(in TimeSpan ts)
 		{
-			SetTimeString(ref this.simTime, ts);
+			SetTimeString(ref this._simTime, ts);
 		}
 
 		public void SetRealTime(in TimeSpan ts)
 		{
-			SetTimeString(ref this.realTime, ts);
+			SetTimeString(ref this._realTime, ts);
 		}
 
 		public void SetDiffTime(in TimeSpan ts)
 		{
-			SetTimeString(ref this.diffTime, ts);
+			SetTimeString(ref this._diffTime, ts);
 		}
 
-		private void SetTimeString(ref StringBuilder target, in TimeSpan ts)
+		private StringBuilder _tempSB = new StringBuilder(16);
+
+		private void SetTimeString(ref string target, in TimeSpan ts)
 		{
-			target.Clear();
-			target.Append(ts.Days.ToString());
-			target.Append("d ");
-			target.Append(ts.Hours.ToString());
-			target.Append(":");
-			target.Append(ts.Minutes.ToString());
-			target.Append(":");
-			target.Append(ts.Seconds.ToString());
-			target.Append(".");
-			target.Append(ts.Milliseconds.ToString());
+			_tempSB.AppendFormat("{0}d {1}:{2}:{3}.{4}", ts.Days.ToString(), ts.Hours.ToString(), ts.Minutes.ToString(), ts.Seconds.ToString(), ts.Milliseconds.ToString());
+			target = _tempSB.ToString();
+			_tempSB.Clear();
 		}
 
-		public string SimTime => simTime.ToString();
-		public string RealTime => realTime.ToString();
-		public string DiffTime => diffTime.ToString();
+		public string SimTime => _simTime;
+		public string RealTime => _realTime;
+		public string DiffTime => _diffTime;
 	}
 
 	private HMS hms = new HMS();
@@ -112,8 +107,10 @@ public class Clock : Device
 				hms.SetRealTime(realTs);
 				break;
 			case 2:
-			default:
 				hms.SetDiffTime(diffTs);
+				break;
+			default:
+				// skip
 				break;
 		}
 		hmsUpdateIndex %= 3;

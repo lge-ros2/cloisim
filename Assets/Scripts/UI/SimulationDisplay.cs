@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
 using System.Text;
 using UnityEngine;
 
@@ -16,10 +15,6 @@ public partial class SimulationDisplay : MonoBehaviour
 	private CameraControl cameraControl = null;
 
 	private StringBuilder eventMessage = new StringBuilder();
-	private StringBuilder sbTimeInfo = new StringBuilder(78);
-	private StringBuilder sbPointInfo = new StringBuilder(38);
-
-	private Vector3 pointInfo = Vector3.zero;
 
 	[Header("GUI properties")]
 	private const int labelFontSize = 14;

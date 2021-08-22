@@ -208,7 +208,7 @@ namespace SDF
 						if (resourceModelTable.ContainsKey(modelName))
 						{
 							failedModelTableList.AppendLine("");
-							failedModelTableList.Append(modelName + " => Cannot register" + modelValue);
+							failedModelTableList.Append(String.Concat(modelName, " => Cannot register", modelValue));
 							numberOfFailedModelTable++;
 						}
 						else

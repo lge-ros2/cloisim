@@ -248,7 +248,7 @@ public class BridgeManager : IDisposable
 		{
 			sbLogs.AppendFormat("Failed to allocate port for HashKey({0}).", hashKey);
 		}
-		sbLogs.AppendLine("");
+		sbLogs.AppendLine();
 
 		return newPort;
 	}
