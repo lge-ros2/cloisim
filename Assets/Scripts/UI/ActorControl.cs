@@ -16,6 +16,9 @@ public class ActorControl : MonoBehaviour
 	{
 		foreach (var transform in list)
 		{
+			if (transform == null)
+				continue;
+
 			var actorAgent = transform.GetComponent<ActorAgent>();
 			if (actorAgent != null)
 			{
