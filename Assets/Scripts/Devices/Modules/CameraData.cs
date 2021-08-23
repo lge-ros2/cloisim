@@ -165,10 +165,10 @@ namespace SensorDevices
 				return imageBuffer.Length;
 			}
 
-			public void StoreImageData(byte[] target)
-			{
-				imageBuffer.CopyTo(target);
-			}
+			public byte[] GetImageData()
+ 			{
+				return imageBuffer.ToArray();
+ 			}
 
 			public void SaveRawImageData(in string path, in string name)
 			{

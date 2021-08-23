@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-using System.Collections;
+
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -34,7 +34,7 @@ namespace SensorDevices
 		protected RenderTextureReadWrite targetRTrwmode;
 		protected TextureFormat readbackDstFormat;
 		private CameraData.ImageData camImageData;
-		private List<AsyncGPUReadbackRequest> readbackList = new List<AsyncGPUReadbackRequest>();
+		private List<AsyncGPUReadbackRequest> _readbackList = new List<AsyncGPUReadbackRequest>();
 		public Noise noise = null;
 		private bool _startCameraWork = false;
 		private float _lastTimeCameraWork = 0f;
@@ -94,6 +94,8 @@ namespace SensorDevices
 		protected virtual void SetupTexture()
 		{
 			camSensor.depthTextureMode = DepthTextureMode.None;
+			universalCamData.requiresColorOption = CameraOverrideOption.On;
+			universalCamData.requiresDepthOption = CameraOverrideOption.Off;
 			universalCamData.requiresColorTexture = true;
 			universalCamData.requiresDepthTexture = false;
 			universalCamData.renderShadows = true;
@@ -204,10 +206,6 @@ namespace SensorDevices
 			universalCamData.allowXRRendering = false;
 			universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
 			universalCamData.renderType = CameraRenderType.Base;
-			universalCamData.requiresColorOption = CameraOverrideOption.On;
-			universalCamData.requiresDepthOption = CameraOverrideOption.Off;
-			universalCamData.requiresColorTexture = true;
-			universalCamData.requiresDepthTexture = false;
 			universalCamData.renderShadows = true;
 			universalCamData.cameraStack.Clear();
 			camSensor.enabled = false;
@@ -250,18 +248,13 @@ namespace SensorDevices
 				{
 					camSensor.Render();
 
-					var readback = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
+					var readbackRequest = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
 					camSensor.enabled = false;
-
-					readbackList.Add(readback);
+					_readbackList.Add(readbackRequest);
 				}
-			}
-			else
-			{
-				readbackList.RemoveAll(readback => readback.done == true);
-			}
 
-			_lastTimeCameraWork = Time.time;
+				_lastTimeCameraWork = Time.time;
+			}
 		}
 
 		protected void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
@@ -277,10 +270,11 @@ namespace SensorDevices
 				var image = imageStamped.Image;
 				if (image.Data.Length == camImageData.GetImageDataLength())
 				{
-					camImageData.StoreImageData(image.Data);
+					var imageData = camImageData.GetImageData();
 
-					PostProcessing(image.Data);
+					PostProcessing(ref imageData);
 
+					image.Data = imageData;
 					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
 
 					if (camParameter.save_enabled)
@@ -291,6 +285,8 @@ namespace SensorDevices
 					}
 				}
 				readbackData.Dispose();
+
+				_readbackList.Remove(request);
 			}
 		}
 
@@ -300,7 +296,7 @@ namespace SensorDevices
 			PushDeviceMessage<messages.ImageStamped>(imageStamped);
 		}
 
-		protected virtual void PostProcessing(byte[] buffer) { }
+		protected virtual void PostProcessing(ref byte[] buffer) { }
 
 		public messages.CameraSensor GetCameraInfo()
 		{

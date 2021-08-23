@@ -6,6 +6,7 @@
 
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace SensorDevices
 {
@@ -51,7 +52,7 @@ namespace SensorDevices
 		{
 			if (ComputeShaderDepthBuffer == null)
 			{
-				ComputeShaderDepthBuffer= Resources.Load<ComputeShader>("Shader/DepthBufferScaling");
+                ComputeShaderDepthBuffer = Resources.Load<ComputeShader>("Shader/DepthBufferScaling");
 			}
 
 			computeShader = Instantiate(ComputeShaderDepthBuffer);
@@ -80,6 +81,8 @@ namespace SensorDevices
 			camSensor.clearFlags = CameraClearFlags.SolidColor;
 
 			camSensor.depthTextureMode = DepthTextureMode.Depth;
+			universalCamData.requiresColorOption = CameraOverrideOption.Off;
+			universalCamData.requiresDepthOption = CameraOverrideOption.On;
 			universalCamData.requiresColorTexture = false;
 			universalCamData.requiresDepthTexture = true;
 			universalCamData.renderShadows = false;
@@ -117,7 +120,7 @@ namespace SensorDevices
 			cb.Release();
 		}
 
-		protected override void PostProcessing(byte[] buffer)
+		protected override void PostProcessing(ref byte[] buffer)
 		{
 			if (readbackDstFormat.Equals(TextureFormat.R16) && computeShader != null)
 			{
@@ -125,8 +128,8 @@ namespace SensorDevices
 				computeShader.SetBuffer(kernelIndex, "_Buffer", computeBuffer);
 				computeBuffer.SetData(buffer);
 
-				var threadGroupX = camParameter.image_width/16;
-				var threadGroupY = camParameter.image_height/8;
+				var threadGroupX = camParameter.image_width / 16;
+				var threadGroupY = camParameter.image_height / 8;
 				computeShader.Dispatch(kernelIndex, threadGroupX, threadGroupY, 1);
 				computeBuffer.GetData(buffer);
 				computeBuffer.Release();
