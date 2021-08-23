@@ -47,8 +47,7 @@ public class Subscriber : SubscriberSocket
 	{
 		if (IsDisposed)
 		{
-			(Console.Out as DebugLogWriter).SetWarningOnce();
-			Console.WriteLine("Socket for subscriber is not ready yet.");
+			Console.Error.WriteLine("Socket for subscriber is not ready yet.");
 		}
 		else
 		{

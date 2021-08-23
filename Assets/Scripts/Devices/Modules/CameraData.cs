@@ -166,9 +166,9 @@ namespace SensorDevices
 			}
 
 			public byte[] GetImageData()
-			{
+ 			{
 				return imageBuffer.ToArray();
-			}
+ 			}
 
 			public void SaveRawImageData(in string path, in string name)
 			{

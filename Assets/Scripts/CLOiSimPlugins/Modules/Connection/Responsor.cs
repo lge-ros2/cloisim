@@ -48,8 +48,7 @@ public class Responsor : ResponseSocket
 		}
 		else
 		{
-			(Console.Out as DebugLogWriter).SetWarningOnce();
-			Console.WriteLine("Socket for response is not ready.");
+			Console.Error.WriteLine("Socket for response is not ready.");
 		}
 		return null;
 	}
@@ -80,8 +79,7 @@ public class Responsor : ResponseSocket
 		}
 		else
 		{
-			(Console.Out as DebugLogWriter).SetWarningOnce();
-			Console.WriteLine("Socket for response is not ready yet.");
+			Console.Error.WriteLine("Socket for response is not ready yet.");
 		}
 
 		return false;

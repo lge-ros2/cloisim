@@ -69,8 +69,7 @@ public class Publisher : PublisherSocket
 			}
 			else
 			{
-				(Console.Out as DebugLogWriter).SetWarningOnce();
-				Console.WriteLine("Socket for publisher is not ready yet.");
+				Console.Error.WriteLine("Socket for publisher is not ready yet.");
 			}
 		}
 

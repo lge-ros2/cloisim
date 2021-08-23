@@ -5,6 +5,7 @@
  */
 
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class CameraControl : MonoBehaviour
 {
@@ -43,6 +44,14 @@ public class CameraControl : MonoBehaviour
 	private float totalRun = 1.0f;
 	private float edgeSensAccumlated = 0.0f;
 
+	private int _targetLayerMask = 0;
+
+	void Awake()
+	{
+		_targetLayerMask = LayerMask.GetMask("Default");
+	}
+
+
 	void LateUpdate()
 	{
 		if (blockControl)
@@ -64,10 +73,13 @@ public class CameraControl : MonoBehaviour
 		if (Input.GetMouseButton(0))
 		{
 			var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-			if (Physics.Raycast(ray.origin, ray.direction, out var hitInfo))
+			if (Physics.Raycast(ray.origin, ray.direction, out var hitInfo, 100f, _targetLayerMask))
 			{
-				var sdfPoint = DeviceHelper.Convert.Position(hitInfo.point);
-				Main.Display.SetPointInfo(sdfPoint);
+				if (!EventSystem.current.IsPointerOverGameObject())
+				{
+					var sdfPoint = DeviceHelper.Convert.Position(hitInfo.point);
+					Main.InfoDisplay.SetPointInfo(sdfPoint);
+				}
 			}
 		}
 		else if (Input.GetMouseButton(2) || Input.GetMouseButton(1))

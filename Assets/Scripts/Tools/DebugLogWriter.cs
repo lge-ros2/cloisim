@@ -5,72 +5,59 @@
  */
 
 using UnityEngine;
+using System.IO;
 
-public class DebugLogWriter : System.IO.TextWriter
+public class DebugLogWriter : TextWriter
 {
-	private bool isSkip = false;
-	private bool isWarning = false;
 	private bool isError = false;
+	private bool showOnDisplay = false;
+	private SimulationDisplay simulationDisplay = null;
 
-	public void SetSkip(in bool value)
-	{
-		isSkip = value;
-	}
-
-	public void SetWarningOnce()
-	{
-		isWarning = true;
-	}
-
-	public void SetErrorOnce()
-	{
-		isError = true;
-	}
-
-	public DebugLogWriter()
+	public DebugLogWriter(in bool errorLog = false)
 	{
 		//Debug.Log("Initialized!!!");
+		isError = errorLog;
+		simulationDisplay = Main.Display;
 	}
 
 	public override void Write(string value)
 	{
-		if (isSkip || value == null)
+		if (value != null)
 		{
-			return;
+			base.Write(value);
+			Print(value);
 		}
-
-		base.Write(value);
-
-		Print(value);
 	}
 
 	public override void WriteLine(string value)
 	{
-		if (isSkip || value == null)
+		if (value != null)
 		{
-			return;
+			base.WriteLine(value);
+			Print(value);
 		}
-
-		base.WriteLine(value);
-
-		Print(value);
 	}
+
+	public void SetShowOnDisplayOnce()
+	{
+		showOnDisplay = true;
+	}
+
 
 	private void Print(in string value)
 	{
-		if (isWarning)
+		if (isError)
 		{
 			Debug.LogWarning(value);
-			isWarning = false;
-		}
-		else if (isError)
-		{
-			Debug.LogError(value);
-			isError = false;
+			if (showOnDisplay)
+				simulationDisplay?.SetErrorMessage(value);
 		}
 		else
 		{
 			Debug.Log(value);
+
+			if (showOnDisplay)
+				simulationDisplay?.SetEventMessage(value);
 		}
 	}
 

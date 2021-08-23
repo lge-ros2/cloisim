@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
 using System.Text;
 using UnityEngine;
 
@@ -16,10 +15,6 @@ public partial class SimulationDisplay : MonoBehaviour
 	private CameraControl cameraControl = null;
 
 	private StringBuilder eventMessage = new StringBuilder();
-	private StringBuilder sbTimeInfo = new StringBuilder(78);
-	private StringBuilder sbPointInfo = new StringBuilder(38);
-
-	private Vector3 pointInfo = Vector3.zero;
 
 	[Header("GUI properties")]
 	private const int labelFontSize = 14;
@@ -105,51 +100,6 @@ public partial class SimulationDisplay : MonoBehaviour
 		eventMessage.AppendLine(value);
 	}
 
-	private string GetTimeInfoString()
-	{
-		var currentSimTime = (clock == null) ? string.Empty : clock.ToHMS().SimTime.ToString();
-		var currentRealTime = (clock == null) ? string.Empty : clock.ToHMS().RealTime.ToString();
-		var diffRealSimTime = (clock == null) ? string.Empty : clock.ToHMS().DiffTime.ToString();
-
-		sbTimeInfo.Clear();
-		sbTimeInfo.Append("Time: Sim [");
-		sbTimeInfo.Append(currentSimTime);
-		sbTimeInfo.Append("] Real[");
-		sbTimeInfo.Append(currentRealTime);
-		sbTimeInfo.Append("] Real-Sim [");
-		sbTimeInfo.Append(diffRealSimTime);
-		sbTimeInfo.Append("]");
-		return sbTimeInfo.ToString();
-	}
-
-	public void SetPointInfo(in Vector3 point)
-	{
-		this.pointInfo = point;
-	}
-
-	private void DrawPointInfoText()
-	{
-		rectPointInfo.y = Screen.height - textHeight - bottomMargin;
-		style.fontStyle = FontStyle.Bold;
-		style.normal.textColor = new Color(1.0f, 0.93f, 0.0f, 1);
-		sbPointInfo.Clear();
-		sbPointInfo.Append("HitPoint (");
-		sbPointInfo.Append(pointInfo.x);
-		sbPointInfo.Append(", ");
-		sbPointInfo.Append(pointInfo.y);
-		sbPointInfo.Append(", ");
-		sbPointInfo.Append(pointInfo.z);
-		sbPointInfo.Append(")");
-		DrawLabelWithShadow(rectPointInfo, sbPointInfo.ToString());
-	}
-
-	private void DrawTimeInfoText()
-	{
-		var simulationInfo = GetTimeInfoString();
-		rectSimulationInfo.y = Screen.height - textHeight - bottomMargin;
-		style.normal.textColor = new Color(0.9f, 0.9f, 0.9f, 1);
-		DrawLabelWithShadow(rectSimulationInfo, simulationInfo);
-	}
 
 	private void DrawLabelWithShadow(in Rect rect, in string value)
 	{
@@ -177,12 +127,6 @@ public partial class SimulationDisplay : MonoBehaviour
 		// version info
 		style.normal.textColor = Color.green;
 		DrawLabelWithShadow(rectVersion, versionInfo);
-
-		DrawTimeInfoText();
-
-		DrawFPSText();
-
-		DrawPointInfoText();
 
 		// logging: error message or event message
 		rectLogMessage.y = Screen.height - (textHeight * 2) - bottomMargin;

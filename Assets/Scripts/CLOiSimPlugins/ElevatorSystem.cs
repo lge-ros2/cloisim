@@ -597,6 +597,11 @@ public partial class ElevatorSystem : CLOiSimPlugin
 				var index = (int)numKey - (int)(KeyCode.Alpha0);
 
 				var elevatorName = elevators.GetEntityNameByIndex(index);
+				if (elevatorName.Equals(string.Empty))
+				{
+					break;
+				}
+
 				Debug.Log("Test elevatorIndex: " + elevatorName);
 
 				if (Input.GetKey(KeyCode.LeftAlt) && Input.GetKey(KeyCode.LeftShift))

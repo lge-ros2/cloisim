@@ -10,6 +10,7 @@ using UnityEngine;
 public partial class SimulationDisplay : MonoBehaviour
 {
 	[Header("Help dialog")]
+	private StringBuilder sbOption_ = new StringBuilder(45);
 	private GUIContent helpContents = new GUIContent();
 	private float helpContentsHeight;
 	private const int buttonWidthHelp = 65;
@@ -77,7 +78,8 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine("            @ Let me know if you are stuck in any trouble :)");
 		sb.AppendLine("");
 
-		helpContentsHeight = 58 * labelFontSize;
+  		var lines = sb.ToString().Split(new string[] {System.Environment.NewLine }, System.StringSplitOptions.None).Length;
+		helpContentsHeight = (int)(lines * labelFontSize * 1.2);
 		helpContents.text = sb.ToString();
 
 		viewRect = new Rect(0, 0, rectDialog.width - 20, helpContentsHeight);
@@ -128,9 +130,12 @@ public partial class SimulationDisplay : MonoBehaviour
 		style.fontSize = (int)(labelFontSize * 0.8f);
 		style.alignment = TextAnchor.MiddleRight;
 		style.normal.textColor = Color.white;
-		var helpStatusMsg = "Vertical Camera Moving Lock(Space) " + ((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
+
+		sbOption_.Clear();
+		sbOption_.Append("Vertical Camera Moving Lock(Space) ");
+		sbOption_.Append((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
 		// var helpStatusMsg2 = "\nStatic Object Selectable(O) " + ((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
 		rectHelpStatus.x = Screen.width - rectHelpButton.width - helpStatusWidth - textLeftMargin - textLeftMargin;
-		DrawLabelWithShadow(rectHelpStatus, helpStatusMsg);
+		DrawLabelWithShadow(rectHelpStatus, sbOption_.ToString());
 	}
 }

@@ -69,7 +69,8 @@ public class ActorControlPlugin : CLOiSimPlugin
 			targetActor = actorList[requestType];
 			if (targetActor)
 			{
-				targetDestination = SDF2Unity.GetPosition(requestValue.Vector3dValue);
+                var vec = requestValue.Vector3dValue;
+				targetDestination = SDF2Unity.GetPosition(vec.X, vec.Y, vec.Z);
 				isReceivedRequest = true;
 				result = true;
 			}

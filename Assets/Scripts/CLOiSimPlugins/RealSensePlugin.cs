@@ -7,6 +7,7 @@
 using System.Collections.Generic;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
+using UnityEngine;
 
 public class RealSensePlugin : CLOiSimMultiPlugin
 {
@@ -47,12 +48,19 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		if (depthName != null)
 		{
 			var plugin = FindAndAddCameraPlugin(depthName);
-			var depthCamera = plugin.GetDepthCamera();
-
-			if (depthCamera != null)
+			if (plugin == null)
 			{
-				depthCamera.ReverseDepthData(false);
-				depthCamera.depthScale = depthScale;
+				Debug.LogWarning(depthName + " plugin is not loaded.");
+			}
+			else
+			{
+				var depthCamera = plugin.GetDepthCamera();
+
+				if (depthCamera != null)
+				{
+					depthCamera.ReverseDepthData(false);
+					depthCamera.depthScale = depthScale;
+				}
 			}
 		}
 

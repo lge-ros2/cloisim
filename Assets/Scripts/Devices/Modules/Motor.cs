@@ -211,7 +211,6 @@ public class Motor : Articulation
 	public void Stop()
 	{
 		_targetTorque = 0;
-
 		SetJointVelocity(0);
 		Drive(0, 0);
 
