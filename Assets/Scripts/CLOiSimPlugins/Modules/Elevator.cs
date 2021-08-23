@@ -103,7 +103,7 @@ public class Elevator
 	{
 		if (elevatorList.Keys.Count == 0 || index >= elevatorList.Keys.Count)
 		{
-			Debug.LogFormat("{0} elevator does not exist.");
+			Debug.LogFormat("{0} elevator does not exist.", index);
 			return string.Empty;
 		}
 

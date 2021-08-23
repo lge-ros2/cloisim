@@ -70,8 +70,7 @@ public class Requestor : RequestSocket
 		}
 		else
 		{
-			(Console.Out as DebugLogWriter).SetWarningOnce();
-			Console.WriteLine("Socket for request is not ready yet.");
+			Console.Error.WriteLine("Socket for request is not ready yet.");
 		}
 
 		return false;
@@ -93,8 +92,7 @@ public class Requestor : RequestSocket
 		}
 		else
 		{
-			(Console.Out as DebugLogWriter).SetWarningOnce();
-			Console.WriteLine("Socket for request is not ready yet.");
+			Console.Error.WriteLine("Socket for request is not ready yet.");
 		}
 
 		return null;

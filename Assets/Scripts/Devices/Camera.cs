@@ -3,7 +3,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
-using System.Collections;
+
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -33,15 +34,18 @@ namespace SensorDevices
 		protected RenderTextureReadWrite targetRTrwmode;
 		protected TextureFormat readbackDstFormat;
 		private CameraData.ImageData camImageData;
-		private CommandBuffer cmdBufferBegin;
-		private CommandBuffer cmdBufferEnd;
+		private List<AsyncGPUReadbackRequest> _readbackList = new List<AsyncGPUReadbackRequest>();
 		public Noise noise = null;
+		private bool _startCameraWork = false;
+		private float _lastTimeCameraWork = 0f;
 
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
 			if (camera.Equals(camSensor))
 			{
-				context.ExecuteCommandBuffer(cmdBufferBegin);
+				var cmdBuffer = new CommandBuffer();
+				cmdBuffer.SetInvertCulling(true);
+				context.ExecuteCommandBuffer(cmdBuffer);
 				context.Submit();
 			}
 		}
@@ -50,7 +54,9 @@ namespace SensorDevices
 		{
 			if (camera.Equals(camSensor))
 			{
-				context.ExecuteCommandBuffer(cmdBufferEnd);
+				var cmdBuffer = new CommandBuffer();
+				cmdBuffer.SetInvertCulling(false);
+				context.ExecuteCommandBuffer(cmdBuffer);
 				context.Submit();
 			}
 		}
@@ -63,11 +69,7 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
-			cmdBufferBegin = new CommandBuffer();
-			cmdBufferBegin.SetInvertCulling(true);
 
-			cmdBufferEnd = new CommandBuffer();
-			cmdBufferEnd.SetInvertCulling(false);
 
 			camSensor = GetComponent<UnityEngine.Camera>();
 			universalCamData = camSensor.GetUniversalAdditionalCameraData();
@@ -85,13 +87,15 @@ namespace SensorDevices
 			{
 				SetupTexture();
 				SetupCamera();
-				StartCoroutine(CameraWorker());
+				_startCameraWork = true;
 			}
 		}
 
 		protected virtual void SetupTexture()
 		{
 			camSensor.depthTextureMode = DepthTextureMode.None;
+			universalCamData.requiresColorOption = CameraOverrideOption.On;
+			universalCamData.requiresDepthOption = CameraOverrideOption.Off;
 			universalCamData.requiresColorTexture = true;
 			universalCamData.requiresDepthTexture = false;
 			universalCamData.renderShadows = true;
@@ -198,7 +202,12 @@ namespace SensorDevices
 			camSensor.projectionMatrix = projMatrix * invertMatrix;
 
 			universalCamData.enabled = false;
-			universalCamData.renderPostProcessing = true;
+			universalCamData.renderPostProcessing = false;
+			universalCamData.allowXRRendering = false;
+			universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
+			universalCamData.renderType = CameraRenderType.Base;
+			universalCamData.renderShadows = true;
+			universalCamData.cameraStack.Clear();
 			camSensor.enabled = false;
 
 			RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
@@ -211,7 +220,7 @@ namespace SensorDevices
 
 		protected new void OnDestroy()
 		{
-			StopCoroutine(CameraWorker());
+			_startCameraWork = false;
 
 			// Debug.Log("OnDestroy(Camera)");
 			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
@@ -220,11 +229,17 @@ namespace SensorDevices
 			base.OnDestroy();
 		}
 
-		private IEnumerator CameraWorker()
+		void Update()
 		{
-			var waitForSeconds = new WaitForSeconds(WaitPeriod());
+			if (_startCameraWork)
+			{
+				CameraWorker();
+			}
+		}
 
-			while (true)
+		private void CameraWorker()
+		{
+			if (Time.time - _lastTimeCameraWork >= WaitPeriod(0.0001f))
 			{
 				camSensor.enabled = true;
 
@@ -232,15 +247,13 @@ namespace SensorDevices
 				if (camSensor.isActiveAndEnabled)
 				{
 					camSensor.Render();
+
+					var readbackRequest = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
+					camSensor.enabled = false;
+					_readbackList.Add(readbackRequest);
 				}
-				var readback = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
 
-				camSensor.enabled = false;
-
-				yield return null;
-				readback.WaitForCompletion();
-
-				yield return waitForSeconds;
+				_lastTimeCameraWork = Time.time;
 			}
 		}
 
@@ -249,11 +262,8 @@ namespace SensorDevices
 			if (request.hasError)
 			{
 				Debug.LogError("Failed to read GPU texture");
-				return;
 			}
-			// Debug.Assert(request.done);
-
-			if (request.done)
+			else if (request.done)
 			{
 				var readbackData = request.GetData<byte>();
 				camImageData.SetTextureBufferData(ref readbackData);
@@ -264,8 +274,8 @@ namespace SensorDevices
 
 					PostProcessing(ref imageData);
 
-					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
 					image.Data = imageData;
+					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
 
 					if (camParameter.save_enabled)
 					{
@@ -275,6 +285,8 @@ namespace SensorDevices
 					}
 				}
 				readbackData.Dispose();
+
+				_readbackList.Remove(request);
 			}
 		}
 

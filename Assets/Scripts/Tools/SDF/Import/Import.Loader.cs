@@ -4,9 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
 using UE = UnityEngine;
-using Debug = UnityEngine.Debug;
 
 namespace SDF
 {

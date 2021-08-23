@@ -14,15 +14,13 @@ public class FollowingTargetList : MonoBehaviour
 	private TMP_Dropdown.OptionData emptyOption = null;
 
 	private GameObject modelRoot = null;
-
 	private FollowingCamera followingCamera = null;
-
 
 	void Awake()
 	{
 		modelRoot = Main.WorldRoot;
 		dropdown = GetComponent<TMP_Dropdown>();
-		followingCamera = gameObject.transform.root.GetComponentInChildren<FollowingCamera>();
+		followingCamera = Main.UIObject.GetComponentInChildren<FollowingCamera>();
 	}
 
 	void Start()
@@ -31,7 +29,19 @@ public class FollowingTargetList : MonoBehaviour
 		{
 			dropdown.onValueChanged.AddListener(OnDropDownValueChanged);
 
-			emptyOption = new TMP_Dropdown.OptionData("-- unfollowing --");
+			emptyOption = new TMP_Dropdown.OptionData("- unfollowing -");
+			dropdown.options.Add(emptyOption);
+			SelectItem();
+		}
+	}
+
+	private void SelectItem(in int selectIndex = 0)
+	{
+		if (dropdown != null)
+		{
+			dropdown.value = selectIndex;
+			dropdown.Select();
+			dropdown.RefreshShownValue();
 		}
 	}
 
@@ -68,8 +78,6 @@ public class FollowingTargetList : MonoBehaviour
 			}
 		}
 
-		dropdown.value = selectIndex;
-		dropdown.Select();
-		dropdown.RefreshShownValue();
+		SelectItem(selectIndex);
 	}
 }

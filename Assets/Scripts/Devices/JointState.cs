@@ -17,8 +17,6 @@ namespace SensorDevices
 
 		private messages.JointStateV jointStateV = null;
 
-		private List<messages.JointState> jointStateList = new List<messages.JointState>();
-
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
