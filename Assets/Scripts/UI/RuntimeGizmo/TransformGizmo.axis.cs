@@ -230,7 +230,7 @@ namespace RuntimeGizmos
 			Ray mouseRay = myCamera.ScreenPointToRay(Input.mousePosition);
 
 			float closestDistance = float.MaxValue;
-			for (int i = 0; i + 1 < lines.Count; i++)
+			for (var i = 0; i + 1 < lines.Count; i++)
 			{
 				IntersectPoints points = Geometry.ClosestPointsOnSegmentToLine(lines[i], lines[i + 1], mouseRay.origin, mouseRay.direction);
 				float distance = Vector3.Distance(points.first, points.second);
@@ -250,7 +250,7 @@ namespace RuntimeGizmos
 			{
 				Ray mouseRay = myCamera.ScreenPointToRay(Input.mousePosition);
 
-				for (int i = 0; i < planePoints.Count; i += 4)
+				for (var i = 0; i < planePoints.Count; i += 4)
 				{
 					Plane plane = new Plane(planePoints[i], planePoints[i + 1], planePoints[i + 2]);
 

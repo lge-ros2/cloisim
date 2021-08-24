@@ -51,9 +51,9 @@ public class LidarVisualizer : MonoBehaviour
 
 	private void ClearTexture(in Texture2D targetTexture)
 	{
-		for (int i = 0; i < targetTexture.width; i++)
+		for (var i = 0; i < targetTexture.width; i++)
 		{
-			for (int j = 0; j < targetTexture.height; j++)
+			for (var j = 0; j < targetTexture.height; j++)
 			{
 				targetTexture.SetPixel(i, j, new Color(0, 1, 0, 0.3f));
 			}
@@ -64,9 +64,9 @@ public class LidarVisualizer : MonoBehaviour
 	{
 		const int centerMarkerSize = 1;
 
-		for (int i = centerPosition - centerMarkerSize; i < centerPosition + centerMarkerSize; i++)
+		for (var i = centerPosition - centerMarkerSize; i < centerPosition + centerMarkerSize; i++)
 		{
-			for (int j = centerPosition - centerMarkerSize; j < centerPosition + centerMarkerSize; j++)
+			for (var j = centerPosition - centerMarkerSize; j < centerPosition + centerMarkerSize; j++)
 			{
 				targetTexture.SetPixel(i, j, new Color(0, 0, 1, 0.5f));
 			}

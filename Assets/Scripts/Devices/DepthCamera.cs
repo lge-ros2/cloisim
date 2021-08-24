@@ -52,7 +52,7 @@ namespace SensorDevices
 		{
 			if (ComputeShaderDepthBuffer == null)
 			{
-                ComputeShaderDepthBuffer = Resources.Load<ComputeShader>("Shader/DepthBufferScaling");
+				ComputeShaderDepthBuffer = Resources.Load<ComputeShader>("Shader/DepthBufferScaling");
 			}
 
 			computeShader = Instantiate(ComputeShaderDepthBuffer);

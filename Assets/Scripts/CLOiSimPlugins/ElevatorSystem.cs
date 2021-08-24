@@ -103,20 +103,20 @@ public partial class ElevatorSystem : CLOiSimPlugin
 	public void ReadElevatorContext()
 	{
 		// ex) plugin parameters example
-		// <system_name>ElevatorSystem_00</system_name>
-		// <elevator prefix_name="Elevator_" speed="2">
-		//   <floor>floor_collision</floor>
-		//   <doors speed="0.6" closing_timer="10.0">
-		//     <inside open_offset="0.567">
-		//       <door name="left">seocho_EV_door_L_link</door>
-		//       <door name="right">seocho_EV_door_R_link</door>
-		//     </inside>
-		//     <outside open_offset="0.567">
-		//       <door name="left">seocho_EV_out_doors_L_link</door>
-		//       <door name="right">seocho_EV_out_doors_R_link</door>
-		//     </outside>
-		//   </doors>
-		// </elevator>
+		//	<system_name>ElevatorSystem_00</system_name>
+		//	<elevator prefix_name="Elevator_" speed="2">
+		//		<floor>floor_collision</floor>
+		//		<doors speed="0.6" closing_timer="10.0">
+		//		<inside open_offset="0.567">
+		//			<door name="left">seocho_EV_door_L_link</door>
+		//			<door name="right">seocho_EV_door_R_link</door>
+		//		</inside>
+		//		<outside open_offset="0.567">
+		//			<door name="left">seocho_EV_out_doors_L_link</door>
+		//			<door name="right">seocho_EV_out_doors_R_link</door>
+		//		</outside>
+		//		</doors>
+		//	</elevator>
 		elevatorSystemName = GetPluginParameters().GetValue<string>("system_name");
 		var elevatorPrefixName = GetPluginParameters().GetAttributeInPath<string>("elevator", "prefix_name");
 		var elevatorSpeed = GetPluginParameters().GetAttributeInPath<float>("elevator", "speed");

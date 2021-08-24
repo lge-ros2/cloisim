@@ -465,11 +465,14 @@ namespace SensorDevices
 						if (doCopy)
 						{
 							try {
-								Buffer.BlockCopy(srcBuffer, srcBufferOffset * bufferUnitSize, laserScan.Ranges, dstBufferOffset * bufferUnitSize, copyLength * bufferUnitSize);
+								lock (laserScan.Ranges.SyncRoot)
+								{
+									Buffer.BlockCopy(srcBuffer, srcBufferOffset * bufferUnitSize, laserScan.Ranges, dstBufferOffset * bufferUnitSize, copyLength * bufferUnitSize);
+								}
 							}
-							catch
+							catch (Exception ex)
 							{
-								Debug.LogWarning("Error occured with Buffer.BlockCopy");
+								Debug.LogWarning("Error occured with Buffer.BlockCopy : " + ex.Message);
 							}
 						}
 					}
