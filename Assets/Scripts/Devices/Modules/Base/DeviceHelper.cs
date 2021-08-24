@@ -182,7 +182,7 @@ public partial class DeviceHelper
 		while (true)
 		{
 			var nextTarget = points[0];
-			for (int i = 1; i < points.Length; i++)
+			for (var i = 1; i < points.Length; i++)
 			{
 				if (points[i] == current)
 				{

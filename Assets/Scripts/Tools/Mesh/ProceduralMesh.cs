@@ -531,8 +531,8 @@ public class ProceduralMesh
 			#region Triangles
 			var nbFaces = (resX - 1) * (resZ - 1);
 			var triangles = new int[nbFaces * 6];
-
-			for (int t = 0, face = 0; face < nbFaces; face++)
+			var t = 0;
+			for (var face = 0; face < nbFaces; face++)
 			{
 				// Retrieve lower left corner from face ind
 				var i = face % (resX - 1) + (face / (resZ - 1) * resX);
@@ -624,9 +624,9 @@ public class ProceduralMesh
 		// Top Hemisphere
 		var top = Mathf.CeilToInt((float)points * 0.5f);
 
-		for (int y = 0; y < top; y++)
+		for (var y = 0; y < top; y++)
 		{
-			for (int x = 0; x < points; x++)
+			for (var x = 0; x < points; x++)
 			{
 				vertices[ind] = new Vector3(pX[x] * pR[y], pY[y], pZ[x] * pR[y]) * radius;
 				vertices[ind].y = yOff + vertices[ind].y;
@@ -659,8 +659,8 @@ public class ProceduralMesh
 
 		// Triangles
 		var triangles = new int[(segments * (segments + 1) * 2 * 3)];
-
-		for (int y = 0, t = 0; y < segments + 1; y++)
+		var t = 0;
+		for (var y = 0; y < segments + 1; y++)
 		{
 			for (var x = 0; x < segments; x++, t += 6)
 			{
