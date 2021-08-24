@@ -70,7 +70,6 @@ namespace SensorDevices
 		{
 			Mode = ModeType.TX_THREAD;
 
-
 			camSensor = GetComponent<UnityEngine.Camera>();
 			universalCamData = camSensor.GetUniversalAdditionalCameraData();
 

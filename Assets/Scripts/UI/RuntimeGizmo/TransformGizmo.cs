@@ -332,7 +332,7 @@ namespace RuntimeGizmos
 									}
 									else
 									{
-										float snapAmount = CalculateSnapAmount(movementSnap, currentSnapMovementAmount.magnitude, out var remainder);
+										var snapAmount = CalculateSnapAmount(movementSnap, currentSnapMovementAmount.magnitude, out var remainder);
 
 										if (snapAmount != 0)
 										{
@@ -342,7 +342,7 @@ namespace RuntimeGizmos
 									}
 								}
 
-								for (int i = 0; i <targetRootsOrdered.Count; i++)
+								for (var i = 0; i < targetRootsOrdered.Count; i++)
 								{
 									Transform target = targetRootsOrdered[i];
 
