@@ -20,9 +20,9 @@ public partial class MeshLoader
 		{
 			"",
 			"/textures/",
-			"../",
 			"../materials/", "../materials/textures/",
-			"../../materials/", "../../materials/textures/"
+			"../../materials/", "../../materials/textures/",
+			"../"
 		};
 
 	private static List<string> GetRootTexturePaths(in string parentPath)
