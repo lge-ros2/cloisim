@@ -88,15 +88,15 @@ public partial class MeshLoader
 			// Reflectivity
 			if (sceneMat.HasReflectivity)
 			{
-				// Debug.Log(sceneMat.Name + ": HasColorReflective but not support. " + sceneMat.ColorReflective);
-				mat.SetFloat("_EnvironmentReflections", sceneMat.Reflectivity);
+				// Debug.Log(sceneMat.Name + ": HasColorReflective " + sceneMat.Reflectivity);
+				mat.SetFloat("_GlossyReflections", sceneMat.Reflectivity);
 			}
 
 			// reflective
 			if (sceneMat.HasColorReflective)
 			{
-				Debug.Log(sceneMat.Name + ": HasColorReflective but not support. " + sceneMat.ColorReflective);
-				// mat.SetColor("_ReflectColor", MeshLoader.GetColor(sceneMat.ColorReflective));
+				// Debug.Log(sceneMat.Name + ": HasColorReflective " + sceneMat.ColorReflective);
+				mat.SetColor("_ReflectColor", MeshLoader.GetColor(sceneMat.ColorReflective));
 			}
 
 			if (sceneMat.HasShininess)
@@ -149,7 +149,7 @@ public partial class MeshLoader
 					if (File.Exists(textureFullPath))
 					{
 						mat.SetTexture("_BumpMap", GetTexture(textureFullPath));
-						Debug.Log(sceneMat.Name + ": HasTextureHeight -> " + filePath);
+						// Debug.Log(sceneMat.Name + ": HasTextureHeight -> " + filePath);
 						break;
 					}
 				}
@@ -171,7 +171,7 @@ public partial class MeshLoader
 					if (File.Exists(textureFullPath))
 					{
 						mat.SetTexture("_DetailNormalMap", GetTexture(textureFullPath));
-						Debug.Log(sceneMat.Name + ": HasTextureNormal -> " + filePath);
+						// Debug.Log(sceneMat.Name + ": HasTextureNormal -> " + filePath);
 						break;
 					}
 				}
@@ -224,15 +224,56 @@ public partial class MeshLoader
 			}
 
 			// UV (texture coordinate)
-			if (sceneMesh.HasTextureCoords(0))
+			for (var channelIndex = 0; channelIndex < sceneMesh.TextureCoordinateChannelCount; channelIndex++)
 			{
-				var uvs = new Queue<Vector2>();
-				foreach (var uv in sceneMesh.TextureCoordinateChannels[0])
+				if (sceneMesh.HasTextureCoords(channelIndex))
 				{
-					uvs.Enqueue(new Vector2(uv.X, uv.Y));
-				}
+					var uvs = new Queue<Vector2>();
+					foreach (var uv in sceneMesh.TextureCoordinateChannels[channelIndex])
+					{
+						uvs.Enqueue(new Vector2(uv.X, uv.Y));
+					}
 
-				newMesh.uv = uvs.ToArray();
+					switch (channelIndex)
+					{
+						case 0:
+							newMesh.uv = uvs.ToArray();
+							break;
+						case 1:
+							newMesh.uv2 = uvs.ToArray();
+							break;
+						case 2:
+							newMesh.uv3 = uvs.ToArray();
+							break;
+						case 3:
+							newMesh.uv4 = uvs.ToArray();
+							break;
+						case 4:
+							newMesh.uv5 = uvs.ToArray();
+							break;
+						case 5:
+							newMesh.uv6 = uvs.ToArray();
+							break;
+						case 6:
+							newMesh.uv7 = uvs.ToArray();
+							break;
+						case 7:
+							newMesh.uv8 = uvs.ToArray();
+							break;
+						default:
+							Debug.LogWarning("Invalid channelIndex: " + channelIndex);
+							break;
+					}
+				}
+			}
+
+			// Vertex Color
+			for (var channelIndex = 0; channelIndex < sceneMesh.VertexColorChannelCount; channelIndex++)
+			{
+				if (sceneMesh.HasVertexColors(channelIndex))
+				{
+					Debug.LogWarning("Has vertex color : " + channelIndex);
+				}
 			}
 
 			// Triangles
@@ -246,6 +287,10 @@ public partial class MeshLoader
 						indices.Enqueue(face.Indices[2]);
 						indices.Enqueue(face.Indices[1]);
 						indices.Enqueue(face.Indices[0]);
+					}
+					else
+					{
+						Debug.LogWarning("invalid face index count=" + face.IndexCount);
 					}
 				}
 
@@ -272,6 +317,7 @@ public partial class MeshLoader
 				{
 					tangents.Enqueue(new Vector4(t.X, t.Y, t.Z, 1));
 				}
+
 				newMesh.tangents = tangents.ToArray();
 			}
 
