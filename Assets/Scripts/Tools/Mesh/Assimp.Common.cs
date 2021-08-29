@@ -169,15 +169,16 @@ public partial class MeshLoader
 		const Assimp.PostProcessSteps postProcessFlags =
 			Assimp.PostProcessSteps.OptimizeGraph |
 			Assimp.PostProcessSteps.OptimizeMeshes |
+			// Assimp.PostProcessSteps.GenerateNormals |
+			// Assimp.PostProcessSteps.GenerateUVCoords |
 			Assimp.PostProcessSteps.ImproveCacheLocality |
 			Assimp.PostProcessSteps.CalculateTangentSpace |
 			Assimp.PostProcessSteps.JoinIdenticalVertices |
 			Assimp.PostProcessSteps.RemoveRedundantMaterials |
 			Assimp.PostProcessSteps.Triangulate |
-			Assimp.PostProcessSteps.FixInFacingNormals |
 			Assimp.PostProcessSteps.SortByPrimitiveType |
 			Assimp.PostProcessSteps.ValidateDataStructure |
-			// Assimp.PostProcessSteps.SplitLargeMeshes |
+			Assimp.PostProcessSteps.SplitLargeMeshes |
 			Assimp.PostProcessSteps.FindInvalidData |
 			Assimp.PostProcessSteps.MakeLeftHanded;
 
