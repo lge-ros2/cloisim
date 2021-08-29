@@ -32,13 +32,12 @@ public partial class SDF2Unity
 		newMaterial.SetFloat("_Glossiness", 0f);
 		newMaterial.SetFloat("_GlossMapScale", 0f);
 		newMaterial.SetFloat("_ReceiveShadows", 1);
-		// newMaterial.DisableKeyword("_ALPHATEST_ON");
-		// newMaterial.DisableKeyword("_ALPHABLEND_ON");
-		// newMaterial.EnableKeyword("_ALPHAPREMULTIPLY_ON");
 		newMaterial.EnableKeyword("_SPECGLOSSMAP");
 		newMaterial.EnableKeyword("_SPECULAR_SETUP");
 		newMaterial.EnableKeyword("_EMISSION");
-		newMaterial.DisableKeyword("_NORMALMAP");
+		newMaterial.EnableKeyword("_NORMALMAP");
+		newMaterial.EnableKeyword("_INSTANCING_ON");
+		newMaterial.EnableKeyword("_DOTS_INSTANCING_ON");
 
 		newMaterial.name = materialName;
 		newMaterial.enableInstancing = true;

@@ -88,11 +88,15 @@ public partial class MeshLoader
 			// Reflectivity
 			if (sceneMat.HasReflectivity)
 			{
-				if (sceneMat.HasColorReflective)
-				{
-					// Debug.Log(sceneMat.Name + ": HasColorReflective but not support. " + sceneMat.ColorReflective);
-					mat.SetColor("_ReflectColor", MeshLoader.GetColor(sceneMat.ColorReflective));
-				}
+				// Debug.Log(sceneMat.Name + ": HasColorReflective but not support. " + sceneMat.ColorReflective);
+				mat.SetFloat("_EnvironmentReflections", sceneMat.Reflectivity);
+			}
+
+			// reflective
+			if (sceneMat.HasColorReflective)
+			{
+				Debug.Log(sceneMat.Name + ": HasColorReflective but not support. " + sceneMat.ColorReflective);
+				// mat.SetColor("_ReflectColor", MeshLoader.GetColor(sceneMat.ColorReflective));
 			}
 
 			if (sceneMat.HasShininess)
@@ -109,22 +113,16 @@ public partial class MeshLoader
 			if (sceneMat.HasTextureDiffuse)
 			{
 				var filePath = sceneMat.TextureDiffuse.FilePath;
-
 				foreach (var textureDirectory in textureDirectories)
 				{
 					var textureFullPath = Path.Combine(textureDirectory, filePath);
 					if (File.Exists(textureFullPath))
 					{
 						mat.SetTexture("_BaseMap", GetTexture(textureFullPath));
-						// Debug.Log(sceneMat.Name + ": HasTextureDiffuse -> " + sceneMat.TextureDiffuse.FilePath);
+						// Debug.Log(sceneMat.Name + ": HasTextureDiffuse -> " + filePath);
 						break;
 					}
 				}
-			}
-
-			if (sceneMat.HasTextureDisplacement)
-			{
-				Debug.Log(sceneMat.Name + ": HasTextureDisplacement but not support. " + sceneMat.TextureDisplacement.FilePath);
 			}
 
 			if (sceneMat.HasTextureEmissive)
@@ -132,19 +130,52 @@ public partial class MeshLoader
 				Debug.Log(sceneMat.Name + ": HasTextureEmissive but not support. " + sceneMat.TextureEmissive.FilePath);
 			}
 
-			if (sceneMat.HasTextureHeight)
+			if (sceneMat.HasTextureSpecular)
 			{
-				Debug.Log(sceneMat.Name + ": HasTextureHeight but not support. " + sceneMat.TextureHeight.FilePath);
+				Debug.Log(sceneMat.Name + ": HasTextureSpecular but not support. " + sceneMat.TextureSpecular.FilePath);
 			}
 
-			if (sceneMat.HasTextureLightMap)
+			if (sceneMat.HasTextureDisplacement)
 			{
-				Debug.Log(sceneMat.Name + ": HasTextureLightMap but not support. " + sceneMat.TextureLightMap.FilePath);
+				Debug.Log(sceneMat.Name + ": HasTextureDisplacement but not support. " + sceneMat.TextureDisplacement.FilePath);
+			}
+
+			if (sceneMat.HasTextureHeight)
+			{
+				var filePath = sceneMat.TextureHeight.FilePath;
+				foreach (var textureDirectory in textureDirectories)
+				{
+					var textureFullPath = Path.Combine(textureDirectory, filePath);
+					if (File.Exists(textureFullPath))
+					{
+						mat.SetTexture("_BumpMap", GetTexture(textureFullPath));
+						Debug.Log(sceneMat.Name + ": HasTextureHeight -> " + filePath);
+						break;
+					}
+				}
+				// Debug.Log(sceneMat.Name + ": HasTextureHeight but not support. " + sceneMat.TextureHeight.FilePath);
+			}
+
+
+			if (sceneMat.HasBumpScaling)
+			{
+				Debug.Log(sceneMat.Name + ": HasBumpScaling but not support. " + sceneMat.BumpScaling);
 			}
 
 			if (sceneMat.HasTextureNormal)
 			{
-				Debug.Log(sceneMat.Name + ": HasTextureNormal but not support. " + sceneMat.TextureNormal.FilePath);
+				var filePath = sceneMat.TextureNormal.FilePath;
+				foreach (var textureDirectory in textureDirectories)
+				{
+					var textureFullPath = Path.Combine(textureDirectory, filePath);
+					if (File.Exists(textureFullPath))
+					{
+						mat.SetTexture("_DetailNormalMap", GetTexture(textureFullPath));
+						Debug.Log(sceneMat.Name + ": HasTextureNormal -> " + filePath);
+						break;
+					}
+				}
+				// Debug.Log(sceneMat.Name + ": HasTextureNormal but not support. " + sceneMat.TextureNormal.FilePath);
 			}
 
 			if (sceneMat.HasTextureOpacity)
@@ -157,9 +188,9 @@ public partial class MeshLoader
 				Debug.Log(sceneMat.Name + ": HasTextureReflection but not support. " + sceneMat.TextureReflection.FilePath);
 			}
 
-			if (sceneMat.HasTextureSpecular)
+			if (sceneMat.HasTextureLightMap)
 			{
-				Debug.Log(sceneMat.Name + ": HasTextureSpecular but not support. " + sceneMat.TextureSpecular.FilePath);
+				Debug.Log(sceneMat.Name + ": HasTextureLightMap but not support. " + sceneMat.TextureLightMap.FilePath);
 			}
 
 			materials.Add(mat);
