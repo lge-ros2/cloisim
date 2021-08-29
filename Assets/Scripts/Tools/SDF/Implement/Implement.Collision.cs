@@ -60,6 +60,11 @@ namespace SDF
 							UE.GameObject.Destroy(transformObjects[index].gameObject);
 						}
 
+						for (var index = 0; index < meshColliders.Length; index++)
+						{
+							UE.GameObject.Destroy(meshColliders[index]);
+						}
+
 						var combinedMeshCollider = targetObject.AddComponent<UE.MeshCollider>();
 						combinedMeshCollider.sharedMesh = mergedMesh;
 						combinedMeshCollider.convex = false;
