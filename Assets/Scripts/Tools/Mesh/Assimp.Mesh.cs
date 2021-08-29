@@ -48,7 +48,7 @@ public partial class MeshLoader
 
 			if (sceneMat.HasColorAmbient)
 			{
-				// Debug.Log(sceneMat.Name + ": ColorAmbient but not support. " + 	MeshLoader.GetColor(sceneMat.ColorAmbient);
+				// Debug.Log(sceneMat.Name + ": ColorAmbient but not support. " + 	MeshLoader.GetColor(sceneMat.ColorAmbient));
 			}
 
 			if (sceneMat.HasColorDiffuse)
@@ -116,7 +116,8 @@ public partial class MeshLoader
 					if (File.Exists(textureFullPath))
 					{
 						mat.SetTexture("_BaseMap", GetTexture(textureFullPath));
-						// mat.mainTexture = GetTexture(textureFullPath);
+						// Debug.Log(sceneMat.Name + ": HasTextureDiffuse -> " + sceneMat.TextureDiffuse.FilePath);
+						break;
 					}
 				}
 			}
@@ -329,13 +330,13 @@ public partial class MeshLoader
 			// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + " =>" + createdMeshObject.transform.localRotation.eulerAngles);
 
 			// change axis of position (y <-> z)
-			var existingPosition = createdMeshObject.transform.localPosition;
-			createdMeshObject.transform.localPosition = new Vector3(-existingPosition.y, -existingPosition.z, existingPosition.x);
+			var prevPosition = createdMeshObject.transform.localPosition;
+			createdMeshObject.transform.localPosition = SDF2Unity.GetPosition(prevPosition);
 			// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + createdMeshObject.transform.localPosition.ToString("F6") + ", " + existingPosition.ToString("F6") );
 
 			// change axis of scale (y <-> z)
-			var existingScale = createdMeshObject.transform.localScale;
-			createdMeshObject.transform.localScale = new Vector3(existingScale.x, existingScale.z, existingScale.y);
+			var prevScale = createdMeshObject.transform.localScale;
+			createdMeshObject.transform.localScale = SDF2Unity.GetScale(prevScale);
 
 			GameObjectCache.Add(meshPath, createdMeshObject);
 			GameObject.DontDestroyOnLoad(createdMeshObject);
