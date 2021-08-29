@@ -12,7 +12,7 @@ public partial class SDF2Unity
 	private static readonly string commonShaderName = "Universal Render Pipeline/Lit";
 	public static Shader CommonShader = Shader.Find(commonShaderName);
 
-	public static Material GetNewMaterial(in string name = "")
+	public static Material GetNewMaterial(in string materialName = "")
 	{
 		var defaultEmissionColor = Color.white - Color.black;
 		var newMaterial = new Material(SDF2Unity.CommonShader);
@@ -40,10 +40,10 @@ public partial class SDF2Unity
 		newMaterial.EnableKeyword("_EMISSION");
 		newMaterial.DisableKeyword("_NORMALMAP");
 
-		newMaterial.name = name;
+		newMaterial.name = materialName;
 		newMaterial.enableInstancing = true;
+		newMaterial.doubleSidedGI = false;
 		// newMaterial.renderQueue = (int)RenderQueue.Transparent;
-
 		// newMaterial.hideFlags |= HideFlags.NotEditable;
 
 		return newMaterial;
