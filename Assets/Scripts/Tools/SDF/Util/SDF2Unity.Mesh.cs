@@ -92,6 +92,7 @@ public partial class SDF2Unity
 		newCombinedMesh.RecalculateNormals();
 		newCombinedMesh.RecalculateTangents();
 		newCombinedMesh.RecalculateBounds();
+		newCombinedMesh.RecalculateUVDistributionMetrics();
 		newCombinedMesh.Optimize();
 
 		return newCombinedMesh;
@@ -116,6 +117,7 @@ public partial class SDF2Unity
 		newCombinedMesh.RecalculateNormals();
 		newCombinedMesh.RecalculateTangents();
 		newCombinedMesh.RecalculateBounds();
+		newCombinedMesh.RecalculateUVDistributionMetrics();
 		newCombinedMesh.Optimize();
 
 		return newCombinedMesh;

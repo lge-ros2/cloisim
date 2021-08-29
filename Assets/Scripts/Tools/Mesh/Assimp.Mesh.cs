@@ -315,7 +315,14 @@ public partial class MeshLoader
 				var tangents = new Queue<Vector4>();
 				foreach (var t in sceneMesh.Tangents)
 				{
+					// Debug.Log(t);
 					tangents.Enqueue(new Vector4(t.X, t.Y, t.Z, 1));
+				}
+
+				foreach (var t in sceneMesh.BiTangents)
+				{
+					// Debug.Log(t);
+					// tangents.Enqueue(new Vector4(t.X, t.Y, t.Z, 1));
 				}
 
 				newMesh.tangents = tangents.ToArray();
