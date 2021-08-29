@@ -567,7 +567,6 @@ public class ProceduralMesh
 		}
 		mesh.vertices = meshVertices;
 
-
 		return mesh;
 	}
 
