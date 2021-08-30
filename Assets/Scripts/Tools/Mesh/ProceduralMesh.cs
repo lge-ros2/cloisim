@@ -417,7 +417,7 @@ public class ProceduralMesh
 			var nbIndexes = nbTriangles * 3;
 			var triangles = new int[nbIndexes];
 
-			//Top Cap
+			// Top Cap
 			var i = 0;
 			for (var lon = 0; lon < nbLong; lon++)
 			{
@@ -426,7 +426,7 @@ public class ProceduralMesh
 				triangles[i++] = 0;
 			}
 
-			//Middle
+			// Middle
 			for (var lat = 0; lat < nbLat - 1; lat++)
 			{
 				for (var lon = 0; lon < nbLong; lon++)
@@ -444,7 +444,7 @@ public class ProceduralMesh
 				}
 			}
 
-			//Bottom Cap
+			// Bottom Cap
 			for (var lon = 0; lon < nbLong; lon++)
 			{
 				triangles[i++] = vertices.Length - 1;

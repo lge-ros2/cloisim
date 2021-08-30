@@ -284,9 +284,9 @@ public partial class MeshLoader
 				{
 					if (face.IndexCount == 3)
 					{
-						indices.Enqueue(face.Indices[2]);
-						indices.Enqueue(face.Indices[1]);
 						indices.Enqueue(face.Indices[0]);
+						indices.Enqueue(face.Indices[1]);
+						indices.Enqueue(face.Indices[2]);
 					}
 					else
 					{
@@ -319,11 +319,11 @@ public partial class MeshLoader
 					tangents.Enqueue(new Vector4(t.X, t.Y, t.Z, 1));
 				}
 
-				foreach (var t in sceneMesh.BiTangents)
-				{
-					// Debug.Log(t);
-					// tangents.Enqueue(new Vector4(t.X, t.Y, t.Z, 1));
-				}
+				// foreach (var t in sceneMesh.BiTangents)
+				// {
+				// 	// Debug.Log(t);
+				// 	tangents.Enqueue(new Vector4(t.X, t.Y, t.Z, 1));
+				// }
 
 				newMesh.tangents = tangents.ToArray();
 			}
