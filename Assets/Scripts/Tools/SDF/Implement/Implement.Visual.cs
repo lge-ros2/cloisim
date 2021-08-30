@@ -15,9 +15,9 @@ namespace SDF
 	{
 		public class Visual
 		{
-			public static void OptimizeMeshes(in UE.GameObject targetObject)
+			public static void OptimizeMeshes(in UE.Transform targetTransform)
 			{
-				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
+				var meshFilters = targetTransform.GetComponentsInChildren<UE.MeshFilter>();
 
 				if (meshFilters.Length <= 1)
 				{
@@ -25,7 +25,7 @@ namespace SDF
 				}
 
 				var materialTable = new Dictionary<string, UE.Material>();
-				var meshfilterTable = new Dictionary<string, HashSet<UE.MeshFilter>>();
+				var meshFilterTable = new Dictionary<string, HashSet<UE.MeshFilter>>();
 
 				foreach (var meshFilter in meshFilters)
 				{
@@ -38,15 +38,15 @@ namespace SDF
 						materialTable.Add(materialName, material);
 					}
 
-					if (!meshfilterTable.ContainsKey(materialName))
+					if (!meshFilterTable.ContainsKey(materialName))
 					{
-						var meshfilterSet = new HashSet<UE.MeshFilter>();
-						meshfilterSet.Add(meshFilter);
-						meshfilterTable.Add(materialName, meshfilterSet);
+						var meshFilterSet = new HashSet<UE.MeshFilter>();
+						meshFilterSet.Add(meshFilter);
+						meshFilterTable.Add(materialName, meshFilterSet);
 					}
 					else
 					{
-						if (meshfilterTable.TryGetValue(materialName, out var value))
+						if (meshFilterTable.TryGetValue(materialName, out var value))
 						{
 							value.Add(meshFilter);
 						}
@@ -63,28 +63,28 @@ namespace SDF
 					}
 				}
 
-				foreach (var meshfilterSet in meshfilterTable)
+				foreach (var meshFilterSet in meshFilterTable)
 				{
 					UE.Material material = null;
-					if (materialTable.TryGetValue(meshfilterSet.Key, out var value))
+					if (materialTable.TryGetValue(meshFilterSet.Key, out var value))
 					{
 						material = value;
 					}
 
-					var mehsFilters = meshfilterSet.Value.ToArray();
-					var mergedMesh = SDF2Unity.MergeMeshes(mehsFilters);
+					var meshFilterList = meshFilterSet.Value.ToArray();
+					var mergedMesh = SDF2Unity.MergeMeshes(meshFilterList);
 
-					var newName = meshfilterSet.Key.Replace("(Instance)", "Combined").Trim();
-					var newVisualObject = new UE.GameObject(newName);
+					var newName = meshFilterSet.Key.Replace("(Instance)", "Combined").Trim();
+					var newVisualGeometryObject = new UE.GameObject(newName);
 
-					var meshFilter = newVisualObject.AddComponent<UE.MeshFilter>();
+					var meshFilter = newVisualGeometryObject.AddComponent<UE.MeshFilter>();
 					mergedMesh.name = newName;
 					meshFilter.sharedMesh = mergedMesh;
 
-					var meshRenderer = newVisualObject.AddComponent<UE.MeshRenderer>();
+					var meshRenderer = newVisualGeometryObject.AddComponent<UE.MeshRenderer>();
 					meshRenderer.material = material;
 
-					newVisualObject.transform.SetParent(targetObject.transform, false);
+					newVisualGeometryObject.transform.SetParent(targetTransform, true);
 				}
 			}
 		}

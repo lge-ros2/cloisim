@@ -12,7 +12,7 @@ public partial class SDF2Unity
 	private static readonly string commonShaderName = "Universal Render Pipeline/Lit";
 	public static Shader CommonShader = Shader.Find(commonShaderName);
 
-	public static Material GetNewMaterial(in string name = "")
+	public static Material GetNewMaterial(in string materialName = "")
 	{
 		var defaultEmissionColor = Color.white - Color.black;
 		var newMaterial = new Material(SDF2Unity.CommonShader);
@@ -32,18 +32,17 @@ public partial class SDF2Unity
 		newMaterial.SetFloat("_Glossiness", 0f);
 		newMaterial.SetFloat("_GlossMapScale", 0f);
 		newMaterial.SetFloat("_ReceiveShadows", 1);
-		// newMaterial.DisableKeyword("_ALPHATEST_ON");
-		// newMaterial.DisableKeyword("_ALPHABLEND_ON");
-		// newMaterial.EnableKeyword("_ALPHAPREMULTIPLY_ON");
 		newMaterial.EnableKeyword("_SPECGLOSSMAP");
 		newMaterial.EnableKeyword("_SPECULAR_SETUP");
 		newMaterial.EnableKeyword("_EMISSION");
-		newMaterial.DisableKeyword("_NORMALMAP");
+		newMaterial.EnableKeyword("_NORMALMAP");
+		newMaterial.EnableKeyword("_INSTANCING_ON");
+		newMaterial.EnableKeyword("_DOTS_INSTANCING_ON");
 
-		newMaterial.name = name;
+		newMaterial.name = materialName;
 		newMaterial.enableInstancing = true;
+		newMaterial.doubleSidedGI = false;
 		// newMaterial.renderQueue = (int)RenderQueue.Transparent;
-
 		// newMaterial.hideFlags |= HideFlags.NotEditable;
 
 		return newMaterial;
@@ -88,11 +87,13 @@ public partial class SDF2Unity
 		}
 
 		var newCombinedMesh = new Mesh();
+		newCombinedMesh.name = "Merged";
 		newCombinedMesh.indexFormat = (totalVertexCount >= System.UInt16.MaxValue) ? IndexFormat.UInt32 : IndexFormat.UInt16;
 		newCombinedMesh.CombineMeshes(combine, false, true);
 		newCombinedMesh.RecalculateNormals();
 		newCombinedMesh.RecalculateTangents();
 		newCombinedMesh.RecalculateBounds();
+		newCombinedMesh.RecalculateUVDistributionMetrics();
 		newCombinedMesh.Optimize();
 
 		return newCombinedMesh;
@@ -112,11 +113,13 @@ public partial class SDF2Unity
 		}
 
 		var newCombinedMesh = new Mesh();
+		newCombinedMesh.name = "Merged";
 		newCombinedMesh.indexFormat = (totalVertexCount >= System.UInt16.MaxValue) ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
 		newCombinedMesh.CombineMeshes(combine, false, true);
 		newCombinedMesh.RecalculateNormals();
 		newCombinedMesh.RecalculateTangents();
 		newCombinedMesh.RecalculateBounds();
+		newCombinedMesh.RecalculateUVDistributionMetrics();
 		newCombinedMesh.Optimize();
 
 		return newCombinedMesh;

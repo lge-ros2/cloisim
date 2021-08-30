@@ -23,6 +23,11 @@ public partial class SDF2Unity
 		return new Vector3(-(float)y, (float)z, (float)x);
 	}
 
+	public static Vector3 GetPosition(in Vector3 value)
+	{
+		return GetPosition(value.x, value.y, value.z);
+	}
+
 	public static Vector3 GetPosition(in SDF.Vector3<double> value)
 	{
 		return (value == null) ? Vector3.zero : GetPosition(value.X, value.Y, value.Z);
@@ -54,6 +59,11 @@ public partial class SDF2Unity
 	}
 
 	public static Vector3 GetScale(in SDF.Vector3<double> value)
+	{
+		return GetScale(new Vector3((float)value.X, (float)value.Y, (float)value.Z));
+	}
+
+	public static Vector3 GetScale(in Vector3 value)
 	{
 		var scaleVector = GetPosition(value);
 		scaleVector.x = Mathf.Abs(scaleVector.x);

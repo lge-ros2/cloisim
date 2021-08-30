@@ -48,7 +48,7 @@ public partial class MeshLoader
 
 			if (sceneMat.HasColorAmbient)
 			{
-				// Debug.Log(sceneMat.Name + ": ColorAmbient but not support. " + 	MeshLoader.GetColor(sceneMat.ColorAmbient);
+				// Debug.Log(sceneMat.Name + ": ColorAmbient but not support. " + 	MeshLoader.GetColor(sceneMat.ColorAmbient));
 			}
 
 			if (sceneMat.HasColorDiffuse)
@@ -88,11 +88,15 @@ public partial class MeshLoader
 			// Reflectivity
 			if (sceneMat.HasReflectivity)
 			{
-				if (sceneMat.HasColorReflective)
-				{
-					// Debug.Log(sceneMat.Name + ": HasColorReflective but not support. " + sceneMat.ColorReflective);
-					mat.SetColor("_ReflectColor", MeshLoader.GetColor(sceneMat.ColorReflective));
-				}
+				// Debug.Log(sceneMat.Name + ": HasColorReflective " + sceneMat.Reflectivity);
+				mat.SetFloat("_GlossyReflections", sceneMat.Reflectivity);
+			}
+
+			// reflective
+			if (sceneMat.HasColorReflective)
+			{
+				// Debug.Log(sceneMat.Name + ": HasColorReflective " + sceneMat.ColorReflective);
+				mat.SetColor("_ReflectColor", MeshLoader.GetColor(sceneMat.ColorReflective));
 			}
 
 			if (sceneMat.HasShininess)
@@ -109,21 +113,16 @@ public partial class MeshLoader
 			if (sceneMat.HasTextureDiffuse)
 			{
 				var filePath = sceneMat.TextureDiffuse.FilePath;
-
 				foreach (var textureDirectory in textureDirectories)
 				{
 					var textureFullPath = Path.Combine(textureDirectory, filePath);
 					if (File.Exists(textureFullPath))
 					{
 						mat.SetTexture("_BaseMap", GetTexture(textureFullPath));
-						// mat.mainTexture = GetTexture(textureFullPath);
+						// Debug.Log(sceneMat.Name + ": HasTextureDiffuse -> " + filePath);
+						break;
 					}
 				}
-			}
-
-			if (sceneMat.HasTextureDisplacement)
-			{
-				Debug.Log(sceneMat.Name + ": HasTextureDisplacement but not support. " + sceneMat.TextureDisplacement.FilePath);
 			}
 
 			if (sceneMat.HasTextureEmissive)
@@ -131,19 +130,52 @@ public partial class MeshLoader
 				Debug.Log(sceneMat.Name + ": HasTextureEmissive but not support. " + sceneMat.TextureEmissive.FilePath);
 			}
 
-			if (sceneMat.HasTextureHeight)
+			if (sceneMat.HasTextureSpecular)
 			{
-				Debug.Log(sceneMat.Name + ": HasTextureHeight but not support. " + sceneMat.TextureHeight.FilePath);
+				Debug.Log(sceneMat.Name + ": HasTextureSpecular but not support. " + sceneMat.TextureSpecular.FilePath);
 			}
 
-			if (sceneMat.HasTextureLightMap)
+			if (sceneMat.HasTextureDisplacement)
 			{
-				Debug.Log(sceneMat.Name + ": HasTextureLightMap but not support. " + sceneMat.TextureLightMap.FilePath);
+				Debug.Log(sceneMat.Name + ": HasTextureDisplacement but not support. " + sceneMat.TextureDisplacement.FilePath);
+			}
+
+			if (sceneMat.HasTextureHeight)
+			{
+				var filePath = sceneMat.TextureHeight.FilePath;
+				foreach (var textureDirectory in textureDirectories)
+				{
+					var textureFullPath = Path.Combine(textureDirectory, filePath);
+					if (File.Exists(textureFullPath))
+					{
+						mat.SetTexture("_BumpMap", GetTexture(textureFullPath));
+						// Debug.Log(sceneMat.Name + ": HasTextureHeight -> " + filePath);
+						break;
+					}
+				}
+				// Debug.Log(sceneMat.Name + ": HasTextureHeight but not support. " + sceneMat.TextureHeight.FilePath);
+			}
+
+
+			if (sceneMat.HasBumpScaling)
+			{
+				Debug.Log(sceneMat.Name + ": HasBumpScaling but not support. " + sceneMat.BumpScaling);
 			}
 
 			if (sceneMat.HasTextureNormal)
 			{
-				Debug.Log(sceneMat.Name + ": HasTextureNormal but not support. " + sceneMat.TextureNormal.FilePath);
+				var filePath = sceneMat.TextureNormal.FilePath;
+				foreach (var textureDirectory in textureDirectories)
+				{
+					var textureFullPath = Path.Combine(textureDirectory, filePath);
+					if (File.Exists(textureFullPath))
+					{
+						mat.SetTexture("_DetailNormalMap", GetTexture(textureFullPath));
+						// Debug.Log(sceneMat.Name + ": HasTextureNormal -> " + filePath);
+						break;
+					}
+				}
+				// Debug.Log(sceneMat.Name + ": HasTextureNormal but not support. " + sceneMat.TextureNormal.FilePath);
 			}
 
 			if (sceneMat.HasTextureOpacity)
@@ -156,9 +188,9 @@ public partial class MeshLoader
 				Debug.Log(sceneMat.Name + ": HasTextureReflection but not support. " + sceneMat.TextureReflection.FilePath);
 			}
 
-			if (sceneMat.HasTextureSpecular)
+			if (sceneMat.HasTextureLightMap)
 			{
-				Debug.Log(sceneMat.Name + ": HasTextureSpecular but not support. " + sceneMat.TextureSpecular.FilePath);
+				Debug.Log(sceneMat.Name + ": HasTextureLightMap but not support. " + sceneMat.TextureLightMap.FilePath);
 			}
 
 			materials.Add(mat);
@@ -192,15 +224,56 @@ public partial class MeshLoader
 			}
 
 			// UV (texture coordinate)
-			if (sceneMesh.HasTextureCoords(0))
+			for (var channelIndex = 0; channelIndex < sceneMesh.TextureCoordinateChannelCount; channelIndex++)
 			{
-				var uvs = new Queue<Vector2>();
-				foreach (var uv in sceneMesh.TextureCoordinateChannels[0])
+				if (sceneMesh.HasTextureCoords(channelIndex))
 				{
-					uvs.Enqueue(new Vector2(uv.X, uv.Y));
-				}
+					var uvs = new Queue<Vector2>();
+					foreach (var uv in sceneMesh.TextureCoordinateChannels[channelIndex])
+					{
+						uvs.Enqueue(new Vector2(uv.X, uv.Y));
+					}
 
-				newMesh.uv = uvs.ToArray();
+					switch (channelIndex)
+					{
+						case 0:
+							newMesh.uv = uvs.ToArray();
+							break;
+						case 1:
+							newMesh.uv2 = uvs.ToArray();
+							break;
+						case 2:
+							newMesh.uv3 = uvs.ToArray();
+							break;
+						case 3:
+							newMesh.uv4 = uvs.ToArray();
+							break;
+						case 4:
+							newMesh.uv5 = uvs.ToArray();
+							break;
+						case 5:
+							newMesh.uv6 = uvs.ToArray();
+							break;
+						case 6:
+							newMesh.uv7 = uvs.ToArray();
+							break;
+						case 7:
+							newMesh.uv8 = uvs.ToArray();
+							break;
+						default:
+							Debug.LogWarning("Invalid channelIndex: " + channelIndex);
+							break;
+					}
+				}
+			}
+
+			// Vertex Color
+			for (var channelIndex = 0; channelIndex < sceneMesh.VertexColorChannelCount; channelIndex++)
+			{
+				if (sceneMesh.HasVertexColors(channelIndex))
+				{
+					Debug.LogWarning("Has vertex color : " + channelIndex);
+				}
 			}
 
 			// Triangles
@@ -211,9 +284,13 @@ public partial class MeshLoader
 				{
 					if (face.IndexCount == 3)
 					{
-						indices.Enqueue(face.Indices[2]);
-						indices.Enqueue(face.Indices[1]);
 						indices.Enqueue(face.Indices[0]);
+						indices.Enqueue(face.Indices[1]);
+						indices.Enqueue(face.Indices[2]);
+					}
+					else
+					{
+						Debug.LogWarning("invalid face index count=" + face.IndexCount);
 					}
 				}
 
@@ -238,8 +315,16 @@ public partial class MeshLoader
 				var tangents = new Queue<Vector4>();
 				foreach (var t in sceneMesh.Tangents)
 				{
+					// Debug.Log(t);
 					tangents.Enqueue(new Vector4(t.X, t.Y, t.Z, 1));
 				}
+
+				// foreach (var t in sceneMesh.BiTangents)
+				// {
+				// 	// Debug.Log(t);
+				// 	tangents.Enqueue(new Vector4(t.X, t.Y, t.Z, 1));
+				// }
+
 				newMesh.tangents = tangents.ToArray();
 			}
 
@@ -329,13 +414,13 @@ public partial class MeshLoader
 			// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + " =>" + createdMeshObject.transform.localRotation.eulerAngles);
 
 			// change axis of position (y <-> z)
-			var existingPosition = createdMeshObject.transform.localPosition;
-			createdMeshObject.transform.localPosition = new Vector3(-existingPosition.y, -existingPosition.z, existingPosition.x);
+			var prevPosition = createdMeshObject.transform.localPosition;
+			createdMeshObject.transform.localPosition = SDF2Unity.GetPosition(prevPosition);
 			// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + createdMeshObject.transform.localPosition.ToString("F6") + ", " + existingPosition.ToString("F6") );
 
 			// change axis of scale (y <-> z)
-			var existingScale = createdMeshObject.transform.localScale;
-			createdMeshObject.transform.localScale = new Vector3(existingScale.x, existingScale.z, existingScale.y);
+			var prevScale = createdMeshObject.transform.localScale;
+			createdMeshObject.transform.localScale = SDF2Unity.GetScale(prevScale);
 
 			GameObjectCache.Add(meshPath, createdMeshObject);
 			GameObject.DontDestroyOnLoad(createdMeshObject);
