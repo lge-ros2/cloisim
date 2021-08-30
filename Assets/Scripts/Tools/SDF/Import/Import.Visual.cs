@@ -15,7 +15,7 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private bool enableOptimization = false;
+			private static readonly bool EnableOptimization = true;
 
 			protected override System.Object ImportVisual(in SDF.Visual visual, in System.Object parentObject)
 			{
@@ -51,9 +51,17 @@ namespace SDF
 						UE.GameObject.Destroy(collider);
 					}
 
-					if (enableOptimization)
+					if (EnableOptimization)
 					{
-						Implement.Visual.OptimizeMeshes(visualObject);
+						var geometryTransform = visualObject.transform.GetChild(0);
+						if (geometryTransform.CompareTag("Geometry"))
+						{
+							Implement.Visual.OptimizeMeshes(geometryTransform);
+						}
+						else
+						{
+							UE.Debug.LogWarning(visualObject.name + " has no geometry object");
+						}
 					}
 
 					// Turn off high-loading features in renderer as a performance tunig

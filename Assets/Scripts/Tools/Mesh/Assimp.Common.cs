@@ -20,9 +20,9 @@ public partial class MeshLoader
 		{
 			"",
 			"/textures/",
-			"../",
 			"../materials/", "../materials/textures/",
-			"../../materials/", "../../materials/textures/"
+			"../../materials/", "../../materials/textures/",
+			"../"
 		};
 
 	private static List<string> GetRootTexturePaths(in string parentPath)
@@ -169,14 +169,19 @@ public partial class MeshLoader
 		const Assimp.PostProcessSteps postProcessFlags =
 			Assimp.PostProcessSteps.OptimizeGraph |
 			Assimp.PostProcessSteps.OptimizeMeshes |
+			// Assimp.PostProcessSteps.GenerateNormals |
+			// Assimp.PostProcessSteps.GenerateUVCoords |
+			Assimp.PostProcessSteps.ImproveCacheLocality |
 			Assimp.PostProcessSteps.CalculateTangentSpace |
 			Assimp.PostProcessSteps.JoinIdenticalVertices |
 			Assimp.PostProcessSteps.RemoveRedundantMaterials |
 			Assimp.PostProcessSteps.Triangulate |
 			Assimp.PostProcessSteps.SortByPrimitiveType |
 			Assimp.PostProcessSteps.ValidateDataStructure |
+			Assimp.PostProcessSteps.SplitLargeMeshes |
 			Assimp.PostProcessSteps.FindInvalidData |
-			Assimp.PostProcessSteps.MakeLeftHanded;
+			Assimp.PostProcessSteps.MakeLeftHanded |
+			Assimp.PostProcessSteps.FlipWindingOrder;
 
 		var scene = importer.ImportFile(targetPath, postProcessFlags);
 		if (scene == null)

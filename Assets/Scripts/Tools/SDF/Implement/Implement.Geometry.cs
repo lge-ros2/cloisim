@@ -90,6 +90,7 @@ namespace SDF
 					mesh.RecalculateNormals();
 					mesh.RecalculateTangents();
 					mesh.RecalculateBounds();
+					mesh.RecalculateUVDistributionMetrics();
 					mesh.Optimize();
 
 					var meshFilter = createdObject.AddComponent<UE.MeshFilter>();

@@ -43,21 +43,26 @@ public class DebugLogWriter : TextWriter
 		showOnDisplay = true;
 	}
 
-
 	private void Print(in string value)
 	{
 		if (isError)
 		{
 			Debug.LogWarning(value);
 			if (showOnDisplay)
+			{
 				simulationDisplay?.SetErrorMessage(value);
+				showOnDisplay = false;
+			}
 		}
 		else
 		{
 			Debug.Log(value);
 
 			if (showOnDisplay)
+			{
 				simulationDisplay?.SetEventMessage(value);
+				showOnDisplay = false;
+			}
 		}
 	}
 

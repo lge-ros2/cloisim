@@ -124,13 +124,13 @@ For the performance in terms of collision handling, designing collision geometry
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.16f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.3.17f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 20.04.2 LTS
   - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
   - Memory: 32GB
-  - Graphics: NVIDIA Corporation TU102 [GeForce RTX 2080 Ti]
+  - Graphics: NVIDIA Corporation [GeForce RTX 3090]
 
 - Windows Machine
   - OS: Windows 10 20H2
@@ -183,7 +183,7 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 #### Debugging log
 
 ```shell
-tail -f  ~/.config/unity3d/LGElectronics.AdvancedRoboticsLab/CLOiSim/Player.log
+tail -f ~/.config/unity3d/lge-arlab/CLOiSim/Player.log
 ```
 
 #### Control service
@@ -203,7 +203,7 @@ Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-servi
 
 New features or functions shall be developed on demand.
 
-- Fully support to keep up with 'SDF specifiaction version 1.7'
+- Fully support to keep up with 'SDF specifiaction version 1.8'
 
 - Add new sensor models and enhance sensor performance
 

@@ -5,6 +5,7 @@
  */
 
 using System.Collections.Generic;
+using System.Text;
 using Any = cloisim.msgs.Any;
 using messages = cloisim.msgs;
 using UnityEngine;
@@ -110,6 +111,8 @@ public class MicomPlugin : CLOiSimPlugin
 
 	private void LoadStaticTF()
 	{
+		var staticTfLog = new StringBuilder();
+		staticTfLog.AppendLine("Loaded Static TF Info : " + modelName);
 		var linkHelpers = GetComponentsInChildren<SDF.Helper.Link>();
 
 		if (GetPluginParameters().GetValues<string>("ros2/static_transforms/link", out var staticLinks))
@@ -127,16 +130,20 @@ public class MicomPlugin : CLOiSimPlugin
 					{
 						var tf = new TF(linkHelper, link, parentFrameId);
 						staticTfList.Add(tf);
-						Debug.Log(modelName + "::" + linkName + " : static TF added");
+						staticTfLog.AppendLine(modelName + "::" + linkName + " : static TF added");
 						break;
 					}
 				}
 			}
 		}
+
+		Debug.Log(staticTfLog.ToString());
 	}
 
 	private void LoadTF()
 	{
+		var tfLog = new StringBuilder();
+		tfLog.AppendLine("Loaded TF Info : " + modelName);
 		var linkHelpers = GetComponentsInChildren<SDF.Helper.Link>();
 		if (GetPluginParameters().GetValues<string>("ros2/transforms/link", out var links))
 		{
@@ -153,12 +160,14 @@ public class MicomPlugin : CLOiSimPlugin
 					{
 						var tf = new TF(linkHelper, link, parentFrameId);
 						tfList.Add(tf);
-						Debug.Log(modelName + "::" + linkName + " : TF added");
+						tfLog.AppendLine(modelName + "::" + linkName + " : TF added");
 						break;
 					}
 				}
 			}
 		}
+
+		Debug.Log(tfLog.ToString());
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
