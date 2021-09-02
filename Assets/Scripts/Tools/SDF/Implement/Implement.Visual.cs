@@ -65,10 +65,9 @@ namespace SDF
 
 				foreach (var meshFilterSet in meshFilterTable)
 				{
-					UE.Material material = null;
-					if (materialTable.TryGetValue(meshFilterSet.Key, out var value))
+					if (!materialTable.TryGetValue(meshFilterSet.Key, out UE.Material material))
 					{
-						material = value;
+						material = null;
 					}
 
 					var meshFilterList = meshFilterSet.Value.ToArray();

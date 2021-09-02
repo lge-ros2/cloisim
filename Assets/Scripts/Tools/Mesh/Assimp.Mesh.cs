@@ -288,6 +288,12 @@ public partial class MeshLoader
 						indices.Enqueue(face.Indices[1]);
 						indices.Enqueue(face.Indices[2]);
 					}
+					else if (face.IndexCount == 2)
+					{
+						indices.Enqueue(face.Indices[0]);
+						indices.Enqueue(face.Indices[1]);
+						indices.Enqueue(face.Indices[0]);
+					}
 					else
 					{
 						Debug.LogWarning("invalid face index count=" + face.IndexCount);
