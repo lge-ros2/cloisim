@@ -18,11 +18,52 @@ namespace SDF
 			private UE.ArticulationBody articulationBody = null;
 
 			private List<UE.Pose> poseList = new List<UE.Pose>();
+
+			struct JointTarget
+			{
+				public float axis1;
+				public float axis2;
+			}
+
+			private List<JointTarget> jointTargetList = new List<JointTarget>();
+
 			public int Count => poseList.Count;
 
 			public PoseControl(in UE.Transform target)
 			{
 				targetTransform = target;
+			}
+
+			public void SetJointTarget(in float targetAxis1, in float targetAxis2, in int targetFrame = 0)
+			{
+				var jointTarget = new JointTarget();
+				jointTarget.axis1 = targetAxis1;
+				jointTarget.axis2 = targetAxis2;
+
+				if (targetFrame < jointTargetList.Count)
+				{
+					jointTargetList[targetFrame] = jointTarget;
+				}
+				else
+				{
+					lock (jointTargetList)
+					{
+						jointTargetList.Add(jointTarget);
+					}
+				}
+			}
+
+			public void GetJointTarget(out float targetAxis1, out float targetAxis2, in int targetFrame = 0)
+			{
+				targetAxis1 = 0;
+				targetAxis2 = 0;
+
+				if (targetFrame < jointTargetList.Count)
+				{
+					var jointTarget = jointTargetList[targetFrame];
+					targetAxis1 = jointTarget.axis1;
+					targetAxis2 = jointTarget.axis2;
+				}
 			}
 
 			public void Add(in UE.Vector3 newPosition, in UE.Quaternion newRotation)
@@ -66,9 +107,14 @@ namespace SDF
 				{
 					poseList.Clear();
 				}
+
+				lock (jointTargetList)
+				{
+					jointTargetList.Clear();
+				}
 			}
 
-			private void ResetArticulationBody()
+			private void ResetArticulationBody(in int targetFrame = 0)
 			{
 				if (articulationBody != null)
 				{
@@ -87,18 +133,68 @@ namespace SDF
 					articulationBody.jointAcceleration = zeroSpace;
 					articulationBody.jointForce = zeroSpace;
 
+					GetJointTarget(out var targetJoint1, out var targetJoint2, targetFrame);
+
 					var xDrive = articulationBody.xDrive;
-					xDrive.target = 0;
+					if (!articulationBody.linearLockX.Equals(UE.ArticulationDofLock.LockedMotion) ||
+						!articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion))
+					{
+						if (!articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
+							!articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
+						{
+							xDrive.target = targetJoint2;
+						}
+						else
+						{
+							xDrive.target = targetJoint1;
+						}
+					}
+					else
+					{
+						xDrive.target = 0;
+					}
 					xDrive.targetVelocity = 0;
 					articulationBody.xDrive = xDrive;
 
 					var yDrive = articulationBody.yDrive;
-					yDrive.target = 0;
+					if (!articulationBody.linearLockY.Equals(UE.ArticulationDofLock.LockedMotion) ||
+						!articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion))
+					{
+						if (!articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
+							!articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
+						{
+							yDrive.target = targetJoint2;
+						}
+						else
+						{
+							yDrive.target = targetJoint1;
+						}
+					}
+					else
+					{
+						yDrive.target = 0;
+					}
 					yDrive.targetVelocity = 0;
 					articulationBody.yDrive = yDrive;
 
 					var zDrive = articulationBody.zDrive;
-					zDrive.target = 0;
+					if (!articulationBody.linearLockY.Equals(UE.ArticulationDofLock.LockedMotion) ||
+						!articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
+					{
+						if (!articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
+							!articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion))
+						{
+							zDrive.target = targetJoint2;
+						}
+						else
+						{
+							zDrive.target = targetJoint1;
+						}
+					}
+					else
+					{
+						yDrive.target = 0;
+					}
 					zDrive.targetVelocity = 0;
 					articulationBody.zDrive = zDrive;
 				}
@@ -137,7 +233,7 @@ namespace SDF
 							articulationBody.TeleportRoot(targetPose.position, targetPose.rotation);
 						}
 
-						ResetArticulationBody();
+						ResetArticulationBody(targetFrame);
 					}
 					else
 					{
