@@ -28,7 +28,7 @@ namespace SDF
 				if (t != null && t.Equals(typeof(SDF.Mesh)))
 				{
 					var mesh = shape as SDF.Mesh;
-					geometryObject = Implement.Geometry.GenerateMeshObject(mesh);
+					geometryObject = Implement.Geometry.GenerateMeshObject(mesh, targetObject.CompareTag("Visual"));
 				}
 				else if (t != null && typeof(SDF.ShapeType).IsAssignableFrom(t))
 				{
