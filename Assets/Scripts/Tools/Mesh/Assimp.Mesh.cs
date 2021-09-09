@@ -419,14 +419,14 @@ public partial class MeshLoader
 			createdMeshObject.transform.localRotation = meshRotation * createdMeshObject.transform.localRotation;
 			// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + " =>" + createdMeshObject.transform.localRotation.eulerAngles);
 
-			// change axis of position (y <-> z)
-			var prevPosition = createdMeshObject.transform.localPosition;
-			createdMeshObject.transform.localPosition = SDF2Unity.GetPosition(prevPosition);
+			createdMeshObject.transform.localPosition = meshRotation * createdMeshObject.transform.localPosition;
 			// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + createdMeshObject.transform.localPosition.ToString("F6") + ", " + existingPosition.ToString("F6") );
 
-			// change axis of scale (y <-> z)
-			var prevScale = createdMeshObject.transform.localScale;
-			createdMeshObject.transform.localScale = SDF2Unity.GetScale(prevScale);
+			var meshScale = meshRotation * createdMeshObject.transform.localScale;
+			meshScale.x = Mathf.Abs(meshScale.x);
+			meshScale.y = Mathf.Abs(meshScale.y);
+			meshScale.z = Mathf.Abs(meshScale.z);
+			createdMeshObject.transform.localScale = meshScale;
 
 			GameObjectCache.Add(meshPath, createdMeshObject);
 			GameObject.DontDestroyOnLoad(createdMeshObject);
