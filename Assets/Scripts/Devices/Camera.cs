@@ -183,7 +183,7 @@ namespace SensorDevices
 				dimension = UnityEngine.Rendering.TextureDimension.Tex2D,
 				antiAliasing = 1,
 				useMipMap = false,
-				useDynamicScale = false,
+				useDynamicScale = true,
 				wrapMode = TextureWrapMode.Clamp,
 				filterMode = FilterMode.Point,
 				enableRandomWrite = true
