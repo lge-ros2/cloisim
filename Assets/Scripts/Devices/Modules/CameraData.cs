@@ -155,7 +155,7 @@ namespace SensorDevices
 				cameraImage = new Texture2D(width, height, textureFormat, false, isLinear);
 			}
 
-			public void SetTextureBufferData(ref NativeArray<byte> buffer)
+			public void SetTextureBufferData(in NativeArray<byte> buffer)
 			{
 				imageBuffer = buffer;
 			}

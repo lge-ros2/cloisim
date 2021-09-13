@@ -308,9 +308,7 @@ namespace SensorDevices
 				Debug.LogError("Failed to read GPU texture");
 				return;
 			}
-			// Debug.Assert(request.done);
-
-			if (request.done)
+			else if (request.done)
 			{
 				var readback = new AsyncLaserWork();
 				var dataIndex = -1;

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -26,7 +27,7 @@ namespace SensorDevices
 		protected Transform cameraLink = null;
 
 		protected UnityEngine.Camera camSensor = null;
-		protected UniversalAdditionalCameraData universalCamData = null;
+		protected UniversalAdditionalCameraData _universalCamData = null;
 
 		protected string targetRTname;
 		protected int targetRTdepth;
@@ -38,6 +39,7 @@ namespace SensorDevices
 		public Noise noise = null;
 		private bool _startCameraWork = false;
 		private float _lastTimeCameraWork = 0f;
+		private RTHandle _targetRtHandle;
 
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
@@ -71,7 +73,7 @@ namespace SensorDevices
 			Mode = ModeType.TX_THREAD;
 
 			camSensor = GetComponent<UnityEngine.Camera>();
-			universalCamData = camSensor.GetUniversalAdditionalCameraData();
+			_universalCamData = camSensor.GetUniversalAdditionalCameraData();
 
 			// for controlling targetDisplay
 			camSensor.targetDisplay = -1;
@@ -93,11 +95,12 @@ namespace SensorDevices
 		protected virtual void SetupTexture()
 		{
 			camSensor.depthTextureMode = DepthTextureMode.None;
-			universalCamData.requiresColorOption = CameraOverrideOption.On;
-			universalCamData.requiresDepthOption = CameraOverrideOption.Off;
-			universalCamData.requiresColorTexture = true;
-			universalCamData.requiresDepthTexture = false;
-			universalCamData.renderShadows = true;
+			_universalCamData.requiresColorOption = CameraOverrideOption.On;
+			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
+			_universalCamData.requiresColorTexture = true;
+			_universalCamData.requiresDepthTexture = false;
+			_universalCamData.renderShadows = true;
+			_universalCamData.allowXRRendering = false;
 
 			// Debug.Log("This is not a Depth Camera!");
 			targetRTname = "CameraColorTexture";
@@ -180,7 +183,7 @@ namespace SensorDevices
 			var targetRT = new RenderTexture(camParameter.image_width, camParameter.image_height, targetRTdepth, targetRTformat, targetRTrwmode)
 			{
 				name = targetRTname,
-				dimension = UnityEngine.Rendering.TextureDimension.Tex2D,
+				dimension = TextureDimension.Tex2D,
 				antiAliasing = 1,
 				useMipMap = false,
 				useDynamicScale = true,
@@ -189,7 +192,22 @@ namespace SensorDevices
 				enableRandomWrite = true
 			};
 
-			camSensor.targetTexture = targetRT;
+			// _targetRtHandle = RTHandles.Alloc(camParameter.image_width, camParameter.image_height, 1,
+			// DepthBits.None,
+			// UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB,
+			// FilterMode.Point, TextureWrapMode.Clamp, TextureDimension.Tex2D,
+			// true,
+			// false, false,
+			// false,
+			// 0, 0,
+			// MSAASamples.None,
+			// false,
+			// true,
+			// RenderTextureMemoryless.None,
+			// targetRTname);
+
+			_targetRtHandle = RTHandles.Alloc(targetRT);
+			camSensor.targetTexture = _targetRtHandle.rt;
 
 			var camHFov = (float)camParameter.horizontal_fov * Mathf.Rad2Deg;
 			var camVFov = DeviceHelper.HorizontalToVerticalFOV(camHFov, camSensor.aspect);
@@ -200,13 +218,13 @@ namespace SensorDevices
 			var invertMatrix = Matrix4x4.Scale(new Vector3(1, -1, 1));
 			camSensor.projectionMatrix = projMatrix * invertMatrix;
 
-			universalCamData.enabled = false;
-			universalCamData.renderPostProcessing = false;
-			universalCamData.allowXRRendering = false;
-			universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
-			universalCamData.renderType = CameraRenderType.Base;
-			universalCamData.renderShadows = true;
-			universalCamData.cameraStack.Clear();
+			_universalCamData.enabled = false;
+			_universalCamData.renderPostProcessing = false;
+			_universalCamData.allowXRRendering = false;
+			_universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
+			_universalCamData.renderType = CameraRenderType.Base;
+			_universalCamData.renderShadows = true;
+			_universalCamData.cameraStack.Clear();
 			camSensor.enabled = false;
 
 			RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
@@ -225,6 +243,8 @@ namespace SensorDevices
 			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
 			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 
+			_targetRtHandle.Release();
+
 			base.OnDestroy();
 		}
 
@@ -240,20 +260,26 @@ namespace SensorDevices
 		{
 			if (Time.time - _lastTimeCameraWork >= WaitPeriod(0.0001f))
 			{
-				camSensor.enabled = true;
+				_universalCamData.enabled = true;
 
 				// Debug.Log("start render and request ");
-				if (camSensor.isActiveAndEnabled)
+				if (_universalCamData.isActiveAndEnabled)
 				{
 					camSensor.Render();
 
 					var readbackRequest = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
-					camSensor.enabled = false;
 					_readbackList.Add(readbackRequest);
 				}
 
+				_universalCamData.enabled = false;
+
 				_lastTimeCameraWork = Time.time;
 			}
+			else
+			{
+				_readbackList.RemoveAll(item => item.done == true);
+			}
+
 		}
 
 		protected void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
@@ -265,7 +291,7 @@ namespace SensorDevices
 			else if (request.done)
 			{
 				var readbackData = request.GetData<byte>();
-				camImageData.SetTextureBufferData(ref readbackData);
+				camImageData.SetTextureBufferData(readbackData);
 				var image = imageStamped.Image;
 				if (image.Data.Length == camImageData.GetImageDataLength())
 				{
@@ -284,8 +310,6 @@ namespace SensorDevices
 					}
 				}
 				readbackData.Dispose();
-
-				_readbackList.Remove(request);
 			}
 		}
 
