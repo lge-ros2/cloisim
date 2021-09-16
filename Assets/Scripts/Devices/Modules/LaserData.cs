@@ -54,7 +54,7 @@ namespace SensorDevices
 			}
 		}
 
-		const int ColorFormatUnitSize = sizeof(float);
+		private const int ColorFormatUnitSize = sizeof(float);
 
 		public struct AngleResolution
 		{
@@ -93,6 +93,7 @@ namespace SensorDevices
 
 			public void Deallocate()
 			{
+				// this.imageBuffer.Dispose();
 				this.depthBuffer.Dispose();
 			}
 
@@ -163,7 +164,7 @@ namespace SensorDevices
 			public float EndAngleH;
 			public float TotalAngleH;
 
-			public LaserCamData(in int bufferWidth, in int bufferHeight, in AngleResolution angleResolution, in float centerAngle, in float halfHFovAngle)
+			public LaserCamData(in int bufferWidth, in int bufferHeight, in MinMax range, in AngleResolution angleResolution, in float centerAngle, in float halfHFovAngle)
 			{
 				this.maxHAngleHalf = halfHFovAngle;
 				this.maxHAngleHalfTangent = Mathf.Tan(maxHAngleHalf * Mathf.Deg2Rad);
@@ -174,7 +175,7 @@ namespace SensorDevices
 				this.EndAngleH = centerAngle + maxHAngleHalf;
  				this.TotalAngleH = this.maxHAngleHalf * 2f;
 
-				this.range = new MinMax();
+				this.range = range;
 				this.horizontalBufferLength = bufferWidth;
 				this.verticalBufferLength = bufferHeight;
 				this.depthBuffer = default(NativeArray<float>);
