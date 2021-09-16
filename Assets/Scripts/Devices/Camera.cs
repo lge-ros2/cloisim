@@ -39,7 +39,7 @@ namespace SensorDevices
 		public Noise noise = null;
 		private bool _startCameraWork = false;
 		private float _lastTimeCameraWork = 0f;
-		private RTHandle _targetRtHandle;
+		private RTHandle _rtHandle;
 
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
@@ -205,9 +205,10 @@ namespace SensorDevices
 			// true,
 			// RenderTextureMemoryless.None,
 			// targetRTname);
+			RTHandles.Alloc(scaleFactor: )
 
-			_targetRtHandle = RTHandles.Alloc(targetRT);
-			camSensor.targetTexture = _targetRtHandle.rt;
+			_rtHandle = RTHandles.Alloc(targetRT);
+			camSensor.targetTexture = _rtHandle.rt;
 
 			var camHFov = (float)camParameter.horizontal_fov * Mathf.Rad2Deg;
 			var camVFov = DeviceHelper.HorizontalToVerticalFOV(camHFov, camSensor.aspect);
@@ -243,7 +244,7 @@ namespace SensorDevices
 			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
 			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 
-			_targetRtHandle.Release();
+			_rtHandle.Release();
 
 			base.OnDestroy();
 		}
