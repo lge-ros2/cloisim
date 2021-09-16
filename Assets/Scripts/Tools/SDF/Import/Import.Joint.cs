@@ -144,15 +144,30 @@ namespace SDF
 				var linkHelper = linkObjectChild.GetComponent<Helper.Link>();
 				if (linkHelper != null)
 				{
+					var axisSpringReference = 0f;
+					var axis2SpringReference = 0f;
 					if (joint.Axis != null)
 					{
 						linkHelper.JointAxis = SDF2Unity.GetAxis(joint.Axis.xyz);
+						if (joint.Axis.dynamics != null)
+						{
+							if (joint.Type.Equals("prismatic"))
+								axisSpringReference = (float)joint.Axis.dynamics.spring_reference;
+							else
+								axisSpringReference = SDF2Unity.CurveOrientation((float)joint.Axis.dynamics.spring_reference);
+						}
 					}
 
 					if (joint.Axis2 != null)
 					{
 						linkHelper.JointAxis2 = SDF2Unity.GetAxis(joint.Axis2.xyz);
+						if (joint.Axis2.dynamics != null)
+						{
+							axis2SpringReference =  SDF2Unity.CurveOrientation((float)joint.Axis2.dynamics.spring_reference);
+						}
 					}
+
+					linkHelper.SetJointTarget(axisSpringReference, axis2SpringReference);
 
 					// set adjusted position for pose control
 					var localPosition = linkHelper.transform.localPosition;

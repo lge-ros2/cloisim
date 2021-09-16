@@ -3,7 +3,7 @@
 
 #define MaxValue16Bits 65535.0f;
 #define THREADS 16
-#define GROUPS 8
+#define GROUPS 16
 
 RWByteAddressBuffer _Buffer;
 

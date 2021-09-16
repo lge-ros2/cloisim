@@ -89,6 +89,6 @@ public partial class SDF2Unity
 
 	public static float CurveOrientation(in float value)
 	{
-		return -value;
+		return -value * Mathf.Rad2Deg;
 	}
 }

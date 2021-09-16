@@ -111,14 +111,18 @@ public partial class MeshLoader
 
 		switch (fileExtension)
 		{
-			case ".dae":
 			case ".obj":
 			case ".stl":
-				eulerRotation =  Quaternion.Euler(90, 0, 0) * Quaternion.Euler(0, 0, 0) * Quaternion.Euler(0, 0, 90);
-				goto case ".fbx";
+				eulerRotation = Quaternion.Euler(90, 0, 0) * Quaternion.Euler(0, 0, 0) * Quaternion.Euler(0, 0, 90);
+				break;
+
+			case ".dae":
+				eulerRotation = Quaternion.Euler(0, -90, 0) * Quaternion.Euler(0, 0, 0);
+				break;
 
 			case ".fbx":
 				break;
+
 			default:
 				break;
 		}
@@ -152,9 +156,6 @@ public partial class MeshLoader
 			Debug.LogError("File doesn't exist: " + targetPath);
 			return null;
 		}
-
-		var colladaIgnoreConfig = new Assimp.Configs.ColladaIgnoreUpDirectionConfig(true);
-		importer.SetConfig(colladaIgnoreConfig);
 
 		// logstream.Attach();
 

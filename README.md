@@ -172,7 +172,7 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 
 - ***./run.sh cloisim.world***
 
-#### Run 'cloisim_ros' after running CLOiSim
+#### Run '[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' after running CLOiSim
 
 - *You need to run this package in order to publish sensor data in ROS2.*
 
@@ -186,13 +186,13 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 tail -f ~/.config/unity3d/lge-arlab/CLOiSim/Player.log
 ```
 
-#### Control service
+#### Control and external UI service
 
-CLOiSim supports web-based simulation control service through websocket as an external interface.
+CLOiSim supports web-based control service through websocket as an external interface.
 
 websocket service path: ***ws://127.0.0.1:8080/{service-name}***
 
-Just send a request data as a JSON format.
+You can add markers like line, text, box, or sphere point and reset simulation by just sending a request data as a JSON format.
 
 Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-service)
 

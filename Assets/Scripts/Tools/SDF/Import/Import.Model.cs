@@ -27,8 +27,8 @@ namespace SDF
 				articulationBody.mass = 0;
 				articulationBody.useGravity = false;
 				articulationBody.immovable = false;
-				articulationBody.linearDamping = 0.01f;
-				articulationBody.angularDamping = 0.01f;
+				articulationBody.linearDamping = 0;
+				articulationBody.angularDamping = 0;
 				articulationBody.ResetCenterOfMass();
 				articulationBody.ResetInertiaTensor();
 				articulationBody.inertiaTensor = UE.Vector3.one * MinimumInertiaTensor;
@@ -37,6 +37,7 @@ namespace SDF
 				articulationBody.solverVelocityIterations = 0;
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
+				articulationBody.Sleep();
 				// UE.Debug.Log(targetObject.name + " Create root articulation body");
 			}
 

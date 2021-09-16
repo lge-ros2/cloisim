@@ -4,9 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Text;
 using UnityEngine;
-using TMPro;
 
 public partial class InfoDisplay : MonoBehaviour
 {

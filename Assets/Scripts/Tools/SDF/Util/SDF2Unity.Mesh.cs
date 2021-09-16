@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -88,8 +89,8 @@ public partial class SDF2Unity
 
 		var newCombinedMesh = new Mesh();
 		newCombinedMesh.name = "Merged";
-		newCombinedMesh.indexFormat = (totalVertexCount >= System.UInt16.MaxValue) ? IndexFormat.UInt32 : IndexFormat.UInt16;
-		newCombinedMesh.CombineMeshes(combine, false, true);
+		newCombinedMesh.indexFormat = (totalVertexCount >= UInt16.MaxValue) ? IndexFormat.UInt32 : IndexFormat.UInt16;
+		newCombinedMesh.CombineMeshes(combine, true, true);
 		newCombinedMesh.RecalculateNormals();
 		newCombinedMesh.RecalculateTangents();
 		newCombinedMesh.RecalculateBounds();
@@ -114,7 +115,7 @@ public partial class SDF2Unity
 
 		var newCombinedMesh = new Mesh();
 		newCombinedMesh.name = "Merged";
-		newCombinedMesh.indexFormat = (totalVertexCount >= System.UInt16.MaxValue) ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
+		newCombinedMesh.indexFormat = (totalVertexCount >= UInt16.MaxValue) ? IndexFormat.UInt32 : IndexFormat.UInt16;
 		newCombinedMesh.CombineMeshes(combine, false, true);
 		newCombinedMesh.RecalculateNormals();
 		newCombinedMesh.RecalculateTangents();
