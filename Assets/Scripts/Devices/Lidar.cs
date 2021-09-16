@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine;
 using Unity.Jobs;
 using messages = cloisim.msgs;
@@ -48,6 +49,9 @@ namespace SensorDevices
 
 		private bool _startLaserWork = false;
 		private float _lastTimeLaserCameraWork = 0;
+
+		private RTHandle _rtHandle = null;
+
 		struct AsyncLaserWork
 		{
 			public int dataIndex;
@@ -100,6 +104,11 @@ namespace SensorDevices
 		protected new void OnDestroy()
 		{
 			_startLaserWork = false;
+
+			if (_rtHandle != null)
+			{
+				_rtHandle.Release();
+			}
 
 			base.OnDestroy();
 		}
@@ -171,6 +180,24 @@ namespace SensorDevices
 			var renderTextrueWidth = Mathf.CeilToInt(LaserCameraHFov / laserAngleResolution.H);
 			var renderTextrueHeight = (laserAngleResolution.V == 1) ? 1 : Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
 
+			// _rtHandle = RTHandles.Alloc(renderTextrueWidth, renderTextrueHeight, 1,
+			// 	DepthBits.None,
+			// 	GraphicsFormat.R8G8B8A8_UNorm,
+			// 	FilterMode.Bilinear,
+			// 	TextureWrapMode.Clamp,
+			// 	TextureDimension.Tex2D,
+			// 	false, // enableRandomWrite
+			// 	false, // useMipMap
+			// 	false, // autoGenerateMips
+			// 	false, // isShadowMap
+			// 	1, // anisoLevel
+			// 	0, // mipMapBias
+			// 	MSAASamples.None,
+			// 	false, // bindTextureMS
+			// 	true, // useDynamicScale
+			// 	RenderTextureMemoryless.None,
+			// 	"LidarDepthTexture");
+
 			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
 			{
 				name = "LidarDepthTexture",
@@ -183,7 +210,8 @@ namespace SensorDevices
 				enableRandomWrite = false
 			};
 
-			laserCam.targetTexture = targetDepthRT;
+			_rtHandle = RTHandles.Alloc(targetDepthRT);
+			laserCam.targetTexture = _rtHandle.rt;
 
 			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(LaserCameraHFov, LaserCameraVFov, laserCam.nearClipPlane, laserCam.farClipPlane);
 			laserCam.projectionMatrix = projMatrix;
