@@ -14,7 +14,7 @@ namespace SDF
 		public class Geometry
 		{
 			/// <summary>Set mesh from external source</summary>
-			public static UE.GameObject GenerateMeshObject(in SDF.Mesh obj)
+			public static UE.GameObject GenerateMeshObject(in SDF.Mesh obj, in bool isVisualMesh = true)
 			{
 				var loadedObject = MeshLoader.CreateMeshObject(obj.uri);
 
@@ -24,10 +24,21 @@ namespace SDF
 				}
 				else
 				{
-					var loadedObjectScale = loadedObject.transform.localScale;
-					loadedObjectScale.Scale(SDF2Unity.GetScale(obj.scale));
-					loadedObject.transform.localScale = loadedObjectScale;
-					// Debug.Log(loadedObject.name + ", " + SDF2Unity.GetScale(obj.scale).ToString("F6") + " => " + loadedObject.transform.localScale.ToString("F6"));
+					// change axis of scale
+					var loadedMeshScale = loadedObject.transform.localScale;
+					var tmp = loadedMeshScale.x;
+					loadedMeshScale.x = loadedMeshScale.z;
+					loadedMeshScale.z = tmp;
+
+					if (!isVisualMesh)
+					{
+						tmp = loadedMeshScale.y;
+						loadedMeshScale.y = loadedMeshScale.z;
+						loadedMeshScale.z = tmp;
+					}
+
+					loadedMeshScale.Scale(SDF2Unity.GetScale(obj.scale));
+					loadedObject.transform.localScale = loadedMeshScale;
 				}
 
 				return loadedObject;

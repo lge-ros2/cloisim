@@ -81,11 +81,11 @@ namespace SensorDevices
 			camSensor.clearFlags = CameraClearFlags.SolidColor;
 
 			camSensor.depthTextureMode = DepthTextureMode.Depth;
-			universalCamData.requiresColorOption = CameraOverrideOption.Off;
-			universalCamData.requiresDepthOption = CameraOverrideOption.On;
-			universalCamData.requiresColorTexture = false;
-			universalCamData.requiresDepthTexture = true;
-			universalCamData.renderShadows = false;
+			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
+			_universalCamData.requiresDepthOption = CameraOverrideOption.On;
+			_universalCamData.requiresColorTexture = false;
+			_universalCamData.requiresDepthTexture = true;
+			_universalCamData.renderShadows = false;
 
 			targetRTname = "CameraDepthTexture";
 			targetRTdepth = 32;

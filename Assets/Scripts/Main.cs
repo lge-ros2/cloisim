@@ -276,6 +276,10 @@ public class Main: MonoBehaviour
 			// for GUI
 			simulationDisplay?.ClearLogMessage();
 			followingList?.UpdateList();
+
+			yield return new WaitForEndOfFrame();
+
+			Reset();
 		}
 		else
 		{
@@ -323,13 +327,8 @@ public class Main: MonoBehaviour
 		return true;
 	}
 
-	private IEnumerator ResetSimulation()
+	void Reset()
 	{
-		isResetting = true;
-		// Debug.LogWarning("Reset positions in simulation!!!");
-
-		transformGizmo?.ClearTargets();
-
 		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Visual>())
 		{
 			helper.Reset();
@@ -354,6 +353,16 @@ public class Main: MonoBehaviour
 		{
 			plugin.Reset();
 		}
+	}
+
+	private IEnumerator ResetSimulation()
+	{
+		isResetting = true;
+		// Debug.LogWarning("Reset positions in simulation!!!");
+
+		transformGizmo?.ClearTargets();
+
+		Reset();
 
 		DeviceHelper.GetGlobalClock()?.ResetTime();
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
