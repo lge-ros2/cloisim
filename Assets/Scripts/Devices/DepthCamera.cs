@@ -5,8 +5,9 @@
  */
 
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 
 namespace SensorDevices
 {
@@ -88,9 +89,7 @@ namespace SensorDevices
 			_universalCamData.renderShadows = false;
 
 			targetRTname = "CameraDepthTexture";
-			targetRTdepth = 32;
-			targetRTrwmode = RenderTextureReadWrite.Linear;
-			targetRTformat = RenderTextureFormat.ARGB32;
+			targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
 
 			var pixelFormat = CameraData.GetPixelFormat(camParameter.image_format);
 			switch (pixelFormat)

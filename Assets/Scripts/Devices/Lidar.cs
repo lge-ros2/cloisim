@@ -51,6 +51,7 @@ namespace SensorDevices
 		private float _lastTimeLaserCameraWork = 0;
 
 		private RTHandle _rtHandle = null;
+		private ParallelOptions _parallelOptions = null;
 
 		struct AsyncLaserWork
 		{
@@ -63,10 +64,10 @@ namespace SensorDevices
 				this.request = request;
 			}
 		}
-		private List<AsyncLaserWork> _readbackList = new List<AsyncLaserWork>();
-		private LaserData.DepthCamBuffer[] depthCamBuffers;
-		private LaserData.LaserCamData[] laserCamData;
-		private LaserData.LaserDataOutput[] laserDataOutput;
+		private List<AsyncLaserWork> _asyncWorkList = new List<AsyncLaserWork>();
+		private LaserData.DepthCamBuffer[] _depthCamBuffers;
+		private LaserData.LaserCamData[] _laserCamData;
+		private LaserData.LaserDataOutput[] _laserDataOutput;
 		private LaserFilter laserFilter = null;
 		public Noise noise = null;
 
@@ -162,7 +163,7 @@ namespace SensorDevices
 
 			laserCam.allowHDR = true;
 			laserCam.allowMSAA = false;
-			laserCam.allowDynamicResolution = false;
+			laserCam.allowDynamicResolution = true;
 			laserCam.useOcclusionCulling = true;
 
 			laserCam.stereoTargetEye = StereoTargetEyeMask.None;
@@ -180,37 +181,25 @@ namespace SensorDevices
 			var renderTextrueWidth = Mathf.CeilToInt(LaserCameraHFov / laserAngleResolution.H);
 			var renderTextrueHeight = (laserAngleResolution.V == 1) ? 1 : Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
 
-			// _rtHandle = RTHandles.Alloc(renderTextrueWidth, renderTextrueHeight, 1,
-			// 	DepthBits.None,
-			// 	GraphicsFormat.R8G8B8A8_UNorm,
-			// 	FilterMode.Bilinear,
-			// 	TextureWrapMode.Clamp,
-			// 	TextureDimension.Tex2D,
-			// 	false, // enableRandomWrite
-			// 	false, // useMipMap
-			// 	false, // autoGenerateMips
-			// 	false, // isShadowMap
-			// 	1, // anisoLevel
-			// 	0, // mipMapBias
-			// 	MSAASamples.None,
-			// 	false, // bindTextureMS
-			// 	true, // useDynamicScale
-			// 	RenderTextureMemoryless.None,
-			// 	"LidarDepthTexture");
+			RTHandles.SetHardwareDynamicResolutionState(true);
+			_rtHandle = RTHandles.Alloc(new Vector2(renderTextrueWidth, renderTextrueHeight),
+				slices: 1,
+				depthBufferBits: DepthBits.None,
+				colorFormat: GraphicsFormat.R8G8B8A8_UNorm,
+				filterMode: FilterMode.Bilinear,
+				wrapMode: TextureWrapMode.Clamp,
+				dimension: TextureDimension.Tex2D,
+				enableRandomWrite: false,
+				useMipMap: false,
+				autoGenerateMips: false,
+				isShadowMap: false,
+				anisoLevel: 0,
+				mipMapBias: 0,
+				bindTextureMS: false,
+				useDynamicScale: true,
+				memoryless: RenderTextureMemoryless.None,
+				name: "LidarDepthTexture");
 
-			var targetDepthRT = new RenderTexture(renderTextrueWidth, renderTextrueHeight, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
-			{
-				name = "LidarDepthTexture",
-				dimension = UnityEngine.Rendering.TextureDimension.Tex2D,
-				antiAliasing = 1,
-				useMipMap = false,
-				useDynamicScale = true,
-				wrapMode = TextureWrapMode.Clamp,
-				filterMode = FilterMode.Point,
-				enableRandomWrite = false
-			};
-
-			_rtHandle = RTHandles.Alloc(targetDepthRT);
 			laserCam.targetTexture = _rtHandle.rt;
 
 			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(LaserCameraHFov, LaserCameraVFov, laserCam.nearClipPlane, laserCam.farClipPlane);
@@ -232,7 +221,7 @@ namespace SensorDevices
 			depthMaterial.SetInt("_FlipX", 1); // Store CCW direction for ROS2 sensor data
 
 			var cb = new CommandBuffer();
-			var tempTextureId = Shader.PropertyToID("_RenderImageCameraDepthTexture");
+			var tempTextureId = Shader.PropertyToID("_RenderCameraDepthTexture");
 			cb.GetTemporaryRT(tempTextureId, -1, -1);
 			cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
 			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
@@ -253,12 +242,13 @@ namespace SensorDevices
 
 		private void SetupLaserCameraData()
 		{
-			const float laserCameraRotationAngle = LaserCameraHFov;
-			numberOfLaserCamData = Mathf.CeilToInt(DEG360 / laserCameraRotationAngle);
+			const float LaserCameraRotationAngle = LaserCameraHFov;
+			numberOfLaserCamData = Mathf.CeilToInt(DEG360 / LaserCameraRotationAngle);
 
-			laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
-			depthCamBuffers = new LaserData.DepthCamBuffer[numberOfLaserCamData];
-			laserDataOutput = new LaserData.LaserDataOutput[numberOfLaserCamData];
+			_parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = numberOfLaserCamData };
+			_laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
+			_depthCamBuffers = new LaserData.DepthCamBuffer[numberOfLaserCamData];
+			_laserDataOutput = new LaserData.LaserDataOutput[numberOfLaserCamData];
 
 			var targetDepthRT = laserCam.targetTexture;
 			var width = targetDepthRT.width;
@@ -267,12 +257,10 @@ namespace SensorDevices
 
 			for (var index = 0; index < numberOfLaserCamData; index++)
 			{
-				depthCamBuffers[index] = new LaserData.DepthCamBuffer(width, height);
+				_depthCamBuffers[index] = new LaserData.DepthCamBuffer(width, height);
 
-				var centerAngle = laserCameraRotationAngle * index + centerAngleOffset;
-				var data = new LaserData.LaserCamData(width, height, laserAngleResolution, centerAngle, LaserCameraHFovHalf);
-				data.range = range;
-				laserCamData[index] = data;
+				var centerAngle = LaserCameraRotationAngle * index + centerAngleOffset;
+				_laserCamData[index] = new LaserData.LaserCamData(width, height, range, laserAngleResolution, centerAngle, LaserCameraHFovHalf);
 			}
 		}
 
@@ -298,7 +286,7 @@ namespace SensorDevices
 
 		private void LaserCameraWorker()
 		{
-			if (Time.time - _lastTimeLaserCameraWork >= WaitPeriod(0.0001f))
+			if (Time.time - _lastTimeLaserCameraWork >= WaitPeriod(0.001f))
 			{
 				// Update lidar sensor pose
 				lidarSensorPose.position = lidarLink.position;
@@ -308,8 +296,8 @@ namespace SensorDevices
 
 				for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
 				{
-					var data = laserCamData[dataIndex];
-					axisRotation.y = data.centerAngle;
+					var laserCamData = _laserCamData[dataIndex];
+					axisRotation.y = laserCamData.centerAngle;
 
 					laserCam.transform.localRotation = lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
 
@@ -319,7 +307,10 @@ namespace SensorDevices
 					{
 						laserCam.Render();
 						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32, OnCompleteAsyncReadback);
-						_readbackList.Add(new AsyncLaserWork(dataIndex, readbackRequest));
+						lock(_asyncWorkList)
+						{
+							_asyncWorkList.Add(new AsyncLaserWork(dataIndex, readbackRequest));
+						}
 					}
 
 					laserCam.enabled = false;
@@ -333,63 +324,54 @@ namespace SensorDevices
 		{
 			if (request.hasError)
 			{
-				Debug.LogError("Failed to read GPU texture");
-				return;
+				Debug.LogWarning("Failed to read GPU texture");
 			}
 			else if (request.done)
 			{
-				var readback = new AsyncLaserWork();
-				var dataIndex = -1;
-
-				for (var i = 0; i < _readbackList.Count; i++)
+				for (var i = 0; i < _asyncWorkList.Count; i++)
 				{
-					readback = _readbackList[i];
-					if (readback.request.Equals(request))
+					var asyncWork = _asyncWorkList[i];
+					if (asyncWork.request.Equals(request))
 					{
-						dataIndex = readback.dataIndex;
-						break;
-					}
-				}
+						var dataIndex = asyncWork.dataIndex;
+						var depthCamBuffer = _depthCamBuffers[dataIndex];
 
-				if (dataIndex > -1)
-				{
-					var depthCamBuffer = depthCamBuffers[dataIndex];
+						var readbackData = request.GetData<byte>();
+						depthCamBuffer.imageBuffer = readbackData;
+						depthCamBuffer.Allocate();
 
-					var readbackData = request.GetData<byte>();
-					depthCamBuffer.imageBuffer = readbackData;
-					depthCamBuffer.Allocate();
-
-					if (depthCamBuffer.depthBuffer.IsCreated)
-					{
-						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
-						jobHandleDepthCamBuffer.Complete();
-
-						var data = laserCamData[dataIndex];
-						data.depthBuffer = depthCamBuffer.depthBuffer;
-						data.Allocate();
-
-						var jobHandle = data.Schedule(data.OutputLength(), BatchSize);
-						jobHandle.Complete();
-
-						laserDataOutput[dataIndex].data = data.GetLaserData();
-
-						if (noise != null)
+						if (depthCamBuffer.depthBuffer.IsCreated)
 						{
-							noise.Apply<double>(ref laserDataOutput[dataIndex].data);
+							var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
+							jobHandleDepthCamBuffer.Complete();
+
+							var laserCamData = _laserCamData[dataIndex];
+							laserCamData.depthBuffer = depthCamBuffer.depthBuffer;
+							laserCamData.Allocate();
+
+							var jobHandle = laserCamData.Schedule(laserCamData.OutputLength(), BatchSize);
+							jobHandle.Complete();
+
+							_laserDataOutput[dataIndex].data = laserCamData.GetLaserData();
+
+							if (noise != null)
+							{
+								noise.Apply<double>(ref _laserDataOutput[dataIndex].data);
+							}
+
+							laserCamData.Deallocate();
 						}
 
-						data.Deallocate();
+						depthCamBuffer.Deallocate();
+
+						readbackData.Dispose();
+
+						lock (_asyncWorkList)
+						{
+							_asyncWorkList.Remove(asyncWork);
+						}
+						break;
 					}
-
-					depthCamBuffer.Deallocate();
-
-					readbackData.Dispose();
-
-					_readbackList.Remove(readback);
-				}
-				else
-				{
-					Debug.LogWarning("Wrong data Index: " + dataIndex);
 				}
 			}
 		}
@@ -409,7 +391,7 @@ namespace SensorDevices
 			var copyLength = 0;
 			var doCopy = true;
 
-			const int bufferUnitSize = sizeof(double);
+			const int BufferUnitSize = sizeof(double);
 			var laserSamplesH = (int)horizontal.samples;
 			var laserStartAngleH = (float)horizontal.angle.min;
 			var laserEndAngleH = (float)horizontal.angle.max;
@@ -421,14 +403,14 @@ namespace SensorDevices
 			var laserEndAngleV = (float)vertical.angle.max;
 			var laserTotalAngleV = (float)vertical.angle.range;
 
-			Parallel.For(0, numberOfLaserCamData, index =>
+			Parallel.For(0, numberOfLaserCamData, _parallelOptions, index =>
 			{
-				var data = laserCamData[index];
-				var srcBuffer = laserDataOutput[index].data;
-				var srcBufferHorizontalLength = data.horizontalBufferLength;
-				var dataStartAngleH = data.StartAngleH;
-				var dataEndAngleH = data.EndAngleH;
-				var dividedDataTotalAngleH = 1f / data.TotalAngleH;
+				var laserCamData = _laserCamData[index];
+				var srcBuffer = _laserDataOutput[index].data;
+				var srcBufferHorizontalLength = laserCamData.horizontalBufferLength;
+				var dataStartAngleH = laserCamData.StartAngleH;
+				var dataEndAngleH = laserCamData.EndAngleH;
+				var dividedDataTotalAngleH = 1f / laserCamData.TotalAngleH;
 
 				if (srcBuffer != null)
 				{
@@ -491,15 +473,15 @@ namespace SensorDevices
 						if (doCopy)
 						{
 							try {
+
 								lock (laserScan.Ranges.SyncRoot)
 								{
-									Buffer.BlockCopy(srcBuffer, srcBufferOffset * bufferUnitSize, laserScan.Ranges, dstBufferOffset * bufferUnitSize, copyLength * bufferUnitSize);
+									Buffer.BlockCopy(srcBuffer, srcBufferOffset * BufferUnitSize, laserScan.Ranges, dstBufferOffset * BufferUnitSize, copyLength * BufferUnitSize);
 								}
 							}
 							catch (Exception ex)
 							{
 								Debug.LogWarning("Error occured with Buffer.BlockCopy : " + ex.Message + ", " + srcBufferOffset + ", " + dstBufferOffset + ", " + copyLength);
-
 							}
 						}
 					}
