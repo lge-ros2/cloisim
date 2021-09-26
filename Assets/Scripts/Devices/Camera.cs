@@ -6,8 +6,9 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 
 using messages = cloisim.msgs;
 
@@ -30,9 +31,7 @@ namespace SensorDevices
 		protected UniversalAdditionalCameraData _universalCamData = null;
 
 		protected string targetRTname;
-		protected int targetRTdepth;
-		protected RenderTextureFormat targetRTformat;
-		protected RenderTextureReadWrite targetRTrwmode;
+		protected GraphicsFormat targetColorFormat;
 		protected TextureFormat readbackDstFormat;
 		private CameraData.ImageData camImageData;
 		private List<AsyncGPUReadbackRequest> _readbackList = new List<AsyncGPUReadbackRequest>();
@@ -104,20 +103,18 @@ namespace SensorDevices
 
 			// Debug.Log("This is not a Depth Camera!");
 			targetRTname = "CameraColorTexture";
-			targetRTdepth = 0;
-			targetRTrwmode = RenderTextureReadWrite.sRGB;
 
 			var pixelFormat = CameraData.GetPixelFormat(camParameter.image_format);
 			switch (pixelFormat)
 			{
 				case CameraData.PixelFormat.L_INT8:
-					targetRTformat = RenderTextureFormat.R8;
+					targetColorFormat = GraphicsFormat.R8_SRGB;
 					readbackDstFormat = TextureFormat.R8;
 					break;
 
 				case CameraData.PixelFormat.RGB_INT8:
 				default:
-					targetRTformat = RenderTextureFormat.ARGB32;
+					targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
 					readbackDstFormat = TextureFormat.RGB24;
 					break;
 			}
@@ -180,33 +177,25 @@ namespace SensorDevices
 			camSensor.farClipPlane = (float)camParameter.clip.far;
 			camSensor.cullingMask = LayerMask.GetMask("Default");
 
-			var targetRT = new RenderTexture(camParameter.image_width, camParameter.image_height, targetRTdepth, targetRTformat, targetRTrwmode)
-			{
-				name = targetRTname,
-				dimension = TextureDimension.Tex2D,
-				antiAliasing = 1,
-				useMipMap = false,
-				useDynamicScale = true,
-				wrapMode = TextureWrapMode.Clamp,
-				filterMode = FilterMode.Point,
-				enableRandomWrite = true
-			};
+			RTHandles.SetHardwareDynamicResolutionState(true);
+			_rtHandle = RTHandles.Alloc(new Vector2(camParameter.image_width, camParameter.image_height),
+				slices: 1,
+				depthBufferBits: DepthBits.None,
+				colorFormat: targetColorFormat,
+				filterMode: FilterMode.Trilinear,
+				wrapMode: TextureWrapMode.Clamp,
+				dimension: TextureDimension.Tex2D,
+				enableRandomWrite: false,
+				useMipMap: true,
+				autoGenerateMips: true,
+				isShadowMap: false,
+				anisoLevel: 2,
+				mipMapBias: 0,
+				bindTextureMS: false,
+				useDynamicScale: true,
+				memoryless: RenderTextureMemoryless.None,
+				name: targetRTname);
 
-			// _targetRtHandle = RTHandles.Alloc(camParameter.image_width, camParameter.image_height, 1,
-			// DepthBits.None,
-			// UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB,
-			// FilterMode.Point, TextureWrapMode.Clamp, TextureDimension.Tex2D,
-			// true,
-			// false, false,
-			// false,
-			// 0, 0,
-			// MSAASamples.None,
-			// false,
-			// true,
-			// RenderTextureMemoryless.None,
-			// targetRTname);
-
-			_rtHandle = RTHandles.Alloc(targetRT);
 			camSensor.targetTexture = _rtHandle.rt;
 
 			var camHFov = (float)camParameter.horizontal_fov * Mathf.Rad2Deg;
@@ -268,18 +257,17 @@ namespace SensorDevices
 					camSensor.Render();
 
 					var readbackRequest = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
-					_readbackList.Add(readbackRequest);
+
+					lock(_readbackList)
+					{
+						_readbackList.Add(readbackRequest);
+					}
 				}
 
 				_universalCamData.enabled = false;
 
 				_lastTimeCameraWork = Time.time;
 			}
-			else
-			{
-				_readbackList.RemoveAll(item => item.done == true);
-			}
-
 		}
 
 		protected void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
@@ -290,26 +278,34 @@ namespace SensorDevices
 			}
 			else if (request.done)
 			{
-				var readbackData = request.GetData<byte>();
-				camImageData.SetTextureBufferData(readbackData);
-				var image = imageStamped.Image;
-				if (image.Data.Length == camImageData.GetImageDataLength())
+				checked
 				{
-					var imageData = camImageData.GetImageData();
-
-					PostProcessing(ref imageData);
-
-					image.Data = imageData;
-					// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
-
-					if (camParameter.save_enabled)
+					var readbackData = request.GetData<byte>();
+					camImageData.SetTextureBufferData(readbackData);
+					var image = imageStamped.Image;
+					if (image.Data.Length == camImageData.GetImageDataLength())
 					{
-						var saveName = name + "_" + Time.time;
-						camImageData.SaveRawImageData(camParameter.save_path, saveName);
-						// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
+						var imageData = camImageData.GetImageData();
+
+						PostProcessing(ref imageData);
+
+						image.Data = imageData;
+						// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
+
+						if (camParameter.save_enabled)
+						{
+							var saveName = name + "_" + Time.time;
+							camImageData.SaveRawImageData(camParameter.save_path, saveName);
+							// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
+						}
 					}
+					readbackData.Dispose();
 				}
-				readbackData.Dispose();
+
+				lock(_readbackList)
+				{
+					_readbackList.Remove(request);
+				}
 			}
 		}
 
