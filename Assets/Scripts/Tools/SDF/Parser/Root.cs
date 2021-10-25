@@ -22,7 +22,7 @@ namespace SDF
 
 		private XmlDocument doc = new XmlDocument();
 
-		private string sdfVersion = "1.7";
+		private string sdfVersion = "1.8";
 
 		private World _world = null;
 
@@ -312,6 +312,12 @@ namespace SDF
 
 			var poseNode = _node.SelectSingleNode("pose");
 			var pose = (poseNode == null) ? null : poseNode.InnerText;
+
+			// var placementFrameNode = _node.SelectSingleNode("placement_frame");
+			// var placementFrame = (placementFrameNode == null) ? null : placementFrameNode.InnerText;
+
+			// var pluginNode = _node.SelectSingleNode("plugin");
+			// var plugin = (pluginNode == null) ? null : pluginNode.InnerText;
 
 			var staticNode = _node.SelectSingleNode("static");
 			var isStatic = (staticNode == null) ? null : staticNode.InnerText;
