@@ -81,15 +81,15 @@ public partial class MeshLoader
 
 			if (sceneMat.HasColorTransparent)
 			{
-				// Debug.Log(sceneMat.Name + ": HasColorTransparent but not support. " + sceneMat.ColorTransparent);
 				mat.SetColor("_TransparentColor", MeshLoader.GetColor(sceneMat.ColorTransparent));
+				// Debug.Log(sceneMat.Name + ": HasColorTransparent " + sceneMat.ColorTransparent);
 			}
 
 			// Reflectivity
 			if (sceneMat.HasReflectivity)
 			{
-				// Debug.Log(sceneMat.Name + ": HasColorReflective " + sceneMat.Reflectivity);
 				mat.SetFloat("_GlossyReflections", sceneMat.Reflectivity);
+				// Debug.Log(sceneMat.Name + ": HasColorReflective " + sceneMat.Reflectivity);
 			}
 
 			// reflective
@@ -155,7 +155,6 @@ public partial class MeshLoader
 				}
 				// Debug.Log(sceneMat.Name + ": HasTextureHeight but not support. " + sceneMat.TextureHeight.FilePath);
 			}
-
 
 			if (sceneMat.HasBumpScaling)
 			{

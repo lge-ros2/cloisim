@@ -153,7 +153,7 @@ public partial class MeshLoader
 
 		if (!File.Exists(targetPath))
 		{
-			Debug.LogError("File doesn't exist: " + targetPath);
+			Debug.LogWarning("File doesn't exist: " + targetPath);
 			return null;
 		}
 
