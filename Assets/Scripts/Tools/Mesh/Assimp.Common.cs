@@ -181,8 +181,7 @@ public partial class MeshLoader
 			Assimp.PostProcessSteps.ValidateDataStructure |
 			Assimp.PostProcessSteps.SplitLargeMeshes |
 			Assimp.PostProcessSteps.FindInvalidData |
-			Assimp.PostProcessSteps.MakeLeftHanded |
-			Assimp.PostProcessSteps.FlipWindingOrder;
+			Assimp.PostProcessSteps.MakeLeftHanded ;
 
 		var scene = importer.ImportFile(targetPath, postProcessFlags);
 		if (scene == null)

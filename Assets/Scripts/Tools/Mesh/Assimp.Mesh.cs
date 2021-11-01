@@ -283,9 +283,9 @@ public partial class MeshLoader
 				{
 					if (face.IndexCount == 3)
 					{
-						indices.Enqueue(face.Indices[0]);
-						indices.Enqueue(face.Indices[1]);
 						indices.Enqueue(face.Indices[2]);
+						indices.Enqueue(face.Indices[1]);
+						indices.Enqueue(face.Indices[0]);
 					}
 					else if (face.IndexCount == 2)
 					{
