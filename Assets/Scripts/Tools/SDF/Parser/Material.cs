@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using System.Xml;
 using System;
 
@@ -49,7 +50,14 @@ namespace SDF
 
 	public class Material : Entity
 	{
-		// <script> : TBD
+		public class Script
+		{
+			public List<string> uri;
+			public string name;
+		}
+
+		public Script script = null;
+
 		// <shader> : TBD
 		// <render_order> : TBD
 		// <lighting> : TBD
@@ -67,6 +75,24 @@ namespace SDF
 
 		protected override void ParseElements()
 		{
+			if (IsValidNode("script"))
+			{
+				script = new Script();
+
+				if (IsValidNode("script/uri"))
+				{
+					if (GetValues<string>("script/uri", out var script_uri_list))
+					{
+						script.uri = script_uri_list;
+					}
+				}
+
+				if (IsValidNode("script/name"))
+				{
+					script.name = GetValue<string>("script/name");
+				}
+			}
+
 			if (IsValidNode("ambient"))
 			{
 				ambient = new Color();

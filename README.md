@@ -114,6 +114,10 @@ So there is NO more constaints for rigidbodies by PGS(Projected Gauss Seidel) so
 
 For the performance in terms of collision handling, designing collision geometry properly may important.
 
+### an aspect of rendering
+
+if `<name>` element of `<script>` element in `<material>` element contains "tree" words, CLOiSim applies "URP/Nature/SpeedTree" Shader as a rendering material.
+
 ## Getting Started
 
 ### Minimum requirement

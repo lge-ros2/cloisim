@@ -60,6 +60,14 @@ namespace SDF
 					{
 						sharedMaterial.SetColor("_SpecColor", SDF2Unity.GetColor(sdfMaterial.specular));
 					}
+
+					if (sdfMaterial.script != null)
+					{
+						if (sdfMaterial.script.name.ToLower().Contains("tree"))
+						{
+							SDF2Unity.SetMaterialSpeedTree(sharedMaterial);
+						}
+					}
 				}
 			}
 		}
