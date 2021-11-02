@@ -52,8 +52,11 @@ public class Articulation
 		if (_jointBody != null)
 		{
 			var jointVelocity = _jointBody.jointVelocity;
-			jointVelocity[targetDegree] = velocity;
-			_jointBody.jointVelocity = jointVelocity;
+			if (targetDegree < jointVelocity.dofCount)
+			{
+				jointVelocity[targetDegree] = velocity;
+				_jointBody.jointVelocity = jointVelocity;
+			}
 		}
 	}
 
