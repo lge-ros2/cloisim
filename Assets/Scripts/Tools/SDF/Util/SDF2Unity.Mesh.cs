@@ -11,14 +11,14 @@ using UnityEngine.Rendering;
 public partial class SDF2Unity
 {
 	private static readonly string commonShaderName = "Universal Render Pipeline/Lit";
+	private static readonly string speedTreeShaderName = "Universal Render Pipeline/Nature/SpeedTree8";
 	public static Shader CommonShader = Shader.Find(commonShaderName);
+	public static Shader SpeedTreeShader = Shader.Find(speedTreeShaderName);
 
 	public static Material GetNewMaterial(in string materialName = "")
 	{
-		var defaultEmissionColor = Color.white - Color.black;
 		var newMaterial = new Material(SDF2Unity.CommonShader);
 		newMaterial.SetFloat("_WorkflowMode", 0); // set to specular mode
-		// newMaterial.SetFloat("_Surface", 1); // set to transparent
 		// newMaterial.SetOverrideTag("RenderType", "Transparent");
 		newMaterial.SetFloat("_Cull", (float)CullMode.Back); // Render face front
 		// newMaterial.SetFloat("_Mode", 3); // set to transparent Mode
@@ -26,7 +26,7 @@ public partial class SDF2Unity
 		// newMaterial.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
 		newMaterial.SetFloat("_ZWrite", 1);
 		newMaterial.SetFloat("_SpecularHighlights", 1f);
-		newMaterial.SetFloat("_Smoothness", 0.5f);
+		newMaterial.SetFloat("_Smoothness", 0.0f);
 		newMaterial.SetFloat("_SmoothnessTextureChannel", 1f);
 		newMaterial.SetFloat("_EnvironmentReflections", 1f);
 		newMaterial.SetFloat("_GlossyReflections", 0f);
@@ -43,7 +43,7 @@ public partial class SDF2Unity
 		newMaterial.name = materialName;
 		newMaterial.enableInstancing = true;
 		newMaterial.doubleSidedGI = false;
-		// newMaterial.renderQueue = (int)RenderQueue.Transparent;
+		newMaterial.renderQueue = (int)RenderQueue.Background;
 		// newMaterial.hideFlags |= HideFlags.NotEditable;
 
 		return newMaterial;
@@ -56,11 +56,12 @@ public partial class SDF2Unity
 		targetMaterial.SetFloat("_Mode", 3); // set to transparent Mode
 		targetMaterial.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
 		targetMaterial.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+		targetMaterial.SetFloat("_AlphaClip", 0);
+		targetMaterial.SetFloat("_QueueOffset", 1);
 		targetMaterial.DisableKeyword("_ALPHATEST_ON");
 		targetMaterial.DisableKeyword("_ALPHABLEND_ON");
 		targetMaterial.EnableKeyword("_ALPHAPREMULTIPLY_ON");
 		targetMaterial.renderQueue = (int)RenderQueue.Transparent;
-		// targetMaterial.SetFloat("_QueueOffset", 20);
 	}
 
 	public static void SetMaterialOpaque(Material targetMaterial)
@@ -72,6 +73,13 @@ public partial class SDF2Unity
 		targetMaterial.DisableKeyword("_ALPHABLEND_ON");
 		targetMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
 		targetMaterial.renderQueue = (int)RenderQueue.Geometry;
+	}
+
+	public static void SetMaterialSpeedTree(Material targetMaterial)
+	{
+		var existingTexture = targetMaterial.GetTexture("_BaseMap");
+		targetMaterial.shader = SpeedTreeShader;
+		targetMaterial.SetTexture("_MainTex", existingTexture);
 	}
 
 	public static Mesh MergeMeshes(in MeshFilter[] meshFilters)

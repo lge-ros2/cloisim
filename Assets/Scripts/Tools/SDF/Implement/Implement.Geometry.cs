@@ -20,7 +20,7 @@ namespace SDF
 
 				if (loadedObject == null)
 				{
-					Debug.LogError("Cannot load mesh: " + obj.uri);
+					Debug.LogWarning("Cannot load mesh: " + obj.uri);
 				}
 				else
 				{
