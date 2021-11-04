@@ -108,7 +108,7 @@ namespace SensorDevices
 			switch (pixelFormat)
 			{
 				case CameraData.PixelFormat.L_INT8:
-					targetColorFormat = GraphicsFormat.R8_SRGB;
+					targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
 					readbackDstFormat = TextureFormat.R8;
 					break;
 
