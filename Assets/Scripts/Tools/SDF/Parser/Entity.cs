@@ -227,10 +227,18 @@ namespace SDF
 				pose.relative_to = GetAttributeInPath<string>("pose", "relative_to");
 
 				// x y z roll pitch yaw
+				value = value.Trim().Replace("    ", " ").Replace("   ", " ").Replace("  ", " ");
 				var poseStr = value.Split(' ');
 
-				pose.Pos.Set(poseStr[0], poseStr[1], poseStr[2]);
-				pose.Rot.Set(poseStr[3], poseStr[4], poseStr[5]);
+				try
+				{
+					pose.Pos.Set(poseStr[0], poseStr[1], poseStr[2]);
+					pose.Rot.Set(poseStr[3], poseStr[4], poseStr[5]);
+				}
+				catch
+				{
+					Console.WriteLine("[{0}] failed to set pose {1}", name, poseStr);
+				}
 
 				// Console.WriteLine("Pose {0} {1} {2} {3} {4} {5}",
 				// 	pose.Pos.X, pose.Pos.Y, pose.Pos.Z,
