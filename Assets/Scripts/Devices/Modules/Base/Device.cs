@@ -61,13 +61,15 @@ public abstract class Device : MonoBehaviour
 	void Awake()
 	{
 		OnAwake();
+
+		InitializeMessages();
 	}
 
 	void Start()
 	{
 		devicePose.Store(this.transform);
 
-		InitializeMessages();
+		SetupMessages();
 
 		OnStart();
 
@@ -161,7 +163,15 @@ public abstract class Device : MonoBehaviour
 		yield return null;
 	}
 
+	/// <summary>
+	/// Initialize message objects only
+	/// </summary>
 	protected virtual void InitializeMessages() { }
+
+	/// <summary>
+	/// Setup message object after initialized
+	/// </summary>
+	protected virtual void SetupMessages() { }
 
 	// Used for RX
 	protected virtual void ProcessDevice() { }

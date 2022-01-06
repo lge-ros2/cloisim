@@ -199,7 +199,7 @@ namespace SensorDevices
 				motorLeft.Update(Time.fixedDeltaTime);
 				motorRight.Update(Time.fixedDeltaTime);
 			}
-			
+
 			UpdateIMU();
 			UpdateUss();
 			UpdateIr();

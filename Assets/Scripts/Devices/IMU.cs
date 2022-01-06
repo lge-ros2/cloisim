@@ -59,11 +59,15 @@ namespace SensorDevices
 		protected override void InitializeMessages()
 		{
 			imu = new messages.Imu();
-			imu.EntityName = DeviceName;
 			imu.Stamp = new messages.Time();
 			imu.Orientation = new messages.Quaternion();
 			imu.AngularVelocity = new messages.Vector3d();
 			imu.LinearAcceleration = new messages.Vector3d();
+		}
+
+		protected override void SetupMessages()
+		{
+			imu.EntityName = DeviceName;
 		}
 
 		void FixedUpdate()

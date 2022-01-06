@@ -126,6 +126,14 @@ namespace SensorDevices
 			imageStamped.Time = new messages.Time();
 			imageStamped.Image = new messages.Image();
 
+			sensorInfo = new messages.CameraSensor();
+			sensorInfo.ImageSize = new messages.Vector2d();
+			sensorInfo.Distortion = new messages.Distortion();
+			sensorInfo.Distortion.Center = new messages.Vector2d();
+		}
+
+		protected override void SetupMessages()
+		{
 			var image = imageStamped.Image;
 			var pixelFormat = CameraData.GetPixelFormat(camParameter.image_format);
 			image.Width = (uint)camParameter.image_width;
@@ -133,11 +141,6 @@ namespace SensorDevices
 			image.PixelFormat = (uint)pixelFormat;
 			image.Step = image.Width * (uint)CameraData.GetImageDepth(pixelFormat);
 			image.Data = new byte[image.Height * image.Step];
-
-			sensorInfo = new messages.CameraSensor();
-			sensorInfo.ImageSize = new messages.Vector2d();
-			sensorInfo.Distortion = new messages.Distortion();
-			sensorInfo.Distortion.Center = new messages.Vector2d();
 
 			sensorInfo.HorizontalFov = camParameter.horizontal_fov;
 			sensorInfo.ImageSize.X = camParameter.image_width;

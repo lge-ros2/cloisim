@@ -29,7 +29,10 @@ namespace SensorDevices
 		{
 			imagesStamped = new messages.ImagesStamped();
 			imagesStamped.Time = new messages.Time();
+		}
 
+		protected override void SetupMessages()
+		{
 			for (var i = 0; i < cameras.Count; i++)
 			{
 				imagesStamped.Images.Add(new messages.Image());
