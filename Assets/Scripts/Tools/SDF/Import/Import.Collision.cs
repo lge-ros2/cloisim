@@ -23,6 +23,13 @@ namespace SDF
 
 				SetParentObject(newCollisionObject, targetObject);
 
+				var localPosition = SDF2Unity.GetPosition(collision.Pose.Pos);
+				var localRotation = SDF2Unity.GetRotation(collision.Pose.Rot);
+
+				var collisionHelper = newCollisionObject.AddComponent<Helper.Collision>();
+				collisionHelper.SetPose(localPosition, localRotation);
+				collisionHelper.ResetPose();
+
 				return newCollisionObject as System.Object;
 			}
 
