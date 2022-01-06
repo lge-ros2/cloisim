@@ -76,7 +76,7 @@ namespace SDF
 				var inertial = link.Inertial;
 				if (!linkHelper.Model.isStatic && inertial != null)
 				{
-					CreateArticulationBody(linkObject, inertial);
+					Loader.CreateArticulationBody(linkObject, inertial);
 				}
 			}
 

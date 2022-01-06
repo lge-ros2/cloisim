@@ -35,7 +35,8 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine(" - Object Control");
 		sb.AppendLine("");
 		sb.AppendLine("    Selection/Deselection: Mouse <b>Left click</b>");
-		sb.AppendLine("      Multiple Selection/Deseletion: + <b>Left Shift</b>");
+		sb.AppendLine("    Select static object: + <b>Left Alt</b>");
+		sb.AppendLine("      Multiple(Adding) Selection/Deseletion: + <b>Left Shift</b>");
 		sb.AppendLine("");
 		sb.AppendLine("    After select object you want, press the key as following.");
 		sb.AppendLine("      <b>T</b>: Translation");

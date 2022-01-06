@@ -491,17 +491,32 @@ namespace RuntimeGizmos
 						}
 						else
 						{
-							// avoid plane object
-							if (!hitObject.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex))
+							// To avoid plane object
+							var isPlaneObject = hitObject.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex);
+							var collisionHelper = hitObject.GetComponentInChildren<SDF.Helper.Collision>();
+							if (collisionHelper != null)
+							{
+								isPlaneObject |= collisionHelper.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex);
+							}
+
+							if (!isPlaneObject)
 							{
 								var hitParentLinkHelper = hitObject?.GetComponentInParent<SDF.Helper.Link>();
 								var hitRootModelHelper = hitParentLinkHelper?.RootModel;
 
-								if (hitRootModelHelper != null && !(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
+								if (hitRootModelHelper != null)
 								{
-									// Debug.Log(hitParentObject.name + " Selected!!!!");
-									target = (hitRootModelHelper.hasRootArticulationBody) ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
+									if (!(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
+									{
+										target = (hitRootModelHelper.hasRootArticulationBody) ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
+									}
 								}
+								// Select static object(non articulation body) only when left alt is pressed
+								else if (hitParentLinkHelper == null && Input.GetKey(KeyCode.LeftAlt))
+								{
+									target = hitObject.transform;
+								}
+								// Debug.Log(hitParentObject.name + " Selected!!!!");
 							}
 						}
 					}
