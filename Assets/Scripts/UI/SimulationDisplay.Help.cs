@@ -119,7 +119,6 @@ public partial class SimulationDisplay : MonoBehaviour
 		style.stretchHeight = false;
 		style.stretchWidth = false;
 
-		rectHelpButton.x = Screen.width - buttonWidthHelp - textLeftMargin;
 		GUI.skin.button.normal.textColor = Color.white;
 		GUI.skin.button.alignment = TextAnchor.MiddleCenter;
 		if (GUI.Button(rectHelpButton, "Help(F1)"))
@@ -128,14 +127,13 @@ public partial class SimulationDisplay : MonoBehaviour
 		}
 
 		style.fontSize = (int)(labelFontSize * 0.8f);
-		style.alignment = TextAnchor.MiddleRight;
+		style.alignment = TextAnchor.MiddleLeft;
 		style.normal.textColor = Color.white;
 
 		sbOption_.Clear();
 		sbOption_.Append("Vertical Camera Moving Lock(Space) ");
 		sbOption_.Append((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
 		// var helpStatusMsg2 = "\nStatic Object Selectable(O) " + ((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
-		rectHelpStatus.x = Screen.width - rectHelpButton.width - helpStatusWidth - textLeftMargin - textLeftMargin;
-		DrawLabelWithShadow(rectHelpStatus, sbOption_.ToString());
+		DrawLabelWithShadow(rectOption, sbOption_.ToString());
 	}
 }

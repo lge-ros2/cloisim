@@ -21,18 +21,21 @@ public partial class SimulationDisplay : MonoBehaviour
 	private const int topMargin = 6;
 	private const int bottomMargin = 10;
 	private const int textLeftMargin = 10;
+	private const int textRightMargin = 10;
 	private const int textHeight = 19;
 
 	private const int textWidthFps = 70;
 	private const int TextWidthPointInfo = 300;
 	private const int textWidthVersion = 50;
 	private const int textWidthSimulationInfo = 500;
+	private const int textWidthOptionInfo = 250;
 	private const int textWidthEvent = 800;
 
 	private Color logMessageColor = Color.red;
 
 	[Header("Rect")]
 	private Rect rectVersion;
+	private Rect rectOption;
 	private Rect rectSimulationInfo;
 	private Rect rectFps;
 	private Rect rectPointInfo;
@@ -63,6 +66,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		textureBackground.Apply(); // not sure if this is necessary
 
 		rectVersion = new Rect(textLeftMargin, topMargin, textWidthVersion, textHeight);
+		rectOption = new Rect(textWidthVersion + textRightMargin, topMargin, textWidthOptionInfo, textHeight);
 		rectSimulationInfo = new Rect(textLeftMargin, Screen.height - textHeight - bottomMargin, textWidthSimulationInfo, textHeight);
 		rectFps = new Rect(rectSimulationInfo.width + rectSimulationInfo.x,  Screen.height - textHeight - bottomMargin, textWidthFps, textHeight);
 		rectPointInfo = new Rect(rectFps.width + rectFps.x,  Screen.height - textHeight - bottomMargin, TextWidthPointInfo, textHeight);
