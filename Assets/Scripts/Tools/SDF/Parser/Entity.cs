@@ -95,7 +95,7 @@ namespace SDF
 		public string Name
 		{
 			get => name;
-			protected set => name = value;
+			set => name = value;
 		}
 
 		public string Type
