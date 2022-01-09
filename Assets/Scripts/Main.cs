@@ -33,6 +33,7 @@ public class Main: MonoBehaviour
 	private static GameObject worldRoot = null;
 	private static GameObject lightsRoot = null;
 	private static GameObject uiRoot = null;
+	private static GameObject uiMainCanvasRoot = null;
 
 	private static SimulationDisplay simulationDisplay = null;
 	private static InfoDisplay _infoDisplay = null;
@@ -50,6 +51,7 @@ public class Main: MonoBehaviour
 	public static GameObject WorldRoot => worldRoot;
 	public static GameObject CoreObject => coreObject;
 	public static GameObject UIObject => uiRoot;
+	public static GameObject UIMainCanvas => uiRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => transformGizmo;
 	public static SimulationDisplay Display => simulationDisplay;
 	public static InfoDisplay InfoDisplay => _infoDisplay;
@@ -212,11 +214,15 @@ public class Main: MonoBehaviour
 		var sphericalCoordinates = new SphericalCoordinates();
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
 
-		followingList = uiRoot.GetComponentInChildren<FollowingTargetList>();
-		simulationDisplay = uiRoot.GetComponentInChildren<SimulationDisplay>();
-		_infoDisplay = uiRoot.GetComponentInChildren<InfoDisplay>();
+		if (uiRoot != null)
+		{
+			_infoDisplay = uiRoot.GetComponentInChildren<InfoDisplay>();
+			transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
 
-		transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
+			uiMainCanvasRoot = uiRoot.transform.Find("Main Canvas").gameObject;
+			followingList = uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
+			simulationDisplay = uiMainCanvasRoot.GetComponentInChildren<SimulationDisplay>();
+		}
 
 		gameObject.AddComponent<ObjectSpawning>();
 	}
@@ -259,11 +265,11 @@ public class Main: MonoBehaviour
 	private void UpdateUIModelList(ref SDF.Root root)
 	{
 		// Update UI Model list
-		var modelList = Main.UIObject.transform.GetChild(0).Find("ModelList").gameObject;
-		var buttonTemplate = modelList.transform.GetChild(0).Find("ButtonTemplate").gameObject;
+		var modelList = uiMainCanvasRoot.transform.Find("ModelList").gameObject;
+		var viewport = modelList.transform.GetChild(0);
+		var buttonTemplate = viewport.Find("ButtonTemplate").gameObject;
 
-		var contentList = modelList.transform.GetChild(0).GetChild(0).gameObject;
-
+		var contentList = viewport.GetChild(0).gameObject;
 		foreach (var child in contentList.GetComponentsInChildren<Button>())
 		{
 			GameObject.Destroy(child.gameObject);
@@ -286,29 +292,37 @@ public class Main: MonoBehaviour
 		}
 	}
 
+	private string GetClonedModelName(in string modelName)
+	{
+		var worldTrnasform = worldRoot.transform;
+		var numbering = 0;
+		var tmpModelName = modelName;
+		for (var i = 0; i < worldTrnasform.childCount; i++)
+		{
+			var childTransform = worldTrnasform.GetChild(i);
+
+			if (childTransform.name.CompareTo(tmpModelName) == 0)
+			{
+				tmpModelName = modelName + "_clone_" + numbering++;
+			}
+		}
+		return tmpModelName;
+	}
+
 	private IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
 		if (sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
+			model.Name = GetClonedModelName(model.Name);
 
-			// Check name duplication
-			var worldTrnasform = worldRoot.transform;
-			var numbering = 0;
-			var tmpModelName = model.Name;
-			for (var i = 0; i < worldTrnasform.childCount; i++)
-			{
-				var childTransform = worldTrnasform.GetChild(i);
-
-				if (childTransform.name.CompareTo(tmpModelName) == 0)
-				{
-					tmpModelName = model.Name + "_clone_" + numbering++;
-				}
-			}
-			model.Name = tmpModelName;
 			yield return StartCoroutine(sdfLoader.StartImport(model));
 
-			var targetObject = Main.WorldRoot.transform.Find(model.Name);
+			var targetObject = worldRoot.transform.Find(model.Name);
+
+			// yield return StartCoroutine(FreeObjectDeploy(targetObject));
+			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
+			addingModel.SetAddingModelForDeploy(targetObject);
 		}
 
 		yield return null;

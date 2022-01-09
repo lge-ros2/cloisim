@@ -221,35 +221,39 @@ namespace RuntimeGizmos
 
 		void SetSpaceAndType()
 		{
-			if (Input.GetKeyDown(SetMoveType))
-			{
-				transformType = TransformType.Move;
-			}
-			else if (Input.GetKeyDown(SetRotateType))
-			{
-				transformType = TransformType.Rotate;
-			}
-			else if (Input.GetKeyDown(SetAllTransformType))
-			{
-				transformType = TransformType.All;
-			}
-
-			if (!isTransforming) translatingType = transformType;
-
-			if (Input.GetKeyDown(SetSpaceToggle))
-			{
-				switch (space)
+			// avoid pressing left control
+			if (!Input.GetKey(KeyCode.LeftControl))
 				{
-					case TransformSpace.Global:
-						space = TransformSpace.Local;
-						break;
+				if (Input.GetKeyUp(SetMoveType))
+				{
+					transformType = TransformType.Move;
+				}
+				else if (Input.GetKeyUp(SetRotateType))
+				{
+					transformType = TransformType.Rotate;
+				}
+				else if (Input.GetKeyUp(SetAllTransformType))
+				{
+					transformType = TransformType.All;
+				}
 
-					case TransformSpace.Local:
-						space = TransformSpace.Global;
-						break;
+				if (!isTransforming) translatingType = transformType;
 
-					default:
-						break;
+				if (Input.GetKeyUp(SetSpaceToggle))
+				{
+					switch (space)
+					{
+						case TransformSpace.Global:
+							space = TransformSpace.Local;
+							break;
+
+						case TransformSpace.Local:
+							space = TransformSpace.Global;
+							break;
+
+						default:
+							break;
+					}
 				}
 			}
 		}
@@ -553,7 +557,7 @@ namespace RuntimeGizmos
 			list = targetRootsOrdered;
 		}
 
-		public void AddTarget(in Transform target)
+		void AddTarget(in Transform target)
 		{
 			if (target != null)
 			{
