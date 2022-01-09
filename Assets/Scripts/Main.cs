@@ -7,8 +7,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
-using UnityEngine.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 [DefaultExecutionOrder(30)]
 public class Main: MonoBehaviour
@@ -32,6 +33,7 @@ public class Main: MonoBehaviour
 	private static GameObject worldRoot = null;
 	private static GameObject lightsRoot = null;
 	private static GameObject uiRoot = null;
+	private static GameObject uiMainCanvasRoot = null;
 
 	private static SimulationDisplay simulationDisplay = null;
 	private static InfoDisplay _infoDisplay = null;
@@ -49,11 +51,17 @@ public class Main: MonoBehaviour
 	public static GameObject WorldRoot => worldRoot;
 	public static GameObject CoreObject => coreObject;
 	public static GameObject UIObject => uiRoot;
+	public static GameObject UIMainCanvas => uiRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => transformGizmo;
 	public static SimulationDisplay Display => simulationDisplay;
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => worldNavMeshBuilder;
 	public static BridgeManager BridgeManager => bridgeManager;
+
+#region "SDFParser"
+	private SDF.Root sdfRoot = null;
+	private SDF.Import.Loader sdfLoader = null;
+#endregion
 
 	private void CleanAllModels()
 	{
@@ -206,11 +214,15 @@ public class Main: MonoBehaviour
 		var sphericalCoordinates = new SphericalCoordinates();
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
 
-		followingList = uiRoot.GetComponentInChildren<FollowingTargetList>();
-		simulationDisplay = uiRoot.GetComponentInChildren<SimulationDisplay>();
-		_infoDisplay = uiRoot.GetComponentInChildren<InfoDisplay>();
+		if (uiRoot != null)
+		{
+			_infoDisplay = uiRoot.GetComponentInChildren<InfoDisplay>();
+			transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
 
-		transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
+			uiMainCanvasRoot = uiRoot.transform.Find("Main Canvas").gameObject;
+			followingList = uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
+			simulationDisplay = uiMainCanvasRoot.GetComponentInChildren<SimulationDisplay>();
+		}
 
 		gameObject.AddComponent<ObjectSpawning>();
 	}
@@ -236,11 +248,10 @@ public class Main: MonoBehaviour
 		if (string.IsNullOrEmpty(newWorldFilename))
 		{
 			newWorldFilename = GetArgument("-worldFile");
-		}
-
-		if (!string.IsNullOrEmpty(newWorldFilename))
-		{
-			worldFileName = newWorldFilename;
+			if (!string.IsNullOrEmpty(newWorldFilename))
+			{
+				worldFileName = newWorldFilename;
+			}
 		}
 
 		if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
@@ -251,6 +262,72 @@ public class Main: MonoBehaviour
 		}
 	}
 
+	private void UpdateUIModelList(ref SDF.Root root)
+	{
+		// Update UI Model list
+		var modelList = uiMainCanvasRoot.transform.Find("ModelList").gameObject;
+		var viewport = modelList.transform.GetChild(0);
+		var buttonTemplate = viewport.Find("ButtonTemplate").gameObject;
+
+		var contentList = viewport.GetChild(0).gameObject;
+		foreach (var child in contentList.GetComponentsInChildren<Button>())
+		{
+			GameObject.Destroy(child.gameObject);
+		}
+
+		foreach (var item in root.resourceModelTable)
+		{
+			var duplicatedbutton = GameObject.Instantiate(buttonTemplate);
+			duplicatedbutton.SetActive(true);
+			duplicatedbutton.transform.SetParent(contentList.transform, false);
+
+			var textComponent = duplicatedbutton.GetComponentInChildren<Text>();
+			textComponent.text = item.Key;
+
+			var buttonComponent = duplicatedbutton.GetComponentInChildren<Button>();
+			buttonComponent.onClick.AddListener(delegate ()
+			{
+				StartCoroutine(LoadModel(item.Value.Item1, item.Value.Item2));
+			});
+		}
+	}
+
+	private string GetClonedModelName(in string modelName)
+	{
+		var worldTrnasform = worldRoot.transform;
+		var numbering = 0;
+		var tmpModelName = modelName;
+		for (var i = 0; i < worldTrnasform.childCount; i++)
+		{
+			var childTransform = worldTrnasform.GetChild(i);
+
+			if (childTransform.name.CompareTo(tmpModelName) == 0)
+			{
+				tmpModelName = modelName + "_clone_" + numbering++;
+			}
+		}
+		return tmpModelName;
+	}
+
+	private IEnumerator LoadModel(string modelPath, string modelFileName)
+	{
+		if (sdfRoot.DoParse(out var model, modelPath, modelFileName))
+		{
+			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
+			model.Name = GetClonedModelName(model.Name);
+
+			yield return StartCoroutine(sdfLoader.StartImport(model));
+
+			var targetObject = worldRoot.transform.Find(model.Name);
+
+			// yield return StartCoroutine(FreeObjectDeploy(targetObject));
+			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
+			addingModel.SetAddingModelForDeploy(targetObject);
+		}
+
+		yield return null;
+	}
+
 	private IEnumerator LoadWorld()
 	{
 		Console.SetOut(new DebugLogWriter());
@@ -259,19 +336,21 @@ public class Main: MonoBehaviour
 		// Debug.Log("Hello CLOiSim World!!!!!");
 		Debug.Log("Target World: " + worldFileName);
 
-		var sdf = new SDF.Root();
-		sdf.SetWorldFileName(worldFileName);
-		sdf.fileDefaultPaths.AddRange(fileRootDirectories);
-		sdf.modelDefaultPaths.AddRange(modelRootDirectories);
-		sdf.worldDefaultPaths.AddRange(worldRootDirectories);
+		sdfRoot = new SDF.Root();
+		sdfRoot.fileDefaultPaths.AddRange(fileRootDirectories);
+		sdfRoot.modelDefaultPaths.AddRange(modelRootDirectories);
+		sdfRoot.worldDefaultPaths.AddRange(worldRootDirectories);
+		sdfRoot.UpdateResourceModelTable();
 
-		if (sdf.DoParse())
+		UpdateUIModelList(ref sdfRoot);
+
+		if (sdfRoot.DoParse(out var world, worldFileName))
 		{
-			var loader = new SDF.Import.Loader();
-			loader.SetRootModels(worldRoot);
-			loader.SetRootLights(lightsRoot);
+			sdfLoader = new SDF.Import.Loader();
+			sdfLoader.SetRootModels(worldRoot);
+			sdfLoader.SetRootLights(lightsRoot);
 
-			yield return loader.StartImport(sdf.World());
+			yield return sdfLoader.StartImport(world);
 
 			// for GUI
 			simulationDisplay?.ClearLogMessage();
@@ -310,7 +389,6 @@ public class Main: MonoBehaviour
 			else
 			{
 				resetTriggered = false;
-
 				StartCoroutine(ResetSimulation());
 			}
 		}
@@ -329,22 +407,7 @@ public class Main: MonoBehaviour
 
 	void Reset()
 	{
-		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Visual>())
-		{
-			helper.Reset();
-		}
-
-		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Actor>())
-		{
-			helper.Reset();
-		}
-
-		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Link>())
-		{
-			helper.Reset();
-		}
-
-		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Model>())
+		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Base>())
 		{
 			helper.Reset();
 		}
@@ -366,7 +429,7 @@ public class Main: MonoBehaviour
 
 		DeviceHelper.GetGlobalClock()?.ResetTime();
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
-		yield return new WaitForSeconds(0.15f);
+		yield return new WaitForSeconds(0.1f);
 
 		isResetting = false;
 	}

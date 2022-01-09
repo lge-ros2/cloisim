@@ -59,6 +59,8 @@ public partial class SimulationDisplay : MonoBehaviour
 		GUI.skin.textField.alignment = TextAnchor.MiddleCenter;
 		scaleFactorString = GUI.TextField(rectScale, scaleFactorString, 5);
 
+		rectHelpButton.x = rectScale.x + rectScale.width + textRightMargin;
+
 		if (checkScaleFactorFocused && !GUI.GetNameOfFocusedControl().Equals("ScaleField"))
 		{
 			doCheckScaleFactorValue = true;

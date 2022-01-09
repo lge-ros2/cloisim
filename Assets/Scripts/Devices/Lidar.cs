@@ -123,6 +123,14 @@ namespace SensorDevices
 			laserScanStamped.Scan.WorldPose.Position = new messages.Vector3d();
 			laserScanStamped.Scan.WorldPose.Orientation = new messages.Quaternion();
 
+			if (vertical.Equals(default(LaserData.Scan)))
+			{
+				vertical = new LaserData.Scan(1);
+			}
+		}
+
+		protected override void SetupMessages()
+		{
 			var laserScan = laserScanStamped.Scan;
 			laserScan.Frame = DeviceName;
 			laserScan.Count = horizontal.samples;
@@ -133,10 +141,6 @@ namespace SensorDevices
 			laserScan.RangeMin = range.min;
 			laserScan.RangeMax = range.max;
 
-			if (vertical.Equals(default(LaserData.Scan)))
-			{
-				vertical = new LaserData.Scan(1);
-			}
 			laserScan.VerticalCount = vertical.samples;
 			laserScan.VerticalAngleMin = vertical.angle.min * Mathf.Deg2Rad;
 			laserScan.VerticalAngleMax = vertical.angle.max * Mathf.Deg2Rad;

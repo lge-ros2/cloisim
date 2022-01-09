@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
@@ -20,6 +21,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		if (BridgeManager.AllocateDevice(type.ToString(), modelName, partsName, subPartsName, out var hashKey, out port))
 		{
 			allocatedDeviceHashKeys.Add(hashKey);
+			allocatedDevicePorts.Add(port);
 
 			hash = DeviceHelper.GetStringHashCode(hashKey);
 			// Debug.LogFormat("PrepareDevice - port({0}) hashKey({1}) hashValue({2:X})", port, hashKey, hash);
@@ -31,9 +33,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return false;
 	}
 
-	protected static bool DeregisterDevice(in string hashKey)
+	protected static bool DeregisterDevice(in List<ushort> allocatedPorts, in List<string> hashKeys)
 	{
-		BridgeManager.DeallocateDevice(hashKey);
+		BridgeManager.DeallocateDevice(allocatedPorts, hashKeys);
 		return true;
 	}
 

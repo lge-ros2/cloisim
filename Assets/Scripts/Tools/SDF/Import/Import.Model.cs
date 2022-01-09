@@ -14,7 +14,7 @@ namespace SDF
 		{
 			/// <summary>make root articulation body for handling robots</summary>
 			/// <remarks>should add root body first</remarks>
-			private void MakeRootArticulationBody(in UE.GameObject targetObject)
+			private void CreateRootArticulationBody(in UE.GameObject targetObject)
 			{
 				var articulationBody = targetObject.GetComponent<UE.ArticulationBody>();
 
@@ -41,6 +41,24 @@ namespace SDF
 				// UE.Debug.Log(targetObject.name + " Create root articulation body");
 			}
 
+			private static void CreateRootRigidBody(in UE.GameObject targetObject)
+			{
+				var rigidBody = targetObject.GetComponent<UE.Rigidbody>();
+
+				// Configure articulation body for root object
+				if (rigidBody == null)
+				{
+					rigidBody = targetObject.AddComponent<UE.Rigidbody>();
+				}
+
+				rigidBody.useGravity = false;
+				rigidBody.isKinematic = true;
+				rigidBody.mass = 0;
+				rigidBody.ResetCenterOfMass();
+				rigidBody.ResetInertiaTensor();
+				rigidBody.Sleep();
+			}
+
 			protected override System.Object ImportModel(in SDF.Model model, in System.Object parentObject)
 			{
 				if (model == null)
@@ -64,9 +82,16 @@ namespace SDF
 				modelHelper.SetPose(localPosition, localRotation);
 				modelHelper.ResetPose();
 
-				if (modelHelper.IsFirstChild && !modelHelper.isStatic)
+				if (modelHelper.IsFirstChild)
 				{
-					MakeRootArticulationBody(newModelObject);
+					if (modelHelper.isStatic)
+					{
+						CreateRootRigidBody(newModelObject);
+					}
+					else
+					{
+						CreateRootArticulationBody(newModelObject);
+					}
 				}
 
 				return newModelObject as System.Object;

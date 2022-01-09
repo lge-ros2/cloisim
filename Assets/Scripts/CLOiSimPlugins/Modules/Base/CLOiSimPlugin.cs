@@ -28,6 +28,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	private SDF.Plugin pluginParameters;
 
+	private List<ushort> allocatedDevicePorts = new List<ushort>();
 	private List<string> allocatedDeviceHashKeys = new List<string>();
 
 	protected Dictionary<string, Device> attachedDevices = new Dictionary<string, Device>();
@@ -38,14 +39,11 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected void OnDestroy()
 	{
-		foreach (var hashKey in allocatedDeviceHashKeys)
-		{
-			DeregisterDevice(hashKey);
-		}
+		DeregisterDevice(allocatedDevicePorts, allocatedDeviceHashKeys);
 
 		thread.Dispose();
 		transport.Dispose();
-		// Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
+		Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
 	}
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)

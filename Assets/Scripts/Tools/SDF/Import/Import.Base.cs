@@ -217,6 +217,7 @@ namespace SDF
 			public IEnumerator<World> StartImport(World world)
 			{
 				// Console.WriteLine("Import Models({0})/Links/Joints", world.GetModels().Count);
+				jointObjectList.Clear();
 				var worldObject = ImportWorld(world);
 
 				ImportModels(world.GetModels());
@@ -227,7 +228,19 @@ namespace SDF
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
 				}
+				yield return null;
+			}
 
+			public IEnumerator<Model> StartImport(Model model)
+			{
+				jointObjectList.Clear();
+				var tempModels = new List<Model>(){model};
+				ImportModels(tempModels);
+
+				foreach (var jointObject in jointObjectList)
+				{
+					ImportJoint(jointObject.Key, jointObject.Value);
+				}
 				yield return null;
 			}
 
