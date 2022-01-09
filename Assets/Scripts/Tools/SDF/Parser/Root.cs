@@ -16,15 +16,13 @@ namespace SDF
 	public class Root
 	{
 		// {Model Name, (Model Path, Model File)}
-		private Dictionary<string, Tuple<string, string>> resourceModelTable = new Dictionary<string, Tuple<string, string>>();
+		public Dictionary<string, Tuple<string, string>> resourceModelTable = new Dictionary<string, Tuple<string, string>>();
 
-		private string[] sdfVersions = {"1.8", "1.7", "1.6", "1.5", "1.4", "1.3", "1.2", string.Empty};
+		private readonly string[] sdfVersions = {"1.9", "1.8", "1.7", "1.6", "1.5", "1.4", "1.3", "1.2", string.Empty};
 
 		private XmlDocument doc = new XmlDocument();
 
-		private string sdfVersion = "1.8";
-
-		private World _world = null;
+		private string sdfVersion = "1.7";
 
 		public List<string> fileDefaultPaths = new List<string>();
 
@@ -32,40 +30,16 @@ namespace SDF
 
 		public List<string> worldDefaultPaths = new List<string>();
 
-		private string worldFileName = string.Empty;
-
-
 		public Root()
-			: this("")
 		{
 		}
 
-		public Root(string filename)
-		{
-			SetWorldFileName(filename);
-
-		}
-
-		public void SetWorldFileName(in string filename)
-		{
-			if (!string.IsNullOrEmpty(filename))
-			{
-				worldFileName = filename;
-			}
-		}
-
-		public World World()
-		{
-			return _world;
-		}
-
-		public bool DoParse()
+		public bool DoParse(out World world, in string worldFileName)
 		{
 			// Console.WriteLine("Loading World File from SDF!!!!!");
-			updateResourceModelTable();
-
 			var worldFound = false;
-			if (worldFileName != null && worldFileName.Length > 0)
+			world = null;
+			if (worldFileName.Trim().Length > 0)
 			{
 				// Console.WriteLine("World file, PATH: " + worldFileName);
 				foreach (var worldPath in worldDefaultPaths)
@@ -75,6 +49,7 @@ namespace SDF
 					{
 						try
 						{
+							doc.RemoveAll();
 							doc.Load(fullFilePath);
 
 							replaceAllIncludedModel();
@@ -84,28 +59,16 @@ namespace SDF
 
 							// Console.WriteLine("Load World");
 							var worldNode = doc.SelectSingleNode("/sdf/world");
-
-							_world = new World(worldNode);
-
+							world = new World(worldNode);
 							// Console.WriteLine("Load Completed!!!");
-
-							// Print all SDF contents
-							// StringWriter sw = new StringWriter();
-							// XmlTextWriter xw = new XmlTextWriter(sw);
-							// doc.WriteTo(xw);
-							// Console.WriteLine(sw.ToString());
-
+							worldFound = true;
 						}
 						catch (XmlException ex)
 						{
 							var errorMessage = "Failed to Load file(" + fullFilePath + ") file - " + ex.Message;
 							(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
 							Console.WriteLine(errorMessage);
-
-							return false;
 						}
-
-						worldFound = true;
 						break;
 					}
 				}
@@ -114,13 +77,54 @@ namespace SDF
 			if (!worldFound)
 			{
 				Console.Error.WriteLine("World file not exist: " + worldFileName);
-				return false;
 			}
 
-			return true;
+			return worldFound;
 		}
 
-		public void updateResourceModelTable()
+		public bool DoParse(out Model model, in string modelFullPath, in string modelFileName)
+		{
+			// Console.WriteLine("Loading World File from SDF!!!!!");
+			var modelFound = false;
+			model = null;
+			var modelLocation = Path.Combine(modelFullPath, modelFileName);
+			try
+			{
+				doc.RemoveAll();
+				doc.Load(modelLocation);
+
+				replaceAllIncludedModel();
+
+				ConvertPathToAbsolutePath("uri");
+				ConvertPathToAbsolutePath("filename");
+
+				// Console.WriteLine("Load World");
+				var modelNode = doc.SelectSingleNode("/sdf/model");
+				model = new Model(modelNode);
+				// Console.WriteLine("Load Completed!!!");
+				modelFound = true;
+			}
+			catch (XmlException ex)
+			{
+				var errorMessage = "Failed to Load Model file(" + modelLocation + ") file - " + ex.Message;
+				(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
+				Console.WriteLine(errorMessage);
+			}
+
+			return modelFound;
+		}
+
+#if false
+		public void SaveDocument()
+		{
+			// Print all SDF contents
+			StringWriter sw = new StringWriter();
+			XmlTextWriter xw = new XmlTextWriter(sw);
+			doc.WriteTo(xw);
+			Console.WriteLine(sw.ToString());
+		}
+#endif
+		public void UpdateResourceModelTable()
 		{
 			if (resourceModelTable == null)
 			{

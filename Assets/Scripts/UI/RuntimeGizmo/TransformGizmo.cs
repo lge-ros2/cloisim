@@ -221,35 +221,39 @@ namespace RuntimeGizmos
 
 		void SetSpaceAndType()
 		{
-			if (Input.GetKeyDown(SetMoveType))
-			{
-				transformType = TransformType.Move;
-			}
-			else if (Input.GetKeyDown(SetRotateType))
-			{
-				transformType = TransformType.Rotate;
-			}
-			else if (Input.GetKeyDown(SetAllTransformType))
-			{
-				transformType = TransformType.All;
-			}
-
-			if (!isTransforming) translatingType = transformType;
-
-			if (Input.GetKeyDown(SetSpaceToggle))
-			{
-				switch (space)
+			// avoid pressing left control
+			if (!Input.GetKey(KeyCode.LeftControl))
 				{
-					case TransformSpace.Global:
-						space = TransformSpace.Local;
-						break;
+				if (Input.GetKeyUp(SetMoveType))
+				{
+					transformType = TransformType.Move;
+				}
+				else if (Input.GetKeyUp(SetRotateType))
+				{
+					transformType = TransformType.Rotate;
+				}
+				else if (Input.GetKeyUp(SetAllTransformType))
+				{
+					transformType = TransformType.All;
+				}
 
-					case TransformSpace.Local:
-						space = TransformSpace.Global;
-						break;
+				if (!isTransforming) translatingType = transformType;
 
-					default:
-						break;
+				if (Input.GetKeyUp(SetSpaceToggle))
+				{
+					switch (space)
+					{
+						case TransformSpace.Global:
+							space = TransformSpace.Local;
+							break;
+
+						case TransformSpace.Local:
+							space = TransformSpace.Global;
+							break;
+
+						default:
+							break;
+					}
 				}
 			}
 		}
@@ -491,17 +495,32 @@ namespace RuntimeGizmos
 						}
 						else
 						{
-							// avoid plane object
-							if (!hitObject.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex))
+							// To avoid plane object
+							var isPlaneObject = hitObject.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex);
+							var collisionHelper = hitObject.GetComponentInChildren<SDF.Helper.Collision>();
+							if (collisionHelper != null)
+							{
+								isPlaneObject |= collisionHelper.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex);
+							}
+
+							if (!isPlaneObject)
 							{
 								var hitParentLinkHelper = hitObject?.GetComponentInParent<SDF.Helper.Link>();
 								var hitRootModelHelper = hitParentLinkHelper?.RootModel;
 
-								if (hitRootModelHelper != null && !(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
+								if (hitRootModelHelper != null)
 								{
-									// Debug.Log(hitParentObject.name + " Selected!!!!");
-									target = (hitRootModelHelper.hasRootArticulationBody) ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
+									if (!(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
+									{
+										target = (hitRootModelHelper.hasRootArticulationBody) ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
+									}
 								}
+								// Select static object(non articulation body) only when left alt is pressed
+								else if (hitParentLinkHelper == null && Input.GetKey(KeyCode.LeftAlt))
+								{
+									target = hitObject.transform;
+								}
+								// Debug.Log(hitParentObject.name + " Selected!!!!");
 							}
 						}
 					}
@@ -538,7 +557,7 @@ namespace RuntimeGizmos
 			list = targetRootsOrdered;
 		}
 
-		public void AddTarget(in Transform target)
+		void AddTarget(in Transform target)
 		{
 			if (target != null)
 			{

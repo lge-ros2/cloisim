@@ -65,6 +65,10 @@ namespace SensorDevices
 		{
 			gps = new messages.Gps();
 			gps.Time = new messages.Time();
+		}
+
+		protected override void SetupMessages()
+		{
 			gps.LinkName = DeviceName;
 		}
 
