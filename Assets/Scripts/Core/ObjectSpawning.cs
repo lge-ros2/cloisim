@@ -193,7 +193,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	private IEnumerator DeleteTargetObject(Transform targetObjectTransform)
 	{
-		if (targetObjectTransform.CompareTag("Props"))
+		if (targetObjectTransform.CompareTag("Props") || targetObjectTransform.CompareTag("Model"))
 		{
 			transformGizmo.GetSelectedTargets(out var list);
 			Destroy(targetObjectTransform.gameObject);
