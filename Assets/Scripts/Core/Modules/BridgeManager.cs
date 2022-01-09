@@ -59,22 +59,53 @@ public class BridgeManager : IDisposable
 		GC.SuppressFinalize(this);
 	}
 
-	public static void DeallocateDevice(in string hashKey)
+	public static void DeallocateDevice(in List<ushort> devicePorts, in List<string> hashKeys)
 	{
-		var isRemoved = false;
+		lock (deviceMapTable)
+		{
+			foreach (var devicePort in devicePorts)
+			{
+				foreach (var deviceMap in deviceMapTable)
+				{
+					foreach (var partMaps in deviceMap.Value)
+					{
+						foreach (var portMaps in partMaps.Value)
+						{
+							var portMapList = portMaps.Value;
+							foreach (var portMap in portMapList.ToList())
+							{
+								if (portMap.Value == devicePort)
+								{
+									portMapList.Remove(portMap.Key);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 
+		DeallocateDevicePort(hashKeys);
+	}
+
+	public static void DeallocateDevicePort(in List<string> hashKeys)
+	{
 		lock (haskKeyPortMapTable)
 		{
-			isRemoved = haskKeyPortMapTable.Remove(hashKey);
-		}
+			var isRemoved = false;
+			foreach (var hashKey in hashKeys)
+			{
+				isRemoved = haskKeyPortMapTable.Remove(hashKey);
 
-		if (!isRemoved)
-		{
-			Console.Error.WriteLine("Failed to remove HashKey({0})!!!!", hashKey);
-		}
-		else
-		{
-			// Console.WriteLine("HashKey({0}) Removed.", hashKey);
+				if (!isRemoved)
+				{
+					Console.Error.WriteLine("Failed to remove HashKey({0})!!!!", hashKey);
+				}
+				else
+				{
+					Console.WriteLine("HashKey({0}) Removed.", hashKey);
+				}
+			}
 		}
 	}
 
@@ -189,8 +220,10 @@ public class BridgeManager : IDisposable
 			{
 				var portsMapTable = new Dictionary<string, ushort>();
 				portsMapTable.Add(subPartsName, port);
+
 				var partsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
 				partsMapTable.Add(partsName, portsMapTable);
+
 				var devicesTypeMap = new Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>();
 				devicesTypeMap.Add(deviceType, partsMapTable);
 
