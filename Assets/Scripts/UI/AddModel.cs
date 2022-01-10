@@ -116,5 +116,13 @@ public class AddModel : MonoBehaviour
 		{
 			HandlingAddedObject();
 		}
+		else
+		{
+			// close ADd model list
+			if (Input.GetKey(KeyCode.Escape))
+			{
+				modelList.SetActive(false);
+			}
+		}
 	}
 }

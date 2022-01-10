@@ -58,7 +58,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
     - [ ] supporting `<specular>`, `<attenuation/linear>`, `<attenuation/contant>`, `<attenuation/quadratic>`, `<spot/falloff>`
   - [X] Spherical Coordinates
 
-Plus, [SDF](http://sdformat.org/spec?ver=1.7) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
+Plus, [SDF](http://sdformat.org/spec?ver=1.6) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<road>`, `<population>`.
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material', 'Collada(.dae) including animation' and 'STL(.stl)'.
@@ -128,12 +128,12 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2020.3.17f1 (LTS)'*.
+- Latest Unity Editor Version: *'2020.3.25f1 (LTS)'*.
 
 - Linux Machine
-  - OS: Ubuntu 20.04.2 LTS
+  - OS: Ubuntu 20.04.3 LTS
   - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
-  - Memory: 32GB
+  - Memory: 64 GB
   - Graphics: NVIDIA Corporation [GeForce RTX 3090]
 
 - Windows Machine
@@ -200,6 +200,8 @@ You can add markers like line, text, box, or sphere point and reset simulation b
 
 Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-service)
 
+### CLOiSim + nav2
+
 ![cloisim_nav2_ros2](https://user-images.githubusercontent.com/21001946/107105530-37fbc100-686a-11eb-9ff8-f3cf45012d9b.gif)
 [video link](https://user-images.githubusercontent.com/21001946/103973626-2f549400-51b3-11eb-8d1f-0945d40c700b.mp4)
 
@@ -207,7 +209,7 @@ Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-servi
 
 New features or functions shall be developed on demand.
 
-- Fully support to keep up with 'SDF specifiaction version 1.8'
+- Fully support to keep up with 'SDF specifiaction version 1.9'
 
 - Add new sensor models and enhance sensor performance
 

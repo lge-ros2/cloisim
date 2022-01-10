@@ -71,12 +71,14 @@ namespace SDF
 					if (parentObject != null && parentObject.CompareTag("Collision"))
 					{
 						var navMeshObstacle = parentObject.gameObject.AddComponent<UEAI.NavMeshObstacle>();
-						navMeshObstacle.carving = true;
-						navMeshObstacle.carveOnlyStationary = true;
-						navMeshObstacle.carvingMoveThreshold = CarvingMoveThreshold;
-						navMeshObstacle.carvingTimeToStationary = CarvingTimeToStationary;
-
-						navMeshObstacle.size = transform.rotation * colliders[i].bounds.size;
+						if (navMeshObstacle != null)
+						{
+							navMeshObstacle.carving = true;
+							navMeshObstacle.carveOnlyStationary = true;
+							navMeshObstacle.carvingMoveThreshold = CarvingMoveThreshold;
+							navMeshObstacle.carvingTimeToStationary = CarvingTimeToStationary;
+							navMeshObstacle.size = transform.rotation * colliders[i].bounds.size;
+						}
 					}
 				}
 			}

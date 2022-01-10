@@ -248,10 +248,11 @@ public class Main: MonoBehaviour
 		if (string.IsNullOrEmpty(newWorldFilename))
 		{
 			newWorldFilename = GetArgument("-worldFile");
-			if (!string.IsNullOrEmpty(newWorldFilename))
-			{
-				worldFileName = newWorldFilename;
-			}
+		}
+
+		if (!string.IsNullOrEmpty(newWorldFilename))
+		{
+			worldFileName = newWorldFilename;
 		}
 
 		if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
@@ -438,12 +439,12 @@ public class Main: MonoBehaviour
 	/// Eg:  CLOiSim.x86_64 -worldFile lg_seocho.world
 	/// read the "-worldFile" command line argument
 	/// </summary>
-	private static string GetArgument(in string name)
+	private static string GetArgument(in string arg_name)
 	{
 		var args = Environment.GetCommandLineArgs();
 		for (var i = 0; i < args.Length; i++)
 		{
-			if (args[i] == name && args.Length > i + 1)
+			if (args[i].CompareTo(arg_name) == 0 && args.Length > i + 1)
 			{
 				return args[i + 1];
 			}
