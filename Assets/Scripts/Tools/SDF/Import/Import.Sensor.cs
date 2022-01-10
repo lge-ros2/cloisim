@@ -28,15 +28,15 @@ namespace SDF
 				switch (sensorType)
 				{
 					case "ray":
-						Debug.LogWarning("It is preferred to use 'lidar' since 'ray' will be deprecated.");
+						Debug.LogWarning("[SDF.Import] It is preferred to use 'lidar' since 'ray' will be deprecated.");
 						goto case "lidar";
 
 					case "lidar":
-						Debug.LogWarning("CPU based lidar or ray does not support. It will change to GPU based sensor.");
+						Debug.LogWarning("[SDF.Import] CPU based lidar or ray does not support. It will change to GPU based sensor.");
 						goto case "gpu_lidar";
 
 					case "gpu_ray":
-						Debug.LogWarning("It is preferred to use 'gpu_lidar' since 'gpu_ray' will be deprecated.");
+						Debug.LogWarning("[SDF.Import] It is preferred to use 'gpu_lidar' since 'gpu_ray' will be deprecated.");
 						goto case "gpu_lidar";
 
 					case "gpu_lidar":

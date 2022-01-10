@@ -145,7 +145,6 @@ namespace RuntimeGizmos
 			// Clear Tagets when ESC
 			if (Input.GetKey(KeyCode.Escape))
 			{
-				transformType = TransformType.Move;
 				ClearTargets();
 			}
 		}
@@ -223,7 +222,7 @@ namespace RuntimeGizmos
 		{
 			// avoid pressing left control
 			if (!Input.GetKey(KeyCode.LeftControl))
-				{
+			{
 				if (Input.GetKeyUp(SetMoveType))
 				{
 					transformType = TransformType.Move;

@@ -1780,6 +1780,7 @@ MonoBehaviour:
   - ../lgrs_resource/assets/models/
   - ../../lgrs_resource/assets/models/
   - ../sample_resources/All
+  - ../cloi_resources
   worldRootDirectories:
   - ../sample_resources/worlds/
   - ../lgrs_resource/worlds/

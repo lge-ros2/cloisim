@@ -38,14 +38,17 @@ public class ActorControl : MonoBehaviour
 	{
 		if (Input.GetMouseButton(1))
 		{
-			Main.Gizmos.GetSelectedTargets(out var list);
-
-			if (list.Count > 0)
+			if (Main.Gizmos != null)
 			{
-				var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-				if (Physics.Raycast(ray.origin, ray.direction, out m_HitInfo))
+				Main.Gizmos.GetSelectedTargets(out var list);
+
+				if (list.Count > 0)
 				{
-					ClickToMove(ref list);
+					var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+					if (Physics.Raycast(ray.origin, ray.direction, out m_HitInfo))
+					{
+						ClickToMove(ref list);
+					}
 				}
 			}
 		}
