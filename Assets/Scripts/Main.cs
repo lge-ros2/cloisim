@@ -320,10 +320,13 @@ public class Main: MonoBehaviour
 			yield return StartCoroutine(sdfLoader.StartImport(model));
 
 			var targetObject = worldRoot.transform.Find(model.Name);
+			targetObject.gameObject.SetActive(false);
 
-			// yield return StartCoroutine(FreeObjectDeploy(targetObject));
+			yield return new WaitForSeconds(0.8f);
+
 			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
 			addingModel.SetAddingModelForDeploy(targetObject);
+			targetObject.gameObject.SetActive(true);
 		}
 
 		yield return null;
