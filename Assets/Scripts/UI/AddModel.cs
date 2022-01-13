@@ -32,8 +32,20 @@ public class AddModel : MonoBehaviour
 		}
 	}
 
+	private void RemoveAddingModel()
+	{
+		if (targetObject != null)
+		{
+			GameObject.Destroy(targetObject.gameObject);
+			targetObject = null;
+			rootArticulationBody = null;
+		}
+	}
+
 	public void SetAddingModelForDeploy(in Transform targetTransform)
 	{
+		RemoveAddingModel();
+
 		targetObject = targetTransform;
 		ChangeColliderObjectLayer(targetObject, "Ignore Raycast");
 
@@ -87,9 +99,7 @@ public class AddModel : MonoBehaviour
 		}
 		else if (Input.GetKeyUp(KeyCode.Escape))
 		{
-			GameObject.Destroy(targetObject.gameObject);
-			targetObject = null;
-			rootArticulationBody = null;
+			RemoveAddingModel();
 		}
 		else
 		{
