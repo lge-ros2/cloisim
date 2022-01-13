@@ -33,8 +33,11 @@ public class Articulation
 
 	public void Reset()
 	{
-		_jointBody.velocity = Vector3.zero;
-		_jointBody.angularVelocity = Vector3.zero;
+		if (_jointBody != null)
+		{
+			_jointBody.velocity = Vector3.zero;
+			_jointBody.angularVelocity = Vector3.zero;
+		}
 	}
 
 	public void SetDriveType(in DriveType type)
@@ -62,7 +65,7 @@ public class Articulation
 
 	private int GetValidIndex(in int index)
 	{
-		return (index >= _jointBody.dofCount) ? (_jointBody.dofCount - 1) : index;
+		return (_jointBody == null) ? -1 : ((index >= _jointBody.dofCount) ? (_jointBody.dofCount - 1) : index);
 	}
 
 	/// <returns>in radian for angular and in meters for linear</param>
