@@ -85,7 +85,7 @@ public class AddModel : MonoBehaviour
 			targetObject = null;
 			rootArticulationBody = null;
 		}
-		else if (Input.GetKey(KeyCode.Escape))
+		else if (Input.GetKeyUp(KeyCode.Escape))
 		{
 			GameObject.Destroy(targetObject.gameObject);
 			targetObject = null;
@@ -118,8 +118,8 @@ public class AddModel : MonoBehaviour
 		}
 		else
 		{
-			// close ADd model list
-			if (Input.GetKey(KeyCode.Escape))
+			// close 'Add model' list Panel
+			if (Input.GetKeyUp(KeyCode.Escape))
 			{
 				modelList.SetActive(false);
 			}
