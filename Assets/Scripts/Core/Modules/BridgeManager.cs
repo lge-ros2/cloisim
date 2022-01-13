@@ -59,29 +59,43 @@ public class BridgeManager : IDisposable
 		GC.SuppressFinalize(this);
 	}
 
+	private static void RemoveDevice(in ushort devicePort)
+	{
+		foreach (var deviceMap in deviceMapTable.ToList())
+		{
+			var deviceMapValue = deviceMap.Value;
+			foreach (var partMaps in deviceMapValue.ToList())
+			{
+				var partMapsValue = partMaps.Value;
+				foreach (var portMaps in partMapsValue.ToList())
+				{
+					var portMapsValue = portMaps.Value;
+					foreach (var portMap in portMapsValue.ToList())
+					{
+						if (portMap.Value == devicePort)
+							portMapsValue.Remove(portMap.Key);
+					}
+
+					if (portMapsValue.Count == 0)
+						partMapsValue.Remove(portMaps.Key);
+				}
+
+				if (partMapsValue.Count == 0)
+					deviceMapValue.Remove(partMaps.Key);
+			}
+
+			if (deviceMapValue.Count == 0)
+				deviceMapTable.Remove(deviceMap.Key);
+		}
+	}
+
 	public static void DeallocateDevice(in List<ushort> devicePorts, in List<string> hashKeys)
 	{
 		lock (deviceMapTable)
 		{
 			foreach (var devicePort in devicePorts)
 			{
-				foreach (var deviceMap in deviceMapTable)
-				{
-					foreach (var partMaps in deviceMap.Value)
-					{
-						foreach (var portMaps in partMaps.Value)
-						{
-							var portMapList = portMaps.Value;
-							foreach (var portMap in portMapList.ToList())
-							{
-								if (portMap.Value == devicePort)
-								{
-									portMapList.Remove(portMap.Key);
-								}
-							}
-						}
-					}
-				}
+				RemoveDevice(devicePort);
 			}
 		}
 
