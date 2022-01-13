@@ -95,8 +95,15 @@ public class MotorControl
 		if (wheelList.TryGetValue(WheelLocation.LEFT, out var motorLeft) &&
 			wheelList.TryGetValue(WheelLocation.RIGHT, out var motorRight))
 		{
-			motorLeft.Feedback.SetRotatingTargetVelocity(angularVelocity);
-			motorRight.Feedback.SetRotatingTargetVelocity(angularVelocity);
+			if (motorLeft != null)
+			{
+				motorLeft.Feedback.SetRotatingTargetVelocity(angularVelocity);
+			}
+
+			if (motorRight != null)
+			{
+				motorRight.Feedback.SetRotatingTargetVelocity(angularVelocity);
+			}
 		}
 	}
 

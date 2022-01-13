@@ -184,7 +184,7 @@ public class Articulation
 				break;
 
 			default:
-				Debug.LogWarning("unsupported joint type");
+				Debug.LogWarning("GetDrive() unsupported joint type: " + _jointType);
 				drive = new ArticulationDrive();
 				break;
 		}
@@ -249,7 +249,7 @@ public class Articulation
 				break;
 
 			default:
-				Debug.LogWarning("unsupported joint type");
+				Debug.LogWarning("SetDrive() unsupported joint type: " + _jointType);
 				break;
 		}
 	}
