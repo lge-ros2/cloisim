@@ -5483,13 +5483,13 @@ MonoBehaviour:
   blockControl: 0
   blockMouseWheelControl: 0
   mainSpeed: 2.5
-  shiftAdd: 5
-  maxShift: 90
-  camSens: 0.15
-  edgeWidth: 25
+  shiftAdd: 15
+  maxShift: 200
+  camSens: 0.1
+  edgeWidth: 20
   edgeSens: 0.1
-  edgeSensMax: 1.5
-  wheelMoveAmp: 50
+  edgeSensMax: 1
+  wheelMoveAmp: 70
 --- !u!20 &963194227
 Camera:
   m_ObjectHideFlags: 0
