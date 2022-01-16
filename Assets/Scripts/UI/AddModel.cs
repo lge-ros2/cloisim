@@ -9,7 +9,7 @@ public class AddModel : MonoBehaviour
 
 #region variables for the object with articulation body
 	private ArticulationBody rootArticulationBody = null;
-	private Vector3 articulationBodyDeployOffset = new Vector3(0, 0.18f, 0);
+	private Vector3 articulationBodyDeployOffset = new Vector3(0, 0.10f, 0);
 #endregion
 
 	public float maxRayDistance = 100.0f;
