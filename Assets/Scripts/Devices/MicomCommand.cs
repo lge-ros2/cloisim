@@ -47,7 +47,7 @@ namespace SensorDevices
 			}
 			else
 			{
-				Debug.LogWarning("ERROR: failed to pop deevice message");
+				Debug.LogWarning("ERROR: failed to pop device message");
 			}
 		}
 
