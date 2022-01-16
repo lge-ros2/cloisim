@@ -1776,19 +1776,13 @@ MonoBehaviour:
   clearAllOnStart: 1
   worldFileName: lg_seocho_with_actors.world
   modelRootDirectories:
-  - ../sample_resources/models/
-  - ../lgrs_resource/assets/models/
-  - ../../lgrs_resource/assets/models/
-  - ../sample_resources/All
   - ../cloi_resources
+  - ../sample_resources/models/
+  - ../sample_resources/All
   worldRootDirectories:
   - ../sample_resources/worlds/
-  - ../lgrs_resource/worlds/
-  - ../../lgrs_resource/worlds/
   fileRootDirectories:
   - ../sample_resources/media/
-  - ../lgrs_resource/assets
-  - ../../lgrs_resource/assets
 --- !u!1 &314493398
 GameObject:
   m_ObjectHideFlags: 0
