@@ -44,21 +44,31 @@ namespace SensorDevices
 			PushDeviceMessage<messages.JointStateV>(jointStateV);
 		}
 
-		public bool AddTarget(in string linkName, out SDF.Helper.Link link)
+		public bool AddTarget(in string targetLinkName, out SDF.Helper.Link link)
 		{
 			var childArticulationBodies = gameObject.GetComponentsInChildren<ArticulationBody>();
-
+			var rootModelName = string.Empty;
 			foreach (var childArticulationBody in childArticulationBodies)
 			{
-				if (childArticulationBody.name.Equals(linkName))
+				// Debug.Log (childArticulationBody.name + " | " + childArticulationBody.transform.parent.name);
+				if (childArticulationBody.isRoot)
+				{
+					rootModelName = childArticulationBody.name;
+					continue;
+				}
+
+				var parentModelName = childArticulationBody.transform.parent.name;
+				var linkName = ((rootModelName.CompareTo(parentModelName) == 0) ? "" : parentModelName + "::") + childArticulationBody.name;
+				// Debug.Log("!!!!!!! " + linkName);
+				if (linkName.Equals(targetLinkName))
 				{
 					var articulation = new Articulation(childArticulationBody);
 					articulation.SetDriveType(Articulation.DriveType.POSITION_AND_VELOCITY);
 
 					var jointState = new messages.JointState();
-					jointState.Name = linkName;
+					jointState.Name = targetLinkName;
 
-					articulationTable.Add(linkName, new Tuple<Articulation, messages.JointState>(articulation, jointState));
+					articulationTable.Add(targetLinkName, new Tuple<Articulation, messages.JointState>(articulation, jointState));
 
 					jointStateV.JointStates.Add(jointState);
 

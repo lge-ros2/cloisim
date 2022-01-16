@@ -1776,19 +1776,13 @@ MonoBehaviour:
   clearAllOnStart: 1
   worldFileName: lg_seocho_with_actors.world
   modelRootDirectories:
-  - ../sample_resources/models/
-  - ../lgrs_resource/assets/models/
-  - ../../lgrs_resource/assets/models/
-  - ../sample_resources/All
   - ../cloi_resources
+  - ../sample_resources/models/
+  - ../sample_resources/All
   worldRootDirectories:
   - ../sample_resources/worlds/
-  - ../lgrs_resource/worlds/
-  - ../../lgrs_resource/worlds/
   fileRootDirectories:
   - ../sample_resources/media/
-  - ../lgrs_resource/assets
-  - ../../lgrs_resource/assets
 --- !u!1 &314493398
 GameObject:
   m_ObjectHideFlags: 0
@@ -5489,13 +5483,13 @@ MonoBehaviour:
   blockControl: 0
   blockMouseWheelControl: 0
   mainSpeed: 2.5
-  shiftAdd: 5
-  maxShift: 90
-  camSens: 0.15
-  edgeWidth: 25
+  shiftAdd: 15
+  maxShift: 200
+  camSens: 0.1
+  edgeWidth: 20
   edgeSens: 0.1
-  edgeSensMax: 1.5
-  wheelMoveAmp: 50
+  edgeSensMax: 1
+  wheelMoveAmp: 70
 --- !u!20 &963194227
 Camera:
   m_ObjectHideFlags: 0

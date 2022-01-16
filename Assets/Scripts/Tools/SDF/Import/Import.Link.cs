@@ -93,7 +93,7 @@ namespace SDF
 				var articulationBody = linkObject.AddComponent<UE.ArticulationBody>();
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
-				articulationBody.useGravity = linkHelper.useGravity;
+				articulationBody.useGravity = (linkHelper == null) ? false : linkHelper.useGravity;
 				articulationBody.jointType = UE.ArticulationJointType.FixedJoint;
 				articulationBody.mass = (inertial == null) ? 1e-07f : (float)inertial.mass;
 				articulationBody.linearDamping = 0.05f;

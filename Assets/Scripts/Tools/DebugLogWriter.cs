@@ -11,13 +11,11 @@ public class DebugLogWriter : TextWriter
 {
 	private bool isError = false;
 	private bool showOnDisplay = false;
-	private SimulationDisplay simulationDisplay = null;
 
 	public DebugLogWriter(in bool errorLog = false)
 	{
 		//Debug.Log("Initialized!!!");
 		isError = errorLog;
-		simulationDisplay = Main.Display;
 	}
 
 	public override void Write(string value)
@@ -50,7 +48,7 @@ public class DebugLogWriter : TextWriter
 			Debug.LogWarning(value);
 			if (showOnDisplay)
 			{
-				simulationDisplay?.SetErrorMessage(value);
+				Main.Display?.SetErrorMessage(value);
 				showOnDisplay = false;
 			}
 		}
@@ -60,7 +58,7 @@ public class DebugLogWriter : TextWriter
 
 			if (showOnDisplay)
 			{
-				simulationDisplay?.SetEventMessage(value);
+				Main.Display?.SetEventMessage(value);
 				showOnDisplay = false;
 			}
 		}

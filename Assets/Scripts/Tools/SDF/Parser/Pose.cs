@@ -4,12 +4,16 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Text.RegularExpressions;
 using System;
 
 namespace SDF
 {
 	public class Vector2<T>
 	{
+		private static string regex_num_pattern = "[^.0-9e-]";
+		public static readonly Regex regex_num = new Regex(regex_num_pattern);
+
 		private T _x;
 		private T _y;
 
@@ -42,11 +46,13 @@ namespace SDF
 			_y = y;
 		}
 
-		public void Set(in string x, in string y)
+		public void Set(string x, string y)
 		{
 			var code = Type.GetTypeCode(typeof(T));
 			if (code != TypeCode.Empty)
 			{
+				x = regex_num.Replace(x, String.Empty);
+				y = regex_num.Replace(y, String.Empty);
 				Set((T)Convert.ChangeType(x, code), (T)Convert.ChangeType(y, code));
 			}
 		}
@@ -105,11 +111,14 @@ namespace SDF
 			_z = z;
 		}
 
-		public void Set(in string x, in string y, in string z)
+		public void Set(string x, string y, string z)
 		{
 			var code = Type.GetTypeCode(typeof(T));
 			if (code != TypeCode.Empty)
 			{
+				x = Vector2<T>.regex_num.Replace(x, String.Empty);
+				y = Vector2<T>.regex_num.Replace(y, String.Empty);
+				z = Vector2<T>.regex_num.Replace(z, String.Empty);
 				Set((T)Convert.ChangeType(x, code), (T)Convert.ChangeType(y, code), (T)Convert.ChangeType(z, code));
 			}
 		}
