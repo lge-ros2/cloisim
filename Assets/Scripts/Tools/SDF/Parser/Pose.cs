@@ -11,7 +11,7 @@ namespace SDF
 {
 	public class Vector2<T>
 	{
-		private static string regex_num_pattern = "[^.0-9-]";
+		private static string regex_num_pattern = "[^.0-9e-]";
 		public static readonly Regex regex_num = new Regex(regex_num_pattern);
 
 		private T _x;
