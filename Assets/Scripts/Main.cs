@@ -218,10 +218,10 @@ public class Main: MonoBehaviour
 		{
 			_infoDisplay = uiRoot.GetComponentInChildren<InfoDisplay>();
 			transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
+			simulationDisplay = uiRoot.GetComponentInChildren<SimulationDisplay>();
 
 			uiMainCanvasRoot = uiRoot.transform.Find("Main Canvas").gameObject;
 			followingList = uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
-			simulationDisplay = uiMainCanvasRoot.GetComponentInChildren<SimulationDisplay>();
 		}
 
 		gameObject.AddComponent<ObjectSpawning>();
@@ -321,9 +321,17 @@ public class Main: MonoBehaviour
 
 			var targetObject = worldRoot.transform.Find(model.Name);
 
-			// yield return StartCoroutine(FreeObjectDeploy(targetObject));
 			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
 			addingModel.SetAddingModelForDeploy(targetObject);
+
+			yield return new WaitForSeconds(0.1f);
+			yield return new WaitForEndOfFrame();
+
+			// for GUI
+			simulationDisplay?.ClearLogMessage();
+			followingList?.UpdateList();
+
+			yield return new WaitForEndOfFrame();
 		}
 
 		yield return null;

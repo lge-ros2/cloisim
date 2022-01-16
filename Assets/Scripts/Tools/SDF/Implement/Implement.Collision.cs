@@ -18,7 +18,7 @@ namespace SDF
 			private static readonly bool EnableMergeCollider = true;
 
 			private static readonly float ThresholdFrictionCombineMultiply = 0.01f;
-			private static readonly float DynamicFrictionRatio = 0.90f;
+			private static readonly float DynamicFrictionRatio = 0.95f;
 
 			private static readonly MCCookingOptions CookingOptions =
 					MCCookingOptions.EnableMeshCleaning |

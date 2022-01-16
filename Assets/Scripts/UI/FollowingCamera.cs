@@ -13,7 +13,6 @@ public class FollowingCamera : MonoBehaviour
 	private CameraControl cameraControl = null;
 
 	[Header("Following Camera Parameters")]
-
 	public bool blockControl = false;
 
 	[Range(0.1f, 20)]
@@ -50,6 +49,11 @@ public class FollowingCamera : MonoBehaviour
 					- (rotation * Vector3.forward * distance) + (Vector3.up * height);
 
 			transform.LookAt(targetObjectTransform);
+		}
+
+		if (targetObjectTransform == null)
+		{
+			ReleaseTargetObject();
 		}
 	}
 
@@ -94,17 +98,34 @@ public class FollowingCamera : MonoBehaviour
 		if (!string.IsNullOrEmpty(targetObjectName))
 		{
 			var targetObject = GameObject.Find(targetObjectName);
-			targetObjectTransform = targetObject.transform;
-			isFollowing = true;
-			cameraControl.blockControl = true;
-			this.blockControl = false;
+			if (targetObject != null)
+			{
+				LockTargetObject(targetObject.transform);
+			}
+			else
+			{
+				Main.Display?.SetWarningMessage("'" + targetObjectName + "' model seems removed from the world.");
+			}
 		}
 		else
 		{
-			targetObjectTransform = null;
-			isFollowing = false;
-			cameraControl.blockControl = false;
-			this.blockControl = true;
+			ReleaseTargetObject();
 		}
+	}
+
+	private void ReleaseTargetObject()
+	{
+		targetObjectTransform = null;
+		isFollowing = false;
+		cameraControl.blockControl = false;
+		this.blockControl = true;
+	}
+
+	private void LockTargetObject(in Transform targetTransform)
+	{
+		targetObjectTransform = targetTransform;
+		isFollowing = true;
+		cameraControl.blockControl = true;
+		this.blockControl = false;
 	}
 }

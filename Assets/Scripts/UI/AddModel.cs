@@ -9,7 +9,7 @@ public class AddModel : MonoBehaviour
 
 #region variables for the object with articulation body
 	private ArticulationBody rootArticulationBody = null;
-	private Vector3 articulationBodyDeployOffset = new Vector3(0, 0.15f, 0);
+	private Vector3 articulationBodyDeployOffset = new Vector3(0, 0.10f, 0);
 #endregion
 
 	public float maxRayDistance = 100.0f;
@@ -32,8 +32,20 @@ public class AddModel : MonoBehaviour
 		}
 	}
 
+	private void RemoveAddingModel()
+	{
+		if (targetObject != null)
+		{
+			GameObject.Destroy(targetObject.gameObject);
+			targetObject = null;
+			rootArticulationBody = null;
+		}
+	}
+
 	public void SetAddingModelForDeploy(in Transform targetTransform)
 	{
+		RemoveAddingModel();
+
 		targetObject = targetTransform;
 		ChangeColliderObjectLayer(targetObject, "Ignore Raycast");
 
@@ -85,11 +97,9 @@ public class AddModel : MonoBehaviour
 			targetObject = null;
 			rootArticulationBody = null;
 		}
-		else if (Input.GetKey(KeyCode.Escape))
+		else if (Input.GetKeyUp(KeyCode.Escape))
 		{
-			GameObject.Destroy(targetObject.gameObject);
-			targetObject = null;
-			rootArticulationBody = null;
+			RemoveAddingModel();
 		}
 		else
 		{
@@ -118,8 +128,8 @@ public class AddModel : MonoBehaviour
 		}
 		else
 		{
-			// close ADd model list
-			if (Input.GetKey(KeyCode.Escape))
+			// close 'Add model' list Panel
+			if (Input.GetKeyUp(KeyCode.Escape))
 			{
 				modelList.SetActive(false);
 			}

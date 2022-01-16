@@ -35,7 +35,7 @@ public class FollowingTargetList : MonoBehaviour
 		}
 	}
 
-	private void SelectItem(in int selectIndex = 0)
+	public void SelectItem(in int selectIndex = 0)
 	{
 		if (dropdown != null)
 		{
@@ -48,9 +48,7 @@ public class FollowingTargetList : MonoBehaviour
 	private void OnDropDownValueChanged(int choice)
 	{
 		var selected = dropdown.options[choice];
-
 		var target = (choice > 0 && followingCamera != null) ? selected.text : null;
-
 		followingCamera.SetTargetObject(target);
 	}
 

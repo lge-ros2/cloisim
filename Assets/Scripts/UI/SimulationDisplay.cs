@@ -104,6 +104,11 @@ public partial class SimulationDisplay : MonoBehaviour
 		eventMessage.AppendLine(value);
 	}
 
+	public void SetWarningMessage(in string value)
+	{
+		logMessageColor = Color.yellow;
+		eventMessage.AppendLine(value);
+	}
 
 	private void DrawLabelWithShadow(in Rect rect, in string value)
 	{

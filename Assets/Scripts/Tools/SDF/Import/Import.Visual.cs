@@ -53,10 +53,13 @@ namespace SDF
 
 					if (EnableOptimization)
 					{
-						var geometryTransform = visualObject.transform.GetChild(0);
-						if (geometryTransform.CompareTag("Geometry"))
+						if (visualObject.transform.childCount > 0)
 						{
-							Implement.Visual.OptimizeMeshes(geometryTransform);
+							var geometryTransform = visualObject.transform.GetChild(0);
+							if (geometryTransform.CompareTag("Geometry"))
+							{
+								Implement.Visual.OptimizeMeshes(geometryTransform);
+							}
 						}
 						else
 						{
