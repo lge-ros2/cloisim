@@ -34,7 +34,6 @@ public class BridgeManager : IDisposable
 {
 	private const ushort MinPortRange = 49152;
 	private const ushort MaxPortRange = IPEndPoint.MaxPort;
-	private static SimulationDisplay simulationDisplay = null;
 	private static StringBuilder sbLogs = new StringBuilder();
 
 	private static Dictionary<string, ushort> haskKeyPortMapTable = new Dictionary<string, ushort>();
@@ -44,7 +43,6 @@ public class BridgeManager : IDisposable
 
 	public BridgeManager()
 	{
-		simulationDisplay = Main.Display;
 		ClearLog();
 	}
 
@@ -259,7 +257,7 @@ public class BridgeManager : IDisposable
 		{
 			var errorMessage = string.Format("HashKey({0}) is already occupied.", hashKey);
 			Console.Error.WriteLine(errorMessage);
-			simulationDisplay?.SetErrorMessage(errorMessage);
+			Main.Display?.SetErrorMessage(errorMessage);
 			return 0;
 		}
 
