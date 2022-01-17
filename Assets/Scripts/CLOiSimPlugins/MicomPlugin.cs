@@ -83,16 +83,16 @@ public class MicomPlugin : CLOiSimPlugin
 
 		var wheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='left']", String.Empty);
 		var wheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='right']", String.Empty);
-		var rearWheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_left']", String.Empty);
-		var rearWheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_right']", String.Empty);
 
-		if (!rearWheelLeftName.Equals(String.Empty) && !rearWheelRightName.Equals(String.Empty))
+		if (!wheelLeftName.Equals(String.Empty) && !wheelRightName.Equals(String.Empty))
 		{
-			micomSensor.SetWheel(wheelLeftName, wheelRightName, rearWheelLeftName, rearWheelRightName);
+			micomSensor.SetWheel(wheelLeftName, wheelRightName);
 		}
 		else
 		{
-			micomSensor.SetWheel(wheelLeftName, wheelRightName);
+			var rearWheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_left']", String.Empty);
+			var rearWheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_right']", String.Empty);
+			micomSensor.SetWheel(wheelLeftName, wheelRightName, rearWheelLeftName, rearWheelRightName);
 		}
 
 		if (GetPluginParameters().GetValues<string>("uss/sensor", out var ussList))
