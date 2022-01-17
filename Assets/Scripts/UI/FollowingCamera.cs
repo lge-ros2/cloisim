@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
 using UnityEngine;
 
 public class FollowingCamera : MonoBehaviour
@@ -99,6 +100,7 @@ public class FollowingCamera : MonoBehaviour
 			else
 			{
 				Main.Display?.SetWarningMessage("'" + targetObjectName + "' model seems removed from the world.");
+				ReleaseTargetObject();
 			}
 		}
 		else
@@ -109,7 +111,10 @@ public class FollowingCamera : MonoBehaviour
 
 	private void ReleaseTargetObject()
 	{
-		Main.Display?.SetInfoMessage("Camera view for '" + targetObjectTransform.name + "' model is released.");
+		if (targetObjectTransform != null && !ReferenceEquals(targetObjectTransform.gameObject, null))
+		{
+			Main.Display?.SetInfoMessage("Camera view for '" + targetObjectTransform.name + "' model is released.");
+		}
 		targetObjectTransform = null;
 		isFollowing = false;
 		cameraControl.blockControl = false;

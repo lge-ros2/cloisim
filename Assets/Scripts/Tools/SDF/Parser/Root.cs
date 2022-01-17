@@ -358,8 +358,6 @@ namespace SDF
 			try
 			{
 				modelSdfDoc.Load(uri);
-				(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
-				Console.Out.WriteLine("");
 			}
 			catch (XmlException e)
 			{

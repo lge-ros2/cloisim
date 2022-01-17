@@ -42,6 +42,8 @@ public class FollowingTargetList : MonoBehaviour
 			dropdown.value = selectIndex;
 			dropdown.Select();
 			dropdown.RefreshShownValue();
+
+			OnDropDownValueChanged(selectIndex);
 		}
 	}
 
@@ -49,16 +51,20 @@ public class FollowingTargetList : MonoBehaviour
 	{
 		var selected = dropdown.options[choice];
 		var target = (choice > 0 && followingCamera != null) ? selected.text : null;
+
 		followingCamera.SetTargetObject(target);
 	}
 
-	public void UpdateList(in int selectIndex = 0)
+	public void UpdateList()
 	{
 		if (dropdown == null)
 		{
 			Debug.LogError("Dropdown is null!!");
 			return;
 		}
+
+		var currentSelectedText = dropdown.options[dropdown.value].text;
+		// Debug.Log("currentSelected: " + dropdown.value + ", " + currentSelectedText + " | " + dropdown.options.Count);
 
 		dropdown.options.Clear();
 		dropdown.options.Add(emptyOption);
@@ -76,6 +82,18 @@ public class FollowingTargetList : MonoBehaviour
 			}
 		}
 
-		SelectItem(selectIndex);
+		// find selected model index by previous model name
+		var selectedValue = 0;
+		for (var i = 0; i < dropdown.options.Count; i++)
+		{
+			if (dropdown.options[i].text.CompareTo(currentSelectedText) == 0)
+			{
+				selectedValue = i;
+				break;
+			}
+		}
+		// Debug.Log("currentSelected: " + selectedValue + " | " + dropdown.options.Count);
+
+		SelectItem(selectedValue);
 	}
 }
