@@ -55,7 +55,6 @@ public class DebugLogWriter : TextWriter
 		else
 		{
 			Debug.Log(value);
-
 			if (showOnDisplay)
 			{
 				Main.Display?.SetEventMessage(value);

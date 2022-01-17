@@ -50,16 +50,10 @@ public class FollowingCamera : MonoBehaviour
 
 			transform.LookAt(targetObjectTransform);
 		}
-
-		if (targetObjectTransform == null)
-		{
-			ReleaseTargetObject();
-		}
 	}
 
 	private void ChangeParameterByBaseInput()
 	{
-
 		if (Input.GetKey(KeyCode.W))
 		{
 			const float blockZeroDistance = 0.001f;
@@ -115,6 +109,7 @@ public class FollowingCamera : MonoBehaviour
 
 	private void ReleaseTargetObject()
 	{
+		Main.Display?.SetInfoMessage("Camera view for '" + targetObjectTransform.name + "' model is released.");
 		targetObjectTransform = null;
 		isFollowing = false;
 		cameraControl.blockControl = false;
@@ -123,6 +118,7 @@ public class FollowingCamera : MonoBehaviour
 
 	private void LockTargetObject(in Transform targetTransform)
 	{
+		Main.Display?.SetInfoMessage("Camera view for '" + targetTransform.name + "' model is locked.");
 		targetObjectTransform = targetTransform;
 		isFollowing = true;
 		cameraControl.blockControl = true;
