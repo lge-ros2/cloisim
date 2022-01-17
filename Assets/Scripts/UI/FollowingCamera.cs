@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
 using UnityEngine;
 
 public class FollowingCamera : MonoBehaviour
@@ -50,16 +51,10 @@ public class FollowingCamera : MonoBehaviour
 
 			transform.LookAt(targetObjectTransform);
 		}
-
-		if (targetObjectTransform == null)
-		{
-			ReleaseTargetObject();
-		}
 	}
 
 	private void ChangeParameterByBaseInput()
 	{
-
 		if (Input.GetKey(KeyCode.W))
 		{
 			const float blockZeroDistance = 0.001f;
@@ -105,6 +100,7 @@ public class FollowingCamera : MonoBehaviour
 			else
 			{
 				Main.Display?.SetWarningMessage("'" + targetObjectName + "' model seems removed from the world.");
+				ReleaseTargetObject();
 			}
 		}
 		else
@@ -115,6 +111,10 @@ public class FollowingCamera : MonoBehaviour
 
 	private void ReleaseTargetObject()
 	{
+		if (targetObjectTransform != null && !ReferenceEquals(targetObjectTransform.gameObject, null))
+		{
+			Main.Display?.SetInfoMessage("Camera view for '" + targetObjectTransform.name + "' model is released.");
+		}
 		targetObjectTransform = null;
 		isFollowing = false;
 		cameraControl.blockControl = false;
@@ -123,6 +123,7 @@ public class FollowingCamera : MonoBehaviour
 
 	private void LockTargetObject(in Transform targetTransform)
 	{
+		Main.Display?.SetInfoMessage("Camera view for '" + targetTransform.name + "' model is locked.");
 		targetObjectTransform = targetTransform;
 		isFollowing = true;
 		cameraControl.blockControl = true;

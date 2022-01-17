@@ -71,6 +71,37 @@ namespace SensorDevices
 			}
 		}
 
+		public void SetWheel(in string frontWheelLeftName, in string frontWheelRightName, in string rearWheelLeftName, in string rearWheelRightName)
+		{
+			SetWheel(frontWheelLeftName, frontWheelRightName);
+
+			var linkList = GetComponentsInChildren<SDF.Helper.Link>();
+			foreach (var link in linkList)
+			{
+				var wheelLocation = MotorControl.WheelLocation.NONE;
+
+				if (link.name.Equals(rearWheelLeftName) || link.Model.name.Equals(rearWheelLeftName))
+				{
+					wheelLocation = MotorControl.WheelLocation.REAR_LEFT;
+
+				}
+				else if (link.name.Equals(rearWheelRightName) || link.Model.name.Equals(rearWheelRightName))
+				{
+					wheelLocation = MotorControl.WheelLocation.REAR_RIGHT;
+				}
+				else
+				{
+					continue;
+				}
+
+				if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
+				{
+					var motorObject = (link.gameObject != null)? link.gameObject : link.Model.gameObject;
+					motorControl.AddWheelInfo(wheelLocation, motorObject);
+				}
+			}
+		}
+
 		public void SetMotorConfiguration(in float wheelRadius, in float wheelTread, in float P, in float I, in float D)
 		{
 			motorControl.SetPID(P, I, D);
@@ -191,14 +222,7 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			var motorLeft = motorControl.GetMotor(MotorControl.WheelLocation.LEFT);
-			var motorRight = motorControl.GetMotor(MotorControl.WheelLocation.RIGHT);
-
-			if (motorLeft != null && motorRight != null)
-			{
-				motorLeft.Update(Time.fixedDeltaTime);
-				motorRight.Update(Time.fixedDeltaTime);
-			}
+			motorControl.UpdateTime(Time.fixedDeltaTime);
 
 			UpdateIMU();
 			UpdateUss();
