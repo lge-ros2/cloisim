@@ -39,7 +39,7 @@ public class Odometry
 
 	public Odometry(in float radius, in float tread)
 	{
-		this.wheelInfo = new WheelInfo(radius, tread);;
+		this.wheelInfo = new WheelInfo(radius, tread);
 	}
 
 	public void SetMotorControl(in MotorControl motorControl)
@@ -95,21 +95,26 @@ public class Odometry
 			return false;
 		}
 
-		var motorLeft = motorControl.GetMotor(MotorControl.WheelLocation.LEFT);
-		var motorRight = motorControl.GetMotor(MotorControl.WheelLocation.RIGHT);
+		// var motorLeft = motorControl.GetMotor();
+		// var motorRight = motorControl.GetMotor(MotorControl.WheelLocation.RIGHT);
 
-		if (motorLeft == null || motorRight == null)
+		// if (motorLeft == null || motorRight == null)
+		// {
+		// 	return false;
+		// }
+
+		if (motorControl.GetCurrentVelocity(MotorControl.WheelLocation.LEFT, out var angularVelocityLeft) &&
+			motorControl.GetCurrentVelocity(MotorControl.WheelLocation.RIGHT, out var angularVelocityRight))
+		{
+			odomMessage.AngularVelocity.Left = DeviceHelper.Convert.CurveOrientation(angularVelocityLeft);
+			odomMessage.AngularVelocity.Right = DeviceHelper.Convert.CurveOrientation(angularVelocityRight);
+			odomMessage.LinearVelocity.Left = odomMessage.AngularVelocity.Left * wheelInfo.wheelRadius;
+			odomMessage.LinearVelocity.Right = odomMessage.AngularVelocity.Right * wheelInfo.wheelRadius;
+		}
+		else
 		{
 			return false;
 		}
-
-		var angularVelocityLeft = motorLeft.GetCurrentVelocity();
-		var angularVelocityRight = motorRight.GetCurrentVelocity();
-
-		odomMessage.AngularVelocity.Left = DeviceHelper.Convert.CurveOrientation(angularVelocityLeft);
-		odomMessage.AngularVelocity.Right = DeviceHelper.Convert.CurveOrientation(angularVelocityRight);
-		odomMessage.LinearVelocity.Left = odomMessage.AngularVelocity.Left * wheelInfo.wheelRadius;
-		odomMessage.LinearVelocity.Right = odomMessage.AngularVelocity.Right * wheelInfo.wheelRadius;
 
 		var deltaTheta = 0f;
 		if (imuSensor != null)
@@ -143,8 +148,7 @@ public class Odometry
 		odomMessage.TwistLinear.X = DeviceHelper.Convert.CurveOrientation(odomTranslationalVelocity);
 		odomMessage.TwistAngular.Z = DeviceHelper.Convert.CurveOrientation(odomRotationalVelocity);
 
-		motorLeft.Feedback.SetRotatingVelocity(odomRotationalVelocity);
-		motorRight.Feedback.SetRotatingVelocity(odomRotationalVelocity);
+		motorControl.UpdateCurrentMotorFeedback(odomRotationalVelocity);
 		// Debug.LogFormat("jointvel: {0}, {1}", angularVelocityLeft, angularVelocityRight);
 		// Debug.LogFormat("Odom: {0}, {1}", odomMessage.AngularVelocity.Left, odomMessage.AngularVelocity.Right);
 

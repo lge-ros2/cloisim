@@ -11,13 +11,15 @@ using messages = cloisim.msgs;
 
 public class MotorControl
 {
-	public enum WheelLocation {NONE, LEFT, RIGHT};
+	public enum WheelLocation { NONE, LEFT, RIGHT, REAR_LEFT, REAR_RIGHT };
 
 #region Motor Related
 	private Dictionary<WheelLocation, Motor> wheelList = new Dictionary<WheelLocation, Motor>()
 	{
 		{WheelLocation.LEFT, null},
-		{WheelLocation.RIGHT, null}
+		{WheelLocation.RIGHT, null},
+		{WheelLocation.REAR_LEFT, null},
+		{WheelLocation.REAR_RIGHT, null}
 	};
 
 	private float pidGainP, pidGainI, pidGainD;
@@ -37,11 +39,6 @@ public class MotorControl
 	{
 		this.odometry = new Odometry(radius, tread);
 		this.odometry.SetMotorControl(this);
-	}
-
-	public Motor GetMotor(in WheelLocation location)
-	{
-		return this.wheelList[location];
 	}
 
 	public void SetPID(in float p, in float i, in float d)
@@ -87,22 +84,29 @@ public class MotorControl
 		var linearVelocity = (linearVelocityLeft + linearVelocityRight) * 0.5f;
 		var angularVelocity = (linearVelocityRight - linearVelocity) / (odometry.WheelTread * 0.5f);
 
-		UpdateMotorFeedback(angularVelocity);
+		UpdateTargetMotorFeedback(angularVelocity);
 	}
 
-	public void UpdateMotorFeedback(in float angularVelocity)
+	public void UpdateTargetMotorFeedback(in float angularVelocity)
 	{
-		if (wheelList.TryGetValue(WheelLocation.LEFT, out var motorLeft) &&
-			wheelList.TryGetValue(WheelLocation.RIGHT, out var motorRight))
+		foreach (var wheel in wheelList)
 		{
-			if (motorLeft != null)
+			var motor = wheel.Value;
+			if (motor != null)
 			{
-				motorLeft.Feedback.SetRotatingTargetVelocity(angularVelocity);
+				motor.Feedback.SetRotatingTargetVelocity(angularVelocity);
 			}
+		}
+	}
 
-			if (motorRight != null)
+	public void UpdateCurrentMotorFeedback(in float angularVelocity)
+	{
+		foreach (var wheel in wheelList)
+		{
+			var motor = wheel.Value;
+			if (motor != null)
 			{
-				motorRight.Feedback.SetRotatingTargetVelocity(angularVelocity);
+				motor.Feedback.SetRotatingVelocity(angularVelocity);
 			}
 		}
 	}
@@ -113,19 +117,46 @@ public class MotorControl
 	{
 		var isRotating = (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight));
 
-		if (wheelList.TryGetValue(WheelLocation.LEFT, out var motorLeft) &&
-			wheelList.TryGetValue(WheelLocation.RIGHT, out var motorRight))
+		foreach (var wheel in wheelList)
 		{
-			if (motorLeft != null)
+			var motor = wheel.Value;
+			if (motor != null)
 			{
-				motorLeft.Feedback.SetMotionRotating(isRotating);
-				motorLeft.SetVelocityTarget(angularVelocityLeft);
-			}
+				motor.Feedback.SetMotionRotating(isRotating);
 
-			if (motorRight != null)
+				if (wheel.Key.Equals(WheelLocation.LEFT) || wheel.Key.Equals(WheelLocation.REAR_LEFT))
+				{
+					motor.SetVelocityTarget(angularVelocityLeft);
+				}
+
+				if (wheel.Key.Equals(WheelLocation.RIGHT) || wheel.Key.Equals(WheelLocation.REAR_RIGHT))
+				{
+					motor.SetVelocityTarget(angularVelocityRight);
+				}
+			}
+		}
+	}
+
+	public bool GetCurrentVelocity(in WheelLocation location, out float angularVelocity)
+	{
+		angularVelocity = 0;
+		var motor = wheelList[location];
+		if (motor != null)
+		{
+			angularVelocity = motor.GetCurrentVelocity();
+			return true;
+		}
+		return false;
+	}
+
+	public void UpdateTime(in float duration)
+	{
+		foreach (var wheel in wheelList)
+		{
+			var motor = wheel.Value;
+			if (motor != null)
 			{
-				motorRight.Feedback.SetMotionRotating(isRotating);
-				motorRight.SetVelocityTarget(angularVelocityRight);
+				motor.Update(duration);
 			}
 		}
 	}
