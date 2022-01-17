@@ -18,11 +18,12 @@ public partial class SimulationDisplay : MonoBehaviour
 
 	[Header("GUI properties")]
 	private const int labelFontSize = 14;
+	private const int textFontSize = 12;
 	private const int topMargin = 6;
-	private const int bottomMargin = 10;
+	private const int bottomMargin = 15;
 	private const int textLeftMargin = 10;
 	private const int textRightMargin = 10;
-	private const int textHeight = 19;
+	private const int textHeight = 20;
 
 	private const int textWidthFps = 70;
 	private const int TextWidthPointInfo = 300;
@@ -31,7 +32,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private const int textWidthOptionInfo = 250;
 	private const int textWidthEvent = 800;
 
-	private Color logMessageColor = Color.red;
+	private Color logMessageColor = Color.black;
 
 	[Header("Rect")]
 	private Rect rectVersion;
@@ -94,26 +95,43 @@ public partial class SimulationDisplay : MonoBehaviour
 
 	public void SetEventMessage(in string value)
 	{
+		ClearLogMessage();
 		logMessageColor = Color.green;
-		eventMessage.AppendLine(value);
+		eventMessage.Append(value);
+	}
+
+	public void SetDebugMessage(in string value)
+	{
+		ClearLogMessage();
+		logMessageColor = Color.blue;
+		eventMessage.Append(value);
+	}
+
+	public void SetInfoMessage(in string value)
+	{
+		ClearLogMessage();
+		logMessageColor = Color.gray;
+		eventMessage.Append(value);
 	}
 
 	public void SetErrorMessage(in string value)
 	{
+		ClearLogMessage();
 		logMessageColor = Color.red;
-		eventMessage.AppendLine(value);
+		eventMessage.Append(value);
 	}
 
 	public void SetWarningMessage(in string value)
 	{
+		ClearLogMessage();
 		logMessageColor = Color.yellow;
-		eventMessage.AppendLine(value);
+		eventMessage.Append(value);
 	}
 
 	private void DrawLabelWithShadow(in Rect rect, in string value)
 	{
 		var styleShadow = new GUIStyle(style);
-		styleShadow.normal.textColor = new Color(0, 0, 0, 0.85f);
+		styleShadow.normal.textColor = new Color(0.1f, 0.1f, 0.1f, 0.70f);
 
 		var rectShadow = rect;
 		rectShadow.x += 1;
@@ -125,9 +143,9 @@ public partial class SimulationDisplay : MonoBehaviour
 	private void DrawText()
 	{
 		style.alignment = TextAnchor.MiddleLeft;
-		style.normal.textColor = new Color(0, 0, 0, 0.85f);
+		style.normal.textColor = new Color(0, 0, 0, 0.80f);
 		style.fontStyle = FontStyle.Bold;
-		style.fontSize = labelFontSize;
+		style.fontSize = textFontSize;
 		style.wordWrap = true;
 		style.clipping = TextClipping.Overflow;
 		style.stretchHeight = false;

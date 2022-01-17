@@ -13,6 +13,7 @@ public class ObjectSpawning : MonoBehaviour
 	private GameObject propsRoot = null;
 	private Camera mainCam = null;
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
+	private FollowingTargetList followingList = null;
 
 	private Quaternion _cylinderRotationAngle = Quaternion.AngleAxis(90, Vector3.forward);
 
@@ -39,8 +40,8 @@ public class ObjectSpawning : MonoBehaviour
 		propsRoot = GameObject.Find("Props");
 		mainCam = Camera.main;
 		transformGizmo = Main.Gizmos;
+		followingList = Main.UIMainCanvas.GetComponentInChildren<FollowingTargetList>();
 	}
-
 
 	void OnDestroy()
 	{
@@ -76,13 +77,7 @@ public class ObjectSpawning : MonoBehaviour
 		else if (Input.GetKey(KeyCode.Delete))
 		{
 			transformGizmo.GetSelectedTargets(out var list);
-
-			for (var i = 0; i < list.Count; i++)
-			{
-				var target = list[i];
-				StartCoroutine(DeleteTargetObject(target));
-			}
-
+			StartCoroutine(DeleteTargetObject(list));
 			transformGizmo.ClearTargets();
 		}
 	}
@@ -193,11 +188,25 @@ public class ObjectSpawning : MonoBehaviour
 
 	private IEnumerator DeleteTargetObject(Transform targetObjectTransform)
 	{
-		if (targetObjectTransform.CompareTag("Props") || targetObjectTransform.CompareTag("Model"))
+		var newList = new List<Transform>() { targetObjectTransform };
+		yield return DeleteTargetObject(newList);
+	}
+
+	private IEnumerator DeleteTargetObject(List<Transform> targetObjectsTransform)
+	{
+		for (var i = 0; i < targetObjectsTransform.Count; i++)
 		{
-			transformGizmo.GetSelectedTargets(out var list);
-			Destroy(targetObjectTransform.gameObject);
+			var targetObjectTransform = targetObjectsTransform[i];
+			if (targetObjectTransform.CompareTag("Props") || targetObjectTransform.CompareTag("Model"))
+			{
+				Destroy(targetObjectTransform.gameObject);
+			}
 		}
+
+		yield return new WaitForEndOfFrame();
+
+		followingList?.UpdateList();
+
 		yield return null;
 	}
 

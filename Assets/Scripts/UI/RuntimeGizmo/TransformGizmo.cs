@@ -268,6 +268,20 @@ namespace RuntimeGizmos
 			}
 		}
 
+		private void MakeImmovableBodyTransformSelected(in bool value)
+		{
+			for (var i = 0; i < targetRootsOrdered.Count; i++)
+			{
+				var target = targetRootsOrdered[i];
+
+				var articulationBody = target.GetComponent<ArticulationBody>();
+				if (articulationBody != null && articulationBody.isRoot)
+				{
+					articulationBody.immovable = value;
+				}
+			}
+		}
+
 		IEnumerator TransformSelected(TransformType transType)
 		{
 			isTransforming = true;
@@ -281,6 +295,8 @@ namespace RuntimeGizmos
 
 			var currentSnapMovementAmount = Vector3.zero;
 			var currentSnapRotationAmount = 0f;
+
+			MakeImmovableBodyTransformSelected(true);
 
 			while (!Input.GetMouseButtonUp(0))
 			{
@@ -448,6 +464,8 @@ namespace RuntimeGizmos
 
 				yield return null;
 			}
+
+			MakeImmovableBodyTransformSelected(false);
 
 			totalRotationAmount = Quaternion.identity;
 			isTransforming = false;

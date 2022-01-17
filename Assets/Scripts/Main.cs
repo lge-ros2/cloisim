@@ -257,7 +257,6 @@ public class Main: MonoBehaviour
 
 		if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
 		{
-			simulationDisplay?.ClearLogMessage();
 			simulationDisplay?.SetEventMessage("Start to load world file: " + worldFileName);
 			StartCoroutine(LoadWorld());
 		}
@@ -328,7 +327,6 @@ public class Main: MonoBehaviour
 			yield return new WaitForEndOfFrame();
 
 			// for GUI
-			simulationDisplay?.ClearLogMessage();
 			followingList?.UpdateList();
 
 			yield return new WaitForEndOfFrame();
@@ -362,7 +360,6 @@ public class Main: MonoBehaviour
 			yield return sdfLoader.StartImport(world);
 
 			// for GUI
-			simulationDisplay?.ClearLogMessage();
 			followingList?.UpdateList();
 
 			yield return new WaitForEndOfFrame();
