@@ -60,14 +60,17 @@ namespace SDF
 							// Console.WriteLine("Load World");
 							var worldNode = doc.SelectSingleNode("/sdf/world");
 							world = new World(worldNode);
-							// Console.WriteLine("Load Completed!!!");
 							worldFound = true;
+
+							var infoMessage = "World(" + worldFileName + ") is loaded.";
+							(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
+							Console.Out.WriteLine(infoMessage);
 						}
 						catch (XmlException ex)
 						{
-							var errorMessage = "Failed to Load file(" + fullFilePath + ") file - " + ex.Message;
-							(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
-							Console.WriteLine(errorMessage);
+							var errorMessage = "Failed to Load World(" + fullFilePath + ") - " + ex.Message;
+							(Console.Error as DebugLogWriter).SetShowOnDisplayOnce();
+							Console.Error.WriteLine(errorMessage);
 						}
 						break;
 					}
@@ -101,14 +104,17 @@ namespace SDF
 				// Console.WriteLine("Load World");
 				var modelNode = doc.SelectSingleNode("/sdf/model");
 				model = new Model(modelNode);
-				// Console.WriteLine("Load Completed!!!");
 				modelFound = true;
+
+				var infoMessage = "Model(" + modelFileName + ") is loaded.";
+				(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
+				Console.Out.WriteLine(infoMessage);
 			}
 			catch (XmlException ex)
 			{
 				var errorMessage = "Failed to Load Model file(" + modelLocation + ") file - " + ex.Message;
-				(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
-				Console.WriteLine(errorMessage);
+				(Console.Error as DebugLogWriter).SetShowOnDisplayOnce();
+				Console.Error.WriteLine(errorMessage);
 			}
 
 			return modelFound;
@@ -352,12 +358,14 @@ namespace SDF
 			try
 			{
 				modelSdfDoc.Load(uri);
+				(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
+				Console.Out.WriteLine("");
 			}
 			catch (XmlException e)
 			{
 				var errorMessage = "Failed to Load included model(" + modelName + ") file - " + e.Message;
-				(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
-				Console.WriteLine(errorMessage);
+				(Console.Error as DebugLogWriter).SetShowOnDisplayOnce();
+				Console.Error.WriteLine(errorMessage);
 				return null;
 			}
 
