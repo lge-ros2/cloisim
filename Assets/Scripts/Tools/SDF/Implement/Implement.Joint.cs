@@ -18,8 +18,13 @@ namespace SDF
 				var modelTransformChild = linkChild.parent;
 				var modelHelperChild = modelTransformChild.GetComponent<SDF.Helper.Model>();
 
+				var linkHelperParent = linkParent.GetComponent<SDF.Helper.Link>();
+				var linkHelperChild = linkChild.GetComponent<SDF.Helper.Link>();
+
 				var anchorPose = new UE.Pose();
-				if (modelTransformChild.Equals(modelTransformParent) || modelHelperChild.IsFirstChild)
+				if (linkHelperChild.Model.Equals(linkHelperParent.Model) ||
+					modelTransformChild.Equals(modelTransformParent) ||
+					modelHelperChild.IsFirstChild)
 				{
 					linkChild.SetParent(linkParent);
 
