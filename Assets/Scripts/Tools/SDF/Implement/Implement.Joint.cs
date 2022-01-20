@@ -73,7 +73,6 @@ namespace SDF
 				}
 
 				drive.forceLimit = (axis.limit.effort > -1d) ? (float)axis.limit.effort : float.MaxValue;
-				drive.targetVelocity = (float)axis.limit.velocity;
 
 				if (axis.dynamics != null)
 				{
@@ -137,7 +136,6 @@ namespace SDF
 				}
 
 				drive.forceLimit = (axis2.limit.effort > -1d) ? (float)axis2.limit.effort : float.MaxValue;
-				drive.targetVelocity = (float)axis2.limit.velocity;
 
 				var joint2Axis = SDF2Unity.GetAxis(axis2.xyz);
 				if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
@@ -206,7 +204,6 @@ namespace SDF
 				}
 
 				drive.forceLimit = (axis.limit.effort > -1d) ? (float)axis.limit.effort : float.MaxValue;
-				drive.targetVelocity = (float)axis.limit.velocity;
 
 				if (axis.dynamics != null)
 				{
