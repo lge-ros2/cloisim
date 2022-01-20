@@ -132,10 +132,15 @@ namespace SDF
 					articulationBody.jointVelocity = zeroSpace;
 					articulationBody.jointAcceleration = zeroSpace;
 					articulationBody.jointForce = zeroSpace;
+					var isPrismatic = articulationBody.jointType.Equals(UE.ArticulationJointType.PrismaticJoint);
 
 					GetJointTarget(out var targetJoint1, out var targetJoint2, targetFrame);
 
 					var xDrive = articulationBody.xDrive;
+					if (!isPrismatic)
+					{
+						xDrive.targetVelocity = 0;
+					}
 					if (!articulationBody.linearLockX.Equals(UE.ArticulationDofLock.LockedMotion) ||
 						!articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion))
 					{
@@ -156,6 +161,10 @@ namespace SDF
 					articulationBody.xDrive = xDrive;
 
 					var yDrive = articulationBody.yDrive;
+					if (!isPrismatic)
+					{
+						yDrive.targetVelocity = 0;
+					}
 					if (!articulationBody.linearLockY.Equals(UE.ArticulationDofLock.LockedMotion) ||
 						!articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion))
 					{
@@ -176,6 +185,10 @@ namespace SDF
 					articulationBody.yDrive = yDrive;
 
 					var zDrive = articulationBody.zDrive;
+					if (!isPrismatic)
+					{
+						zDrive.targetVelocity = 0;
+					}
 					if (!articulationBody.linearLockY.Equals(UE.ArticulationDofLock.LockedMotion) ||
 						!articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
 					{
