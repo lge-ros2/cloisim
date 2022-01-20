@@ -2,8 +2,8 @@
 #pragma kernel CSDepthBufferScaling
 
 #define MaxValue16Bits 65535.0f;
-#define THREADS 16
-#define GROUPS 16
+#define THREADS 8
+#define GROUPS 4
 
 RWByteAddressBuffer _Buffer;
 
