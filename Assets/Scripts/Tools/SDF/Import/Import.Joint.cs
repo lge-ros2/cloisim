@@ -24,7 +24,8 @@ namespace SDF
 					rootTransform = rootTransform.parent;
 				}
 
-				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(name);
+				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(name, targetTransform.name);
+				// UE.Debug.Log("GetModelLinkName  => " + modelName + ", " + linkName);
 
 				if (string.IsNullOrEmpty(modelName))
 				{
@@ -53,10 +54,14 @@ namespace SDF
 
 					if (modelTransform != null)
 					{
-						var linkTransform = modelTransform.Find(linkName);
-						if (linkTransform != null)
+						foreach (var linkObject in modelTransform.GetComponentsInChildren<SDF.Helper.Link>())
 						{
-							foundLinkObject = linkTransform;
+							var linkTransform = linkObject.transform;
+							if (linkTransform.name.Equals(linkName))
+							{
+								foundLinkObject = linkTransform;
+								break;
+							}
 						}
 					}
 				}

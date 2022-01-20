@@ -304,6 +304,7 @@ public class Main: MonoBehaviour
 			if (childTransform.name.CompareTo(tmpModelName) == 0)
 			{
 				tmpModelName = modelName + "_clone_" + numbering++;
+				i = 0;
 			}
 		}
 		return tmpModelName;
@@ -323,7 +324,7 @@ public class Main: MonoBehaviour
 			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
 			addingModel.SetAddingModelForDeploy(targetObject);
 
-			yield return new WaitForSeconds(0.1f);
+			yield return new WaitForSeconds(0.01f);
 			yield return new WaitForEndOfFrame();
 
 			// for GUI

@@ -51,8 +51,8 @@ namespace SDF
 			var code = Type.GetTypeCode(typeof(T));
 			if (code != TypeCode.Empty)
 			{
-				x = regex_num.Replace(x, String.Empty);
-				y = regex_num.Replace(y, String.Empty);
+				x = regex_num.Replace(x, string.Empty);
+				y = regex_num.Replace(y, string.Empty);
 				Set((T)Convert.ChangeType(x, code), (T)Convert.ChangeType(y, code));
 			}
 		}
@@ -116,9 +116,9 @@ namespace SDF
 			var code = Type.GetTypeCode(typeof(T));
 			if (code != TypeCode.Empty)
 			{
-				x = Vector2<T>.regex_num.Replace(x, String.Empty);
-				y = Vector2<T>.regex_num.Replace(y, String.Empty);
-				z = Vector2<T>.regex_num.Replace(z, String.Empty);
+				x = Vector2<T>.regex_num.Replace(x, string.Empty);
+				y = Vector2<T>.regex_num.Replace(y, string.Empty);
+				z = Vector2<T>.regex_num.Replace(z, string.Empty);
 				Set((T)Convert.ChangeType(x, code), (T)Convert.ChangeType(y, code), (T)Convert.ChangeType(z, code));
 			}
 		}

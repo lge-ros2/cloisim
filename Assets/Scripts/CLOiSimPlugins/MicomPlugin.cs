@@ -6,7 +6,6 @@
 
 using System.Collections.Generic;
 using System.Text;
-using System;
 using Any = cloisim.msgs.Any;
 using messages = cloisim.msgs;
 using UnityEngine;
@@ -81,12 +80,12 @@ public class MicomPlugin : CLOiSimPlugin
 		var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f);
 		var brakeFriction = GetPluginParameters().GetValue<float>("wheel/friction/brake", 0.1f);
 
-		var wheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='left']", String.Empty);
-		var wheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='right']", String.Empty);
-		var rearWheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_left']", String.Empty);
-		var rearWheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_right']", String.Empty);
+		var wheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='left']", string.Empty);
+		var wheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='right']", string.Empty);
+		var rearWheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_left']", string.Empty);
+		var rearWheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_right']", string.Empty);
 
-		if (!rearWheelLeftName.Equals(String.Empty) && !rearWheelRightName.Equals(String.Empty))
+		if (!rearWheelLeftName.Equals(string.Empty) && !rearWheelRightName.Equals(string.Empty))
 		{
 			micomSensor.SetWheel(wheelLeftName, wheelRightName, rearWheelLeftName, rearWheelRightName);
 		}
