@@ -8,9 +8,9 @@ using UnityEngine;
 
 public partial class SDF2Unity
 {
-	public static (string, string) GetModelLinkName(in string value)
+	public static (string, string) GetModelLinkName(in string value, in string defaultModelName = "")
 	{
-		var modelName = string.Empty;
+		var modelName = defaultModelName;
 		var linkName = value;
 
 		if (value.Contains("::"))

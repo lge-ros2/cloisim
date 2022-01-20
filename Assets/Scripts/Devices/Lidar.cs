@@ -485,7 +485,7 @@ namespace SensorDevices
 							}
 							catch (Exception ex)
 							{
-								Debug.LogWarning("Error occured with Buffer.BlockCopy : " + ex.Message + ", " + srcBufferOffset + ", " + dstBufferOffset + ", " + copyLength);
+								Debug.LogWarning("Error occured with Buffer.BlockCopy : " + ex.Message + ", " + srcBufferOffset + ", " + dstBufferOffset + ", " + copyLength + ", Len: src "+ srcBuffer.Length + ", dst " + laserScan.Ranges.Length);
 							}
 						}
 					}

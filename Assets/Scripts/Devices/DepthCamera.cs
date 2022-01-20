@@ -119,6 +119,9 @@ namespace SensorDevices
 			cb.Release();
 		}
 
+		private int threadGroupsX = 8;
+		private int threadGroupsY = 4;
+
 		protected override void PostProcessing(ref byte[] buffer)
 		{
 			if (readbackDstFormat.Equals(TextureFormat.R16) && computeShader != null)
@@ -127,8 +130,8 @@ namespace SensorDevices
 				computeShader.SetBuffer(kernelIndex, "_Buffer", computeBuffer);
 				computeBuffer.SetData(buffer);
 
-				var threadGroupX = camParameter.image_width / 16;
-				var threadGroupY = camParameter.image_height / 8;
+				var threadGroupX = camParameter.image_width / threadGroupsX;
+				var threadGroupY = camParameter.image_height / threadGroupsY;
 				computeShader.Dispatch(kernelIndex, threadGroupX, threadGroupY, 1);
 				computeBuffer.GetData(buffer);
 				computeBuffer.Release();
