@@ -153,6 +153,7 @@ namespace SDF
 					{
 						xDrive.target = 0;
 					}
+					xDrive.targetVelocity = 0;
 					articulationBody.xDrive = xDrive;
 
 					var yDrive = articulationBody.yDrive;
@@ -173,6 +174,7 @@ namespace SDF
 					{
 						yDrive.target = 0;
 					}
+					yDrive.targetVelocity = 0;
 					articulationBody.yDrive = yDrive;
 
 					var zDrive = articulationBody.zDrive;
@@ -191,8 +193,9 @@ namespace SDF
 					}
 					else
 					{
-						zDrive.target = 0;
+						yDrive.target = 0;
 					}
+					zDrive.targetVelocity = 0;
 					articulationBody.zDrive = zDrive;
 				}
 			}
