@@ -525,7 +525,7 @@ namespace RuntimeGizmos
 								var hitParentLinkHelper = hitObject?.GetComponentInParent<SDF.Helper.Link>();
 								var hitRootModelHelper = hitParentLinkHelper?.RootModel;
 
-								if (hitRootModelHelper != null)
+								if (hitRootModelHelper != null && hitParentLinkHelper.Model != null)
 								{
 									if (!(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
 									{
