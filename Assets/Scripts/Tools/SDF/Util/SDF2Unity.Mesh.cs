@@ -10,7 +10,7 @@ using UnityEngine.Rendering;
 
 public partial class SDF2Unity
 {
-	private static readonly string commonShaderName = "Universal Render Pipeline/Lit";
+	private static readonly string commonShaderName = "Universal Render Pipeline/Simple Lit";
 	private static readonly string speedTreeShaderName = "Universal Render Pipeline/Nature/SpeedTree8";
 	public static Shader CommonShader = Shader.Find(commonShaderName);
 	public static Shader SpeedTreeShader = Shader.Find(speedTreeShaderName);
