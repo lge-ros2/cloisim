@@ -279,6 +279,14 @@ namespace RuntimeGizmos
 				{
 					articulationBody.immovable = value;
 				}
+				else
+				{
+					var rigidbody = target.GetComponent<Rigidbody>();
+					if (rigidbody != null && rigidbody.isKinematic == false)
+					{
+						rigidbody.isKinematic = value;
+					}
+				}
 			}
 		}
 
