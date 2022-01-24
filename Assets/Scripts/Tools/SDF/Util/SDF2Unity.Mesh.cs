@@ -19,11 +19,7 @@ public partial class SDF2Unity
 	{
 		var newMaterial = new Material(SDF2Unity.CommonShader);
 		newMaterial.SetFloat("_WorkflowMode", 0); // set to specular mode
-		// newMaterial.SetOverrideTag("RenderType", "Transparent");
 		newMaterial.SetFloat("_Cull", (float)CullMode.Back); // Render face front
-		// newMaterial.SetFloat("_Mode", 3); // set to transparent Mode
-		// newMaterial.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
-		// newMaterial.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
 		newMaterial.SetFloat("_ZWrite", 1);
 		newMaterial.SetFloat("_SpecularHighlights", 1f);
 		newMaterial.SetFloat("_Smoothness", 0.0f);
