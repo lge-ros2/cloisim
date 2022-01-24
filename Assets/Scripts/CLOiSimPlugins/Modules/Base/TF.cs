@@ -13,6 +13,7 @@ public class TF
 	public string parentFrameId = string.Empty;
 	public string childFrameId = string.Empty;
 	public SDF.Helper.Link link = null;
+
 	public TF(in SDF.Helper.Link link, in string childFrameId, in string parentFrameId = "base_link")
 	{
 		this.parentFrameId = parentFrameId.Replace("::", "_");
@@ -29,10 +30,22 @@ public class TF
 		{
 			var modelPose = tfLink.Model.GetPose(targetPoseFrame);
 
-			modelPose.rotation = Quaternion.AngleAxis(180, Vector3.left) * modelPose.rotation;
+			// Debug.Log(parentFrameId + "::" + childFrameId + "(" + tfLink.JointAxis + ") = " + modelPose.position +", " + tfPose.position);
+			if (tfLink.JointAxis.Equals(Vector3.up) || tfLink.JointAxis.Equals(Vector3.down))
+			{
+				tfPose.rotation *= Quaternion.AngleAxis(180, Vector3.right);
+			}
+			else if (tfLink.JointAxis.Equals(Vector3.forward) || tfLink.JointAxis.Equals(Vector3.back))
+			{
+				// tfPose.rotation *= Quaternion.AngleAxis(180, Vector3.up);
+			}
+			else if (tfLink.JointAxis.Equals(Vector3.left) || tfLink.JointAxis.Equals(Vector3.right))
+			{
+				// tfPose.rotation *= Quaternion.AngleAxis(180, Vector3.forward);
+			}
 
-			tfPose.position = tfPose.position + modelPose.position;
-			tfPose.rotation = tfPose.rotation * modelPose.rotation;
+			tfPose.position += modelPose.position;
+			tfPose.rotation *= modelPose.rotation;
 		}
 
 		return tfPose;
