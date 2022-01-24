@@ -198,10 +198,18 @@ public class Main: MonoBehaviour
 		}
 
 		worldRoot = GameObject.Find("World");
-
 		lightsRoot = GameObject.Find("Lights");
-
 		uiRoot = GameObject.Find("UI");
+
+		if (uiRoot != null)
+		{
+			_infoDisplay = uiRoot.GetComponentInChildren<InfoDisplay>();
+			transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
+			simulationDisplay = uiRoot.GetComponentInChildren<SimulationDisplay>();
+
+			uiMainCanvasRoot = uiRoot.transform.Find("Main Canvas").gameObject;
+			followingList = uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
+		}
 
 		worldNavMeshBuilder = worldRoot.GetComponent<WorldNavMeshBuilder>();
 
@@ -213,16 +221,6 @@ public class Main: MonoBehaviour
 
 		var sphericalCoordinates = new SphericalCoordinates();
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
-
-		if (uiRoot != null)
-		{
-			_infoDisplay = uiRoot.GetComponentInChildren<InfoDisplay>();
-			transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
-			simulationDisplay = uiRoot.GetComponentInChildren<SimulationDisplay>();
-
-			uiMainCanvasRoot = uiRoot.transform.Find("Main Canvas").gameObject;
-			followingList = uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
-		}
 
 		gameObject.AddComponent<ObjectSpawning>();
 	}
@@ -243,22 +241,25 @@ public class Main: MonoBehaviour
 			CleanAllResources();
 		}
 
-		var newWorldFilename = GetArgument("-world");
-
-		if (string.IsNullOrEmpty(newWorldFilename))
+		if (simulationService.IsStarted())
 		{
-			newWorldFilename = GetArgument("-worldFile");
-		}
+			var newWorldFilename = GetArgument("-world");
 
-		if (!string.IsNullOrEmpty(newWorldFilename))
-		{
-			worldFileName = newWorldFilename;
-		}
+			if (string.IsNullOrEmpty(newWorldFilename))
+			{
+				newWorldFilename = GetArgument("-worldFile");
+			}
 
-		if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
-		{
-			simulationDisplay?.SetEventMessage("Start to load world file: " + worldFileName);
-			StartCoroutine(LoadWorld());
+			if (!string.IsNullOrEmpty(newWorldFilename))
+			{
+				worldFileName = newWorldFilename;
+			}
+
+			if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
+			{
+				simulationDisplay?.SetEventMessage("Start to load world file: " + worldFileName);
+				StartCoroutine(LoadWorld());
+			}
 		}
 	}
 

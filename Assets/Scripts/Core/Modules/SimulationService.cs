@@ -33,27 +33,40 @@ public class SimulationService : IDisposable
 
 		InitializeServices();
 
- 		wsServer.Start();
-
-		if (wsServer.IsListening)
+		try
 		{
-			var wsLog = new StringBuilder();
-			wsLog.Append(String.Concat("Listening on port ", wsServer.Port, ", and providing services are:"));
-			wsLog.AppendLine();
+ 			wsServer.Start();
 
-			foreach (var path in wsServer.WebSocketServices.Paths)
+			if (IsStarted())
 			{
-				wsLog.Append(String.Concat(" - ", path));
+				var wsLog = new StringBuilder();
+				wsLog.Append(String.Concat("Listening on port ", wsServer.Port, ", and providing services are:"));
 				wsLog.AppendLine();
-			}
 
-			Debug.Log(wsLog);
+				foreach (var path in wsServer.WebSocketServices.Paths)
+				{
+					wsLog.Append(String.Concat(" - ", path));
+					wsLog.AppendLine();
+				}
+
+				Debug.Log(wsLog);
+			}
+		}
+		catch (Exception ex) {
+			var errMessage = "Failed to start SimulationService: " + ex.Message;
+			Main.Display?.SetErrorMessage(errMessage);
+			Debug.LogError(errMessage);
 		}
 	}
 
 	~SimulationService()
 	{
 		Dispose();
+	}
+
+	public bool IsStarted()
+	{
+		return (wsServer != null) ? wsServer.IsListening : false;
 	}
 
 	public void Dispose()
