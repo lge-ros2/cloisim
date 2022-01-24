@@ -1778,7 +1778,7 @@ MonoBehaviour:
   modelRootDirectories:
   - ../cloi_resources
   - ../sample_resources/models/
-  - ../sample_resources/All
+  - ../world_resources_yangjae_city
   worldRootDirectories:
   - ../sample_resources/worlds/
   fileRootDirectories:
