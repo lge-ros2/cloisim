@@ -175,10 +175,12 @@ public partial class SimulationDisplay : MonoBehaviour
 			if (keyCode.CompareTo(KeyCode.F1) == 0)
 			{
 				popupHelpDialog = !popupHelpDialog;
+				cameraControl.BlockMouseWheelControl();
 			}
 			else if (keyCode.CompareTo(KeyCode.Escape) == 0)
 			{
 				popupHelpDialog = false;
+				cameraControl.UnBlockMouseWheelControl();
 			}
 		}
 
@@ -186,11 +188,6 @@ public partial class SimulationDisplay : MonoBehaviour
 		{
 			// Debug.Log("Show Help dialog");
 			DrawHelpDialog();
-			cameraControl.blockMouseWheelControl = true;
-		}
-		else
-		{
-			cameraControl.blockMouseWheelControl = false;
 		}
 	}
 }

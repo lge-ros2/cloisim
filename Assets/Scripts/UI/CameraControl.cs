@@ -19,9 +19,9 @@ public class CameraControl : MonoBehaviour
 		space : Moves camera on X and Z axis only.  So camera doesn't gain any height
 	*/
 
-	public bool blockControl = false;
+	private bool blockControl = false;
 
-	public bool blockMouseWheelControl = false;
+	private bool blockMouseWheelControl = false;
 
 	private bool _verticalMovementLock = false;
 
@@ -50,7 +50,6 @@ public class CameraControl : MonoBehaviour
 	{
 		_targetLayerMask = LayerMask.GetMask("Default");
 	}
-
 
 	void LateUpdate()
 	{
@@ -160,6 +159,26 @@ public class CameraControl : MonoBehaviour
 		{
 			transform.Translate(p);
 		}
+	}
+
+	public void BlockControl()
+	{
+		blockControl = true;
+	}
+
+	public void UnBlockControl()
+	{
+		blockControl = false;
+	}
+
+	public void BlockMouseWheelControl()
+	{
+		blockMouseWheelControl = true;
+	}
+
+	public void UnBlockMouseWheelControl()
+	{
+		blockMouseWheelControl = false;
 	}
 
 	private Vector3 GetBaseInput()

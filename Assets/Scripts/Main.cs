@@ -39,6 +39,7 @@ public class Main: MonoBehaviour
 	private static InfoDisplay _infoDisplay = null;
 	private static WorldNavMeshBuilder worldNavMeshBuilder = null;
 	private static RuntimeGizmos.TransformGizmo transformGizmo = null;
+	private static CameraControl cameraControl = null;
 
 #region "Non-Component class"
 	private static BridgeManager bridgeManager = null;
@@ -57,6 +58,8 @@ public class Main: MonoBehaviour
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => worldNavMeshBuilder;
 	public static BridgeManager BridgeManager => bridgeManager;
+
+	public static CameraControl CameraControl => cameraControl;
 
 #region "SDFParser"
 	private SDF.Root sdfRoot = null;
@@ -210,6 +213,8 @@ public class Main: MonoBehaviour
 			uiMainCanvasRoot = uiRoot.transform.Find("Main Canvas").gameObject;
 			followingList = uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
 		}
+
+		cameraControl = mainCamera.GetComponent<CameraControl>();
 
 		worldNavMeshBuilder = worldRoot.GetComponent<WorldNavMeshBuilder>();
 

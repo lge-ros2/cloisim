@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
 using UnityEngine;
 
 public class FollowingCamera : MonoBehaviour
@@ -31,7 +30,7 @@ public class FollowingCamera : MonoBehaviour
 	// Start is called before the first frame update
 	void Start()
 	{
-		cameraControl = GetComponent<CameraControl>();
+		cameraControl = Main.CameraControl;
 	}
 
 	void LateUpdate()
@@ -117,7 +116,7 @@ public class FollowingCamera : MonoBehaviour
 		}
 		targetObjectTransform = null;
 		isFollowing = false;
-		cameraControl.blockControl = false;
+		Main.CameraControl?.UnBlockControl();
 		this.blockControl = true;
 	}
 
@@ -126,7 +125,7 @@ public class FollowingCamera : MonoBehaviour
 		Main.Display?.SetInfoMessage("Camera view for '" + targetTransform.name + "' model is locked.");
 		targetObjectTransform = targetTransform;
 		isFollowing = true;
-		cameraControl.blockControl = true;
+		Main.CameraControl?.BlockControl();
 		this.blockControl = false;
 	}
 }
