@@ -74,8 +74,17 @@ public partial class SDF2Unity
 	public static void SetMaterialSpeedTree(Material targetMaterial)
 	{
 		var existingTexture = targetMaterial.GetTexture("_BaseMap");
+		var existingColor = targetMaterial.GetColor("_Color");
+		existingColor.a = 0.55f;
 		targetMaterial.shader = SpeedTreeShader;
+		targetMaterial.EnableKeyword("EFFECT_BILLBOARD");
+		targetMaterial.EnableKeyword("_INSTANCING_ON");
 		targetMaterial.SetTexture("_MainTex", existingTexture);
+		targetMaterial.SetColor("_Color", existingColor);
+		targetMaterial.SetFloat("_Glossiness", 0f);
+		targetMaterial.SetInt("_TwoSided", 2);
+		targetMaterial.SetFloat("_BillboardKwToggle", 1f);
+		targetMaterial.SetFloat("_BillSboardShadowFade", 0f);
 	}
 
 	public static Mesh MergeMeshes(in MeshFilter[] meshFilters)
@@ -87,7 +96,7 @@ public partial class SDF2Unity
 			var meshFilter = meshFilters[combineIndex];
 			combine[combineIndex].mesh = meshFilter.sharedMesh;
 			totalVertexCount += meshFilter.sharedMesh.vertexCount;
-			combine[combineIndex].transform = meshFilters[combineIndex].transform.localToWorldMatrix;
+			combine[combineIndex].transform = meshFilter.transform.localToWorldMatrix;
 			// Debug.LogFormat("{0}, {1}: {2}", meshFilter.name, meshFilter.transform.name, combine[combineIndex].transform);
 		}
 
