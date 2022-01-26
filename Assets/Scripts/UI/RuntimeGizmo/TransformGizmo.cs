@@ -282,7 +282,7 @@ namespace RuntimeGizmos
 				else
 				{
 					var rigidbody = target.GetComponent<Rigidbody>();
-					if (rigidbody != null && rigidbody.isKinematic == false)
+					if (rigidbody != null && (rigidbody.CompareTag("Props") || (!rigidbody.CompareTag("Props") && !rigidbody.isKinematic)))
 					{
 						rigidbody.isKinematic = value;
 					}
@@ -506,7 +506,7 @@ namespace RuntimeGizmos
 					Transform target = null;
 					var hitObject = hitInfo.transform;
 
-					if (hitObject.tag.Equals("Props"))
+					if (hitObject.CompareTag("Props"))
 					{
 						target = hitObject.transform;
 					}
