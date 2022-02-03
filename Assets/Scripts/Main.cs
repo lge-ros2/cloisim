@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -187,7 +188,9 @@ public class Main: MonoBehaviour
 		// refer to https://thomas.trocha.com/blog/netmq-on-unity3d/
 		AsyncIO.ForceDotNet.Force();
 
-		Application.targetFrameRate = 61;
+		QualitySettings.vSyncCount = 0;
+		Application.targetFrameRate = 60;
+		OnDemandRendering.renderFrameInterval = 1;
 
 		var mainCamera = Camera.main;
 		mainCamera.depthTextureMode = DepthTextureMode.None;
