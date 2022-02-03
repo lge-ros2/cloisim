@@ -437,7 +437,7 @@ namespace SensorDevices
 						{
 							srcBufferOffset = srcBufferHorizontalLength * sampleIndexV;
 							var srcLengthratio = Mathf.Abs((dataStartAngleH - laserStartAngleH) * dividedDataTotalAngleH);
-							copyLength = srcBufferHorizontalLength - Mathf.FloorToInt(srcBufferHorizontalLength * srcLengthratio);
+							copyLength = srcBufferHorizontalLength - Mathf.CeilToInt(srcBufferHorizontalLength * srcLengthratio);
 							dstBufferOffset = (laserSamplesH * (sampleIndexV + 1)) - copyLength;
 
 							if (copyLength < 0 || dstBufferOffset < 0)
@@ -467,7 +467,7 @@ namespace SensorDevices
 						else if (dataEndAngleH >= laserEndAngleH)
 						{
 							var srcLengthRatio = (laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
-							copyLength = Mathf.CeilToInt(srcBufferHorizontalLength * srcLengthRatio);
+							copyLength = Mathf.FloorToInt(srcBufferHorizontalLength * srcLengthRatio);
 
 							srcBufferOffset = (srcBufferHorizontalLength * (sampleIndexV + 1)) - copyLength;
 							dstBufferOffset = laserSamplesH * sampleIndexV;
