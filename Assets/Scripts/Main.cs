@@ -184,7 +184,7 @@ public class Main: MonoBehaviour
 		Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath);
 
 		// Calling this method is required for windows version
-		// refer o https://thomas.trocha.com/blog/netmq-on-unity3d/
+		// refer to https://thomas.trocha.com/blog/netmq-on-unity3d/
 		AsyncIO.ForceDotNet.Force();
 
 		Application.targetFrameRate = 61;
@@ -330,7 +330,6 @@ public class Main: MonoBehaviour
 			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
 			addingModel.SetAddingModelForDeploy(targetObject);
 
-			yield return new WaitForSeconds(0.01f);
 			yield return new WaitForEndOfFrame();
 
 			// for GUI
