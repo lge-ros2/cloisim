@@ -337,8 +337,6 @@ public class Main: MonoBehaviour
 
 			// for GUI
 			followingList?.UpdateList();
-
-			yield return new WaitForEndOfFrame();
 		}
 
 		yield return null;
