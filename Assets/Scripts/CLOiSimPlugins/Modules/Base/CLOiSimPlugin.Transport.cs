@@ -11,14 +11,22 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
 	private Transporter transport = new Transporter();
 
+	private string subPartsName = string.Empty;
+
+	public string SubPartsName
+	{
+		get => this.subPartsName;
+		set => this.subPartsName = value;
+	}
+
 	public Transporter GetTransport()
 	{
 		return transport;
 	}
 
-	private bool PrepareDevice(in string subPartsName, out ushort port, out ulong hash)
+	private bool PrepareDevice(in string subPartsAndKey, out ushort port, out ulong hash)
 	{
-		if (BridgeManager.AllocateDevice(type.ToString(), modelName, partsName, subPartsName, out var hashKey, out port))
+		if (BridgeManager.AllocateDevice(type.ToString(), modelName, partsName, subPartsAndKey, out var hashKey, out port))
 		{
 			allocatedDeviceHashKeys.Add(hashKey);
 			allocatedDevicePorts.Add(port);
@@ -39,9 +47,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return true;
 	}
 
-	protected bool RegisterTxDevice(out ushort port, in string subPartsName = "")
+	protected bool RegisterTxDevice(out ushort port, in string key = "")
 	{
-		if (PrepareDevice(subPartsName, out port, out var hash))
+		if (PrepareDevice(subPartsName + key, out port, out var hash))
 		{
 			transport.InitializePublisher(port, hash);
 			return true;
@@ -52,9 +60,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return false;
 	}
 
-	protected bool RegisterRxDevice(out ushort port, in string subPartsName = "")
+	protected bool RegisterRxDevice(out ushort port, in string key = "")
 	{
-		if (PrepareDevice(subPartsName, out port, out var hash))
+		if (PrepareDevice(subPartsName + key, out port, out var hash))
 		{
 			transport.InitializeSubscriber(port, hash);
 			return true;
@@ -65,9 +73,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return false;
 	}
 
-	protected bool RegisterServiceDevice(out ushort port, in string subPartsName = "")
+	protected bool RegisterServiceDevice(out ushort port, in string key = "")
 	{
-		if (PrepareDevice(subPartsName, out port, out var hash))
+		if (PrepareDevice(subPartsName + key, out port, out var hash))
 		{
 			transport.InitializeResponsor(port, hash);
 			return true;
@@ -78,9 +86,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return false;
 	}
 
-	protected bool RegisterClientDevice(out ushort port, in string subPartsName = "")
+	protected bool RegisterClientDevice(out ushort port, in string key = "")
 	{
-		if (PrepareDevice(subPartsName, out port, out var hash))
+		if (PrepareDevice(subPartsName + key, out port, out var hash))
 		{
 			transport.InitializeRequester(port, hash);
 			return true;

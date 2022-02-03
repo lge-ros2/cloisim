@@ -9,7 +9,6 @@ using Any = cloisim.msgs.Any;
 public class CameraPlugin : CLOiSimPlugin
 {
 	private SensorDevices.Camera cam = null;
-	private string subPartsName = string.Empty;
 
 	public SensorDevices.Camera GetCamera()
 	{
@@ -19,12 +18,6 @@ public class CameraPlugin : CLOiSimPlugin
 	public SensorDevices.DepthCamera GetDepthCamera()
 	{
 		return GetCamera() as SensorDevices.DepthCamera;
-	}
-
-	public string SubPartsName
-	{
-		get => this.subPartsName;
-		set => this.subPartsName = value;
 	}
 
 	protected override void OnAwake()
@@ -48,12 +41,12 @@ public class CameraPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		if (RegisterServiceDevice(out var portService, subPartsName + "Info"))
+		if (RegisterServiceDevice(out var portService, "Info"))
 		{
 			AddThread(portService, ServiceThread);
 		}
 
-		if (RegisterTxDevice(out var portTx, subPartsName + "Data"))
+		if (RegisterTxDevice(out var portTx, "Data"))
 		{
 			AddThread(portTx, SenderThread, cam);
 		}
