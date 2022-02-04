@@ -1778,7 +1778,7 @@ MonoBehaviour:
   modelRootDirectories:
   - ../cloi_resources
   - ../sample_resources/models/
-  - ../sample_resources/All
+  - ../world_resources_yangjae_city
   worldRootDirectories:
   - ../sample_resources/worlds/
   fileRootDirectories:
@@ -4663,7 +4663,7 @@ MonoBehaviour:
   m_Elasticity: 0.1
   m_Inertia: 1
   m_DecelerationRate: 0.135
-  m_ScrollSensitivity: 1
+  m_ScrollSensitivity: 50
   m_Viewport: {fileID: 20107707}
   m_HorizontalScrollbar: {fileID: 0}
   m_VerticalScrollbar: {fileID: 970763218}
@@ -5480,8 +5480,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec65e03504ece92cbeb7b40065a589c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  blockControl: 0
-  blockMouseWheelControl: 0
   mainSpeed: 2.5
   shiftAdd: 15
   maxShift: 200

@@ -222,6 +222,11 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
+			if (motorControl == null || micomSensorData == null)
+			{
+				return;
+			}
+
 			motorControl.UpdateTime(Time.fixedDeltaTime);
 
 			UpdateIMU();

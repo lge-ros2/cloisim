@@ -110,11 +110,12 @@
             <param name="cancellationToken">The token used to propagate notification that this operation should be canceled.</param>
             <returns>The content of the received message frame as a string and boolean indicate if another frame of the same message follows..</returns>
         </member>
-        <member name="M:NetMQ.AsyncReceiveExtensions.SkipFrameAsync(NetMQ.NetMQSocket)">
+        <member name="M:NetMQ.AsyncReceiveExtensions.SkipFrameAsync(NetMQ.NetMQSocket,System.Threading.CancellationToken)">
             <summary>
             Receive a single frame from <paramref name="socket"/>, asynchronously, then ignore its content.
             </summary>
             <param name="socket">The socket to receive from.</param>
+            <param name="cancellationToken">The token used to propagate notification that this operation should be canceled.</param>
             <returns>Boolean indicate if another frame of the same message follows</returns>
         </member>
         <member name="M:NetMQ.AsyncReceiveExtensions.SkipMultipartMessageAsync(NetMQ.NetMQSocket)">
@@ -6845,6 +6846,12 @@
             </summary>
             <returns>The span</returns>
         </member>
+        <member name="M:NetMQ.Msg.SliceAsMemory">
+            <summary>
+            Return the internal buffer as Memory
+            </summary>
+            <returns>The memory</returns>
+        </member>
         <member name="M:NetMQ.Msg.Slice(System.Int32)">
             <summary>
             Returns a slice of the internal buffer.
@@ -7462,7 +7469,7 @@
         </member>
         <member name="P:NetMQ.NetMQCertificate.SecretKeyZ85">
             <summary>
-            Curve Public key 
+            Curve Secret key, encoded.
             </summary>
         </member>
         <member name="P:NetMQ.NetMQCertificate.HasSecretKey">
@@ -7472,12 +7479,12 @@
         </member>
         <member name="P:NetMQ.NetMQCertificate.PublicKey">
             <summary>
-            Curve Public key 
+            Curve Public key.
             </summary>
         </member>
         <member name="P:NetMQ.NetMQCertificate.PublicKeyZ85">
             <summary>
-            Curve Public key 
+            Curve Public key, encoded.
             </summary>
         </member>
         <member name="T:NetMQ.NetMQConfig">
@@ -9535,6 +9542,47 @@
             <param name="routingKey">the routing key to send</param>
             <returns><c>true</c> if a message was available, otherwise <c>false</c>.</returns>
         </member>
+        <member name="M:NetMQ.OutgoingSocketExtensions.SendEmptyRoutingKeys(NetMQ.IOutgoingSocket)">
+            <summary>
+            Send empty list of routing keys over <paramref name="socket"/>, append an empty message at the end of the keys.
+            </summary>
+            <param name="socket">the IOutgoingSocket to transmit on</param>
+        </member>
+        <member name="M:NetMQ.OutgoingSocketExtensions.SendRoutingKeys(NetMQ.IOutgoingSocket,NetMQ.RoutingKey[])">
+            <summary>
+            Send a single routing key over <paramref name="socket"/>, append an empty message afterwards.
+            </summary>
+            <param name="socket">the IOutgoingSocket to transmit on</param>
+            <param name="routingKeys">the routing keys to send</param>
+        </member>
+        <member name="M:NetMQ.OutgoingSocketExtensions.SendRoutingKeys(NetMQ.IOutgoingSocket,System.Collections.Generic.IEnumerable{NetMQ.RoutingKey})">
+            <summary>
+            Send routing keys over <paramref name="socket"/>, append an empty message at the end of the keys.
+            </summary>
+            <param name="socket">the IOutgoingSocket to transmit on</param>
+            <param name="routingKeys">the routing keys to send</param>
+        </member>
+        <member name="M:NetMQ.OutgoingSocketExtensions.TrySendRoutingKeys(NetMQ.IOutgoingSocket,System.Collections.Generic.IEnumerable{NetMQ.RoutingKey})">
+            <summary>
+            Attempt to transmit routing keys over <paramref name="socket"/>.
+            If message cannot be sent immediately, return <c>false</c>.
+            Routing is always sent as more frame.
+            </summary>
+            <param name="socket">the IOutgoingSocket to transmit on</param>
+            <param name="routingKeys">the routing keys to send</param>
+            <returns><c>true</c> if a message was available, otherwise <c>false</c>.</returns>
+        </member>
+        <member name="M:NetMQ.OutgoingSocketExtensions.TrySendRoutingKeys(NetMQ.IOutgoingSocket,System.TimeSpan,System.Collections.Generic.IEnumerable{NetMQ.RoutingKey})">
+            <summary>
+            Attempt to transmit routing key over <paramref name="socket"/>.
+            If message cannot be sent within <paramref name="timeout"/>, return <c>false</c>.
+            Routing is always sent as more frame.
+            </summary>
+            <param name="socket">the IOutgoingSocket to transmit on</param>
+            <param name="timeout">The maximum period of time to try to send a message.</param>
+            <param name="routingKeys">the routing keys to send</param>
+            <returns><c>true</c> if a message was available, otherwise <c>false</c>.</returns>
+        </member>
         <member name="T:NetMQ.PollEvents">
             <summary>
             This flags enum-type is simply an indication of the direction of the poll-event,
@@ -10232,6 +10280,32 @@
             <param name="routingKey">The routing-key of the received message frame.</param>
             <returns><c>true</c> if a message was available, otherwise <c>false</c>.</returns>
         </member>
+        <member name="M:NetMQ.ReceivingSocketExtensions.ReceiveRoutingKeys(NetMQ.IReceivingSocket)">
+            <summary>
+            Receive routing keys from <paramref name="socket"/> until a bottom message arrives (empty message), blocking until one arrives.
+            </summary>
+            <param name="socket">The socket to receive from.</param>
+            <returns>The routing keys.</returns>
+        </member>
+        <member name="M:NetMQ.ReceivingSocketExtensions.TryReceiveRoutingKeys(NetMQ.IReceivingSocket,System.Collections.Generic.IEnumerable{NetMQ.RoutingKey}@)">
+            <summary>
+            Attempt to receive routing-keys from <paramref name="socket"/>, an empty message expected at the end of routing keys.
+            If no message is immediately available, return <c>false</c>.
+            </summary>
+            <param name="socket">The socket to receive from.</param>
+            <param name="routingKeys">The routing-keys of the received message.</param>
+            <returns><c>true</c> if a message was available, otherwise <c>false</c>.</returns>
+        </member>
+        <member name="M:NetMQ.ReceivingSocketExtensions.TryReceiveRoutingKeys(NetMQ.IReceivingSocket,System.TimeSpan,System.Collections.Generic.IEnumerable{NetMQ.RoutingKey}@)">
+            <summary>
+            Attempt to receive a routing-keys from <paramref name="socket"/>.
+            If no message is available within <paramref name="timeout"/>, return <c>false</c>.
+            </summary>
+            <param name="socket">The socket to receive from.</param>
+            <param name="timeout">The maximum period of time to wait for a message to become available.</param>
+            <param name="routingKeys">The routing-keys of the received message.</param>
+            <returns><c>true</c> if a message was available, otherwise <c>false</c>.</returns>
+        </member>
         <member name="T:NetMQ.RoutingIdSocketExtensions">
             <summary>
             Send and Receive extensions for sockets with RoutingId capability (ServerSocket)
@@ -10486,6 +10560,12 @@
             Create a new routing key out of a base64 string
             </summary>
             <param name="b64"></param>
+        </member>
+        <member name="M:NetMQ.RoutingKey.#ctor(System.Int64)">
+            <summary>
+            Create a new routing key out of a Int64
+            </summary>
+            <param name="value"></param>
         </member>
         <member name="M:NetMQ.RoutingKey.Equals(System.Object)">
             <summary>

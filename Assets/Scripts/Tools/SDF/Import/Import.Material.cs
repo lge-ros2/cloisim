@@ -33,7 +33,7 @@ namespace SDF
 
 					if (sdfMaterial.ambient != null)
 					{
-						// UE.Debug.Log(sharedMaterial.name + ": ambient but not support. " + 	SDF2Unity.GetColor(sdfMaterial.ambient));
+						// UE.Debug.Log(sharedMaterial.name + ": ambient is not support. " + 	SDF2Unity.GetColor(sdfMaterial.ambient));
 					}
 
 					if (sdfMaterial.diffuse != null)

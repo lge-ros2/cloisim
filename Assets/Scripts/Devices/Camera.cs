@@ -181,13 +181,16 @@ namespace SensorDevices
 			camSensor.cullingMask = LayerMask.GetMask("Default");
 
 			RTHandles.SetHardwareDynamicResolutionState(true);
-			_rtHandle = RTHandles.Alloc(new Vector2(camParameter.image_width, camParameter.image_height),
+			_rtHandle = RTHandles.Alloc(
+				width: camParameter.image_width,
+				height: camParameter.image_height,
 				slices: 1,
 				depthBufferBits: DepthBits.None,
 				colorFormat: targetColorFormat,
 				filterMode: FilterMode.Trilinear,
 				wrapMode: TextureWrapMode.Clamp,
 				dimension: TextureDimension.Tex2D,
+				msaaSamples: MSAASamples.MSAA2x,
 				enableRandomWrite: false,
 				useMipMap: true,
 				autoGenerateMips: true,

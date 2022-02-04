@@ -10,7 +10,7 @@ using UnityEngine.Rendering;
 
 public partial class SDF2Unity
 {
-	private static readonly string commonShaderName = "Universal Render Pipeline/Lit";
+	private static readonly string commonShaderName = "Universal Render Pipeline/Simple Lit";
 	private static readonly string speedTreeShaderName = "Universal Render Pipeline/Nature/SpeedTree8";
 	public static Shader CommonShader = Shader.Find(commonShaderName);
 	public static Shader SpeedTreeShader = Shader.Find(speedTreeShaderName);
@@ -19,11 +19,7 @@ public partial class SDF2Unity
 	{
 		var newMaterial = new Material(SDF2Unity.CommonShader);
 		newMaterial.SetFloat("_WorkflowMode", 0); // set to specular mode
-		// newMaterial.SetOverrideTag("RenderType", "Transparent");
 		newMaterial.SetFloat("_Cull", (float)CullMode.Back); // Render face front
-		// newMaterial.SetFloat("_Mode", 3); // set to transparent Mode
-		// newMaterial.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
-		// newMaterial.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
 		newMaterial.SetFloat("_ZWrite", 1);
 		newMaterial.SetFloat("_SpecularHighlights", 1f);
 		newMaterial.SetFloat("_Smoothness", 0.0f);
@@ -78,8 +74,17 @@ public partial class SDF2Unity
 	public static void SetMaterialSpeedTree(Material targetMaterial)
 	{
 		var existingTexture = targetMaterial.GetTexture("_BaseMap");
+		var existingColor = targetMaterial.GetColor("_Color");
+		existingColor.a = 0.55f;
 		targetMaterial.shader = SpeedTreeShader;
+		targetMaterial.EnableKeyword("EFFECT_BILLBOARD");
+		targetMaterial.EnableKeyword("_INSTANCING_ON");
 		targetMaterial.SetTexture("_MainTex", existingTexture);
+		targetMaterial.SetColor("_Color", existingColor);
+		targetMaterial.SetFloat("_Glossiness", 0f);
+		targetMaterial.SetInt("_TwoSided", 2);
+		targetMaterial.SetFloat("_BillboardKwToggle", 1f);
+		targetMaterial.SetFloat("_BillSboardShadowFade", 0f);
 	}
 
 	public static Mesh MergeMeshes(in MeshFilter[] meshFilters)
@@ -91,7 +96,7 @@ public partial class SDF2Unity
 			var meshFilter = meshFilters[combineIndex];
 			combine[combineIndex].mesh = meshFilter.sharedMesh;
 			totalVertexCount += meshFilter.sharedMesh.vertexCount;
-			combine[combineIndex].transform = meshFilters[combineIndex].transform.localToWorldMatrix;
+			combine[combineIndex].transform = meshFilter.transform.localToWorldMatrix;
 			// Debug.LogFormat("{0}, {1}: {2}", meshFilter.name, meshFilter.transform.name, combine[combineIndex].transform);
 		}
 
