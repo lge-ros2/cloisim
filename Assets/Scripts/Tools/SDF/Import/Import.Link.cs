@@ -127,8 +127,7 @@ namespace SDF
 					}
 					else
 					{
-						articulationBody.inertiaTensor = UE.Vector3.one;
-						articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
+						articulationBody.ResetInertiaTensor();
 					}
 
 					// handling mesh collider

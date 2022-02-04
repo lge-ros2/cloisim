@@ -279,6 +279,14 @@ namespace RuntimeGizmos
 				{
 					articulationBody.immovable = value;
 				}
+				else
+				{
+					var rigidbody = target.GetComponent<Rigidbody>();
+					if (rigidbody != null && (rigidbody.CompareTag("Props") || (!rigidbody.CompareTag("Props") && !rigidbody.isKinematic)))
+					{
+						rigidbody.isKinematic = value;
+					}
+				}
 			}
 		}
 
@@ -498,7 +506,7 @@ namespace RuntimeGizmos
 					Transform target = null;
 					var hitObject = hitInfo.transform;
 
-					if (hitObject.tag.Equals("Props"))
+					if (hitObject.CompareTag("Props"))
 					{
 						target = hitObject.transform;
 					}
@@ -525,7 +533,7 @@ namespace RuntimeGizmos
 								var hitParentLinkHelper = hitObject?.GetComponentInParent<SDF.Helper.Link>();
 								var hitRootModelHelper = hitParentLinkHelper?.RootModel;
 
-								if (hitRootModelHelper != null)
+								if (hitRootModelHelper != null && hitParentLinkHelper.Model != null)
 								{
 									if (!(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
 									{

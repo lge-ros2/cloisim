@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -39,6 +40,7 @@ public class Main: MonoBehaviour
 	private static InfoDisplay _infoDisplay = null;
 	private static WorldNavMeshBuilder worldNavMeshBuilder = null;
 	private static RuntimeGizmos.TransformGizmo transformGizmo = null;
+	private static CameraControl cameraControl = null;
 
 #region "Non-Component class"
 	private static BridgeManager bridgeManager = null;
@@ -57,6 +59,8 @@ public class Main: MonoBehaviour
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => worldNavMeshBuilder;
 	public static BridgeManager BridgeManager => bridgeManager;
+
+	public static CameraControl CameraControl => cameraControl;
 
 #region "SDFParser"
 	private SDF.Root sdfRoot = null;
@@ -181,10 +185,12 @@ public class Main: MonoBehaviour
 		Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath);
 
 		// Calling this method is required for windows version
-		// refer o https://thomas.trocha.com/blog/netmq-on-unity3d/
+		// refer to https://thomas.trocha.com/blog/netmq-on-unity3d/
 		AsyncIO.ForceDotNet.Force();
 
-		Application.targetFrameRate = 61;
+		QualitySettings.vSyncCount = 0;
+		Application.targetFrameRate = 60;
+		OnDemandRendering.renderFrameInterval = 1;
 
 		var mainCamera = Camera.main;
 		mainCamera.depthTextureMode = DepthTextureMode.None;
@@ -198,10 +204,20 @@ public class Main: MonoBehaviour
 		}
 
 		worldRoot = GameObject.Find("World");
-
 		lightsRoot = GameObject.Find("Lights");
-
 		uiRoot = GameObject.Find("UI");
+
+		if (uiRoot != null)
+		{
+			_infoDisplay = uiRoot.GetComponentInChildren<InfoDisplay>();
+			transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
+			simulationDisplay = uiRoot.GetComponentInChildren<SimulationDisplay>();
+
+			uiMainCanvasRoot = uiRoot.transform.Find("Main Canvas").gameObject;
+			followingList = uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
+		}
+
+		cameraControl = mainCamera.GetComponent<CameraControl>();
 
 		worldNavMeshBuilder = worldRoot.GetComponent<WorldNavMeshBuilder>();
 
@@ -213,16 +229,6 @@ public class Main: MonoBehaviour
 
 		var sphericalCoordinates = new SphericalCoordinates();
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
-
-		if (uiRoot != null)
-		{
-			_infoDisplay = uiRoot.GetComponentInChildren<InfoDisplay>();
-			transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
-			simulationDisplay = uiRoot.GetComponentInChildren<SimulationDisplay>();
-
-			uiMainCanvasRoot = uiRoot.transform.Find("Main Canvas").gameObject;
-			followingList = uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
-		}
 
 		gameObject.AddComponent<ObjectSpawning>();
 	}
@@ -243,22 +249,25 @@ public class Main: MonoBehaviour
 			CleanAllResources();
 		}
 
-		var newWorldFilename = GetArgument("-world");
-
-		if (string.IsNullOrEmpty(newWorldFilename))
+		if (simulationService.IsStarted())
 		{
-			newWorldFilename = GetArgument("-worldFile");
-		}
+			var newWorldFilename = GetArgument("-world");
 
-		if (!string.IsNullOrEmpty(newWorldFilename))
-		{
-			worldFileName = newWorldFilename;
-		}
+			if (string.IsNullOrEmpty(newWorldFilename))
+			{
+				newWorldFilename = GetArgument("-worldFile");
+			}
 
-		if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
-		{
-			simulationDisplay?.SetEventMessage("Start to load world file: " + worldFileName);
-			StartCoroutine(LoadWorld());
+			if (!string.IsNullOrEmpty(newWorldFilename))
+			{
+				worldFileName = newWorldFilename;
+			}
+
+			if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
+			{
+				simulationDisplay?.SetEventMessage("Start to load world file: " + worldFileName);
+				StartCoroutine(LoadWorld());
+			}
 		}
 	}
 
@@ -324,13 +333,10 @@ public class Main: MonoBehaviour
 			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
 			addingModel.SetAddingModelForDeploy(targetObject);
 
-			yield return new WaitForSeconds(0.01f);
 			yield return new WaitForEndOfFrame();
 
 			// for GUI
 			followingList?.UpdateList();
-
-			yield return new WaitForEndOfFrame();
 		}
 
 		yield return null;

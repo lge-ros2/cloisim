@@ -186,16 +186,19 @@ namespace SensorDevices
 			var renderTextrueHeight = (laserAngleResolution.V == 1) ? 1 : Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
 
 			RTHandles.SetHardwareDynamicResolutionState(true);
-			_rtHandle = RTHandles.Alloc(new Vector2(renderTextrueWidth, renderTextrueHeight),
+			_rtHandle = RTHandles.Alloc(
+				width: renderTextrueWidth,
+				height: renderTextrueHeight,
 				slices: 1,
 				depthBufferBits: DepthBits.None,
 				colorFormat: GraphicsFormat.R8G8B8A8_UNorm,
-				filterMode: FilterMode.Bilinear,
+				filterMode: FilterMode.Trilinear,
 				wrapMode: TextureWrapMode.Clamp,
 				dimension: TextureDimension.Tex2D,
+				msaaSamples: MSAASamples.MSAA2x,
 				enableRandomWrite: false,
-				useMipMap: false,
-				autoGenerateMips: false,
+				useMipMap: true,
+				autoGenerateMips: true,
 				isShadowMap: false,
 				anisoLevel: 0,
 				mipMapBias: 0,
@@ -425,6 +428,8 @@ namespace SensorDevices
 					}
 					// Debug.LogFormat("index {0}: {1}~{2}, {3}~{4}", dataIndex, laserStartAngleH, laserEndAngleH, dataStartAngleH, dataEndAngleH);
 
+					var dataCopyType = -1;
+
 					for (var sampleIndexV = 0; sampleIndexV < laserSamplesV; sampleIndexV++, doCopy = true)
 					{
 						// start side of laser angle
@@ -432,13 +437,15 @@ namespace SensorDevices
 						{
 							srcBufferOffset = srcBufferHorizontalLength * sampleIndexV;
 							var srcLengthratio = Mathf.Abs((dataStartAngleH - laserStartAngleH) * dividedDataTotalAngleH);
-							copyLength = srcBufferHorizontalLength - Mathf.FloorToInt(srcBufferHorizontalLength * srcLengthratio);
+							copyLength = srcBufferHorizontalLength - Mathf.CeilToInt(srcBufferHorizontalLength * srcLengthratio);
 							dstBufferOffset = (laserSamplesH * (sampleIndexV + 1)) - copyLength;
 
 							if (copyLength < 0 || dstBufferOffset < 0)
 							{
 								doCopy = false;
 							}
+
+							dataCopyType = 1;
 						}
 						// middle of laser angle
 						else if (dataStartAngleH > laserStartAngleH && dataEndAngleH < laserEndAngleH)
@@ -453,12 +460,14 @@ namespace SensorDevices
 							{
 								doCopy = false;
 							}
+
+							dataCopyType = 2;
 						}
 						// end side of laser angle
 						else if (dataEndAngleH >= laserEndAngleH)
 						{
 							var srcLengthRatio = (laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
-							copyLength = Mathf.CeilToInt(srcBufferHorizontalLength * srcLengthRatio);
+							copyLength = Mathf.FloorToInt(srcBufferHorizontalLength * srcLengthRatio);
 
 							srcBufferOffset = (srcBufferHorizontalLength * (sampleIndexV + 1)) - copyLength;
 							dstBufferOffset = laserSamplesH * sampleIndexV;
@@ -467,9 +476,12 @@ namespace SensorDevices
 							{
 								doCopy = false;
 							}
+
+							dataCopyType = 3;
 						}
 						else
 						{
+							dataCopyType = -1;
 							Debug.LogWarning("Something wrong data in Laser....");
 							doCopy = false;
 						}
@@ -485,7 +497,7 @@ namespace SensorDevices
 							}
 							catch (Exception ex)
 							{
-								Debug.LogWarning("Error occured with Buffer.BlockCopy : " + ex.Message + ", " + srcBufferOffset + ", " + dstBufferOffset + ", " + copyLength + ", Len: src "+ srcBuffer.Length + ", dst " + laserScan.Ranges.Length);
+								Debug.LogWarning("Error occured with Buffer.BlockCopy : " + ex.Message + ", Type: " + dataCopyType + " Offset: src(" + srcBufferOffset + ") dst(" + dstBufferOffset + "), Copysize: " + copyLength + ", Len: src("+ srcBuffer.Length + ") dst(" + laserScan.Ranges.Length + ")");
 							}
 						}
 					}

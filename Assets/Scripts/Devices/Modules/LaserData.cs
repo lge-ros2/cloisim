@@ -39,10 +39,17 @@ namespace SensorDevices
 				this.resolution = resolution;
 				this.angle = new MinMax(angleMinRad * Mathf.Rad2Deg, angleMaxRad * Mathf.Rad2Deg);
 
-				var residual = (angle.range - 360d < double.Epsilon ) ? 0 : 1;
-				var rangeCount = resolution * samples - residual;
+				if (System.Math.Abs(this.angle.range) < double.Epsilon)
+				{
+					this.angleStep = 1;
+				}
+				else
+				{
+					var residual = (angle.range - 360d < double.Epsilon) ? 0 : 1;
+					var rangeCount = resolution * samples - residual;
 
-				this.angleStep = (rangeCount <= 0) ? 0 : ((angle.range) / rangeCount);
+					this.angleStep = (rangeCount <= 0) ? 0 : ((angle.range) / rangeCount);
+				}
 			}
 
 			public Scan(in uint samples)

@@ -106,7 +106,7 @@ namespace SDF
 				model = new Model(modelNode);
 				modelFound = true;
 
-				var infoMessage = "Model(" + modelFileName + ") is loaded.";
+				var infoMessage =  model.Name + " Model(" + modelFileName + ") is loaded.";
 				(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
 				Console.Out.WriteLine(infoMessage);
 			}

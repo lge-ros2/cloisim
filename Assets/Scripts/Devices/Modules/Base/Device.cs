@@ -61,7 +61,6 @@ public abstract class Device : MonoBehaviour
 	void Awake()
 	{
 		OnAwake();
-
 		InitializeMessages();
 	}
 

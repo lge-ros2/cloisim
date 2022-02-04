@@ -51,7 +51,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 					// Debug.Log(tfMessage.Header.Stamp.Sec + "." + tfMessage.Header.Stamp.Nsec + ": " + tfMessage.Header.StrId + ", " + tfMessage.Transform.Name) ;
 					if (publisher.Publish(deviceMessage) == false)
 					{
-						Debug.Log(tfMessage.Header.StrId  + ", " + tfMessage.Transform.Name + " error to sent TF!!");
+						Debug.Log(tfMessage.Header.StrId  + ", " + tfMessage.Transform.Name + " error to send TF!!");
 					}
 					CLOiSimPluginThread.Sleep(updatePeriodPerEachTf);
 				}
@@ -149,10 +149,21 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			switch (requestType)
 			{
 				case "request_ros2":
+					if (GetPluginParameters().IsValidNode("ros2"))
+					{
+						var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name[@add_parts_name_prefix='true']");
+						if (string.IsNullOrEmpty(topic_name))
+						{
+							topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name", partsName);
+						}
+						else
+						{
+							topic_name = partsName + "/" + topic_name;
+						}
 
-					var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name", partsName);
-					GetPluginParameters().GetValues<string>("ros2/frame_id", out var frameIdList);
-					SetROS2CommonInfoResponse(ref response, topic_name, frameIdList);
+						GetPluginParameters().GetValues<string>("ros2/frame_id", out var frameIdList);
+						SetROS2CommonInfoResponse(ref response, topic_name, frameIdList);
+					}
 					break;
 
 				default:
