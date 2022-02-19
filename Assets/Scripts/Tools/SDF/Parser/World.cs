@@ -204,9 +204,9 @@ namespace SDF
 
 		public SphericalCoordinates spherical_coordinates = null;
 
-		// <state> : TBD
+		public List<State> states = null;
 
-		public List<Population> population = new List<Population>();
+		public List<Population> population = null;
 
 		private Plugins plugins;
 
