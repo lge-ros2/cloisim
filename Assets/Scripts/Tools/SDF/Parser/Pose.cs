@@ -361,7 +361,16 @@ namespace SDF
 		private Vector3<T> _pos;
 		private Quaternion<T> _rot;
 
-		public string relative_to = string.Empty; // TBD : for SDF 1.7
+		public string relative_to = string.Empty; // TBD : since SDF 1.7
+
+		// Description: 'euler_rpy' by default.
+		// Supported rotation formats are 'euler_rpy', Euler angles representation in roll, pitch, yaw.
+		// The pose is expected to have 6 values.
+		// 'quat_xyzw', Quaternion representation in x, y, z, w. The pose is expected to have 7 values.
+		public string rotation_format = "euler_rpy"; // TBD : since SDF 1.9
+
+		// Description: Whether or not the euler angles are in degrees, otherwise they will be interpreted as radians by default.
+		public bool degrees = false;// TBD : since SDF 1.9
 
 		public Pose()
 			: this(default(T), default(T), default(T))

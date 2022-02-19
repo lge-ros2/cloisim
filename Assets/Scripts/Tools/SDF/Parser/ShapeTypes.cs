@@ -19,7 +19,10 @@ namespace SDF
 
 	public class Cylinder : ShapeType
 	{
+		// Description: Radius of the cylinder
 		public double radius = 1;
+
+		// Description: Length of the cylinder along the z axis
 		public double length = 1;
 	}
 
