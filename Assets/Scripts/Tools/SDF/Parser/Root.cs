@@ -317,27 +317,28 @@ namespace SDF
 
 		private XmlNode GetIncludedModel(XmlNode included_node)
 		{
-			var nameNode = included_node.SelectSingleNode("name");
-			var name = (nameNode == null) ? null : nameNode.InnerText;
-
-			var poseNode = included_node.SelectSingleNode("pose");
-			var pose = (poseNode == null) ? null : poseNode.InnerText;
-
-			// var placementFrameNode = included_node.SelectSingleNode("placement_frame");
-			// var placementFrame = (placementFrameNode == null) ? null : placementFrameNode.InnerText;
-
-			// var pluginNode = included_node.SelectSingleNode("plugin");
-			// var plugin = (pluginNode == null) ? null : pluginNode.InnerText;
-
-			var staticNode = included_node.SelectSingleNode("static");
-			var isStatic = (staticNode == null) ? null : staticNode.InnerText;
-
 			var uri_node = included_node.SelectSingleNode("uri");
 			if (uri_node == null)
 			{
 				Console.WriteLine("uri is empty.");
 				return null;
 			}
+
+			var nameNode = included_node.SelectSingleNode("name");
+			var name = (nameNode == null) ? null : nameNode.InnerText;
+
+			var staticNode = included_node.SelectSingleNode("static");
+			var isStatic = (staticNode == null) ? null : staticNode.InnerText;
+
+			var placementFrameNode = included_node.SelectSingleNode("placement_frame");
+			var placementFrame = (placementFrameNode == null) ? null : placementFrameNode.InnerText;
+
+			var poseNode = included_node.SelectSingleNode("pose");
+			var pose = (poseNode == null) ? null : poseNode.InnerText;
+
+
+			// var pluginNode = included_node.SelectSingleNode("plugin");
+			// var plugin = (pluginNode == null) ? null : pluginNode.InnerText;
 
 			var uri = uri_node.InnerText;
 			// Console.WriteLineFormat("{0} | {1} | {2} | {3}", name, uri, pose, isStatic);
