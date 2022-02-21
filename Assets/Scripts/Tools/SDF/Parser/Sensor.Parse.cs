@@ -79,9 +79,9 @@ namespace SDF
 
 			camera.type = Type;
 			camera.horizontal_fov = GetValue<double>(cameraElement + "/horizontal_fov");
-			camera.image.width = GetValue<int>(cameraElement + "/image/width");
-			camera.image.height = GetValue<int>(cameraElement + "/image/height");
-			camera.image.format = GetValue<string>(cameraElement + "/image/format");
+			camera.image.width = GetValue<int>(cameraElement + "/image/width", camera.image.width);
+			camera.image.height = GetValue<int>(cameraElement + "/image/height", camera.image.height);
+			camera.image.format = GetValue<string>(cameraElement + "/image/format", string.Empty);
 
 			if (IsValidNode(cameraElement + "/clip/near"))
 			{
@@ -243,45 +243,45 @@ namespace SDF
 			return imu;
 		}
 
-		private GPS ParseGPS()
+		private NavSat ParseNavSat(in string element_path = "navsat")
 		{
-			var gps = new GPS();
+			var navsat = new NavSat();
 
-			if (IsValidNode("gps/position_sensing"))
+			if (IsValidNode(element_path + "/position_sensing"))
 			{
-				gps.position_sensing = new GPS.SensingNoise();
+				navsat.position_sensing = new NavSat.SensingNoise();
 
-				if (IsValidNode("gps/position_sensing/horizontal/noise"))
+				if (IsValidNode(element_path + "/position_sensing/horizontal/noise"))
 				{
-					gps.position_sensing.horizontal_noise = new Noise();
-					ParseNoise(ref gps.position_sensing.horizontal_noise, "gps/position_sensing/horizontal");
+					navsat.position_sensing.horizontal_noise = new Noise();
+					ParseNoise(ref navsat.position_sensing.horizontal_noise, element_path + "/position_sensing/horizontal");
 				}
 
-				if (IsValidNode("gps/position_sensing/vertical/noise"))
+				if (IsValidNode(element_path + "/position_sensing/vertical/noise"))
 				{
-					gps.position_sensing.vertical_noise = new Noise();
-					ParseNoise(ref gps.position_sensing.vertical_noise, "gps/position_sensing/vertical");
+					navsat.position_sensing.vertical_noise = new Noise();
+					ParseNoise(ref navsat.position_sensing.vertical_noise, element_path + "/position_sensing/vertical");
 				}
 			}
 
-			if (IsValidNode("gps/velocity_sensing"))
+			if (IsValidNode(element_path + "/velocity_sensing"))
 			{
-				gps.velocity_sensing = new GPS.SensingNoise();
+				navsat.velocity_sensing = new NavSat.SensingNoise();
 
-				if (IsValidNode("gps/velocity_sensing/horizontal/noise"))
+				if (IsValidNode(element_path + "/velocity_sensing/horizontal/noise"))
 				{
-					gps.velocity_sensing.horizontal_noise = new Noise();
-					ParseNoise(ref gps.velocity_sensing.horizontal_noise, "gps/velocity_sensing/horizontal");
+					navsat.velocity_sensing.horizontal_noise = new Noise();
+					ParseNoise(ref navsat.velocity_sensing.horizontal_noise, element_path + "/velocity_sensing/horizontal");
 				}
 
-				if (IsValidNode("gps/velocity_sensing/vertical/noise"))
+				if (IsValidNode(element_path + "/velocity_sensing/vertical/noise"))
 				{
-					gps.velocity_sensing.vertical_noise = new Noise();
-					ParseNoise(ref gps.velocity_sensing.vertical_noise, "gps/velocity_sensing/vertical");
+					navsat.velocity_sensing.vertical_noise = new Noise();
+					ParseNoise(ref navsat.velocity_sensing.vertical_noise, element_path + "/velocity_sensing/vertical");
 				}
 			}
 
-			return gps;
+			return navsat;
 		}
 
 		private Contact ParseContact()

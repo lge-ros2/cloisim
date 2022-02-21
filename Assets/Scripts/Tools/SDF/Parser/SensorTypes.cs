@@ -199,7 +199,8 @@ namespace SDF
 		public string topic;
 	}
 
-	public class GPS : SensorType
+	// same as <GPS>
+	public class NavSat : SensorType
 	{
 		public class SensingNoise
 		{
@@ -232,8 +233,8 @@ namespace SDF
 
 		public OrientationReferenceFrame orientation_reference_frame = new OrientationReferenceFrame();
 
-		public NoiseDirection angular_velocity_noise = null;
-		public NoiseDirection linear_acceleration_noise = null;
+		public NoiseDirection angular_velocity_noise = new NoiseDirection();
+		public NoiseDirection linear_acceleration_noise = new NoiseDirection();
 
 		// Descripotion: Some IMU sensors rely on external filters to produce orientation estimates. True to generate and output orientation data, false to disable orientation data generation.
 		public bool enable_orientation = true;

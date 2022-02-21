@@ -55,6 +55,8 @@ namespace SDF
 						device = Implement.Sensor.AddCamera(camera, targetObject);
 						break;
 
+					case "rgbd_camera":
+					case "rgbd":
 					case "multicamera":
 						var cameras = sensor.GetSensor() as SDF.Cameras;
 						device = Implement.Sensor.AddMultiCamera(cameras, targetObject);
@@ -71,8 +73,12 @@ namespace SDF
 						break;
 
 					case "gps":
-						var gps = sensor.GetSensor() as SDF.GPS;
-						device = Implement.Sensor.AddGps(gps, targetObject);
+						Debug.LogWarning("[SDF.Import] It is preferred to use 'navsat' since 'gps' will be deprecated.");
+						goto case "navsat";
+
+					case "navsat":
+						var navsat = sensor.GetSensor() as SDF.NavSat;
+						device = Implement.Sensor.AddNavSat(navsat, targetObject);
 						break;
 
 					case "contact":
@@ -84,11 +90,10 @@ namespace SDF
 					case "altimeter":
 					case "force_torque":
 					case "logical_camera":
+					case "thermal_camera":
 					case "magnetometer":
 					case "rfid":
 					case "rfidtag":
-					case "rgbd_camera":
-					case "thermal_camera":
 					case "wireless_receiver":
 					case "wireless_transmitter":
 						Debug.LogWarningFormat("[Sensor] Not supported sensor name({0}) type({1})!!!!!", sensor.Name, sensorType);

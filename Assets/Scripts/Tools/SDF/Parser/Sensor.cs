@@ -87,19 +87,20 @@ namespace SDF
 					}
 					break;
 
+				case "rgbd_camera":
+				case "rgbd":
 				case "multicamera":
 					if (IsValidNode("camera"))
 					{
 						var cameras = new Cameras();
-						cameras.name = "multiple_camera";
+						cameras.name = Type;
+						cameras.type = Type;
 
 						var nodes = GetNodes("camera");
 						// Console.WriteLine("totalCamera: " + nodes.Count);
 
 						for (var index = 1; index <= nodes.Count; index++)
-						{
 							cameras.Add(ParseCamera(index));
-						}
 
 						sensor = cameras;
 					}
@@ -128,10 +129,12 @@ namespace SDF
 					}
 					break;
 
+
 				case "gps":
-					if (IsValidNode("gps"))
+				case "navsat":
+					if (IsValidNode(Type))
 					{
-						sensor = ParseGPS();
+						sensor = ParseNavSat(Type);
 					}
 					break;
 
@@ -146,13 +149,16 @@ namespace SDF
 				case "altimeter":
 				case "force_torque":
 				case "logical_camera":
+				case "boundingbox_camera":
+				case "segmentation_camera":
 				case "magnetometer":
 				case "rfid":
 				case "rfidtag":
-				case "rgbd_camera":
 				case "thermal_camera":
+				case "thermal":
 				case "wireless_receiver":
 				case "wireless_transmitter":
+				case "custom":
 					Console.WriteLine("Not supported sensor type!!!!! => " + Type);
 					break;
 

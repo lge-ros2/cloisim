@@ -91,7 +91,7 @@ namespace SDF
 
 				if (element.noise != null)
 				{
-					camera.noise = new SensorDevices.Noise(element.noise, "camera");
+					camera.noise = new SensorDevices.Noise(element.noise, element.type);
 				}
 
 				return camera;
@@ -105,34 +105,35 @@ namespace SDF
 				var depthCamera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
 				depthCamera.DeviceName = GetFrameName(newSensorObject);
 
-				if (string.IsNullOrEmpty(element.image.format))
+				switch (element.image.format)
 				{
-					element.image.format = "R_FLOAT32";
-				}
-				else
-				{
-					switch (element.image.format)
-					{
-						case "L16":
-						case "R_FLOAT16":
-						case "R_FLOAT32":
-						case "L_INT16":
-						case "L_UINT16":
-							// Debug.Log("Supporting data type for Depth camera");
-							break;
+					case "L16":
+					case "R_FLOAT16":
+					case "R_FLOAT32":
+					case "L_INT16":
+					case "L_UINT16":
+						// Debug.Log("Supporting data type for Depth camera");
+						break;
 
-						default:
+					default:
+						if (element.image.format.Equals(string.Empty))
+						{
+							Debug.LogWarning(element.name + " 'R_FLOAT32' will be set for Depth camera's image format");
+						}
+						else
+						{
 							Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image.format);
-							element.image.format = "R_FLOAT32";
-							break;
-					}
+						}
+
+						element.image.format = "R_FLOAT32";
+						break;
 				}
 
 				depthCamera.SetCamParameter(element);
 
 				if (element.noise != null)
 				{
-					depthCamera.noise = new SensorDevices.Noise(element.noise, "depthcamera");
+					depthCamera.noise = new SensorDevices.Noise(element.noise, element.type);
 				}
 
 				return depthCamera;
@@ -148,22 +149,11 @@ namespace SDF
 
 				foreach (var camParam in element.cameras)
 				{
-					var newCamObject = new GameObject();
-					newCamObject.name = camParam.name;
-
-					AttachSensor(newCamObject, newSensorObject, camParam.Pose);
-
-					var newCam = newCamObject.AddComponent<SensorDevices.Camera>();
+					var newCam = AddCamera(camParam, newSensorObject);
 					newCam.Mode = Device.ModeType.NONE;
-					newCam.DeviceName = "MultiCamera::" + newCamObject.name;
-					newCam.SetCamParameter(camParam);
+					newCam.DeviceName = element.name + "::" + newCam.DeviceName;
 
-					if (camParam.noise != null)
-					{
-						newCam.noise = new SensorDevices.Noise(camParam.noise, "multicamera");
-					}
-
-					multicamera.AddCamera(newCam);
+					multicamera.AddCamera((SensorDevices.Camera)newCam);
 				}
 
 				return multicamera;
@@ -225,7 +215,7 @@ namespace SDF
 				return imu;
 			}
 
-			public static Device AddGps(in SDF.GPS element, in GameObject targetObject)
+			public static Device AddNavSat(in SDF.NavSat element, in GameObject targetObject)
 			{
 				var newSensorObject = new GameObject();
 				AttachSensor(newSensorObject, targetObject);
