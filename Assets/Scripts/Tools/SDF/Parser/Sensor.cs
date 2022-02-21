@@ -19,10 +19,20 @@ namespace SDF
 
 	public partial class Sensor : Entity
 	{
+		// Description: If true the sensor will always be updated according to the update rate.
 		private bool always_on = false;
+
+		// Description: The frequency at which the sensor data is generated. If left unspecified, the sensor will generate data every cycle.
 		private double update_rate = 0.0;
+
+		// Description: If true, the sensor is visualized in the GUI
 		private bool visualize = false;
+
+		// Description: Name of the topic on which data is published. This is necessary for visualization
 		private string topic = "__default__";
+
+		// Description: If true, the sensor will publish performance metrics
+		private bool enable_metrics = false;
 
 		private SensorType sensor = null;
 		private Plugins plugins = null;

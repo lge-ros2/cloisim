@@ -79,9 +79,9 @@ namespace SDF
 
 			camera.type = Type;
 			camera.horizontal_fov = GetValue<double>(cameraElement + "/horizontal_fov");
-			camera.image_width = GetValue<int>(cameraElement + "/image/width");
-			camera.image_height = GetValue<int>(cameraElement + "/image/height");
-			camera.image_format = GetValue<string>(cameraElement + "/image/format");
+			camera.image.width = GetValue<int>(cameraElement + "/image/width");
+			camera.image.height = GetValue<int>(cameraElement + "/image/height");
+			camera.image.format = GetValue<string>(cameraElement + "/image/format");
 
 			if (IsValidNode(cameraElement + "/clip/near"))
 			{
@@ -202,20 +202,20 @@ namespace SDF
 			{
 				if (IsValidNode("imu/angular_velocity/x"))
 				{
-					imu.angular_velocity_x_noise = new Noise();
-					ParseNoise(ref imu.angular_velocity_x_noise, "imu/angular_velocity/x");
+					imu.angular_velocity_noise.x = new Noise();
+					ParseNoise(ref imu.angular_velocity_noise.x, "imu/angular_velocity/x");
 				}
 
 				if (IsValidNode("imu/angular_velocity/y"))
 				{
-					imu.angular_velocity_y_noise = new Noise();
-					ParseNoise(ref imu.angular_velocity_y_noise, "imu/angular_velocity/y");
+					imu.angular_velocity_noise.y = new Noise();
+					ParseNoise(ref imu.angular_velocity_noise.y, "imu/angular_velocity/y");
 				}
 
 				if (IsValidNode("imu/angular_velocity/z"))
 				{
-					imu.angular_velocity_z_noise = new Noise();
-					ParseNoise(ref imu.angular_velocity_z_noise, "imu/angular_velocity/z");
+					imu.angular_velocity_noise.z = new Noise();
+					ParseNoise(ref imu.angular_velocity_noise.z, "imu/angular_velocity/z");
 				}
 			}
 
@@ -223,20 +223,20 @@ namespace SDF
 			{
 				if (IsValidNode("imu/linear_acceleration/x"))
 				{
-					imu.linear_acceleration_x_noise = new Noise();
-					ParseNoise(ref imu.linear_acceleration_x_noise, "imu/linear_acceleration/x");
+					imu.linear_acceleration_noise.x = new Noise();
+					ParseNoise(ref imu.linear_acceleration_noise.x, "imu/linear_acceleration/x");
 				}
 
 				if (IsValidNode("imu/linear_acceleration/y"))
 				{
-					imu.linear_acceleration_y_noise = new Noise();
-					ParseNoise(ref imu.linear_acceleration_y_noise, "imu/linear_acceleration/y");
+					imu.linear_acceleration_noise.y = new Noise();
+					ParseNoise(ref imu.linear_acceleration_noise.y, "imu/linear_acceleration/y");
 				}
 
 				if (IsValidNode("imu/linear_acceleration/z"))
 				{
-					imu.linear_acceleration_z_noise = new Noise();
-					ParseNoise(ref imu.linear_acceleration_z_noise, "imu/linear_acceleration/z");
+					imu.linear_acceleration_noise.z = new Noise();
+					ParseNoise(ref imu.linear_acceleration_noise.z, "imu/linear_acceleration/z");
 				}
 			}
 

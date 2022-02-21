@@ -75,7 +75,7 @@ namespace SensorDevices
 			if (camParameter.depth_camera_output.Equals("points"))
 			{
 				Debug.Log("Enable Point Cloud data mode - NOT SUPPORT YET!");
-				camParameter.image_format = "RGB_FLOAT32";
+				camParameter.image.format = "RGB_FLOAT32";
 			}
 
 			camSensor.backgroundColor = Color.white;
@@ -91,7 +91,7 @@ namespace SensorDevices
 			targetRTname = "CameraDepthTexture";
 			targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
 
-			var pixelFormat = CameraData.GetPixelFormat(camParameter.image_format);
+			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
 			switch (pixelFormat)
 			{
 				case CameraData.PixelFormat.L_INT16:
@@ -130,8 +130,8 @@ namespace SensorDevices
 				computeShader.SetBuffer(kernelIndex, "_Buffer", computeBuffer);
 				computeBuffer.SetData(buffer);
 
-				var threadGroupX = camParameter.image_width / threadGroupsX;
-				var threadGroupY = camParameter.image_height / threadGroupsY;
+				var threadGroupX = camParameter.image.width / threadGroupsX;
+				var threadGroupY = camParameter.image.height / threadGroupsY;
 				computeShader.Dispatch(kernelIndex, threadGroupX, threadGroupY, 1);
 				computeBuffer.GetData(buffer);
 				computeBuffer.Release();

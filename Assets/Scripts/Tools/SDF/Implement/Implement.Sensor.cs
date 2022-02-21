@@ -105,13 +105,13 @@ namespace SDF
 				var depthCamera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
 				depthCamera.DeviceName = GetFrameName(newSensorObject);
 
-				if (string.IsNullOrEmpty(element.image_format))
+				if (string.IsNullOrEmpty(element.image.format))
 				{
-					element.image_format = "R_FLOAT32";
+					element.image.format = "R_FLOAT32";
 				}
 				else
 				{
-					switch (element.image_format)
+					switch (element.image.format)
 					{
 						case "L16":
 						case "R_FLOAT16":
@@ -122,8 +122,8 @@ namespace SDF
 							break;
 
 						default:
-							Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image_format);
-							element.image_format = "R_FLOAT32";
+							Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image.format);
+							element.image.format = "R_FLOAT32";
 							break;
 					}
 				}
@@ -192,34 +192,34 @@ namespace SDF
 				var imu = newSensorObject.AddComponent<SensorDevices.IMU>();
 				imu.DeviceName = GetFrameName(newSensorObject);
 
-				if (element.angular_velocity_x_noise != null)
+				if (element.angular_velocity_noise.x != null)
 				{
-					imu.angular_velocity_noises["x"] = new SensorDevices.Noise(element.angular_velocity_x_noise, "imu");
+					imu.angular_velocity_noises["x"] = new SensorDevices.Noise(element.angular_velocity_noise.x, "imu");
 				}
 
-				if (element.angular_velocity_y_noise != null)
+				if (element.angular_velocity_noise.y != null)
 				{
-					imu.angular_velocity_noises["y"] = new SensorDevices.Noise(element.angular_velocity_y_noise, "imu");
+					imu.angular_velocity_noises["y"] = new SensorDevices.Noise(element.angular_velocity_noise.y, "imu");
 				}
 
-				if (element.angular_velocity_z_noise != null)
+				if (element.angular_velocity_noise.z != null)
 				{
-					imu.angular_velocity_noises["z"] = new SensorDevices.Noise(element.angular_velocity_z_noise, "imu");
+					imu.angular_velocity_noises["z"] = new SensorDevices.Noise(element.angular_velocity_noise.z, "imu");
 				}
 
-				if (element.linear_acceleration_x_noise != null)
+				if (element.linear_acceleration_noise.x != null)
 				{
-					imu.linear_acceleration_noises["x"] = new SensorDevices.Noise(element.linear_acceleration_x_noise, "imu");
+					imu.linear_acceleration_noises["x"] = new SensorDevices.Noise(element.linear_acceleration_noise.x, "imu");
 				}
 
-				if (element.linear_acceleration_y_noise != null)
+				if (element.linear_acceleration_noise.y != null)
 				{
-					imu.linear_acceleration_noises["y"] = new SensorDevices.Noise(element.linear_acceleration_y_noise, "imu");
+					imu.linear_acceleration_noises["y"] = new SensorDevices.Noise(element.linear_acceleration_noise.y, "imu");
 				}
 
-				if (element.linear_acceleration_z_noise != null)
+				if (element.linear_acceleration_noise.z != null)
 				{
-					imu.linear_acceleration_noises["z"] = new SensorDevices.Noise(element.linear_acceleration_z_noise, "imu");
+					imu.linear_acceleration_noises["z"] = new SensorDevices.Noise(element.linear_acceleration_noise.z, "imu");
 				}
 
 				return imu;
