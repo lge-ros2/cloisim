@@ -57,10 +57,57 @@ namespace SDF
 	{
 		public class Physics
 		{
+			public class SimBody
+			{
+				// Description: Force cut in the multibody graph at this joint.
+				public bool must_be_loop_joint = false;
+			}
+
 			public class ODE
 			{
+				// Description: If cfm damping is set to true, ODE will use CFM to simulate damping, allows for infinite damping, and one additional constraint row (previously used for joint limit) is always active.
+				public bool cfm_damping = false;
+
+				// Description: If implicit_spring_damper is set to true, ODE will use CFM, ERP to simulate stiffness and damping, allows for infinite damping, and one additional constraint row (previously used for joint limit) is always active. This replaces cfm_damping parameter in SDFormat 1.4.
+				public bool implicit_spring_damper = false;
+
+				// Description: Scale the excess for in a joint motor at joint limits. Should be between zero and one.
+				public double fudge_factor = 0;
+
+				// Description: Constraint force mixing for constrained directions
+				public double cfm = 0;
+				// Description: Error reduction parameter for constrained directions
+				public double erp = 0.20000000000000001;
+
+				// Description: Bounciness of the limits
+				public double bounce = 0;
+
+				// Description: Maximum force or torque used to reach the desired velocity.
 				public double max_force = 0;
+
+				// Description: The desired velocity of the joint. Should only be set if you want the joint to move on load.
+				public double velocity = 0;
+
+				// Description: Constraint force mixing parameter used by the joint stop
+				public double limit_cfm = 0;
+
+				// Description: Error reduction parameter used by the joint stop
+				public double limit_erp = 0.20000000000000001;
+
+				// Description: Suspension constraint force mixing parameter
+				public double suspension_cfm = 0;
+				// Description: Suspension error reduction parameter
+				public double suspension_erp = 0.20000000000000001;
 			}
+
+			// Description: Simbody specific parameters
+			public SimBody simbody = null;
+
+			// Description: ODE specific parameters
+			public ODE ode = null;
+
+			// Description: If provide feedback is set to true, physics engine will compute the constraint forces at this joint.
+			public bool provide_feedback = false;
 		}
 
 		private string parent = string.Empty;
@@ -73,10 +120,9 @@ namespace SDF
 		private Axis axis = null; // for revolute/prismatic joints
 		private Axis axis2 = null; // for revolute2(second axis)/universal joints
 
-		// <physics> : TBD
-		private Physics.ODE ode = null;
+		private Physics physics = new Physics();
 
-		// <sensor> : TBD, ???
+		private Sensors sensors = null;
 
 		public string ParentLinkName => parent;
 
@@ -85,7 +131,7 @@ namespace SDF
 		public Axis Axis => axis;
 		public Axis Axis2 => axis2;
 
-		public Physics.ODE PhysicsODE => ode;
+		public Physics.ODE PhysicsODE => physics.ode;
 
 		public Joint(XmlNode _node)
 			: base(_node)
@@ -197,11 +243,11 @@ namespace SDF
 
 					if (IsValidNode("physics/ode"))
 					{
-						ode = new Physics.ODE();
+						physics.ode = new Physics.ODE();
 
 						if (IsValidNode("physics/ode/max_force"))
 						{
-							ode.max_force = GetValue<double>("physics/ode/max_force");
+							physics.ode.max_force = GetValue<double>("physics/ode/max_force");
 						}
 					}
 					break;
