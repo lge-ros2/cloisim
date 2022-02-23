@@ -182,34 +182,37 @@ namespace SDF
 				var imu = newSensorObject.AddComponent<SensorDevices.IMU>();
 				imu.DeviceName = GetFrameName(newSensorObject);
 
-				if (element.angular_velocity_noise.x != null)
+				if (element != null)
 				{
-					imu.angular_velocity_noises["x"] = new SensorDevices.Noise(element.angular_velocity_noise.x, "imu");
-				}
+					if (element.noise_angular_velocity.x != null)
+					{
+						imu.angular_velocity_noises["x"] = new SensorDevices.Noise(element.noise_angular_velocity.x, "imu");
+					}
 
-				if (element.angular_velocity_noise.y != null)
-				{
-					imu.angular_velocity_noises["y"] = new SensorDevices.Noise(element.angular_velocity_noise.y, "imu");
-				}
+					if (element.noise_angular_velocity.y != null)
+					{
+						imu.angular_velocity_noises["y"] = new SensorDevices.Noise(element.noise_angular_velocity.y, "imu");
+					}
 
-				if (element.angular_velocity_noise.z != null)
-				{
-					imu.angular_velocity_noises["z"] = new SensorDevices.Noise(element.angular_velocity_noise.z, "imu");
-				}
+					if (element.noise_angular_velocity.z != null)
+					{
+						imu.angular_velocity_noises["z"] = new SensorDevices.Noise(element.noise_angular_velocity.z, "imu");
+					}
 
-				if (element.linear_acceleration_noise.x != null)
-				{
-					imu.linear_acceleration_noises["x"] = new SensorDevices.Noise(element.linear_acceleration_noise.x, "imu");
-				}
+					if (element.noise_linear_acceleration.x != null)
+					{
+						imu.linear_acceleration_noises["x"] = new SensorDevices.Noise(element.noise_linear_acceleration.x, "imu");
+					}
 
-				if (element.linear_acceleration_noise.y != null)
-				{
-					imu.linear_acceleration_noises["y"] = new SensorDevices.Noise(element.linear_acceleration_noise.y, "imu");
-				}
+					if (element.noise_linear_acceleration.y != null)
+					{
+						imu.linear_acceleration_noises["y"] = new SensorDevices.Noise(element.noise_linear_acceleration.y, "imu");
+					}
 
-				if (element.linear_acceleration_noise.z != null)
-				{
-					imu.linear_acceleration_noises["z"] = new SensorDevices.Noise(element.linear_acceleration_noise.z, "imu");
+					if (element.noise_linear_acceleration.z != null)
+					{
+						imu.linear_acceleration_noises["z"] = new SensorDevices.Noise(element.noise_linear_acceleration.z, "imu");
+					}
 				}
 
 				return imu;
@@ -223,24 +226,27 @@ namespace SDF
 				var gps = newSensorObject.AddComponent<SensorDevices.GPS>();
 				gps.DeviceName = GetFrameName(newSensorObject);
 
-				if (element.position_sensing.horizontal_noise != null)
+				if (element != null)
 				{
-					gps.position_sensing_noises["horizontal"] = new SensorDevices.Noise(element.position_sensing.horizontal_noise, "gps");
-				}
+					if (element.position_sensing.horizontal_noise != null)
+					{
+						gps.position_sensing_noises["horizontal"] = new SensorDevices.Noise(element.position_sensing.horizontal_noise, "gps");
+					}
 
-				if (element.position_sensing.vertical_noise != null)
-				{
-					gps.position_sensing_noises["vertical"] = new SensorDevices.Noise(element.position_sensing.vertical_noise, "gps");
-				}
+					if (element.position_sensing.vertical_noise != null)
+					{
+						gps.position_sensing_noises["vertical"] = new SensorDevices.Noise(element.position_sensing.vertical_noise, "gps");
+					}
 
-				if (element.velocity_sensing.horizontal_noise != null)
-				{
-					gps.velocity_sensing_noises["horizontal"] = new SensorDevices.Noise(element.velocity_sensing.horizontal_noise, "gps");
-				}
+					if (element.velocity_sensing.horizontal_noise != null)
+					{
+						gps.velocity_sensing_noises["horizontal"] = new SensorDevices.Noise(element.velocity_sensing.horizontal_noise, "gps");
+					}
 
-				if (element.velocity_sensing.vertical_noise != null)
-				{
-					gps.velocity_sensing_noises["vertical"] = new SensorDevices.Noise(element.velocity_sensing.vertical_noise, "gps");
+					if (element.velocity_sensing.vertical_noise != null)
+					{
+						gps.velocity_sensing_noises["vertical"] = new SensorDevices.Noise(element.velocity_sensing.vertical_noise, "gps");
+					}
 				}
 
 				return gps;

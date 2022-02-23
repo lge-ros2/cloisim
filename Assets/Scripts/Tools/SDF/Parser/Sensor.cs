@@ -123,26 +123,16 @@ namespace SDF
 					break;
 
 				case "imu":
-					if (IsValidNode("imu"))
-					{
-						sensor = ParseIMU();
-					}
+					sensor = ParseIMU();
 					break;
-
 
 				case "gps":
 				case "navsat":
-					if (IsValidNode(Type))
-					{
-						sensor = ParseNavSat(Type);
-					}
+					sensor = ParseNavSat(Type);
 					break;
 
 				case "contact":
-					if (IsValidNode("contact"))
-					{
-						sensor = ParseContact();
-					}
+					sensor = ParseContact();
 					break;
 
 				case "air_pressure":
@@ -176,7 +166,7 @@ namespace SDF
 			}
 			catch
 			{
-				Console.WriteLine("sensor was not created!");
+				Console.WriteLine("Sensor {0}::{1} was NOT created!", Name, Type);
 			}
 
 			plugins = new Plugins(root);

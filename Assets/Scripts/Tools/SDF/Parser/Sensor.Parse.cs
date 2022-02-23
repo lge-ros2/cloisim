@@ -195,27 +195,27 @@ namespace SDF
 
 			if (IsValidNode("imu/orientation_reference_frame"))
 			{
-				Console.WriteLine("Not supported imue orientation_reference_frame!!!");
+				Console.WriteLine("Not supported imu orientation_reference_frame!!!");
 			}
 
 			if (IsValidNode("imu/angular_velocity"))
 			{
 				if (IsValidNode("imu/angular_velocity/x"))
 				{
-					imu.angular_velocity_noise.x = new Noise();
-					ParseNoise(ref imu.angular_velocity_noise.x, "imu/angular_velocity/x");
+					imu.noise_angular_velocity.x = new Noise();
+					ParseNoise(ref imu.noise_angular_velocity.x, "imu/angular_velocity/x");
 				}
 
 				if (IsValidNode("imu/angular_velocity/y"))
 				{
-					imu.angular_velocity_noise.y = new Noise();
-					ParseNoise(ref imu.angular_velocity_noise.y, "imu/angular_velocity/y");
+					imu.noise_angular_velocity.y = new Noise();
+					ParseNoise(ref imu.noise_angular_velocity.y, "imu/angular_velocity/y");
 				}
 
 				if (IsValidNode("imu/angular_velocity/z"))
 				{
-					imu.angular_velocity_noise.z = new Noise();
-					ParseNoise(ref imu.angular_velocity_noise.z, "imu/angular_velocity/z");
+					imu.noise_angular_velocity.z = new Noise();
+					ParseNoise(ref imu.noise_angular_velocity.z, "imu/angular_velocity/z");
 				}
 			}
 
@@ -223,20 +223,20 @@ namespace SDF
 			{
 				if (IsValidNode("imu/linear_acceleration/x"))
 				{
-					imu.linear_acceleration_noise.x = new Noise();
-					ParseNoise(ref imu.linear_acceleration_noise.x, "imu/linear_acceleration/x");
+					imu.noise_linear_acceleration.x = new Noise();
+					ParseNoise(ref imu.noise_linear_acceleration.x, "imu/linear_acceleration/x");
 				}
 
 				if (IsValidNode("imu/linear_acceleration/y"))
 				{
-					imu.linear_acceleration_noise.y = new Noise();
-					ParseNoise(ref imu.linear_acceleration_noise.y, "imu/linear_acceleration/y");
+					imu.noise_linear_acceleration.y = new Noise();
+					ParseNoise(ref imu.noise_linear_acceleration.y, "imu/linear_acceleration/y");
 				}
 
 				if (IsValidNode("imu/linear_acceleration/z"))
 				{
-					imu.linear_acceleration_noise.z = new Noise();
-					ParseNoise(ref imu.linear_acceleration_noise.z, "imu/linear_acceleration/z");
+					imu.noise_linear_acceleration.z = new Noise();
+					ParseNoise(ref imu.noise_linear_acceleration.z, "imu/linear_acceleration/z");
 				}
 			}
 

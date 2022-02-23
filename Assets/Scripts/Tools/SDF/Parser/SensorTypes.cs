@@ -233,8 +233,8 @@ namespace SDF
 
 		public OrientationReferenceFrame orientation_reference_frame = new OrientationReferenceFrame();
 
-		public NoiseDirection angular_velocity_noise = new NoiseDirection();
-		public NoiseDirection linear_acceleration_noise = new NoiseDirection();
+		public NoiseDirection noise_angular_velocity = new NoiseDirection();
+		public NoiseDirection noise_linear_acceleration = new NoiseDirection();
 
 		// Descripotion: Some IMU sensors rely on external filters to produce orientation estimates. True to generate and output orientation data, false to disable orientation data generation.
 		public bool enable_orientation = true;
