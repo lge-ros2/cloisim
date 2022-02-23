@@ -46,7 +46,7 @@ namespace SDF
 			// Console.WriteLine("Num Of model nodes: " + nodeList.Count);
 			foreach (var nodeItem in nodeList)
 			{
-				//Console.WriteLine("     NAME: " + node.Attributes["name"].Value);
+				// Console.WriteLine("     NAME: " + node.Attributes["name"].Value);
 				items.Add((T)Activator.CreateInstance(typeof(T), nodeItem));
 			}
 		}

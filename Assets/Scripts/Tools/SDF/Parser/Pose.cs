@@ -5,14 +5,15 @@
  */
 
 using System.Text.RegularExpressions;
+using System.Globalization;
 using System;
 
 namespace SDF
 {
 	public class Vector2<T>
 	{
-		private static string regex_num_pattern = "[^.0-9e-]";
-		public static readonly Regex regex_num = new Regex(regex_num_pattern);
+		private static string regex_num_pattern = "[^.0-9Ee+-]";
+		protected static readonly Regex regex_num = new Regex(regex_num_pattern);
 
 		private T _x;
 		private T _y;
@@ -44,6 +45,7 @@ namespace SDF
 		{
 			_x = x;
 			_y = y;
+			// Console.WriteLine(typeof(T) + "::" + _x + ", " + _y);
 		}
 
 		public void Set(string x, string y)
@@ -53,7 +55,10 @@ namespace SDF
 			{
 				x = regex_num.Replace(x, string.Empty);
 				y = regex_num.Replace(y, string.Empty);
-				Set((T)Convert.ChangeType(x, code), (T)Convert.ChangeType(y, code));
+				var parsed_x = double.Parse(x, NumberStyles.Float);
+				var parsed_y = double.Parse(y, NumberStyles.Float);
+				// Console.WriteLine(typeof(T) + "::" + parsed_x + ", " + parsed_y);
+				Set((T)Convert.ChangeType(parsed_x, code), (T)Convert.ChangeType(parsed_y, code));
 			}
 		}
 
@@ -72,9 +77,8 @@ namespace SDF
 		}
 	}
 
-	public class Vector3<T>
+	public class Vector3<T> : Vector2<T>
 	{
-		private Vector2<T> _xy = new Vector2<T>();
 		private T _z;
 
 		public Vector3()
@@ -87,18 +91,6 @@ namespace SDF
 			Set(x, y, z);
 		}
 
-		public T X
-		{
-			get => _xy.X;
-			set => _xy.X = value;
-		}
-
-		public T Y
-		{
-			get => _xy.Y;
-			set => _xy.Y = value;
-		}
-
 		public T Z
 		{
 			get => _z;
@@ -107,23 +99,26 @@ namespace SDF
 
 		public void Set(T x, T y, T z)
 		{
-			_xy.Set(x, y);
+			base.Set(x, y);
 			_z = z;
+			// Console.WriteLine(typeof(T) + "::" + _z);
 		}
 
 		public void Set(string x, string y, string z)
 		{
+			base.Set(x, y);
+
 			var code = Type.GetTypeCode(typeof(T));
-			if (code != TypeCode.Empty)
+			if (!code.Equals(TypeCode.Empty))
 			{
-				x = Vector2<T>.regex_num.Replace(x, string.Empty);
-				y = Vector2<T>.regex_num.Replace(y, string.Empty);
-				z = Vector2<T>.regex_num.Replace(z, string.Empty);
-				Set((T)Convert.ChangeType(x, code), (T)Convert.ChangeType(y, code), (T)Convert.ChangeType(z, code));
+				z = regex_num.Replace(z, string.Empty);
+				var parsed_z = double.Parse(z, NumberStyles.Float);
+				// Console.WriteLine(typeof(T) + "::" + parsed_z);
+				_z = (T)Convert.ChangeType(parsed_z, code);
 			}
 		}
 
-		public void FromString(in string value)
+		new public void FromString(in string value)
 		{
 			if (string.IsNullOrEmpty(value))
 			{
