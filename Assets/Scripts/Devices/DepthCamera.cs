@@ -42,7 +42,6 @@ namespace SensorDevices
 			// Debug.Log("OnDestroy(Depth Camera)");
 			Destroy(computeShader);
 			computeShader = null;
-
 			Resources.UnloadAsset(ComputeShaderDepthBuffer);
 			Resources.UnloadUnusedAssets();
 
@@ -104,18 +103,18 @@ namespace SensorDevices
 
 				case CameraData.PixelFormat.R_FLOAT32:
 				default:
+					Debug.Log("32bits depth format may cause application freezing.");
 					readbackDstFormat = TextureFormat.RFloat;
 					break;
 			}
 
 			var cb = new CommandBuffer();
+			cb.name = "CommandBufferForDepthShading";
 			var tempTextureId = Shader.PropertyToID("_RenderImageCameraDepthTexture");
 			cb.GetTemporaryRT(tempTextureId, -1, -1);
-			cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
 			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
-			camSensor.AddCommandBuffer(CameraEvent.AfterEverything, cb);
-
 			cb.ReleaseTemporaryRT(tempTextureId);
+			camSensor.AddCommandBuffer(CameraEvent.AfterEverything, cb);
 			cb.Release();
 		}
 
