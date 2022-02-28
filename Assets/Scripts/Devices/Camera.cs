@@ -214,6 +214,7 @@ namespace SensorDevices
 			camSensor.projectionMatrix = projMatrix * invertMatrix;
 
 			_universalCamData.enabled = false;
+			_universalCamData.stopNaN = true;
 			_universalCamData.renderPostProcessing = false;
 			_universalCamData.allowXRRendering = false;
 			_universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
