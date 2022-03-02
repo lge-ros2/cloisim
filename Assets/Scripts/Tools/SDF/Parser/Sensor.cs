@@ -19,10 +19,20 @@ namespace SDF
 
 	public partial class Sensor : Entity
 	{
+		// Description: If true the sensor will always be updated according to the update rate.
 		private bool always_on = false;
+
+		// Description: The frequency at which the sensor data is generated. If left unspecified, the sensor will generate data every cycle.
 		private double update_rate = 0.0;
+
+		// Description: If true, the sensor is visualized in the GUI
 		private bool visualize = false;
+
+		// Description: Name of the topic on which data is published. This is necessary for visualization
 		private string topic = "__default__";
+
+		// Description: If true, the sensor will publish performance metrics
+		private bool enable_metrics = false;
 
 		private SensorType sensor = null;
 		private Plugins plugins = null;
@@ -77,19 +87,20 @@ namespace SDF
 					}
 					break;
 
+				case "rgbd_camera":
+				case "rgbd":
 				case "multicamera":
 					if (IsValidNode("camera"))
 					{
 						var cameras = new Cameras();
-						cameras.name = "multiple_camera";
+						cameras.name = Type;
+						cameras.type = Type;
 
 						var nodes = GetNodes("camera");
 						// Console.WriteLine("totalCamera: " + nodes.Count);
 
 						for (var index = 1; index <= nodes.Count; index++)
-						{
 							cameras.Add(ParseCamera(index));
-						}
 
 						sensor = cameras;
 					}
@@ -112,37 +123,32 @@ namespace SDF
 					break;
 
 				case "imu":
-					if (IsValidNode("imu"))
-					{
-						sensor = ParseIMU();
-					}
+					sensor = ParseIMU();
 					break;
 
 				case "gps":
-					if (IsValidNode("gps"))
-					{
-						sensor = ParseGPS();
-					}
+				case "navsat":
+					sensor = ParseNavSat(Type);
 					break;
 
 				case "contact":
-					if (IsValidNode("contact"))
-					{
-						sensor = ParseContact();
-					}
+					sensor = ParseContact();
 					break;
 
 				case "air_pressure":
 				case "altimeter":
 				case "force_torque":
 				case "logical_camera":
+				case "boundingbox_camera":
+				case "segmentation_camera":
 				case "magnetometer":
 				case "rfid":
 				case "rfidtag":
-				case "rgbd_camera":
 				case "thermal_camera":
+				case "thermal":
 				case "wireless_receiver":
 				case "wireless_transmitter":
+				case "custom":
 					Console.WriteLine("Not supported sensor type!!!!! => " + Type);
 					break;
 
@@ -160,7 +166,7 @@ namespace SDF
 			}
 			catch
 			{
-				Console.WriteLine("sensor was not created!");
+				Console.WriteLine("Sensor {0}::{1} was NOT created!", Name, Type);
 			}
 
 			plugins = new Plugins(root);

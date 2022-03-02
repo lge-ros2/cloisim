@@ -63,6 +63,9 @@ namespace SensorDevices
 					{
 						case "camera":
 						case "depth":
+						case "depth_camera":
+						case "rgbd":
+						case "rgbd_camera":
 						case "multicamera":
 						case "wideanglecamera":
 							noiseModel = new ImageGaussianNoiseModel(this.parameter);

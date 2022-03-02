@@ -393,11 +393,6 @@ namespace SensorDevices
 			DeviceHelper.SetVector3d(laserScan.WorldPose.Position, lidarPosition);
 			DeviceHelper.SetQuaternion(laserScan.WorldPose.Orientation, lidarRotation);
 
-			var srcBufferOffset = 0;
-			var dstBufferOffset = 0;
-			var copyLength = 0;
-			var doCopy = true;
-
 			const int BufferUnitSize = sizeof(double);
 			var laserSamplesH = (int)horizontal.samples;
 			var laserStartAngleH = (float)horizontal.angle.min;
@@ -418,6 +413,11 @@ namespace SensorDevices
 				var dataStartAngleH = laserCamData.StartAngleH;
 				var dataEndAngleH = laserCamData.EndAngleH;
 				var dividedDataTotalAngleH = 1f / laserCamData.TotalAngleH;
+
+				var srcBufferOffset = 0;
+				var dstBufferOffset = 0;
+				var copyLength = 0;
+				var doCopy = true;
 
 				if (srcBuffer != null)
 				{
