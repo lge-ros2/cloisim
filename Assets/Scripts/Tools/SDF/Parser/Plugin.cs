@@ -19,8 +19,6 @@ namespace SDF
 	{
 		private string filename = "__default__";
 
-		public string FileName => filename;
-
 		public Plugin(XmlNode _node)
 			: base(_node)
 		{
@@ -33,7 +31,7 @@ namespace SDF
 
 		public string LibraryName()
 		{
-			var pluginName = FileName;
+			var pluginName = filename;
 			if (pluginName.StartsWith("lib"))
 			{
 				pluginName = pluginName.Substring(3);

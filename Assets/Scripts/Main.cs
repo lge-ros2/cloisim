@@ -326,6 +326,7 @@ public class Main: MonoBehaviour
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
 			model.Name = GetClonedModelName(model.Name);
 
+			yield return new WaitForEndOfFrame();
 			yield return StartCoroutine(sdfLoader.StartImport(model));
 
 			var targetObject = worldRoot.transform.Find(model.Name);

@@ -63,6 +63,7 @@ namespace SDF
 				shape = new Sphere();
 				(shape as Sphere).radius = GetValue<double>("sphere/radius");
 			}
+
 			else if (IsValidNode("cylinder"))
 			{
 				Type = "cylinder";
@@ -80,6 +81,7 @@ namespace SDF
 				var size = GetValue<string>("plane/size");
 				(shape as Plane).size.FromString(size);
 			}
+#region SDF 1.7 feature
 			else if (IsValidNode("capsule"))
 			{
 				Type = "capsule";
@@ -87,6 +89,7 @@ namespace SDF
 				(shape as Capsule).radius = GetValue<double>("capsule/radius");
 				(shape as Capsule).length = GetValue<double>("capsule/length");
 			}
+#endregion
 			else if (IsValidNode("ellipsoid"))
 			{
 				Type = "ellipsoid";

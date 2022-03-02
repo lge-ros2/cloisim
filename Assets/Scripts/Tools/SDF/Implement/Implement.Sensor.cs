@@ -91,7 +91,7 @@ namespace SDF
 
 				if (element.noise != null)
 				{
-					camera.noise = new SensorDevices.Noise(element.noise, "camera");
+					camera.noise = new SensorDevices.Noise(element.noise, element.type);
 				}
 
 				return camera;
@@ -105,34 +105,35 @@ namespace SDF
 				var depthCamera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
 				depthCamera.DeviceName = GetFrameName(newSensorObject);
 
-				if (string.IsNullOrEmpty(element.image_format))
+				switch (element.image.format)
 				{
-					element.image_format = "R_FLOAT32";
-				}
-				else
-				{
-					switch (element.image_format)
-					{
-						case "L16":
-						case "R_FLOAT16":
-						case "R_FLOAT32":
-						case "L_INT16":
-						case "L_UINT16":
-							// Debug.Log("Supporting data type for Depth camera");
-							break;
+					case "L16":
+					case "R_FLOAT16":
+					case "R_FLOAT32":
+					case "L_INT16":
+					case "L_UINT16":
+						// Debug.Log("Supporting data type for Depth camera");
+						break;
 
-						default:
-							Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image_format);
-							element.image_format = "R_FLOAT32";
-							break;
-					}
+					default:
+						if (element.image.format.Equals(string.Empty))
+						{
+							Debug.LogWarning(element.name + " 'R_FLOAT16' will be set for Depth camera's image format");
+						}
+						else
+						{
+							Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image.format);
+						}
+
+						element.image.format = "R_FLOAT16";
+						break;
 				}
 
 				depthCamera.SetCamParameter(element);
 
 				if (element.noise != null)
 				{
-					depthCamera.noise = new SensorDevices.Noise(element.noise, "depthcamera");
+					depthCamera.noise = new SensorDevices.Noise(element.noise, element.type);
 				}
 
 				return depthCamera;
@@ -148,22 +149,11 @@ namespace SDF
 
 				foreach (var camParam in element.cameras)
 				{
-					var newCamObject = new GameObject();
-					newCamObject.name = camParam.name;
-
-					AttachSensor(newCamObject, newSensorObject, camParam.Pose);
-
-					var newCam = newCamObject.AddComponent<SensorDevices.Camera>();
+					var newCam = AddCamera(camParam, newSensorObject);
 					newCam.Mode = Device.ModeType.NONE;
-					newCam.DeviceName = "MultiCamera::" + newCamObject.name;
-					newCam.SetCamParameter(camParam);
+					newCam.DeviceName = element.name + "::" + newCam.DeviceName;
 
-					if (camParam.noise != null)
-					{
-						newCam.noise = new SensorDevices.Noise(camParam.noise, "multicamera");
-					}
-
-					multicamera.AddCamera(newCam);
+					multicamera.AddCamera((SensorDevices.Camera)newCam);
 				}
 
 				return multicamera;
@@ -192,40 +182,43 @@ namespace SDF
 				var imu = newSensorObject.AddComponent<SensorDevices.IMU>();
 				imu.DeviceName = GetFrameName(newSensorObject);
 
-				if (element.angular_velocity_x_noise != null)
+				if (element != null)
 				{
-					imu.angular_velocity_noises["x"] = new SensorDevices.Noise(element.angular_velocity_x_noise, "imu");
-				}
+					if (element.noise_angular_velocity.x != null)
+					{
+						imu.angular_velocity_noises["x"] = new SensorDevices.Noise(element.noise_angular_velocity.x, "imu");
+					}
 
-				if (element.angular_velocity_y_noise != null)
-				{
-					imu.angular_velocity_noises["y"] = new SensorDevices.Noise(element.angular_velocity_y_noise, "imu");
-				}
+					if (element.noise_angular_velocity.y != null)
+					{
+						imu.angular_velocity_noises["y"] = new SensorDevices.Noise(element.noise_angular_velocity.y, "imu");
+					}
 
-				if (element.angular_velocity_z_noise != null)
-				{
-					imu.angular_velocity_noises["z"] = new SensorDevices.Noise(element.angular_velocity_z_noise, "imu");
-				}
+					if (element.noise_angular_velocity.z != null)
+					{
+						imu.angular_velocity_noises["z"] = new SensorDevices.Noise(element.noise_angular_velocity.z, "imu");
+					}
 
-				if (element.linear_acceleration_x_noise != null)
-				{
-					imu.linear_acceleration_noises["x"] = new SensorDevices.Noise(element.linear_acceleration_x_noise, "imu");
-				}
+					if (element.noise_linear_acceleration.x != null)
+					{
+						imu.linear_acceleration_noises["x"] = new SensorDevices.Noise(element.noise_linear_acceleration.x, "imu");
+					}
 
-				if (element.linear_acceleration_y_noise != null)
-				{
-					imu.linear_acceleration_noises["y"] = new SensorDevices.Noise(element.linear_acceleration_y_noise, "imu");
-				}
+					if (element.noise_linear_acceleration.y != null)
+					{
+						imu.linear_acceleration_noises["y"] = new SensorDevices.Noise(element.noise_linear_acceleration.y, "imu");
+					}
 
-				if (element.linear_acceleration_z_noise != null)
-				{
-					imu.linear_acceleration_noises["z"] = new SensorDevices.Noise(element.linear_acceleration_z_noise, "imu");
+					if (element.noise_linear_acceleration.z != null)
+					{
+						imu.linear_acceleration_noises["z"] = new SensorDevices.Noise(element.noise_linear_acceleration.z, "imu");
+					}
 				}
 
 				return imu;
 			}
 
-			public static Device AddGps(in SDF.GPS element, in GameObject targetObject)
+			public static Device AddNavSat(in SDF.NavSat element, in GameObject targetObject)
 			{
 				var newSensorObject = new GameObject();
 				AttachSensor(newSensorObject, targetObject);
@@ -233,24 +226,27 @@ namespace SDF
 				var gps = newSensorObject.AddComponent<SensorDevices.GPS>();
 				gps.DeviceName = GetFrameName(newSensorObject);
 
-				if (element.position_sensing.horizontal_noise != null)
+				if (element != null)
 				{
-					gps.position_sensing_noises["horizontal"] = new SensorDevices.Noise(element.position_sensing.horizontal_noise, "gps");
-				}
+					if (element.position_sensing.horizontal_noise != null)
+					{
+						gps.position_sensing_noises["horizontal"] = new SensorDevices.Noise(element.position_sensing.horizontal_noise, "gps");
+					}
 
-				if (element.position_sensing.vertical_noise != null)
-				{
-					gps.position_sensing_noises["vertical"] = new SensorDevices.Noise(element.position_sensing.vertical_noise, "gps");
-				}
+					if (element.position_sensing.vertical_noise != null)
+					{
+						gps.position_sensing_noises["vertical"] = new SensorDevices.Noise(element.position_sensing.vertical_noise, "gps");
+					}
 
-				if (element.velocity_sensing.horizontal_noise != null)
-				{
-					gps.velocity_sensing_noises["horizontal"] = new SensorDevices.Noise(element.velocity_sensing.horizontal_noise, "gps");
-				}
+					if (element.velocity_sensing.horizontal_noise != null)
+					{
+						gps.velocity_sensing_noises["horizontal"] = new SensorDevices.Noise(element.velocity_sensing.horizontal_noise, "gps");
+					}
 
-				if (element.velocity_sensing.vertical_noise != null)
-				{
-					gps.velocity_sensing_noises["vertical"] = new SensorDevices.Noise(element.velocity_sensing.vertical_noise, "gps");
+					if (element.velocity_sensing.vertical_noise != null)
+					{
+						gps.velocity_sensing_noises["vertical"] = new SensorDevices.Noise(element.velocity_sensing.vertical_noise, "gps");
+					}
 				}
 
 				return gps;

@@ -104,7 +104,7 @@ namespace SensorDevices
 			// Debug.Log("This is not a Depth Camera!");
 			targetRTname = "CameraColorTexture";
 
-			var pixelFormat = CameraData.GetPixelFormat(camParameter.image_format);
+			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
 			switch (pixelFormat)
 			{
 				case CameraData.PixelFormat.L_INT8:
@@ -135,17 +135,17 @@ namespace SensorDevices
 		protected override void SetupMessages()
 		{
 			var image = imageStamped.Image;
-			var pixelFormat = CameraData.GetPixelFormat(camParameter.image_format);
-			image.Width = (uint)camParameter.image_width;
-			image.Height = (uint)camParameter.image_height;
+			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
+			image.Width = (uint)camParameter.image.width;
+			image.Height = (uint)camParameter.image.height;
 			image.PixelFormat = (uint)pixelFormat;
 			image.Step = image.Width * (uint)CameraData.GetImageDepth(pixelFormat);
 			image.Data = new byte[image.Height * image.Step];
 
 			sensorInfo.HorizontalFov = camParameter.horizontal_fov;
-			sensorInfo.ImageSize.X = camParameter.image_width;
-			sensorInfo.ImageSize.Y = camParameter.image_height;
-			sensorInfo.ImageFormat = camParameter.image_format;
+			sensorInfo.ImageSize.X = camParameter.image.width;
+			sensorInfo.ImageSize.Y = camParameter.image.height;
+			sensorInfo.ImageFormat = camParameter.image.format;
 			sensorInfo.NearClip = camParameter.clip.near;
 			sensorInfo.FarClip = camParameter.clip.far;
 			sensorInfo.SaveEnabled = camParameter.save_enabled;
@@ -182,8 +182,8 @@ namespace SensorDevices
 
 			RTHandles.SetHardwareDynamicResolutionState(true);
 			_rtHandle = RTHandles.Alloc(
-				width: camParameter.image_width,
-				height: camParameter.image_height,
+				width: camParameter.image.width,
+				height: camParameter.image.height,
 				slices: 1,
 				depthBufferBits: DepthBits.None,
 				colorFormat: targetColorFormat,
@@ -214,6 +214,7 @@ namespace SensorDevices
 			camSensor.projectionMatrix = projMatrix * invertMatrix;
 
 			_universalCamData.enabled = false;
+			_universalCamData.stopNaN = true;
 			_universalCamData.renderPostProcessing = false;
 			_universalCamData.allowXRRendering = false;
 			_universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
@@ -227,7 +228,7 @@ namespace SensorDevices
 
 			// camSensor.hideFlags |= HideFlags.NotEditable;
 
-			camImageData = new CameraData.ImageData(camParameter.image_width, camParameter.image_height, camParameter.image_format);
+			camImageData = new CameraData.ImageData(camParameter.image.width, camParameter.image.height, camParameter.image.format);
 		}
 
 		protected new void OnDestroy()

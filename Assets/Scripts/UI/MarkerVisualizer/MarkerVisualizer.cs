@@ -176,7 +176,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 		if (markerRequest.command.Equals(VisualMarkerRequest.MarkerCommands.List) && markerRequest.markers.Count > 0)
 		{
 			request = null;
-			response.command = "";
+			response.command = string.Empty;
 			response.result = SimulationService.FAIL;
 			response.lines = null;
 			response.texts = null;

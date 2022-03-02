@@ -12,6 +12,36 @@ namespace SDF
 {
 	public class World : Entity
 	{
+		// Description: Global audio properties.
+		public class Audio
+		{
+			// Description: Device to use for audio playback. A value of "default" will use the system's default audio device. Otherwise, specify a an audio device file"
+			public string device = string.Empty;
+		}
+
+		// Description: The wind tag specifies the type and properties of the wind.
+		public class Wind
+		{
+			// Description: Linear velocity of the wind.
+			public Vector3<double> linear_velocity = new Vector3<double>();
+		}
+
+		// Description: The atmosphere tag specifies the type and properties of the atmosphere model.
+		public class Atmosphere
+		{
+			// Description: The type of the atmosphere engine. Current options are adiabatic. Defaults to adiabatic if left unspecified.
+			public string type = "adiabatic";
+
+			// Description: Temperature at sea level in kelvins.
+			public double temperature = 288.14999999999998;
+
+			// Description: Pressure at sea level in pascals.
+			public double pressure = 101325;
+
+			// Description: Temperature gradient with respect to increasing altitude at sea level in units of K/m.
+			public double temperature_gradient = -0.0064999999999999997;
+		}
+
 		public class Gui
 		{
 			public class Camera : Entity
@@ -69,6 +99,23 @@ namespace SDF
 			private Plugins plugins;
 		}
 
+		public class Road
+		{
+			// Description: Name of the road
+			public string name = "__default__";
+
+ 			// Description: Width of the road
+			public double width = 1;
+
+			// Required: +
+			// Description: A series of points that define the path of the road.
+			// Default: 0 0 0
+			public Vector3<double> point = null;
+
+			// Description: The material of the visual element.
+			public Material material = null;
+		}
+
 		public class SphericalCoordinates
 		{
 			// Description: Name of planetary surface model, used to determine the surface altitude at a given latitude and longitude. The default is an ellipsoid model of the earth based on the WGS-84 standard. It is used in Gazebo's GPS sensor implementation.
@@ -90,19 +137,61 @@ namespace SDF
 			public double heading_deg = 0;
 		}
 
-		// <audio> : TBD
-		// <wind> : TBD
+		// Required: *
+		// Description: The population element defines how and where a set of models will be automatically populated in Gazebo.
+		public class Population
+		{
+			// Description: Specifies the type of object distribution and its optional parameters.
+			public class Distribution
+			{
+				// Description: Define how the objects will be placed in the specified region. - random: Models placed at random. - uniform: Models approximately placed in a 2D grid pattern with control over the number of objects. - grid: Models evenly placed in a 2D grid pattern. The number of objects is not explicitly specified, it is based on the number of rows and columns of the grid. - linear-x: Models evently placed in a row along the global x-axis. - linear-y: Models evently placed in a row along the global y-axis. - linear-z: Models evently placed in a row along the global z-axis.
+				public string type = "random";
+
+				// Description: Number of rows in the grid.
+				public int rows = 1;
+
+				// Description: Number of columns in the grid.
+				public int cols = 1;
+
+				// Description: Distance between elements of the grid.
+				public Vector3<double> step = new Vector3<double>(0.5, 0.5, 0);
+			}
+
+			// Description: A unique name for the population. This name must not match another population in the world.
+			public string name = "__default__";
+
+			// Description: The number of models to place.
+			public int model_count = 1;
+
+			public Distribution distribution = new Distribution();
+
+			// Description: Box shape
+			public Box box;
+
+			// Description: Cylinder shape
+			public Cylinder cylinder;
+
+			public Pose<double> pose = null;
+
+			// Description: The model element defines a complete robot or any other physical object.
+			private Models models = null;
+		}
+
+		public Audio audio = null;
+		public Wind wind = null;
 
 		public Vector3<double> gravity = new Vector3<double>();
 
-		// <magnetic_field> : TBD
-		// <atmosphere> : TBD
+		// Description: The magnetic vector in Tesla, expressed in a coordinate frame defined by the spherical_coordinates tag.
+		public Vector3<double> magnetic_field = new Vector3<double>(6e-06, 2.3e-05, -4.2e-05);
+
+		public Atmosphere atmosphere = null;
 
 		public Gui gui = null;
 
 		private Physics physics = null;
 
-		// <scene> : TBD
+		private Scene scene = null;
 
 		private Lights lights = null;
 
@@ -111,15 +200,15 @@ namespace SDF
 		private Models models = null;
 		private Actors actors = null;
 
-		// <road> : TBD
+		public Road road = null;
 
 		public SphericalCoordinates spherical_coordinates = null;
 
-		// <state> : TBD
-		// <population> : TBD
+		public List<State> states = null;
+
+		public List<Population> population = null;
 
 		private Plugins plugins;
-
 
 		public World(XmlNode _node)
 			: base(_node)
@@ -180,7 +269,7 @@ namespace SDF
 
 			if (IsValidNode("scene"))
 			{
-				// Console.WriteLine("<scene> tag is NOT supported yet.");
+				scene = new Scene(GetNode("scene"));
 			}
 
 			if (IsValidNode("frame"))

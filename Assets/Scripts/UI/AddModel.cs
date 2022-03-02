@@ -67,6 +67,15 @@ public class AddModel : MonoBehaviour
 			}
 		}
 
+		var totalBound = new Bounds();
+		foreach (var renderer in targetObject.GetComponentsInChildren<Renderer>())
+		{
+			totalBound.Encapsulate(renderer.bounds);
+		}
+
+		// Debug.Log(totalBound.extents + " " + totalBound.center + " "  + totalBound.size);
+		articulationBodyDeployOffset.y = totalBound.extents.y;
+
 		modelHelper = targetObject.GetComponent<SDF.Helper.Model>();
 	}
 
