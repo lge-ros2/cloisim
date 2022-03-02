@@ -88,8 +88,8 @@ public class Clock : Device
 
 	void FixedUpdate()
 	{
-		currentSimTime = Time.timeAsDouble - restartedSimTime;
 		currentRealTime = Time.realtimeSinceStartupAsDouble - restartedRealTime;
+		currentSimTime = Time.timeAsDouble - restartedSimTime;
 	}
 
 	void LateUpdate()
