@@ -2,7 +2,7 @@
   "dependencies": {
     "com.unity.ai.navigation.components": "https://github.com/Unity-Technologies/NavMeshComponents.git#package",
     "com.unity.ide.vscode": "1.2.5",
-    "com.unity.mathematics": "1.2.5",
+    "com.unity.mathematics": "1.2.6",
     "com.unity.render-pipelines.universal": "10.8.1",
     "com.unity.searcher": "4.3.2",
     "com.unity.textmeshpro": "3.0.6",
