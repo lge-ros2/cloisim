@@ -30,18 +30,25 @@ namespace SDF
 
 		public List<string> worldDefaultPaths = new List<string>();
 
+		private DebugLogWriter logger;
+		private DebugLogWriter errLogger;
+
 		public Root()
 		{
+			logger = new DebugLogWriter();
+			errLogger = new DebugLogWriter(true);
+			Console.SetOut(logger);
+			Console.SetError(errLogger);
 		}
 
 		public bool DoParse(out World world, in string worldFileName)
 		{
-			// Console.WriteLine("Loading World File from SDF!!!!!");
+			// Console.Write("Loading World File from SDF!!!!!");
 			var worldFound = false;
 			world = null;
 			if (worldFileName.Trim().Length > 0)
 			{
-				// Console.WriteLine("World file, PATH: " + worldFileName);
+				// Console.Write("World file, PATH: " + worldFileName);
 				foreach (var worldPath in worldDefaultPaths)
 				{
 					var fullFilePath = worldPath + "/" + worldFileName;
@@ -57,20 +64,21 @@ namespace SDF
 							ConvertPathToAbsolutePath("uri");
 							ConvertPathToAbsolutePath("filename");
 
-							// Console.WriteLine("Load World");
+							// Console.Write("Load World");
 							var worldNode = doc.SelectSingleNode("/sdf/world");
 							world = new World(worldNode);
 							worldFound = true;
 
 							var infoMessage = "World(" + worldFileName + ") is loaded.";
-							(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
-							Console.Out.WriteLine(infoMessage);
+
+							logger.Write(infoMessage);
+							// logger.SetShowOnDisplayOnce();
 						}
 						catch (XmlException ex)
 						{
 							var errorMessage = "Failed to Load World(" + fullFilePath + ") - " + ex.Message;
-							(Console.Error as DebugLogWriter).SetShowOnDisplayOnce();
-							Console.Error.WriteLine(errorMessage);
+							errLogger.SetShowOnDisplayOnce();
+							errLogger.Write(errorMessage);
 						}
 						break;
 					}
@@ -79,7 +87,7 @@ namespace SDF
 
 			if (!worldFound)
 			{
-				Console.Error.WriteLine("World file not exist: " + worldFileName);
+				errLogger.Write("World file not exist: " + worldFileName);
 			}
 
 			return worldFound;
@@ -87,7 +95,7 @@ namespace SDF
 
 		public bool DoParse(out Model model, in string modelFullPath, in string modelFileName)
 		{
-			// Console.WriteLine("Loading World File from SDF!!!!!");
+			// Console.Write("Loading World File from SDF!!!!!");
 			var modelFound = false;
 			model = null;
 			var modelLocation = Path.Combine(modelFullPath, modelFileName);
@@ -101,20 +109,20 @@ namespace SDF
 				ConvertPathToAbsolutePath("uri");
 				ConvertPathToAbsolutePath("filename");
 
-				// Console.WriteLine("Load World");
+				// Console.Write("Load World");
 				var modelNode = doc.SelectSingleNode("/sdf/model");
 				model = new Model(modelNode);
 				modelFound = true;
 
 				var infoMessage =  model.Name + " Model(" + modelFileName + ") is loaded.";
-				(Console.Out as DebugLogWriter).SetShowOnDisplayOnce();
-				Console.Out.WriteLine(infoMessage);
+				// logger.SetShowOnDisplayOnce();
+				logger.Write(infoMessage);
 			}
 			catch (XmlException ex)
 			{
 				var errorMessage = "Failed to Load Model file(" + modelLocation + ") file - " + ex.Message;
-				(Console.Error as DebugLogWriter).SetShowOnDisplayOnce();
-				Console.Error.WriteLine(errorMessage);
+				errLogger.SetShowOnDisplayOnce();
+				errLogger.Write(errorMessage);
 			}
 
 			return modelFound;
@@ -127,14 +135,14 @@ namespace SDF
 			StringWriter sw = new StringWriter();
 			XmlTextWriter xw = new XmlTextWriter(sw);
 			doc.WriteTo(xw);
-			Console.WriteLine(sw.ToString());
+			Console.Write(sw.ToString());
 		}
 #endif
 		public void UpdateResourceModelTable()
 		{
 			if (resourceModelTable == null)
 			{
-				Console.WriteLine("ERROR: Resource model table is not initialized!!!!");
+				Console.Write("ERROR: Resource model table is not initialized!!!!");
 				return;
 			}
 
@@ -148,12 +156,12 @@ namespace SDF
 			{
 				if (!Directory.Exists(modelPath))
 				{
-					Console.WriteLine("Directory does not exists: " + modelPath);
+					Console.Write("Directory does not exists: " + modelPath);
 					continue;
 				}
 
 				var rootDirectory = new DirectoryInfo(modelPath);
-				//Console.WriteLine(">>> Model Default Path: " + modelPath);
+				//Console.Write(">>> Model Default Path: " + modelPath);
 
 				// Loop models
 				foreach (var subDirectory in rootDirectory.GetDirectories())
@@ -163,12 +171,12 @@ namespace SDF
 						continue;
 					}
 
-					//Console.WriteLine(subDirectory.Name + " => " + subDirectory.FullName);
+					//Console.Write(subDirectory.Name + " => " + subDirectory.FullName);
 					var modelConfig = subDirectory.FullName + "/model.config";
 
 					if (!File.Exists(modelConfig))
 					{
-						Console.WriteLine("File does not exists: " + modelConfig);
+						Console.Write("File does not exists: " + modelConfig);
 						continue;
 					}
 
@@ -178,7 +186,7 @@ namespace SDF
 					}
 					catch (XmlException e)
 					{
-						Console.WriteLine("Failed to Load model file(" + modelConfig  + ") - " + e.Message);
+						Console.Write("Failed to Load model file(" + modelConfig  + ") - " + e.Message);
 						continue;
 					}
 
@@ -192,20 +200,20 @@ namespace SDF
 					var sdfFileName = string.Empty;
 					foreach (var version in sdfVersions)
 					{
-						//Console.WriteLine(version);
+						//Console.Write(version);
 						var sdfNode = modelNode.SelectSingleNode("sdf[@version=" + version + " or not(@version)]");
 						if (sdfNode != null)
 						{
 							sdfFileName = sdfNode.InnerText;
 							sdfVersion = version;
-							//Console.WriteLine(version + "," + sdfFileName);
+							//Console.Write(version + "," + sdfFileName);
 							break;
 						}
 					}
 
 					if (string.IsNullOrEmpty(sdfFileName))
 					{
-						Console.WriteLine(modelName + ": SDF FileName is empty!!");
+						Console.Write(modelName + ": SDF FileName is empty!!");
 						continue;
 					}
 
@@ -213,8 +221,8 @@ namespace SDF
 					var modelValue = new Tuple<string, string>(subDirectory.FullName, sdfFileName);
 					try
 					{
-						// Console.WriteLine(modelName + ":" + subDirectory.FullName + ":" + sdfFileName);
-						// Console.WriteLine(modelName + ", " + modelValue);
+						// Console.Write(modelName + ":" + subDirectory.FullName + ":" + sdfFileName);
+						// Console.Write(modelName + ", " + modelValue);
 						if (resourceModelTable.ContainsKey(modelName))
 						{
 							failedModelTableList.AppendLine(string.Empty);
@@ -228,7 +236,7 @@ namespace SDF
 					}
 					catch (NullReferenceException e)
 					{
-						Console.WriteLine(e.Message);
+						Console.Write(e.Message);
 					}
 				}
 			}
@@ -236,17 +244,17 @@ namespace SDF
 			if (numberOfFailedModelTable > 0)
 			{
 				failedModelTableList.Insert(0, "All failed models(" + numberOfFailedModelTable + ") are already registered.");
-				Console.Error.WriteLine(failedModelTableList);
+				errLogger.Write(failedModelTableList);
 			}
 
-			Console.WriteLine("Total Models: " + resourceModelTable.Count);
+			Console.Write("Total Models: " + resourceModelTable.Count);
 		}
 
 		// Converting media/file uri
 		private void ConvertPathToAbsolutePath(in string target_element)
 		{
 			var nodeList = doc.SelectNodes("//" + target_element);
-			// Console.WriteLine("Num Of uri nodes: " + nodeList.Count);
+			// Console.Write("Num Of uri nodes: " + nodeList.Count);
 			foreach (XmlNode node in nodeList)
 			{
 				var uri = node.InnerText;
@@ -281,7 +289,7 @@ namespace SDF
 				}
 				else
 				{
-					Console.WriteLine("Cannot convert: " + uri);
+					Console.Write("Cannot convert: " + uri);
 				}
 			}
 		}
@@ -295,7 +303,7 @@ namespace SDF
 				nodes = doc.SelectNodes("//include");
 
 				// if (nodes.Count > 0)
-				// 	Console.WriteLine("Num Of Included Model nodes: " + nodes.Count);
+				// 	Console.Write("Num Of Included Model nodes: " + nodes.Count);
 
 				foreach (XmlNode node in nodes)
 				{
@@ -303,7 +311,7 @@ namespace SDF
 
 					if (modelNode != null)
 					{
-						// Console.WriteLine("Node - " + modelNode);
+						// Console.Write("Node - " + modelNode);
 						var importNode = doc.ImportNode(modelNode, true);
 						node.ParentNode.ReplaceChild(importNode, node);
 					}
@@ -320,7 +328,7 @@ namespace SDF
 			var uri_node = included_node.SelectSingleNode("uri");
 			if (uri_node == null)
 			{
-				Console.WriteLine("uri is empty.");
+				Console.Write("uri is empty.");
 				return null;
 			}
 
@@ -351,7 +359,7 @@ namespace SDF
 			}
 			else
 			{
-				Console.WriteLine("Not exists in database: " + uri);
+				Console.Write("Not exists in database: " + uri);
 				return null;
 			}
 
@@ -363,8 +371,8 @@ namespace SDF
 			catch (XmlException e)
 			{
 				var errorMessage = "Failed to Load included model(" + modelName + ") file - " + e.Message;
-				(Console.Error as DebugLogWriter).SetShowOnDisplayOnce();
-				Console.Error.WriteLine(errorMessage);
+				errLogger.SetShowOnDisplayOnce();
+				errLogger.Write(errorMessage);
 				return null;
 			}
 

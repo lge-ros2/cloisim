@@ -111,11 +111,11 @@ public class BridgeManager : IDisposable
 
 				if (!isRemoved)
 				{
-					Console.Error.WriteLine("Failed to remove HashKey({0})!!!!", hashKey);
+					Console.Error.Write("Failed to remove HashKey({0})!!!!", hashKey);
 				}
 				else
 				{
-					Console.WriteLine("HashKey({0}) Removed.", hashKey);
+					Console.Write("HashKey({0}) Removed.", hashKey);
 				}
 			}
 		}
@@ -194,7 +194,7 @@ public class BridgeManager : IDisposable
 
 		if (string.IsNullOrEmpty(hashKey))
 		{
-			Console.Error.WriteLine("Impossible empty hashKey");
+			Console.Error.Write("Impossible empty hashKey");
 			port = 0;
 			return false;
 		}
@@ -256,7 +256,7 @@ public class BridgeManager : IDisposable
 		if (newPort > 0)
 		{
 			var errorMessage = string.Format("HashKey({0}) is already occupied.", hashKey);
-			Console.Error.WriteLine(errorMessage);
+			Console.Error.Write(errorMessage);
 			Main.Display?.SetErrorMessage(errorMessage);
 			return 0;
 		}
@@ -300,7 +300,7 @@ public class BridgeManager : IDisposable
 
 	public void PrintLog()
 	{
-		Console.WriteLine(sbLogs);
+		Console.Write(sbLogs);
 	}
 
 	public void ClearLog()

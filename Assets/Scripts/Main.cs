@@ -345,9 +345,6 @@ public class Main: MonoBehaviour
 
 	private IEnumerator LoadWorld()
 	{
-		Console.SetOut(new DebugLogWriter());
-		Console.SetError(new DebugLogWriter(true));
-
 		// Debug.Log("Hello CLOiSim World!!!!!");
 		Debug.Log("Target World: " + worldFileName);
 
