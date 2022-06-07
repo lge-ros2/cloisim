@@ -26,13 +26,19 @@ public class LaserPlugin : CLOiSimPlugin
 		{
 			var useIntensity = GetPluginParameters().GetValue<bool>("intensity");
 
-			var filterAngleLower = GetPluginParameters().GetValue<double>("filter/angle/horizontal/lower", double.NegativeInfinity);
-			var filterAngleUpper = GetPluginParameters().GetValue<double>("filter/angle/horizontal/upper", double.PositiveInfinity);
-			lidar.SetupLaserAngleFilter(filterAngleLower, filterAngleUpper, useIntensity);
+			if (GetPluginParameters().IsValidNode("filter/angle/horizontal"))
+			{
+				var filterAngleLower = GetPluginParameters().GetValue<double>("filter/angle/horizontal/lower", double.NegativeInfinity);
+				var filterAngleUpper = GetPluginParameters().GetValue<double>("filter/angle/horizontal/upper", double.PositiveInfinity);
+				lidar.SetupLaserAngleFilter(filterAngleLower, filterAngleUpper, useIntensity);
+			}
 
-			var filterRangeMin = GetPluginParameters().GetValue<double>("filter/range/min", double.NegativeInfinity);
-			var filterRangeMax = GetPluginParameters().GetValue<double>("filter/range/max", double.PositiveInfinity);
-			lidar.SetupLaserRangeFilter(filterRangeMin, filterRangeMax, useIntensity);
+			if (GetPluginParameters().IsValidNode("filter/range"))
+			{
+				var filterRangeMin = GetPluginParameters().GetValue<double>("filter/range/min", double.NegativeInfinity);
+				var filterRangeMax = GetPluginParameters().GetValue<double>("filter/range/max", double.PositiveInfinity);
+				lidar.SetupLaserRangeFilter(filterRangeMin, filterRangeMax, useIntensity);
+			}
 		}
 
 		if (RegisterServiceDevice(out var portService, "Info"))
