@@ -156,7 +156,7 @@ namespace SensorDevices
 			Parallel.ForEach(laserScan.Ranges, item => item = double.NaN);
 			Parallel.ForEach(laserScan.Intensities, item => item = double.NaN);
 
- 			laserAngleResolution = new LaserData.AngleResolution((float)horizontal.angleStep, (float)vertical.angleStep);
+			laserAngleResolution = new LaserData.AngleResolution((float)horizontal.angleStep, (float)vertical.angleStep);
 			// Debug.Log("H resolution: " + laserHAngleResolution + ", V resolution: " + laserVAngleResolution);
 		}
 
@@ -314,7 +314,7 @@ namespace SensorDevices
 					{
 						laserCam.Render();
 						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32, OnCompleteAsyncReadback);
-						lock(_asyncWorkList)
+						lock (_asyncWorkList)
 						{
 							_asyncWorkList.Add(new AsyncLaserWork(dataIndex, readbackRequest));
 						}
@@ -454,7 +454,7 @@ namespace SensorDevices
 							copyLength = srcBufferHorizontalLength;
 
 							var sampleRatio = (dataStartAngleH - laserStartAngleH) * dividedLaserTotalAngleH;
-							dstBufferOffset = (laserSamplesH * (sampleIndexV + 1)) - (Mathf.CeilToInt(laserSamplesH * sampleRatio) + copyLength);
+							dstBufferOffset = (laserSamplesH * (sampleIndexV + 1)) - (Mathf.FloorToInt(laserSamplesH * sampleRatio) + copyLength);
 
 							if (copyLength < 0 || dstBufferOffset < 0)
 							{
@@ -488,7 +488,8 @@ namespace SensorDevices
 
 						if (doCopy)
 						{
-							try {
+							try
+							{
 
 								lock (laserScan.Ranges.SyncRoot)
 								{
@@ -497,7 +498,7 @@ namespace SensorDevices
 							}
 							catch (Exception ex)
 							{
-								Debug.LogWarning("Error occured with Buffer.BlockCopy : " + ex.Message + ", Type: " + dataCopyType + " Offset: src(" + srcBufferOffset + ") dst(" + dstBufferOffset + "), Copysize: " + copyLength + ", Len: src("+ srcBuffer.Length + ") dst(" + laserScan.Ranges.Length + ")");
+								Debug.LogWarning("Error occured with Buffer.BlockCopy : " + ex.Message + ", Type: " + dataCopyType + " Offset: src(" + srcBufferOffset + ") dst(" + dstBufferOffset + "), Copysize: " + copyLength + ", Len: src(" + srcBuffer.Length + ") dst(" + laserScan.Ranges.Length + ")");
 							}
 						}
 					}
@@ -548,7 +549,7 @@ namespace SensorDevices
 
 						if (rayData != float.NaN && rayData <= rangeMax)
 						{
-							rayColor.g = rayAngleV/(float)angleRangeV;
+							rayColor.g = rayAngleV / (float)angleRangeV;
 
 							var rayRotation = Quaternion.AngleAxis((float)rayAngleH, transform.up) * Quaternion.AngleAxis((float)rayAngleV, transform.forward) * lidarLink.forward;
 							var rayDirection = rayRotation * (rayData);
