@@ -85,7 +85,7 @@ public class RandomNumberGenerator
 		{
 			var msg = string.Format("Shape must be positive. Received {0}.", standardDeviation);
 			// throw new ArgumentOutOfRangeException(msg);
-			Console.WriteLine(msg);
+			Console.Write(msg);
 		}
 		return mean + standardDeviation * GetNormal();
 	}
