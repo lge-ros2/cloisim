@@ -699,6 +699,11 @@
             The runtime version for the generated assembly
             </summary>
         </member>
+        <member name="P:ProtoBuf.Meta.RuntimeTypeModel.CompilerOptions.AssemblyVersion">
+            <summary>
+            The Version baked into the generated assembly.
+            </summary>
+        </member>
         <member name="P:ProtoBuf.Meta.RuntimeTypeModel.CompilerOptions.Accessibility">
             <summary>
             The acecssibility of the generated serializer
@@ -803,6 +808,14 @@
             <param name="dataFormat">The <see cref="T:ProtoBuf.DataFormat"/> to use</param>
             <param name="compatibilityLevel">The <see cref="T:ProtoBuf.CompatibilityLevel"/> to assume for this type</param>
             <returns>The original model (for chaining).</returns>
+        </member>
+        <member name="M:ProtoBuf.Meta.RuntimeTypeModel.AddSerializer(System.Type,System.Type)">
+            <summary>
+            Add an externally defined serialiser
+            </summary>
+            <param name="collectionType">type of the collectionn e.g. F# Map</param>
+            <param name="serializerType">type of the External Serializer</param>
+            <returns></returns>
         </member>
         <member name="T:ProtoBuf.Meta.LockContentedEventArgs">
             <summary>
