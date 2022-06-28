@@ -84,11 +84,11 @@ namespace SDF
 			visuals = new Visuals(root);
 			sensors = new Sensors(root);
 
-			gravity = GetValue<bool>("gravity");
-			enable_wind = GetValue<bool>("enable_wind");
-			self_collide = GetValue<bool>("self_collide");
-			kinematic = GetValue<bool>("kinematic");
-			must_be_base_link = GetValue<bool>("must_be_base_link");
+			gravity = GetValue<bool>("gravity", true);
+			enable_wind = GetValue<bool>("enable_wind", false);
+			self_collide = GetValue<bool>("self_collide", false);
+			kinematic = GetValue<bool>("kinematic", false);
+			must_be_base_link = GetValue<bool>("must_be_base_link", false);
 
 			if (IsValidNode("inertial"))
 			{

@@ -26,9 +26,11 @@ namespace SensorDevices
 		private const float DEG180 = Mathf.PI * Mathf.Rad2Deg;
 		private const float DEG360 = DEG180 * 2;
 
-		private const float LaserCameraHFov = 120.0000000000f;
-		private const float LaserCameraVFov = 50.0000000000f;
-		private const float LaserCameraHFovHalf = LaserCameraHFov * 0.5f;
+		private const float HFOV_FOR_2D_LIDAR = 120f;
+		private const float HFOV_FOR_3D_LIDAR = 10f;
+		private float LaserCameraHFov = 0f;
+		private float LaserCameraHFovHalf = 0;
+		private float LaserCameraVFov = 0;
 
 		public LaserData.MinMax range;
 
@@ -145,6 +147,7 @@ namespace SensorDevices
 			laserScan.VerticalAngleMin = vertical.angle.min * Mathf.Deg2Rad;
 			laserScan.VerticalAngleMax = vertical.angle.max * Mathf.Deg2Rad;
 			laserScan.VerticalAngleStep = vertical.angleStep * Mathf.Deg2Rad;
+			// Debug.Log(laserScan.VerticalCount + ", " + laserScan.VerticalAngleMin + ", " + laserScan.VerticalAngleMax + ", " + laserScan.VerticalAngleStep);
 
 			var totalSamples = laserScan.Count * laserScan.VerticalCount;
 			// Debug.Log(samples + " x " + vertical.samples + " = " + totalSamples);
@@ -156,12 +159,16 @@ namespace SensorDevices
 			Parallel.ForEach(laserScan.Ranges, item => item = double.NaN);
 			Parallel.ForEach(laserScan.Intensities, item => item = double.NaN);
 
- 			laserAngleResolution = new LaserData.AngleResolution((float)horizontal.angleStep, (float)vertical.angleStep);
-			// Debug.Log("H resolution: " + laserHAngleResolution + ", V resolution: " + laserVAngleResolution);
+			laserAngleResolution = new LaserData.AngleResolution((float)horizontal.angleStep, (float)vertical.angleStep);
+			// Debug.Log("H resolution: " + laserAngleResolution.H + ", V resolution: " + laserAngleResolution.V);
 		}
 
 		private void SetupLaserCamera()
 		{
+			LaserCameraVFov = (vertical.samples == 1) ? 1 : (float)vertical.angle.max - (float)vertical.angle.min;
+			LaserCameraHFov = (vertical.samples > 1) ? HFOV_FOR_3D_LIDAR : HFOV_FOR_2D_LIDAR;
+			LaserCameraHFovHalf = LaserCameraHFov * 0.5f;
+
 			laserCam.ResetWorldToCameraMatrix();
 			laserCam.ResetProjectionMatrix();
 
@@ -183,7 +190,9 @@ namespace SensorDevices
 			laserCam.renderingPath = RenderingPath.DeferredLighting;
 
 			var renderTextrueWidth = Mathf.CeilToInt(LaserCameraHFov / laserAngleResolution.H);
-			var renderTextrueHeight = (laserAngleResolution.V == 1) ? 1 : Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
+			var renderTextrueHeight = Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
+			// Debug.Log(maxVFov + "," + LaserCameraVFov + "," + renderTextrueWidth + "," + renderTextrueHeight);
+			// Debug.Log(LaserCameraVFov + "," + renderTextrueWidth + "," + renderTextrueHeight);
 
 			RTHandles.SetHardwareDynamicResolutionState(true);
 			_rtHandle = RTHandles.Alloc(
@@ -209,7 +218,9 @@ namespace SensorDevices
 
 			laserCam.targetTexture = _rtHandle.rt;
 
+			// var centerVAngle = LaserCameraVFov * 0.5f + (float)vertical.angle.min;
 			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(LaserCameraHFov, LaserCameraVFov, laserCam.nearClipPlane, laserCam.farClipPlane);
+			// Debug.Log("Cam VFOV=" + laserCameraVFov);
 			laserCam.projectionMatrix = projMatrix;
 
 			var universalLaserCamData = laserCam.GetUniversalAdditionalCameraData();
@@ -249,8 +260,10 @@ namespace SensorDevices
 
 		private void SetupLaserCameraData()
 		{
-			const float LaserCameraRotationAngle = LaserCameraHFov;
+			var LaserCameraVFovHalf = LaserCameraVFov * 0.5f;
+			var LaserCameraRotationAngle = LaserCameraHFov;
 			numberOfLaserCamData = Mathf.CeilToInt(DEG360 / LaserCameraRotationAngle);
+			var isEven = (numberOfLaserCamData % 2 == 0) ? true : false;
 
 			_parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = numberOfLaserCamData };
 			_laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
@@ -260,14 +273,14 @@ namespace SensorDevices
 			var targetDepthRT = laserCam.targetTexture;
 			var width = targetDepthRT.width;
 			var height = targetDepthRT.height;
-			var centerAngleOffset = (horizontal.angle.min < 0) ? 0f : LaserCameraHFovHalf;
+			var centerAngleOffset = (horizontal.angle.min < 0) ? (isEven ? -LaserCameraHFovHalf : 0) : LaserCameraHFovHalf;
 
 			for (var index = 0; index < numberOfLaserCamData; index++)
 			{
 				_depthCamBuffers[index] = new LaserData.DepthCamBuffer(width, height);
 
 				var centerAngle = LaserCameraRotationAngle * index + centerAngleOffset;
-				_laserCamData[index] = new LaserData.LaserCamData(width, height, range, laserAngleResolution, centerAngle, LaserCameraHFovHalf);
+				_laserCamData[index] = new LaserData.LaserCamData(width, height, range, laserAngleResolution, centerAngle, LaserCameraHFovHalf, LaserCameraVFovHalf);
 			}
 		}
 
@@ -314,7 +327,7 @@ namespace SensorDevices
 					{
 						laserCam.Render();
 						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32, OnCompleteAsyncReadback);
-						lock(_asyncWorkList)
+						lock (_asyncWorkList)
 						{
 							_asyncWorkList.Add(new AsyncLaserWork(dataIndex, readbackRequest));
 						}
@@ -448,13 +461,13 @@ namespace SensorDevices
 							dataCopyType = 1;
 						}
 						// middle of laser angle
-						else if (dataStartAngleH > laserStartAngleH && dataEndAngleH < laserEndAngleH)
+						else if (dataStartAngleH > laserStartAngleH && dataEndAngleH <= laserEndAngleH)
 						{
 							srcBufferOffset = srcBufferHorizontalLength * sampleIndexV;
 							copyLength = srcBufferHorizontalLength;
 
 							var sampleRatio = (dataStartAngleH - laserStartAngleH) * dividedLaserTotalAngleH;
-							dstBufferOffset = (laserSamplesH * (sampleIndexV + 1)) - (Mathf.CeilToInt(laserSamplesH * sampleRatio) + copyLength);
+							dstBufferOffset = (laserSamplesH * (sampleIndexV + 1)) - (Mathf.FloorToInt(laserSamplesH * sampleRatio) + copyLength);
 
 							if (copyLength < 0 || dstBufferOffset < 0)
 							{
@@ -464,7 +477,7 @@ namespace SensorDevices
 							dataCopyType = 2;
 						}
 						// end side of laser angle
-						else if (dataEndAngleH >= laserEndAngleH)
+						else if (dataEndAngleH > laserEndAngleH)
 						{
 							var srcLengthRatio = (laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
 							copyLength = Mathf.FloorToInt(srcBufferHorizontalLength * srcLengthRatio);
@@ -488,8 +501,8 @@ namespace SensorDevices
 
 						if (doCopy)
 						{
-							try {
-
+							try
+							{
 								lock (laserScan.Ranges.SyncRoot)
 								{
 									Buffer.BlockCopy(srcBuffer, srcBufferOffset * BufferUnitSize, laserScan.Ranges, dstBufferOffset * BufferUnitSize, copyLength * BufferUnitSize);
@@ -497,7 +510,7 @@ namespace SensorDevices
 							}
 							catch (Exception ex)
 							{
-								Debug.LogWarning("Error occured with Buffer.BlockCopy : " + ex.Message + ", Type: " + dataCopyType + " Offset: src(" + srcBufferOffset + ") dst(" + dstBufferOffset + "), Copysize: " + copyLength + ", Len: src("+ srcBuffer.Length + ") dst(" + laserScan.Ranges.Length + ")");
+								Debug.LogWarning("Error occured with Buffer.BlockCopy : " + ex.Message + ", Type: " + dataCopyType + " Offset: src(" + srcBufferOffset + ") dst(" + dstBufferOffset + "), Copysize: " + copyLength + ", Len: src(" + srcBuffer.Length + ") dst(" + laserScan.Ranges.Length + ")");
 							}
 						}
 					}
@@ -548,9 +561,9 @@ namespace SensorDevices
 
 						if (rayData != float.NaN && rayData <= rangeMax)
 						{
-							rayColor.g = rayAngleV/(float)angleRangeV;
+							rayColor.g = rayAngleV / (float)angleRangeV;
 
-							var rayRotation = Quaternion.AngleAxis((float)rayAngleH, transform.up) * Quaternion.AngleAxis((float)rayAngleV, transform.forward) * lidarLink.forward;
+							var rayRotation = Quaternion.AngleAxis((float)rayAngleH, transform.up) * Quaternion.AngleAxis((float)rayAngleV, -transform.forward) * lidarLink.forward;
 							var rayDirection = rayRotation * (rayData);
 							Debug.DrawRay(rayStart, rayDirection, rayColor, visualDrawDuration, true);
 						}
