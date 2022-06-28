@@ -84,7 +84,7 @@ public class LaserFilter
 					{
 						if (laserScan.Ranges[index] > rangeFilter?.max || laserScan.Ranges[index] < rangeFilter?.min)
 						{
- 							laserScan.Ranges[index] = double.NaN;
+							laserScan.Ranges[index] = double.NaN;
 						}
 					}
 				}
