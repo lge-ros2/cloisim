@@ -134,8 +134,6 @@ namespace SensorDevices
 
 			private float DecodeFloatRGBA(in byte r, in byte g, in byte b, in byte a)
 			{
-				// decodedData = (r / 255f) + (g / 255f) / 255f + (b / 255f) / 65025f;
-				// decodedData = (r * 0.0039215686f) + (g * 0.0000153787f) + (b * 0.0000000603f);
 				// decodedData = (r / 255f) + (g / 255f) / 255f + (b / 255f) / 65025f + (a / 255f) / 16581375f;
 				return (r * 0.0039215686f) + (g * 0.0000153787f) + (b * 0.0000000603f) + (a * 0.0000000002f);
 			}
@@ -154,13 +152,17 @@ namespace SensorDevices
 		public struct LaserCamData : IJobParallelFor
 		{
 			private float maxHAngleHalf;
-			private float maxHAngleHalfTangent;
+			private float maxHAngleHalfTanInverse;
+			private float maxVAngleHalf;
+			private float maxVAngleHalfTanInverse;
 			public AngleResolution angleResolution;
 			public float centerAngle;
 			public MinMax range;
 
 			public readonly int horizontalBufferLength;
+			public readonly int horizontalBufferLengthHalf;
 			public readonly int verticalBufferLength;
+			public readonly int verticalBufferLengthHalf;
 
 			[ReadOnly]
 			public NativeArray<float> depthBuffer;
@@ -171,20 +173,24 @@ namespace SensorDevices
 			public float EndAngleH;
 			public float TotalAngleH;
 
-			public LaserCamData(in int bufferWidth, in int bufferHeight, in MinMax range, in AngleResolution angleResolution, in float centerAngle, in float halfHFovAngle)
+			public LaserCamData(in int bufferWidth, in int bufferHeight, in MinMax range, in AngleResolution angleResolution, in float centerAngle, in float halfHFovAngle, in float halfVFovAngle)
 			{
 				this.maxHAngleHalf = halfHFovAngle;
-				this.maxHAngleHalfTangent = Mathf.Tan(maxHAngleHalf * Mathf.Deg2Rad);
+				this.maxHAngleHalfTanInverse = 1 / Mathf.Tan(maxHAngleHalf * Mathf.Deg2Rad);
+				this.maxVAngleHalf = halfVFovAngle;
+				this.maxVAngleHalfTanInverse = 1 / Mathf.Tan(maxVAngleHalf * Mathf.Deg2Rad);
 				this.angleResolution = angleResolution;
 
 				this.centerAngle = centerAngle;
 				this.StartAngleH = centerAngle - maxHAngleHalf;
 				this.EndAngleH = centerAngle + maxHAngleHalf;
- 				this.TotalAngleH = this.maxHAngleHalf * 2f;
+				this.TotalAngleH = this.maxHAngleHalf * 2f;
 
 				this.range = range;
 				this.horizontalBufferLength = bufferWidth;
+				this.horizontalBufferLengthHalf = (int)(bufferWidth * 0.5f);
 				this.verticalBufferLength = bufferHeight;
+				this.verticalBufferLengthHalf = (int)(bufferHeight * 0.5f);
 				this.depthBuffer = default(NativeArray<float>);
 				this.laserData = default(NativeArray<double>);
 			}
@@ -214,19 +220,22 @@ namespace SensorDevices
 
 			private float GetDepthData(in float horizontalAngle, in float verticalAngle)
 			{
-				var horizontalAngleInCamData = (horizontalAngle - maxHAngleHalf) * Mathf.Deg2Rad;
-				var verticalAngleInCamData = verticalAngle * Mathf.Deg2Rad;
+				var horizontalAngleInCam = (horizontalAngle - maxHAngleHalf) * Mathf.Deg2Rad;
+				var verticalAngleInCam = (verticalAngle - maxVAngleHalf) * Mathf.Deg2Rad;
 
-				var offsetX = Mathf.FloorToInt((horizontalBufferLength * 0.5f) * (1f + Mathf.Tan(horizontalAngleInCamData)/maxHAngleHalfTangent));
-				var offsetY = Mathf.FloorToInt((verticalBufferLength * 0.5f) * (1f + Mathf.Tan(verticalAngleInCamData)/maxHAngleHalfTangent));
+				var offsetYratio = Mathf.Tan(verticalAngleInCam) * maxVAngleHalfTanInverse;
+				var offsetY = Mathf.FloorToInt(verticalBufferLengthHalf * (1f + (offsetYratio)));
+
+				var offsetXratio = Mathf.Tan(horizontalAngleInCam) * maxHAngleHalfTanInverse;
+				var offsetX = Mathf.FloorToInt(horizontalBufferLengthHalf * (1f + offsetXratio));
 
 				var depthRange = GetDepthRange(offsetX, offsetY);
 
-				// Compensate distance
-				var compensateScaleHorizontal = (1f / Mathf.Cos(horizontalAngleInCamData));
-				var compensateScaleVertical = (1f / Mathf.Cos(verticalAngleInCamData));
-				var finalDepthData = depthRange * compensateScaleHorizontal * compensateScaleVertical;
-				return finalDepthData;
+				var horizontalCos = Mathf.Cos(horizontalAngleInCam);
+				var verticalCos = Mathf.Cos(verticalAngleInCam);
+				depthRange *= 1 / (verticalCos * horizontalCos);
+
+				return (depthRange > 1) ? Mathf.Infinity : depthRange;
 			}
 
 			private void ResolveLaserRange(in int index)
@@ -237,8 +246,8 @@ namespace SensorDevices
 					return;
 				}
 
-				var indexH = index % horizontalBufferLength;
-				var indexV = index / horizontalBufferLength;
+				var indexH = (int)(index % horizontalBufferLength);
+				var indexV = (int)(index / horizontalBufferLength);
 				// Debug.Log("H: " + indexH + ", V:" + indexV);
 
 				var rayAngleH = angleResolution.H * indexH;
@@ -246,13 +255,8 @@ namespace SensorDevices
 				var depthData = GetDepthData(rayAngleH, rayAngleV);
 
 				// filter range
-				var rayDistance = (depthData > 1f) ? Mathf.Infinity : (depthData * range.max);
-				if (rayDistance < range.min)
-				{
-					rayDistance = double.NaN;
-				}
-
-				laserData[index] = (double)rayDistance;
+				var rayDistance = (depthData < range.min) ? double.NaN : (depthData * range.max);
+				laserData[index] = rayDistance;
 			}
 
 			// The code actually running on the job
