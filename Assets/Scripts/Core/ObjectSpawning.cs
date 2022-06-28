@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class ObjectSpawning : MonoBehaviour
 {
-	public enum PropsType {BOX = 0, CYLINDER = 1, SPHERE = 2};
+	public enum PropsType { BOX = 0, CYLINDER = 1, SPHERE = 2 };
 
 	private static PhysicMaterial PropsPhysicalMaterial = null;
 
@@ -129,6 +129,11 @@ public class ObjectSpawning : MonoBehaviour
 
 			var meshRender = spawnedObject.GetComponentInChildren<MeshRenderer>();
 			meshRender.material.color = Random.ColorHSV(0f, 1f, 0.7f, 1f, 0.6f, 1f);
+
+			var rigidBody = spawnedObject.GetComponentInChildren<Rigidbody>();
+			rigidBody.mass = CalculateMass(scale);
+			rigidBody.ResetCenterOfMass();
+			rigidBody.ResetInertiaTensor();
 		}
 
 		if (mesh != null)
@@ -144,6 +149,11 @@ public class ObjectSpawning : MonoBehaviour
 		spawnedObject.transform.SetParent(propsRoot.transform);
 
 		yield return null;
+	}
+
+	private float CalculateMass(in Vector3 scale)
+	{
+		return (scale.x + scale.y + scale.z) / 3;
 	}
 
 	private GameObject CreateProps(in string name, in Mesh targetMesh, in Vector3 scale)
@@ -173,8 +183,9 @@ public class ObjectSpawning : MonoBehaviour
 		meshCollider.isTrigger = false;
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
-		rigidBody.drag = 0.8f;
-		rigidBody.angularDrag = 0.8f;
+		rigidBody.mass = 1;
+		rigidBody.drag = 2.5f;
+		rigidBody.angularDrag = 0.1f;
 
 		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
 		navMeshObstacle.carving = true;
