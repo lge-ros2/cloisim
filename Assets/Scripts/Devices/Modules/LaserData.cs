@@ -45,7 +45,7 @@ namespace SensorDevices
 				}
 				else
 				{
-					var residual = (angle.range - 360d < double.Epsilon) ? 0 : 1;
+					var residual = (System.Math.Abs(this.angle.range - 360d) < double.Epsilon) ? 0 : 1;
 					var rangeCount = resolution * samples - residual;
 
 					this.angleStep = (rangeCount <= 0) ? 0 : ((angle.range) / rangeCount);
@@ -61,8 +61,6 @@ namespace SensorDevices
 			}
 		}
 
-		private const int ColorFormatUnitSize = sizeof(float);
-
 		public struct AngleResolution
 		{
 			public readonly float H; // degree
@@ -75,10 +73,11 @@ namespace SensorDevices
 			}
 		}
 
+		private const int ColorFormatUnitSize = sizeof(float);
+
 		public struct DepthCamBuffer : IJobParallelFor
 		{
-			private readonly int imageWidth;
-			private readonly int imageHeight;
+			private readonly int imageDataLength;
 
 			[ReadOnly]
 			public NativeArray<byte> imageBuffer;
@@ -86,21 +85,19 @@ namespace SensorDevices
 
 			public DepthCamBuffer(in int width, in int height)
 			{
-				this.imageWidth = width;
-				this.imageHeight = height;
+				this.imageDataLength = width * height;
 				this.imageBuffer = default(NativeArray<byte>);
 				this.depthBuffer = default(NativeArray<float>);
 			}
 
 			public void Allocate()
 			{
-				var dataLength = imageWidth * imageHeight;
-				this.depthBuffer = new NativeArray<float>(dataLength, Allocator.TempJob);
+				this.depthBuffer = new NativeArray<float>(this.imageDataLength, Allocator.TempJob);
 			}
 
 			public void Deallocate()
 			{
-				// this.imageBuffer.Dispose();
+				this.imageBuffer.Dispose();
 				this.depthBuffer.Dispose();
 			}
 
@@ -188,9 +185,9 @@ namespace SensorDevices
 
 				this.range = range;
 				this.horizontalBufferLength = bufferWidth;
-				this.horizontalBufferLengthHalf = (int)(bufferWidth * 0.5f);
+				this.horizontalBufferLengthHalf = (int)(bufferWidth >> 1);
 				this.verticalBufferLength = bufferHeight;
-				this.verticalBufferLengthHalf = (int)(bufferHeight * 0.5f);
+				this.verticalBufferLengthHalf = (int)(bufferHeight >> 1);
 				this.depthBuffer = default(NativeArray<float>);
 				this.laserData = default(NativeArray<double>);
 			}
@@ -224,10 +221,10 @@ namespace SensorDevices
 				var verticalAngleInCam = (verticalAngle - maxVAngleHalf) * Mathf.Deg2Rad;
 
 				var offsetYratio = Mathf.Tan(verticalAngleInCam) * maxVAngleHalfTanInverse;
-				var offsetY = Mathf.FloorToInt(verticalBufferLengthHalf * (1f + (offsetYratio)));
+				var offsetY = Mathf.CeilToInt(verticalBufferLengthHalf * (1f + offsetYratio));
 
 				var offsetXratio = Mathf.Tan(horizontalAngleInCam) * maxHAngleHalfTanInverse;
-				var offsetX = Mathf.FloorToInt(horizontalBufferLengthHalf * (1f + offsetXratio));
+				var offsetX = Mathf.CeilToInt(horizontalBufferLengthHalf * (1f + offsetXratio));
 
 				var depthRange = GetDepthRange(offsetX, offsetY);
 
@@ -254,9 +251,9 @@ namespace SensorDevices
 				var rayAngleV = angleResolution.V * indexV;
 				var depthData = GetDepthData(rayAngleH, rayAngleV);
 
-				// filter range
-				var rayDistance = (depthData < range.min) ? double.NaN : (depthData * range.max);
-				laserData[index] = rayDistance;
+				// filter min/max range
+				var rayDistance = depthData * range.max;
+				laserData[index] = (rayDistance < range.min)? double.NaN: rayDistance;
 			}
 
 			// The code actually running on the job
