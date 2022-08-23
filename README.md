@@ -128,7 +128,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2021.3.5f1 (LTS)'*.
+- Latest Unity Editor Version: *'2021.3.8f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 20.04.3 LTS
