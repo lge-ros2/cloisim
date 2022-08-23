@@ -100,7 +100,6 @@ namespace SensorDevices
 
 			public void Deallocate()
 			{
-				// this.imageBuffer.Dispose();
 				this.depthBuffer.Dispose();
 			}
 
@@ -255,8 +254,8 @@ namespace SensorDevices
 				var depthData = GetDepthData(rayAngleH, rayAngleV);
 
 				// filter range
-				var rayDistance = (depthData < range.min) ? double.NaN : (depthData * range.max);
-				laserData[index] = rayDistance;
+				var rayDistance = depthData * range.max;
+				laserData[index] = (rayDistance < range.min)? double.NaN: rayDistance;
 			}
 
 			// The code actually running on the job
