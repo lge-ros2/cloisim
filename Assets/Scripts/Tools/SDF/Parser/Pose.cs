@@ -289,10 +289,10 @@ namespace SDF
 			}
 			else
 			{
-				_w = (T)(object)(w/s);
-				_x = (T)(object)(x/s);
-				_y = (T)(object)(y/s);
-				_z = (T)(object)(z/s);
+				_w = (T)(object)(w / s);
+				_x = (T)(object)(x / s);
+				_y = (T)(object)(y / s);
+				_z = (T)(object)(z / s);
 			}
 		}
 
@@ -319,7 +319,7 @@ namespace SDF
 			}
 			else if (sarg >= 1.0d)
 			{
-				euler.Y = (T)(object)(0.5d *  Math.PI);
+				euler.Y = (T)(object)(0.5d * Math.PI);
 			}
 			else
 			{
@@ -358,7 +358,7 @@ namespace SDF
 
 		public string relative_to = string.Empty; // TBD : since SDF 1.7
 
-#region SDF 1.9 feature
+		#region SDF 1.9 feature
 		// Description: 'euler_rpy' by default.
 		// Supported rotation formats are 'euler_rpy', Euler angles representation in roll, pitch, yaw.
 		// The pose is expected to have 6 values.
@@ -367,7 +367,7 @@ namespace SDF
 
 		// Description: Whether or not the euler angles are in degrees, otherwise they will be interpreted as radians by default.
 		public bool degrees = false;
-#endregion
+		#endregion
 
 		public Pose()
 			: this(default(T), default(T), default(T))

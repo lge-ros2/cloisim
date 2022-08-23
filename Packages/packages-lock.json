@@ -10,7 +10,7 @@
       "hash": "0fc6f532e4f47d66d173314efcb906bc7cf0d00f"
     },
     "com.unity.burst": {
-      "version": "1.6.5",
+      "version": "1.7.3",
       "depth": 1,
       "source": "registry",
       "dependencies": {
@@ -48,7 +48,7 @@
       "source": "builtin",
       "dependencies": {
         "com.unity.mathematics": "1.2.1",
-        "com.unity.burst": "1.5.0",
+        "com.unity.burst": "1.7.3",
         "com.unity.render-pipelines.core": "12.1.7",
         "com.unity.shadergraph": "12.1.7"
       }
