@@ -86,10 +86,15 @@ public class Clock : Device
 		worldStat.RealTime = new messages.Time();
 	}
 
-	void FixedUpdate()
+	private void UpdateCurrentTime()
 	{
 		currentRealTime = Time.realtimeSinceStartupAsDouble - restartedRealTime;
 		currentSimTime = Time.timeAsDouble - restartedSimTime;
+	}
+
+	void FixedUpdate()
+	{
+		UpdateCurrentTime();
 	}
 
 	void LateUpdate()
@@ -124,11 +129,17 @@ public class Clock : Device
 		// filter same clock info
 		if (prevSimTime >= SimTime)
 		{
-			// Debug.LogWarningFormat("Filter SimTime, Prev:{0} >= Current:{1}", prevSimTime, SimTime);
+			if (prevSimTime > SimTime)
+			{
+				Debug.LogWarningFormat("Filter SimTime, Prev:{0} >= Current:{1}", prevSimTime, SimTime);
+			}
 		}
 		else if (prevRealTime >= RealTime)
 		{
-			// Debug.LogWarningFormat("Filter RealTime, Prev:{0} >= Current:{1}", prevRealTime, RealTime);
+			if ((prevRealTime > RealTime))
+			{
+				Debug.LogWarningFormat("Filter RealTime, Prev:{0} >= Current:{1}", prevRealTime, RealTime);
+			}
 		}
 		else
 		{
@@ -142,5 +153,10 @@ public class Clock : Device
 	{
 		restartedSimTime = Time.timeAsDouble;
 		restartedRealTime = Time.realtimeSinceStartupAsDouble;
+
+		UpdateCurrentTime();
+
+		prevSimTime = SimTime;
+		prevRealTime = RealTime;
 	}
 }
