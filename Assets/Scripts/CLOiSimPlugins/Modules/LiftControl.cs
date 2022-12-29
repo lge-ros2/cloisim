@@ -141,9 +141,9 @@ public class LiftControl : MonoBehaviour
 				{
 					if (articulationBody.isRoot)
 					{
-						articulationBody.Sleep();
 						var newWorldPose = articulationBody.transform.position;
 						newWorldPose.y = transform.localPosition.y + NEW_POSE_MARGIN;
+						articulationBody.Sleep();
 						articulationBody.TeleportRoot(newWorldPose, articulationBody.transform.localRotation);
 						break;
 					}

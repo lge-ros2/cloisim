@@ -7,10 +7,10 @@ public class AddModel : MonoBehaviour
 	private Transform targetObject = null;
 	private SDF.Helper.Model modelHelper = null;
 
-#region variables for the object with articulation body
+	#region variables for the object with articulation body
 	private ArticulationBody rootArticulationBody = null;
 	private Vector3 articulationBodyDeployOffset = new Vector3(0, 0.10f, 0);
-#endregion
+	#endregion
 
 	public float maxRayDistance = 100.0f;
 
@@ -123,6 +123,7 @@ public class AddModel : MonoBehaviour
 				{
 					if (rootArticulationBody != null)
 					{
+						rootArticulationBody.Sleep();
 						rootArticulationBody.TeleportRoot(point + articulationBodyDeployOffset, targetObject.rotation);
 					}
 					else
