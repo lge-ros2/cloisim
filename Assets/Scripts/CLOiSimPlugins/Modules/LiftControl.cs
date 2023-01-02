@@ -16,12 +16,12 @@ public class LiftControl : MonoBehaviour
 
 	private Actuator lift = new Actuator();
 
-	private HashSet<GameObject> hashsetAllTopModels = new HashSet<GameObject>();
 	private HashSet<GameObject> hashsetLiftingObjects = new HashSet<GameObject>();
+	private HashSet<GameObject> hashsetLiftingProps = new HashSet<GameObject>();
 
 	private UnityEvent finishedLiftingEvent = new UnityEvent();
-	private GameObject rootModel = null;
 	private Transform rootModelTransform = null;
+	private Transform rootPropsTransform = null;
 
 	public string floorColliderName = string.Empty;
 	private MeshCollider floorCollider = null;
@@ -31,8 +31,8 @@ public class LiftControl : MonoBehaviour
 
 	void Awake()
 	{
-		rootModel = Main.WorldRoot;
-		rootModelTransform = rootModel.transform;
+		rootModelTransform = Main.WorldRoot.transform;
+		rootPropsTransform = Main.PropsRoot.transform;
 	}
 
 	void Start()
@@ -47,7 +47,6 @@ public class LiftControl : MonoBehaviour
 		// Debug.Log(name + "::" + speed);
 
 		FindFloorRegionInLift();
-		UpdateTopModels();
 	}
 
 	public void SetFinishedEventListener(UnityAction call)
@@ -68,36 +67,37 @@ public class LiftControl : MonoBehaviour
 		}
 	}
 
-	public void UpdateTopModels()
+	private void DetectObjectsToLiftAndLiftIt()
 	{
-		if (rootModel == null)
-		{
-			Debug.LogError("root model is not assigned yet.");
-			return;
-		}
+		hashsetLiftingObjects.Clear();
+		hashsetLiftingProps.Clear();
 
-		var allModelHelpers = rootModel.GetComponentsInChildren<SDF.Helper.Model>();
+		var allModelHelpers = rootModelTransform.GetComponentsInChildren<SDF.Helper.Model>();
 		foreach (var modelHelper in allModelHelpers)
 		{
 			if (modelHelper.IsFirstChild)
 			{
-				hashsetAllTopModels.Add(modelHelper.gameObject);
-			}
-		}
-	}
-
-	private void DetectObjectsToLiftAndLiftIt()
-	{
-		hashsetLiftingObjects.Clear();
-		foreach (var topModel in hashsetAllTopModels)
-		{
-			if (topModel != null)
-			{
+				var topModel = modelHelper.gameObject;
 				var topModelPosition = topModel.transform.position;
 				if (floorCollider != null && floorCollider.bounds.Contains(topModelPosition))
 				{
 					hashsetLiftingObjects.Add(topModel);
 					topModel.transform.SetParent(transform, true);
+				}
+			}
+		}
+
+		var allProps = rootPropsTransform.GetComponentsInChildren<Transform>();
+		foreach (var prop in allProps)
+		{
+			if (prop.CompareTag("Props"))
+			{
+				var propPosition = prop.transform.position;
+				if (floorCollider != null && floorCollider.bounds.Contains(propPosition))
+				{
+					var propObject = prop.gameObject;
+					hashsetLiftingProps.Add(propObject);
+					prop.transform.SetParent(transform, true);
 				}
 			}
 		}
@@ -111,6 +111,14 @@ public class LiftControl : MonoBehaviour
 			foreach (var obj in hashsetLiftingObjects)
 			{
 				obj.transform.SetParent(rootModelTransform, true);
+			}
+		}
+
+		if (rootPropsTransform != null)
+		{
+			foreach (var obj in hashsetLiftingProps)
+			{
+				obj.transform.SetParent(rootPropsTransform, true);
 			}
 		}
 	}
@@ -129,28 +137,42 @@ public class LiftControl : MonoBehaviour
 	private IEnumerator DoLifting()
 	{
 		var waitForEOF = new WaitForEndOfFrame();
-		const float NEW_POSE_MARGIN = 0.005f;
+
+		var bodyOriginalTransform = new Dictionary<ArticulationBody, Transform>();
+
+		// handling the gameobhect which has articulation body
+		foreach (var obj in hashsetLiftingObjects)
+		{
+			var articulationBodies = obj.GetComponentsInChildren<ArticulationBody>();
+			foreach (var articulationBody in articulationBodies)
+			{
+				if (articulationBody.isRoot)
+				{
+					bodyOriginalTransform.Add(articulationBody, articulationBody.transform);
+					break;
+				}
+			}
+		}
+
 		do
 		{
 			lift.Drive();
-			foreach (var obj in hashsetLiftingObjects)
+
+			// find root articulation body and teleport the body following as
+			foreach (var item in bodyOriginalTransform)
 			{
-				// find root articulation body and teleport the body following as
-				var articulationBodies = obj.GetComponentsInChildren<ArticulationBody>();
-				foreach (var articulationBody in articulationBodies)
-				{
-					if (articulationBody.isRoot)
-					{
-						articulationBody.Sleep();
-						var newWorldPose = articulationBody.transform.position;
-						newWorldPose.y = transform.localPosition.y + NEW_POSE_MARGIN;
-						articulationBody.TeleportRoot(newWorldPose, articulationBody.transform.localRotation);
-						break;
-					}
-				}
+				var articulationBody = item.Key;
+				var originalTransform = item.Value;
+				var newWorldPose = originalTransform.position;
+				newWorldPose.y = transform.localPosition.y;
+				articulationBody.Sleep();
+				articulationBody.TeleportRoot(newWorldPose, originalTransform.localRotation);
 			}
+
 			yield return waitForEOF;
 		} while (lift.IsMoving);
+
+		bodyOriginalTransform.Clear();
 
 		DropLiftedObjects();
 
@@ -159,21 +181,21 @@ public class LiftControl : MonoBehaviour
 		yield return null;
 	}
 
-	// #if UNITY_EDITOR
-	// 	// just for test
-	// 	void Update()
+#if UNITY_EDITOR
+	// just for test
+	// void Update()
+	// {
+	// 	if (!lift.IsMoving)
 	// 	{
-	// 		if (!lift.IsMoving)
+	// 		if (Input.GetKeyUp(KeyCode.U))
 	// 		{
-	// 			if (Input.GetKeyUp(KeyCode.U))
-	// 			{
-	// 				MoveTo(600);
-	// 			}
-	// 			else if (Input.GetKeyUp(KeyCode.J))
-	// 			{
-	// 				MoveTo(-600);
-	// 			}
+	// 			MoveTo(600);
+	// 		}
+	// 		else if (Input.GetKeyUp(KeyCode.J))
+	// 		{
+	// 			MoveTo(-600);
 	// 		}
 	// 	}
-	// #endif
+	// }
+#endif
 }

@@ -13,7 +13,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 [DefaultExecutionOrder(30)]
-public class Main: MonoBehaviour
+public class Main : MonoBehaviour
 {
 	[Header("Block Loading SDF")]
 	public bool doNotLoad = false;
@@ -31,6 +31,7 @@ public class Main: MonoBehaviour
 	private FollowingTargetList followingList = null;
 
 	private static GameObject coreObject = null;
+	private static GameObject propsRoot = null;
 	private static GameObject worldRoot = null;
 	private static GameObject lightsRoot = null;
 	private static GameObject uiRoot = null;
@@ -42,14 +43,15 @@ public class Main: MonoBehaviour
 	private static RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private static CameraControl cameraControl = null;
 
-#region "Non-Component class"
+	#region "Non-Component class"
 	private static BridgeManager bridgeManager = null;
 	private static SimulationService simulationService = null;
-#endregion
+	#endregion
 
 	private static bool isResetting = false;
 	private static bool resetTriggered = false;
 
+	public static GameObject PropsRoot => propsRoot;
 	public static GameObject WorldRoot => worldRoot;
 	public static GameObject CoreObject => coreObject;
 	public static GameObject UIObject => uiRoot;
@@ -62,10 +64,10 @@ public class Main: MonoBehaviour
 
 	public static CameraControl CameraControl => cameraControl;
 
-#region "SDFParser"
+	#region "SDFParser"
 	private SDF.Root sdfRoot = null;
 	private SDF.Import.Loader sdfLoader = null;
-#endregion
+	#endregion
 
 	private void CleanAllModels()
 	{
@@ -166,21 +168,21 @@ public class Main: MonoBehaviour
 
 		// Load Library for Assimp
 #if UNITY_EDITOR
-#	if UNITY_EDITOR_LINUX
+#if UNITY_EDITOR_LINUX
 		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/linux-x64/native/libassimp";
-#	elif UNITY_EDITOR_OSX // TODO: need to be verified,
+#elif UNITY_EDITOR_OSX // TODO: need to be verified,
 		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/osx-x64/native/libassimp";
-#	else // == UNITY_EDITOR_WIN
+#else // == UNITY_EDITOR_WIN
 		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/win-x64/native/assimp";
-#	endif
+#endif
 #else
-#	if UNITY_STANDALONE_WIN
+#if UNITY_STANDALONE_WIN
 		var assimpLibraryPath = "./CLOiSim_Data/Plugins/x86_64/assimp";
-#	elif UNITY_STANDALONE_OSX // TODO: need to be verified,
+#elif UNITY_STANDALONE_OSX // TODO: need to be verified,
 		var assimpLibraryPath = "./Contents/PlugIns/libassimp";
-#	else // == UNITY_STANDALONE_LINUX
+#else // == UNITY_STANDALONE_LINUX
 		var assimpLibraryPath = "./CLOiSim_Data/Plugins/libassimp";
-#	endif
+#endif
 #endif
 		Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath);
 
@@ -203,6 +205,7 @@ public class Main: MonoBehaviour
 			Debug.LogError("Failed to Find 'Core'!!!!");
 		}
 
+		propsRoot = GameObject.Find("Props");
 		worldRoot = GameObject.Find("World");
 		lightsRoot = GameObject.Find("Lights");
 		uiRoot = GameObject.Find("UI");
