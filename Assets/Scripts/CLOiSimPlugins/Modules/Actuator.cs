@@ -8,7 +8,7 @@ using UnityEngine;
 
 public class Actuator
 {
-	public enum MovingType {MoveTowards = 0, Lerp, SmoothDamp};
+	public enum MovingType { MoveTowards = 0, Lerp, SmoothDamp };
 	private const float lerpEpsilon = 0.009f;
 	private Vector3 currentVelocity = Vector3.zero; // only for SmoothDamp
 
@@ -28,7 +28,7 @@ public class Actuator
 	#endregion
 
 	private float distanceEpsilon = Vector3.kEpsilon;
-	private float maxMovingSpeed = 1;
+	private float maxMovingSpeed = 0.9f;
 	private bool isMoving = false;
 	public bool IsMoving => isMoving;
 
@@ -133,7 +133,7 @@ public class Actuator
 			return Vector3.zero;
 		}
 
-		return (worldPosition)? targetTransform.position : targetTransform.localPosition;
+		return (worldPosition) ? targetTransform.position : targetTransform.localPosition;
 	}
 
 	//

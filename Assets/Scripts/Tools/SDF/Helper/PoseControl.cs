@@ -240,6 +240,7 @@ namespace SDF
 					{
 						if (articulationBody.isRoot)
 						{
+							articulationBody.Sleep();
 							articulationBody.TeleportRoot(targetPose.position, targetPose.rotation);
 						}
 
