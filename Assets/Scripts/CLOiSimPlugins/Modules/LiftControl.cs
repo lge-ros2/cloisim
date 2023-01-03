@@ -16,6 +16,8 @@ public class LiftControl : MonoBehaviour
 
 	private Actuator lift = new Actuator();
 
+
+	private Dictionary<ArticulationBody, Transform> bodyOriginalTransform = new Dictionary<ArticulationBody, Transform>();
 	private HashSet<GameObject> hashsetLiftingObjects = new HashSet<GameObject>();
 	private HashSet<GameObject> hashsetLiftingProps = new HashSet<GameObject>();
 
@@ -136,10 +138,6 @@ public class LiftControl : MonoBehaviour
 
 	private IEnumerator DoLifting()
 	{
-		var waitForEOF = new WaitForEndOfFrame();
-
-		var bodyOriginalTransform = new Dictionary<ArticulationBody, Transform>();
-
 		// handling the gameobhect which has articulation body
 		foreach (var obj in hashsetLiftingObjects)
 		{
@@ -154,31 +152,41 @@ public class LiftControl : MonoBehaviour
 			}
 		}
 
+		var waitForEOF = new WaitForEndOfFrame();
+		var waitForFU = new WaitForFixedUpdate();
+
 		do
 		{
 			lift.Drive();
-
-			// find root articulation body and teleport the body following as
-			foreach (var item in bodyOriginalTransform)
-			{
-				var articulationBody = item.Key;
-				var originalTransform = item.Value;
-				var newWorldPose = originalTransform.position;
-				newWorldPose.y = transform.localPosition.y;
-				articulationBody.Sleep();
-				articulationBody.TeleportRoot(newWorldPose, originalTransform.localRotation);
-			}
-
 			yield return waitForEOF;
+			yield return waitForFU;
 		} while (lift.IsMoving);
 
 		bodyOriginalTransform.Clear();
 
 		DropLiftedObjects();
-
 		finishedLiftingEvent.Invoke();
 
 		yield return null;
+	}
+
+	void FixedUpdate()
+	{
+		const float GAP_BETWEEN_ELEVATOR_FLOOR = 0.02f;
+
+		if (bodyOriginalTransform.Count > 0)
+		{
+			// find root articulation body and teleport the body following as elevator's height
+			foreach (var item in bodyOriginalTransform)
+			{
+				var articulationBody = item.Key;
+				var originalTransform = item.Value;
+				var newWorldPose = originalTransform.position;
+				newWorldPose.y = transform.localPosition.y + GAP_BETWEEN_ELEVATOR_FLOOR;
+				articulationBody.Sleep();
+				articulationBody.TeleportRoot(newWorldPose, originalTransform.localRotation);
+			}
+		}
 	}
 
 #if UNITY_EDITOR
