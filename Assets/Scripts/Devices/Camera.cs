@@ -88,18 +88,21 @@ namespace SensorDevices
 				SetupTexture();
 				SetupCamera();
 				_startCameraWork = true;
+
+				Debug.Log(camSensor.name);
+				Debug.Log(camSensor.allowHDR);
 			}
 		}
 
 		protected virtual void SetupTexture()
 		{
+			camSensor.allowHDR = true;
 			camSensor.depthTextureMode = DepthTextureMode.None;
 			_universalCamData.requiresColorOption = CameraOverrideOption.On;
 			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
 			_universalCamData.requiresColorTexture = true;
 			_universalCamData.requiresDepthTexture = false;
 			_universalCamData.renderShadows = true;
-			_universalCamData.allowXRRendering = false;
 
 			// Debug.Log("This is not a Depth Camera!");
 			targetRTname = "CameraColorTexture";
@@ -168,9 +171,10 @@ namespace SensorDevices
 			camSensor.ResetWorldToCameraMatrix();
 			camSensor.ResetProjectionMatrix();
 
-			camSensor.allowHDR = true;
 			camSensor.allowMSAA = true;
 			camSensor.allowDynamicResolution = true;
+
+
 			camSensor.useOcclusionCulling = true;
 
 			camSensor.stereoTargetEye = StereoTargetEyeMask.None;
@@ -215,11 +219,11 @@ namespace SensorDevices
 
 			_universalCamData.enabled = false;
 			_universalCamData.stopNaN = true;
+			_universalCamData.dithering = true;
 			_universalCamData.renderPostProcessing = false;
 			_universalCamData.allowXRRendering = false;
 			_universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
 			_universalCamData.renderType = CameraRenderType.Base;
-			_universalCamData.renderShadows = true;
 			_universalCamData.cameraStack.Clear();
 			camSensor.enabled = false;
 
@@ -265,7 +269,7 @@ namespace SensorDevices
 
 					var readbackRequest = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
 
-					lock(_readbackList)
+					lock (_readbackList)
 					{
 						_readbackList.Add(readbackRequest);
 					}
@@ -309,7 +313,7 @@ namespace SensorDevices
 					readbackData.Dispose();
 				}
 
-				lock(_readbackList)
+				lock (_readbackList)
 				{
 					_readbackList.Remove(request);
 				}
@@ -331,7 +335,7 @@ namespace SensorDevices
 
 		public messages.Image GetImageDataMessage()
 		{
-			return (imageStamped == null || imageStamped.Image == null)? null:imageStamped.Image;
+			return (imageStamped == null || imageStamped.Image == null) ? null : imageStamped.Image;
 		}
 	}
 }

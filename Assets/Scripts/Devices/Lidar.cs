@@ -224,6 +224,7 @@ namespace SensorDevices
 
 			var universalLaserCamData = laserCam.GetUniversalAdditionalCameraData();
 			universalLaserCamData.renderShadows = false;
+			universalLaserCamData.dithering = true;
 			universalLaserCamData.allowXRRendering = false;
 			universalLaserCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
 			universalLaserCamData.renderType = CameraRenderType.Base;
@@ -479,7 +480,7 @@ namespace SensorDevices
 							break;
 
 						case 3:
-							dataLengthRatio =(laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
+							dataLengthRatio = (laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
 							copyLength = Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
 							srcBufferOffset = srcBufferHorizontalLength * (sampleIndexV + 1) - copyLength;
 							dstBufferOffset = laserSamplesH * sampleIndexV + 1;

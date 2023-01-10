@@ -63,7 +63,6 @@ namespace SensorDevices
 
 			if (computeShader != null)
 			{
-				computeShader.SetFloat("_DepthMin", (float)camParameter.clip.near);
 				computeShader.SetFloat("_DepthMax", (float)camParameter.clip.far);
 				computeShader.SetFloat("_DepthScale", (float)depthScale);
 			}
@@ -79,8 +78,8 @@ namespace SensorDevices
 
 			camSensor.backgroundColor = Color.white;
 			camSensor.clearFlags = CameraClearFlags.SolidColor;
-
 			camSensor.depthTextureMode = DepthTextureMode.Depth;
+			camSensor.allowHDR = false;
 			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
 			_universalCamData.requiresDepthOption = CameraOverrideOption.On;
 			_universalCamData.requiresColorTexture = false;
@@ -119,7 +118,7 @@ namespace SensorDevices
 		}
 
 		private int threadGroupsX = 8;
-		private int threadGroupsY = 4;
+		private int threadGroupsY = 8;
 
 		protected override void PostProcessing(ref byte[] buffer)
 		{
