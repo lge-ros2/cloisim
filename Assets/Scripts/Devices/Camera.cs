@@ -32,7 +32,8 @@ namespace SensorDevices
 
 		protected string targetRTname;
 		protected GraphicsFormat targetColorFormat;
-		protected TextureFormat readbackDstFormat;
+		protected GraphicsFormat readbackDstFormat;
+
 		private CameraData.ImageData camImageData;
 		private List<AsyncGPUReadbackRequest> _readbackList = new List<AsyncGPUReadbackRequest>();
 		public Noise noise = null;
@@ -88,9 +89,6 @@ namespace SensorDevices
 				SetupTexture();
 				SetupCamera();
 				_startCameraWork = true;
-
-				Debug.Log(camSensor.name);
-				Debug.Log(camSensor.allowHDR);
 			}
 		}
 
@@ -112,13 +110,13 @@ namespace SensorDevices
 			{
 				case CameraData.PixelFormat.L_INT8:
 					targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
-					readbackDstFormat = TextureFormat.R8;
+					readbackDstFormat = GraphicsFormat.R8_SRGB;
 					break;
 
 				case CameraData.PixelFormat.RGB_INT8:
 				default:
 					targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
-					readbackDstFormat = TextureFormat.RGB24;
+					readbackDstFormat = GraphicsFormat.R8G8B8_SRGB;
 					break;
 			}
 		}
@@ -173,12 +171,8 @@ namespace SensorDevices
 
 			camSensor.allowMSAA = true;
 			camSensor.allowDynamicResolution = true;
-
-
 			camSensor.useOcclusionCulling = true;
-
 			camSensor.stereoTargetEye = StereoTargetEyeMask.None;
-
 			camSensor.orthographic = false;
 			camSensor.nearClipPlane = (float)camParameter.clip.near;
 			camSensor.farClipPlane = (float)camParameter.clip.far;
@@ -285,7 +279,7 @@ namespace SensorDevices
 		{
 			if (request.hasError)
 			{
-				Debug.LogError("Failed to read GPU texture");
+				Debug.LogErrorFormat("{0}: Failed to read GPU texture", name);
 			}
 			else if (request.done)
 			{
@@ -294,22 +288,27 @@ namespace SensorDevices
 					var readbackData = request.GetData<byte>();
 					camImageData.SetTextureBufferData(readbackData);
 					var image = imageStamped.Image;
-					if (image.Data.Length == camImageData.GetImageDataLength())
-					{
-						var imageData = camImageData.GetImageData();
 
+					var imageData = camImageData.GetImageData(image.Data.Length);
+					if (imageData != null)
+					{
 						PostProcessing(ref imageData);
 
 						image.Data = imageData;
 						// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
 
-						if (camParameter.save_enabled)
+						if (camParameter.save_enabled && _startCameraWork)
 						{
 							var saveName = name + "_" + Time.time;
 							camImageData.SaveRawImageData(camParameter.save_path, saveName);
 							// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
 						}
 					}
+					else
+					{
+						Debug.LogWarningFormat("{0}: Failed to get image Data", name);
+					}
+
 					readbackData.Dispose();
 				}
 

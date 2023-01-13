@@ -122,7 +122,6 @@ namespace SensorDevices
 
 			public ImageData(in int width, in int height, in string imageFormat)
 			{
-				var isLinear = false;
 				var textureFormat = TextureFormat.RGB24;
 
 				var format = GetPixelFormat(imageFormat);
@@ -133,26 +132,26 @@ namespace SensorDevices
 						break;
 
 					case PixelFormat.L_INT16:
-						textureFormat = TextureFormat.RG16;
+						textureFormat = TextureFormat.R16;
+						break;
+
+					case PixelFormat.R_FLOAT16:
+						textureFormat = TextureFormat.RHalf;
 						break;
 
 					case PixelFormat.R_FLOAT32:
-						textureFormat = TextureFormat.ARGB32;
-						isLinear = true;
+						textureFormat = TextureFormat.RFloat;
 						break;
 
 					case PixelFormat.RGB_FLOAT32:
-						textureFormat = TextureFormat.ARGB32;
-						isLinear = true;
-						break;
-
 					case PixelFormat.RGB_INT8:
 					default:
+						textureFormat = TextureFormat.RGB24;
 						break;
 				}
 
 				imageBuffer = default(NativeArray<byte>);
-				cameraImage = new Texture2D(width, height, textureFormat, false, isLinear);
+				cameraImage = new Texture2D(width, height, textureFormat, false, true);
 			}
 
 			public void SetTextureBufferData(in NativeArray<byte> buffer)
@@ -160,15 +159,10 @@ namespace SensorDevices
 				imageBuffer = buffer;
 			}
 
-			public int GetImageDataLength()
+			public byte[] GetImageData(in int targetLength)
 			{
-				return imageBuffer.Length;
+				return (targetLength == imageBuffer.Length) ? imageBuffer.ToArray() : null;
 			}
-
-			public byte[] GetImageData()
- 			{
-				return imageBuffer.ToArray();
- 			}
 
 			public void SaveRawImageData(in string path, in string name)
 			{

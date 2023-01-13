@@ -19,7 +19,7 @@ namespace SensorDevices
 
 		private Material depthMaterial = null;
 
-		public uint depthScale = 1;
+		private uint depthScale = 1;
 
 		public void ReverseDepthData(in bool reverse)
 		{
@@ -27,6 +27,8 @@ namespace SensorDevices
 			{
 				depthMaterial.SetInt("_ReverseData", (reverse) ? 1 : 0);
 			}
+			else
+				Debug.Log("is null");
 		}
 
 		public void FlipXDepthData(in bool flip)
@@ -34,6 +36,16 @@ namespace SensorDevices
 			if (depthMaterial != null)
 			{
 				depthMaterial.SetInt("_FlipX", (flip) ? 1 : 0);
+			}
+		}
+
+		public void SetDepthScale(in uint value)
+		{
+			depthScale = value;
+
+			if (computeShader != null)
+			{
+				computeShader.SetFloat("_DepthScale", (float)depthScale);
 			}
 		}
 
@@ -64,7 +76,6 @@ namespace SensorDevices
 			if (computeShader != null)
 			{
 				computeShader.SetFloat("_DepthMax", (float)camParameter.clip.far);
-				computeShader.SetFloat("_DepthScale", (float)depthScale);
 			}
 
 			ReverseDepthData(true);
@@ -77,7 +88,8 @@ namespace SensorDevices
 			}
 
 			camSensor.backgroundColor = Color.white;
-			camSensor.clearFlags = CameraClearFlags.SolidColor;
+			camSensor.clearFlags = CameraClearFlags.Nothing;
+			camSensor.renderingPath = RenderingPath.DeferredLighting;
 			camSensor.depthTextureMode = DepthTextureMode.Depth;
 			camSensor.allowHDR = false;
 			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
@@ -92,18 +104,22 @@ namespace SensorDevices
 			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
 			switch (pixelFormat)
 			{
+				case CameraData.PixelFormat.L_INT8:
+					readbackDstFormat = GraphicsFormat.R8_UNorm;
+					break;
+
 				case CameraData.PixelFormat.L_INT16:
-					readbackDstFormat = TextureFormat.R16;
+					readbackDstFormat = GraphicsFormat.R16_UNorm;
 					break;
 
 				case CameraData.PixelFormat.R_FLOAT16:
-					readbackDstFormat = TextureFormat.RHalf;
+					readbackDstFormat = GraphicsFormat.R16_SFloat;
 					break;
 
 				case CameraData.PixelFormat.R_FLOAT32:
 				default:
 					Debug.Log("32bits depth format may cause application freezing.");
-					readbackDstFormat = TextureFormat.RFloat;
+					readbackDstFormat = GraphicsFormat.R32_SFloat;
 					break;
 			}
 
@@ -122,7 +138,7 @@ namespace SensorDevices
 
 		protected override void PostProcessing(ref byte[] buffer)
 		{
-			if (readbackDstFormat.Equals(TextureFormat.R16) && computeShader != null)
+			if (depthScale > 1 && computeShader != null)
 			{
 				var computeBuffer = new ComputeBuffer(buffer.Length, sizeof(byte));
 				computeShader.SetBuffer(kernelIndex, "_Buffer", computeBuffer);

@@ -27,7 +27,6 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 	protected override void OnStart()
 	{
 		var depthScale = GetPluginParameters().GetValue<uint>("configuration/depth_scale", 1000);
-
 		var colorName = GetPluginParameters().GetValue<string>("activate/module[@name='color']");
 		var leftImagerName = GetPluginParameters().GetValue<string>("activate/module[@name='left_imager']");
 		var rightImagerName = GetPluginParameters().GetValue<string>("activate/module[@name='right_imager']");
@@ -93,8 +92,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 			if (depthCamera != null)
 			{
-				depthCamera.ReverseDepthData(false);
-				depthCamera.depthScale = depthScale;
+				depthCamera.SetDepthScale(depthScale);
 			}
 		}
 	}
@@ -154,7 +152,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		{
 			var moduleInfo = new messages.Param();
 			moduleInfo.Name = "module";
-			moduleInfo.Value = new Any { Type = Any.ValueType.None};
+			moduleInfo.Value = new Any { Type = Any.ValueType.None };
 
 			var moduleType = new messages.Param();
 			moduleType.Name = "type";

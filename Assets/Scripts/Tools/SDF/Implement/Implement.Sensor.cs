@@ -118,7 +118,7 @@ namespace SDF
 					default:
 						if (element.image.format.Equals(string.Empty))
 						{
-							Debug.LogWarning(element.name + " 'R_FLOAT16' will be set for Depth camera's image format");
+							Debug.LogWarningFormat("'R_FLOAT16' will be set for Depth camera({0})'s image format", element.name);
 						}
 						else
 						{
