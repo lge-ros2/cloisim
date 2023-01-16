@@ -81,7 +81,7 @@ public class RandomNumberGenerator
 	// Get normal (Gaussian) random sample with specified mean and standard deviation
 	public static double GetNormal(in double mean, in double standardDeviation)
 	{
-		if (standardDeviation <= 0.0)
+		if (standardDeviation <= 0)
 		{
 			var msg = string.Format("Shape must be positive. Received {0}.", standardDeviation);
 			// throw new ArgumentOutOfRangeException(msg);
