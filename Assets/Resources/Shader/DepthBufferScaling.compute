@@ -1,35 +1,45 @@
-// Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSDepthBufferScaling
+#pragma kernel CSScaleDepthBuffer
 
-#define MaxValue16Bits 65535.0f;
-#define THREADS 8
-#define GROUPS 4
+#define THREADS 32
+#define GROUPS 32
 
-RWByteAddressBuffer _Buffer;
+#define MAX_RANGE_16BITS 65535.0
+#define MAX_RANGE_8BITS 255.0
 
-float _inverseMaxValue16Bits = 1 / MaxValue16Bits;
-float _DepthMin;
+StructuredBuffer<float> _Input;
+RWStructuredBuffer<uint> _Output;
+
 float _DepthMax;
 float _DepthScale;
-
-uint getDepthDataIn16BitsScaled(uint depthData)
-{
-	float depthDataRatio = (float)depthData * _inverseMaxValue16Bits;
-
-	uint scaledDepthData = (uint)(depthDataRatio * _DepthMax * _DepthScale);
-	uint finalData = ((scaledDepthData & 0xff) << 8) | (scaledDepthData >> 8);
-	return finalData;
-}
+uint _Width;
+int _UnitSize;
 
 [numthreads(THREADS, GROUPS, 1)]
-void CSDepthBufferScaling(uint3 id : SV_DispatchThreadID)
+void CSScaleDepthBuffer(uint3 id : SV_DispatchThreadID)
 {
-	uint index = id.x + id.y;
-	uint data = _Buffer.Load(index);
+  const uint bufIndex = id.y *_Width + id.x;
+  const float data = _Input.Load(bufIndex);
+  const float rangedData = data * _DepthMax;
 
-	uint part1 = getDepthDataIn16BitsScaled(data & 0xffff);
-	uint part2 = getDepthDataIn16BitsScaled(data >> 16);
-
-	uint finalData = (part2 << 16) | (part1 & 0xffff);
-	_Buffer.Store(index, finalData);
+  if (_UnitSize == 4)
+  {
+    _Output[bufIndex] = asuint(rangedData);
+  }
+  else
+  {
+    uint finalData;
+    if (_UnitSize == 2)
+    {
+      const float max_scaled_range = MAX_RANGE_16BITS / _DepthScale;
+      const float scaledData = ((rangedData > max_scaled_range)? max_scaled_range : rangedData) * _DepthScale;
+      finalData = asuint((uint)scaledData) & 0xFFFF;
+    }
+    else // 1
+    {
+      // const float max_scaled_range = MAX_RANGE_8BITS;
+      const float scaledData = rangedData / _DepthMax * MAX_RANGE_8BITS;//((rangedData > max_scaled_range)? max_scaled_range : rangedData) * _DepthScale;
+      finalData = asuint((uint)scaledData) & 0xFF;
+    }
+    _Output[bufIndex] = finalData;
+  }
 }
