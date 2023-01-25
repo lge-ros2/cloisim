@@ -271,6 +271,8 @@ namespace RuntimeGizmos
 
 		private void MakeImmovableBodyTransformSelected(in bool value)
 		{
+			const float MarginForPositionY = 0.005f;
+
 			for (var i = 0; i < targetRootsOrdered.Count; i++)
 			{
 				var target = targetRootsOrdered[i];
@@ -279,6 +281,14 @@ namespace RuntimeGizmos
 				if (articulationBody != null && articulationBody.isRoot)
 				{
 					articulationBody.immovable = value;
+
+					if (articulationBody.immovable)
+					{
+						articulationBody.Sleep();
+						var marginForTransform = new Pose(articulationBody.transform.position, articulationBody.transform.rotation);
+						marginForTransform.position.y += MarginForPositionY;
+						articulationBody.TeleportRoot(marginForTransform.position, marginForTransform.rotation);
+					}
 				}
 				else
 				{
@@ -312,6 +322,8 @@ namespace RuntimeGizmos
 				var mouseRay = myCamera.ScreenPointToRay(Input.mousePosition);
 				var mousePosition = Geometry.LinePlaneIntersect(mouseRay.origin, mouseRay.direction, originalPivot, planeNormal);
 				var isSnapping = Input.GetKey(translationSnapping);
+
+				mousePosition.y += 0.1f;
 
 				if (previousMousePosition != Vector3.zero && mousePosition != Vector3.zero)
 				{
@@ -377,11 +389,10 @@ namespace RuntimeGizmos
 									var articulationBody = target.GetComponent<ArticulationBody>();
 									if (articulationBody != null && articulationBody.isRoot)
 									{
-										var newPose = new Pose(target.transform.position, target.transform.rotation);
+										var newPose = new Pose(articulationBody.transform.position, articulationBody.transform.rotation);
 										newPose.position += movement;
 										articulationBody.Sleep();
 										articulationBody.TeleportRoot(newPose.position, newPose.rotation);
-										articulationBody.Sleep();
 									}
 									else
 									{
@@ -458,10 +469,9 @@ namespace RuntimeGizmos
 									var articulationBody = target.GetComponent<ArticulationBody>();
 									if (articulationBody != null && articulationBody.isRoot)
 									{
-										var newPose = new Pose(target.transform.position, target.transform.rotation);
+										var newPose = new Pose(articulationBody.transform.position, articulationBody.transform.rotation);
 										articulationBody.Sleep();
 										articulationBody.TeleportRoot(newPose.position, newPose.rotation);
-										articulationBody.Sleep();
 									}
 								}
 
