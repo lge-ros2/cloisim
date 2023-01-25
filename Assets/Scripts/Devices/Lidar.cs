@@ -67,7 +67,7 @@ namespace SensorDevices
 			}
 		}
 		private List<AsyncLaserWork> _asyncWorkList = new List<AsyncLaserWork>();
-		private LaserData.DepthCamBuffer[] _depthCamBuffers;
+		private DepthData.CamBuffer[] _depthCamBuffers;
 		private LaserData.LaserCamData[] _laserCamData;
 		private LaserData.LaserDataOutput[] _laserDataOutput;
 		private LaserFilter laserFilter = null;
@@ -224,6 +224,7 @@ namespace SensorDevices
 
 			var universalLaserCamData = laserCam.GetUniversalAdditionalCameraData();
 			universalLaserCamData.renderShadows = false;
+			universalLaserCamData.dithering = true;
 			universalLaserCamData.allowXRRendering = false;
 			universalLaserCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
 			universalLaserCamData.renderType = CameraRenderType.Base;
@@ -266,7 +267,7 @@ namespace SensorDevices
 
 			_parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = numberOfLaserCamData };
 			_laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
-			_depthCamBuffers = new LaserData.DepthCamBuffer[numberOfLaserCamData];
+			_depthCamBuffers = new DepthData.CamBuffer[numberOfLaserCamData];
 			_laserDataOutput = new LaserData.LaserDataOutput[numberOfLaserCamData];
 
 			var targetDepthRT = laserCam.targetTexture;
@@ -276,7 +277,7 @@ namespace SensorDevices
 
 			for (var index = 0; index < numberOfLaserCamData; index++)
 			{
-				_depthCamBuffers[index] = new LaserData.DepthCamBuffer(width, height);
+				_depthCamBuffers[index] = new DepthData.CamBuffer(width, height);
 
 				var centerAngle = LaserCameraRotationAngle * index + centerAngleOffset;
 				_laserCamData[index] = new LaserData.LaserCamData(width, height, range, laserAngleResolution, centerAngle, LaserCameraHFovHalf, LaserCameraVFovHalf);
@@ -325,7 +326,7 @@ namespace SensorDevices
 					if (laserCam.isActiveAndEnabled)
 					{
 						laserCam.Render();
-						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, TextureFormat.RGBA32, OnCompleteAsyncReadback);
+						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, OnCompleteAsyncReadback);
 						lock (_asyncWorkList)
 						{
 							_asyncWorkList.Add(new AsyncLaserWork(dataIndex, readbackRequest));
@@ -356,15 +357,15 @@ namespace SensorDevices
 						var depthCamBuffer = _depthCamBuffers[dataIndex];
 
 						depthCamBuffer.Allocate();
-						depthCamBuffer.imageBuffer = request.GetData<byte>();
+						depthCamBuffer.raw = request.GetData<byte>();
 
-						if (depthCamBuffer.depthBuffer.IsCreated)
+						if (depthCamBuffer.depth.IsCreated)
 						{
 							var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
 							jobHandleDepthCamBuffer.Complete();
 
 							var laserCamData = _laserCamData[dataIndex];
-							laserCamData.depthBuffer = depthCamBuffer.depthBuffer;
+							laserCamData.depthBuffer = depthCamBuffer.depth;
 							laserCamData.Allocate();
 
 							var jobHandle = laserCamData.Schedule(laserCamData.OutputLength(), BatchSize);
@@ -479,7 +480,7 @@ namespace SensorDevices
 							break;
 
 						case 3:
-							dataLengthRatio =(laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
+							dataLengthRatio = (laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
 							copyLength = Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
 							srcBufferOffset = srcBufferHorizontalLength * (sampleIndexV + 1) - copyLength;
 							dstBufferOffset = laserSamplesH * sampleIndexV + 1;

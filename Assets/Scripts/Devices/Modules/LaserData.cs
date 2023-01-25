@@ -73,69 +73,6 @@ namespace SensorDevices
 			}
 		}
 
-		private const int ColorFormatUnitSize = sizeof(float);
-
-		public struct DepthCamBuffer : IJobParallelFor
-		{
-			private readonly int imageDataLength;
-
-			[ReadOnly]
-			public NativeArray<byte> imageBuffer;
-			public NativeArray<float> depthBuffer;
-
-			public DepthCamBuffer(in int width, in int height)
-			{
-				this.imageDataLength = width * height;
-				this.imageBuffer = default(NativeArray<byte>);
-				this.depthBuffer = default(NativeArray<float>);
-			}
-
-			public void Allocate()
-			{
-				this.depthBuffer = new NativeArray<float>(this.imageDataLength, Allocator.TempJob);
-			}
-
-			public void Deallocate()
-			{
-				this.imageBuffer.Dispose();
-				this.depthBuffer.Dispose();
-			}
-
-			public int Length()
-			{
-				return depthBuffer.Length;
-			}
-
-			public void Execute(int i)
-			{
-				depthBuffer[i] = GetDecodedData(i);
-			}
-
-			private float GetDecodedData(in int index)
-			{
-				var imageOffset = index * ColorFormatUnitSize;
-				if (imageBuffer != null && imageOffset < imageBuffer.Length)
-				{
-					var r = imageBuffer[imageOffset];
-					var g = imageBuffer[imageOffset + 1];
-					var b = imageBuffer[imageOffset + 2];
-					var a = imageBuffer[imageOffset + 3];
-
-					return DecodeFloatRGBA(r, g, b, a);
-				}
-				else
-				{
-					return 0;
-				}
-			}
-
-			private float DecodeFloatRGBA(in byte r, in byte g, in byte b, in byte a)
-			{
-				// decodedData = (r / 255f) + (g / 255f) / 255f + (b / 255f) / 65025f + (a / 255f) / 16581375f;
-				return (r * 0.0039215686f) + (g * 0.0000153787f) + (b * 0.0000000603f) + (a * 0.0000000002f);
-			}
-		}
-
 		public struct LaserDataOutput
 		{
 			public double[] data;
@@ -253,7 +190,7 @@ namespace SensorDevices
 
 				// filter min/max range
 				var rayDistance = depthData * range.max;
-				laserData[index] = (rayDistance < range.min)? double.NaN: rayDistance;
+				laserData[index] = (rayDistance < range.min) ? double.NaN : rayDistance;
 			}
 
 			// The code actually running on the job
