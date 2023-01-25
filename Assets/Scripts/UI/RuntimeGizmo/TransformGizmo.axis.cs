@@ -272,26 +272,6 @@ namespace RuntimeGizmos
 			return closestDistance;
 		}
 
-		//float DistanceFromMouseToPlane(List<Vector3> planeLines)
-		//{
-		//	if (planeLines.Count >= 4)
-		//	{
-		//		Ray mouseRay = myCamera.ScreenPointToRay(Input.mousePosition);
-		//		Plane plane = new Plane(planeLines[0], planeLines[1], planeLines[2]);
-
-		//		float distanceToPlane;
-		//		if (plane.Raycast(mouseRay, out distanceToPlane))
-		//		{
-		//			Vector3 pointOnPlane = mouseRay.origin + (mouseRay.direction * distanceToPlane);
-		//			Vector3 planeCenter = (planeLines[0] + planeLines[1] + planeLines[2] + planeLines[3]) / 4f;
-
-		//			return Vector3.Distance(planeCenter, pointOnPlane);
-		//		}
-		//	}
-
-		//	return float.MaxValue;
-		//}
-
 		void SetAxisInfo()
 		{
 			if (mainTargetRoot != null)
@@ -300,14 +280,13 @@ namespace RuntimeGizmos
 			}
 		}
 
-		//This helps keep the size consistent no matter how far we are from it.
+		// This helps keep the size consistent no matter how far we are from it.
 		public float GetDistanceMultiplier()
 		{
 			if (mainTargetRoot == null) return 0f;
-
 			if (myCamera.orthographic) return Mathf.Max(.01f, myCamera.orthographicSize * 2f);
-			return Mathf.Max(.01f, Mathf.Abs(ExtVector3.MagnitudeInDirection(pivotPoint - transform.position, myCamera.transform.forward)));
+			var mag = Mathf.Abs(ExtVector3.MagnitudeInDirection(pivotPoint - transform.position, myCamera.transform.forward));
+			return Mathf.Max(this.minimumDistanceHandleLengthMultiplier, mag);
 		}
-
 	}
 }

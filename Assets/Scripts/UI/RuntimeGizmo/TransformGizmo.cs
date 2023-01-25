@@ -33,6 +33,7 @@ namespace RuntimeGizmos
 		public int circleDetail = 40;
 		public float allMoveHandleLengthMultiplier = 1f;
 		public float allRotateHandleLengthMultiplier = 1.4f;
+		public float minimumDistanceHandleLengthMultiplier = 2f;
 		public float minSelectedDistanceCheck = .01f;
 		public float moveSpeedMultiplier = 1f;
 		public float rotateSpeedMultiplier = 1f;
@@ -61,18 +62,18 @@ namespace RuntimeGizmos
 		public Action onCheckForSelectedAxis;
 		public Action onDrawCustomGizmo;
 
-		public Camera myCamera {get; private set;}
+		public Camera myCamera { get; private set; }
 
-		public bool isTransforming {get; private set;}
-		public Quaternion totalRotationAmount {get; private set;}
-		public Axis translatingAxis {get {return nearAxis;}}
-		public Axis translatingAxisPlane {get {return planeAxis;}}
-		public bool hasTranslatingAxisPlane {get {return translatingAxisPlane != Axis.None && translatingAxisPlane != Axis.Any;}}
-		public TransformType transformingType {get {return translatingType;}}
+		public bool isTransforming { get; private set; }
+		public Quaternion totalRotationAmount { get; private set; }
+		public Axis translatingAxis { get { return nearAxis; } }
+		public Axis translatingAxisPlane { get { return planeAxis; } }
+		public bool hasTranslatingAxisPlane { get { return translatingAxisPlane != Axis.None && translatingAxisPlane != Axis.Any; } }
+		public TransformType transformingType { get { return translatingType; } }
 
-		public Vector3 pivotPoint {get; private set;}
+		public Vector3 pivotPoint { get; private set; }
 
-		public Transform mainTargetRoot {get {return (targetRootsOrdered.Count > 0)? ((useFirstSelectedAsMain)? targetRootsOrdered[0]:targetRootsOrdered[targetRootsOrdered.Count - 1]):null;}}
+		public Transform mainTargetRoot { get { return (targetRootsOrdered.Count > 0) ? ((useFirstSelectedAsMain) ? targetRootsOrdered[0] : targetRootsOrdered[targetRootsOrdered.Count - 1]) : null; } }
 
 		private Axis nearAxis = Axis.None;
 		private Axis planeAxis = Axis.None;
@@ -153,7 +154,7 @@ namespace RuntimeGizmos
 		{
 			if (mainTargetRoot == null)
 			{
-				 return;
+				return;
 			}
 
 			// We run this in lateupdate since coroutines run after update and we want our gizmos to have the updated target transform position after TransformSelected()
@@ -380,6 +381,7 @@ namespace RuntimeGizmos
 										newPose.position += movement;
 										articulationBody.Sleep();
 										articulationBody.TeleportRoot(newPose.position, newPose.rotation);
+										articulationBody.Sleep();
 									}
 									else
 									{
@@ -459,6 +461,7 @@ namespace RuntimeGizmos
 										var newPose = new Pose(target.transform.position, target.transform.rotation);
 										articulationBody.Sleep();
 										articulationBody.TeleportRoot(newPose.position, newPose.rotation);
+										articulationBody.Sleep();
 									}
 								}
 
