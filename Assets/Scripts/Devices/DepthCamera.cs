@@ -8,18 +8,57 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
+using Unity.Collections;
+using Unity.Jobs;
+using System.Threading.Tasks;
 
 namespace SensorDevices
 {
 	public class DepthCamera : Camera
 	{
+		#region "For Compute Shader"
+
 		private static ComputeShader ComputeShaderDepthBuffer = null;
 		private ComputeShader computeShader = null;
-		private int kernelIndex = -1;
+		private int _kernelIndex = -1;
+		private const int ThreadGroupsX = 32;
+		private const int ThreadGroupsY = 32;
+		private int _threadGroupX;
+		private int _threadGroupY;
+
+		#endregion
 
 		private Material depthMaterial = null;
 
 		private uint depthScale = 1;
+		private int _imageDepth;
+
+		private const int BatchSize = 64;
+		private DepthData.CamBuffer _depthCamBuffer;
+		private byte[] _computedBufferOutput;
+		private const uint OutputUnitSize = 4;
+		private int _computedBufferOutputUnitLength;
+		private CameraData.Image _depthCamImage;
+		private Texture2D _textureForCapture;
+
+
+		public static void LoadComputeShader()
+		{
+			if (ComputeShaderDepthBuffer == null)
+			{
+				ComputeShaderDepthBuffer = Resources.Load<ComputeShader>("Shader/DepthBufferScaling");
+			}
+		}
+
+		public static void UnloadComputeShader()
+		{
+			if (ComputeShaderDepthBuffer != null)
+			{
+				Resources.UnloadAsset(ComputeShaderDepthBuffer);
+				Resources.UnloadUnusedAssets();
+				ComputeShaderDepthBuffer = null;
+			}
+		}
 
 		public void ReverseDepthData(in bool reverse)
 		{
@@ -54,32 +93,17 @@ namespace SensorDevices
 			// Debug.Log("OnDestroy(Depth Camera)");
 			Destroy(computeShader);
 			computeShader = null;
-			Resources.UnloadAsset(ComputeShaderDepthBuffer);
-			Resources.UnloadUnusedAssets();
 
 			base.OnDestroy();
 		}
 
 		protected override void SetupTexture()
 		{
-			if (ComputeShaderDepthBuffer == null)
-			{
-				ComputeShaderDepthBuffer = Resources.Load<ComputeShader>("Shader/DepthBufferScaling");
-			}
-
 			computeShader = Instantiate(ComputeShaderDepthBuffer);
-			kernelIndex = computeShader.FindKernel("CSDepthBufferScaling");
+			_kernelIndex = computeShader.FindKernel("CSScaleDepthBuffer");
 
 			var depthShader = Shader.Find("Sensor/Depth");
 			depthMaterial = new Material(depthShader);
-
-			if (computeShader != null)
-			{
-				computeShader.SetFloat("_DepthMax", (float)camParameter.clip.far);
-			}
-
-			ReverseDepthData(true);
-			FlipXDepthData(false);
 
 			if (camParameter.depth_camera_output.Equals("points"))
 			{
@@ -87,11 +111,9 @@ namespace SensorDevices
 				camParameter.image.format = "RGB_FLOAT32";
 			}
 
-			camSensor.backgroundColor = Color.white;
-			camSensor.clearFlags = CameraClearFlags.Nothing;
-			camSensor.renderingPath = RenderingPath.DeferredLighting;
-			camSensor.depthTextureMode = DepthTextureMode.Depth;
+			camSensor.clearFlags = CameraClearFlags.Depth;
 			camSensor.allowHDR = false;
+			camSensor.depthTextureMode = DepthTextureMode.Depth;
 			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
 			_universalCamData.requiresDepthOption = CameraOverrideOption.On;
 			_universalCamData.requiresColorTexture = false;
@@ -100,28 +122,7 @@ namespace SensorDevices
 
 			targetRTname = "CameraDepthTexture";
 			targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
-
-			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
-			switch (pixelFormat)
-			{
-				case CameraData.PixelFormat.L_INT8:
-					readbackDstFormat = GraphicsFormat.R8_UNorm;
-					break;
-
-				case CameraData.PixelFormat.L_INT16:
-					readbackDstFormat = GraphicsFormat.R16_UNorm;
-					break;
-
-				case CameraData.PixelFormat.R_FLOAT16:
-					readbackDstFormat = GraphicsFormat.R16_SFloat;
-					break;
-
-				case CameraData.PixelFormat.R_FLOAT32:
-				default:
-					Debug.Log("32bits depth format may cause application freezing.");
-					readbackDstFormat = GraphicsFormat.R32_SFloat;
-					break;
-			}
+			readbackDstFormat = GraphicsFormat.R8G8B8A8_UNorm;
 
 			var cb = new CommandBuffer();
 			cb.name = "CommandBufferForDepthShading";
@@ -131,25 +132,95 @@ namespace SensorDevices
 			cb.ReleaseTemporaryRT(tempTextureId);
 			camSensor.AddCommandBuffer(CameraEvent.AfterEverything, cb);
 			cb.Release();
+
+			var width = camParameter.image.width;
+			var height = camParameter.image.height;
+			var format = CameraData.GetPixelFormat(camParameter.image.format);
+			GraphicsFormat graphicFormat;
+			switch (format)
+			{
+				case CameraData.PixelFormat.L_INT8:
+					graphicFormat = GraphicsFormat.R8_UNorm;
+					break;
+				case CameraData.PixelFormat.R_FLOAT32:
+					graphicFormat = GraphicsFormat.R16G16_UNorm;
+					break;
+				case CameraData.PixelFormat.L_INT16:
+				default:
+					graphicFormat = GraphicsFormat.R16_UNorm;
+					break;
+			}
+			_textureForCapture = new Texture2D(width, height, graphicFormat, 0, TextureCreationFlags.None);
+
+			_depthCamBuffer = new DepthData.CamBuffer(width, height);
+			_computedBufferOutputUnitLength = width * height;
+			_computedBufferOutput = new byte[_computedBufferOutputUnitLength * OutputUnitSize];
+
+			_depthCamImage = new CameraData.Image(width, height, format);
+
+			if (computeShader != null)
+			{
+				_imageDepth = CameraData.GetImageDepth(format);
+				computeShader.SetFloat("_DepthMax", (float)camParameter.clip.far);
+				computeShader.SetInt("_Width", width);
+				computeShader.SetInt("_UnitSize", _imageDepth);
+			}
+
+			ReverseDepthData(false);
+			FlipXDepthData(false);
+
+			_threadGroupX = width / ThreadGroupsX;
+			_threadGroupY = height / ThreadGroupsY;
 		}
 
-		private int threadGroupsX = 8;
-		private int threadGroupsY = 8;
-
-		protected override void PostProcessing(ref byte[] buffer)
+		protected override void ImageProcessing(ref NativeArray<byte> readbackData)
 		{
-			if (depthScale > 1 && computeShader != null)
-			{
-				var computeBuffer = new ComputeBuffer(buffer.Length, sizeof(byte));
-				computeShader.SetBuffer(kernelIndex, "_Buffer", computeBuffer);
-				computeBuffer.SetData(buffer);
+			_depthCamBuffer.Allocate();
+			_depthCamBuffer.raw = readbackData;
 
-				var threadGroupX = camParameter.image.width / threadGroupsX;
-				var threadGroupY = camParameter.image.height / threadGroupsY;
-				computeShader.Dispatch(kernelIndex, threadGroupX, threadGroupY, 1);
-				computeBuffer.GetData(buffer);
-				computeBuffer.Release();
+			if (_depthCamBuffer.depth.IsCreated && computeShader != null)
+			{
+				var jobHandleDepthCamBuffer = _depthCamBuffer.Schedule(_depthCamBuffer.Length(), BatchSize);
+				jobHandleDepthCamBuffer.Complete();
+
+				var computeBufferSrc = new ComputeBuffer(_depthCamBuffer.depth.Length, sizeof(float));
+				computeShader.SetBuffer(_kernelIndex, "_Input", computeBufferSrc);
+				computeBufferSrc.SetData(_depthCamBuffer.depth);
+
+				var computeBufferDst = new ComputeBuffer(_computedBufferOutput.Length, sizeof(byte));
+				computeShader.SetBuffer(_kernelIndex, "_Output", computeBufferDst);
+				computeShader.Dispatch(_kernelIndex, _threadGroupX, _threadGroupY, 1);
+				computeBufferDst.GetData(_computedBufferOutput);
+
+				computeBufferSrc.Release();
+				computeBufferDst.Release();
+
+				Parallel.For(0, _computedBufferOutputUnitLength, (int i) =>
+				{
+					for (int j = 0; j < _imageDepth; j++)
+						imageStamped.Image.Data[i * _imageDepth + j] = _computedBufferOutput[i * OutputUnitSize + j];
+				});
+
+				// Debug.LogFormat("{0:X} {1:X} {2:X} {3:X} => {4}, {5}, {6}, {7}", image.Data[0], image.Data[1], image.Data[2], image.Data[3], System.BitConverter.ToInt16(image.Data, 0), System.BitConverter.ToUInt16(image.Data, 2), System.BitConverter.ToInt32(image.Data, 0), System.BitConverter.ToSingle(image.Data, 0));
+
+				if (camParameter.save_enabled && _startCameraWork)
+				{
+					SaveRawImageData();
+				}
 			}
+			_depthCamBuffer.Deallocate();
+		}
+
+		private void SaveRawImageData()
+		{
+			var saveName = name + "_" + Time.time;
+			_textureForCapture.SetPixelData(imageStamped.Image.Data, 0);
+			_textureForCapture.filterMode = FilterMode.Point;
+			_textureForCapture.Apply();
+			var bytes = _textureForCapture.EncodeToJPG();
+			var fileName = string.Format("{0}/{1}.jpg", camParameter.save_path, saveName);
+			System.IO.File.WriteAllBytes(fileName, bytes);
+			// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
 		}
 	}
 }

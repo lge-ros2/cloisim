@@ -234,6 +234,8 @@ public class Main : MonoBehaviour
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
 
 		gameObject.AddComponent<ObjectSpawning>();
+
+		SensorDevices.DepthCamera.LoadComputeShader();
 	}
 
 	void Start()
@@ -467,6 +469,8 @@ public class Main : MonoBehaviour
 
 	void OnDestroy()
 	{
+		SensorDevices.DepthCamera.UnloadComputeShader();
+
 		Main.bridgeManager.Dispose();
 		Main.simulationService.Dispose();
 

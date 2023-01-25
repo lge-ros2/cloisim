@@ -9,8 +9,8 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
-
 using messages = cloisim.msgs;
+using Unity.Collections;
 
 namespace SensorDevices
 {
@@ -34,10 +34,10 @@ namespace SensorDevices
 		protected GraphicsFormat targetColorFormat;
 		protected GraphicsFormat readbackDstFormat;
 
-		private CameraData.ImageData camImageData;
+		private CameraData.Image camImageData;
 		private List<AsyncGPUReadbackRequest> _readbackList = new List<AsyncGPUReadbackRequest>();
 		public Noise noise = null;
-		private bool _startCameraWork = false;
+		protected bool _startCameraWork = false;
 		private float _lastTimeCameraWork = 0f;
 		private RTHandle _rtHandle;
 
@@ -94,6 +94,7 @@ namespace SensorDevices
 
 		protected virtual void SetupTexture()
 		{
+			camSensor.clearFlags = CameraClearFlags.Nothing;
 			camSensor.allowHDR = true;
 			camSensor.depthTextureMode = DepthTextureMode.None;
 			_universalCamData.requiresColorOption = CameraOverrideOption.On;
@@ -119,6 +120,8 @@ namespace SensorDevices
 					readbackDstFormat = GraphicsFormat.R8G8B8_SRGB;
 					break;
 			}
+
+			camImageData = new CameraData.Image(camParameter.image.width, camParameter.image.height, pixelFormat);
 		}
 
 		protected override void InitializeMessages()
@@ -169,6 +172,7 @@ namespace SensorDevices
 			camSensor.ResetWorldToCameraMatrix();
 			camSensor.ResetProjectionMatrix();
 
+			camSensor.renderingPath = RenderingPath.DeferredLighting;
 			camSensor.allowMSAA = true;
 			camSensor.allowDynamicResolution = true;
 			camSensor.useOcclusionCulling = true;
@@ -225,8 +229,6 @@ namespace SensorDevices
 			RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
 
 			// camSensor.hideFlags |= HideFlags.NotEditable;
-
-			camImageData = new CameraData.ImageData(camParameter.image.width, camParameter.image.height, camParameter.image.format);
 		}
 
 		protected new void OnDestroy()
@@ -286,29 +288,7 @@ namespace SensorDevices
 				checked
 				{
 					var readbackData = request.GetData<byte>();
-					camImageData.SetTextureBufferData(readbackData);
-					var image = imageStamped.Image;
-
-					var imageData = camImageData.GetImageData(image.Data.Length);
-					if (imageData != null)
-					{
-						PostProcessing(ref imageData);
-
-						image.Data = imageData;
-						// Debug.Log(imageStamped.Image.Height + "," + imageStamped.Image.Width);
-
-						if (camParameter.save_enabled && _startCameraWork)
-						{
-							var saveName = name + "_" + Time.time;
-							camImageData.SaveRawImageData(camParameter.save_path, saveName);
-							// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
-						}
-					}
-					else
-					{
-						Debug.LogWarningFormat("{0}: Failed to get image Data", name);
-					}
-
+					ImageProcessing(ref readbackData);
 					readbackData.Dispose();
 				}
 
@@ -325,7 +305,27 @@ namespace SensorDevices
 			PushDeviceMessage<messages.ImageStamped>(imageStamped);
 		}
 
-		protected virtual void PostProcessing(ref byte[] buffer) { }
+		protected virtual void ImageProcessing(ref NativeArray<byte> readbackData)
+		{
+			var image = imageStamped.Image;
+			camImageData.SetTextureBufferData(readbackData);
+
+			var imageData = camImageData.GetImageData(image.Data.Length);
+			if (imageData != null)
+			{
+				image.Data = imageData;
+				if (camParameter.save_enabled && _startCameraWork)
+				{
+					var saveName = name + "_" + Time.time;
+					camImageData.SaveRawImageData(camParameter.save_path, saveName);
+					// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
+				}
+			}
+			else
+			{
+				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
+			}
+		}
 
 		public messages.CameraSensor GetCameraInfo()
 		{

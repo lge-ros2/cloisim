@@ -114,18 +114,17 @@ namespace SensorDevices
 			return depth;
 		}
 
-		public struct ImageData
+		public struct Image
 		{
-			private NativeArray<byte> imageBuffer;
+			private NativeArray<byte> buffer;
 
-			private Texture2D cameraImage;
+			private Texture2D textureForCapture;
 
-			public ImageData(in int width, in int height, in string imageFormat)
+			public Image(in int width, in int height, in CameraData.PixelFormat pixelFormat)
 			{
 				var textureFormat = TextureFormat.RGB24;
 
-				var format = GetPixelFormat(imageFormat);
-				switch (format)
+				switch (pixelFormat)
 				{
 					case PixelFormat.L_INT8:
 						textureFormat = TextureFormat.R8;
@@ -150,25 +149,25 @@ namespace SensorDevices
 						break;
 				}
 
-				imageBuffer = default(NativeArray<byte>);
-				cameraImage = new Texture2D(width, height, textureFormat, false, true);
+				buffer = default(NativeArray<byte>);
+				textureForCapture = new Texture2D(width, height, textureFormat, false, true);
 			}
 
-			public void SetTextureBufferData(in NativeArray<byte> buffer)
+			public void SetTextureBufferData(in NativeArray<byte> data)
 			{
-				imageBuffer = buffer;
+				buffer = data;
 			}
 
 			public byte[] GetImageData(in int targetLength)
 			{
-				return (targetLength == imageBuffer.Length) ? imageBuffer.ToArray() : null;
+				return (targetLength == buffer.Length) ? buffer.ToArray() : null;
 			}
 
 			public void SaveRawImageData(in string path, in string name)
 			{
-				cameraImage.SetPixelData(imageBuffer, 0);
-				cameraImage.Apply();
-				var bytes = cameraImage.EncodeToPNG();
+				textureForCapture.SetPixelData(buffer, 0);
+				textureForCapture.Apply();
+				var bytes = textureForCapture.EncodeToPNG();
 				var fileName = string.Format("{0}/{1}.png", path, name);
 				System.IO.File.WriteAllBytes(fileName, bytes);
 			}
