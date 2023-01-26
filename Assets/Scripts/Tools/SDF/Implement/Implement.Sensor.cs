@@ -108,24 +108,24 @@ namespace SDF
 				switch (element.image.format)
 				{
 					case "L16":
-					case "R_FLOAT16":
+					case "L8":
 					case "R_FLOAT32":
-					case "L_INT16":
 					case "L_UINT16":
+					case "L_INT16":
+					case "L_INT8":
 						// Debug.Log("Supporting data type for Depth camera");
 						break;
 
 					default:
 						if (element.image.format.Equals(string.Empty))
 						{
-							Debug.LogWarning(element.name + " 'R_FLOAT16' will be set for Depth camera's image format");
+							Debug.LogWarningFormat("'L16' will be set for Depth camera({0})'s image format", element.name);
 						}
 						else
 						{
 							Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image.format);
 						}
-
-						element.image.format = "R_FLOAT16";
+						element.image.format = "L16";
 						break;
 				}
 

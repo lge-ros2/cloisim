@@ -33,6 +33,7 @@ namespace RuntimeGizmos
 		public int circleDetail = 40;
 		public float allMoveHandleLengthMultiplier = 1f;
 		public float allRotateHandleLengthMultiplier = 1.4f;
+		public float minimumDistanceHandleLengthMultiplier = 2f;
 		public float minSelectedDistanceCheck = .01f;
 		public float moveSpeedMultiplier = 1f;
 		public float rotateSpeedMultiplier = 1f;
@@ -61,18 +62,18 @@ namespace RuntimeGizmos
 		public Action onCheckForSelectedAxis;
 		public Action onDrawCustomGizmo;
 
-		public Camera myCamera {get; private set;}
+		public Camera myCamera { get; private set; }
 
-		public bool isTransforming {get; private set;}
-		public Quaternion totalRotationAmount {get; private set;}
-		public Axis translatingAxis {get {return nearAxis;}}
-		public Axis translatingAxisPlane {get {return planeAxis;}}
-		public bool hasTranslatingAxisPlane {get {return translatingAxisPlane != Axis.None && translatingAxisPlane != Axis.Any;}}
-		public TransformType transformingType {get {return translatingType;}}
+		public bool isTransforming { get; private set; }
+		public Quaternion totalRotationAmount { get; private set; }
+		public Axis translatingAxis { get { return nearAxis; } }
+		public Axis translatingAxisPlane { get { return planeAxis; } }
+		public bool hasTranslatingAxisPlane { get { return translatingAxisPlane != Axis.None && translatingAxisPlane != Axis.Any; } }
+		public TransformType transformingType { get { return translatingType; } }
 
-		public Vector3 pivotPoint {get; private set;}
+		public Vector3 pivotPoint { get; private set; }
 
-		public Transform mainTargetRoot {get {return (targetRootsOrdered.Count > 0)? ((useFirstSelectedAsMain)? targetRootsOrdered[0]:targetRootsOrdered[targetRootsOrdered.Count - 1]):null;}}
+		public Transform mainTargetRoot { get { return (targetRootsOrdered.Count > 0) ? ((useFirstSelectedAsMain) ? targetRootsOrdered[0] : targetRootsOrdered[targetRootsOrdered.Count - 1]) : null; } }
 
 		private Axis nearAxis = Axis.None;
 		private Axis planeAxis = Axis.None;
@@ -153,7 +154,7 @@ namespace RuntimeGizmos
 		{
 			if (mainTargetRoot == null)
 			{
-				 return;
+				return;
 			}
 
 			// We run this in lateupdate since coroutines run after update and we want our gizmos to have the updated target transform position after TransformSelected()
@@ -270,6 +271,8 @@ namespace RuntimeGizmos
 
 		private void MakeImmovableBodyTransformSelected(in bool value)
 		{
+			const float MarginForPositionY = 0.005f;
+
 			for (var i = 0; i < targetRootsOrdered.Count; i++)
 			{
 				var target = targetRootsOrdered[i];
@@ -278,6 +281,14 @@ namespace RuntimeGizmos
 				if (articulationBody != null && articulationBody.isRoot)
 				{
 					articulationBody.immovable = value;
+
+					if (articulationBody.immovable)
+					{
+						articulationBody.Sleep();
+						var marginForTransform = new Pose(articulationBody.transform.position, articulationBody.transform.rotation);
+						marginForTransform.position.y += MarginForPositionY;
+						articulationBody.TeleportRoot(marginForTransform.position, marginForTransform.rotation);
+					}
 				}
 				else
 				{
@@ -311,6 +322,8 @@ namespace RuntimeGizmos
 				var mouseRay = myCamera.ScreenPointToRay(Input.mousePosition);
 				var mousePosition = Geometry.LinePlaneIntersect(mouseRay.origin, mouseRay.direction, originalPivot, planeNormal);
 				var isSnapping = Input.GetKey(translationSnapping);
+
+				mousePosition.y += 0.1f;
 
 				if (previousMousePosition != Vector3.zero && mousePosition != Vector3.zero)
 				{
@@ -376,7 +389,7 @@ namespace RuntimeGizmos
 									var articulationBody = target.GetComponent<ArticulationBody>();
 									if (articulationBody != null && articulationBody.isRoot)
 									{
-										var newPose = new Pose(target.transform.position, target.transform.rotation);
+										var newPose = new Pose(articulationBody.transform.position, articulationBody.transform.rotation);
 										newPose.position += movement;
 										articulationBody.Sleep();
 										articulationBody.TeleportRoot(newPose.position, newPose.rotation);
@@ -456,7 +469,7 @@ namespace RuntimeGizmos
 									var articulationBody = target.GetComponent<ArticulationBody>();
 									if (articulationBody != null && articulationBody.isRoot)
 									{
-										var newPose = new Pose(target.transform.position, target.transform.rotation);
+										var newPose = new Pose(articulationBody.transform.position, articulationBody.transform.rotation);
 										articulationBody.Sleep();
 										articulationBody.TeleportRoot(newPose.position, newPose.rotation);
 									}
