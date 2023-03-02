@@ -3,7 +3,7 @@
     "com.unity.ai.navigation.components": "https://github.com/Unity-Technologies/NavMeshComponents.git#package",
     "com.unity.ide.vscode": "1.2.5",
     "com.unity.mathematics": "1.2.6",
-    "com.unity.performance.profile-analyzer": "1.1.1",
+    "com.unity.performance.profile-analyzer": "1.2.2",
     "com.unity.render-pipelines.universal": "12.1.10",
     "com.unity.searcher": "4.9.2",
     "com.unity.textmeshpro": "3.0.6",
