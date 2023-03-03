@@ -20,7 +20,14 @@ public class FollowingTargetList : MonoBehaviour
 	{
 		modelRoot = Main.WorldRoot;
 		dropdown = GetComponent<TMP_Dropdown>();
-		followingCamera = Main.UIObject.GetComponentInChildren<FollowingCamera>();
+		if (Main.UIMainCanvas != null)
+		{
+			followingCamera = Main.UIObject.GetComponentInChildren<FollowingCamera>();
+		}
+		else
+		{
+			Debug.LogError("Main.UIMainCanvas is not ready!!");
+		}
 	}
 
 	void Start()
@@ -52,7 +59,10 @@ public class FollowingTargetList : MonoBehaviour
 		var selected = dropdown.options[choice];
 		var target = (choice > 0 && followingCamera != null) ? selected.text : null;
 
-		followingCamera.SetTargetObject(target);
+		if (target != null)
+		{
+			followingCamera?.SetTargetObject(target);
+		}
 	}
 
 	public void UpdateList()

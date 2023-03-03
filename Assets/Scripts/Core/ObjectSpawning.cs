@@ -40,7 +40,15 @@ public class ObjectSpawning : MonoBehaviour
 		propsRoot = GameObject.Find("Props");
 		mainCam = Camera.main;
 		transformGizmo = Main.Gizmos;
-		followingList = Main.UIMainCanvas.GetComponentInChildren<FollowingTargetList>();
+
+		if (Main.UIMainCanvas != null)
+		{
+			followingList = Main.UIMainCanvas.GetComponentInChildren<FollowingTargetList>();
+		}
+		else
+		{
+			Debug.LogError("Main.UIMainCanvas is not ready!!");
+		}
 	}
 
 	void OnDestroy()

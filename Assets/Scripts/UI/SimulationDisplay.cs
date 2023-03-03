@@ -57,8 +57,15 @@ public partial class SimulationDisplay : MonoBehaviour
 	{
 		versionInfo = Application.version;
 
-		var coreObject = Main.CoreObject;
-		objectSpawning = coreObject.GetComponent<ObjectSpawning>();
+		if (Main.CoreObject != null)
+		{
+			objectSpawning = Main.CoreObject.GetComponent<ObjectSpawning>();
+		}
+		else
+		{
+			Debug.LogError("Main.CoreObject is not ready!!");
+		}
+
 		cameraControl = GetComponentInChildren<CameraControl>();
 		clock = DeviceHelper.GetGlobalClock();
 
@@ -69,15 +76,15 @@ public partial class SimulationDisplay : MonoBehaviour
 		rectVersion = new Rect(textLeftMargin, topMargin, textWidthVersion, textHeight);
 		rectOption = new Rect(textWidthVersion + textRightMargin, topMargin, textWidthOptionInfo, textHeight);
 		rectSimulationInfo = new Rect(textLeftMargin, Screen.height - textHeight - bottomMargin, textWidthSimulationInfo, textHeight);
-		rectFps = new Rect(rectSimulationInfo.width + rectSimulationInfo.x,  Screen.height - textHeight - bottomMargin, textWidthFps, textHeight);
-		rectPointInfo = new Rect(rectFps.width + rectFps.x,  Screen.height - textHeight - bottomMargin, TextWidthPointInfo, textHeight);
+		rectFps = new Rect(rectSimulationInfo.width + rectSimulationInfo.x, Screen.height - textHeight - bottomMargin, textWidthFps, textHeight);
+		rectPointInfo = new Rect(rectFps.width + rectFps.x, Screen.height - textHeight - bottomMargin, TextWidthPointInfo, textHeight);
 		rectLogMessage = new Rect(textLeftMargin, Screen.height - (textHeight * 2) - bottomMargin, textWidthEvent, textHeight);
 
 		rectToolbar = new Rect(0, topMargin, toolbarWidth, guiHeight);
 
 		rectDialog = new Rect();
 		rectHelpButton = new Rect(Screen.width - buttonWidthHelp - textLeftMargin, topMargin, buttonWidthHelp, guiHeight);
-		rectHelpStatus = new Rect(Screen.width -rectHelpButton.width - helpStatusWidth - textLeftMargin, topMargin, helpStatusWidth, textHeight * 1.1f);
+		rectHelpStatus = new Rect(Screen.width - rectHelpButton.width - helpStatusWidth - textLeftMargin, topMargin, helpStatusWidth, textHeight * 1.1f);
 
 		style = new GUIStyle();
 
