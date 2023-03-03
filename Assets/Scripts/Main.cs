@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Runtime.InteropServices;
 
 [DefaultExecutionOrder(30)]
 public class Main : MonoBehaviour
@@ -55,7 +56,7 @@ public class Main : MonoBehaviour
 	public static GameObject WorldRoot => worldRoot;
 	public static GameObject CoreObject => coreObject;
 	public static GameObject UIObject => uiRoot;
-	public static GameObject UIMainCanvas => uiRoot;
+	public static GameObject UIMainCanvas => uiMainCanvasRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => transformGizmo;
 	public static SimulationDisplay Display => simulationDisplay;
 	public static InfoDisplay InfoDisplay => _infoDisplay;
@@ -185,6 +186,12 @@ public class Main : MonoBehaviour
 #endif
 #endif
 		Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath);
+
+		if (Assimp.Unmanaged.AssimpLibrary.Instance.IsLibraryLoaded == false)
+		{
+			Debug.LogError("Failed to load assimp library!!!!");
+			return;
+		}
 
 		// Calling this method is required for windows version
 		// refer to https://thomas.trocha.com/blog/netmq-on-unity3d/
@@ -471,8 +478,15 @@ public class Main : MonoBehaviour
 	{
 		SensorDevices.DepthCamera.UnloadComputeShader();
 
-		Main.bridgeManager.Dispose();
-		Main.simulationService.Dispose();
+		if (Main.BridgeManager != null)
+		{
+			Main.BridgeManager.Dispose();
+		}
+
+		if (Main.simulationService != null)
+		{
+			Main.simulationService.Dispose();
+		}
 
 		if (Assimp.Unmanaged.AssimpLibrary.Instance.IsLibraryLoaded)
 		{
