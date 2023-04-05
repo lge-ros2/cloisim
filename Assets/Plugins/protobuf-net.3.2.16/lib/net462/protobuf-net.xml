@@ -268,7 +268,7 @@
         </member>
         <member name="M:ProtoBuf.Meta.MetaType.SetCallbacks(System.Reflection.MethodInfo,System.Reflection.MethodInfo,System.Reflection.MethodInfo,System.Reflection.MethodInfo)">
             <summary>
-            Assigns the callbacks to use during serialiation/deserialization.
+            Assigns the callbacks to use during serialization/deserialization.
             </summary>
             <param name="beforeSerialize">The method (or null) called before serialization begins.</param>
             <param name="afterSerialize">The method (or null) called when serialization is complete.</param>

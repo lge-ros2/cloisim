@@ -2066,7 +2066,7 @@
             </summary>
         </member>
         <member name="P:ProtoBuf.NullWrappedValueAttribute.AsGroup">
-            <summary>Indicates that the collection message wrapper shold use group encoding; this is more
+            <summary>Indicates that the collection message wrapper should use group encoding; this is more
             efficient to write, but may be hard to consume in cross-platform scenarios; this feature is
             usually used for compatibility with protobuf-net v2 <c>SupportNull</c> usage</summary>
         </member>
@@ -2076,7 +2076,7 @@
             </summary>
         </member>
         <member name="P:ProtoBuf.NullWrappedCollectionAttribute.AsGroup">
-            <summary>Indicates that the collection message wrapper shold use group encoding; this is more efficient to write, but may be hard to consume in cross-platform scenarios.</summary>
+            <summary>Indicates that the collection message wrapper should use group encoding; this is more efficient to write, but may be hard to consume in cross-platform scenarios.</summary>
         </member>
         <member name="T:ProtoBuf.PrefixStyle">
             <summary>
@@ -2789,6 +2789,16 @@
             Reads a signed 8-bit integer from the stream; supported wire-types: Variant, Fixed32, Fixed64, SignedVariant
             </summary>
         </member>
+        <member name="M:ProtoBuf.ProtoReader.State.ReadIntPtr">
+            <summary>
+            Reads a native integer from the stream; if the value exceeds the native width, an error will occur; supported wire-types: Variant, Fixed32, Fixed64
+            </summary>
+        </member>
+        <member name="M:ProtoBuf.ProtoReader.State.ReadUIntPtr">
+            <summary>
+            Reads a native integer from the stream; if the value exceeds the native width, an error will occur; supported wire-types: Variant, Fixed32, Fixed64
+            </summary>
+        </member>
         <member name="M:ProtoBuf.ProtoReader.State.ReadUInt32">
             <summary>
             Reads an unsigned 32-bit integer from the stream; supported wire-types: Variant, Fixed32, Fixed64, SignedVariant
@@ -3123,7 +3133,7 @@
         </member>
         <member name="M:ProtoBuf.ProtoWriter.State.Create(System.Buffers.IBufferWriter{System.Byte},ProtoBuf.Meta.TypeModel,System.Object)">
             <summary>
-            Create a new ProtoWriter that tagets a buffer writer
+            Create a new ProtoWriter that targets a buffer writer
             </summary>
         </member>
         <member name="M:ProtoBuf.ProtoWriter.State.Flush">
@@ -3184,6 +3194,16 @@
         <member name="M:ProtoBuf.ProtoWriter.State.WriteBoolean(System.Boolean)">
             <summary>
             Writes a boolean to the stream; supported wire-types: Variant, Fixed32, Fixed64
+            </summary>
+        </member>
+        <member name="M:ProtoBuf.ProtoWriter.State.WriteIntPtr(System.IntPtr)">
+            <summary>
+            Writes a native integer from the stream; supported wire-types: Variant, Fixed32, Fixed64
+            </summary>
+        </member>
+        <member name="M:ProtoBuf.ProtoWriter.State.WriteUIntPtr(System.UIntPtr)">
+            <summary>
+            Writes a native integer from the stream; supported wire-types: Variant, Fixed32, Fixed64
             </summary>
         </member>
         <member name="M:ProtoBuf.ProtoWriter.State.WriteUInt32(System.UInt32)">
@@ -3407,7 +3427,7 @@
             <summary>
             Indicates the end of a nested record.
             </summary>
-            <param name="token">The token obtained from StartubItem.</param>
+            <param name="token">The token obtained from StartSubItem.</param>
             <param name="writer">The destination.</param>
         </member>
         <member name="M:ProtoBuf.ProtoWriter.Init(ProtoBuf.Meta.TypeModel,System.Object,System.Boolean)">
@@ -3468,7 +3488,7 @@
             <summary>
             Writes any buffered data (if possible) to the underlying stream.
             </summary>
-            <param name="state">Wwriter state</param>
+            <param name="state">writer state</param>
             <remarks>It is not always possible to fully flush, since some sequences
             may require values to be back-filled into the byte-stream.</remarks>
         </member>
