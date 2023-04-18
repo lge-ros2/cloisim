@@ -40,7 +40,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.render-pipelines.core": {
-      "version": "12.1.10",
+      "version": "12.1.11",
       "depth": 1,
       "source": "builtin",
       "dependencies": {
@@ -50,14 +50,14 @@
       }
     },
     "com.unity.render-pipelines.universal": {
-      "version": "12.1.10",
+      "version": "12.1.11",
       "depth": 0,
       "source": "builtin",
       "dependencies": {
         "com.unity.mathematics": "1.2.1",
         "com.unity.burst": "1.8.2",
-        "com.unity.render-pipelines.core": "12.1.10",
-        "com.unity.shadergraph": "12.1.10"
+        "com.unity.render-pipelines.core": "12.1.11",
+        "com.unity.shadergraph": "12.1.11"
       }
     },
     "com.unity.searcher": {
@@ -68,27 +68,27 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.shadergraph": {
-      "version": "12.1.10",
+      "version": "12.1.11",
       "depth": 1,
       "source": "builtin",
       "dependencies": {
-        "com.unity.render-pipelines.core": "12.1.10",
+        "com.unity.render-pipelines.core": "12.1.11",
         "com.unity.searcher": "4.9.1"
       }
     },
     "com.unity.sysroot": {
-      "version": "1.0.0",
+      "version": "2.0.5",
       "depth": 1,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
     "com.unity.sysroot.linux-x86_64": {
-      "version": "1.0.0",
+      "version": "2.0.4",
       "depth": 1,
       "source": "registry",
       "dependencies": {
-        "com.unity.sysroot": "1.0.0"
+        "com.unity.sysroot": "2.0.5"
       },
       "url": "https://packages.unity.com"
     },
@@ -102,12 +102,12 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.toolchain.linux-x86_64": {
-      "version": "1.0.0",
+      "version": "2.0.4",
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.unity.sysroot": "1.0.0",
-        "com.unity.sysroot.linux-x86_64": "1.0.0"
+        "com.unity.sysroot": "2.0.5",
+        "com.unity.sysroot.linux-x86_64": "2.0.4"
       },
       "url": "https://packages.unity.com"
     },
