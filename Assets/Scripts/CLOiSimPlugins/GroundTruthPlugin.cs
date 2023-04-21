@@ -285,7 +285,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			}
 			catch
 			{
-				UE.Debug.LogWarning(trackingId + " is wrong object to get");
+				UE.Debug.LogWarning(trackingId + "(" + perception.ClassId + ") is wrong object to get");
 				// foreach (var track in trackingObjectList)
 				// {
 				// 	UE.Debug.Log(track.Key + ", " + track.Value.GetGameObject().name);

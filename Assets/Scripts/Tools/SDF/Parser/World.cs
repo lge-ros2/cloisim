@@ -73,7 +73,7 @@ namespace SDF
 				public string view_controller = "orbit";
 
 				// Description: Set the type of projection for the camera. Valid values are "perspective" and "orthographic".
-				public string projection_type= "perspective";
+				public string projection_type = "perspective";
 
 				public TrackVisual track_visual = null;
 
@@ -104,7 +104,7 @@ namespace SDF
 			// Description: Name of the road
 			public string name = "__default__";
 
- 			// Description: Width of the road
+			// Description: Width of the road
 			public double width = 1;
 
 			// Required: +
@@ -223,13 +223,13 @@ namespace SDF
 			lights = new Lights(root);
 			plugins = new Plugins(root);
 
-			var gravityStr = (IsValidNode("gravity"))? GetValue<string>("gravity"): "0 0 -9.8";
+			var gravityStr = (IsValidNode("gravity")) ? GetValue<string>("gravity") : "0 0 -9.8";
 			gravity.FromString(gravityStr);
 
 			// Console.WriteLine("{0}", GetType().Name);
 
 			// Console.WriteLine("[{0}] {1} {2} {3} {4}", GetType().Name,
-				// isStatic, isSelfCollide, allowAutoDisable, enableWind);
+			// isStatic, isSelfCollide, allowAutoDisable, enableWind);
 
 			if (IsValidNode("gui"))
 			{

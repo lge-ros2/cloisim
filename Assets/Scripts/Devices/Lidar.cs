@@ -539,7 +539,8 @@ namespace SensorDevices
 
 			while (true)
 			{
-				var rayStart = lidarLink.position + lidarSensorInitPose.position;
+				var lidarModel = lidarLink.parent;
+				var rayStart = lidarLink.position + lidarModel.rotation * lidarSensorInitPose.position;
 				var rangeData = GetRangeData();
 
 				if (rangeData != null)

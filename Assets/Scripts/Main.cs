@@ -338,7 +338,6 @@ public class Main : MonoBehaviour
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
 			model.Name = GetClonedModelName(model.Name);
 
-			yield return new WaitForEndOfFrame();
 			yield return StartCoroutine(sdfLoader.StartImport(model));
 
 			var targetObject = worldRoot.transform.Find(model.Name);
@@ -346,6 +345,7 @@ public class Main : MonoBehaviour
 			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
 			addingModel.SetAddingModelForDeploy(targetObject);
 
+			// Debug.Log("Model Loaded:" + targetObject.name);
 			yield return new WaitForEndOfFrame();
 
 			// for GUI
