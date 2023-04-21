@@ -139,7 +139,7 @@ namespace RuntimeGizmos
 		}
 		int AxisDirectionMultiplier(Vector3 direction, Vector3 otherDirection)
 		{
-			return ExtVector3.IsInDirection(direction, otherDirection)? 1 : -1;
+			return ExtVector3.IsInDirection(direction, otherDirection) ? 1 : -1;
 		}
 
 		void SetHandlePlanes()
@@ -428,7 +428,7 @@ namespace RuntimeGizmos
 
 		void ClearAllHighlightedRenderers()
 		{
-			foreach(var target in targetRoots)
+			foreach (var target in targetRoots)
 			{
 				RemoveTargetHighlightedRenderers(target.Key);
 			}
