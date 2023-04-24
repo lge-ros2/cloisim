@@ -128,7 +128,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement
 
-- Latest Unity Editor Version: *'2021.3.8f1 (LTS)'*.
+- Latest Unity Editor Version: *'2021.3.23f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 20.04.3 LTS
@@ -181,6 +181,8 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 - *You need to run this package in order to publish sensor data in ROS2.*
 
 - *Run bringup node in '[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' ros2 packages*
+
+- Latest version of CLOiSim will support only humble version of ROS2
 
 - That's it. *Have fun!!!*
 
