@@ -65,7 +65,7 @@ namespace SensorDevices
 
 				if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
 				{
-					var motorObject = (link.gameObject != null)? link.gameObject : link.Model.gameObject;
+					var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
 					motorControl.AddWheelInfo(wheelLocation, motorObject);
 				}
 			}
@@ -96,7 +96,7 @@ namespace SensorDevices
 
 				if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
 				{
-					var motorObject = (link.gameObject != null)? link.gameObject : link.Model.gameObject;
+					var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
 					motorControl.AddWheelInfo(wheelLocation, motorObject);
 				}
 			}

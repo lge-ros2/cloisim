@@ -7,7 +7,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Stopwatch = System.Diagnostics.Stopwatch;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -61,8 +60,8 @@ namespace SensorDevices
 			}
 			else
 			{
-				mesh = ProceduralMesh.CreateCone((float)radius, 0, (float)rangeMax, 10);
-				sensorMeshOffset = (float)rangeMax/2;
+				mesh = ProceduralMesh.CreateCone((float)radius, 0, (float)rangeMax, 14);
+				sensorMeshOffset = (float)rangeMax / 2;
 			}
 
 			TranslateDetectionArea(mesh, 0.0001f + sensorStartOffset + sensorMeshOffset + (float)rangeMin);
@@ -115,11 +114,12 @@ namespace SensorDevices
 			var sonarPosition = sonarLink.position;
 			var sonarRotation = sonarLink.rotation;
 
+			DeviceHelper.SetCurrentTime(sonarStamped.Time);
+
 			var sonar = sonarStamped.Sonar;
 			sonar.Frame = DeviceName;
 			DeviceHelper.SetVector3d(sonar.WorldPose.Position, sonarPosition);
 			DeviceHelper.SetQuaternion(sonar.WorldPose.Orientation, sonarRotation);
-			DeviceHelper.SetCurrentTime(sonarStamped.Time);
 			PushDeviceMessage<messages.SonarStamped>(sonarStamped);
 		}
 
@@ -182,17 +182,24 @@ namespace SensorDevices
 				var targetPoint = localToWorld.MultiplyPoint3x4(meshSensorRegionVertices[i]);
 				var direction = (targetPoint - sensorStartPoint);
 
-				if (Physics.Raycast(sensorStartPoint, direction, out var hitInfo))
+				if (Physics.Raycast(sensorStartPoint, direction, out var hitInfo, (float)rangeMax))
 				{
 					// Debug.DrawRay(sensorStartPoint, direction, Color.magenta, 0.01f);
-
 					// Debug.Log("Hit Point of contact: " + hitInfo.point + " | " + sensorStartPoint.ToString("F4"));
 					var hitPoint = hitInfo.point;
 					var hitDistance = Vector3.Distance(sensorStartPoint, hitPoint);
+					var hitCollider = hitInfo.collider;
+
+					// Debug.Log(hitCollider.name + " <=> " + name + "," + DeviceName);
+					// Debug.Log(hitCollider.transform.parent.name + " <=> " + sonarLink.name + "," + DeviceName);
+
+					// ignore itself
+					if (hitCollider.name.CompareTo(name) == 0 && hitCollider.transform.parent.name.CompareTo(sonarLink.name) == 0)
+						continue;
 
 					if ((hitDistance < detectedRange) && (hitDistance > (float)rangeMin))
 					{
-						// Debug.Log("Hit Point " + i + " of contact: " + hitInfo.point + "|" + hitDistance.ToString("F4"));
+						// Debug.Log("Hit Point " + i + " of contacts: " + hitCollider.name + "," + hitInfo.point + "|" + hitDistance.ToString("F4"));
 						detectedRange = hitDistance;
 						contactDirection = direction;
 						contactPoint = hitPoint;
