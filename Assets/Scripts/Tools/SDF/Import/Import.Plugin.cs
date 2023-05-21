@@ -20,7 +20,7 @@ namespace SDF
 
 				// filtering plugin name
 				var pluginLibraryName = plugin.LibraryName();
-				// Debug.Log("plugin name = " + pluginName);
+				// Debug.Log("plugin name = " + pluginLibraryName);
 
 				var pluginType = Type.GetType(pluginLibraryName);
 				if (pluginType != null)

@@ -62,8 +62,8 @@ namespace SensorDevices
 
 		public SensorDevices.Camera GetCamera(in string cameraName)
 		{
-			var target = "MultiCamera::" + cameraName;
-			return cameras.Find(x => x.DeviceName.Equals(target));
+			var target = "::" + cameraName;
+			return cameras.Find(x => x.DeviceName.EndsWith(target));
 		}
 
 		public SensorDevices.Camera GetCamera(in int cameraIndex)

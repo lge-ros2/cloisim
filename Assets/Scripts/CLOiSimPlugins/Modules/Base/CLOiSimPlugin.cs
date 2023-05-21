@@ -9,7 +9,7 @@ using UnityEngine;
 
 public interface ICLOiSimPlugin
 {
-	enum Type { WORLD, GROUNDTRUTH, ELEVATOR, ACTOR, MICOM, JOINTCONTROL, GPS, IMU, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE };
+	enum Type { WORLD, GROUNDTRUTH, ELEVATOR, ACTOR, MICOM, JOINTCONTROL, GPS, IMU, SONAR, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE };
 	void SetPluginParameters(in SDF.Plugin node);
 	SDF.Plugin GetPluginParameters();
 	void Reset();
@@ -43,7 +43,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 		thread.Dispose();
 		transport.Dispose();
-		Debug.Log(name + ", CLOiSimPlugin destroyed !!!!!!!!!!!");
+		Debug.LogFormat("({0}){0}, CLOiSimPlugin destroyed.", type.ToString(), name);
 	}
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)
