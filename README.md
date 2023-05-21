@@ -58,7 +58,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
     - [ ] supporting `<specular>`, `<attenuation/linear>`, `<attenuation/contant>`, `<attenuation/quadratic>`, `<spot/falloff>`
   - [X] Spherical Coordinates
 
-Plus, [SDF](http://sdformat.org/spec?ver=1.6) works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
+Plus, [SDF](http://sdformat.org/spec?ver=1.6) file basically targeting and supporting version 1.6 and works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<road>`, `<population>`.
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material', 'Collada(.dae) including animation' and 'STL(.stl)'.
@@ -87,9 +87,12 @@ more details in [here](https://github.com/lge-ros2/cloisim/tree/main/Assets/Scri
 - `CameraPlugin`: help to publish 2D color image data or depth image data
 - `MultiCameraPlugin`: help to publish multiple color image data
 - `RealSensePlugin`: can handle ir1(left), ir2(right), depth, color
-- `MicomPlugin`: control micom input/output(sensor)
+- `MicomPlugin`: control micom(differential drive) input/output(sensor)
 - `GpsPlugin`: gps position in world
+- `JointControlPlugin`: can control joints and help to publish joints status.
 - `ActorPlugin`: add actor control functionality using AI(Unity) components
+- `ImuPlugin`: help to publish IMU sensor data
+- `SonarPlugin`: help to publish Sonar range data
 
 #### World Specific
 
@@ -126,13 +129,13 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 - Memory: testing and looking for the minimum
 - Graphics: testing and looking for the minimum
 
-### Tested environement
+### Tested environement (latest)
 
-- Latest Unity Editor Version: *'2021.3.23f1 (LTS)'*.
+- Unity Editor Version: *'2021.3.25f1 (LTS)'*.
 
 - Linux Machine
-  - OS: Ubuntu 20.04.3 LTS
-  - Processor: AMD® Ryzen 9 3900x 12-core processor × 24
+  - OS: Ubuntu 22.04.2 LTS
+  - Processor: AMD® Ryzen 9 5950X 16-core processor
   - Memory: 64 GB
   - Graphics: NVIDIA Corporation [GeForce RTX 3090]
 
