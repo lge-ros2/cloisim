@@ -60,7 +60,6 @@ namespace SDF
 				AttachSensor(newSensorObject, targetObject);
 
 				var lidar = newSensorObject.AddComponent<SensorDevices.Lidar>();
-
 				lidar.DeviceName = GetFrameName(newSensorObject);
 				lidar.range = new SensorDevices.LaserData.MinMax(element.range.min, element.range.max);
 				var horizontal = element.horizontal;
@@ -86,6 +85,7 @@ namespace SDF
 				AttachSensor(newSensorObject, targetObject, element.Pose);
 
 				var camera = newSensorObject.AddComponent<SensorDevices.Camera>();
+				camera.tag = "Sensor";
 				camera.DeviceName = GetFrameName(newSensorObject);
 				camera.SetCamParameter(element);
 
@@ -146,13 +146,12 @@ namespace SDF
 
 				var multicamera = newSensorObject.AddComponent<SensorDevices.MultiCamera>();
 				multicamera.DeviceName = GetFrameName(newSensorObject);
-
 				foreach (var camParam in element.cameras)
 				{
 					var newCam = AddCamera(camParam, newSensorObject);
+					newCam.name = camParam.name;
 					newCam.Mode = Device.ModeType.NONE;
-					newCam.DeviceName = element.name + "::" + newCam.DeviceName;
-
+					newCam.DeviceName = multicamera.DeviceName + "::" + element.name + "::" + newCam.name;
 					multicamera.AddCamera((SensorDevices.Camera)newCam);
 				}
 

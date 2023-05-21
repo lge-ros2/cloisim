@@ -51,7 +51,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 					// Debug.Log(tfMessage.Header.Stamp.Sec + "." + tfMessage.Header.Stamp.Nsec + ": " + tfMessage.Header.StrId + ", " + tfMessage.Transform.Name) ;
 					if (publisher.Publish(deviceMessage) == false)
 					{
-						Debug.Log(tfMessage.Header.StrId  + ", " + tfMessage.Transform.Name + " error to send TF!!");
+						Debug.Log(tfMessage.Header.StrId + ", " + tfMessage.Transform.Name + " error to send TF!!");
 					}
 					CLOiSimPluginThread.Sleep(updatePeriodPerEachTf);
 				}
