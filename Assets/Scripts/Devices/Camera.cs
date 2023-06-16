@@ -172,9 +172,9 @@ namespace SensorDevices
 			camSensor.ResetWorldToCameraMatrix();
 			camSensor.ResetProjectionMatrix();
 
-			camSensor.renderingPath = RenderingPath.DeferredLighting;
+			camSensor.renderingPath = RenderingPath.Forward;
 			camSensor.allowMSAA = true;
-			camSensor.allowDynamicResolution = true;
+			camSensor.allowDynamicResolution = false;
 			camSensor.useOcclusionCulling = true;
 			camSensor.stereoTargetEye = StereoTargetEyeMask.None;
 			camSensor.orthographic = false;

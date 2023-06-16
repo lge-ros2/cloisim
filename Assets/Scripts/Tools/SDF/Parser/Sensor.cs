@@ -32,7 +32,7 @@ namespace SDF
 		private string topic = "__default__";
 
 		// Description: If true, the sensor will publish performance metrics
-		private bool enable_metrics = false;
+		// private bool enable_metrics = false;
 
 		private SensorType sensor = null;
 		private Plugins plugins = null;

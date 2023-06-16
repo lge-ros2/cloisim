@@ -130,7 +130,6 @@ namespace SDF
 
 					articulationBody.jointPosition = zeroSpace;
 					articulationBody.jointVelocity = zeroSpace;
-					articulationBody.jointAcceleration = zeroSpace;
 					articulationBody.jointForce = zeroSpace;
 					var isPrismatic = articulationBody.jointType.Equals(UE.ArticulationJointType.PrismaticJoint);
 

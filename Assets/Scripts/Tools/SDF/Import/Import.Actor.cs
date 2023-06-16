@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using UnityEngine.AI;
 using UnityEngine;
 
 namespace SDF

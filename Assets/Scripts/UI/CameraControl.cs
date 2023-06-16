@@ -205,7 +205,11 @@ public class CameraControl : MonoBehaviour
 			baseDirection += new Vector3(0, 0, -1);
 		}
 
-		if (Input.GetKey(KeyCode.A))
+		if (Input.GetKey(KeyCode.A) && Input.GetKey(KeyCode.D))
+		{
+			baseDirection += new Vector3(0, 0, 0);
+		}
+		else if (Input.GetKey(KeyCode.A))
 		{
 			baseDirection += new Vector3(-1, 0, 0);
 		}

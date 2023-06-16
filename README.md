@@ -18,6 +18,11 @@ This project consists of
 ![cloisim_multirobot](https://user-images.githubusercontent.com/21001946/107105748-3a124f80-686b-11eb-8ac8-74377696e641.gif)
 [video link](https://user-images.githubusercontent.com/21001946/104274159-96d84f80-54e3-11eb-9975-9d4bbbbdd586.mp4)
 
+## Notices
+
+Working branch policy has been updated. Previous latest `main` branch which is corresponding to `release-3.2.0` branch is no longer available. So please check `release-3.2.0` branch if you want to follow the history of `CLOiSim-3.x.x`.
+`develop` branch shall be merged into `main` branch every released.
+
 ## Features
 
 ### Sensors
@@ -131,7 +136,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2021.3.27f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.2f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 22.04.2 LTS

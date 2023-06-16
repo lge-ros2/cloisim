@@ -9,7 +9,6 @@ using UnityEngine.AI;
 using Unity.Jobs.LowLevel.Unsafe;
 using System.Collections;
 using System.Collections.Generic;
-using NavMeshBuilder = UnityEngine.AI.NavMeshBuilder;
 
 // Build and update a localized navmesh from the sources marked by NavMeshSourceTag
 [DefaultExecutionOrder(-102)]
