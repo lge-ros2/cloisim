@@ -1,0 +1,133 @@
+# For most projects, this workflow file will not need changing; you simply need
+# to commit it to your repository.
+#
+# You may wish to alter this file to override the set of languages analyzed,
+# or to provide custom queries or build logic.
+#
+# ******** NOTE ********
+# We have attempted to detect the languages in your repository. Please check
+# the `language` matrix defined below to confirm you have the correct set of
+# supported CodeQL languages.
+#
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ main, develop, develop-2 ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ main ]
+  schedule:
+    - cron: '38 12 * * 5'
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'cpp', 'csharp' ]
+        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python' ]
+        # Learn more:
+        # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#changing-the-languages-that-are-analyzed
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v1
+      with:
+        languages: ${{ matrix.language }}
+        # If you wish to specify custom queries, you can do so here or in a config file.
+        # By default, queries listed here will override any specified in a config file.
+        # Prefix the list here with "+" to use these queries and those in the config file.
+        # queries: ./path/to/local/query, your-org/your-repo/queries@main
+
+    # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
+    # If this step fails, then you should remove it and run the build manually (see below)
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v1
+
+    # ℹ️ Command-line programs to run using the OS shell.
+    # 📚 https://git.io/JvXDl
+
+    # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
+    #    and modify them (or add more) to build your code if your project
+    #    uses a compiled language
+
+    #- run: |
+    #   make bootstrap
+    #   make release
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v1
+
+    - name: Codecov
+      # You may pin to the exact commit or the version.
+      # uses: codecov/codecov-action@e156083f13aff6830c92fc5faa23505779fbf649
+      uses: codecov/codecov-action@v1.2.1
+      with:
+        # Repository upload token - get it from codecov.io. Required only for private repositories
+        token: # optional
+        # Comma-separated list of files to upload
+        files: # optional
+        # Directory to search for coverage reports.
+        directory: # optional
+        # Flag upload to group coverage metrics (e.g. unittests | integration | ui,chrome)
+        flags: # optional
+        # Extra curl arguments to communicate with AWS.
+        aws_curl_args: # optional
+        # Extra curl arguments to communicate with Codecov. e.g., -U "--proxy http://http-proxy"
+        codecov_curl_args: # optional
+        # The commit SHA of the parent for which you are uploading coverage. If not present, the parent will be determined using the API of your repository provider.  When using the repository providers API, the parent is determined via finding the closest ancestor to the commit.
+        commit_parent: # optional
+        # Environment variables to tag the upload with (e.g. PYTHON | OS,PYTHON)
+        env_vars: # optional
+        # Specify whether or not CI build should fail if Codecov runs into an error during upload
+        fail_ci_if_error: # optional
+        # Path to coverage file to upload
+        file: # optional
+        # Comma-separated list, see the README for options and their usage
+        functionalities: # optional
+        # extra arguments to pass to gcov
+        gcov_args: # optional
+        # gcov executable to run. Defaults to gcov
+        gcov_executable: # optional
+        # Paths to ignore during gcov gathering (as a glob)
+        gcov_path_exclude: # optional
+        # Paths to include during gcov gathering (as a glob)
+        gcov_path_include: # optional
+        # Prefix filepaths to help resolve path fixing
+        gcov_prefix: # optional
+        # Project root directory, also used when preparing gcov
+        gcov_root_dir: # optional
+        # Move discovered coverage reports to the trash
+        move_coverage_to_trash: # optional
+        # User defined upload name. Visible in Codecov UI
+        name: # optional
+        # Specify the branch name
+        override_branch: # optional
+        # Specify the build number
+        override_build: # optional
+        # Specify the commit SHA
+        override_commit: # optional
+        # Specify the pull request number
+        override_pr: # optional
+        # Specify the git tag
+        override_tag: # optional
+        # Write upload file to path before uploading
+        path_to_write_report: # optional
+        # Used when not in git/hg project to identify project root directory
+        root_dir: # optional
+        # Specify whether the Codecov output should be verbose
+        verbose: # optional
+        # Directory in which to execute codecov.sh
+        working-directory: # optional
+        # Custom Derived Data Path for Coverage.profdata and gcov processing
+        xcode_derived_data: # optional
+        # Specify packages to build coverage. Uploader will only build these packages
+        xcode_package: # optional
