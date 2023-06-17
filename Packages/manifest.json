@@ -5,6 +5,7 @@
     "com.unity.mathematics": "1.2.6",
     "com.unity.performance.profile-analyzer": "1.2.2",
     "com.unity.render-pipelines.universal": "14.0.8",
+    "com.unity.robotics.vhacd": "https://github.com/Unity-Technologies/VHACD.git?path=/com.unity.robotics.vhacd",
     "com.unity.searcher": "4.9.2",
     "com.unity.textmeshpro": "3.0.6",
     "com.unity.toolchain.linux-x86_64": "2.0.5",
