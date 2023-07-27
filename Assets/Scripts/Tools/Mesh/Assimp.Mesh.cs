@@ -434,7 +434,7 @@ public partial class MeshLoader
 
 		meshObject = GameObject.Instantiate(GameObjectCache[meshPath]);
 		meshObject.SetActive(true);
-		meshObject.name = "geometry(mesh)";
+		meshObject.name = "Non-Primitive Mesh";
 		meshObject.tag = "Geometry";
 
 		return meshObject;
