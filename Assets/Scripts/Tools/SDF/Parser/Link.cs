@@ -26,7 +26,7 @@ namespace SDF
 
 		public Inertia inertia;
 
-		public Pose<double> pose;
+		public Pose<double> pose = null;
 
 		public Inertial(double _mass = 0.0)
 		{
@@ -107,7 +107,10 @@ namespace SDF
 				}
 
 				var poseStr = GetValue<string>("inertial/pose");
-				inertial.pose.FromString(poseStr);
+				if (poseStr == null)
+					inertial.pose = null;
+				else
+					inertial.pose.FromString(poseStr);
 				// Console.WriteLine("Link Mass: " + inertial.mass);
 			}
 		}
