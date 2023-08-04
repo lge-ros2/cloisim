@@ -15,8 +15,8 @@ namespace SDF
 {
 	public class Root
 	{
-		// {Model Name, (Model Path, Model File)}
-		public Dictionary<string, Tuple<string, string>> resourceModelTable = new Dictionary<string, Tuple<string, string>>();
+		// {Model Name, (Model Config Name, Model Path, Model File)}
+		public Dictionary<string, Tuple<string, string, string>> resourceModelTable = new Dictionary<string, Tuple<string, string, string>>();
 
 		private readonly string[] sdfVersions = {"1.9", "1.8", "1.7", "1.6", "1.5", "1.4", "1.3", "1.2", string.Empty};
 
@@ -190,11 +190,14 @@ namespace SDF
 						continue;
 					}
 
+					// Get Model root
+					var modelNode = modelConfigDoc.SelectSingleNode("model");
+
 					// Get Model name
 					var modelName = subDirectory.Name;
 
-					// Get Model root
-					var modelNode = modelConfigDoc.SelectSingleNode("model");
+					var modelNameNode = modelNode.SelectSingleNode("name");
+					var modelConfigName = (modelNameNode == null) ? modelName : modelNameNode.InnerText;
 
 					// Get Model SDF file name
 					var sdfFileName = string.Empty;
@@ -218,7 +221,7 @@ namespace SDF
 					}
 
 					// Insert resource table
-					var modelValue = new Tuple<string, string>(subDirectory.FullName, sdfFileName);
+					var modelValue = new Tuple<string, string, string>(modelConfigName, subDirectory.FullName, sdfFileName);
 					try
 					{
 						// Console.Write(modelName + ":" + subDirectory.FullName + ":" + sdfFileName);
@@ -269,10 +272,9 @@ namespace SDF
 					// remove Model name in array
 					modelUri = string.Join("/", stringArray.Skip(1));
 
-					Tuple<string, string> value;
-					if (resourceModelTable.TryGetValue(modelName, out value))
+					if (resourceModelTable.TryGetValue(modelName, out var value))
 					{
-						node.InnerText = value.Item1 + "/" + modelUri;
+						node.InnerText = value.Item2 + "/" + modelUri;
 					}
 				}
 				else if (uri.StartsWith("file://"))
@@ -351,11 +353,10 @@ namespace SDF
 			var uri = uri_node.InnerText;
 			// Console.WriteLineFormat("{0} | {1} | {2} | {3}", name, uri, pose, isStatic);
 
-			Tuple<string, string> value;
 			var modelName = uri.Replace("model://", string.Empty);
-			if (resourceModelTable.TryGetValue(modelName, out value))
+			if (resourceModelTable.TryGetValue(modelName, out var value))
 			{
-				uri = value.Item1 + "/" + value.Item2;
+				uri = value.Item2 + "/" + value.Item3;
 			}
 			else
 			{
