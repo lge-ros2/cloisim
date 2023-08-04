@@ -8,9 +8,7 @@ using UnityEngine;
 
 public class Articulation
 {
-	public enum DriveType {NONE, FORCE_AND_VELOCITY, POSITION_AND_VELOCITY};
-	private DriveType driveType = DriveType.NONE;
-
+	private ArticulationDriveType _driveType = ArticulationDriveType.Force;
 	private ArticulationBody _jointBody = null;
 	private ArticulationJointType _jointType = ArticulationJointType.FixedJoint;
 
@@ -40,9 +38,9 @@ public class Articulation
 		}
 	}
 
-	public void SetDriveType(in DriveType type)
+	public void SetDriveType(in ArticulationDriveType type)
 	{
-		this.driveType = type;
+		this._driveType = type;
 	}
 
 	public bool IsRevoluteType()
@@ -99,9 +97,9 @@ public class Articulation
 		return F;
 	}
 
-	/// <param name="target">force or torque desired for FORCE_AND_VELOCITY type and position for POSITION_AND_VELOCITY.</param>
 	/// <param name="targetVelocity">angular velocity in degrees per second.</param>
-	public void Drive(in float target, in float targetVelocity)
+	/// <param name="target">target position </param>
+	public void Drive(in float targetVelocity, in float target = 0)
 	{
 		if (_jointBody == null)
 		{
@@ -113,14 +111,11 @@ public class Articulation
 		// F = stiffness * (currentPosition - target) - damping * (currentVelocity - targetVelocity).
 		var drive = GetDrive();
 
-		switch (this.driveType)
+		drive.driveType = _driveType;
+
+		if (_driveType == ArticulationDriveType.Force)
 		{
-			case DriveType.FORCE_AND_VELOCITY:
-				drive.damping = target;
-				break;
-			case DriveType.POSITION_AND_VELOCITY:
-				drive.target = target;
-				break;
+			drive.target = target;
 		}
 
 		drive.targetVelocity = targetVelocity;
@@ -128,7 +123,7 @@ public class Articulation
 		SetDrive(drive);
 	}
 
-	public ArticulationDrive GetDrive()
+	private ArticulationDrive GetDrive()
 	{
 		ArticulationDrive drive;
 

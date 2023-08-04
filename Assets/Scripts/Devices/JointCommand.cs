@@ -78,7 +78,7 @@ namespace SensorDevices
 			while (jointCommandQueue.Count > 0)
 			{
 				var command = jointCommandQueue.Dequeue();
-				command.joint.Drive(command.targetPosition, command.targetVelocity);
+				command.joint.Drive(command.targetVelocity, command.targetPosition);
 			}
 		}
 	}

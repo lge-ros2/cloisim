@@ -116,7 +116,6 @@ public class Motor : Articulation
 	private bool _enableMotor = false;
 
 	private float _targetAngularVelocity = 0;
-	private float _targetTorque = 0;
 	private float _currentMotorVelocity = 0; // degree per seconds
 	private float _prevJointPosition = 0;
 
@@ -128,7 +127,7 @@ public class Motor : Articulation
 			Debug.LogWarningFormat("joint type({0}) is not 'revolute'!!", Type);
 		}
 
-		SetDriveType(DriveType.FORCE_AND_VELOCITY);
+		SetDriveType(ArticulationDriveType.Velocity);
 	}
 
 	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
@@ -186,9 +185,7 @@ public class Motor : Articulation
 
 			var compensatedTargetAngularVelocity = _targetAngularVelocity + targetAngularVelocityCompensation;
 
-			_targetTorque = Mathf.Abs(_pidControl.Update(compensatedTargetAngularVelocity, _currentMotorVelocity, duration));
-
-			// Debug.Log(GetMotorName() + ", " + _targetAngularVelocity + " <=> " + _currentMotorVelocity);
+			var adjustValue = _pidControl.Update(compensatedTargetAngularVelocity, _currentMotorVelocity, duration);
 
 			// Improve motion for rapid direction change
 			if (_rapidControl.DirectionSwitched())
@@ -199,7 +196,7 @@ public class Motor : Articulation
 			}
 			else
 			{
-				Drive(_targetTorque, compensatedTargetAngularVelocity);
+				Drive(compensatedTargetAngularVelocity + adjustValue);
 			}
 		}
 		else
@@ -210,7 +207,6 @@ public class Motor : Articulation
 
 	public void Stop()
 	{
-		_targetTorque = 0;
 		SetJointVelocity(0);
 		Drive(0, 0);
 
