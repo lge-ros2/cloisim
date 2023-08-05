@@ -16,24 +16,24 @@ namespace SDF
 		{
 			public static readonly int PlaneLayerIndex = UE.LayerMask.NameToLayer("Plane");
 
-			private static readonly bool EnableMergeCollider = true;
+			private static readonly bool EnableMergeCollider = false;
 			private static readonly bool UseVHACD = false;
 
 			private static VHACD.Parameters VHACDParams = new VHACD.Parameters()
 			{
-				m_resolution = 10000,
-				m_concavity = 0.001,
-				m_planeDownsampling = 4,
+				m_resolution = 50000, // 100000
+				m_concavity = 0.0005,
+				m_planeDownsampling = 5,
 				m_convexhullDownsampling = 4,
-				m_alpha = 0.05,
+				m_alpha = 0.0005, // 0.05
 				m_beta = 0.05,
 				m_pca = 0,
 				m_mode = 0,
-				m_maxNumVerticesPerCH = 64,
+				m_maxNumVerticesPerCH = 128, //64,
 				m_minVolumePerCH = 0.0001,
 				m_convexhullApproximation = 1,
 				m_oclAcceleration = 0,
-				m_maxConvexHulls = 1024,
+				m_maxConvexHulls = 512, // 1024
 				m_projectHullVertices = true
 			};
 
@@ -127,10 +127,13 @@ namespace SDF
 
 				if (targetObject.GetComponent<UE.Collider>() == null)
 				{
-					// if (UseVHACD && totalVertices >= 256)
 					if (UseVHACD && targetObject.name != "Primitive Mesh")
 					{
-						UE.Debug.Log("Apply VHACD, EnableMergeCollider will be ignored.");
+						if (EnableMergeCollider)
+							UE.Debug.LogFormat("Apply VHACD({0}), EnableMergeCollider will be ignored.", targetObject.name);
+						else
+							UE.Debug.LogFormat("Apply VHACD({0})", targetObject.name);
+
 						ApplyVHACD(targetObject, meshFilters);
 					}
 					else
