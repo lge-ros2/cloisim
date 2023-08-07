@@ -5,7 +5,7 @@ public class AddModel : MonoBehaviour
 {
 	private GameObject modelList = null;
 	private Transform targetObject = null;
-	private SDF.Helper.Model modelHelper = null;
+	private SDF.Helper.Model _modelHelper = null;
 
 	#region variables for the object with articulation body
 	private ArticulationBody rootArticulationBody = null;
@@ -43,8 +43,9 @@ public class AddModel : MonoBehaviour
 		{
 			GameObject.Destroy(targetObject.gameObject);
 			targetObject = null;
-			rootArticulationBody = null;
 		}
+		rootArticulationBody = null;
+		_modelHelper = null;
 	}
 
 	public void SetAddingModelForDeploy(in Transform targetTransform)
@@ -74,9 +75,9 @@ public class AddModel : MonoBehaviour
 		}
 
 		// Debug.Log(totalBound.extents + " " + totalBound.center + " "  + totalBound.size);
-		articulationBodyDeployOffset.y = totalBound.extents.y;
+		articulationBodyDeployOffset.y = totalBound.size.y;
 
-		modelHelper = targetObject.GetComponent<SDF.Helper.Model>();
+		_modelHelper = targetObject.GetComponent<SDF.Helper.Model>();
 	}
 
 	private bool GetPointAndNormalOnClick(out Vector3 point, out Vector3 normal)
@@ -105,11 +106,13 @@ public class AddModel : MonoBehaviour
 			}
 
 			// Update init pose
-			modelHelper.SetPose(targetObject.position, targetObject.rotation);
+			_modelHelper.SetPose(targetObject.position, targetObject.rotation);
 
 			ChangeColliderObjectLayer(targetObject, "Default");
+
 			targetObject = null;
 			rootArticulationBody = null;
+			_modelHelper = null;
 		}
 		else if (Input.GetKeyUp(KeyCode.Escape))
 		{
