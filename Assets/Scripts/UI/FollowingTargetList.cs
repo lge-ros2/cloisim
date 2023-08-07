@@ -11,10 +11,10 @@ using TMPro;
 public class FollowingTargetList : MonoBehaviour
 {
 	private TMP_Dropdown dropdown = null;
-	private TMP_Dropdown.OptionData emptyOption = null;
+	private TMP_Dropdown.OptionData _emptyOption = null;
 
 	private GameObject modelRoot = null;
-	private FollowingCamera followingCamera = null;
+	private FollowingCamera _followingCamera = null;
 
 	void Awake()
 	{
@@ -22,7 +22,7 @@ public class FollowingTargetList : MonoBehaviour
 		dropdown = GetComponent<TMP_Dropdown>();
 		if (Main.UIMainCanvas != null)
 		{
-			followingCamera = Main.UIObject.GetComponentInChildren<FollowingCamera>();
+			_followingCamera = Main.UIObject.GetComponentInChildren<FollowingCamera>();
 		}
 		else
 		{
@@ -36,8 +36,8 @@ public class FollowingTargetList : MonoBehaviour
 		{
 			dropdown.onValueChanged.AddListener(OnDropDownValueChanged);
 
-			emptyOption = new TMP_Dropdown.OptionData("- unfollowing -");
-			dropdown.options.Add(emptyOption);
+			_emptyOption = new TMP_Dropdown.OptionData("- unfollowing -");
+			dropdown.options.Add(_emptyOption);
 			SelectItem();
 		}
 	}
@@ -57,12 +57,8 @@ public class FollowingTargetList : MonoBehaviour
 	private void OnDropDownValueChanged(int choice)
 	{
 		var selected = dropdown.options[choice];
-		var target = (choice > 0 && followingCamera != null) ? selected.text : null;
-
-		if (target != null)
-		{
-			followingCamera?.SetTargetObject(target);
-		}
+		var target = (choice > 0 && _followingCamera != null) ? selected.text : null;
+		_followingCamera?.SetTargetObject(target);
 	}
 
 	public void UpdateList()
@@ -77,7 +73,7 @@ public class FollowingTargetList : MonoBehaviour
 		// Debug.Log("currentSelected: " + dropdown.value + ", " + currentSelectedText + " | " + dropdown.options.Count);
 
 		dropdown.options.Clear();
-		dropdown.options.Add(emptyOption);
+		dropdown.options.Add(_emptyOption);
 
 		if (modelRoot != null)
 		{
