@@ -9,7 +9,7 @@ public class AddModel : MonoBehaviour
 
 	#region variables for the object with articulation body
 	private ArticulationBody rootArticulationBody = null;
-	private Vector3 articulationBodyDeployOffset = new Vector3(0, 0.10f, 0);
+	private Vector3 articulationBodyDeployOffset = new Vector3(0, 0, 0);
 	#endregion
 
 	public float maxRayDistance = 100.0f;
@@ -50,6 +50,8 @@ public class AddModel : MonoBehaviour
 
 	public void SetAddingModelForDeploy(in Transform targetTransform)
 	{
+		const float DeployOffset = 0.1f;
+
 		RemoveAddingModel();
 
 		targetObject = targetTransform;
@@ -75,7 +77,8 @@ public class AddModel : MonoBehaviour
 		}
 
 		// Debug.Log(totalBound.extents + " " + totalBound.center + " "  + totalBound.size);
-		articulationBodyDeployOffset.y = totalBound.size.y;
+		// Debug.Log(totalBound.extents.y + " " + totalBound.center.y + " "  + totalBound.size.y);
+		articulationBodyDeployOffset.y = totalBound.extents.y + DeployOffset;
 
 		_modelHelper = targetObject.GetComponent<SDF.Helper.Model>();
 	}
