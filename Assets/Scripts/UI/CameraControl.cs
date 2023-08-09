@@ -21,7 +21,7 @@ public class CameraControl : MonoBehaviour
 
 	private bool blockControl = false;
 
-	private bool blockMouseWheelControl = false;
+	private bool _blockMouseWheelControl = false;
 
 	private bool _verticalMovementLock = false;
 
@@ -171,14 +171,9 @@ public class CameraControl : MonoBehaviour
 		blockControl = false;
 	}
 
-	public void BlockMouseWheelControl()
+	public void BlockMouseWheelControl(in bool value)
 	{
-		blockMouseWheelControl = true;
-	}
-
-	public void UnBlockMouseWheelControl()
-	{
-		blockMouseWheelControl = false;
+		_blockMouseWheelControl = value;
 	}
 
 	private Vector3 GetBaseInput()
@@ -186,7 +181,7 @@ public class CameraControl : MonoBehaviour
 		//returns the basic values, if it's 0 than it's not active.
 		var baseDirection = new Vector3();
 
-		if (!blockMouseWheelControl)
+		if (!_blockMouseWheelControl)
 		{
 			var scrollWheel = Input.GetAxis("Mouse ScrollWheel");
 			if (scrollWheel != 0)

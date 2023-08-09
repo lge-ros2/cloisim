@@ -24,9 +24,9 @@ public class AddModel : MonoBehaviour
 		modelList.SetActive(!modelList.activeSelf);
 
 		if (modelList.activeSelf)
-			Main.CameraControl.BlockMouseWheelControl();
+			Main.CameraControl.BlockMouseWheelControl(true);
 		else
-			Main.CameraControl.UnBlockMouseWheelControl();
+			Main.CameraControl.BlockMouseWheelControl(false);
 	}
 
 	private static void ChangeColliderObjectLayer(Transform target, in string layerName)
@@ -153,7 +153,7 @@ public class AddModel : MonoBehaviour
 			if (Input.GetKeyUp(KeyCode.Escape))
 			{
 				modelList.SetActive(false);
-				Main.CameraControl.UnBlockMouseWheelControl();
+				Main.CameraControl.BlockMouseWheelControl(false);
 			}
 		}
 	}
