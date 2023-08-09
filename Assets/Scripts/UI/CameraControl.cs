@@ -183,43 +183,43 @@ public class CameraControl : MonoBehaviour
 
 		if (!_blockMouseWheelControl)
 		{
-			var scrollWheel = Input.GetAxis("Mouse ScrollWheel");
+			var scrollWheel = Input.GetAxisRaw("Mouse ScrollWheel");
 			if (scrollWheel != 0)
 			{
-				baseDirection += new Vector3(0, 0, scrollWheel * wheelMoveAmp);
-				// Debug.Log(scrollWheel.ToString("F4"));
+				baseDirection += new Vector3(0, 0, Input.mouseScrollDelta.y * wheelMoveAmp);
+				// Debug.Log(scrollWheel.ToString("F4") + " | " + Input.mouseScrollDelta.y);
 			}
 		}
 
 		if (Input.GetKey(KeyCode.W))
 		{
-			baseDirection += new Vector3(0, 0, 1);
+			baseDirection.z += 1;
 		}
 		else if (Input.GetKey(KeyCode.S))
 		{
-			baseDirection += new Vector3(0, 0, -1);
+			baseDirection.z += -1;
 		}
 
 		if (Input.GetKey(KeyCode.A) && Input.GetKey(KeyCode.D))
 		{
-			baseDirection += new Vector3(0, 0, 0);
+			baseDirection.x = 0;
 		}
 		else if (Input.GetKey(KeyCode.A))
 		{
-			baseDirection += new Vector3(-1, 0, 0);
+			baseDirection.x += -1;
 		}
 		else if (Input.GetKey(KeyCode.D))
 		{
-			baseDirection += new Vector3(1, 0, 0);
+			baseDirection.x += 1;
 		}
 
 		if (Input.GetKey(KeyCode.Q))
 		{
-			baseDirection += new Vector3(0, 1, 0);
+			baseDirection.y += 1;
 		}
 		else if (Input.GetKey(KeyCode.Z))
 		{
-			baseDirection += new Vector3(0, -1, 0);
+			baseDirection.y += -1;
 		}
 
 		return baseDirection;
