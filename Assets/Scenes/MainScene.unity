@@ -5150,14 +5150,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec65e03504ece92cbeb7b40065a589c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mainSpeed: 2.5
-  shiftAdd: 15
-  maxShift: 200
-  camSens: 0.1
+  mainSpeed: 1
+  shiftAdd: 5
+  maxShift: 150
+  camSens: 0.15
   edgeWidth: 20
   edgeSens: 0.1
   edgeSensMax: 1
-  wheelMoveAmp: 70
+  wheelMoveAmp: 100
 --- !u!20 &963194227
 Camera:
   m_ObjectHideFlags: 0
