@@ -31,6 +31,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		var leftImagerName = GetPluginParameters().GetValue<string>("activate/module[@name='left_imager']");
 		var rightImagerName = GetPluginParameters().GetValue<string>("activate/module[@name='right_imager']");
 		var depthName = GetPluginParameters().GetValue<string>("activate/module[@name='depth']");
+		var alignedDepthToColorName = GetPluginParameters().GetValue<string>("activate/module[@name='aligned_depth_to_color']");
 		var imuName = GetPluginParameters().GetValue<string>("activate/module[@name='imu']");
 
 		if (!string.IsNullOrEmpty(colorName))
@@ -51,6 +52,11 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		if (!string.IsNullOrEmpty(depthName))
 		{
 			FindAndAddDepthCameraPlugin(depthName, depthScale);
+		}
+
+		if (!string.IsNullOrEmpty(alignedDepthToColorName))
+		{
+			FindAndAddDepthCameraPlugin(alignedDepthToColorName, depthScale);
 		}
 
 		if (!string.IsNullOrEmpty(imuName))
