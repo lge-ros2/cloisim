@@ -108,10 +108,7 @@ namespace SensorDevices
 		{
 			_startLaserWork = false;
 
-			if (_rtHandle != null)
-			{
-				_rtHandle.Release();
-			}
+			_rtHandle?.Release();
 
 			base.OnDestroy();
 		}

@@ -239,7 +239,7 @@ namespace SensorDevices
 			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
 			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 
-			_rtHandle.Release();
+			_rtHandle?.Release();
 
 			base.OnDestroy();
 		}
