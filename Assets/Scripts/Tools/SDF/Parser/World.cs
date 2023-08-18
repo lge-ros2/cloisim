@@ -174,7 +174,7 @@ namespace SDF
 			public Pose<double> pose = null;
 
 			// Description: The model element defines a complete robot or any other physical object.
-			private Models models = null;
+			// private Models models = null;
 		}
 
 		public Audio audio = null;

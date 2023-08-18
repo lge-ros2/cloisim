@@ -63,7 +63,7 @@ namespace SensorDevices
 				if (linkName.Equals(targetLinkName))
 				{
 					var articulation = new Articulation(childArticulationBody);
-					articulation.SetDriveType(Articulation.DriveType.POSITION_AND_VELOCITY);
+					articulation.SetDriveType(ArticulationDriveType.Force);
 
 					var jointState = new messages.JointState();
 					jointState.Name = targetLinkName;

@@ -133,7 +133,8 @@ public partial class SimulationDisplay : MonoBehaviour
 
 		sbOption_.Clear();
 		sbOption_.Append("Vertical Camera Moving Lock(Space) ");
-		sbOption_.Append((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
+		var checkValue = (cameraControl != null && cameraControl.VerticalMovementLock) ? "[V]" : "[  ]";
+		sbOption_.Append(checkValue);
 		// var helpStatusMsg2 = "\nStatic Object Selectable(O) " + ((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
 		DrawLabelWithShadow(rectOption, sbOption_.ToString());
 	}

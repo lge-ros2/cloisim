@@ -108,10 +108,7 @@ namespace SensorDevices
 		{
 			_startLaserWork = false;
 
-			if (_rtHandle != null)
-			{
-				_rtHandle.Release();
-			}
+			_rtHandle?.Release();
 
 			base.OnDestroy();
 		}
@@ -174,7 +171,7 @@ namespace SensorDevices
 
 			laserCam.allowHDR = true;
 			laserCam.allowMSAA = false;
-			laserCam.allowDynamicResolution = true;
+			laserCam.allowDynamicResolution = false;
 			laserCam.useOcclusionCulling = true;
 
 			laserCam.stereoTargetEye = StereoTargetEyeMask.None;
@@ -187,7 +184,7 @@ namespace SensorDevices
 			laserCam.clearFlags = CameraClearFlags.Nothing;
 			laserCam.depthTextureMode = DepthTextureMode.Depth;
 
-			laserCam.renderingPath = RenderingPath.DeferredLighting;
+			laserCam.renderingPath = RenderingPath.DeferredShading;
 
 			var renderTextrueWidth = Mathf.CeilToInt(LaserCameraHFov / laserAngleResolution.H);
 			var renderTextrueHeight = Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);

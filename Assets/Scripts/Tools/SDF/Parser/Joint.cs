@@ -122,7 +122,7 @@ namespace SDF
 
 		private Physics physics = new Physics();
 
-		private Sensors sensors = null;
+		// private Sensors sensors = null;
 
 		public string ParentLinkName => parent;
 

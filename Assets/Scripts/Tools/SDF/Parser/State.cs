@@ -72,11 +72,11 @@ namespace SDF
 				public class CollisionState
 				{
 					// Description: Name of the collision
-					string name = "__default__";
+					// string name = "__default__";
 				}
 
 				// Description: Name of the link
-				string name = "__default__";
+				// string name = "__default__";
 
 				// Description: Velocity of the link. The x, y, z components of the pose correspond to the linear velocity of the link, and the roll, pitch, yaw components correspond to the angular velocity of the link
 				public Pose<double> velocity = null;

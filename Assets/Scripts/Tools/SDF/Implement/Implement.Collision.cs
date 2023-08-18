@@ -3,9 +3,11 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#define ENABLE_MERGE_COLLIDER
 
 using UE = UnityEngine;
 using MCCookingOptions = UnityEngine.MeshColliderCookingOptions;
+using MeshProcess;
 
 namespace SDF
 {
@@ -15,7 +17,27 @@ namespace SDF
 		{
 			public static readonly int PlaneLayerIndex = UE.LayerMask.NameToLayer("Plane");
 
-			private static readonly bool EnableMergeCollider = true;
+			private static readonly int NumOfLimitConvexMeshTriangles = 255;
+
+			private static readonly bool UseVHACD = true; // Expreimental parameters
+
+			private static VHACD.Parameters VHACDParams = new VHACD.Parameters()
+			{
+				m_resolution = 25000,
+				m_concavity = 0.001,
+				m_planeDownsampling = 6,
+				m_convexhullDownsampling = 6,
+				m_alpha = 0.1,
+				m_beta = 0.05,
+				m_pca = 0,
+				m_mode = 0,
+				m_maxNumVerticesPerCH = 64,
+				m_minVolumePerCH = 0.0001,
+				m_convexhullApproximation = 1,
+				m_oclAcceleration = 0,
+				m_maxConvexHulls = 256,
+				m_projectHullVertices = true
+			};
 
 			private static readonly float ThresholdFrictionCombineMultiply = 0.01f;
 			private static readonly float DynamicFrictionRatio = 0.95f;
@@ -32,7 +54,6 @@ namespace SDF
 				{
 					var meshObject = meshFilter.gameObject;
 					var meshCollider = meshObject.AddComponent<UE.MeshCollider>();
-
 					meshCollider.sharedMesh = meshFilter.sharedMesh;
 					meshCollider.convex = false;
 					meshCollider.cookingOptions = CookingOptions;
@@ -40,47 +61,107 @@ namespace SDF
 				}
 			}
 
+			private static void ApplyVHACD(in UE.GameObject targetObject, in UE.MeshFilter[] meshFilters)
+			{
+				var decomposer = targetObject.AddComponent<VHACD>();
+				decomposer.m_parameters = VHACDParams;
+
+				foreach (var meshFilter in meshFilters)
+				{
+					// Just skip if the number of vertices in the mesh is less than the limit of convex mesh triangles
+					if (meshFilter.sharedMesh.vertexCount >= NumOfLimitConvexMeshTriangles)
+					{
+// #if ENABLE_MERGE_COLLIDER
+// 						UE.Debug.LogFormat("Apply VHACD({0}), EnableMergeCollider will be ignored.", targetObject.name);
+// #else
+// 						UE.Debug.LogFormat("Apply VHACD({0})", targetObject.name);
+// #endif
+						var colliderMeshes = decomposer.GenerateConvexMeshes(meshFilter.sharedMesh);
+
+						var index = 0;
+						foreach (var collider in colliderMeshes)
+						{
+							var currentMeshCollider = targetObject.AddComponent<UE.MeshCollider>();
+							collider.name = "VHACD_" + meshFilter.name + "_" + (index++);
+							// UE.Debug.Log(collider.name);
+							currentMeshCollider.sharedMesh = collider;
+							currentMeshCollider.convex = false;
+							currentMeshCollider.cookingOptions = CookingOptions;
+							currentMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
+						}
+					}
+					else
+					{
+						var meshCollider = targetObject.AddComponent<UE.MeshCollider>();
+						meshCollider.sharedMesh = meshFilter.sharedMesh;
+						meshCollider.convex = false;
+						meshCollider.cookingOptions = CookingOptions;
+						meshCollider.hideFlags |= UE.HideFlags.NotEditable;
+					}
+					UE.GameObject.Destroy(meshFilter.gameObject);
+				}
+
+				UE.Component.Destroy(decomposer);
+			}
+
+#if ENABLE_MERGE_COLLIDER
+			private static void MergeCollider(in UE.GameObject targetObject)
+			{
+				var geometryWorldToLocalMatrix = targetObject.transform.worldToLocalMatrix;
+				var meshColliders = targetObject.GetComponentsInChildren<UE.MeshCollider>();
+				var mergedMesh = SDF2Unity.MergeMeshes(meshColliders, geometryWorldToLocalMatrix);
+
+				for (var index = 0; index < meshColliders.Length; index++)
+				{
+					UE.GameObject.Destroy(meshColliders[index]);
+				}
+
+				var transformObjects = targetObject.GetComponentsInChildren<UE.Transform>();
+				for (var index = 1; index < transformObjects.Length; index++)
+				{
+					UE.GameObject.Destroy(transformObjects[index].gameObject);
+				}
+
+				var mergedMeshCollider = targetObject.AddComponent<UE.MeshCollider>();
+				mergedMeshCollider.sharedMesh = mergedMesh;
+				mergedMeshCollider.convex = false;
+				mergedMeshCollider.cookingOptions = CookingOptions;
+				mergedMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
+			}
+#endif
+
 			public static void Make(UE.GameObject targetObject)
 			{
 				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
 
 				if (targetObject.GetComponent<UE.Collider>() == null)
 				{
-					KeepUnmergedMeshes(meshFilters);
+					var modelHelper = targetObject.GetComponentInParent<SDF.Helper.Model>();
+					// UE.Debug.Log(modelHelper);
 
-					if (EnableMergeCollider)
+					// Skip for Primitive Mesh or static model
+					if (UseVHACD && targetObject.name != "Primitive Mesh" && modelHelper.isStatic == false)
 					{
-						var geometryWorldToLocalMatrix = targetObject.transform.worldToLocalMatrix;
-						var meshColliders = targetObject.GetComponentsInChildren<UE.MeshCollider>();
-						var mergedMesh = SDF2Unity.MergeMeshes(meshColliders, geometryWorldToLocalMatrix);
+						ApplyVHACD(targetObject, meshFilters);
+					}
+					else
+					{
+						KeepUnmergedMeshes(meshFilters);
 
-						var transformObjects = targetObject.GetComponentsInChildren<UE.Transform>();
-						for (var index = 1; index < transformObjects.Length; index++)
-						{
-							UE.GameObject.Destroy(transformObjects[index].gameObject);
-						}
-
-						for (var index = 0; index < meshColliders.Length; index++)
-						{
-							UE.GameObject.Destroy(meshColliders[index]);
-						}
-
-						var combinedMeshCollider = targetObject.AddComponent<UE.MeshCollider>();
-						combinedMeshCollider.sharedMesh = mergedMesh;
-						combinedMeshCollider.convex = false;
-						combinedMeshCollider.cookingOptions = CookingOptions;
-						combinedMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
+#if ENABLE_MERGE_COLLIDER
+						MergeCollider(targetObject);
+#endif
 					}
 				}
 
-				for (var i = 0; i < meshFilters.Length; i++)
+				foreach (var meshFilter in meshFilters)
 				{
-					var meshRenderer = meshFilters[i].GetComponent<UE.MeshRenderer>();
+					var meshRenderer = meshFilter.GetComponent<UE.MeshRenderer>();
 					if (meshRenderer != null)
 					{
 						UE.GameObject.Destroy(meshRenderer);
 					}
-					UE.GameObject.Destroy(meshFilters[i]);
+					UE.GameObject.Destroy(meshFilter);
 				}
 			}
 

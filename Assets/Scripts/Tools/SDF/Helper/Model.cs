@@ -32,19 +32,13 @@ namespace SDF
 				{
 					if (hasRootArticulationBody)
 					{
-						if (IsRobotModel())
-						{
-							AddNavMeshObstalceForRobot();
-						}
-						else
-						{
-							AddNavMeshObstalceForNonRobot();
-						}
+						var carveOnlyStationary = IsRobotModel() ? false : true;
+						AddNavMeshObstalce(carveOnlyStationary);
 					}
 				}
 			}
 
-			private void AddNavMeshObstalceForRobot()
+			private void AddNavMeshObstalce(in bool carveOnlyStationary)
 			{
 				var bounds = new UE.Bounds();
 				var renderers = transform.GetComponentsInChildren<UE.Renderer>();
@@ -55,32 +49,10 @@ namespace SDF
 
 				var navMeshObstacle = gameObject.AddComponent<UEAI.NavMeshObstacle>();
 				navMeshObstacle.carving = true;
-				navMeshObstacle.carveOnlyStationary = false;
+				navMeshObstacle.carveOnlyStationary = carveOnlyStationary;
 				navMeshObstacle.carvingMoveThreshold = CarvingMoveThreshold;
 				navMeshObstacle.carvingTimeToStationary = CarvingTimeToStationary;
-
 				navMeshObstacle.size = transform.rotation * bounds.size;
-			}
-
-			private void AddNavMeshObstalceForNonRobot()
-			{
-				var colliders = transform.GetComponentsInChildren<UE.Collider>();
-				for (var i = 0; i < colliders.Length; i++)
-				{
-					var parentObject = colliders[i].transform.parent;
-					if (parentObject != null && parentObject.CompareTag("Collision"))
-					{
-						var navMeshObstacle = parentObject.gameObject.AddComponent<UEAI.NavMeshObstacle>();
-						if (navMeshObstacle != null)
-						{
-							navMeshObstacle.carving = true;
-							navMeshObstacle.carveOnlyStationary = true;
-							navMeshObstacle.carvingMoveThreshold = CarvingMoveThreshold;
-							navMeshObstacle.carvingTimeToStationary = CarvingTimeToStationary;
-							navMeshObstacle.size = transform.rotation * colliders[i].bounds.size;
-						}
-					}
-				}
 			}
 
 			private bool IsRobotModel()

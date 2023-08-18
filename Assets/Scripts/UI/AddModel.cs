@@ -5,11 +5,11 @@ public class AddModel : MonoBehaviour
 {
 	private GameObject modelList = null;
 	private Transform targetObject = null;
-	private SDF.Helper.Model modelHelper = null;
+	private SDF.Helper.Model _modelHelper = null;
 
 	#region variables for the object with articulation body
 	private ArticulationBody rootArticulationBody = null;
-	private Vector3 articulationBodyDeployOffset = new Vector3(0, 0.10f, 0);
+	private Vector3 articulationBodyDeployOffset = new Vector3(0, 0, 0);
 	#endregion
 
 	public float maxRayDistance = 100.0f;
@@ -24,9 +24,9 @@ public class AddModel : MonoBehaviour
 		modelList.SetActive(!modelList.activeSelf);
 
 		if (modelList.activeSelf)
-			Main.CameraControl.BlockMouseWheelControl();
+			Main.CameraControl.BlockMouseWheelControl(true);
 		else
-			Main.CameraControl.UnBlockMouseWheelControl();
+			Main.CameraControl.BlockMouseWheelControl(false);
 	}
 
 	private static void ChangeColliderObjectLayer(Transform target, in string layerName)
@@ -43,12 +43,15 @@ public class AddModel : MonoBehaviour
 		{
 			GameObject.Destroy(targetObject.gameObject);
 			targetObject = null;
-			rootArticulationBody = null;
 		}
+		rootArticulationBody = null;
+		_modelHelper = null;
 	}
 
 	public void SetAddingModelForDeploy(in Transform targetTransform)
 	{
+		const float DeployOffset = 0.1f;
+
 		RemoveAddingModel();
 
 		targetObject = targetTransform;
@@ -74,9 +77,10 @@ public class AddModel : MonoBehaviour
 		}
 
 		// Debug.Log(totalBound.extents + " " + totalBound.center + " "  + totalBound.size);
-		articulationBodyDeployOffset.y = totalBound.extents.y;
+		// Debug.Log(totalBound.extents.y + " " + totalBound.center.y + " "  + totalBound.size.y);
+		articulationBodyDeployOffset.y = totalBound.extents.y + DeployOffset;
 
-		modelHelper = targetObject.GetComponent<SDF.Helper.Model>();
+		_modelHelper = targetObject.GetComponent<SDF.Helper.Model>();
 	}
 
 	private bool GetPointAndNormalOnClick(out Vector3 point, out Vector3 normal)
@@ -105,11 +109,13 @@ public class AddModel : MonoBehaviour
 			}
 
 			// Update init pose
-			modelHelper.SetPose(targetObject.position, targetObject.rotation);
+			_modelHelper.SetPose(targetObject.position, targetObject.rotation);
 
 			ChangeColliderObjectLayer(targetObject, "Default");
+
 			targetObject = null;
 			rootArticulationBody = null;
+			_modelHelper = null;
 		}
 		else if (Input.GetKeyUp(KeyCode.Escape))
 		{
@@ -147,7 +153,7 @@ public class AddModel : MonoBehaviour
 			if (Input.GetKeyUp(KeyCode.Escape))
 			{
 				modelList.SetActive(false);
-				Main.CameraControl.UnBlockMouseWheelControl();
+				Main.CameraControl.BlockMouseWheelControl(false);
 			}
 		}
 	}

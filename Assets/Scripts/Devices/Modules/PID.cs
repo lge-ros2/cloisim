@@ -58,7 +58,6 @@ public class PID
 		lastError = error;
 
 		var output = (error * _pGain) + (integral * _iGain) + (derive * _dGain);
-
 		return UnityEngine.Mathf.Clamp(output, _outputMin, _outputMax);
 	}
 }

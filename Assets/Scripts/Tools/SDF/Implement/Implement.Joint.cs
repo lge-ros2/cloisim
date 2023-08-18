@@ -51,6 +51,7 @@ namespace SDF
 
 			public static void SetArticulationBodyAnchor(in UE.ArticulationBody body, in UE.Pose parentAnchor)
 			{
+				body.matchAnchors = true;
 				body.anchorPosition = UE.Vector3.zero;
 				body.anchorRotation = UE.Quaternion.identity;
 				body.parentAnchorPosition = parentAnchor.position;

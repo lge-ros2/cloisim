@@ -24,15 +24,21 @@ namespace SDF
 					articulationBody = targetObject.AddComponent<UE.ArticulationBody>();
 				}
 
+
 				articulationBody.mass = 0;
 				articulationBody.useGravity = false;
 				articulationBody.immovable = false;
 				articulationBody.linearDamping = 0;
 				articulationBody.angularDamping = 0;
+#if true
+				articulationBody.automaticCenterOfMass = true;
+				articulationBody.automaticInertiaTensor = true;
+#else
 				articulationBody.ResetCenterOfMass();
 				articulationBody.ResetInertiaTensor();
 				articulationBody.inertiaTensor = UE.Vector3.one * MinimumInertiaTensor;
 				articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
+#endif
 				articulationBody.solverIterations = 0;
 				articulationBody.solverVelocityIterations = 0;
 				articulationBody.velocity = UE.Vector3.zero;

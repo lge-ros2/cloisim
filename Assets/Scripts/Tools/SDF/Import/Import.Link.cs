@@ -109,10 +109,14 @@ namespace SDF
 				if (inertial == null)
 				{
 					articulationBody.ResetCenterOfMass();
+					articulationBody.automaticCenterOfMass = true;
 				}
 				else
 				{
-					articulationBody.centerOfMass = SDF2Unity.GetPosition(inertial.pose.Pos);
+					if (inertial.pose == null)
+						articulationBody.automaticCenterOfMass = true;
+					else
+						articulationBody.centerOfMass = SDF2Unity.GetPosition(inertial.pose.Pos);
 					// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
 				}
 
@@ -128,6 +132,7 @@ namespace SDF
 					else
 					{
 						articulationBody.ResetInertiaTensor();
+						articulationBody.automaticInertiaTensor = true;
 					}
 
 					// handling mesh collider

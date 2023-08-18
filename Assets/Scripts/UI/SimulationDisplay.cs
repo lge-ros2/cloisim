@@ -182,12 +182,12 @@ public partial class SimulationDisplay : MonoBehaviour
 			if (keyCode.CompareTo(KeyCode.F1) == 0)
 			{
 				popupHelpDialog = !popupHelpDialog;
-				cameraControl.BlockMouseWheelControl();
+				cameraControl.BlockMouseWheelControl(true);
 			}
 			else if (keyCode.CompareTo(KeyCode.Escape) == 0)
 			{
 				popupHelpDialog = false;
-				cameraControl.UnBlockMouseWheelControl();
+				cameraControl.BlockMouseWheelControl(false);
 			}
 		}
 

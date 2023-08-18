@@ -298,17 +298,18 @@ public class Main : MonoBehaviour
 
 		foreach (var item in root.resourceModelTable)
 		{
+			var itemValue = item.Value;
 			var duplicatedbutton = GameObject.Instantiate(buttonTemplate);
 			duplicatedbutton.SetActive(true);
 			duplicatedbutton.transform.SetParent(contentList.transform, false);
 
 			var textComponent = duplicatedbutton.GetComponentInChildren<Text>();
-			textComponent.text = item.Key;
+			textComponent.text = itemValue.Item1;
 
 			var buttonComponent = duplicatedbutton.GetComponentInChildren<Button>();
 			buttonComponent.onClick.AddListener(delegate ()
 			{
-				StartCoroutine(LoadModel(item.Value.Item1, item.Value.Item2));
+				StartCoroutine(LoadModel(itemValue.Item2, itemValue.Item3));
 			});
 		}
 	}
