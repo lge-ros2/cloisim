@@ -178,7 +178,7 @@ namespace SensorDevices
 			{
 				if (index >= OutputLength())
 				{
-					Debug.LogWarning("index exceeded range " + index + " / " + OutputLength());
+					// Debug.LogWarning("index exceeded range " + index + " / " + OutputLength());
 					return;
 				}
 
