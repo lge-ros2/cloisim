@@ -83,7 +83,7 @@ namespace SDF
 						{
 							var currentMeshCollider = targetObject.AddComponent<UE.MeshCollider>();
 							collider.name = "VHACD_" + meshFilter.name + "_" + (index++);
-							UE.Debug.Log(collider.name);
+							// UE.Debug.Log(collider.name);
 							currentMeshCollider.sharedMesh = collider;
 							currentMeshCollider.convex = false;
 							currentMeshCollider.cookingOptions = CookingOptions;
