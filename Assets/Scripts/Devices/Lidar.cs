@@ -66,7 +66,7 @@ namespace SensorDevices
 				this.request = request;
 			}
 		}
-		private List<AsyncLaserWork> _asyncWorkList = new List<AsyncLaserWork>();
+		private AsyncLaserWork[] _asyncWorkList;
 		private DepthData.CamBuffer[] _depthCamBuffers;
 		private LaserData.LaserCamData[] _laserCamData;
 		private LaserData.LaserDataOutput[] _laserDataOutput;
@@ -198,10 +198,10 @@ namespace SensorDevices
 				slices: 1,
 				depthBufferBits: DepthBits.None,
 				colorFormat: GraphicsFormat.R8G8B8A8_UNorm,
-				filterMode: FilterMode.Trilinear,
+				filterMode: FilterMode.Bilinear,
 				wrapMode: TextureWrapMode.Clamp,
 				dimension: TextureDimension.Tex2D,
-				msaaSamples: MSAASamples.MSAA2x,
+				msaaSamples: MSAASamples.MSAA4x,
 				enableRandomWrite: false,
 				useMipMap: true,
 				autoGenerateMips: true,
@@ -263,8 +263,9 @@ namespace SensorDevices
 			var isEven = (numberOfLaserCamData % 2 == 0) ? true : false;
 
 			_parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = numberOfLaserCamData };
-			_laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
+			_asyncWorkList = new AsyncLaserWork[numberOfLaserCamData];
 			_depthCamBuffers = new DepthData.CamBuffer[numberOfLaserCamData];
+			_laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
 			_laserDataOutput = new LaserData.LaserDataOutput[numberOfLaserCamData];
 
 			var targetDepthRT = laserCam.targetTexture;
@@ -324,10 +325,9 @@ namespace SensorDevices
 					{
 						laserCam.Render();
 						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, OnCompleteAsyncReadback);
-						lock (_asyncWorkList)
-						{
-							_asyncWorkList.Add(new AsyncLaserWork(dataIndex, readbackRequest));
-						}
+
+						if (_asyncWorkList.Length == numberOfLaserCamData)
+							_asyncWorkList[dataIndex] = new AsyncLaserWork(dataIndex, readbackRequest);
 					}
 
 					laserCam.enabled = false;
@@ -345,7 +345,7 @@ namespace SensorDevices
 			}
 			else if (request.done)
 			{
-				for (var i = 0; i < _asyncWorkList.Count; i++)
+				for (var i = 0; i < _asyncWorkList.Length; i++)
 				{
 					var asyncWork = _asyncWorkList[i];
 					if (asyncWork.request.Equals(request))
@@ -379,11 +379,6 @@ namespace SensorDevices
 						}
 
 						depthCamBuffer.Deallocate();
-
-						lock (_asyncWorkList)
-						{
-							_asyncWorkList.Remove(asyncWork);
-						}
 						break;
 					}
 				}
