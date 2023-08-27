@@ -78,7 +78,7 @@ public class AddModel : MonoBehaviour
 
 		// Debug.Log(totalBound.extents + " " + totalBound.center + " "  + totalBound.size);
 		// Debug.Log(totalBound.extents.y + " " + totalBound.center.y + " "  + totalBound.size.y);
-		articulationBodyDeployOffset.y = totalBound.extents.y + DeployOffset;
+		articulationBodyDeployOffset.y = totalBound.min.y + DeployOffset;
 
 		_modelHelper = targetObject.GetComponent<SDF.Helper.Model>();
 	}
