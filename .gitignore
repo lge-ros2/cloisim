@@ -114,3 +114,6 @@ tags
 
 # Persistent undo
 [._]*.un~
+
+# UI 
+/UIElementsSchema
