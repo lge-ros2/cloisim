@@ -151,8 +151,14 @@ namespace SDF
 				{
 					var axisSpringReference = 0f;
 					var axis2SpringReference = 0f;
+
+					linkHelper.JointName = joint.Name;
+					linkHelper.JointParentLinkName = joint.ParentLinkName;
+					linkHelper.JointChildLinkName = joint.ChildLinkName;
+
 					if (joint.Axis != null)
 					{
+						// articulationBodyChild
 						linkHelper.JointAxis = SDF2Unity.GetAxis(joint.Axis.xyz);
 						if (joint.Axis.dynamics != null)
 						{

@@ -8,12 +8,10 @@ using UnityEngine;
 
 public class Articulation
 {
-	private ArticulationDriveType _driveType = ArticulationDriveType.Force;
 	private ArticulationBody _jointBody = null;
 	private ArticulationJointType _jointType = ArticulationJointType.FixedJoint;
 
 	public ArticulationJointType Type => _jointType;
-	public GameObject gameObject => _jointBody.gameObject;
 
 	public Articulation(in ArticulationBody jointBody)
 	{
@@ -36,11 +34,6 @@ public class Articulation
 			_jointBody.velocity = Vector3.zero;
 			_jointBody.angularVelocity = Vector3.zero;
 		}
-	}
-
-	public void SetDriveType(in ArticulationDriveType type)
-	{
-		this._driveType = type;
 	}
 
 	public bool IsRevoluteType()
@@ -97,9 +90,8 @@ public class Articulation
 		return F;
 	}
 
-	/// <param name="targetVelocity">angular velocity in degrees per second.</param>
-	/// <param name="target">target position </param>
-	public void Drive(in float targetVelocity, in float target = 0)
+	/// <param name="target">angular velocity in degrees per second OR target position </param>
+	public void Drive(in float target, ArticulationDriveType driveType = ArticulationDriveType.Velocity)
 	{
 		if (_jointBody == null)
 		{
@@ -107,18 +99,91 @@ public class Articulation
 			return;
 		}
 
+		if (target == float.NaN)
+		{
+			Debug.LogWarning("Invalid Value: target is NaN");
+			return;
+		}
+
 		// Arccording to document(https://docs.unity3d.com/2020.3/Documentation/ScriptReference/ArticulationDrive.html)
 		// F = stiffness * (currentPosition - target) - damping * (currentVelocity - targetVelocity).
 		var drive = GetDrive();
 
-		drive.driveType = _driveType;
+		drive.driveType = driveType;
 
-		if (_driveType == ArticulationDriveType.Force)
+		switch (driveType)
 		{
-			drive.target = target;
+			case ArticulationDriveType.Target:
+				drive.target = target;
+				break;
+			case ArticulationDriveType.Velocity:
+				drive.targetVelocity = target;
+				break;
+			default:
+				Debug.LogWarning("ArticulationDriveType should be Target/Velocity");
+				return;
+		}
+	}
+
+	/// <param name="targetVelocity">angular velocity in degrees per second.</param>
+	/// <param name="target">target position </param>
+	public void Drive(in float targetVelocity, in float targetPosition)
+	{
+		if (_jointBody == null)
+		{
+			Debug.LogWarning("ArticulationBody is empty, please set target body first");
+			return;
 		}
 
-		drive.targetVelocity = targetVelocity;
+		if (targetVelocity == float.NaN || targetPosition == float.NaN)
+		{
+			Debug.LogWarning("Invalid Value: targetVelocity or targetPosition is NaN");
+			return;
+		}
+
+		// Arccording to document(https://docs.unity3d.com/2020.3/Documentation/ScriptReference/ArticulationDrive.html)
+		// F = stiffness * (currentPosition - target) - damping * (currentVelocity - targetVelocity).
+		var drive = GetDrive();
+
+		if (!float.IsNaN(targetVelocity) && !float.IsNaN(targetPosition))
+		{
+			drive.driveType = ArticulationDriveType.Force;
+			Debug.LogWarningFormat("1 targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
+		}
+		else if (float.IsNaN(targetVelocity) && !float.IsNaN(targetPosition))
+		{
+			drive.driveType = ArticulationDriveType.Target;
+			Debug.LogWarningFormat("2 targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
+		}
+		else if (!float.IsNaN(targetVelocity) && float.IsNaN(targetPosition))
+		{
+			drive.driveType = ArticulationDriveType.Velocity;
+			Debug.LogWarningFormat("3 targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
+		}
+		else
+		{
+			Debug.LogError("Invalid targetVelocity and targetPosition: Both NaN");
+			return;
+		}
+
+		Debug.LogWarningFormat("Value: targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
+
+		switch (drive.driveType)
+		{
+			case ArticulationDriveType.Force:
+				drive.target = targetPosition;
+				drive.targetVelocity = targetVelocity;
+				break;
+			case ArticulationDriveType.Target:
+				drive.target = targetPosition;
+				break;
+			case ArticulationDriveType.Velocity:
+				drive.targetVelocity = targetVelocity;
+				break;
+			default:
+				Debug.LogWarning("ArticulationDriveType should be Target, Velocity or Force");
+				return;
+		}
 
 		SetDrive(drive);
 	}
