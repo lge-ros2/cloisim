@@ -44,10 +44,13 @@ namespace SensorDevices
 			PushDeviceMessage<messages.JointStateV>(jointStateV);
 		}
 
-		public bool AddTarget(in string targetLinkName, out SDF.Helper.Link link)
+		public bool AddTargetJoint(in string targetJointName, out SDF.Helper.Link link, out bool isStatic)
 		{
 			var childArticulationBodies = gameObject.GetComponentsInChildren<ArticulationBody>();
 			var rootModelName = string.Empty;
+			link = null;
+			isStatic = false;
+
 			foreach (var childArticulationBody in childArticulationBodies)
 			{
 				// Debug.Log (childArticulationBody.name + " | " + childArticulationBody.transform.parent.name);
@@ -57,33 +60,42 @@ namespace SensorDevices
 					continue;
 				}
 
-				var parentModelName = childArticulationBody.transform.parent.name;
-				var linkName = ((rootModelName.CompareTo(parentModelName) == 0) ? "" : parentModelName + "::") + childArticulationBody.name;
-				// Debug.Log("!!!!!!! " + linkName);
-				if (linkName.Equals(targetLinkName))
+				var parentObject = childArticulationBody.transform.parent;
+				var parentModelName = parentObject.name;
+				// var linkName = ((!parentObject.CompareTag("Model") || rootModelName.CompareTo(parentModelName) == 0) ? "" : parentModelName + "::") + childArticulationBody.name;
+				var linkHelper = childArticulationBody.GetComponentInChildren<SDF.Helper.Link>();
+				// Debug.Log("linkHelper.JointName " + linkHelper.JointName);
+				if (linkHelper.JointName.Equals(targetJointName))
 				{
+					// Debug.Log("AddTargetJoint " + targetJointName);
+					link = linkHelper;
+					if (childArticulationBody.jointType == ArticulationJointType.FixedJoint)
+					{
+						Debug.LogWarning("Skip to AddTargetJoint due to fixed joint: " + targetJointName);
+						isStatic = true;
+						return true;
+					}
+
 					var articulation = new Articulation(childArticulationBody);
-					articulation.SetDriveType(ArticulationDriveType.Force);
 
 					var jointState = new messages.JointState();
-					jointState.Name = targetLinkName;
+					jointState.Name = targetJointName;
 
-					articulationTable.Add(targetLinkName, new Tuple<Articulation, messages.JointState>(articulation, jointState));
+					articulationTable.Add(targetJointName, new Tuple<Articulation, messages.JointState>(articulation, jointState));
 
 					jointStateV.JointStates.Add(jointState);
 
-					link = articulation.gameObject.GetComponentInChildren<SDF.Helper.Link>();
+					// link = articulation.gameObject.GetComponentInChildren<SDF.Helper.Link>();
 					return true;
 				}
 			}
 
-			link = null;
 			return false;
 		}
 
-		public Articulation GetArticulation(in string targetLinkName)
+		public Articulation GetArticulation(in string targetJointName)
 		{
-			return articulationTable.ContainsKey(targetLinkName) ? articulationTable[targetLinkName].Item1 : null;
+			return articulationTable.ContainsKey(targetJointName) ? articulationTable[targetJointName].Item1 : null;
 		}
 
 		void FixedUpdate()

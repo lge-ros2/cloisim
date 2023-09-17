@@ -11,7 +11,6 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using System.Runtime.InteropServices;
 
 [DefaultExecutionOrder(30)]
 public class Main : MonoBehaviour

@@ -126,8 +126,6 @@ public class Motor : Articulation
 		{
 			Debug.LogWarningFormat("joint type({0}) is not 'revolute'!!", Type);
 		}
-
-		SetDriveType(ArticulationDriveType.Velocity);
 	}
 
 	public void SetPID(in float pFactor, in float iFactor, in float dFactor)

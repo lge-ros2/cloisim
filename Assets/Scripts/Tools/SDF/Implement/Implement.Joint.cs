@@ -46,16 +46,17 @@ namespace SDF
 				anchorPose.position += jointPosition;
 				anchorPose.rotation *= jointRotation;
 
-				return anchorPose;
+				return anchorPose; // TODO: Not used anywhere
 			}
 
 			public static void SetArticulationBodyAnchor(in UE.ArticulationBody body, in UE.Pose parentAnchor)
 			{
+				// TODO: Consider parentAnchor
 				body.matchAnchors = true;
 				body.anchorPosition = UE.Vector3.zero;
 				body.anchorRotation = UE.Quaternion.identity;
-				body.parentAnchorPosition = parentAnchor.position;
-				body.parentAnchorRotation = parentAnchor.rotation;
+				// body.parentAnchorPosition = parentAnchor.position;
+				// body.parentAnchorRotation = parentAnchor.rotation;
 			}
 
 			public static void MakeRevolute(in UE.ArticulationBody body, in SDF.Axis axis)
