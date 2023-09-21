@@ -57,29 +57,9 @@ public class JointControlPlugin : CLOiSimPlugin
 
 	private void LoadJoints()
 	{
-		UnityEngine.Debug.Log("Joints loaded");
 		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
 		jointState.SetUpdateRate(updateRate);
-#if false
-		// if (GetPluginParameters().GetValues<string>("joints/link", out var links))
-		// {
-		// 	foreach (var linkName in links)
-		// 	{
 
-		// 		// UnityEngine.Debug.Log("Joints loaded "+ linkName);
-		// 		var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("joints/link[text()='" + linkName + "']", "parent_frame_id", "base_link");
-		// 		if (jointState.AddTargetJoint(linkName, out var targetLink, out var isStatic))
-		// 		{
-		// 			var tf = new TF(targetLink, linkName, parentFrameId);
-
-		// 			if (isStatic)
-		// 				staticTfList.Add(tf);
-		// 			else
-		// 				tfList.Add(tf);
-		// 		}
-		// 	}
-		}
-#else
 		if (GetPluginParameters().GetValues<string>("joints/joint", out var joints))
 		{
 			foreach (var jointName in joints)
@@ -96,8 +76,7 @@ public class JointControlPlugin : CLOiSimPlugin
 				}
 			}
 		}
-#endif
-
+		// UnityEngine.Debug.Log("Joints loaded");
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
