@@ -8,17 +8,15 @@ using UnityEngine;
 
 public class Articulation
 {
-	private ArticulationBody _jointBody = null;
-	private ArticulationJointType _jointType = ArticulationJointType.FixedJoint;
+	protected ArticulationBody _jointBody = null;
 
-	public ArticulationJointType Type => _jointType;
+	public ArticulationJointType Type => _jointBody.jointType;
 
 	public Articulation(in ArticulationBody jointBody)
 	{
 		if (jointBody != null)
 		{
 			_jointBody = jointBody;
-			_jointType = _jointBody.jointType;
 		}
 	}
 
@@ -111,7 +109,7 @@ public class Articulation
 
 		drive.driveType = driveType;
 
-		switch (driveType)
+		switch (drive.driveType)
 		{
 			case ArticulationDriveType.Target:
 				drive.target = target;
@@ -123,6 +121,8 @@ public class Articulation
 				Debug.LogWarning("ArticulationDriveType should be Target/Velocity");
 				return;
 		}
+
+		SetDrive(drive);
 	}
 
 	/// <param name="targetVelocity">angular velocity in degrees per second.</param>
@@ -135,7 +135,7 @@ public class Articulation
 			return;
 		}
 
-		if (targetVelocity == float.NaN || targetPosition == float.NaN)
+		if (targetVelocity == float.NaN && targetPosition == float.NaN)
 		{
 			Debug.LogWarning("Invalid Value: targetVelocity or targetPosition is NaN");
 			return;
@@ -148,25 +148,23 @@ public class Articulation
 		if (!float.IsNaN(targetVelocity) && !float.IsNaN(targetPosition))
 		{
 			drive.driveType = ArticulationDriveType.Force;
-			Debug.LogWarningFormat("1 targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
+			// Debug.LogWarningFormat("1 targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
 		}
 		else if (float.IsNaN(targetVelocity) && !float.IsNaN(targetPosition))
 		{
 			drive.driveType = ArticulationDriveType.Target;
-			Debug.LogWarningFormat("2 targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
+			// Debug.LogWarningFormat("2 targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
 		}
 		else if (!float.IsNaN(targetVelocity) && float.IsNaN(targetPosition))
 		{
 			drive.driveType = ArticulationDriveType.Velocity;
-			Debug.LogWarningFormat("3 targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
+			// Debug.LogWarningFormat("3 targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
 		}
 		else
 		{
 			Debug.LogError("Invalid targetVelocity and targetPosition: Both NaN");
 			return;
 		}
-
-		Debug.LogWarningFormat("Value: targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
 
 		switch (drive.driveType)
 		{
@@ -192,7 +190,7 @@ public class Articulation
 	{
 		ArticulationDrive drive;
 
-		switch (_jointType)
+		switch (Type)
 		{
 			case ArticulationJointType.RevoluteJoint:
 				drive = _jointBody.xDrive;
@@ -247,7 +245,7 @@ public class Articulation
 				break;
 
 			default:
-				Debug.LogWarning("GetDrive() unsupported joint type: " + _jointType);
+				Debug.LogWarning("GetDrive() unsupported joint type: " + Type);
 				drive = new ArticulationDrive();
 				break;
 		}
@@ -257,7 +255,7 @@ public class Articulation
 
 	public void SetDrive(in ArticulationDrive drive)
 	{
-		switch (_jointType)
+		switch (Type)
 		{
 			case ArticulationJointType.RevoluteJoint:
 				_jointBody.xDrive = drive;
@@ -312,7 +310,7 @@ public class Articulation
 				break;
 
 			default:
-				Debug.LogWarning("SetDrive() unsupported joint type: " + _jointType);
+				Debug.LogWarning("SetDrive() unsupported joint type: " + Type);
 				break;
 		}
 	}
