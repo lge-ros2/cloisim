@@ -105,6 +105,7 @@ namespace SDF
 					AfterImportModel(item, createdObject);
 
 					ImportJoints(item.GetJoints(), createdObject);
+
 					ImportPlugins(item.GetPlugins(), createdObject);
 				}
 			}
@@ -134,20 +135,19 @@ namespace SDF
 
 				var worldObject = ImportWorld(world);
 
-				ImportModels(world.GetModels());
-				yield return null;
-
 				ImportActors(world.GetActors());
 				yield return null;
 
-				ImportPlugins(world.GetPlugins(), worldObject);
-				yield return null;
+				ImportModels(world.GetModels());
 
 				foreach (var jointObject in jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
-					yield return null;
 				}
+				yield return null;
+
+				ImportPlugins(world.GetPlugins(), worldObject);
+				yield return null;
 			}
 
 			public IEnumerator<Model> StartImport(Model model)
@@ -156,13 +156,12 @@ namespace SDF
 				var tempModels = new List<Model>() { model };
 
 				ImportModels(tempModels);
-				yield return null;
 
 				foreach (var jointObject in jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
-					yield return null;
 				}
+				yield return null;
 			}
 		}
 	}
