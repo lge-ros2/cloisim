@@ -13,10 +13,10 @@ public class Clock : Device
 {
 	private messages.WorldStatistics worldStat = null;
 
-#region Filter times
+	#region Filter times
 	private double prevSimTime = 0f;
 	private double prevRealTime = 0f;
-#endregion
+	#endregion
 
 	private double restartedSimTime = 0;
 	private double restartedRealTime = 0;
@@ -24,7 +24,7 @@ public class Clock : Device
 	private double currentSimTime = 0;
 	private double currentRealTime = 0;
 
-#region time in hms format
+	#region time in hms format
 	public class HMS
 	{
 		private string _simTime = string.Empty;
@@ -50,7 +50,7 @@ public class Clock : Device
 
 		private void SetTimeString(ref string target, in TimeSpan ts)
 		{
-			_tempSB.AppendFormat("{0}d {1}:{2}:{3}.{4}", ts.Days.ToString(), ts.Hours.ToString(), ts.Minutes.ToString(), ts.Seconds.ToString(), ts.Milliseconds.ToString());
+			_tempSB.AppendFormat("{0}d {1:D2}:{2:D2}:{3:D2}.{4:D3}", ts.Days, ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds);
 			target = _tempSB.ToString();
 			_tempSB.Clear();
 		}
@@ -63,7 +63,7 @@ public class Clock : Device
 	private HMS hms = new HMS();
 
 	private int hmsUpdateIndex = 0;
-#endregion
+	#endregion
 
 	public double SimTime => currentSimTime;
 
