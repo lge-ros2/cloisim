@@ -18,7 +18,7 @@ namespace SDF
 		// {Model Name, (Model Config Name, Model Path, Model File)}
 		public Dictionary<string, Tuple<string, string, string>> resourceModelTable = new Dictionary<string, Tuple<string, string, string>>();
 
-		private readonly string[] sdfVersions = {"1.9", "1.8", "1.7", "1.6", "1.5", "1.4", "1.3", "1.2", string.Empty};
+		private readonly string[] sdfVersions = { "1.9", "1.8", "1.7", "1.6", "1.5", "1.4", "1.3", "1.2", string.Empty };
 
 		private XmlDocument doc = new XmlDocument();
 
@@ -114,7 +114,7 @@ namespace SDF
 				model = new Model(modelNode);
 				modelFound = true;
 
-				var infoMessage =  model.Name + " Model(" + modelFileName + ") is loaded.";
+				var infoMessage = model.Name + " Model(" + modelFileName + ") is loaded.";
 				// logger.SetShowOnDisplayOnce();
 				logger.Write(infoMessage);
 			}
@@ -186,7 +186,7 @@ namespace SDF
 					}
 					catch (XmlException e)
 					{
-						Console.Write("Failed to Load model file(" + modelConfig  + ") - " + e.Message);
+						Console.Write("Failed to Load model file(" + modelConfig + ") - " + e.Message);
 						continue;
 					}
 
