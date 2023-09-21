@@ -89,8 +89,21 @@ namespace SDF
 				}
 
 				var linkHelper = linkObject.GetComponent<SDF.Helper.Link>();
+				var colliders = linkObject.GetComponentsInChildren<UE.Collider>();
+
+				// handling mesh collider
+				foreach (var collider in colliders)
+				{
+					var meshCollider = collider as UE.MeshCollider;
+
+					if (meshCollider != null)
+					{
+						meshCollider.convex = true;
+					}
+				}
 
 				var articulationBody = linkObject.AddComponent<UE.ArticulationBody>();
+
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
 				articulationBody.useGravity = (linkHelper == null) ? false : linkHelper.useGravity;
@@ -120,7 +133,6 @@ namespace SDF
 					// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
 				}
 
-				var colliders = linkObject.GetComponentsInChildren<UE.Collider>();
 				if (colliders.Length > 0)
 				{
 					if (inertial?.inertia != null)
@@ -133,17 +145,6 @@ namespace SDF
 					{
 						articulationBody.ResetInertiaTensor();
 						articulationBody.automaticInertiaTensor = true;
-					}
-
-					// handling mesh collider
-					foreach (var collider in colliders)
-					{
-						var meshCollider = collider as UE.MeshCollider;
-
-						if (meshCollider != null)
-						{
-							meshCollider.convex = true;
-						}
 					}
 				}
 				else
