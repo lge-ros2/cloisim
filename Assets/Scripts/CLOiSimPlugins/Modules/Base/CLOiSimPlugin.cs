@@ -15,7 +15,6 @@ public interface ICLOiSimPlugin
 	void Reset();
 }
 
-[DefaultExecutionOrder(560)]
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
 	public ICLOiSimPlugin.Type type { get; protected set; }
