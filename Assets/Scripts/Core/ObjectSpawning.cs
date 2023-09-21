@@ -219,6 +219,7 @@ public class ObjectSpawning : MonoBehaviour
 			if (targetObjectTransform.CompareTag("Props") || targetObjectTransform.CompareTag("Model"))
 			{
 				Destroy(targetObjectTransform.gameObject);
+				yield return new WaitForEndOfFrame();
 			}
 		}
 
