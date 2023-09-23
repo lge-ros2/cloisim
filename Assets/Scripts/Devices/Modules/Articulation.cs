@@ -123,6 +123,8 @@ public class Articulation
 				Debug.LogWarning("ArticulationDriveType should be Target/Velocity");
 				return;
 		}
+
+		SetDrive(drive);
 	}
 
 	/// <param name="targetVelocity">angular velocity in degrees per second.</param>
@@ -135,7 +137,7 @@ public class Articulation
 			return;
 		}
 
-		if (targetVelocity == float.NaN || targetPosition == float.NaN)
+		if (targetVelocity == float.NaN && targetPosition == float.NaN)
 		{
 			Debug.LogWarning("Invalid Value: targetVelocity or targetPosition is NaN");
 			return;
@@ -148,17 +150,15 @@ public class Articulation
 		if (!float.IsNaN(targetVelocity) && !float.IsNaN(targetPosition))
 		{
 			drive.driveType = ArticulationDriveType.Force;
-			Debug.LogWarningFormat("1 targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
+			// Debug.LogWarningFormat("targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
 		}
 		else if (float.IsNaN(targetVelocity) && !float.IsNaN(targetPosition))
 		{
 			drive.driveType = ArticulationDriveType.Target;
-			Debug.LogWarningFormat("2 targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
 		}
 		else if (!float.IsNaN(targetVelocity) && float.IsNaN(targetPosition))
 		{
 			drive.driveType = ArticulationDriveType.Velocity;
-			Debug.LogWarningFormat("3 targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
 		}
 		else
 		{
@@ -166,7 +166,7 @@ public class Articulation
 			return;
 		}
 
-		Debug.LogWarningFormat("Value: targetVelocity={0} or targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
+		// Debug.LogWarningFormat("targetVelocity={0} targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
 
 		switch (drive.driveType)
 		{
