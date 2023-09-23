@@ -143,7 +143,7 @@ public partial class DeviceHelper
 
 		public static Quaternion Rotation(in Quaternion rotation)
 		{
-			return new Quaternion(-rotation.z, -rotation.x, rotation.y, -rotation.w);
+			return new Quaternion(-rotation.z, rotation.x, -rotation.y, rotation.w);
 		}
 
 		public static Vector3 Reverse(in Vector3 value)

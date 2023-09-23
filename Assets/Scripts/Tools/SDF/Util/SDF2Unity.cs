@@ -18,6 +18,9 @@ public partial class SDF2Unity
 		return new Vector3(Mathf.Abs((float)y), Mathf.Abs((float)z), Mathf.Abs((float)x));
 	}
 
+	/// <param name="x">right handed system x</param>
+	/// <param name="y">right handed system y</param>
+	/// <param name="z">right handed system z</param>
 	public static Vector3 GetPosition(in double x, in double y, in double z)
 	{
 		return new Vector3(-(float)y, (float)z, (float)x);
@@ -53,6 +56,10 @@ public partial class SDF2Unity
 		return (value == null) ? Quaternion.identity : GetRotation(value.W, value.X, value.Y, value.Z);
 	}
 
+	/// <param name="w">right handed system w</param>
+	/// <param name="x">right handed system x</param>
+	/// <param name="y">right handed system y</param>
+	/// <param name="z">right handed system z</param>
 	public static Quaternion GetRotation(in double w, in double x, in double y, in double z)
 	{
 		return new Quaternion((float)y, (float)-z, (float)-x, (float)w);
