@@ -5,6 +5,7 @@
  */
 
 using UnityEngine;
+using UnityEngine.Assertions.Comparers;
 
 public class Motor : Articulation
 {
@@ -121,6 +122,10 @@ public class Motor : Articulation
 	public Motor(in GameObject gameObject)
 		: base(gameObject)
 	{
+		if (!IsRevoluteType())
+		{
+			Debug.LogWarningFormat("joint type({0}) is not 'revolute'!!", Type);
+		}
 	}
 
 	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
@@ -166,12 +171,6 @@ public class Motor : Articulation
 
 	public void Update(in float duration)
 	{
-		if (!IsRevoluteType())
-		{
-			// Debug.LogWarningFormat("({0} => joint type({1}) is not 'revolute'!!", _jointBody.transform.parent.name, Type);
-			return;
-		}
-
 		_currentMotorVelocity = GetMotorVelocity(duration);
 		// Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
 		// 	Body.jointVelocity[0], Body.jointAcceleration[0], Body.jointForce[0], Body.jointFriction, Body.jointPosition[0]);
@@ -207,7 +206,7 @@ public class Motor : Articulation
 	public void Stop()
 	{
 		SetJointVelocity(0);
-		Drive(0);
+		Drive(0, 0);
 
 		_pidControl.Reset();
 		_rapidControl.SetDirectionSwitched(false);
