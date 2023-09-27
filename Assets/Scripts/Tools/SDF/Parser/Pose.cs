@@ -15,8 +15,8 @@ namespace SDF
 		private static string regex_num_pattern = "[^.0-9Ee+-]";
 		protected static readonly Regex regex_num = new Regex(regex_num_pattern);
 
-		private T _x;
-		private T _y;
+		protected T _x;
+		protected T _y;
 
 		public Vector2()
 			: this(default(T), default(T))
@@ -75,6 +75,11 @@ namespace SDF
 				Set(tmp[0], tmp[1]);
 			}
 		}
+
+		public override string ToString()
+		{
+			return $"Vector2({_x}, {_y})";
+		}
 	}
 
 	public class Vector3<T> : Vector2<T>
@@ -130,6 +135,11 @@ namespace SDF
 			{
 				Set(tmp[0], tmp[1], tmp[2]);
 			}
+		}
+
+		public override string ToString()
+		{
+			return $"Vector3({_x}, {_y}, {_z})";
 		}
 	}
 
@@ -252,6 +262,11 @@ namespace SDF
 			{
 				Set(tmp[0], tmp[1], tmp[2], tmp[3]);
 			}
+		}
+
+		public override string ToString()
+		{
+			return $"Quaternion({_w}, {_x}, {_y}, {_z})";
 		}
 
 		private void ConvertEuler2Quaternion()
@@ -421,6 +436,11 @@ namespace SDF
 				_pos.Set(tmp[0], tmp[1], tmp[2]);
 				_rot.Set(tmp[3], tmp[4], tmp[5]);
 			}
+		}
+
+		public override string ToString()
+		{
+			return $"Pose({_pos.ToString()}, {_rot.ToString()})";
 		}
 	}
 }

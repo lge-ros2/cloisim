@@ -99,7 +99,8 @@ namespace SDF
 
 				if (articulationBodyChild == null)
 				{
-					Debug.LogWarning("Articulation Body is NULL, will create an articulation body for linking, parent: " + linkObjectParent.name + ", child: " + linkObjectChild.name);
+					Debug.LogWarningFormat("Link Child has NO Articulation Body, will create an articulation body for linking, parent({0}) child({1})",
+						linkObjectParent.name, linkObjectChild.name);
 					articulationBodyChild = CreateArticulationBody(linkObjectChild.gameObject);
 				}
 
@@ -151,8 +152,14 @@ namespace SDF
 				{
 					var axisSpringReference = 0f;
 					var axis2SpringReference = 0f;
+
+					linkHelper.JointName = joint.Name;
+					linkHelper.JointParentLinkName = joint.ParentLinkName;
+					linkHelper.JointChildLinkName = joint.ChildLinkName;
+
 					if (joint.Axis != null)
 					{
+						// articulationBodyChild
 						linkHelper.JointAxis = SDF2Unity.GetAxis(joint.Axis.xyz);
 						if (joint.Axis.dynamics != null)
 						{
@@ -168,7 +175,7 @@ namespace SDF
 						linkHelper.JointAxis2 = SDF2Unity.GetAxis(joint.Axis2.xyz);
 						if (joint.Axis2.dynamics != null)
 						{
-							axis2SpringReference =  SDF2Unity.CurveOrientation((float)joint.Axis2.dynamics.spring_reference);
+							axis2SpringReference = SDF2Unity.CurveOrientation((float)joint.Axis2.dynamics.spring_reference);
 						}
 					}
 

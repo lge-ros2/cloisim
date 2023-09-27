@@ -94,7 +94,7 @@ namespace SensorDevices
 
 		protected virtual void SetupTexture()
 		{
-			camSensor.clearFlags = CameraClearFlags.Nothing;
+			camSensor.clearFlags = CameraClearFlags.Skybox;
 			camSensor.allowHDR = true;
 			camSensor.depthTextureMode = DepthTextureMode.None;
 			_universalCamData.requiresColorOption = CameraOverrideOption.On;
@@ -174,7 +174,7 @@ namespace SensorDevices
 
 			camSensor.renderingPath = RenderingPath.Forward;
 			camSensor.allowMSAA = true;
-			camSensor.allowDynamicResolution = false;
+			camSensor.allowDynamicResolution = true;
 			camSensor.useOcclusionCulling = true;
 			camSensor.stereoTargetEye = StereoTargetEyeMask.None;
 			camSensor.orthographic = false;
@@ -192,7 +192,7 @@ namespace SensorDevices
 				filterMode: FilterMode.Trilinear,
 				wrapMode: TextureWrapMode.Clamp,
 				dimension: TextureDimension.Tex2D,
-				msaaSamples: MSAASamples.MSAA2x,
+				msaaSamples: MSAASamples.MSAA4x,
 				enableRandomWrite: false,
 				useMipMap: true,
 				autoGenerateMips: true,

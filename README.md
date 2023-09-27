@@ -34,6 +34,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
 - [X] Joint models
   - [X] 2-Wheeled Motor driving
   - [X] Joint control
+  - [ ] Joint Pose
 - [X] Sensor models
   - [X] LiDAR Sensor
     - [X] 2D
@@ -65,6 +66,8 @@ Here are the list of items that is implemented(marked) or planned to be implemen
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.6) file basically targeting and supporting version 1.6 and works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<road>`, `<population>`.
+
+There is problem with `<pose>` in `<joint>` since introduction of articulation body model. Therefore, plaese
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material', 'Collada(.dae) including animation' and 'STL(.stl)'.
 `<ambient>` elements in `<materal>` and ambient properies in mesh files are not support in CLOiSim.
@@ -136,10 +139,10 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.7f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.10f1 (LTS)'*.
 
 - Linux Machine
-  - OS: Ubuntu 22.04.2 LTS
+  - OS: Ubuntu 22.04.3 LTS
   - Processor: AMD® Ryzen 9 5950X 16-core processor
   - Memory: 64 GB
   - Graphics: NVIDIA Corporation [GeForce RTX 3090]
@@ -219,7 +222,9 @@ Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-servi
 
 New features or functions shall be developed on demand.
 
-- Fully support to keep up with 'SDF specifiaction version 1.9'
+- Fully support to keep up with the latest version of 'SDF specifiaction'
+
+  - Considering wrapper class for SDF c++ library.
 
 - Add new sensor models and enhance sensor performance
 

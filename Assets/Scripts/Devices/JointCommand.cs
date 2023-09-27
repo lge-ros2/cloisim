@@ -21,15 +21,18 @@ namespace SensorDevices
 			public Command(in Articulation joint, in float targetPosition, in float targetVelocity)
 			{
 				this.joint = joint;
-				this.targetPosition = 0;
-				this.targetVelocity = 0;
+				this.targetPosition = float.NaN;
+				this.targetVelocity = float.NaN;
 				Set(targetPosition, targetVelocity);
 			}
 
 			public void Set(in float targetPosition, in float targetVelocity)
 			{
-				this.targetPosition = targetPosition * (this.joint.IsRevoluteType() ? Mathf.Rad2Deg : 1);
-				this.targetVelocity = targetVelocity * (this.joint.IsRevoluteType() ? Mathf.Rad2Deg : 1);
+				if (targetPosition != float.NaN)
+					this.targetPosition = targetPosition * (this.joint.IsRevoluteType() ? Mathf.Rad2Deg : 1);
+
+				if (targetVelocity != float.NaN)
+					this.targetVelocity = targetVelocity * (this.joint.IsRevoluteType() ? Mathf.Rad2Deg : 1);
 			}
 		}
 
@@ -54,13 +57,24 @@ namespace SensorDevices
 		{
 			if (PopDeviceMessage<messages.JointCmd>(out var jointCommand))
 			{
-				var linkName = jointCommand.Name;
-				var articulation = jointState.GetArticulation(linkName);
-
+				var jointName = jointCommand.Name;
+				Debug.Log(jointName);
+				var articulation = jointState.GetArticulation(jointName);
 				if (articulation != null)
 				{
-					var targetPosition = (float)jointCommand.Position.Target;
-					var targetVelocity = (float)jointCommand.Velocity.Target;
+					var targetPosition = float.NaN;
+					if (jointCommand.Position != null)
+					{
+						targetPosition = (float)jointCommand.Position.Target;
+						Debug.Log("targetPosition=" + targetPosition);
+					}
+
+					var targetVelocity = float.NaN;
+					if (jointCommand.Velocity != null)
+					{
+						targetVelocity = (float)jointCommand.Velocity.Target;
+						Debug.Log("targetVelocity=" + targetVelocity);
+					}
 
 					var newCommand = new Command(articulation, targetPosition, targetVelocity);
 					jointCommandQueue.Enqueue(newCommand);
@@ -78,6 +92,7 @@ namespace SensorDevices
 			while (jointCommandQueue.Count > 0)
 			{
 				var command = jointCommandQueue.Dequeue();
+				// Debug.Log(command.targetVelocity + "," + command.targetPosition);
 				command.joint.Drive(command.targetVelocity, command.targetPosition);
 			}
 		}

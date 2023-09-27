@@ -25,10 +25,33 @@ namespace SDF
 			public bool useGravity = false;
 
 			private UE.ArticulationBody _artBody = null;
+
+			private string jointName = string.Empty;
+			private string jointParentLinkName = string.Empty;
+			private string jointChildLinkName = string.Empty;
+
 			private UE.Vector3 jointAxis = UE.Vector3.zero;
 			private UE.Vector3 jointAxis2 = UE.Vector3.zero;
 
 			private List<UE.ContactPoint> collisionContacts = new List<UE.ContactPoint>();
+
+			public string JointName
+			{
+				get => this.jointName;
+				set => this.jointName = value;
+			}
+
+			public string JointParentLinkName
+			{
+				get => this.jointParentLinkName;
+				set => this.jointParentLinkName = value;
+			}
+
+			public string JointChildLinkName
+			{
+				get => this.jointChildLinkName;
+				set => this.jointChildLinkName = value;
+			}
 
 			public UE.Vector3 JointAxis
 			{

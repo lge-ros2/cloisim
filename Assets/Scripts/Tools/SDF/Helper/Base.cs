@@ -10,13 +10,13 @@ namespace SDF
 {
 	namespace Helper
 	{
-		public class Base: UE.MonoBehaviour
+		public class Base : UE.MonoBehaviour
 		{
 			private PoseControl poseControl = null;
 
 			private bool isFirstChild = false;
 
-			public bool IsFirstChild => isFirstChild;
+			public bool IsFirstChild => isFirstChild; // root model
 
 			protected void Awake()
 			{
