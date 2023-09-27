@@ -16,12 +16,24 @@ namespace SDF
 			{
 				var modelTransformParent = linkParent.parent;
 				var modelTransformChild = linkChild.parent;
+
 				var modelHelperChild = modelTransformChild.GetComponent<SDF.Helper.Model>();
 
 				var linkHelperParent = linkParent.GetComponent<SDF.Helper.Link>();
 				var linkHelperChild = linkChild.GetComponent<SDF.Helper.Link>();
 
+				var linkParentArticulationBody = linkParent.GetComponent<UE.ArticulationBody>();
+				if (linkParentArticulationBody == null)
+				{
+					UE.Debug.LogWarningFormat("LinkParent({0}) has no ArticulationBody -> create empty one", linkParent.name);
+					linkParentArticulationBody = Import.Loader.CreateArticulationBody(linkParent);
+				}
+
 				var anchorPose = new UE.Pose();
+
+				// link to link within same model
+				// model to model
+				// model is root model
 				if (linkHelperChild.Model.Equals(linkHelperParent.Model) ||
 					modelTransformChild.Equals(modelTransformParent) ||
 					modelHelperChild.IsFirstChild)
@@ -30,7 +42,8 @@ namespace SDF
 
 					// Set anchor pose
 					anchorPose.position = linkChild.localPosition;
-					anchorPose.rotation = UE.Quaternion.Inverse(linkChild.localRotation);
+					anchorPose.rotation = UE.Quaternion.Inverse(linkChild.localRotation) * linkParentArticulationBody.anchorRotation;
+					// UE.Debug.LogWarningFormat("Linking1 ({0}) => ({1})", linkChild.name, linkParent.name);
 				}
 				else
 				{
@@ -39,11 +52,11 @@ namespace SDF
 					// Set anchor pose
 					anchorPose.position = modelTransformChild.localPosition;
 					anchorPose.rotation = UE.Quaternion.Inverse(modelTransformChild.localRotation);
+					// UE.Debug.LogWarningFormat("Linking2 ({0}) => ({1})", modelTransformChild.name, linkParent.name);
 				}
 
 				var jointPosition = SDF2Unity.GetPosition(joint.Pose.Pos);
 				var jointRotation = SDF2Unity.GetRotation(joint.Pose.Rot);
-				// UE.Debug.Log("jointPosition jointRotation  " + jointPosition.ToString("F3") + ", " + jointRotation.ToString("F3"));
 				anchorPose.position += jointPosition;
 				anchorPose.rotation *= jointRotation;
 
@@ -52,11 +65,10 @@ namespace SDF
 
 			public static void SetArticulationBodyAnchor(in UE.ArticulationBody body, in UE.Pose parentAnchor)
 			{
-				UE.Debug.Log(parentAnchor.ToString("F5"));
-				// TODO: Consider parentAnchor
-				body.matchAnchors = true;
 				body.anchorPosition = UE.Vector3.zero;
 				body.anchorRotation = parentAnchor.rotation;
+
+				// TODO: Consider parentAnchor
 				// body.parentAnchorPosition = parentAnchor.position; // TODO: matchAnchors is set to true
 				// body.parentAnchorRotation = parentAnchor.rotation; // TODO: matchAnchors is set to true
 			}

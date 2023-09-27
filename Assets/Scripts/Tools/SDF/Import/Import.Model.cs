@@ -31,6 +31,7 @@ namespace SDF
 				articulationBody.linearDamping = 0;
 				articulationBody.angularDamping = 0;
 #if true
+				// TODO: consider to set intertia value manually
 				articulationBody.automaticCenterOfMass = true;
 				articulationBody.automaticInertiaTensor = true;
 #else

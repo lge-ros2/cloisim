@@ -80,6 +80,11 @@ namespace SDF
 				}
 			}
 
+			public static UE.ArticulationBody CreateArticulationBody(in UE.Transform linkObjectTransform, in Inertial inertial = null)
+			{
+				return CreateArticulationBody(linkObjectTransform.gameObject, inertial);
+			}
+
 			private static UE.ArticulationBody CreateArticulationBody(in UE.GameObject linkObject, in Inertial inertial = null)
 			{
 				if (linkObject == null)
@@ -118,6 +123,10 @@ namespace SDF
 				articulationBody.ResetInertiaTensor();
 				articulationBody.jointType = UE.ArticulationJointType.FixedJoint;
 				articulationBody.Sleep();
+
+				articulationBody.matchAnchors = true;
+				articulationBody.anchorPosition = UE.Vector3.zero;
+				articulationBody.anchorRotation = UE.Quaternion.identity;
 
 				if (inertial == null)
 				{
