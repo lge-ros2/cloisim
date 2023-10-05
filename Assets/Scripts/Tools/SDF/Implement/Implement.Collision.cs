@@ -23,7 +23,7 @@ namespace SDF
 
 			private static VHACD.Parameters VHACDParams = new VHACD.Parameters()
 			{
-				m_resolution = 30000,
+				m_resolution = 20000,
 				m_concavity = 0.001,
 				m_planeDownsampling = 2,
 				m_convexhullDownsampling = 2,
@@ -31,8 +31,8 @@ namespace SDF
 				m_beta = 0.05,
 				m_pca = 0,
 				m_mode = 0,
-				m_maxNumVerticesPerCH = 64,
-				m_minVolumePerCH = 0.0001,
+				m_maxNumVerticesPerCH = 128,
+				m_minVolumePerCH = 0.0005,
 				m_convexhullApproximation = 1,
 				m_oclAcceleration = 0,
 				m_maxConvexHulls = 256,
@@ -71,11 +71,11 @@ namespace SDF
 					// Just skip if the number of vertices in the mesh is less than the limit of convex mesh triangles
 					if (meshFilter.sharedMesh.vertexCount >= NumOfLimitConvexMeshTriangles)
 					{
-// #if ENABLE_MERGE_COLLIDER
-// 						UE.Debug.LogFormat("Apply VHACD({0}), EnableMergeCollider will be ignored.", targetObject.name);
-// #else
-// 						UE.Debug.LogFormat("Apply VHACD({0})", targetObject.name);
-// #endif
+						// #if ENABLE_MERGE_COLLIDER
+						// 						UE.Debug.LogFormat("Apply VHACD({0}), EnableMergeCollider will be ignored.", targetObject.name);
+						// #else
+						// 						UE.Debug.LogFormat("Apply VHACD({0})", targetObject.name);
+						// #endif
 						var colliderMeshes = decomposer.GenerateConvexMeshes(meshFilter.sharedMesh);
 
 						var index = 0;
@@ -173,7 +173,7 @@ namespace SDF
 				{
 					material.name = "SDF Surface Friction";
 
-					material.bounciness = (surface.bounce == null)? 0:(float)surface.bounce.restitution_coefficient;
+					material.bounciness = (surface.bounce == null) ? 0 : (float)surface.bounce.restitution_coefficient;
 
 					if (surface.friction != null)
 					{
