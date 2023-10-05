@@ -28,9 +28,9 @@ namespace SensorDevices
 
 		public Vector3 sensorStartPoint = Vector3.zero;
 
-		public double detectedDistance = 0;
-
 		private List<Vector3> meshSensorRegionVertices = new List<Vector3>();
+
+		private int pingpongindex = 0;
 
 		private Transform sonarLink = null;
 
@@ -177,7 +177,7 @@ namespace SensorDevices
 			sensorStartPoint = localToWorld.MultiplyPoint3x4(sensorStartPoint);
 
 			// Debug.Log("Hit Points: " + meshSensorRegionVertices.Count);
-			for (var i = 0; i < meshSensorRegionVertices.Count; i++)
+			for (var i = pingpongindex; i < meshSensorRegionVertices.Count; i += 2)
 			{
 				var targetPoint = localToWorld.MultiplyPoint3x4(meshSensorRegionVertices[i]);
 				var direction = (targetPoint - sensorStartPoint);
@@ -207,11 +207,13 @@ namespace SensorDevices
 				}
 			}
 
-			detectedDistance = detectedRange;
 			var sonar = sonarStamped.Sonar;
 			sonar.Range = detectedRange;
 			DeviceHelper.SetVector3d(sonar.Contact, contactPoint);
 			// Debug.Log(deviceName + ": " + other.name + " |Stay| " + detectedRange.ToString("F5") + " | " + contactPoint);
+
+			pingpongindex++;
+			pingpongindex %= 2;
 		}
 
 		void OnTriggerExit(Collider other)
