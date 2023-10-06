@@ -198,10 +198,10 @@ namespace SensorDevices
 				slices: 1,
 				depthBufferBits: DepthBits.None,
 				colorFormat: GraphicsFormat.R8G8B8A8_UNorm,
-				filterMode: FilterMode.Bilinear,
+				filterMode: FilterMode.Point,
 				wrapMode: TextureWrapMode.Clamp,
 				dimension: TextureDimension.Tex2D,
-				msaaSamples: MSAASamples.MSAA4x,
+				msaaSamples: MSAASamples.None,
 				enableRandomWrite: false,
 				useMipMap: true,
 				autoGenerateMips: true,
@@ -221,6 +221,7 @@ namespace SensorDevices
 
 			var universalLaserCamData = laserCam.GetUniversalAdditionalCameraData();
 			universalLaserCamData.renderShadows = false;
+			universalLaserCamData.stopNaN = true;
 			universalLaserCamData.dithering = true;
 			universalLaserCamData.allowXRRendering = false;
 			universalLaserCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
