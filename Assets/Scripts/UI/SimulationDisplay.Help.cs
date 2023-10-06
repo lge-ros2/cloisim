@@ -48,8 +48,12 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine("        Snapping(optional): + <b>Shift</b>");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(string.Empty);
-		sb.AppendLine("- Object spawning: choose one of model on the top of screen. [Box], [Cylinder], [Sphere] ");
+		sb.AppendLine("- Object spawning: choose one of model on the top of screen. [Box], [Cylinder], [Sphere]");
 		sb.AppendLine(string.Empty);
+		sb.AppendLine("    Choose Prop by Number Key");
+		sb.AppendLine("      <b>1</b>: [Box]");
+		sb.AppendLine("      <b>1</b>: [Cylinder]");
+		sb.AppendLine("      <b>2</b>: [Sphere]");
 		sb.AppendLine("    Pressing <b>Left Ctrl</b> key and,");
 		sb.AppendLine("      Spawning: + Mouse <b>Left Click</b> on the cursor");
 		sb.AppendLine("      Remove: + Mouse <b>Right Click</b> on the object already spawned");
@@ -69,7 +73,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine("    <b>A</b>: Move Left(sidestep left)");
 		sb.AppendLine("    <b>D</b>: Move Right(sidestep right)");
 		sb.AppendLine("    <b>Q</b>: Move upward");
- 		sb.AppendLine("    <b>Z</b>: Move downward");
+		sb.AppendLine("    <b>Z</b>: Move downward");
 		sb.AppendLine("    <b>Space</b>: moving only on current plane(X, Z axis). it's toggling.");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(string.Empty);
@@ -79,7 +83,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine("            @ Let me know if you are stuck in any trouble :)");
 		sb.AppendLine(string.Empty);
 
-  		var lines = sb.ToString().Split(new string[] {System.Environment.NewLine }, System.StringSplitOptions.None).Length;
+		var lines = sb.ToString().Split(new string[] { System.Environment.NewLine }, System.StringSplitOptions.None).Length;
 		helpContentsHeight = (int)(lines * labelFontSize * 1.2);
 		helpContents.text = sb.ToString();
 

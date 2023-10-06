@@ -189,6 +189,18 @@ public partial class SimulationDisplay : MonoBehaviour
 				popupHelpDialog = false;
 				cameraControl.BlockMouseWheelControl(false);
 			}
+			else if (keyCode.CompareTo(KeyCode.Alpha1) == 0)
+			{
+				_toolbarSelected = 0;
+			}
+			else if (keyCode.CompareTo(KeyCode.Alpha2) == 0)
+			{
+				_toolbarSelected = 1;
+			}
+			else if (keyCode.CompareTo(KeyCode.Alpha3) == 0)
+			{
+				_toolbarSelected = 2;
+			}
 		}
 
 		if (popupHelpDialog)
