@@ -64,15 +64,23 @@ public class JointControlPlugin : CLOiSimPlugin
 		{
 			foreach (var jointName in joints)
 			{
+				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("joints/joint[text()='" + jointName + "']", "parent_frame_id");
+
 				// UnityEngine.Debug.Log("Joints loaded "+ jointName);
 				if (jointState.AddTargetJoint(jointName, out var targetLink, out var isStatic))
 				{
-					var tf = new TF(targetLink);
-
+					var jointParentLinkName = (parentFrameId == null) ? targetLink.JointParentLinkName : parentFrameId;
+					var tf = new TF(targetLink, targetLink.JointChildLinkName, jointParentLinkName);
 					if (isStatic)
+					{
 						staticTfList.Add(tf);
+						// UnityEngine.Debug.LogFormat("staticTfList Added: {0}::{1}", targetLink.Model.name, targetLink.name);
+					}
 					else
+					{
 						tfList.Add(tf);
+						// UnityEngine.Debug.LogFormat("tfList Added: {0}::{1}", targetLink.Model.name, targetLink.name);
+					}
 				}
 			}
 		}
