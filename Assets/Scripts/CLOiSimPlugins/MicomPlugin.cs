@@ -217,6 +217,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 			{
 				var tfPose = tf.GetPose();
+				// Debug.Log(tf.parentFrameId + " <= " + tf.childFrameId + " = " + tf.link.JointAxis + ", " + tfPose);
 
 				var poseMessage = new messages.Pose();
 				poseMessage.Position = new messages.Vector3d();
