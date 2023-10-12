@@ -189,15 +189,15 @@ namespace SensorDevices
 				slices: 1,
 				depthBufferBits: DepthBits.None,
 				colorFormat: targetColorFormat,
-				filterMode: FilterMode.Trilinear,
+				filterMode: FilterMode.Bilinear,
 				wrapMode: TextureWrapMode.Clamp,
 				dimension: TextureDimension.Tex2D,
-				msaaSamples: MSAASamples.MSAA4x,
+				msaaSamples: MSAASamples.MSAA2x,
 				enableRandomWrite: false,
 				useMipMap: true,
 				autoGenerateMips: true,
 				isShadowMap: false,
-				anisoLevel: 2,
+				anisoLevel: 3,
 				mipMapBias: 0,
 				bindTextureMS: false,
 				useDynamicScale: true,
@@ -254,7 +254,7 @@ namespace SensorDevices
 
 		private void CameraWorker()
 		{
-			if (Time.time - _lastTimeCameraWork >= WaitPeriod(0.0001f))
+			if (Time.time - _lastTimeCameraWork >= WaitPeriod(0.00001f))
 			{
 				_universalCamData.enabled = true;
 

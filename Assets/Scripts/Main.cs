@@ -230,18 +230,18 @@ public class Main : MonoBehaviour
 
 		worldNavMeshBuilder = worldRoot.GetComponent<WorldNavMeshBuilder>();
 
+		var simWorld = worldRoot.AddComponent<SimulationWorld>();
+		DeviceHelper.SetGlobalClock(simWorld.GetClock());
+
 		Main.bridgeManager = new BridgeManager();
 		Main.simulationService = new SimulationService();
-
-		var simWorld = gameObject.AddComponent<SimulationWorld>();
-		DeviceHelper.SetGlobalClock(simWorld.GetClock());
 
 		var sphericalCoordinates = new SphericalCoordinates();
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
 
-		gameObject.AddComponent<ObjectSpawning>();
-
 		SensorDevices.DepthCamera.LoadComputeShader();
+
+		gameObject.AddComponent<ObjectSpawning>();
 	}
 
 	void Start()

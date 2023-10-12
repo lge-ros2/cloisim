@@ -19,48 +19,31 @@ public class TF
 		this.parentFrameId = parentFrameId.Replace("::", "_");
 		this.childFrameId = childFrameId.Replace("::", "_");
 		this.link = link;
-	}
-
-	public TF(in SDF.Helper.Link link)
-	{
-		var parentFrame = link.JointParentLinkName;
-		var childFrame = link.JointChildLinkName;
-		this.parentFrameId = parentFrame.Replace("::", "_");
-		this.childFrameId = childFrame.Replace("::", "_");
-		this.link = link;
+		// Debug.LogFormat("{0} <- {1}", parentFrameId, childFrameId);
 	}
 
 	public Pose GetPose()
 	{
 		var tfLink = this.link;
 		var tfPose = tfLink.GetPose(targetPoseFrame);
+		var modelPose = tfLink.Model.GetPose(targetPoseFrame);
 
-		// Debug.Log(tfLink.Model.name + " <=>" + tfLink.RootModel.name);
+		// Debug.Log(parentFrameId + " <= " + childFrameId + "(" + tfLink.JointAxis + ")" + tfPose);
 		if (!tfLink.Model.Equals(tfLink.RootModel))
 		{
-			var modelPose = tfLink.Model.GetPose(targetPoseFrame);
+			tfPose.rotation = modelPose.rotation * tfPose.rotation;
 
-			// Debug.Log(parentFrameId + "::" + childFrameId + "(" + tfLink.JointAxis + ") = " + modelPose.position +", " + tfPose.position);
-			if (tfLink.JointAxis.Equals(Vector3.up) || tfLink.JointAxis.Equals(Vector3.down))
+			if (tfLink.Model != null)
 			{
-				tfPose.rotation *= Quaternion.AngleAxis(180, Vector3.right);
-				// Debug.Log(parentFrameId + "::" + childFrameId + "(" + tfLink.JointAxis + ") = " + modelPose.position + ", " + tfPose.position);
+				tfPose.position += modelPose.position;
 			}
-			else if (tfLink.JointAxis.Equals(Vector3.forward) || tfLink.JointAxis.Equals(Vector3.back))
-			{
-				// tfPose.rotation *= Quaternion.AngleAxis(180, Vector3.up);
-				// Debug.Log(parentFrameId + "::" + childFrameId + "(" + tfLink.JointAxis + ") = " + modelPose.position + ", " + tfPose.position);
-			}
-			else if (tfLink.JointAxis.Equals(Vector3.left) || tfLink.JointAxis.Equals(Vector3.right))
-			{
-				// tfPose.rotation *= Quaternion.AngleAxis(180, Vector3.forward);
-				// Debug.Log(parentFrameId + "::" + childFrameId + "(" + tfLink.JointAxis + ") = " + modelPose.position + ", " + tfPose.position);
-			}
-
-			tfPose.position += modelPose.position;
-			tfPose.rotation *= modelPose.rotation;
 		}
-
+		else
+		{
+			tfPose.rotation *= modelPose.rotation;
+			// Debug.Log("is Root Model TF");
+		}
+		// Debug.Log(parentFrameId + "::" + childFrameI + "(" + tfLink.JointAxis + ") = tf rot" + tfPose.rotation.eulerAngles);
 		return tfPose;
 	}
 }

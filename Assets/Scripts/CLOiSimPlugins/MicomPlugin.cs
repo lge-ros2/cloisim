@@ -134,7 +134,8 @@ public class MicomPlugin : CLOiSimPlugin
 
 				foreach (var linkHelper in linkHelpers)
 				{
-					if ((string.IsNullOrEmpty(modelName) || (!string.IsNullOrEmpty(modelName) && linkHelper.Model.name.Equals(modelName))) &&
+					if ((string.IsNullOrEmpty(modelName) || (!string.IsNullOrEmpty(modelName) &&
+						linkHelper.Model.name.Equals(modelName))) &&
 						linkHelper.name.Equals(linkName))
 					{
 						var tf = new TF(linkHelper, link, parentFrameId);
@@ -216,6 +217,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 			{
 				var tfPose = tf.GetPose();
+				// Debug.Log(tf.parentFrameId + " <= " + tf.childFrameId + " = " + tf.link.JointAxis + ", " + tfPose);
 
 				var poseMessage = new messages.Pose();
 				poseMessage.Position = new messages.Vector3d();
@@ -227,7 +229,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 				var ros2StaticTransformElement = new messages.Param();
 				ros2StaticTransformElement.Name = "pose";
-				ros2StaticTransformElement.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = poseMessage};
+				ros2StaticTransformElement.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = poseMessage };
 
 				ros2StaticTransformLink.Childrens.Add(ros2StaticTransformElement);
 				// Debug.Log(poseMessage.Name + ", " + poseMessage.Position + ", " + poseMessage.Orientation);

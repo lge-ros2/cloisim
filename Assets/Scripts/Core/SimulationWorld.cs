@@ -3,9 +3,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
- using UnityEngine;
+using UnityEngine;
 
-[DefaultExecutionOrder(600)]
 [RequireComponent(typeof(Clock))]
 public class SimulationWorld : CLOiSimPlugin
 {

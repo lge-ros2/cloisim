@@ -30,6 +30,8 @@ namespace SDF
 				}
 
 				var anchorPose = new UE.Pose();
+				anchorPose.position = UE.Vector3.zero;
+				anchorPose.rotation = UE.Quaternion.identity;
 
 				// link to link within same model
 				// model to model
@@ -42,7 +44,6 @@ namespace SDF
 
 					// Set anchor pose
 					anchorPose.position = linkChild.localPosition;
-					anchorPose.rotation = UE.Quaternion.Inverse(linkChild.localRotation) * linkParentArticulationBody.anchorRotation;
 					// UE.Debug.LogWarningFormat("Linking1 ({0}) => ({1})", linkChild.name, linkParent.name);
 				}
 				else
@@ -51,7 +52,6 @@ namespace SDF
 
 					// Set anchor pose
 					anchorPose.position = modelTransformChild.localPosition;
-					anchorPose.rotation = UE.Quaternion.Inverse(modelTransformChild.localRotation);
 					// UE.Debug.LogWarningFormat("Linking2 ({0}) => ({1})", modelTransformChild.name, linkParent.name);
 				}
 

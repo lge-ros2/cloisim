@@ -39,7 +39,7 @@ public class Publisher : PublisherSocket
 
 	public bool Publish(in DeviceMessage messageToSend)
 	{
-		if (messageToSend.IsValid())
+		if (messageToSend != null && messageToSend.IsValid())
 		{
 			var buffer = messageToSend.GetBuffer();
 			var bufferLength = (int)messageToSend.Length;

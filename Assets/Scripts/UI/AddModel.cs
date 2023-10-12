@@ -4,15 +4,15 @@ using UnityEngine;
 public class AddModel : MonoBehaviour
 {
 	private GameObject modelList = null;
-	private Transform targetObject = null;
+	private Transform _targetObject = null;
 	private SDF.Helper.Model _modelHelper = null;
 
 	#region variables for the object with articulation body
 	private ArticulationBody rootArticulationBody = null;
-	private Vector3 articulationBodyDeployOffset = new Vector3(0, 0, 0);
+	private Vector3 articulationBodyDeployOffset = Vector3.zero;
 	#endregion
 
-	public float maxRayDistance = 100.0f;
+	public float maxRayDistance = 60.0f;
 
 	void Awake()
 	{
@@ -39,10 +39,10 @@ public class AddModel : MonoBehaviour
 
 	private void RemoveAddingModel()
 	{
-		if (targetObject != null)
+		if (_targetObject != null)
 		{
-			GameObject.Destroy(targetObject.gameObject);
-			targetObject = null;
+			GameObject.Destroy(_targetObject.gameObject);
+			_targetObject = null;
 		}
 		rootArticulationBody = null;
 		_modelHelper = null;
@@ -50,14 +50,14 @@ public class AddModel : MonoBehaviour
 
 	public void SetAddingModelForDeploy(in Transform targetTransform)
 	{
-		const float DeployOffset = 0.1f;
+		const float DeployOffset = 0.05f;
 
 		RemoveAddingModel();
 
-		targetObject = targetTransform;
-		ChangeColliderObjectLayer(targetObject, "Ignore Raycast");
+		_targetObject = targetTransform;
+		ChangeColliderObjectLayer(_targetObject, "Ignore Raycast");
 
-		rootArticulationBody = targetObject.GetComponentInChildren<ArticulationBody>();
+		rootArticulationBody = _targetObject.GetComponentInChildren<ArticulationBody>();
 		if (rootArticulationBody != null)
 		{
 			if (rootArticulationBody.isRoot)
@@ -71,16 +71,16 @@ public class AddModel : MonoBehaviour
 		}
 
 		var totalBound = new Bounds();
-		foreach (var renderer in targetObject.GetComponentsInChildren<Renderer>())
+		foreach (var collider in _targetObject.GetComponentsInChildren<Collider>())
 		{
-			totalBound.Encapsulate(renderer.bounds);
+			totalBound.Encapsulate(collider.bounds);
 		}
 
-		// Debug.Log(totalBound.extents + " " + totalBound.center + " "  + totalBound.size);
-		// Debug.Log(totalBound.extents.y + " " + totalBound.center.y + " "  + totalBound.size.y);
-		articulationBodyDeployOffset.y = totalBound.min.y + DeployOffset;
+		articulationBodyDeployOffset.y = DeployOffset
+			+ ((totalBound.min.y >= 0) ? totalBound.min.y : 0);
+		// Debug.Log("Deploy == " + articulationBodyDeployOffset.y + " " + totalBound.min + ", " + totalBound.center + "," + totalBound.extents);
 
-		_modelHelper = targetObject.GetComponent<SDF.Helper.Model>();
+		_modelHelper = _targetObject.GetComponent<SDF.Helper.Model>();
 	}
 
 	private bool GetPointAndNormalOnClick(out Vector3 point, out Vector3 normal)
@@ -89,11 +89,15 @@ public class AddModel : MonoBehaviour
 		normal = Vector3.zero;
 
 		var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-		var layerMask = ~LayerMask.GetMask("Ignore Raycast");
+		var layerMask = ~(LayerMask.GetMask("Ignore Raycast") |
+							LayerMask.GetMask("TransparentFX") |
+							LayerMask.GetMask("UI") |
+							LayerMask.GetMask("Water"));
 		if (Physics.Raycast(ray, out var hitInfo, maxRayDistance, layerMask))
 		{
 			point = hitInfo.point;
 			normal = hitInfo.normal;
+			// Debug.Log(point + ", " + normal);
 			return true;
 		}
 		return false;
@@ -109,11 +113,11 @@ public class AddModel : MonoBehaviour
 			}
 
 			// Update init pose
-			_modelHelper.SetPose(targetObject.position, targetObject.rotation);
+			_modelHelper.SetPose(_targetObject.position, _targetObject.rotation);
 
-			ChangeColliderObjectLayer(targetObject, "Default");
+			ChangeColliderObjectLayer(_targetObject, "Default");
 
-			targetObject = null;
+			_targetObject = null;
 			rootArticulationBody = null;
 			_modelHelper = null;
 		}
@@ -125,16 +129,17 @@ public class AddModel : MonoBehaviour
 		{
 			if (GetPointAndNormalOnClick(out var point, out var normal))
 			{
-				if (targetObject.position != point)
+				if (_targetObject.position != point)
 				{
 					if (rootArticulationBody != null)
 					{
 						rootArticulationBody.Sleep();
-						rootArticulationBody.TeleportRoot(point + articulationBodyDeployOffset, targetObject.rotation);
+						var bodyRotation = Quaternion.FromToRotation(transform.up, normal);
+						rootArticulationBody.TeleportRoot(point + articulationBodyDeployOffset, bodyRotation);
 					}
 					else
 					{
-						targetObject.position = point;
+						_targetObject.position = point;
 					}
 				}
 			}
@@ -143,7 +148,7 @@ public class AddModel : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (targetObject != null)
+		if (_targetObject != null)
 		{
 			HandlingAddedObject();
 		}
