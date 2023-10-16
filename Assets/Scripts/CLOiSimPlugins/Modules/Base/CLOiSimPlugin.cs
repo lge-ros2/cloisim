@@ -23,6 +23,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	public string modelName { get; protected set; } = string.Empty;
 	public string partsName { get; protected set; } = string.Empty;
 
+	protected List<TF> staticTfList = new List<TF>();
+
 	private Pose pluginPose = Pose.identity;
 
 	private SDF.Plugin pluginParameters;

@@ -10,7 +10,6 @@ using messages = cloisim.msgs;
 
 public class JointControlPlugin : CLOiSimPlugin
 {
-	private List<TF> staticTfList = new List<TF>();
 	private List<TF> tfList = new List<TF>();
 	private SensorDevices.JointCommand jointCommand = null;
 	private SensorDevices.JointState jointState = null;
@@ -91,59 +90,8 @@ public class JointControlPlugin : CLOiSimPlugin
 	{
 		switch (requestType)
 		{
-			case "request_static_transforms":
-				SetStaticTransformsResponse(ref response);
-				break;
-
-			case "reset_odometry":
-				Reset();
-				SetEmptyResponse(ref response);
-				break;
-
 			default:
 				break;
 		}
-	}
-
-	private void SetStaticTransformsResponse(ref DeviceMessage msRos2Info)
-	{
-		if (msRos2Info == null)
-		{
-			return;
-		}
-
-		var ros2CommonInfo = new messages.Param();
-		ros2CommonInfo.Name = "static_transforms";
-		ros2CommonInfo.Value = new Any { Type = Any.ValueType.None };
-
-		foreach (var tf in staticTfList)
-		{
-			var ros2StaticTransformLink = new messages.Param();
-			ros2StaticTransformLink.Name = "parent_frame_id";
-			ros2StaticTransformLink.Value = new Any { Type = Any.ValueType.String, StringValue = tf.parentFrameId };
-
-			{
-				var tfPose = tf.GetPose();
-
-				var poseMessage = new messages.Pose();
-				poseMessage.Position = new messages.Vector3d();
-				poseMessage.Orientation = new messages.Quaternion();
-
-				poseMessage.Name = tf.childFrameId;
-				DeviceHelper.SetVector3d(poseMessage.Position, tfPose.position);
-				DeviceHelper.SetQuaternion(poseMessage.Orientation, tfPose.rotation);
-
-				var ros2StaticTransformElement = new messages.Param();
-				ros2StaticTransformElement.Name = "pose";
-				ros2StaticTransformElement.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = poseMessage };
-
-				ros2StaticTransformLink.Childrens.Add(ros2StaticTransformElement);
-				// Debug.Log(poseMessage.Name + ", " + poseMessage.Position + ", " + poseMessage.Orientation);
-			}
-
-			ros2CommonInfo.Childrens.Add(ros2StaticTransformLink);
-		}
-
-		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
 	}
 }

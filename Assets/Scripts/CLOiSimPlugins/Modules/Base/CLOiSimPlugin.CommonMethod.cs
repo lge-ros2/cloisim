@@ -166,6 +166,10 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 					}
 					break;
 
+				case "request_static_transforms":
+					SetStaticTransformsResponse(ref response);
+					break;
+
 				default:
 					HandleCustomRequestMessage(requestType, requestValue, ref response);
 					break;
@@ -176,6 +180,49 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		{
 			HandleCustomRequestMessage(requestType, requestChildren, ref response);
 		};
+	}
+
+	private void SetStaticTransformsResponse(ref DeviceMessage msRos2Info)
+	{
+		if (msRos2Info == null)
+		{
+			return;
+		}
+
+		var ros2CommonInfo = new messages.Param();
+		ros2CommonInfo.Name = "static_transforms";
+		ros2CommonInfo.Value = new Any { Type = Any.ValueType.None };
+
+		foreach (var tf in staticTfList)
+		{
+			var ros2StaticTransformLink = new messages.Param();
+			ros2StaticTransformLink.Name = "parent_frame_id";
+			ros2StaticTransformLink.Value = new Any { Type = Any.ValueType.String, StringValue = tf.parentFrameId };
+
+			{
+				var tfPose = tf.GetPose();
+				// Debug.Log(tf.parentFrameId + " <= " + tf.childFrameId + " = " + tf.link.JointAxis + ", " + tfPose);
+
+				var poseMessage = new messages.Pose();
+				poseMessage.Position = new messages.Vector3d();
+				poseMessage.Orientation = new messages.Quaternion();
+
+				poseMessage.Name = tf.childFrameId;
+				DeviceHelper.SetVector3d(poseMessage.Position, tfPose.position);
+				DeviceHelper.SetQuaternion(poseMessage.Orientation, tfPose.rotation);
+
+				var ros2StaticTransformElement = new messages.Param();
+				ros2StaticTransformElement.Name = "pose";
+				ros2StaticTransformElement.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = poseMessage };
+
+				ros2StaticTransformLink.Childrens.Add(ros2StaticTransformElement);
+				// Debug.Log(poseMessage.Name + ", " + poseMessage.Position + ", " + poseMessage.Orientation);
+			}
+
+			ros2CommonInfo.Childrens.Add(ros2StaticTransformLink);
+		}
+
+		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
 	}
 
 	protected virtual void HandleCustomRequestMessage(in string requestType, in List<messages.Param> requestChildren, ref DeviceMessage response) { }
