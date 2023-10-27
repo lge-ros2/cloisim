@@ -106,8 +106,10 @@ namespace SensorDevices
 				var jointState = item.Item2;
 
 				jointState.Effort = articulation.GetEffort();
-				jointState.Position = articulation.GetJointPosition();
-				jointState.Velocity = articulation.GetJointVelocity();
+				jointState.Position = (articulation.IsRevoluteType() ?
+					DeviceHelper.Convert.CurveOrientation(articulation.GetJointPosition()) : articulation.GetJointPosition());
+				jointState.Velocity = (articulation.IsRevoluteType() ?
+					DeviceHelper.Convert.CurveOrientation(articulation.GetJointVelocity()) : articulation.GetJointVelocity());
 			}
 		}
 	}
