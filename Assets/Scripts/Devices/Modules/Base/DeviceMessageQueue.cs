@@ -5,11 +5,12 @@
  */
 
 using System.Collections.Concurrent;
+using System;
 
 public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 {
-	private const int MaxQueue = 5;
-	private const int TimeoutInMilliseconds = 100;
+	private const int MaxQueue = 15;
+	private const int TimeoutInMilliseconds = 200;
 
 	public DeviceMessageQueue()
 		: base(MaxQueue)
@@ -36,7 +37,7 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 	{
 		if (Count >= MaxQueue)
 		{
-			// Debug.LogWarningFormat("Outbound queue is reached to maximum capacity({0})!!", maxQueue);
+			// UnityEngine.Debug.LogWarningFormat("Outbound queue is reached to maximum capacity({0})!!", MaxQueue);
 			FlushHalf();
 		}
 
@@ -57,8 +58,9 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 				return true;
 			}
 		}
-		catch
+		catch (Exception ex)
 		{
+			UnityEngine.Debug.LogWarning(ex.Message);
 			item = default(DeviceMessage);
 		}
 		return false;
