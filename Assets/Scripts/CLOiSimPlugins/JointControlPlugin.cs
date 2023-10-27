@@ -51,7 +51,7 @@ public class JointControlPlugin : CLOiSimPlugin
 		LoadJoints();
 
 		robotDescription_ = "<?xml version='1.0' ?><sdf>" + GetPluginParameters().ParentRawXml() + "</sdf>";
-		UnityEngine.Debug.Log(robotDescription_);
+		// UnityEngine.Debug.Log(robotDescription_);
 	}
 
 	protected override void OnReset()
