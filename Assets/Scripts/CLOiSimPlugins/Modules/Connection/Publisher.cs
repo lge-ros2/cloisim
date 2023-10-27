@@ -28,8 +28,9 @@ public class Publisher : PublisherSocket
 		Options.Linger = TimeSpan.FromTicks(0);
 		Options.IPv4Only = true;
 		Options.TcpKeepalive = true;
-		Options.DisableTimeWait = true;
+		Options.DisableTimeWait = false;
 		Options.SendHighWatermark = TransportHelper.HighWaterMark;
+
 		Bind(TransportHelper.GetAddress(targetPort));
 		// publisherSocket.BindRandomPort(TransportHelper.GetAddress());
 		// Console.WriteLine("Publisher socket binding for - " + targetPort);
