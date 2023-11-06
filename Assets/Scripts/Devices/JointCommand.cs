@@ -116,8 +116,10 @@ namespace SensorDevices
 			while (jointCommandQueue.Count > 0)
 			{
 				var command = jointCommandQueue.Dequeue();
-				// Debug.Log(command.targetVelocity + "," + command.targetPosition);
-				command.joint.Drive(command.targetVelocity, command.targetPosition);
+				if (command.joint != null)
+					command.joint.Drive(command.targetVelocity, command.targetPosition);
+				else
+					Debug.LogWarning("Command joint is null. " + command.targetVelocity + ", " + command.targetPosition);
 			}
 		}
 	}
