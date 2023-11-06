@@ -10,7 +10,7 @@ using NetMQ.Sockets;
 
 public class Subscriber : SubscriberSocket
 {
-	private TimeSpan timeout = TimeSpan.FromMilliseconds(500);
+	private TimeSpan timeout = TimeSpan.FromMilliseconds(100);
 
 	private byte[] hashValue = null;
 
@@ -29,7 +29,7 @@ public class Subscriber : SubscriberSocket
 		Options.Linger = TimeSpan.FromTicks(0);
 		Options.IPv4Only = true;
 		Options.TcpKeepalive = true;
-		Options.DisableTimeWait = true;
+		Options.DisableTimeWait = false;
 		Options.ReceiveHighWatermark = TransportHelper.HighWaterMark;
 
 		if (hashValue != null)
@@ -53,6 +53,7 @@ public class Subscriber : SubscriberSocket
 		{
 			if (this.TryReceiveFrameBytes(timeout, out var frameReceived))
 			{
+				// Console.Error.WriteLine(frameReceived.Length);
 				return TransportHelper.RetrieveData(frameReceived);
 			}
 		}

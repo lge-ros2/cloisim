@@ -206,8 +206,8 @@ public class Motor : Articulation
 
 	public void Stop()
 	{
-		SetJointVelocity(0);
 		Drive(0);
+		SetJointVelocity(0);
 
 		_pidControl.Reset();
 		_rapidControl.SetDirectionSwitched(false);

@@ -3,8 +3,10 @@
  *
  * SPDX-License-Identifier: MIT
  */
+// #define PRINT_COMMAND_LOG
 
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -18,23 +20,27 @@ namespace SensorDevices
 			public float targetPosition;
 			public float targetVelocity;
 
-			public Command(in Articulation joint, in float targetPosition, in float targetVelocity)
+			public Command(in Articulation joint, in float targetPosition_, in float targetVelocity_)
 			{
 				this.joint = joint;
 				this.targetPosition = float.NaN;
 				this.targetVelocity = float.NaN;
-				Set(targetPosition, targetVelocity);
+				Set(targetPosition_, targetVelocity_);
 			}
 
-			public void Set(in float targetPosition, in float targetVelocity)
+			public void Set(in float targetPosition_, in float targetVelocity_)
 			{
-				if (targetPosition != float.NaN)
-					this.targetPosition = targetPosition * (this.joint.IsRevoluteType() ? Mathf.Rad2Deg : 1);
+				if (targetPosition_ != float.NaN)
+					this.targetPosition = (this.joint.IsRevoluteType() ? SDF2Unity.CurveOrientation(targetPosition_) : targetPosition_);
 
-				if (targetVelocity != float.NaN)
-					this.targetVelocity = targetVelocity * (this.joint.IsRevoluteType() ? Mathf.Rad2Deg : 1);
+				if (targetVelocity_ != float.NaN)
+					this.targetVelocity = (this.joint.IsRevoluteType() ? SDF2Unity.CurveOrientation(targetVelocity_) : targetVelocity_);
 			}
 		}
+
+#if PRINT_COMMAND_LOG
+		private StringBuilder commandLog = new StringBuilder();
+#endif
 
 		private JointState jointState = null;
 		private Queue<Command> jointCommandQueue = new Queue<Command>();
@@ -55,30 +61,48 @@ namespace SensorDevices
 
 		protected override void ProcessDevice()
 		{
-			if (PopDeviceMessage<messages.JointCmd>(out var jointCommand))
+			if (PopDeviceMessage<messages.JointCmdV>(out var jointCommandV))
 			{
-				var jointName = jointCommand.Name;
-				Debug.Log(jointName);
-				var articulation = jointState.GetArticulation(jointName);
-				if (articulation != null)
+				if (jointCommandV == null)
 				{
-					var targetPosition = float.NaN;
-					if (jointCommand.Position != null)
-					{
-						targetPosition = (float)jointCommand.Position.Target;
-						Debug.Log("targetPosition=" + targetPosition);
-					}
-
-					var targetVelocity = float.NaN;
-					if (jointCommand.Velocity != null)
-					{
-						targetVelocity = (float)jointCommand.Velocity.Target;
-						Debug.Log("targetVelocity=" + targetVelocity);
-					}
-
-					var newCommand = new Command(articulation, targetPosition, targetVelocity);
-					jointCommandQueue.Enqueue(newCommand);
+					Debug.LogWarning("JointCommand: Pop Message failed.");
+					return;
 				}
+#if PRINT_COMMAND_LOG
+				commandLog.Clear();
+#endif
+				foreach (var jointCommand in jointCommandV.JointCmds)
+				{
+					var jointName = jointCommand.Name;
+					var articulation = jointState.GetArticulation(jointName);
+					if (articulation != null)
+					{
+						var targetPosition = float.NaN;
+						if (jointCommand.Position != null)
+						{
+							targetPosition = (float)jointCommand.Position.Target;
+#if PRINT_COMMAND_LOG
+							commandLog.AppendLine(jointName + ": targetPosition=" + targetPosition);
+#endif
+						}
+
+						var targetVelocity = float.NaN;
+						if (jointCommand.Velocity != null)
+						{
+							targetVelocity = (float)jointCommand.Velocity.Target;
+#if PRINT_COMMAND_LOG
+							commandLog.AppendLine(jointName + ": targetVelocity=" + targetVelocity);
+#endif
+						}
+
+						var newCommand = new Command(articulation, targetPosition, targetVelocity);
+						jointCommandQueue.Enqueue(newCommand);
+					}
+				}
+#if PRINT_COMMAND_LOG
+				if (commandLog.Length > 0)
+					Debug.Log(commandLog.ToString());
+#endif
 			}
 		}
 

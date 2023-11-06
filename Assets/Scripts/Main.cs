@@ -398,6 +398,7 @@ public class Main : MonoBehaviour
 		if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyUp(KeyCode.R))
 		{
 			resetTriggered = true;
+			// Debug.Log("Reset Triggered");
 		}
 
 		if (resetTriggered && !isResetting)

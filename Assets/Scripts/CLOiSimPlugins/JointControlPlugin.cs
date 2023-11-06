@@ -11,6 +11,7 @@ using messages = cloisim.msgs;
 public class JointControlPlugin : CLOiSimPlugin
 {
 	private List<TF> tfList = new List<TF>();
+	private string robotDescription_ = "<?xml version='1.0' ?><sdf></sdf>";
 	private SensorDevices.JointCommand jointCommand = null;
 	private SensorDevices.JointState jointState = null;
 
@@ -48,6 +49,9 @@ public class JointControlPlugin : CLOiSimPlugin
 		}
 
 		LoadJoints();
+
+		robotDescription_ = "<?xml version='1.0' ?><sdf>" + GetPluginParameters().ParentRawXml() + "</sdf>";
+		// UnityEngine.Debug.Log(robotDescription_);
 	}
 
 	protected override void OnReset()
@@ -63,11 +67,10 @@ public class JointControlPlugin : CLOiSimPlugin
 		{
 			foreach (var jointName in joints)
 			{
-				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("joints/joint[text()='" + jointName + "']", "parent_frame_id");
-
 				// UnityEngine.Debug.Log("Joints loaded "+ jointName);
 				if (jointState.AddTargetJoint(jointName, out var targetLink, out var isStatic))
 				{
+					var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("joints/joint[text()='" + jointName + "']", "parent_frame_id");
 					var jointParentLinkName = (parentFrameId == null) ? targetLink.JointParentLinkName : parentFrameId;
 					var tf = new TF(targetLink, targetLink.JointChildLinkName, jointParentLinkName);
 					if (isStatic)
@@ -90,8 +93,27 @@ public class JointControlPlugin : CLOiSimPlugin
 	{
 		switch (requestType)
 		{
+			case "robot_description":
+				SetRobotDescription(ref response);
+				break;
+
 			default:
 				break;
 		}
+	}
+
+	private void SetRobotDescription(ref DeviceMessage msRos2Info)
+	{
+		if (msRos2Info == null)
+		{
+			return;
+		}
+
+		var ros2CommonInfo = new messages.Param();
+		ros2CommonInfo.Name = "description";
+		ros2CommonInfo.Value = new Any { Type = Any.ValueType.String };
+		ros2CommonInfo.Value.StringValue = robotDescription_;
+
+		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
 	}
 }
