@@ -72,20 +72,25 @@ public class Articulation
 		{
 			if (Type == ArticulationJointType.PrismaticJoint)
 			{
+				var anchorRotation = _jointBody.anchorRotation.eulerAngles;
+				var direction = (Mathf.Approximately(anchorRotation.x, 180) ||
+								Mathf.Approximately(anchorRotation.y, 180) ||
+								Mathf.Approximately(anchorRotation.z, 180)) ? -1f : 1f;
+
 				if (_jointBody.linearLockX == ArticulationDofLock.LockedMotion &&
 					_jointBody.linearLockY == ArticulationDofLock.LockedMotion)
 				{
-					return _jointBody.transform.localPosition.z;
+					return direction * _jointBody.transform.localPosition.z;
 				}
 				else if (_jointBody.linearLockY == ArticulationDofLock.LockedMotion &&
 						 _jointBody.linearLockZ == ArticulationDofLock.LockedMotion)
 				{
-					return _jointBody.transform.localPosition.x;
+					return direction * _jointBody.transform.localPosition.x;
 				}
 				else if (_jointBody.linearLockX == ArticulationDofLock.LockedMotion &&
 						 _jointBody.linearLockZ == ArticulationDofLock.LockedMotion)
 				{
-					return _jointBody.transform.localPosition.y;
+					return direction * _jointBody.transform.localPosition.y;
 				}
 			}
 		}
