@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+// #define PRINT_COMMAND_LOG
 
 using System.Collections.Generic;
 using System.Text;
@@ -37,7 +38,10 @@ namespace SensorDevices
 			}
 		}
 
+#if PRINT_COMMAND_LOG
 		private StringBuilder commandLog = new StringBuilder();
+#endif
+
 		private JointState jointState = null;
 		private Queue<Command> jointCommandQueue = new Queue<Command>();
 
@@ -64,9 +68,9 @@ namespace SensorDevices
 					Debug.LogWarning("JointCommand: Pop Message failed.");
 					return;
 				}
-
+#if PRINT_COMMAND_LOG
 				commandLog.Clear();
-
+#endif
 				foreach (var jointCommand in jointCommandV.JointCmds)
 				{
 					var jointName = jointCommand.Name;
@@ -77,22 +81,28 @@ namespace SensorDevices
 						if (jointCommand.Position != null)
 						{
 							targetPosition = (float)jointCommand.Position.Target;
+#if PRINT_COMMAND_LOG
 							commandLog.AppendLine(jointName + ": targetPosition=" + targetPosition);
+#endif
 						}
 
 						var targetVelocity = float.NaN;
 						if (jointCommand.Velocity != null)
 						{
 							targetVelocity = (float)jointCommand.Velocity.Target;
+#if PRINT_COMMAND_LOG
 							commandLog.AppendLine(jointName + ": targetVelocity=" + targetVelocity);
+#endif
 						}
 
 						var newCommand = new Command(articulation, targetPosition, targetVelocity);
 						jointCommandQueue.Enqueue(newCommand);
 					}
 				}
-
-				Debug.Log(commandLog.ToString());
+#if PRINT_COMMAND_LOG
+				if (commandLog.Length > 0)
+					Debug.Log(commandLog.ToString());
+#endif
 			}
 		}
 
