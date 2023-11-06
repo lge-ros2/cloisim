@@ -65,6 +65,7 @@ public class DeviceMessage : MemoryStream
 
 		lock (this)
 		{
+			Seek(0, SeekOrigin.Begin);
 			result = Serializer.Deserialize<T>(this);
 		}
 

@@ -26,10 +26,10 @@ namespace cloisim.msgs
         public float B { get; set; }
 
         [global::ProtoBuf.ProtoMember(5, Name = @"a")]
-        [global::System.ComponentModel.DefaultValue(1)]
+        [global::System.ComponentModel.DefaultValue(1f)]
         public float A
         {
-            get => __pbn__A ?? 1;
+            get => __pbn__A ?? 1f;
             set => __pbn__A = value;
         }
         public bool ShouldSerializeA() => __pbn__A != null;

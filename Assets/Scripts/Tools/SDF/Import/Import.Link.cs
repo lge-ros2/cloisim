@@ -142,26 +142,24 @@ namespace SDF
 					// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
 				}
 
-				if (colliders.Length > 0)
+				if (colliders.Length == 0)
 				{
-					if (inertial?.inertia != null)
-					{
-						var momentum = GetInertiaTensor(inertial?.inertia);
-						articulationBody.inertiaTensor = momentum.position;
-						articulationBody.inertiaTensorRotation = momentum.rotation;
-					}
-					else
-					{
-						articulationBody.ResetInertiaTensor();
-						articulationBody.automaticInertiaTensor = true;
-					}
+					Debug.LogWarningFormat(articulationBody.name + " => no mesh collider exists in child");
+				}
+
+				if (inertial?.inertia != null)
+				{
+					var momentum = GetInertiaTensor(inertial?.inertia);
+					articulationBody.inertiaTensor = momentum.position;
+					articulationBody.inertiaTensorRotation = momentum.rotation;
 				}
 				else
 				{
 					articulationBody.inertiaTensor = UE.Vector3.one * MinimumInertiaTensor;
 					articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
 
-					Debug.LogWarningFormat(articulationBody.name + " => no mesh collider exists in child");
+					articulationBody.automaticInertiaTensor = true;
+					articulationBody.ResetInertiaTensor();
 				}
 
 				// Debug.Log("Create link body " + linkObject.name);

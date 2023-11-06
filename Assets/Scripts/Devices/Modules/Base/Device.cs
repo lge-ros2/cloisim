@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
 using System.Threading;
 using System.Collections;
 using UnityEngine;
@@ -152,9 +153,9 @@ public abstract class Device : MonoBehaviour
 
 	protected abstract void OnAwake();
 
-	protected virtual void OnStart() {}
+	protected virtual void OnStart() { }
 
-	protected virtual void OnReset() {}
+	protected virtual void OnReset() { }
 
 
 	protected virtual IEnumerator OnVisualize()
@@ -190,7 +191,7 @@ public abstract class Device : MonoBehaviour
 
 	private IEnumerator DeviceCoroutineRx()
 	{
-		var waitUntil = new WaitUntil(() => deviceMessageQueue.Count > 0);
+		var waitUntil = new WaitUntil(() => (deviceMessageQueue.Count > 0));
 		while (runningDevice)
 		{
 			yield return waitUntil;
@@ -244,10 +245,10 @@ public abstract class Device : MonoBehaviour
 			instance = (result) ? data.GetMessage<T>() : default(T);
 			return result;
 		}
-		catch
+		catch (Exception ex)
 		{
 			instance = default(T);
-			Debug.LogWarning("PopDeviceMessage<T>(): ERROR");
+			Debug.LogWarning("ERROR: PopDeviceMessage<T>(): " + ex.Message);
 		}
 
 		return false;

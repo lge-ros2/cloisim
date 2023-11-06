@@ -5,6 +5,8 @@
  */
 
 using System.Xml;
+using System.Xml.Serialization;
+using System.IO;
 
 namespace SDF
 {
@@ -44,6 +46,16 @@ namespace SDF
 			}
 
 			return pluginName;
+		}
+
+		public string ParentRawXml()
+		{
+			return root.ParentNode.OuterXml;
+		}
+
+		public string RawXml()
+		{
+			return root.OuterXml;
 		}
 	}
 }

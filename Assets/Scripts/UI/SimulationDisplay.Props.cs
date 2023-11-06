@@ -85,13 +85,13 @@ public partial class SimulationDisplay : MonoBehaviour
 			{
 				if (float.TryParse(scaleFactorString, out var scaleFactor))
 				{
-					if (scaleFactor < 0.1f)
+					if (scaleFactor < 0.01f)
 					{
-						scaleFactorString = "0.1";
+						scaleFactorString = "0.01";
 					}
-					else if (scaleFactor > 5f)
+					else if (scaleFactor > 10f)
 					{
-						scaleFactorString = "5";
+						scaleFactorString = "10";
 					}
 				}
 				else

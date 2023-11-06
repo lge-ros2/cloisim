@@ -18,7 +18,7 @@ public class Articulation
 		if (jointBody != null)
 		{
 			_jointBody = jointBody;
-			_jointType = _jointBody.jointType;
+			_jointType = jointBody.jointType;
 		}
 	}
 
@@ -62,8 +62,40 @@ public class Articulation
 	/// <returns>in radian for angular and in meters for linear</param>
 	public float GetJointPosition(int index = 0)
 	{
-		index = GetValidIndex(index);
-		return (_jointBody == null || index == -1) ? 0 : _jointBody.jointPosition[index];
+		if (IsRevoluteType())
+		{
+			index = GetValidIndex(index);
+			return (_jointBody == null || index == -1) ? 0 :
+				DeviceHelper.Convert.CurveOrientation(_jointBody.jointPosition[index]);
+		}
+		else
+		{
+			if (Type == ArticulationJointType.PrismaticJoint)
+			{
+				var anchorRotation = _jointBody.anchorRotation.eulerAngles;
+				var direction = (Mathf.Approximately(anchorRotation.x, 180) ||
+								Mathf.Approximately(anchorRotation.y, 180) ||
+								Mathf.Approximately(anchorRotation.z, 180)) ? -1f : 1f;
+
+				if (_jointBody.linearLockX == ArticulationDofLock.LockedMotion &&
+					_jointBody.linearLockY == ArticulationDofLock.LockedMotion)
+				{
+					return direction * _jointBody.transform.localPosition.z;
+				}
+				else if (_jointBody.linearLockY == ArticulationDofLock.LockedMotion &&
+						 _jointBody.linearLockZ == ArticulationDofLock.LockedMotion)
+				{
+					return direction * _jointBody.transform.localPosition.x;
+				}
+				else if (_jointBody.linearLockX == ArticulationDofLock.LockedMotion &&
+						 _jointBody.linearLockZ == ArticulationDofLock.LockedMotion)
+				{
+					return direction * _jointBody.transform.localPosition.y;
+				}
+			}
+		}
+
+		return 0;
 	}
 
 	/// <returns>torque for angular and force for linear</param>
@@ -78,7 +110,8 @@ public class Articulation
 	public float GetJointVelocity(int index = 0)
 	{
 		index = GetValidIndex(index);
-		return (_jointBody == null || index == -1) ? 0 : _jointBody.jointVelocity[index];
+		var value = (_jointBody == null || index == -1) ? 0 : _jointBody.jointVelocity[index];
+		return (IsRevoluteType() ? DeviceHelper.Convert.CurveOrientation(value) : value);
 	}
 
 	/// <returns>torque for angular and force for linear</param>

@@ -17,10 +17,10 @@ namespace cloisim.msgs
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"target")]
-        [global::System.ComponentModel.DefaultValue(0)]
+        [global::System.ComponentModel.DefaultValue(0d)]
         public double Target
         {
-            get => __pbn__Target ?? 0;
+            get => __pbn__Target ?? 0d;
             set => __pbn__Target = value;
         }
         public bool ShouldSerializeTarget() => __pbn__Target != null;
@@ -28,10 +28,10 @@ namespace cloisim.msgs
         private double? __pbn__Target;
 
         [global::ProtoBuf.ProtoMember(2, Name = @"p_gain")]
-        [global::System.ComponentModel.DefaultValue(0)]
+        [global::System.ComponentModel.DefaultValue(0d)]
         public double PGain
         {
-            get => __pbn__PGain ?? 0;
+            get => __pbn__PGain ?? 0d;
             set => __pbn__PGain = value;
         }
         public bool ShouldSerializePGain() => __pbn__PGain != null;
@@ -39,10 +39,10 @@ namespace cloisim.msgs
         private double? __pbn__PGain;
 
         [global::ProtoBuf.ProtoMember(3, Name = @"i_gain")]
-        [global::System.ComponentModel.DefaultValue(0)]
+        [global::System.ComponentModel.DefaultValue(0d)]
         public double IGain
         {
-            get => __pbn__IGain ?? 0;
+            get => __pbn__IGain ?? 0d;
             set => __pbn__IGain = value;
         }
         public bool ShouldSerializeIGain() => __pbn__IGain != null;
@@ -50,10 +50,10 @@ namespace cloisim.msgs
         private double? __pbn__IGain;
 
         [global::ProtoBuf.ProtoMember(4, Name = @"d_gain")]
-        [global::System.ComponentModel.DefaultValue(0)]
+        [global::System.ComponentModel.DefaultValue(0d)]
         public double DGain
         {
-            get => __pbn__DGain ?? 0;
+            get => __pbn__DGain ?? 0d;
             set => __pbn__DGain = value;
         }
         public bool ShouldSerializeDGain() => __pbn__DGain != null;
@@ -61,10 +61,10 @@ namespace cloisim.msgs
         private double? __pbn__DGain;
 
         [global::ProtoBuf.ProtoMember(5, Name = @"i_max")]
-        [global::System.ComponentModel.DefaultValue(0)]
+        [global::System.ComponentModel.DefaultValue(0d)]
         public double IMax
         {
-            get => __pbn__IMax ?? 0;
+            get => __pbn__IMax ?? 0d;
             set => __pbn__IMax = value;
         }
         public bool ShouldSerializeIMax() => __pbn__IMax != null;
@@ -72,10 +72,10 @@ namespace cloisim.msgs
         private double? __pbn__IMax;
 
         [global::ProtoBuf.ProtoMember(6, Name = @"i_min")]
-        [global::System.ComponentModel.DefaultValue(0)]
+        [global::System.ComponentModel.DefaultValue(0d)]
         public double IMin
         {
-            get => __pbn__IMin ?? 0;
+            get => __pbn__IMin ?? 0d;
             set => __pbn__IMin = value;
         }
         public bool ShouldSerializeIMin() => __pbn__IMin != null;
@@ -83,10 +83,10 @@ namespace cloisim.msgs
         private double? __pbn__IMin;
 
         [global::ProtoBuf.ProtoMember(7, Name = @"limit")]
-        [global::System.ComponentModel.DefaultValue(0)]
+        [global::System.ComponentModel.DefaultValue(0d)]
         public double Limit
         {
-            get => __pbn__Limit ?? 0;
+            get => __pbn__Limit ?? 0d;
             set => __pbn__Limit = value;
         }
         public bool ShouldSerializeLimit() => __pbn__Limit != null;

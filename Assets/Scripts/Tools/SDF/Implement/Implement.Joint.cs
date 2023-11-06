@@ -224,8 +224,8 @@ namespace SDF
 				if (axis.limit.Use())
 				{
 					// Debug.LogWarningFormat("limit uppper{0}, lower{1}", axis.limit.upper, axis.limit.lower);
-					drive.lowerLimit = (float)(axis.limit.lower);
-					drive.upperLimit = (float)(axis.limit.upper);
+					drive.lowerLimit = (float)axis.limit.lower;
+					drive.upperLimit = (float)axis.limit.upper;
 				}
 
 				drive.forceLimit = (axis.limit.effort > -1d) ? (float)axis.limit.effort : float.MaxValue;
@@ -235,12 +235,6 @@ namespace SDF
 					drive.stiffness = (float)axis.dynamics.spring_stiffness;
 					drive.target = (float)axis.dynamics.spring_reference;
 					drive.damping = (float)axis.dynamics.damping;
-
-					// Check if spring
-					if (axis.limit.Use())
-					{
-						drive.targetVelocity = 1;
-					}
 
 					body.jointFriction = (float)axis.dynamics.friction;
 				}

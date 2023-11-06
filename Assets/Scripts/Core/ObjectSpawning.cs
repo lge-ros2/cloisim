@@ -122,7 +122,7 @@ public class ObjectSpawning : MonoBehaviour
 			{
 				var newTempPropsObject = CreateProps(propsName, mesh, scale);
 				props.Add(type, newTempPropsObject);
-				newTempPropsObject.hideFlags = HideFlags.HideAndDontSave;
+				newTempPropsObject.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSave;
 				newTempPropsObject.SetActive(false);
 			}
 		}
@@ -136,7 +136,7 @@ public class ObjectSpawning : MonoBehaviour
 			mesh = meshFilter.sharedMesh;
 
 			var meshRender = spawnedObject.GetComponentInChildren<MeshRenderer>();
-			meshRender.material.color = Random.ColorHSV(0f, 1f, 0.7f, 1f, 0.6f, 1f);
+			meshRender.material.color = Random.ColorHSV(0f, 1f, 0.6f, 1f, 0.5f, 1f);
 
 			var rigidBody = spawnedObject.GetComponentInChildren<Rigidbody>();
 			rigidBody.mass = CalculateMass(scale);
@@ -176,8 +176,6 @@ public class ObjectSpawning : MonoBehaviour
 		var newMaterial = new Material(SDF2Unity.CommonShader);
 		newMaterial.name = targetMesh.name;
 		newMaterial.color = Color.white;
-
-		// Debug.Log(Random.ColorHSV(0f, 1f, 0.7f, 1f, 0.6f, 1f));
 
 		var meshRenderer = newObject.AddComponent<MeshRenderer>();
 		meshRenderer.material = newMaterial;

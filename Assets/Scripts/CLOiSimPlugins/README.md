@@ -2,9 +2,36 @@
 
 These plugin scripts are for sensor connection.
 
-Each class name is important to load plugin in SDF. Class name should be exact to filename which means if the class name is 'SensorPlugin' filename would be a 'libSensorPlugin.so'. But 'lib' or '.so' words can be skipped.
+Each class name is important to load plugin in SDF. Class name should be exact to filename which means if the class name is 'SensorPlugin' filename would be a 'libSensorPlugin.so'. But 'lib' or '.so' words will be discarded.
 
-For example, if it describes a name with 'RobotControl' in `<plugin>` attributesm, SDF Parser will start to find a filename in plugin element as 'RobotControl' in Unity project.
+For example, if it describes a name with 'RobotControl' in `<plugin>` attributes, SDF Parser will start to find a filename in plugin element as 'RobotControl' in Unity project.
+
+
+## List of plugins
+
+Just take one of below plugins list and write it inside of `filename` attirbute.
+It is optional but recommend to append 'lib' and '.so' to the name as a prefix and postfix.
+
+### Model Specific
+
+- `LaserPlugin`: help to publish 2D or 3D lidar data
+- `CameraPlugin`: help to publish 2D color image data or depth image data
+- `MultiCameraPlugin`: help to publish multiple color image data
+- `RealSensePlugin`: can handle ir1(left), ir2(right), depth, color
+- `MicomPlugin`: control micom(differential drive) input/output(sensor)
+- `GpsPlugin`: gps position in world
+- `JointControlPlugin`: can control joints and help to publish joints status.
+- `ActorPlugin`: add actor control functionality using AI(Unity) components
+- `ImuPlugin`: help to publish IMU sensor data
+- `SonarPlugin`: help to publish Sonar range data
+
+### World Specific
+
+- `ElevatorSystemPlugin`: control(lifting, cal) elevators
+- `GroundTruthPlugin`: retrieve all information(position, size, velocity) for objects
+- `ActorControlPlugin`: controls actor using AI(Unity) components(actor which loaded `ActorPlugin`)
+
+## Example of RobotControl
 
 ```xml
 <model>

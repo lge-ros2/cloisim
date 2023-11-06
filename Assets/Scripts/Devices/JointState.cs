@@ -62,7 +62,6 @@ namespace SensorDevices
 
 				var parentObject = childArticulationBody.transform.parent;
 				var parentModelName = parentObject.name;
-				// var linkName = ((!parentObject.CompareTag("Model") || rootModelName.CompareTo(parentModelName) == 0) ? "" : parentModelName + "::") + childArticulationBody.name;
 				var linkHelper = childArticulationBody.GetComponentInChildren<SDF.Helper.Link>();
 				// Debug.Log("linkHelper.JointName " + linkHelper.JointName);
 				if (linkHelper.JointName.Equals(targetJointName))
@@ -84,8 +83,6 @@ namespace SensorDevices
 					articulationTable.Add(targetJointName, new Tuple<Articulation, messages.JointState>(articulation, jointState));
 
 					jointStateV.JointStates.Add(jointState);
-
-					// link = articulation.gameObject.GetComponentInChildren<SDF.Helper.Link>();
 					return true;
 				}
 			}
