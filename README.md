@@ -139,7 +139,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.10f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.14f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 22.04.3 LTS
@@ -200,7 +200,7 @@ or you can execute '***./run.sh***' script in release [binary](https://github.co
 #### Debugging log
 
 ```shell
-tail -f ~/.config/unity3d/lge-arlab/CLOiSim/Player.log
+tail -f ~/.config/unity3d/LGE.CTO.AdvancedRoboticsLab/CLOiSim/Player.log
 ```
 
 #### Control and external UI service

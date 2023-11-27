@@ -155,6 +155,13 @@ public partial class DeviceHelper
 		{
 			return -value;
 		}
+
+		public static float PrismaticDirection(in float value, in Vector3 rotation)
+		{
+			return (Mathf.Approximately(rotation.x, 180) ||
+					Mathf.Approximately(rotation.y, 180) ||
+					Mathf.Approximately(rotation.z, 180)) ? -value : value;
+		}
 	}
 
 	public static Vector3[] SolveConvexHull2D(in Vector3[] points)

@@ -45,8 +45,8 @@ public class Motor : Articulation
 
 	public class MotorMotionFeedback
 	{
-		public float compensatingVelocityIncrease = 0.20f;
-		public float compensatingVelocityDecrease = 0.60f;
+		public const float CompensatingVelocityIncrease = 0.10f;
+		public const float CompensatingVelocityDecrease = 0.50f;
 
 		private bool _isRotating = false;
 		private float _currentTwistAngularVelocity = 0;
@@ -84,12 +84,12 @@ public class Motor : Articulation
 			{
 				if (IsTargetReached() == false)
 				{
-					_compensateValue += compensatingVelocityIncrease;
+					_compensateValue += CompensatingVelocityIncrease;
 					// Debug.Log("_test: it is low speed, " + _currentTwistAngularVelocity + " < " + _targetTwistAngularVelocity);
 				}
 				else
 				{
-					_compensateValue -= compensatingVelocityDecrease;
+					_compensateValue -= CompensatingVelocityDecrease;
 
 					if (_compensateValue < 0)
 					{
@@ -125,7 +125,7 @@ public class Motor : Articulation
 
 	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
 	{
-		_pidControl = new PID(pFactor, iFactor, dFactor, 50, -50, 300, -300);
+		_pidControl = new PID(pFactor, iFactor, dFactor, 10, -10, 100, -100);
 	}
 
 	/// <summary>Get Current Joint Velocity</summary>
@@ -173,8 +173,6 @@ public class Motor : Articulation
 		}
 
 		_currentMotorVelocity = GetMotorVelocity(duration);
-		// Debug.LogFormat("joint vel({0}) accel({1}) force({2}) friction({3}) pos({4})",
-		// 	Body.jointVelocity[0], Body.jointAcceleration[0], Body.jointForce[0], Body.jointFriction, Body.jointPosition[0]);
 
 		// do stop motion of motor when motor disabled
 		if (_enableMotor)

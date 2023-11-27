@@ -102,9 +102,22 @@ namespace SensorDevices
 				var articulation = item.Item1;
 				var jointState = item.Item2;
 
-				jointState.Effort = articulation.GetEffort();
-				jointState.Position = articulation.GetJointPosition();
-				jointState.Velocity = articulation.GetJointVelocity();
+				var jointVelocity = articulation.GetJointVelocity();
+				var jointPosition = articulation.GetJointPosition();
+				var jointForce = articulation.GetForce();
+
+				jointState.Effort = (articulation.IsRevoluteType()) ?
+										DeviceHelper.Convert.CurveOrientation(jointForce) :
+											(articulation.IsPrismaticType() ?
+												 DeviceHelper.Convert.PrismaticDirection(jointForce, articulation.GetAnchorRotation()) : jointForce);
+
+				jointState.Position = (articulation.IsRevoluteType()) ?
+										DeviceHelper.Convert.CurveOrientation(jointPosition) :
+											(articulation.IsPrismaticType() ?
+												 DeviceHelper.Convert.PrismaticDirection(jointPosition, articulation.GetAnchorRotation()) : jointPosition);
+
+				jointState.Velocity = (articulation.IsRevoluteType()) ?
+										DeviceHelper.Convert.CurveOrientation(jointVelocity) : jointVelocity;
 			}
 		}
 	}
