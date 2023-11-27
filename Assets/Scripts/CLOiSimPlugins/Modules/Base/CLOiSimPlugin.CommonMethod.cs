@@ -155,6 +155,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 						if (string.IsNullOrEmpty(topic_name))
 						{
 							topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name", partsName);
+							topic_name = topic_name.Replace("{parts_name}", partsName);
 						}
 						else
 						{
@@ -162,6 +163,12 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 						}
 
 						GetPluginParameters().GetValues<string>("ros2/frame_id", out var frameIdList);
+
+						for (var i = 0; i < frameIdList.Count; i++)
+						{
+							frameIdList[i] = frameIdList[i].Replace("{parts_name}", partsName);
+						}
+
 						SetROS2CommonInfoResponse(ref response, topic_name, frameIdList);
 					}
 					break;
