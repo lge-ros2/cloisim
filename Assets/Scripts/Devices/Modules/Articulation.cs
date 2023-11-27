@@ -5,6 +5,7 @@
  */
 
 using UnityEngine;
+using System.Collections.Generic;
 
 public class Articulation
 {
@@ -41,6 +42,11 @@ public class Articulation
 		return (Type == ArticulationJointType.RevoluteJoint || Type == ArticulationJointType.SphericalJoint) ? true : false;
 	}
 
+	public bool IsPrismaticType()
+	{
+		return (Type == ArticulationJointType.RevoluteJoint || Type == ArticulationJointType.PrismaticJoint) ? true : false;
+	}
+
 	protected void SetJointVelocity(in float velocity, in int targetDegree = 0)
 	{
 		if (_jointBody != null)
@@ -59,38 +65,37 @@ public class Articulation
 		return (_jointBody == null) ? -1 : ((index >= _jointBody.dofCount) ? (_jointBody.dofCount - 1) : index);
 	}
 
+	public Vector3 GetAnchorRotation()
+	{
+		return (_jointBody == null) ? Vector3.zero : _jointBody.anchorRotation.eulerAngles;
+	}
+
 	/// <returns>in radian for angular and in meters for linear</param>
 	public float GetJointPosition(int index = 0)
 	{
 		if (IsRevoluteType())
 		{
 			index = GetValidIndex(index);
-			return (_jointBody == null || index == -1) ? 0 :
-				DeviceHelper.Convert.CurveOrientation(_jointBody.jointPosition[index]);
+			return (_jointBody == null || index == -1) ? 0 : _jointBody.jointPosition[index];
 		}
 		else
 		{
 			if (Type == ArticulationJointType.PrismaticJoint)
 			{
-				var anchorRotation = _jointBody.anchorRotation.eulerAngles;
-				var direction = (Mathf.Approximately(anchorRotation.x, 180) ||
-								Mathf.Approximately(anchorRotation.y, 180) ||
-								Mathf.Approximately(anchorRotation.z, 180)) ? -1f : 1f;
-
 				if (_jointBody.linearLockX == ArticulationDofLock.LockedMotion &&
 					_jointBody.linearLockY == ArticulationDofLock.LockedMotion)
 				{
-					return direction * _jointBody.transform.localPosition.z;
+					return _jointBody.transform.localPosition.z;
 				}
 				else if (_jointBody.linearLockY == ArticulationDofLock.LockedMotion &&
 						 _jointBody.linearLockZ == ArticulationDofLock.LockedMotion)
 				{
-					return direction * _jointBody.transform.localPosition.x;
+					return _jointBody.transform.localPosition.x;
 				}
 				else if (_jointBody.linearLockX == ArticulationDofLock.LockedMotion &&
 						 _jointBody.linearLockZ == ArticulationDofLock.LockedMotion)
 				{
-					return direction * _jointBody.transform.localPosition.y;
+					return _jointBody.transform.localPosition.y;
 				}
 			}
 		}
@@ -111,16 +116,15 @@ public class Articulation
 	{
 		index = GetValidIndex(index);
 		var value = (_jointBody == null || index == -1) ? 0 : _jointBody.jointVelocity[index];
-		return (IsRevoluteType() ? DeviceHelper.Convert.CurveOrientation(value) : value);
+		return value;
 	}
 
 	/// <returns>torque for angular and force for linear</param>
-	public float GetEffort()
+	public float GetForce(int index = 0)
 	{
-		var drive = GetDrive();
-		var F = drive.stiffness * (GetJointPosition() - drive.target) - drive.damping * (GetJointVelocity() - drive.targetVelocity);
-		// Debug.Log(_jointBody.name + ": Calculated force = " + F);
-		return F;
+		index = GetValidIndex(index);
+		var value = (_jointBody == null || index == -1) ? 0 : _jointBody.driveForce[index];
+		return value;
 	}
 
 	/// <param name="target">angular velocity in degrees per second OR target position </param>
