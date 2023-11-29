@@ -34,12 +34,25 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
-			imuSensor = gameObject.GetComponentInChildren<SensorDevices.IMU>();
 		}
 
 		protected override IEnumerator OnVisualize()
 		{
 			yield return null;
+		}
+
+		public void SetIMU(in string name)
+		{
+			var imuList = gameObject.GetComponentsInChildren<SensorDevices.IMU>();
+			foreach (var imu in imuList)
+			{
+				if (imu.DeviceName.Contains("::" + name + "::"))
+				{
+					// Debug.Log(imu.DeviceName + " attached to Micom");
+					imuSensor = imu;
+					break;
+				}
+			}
 		}
 
 		public void SetWheel(in string wheelNameLeft, in string wheelNameRight)

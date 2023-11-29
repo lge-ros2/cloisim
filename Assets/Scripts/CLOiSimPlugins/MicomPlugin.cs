@@ -114,6 +114,13 @@ public class MicomPlugin : CLOiSimPlugin
 		{
 			micomSensor.SetBumperSensor(bumperJointNameList);
 		}
+
+		var targetImuName = GetPluginParameters().GetValue<string>("imu");
+		if (!string.IsNullOrEmpty(targetImuName))
+		{
+			// Debug.Log("Imu Sensor = " + targetImuName);
+			micomSensor.SetIMU(targetImuName);
+		}
 	}
 
 	private void LoadStaticTF()
