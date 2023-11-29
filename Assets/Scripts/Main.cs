@@ -65,8 +65,8 @@ public class Main : MonoBehaviour
 	public static CameraControl CameraControl => cameraControl;
 
 	#region "SDFParser"
-	private SDF.Root sdfRoot = null;
-	private SDF.Import.Loader sdfLoader = null;
+	private SDF.Root _sdfRoot = null;
+	private SDF.Import.Loader _sdfLoader = null;
 	#endregion
 
 	private void CleanAllModels()
@@ -282,8 +282,14 @@ public class Main : MonoBehaviour
 		}
 	}
 
-	private void UpdateUIModelList(ref SDF.Root root)
+	private void UpdateUIModelList()
 	{
+		if (_sdfRoot == null)
+		{
+			Debug.LogWarning("_sdfRoot is null");
+			return;
+		}
+
 		// Update UI Model list
 		var modelList = uiMainCanvasRoot.transform.Find("ModelList").gameObject;
 		var viewport = modelList.transform.GetChild(0);
@@ -295,7 +301,7 @@ public class Main : MonoBehaviour
 			GameObject.Destroy(child.gameObject);
 		}
 
-		foreach (var item in root.resourceModelTable)
+		foreach (var item in _sdfRoot.resourceModelTable)
 		{
 			var itemValue = item.Value;
 			var duplicatedbutton = GameObject.Instantiate(buttonTemplate);
@@ -333,12 +339,12 @@ public class Main : MonoBehaviour
 
 	private IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
-		if (sdfRoot.DoParse(out var model, modelPath, modelFileName))
+		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
 			model.Name = GetClonedModelName(model.Name);
 
-			yield return StartCoroutine(sdfLoader.StartImport(model));
+			yield return StartCoroutine(_sdfLoader.StartImport(model));
 
 			var targetObject = worldRoot.transform.Find(model.Name);
 
@@ -360,21 +366,21 @@ public class Main : MonoBehaviour
 		// Debug.Log("Hello CLOiSim World!!!!!");
 		Debug.Log("Target World: " + worldFileName);
 
-		sdfRoot = new SDF.Root();
-		sdfRoot.fileDefaultPaths.AddRange(fileRootDirectories);
-		sdfRoot.modelDefaultPaths.AddRange(modelRootDirectories);
-		sdfRoot.worldDefaultPaths.AddRange(worldRootDirectories);
-		sdfRoot.UpdateResourceModelTable();
+		_sdfRoot = new SDF.Root();
+		_sdfRoot.fileDefaultPaths.AddRange(fileRootDirectories);
+		_sdfRoot.modelDefaultPaths.AddRange(modelRootDirectories);
+		_sdfRoot.worldDefaultPaths.AddRange(worldRootDirectories);
+		_sdfRoot.UpdateResourceModelTable();
 
-		UpdateUIModelList(ref sdfRoot);
+		UpdateUIModelList();
 
-		if (sdfRoot.DoParse(out var world, worldFileName))
+		if (_sdfRoot.DoParse(out var world, worldFileName))
 		{
-			sdfLoader = new SDF.Import.Loader();
-			sdfLoader.SetRootModels(worldRoot);
-			sdfLoader.SetRootLights(lightsRoot);
+			_sdfLoader = new SDF.Import.Loader();
+			_sdfLoader.SetRootModels(worldRoot);
+			_sdfLoader.SetRootLights(lightsRoot);
 
-			yield return sdfLoader.StartImport(world);
+			yield return _sdfLoader.StartImport(world);
 
 			// for GUI
 			followingList?.UpdateList();
