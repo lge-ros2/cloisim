@@ -32,7 +32,6 @@ public class ActorPlugin : CLOiSimPlugin
 			return;
 		}
 
-
 		GetPluginParameters().GetValues<string>("activity_zone/model", out var zoneList);
 
 		foreach (var zone in zoneList)

@@ -135,19 +135,17 @@ namespace SDF
 
 				var worldObject = ImportWorld(world);
 
-				ImportActors(world.GetActors());
-				yield return null;
-
 				ImportModels(world.GetModels());
 
 				foreach (var jointObject in jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
 				}
-				yield return null;
 
 				ImportPlugins(world.GetPlugins(), worldObject);
 				yield return null;
+
+				ImportActors(world.GetActors());
 			}
 
 			public IEnumerator<Model> StartImport(Model model)
