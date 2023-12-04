@@ -139,8 +139,6 @@ public class Motor : Articulation
 	/// <remarks>degree per second</remarks>
 	public void SetVelocityTarget(in float targetAngularVelocity)
 	{
-		var compensatingVelocityRatio = 1f;
-
 		if (Mathf.Abs(targetAngularVelocity) < Quaternion.kEpsilon || float.IsInfinity(targetAngularVelocity))
 		{
 			_enableMotor = false;
@@ -154,14 +152,9 @@ public class Motor : Articulation
 				var directionSwitch = (Mathf.Sign(_targetAngularVelocity) == Mathf.Sign(targetAngularVelocity)) ? false : true;
 				_rapidControl.SetDirectionSwitched(directionSwitch);
 			}
-
-			const float CompensateThreshold = 9.0f;
-			const float CompensatingRatio = 1.15f;
-
-			compensatingVelocityRatio = ((Mathf.Abs(targetAngularVelocity) < CompensateThreshold) ? CompensatingRatio : 1f);
 		}
 
-		_targetAngularVelocity = targetAngularVelocity * compensatingVelocityRatio;
+		_targetAngularVelocity = targetAngularVelocity;
 	}
 
 	public void Update(in float duration)
