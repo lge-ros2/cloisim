@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Motor : Articulation
@@ -82,12 +83,7 @@ public class Motor : Articulation
 		{
 			if (IsMotionRotating)
 			{
-				if (IsTargetReached() == false)
-				{
-					_compensateValue += CompensatingVelocityIncrease;
-					// Debug.Log("_test: it is low speed, " + _currentTwistAngularVelocity + " < " + _targetTwistAngularVelocity);
-				}
-				else
+				if (IsTargetReached())
 				{
 					_compensateValue -= CompensatingVelocityDecrease;
 
@@ -95,6 +91,11 @@ public class Motor : Articulation
 					{
 						_compensateValue = 0;
 					}
+				}
+				else
+				{
+					_compensateValue += CompensatingVelocityIncrease;
+					// Debug.Log("_test: it is low speed, " + _currentTwistAngularVelocity + " < " + _targetTwistAngularVelocity);
 				}
 			}
 			else
@@ -116,7 +117,6 @@ public class Motor : Articulation
 
 	private float _targetAngularVelocity = 0;
 	private float _currentMotorVelocity = 0; // degree per seconds
-	private float _prevJointPosition = 0;
 
 	public Motor(in GameObject gameObject)
 		: base(gameObject)
@@ -139,9 +139,9 @@ public class Motor : Articulation
 	/// <remarks>degree per second</remarks>
 	public void SetVelocityTarget(in float targetAngularVelocity)
 	{
-		var compensatingVelocityRatio = 0f;
+		var compensatingVelocityRatio = 1f;
 
-		if (Mathf.Abs(targetAngularVelocity) < Quaternion.kEpsilon)
+		if (Mathf.Abs(targetAngularVelocity) < Quaternion.kEpsilon || float.IsInfinity(targetAngularVelocity))
 		{
 			_enableMotor = false;
 		}
@@ -155,10 +155,10 @@ public class Motor : Articulation
 				_rapidControl.SetDirectionSwitched(directionSwitch);
 			}
 
-			const float compensateThreshold = 10.0f;
-			const float compensatingRatio = 1.20f;
+			const float CompensateThreshold = 9.0f;
+			const float CompensatingRatio = 1.15f;
 
-			compensatingVelocityRatio = ((Mathf.Abs(targetAngularVelocity) < compensateThreshold) ? compensatingRatio : 1.0f);
+			compensatingVelocityRatio = ((Mathf.Abs(targetAngularVelocity) < CompensateThreshold) ? CompensatingRatio : 1f);
 		}
 
 		_targetAngularVelocity = targetAngularVelocity * compensatingVelocityRatio;
@@ -172,7 +172,7 @@ public class Motor : Articulation
 			return;
 		}
 
-		_currentMotorVelocity = GetMotorVelocity(duration);
+		_currentMotorVelocity = GetAngularVelocity(duration);
 
 		// do stop motion of motor when motor disabled
 		if (_enableMotor)
@@ -188,12 +188,13 @@ public class Motor : Articulation
 			if (_rapidControl.DirectionSwitched())
 			{
 				Stop();
-				compensatedTargetAngularVelocity = 0;
+				// compensatedTargetAngularVelocity = 0;
 				_rapidControl.Wait();
 			}
 			else
 			{
 				Drive(compensatedTargetAngularVelocity + adjustValue);
+				// Drive(_targetAngularVelocity + adjustValue);
 			}
 		}
 		else
@@ -213,13 +214,41 @@ public class Motor : Articulation
 		Reset();
 	}
 
-	private float GetMotorVelocity(in float duration)
-	{
-		// calculate velocity using joint position is more accurate than joint velocity
-		var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
-		var motorVelocity = Mathf.DeltaAngle(_prevJointPosition, jointPosition) / duration;
-		_prevJointPosition = jointPosition;
+	private float _prevJointPosition = 0; // in deg
+	private const int RollingMeanWindowSize = 10;
+	private Queue<float> rollingMeanAnguluarVelocity = new Queue<float>(RollingMeanWindowSize);
 
-		return (Mathf.Approximately(motorVelocity, Quaternion.kEpsilon)) ? 0 : motorVelocity;
+	/// <remarks>degree per second</remarks>
+	private float GetAngularVelocity(in float duration)
+	{
+		var motorVelocity = 0f;
+		if (Mathf.Approximately(Mathf.Abs(_targetAngularVelocity), Quaternion.kEpsilon) == false)
+		{
+#if true
+			// calculate velocity using joint position is more accurate than joint velocity
+			var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
+			motorVelocity = Mathf.DeltaAngle(_prevJointPosition, jointPosition) / duration;
+			_prevJointPosition = jointPosition;
+			// Debug.LogFormat("prv:{0:F5} cur:{1:F5} vel:{2:F5}", _prevJointPosition, jointPosition, motorVelocity);
+#else
+			var motorVelocity = GetJointVelocity() * Mathf.Rad2Deg;
+#endif
+		}
+
+		// rolling mean filtering
+		if (rollingMeanAnguluarVelocity.Count == RollingMeanWindowSize)
+			rollingMeanAnguluarVelocity.Dequeue();
+
+		rollingMeanAnguluarVelocity.Enqueue(motorVelocity);
+
+		var sumVelocity = 0f;
+		foreach (var velocity in rollingMeanAnguluarVelocity)
+			sumVelocity += velocity;
+
+		var filteredVelocity = sumVelocity / (float)rollingMeanAnguluarVelocity.Count;
+
+		// Debug.LogFormat("{0:F5} {1:F5}", motorVelocity, filteredVelocity);
+
+		return (Mathf.Approximately(filteredVelocity, Quaternion.kEpsilon)) ? 0 : filteredVelocity;
 	}
 }

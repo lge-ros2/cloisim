@@ -48,7 +48,7 @@ namespace SensorDevices
 			{
 				if (imu.DeviceName.Contains("::" + name + "::"))
 				{
-					// Debug.Log(imu.DeviceName + " attached to Micom");
+					Debug.Log(imu.DeviceName + " attached to Micom");
 					imuSensor = imu;
 					break;
 				}
@@ -115,10 +115,10 @@ namespace SensorDevices
 			}
 		}
 
-		public void SetMotorConfiguration(in float wheelRadius, in float wheelTread, in float P, in float I, in float D)
+		public void SetMotorConfiguration(in float wheelRadius, in float wheelSeparation, in float P, in float I, in float D)
 		{
 			motorControl.SetPID(P, I, D);
-			motorControl.SetWheelInfo(wheelRadius, wheelTread);
+			motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
 		}
 
 		public void SetUSS(in List<string> ussList)
@@ -229,7 +229,6 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			DeviceHelper.SetCurrentTime(micomSensorData.Time);
 			PushDeviceMessage<messages.Micom>(micomSensorData);
 		}
 
@@ -240,14 +239,17 @@ namespace SensorDevices
 				return;
 			}
 
-			motorControl.UpdateTime(Time.fixedDeltaTime);
+			var deltaTime = Time.fixedDeltaTime;
+
+			motorControl.Update(deltaTime);
 
 			UpdateIMU();
 			UpdateUss();
 			UpdateIr();
 			UpdateBumper();
 
-			motorControl.UpdateOdometry(micomSensorData.Odom, Time.fixedDeltaTime, imuSensor);
+			motorControl.UpdateOdometry(micomSensorData.Odom, deltaTime, imuSensor);
+			DeviceHelper.SetTime(micomSensorData.Time, DeviceHelper.GlobalClock.FixedSimTime);
 		}
 
 		private void UpdateBumper()

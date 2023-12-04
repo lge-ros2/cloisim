@@ -13,7 +13,7 @@ public class MotorControl
 {
 	public enum WheelLocation { NONE, LEFT, RIGHT, REAR_LEFT, REAR_RIGHT };
 
-#region Motor Related
+	#region Motor Related
 	private Dictionary<WheelLocation, Motor> wheelList = new Dictionary<WheelLocation, Motor>()
 	{
 		{WheelLocation.LEFT, null},
@@ -25,7 +25,7 @@ public class MotorControl
 	private float pidGainP, pidGainI, pidGainD;
 
 	private Odometry odometry = null;
-#endregion
+	#endregion
 
 	public void Reset()
 	{
@@ -35,9 +35,9 @@ public class MotorControl
 		}
 	}
 
-	public void SetWheelInfo(in float radius, in float tread)
+	public void SetWheelInfo(in float radius, in float separation)
 	{
-		this.odometry = new Odometry(radius, tread);
+		this.odometry = new Odometry(radius, separation);
 		this.odometry.SetMotorControl(this);
 	}
 
@@ -69,9 +69,9 @@ public class MotorControl
 	public void SetTwistDrive(in float linearVelocity, in float angularVelocity)
 	{
 		// m/s, rad/s
-		// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * wheelTread)) / (2 * wheelRadius);
-		// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * wheelTread)) / (2 * wheelRadius);
-		var angularCalculation = (angularVelocity * odometry.WheelTread * 0.5f);
+		// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * WheelSeparation)) / (2 * wheelRadius);
+		// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * WheelSeparation)) / (2 * wheelRadius);
+		var angularCalculation = (angularVelocity * odometry.WheelSeparation * 0.5f);
 
 		var linearVelocityLeft = linearVelocity - angularCalculation;
 		var linearVelocityRight = linearVelocity + angularCalculation;
@@ -82,7 +82,7 @@ public class MotorControl
 	public void UpdateMotorFeedback(in float linearVelocityLeft, in float linearVelocityRight)
 	{
 		var linearVelocity = (linearVelocityLeft + linearVelocityRight) * 0.5f;
-		var angularVelocity = (linearVelocityRight - linearVelocity) / (odometry.WheelTread * 0.5f);
+		var angularVelocity = (linearVelocityRight - linearVelocity) / (odometry.WheelSeparation * 0.5f);
 
 		UpdateTargetMotorFeedback(angularVelocity);
 	}
@@ -137,6 +137,8 @@ public class MotorControl
 		}
 	}
 
+	/// <summary>Get target Motor Velocity</summary>
+	/// <remarks>radian per second</remarks>
 	public bool GetCurrentVelocity(in WheelLocation location, out float angularVelocity)
 	{
 		angularVelocity = 0;
@@ -149,7 +151,7 @@ public class MotorControl
 		return false;
 	}
 
-	public void UpdateTime(in float duration)
+	public void Update(in float duration)
 	{
 		foreach (var wheel in wheelList)
 		{

@@ -84,6 +84,11 @@ public partial class DeviceHelper
 	[DllImport("StdHash")]
 	public static extern ulong GetStringHashCode(string value);
 
+	public static void SetTime(messages.Time msgTime, in double time)
+	{
+		SetTime(msgTime, (float)time);
+	}
+
 	public static void SetTime(messages.Time msgTime, in float time)
 	{
 		if (msgTime == null)

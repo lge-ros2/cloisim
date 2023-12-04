@@ -70,13 +70,15 @@ public class Articulation
 		return (_jointBody == null) ? Vector3.zero : _jointBody.anchorRotation.eulerAngles;
 	}
 
-	/// <returns>in radian for angular and in meters for linear</param>
+	/// <returns>in (rad)ian for angular OR in (m)eters for linear</param>
 	public float GetJointPosition(int index = 0)
 	{
+		if (_jointBody == null)
+			return 0;
+
 		if (IsRevoluteType())
 		{
-			index = GetValidIndex(index);
-			return (_jointBody == null || index == -1) ? 0 : _jointBody.jointPosition[index];
+			return (index == -1) ? 0 : _jointBody.jointPosition[index];
 		}
 		else
 		{
@@ -97,6 +99,10 @@ public class Articulation
 				{
 					return _jointBody.transform.localPosition.y;
 				}
+			}
+			else
+			{
+				Debug.LogWarning("Unsupported articulation Type: " + Type);
 			}
 		}
 
