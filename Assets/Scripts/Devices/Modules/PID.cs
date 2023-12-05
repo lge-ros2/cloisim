@@ -10,18 +10,21 @@ using System;
 public class PID
 {
 	private float _pGain, _iGain, _dGain;
-	private float integral = 0;
-	private float lastError = 0;
+	private float _integralError = 0;
+	private float _lastError = 0;
 	private float _integralMax, _integralMin;
-	private float _outputMax, _outputMin;
+	private float _cmdMax, _cmdMin;
 
-	public PID(in float pGain, in float iGain, in float dGain, in float integralMax = 100, in float integralMin = -100, in float outputMax = 1000, in float outputMin = -1000)
+	public PID(
+		in float pGain, in float iGain, in float dGain,
+		in float integralMax = 100, in float integralMin = -100,
+		in float cmdMax = 1000, in float cmdMin = -1000)
 	{
 		Change(pGain, iGain, dGain);
 		this._integralMax = integralMax;
 		this._integralMin = integralMin;
-		this._outputMax = outputMax;
-		this._outputMin = outputMin;
+		this._cmdMax = cmdMax;
+		this._cmdMin = cmdMin;
 	}
 
 	public void Change(in float pGain, in float iGain, in float dGain)
@@ -33,31 +36,48 @@ public class PID
 
 	public void Reset()
 	{
-		integral = 0;
-		lastError = 0;
+		_integralError = 0;
+		_lastError = 0;
 	}
 
 	public float Update(in float target, in float actual, in float deltaTime)
 	{
-		var error = target - actual;
+		if (UnityEngine.Mathf.Abs(deltaTime) < float.Epsilon ||
+			float.IsNaN(deltaTime) || float.IsInfinity(deltaTime))
+			return 0f;
 
-		integral += (error * deltaTime);
+		var error = actual - target;
+
+		// Calculate proportional contribution to command
+		var pTerm = _pGain * error;
+
+		// Calculate the integral error
+		_integralError += deltaTime * error;
+
+		// Calculate integral contribution to command
+		var iTerm = _iGain * _integralError;
 
 		// Limit iTerm so that the limit is meaningful in the output
-		if (integral > _integralMax)
+		if (iTerm > _integralMax)
 		{
-			integral = _integralMax / _iGain;
+			iTerm = _integralMax;
+			_integralError = iTerm / _iGain;
 		}
-		else if (integral < _integralMin)
+		else if (iTerm < _integralMin)
 		{
-			integral = _integralMin / _iGain;
+			iTerm = _integralMin;
+			_integralError = iTerm / _iGain;
 		}
 
-		var derive = (deltaTime == 0)? 0 : ((error - lastError) / deltaTime);
+		// Calculate the derivative error
+		var dErr = (error - _lastError) / deltaTime;
+		_lastError = error;
 
-		lastError = error;
+		// Calculate derivative contribution to command
+		var dTerm = _dGain * dErr;
 
-		var output = (error * _pGain) + (integral * _iGain) + (derive * _dGain);
-		return UnityEngine.Mathf.Clamp(output, _outputMin, _outputMax);
+		var cmd = -pTerm - iTerm - dTerm;
+
+		return UnityEngine.Mathf.Clamp(cmd, _cmdMin, _cmdMax);
 	}
 }

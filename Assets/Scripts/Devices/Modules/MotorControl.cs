@@ -62,7 +62,6 @@ public class MotorControl
 	{
 		var angularVelocityLeft = SDF2Unity.CurveOrientation(linearVelocityLeft * odometry.InverseWheelRadius);
 		var angularVelocityRight = SDF2Unity.CurveOrientation(linearVelocityRight * odometry.InverseWheelRadius);
-
 		SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
 	}
 
@@ -75,40 +74,7 @@ public class MotorControl
 
 		var linearVelocityLeft = linearVelocity - angularCalculation;
 		var linearVelocityRight = linearVelocity + angularCalculation;
-
 		SetDifferentialDrive(linearVelocityLeft, linearVelocityRight);
-	}
-
-	public void UpdateMotorFeedback(in float linearVelocityLeft, in float linearVelocityRight)
-	{
-		var linearVelocity = (linearVelocityLeft + linearVelocityRight) * 0.5f;
-		var angularVelocity = (linearVelocityRight - linearVelocity) / (odometry.WheelSeparation * 0.5f);
-
-		UpdateTargetMotorFeedback(angularVelocity);
-	}
-
-	public void UpdateTargetMotorFeedback(in float angularVelocity)
-	{
-		foreach (var wheel in wheelList)
-		{
-			var motor = wheel.Value;
-			if (motor != null)
-			{
-				motor.Feedback.SetRotatingTargetVelocity(angularVelocity);
-			}
-		}
-	}
-
-	public void UpdateCurrentMotorFeedback(in float angularVelocity)
-	{
-		foreach (var wheel in wheelList)
-		{
-			var motor = wheel.Value;
-			if (motor != null)
-			{
-				motor.Feedback.SetRotatingVelocity(angularVelocity);
-			}
-		}
 	}
 
 	/// <summary>Set motor velocity</summary>
