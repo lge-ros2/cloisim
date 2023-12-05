@@ -111,10 +111,10 @@ public class WorldNavMeshBuilder : MonoBehaviour
 
 		var bounds = new Bounds(transform.position, Vector3.zero);
 		var renderers = transform.GetComponentsInChildren<Renderer>();
-		for (var i = 0; i < renderers.Length; i++)
+		foreach (var render in renderers)
 		{
-			// Debug.Log(renderer.bounds.center + ", " + renderer.bounds.size);
-			bounds.Encapsulate(renderers[i].bounds);
+			// Debug.Log(render.bounds.center + ", " + render.bounds.size);
+			bounds.Encapsulate(render.bounds);
 		}
 		// Debug.Log("Final: " + bounds.center + ", " + bounds.size);
 

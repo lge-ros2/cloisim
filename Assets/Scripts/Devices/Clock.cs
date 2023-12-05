@@ -19,9 +19,11 @@ public class Clock : Device
 	#endregion
 
 	private double restartedSimTime = 0;
+	private double restartedFixedSimTime = 0;
 	private double restartedRealTime = 0;
 
 	private double currentSimTime = 0;
+	private double currentFixedSimTime = 0;
 	private double currentRealTime = 0;
 
 	#region time in hms format
@@ -66,7 +68,7 @@ public class Clock : Device
 	#endregion
 
 	public double SimTime => currentSimTime;
-
+	public double FixedSimTime => currentFixedSimTime;
 	public double RealTime => currentRealTime;
 
 	public HMS ToHMS() => hms;
@@ -90,6 +92,7 @@ public class Clock : Device
 	{
 		currentRealTime = Time.realtimeSinceStartupAsDouble - restartedRealTime;
 		currentSimTime = Time.timeAsDouble - restartedSimTime;
+		currentFixedSimTime = Time.fixedTimeAsDouble - restartedFixedSimTime;
 	}
 
 	void FixedUpdate()
@@ -152,6 +155,7 @@ public class Clock : Device
 	public void ResetTime()
 	{
 		restartedSimTime = Time.timeAsDouble;
+		restartedFixedSimTime = Time.fixedTimeAsDouble;
 		restartedRealTime = Time.realtimeSinceStartupAsDouble;
 
 		UpdateCurrentTime();

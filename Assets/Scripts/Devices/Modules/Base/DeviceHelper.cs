@@ -26,6 +26,8 @@ public partial class DeviceHelper
 		return globalClock;
 	}
 
+	public static Clock GlobalClock => globalClock;
+
 	public static void SetGlobalSphericalCoordinates(in SphericalCoordinates sphericalCoordinates)
 	{
 		globalSphericalCoordinates = sphericalCoordinates;
@@ -81,6 +83,22 @@ public partial class DeviceHelper
 
 	[DllImport("StdHash")]
 	public static extern ulong GetStringHashCode(string value);
+
+	public static void SetTime(messages.Time msgTime, in double time)
+	{
+		SetTime(msgTime, (float)time);
+	}
+
+	public static void SetTime(messages.Time msgTime, in float time)
+	{
+		if (msgTime == null)
+		{
+			msgTime = new messages.Time();
+		}
+
+		msgTime.Sec = (int)time;
+		msgTime.Nsec = (int)((time - (double)msgTime.Sec) * 1e+9);
+	}
 
 	public static void SetCurrentTime(messages.Time msgTime, in bool useRealTime = false)
 	{

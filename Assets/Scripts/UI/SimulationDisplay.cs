@@ -91,7 +91,6 @@ public partial class SimulationDisplay : MonoBehaviour
 		padding = new RectOffset(30, 30, 30, 30);
 		zeroPadding = new RectOffset(0, 0, 0, 0);
 
-		InitPropsMenu();
 		UpdateHelpContents();
 	}
 
@@ -179,27 +178,30 @@ public partial class SimulationDisplay : MonoBehaviour
 		if (Event.current.type.Equals(EventType.KeyUp))
 		{
 			var keyCode = Event.current.keyCode;
-			if (keyCode.CompareTo(KeyCode.F1) == 0)
+			if (keyCode == KeyCode.F1)
 			{
 				popupHelpDialog = !popupHelpDialog;
 				cameraControl.BlockMouseWheelControl(true);
 			}
-			else if (keyCode.CompareTo(KeyCode.Escape) == 0)
+			else if (keyCode == KeyCode.Escape)
 			{
 				popupHelpDialog = false;
 				cameraControl.BlockMouseWheelControl(false);
 			}
-			else if (keyCode.CompareTo(KeyCode.Alpha1) == 0)
+			else if (keyCode >= KeyCode.Alpha1 && keyCode <= KeyCode.Alpha9 && isChangingScaleFactor == false)
 			{
-				_toolbarSelected = 0;
-			}
-			else if (keyCode.CompareTo(KeyCode.Alpha2) == 0)
-			{
-				_toolbarSelected = 1;
-			}
-			else if (keyCode.CompareTo(KeyCode.Alpha3) == 0)
-			{
-				_toolbarSelected = 2;
+				switch (keyCode)
+				{
+					case KeyCode.Alpha1:
+						_toolbarSelected = 0;
+						break;
+					case KeyCode.Alpha2:
+						_toolbarSelected = 1;
+						break;
+					case KeyCode.Alpha3:
+						_toolbarSelected = 2;
+						break;
+				}
 			}
 		}
 

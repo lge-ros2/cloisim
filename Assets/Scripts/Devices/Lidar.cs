@@ -55,17 +55,6 @@ namespace SensorDevices
 		private RTHandle _rtHandle = null;
 		private ParallelOptions _parallelOptions = null;
 
-		struct AsyncLaserWork
-		{
-			public int dataIndex;
-			public AsyncGPUReadbackRequest request;
-
-			public AsyncLaserWork(in int dataIndex, in AsyncGPUReadbackRequest request)
-			{
-				this.dataIndex = dataIndex;
-				this.request = request;
-			}
-		}
 		private AsyncLaserWork[] _asyncWorkList;
 		private DepthData.CamBuffer[] _depthCamBuffers;
 		private LaserData.LaserCamData[] _laserCamData;
@@ -325,13 +314,14 @@ namespace SensorDevices
 					if (laserCam.isActiveAndEnabled)
 					{
 						laserCam.Render();
+						var capturedTime = (float)DeviceHelper.GetGlobalClock().SimTime;
 						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, OnCompleteAsyncReadback);
 
 						if (_asyncWorkList.Length == numberOfLaserCamData)
-							_asyncWorkList[dataIndex] = new AsyncLaserWork(dataIndex, readbackRequest);
-					}
+							_asyncWorkList[dataIndex] = new AsyncLaserWork(dataIndex, readbackRequest, capturedTime);
 
-					laserCam.enabled = false;
+						laserCam.enabled = false;
+					}
 				}
 
 				_lastTimeLaserCameraWork = Time.time;
@@ -349,39 +339,40 @@ namespace SensorDevices
 				for (var i = 0; i < _asyncWorkList.Length; i++)
 				{
 					var asyncWork = _asyncWorkList[i];
-					if (asyncWork.request.Equals(request))
+					if (!asyncWork.request.Equals(request))
+						continue;
+
+					var dataIndex = asyncWork.dataIndex;
+					var depthCamBuffer = _depthCamBuffers[dataIndex];
+
+					depthCamBuffer.Allocate();
+					depthCamBuffer.raw = request.GetData<byte>();
+
+					if (depthCamBuffer.depth.IsCreated)
 					{
-						var dataIndex = asyncWork.dataIndex;
-						var depthCamBuffer = _depthCamBuffers[dataIndex];
+						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
+						jobHandleDepthCamBuffer.Complete();
 
-						depthCamBuffer.Allocate();
-						depthCamBuffer.raw = request.GetData<byte>();
+						var laserCamData = _laserCamData[dataIndex];
+						laserCamData.depthBuffer = depthCamBuffer.depth;
+						laserCamData.Allocate();
 
-						if (depthCamBuffer.depth.IsCreated)
+						var jobHandle = laserCamData.Schedule(laserCamData.OutputLength(), BatchSize);
+						jobHandle.Complete();
+
+						_laserDataOutput[dataIndex].data = laserCamData.GetLaserData();
+						_laserDataOutput[dataIndex].capturedTime = asyncWork.capturedTime;
+
+						if (noise != null)
 						{
-							var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
-							jobHandleDepthCamBuffer.Complete();
-
-							var laserCamData = _laserCamData[dataIndex];
-							laserCamData.depthBuffer = depthCamBuffer.depth;
-							laserCamData.Allocate();
-
-							var jobHandle = laserCamData.Schedule(laserCamData.OutputLength(), BatchSize);
-							jobHandle.Complete();
-
-							_laserDataOutput[dataIndex].data = laserCamData.GetLaserData();
-
-							if (noise != null)
-							{
-								noise.Apply<double>(ref _laserDataOutput[dataIndex].data);
-							}
-
-							laserCamData.Deallocate();
+							noise.Apply<double>(ref _laserDataOutput[dataIndex].data);
 						}
 
-						depthCamBuffer.Deallocate();
-						break;
+						laserCamData.Deallocate();
 					}
+
+					depthCamBuffer.Deallocate();
+					break;
 				}
 			}
 		}
@@ -408,6 +399,9 @@ namespace SensorDevices
 			var laserEndAngleV = (float)vertical.angle.max;
 			var laserTotalAngleV = (float)vertical.angle.range;
 
+			const int TargetCaptureTimeIndex = 1;
+			var capturedTime = (float)DeviceHelper.GlobalClock.FixedSimTime;
+
 			Parallel.For(0, numberOfLaserCamData, _parallelOptions, index =>
 			{
 				var laserCamData = _laserCamData[index];
@@ -428,6 +422,11 @@ namespace SensorDevices
 					return;
 				}
 
+				if (index == TargetCaptureTimeIndex)
+				{
+					capturedTime = _laserDataOutput[index].capturedTime;
+				}
+
 				if (laserStartAngleH < 0 && dataEndAngleH > DEG180)
 				{
 					dataStartAngleH -= DEG360;
@@ -435,54 +434,33 @@ namespace SensorDevices
 				}
 				// Debug.LogFormat("index {0}: {1}~{2}, {3}~{4}", dataIndex, laserStartAngleH, laserEndAngleH, dataStartAngleH, dataEndAngleH);
 
-				var dataCopyType = -1;
-
 				for (var sampleIndexV = 0; sampleIndexV < laserSamplesV; sampleIndexV++, doCopy = true)
 				{
-					if (dataStartAngleH <= laserStartAngleH)
+					if (dataStartAngleH <= laserStartAngleH) // start side of laser angle
 					{
-						dataCopyType = 1; // start side of laser angle
+						dataLengthRatio = (laserStartAngleH - dataStartAngleH) * dividedDataTotalAngleH;
+						copyLength = srcBufferHorizontalLength - Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
+						srcBufferOffset = srcBufferHorizontalLength * sampleIndexV;
+						dstBufferOffset = laserSamplesH * (sampleIndexV + 1) - copyLength;
 					}
-					else if (dataStartAngleH > laserStartAngleH && dataEndAngleH < laserEndAngleH)
+					else if (dataStartAngleH > laserStartAngleH && dataEndAngleH < laserEndAngleH) // middle of laser angle
 					{
-						dataCopyType = 2; // middle of laser angle
+						dataLengthRatio = (dataStartAngleH - laserStartAngleH) * dividedLaserTotalAngleH;
+						copyLength = srcBufferHorizontalLength;
+						srcBufferOffset = srcBufferHorizontalLength * sampleIndexV;
+						dstBufferOffset = Mathf.CeilToInt(laserSamplesH * ((float)(sampleIndexV + 1) - dataLengthRatio)) - copyLength;
 					}
-					else if (dataEndAngleH >= laserEndAngleH)
+					else if (dataEndAngleH >= laserEndAngleH) // end side of laser angle
 					{
-						dataCopyType = 3; // end side of laser angle
+						dataLengthRatio = (laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
+						copyLength = Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
+						srcBufferOffset = srcBufferHorizontalLength * (sampleIndexV + 1) - copyLength;
+						dstBufferOffset = laserSamplesH * sampleIndexV + 1;
 					}
 					else
 					{
-						dataCopyType = -1;
-					}
-
-					switch (dataCopyType)
-					{
-						case 1:
-							dataLengthRatio = (laserStartAngleH - dataStartAngleH) * dividedDataTotalAngleH;
-							copyLength = srcBufferHorizontalLength - Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
-							srcBufferOffset = srcBufferHorizontalLength * sampleIndexV;
-							dstBufferOffset = laserSamplesH * (sampleIndexV + 1) - copyLength;
-							break;
-
-						case 2:
-							dataLengthRatio = (dataStartAngleH - laserStartAngleH) * dividedLaserTotalAngleH;
-							copyLength = srcBufferHorizontalLength;
-							srcBufferOffset = srcBufferHorizontalLength * sampleIndexV;
-							dstBufferOffset = Mathf.CeilToInt(laserSamplesH * ((float)(sampleIndexV + 1) - dataLengthRatio)) - copyLength;
-							break;
-
-						case 3:
-							dataLengthRatio = (laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
-							copyLength = Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
-							srcBufferOffset = srcBufferHorizontalLength * (sampleIndexV + 1) - copyLength;
-							dstBufferOffset = laserSamplesH * sampleIndexV + 1;
-							break;
-
-						default:
-							Debug.LogWarning("Something wrong data copy type in Generating Laser Data....");
-							doCopy = false;
-							break;
+						Debug.LogWarning("Something wrong data copy type in Generating Laser Data....");
+						doCopy = false;
 					}
 
 					if (doCopy && copyLength >= 0 && dstBufferOffset >= 0)
@@ -496,7 +474,16 @@ namespace SensorDevices
 						}
 						catch (Exception ex)
 						{
-							Debug.LogWarning("Error occured with Buffer.BlockCopy: " + ex.Message + ", Type: " + dataCopyType + " Offset: src(" + srcBufferOffset + ") dst(" + dstBufferOffset + ") Len: src(" + srcBuffer.Length + ") dst(" + laserScan.Ranges.Length + ") copy_size(" + copyLength + ")");
+							var copyType = -1;
+							if (dataStartAngleH <= laserStartAngleH)
+								copyType = 0;
+							else if (dataStartAngleH > laserStartAngleH && dataEndAngleH < laserEndAngleH)
+								copyType = 1;
+							else if (dataEndAngleH >= laserEndAngleH)
+								copyType = 2;
+
+							Debug.LogWarningFormat("Error occured with Buffer.BlockCopy: {0}, Type: {1} Offset: src({2}) dst({3}) Len: src({4}) dst({5}) copy_size({6})",
+								ex.Message, copyType, srcBufferOffset, dstBufferOffset, srcBuffer.Length, laserScan.Ranges.Length, copyLength);
 						}
 					}
 					else
@@ -511,7 +498,8 @@ namespace SensorDevices
 				laserFilter.DoFilter(ref laserScan);
 			}
 
-			DeviceHelper.SetCurrentTime(laserScanStamped.Time);
+			DeviceHelper.SetTime(laserScanStamped.Time, capturedTime);
+
 			PushDeviceMessage<messages.LaserScanStamped>(laserScanStamped);
 		}
 

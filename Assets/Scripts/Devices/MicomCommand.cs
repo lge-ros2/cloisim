@@ -64,7 +64,6 @@ namespace SensorDevices
 			var targetLinearVelocity = linearVelocity.z;
 			var targetAngularVelocity = angularVelocity.y;
 			motorControl.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
-			motorControl.UpdateTargetMotorFeedback(targetAngularVelocity);
 		}
 	}
 }

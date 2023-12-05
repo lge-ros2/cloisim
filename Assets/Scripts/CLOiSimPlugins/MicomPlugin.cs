@@ -67,12 +67,18 @@ public class MicomPlugin : CLOiSimPlugin
 		micomSensor.SetUpdateRate(updateRate);
 
 		var wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
-		var wheelTread = GetPluginParameters().GetValue<float>("wheel/tread");
+		var wheelTread = GetPluginParameters().GetValue<float>("wheel/tread"); // deprecated
+		if (Mathf.Approximately(Mathf.Abs(wheelTread), Quaternion.kEpsilon) == false)
+		{
+			Debug.LogWarning("<wheel/tread> will be depreacted!!");
+		}
+
+		var wheelSeparation = GetPluginParameters().GetValue<float>("wheel/separation", wheelTread);
 		var P = GetPluginParameters().GetValue<float>("wheel/PID/kp");
 		var I = GetPluginParameters().GetValue<float>("wheel/PID/ki");
 		var D = GetPluginParameters().GetValue<float>("wheel/PID/kd");
 
-		micomSensor.SetMotorConfiguration(wheelRadius, wheelTread, P, I, D);
+		micomSensor.SetMotorConfiguration(wheelRadius, wheelSeparation, P, I, D);
 
 		// TODO: to be utilized, currently not used
 		var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f);
@@ -113,6 +119,13 @@ public class MicomPlugin : CLOiSimPlugin
 		if (GetPluginParameters().GetValues<string>("bumper/joint_name", out var bumperJointNameList))
 		{
 			micomSensor.SetBumperSensor(bumperJointNameList);
+		}
+
+		var targetImuName = GetPluginParameters().GetValue<string>("imu");
+		if (!string.IsNullOrEmpty(targetImuName))
+		{
+			// Debug.Log("Imu Sensor = " + targetImuName);
+			micomSensor.SetIMU(targetImuName);
 		}
 	}
 

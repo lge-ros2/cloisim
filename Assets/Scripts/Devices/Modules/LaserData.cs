@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using UnityEngine.Rendering;
 using UnityEngine;
 using Unity.Collections;
 using Unity.Jobs;
@@ -78,9 +78,12 @@ namespace SensorDevices
 		{
 			public double[] data;
 
+			public float capturedTime;
+
 			public LaserDataOutput(in int length = 0)
 			{
 				data = (length == 0) ? null : new double[length];
+				capturedTime = 0;
 			}
 		}
 
@@ -109,7 +112,10 @@ namespace SensorDevices
 			public float EndAngleH;
 			public float TotalAngleH;
 
-			public LaserCamData(in int bufferWidth, in int bufferHeight, in MinMax range, in AngleResolution angleResolution, in float centerAngle, in float halfHFovAngle, in float halfVFovAngle)
+			public LaserCamData(
+					in int bufferWidth, in int bufferHeight,
+			 		in MinMax range, in AngleResolution angleResolution,
+					in float centerAngle, in float halfHFovAngle, in float halfVFovAngle)
 			{
 				this.maxHAngleHalf = halfHFovAngle;
 				this.maxHAngleHalfTanInverse = 1 / Mathf.Tan(maxHAngleHalf * Mathf.Deg2Rad);
@@ -207,4 +213,19 @@ namespace SensorDevices
 			}
 		}
 	}
+
+	struct AsyncLaserWork
+	{
+		public int dataIndex;
+		public AsyncGPUReadbackRequest request;
+		public float capturedTime;
+
+		public AsyncLaserWork(in int dataIndex, in AsyncGPUReadbackRequest request, in float capturedTime)
+		{
+			this.dataIndex = dataIndex;
+			this.request = request;
+			this.capturedTime = capturedTime;
+		}
+	}
+
 }
