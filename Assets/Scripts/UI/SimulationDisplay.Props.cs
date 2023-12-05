@@ -18,11 +18,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private bool checkScaleFactorFocused = false;
 	private bool doCheckScaleFactorValue = false;
 	private RectOffset zeroPadding;
-
-	private void InitPropsMenu()
-	{
-		// toolbarStrings = new string[] { "Box", "Cylinder", "Sphere" };
-	}
+	private bool isChangingScaleFactor = false;
 
 	private void DrawPropsMenus()
 	{
@@ -58,6 +54,8 @@ public partial class SimulationDisplay : MonoBehaviour
 		GUI.skin.textField.normal.textColor = Color.white;
 		GUI.skin.textField.alignment = TextAnchor.MiddleCenter;
 		scaleFactorString = GUI.TextField(rectScale, scaleFactorString, 5);
+
+		isChangingScaleFactor = (GUI.GetNameOfFocusedControl().CompareTo("ScaleField") == 0);
 
 		rectHelpButton.x = rectScale.x + rectScale.width + textRightMargin;
 
