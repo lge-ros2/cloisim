@@ -15,7 +15,8 @@ public class ObjectSpawning : MonoBehaviour
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private FollowingTargetList followingList = null;
 
-	private Quaternion _cylinderRotationAngle = Quaternion.AngleAxis(90, Vector3.forward);
+	// private Quaternion CylinderRotationAngle = Quaternion.AngleAxis(90, Vector3.forward);
+	private const float CylinderRotationAngle = 90;
 
 	private Dictionary<PropsType, GameObject> props = new Dictionary<PropsType, GameObject>();
 	public float maxRayDistance = 100;
@@ -105,12 +106,7 @@ public class ObjectSpawning : MonoBehaviour
 					break;
 
 				case PropsType.CYLINDER:
-					mesh = ProceduralMesh.CreateCylinder(0.5f, 1, 20);
-
-					for (var index = 0; index < mesh.vertices.LongLength; index++)
-					{
-						mesh.vertices[index] = _cylinderRotationAngle * mesh.vertices[index];
-					}
+					mesh = ProceduralMesh.CreateCylinder(0.5f, 1, 20, CylinderRotationAngle);
 					break;
 
 				case PropsType.SPHERE:
@@ -190,7 +186,7 @@ public class ObjectSpawning : MonoBehaviour
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
 		rigidBody.mass = 1;
-		rigidBody.drag = 2.5f;
+		rigidBody.drag = 0.5f;
 		rigidBody.angularDrag = 0.1f;
 
 		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
