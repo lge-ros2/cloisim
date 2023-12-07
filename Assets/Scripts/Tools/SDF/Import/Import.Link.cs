@@ -57,6 +57,11 @@ namespace SDF
 				linkHelper.SetPose(localPosition, localRotation);
 				linkHelper.ResetPose();
 
+				if (link.Battery != null)
+				{
+					linkHelper.AttachBattery(link.Battery.name, (float)link.Battery.voltage);
+				}
+
 				return newLinkObject as System.Object;
 			}
 

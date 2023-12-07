@@ -15,16 +15,14 @@ namespace SDF
 		{
 			private Model rootModel = null;
 			private Model parentModelHelper = null;
-			public bool drawInertia = false;
+			private UE.ArticulationBody _artBody = null;
 
-			private bool drawContact = true;
+			public bool drawInertia = false;
+			public bool drawContact = true;
 
 			[UE.Header("SDF Properties")]
 			public bool isSelfCollide = false;
-
 			public bool useGravity = false;
-
-			private UE.ArticulationBody _artBody = null;
 
 			private string jointName = string.Empty;
 			private string jointParentLinkName = string.Empty;
@@ -34,6 +32,9 @@ namespace SDF
 			private UE.Vector3 jointAxis2 = UE.Vector3.zero;
 
 			private List<UE.ContactPoint> collisionContacts = new List<UE.ContactPoint>();
+
+			private SensorDevices.Battery battery = null;
+			public SensorDevices.Battery Battery => battery;
 
 			public string JointName
 			{
@@ -104,14 +105,14 @@ namespace SDF
 					var region = _artBody.inertiaTensor;
 					if (region.x < 1f && region.y < 1f && region.z < 1f)
 					{
-						region.Set(region.magnitude/region.x, region.magnitude/region.y, region.magnitude/region.z);
+						region.Set(region.magnitude / region.x, region.magnitude / region.y, region.magnitude / region.z);
 					}
 					region = region.normalized;
 
 					UE.Gizmos.DrawCube(transform.position, region);
 				}
 
-				lock(this.collisionContacts)
+				lock (this.collisionContacts)
 				{
 					if (drawContact && collisionContacts != null && collisionContacts.Count > 0)
 					{
@@ -137,7 +138,7 @@ namespace SDF
 #if UNITY_EDITOR
 			void OnCollisionStay(UE.Collision collisionInfo)
 			{
-				lock(this.collisionContacts)
+				lock (this.collisionContacts)
 				{
 					// UE.Debug.Log(name + " |Stay| " + collisionInfo.gameObject.name);
 					collisionInfo.GetContacts(this.collisionContacts);
@@ -177,6 +178,16 @@ namespace SDF
 						}
 					}
 				}
+			}
+
+			public void AttachBattery(in string name, in float initVoltage)
+			{
+				if (battery == null)
+				{
+					battery = new SensorDevices.Battery(name);
+				}
+
+				battery.SetMax(initVoltage);
 			}
 		}
 	}

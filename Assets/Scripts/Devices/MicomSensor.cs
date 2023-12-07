@@ -23,6 +23,8 @@ namespace SensorDevices
 		private SensorDevices.Contact bumperContact = null;
 		private List<ArticulationBody> bumperSensors = new List<ArticulationBody>();
 
+		private SensorDevices.Battery battery = null;
+
 		private MotorControl motorControl = new MotorControl();
 		public MotorControl MotorControl => this.motorControl;
 
@@ -199,6 +201,12 @@ namespace SensorDevices
 			}
 		}
 
+		public void SetBattery(in SensorDevices.Battery targetBattery)
+		{
+			this.battery = targetBattery;
+			micomSensorData.Battery.Name = battery.Name;
+		}
+
 		protected override void OnReset()
 		{
 			if (imuSensor != null)
@@ -225,6 +233,7 @@ namespace SensorDevices
 			micomSensorData.uss = new messages.Micom.Uss();
 			micomSensorData.ir = new messages.Micom.Ir();
 			micomSensorData.bumper = new messages.Micom.Bumper();
+			micomSensorData.Battery = new messages.Battery();
 		}
 
 		protected override void GenerateMessage()
@@ -240,6 +249,11 @@ namespace SensorDevices
 			}
 
 			var deltaTime = Time.fixedDeltaTime;
+
+			if (battery != null)
+			{
+				micomSensorData.Battery.Voltage = battery.Update(deltaTime);
+			}
 
 			motorControl.Update(deltaTime);
 
