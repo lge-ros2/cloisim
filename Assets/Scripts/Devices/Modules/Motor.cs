@@ -62,7 +62,7 @@ public class Motor : Articulation
 
 	private PID _pidControl = null;
 
-	private bool _enableMotor = false;
+	private bool _enable = false;
 
 	private float _targetAngularVelocity = 0;
 	private float _currentMotorVelocity = 0; // degree per seconds
@@ -90,11 +90,11 @@ public class Motor : Articulation
 	{
 		if (Mathf.Abs(targetAngularVelocity) < Quaternion.kEpsilon || float.IsInfinity(targetAngularVelocity))
 		{
-			_enableMotor = false;
+			_enable = false;
 		}
 		else
 		{
-			_enableMotor = true;
+			_enable = true;
 
 			if (_feedback.IsMotionRotating)
 			{
@@ -117,7 +117,7 @@ public class Motor : Articulation
 		_currentMotorVelocity = GetAngularVelocity(duration);
 
 		// do stop motion of motor when motor disabled
-		if (_enableMotor)
+		if (_enable)
 		{
 			var adjustValue = _pidControl.Update(_targetAngularVelocity, _currentMotorVelocity, duration);
 
