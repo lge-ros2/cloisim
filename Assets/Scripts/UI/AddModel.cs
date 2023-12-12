@@ -9,7 +9,7 @@ public class AddModel : MonoBehaviour
 
 	#region variables for the object with articulation body
 	private ArticulationBody rootArticulationBody = null;
-	private Vector3 articulationBodyDeployOffset = Vector3.zero;
+	private Vector3 modelDeployOffset = Vector3.zero;
 	#endregion
 
 	public float maxRayDistance = 60.0f;
@@ -50,7 +50,7 @@ public class AddModel : MonoBehaviour
 
 	public void SetAddingModelForDeploy(in Transform targetTransform)
 	{
-		const float DeployOffset = 0.05f;
+		const float DeployOffsetMargin = 0.1f;
 
 		RemoveAddingModel();
 
@@ -73,12 +73,12 @@ public class AddModel : MonoBehaviour
 		var totalBound = new Bounds();
 		foreach (var collider in _targetObject.GetComponentsInChildren<Collider>())
 		{
+			// Debug.Log(collider.bounds.min + ", " + collider.bounds.max);
 			totalBound.Encapsulate(collider.bounds);
 		}
 
-		articulationBodyDeployOffset.y = DeployOffset
-			+ ((totalBound.min.y >= 0) ? totalBound.min.y : 0);
-		// Debug.Log("Deploy == " + articulationBodyDeployOffset.y + " " + totalBound.min + ", " + totalBound.center + "," + totalBound.extents);
+		modelDeployOffset.y = DeployOffsetMargin + ((totalBound.min.y < 0) ? -totalBound.min.y : 0);
+		// Debug.Log("Deploy == " + modelDeployOffset.y + " " + totalBound.min + ", " + totalBound.center + "," + totalBound.extents);
 
 		_modelHelper = _targetObject.GetComponent<SDF.Helper.Model>();
 	}
@@ -113,7 +113,7 @@ public class AddModel : MonoBehaviour
 			}
 
 			// Update init pose
-			_modelHelper.SetPose(_targetObject.position, _targetObject.rotation);
+			_modelHelper.SetPose(_targetObject.position + modelDeployOffset, _targetObject.rotation);
 
 			ChangeColliderObjectLayer(_targetObject, "Default");
 
@@ -135,11 +135,11 @@ public class AddModel : MonoBehaviour
 					{
 						rootArticulationBody.Sleep();
 						var bodyRotation = Quaternion.FromToRotation(transform.up, normal);
-						rootArticulationBody.TeleportRoot(point + articulationBodyDeployOffset, bodyRotation);
+						rootArticulationBody.TeleportRoot(point + modelDeployOffset, bodyRotation);
 					}
 					else
 					{
-						_targetObject.position = point;
+						_targetObject.position = point + modelDeployOffset;
 					}
 				}
 			}
