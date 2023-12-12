@@ -12,6 +12,8 @@ namespace SDF
 	{
 		public class Joint
 		{
+			private static float DefaultJointFriction = 0.05f;
+
 			public static UE.Pose SetArticulationBodyRelationship(in SDF.Joint joint, UE.Transform linkParent, UE.Transform linkChild)
 			{
 				var modelTransformParent = linkParent.parent;
@@ -79,8 +81,6 @@ namespace SDF
 				body.linearDamping = 0.05f; // TODO : value to find
 				body.angularDamping = 0.05f; // TODO : value to find
 
-				body.jointFriction = (axis.dynamics != null) ? (float)axis.dynamics.friction : 0;
-
 				var drive = new UE.ArticulationDrive();
 
 				if (axis.limit.Use())
@@ -99,7 +99,7 @@ namespace SDF
 				}
 				else
 				{
-					body.jointFriction = 0;
+					body.jointFriction = DefaultJointFriction;
 				}
 
 				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
@@ -240,7 +240,7 @@ namespace SDF
 				}
 				else
 				{
-					body.jointFriction = 0;
+					body.jointFriction = DefaultJointFriction;
 				}
 
 				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
