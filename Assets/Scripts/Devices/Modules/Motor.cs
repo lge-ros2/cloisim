@@ -166,6 +166,12 @@ public class Motor : Articulation
 
 	private float GetFilteredAngularVelocity(in float motorVelocity)
 	{
+		if (Mathf.Abs(_targetAngularVelocity) <= Quaternion.kEpsilon)
+		{
+			_rollingMeanAnguluarVelocity.Clear();
+			_rollingMeanSumVelocity = 0;
+		}
+
 		// rolling mean filtering
 		if (_rollingMeanAnguluarVelocity.Count == RollingMeanWindowSize)
 		{
