@@ -5,7 +5,6 @@
  */
 
 using UnityEngine;
-using System.Collections.Generic;
 
 public class Articulation
 {
@@ -21,6 +20,8 @@ public class Articulation
 			_jointBody = jointBody;
 			_jointType = jointBody.jointType;
 		}
+
+		Reset();
 	}
 
 	public Articulation(in GameObject target)
@@ -34,6 +35,8 @@ public class Articulation
 		{
 			_jointBody.velocity = Vector3.zero;
 			_jointBody.angularVelocity = Vector3.zero;
+
+			SetJointVelocity(0);
 		}
 	}
 
@@ -136,38 +139,18 @@ public class Articulation
 	/// <param name="target">angular velocity in degrees per second OR target position </param>
 	public void Drive(in float target, ArticulationDriveType driveType = ArticulationDriveType.Velocity)
 	{
-		if (_jointBody == null)
-		{
-			Debug.LogWarning("ArticulationBody is empty, please set target body first");
-			return;
-		}
-
-		if (target == float.NaN)
-		{
-			Debug.LogWarning("Invalid Value: target is NaN");
-			return;
-		}
-
-		// Arccording to document(https://docs.unity3d.com/2020.3/Documentation/ScriptReference/ArticulationDrive.html)
-		// F = stiffness * (currentPosition - target) - damping * (currentVelocity - targetVelocity).
-		var drive = GetDrive();
-
-		drive.driveType = driveType;
-
 		switch (driveType)
 		{
 			case ArticulationDriveType.Target:
-				drive.target = target;
+				Drive(float.NaN, target);
 				break;
 			case ArticulationDriveType.Velocity:
-				drive.targetVelocity = target;
+				Drive(target, float.NaN);
 				break;
 			default:
 				Debug.LogWarning("ArticulationDriveType should be Target/Velocity");
 				return;
 		}
-
-		SetDrive(drive);
 	}
 
 	/// <param name="targetVelocity">angular velocity in degrees per second.</param>
