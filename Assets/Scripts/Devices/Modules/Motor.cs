@@ -142,12 +142,16 @@ public class Motor : Articulation
 			{
 				decelerationVelocity = 0;
 			}
+
+			Debug.Log(_currentMotorVelocity + " , " + decelerationVelocity);
+
 			Stop(decelerationVelocity);
 		}
 	}
 
 	public void Stop(in float decelerationVelocity = 0f)
 	{
+		Debug.Log("Stop :" + decelerationVelocity.ToString("F6"));
 		Drive(decelerationVelocity);
 		SetJointVelocity(decelerationVelocity);
 
@@ -155,12 +159,11 @@ public class Motor : Articulation
 		{
 			_pidControl.Reset();
 			_rapidControl.SetDirectionSwitched(false);
-
-			Reset();
+			ResetVelocity();
 		}
 	}
 
-	private const int RollingMeanWindowSize = 20;
+	private const int RollingMeanWindowSize = 5;
 	private Queue<float> _rollingMeanAnguluarVelocity = new Queue<float>(RollingMeanWindowSize);
 	private float _rollingMeanSumVelocity = 0f;
 

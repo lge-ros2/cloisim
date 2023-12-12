@@ -28,7 +28,7 @@ public class Articulation
 	{
 	}
 
-	public void Reset()
+	public void ResetVelocity()
 	{
 		if (_jointBody != null)
 		{
