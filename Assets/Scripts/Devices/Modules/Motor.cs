@@ -143,15 +143,13 @@ public class Motor : Articulation
 				decelerationVelocity = 0;
 			}
 
-			Debug.Log(_currentMotorVelocity + " , " + decelerationVelocity);
-
 			Stop(decelerationVelocity);
 		}
 	}
 
 	public void Stop(in float decelerationVelocity = 0f)
 	{
-		Debug.Log("Stop :" + decelerationVelocity.ToString("F6"));
+		// Debug.Log("Stop :" + decelerationVelocity.ToString("F6"));
 		Drive(decelerationVelocity);
 		SetJointVelocity(decelerationVelocity);
 
@@ -159,8 +157,20 @@ public class Motor : Articulation
 		{
 			_pidControl.Reset();
 			_rapidControl.SetDirectionSwitched(false);
-			ResetVelocity();
+			base.Reset();
 		}
+	}
+
+	new public void Reset()
+	{
+		_pidControl.Reset();
+		_rapidControl.SetDirectionSwitched(false);
+		base.Reset();
+
+		_rollingMeanAnguluarVelocity.Clear();
+		_rollingMeanSumVelocity = 0;
+
+		_prevJointPosition = 0;
 	}
 
 	private const int RollingMeanWindowSize = 5;
@@ -169,12 +179,6 @@ public class Motor : Articulation
 
 	private float GetFilteredAngularVelocity(in float motorVelocity)
 	{
-		if (Mathf.Abs(_targetAngularVelocity) <= Quaternion.kEpsilon)
-		{
-			_rollingMeanAnguluarVelocity.Clear();
-			_rollingMeanSumVelocity = 0;
-		}
-
 		// rolling mean filtering
 		if (_rollingMeanAnguluarVelocity.Count == RollingMeanWindowSize)
 		{
@@ -186,10 +190,13 @@ public class Motor : Articulation
 
 		var filteredVelocity = _rollingMeanSumVelocity / (float)_rollingMeanAnguluarVelocity.Count;
 
+		// Debug.LogFormat("GetFilteredAngularVelocity={0}, {1}, {2}, {3}",
+		// filteredVelocity, _rollingMeanSumVelocity, motorVelocity, _targetAngularVelocity);
+
 		return filteredVelocity;
 	}
 
-	private float _prevJointPosition = 0; // in deg
+	private float _prevJointPosition = 0; // in deg, for GetAngularVelocity()
 
 	/// <remarks>degree per second</remarks>
 	private float GetAngularVelocity(in float duration)
@@ -201,10 +208,10 @@ public class Motor : Articulation
 			// calculate velocity using joint position is more accurate than joint velocity
 			var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
 			motorVelocity = Mathf.DeltaAngle(_prevJointPosition, jointPosition) / duration;
-			_prevJointPosition = jointPosition;
 			// Debug.LogFormat("prv:{0:F5} cur:{1:F5} vel:{2:F5}", _prevJointPosition, jointPosition, motorVelocity);
+			_prevJointPosition = jointPosition;
 #else
-			var motorVelocity = GetJointVelocity() * Mathf.Rad2Deg;
+			motorVelocity = GetJointVelocity() * Mathf.Rad2Deg;
 #endif
 		}
 

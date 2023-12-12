@@ -33,6 +33,15 @@ public class MotorControl
 		{
 			odometry.Reset();
 		}
+
+		foreach (var wheel in wheelList)
+		{
+			var motor = wheel.Value;
+			if (motor != null)
+			{
+				motor.Reset();
+			}
+		}
 	}
 
 	public void SetWheelInfo(in float radius, in float separation)
