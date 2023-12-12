@@ -203,6 +203,8 @@ namespace SensorDevices
 
 		public void SetBattery(in SensorDevices.Battery targetBattery)
 		{
+			micomSensorData.Battery = new messages.Battery();
+
 			this.battery = targetBattery;
 			micomSensorData.Battery.Name = battery.Name;
 		}
@@ -233,7 +235,6 @@ namespace SensorDevices
 			micomSensorData.uss = new messages.Micom.Uss();
 			micomSensorData.ir = new messages.Micom.Ir();
 			micomSensorData.bumper = new messages.Micom.Bumper();
-			micomSensorData.Battery = new messages.Battery();
 		}
 
 		protected override void GenerateMessage()
