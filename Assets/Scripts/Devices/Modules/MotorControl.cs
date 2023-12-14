@@ -13,7 +13,7 @@ public class MotorControl
 {
 	public enum WheelLocation { NONE, LEFT, RIGHT, REAR_LEFT, REAR_RIGHT };
 
-	#region Motor Related
+	#region <Motor Related>
 	private Dictionary<WheelLocation, Motor> wheelList = new Dictionary<WheelLocation, Motor>()
 	{
 		{WheelLocation.LEFT, null},
@@ -22,7 +22,7 @@ public class MotorControl
 		{WheelLocation.REAR_RIGHT, null}
 	};
 
-	private float pidGainP, pidGainI, pidGainD;
+	private float _pidGainP, _pidGainI, _pidGainD;
 
 	private Odometry odometry = null;
 	#endregion
@@ -46,21 +46,20 @@ public class MotorControl
 
 	public void SetWheelInfo(in float radius, in float separation)
 	{
-		this.odometry = new Odometry(radius, separation);
-		this.odometry.SetMotorControl(this);
+		this.odometry = new Odometry(this, radius, separation);
 	}
 
 	public void SetPID(in float p, in float i, in float d)
 	{
-		pidGainP = p;
-		pidGainI = i;
-		pidGainD = d;
+		_pidGainP = p;
+		_pidGainI = i;
+		_pidGainD = d;
 	}
 
-	public void AddWheelInfo(in WheelLocation location, in GameObject targetMotorObject)
+	public void AttachWheel(in WheelLocation location, in GameObject targetMotorObject)
 	{
 		var motor = new Motor(targetMotorObject);
-		motor.SetPID(pidGainP, pidGainI, pidGainD);
+		motor.SetPID(_pidGainP, _pidGainI, _pidGainD);
 
 		wheelList[location] = motor;
 	}
@@ -99,14 +98,14 @@ public class MotorControl
 			{
 				motor.Feedback.SetMotionRotating(isRotating);
 
-				if (wheel.Key.Equals(WheelLocation.LEFT) || wheel.Key.Equals(WheelLocation.REAR_LEFT))
-				{
-					motor.SetVelocityTarget(angularVelocityLeft);
-				}
-
 				if (wheel.Key.Equals(WheelLocation.RIGHT) || wheel.Key.Equals(WheelLocation.REAR_RIGHT))
 				{
 					motor.SetVelocityTarget(angularVelocityRight);
+				}
+
+				if (wheel.Key.Equals(WheelLocation.LEFT) || wheel.Key.Equals(WheelLocation.REAR_LEFT))
+				{
+					motor.SetVelocityTarget(angularVelocityLeft);
 				}
 			}
 		}
