@@ -25,6 +25,7 @@ public class MotorControl
 	private float _pidGainP, _pidGainI, _pidGainD;
 
 	private Odometry odometry = null;
+
 	#endregion
 
 	public void Reset()
@@ -87,25 +88,31 @@ public class MotorControl
 
 	/// <summary>Set motor velocity</summary>
 	/// <remarks>degree per second</remarks>
+	private sbyte _rotationDirection = 0;
 	private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)
 	{
-		var isRotating = (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight));
+		if (Mathf.Sign(angularVelocityLeft) == Mathf.Sign(angularVelocityRight))
+		{
+			_rotationDirection = 0;
+		}
+		else if (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight))
+		{
+			_rotationDirection = (sbyte)((angularVelocityLeft > angularVelocityRight) ? 1 : -1);
+		}
 
 		foreach (var wheel in wheelList)
 		{
 			var motor = wheel.Value;
 			if (motor != null)
 			{
-				motor.Feedback.SetMotionRotating(isRotating);
-
 				if (wheel.Key.Equals(WheelLocation.RIGHT) || wheel.Key.Equals(WheelLocation.REAR_RIGHT))
 				{
-					motor.SetVelocityTarget(angularVelocityRight);
+					motor.SetVelocityTarget(angularVelocityRight, false);
 				}
 
 				if (wheel.Key.Equals(WheelLocation.LEFT) || wheel.Key.Equals(WheelLocation.REAR_LEFT))
 				{
-					motor.SetVelocityTarget(angularVelocityLeft);
+					motor.SetVelocityTarget(angularVelocityLeft, false);
 				}
 			}
 		}
@@ -115,30 +122,60 @@ public class MotorControl
 	/// <remarks>radian per second</remarks>
 	public bool GetCurrentVelocity(in WheelLocation location, out float angularVelocity)
 	{
-		angularVelocity = 0;
 		var motor = wheelList[location];
 		if (motor != null)
 		{
-			angularVelocity = motor.GetCurrentVelocity();
+			angularVelocity = motor.GetCurrentAngularVelocity();
 			return true;
 		}
+		angularVelocity = float.NaN;
 		return false;
 	}
 
-	public void Update(in float duration)
+	public bool IsDirectionChanged()
 	{
+		if (_rotationDirection != 0)
+		{
+			var allVelocityStopped = true;
+			foreach (var wheel in wheelList)
+			{
+				var motor = wheel.Value;
+				if (motor != null)
+				{
+					var currentAngularVelocity = motor.GetCurrentAngularVelocity();
+					if (Mathf.Abs(currentAngularVelocity) > Quaternion.kEpsilon)
+					{
+						allVelocityStopped &= false;
+					}
+				}
+			}
+
+			if (allVelocityStopped == false)
+			{
+				_rotationDirection = 0;
+			}
+			else
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor = null)
+	{
+		var decreaseVelocity = IsDirectionChanged();
+
 		foreach (var wheel in wheelList)
 		{
 			var motor = wheel.Value;
 			if (motor != null)
 			{
-				motor.Update(duration);
+				motor.Update(duration, decreaseVelocity);
 			}
 		}
-	}
 
-	public bool UpdateOdometry(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor)
-	{
 		return (odometry != null) ? odometry.Update(odomMessage, duration, imuSensor) : false;
 	}
 }
