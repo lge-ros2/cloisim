@@ -28,6 +28,13 @@ public class MotorControl
 
 	#endregion
 
+	private Transform _baseTransform = null;
+
+	public MotorControl(in Transform controllerTransform)
+	{
+		_baseTransform = controllerTransform;
+	}
+
 	public void Reset()
 	{
 		if (odometry != null)
@@ -107,12 +114,12 @@ public class MotorControl
 			{
 				if (wheel.Key.Equals(WheelLocation.RIGHT) || wheel.Key.Equals(WheelLocation.REAR_RIGHT))
 				{
-					motor.SetVelocityTarget(angularVelocityRight, false);
+					motor.SetVelocityTarget(angularVelocityRight);
 				}
 
 				if (wheel.Key.Equals(WheelLocation.LEFT) || wheel.Key.Equals(WheelLocation.REAR_LEFT))
 				{
-					motor.SetVelocityTarget(angularVelocityLeft, false);
+					motor.SetVelocityTarget(angularVelocityLeft);
 				}
 			}
 		}
@@ -132,40 +139,37 @@ public class MotorControl
 		return false;
 	}
 
-	public bool IsDirectionChanged()
+	public float _prevPositionY = 0;
+
+	public bool IsDirectionChanged(in float duration)
 	{
+		var isChanged = false;
 		if (_rotationDirection != 0)
 		{
-			var allVelocityStopped = true;
-			foreach (var wheel in wheelList)
-			{
-				var motor = wheel.Value;
-				if (motor != null)
-				{
-					var currentAngularVelocity = motor.GetCurrentAngularVelocity();
-					if (Mathf.Abs(currentAngularVelocity) > Quaternion.kEpsilon)
-					{
-						allVelocityStopped &= false;
-					}
-				}
-			}
+			var rotationVelocity = Mathf.DeltaAngle(_prevPositionY, _baseTransform.position.y) / duration;
 
-			if (allVelocityStopped == false)
+			Debug.Log(rotationVelocity * Mathf.Deg2Rad);
+
+			var allVelocityStopped = (Mathf.Abs(rotationVelocity) < Vector3.kEpsilon) ? true : false;
+
+			if (allVelocityStopped)
 			{
 				_rotationDirection = 0;
 			}
 			else
 			{
-				return true;
+				isChanged = true;
 			}
 		}
 
-		return false;
+		_prevPositionY = _baseTransform.position.y;
+
+		return isChanged;
 	}
 
 	public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor = null)
 	{
-		var decreaseVelocity = IsDirectionChanged();
+		var decreaseVelocity = IsDirectionChanged(duration);
 
 		foreach (var wheel in wheelList)
 		{

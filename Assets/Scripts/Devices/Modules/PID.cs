@@ -61,11 +61,13 @@ public class PID
 		if (iTerm > _integralMax)
 		{
 			iTerm = _integralMax;
+			// UnityEngine.Debug.Log("MAX=" + iTerm);
 			_integralError = iTerm / _iGain;
 		}
 		else if (iTerm < _integralMin)
 		{
 			iTerm = _integralMin;
+			// UnityEngine.Debug.Log("MIN=" + iTerm);
 			_integralError = iTerm / _iGain;
 		}
 
@@ -78,6 +80,7 @@ public class PID
 
 		var cmd = -pTerm - iTerm - dTerm;
 
+		// UnityEngine.Debug.Log("cmd=" + cmd + " cmdMin=" + _cmdMin + " cmdMax=" + _cmdMax);
 		return UnityEngine.Mathf.Clamp(cmd, _cmdMin, _cmdMax);
 	}
 }

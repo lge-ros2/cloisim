@@ -32,7 +32,6 @@ public class Motor : Articulation
 		_prevJointPosition = 0;
 	}
 
-
 	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
 	{
 		_pidControl = new PID(pFactor, iFactor, dFactor, 10, -10, 100, -100);
@@ -53,11 +52,9 @@ public class Motor : Articulation
 	// private bool _isRotatingMotion = false;
 	/// <summary>Set Target Velocity wmotorLeftith PID control</summary>
 	/// <remarks>degree per second</remarks>
-	public void SetVelocityTarget(in float targetAngularVelocity, in bool isRotating = false)
+	public void SetVelocityTarget(in float targetAngularVelocity)
 	{
 		_enable = (IsZero(targetAngularVelocity) || float.IsInfinity(targetAngularVelocity)) ? false : true;
-
-
 		_targetAngularVelocity = targetAngularVelocity;
 	}
 
@@ -89,13 +86,13 @@ public class Motor : Articulation
 		else
 		{
 			var decelVelocity = GetDecelerationVelocity();
-			// Debug.Log("Update disable motor :" + _currentMotorVelocity.ToString("F5") + ", " + decelVelocity.ToString("F6"));
+			// Debug.Log("decelVelocity current:" + _currentMotorVelocity.ToString("F5") + ", decel: " + decelVelocity.ToString("F6"));
 			Stop(decelVelocity);
 		}
 	}
 
 	// in Deg
-	private float GetDecelerationVelocity(in float DecreasingVelocityLevel = 30f)
+	private float GetDecelerationVelocity(in float DecreasingVelocityLevel = 10f)
 	{
 		var decelerationVelocity = _currentMotorVelocity - Mathf.Sign(_currentMotorVelocity) * DecreasingVelocityLevel;
 		if (Mathf.Abs(decelerationVelocity) <= DecreasingVelocityLevel)
@@ -122,18 +119,14 @@ public class Motor : Articulation
 	/// <remarks>degree per second</remarks>
 	private void SolveAngularVelocity(in float duration)
 	{
-		var motorVelocity = 0f;
-		if (IsZero(_targetAngularVelocity) == false)
-		{
-			// calculate velocity using joint position is more accurate than joint velocity
-			var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
-			motorVelocity = Mathf.DeltaAngle(_prevJointPosition, jointPosition) / duration;
-			// Debug.LogFormat("prv:{0:F5} cur:{1:F5} vel:{2:F5}", _prevJointPosition, jointPosition, motorVelocity);
-			_prevJointPosition = jointPosition;
-		}
+		// calculate velocity using joint position is more accurate than joint velocity
+		var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
+		var motorVelocity = Mathf.DeltaAngle(_prevJointPosition, jointPosition) / duration;
+		// Debug.LogFormat("prv:{0:F5} cur:{1:F5} vel:{2:F5}", _prevJointPosition, jointPosition, motorVelocity);
+		_prevJointPosition = jointPosition;
 
 		var sampledVelocity = Mathf.Sign(motorVelocity) * Mathf.Floor(Mathf.Abs(motorVelocity) / WheelResolution) * WheelResolution;
-		// Debug.LogFormat("motvel:{0:F5} filvel:{1:F5}", motorVelocity, sampledVelocity);
+		// Debug.LogFormat("prv={0:F5} cur={1:F5} vel={2:F5} sampVel={3:F5}", _prevJointPosition, jointPosition, motorVelocity, sampledVelocity);
 
 		_currentMotorVelocity = (Mathf.Abs(sampledVelocity) < Quaternion.kEpsilon) ? 0 : sampledVelocity;
 	}
