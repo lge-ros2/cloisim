@@ -192,26 +192,87 @@ public class Articulation
 			return;
 		}
 
+		SetDrive(drive);
+
+		var drivceAxis = GetDriveAxis();
 		// Debug.LogWarningFormat("targetVelocity={0} targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
 
-		switch (drive.driveType)
+		if (drive.driveType == ArticulationDriveType.Force || drive.driveType == ArticulationDriveType.Target)
 		{
-			case ArticulationDriveType.Force:
-				drive.target = targetPosition;
-				drive.targetVelocity = targetVelocity;
-				break;
-			case ArticulationDriveType.Target:
-				drive.target = targetPosition;
-				break;
-			case ArticulationDriveType.Velocity:
-				drive.targetVelocity = targetVelocity;
-				break;
-			default:
-				Debug.LogWarning("ArticulationDriveType should be Target, Velocity or Force");
-				return;
+			_jointBody.SetDriveTarget(drivceAxis, targetPosition);
 		}
 
-		SetDrive(drive);
+		if (drive.driveType == ArticulationDriveType.Force || drive.driveType == ArticulationDriveType.Velocity)
+		{
+			_jointBody.SetDriveTargetVelocity(drivceAxis, targetVelocity);
+		}
+	}
+
+	private ArticulationDriveAxis GetDriveAxis()
+	{
+		var axis = new ArticulationDriveAxis();
+
+		switch (_jointType)
+		{
+			case ArticulationJointType.RevoluteJoint:
+				axis = ArticulationDriveAxis.X;
+				break;
+
+			case ArticulationJointType.PrismaticJoint:
+
+				if (_jointBody.linearLockX == ArticulationDofLock.LockedMotion &&
+					_jointBody.linearLockY == ArticulationDofLock.LockedMotion)
+				{
+					axis = ArticulationDriveAxis.Z;
+				}
+				else if (_jointBody.linearLockY == ArticulationDofLock.LockedMotion &&
+						 _jointBody.linearLockZ == ArticulationDofLock.LockedMotion)
+				{
+					axis = ArticulationDriveAxis.X;
+				}
+				else if (_jointBody.linearLockX == ArticulationDofLock.LockedMotion &&
+						 _jointBody.linearLockZ == ArticulationDofLock.LockedMotion)
+				{
+					axis = ArticulationDriveAxis.Y;
+				}
+				else
+				{
+					Debug.LogWarning("Wrong Joint configuration!!! -> " + _jointBody.name);
+					goto default;
+				}
+				break;
+
+			case ArticulationJointType.SphericalJoint:
+
+				if (_jointBody.swingYLock == ArticulationDofLock.LockedMotion &&
+					_jointBody.swingZLock == ArticulationDofLock.LockedMotion)
+				{
+					axis = ArticulationDriveAxis.X;
+				}
+				else if (_jointBody.swingYLock == ArticulationDofLock.LockedMotion &&
+						 _jointBody.twistLock == ArticulationDofLock.LockedMotion)
+				{
+					axis = ArticulationDriveAxis.Z;
+				}
+				else if (_jointBody.swingZLock == ArticulationDofLock.LockedMotion &&
+						 _jointBody.twistLock == ArticulationDofLock.LockedMotion)
+				{
+					axis = ArticulationDriveAxis.Y;
+				}
+				else
+				{
+					Debug.LogWarning("Wrong Joint configuration!!! -> " + _jointBody.name);
+					goto default;
+				}
+				break;
+
+			default:
+				Debug.LogWarning("GetDrive() unsupported joint type: " + _jointType);
+				axis = ArticulationDriveAxis.X;
+				break;
+		}
+
+		return axis;
 	}
 
 	private ArticulationDrive GetDrive()
@@ -310,7 +371,6 @@ public class Articulation
 				{
 					Debug.LogWarning("Wrong Joint configuration!!! -> " + _jointBody.name);
 				}
-
 				break;
 
 			case ArticulationJointType.SphericalJoint:
@@ -334,7 +394,6 @@ public class Articulation
 				{
 					Debug.LogWarning("Wrong Joint configuration!!! -> " + _jointBody.name);
 				}
-
 				break;
 
 			default:
