@@ -38,7 +38,7 @@ namespace SDF
 				}
 			}
 
-			public void SetJointTarget(in float targetAxis1, in float targetAxis2, in int targetFrame = 0)
+			public void SetJointPoseTarget(in float targetAxis1, in float targetAxis2, in int targetFrame = 0)
 			{
 				if (poseControl != null)
 				{

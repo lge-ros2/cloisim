@@ -179,7 +179,7 @@ namespace SDF
 						}
 					}
 
-					linkHelper.SetJointTarget(axisSpringReference, axis2SpringReference);
+					linkHelper.SetJointPoseTarget(axisSpringReference, axis2SpringReference);
 
 					// set adjusted position for pose control
 					var localPosition = linkHelper.transform.localPosition;
