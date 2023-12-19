@@ -46,10 +46,15 @@ public partial class Odometry
 		rollingMeanOdomTAngularVelocity.Reset();
 	}
 
+	private bool IsZero(in float value)
+	{
+		return Mathf.Abs(value) < Quaternion.kEpsilon;
+	}
+
 	/// <summary>Calculate odometry on this robot</summary>
 	/// <remarks>rad per second for `angularVelocity`</remarks>
 	/// <remarks>rad per second for `theta`</remarks>
-	void CalculateOdometry(in float angularVelocityLeftWheel, in float angularVelocityRightWheel, in float duration, in float deltaTheta)
+	private void CalculateOdometry(in float angularVelocityLeftWheel, in float angularVelocityRightWheel, in float duration, in float deltaTheta)
 	{
 		// circumference of wheel [rad] per step time.
 		var wheelCircumLeft = angularVelocityLeftWheel * duration;
@@ -59,14 +64,14 @@ public partial class Odometry
 
 		// compute odometric pose
 		var poseLinear = wheelInfo.wheelRadius * (wheelCircumLeft + wheelCircumRight) * 0.5f;
-		poseLinear = Mathf.Approximately(poseLinear, Quaternion.kEpsilon) ? 0 : poseLinear;
+		poseLinear = IsZero(poseLinear) ? 0 : poseLinear;
 
 		var halfDeltaTheta = deltaTheta * 0.5f;
 		var poseZ = poseLinear * Mathf.Cos(_odomPose.y + halfDeltaTheta);
-		poseZ = Mathf.Approximately(poseZ, Quaternion.kEpsilon) ? 0 : poseZ;
+		poseZ = IsZero(poseZ) ? 0 : poseZ;
 
 		var poseX = poseLinear * Mathf.Sin(_odomPose.y + halfDeltaTheta);
-		poseX = Mathf.Approximately(poseX, Quaternion.kEpsilon) ? 0 : poseX;
+		poseX = IsZero(poseX) ? 0 : poseX;
 
 		_odomPose.z += poseZ;
 		_odomPose.x += poseX;
@@ -80,7 +85,7 @@ public partial class Odometry
 
 	/// <summary>Calculate odometry on this robot</summary>
 	/// <remarks>rad per second for `angularVelocity`</remarks>
-	void CalculateOdometry(in float angularVelocityLeftWheel, in float angularVelocityRightWheel, in float duration)
+	private void CalculateOdometry(in float angularVelocityLeftWheel, in float angularVelocityRightWheel, in float duration)
 	{
 		var linearVelocityLeftWheel = angularVelocityLeftWheel * wheelInfo.wheelRadius;
 		var linearVelocityRightWheel = angularVelocityRightWheel * wheelInfo.wheelRadius;
@@ -88,14 +93,14 @@ public partial class Odometry
 		var sumLeftRight = linearVelocityLeftWheel + linearVelocityRightWheel;
 		var diffRightLeft = linearVelocityRightWheel - linearVelocityLeftWheel;
 
-		_odomTranslationalVelocity = Mathf.Approximately(sumLeftRight, Quaternion.kEpsilon) ? 0 : (sumLeftRight * 0.5f);
-		_odomRotationalVelocity = Mathf.Approximately(diffRightLeft, Quaternion.kEpsilon) ? 0 : (diffRightLeft * wheelInfo.inversedWheelSeparation);
+		_odomTranslationalVelocity = IsZero(sumLeftRight) ? 0 : (sumLeftRight * 0.5f);
+		_odomRotationalVelocity = IsZero(diffRightLeft) ? 0 : (diffRightLeft * wheelInfo.inversedWheelSeparation);
 
 		var linear = _odomTranslationalVelocity * duration;
 		var angular = _odomRotationalVelocity * duration;
 
 		// Acculumate odometry:
-		if (Mathf.Abs(angular) < Quaternion.kEpsilon) // RungeKutta2
+		if (IsZero(angular)) // RungeKutta2
 		{
 			var direction = _odomPose.y + angular * 0.5f;
 
@@ -114,6 +119,8 @@ public partial class Odometry
 			_odomPose.z += r * (Mathf.Sin(_odomPose.y) - Mathf.Sin(headingOld));
 			_odomPose.x += -r * (Mathf.Cos(_odomPose.y) - Mathf.Cos(headingOld));
 		}
+
+		// Debug.Log(_odomPose.y + ", " + angular);
 	}
 
 	public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor)
@@ -139,21 +146,12 @@ public partial class Odometry
 		if (imuSensor != null)
 		{
 			var imuOrientation = imuSensor.GetOrientation();
-			var yaw = imuOrientation.y * Mathf.Deg2Rad;
-			var deltaThetaImu = yaw - _lastImuYaw;
+			var yaw = imuOrientation.y;
+			var deltaThetaImu = Mathf.DeltaAngle(_lastImuYaw, yaw);
 			_lastImuYaw = yaw;
 
-			if (deltaThetaImu > _PI)
-			{
-				deltaThetaImu -= _2_PI;
-			}
-			else if (deltaThetaImu < -_PI)
-			{
-				deltaThetaImu += _2_PI;
-			}
-
-			deltaThetaImu = Mathf.Approximately(deltaThetaImu, Quaternion.kEpsilon) ? 0 : deltaThetaImu;
-
+			deltaThetaImu = IsZero(deltaThetaImu) ? 0 : deltaThetaImu * Mathf.Deg2Rad;
+			// Debug.Log("deltaThetaImu =" + deltaThetaImu);
 			CalculateOdometry(angularVelocityLeft, angularVelocityRight, duration, deltaThetaImu);
 		}
 		else
