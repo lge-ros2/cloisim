@@ -114,12 +114,12 @@ public class MotorControl
 			{
 				if (wheel.Key.Equals(WheelLocation.RIGHT) || wheel.Key.Equals(WheelLocation.REAR_RIGHT))
 				{
-					motor.SetVelocityTarget(angularVelocityRight);
+					motor.SetTargetVelocity(angularVelocityRight);
 				}
 
 				if (wheel.Key.Equals(WheelLocation.LEFT) || wheel.Key.Equals(WheelLocation.REAR_LEFT))
 				{
-					motor.SetVelocityTarget(angularVelocityLeft);
+					motor.SetTargetVelocity(angularVelocityLeft);
 				}
 			}
 		}

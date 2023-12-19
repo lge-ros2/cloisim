@@ -12,8 +12,8 @@ namespace SDF
 	public class Joints : Entities<Joint>
 	{
 		private const string TARGET_TAG = "joint";
-		public Joints() : base(TARGET_TAG) {}
-		public Joints(XmlNode _node) : base(_node, TARGET_TAG) {}
+		public Joints() : base(TARGET_TAG) { }
+		public Joints(XmlNode _node) : base(_node, TARGET_TAG) { }
 	}
 
 	public class Axis
@@ -30,15 +30,16 @@ namespace SDF
 		/// <summary>specifies the limits of this joint</summary>
 		public class Limit
 		{
-			public double lower = -1e+16; // Specifies the lower joint limit (radians for revolute joints, meters for prismatic joints). Omit if joint is continuous.
-			public double upper = 1e+16; // Specifies the upper joint limit (radians for revolute joints, meters for prismatic joints). Omit if joint is continuous.
-			public double effort = -1; // A value for enforcing the maximum joint effort applied. Limit is not enforced if value is negative.
-			public double velocity = -1; // (not implemented) An attribute for enforcing the maximum joint velocity.
+			public double lower = double.NegativeInfinity; // Specifies the lower joint limit (radians for revolute joints, meters for prismatic joints). Omit if joint is continuous.
+			public double upper = double.PositiveInfinity; // Specifies the upper joint limit (radians for revolute joints, meters for prismatic joints). Omit if joint is continuous.
+			public double effort = double.PositiveInfinity; // A value for enforcing the maximum joint effort applied. Limit is not enforced if value is negative.
+			public double velocity = double.PositiveInfinity; // An attribute for enforcing the maximum joint velocity.
 			public double stiffness = 1e+08; // Joint stop stiffness.
 			public double dissipation = 1; // Joint stop dissipation.
-			public bool Use()
+
+			public bool HasJoint()
 			{
-				return (lower.Equals(-1e+16) && upper.Equals(1e+16))? false:true;
+				return (double.IsInfinity(lower) && double.IsInfinity(upper)) ? false : true;
 			}
 		}
 
@@ -166,8 +167,15 @@ namespace SDF
 
 					if (IsValidNode("axis/limit"))
 					{
-						axis.limit.lower = GetValue<double>("axis/limit/lower");
-						axis.limit.upper = GetValue<double>("axis/limit/upper");
+						if (IsValidNode("axis/limit/lower"))
+						{
+							axis.limit.lower = GetValue<double>("axis/limit/lower");
+						}
+
+						if (IsValidNode("axis/limit/upper"))
+						{
+							axis.limit.upper = GetValue<double>("axis/limit/upper");
+						}
 
 						if (IsValidNode("axis/limit/effort"))
 						{

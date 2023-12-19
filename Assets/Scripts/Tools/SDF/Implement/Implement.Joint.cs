@@ -83,12 +83,13 @@ namespace SDF
 
 				var drive = new UE.ArticulationDrive();
 
-				if (axis.limit.Use())
+				if (axis.limit.HasJoint())
 				{
+					UE.Debug.LogWarningFormat("limit uppper{0}, lower{1}", axis.limit.upper, axis.limit.lower);
 					SetRevoluteArticulationDriveLimit(ref drive, axis.limit);
 				}
 
-				drive.forceLimit = (axis.limit.effort > -1d) ? (float)axis.limit.effort : float.MaxValue;
+				drive.forceLimit = (double.IsInfinity(axis.limit.effort)) ? float.MaxValue : (float)axis.limit.effort;
 
 				if (axis.dynamics != null)
 				{
@@ -112,7 +113,7 @@ namespace SDF
 						ReverseArticulationBodyAxis(body, UE.Vector3.forward);
 					}
 					body.xDrive = drive;
-					body.twistLock = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.twistLock = (axis.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.swingYLock = UE.ArticulationDofLock.LockedMotion;
 					body.swingZLock = UE.ArticulationDofLock.LockedMotion;
 				}
@@ -124,7 +125,7 @@ namespace SDF
 					}
 					body.yDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
-					body.swingYLock = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.swingYLock = (axis.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.swingZLock = UE.ArticulationDofLock.LockedMotion;
 				}
 				else if (jointAxis.Equals(UE.Vector3.forward) || jointAxis.Equals(UE.Vector3.back))
@@ -136,7 +137,7 @@ namespace SDF
 					body.zDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
 					body.swingYLock = UE.ArticulationDofLock.LockedMotion;
-					body.swingZLock = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.swingZLock = (axis.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 				else
 				{
@@ -150,12 +151,12 @@ namespace SDF
 
 				var drive = new UE.ArticulationDrive();
 
-				if (axis2.limit.Use())
+				if (axis2.limit.HasJoint())
 				{
 					SetRevoluteArticulationDriveLimit(ref drive, axis2.limit);
 				}
 
-				drive.forceLimit = (axis2.limit.effort > -1d) ? (float)axis2.limit.effort : float.MaxValue;
+				drive.forceLimit = (double.IsInfinity(axis2.limit.effort)) ? float.MaxValue : (float)axis2.limit.effort;
 
 				var joint2Axis = SDF2Unity.GetAxis(axis2.xyz);
 				if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
@@ -165,7 +166,7 @@ namespace SDF
 						ReverseArticulationBodyAxis(body, UE.Vector3.forward);
 					}
 					body.xDrive = drive;
-					body.twistLock = (axis2.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.twistLock = (axis2.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 				else if (joint2Axis.Equals(UE.Vector3.up) || joint2Axis.Equals(UE.Vector3.down))
 				{
@@ -174,7 +175,7 @@ namespace SDF
 						ReverseArticulationBodyAxis(body, UE.Vector3.right);
 					}
 					body.yDrive = drive;
-					body.swingYLock = (axis2.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.swingYLock = (axis2.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 				else if (joint2Axis.Equals(UE.Vector3.forward) || joint2Axis.Equals(UE.Vector3.back))
 				{
@@ -183,7 +184,7 @@ namespace SDF
 						ReverseArticulationBodyAxis(body, UE.Vector3.up);
 					}
 					body.zDrive = drive;
-					body.swingZLock = (axis2.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.swingZLock = (axis2.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 				else
 				{
@@ -221,14 +222,13 @@ namespace SDF
 
 				var drive = new UE.ArticulationDrive();
 
-				if (axis.limit.Use())
+				if (axis.limit.HasJoint())
 				{
-					// Debug.LogWarningFormat("limit uppper{0}, lower{1}", axis.limit.upper, axis.limit.lower);
 					drive.lowerLimit = (float)axis.limit.lower;
 					drive.upperLimit = (float)axis.limit.upper;
 				}
 
-				drive.forceLimit = (axis.limit.effort > -1d) ? (float)axis.limit.effort : float.MaxValue;
+				drive.forceLimit = (double.IsInfinity(axis.limit.effort)) ? float.MaxValue : (float)axis.limit.effort;
 
 				if (axis.dynamics != null)
 				{
@@ -254,7 +254,7 @@ namespace SDF
 					}
 
 					body.xDrive = drive;
-					body.linearLockX = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.linearLockX = (axis.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.linearLockY = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockZ = UE.ArticulationDofLock.LockedMotion;
 				}
@@ -267,7 +267,7 @@ namespace SDF
 
 					body.yDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
-					body.linearLockY = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.linearLockY = (axis.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.linearLockZ = UE.ArticulationDofLock.LockedMotion;
 				}
 				else if (jointAxis.Equals(UE.Vector3.forward) || jointAxis.Equals(UE.Vector3.back))
@@ -280,7 +280,7 @@ namespace SDF
 					body.zDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockY = UE.ArticulationDofLock.LockedMotion;
-					body.linearLockZ = (axis.limit.Use()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.linearLockZ = (axis.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 				else
 				{

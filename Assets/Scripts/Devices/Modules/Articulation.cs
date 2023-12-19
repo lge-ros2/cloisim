@@ -13,6 +13,8 @@ public class Articulation
 
 	public ArticulationJointType Type => _jointType;
 
+	private float _velocityLimit = float.NaN;
+
 	public Articulation(in ArticulationBody jointBody)
 	{
 		if (jointBody != null)
@@ -27,6 +29,11 @@ public class Articulation
 	public Articulation(in GameObject target)
 		: this(target.GetComponentInChildren<ArticulationBody>())
 	{
+	}
+
+	public void SetVelocityLimit(in float value)
+	{
+		_velocityLimit = value;
 	}
 
 	public void Reset()
@@ -50,6 +57,18 @@ public class Articulation
 		return (Type == ArticulationJointType.RevoluteJoint || Type == ArticulationJointType.PrismaticJoint) ? true : false;
 	}
 
+	private float GetLimitedVelocity(in float velocity)
+	{
+		if (!float.IsNaN(_velocityLimit) && Mathf.Abs(velocity) > Mathf.Abs(_velocityLimit))
+		{
+			return Mathf.Sign(velocity) * Mathf.Abs(_velocityLimit);
+		}
+		else
+		{
+			return velocity;
+		}
+	}
+
 	protected void SetJointVelocity(in float velocity, in int targetDegree = 0)
 	{
 		if (_jointBody != null)
@@ -57,7 +76,7 @@ public class Articulation
 			var jointVelocity = _jointBody.jointVelocity;
 			if (targetDegree < jointVelocity.dofCount)
 			{
-				jointVelocity[targetDegree] = velocity;
+				jointVelocity[targetDegree] = GetLimitedVelocity(velocity);
 				_jointBody.jointVelocity = jointVelocity;
 			}
 		}
@@ -204,7 +223,8 @@ public class Articulation
 
 		if (drive.driveType == ArticulationDriveType.Force || drive.driveType == ArticulationDriveType.Velocity)
 		{
-			_jointBody.SetDriveTargetVelocity(drivceAxis, targetVelocity);
+			var limitedTargetVelocity = GetLimitedVelocity(targetVelocity);
+			_jointBody.SetDriveTargetVelocity(drivceAxis, limitedTargetVelocity);
 		}
 	}
 

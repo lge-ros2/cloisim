@@ -31,6 +31,10 @@ namespace SDF
 			private UE.Vector3 jointAxis = UE.Vector3.zero;
 			private UE.Vector3 jointAxis2 = UE.Vector3.zero;
 
+			private float _jointAxisLimitVelocity = float.NaN;
+
+			private float _jointAxis2LimitVelocity = float.NaN;
+
 			private List<UE.ContactPoint> collisionContacts = new List<UE.ContactPoint>();
 
 			private SensorDevices.Battery battery = null;
@@ -52,6 +56,18 @@ namespace SDF
 			{
 				get => this.jointChildLinkName;
 				set => this.jointChildLinkName = value;
+			}
+
+			public float JointAxisLimitVelocity
+			{
+				get => this._jointAxisLimitVelocity;
+				set => this._jointAxisLimitVelocity = value;
+			}
+
+			public float JointAxis2LimitVelocity
+			{
+				get => this._jointAxis2LimitVelocity;
+				set => this._jointAxis2LimitVelocity = value;
 			}
 
 			public UE.Vector3 JointAxis

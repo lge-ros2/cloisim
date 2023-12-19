@@ -168,6 +168,11 @@ namespace SDF
 							else
 								axisSpringReference = SDF2Unity.CurveOrientation((float)joint.Axis.dynamics.spring_reference);
 						}
+
+						if (!double.IsInfinity(joint.Axis.limit.velocity))
+						{
+							linkHelper.JointAxisLimitVelocity = (float)joint.Axis.limit.velocity;
+						}
 					}
 
 					if (joint.Axis2 != null)
@@ -176,6 +181,11 @@ namespace SDF
 						if (joint.Axis2.dynamics != null)
 						{
 							axis2SpringReference = SDF2Unity.CurveOrientation((float)joint.Axis2.dynamics.spring_reference);
+						}
+
+						if (!double.IsInfinity(joint.Axis2.limit.velocity))
+						{
+							linkHelper.JointAxis2LimitVelocity = (float)joint.Axis2.limit.velocity;
 						}
 					}
 

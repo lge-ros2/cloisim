@@ -52,9 +52,10 @@ public class Motor : Articulation
 	// private bool _isRotatingMotion = false;
 	/// <summary>Set Target Velocity wmotorLeftith PID control</summary>
 	/// <remarks>degree per second</remarks>
-	public void SetVelocityTarget(in float targetAngularVelocity)
+	public void SetTargetVelocity(in float targetAngularVelocity)
 	{
 		_enable = (IsZero(targetAngularVelocity) || float.IsInfinity(targetAngularVelocity)) ? false : true;
+		
 		_targetAngularVelocity = targetAngularVelocity;
 	}
 
