@@ -147,9 +147,6 @@ public class MotorControl
 		if (_rotationDirection != 0)
 		{
 			var rotationVelocity = Mathf.DeltaAngle(_prevPositionY, _baseTransform.position.y) / duration;
-
-			Debug.Log(rotationVelocity * Mathf.Deg2Rad);
-
 			var allVelocityStopped = (Mathf.Abs(rotationVelocity) < Vector3.kEpsilon) ? true : false;
 
 			if (allVelocityStopped)
