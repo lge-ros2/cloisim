@@ -76,6 +76,7 @@ namespace SensorDevices
 					}
 
 					var articulation = new Articulation(childArticulationBody);
+					articulation.SetVelocityLimit(linkHelper.JointAxisLimitVelocity);
 
 					var jointState = new messages.JointState();
 					jointState.Name = targetJointName;

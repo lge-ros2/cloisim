@@ -25,13 +25,14 @@ namespace SensorDevices
 
 		private SensorDevices.Battery battery = null;
 
-		private MotorControl motorControl = new MotorControl();
-		public MotorControl MotorControl => this.motorControl;
+		private MotorControl _motorControl = null;
+		public MotorControl MotorControl => this._motorControl;
 
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
 			DeviceName = "MicomSensor";
+			_motorControl = new MotorControl(this.transform);
 		}
 
 		protected override void OnStart()
@@ -81,7 +82,7 @@ namespace SensorDevices
 				if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
 				{
 					var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
-					motorControl.AddWheelInfo(wheelLocation, motorObject);
+					_motorControl.AttachWheel(wheelLocation, motorObject);
 				}
 			}
 		}
@@ -112,15 +113,15 @@ namespace SensorDevices
 				if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
 				{
 					var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
-					motorControl.AddWheelInfo(wheelLocation, motorObject);
+					_motorControl.AttachWheel(wheelLocation, motorObject);
 				}
 			}
 		}
 
 		public void SetMotorConfiguration(in float wheelRadius, in float wheelSeparation, in float P, in float I, in float D)
 		{
-			motorControl.SetPID(P, I, D);
-			motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
+			_motorControl.SetPID(P, I, D);
+			_motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
 		}
 
 		public void SetUSS(in List<string> ussList)
@@ -216,9 +217,9 @@ namespace SensorDevices
 				imuSensor.Reset();
 			}
 
-			if (motorControl != null)
+			if (_motorControl != null)
 			{
-				motorControl.Reset();
+				_motorControl.Reset();
 			}
 		}
 
@@ -244,8 +245,9 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			if (motorControl == null || micomSensorData == null)
+			if (_motorControl == null || micomSensorData == null)
 			{
+				Debug.LogWarning("micomSensorData or motorControl is NULL");
 				return;
 			}
 
@@ -256,14 +258,16 @@ namespace SensorDevices
 				micomSensorData.Battery.Voltage = battery.Update(deltaTime);
 			}
 
-			motorControl.Update(deltaTime);
+			if (_motorControl.Update(micomSensorData.Odom, deltaTime, imuSensor) == false)
+			{
+				Debug.LogWarning("Update failed in MotorControl");
+			}
 
 			UpdateIMU();
 			UpdateUss();
 			UpdateIr();
 			UpdateBumper();
 
-			motorControl.UpdateOdometry(micomSensorData.Odom, deltaTime, imuSensor);
 			DeviceHelper.SetTime(micomSensorData.Time, DeviceHelper.GlobalClock.FixedSimTime);
 		}
 
