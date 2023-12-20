@@ -15,7 +15,6 @@ public class ObjectSpawning : MonoBehaviour
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private FollowingTargetList followingList = null;
 
-	// private Quaternion CylinderRotationAngle = Quaternion.AngleAxis(90, Vector3.forward);
 	private const float CylinderRotationAngle = 90;
 
 	private Dictionary<PropsType, GameObject> props = new Dictionary<PropsType, GameObject>();

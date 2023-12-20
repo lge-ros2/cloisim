@@ -132,10 +132,7 @@ public partial class Odometry
 		{
 			var diffRightLeft = angularVelocityRight - angularVelocityLeft;
 			var rotationVelocity = IsZero(diffRightLeft) ? 0 : (diffRightLeft * wheelInfo.wheelRadius * wheelInfo.inversedWheelSeparation);
-
 			var deltaTheta = rotationVelocity * duration;
-			// CalculateOdometry(angularVelocityLeft, angularVelocityRight, duration, deltaTheta);
-
 			// Debug.LogFormat("diff {0:F7}", deltaTheta - deltaThetaIMU);
 			CalculateOdometry(angularVelocityLeft, angularVelocityRight, duration);
 		}
