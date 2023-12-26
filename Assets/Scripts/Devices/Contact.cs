@@ -46,10 +46,8 @@ namespace SensorDevices
 	{
 		private messages.Contacts contacts = null;
 
-		public List<string> collision = new List<string>();
+		public string targetCollision = string.Empty;
 		public string topic = string.Empty;
-
-		private bool contacted = false;
 
 		protected override void OnAwake()
 		{
@@ -70,37 +68,68 @@ namespace SensorDevices
 		protected override void GenerateMessage()
 		{
 			DeviceHelper.SetCurrentTime(contacts.Time);
-			PushDeviceMessage<messages.Contacts>(contacts);
 			// if (contacts.contact.Count > 0)
 			// {
 			// 	Debug.Log(contacts.contact[0].Depths.Length + " : " + contacts.contact[0].Normals.Count);
 			// }
-			contacts.contact.Clear();
+			PushDeviceMessage<messages.Contacts>(contacts);
+		}
+
+		public string GetColliderParentName(in Collider collider)
+		{
+			return collider.transform.parent.name;
+		}
+
+		public string GetColliderName(in Collider collider)
+		{
+			var childName = collider.name;
+			var parentName = GetColliderParentName(collider);
+			return parentName + "::" + childName;
 		}
 
 		public void CollisionEnter(Collision other)
 		{
-			if (other.contactCount > 0)
+			for (var i = 0; i < other.contacts.Length; i++)
 			{
-				contacted = true;
+				var collisionContact = other.contacts[i];
+				var collision1 = GetColliderParentName(collisionContact.thisCollider);
+				var collision2 = GetColliderName(collisionContact.otherCollider);
+				// Debug.Log("CollisionEnter: " + collision1 + " <-> " + collision2);
+
+				if (string.Equals(collision1, targetCollision))
+				{
+					// find existing collision set
+					var foundContact = contacts.contact.Find(x => x.Collision1.Contains(collision1) && x.Collision2.Contains(collision2));
+					if (foundContact == null)
+					{
+						var newContact = new messages.Contact();
+						// newContact.Wrenchs // TODO: Need to be implemented;
+						newContact.World = "default";
+
+						newContact.Collision1 = collision1;
+						newContact.Collision2 = collision2;
+
+						newContact.Depths = new double[0];
+
+						contacts.contact.Add(newContact);
+					}
+				}
 			}
 		}
 
 		public void CollisionStay(Collision other)
 		{
-			var newContact = new messages.Contact();
-
-			// TODO: Need to be implemented;
-			// newContact.Wrenchs
-			newContact.Depths = new double[1];
-			newContact.World = "default";
-			DeviceHelper.SetCurrentTime(newContact.Time);
-
 			for (var i = 0; i < other.contacts.Length; i++)
 			{
 				var collisionContact = other.contacts[i];
-				var collision1 = collisionContact.thisCollider.name;
-				var collision2 = collisionContact.otherCollider.name;
+				var collision1 = GetColliderParentName(collisionContact.thisCollider);
+				if (!string.Equals(collision1, targetCollision))
+				{
+					continue;
+				}
+
+				var collision2 = GetColliderName(collisionContact.otherCollider);
+				// Debug.Log("CollsiionStay: " + collision1 + " " + collision2);
 
 				// find existing collision set
 				var existingContact = contacts.contact.Find(x => x.Collision1.Contains(collision1) && x.Collision2.Contains(collision2));
@@ -108,9 +137,8 @@ namespace SensorDevices
 				{
 					// Debug.Log("Existing!!");
 					var depths = existingContact.Depths;
-					var depthsLength = depths.Length;
-					Array.Resize(ref depths, depthsLength + 1);
-					depths[depthsLength] = collisionContact.separation;
+					Array.Resize(ref depths, depths.Length + 1);
+					depths[depths.Length - 1] = collisionContact.separation;
 					existingContact.Depths = depths;
 
 					var normal = new messages.Vector3d();
@@ -120,41 +148,36 @@ namespace SensorDevices
 					var position = new messages.Vector3d();
 					DeviceHelper.SetVector3d(position, collisionContact.point);
 					existingContact.Positions.Add(position);
+
+					DeviceHelper.SetCurrentTime(existingContact.Time);
+					// Debug.Log("CollisionStay: " + collision1 + " <-> " + collision2);
 				}
-				else
-				{
-					newContact.Collision1 = collisionContact.thisCollider.name;
-					newContact.Collision2 = collisionContact.otherCollider.name;
 
-					newContact.Depths[0] = collisionContact.separation;
-
-					var normal = new messages.Vector3d();
-					DeviceHelper.SetVector3d(normal, collisionContact.normal);
-					newContact.Normals.Add(normal);
-
-					var position = new messages.Vector3d();
-					DeviceHelper.SetVector3d(position, collisionContact.point);
-					newContact.Positions.Add(position);
-
-					contacts.contact.Add(newContact);
-				}
 				// Debug.DrawLine(collisionContact.point, collisionContact.normal, Color.white);
 			}
-			// Debug.Log(other.contactCount + "," + contacts.contact.Count);
-			// Debug.Log(contacts.contact[0].Depths.Length + " : " + contacts.contact[0].Normals.Count);
 		}
 
 		public void CollisionExit(Collision other)
 		{
-			if (other.contactCount == 0)
+			// Debug.Log("CollisionExit: " + other.contactCount + " ," + other.collider.name);
+			var collision2 = GetColliderName(other.collider);
+			var foundContacts = contacts.contact.FindAll(x => x.Collision2.Contains(collision2));
+
+			foreach (var foundContact in foundContacts)
 			{
-				contacted = false;
+				// Debug.Log("CollisionExit: Remove " + foundContact.Collision1 + " <-> " + foundContact.Collision2);
+				contacts.contact.Remove(foundContact);
 			}
+
+			// if (contacts.contact.Count == 0)
+			// {
+			// 	Debug.Log("CollisionExit: no contacts");
+			// }
 		}
 
 		public bool IsContacted()
 		{
-			return contacted;
+			return (contacts.contact.Count == 0) ? false : true;
 		}
 	}
 }

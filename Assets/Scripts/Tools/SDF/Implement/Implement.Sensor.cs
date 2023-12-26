@@ -258,7 +258,7 @@ namespace SDF
 
 				var contact = newSensorObject.AddComponent<SensorDevices.Contact>();
 				contact.DeviceName = GetFrameName(newSensorObject);
-				contact.collision = element.collision;
+				contact.targetCollision = element.collision;
 				contact.topic = element.topic;
 
 				var contactTrigger = targetObject.AddComponent<SensorDevices.ContactTrigger>();

@@ -122,19 +122,16 @@ public class MicomPlugin : CLOiSimPlugin
 			_micomSensor.SetMagnet(magnetList);
 		}
 
-		var targetContactName = GetPluginParameters().GetAttribute<string>("bumper", "contact");
-		_micomSensor.SetBumper(targetContactName);
-
-		if (GetPluginParameters().GetValues<string>("bumper/joint_name", out var bumperJointNameList))
+		if (GetPluginParameters().GetValues<string>("bumper/sensor", out var bumperList))
 		{
-			_micomSensor.SetBumperSensor(bumperJointNameList);
+			_micomSensor.SetBumper(bumperList);
 		}
 
-		var targetImuName = GetPluginParameters().GetValue<string>("imu");
-		if (!string.IsNullOrEmpty(targetImuName))
+		var targetImuSensorName = GetPluginParameters().GetValue<string>("imu");
+		if (!string.IsNullOrEmpty(targetImuSensorName))
 		{
 			// Debug.Log("Imu Sensor = " + targetImuName);
-			_micomSensor.SetIMU(targetImuName);
+			_micomSensor.SetIMU(targetImuSensorName);
 		}
 	}
 
