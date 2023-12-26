@@ -160,6 +160,10 @@ public class AddModel : MonoBehaviour
 				modelList.SetActive(false);
 				Main.CameraControl.BlockMouseWheelControl(false);
 			}
+			else if (Input.GetKeyUp(KeyCode.F3))
+			{
+				OnButtonClicked();
+			}
 		}
 	}
 }
