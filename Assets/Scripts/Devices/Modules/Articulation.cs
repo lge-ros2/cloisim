@@ -5,7 +5,6 @@
  */
 
 using UnityEngine;
-using System.Collections.Generic;
 
 public class Articulation
 {
@@ -14,6 +13,8 @@ public class Articulation
 
 	public ArticulationJointType Type => _jointType;
 
+	private float _velocityLimit = float.NaN;
+
 	public Articulation(in ArticulationBody jointBody)
 	{
 		if (jointBody != null)
@@ -21,11 +22,18 @@ public class Articulation
 			_jointBody = jointBody;
 			_jointType = jointBody.jointType;
 		}
+
+		Reset();
 	}
 
 	public Articulation(in GameObject target)
 		: this(target.GetComponentInChildren<ArticulationBody>())
 	{
+	}
+
+	public void SetVelocityLimit(in float value)
+	{
+		_velocityLimit = value;
 	}
 
 	public void Reset()
@@ -34,6 +42,8 @@ public class Articulation
 		{
 			_jointBody.velocity = Vector3.zero;
 			_jointBody.angularVelocity = Vector3.zero;
+
+			SetJointVelocity(0);
 		}
 	}
 
@@ -47,6 +57,18 @@ public class Articulation
 		return (Type == ArticulationJointType.RevoluteJoint || Type == ArticulationJointType.PrismaticJoint) ? true : false;
 	}
 
+	private float GetLimitedVelocity(in float velocity)
+	{
+		if (!float.IsNaN(_velocityLimit) && Mathf.Abs(velocity) > Mathf.Abs(_velocityLimit))
+		{
+			return Mathf.Sign(velocity) * Mathf.Abs(_velocityLimit);
+		}
+		else
+		{
+			return velocity;
+		}
+	}
+
 	protected void SetJointVelocity(in float velocity, in int targetDegree = 0)
 	{
 		if (_jointBody != null)
@@ -54,7 +76,7 @@ public class Articulation
 			var jointVelocity = _jointBody.jointVelocity;
 			if (targetDegree < jointVelocity.dofCount)
 			{
-				jointVelocity[targetDegree] = velocity;
+				jointVelocity[targetDegree] = GetLimitedVelocity(velocity);
 				_jointBody.jointVelocity = jointVelocity;
 			}
 		}
@@ -136,38 +158,18 @@ public class Articulation
 	/// <param name="target">angular velocity in degrees per second OR target position </param>
 	public void Drive(in float target, ArticulationDriveType driveType = ArticulationDriveType.Velocity)
 	{
-		if (_jointBody == null)
-		{
-			Debug.LogWarning("ArticulationBody is empty, please set target body first");
-			return;
-		}
-
-		if (target == float.NaN)
-		{
-			Debug.LogWarning("Invalid Value: target is NaN");
-			return;
-		}
-
-		// Arccording to document(https://docs.unity3d.com/2020.3/Documentation/ScriptReference/ArticulationDrive.html)
-		// F = stiffness * (currentPosition - target) - damping * (currentVelocity - targetVelocity).
-		var drive = GetDrive();
-
-		drive.driveType = driveType;
-
 		switch (driveType)
 		{
 			case ArticulationDriveType.Target:
-				drive.target = target;
+				Drive(float.NaN, target);
 				break;
 			case ArticulationDriveType.Velocity:
-				drive.targetVelocity = target;
+				Drive(target, float.NaN);
 				break;
 			default:
 				Debug.LogWarning("ArticulationDriveType should be Target/Velocity");
 				return;
 		}
-
-		SetDrive(drive);
 	}
 
 	/// <param name="targetVelocity">angular velocity in degrees per second.</param>
@@ -209,26 +211,88 @@ public class Articulation
 			return;
 		}
 
+		SetDrive(drive);
+
+		var drivceAxis = GetDriveAxis();
 		// Debug.LogWarningFormat("targetVelocity={0} targetPosition={1} Type={2}", targetVelocity, targetPosition, drive.driveType);
 
-		switch (drive.driveType)
+		if (drive.driveType == ArticulationDriveType.Force || drive.driveType == ArticulationDriveType.Target)
 		{
-			case ArticulationDriveType.Force:
-				drive.target = targetPosition;
-				drive.targetVelocity = targetVelocity;
-				break;
-			case ArticulationDriveType.Target:
-				drive.target = targetPosition;
-				break;
-			case ArticulationDriveType.Velocity:
-				drive.targetVelocity = targetVelocity;
-				break;
-			default:
-				Debug.LogWarning("ArticulationDriveType should be Target, Velocity or Force");
-				return;
+			_jointBody.SetDriveTarget(drivceAxis, targetPosition);
 		}
 
-		SetDrive(drive);
+		if (drive.driveType == ArticulationDriveType.Force || drive.driveType == ArticulationDriveType.Velocity)
+		{
+			var limitedTargetVelocity = GetLimitedVelocity(targetVelocity);
+			_jointBody.SetDriveTargetVelocity(drivceAxis, limitedTargetVelocity);
+		}
+	}
+
+	private ArticulationDriveAxis GetDriveAxis()
+	{
+		var axis = new ArticulationDriveAxis();
+
+		switch (_jointType)
+		{
+			case ArticulationJointType.RevoluteJoint:
+				axis = ArticulationDriveAxis.X;
+				break;
+
+			case ArticulationJointType.PrismaticJoint:
+
+				if (_jointBody.linearLockX == ArticulationDofLock.LockedMotion &&
+					_jointBody.linearLockY == ArticulationDofLock.LockedMotion)
+				{
+					axis = ArticulationDriveAxis.Z;
+				}
+				else if (_jointBody.linearLockY == ArticulationDofLock.LockedMotion &&
+						 _jointBody.linearLockZ == ArticulationDofLock.LockedMotion)
+				{
+					axis = ArticulationDriveAxis.X;
+				}
+				else if (_jointBody.linearLockX == ArticulationDofLock.LockedMotion &&
+						 _jointBody.linearLockZ == ArticulationDofLock.LockedMotion)
+				{
+					axis = ArticulationDriveAxis.Y;
+				}
+				else
+				{
+					Debug.LogWarning("Wrong Joint configuration!!! -> " + _jointBody.name);
+					goto default;
+				}
+				break;
+
+			case ArticulationJointType.SphericalJoint:
+
+				if (_jointBody.swingYLock == ArticulationDofLock.LockedMotion &&
+					_jointBody.swingZLock == ArticulationDofLock.LockedMotion)
+				{
+					axis = ArticulationDriveAxis.X;
+				}
+				else if (_jointBody.swingYLock == ArticulationDofLock.LockedMotion &&
+						 _jointBody.twistLock == ArticulationDofLock.LockedMotion)
+				{
+					axis = ArticulationDriveAxis.Z;
+				}
+				else if (_jointBody.swingZLock == ArticulationDofLock.LockedMotion &&
+						 _jointBody.twistLock == ArticulationDofLock.LockedMotion)
+				{
+					axis = ArticulationDriveAxis.Y;
+				}
+				else
+				{
+					Debug.LogWarning("Wrong Joint configuration!!! -> " + _jointBody.name);
+					goto default;
+				}
+				break;
+
+			default:
+				Debug.LogWarning("GetDrive() unsupported joint type: " + _jointType);
+				axis = ArticulationDriveAxis.X;
+				break;
+		}
+
+		return axis;
 	}
 
 	private ArticulationDrive GetDrive()
@@ -327,7 +391,6 @@ public class Articulation
 				{
 					Debug.LogWarning("Wrong Joint configuration!!! -> " + _jointBody.name);
 				}
-
 				break;
 
 			case ArticulationJointType.SphericalJoint:
@@ -351,7 +414,6 @@ public class Articulation
 				{
 					Debug.LogWarning("Wrong Joint configuration!!! -> " + _jointBody.name);
 				}
-
 				break;
 
 			default:

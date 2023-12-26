@@ -15,7 +15,7 @@ public class ObjectSpawning : MonoBehaviour
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private FollowingTargetList followingList = null;
 
-	private Quaternion _cylinderRotationAngle = Quaternion.AngleAxis(90, Vector3.forward);
+	private const float CylinderRotationAngle = 90;
 
 	private Dictionary<PropsType, GameObject> props = new Dictionary<PropsType, GameObject>();
 	public float maxRayDistance = 100;
@@ -23,6 +23,8 @@ public class ObjectSpawning : MonoBehaviour
 
 	private string scaleFactorString = "0.5";
 	private int propType = 0;
+
+	private const float UnitMass = 3f;
 
 	public void SetScaleFactor(in string value)
 	{
@@ -66,12 +68,9 @@ public class ObjectSpawning : MonoBehaviour
 			// Add On left click spawn
 			// selected prefab and align its rotation to a surface normal
 			var spawnData = GetPositionAndNormalOnClick();
-			if (spawnData[0] != Vector3.zero)
-			{
-				var scaleFactor = float.Parse(scaleFactorString);
-				var propsScale = Vector3.one * scaleFactor;
-				StartCoroutine(SpawnTargetObject((PropsType)propType, spawnData[0], spawnData[1], propsScale));
-			}
+			var scaleFactor = float.Parse(scaleFactorString);
+			var propsScale = Vector3.one * scaleFactor;
+			StartCoroutine(SpawnTargetObject((PropsType)propType, spawnData[0], spawnData[1], propsScale));
 		}
 		else if (leftControlPressed && Input.GetMouseButtonDown(1))
 		{
@@ -105,12 +104,7 @@ public class ObjectSpawning : MonoBehaviour
 					break;
 
 				case PropsType.CYLINDER:
-					mesh = ProceduralMesh.CreateCylinder(0.5f, 1, 20);
-
-					for (var index = 0; index < mesh.vertices.LongLength; index++)
-					{
-						mesh.vertices[index] = _cylinderRotationAngle * mesh.vertices[index];
-					}
+					mesh = ProceduralMesh.CreateCylinder(0.5f, 1, 20, CylinderRotationAngle);
 					break;
 
 				case PropsType.SPHERE:
@@ -146,7 +140,8 @@ public class ObjectSpawning : MonoBehaviour
 
 		if (mesh != null)
 		{
-			position.y += mesh.bounds.extents.y + 0.001f;
+			const float SpawningMargin = 0.001f;
+			position.y += mesh.bounds.max.y + SpawningMargin;
 		}
 
 		var spawanedObjectTransform = spawnedObject.transform;
@@ -161,7 +156,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	private float CalculateMass(in Vector3 scale)
 	{
-		return (scale.x + scale.y + scale.z) / 3;
+		return (scale.x + scale.y + scale.z) / 3 * UnitMass;
 	}
 
 	private GameObject CreateProps(in string name, in Mesh targetMesh, in Vector3 scale)
@@ -190,8 +185,8 @@ public class ObjectSpawning : MonoBehaviour
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
 		rigidBody.mass = 1;
-		rigidBody.drag = 2.5f;
-		rigidBody.angularDrag = 0.1f;
+		rigidBody.drag = 0.25f;
+		rigidBody.angularDrag = 1f;
 
 		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
 		navMeshObstacle.carving = true;

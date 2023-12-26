@@ -64,7 +64,7 @@ namespace SDF
 
 		private Camera ParseCamera(in int index = 1)
 		{
-			var cameraElement = "camera["+ index +"]";
+			var cameraElement = "camera[" + index + "]";
 			var camera = new Camera();
 			var pose = GetValue<string>(cameraElement + "/pose");
 			var relative_to = GetAttributeInPath<string>(cameraElement + "/pose", "relative_to");
@@ -287,14 +287,8 @@ namespace SDF
 		private Contact ParseContact()
 		{
 			var contact = new Contact();
-
-			if (GetValues<string>("contact/collision", out var collisionList))
-			{
-				contact.collision = collisionList;
-			}
-
+			contact.collision = GetValue<string>("contact/collision");
 			contact.topic = GetValue<string>("contact/topic");
-
 			return contact;
 		}
 
@@ -303,7 +297,7 @@ namespace SDF
 			var noiseXPath = targetPathName + "/noise";
 
 			var type = GetAttributeInPath<string>(noiseXPath, "type");
-			noise.type = (type == null)? GetValue<string>(noiseXPath + "/type", "none"): type;
+			noise.type = (type == null) ? GetValue<string>(noiseXPath + "/type", "none") : type;
 			noise.mean = GetValue<double>(noiseXPath + "/mean", 0);
 			noise.stddev = GetValue<double>(noiseXPath + "/stddev", 0);
 			noise.bias_mean = GetValue<double>(noiseXPath + "/bias_mean", 0);

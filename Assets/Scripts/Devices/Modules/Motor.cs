@@ -4,67 +4,19 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Motor : Articulation
 {
-	public class RapidChangeControl
-	{
-		private const int MaxWaitCount = 10;
-		private bool _directionSwitched = false;
-		private int _waitForStopCount = 0;
-
-		public void SetDirectionSwitched(in bool switched)
-		{
-			// if (switched)
-			// {
-			// 	Debug.Log(GetMotorName() + " - direction switched");
-			// }
-
-			_directionSwitched = switched;
-
-			if (_directionSwitched)
-			{
-				_waitForStopCount = MaxWaitCount;
-			}
-		}
-
-		public bool DirectionSwitched()
-		{
-			return _directionSwitched;
-		}
-
-		public void Wait()
-		{
-			if (_waitForStopCount-- <= 0)
-			{
-				SetDirectionSwitched(false);
-			}
-		}
-	}
-
-	public class MotorMotionFeedback
-	{
-		private bool _isRotating = false;
-
-		public bool IsMotionRotating => _isRotating;
-
-		public void SetMotionRotating(in bool enable)
-		{
-			_isRotating = enable;
-		}
-	}
-
-	private RapidChangeControl _rapidControl = new RapidChangeControl();
-	private MotorMotionFeedback _feedback = new MotorMotionFeedback();
-	public MotorMotionFeedback Feedback => _feedback;
-
 	private PID _pidControl = null;
 
-	private bool _enableMotor = false;
+	private bool _enable = false;
 
-	private float _targetAngularVelocity = 0;
+	private const float WheelResolution = 0.087890625f; // in degree, encoding 12bits,360°
+
+	private const float DecelAmountForRapidControl = 30;
+
+	private float _targetAngularVelocity = 0; // degree per seconds
 	private float _currentMotorVelocity = 0; // degree per seconds
 
 	public Motor(in GameObject gameObject)
@@ -72,41 +24,42 @@ public class Motor : Articulation
 	{
 	}
 
+	new public void Reset()
+	{
+		base.Reset();
+
+		_pidControl.Reset();
+		_prevJointPosition = 0;
+	}
+
 	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
 	{
 		_pidControl = new PID(pFactor, iFactor, dFactor, 10, -10, 100, -100);
 	}
 
-	/// <summary>Get Current Joint Velocity</summary>
+	/// <summary>Get Current Joint angular Velocity</summary>
 	/// <remarks>radian per second</remarks>
-	public float GetCurrentVelocity()
+	public float GetCurrentAngularVelocity()
 	{
 		return _currentMotorVelocity * Mathf.Deg2Rad;
 	}
 
+	public bool IsZero(in float value)
+	{
+		return (Mathf.Abs(value) < Quaternion.kEpsilon);
+	}
+
+	// private bool _isRotatingMotion = false;
 	/// <summary>Set Target Velocity wmotorLeftith PID control</summary>
 	/// <remarks>degree per second</remarks>
-	public void SetVelocityTarget(in float targetAngularVelocity)
+	public void SetTargetVelocity(in float targetAngularVelocity)
 	{
-		if (Mathf.Abs(targetAngularVelocity) < Quaternion.kEpsilon || float.IsInfinity(targetAngularVelocity))
-		{
-			_enableMotor = false;
-		}
-		else
-		{
-			_enableMotor = true;
-
-			if (_feedback.IsMotionRotating)
-			{
-				var directionSwitch = (Mathf.Sign(_targetAngularVelocity) == Mathf.Sign(targetAngularVelocity)) ? false : true;
-				_rapidControl.SetDirectionSwitched(directionSwitch);
-			}
-		}
-
+		_enable = (IsZero(targetAngularVelocity) || float.IsInfinity(targetAngularVelocity)) ? false : true;
+		
 		_targetAngularVelocity = targetAngularVelocity;
 	}
 
-	public void Update(in float duration)
+	public void Update(in float duration, in bool doDecreaseVelocity = true)
 	{
 		if (!IsRevoluteType())
 		{
@@ -114,93 +67,68 @@ public class Motor : Articulation
 			return;
 		}
 
-		_currentMotorVelocity = GetAngularVelocity(duration);
+		SolveAngularVelocity(duration);
 
 		// do stop motion of motor when motor disabled
-		if (_enableMotor)
+		if (_enable)
 		{
-			var adjustValue = _pidControl.Update(_targetAngularVelocity, _currentMotorVelocity, duration);
-
-			// Improve motion for rapid direction change
-			if (_rapidControl.DirectionSwitched())
+			if (doDecreaseVelocity)
 			{
-				_rapidControl.Wait();
-				if (_rapidControl.DirectionSwitched() == false)
-					Stop(0);
+				var decelVelocity = GetDecelerationVelocity(DecelAmountForRapidControl);
+				// Debug.Log("Update disable motor :" + _currentMotorVelocity.ToString("F5") + ", " + decelVelocity.ToString("F6"));
+				Stop(decelVelocity);
 			}
 			else
 			{
+				var adjustValue = _pidControl.Update(_targetAngularVelocity, _currentMotorVelocity, duration);
 				Drive(_targetAngularVelocity + adjustValue);
 			}
 		}
 		else
 		{
-			const float DecreasingVelocity = 60f; // in deg
-
-			var decelerationVelocity = _currentMotorVelocity - Mathf.Sign(_currentMotorVelocity) * DecreasingVelocity;
-			if (Mathf.Abs(decelerationVelocity) <= DecreasingVelocity)
-			{
-				decelerationVelocity = 0;
-			}
-			Stop(decelerationVelocity);
+			var decelVelocity = GetDecelerationVelocity();
+			// Debug.Log("decelVelocity current:" + _currentMotorVelocity.ToString("F5") + ", decel: " + decelVelocity.ToString("F6"));
+			Stop(decelVelocity);
 		}
 	}
 
-	public void Stop(in float decelerationVelocity = 0f)
+	// in Deg
+	private float GetDecelerationVelocity(in float DecreasingVelocityLevel = 10f)
+	{
+		var decelerationVelocity = _currentMotorVelocity - Mathf.Sign(_currentMotorVelocity) * DecreasingVelocityLevel;
+		if (Mathf.Abs(decelerationVelocity) <= DecreasingVelocityLevel)
+		{
+			decelerationVelocity = 0;
+		}
+
+		return decelerationVelocity;
+	}
+
+	private void Stop(in float decelerationVelocity = 0f)
 	{
 		Drive(decelerationVelocity);
-		SetJointVelocity(decelerationVelocity);
 
-		if (Mathf.Abs(decelerationVelocity) < Quaternion.kEpsilon)
+		if (IsZero(decelerationVelocity))
 		{
 			_pidControl.Reset();
-			_rapidControl.SetDirectionSwitched(false);
-
-			Reset();
+			base.Reset();
 		}
 	}
 
-	private const int RollingMeanWindowSize = 20;
-	private Queue<float> _rollingMeanAnguluarVelocity = new Queue<float>(RollingMeanWindowSize);
-	private float _rollingMeanSumVelocity = 0f;
-
-	private float GetFilteredAngularVelocity(in float motorVelocity)
-	{
-		// rolling mean filtering
-		if (_rollingMeanAnguluarVelocity.Count == RollingMeanWindowSize)
-		{
-			_rollingMeanSumVelocity -= _rollingMeanAnguluarVelocity.Dequeue();
-		}
-
-		_rollingMeanAnguluarVelocity.Enqueue(motorVelocity);
-		_rollingMeanSumVelocity += motorVelocity;
-
-		var filteredVelocity = _rollingMeanSumVelocity / (float)_rollingMeanAnguluarVelocity.Count;
-
-		return filteredVelocity;
-	}
-
-	private float _prevJointPosition = 0; // in deg
+	private float _prevJointPosition = 0; // in deg, for GetAngularVelocity()
 
 	/// <remarks>degree per second</remarks>
-	private float GetAngularVelocity(in float duration)
+	private void SolveAngularVelocity(in float duration)
 	{
-		var motorVelocity = 0f;
-		if (Mathf.Approximately(Mathf.Abs(_targetAngularVelocity), Quaternion.kEpsilon) == false)
-		{
-#if true
-			// calculate velocity using joint position is more accurate than joint velocity
-			var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
-			motorVelocity = Mathf.DeltaAngle(_prevJointPosition, jointPosition) / duration;
-			_prevJointPosition = jointPosition;
-			// Debug.LogFormat("prv:{0:F5} cur:{1:F5} vel:{2:F5}", _prevJointPosition, jointPosition, motorVelocity);
-#else
-			var motorVelocity = GetJointVelocity() * Mathf.Rad2Deg;
-#endif
-		}
+		// calculate velocity using joint position is more accurate than joint velocity
+		var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
+		var motorVelocity = Mathf.DeltaAngle(_prevJointPosition, jointPosition) / duration;
+		// Debug.LogFormat("prv:{0:F5} cur:{1:F5} vel:{2:F5}", _prevJointPosition, jointPosition, motorVelocity);
+		_prevJointPosition = jointPosition;
 
-		var filteredVelocity = GetFilteredAngularVelocity(motorVelocity);
+		var sampledVelocity = Mathf.Sign(motorVelocity) * Mathf.Floor(Mathf.Abs(motorVelocity) / WheelResolution) * WheelResolution;
+		// Debug.LogFormat("prv={0:F5} cur={1:F5} vel={2:F5} sampVel={3:F5}", _prevJointPosition, jointPosition, motorVelocity, sampledVelocity);
 
-		return (Mathf.Abs(filteredVelocity) < Quaternion.kEpsilon) ? 0 : filteredVelocity;
+		_currentMotorVelocity = (Mathf.Abs(sampledVelocity) < Quaternion.kEpsilon) ? 0 : sampledVelocity;
 	}
 }

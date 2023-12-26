@@ -70,7 +70,7 @@ namespace SDF
 	{
 		public List<Camera> cameras = new List<Camera>();
 
-		public void	Add(in Camera item)
+		public void Add(in Camera item)
 		{
 			cameras.Add(item);
 		}
@@ -195,7 +195,7 @@ namespace SDF
 
 	public class Contact : SensorType
 	{
-		public List<string> collision = new List<string>();
+		public string collision;
 		public string topic;
 	}
 
@@ -293,11 +293,11 @@ namespace SDF
 	{
 	}
 
-	public class Rfid: SensorType
+	public class Rfid : SensorType
 	{
 	}
 
-	public class Sonar: SensorType
+	public class Sonar : SensorType
 	{
 		public string geometry = "cone";
 		public double min = 0;

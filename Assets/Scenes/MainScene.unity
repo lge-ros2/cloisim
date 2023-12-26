@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.17276844, g: 0.21589246, b: 0.2978263, a: 1}
+  m_IndirectSpecularColor: {r: 0.17276844, g: 0.2158925, b: 0.29782635, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -237,6 +237,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawInertia: 0
+  drawContact: 1
   isSelfCollide: 0
   useGravity: 0
 --- !u!1 &20107706
@@ -444,6 +445,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawInertia: 0
+  drawContact: 1
   isSelfCollide: 0
   useGravity: 0
 --- !u!1 &34803206
@@ -2790,6 +2792,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawInertia: 0
+  drawContact: 1
   isSelfCollide: 0
   useGravity: 0
 --- !u!135 &402915479
@@ -3824,6 +3827,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawInertia: 0
+  drawContact: 1
   isSelfCollide: 0
   useGravity: 0
 --- !u!171741748 &635764732
@@ -4424,10 +4428,10 @@ MonoBehaviour:
   m_Horizontal: 0
   m_Vertical: 1
   m_MovementType: 1
-  m_Elasticity: 0.1
+  m_Elasticity: 0.2
   m_Inertia: 1
   m_DecelerationRate: 0.135
-  m_ScrollSensitivity: 50
+  m_ScrollSensitivity: 200
   m_Viewport: {fileID: 20107707}
   m_HorizontalScrollbar: {fileID: 0}
   m_VerticalScrollbar: {fileID: 970763218}
@@ -4749,6 +4753,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawInertia: 0
+  drawContact: 1
   isSelfCollide: 0
   useGravity: 0
 --- !u!1 &887438904
@@ -7880,6 +7885,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawInertia: 0
+  drawContact: 1
   isSelfCollide: 0
   useGravity: 0
 --- !u!1 &1829705135

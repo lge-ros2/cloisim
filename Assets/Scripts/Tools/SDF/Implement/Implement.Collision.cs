@@ -24,6 +24,7 @@ namespace SDF
 			private static VHACD.Parameters VHACDParams = new VHACD.Parameters()
 			{
 				m_resolution = 20000,
+				// m_resolution = 800000, // max: 64,000,000
 				m_concavity = 0.001,
 				m_planeDownsampling = 2,
 				m_convexhullDownsampling = 2,

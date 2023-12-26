@@ -35,6 +35,12 @@ namespace SDF
 		}
 	}
 
+	public class Battery
+	{
+		public string name = "__default__";
+		public double voltage = 0;
+	}
+
 	public class Links : Entities<Link>
 	{
 		private const string TARGET_TAG = "link";
@@ -62,8 +68,10 @@ namespace SDF
 		// <projector> : TBD
 		// <audio_sink> : TBD
 		// <audio_source> : TBD
-		// <battery> : TBD
-		// <light> : TBD
+
+		private Battery battery = null;
+
+		private Light light = null;
 
 		public bool Gravity => gravity;
 
@@ -72,6 +80,8 @@ namespace SDF
 		public bool SelfCollide => self_collide;
 
 		public Inertial Inertial => inertial;
+
+		public Battery Battery => battery;
 
 		public Link(XmlNode _node)
 			: base(_node)
@@ -112,6 +122,18 @@ namespace SDF
 				else
 					inertial.pose.FromString(poseStr);
 				// Console.WriteLine("Link Mass: " + inertial.mass);
+			}
+
+			if (IsValidNode("light"))
+			{
+				light = new Light(root);
+			}
+
+			if (IsValidNode("battery"))
+			{
+				battery = new Battery();
+				battery.name = GetAttributeInPath<string>("battery", "name");
+				battery.voltage = GetValue<double>("battery/voltage");
 			}
 		}
 

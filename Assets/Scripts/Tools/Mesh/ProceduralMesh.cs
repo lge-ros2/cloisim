@@ -10,7 +10,7 @@ using UnityEngine;
 /// <summary>https://wiki.unity3d.com/index.php/ProceduralPrimitives</summary>
 public class ProceduralMesh
 {
-	private enum Type {BOX, CYLINDER, SPHERE, PLANE};
+	private enum Type { BOX, CYLINDER, SPHERE, PLANE };
 
 	private static Dictionary<Type, Mesh> MeshObjectCache = new Dictionary<Type, Mesh>();
 
@@ -145,7 +145,7 @@ public class ProceduralMesh
 		return mesh;
 	}
 
-	public static Mesh CreateCylinder(in float radius = 1f, in float height = 1f, in int nbSides = 36)
+	public static Mesh CreateCylinder(in float radius = 1f, in float height = 1f, in int nbSides = 36, in float upRotationAngle = 0)
 	{
 		Mesh mesh;
 
@@ -159,12 +159,15 @@ public class ProceduralMesh
 		mesh = Object.Instantiate(MeshObjectCache[Type.CYLINDER]);
 		mesh.name = "Cylinder";
 
+		var rotationMatrix = Quaternion.AngleAxis(upRotationAngle, Vector3.up);
+
 		var meshVertices = mesh.vertices;
 		for (var i = 0; i < mesh.vertexCount; i++)
 		{
 			var vertex = meshVertices[i];
 			vertex.Scale(new Vector3(radius, height, radius));
-			meshVertices[i] = vertex;
+
+			meshVertices[i] = rotationMatrix * vertex;
 		}
 		mesh.vertices = meshVertices;
 

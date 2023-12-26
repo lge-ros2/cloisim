@@ -19,17 +19,20 @@ namespace SensorDevices
 		private List<SensorDevices.Sonar> ussSensors = new List<SensorDevices.Sonar>();
 		private List<SensorDevices.Sonar> irSensors = new List<SensorDevices.Sonar>();
 		// private List<SensorDevices.Magnet> magnetSensors = null;
+		private List<SensorDevices.Contact> bumperSensors = new List<SensorDevices.Contact>();
 
-		private SensorDevices.Contact bumperContact = null;
-		private List<ArticulationBody> bumperSensors = new List<ArticulationBody>();
+		// private List<ArticulationBody> bumperSensors = new List<ArticulationBody>();
 
-		private MotorControl motorControl = new MotorControl();
-		public MotorControl MotorControl => this.motorControl;
+		private SensorDevices.Battery battery = null;
+
+		private MotorControl _motorControl = null;
+		public MotorControl MotorControl => this._motorControl;
 
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
 			DeviceName = "MicomSensor";
+			_motorControl = new MotorControl(this.transform);
 		}
 
 		protected override void OnStart()
@@ -41,17 +44,20 @@ namespace SensorDevices
 			yield return null;
 		}
 
-		public void SetIMU(in string name)
+		public void SetIMU(in string sensorName)
 		{
 			var imuList = gameObject.GetComponentsInChildren<SensorDevices.IMU>();
 			foreach (var imu in imuList)
 			{
-				if (imu.DeviceName.Contains("::" + name + "::"))
+				Debug.Log(imu.name + " , " + imu.DeviceName);
+				if (imu.DeviceName.Contains("::" + sensorName + "::") ||
+					imu.name.CompareTo(sensorName) == 0)
 				{
 					Debug.Log(imu.DeviceName + " attached to Micom");
 					imuSensor = imu;
 					break;
 				}
+
 			}
 		}
 
@@ -79,7 +85,7 @@ namespace SensorDevices
 				if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
 				{
 					var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
-					motorControl.AddWheelInfo(wheelLocation, motorObject);
+					_motorControl.AttachWheel(wheelLocation, motorObject);
 				}
 			}
 		}
@@ -110,15 +116,15 @@ namespace SensorDevices
 				if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
 				{
 					var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
-					motorControl.AddWheelInfo(wheelLocation, motorObject);
+					_motorControl.AttachWheel(wheelLocation, motorObject);
 				}
 			}
 		}
 
 		public void SetMotorConfiguration(in float wheelRadius, in float wheelSeparation, in float P, in float I, in float D)
 		{
-			motorControl.SetPID(P, I, D);
-			motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
+			_motorControl.SetPID(P, I, D);
+			_motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
 		}
 
 		public void SetUSS(in List<string> ussList)
@@ -166,37 +172,50 @@ namespace SensorDevices
 			}
 		}
 
-		public void SetBumper(in string contactName)
+		public void SetBumper(in List<string> bumperList)
 		{
 			// Debug.Log(targetContactName);
 			var contactsInChild = GetComponentsInChildren<SensorDevices.Contact>();
-
-			foreach (var contact in contactsInChild)
+			foreach (var bumper in bumperList)
 			{
-				if (contact.name.Equals(contactName))
+				foreach (var contact in contactsInChild)
 				{
-					bumperContact = contact;
-					// Debug.Log("Found");
-				}
-			}
-		}
-
-		public void SetBumperSensor(in List<string> bumperJointNameList)
-		{
-			if (bumperContact != null)
-			{
-				var linkList = GetComponentsInChildren<SDF.Helper.Link>();
-				foreach (var link in linkList)
-				{
-					foreach (var bumperJointName in bumperJointNameList)
+					if (contact.name.Equals(bumper))
 					{
-						// TODO: to be implemented
+						bumperSensors.Add(contact);
+						Debug.Log("Found " + contact.name);
 					}
 				}
-
-				var bumperCount = bumperSensors.Count;
-				micomSensorData.bumper.Bumpeds = new bool[bumperCount];
 			}
+
+			var bumperCount = bumperSensors.Count;
+			micomSensorData.bumper.Bumpeds = new bool[bumperCount];
+		}
+
+		// public void SetBumperSensor(in List<string> bumperJointNameList)
+		// {
+		// 	if (bumperContact != null)
+		// 	{
+		// 		var linkList = GetComponentsInChildren<SDF.Helper.Link>();
+		// 		foreach (var link in linkList)
+		// 		{
+		// 			foreach (var bumperJointName in bumperJointNameList)
+		// 			{
+		// 				// TODO: to be implemented
+		// 			}
+		// 		}
+
+		// 		var bumperCount = bumperSensors.Count;
+		// 		micomSensorData.bumper.Bumpeds = new bool[bumperCount];
+		// 	}
+		// }
+
+		public void SetBattery(in SensorDevices.Battery targetBattery)
+		{
+			micomSensorData.Battery = new messages.Battery();
+
+			this.battery = targetBattery;
+			micomSensorData.Battery.Name = battery.Name;
 		}
 
 		protected override void OnReset()
@@ -206,9 +225,9 @@ namespace SensorDevices
 				imuSensor.Reset();
 			}
 
-			if (motorControl != null)
+			if (_motorControl != null)
 			{
-				motorControl.Reset();
+				_motorControl.Reset();
 			}
 		}
 
@@ -234,63 +253,44 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			if (motorControl == null || micomSensorData == null)
+			if (_motorControl == null || micomSensorData == null)
 			{
+				Debug.LogWarning("micomSensorData or motorControl is NULL");
 				return;
 			}
 
 			var deltaTime = Time.fixedDeltaTime;
 
-			motorControl.Update(deltaTime);
+			if (battery != null)
+			{
+				micomSensorData.Battery.Voltage = battery.Update(deltaTime);
+			}
+
+			if (_motorControl.Update(micomSensorData.Odom, deltaTime, imuSensor) == false)
+			{
+				Debug.LogWarning("Update failed in MotorControl");
+			}
 
 			UpdateIMU();
 			UpdateUss();
 			UpdateIr();
 			UpdateBumper();
 
-			motorControl.UpdateOdometry(micomSensorData.Odom, deltaTime, imuSensor);
 			DeviceHelper.SetTime(micomSensorData.Time, DeviceHelper.GlobalClock.FixedSimTime);
 		}
 
 		private void UpdateBumper()
 		{
-			if (micomSensorData == null || micomSensorData.bumper == null || bumperContact == null)
+			if (micomSensorData == null || micomSensorData.bumper == null)
 			{
 				return;
 			}
 
-			if (bumperContact.IsContacted())
+			for (var index = 0; index < bumperSensors.Count; index++)
 			{
-				if (bumperSensors == null || bumperSensors.Count == 0)
-				{
-					micomSensorData.bumper.Bumpeds[0] = true;
-				}
-				else
-				{
-					for (var index = 0; index < bumperSensors.Count; index++)
-					{
-						// TODO: to be implemented
-
-						// var normal = bumperSensors[index].transform.localPosition.normalized;
-						// // Debug.Log(index + ": " + normal.ToString("F6"));
-
-						// if (normal.x > 0 && normal.z < 0)
-						// {
-						// 	micomSensorData.bumper.Bumpeds[index] = true;
-						// 	// Debug.Log("Left Bumped");
-						// }
-						// else if (normal.x < 0 && normal.z < 0)
-						// {
-						// 	micomSensorData.bumper.Bumpeds[index] = true;
-						// 	// Debug.Log("Right Bumped");
-						// }
-						// else
-						// {
-						// 	micomSensorData.bumper.Bumpeds[index] = false;
-						// 	// Debug.Log("No Bumped");
-						// }
-					}
-				}
+				var bumperSensor = bumperSensors[index];
+				micomSensorData.bumper.Bumpeds[index] = bumperSensor.IsContacted();
+				// Debug.Log(micomSensorData.bumper.Bumpeds[index]);
 			}
 		}
 
