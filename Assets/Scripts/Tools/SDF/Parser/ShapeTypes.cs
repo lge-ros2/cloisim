@@ -26,37 +26,13 @@ namespace SDF
 		public double length = 1;
 	}
 
-	public class Heightmap : ShapeType
-	{
-		public class Texture
-		{
-			public double size = 1;
-			public string diffuse = "__default__";
-			public string normal = "__default__";
-		}
-
-		public class Blend
-		{
-			public double min_height = 0;
-			public double fade_dist = 0;
-		}
-
-		public string uri = "__default__";
-		public Vector3<double> size = new Vector3<double>(1, 1, 1);
-		public Vector3<double> pos = new Vector3<double>(0, 0, 0);
-		public List<Texture> textures = new List<Texture>();
-		public List<Blend> blends = new List<Blend>();
-		public bool use_terrain_pagin = false;
-		public uint sampling = 1;
-	}
-
 	public class Ellipsoid : ShapeType
 	{
 		public Vector3<double> radii = new Vector3<double>();
 	}
 
 	// Description: A heightmap based on a 2d grayscale image.
-	public class HeightMap : ShapeType
+	public class Heightmap : ShapeType
 	{
 		// Description: The heightmap can contain multiple textures. The order of the texture matters. The first texture will appear at the lowest height, and the last texture at the highest height. Use blend to control the height thresholds and fade between textures.
 		public class Texture
