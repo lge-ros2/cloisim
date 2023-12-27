@@ -109,6 +109,16 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unity.terrain-tools": {
+      "version": "5.0.4",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.modules.terrain": "1.0.0",
+        "com.unity.modules.terrainphysics": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
     "com.unity.textmeshpro": {
       "version": "3.0.6",
       "depth": 0,
@@ -198,6 +208,15 @@
       "depth": 0,
       "source": "builtin",
       "dependencies": {}
+    },
+    "com.unity.modules.terrainphysics": {
+      "version": "1.0.0",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.modules.physics": "1.0.0",
+        "com.unity.modules.terrain": "1.0.0"
+      }
     },
     "com.unity.modules.ui": {
       "version": "1.0.0",
