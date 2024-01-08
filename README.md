@@ -1,6 +1,6 @@
 # CLOiSim : Multi-Robot Simulator
 
-![Multi-robot](https://user-images.githubusercontent.com/21001946/82773215-75572480-9e7c-11ea-85a2-a3838fa1e190.png)
+![multi-type-of-robots](https://github.com/lge-ros2/cloisim/assets/21001946/499fc995-0a29-454b-902f-3df77d00c7de)
 
 Happy to announce CLOiSim. It is a new multi-robot simulator that uses an [SDF](www.sdformat.org) file containing 3d world environemnts and robot descriptions.
 
@@ -164,6 +164,9 @@ In terms of branch, 'main' is release(stable) version, and 'develop' is used for
 Please visit here [build guide](https://github.com/lge-ros2/cloisim/wiki/Build-Guide).
 
 ## Usage
+
+![multi-robots](https://user-images.githubusercontent.com/21001946/82773215-75572480-9e7c-11ea-85a2-a3838fa1e190.png)
+
 
 ### Run 'CLOiSim'
 
