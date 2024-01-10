@@ -298,8 +298,8 @@ namespace SDF
 		{
 			ConvertPathToAbsolutePath("uri");
 			ConvertPathToAbsolutePath("filename");
-			ConvertPathToAbsolutePath("diffuse");
-			ConvertPathToAbsolutePath("normal");
+			ConvertPathToAbsolutePath("texture/diffuse");
+			ConvertPathToAbsolutePath("texture/normal");
 		}
 
 		private void replaceAllIncludedModel()
