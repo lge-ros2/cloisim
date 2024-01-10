@@ -9,7 +9,7 @@ using Debug = UnityEngine.Debug;
 
 namespace SDF
 {
-	public partial class Implement
+	namespace Implement
 	{
 		public class Geometry
 		{
