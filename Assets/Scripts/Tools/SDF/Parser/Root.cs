@@ -61,8 +61,7 @@ namespace SDF
 
 							replaceAllIncludedModel();
 
-							ConvertPathToAbsolutePath("uri");
-							ConvertPathToAbsolutePath("filename");
+							ConvertPathToAbsolutePaths();
 
 							// Console.Write("Load World");
 							var worldNode = doc.SelectSingleNode("/sdf/world");
@@ -106,8 +105,7 @@ namespace SDF
 
 				replaceAllIncludedModel();
 
-				ConvertPathToAbsolutePath("uri");
-				ConvertPathToAbsolutePath("filename");
+				ConvertPathToAbsolutePaths();
 
 				// Console.Write("Load World");
 				var modelNode = doc.SelectSingleNode("/sdf/model");
@@ -254,10 +252,10 @@ namespace SDF
 		}
 
 		// Converting media/file uri
-		private void ConvertPathToAbsolutePath(in string target_element)
+		private void ConvertPathToAbsolutePath(in string targetElement)
 		{
-			var nodeList = doc.SelectNodes("//" + target_element);
-			// Console.Write("Num Of uri nodes: " + nodeList.Count);
+			var nodeList = doc.SelectNodes("//" + targetElement);
+			// Console.Write("Target:" + targetElement + ", Num Of uri nodes: " + nodeList.Count);
 			foreach (XmlNode node in nodeList)
 			{
 				var uri = node.InnerText;
@@ -294,6 +292,14 @@ namespace SDF
 					Console.Write("Cannot convert: " + uri);
 				}
 			}
+		}
+
+		private void ConvertPathToAbsolutePaths()
+		{
+			ConvertPathToAbsolutePath("uri");
+			ConvertPathToAbsolutePath("filename");
+			ConvertPathToAbsolutePath("diffuse");
+			ConvertPathToAbsolutePath("normal");
 		}
 
 		private void replaceAllIncludedModel()
