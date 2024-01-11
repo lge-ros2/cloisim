@@ -7,16 +7,35 @@
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
 
+// using UnityEngine;
+// using System;
+// using UnityEngine.Rendering;
+// using UENet = UnityEngine.Networking;
+// using UnityEngine;
+// using UnityEngine.Networking;
+// using System.Collections;
+
+// using UnityEngine;
+// using System.Collections;
+// using UnityEngine.Networking;
+
+
 namespace SDF
 {
 	namespace Implement
 	{
 		public class Geometry
 		{
+			private static bool IsVisualObject(in UE.GameObject target)
+			{
+				return target.CompareTag("Visual");
+			}
+
 			/// <summary>Set mesh from external source</summary>
-			public static UE.GameObject GenerateMeshObject(in SDF.Mesh obj, in bool isVisualMesh = true)
+			public static void GenerateMeshObject(in SDF.Mesh obj, in UE.GameObject targetParentObject)// in bool isVisualMesh = true)
 			{
 				var loadedObject = MeshLoader.CreateMeshObject(obj.uri);
+				var isVisualMesh = IsVisualObject(targetParentObject);
 
 				if (loadedObject == null)
 				{
@@ -41,13 +60,26 @@ namespace SDF
 					loadedObject.transform.localScale = loadedMeshScale;
 				}
 
-				return loadedObject;
+				loadedObject.transform.SetParent(targetParentObject.transform, false);
+			}
+
+
+			public static void GenerateMeshObject(in SDF.Heightmap obj, in UE.GameObject targetParentObject)
+			{
+				var heightmapObject = new UE.GameObject("Heightmap");
+				var isVisualMesh = IsVisualObject(targetParentObject);
+
+				heightmapObject.transform.SetParent(targetParentObject.transform, false);
+
+				ProceduralHeightmap.Generate(obj, heightmapObject, isVisualMesh);
+
+				heightmapObject.transform.localPosition = SDF2Unity.GetPosition(obj.pos);
 			}
 
 			//
 			// Summary: Set primitive mesh
 			//
-			public static UE.GameObject GenerateMeshObject(in SDF.ShapeType shape)
+			public static void GenerateMeshObject(in SDF.ShapeType shape, in UE.GameObject targetParentObject)
 			{
 				var createdObject = new UE.GameObject("Primitive Mesh");
 				createdObject.tag = "Geometry";
@@ -112,7 +144,7 @@ namespace SDF
 					meshRenderer.allowOcclusionWhenDynamic = true;
 				}
 
-				return createdObject;
+				createdObject.transform.SetParent(targetParentObject.transform, false);
 			}
 		}
 	}

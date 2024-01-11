@@ -23,26 +23,24 @@ namespace SDF
 				var t = geometry.GetShapeType();
 				var shape = geometry.GetShape();
 
-				UE.GameObject geometryObject = null;
-
 				if (t != null && t.Equals(typeof(SDF.Mesh)))
 				{
 					var mesh = shape as SDF.Mesh;
-					geometryObject = Implement.Geometry.GenerateMeshObject(mesh, targetObject.CompareTag("Visual"));
+					Implement.Geometry.GenerateMeshObject(mesh, targetObject);
+				}
+				else if (t != null && t.Equals(typeof(SDF.Heightmap)))
+				{
+					var heightmap = shape as SDF.Heightmap;
+					Implement.Geometry.GenerateMeshObject(heightmap, targetObject);
 				}
 				else if (t != null && typeof(SDF.ShapeType).IsAssignableFrom(t))
 				{
-					geometryObject = Implement.Geometry.GenerateMeshObject(shape);
+					Implement.Geometry.GenerateMeshObject(shape, targetObject);
 				}
 				else
 				{
 					UE.Debug.LogErrorFormat("[{0}] Not support type({1}) for geometry", geometry.Name, geometry.Type);
 					return;
-				}
-
-				if (geometryObject != null)
-				{
-					geometryObject.transform.SetParent(targetObject.transform, false);
 				}
 
 				targetObject.SetActive(true);

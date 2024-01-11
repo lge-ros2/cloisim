@@ -63,6 +63,9 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] Lights
     - [ ] supporting `<specular>`, `<attenuation/linear>`, `<attenuation/contant>`, `<attenuation/quadratic>`, `<spot/falloff>`
   - [X] Spherical Coordinates
+  - [X] Heightmap (DEM)
+    - [ ] Support GeoTIFF
+    - [ ] Texture Blend
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.6) file basically targeting and supporting version 1.6 and works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<road>`, `<population>`.
