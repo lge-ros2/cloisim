@@ -11,7 +11,7 @@ using MeshProcess;
 
 namespace SDF
 {
-	public partial class Implement
+	namespace Implement
 	{
 		public class Collision
 		{

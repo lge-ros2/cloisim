@@ -34,10 +34,13 @@ namespace SDF
 	// Description: A heightmap based on a 2d grayscale image.
 	public class Heightmap : ShapeType
 	{
-		// Description: The heightmap can contain multiple textures. The order of the texture matters. The first texture will appear at the lowest height, and the last texture at the highest height. Use blend to control the height thresholds and fade between textures.
+		// Description: The heightmap can contain multiple textures.
+		// The order of the texture matters.
+		// The first texture will appear at the lowest height,
+		// and the last texture at the highest height.
+		// Use blend to control the height thresholds and fade between textures.
 		public class Texture
 		{
-
 			// Description: Size of the applied texture in meters.
 			public double size = 10;
 

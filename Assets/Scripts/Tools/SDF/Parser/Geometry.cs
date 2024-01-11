@@ -129,8 +129,10 @@ namespace SDF
 									texture.size = textureSizeList[i];
 									texture.diffuse = textureDiffuseList[i];
 									texture.normal = textureNomralList[i];
+									// Console.Write(texture.diffuse);
 									(shape as Heightmap).texture.Add(texture);
 								}
+								(shape as Heightmap).texture.Reverse();
 							}
 						}
 					}
@@ -142,12 +144,23 @@ namespace SDF
 					{
 						if (blendMinHeightList.Count > 0 && blendMinHeightList.Count == blendFadeDistList.Count)
 						{
-							for (var i = 0; i < textureSizeList.Count; i++)
+							Console.WriteLine("Blend is not supported yet");
+
+							if (blendMinHeightList.Count + 1 > textureSizeList.Count)
 							{
-								var blend = new Heightmap.Blend();
-								blend.min_height = blendMinHeightList[i];
-								blend.fade_dist = blendFadeDistList[i];
-								(shape as Heightmap).blend.Add(blend);
+								Console.WriteLine(
+									"Invalid terrain, too few layers to initialize blend map, texture(" +
+									 textureSizeList.Count + ") blend(" + blendMinHeightList.Count + ")");
+							}
+							else
+							{
+								for (var i = 0; i < blendMinHeightList.Count; i++)
+								{
+									var blend = new Heightmap.Blend();
+									blend.min_height = blendMinHeightList[i];
+									blend.fade_dist = blendFadeDistList[i];
+									(shape as Heightmap).blend.Add(blend);
+								}
 							}
 						}
 					}

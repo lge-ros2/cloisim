@@ -9,7 +9,7 @@ using UE = UnityEngine;
 
 namespace SDF
 {
-	public partial class Implement
+	namespace Implement
 	{
 		public class Actor
 		{
