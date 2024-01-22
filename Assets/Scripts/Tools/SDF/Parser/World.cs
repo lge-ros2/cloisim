@@ -99,21 +99,45 @@ namespace SDF
 			private Plugins plugins;
 		}
 
-		public class Road
+		public class Road : Entity
 		{
-			// Description: Name of the road
-			public string name = "__default__";
-
 			// Description: Width of the road
 			public double width = 1;
 
 			// Required: +
 			// Description: A series of points that define the path of the road.
 			// Default: 0 0 0
-			public Vector3<double> point = null;
+			public List<Vector3<double>> points = new List<Vector3<double>>();
 
 			// Description: The material of the visual element.
 			public Material material = null;
+
+			public Road(in XmlNode _node)
+				: base(_node)
+			{
+				// Description: Name of the road
+				Name = GetValue<string>("name", "__default__");
+				width = GetValue<double>("width", 1);
+				Console.Write(Name);
+				Console.Write(width);
+
+				if (GetValues<string>("point", out var pointList))
+				{
+					foreach (var pointStr in pointList)
+					{
+						Console.Write(pointStr);
+						var point = new Vector3<double>(pointStr);
+						points.Add(point);
+					}
+				}
+
+				material = new Material(GetNode("material"));
+
+				foreach (var uri in material.script.uri)
+				{
+					Console.Write(uri);
+				}
+			}
 		}
 
 		public class SphericalCoordinates
@@ -200,13 +224,13 @@ namespace SDF
 		private Models models = null;
 		private Actors actors = null;
 
-		public Road road = null;
+		public List<Road> roads = new List<Road>();
 
 		public SphericalCoordinates spherical_coordinates = null;
 
-		public List<State> states = null;
+		// public List<State> states = null;
 
-		public List<Population> population = null;
+		// public List<Population> population = null;
 
 		private Plugins plugins;
 
@@ -277,9 +301,10 @@ namespace SDF
 				// Console.WriteLine("<frame> tag is NOT supported yet.");
 			}
 
-			if (IsValidNode("road"))
+			foreach (XmlNode roadNode in GetNodes("road"))
 			{
-				// Console.WriteLine("<road> tag is NOT supported yet.");
+				var road = new Road(roadNode);
+				roads.Add(road);
 			}
 
 			if (IsValidNode("spherical_coordinates"))

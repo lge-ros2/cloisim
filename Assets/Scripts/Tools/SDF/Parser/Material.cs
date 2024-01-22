@@ -37,7 +37,7 @@ namespace SDF
 
 		public Color()
 		: this(0.0, 0.0, 0.0, 1.0)
-		{}
+		{ }
 
 		public Color(double r, double g, double b, double a)
 		{
@@ -181,12 +181,9 @@ namespace SDF
 			{
 				script = new Script();
 
-				if (IsValidNode("script/uri"))
+				if (GetValues<string>("script/uri", out var script_uri_list))
 				{
-					if (GetValues<string>("script/uri", out var script_uri_list))
-					{
-						script.uri = script_uri_list;
-					}
+					script.uri = script_uri_list;
 				}
 
 				if (IsValidNode("script/name"))

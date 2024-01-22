@@ -91,6 +91,11 @@ namespace SDF
 		{
 		}
 
+		public Vector3(in string value)
+		{
+			FromString(value);
+		}
+
 		public Vector3(T x, T y, T z)
 		{
 			Set(x, y, z);
