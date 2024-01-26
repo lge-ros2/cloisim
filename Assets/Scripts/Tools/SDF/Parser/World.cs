@@ -118,14 +118,14 @@ namespace SDF
 				// Description: Name of the road
 				Name = GetValue<string>("name", "__default__");
 				width = GetValue<double>("width", 1);
-				Console.Write(Name);
-				Console.Write(width);
+				// Console.Write(Name);
+				// Console.Write(width);
 
 				if (GetValues<string>("point", out var pointList))
 				{
 					foreach (var pointStr in pointList)
 					{
-						Console.Write(pointStr);
+						// Console.Write(pointStr);
 						var point = new Vector3<double>(pointStr);
 						points.Add(point);
 					}
@@ -224,7 +224,7 @@ namespace SDF
 		private Models models = null;
 		private Actors actors = null;
 
-		public List<Road> roads = new List<Road>();
+		private List<Road> roads_ = new List<Road>();
 
 		public SphericalCoordinates spherical_coordinates = null;
 
@@ -304,7 +304,7 @@ namespace SDF
 			foreach (XmlNode roadNode in GetNodes("road"))
 			{
 				var road = new Road(roadNode);
-				roads.Add(road);
+				roads_.Add(road);
 			}
 
 			if (IsValidNode("spherical_coordinates"))
@@ -371,6 +371,11 @@ namespace SDF
 		public List<Light> GetLights()
 		{
 			return lights.GetData();
+		}
+
+		public List<Road> GetRoads()
+		{
+			return roads_;
 		}
 	}
 }

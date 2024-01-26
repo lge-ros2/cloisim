@@ -30,10 +30,11 @@ public class Main : MonoBehaviour
 
 	private FollowingTargetList followingList = null;
 
-	private static GameObject coreObject = null;
+	private static GameObject _core = null;
 	private static GameObject propsRoot = null;
 	private static GameObject worldRoot = null;
 	private static GameObject lightsRoot = null;
+	private static GameObject _roadsRoot = null;
 	private static GameObject uiRoot = null;
 	private static GameObject uiMainCanvasRoot = null;
 
@@ -53,7 +54,8 @@ public class Main : MonoBehaviour
 
 	public static GameObject PropsRoot => propsRoot;
 	public static GameObject WorldRoot => worldRoot;
-	public static GameObject CoreObject => coreObject;
+	public static GameObject RoadsRoot => _roadsRoot;
+	public static GameObject CoreObject => _core;
 	public static GameObject UIObject => uiRoot;
 	public static GameObject UIMainCanvas => uiMainCanvasRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => transformGizmo;
@@ -205,8 +207,8 @@ public class Main : MonoBehaviour
 		mainCamera.allowHDR = true;
 		mainCamera.allowMSAA = true;
 
-		coreObject = GameObject.Find("Core");
-		if (coreObject == null)
+		_core = GameObject.Find("Core");
+		if (_core == null)
 		{
 			Debug.LogError("Failed to Find 'Core'!!!!");
 		}
@@ -214,6 +216,7 @@ public class Main : MonoBehaviour
 		propsRoot = GameObject.Find("Props");
 		worldRoot = GameObject.Find("World");
 		lightsRoot = GameObject.Find("Lights");
+		_roadsRoot = GameObject.Find("Roads");
 		uiRoot = GameObject.Find("UI");
 
 		if (uiRoot != null)
@@ -379,6 +382,7 @@ public class Main : MonoBehaviour
 			_sdfLoader = new SDF.Import.Loader();
 			_sdfLoader.SetRootModels(worldRoot);
 			_sdfLoader.SetRootLights(lightsRoot);
+			_sdfLoader.SetRootRoads(_roadsRoot);
 
 			yield return _sdfLoader.StartImport(world);
 

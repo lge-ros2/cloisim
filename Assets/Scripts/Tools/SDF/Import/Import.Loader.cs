@@ -12,17 +12,23 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private UE.GameObject _rootObjectModels = null;
-			private UE.GameObject _rootObjectLights = null;
+			private UE.GameObject _rootModels = null;
+			private UE.GameObject _rootLights = null;
+			private UE.GameObject _rootRoads = null;
 
 			public void SetRootModels(in UE.GameObject root)
 			{
-				_rootObjectModels = root;
+				_rootModels = root;
 			}
 
 			public void SetRootLights(in UE.GameObject root)
 			{
-				_rootObjectLights = root;
+				_rootLights = root;
+			}
+
+			public void SetRootRoads(in UE.GameObject root)
+			{
+				_rootRoads = root;
 			}
 
 			private void SetParentObject(UE.GameObject childObject, UE.GameObject parentObject)
@@ -30,7 +36,7 @@ namespace SDF
 				childObject.transform.position = UE.Vector3.zero;
 				childObject.transform.rotation = UE.Quaternion.identity;
 
-				var targetParentTransform = (parentObject == null) ? _rootObjectModels.transform : parentObject.transform;
+				var targetParentTransform = (parentObject == null) ? _rootModels.transform : parentObject.transform;
 				childObject.transform.SetParent(targetParentTransform, false);
 
 				childObject.transform.localScale = UE.Vector3.one;
