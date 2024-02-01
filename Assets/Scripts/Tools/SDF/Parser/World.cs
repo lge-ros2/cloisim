@@ -131,11 +131,9 @@ namespace SDF
 					}
 				}
 
-				material = new Material(GetNode("material"));
-
-				foreach (var uri in material.script.uri)
+				if (IsValidNode("material/script"))
 				{
-					Console.Write(uri);
+					material = new Material(GetNode("material"));
 				}
 			}
 		}
