@@ -45,7 +45,7 @@ namespace SDF
 					linkChild.SetParent(linkParent);
 
 					// Set anchor pose
-					anchorPose.position = linkChild.localPosition;
+					// anchorPose.position = linkChild.localPosition;
 					// UE.Debug.LogWarningFormat("Linking1 ({0}) => ({1})", linkChild.name, linkParent.name);
 				}
 				else
@@ -53,7 +53,7 @@ namespace SDF
 					modelTransformChild.SetParent(linkParent);
 
 					// Set anchor pose
-					anchorPose.position = modelTransformChild.localPosition;
+					// anchorPose.position = modelTransformChild.localPosition;
 					// UE.Debug.LogWarningFormat("Linking2 ({0}) => ({1})", modelTransformChild.name, linkParent.name);
 				}
 
@@ -67,7 +67,8 @@ namespace SDF
 
 			public static void SetArticulationBodyAnchor(in UE.ArticulationBody body, in UE.Pose parentAnchor)
 			{
-				body.anchorPosition = UE.Vector3.zero;
+				// UE.Debug.Log(parentAnchor.position);
+				body.anchorPosition = parentAnchor.position; //UE.Vector3.zero;
 				body.anchorRotation = parentAnchor.rotation;
 
 				// TODO: Consider parentAnchor
