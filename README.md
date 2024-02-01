@@ -66,6 +66,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] Heightmap (DEM)
     - [ ] Support GeoTIFF
     - [ ] Texture Blend
+  - [X] Road
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.6) file basically targeting and supporting version 1.6 and works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<road>`, `<population>`.
@@ -142,7 +143,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.16f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.19f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 22.04.3 LTS
