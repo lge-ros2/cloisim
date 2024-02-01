@@ -4,14 +4,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-
 namespace SDF
 {
 	namespace Import
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportWorld(in SDF.World world)
+			protected override System.Object ImportWorld(in World world)
 			{
 				if (world == null)
 				{
@@ -43,8 +42,9 @@ namespace SDF
 					sphericalCoordinatesCore.SetCoordinatesReference((float)sphericalCoordinates.latitude_deg, (float)sphericalCoordinates.longitude_deg, (float)sphericalCoordinates.elevation, (float)sphericalCoordinates.heading_deg);
 				}
 
-				UnityEngine.Physics.gravity = SDF2Unity.GetDirection(world.gravity);
+				ImportRoads(world.GetRoads());
 
+				UnityEngine.Physics.gravity = SDF2Unity.GetDirection(world.gravity);
 
 				ImportLights(world.GetLights());
 

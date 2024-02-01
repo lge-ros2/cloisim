@@ -39,6 +39,11 @@ namespace SDF
 		: this(0.0, 0.0, 0.0, 1.0)
 		{ }
 
+		public Color(string value)
+		{
+			FromString(value);
+		}
+
 		public Color(double r, double g, double b, double a)
 		{
 			R = r;
@@ -52,7 +57,7 @@ namespace SDF
 	{
 		public class Script
 		{
-			public List<string> uri;
+			public List<string> uri = new List<string>();
 			public string name;
 		}
 
@@ -183,12 +188,18 @@ namespace SDF
 
 				if (GetValues<string>("script/uri", out var script_uri_list))
 				{
-					script.uri = script_uri_list;
+					script.uri.AddRange(script_uri_list);
+
+					// foreach (var uri in script.uri)
+					// {
+					// 	Console.Write(uri);
+					// }
 				}
 
 				if (IsValidNode("script/name"))
 				{
 					script.name = GetValue<string>("script/name");
+					// Console.Write(script.name);
 				}
 			}
 

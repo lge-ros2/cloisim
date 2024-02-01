@@ -1,0 +1,13 @@
+{
+    "files.exclude": {
+        ".vscode": true,
+        "**/*.meta": true,
+        "Library": true,
+        "Temp": true,
+        "UserSettings": true
+    },
+    "editor.detectIndentation": false,
+    "editor.indentSize": "tabSize",
+    "editor.insertSpaces": false,
+    "editor.tabSize": 4,
+}
