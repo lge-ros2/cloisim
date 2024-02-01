@@ -28,7 +28,7 @@ namespace SDF
 
 				var lightComponent = newLightObject.AddComponent<UE.Light>();
 
-				lightComponent.transform.SetParent(_rootObjectLights.transform);
+				lightComponent.transform.SetParent(_rootLights.transform);
 
 				lightComponent.renderMode = UE.LightRenderMode.ForcePixel;
 

@@ -13,6 +13,12 @@ public partial class SDF2Unity
 		return new Color((float)value.R, (float)value.G, (float)value.B, (float)value.A);
 	}
 
+	public static Color GetColor(in string value)
+	{
+		var color = new SDF.Color(value);
+		return GetColor(color);
+	}
+
 	public static Vector3 GetScalar(in double x, in double y, in double z)
 	{
 		return new Vector3(Mathf.Abs((float)y), Mathf.Abs((float)z), Mathf.Abs((float)x));

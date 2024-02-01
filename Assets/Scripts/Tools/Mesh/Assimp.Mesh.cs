@@ -14,14 +14,14 @@ public partial class MeshLoader
 {
 	private static Dictionary<string, GameObject> GameObjectCache = new Dictionary<string, GameObject>();
 
-	private static Texture2D GetTexture(in string textureFullPath)
+	public static Texture2D GetTexture(in string textureFullPath)
 	{
-		if (!string.IsNullOrEmpty(textureFullPath))
+		if (!string.IsNullOrEmpty(textureFullPath) && File.Exists(textureFullPath))
 		{
 			var byteArray = File.ReadAllBytes(textureFullPath);
 			if (byteArray != null)
 			{
-				var texture = new Texture2D(2, 2);
+				var texture = new Texture2D(1, 1);
 				if (texture.LoadImage(byteArray))
 				{
 					return texture;

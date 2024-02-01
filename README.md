@@ -1,6 +1,6 @@
 # CLOiSim : Multi-Robot Simulator
 
-![Multi-robot](https://user-images.githubusercontent.com/21001946/82773215-75572480-9e7c-11ea-85a2-a3838fa1e190.png)
+![multi-type-of-robots](https://github.com/lge-ros2/cloisim/assets/21001946/499fc995-0a29-454b-902f-3df77d00c7de)
 
 Happy to announce CLOiSim. It is a new multi-robot simulator that uses an [SDF](www.sdformat.org) file containing 3d world environemnts and robot descriptions.
 
@@ -63,6 +63,10 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] Lights
     - [ ] supporting `<specular>`, `<attenuation/linear>`, `<attenuation/contant>`, `<attenuation/quadratic>`, `<spot/falloff>`
   - [X] Spherical Coordinates
+  - [X] Heightmap (DEM)
+    - [ ] Support GeoTIFF
+    - [ ] Texture Blend
+  - [X] Road
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.6) file basically targeting and supporting version 1.6 and works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<road>`, `<population>`.
@@ -139,7 +143,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.16f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.19f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 22.04.3 LTS
@@ -164,6 +168,9 @@ In terms of branch, 'main' is release(stable) version, and 'develop' is used for
 Please visit here [build guide](https://github.com/lge-ros2/cloisim/wiki/Build-Guide).
 
 ## Usage
+
+![multi-robots](https://user-images.githubusercontent.com/21001946/82773215-75572480-9e7c-11ea-85a2-a3838fa1e190.png)
+
 
 ### Run 'CLOiSim'
 

@@ -63,7 +63,6 @@ namespace SDF
 				shape = new Sphere();
 				(shape as Sphere).radius = GetValue<double>("sphere/radius");
 			}
-
 			else if (IsValidNode("cylinder"))
 			{
 				Type = "cylinder";
@@ -81,7 +80,108 @@ namespace SDF
 				var size = GetValue<string>("plane/size");
 				(shape as Plane).size.FromString(size);
 			}
-#region SDF 1.7 feature
+			else if (IsValidNode("image"))
+			{
+				Type = "image";
+				shape = new Image();
+
+				(shape as Image).uri = GetValue<string>("image/uri");
+				(shape as Image).scale = GetValue<double>("image/scale");
+				(shape as Image).threshold = GetValue<int>("image/threshold");
+				(shape as Image).height = GetValue<double>("image/height");
+				(shape as Image).granularity = GetValue<int>("image/granularity");
+			}
+			else if (IsValidNode("heightmap"))
+			{
+				Type = "heightmap";
+				shape = new Heightmap();
+
+				(shape as Heightmap).uri = GetValue<string>("heightmap/uri");
+
+				var heightmapSize = GetValue<string>("heightmap/size");
+				if (!string.IsNullOrEmpty(heightmapSize))
+				{
+					(shape as Heightmap).size.FromString(heightmapSize);
+				}
+
+				var heightmapPos = GetValue<string>("heightmap/pos");
+				if (!string.IsNullOrEmpty(heightmapPos))
+				{
+					(shape as Heightmap).pos.FromString(heightmapPos);
+				}
+
+				if (GetValues<double>("heightmap/texture/size", out var textureSizeList))
+				{
+					// (shape as Heightmap).size.FromString(heightmapPos);
+					if (GetValues<string>("heightmap/texture/diffuse", out var textureDiffuseList))
+					{
+						// (shape as Heightmap).size.FromString(heightmapPos);
+						if (GetValues<string>("heightmap/texture/normal", out var textureNomralList))
+						{
+							// (shape as Heightmap).size.FromString(heightmapPos);
+							if (textureSizeList.Count > 0 &&
+								textureSizeList.Count == textureDiffuseList.Count &&
+								textureDiffuseList.Count == textureNomralList.Count)
+							{
+								for (var i = 0; i < textureSizeList.Count; i++)
+								{
+									var texture = new Heightmap.Texture();
+									texture.size = textureSizeList[i];
+									texture.diffuse = textureDiffuseList[i];
+									texture.normal = textureNomralList[i];
+									// Console.Write(texture.diffuse);
+									(shape as Heightmap).texture.Add(texture);
+								}
+								(shape as Heightmap).texture.Reverse();
+							}
+						}
+					}
+				}
+
+				if (GetValues<double>("heightmap/blend/min_height", out var blendMinHeightList))
+				{
+					if (GetValues<double>("heightmap/blend/fade_dist", out var blendFadeDistList))
+					{
+						if (blendMinHeightList.Count > 0 && blendMinHeightList.Count == blendFadeDistList.Count)
+						{
+							Console.WriteLine("Blend is not supported yet");
+
+							if (blendMinHeightList.Count + 1 > textureSizeList.Count)
+							{
+								Console.WriteLine(
+									"Invalid terrain, too few layers to initialize blend map, texture(" +
+									 textureSizeList.Count + ") blend(" + blendMinHeightList.Count + ")");
+							}
+							else
+							{
+								for (var i = 0; i < blendMinHeightList.Count; i++)
+								{
+									var blend = new Heightmap.Blend();
+									blend.min_height = blendMinHeightList[i];
+									blend.fade_dist = blendFadeDistList[i];
+									(shape as Heightmap).blend.Add(blend);
+								}
+							}
+						}
+					}
+				}
+
+				(shape as Heightmap).use_terrain_paging = GetValue<bool>("heightmap/use_terrain_paging", false);
+
+				if ((shape as Heightmap).use_terrain_paging)
+				{
+					Console.WriteLine("<use_terrain_paging> is not supported yet.");
+				}
+
+				(shape as Heightmap).sampling = GetValue<uint>("heightmap/sampling", 2);
+			}
+			else if (IsValidNode("polyline"))
+			{
+				Console.WriteLine("Currently not supported");
+				empty = true;
+			}
+
+			#region SDF_1.7_feature
 			else if (IsValidNode("capsule"))
 			{
 				Type = "capsule";
@@ -89,7 +189,9 @@ namespace SDF
 				(shape as Capsule).radius = GetValue<double>("capsule/radius");
 				(shape as Capsule).length = GetValue<double>("capsule/length");
 			}
-#endregion
+			#endregion
+
+			#region SDF_1.8_feature
 			else if (IsValidNode("ellipsoid"))
 			{
 				Type = "ellipsoid";
@@ -106,23 +208,8 @@ namespace SDF
 					(shape as Ellipsoid).radii.FromString(radii);
 				}
 			}
-			else if (IsValidNode("image"))
-			{
-				Type = "image";
-				shape = new Image();
+			#endregion
 
-				(shape as Image).uri = GetValue<string>("image/uri");
-				(shape as Image).scale = GetValue<double>("image/scale");
-				(shape as Image).threshold = GetValue<int>("image/threshold");
-				(shape as Image).height = GetValue<double>("image/height");
-				(shape as Image).granularity = GetValue<int>("image/granularity");
-			}
-			else if (IsValidNode("heightmap") ||
-					 IsValidNode("polyline"))
-			{
-				Console.WriteLine("Currently not supported");
-				empty = true;
-			}
 			else
 			{
 				empty = true;

@@ -44,7 +44,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 		thread.Dispose();
 		transport.Dispose();
-		Debug.LogFormat("({0}){0}, CLOiSimPlugin destroyed.", type.ToString(), name);
+		Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
 	}
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)

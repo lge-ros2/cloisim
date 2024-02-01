@@ -1843,13 +1843,16 @@ MonoBehaviour:
   - ../sample_resources/models/
   - ../world_resources/yangjae_city
   - ../world_resources/bluepearl/models
-  - ../../props_resources
+  - ../props_resources
+  - ../world_resources/lawn_ground/models
   worldRootDirectories:
   - ../sample_resources/worlds/
   - ../world_resources/bluepearl/worlds
+  - ../world_resources/lawn_ground/worlds
   fileRootDirectories:
   - ../sample_resources/media/
   - ../world_resources/bluepearl/media
+  - ../world_resources/lawn_ground
 --- !u!1 &314493398
 GameObject:
   m_ObjectHideFlags: 0
@@ -3896,6 +3899,37 @@ ArticulationBody:
   m_Immovable: 0
   m_UseGravity: 1
   m_CollisionDetectionMode: 0
+--- !u!1 &648266123
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 648266124}
+  m_Layer: 0
+  m_Name: Roads
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &648266124
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 648266123}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &683297084
 GameObject:
   m_ObjectHideFlags: 0
@@ -9158,4 +9192,5 @@ SceneRoots:
   - {fileID: 333360876}
   - {fileID: 622325895}
   - {fileID: 167231047}
+  - {fileID: 648266124}
   - {fileID: 126105769}
