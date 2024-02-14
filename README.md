@@ -165,12 +165,13 @@ In terms of branch, 'main' is release(stable) version, and 'develop' is used for
 
 ### If you want to build a project
 
-Please visit here [build guide](https://github.com/lge-ros2/cloisim/wiki/Build-Guide).
+Please visit here [build guide](https://github.com/lge-ros2/cloisim/wiki/Build-Guide) in Wiki pages.
 
 ## Usage
 
 ![multi-robots](https://user-images.githubusercontent.com/21001946/82773215-75572480-9e7c-11ea-85a2-a3838fa1e190.png)
 
+Any problem during launching the simultion, please refer to [Wiki Page/Usage](https://github.com/lge-ros2/cloisim/wiki/Usage)' section.
 
 ### Run 'CLOiSim'
 
@@ -218,7 +219,7 @@ websocket service path: ***ws://127.0.0.1:8080/{service-name}***
 
 You can add markers like line, text, box, or sphere point and reset simulation by just sending a request data as a JSON format.
 
-Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-service)
+Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-service) in Wiki pages.
 
 ### CLOiSim + nav2
 
