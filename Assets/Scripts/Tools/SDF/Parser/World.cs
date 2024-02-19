@@ -222,7 +222,7 @@ namespace SDF
 		private Models models = null;
 		private Actors actors = null;
 
-		private List<Road> roads_ = new List<Road>();
+		private List<Road> _roads = new List<Road>();
 
 		public SphericalCoordinates spherical_coordinates = null;
 
@@ -302,7 +302,7 @@ namespace SDF
 			foreach (XmlNode roadNode in GetNodes("road"))
 			{
 				var road = new Road(roadNode);
-				roads_.Add(road);
+				_roads.Add(road);
 			}
 
 			if (IsValidNode("spherical_coordinates"))
@@ -373,7 +373,7 @@ namespace SDF
 
 		public List<Road> GetRoads()
 		{
-			return roads_;
+			return _roads;
 		}
 	}
 }

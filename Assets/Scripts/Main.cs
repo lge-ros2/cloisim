@@ -31,8 +31,8 @@ public class Main : MonoBehaviour
 	private FollowingTargetList followingList = null;
 
 	private static GameObject _core = null;
-	private static GameObject propsRoot = null;
-	private static GameObject worldRoot = null;
+	private static GameObject _propsRoot = null;
+	private static GameObject _worldRoot = null;
 	private static GameObject lightsRoot = null;
 	private static GameObject _roadsRoot = null;
 	private static GameObject uiRoot = null;
@@ -52,8 +52,8 @@ public class Main : MonoBehaviour
 	private static bool isResetting = false;
 	private static bool resetTriggered = false;
 
-	public static GameObject PropsRoot => propsRoot;
-	public static GameObject WorldRoot => worldRoot;
+	public static GameObject PropsRoot => _propsRoot;
+	public static GameObject WorldRoot => _worldRoot;
 	public static GameObject RoadsRoot => _roadsRoot;
 	public static GameObject CoreObject => _core;
 	public static GameObject UIObject => uiRoot;
@@ -73,10 +73,10 @@ public class Main : MonoBehaviour
 
 	private void CleanAllModels()
 	{
-		foreach (var child in worldRoot.GetComponentsInChildren<Transform>())
+		foreach (var child in _worldRoot.GetComponentsInChildren<Transform>())
 		{
 			// skip root gameobject
-			if (child == null || child.gameObject == null || child.gameObject == worldRoot)
+			if (child == null || child.gameObject == null || child.gameObject == _worldRoot)
 			{
 				continue;
 			}
@@ -107,11 +107,11 @@ public class Main : MonoBehaviour
 
 	private void ResetRootModelsTransform()
 	{
-		if (worldRoot != null)
+		if (_worldRoot != null)
 		{
-			worldRoot.transform.localRotation = Quaternion.identity;
-			worldRoot.transform.localPosition = Vector3.zero;
-			worldRoot.transform.localScale = Vector3.one;
+			_worldRoot.transform.localRotation = Quaternion.identity;
+			_worldRoot.transform.localPosition = Vector3.zero;
+			_worldRoot.transform.localScale = Vector3.one;
 		}
 	}
 
@@ -213,8 +213,8 @@ public class Main : MonoBehaviour
 			Debug.LogError("Failed to Find 'Core'!!!!");
 		}
 
-		propsRoot = GameObject.Find("Props");
-		worldRoot = GameObject.Find("World");
+		_propsRoot = GameObject.Find("Props");
+		_worldRoot = GameObject.Find("World");
 		lightsRoot = GameObject.Find("Lights");
 		_roadsRoot = GameObject.Find("Roads");
 		uiRoot = GameObject.Find("UI");
@@ -231,9 +231,9 @@ public class Main : MonoBehaviour
 
 		cameraControl = mainCamera.GetComponent<CameraControl>();
 
-		worldNavMeshBuilder = worldRoot.GetComponent<WorldNavMeshBuilder>();
+		worldNavMeshBuilder = _worldRoot.GetComponent<WorldNavMeshBuilder>();
 
-		var simWorld = worldRoot.AddComponent<SimulationWorld>();
+		var simWorld = _worldRoot.AddComponent<SimulationWorld>();
 		DeviceHelper.SetGlobalClock(simWorld.GetClock());
 
 		Main.bridgeManager = new BridgeManager();
@@ -324,7 +324,7 @@ public class Main : MonoBehaviour
 
 	private string GetClonedModelName(in string modelName)
 	{
-		var worldTrnasform = worldRoot.transform;
+		var worldTrnasform = _worldRoot.transform;
 		var numbering = 0;
 		var tmpModelName = modelName;
 		for (var i = 0; i < worldTrnasform.childCount; i++)
@@ -349,7 +349,7 @@ public class Main : MonoBehaviour
 
 			yield return StartCoroutine(_sdfLoader.StartImport(model));
 
-			var targetObject = worldRoot.transform.Find(model.Name);
+			var targetObject = _worldRoot.transform.Find(model.Name);
 
 			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
 			addingModel.SetAddingModelForDeploy(targetObject);
@@ -380,7 +380,7 @@ public class Main : MonoBehaviour
 		if (_sdfRoot.DoParse(out var world, worldFileName))
 		{
 			_sdfLoader = new SDF.Import.Loader();
-			_sdfLoader.SetRootModels(worldRoot);
+			_sdfLoader.SetRootModels(_worldRoot);
 			_sdfLoader.SetRootLights(lightsRoot);
 			_sdfLoader.SetRootRoads(_roadsRoot);
 
@@ -441,12 +441,12 @@ public class Main : MonoBehaviour
 
 	void Reset()
 	{
-		foreach (var helper in worldRoot.GetComponentsInChildren<SDF.Helper.Base>())
+		foreach (var helper in _worldRoot.GetComponentsInChildren<SDF.Helper.Base>())
 		{
 			helper.Reset();
 		}
 
-		foreach (var plugin in worldRoot.GetComponentsInChildren<CLOiSimPlugin>())
+		foreach (var plugin in _worldRoot.GetComponentsInChildren<CLOiSimPlugin>())
 		{
 			plugin.Reset();
 		}
