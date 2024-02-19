@@ -114,6 +114,11 @@ namespace SDF
 				}
 			}
 
+			if (IsValidNode(cameraElement + "/segmentation_type"))
+			{
+				camera.segmentation_type = GetValue<string>(cameraElement + "/segmentation_type", "semantic");
+			}
+
 			if (IsValidNode(cameraElement + "/noise"))
 			{
 				camera.noise = new Noise("gaussian");

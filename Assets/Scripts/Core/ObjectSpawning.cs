@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2021 LG Electronics Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.AI;

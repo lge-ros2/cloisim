@@ -30,11 +30,11 @@ namespace SensorDevices
 		protected UnityEngine.Camera camSensor = null;
 		protected UniversalAdditionalCameraData _universalCamData = null;
 
-		protected string targetRTname;
-		protected GraphicsFormat targetColorFormat;
-		protected GraphicsFormat readbackDstFormat;
+		protected string _targetRTname;
+		protected GraphicsFormat _targetColorFormat;
+		protected GraphicsFormat _readbackDstFormat;
 
-		private CameraData.Image camImageData;
+		protected CameraData.Image _camImageData;
 		private List<AsyncGPUReadbackRequest> _readbackList = new List<AsyncGPUReadbackRequest>();
 		public Noise noise = null;
 		protected bool _startCameraWork = false;
@@ -104,24 +104,24 @@ namespace SensorDevices
 			_universalCamData.renderShadows = true;
 
 			// Debug.Log("This is not a Depth Camera!");
-			targetRTname = "CameraColorTexture";
+			_targetRTname = "CameraColorTexture";
 
 			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
 			switch (pixelFormat)
 			{
 				case CameraData.PixelFormat.L_INT8:
-					targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
-					readbackDstFormat = GraphicsFormat.R8_SRGB;
+					_targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
+					_readbackDstFormat = GraphicsFormat.R8_SRGB;
 					break;
 
 				case CameraData.PixelFormat.RGB_INT8:
 				default:
-					targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
-					readbackDstFormat = GraphicsFormat.R8G8B8_SRGB;
+					_targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
+					_readbackDstFormat = GraphicsFormat.R8G8B8_SRGB;
 					break;
 			}
 
-			camImageData = new CameraData.Image(camParameter.image.width, camParameter.image.height, pixelFormat);
+			_camImageData = new CameraData.Image(camParameter.image.width, camParameter.image.height, pixelFormat);
 		}
 
 		protected override void InitializeMessages()
@@ -167,6 +167,19 @@ namespace SensorDevices
 			}
 		}
 
+		private void OnEnable()
+		{
+			RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+			RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
+		}
+
+		private void OnDisable()
+		{
+			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
+		}
+
+		// protected virtual void SetupCamera()
 		private void SetupCamera()
 		{
 			camSensor.ResetWorldToCameraMatrix();
@@ -188,7 +201,7 @@ namespace SensorDevices
 				height: camParameter.image.height,
 				slices: 1,
 				depthBufferBits: DepthBits.None,
-				colorFormat: targetColorFormat,
+				colorFormat: _targetColorFormat,
 				filterMode: FilterMode.Bilinear,
 				wrapMode: TextureWrapMode.Clamp,
 				dimension: TextureDimension.Tex2D,
@@ -202,7 +215,7 @@ namespace SensorDevices
 				bindTextureMS: false,
 				useDynamicScale: true,
 				memoryless: RenderTextureMemoryless.None,
-				name: targetRTname);
+				name: _targetRTname);
 
 			camSensor.targetTexture = _rtHandle.rt;
 
@@ -224,9 +237,6 @@ namespace SensorDevices
 			_universalCamData.renderType = CameraRenderType.Base;
 			_universalCamData.cameraStack.Clear();
 			camSensor.enabled = false;
-
-			RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
-			RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
 
 			// camSensor.hideFlags |= HideFlags.NotEditable;
 		}
@@ -263,7 +273,7 @@ namespace SensorDevices
 				{
 					camSensor.Render();
 
-					var readbackRequest = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
+					var readbackRequest = AsyncGPUReadback.Request(camSensor.targetTexture, 0, _readbackDstFormat, OnCompleteAsyncReadback);
 
 					lock (_readbackList)
 					{
@@ -308,16 +318,16 @@ namespace SensorDevices
 		protected virtual void ImageProcessing(ref NativeArray<byte> readbackData)
 		{
 			var image = imageStamped.Image;
-			camImageData.SetTextureBufferData(readbackData);
+			_camImageData.SetTextureBufferData(readbackData);
 
-			var imageData = camImageData.GetImageData(image.Data.Length);
+			var imageData = _camImageData.GetImageData(image.Data.Length);
 			if (imageData != null)
 			{
 				image.Data = imageData;
 				if (camParameter.save_enabled && _startCameraWork)
 				{
 					var saveName = name + "_" + Time.time;
-					camImageData.SaveRawImageData(camParameter.save_path, saveName);
+					_camImageData.SaveRawImageData(camParameter.save_path, saveName);
 					// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
 				}
 			}

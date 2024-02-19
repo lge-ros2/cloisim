@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 
 namespace SensorDevices
 {
+	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class DepthCamera : Camera
 	{
 		#region "For Compute Shader"
@@ -38,7 +39,6 @@ namespace SensorDevices
 		private byte[] _computedBufferOutput;
 		private const uint OutputUnitSize = 4;
 		private int _computedBufferOutputUnitLength;
-		private CameraData.Image _depthCamImage;
 		private Texture2D _textureForCapture;
 
 
@@ -120,9 +120,9 @@ namespace SensorDevices
 			_universalCamData.requiresDepthTexture = true;
 			_universalCamData.renderShadows = false;
 
-			targetRTname = "CameraDepthTexture";
-			targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
-			readbackDstFormat = GraphicsFormat.R8G8B8A8_UNorm;
+			_targetRTname = "CameraDepthTexture";
+			_targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
+			_readbackDstFormat = GraphicsFormat.R8G8B8A8_UNorm;
 
 			var cb = new CommandBuffer();
 			cb.name = "CommandBufferForDepthShading";
@@ -150,13 +150,10 @@ namespace SensorDevices
 					graphicFormat = GraphicsFormat.R16_UNorm;
 					break;
 			}
-			_textureForCapture = new Texture2D(width, height, graphicFormat, 0, TextureCreationFlags.None);
 
 			_depthCamBuffer = new DepthData.CamBuffer(width, height);
 			_computedBufferOutputUnitLength = width * height;
 			_computedBufferOutput = new byte[_computedBufferOutputUnitLength * OutputUnitSize];
-
-			_depthCamImage = new CameraData.Image(width, height, format);
 
 			if (computeShader != null)
 			{
@@ -171,6 +168,9 @@ namespace SensorDevices
 
 			_threadGroupX = width / ThreadGroupsX;
 			_threadGroupY = height / ThreadGroupsY;
+
+			_textureForCapture = new Texture2D(width, height, graphicFormat, 0, TextureCreationFlags.None);
+			_textureForCapture.filterMode = FilterMode.Point;
 		}
 
 		protected override void ImageProcessing(ref NativeArray<byte> readbackData)
@@ -205,20 +205,19 @@ namespace SensorDevices
 
 				if (camParameter.save_enabled && _startCameraWork)
 				{
-					SaveRawImageData();
+					var saveName = name + "_" + Time.time;
+					SaveRawImageData(camParameter.save_path, saveName);
 				}
 			}
 			_depthCamBuffer.Deallocate();
 		}
 
-		private void SaveRawImageData()
+		private void SaveRawImageData(in string path, in string name)
 		{
-			var saveName = name + "_" + Time.time;
 			_textureForCapture.SetPixelData(imageStamped.Image.Data, 0);
-			_textureForCapture.filterMode = FilterMode.Point;
 			_textureForCapture.Apply();
 			var bytes = _textureForCapture.EncodeToJPG();
-			var fileName = string.Format("{0}/{1}.jpg", camParameter.save_path, saveName);
+			var fileName = string.Format("{0}/{1}.jpg", path, name);
 			System.IO.File.WriteAllBytes(fileName, bytes);
 			// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
 		}
