@@ -13,6 +13,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 [DefaultExecutionOrder(30)]
+[RequireComponent(typeof(ObjectSpawning), typeof(SegmentationManager))]
 public class Main : MonoBehaviour
 {
 	[Header("Block Loading SDF")]
@@ -243,8 +244,6 @@ public class Main : MonoBehaviour
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
 
 		SensorDevices.DepthCamera.LoadComputeShader();
-
-		gameObject.AddComponent<ObjectSpawning>();
 	}
 
 	void Start()
@@ -503,5 +502,7 @@ public class Main : MonoBehaviour
 		{
 			Assimp.Unmanaged.AssimpLibrary.Instance.FreeLibrary();
 		}
+
+		
 	}
 }
