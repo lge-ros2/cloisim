@@ -22,25 +22,49 @@ public class CameraPlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		var depthcam = gameObject.GetComponent<SensorDevices.DepthCamera>();
-		if (depthcam is null)
+		var depthCam = gameObject.GetComponent<SensorDevices.DepthCamera>();
+		var segCam = gameObject.GetComponent<SensorDevices.SegmentationCamera>();
+
+		var deviceName = string.Empty;
+		if (depthCam is null && segCam is not null)
 		{
-			ChangePluginType(ICLOiSimPlugin.Type.CAMERA);
-			cam = gameObject.GetComponent<SensorDevices.Camera>();
-			attachedDevices.Add("Camera", cam);
+			ChangePluginType(ICLOiSimPlugin.Type.SEGMENTCAMERA);
+			cam = segCam;
+			deviceName = "SegmentationCamera";
+		}
+		else if (depthCam is not null && segCam is null)
+		{
+			ChangePluginType(ICLOiSimPlugin.Type.DEPTHCAMERA);
+			cam = depthCam;
+			deviceName = "DepthCamera";
 		}
 		else
 		{
-			ChangePluginType(ICLOiSimPlugin.Type.DEPTHCAMERA);
-			cam = depthcam;
-			attachedDevices.Add("DepthCamera", cam);
+			ChangePluginType(ICLOiSimPlugin.Type.CAMERA);
+			cam = gameObject.GetComponent<SensorDevices.Camera>();
+			deviceName = "Camera";
 		}
+
+		if (!string.IsNullOrEmpty(deviceName))
+			attachedDevices.Add(deviceName, cam);
 
 		partsName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
+		if (type == ICLOiSimPlugin.Type.DEPTHCAMERA)
+		{
+			if (GetPluginParameters() != null)
+			{
+				var depthScale = GetPluginParameters().GetValue<uint>("configuration/depth_scale", 1000);
+				if (cam != null)
+				{
+					((SensorDevices.DepthCamera)cam).SetDepthScale(depthScale);
+				}
+			}
+		}
+
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
 			AddThread(portService, ServiceThread);
