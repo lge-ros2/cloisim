@@ -15,9 +15,6 @@ Shader "Sensor/Segmentation"
 			"RenderType" = "Opaque"
 		}
 
-		HLSLINCLUDE
-		ENDHLSL
-
 		Pass
 		{
 			Name "Segmentation"
@@ -35,7 +32,6 @@ Shader "Sensor/Segmentation"
 			half4 _UnsupportedColor;
 			int _OutputMode;
 			CBUFFER_END
-
 
 			half4 replacement_output()
 			{
@@ -61,12 +57,12 @@ Shader "Sensor/Segmentation"
 
 			struct Attributes
 			{
-				half4 positionOS : POSITION;
+				float4 positionOS : POSITION;
 			};
 
 			struct Varyings
 			{
-				half4 positionCS : SV_POSITION;
+				float4 positionCS : SV_POSITION;
 				half4 color : COLOR;
 			};
 
@@ -75,13 +71,15 @@ Shader "Sensor/Segmentation"
 				Varyings output = (Varyings)0;
 				VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
 				output.positionCS = vertexInput.positionCS;
-				output.color = replacement_output();
+				half4 color =replacement_output();
+				output.color = color;
 				return output;
 			}
 
 			half4 frag(Varyings i) : SV_Target
 			{
-				return replacement_output();
+				half4 color =replacement_output();
+				return color;
 			}
 			ENDHLSL
 		}
