@@ -16,27 +16,12 @@ namespace SensorDevices
 	{
 		protected override void SetupTexture()
 		{
-			if (!camParameter.segmentation_type.Equals("semantic"))
-			{
-				Debug.Log("Only support semantic segmentation");
-			}
-
-			camSensor.backgroundColor = Color.black;
-			camSensor.clearFlags = CameraClearFlags.SolidColor;
-			camSensor.depthTextureMode = DepthTextureMode.None;
-			camSensor.allowHDR = false;
-			camSensor.allowMSAA = true;
-
-			// Refer to SegmentationRenderer (Universal Renderer Data)
-			_universalCamData.SetRenderer(1);
-			_universalCamData.renderPostProcessing = true;
-			_universalCamData.requiresColorOption = CameraOverrideOption.On;
-			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
-			_universalCamData.requiresColorTexture = true;
-			_universalCamData.requiresDepthTexture = false;
-			_universalCamData.renderShadows = true;
-
 			_targetRTname = "SegmentationTexture";
+
+			_filterMode = FilterMode.Point;
+			_msaaSample = UnityEngine.Rendering.MSAASamples.None;
+			_useDynamicScale = false;
+			_anisoLevel = 0;
 
 			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
 			if (pixelFormat != CameraData.PixelFormat.L_INT16)
@@ -45,10 +30,32 @@ namespace SensorDevices
 			}
 
 			_targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
-			_readbackDstFormat = GraphicsFormat.R16_UNorm;
-			// _readbackDstFormat = GraphicsFormat.R16_SFloat;
+			_readbackDstFormat = GraphicsFormat.R8G8_UNorm;
 
 			_camImageData = new CameraData.Image(camParameter.image.width, camParameter.image.height, pixelFormat);
+		}
+
+		protected override void SetupCamera()
+		{
+			if (!camParameter.segmentation_type.Equals("semantic"))
+			{
+				Debug.Log("Only support semantic segmentation");
+			}
+
+			camSensor.backgroundColor = Color.black;
+			camSensor.clearFlags = CameraClearFlags.SolidColor;
+			camSensor.allowHDR = false;
+			camSensor.allowMSAA = false;
+			camSensor.allowDynamicResolution = false;
+
+			// Refer to SegmentationRenderer (Universal Renderer Data)
+			_universalCamData.SetRenderer(1);
+			_universalCamData.renderPostProcessing = true;
+			_universalCamData.requiresColorOption = CameraOverrideOption.On;
+			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
+			_universalCamData.requiresColorTexture = true;
+			_universalCamData.requiresDepthTexture = false;
+			_universalCamData.renderShadows = false;
 		}
 
 		protected override void ImageProcessing(ref NativeArray<byte> readbackData)
@@ -71,6 +78,8 @@ namespace SensorDevices
 			{
 				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
 			}
+
+			DeviceHelper.SetCurrentTime(imageStamped.Time);
 		}
 	}
 }

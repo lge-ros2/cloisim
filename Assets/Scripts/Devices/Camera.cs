@@ -32,6 +32,11 @@ namespace SensorDevices
 
 		protected string _targetRTname;
 		protected GraphicsFormat _targetColorFormat;
+		protected FilterMode _filterMode = FilterMode.Bilinear;
+		protected MSAASamples _msaaSample = MSAASamples.MSAA2x;
+		protected bool _useDynamicScale = true;
+		protected int _anisoLevel = 3;
+
 		protected GraphicsFormat _readbackDstFormat;
 
 		protected CameraData.Image _camImageData;
@@ -87,6 +92,7 @@ namespace SensorDevices
 			if (camSensor)
 			{
 				SetupTexture();
+				SetupDefaultCamera();
 				SetupCamera();
 				_startCameraWork = true;
 			}
@@ -94,15 +100,6 @@ namespace SensorDevices
 
 		protected virtual void SetupTexture()
 		{
-			camSensor.clearFlags = CameraClearFlags.Skybox;
-			camSensor.allowHDR = true;
-			camSensor.depthTextureMode = DepthTextureMode.None;
-			_universalCamData.requiresColorOption = CameraOverrideOption.On;
-			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
-			_universalCamData.requiresColorTexture = true;
-			_universalCamData.requiresDepthTexture = false;
-			_universalCamData.renderShadows = true;
-
 			// Debug.Log("This is not a Depth Camera!");
 			_targetRTname = "CameraColorTexture";
 
@@ -179,13 +176,16 @@ namespace SensorDevices
 			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
 		}
 
-		// protected virtual void SetupCamera()
-		private void SetupCamera()
+		private void SetupDefaultCamera()
 		{
 			camSensor.ResetWorldToCameraMatrix();
 			camSensor.ResetProjectionMatrix();
 
+			camSensor.backgroundColor = Color.black;
+			camSensor.clearFlags = CameraClearFlags.Skybox;
+			camSensor.depthTextureMode = DepthTextureMode.None;
 			camSensor.renderingPath = RenderingPath.Forward;
+			camSensor.allowHDR = true;
 			camSensor.allowMSAA = true;
 			camSensor.allowDynamicResolution = true;
 			camSensor.useOcclusionCulling = true;
@@ -202,17 +202,21 @@ namespace SensorDevices
 				slices: 1,
 				depthBufferBits: DepthBits.None,
 				colorFormat: _targetColorFormat,
+				// filterMode: _filterMode,
 				filterMode: FilterMode.Bilinear,
 				wrapMode: TextureWrapMode.Clamp,
 				dimension: TextureDimension.Tex2D,
+				// msaaSamples: _msaaSample,
 				msaaSamples: MSAASamples.MSAA2x,
 				enableRandomWrite: false,
 				useMipMap: true,
 				autoGenerateMips: true,
 				isShadowMap: false,
+				// anisoLevel: _anisoLevel,
 				anisoLevel: 3,
 				mipMapBias: 0,
 				bindTextureMS: false,
+				// useDynamicScale: _useDynamicScale,
 				useDynamicScale: true,
 				memoryless: RenderTextureMemoryless.None,
 				name: _targetRTname);
@@ -228,6 +232,11 @@ namespace SensorDevices
 			var invertMatrix = Matrix4x4.Scale(new Vector3(1, -1, 1));
 			camSensor.projectionMatrix = projMatrix * invertMatrix;
 
+			_universalCamData.requiresColorOption = CameraOverrideOption.On;
+			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
+			_universalCamData.requiresColorTexture = true;
+			_universalCamData.requiresDepthTexture = false;
+			_universalCamData.renderShadows = true;
 			_universalCamData.enabled = false;
 			_universalCamData.stopNaN = true;
 			_universalCamData.dithering = true;
@@ -236,21 +245,20 @@ namespace SensorDevices
 			_universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
 			_universalCamData.renderType = CameraRenderType.Base;
 			_universalCamData.cameraStack.Clear();
-			camSensor.enabled = false;
 
+			camSensor.enabled = false;
 			// camSensor.hideFlags |= HideFlags.NotEditable;
+		}
+
+		protected virtual void SetupCamera()
+		{
 		}
 
 		protected new void OnDestroy()
 		{
-			_startCameraWork = false;
-
 			// Debug.Log("OnDestroy(Camera)");
-			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
-			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
-
+			_startCameraWork = false;
 			_rtHandle?.Release();
-
 			base.OnDestroy();
 		}
 
@@ -311,7 +319,6 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			DeviceHelper.SetCurrentTime(imageStamped.Time);
 			PushDeviceMessage<messages.ImageStamped>(imageStamped);
 		}
 
@@ -335,6 +342,8 @@ namespace SensorDevices
 			{
 				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
 			}
+
+			DeviceHelper.SetCurrentTime(imageStamped.Time);
 		}
 
 		public messages.CameraSensor GetCameraInfo()

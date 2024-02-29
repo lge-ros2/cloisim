@@ -11,6 +11,7 @@ using UnityEngine.Experimental.Rendering;
 using Unity.Collections;
 using Unity.Jobs;
 using System.Threading.Tasks;
+using System;
 
 namespace SensorDevices
 {
@@ -20,7 +21,7 @@ namespace SensorDevices
 		#region "For Compute Shader"
 
 		private static ComputeShader ComputeShaderDepthBuffer = null;
-		private ComputeShader computeShader = null;
+		private ComputeShader _computeShader = null;
 		private int _kernelIndex = -1;
 		private const int ThreadGroupsX = 32;
 		private const int ThreadGroupsY = 32;
@@ -40,7 +41,6 @@ namespace SensorDevices
 		private const uint OutputUnitSize = 4;
 		private int _computedBufferOutputUnitLength;
 		private Texture2D _textureForCapture;
-
 
 		public static void LoadComputeShader()
 		{
@@ -81,57 +81,22 @@ namespace SensorDevices
 		public void SetDepthScale(in uint value)
 		{
 			depthScale = value;
-
-			if (computeShader != null)
-			{
-				computeShader.SetFloat("_DepthScale", (float)depthScale);
-			}
 		}
 
 		new void OnDestroy()
 		{
 			// Debug.Log("OnDestroy(Depth Camera)");
-			Destroy(computeShader);
-			computeShader = null;
+			Destroy(_computeShader);
+			_computeShader = null;
 
 			base.OnDestroy();
 		}
 
 		protected override void SetupTexture()
 		{
-			computeShader = Instantiate(ComputeShaderDepthBuffer);
-			_kernelIndex = computeShader.FindKernel("CSScaleDepthBuffer");
-
-			var depthShader = Shader.Find("Sensor/Depth");
-			depthMaterial = new Material(depthShader);
-
-			if (camParameter.depth_camera_output.Equals("points"))
-			{
-				Debug.Log("Enable Point Cloud data mode - NOT SUPPORT YET!");
-				camParameter.image.format = "RGB_FLOAT32";
-			}
-
-			camSensor.clearFlags = CameraClearFlags.Depth;
-			camSensor.allowHDR = false;
-			camSensor.depthTextureMode = DepthTextureMode.Depth;
-			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
-			_universalCamData.requiresDepthOption = CameraOverrideOption.On;
-			_universalCamData.requiresColorTexture = false;
-			_universalCamData.requiresDepthTexture = true;
-			_universalCamData.renderShadows = false;
-
 			_targetRTname = "CameraDepthTexture";
 			_targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
 			_readbackDstFormat = GraphicsFormat.R8G8B8A8_UNorm;
-
-			var cb = new CommandBuffer();
-			cb.name = "CommandBufferForDepthShading";
-			var tempTextureId = Shader.PropertyToID("_RenderImageCameraDepthTexture");
-			cb.GetTemporaryRT(tempTextureId, -1, -1);
-			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
-			cb.ReleaseTemporaryRT(tempTextureId);
-			camSensor.AddCommandBuffer(CameraEvent.AfterEverything, cb);
-			cb.Release();
 
 			var width = camParameter.image.width;
 			var height = camParameter.image.height;
@@ -155,22 +120,58 @@ namespace SensorDevices
 			_computedBufferOutputUnitLength = width * height;
 			_computedBufferOutput = new byte[_computedBufferOutputUnitLength * OutputUnitSize];
 
-			if (computeShader != null)
-			{
-				_imageDepth = CameraData.GetImageDepth(format);
-				computeShader.SetFloat("_DepthMax", (float)camParameter.clip.far);
-				computeShader.SetInt("_Width", width);
-				computeShader.SetInt("_UnitSize", _imageDepth);
-			}
-
-			ReverseDepthData(false);
-			FlipXDepthData(false);
-
 			_threadGroupX = width / ThreadGroupsX;
 			_threadGroupY = height / ThreadGroupsY;
 
 			_textureForCapture = new Texture2D(width, height, graphicFormat, 0, TextureCreationFlags.None);
 			_textureForCapture.filterMode = FilterMode.Point;
+
+			_computeShader = Instantiate(ComputeShaderDepthBuffer);
+
+			if (_computeShader != null)
+			{
+				_kernelIndex = _computeShader.FindKernel("CSScaleDepthBuffer");
+				_imageDepth = CameraData.GetImageDepth(format);
+
+				_computeShader.SetFloat("_DepthMax", (float)camParameter.clip.far);
+				_computeShader.SetInt("_Width", width);
+				_computeShader.SetInt("_UnitSize", _imageDepth);
+				_computeShader.SetFloat("_DepthScale", (float)depthScale);
+			}
+		}
+
+		protected override void SetupCamera()
+		{
+			var depthShader = Shader.Find("Sensor/Depth");
+			depthMaterial = new Material(depthShader);
+
+			if (camParameter.depth_camera_output.Equals("points"))
+			{
+				Debug.Log("Enable Point Cloud data mode - NOT SUPPORT YET!");
+				camParameter.image.format = "RGB_FLOAT32";
+			}
+
+			camSensor.clearFlags = CameraClearFlags.Depth;
+			camSensor.allowHDR = false;
+			camSensor.depthTextureMode = DepthTextureMode.Depth;
+
+			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
+			_universalCamData.requiresDepthOption = CameraOverrideOption.On;
+			_universalCamData.requiresColorTexture = false;
+			_universalCamData.requiresDepthTexture = true;
+			_universalCamData.renderShadows = false;
+
+			var cb = new CommandBuffer();
+			cb.name = "CommandBufferForDepthShading";
+			var tempTextureId = Shader.PropertyToID("_RenderImageCameraDepthTexture");
+			cb.GetTemporaryRT(tempTextureId, -1, -1);
+			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
+			cb.ReleaseTemporaryRT(tempTextureId);
+			camSensor.AddCommandBuffer(CameraEvent.AfterEverything, cb);
+			cb.Release();
+
+			ReverseDepthData(false);
+			FlipXDepthData(false);
 		}
 
 		protected override void ImageProcessing(ref NativeArray<byte> readbackData)
@@ -178,18 +179,18 @@ namespace SensorDevices
 			_depthCamBuffer.Allocate();
 			_depthCamBuffer.raw = readbackData;
 
-			if (_depthCamBuffer.depth.IsCreated && computeShader != null)
+			if (_depthCamBuffer.depth.IsCreated && _computeShader != null)
 			{
 				var jobHandleDepthCamBuffer = _depthCamBuffer.Schedule(_depthCamBuffer.Length(), BatchSize);
 				jobHandleDepthCamBuffer.Complete();
 
 				var computeBufferSrc = new ComputeBuffer(_depthCamBuffer.depth.Length, sizeof(float));
-				computeShader.SetBuffer(_kernelIndex, "_Input", computeBufferSrc);
+				_computeShader.SetBuffer(_kernelIndex, "_Input", computeBufferSrc);
 				computeBufferSrc.SetData(_depthCamBuffer.depth);
 
 				var computeBufferDst = new ComputeBuffer(_computedBufferOutput.Length, sizeof(byte));
-				computeShader.SetBuffer(_kernelIndex, "_Output", computeBufferDst);
-				computeShader.Dispatch(_kernelIndex, _threadGroupX, _threadGroupY, 1);
+				_computeShader.SetBuffer(_kernelIndex, "_Output", computeBufferDst);
+				_computeShader.Dispatch(_kernelIndex, _threadGroupX, _threadGroupY, 1);
 				computeBufferDst.GetData(_computedBufferOutput);
 
 				computeBufferSrc.Release();
@@ -197,11 +198,19 @@ namespace SensorDevices
 
 				Parallel.For(0, _computedBufferOutputUnitLength, (int i) =>
 				{
-					for (int j = 0; j < _imageDepth; j++)
-						imageStamped.Image.Data[i * _imageDepth + j] = _computedBufferOutput[i * OutputUnitSize + j];
+					Buffer.BlockCopy(
+						_computedBufferOutput, i * (int)OutputUnitSize,
+						imageStamped.Image.Data, i * _imageDepth,
+						_imageDepth);
 				});
 
-				// Debug.LogFormat("{0:X} {1:X} {2:X} {3:X} => {4}, {5}, {6}, {7}", image.Data[0], image.Data[1], image.Data[2], image.Data[3], System.BitConverter.ToInt16(image.Data, 0), System.BitConverter.ToUInt16(image.Data, 2), System.BitConverter.ToInt32(image.Data, 0), System.BitConverter.ToSingle(image.Data, 0));
+				// Debug.LogFormat("{0:X} {1:X} {2:X} {3:X} => {4}, {5}, {6}, {7}",
+				// 	imageStamped.Image.Data[1000], imageStamped.Image.Data[2000],
+				// 	imageStamped.Image.Data[5000], imageStamped.Image.Data[8000],
+				// 	System.BitConverter.ToInt16(imageStamped.Image.Data, 0),
+				// 	System.BitConverter.ToUInt16(imageStamped.Image.Data, 2),
+				// 	System.BitConverter.ToInt32(imageStamped.Image.Data, 0),
+				// 	System.BitConverter.ToSingle(imageStamped.Image.Data, 0));
 
 				if (camParameter.save_enabled && _startCameraWork)
 				{
@@ -210,6 +219,8 @@ namespace SensorDevices
 				}
 			}
 			_depthCamBuffer.Deallocate();
+
+			DeviceHelper.SetCurrentTime(imageStamped.Time);
 		}
 
 		private void SaveRawImageData(in string path, in string name)
