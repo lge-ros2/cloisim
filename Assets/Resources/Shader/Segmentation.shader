@@ -3,7 +3,7 @@ Shader "Sensor/Segmentation"
 	Properties
 	{
 		_SegmentationColor ("Segmentation Color", Color) = (1, 1, 1, 1)
-		_SegmentationClassId ("Segmentation Class ID Value in 16bits", Color) = (1, 1, 1, 1)
+		_SegmentationClassId ("Segmentation Class ID Value in 16bits", Color) = (0, 0, 0, 1)
 		_DisableColor ("Disable Color output", int) = 0
 	}
 

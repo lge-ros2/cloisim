@@ -26,9 +26,8 @@ Material:
     m_Ints: []
     m_Floats:
     - _DisableColor: 0
-    - _SegmentationGray: 1
     m_Colors:
-    - _SegmentationClassId: {r: 1, g: 1, b: 1, a: 1}
+    - _SegmentationClassId: {r: 0, g: 0, b: 0, a: 1}
     - _SegmentationColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
 --- !u!114 &6202412140821847777
