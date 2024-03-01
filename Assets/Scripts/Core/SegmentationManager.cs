@@ -60,7 +60,7 @@ public class SegmentationManager : MonoBehaviour
 			return;
 		}
 		_labelInfo.TryAdd(className, value);
-		Debug.Log($"AddClass: {className}, {_labelInfo[className]}");
+		// Debug.Log($"AddClass: {className}, {_labelInfo[className]}");
 	}
 
 	public void GetLabelInfo()
@@ -69,5 +69,12 @@ public class SegmentationManager : MonoBehaviour
 		{
 			Debug.Log($"{item.Key}, {item.Value}");
 		}
+	}
+
+	public static void AttachTag(in string className, Transform target)
+	{
+		var segmentationTag = target.gameObject.AddComponent<SegmentationTag>();
+		segmentationTag.TagName = className;
+		segmentationTag.Refresh();
 	}
 }

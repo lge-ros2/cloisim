@@ -325,7 +325,7 @@ public class Main : MonoBehaviour
 		}
 	}
 
-	private string GetClonedModelName(in string modelName)
+	private static string GetClonedModelName(in string modelName)
 	{
 		var worldTrnasform = _worldRoot.transform;
 		var numbering = 0;
@@ -343,13 +343,6 @@ public class Main : MonoBehaviour
 		return tmpModelName;
 	}
 
-	private void AttachSegmentationTag(in string className, Transform target)
-	{
-		var segmentationTag = target.gameObject.AddComponent<SegmentationTag>();
-		segmentationTag.TagName = className;
-		segmentationTag.Refresh();
-	}
-
 	private IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
@@ -362,7 +355,7 @@ public class Main : MonoBehaviour
 
 			var targetObject = _worldRoot.transform.Find(model.Name);
 
-			AttachSegmentationTag(originalModelName, targetObject);
+			SegmentationManager.AttachTag(originalModelName, targetObject);
 
 			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
 			addingModel.SetAddingModelForDeploy(targetObject);
@@ -398,6 +391,8 @@ public class Main : MonoBehaviour
 			_sdfLoader.SetRootRoads(_roadsRoot);
 
 			yield return _sdfLoader.StartImport(world);
+
+			// AttachSegmentationTag();
 
 			// for GUI
 			followingList?.UpdateList();
