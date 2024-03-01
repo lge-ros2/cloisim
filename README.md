@@ -47,6 +47,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
     - [X] Depth Camera
     - [X] Multi-camera
     - [X] RealSense (RGB + IR1 + IR2 + Depth)
+    - [X] Semantic Segmentation Camera
   - [X] GPS sensor
   - [ ] Sensor noise models
     - [X] Gaussian
@@ -143,7 +144,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.19f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.20f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 22.04.3 LTS
