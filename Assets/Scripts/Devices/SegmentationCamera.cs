@@ -18,11 +18,6 @@ namespace SensorDevices
 		{
 			_targetRTname = "SegmentationTexture";
 
-			_filterMode = FilterMode.Point;
-			_msaaSample = UnityEngine.Rendering.MSAASamples.None;
-			_useDynamicScale = false;
-			_anisoLevel = 0;
-
 			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
 			if (pixelFormat != CameraData.PixelFormat.L_INT16)
 			{
@@ -30,7 +25,7 @@ namespace SensorDevices
 			}
 
 			_targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
-			_readbackDstFormat = GraphicsFormat.R8G8_UNorm;
+			_readbackDstFormat = GraphicsFormat.R8G8_UNorm; // for Unsigned 16-bit
 
 			_camImageData = new CameraData.Image(camParameter.image.width, camParameter.image.height, pixelFormat);
 		}
@@ -46,7 +41,6 @@ namespace SensorDevices
 			camSensor.clearFlags = CameraClearFlags.SolidColor;
 			camSensor.allowHDR = false;
 			camSensor.allowMSAA = false;
-			camSensor.allowDynamicResolution = false;
 
 			// Refer to SegmentationRenderer (Universal Renderer Data)
 			_universalCamData.SetRenderer(1);
@@ -56,6 +50,7 @@ namespace SensorDevices
 			_universalCamData.requiresColorTexture = true;
 			_universalCamData.requiresDepthTexture = false;
 			_universalCamData.renderShadows = false;
+			_universalCamData.dithering = false;
 		}
 
 		protected override void ImageProcessing(ref NativeArray<byte> readbackData)
@@ -67,6 +62,7 @@ namespace SensorDevices
 			if (imageData != null)
 			{
 				image.Data = imageData;
+
 				if (camParameter.save_enabled && _startCameraWork)
 				{
 					var saveName = name + "_" + Time.time;
@@ -76,7 +72,7 @@ namespace SensorDevices
 			}
 			else
 			{
-				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
+				Debug.LogWarning($"{name}: Failed to get image Data");
 			}
 
 			DeviceHelper.SetCurrentTime(imageStamped.Time);

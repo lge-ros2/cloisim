@@ -32,11 +32,6 @@ namespace SensorDevices
 
 		protected string _targetRTname;
 		protected GraphicsFormat _targetColorFormat;
-		protected FilterMode _filterMode = FilterMode.Bilinear;
-		protected MSAASamples _msaaSample = MSAASamples.MSAA2x;
-		protected bool _useDynamicScale = true;
-		protected int _anisoLevel = 3;
-
 		protected GraphicsFormat _readbackDstFormat;
 
 		protected CameraData.Image _camImageData;
@@ -202,21 +197,17 @@ namespace SensorDevices
 				slices: 1,
 				depthBufferBits: DepthBits.None,
 				colorFormat: _targetColorFormat,
-				// filterMode: _filterMode,
 				filterMode: FilterMode.Bilinear,
 				wrapMode: TextureWrapMode.Clamp,
 				dimension: TextureDimension.Tex2D,
-				// msaaSamples: _msaaSample,
 				msaaSamples: MSAASamples.MSAA2x,
 				enableRandomWrite: false,
 				useMipMap: true,
 				autoGenerateMips: true,
 				isShadowMap: false,
-				// anisoLevel: _anisoLevel,
 				anisoLevel: 3,
 				mipMapBias: 0,
 				bindTextureMS: false,
-				// useDynamicScale: _useDynamicScale,
 				useDynamicScale: true,
 				memoryless: RenderTextureMemoryless.None,
 				name: _targetRTname);
