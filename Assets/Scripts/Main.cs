@@ -43,6 +43,7 @@ public class Main : MonoBehaviour
 	private static WorldNavMeshBuilder worldNavMeshBuilder = null;
 	private static RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private static CameraControl cameraControl = null;
+	private static SegmentationManager _segmentationManager = null;
 
 	#region "Non-Component class"
 	private static BridgeManager bridgeManager = null;
@@ -63,6 +64,7 @@ public class Main : MonoBehaviour
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => worldNavMeshBuilder;
 	public static BridgeManager BridgeManager => bridgeManager;
+	public static SegmentationManager SegmentationManager => _segmentationManager;
 
 	public static CameraControl CameraControl => cameraControl;
 
@@ -245,7 +247,7 @@ public class Main : MonoBehaviour
 		SensorDevices.DepthCamera.LoadComputeShader();
 
 		gameObject.AddComponent<ObjectSpawning>();
-		gameObject.AddComponent<SegmentationManager>();
+		_segmentationManager = gameObject.AddComponent<SegmentationManager>();
 	}
 
 	void Start()
@@ -341,16 +343,26 @@ public class Main : MonoBehaviour
 		return tmpModelName;
 	}
 
+	private void AttachSegmentationTag(in string className, Transform target)
+	{
+		var segmentationTag = target.gameObject.AddComponent<SegmentationTag>();
+		segmentationTag.TagName = className;
+		segmentationTag.Refresh();
+	}
+
 	private IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
-			model.Name = GetClonedModelName(model.Name);
+			var originalModelName = model.Name;
+			model.Name = GetClonedModelName(originalModelName);
 
 			yield return StartCoroutine(_sdfLoader.StartImport(model));
 
 			var targetObject = _worldRoot.transform.Find(model.Name);
+
+			AttachSegmentationTag(originalModelName, targetObject);
 
 			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
 			addingModel.SetAddingModelForDeploy(targetObject);
