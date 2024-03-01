@@ -25,12 +25,11 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _OutputMode: -1
+    - _DisableColor: 0
+    - _SegmentationGray: 1
     m_Colors:
-    - _SegmentationIdColor: {r: 0.29999998, g: 0.5, b: 1, a: 1}
-    - _SegmentationLayerColor: {r: 0.5, g: 0.9, b: 1, a: 1}
-    - _SegmentationNameColor: {r: 0.39999998, g: 0.7, b: 1, a: 1}
-    - _UnsupportedColor: {r: 0.09999997, g: 0.09999997, b: 0.09999997, a: 1}
+    - _SegmentationClassId: {r: 1, g: 1, b: 1, a: 1}
+    - _SegmentationColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
 --- !u!114 &6202412140821847777
 MonoBehaviour:

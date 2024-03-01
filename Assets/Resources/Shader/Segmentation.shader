@@ -2,11 +2,9 @@ Shader "Sensor/Segmentation"
 {
 	Properties
 	{
-		_SegmentationIdColor ("Id Color", Color) = (0.3, 0.5, 1, 1)
-		_SegmentationNameColor ("Name Color", Color) = (0.4, 0.7, 1, 1)
-		_SegmentationLayerColor ("Layer Color", Color) = (0.5, 0.9, 1, 1)
-		_UnsupportedColor ("Unsupported Color", Color) = (0.1, 0.1, 0.1, 1)
-		_OutputMode ("Output Mode", int) = -1
+		_SegmentationColor ("Segmentation Color", Color) = (1, 1, 1, 1)
+		_SegmentationClassId ("Segmentation Class ID Value in 16bits", Color) = (1, 1, 1, 1)
+		_DisableColor ("Disable Color output", int) = 0
 	}
 
 	SubShader
@@ -26,34 +24,10 @@ Shader "Sensor/Segmentation"
 			#pragma fragment frag
 
 			CBUFFER_START(UnityPerMaterial)
-			half4 _SegmentationIdColor;
-			half4 _SegmentationNameColor;
-			half4 _SegmentationLayerColor;
-			half4 _UnsupportedColor;
-			int _OutputMode;
+			half4 _SegmentationColor;
+			half4 _SegmentationClassId;
+			int _DisableColor;
 			CBUFFER_END
-
-			half4 replacement_output()
-			{
-				/*
-				public enum ReplacementMode
-				{
-					ObjectId = 0,
-					ObjectName = 1,
-					ObjectLayer = 2
-				};
-				*/
-				switch (_OutputMode)
-				{
-				case 0:
-					return _SegmentationIdColor;
-				case 1:
-					return _SegmentationNameColor;
-				case 2:
-					return _SegmentationLayerColor;
-				}
-				return _UnsupportedColor;
-			}
 
 			struct Attributes
 			{
@@ -71,15 +45,13 @@ Shader "Sensor/Segmentation"
 				Varyings output = (Varyings)0;
 				VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
 				output.positionCS = vertexInput.positionCS;
-				half4 color =replacement_output();
-				output.color = color;
+				output.color = (_DisableColor == 0)? _SegmentationColor : _SegmentationClassId;
 				return output;
 			}
 
 			half4 frag(Varyings i) : SV_Target
 			{
-				half4 color =replacement_output();
-				return color;
+				return (_DisableColor == 0)? _SegmentationColor : _SegmentationClassId;
 			}
 			ENDHLSL
 		}

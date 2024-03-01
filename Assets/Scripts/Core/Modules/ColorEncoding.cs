@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-
+using System;
 using UnityEngine;
 
 public class ColorEncoding
@@ -83,5 +83,19 @@ public class ColorEncoding
 		color /= divider;
 
 		return color;
+	}
+
+	public static Color Encode16BitsToRG(in UInt16 value)
+	{
+		var classIdR = (byte)((value >> 8) & 0xFF);
+		var classIdG = (byte)(value & 0xFF);
+		return new Color32(classIdR, classIdG, 0, 0);
+	}
+
+	// for little endian order
+	public static Color Encode16BitsToGR(in UInt16 value)
+	{
+		var rgColor = Encode16BitsToRG(value);
+		return new Color(rgColor.g, rgColor.r, 0, 0);
 	}
 }

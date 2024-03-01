@@ -4,74 +4,70 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
 using UnityEngine;
-// using UnityEngine.Rendering.Universal;
-// using UnityEngine.Experimental.Rendering;
-// using Unity.Collections;
 using System.Collections.Generic;
 
 public class SegmentationManager : MonoBehaviour
 {
-	private enum ReplacementMode
+	public enum ReplacementMode
 	{
 		ObjectId = 0,
 		ObjectName = 1,
 		LayerId = 2
 	};
 
-	private static readonly ReplacementMode ReplaceMode = ReplacementMode.ObjectName;
-	private static Material SegmentationMaterial = null;
+	public ReplacementMode Mode => _ReplaceMode;
+
+	private static readonly ReplacementMode _ReplaceMode = ReplacementMode.ObjectName;
+	private static readonly bool _disableColor = true;
+	private static Material _material = null;
+
+	private const int MAX_LABEL_INFO = 256;
+
+	private Dictionary<string, UInt16> _labelInfo = new Dictionary<string, UInt16>();
+
+	private List<SegmentationTag> _tagList = new List<SegmentationTag>();
 
 
 	void OnEnable()
 	{
-		if (SegmentationMaterial == null)
+		if (_material == null)
 		{
-			SegmentationMaterial = Resources.Load<Material>("Materials/Segmentation");
+			_material = Resources.Load<Material>("Materials/Segmentation");
 		}
 
-		if (SegmentationMaterial != null)
+		if (_material != null)
 		{
-			SegmentationMaterial.SetInt("_OutputMode", (int)ReplaceMode);
+			_material.SetInt("_DisableColor", _disableColor ? 1 : 0);
 		}
 	}
 
 	void OnDisable()
 	{
-		if (SegmentationMaterial != null)
+		if (_material != null)
 		{
-			SegmentationMaterial.SetInt("_OutputMode", (int)-1);
+			_material.SetInt("_DisableColor", 0);
 		}
 	}
 
-
-
-	public void OnSceneChanged()
+	public void AddClass(in string className, in UInt16 value)
 	{
-		var renderersWorld = Main.WorldRoot.GetComponentsInChildren<Renderer>();
-		var renderersProps = Main.PropsRoot.GetComponentsInChildren<Renderer>();
-
-		var combineRenderers = new List<Renderer>();
-		combineRenderers.AddRange(renderersWorld);
-		combineRenderers.AddRange(renderersProps);
-
-		var mpb = new MaterialPropertyBlock();
-		foreach (var renderer in combineRenderers.ToArray())
+		if (_labelInfo.Count > MAX_LABEL_INFO)
 		{
-			var go = renderer.gameObject;
+			Debug.LogWarning(
+				$"Cannot add className({className}) due to maximum count({MAX_LABEL_INFO}) reached");
+			return;
+		}
+		_labelInfo.TryAdd(className, value);
+		Debug.Log($"AddClass: {className}, {_labelInfo[className]}");
+	}
 
-			var id = go.GetInstanceID();
-			var layer = go.layer;
-			var name = go.name;
-
-			mpb.SetColor("_SegmentationIdColor", ColorEncoding.EncodeIDAsColor(id));
-			mpb.SetColor("_SegmentationNameColor", ColorEncoding.EncodeNameAsColor(name));
-			mpb.SetColor("_SegmentationLayerColor", ColorEncoding.EncodeLayerAsColor(layer));
-			// Debug.Log(id + " " + name + " " + mpb.GetColor("_SegmentationIdColor"));
-			// Debug.Log(id + " " + name + " " + mpb.GetColor("_SegmentationNameColor"));
-			// Debug.Log(id + " " + name + " " + mpb.GetColor("_SegmentationLayerColor"));
-
-			renderer.SetPropertyBlock(mpb);
+	public void GetLabelInfo()
+	{
+		foreach (var item in _labelInfo)
+		{
+			Debug.Log($"{item.Key}, {item.Value}");
 		}
 	}
 }
