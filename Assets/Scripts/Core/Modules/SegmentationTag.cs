@@ -9,8 +9,10 @@ using System;
 
 public class SegmentationTag : MonoBehaviour
 {
+	[SerializeField]
 	private string _tagName = string.Empty;
 
+	[SerializeField]
 	private UInt16 _classId = 0;
 
 	public string TagName
