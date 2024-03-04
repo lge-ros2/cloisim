@@ -24,7 +24,6 @@ namespace SDF
 					articulationBody = targetObject.AddComponent<UE.ArticulationBody>();
 				}
 
-
 				articulationBody.mass = 0;
 				articulationBody.useGravity = false;
 				articulationBody.immovable = false;
@@ -123,6 +122,8 @@ namespace SDF
 					{
 						modelHelper.hasRootArticulationBody = true;
 					}
+
+					SegmentationManager.AttachTag(model.OriginalName, modelObject);
 				}
 			}
 		}

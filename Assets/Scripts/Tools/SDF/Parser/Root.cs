@@ -33,6 +33,9 @@ namespace SDF
 		private DebugLogWriter logger;
 		private DebugLogWriter errLogger;
 
+		private static readonly string ProtocolModel = "model://";
+		private static readonly string ProtocolFile = "file://";
+
 		public Root()
 		{
 			logger = new DebugLogWriter();
@@ -259,9 +262,9 @@ namespace SDF
 			foreach (XmlNode node in nodeList)
 			{
 				var uri = node.InnerText;
-				if (uri.StartsWith("model://"))
+				if (uri.StartsWith(ProtocolModel))
 				{
-					var modelUri = uri.Replace("model://", string.Empty);
+					var modelUri = uri.Replace(ProtocolModel, string.Empty);
 					var stringArray = modelUri.Split('/');
 
 					// Get Model name from Uri
@@ -275,11 +278,11 @@ namespace SDF
 						node.InnerText = value.Item2 + "/" + modelUri;
 					}
 				}
-				else if (uri.StartsWith("file://"))
+				else if (uri.StartsWith(ProtocolFile))
 				{
 					foreach (var filePath in fileDefaultPaths)
 					{
-						var fileUri = uri.Replace("file://", filePath + "/");
+						var fileUri = uri.Replace(ProtocolFile, filePath + "/");
 						if (File.Exists(@fileUri))
 						{
 							node.InnerText = fileUri;
@@ -352,17 +355,16 @@ namespace SDF
 			var poseNode = included_node.SelectSingleNode("pose");
 			var pose = (poseNode == null) ? null : poseNode.InnerText;
 
-
 			// var pluginNode = included_node.SelectSingleNode("plugin");
 			// var plugin = (pluginNode == null) ? null : pluginNode.InnerText;
 
 			var uri = uri_node.InnerText;
-			// Console.WriteLineFormat("{0} | {1} | {2} | {3}", name, uri, pose, isStatic);
+			var modelName = uri.Replace(ProtocolModel, string.Empty);
 
-			var modelName = uri.Replace("model://", string.Empty);
 			if (resourceModelTable.TryGetValue(modelName, out var value))
 			{
 				uri = value.Item2 + "/" + value.Item3;
+				// Console.WriteLine($"{name} | {uri} | {modelName} | {pose} | {isStatic}");
 			}
 			else
 			{
@@ -394,7 +396,15 @@ namespace SDF
 			if (attributes.GetNamedItem("version") != null)
 			{
 				var modelSdfDocVersion = attributes.GetNamedItem("version").Value;
+				// TODO: Version check
 			}
+
+			#region Segmentation Tag
+ 			// store original model's name for segmentation Tag
+			var newAttr = modelSdfDoc.CreateAttribute("original_name");
+			newAttr.Value = modelName;
+			sdfNode.Attributes.Append(newAttr);
+			#endregion
 
 			// Edit custom parameter
 			if (nameNode != null)

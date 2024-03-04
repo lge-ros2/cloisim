@@ -41,6 +41,11 @@ namespace SDF
 
 		public bool IsWindEnabled => enableWind;
 
+		#region Segmentation Tag
+		private string originalName_ = string.Empty;
+		public string OriginalName => originalName_;
+		#endregion
+
 		public Model(XmlNode _node)
 			: base(_node)
 		{
@@ -62,6 +67,10 @@ namespace SDF
 
 			// Console.WriteLine("[{0}] {1} {2} {3} {4}", GetType().Name,
 			// 	isStatic, isSelfCollide, allowAutoDisable, enableWind);
+
+			#region Segmentation Tag
+			originalName_ = GetAttribute<string>("original_name");
+			#endregion
 		}
 
 		public List<Model> GetModels()

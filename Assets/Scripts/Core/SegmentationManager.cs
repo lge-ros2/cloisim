@@ -71,6 +71,11 @@ public class SegmentationManager : MonoBehaviour
 		}
 	}
 
+	public static void AttachTag(in string className, GameObject target)
+	{
+		AttachTag(className, target.transform);
+	}
+
 	public static void AttachTag(in string className, Transform target)
 	{
 		var segmentationTag = target.gameObject.AddComponent<SegmentationTag>();

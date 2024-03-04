@@ -14,13 +14,13 @@ namespace SDF
 		{
 			private PoseControl _poseControl = null;
 
-			private bool _isFirstChild = false;
+			private bool _isRootModel = false;
 
-			public bool IsFirstChild => _isFirstChild; // root model
+			public bool IsFirstChild => _isRootModel; // root model
 
 			protected void Awake()
 			{
-				_isFirstChild = SDF2Unity.IsRootModel(this.gameObject);
+				_isRootModel = SDF2Unity.IsRootModel(this.gameObject);
 				_poseControl = new PoseControl(this.transform);
 				Reset();
 			}

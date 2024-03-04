@@ -348,14 +348,11 @@ public class Main : MonoBehaviour
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
-			var originalModelName = model.Name;
-			model.Name = GetClonedModelName(originalModelName);
+			model.Name = GetClonedModelName(model.Name);
 
 			yield return StartCoroutine(_sdfLoader.StartImport(model));
 
 			var targetObject = _worldRoot.transform.Find(model.Name);
-
-			SegmentationManager.AttachTag(originalModelName, targetObject);
 
 			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
 			addingModel.SetAddingModelForDeploy(targetObject);
@@ -391,8 +388,6 @@ public class Main : MonoBehaviour
 			_sdfLoader.SetRootRoads(_roadsRoot);
 
 			yield return _sdfLoader.StartImport(world);
-
-			// AttachSegmentationTag();
 
 			// for GUI
 			followingList?.UpdateList();
