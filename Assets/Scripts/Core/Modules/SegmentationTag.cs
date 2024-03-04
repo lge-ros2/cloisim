@@ -37,9 +37,6 @@ public class SegmentationTag : MonoBehaviour
 	public void Refresh()
 	{
 		var mpb = new MaterialPropertyBlock();
-		// mpb.SetColor("_SegmentationIdColor", ColorEncoding.EncodeIDAsColor(TagId));
-		// mpb.SetColor("_SegmentationNameColor", ColorEncoding.EncodeNameAsColor(TagName));
-		// mpb.SetColor("_SegmentationLayerColor", ColorEncoding.EncodeLayerAsColor(TagLayer));
 
 		// Debug.Log(Main.SegmentationManager.Mode);
 		var color = new Color();
@@ -47,23 +44,18 @@ public class SegmentationTag : MonoBehaviour
 		{
 			case SegmentationManager.ReplacementMode.ObjectId:
 				color = ColorEncoding.EncodeIDAsColor(TagId);
-				// grayscale = mpb.GetColor("_SegmentationIdColor").grayscale;
-				// gray = color.grayscale;
 				break;
 
 			case SegmentationManager.ReplacementMode.ObjectName:
 				color = ColorEncoding.EncodeNameAsColor(TagName);
-				// grayscale = mpb.GetColor("_SegmentationNameColor").grayscale;
 				break;
 
 			case SegmentationManager.ReplacementMode.LayerId:
 				color = ColorEncoding.EncodeLayerAsColor(TagId);
-				// grayscale = mpb.GetColor("_SegmentationLayerColor").grayscale;
 				break;
 
 			default:
 				color = Color.black;
-				// grayscale = 0F;
 				break;
 		}
 
