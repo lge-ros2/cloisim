@@ -40,11 +40,11 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected void OnDestroy()
 	{
-		DeregisterDevice(allocatedDevicePorts, allocatedDeviceHashKeys);
-
 		thread.Dispose();
 		transport.Dispose();
-		Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
+
+		DeregisterDevice(allocatedDevicePorts, allocatedDeviceHashKeys);
+		// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
 	}
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)
