@@ -7,6 +7,7 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Experimental.Rendering;
+using messages = cloisim.msgs;
 using Unity.Collections;
 
 namespace SensorDevices
@@ -14,6 +15,8 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class SegmentationCamera : Camera
 	{
+		private messages.Segmentation _segmentation = null;
+
 		protected override void SetupTexture()
 		{
 			_targetRTname = "SegmentationTexture";
@@ -53,9 +56,22 @@ namespace SensorDevices
 			_universalCamData.dithering = false;
 		}
 
+		protected override void InitializeMessages()
+		{
+			base.InitializeMessages();
+
+			_segmentation = new messages.Segmentation();
+			_segmentation.ImageStamped = _imageStamped;
+		}
+
+		protected override void GenerateMessage()
+		{
+			PushDeviceMessage<messages.Segmentation>(_segmentation);
+		}
+
 		protected override void ImageProcessing(ref NativeArray<byte> readbackData)
 		{
-			var image = imageStamped.Image;
+			var image = _imageStamped.Image;
 			_camImageData.SetTextureBufferData(readbackData);
 
 			var imageData = _camImageData.GetImageData(image.Data.Length);
@@ -75,7 +91,22 @@ namespace SensorDevices
 				Debug.LogWarning($"{name}: Failed to get image Data");
 			}
 
-			DeviceHelper.SetCurrentTime(imageStamped.Time);
+			// update labels
+			var labelInfo = Main.SegmentationManager.GetLabelInfo();
+			foreach (var kv in labelInfo)
+			{
+				if (!kv.Value.Hide)
+				{
+					var visionClass = new messages.VisionClass()
+					{
+						ClassName = kv.Key,
+						ClassId = kv.Value.ClassId
+					};
+					_segmentation.ClassMaps.Add(visionClass);
+				}
+			}
+
+			DeviceHelper.SetCurrentTime(_imageStamped.Time);
 		}
 	}
 }
