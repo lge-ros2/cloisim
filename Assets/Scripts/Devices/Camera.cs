@@ -19,7 +19,7 @@ namespace SensorDevices
 	{
 		protected SDF.Camera camParameter = null;
 		protected messages.CameraSensor sensorInfo = null;
-		protected messages.ImageStamped imageStamped = null;
+		protected messages.ImageStamped _imageStamped = null;
 
 		// TODO : Need to be implemented!!!
 		// <lens> TBD
@@ -118,9 +118,9 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			imageStamped = new messages.ImageStamped();
-			imageStamped.Time = new messages.Time();
-			imageStamped.Image = new messages.Image();
+			_imageStamped = new messages.ImageStamped();
+			_imageStamped.Time = new messages.Time();
+			_imageStamped.Image = new messages.Image();
 
 			sensorInfo = new messages.CameraSensor();
 			sensorInfo.ImageSize = new messages.Vector2d();
@@ -130,7 +130,7 @@ namespace SensorDevices
 
 		protected override void SetupMessages()
 		{
-			var image = imageStamped.Image;
+			var image = _imageStamped.Image;
 			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
 			image.Width = (uint)camParameter.image.width;
 			image.Height = (uint)camParameter.image.height;
@@ -310,12 +310,12 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			PushDeviceMessage<messages.ImageStamped>(imageStamped);
+			PushDeviceMessage<messages.ImageStamped>(_imageStamped);
 		}
 
 		protected virtual void ImageProcessing(ref NativeArray<byte> readbackData)
 		{
-			var image = imageStamped.Image;
+			var image = _imageStamped.Image;
 			_camImageData.SetTextureBufferData(readbackData);
 
 			var imageData = _camImageData.GetImageData(image.Data.Length);
@@ -334,7 +334,7 @@ namespace SensorDevices
 				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
 			}
 
-			DeviceHelper.SetCurrentTime(imageStamped.Time);
+			DeviceHelper.SetCurrentTime(_imageStamped.Time);
 		}
 
 		public messages.CameraSensor GetCameraInfo()
@@ -344,7 +344,7 @@ namespace SensorDevices
 
 		public messages.Image GetImageDataMessage()
 		{
-			return (imageStamped == null || imageStamped.Image == null) ? null : imageStamped.Image;
+			return (_imageStamped == null || _imageStamped.Image == null) ? null : _imageStamped.Image;
 		}
 	}
 }

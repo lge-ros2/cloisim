@@ -30,7 +30,7 @@ namespace SensorDevices
 
 		#endregion
 
-		private Material depthMaterial = null;
+		private Material _depthMaterial = null;
 
 		private uint depthScale = 1;
 		private int _imageDepth;
@@ -62,19 +62,17 @@ namespace SensorDevices
 
 		public void ReverseDepthData(in bool reverse)
 		{
-			if (depthMaterial != null)
+			if (_depthMaterial != null)
 			{
-				depthMaterial.SetInt("_ReverseData", (reverse) ? 1 : 0);
+				_depthMaterial.SetInt("_ReverseData", (reverse) ? 1 : 0);
 			}
-			else
-				Debug.Log("is null");
 		}
 
 		public void FlipXDepthData(in bool flip)
 		{
-			if (depthMaterial != null)
+			if (_depthMaterial != null)
 			{
-				depthMaterial.SetInt("_FlipX", (flip) ? 1 : 0);
+				_depthMaterial.SetInt("_FlipX", (flip) ? 1 : 0);
 			}
 		}
 
@@ -143,7 +141,7 @@ namespace SensorDevices
 		protected override void SetupCamera()
 		{
 			var depthShader = Shader.Find("Sensor/Depth");
-			depthMaterial = new Material(depthShader);
+			_depthMaterial = new Material(depthShader);
 
 			if (camParameter.depth_camera_output.Equals("points"))
 			{
@@ -165,7 +163,7 @@ namespace SensorDevices
 			cb.name = "CommandBufferForDepthShading";
 			var tempTextureId = Shader.PropertyToID("_RenderImageCameraDepthTexture");
 			cb.GetTemporaryRT(tempTextureId, -1, -1);
-			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
+			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
 			cb.ReleaseTemporaryRT(tempTextureId);
 			camSensor.AddCommandBuffer(CameraEvent.AfterEverything, cb);
 			cb.Release();
@@ -200,7 +198,7 @@ namespace SensorDevices
 				{
 					Buffer.BlockCopy(
 						_computedBufferOutput, i * (int)OutputUnitSize,
-						imageStamped.Image.Data, i * _imageDepth,
+						_imageStamped.Image.Data, i * _imageDepth,
 						_imageDepth);
 				});
 
@@ -220,12 +218,12 @@ namespace SensorDevices
 			}
 			_depthCamBuffer.Deallocate();
 
-			DeviceHelper.SetCurrentTime(imageStamped.Time);
+			DeviceHelper.SetCurrentTime(_imageStamped.Time);
 		}
 
 		private void SaveRawImageData(in string path, in string name)
 		{
-			_textureForCapture.SetPixelData(imageStamped.Image.Data, 0);
+			_textureForCapture.SetPixelData(_imageStamped.Image.Data, 0);
 			_textureForCapture.Apply();
 			var bytes = _textureForCapture.EncodeToJPG();
 			var fileName = string.Format("{0}/{1}.jpg", path, name);
