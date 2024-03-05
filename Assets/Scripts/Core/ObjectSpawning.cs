@@ -157,8 +157,6 @@ public class ObjectSpawning : MonoBehaviour
 			segmentationTag.Refresh();
 		}
 
-		Main.SegmentationManager.GetLabelInfo();
-
 		if (mesh != null)
 		{
 			const float SpawningMargin = 0.001f;
