@@ -21,8 +21,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	protected void SenderThread(System.Object threadObject)
 	{
 		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
-		var publisher = this.transport.Get<Publisher>(paramObject.targetPort);
-		var deviceParam = paramObject.paramObject as Device;
+		var publisher = GetTransport().Get<Publisher>(paramObject.targetPort);
+		var deviceParam = paramObject.param as Device;
 
 		thread.Sender(publisher, deviceParam);
 	}
@@ -30,8 +30,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	protected void ReceiverThread(System.Object threadObject)
 	{
 		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
-		var subscriber = this.transport.Get<Subscriber>(paramObject.targetPort);
-		var deviceParam = paramObject.paramObject as Device;
+		var subscriber = GetTransport().Get<Subscriber>(paramObject.targetPort);
+		var deviceParam = paramObject.param as Device;
 
 		thread.Receiver(subscriber, deviceParam);
 	}
@@ -39,7 +39,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	protected void ServiceThread(System.Object threadObject)
 	{
 		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
-		var responsor = this.transport.Get<Responsor>(paramObject.targetPort);
+		var responsor = GetTransport().Get<Responsor>(paramObject.targetPort);
 
 		thread.Service(responsor);
 	}
