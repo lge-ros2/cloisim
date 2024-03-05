@@ -15,7 +15,7 @@ MonoBehaviour:
   m_Active: 1
   settings:
     passTag: RenderObjects
-    Event: 600
+    Event: 550
     filterSettings:
       RenderQueueType: 0
       LayerMask:
@@ -28,13 +28,13 @@ MonoBehaviour:
     overrideShaderPassIndex: 0
     overrideMode: 1
     overrideDepthState: 0
-    depthCompareFunction: 5
+    depthCompareFunction: 2
     enableWrite: 0
     stencilSettings:
       overrideStencilState: 0
       stencilReference: 5
       stencilCompareFunction: 5
-      passOperation: 0
+      passOperation: 1
       failOperation: 1
       zFailOperation: 1
     cameraSettings:
