@@ -8,60 +8,40 @@ using Any = cloisim.msgs.Any;
 
 public class CameraPlugin : CLOiSimPlugin
 {
-	private SensorDevices.Camera cam = null;
-
-	public SensorDevices.Camera GetCamera()
-	{
-		return cam;
-	}
-
-	public SensorDevices.DepthCamera GetDepthCamera()
-	{
-		return GetCamera() as SensorDevices.DepthCamera;
-	}
+	protected SensorDevices.Camera _cam = null;
 
 	protected override void OnAwake()
 	{
 		var depthCam = gameObject.GetComponent<SensorDevices.DepthCamera>();
-		var segCam = gameObject.GetComponent<SensorDevices.SegmentationCamera>();
 
 		var deviceName = string.Empty;
-		if (depthCam is null && segCam is not null)
-		{
-			ChangePluginType(ICLOiSimPlugin.Type.SEGMENTCAMERA);
-			cam = segCam;
-			deviceName = "SegmentationCamera";
-		}
-		else if (depthCam is not null && segCam is null)
+		if (depthCam is not null)
 		{
 			ChangePluginType(ICLOiSimPlugin.Type.DEPTHCAMERA);
-			cam = depthCam;
 			deviceName = "DepthCamera";
+			_cam = depthCam;
 		}
 		else
 		{
 			ChangePluginType(ICLOiSimPlugin.Type.CAMERA);
-			cam = gameObject.GetComponent<SensorDevices.Camera>();
 			deviceName = "Camera";
+			_cam = gameObject.GetComponent<SensorDevices.Camera>();
 		}
 
 		if (!string.IsNullOrEmpty(deviceName))
-			attachedDevices.Add(deviceName, cam);
+			attachedDevices.Add(deviceName, _cam);
 
 		partsName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()
 	{
-		if (type == ICLOiSimPlugin.Type.DEPTHCAMERA)
+		if (GetPluginParameters() != null && type == ICLOiSimPlugin.Type.DEPTHCAMERA)
 		{
-			if (GetPluginParameters() != null)
+			var depthScale = GetPluginParameters().GetValue<uint>("configuration/depth_scale", 1000);
+			if (_cam != null)
 			{
-				var depthScale = GetPluginParameters().GetValue<uint>("configuration/depth_scale", 1000);
-				if (cam != null)
-				{
-					((SensorDevices.DepthCamera)cam).SetDepthScale(depthScale);
-				}
+				((SensorDevices.DepthCamera)_cam).SetDepthScale(depthScale);
 			}
 		}
 
@@ -72,7 +52,7 @@ public class CameraPlugin : CLOiSimPlugin
 
 		if (RegisterTxDevice(out var portTx, "Data"))
 		{
-			AddThread(portTx, SenderThread, cam);
+			AddThread(portTx, SenderThread, _cam);
 		}
 	}
 
@@ -81,13 +61,13 @@ public class CameraPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_camera_info":
-				var cameraInfoMessage = cam.GetCameraInfo();
+				var cameraInfoMessage = _cam.GetCameraInfo();
 				SetCameraInfoResponse(ref response, cameraInfoMessage);
 				break;
 
 			case "request_transform":
-				var devicePose = cam.GetPose();
-				var deviceName = cam.DeviceName;
+				var devicePose = _cam.GetPose();
+				var deviceName = _cam.DeviceName;
 				SetTransformInfoResponse(ref response, deviceName, devicePose);
 				break;
 
