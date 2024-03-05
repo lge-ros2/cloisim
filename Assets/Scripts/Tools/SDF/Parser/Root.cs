@@ -98,9 +98,11 @@ namespace SDF
 		public bool DoParse(out Model model, in string modelFullPath, in string modelFileName)
 		{
 			// Console.Write("Loading World File from SDF!!!!!");
-			var modelFound = false;
 			model = null;
+
 			var modelLocation = Path.Combine(modelFullPath, modelFileName);
+			var modelName = Path.GetFileName(modelFullPath);
+			// Console.Write(modelFullPath, modelName);
 			try
 			{
 				doc.RemoveAll();
@@ -112,12 +114,15 @@ namespace SDF
 
 				// Console.Write("Load World");
 				var modelNode = doc.SelectSingleNode("/sdf/model");
-				model = new Model(modelNode);
-				modelFound = true;
 
-				var infoMessage = model.Name + " Model(" + modelFileName + ") is loaded.";
+				StoreOriginalModelName(doc, modelName, modelNode);
+
+				model = new Model(modelNode);
+
 				// logger.SetShowOnDisplayOnce();
-				logger.Write(infoMessage);
+				logger.Write($"{model.Name} {modelName} Model({modelFileName}) is loaded.");
+
+				return true;
 			}
 			catch (XmlException ex)
 			{
@@ -126,7 +131,7 @@ namespace SDF
 				errLogger.Write(errorMessage);
 			}
 
-			return modelFound;
+			return false;
 		}
 
 #if false
@@ -334,6 +339,16 @@ namespace SDF
 			} while (nodes.Count != 0);
 		}
 
+		#region Segmentation Tag
+		private void StoreOriginalModelName(XmlDocument doc, in string modelName, XmlNode targetNode)
+		{
+ 			// store original model's name for segmentation Tag
+			var newAttr = doc.CreateAttribute("original_name");
+			newAttr.Value = modelName;
+			targetNode.Attributes.Append(newAttr);
+		}
+		#endregion
+
 		private XmlNode GetIncludedModel(XmlNode included_node)
 		{
 			var uri_node = included_node.SelectSingleNode("uri");
@@ -399,12 +414,7 @@ namespace SDF
 				// TODO: Version check
 			}
 
-			#region Segmentation Tag
- 			// store original model's name for segmentation Tag
-			var newAttr = modelSdfDoc.CreateAttribute("original_name");
-			newAttr.Value = modelName;
-			sdfNode.Attributes.Append(newAttr);
-			#endregion
+			StoreOriginalModelName(modelSdfDoc, modelName, sdfNode);
 
 			// Edit custom parameter
 			if (nameNode != null)
