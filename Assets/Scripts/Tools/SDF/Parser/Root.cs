@@ -120,7 +120,7 @@ namespace SDF
 				model = new Model(modelNode);
 
 				// logger.SetShowOnDisplayOnce();
-				logger.Write($"{model.Name} {modelName} Model({modelFileName}) is loaded.");
+				// logger.Write($"Model({modelName}) is loaded. > {model.Name}");
 
 				return true;
 			}

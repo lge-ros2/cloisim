@@ -95,12 +95,12 @@ namespace SensorDevices
 			var labelInfo = Main.SegmentationManager.GetLabelInfo();
 			foreach (var kv in labelInfo)
 			{
-				if (!kv.Value.Hide)
+				if (kv.Value.Count > 0 && !kv.Value[0].Hide)
 				{
 					var visionClass = new messages.VisionClass()
 					{
 						ClassName = kv.Key,
-						ClassId = kv.Value.ClassId
+						ClassId = kv.Value[0].ClassId
 					};
 					_segmentation.ClassMaps.Add(visionClass);
 				}

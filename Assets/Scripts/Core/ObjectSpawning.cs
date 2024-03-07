@@ -149,12 +149,11 @@ public class ObjectSpawning : MonoBehaviour
 			rigidBody.ResetCenterOfMass();
 			rigidBody.ResetInertiaTensor();
 
-			var segmentationTag = spawnedObject.GetComponentInChildren<SegmentationTag>();
 			// var propTypeName = (type.ToString() + scale.ToString()).Trim();
-			// // Debug.Log(propTypeName);
-			// segmentationTag.TagName = propTypeName;
-			segmentationTag.TagName = type.ToString();
-			segmentationTag.Refresh();
+			// Debug.Log(propTypeName);
+			SegmentationManager.AttachTag(type.ToString(), spawnedObject);
+
+			Main.SegmentationManager.UpdateTags();
 		}
 
 		if (mesh != null)

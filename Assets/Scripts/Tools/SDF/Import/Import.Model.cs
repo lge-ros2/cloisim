@@ -126,7 +126,9 @@ namespace SDF
 						}
 					}
 
+					// UE.Debug.Log("AfterImportModel: " + model.OriginalName + ", " + modelObject.name);
 					SegmentationManager.AttachTag(model.OriginalName, modelObject);
+					Main.SegmentationManager.UpdateTags();
 				}
 			}
 		}

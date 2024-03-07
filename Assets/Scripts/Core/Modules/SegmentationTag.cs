@@ -10,10 +10,17 @@ using System;
 public class SegmentationTag : MonoBehaviour
 {
 	[SerializeField]
-	private string _tagName = string.Empty;
+	private bool _hide = false;
+
+
+	[SerializeField]
+	private string _className = string.Empty;
 
 	[SerializeField]
 	private UInt16 _classId = 0;
+
+	[SerializeField]
+	private string _tagName = string.Empty;
 
 	public string TagName
 	{
@@ -34,6 +41,20 @@ public class SegmentationTag : MonoBehaviour
 	public UInt16 ClassId
 	{
 		get => _classId;
+	}
+
+	public bool Hide
+	{
+		get => _hide;
+		set {
+			_hide = value;
+			HideLabelForMaterialPropertyBlock(_hide);
+		}
+	}
+
+	void OnDestroy() {
+		// Debug.Log($"Destroy segmentation tag {this.name}");
+		Main.SegmentationManager.RemoveClass(_className, this);
 	}
 
 	public void Refresh()
@@ -65,21 +86,17 @@ public class SegmentationTag : MonoBehaviour
 
 		_classId = (UInt16)(grayscale * UInt16.MaxValue);
 
-		mpb.SetColor("_SegmentationColor", color);
-		mpb.SetColor("_SegmentationClassId", ColorEncoding.Encode16BitsToGR(_classId));
+		var classValue = ColorEncoding.Encode16BitsToGR(_classId);
 
-		var calssIdColor = mpb.GetColor("_SegmentationClassId");
+		mpb.SetColor("_SegmentationColor", color);
+		mpb.SetColor("_SegmentationClassId", classValue);
 
 		// Debug.Log(TagName + ": mode=" + Main.SegmentationManager.Mode +
 		// 			" color=" + color +
-		// 			" calssId=" + calssIdColor.r + " "  + calssIdColor.g);
+		// 			" calssId=" + classValue.r + " "  + classValue.g);
 		// Debug.Log($"{TagName} : {grayscale} > {_classId}");
 
-		var renderers = GetComponentsInChildren<Renderer>();
-		foreach (var renderer in renderers)
-		{
-			renderer.SetPropertyBlock(mpb);
-		}
+		AllocateMaterialPropertyBlock(mpb);
 
 		UpdateClass();
 	}
@@ -89,19 +106,46 @@ public class SegmentationTag : MonoBehaviour
 		switch (Main.SegmentationManager.Mode)
 		{
 			case SegmentationManager.ReplacementMode.ObjectId:
-				Main.SegmentationManager.AddClass(TagId.ToString(), _classId);
+				_className = TagId.ToString();
 				break;
 
 			case SegmentationManager.ReplacementMode.ObjectName:
-				Main.SegmentationManager.AddClass(TagName, _classId);
+				_className = TagName;
 				break;
 
 			case SegmentationManager.ReplacementMode.LayerId:
-				Main.SegmentationManager.AddClass(TagLayer.ToString(), _classId);
+				_className = TagLayer.ToString();
 				break;
 
 			default:
-				break;
+				return;
+		}
+
+		Main.SegmentationManager.AddClass(_className, this);
+	}
+
+	private void AllocateMaterialPropertyBlock(in MaterialPropertyBlock mpb)
+	{
+		var renderers = GetComponentsInChildren<Renderer>();
+		foreach (var renderer in renderers)
+		{
+			renderer.SetPropertyBlock(mpb);
+		}
+	}
+
+	/// <summary>
+	/// Hides the label in material property block.
+	/// </summary>
+	/// <param name="value">if set to <c>true</c>, hide this segmentation.</param>
+	private void HideLabelForMaterialPropertyBlock(in bool value)
+	{
+		var mpb = new MaterialPropertyBlock();
+		var renderers = GetComponentsInChildren<Renderer>();
+		foreach (var renderer in renderers)
+		{
+			renderer.GetPropertyBlock(mpb);
+			mpb.SetInt("_Hide", value? 1 : 0);
+			renderer.SetPropertyBlock(mpb);
 		}
 	}
 }
