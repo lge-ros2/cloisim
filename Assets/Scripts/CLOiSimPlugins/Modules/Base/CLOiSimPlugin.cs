@@ -36,6 +36,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
+	protected virtual void OnPluginLoad() { }
 	protected virtual void OnReset() { }
 
 	protected void OnDestroy()
@@ -88,6 +89,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		{
 			partsName = pluginParameters.Name;
 		}
+
+		OnPluginLoad();
 
 		OnStart();
 

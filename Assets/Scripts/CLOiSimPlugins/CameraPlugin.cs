@@ -36,15 +36,6 @@ public class CameraPlugin : CLOiSimPlugin
 
 	protected override void OnStart()
 	{
-		if (GetPluginParameters() != null && type == ICLOiSimPlugin.Type.DEPTHCAMERA)
-		{
-			var depthScale = GetPluginParameters().GetValue<uint>("configuration/depth_scale", 1000);
-			if (_cam != null)
-			{
-				((SensorDevices.DepthCamera)_cam).SetDepthScale(depthScale);
-			}
-		}
-
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
 			AddThread(portService, ServiceThread);
@@ -53,6 +44,18 @@ public class CameraPlugin : CLOiSimPlugin
 		if (RegisterTxDevice(out var portTx, "Data"))
 		{
 			AddThread(portTx, SenderThread, _cam);
+		}
+	}
+
+	protected override void OnPluginLoad()
+	{
+		if (GetPluginParameters() != null && type == ICLOiSimPlugin.Type.DEPTHCAMERA)
+		{
+			var depthScale = GetPluginParameters().GetValue<uint>("configuration/depth_scale", 1000);
+			if (_cam != null)
+			{
+				((SensorDevices.DepthCamera)_cam).SetDepthScale(depthScale);
+			}
 		}
 	}
 
