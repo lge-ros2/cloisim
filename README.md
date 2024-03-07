@@ -92,12 +92,13 @@ For example,
 <plugin name="actor_plugin" filename="libActorPlugin.so" />
 ```
 
-more details in [here](https://github.com/lge-ros2/cloisim/tree/main/Assets/Scripts/CLOiSimPlugins)).
+More details and usages for configuration/parameters in [here](https://github.com/lge-ros2/cloisim/tree/main/Assets/Scripts/CLOiSimPlugins).
 
 #### Model Specific
 
 - `LaserPlugin`: help to publish 2D or 3D lidar data
 - `CameraPlugin`: help to publish 2D color image data or depth image data
+- `SegmentationCameraPlugin`: help to publish semantic segmentation image data and label info
 - `MultiCameraPlugin`: help to publish multiple color image data
 - `RealSensePlugin`: can handle ir1(left), ir2(right), depth, color
 - `MicomPlugin`: control micom(differential drive) input/output(sensor)
