@@ -47,6 +47,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
     - [X] Depth Camera
     - [X] Multi-camera
     - [X] RealSense (RGB + IR1 + IR2 + Depth)
+    - [X] Semantic Segmentation Camera
   - [X] GPS sensor
   - [ ] Sensor noise models
     - [X] Gaussian
@@ -91,12 +92,13 @@ For example,
 <plugin name="actor_plugin" filename="libActorPlugin.so" />
 ```
 
-more details in [here](https://github.com/lge-ros2/cloisim/tree/main/Assets/Scripts/CLOiSimPlugins)).
+More details and usages for configuration/parameters in [here](https://github.com/lge-ros2/cloisim/tree/main/Assets/Scripts/CLOiSimPlugins).
 
 #### Model Specific
 
 - `LaserPlugin`: help to publish 2D or 3D lidar data
 - `CameraPlugin`: help to publish 2D color image data or depth image data
+- `SegmentationCameraPlugin`: help to publish semantic segmentation image data and label info
 - `MultiCameraPlugin`: help to publish multiple color image data
 - `RealSensePlugin`: can handle ir1(left), ir2(right), depth, color
 - `MicomPlugin`: control micom(differential drive) input/output(sensor)
@@ -143,7 +145,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.19f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.20f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 22.04.3 LTS

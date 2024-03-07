@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Xml;
+using System;
 
 namespace SDF
 {
@@ -41,6 +42,11 @@ namespace SDF
 
 		public bool IsWindEnabled => enableWind;
 
+		#region Segmentation Tag
+		private string originalName_ = string.Empty;
+		public string OriginalName => originalName_;
+		#endregion
+
 		public Model(XmlNode _node)
 			: base(_node)
 		{
@@ -60,8 +66,13 @@ namespace SDF
 			allowAutoDisable = GetValue<bool>("allow_auto_disable");
 			enableWind = GetValue<bool>("enable_wind");
 
-			// Console.WriteLine("[{0}] {1} {2} {3} {4}", GetType().Name,
+			// Console.Write("[{0}] {1} {2} {3} {4}", GetType().Name,
 			// 	isStatic, isSelfCollide, allowAutoDisable, enableWind);
+
+			#region Segmentation Tag
+			originalName_ = GetAttribute<string>("original_name");
+			// Console.Write($"Model::ParseElements > [{originalName_}]");
+			#endregion
 		}
 
 		public List<Model> GetModels()

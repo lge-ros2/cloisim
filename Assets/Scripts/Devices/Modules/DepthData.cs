@@ -55,19 +55,17 @@ namespace SensorDevices
 			private float GetDecodedData(in int index)
 			{
 				var imageOffset = index * ColorFormatUnitSize;
-				if (raw != null && imageOffset < raw.Length)
-				{
-					var r = raw[imageOffset];
-					var g = raw[imageOffset + 1];
-					var b = raw[imageOffset + 2];
-					var a = raw[imageOffset + 3];
-
-					return DecodeFloatRGBA(r, g, b, a);
-				}
-				else
+				if (raw == null || imageOffset >= raw.Length)
 				{
 					return 0;
 				}
+
+				var r = raw[imageOffset];
+				var g = raw[imageOffset + 1];
+				var b = raw[imageOffset + 2];
+				var a = raw[imageOffset + 3];
+
+				return DecodeFloatRGBA(r, g, b, a);
 			}
 
 			private float DecodeFloatRGBA(in byte r, in byte g, in byte b, in byte a)

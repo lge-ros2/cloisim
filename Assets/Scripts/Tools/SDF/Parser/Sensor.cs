@@ -109,6 +109,8 @@ namespace SDF
 				case "camera":
 				case "depth_camera":
 				case "depth":
+				case "segmentation_camera":
+				case "segmentation":
 					if (IsValidNode("camera"))
 					{
 						sensor = ParseCamera();
@@ -140,7 +142,6 @@ namespace SDF
 				case "force_torque":
 				case "logical_camera":
 				case "boundingbox_camera":
-				case "segmentation_camera":
 				case "magnetometer":
 				case "rfid":
 				case "rfidtag":

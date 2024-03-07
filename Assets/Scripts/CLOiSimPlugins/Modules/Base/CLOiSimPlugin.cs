@@ -9,7 +9,7 @@ using UnityEngine;
 
 public interface ICLOiSimPlugin
 {
-	enum Type { WORLD, GROUNDTRUTH, ELEVATOR, ACTOR, MICOM, JOINTCONTROL, GPS, IMU, SONAR, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE };
+	enum Type { WORLD, GROUNDTRUTH, ELEVATOR, ACTOR, MICOM, JOINTCONTROL, GPS, IMU, SONAR, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE, SEGMENTCAMERA};
 	void SetPluginParameters(in SDF.Plugin node);
 	SDF.Plugin GetPluginParameters();
 	void Reset();
@@ -36,15 +36,16 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
+	protected virtual void OnPluginLoad() { }
 	protected virtual void OnReset() { }
 
 	protected void OnDestroy()
 	{
-		DeregisterDevice(allocatedDevicePorts, allocatedDeviceHashKeys);
-
 		thread.Dispose();
 		transport.Dispose();
-		Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
+
+		DeregisterDevice(allocatedDevicePorts, allocatedDeviceHashKeys);
+		// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
 	}
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)
@@ -88,6 +89,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		{
 			partsName = pluginParameters.Name;
 		}
+
+		OnPluginLoad();
 
 		OnStart();
 

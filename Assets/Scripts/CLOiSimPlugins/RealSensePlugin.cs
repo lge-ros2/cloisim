@@ -26,7 +26,6 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 	protected override void OnStart()
 	{
-		var depthScale = GetPluginParameters().GetValue<uint>("configuration/depth_scale", 1000);
 		var colorName = GetPluginParameters().GetValue<string>("activate/module[@name='color']");
 		var leftImagerName = GetPluginParameters().GetValue<string>("activate/module[@name='left_imager']");
 		var rightImagerName = GetPluginParameters().GetValue<string>("activate/module[@name='right_imager']");
@@ -51,12 +50,12 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 		if (!string.IsNullOrEmpty(depthName))
 		{
-			FindAndAddDepthCameraPlugin(depthName, depthScale);
+			FindAndAddCameraPlugin(depthName);
 		}
 
 		if (!string.IsNullOrEmpty(alignedDepthToColorName))
 		{
-			FindAndAddDepthCameraPlugin(alignedDepthToColorName, depthScale);
+			FindAndAddCameraPlugin(alignedDepthToColorName);
 		}
 
 		if (!string.IsNullOrEmpty(imuName))
@@ -82,24 +81,6 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 			AddCLOiSimPlugin(name, plugin);
 			activatedModules.Add(new Tuple<string, string>("imu", name));
-		}
-	}
-
-	private void FindAndAddDepthCameraPlugin(in string name, in uint depthScale)
-	{
-		var plugin = FindAndAddCameraPlugin(name);
-		if (plugin == null)
-		{
-			Debug.LogWarning(name + " plugin is not loaded.");
-		}
-		else
-		{
-			var depthCamera = plugin.GetDepthCamera();
-
-			if (depthCamera != null)
-			{
-				depthCamera.SetDepthScale(depthScale);
-			}
 		}
 	}
 

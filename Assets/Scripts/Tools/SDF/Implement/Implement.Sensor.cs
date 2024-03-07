@@ -97,6 +97,44 @@ namespace SDF
 				return camera;
 			}
 
+			public static Device AddSegmentaionCamera(in SDF.Camera element, in GameObject targetObject)
+			{
+				var newSensorObject = new GameObject();
+				AttachSensor(newSensorObject, targetObject, element.Pose);
+
+				var segmentationCamera = newSensorObject.AddComponent<SensorDevices.SegmentationCamera>();
+				segmentationCamera.DeviceName = GetFrameName(newSensorObject);
+
+				switch (element.image.format)
+				{
+					case "L16":
+					case "L_UINT16":
+						// Debug.Log("Supporting data type for Depth camera");
+						break;
+
+					default:
+						if (element.image.format.Equals(string.Empty))
+						{
+							Debug.LogWarningFormat("'L16' will be set for Depth camera({0})'s image format", element.name);
+						}
+						else
+						{
+							Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image.format);
+						}
+						element.image.format = "L16";
+						break;
+				}
+
+				segmentationCamera.SetCamParameter(element);
+
+				if (element.noise != null)
+				{
+					segmentationCamera.noise = new SensorDevices.Noise(element.noise, element.type);
+				}
+
+				return segmentationCamera;
+			}
+
 			public static Device AddDepthCamera(in SDF.Camera element, in GameObject targetObject)
 			{
 				var newSensorObject = new GameObject();

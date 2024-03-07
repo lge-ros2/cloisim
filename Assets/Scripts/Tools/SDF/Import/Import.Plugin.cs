@@ -16,44 +16,42 @@ namespace SDF
 		{
 			protected override void ImportPlugin(in SDF.Plugin plugin, in System.Object parentObject)
 			{
-				var targetObject = (parentObject as UE.GameObject);
-
 				// filtering plugin name
 				var pluginLibraryName = plugin.LibraryName();
-				// Debug.Log("plugin name = " + pluginLibraryName);
+				// Debug.Log($"[Plugin] name={plugin.Name}");
 
 				var pluginType = Type.GetType(pluginLibraryName);
-				if (pluginType != null)
+				if (pluginType == null)
 				{
-					if (targetObject == null)
-					{
-						Debug.LogError("[Plugin] targetObject is empty");
-						return;
-					}
+					Debug.LogWarning($"[Plugin] No plugin({plugin.Name}) exist");
+					return;
+				}
 
-					var pluginComponent = targetObject.AddComponent(pluginType);
+				var targetObject = (parentObject as UE.GameObject);
+				if (targetObject == null)
+				{
+					Debug.LogError("[Plugin] targetObject is empty");
+					return;
+				}
 
-					var pluginObject = pluginComponent as CLOiSimPlugin;
-					var multiPluginObject = pluginComponent as CLOiSimMultiPlugin;
+				var pluginComponent = targetObject.AddComponent(pluginType);
 
-					if (pluginObject != null)
-					{
-						pluginObject.SetPluginParameters(plugin);
-						// Debug.Log("[Plugin] added : " + plugin.Name);
-					}
-					else if (multiPluginObject != null)
-					{
-						multiPluginObject.SetPluginParameters(plugin);
-						// Debug.Log("[Plugin] devices added : " + plugin.Name);
-					}
-					else
-					{
-						Debug.LogError("[Plugin] failed to add : " + plugin.Name);
-					}
+				var pluginObject = pluginComponent as CLOiSimPlugin;
+				var multiPluginObject = pluginComponent as CLOiSimMultiPlugin;
+
+				if (multiPluginObject != null)
+				{
+					multiPluginObject.SetPluginParameters(plugin);
+					// Debug.Log("[Plugin] devices added : " + plugin.Name);
+				}
+				else if (pluginObject != null)
+				{
+					pluginObject.SetPluginParameters(plugin);
+					// Debug.Log("[Plugin] added : " + plugin.Name);
 				}
 				else
 				{
-					Debug.LogWarningFormat("[Plugin] No plugin({0}) exist", plugin.Name);
+					Debug.LogError($"[Plugin] failed to add : {plugin.Name}");
 				}
 			}
 		}

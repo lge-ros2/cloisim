@@ -16,7 +16,8 @@ PROTOGEN="protogen"
 ## 2. check and edit here
 ##    set the location of protobuf messages in absolute path
 # PROTO_MSGS_PATH="../../../../../cloi3_ws/src/cloisim_ros/cloisim_ros_protobuf_msgs/msgs/"
-PROTO_MSGS_PATH="../../../../../../../cloi3/src/cloisim_ros/cloisim_ros_protobuf_msgs/msgs/"
+#PROTO_MSGS_PATH="../../../../../../../cloi3/src/cloisim_ros/cloisim_ros_protobuf_msgs/msgs/"
+PROTO_MSGS_PATH="../../../../../../cloi_ws/src/simulator/cloisim_ros/cloisim_ros_protobuf_msgs/msgs/"
 
 ## 3. target protobuf message
 ##
@@ -27,6 +28,7 @@ MSG="header any param param_v color empty "
 MSG+="time vector2d vector3d quaternion pose pose_v poses_stamped "
 MSG+="image images_stamped image_stamped camerasensor distortion camera_lens "
 MSG+="laserscan laserscan_stamped raysensor pointcloud "
+MSG+="segmentation vision_class "
 MSG+="micom battery twist "
 MSG+="contact contacts contactsensor "
 MSG+="gps gps_sensor "

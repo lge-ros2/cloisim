@@ -24,7 +24,6 @@ namespace SDF
 					articulationBody = targetObject.AddComponent<UE.ArticulationBody>();
 				}
 
-
 				articulationBody.mass = 0;
 				articulationBody.useGravity = false;
 				articulationBody.immovable = false;
@@ -109,20 +108,27 @@ namespace SDF
 				var modelObject = (targetObject as UE.GameObject);
 
 				var modelHelper = modelObject.GetComponent<Helper.Model>();
-				if (modelHelper.IsFirstChild && !modelHelper.isStatic)
+				if (modelHelper.IsFirstChild)
 				{
-					var childArticulationBodies = modelObject.GetComponentsInChildren<UE.ArticulationBody>();
+					if (!modelHelper.isStatic)
+					{
+						var childArticulationBodies = modelObject.GetComponentsInChildren<UE.ArticulationBody>();
 
-					if (childArticulationBodies.Length == 1 && childArticulationBodies[0].index == 0)
-					{
-						// remove root articulation body if there are no ariticulation body in childeren
-						UE.GameObject.Destroy(childArticulationBodies[0]);
-						modelHelper.hasRootArticulationBody = false;
+						if (childArticulationBodies.Length == 1 && childArticulationBodies[0].index == 0)
+						{
+							// remove root articulation body if there are no ariticulation body in childeren
+							UE.GameObject.Destroy(childArticulationBodies[0]);
+							modelHelper.hasRootArticulationBody = false;
+						}
+						else if (childArticulationBodies.Length > 1)
+						{
+							modelHelper.hasRootArticulationBody = true;
+						}
 					}
-					else if (childArticulationBodies.Length > 1)
-					{
-						modelHelper.hasRootArticulationBody = true;
-					}
+
+					// UE.Debug.Log("AfterImportModel: " + model.OriginalName + ", " + modelObject.name);
+					SegmentationManager.AttachTag(model.OriginalName, modelObject);
+					Main.SegmentationManager.UpdateTags();
 				}
 			}
 		}
