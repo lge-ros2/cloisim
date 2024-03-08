@@ -40,6 +40,81 @@ namespace SDF
 				return string.Empty;
 			}
 
+			private void ApplyOgreMaterial(in OgreMaterial.Material ogreMaterial, UE.Material material, in string uri)
+			{
+				foreach (var technique in ogreMaterial.techniques)
+				{
+					foreach (var pass in technique.passes)
+					{
+						// UE.Debug.Log($"Technique: {technique.passes.IndexOf(pass)}");
+
+						// foreach (var kvp in pass.properties)
+						// {
+						// 	UE.Debug.Log($"  Pass: {kvp.Key}: {kvp.Value}");
+						// }
+
+						if (pass.properties.ContainsKey("diffuse"))
+						{
+							var diffuse = pass.properties["diffuse"];
+							var diffuseColor = SDF2Unity.GetColor(diffuse);
+							material.SetColor("_BaseColor", diffuseColor);
+
+							if (diffuseColor.a < 1)
+							{
+								SDF2Unity.SetMaterialTransparent(material);
+							}
+							else
+							{
+								SDF2Unity.SetMaterialOpaque(material);
+							}
+						}
+						else if (pass.properties.ContainsKey("emissive"))
+						{
+							var emissive = pass.properties["emissive"];
+							var emissiveColor = SDF2Unity.GetColor(emissive);
+							material.SetColor("_EmissionColor", emissiveColor);
+						}
+						else if (pass.properties.ContainsKey("specular"))
+						{
+							var specular = pass.properties["specular"];
+							var specularColor = SDF2Unity.GetColor(specular);
+							material.SetColor("_SpecColor", specularColor);
+						}
+
+						foreach (var textureunit in pass.textureUnits)
+						{
+							// UE.Debug.Log($"    TextureUnit: {pass.textureUnits.IndexOf(textureunit)}");
+
+							// foreach (var kvp in textureunit.properties)
+							// {
+							// 	UE.Debug.Log($"      TextureUnit: {kvp.Key} -> {kvp.Value}");
+							// }
+
+							if (textureunit.properties.ContainsKey("texture"))
+							{
+								var textureFileName = textureunit.properties["texture"];
+								var textureFilePath = FindFile(uri, textureFileName);
+								// UE.Debug.Log(textureFilePath);
+								if (!string.IsNullOrEmpty(textureFilePath))
+								{
+									var texture = MeshLoader.GetTexture(textureFilePath);
+									if (texture != null)
+									{
+										var textureFiltering = textureunit.properties["filtering"];
+
+										// to make upper in First character
+										textureFiltering = textureFiltering.Remove(1).ToUpper() + textureFiltering.Substring(1);
+										texture.filterMode = (UE.FilterMode)Enum.Parse(typeof(UE.FilterMode), textureFiltering);
+										material.SetTexture("_BaseMap", texture);
+									}
+								}
+							}
+							break;
+						}
+					}
+				}
+			}
+
 			private void ImportRoad(in World.Road road)
 			{
 				var newRoadObject = new UE.GameObject();
@@ -58,7 +133,6 @@ namespace SDF
 				}
 				splineContainer.Spline.SetTangentMode(0, Splines.TangentMode.AutoSmooth);
 
-
 				var material = SDF2Unity.GetNewMaterial(road.Name + "_Material");
 
 				var targetMaterialName = road.material.script.name;
@@ -67,81 +141,8 @@ namespace SDF
 					var ogreMaterial = OgreMaterial.Parse(uri, targetMaterialName);
 					if (ogreMaterial != null)
 					{
-						if (ogreMaterial != null)
-						{
-							// UE.Debug.Log($"Found: {targetMaterialName} material");
-							foreach (var technique in ogreMaterial.techniques)
-							{
-								foreach (var pass in technique.passes)
-								{
-									// UE.Debug.Log($"Technique: {technique.passes.IndexOf(pass)}");
-
-									// foreach (var kvp in pass.properties)
-									// {
-									// 	UE.Debug.Log($"  Pass: {kvp.Key}: {kvp.Value}");
-									// }
-
-									if (pass.properties.ContainsKey("diffuse"))
-									{
-										var diffuse = pass.properties["diffuse"];
-										var diffuseColor = SDF2Unity.GetColor(diffuse);
-										material.SetColor("_BaseColor", diffuseColor);
-
-										if (diffuseColor.a < 1)
-										{
-											SDF2Unity.SetMaterialTransparent(material);
-										}
-										else
-										{
-											SDF2Unity.SetMaterialOpaque(material);
-										}
-									}
-									else if (pass.properties.ContainsKey("emissive"))
-									{
-										var emissive = pass.properties["emissive"];
-										var emissiveColor = SDF2Unity.GetColor(emissive);
-										material.SetColor("_EmissionColor", emissiveColor);
-									}
-									else if (pass.properties.ContainsKey("specular"))
-									{
-										var specular = pass.properties["specular"];
-										var specularColor = SDF2Unity.GetColor(specular);
-										material.SetColor("_SpecColor", specularColor);
-									}
-
-									foreach (var textureunit in pass.textureUnits)
-									{
-										// UE.Debug.Log($"    TextureUnit: {pass.textureUnits.IndexOf(textureunit)}");
-
-										// foreach (var kvp in textureunit.properties)
-										// {
-										// 	UE.Debug.Log($"      TextureUnit: {kvp.Key} -> {kvp.Value}");
-										// }
-
-										if (textureunit.properties.ContainsKey("texture"))
-										{
-											var textureFileName = textureunit.properties["texture"];
-											var textureFilePath = FindFile(uri, textureFileName);
-											// UE.Debug.Log(textureFilePath);
-											if (!string.IsNullOrEmpty(textureFilePath))
-											{
-												var texture = MeshLoader.GetTexture(textureFilePath);
-												if (texture != null)
-												{
-													var textureFiltering = textureunit.properties["filtering"];
-
-													// to make upper in First character
-													textureFiltering = textureFiltering.Remove(1).ToUpper() + textureFiltering.Substring(1);
-													texture.filterMode = (UE.FilterMode)Enum.Parse(typeof(UE.FilterMode), textureFiltering);
-													material.SetTexture("_BaseMap", texture);
-												}
-											}
-										}
-										break;
-									}
-								}
-							}
-						}
+						// UE.Debug.Log($"Found: {targetMaterialName} material");
+						ApplyOgreMaterial(ogreMaterial, material, uri);
 						break;
 					}
 				}
@@ -150,6 +151,10 @@ namespace SDF
 				roadGenerator.Material = material;
 				roadGenerator.LoftAllRoads();
 				roadGenerator.Widths.Add(new Splines.SplineData<float>((float)road.width));
+
+				// UE.Debug.Log("AfterImportModel: " + model.OriginalName + ", " + modelObject.name);
+				SegmentationManager.AttachTag(newRoadObject.name, newRoadObject);
+				Main.SegmentationManager.UpdateTags();
 			}
 
 			private void ImportRoads(IReadOnlyList<World.Road> items)

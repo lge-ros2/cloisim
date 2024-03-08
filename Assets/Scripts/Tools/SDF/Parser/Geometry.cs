@@ -144,7 +144,7 @@ namespace SDF
 					{
 						if (blendMinHeightList.Count > 0 && blendMinHeightList.Count == blendFadeDistList.Count)
 						{
-							Console.WriteLine("Blend is not supported yet");
+							Console.Write("Blend is not supported yet");
 
 							if (blendMinHeightList.Count + 1 > textureSizeList.Count)
 							{

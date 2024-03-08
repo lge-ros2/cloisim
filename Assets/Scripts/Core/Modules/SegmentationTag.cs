@@ -127,6 +127,7 @@ public class SegmentationTag : MonoBehaviour
 	private void AllocateMaterialPropertyBlock(in MaterialPropertyBlock mpb)
 	{
 		var renderers = GetComponentsInChildren<Renderer>();
+		// Debug.Log($"{this.name} {renderers.Length}");
 		foreach (var renderer in renderers)
 		{
 			renderer.SetPropertyBlock(mpb);
