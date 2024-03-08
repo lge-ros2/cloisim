@@ -12,16 +12,16 @@ namespace SDF
 	{
 		public class Base : UE.MonoBehaviour
 		{
-			private PoseControl poseControl = null;
+			private PoseControl _poseControl = null;
 
-			private bool isFirstChild = false;
+			private bool _isRootModel = false;
 
-			public bool IsFirstChild => isFirstChild; // root model
+			public bool IsFirstChild => _isRootModel; // root model
 
 			protected void Awake()
 			{
-				isFirstChild = SDF2Unity.IsRootModel(this.gameObject);
-				poseControl = new PoseControl(this.transform);
+				_isRootModel = SDF2Unity.IsRootModel(this.gameObject);
+				_poseControl = new PoseControl(this.transform);
 				Reset();
 			}
 
@@ -32,17 +32,17 @@ namespace SDF
 
 			public void ClearPose()
 			{
-				if (poseControl != null)
+				if (_poseControl != null)
 				{
-					poseControl.Clear();
+					_poseControl.Clear();
 				}
 			}
 
 			public void SetJointPoseTarget(in float targetAxis1, in float targetAxis2, in int targetFrame = 0)
 			{
-				if (poseControl != null)
+				if (_poseControl != null)
 				{
-					poseControl.SetJointTarget(targetAxis1, targetAxis2, targetFrame);
+					_poseControl.SetJointTarget(targetAxis1, targetAxis2, targetFrame);
 				}
 			}
 
@@ -53,28 +53,28 @@ namespace SDF
 
 			public void SetPose(in UE.Vector3 position, in UE.Quaternion rotation, in int targetFrame = 0)
 			{
-				if (poseControl != null)
+				if (_poseControl != null)
 				{
-					poseControl.Set(position, rotation, targetFrame);
+					_poseControl.Set(position, rotation, targetFrame);
 				}
 			}
 
 			public void ResetPose()
 			{
-				if (poseControl != null)
+				if (_poseControl != null)
 				{
-					poseControl.Reset();
+					_poseControl.Reset();
 				}
 			}
 
 			public UE.Pose GetPose(in int targetFrame = 0)
 			{
-				return (poseControl != null) ? poseControl.Get(targetFrame) : UE.Pose.identity;
+				return (_poseControl != null) ? _poseControl.Get(targetFrame) : UE.Pose.identity;
 			}
 
 			public int GetPoseCount()
 			{
-				return (poseControl != null) ? poseControl.Count : 0;
+				return (_poseControl != null) ? _poseControl.Count : 0;
 			}
 		}
 	}

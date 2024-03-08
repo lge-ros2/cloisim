@@ -19,7 +19,7 @@ namespace SensorDevices
 	{
 		protected SDF.Camera camParameter = null;
 		protected messages.CameraSensor sensorInfo = null;
-		protected messages.ImageStamped imageStamped = null;
+		protected messages.ImageStamped _imageStamped = null;
 
 		// TODO : Need to be implemented!!!
 		// <lens> TBD
@@ -30,11 +30,11 @@ namespace SensorDevices
 		protected UnityEngine.Camera camSensor = null;
 		protected UniversalAdditionalCameraData _universalCamData = null;
 
-		protected string targetRTname;
-		protected GraphicsFormat targetColorFormat;
-		protected GraphicsFormat readbackDstFormat;
+		protected string _targetRTname;
+		protected GraphicsFormat _targetColorFormat;
+		protected GraphicsFormat _readbackDstFormat;
 
-		private CameraData.Image camImageData;
+		protected CameraData.Image _camImageData;
 		private List<AsyncGPUReadbackRequest> _readbackList = new List<AsyncGPUReadbackRequest>();
 		public Noise noise = null;
 		protected bool _startCameraWork = false;
@@ -87,6 +87,7 @@ namespace SensorDevices
 			if (camSensor)
 			{
 				SetupTexture();
+				SetupDefaultCamera();
 				SetupCamera();
 				_startCameraWork = true;
 			}
@@ -94,41 +95,32 @@ namespace SensorDevices
 
 		protected virtual void SetupTexture()
 		{
-			camSensor.clearFlags = CameraClearFlags.Skybox;
-			camSensor.allowHDR = true;
-			camSensor.depthTextureMode = DepthTextureMode.None;
-			_universalCamData.requiresColorOption = CameraOverrideOption.On;
-			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
-			_universalCamData.requiresColorTexture = true;
-			_universalCamData.requiresDepthTexture = false;
-			_universalCamData.renderShadows = true;
-
 			// Debug.Log("This is not a Depth Camera!");
-			targetRTname = "CameraColorTexture";
+			_targetRTname = "CameraColorTexture";
 
 			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
 			switch (pixelFormat)
 			{
 				case CameraData.PixelFormat.L_INT8:
-					targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
-					readbackDstFormat = GraphicsFormat.R8_SRGB;
+					_targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
+					_readbackDstFormat = GraphicsFormat.R8_SRGB;
 					break;
 
 				case CameraData.PixelFormat.RGB_INT8:
 				default:
-					targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
-					readbackDstFormat = GraphicsFormat.R8G8B8_SRGB;
+					_targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
+					_readbackDstFormat = GraphicsFormat.R8G8B8_SRGB;
 					break;
 			}
 
-			camImageData = new CameraData.Image(camParameter.image.width, camParameter.image.height, pixelFormat);
+			_camImageData = new CameraData.Image(camParameter.image.width, camParameter.image.height, pixelFormat);
 		}
 
 		protected override void InitializeMessages()
 		{
-			imageStamped = new messages.ImageStamped();
-			imageStamped.Time = new messages.Time();
-			imageStamped.Image = new messages.Image();
+			_imageStamped = new messages.ImageStamped();
+			_imageStamped.Time = new messages.Time();
+			_imageStamped.Image = new messages.Image();
 
 			sensorInfo = new messages.CameraSensor();
 			sensorInfo.ImageSize = new messages.Vector2d();
@@ -138,7 +130,7 @@ namespace SensorDevices
 
 		protected override void SetupMessages()
 		{
-			var image = imageStamped.Image;
+			var image = _imageStamped.Image;
 			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
 			image.Width = (uint)camParameter.image.width;
 			image.Height = (uint)camParameter.image.height;
@@ -167,12 +159,28 @@ namespace SensorDevices
 			}
 		}
 
-		private void SetupCamera()
+		private void OnEnable()
+		{
+			RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+			RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
+		}
+
+		private void OnDisable()
+		{
+			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
+		}
+
+		private void SetupDefaultCamera()
 		{
 			camSensor.ResetWorldToCameraMatrix();
 			camSensor.ResetProjectionMatrix();
 
+			camSensor.backgroundColor = Color.black;
+			camSensor.clearFlags = CameraClearFlags.Skybox;
+			camSensor.depthTextureMode = DepthTextureMode.None;
 			camSensor.renderingPath = RenderingPath.Forward;
+			camSensor.allowHDR = true;
 			camSensor.allowMSAA = true;
 			camSensor.allowDynamicResolution = true;
 			camSensor.useOcclusionCulling = true;
@@ -188,7 +196,7 @@ namespace SensorDevices
 				height: camParameter.image.height,
 				slices: 1,
 				depthBufferBits: DepthBits.None,
-				colorFormat: targetColorFormat,
+				colorFormat: _targetColorFormat,
 				filterMode: FilterMode.Bilinear,
 				wrapMode: TextureWrapMode.Clamp,
 				dimension: TextureDimension.Tex2D,
@@ -202,7 +210,7 @@ namespace SensorDevices
 				bindTextureMS: false,
 				useDynamicScale: true,
 				memoryless: RenderTextureMemoryless.None,
-				name: targetRTname);
+				name: _targetRTname);
 
 			camSensor.targetTexture = _rtHandle.rt;
 
@@ -215,6 +223,11 @@ namespace SensorDevices
 			var invertMatrix = Matrix4x4.Scale(new Vector3(1, -1, 1));
 			camSensor.projectionMatrix = projMatrix * invertMatrix;
 
+			_universalCamData.requiresColorOption = CameraOverrideOption.On;
+			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
+			_universalCamData.requiresColorTexture = true;
+			_universalCamData.requiresDepthTexture = false;
+			_universalCamData.renderShadows = true;
 			_universalCamData.enabled = false;
 			_universalCamData.stopNaN = true;
 			_universalCamData.dithering = true;
@@ -223,24 +236,20 @@ namespace SensorDevices
 			_universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
 			_universalCamData.renderType = CameraRenderType.Base;
 			_universalCamData.cameraStack.Clear();
+
 			camSensor.enabled = false;
-
-			RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
-			RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
-
 			// camSensor.hideFlags |= HideFlags.NotEditable;
+		}
+
+		protected virtual void SetupCamera()
+		{
 		}
 
 		protected new void OnDestroy()
 		{
-			_startCameraWork = false;
-
 			// Debug.Log("OnDestroy(Camera)");
-			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
-			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
-
+			_startCameraWork = false;
 			_rtHandle?.Release();
-
 			base.OnDestroy();
 		}
 
@@ -263,7 +272,7 @@ namespace SensorDevices
 				{
 					camSensor.Render();
 
-					var readbackRequest = AsyncGPUReadback.Request(camSensor.targetTexture, 0, readbackDstFormat, OnCompleteAsyncReadback);
+					var readbackRequest = AsyncGPUReadback.Request(camSensor.targetTexture, 0, _readbackDstFormat, OnCompleteAsyncReadback);
 
 					lock (_readbackList)
 					{
@@ -301,23 +310,22 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			DeviceHelper.SetCurrentTime(imageStamped.Time);
-			PushDeviceMessage<messages.ImageStamped>(imageStamped);
+			PushDeviceMessage<messages.ImageStamped>(_imageStamped);
 		}
 
 		protected virtual void ImageProcessing(ref NativeArray<byte> readbackData)
 		{
-			var image = imageStamped.Image;
-			camImageData.SetTextureBufferData(readbackData);
+			var image = _imageStamped.Image;
+			_camImageData.SetTextureBufferData(readbackData);
 
-			var imageData = camImageData.GetImageData(image.Data.Length);
+			var imageData = _camImageData.GetImageData(image.Data.Length);
 			if (imageData != null)
 			{
 				image.Data = imageData;
 				if (camParameter.save_enabled && _startCameraWork)
 				{
 					var saveName = name + "_" + Time.time;
-					camImageData.SaveRawImageData(camParameter.save_path, saveName);
+					_camImageData.SaveRawImageData(camParameter.save_path, saveName);
 					// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
 				}
 			}
@@ -325,6 +333,8 @@ namespace SensorDevices
 			{
 				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
 			}
+
+			DeviceHelper.SetCurrentTime(_imageStamped.Time);
 		}
 
 		public messages.CameraSensor GetCameraInfo()
@@ -334,7 +344,7 @@ namespace SensorDevices
 
 		public messages.Image GetImageDataMessage()
 		{
-			return (imageStamped == null || imageStamped.Image == null) ? null : imageStamped.Image;
+			return (_imageStamped == null || _imageStamped.Image == null) ? null : _imageStamped.Image;
 		}
 	}
 }

@@ -221,17 +221,32 @@ public abstract class Device : MonoBehaviour
 
 	public bool PushDeviceMessage<T>(T instance)
 	{
-		deviceMessage.SetMessage<T>(instance);
-		deviceMessage.GetMessage(out var message);
-		return deviceMessageQueue.Push(message);
+		try
+		{
+			deviceMessage.SetMessage<T>(instance);
+			deviceMessage.GetMessage(out var message);
+			return deviceMessageQueue.Push(message);
+		}
+		catch (Exception ex)
+		{
+			Debug.LogWarning("ERROR: PushDeviceMessage<T>(): " + ex.Message);
+			return false;
+		}
 	}
 
 	public bool PushDeviceMessage(in byte[] data)
 	{
-		if (deviceMessage.SetMessage(data))
+		try
 		{
-			deviceMessage.GetMessage(out var message);
-			return deviceMessageQueue.Push(message);
+			if (deviceMessage.SetMessage(data))
+			{
+				deviceMessage.GetMessage(out var message);
+				return deviceMessageQueue.Push(message);
+			}
+		}
+		catch (Exception ex)
+		{
+			Debug.LogWarning("ERROR: PushDeviceMessage(): " + ex.Message);
 		}
 
 		return false;

@@ -74,15 +74,15 @@ namespace SDF
 				return null;
 			}
 
+			protected virtual void AfterImportModel(in Model model, in Object targetObject)
+			{
+				PrintNotImported(MethodBase.GetCurrentMethod().Name, model.Name);
+			}
+
 			protected virtual System.Object ImportActor(in Actor actor)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, actor.Name);
 				return null;
-			}
-
-			protected virtual void AfterImportModel(in Model model, in Object targetObject)
-			{
-				PrintNotImported(MethodBase.GetCurrentMethod().Name, model.Name);
 			}
 
 			protected virtual void ImportGeometry(in Geometry geometry, in Object parentObject)

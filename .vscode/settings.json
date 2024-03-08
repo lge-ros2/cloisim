@@ -4,7 +4,10 @@
         "**/*.meta": true,
         "Library": true,
         "Temp": true,
-        "UserSettings": true
+        "UserSettings": true,
+		"obj": true,
+		"**/TextMesh Pro": true,
+		"**/VSCode": true
     },
     "editor.detectIndentation": false,
     "editor.indentSize": "tabSize",

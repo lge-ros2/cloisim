@@ -17,12 +17,12 @@ public class CLOiSimPluginThread : IDisposable
 	public class ParamObject
 	{
 		public ushort targetPort;
-		public System.Object paramObject;
+		public System.Object param;
 
-		public ParamObject(in ushort targetPort, in System.Object paramObject)
+		public ParamObject(in ushort targetPort, in System.Object parameter)
 		{
 			this.targetPort = targetPort;
-			this.paramObject = paramObject;
+			this.param = parameter;
 		}
 	}
 

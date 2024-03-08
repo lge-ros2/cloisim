@@ -8,33 +8,28 @@ using Any = cloisim.msgs.Any;
 
 public class CameraPlugin : CLOiSimPlugin
 {
-	private SensorDevices.Camera cam = null;
-
-	public SensorDevices.Camera GetCamera()
-	{
-		return cam;
-	}
-
-	public SensorDevices.DepthCamera GetDepthCamera()
-	{
-		return GetCamera() as SensorDevices.DepthCamera;
-	}
+	protected SensorDevices.Camera _cam = null;
 
 	protected override void OnAwake()
 	{
-		var depthcam = gameObject.GetComponent<SensorDevices.DepthCamera>();
-		if (depthcam is null)
+		var depthCam = gameObject.GetComponent<SensorDevices.DepthCamera>();
+
+		var deviceName = string.Empty;
+		if (depthCam is not null)
 		{
-			ChangePluginType(ICLOiSimPlugin.Type.CAMERA);
-			cam = gameObject.GetComponent<SensorDevices.Camera>();
-			attachedDevices.Add("Camera", cam);
+			ChangePluginType(ICLOiSimPlugin.Type.DEPTHCAMERA);
+			deviceName = "DepthCamera";
+			_cam = depthCam;
 		}
 		else
 		{
-			ChangePluginType(ICLOiSimPlugin.Type.DEPTHCAMERA);
-			cam = depthcam;
-			attachedDevices.Add("DepthCamera", cam);
+			ChangePluginType(ICLOiSimPlugin.Type.CAMERA);
+			deviceName = "Camera";
+			_cam = gameObject.GetComponent<SensorDevices.Camera>();
 		}
+
+		if (!string.IsNullOrEmpty(deviceName))
+			attachedDevices.Add(deviceName, _cam);
 
 		partsName = DeviceHelper.GetPartName(gameObject);
 	}
@@ -48,7 +43,19 @@ public class CameraPlugin : CLOiSimPlugin
 
 		if (RegisterTxDevice(out var portTx, "Data"))
 		{
-			AddThread(portTx, SenderThread, cam);
+			AddThread(portTx, SenderThread, _cam);
+		}
+	}
+
+	protected override void OnPluginLoad()
+	{
+		if (GetPluginParameters() != null && type == ICLOiSimPlugin.Type.DEPTHCAMERA)
+		{
+			var depthScale = GetPluginParameters().GetValue<uint>("configuration/depth_scale", 1000);
+			if (_cam != null)
+			{
+				((SensorDevices.DepthCamera)_cam).SetDepthScale(depthScale);
+			}
 		}
 	}
 
@@ -57,13 +64,13 @@ public class CameraPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_camera_info":
-				var cameraInfoMessage = cam.GetCameraInfo();
+				var cameraInfoMessage = _cam.GetCameraInfo();
 				SetCameraInfoResponse(ref response, cameraInfoMessage);
 				break;
 
 			case "request_transform":
-				var devicePose = cam.GetPose();
-				var deviceName = cam.DeviceName;
+				var devicePose = _cam.GetPose();
+				var deviceName = _cam.DeviceName;
 				SetTransformInfoResponse(ref response, deviceName, devicePose);
 				break;
 

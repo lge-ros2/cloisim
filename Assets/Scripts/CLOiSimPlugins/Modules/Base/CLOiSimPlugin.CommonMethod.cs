@@ -16,7 +16,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	{
 		var paramsObject = threadObject as CLOiSimPluginThread.ParamObject;
 		var publisher = GetTransport().Get<Publisher>(paramsObject.targetPort);
-		var tfList = paramsObject.paramObject as List<TF>;
+		var tfList = paramsObject.param as List<TF>;
 
 		var tfMessage = new messages.TransformStamped();
 		tfMessage.Header = new messages.Header();

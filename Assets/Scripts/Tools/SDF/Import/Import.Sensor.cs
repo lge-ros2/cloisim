@@ -55,6 +55,12 @@ namespace SDF
 						device = Implement.Sensor.AddCamera(camera, targetObject);
 						break;
 
+					case "segmentation_camera":
+					case "segmentation":
+						var segmentationCamera = sensor.GetSensor() as SDF.Camera;
+						device = Implement.Sensor.AddSegmentaionCamera(segmentationCamera, targetObject);
+						break;
+
 					case "rgbd_camera":
 					case "rgbd":
 					case "multicamera":

@@ -33,6 +33,9 @@ namespace SDF
 		private DebugLogWriter logger;
 		private DebugLogWriter errLogger;
 
+		private static readonly string ProtocolModel = "model://";
+		private static readonly string ProtocolFile = "file://";
+
 		public Root()
 		{
 			logger = new DebugLogWriter();
@@ -95,9 +98,11 @@ namespace SDF
 		public bool DoParse(out Model model, in string modelFullPath, in string modelFileName)
 		{
 			// Console.Write("Loading World File from SDF!!!!!");
-			var modelFound = false;
 			model = null;
+
 			var modelLocation = Path.Combine(modelFullPath, modelFileName);
+			var modelName = Path.GetFileName(modelFullPath);
+			// Console.Write(modelFullPath, modelName);
 			try
 			{
 				doc.RemoveAll();
@@ -109,12 +114,15 @@ namespace SDF
 
 				// Console.Write("Load World");
 				var modelNode = doc.SelectSingleNode("/sdf/model");
-				model = new Model(modelNode);
-				modelFound = true;
 
-				var infoMessage = model.Name + " Model(" + modelFileName + ") is loaded.";
+				StoreOriginalModelName(doc, modelName, modelNode);
+
+				model = new Model(modelNode);
+
 				// logger.SetShowOnDisplayOnce();
-				logger.Write(infoMessage);
+				// logger.Write($"Model({modelName}) is loaded. > {model.Name}");
+
+				return true;
 			}
 			catch (XmlException ex)
 			{
@@ -123,7 +131,7 @@ namespace SDF
 				errLogger.Write(errorMessage);
 			}
 
-			return modelFound;
+			return false;
 		}
 
 #if false
@@ -259,9 +267,9 @@ namespace SDF
 			foreach (XmlNode node in nodeList)
 			{
 				var uri = node.InnerText;
-				if (uri.StartsWith("model://"))
+				if (uri.StartsWith(ProtocolModel))
 				{
-					var modelUri = uri.Replace("model://", string.Empty);
+					var modelUri = uri.Replace(ProtocolModel, string.Empty);
 					var stringArray = modelUri.Split('/');
 
 					// Get Model name from Uri
@@ -275,11 +283,11 @@ namespace SDF
 						node.InnerText = value.Item2 + "/" + modelUri;
 					}
 				}
-				else if (uri.StartsWith("file://"))
+				else if (uri.StartsWith(ProtocolFile))
 				{
 					foreach (var filePath in fileDefaultPaths)
 					{
-						var fileUri = uri.Replace("file://", filePath + "/");
+						var fileUri = uri.Replace(ProtocolFile, filePath + "/");
 						if (File.Exists(@fileUri))
 						{
 							node.InnerText = fileUri;
@@ -331,6 +339,16 @@ namespace SDF
 			} while (nodes.Count != 0);
 		}
 
+		#region Segmentation Tag
+		private void StoreOriginalModelName(XmlDocument doc, in string modelName, XmlNode targetNode)
+		{
+ 			// store original model's name for segmentation Tag
+			var newAttr = doc.CreateAttribute("original_name");
+			newAttr.Value = modelName;
+			targetNode.Attributes.Append(newAttr);
+		}
+		#endregion
+
 		private XmlNode GetIncludedModel(XmlNode included_node)
 		{
 			var uri_node = included_node.SelectSingleNode("uri");
@@ -352,17 +370,16 @@ namespace SDF
 			var poseNode = included_node.SelectSingleNode("pose");
 			var pose = (poseNode == null) ? null : poseNode.InnerText;
 
-
 			// var pluginNode = included_node.SelectSingleNode("plugin");
 			// var plugin = (pluginNode == null) ? null : pluginNode.InnerText;
 
 			var uri = uri_node.InnerText;
-			// Console.WriteLineFormat("{0} | {1} | {2} | {3}", name, uri, pose, isStatic);
+			var modelName = uri.Replace(ProtocolModel, string.Empty);
 
-			var modelName = uri.Replace("model://", string.Empty);
 			if (resourceModelTable.TryGetValue(modelName, out var value))
 			{
 				uri = value.Item2 + "/" + value.Item3;
+				// Console.WriteLine($"{name} | {uri} | {modelName} | {pose} | {isStatic}");
 			}
 			else
 			{
@@ -394,7 +411,10 @@ namespace SDF
 			if (attributes.GetNamedItem("version") != null)
 			{
 				var modelSdfDocVersion = attributes.GetNamedItem("version").Value;
+				// TODO: Version check
 			}
+
+			StoreOriginalModelName(modelSdfDoc, modelName, sdfNode);
 
 			// Edit custom parameter
 			if (nameNode != null)

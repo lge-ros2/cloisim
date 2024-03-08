@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2021 LG Electronics Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.AI;
@@ -19,7 +25,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	private Dictionary<PropsType, GameObject> props = new Dictionary<PropsType, GameObject>();
 	public float maxRayDistance = 100;
-	private uint propsCount = 0;
+	private Dictionary<PropsType, uint> propsCount = new Dictionary<PropsType, uint>();
 
 	private string scaleFactorString = "0.5";
 	private int propType = 0;
@@ -93,7 +99,11 @@ public class ObjectSpawning : MonoBehaviour
 	{
 		GameObject spawnedObject = null;
 		Mesh mesh = null;
-		var propsName = type.ToString() + "-" + propsCount++;
+
+		if (!propsCount.ContainsKey(type))
+		{
+			propsCount.Add(type, 0);
+		}
 
 		if (!props.ContainsKey(type))
 		{
@@ -114,12 +124,14 @@ public class ObjectSpawning : MonoBehaviour
 
 			if (mesh != null)
 			{
-				var newTempPropsObject = CreateProps(propsName, mesh, scale);
+				var newTempPropsObject = CreateProps(type.ToString(), mesh, scale);
 				props.Add(type, newTempPropsObject);
 				newTempPropsObject.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSave;
 				newTempPropsObject.SetActive(false);
 			}
 		}
+
+		var propsName = type.ToString() + "-" + propsCount[type]++;
 
 		if (props.TryGetValue(type, out var targetObject))
 		{
@@ -130,12 +142,18 @@ public class ObjectSpawning : MonoBehaviour
 			mesh = meshFilter.sharedMesh;
 
 			var meshRender = spawnedObject.GetComponentInChildren<MeshRenderer>();
-			meshRender.material.color = Random.ColorHSV(0f, 1f, 0.6f, 1f, 0.5f, 1f);
+			meshRender.material.color = Random.ColorHSV(0f, 1f, 0.4f, 1f, 0.3f, 1f);
 
 			var rigidBody = spawnedObject.GetComponentInChildren<Rigidbody>();
 			rigidBody.mass = CalculateMass(scale);
 			rigidBody.ResetCenterOfMass();
 			rigidBody.ResetInertiaTensor();
+
+			// var propTypeName = (type.ToString() + scale.ToString()).Trim();
+			// Debug.Log(propTypeName);
+			SegmentationManager.AttachTag(type.ToString(), spawnedObject);
+
+			Main.SegmentationManager.UpdateTags();
 		}
 
 		if (mesh != null)
@@ -194,6 +212,8 @@ public class ObjectSpawning : MonoBehaviour
 		navMeshObstacle.carvingMoveThreshold = 0.1f;
 		navMeshObstacle.carvingTimeToStationary = 0.2f;
 		navMeshObstacle.carveOnlyStationary = true;
+
+		newObject.AddComponent<SegmentationTag>();
 
 		return newObject;
 	}
