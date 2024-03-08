@@ -118,7 +118,7 @@ public class SegmentationManager : MonoBehaviour
 			{
 				tag.Hide = allowedTag ? false : true;
 			}
-			Debug.Log(vk.Key + ", " + allowedTag);
+			// Debug.Log(vk.Key + ", " + allowedTag);
 		}
 	}
 
