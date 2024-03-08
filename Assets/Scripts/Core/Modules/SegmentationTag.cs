@@ -132,6 +132,12 @@ public class SegmentationTag : MonoBehaviour
 		{
 			renderer.SetPropertyBlock(mpb);
 		}
+
+		var terrains = GetComponentsInChildren<Terrain>();
+		foreach (var terrain in terrains)
+		{
+			terrain.SetSplatMaterialPropertyBlock(mpb);
+		}
 	}
 
 	/// <summary>
