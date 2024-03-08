@@ -93,6 +93,7 @@ namespace SensorDevices
 
 			// update labels
 			var labelInfo = Main.SegmentationManager.GetLabelInfo();
+			_segmentation.ClassMaps.Clear();
 			foreach (var kv in labelInfo)
 			{
 				if (kv.Value.Count > 0 && !kv.Value[0].Hide)
