@@ -113,6 +113,11 @@ public partial class MeshLoader
 			if (sceneMat.HasTextureDiffuse)
 			{
 				var filePath = sceneMat.TextureDiffuse.FilePath;
+				if (filePath.Contains("model://"))
+				{
+					filePath = filePath.Replace("model://", "");
+				}
+
 				foreach (var textureDirectory in textureDirectories)
 				{
 					var textureFullPath = Path.Combine(textureDirectory, filePath);
