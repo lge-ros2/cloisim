@@ -135,7 +135,7 @@ namespace SensorDevices
 			image.Width = (uint)camParameter.image.width;
 			image.Height = (uint)camParameter.image.height;
 			image.PixelFormat = (uint)pixelFormat;
-			image.Step = image.Width * (uint)CameraData.GetImageDepth(pixelFormat);
+			image.Step = image.Width * (uint)CameraData.GetImageStep(pixelFormat);
 			image.Data = new byte[image.Height * image.Step];
 
 			sensorInfo.HorizontalFov = camParameter.horizontal_fov;
@@ -177,7 +177,7 @@ namespace SensorDevices
 			camSensor.ResetProjectionMatrix();
 
 			camSensor.backgroundColor = Color.black;
-			camSensor.clearFlags = CameraClearFlags.Skybox;
+			camSensor.clearFlags = CameraClearFlags.Nothing;
 			camSensor.depthTextureMode = DepthTextureMode.None;
 			camSensor.renderingPath = RenderingPath.Forward;
 			camSensor.allowHDR = true;
@@ -243,6 +243,7 @@ namespace SensorDevices
 
 		protected virtual void SetupCamera()
 		{
+			camSensor.clearFlags = CameraClearFlags.Skybox;
 		}
 
 		protected new void OnDestroy()
@@ -318,6 +319,7 @@ namespace SensorDevices
 			var image = _imageStamped.Image;
 			_camImageData.SetTextureBufferData(readbackData);
 
+			// Debug.Log(image.Data.Length);
 			var imageData = _camImageData.GetImageData(image.Data.Length);
 			if (imageData != null)
 			{
