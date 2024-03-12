@@ -171,11 +171,15 @@ public partial class MeshLoader
 			Assimp.PostProcessSteps.OptimizeGraph |
 			Assimp.PostProcessSteps.OptimizeMeshes |
 			// Assimp.PostProcessSteps.GenerateNormals |
+			// Assimp.PostProcessSteps.GenerateSmoothNormals |
 			// Assimp.PostProcessSteps.GenerateUVCoords |
+			// Assimp.PostProcessSteps.RemoveComponent |
 			Assimp.PostProcessSteps.ImproveCacheLocality |
 			Assimp.PostProcessSteps.CalculateTangentSpace |
 			Assimp.PostProcessSteps.JoinIdenticalVertices |
 			Assimp.PostProcessSteps.RemoveRedundantMaterials |
+			// Assimp.PostProcessSteps.FixInFacingNormals |
+			// Assimp.PostProcessSteps.SortByPrimitiveType |
 			Assimp.PostProcessSteps.Triangulate |
 			Assimp.PostProcessSteps.SortByPrimitiveType |
 			Assimp.PostProcessSteps.ValidateDataStructure |

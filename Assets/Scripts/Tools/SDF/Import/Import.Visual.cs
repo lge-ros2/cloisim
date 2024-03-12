@@ -39,49 +39,68 @@ namespace SDF
 
 			protected override void AfterImportVisual(in SDF.Visual visual, in System.Object targetObject)
 			{
+				if (visual == null)
+				{
+					return;
+				}
+
 				var visualObject = (targetObject as UE.GameObject);
 
 				// Optimize geometry and materials
-				if (visualObject.CompareTag("Visual"))
+				if (visualObject.CompareTag("Visual") == false)
 				{
-					// remove all colliders
-					var colliders = visualObject.GetComponentsInChildren<UE.Collider>();
-					foreach (var collider in colliders)
-					{
-						UE.GameObject.Destroy(collider);
-					}
+					return;
+				}
 
-					if (EnableOptimization)
+				// remove all colliders
+				var colliders = visualObject.GetComponentsInChildren<UE.Collider>();
+				foreach (var collider in colliders)
+				{
+					UE.GameObject.Destroy(collider);
+				}
+
+				if (EnableOptimization)
+				{
+					if (visualObject.transform.childCount > 0)
 					{
-						if (visualObject.transform.childCount > 0)
+						var geometryTransform = visualObject.transform.GetChild(0);
+						if (geometryTransform.CompareTag("Geometry"))
 						{
-							var geometryTransform = visualObject.transform.GetChild(0);
-							if (geometryTransform.CompareTag("Geometry"))
-							{
-								Implement.Visual.OptimizeMeshes(geometryTransform);
-							}
-						}
-						else
-						{
-							UE.Debug.LogWarning(visualObject.name + " has no geometry object");
+							Implement.Visual.OptimizeMeshes(geometryTransform);
 						}
 					}
-
-					// Turn off high-loading features in renderer as a performance tunig
-					var meshRenderers = visualObject.GetComponentsInChildren<UE.MeshRenderer>();
-					foreach (var meshRenderer in meshRenderers)
+					else
 					{
-						meshRenderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
-						meshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-						meshRenderer.motionVectorGenerationMode = UnityEngine.MotionVectorGenerationMode.ForceNoMotion;
-						meshRenderer.allowOcclusionWhenDynamic = true;
+						UE.Debug.LogWarning(visualObject.name + " has no geometry object");
 					}
+				}
+
+				// Turn off high-loading features in renderer as a performance tunig
+				var meshRenderers = visualObject.GetComponentsInChildren<UE.MeshRenderer>();
+				foreach (var meshRenderer in meshRenderers)
+				{
+					meshRenderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+					meshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+					meshRenderer.motionVectorGenerationMode = UnityEngine.MotionVectorGenerationMode.ForceNoMotion;
+					meshRenderer.allowOcclusionWhenDynamic = true;
+				}
+
+				// apply material script
+				var material = visual.GetMaterial();
+				if (material != null && material.script != null)
+				{
+					var meshMaterials = visualObject.GetComponentsInChildren<UE.Material>();
+					foreach (var meshMaterial in meshMaterials)
+					{
+						UE.Debug.Log(meshMaterial.name);
+						// Implement.Visual.ApplyMaterial(material.script, meshMaterial);
+					}
+				}
 
 #if UNITY_EDITOR
-					// SceneVisibilityManager.instance.ToggleVisibility(visualObject, true);
-					SceneVisibilityManager.instance.DisablePicking(visualObject, true);
+				// SceneVisibilityManager.instance.ToggleVisibility(visualObject, true);
+				SceneVisibilityManager.instance.DisablePicking(visualObject, true);
 #endif
-				}
 			}
 		}
 	}
