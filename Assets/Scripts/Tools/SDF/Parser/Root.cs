@@ -74,7 +74,6 @@ namespace SDF
 							worldFound = true;
 
 							var infoMessage = "World(" + worldFileName + ") is loaded.";
-
 							logger.Write(infoMessage);
 							// logger.SetShowOnDisplayOnce();
 						}

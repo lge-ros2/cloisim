@@ -183,15 +183,18 @@ public partial class MeshLoader
 			Assimp.PostProcessSteps.FindInvalidData |
 			Assimp.PostProcessSteps.MakeLeftHanded ;
 
-		var scene = importer.ImportFile(targetPath, postProcessFlags);
-		if (scene == null)
-		{
-			return null;
+		try {
+			var scene = importer.ImportFile(targetPath, postProcessFlags);
+
+			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
+			meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
+
+			return scene;
 		}
-
-		// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
-		meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
-
-		return scene;
+		catch (Assimp.AssimpException e)
+		{
+			Debug.LogError(e.Message);
+		}
+		return null;
 	}
 }

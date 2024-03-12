@@ -398,7 +398,10 @@ public partial class MeshLoader
 			var scene = GetScene(meshPath, out var meshRotation);
 			if (scene == null)
 			{
-				return null;
+				meshObject = new GameObject("No Mesh");
+				meshObject.SetActive(false);
+				meshObject.tag = "Geometry";
+				return meshObject;
 			}
 
 			// Materials
