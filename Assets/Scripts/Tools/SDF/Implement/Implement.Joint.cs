@@ -86,7 +86,7 @@ namespace SDF
 
 				if (axis.limit.HasJoint())
 				{
-					UE.Debug.LogWarningFormat("limit uppper{0}, lower{1}", axis.limit.upper, axis.limit.lower);
+					// UE.Debug.LogWarningFormat("limit uppper{0}, lower{1}", axis.limit.upper, axis.limit.lower);
 					SetRevoluteArticulationDriveLimit(ref drive, axis.limit);
 				}
 
