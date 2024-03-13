@@ -20,6 +20,7 @@ public static class OgreMaterial
 		}
 
 		public string name;
+		public bool receiveShadows = false;
 		public List<Technique> techniques = new List<Technique>();
 	}
 
@@ -69,12 +70,13 @@ public static class OgreMaterial
 
 				if (parts.Length >= 1)
 				{
-					var key = parts[0];
-					// Debug.Log(key);
+					var key = parts[0].Trim();
+					var value = (parts.Length > 1)? parts[1].Trim() : string.Empty;
+					// Debug.Log(key + " => " + value);
 
 					if (key == "material")
 					{
-						if (parts[1] == targetMaterial)
+						if (value == targetMaterial)
 						{
 							material = new Material(targetMaterial);
 							propertyLevel = PropertyLevel.MATERIAL;
@@ -82,14 +84,19 @@ public static class OgreMaterial
 						}
 						else
 						{
-							// Debug.Log($"!! material: {parts[1]}");
+							// Debug.Log($"!! material: {value}");
 						}
+					}
+					else if (key == "receive_shadows" && propertyLevel == PropertyLevel.MATERIAL)
+					{
+						// Debug.Log($"!! Found {key}: {value}");
+						material.receiveShadows = (value == "on") ? true : false;
 					}
 					else if (key == "technique" && propertyLevel == PropertyLevel.MATERIAL)
 					{
-						// Debug.Log($"!! Found technique: {material.techniques.Count}");
 						material.techniques.Add(new Technique());
 						propertyLevel = PropertyLevel.TECHNIQUE;
+						// Debug.Log($"!! Found technique: {material.techniques.Count}");
 					}
 					else if (key == "pass" && propertyLevel == PropertyLevel.TECHNIQUE)
 					{
@@ -141,16 +148,17 @@ public static class OgreMaterial
 					{
 						if (parts.Length >= 2 && propertyLevel != PropertyLevel.NONE)
 						{
-							// Debug.Log($"!! {key}: {parts[1]}");
+							// Debug.Log($"!! {key}: {value}");
 							if (propertyLevel == PropertyLevel.PASS)
 							{
-								var value = string.Join(" ", parts, 1, parts.Length - 1);
-								material.techniques.Last().passes.Last().properties[key] = value;
+								var values = string.Join(" ", parts, 1, parts.Length - 1);
+								material.techniques.Last().passes.Last().properties[key] = values;
 							}
 							else if (propertyLevel == PropertyLevel.TEXTUREUNIT)
 							{
-								var value = string.Join(" ", parts, 1, parts.Length - 1);
-								material.techniques.Last().passes.Last().textureUnits.Last().properties[key] = value;
+								var values = string.Join(" ", parts, 1, parts.Length - 1);
+								material.techniques.Last().passes.Last().textureUnits.Last().properties[key] = values;
+								// Debug.Log($"!! {key}: {values}");
 							}
 						}
 					}

@@ -115,12 +115,13 @@ namespace SDF
 
 			private static void ApplyOgreMaterial(in OgreMaterial.Material ogreMaterial, UE.Material material, in List<string> uris)
 			{
+				material.SetFloat("_ReceiveShadows", ogreMaterial.receiveShadows ? 1 : 0);
+
 				foreach (var technique in ogreMaterial.techniques)
 				{
 					foreach (var pass in technique.passes)
 					{
 						// UE.Debug.Log($"Technique: {technique.passes.IndexOf(pass)}");
-
 						// foreach (var kvp in pass.properties)
 						// {
 						// 	UE.Debug.Log($"  Pass: {kvp.Key}: {kvp.Value}");
@@ -150,14 +151,28 @@ namespace SDF
 						else if (pass.properties.ContainsKey("specular"))
 						{
 							var specular = pass.properties["specular"];
+
+							specular = specular.Trim();
+							var tmp = specular.Split(' ');
+							if (tmp.Length == 5)
+							{
+								var shininess = Convert.ToInt32(tmp[4]);
+								// ObsoleteProperties in Simple lit
+								material.SetFloat("_Shininess", shininess);
+
+								specular = string.Join(" ", tmp, 0, 4);
+							}
+
 							var specularColor = SDF2Unity.GetColor(specular);
 							material.SetColor("_SpecColor", specularColor);
+
+							material.SetFloat("_SpecularHighlights", 1f);
+							material.EnableKeyword("_SPECULAR_SETUP");
 						}
 
 						foreach (var textureunit in pass.textureUnits)
 						{
 							// UE.Debug.Log($"    TextureUnit: {pass.textureUnits.IndexOf(textureunit)}");
-
 							// foreach (var kvp in textureunit.properties)
 							// {
 							// 	UE.Debug.Log($"      TextureUnit: {kvp.Key} -> {kvp.Value}");
@@ -168,19 +183,53 @@ namespace SDF
 							{
 								var textureFileName = textureUnitProps["texture"];
 								var textureFilePath = FindFile(uris, textureFileName);
+
+								// UE.Debug.Log(textureFileName);
+								// UE.Debug.Log(textureFilePath);
 								if (!string.IsNullOrEmpty(textureFilePath))
 								{
 									var texture = MeshLoader.GetTexture(textureFilePath);
+
 									if (texture != null)
 									{
 										if (textureUnitProps.ContainsKey("filtering"))
 										{
 											var textureFiltering = textureUnitProps["filtering"];
-											textureFiltering = textureFiltering.Remove(1).ToUpper() + textureFiltering.Substring(1);
-											texture.filterMode = (UE.FilterMode)Enum.Parse(typeof(UE.FilterMode), textureFiltering);
+											// to make upper in First character
+											switch (textureFiltering)
+											{
+												case "bilinear":
+													texture.filterMode = UE.FilterMode.Bilinear;
+													break;
+												case "trilinear":
+												case "anisotropic":
+													texture.filterMode = UE.FilterMode.Trilinear;
+													break;
+												case "none":
+												default:
+													texture.filterMode = UE.FilterMode.Point;
+													break;
+											}
 										}
 
-										// to make upper in First character
+										if (textureUnitProps.ContainsKey("max_anisotropy"))
+										{
+											var textureAnisotropy = textureUnitProps["max_anisotropy"];
+											texture.anisoLevel = Convert.ToInt32(textureAnisotropy);
+										}
+
+										if (textureUnitProps.ContainsKey("scale"))
+										{
+											var scaleSet = textureUnitProps["scale"];
+											var tileScale = SDF2Unity.GetScale(scaleSet);
+
+											// TODO: Check texture tile scaling
+											tileScale.x = 1 / tileScale.x;
+											tileScale.y = 1 / tileScale.y;
+
+											material.SetTextureScale("_BaseMap", tileScale);
+										}
+
 										material.SetTexture("_BaseMap", texture);
 									}
 								}
@@ -215,7 +264,7 @@ namespace SDF
 							if (file.EndsWith(".material"))
 							{
 								targetMaterialFilepath = file;
-								Console.WriteLine(file);
+								// Console.Write(file);
 							}
 						}
 
@@ -228,7 +277,7 @@ namespace SDF
 					var ogreMaterial = OgreMaterial.Parse(targetMaterialFilepath, targetMaterialName);
 					if (ogreMaterial != null)
 					{
-						// UE.Debug.Log($"Found: {targetMaterialName} material");
+						// UE.Debug.Log($"Found: '{ogreMaterial.name}' material, techniques: {ogreMaterial.techniques.Count}");
 						ApplyOgreMaterial(ogreMaterial, targetMaterial, texturesPath);
 					}
 				}
