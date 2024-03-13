@@ -71,6 +71,21 @@ public partial class SDF2Unity
 		return new Quaternion((float)y, (float)-z, (float)-x, (float)w);
 	}
 
+	public static Vector2 GetScale(in string value)
+	{
+		return GetScale(new SDF.Vector2<double>(value));
+	}
+
+	public static Vector2 GetScale(in SDF.Vector2<double> value)
+	{
+		return GetScale(new Vector2((float)value.X, (float)value.Y));
+	}
+
+	public static Vector2 GetScale(in Vector2 value)
+	{
+		return new Vector2(Mathf.Abs(value.x), Mathf.Abs(value.y));
+	}
+
 	public static Vector3 GetScale(in SDF.Vector3<double> value)
 	{
 		return GetScale(new Vector3((float)value.X, (float)value.Y, (float)value.Z));
