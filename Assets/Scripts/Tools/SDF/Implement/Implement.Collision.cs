@@ -45,6 +45,7 @@ namespace SDF
 
 			private static readonly MCCookingOptions CookingOptions =
 					MCCookingOptions.EnableMeshCleaning |
+					// MCCookingOptions.InflateConvexMesh|
 					MCCookingOptions.CookForFasterSimulation |
 					MCCookingOptions.WeldColocatedVertices |
 					MCCookingOptions.UseFastMidphase;
@@ -58,7 +59,7 @@ namespace SDF
 					meshCollider.sharedMesh = meshFilter.sharedMesh;
 					meshCollider.convex = false;
 					meshCollider.cookingOptions = CookingOptions;
-					meshCollider.hideFlags |= UE.HideFlags.NotEditable;
+					// meshCollider.hideFlags |= UE.HideFlags.NotEditable;
 				}
 			}
 

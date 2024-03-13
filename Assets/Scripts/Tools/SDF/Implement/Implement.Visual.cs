@@ -95,18 +95,15 @@ namespace SDF
 
 				foreach (var currentDir in uris)
 				{
-					var parentDir = Directory.GetParent(currentDir).Parent.ToString();
-					// UE.Debug.Log(parentDir);
-
-					var subdirectoryEntries = Directory.GetDirectories(parentDir);
-					foreach (var subdirectory in subdirectoryEntries)
+					var subdirectoryEntries = Directory.GetDirectories(currentDir);
+					var subDirectories = new List<string>();
+					subDirectories.AddRange(subdirectoryEntries);
+					subDirectories.Insert(0, currentDir);
+					foreach (var subdirectory in subDirectories)
 					{
-						// UE.Debug.Log(subdirectory);
 						var fileEntries = Directory.GetFiles(subdirectory, "*" + ext);
-
 						foreach (var fileName in fileEntries)
 						{
-							// UE.Debug.Log(fileName);
 							if (fileName.EndsWith(targetFileName))
 								return fileName;
 						}
@@ -165,22 +162,25 @@ namespace SDF
 							// {
 							// 	UE.Debug.Log($"      TextureUnit: {kvp.Key} -> {kvp.Value}");
 							// }
+							var textureUnitProps = textureunit.properties;
 
-							if (textureunit.properties.ContainsKey("texture"))
+							if (textureUnitProps.ContainsKey("texture"))
 							{
-								var textureFileName = textureunit.properties["texture"];
+								var textureFileName = textureUnitProps["texture"];
 								var textureFilePath = FindFile(uris, textureFileName);
-								// UE.Debug.Log(textureFilePath);
 								if (!string.IsNullOrEmpty(textureFilePath))
 								{
 									var texture = MeshLoader.GetTexture(textureFilePath);
 									if (texture != null)
 									{
-										var textureFiltering = textureunit.properties["filtering"];
+										if (textureUnitProps.ContainsKey("filtering"))
+										{
+											var textureFiltering = textureUnitProps["filtering"];
+											textureFiltering = textureFiltering.Remove(1).ToUpper() + textureFiltering.Substring(1);
+											texture.filterMode = (UE.FilterMode)Enum.Parse(typeof(UE.FilterMode), textureFiltering);
+										}
 
 										// to make upper in First character
-										textureFiltering = textureFiltering.Remove(1).ToUpper() + textureFiltering.Substring(1);
-										texture.filterMode = (UE.FilterMode)Enum.Parse(typeof(UE.FilterMode), textureFiltering);
 										material.SetTexture("_BaseMap", texture);
 									}
 								}
@@ -194,17 +194,42 @@ namespace SDF
 			public static void ApplyMaterial(in SDF.Material.Script script, UE.Material targetMaterial)
 			{
 				var targetMaterialName = script.name;
+				var texturesPath = new List<string>();
+				var targetMaterialFilepath = string.Empty;
+
 				foreach (var uri in script.uri)
 				{
-					if (uri.EndsWith(".material"))
+					// Debug.Log(uri);
+					if (uri.EndsWith(".material") && File.Exists(uri))
 					{
-						var ogreMaterial = OgreMaterial.Parse(uri, targetMaterialName);
-						if (ogreMaterial != null)
+						targetMaterialFilepath = uri;
+						var targetDir = Directory.GetParent(uri).Parent.ToString();
+						texturesPath.Add(targetDir);
+					}
+					// find *.material file in folder
+					else if (Directory.Exists(uri))
+					{
+						var files = Directory.GetFiles(uri);
+						foreach (var file in files)
 						{
-							// UE.Debug.Log($"Found: {targetMaterialName} material");
-							ApplyOgreMaterial(ogreMaterial, targetMaterial, script.uri);
-							break;
+							if (file.EndsWith(".material"))
+							{
+								targetMaterialFilepath = file;
+								Console.WriteLine(file);
+							}
 						}
+
+						texturesPath.Add(uri);
+					}
+				}
+
+				if (string.IsNullOrEmpty(targetMaterialFilepath) == false)
+				{
+					var ogreMaterial = OgreMaterial.Parse(targetMaterialFilepath, targetMaterialName);
+					if (ogreMaterial != null)
+					{
+						// UE.Debug.Log($"Found: {targetMaterialName} material");
+						ApplyOgreMaterial(ogreMaterial, targetMaterial, texturesPath);
 					}
 				}
 			}

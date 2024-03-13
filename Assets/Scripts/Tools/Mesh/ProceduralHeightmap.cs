@@ -98,7 +98,7 @@ public class ProceduralHeightmap
 			if (terrainCollider != null)
 			{
 				terrainData = terrainCollider.terrainData;
-				Debug.Log("terrainData Found visual mesh");
+				// Debug.Log("terrainData Found visual mesh");
 			}
 		}
 		else
@@ -107,7 +107,7 @@ public class ProceduralHeightmap
 			if (terrain != null)
 			{
 				terrainData = terrain.terrainData;
-				Debug.Log("terrainData Found collision mesh");
+				// Debug.Log("terrainData Found collision mesh");
 			}
 		}
 
