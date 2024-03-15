@@ -219,7 +219,7 @@ namespace SDF
 							axis2.dynamics.damping = GetValue<double>("axis2/dynamics/damping");
 							axis2.dynamics.spring_reference = GetValue<double>("axis2/dynamics/spring_reference");
 							axis2.dynamics.spring_stiffness = GetValue<double>("axis2/dynamics/spring_stiffness");
-							axis.dynamics.friction = GetValue<double>("axis2/dynamics/friction");
+							axis2.dynamics.friction = GetValue<double>("axis2/dynamics/friction");
 						}
 
 						if (IsValidNode("axis2/limit"))
