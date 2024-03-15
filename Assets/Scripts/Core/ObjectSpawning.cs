@@ -186,14 +186,13 @@ public class ObjectSpawning : MonoBehaviour
 		var meshFilter = newObject.AddComponent<MeshFilter>();
 		meshFilter.sharedMesh = targetMesh;
 
-		var newMaterial = new Material(SDF2Unity.CommonShader);
-		newMaterial.name = targetMesh.name;
+		var newMaterial = SDF2Unity.GetNewMaterial(targetMesh.name);
 		newMaterial.color = Color.white;
 
 		var meshRenderer = newObject.AddComponent<MeshRenderer>();
+		meshRenderer.shadowCastingMode = ShadowCastingMode.On;
+		meshRenderer.receiveShadows = true;
 		meshRenderer.material = newMaterial;
-		meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
-		meshRenderer.receiveShadows = false;
 
 		var meshCollider = newObject.AddComponent<MeshCollider>();
 		meshCollider.sharedMesh = targetMesh;
