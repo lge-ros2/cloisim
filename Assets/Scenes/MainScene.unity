@@ -1841,14 +1841,17 @@ MonoBehaviour:
   modelRootDirectories:
   - ../cloi_resources
   - ../sample_resources/models/
+  - ../props_resources
+  - ../gazebo_models/
   - ../world_resources/yangjae_city
   - ../world_resources/bluepearl/models
-  - ../props_resources
   - ../world_resources/lawn_ground/models
+  - ../world_resources/seocho_tower/models
   worldRootDirectories:
   - ../sample_resources/worlds/
   - ../world_resources/bluepearl/worlds
   - ../world_resources/lawn_ground/worlds
+  - ../world_resources/seocho_tower/worlds
   fileRootDirectories:
   - ../sample_resources/media/
   - ../world_resources/bluepearl/media
