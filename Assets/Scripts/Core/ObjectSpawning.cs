@@ -15,6 +15,7 @@ public class ObjectSpawning : MonoBehaviour
 	public enum PropsType { BOX = 0, CYLINDER = 1, SPHERE = 2 };
 
 	private static PhysicMaterial PropsPhysicalMaterial = null;
+	private static Material PropMaterial_ = null;
 
 	private GameObject propsRoot = null;
 	private Camera mainCam = null;
@@ -44,6 +45,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	void Awake()
 	{
+		PropMaterial_ = SDF2Unity.Material.Create();
 		PropsPhysicalMaterial = Resources.Load<PhysicMaterial>("Materials/Props");
 		propsRoot = GameObject.Find("Props");
 		mainCam = Camera.main;
@@ -141,8 +143,12 @@ public class ObjectSpawning : MonoBehaviour
 			var meshFilter = spawnedObject.GetComponentInChildren<MeshFilter>();
 			mesh = meshFilter.sharedMesh;
 
-			var meshRender = spawnedObject.GetComponentInChildren<MeshRenderer>();
-			meshRender.material.color = Random.ColorHSV(0f, 1f, 0.4f, 1f, 0.3f, 1f);
+			const float SpawningMargin = 0.001f;
+			position.y += mesh.bounds.max.y + SpawningMargin;
+
+			var renderer = spawnedObject.GetComponentInChildren<Renderer>();
+			var newColor = Random.ColorHSV(0f, 1f, 0.4f, 1f, 0.3f, 1f);
+			renderer.material.SetColor("_BaseColor", newColor);
 
 			var rigidBody = spawnedObject.GetComponentInChildren<Rigidbody>();
 			rigidBody.mass = CalculateMass(scale);
@@ -156,11 +162,6 @@ public class ObjectSpawning : MonoBehaviour
 			Main.SegmentationManager.UpdateTags();
 		}
 
-		if (mesh != null)
-		{
-			const float SpawningMargin = 0.001f;
-			position.y += mesh.bounds.max.y + SpawningMargin;
-		}
 
 		var spawanedObjectTransform = spawnedObject.transform;
 		spawanedObjectTransform.position = position;
@@ -186,13 +187,13 @@ public class ObjectSpawning : MonoBehaviour
 		var meshFilter = newObject.AddComponent<MeshFilter>();
 		meshFilter.sharedMesh = targetMesh;
 
-		var newMaterial = SDF2Unity.GetNewMaterial(targetMesh.name);
-		newMaterial.color = Color.white;
-
 		var meshRenderer = newObject.AddComponent<MeshRenderer>();
 		meshRenderer.shadowCastingMode = ShadowCastingMode.On;
 		meshRenderer.receiveShadows = true;
-		meshRenderer.material = newMaterial;
+		meshRenderer.sharedMaterial = PropMaterial_;
+
+		meshRenderer.material.name = targetMesh.name;
+		meshRenderer.material.color = Color.white;
 
 		var meshCollider = newObject.AddComponent<MeshCollider>();
 		meshCollider.sharedMesh = targetMesh;

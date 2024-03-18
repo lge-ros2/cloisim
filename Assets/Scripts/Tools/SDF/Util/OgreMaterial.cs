@@ -20,6 +20,8 @@ public static class OgreMaterial
 		}
 
 		public string name;
+
+		public bool hasReceiveShadows = false;
 		public bool receiveShadows = false;
 		public List<Technique> techniques = new List<Technique>();
 	}
@@ -81,6 +83,13 @@ public static class OgreMaterial
 							material = new Material(targetMaterial);
 							propertyLevel = PropertyLevel.MATERIAL;
 							// Debug.Log($"!! Found material: {targetMaterial}");
+
+							if (parts.Length > 3 && parts[2] == ":")
+							{
+								var parentTargetMaterial = parts[3];
+								Debug.Log($"!! Found parent material: {parentTargetMaterial}");
+								var parentMaterial = Parse(filePath, parentTargetMaterial);
+							}
 						}
 						else
 						{
@@ -90,6 +99,7 @@ public static class OgreMaterial
 					else if (key == "receive_shadows" && propertyLevel == PropertyLevel.MATERIAL)
 					{
 						// Debug.Log($"!! Found {key}: {value}");
+						material.hasReceiveShadows = true;
 						material.receiveShadows = (value == "on") ? true : false;
 					}
 					else if (key == "technique" && propertyLevel == PropertyLevel.MATERIAL)

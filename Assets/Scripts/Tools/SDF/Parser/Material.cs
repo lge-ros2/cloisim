@@ -207,24 +207,28 @@ namespace SDF
 			{
 				ambient = new Color();
 				ambient.FromString(GetValue<string>("ambient"));
+				// Console.Write("sdf/material/ambient");
 			}
 
 			if (IsValidNode("diffuse"))
 			{
 				diffuse = new Color();
 				diffuse.FromString(GetValue<string>("diffuse"));
+				// Console.Write("sdf/material/diffuse");
 			}
 
 			if (IsValidNode("specular"))
 			{
 				specular = new Color();
 				specular.FromString(GetValue<string>("specular"));
+				// Console.Write("sdf/material/specular");
 			}
 
 			if (IsValidNode("emissive"))
 			{
 				emissive = new Color();
 				emissive.FromString(GetValue<string>("emissive"));
+				// Console.Write("sdf/material/emissive");
 			}
 		}
 	}

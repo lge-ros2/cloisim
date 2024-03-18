@@ -21,53 +21,53 @@ namespace SDF
 					return;
 				}
 
-				foreach (var renderer in targetObject.GetComponentsInChildren<UE.Renderer>(true))
+				// var meshRenderers = visualObject.GetComponentsInChildren<UE.MeshRenderer>();
+				// var material = visual.GetMaterial();
+				// foreach (var meshRenderer in meshRenderers)
+				// {
+				// }
+
+				var meshRenderers = targetObject.GetComponentsInChildren<UE.Renderer>(true);
+				foreach (var renderer in meshRenderers)
 				{
-					var sharedMaterial = renderer.sharedMaterial;
-
-					if (sharedMaterial == null)
+					// var sharedMaterial = renderer.material;
+					foreach (var material in renderer.sharedMaterials)
 					{
-						UE.Debug.Log(targetObject + ": sharedMaterial is null");
-						continue;
-					}
-
-					if (sdfMaterial.ambient != null)
-					{
-						// UE.Debug.Log(sharedMaterial.name + ": ambient is not support. " + 	SDF2Unity.GetColor(sdfMaterial.ambient));
-					}
-
-					if (sdfMaterial.diffuse != null)
-					{
-						var diffuseColor = SDF2Unity.GetColor(sdfMaterial.diffuse);
-						sharedMaterial.SetColor("_BaseColor", diffuseColor);
-
-						if (diffuseColor.a < 1)
+						if (sdfMaterial.ambient != null)
 						{
-							SDF2Unity.SetMaterialTransparent(sharedMaterial);
+							UE.Debug.Log(material.name + ": ambient is not support. " + 	SDF2Unity.GetColor(sdfMaterial.ambient));
 						}
-						else
+
+						if (sdfMaterial.diffuse != null)
 						{
-							SDF2Unity.SetMaterialOpaque(sharedMaterial);
+							SDF2Unity.Material.SetBaseColor(material, SDF2Unity.GetColor(sdfMaterial.diffuse));
 						}
-					}
 
-					if (sdfMaterial.emissive != null)
-					{
-						sharedMaterial.SetColor("_EmissionColor", SDF2Unity.GetColor(sdfMaterial.emissive));
-					}
-
-					if (sdfMaterial.specular != null)
-					{
-						sharedMaterial.SetColor("_SpecColor", SDF2Unity.GetColor(sdfMaterial.specular));
-					}
-
-					if (sdfMaterial.script != null)
-					{
-						if (sdfMaterial.script.name.ToLower().Contains("tree"))
+						if (sdfMaterial.emissive != null)
 						{
-							SDF2Unity.SetMaterialSpeedTree(sharedMaterial);
+							SDF2Unity.Material.SetEmission(material, SDF2Unity.GetColor(sdfMaterial.emissive));
+						}
+
+						if (sdfMaterial.specular != null)
+						{
+							SDF2Unity.Material.SetSpecular(material, SDF2Unity.GetColor(sdfMaterial.specular));
+							// UE.Debug.Log("ImportMaterial HasColorSpecular " + material.GetColor("_SpecColor"));
+						}
+
+						if (sdfMaterial.script != null)
+						{
+							if (sdfMaterial.script.name.ToLower().Contains("tree"))
+							{
+								SDF2Unity.Material.SetSpeedTree(material);
+							}
 						}
 					}
+
+					// Turn off high-loading features in renderer as a performance tunig
+					renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+					renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+					renderer.motionVectorGenerationMode = UnityEngine.MotionVectorGenerationMode.ForceNoMotion;
+					renderer.allowOcclusionWhenDynamic = true;
 				}
 			}
 		}

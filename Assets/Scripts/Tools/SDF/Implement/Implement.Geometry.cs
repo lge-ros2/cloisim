@@ -140,7 +140,7 @@ namespace SDF
 					meshFilter.sharedMesh = mesh;
 
 					var meshRenderer = createdObject.AddComponent<UE.MeshRenderer>();
-					meshRenderer.sharedMaterial = SDF2Unity.GetNewMaterial(mesh.name);
+					meshRenderer.sharedMaterial = SDF2Unity.Material.Create(mesh.name);
 					meshRenderer.allowOcclusionWhenDynamic = true;
 				}
 

@@ -44,7 +44,7 @@ public partial class MeshLoader
 
 		foreach (var sceneMat in sceneMaterials)
 		{
-			var mat = SDF2Unity.GetNewMaterial(sceneMat.Name);
+			var mat = SDF2Unity.Material.Create(sceneMat.Name);
 
 			if (sceneMat.HasColorAmbient)
 			{
@@ -54,54 +54,58 @@ public partial class MeshLoader
 			if (sceneMat.HasColorDiffuse)
 			{
 				var diffuseColor = MeshLoader.GetColor(sceneMat.ColorDiffuse);
+				// Debug.Log(sceneMat.Name + ": " + diffuseColor);
 				mat.SetColor("_BaseColor", diffuseColor);
 
 				if (diffuseColor.a < 1)
 				{
-					SDF2Unity.SetMaterialTransparent(mat);
+					SDF2Unity.Material.SetTransparent(mat);
 				}
 				else
 				{
-					SDF2Unity.SetMaterialOpaque(mat);
+					SDF2Unity.Material.SetOpaque(mat);
 				}
 			}
 
 			// Emission
 			if (sceneMat.HasColorEmissive)
 			{
-				mat.SetColor("_EmissionColor", MeshLoader.GetColor(sceneMat.ColorEmissive));
+				SDF2Unity.Material.SetEmission(mat, MeshLoader.GetColor(sceneMat.ColorEmissive));
 				// Debug.Log(sceneMat.Name + ": HasColorEmissive " + MeshLoader.GetColor(sceneMat.ColorEmissive));
 			}
 
 			if (sceneMat.HasColorSpecular)
 			{
-				mat.SetColor("_SpecColor", MeshLoader.GetColor(sceneMat.ColorSpecular));
+				SDF2Unity.Material.SetSpecular(mat, MeshLoader.GetColor(sceneMat.ColorSpecular));
 				// Debug.Log(sceneMat.Name + ": HasColorSpecular " + MeshLoader.GetColor(sceneMat.ColorSpecular));
 			}
 
 			if (sceneMat.HasColorTransparent)
 			{
-				mat.SetColor("_TransparentColor", MeshLoader.GetColor(sceneMat.ColorTransparent));
+				// mat.SetColor("_TransparentColor", MeshLoader.GetColor(sceneMat.ColorTransparent));
 				// Debug.Log(sceneMat.Name + ": HasColorTransparent " + sceneMat.ColorTransparent);
+				Debug.Log(sceneMat.Name + ": HasColorTransparent but not support. " + sceneMat.ColorTransparent);
 			}
 
 			// Reflectivity
 			if (sceneMat.HasReflectivity)
 			{
-				mat.SetFloat("_GlossyReflections", sceneMat.Reflectivity);
-				// Debug.Log(sceneMat.Name + ": HasColorReflective " + sceneMat.Reflectivity);
+				// mat.SetFloat("_GlossyReflections", sceneMat.Reflectivity);
+				// Debug.Log(sceneMat.Name + ": HasReflectivity " + sceneMat.Reflectivity);
+				Debug.Log(sceneMat.Name + ": HasReflectivity but not support. " + sceneMat.Reflectivity);
 			}
 
 			// reflective
 			if (sceneMat.HasColorReflective)
 			{
 				// Debug.Log(sceneMat.Name + ": HasColorReflective " + sceneMat.ColorReflective);
-				mat.SetColor("_ReflectColor", MeshLoader.GetColor(sceneMat.ColorReflective));
+				// mat.SetColor("_ReflectColor", MeshLoader.GetColor(sceneMat.ColorReflective));
+				Debug.Log(sceneMat.Name + ": HasColorReflective but not support. " + sceneMat.ColorReflective);
 			}
 
 			if (sceneMat.HasShininess)
 			{
-				mat.SetFloat("_Glossiness", sceneMat.Shininess);
+				mat.SetFloat("_Shininess", sceneMat.Shininess);
 			}
 
 			// Texture
@@ -361,7 +365,7 @@ public partial class MeshLoader
 				meshFilter.sharedMesh = meshMat.Mesh;
 
 				var meshRenderer = subObject.AddComponent<MeshRenderer>();
-				meshRenderer.sharedMaterial = meshMat.Material;
+				meshRenderer.material = meshMat.Material;
 				meshRenderer.allowOcclusionWhenDynamic = true;
 
 				subObject.transform.SetParent(rootObject.transform, true);

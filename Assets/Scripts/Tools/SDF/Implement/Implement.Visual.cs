@@ -115,7 +115,10 @@ namespace SDF
 
 			private static void ApplyOgreMaterial(in OgreMaterial.Material ogreMaterial, UE.Material material, in List<string> uris)
 			{
-				material.SetFloat("_ReceiveShadows", ogreMaterial.receiveShadows ? 1 : 0);
+				if (ogreMaterial.hasReceiveShadows)
+				{
+					material.SetFloat("_ReceiveShadows", ogreMaterial.receiveShadows ? 1f : 0);
+				}
 
 				foreach (var technique in ogreMaterial.techniques)
 				{
@@ -130,29 +133,17 @@ namespace SDF
 						if (pass.properties.ContainsKey("diffuse"))
 						{
 							var diffuse = pass.properties["diffuse"];
-							var diffuseColor = SDF2Unity.GetColor(diffuse);
-							material.SetColor("_BaseColor", diffuseColor);
-
-							if (diffuseColor.a < 1)
-							{
-								SDF2Unity.SetMaterialTransparent(material);
-							}
-							else
-							{
-								SDF2Unity.SetMaterialOpaque(material);
-							}
+							SDF2Unity.Material.SetBaseColor(material, SDF2Unity.GetColor(diffuse));
 						}
 						else if (pass.properties.ContainsKey("emissive"))
 						{
 							var emissive = pass.properties["emissive"];
-							var emissiveColor = SDF2Unity.GetColor(emissive);
-							material.SetColor("_EmissionColor", emissiveColor);
+							SDF2Unity.Material.SetEmission(material, SDF2Unity.GetColor(emissive));
 						}
 						else if (pass.properties.ContainsKey("specular"))
 						{
-							var specular = pass.properties["specular"];
+							var specular = pass.properties["specular"].Trim();
 
-							specular = specular.Trim();
 							var tmp = specular.Split(' ');
 							if (tmp.Length == 5)
 							{
@@ -163,11 +154,7 @@ namespace SDF
 								specular = string.Join(" ", tmp, 0, 4);
 							}
 
-							var specularColor = SDF2Unity.GetColor(specular);
-							material.SetColor("_SpecColor", specularColor);
-
-							material.SetFloat("_SpecularHighlights", 1f);
-							material.EnableKeyword("_SPECULAR_SETUP");
+							SDF2Unity.Material.SetSpecular(material, SDF2Unity.GetColor(specular));
 						}
 
 						foreach (var textureunit in pass.textureUnits)

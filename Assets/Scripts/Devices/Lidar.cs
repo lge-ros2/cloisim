@@ -221,8 +221,8 @@ namespace SensorDevices
 			universalLaserCamData.requiresDepthTexture = true;
 			universalLaserCamData.cameraStack.Clear();
 
-			var shader = Shader.Find("Sensor/Depth");
-			depthMaterial = new Material(shader);
+			var depthShader = Shader.Find("Sensor/Depth");
+			depthMaterial = new Material(depthShader);
 			depthMaterial.SetInt("_FlipX", 1); // Store CCW direction for ROS2 sensor data
 
 			var cb = new CommandBuffer();

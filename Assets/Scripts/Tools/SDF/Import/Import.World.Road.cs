@@ -34,7 +34,7 @@ namespace SDF
 				}
 				splineContainer.Spline.SetTangentMode(0, Splines.TangentMode.AutoSmooth);
 
-				var material = SDF2Unity.GetNewMaterial(road.Name + "_Material");
+				var material = SDF2Unity.Material.Create(road.Name + "_Material");
 
 				SDF.Implement.Visual.ApplyMaterial(road.material.script, material);
 
