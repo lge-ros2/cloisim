@@ -75,27 +75,6 @@ namespace SDF
 					}
 				}
 
-				// Turn off high-loading features in renderer as a performance tunig
-				var meshRenderers = visualObject.GetComponentsInChildren<UE.MeshRenderer>();
-				var material = visual.GetMaterial();
-				foreach (var meshRenderer in meshRenderers)
-				{
-					meshRenderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
-					meshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-					meshRenderer.motionVectorGenerationMode = UnityEngine.MotionVectorGenerationMode.ForceNoMotion;
-					meshRenderer.allowOcclusionWhenDynamic = true;
-
-					// apply material script
-					if (material != null && material.script != null)
-					{
-						foreach (var meshMaterial in meshRenderer.materials)
-						{
-							// UE.Debug.Log(meshMaterial.name);
-							Implement.Visual.ApplyMaterial(material.script, meshMaterial);
-						}
-					}
-				}
-
 #if UNITY_EDITOR
 				// SceneVisibilityManager.instance.ToggleVisibility(visualObject, true);
 				SceneVisibilityManager.instance.DisablePicking(visualObject, true);

@@ -21,18 +21,17 @@ namespace SDF
 					return;
 				}
 
-				// var meshRenderers = visualObject.GetComponentsInChildren<UE.MeshRenderer>();
-				// var material = visual.GetMaterial();
-				// foreach (var meshRenderer in meshRenderers)
-				// {
-				// }
-
 				var meshRenderers = targetObject.GetComponentsInChildren<UE.Renderer>(true);
 				foreach (var renderer in meshRenderers)
 				{
-					// var sharedMaterial = renderer.material;
-					foreach (var material in renderer.sharedMaterials)
+					foreach (var material in renderer.materials)
 					{
+						// apply material script
+						if (sdfMaterial != null && sdfMaterial.script != null)
+						{
+							Implement.Visual.ApplyMaterial(sdfMaterial.script, material);
+						}
+
 						if (sdfMaterial.ambient != null)
 						{
 							UE.Debug.Log(material.name + ": ambient is not support. " + 	SDF2Unity.GetColor(sdfMaterial.ambient));
