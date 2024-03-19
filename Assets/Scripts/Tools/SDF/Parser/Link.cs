@@ -59,8 +59,7 @@ namespace SDF
 
 		// <velocity decay> : TBD
 
-		private Inertial inertial = null;
-
+		private Inertial _inertial = null;
 		private Collisions collisions;
 		private Visuals visuals;
 		private Sensors sensors;
@@ -79,7 +78,7 @@ namespace SDF
 
 		public bool SelfCollide => self_collide;
 
-		public Inertial Inertial => inertial;
+		public Inertial Inertial => _inertial;
 
 		public Battery Battery => battery;
 
@@ -102,8 +101,8 @@ namespace SDF
 
 			if (IsValidNode("inertial"))
 			{
-				inertial = new Inertial();
-				inertial.mass = GetValue<double>("inertial/mass");
+				_inertial = new Inertial();
+				Inertial.mass = GetValue<double>("inertial/mass");
 
 				if (IsValidNode("inertial/inertia"))
 				{
@@ -118,9 +117,9 @@ namespace SDF
 
 				var poseStr = GetValue<string>("inertial/pose");
 				if (poseStr == null)
-					inertial.pose = null;
+					Inertial.pose = null;
 				else
-					inertial.pose.FromString(poseStr);
+					Inertial.pose.FromString(poseStr);
 				// Console.WriteLine("Link Mass: " + inertial.mass);
 			}
 

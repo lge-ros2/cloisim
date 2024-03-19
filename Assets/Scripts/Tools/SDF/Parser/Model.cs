@@ -43,8 +43,8 @@ namespace SDF
 		public bool IsWindEnabled => enableWind;
 
 		#region Segmentation Tag
-		private string originalName_ = string.Empty;
-		public string OriginalName => originalName_;
+		private string _originalName = string.Empty;
+		public string OriginalName => _originalName;
 		#endregion
 
 		public Model(XmlNode _node)
@@ -70,8 +70,8 @@ namespace SDF
 			// 	isStatic, isSelfCollide, allowAutoDisable, enableWind);
 
 			#region Segmentation Tag
-			originalName_ = GetAttribute<string>("original_name");
-			// Console.Write($"Model::ParseElements > [{originalName_}]");
+			_originalName = GetAttribute<string>("original_name");
+			// Console.Write($"Model::ParseElements > [{_originalName}]");
 			#endregion
 		}
 

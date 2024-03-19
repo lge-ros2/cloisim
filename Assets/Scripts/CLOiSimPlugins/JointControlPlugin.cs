@@ -11,7 +11,7 @@ using messages = cloisim.msgs;
 public class JointControlPlugin : CLOiSimPlugin
 {
 	private List<TF> tfList = new List<TF>();
-	private string robotDescription_ = "<?xml version='1.0' ?><sdf></sdf>";
+	private string _robotDescription = "<?xml version='1.0' ?><sdf></sdf>";
 	private SensorDevices.JointCommand jointCommand = null;
 	private SensorDevices.JointState jointState = null;
 
@@ -50,8 +50,8 @@ public class JointControlPlugin : CLOiSimPlugin
 
 		LoadJoints();
 
-		robotDescription_ = "<?xml version='1.0' ?><sdf>" + GetPluginParameters().ParentRawXml() + "</sdf>";
-		// UnityEngine.Debug.Log(robotDescription_);
+		_robotDescription = "<?xml version='1.0' ?><sdf>" + GetPluginParameters().ParentRawXml() + "</sdf>";
+		// UnityEngine.Debug.Log(_robotDescription);
 	}
 
 	protected override void OnReset()
@@ -112,7 +112,7 @@ public class JointControlPlugin : CLOiSimPlugin
 		var ros2CommonInfo = new messages.Param();
 		ros2CommonInfo.Name = "description";
 		ros2CommonInfo.Value = new Any { Type = Any.ValueType.String };
-		ros2CommonInfo.Value.StringValue = robotDescription_;
+		ros2CommonInfo.Value.StringValue = _robotDescription;
 
 		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
 	}

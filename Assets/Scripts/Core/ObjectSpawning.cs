@@ -14,8 +14,8 @@ public class ObjectSpawning : MonoBehaviour
 {
 	public enum PropsType { BOX = 0, CYLINDER = 1, SPHERE = 2 };
 
-	private static PhysicMaterial PropsPhysicalMaterial = null;
-	private static Material PropMaterial_ = null;
+	private static PhysicMaterial _propsPhysicalMaterial = null;
+	private static Material _propMaterial = null;
 
 	private GameObject propsRoot = null;
 	private Camera mainCam = null;
@@ -45,8 +45,8 @@ public class ObjectSpawning : MonoBehaviour
 
 	void Awake()
 	{
-		PropMaterial_ = SDF2Unity.Material.Create();
-		PropsPhysicalMaterial = Resources.Load<PhysicMaterial>("Materials/Props");
+		_propMaterial = SDF2Unity.Material.Create();
+		_propsPhysicalMaterial = Resources.Load<PhysicMaterial>("Materials/Props");
 		propsRoot = GameObject.Find("Props");
 		mainCam = Camera.main;
 		transformGizmo = Main.Gizmos;
@@ -63,7 +63,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	void OnDestroy()
 	{
-		Resources.UnloadAsset(PropsPhysicalMaterial);
+		Resources.UnloadAsset(_propsPhysicalMaterial);
 	}
 
 	// Update is called once per frame
@@ -190,14 +190,14 @@ public class ObjectSpawning : MonoBehaviour
 		var meshRenderer = newObject.AddComponent<MeshRenderer>();
 		meshRenderer.shadowCastingMode = ShadowCastingMode.On;
 		meshRenderer.receiveShadows = true;
-		meshRenderer.sharedMaterial = PropMaterial_;
+		meshRenderer.sharedMaterial = _propMaterial;
 
 		meshRenderer.material.name = targetMesh.name;
 		meshRenderer.material.color = Color.white;
 
 		var meshCollider = newObject.AddComponent<MeshCollider>();
 		meshCollider.sharedMesh = targetMesh;
-		meshCollider.sharedMaterial = PropsPhysicalMaterial;
+		meshCollider.sharedMaterial = _propsPhysicalMaterial;
 		meshCollider.convex = true;
 		meshCollider.isTrigger = false;
 
