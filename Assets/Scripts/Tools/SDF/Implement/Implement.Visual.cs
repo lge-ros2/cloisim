@@ -131,8 +131,6 @@ namespace SDF
 				{
 					var specular = pass.properties["specular"].Trim();
 
-					Debug.Log(specular);
-
 					var tmp = specular.Split(' ');
 					if (tmp.Length == 5)
 					{
@@ -154,7 +152,7 @@ namespace SDF
 							tmp[3] = Convert.ToString((r + g + b) / 3f);
 						}
 
-						specular = string.Join(" ", tmp, 0, 3);
+						specular = string.Join(" ", tmp, 0, 4);
 					}
 
 					SDF2Unity.Material.SetSpecular(material, SDF2Unity.GetColor(specular));
@@ -168,20 +166,26 @@ namespace SDF
 					material.SetFloat("_ReceiveShadows", ogreMaterial.receiveShadows ? 1f : 0);
 				}
 
-				foreach (var technique in ogreMaterial.techniques)
+				foreach (var techEntry in ogreMaterial.techniques)
 				{
-					foreach (var pass in technique.passes)
+					var technique = techEntry.Value;
+
+					foreach (var passEntry in technique.passes)
 					{
-						UE.Debug.Log($"Technique: {technique.passes.IndexOf(pass)}");
-						foreach (var kvp in pass.properties)
-						{
-							UE.Debug.Log($"  Pass: {kvp.Key}: {kvp.Value}");
-						}
+						var pass = passEntry.Value;
+
+						// UE.Debug.Log($"Technique: {technique.passes.IndexOf(pass)}");
+						// foreach (var kvp in pass.properties)
+						// {
+						// 	UE.Debug.Log($"  Pass: {kvp.Key}: {kvp.Value}");
+						// }
 
 						ApplyOgreVertexColour(pass, material);
 
-						foreach (var textureunit in pass.textureUnits)
+						foreach (var textureunitEntry in pass.textureUnits)
 						{
+							var textureunit = textureunitEntry.Value;
+
 							// UE.Debug.Log($"    TextureUnit: {pass.textureUnits.IndexOf(textureunit)}");
 							// foreach (var kvp in textureunit.properties)
 							// {

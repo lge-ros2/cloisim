@@ -26,12 +26,6 @@ namespace SDF
 				{
 					foreach (var material in renderer.materials)
 					{
-						// apply material script
-						if (sdfMaterial != null && sdfMaterial.script != null)
-						{
-							Implement.Visual.ApplyMaterial(sdfMaterial.script, material);
-						}
-
 						if (sdfMaterial.ambient != null)
 						{
 							UE.Debug.Log(material.name + ": ambient is not support. " + 	SDF2Unity.GetColor(sdfMaterial.ambient));
@@ -53,8 +47,14 @@ namespace SDF
 							// UE.Debug.Log("ImportMaterial HasColorSpecular " + material.GetColor("_SpecColor"));
 						}
 
+
+						// apply material script
 						if (sdfMaterial.script != null)
 						{
+							// Name of material from an installed script file.
+							// This will override the color element if the script exists.
+							Implement.Visual.ApplyMaterial(sdfMaterial.script, material);
+
 							if (sdfMaterial.script.name.ToLower().Contains("tree"))
 							{
 								SDF2Unity.Material.SetSpeedTree(material);
