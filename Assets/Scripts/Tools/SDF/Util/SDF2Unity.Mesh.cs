@@ -7,7 +7,6 @@
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UE = UnityEngine;
 
 public partial class SDF2Unity
 {

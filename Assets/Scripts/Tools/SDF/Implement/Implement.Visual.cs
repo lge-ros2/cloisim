@@ -113,6 +113,54 @@ namespace SDF
 				return string.Empty;
 			}
 
+			private static void ApplyOgreVertexColour(in OgreMaterial.Pass pass, UE.Material material)
+			{
+				if (pass.properties.ContainsKey("diffuse"))
+				{
+					var diffuse = pass.properties["diffuse"].Trim();
+					SDF2Unity.Material.SetBaseColor(material, SDF2Unity.GetColor(diffuse));
+				}
+
+				if (pass.properties.ContainsKey("emissive"))
+				{
+					var emissive = pass.properties["emissive"].Trim();
+					SDF2Unity.Material.SetEmission(material, SDF2Unity.GetColor(emissive));
+				}
+
+				if (pass.properties.ContainsKey("specular"))
+				{
+					var specular = pass.properties["specular"].Trim();
+
+					Debug.Log(specular);
+
+					var tmp = specular.Split(' ');
+					if (tmp.Length == 5)
+					{
+						var shininess = Convert.ToSingle(tmp[4]);
+						// ObsoleteProperties in Simple lit
+						material.SetFloat("_Shininess", shininess);
+
+						specular = string.Join(" ", tmp, 0, 4);
+					}
+					else if (tmp.Length == 4)
+					{
+						var alpha = Convert.ToSingle(tmp[3]);
+						if (alpha > 1)
+						{
+							material.SetFloat("_Shininess", alpha);
+							var r = Convert.ToSingle(tmp[0]);
+							var g = Convert.ToSingle(tmp[1]);
+							var b = Convert.ToSingle(tmp[2]);
+							tmp[3] = Convert.ToString((r + g + b) / 3f);
+						}
+
+						specular = string.Join(" ", tmp, 0, 3);
+					}
+
+					SDF2Unity.Material.SetSpecular(material, SDF2Unity.GetColor(specular));
+				}
+			}
+
 			private static void ApplyOgreMaterial(in OgreMaterial.Material ogreMaterial, UE.Material material, in List<string> uris)
 			{
 				if (ogreMaterial.hasReceiveShadows)
@@ -124,38 +172,13 @@ namespace SDF
 				{
 					foreach (var pass in technique.passes)
 					{
-						// UE.Debug.Log($"Technique: {technique.passes.IndexOf(pass)}");
-						// foreach (var kvp in pass.properties)
-						// {
-						// 	UE.Debug.Log($"  Pass: {kvp.Key}: {kvp.Value}");
-						// }
-
-						if (pass.properties.ContainsKey("diffuse"))
+						UE.Debug.Log($"Technique: {technique.passes.IndexOf(pass)}");
+						foreach (var kvp in pass.properties)
 						{
-							var diffuse = pass.properties["diffuse"];
-							SDF2Unity.Material.SetBaseColor(material, SDF2Unity.GetColor(diffuse));
+							UE.Debug.Log($"  Pass: {kvp.Key}: {kvp.Value}");
 						}
-						else if (pass.properties.ContainsKey("emissive"))
-						{
-							var emissive = pass.properties["emissive"];
-							SDF2Unity.Material.SetEmission(material, SDF2Unity.GetColor(emissive));
-						}
-						else if (pass.properties.ContainsKey("specular"))
-						{
-							var specular = pass.properties["specular"].Trim();
 
-							var tmp = specular.Split(' ');
-							if (tmp.Length == 5)
-							{
-								var shininess = Convert.ToInt32(tmp[4]);
-								// ObsoleteProperties in Simple lit
-								material.SetFloat("_Shininess", shininess);
-
-								specular = string.Join(" ", tmp, 0, 4);
-							}
-
-							SDF2Unity.Material.SetSpecular(material, SDF2Unity.GetColor(specular));
-						}
+						ApplyOgreVertexColour(pass, material);
 
 						foreach (var textureunit in pass.textureUnits)
 						{
