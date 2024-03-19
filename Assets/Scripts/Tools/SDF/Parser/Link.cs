@@ -41,13 +41,18 @@ namespace SDF
 		public double voltage = 0;
 	}
 
+	public class VelocityDecay
+	{
+		public double linear = 0;
+		public double angular = 0;
+	};
+
 	public class Links : Entities<Link>
 	{
 		private const string TARGET_TAG = "link";
 		public Links() : base(TARGET_TAG) { }
 		public Links(XmlNode _node) : base(_node, TARGET_TAG) { }
 	}
-
 
 	public class Link : Entity
 	{
@@ -57,7 +62,7 @@ namespace SDF
 		private bool kinematic = false;
 		private bool must_be_base_link = false;
 
-		// <velocity decay> : TBD
+		private VelocityDecay _velocity_decay = null;
 
 		private Inertial _inertial = null;
 		private Collisions collisions;
@@ -77,6 +82,8 @@ namespace SDF
 		public bool Kinematic => kinematic;
 
 		public bool SelfCollide => self_collide;
+
+		public VelocityDecay VelocityDecay => _velocity_decay;
 
 		public Inertial Inertial => _inertial;
 
@@ -98,6 +105,13 @@ namespace SDF
 			self_collide = GetValue<bool>("self_collide", false);
 			kinematic = GetValue<bool>("kinematic", false);
 			must_be_base_link = GetValue<bool>("must_be_base_link", false);
+
+			if (IsValidNode("velocity_decay"))
+			{
+				_velocity_decay = new VelocityDecay();
+				_velocity_decay.linear = GetValue<double>("velocity_decay/linear", 0);
+				_velocity_decay.angular = GetValue<double>("velocity_decay/angular", 0);
+			}
 
 			if (IsValidNode("inertial"))
 			{
