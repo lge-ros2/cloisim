@@ -32,9 +32,9 @@ namespace SDF
 			}
 
 			/// <summary>Set mesh from external source</summary>
-			public static void GenerateMeshObject(in SDF.Mesh obj, in UE.GameObject targetParentObject)// in bool isVisualMesh = true)
+			public static void GenerateMeshObject(in SDF.Mesh obj, in UE.GameObject targetParentObject)
 			{
-				var loadedObject = MeshLoader.CreateMeshObject(obj.uri);
+				var loadedObject = MeshLoader.CreateMeshObject(obj.uri, obj.submesh_name);
 				var isVisualMesh = IsVisualObject(targetParentObject);
 
 				if (loadedObject == null)

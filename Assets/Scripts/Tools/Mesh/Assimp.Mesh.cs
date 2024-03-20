@@ -12,7 +12,7 @@ using UnityEngine.Rendering;
 
 public partial class MeshLoader
 {
-	private static Dictionary<string, GameObject> GameObjectCache = new Dictionary<string, GameObject>();
+	private static Dictionary<string, GameObject> MeshCache = new Dictionary<string, GameObject>();
 
 	public static Texture2D GetTexture(in string textureFullPath)
 	{
@@ -352,6 +352,7 @@ public partial class MeshLoader
 	private static GameObject ConvertAssimpNodeToMeshObject(in Assimp.Node node, in MeshMaterialList meshMatList)
 	{
 		var rootObject = new GameObject(node.Name);
+		Debug.Log($"ConvertAssimpNodeToMeshObject : {node.Name}");
 
 		// Set Mesh
 		if (node.HasMeshes)
@@ -384,7 +385,7 @@ public partial class MeshLoader
 		{
 			foreach (var child in node.Children)
 			{
-				// Debug.Log(" => Child Object: " + child.Name);
+				Debug.Log(" => Child Object: " + child.Name);
 				var childObject = ConvertAssimpNodeToMeshObject(child, meshMatList);
 				childObject.transform.SetParent(rootObject.transform, false);
 			}
@@ -393,16 +394,18 @@ public partial class MeshLoader
 		return rootObject;
 	}
 
-	public static GameObject CreateMeshObject(in string meshPath)
+	public static GameObject CreateMeshObject(in string meshPath, in string subMesh = null)
 	{
 		GameObject meshObject = null;
 
-		if (!GameObjectCache.ContainsKey(meshPath))
+		var cacheKey = meshPath + (string.IsNullOrEmpty(subMesh) ? "" : subMesh);
+
+		if (!MeshCache.ContainsKey(cacheKey))
 		{
-			var scene = GetScene(meshPath, out var meshRotation);
+			var scene = GetScene(meshPath, out var meshRotation, subMesh);
 			if (scene == null)
 			{
-				meshObject = new GameObject("No Mesh");
+				meshObject = new GameObject("Empty Mesh");
 				meshObject.SetActive(false);
 				meshObject.tag = "Geometry";
 				return meshObject;
@@ -438,13 +441,17 @@ public partial class MeshLoader
 			meshScale.y = Mathf.Abs(meshScale.y);
 			meshScale.z = Mathf.Abs(meshScale.z);
 			createdMeshObject.transform.localScale = meshScale;
-
-			GameObjectCache.Add(meshPath, createdMeshObject);
-			GameObject.DontDestroyOnLoad(createdMeshObject);
 			createdMeshObject.SetActive(false);
+
+			MeshCache.Add(cacheKey, createdMeshObject);
+			GameObject.DontDestroyOnLoad(createdMeshObject);
+		}
+		else
+		{
+			Debug.Log($"Use cached mesh({cacheKey}) for {meshPath}");
 		}
 
-		meshObject = GameObject.Instantiate(GameObjectCache[meshPath]);
+		meshObject = GameObject.Instantiate(MeshCache[cacheKey]);
 		meshObject.SetActive(true);
 		meshObject.name = "Non-Primitive Mesh";
 		meshObject.tag = "Geometry";

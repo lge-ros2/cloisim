@@ -147,7 +147,7 @@ public partial class MeshLoader
 			Debug.Log(msg);
 		});
 
-	private static Assimp.Scene GetScene(in string targetPath, out Quaternion meshRotation)
+	private static Assimp.Scene GetScene(in string targetPath, out Quaternion meshRotation, in string subMesh = null)
 	{
 		meshRotation = Quaternion.identity;
 
@@ -168,27 +168,52 @@ public partial class MeshLoader
 		}
 
 		const Assimp.PostProcessSteps postProcessFlags =
-			Assimp.PostProcessSteps.OptimizeGraph |
+			// Assimp.PostProcessSteps.OptimizeGraph | // --> occurs sub-mesh merged
 			Assimp.PostProcessSteps.OptimizeMeshes |
-			// Assimp.PostProcessSteps.GenerateNormals |
-			// Assimp.PostProcessSteps.GenerateSmoothNormals |
-			// Assimp.PostProcessSteps.GenerateUVCoords |
-			// Assimp.PostProcessSteps.RemoveComponent |
+			Assimp.PostProcessSteps.GenerateNormals |
+			// Assimp.PostProcessSteps.GenerateSmoothNormals | // --> it may causes conflict with GenerateNormals
+			Assimp.PostProcessSteps.GenerateUVCoords |
+			Assimp.PostProcessSteps.RemoveComponent |
 			Assimp.PostProcessSteps.ImproveCacheLocality |
 			Assimp.PostProcessSteps.CalculateTangentSpace |
 			Assimp.PostProcessSteps.JoinIdenticalVertices |
 			Assimp.PostProcessSteps.RemoveRedundantMaterials |
-			// Assimp.PostProcessSteps.FixInFacingNormals |
-			// Assimp.PostProcessSteps.SortByPrimitiveType |
+			Assimp.PostProcessSteps.FixInFacingNormals |
 			Assimp.PostProcessSteps.Triangulate |
 			Assimp.PostProcessSteps.SortByPrimitiveType |
 			Assimp.PostProcessSteps.ValidateDataStructure |
 			Assimp.PostProcessSteps.SplitLargeMeshes |
 			Assimp.PostProcessSteps.FindInvalidData |
-			Assimp.PostProcessSteps.MakeLeftHanded ;
+			Assimp.PostProcessSteps.MakeLeftHanded;
 
 		try {
 			var scene = importer.ImportFile(targetPath, postProcessFlags);
+
+			// Remove cameras and lights
+			scene.Cameras.Clear();
+			scene.Lights.Clear();
+
+			if (!string.IsNullOrEmpty(subMesh))
+			{
+				Debug.Log(subMesh);
+				for (var i = scene.RootNode.ChildCount - 1; i >= 0; i--)
+				{
+					var sceneNode = scene.RootNode.Children[i];
+
+					if (sceneNode.Name != subMesh)
+					{
+						Debug.Log("remove: " + sceneNode.Name);
+						scene.RootNode.Children.Remove(sceneNode);
+					}
+					else
+					{
+						Debug.Log("keep: " + sceneNode.Name);
+					}
+				}
+
+				Debug.Log(scene.RootNode.Children.Count);
+				Debug.Log(scene.RootNode.ChildCount);
+			}
 
 			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
 			meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
