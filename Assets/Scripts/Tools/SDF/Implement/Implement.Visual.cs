@@ -259,9 +259,11 @@ namespace SDF
 											tileScale.y = 1 / tileScale.y;
 
 											material.SetTextureScale("_BaseMap", tileScale);
+											material.SetTextureScale("_MainTex", tileScale);
 										}
 
 										material.SetTexture("_BaseMap", texture);
+										material.SetTexture("_MainTex", texture);
 									}
 								}
 							}

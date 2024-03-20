@@ -77,15 +77,17 @@ public partial class SDF2Unity
 		{
 			var existingTexture = target.GetTexture("_BaseMap");
 			var existingColor = target.GetColor("_BaseColor");
-			existingColor.a = 0.55f;
+			// existingColor.a = 0.55f;
 			target.shader = SpeedTreeShader;
-			target.SetTexture("_BaseMap", existingTexture);
-			target.SetColor("_BaseColor", existingColor);
-			target.SetFloat("_Smoothness", 0f);
-			target.SetInt("_TwoSided", 2);
-			target.SetFloat("_BillboardKwToggle", 1f);
+			target.SetTexture("_MainTex", existingTexture);
+			target.SetColor("_Color", existingColor);
+			target.SetFloat("_Glossiness", 0f);
+			target.SetInt("_TwoSided", 0);
+
+			target.SetFloat("_BillboardKwToggle", 0);
 			target.SetFloat("_BillSboardShadowFade", 0f);
-			target.EnableKeyword("EFFECT_BILLBOARD");
+			target.DisableKeyword("EFFECT_BILLBOARD");
+
 			target.EnableKeyword("_INSTANCING_ON");
 		}
 

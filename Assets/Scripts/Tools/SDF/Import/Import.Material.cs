@@ -51,14 +51,14 @@ namespace SDF
 						// apply material script
 						if (sdfMaterial.script != null)
 						{
-							// Name of material from an installed script file.
-							// This will override the color element if the script exists.
-							Implement.Visual.ApplyMaterial(sdfMaterial.script, material);
-
 							if (sdfMaterial.script.name.ToLower().Contains("tree"))
 							{
 								SDF2Unity.Material.SetSpeedTree(material);
 							}
+
+							// Name of material from an installed script file.
+							// This will override the color element if the script exists.
+							Implement.Visual.ApplyMaterial(sdfMaterial.script, material);
 						}
 					}
 

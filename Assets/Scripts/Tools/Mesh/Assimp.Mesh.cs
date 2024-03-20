@@ -352,7 +352,7 @@ public partial class MeshLoader
 	private static GameObject ConvertAssimpNodeToMeshObject(in Assimp.Node node, in MeshMaterialList meshMatList)
 	{
 		var rootObject = new GameObject(node.Name);
-		Debug.Log($"ConvertAssimpNodeToMeshObject : {node.Name}");
+		// Debug.Log($"ConvertAssimpNodeToMeshObject : {node.Name}");
 
 		// Set Mesh
 		if (node.HasMeshes)
@@ -385,7 +385,7 @@ public partial class MeshLoader
 		{
 			foreach (var child in node.Children)
 			{
-				Debug.Log(" => Child Object: " + child.Name);
+				// Debug.Log(" => Child Object: " + child.Name);
 				var childObject = ConvertAssimpNodeToMeshObject(child, meshMatList);
 				childObject.transform.SetParent(rootObject.transform, false);
 			}

@@ -195,24 +195,21 @@ public partial class MeshLoader
 
 			if (!string.IsNullOrEmpty(subMesh))
 			{
-				Debug.Log(subMesh);
+				// Debug.Log(subMesh);
 				for (var i = scene.RootNode.ChildCount - 1; i >= 0; i--)
 				{
 					var sceneNode = scene.RootNode.Children[i];
 
 					if (sceneNode.Name != subMesh)
 					{
-						Debug.Log("remove: " + sceneNode.Name);
+						// Debug.Log("remove: " + sceneNode.Name);
 						scene.RootNode.Children.Remove(sceneNode);
 					}
-					else
-					{
-						Debug.Log("keep: " + sceneNode.Name);
-					}
+					// else
+					// {
+					// 	Debug.Log("keep: " + sceneNode.Name);
+					// }
 				}
-
-				Debug.Log(scene.RootNode.Children.Count);
-				Debug.Log(scene.RootNode.ChildCount);
 			}
 
 			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
