@@ -17,9 +17,9 @@ namespace SDF
 	{
 		public class Visual
 		{
-			public static void OptimizeMeshes(in UE.Transform targetTransform)
+			private static void OptimizeMesh(in UE.Transform target)
 			{
-				var meshFilters = targetTransform.GetComponentsInChildren<UE.MeshFilter>();
+				var meshFilters = target.GetComponentsInChildren<UE.MeshFilter>();
 
 				if (meshFilters.Length <= 1)
 				{
@@ -85,7 +85,24 @@ namespace SDF
 					var meshRenderer = newVisualGeometryObject.AddComponent<UE.MeshRenderer>();
 					meshRenderer.material = material;
 
-					newVisualGeometryObject.transform.SetParent(targetTransform, true);
+					newVisualGeometryObject.transform.SetParent(target, true);
+				}
+			}
+
+			public static void OptimizeMeshes(in UE.Transform targetTransform)
+			{
+				for (var i = 0; i< targetTransform.childCount; i++)
+				{
+					var child = targetTransform.GetChild(i);
+
+					if (child.GetComponent<UE.MeshFilter>() == null)
+					{
+						OptimizeMesh(child);
+					}
+					else
+					{
+						OptimizeMesh(targetTransform);
+					}
 				}
 			}
 
