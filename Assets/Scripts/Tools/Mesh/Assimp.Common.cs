@@ -11,6 +11,25 @@ using UnityEngine;
 
 public partial class MeshLoader
 {
+	private static Assimp.PostProcessSteps PostProcessFlags =
+		// Assimp.PostProcessSteps.OptimizeGraph | // --> occurs sub-mesh merged
+		// Assimp.PostProcessSteps.GenerateSmoothNormals | // --> it may causes conflict with GenerateNormals
+		// Assimp.PostProcessSteps.OptimizeMeshes | // -> it may causes face reverting
+		// Assimp.PostProcessSteps.FixInFacingNormals | // -> it may causes wrong face
+		Assimp.PostProcessSteps.GenerateNormals |
+		Assimp.PostProcessSteps.GenerateUVCoords |
+		Assimp.PostProcessSteps.RemoveComponent |
+		Assimp.PostProcessSteps.ImproveCacheLocality |
+		Assimp.PostProcessSteps.CalculateTangentSpace |
+		Assimp.PostProcessSteps.JoinIdenticalVertices |
+		Assimp.PostProcessSteps.RemoveRedundantMaterials |
+		Assimp.PostProcessSteps.Triangulate |
+		Assimp.PostProcessSteps.SortByPrimitiveType |
+		Assimp.PostProcessSteps.ValidateDataStructure |
+		Assimp.PostProcessSteps.SplitLargeMeshes |
+		Assimp.PostProcessSteps.FindInvalidData |
+		Assimp.PostProcessSteps.MakeLeftHanded;
+
 	private static Color GetColor(Assimp.Color4D color)
 	{
 		return (color == null) ? Color.clear : new Color(color.R, color.G, color.B, color.A);
@@ -149,27 +168,8 @@ public partial class MeshLoader
 			return null;
 		}
 
-		const Assimp.PostProcessSteps postProcessFlags =
-			// Assimp.PostProcessSteps.OptimizeGraph | // --> occurs sub-mesh merged
-			// Assimp.PostProcessSteps.GenerateSmoothNormals | // --> it may causes conflict with GenerateNormals
-			// Assimp.PostProcessSteps.OptimizeMeshes | // -> it may causes face reverting
-			// Assimp.PostProcessSteps.FixInFacingNormals | // -> it may causes wrong face
-			Assimp.PostProcessSteps.GenerateNormals |
-			Assimp.PostProcessSteps.GenerateUVCoords |
-			Assimp.PostProcessSteps.RemoveComponent |
-			Assimp.PostProcessSteps.ImproveCacheLocality |
-			Assimp.PostProcessSteps.CalculateTangentSpace |
-			Assimp.PostProcessSteps.JoinIdenticalVertices |
-			Assimp.PostProcessSteps.RemoveRedundantMaterials |
-			Assimp.PostProcessSteps.Triangulate |
-			Assimp.PostProcessSteps.SortByPrimitiveType |
-			Assimp.PostProcessSteps.ValidateDataStructure |
-			Assimp.PostProcessSteps.SplitLargeMeshes |
-			Assimp.PostProcessSteps.FindInvalidData |
-			Assimp.PostProcessSteps.MakeLeftHanded;
-
 		try {
-			var scene = importer.ImportFile(targetPath, postProcessFlags);
+			var scene = importer.ImportFile(targetPath, PostProcessFlags);
 
 			// Remove cameras and lights
 			scene.Cameras.Clear();
