@@ -53,18 +53,7 @@ public partial class MeshLoader
 
 			if (sceneMat.HasColorDiffuse)
 			{
-				var diffuseColor = MeshLoader.GetColor(sceneMat.ColorDiffuse);
-				// Debug.Log(sceneMat.Name + ": " + diffuseColor);
-				mat.SetColor("_BaseColor", diffuseColor);
-
-				if (diffuseColor.a < 1)
-				{
-					SDF2Unity.Material.SetTransparent(mat);
-				}
-				else
-				{
-					SDF2Unity.Material.SetOpaque(mat);
-				}
+				SDF2Unity.Material.SetEmission(mat, MeshLoader.GetColor(sceneMat.ColorDiffuse));
 			}
 
 			// Emission
