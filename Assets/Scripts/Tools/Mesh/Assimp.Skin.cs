@@ -112,12 +112,12 @@ public partial class MeshLoader
 		var meshIndex = 0;
 		foreach (var sceneMesh in sceneMeshes)
 		{
-			var meshMat = meshMatList.Get(meshIndex++);
+			var meshMat = meshMatList[meshIndex++];
 
 			// Bones
-			if (meshMat != null && sceneMesh.HasBones)
+			if (sceneMesh.HasBones)
 			{
-				var mesh = meshMat.Mesh;
+				var mesh = meshMat.mesh;
 				var boneWeightList = new BoneWeightItemList(mesh.vertexCount);
 				// Debug.Log(newMesh.name + ": vertexCount=" + newMesh.vertexCount + " or " + sceneMesh.VertexCount + ", boneCount=" + sceneMesh.BoneCount + ", " + sceneMesh.Bones.Count);
 
@@ -218,18 +218,18 @@ public partial class MeshLoader
 		var bones = skinnedMeshRenderer.rootBone.GetComponentsInChildren<Transform>();
 		skinnedMeshRenderer.bones = bones;
 
-		// Materials
-		List<Material> materials = null;
-		if (scene.HasMaterials)
-		{
-			materials = LoadMaterials(meshPath, scene.Materials);
-		}
-
 		// Meshes
 		MeshMaterialList meshMatList = null;
 		BindPoseList bindPoseList = null;
 		if (scene.HasMeshes)
 		{
+			// Materials
+			List<Material> materials = null;
+			if (scene.HasMaterials)
+			{
+				materials = LoadMaterials(meshPath, scene.Materials);
+			}
+
 			// additional rotation for skin loading
 			meshMatList = LoadMeshes(scene.Meshes);
 			meshMatList.SetMaterials(materials);
@@ -244,11 +244,11 @@ public partial class MeshLoader
 		var combine = new CombineInstance[meshMatList.Count];
 		for (var combineIndex = 0; combineIndex < meshMatList.Count; combineIndex++)
 		{
-			var meshMat = meshMatList.Get(combineIndex);
-			combinedMaterials.Add(meshMat.Material);
-			combine[combineIndex].mesh = meshMat.Mesh;
+			var meshMat = meshMatList[combineIndex];
+			combinedMaterials.Add(meshMat.material);
+			combine[combineIndex].mesh = meshMat.mesh;
 			combine[combineIndex].transform = Matrix4x4.identity;
-			combinedBoneWeights.AddRange(meshMat.Mesh.boneWeights);
+			combinedBoneWeights.AddRange(meshMat.mesh.boneWeights);
 		}
 
 		var combinedMesh = new Mesh();

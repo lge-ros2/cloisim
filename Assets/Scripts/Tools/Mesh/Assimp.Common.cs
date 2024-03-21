@@ -37,51 +37,33 @@ public partial class MeshLoader
 		return texturePaths;
 	}
 
-	class MeshMaterialSet
+	struct MeshMaterial
 	{
-		private readonly int _materialIndex;
-		private readonly Mesh _mesh;
-		private Material _material;
+		public bool valid;
+		public readonly int materialIndex;
+		public readonly Mesh mesh;
+		public Material material;
 
-		public MeshMaterialSet(in Mesh mesh, in int materialIndex)
+		public MeshMaterial(in Mesh mesh, in int materialIndex)
 		{
-			_mesh = mesh;
-			_materialIndex = materialIndex;
+			this.valid = true;
+			this.materialIndex = materialIndex;
+			this.mesh = mesh;
+			this.material = null;
 		}
-
-		public int MaterialIndex => _materialIndex;
-
-		public Material Material
-		{
-			get => _material;
-			set => _material = value;
-		}
-
-		public Mesh Mesh => _mesh;
 	}
 
-	class MeshMaterialList
+	class MeshMaterialList : List<MeshMaterial>
 	{
-		private List<MeshMaterialSet> meshMatList = new List<MeshMaterialSet>();
-
-		public int Count => meshMatList.Count;
-
-		public void Add(in MeshMaterialSet meshMatSet)
-		{
-			meshMatList.Add(meshMatSet);
-		}
-
 		public void SetMaterials(in List<Material> materials)
 		{
-			foreach (var meshMatSet in meshMatList)
+			// foreach (var meshMat in meshMatList)
+			for (var i = 0; i < this.Count; i++)
 			{
-				meshMatSet.Material = materials[meshMatSet.MaterialIndex];
+				var meshMat = this[i];
+				meshMat.material = materials[meshMat.materialIndex];
+				this[i] = meshMat;
 			}
-		}
-
-		public MeshMaterialSet Get(in int index)
-		{
-			return meshMatList[index];
 		}
 	}
 
@@ -169,16 +151,16 @@ public partial class MeshLoader
 
 		const Assimp.PostProcessSteps postProcessFlags =
 			// Assimp.PostProcessSteps.OptimizeGraph | // --> occurs sub-mesh merged
-			Assimp.PostProcessSteps.OptimizeMeshes |
-			Assimp.PostProcessSteps.GenerateNormals |
 			// Assimp.PostProcessSteps.GenerateSmoothNormals | // --> it may causes conflict with GenerateNormals
+			// Assimp.PostProcessSteps.OptimizeMeshes | // -> it may causes face reverting
+			// Assimp.PostProcessSteps.FixInFacingNormals | // -> it may causes wrong face
+			Assimp.PostProcessSteps.GenerateNormals |
 			Assimp.PostProcessSteps.GenerateUVCoords |
 			Assimp.PostProcessSteps.RemoveComponent |
 			Assimp.PostProcessSteps.ImproveCacheLocality |
 			Assimp.PostProcessSteps.CalculateTangentSpace |
 			Assimp.PostProcessSteps.JoinIdenticalVertices |
 			Assimp.PostProcessSteps.RemoveRedundantMaterials |
-			Assimp.PostProcessSteps.FixInFacingNormals |
 			Assimp.PostProcessSteps.Triangulate |
 			Assimp.PostProcessSteps.SortByPrimitiveType |
 			Assimp.PostProcessSteps.ValidateDataStructure |

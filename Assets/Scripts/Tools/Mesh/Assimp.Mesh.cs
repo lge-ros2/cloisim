@@ -53,10 +53,10 @@ public partial class MeshLoader
 
 			if (sceneMat.HasColorDiffuse)
 			{
-				SDF2Unity.Material.SetEmission(mat, MeshLoader.GetColor(sceneMat.ColorDiffuse));
+				SDF2Unity.Material.SetBaseColor(mat, MeshLoader.GetColor(sceneMat.ColorDiffuse));
+				// Debug.Log(sceneMat.Name + ": HasColorHasColorDiffuseEmissive " + MeshLoader.GetColor(sceneMat.ColorDiffuse));
 			}
 
-			// Emission
 			if (sceneMat.HasColorEmissive)
 			{
 				SDF2Unity.Material.SetEmission(mat, MeshLoader.GetColor(sceneMat.ColorEmissive));
@@ -79,7 +79,6 @@ public partial class MeshLoader
 			// Reflectivity
 			if (sceneMat.HasReflectivity)
 			{
-				// mat.SetFloat("_GlossyReflections", sceneMat.Reflectivity);
 				// Debug.Log(sceneMat.Name + ": HasReflectivity " + sceneMat.Reflectivity);
 				Debug.Log(sceneMat.Name + ": HasReflectivity but not support. " + sceneMat.Reflectivity);
 			}
@@ -88,7 +87,6 @@ public partial class MeshLoader
 			if (sceneMat.HasColorReflective)
 			{
 				// Debug.Log(sceneMat.Name + ": HasColorReflective " + sceneMat.ColorReflective);
-				// mat.SetColor("_ReflectColor", MeshLoader.GetColor(sceneMat.ColorReflective));
 				Debug.Log(sceneMat.Name + ": HasColorReflective but not support. " + sceneMat.ColorReflective);
 			}
 
@@ -140,23 +138,13 @@ public partial class MeshLoader
 
 			if (sceneMat.HasTextureHeight)
 			{
-				var filePath = sceneMat.TextureHeight.FilePath;
-				foreach (var textureDirectory in textureDirectories)
-				{
-					var textureFullPath = Path.Combine(textureDirectory, filePath);
-					if (File.Exists(textureFullPath))
-					{
-						mat.SetTexture("_BumpMap", GetTexture(textureFullPath));
-						// Debug.Log(sceneMat.Name + ": HasTextureHeight -> " + filePath);
-						break;
-					}
-				}
-				// Debug.Log(sceneMat.Name + ": HasTextureHeight but not support. " + sceneMat.TextureHeight.FilePath);
+				Debug.Log(sceneMat.Name + ": HasTextureHeight but not support. " + sceneMat.TextureHeight.FilePath);
 			}
 
 			if (sceneMat.HasBumpScaling)
 			{
-				Debug.Log(sceneMat.Name + ": HasBumpScaling but not support. " + sceneMat.BumpScaling);
+				mat.SetFloat("_BumpScale", sceneMat.BumpScaling);
+				// Debug.Log(sceneMat.Name + ": HasBumpScaling but not support. " + sceneMat.BumpScaling);
 			}
 
 			if (sceneMat.HasTextureNormal)
@@ -167,7 +155,7 @@ public partial class MeshLoader
 					var textureFullPath = Path.Combine(textureDirectory, filePath);
 					if (File.Exists(textureFullPath))
 					{
-						mat.SetTexture("_DetailNormalMap", GetTexture(textureFullPath));
+						mat.SetTexture("_BumpMap", GetTexture(textureFullPath));
 						// Debug.Log(sceneMat.Name + ": HasTextureNormal -> " + filePath);
 						break;
 					}
@@ -202,6 +190,12 @@ public partial class MeshLoader
 
 		foreach (var sceneMesh in sceneMeshes)
 		{
+			if (sceneMesh.VertexCount < 3)
+			{
+				Debug.LogWarning($"{sceneMesh.Name}: Vertex count is less thean 3");
+				continue;
+			}
+
 			var newMesh = new Mesh();
 
 			newMesh.name = sceneMesh.Name;
@@ -332,7 +326,7 @@ public partial class MeshLoader
 			}
 
 			// Debug.Log("Done - " + sceneMesh.Name + ", " + newMesh.vertexCount + " : " + sceneMesh.MaterialIndex + ", " + newMesh.bindposes.LongLength);
-			meshMatList.Add(new MeshMaterialSet(newMesh, sceneMesh.MaterialIndex));
+			meshMatList.Add(new MeshMaterial(newMesh, sceneMesh.MaterialIndex));
 		}
 
 		return meshMatList;
@@ -348,14 +342,15 @@ public partial class MeshLoader
 		{
 			foreach (var index in node.MeshIndices)
 			{
-				var meshMat = meshMatList.Get(index);
+				var meshMat = meshMatList[index];
 
-				var subObject = new GameObject(meshMat.Mesh.name);
+				var subObject = new GameObject(meshMat.mesh.name);
+
 				var meshFilter = subObject.AddComponent<MeshFilter>();
-				meshFilter.sharedMesh = meshMat.Mesh;
+				meshFilter.sharedMesh = meshMat.mesh;
 
 				var meshRenderer = subObject.AddComponent<MeshRenderer>();
-				meshRenderer.material = meshMat.Material;
+				meshRenderer.sharedMaterial = meshMat.material;
 				meshRenderer.allowOcclusionWhenDynamic = true;
 
 				subObject.transform.SetParent(rootObject.transform, true);
@@ -400,17 +395,17 @@ public partial class MeshLoader
 				return meshObject;
 			}
 
-			// Materials
-			List<Material> materials = null;
-			if (scene.HasMaterials)
-			{
-				materials = LoadMaterials(meshPath, scene.Materials);
-			}
-
 			// Meshes
 			MeshMaterialList meshMatList = null;
 			if (scene.HasMeshes)
 			{
+				// Materials
+				List<Material> materials = null;
+				if (scene.HasMaterials)
+				{
+					materials = LoadMaterials(meshPath, scene.Materials);
+				}
+
 				meshMatList = LoadMeshes(scene.Meshes);
 				meshMatList.SetMaterials(materials);
 			}
@@ -430,6 +425,7 @@ public partial class MeshLoader
 			meshScale.y = Mathf.Abs(meshScale.y);
 			meshScale.z = Mathf.Abs(meshScale.z);
 			createdMeshObject.transform.localScale = meshScale;
+
 			createdMeshObject.SetActive(false);
 
 			MeshCache.Add(cacheKey, createdMeshObject);
