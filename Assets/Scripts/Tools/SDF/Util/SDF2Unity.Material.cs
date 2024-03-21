@@ -73,13 +73,15 @@ public partial class SDF2Unity
 			target.renderQueue = (int)RenderQueue.Geometry;
 		}
 
-		public static void SetSpeedTree(UE.Material target)
+		public static void ConvertToSpeedTree(UE.Material target)
 		{
 			var existingTexture = target.GetTexture("_BaseMap");
+			var existingTextureScale = target.GetTextureScale("_BaseMap");
 			var existingColor = target.GetColor("_BaseColor");
-			// existingColor.a = 0.55f;
+
 			target.shader = SpeedTreeShader;
 			target.SetTexture("_MainTex", existingTexture);
+			target.SetTextureScale("_MainTex", existingTextureScale);
 			target.SetColor("_Color", existingColor);
 			target.SetFloat("_Glossiness", 0f);
 			target.SetInt("_TwoSided", 0);
