@@ -8,6 +8,14 @@ using UnityEngine;
 
 public partial class SDF2Unity
 {
+	public static Vector3 Abs(in Vector3 value)
+	{
+		return new Vector3(
+			Mathf.Abs(value.x),
+			Mathf.Abs(value.y),
+			Mathf.Abs(value.z));
+	}
+
 	public static Color GetColor(in SDF.Color value)
 	{
 		return new Color((float)value.R, (float)value.G, (float)value.B, (float)value.A);
