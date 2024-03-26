@@ -1869,7 +1869,7 @@ GameObject:
   - component: {fileID: 314493401}
   - component: {fileID: 314493400}
   m_Layer: 0
-  m_Name: vvv
+  m_Name: Body
   m_TagString: Visual
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4318,7 +4318,7 @@ GameObject:
   - component: {fileID: 747390630}
   - component: {fileID: 747390631}
   m_Layer: 0
-  m_Name: Cube(Main)S
+  m_Name: Cube(Main)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
