@@ -71,23 +71,25 @@ public partial class MeshLoader
 
 			if (sceneMat.HasColorTransparent)
 			{
-				// mat.SetColor("_TransparentColor", MeshLoader.GetColor(sceneMat.ColorTransparent));
-				// Debug.Log(sceneMat.Name + ": HasColorTransparent " + sceneMat.ColorTransparent);
+#if UNITY_EDITOR
 				Debug.Log(sceneMat.Name + ": HasColorTransparent but not support. " + sceneMat.ColorTransparent);
+#endif
 			}
 
 			// Reflectivity
 			if (sceneMat.HasReflectivity)
 			{
-				// Debug.Log(sceneMat.Name + ": HasReflectivity " + sceneMat.Reflectivity);
+#if UNITY_EDITOR
 				Debug.Log(sceneMat.Name + ": HasReflectivity but not support. " + sceneMat.Reflectivity);
+#endif
 			}
 
 			// reflective
 			if (sceneMat.HasColorReflective)
 			{
-				// Debug.Log(sceneMat.Name + ": HasColorReflective " + sceneMat.ColorReflective);
+#if UNITY_EDITOR
 				Debug.Log(sceneMat.Name + ": HasColorReflective but not support. " + sceneMat.ColorReflective);
+#endif
 			}
 
 			if (sceneMat.HasShininess)
@@ -98,7 +100,9 @@ public partial class MeshLoader
 			// Texture
 			if (sceneMat.HasTextureAmbient)
 			{
+#if UNITY_EDITOR
 				Debug.Log(sceneMat.Name + ": HasTextureAmbient but not support. " + sceneMat.TextureAmbient.FilePath);
+#endif
 			}
 
 			if (sceneMat.HasTextureDiffuse)
@@ -190,15 +194,15 @@ public partial class MeshLoader
 
 		foreach (var sceneMesh in sceneMeshes)
 		{
+			var newMesh = new Mesh();
+			newMesh.name = sceneMesh.Name;
+
 			if (sceneMesh.VertexCount < 3)
 			{
 				Debug.LogWarning($"{sceneMesh.Name}: Vertex count is less thean 3");
+				meshMatList.Add(new MeshMaterial(newMesh, sceneMesh.MaterialIndex));
 				continue;
 			}
-
-			var newMesh = new Mesh();
-
-			newMesh.name = sceneMesh.Name;
 
 			// Vertices
 			if (sceneMesh.HasVertices)
@@ -332,7 +336,10 @@ public partial class MeshLoader
 		return meshMatList;
 	}
 
-	private static GameObject ConvertAssimpNodeToMeshObject(in Assimp.Node node, in MeshMaterialList meshMatList)
+	private static GameObject ConvertAssimpNodeToMeshObject(
+		in Assimp.Node node,
+		in MeshMaterialList meshMatList,
+		out bool doFlip)
 	{
 		var rootObject = new GameObject(node.Name);
 		// Debug.Log($"ConvertAssimpNodeToMeshObject : {node.Name}");
@@ -352,6 +359,7 @@ public partial class MeshLoader
 				var meshRenderer = subObject.AddComponent<MeshRenderer>();
 				meshRenderer.sharedMaterial = meshMat.material;
 				meshRenderer.allowOcclusionWhenDynamic = true;
+				meshRenderer.receiveShadows = true;
 
 				subObject.transform.SetParent(rootObject.transform, true);
 				// Debug.Log("Sub Object: " + subObject.name);
@@ -363,19 +371,41 @@ public partial class MeshLoader
 		rootObject.transform.localPosition = nodeTransform.GetColumn(3);
 		rootObject.transform.localRotation = nodeTransform.rotation;
 		rootObject.transform.localScale = nodeTransform.lossyScale;
-		// Debug.Log("RootObject: " + rootObject.name + "; " + rootObject.transform.localScale.ToString("F7"));
+
+		// Debug.Log("Node: " + node.Name + " => " + rootObject.transform.localScale.ToString("F8"));
+
+		doFlip = (rootObject.transform.localScale.x < 0 ||
+				  rootObject.transform.localScale.y < 0 ||
+				  rootObject.transform.localScale.z < 0) ? true : false;
 
 		if (node.HasChildren)
 		{
 			foreach (var child in node.Children)
 			{
+				if (AssimpNodeChildrenCount(child) == 0)
+				{
+					continue;
+				}
+
 				// Debug.Log(" => Child Object: " + child.Name);
-				var childObject = ConvertAssimpNodeToMeshObject(child, meshMatList);
+				var childObject = ConvertAssimpNodeToMeshObject(child, meshMatList, out var doFlipChild);
 				childObject.transform.SetParent(rootObject.transform, false);
+
+				doFlip |= doFlipChild;
 			}
 		}
 
 		return rootObject;
+	}
+
+	private static int AssimpNodeChildrenCount(in Assimp.Node node)
+	{
+		var childrenCount = 0;
+		foreach (var child in node.Children)
+		{
+		 	childrenCount += AssimpNodeChildrenCount(child);
+		}
+		return node.ChildCount + node.MeshCount + childrenCount;
 	}
 
 	public static GameObject CreateMeshObject(in string meshPath, in string subMesh = null)
@@ -411,35 +441,32 @@ public partial class MeshLoader
 			}
 
 			// Create GameObjects from nodes
-			var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList);
+			var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList, out var doFlip);
+			// Debug.Log(createdMeshObject.name + ": " + createdMeshObject.transform.localRotation.eulerAngles);
 
-			// rotate final mesh object
 			createdMeshObject.transform.localRotation = meshRotation * createdMeshObject.transform.localRotation;
-			// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + " =>" + createdMeshObject.transform.localRotation.eulerAngles);
-
-			createdMeshObject.transform.localPosition = meshRotation * createdMeshObject.transform.localPosition;
-			// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + createdMeshObject.transform.localPosition.ToString("F6") + ", " + existingPosition.ToString("F6") );
-
-			var meshScale = meshRotation * createdMeshObject.transform.localScale;
-			meshScale.x = Mathf.Abs(meshScale.x);
-			meshScale.y = Mathf.Abs(meshScale.y);
-			meshScale.z = Mathf.Abs(meshScale.z);
-			createdMeshObject.transform.localScale = meshScale;
+			if (doFlip)
+			{
+				createdMeshObject.transform.localScale = -createdMeshObject.transform.localScale;
+			}
 
 			createdMeshObject.SetActive(false);
+			GameObject.DontDestroyOnLoad(createdMeshObject);
 
 			MeshCache.Add(cacheKey, createdMeshObject);
-			GameObject.DontDestroyOnLoad(createdMeshObject);
 		}
 		else
 		{
 			Debug.Log($"Use cached mesh({cacheKey}) for {meshPath}");
 		}
 
-		meshObject = GameObject.Instantiate(MeshCache[cacheKey]);
+		meshObject = new GameObject("Non-Primitive Mesh");
 		meshObject.SetActive(true);
-		meshObject.name = "Non-Primitive Mesh";
 		meshObject.tag = "Geometry";
+
+		var sceneMeshObject = GameObject.Instantiate(MeshCache[cacheKey]);
+		sceneMeshObject.SetActive(true);
+		sceneMeshObject.transform.SetParent(meshObject.transform, false);
 
 		return meshObject;
 	}
