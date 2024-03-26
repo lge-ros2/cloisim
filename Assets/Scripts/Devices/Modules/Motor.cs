@@ -55,7 +55,6 @@ public class Motor : Articulation
 	public void SetTargetVelocity(in float targetAngularVelocity)
 	{
 		_enable = (IsZero(targetAngularVelocity) || float.IsInfinity(targetAngularVelocity)) ? false : true;
-		
 		_targetAngularVelocity = targetAngularVelocity;
 	}
 
@@ -96,6 +95,7 @@ public class Motor : Articulation
 	private float GetDecelerationVelocity(in float DecreasingVelocityLevel = 10f)
 	{
 		var decelerationVelocity = _currentMotorVelocity - Mathf.Sign(_currentMotorVelocity) * DecreasingVelocityLevel;
+
 		if (Mathf.Abs(decelerationVelocity) <= DecreasingVelocityLevel)
 		{
 			decelerationVelocity = 0;
@@ -123,11 +123,9 @@ public class Motor : Articulation
 		// calculate velocity using joint position is more accurate than joint velocity
 		var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
 		var motorVelocity = Mathf.DeltaAngle(_prevJointPosition, jointPosition) / duration;
-		// Debug.LogFormat("prv:{0:F5} cur:{1:F5} vel:{2:F5}", _prevJointPosition, jointPosition, motorVelocity);
-		_prevJointPosition = jointPosition;
-
 		var sampledVelocity = Mathf.Sign(motorVelocity) * Mathf.Floor(Mathf.Abs(motorVelocity) / WheelResolution) * WheelResolution;
 		// Debug.LogFormat("prv={0:F5} cur={1:F5} vel={2:F5} sampVel={3:F5}", _prevJointPosition, jointPosition, motorVelocity, sampledVelocity);
+		_prevJointPosition = jointPosition;
 
 		_currentMotorVelocity = (Mathf.Abs(sampledVelocity) < Quaternion.kEpsilon) ? 0 : sampledVelocity;
 	}
