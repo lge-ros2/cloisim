@@ -12,6 +12,15 @@ using UnityEngine;
 public partial class MeshLoader
 {
 	private static Assimp.PostProcessSteps PostProcessFlags =
+		// PreTransformVertices
+		// LimitBoneWeights
+		// FindInstances
+		// FindDegenerates
+		// FlipUVs
+		// FlipWindingOrder
+		// SplitByBoneCount
+		// Debone
+		// GlobalScale
 		// Assimp.PostProcessSteps.OptimizeGraph | // --> occurs sub-mesh merged
 		// Assimp.PostProcessSteps.GenerateSmoothNormals | // --> it may causes conflict with GenerateNormals
 		// Assimp.PostProcessSteps.OptimizeMeshes | // -> it may causes face reverting
@@ -29,6 +38,7 @@ public partial class MeshLoader
 		Assimp.PostProcessSteps.SplitLargeMeshes |
 		Assimp.PostProcessSteps.FindInvalidData |
 		Assimp.PostProcessSteps.MakeLeftHanded;
+
 
 	private static Color GetColor(Assimp.Color4D color)
 	{
@@ -114,11 +124,11 @@ public partial class MeshLoader
 		{
 			case ".obj":
 			case ".stl":
-				eulerRotation = Quaternion.Euler(90, 0, 0) * Quaternion.Euler(0, 0, 0) * Quaternion.Euler(0, 0, 90);
+				eulerRotation = Quaternion.Euler(90, 0, 0) * Quaternion.Euler(0, 0, 90);
 				break;
 
 			case ".dae":
-				eulerRotation = Quaternion.Euler(0, -90, 0) * Quaternion.Euler(0, 0, 0);
+				eulerRotation = Quaternion.Euler(0, -90, 0);
 				break;
 
 			case ".fbx":
@@ -175,24 +185,27 @@ public partial class MeshLoader
 			scene.Cameras.Clear();
 			scene.Lights.Clear();
 
+			var rootNode = scene.RootNode;
 			if (!string.IsNullOrEmpty(subMesh))
 			{
 				// Debug.Log(subMesh);
-				for (var i = scene.RootNode.ChildCount - 1; i >= 0; i--)
+				var foundSubMesh = rootNode.FindNode(subMesh);
+				rootNode.Children.Clear();
+				if (foundSubMesh != null)
 				{
-					var sceneNode = scene.RootNode.Children[i];
-
-					if (sceneNode.Name != subMesh)
-					{
-						// Debug.Log("remove: " + sceneNode.Name);
-						scene.RootNode.Children.Remove(sceneNode);
-					}
-					// else
-					// {
-					// 	Debug.Log("keep: " + sceneNode.Name);
-					// }
+					// Debug.Log($"submesh({subMesh}) exist");
+					rootNode.Children.Add(foundSubMesh);
 				}
 			}
+
+			// var metaData = scene.Metadata;
+			// foreach (var metaDataSet in metaData)
+			// {
+			// 	var metaDataKey = metaDataSet.Key;
+			// 	var metaDataValue = metaDataSet.Value;
+			// 	Debug.Log($"{metaDataKey} : {metaDataValue}");
+			// }
+			// Debug.Log(rootNode.Transform);
 
 			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
 			meshRotation = GetRotationByFileExtension(fileExtension, targetPath);

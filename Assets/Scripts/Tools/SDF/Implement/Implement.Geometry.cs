@@ -43,26 +43,11 @@ namespace SDF
 				}
 				else
 				{
-					// change axis of scale
-					var loadedMeshScale = loadedObject.transform.localScale;
-					var tmp = loadedMeshScale.x;
-					loadedMeshScale.x = loadedMeshScale.z;
-					loadedMeshScale.z = tmp;
-
-					if (!isVisualMesh)
-					{
-						tmp = loadedMeshScale.y;
-						loadedMeshScale.y = loadedMeshScale.z;
-						loadedMeshScale.z = tmp;
-					}
-
-					loadedMeshScale.Scale(SDF2Unity.GetScale(obj.scale));
-					loadedObject.transform.localScale = loadedMeshScale;
+					loadedObject.transform.localScale = SDF2Unity.GetScale(obj.scale);
 				}
 
 				loadedObject.transform.SetParent(targetParentObject.transform, false);
 			}
-
 
 			public static void GenerateMeshObject(in SDF.Heightmap obj, in UE.GameObject targetParentObject)
 			{
