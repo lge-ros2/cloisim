@@ -70,12 +70,12 @@ namespace SensorDevices
 
 		public static int GetImageDepth(in PixelFormat pixelFormat)
 		{
-			var depth = 0;
+			return GetImageStep(pixelFormat);
+		}
 
-			if (pixelFormat.Equals(PixelFormat.UNKNOWN_PIXEL_FORMAT))
-			{
-				return depth;
-			}
+		public static int GetImageStep(in PixelFormat pixelFormat)
+		{
+			var depth = 0;
 
 			switch (pixelFormat)
 			{
@@ -106,8 +106,10 @@ namespace SensorDevices
 					depth = 4;
 					break;
 
+				case PixelFormat.UNKNOWN_PIXEL_FORMAT:
 				default:
-					Debug.LogErrorFormat("Error parsing image format ({0})", pixelFormat);
+					Debug.LogWarning($"Error parsing image format ({pixelFormat}), Set to default(3)");
+					depth = 3;
 					break;
 			}
 

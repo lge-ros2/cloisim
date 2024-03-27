@@ -23,6 +23,11 @@ namespace SDF
 		{
 		}
 
+		public Vector2(in string value)
+		{
+			FromString(value);
+		}
+
 		public Vector2(T x, T y)
 		{
 			_x = x;

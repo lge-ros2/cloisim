@@ -7,7 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEngine;
 
 public static class OgreMaterial
@@ -20,18 +19,22 @@ public static class OgreMaterial
 		}
 
 		public string name;
-		public List<Technique> techniques = new List<Technique>();
+
+		public bool hasReceiveShadows = false;
+		public bool receiveShadows = false;
+
+		public Dictionary<string, Technique> techniques = new Dictionary<string, Technique>();
 	}
 
 	public class Technique
 	{
-		public List<Pass> passes = new List<Pass>();
+		public Dictionary<string, Pass> passes = new Dictionary<string, Pass>();
 	}
 
 	public class Pass
 	{
 		public Dictionary<string, string> properties = new Dictionary<string, string>();
-		public List<TextureUnit> textureUnits = new List<TextureUnit>();
+		public Dictionary<string, TextureUnit> textureUnits = new Dictionary<string, TextureUnit>();
 	}
 
 	public class TextureUnit
@@ -41,16 +44,20 @@ public static class OgreMaterial
 
 	private enum PropertyLevel { NONE, MATERIAL, TECHNIQUE, PASS, TEXTUREUNIT };
 
-	public static Material Parse(string filePath, string targetMaterial)
+	public static Material Parse(string filePath, string targetMaterialName)
 	{
 		Material material = null;
 		try
 		{
-			string[] lines = File.ReadAllLines(filePath);
+			var lines = File.ReadAllLines(filePath);
 
 			var propertyLevel = PropertyLevel.NONE;
 
 			var skipForCommentOut = false;
+
+			var targetTechName = string.Empty;
+			var targetPassName = string.Empty;
+			var targetTextureUnitName = string.Empty;
 
 			foreach (var line in lines)
 			{
@@ -69,71 +76,112 @@ public static class OgreMaterial
 
 				if (parts.Length >= 1)
 				{
-					var key = parts[0];
-					// Debug.Log(key);
+					var key = parts[0].Trim();
+					var value = (parts.Length > 1)? parts[1].Trim() : string.Empty;
+					// Debug.Log(key + " => " + value);
 
 					if (key == "material")
 					{
-						if (parts[1] == targetMaterial)
+						if (value == targetMaterialName)
 						{
-							material = new Material(targetMaterial);
+							// Debug.Log($"!! Found material: {targetMaterialName}");
+							if (parts.Length > 3 && parts[2] == ":")
+							{
+								var parentMaterialName = parts[3];
+								// Debug.Log($"!! Found parent material: {parentMaterialName}");
+								material = Parse(filePath, parentMaterialName);
+								material.name = targetMaterialName;
+							}
+							else
+							{
+								material = new Material(targetMaterialName);
+							}
+
 							propertyLevel = PropertyLevel.MATERIAL;
-							// Debug.Log($"!! Found material: {targetMaterial}");
 						}
-						else
-						{
-							// Debug.Log($"!! material: {parts[1]}");
-						}
+						// else
+						// {
+						// 	Debug.Log($"!! material: {value}");
+						// }
+					}
+					else if (key == "receive_shadows" && propertyLevel == PropertyLevel.MATERIAL)
+					{
+						// Debug.Log($"!! Found {key}: {value}");
+						material.hasReceiveShadows = true;
+						material.receiveShadows = (value == "on") ? true : false;
 					}
 					else if (key == "technique" && propertyLevel == PropertyLevel.MATERIAL)
 					{
-						// Debug.Log($"!! Found technique: {material.techniques.Count}");
-						material.techniques.Add(new Technique());
+						var techName = (parts.Length > 1) ? parts[1] : string.Empty;
+
+						material.techniques[techName] = new Technique();
+						targetTechName = techName;
+
 						propertyLevel = PropertyLevel.TECHNIQUE;
+						// Debug.Log($"!! Found technique: {material.techniques.Count}");
 					}
 					else if (key == "pass" && propertyLevel == PropertyLevel.TECHNIQUE)
 					{
+						// Debug.Log(key + " => " + value);
 						if (material.techniques.Count == 0)
 						{
 							// Debug.Log("!! Missing technique");
 							break;
 						}
 
-						material.techniques.Last().passes.Add(new Pass());
+						var passName = (parts.Length > 1) ? parts[1] : string.Empty;
+
+						var targetTechnique = material.techniques[targetTechName];
+						if (!targetTechnique.passes.ContainsKey(passName))
+							targetTechnique.passes[passName] = new Pass();
+
+						// Debug.Log(targetTechnique.passes.Count);
+						targetPassName = passName;
+
 						propertyLevel = PropertyLevel.PASS;
 					}
 					else if (key == "texture_unit" && propertyLevel == PropertyLevel.PASS)
 					{
-						if (material.techniques.Last().passes.Count == 0)
+						if (material.techniques[targetTechName].passes.Count == 0)
 						{
 							// Debug.Log("!! Missing pass");
 							break;
 						}
 
-						material.techniques.Last().passes.Last().textureUnits.Add(new TextureUnit());
+						var textureUnitName = (parts.Length > 1) ? parts[1] : string.Empty;
+
+						var targetPass = material.techniques[targetTechName].passes[targetPassName];
+
+						if (!targetPass.textureUnits.ContainsKey(textureUnitName))
+							targetPass.textureUnits[textureUnitName] = new TextureUnit();
+
+						targetTextureUnitName = textureUnitName;
 						propertyLevel = PropertyLevel.TEXTUREUNIT;
 					}
 					else if (key == "}")
 					{
 						if (propertyLevel == PropertyLevel.MATERIAL)
 						{
-							// Debug.Log($"!! End MATERIAL parsing: {targetMaterial} Abort");
+							// Debug.Log($"!! End MATERIAL parsing: {targetMaterialName} Abort");
 							propertyLevel = PropertyLevel.NONE;
 							break;
 						}
 						else if (propertyLevel == PropertyLevel.TECHNIQUE)
 						{
 							// Debug.Log($"!! End TECHNIQUE parsing:");
+							targetTechName = string.Empty;
 							propertyLevel = PropertyLevel.MATERIAL;
 						}
 						else if (propertyLevel == PropertyLevel.PASS)
 						{
 							// Debug.Log($"!! End PASS parsing: ");
+							targetPassName = string.Empty;
 							propertyLevel = PropertyLevel.TECHNIQUE;
 						}
 						else if (propertyLevel == PropertyLevel.TEXTUREUNIT)
 						{
 							// Debug.Log($"!! End TEXTUREUNIT parsing: ");
+							targetTextureUnitName = string.Empty;
 							propertyLevel = PropertyLevel.PASS;
 						}
 					}
@@ -141,16 +189,25 @@ public static class OgreMaterial
 					{
 						if (parts.Length >= 2 && propertyLevel != PropertyLevel.NONE)
 						{
-							// Debug.Log($"!! {key}: {parts[1]}");
+							var values = string.Join(" ", parts, 1, parts.Length - 1);
 							if (propertyLevel == PropertyLevel.PASS)
 							{
-								var value = string.Join(" ", parts, 1, parts.Length - 1);
-								material.techniques.Last().passes.Last().properties[key] = value;
+								material.techniques[targetTechName]
+										.passes[targetPassName]
+										.properties[key] = values;
+								// Debug.Log($"!! {key}: {values}");
 							}
 							else if (propertyLevel == PropertyLevel.TEXTUREUNIT)
 							{
-								var value = string.Join(" ", parts, 1, parts.Length - 1);
-								material.techniques.Last().passes.Last().textureUnits.Last().properties[key] = value;
+								material.techniques[targetTechName]
+										.passes[targetPassName]
+										.textureUnits[targetTextureUnitName]
+										.properties[key] = values;
+								// Debug.Log($"!! {key}: {values}");
+							}
+							else
+							{
+								Debug.Log($"Unsupported entries {key}: {values}");
 							}
 						}
 					}

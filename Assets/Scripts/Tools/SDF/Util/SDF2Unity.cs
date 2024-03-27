@@ -8,6 +8,14 @@ using UnityEngine;
 
 public partial class SDF2Unity
 {
+	public static Vector3 Abs(in Vector3 value)
+	{
+		return new Vector3(
+			Mathf.Abs(value.x),
+			Mathf.Abs(value.y),
+			Mathf.Abs(value.z));
+	}
+
 	public static Color GetColor(in SDF.Color value)
 	{
 		return new Color((float)value.R, (float)value.G, (float)value.B, (float)value.A);
@@ -69,6 +77,21 @@ public partial class SDF2Unity
 	public static Quaternion GetRotation(in double w, in double x, in double y, in double z)
 	{
 		return new Quaternion((float)y, (float)-z, (float)-x, (float)w);
+	}
+
+	public static Vector2 GetScale(in string value)
+	{
+		return GetScale(new SDF.Vector2<double>(value));
+	}
+
+	public static Vector2 GetScale(in SDF.Vector2<double> value)
+	{
+		return GetScale(new Vector2((float)value.X, (float)value.Y));
+	}
+
+	public static Vector2 GetScale(in Vector2 value)
+	{
+		return new Vector2(Mathf.Abs(value.x), Mathf.Abs(value.y));
 	}
 
 	public static Vector3 GetScale(in SDF.Vector3<double> value)

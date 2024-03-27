@@ -14,7 +14,8 @@ public class ObjectSpawning : MonoBehaviour
 {
 	public enum PropsType { BOX = 0, CYLINDER = 1, SPHERE = 2 };
 
-	private static PhysicMaterial PropsPhysicalMaterial = null;
+	private static PhysicMaterial _propsPhysicalMaterial = null;
+	private static Material _propMaterial = null;
 
 	private GameObject propsRoot = null;
 	private Camera mainCam = null;
@@ -44,7 +45,8 @@ public class ObjectSpawning : MonoBehaviour
 
 	void Awake()
 	{
-		PropsPhysicalMaterial = Resources.Load<PhysicMaterial>("Materials/Props");
+		_propMaterial = SDF2Unity.Material.Create();
+		_propsPhysicalMaterial = Resources.Load<PhysicMaterial>("Materials/Props");
 		propsRoot = GameObject.Find("Props");
 		mainCam = Camera.main;
 		transformGizmo = Main.Gizmos;
@@ -61,7 +63,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	void OnDestroy()
 	{
-		Resources.UnloadAsset(PropsPhysicalMaterial);
+		Resources.UnloadAsset(_propsPhysicalMaterial);
 	}
 
 	// Update is called once per frame
@@ -141,8 +143,12 @@ public class ObjectSpawning : MonoBehaviour
 			var meshFilter = spawnedObject.GetComponentInChildren<MeshFilter>();
 			mesh = meshFilter.sharedMesh;
 
-			var meshRender = spawnedObject.GetComponentInChildren<MeshRenderer>();
-			meshRender.material.color = Random.ColorHSV(0f, 1f, 0.4f, 1f, 0.3f, 1f);
+			const float SpawningMargin = 0.001f;
+			position.y += mesh.bounds.max.y + SpawningMargin;
+
+			var renderer = spawnedObject.GetComponentInChildren<Renderer>();
+			var newColor = Random.ColorHSV(0f, 1f, 0.4f, 1f, 0.3f, 1f);
+			renderer.material.SetColor("_BaseColor", newColor);
 
 			var rigidBody = spawnedObject.GetComponentInChildren<Rigidbody>();
 			rigidBody.mass = CalculateMass(scale);
@@ -156,11 +162,6 @@ public class ObjectSpawning : MonoBehaviour
 			Main.SegmentationManager.UpdateTags();
 		}
 
-		if (mesh != null)
-		{
-			const float SpawningMargin = 0.001f;
-			position.y += mesh.bounds.max.y + SpawningMargin;
-		}
 
 		var spawanedObjectTransform = spawnedObject.transform;
 		spawanedObjectTransform.position = position;
@@ -186,18 +187,17 @@ public class ObjectSpawning : MonoBehaviour
 		var meshFilter = newObject.AddComponent<MeshFilter>();
 		meshFilter.sharedMesh = targetMesh;
 
-		var newMaterial = new Material(SDF2Unity.CommonShader);
-		newMaterial.name = targetMesh.name;
-		newMaterial.color = Color.white;
-
 		var meshRenderer = newObject.AddComponent<MeshRenderer>();
-		meshRenderer.material = newMaterial;
-		meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
-		meshRenderer.receiveShadows = false;
+		meshRenderer.shadowCastingMode = ShadowCastingMode.On;
+		meshRenderer.receiveShadows = true;
+		meshRenderer.sharedMaterial = _propMaterial;
+
+		meshRenderer.material.name = targetMesh.name;
+		meshRenderer.material.color = Color.white;
 
 		var meshCollider = newObject.AddComponent<MeshCollider>();
 		meshCollider.sharedMesh = targetMesh;
-		meshCollider.sharedMaterial = PropsPhysicalMaterial;
+		meshCollider.sharedMaterial = _propsPhysicalMaterial;
 		meshCollider.convex = true;
 		meshCollider.isTrigger = false;
 
@@ -214,6 +214,8 @@ public class ObjectSpawning : MonoBehaviour
 		navMeshObstacle.carveOnlyStationary = true;
 
 		newObject.AddComponent<SegmentationTag>();
+
+		GameObject.DontDestroyOnLoad(newObject);
 
 		return newObject;
 	}

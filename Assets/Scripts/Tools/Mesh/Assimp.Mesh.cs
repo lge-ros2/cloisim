@@ -12,7 +12,7 @@ using UnityEngine.Rendering;
 
 public partial class MeshLoader
 {
-	private static Dictionary<string, GameObject> GameObjectCache = new Dictionary<string, GameObject>();
+	private static Dictionary<string, GameObject> MeshCache = new Dictionary<string, GameObject>();
 
 	public static Texture2D GetTexture(in string textureFullPath)
 	{
@@ -44,7 +44,7 @@ public partial class MeshLoader
 
 		foreach (var sceneMat in sceneMaterials)
 		{
-			var mat = SDF2Unity.GetNewMaterial(sceneMat.Name);
+			var mat = SDF2Unity.Material.Create(sceneMat.Name);
 
 			if (sceneMat.HasColorAmbient)
 			{
@@ -53,66 +53,66 @@ public partial class MeshLoader
 
 			if (sceneMat.HasColorDiffuse)
 			{
-				var diffuseColor = MeshLoader.GetColor(sceneMat.ColorDiffuse);
-				mat.SetColor("_BaseColor", diffuseColor);
-
-				if (diffuseColor.a < 1)
-				{
-					SDF2Unity.SetMaterialTransparent(mat);
-				}
-				else
-				{
-					SDF2Unity.SetMaterialOpaque(mat);
-				}
+				SDF2Unity.Material.SetBaseColor(mat, MeshLoader.GetColor(sceneMat.ColorDiffuse));
+				// Debug.Log(sceneMat.Name + ": HasColorHasColorDiffuseEmissive " + MeshLoader.GetColor(sceneMat.ColorDiffuse));
 			}
 
-			// Emission
 			if (sceneMat.HasColorEmissive)
 			{
-				mat.SetColor("_EmissionColor", MeshLoader.GetColor(sceneMat.ColorEmissive));
+				SDF2Unity.Material.SetEmission(mat, MeshLoader.GetColor(sceneMat.ColorEmissive));
 				// Debug.Log(sceneMat.Name + ": HasColorEmissive " + MeshLoader.GetColor(sceneMat.ColorEmissive));
 			}
 
 			if (sceneMat.HasColorSpecular)
 			{
-				mat.SetColor("_SpecColor", MeshLoader.GetColor(sceneMat.ColorSpecular));
+				SDF2Unity.Material.SetSpecular(mat, MeshLoader.GetColor(sceneMat.ColorSpecular));
 				// Debug.Log(sceneMat.Name + ": HasColorSpecular " + MeshLoader.GetColor(sceneMat.ColorSpecular));
 			}
 
 			if (sceneMat.HasColorTransparent)
 			{
-				mat.SetColor("_TransparentColor", MeshLoader.GetColor(sceneMat.ColorTransparent));
-				// Debug.Log(sceneMat.Name + ": HasColorTransparent " + sceneMat.ColorTransparent);
+#if UNITY_EDITOR
+				Debug.Log(sceneMat.Name + ": HasColorTransparent but not support. " + sceneMat.ColorTransparent);
+#endif
 			}
 
 			// Reflectivity
 			if (sceneMat.HasReflectivity)
 			{
-				mat.SetFloat("_GlossyReflections", sceneMat.Reflectivity);
-				// Debug.Log(sceneMat.Name + ": HasColorReflective " + sceneMat.Reflectivity);
+#if UNITY_EDITOR
+				Debug.Log(sceneMat.Name + ": HasReflectivity but not support. " + sceneMat.Reflectivity);
+#endif
 			}
 
 			// reflective
 			if (sceneMat.HasColorReflective)
 			{
-				// Debug.Log(sceneMat.Name + ": HasColorReflective " + sceneMat.ColorReflective);
-				mat.SetColor("_ReflectColor", MeshLoader.GetColor(sceneMat.ColorReflective));
+#if UNITY_EDITOR
+				Debug.Log(sceneMat.Name + ": HasColorReflective but not support. " + sceneMat.ColorReflective);
+#endif
 			}
 
 			if (sceneMat.HasShininess)
 			{
-				mat.SetFloat("_Glossiness", sceneMat.Shininess);
+				mat.SetFloat("_Shininess", sceneMat.Shininess);
 			}
 
 			// Texture
 			if (sceneMat.HasTextureAmbient)
 			{
+#if UNITY_EDITOR
 				Debug.Log(sceneMat.Name + ": HasTextureAmbient but not support. " + sceneMat.TextureAmbient.FilePath);
+#endif
 			}
 
 			if (sceneMat.HasTextureDiffuse)
 			{
 				var filePath = sceneMat.TextureDiffuse.FilePath;
+				if (filePath.Contains("model://"))
+				{
+					filePath = filePath.Replace("model://", "");
+				}
+
 				foreach (var textureDirectory in textureDirectories)
 				{
 					var textureFullPath = Path.Combine(textureDirectory, filePath);
@@ -142,23 +142,13 @@ public partial class MeshLoader
 
 			if (sceneMat.HasTextureHeight)
 			{
-				var filePath = sceneMat.TextureHeight.FilePath;
-				foreach (var textureDirectory in textureDirectories)
-				{
-					var textureFullPath = Path.Combine(textureDirectory, filePath);
-					if (File.Exists(textureFullPath))
-					{
-						mat.SetTexture("_BumpMap", GetTexture(textureFullPath));
-						// Debug.Log(sceneMat.Name + ": HasTextureHeight -> " + filePath);
-						break;
-					}
-				}
-				// Debug.Log(sceneMat.Name + ": HasTextureHeight but not support. " + sceneMat.TextureHeight.FilePath);
+				Debug.Log(sceneMat.Name + ": HasTextureHeight but not support. " + sceneMat.TextureHeight.FilePath);
 			}
 
 			if (sceneMat.HasBumpScaling)
 			{
-				Debug.Log(sceneMat.Name + ": HasBumpScaling but not support. " + sceneMat.BumpScaling);
+				mat.SetFloat("_BumpScale", sceneMat.BumpScaling);
+				// Debug.Log(sceneMat.Name + ": HasBumpScaling but not support. " + sceneMat.BumpScaling);
 			}
 
 			if (sceneMat.HasTextureNormal)
@@ -169,7 +159,7 @@ public partial class MeshLoader
 					var textureFullPath = Path.Combine(textureDirectory, filePath);
 					if (File.Exists(textureFullPath))
 					{
-						mat.SetTexture("_DetailNormalMap", GetTexture(textureFullPath));
+						mat.SetTexture("_BumpMap", GetTexture(textureFullPath));
 						// Debug.Log(sceneMat.Name + ": HasTextureNormal -> " + filePath);
 						break;
 					}
@@ -205,8 +195,14 @@ public partial class MeshLoader
 		foreach (var sceneMesh in sceneMeshes)
 		{
 			var newMesh = new Mesh();
-
 			newMesh.name = sceneMesh.Name;
+
+			if (sceneMesh.VertexCount < 3)
+			{
+				Debug.LogWarning($"{sceneMesh.Name}: Vertex count is less thean 3");
+				meshMatList.Add(new MeshMaterial(newMesh, sceneMesh.MaterialIndex));
+				continue;
+			}
 
 			// Vertices
 			if (sceneMesh.HasVertices)
@@ -334,30 +330,36 @@ public partial class MeshLoader
 			}
 
 			// Debug.Log("Done - " + sceneMesh.Name + ", " + newMesh.vertexCount + " : " + sceneMesh.MaterialIndex + ", " + newMesh.bindposes.LongLength);
-			meshMatList.Add(new MeshMaterialSet(newMesh, sceneMesh.MaterialIndex));
+			meshMatList.Add(new MeshMaterial(newMesh, sceneMesh.MaterialIndex));
 		}
 
 		return meshMatList;
 	}
 
-	private static GameObject ConvertAssimpNodeToMeshObject(in Assimp.Node node, in MeshMaterialList meshMatList)
+	private static GameObject ConvertAssimpNodeToMeshObject(
+		in Assimp.Node node,
+		in MeshMaterialList meshMatList,
+		out bool doFlip)
 	{
 		var rootObject = new GameObject(node.Name);
+		// Debug.Log($"ConvertAssimpNodeToMeshObject : {node.Name}");
 
 		// Set Mesh
 		if (node.HasMeshes)
 		{
 			foreach (var index in node.MeshIndices)
 			{
-				var meshMat = meshMatList.Get(index);
+				var meshMat = meshMatList[index];
 
-				var subObject = new GameObject(meshMat.Mesh.name);
+				var subObject = new GameObject(meshMat.mesh.name);
+
 				var meshFilter = subObject.AddComponent<MeshFilter>();
-				meshFilter.sharedMesh = meshMat.Mesh;
+				meshFilter.sharedMesh = meshMat.mesh;
 
 				var meshRenderer = subObject.AddComponent<MeshRenderer>();
-				meshRenderer.sharedMaterial = meshMat.Material;
+				meshRenderer.sharedMaterial = meshMat.material;
 				meshRenderer.allowOcclusionWhenDynamic = true;
+				meshRenderer.receiveShadows = true;
 
 				subObject.transform.SetParent(rootObject.transform, true);
 				// Debug.Log("Sub Object: " + subObject.name);
@@ -369,73 +371,102 @@ public partial class MeshLoader
 		rootObject.transform.localPosition = nodeTransform.GetColumn(3);
 		rootObject.transform.localRotation = nodeTransform.rotation;
 		rootObject.transform.localScale = nodeTransform.lossyScale;
-		// Debug.Log("RootObject: " + rootObject.name + "; " + rootObject.transform.localScale.ToString("F7"));
+
+		// Debug.Log("Node: " + node.Name + " => " + rootObject.transform.localScale.ToString("F8"));
+
+		doFlip = (rootObject.transform.localScale.x < 0 ||
+				  rootObject.transform.localScale.y < 0 ||
+				  rootObject.transform.localScale.z < 0) ? true : false;
 
 		if (node.HasChildren)
 		{
 			foreach (var child in node.Children)
 			{
+				if (AssimpNodeChildrenCount(child) == 0)
+				{
+					continue;
+				}
+
 				// Debug.Log(" => Child Object: " + child.Name);
-				var childObject = ConvertAssimpNodeToMeshObject(child, meshMatList);
+				var childObject = ConvertAssimpNodeToMeshObject(child, meshMatList, out var doFlipChild);
 				childObject.transform.SetParent(rootObject.transform, false);
+
+				doFlip |= doFlipChild;
 			}
 		}
 
 		return rootObject;
 	}
 
-	public static GameObject CreateMeshObject(in string meshPath)
+	private static int AssimpNodeChildrenCount(in Assimp.Node node)
+	{
+		var childrenCount = 0;
+		foreach (var child in node.Children)
+		{
+		 	childrenCount += AssimpNodeChildrenCount(child);
+		}
+		return node.ChildCount + node.MeshCount + childrenCount;
+	}
+
+	public static GameObject CreateMeshObject(in string meshPath, in string subMesh = null)
 	{
 		GameObject meshObject = null;
 
-		if (!GameObjectCache.ContainsKey(meshPath))
+		var cacheKey = meshPath + (string.IsNullOrEmpty(subMesh) ? "" : subMesh);
+
+		if (!MeshCache.ContainsKey(cacheKey))
 		{
-			var scene = GetScene(meshPath, out var meshRotation);
+			var scene = GetScene(meshPath, out var meshRotation, subMesh);
 			if (scene == null)
 			{
-				return null;
-			}
-
-			// Materials
-			List<Material> materials = null;
-			if (scene.HasMaterials)
-			{
-				materials = LoadMaterials(meshPath, scene.Materials);
+				meshObject = new GameObject("Empty Mesh");
+				meshObject.SetActive(false);
+				meshObject.tag = "Geometry";
+				return meshObject;
 			}
 
 			// Meshes
 			MeshMaterialList meshMatList = null;
 			if (scene.HasMeshes)
 			{
+				// Materials
+				List<Material> materials = null;
+				if (scene.HasMaterials)
+				{
+					materials = LoadMaterials(meshPath, scene.Materials);
+				}
+
 				meshMatList = LoadMeshes(scene.Meshes);
 				meshMatList.SetMaterials(materials);
 			}
 
 			// Create GameObjects from nodes
-			var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList);
+			var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList, out var doFlip);
+			// Debug.Log(createdMeshObject.name + ": " + createdMeshObject.transform.localRotation.eulerAngles);
 
-			// rotate final mesh object
 			createdMeshObject.transform.localRotation = meshRotation * createdMeshObject.transform.localRotation;
-			// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + meshRotation.eulerAngles.ToString("F6") + " =>" + createdMeshObject.transform.localRotation.eulerAngles);
+			if (doFlip)
+			{
+				createdMeshObject.transform.localScale = -createdMeshObject.transform.localScale;
+			}
 
-			createdMeshObject.transform.localPosition = meshRotation * createdMeshObject.transform.localPosition;
-			// Debug.Log(createdMeshObject.transform.GetChild(0).name + ": " + createdMeshObject.transform.localPosition.ToString("F6") + ", " + existingPosition.ToString("F6") );
-
-			var meshScale = meshRotation * createdMeshObject.transform.localScale;
-			meshScale.x = Mathf.Abs(meshScale.x);
-			meshScale.y = Mathf.Abs(meshScale.y);
-			meshScale.z = Mathf.Abs(meshScale.z);
-			createdMeshObject.transform.localScale = meshScale;
-
-			GameObjectCache.Add(meshPath, createdMeshObject);
-			GameObject.DontDestroyOnLoad(createdMeshObject);
 			createdMeshObject.SetActive(false);
+			GameObject.DontDestroyOnLoad(createdMeshObject);
+
+			MeshCache.Add(cacheKey, createdMeshObject);
+		}
+		else
+		{
+			Debug.Log($"Use cached mesh({cacheKey}) for {meshPath}");
 		}
 
-		meshObject = GameObject.Instantiate(GameObjectCache[meshPath]);
+		meshObject = new GameObject("Non-Primitive Mesh");
 		meshObject.SetActive(true);
-		meshObject.name = "Non-Primitive Mesh";
 		meshObject.tag = "Geometry";
+
+		var sceneMeshObject = GameObject.Instantiate(MeshCache[cacheKey]);
+		sceneMeshObject.SetActive(true);
+		sceneMeshObject.transform.SetParent(meshObject.transform, false);
 
 		return meshObject;
 	}

@@ -32,9 +32,9 @@ namespace SDF
 			}
 
 			/// <summary>Set mesh from external source</summary>
-			public static void GenerateMeshObject(in SDF.Mesh obj, in UE.GameObject targetParentObject)// in bool isVisualMesh = true)
+			public static void GenerateMeshObject(in SDF.Mesh obj, in UE.GameObject targetParentObject)
 			{
-				var loadedObject = MeshLoader.CreateMeshObject(obj.uri);
+				var loadedObject = MeshLoader.CreateMeshObject(obj.uri, obj.submesh_name);
 				var isVisualMesh = IsVisualObject(targetParentObject);
 
 				if (loadedObject == null)
@@ -43,26 +43,11 @@ namespace SDF
 				}
 				else
 				{
-					// change axis of scale
-					var loadedMeshScale = loadedObject.transform.localScale;
-					var tmp = loadedMeshScale.x;
-					loadedMeshScale.x = loadedMeshScale.z;
-					loadedMeshScale.z = tmp;
-
-					if (!isVisualMesh)
-					{
-						tmp = loadedMeshScale.y;
-						loadedMeshScale.y = loadedMeshScale.z;
-						loadedMeshScale.z = tmp;
-					}
-
-					loadedMeshScale.Scale(SDF2Unity.GetScale(obj.scale));
-					loadedObject.transform.localScale = loadedMeshScale;
+					loadedObject.transform.localScale = SDF2Unity.GetScale(obj.scale);
 				}
 
 				loadedObject.transform.SetParent(targetParentObject.transform, false);
 			}
-
 
 			public static void GenerateMeshObject(in SDF.Heightmap obj, in UE.GameObject targetParentObject)
 			{
@@ -140,7 +125,7 @@ namespace SDF
 					meshFilter.sharedMesh = mesh;
 
 					var meshRenderer = createdObject.AddComponent<UE.MeshRenderer>();
-					meshRenderer.sharedMaterial = SDF2Unity.GetNewMaterial(mesh.name);
+					meshRenderer.sharedMaterial = SDF2Unity.Material.Create(mesh.name);
 					meshRenderer.allowOcclusionWhenDynamic = true;
 				}
 

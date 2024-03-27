@@ -26,12 +26,16 @@ namespace SDF
 
 			var tmp = value.Split(' ');
 
-			if (tmp.Length != 4)
+			if (tmp.Length < 3)
 				return;
 
 			R = (double)Convert.ChangeType(tmp[0], TypeCode.Double);
 			G = (double)Convert.ChangeType(tmp[1], TypeCode.Double);
 			B = (double)Convert.ChangeType(tmp[2], TypeCode.Double);
+
+			if (tmp.Length > 4)
+				return;
+
 			A = (double)Convert.ChangeType(tmp[3], TypeCode.Double);
 		}
 
@@ -207,24 +211,28 @@ namespace SDF
 			{
 				ambient = new Color();
 				ambient.FromString(GetValue<string>("ambient"));
+				// Console.Write("sdf/material/ambient");
 			}
 
 			if (IsValidNode("diffuse"))
 			{
 				diffuse = new Color();
 				diffuse.FromString(GetValue<string>("diffuse"));
+				// Console.Write("sdf/material/diffuse");
 			}
 
 			if (IsValidNode("specular"))
 			{
 				specular = new Color();
 				specular.FromString(GetValue<string>("specular"));
+				// Console.Write("sdf/material/specular");
 			}
 
 			if (IsValidNode("emissive"))
 			{
 				emissive = new Color();
 				emissive.FromString(GetValue<string>("emissive"));
+				// Console.Write("sdf/material/emissive");
 			}
 		}
 	}

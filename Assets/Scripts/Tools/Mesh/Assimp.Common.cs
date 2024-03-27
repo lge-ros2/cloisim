@@ -11,6 +11,35 @@ using UnityEngine;
 
 public partial class MeshLoader
 {
+	private static Assimp.PostProcessSteps PostProcessFlags =
+		// PreTransformVertices
+		// LimitBoneWeights
+		// FindInstances
+		// FindDegenerates
+		// FlipUVs
+		// FlipWindingOrder
+		// SplitByBoneCount
+		// Debone
+		// GlobalScale
+		// Assimp.PostProcessSteps.OptimizeGraph | // --> occurs sub-mesh merged
+		// Assimp.PostProcessSteps.GenerateSmoothNormals | // --> it may causes conflict with GenerateNormals
+		// Assimp.PostProcessSteps.OptimizeMeshes | // -> it may causes face reverting
+		// Assimp.PostProcessSteps.FixInFacingNormals | // -> it may causes wrong face
+		Assimp.PostProcessSteps.GenerateNormals |
+		Assimp.PostProcessSteps.GenerateUVCoords |
+		Assimp.PostProcessSteps.RemoveComponent |
+		Assimp.PostProcessSteps.ImproveCacheLocality |
+		Assimp.PostProcessSteps.CalculateTangentSpace |
+		Assimp.PostProcessSteps.JoinIdenticalVertices |
+		Assimp.PostProcessSteps.RemoveRedundantMaterials |
+		Assimp.PostProcessSteps.Triangulate |
+		Assimp.PostProcessSteps.SortByPrimitiveType |
+		Assimp.PostProcessSteps.ValidateDataStructure |
+		Assimp.PostProcessSteps.SplitLargeMeshes |
+		Assimp.PostProcessSteps.FindInvalidData |
+		Assimp.PostProcessSteps.MakeLeftHanded;
+
+
 	private static Color GetColor(Assimp.Color4D color)
 	{
 		return (color == null) ? Color.clear : new Color(color.R, color.G, color.B, color.A);
@@ -22,7 +51,7 @@ public partial class MeshLoader
 			"/textures/",
 			"../materials/", "../materials/textures/",
 			"../../materials/", "../../materials/textures/",
-			"../"
+			"../", "../../"
 		};
 
 	private static List<string> GetRootTexturePaths(in string parentPath)
@@ -37,51 +66,33 @@ public partial class MeshLoader
 		return texturePaths;
 	}
 
-	class MeshMaterialSet
+	struct MeshMaterial
 	{
-		private readonly int _materialIndex;
-		private readonly Mesh _mesh;
-		private Material _material;
+		public bool valid;
+		public readonly int materialIndex;
+		public readonly Mesh mesh;
+		public Material material;
 
-		public MeshMaterialSet(in Mesh mesh, in int materialIndex)
+		public MeshMaterial(in Mesh mesh, in int materialIndex)
 		{
-			_mesh = mesh;
-			_materialIndex = materialIndex;
+			this.valid = true;
+			this.materialIndex = materialIndex;
+			this.mesh = mesh;
+			this.material = null;
 		}
-
-		public int MaterialIndex => _materialIndex;
-
-		public Material Material
-		{
-			get => _material;
-			set => _material = value;
-		}
-
-		public Mesh Mesh => _mesh;
 	}
 
-	class MeshMaterialList
+	class MeshMaterialList : List<MeshMaterial>
 	{
-		private List<MeshMaterialSet> meshMatList = new List<MeshMaterialSet>();
-
-		public int Count => meshMatList.Count;
-
-		public void Add(in MeshMaterialSet meshMatSet)
-		{
-			meshMatList.Add(meshMatSet);
-		}
-
 		public void SetMaterials(in List<Material> materials)
 		{
-			foreach (var meshMatSet in meshMatList)
+			// foreach (var meshMat in meshMatList)
+			for (var i = 0; i < this.Count; i++)
 			{
-				meshMatSet.Material = materials[meshMatSet.MaterialIndex];
+				var meshMat = this[i];
+				meshMat.material = materials[meshMat.materialIndex];
+				this[i] = meshMat;
 			}
-		}
-
-		public MeshMaterialSet Get(in int index)
-		{
-			return meshMatList[index];
 		}
 	}
 
@@ -113,11 +124,11 @@ public partial class MeshLoader
 		{
 			case ".obj":
 			case ".stl":
-				eulerRotation = Quaternion.Euler(90, 0, 0) * Quaternion.Euler(0, 0, 0) * Quaternion.Euler(0, 0, 90);
+				eulerRotation = Quaternion.Euler(90, 0, 0) * Quaternion.Euler(0, 0, 90);
 				break;
 
 			case ".dae":
-				eulerRotation = Quaternion.Euler(0, -90, 0) * Quaternion.Euler(0, 0, 0);
+				eulerRotation = Quaternion.Euler(0, -90, 0);
 				break;
 
 			case ".fbx":
@@ -147,7 +158,7 @@ public partial class MeshLoader
 			Debug.Log(msg);
 		});
 
-	private static Assimp.Scene GetScene(in string targetPath, out Quaternion meshRotation)
+	private static Assimp.Scene GetScene(in string targetPath, out Quaternion meshRotation, in string subMesh = null)
 	{
 		meshRotation = Quaternion.identity;
 
@@ -167,31 +178,44 @@ public partial class MeshLoader
 			return null;
 		}
 
-		const Assimp.PostProcessSteps postProcessFlags =
-			Assimp.PostProcessSteps.OptimizeGraph |
-			Assimp.PostProcessSteps.OptimizeMeshes |
-			// Assimp.PostProcessSteps.GenerateNormals |
-			// Assimp.PostProcessSteps.GenerateUVCoords |
-			Assimp.PostProcessSteps.ImproveCacheLocality |
-			Assimp.PostProcessSteps.CalculateTangentSpace |
-			Assimp.PostProcessSteps.JoinIdenticalVertices |
-			Assimp.PostProcessSteps.RemoveRedundantMaterials |
-			Assimp.PostProcessSteps.Triangulate |
-			Assimp.PostProcessSteps.SortByPrimitiveType |
-			Assimp.PostProcessSteps.ValidateDataStructure |
-			Assimp.PostProcessSteps.SplitLargeMeshes |
-			Assimp.PostProcessSteps.FindInvalidData |
-			Assimp.PostProcessSteps.MakeLeftHanded ;
+		try {
+			var scene = importer.ImportFile(targetPath, PostProcessFlags);
 
-		var scene = importer.ImportFile(targetPath, postProcessFlags);
-		if (scene == null)
-		{
-			return null;
+			// Remove cameras and lights
+			scene.Cameras.Clear();
+			scene.Lights.Clear();
+
+			var rootNode = scene.RootNode;
+			if (!string.IsNullOrEmpty(subMesh))
+			{
+				// Debug.Log(subMesh);
+				var foundSubMesh = rootNode.FindNode(subMesh);
+				rootNode.Children.Clear();
+				if (foundSubMesh != null)
+				{
+					// Debug.Log($"submesh({subMesh}) exist");
+					rootNode.Children.Add(foundSubMesh);
+				}
+			}
+
+			// var metaData = scene.Metadata;
+			// foreach (var metaDataSet in metaData)
+			// {
+			// 	var metaDataKey = metaDataSet.Key;
+			// 	var metaDataValue = metaDataSet.Value;
+			// 	Debug.Log($"{metaDataKey} : {metaDataValue}");
+			// }
+			// Debug.Log(rootNode.Transform);
+
+			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
+			meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
+
+			return scene;
 		}
-
-		// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
-		meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
-
-		return scene;
+		catch (Assimp.AssimpException e)
+		{
+			Debug.LogError(e.Message);
+		}
+		return null;
 	}
 }

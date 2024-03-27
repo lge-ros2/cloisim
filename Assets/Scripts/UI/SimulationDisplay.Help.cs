@@ -10,7 +10,7 @@ using UnityEngine;
 public partial class SimulationDisplay : MonoBehaviour
 {
 	[Header("Help dialog")]
-	private StringBuilder sbOption_ = new StringBuilder(45);
+	private StringBuilder _sbOption = new StringBuilder(45);
 	private GUIContent helpContents = new GUIContent();
 	private float helpContentsHeight;
 	private const int buttonWidthHelp = 65;
@@ -135,11 +135,11 @@ public partial class SimulationDisplay : MonoBehaviour
 		style.alignment = TextAnchor.MiddleLeft;
 		style.normal.textColor = Color.white;
 
-		sbOption_.Clear();
-		sbOption_.Append("Vertical Camera Moving Lock(Space) ");
+		_sbOption.Clear();
+		_sbOption.Append("Vertical Camera Moving Lock(Space) ");
 		var checkValue = (cameraControl != null && cameraControl.VerticalMovementLock) ? "[V]" : "[  ]";
-		sbOption_.Append(checkValue);
+		_sbOption.Append(checkValue);
 		// var helpStatusMsg2 = "\nStatic Object Selectable(O) " + ((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
-		DrawLabelWithShadow(rectOption, sbOption_.ToString());
+		DrawLabelWithShadow(rectOption, _sbOption.ToString());
 	}
 }

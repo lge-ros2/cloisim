@@ -43,19 +43,26 @@ namespace SDF
 			{
 				Type = "mesh";
 				shape = new Mesh();
-				(shape as Mesh).uri = GetValue<string>("mesh/uri");
+				var mesh = (shape as Mesh);
+				mesh.uri = GetValue<string>("mesh/uri");
 				var scale = GetValue<string>("mesh/scale");
 
 				if (string.IsNullOrEmpty(scale))
 				{
-					(shape as Mesh).scale.Set(1.0f, 1.0f, 1.0f);
+					mesh.scale.Set(1.0f, 1.0f, 1.0f);
 				}
 				else
 				{
-					(shape as Mesh).scale.FromString(scale);
+					mesh.scale.FromString(scale);
 				}
 
-				// Console.WriteLine("mesh uri : " + (shape as Mesh).uri + ", scale:" + scale);
+				if (IsValidNode("mesh/submesh"))
+				{
+					mesh.submesh_name = GetValue<string>("mesh/submesh/name");
+					mesh.submesh_center = GetValue<bool>("mesh/submesh/center");
+				}
+
+				// Console.WriteLine("mesh uri : " + mesh.uri + ", scale:" + scale);
 			}
 			else if (IsValidNode("sphere"))
 			{

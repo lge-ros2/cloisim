@@ -1841,14 +1841,17 @@ MonoBehaviour:
   modelRootDirectories:
   - ../cloi_resources
   - ../sample_resources/models/
+  - ../props_resources
+  - ../gazebo_models/
   - ../world_resources/yangjae_city
   - ../world_resources/bluepearl/models
-  - ../props_resources
   - ../world_resources/lawn_ground/models
+  - ../world_resources/seocho_tower/models
   worldRootDirectories:
   - ../sample_resources/worlds/
   - ../world_resources/bluepearl/worlds
   - ../world_resources/lawn_ground/worlds
+  - ../world_resources/seocho_tower/worlds
   fileRootDirectories:
   - ../sample_resources/media/
   - ../world_resources/bluepearl/media
@@ -1866,7 +1869,7 @@ GameObject:
   - component: {fileID: 314493401}
   - component: {fileID: 314493400}
   m_Layer: 0
-  m_Name: vvv
+  m_Name: Body
   m_TagString: Visual
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4315,7 +4318,7 @@ GameObject:
   - component: {fileID: 747390630}
   - component: {fileID: 747390631}
   m_Layer: 0
-  m_Name: Cube(Main)S
+  m_Name: Cube(Main)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

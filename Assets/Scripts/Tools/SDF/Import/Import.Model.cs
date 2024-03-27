@@ -81,7 +81,7 @@ namespace SDF
 				// Apply attributes
 				var localPosition = SDF2Unity.GetPosition(model.Pose.Pos);
 				var localRotation = SDF2Unity.GetRotation(model.Pose.Rot);
-				// Debug.Log(newModelObject.name + "::" + localPosition + ", " + localRotation);
+				// UE.Debug.Log(newModelObject.name + "::" + localPosition + ", " + localRotation);
 
 				var modelHelper = newModelObject.AddComponent<Helper.Model>();
 				modelHelper.isStatic = model.IsStatic;
@@ -110,22 +110,6 @@ namespace SDF
 				var modelHelper = modelObject.GetComponent<Helper.Model>();
 				if (modelHelper.IsFirstChild)
 				{
-					if (!modelHelper.isStatic)
-					{
-						var childArticulationBodies = modelObject.GetComponentsInChildren<UE.ArticulationBody>();
-
-						if (childArticulationBodies.Length == 1 && childArticulationBodies[0].index == 0)
-						{
-							// remove root articulation body if there are no ariticulation body in childeren
-							UE.GameObject.Destroy(childArticulationBodies[0]);
-							modelHelper.hasRootArticulationBody = false;
-						}
-						else if (childArticulationBodies.Length > 1)
-						{
-							modelHelper.hasRootArticulationBody = true;
-						}
-					}
-
 					// UE.Debug.Log("AfterImportModel: " + model.OriginalName + ", " + modelObject.name);
 					SegmentationManager.AttachTag(model.OriginalName, modelObject);
 					Main.SegmentationManager.UpdateTags();

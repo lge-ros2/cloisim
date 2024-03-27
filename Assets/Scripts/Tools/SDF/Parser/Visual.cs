@@ -12,8 +12,8 @@ namespace SDF
 	public class Visuals : Entities<Visual>
 	{
 		private const string TARGET_TAG = "visual";
-		public Visuals() : base(TARGET_TAG) {}
-		public Visuals(XmlNode _node) : base(_node, TARGET_TAG) {}
+		public Visuals() : base(TARGET_TAG) { }
+		public Visuals(XmlNode _node) : base(_node, TARGET_TAG) { }
 	}
 
 	public class Visual : Entity
@@ -44,13 +44,17 @@ namespace SDF
 		{
 			plugins = new Plugins(root);
 
+			var geomNode = GetNode("geometry");
+			if (geomNode != null)
+			{
+				geometry = new Geometry(geomNode);
+			}
+
 			var matNode = GetNode("material");
 			if (matNode != null)
 			{
 				material = new Material(matNode);
 			}
-
-			geometry = new Geometry( GetNode("geometry"));
 
 			var metaNode = GetNode("meta");
 			if (metaNode != null)

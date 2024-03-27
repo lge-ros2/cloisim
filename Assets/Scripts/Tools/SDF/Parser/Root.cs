@@ -18,7 +18,9 @@ namespace SDF
 		// {Model Name, (Model Config Name, Model Path, Model File)}
 		public Dictionary<string, Tuple<string, string, string>> resourceModelTable = new Dictionary<string, Tuple<string, string, string>>();
 
-		private readonly string[] sdfVersions = { "1.9", "1.8", "1.7", "1.6", "1.5", "1.4", "1.3", "1.2", string.Empty };
+		private readonly string[] SdfVersions = {
+					"1.9", "1.8", "1.7", "1.6", "1.5", "1.4",
+					"1.3", "1.2", "1.1", "1.0", string.Empty };
 
 		private XmlDocument doc = new XmlDocument();
 
@@ -72,7 +74,6 @@ namespace SDF
 							worldFound = true;
 
 							var infoMessage = "World(" + worldFileName + ") is loaded.";
-
 							logger.Write(infoMessage);
 							// logger.SetShowOnDisplayOnce();
 						}
@@ -177,7 +178,7 @@ namespace SDF
 						continue;
 					}
 
-					//Console.Write(subDirectory.Name + " => " + subDirectory.FullName);
+					// Console.Write(subDirectory.Name + " => " + subDirectory.FullName);
 					var modelConfig = subDirectory.FullName + "/model.config";
 
 					if (!File.Exists(modelConfig))
@@ -207,9 +208,10 @@ namespace SDF
 
 					// Get Model SDF file name
 					var sdfFileName = string.Empty;
-					foreach (var version in sdfVersions)
+					foreach (var version in SdfVersions)
 					{
-						//Console.Write(version);
+						// Console.Write(version);
+						// Console.Write(modelNode);
 						var sdfNode = modelNode.SelectSingleNode("sdf[@version=" + version + " or not(@version)]");
 						if (sdfNode != null)
 						{

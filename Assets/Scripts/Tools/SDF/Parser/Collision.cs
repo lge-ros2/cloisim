@@ -5,6 +5,7 @@
  */
 
 using System.Xml;
+using System;
 
 namespace SDF
 {
@@ -203,7 +204,7 @@ namespace SDF
 				if (IsValidNode("surface/bounce"))
 				{
 					surface.bounce = new Surface.Bounce();
-					surface.bounce.restitution_coefficient = GetValue<double>("surface/bounce/restitution_coefficient");
+					surface.bounce.restitution_coefficient = Math.Clamp(GetValue<double>("surface/bounce/restitution_coefficient"), 0, 1);
 					surface.bounce.threshold = GetValue<double>("surface/bounce/threshold");
 				}
 
@@ -214,8 +215,8 @@ namespace SDF
 					if (IsValidNode("surface/friction/ode"))
 					{
 						surface.friction.ode = new Surface.Friction.ODE();
-						surface.friction.ode.mu = GetValue<double>("surface/friction/ode/mu");
-						surface.friction.ode.mu2 = GetValue<double>("surface/friction/ode/mu2");
+						surface.friction.ode.mu = Math.Clamp(GetValue<double>("surface/friction/ode/mu"), 0, 1);
+						surface.friction.ode.mu2 = Math.Clamp(GetValue<double>("surface/friction/ode/mu2"), 0, 1);
 					}
 				}
 			}

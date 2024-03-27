@@ -30,6 +30,22 @@ namespace SDF
 				}
 				else
 				{
+					if (IsFirstChild)
+					{
+						var childArticulationBodies = GetComponentsInChildren<UE.ArticulationBody>();
+
+						if (childArticulationBodies.Length == 1 && childArticulationBodies[0].index == 0)
+						{
+							// remove root articulation body if there are no ariticulation body in childeren
+							UE.GameObject.Destroy(childArticulationBodies[0]);
+							hasRootArticulationBody = false;
+						}
+						else if (childArticulationBodies.Length > 1)
+						{
+							hasRootArticulationBody = true;
+						}
+					}
+
 					if (hasRootArticulationBody)
 					{
 						var carveOnlyStationary = IsRobotModel() ? false : true;

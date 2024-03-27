@@ -41,13 +41,18 @@ namespace SDF
 		public double voltage = 0;
 	}
 
+	public class VelocityDecay
+	{
+		public double linear = 0;
+		public double angular = 0;
+	};
+
 	public class Links : Entities<Link>
 	{
 		private const string TARGET_TAG = "link";
 		public Links() : base(TARGET_TAG) { }
 		public Links(XmlNode _node) : base(_node, TARGET_TAG) { }
 	}
-
 
 	public class Link : Entity
 	{
@@ -57,10 +62,9 @@ namespace SDF
 		private bool kinematic = false;
 		private bool must_be_base_link = false;
 
-		// <velocity decay> : TBD
+		private VelocityDecay _velocity_decay = null;
 
-		private Inertial inertial = null;
-
+		private Inertial _inertial = null;
 		private Collisions collisions;
 		private Visuals visuals;
 		private Sensors sensors;
@@ -79,7 +83,9 @@ namespace SDF
 
 		public bool SelfCollide => self_collide;
 
-		public Inertial Inertial => inertial;
+		public VelocityDecay VelocityDecay => _velocity_decay;
+
+		public Inertial Inertial => _inertial;
 
 		public Battery Battery => battery;
 
@@ -100,10 +106,17 @@ namespace SDF
 			kinematic = GetValue<bool>("kinematic", false);
 			must_be_base_link = GetValue<bool>("must_be_base_link", false);
 
+			if (IsValidNode("velocity_decay"))
+			{
+				_velocity_decay = new VelocityDecay();
+				_velocity_decay.linear = GetValue<double>("velocity_decay/linear", 0);
+				_velocity_decay.angular = GetValue<double>("velocity_decay/angular", 0);
+			}
+
 			if (IsValidNode("inertial"))
 			{
-				inertial = new Inertial();
-				inertial.mass = GetValue<double>("inertial/mass");
+				_inertial = new Inertial();
+				Inertial.mass = GetValue<double>("inertial/mass");
 
 				if (IsValidNode("inertial/inertia"))
 				{
@@ -118,9 +131,9 @@ namespace SDF
 
 				var poseStr = GetValue<string>("inertial/pose");
 				if (poseStr == null)
-					inertial.pose = null;
+					Inertial.pose = null;
 				else
-					inertial.pose.FromString(poseStr);
+					Inertial.pose.FromString(poseStr);
 				// Console.WriteLine("Link Mass: " + inertial.mass);
 			}
 

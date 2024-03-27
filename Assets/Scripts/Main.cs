@@ -172,21 +172,26 @@ public class Main : MonoBehaviour
 
 		// Load Library for Assimp
 #if UNITY_EDITOR
-#if UNITY_EDITOR_LINUX
-		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/linux-x64/native/libassimp";
-#elif UNITY_EDITOR_OSX // TODO: need to be verified,
-		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/osx-x64/native/libassimp";
-#else // == UNITY_EDITOR_WIN
-		var assimpLibraryPath = "./Assets/Plugins/AssimpNet.4.1.0/runtimes/win-x64/native/assimp";
-#endif
+		var AssimpVersion = "5.0.0-beta1";
+#	if UNITY_EDITOR_LINUX
+		var assimpLibraryPath = $"./Assets/Plugins/AssimpNet.{AssimpVersion}/runtimes/linux-x64/native/libassimp";
+#	elif UNITY_EDITOR_OSX // TODO: need to be verified,
+		var assimpLibraryPath = $"./Assets/Plugins/AssimpNet.{AssimpVersion}/runtimes/osx-x64/native/libassimp";
+#	else // == UNITY_EDITOR_WIN
+#		if UNITY_64
+		var assimpLibraryPath = $"./Assets/Plugins/AssimpNet.{AssimpVersion}/runtimes/win-x64/native/assimp";
+#		else
+		var assimpLibraryPath = $"./Assets/Plugins/AssimpNet.{AssimpVersion}/runtimes/win-x86/native/assimp";
+#		endif
+#	endif
 #else
-#if UNITY_STANDALONE_WIN
+#	if UNITY_STANDALONE_WIN
 		var assimpLibraryPath = "./CLOiSim_Data/Plugins/x86_64/assimp";
-#elif UNITY_STANDALONE_OSX // TODO: need to be verified,
+#	elif UNITY_STANDALONE_OSX // TODO: need to be verified,
 		var assimpLibraryPath = "./Contents/PlugIns/libassimp";
-#else // == UNITY_STANDALONE_LINUX
+#	else // == UNITY_STANDALONE_LINUX
 		var assimpLibraryPath = "./CLOiSim_Data/Plugins/libassimp";
-#endif
+#	endif
 #endif
 		Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath);
 

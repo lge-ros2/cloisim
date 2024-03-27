@@ -190,12 +190,14 @@ export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample_resources/worlds"
 Run CLOiSim
 
 ```shell
+ ./run.sh cloisim.world
+ ```
+
+or you can execute [binary](https://github.com/lge-ros2/cloisim/releases) file directly.
+
+```shell
 ./CLOiSim.x86_64 -world lg_seocho.world
 ```
-
-or you can execute '***./run.sh***' script in release [binary](https://github.com/lge-ros2/cloisim/releases) version.
-
-- ***./run.sh cloisim.world***
 
 #### Run '[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' after running CLOiSim
 
