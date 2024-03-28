@@ -359,8 +359,8 @@ public class Main : MonoBehaviour
 
 			var targetObject = _worldRoot.transform.Find(model.Name);
 
-			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
-			addingModel.SetAddingModelForDeploy(targetObject);
+			var modelImporter = uiMainCanvasRoot.GetComponentInChildren<ModelImporter>();
+			modelImporter.SetModelForDeploy(targetObject);
 
 			// Debug.Log("Model Loaded:" + targetObject.name);
 			yield return new WaitForEndOfFrame();

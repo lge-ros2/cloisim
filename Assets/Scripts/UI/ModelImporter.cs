@@ -1,7 +1,7 @@
 
 using UnityEngine;
 
-public class AddModel : MonoBehaviour
+public class ModelImporter : MonoBehaviour
 {
 	private GameObject modelList = null;
 	private Transform _targetObject = null;
@@ -37,7 +37,7 @@ public class AddModel : MonoBehaviour
 		}
 	}
 
-	private void RemoveAddingModel()
+	private void DiscardSelectedModel()
 	{
 		if (_targetObject != null)
 		{
@@ -48,11 +48,11 @@ public class AddModel : MonoBehaviour
 		_modelHelper = null;
 	}
 
-	public void SetAddingModelForDeploy(in Transform targetTransform)
+	public void SetModelForDeploy(in Transform targetTransform)
 	{
 		const float DeployOffsetMargin = 0.1f;
 
-		RemoveAddingModel();
+		DiscardSelectedModel();
 
 		_targetObject = targetTransform;
 		ChangeColliderObjectLayer(_targetObject, "Ignore Raycast");
@@ -123,7 +123,7 @@ public class AddModel : MonoBehaviour
 		}
 		else if (Input.GetKeyUp(KeyCode.Escape))
 		{
-			RemoveAddingModel();
+			DiscardSelectedModel();
 		}
 		else
 		{
