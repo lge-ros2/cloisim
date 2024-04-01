@@ -61,7 +61,7 @@ namespace Unity.Splines
 		[SerializeField]
 		float m_TextureScale = 1;
 
-		public IReadOnlyList<Spline> splines => LoftSplines;
+		// public IReadOnlyList<Spline> splines => LoftSplines;
 
 		public IReadOnlyList<Spline> LoftSplines
 		{
