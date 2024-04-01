@@ -117,3 +117,8 @@ tags
 
 # UI 
 /UIElementsSchema
+
+
+# SDF files
+*.world
+*.sdf
