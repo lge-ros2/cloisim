@@ -519,7 +519,8 @@ namespace RuntimeGizmos
 					Transform target = null;
 					var hitObject = hitInfo.transform;
 
-					if (hitObject.CompareTag("Props"))
+					if (hitObject.CompareTag("Props") ||
+						(hitObject.CompareTag("Road") && Input.GetKey(KeyCode.LeftAlt)))
 					{
 						target = hitObject.transform;
 					}
