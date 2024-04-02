@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using UE = UnityEngine;
-using Splines = UnityEngine.Splines;
 using System.Collections.Generic;
 
 namespace SDF

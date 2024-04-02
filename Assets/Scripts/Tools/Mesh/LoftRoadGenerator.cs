@@ -17,6 +17,8 @@ namespace Unity.Splines
 	[RequireComponent(typeof(MeshRenderer), typeof(MeshCollider), typeof(MeshFilter))]
 	public class LoftRoadGenerator : MonoBehaviour
 	{
+		private static PhysicMaterial _physicalMaterial;
+
 		[SerializeField]
 		List<SplineData<float>> m_Widths = new List<SplineData<float>>();
 
@@ -61,8 +63,6 @@ namespace Unity.Splines
 		[SerializeField]
 		float m_TextureScale = 1;
 
-		// public IReadOnlyList<Spline> splines => LoftSplines;
-
 		public IReadOnlyList<Spline> LoftSplines
 		{
 			get
@@ -97,6 +97,10 @@ namespace Unity.Splines
 		private List<Vector2> m_Textures = new List<Vector2>();
 		private List<int> m_Indices = new List<int>();
 
+		void Awake()
+		{
+			_physicalMaterial = Resources.Load<PhysicMaterial>("PhysicsMaterials/Asphalt");
+		}
 
 		public void OnEnable()
 		{
@@ -160,7 +164,7 @@ namespace Unity.Splines
 				var delta = LoftSplines.Count - m_Widths.Count;
 				for (var i = 0; i < delta; i++)
 				{
-#if  UNITY_EDITOR
+#if UNITY_EDITOR
 					Undo.RecordObject(this, "Modifying Widths SplineData");
 #endif
 					m_Widths.Add(new SplineData<float>() { DefaultValue = 1f });
@@ -247,6 +251,12 @@ namespace Unity.Splines
 			m_Mesh.Optimize();
 
 			GetComponent<MeshFilter>().sharedMesh = m_Mesh;
+
+			var meshCollider = GetComponent<MeshCollider>();
+			meshCollider.material = _physicalMaterial;
+			meshCollider.convex = false;
+			meshCollider.cookingOptions = SDF.Implement.Collision.CookingOptions;
+			meshCollider.sharedMesh = m_Mesh;
 		}
 
 		private void Loft(Spline spline, in int widthDataIndex)
