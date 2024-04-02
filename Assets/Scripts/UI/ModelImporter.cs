@@ -22,11 +22,7 @@ public class ModelImporter : MonoBehaviour
 	public void OnButtonClicked()
 	{
 		modelList.SetActive(!modelList.activeSelf);
-
-		if (modelList.activeSelf)
-			Main.CameraControl.BlockMouseWheelControl(true);
-		else
-			Main.CameraControl.BlockMouseWheelControl(false);
+		Main.CameraControl.BlockMouseWheelControl(modelList.activeSelf);
 	}
 
 	private static void ChangeColliderObjectLayer(Transform target, in string layerName)
@@ -85,9 +81,6 @@ public class ModelImporter : MonoBehaviour
 
 	private bool GetPointAndNormalOnClick(out Vector3 point, out Vector3 normal)
 	{
-		point = Vector3.zero;
-		normal = Vector3.zero;
-
 		var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 		var layerMask = ~(LayerMask.GetMask("Ignore Raycast") |
 							LayerMask.GetMask("TransparentFX") |
@@ -99,6 +92,11 @@ public class ModelImporter : MonoBehaviour
 			normal = hitInfo.normal;
 			// Debug.Log(point + ", " + normal);
 			return true;
+		}
+		else
+		{
+			point = Vector3.negativeInfinity;
+			normal = Vector3.negativeInfinity;
 		}
 		return false;
 	}
