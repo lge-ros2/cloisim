@@ -46,7 +46,7 @@ public class ObjectSpawning : MonoBehaviour
 	void Awake()
 	{
 		_propMaterial = SDF2Unity.Material.Create();
-		_propsPhysicalMaterial = Resources.Load<PhysicMaterial>("Materials/Props");
+		_propsPhysicalMaterial = Resources.Load<PhysicMaterial>("PhysicsMaterials/Props");
 		propsRoot = GameObject.Find("Props");
 		mainCam = Camera.main;
 		transformGizmo = Main.Gizmos;
