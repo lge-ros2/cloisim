@@ -75,10 +75,12 @@ public class ObjectSpawning : MonoBehaviour
 		{
 			// Add On left click spawn
 			// selected prefab and align its rotation to a surface normal
-			var spawnData = GetPositionAndNormalOnClick();
-			var scaleFactor = float.Parse(scaleFactorString);
-			var propsScale = Vector3.one * scaleFactor;
-			StartCoroutine(SpawnTargetObject((PropsType)propType, spawnData[0], spawnData[1], propsScale));
+			if (GetPositionAndNormalOnClick(out var hitPoint, out var hitNormal))
+			{
+				var scaleFactor = float.Parse(scaleFactorString);
+				var propsScale = Vector3.one * scaleFactor;
+				StartCoroutine(SpawnTargetObject((PropsType)propType, hitPoint, hitNormal, propsScale));
+			}
 		}
 		else if (leftControlPressed && Input.GetMouseButtonDown(1))
 		{
@@ -245,18 +247,22 @@ public class ObjectSpawning : MonoBehaviour
 		yield return null;
 	}
 
-	private Vector3[] GetPositionAndNormalOnClick()
+	private bool GetPositionAndNormalOnClick(out Vector3 hitPoint, out Vector3 hitNormal)
 	{
-		var returnData = new Vector3[] { Vector3.zero, Vector3.zero }; //0 = spawn poisiton, 1 = surface normal
 		var ray = mainCam.ScreenPointToRay(Input.mousePosition);
-
 		if (Physics.Raycast(ray, out var hit, maxRayDistance))
 		{
-			returnData[0] = hit.point;
-			returnData[1] = hit.normal;
+			hitPoint = hit.point; // 0 = spawn poisiton
+			hitNormal = hit.normal; // 1 = surface normal
+			return true;
+		}
+		else
+		{
+			hitPoint = Vector3.positiveInfinity;
+			hitNormal = Vector3.positiveInfinity;
 		}
 
-		return returnData;
+		return false;
 	}
 
 	private Transform GetTransformOnClick()
