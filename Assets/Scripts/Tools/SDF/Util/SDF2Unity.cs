@@ -86,22 +86,17 @@ public partial class SDF2Unity
 
 	public static Vector2 GetScale(in SDF.Vector2<double> value)
 	{
-		return GetScale(new Vector2((float)value.X, (float)value.Y));
-	}
-
-	public static Vector2 GetScale(in Vector2 value)
-	{
-		return new Vector2(Mathf.Abs(value.x), Mathf.Abs(value.y));
+		return new Vector2(Mathf.Abs((float)value.X), Mathf.Abs((float)value.Y));
 	}
 
 	public static Vector3 GetScale(in SDF.Vector3<double> value)
 	{
-		return GetScale(new Vector3((float)value.X, (float)value.Y, (float)value.Z));
+		return GetScale(value.X, value.Y, value.Z);
 	}
 
-	public static Vector3 GetScale(in Vector3 value)
+	public static Vector3 GetScale(in double x, in double y, in double z)
 	{
-		var scaleVector = GetPosition(value);
+		var scaleVector = GetPosition(x, y, z);
 		scaleVector.x = Mathf.Abs(scaleVector.x);
 		scaleVector.y = Mathf.Abs(scaleVector.y);
 		scaleVector.z = Mathf.Abs(scaleVector.z);

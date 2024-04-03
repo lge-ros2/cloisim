@@ -388,7 +388,7 @@ public class SphericalCoordinates
 	}
 
 	/// <summary>based on right handed system</summary>
-	public Vector3d SphericalFromLocal(in Vector3 xyz)
+	public Vector3d SphericalFromLocal(in SDF.Vector3<double> xyz)
 	{
 		var result = PositionTransform(xyz, CoordinateType.LOCAL, CoordinateType.SPHERICAL);
 		result.x *= Mathf.Rad2Deg;
@@ -412,7 +412,7 @@ public class SphericalCoordinates
 	}
 
 	/// <summary>based on right handed system</summary>
-	public Vector3d GlobalFromLocal(in Vector3 xyz)
+	public Vector3d GlobalFromLocal(in SDF.Vector3<double> xyz)
 	{
 		return VelocityTransform(xyz, CoordinateType.LOCAL, CoordinateType.GLOBAL);
 	}
