@@ -35,11 +35,11 @@ namespace SDF
 				lightComponent.shadows = (light.cast_shadow) ? UE.LightShadows.Hard : UE.LightShadows.None;
 				lightComponent.shadowResolution = UE.Rendering.LightShadowResolution.Medium;
 
-				lightComponent.color = SDF2Unity.GetColor(light.diffuse);
+				lightComponent.color = SDF2Unity.Color(light.diffuse);
 				lightComponent.cullingMask = UE.LayerMask.GetMask("Default") | UE.LayerMask.GetMask("Plane");
-				// SDF2Unity.GetColor(light.specular);
+				// SDF2Unity.Color(light.specular);
 
-				var direction = SDF2Unity.GetDirection(light.direction);
+				var direction = SDF2Unity.Direction(light.direction);
 
 				switch (light.Type)
 				{

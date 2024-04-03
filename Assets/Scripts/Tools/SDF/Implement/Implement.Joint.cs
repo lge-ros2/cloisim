@@ -104,7 +104,7 @@ namespace SDF
 					body.jointFriction = DefaultJointFriction;
 				}
 
-				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
+				var jointAxis = SDF2Unity.Axis(axis.xyz);
 				// UE.Debug.LogWarning(body.transform.parent.name + "::" + body.name + " = " + jointAxis + " - revolute");
 
 				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
@@ -159,7 +159,7 @@ namespace SDF
 
 				drive.forceLimit = (double.IsInfinity(axis2.limit.effort)) ? float.MaxValue : (float)axis2.limit.effort;
 
-				var joint2Axis = SDF2Unity.GetAxis(axis2.xyz);
+				var joint2Axis = SDF2Unity.Axis(axis2.xyz);
 				if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
 				{
 					if (joint2Axis.Equals(UE.Vector3.left))
@@ -244,7 +244,7 @@ namespace SDF
 					body.jointFriction = DefaultJointFriction;
 				}
 
-				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
+				var jointAxis = SDF2Unity.Axis(axis.xyz);
 				// UE.Debug.LogWarning(body.transform.parent.name + "::" + body.name + " = " + jointAxis + " - Prismatic");
 
 				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))

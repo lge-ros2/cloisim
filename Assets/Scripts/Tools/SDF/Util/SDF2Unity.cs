@@ -16,18 +16,18 @@ public partial class SDF2Unity
 			Mathf.Abs(value.z));
 	}
 
-	public static Color GetColor(in SDF.Color value)
+	public static Color Color(in SDF.Color value)
 	{
 		return new Color((float)value.R, (float)value.G, (float)value.B, (float)value.A);
 	}
 
-	public static Color GetColor(in string value)
+	public static Color Color(in string value)
 	{
 		var color = new SDF.Color(value);
-		return GetColor(color);
+		return Color(color);
 	}
 
-	public static Vector3 GetScalar(in double x, in double y, in double z)
+	public static Vector3 Scalar(in double x, in double y, in double z)
 	{
 		return new Vector3(Mathf.Abs((float)y), Mathf.Abs((float)z), Mathf.Abs((float)x));
 	}
@@ -79,22 +79,22 @@ public partial class SDF2Unity
 		return new Quaternion((float)y, (float)-z, (float)-x, (float)w);
 	}
 
-	public static Vector2 GetScale(in string value)
+	public static Vector2 Scale(in string value)
 	{
-		return GetScale(new SDF.Vector2<double>(value));
+		return Scale(new SDF.Vector2<double>(value));
 	}
 
-	public static Vector2 GetScale(in SDF.Vector2<double> value)
+	public static Vector2 Scale(in SDF.Vector2<double> value)
 	{
 		return new Vector2(Mathf.Abs((float)value.X), Mathf.Abs((float)value.Y));
 	}
 
-	public static Vector3 GetScale(in SDF.Vector3<double> value)
+	public static Vector3 Scale(in SDF.Vector3<double> value)
 	{
-		return GetScale(value.X, value.Y, value.Z);
+		return Scale(value.X, value.Y, value.Z);
 	}
 
-	public static Vector3 GetScale(in double x, in double y, in double z)
+	public static Vector3 Scale(in double x, in double y, in double z)
 	{
 		var scaleVector = Position(x, y, z);
 		scaleVector.x = Mathf.Abs(scaleVector.x);
@@ -103,17 +103,17 @@ public partial class SDF2Unity
 		return scaleVector;
 	}
 
-	public static Vector3 GetNormal(in SDF.Vector3<int> value)
+	public static Vector3 Normal(in SDF.Vector3<int> value)
 	{
 		return Position(value);
 	}
 
-	public static Vector3 GetAxis(SDF.Vector3<int> axis)
+	public static Vector3 Axis(SDF.Vector3<int> axis)
 	{
 		return Position(axis);
 	}
 
-	public static Vector3 GetDirection(SDF.Vector3<double> direction)
+	public static Vector3 Direction(SDF.Vector3<double> direction)
 	{
 		return Position(direction);
 	}

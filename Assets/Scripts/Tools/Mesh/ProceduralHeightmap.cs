@@ -134,7 +134,7 @@ public class ProceduralHeightmap
 			var sampling = (int)(property.sampling * MinDetailResolution);
 			terrainData.SetDetailResolution(sampling, ResolutionPerPatch);
 
-			var terrainSize = SDF2Unity.GetScale(property.size);
+			var terrainSize = SDF2Unity.Scale(property.size);
 			var DefaultTerrainSize = new Vector3(texture.width, 1f, texture.height);
 			terrainData.size = (terrainSize == Vector3.one) ? DefaultTerrainSize : terrainSize;
 

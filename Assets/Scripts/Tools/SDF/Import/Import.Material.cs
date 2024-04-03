@@ -28,22 +28,22 @@ namespace SDF
 					{
 						if (sdfMaterial.ambient != null)
 						{
-							UE.Debug.Log(material.name + ": ambient is not support. " + 	SDF2Unity.GetColor(sdfMaterial.ambient));
+							UE.Debug.Log(material.name + ": ambient is not support. " + 	SDF2Unity.Color(sdfMaterial.ambient));
 						}
 
 						if (sdfMaterial.diffuse != null)
 						{
-							SDF2Unity.Material.SetBaseColor(material, SDF2Unity.GetColor(sdfMaterial.diffuse));
+							SDF2Unity.Material.SetBaseColor(material, SDF2Unity.Color(sdfMaterial.diffuse));
 						}
 
 						if (sdfMaterial.emissive != null)
 						{
-							SDF2Unity.Material.SetEmission(material, SDF2Unity.GetColor(sdfMaterial.emissive));
+							SDF2Unity.Material.SetEmission(material, SDF2Unity.Color(sdfMaterial.emissive));
 						}
 
 						if (sdfMaterial.specular != null)
 						{
-							SDF2Unity.Material.SetSpecular(material, SDF2Unity.GetColor(sdfMaterial.specular));
+							SDF2Unity.Material.SetSpecular(material, SDF2Unity.Color(sdfMaterial.specular));
 							// UE.Debug.Log("ImportMaterial HasColorSpecular " + material.GetColor("_SpecColor"));
 						}
 

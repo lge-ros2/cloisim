@@ -18,8 +18,8 @@ namespace SDF
 			private static UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia inertia)
 			{
 				var inertiaMomentum = UE.Pose.identity;
-				var inertiaVector = SDF2Unity.GetScalar((float)inertia?.ixx, (float)inertia?.iyy, (float)inertia?.izz);
-				var inertiaRotationVector = SDF2Unity.GetScalar((float)inertia?.ixy, (float)inertia?.iyz, (float)inertia?.ixz);
+				var inertiaVector = SDF2Unity.Scalar((float)inertia?.ixx, (float)inertia?.iyy, (float)inertia?.izz);
+				var inertiaRotationVector = SDF2Unity.Scalar((float)inertia?.ixy, (float)inertia?.iyz, (float)inertia?.ixz);
 
 				for (var index = 0; index < 3; index++)
 				{

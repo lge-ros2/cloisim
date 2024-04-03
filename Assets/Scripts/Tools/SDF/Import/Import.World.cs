@@ -44,7 +44,7 @@ namespace SDF
 
 				ImportRoads(world.GetRoads());
 
-				UnityEngine.Physics.gravity = SDF2Unity.GetDirection(world.gravity);
+				UnityEngine.Physics.gravity = SDF2Unity.Direction(world.gravity);
 
 				ImportLights(world.GetLights());
 
