@@ -11,16 +11,16 @@ using UE = UnityEngine;
 
 public partial class SDF2Unity
 {
-	private static readonly string _commonShaderName = "Universal Render Pipeline/Simple Lit";
-	private static readonly string _speedTreeShaderName = "Universal Render Pipeline/Nature/SpeedTree8";
-	public static Shader CommonShader = Shader.Find(_commonShaderName);
-	public static Shader SpeedTreeShader = Shader.Find(_speedTreeShaderName);
-
 	public class Material
 	{
+		private static readonly string _commonShaderName = "Universal Render Pipeline/Simple Lit";
+		private static readonly string _speedTreeShaderName = "Universal Render Pipeline/Nature/SpeedTree8";
+		public static Shader CommonShader = Shader.Find(_commonShaderName);
+		public static Shader SpeedTreeShader = Shader.Find(_speedTreeShaderName);
+
 		public static UE.Material Create(in string materialName = "")
 		{
-			var newMaterial = new UE.Material(SDF2Unity.CommonShader);
+			var newMaterial = new UE.Material(CommonShader);
 
 			newMaterial.name = materialName;
 			newMaterial.renderQueue = (int)RenderQueue.Background;
