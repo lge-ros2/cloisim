@@ -48,8 +48,8 @@ namespace SDF
 
 				SetParentObject(newLinkObject, targetObject);
 
-				var localPosition = SDF2Unity.GetPosition(link.Pose.Pos);
-				var localRotation = SDF2Unity.GetRotation(link.Pose.Rot);
+				var localPosition = SDF2Unity.Position(link.Pose.Pos);
+				var localRotation = SDF2Unity.Rotation(link.Pose.Rot);
 
 				var linkHelper = newLinkObject.AddComponent<Helper.Link>();
 				linkHelper.isSelfCollide = link.SelfCollide;
@@ -143,7 +143,7 @@ namespace SDF
 					if (inertial.pose == null)
 						articulationBody.automaticCenterOfMass = true;
 					else
-						articulationBody.centerOfMass = SDF2Unity.GetPosition(inertial.pose.Pos);
+						articulationBody.centerOfMass = SDF2Unity.Position(inertial.pose.Pos);
 					// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
 				}
 

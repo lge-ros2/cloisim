@@ -47,8 +47,8 @@ namespace SDF
 					}
 					else
 					{
-						sensorTransform.localPosition = SDF2Unity.GetPosition(sensorPose.Pos);
-						sensorTransform.localRotation = SDF2Unity.GetRotation(sensorPose.Rot);
+						sensorTransform.localPosition = SDF2Unity.Position(sensorPose.Pos);
+						sensorTransform.localRotation = SDF2Unity.Rotation(sensorPose.Rot);
 					}
 				}
 				catch

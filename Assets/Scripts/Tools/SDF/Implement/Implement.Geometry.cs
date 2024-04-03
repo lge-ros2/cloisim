@@ -58,7 +58,7 @@ namespace SDF
 
 				ProceduralHeightmap.Generate(obj, heightmapObject, isVisualMesh);
 
-				heightmapObject.transform.localPosition = SDF2Unity.GetPosition(obj.pos);
+				heightmapObject.transform.localPosition = SDF2Unity.Position(obj.pos);
 			}
 
 			//

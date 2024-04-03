@@ -66,8 +66,8 @@ namespace SDF
 						break;
 				}
 
-				var localPosition = SDF2Unity.GetPosition(light.Pose.Pos);
-				var localRotation = SDF2Unity.GetRotation(light.Pose.Rot);
+				var localPosition = SDF2Unity.Position(light.Pose.Pos);
+				var localRotation = SDF2Unity.Rotation(light.Pose.Rot);
 
 				newLightObject.transform.localPosition = localPosition;
 				newLightObject.transform.localRotation *= localRotation;

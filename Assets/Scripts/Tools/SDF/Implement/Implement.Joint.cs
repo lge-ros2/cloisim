@@ -57,8 +57,8 @@ namespace SDF
 					// UE.Debug.LogWarningFormat("Linking2 ({0}) => ({1})", modelTransformChild.name, linkParent.name);
 				}
 
-				var jointPosition = SDF2Unity.GetPosition(joint.Pose.Pos);
-				var jointRotation = SDF2Unity.GetRotation(joint.Pose.Rot);
+				var jointPosition = SDF2Unity.Position(joint.Pose.Pos);
+				var jointRotation = SDF2Unity.Rotation(joint.Pose.Rot);
 				anchorPose.position += jointPosition;
 				anchorPose.rotation *= jointRotation;
 
@@ -215,8 +215,8 @@ namespace SDF
 			public static void MakePrismatic(in UE.ArticulationBody body, in SDF.Axis axis, in SDF.Pose<double> pose)
 			{
 				body.jointType = UE.ArticulationJointType.PrismaticJoint;
-				body.anchorRotation *= SDF2Unity.GetRotation(pose.Rot);
-				// body.parentAnchorRotation *= SDF2Unity.GetRotation(pose.Rot);  // TODO: matchAnchors is set to true
+				body.anchorRotation *= SDF2Unity.Rotation(pose.Rot);
+				// body.parentAnchorRotation *= SDF2Unity.Rotation(pose.Rot);  // TODO: matchAnchors is set to true
 
 				body.linearDamping = 0.05f;
 				body.angularDamping = 0.05f;

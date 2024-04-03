@@ -121,8 +121,8 @@ namespace SDF
 					{
 						newSensorObject.tag = "Sensor";
 						newSensorObject.name = sensor.Name;
-						newSensorObject.transform.localPosition += SDF2Unity.GetPosition(sensor.Pose.Pos);
-						newSensorObject.transform.localRotation *= SDF2Unity.GetRotation(sensor.Pose.Rot);
+						newSensorObject.transform.localPosition += SDF2Unity.Position(sensor.Pose.Pos);
+						newSensorObject.transform.localRotation *= SDF2Unity.Rotation(sensor.Pose.Rot);
 #if UNITY_EDITOR
 						SceneVisibilityManager.instance.ToggleVisibility(newSensorObject, true);
 						SceneVisibilityManager.instance.DisablePicking(newSensorObject, true);
