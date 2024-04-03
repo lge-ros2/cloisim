@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
-using UnityEngine;
 using UnityEngine.Rendering;
 using UE = UnityEngine;
 
@@ -15,8 +13,8 @@ public partial class SDF2Unity
 	{
 		private static readonly string _commonShaderName = "Universal Render Pipeline/Simple Lit";
 		private static readonly string _speedTreeShaderName = "Universal Render Pipeline/Nature/SpeedTree8";
-		public static Shader CommonShader = Shader.Find(_commonShaderName);
-		public static Shader SpeedTreeShader = Shader.Find(_speedTreeShaderName);
+		public static UE.Shader CommonShader = UE.Shader.Find(_commonShaderName);
+		public static UE.Shader SpeedTreeShader = UE.Shader.Find(_speedTreeShaderName);
 
 		public static UE.Material Create(in string materialName = "")
 		{
@@ -93,7 +91,7 @@ public partial class SDF2Unity
 			target.EnableKeyword("_INSTANCING_ON");
 		}
 
-		public static void SetBaseColor(UE.Material target, Color color)
+		public static void SetBaseColor(UE.Material target, UE.Color color)
 		{
 			target.SetColor("_BaseColor", color);
 
@@ -107,21 +105,21 @@ public partial class SDF2Unity
 			}
 		}
 
-		public static void SetEmission(UE.Material target, Color color)
+		public static void SetEmission(UE.Material target, UE.Color color)
 		{
 			target.SetColor("_EmissionColor", color);
-			target.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+			target.globalIlluminationFlags = UE.MaterialGlobalIlluminationFlags.None;
 			target.EnableKeyword("_EMISSION");
 		}
 
 		public static void SetSpecular(UE.Material target, in float smoothness = 0.5f)
 		{
-			var defaultSpecColor = Color.gray;
+			var defaultSpecColor = UE.Color.gray;
 			defaultSpecColor.a = smoothness;
 			SetSpecular(target, defaultSpecColor);
 		}
 
-		public static void SetSpecular(UE.Material target, Color color)
+		public static void SetSpecular(UE.Material target, UE.Color color)
 		{
 			target.SetColor("_SpecColor", color);
 			target.SetFloat("_Smoothness", color.a);
