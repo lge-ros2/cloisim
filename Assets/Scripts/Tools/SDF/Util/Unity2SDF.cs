@@ -22,6 +22,11 @@ public class Unity2SDF
 		return new SDF.Quaternion<double>(-value.z, value.x, -value.y, value.w);
 	}
 
+	public static SDF.Pose<double> Pose(in SDF.Vector3<double> position, in SDF.Quaternion<double> rotation)
+	{
+		return new SDF.Pose<double>(position, rotation);
+	}
+
 	public class Direction
 	{
 		public static Vector3 Reverse(in Vector3 value)
