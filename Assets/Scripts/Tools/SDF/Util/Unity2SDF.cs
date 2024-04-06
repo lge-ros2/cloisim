@@ -19,7 +19,7 @@ public class Unity2SDF
 
 	public static SDF.Quaternion<double> Rotation(in Quaternion value)
 	{
-		return new SDF.Quaternion<double>(-value.z, value.x, -value.y, value.w);
+		return new SDF.Quaternion<double>(value.w, -value.z, value.x, -value.y);
 	}
 
 	public static SDF.Pose<double> Pose(in SDF.Vector3<double> position, in SDF.Quaternion<double> rotation)
