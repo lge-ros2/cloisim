@@ -1480,6 +1480,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb1f25bcbdf8dbeb2910354dd18778b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  modelNameInPath: 
   hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &227849490
@@ -9286,6 +9287,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb1f25bcbdf8dbeb2910354dd18778b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  modelNameInPath: 
   hasRootArticulationBody: 0
   isStatic: 0
 --- !u!1 &2130172959

@@ -84,6 +84,7 @@ namespace SDF
 				// UE.Debug.Log(newModelObject.name + "::" + localPosition + ", " + localRotation);
 
 				var modelHelper = newModelObject.AddComponent<Helper.Model>();
+				modelHelper.modelNameInPath = model.OriginalName;
 				modelHelper.isStatic = model.IsStatic;
 				modelHelper.SetPose(localPosition, localRotation);
 				modelHelper.ResetPose();

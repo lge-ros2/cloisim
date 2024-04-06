@@ -17,6 +17,7 @@ namespace SDF
 			private Model parentModelHelper = null;
 			private UE.ArticulationBody _artBody = null;
 
+			[UE.Header("Properties")]
 			public bool drawInertia = false;
 			public bool drawContact = true;
 
