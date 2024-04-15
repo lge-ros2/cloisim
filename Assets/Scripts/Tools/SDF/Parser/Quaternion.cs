@@ -10,16 +10,18 @@ namespace SDF
 {
 	public class Quaternion<T>
 	{
+		private TypeCode _code;
+		private Vector3<T> _euler = new Vector3<T>();
 		private T _w;
 		private T _x;
 		private T _y;
 		private T _z;
 
 		// x:roll, y:pitch, z:yaw
-		private Vector3<T> euler = new Vector3<T>();
 
 		public Quaternion(T w, T x, T y, T z)
 		{
+			SetTypeCode();
 			Set(w, x, y, z);
 		}
 
@@ -30,54 +32,81 @@ namespace SDF
 
 		public Quaternion(T roll, T pitch, T yaw)
 		{
+			SetTypeCode();
 			Set(roll, pitch, yaw);
+		}
+
+		private void SetTypeCode()
+		{
+			_code = Type.GetTypeCode(typeof(T));
 		}
 
 		public T Roll
 		{
-			get => euler.X;
-			set => euler.X = value;
+			get => _euler.X;
+			set {
+				_euler.X = value;
+				ConvertEuler2Quaternion();
+			}
 		}
 
 		public T Pitch
 		{
-			get => euler.Y;
-			set => euler.Y = value;
+			get => _euler.Y;
+			set {
+				_euler.Y = value;
+				ConvertEuler2Quaternion();
+			}
 		}
 
 		public T Yaw
 		{
-			get => euler.Z;
-			set => euler.Z = value;
+			get => _euler.Z;
+			set {
+				_euler.Z = value;
+				ConvertEuler2Quaternion();
+			}
 		}
 
 		public T W
 		{
 			get => _w;
-			set => _w = value;
+			set {
+				_w = value;
+				ConvertQuaternion2Euler();
+			}
 		}
 
 		public T X
 		{
 			get => _x;
-			set => _x = value;
+			set {
+				_x = value;
+				ConvertQuaternion2Euler();
+			}
 		}
 
 		public T Y
 		{
 			get => _y;
-			set => _y = value;
+			set {
+				_y = value;
+				ConvertQuaternion2Euler();
+			}
 		}
 
 		public T Z
 		{
 			get => _z;
-			set => _z = value;
+			set {
+				_z = value;
+				ConvertQuaternion2Euler();
+			}
 		}
 
 		public void Set(T roll, T pitch, T yaw)
 		{
-			euler.Set(roll, pitch, yaw);
+			_euler.Set(roll, pitch, yaw);
 
 			ConvertEuler2Quaternion();
 		}
@@ -94,35 +123,39 @@ namespace SDF
 
 		public void Set(in string roll, in string pitch, in string yaw)
 		{
-			var code = Type.GetTypeCode(typeof(T));
-			if (code != TypeCode.Empty)
-			{
-				Set((T)Convert.ChangeType(roll, code), (T)Convert.ChangeType(pitch, code), (T)Convert.ChangeType(yaw, code));
-			}
+			Set((T)Convert.ChangeType(roll, _code),
+				(T)Convert.ChangeType(pitch, _code),
+				(T)Convert.ChangeType(yaw, _code));
 		}
 
 		public void Set(in string w, in string x, in string y, in string z)
 		{
-			var code = Type.GetTypeCode(typeof(T));
-			if (code != TypeCode.Empty)
-			{
-				Set((T)Convert.ChangeType(w, code), (T)Convert.ChangeType(x, code), (T)Convert.ChangeType(y, code), (T)Convert.ChangeType(z, code));
-			}
+			Set((T)Convert.ChangeType(w, _code),
+				(T)Convert.ChangeType(x, _code),
+				(T)Convert.ChangeType(y, _code),
+				(T)Convert.ChangeType(z, _code));
 		}
 
 		private void ConvertEuler2Quaternion()
 		{
-			var roll = Convert.ToDouble(euler.X);
-			var pitch = Convert.ToDouble(euler.Y);
-			var yaw = Convert.ToDouble(euler.Z);
-			var phi = roll / 2.0;
-			var the = pitch / 2.0;
-			var psi = yaw / 2.0;
+			var roll = Convert.ToDouble(_euler.X);
+			var pitch = Convert.ToDouble(_euler.Y);
+			var yaw = Convert.ToDouble(_euler.Z);
+			var phi = roll * 0.5d;
+			var the = pitch * 0.5d;
+			var psi = yaw * 0.5d;
 
-			_w = (T)(object)(Math.Cos(phi) * Math.Cos(the) * Math.Cos(psi) + Math.Sin(phi) * Math.Sin(the) * Math.Sin(psi));
-			_x = (T)(object)(Math.Sin(phi) * Math.Cos(the) * Math.Cos(psi) - Math.Cos(phi) * Math.Sin(the) * Math.Sin(psi));
-			_y = (T)(object)(Math.Cos(phi) * Math.Sin(the) * Math.Cos(psi) + Math.Sin(phi) * Math.Cos(the) * Math.Sin(psi));
-			_z = (T)(object)(Math.Cos(phi) * Math.Cos(the) * Math.Sin(psi) - Math.Sin(phi) * Math.Sin(the) * Math.Cos(psi));
+			_w = (T)(dynamic)(Math.Cos(phi) * Math.Cos(the) * Math.Cos(psi) +
+							  Math.Sin(phi) * Math.Sin(the) * Math.Sin(psi));
+
+			_x = (T)(dynamic)(Math.Sin(phi) * Math.Cos(the) * Math.Cos(psi) -
+							  Math.Cos(phi) * Math.Sin(the) * Math.Sin(psi));
+
+			_y = (T)(dynamic)(Math.Cos(phi) * Math.Sin(the) * Math.Cos(psi) +
+							  Math.Sin(phi) * Math.Cos(the) * Math.Sin(psi));
+
+			_z = (T)(dynamic)(Math.Cos(phi) * Math.Cos(the) * Math.Sin(psi) -
+							  Math.Sin(phi) * Math.Sin(the) * Math.Cos(psi));
 
 			Normalize();
 		}
@@ -155,6 +188,7 @@ namespace SDF
 		private void ConvertQuaternion2Euler()
 		{
 			const double tol = 1e-15d;
+
 			Normalize();
 
 			var w = Convert.ToDouble(_w);
@@ -171,15 +205,15 @@ namespace SDF
 			var sarg = -2 * (x * z - w * y);
 			if (sarg <= -1.0d)
 			{
-				euler.Y = (T)(object)(-0.5d * Math.PI);
+				_euler.Y = (T)(dynamic)(-0.5d * Math.PI);
 			}
 			else if (sarg >= 1.0d)
 			{
-				euler.Y = (T)(object)(0.5d * Math.PI);
+				_euler.Y = (T)(dynamic)(0.5d * Math.PI);
 			}
 			else
 			{
-				euler.Y = (T)(object)(Math.Asin(sarg));
+				_euler.Y = (T)(dynamic)(Math.Asin(sarg));
 			}
 
 			// If the pitch angle is PI/2 or -PI/2, we can only compute the sum roll + yaw.  However, any combination that gives
@@ -187,22 +221,32 @@ namespace SDF
 			// pitch angle is PI/2
 			if (Math.Abs(sarg - 1) < tol)
 			{
-				euler.Z = (T)(object)0d;
-				euler.X = (T)(object)Math.Atan2(2 * x * y - z * w, squ - sqx + sqy - sqz);
+				// Roll
+				_euler.X = (T)(dynamic)Math.Atan2(2 * (x * y - z * w),
+												  squ - sqx + sqy - sqz);
+
+				// Yaw
+				_euler.Z = (T)(dynamic)0d;
 			}
 			// pitch angle is -PI/2
 			else if (Math.Abs(sarg + 1) < tol)
 			{
-				euler.Z = (T)(object)0d;
-				euler.X = (T)(object)Math.Atan2(-2 * x * y - z * w, squ - sqx + sqy - sqz);
+				// Roll
+				_euler.X = (T)(dynamic)Math.Atan2(-2 * (x * y - z * w),
+												  squ - sqx + sqy - sqz);
+
+				// Yaw
+				_euler.Z = (T)(dynamic)0d;
 			}
 			else
 			{
 				// Roll
-				euler.X = (T)(object)Math.Atan2(2 * y * z + w * x, squ - sqx - sqy + sqz);
+				_euler.X = (T)(dynamic)Math.Atan2(2 * (y * z + w * x),
+												  squ - sqx - sqy + sqz);
 
 				// Yaw
-				euler.Z = (T)(object)Math.Atan2(2 * x * y + w * z, squ + sqx - sqy - sqz);
+				_euler.Z = (T)(dynamic)Math.Atan2(2 * (x * y + w * z),
+												  squ + sqx - sqy - sqz);
 			}
 		}
 

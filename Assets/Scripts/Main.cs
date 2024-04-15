@@ -412,6 +412,23 @@ public class Main : MonoBehaviour
 		_bridgeManager.PrintLog();
 	}
 
+	public void OnSaveButtonClicked()
+	{
+		// Debug.Log("OnSaveButtonClicked");
+		SaveWorld();
+	}
+
+	private void SaveWorld()
+	{
+		var saveDoc = _sdfRoot.GetOriginalDocument();
+
+		var worldSaver = new WorldSaver(saveDoc);
+		worldSaver.Update();
+
+		_sdfRoot.Save();
+	}
+
+
 	void LateUpdate()
 	{
 		if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyUp(KeyCode.R))

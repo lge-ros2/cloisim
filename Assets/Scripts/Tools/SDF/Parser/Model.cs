@@ -42,7 +42,7 @@ namespace SDF
 
 		public bool IsWindEnabled => enableWind;
 
-		#region Segmentation Tag
+		#region SegmentationTag and SaveWorld
 		private string _originalName = string.Empty;
 		public string OriginalName => _originalName;
 		#endregion
@@ -69,7 +69,7 @@ namespace SDF
 			// Console.Write("[{0}] {1} {2} {3} {4}", GetType().Name,
 			// 	isStatic, isSelfCollide, allowAutoDisable, enableWind);
 
-			#region Segmentation Tag
+			#region SegmentationTag and SaveWorld
 			_originalName = GetAttribute<string>("original_name");
 			// Console.Write($"Model::ParseElements > [{_originalName}]");
 			#endregion

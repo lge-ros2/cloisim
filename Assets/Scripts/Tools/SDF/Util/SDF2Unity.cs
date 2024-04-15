@@ -55,16 +55,6 @@ public partial class SDF2Unity
 		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
 	}
 
-	public static Quaternion Rotation(in double x, in double y, in double z)
-	{
-		return Rotation(new SDF.Quaternion<double>(x, y, z));
-	}
-
-	public static Quaternion Rotation(in SDF.Vector3<double> value)
-	{
-		return Rotation(new SDF.Quaternion<double>(value.X, value.Y, value.Z));
-	}
-
 	public static Quaternion Rotation(in SDF.Quaternion<double> value)
 	{
 		return (value == null) ? Quaternion.identity : Rotation(value.W, value.X, value.Y, value.Z);

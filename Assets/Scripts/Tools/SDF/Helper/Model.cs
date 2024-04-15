@@ -13,9 +13,12 @@ namespace SDF
 	{
 		public class Model : Base
 		{
+			[UE.Header("NavMeshObstacle Parameters")]
 			private float CarvingMoveThreshold = 0.1f;
 			private float CarvingTimeToStationary = 0.3f;
 
+			[UE.Header("Properties")]
+			public string modelNameInPath = string.Empty;
 			public bool hasRootArticulationBody;
 
 			[UE.Header("SDF Properties")]
