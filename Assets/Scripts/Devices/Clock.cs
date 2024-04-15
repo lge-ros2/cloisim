@@ -45,14 +45,18 @@ public class Clock : Device
 
 		public void SetDiffTime(in TimeSpan ts)
 		{
-			SetTimeString(ref this._diffTime, ts);
+			SetTimeString(ref this._diffTime, ts, true);
 		}
 
 		private StringBuilder _tempSB = new StringBuilder(16);
 
-		private void SetTimeString(ref string target, in TimeSpan ts)
+		private void SetTimeString(ref string target, in TimeSpan ts, in bool secondsOnly = false)
 		{
-			_tempSB.AppendFormat("{0}d {1:D2}:{2:D2}:{3:D2}.{4:D3}", ts.Days, ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds);
+			var timeString = (secondsOnly)?
+				$"{ts.TotalSeconds}" :
+				$"{ts.Days}d {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}.{ts.Milliseconds:D3}";
+
+			_tempSB.AppendFormat(timeString);
 			target = _tempSB.ToString();
 			_tempSB.Clear();
 		}

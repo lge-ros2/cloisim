@@ -21,11 +21,18 @@ public struct Vector3d
 		this.z = val.z;
 	}
 
-	public Vector3d(in double x, in double y)
+	public Vector3d(in Vector3d val)
 	{
-		this.x = x;
-		this.y = y;
-		this.z = 0;
+		this.x = val.x;
+		this.y = val.y;
+		this.z = val.z;
+	}
+
+	public Vector3d(in SDF.Vector3<double> v)
+	{
+		this.x = v.X;
+		this.y = v.Y;
+		this.z = v.Z;
 	}
 
 	public Vector3d(in double x, in double y, in double z)
@@ -590,8 +597,8 @@ public struct Vector3d
 		return new Vector3d(v.x, v.y, v.z);
 	}
 
-	public static implicit operator Vector3(in Vector3d v)
+	public static implicit operator Vector3d(in SDF.Vector3<double> v)
 	{
-		return new Vector3((float)v.x, (float)v.y, (float)v.z);
+		return new Vector3((float)v.X, (float)v.Y, (float)v.Z);
 	}
 }

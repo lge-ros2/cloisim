@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using UnityEngine;
+using UE = UnityEngine;
 
 namespace SDF
 {
@@ -12,7 +12,7 @@ namespace SDF
 	{
 		public class Sensor
 		{
-			private static string GetFrameName(in GameObject currentObject)
+			private static string GetFrameName(in UE.GameObject currentObject)
 			{
 				var frameName = string.Empty;
 				var nextObject = currentObject.transform.parent;
@@ -27,36 +27,39 @@ namespace SDF
 				return frameName.Substring(2);
 			}
 
-			private static void AttachSensor(in GameObject sensorObject, in GameObject targetObject, SDF.Pose<double> sensorPose = null)
+			private static void AttachSensor(
+				in UE.GameObject sensorObject,
+				in UE.GameObject targetObject,
+				Pose<double> sensorPose = null)
 			{
 				try
 				{
 					var sensorTransform = sensorObject.transform;
-					sensorTransform.position = Vector3.zero;
-					sensorTransform.rotation = Quaternion.identity;
+					sensorTransform.position = UE.Vector3.zero;
+					sensorTransform.rotation = UE.Quaternion.identity;
 					sensorTransform.SetParent(targetObject.transform, false);
-					sensorTransform.localScale = Vector3.one;
+					sensorTransform.localScale = UE.Vector3.one;
 
 					if (sensorPose == null)
 					{
-						sensorTransform.localPosition = Vector3.zero;
-						sensorTransform.localRotation = Quaternion.identity;
+						sensorTransform.localPosition = UE.Vector3.zero;
+						sensorTransform.localRotation = UE.Quaternion.identity;
 					}
 					else
 					{
-						sensorTransform.localPosition = SDF2Unity.GetPosition(sensorPose.Pos);
-						sensorTransform.localRotation = SDF2Unity.GetRotation(sensorPose.Rot);
+						sensorTransform.localPosition = SDF2Unity.Position(sensorPose.Pos);
+						sensorTransform.localRotation = SDF2Unity.Rotation(sensorPose.Rot);
 					}
 				}
 				catch
 				{
-					Debug.Log("sensorObject is null or Invalid obejct exist");
+					UE.Debug.Log("sensorObject is null or Invalid obejct exist");
 				}
 			}
 
-			public static Device AddLidar(in SDF.Lidar element, in GameObject targetObject)
+			public static Device AddLidar(in SDF.Lidar element, in UE.GameObject targetObject)
 			{
-				var newSensorObject = new GameObject();
+				var newSensorObject = new UE.GameObject();
 				AttachSensor(newSensorObject, targetObject);
 
 				var lidar = newSensorObject.AddComponent<SensorDevices.Lidar>();
@@ -79,9 +82,9 @@ namespace SDF
 				return lidar;
 			}
 
-			public static Device AddCamera(in SDF.Camera element, in GameObject targetObject)
+			public static Device AddCamera(in SDF.Camera element, in UE.GameObject targetObject)
 			{
-				var newSensorObject = new GameObject();
+				var newSensorObject = new UE.GameObject();
 				AttachSensor(newSensorObject, targetObject, element.Pose);
 
 				var camera = newSensorObject.AddComponent<SensorDevices.Camera>();
@@ -97,9 +100,9 @@ namespace SDF
 				return camera;
 			}
 
-			public static Device AddSegmentaionCamera(in SDF.Camera element, in GameObject targetObject)
+			public static Device AddSegmentaionCamera(in SDF.Camera element, in UE.GameObject targetObject)
 			{
-				var newSensorObject = new GameObject();
+				var newSensorObject = new UE.GameObject();
 				AttachSensor(newSensorObject, targetObject, element.Pose);
 
 				var segmentationCamera = newSensorObject.AddComponent<SensorDevices.SegmentationCamera>();
@@ -115,11 +118,11 @@ namespace SDF
 					default:
 						if (element.image.format.Equals(string.Empty))
 						{
-							Debug.LogWarningFormat("'L16' will be set for Depth camera({0})'s image format", element.name);
+							UE.Debug.LogWarningFormat("'L16' will be set for Depth camera({0})'s image format", element.name);
 						}
 						else
 						{
-							Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image.format);
+							UE.Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image.format);
 						}
 						element.image.format = "L16";
 						break;
@@ -135,9 +138,9 @@ namespace SDF
 				return segmentationCamera;
 			}
 
-			public static Device AddDepthCamera(in SDF.Camera element, in GameObject targetObject)
+			public static Device AddDepthCamera(in SDF.Camera element, in UE.GameObject targetObject)
 			{
-				var newSensorObject = new GameObject();
+				var newSensorObject = new UE.GameObject();
 				AttachSensor(newSensorObject, targetObject, element.Pose);
 
 				var depthCamera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
@@ -157,11 +160,11 @@ namespace SDF
 					default:
 						if (element.image.format.Equals(string.Empty))
 						{
-							Debug.LogWarningFormat("'L16' will be set for Depth camera({0})'s image format", element.name);
+							UE.Debug.LogWarningFormat("'L16' will be set for Depth camera({0})'s image format", element.name);
 						}
 						else
 						{
-							Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image.format);
+							UE.Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image.format);
 						}
 						element.image.format = "L16";
 						break;
@@ -177,9 +180,9 @@ namespace SDF
 				return depthCamera;
 			}
 
-			public static Device AddMultiCamera(in SDF.Cameras element, in GameObject targetObject)
+			public static Device AddMultiCamera(in SDF.Cameras element, in UE.GameObject targetObject)
 			{
-				var newSensorObject = new GameObject();
+				var newSensorObject = new UE.GameObject();
 				AttachSensor(newSensorObject, targetObject);
 
 				var multicamera = newSensorObject.AddComponent<SensorDevices.MultiCamera>();
@@ -196,9 +199,9 @@ namespace SDF
 				return multicamera;
 			}
 
-			public static Device AddSonar(in SDF.Sonar element, in GameObject targetObject)
+			public static Device AddSonar(in SDF.Sonar element, in UE.GameObject targetObject)
 			{
-				var newSensorObject = new GameObject();
+				var newSensorObject = new UE.GameObject();
 				AttachSensor(newSensorObject, targetObject);
 
 				var sonar = newSensorObject.AddComponent<SensorDevices.Sonar>();
@@ -211,9 +214,9 @@ namespace SDF
 				return sonar;
 			}
 
-			public static Device AddImu(in SDF.IMU element, in GameObject targetObject)
+			public static Device AddImu(in SDF.IMU element, in UE.GameObject targetObject)
 			{
-				var newSensorObject = new GameObject();
+				var newSensorObject = new UE.GameObject();
 				AttachSensor(newSensorObject, targetObject);
 
 				var imu = newSensorObject.AddComponent<SensorDevices.IMU>();
@@ -255,9 +258,9 @@ namespace SDF
 				return imu;
 			}
 
-			public static Device AddNavSat(in SDF.NavSat element, in GameObject targetObject)
+			public static Device AddNavSat(in SDF.NavSat element, in UE.GameObject targetObject)
 			{
-				var newSensorObject = new GameObject();
+				var newSensorObject = new UE.GameObject();
 				AttachSensor(newSensorObject, targetObject);
 
 				var gps = newSensorObject.AddComponent<SensorDevices.GPS>();
@@ -289,9 +292,9 @@ namespace SDF
 				return gps;
 			}
 
-			public static Device AddContact(in SDF.Contact element, in GameObject targetObject)
+			public static Device AddContact(in SDF.Contact element, in UE.GameObject targetObject)
 			{
-				var newSensorObject = new GameObject();
+				var newSensorObject = new UE.GameObject();
 				AttachSensor(newSensorObject, targetObject);
 
 				var contact = newSensorObject.AddComponent<SensorDevices.Contact>();

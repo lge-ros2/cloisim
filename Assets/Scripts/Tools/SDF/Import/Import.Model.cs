@@ -79,8 +79,8 @@ namespace SDF
 				SetParentObject(newModelObject, targetObject);
 
 				// Apply attributes
-				var localPosition = SDF2Unity.GetPosition(model.Pose.Pos);
-				var localRotation = SDF2Unity.GetRotation(model.Pose.Rot);
+				var localPosition = SDF2Unity.Position(model.Pose.Pos);
+				var localRotation = SDF2Unity.Rotation(model.Pose.Rot);
 				// UE.Debug.Log(newModelObject.name + "::" + localPosition + ", " + localRotation);
 
 				var modelHelper = newModelObject.AddComponent<Helper.Model>();

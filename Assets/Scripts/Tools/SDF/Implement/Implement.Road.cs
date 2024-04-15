@@ -28,12 +28,12 @@ namespace SDF
 										road.points.Average(x => x.Y),
 										road.points.Average(x => x.Z));
 
-				newRoadObject.transform.localPosition = SDF2Unity.GetPosition(centerPosOfRoad);
+				newRoadObject.transform.localPosition = SDF2Unity.Position(centerPosOfRoad);
 
 				foreach (var point in road.points)
 				{
 					var offset = point - centerPosOfRoad;
-					var knotPos = SDF2Unity.GetPosition(offset);
+					var knotPos = SDF2Unity.Position(offset);
 					var knot = new Splines.BezierKnot();
 					knot.Position = knotPos;
 					splineContainer.Spline.Add(knot, Splines.TangentMode.AutoSmooth);
@@ -48,8 +48,8 @@ namespace SDF
 
 				var roadGenerator = newRoadObject.AddComponent<Unity.Splines.LoftRoadGenerator>();
 				roadGenerator.Material = material;
-				roadGenerator.LoftAllRoads();
 				roadGenerator.Widths.Add(new Splines.SplineData<float>((float)road.width));
+				roadGenerator.LoftAllRoads();
 
 				return newRoadObject;
 			}

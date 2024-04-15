@@ -135,13 +135,13 @@ namespace SDF
 				if (pass.properties.ContainsKey("diffuse"))
 				{
 					var diffuse = pass.properties["diffuse"].Trim();
-					SDF2Unity.Material.SetBaseColor(material, SDF2Unity.GetColor(diffuse));
+					SDF2Unity.Material.SetBaseColor(material, SDF2Unity.Color(diffuse));
 				}
 
 				if (pass.properties.ContainsKey("emissive"))
 				{
 					var emissive = pass.properties["emissive"].Trim();
-					SDF2Unity.Material.SetEmission(material, SDF2Unity.GetColor(emissive));
+					SDF2Unity.Material.SetEmission(material, SDF2Unity.Color(emissive));
 				}
 
 				if (pass.properties.ContainsKey("specular"))
@@ -172,7 +172,7 @@ namespace SDF
 						specular = string.Join(" ", tmp, 0, 4);
 					}
 
-					SDF2Unity.Material.SetSpecular(material, SDF2Unity.GetColor(specular));
+					SDF2Unity.Material.SetSpecular(material, SDF2Unity.Color(specular));
 				}
 			}
 
@@ -235,7 +235,7 @@ namespace SDF
 						if (textureUnitProps.ContainsKey("scale"))
 						{
 							var scaleSet = textureUnitProps["scale"];
-							var tileScale = SDF2Unity.GetScale(scaleSet);
+							var tileScale = SDF2Unity.Scale(scaleSet);
 
 							// TODO: Check texture tile scaling
 							tileScale.x = 1 / tileScale.x;

@@ -24,8 +24,8 @@ namespace SDF
 					if (mainCamera != null)
 					{
 						var cameraPose = world.gui.camera.Pose;
-						mainCamera.transform.localPosition = SDF2Unity.GetPosition(cameraPose.Pos);
-						mainCamera.transform.localRotation = SDF2Unity.GetRotation(cameraPose.Rot);
+						mainCamera.transform.localPosition = SDF2Unity.Position(cameraPose.Pos);
+						mainCamera.transform.localRotation = SDF2Unity.Rotation(cameraPose.Rot);
 					}
 				}
 
@@ -44,7 +44,7 @@ namespace SDF
 
 				ImportRoads(world.GetRoads());
 
-				UnityEngine.Physics.gravity = SDF2Unity.GetDirection(world.gravity);
+				UnityEngine.Physics.gravity = SDF2Unity.Direction(world.gravity);
 
 				ImportLights(world.GetLights());
 

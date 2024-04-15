@@ -80,11 +80,11 @@ public partial class InfoDisplay : MonoBehaviour
 		}
 	}
 
-	public void SetPointInfo(in Vector3 point)
+	public void SetPointInfo(in SDF.Vector3<double> point)
 	{
-		var ptX = System.Math.Truncate(point.x * 10000)/10000;
-		var ptY = System.Math.Truncate(point.y * 10000)/10000;
-		var ptZ = System.Math.Truncate(point.z * 10000)/10000;
+		var ptX = System.Math.Truncate(point.X * 10000)/10000;
+		var ptY = System.Math.Truncate(point.Y * 10000)/10000;
+		var ptZ = System.Math.Truncate(point.Z * 10000)/10000;
 		_pointInfo = String.Concat(ptX.ToString(), ", ", ptY.ToString(), ", ", ptZ.ToString());
 	}
 
