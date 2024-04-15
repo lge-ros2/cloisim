@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+using UE = UnityEngine;
+
 namespace SDF
 {
 	namespace Import
@@ -26,6 +28,23 @@ namespace SDF
 						var cameraPose = world.gui.camera.Pose;
 						mainCamera.transform.localPosition = SDF2Unity.Position(cameraPose.Pos);
 						mainCamera.transform.localRotation = SDF2Unity.Rotation(cameraPose.Rot);
+
+						UE.Screen.fullScreen = world.gui.fullscreen;
+						if (world.gui.fullscreen)
+						{
+							var currentResolution = UE.Screen.currentResolution;
+							UE.Screen.SetResolution(currentResolution.width, currentResolution.height, UE.FullScreenMode.MaximizedWindow);
+						}
+						else
+						{
+							var resolutionIndex = UE.Screen.resolutions.Length / 2;
+							// for (int i = 0; i < UE.Screen.resolutions.Length; i++)
+							// 	UE.Debug.Log(UE.Screen.resolutions[i]);
+							var selectedResolution = UE.Screen.resolutions[resolutionIndex];
+							UE.Debug.Log($"SelectedWindowResolution={selectedResolution}");
+
+							UE.Screen.SetResolution(selectedResolution.width, selectedResolution.height, UE.FullScreenMode.Windowed);
+						}
 					}
 				}
 

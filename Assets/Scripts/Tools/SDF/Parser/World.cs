@@ -256,7 +256,7 @@ namespace SDF
 			if (IsValidNode("gui"))
 			{
 				gui = new Gui();
-				gui.fullscreen = GetAttributeInPath<bool>("gui", "fullscreen");
+				gui.fullscreen = GetValue<bool>("gui/fullscreen", false);
 
 				if (IsValidNode("gui/camera"))
 				{
