@@ -34,6 +34,7 @@ public class WorldSaver
 	public void Update()
 	{
 		ClearAllComments();
+		UpdateGUI();
 		UpdateModels();
 		UpdateRoads();
 	}
@@ -84,6 +85,41 @@ public class WorldSaver
 	private XmlNode GetModel(in string modelName)
 	{
 		return GetNode(_worldNode, $"model[@name='{modelName}']");
+	}
+
+	private void UpdateGUI()
+	{
+		var mainCamera = Camera.main;
+		if (mainCamera == null)
+		{
+			return;
+		}
+
+		var guiNode = GetNode(_worldNode, "gui");
+		if (guiNode == null)
+		{
+			guiNode = _doc.CreateElement("gui");
+			_worldNode.AppendChild(guiNode);
+		}
+
+		var cameraNode = GetNode(guiNode, "camera");
+		if (cameraNode == null)
+		{
+			cameraNode = _doc.CreateElement("camera");
+			guiNode.AppendChild(cameraNode);
+		}
+
+		var cameraPoseNode = GetNode(cameraNode, "pose");
+		if (cameraPoseNode == null)
+		{
+			cameraPoseNode = _doc.CreateElement("pose");
+			cameraNode.AppendChild(cameraPoseNode);
+		}
+
+		var camPosition = Unity2SDF.Position(mainCamera.transform.localPosition);
+		var camRotation = Unity2SDF.Rotation(mainCamera.transform.localRotation);
+		var pose = Unity2SDF.Pose(camPosition, camRotation);
+		cameraPoseNode.InnerText = pose.ToString();
 	}
 
 	private void UpdateModels()
