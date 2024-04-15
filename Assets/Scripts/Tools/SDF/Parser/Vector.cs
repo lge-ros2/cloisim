@@ -102,7 +102,7 @@ namespace SDF
 		public override string ToString()
 		{
 			// return $"Vector2({_x}, {_y})";
-			return $"{_x} {_y}";
+			return $"{_x:f10} {_y:f10}";
 		}
 	}
 
@@ -183,7 +183,7 @@ namespace SDF
 		public override string ToString()
 		{
 			// return $"Vector3({_x}, {_y}, {_z})";
-			return $"{_x} {_y} {_z}";
+			return $"{base.ToString()} {_z:f10}";
 		}
 	}
 }

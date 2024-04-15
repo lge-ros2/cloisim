@@ -272,7 +272,7 @@ namespace SDF
 		public override string ToString()
 		{
 			// return $"Quaternion({_w}, {_x}, {_y}, {_z})";
-			return $"{Roll} {Pitch} {Yaw}";
+			return $"{Roll:f10} {Pitch:f10} {Yaw:f10}";
 		}
 	}
 }
