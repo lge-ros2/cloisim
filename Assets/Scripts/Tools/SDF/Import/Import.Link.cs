@@ -48,8 +48,8 @@ namespace SDF
 
 				SetParentObject(newLinkObject, targetObject);
 
-				var localPosition = SDF2Unity.Position(link.Pose.Pos);
-				var localRotation = SDF2Unity.Rotation(link.Pose.Rot);
+				var localPosition = SDF2Unity.Position(link.Pose?.Pos);
+				var localRotation = SDF2Unity.Rotation(link.Pose?.Rot);
 
 				var linkHelper = newLinkObject.AddComponent<Helper.Link>();
 				linkHelper.isSelfCollide = link.SelfCollide;

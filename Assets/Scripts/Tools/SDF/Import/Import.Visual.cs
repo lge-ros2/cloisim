@@ -25,8 +25,8 @@ namespace SDF
 
 				SetParentObject(newVisualObject, targetObject);
 
-				var localPosition = SDF2Unity.Position(visual.Pose.Pos);
-				var localRotation = SDF2Unity.Rotation(visual.Pose.Rot);
+				var localPosition = SDF2Unity.Position(visual.Pose?.Pos);
+				var localRotation = SDF2Unity.Rotation(visual.Pose?.Rot);
 
 				var visualHelper = newVisualObject.AddComponent<Helper.Visual>();
 				visualHelper.isCastingShadow = visual.CastShadow;

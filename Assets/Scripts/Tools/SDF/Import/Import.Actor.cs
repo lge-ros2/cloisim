@@ -31,8 +31,8 @@ namespace SDF
 				SetParentObject(newActorObject, null);
 
 				// Apply attributes
-				var localPosition = SDF2Unity.Position(actor.Pose.Pos);
-				var localRotation = SDF2Unity.Rotation(actor.Pose.Rot);
+				var localPosition = SDF2Unity.Position(actor.Pose?.Pos);
+				var localRotation = SDF2Unity.Rotation(actor.Pose?.Rot);
 				// Debug.Log(newActorObject.name + "::" + localPosition + ", " + localRotation);
 
 				var actorHelper = newActorObject.AddComponent<Helper.Actor>();

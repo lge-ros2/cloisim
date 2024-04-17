@@ -57,8 +57,8 @@ namespace SDF
 					// UE.Debug.LogWarningFormat("Linking2 ({0}) => ({1})", modelTransformChild.name, linkParent.name);
 				}
 
-				var jointPosition = SDF2Unity.Position(joint.Pose.Pos);
-				var jointRotation = SDF2Unity.Rotation(joint.Pose.Rot);
+				var jointPosition = SDF2Unity.Position(joint.Pose?.Pos);
+				var jointRotation = SDF2Unity.Rotation(joint.Pose?.Rot);
 				anchorPose.position += jointPosition;
 				anchorPose.rotation *= jointRotation;
 

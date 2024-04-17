@@ -67,7 +67,7 @@ namespace SDF
 		private string name = string.Empty;
 		private string type = string.Empty;
 
-		protected Pose<double> pose = new Pose<double>();
+		protected Pose<double> pose = null;
 
 		protected Entity(XmlNode node, in string default_name = "__default__", in string default_type = "__default__")
 		{
@@ -224,6 +224,7 @@ namespace SDF
 
 			if (value != null)
 			{
+				pose = new Pose<double>();
 				pose.relative_to = GetAttributeInPath<string>("pose", "relative_to");
 
 				// x y z roll pitch yaw

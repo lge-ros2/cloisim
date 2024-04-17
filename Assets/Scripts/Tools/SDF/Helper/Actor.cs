@@ -204,8 +204,8 @@ namespace SDF
 
 							if (firstWayPoint.time == 0)
 							{
-								lastPosition = SDF2Unity.Position(firstWayPoint.Pose.Pos);
-								lastRotation = SDF2Unity.Rotation(firstWayPoint.Pose.Rot);
+								lastPosition = SDF2Unity.Position(firstWayPoint.Pose?.Pos);
+								lastRotation = SDF2Unity.Rotation(firstWayPoint.Pose?.Rot);
 								startIndex = 1;
 							}
 
@@ -219,8 +219,8 @@ namespace SDF
 
 								var waypointToward = new WaypointToward();
 								var nextTime = (float)waypoint.time;
-								var nextPosition = SDF2Unity.Position(waypoint.Pose.Pos);
-								var nextRotation = SDF2Unity.Rotation(waypoint.Pose.Rot);
+								var nextPosition = SDF2Unity.Position(waypoint.Pose?.Pos);
+								var nextRotation = SDF2Unity.Rotation(waypoint.Pose?.Rot);
 
 								waypointToward.linearSpeed = UE.Vector3.Distance(nextPosition, lastPosition) / (nextTime - lastTime);
 								waypointToward.angularSpeed = UE.Quaternion.Angle(nextRotation, lastRotation) / (nextTime - lastTime);
