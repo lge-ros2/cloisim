@@ -12,7 +12,6 @@ public class SegmentationTag : MonoBehaviour
 	[SerializeField]
 	private bool _hide = false;
 
-
 	[SerializeField]
 	private string _className = string.Empty;
 

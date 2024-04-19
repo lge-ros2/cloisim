@@ -71,24 +71,27 @@ public class ObjectSpawning : MonoBehaviour
 	{
 		var leftControlPressed = Input.GetKey(KeyCode.LeftControl);
 
-		if (leftControlPressed && Input.GetMouseButtonDown(0))
+		if (leftControlPressed)
 		{
-			// Add On left click spawn
-			// selected prefab and align its rotation to a surface normal
-			if (GetPositionAndNormalOnClick(out var hitPoint, out var hitNormal))
+			if (Input.GetMouseButtonDown(0))
 			{
-				var scaleFactor = float.Parse(scaleFactorString);
-				var propsScale = Vector3.one * scaleFactor;
-				StartCoroutine(SpawnTargetObject((PropsType)propType, hitPoint, hitNormal, propsScale));
+				// Add On left click spawn
+				// selected prefab and align its rotation to a surface normal
+				if (GetPositionAndNormalOnClick(out var hitPoint, out var hitNormal))
+				{
+					var scaleFactor = float.Parse(scaleFactorString);
+					var propsScale = Vector3.one * scaleFactor;
+					StartCoroutine(SpawnTargetObject((PropsType)propType, hitPoint, hitNormal, propsScale));
+				}
 			}
-		}
-		else if (leftControlPressed && Input.GetMouseButtonDown(1))
-		{
-			// Remove spawned prefab when holding left control and right clicking
-			var selectedPropsTransform = GetTransformOnClick();
-			if (selectedPropsTransform)
+			else if (Input.GetMouseButtonDown(1))
 			{
-				StartCoroutine(DeleteTargetObject(selectedPropsTransform));
+				// Remove spawned prefab when holding left control and right clicking
+				var selectedPropsTransform = GetTransformOnClick();
+				if (selectedPropsTransform)
+				{
+					StartCoroutine(DeleteTargetObject(selectedPropsTransform));
+				}
 			}
 		}
 		else if (Input.GetKey(KeyCode.Delete))
@@ -233,10 +236,11 @@ public class ObjectSpawning : MonoBehaviour
 		for (var i = 0; i < targetObjectsTransform.Count; i++)
 		{
 			var targetObjectTransform = targetObjectsTransform[i];
-			if (targetObjectTransform.CompareTag("Props") || targetObjectTransform.CompareTag("Model"))
+			if (targetObjectTransform.CompareTag("Props") ||
+				targetObjectTransform.CompareTag("Road") ||
+				targetObjectTransform.CompareTag("Model"))
 			{
 				Destroy(targetObjectTransform.gameObject);
-				yield return new WaitForEndOfFrame();
 			}
 		}
 
