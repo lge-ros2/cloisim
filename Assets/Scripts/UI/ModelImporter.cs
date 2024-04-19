@@ -1,18 +1,27 @@
+/*
+ * Copyright (c) 2024 LG Electronics Inc.
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 using UnityEngine;
+using System.Linq;
+using System.Collections.Generic;
 
 public class ModelImporter : MonoBehaviour
 {
 	private GameObject modelList = null;
 	private Transform _targetObject = null;
-	private SDF.Helper.Model _modelHelper = null;
 
 	#region variables for the object with articulation body
-	private ArticulationBody rootArticulationBody = null;
+	private ArticulationBody _rootArticulationBody = null;
 	private Vector3 modelDeployOffset = Vector3.zero;
 	#endregion
 
-	public float maxRayDistance = 60.0f;
+	private Transform _targetObjectForCopy = null;
+
+	[SerializeField]
+	private float maxRayDistance = 60.0f;
 
 	void Awake()
 	{
@@ -40,8 +49,33 @@ public class ModelImporter : MonoBehaviour
 			GameObject.Destroy(_targetObject.gameObject);
 			_targetObject = null;
 		}
-		rootArticulationBody = null;
-		_modelHelper = null;
+		_rootArticulationBody = null;
+	}
+
+	private void BlockSelfRaycast()
+	{
+		if(_targetObject.CompareTag("Road"))
+		{
+			var meshCollider = _targetObject.GetComponentInChildren<Collider>();
+			meshCollider.enabled = false;
+		}
+		else
+		{
+			ChangeColliderObjectLayer(_targetObject, "Ignore Raycast");
+		}
+	}
+
+	private void UnblockSelfRaycast()
+	{
+		if(_targetObject.CompareTag("Road"))
+		{
+			var meshCollider = _targetObject.GetComponentInChildren<Collider>();
+			meshCollider.enabled = true;
+		}
+		else
+		{
+			ChangeColliderObjectLayer(_targetObject, "Default");
+		}
 	}
 
 	public void SetModelForDeploy(in Transform targetTransform)
@@ -51,18 +85,19 @@ public class ModelImporter : MonoBehaviour
 		DiscardSelectedModel();
 
 		_targetObject = targetTransform;
-		ChangeColliderObjectLayer(_targetObject, "Ignore Raycast");
 
-		rootArticulationBody = _targetObject.GetComponentInChildren<ArticulationBody>();
-		if (rootArticulationBody != null)
+		BlockSelfRaycast();
+
+		_rootArticulationBody = _targetObject.GetComponentInChildren<ArticulationBody>();
+		if (_rootArticulationBody != null)
 		{
-			if (rootArticulationBody.isRoot)
+			if (_rootArticulationBody.isRoot)
 			{
-				rootArticulationBody.immovable = true;
+				_rootArticulationBody.immovable = true;
 			}
 			else
 			{
-				rootArticulationBody = null;
+				_rootArticulationBody = null;
 			}
 		}
 
@@ -75,17 +110,15 @@ public class ModelImporter : MonoBehaviour
 
 		modelDeployOffset.y = DeployOffsetMargin + ((totalBound.min.y < 0) ? -totalBound.min.y : 0);
 		// Debug.Log("Deploy == " + modelDeployOffset.y + " " + totalBound.min + ", " + totalBound.center + "," + totalBound.extents);
-
-		_modelHelper = _targetObject.GetComponent<SDF.Helper.Model>();
 	}
 
 	private bool GetPointAndNormalOnClick(out Vector3 point, out Vector3 normal)
 	{
 		var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-		var layerMask = ~(LayerMask.GetMask("Ignore Raycast") |
-							LayerMask.GetMask("TransparentFX") |
-							LayerMask.GetMask("UI") |
-							LayerMask.GetMask("Water"));
+		var layerMask = ~(LayerMask.GetMask("Ignore Raycast")
+						| LayerMask.GetMask("TransparentFX")
+						| LayerMask.GetMask("UI")
+						| LayerMask.GetMask("Water"));
 		if (Physics.Raycast(ray, out var hitInfo, maxRayDistance, layerMask))
 		{
 			point = hitInfo.point;
@@ -101,23 +134,55 @@ public class ModelImporter : MonoBehaviour
 		return false;
 	}
 
-	private void HandlingAddedObject()
+	private void UpdateInitPose()
+	{
+		var modelHelper = _targetObject.GetComponent<SDF.Helper.Model>();
+		if (modelHelper != null)
+		{
+			modelHelper.SetPose(_targetObject.position + modelDeployOffset, _targetObject.rotation);
+		}
+	}
+
+	private void CompleteDeployment()
+	{
+		if (_rootArticulationBody != null)
+		{
+			_rootArticulationBody.immovable = false;
+		}
+
+		UpdateInitPose();
+
+		UnblockSelfRaycast();
+
+		_targetObject = null;
+		_rootArticulationBody = null;
+	}
+
+	private void MoveImportedObject()
+	{
+		if (GetPointAndNormalOnClick(out var point, out var normal))
+		{
+			if (_targetObject.position != point)
+			{
+				if (_rootArticulationBody != null)
+				{
+					_rootArticulationBody.Sleep();
+					var bodyRotation = Quaternion.FromToRotation(transform.up, normal);
+					_rootArticulationBody.TeleportRoot(point + modelDeployOffset, bodyRotation);
+				}
+				else
+				{
+					_targetObject.position = point + modelDeployOffset;
+				}
+			}
+		}
+	}
+
+	private void HandlingImportedObject()
 	{
 		if (Input.GetMouseButtonUp(0))
 		{
-			if (rootArticulationBody != null)
-			{
-				rootArticulationBody.immovable = false;
-			}
-
-			// Update init pose
-			_modelHelper.SetPose(_targetObject.position + modelDeployOffset, _targetObject.rotation);
-
-			ChangeColliderObjectLayer(_targetObject, "Default");
-
-			_targetObject = null;
-			rootArticulationBody = null;
-			_modelHelper = null;
+			CompleteDeployment();
 		}
 		else if (Input.GetKeyUp(KeyCode.Escape))
 		{
@@ -125,22 +190,7 @@ public class ModelImporter : MonoBehaviour
 		}
 		else
 		{
-			if (GetPointAndNormalOnClick(out var point, out var normal))
-			{
-				if (_targetObject.position != point)
-				{
-					if (rootArticulationBody != null)
-					{
-						rootArticulationBody.Sleep();
-						var bodyRotation = Quaternion.FromToRotation(transform.up, normal);
-						rootArticulationBody.TeleportRoot(point + modelDeployOffset, bodyRotation);
-					}
-					else
-					{
-						_targetObject.position = point + modelDeployOffset;
-					}
-				}
-			}
+			MoveImportedObject();
 		}
 	}
 
@@ -148,7 +198,7 @@ public class ModelImporter : MonoBehaviour
 	{
 		if (_targetObject != null)
 		{
-			HandlingAddedObject();
+			HandlingImportedObject();
 		}
 		else
 		{
@@ -161,6 +211,37 @@ public class ModelImporter : MonoBehaviour
 			else if (Input.GetKeyUp(KeyCode.F3))
 			{
 				OnButtonClicked();
+			}
+		}
+
+		if (Input.GetKey(KeyCode.LeftControl))
+		{
+			if (Input.GetKeyUp(KeyCode.C))
+			{
+				Main.Gizmos.GetSelectedTargets(out var objectListForCopy);
+
+				if (objectListForCopy.Count > 0)
+				{
+					if (objectListForCopy.Count > 1)
+					{
+						Main.Display?.SetWarningMessage("Multiple Object is selected. Only single object can be copied.");
+					}
+
+					_targetObjectForCopy = objectListForCopy[objectListForCopy.Count - 1];
+
+					Main.Gizmos.ClearTargets();
+				}
+			}
+			else if (Input.GetKeyUp(KeyCode.V))
+			{
+				if (_targetObjectForCopy != null)
+				{
+					var instantiatedObject = GameObject.Instantiate(_targetObjectForCopy, _targetObjectForCopy.root, true);
+					instantiatedObject.name = _targetObjectForCopy.name + "_clone_" + instantiatedObject.GetInstanceID();
+
+					SetModelForDeploy(instantiatedObject);
+					Debug.Log("Paste " + instantiatedObject.name);
+				}
 			}
 		}
 	}
