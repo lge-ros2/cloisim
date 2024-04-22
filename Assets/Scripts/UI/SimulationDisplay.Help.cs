@@ -13,8 +13,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private StringBuilder _sbOption = new StringBuilder(45);
 	private GUIContent helpContents = new GUIContent();
 	private float helpContentsHeight;
-	private const int buttonWidthHelp = 65;
-	private const int helpStatusWidth = buttonWidthHelp * 4;
+	private const int buttonWidthHelp = 45;
 	private bool popupHelpDialog = false;
 	private Vector2 scrollPosition = Vector2.zero;
 
@@ -129,7 +128,7 @@ public partial class SimulationDisplay : MonoBehaviour
 
 		GUI.skin.button.normal.textColor = Color.white;
 		GUI.skin.button.alignment = TextAnchor.MiddleCenter;
-		if (GUI.Button(rectHelpButton, "Help(F1)"))
+		if (GUI.Button(rectHelpButton, "Help"))
 		{
 			popupHelpDialog = !popupHelpDialog;
 		}
@@ -139,8 +138,8 @@ public partial class SimulationDisplay : MonoBehaviour
 		style.normal.textColor = Color.white;
 
 		_sbOption.Clear();
-		_sbOption.Append("Vertical Camera Moving Lock(Space) ");
-		var checkValue = (cameraControl != null && cameraControl.VerticalMovementLock) ? "[V]" : "[  ]";
+		_sbOption.Append("Lock Vertical Moving");
+		var checkValue = (cameraControl != null && cameraControl.VerticalMovementLock) ? "[X]" : "[  ]";
 		_sbOption.Append(checkValue);
 		// var helpStatusMsg2 = "\nStatic Object Selectable(O) " + ((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
 		DrawLabelWithShadow(rectOption, _sbOption.ToString());
