@@ -218,18 +218,21 @@ public class WorldSaver
 			roadNode.AppendChild(roadWidthNode);
 
 			var roadMaterialNode = _doc.CreateElement("material");
+			var roadMaterialScriptNode = _doc.CreateElement("script");
 
 			foreach (var uri in roadGenerator.SdfMaterial.script.original_uri)
 			{
 				// Debug.Log(uri);
 				var roadMaterialUriNode = _doc.CreateElement("uri");
 				roadMaterialUriNode.InnerText = uri;
-				roadMaterialNode.AppendChild(roadMaterialUriNode);
+				roadMaterialScriptNode.AppendChild(roadMaterialUriNode);
 			}
 
 			var roadMaterialNameNode = _doc.CreateElement("name");
 			roadMaterialNameNode.InnerText = roadGenerator.SdfMaterial.script.name;
-			roadMaterialNode.AppendChild(roadMaterialNameNode);
+			roadMaterialScriptNode.AppendChild(roadMaterialNameNode);
+
+			roadMaterialNode.AppendChild(roadMaterialScriptNode);
 			roadNode.AppendChild(roadMaterialNode);
 
 			_worldNode.AppendChild(roadNode);
