@@ -237,10 +237,17 @@ public class ModelImporter : MonoBehaviour
 				if (_targetObjectForCopy != null)
 				{
 					var instantiatedObject = GameObject.Instantiate(_targetObjectForCopy, _targetObjectForCopy.root, true);
-					instantiatedObject.name = _targetObjectForCopy.name + "_clone_" + instantiatedObject.GetInstanceID();
+					instantiatedObject.name = $"{_targetObjectForCopy.name}_clone_{instantiatedObject.GetInstanceID()}";
+
+					if (_targetObjectForCopy.CompareTag("Road"))
+					{
+						var loftRoadOriginal = _targetObjectForCopy.GetComponent<Unity.Splines.LoftRoadGenerator>();
+						var loftRoadNew = instantiatedObject.GetComponent<Unity.Splines.LoftRoadGenerator>();
+						loftRoadNew.SdfMaterial = loftRoadOriginal.SdfMaterial;
+					}
 
 					SetModelForDeploy(instantiatedObject);
-					Debug.Log("Paste " + instantiatedObject.name);
+					// Debug.Log("Paste " + instantiatedObject.name);
 				}
 			}
 		}

@@ -252,17 +252,17 @@ namespace SDF
 
 			if (numberOfFailedModelTable > 0)
 			{
-				failedModelTableList.Insert(0, "All failed models(" + numberOfFailedModelTable + ") are already registered.");
+				failedModelTableList.Insert(0, $"All failed models({numberOfFailedModelTable}) are already registered.");
 				_loggerErr.Write(failedModelTableList);
 			}
 
-			Console.Write("Total Models: " + resourceModelTable.Count);
+			Console.Write($"Total Models: {resourceModelTable.Count}");
 		}
 
-		// Converting media/file uri
+			// Converting media/file uri
 		private void ConvertPathToAbsolutePath(in string targetElement)
 		{
-			var nodeList = _doc.SelectNodes("//" + targetElement);
+			var nodeList = _doc.SelectNodes($"//{targetElement}");
 			// Console.Write("Target:" + targetElement + ", Num Of uri nodes: " + nodeList.Count);
 			foreach (XmlNode node in nodeList)
 			{
@@ -297,13 +297,28 @@ namespace SDF
 				}
 				else
 				{
-					Console.Write("Cannot convert: " + uri);
+					Console.Write($"Cannot convert: {uri}");
 				}
+			}
+		}
+
+		private void DuplicateNode(in string targetElement, in string newName)
+		{
+			var nodeList = _doc.SelectNodes($"//{targetElement}");
+			foreach (XmlNode node in nodeList)
+			{
+				var newNode = _doc.CreateElement(newName);
+				foreach (XmlNode childNode in node.ChildNodes)
+				{
+					newNode.AppendChild(childNode.CloneNode(true));
+				}
+				node.ParentNode.AppendChild(newNode);
 			}
 		}
 
 		private void ConvertPathToAbsolutePaths()
 		{
+			DuplicateNode("uri", "original_uri");
 			ConvertPathToAbsolutePath("uri");
 			ConvertPathToAbsolutePath("filename");
 			ConvertPathToAbsolutePath("texture/diffuse");

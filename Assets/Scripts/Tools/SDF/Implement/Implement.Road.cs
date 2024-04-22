@@ -47,8 +47,9 @@ namespace SDF
 				SDF.Implement.Visual.ApplyMaterial(road.material.script, material);
 
 				var roadGenerator = newRoadObject.AddComponent<Unity.Splines.LoftRoadGenerator>();
+				roadGenerator.SdfMaterial = road.material;
 				roadGenerator.Material = material;
-				roadGenerator.Widths.Add(new Splines.SplineData<float>((float)road.width));
+				roadGenerator.Width = (float)road.width;
 				roadGenerator.LoftAllRoads();
 
 				return newRoadObject;

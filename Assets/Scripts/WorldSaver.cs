@@ -7,6 +7,7 @@
 using UnityEngine;
 using Splines = UnityEngine.Splines;
 using System.Xml;
+using System.Linq;
 using System.Collections.Generic;
 
 
@@ -188,9 +189,56 @@ public class WorldSaver
 
 	private void UpdateRoads()
 	{
-		// Debug.Log("UpdateRoads");
-		var roadTransforms = Main.RoadsRoot.GetComponentsInChildren<Transform>();
+		RemoveRoads();
 
+		AddRoads();
+
+		UpdateRoadPoints();
+	}
+
+	private void AddRoads()
+	{
+		var roadTransforms = Main.RoadsRoot.GetComponentsInChildren<Transform>();
+		var roads = GetNodes(_worldNode, "road");
+		for (var i = 1; i < roadTransforms.Length; i++)
+		{
+			var roadTransform = roadTransforms[i];
+			var roadName = roadTransform.name;
+			var roadGenerator = roadTransform.GetComponent<Unity.Splines.LoftRoadGenerator>();
+
+			// Debug.Log("Append road :" + roadName);
+			var roadNode = _doc.CreateElement("road");
+
+			var roadNameNode = _doc.CreateElement("name");
+			roadNameNode.InnerText = roadName;
+			roadNode.AppendChild(roadNameNode);
+
+			var roadWidthNode = _doc.CreateElement("width");
+			roadWidthNode.InnerText = System.Convert.ToString(roadGenerator.Width);
+			roadNode.AppendChild(roadWidthNode);
+
+			var roadMaterialNode = _doc.CreateElement("material");
+
+			foreach (var uri in roadGenerator.SdfMaterial.script.original_uri)
+			{
+				// Debug.Log(uri);
+				var roadMaterialUriNode = _doc.CreateElement("uri");
+				roadMaterialUriNode.InnerText = uri;
+				roadMaterialNode.AppendChild(roadMaterialUriNode);
+			}
+
+			var roadMaterialNameNode = _doc.CreateElement("name");
+			roadMaterialNameNode.InnerText = roadGenerator.SdfMaterial.script.name;
+			roadMaterialNode.AppendChild(roadMaterialNameNode);
+			roadNode.AppendChild(roadMaterialNode);
+
+			_worldNode.AppendChild(roadNode);
+		}
+	}
+
+	private void UpdateRoadPoints()
+	{
+		var roadTransforms = Main.RoadsRoot.GetComponentsInChildren<Transform>();
 
 		foreach (XmlNode roadNode in GetNodes(_worldNode, "road"))
 		{
@@ -207,6 +255,16 @@ public class WorldSaver
 					break;
 				}
 			}
+		}
+	}
+
+	private void RemoveRoads()
+	{
+		// var roadTransforms = Main.RoadsRoot.GetComponentsInChildren<Transform>();
+		var roads = GetNodes(_worldNode, "road");
+		for (var i = roads.Count - 1; i >= 0; i--)
+		{
+			_worldNode.RemoveChild(roads[i]);
 		}
 	}
 

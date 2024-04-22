@@ -22,17 +22,14 @@ namespace Unity.Splines
 		[SerializeField]
 		List<SplineData<float>> m_Widths = new List<SplineData<float>>();
 
-		public List<SplineData<float>> Widths
+		public float Width
 		{
-			get
+			get => _sdfWidth;
+			set
 			{
-				foreach (var width in m_Widths)
-				{
-					if (width.DefaultValue == 0)
-						width.DefaultValue = 1f;
-				}
-
-				return m_Widths;
+				_sdfWidth = value;
+				m_Widths.Clear();
+				m_Widths.Add(new SplineData<float>((float)_sdfWidth));
 			}
 		}
 
@@ -63,6 +60,10 @@ namespace Unity.Splines
 		[SerializeField]
 		float m_TextureScale = 1;
 
+		[SerializeField]
+		private float _sdfWidth = 0;
+		private SDF.Material _sdfMaterial = null;
+
 		public IReadOnlyList<Spline> LoftSplines
 		{
 			get
@@ -88,6 +89,12 @@ namespace Unity.Splines
 				m_Material = value;
 				GetComponent<MeshRenderer>().sharedMaterial = m_Material;
 			}
+		}
+
+		public SDF.Material SdfMaterial
+		{
+			get => _sdfMaterial;
+			set =>  _sdfMaterial = value;
 		}
 
 		public int SegmentsPerMeter => Mathf.Min(10, Mathf.Max(1, m_SegmentsPerMeter));
