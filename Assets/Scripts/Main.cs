@@ -431,10 +431,17 @@ public class Main : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyUp(KeyCode.R))
+		if (Input.GetKey(KeyCode.LeftControl))
 		{
-			resetTriggered = true;
-			// Debug.Log("Reset Triggered");
+		 	if (Input.GetKeyUp(KeyCode.R))
+			{
+				resetTriggered = true;
+				// Debug.Log("Reset Triggered");
+			}
+			else if (Input.GetKeyUp(KeyCode.S))
+			{
+				OnSaveButtonClicked();
+			}
 		}
 
 		if (resetTriggered && !isResetting)
@@ -452,6 +459,8 @@ public class Main : MonoBehaviour
 				StartCoroutine(ResetSimulation());
 			}
 		}
+
+
 	}
 
 	public static bool TriggerResetService()

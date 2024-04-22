@@ -32,6 +32,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine("    <b>Ctrl + Shift + R</b>: simulation Full reset like restart");
 		sb.AppendLine("    <b>Ctrl + C</b>: Copy Selected object (supports only single object)");
 		sb.AppendLine("    <b>Ctrl + V</b>: Past copied object");
+		sb.AppendLine("    <b>Ctrl + S</b>: Save current world");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(" - Object Control");
