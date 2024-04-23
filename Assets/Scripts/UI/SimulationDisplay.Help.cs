@@ -27,11 +27,11 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(" - General");
 		sb.AppendLine(string.Empty);
-		sb.AppendLine("    <b>Ctrl + R</b>: Reset simulation");
-		sb.AppendLine("    <b>Ctrl + Shift + R</b>: simulation Full reset like restart");
-		sb.AppendLine("    <b>Ctrl + C</b>: Copy Selected object (supports only single object)");
-		sb.AppendLine("    <b>Ctrl + V</b>: Past copied object");
-		sb.AppendLine("    <b>Ctrl + S</b>: Save current world");
+		sb.AppendLine("    <b>Left Ctrl + R</b>: Reset simulation");
+		sb.AppendLine("    <b>Left Ctrl + Left Shift + R</b>: simulation Full reset like restart");
+		sb.AppendLine("    <b>Left Ctrl + C</b>: Copy Selected object (supports only single object)");
+		sb.AppendLine("    <b>Left Ctrl + V</b>: Past copied object");
+		sb.AppendLine("    <b>Left Ctrl + S</b>: Save current world");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(" - Object Control");
@@ -66,6 +66,8 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine(string.Empty);
 		sb.AppendLine("    <b>Choose one object from the list</b> on the bottom right corner.");
 		sb.AppendLine("    if you want cancel the following mode, choose '--unfollowing--' menu from the list.");
+		sb.AppendLine("    Select object and <b>Left Ctrl + F</b>: Follow the object");
+		sb.AppendLine("    <b>Left Ctrl + Left Shift + F</b>: Unfollow");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(" - Camera Control: Camera control is quite intuitive like a FPS game (W/S/A/D + R/F)");
