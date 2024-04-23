@@ -43,7 +43,7 @@ namespace SDF
 				}
 				else
 				{
-					loadedObject.transform.localScale = SDF2Unity.GetScale(obj.scale);
+					loadedObject.transform.localScale = SDF2Unity.Scale(obj.scale);
 				}
 
 				loadedObject.transform.SetParent(targetParentObject.transform, false);
@@ -58,7 +58,7 @@ namespace SDF
 
 				ProceduralHeightmap.Generate(obj, heightmapObject, isVisualMesh);
 
-				heightmapObject.transform.localPosition = SDF2Unity.GetPosition(obj.pos);
+				heightmapObject.transform.localPosition = SDF2Unity.Position(obj.pos);
 			}
 
 			//
@@ -74,7 +74,7 @@ namespace SDF
 				if (shape is SDF.Box)
 				{
 					var box = shape as SDF.Box;
-					var scale = SDF2Unity.GetScale(box.size);
+					var scale = SDF2Unity.Scale(box.size);
 					mesh = ProceduralMesh.CreateBox(scale.x, scale.y, scale.z);
 
 					var boxCollider = createdObject.AddComponent<UE.BoxCollider>();
@@ -105,7 +105,7 @@ namespace SDF
 				else if (shape is SDF.Plane)
 				{
 					var plane = shape as SDF.Plane;
-					var normal = SDF2Unity.GetNormal(plane.normal);
+					var normal = SDF2Unity.Normal(plane.normal);
 					mesh = ProceduralMesh.CreatePlane((float)plane.size.X, (float)plane.size.Y, normal);
 				}
 				else

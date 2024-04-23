@@ -30,6 +30,7 @@ public partial class SDF2Unity
 
 	public static bool IsRootModel(in Transform targetTransform)
 	{
-		return targetTransform.parent.Equals(targetTransform.root);
+		return (targetTransform.parent == null) ?
+			false : (targetTransform.parent.Equals(targetTransform.root));
 	}
 }

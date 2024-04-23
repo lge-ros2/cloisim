@@ -118,11 +118,11 @@ public partial class DeviceHelper
 		{
 			vector3d = new messages.Vector3d();
 		}
-		var converted = Convert.Position(position);
+		var converted = Unity2SDF.Position(position);
 
-		vector3d.X = converted.x;
-		vector3d.Y = converted.y;
-		vector3d.Z = converted.z;
+		vector3d.X = converted.X;
+		vector3d.Y = converted.Y;
+		vector3d.Z = converted.Z;
 	}
 
 	public static void SetQuaternion(messages.Quaternion quaternion, in Quaternion rotation)
@@ -131,12 +131,12 @@ public partial class DeviceHelper
 		{
 			quaternion = new messages.Quaternion();
 		}
-		var converted = Convert.Rotation(rotation);
+		var converted = Unity2SDF.Rotation(rotation);
 
-		quaternion.X = converted.x;
-		quaternion.Y = converted.y;
-		quaternion.Z = converted.z;
-		quaternion.W = converted.w;
+		quaternion.X = converted.X;
+		quaternion.Y = converted.Y;
+		quaternion.Z = converted.Z;
+		quaternion.W = converted.W;
 	}
 
 	public static bool IsSamePosition(in float A, in float B)
@@ -151,29 +151,6 @@ public partial class DeviceHelper
 
 	public static class Convert
 	{
-		/// <summary>
-		/// Convert to right handed coordinates
-		/// </summary>
-		public static Vector3 Position(in Vector3 position)
-		{
-			return new Vector3(position.z, -position.x, position.y);
-		}
-
-		public static Quaternion Rotation(in Quaternion rotation)
-		{
-			return new Quaternion(-rotation.z, rotation.x, -rotation.y, rotation.w);
-		}
-
-		public static Vector3 Reverse(in Vector3 value)
-		{
-			return -value;
-		}
-
-		public static float CurveOrientation(in float value)
-		{
-			return -value;
-		}
-
 		public static float PrismaticDirection(in float value, in Vector3 rotation)
 		{
 			return (Mathf.Approximately(rotation.x, 180) ||

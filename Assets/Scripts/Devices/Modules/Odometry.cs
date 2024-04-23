@@ -106,8 +106,8 @@ public partial class Odometry
 		if (_motorControl.GetCurrentVelocity(MotorControl.WheelLocation.LEFT, out var angularVelocityLeft) &&
 			_motorControl.GetCurrentVelocity(MotorControl.WheelLocation.RIGHT, out var angularVelocityRight))
 		{
-			odomMessage.AngularVelocity.Left = DeviceHelper.Convert.CurveOrientation(angularVelocityLeft);
-			odomMessage.AngularVelocity.Right = DeviceHelper.Convert.CurveOrientation(angularVelocityRight);
+			odomMessage.AngularVelocity.Left = Unity2SDF.Direction.Curve(angularVelocityLeft);
+			odomMessage.AngularVelocity.Right = Unity2SDF.Direction.Curve(angularVelocityRight);
 			odomMessage.LinearVelocity.Left = odomMessage.AngularVelocity.Left * wheelInfo.wheelRadius;
 			odomMessage.LinearVelocity.Right = odomMessage.AngularVelocity.Right * wheelInfo.wheelRadius;
 		}
@@ -137,13 +137,13 @@ public partial class Odometry
 			CalculateOdometry(angularVelocityLeft, angularVelocityRight, duration);
 		}
 
-		DeviceHelper.SetVector3d(odomMessage.Pose, DeviceHelper.Convert.Reverse(_odomPose));
+		DeviceHelper.SetVector3d(odomMessage.Pose, Unity2SDF.Direction.Reverse(_odomPose));
 
 		// rolling mean filtering
-		var odomTransVel = DeviceHelper.Convert.CurveOrientation(_odomTranslationalVelocity);
+		var odomTransVel = Unity2SDF.Direction.Curve(_odomTranslationalVelocity);
 		rollingMeanOdomTransVelocity.Accumulate(odomTransVel);
 
-		var odomAngularVel = DeviceHelper.Convert.CurveOrientation(_odomRotationalVelocity);
+		var odomAngularVel = Unity2SDF.Direction.Curve(_odomRotationalVelocity);
 		rollingMeanOdomTAngularVelocity.Accumulate(odomAngularVel);
 
 		odomMessage.TwistLinear.X = rollingMeanOdomTransVelocity.Get();

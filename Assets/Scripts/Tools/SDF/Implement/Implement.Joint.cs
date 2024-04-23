@@ -57,8 +57,8 @@ namespace SDF
 					// UE.Debug.LogWarningFormat("Linking2 ({0}) => ({1})", modelTransformChild.name, linkParent.name);
 				}
 
-				var jointPosition = SDF2Unity.GetPosition(joint.Pose.Pos);
-				var jointRotation = SDF2Unity.GetRotation(joint.Pose.Rot);
+				var jointPosition = SDF2Unity.Position(joint.Pose?.Pos);
+				var jointRotation = SDF2Unity.Rotation(joint.Pose?.Rot);
 				anchorPose.position += jointPosition;
 				anchorPose.rotation *= jointRotation;
 
@@ -104,7 +104,7 @@ namespace SDF
 					body.jointFriction = DefaultJointFriction;
 				}
 
-				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
+				var jointAxis = SDF2Unity.Axis(axis.xyz);
 				// UE.Debug.LogWarning(body.transform.parent.name + "::" + body.name + " = " + jointAxis + " - revolute");
 
 				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
@@ -159,7 +159,7 @@ namespace SDF
 
 				drive.forceLimit = (double.IsInfinity(axis2.limit.effort)) ? float.MaxValue : (float)axis2.limit.effort;
 
-				var joint2Axis = SDF2Unity.GetAxis(axis2.xyz);
+				var joint2Axis = SDF2Unity.Axis(axis2.xyz);
 				if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
 				{
 					if (joint2Axis.Equals(UE.Vector3.left))
@@ -215,8 +215,8 @@ namespace SDF
 			public static void MakePrismatic(in UE.ArticulationBody body, in SDF.Axis axis, in SDF.Pose<double> pose)
 			{
 				body.jointType = UE.ArticulationJointType.PrismaticJoint;
-				body.anchorRotation *= SDF2Unity.GetRotation(pose.Rot);
-				// body.parentAnchorRotation *= SDF2Unity.GetRotation(pose.Rot);  // TODO: matchAnchors is set to true
+				body.anchorRotation *= SDF2Unity.Rotation(pose?.Rot);
+				// body.parentAnchorRotation *= SDF2Unity.Rotation(pose?.Rot);  // TODO: matchAnchors is set to true
 
 				body.linearDamping = 0.05f;
 				body.angularDamping = 0.05f;
@@ -244,7 +244,7 @@ namespace SDF
 					body.jointFriction = DefaultJointFriction;
 				}
 
-				var jointAxis = SDF2Unity.GetAxis(axis.xyz);
+				var jointAxis = SDF2Unity.Axis(axis.xyz);
 				// UE.Debug.LogWarning(body.transform.parent.name + "::" + body.name + " = " + jointAxis + " - Prismatic");
 
 				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))

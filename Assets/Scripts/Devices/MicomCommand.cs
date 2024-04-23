@@ -40,8 +40,8 @@ namespace SensorDevices
 				var linear = micomWritingData.Linear;
 				var angular = micomWritingData.Angular;
 
-				var linearVelocity = SDF2Unity.GetPosition(linear.X, linear.Y, linear.Z);
-				var angularVelocity = SDF2Unity.GetPosition(angular.X, angular.Y, angular.Z);
+				var linearVelocity = SDF2Unity.Position(linear.X, linear.Y, linear.Z);
+				var angularVelocity = SDF2Unity.Position(angular.X, angular.Y, angular.Z);
 
 				DoWheelDrive(linearVelocity, angularVelocity);
 			}

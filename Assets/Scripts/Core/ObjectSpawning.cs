@@ -46,7 +46,7 @@ public class ObjectSpawning : MonoBehaviour
 	void Awake()
 	{
 		_propMaterial = SDF2Unity.Material.Create();
-		_propsPhysicalMaterial = Resources.Load<PhysicMaterial>("Materials/Props");
+		_propsPhysicalMaterial = Resources.Load<PhysicMaterial>("PhysicsMaterials/Props");
 		propsRoot = GameObject.Find("Props");
 		mainCam = Camera.main;
 		transformGizmo = Main.Gizmos;
@@ -71,22 +71,27 @@ public class ObjectSpawning : MonoBehaviour
 	{
 		var leftControlPressed = Input.GetKey(KeyCode.LeftControl);
 
-		if (leftControlPressed && Input.GetMouseButtonDown(0))
+		if (leftControlPressed)
 		{
-			// Add On left click spawn
-			// selected prefab and align its rotation to a surface normal
-			var spawnData = GetPositionAndNormalOnClick();
-			var scaleFactor = float.Parse(scaleFactorString);
-			var propsScale = Vector3.one * scaleFactor;
-			StartCoroutine(SpawnTargetObject((PropsType)propType, spawnData[0], spawnData[1], propsScale));
-		}
-		else if (leftControlPressed && Input.GetMouseButtonDown(1))
-		{
-			// Remove spawned prefab when holding left control and right clicking
-			var selectedPropsTransform = GetTransformOnClick();
-			if (selectedPropsTransform)
+			if (Input.GetMouseButtonDown(0))
 			{
-				StartCoroutine(DeleteTargetObject(selectedPropsTransform));
+				// Add On left click spawn
+				// selected prefab and align its rotation to a surface normal
+				if (GetPositionAndNormalOnClick(out var hitPoint, out var hitNormal))
+				{
+					var scaleFactor = float.Parse(scaleFactorString);
+					var propsScale = Vector3.one * scaleFactor;
+					StartCoroutine(SpawnTargetObject((PropsType)propType, hitPoint, hitNormal, propsScale));
+				}
+			}
+			else if (Input.GetMouseButtonDown(1))
+			{
+				// Remove spawned prefab when holding left control and right clicking
+				var selectedPropsTransform = GetTransformOnClick();
+				if (selectedPropsTransform)
+				{
+					StartCoroutine(DeleteTargetObject(selectedPropsTransform));
+				}
 			}
 		}
 		else if (Input.GetKey(KeyCode.Delete))
@@ -231,10 +236,11 @@ public class ObjectSpawning : MonoBehaviour
 		for (var i = 0; i < targetObjectsTransform.Count; i++)
 		{
 			var targetObjectTransform = targetObjectsTransform[i];
-			if (targetObjectTransform.CompareTag("Props") || targetObjectTransform.CompareTag("Model"))
+			if (targetObjectTransform.CompareTag("Props") ||
+				targetObjectTransform.CompareTag("Road") ||
+				targetObjectTransform.CompareTag("Model"))
 			{
 				Destroy(targetObjectTransform.gameObject);
-				yield return new WaitForEndOfFrame();
 			}
 		}
 
@@ -245,18 +251,22 @@ public class ObjectSpawning : MonoBehaviour
 		yield return null;
 	}
 
-	private Vector3[] GetPositionAndNormalOnClick()
+	private bool GetPositionAndNormalOnClick(out Vector3 hitPoint, out Vector3 hitNormal)
 	{
-		var returnData = new Vector3[] { Vector3.zero, Vector3.zero }; //0 = spawn poisiton, 1 = surface normal
 		var ray = mainCam.ScreenPointToRay(Input.mousePosition);
-
 		if (Physics.Raycast(ray, out var hit, maxRayDistance))
 		{
-			returnData[0] = hit.point;
-			returnData[1] = hit.normal;
+			hitPoint = hit.point; // 0 = spawn poisiton
+			hitNormal = hit.normal; // 1 = surface normal
+			return true;
+		}
+		else
+		{
+			hitPoint = Vector3.positiveInfinity;
+			hitNormal = Vector3.positiveInfinity;
 		}
 
-		return returnData;
+		return false;
 	}
 
 	private Transform GetTransformOnClick()

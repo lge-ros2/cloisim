@@ -70,7 +70,7 @@ public class ActorControlPlugin : CLOiSimPlugin
 			if (targetActor)
 			{
 				var vec = requestValue.Vector3dValue;
-				targetDestination = SDF2Unity.GetPosition(vec.X, vec.Y, vec.Z);
+				targetDestination = SDF2Unity.Position(vec.X, vec.Y, vec.Z);
 				isReceivedRequest = true;
 				result = true;
 			}

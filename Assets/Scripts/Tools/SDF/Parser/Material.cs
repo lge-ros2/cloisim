@@ -62,6 +62,10 @@ namespace SDF
 		public class Script
 		{
 			public List<string> uri = new List<string>();
+
+			#region save original path before converting uri path
+			public List<string> original_uri = new List<string>();
+			#endregion
 			public string name;
 		}
 
@@ -199,6 +203,18 @@ namespace SDF
 					// 	Console.Write(uri);
 					// }
 				}
+
+				#region save original path before converting uri path
+				if (GetValues<string>("script/original_uri", out var script_original_uri_list))
+				{
+					script.original_uri.AddRange(script_original_uri_list);
+
+					// foreach (var uri in script.original_uri)
+					// {
+					// 	Console.Write(uri);
+					// }
+				}
+				#endregion
 
 				if (IsValidNode("script/name"))
 				{

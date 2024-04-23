@@ -43,9 +43,9 @@ public partial class SimulationDisplay : MonoBehaviour
 
 		var rectScaleLabel = rectToolbar;
 		rectScaleLabel.x += (toolbarWidth + 10);
-		rectScaleLabel.width = 70;
+		rectScaleLabel.width = 35;
 		style.normal.textColor = Color.white;
-		DrawLabelWithShadow(rectScaleLabel, "PropSize");
+		DrawLabelWithShadow(rectScaleLabel, "Size");
 
 		var rectScale = rectScaleLabel;
 		rectScale.x += (rectScaleLabel.width);
@@ -57,7 +57,7 @@ public partial class SimulationDisplay : MonoBehaviour
 
 		isChangingScaleFactor = (GUI.GetNameOfFocusedControl().CompareTo("ScaleField") == 0);
 
-		rectHelpButton.x = rectScale.x + rectScale.width + textRightMargin;
+		rectHelpButton.x = rectScale.x + rectScale.width + textRightMargin * 5;
 
 		if (checkScaleFactorFocused && !GUI.GetNameOfFocusedControl().Equals("ScaleField"))
 		{

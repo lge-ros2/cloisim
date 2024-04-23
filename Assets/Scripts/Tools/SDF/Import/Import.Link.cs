@@ -18,8 +18,8 @@ namespace SDF
 			private static UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia inertia)
 			{
 				var inertiaMomentum = UE.Pose.identity;
-				var inertiaVector = SDF2Unity.GetScalar((float)inertia?.ixx, (float)inertia?.iyy, (float)inertia?.izz);
-				var inertiaRotationVector = SDF2Unity.GetScalar((float)inertia?.ixy, (float)inertia?.iyz, (float)inertia?.ixz);
+				var inertiaVector = SDF2Unity.Scalar((float)inertia?.ixx, (float)inertia?.iyy, (float)inertia?.izz);
+				var inertiaRotationVector = SDF2Unity.Scalar((float)inertia?.ixy, (float)inertia?.iyz, (float)inertia?.ixz);
 
 				for (var index = 0; index < 3; index++)
 				{
@@ -48,8 +48,8 @@ namespace SDF
 
 				SetParentObject(newLinkObject, targetObject);
 
-				var localPosition = SDF2Unity.GetPosition(link.Pose.Pos);
-				var localRotation = SDF2Unity.GetRotation(link.Pose.Rot);
+				var localPosition = SDF2Unity.Position(link.Pose?.Pos);
+				var localRotation = SDF2Unity.Rotation(link.Pose?.Rot);
 
 				var linkHelper = newLinkObject.AddComponent<Helper.Link>();
 				linkHelper.isSelfCollide = link.SelfCollide;
@@ -143,7 +143,7 @@ namespace SDF
 					if (inertial.pose == null)
 						articulationBody.automaticCenterOfMass = true;
 					else
-						articulationBody.centerOfMass = SDF2Unity.GetPosition(inertial.pose.Pos);
+						articulationBody.centerOfMass = SDF2Unity.Position(inertial.pose?.Pos);
 					// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
 				}
 

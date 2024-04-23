@@ -77,7 +77,7 @@ namespace SensorDevices
 			DeviceHelper.SetCurrentTime(gps.Time);
 
 			// Convert to global frames
-			var convertedPosition = DeviceHelper.Convert.Position(worldPosition);
+			var convertedPosition = Unity2SDF.Position(worldPosition);
 
 			gpsCoordinates = sphericalCoordinates.SphericalFromLocal(convertedPosition);
 
@@ -97,7 +97,7 @@ namespace SensorDevices
 			gps.Altitude = gpsCoordinates.z;
 
 			// Convert to global frame
-			var convertedVelocity = DeviceHelper.Convert.Position(sensorVelocity);
+			var convertedVelocity = Unity2SDF.Position(sensorVelocity);
 			gpsVelocity = sphericalCoordinates.GlobalFromLocal(convertedVelocity);
 
 			// Apply noise after converting to global frame

@@ -38,11 +38,11 @@ public class FollowingTargetList : MonoBehaviour
 
 			_emptyOption = new TMP_Dropdown.OptionData("- unfollowing -");
 			dropdown.options.Add(_emptyOption);
-			SelectItem();
+			SelectItem(0);
 		}
 	}
 
-	public void SelectItem(in int selectIndex = 0)
+	private void SelectItem(in int selectIndex)
 	{
 		if (dropdown != null)
 		{
@@ -59,6 +59,57 @@ public class FollowingTargetList : MonoBehaviour
 		var selected = dropdown.options[choice];
 		var target = (choice > 0 && _followingCamera != null) ? selected.text : null;
 		_followingCamera?.SetTargetObject(target);
+	}
+
+	void LateUpdate()
+	{
+		if (Input.GetKey(KeyCode.LeftControl))
+		{
+		 	if (Input.GetKeyUp(KeyCode.F))
+			{
+				if (Input.GetKey(KeyCode.LeftShift))
+				{
+					SelectItem(0);
+				}
+				else
+				{
+					Main.Gizmos.GetSelectedTargets(out var objectListForFollowing);
+
+					if (objectListForFollowing.Count > 0)
+					{
+						if (objectListForFollowing.Count > 1)
+						{
+							Main.Display?.SetWarningMessage("Multiple Object is selected. Only single object can be followed.");
+						}
+
+						foreach (var target in objectListForFollowing)
+						{
+							var articulationBody = target.GetComponent<ArticulationBody>();
+							if (articulationBody != null && articulationBody.isRoot)
+							{
+								var selectedObjectName = target.gameObject.name;
+								var selectedIndex = FindItemIndex(selectedObjectName);
+								SelectItem(selectedIndex);
+								Main.Gizmos.ClearTargets();
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private int FindItemIndex(in string name)
+	{
+		foreach (var option in dropdown.options)
+		{
+			if (option.text.CompareTo(name) == 0)
+			{
+				return dropdown.options.IndexOf(option);
+			}
+		}
+		return 0;
 	}
 
 	public void UpdateList()

@@ -108,17 +108,17 @@ namespace SensorDevices
 				var jointForce = articulation.GetForce();
 
 				jointState.Effort = (articulation.IsRevoluteType()) ?
-										DeviceHelper.Convert.CurveOrientation(jointForce) :
+										Unity2SDF.Direction.Curve(jointForce) :
 											(articulation.IsPrismaticType() ?
-												 DeviceHelper.Convert.PrismaticDirection(jointForce, articulation.GetAnchorRotation()) : jointForce);
+												 Unity2SDF.Direction.Joint.Prismatic(jointForce, articulation.GetAnchorRotation()) : jointForce);
 
 				jointState.Position = (articulation.IsRevoluteType()) ?
-										DeviceHelper.Convert.CurveOrientation(jointPosition) :
+										Unity2SDF.Direction.Curve(jointPosition) :
 											(articulation.IsPrismaticType() ?
-												 DeviceHelper.Convert.PrismaticDirection(jointPosition, articulation.GetAnchorRotation()) : jointPosition);
+												 Unity2SDF.Direction.Joint.Prismatic(jointPosition, articulation.GetAnchorRotation()) : jointPosition);
 
 				jointState.Velocity = (articulation.IsRevoluteType()) ?
-										DeviceHelper.Convert.CurveOrientation(jointVelocity) : jointVelocity;
+										Unity2SDF.Direction.Curve(jointVelocity) : jointVelocity;
 			}
 		}
 	}

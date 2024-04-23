@@ -51,13 +51,15 @@ namespace RuntimeGizmos
 
 		public bool manuallyHandleGizmo;
 
-		//These are the same as the unity editor hotkeys
+		// These are the same as the unity editor hotkeys
 		[Header("Key configurations")]
 		public KeyCode SetMoveType = KeyCode.T;
 		public KeyCode SetRotateType = KeyCode.R;
 		public KeyCode SetAllTransformType = KeyCode.Y;
 		public KeyCode SetSpaceToggle = KeyCode.X;
 		public KeyCode translationSnapping = KeyCode.LeftShift;
+
+		private bool _lockRotation = false;
 
 		public Action onCheckForSelectedAxis;
 		public Action onDrawCustomGizmo;
@@ -222,38 +224,40 @@ namespace RuntimeGizmos
 		void SetSpaceAndType()
 		{
 			// avoid pressing left control
-			if (!Input.GetKey(KeyCode.LeftControl))
+			if (Input.GetKey(KeyCode.LeftControl))
 			{
-				if (Input.GetKeyUp(SetMoveType))
-				{
-					transformType = TransformType.Move;
-				}
-				else if (Input.GetKeyUp(SetRotateType))
-				{
-					transformType = TransformType.Rotate;
-				}
-				else if (Input.GetKeyUp(SetAllTransformType))
-				{
-					transformType = TransformType.All;
-				}
+				return;
+			}
 
-				if (!isTransforming) translatingType = transformType;
+			if (Input.GetKeyUp(SetMoveType))
+			{
+				transformType = TransformType.Move;
+			}
+			else if (Input.GetKeyUp(SetRotateType) && _lockRotation == false)
+			{
+				transformType = TransformType.Rotate;
+			}
+			else if (Input.GetKeyUp(SetAllTransformType) && _lockRotation == false)
+			{
+				transformType = TransformType.All;
+			}
 
-				if (Input.GetKeyUp(SetSpaceToggle))
+			if (!isTransforming) translatingType = transformType;
+
+			if (Input.GetKeyUp(SetSpaceToggle))
+			{
+				switch (space)
 				{
-					switch (space)
-					{
-						case TransformSpace.Global:
-							space = TransformSpace.Local;
-							break;
+					case TransformSpace.Global:
+						space = TransformSpace.Local;
+						break;
 
-						case TransformSpace.Local:
-							space = TransformSpace.Global;
-							break;
+					case TransformSpace.Local:
+						space = TransformSpace.Global;
+						break;
 
-						default:
-							break;
-					}
+					default:
+						break;
 				}
 			}
 		}
@@ -519,8 +523,16 @@ namespace RuntimeGizmos
 					Transform target = null;
 					var hitObject = hitInfo.transform;
 
-					if (hitObject.CompareTag("Props"))
+					_lockRotation = false;
+
+					if (hitObject.CompareTag("Props") ||
+						(hitObject.CompareTag("Road") && Input.GetKey(KeyCode.LeftAlt)))
 					{
+						if (hitObject.CompareTag("Road"))
+						{
+							_lockRotation = true;
+						}
+
 						target = hitObject.transform;
 					}
 					else

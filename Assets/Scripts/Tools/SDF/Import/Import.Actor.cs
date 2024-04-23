@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using UnityEngine;
+using UE = UnityEngine;
 
 namespace SDF
 {
@@ -31,15 +31,15 @@ namespace SDF
 				SetParentObject(newActorObject, null);
 
 				// Apply attributes
-				var localPosition = SDF2Unity.GetPosition(actor.Pose.Pos);
-				var localRotation = SDF2Unity.GetRotation(actor.Pose.Rot);
+				var localPosition = SDF2Unity.Position(actor.Pose?.Pos);
+				var localRotation = SDF2Unity.Rotation(actor.Pose?.Rot);
 				// Debug.Log(newActorObject.name + "::" + localPosition + ", " + localRotation);
 
 				var actorHelper = newActorObject.AddComponent<Helper.Actor>();
 				actorHelper.SetPose(localPosition, localRotation);
 				actorHelper.ResetPose();
 
-				newActorObject.transform.localScale = Vector3.one * (float)actor.skin.scale;
+				newActorObject.transform.localScale = UE.Vector3.one * (float)actor.skin.scale;
 
 				var script = actor.script;
 				if (actor.animations != null)
@@ -52,7 +52,7 @@ namespace SDF
 
 				actorHelper.SetScript(script);
 
-				var capsuleCollider = newActorObject.AddComponent<CapsuleCollider>();
+				var capsuleCollider = newActorObject.AddComponent<UE.CapsuleCollider>();
 				capsuleCollider.direction = 1;
 
 				return newActorObject as System.Object;

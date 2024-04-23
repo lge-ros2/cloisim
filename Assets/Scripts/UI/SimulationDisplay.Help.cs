@@ -13,8 +13,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private StringBuilder _sbOption = new StringBuilder(45);
 	private GUIContent helpContents = new GUIContent();
 	private float helpContentsHeight;
-	private const int buttonWidthHelp = 65;
-	private const int helpStatusWidth = buttonWidthHelp * 4;
+	private const int buttonWidthHelp = 45;
 	private bool popupHelpDialog = false;
 	private Vector2 scrollPosition = Vector2.zero;
 
@@ -28,8 +27,11 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(" - General");
 		sb.AppendLine(string.Empty);
-		sb.AppendLine("    <b>Ctrl + R</b>: Reset simulation");
-		sb.AppendLine("    <b>Ctrl + Shift + R</b>: simulation Full reset like restart");
+		sb.AppendLine("    <b>Left Ctrl + R</b>: Reset simulation");
+		sb.AppendLine("    <b>Left Ctrl + Left Shift + R</b>: simulation Full reset like restart");
+		sb.AppendLine("    <b>Left Ctrl + C</b>: Copy Selected object (supports only single object)");
+		sb.AppendLine("    <b>Left Ctrl + V</b>: Past copied object");
+		sb.AppendLine("    <b>Left Ctrl + S</b>: Save current world");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(" - Object Control");
@@ -64,17 +66,21 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine(string.Empty);
 		sb.AppendLine("    <b>Choose one object from the list</b> on the bottom right corner.");
 		sb.AppendLine("    if you want cancel the following mode, choose '--unfollowing--' menu from the list.");
+		sb.AppendLine("    Select object and <b>Left Ctrl + F</b>: Follow the object");
+		sb.AppendLine("    <b>Left Ctrl + Left Shift + F</b>: Unfollow");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(string.Empty);
-		sb.AppendLine(" - Camera Control: Camera control is quite intuitive like a FPS game (W/S/A/D/Q/Z)");
+		sb.AppendLine(" - Camera Control: Camera control is quite intuitive like a FPS game (W/S/A/D + R/F)");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine("    <b>W</b> or <b>Mouse Scroll Up</b>: Move Forward");
 		sb.AppendLine("    <b>S</b> or <b>Mouse Scroll Down</b>: Move Backward");
 		sb.AppendLine("    <b>A</b>: Move Left(sidestep left)");
 		sb.AppendLine("    <b>D</b>: Move Right(sidestep right)");
-		sb.AppendLine("    <b>Q</b>: Move upward");
-		sb.AppendLine("    <b>Z</b>: Move downward");
-		sb.AppendLine("    <b>Space</b>: moving only on current plane(X, Z axis). it's toggling.");
+		sb.AppendLine("    <b>Q</b>: Turn Left");
+		sb.AppendLine("    <b>E</b>: Turn Right");
+		sb.AppendLine("    <b>R</b>: Move upward");
+		sb.AppendLine("    <b>F</b>: Move downward");
+		sb.AppendLine("    <b>Space</b>: moving only on current plane(XZ plane). It's toggling.");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(" - Change camera view-port(screen)");
@@ -126,7 +132,7 @@ public partial class SimulationDisplay : MonoBehaviour
 
 		GUI.skin.button.normal.textColor = Color.white;
 		GUI.skin.button.alignment = TextAnchor.MiddleCenter;
-		if (GUI.Button(rectHelpButton, "Help(F1)"))
+		if (GUI.Button(rectHelpButton, "Help"))
 		{
 			popupHelpDialog = !popupHelpDialog;
 		}
@@ -136,8 +142,8 @@ public partial class SimulationDisplay : MonoBehaviour
 		style.normal.textColor = Color.white;
 
 		_sbOption.Clear();
-		_sbOption.Append("Vertical Camera Moving Lock(Space) ");
-		var checkValue = (cameraControl != null && cameraControl.VerticalMovementLock) ? "[V]" : "[  ]";
+		_sbOption.Append("Lock Vertical Moving");
+		var checkValue = (cameraControl != null && cameraControl.VerticalMovementLock) ? "[X]" : "[  ]";
 		_sbOption.Append(checkValue);
 		// var helpStatusMsg2 = "\nStatic Object Selectable(O) " + ((cameraControl.VerticalMovementLock)? "[V]":"[  ]");
 		DrawLabelWithShadow(rectOption, _sbOption.ToString());

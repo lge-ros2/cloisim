@@ -28,14 +28,14 @@ public class Main : MonoBehaviour
 	public List<string> worldRootDirectories = new List<string>();
 	public List<string> fileRootDirectories = new List<string>();
 
-	private FollowingTargetList followingList = null;
+	private FollowingTargetList _followingList = null;
 
 	private static GameObject _core = null;
 	private static GameObject _propsRoot = null;
 	private static GameObject _worldRoot = null;
-	private static GameObject lightsRoot = null;
+	private static GameObject _lightsRoot = null;
 	private static GameObject _roadsRoot = null;
-	private static GameObject uiRoot = null;
+	private static GameObject _uiRoot = null;
 	private static GameObject uiMainCanvasRoot = null;
 
 	private static SimulationDisplay simulationDisplay = null;
@@ -45,10 +45,6 @@ public class Main : MonoBehaviour
 	private static CameraControl cameraControl = null;
 	private static SegmentationManager _segmentationManager = null;
 
-	#region "Non-Component class"
-	private static BridgeManager bridgeManager = null;
-	private static SimulationService simulationService = null;
-	#endregion
 
 	private static bool isResetting = false;
 	private static bool resetTriggered = false;
@@ -57,20 +53,25 @@ public class Main : MonoBehaviour
 	public static GameObject WorldRoot => _worldRoot;
 	public static GameObject RoadsRoot => _roadsRoot;
 	public static GameObject CoreObject => _core;
-	public static GameObject UIObject => uiRoot;
+	public static GameObject UIObject => _uiRoot;
 	public static GameObject UIMainCanvas => uiMainCanvasRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => transformGizmo;
 	public static SimulationDisplay Display => simulationDisplay;
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => worldNavMeshBuilder;
-	public static BridgeManager BridgeManager => bridgeManager;
+	public static BridgeManager BridgeManager => _bridgeManager;
 	public static SegmentationManager SegmentationManager => _segmentationManager;
 
 	public static CameraControl CameraControl => cameraControl;
 
-	#region "SDFParser"
+	#region SDF Parser
 	private SDF.Root _sdfRoot = null;
 	private SDF.Import.Loader _sdfLoader = null;
+	#endregion
+
+	#region Non-Component class
+	private static BridgeManager _bridgeManager = null;
+	private static SimulationService _simulationService = null;
 	#endregion
 
 	private void CleanAllModels()
@@ -89,10 +90,10 @@ public class Main : MonoBehaviour
 
 	private void CleanAllLights()
 	{
-		foreach (var child in lightsRoot.GetComponentsInChildren<Transform>())
+		foreach (var child in _lightsRoot.GetComponentsInChildren<Transform>())
 		{
 			// skip root gameobject
-			if (child.gameObject == lightsRoot)
+			if (child.gameObject == _lightsRoot)
 			{
 				continue;
 			}
@@ -222,18 +223,18 @@ public class Main : MonoBehaviour
 
 		_propsRoot = GameObject.Find("Props");
 		_worldRoot = GameObject.Find("World");
-		lightsRoot = GameObject.Find("Lights");
+		_lightsRoot = GameObject.Find("Lights");
 		_roadsRoot = GameObject.Find("Roads");
-		uiRoot = GameObject.Find("UI");
+		_uiRoot = GameObject.Find("UI");
 
-		if (uiRoot != null)
+		if (_uiRoot != null)
 		{
-			_infoDisplay = uiRoot.GetComponentInChildren<InfoDisplay>();
-			transformGizmo = uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
-			simulationDisplay = uiRoot.GetComponentInChildren<SimulationDisplay>();
+			_infoDisplay = _uiRoot.GetComponentInChildren<InfoDisplay>();
+			transformGizmo = _uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
+			simulationDisplay = _uiRoot.GetComponentInChildren<SimulationDisplay>();
 
-			uiMainCanvasRoot = uiRoot.transform.Find("Main Canvas").gameObject;
-			followingList = uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
+			uiMainCanvasRoot = _uiRoot.transform.Find("Main Canvas").gameObject;
+			_followingList = uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
 		}
 
 		cameraControl = mainCamera.GetComponent<CameraControl>();
@@ -243,8 +244,8 @@ public class Main : MonoBehaviour
 		var simWorld = _worldRoot.AddComponent<SimulationWorld>();
 		DeviceHelper.SetGlobalClock(simWorld.GetClock());
 
-		Main.bridgeManager = new BridgeManager();
-		Main.simulationService = new SimulationService();
+		Main._bridgeManager = new BridgeManager();
+		Main._simulationService = new SimulationService();
 
 		var sphericalCoordinates = new SphericalCoordinates();
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
@@ -271,7 +272,7 @@ public class Main : MonoBehaviour
 			CleanAllResources();
 		}
 
-		if (simulationService.IsStarted())
+		if (_simulationService.IsStarted())
 		{
 			var newWorldFilename = GetArgument("-world");
 
@@ -284,6 +285,14 @@ public class Main : MonoBehaviour
 			{
 				worldFileName = newWorldFilename;
 			}
+
+			_sdfRoot = new SDF.Root();
+			_sdfRoot.fileDefaultPaths.AddRange(fileRootDirectories);
+			_sdfRoot.modelDefaultPaths.AddRange(modelRootDirectories);
+			_sdfRoot.worldDefaultPaths.AddRange(worldRootDirectories);
+			_sdfRoot.UpdateResourceModelTable();
+
+			UpdateUIModelList();
 
 			if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
 			{
@@ -359,14 +368,14 @@ public class Main : MonoBehaviour
 
 			var targetObject = _worldRoot.transform.Find(model.Name);
 
-			var addingModel = uiMainCanvasRoot.GetComponentInChildren<AddModel>();
-			addingModel.SetAddingModelForDeploy(targetObject);
+			var modelImporter = uiMainCanvasRoot.GetComponentInChildren<ModelImporter>();
+			modelImporter.SetModelForDeploy(targetObject);
 
 			// Debug.Log("Model Loaded:" + targetObject.name);
 			yield return new WaitForEndOfFrame();
 
 			// for GUI
-			followingList?.UpdateList();
+			_followingList?.UpdateList();
 		}
 
 		yield return null;
@@ -377,25 +386,17 @@ public class Main : MonoBehaviour
 		// Debug.Log("Hello CLOiSim World!!!!!");
 		Debug.Log("Target World: " + worldFileName);
 
-		_sdfRoot = new SDF.Root();
-		_sdfRoot.fileDefaultPaths.AddRange(fileRootDirectories);
-		_sdfRoot.modelDefaultPaths.AddRange(modelRootDirectories);
-		_sdfRoot.worldDefaultPaths.AddRange(worldRootDirectories);
-		_sdfRoot.UpdateResourceModelTable();
-
-		UpdateUIModelList();
-
 		if (_sdfRoot.DoParse(out var world, worldFileName))
 		{
 			_sdfLoader = new SDF.Import.Loader();
 			_sdfLoader.SetRootModels(_worldRoot);
-			_sdfLoader.SetRootLights(lightsRoot);
+			_sdfLoader.SetRootLights(_lightsRoot);
 			_sdfLoader.SetRootRoads(_roadsRoot);
 
 			yield return _sdfLoader.StartImport(world);
 
 			// for GUI
-			followingList?.UpdateList();
+			_followingList?.UpdateList();
 
 			yield return new WaitForEndOfFrame();
 
@@ -408,15 +409,39 @@ public class Main : MonoBehaviour
 			simulationDisplay?.SetErrorMessage(errorMessage);
 		}
 
-		bridgeManager.PrintLog();
+		_bridgeManager.PrintLog();
 	}
+
+	public void OnSaveButtonClicked()
+	{
+		// Debug.Log("OnSaveButtonClicked");
+		SaveWorld();
+	}
+
+	private void SaveWorld()
+	{
+		var saveDoc = _sdfRoot.GetOriginalDocument();
+
+		var worldSaver = new WorldSaver(saveDoc);
+		worldSaver.Update();
+
+		_sdfRoot.Save();
+	}
+
 
 	void LateUpdate()
 	{
-		if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyUp(KeyCode.R))
+		if (Input.GetKey(KeyCode.LeftControl))
 		{
-			resetTriggered = true;
-			// Debug.Log("Reset Triggered");
+		 	if (Input.GetKeyUp(KeyCode.R))
+			{
+				resetTriggered = true;
+				// Debug.Log("Reset Triggered");
+			}
+			else if (Input.GetKeyUp(KeyCode.S))
+			{
+				OnSaveButtonClicked();
+			}
 		}
 
 		if (resetTriggered && !isResetting)
@@ -434,6 +459,8 @@ public class Main : MonoBehaviour
 				StartCoroutine(ResetSimulation());
 			}
 		}
+
+
 	}
 
 	public static bool TriggerResetService()
@@ -502,9 +529,9 @@ public class Main : MonoBehaviour
 			Main.BridgeManager.Dispose();
 		}
 
-		if (Main.simulationService != null)
+		if (Main._simulationService != null)
 		{
-			Main.simulationService.Dispose();
+			Main._simulationService.Dispose();
 		}
 
 		if (Assimp.Unmanaged.AssimpLibrary.Instance.IsLibraryLoaded)

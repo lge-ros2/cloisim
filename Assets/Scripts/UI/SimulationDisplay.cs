@@ -44,7 +44,6 @@ public partial class SimulationDisplay : MonoBehaviour
 	private Rect rectDialog;
 	private Rect rectToolbar;
 	private Rect rectHelpButton;
-	private Rect rectHelpStatus;
 
 	private GUIStyle style;
 	private Texture2D textureBackground;
@@ -83,8 +82,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		rectToolbar = new Rect(0, topMargin, toolbarWidth, guiHeight);
 
 		rectDialog = new Rect();
-		rectHelpButton = new Rect(Screen.width - buttonWidthHelp - textLeftMargin, topMargin, buttonWidthHelp, guiHeight);
-		rectHelpStatus = new Rect(Screen.width - rectHelpButton.width - helpStatusWidth - textLeftMargin, topMargin, helpStatusWidth, textHeight * 1.1f);
+		rectHelpButton = new Rect(0, topMargin, buttonWidthHelp, guiHeight);
 
 		style = new GUIStyle();
 

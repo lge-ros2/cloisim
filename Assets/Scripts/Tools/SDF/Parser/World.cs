@@ -93,7 +93,7 @@ namespace SDF
 
 			public bool fullscreen;
 
-			public Camera camera;
+			public Camera camera = null;
 
 			// Description: A plugin is a dynamically loaded chunk of code. It can exist as a child of world, model, and sensor.
 			private Plugins plugins;
@@ -256,7 +256,7 @@ namespace SDF
 			if (IsValidNode("gui"))
 			{
 				gui = new Gui();
-				gui.fullscreen = GetAttributeInPath<bool>("gui", "fullscreen");
+				gui.fullscreen = GetValue<bool>("gui/fullscreen", false);
 
 				if (IsValidNode("gui/camera"))
 				{
