@@ -5468,6 +5468,7 @@ MonoBehaviour:
   edgeSens: 0.1
   edgeSensMax: 1
   wheelMoveAmp: 100
+  angleStep: 1.5
 --- !u!20 &963194227
 Camera:
   m_ObjectHideFlags: 0
