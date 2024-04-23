@@ -215,8 +215,8 @@ namespace SDF
 			public static void MakePrismatic(in UE.ArticulationBody body, in SDF.Axis axis, in SDF.Pose<double> pose)
 			{
 				body.jointType = UE.ArticulationJointType.PrismaticJoint;
-				body.anchorRotation *= SDF2Unity.Rotation(pose.Rot);
-				// body.parentAnchorRotation *= SDF2Unity.Rotation(pose.Rot);  // TODO: matchAnchors is set to true
+				body.anchorRotation *= SDF2Unity.Rotation(pose?.Rot);
+				// body.parentAnchorRotation *= SDF2Unity.Rotation(pose?.Rot);  // TODO: matchAnchors is set to true
 
 				body.linearDamping = 0.05f;
 				body.angularDamping = 0.05f;

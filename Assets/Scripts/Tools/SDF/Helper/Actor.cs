@@ -215,7 +215,7 @@ namespace SDF
 							for (var i = startIndex; i < trajectory.waypoints.Count; i++)
 							{
 								var waypoint = trajectory.waypoints[i];
-								// UE.Debug.Log("Time: " + waypoint.time + ", Position: " + SDF2Unity.Position(waypoint.Pose.Pos) + ", Rotation: " + SDF2Unity.Rotation(waypoint.Pose.Rot));
+								// UE.Debug.Log("Time: " + waypoint.time + ", Position: " + SDF2Unity.Position(waypoint.Pose?.Pos) + ", Rotation: " + SDF2Unity.Rotation(waypoint.Pose?.Rot));
 
 								var waypointToward = new WaypointToward();
 								var nextTime = (float)waypoint.time;

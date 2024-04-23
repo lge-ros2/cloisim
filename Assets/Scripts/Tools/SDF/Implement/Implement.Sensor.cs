@@ -39,17 +39,8 @@ namespace SDF
 					sensorTransform.rotation = UE.Quaternion.identity;
 					sensorTransform.SetParent(targetObject.transform, false);
 					sensorTransform.localScale = UE.Vector3.one;
-
-					if (sensorPose == null)
-					{
-						sensorTransform.localPosition = UE.Vector3.zero;
-						sensorTransform.localRotation = UE.Quaternion.identity;
-					}
-					else
-					{
-						sensorTransform.localPosition = SDF2Unity.Position(sensorPose.Pos);
-						sensorTransform.localRotation = SDF2Unity.Rotation(sensorPose.Rot);
-					}
+					sensorTransform.localPosition = SDF2Unity.Position(sensorPose?.Pos);
+					sensorTransform.localRotation = SDF2Unity.Rotation(sensorPose?.Rot);
 				}
 				catch
 				{

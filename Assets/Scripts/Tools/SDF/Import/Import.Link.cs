@@ -143,7 +143,7 @@ namespace SDF
 					if (inertial.pose == null)
 						articulationBody.automaticCenterOfMass = true;
 					else
-						articulationBody.centerOfMass = SDF2Unity.Position(inertial.pose.Pos);
+						articulationBody.centerOfMass = SDF2Unity.Position(inertial.pose?.Pos);
 					// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
 				}
 

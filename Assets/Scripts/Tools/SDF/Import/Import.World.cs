@@ -26,11 +26,8 @@ namespace SDF
 					if (mainCamera != null && world.gui.camera != null)
 					{
 						var cameraPose = world.gui.camera.Pose;
-						if (cameraPose != null)
-						{
-							mainCamera.transform.localPosition = SDF2Unity.Position(cameraPose.Pos);
-							mainCamera.transform.localRotation = SDF2Unity.Rotation(cameraPose.Rot);
-						}
+						mainCamera.transform.localPosition = SDF2Unity.Position(cameraPose?.Pos);
+						mainCamera.transform.localRotation = SDF2Unity.Rotation(cameraPose?.Rot);
 					}
 
 					UE.Screen.fullScreen = world.gui.fullscreen;
