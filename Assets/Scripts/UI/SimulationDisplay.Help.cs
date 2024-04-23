@@ -68,14 +68,14 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine("    if you want cancel the following mode, choose '--unfollowing--' menu from the list.");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(string.Empty);
-		sb.AppendLine(" - Camera Control: Camera control is quite intuitive like a FPS game (W/S/A/D/Q/Z)");
+		sb.AppendLine(" - Camera Control: Camera control is quite intuitive like a FPS game (W/S/A/D + R/F)");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine("    <b>W</b> or <b>Mouse Scroll Up</b>: Move Forward");
 		sb.AppendLine("    <b>S</b> or <b>Mouse Scroll Down</b>: Move Backward");
 		sb.AppendLine("    <b>A</b>: Move Left(sidestep left)");
 		sb.AppendLine("    <b>D</b>: Move Right(sidestep right)");
-		sb.AppendLine("    <b>Q</b>: Move upward");
-		sb.AppendLine("    <b>Z</b>: Move downward");
+		sb.AppendLine("    <b>R</b>: Move upward");
+		sb.AppendLine("    <b>F</b>: Move downward");
 		sb.AppendLine("    <b>Space</b>: moving only on current plane(X, Z axis). it's toggling.");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(string.Empty);

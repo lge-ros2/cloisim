@@ -213,11 +213,11 @@ public class CameraControl : MonoBehaviour
 			baseDirection.x += 1;
 		}
 
-		if (Input.GetKey(KeyCode.Q))
+		if (Input.GetKey(KeyCode.R))
 		{
 			baseDirection.y += 1;
 		}
-		else if (Input.GetKey(KeyCode.Z))
+		else if (Input.GetKey(KeyCode.F))
 		{
 			baseDirection.y += -1;
 		}

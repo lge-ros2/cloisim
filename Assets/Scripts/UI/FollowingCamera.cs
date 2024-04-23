@@ -24,7 +24,10 @@ public class FollowingCamera : MonoBehaviour
 	[Range(-180, 180)]
 	public float followingAngle = 40f;
 
+	[SerializeField]
 	public float moveAmount = 0.1f;
+
+	[SerializeField]
 	public float angleStep = 1.5f;
 
 	// Start is called before the first frame update
@@ -54,36 +57,39 @@ public class FollowingCamera : MonoBehaviour
 
 	private void ChangeParameterByBaseInput()
 	{
-		if (Input.GetKey(KeyCode.W))
+		if (!Input.GetKey(KeyCode.LeftControl))
 		{
-			const float blockZeroDistance = 0.001f;
-
-			if (distance > moveAmount + blockZeroDistance)
+			if (Input.GetKey(KeyCode.W))
 			{
-				distance -= moveAmount;
+				const float blockZeroDistance = 0.001f;
+
+				if (distance > moveAmount + blockZeroDistance)
+				{
+					distance -= moveAmount;
+				}
 			}
-		}
-		else if (Input.GetKey(KeyCode.S))
-		{
-			distance += moveAmount;
-		}
+			else if (Input.GetKey(KeyCode.S))
+			{
+				distance += moveAmount;
+			}
 
-		if (Input.GetKey(KeyCode.A))
-		{
-			followingAngle += (angleStep);
-		}
-		else if (Input.GetKey(KeyCode.D))
-		{
-			followingAngle -= (angleStep);
-		}
+			if (Input.GetKey(KeyCode.A))
+			{
+				followingAngle += (angleStep);
+			}
+			else if (Input.GetKey(KeyCode.D))
+			{
+				followingAngle -= (angleStep);
+			}
 
-		if (Input.GetKey(KeyCode.Q))
-		{
-			height += moveAmount;
-		}
-		else if (Input.GetKey(KeyCode.Z))
-		{
-			height -= moveAmount;
+			if (Input.GetKey(KeyCode.R))
+			{
+				height += moveAmount;
+			}
+			else if (Input.GetKey(KeyCode.F))
+			{
+				height -= moveAmount;
+			}
 		}
 	}
 
