@@ -39,6 +39,7 @@ public class CameraControl : MonoBehaviour
 	public float edgeSens = 0.02f;
 	public float edgeSensMax = 1.0f;
 	public float wheelMoveAmp = 50f;
+	public float angleStep = 1.5f;
 
 	private Vector3 lastMouse = new Vector3(255, 255, 255); //kind of in the middle of the screen, rather than at the top (play)
 	private float totalRun = 1.0f;
@@ -128,7 +129,7 @@ public class CameraControl : MonoBehaviour
 
 		lastMouse = Input.mousePosition;
 
-		// Keyboard commands
+		// Keyboard commands for Translation
 		var p = GetBaseInput();
 		if (Input.GetKey(KeyCode.LeftShift))
 		{
@@ -158,6 +159,24 @@ public class CameraControl : MonoBehaviour
 		else
 		{
 			transform.Translate(p);
+		}
+
+		Rotate();
+	}
+
+	private void Rotate()
+	{
+		var rotation = transform.rotation.eulerAngles;
+		if (!Input.GetKey(KeyCode.LeftControl))
+		{
+			if (Input.GetKey(KeyCode.Q))
+			{
+				transform.RotateAround(transform.position, Vector3.up, -angleStep);
+			}
+			else if (Input.GetKey(KeyCode.E))
+			{
+				transform.RotateAround(transform.position, Vector3.up, angleStep);
+			}
 		}
 	}
 
@@ -191,35 +210,39 @@ public class CameraControl : MonoBehaviour
 			}
 		}
 
-		if (Input.GetKey(KeyCode.W))
+		if (!Input.GetKey(KeyCode.LeftControl))
 		{
-			baseDirection.z += 1;
-		}
-		else if (Input.GetKey(KeyCode.S))
-		{
-			baseDirection.z += -1;
-		}
+			if (Input.GetKey(KeyCode.W))
 
-		if (Input.GetKey(KeyCode.A) && Input.GetKey(KeyCode.D))
-		{
-			baseDirection.x = 0;
-		}
-		else if (Input.GetKey(KeyCode.A))
-		{
-			baseDirection.x += -1;
-		}
-		else if (Input.GetKey(KeyCode.D))
-		{
-			baseDirection.x += 1;
-		}
+			{
+				baseDirection.z += 1;
+			}
+			else if (Input.GetKey(KeyCode.S))
+			{
+				baseDirection.z += -1;
+			}
 
-		if (Input.GetKey(KeyCode.R))
-		{
-			baseDirection.y += 1;
-		}
-		else if (Input.GetKey(KeyCode.F))
-		{
-			baseDirection.y += -1;
+			if (Input.GetKey(KeyCode.A) && Input.GetKey(KeyCode.D))
+			{
+				baseDirection.x = 0;
+			}
+			else if (Input.GetKey(KeyCode.A))
+			{
+				baseDirection.x += -1;
+			}
+			else if (Input.GetKey(KeyCode.D))
+			{
+				baseDirection.x += 1;
+			}
+
+			if (Input.GetKey(KeyCode.R))
+			{
+				baseDirection.y += 1;
+			}
+			else if (Input.GetKey(KeyCode.F))
+			{
+				baseDirection.y += -1;
+			}
 		}
 
 		return baseDirection;

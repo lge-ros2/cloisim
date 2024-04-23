@@ -74,9 +74,11 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine("    <b>S</b> or <b>Mouse Scroll Down</b>: Move Backward");
 		sb.AppendLine("    <b>A</b>: Move Left(sidestep left)");
 		sb.AppendLine("    <b>D</b>: Move Right(sidestep right)");
+		sb.AppendLine("    <b>Q</b>: Turn Left");
+		sb.AppendLine("    <b>E</b>: Turn Right");
 		sb.AppendLine("    <b>R</b>: Move upward");
 		sb.AppendLine("    <b>F</b>: Move downward");
-		sb.AppendLine("    <b>Space</b>: moving only on current plane(X, Z axis). it's toggling.");
+		sb.AppendLine("    <b>Space</b>: moving only on current plane(XZ plane). It's toggling.");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(string.Empty);
 		sb.AppendLine(" - Change camera view-port(screen)");
