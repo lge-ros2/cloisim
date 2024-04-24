@@ -233,10 +233,5 @@ namespace SDF
 		{
 			return shape;
 		}
-
-		public Type GetShapeType()
-		{
-			return shape?.GetType();
-		}
 	}
 }

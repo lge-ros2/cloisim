@@ -259,11 +259,11 @@ namespace SDF
 			Console.Write($"Total Models: {resourceModelTable.Count}");
 		}
 
-			// Converting media/file uri
+		// Converting media/file uri
 		private void ConvertPathToAbsolutePath(in string targetElement)
 		{
 			var nodeList = _doc.SelectNodes($"//{targetElement}");
-			// Console.Write("Target:" + targetElement + ", Num Of uri nodes: " + nodeList.Count);
+			Console.Write("Target:" + targetElement + ", Num Of uri nodes: " + nodeList.Count);
 			foreach (XmlNode node in nodeList)
 			{
 				var uri = node.InnerText;
@@ -285,9 +285,11 @@ namespace SDF
 				}
 				else if (uri.StartsWith(ProtocolFile))
 				{
+					Console.Write(uri);
 					foreach (var filePath in fileDefaultPaths)
 					{
 						var fileUri = uri.Replace(ProtocolFile, filePath + "/");
+						Console.Write(fileUri);
 						if (File.Exists(@fileUri))
 						{
 							node.InnerText = fileUri;

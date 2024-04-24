@@ -6,19 +6,8 @@
 
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
-
-// using UnityEngine;
-// using System;
-// using UnityEngine.Rendering;
-// using UENet = UnityEngine.Networking;
-// using UnityEngine;
-// using UnityEngine.Networking;
-// using System.Collections;
-
-// using UnityEngine;
-// using System.Collections;
-// using UnityEngine.Networking;
-
+using System.Collections.Generic;
+using System;
 
 namespace SDF
 {
@@ -76,26 +65,16 @@ namespace SDF
 					var box = shape as SDF.Box;
 					var scale = SDF2Unity.Scale(box.size);
 					mesh = ProceduralMesh.CreateBox(scale.x, scale.y, scale.z);
-
-					var boxCollider = createdObject.AddComponent<UE.BoxCollider>();
-					boxCollider.size = scale;
 				}
 				else if (shape is SDF.Sphere)
 				{
 					var sphere = shape as SDF.Sphere;
 					mesh = ProceduralMesh.CreateSphere((float)sphere.radius);
-
-					var sphereCollider = createdObject.AddComponent<UE.SphereCollider>();
-					sphereCollider.radius = (float)sphere.radius;
 				}
 				else if (shape is SDF.Capsule)
 				{
 					var capsule = shape as SDF.Capsule;
 					mesh = ProceduralMesh.CreateCapsule((float)capsule.radius, (float)capsule.length);
-
-					var capsuleCollider = createdObject.AddComponent<UE.CapsuleCollider>();
-					capsuleCollider.radius = (float)capsule.radius;
-					capsuleCollider.height = (float)capsule.length;
 				}
 				else if (shape is SDF.Cylinder)
 				{
@@ -107,6 +86,10 @@ namespace SDF
 					var plane = shape as SDF.Plane;
 					var normal = SDF2Unity.Normal(plane.normal);
 					mesh = ProceduralMesh.CreatePlane((float)plane.size.X, (float)plane.size.Y, normal);
+				}
+				else if (shape is SDF.Polyline)
+				{
+					mesh = CreatePolyline(createdObject, (shape as SDF.Polyline).point, (shape as SDF.Polyline).height);
 				}
 				else
 				{
@@ -130,6 +113,47 @@ namespace SDF
 				}
 
 				createdObject.transform.SetParent(targetParentObject.transform, false);
+			}
+
+			private static UE.Mesh CreatePolyline(in UE.GameObject createdObject, IReadOnlyList<Vector2<double>> points, in double height)
+			{
+				const float polyLineWidth = 0.1f;
+
+				if (points == null)
+				{
+					throw new ArgumentNullException(nameof(points));
+				}
+
+				var positions = new UE.Vector3[points.Count];
+
+				for (int i = 0; i < points.Count; i++)
+				{
+					var point = points[i];
+					if (point == null)
+					{
+						throw new ArgumentNullException(nameof(points), $"'{nameof(points)}' contains a null element at index '{i}'.");
+					}
+
+					positions[i] = SDF2Unity.Position((float)point.X, (float)point.Y, (float)height);
+				}
+
+				var lineRenderer = createdObject.AddComponent<UE.LineRenderer>();
+				lineRenderer.startWidth = polyLineWidth;
+				lineRenderer.endWidth = polyLineWidth;
+				lineRenderer.positionCount = positions.Length;
+				lineRenderer.SetPositions(positions);
+
+				var mesh = new UE.Mesh();
+				try
+				{
+					lineRenderer.BakeMesh(mesh, false);
+				}
+				catch (Exception e)
+				{
+					throw new InvalidOperationException("Failed to bake mesh.", e);
+				}
+
+				return mesh;
 			}
 		}
 	}

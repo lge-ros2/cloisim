@@ -16,7 +16,7 @@ namespace SDF
 		{
 			public static readonly int PlaneLayerIndex = UE.LayerMask.NameToLayer("Plane");
 
-			private static readonly bool UseVHACD = true; // Expreimental parameters
+			private static readonly bool UseVHACD = true; // Experiment parameters
 
 			private static readonly float ThresholdFrictionCombineMultiply = 0.01f;
 			private static readonly float DynamicFrictionRatio = 0.95f;
@@ -41,7 +41,6 @@ namespace SDF
 				}
 			}
 
-#if ENABLE_MERGE_COLLIDER
 			private static void MergeCollider(in UE.GameObject targetObject)
 			{
 				var geometryWorldToLocalMatrix = targetObject.transform.worldToLocalMatrix;
@@ -63,9 +62,8 @@ namespace SDF
 				mergedMeshCollider.sharedMesh = mergedMesh;
 				mergedMeshCollider.convex = false;
 				mergedMeshCollider.cookingOptions = CookingOptions;
-				mergedMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
+				// mergedMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
 			}
-#endif
 
 			public static void Make(UE.GameObject targetObject)
 			{
