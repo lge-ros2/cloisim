@@ -34,14 +34,12 @@ namespace SDF
 			}
 			else if (IsValidNode("box"))
 			{
-				Type = "box";
 				shape = new Box();
 				var sizeStr = GetValue<string>("box/size");
 				(shape as Box).size.FromString(sizeStr);
 			}
 			else if (IsValidNode("mesh"))
 			{
-				Type = "mesh";
 				shape = new Mesh();
 				var mesh = (shape as Mesh);
 				mesh.uri = GetValue<string>("mesh/uri");
@@ -66,20 +64,17 @@ namespace SDF
 			}
 			else if (IsValidNode("sphere"))
 			{
-				Type = "sphere";
 				shape = new Sphere();
 				(shape as Sphere).radius = GetValue<double>("sphere/radius");
 			}
 			else if (IsValidNode("cylinder"))
 			{
-				Type = "cylinder";
 				shape = new Cylinder();
 				(shape as Cylinder).radius = GetValue<double>("cylinder/radius");
 				(shape as Cylinder).length = GetValue<double>("cylinder/length");
 			}
 			else if (IsValidNode("plane"))
 			{
-				Type = "plane";
 				shape = new Plane();
 				var normal = GetValue<string>("plane/normal");
 				(shape as Plane).normal.FromString(normal);
@@ -89,7 +84,6 @@ namespace SDF
 			}
 			else if (IsValidNode("image"))
 			{
-				Type = "image";
 				shape = new Image();
 
 				(shape as Image).uri = GetValue<string>("image/uri");
@@ -100,7 +94,6 @@ namespace SDF
 			}
 			else if (IsValidNode("heightmap"))
 			{
-				Type = "heightmap";
 				shape = new Heightmap();
 
 				(shape as Heightmap).uri = GetValue<string>("heightmap/uri");
@@ -184,14 +177,21 @@ namespace SDF
 			}
 			else if (IsValidNode("polyline"))
 			{
-				Console.WriteLine("Currently not supported");
-				empty = true;
+				shape = new Polyline();
+				if (GetValues<string>("polyline/point", out var pointList))
+				{
+					foreach (var pointstr in pointList)
+					{
+						var point = new Vector2<double>(pointstr);
+						(shape as Polyline).point.Add(point);
+					}
+				}
+				(shape as Polyline).height = GetValue<double>("polyline/height");
 			}
 
 			#region SDF_1.7_feature
 			else if (IsValidNode("capsule"))
 			{
-				Type = "capsule";
 				shape = new Capsule();
 				(shape as Capsule).radius = GetValue<double>("capsule/radius");
 				(shape as Capsule).length = GetValue<double>("capsule/length");
@@ -201,7 +201,6 @@ namespace SDF
 			#region SDF_1.8_feature
 			else if (IsValidNode("ellipsoid"))
 			{
-				Type = "ellipsoid";
 				shape = new Ellipsoid();
 
 				var radii = GetValue<string>("ellipsoid/radii");
@@ -221,6 +220,12 @@ namespace SDF
 			{
 				empty = true;
 				Console.WriteLine("missing mesh type");
+			}
+
+			if (shape != null)
+			{
+				this.Type = shape.Type();
+				// Console.WriteLine(Type);
 			}
 		}
 
