@@ -33,7 +33,7 @@ namespace SDF
 			G = (double)Convert.ChangeType(tmp[1], TypeCode.Double);
 			B = (double)Convert.ChangeType(tmp[2], TypeCode.Double);
 
-			if (tmp.Length > 4)
+			if (tmp.Length != 4)
 				return;
 
 			A = (double)Convert.ChangeType(tmp[3], TypeCode.Double);
