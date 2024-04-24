@@ -92,15 +92,20 @@ namespace SDF
 #endif
 					}
 
-					foreach (var meshFilter in meshFilters)
+					RemoveRenderers(meshFilters);
+				}
+			}
+
+			private static void RemoveRenderers(UE.MeshFilter[] meshFilters)
+			{
+				foreach (var meshFilter in meshFilters)
+				{
+					var meshRenderer = meshFilter.GetComponent<UE.MeshRenderer>();
+					if (meshRenderer != null)
 					{
-						var meshRenderer = meshFilter.GetComponent<UE.MeshRenderer>();
-						if (meshRenderer != null)
-						{
-							UE.GameObject.Destroy(meshRenderer);
-						}
-						UE.GameObject.Destroy(meshFilter);
+						UE.GameObject.Destroy(meshRenderer);
 					}
+					UE.GameObject.Destroy(meshFilter);
 				}
 			}
 
