@@ -192,7 +192,7 @@ namespace SDF
 						}
 					}
 
-					polyline.height = GetValue<double>("height");
+					polyline.height = polyline.GetValue<double>("height");
 
 					(shape as Polylines).Add(polyline);
 				}
