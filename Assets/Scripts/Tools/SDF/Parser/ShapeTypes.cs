@@ -5,6 +5,7 @@
  */
 
 using System.Collections.Generic;
+using System.Xml;
 
 namespace SDF
 {
@@ -139,11 +140,19 @@ namespace SDF
 		}
 	}
 
-	public class Polyline : ShapeType
+	public class Polyline : Entity
 	{
 		public List<Vector2<double>> point = new List<Vector2<double>>();
 		public double height = 1;
 
+		public Polyline(XmlNode _node)
+			: base(_node)
+		{
+		}
+	}
+
+	public class Polylines : List<Polyline>, ShapeType
+	{
 		public string Type()
 		{
 			return "polyline";

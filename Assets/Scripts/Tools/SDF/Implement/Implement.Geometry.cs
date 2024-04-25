@@ -6,7 +6,6 @@
 
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
-using System.Collections.Generic;
 using System;
 
 namespace SDF
@@ -87,9 +86,9 @@ namespace SDF
 					var normal = SDF2Unity.Normal(plane.normal);
 					mesh = ProceduralMesh.CreatePlane((float)plane.size.X, (float)plane.size.Y, normal);
 				}
-				else if (shape is SDF.Polyline)
+				else if (shape is SDF.Polylines)
 				{
-					mesh = CreatePolyline(createdObject, (shape as SDF.Polyline).point, (shape as SDF.Polyline).height);
+					mesh = ProceduralMesh.CreatePolylines(shape as SDF.Polylines);
 				}
 				else
 				{
@@ -113,47 +112,6 @@ namespace SDF
 				}
 
 				createdObject.transform.SetParent(targetParentObject.transform, false);
-			}
-
-			private static UE.Mesh CreatePolyline(in UE.GameObject createdObject, IReadOnlyList<Vector2<double>> points, in double height)
-			{
-				const float polyLineWidth = 0.1f;
-
-				if (points == null)
-				{
-					throw new ArgumentNullException(nameof(points));
-				}
-
-				var positions = new UE.Vector3[points.Count];
-
-				for (int i = 0; i < points.Count; i++)
-				{
-					var point = points[i];
-					if (point == null)
-					{
-						throw new ArgumentNullException(nameof(points), $"'{nameof(points)}' contains a null element at index '{i}'.");
-					}
-
-					positions[i] = SDF2Unity.Position((float)point.X, (float)point.Y, (float)height);
-				}
-
-				var lineRenderer = createdObject.AddComponent<UE.LineRenderer>();
-				lineRenderer.startWidth = polyLineWidth;
-				lineRenderer.endWidth = polyLineWidth;
-				lineRenderer.positionCount = positions.Length;
-				lineRenderer.SetPositions(positions);
-
-				var mesh = new UE.Mesh();
-				try
-				{
-					lineRenderer.BakeMesh(mesh, false);
-				}
-				catch (Exception e)
-				{
-					throw new InvalidOperationException("Failed to bake mesh.", e);
-				}
-
-				return mesh;
 			}
 		}
 	}

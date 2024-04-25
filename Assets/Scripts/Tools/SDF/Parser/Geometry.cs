@@ -177,16 +177,25 @@ namespace SDF
 			}
 			else if (IsValidNode("polyline"))
 			{
-				shape = new Polyline();
-				if (GetValues<string>("polyline/point", out var pointList))
+				shape = new Polylines();
+
+				var polylineList = GetNodes("polyline");
+				foreach (XmlNode polylineNode in polylineList)
 				{
-					foreach (var pointstr in pointList)
+					var polyline = new Polyline(polylineNode);
+					if (polyline.GetValues<string>("point", out var pointList))
 					{
-						var point = new Vector2<double>(pointstr);
-						(shape as Polyline).point.Add(point);
+						foreach (var pointstr in pointList)
+						{
+							var point = new Vector2<double>(pointstr);
+							polyline.point.Add(point);
+						}
 					}
+
+					polyline.height = GetValue<double>("height");
+
+					(shape as Polylines).Add(polyline);
 				}
-				(shape as Polyline).height = GetValue<double>("polyline/height");
 			}
 
 			#region SDF_1.7_feature

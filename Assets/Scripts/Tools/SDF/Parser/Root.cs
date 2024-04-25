@@ -285,11 +285,9 @@ namespace SDF
 				}
 				else if (uri.StartsWith(ProtocolFile))
 				{
-					Console.Write(uri);
 					foreach (var filePath in fileDefaultPaths)
 					{
 						var fileUri = uri.Replace(ProtocolFile, filePath + "/");
-						Console.Write(fileUri);
 						if (File.Exists(@fileUri))
 						{
 							node.InnerText = fileUri;

@@ -16,7 +16,7 @@ namespace SDF
 		{
 			public static readonly int PlaneLayerIndex = UE.LayerMask.NameToLayer("Plane");
 
-			private static readonly bool UseVHACD = true; // Experiment parameters
+			private static readonly bool UseVHACD = true; // Experimental parameters
 
 			private static readonly float ThresholdFrictionCombineMultiply = 0.01f;
 			private static readonly float DynamicFrictionRatio = 0.95f;
