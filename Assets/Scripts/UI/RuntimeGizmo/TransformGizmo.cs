@@ -516,9 +516,11 @@ namespace RuntimeGizmos
 
 		void GetTarget()
 		{
-			if (nearAxis == Axis.None && !Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButtonDown(0))
+			if (nearAxis == Axis.None &&
+				!Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButtonDown(0))
 			{
-				if (Physics.Raycast(myCamera.ScreenPointToRay(Input.mousePosition), out var hitInfo, Mathf.Infinity))
+				var ray = myCamera.ScreenPointToRay(Input.mousePosition);
+				if (Physics.Raycast(ray, out var hitInfo, Mathf.Infinity))
 				{
 					Transform target = null;
 					var hitObject = hitInfo.transform;
@@ -526,6 +528,7 @@ namespace RuntimeGizmos
 					_lockRotation = false;
 
 					if (hitObject.CompareTag("Props") ||
+						hitObject.CompareTag("Actor") ||
 						(hitObject.CompareTag("Road") && Input.GetKey(KeyCode.LeftAlt)))
 					{
 						if (hitObject.CompareTag("Road"))
@@ -537,41 +540,32 @@ namespace RuntimeGizmos
 					}
 					else
 					{
-						var hitParentActor = hitObject?.GetComponent<SDF.Helper.Actor>();
-
-						if (hitParentActor != null && hitParentActor.CompareTag("Actor"))
+						// To avoid plane object
+						var isPlaneObject = hitObject.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex);
+						var collisionHelper = hitObject.GetComponentInChildren<SDF.Helper.Collision>();
+						if (collisionHelper != null)
 						{
-							target = hitParentActor.transform;
+							isPlaneObject |= collisionHelper.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex);
 						}
-						else
+
+						if (!isPlaneObject)
 						{
-							// To avoid plane object
-							var isPlaneObject = hitObject.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex);
-							var collisionHelper = hitObject.GetComponentInChildren<SDF.Helper.Collision>();
-							if (collisionHelper != null)
-							{
-								isPlaneObject |= collisionHelper.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex);
-							}
+							var hitParentLinkHelper = hitObject?.GetComponentInParent<SDF.Helper.Link>();
+							var hitRootModelHelper = hitParentLinkHelper?.RootModel;
 
-							if (!isPlaneObject)
+							if (hitRootModelHelper != null && hitParentLinkHelper.Model != null)
 							{
-								var hitParentLinkHelper = hitObject?.GetComponentInParent<SDF.Helper.Link>();
-								var hitRootModelHelper = hitParentLinkHelper?.RootModel;
-
-								if (hitRootModelHelper != null && hitParentLinkHelper.Model != null)
+								if (!(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
 								{
-									if (!(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
-									{
-										target = (hitRootModelHelper.hasRootArticulationBody) ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
-									}
+									target = (hitRootModelHelper.hasRootArticulationBody) ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
 								}
-								// Select static object(non articulation body) only when left alt is pressed
-								else if (hitParentLinkHelper == null && Input.GetKey(KeyCode.LeftAlt))
-								{
-									target = hitObject.transform;
-								}
-								// Debug.Log(hitParentObject.name + " Selected!!!!");
 							}
+							// Select static object(non articulation body) only when left alt is pressed
+							else if (hitParentLinkHelper == null && Input.GetKey(KeyCode.LeftAlt))
+							{
+								target = hitObject.transform;
+							}
+							// Debug.Log(hitParentObject.name + " Selected!!!!");
 						}
 					}
 

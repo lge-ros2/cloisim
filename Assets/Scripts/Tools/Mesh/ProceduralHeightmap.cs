@@ -49,14 +49,21 @@ public class ProceduralHeightmap
 	private static Texture2D GenerateTexture(in string uri)
 	{
 		// Debug.Log(uri);
-		var img = System.Drawing.Image.FromFile(uri);
 		var texture = new Texture2D(1, 1);
-
-		// TODO: Support GeoTIFF
-		using (var ms = new MemoryStream())
+		try
 		{
-			img.Save(ms, img.RawFormat);
-			ImageConversion.LoadImage(texture, ms.ToArray(), false);
+			var img = System.Drawing.Image.FromFile(uri);
+
+			// TODO: Support GeoTIFF
+			using (var ms = new MemoryStream())
+			{
+				img.Save(ms, img.RawFormat);
+				ImageConversion.LoadImage(texture, ms.ToArray(), false);
+			}
+		}
+		catch (Exception e)
+		{
+			Debug.LogWarning(e.Message);
 		}
 
 		return texture;

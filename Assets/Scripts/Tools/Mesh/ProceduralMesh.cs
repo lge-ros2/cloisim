@@ -6,6 +6,8 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using Game.Utils.Math;
+using Game.Utils.Triangulation;
 
 /// <summary>https://wiki.unity3d.com/index.php/ProceduralPrimitives</summary>
 public class ProceduralMesh
@@ -687,6 +689,109 @@ public class ProceduralMesh
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
+		return mesh;
+	}
+
+	public static Mesh CreatePolylines(in SDF.Polylines polylines)
+	{
+		// Enables tesselation (before calculating constrained edges) when greater than zero.
+		// It subdivides the triangles until each of them has an area smaller than this value.
+		const float TesselationMaximumTriangleArea = 0.0f;
+
+		// distance tolerance between 2 points.
+		// This is used when creating a list of distinct points in the polylines.
+		const float tolerance = 1e-4f;
+
+		var height = polylines.Count == 0 ? 1f : (float)polylines[0].height;
+		var halfHeight = height * 0.5f;
+
+		// close all the loops
+		foreach (var polyline in polylines)
+		{
+			// does the poly ends with the first point?
+			var first = polyline.point[0];
+			var last = polyline.point[polyline.point.Count - 1];
+			var distance = (first.X - last.X) * (first.X - last.X) + (first.Y - last.Y) * (first.Y - last.Y);
+
+			// within range
+			if (distance > tolerance * tolerance)
+			{
+				polyline.point.Add(first);
+				Debug.LogWarning("add the first point at the ends");
+			}
+		}
+
+		var pointsToTriangulate = new List<Vector2>();
+		if (polylines.Count > 0)
+		{
+			foreach (var point in polylines[0].point)
+			{
+				pointsToTriangulate.Add(new Vector2((float)point.Y, (float)point.X));
+			}
+		}
+
+		List<List<Vector2>> constrainedEdgePoints = null;
+		if (polylines.Count > 1)
+		{
+			constrainedEdgePoints = new List<List<Vector2>>();
+
+			for (int i = 1; i < polylines.Count; i++)
+			{
+				var points = new List<Vector2>();
+				foreach (var point in polylines[i].point)
+				{
+					points.Add(new Vector2((float)point.Y, (float)point.X));
+				}
+				constrainedEdgePoints.Add(points);
+			}
+		}
+
+		var outputTriangles = new List<Triangle2D>();
+		var triangulator = new DelaunayTriangulation();
+		triangulator.Triangulate(pointsToTriangulate, TesselationMaximumTriangleArea, constrainedEdgePoints);
+		triangulator.GetTrianglesDiscardingHoles(outputTriangles);
+
+		var planeMesh = CreateMeshFromTriangles(outputTriangles);
+
+		var extrudedMesh = new Mesh();
+		extrudedMesh.name = "Polyline";
+
+		var extrusion = new Matrix4x4[2]
+		{
+			Matrix4x4.TRS(Vector3.forward * -halfHeight, Quaternion.identity, Vector3.one),
+			Matrix4x4.TRS(Vector3.forward * halfHeight, Quaternion.identity, Vector3.one)
+		};
+		MeshExtrusion.ExtrudeMesh(planeMesh, extrudedMesh, extrusion, false);
+
+		return extrudedMesh;
+	}
+
+	private static Mesh CreateMeshFromTriangles(IReadOnlyList<Triangle2D> triangles)
+	{
+		var vertices = new List<Vector3>(triangles.Count * 3);
+		var indices = new List<int>(triangles.Count * 3);
+
+		for (var i = 0; i < triangles.Count; ++i)
+		{
+			vertices.Add(triangles[i].p0);
+			vertices.Add(triangles[i].p1);
+			vertices.Add(triangles[i].p2);
+			indices.Add(i * 3 + 2); // Changes order
+			indices.Add(i * 3 + 1);
+			indices.Add(i * 3);
+		}
+
+		var uvs = new Vector2[vertices.Count];
+		for (int i = 0; i < uvs.Length; i++)
+		{
+			uvs[i] = new Vector2(vertices[i].x, vertices[i].y);
+		}
+
+		var mesh = new Mesh();
+		mesh.subMeshCount = 1;
+		mesh.SetVertices(vertices);
+		mesh.SetIndices(indices, MeshTopology.Triangles, 0);
+		mesh.SetUVs(0, uvs);
 		return mesh;
 	}
 }
