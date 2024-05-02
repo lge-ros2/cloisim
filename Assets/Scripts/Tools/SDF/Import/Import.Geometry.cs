@@ -20,8 +20,8 @@ namespace SDF
 				}
 
 				var targetObject = (parentObject as UE.GameObject);
-				var t = geometry.GetShapeType();
 				var shape = geometry.GetShape();
+				var t = shape.GetType();
 
 				if (t != null && t.Equals(typeof(SDF.Mesh)))
 				{

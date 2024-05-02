@@ -16,7 +16,7 @@ namespace SDF
 		{
 			public static readonly int PlaneLayerIndex = UE.LayerMask.NameToLayer("Plane");
 
-			private static readonly bool UseVHACD = true; // Expreimental parameters
+			private static readonly bool UseVHACD = true; // Experimental parameters
 
 			private static readonly float ThresholdFrictionCombineMultiply = 0.01f;
 			private static readonly float DynamicFrictionRatio = 0.95f;
@@ -41,7 +41,6 @@ namespace SDF
 				}
 			}
 
-#if ENABLE_MERGE_COLLIDER
 			private static void MergeCollider(in UE.GameObject targetObject)
 			{
 				var geometryWorldToLocalMatrix = targetObject.transform.worldToLocalMatrix;
@@ -63,9 +62,8 @@ namespace SDF
 				mergedMeshCollider.sharedMesh = mergedMesh;
 				mergedMeshCollider.convex = false;
 				mergedMeshCollider.cookingOptions = CookingOptions;
-				mergedMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
+				// mergedMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
 			}
-#endif
 
 			public static void Make(UE.GameObject targetObject)
 			{
@@ -92,15 +90,20 @@ namespace SDF
 #endif
 					}
 
-					foreach (var meshFilter in meshFilters)
+					RemoveRenderers(meshFilters);
+				}
+			}
+
+			private static void RemoveRenderers(UE.MeshFilter[] meshFilters)
+			{
+				foreach (var meshFilter in meshFilters)
+				{
+					var meshRenderer = meshFilter.GetComponent<UE.MeshRenderer>();
+					if (meshRenderer != null)
 					{
-						var meshRenderer = meshFilter.GetComponent<UE.MeshRenderer>();
-						if (meshRenderer != null)
-						{
-							UE.GameObject.Destroy(meshRenderer);
-						}
-						UE.GameObject.Destroy(meshFilter);
+						UE.GameObject.Destroy(meshRenderer);
 					}
+					UE.GameObject.Destroy(meshFilter);
 				}
 			}
 

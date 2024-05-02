@@ -6,19 +6,7 @@
 
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
-
-// using UnityEngine;
-// using System;
-// using UnityEngine.Rendering;
-// using UENet = UnityEngine.Networking;
-// using UnityEngine;
-// using UnityEngine.Networking;
-// using System.Collections;
-
-// using UnityEngine;
-// using System.Collections;
-// using UnityEngine.Networking;
-
+using System;
 
 namespace SDF
 {
@@ -76,26 +64,16 @@ namespace SDF
 					var box = shape as SDF.Box;
 					var scale = SDF2Unity.Scale(box.size);
 					mesh = ProceduralMesh.CreateBox(scale.x, scale.y, scale.z);
-
-					var boxCollider = createdObject.AddComponent<UE.BoxCollider>();
-					boxCollider.size = scale;
 				}
 				else if (shape is SDF.Sphere)
 				{
 					var sphere = shape as SDF.Sphere;
 					mesh = ProceduralMesh.CreateSphere((float)sphere.radius);
-
-					var sphereCollider = createdObject.AddComponent<UE.SphereCollider>();
-					sphereCollider.radius = (float)sphere.radius;
 				}
 				else if (shape is SDF.Capsule)
 				{
 					var capsule = shape as SDF.Capsule;
 					mesh = ProceduralMesh.CreateCapsule((float)capsule.radius, (float)capsule.length);
-
-					var capsuleCollider = createdObject.AddComponent<UE.CapsuleCollider>();
-					capsuleCollider.radius = (float)capsule.radius;
-					capsuleCollider.height = (float)capsule.length;
 				}
 				else if (shape is SDF.Cylinder)
 				{
@@ -107,6 +85,10 @@ namespace SDF
 					var plane = shape as SDF.Plane;
 					var normal = SDF2Unity.Normal(plane.normal);
 					mesh = ProceduralMesh.CreatePlane((float)plane.size.X, (float)plane.size.Y, normal);
+				}
+				else if (shape is SDF.Polylines)
+				{
+					mesh = ProceduralMesh.CreatePolylines(shape as SDF.Polylines);
 				}
 				else
 				{

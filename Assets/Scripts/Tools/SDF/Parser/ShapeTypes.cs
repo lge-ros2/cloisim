@@ -5,16 +5,23 @@
  */
 
 using System.Collections.Generic;
+using System.Xml;
 
 namespace SDF
 {
 	public interface ShapeType
 	{
+		public string Type();
 	}
 
 	public class Box : ShapeType
 	{
 		public Vector3<double> size = new Vector3<double>(1, 1, 1);
+
+		public string Type()
+		{
+			return "box";
+		}
 	}
 
 	public class Cylinder : ShapeType
@@ -24,11 +31,21 @@ namespace SDF
 
 		// Description: Length of the cylinder along the z axis
 		public double length = 1;
+
+		public string Type()
+		{
+			return "cylinder";
+		}
 	}
 
 	public class Ellipsoid : ShapeType
 	{
 		public Vector3<double> radii = new Vector3<double>();
+
+		public string Type()
+		{
+			return "ellipsoid";
+		}
 	}
 
 	// Description: A heightmap based on a 2d grayscale image.
@@ -78,6 +95,11 @@ namespace SDF
 
 		// Description: Samples per heightmap datum. For rasterized heightmaps, this indicates the number of samples to take per pixel. Using a higher value, e.g. 2, will generally improve the quality of the heightmap but lower performance.
 		public uint sampling = 1;
+
+		public string Type()
+		{
+			return "heightmap";
+		}
 	}
 
 	public class Image : ShapeType
@@ -87,6 +109,11 @@ namespace SDF
 		public int threshold = 200;
 		public double height = 1d;
 		public int granularity = 1;
+
+		public string Type()
+		{
+			return "image";
+		}
 	}
 
 	public class Mesh : ShapeType
@@ -95,28 +122,61 @@ namespace SDF
 		public string submesh_name = null;
 		public bool submesh_center = false;
 		public Vector3<double> scale = new Vector3<double>();
+
+		public string Type()
+		{
+			return "mesh";
+		}
 	}
 
 	public class Plane : ShapeType
 	{
 		public Vector3<int> normal = new Vector3<int>();
 		public Vector2<double> size = new Vector2<double>();
+
+		public string Type()
+		{
+			return "plane";
+		}
 	}
 
-	public class Polyline : ShapeType
+	public class Polyline : Entity
 	{
 		public List<Vector2<double>> point = new List<Vector2<double>>();
 		public double height = 1;
+
+		public Polyline(XmlNode _node)
+			: base(_node)
+		{
+		}
+	}
+
+	public class Polylines : List<Polyline>, ShapeType
+	{
+		public string Type()
+		{
+			return "polyline";
+		}
 	}
 
 	public class Sphere : ShapeType
 	{
 		public double radius;
+
+		public string Type()
+		{
+			return "sphere";
+		}
 	}
 
 	public class Capsule : ShapeType
 	{
 		public double radius;
 		public double length;
+
+		public string Type()
+		{
+			return "capsule";
+		}
 	}
 }
