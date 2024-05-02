@@ -27,7 +27,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	private Pose pluginPose = Pose.identity;
 
-	private SDF.Plugin pluginParameters;
+	private SDF.Plugin _pluginParameters;
 
 	private List<ushort> allocatedDevicePorts = new List<ushort>();
 	private List<string> allocatedDeviceHashKeys = new List<string>();
@@ -36,8 +36,12 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
-	protected virtual void OnPluginLoad() { }
 	protected virtual void OnReset() { }
+
+	/// <summary>
+	/// This method should be called in Awake()
+	/// </summary>
+	protected virtual void OnPluginLoad() { }
 
 	protected void OnDestroy()
 	{
@@ -55,12 +59,20 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	public void SetPluginParameters(in SDF.Plugin plugin)
 	{
-		pluginParameters = plugin;
+		_pluginParameters = plugin;
 	}
 
 	public SDF.Plugin GetPluginParameters()
 	{
-		return pluginParameters;
+		return _pluginParameters;
+	}
+
+	public void StorePluginParametersInAttachedDevices()
+	{
+		foreach (var device in attachedDevices.Values)
+		{
+			device.SetPluginParameters(_pluginParameters);
+		}
 	}
 
 	void Awake()
@@ -68,16 +80,15 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		SetCustomHandleRequestMessage();
 
 		OnAwake();
+
+		StorePluginParametersInAttachedDevices();
+
+		OnPluginLoad();
 	}
 
 	// Start is called before the first frame update
 	void Start()
 	{
-		foreach (var device in attachedDevices.Values)
-		{
-			device.SetPluginParameters(pluginParameters);
-		}
-
 		StorePose();
 
 		if (string.IsNullOrEmpty(modelName))
@@ -87,10 +98,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 		if (string.IsNullOrEmpty(partsName))
 		{
-			partsName = pluginParameters.Name;
+			partsName = _pluginParameters.Name;
 		}
-
-		OnPluginLoad();
 
 		OnStart();
 

@@ -99,6 +99,7 @@ namespace SensorDevices
 			var width = camParameter.image.width;
 			var height = camParameter.image.height;
 			var format = CameraData.GetPixelFormat(camParameter.image.format);
+
 			GraphicsFormat graphicFormat;
 			switch (format)
 			{
