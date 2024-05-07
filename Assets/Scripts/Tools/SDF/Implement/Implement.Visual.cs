@@ -149,7 +149,7 @@ namespace SDF
 				{
 					var specular = pass.properties["specular"].Trim();
 
-					var tmp = specular.Split(' ');
+					var tmp = specular.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 					if (tmp.Length == 5)
 					{
 						var shininess = Convert.ToSingle(tmp[4]);
@@ -267,7 +267,7 @@ namespace SDF
 					{
 						var pass = passEntry.Value;
 
-						// UE.Debug.Log($"Technique: {technique.passes.IndexOf(pass)}");
+						// UE.Debug.Log($"Technique: {technique.passes.Count}");
 						// foreach (var kvp in pass.properties)
 						// {
 						// 	UE.Debug.Log($"  Pass: {kvp.Key}: {kvp.Value}");

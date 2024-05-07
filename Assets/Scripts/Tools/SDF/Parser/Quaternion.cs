@@ -257,7 +257,7 @@ namespace SDF
 				return;
 			}
 
-			var tmp = value.Trim().Split(' ');
+			var tmp = value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
 			if (tmp.Length == 3)
 			{
