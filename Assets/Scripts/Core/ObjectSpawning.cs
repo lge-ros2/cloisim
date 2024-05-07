@@ -163,7 +163,6 @@ public class ObjectSpawning : MonoBehaviour
 			// var propTypeName = (type.ToString() + scale.ToString()).Trim();
 			// Debug.Log(propTypeName);
 			SegmentationManager.AttachTag(type.ToString(), spawnedObject);
-
 			Main.SegmentationManager.UpdateTags();
 		}
 

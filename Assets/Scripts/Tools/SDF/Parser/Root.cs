@@ -263,7 +263,7 @@ namespace SDF
 		private void ConvertPathToAbsolutePath(in string targetElement)
 		{
 			var nodeList = _doc.SelectNodes($"//{targetElement}");
-			Console.Write("Target:" + targetElement + ", Num Of uri nodes: " + nodeList.Count);
+			// Console.Write("Target:" + targetElement + ", Num Of uri nodes: " + nodeList.Count);
 			foreach (XmlNode node in nodeList)
 			{
 				var uri = node.InnerText;

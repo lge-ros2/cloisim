@@ -42,8 +42,9 @@ namespace SDF
 
 					if (!meshFilterTable.ContainsKey(materialName))
 					{
-						var meshFilterSet = new HashSet<UE.MeshFilter>();
-						meshFilterSet.Add(meshFilter);
+						var meshFilterSet = new HashSet<UE.MeshFilter>(){
+							meshFilter
+						};
 						meshFilterTable.Add(materialName, meshFilterSet);
 					}
 					else
@@ -73,19 +74,23 @@ namespace SDF
 					}
 
 					var meshFilterList = meshFilterSet.Value.ToArray();
-					var mergedMesh = SDF2Unity.MergeMeshes(meshFilterList);
+					if (meshFilterList.Length > 0)
+					{
+						var targetParent = meshFilterList[0].transform.parent;
+						var mergedMesh = SDF2Unity.MergeMeshes(meshFilterList);
 
-					var newName = meshFilterSet.Key.Replace("(Instance)", "Combined").Trim();
-					var newVisualGeometryObject = new UE.GameObject(newName);
+						var newName = meshFilterSet.Key.Replace("(Instance)", "Combined").Trim();
+						var newVisualGeometryObject = new UE.GameObject(newName);
 
-					var meshFilter = newVisualGeometryObject.AddComponent<UE.MeshFilter>();
-					mergedMesh.name = newName;
-					meshFilter.sharedMesh = mergedMesh;
+						var meshFilter = newVisualGeometryObject.AddComponent<UE.MeshFilter>();
+						mergedMesh.name = newName;
+						meshFilter.sharedMesh = mergedMesh;
 
-					var meshRenderer = newVisualGeometryObject.AddComponent<UE.MeshRenderer>();
-					meshRenderer.material = material;
+						var meshRenderer = newVisualGeometryObject.AddComponent<UE.MeshRenderer>();
+						meshRenderer.material = material;
 
-					newVisualGeometryObject.transform.SetParent(target, true);
+						newVisualGeometryObject.transform.SetParent(targetParent, true);
+					}
 				}
 			}
 
@@ -94,15 +99,11 @@ namespace SDF
 				for (var i = 0; i< targetTransform.childCount; i++)
 				{
 					var child = targetTransform.GetChild(i);
+					var optimizationTarget
+						= (child.GetComponent<UE.MeshFilter>() == null)
+							? child : targetTransform;
 
-					if (child.GetComponent<UE.MeshFilter>() == null)
-					{
-						OptimizeMesh(child);
-					}
-					else
-					{
-						OptimizeMesh(targetTransform);
-					}
+					OptimizeMesh(optimizationTarget);
 				}
 			}
 

@@ -248,6 +248,11 @@ public class ModelImporter : MonoBehaviour
 
 					SetModelForDeploy(instantiatedObject);
 					// Debug.Log("Paste " + instantiatedObject.name);
+
+					var segmentationTag = instantiatedObject.GetComponentInChildren<SegmentationTag>();
+					segmentationTag?.Refresh();
+
+					Main.SegmentationManager.UpdateTags();
 				}
 			}
 		}
