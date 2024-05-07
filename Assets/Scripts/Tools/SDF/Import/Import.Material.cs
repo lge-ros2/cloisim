@@ -47,7 +47,6 @@ namespace SDF
 							// UE.Debug.Log("ImportMaterial HasColorSpecular " + material.GetColor("_SpecColor"));
 						}
 
-
 						// apply material script
 						if (sdfMaterial.script != null)
 						{
