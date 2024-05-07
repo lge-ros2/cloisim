@@ -18,6 +18,7 @@ Shader "Sensor/Segmentation"
 		{
 			Name "Segmentation"
 
+			Cull Off // Disable backface culling
 
 			HLSLPROGRAM
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
