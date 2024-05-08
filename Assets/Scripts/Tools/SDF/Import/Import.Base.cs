@@ -128,7 +128,7 @@ namespace SDF
 				}
 			}
 
-			public IEnumerator<World> StartImport(World world)
+			public IEnumerator<World> Start(World world)
 			{
 				// Console.WriteLine("Import Models({0})/Links/Joints", world.GetModels().Count);
 				jointObjectList.Clear();
@@ -148,7 +148,7 @@ namespace SDF
 				ImportActors(world.GetActors());
 			}
 
-			public IEnumerator<Model> StartImport(Model model)
+			public IEnumerator<Model> Start(Model model)
 			{
 				jointObjectList.Clear();
 				var tempModels = new List<Model>() { model };
