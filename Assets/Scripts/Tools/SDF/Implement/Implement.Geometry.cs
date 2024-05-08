@@ -105,10 +105,6 @@ namespace SDF
 
 					var meshFilter = createdObject.AddComponent<UE.MeshFilter>();
 					meshFilter.sharedMesh = mesh;
-
-					var meshRenderer = createdObject.AddComponent<UE.MeshRenderer>();
-					meshRenderer.sharedMaterial = SDF2Unity.Material.Create(mesh.name);
-					meshRenderer.allowOcclusionWhenDynamic = true;
 				}
 
 				createdObject.transform.SetParent(targetParentObject.transform, false);

@@ -52,12 +52,9 @@ namespace SDF
 					return;
 				}
 
-				// remove all colliders
-				var colliders = visualObject.GetComponentsInChildren<UE.Collider>();
-				foreach (var collider in colliders)
-				{
-					UE.GameObject.Destroy(collider);
-				}
+				RemoveColliders(visualObject);
+
+				AddRenderes(visualObject);
 
 				if (EnableOptimization)
 				{
@@ -79,6 +76,32 @@ namespace SDF
 				// SceneVisibilityManager.instance.ToggleVisibility(visualObject, true);
 				SceneVisibilityManager.instance.DisablePicking(visualObject, true);
 #endif
+			}
+
+			private void RemoveColliders(UE.GameObject targetObject)
+			{
+				var colliders = targetObject.GetComponentsInChildren<UE.Collider>();
+				foreach (var collider in colliders)
+				{
+					UE.Debug.LogWarning($"{collider.name} Collider should not exit. There was collider");
+					UE.GameObject.Destroy(collider);
+				}
+			}
+
+			private void AddRenderes(UE.GameObject targetObject)
+			{
+				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
+				foreach (var meshFilter in meshFilters)
+				{
+					var meshRenderer = meshFilter.gameObject.GetComponent<UE.MeshRenderer>();
+					if (meshRenderer == null)
+					{
+						meshRenderer = meshFilter.gameObject.AddComponent<UE.MeshRenderer>();
+						meshRenderer.materials = new UE.Material[] { SDF2Unity.Material.Create(meshFilter.name + "_material") };
+						meshRenderer.allowOcclusionWhenDynamic = true;
+						meshRenderer.receiveShadows = true;
+					}
+				}
 			}
 		}
 	}

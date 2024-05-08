@@ -25,11 +25,11 @@ namespace SDF
 
 					ImportGeometry(item.GetGeometry(), createdObject);
 
-					ImportMaterial(item.GetMaterial(), createdObject);
-
 					ImportPlugins(item.GetPlugins(), createdObject);
 
 					AfterImportVisual(item, createdObject);
+
+					ImportMaterial(item.GetMaterial(), createdObject);
 				}
 			}
 

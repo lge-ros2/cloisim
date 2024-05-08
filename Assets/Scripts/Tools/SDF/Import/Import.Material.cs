@@ -28,7 +28,7 @@ namespace SDF
 					{
 						if (sdfMaterial.ambient != null)
 						{
-							UE.Debug.Log(material.name + ": ambient is not support. " + 	SDF2Unity.Color(sdfMaterial.ambient));
+							UE.Debug.Log(material.name + ": ambient is not support. " + SDF2Unity.Color(sdfMaterial.ambient));
 						}
 
 						if (sdfMaterial.diffuse != null)
