@@ -16,6 +16,46 @@ namespace SDF
 	{
 		public partial class Material
 		{
+			public static void Apply(in SDF.Material sdfMaterial, UE.Renderer renderer)
+			{
+				foreach (var material in renderer.materials)
+				{
+					if (sdfMaterial.ambient != null)
+					{
+						UE.Debug.Log(material.name + ": ambient is not support. " + SDF2Unity.Color(sdfMaterial.ambient));
+					}
+
+					if (sdfMaterial.diffuse != null)
+					{
+						SDF2Unity.Material.SetBaseColor(material, SDF2Unity.Color(sdfMaterial.diffuse));
+					}
+
+					if (sdfMaterial.emissive != null)
+					{
+						SDF2Unity.Material.SetEmission(material, SDF2Unity.Color(sdfMaterial.emissive));
+					}
+
+					if (sdfMaterial.specular != null)
+					{
+						SDF2Unity.Material.SetSpecular(material, SDF2Unity.Color(sdfMaterial.specular));
+						// UE.Debug.Log("ImportMaterial HasColorSpecular " + material.GetColor("_SpecColor"));
+					}
+
+					// apply material script
+					if (sdfMaterial.script != null)
+					{
+						// Name of material from an installed script file.
+						// This will override the color element if the script exists.
+						ApplyScript(sdfMaterial.script, material);
+
+						if (sdfMaterial.script.name.ToLower().Contains("tree"))
+						{
+							SDF2Unity.Material.ConvertToSpeedTree(material);
+						}
+					}
+				}
+			}
+
 			public static void ApplyScript(in SDF.Material.Script script, UE.Material targetMaterial)
 			{
 				var targetMaterialName = script.name;
