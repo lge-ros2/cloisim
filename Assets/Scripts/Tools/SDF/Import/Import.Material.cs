@@ -52,7 +52,7 @@ namespace SDF
 						{
 							// Name of material from an installed script file.
 							// This will override the color element if the script exists.
-							Implement.Visual.ApplyMaterial(sdfMaterial.script, material);
+							Implement.Material.ApplyScript(sdfMaterial.script, material);
 
 							if (sdfMaterial.script.name.ToLower().Contains("tree"))
 							{
