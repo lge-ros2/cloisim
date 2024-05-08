@@ -42,23 +42,23 @@ namespace SDF
 				}
 
 
-				private static void ApplyVertexColour(in OgreMaterial.Pass pass, UE.Material material)
+				private static void ApplyVertexColour(in Dictionary<string, string> passProperties, UE.Material material)
 				{
-					if (pass.properties.ContainsKey("diffuse"))
+					if (passProperties.ContainsKey("diffuse"))
 					{
-						var diffuse = pass.properties["diffuse"].Trim();
+						var diffuse = passProperties["diffuse"].Trim();
 						SDF2Unity.Material.SetBaseColor(material, SDF2Unity.Color(diffuse));
 					}
 
-					if (pass.properties.ContainsKey("emissive"))
+					if (passProperties.ContainsKey("emissive"))
 					{
-						var emissive = pass.properties["emissive"].Trim();
+						var emissive = passProperties["emissive"].Trim();
 						SDF2Unity.Material.SetEmission(material, SDF2Unity.Color(emissive));
 					}
 
-					if (pass.properties.ContainsKey("specular"))
+					if (passProperties.ContainsKey("specular"))
 					{
-						var specular = pass.properties["specular"].Trim();
+						var specular = passProperties["specular"].Trim();
 
 						var tmp = specular.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 						if (tmp.Length == 5)
@@ -88,11 +88,68 @@ namespace SDF
 					}
 				}
 
-				private static void ApplyTextureUnits(in OgreMaterial.Pass pass, UE.Material material, in List<string> uris)
+				private static void ApplyTexture(
+					in string path,
+					in Dictionary<string, string> props,
+					 UE.Material material)
 				{
-					foreach (var textureunitEntry in pass.textureUnits)
+					var texture = MeshLoader.GetTexture(path);
+					if (texture != null)
 					{
-						var textureunit = textureunitEntry.Value;
+						if (props.ContainsKey("filtering"))
+						{
+							var textureFiltering = props["filtering"];
+							// to make upper in First character
+							switch (textureFiltering)
+							{
+								case "bilinear":
+									texture.filterMode = UE.FilterMode.Bilinear;
+									break;
+								case "trilinear":
+								case "anisotropic":
+									texture.filterMode = UE.FilterMode.Trilinear;
+									break;
+								case "none":
+								default:
+									texture.filterMode = UE.FilterMode.Point;
+									break;
+							}
+						}
+
+						if (props.ContainsKey("max_anisotropy"))
+						{
+							var textureAnisotropy = props["max_anisotropy"];
+							texture.anisoLevel = Convert.ToInt32(textureAnisotropy);
+						}
+
+						if (props.ContainsKey("scale"))
+						{
+							var scaleSet = props["scale"];
+							var tileScale = SDF2Unity.Scale(scaleSet);
+
+							// TODO: Check texture tile scaling
+							tileScale.x = 1 / tileScale.x;
+							tileScale.y = 1 / tileScale.y;
+
+							material.SetTextureScale("_BaseMap", tileScale);
+						}
+
+						material.SetTexture("_BaseMap", texture);
+					}
+					else
+					{
+						UE.Debug.LogWarning($"Wrong texture path: {path}");
+					}
+				}
+
+				private static void ApplyTextureUnits(
+					in Dictionary<string, OgreMaterial.TextureUnit> textrueUnits,
+					UE.Material material,
+					in List<string> uris)
+				{
+					foreach (var textureUnitEntry in textrueUnits)
+					{
+						var textureunit = textureUnitEntry.Value;
 
 						// UE.Debug.Log($"    TextureUnit: {textureunitEntry.Key}");
 						// foreach (var kvp in textureunit.properties)
@@ -115,50 +172,7 @@ namespace SDF
 							continue;
 						}
 
-						var texture = MeshLoader.GetTexture(textureFilePath);
-						if (texture != null)
-						{
-							if (textureUnitProps.ContainsKey("filtering"))
-							{
-								var textureFiltering = textureUnitProps["filtering"];
-								// to make upper in First character
-								switch (textureFiltering)
-								{
-									case "bilinear":
-										texture.filterMode = UE.FilterMode.Bilinear;
-										break;
-									case "trilinear":
-									case "anisotropic":
-										texture.filterMode = UE.FilterMode.Trilinear;
-										break;
-									case "none":
-									default:
-										texture.filterMode = UE.FilterMode.Point;
-										break;
-								}
-							}
-
-							if (textureUnitProps.ContainsKey("max_anisotropy"))
-							{
-								var textureAnisotropy = textureUnitProps["max_anisotropy"];
-								texture.anisoLevel = Convert.ToInt32(textureAnisotropy);
-							}
-
-							if (textureUnitProps.ContainsKey("scale"))
-							{
-								var scaleSet = textureUnitProps["scale"];
-								var tileScale = SDF2Unity.Scale(scaleSet);
-
-								// TODO: Check texture tile scaling
-								tileScale.x = 1 / tileScale.x;
-								tileScale.y = 1 / tileScale.y;
-
-								material.SetTextureScale("_BaseMap", tileScale);
-							}
-
-							material.SetTexture("_BaseMap", texture);
-						}
-
+						ApplyTexture(textureFilePath, textureUnitProps, material);
 						return;
 					}
 				}
@@ -184,9 +198,9 @@ namespace SDF
 							// 	UE.Debug.Log($"  Pass: {kvp.Key}: {kvp.Value}");
 							// }
 
-							ApplyVertexColour(pass, material);
+							ApplyVertexColour(pass.properties, material);
 
-							ApplyTextureUnits(pass, material, uris);
+							ApplyTextureUnits(pass.textureUnits, material, uris);
 						}
 					}
 				}
