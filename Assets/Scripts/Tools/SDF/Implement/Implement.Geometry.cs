@@ -84,7 +84,8 @@ namespace SDF
 				{
 					var plane = shape as SDF.Plane;
 					var normal = SDF2Unity.Normal(plane.normal);
-					mesh = ProceduralMesh.CreatePlane((float)plane.size.X, (float)plane.size.Y, normal);
+					var size = SDF2Unity.Size(plane.size);
+					mesh = ProceduralMesh.CreatePlane(size.x, size.y, normal);
 				}
 				else if (shape is SDF.Polylines)
 				{

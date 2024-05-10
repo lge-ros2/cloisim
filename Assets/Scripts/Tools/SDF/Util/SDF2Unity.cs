@@ -93,6 +93,16 @@ public partial class SDF2Unity
 		return scaleVector;
 	}
 
+	public static Vector2 Size(in SDF.Vector2<double> value)
+	{
+		return new Vector2((float)value.X, (float)value.Y);
+	}
+
+	public static Vector2 Point(in SDF.Vector2<double> value)
+	{
+		return new Vector2((float)value.Y, (float)value.X);
+	}
+
 	public static Vector3 Normal(in SDF.Vector3<int> value)
 	{
 		return Position(value);

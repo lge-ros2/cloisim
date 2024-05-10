@@ -528,7 +528,9 @@ public class ProceduralMesh
 			{
 				for (var u = 0; u < resX; u++)
 				{
-					uvs[u + v * resX] = new Vector2((float)u / (resX - 1), (float)v / (resZ - 1));
+					var U = (float)u / (resX - 1);
+					var V = (float)v / (resZ - 1);
+					uvs[u + v * resX] = new Vector2(V, U);
 				}
 			}
 			#endregion
@@ -726,7 +728,7 @@ public class ProceduralMesh
 		{
 			foreach (var point in polylines[0].point)
 			{
-				pointsToTriangulate.Add(new Vector2((float)point.Y, (float)point.X));
+				pointsToTriangulate.Add(SDF2Unity.Point(point));
 			}
 		}
 
@@ -740,7 +742,7 @@ public class ProceduralMesh
 				var points = new List<Vector2>();
 				foreach (var point in polylines[i].point)
 				{
-					points.Add(new Vector2((float)point.Y, (float)point.X));
+					points.Add(SDF2Unity.Point(point));
 				}
 				constrainedEdgePoints.Add(points);
 			}

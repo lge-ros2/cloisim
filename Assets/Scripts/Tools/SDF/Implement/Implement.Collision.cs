@@ -98,10 +98,10 @@ namespace SDF
 			{
 				foreach (var meshFilter in meshFilters)
 				{
-					UE.Debug.LogWarning($"{meshFilter.name} meshFilter should not exist");
 					var meshRenderer = meshFilter.GetComponent<UE.MeshRenderer>();
 					if (meshRenderer != null)
 					{
+						UE.Debug.LogWarning($"{meshFilter.name} MeshRenderer should not exist");
 						UE.GameObject.Destroy(meshRenderer);
 					}
 					UE.GameObject.Destroy(meshFilter);

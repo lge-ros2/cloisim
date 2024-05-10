@@ -364,7 +364,7 @@ public class Main : MonoBehaviour
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
 			model.Name = GetClonedModelName(model.Name);
 
-			yield return StartCoroutine(_sdfLoader.StartImport(model));
+			yield return StartCoroutine(_sdfLoader.Start(model));
 
 			var targetObject = _worldRoot.transform.Find(model.Name);
 
@@ -393,7 +393,7 @@ public class Main : MonoBehaviour
 			_sdfLoader.SetRootLights(_lightsRoot);
 			_sdfLoader.SetRootRoads(_roadsRoot);
 
-			yield return _sdfLoader.StartImport(world);
+			yield return _sdfLoader.Start(world);
 
 			// for GUI
 			_followingList?.UpdateList();
