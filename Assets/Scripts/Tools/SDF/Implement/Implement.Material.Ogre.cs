@@ -100,7 +100,7 @@ namespace SDF
 				private static void ApplyTexture(
 					in string path,
 					in Dictionary<string, string> props,
-					 UE.Material material)
+					UE.Material material)
 				{
 					var texture = MeshLoader.GetTexture(path);
 					if (texture != null)

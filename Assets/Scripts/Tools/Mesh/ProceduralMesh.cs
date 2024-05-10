@@ -528,7 +528,9 @@ public class ProceduralMesh
 			{
 				for (var u = 0; u < resX; u++)
 				{
-					uvs[u + v * resX] = new Vector2((float)u / (resX - 1), (float)v / (resZ - 1));
+					var U = (float)u / (resX - 1);
+					var V = (float)v / (resZ - 1);
+					uvs[u + v * resX] = new Vector2(V, U);
 				}
 			}
 			#endregion
