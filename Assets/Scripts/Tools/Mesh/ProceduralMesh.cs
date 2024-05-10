@@ -726,7 +726,7 @@ public class ProceduralMesh
 		{
 			foreach (var point in polylines[0].point)
 			{
-				pointsToTriangulate.Add(new Vector2((float)point.Y, (float)point.X));
+				pointsToTriangulate.Add(SDF2Unity.Point(point));
 			}
 		}
 
@@ -740,7 +740,7 @@ public class ProceduralMesh
 				var points = new List<Vector2>();
 				foreach (var point in polylines[i].point)
 				{
-					points.Add(new Vector2((float)point.Y, (float)point.X));
+					points.Add(SDF2Unity.Point(point));
 				}
 				constrainedEdgePoints.Add(points);
 			}
