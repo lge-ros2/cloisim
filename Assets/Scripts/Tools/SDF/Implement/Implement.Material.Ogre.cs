@@ -127,6 +127,8 @@ namespace SDF
 							var scaleSet = props["scale"];
 							var tileScale = SDF2Unity.Scale(scaleSet);
 
+							// UE.Debug.Log(tileScale);
+
 							// TODO: Check texture tile scaling
 							tileScale.x = 1 / tileScale.x;
 							tileScale.y = 1 / tileScale.y;
@@ -177,13 +179,59 @@ namespace SDF
 					}
 				}
 
-				public static void ApplyMaterial(in OgreMaterial.Material ogreMaterial, UE.Material material, in List<string> uris)
+				private static UE.Material[] ResizeMaterials(in OgreMaterial.Material ogreMaterial, in UE.Material[] baseMaterials)
 				{
-					if (ogreMaterial.hasReceiveShadows)
+					var requiredMaterialCount = 0;
+					foreach (var techEntry in ogreMaterial.techniques)
 					{
-						material.SetFloat("_ReceiveShadows", ogreMaterial.receiveShadows ? 1f : 0);
+						var technique = techEntry.Value;
+						requiredMaterialCount += technique.passes.Count;
+					}
+					// UE.Debug.LogWarning($"requiredMaterialCount: {requiredMaterialCount}");
+
+					// resizing materials
+					UE.Material[] materials = null;
+					if (baseMaterials.Length < requiredMaterialCount)
+					{
+						var prevMaterials = (UE.Material[])baseMaterials.Clone();
+						var lastMaterial = prevMaterials[prevMaterials.Length - 1];
+
+						materials = new UE.Material[requiredMaterialCount];
+						for (var i = 0; i < prevMaterials.Length; i++)
+						{
+							materials[i] = prevMaterials[i];
+						}
+						for (var i = prevMaterials.Length - 1; i < requiredMaterialCount; i++)
+						{
+							materials[i] = new UE.Material(lastMaterial);
+						}
+
+						// UE.Debug.Log("Resizing materials " + materials.Length);
+					}
+					else
+					{
+						materials = baseMaterials;
 					}
 
+					return materials;
+				}
+
+				public static UE.Material[] ApplyMaterial(
+					in OgreMaterial.Material ogreMaterial,
+					UE.Material[] baseMaterials,
+					in List<string> texturePathURIs)
+				{
+					var materials = ResizeMaterials(ogreMaterial, baseMaterials);
+
+					if (ogreMaterial.hasReceiveShadows)
+					{
+						foreach (var material in materials)
+						{
+							material.SetFloat("_ReceiveShadows", ogreMaterial.receiveShadows ? 1f : 0);
+						}
+					}
+
+					var materialIndex = 0;
 					foreach (var techEntry in ogreMaterial.techniques)
 					{
 						var technique = techEntry.Value;
@@ -198,11 +246,15 @@ namespace SDF
 							// 	UE.Debug.Log($"  Pass: {kvp.Key}: {kvp.Value}");
 							// }
 
+							var material = materials[materialIndex++];
+
 							ApplyVertexColour(pass.properties, material);
 
-							ApplyTextureUnits(pass.textureUnits, material, uris);
+							ApplyTextureUnits(pass.textureUnits, material, texturePathURIs);
 						}
 					}
+
+					return materials;
 				}
 			}
 		}

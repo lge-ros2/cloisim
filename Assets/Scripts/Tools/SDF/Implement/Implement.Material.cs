@@ -40,15 +40,19 @@ namespace SDF
 						SDF2Unity.Material.SetSpecular(material, SDF2Unity.Color(sdfMaterial.specular));
 						// UE.Debug.Log("ImportMaterial HasColorSpecular " + material.GetColor("_SpecColor"));
 					}
+				}
 
-					// apply material script
-					if (sdfMaterial.script != null)
+				// apply material script
+				if (sdfMaterial.script != null)
+				{
+					// Name of material from an installed script file.
+					// This will override the color element if the script exists.
+					var scriptAppliedMaterials = ApplyScript(sdfMaterial.script, renderer.materials);
+					renderer.materials = scriptAppliedMaterials;
+
+					if (sdfMaterial.script.name.ToLower().Contains("tree"))
 					{
-						// Name of material from an installed script file.
-						// This will override the color element if the script exists.
-						ApplyScript(sdfMaterial.script, material);
-
-						if (sdfMaterial.script.name.ToLower().Contains("tree"))
+						foreach (var material in renderer.materials)
 						{
 							SDF2Unity.Material.ConvertToSpeedTree(material);
 						}
@@ -56,13 +60,38 @@ namespace SDF
 				}
 			}
 
-			public static void ApplyScript(in SDF.Material.Script script, UE.Material targetMaterial)
+			public static UE.Material ApplyScript(in SDF.Material.Script script, in UE.Material baseMasterial)
+			{
+				var materials = ApplyScript(script, new UE.Material[] { baseMasterial });
+				return materials[0];
+			}
+
+			public static UE.Material[] ApplyScript(in SDF.Material.Script script, in UE.Material[] baseMaterials)
 			{
 				var targetMaterialName = script.name;
-				var texturesPath = new List<string>();
+				var targetMaterialFilepath = FindMaterialFilepathAndUpdateURIs(script.uri, out var texturesPath);
+
+				var outputMaterials = baseMaterials;
+
+				if (string.IsNullOrEmpty(targetMaterialFilepath) == false)
+				{
+					var ogreMaterial = OgreMaterial.Parse(targetMaterialFilepath, targetMaterialName);
+					if (ogreMaterial != null)
+					{
+						// UE.Debug.Log($"Found: '{ogreMaterial.name}' material, techniques: {ogreMaterial.techniques.Count}");
+						outputMaterials = Ogre.ApplyMaterial(ogreMaterial, baseMaterials, texturesPath);
+					}
+				}
+
+				return outputMaterials;
+			}
+
+			private static string FindMaterialFilepathAndUpdateURIs(in List<string> scriptUris, out List<string> texturesPath)
+			{
+				texturesPath = new List<string>();
 				var targetMaterialFilepath = string.Empty;
 
-				foreach (var uri in script.uri)
+				foreach (var uri in scriptUris)
 				{
 					// Debug.Log(uri);
 					if (uri.EndsWith(".material") && File.Exists(uri))
@@ -88,15 +117,7 @@ namespace SDF
 					}
 				}
 
-				if (string.IsNullOrEmpty(targetMaterialFilepath) == false)
-				{
-					var ogreMaterial = OgreMaterial.Parse(targetMaterialFilepath, targetMaterialName);
-					if (ogreMaterial != null)
-					{
-						// UE.Debug.Log($"Found: '{ogreMaterial.name}' material, techniques: {ogreMaterial.techniques.Count}");
-						Ogre.ApplyMaterial(ogreMaterial, targetMaterial, texturesPath);
-					}
-				}
+				return targetMaterialFilepath;
 			}
 		}
 	}
