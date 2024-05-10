@@ -48,7 +48,7 @@ public partial class SDF2Unity
 			return newMaterial;
 		}
 
-		private static void SetTransparent(UE.Material target)
+		public static void SetTransparent(UE.Material target)
 		{
 			target.SetOverrideTag("RenderType", "Transparent");
 			target.SetFloat("_Surface", 1); // set to transparent
@@ -62,7 +62,7 @@ public partial class SDF2Unity
 			target.renderQueue = (int)RenderQueue.Transparent;
 		}
 
-		private static void SetOpaque(UE.Material target)
+		public static void SetOpaque(UE.Material target)
 		{
 			target.SetOverrideTag("RenderType", "Opaque");
 			target.SetFloat("_Surface", 0); // set to opaque

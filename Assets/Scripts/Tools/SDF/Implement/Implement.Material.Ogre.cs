@@ -86,6 +86,15 @@ namespace SDF
 
 						SDF2Unity.Material.SetSpecular(material, SDF2Unity.Color(specular));
 					}
+
+					if (passProperties.ContainsKey("scene_blend"))
+					{
+						var sceneBlend = passProperties["scene_blend"].Trim();
+						if (sceneBlend == "alpha_blend")
+						{
+							SDF2Unity.Material.SetTransparent(material);
+						}
+					}
 				}
 
 				private static void ApplyTexture(
