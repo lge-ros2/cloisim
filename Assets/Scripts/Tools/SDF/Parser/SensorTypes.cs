@@ -87,7 +87,7 @@ namespace SDF
 			if (!string.IsNullOrEmpty(poseString))
 			{
 				// x y z roll pitch yaw
-				var poseInfo = poseString.Split(' ');
+				var poseInfo = poseString.Replace('\t', ' ').Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
 
 				pose.Pos.Set(poseInfo[0], poseInfo[1], poseInfo[2]);
 				pose.Rot.Set(poseInfo[3], poseInfo[4], poseInfo[5]);

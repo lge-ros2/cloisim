@@ -84,7 +84,8 @@ namespace SDF
 				{
 					var plane = shape as SDF.Plane;
 					var normal = SDF2Unity.Normal(plane.normal);
-					mesh = ProceduralMesh.CreatePlane((float)plane.size.X, (float)plane.size.Y, normal);
+					var size = SDF2Unity.Size(plane.size);
+					mesh = ProceduralMesh.CreatePlane(size.x, size.y, normal);
 				}
 				else if (shape is SDF.Polylines)
 				{
@@ -105,10 +106,6 @@ namespace SDF
 
 					var meshFilter = createdObject.AddComponent<UE.MeshFilter>();
 					meshFilter.sharedMesh = mesh;
-
-					var meshRenderer = createdObject.AddComponent<UE.MeshRenderer>();
-					meshRenderer.sharedMaterial = SDF2Unity.Material.Create(mesh.name);
-					meshRenderer.allowOcclusionWhenDynamic = true;
 				}
 
 				createdObject.transform.SetParent(targetParentObject.transform, false);

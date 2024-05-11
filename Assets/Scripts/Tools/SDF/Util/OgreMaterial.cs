@@ -112,7 +112,7 @@ public static class OgreMaterial
 					}
 					else if (key == "technique" && propertyLevel == PropertyLevel.MATERIAL)
 					{
-						var techName = (parts.Length > 1) ? parts[1] : string.Empty;
+						var techName = (string.IsNullOrEmpty(value))? (key + material.techniques.Count) : value;
 
 						material.techniques[techName] = new Technique();
 						targetTechName = techName;
@@ -125,13 +125,14 @@ public static class OgreMaterial
 						// Debug.Log(key + " => " + value);
 						if (material.techniques.Count == 0)
 						{
-							// Debug.Log("!! Missing technique");
+							Debug.LogWarning("!! Missing technique");
 							break;
 						}
 
-						var passName = (parts.Length > 1) ? parts[1] : string.Empty;
-
 						var targetTechnique = material.techniques[targetTechName];
+
+						var passName = (string.IsNullOrEmpty(value))? (key + targetTechnique.passes.Count) : value;
+
 						if (!targetTechnique.passes.ContainsKey(passName))
 							targetTechnique.passes[passName] = new Pass();
 
@@ -144,11 +145,11 @@ public static class OgreMaterial
 					{
 						if (material.techniques[targetTechName].passes.Count == 0)
 						{
-							// Debug.Log("!! Missing pass");
+							Debug.LogWarning("!! Missing pass");
 							break;
 						}
 
-						var textureUnitName = (parts.Length > 1) ? parts[1] : string.Empty;
+						var textureUnitName = (parts.Length > 1) ? value : string.Empty;
 
 						var targetPass = material.techniques[targetTechName].passes[targetPassName];
 

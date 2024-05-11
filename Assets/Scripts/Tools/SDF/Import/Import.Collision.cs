@@ -44,23 +44,26 @@ namespace SDF
 					Implement.Collision.Make(geometryObject);
 
 					var shape = collision.GetGeometry().GetShape();
-					var shapeType = shape.GetType();
-
-					var existingMeshCollider = geometryObject.GetComponent<UE.MeshCollider>();
-
-					if (shapeType.Equals(typeof(Plane)))
+					if (shape != null)
 					{
-						collisionObject.layer = Implement.Collision.PlaneLayerIndex;
-						existingMeshCollider.convex = false;
-					}
-					else
-					{
-						if (EnhanceCollisionPerformance(shapeType, shape, existingMeshCollider))
+						var shapeType = shape.GetType();
+
+						var existingMeshCollider = geometryObject.GetComponent<UE.MeshCollider>();
+
+						if (shapeType.Equals(typeof(Plane)))
 						{
-							var meshColliders = geometryObject.GetComponentsInChildren<UE.MeshCollider>();
-							for (var index = 0; index < meshColliders.Length; index++)
+							collisionObject.layer = Implement.Collision.PlaneLayerIndex;
+							existingMeshCollider.convex = false;
+						}
+						else
+						{
+							if (EnhanceCollisionPerformance(shapeType, shape, existingMeshCollider))
 							{
-								UE.GameObject.Destroy(meshColliders[index]);
+								var meshColliders = geometryObject.GetComponentsInChildren<UE.MeshCollider>();
+								for (var index = 0; index < meshColliders.Length; index++)
+								{
+									UE.GameObject.Destroy(meshColliders[index]);
+								}
 							}
 						}
 					}
