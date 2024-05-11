@@ -22,7 +22,7 @@ namespace SDF
 
 			value = value.Trim();
 
-			var tmp = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			var tmp = value.Replace('\t', ' ').Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
 			if (tmp.Length < 3)
 				return;

@@ -92,7 +92,7 @@ namespace SDF
 				return;
 			}
 
-			var tmp = value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			var tmp = value.Trim().Replace('\t', ' ').Split(' ', StringSplitOptions.RemoveEmptyEntries);
 			if (tmp.Length == 2)
 			{
 				Set(tmp[0], tmp[1]);
@@ -173,7 +173,7 @@ namespace SDF
 				return;
 			}
 
-			var tmp = value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			var tmp = value.Trim().Replace('\t', ' ').Split(' ', StringSplitOptions.RemoveEmptyEntries);
 			if (tmp.Length == 3)
 			{
 				Set(tmp[0], tmp[1], tmp[2]);

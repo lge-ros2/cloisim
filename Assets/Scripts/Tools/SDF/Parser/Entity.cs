@@ -229,7 +229,7 @@ namespace SDF
 
 				// x y z roll pitch yaw
 				value = value.Trim().Replace("    ", " ").Replace("   ", " ").Replace("  ", " ");
-				var poseStr = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+				var poseStr = value.Replace('\t', ' ').Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
 				try
 				{

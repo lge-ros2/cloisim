@@ -60,7 +60,7 @@ namespace SDF
 					{
 						var specular = passProperties["specular"].Trim();
 
-						var tmp = specular.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+						var tmp = specular.Replace('\t', ' ').Split(' ', StringSplitOptions.RemoveEmptyEntries);
 						if (tmp.Length == 5)
 						{
 							var shininess = Convert.ToSingle(tmp[4]);
