@@ -96,16 +96,21 @@ public class MotorControl
 	/// <summary>Set motor velocity</summary>
 	/// <remarks>degree per second</remarks>
 	private sbyte _rotationDirection = 0;
-	private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)
+	private void CheckRotationalBehavior(in float angularVelocityLeft, in float angularVelocityRight)
 	{
 		if (Mathf.Sign(angularVelocityLeft) == Mathf.Sign(angularVelocityRight))
 		{
 			_rotationDirection = 0;
 		}
-		else if (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight))
+		else // (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight))
 		{
 			_rotationDirection = (sbyte)((angularVelocityLeft > angularVelocityRight) ? 1 : -1);
 		}
+	}
+
+	private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)
+	{
+		CheckRotationalBehavior(angularVelocityLeft, angularVelocityRight);
 
 		foreach (var wheel in wheelList)
 		{
@@ -140,11 +145,12 @@ public class MotorControl
 	}
 
 	public float _prevPositionY = 0;
+	public sbyte _lastRotationDirection = 0;
 
 	public bool IsDirectionChanged(in float duration)
 	{
 		var isChanged = false;
-		if (_rotationDirection != 0)
+		if (_rotationDirection != 0 && _rotationDirection != _lastRotationDirection)
 		{
 			var rotationVelocity = Mathf.DeltaAngle(_prevPositionY, _baseTransform.position.y) / duration;
 			var allVelocityStopped = (Mathf.Abs(rotationVelocity) < Vector3.kEpsilon) ? true : false;
@@ -157,9 +163,11 @@ public class MotorControl
 			{
 				isChanged = true;
 			}
+			// Debug.Log("IsDirectionChanged " + isChanged + ", " + _rotationDirection);
 		}
 
 		_prevPositionY = _baseTransform.position.y;
+		_lastRotationDirection = _rotationDirection;
 
 		return isChanged;
 	}
