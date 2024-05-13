@@ -11,7 +11,7 @@ using TMPro;
 [DefaultExecutionOrder(50)]
 public partial class InfoDisplay : MonoBehaviour
 {
-	private string _pointInfo = "000.0000, 000.0000, 000.0000";
+	private string _pointInfo = "-000.0000, -000.0000, -000.0000";
 	private Clock _clock = null;
 	private TMP_InputField _inputFieldSim = null;
 	private TMP_InputField _inputFieldReal = null;
