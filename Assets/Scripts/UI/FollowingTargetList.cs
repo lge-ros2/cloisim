@@ -36,7 +36,7 @@ public class FollowingTargetList : MonoBehaviour
 		{
 			dropdown.onValueChanged.AddListener(OnDropDownValueChanged);
 
-			_emptyOption = new TMP_Dropdown.OptionData("- unfollowing -");
+			_emptyOption = new TMP_Dropdown.OptionData("UNFOLLOWING");
 			dropdown.options.Add(_emptyOption);
 			SelectItem(0);
 		}

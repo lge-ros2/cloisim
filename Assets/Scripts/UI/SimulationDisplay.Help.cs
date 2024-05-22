@@ -65,7 +65,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		sb.AppendLine(" - Camera following mode");
 		sb.AppendLine(string.Empty);
 		sb.AppendLine("    <b>Choose one object from the list</b> on the bottom right corner.");
-		sb.AppendLine("    if you want cancel the following mode, choose '--unfollowing--' menu from the list.");
+		sb.AppendLine("    if you want cancel the following mode, choose 'UNFOLLOWING' menu from the list.");
 		sb.AppendLine("    Select object and <b>Left Ctrl + F</b>: Follow the object");
 		sb.AppendLine("    <b>Left Ctrl + Left Shift + F</b>: Unfollow");
 		sb.AppendLine(string.Empty);
