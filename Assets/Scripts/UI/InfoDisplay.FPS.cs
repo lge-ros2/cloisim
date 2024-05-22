@@ -8,7 +8,7 @@ using UnityEngine;
 
 public partial class InfoDisplay : MonoBehaviour
 {
-	private const float fpsUpdatePeriod = 0.25f;
+	private const float fpsUpdatePeriod = 1f;
 	private int frameCount = 0;
 	private float dT = 0.0F;
 	private float fps = 0.0F;
@@ -16,7 +16,7 @@ public partial class InfoDisplay : MonoBehaviour
 	private void CalculateFPS()
 	{
 		frameCount++;
-		dT += Time.unscaledDeltaTime;
+		dT += Time.deltaTime;
 		if (dT > fpsUpdatePeriod)
 		{
 			fps = Mathf.Round(frameCount / dT);
@@ -27,8 +27,6 @@ public partial class InfoDisplay : MonoBehaviour
 
 	private void UpdateFPS()
 	{
-		CalculateFPS();
-
 		if (_inputFieldFPS != null)
 		{
 			_inputFieldFPS.text = fps.ToString();
