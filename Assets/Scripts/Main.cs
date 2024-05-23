@@ -44,7 +44,7 @@ public class Main : MonoBehaviour
 	private static RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private static CameraControl cameraControl = null;
 	private static SegmentationManager _segmentationManager = null;
-
+	private static MeshProcess.VHACD _vhacd = null;
 
 	private static bool isResetting = false;
 	private static bool resetTriggered = false;
@@ -63,6 +63,8 @@ public class Main : MonoBehaviour
 	public static SegmentationManager SegmentationManager => _segmentationManager;
 
 	public static CameraControl CameraControl => cameraControl;
+
+	public static MeshProcess.VHACD MeshVHACD => _vhacd;
 
 	#region SDF Parser
 	private SDF.Root _sdfRoot = null;
@@ -253,7 +255,11 @@ public class Main : MonoBehaviour
 		SensorDevices.DepthCamera.LoadComputeShader();
 
 		gameObject.AddComponent<ObjectSpawning>();
+
 		_segmentationManager = gameObject.AddComponent<SegmentationManager>();
+
+		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
+		_vhacd.m_parameters = VHACD.Params;
 	}
 
 	void Start()
