@@ -33,10 +33,7 @@ namespace SDF
 				foreach (var point in road.points)
 				{
 					var offset = point - centerPosOfRoad;
-					var knotPos = SDF2Unity.Position(offset);
-					var knot = new Splines.BezierKnot();
-					knot.Position = knotPos;
-					splineContainer.Spline.Add(knot, Splines.TangentMode.AutoSmooth);
+					splineContainer.Spline.Add(SDF2Unity.Position(offset), Splines.TangentMode.AutoSmooth);
 				}
 
 				splineContainer.Spline.SetTangentMode(0, Splines.TangentMode.Linear);
