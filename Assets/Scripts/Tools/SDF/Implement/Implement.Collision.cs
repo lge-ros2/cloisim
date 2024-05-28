@@ -70,17 +70,17 @@ namespace SDF
 				var modelHelper = targetObject.GetComponentInParent<SDF.Helper.Model>();
 				// UE.Debug.Log(modelHelper);
 
+				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
+
 				// Skip for Primitive Mesh or static model
 				if (UseVHACD &&
 					targetObject.name != "Primitive Mesh" &&
 					modelHelper.isStatic == false)
 				{
-					VHACD.Apply(targetObject);
+					VHACD.Apply(meshFilters);
 				}
 				else
 				{
-					var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
-
 					if (targetObject.GetComponent<UE.Collider>() == null)
 					{
 						KeepUnmergedMeshes(meshFilters);
@@ -89,9 +89,9 @@ namespace SDF
 						MergeCollider(targetObject);
 #endif
 					}
-
-					RemoveRenderers(meshFilters);
 				}
+
+				RemoveRenderers(meshFilters);
 			}
 
 			private static void RemoveRenderers(UE.MeshFilter[] meshFilters)

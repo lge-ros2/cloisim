@@ -51,6 +51,11 @@ public partial class InfoDisplay : MonoBehaviour
 		}
 	}
 
+	void Update()
+	{
+		CalculateFPS();
+	}
+
 	void LateUpdate()
 	{
 		UpdateFPS();
