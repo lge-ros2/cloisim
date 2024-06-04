@@ -29,7 +29,11 @@ public partial class SDF2Unity
 
 	public static Vector3 Scalar(in double x, in double y, in double z)
 	{
-		return new Vector3(Mathf.Abs((float)y), Mathf.Abs((float)z), Mathf.Abs((float)x));
+		var scalarVector = Position(x, y, z);
+		scalarVector.x = Mathf.Abs(scalarVector.x);
+		scalarVector.y = Mathf.Abs(scalarVector.y);
+		scalarVector.z = Mathf.Abs(scalarVector.z);
+		return scalarVector;
 	}
 
 	/// <param name="x">right handed system x</param>
