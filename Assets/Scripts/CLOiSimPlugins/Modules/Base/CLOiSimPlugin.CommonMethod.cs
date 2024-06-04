@@ -39,8 +39,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 				{
 					var tf = tfList[i];
 
-					tfMessage.Header.StrId = tf.parentFrameId;
-					tfMessage.Transform.Name = tf.childFrameId;
+					tfMessage.Header.StrId = tf.ParentFrameID;
+					tfMessage.Transform.Name = tf.ChildFrameID;
 
 					var tfPose = tf.GetPose();
 					DeviceHelper.SetCurrentTime(tfMessage.Header.Stamp);
@@ -48,10 +48,13 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 					DeviceHelper.SetQuaternion(tfMessage.Transform.Orientation, tfPose.rotation);
 
 					deviceMessage.SetMessage<messages.TransformStamped>(tfMessage);
-					// Debug.Log(tfMessage.Header.Stamp.Sec + "." + tfMessage.Header.Stamp.Nsec + ": " + tfMessage.Header.StrId + ", " + tfMessage.Transform.Name) ;
 					if (publisher.Publish(deviceMessage) == false)
 					{
 						Debug.Log(tfMessage.Header.StrId + ", " + tfMessage.Transform.Name + " error to send TF!!");
+					}
+					else
+					{
+						// Debug.Log(tfMessage.Header.Stamp.Sec + "." + tfMessage.Header.Stamp.Nsec + ": " + tfMessage.Header.StrId + ", " + tfMessage.Transform.Name);
 					}
 					CLOiSimPluginThread.Sleep(updatePeriodPerEachTf);
 				}
@@ -204,17 +207,16 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		{
 			var ros2StaticTransformLink = new messages.Param();
 			ros2StaticTransformLink.Name = "parent_frame_id";
-			ros2StaticTransformLink.Value = new Any { Type = Any.ValueType.String, StringValue = tf.parentFrameId };
+			ros2StaticTransformLink.Value = new Any { Type = Any.ValueType.String, StringValue = tf.ParentFrameID };
 
 			{
 				var tfPose = tf.GetPose();
-				// Debug.Log(tf.parentFrameId + " <= " + tf.childFrameId + " = " + tf.link.JointAxis + ", " + tfPose);
 
 				var poseMessage = new messages.Pose();
 				poseMessage.Position = new messages.Vector3d();
 				poseMessage.Orientation = new messages.Quaternion();
 
-				poseMessage.Name = tf.childFrameId;
+				poseMessage.Name = tf.ChildFrameID;
 				DeviceHelper.SetVector3d(poseMessage.Position, tfPose.position);
 				DeviceHelper.SetQuaternion(poseMessage.Orientation, tfPose.rotation);
 

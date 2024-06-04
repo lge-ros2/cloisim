@@ -8,42 +8,40 @@ using UnityEngine;
 
 public class TF
 {
-	private const int targetPoseFrame = 1;
+	private const int TargetPoseFrame = 1;
 
-	public string parentFrameId = string.Empty;
-	public string childFrameId = string.Empty;
-	public SDF.Helper.Link link = null;
+	public string _parentFrameId = string.Empty;
+	public string _childFrameId = string.Empty;
+	private SDF.Helper.Link _link = null;
 
-	public TF(in SDF.Helper.Link link, in string childFrameId, in string parentFrameId = "base_link")
+	public string ParentFrameID => _parentFrameId;
+	public string ChildFrameID => _childFrameId;
+
+
+	public TF(in SDF.Helper.Link link, in string childFrameId, in string parentFrameId)
 	{
-		this.parentFrameId = parentFrameId.Replace("::", "_");
-		this.childFrameId = childFrameId.Replace("::", "_");
-		this.link = link;
+		this._parentFrameId = parentFrameId.Replace("::", "_");
+		this._childFrameId = childFrameId.Replace("::", "_");
+		this._link = link;
 		// Debug.LogFormat("{0} <- {1}", parentFrameId, childFrameId);
 	}
 
 	public Pose GetPose()
 	{
-		var tfLink = this.link;
-		var tfPose = tfLink.GetPose(targetPoseFrame);
-		var modelPose = tfLink.Model.GetPose(targetPoseFrame);
+		var tfPose = Pose.identity;
+		var modelPose = _link.Model.GetPose(TargetPoseFrame);
+		var linkJointPose = _link.LinkJointPose;
+		var linkPoseMoving = _link.GetPose(TargetPoseFrame);
 
-		// Debug.Log(parentFrameId + " <= " + childFrameId + "(" + tfLink.JointAxis + ")" + tfPose);
-		if (!tfLink.Model.Equals(tfLink.RootModel))
+		if (!_link.Model.Equals(_link.RootModel))
 		{
-			tfPose.rotation = modelPose.rotation * tfPose.rotation;
-
-			if (tfLink.Model != null)
-			{
-				tfPose.position += modelPose.position;
-			}
-		}
-		else
-		{
+			tfPose.position += modelPose.position;
 			tfPose.rotation *= modelPose.rotation;
-			// Debug.Log("is Root Model TF");
 		}
-		// Debug.Log(parentFrameId + "::" + childFrameI + "(" + tfLink.JointAxis + ") = tf rot" + tfPose.rotation.eulerAngles);
+
+		tfPose.position += linkJointPose.position;
+		tfPose.rotation *= linkPoseMoving.rotation;
+
 		return tfPose;
 	}
 }

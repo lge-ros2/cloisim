@@ -159,8 +159,6 @@ namespace SDF
 
 					if (joint.Axis != null)
 					{
-						// articulationBodyChild
-						linkHelper.JointAxis = SDF2Unity.Axis(joint.Axis.xyz);
 						if (joint.Axis.dynamics != null)
 						{
 							if (joint.Type.Equals("prismatic"))
@@ -177,7 +175,6 @@ namespace SDF
 
 					if (joint.Axis2 != null)
 					{
-						linkHelper.JointAxis2 = SDF2Unity.Axis(joint.Axis2.xyz);
 						if (joint.Axis2.dynamics != null)
 						{
 							axis2SpringReference = SDF2Unity.CurveOrientation((float)joint.Axis2.dynamics.spring_reference);

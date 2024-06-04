@@ -13,9 +13,13 @@ namespace SDF
 	{
 		public class Link : Base
 		{
-			private Model rootModel = null;
-			private Model parentModelHelper = null;
+			private Model _rootModel = null;
+			private Model _parentModelHelper = null;
 			private UE.ArticulationBody _artBody = null;
+			private UE.ArticulationBody _parentArtBody = null;
+			private Link _parentLink = null;
+			private UE.Pose _jointPose = UE.Pose.identity;
+			private bool _isParentLinkModel = false;
 
 			[UE.Header("Properties")]
 			public bool drawInertia = false;
@@ -25,21 +29,20 @@ namespace SDF
 			public bool isSelfCollide = false;
 			public bool useGravity = false;
 
+			[UE.Header("Joint related")]
 			private string jointName = string.Empty;
 			private string jointParentLinkName = string.Empty;
 			private string jointChildLinkName = string.Empty;
 
-			private UE.Vector3 jointAxis = UE.Vector3.zero;
-			private UE.Vector3 jointAxis2 = UE.Vector3.zero;
+			private UE.Pose _jointAnchorPose = new UE.Pose();
 
 			private float _jointAxisLimitVelocity = float.NaN;
-
 			private float _jointAxis2LimitVelocity = float.NaN;
 
 			private List<UE.ContactPoint> collisionContacts = new List<UE.ContactPoint>();
 
-			private SensorDevices.Battery battery = null;
-			public SensorDevices.Battery Battery => battery;
+			private SensorDevices.Battery _battery = null;
+			public SensorDevices.Battery Battery => _battery;
 
 			public string JointName
 			{
@@ -71,35 +74,41 @@ namespace SDF
 				set => this._jointAxis2LimitVelocity = value;
 			}
 
-			public UE.Vector3 JointAxis
-			{
-				get => this.jointAxis;
-				set => this.jointAxis = value;
-			}
+			public UE.Pose LinkJointPose => _jointPose;
 
-			public UE.Vector3 JointAxis2
-			{
-				get => this.jointAxis2;
-				set => this.jointAxis2 = value;
-			}
-
-			public Model RootModel => rootModel;
-
-			public Model Model => parentModelHelper;
+			public Model RootModel => _rootModel;
+			public Model Model => _parentModelHelper;
 
 			new protected void Awake()
 			{
 				base.Awake();
-				parentModelHelper = transform.parent?.GetComponent<Model>();
+				_parentModelHelper = transform.parent?.GetComponent<Model>();
+				_jointAnchorPose = UE.Pose.identity;
 			}
 
 			// Start is called before the first frame update
 			void Start()
 			{
 				var modelHelpers = GetComponentsInParent(typeof(Model));
-				rootModel = (Model)modelHelpers[modelHelpers.Length - 1];
+				_rootModel = (Model)modelHelpers[modelHelpers.Length - 1];
 
-				_artBody = GetComponent<UE.ArticulationBody>();
+				var parentArtBodies = GetComponentsInParent<UE.ArticulationBody>();
+
+				if (parentArtBodies.Length > 0)
+				{
+					_artBody = parentArtBodies[0];
+
+					if (parentArtBodies.Length > 1)
+					{
+						_parentArtBody = parentArtBodies[1];
+						_parentLink = _parentArtBody.gameObject.GetComponent<Link>();
+					}
+				}
+
+				if (transform.parent.CompareTag("Link"))
+				{
+					_isParentLinkModel = true;
+				}
 
 				// Handle self collision
 				if (!isSelfCollide)
@@ -111,7 +120,21 @@ namespace SDF
 			void LateUpdate()
 			{
 				SetPose(transform.localPosition, transform.localRotation, 1);
-			}
+
+				if (_artBody != null)
+				{
+					_jointAnchorPose.position = _artBody.anchorPosition;
+					_jointAnchorPose.rotation = _artBody.anchorRotation;
+				}
+
+				_jointPose.position = transform.localPosition + _jointAnchorPose.position;
+				_jointPose.rotation = transform.localRotation * _jointAnchorPose.rotation;
+
+				if (_parentLink != null && _isParentLinkModel == false)
+				{
+					_jointPose.position -= _parentLink._jointPose.position;
+				}
+		}
 
 			void OnDrawGizmos()
 			{
@@ -170,12 +193,12 @@ namespace SDF
 
 			private void IgnoreSelfCollision()
 			{
-				if (rootModel == null)
+				if (_rootModel == null)
 				{
 					return;
 				}
 
-				var otherLinkPlugins = rootModel.GetComponentsInChildren<Link>();
+				var otherLinkPlugins = _rootModel.GetComponentsInChildren<Link>();
 				var thisColliders = GetCollidersInChildren();
 
 				foreach (var otherLinkPlugin in otherLinkPlugins)
@@ -199,12 +222,12 @@ namespace SDF
 
 			public void AttachBattery(in string name, in float initVoltage)
 			{
-				if (battery == null)
+				if (_battery == null)
 				{
-					battery = new SensorDevices.Battery(name);
+					_battery = new SensorDevices.Battery(name);
 				}
 
-				battery.SetMax(initVoltage);
+				_battery.SetMax(initVoltage);
 			}
 		}
 	}
