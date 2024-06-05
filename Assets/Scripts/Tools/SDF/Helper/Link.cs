@@ -140,7 +140,7 @@ namespace SDF
 			{
 				if (_artBody && drawInertia)
 				{
-					UE.Gizmos.color = new UE.Color(0.35f, 0.0f, 0.1f, 0.1f);
+					UE.Gizmos.color = new UE.Color(0.45f, 0.1f, 0.15f, 0.3f);
 
 					var region = _artBody.inertiaTensor;
 					if (region.x < 1f && region.y < 1f && region.z < 1f)
