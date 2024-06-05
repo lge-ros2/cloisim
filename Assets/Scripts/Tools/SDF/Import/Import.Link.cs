@@ -32,11 +32,6 @@ namespace SDF
 					{
 						inertiaVector[index] = MinimumInertiaTensor;
 					}
-
-					if (inertiaRotationVector[index] <= MinimumInertiaTensor)
-					{
-						inertiaRotationVector[index] = MinimumInertiaTensor;
-					}
 				}
 
 				inertiaMomentum.position = inertiaVector;
