@@ -34,7 +34,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
 - [X] Joint models
   - [X] 2-Wheeled Motor driving
   - [X] Joint control
-  - [ ] Joint Pose
+  - [X] Joint Pose
 - [X] Sensor models
   - [X] LiDAR Sensor
     - [X] 2D
@@ -76,6 +76,8 @@ There is problem with `<pose>` in `<joint>` since introduction of articulation b
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material', 'Collada(.dae) including animation' and 'STL(.stl)'.
 `<ambient>` elements in `<materal>` and ambient properies in mesh files are not support in CLOiSim.
+
+If you're trying to connect `<link>` of `<model>`, it needs to specify unique name in link name in `joint/parent` or `joint/child` within same root model.
 
 ![cloisim_lidar_ros](https://user-images.githubusercontent.com/21001946/107105540-42b65600-686a-11eb-8797-7d937b108c11.gif)
 [video link](https://user-images.githubusercontent.com/21001946/103972179-d0415000-51af-11eb-824b-3d77051664d5.mp4)
@@ -145,10 +147,10 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.21f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.30f1 (LTS)'*.
 
 - Linux Machine
-  - OS: Ubuntu 22.04.3 LTS
+  - OS: Ubuntu 22.04.4 LTS
   - Processor: AMD® Ryzen 9 5950X 16-core processor
   - Memory: 64 GB
   - Graphics: NVIDIA Corporation [GeForce RTX 3090]

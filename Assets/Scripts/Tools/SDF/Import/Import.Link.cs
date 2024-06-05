@@ -17,6 +17,11 @@ namespace SDF
 
 			private static UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia inertia)
 			{
+				/**
+				 *  | Ixx  Ixy  Ixz |
+				 *  | Ixy  Iyy  Iyz |
+				 *  | Ixz  Iyz  Izz |
+				 */
 				var inertiaMomentum = UE.Pose.identity;
 				var inertiaVector = SDF2Unity.Scalar((float)inertia?.ixx, (float)inertia?.iyy, (float)inertia?.izz);
 				var inertiaRotationVector = SDF2Unity.Scalar((float)inertia?.ixy, (float)inertia?.iyz, (float)inertia?.ixz);
@@ -26,11 +31,6 @@ namespace SDF
 					if (inertiaVector[index] <= MinimumInertiaTensor)
 					{
 						inertiaVector[index] = MinimumInertiaTensor;
-					}
-
-					if (inertiaRotationVector[index] <= MinimumInertiaTensor)
-					{
-						inertiaRotationVector[index] = MinimumInertiaTensor;
 					}
 				}
 

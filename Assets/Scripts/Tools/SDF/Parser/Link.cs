@@ -14,15 +14,15 @@ namespace SDF
 	{
 		public class Inertia
 		{
-			public double ixx;
-			public double ixy;
-			public double ixz;
-			public double iyy;
-			public double iyz;
-			public double izz;
+			public double ixx = 0;
+			public double ixy = 0;
+			public double ixz = 0;
+			public double iyy = 0;
+			public double iyz = 0;
+			public double izz = 0;
 		}
 
-		public double mass;
+		public double mass = 0;
 
 		public Inertia inertia;
 

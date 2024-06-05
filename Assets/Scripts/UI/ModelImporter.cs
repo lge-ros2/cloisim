@@ -139,7 +139,7 @@ public class ModelImporter : MonoBehaviour
 		var modelHelper = _targetObject.GetComponent<SDF.Helper.Model>();
 		if (modelHelper != null)
 		{
-			modelHelper.SetPose(_targetObject.position + modelDeployOffset, _targetObject.rotation);
+			modelHelper.SetPose(_targetObject.localPosition + modelDeployOffset, _targetObject.localRotation);
 		}
 	}
 

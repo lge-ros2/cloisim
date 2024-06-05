@@ -291,7 +291,7 @@ namespace SDF
 
 			private static void ReverseArticulationBodyAxis(in UE.ArticulationBody body, in UE.Vector3 euler)
 			{
-				body.anchorRotation *= UE.Quaternion.Euler(euler * 180);
+				body.anchorRotation *= UE.Quaternion.Euler(euler * 180f);
 				// body.parentAnchorRotation *= UE.Quaternion.Euler(euler * 180);  // TODO: matchAnchors is set to true
 			}
 

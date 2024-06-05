@@ -71,7 +71,7 @@ public class JointControlPlugin : CLOiSimPlugin
 				if (jointState.AddTargetJoint(jointName, out var targetLink, out var isStatic))
 				{
 					var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("joints/joint[text()='" + jointName + "']", "parent_frame_id");
-					var jointParentLinkName = (parentFrameId == null) ? targetLink.JointParentLinkName : parentFrameId;
+					var jointParentLinkName = (string.IsNullOrEmpty(parentFrameId)) ? targetLink.JointParentLinkName : parentFrameId;
 					var tf = new TF(targetLink, targetLink.JointChildLinkName, jointParentLinkName);
 					if (isStatic)
 					{
