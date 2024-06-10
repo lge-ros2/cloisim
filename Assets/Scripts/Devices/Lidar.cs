@@ -5,7 +5,6 @@
  */
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
 using UnityEngine.Rendering.Universal;
@@ -50,7 +49,6 @@ namespace SensorDevices
 		private int numberOfLaserCamData = 0;
 
 		private bool _startLaserWork = false;
-		private float _lastTimeLaserCameraWork = 0;
 
 		private RTHandle _rtHandle = null;
 		private ParallelOptions _parallelOptions = null;
@@ -82,14 +80,7 @@ namespace SensorDevices
 				SetupLaserCameraData();
 
 				_startLaserWork = true;
-			}
-		}
-
-		void Update()
-		{
-			if (_startLaserWork)
-			{
-				LaserCameraWorker();
+				StartCoroutine(CaptureLaserCamera());
 			}
 		}
 
@@ -292,9 +283,9 @@ namespace SensorDevices
 			laserFilter.SetupRangeFilter(filterRangeMin, filterRangeMax);
 		}
 
-		private void LaserCameraWorker()
+		private IEnumerator CaptureLaserCamera()
 		{
-			if (Time.time - _lastTimeLaserCameraWork >= WaitPeriod(0.001f))
+			while (_startLaserWork)
 			{
 				// Update lidar sensor pose
 				lidarSensorPose.position = lidarLink.position;
@@ -308,7 +299,6 @@ namespace SensorDevices
 					axisRotation.y = laserCamData.centerAngle;
 
 					laserCam.transform.localRotation = lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
-
 					laserCam.enabled = true;
 
 					if (laserCam.isActiveAndEnabled)
@@ -321,10 +311,11 @@ namespace SensorDevices
 							_asyncWorkList[dataIndex] = new AsyncLaserWork(dataIndex, readbackRequest, capturedTime);
 
 						laserCam.enabled = false;
+						yield return null;
 					}
 				}
 
-				_lastTimeLaserCameraWork = Time.time;
+				yield return new WaitForSecondsRealtime(UpdatePeriod);
 			}
 		}
 
@@ -399,8 +390,7 @@ namespace SensorDevices
 			var laserEndAngleV = (float)vertical.angle.max;
 			var laserTotalAngleV = (float)vertical.angle.range;
 
-			const int TargetCaptureTimeIndex = 1;
-			var capturedTime = (float)DeviceHelper.GlobalClock.FixedSimTime;
+			var capturedTimeSum = 0f;
 
 			Parallel.For(0, numberOfLaserCamData, _parallelOptions, index =>
 			{
@@ -422,10 +412,7 @@ namespace SensorDevices
 					return;
 				}
 
-				if (index == TargetCaptureTimeIndex)
-				{
-					capturedTime = _laserDataOutput[index].capturedTime;
-				}
+				capturedTimeSum += _laserDataOutput[index].capturedTime;
 
 				if (laserStartAngleH < 0 && dataEndAngleH > DEG180)
 				{
@@ -498,6 +485,8 @@ namespace SensorDevices
 				laserFilter.DoFilter(ref laserScan);
 			}
 
+			capturedTimeSum += (float)DeviceHelper.GlobalClock.SimTime;
+			var capturedTime = capturedTimeSum / (numberOfLaserCamData + 1);
 			DeviceHelper.SetTime(laserScanStamped.Time, capturedTime);
 
 			PushDeviceMessage<messages.LaserScanStamped>(laserScanStamped);
