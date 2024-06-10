@@ -5,7 +5,6 @@
  */
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
 using UnityEngine.Rendering.Universal;
@@ -33,14 +32,12 @@ namespace SensorDevices
 		private float LaserCameraVFov = 0;
 
 		public LaserData.MinMax range;
-
 		public LaserData.Scan horizontal;
-
 		public LaserData.Scan vertical;
 
-		private Transform lidarLink = null;
-		private Pose lidarSensorInitPose = new Pose();
-		private Pose lidarSensorPose = new Pose();
+		private Transform _lidarLink = null;
+		private Pose _lidarSensorInitPose = new Pose();
+		private Pose _lidarSensorPose = new Pose();
 
 		private UnityEngine.Camera laserCam = null;
 		private Material depthMaterial = null;
@@ -50,7 +47,6 @@ namespace SensorDevices
 		private int numberOfLaserCamData = 0;
 
 		private bool _startLaserWork = false;
-		private float _lastTimeLaserCameraWork = 0;
 
 		private RTHandle _rtHandle = null;
 		private ParallelOptions _parallelOptions = null;
@@ -65,7 +61,7 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
-			lidarLink = transform.parent;
+			_lidarLink = transform.parent;
 
 			laserCam = GetComponent<UnityEngine.Camera>();
 		}
@@ -74,22 +70,15 @@ namespace SensorDevices
 		{
 			if (laserCam)
 			{
-				lidarSensorInitPose.position = transform.localPosition;
-				lidarSensorInitPose.rotation = transform.localRotation;
+				_lidarSensorInitPose.position = transform.localPosition;
+				_lidarSensorInitPose.rotation = transform.localRotation;
 
 				SetupLaserCamera();
 
 				SetupLaserCameraData();
 
 				_startLaserWork = true;
-			}
-		}
-
-		void Update()
-		{
-			if (_startLaserWork)
-			{
-				LaserCameraWorker();
+				StartCoroutine(CaptureLaserCamera());
 			}
 		}
 
@@ -192,8 +181,8 @@ namespace SensorDevices
 				dimension: TextureDimension.Tex2D,
 				msaaSamples: MSAASamples.None,
 				enableRandomWrite: false,
-				useMipMap: true,
-				autoGenerateMips: true,
+				useMipMap: false,
+				autoGenerateMips: false,
 				isShadowMap: false,
 				anisoLevel: 0,
 				mipMapBias: 0,
@@ -292,13 +281,13 @@ namespace SensorDevices
 			laserFilter.SetupRangeFilter(filterRangeMin, filterRangeMax);
 		}
 
-		private void LaserCameraWorker()
+		private IEnumerator CaptureLaserCamera()
 		{
-			if (Time.time - _lastTimeLaserCameraWork >= WaitPeriod(0.001f))
+			while (_startLaserWork)
 			{
 				// Update lidar sensor pose
-				lidarSensorPose.position = lidarLink.position;
-				lidarSensorPose.rotation = lidarLink.rotation;
+				_lidarSensorPose.position = _lidarLink.position;
+				_lidarSensorPose.rotation = _lidarLink.rotation;
 
 				var axisRotation = Vector3.zero;
 
@@ -307,8 +296,7 @@ namespace SensorDevices
 					var laserCamData = _laserCamData[dataIndex];
 					axisRotation.y = laserCamData.centerAngle;
 
-					laserCam.transform.localRotation = lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
-
+					laserCam.transform.localRotation = _lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
 					laserCam.enabled = true;
 
 					if (laserCam.isActiveAndEnabled)
@@ -321,10 +309,18 @@ namespace SensorDevices
 							_asyncWorkList[dataIndex] = new AsyncLaserWork(dataIndex, readbackRequest, capturedTime);
 
 						laserCam.enabled = false;
+						yield return null;
 					}
 				}
 
-				_lastTimeLaserCameraWork = Time.time;
+				var processingTime = 0f;
+				for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
+				{
+					processingTime += _laserDataOutput[dataIndex].processingTime;
+				}
+
+				var averageProcessingTime = processingTime / numberOfLaserCamData;
+				yield return new WaitForSeconds(UpdatePeriod - averageProcessingTime);
 			}
 		}
 
@@ -362,6 +358,7 @@ namespace SensorDevices
 
 						_laserDataOutput[dataIndex].data = laserCamData.GetLaserData();
 						_laserDataOutput[dataIndex].capturedTime = asyncWork.capturedTime;
+						_laserDataOutput[dataIndex].processingTime = (float)DeviceHelper.GlobalClock.SimTime - asyncWork.capturedTime;
 
 						if (noise != null)
 						{
@@ -379,8 +376,8 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			var lidarPosition = lidarSensorPose.position + lidarSensorInitPose.position;
-			var lidarRotation = lidarSensorPose.rotation * lidarSensorInitPose.rotation;
+			var lidarPosition = _lidarSensorPose.position + _lidarSensorInitPose.position;
+			var lidarRotation = _lidarSensorPose.rotation * _lidarSensorInitPose.rotation;
 
 			var laserScan = laserScanStamped.Scan;
 
@@ -399,8 +396,7 @@ namespace SensorDevices
 			var laserEndAngleV = (float)vertical.angle.max;
 			var laserTotalAngleV = (float)vertical.angle.range;
 
-			const int TargetCaptureTimeIndex = 1;
-			var capturedTime = (float)DeviceHelper.GlobalClock.FixedSimTime;
+			var capturedTimeSum = 0f;
 
 			Parallel.For(0, numberOfLaserCamData, _parallelOptions, index =>
 			{
@@ -422,16 +418,15 @@ namespace SensorDevices
 					return;
 				}
 
-				if (index == TargetCaptureTimeIndex)
-				{
-					capturedTime = _laserDataOutput[index].capturedTime;
-				}
+				capturedTimeSum += _laserDataOutput[index].capturedTime;
 
 				if (laserStartAngleH < 0 && dataEndAngleH > DEG180)
 				{
 					dataStartAngleH -= DEG360;
 					dataEndAngleH -= DEG360;
 				}
+				// Debug.LogWarning(index + " capturedTime=" + _laserDataOutput[index].capturedTime.ToString("F8")
+				// 				+ ", processingTime=" + _laserDataOutput[index].processingTime.ToString("F8"));
 				// Debug.LogFormat("index {0}: {1}~{2}, {3}~{4}", dataIndex, laserStartAngleH, laserEndAngleH, dataStartAngleH, dataEndAngleH);
 
 				for (var sampleIndexV = 0; sampleIndexV < laserSamplesV; sampleIndexV++, doCopy = true)
@@ -498,6 +493,8 @@ namespace SensorDevices
 				laserFilter.DoFilter(ref laserScan);
 			}
 
+			capturedTimeSum += (float)DeviceHelper.GlobalClock.SimTime;
+			var capturedTime = capturedTimeSum / (numberOfLaserCamData + 1);
 			DeviceHelper.SetTime(laserScanStamped.Time, capturedTime);
 
 			PushDeviceMessage<messages.LaserScanStamped>(laserScanStamped);
@@ -520,8 +517,8 @@ namespace SensorDevices
 
 			while (true)
 			{
-				var lidarModel = lidarLink.parent;
-				var rayStart = lidarLink.position + lidarModel.rotation * lidarSensorInitPose.position;
+				var lidarModel = _lidarLink.parent;
+				var rayStart = _lidarLink.position + lidarModel.rotation * _lidarSensorInitPose.position;
 				var rangeData = GetRangeData();
 
 				if (rangeData != null)
@@ -541,7 +538,7 @@ namespace SensorDevices
 						{
 							rayColor.g = rayAngleV / (float)angleRangeV;
 
-							var rayRotation = Quaternion.AngleAxis((float)rayAngleH, transform.up) * Quaternion.AngleAxis((float)rayAngleV, -transform.forward) * lidarLink.forward;
+							var rayRotation = Quaternion.AngleAxis((float)rayAngleH, transform.up) * Quaternion.AngleAxis((float)rayAngleV, -transform.forward) * _lidarLink.forward;
 							var rayDirection = rayRotation * (rayData);
 							Debug.DrawRay(rayStart, rayDirection, rayColor, visualDrawDuration, true);
 						}
