@@ -362,7 +362,12 @@ public class ProceduralMesh
 
 	// Longitude |||
 	// Latitude ---
-	public static Mesh CreateSphere(in float radius = 1f, int nbLong = 24, int nbLat = 24)
+	public static Mesh CreateSphere(in float radius = 1f, in int nbLong = 24, in int nbLat = 24)
+	{
+		return CreateSphere(Vector3.one * radius, nbLong, nbLat, "Sphere");
+	}
+
+	public static Mesh CreateSphere(in Vector3 scale, in int nbLong = 24, in int nbLat = 24, in string meshName = "Ellipsoid")
 	{
 		Mesh mesh;
 
@@ -467,13 +472,13 @@ public class ProceduralMesh
 		}
 
 		mesh = Object.Instantiate(MeshObjectCache[Type.SPHERE]);
-		mesh.name = "Sphere";
+		mesh.name = meshName;
 
 		var meshVertices = mesh.vertices;
 		for (var i = 0; i < mesh.vertexCount; i++)
 		{
 			var vertex = meshVertices[i];
-			vertex.Scale(new Vector3(radius, radius, radius));
+			vertex.Scale(scale);
 			meshVertices[i] = vertex;
 		}
 		mesh.vertices = meshVertices;
