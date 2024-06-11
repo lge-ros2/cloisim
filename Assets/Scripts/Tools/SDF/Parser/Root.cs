@@ -73,7 +73,7 @@ namespace SDF
 						_originalDoc = (XmlDocument)_doc.CloneNode(true);
 						_worldFileName = worldFileName;
 
-						replaceAllIncludedModel();
+						ReplaceAllIncludedModel();
 
 						ConvertPathToAbsolutePaths();
 
@@ -111,20 +111,20 @@ namespace SDF
 
 			var modelLocation = Path.Combine(modelFullPath, modelFileName);
 			var modelName = Path.GetFileName(modelFullPath);
-			// Console.Write(modelFullPath, modelName);
+			// Console.Write(modelFullPath + " -> " + modelName);
 			try
 			{
 				_doc.RemoveAll();
 				_doc.Load(modelLocation);
 
-				replaceAllIncludedModel();
-
-				ConvertPathToAbsolutePaths();
+				ReplaceAllIncludedModel();
 
 				// Console.Write("Load World");
 				var modelNode = _doc.SelectSingleNode("/sdf/model");
 
 				StoreOriginalModelName(_doc, modelName, modelNode);
+
+				ConvertPathToAbsolutePaths();
 
 				model = new Model(modelNode);
 
@@ -259,6 +259,30 @@ namespace SDF
 			Console.Write($"Total Models: {resourceModelTable.Count}");
 		}
 
+		private string FindParentModelFolderName(in XmlNode targetNode)
+		{
+			var modelName = string.Empty;
+			var node = targetNode?.ParentNode;
+			while (node != null)
+			{
+				// Console.Write(node.Name + " - " + node.LocalName);
+				if (node.Name == "model")
+				{
+					modelName = node.Attributes["original_name"]?.Value;
+					// Console.Write("Found model " + modelName);
+					break;
+				}
+				node = node?.ParentNode;
+			}
+
+			if (modelName == null)
+			{
+				return string.Empty;
+			}
+
+			return modelName;
+		}
+
 		// Converting media/file uri
 		private void ConvertPathToAbsolutePath(in string targetElement)
 		{
@@ -297,7 +321,15 @@ namespace SDF
 				}
 				else
 				{
-					Console.Write($"Cannot convert: {uri}");
+					var currentModelName = FindParentModelFolderName(node);
+
+					var meshUri = string.Join("/", uri);
+
+					if (resourceModelTable.TryGetValue(currentModelName, out var value))
+					{
+						node.InnerText = value.Item2 + "/" + meshUri;
+					}
+					// Console.Write($"Cannot convert: {uri}");
 				}
 			}
 		}
@@ -325,7 +357,7 @@ namespace SDF
 			ConvertPathToAbsolutePath("texture/normal");
 		}
 
-		private void replaceAllIncludedModel()
+		private void ReplaceAllIncludedModel()
 		{
 			// loop all include tag until all replaced.
 			XmlNodeList nodes;
@@ -355,12 +387,13 @@ namespace SDF
 		}
 
 		#region Segmentation Tag
-		private void StoreOriginalModelName(XmlDocument targetDoc, in string modelName, XmlNode targetNode)
+		private void StoreOriginalModelName(in XmlDocument targetDoc, in string modelName, XmlNode targetNode)
 		{
  			// store original model's name for segmentation Tag
 			var newAttr = targetDoc.CreateAttribute("original_name");
 			newAttr.Value = modelName;
 			targetNode.Attributes.Append(newAttr);
+			// Console.Write(targetNode.Name + " - " + targetNode.LocalName + " - " + modelName);
 		}
 		#endregion
 
@@ -394,7 +427,7 @@ namespace SDF
 			if (resourceModelTable.TryGetValue(modelName, out var value))
 			{
 				uri = value.Item2 + "/" + value.Item3;
-				// Console.WriteLine($"{name} | {uri} | {modelName} | {pose} | {isStatic}");
+				// Console.WriteLine($"include/modelname = {name} | {uri} | {modelName} | {pose} | {isStatic}");
 			}
 			else
 			{
