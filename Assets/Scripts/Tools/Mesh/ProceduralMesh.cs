@@ -362,7 +362,7 @@ public class ProceduralMesh
 
 	// Longitude |||
 	// Latitude ---
-	public static Mesh CreateSphere(in float radius = 1f, int nbLong = 24, int nbLat = 16)
+	public static Mesh CreateSphere(in float radius = 1f, int nbLong = 24, int nbLat = 24)
 	{
 		Mesh mesh;
 
