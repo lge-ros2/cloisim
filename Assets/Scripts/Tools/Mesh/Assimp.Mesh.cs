@@ -10,7 +10,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public partial class MeshLoader
+public static partial class MeshLoader
 {
 	private static Dictionary<string, GameObject> MeshCache = new Dictionary<string, GameObject>();
 
@@ -336,13 +336,13 @@ public partial class MeshLoader
 		return meshMatList;
 	}
 
-	private static GameObject ConvertAssimpNodeToMeshObject(
-		in Assimp.Node node,
+	private static GameObject ConvertToUnityMeshObject(
+		this Assimp.Node node,
 		in MeshMaterialList meshMatList,
 		out bool doFlip)
 	{
-		var rootObject = new GameObject(node.Name);
-		// Debug.Log($"ConvertAssimpNodeToMeshObject : {node.Name}");
+		var nodeObject = new GameObject(node.Name);
+		// Debug.Log($"ConvertToUnityMeshObject : {node.Name}");
 
 		// Set Mesh
 		if (node.HasMeshes)
@@ -361,49 +361,50 @@ public partial class MeshLoader
 				meshRenderer.allowOcclusionWhenDynamic = true;
 				meshRenderer.receiveShadows = true;
 
-				subObject.transform.SetParent(rootObject.transform, true);
+				subObject.transform.SetParent(nodeObject.transform, true);
 				// Debug.Log("Sub Object: " + subObject.name);
 			}
 		}
 
 		// Convert Assimp transfrom into Unity transform
-		var nodeTransform = ConvertAssimpMatrix4x4ToUnity(node.Transform);
-		rootObject.transform.localPosition = nodeTransform.GetColumn(3);
-		rootObject.transform.localRotation = nodeTransform.rotation;
-		rootObject.transform.localScale = nodeTransform.lossyScale;
+		var nodeTransform = node.Transform.ConvertToUnity();
+		nodeObject.transform.localPosition = nodeTransform.GetPosition();
+		nodeObject.transform.localRotation = nodeTransform.rotation;
+		nodeObject.transform.localScale = nodeTransform.lossyScale;
 
-		// Debug.Log("Node: " + node.Name + " => " + rootObject.transform.localScale.ToString("F8"));
+		// Debug.Log("Node: " + node.Name + " => " + nodeObject.transform.localScale.ToString("F8"));
+		// Debug.Log(node.Transform);
 
-		doFlip = (rootObject.transform.localScale.x < 0 ||
-				  rootObject.transform.localScale.y < 0 ||
-				  rootObject.transform.localScale.z < 0) ? true : false;
+		doFlip = (nodeObject.transform.localScale.x < 0 ||
+				  nodeObject.transform.localScale.y < 0 ||
+				  nodeObject.transform.localScale.z < 0) ? true : false;
 
 		if (node.HasChildren)
 		{
 			foreach (var child in node.Children)
 			{
-				if (AssimpNodeChildrenCount(child) == 0)
+				if (child.ChildrenCount() == 0)
 				{
 					continue;
 				}
 
 				// Debug.Log(" => Child Object: " + child.Name);
-				var childObject = ConvertAssimpNodeToMeshObject(child, meshMatList, out var doFlipChild);
-				childObject.transform.SetParent(rootObject.transform, false);
+				var childObject = child.ConvertToUnityMeshObject(meshMatList, out var doFlipChild);
+				childObject.transform.SetParent(nodeObject.transform, false);
 
 				doFlip |= doFlipChild;
 			}
 		}
 
-		return rootObject;
+		return nodeObject;
 	}
 
-	private static int AssimpNodeChildrenCount(in Assimp.Node node)
+	private static int ChildrenCount(this Assimp.Node node)
 	{
 		var childrenCount = 0;
 		foreach (var child in node.Children)
 		{
-		 	childrenCount += AssimpNodeChildrenCount(child);
+		 	childrenCount += child.ChildrenCount();
 		}
 		return node.ChildCount + node.MeshCount + childrenCount;
 	}
@@ -441,7 +442,7 @@ public partial class MeshLoader
 			}
 
 			// Create GameObjects from nodes
-			var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList, out var doFlip);
+			var createdMeshObject = scene.RootNode.ConvertToUnityMeshObject(meshMatList, out var doFlip);
 			// Debug.Log(createdMeshObject.name + ": " + createdMeshObject.transform.localRotation.eulerAngles);
 
 			if (doFlip)

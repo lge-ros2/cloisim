@@ -9,7 +9,7 @@ using System.Linq;
 using System;
 using UnityEngine;
 
-public partial class MeshLoader
+public static partial class MeshLoader
 {
 	private static int boneMapIndex;
 	private static Dictionary<string, Tuple<int, Transform>> boneNameIndexMap = new Dictionary<string, Tuple<int, Transform>>();
@@ -126,7 +126,7 @@ public partial class MeshLoader
 					boneNameIndexMap.TryGetValue(bone.Name, out var tupleBone);
 					var boneIndex = tupleBone.Item1;
 					// Debug.Log(bone.Name + ", index= " + boneIndex + "--------------- " + bone.OffsetMatrix.ToString());
-					var bindPoseMat = ConvertAssimpMatrix4x4ToUnity(bone.OffsetMatrix);
+					var bindPoseMat = bone.OffsetMatrix.ConvertToUnity();
 					bindPoseList.SetBindPose(boneIndex, bindPoseMat);
 
 					if (bone.HasVertexWeights)
@@ -157,13 +157,13 @@ public partial class MeshLoader
 		return bindPoseList;
 	}
 
-	private static GameObject GetBonesFromAssimpNode(in Assimp.Node node)
+	private static GameObject GetBones(this Assimp.Node node)
 	{
 		var rootObject = new GameObject(node.Name);
 		// Debug.Log("Bone Object: " + rootObject.name);
 
 		// Convert Assimp transfrom into Unity transform
-		var nodeTransform = ConvertAssimpMatrix4x4ToUnity(node.Transform);
+		var nodeTransform = node.Transform.ConvertToUnity();
 		rootObject.transform.position = nodeTransform.GetColumn(3);
 		rootObject.transform.rotation = nodeTransform.rotation;
 		rootObject.transform.localScale = nodeTransform.lossyScale;
@@ -177,7 +177,7 @@ public partial class MeshLoader
 		{
 			foreach (var child in node.Children)
 			{
-				var childObject = GetBonesFromAssimpNode(child);
+				var childObject = child.GetBones();
 				childObject.transform.SetParent(rootObject.transform, true);
 			}
 		}
@@ -203,7 +203,7 @@ public partial class MeshLoader
 
 		boneMapIndex = -2;
 		boneNameIndexMap.Clear();
-		var rootObject = GetBonesFromAssimpNode(rootNode);
+		var rootObject = rootNode.GetBones();
 
 		var meshObject = rootObject.transform.GetChild(1).gameObject;
 

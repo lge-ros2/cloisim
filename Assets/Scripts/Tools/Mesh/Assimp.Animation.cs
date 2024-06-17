@@ -7,7 +7,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class MeshLoader
+public static partial class MeshLoader
 {
 	public class KeyFramesPosition
 	{

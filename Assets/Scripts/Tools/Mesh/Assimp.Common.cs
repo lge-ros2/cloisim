@@ -9,7 +9,7 @@ using System.IO;
 using System;
 using UnityEngine;
 
-public partial class MeshLoader
+public static partial class MeshLoader
 {
 	private static Assimp.PostProcessSteps PostProcessFlags =
 		// PreTransformVertices
@@ -141,13 +141,13 @@ public partial class MeshLoader
 		return eulerRotation;
 	}
 
-	private static Matrix4x4 ConvertAssimpMatrix4x4ToUnity(in Assimp.Matrix4x4 assimpMatrix)
+	private static Matrix4x4 ConvertToUnity(this Assimp.Matrix4x4 assimpMatrix)
 	{
 		assimpMatrix.Decompose(out var scaling, out var rotation, out var translation);
 		var pos = new Vector3(translation.X, translation.Y, translation.Z);
-		var q = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
-		var s = new Vector3(scaling.X, scaling.Y, scaling.Z);
-		return Matrix4x4.TRS(pos, q, s);
+		var rot = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
+		var scale = new Vector3(scaling.X, scaling.Y, scaling.Z);
+		return Matrix4x4.TRS(pos, rot, scale);
 	}
 
 	private static readonly Assimp.AssimpContext importer = new Assimp.AssimpContext();
@@ -176,8 +176,9 @@ public partial class MeshLoader
 			return null;
 		}
 
+		Assimp.Scene scene = null;
 		try {
-			var scene = importer.ImportFile(targetPath, PostProcessFlags);
+			scene = importer.ImportFile(targetPath, PostProcessFlags);
 
 			// Remove cameras and lights
 			scene.Cameras.Clear();
@@ -203,12 +204,12 @@ public partial class MeshLoader
 			// 	var metaDataValue = metaDataSet.Value;
 			// 	Debug.Log($"{metaDataKey} : {metaDataValue}");
 			// }
-			// Debug.Log(rootNode.Transform);
+			// Debug.Log("rootNode.Transform=" + rootNode.Transform);
 
 			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
 			var meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
 
-			var rootNodeMatrix = ConvertAssimpMatrix4x4ToUnity(rootNode.Transform);
+			var rootNodeMatrix = rootNode.Transform.ConvertToUnity();
 			rootNodeMatrix = Matrix4x4.Rotate(meshRotation) * rootNodeMatrix;
 
 			rootNode.Transform = new Assimp.Matrix4x4(
@@ -217,13 +218,12 @@ public partial class MeshLoader
 				rootNodeMatrix.m20, rootNodeMatrix.m21, rootNodeMatrix.m22, rootNodeMatrix.m23,
 				rootNodeMatrix.m30, rootNodeMatrix.m31, rootNodeMatrix.m32, rootNodeMatrix.m33
 			);
-
-			return scene;
 		}
 		catch (Assimp.AssimpException e)
 		{
 			Debug.LogError(e.Message);
 		}
-		return null;
+
+		return scene;
 	}
 }
