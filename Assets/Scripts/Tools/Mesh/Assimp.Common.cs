@@ -33,19 +33,20 @@ public static partial class MeshLoader
 		// Assimp.PostProcessSteps.GenerateSmoothNormals | // --> it may causes conflict with GenerateNormals
 		// Assimp.PostProcessSteps.OptimizeMeshes | // -> it may causes face reverting
 		// Assimp.PostProcessSteps.FixInFacingNormals | // -> it may causes wrong face
-		Assimp.PostProcessSteps.GenerateNormals |
-		Assimp.PostProcessSteps.GenerateUVCoords |
 		Assimp.PostProcessSteps.RemoveComponent |
 		Assimp.PostProcessSteps.ImproveCacheLocality |
-		Assimp.PostProcessSteps.CalculateTangentSpace |
-		Assimp.PostProcessSteps.JoinIdenticalVertices |
 		Assimp.PostProcessSteps.RemoveRedundantMaterials |
-		Assimp.PostProcessSteps.Triangulate |
-		Assimp.PostProcessSteps.SortByPrimitiveType |
 		Assimp.PostProcessSteps.ValidateDataStructure |
 		Assimp.PostProcessSteps.SplitLargeMeshes |
 		Assimp.PostProcessSteps.FindInvalidData |
-		Assimp.PostProcessSteps.MakeLeftHanded;
+		Assimp.PostProcessSteps.MakeLeftHanded |
+		// Assimp.PostProcessSteps.CalculateTangentSpace | => defined in Preset RTFast
+		// Assimp.PostProcessSteps.GenerateNormals | => defined in Preset RTFast
+		// Assimp.PostProcessSteps.JoinIdenticalVertices | => defined in Preset RTFast
+		// Assimp.PostProcessSteps.Triangulate | => defined in Preset RTFast
+		// Assimp.PostProcessSteps.GenerateUVCoords | => defined in Preset RTFast
+		// Assimp.PostProcessSteps.SortByPrimitiveType | => defined in Preset RTFast
+		Assimp.PostProcessPreset.TargetRealTimeFast;
 
 	private static List<string> MaterialSearchPaths = new List<string>()
 		{
@@ -147,7 +148,6 @@ public static partial class MeshLoader
 	{
 		return (color == null) ? Color.clear : new Color(color.R, color.G, color.B, color.A);
 	}
-
 
 	private static Matrix4x4 ToUnity(this Assimp.Matrix4x4 assimpMatrix)
 	{
