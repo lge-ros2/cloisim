@@ -142,7 +142,7 @@ public partial class MeshLoader
 							}
 							else
 							{
-								Debug.LogWarning("weight is zero!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1");
+								Debug.LogWarning("weight is zero!!");
 							}
 						}
 					}
@@ -187,7 +187,7 @@ public partial class MeshLoader
 
 	public static GameObject CreateSkinObject(in string meshPath)
 	{
-		var scene = GetScene(meshPath, out var meshRotation);
+		var scene = GetScene(meshPath);
 		if (scene == null)
 		{
 			return null;
@@ -211,9 +211,10 @@ public partial class MeshLoader
 		skinnedMeshRenderer.updateWhenOffscreen = true;
 
 		var rootBoneTransform = rootObject.transform.GetChild(0);
-		var rootBoneRotation = Quaternion.Euler(180, 0, 90);
-		rootBoneTransform.localRotation *= rootBoneRotation;
 		skinnedMeshRenderer.rootBone = rootBoneTransform.GetChild(0);
+
+		var rootObjectRotation = Quaternion.Euler(90, -90, 0);
+		skinnedMeshRenderer.rootBone.parent.localRotation = rootObjectRotation;
 
 		var bones = skinnedMeshRenderer.rootBone.GetComponentsInChildren<Transform>();
 		skinnedMeshRenderer.bones = bones;

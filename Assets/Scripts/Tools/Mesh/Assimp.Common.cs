@@ -158,10 +158,8 @@ public partial class MeshLoader
 			Debug.Log(msg);
 		});
 
-	private static Assimp.Scene GetScene(in string targetPath, out Quaternion meshRotation, in string subMesh = null)
+	private static Assimp.Scene GetScene(in string targetPath, in string subMesh = null)
 	{
-		meshRotation = Quaternion.identity;
-
 		if (!File.Exists(targetPath))
 		{
 			Debug.LogWarning("File doesn't exist: " + targetPath);
@@ -208,7 +206,17 @@ public partial class MeshLoader
 			// Debug.Log(rootNode.Transform);
 
 			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
-			meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
+			var meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
+
+			var rootNodeMatrix = ConvertAssimpMatrix4x4ToUnity(rootNode.Transform);
+			rootNodeMatrix = Matrix4x4.Rotate(meshRotation) * rootNodeMatrix;
+
+			rootNode.Transform = new Assimp.Matrix4x4(
+				rootNodeMatrix.m00, rootNodeMatrix.m01, rootNodeMatrix.m02, rootNodeMatrix.m03,
+				rootNodeMatrix.m10,	rootNodeMatrix.m11, rootNodeMatrix.m12, rootNodeMatrix.m13,
+				rootNodeMatrix.m20, rootNodeMatrix.m21, rootNodeMatrix.m22, rootNodeMatrix.m23,
+				rootNodeMatrix.m30, rootNodeMatrix.m31, rootNodeMatrix.m32, rootNodeMatrix.m33
+			);
 
 			return scene;
 		}

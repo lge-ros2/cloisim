@@ -416,7 +416,7 @@ public partial class MeshLoader
 
 		if (!MeshCache.ContainsKey(cacheKey))
 		{
-			var scene = GetScene(meshPath, out var meshRotation, subMesh);
+			var scene = GetScene(meshPath, subMesh);
 			if (scene == null)
 			{
 				meshObject = new GameObject("Empty Mesh");
@@ -444,7 +444,6 @@ public partial class MeshLoader
 			var createdMeshObject = ConvertAssimpNodeToMeshObject(scene.RootNode, meshMatList, out var doFlip);
 			// Debug.Log(createdMeshObject.name + ": " + createdMeshObject.transform.localRotation.eulerAngles);
 
-			createdMeshObject.transform.localRotation = meshRotation * createdMeshObject.transform.localRotation;
 			if (doFlip)
 			{
 				createdMeshObject.transform.localScale = -createdMeshObject.transform.localScale;

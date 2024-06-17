@@ -111,7 +111,7 @@ public partial class MeshLoader
 
 	public static AnimationClip LoadAnimation(in string animationName, in string filePath, in Dictionary<string, string> relativePaths, in float scale = 1)
 	{
-		var scene = GetScene(filePath, out var meshRotation);
+		var scene = GetScene(filePath);
 		if (scene == null)
 		{
 			return null;
