@@ -48,25 +48,25 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasColorAmbient)
 			{
-				// Debug.Log(sceneMat.Name + ": ColorAmbient but not support. " + 	MeshLoader.GetColor(sceneMat.ColorAmbient));
+				// Debug.Log(sceneMat.Name + ": ColorAmbient but not support. " + sceneMat.ColorAmbient.ToUnity());
 			}
 
 			if (sceneMat.HasColorDiffuse)
 			{
-				SDF2Unity.Material.SetBaseColor(mat, MeshLoader.GetColor(sceneMat.ColorDiffuse));
-				// Debug.Log(sceneMat.Name + ": HasColorHasColorDiffuseEmissive " + MeshLoader.GetColor(sceneMat.ColorDiffuse));
+				SDF2Unity.Material.SetBaseColor(mat, sceneMat.ColorDiffuse.ToUnity());
+				// Debug.Log(sceneMat.Name + ": HasColorHasColorDiffuseEmissive " + sceneMat.ColorDiffuse.ToUnity());
 			}
 
 			if (sceneMat.HasColorEmissive)
 			{
-				SDF2Unity.Material.SetEmission(mat, MeshLoader.GetColor(sceneMat.ColorEmissive));
-				// Debug.Log(sceneMat.Name + ": HasColorEmissive " + MeshLoader.GetColor(sceneMat.ColorEmissive));
+				SDF2Unity.Material.SetEmission(mat, sceneMat.ColorEmissive.ToUnity());
+				// Debug.Log(sceneMat.Name + ": HasColorEmissive " + sceneMat.ColorEmissive.ToUnity());
 			}
 
 			if (sceneMat.HasColorSpecular)
 			{
-				SDF2Unity.Material.SetSpecular(mat, MeshLoader.GetColor(sceneMat.ColorSpecular));
-				// Debug.Log(sceneMat.Name + ": HasColorSpecular " + MeshLoader.GetColor(sceneMat.ColorSpecular));
+				SDF2Unity.Material.SetSpecular(mat, sceneMat.ColorSpecular.ToUnity());
+				// Debug.Log(sceneMat.Name + ": HasColorSpecular " + sceneMat.ColorSpecular.ToUnity());
 			}
 
 			if (sceneMat.HasColorTransparent)
@@ -336,13 +336,13 @@ public static partial class MeshLoader
 		return meshMatList;
 	}
 
-	private static GameObject ConvertToUnityMeshObject(
+	private static GameObject ToUnityMeshObject(
 		this Assimp.Node node,
 		in MeshMaterialList meshMatList,
 		out bool doFlip)
 	{
 		var nodeObject = new GameObject(node.Name);
-		// Debug.Log($"ConvertToUnityMeshObject : {node.Name}");
+		// Debug.Log($"ToUnityMeshObject : {node.Name}");
 
 		// Set Mesh
 		if (node.HasMeshes)
@@ -367,10 +367,14 @@ public static partial class MeshLoader
 		}
 
 		// Convert Assimp transfrom into Unity transform
-		var nodeTransform = node.Transform.ConvertToUnity();
-		nodeObject.transform.localPosition = nodeTransform.GetPosition();
-		nodeObject.transform.localRotation = nodeTransform.rotation;
-		nodeObject.transform.localScale = nodeTransform.lossyScale;
+		var nodeTransformMatrix = node.Transform.ToUnity();
+		nodeObject.transform.localPosition = nodeTransformMatrix.GetPosition();
+		nodeObject.transform.localRotation = nodeTransformMatrix.rotation;
+		// nodeObject.transform.localRotation = Quaternion.LookRotation(nodeTransformMatrix.GetColumn(2), nodeTransformMatrix.GetColumn(1));
+		nodeObject.transform.localScale = nodeTransformMatrix.lossyScale;
+		// nodeObject.transform.localScale = new Vector3(nodeTransformMatrix.GetColumn(0).magnitude,
+		// 											nodeTransformMatrix.GetColumn(1).magnitude,
+		// 											nodeTransformMatrix.GetColumn(2).magnitude);
 
 		// Debug.Log("Node: " + node.Name + " => " + nodeObject.transform.localScale.ToString("F8"));
 		// Debug.Log(node.Transform);
@@ -389,7 +393,7 @@ public static partial class MeshLoader
 				}
 
 				// Debug.Log(" => Child Object: " + child.Name);
-				var childObject = child.ConvertToUnityMeshObject(meshMatList, out var doFlipChild);
+				var childObject = child.ToUnityMeshObject(meshMatList, out var doFlipChild);
 				childObject.transform.SetParent(nodeObject.transform, false);
 
 				doFlip |= doFlipChild;
@@ -442,7 +446,7 @@ public static partial class MeshLoader
 			}
 
 			// Create GameObjects from nodes
-			var createdMeshObject = scene.RootNode.ConvertToUnityMeshObject(meshMatList, out var doFlip);
+			var createdMeshObject = scene.RootNode.ToUnityMeshObject(meshMatList, out var doFlip);
 			// Debug.Log(createdMeshObject.name + ": " + createdMeshObject.transform.localRotation.eulerAngles);
 
 			if (doFlip)

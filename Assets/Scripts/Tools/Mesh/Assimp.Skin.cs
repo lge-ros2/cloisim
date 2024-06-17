@@ -126,7 +126,7 @@ public static partial class MeshLoader
 					boneNameIndexMap.TryGetValue(bone.Name, out var tupleBone);
 					var boneIndex = tupleBone.Item1;
 					// Debug.Log(bone.Name + ", index= " + boneIndex + "--------------- " + bone.OffsetMatrix.ToString());
-					var bindPoseMat = bone.OffsetMatrix.ConvertToUnity();
+					var bindPoseMat = bone.OffsetMatrix.ToUnity();
 					bindPoseList.SetBindPose(boneIndex, bindPoseMat);
 
 					if (bone.HasVertexWeights)
@@ -163,7 +163,7 @@ public static partial class MeshLoader
 		// Debug.Log("Bone Object: " + rootObject.name);
 
 		// Convert Assimp transfrom into Unity transform
-		var nodeTransform = node.Transform.ConvertToUnity();
+		var nodeTransform = node.Transform.ToUnity();
 		rootObject.transform.position = nodeTransform.GetColumn(3);
 		rootObject.transform.rotation = nodeTransform.rotation;
 		rootObject.transform.localScale = nodeTransform.lossyScale;

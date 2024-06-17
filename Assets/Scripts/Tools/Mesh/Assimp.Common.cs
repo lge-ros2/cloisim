@@ -11,6 +11,14 @@ using UnityEngine;
 
 public static partial class MeshLoader
 {
+	private static readonly Assimp.AssimpContext importer = new Assimp.AssimpContext();
+
+	private static readonly Assimp.LogStream logstream = new Assimp.LogStream(
+		delegate (String msg, String userData)
+		{
+			Debug.Log(msg);
+		});
+
 	private static Assimp.PostProcessSteps PostProcessFlags =
 		// PreTransformVertices
 		// LimitBoneWeights
@@ -38,12 +46,6 @@ public static partial class MeshLoader
 		Assimp.PostProcessSteps.SplitLargeMeshes |
 		Assimp.PostProcessSteps.FindInvalidData |
 		Assimp.PostProcessSteps.MakeLeftHanded;
-
-
-	private static Color GetColor(Assimp.Color4D color)
-	{
-		return (color == null) ? Color.clear : new Color(color.R, color.G, color.B, color.A);
-	}
 
 	private static List<string> MaterialSearchPaths = new List<string>()
 		{
@@ -141,22 +143,22 @@ public static partial class MeshLoader
 		return eulerRotation;
 	}
 
-	private static Matrix4x4 ConvertToUnity(this Assimp.Matrix4x4 assimpMatrix)
+	private static Color ToUnity(this Assimp.Color4D color)
+	{
+		return (color == null) ? Color.clear : new Color(color.R, color.G, color.B, color.A);
+	}
+
+
+	private static Matrix4x4 ToUnity(this Assimp.Matrix4x4 assimpMatrix)
 	{
 		assimpMatrix.Decompose(out var scaling, out var rotation, out var translation);
 		var pos = new Vector3(translation.X, translation.Y, translation.Z);
 		var rot = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
 		var scale = new Vector3(scaling.X, scaling.Y, scaling.Z);
+		// Debug.Log($"{scaling.X} {scaling.Y} {scaling.Z}");
+		// Debug.Log($"{scale.x} {scale.y} {scale.z}");
 		return Matrix4x4.TRS(pos, rot, scale);
 	}
-
-	private static readonly Assimp.AssimpContext importer = new Assimp.AssimpContext();
-
-	private static readonly Assimp.LogStream logstream = new Assimp.LogStream(
-		delegate (String msg, String userData)
-		{
-			Debug.Log(msg);
-		});
 
 	private static Assimp.Scene GetScene(in string targetPath, in string subMesh = null)
 	{
@@ -209,7 +211,7 @@ public static partial class MeshLoader
 			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
 			var meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
 
-			var rootNodeMatrix = rootNode.Transform.ConvertToUnity();
+			var rootNodeMatrix = rootNode.Transform.ToUnity();
 			rootNodeMatrix = Matrix4x4.Rotate(meshRotation) * rootNodeMatrix;
 
 			rootNode.Transform = new Assimp.Matrix4x4(
