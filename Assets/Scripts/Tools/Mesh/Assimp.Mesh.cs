@@ -370,14 +370,7 @@ public static partial class MeshLoader
 		var nodeTransformMatrix = node.Transform.ToUnity();
 		nodeObject.transform.localPosition = nodeTransformMatrix.GetPosition();
 		nodeObject.transform.localRotation = nodeTransformMatrix.rotation;
-		// nodeObject.transform.localRotation = Quaternion.LookRotation(nodeTransformMatrix.GetColumn(2), nodeTransformMatrix.GetColumn(1));
 		nodeObject.transform.localScale = nodeTransformMatrix.lossyScale;
-		// nodeObject.transform.localScale = new Vector3(nodeTransformMatrix.GetColumn(0).magnitude,
-		// 											nodeTransformMatrix.GetColumn(1).magnitude,
-		// 											nodeTransformMatrix.GetColumn(2).magnitude);
-
-		// Debug.Log("Node: " + node.Name + " => " + nodeObject.transform.localScale.ToString("F8"));
-		// Debug.Log(node.Transform);
 
 		doFlip = (nodeObject.transform.localScale.x < 0 ||
 				  nodeObject.transform.localScale.y < 0 ||

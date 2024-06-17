@@ -155,8 +155,36 @@ public static partial class MeshLoader
 		var pos = new Vector3(translation.X, translation.Y, translation.Z);
 		var rot = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
 		var scale = new Vector3(scaling.X, scaling.Y, scaling.Z);
-		// Debug.Log($"{scaling.X} {scaling.Y} {scaling.Z}");
-		// Debug.Log($"{scale.x} {scale.y} {scale.z}");
+
+#region  Temporay CODE until Assimp Library is fixed.
+		// Debug.Log($"rotation = {rot.eulerAngles}");
+		// Debug.Log($"scaling  = {scaling.X} {scaling.Y} {scaling.Z}");
+
+		const float precision = 1000f;
+		var isRotZeroX = Mathf.Approximately((int)(rot.eulerAngles.x * precision), 0);
+		var isRotZeroY = Mathf.Approximately((int)(rot.eulerAngles.y * precision), 0);
+		var isRotZeroZ = Mathf.Approximately((int)(rot.eulerAngles.z * precision), 0);
+
+		if (isRotZeroX && !isRotZeroY && !isRotZeroZ)
+		{
+			var newScale = new Vector3(scale.y, scale.z, scale.x);
+			scale = newScale;
+		}
+		else if	(!isRotZeroX && !isRotZeroY && isRotZeroZ)
+		{
+			var newScale = new Vector3(scale.z, scale.x, scale.y);
+			scale = newScale;
+		}
+		else if (isRotZeroX && !isRotZeroY &&  isRotZeroZ &&
+				!Mathf.Approximately(rot.eulerAngles.y, 180f))
+		{
+			var newScale = new Vector3(scale.z, scale.y, scale.x);
+			scale = newScale;
+		}
+
+		// Debug.Log($"new scaling = {scale.x} {scale.y} {scale.z}");
+#endregion
+
 		return Matrix4x4.TRS(pos, rot, scale);
 	}
 

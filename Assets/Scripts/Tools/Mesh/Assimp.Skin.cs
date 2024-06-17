@@ -164,7 +164,7 @@ public static partial class MeshLoader
 
 		// Convert Assimp transfrom into Unity transform
 		var nodeTransform = node.Transform.ToUnity();
-		rootObject.transform.position = nodeTransform.GetColumn(3);
+		rootObject.transform.position = nodeTransform.GetPosition();
 		rootObject.transform.rotation = nodeTransform.rotation;
 		rootObject.transform.localScale = nodeTransform.lossyScale;
 		// Debug.Log(node.Name + ", " + rootObject.transform.position + ", " + rootObject.transform.rotation + ", " + rootObject.transform.localScale);
