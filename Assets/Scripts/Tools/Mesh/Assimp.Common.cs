@@ -9,8 +9,16 @@ using System.IO;
 using System;
 using UnityEngine;
 
-public partial class MeshLoader
+public static partial class MeshLoader
 {
+	private static readonly Assimp.AssimpContext importer = new Assimp.AssimpContext();
+
+	private static readonly Assimp.LogStream logstream = new Assimp.LogStream(
+		delegate (String msg, String userData)
+		{
+			Debug.Log(msg);
+		});
+
 	private static Assimp.PostProcessSteps PostProcessFlags =
 		// PreTransformVertices
 		// LimitBoneWeights
@@ -25,25 +33,20 @@ public partial class MeshLoader
 		// Assimp.PostProcessSteps.GenerateSmoothNormals | // --> it may causes conflict with GenerateNormals
 		// Assimp.PostProcessSteps.OptimizeMeshes | // -> it may causes face reverting
 		// Assimp.PostProcessSteps.FixInFacingNormals | // -> it may causes wrong face
-		Assimp.PostProcessSteps.GenerateNormals |
-		Assimp.PostProcessSteps.GenerateUVCoords |
 		Assimp.PostProcessSteps.RemoveComponent |
 		Assimp.PostProcessSteps.ImproveCacheLocality |
-		Assimp.PostProcessSteps.CalculateTangentSpace |
-		Assimp.PostProcessSteps.JoinIdenticalVertices |
 		Assimp.PostProcessSteps.RemoveRedundantMaterials |
-		Assimp.PostProcessSteps.Triangulate |
-		Assimp.PostProcessSteps.SortByPrimitiveType |
 		Assimp.PostProcessSteps.ValidateDataStructure |
 		Assimp.PostProcessSteps.SplitLargeMeshes |
 		Assimp.PostProcessSteps.FindInvalidData |
-		Assimp.PostProcessSteps.MakeLeftHanded;
-
-
-	private static Color GetColor(Assimp.Color4D color)
-	{
-		return (color == null) ? Color.clear : new Color(color.R, color.G, color.B, color.A);
-	}
+		Assimp.PostProcessSteps.MakeLeftHanded |
+		// Assimp.PostProcessSteps.CalculateTangentSpace | => defined in Preset RTFast
+		// Assimp.PostProcessSteps.GenerateNormals | => defined in Preset RTFast
+		// Assimp.PostProcessSteps.JoinIdenticalVertices | => defined in Preset RTFast
+		// Assimp.PostProcessSteps.Triangulate | => defined in Preset RTFast
+		// Assimp.PostProcessSteps.GenerateUVCoords | => defined in Preset RTFast
+		// Assimp.PostProcessSteps.SortByPrimitiveType | => defined in Preset RTFast
+		Assimp.PostProcessPreset.TargetRealTimeFast;
 
 	private static List<string> MaterialSearchPaths = new List<string>()
 		{
@@ -141,27 +144,52 @@ public partial class MeshLoader
 		return eulerRotation;
 	}
 
-	private static Matrix4x4 ConvertAssimpMatrix4x4ToUnity(in Assimp.Matrix4x4 assimpMatrix)
+	private static Color ToUnity(this Assimp.Color4D color)
+	{
+		return (color == null) ? Color.clear : new Color(color.R, color.G, color.B, color.A);
+	}
+
+	private static Matrix4x4 ToUnity(this Assimp.Matrix4x4 assimpMatrix)
 	{
 		assimpMatrix.Decompose(out var scaling, out var rotation, out var translation);
 		var pos = new Vector3(translation.X, translation.Y, translation.Z);
-		var q = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
-		var s = new Vector3(scaling.X, scaling.Y, scaling.Z);
-		return Matrix4x4.TRS(pos, q, s);
+		var rot = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
+		var scale = new Vector3(scaling.X, scaling.Y, scaling.Z);
+
+#region  Temporay CODE until Assimp Library is fixed.
+		// Debug.Log($"rotation = {rot.eulerAngles}");
+		// Debug.Log($"scaling  = {scaling.X} {scaling.Y} {scaling.Z}");
+
+		const float precision = 1000f;
+		var isRotZeroX = Mathf.Approximately((int)(rot.eulerAngles.x * precision), 0);
+		var isRotZeroY = Mathf.Approximately((int)(rot.eulerAngles.y * precision), 0);
+		var isRotZeroZ = Mathf.Approximately((int)(rot.eulerAngles.z * precision), 0);
+
+		if (isRotZeroX && !isRotZeroY && !isRotZeroZ)
+		{
+			var newScale = new Vector3(scale.y, scale.z, scale.x);
+			scale = newScale;
+		}
+		else if	(!isRotZeroX && !isRotZeroY && isRotZeroZ)
+		{
+			var newScale = new Vector3(scale.z, scale.x, scale.y);
+			scale = newScale;
+		}
+		else if (isRotZeroX && !isRotZeroY &&  isRotZeroZ &&
+				!Mathf.Approximately(rot.eulerAngles.y, 180f))
+		{
+			var newScale = new Vector3(scale.z, scale.y, scale.x);
+			scale = newScale;
+		}
+
+		// Debug.Log($"new scaling = {scale.x} {scale.y} {scale.z}");
+#endregion
+
+		return Matrix4x4.TRS(pos, rot, scale);
 	}
 
-	private static readonly Assimp.AssimpContext importer = new Assimp.AssimpContext();
-
-	private static readonly Assimp.LogStream logstream = new Assimp.LogStream(
-		delegate (String msg, String userData)
-		{
-			Debug.Log(msg);
-		});
-
-	private static Assimp.Scene GetScene(in string targetPath, out Quaternion meshRotation, in string subMesh = null)
+	private static Assimp.Scene GetScene(in string targetPath, in string subMesh = null)
 	{
-		meshRotation = Quaternion.identity;
-
 		if (!File.Exists(targetPath))
 		{
 			Debug.LogWarning("File doesn't exist: " + targetPath);
@@ -178,8 +206,9 @@ public partial class MeshLoader
 			return null;
 		}
 
+		Assimp.Scene scene = null;
 		try {
-			var scene = importer.ImportFile(targetPath, PostProcessFlags);
+			scene = importer.ImportFile(targetPath, PostProcessFlags);
 
 			// Remove cameras and lights
 			scene.Cameras.Clear();
@@ -205,17 +234,26 @@ public partial class MeshLoader
 			// 	var metaDataValue = metaDataSet.Value;
 			// 	Debug.Log($"{metaDataKey} : {metaDataValue}");
 			// }
-			// Debug.Log(rootNode.Transform);
+			// Debug.Log("rootNode.Transform=" + rootNode.Transform);
 
 			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
-			meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
+			var meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
 
-			return scene;
+			var rootNodeMatrix = rootNode.Transform.ToUnity();
+			rootNodeMatrix = Matrix4x4.Rotate(meshRotation) * rootNodeMatrix;
+
+			rootNode.Transform = new Assimp.Matrix4x4(
+				rootNodeMatrix.m00, rootNodeMatrix.m01, rootNodeMatrix.m02, rootNodeMatrix.m03,
+				rootNodeMatrix.m10,	rootNodeMatrix.m11, rootNodeMatrix.m12, rootNodeMatrix.m13,
+				rootNodeMatrix.m20, rootNodeMatrix.m21, rootNodeMatrix.m22, rootNodeMatrix.m23,
+				rootNodeMatrix.m30, rootNodeMatrix.m31, rootNodeMatrix.m32, rootNodeMatrix.m33
+			);
 		}
 		catch (Assimp.AssimpException e)
 		{
 			Debug.LogError(e.Message);
 		}
-		return null;
+
+		return scene;
 	}
 }

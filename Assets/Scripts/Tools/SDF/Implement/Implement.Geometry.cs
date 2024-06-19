@@ -91,6 +91,12 @@ namespace SDF
 				{
 					mesh = ProceduralMesh.CreatePolylines(shape as SDF.Polylines);
 				}
+				else if (shape is SDF.Ellipsoid)
+				{
+					var ellipsoid = shape as SDF.Ellipsoid;
+					var radii = SDF2Unity.Scale(ellipsoid.radii);
+					mesh = ProceduralMesh.CreateSphere(radii);
+				}
 				else
 				{
 					Debug.Log("Wrong ShapeType!!!");
