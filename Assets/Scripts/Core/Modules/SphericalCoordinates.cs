@@ -22,7 +22,30 @@ public class SphericalCoordinates
 
 		// if: WGS84 inverse flattening parameter (no units)
 		public const double EarthFlattening = 1d / 298.257223563d;
+
+		// Radius of the Earth (meters).
+		// public const double EarthRadius = 6371000.0d;
 	}
+
+	// public class MOON_SCS
+	// {
+	// 	// Radius of the Moon (meters).
+	// 	// Source: https://lunar.gsfc.nasa.gov/library/451-SCI-000958.pdf
+	// 	const double MoonRadius = 1737400.0;
+
+	// 	// a: Equatorial radius of the Moon.
+	// 	// Source : https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html
+	// 	const double MoonAxisEquatorial = 1738100.0;
+
+	// 	// b: Polar radius of the Moon.
+	// 	// Source : https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html
+	// 	const double MoonAxisPolar = 1736000.0;
+
+	// 	// if: Unitless flattening parameter for the Moon.
+	// 	// Source : https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html
+	// 	const double MoonFlattening = 0.0012;
+	// }
+
 
 	public enum SurfaceType
 	{
@@ -77,8 +100,6 @@ public class SphericalCoordinates
 	private double _elevationReference = 0; // in meters
 	private double _heading = 0; // in radian
 
-	private double _headingOrientationOffset = 0; // in degree
-
 	public void SetLatitudeReference(in double angle)
 	{
 		_latitudeReference = angle * Mathf.Deg2Rad;
@@ -99,11 +120,11 @@ public class SphericalCoordinates
 
 	public void SetHeadingOffset(in double angle)
 	{
-		_heading = (angle + _headingOrientationOffset) * Mathf.Deg2Rad;
+		_heading = angle * Mathf.Deg2Rad;
 		UpdateTransformation();
 	}
 
-	public float HeadingAngle => (float)(_heading * Mathf.Rad2Deg - _headingOrientationOffset);
+	public float HeadingAngle => (float)(_heading * Mathf.Rad2Deg);
 
 	void Awake()
 	{
@@ -165,22 +186,19 @@ public class SphericalCoordinates
 	public void SetWorldOrientation(in string orientation)
 	{
 		// world frame: world_orientation="ENU" with heading_deg=-90° == "NWU" with heading of 0°.
-
 		switch (orientation)
 		{
 			case "NWU":
-				_headingOrientationOffset = 0;
+				Debug.Log("Recommend to set ENU");
 				break;
 
 			case "NED":
-				Debug.LogWarning("need to check NED orientaion");
-				_headingOrientationOffset = 0;
+				Debug.Log("Recommend to set ENU");
 				break;
 
 			case "ENU":
 			case "":
 			default:
-				_headingOrientationOffset = -90;
 				break;
 		}
 	}
@@ -256,7 +274,6 @@ public class SphericalCoordinates
 			case CoordinateType.LOCAL:
 				tmpPosition.x = -position.x * cosHea + position.y * sinHea;
 				tmpPosition.y = -position.x * sinHea - position.y * cosHea;
-
 				goto case CoordinateType.GLOBAL;
 
 			case CoordinateType.GLOBAL:
@@ -290,7 +307,8 @@ public class SphericalCoordinates
 				var theta = Math.Atan((tmpPosition.z * this.ellA) / (p * this.ellB));
 
 				// Calculate latitude and longitude
-				var lat = Math.Atan((tmpPosition.z + Math.Pow(this.ellP, 2) * this.ellB * Math.Pow(Math.Sin(theta), 3)) / (p - Math.Pow(this.ellE, 2) * this.ellA * Math.Pow(Math.Cos(theta), 3)));
+				var lat = Math.Atan((tmpPosition.z + Math.Pow(this.ellP, 2) * this.ellB * Math.Pow(Math.Sin(theta), 3)) /
+									(p - Math.Pow(this.ellE, 2) * this.ellA * Math.Pow(Math.Cos(theta), 3)));
 				var lon = Math.Atan2(tmpPosition.y, tmpPosition.x);
 
 				// Recalculate radius of planet curvature at the current latitude.
@@ -397,7 +415,6 @@ public class SphericalCoordinates
 			case CoordinateType.LOCAL:
 
 				tmpVelocity = matrixECEFToGlobal.MultiplyVector(tmpVelocity);
-
 				tmpVelocity.Set(tmpVelocity.x * cosHea - tmpVelocity.y * sinHea,
 								tmpVelocity.x * sinHea + tmpVelocity.y * cosHea,
 								tmpVelocity.z);
@@ -417,7 +434,7 @@ public class SphericalCoordinates
 		_latitudeReference = latitudeAngle * Mathf.Deg2Rad;
 		_longitudeReference = longitudeAngle * Mathf.Deg2Rad;
 		_elevationReference = elevation;
-		_heading = (headingAngle + _headingOrientationOffset) * Mathf.Deg2Rad;
+		_heading = headingAngle * Mathf.Deg2Rad;
 
 		UpdateTransformation();
 	}
@@ -432,7 +449,7 @@ public class SphericalCoordinates
 		return result;
 	}
 
-	/// <summary>based on right handed system</summary>
+	// <summary>based on right handed system</summary>
 	public Vector3d LocalFromSpherical(in Vector3 xyz)
 	{
 		var convertedXYZ = xyz;
