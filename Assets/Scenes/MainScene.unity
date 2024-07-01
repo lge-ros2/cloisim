@@ -1847,6 +1847,7 @@ MonoBehaviour:
   - ../world_resources/bluepearl/models
   - ../world_resources/lawn_ground/models
   - ../world_resources/seocho_tower/models
+  - ../world_resources/app.gazebosim.org
   worldRootDirectories:
   - ../sample_resources/worlds/
   - ../world_resources/bluepearl/worlds
