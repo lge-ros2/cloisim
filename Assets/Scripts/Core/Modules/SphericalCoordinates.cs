@@ -24,7 +24,16 @@ public class SphericalCoordinates
 		public const double EarthFlattening = 1d / 298.257223563d;
 	}
 
-	public enum SurfaceType { EARTH_WGS84 };
+	public enum SurfaceType
+	{
+		// Model of reference ellipsoid for earth, based on WGS 84 standard.
+		// see wikipedia: World_Geodetic_System
+		EARTH_WGS84 = 1,
+
+		// Model of the moon, based on the Selenographic coordinate system,
+		// see wikipedia: Selenographic Coordinate System.
+		MOON_SCS = 2
+	};
 
 	public enum CoordinateType
 	{
@@ -63,12 +72,38 @@ public class SphericalCoordinates
 
 	private SurfaceType surfaceType;
 
-	private double latitudeReference = 0; // in radian
-	private double longitudeReference = 0; // in radian
-	private double elevationReference = 0; // in meters
-	private double headingOffset = 0; // in radian
+	private double _latitudeReference = 0; // in radian
+	private double _longitudeReference = 0; // in radian
+	private double _elevationReference = 0; // in meters
+	private double _heading = 0; // in radian
 
-	private double haedingOrientationOffset = 0; // in degree
+	private double _headingOrientationOffset = 0; // in degree
+
+	public void SetLatitudeReference(in double angle)
+	{
+		_latitudeReference = angle * Mathf.Deg2Rad;
+		UpdateTransformation();
+	}
+
+	public void SetLongitudeReference(in double angle)
+	{
+		_longitudeReference = angle * Mathf.Deg2Rad;
+		UpdateTransformation();
+	}
+
+	public void SetElevationReference(in double elevation)
+	{
+		_elevationReference = elevation;
+		UpdateTransformation();
+	}
+
+	public void SetHeadingOffset(in double angle)
+	{
+		_heading = (angle + _headingOrientationOffset) * Mathf.Deg2Rad;
+		UpdateTransformation();
+	}
+
+	public float HeadingAngle => (float)(_heading * Mathf.Rad2Deg - _headingOrientationOffset);
 
 	void Awake()
 	{
@@ -80,10 +115,10 @@ public class SphericalCoordinates
 	private void UpdateTransformation()
 	{
 		// Cache trig results
-		var cosLat = Math.Cos(latitudeReference);
-		var sinLat = Math.Sin(latitudeReference);
-		var cosLon = Math.Cos(longitudeReference);
-		var sinLon = Math.Sin(longitudeReference);
+		var cosLat = Math.Cos(_latitudeReference);
+		var sinLat = Math.Sin(_latitudeReference);
+		var cosLon = Math.Cos(_longitudeReference);
+		var sinLon = Math.Sin(_longitudeReference);
 
 		// Create a rotation matrix that moves ECEF to GLOBAL
 		// Transformations_between_ECEF_and_ENU_coordinates
@@ -119,11 +154,11 @@ public class SphericalCoordinates
 		// -- note that we have to negate the heading in order to preserve backward compatibility.
 		// ie. Gazebo has traditionally expressed positive angle as a CLOCKWISE rotation that takes the GLOBAL
 		// frame to the LOCAL frame. However, right hand coordinate systems require this to be expressed as an ANTI-CLOCKWISE rotation. So, we negate it.
-		cosHea = Math.Cos(-headingOffset);
-		sinHea = Math.Sin(-headingOffset);
+		cosHea = Math.Cos(-_heading);
+		sinHea = Math.Sin(-_heading);
 
 		// Cache the ECEF coordinate of the origin
-		origin.Set(latitudeReference, longitudeReference, elevationReference);
+		origin.Set(_latitudeReference, _longitudeReference, _elevationReference);
 		origin = PositionTransform(origin, CoordinateType.SPHERICAL, CoordinateType.ECEF);
 	}
 
@@ -134,18 +169,18 @@ public class SphericalCoordinates
 		switch (orientation)
 		{
 			case "NWU":
-				haedingOrientationOffset = 0;
+				_headingOrientationOffset = 0;
 				break;
 
 			case "NED":
 				Debug.LogWarning("need to check NED orientaion");
-				haedingOrientationOffset = 0;
+				_headingOrientationOffset = 0;
 				break;
 
 			case "ENU":
 			case "":
 			default:
-				haedingOrientationOffset = -90;
+				_headingOrientationOffset = -90;
 				break;
 		}
 	}
@@ -379,10 +414,10 @@ public class SphericalCoordinates
 	public void SetCoordinatesReference(in double latitudeAngle, in double longitudeAngle, in double elevation, in double headingAngle)
 	{
 		// Set the coordinate transform parameters in degree
-		latitudeReference = latitudeAngle * Mathf.Deg2Rad;
-		longitudeReference = longitudeAngle * Mathf.Deg2Rad;
-		elevationReference = elevation;
-		headingOffset = (headingAngle + haedingOrientationOffset) * Mathf.Deg2Rad;
+		_latitudeReference = latitudeAngle * Mathf.Deg2Rad;
+		_longitudeReference = longitudeAngle * Mathf.Deg2Rad;
+		_elevationReference = elevation;
+		_heading = (headingAngle + _headingOrientationOffset) * Mathf.Deg2Rad;
 
 		UpdateTransformation();
 	}
@@ -421,29 +456,5 @@ public class SphericalCoordinates
 	public Vector3d LocalFromGlobal(in Vector3 xyz)
 	{
 		return VelocityTransform(xyz, CoordinateType.GLOBAL, CoordinateType.LOCAL);
-	}
-
-	public void SetLatitudeReference(in double angle)
-	{
-		latitudeReference = angle * Mathf.Deg2Rad;
-		UpdateTransformation();
-	}
-
-	public void SetLongitudeReference(in double angle)
-	{
-		longitudeReference = angle * Mathf.Deg2Rad;
-		UpdateTransformation();
-	}
-
-	public void SetElevationReference(in double elevation)
-	{
-		elevationReference = elevation;
-		UpdateTransformation();
-	}
-
-	public void SetHeadingOffset(in double angle)
-	{
-		headingOffset = (angle + haedingOrientationOffset) * Mathf.Deg2Rad;
-		UpdateTransformation();
 	}
 }
