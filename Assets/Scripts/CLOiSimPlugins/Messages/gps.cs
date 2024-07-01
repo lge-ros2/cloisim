@@ -61,6 +61,9 @@ namespace cloisim.msgs
         public void ResetVelocityUp() => __pbn__VelocityUp = null;
         private double? __pbn__VelocityUp;
 
+        [global::ProtoBuf.ProtoMember(9, Name = @"heading")]
+        public Imu Heading { get; set; }
+
     }
 
 }

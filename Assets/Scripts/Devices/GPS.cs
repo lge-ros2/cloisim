@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 LG Electronics Inc.
+ * Copyright (c) 2024 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,18 +12,21 @@ namespace SensorDevices
 {
 	public class GPS : Device
 	{
-		private messages.Gps gps = null;
+		private messages.Gps _gps = null;
 
-		private SphericalCoordinates sphericalCoordinates = null;
+		private Transform _gpsLink = null;
+		private SphericalCoordinates _sphericalCoordinates = null;
 
-		private Transform gpsLink = null;
+		private Vector3 _sensorInitialRotation = Vector3.zero;
+		private Vector3 _sensorCurrentRotation = Vector3.zero;
+		private Vector3 _worldFrameOrientation = Vector3.zero;
 
-		public Vector3 worldPosition;
-		public Vector3 sensorVelocity;
+		public Vector3 _worldPosition;
+		public Vector3 _sensorVelocity;
 
-		private Vector3 previousSensorPosition;
-		public Vector3d gpsCoordinates;
-		public Vector3d gpsVelocity;
+		private Vector3 _previousSensorPosition;
+		public Vector3d _gpsCoordinates;
+		public Vector3d _gpsVelocity;
 
 		public Dictionary<string, Noise> position_sensing_noises = new Dictionary<string, Noise>()
 		{
@@ -40,100 +43,131 @@ namespace SensorDevices
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
-			gpsLink = transform.parent;
+			_gpsLink = transform.parent;
 			DeviceName = name;
 
-			sphericalCoordinates = DeviceHelper.GetGlobalSphericalCoordinates();
+			_sphericalCoordinates = DeviceHelper.GetGlobalSphericalCoordinates();
+			_worldFrameOrientation = (Vector3.up * _sphericalCoordinates.HeadingAngle);
+			// Debug.Log("worldFrameOrientation=" + _worldFrameOrientation.ToString("F3"));
 		}
 
 		protected override void OnStart()
 		{
-			previousSensorPosition = gpsLink.position;
-		}
-
-		void Update()
-		{
-			worldPosition = gpsLink.position; // Get postion in Cartesian frame
-
-			var positionDiff = worldPosition - previousSensorPosition;
-			previousSensorPosition = worldPosition;
-
-			sensorVelocity = positionDiff / Time.deltaTime;
+			_previousSensorPosition = _gpsLink.position;
 		}
 
 		protected override void InitializeMessages()
 		{
-			gps = new messages.Gps();
-			gps.Time = new messages.Time();
+			_gps = new messages.Gps();
+			_gps.Time = new messages.Time();
+			_gps.Heading = new messages.Imu();
+			_gps.Heading.Stamp = new messages.Time();
+			_gps.Heading.Orientation = new messages.Quaternion();
+			_gps.Heading.AngularVelocity = new messages.Vector3d();
+			_gps.Heading.LinearAcceleration = new messages.Vector3d();
 		}
 
 		protected override void SetupMessages()
 		{
-			gps.LinkName = DeviceName;
+			_gps.LinkName = DeviceName;
+			_gps.Heading.EntityName = DeviceName + "_heading";
 		}
 
-		protected override void GenerateMessage()
+		void Update()
 		{
-			DeviceHelper.SetCurrentTime(gps.Time);
+			_worldPosition = _gpsLink.position; // Get postion in Cartesian frame
 
-			// Convert to global frames
-			var convertedPosition = Unity2SDF.Position(worldPosition);
+			var positionDiff = _worldPosition - _previousSensorPosition;
+			_previousSensorPosition = _worldPosition;
 
-			gpsCoordinates = sphericalCoordinates.SphericalFromLocal(convertedPosition);
+			_sensorVelocity = positionDiff / Time.deltaTime;
 
-			// Apply noise after converting to global frame
+			_sensorCurrentRotation = transform.rotation.eulerAngles;
+		}
+
+
+		private void ApplyNoises()
+		{
 			if (position_sensing_noises["horizontal"] != null)
 			{
-				position_sensing_noises["horizontal"].Apply<double>(ref gpsCoordinates.x);
+				position_sensing_noises["horizontal"].Apply<double>(ref _gpsCoordinates.x);
 			}
 
 			if (position_sensing_noises["vertical"] != null)
 			{
-				position_sensing_noises["vertical"].Apply<double>(ref gpsCoordinates.y);
+				position_sensing_noises["vertical"].Apply<double>(ref _gpsCoordinates.y);
 			}
 
-			gps.LatitudeDeg = gpsCoordinates.x;
-			gps.LongitudeDeg = gpsCoordinates.y;
-			gps.Altitude = gpsCoordinates.z;
-
-			// Convert to global frame
-			var convertedVelocity = Unity2SDF.Position(sensorVelocity);
-			gpsVelocity = sphericalCoordinates.GlobalFromLocal(convertedVelocity);
-
-			// Apply noise after converting to global frame
 			if (velocity_sensing_noises["horizontal"] != null)
 			{
-				velocity_sensing_noises["horizontal"].Apply<double>(ref gpsVelocity.x);
+				velocity_sensing_noises["horizontal"].Apply<double>(ref _gpsVelocity.x);
 			}
 
 			if (velocity_sensing_noises["vertical"] != null)
 			{
-				velocity_sensing_noises["vertical"].Apply<double>(ref gpsVelocity.y);
+				velocity_sensing_noises["vertical"].Apply<double>(ref _gpsVelocity.y);
 			}
-
-			gps.VelocityNorth = gpsVelocity.x;
-			gps.VelocityEast = gpsVelocity.y;
-			gps.VelocityUp = gpsVelocity.z;
-
-			PushDeviceMessage<messages.Gps>(gps);
 		}
 
-		public double Longitude => gps.LongitudeDeg;
+		private void AssembleGPSMessage()
+		{
+			DeviceHelper.SetCurrentTime(_gps.Time);
 
-		public double Latitude => gps.LatitudeDeg;
+			// Convert to global frames
+			var convertedPosition = Unity2SDF.Position(_worldPosition);
 
-		public double Altitude => gps.Altitude;
+			_gpsCoordinates = _sphericalCoordinates.SphericalFromLocal(convertedPosition);
 
-		public double VelocityEast => gps.VelocityEast;
+			_gps.LatitudeDeg = _gpsCoordinates.x;
+			_gps.LongitudeDeg = _gpsCoordinates.y;
+			_gps.Altitude = _gpsCoordinates.z;
 
-		public double VelocityNorth => gps.VelocityNorth;
+			// Convert to global frame
+			var convertedVelocity = Unity2SDF.Position(_sensorVelocity);
+			_gpsVelocity = _sphericalCoordinates.GlobalFromLocal(convertedVelocity);
 
-		public double VelocityUp => gps.VelocityUp;
+			// Apply noise after converting to global frame
+			ApplyNoises();
+
+			_gps.VelocityNorth = _gpsVelocity.x;
+			_gps.VelocityEast = _gpsVelocity.y;
+			_gps.VelocityUp = _gpsVelocity.z;
+		}
+
+		public void AssembleHeadingMessage()
+		{
+			DeviceHelper.SetCurrentTime(_gps.Heading.Stamp);
+			var sensorRotation = _sensorCurrentRotation - _sensorInitialRotation + _worldFrameOrientation;
+			var sensorOrientation = Quaternion.Euler(sensorRotation.x, sensorRotation.y, sensorRotation.z);
+
+			DeviceHelper.SetQuaternion(_gps.Heading.Orientation, sensorOrientation);
+			DeviceHelper.SetVector3d(_gps.Heading.AngularVelocity, Vector3.zero);
+			DeviceHelper.SetVector3d(_gps.Heading.LinearAcceleration, Vector3.zero);
+		}
+
+		protected override void GenerateMessage()
+		{
+			AssembleGPSMessage();
+			AssembleHeadingMessage();
+
+			PushDeviceMessage<messages.Gps>(_gps);
+		}
+
+		public double Longitude => _gps.LongitudeDeg;
+
+		public double Latitude => _gps.LatitudeDeg;
+
+		public double Altitude => _gps.Altitude;
+
+		public double VelocityEast => _gps.VelocityEast;
+
+		public double VelocityNorth => _gps.VelocityNorth;
+
+		public double VelocityUp => _gps.VelocityUp;
 
 		public Vector3 VelocityENU()
 		{
-			return new Vector3((float)gps.VelocityEast, (float)gps.VelocityNorth, (float)gps.VelocityUp);
+			return new Vector3((float)_gps.VelocityEast, (float)_gps.VelocityNorth, (float)_gps.VelocityUp);
 		}
-
 	}
 }
