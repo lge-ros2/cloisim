@@ -48,13 +48,15 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasColorAmbient)
 			{
-				// Debug.Log(sceneMat.Name + ": ColorAmbient but not support. " + sceneMat.ColorAmbient.ToUnity());
+#if UNITY_EDITOR
+				Debug.Log(sceneMat.Name + ": ColorAmbient but not support. " + sceneMat.ColorAmbient.ToUnity());
+#endif
 			}
 
 			if (sceneMat.HasColorDiffuse)
 			{
 				SDF2Unity.Material.SetBaseColor(mat, sceneMat.ColorDiffuse.ToUnity());
-				// Debug.Log(sceneMat.Name + ": HasColorHasColorDiffuseEmissive " + sceneMat.ColorDiffuse.ToUnity());
+				// Debug.Log(sceneMat.Name + ": HasColorDiffuse " + sceneMat.ColorDiffuse.ToUnity());
 			}
 
 			if (sceneMat.HasColorEmissive)
@@ -127,28 +129,36 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasTextureEmissive)
 			{
+#if UNITY_EDITOR
 				Debug.Log(sceneMat.Name + ": HasTextureEmissive but not support. " + sceneMat.TextureEmissive.FilePath);
+#endif
 			}
 
 			if (sceneMat.HasTextureSpecular)
 			{
+#if UNITY_EDITOR
 				Debug.Log(sceneMat.Name + ": HasTextureSpecular but not support. " + sceneMat.TextureSpecular.FilePath);
+#endif
 			}
 
 			if (sceneMat.HasTextureDisplacement)
 			{
+#if UNITY_EDITOR
 				Debug.Log(sceneMat.Name + ": HasTextureDisplacement but not support. " + sceneMat.TextureDisplacement.FilePath);
+#endif
 			}
 
 			if (sceneMat.HasTextureHeight)
 			{
+#if UNITY_EDITOR
 				Debug.Log(sceneMat.Name + ": HasTextureHeight but not support. " + sceneMat.TextureHeight.FilePath);
+#endif
 			}
 
 			if (sceneMat.HasBumpScaling)
 			{
 				mat.SetFloat("_BumpScale", sceneMat.BumpScaling);
-				// Debug.Log(sceneMat.Name + ": HasBumpScaling but not support. " + sceneMat.BumpScaling);
+				Debug.Log(sceneMat.Name + ": HasBumpScaling but not support. " + sceneMat.BumpScaling);
 			}
 
 			if (sceneMat.HasTextureNormal)
@@ -169,17 +179,23 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasTextureOpacity)
 			{
+#if UNITY_EDITOR
 				Debug.Log(sceneMat.Name + ": HasTextureOpacity but not support. " + sceneMat.TextureOpacity.FilePath);
+#endif
 			}
 
 			if (sceneMat.HasTextureReflection)
 			{
+#if UNITY_EDITOR
 				Debug.Log(sceneMat.Name + ": HasTextureReflection but not support. " + sceneMat.TextureReflection.FilePath);
+#endif
 			}
 
 			if (sceneMat.HasTextureLightMap)
 			{
+#if UNITY_EDITOR
 				Debug.Log(sceneMat.Name + ": HasTextureLightMap but not support. " + sceneMat.TextureLightMap.FilePath);
+#endif
 			}
 
 			materials.Add(mat);

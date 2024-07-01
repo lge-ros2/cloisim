@@ -12,17 +12,17 @@ namespace SensorDevices
 {
 	public class IMU : Device
 	{
-		private messages.Imu imu = null;
+		private messages.Imu _imu = null;
 
-		private Vector3 imuInitialRotation = Vector3.zero;
-		private Vector3 lastImuInitialRotation = Vector3.zero;
-		private Quaternion imuOrientation = Quaternion.identity;
-		private Vector3 imuAngularVelocity = Vector3.zero;
-		private Vector3 imuLinearAcceleration = Vector3.zero;
+		private Vector3 _imuInitialRotation = Vector3.zero;
+		private Vector3 _lastImuInitialRotation = Vector3.zero;
+		private Quaternion _imuOrientation = Quaternion.identity;
+		private Vector3 _imuAngularVelocity = Vector3.zero;
+		private Vector3 _imuLinearAcceleration = Vector3.zero;
 
-		private Vector3 previousImuPosition = Vector3.zero;
-		private Vector3 previousImuRotation = Vector3.zero;
-		private Vector3 previousLinearVelocity = Vector3.zero;
+		private Vector3 _previousImuPosition = Vector3.zero;
+		private Vector3 _previousImuRotation = Vector3.zero;
+		private Vector3 _previousLinearVelocity = Vector3.zero;
 
 		public Dictionary<string, Noise> angular_velocity_noises = new Dictionary<string, Noise>()
 		{
@@ -47,109 +47,112 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
-			imuInitialRotation = transform.rotation.eulerAngles;
+			_imuInitialRotation = transform.rotation.eulerAngles;
 		}
 
 		protected override void OnReset()
 		{
 			// Debug.Log("IMU Reset");
-			previousImuRotation = Vector3.zero;
+			_previousImuRotation = Vector3.zero;
 		}
 
 		protected override void InitializeMessages()
 		{
-			imu = new messages.Imu();
-			imu.Stamp = new messages.Time();
-			imu.Orientation = new messages.Quaternion();
-			imu.AngularVelocity = new messages.Vector3d();
-			imu.LinearAcceleration = new messages.Vector3d();
+			_imu = new messages.Imu();
+			_imu.Stamp = new messages.Time();
+			_imu.Orientation = new messages.Quaternion();
+			_imu.AngularVelocity = new messages.Vector3d();
+			_imu.LinearAcceleration = new messages.Vector3d();
 		}
 
 		protected override void SetupMessages()
 		{
-			imu.EntityName = DeviceName;
+			_imu.EntityName = DeviceName;
+		}
+
+		private void ApplyNoises(in float deltaTime)
+		{
+			if (angular_velocity_noises["x"] != null)
+			{
+				angular_velocity_noises["x"].Apply<float>(ref _imuAngularVelocity.x, deltaTime);
+			}
+
+			if (angular_velocity_noises["y"] != null)
+			{
+				angular_velocity_noises["y"].Apply<float>(ref _imuAngularVelocity.y, deltaTime);
+			}
+
+			if (angular_velocity_noises["z"] != null)
+			{
+				angular_velocity_noises["z"].Apply<float>(ref _imuAngularVelocity.z, deltaTime);
+			}
+
+			if (linear_acceleration_noises["x"] != null)
+			{
+				linear_acceleration_noises["x"].Apply<float>(ref _imuLinearAcceleration.x, deltaTime);
+			}
+
+			if (linear_acceleration_noises["y"] != null)
+			{
+				linear_acceleration_noises["y"].Apply<float>(ref _imuLinearAcceleration.y, deltaTime);
+			}
+
+			if (linear_acceleration_noises["z"] != null)
+			{
+				linear_acceleration_noises["z"].Apply<float>(ref _imuLinearAcceleration.z, deltaTime);
+			}
 		}
 
 		void FixedUpdate()
 		{
 			// Caculate orientation and acceleration
-			lastImuInitialRotation = transform.rotation.eulerAngles;
-			var imuRotation = lastImuInitialRotation - imuInitialRotation;
-			imuOrientation = Quaternion.Euler(imuRotation.x, imuRotation.y, imuRotation.z);
+			_lastImuInitialRotation = transform.rotation.eulerAngles;
+			var imuRotation = _lastImuInitialRotation - _imuInitialRotation;
+			_imuOrientation = Quaternion.Euler(imuRotation.x, imuRotation.y, imuRotation.z);
 
-			imuAngularVelocity.x = Mathf.DeltaAngle(imuRotation.x, previousImuRotation.x) / Time.fixedDeltaTime;
-			imuAngularVelocity.y = Mathf.DeltaAngle(imuRotation.y, previousImuRotation.y) / Time.fixedDeltaTime;
-			imuAngularVelocity.z = Mathf.DeltaAngle(imuRotation.z, previousImuRotation.z) / Time.fixedDeltaTime;
-
-			// apply noise
-			if (angular_velocity_noises["x"] != null)
-			{
-				angular_velocity_noises["x"].Apply<float>(ref imuAngularVelocity.x, Time.fixedDeltaTime);
-			}
-
-			if (angular_velocity_noises["y"] != null)
-			{
-				angular_velocity_noises["y"].Apply<float>(ref imuAngularVelocity.y, Time.fixedDeltaTime);
-			}
-
-			if (angular_velocity_noises["z"] != null)
-			{
-				angular_velocity_noises["z"].Apply<float>(ref imuAngularVelocity.z, Time.fixedDeltaTime);
-			}
+			_imuAngularVelocity.x = Mathf.DeltaAngle(imuRotation.x, _previousImuRotation.x) / Time.fixedDeltaTime;
+			_imuAngularVelocity.y = Mathf.DeltaAngle(imuRotation.y, _previousImuRotation.y) / Time.fixedDeltaTime;
+			_imuAngularVelocity.z = Mathf.DeltaAngle(imuRotation.z, _previousImuRotation.z) / Time.fixedDeltaTime;
 
 			var currentPosition = transform.position;
-			var currentLinearVelocity = (currentPosition - previousImuPosition) / Time.fixedDeltaTime;
-			imuLinearAcceleration = (currentLinearVelocity - previousLinearVelocity) / Time.fixedDeltaTime;
-			imuLinearAcceleration.y += (-Physics.gravity.y);
+			var currentLinearVelocity = (currentPosition - _previousImuPosition) / Time.fixedDeltaTime;
+			_imuLinearAcceleration = (currentLinearVelocity - _previousLinearVelocity) / Time.fixedDeltaTime;
+			_imuLinearAcceleration.y += (-Physics.gravity.y);
 
-			// apply noise
-			if (linear_acceleration_noises["x"] != null)
-			{
-				linear_acceleration_noises["x"].Apply<float>(ref imuLinearAcceleration.x, Time.fixedDeltaTime);
-			}
+			ApplyNoises(Time.fixedDeltaTime);
 
-			if (linear_acceleration_noises["y"] != null)
-			{
-				linear_acceleration_noises["y"].Apply<float>(ref imuLinearAcceleration.y, Time.fixedDeltaTime);
-			}
-
-			if (linear_acceleration_noises["z"] != null)
-			{
-				linear_acceleration_noises["z"].Apply<float>(ref imuLinearAcceleration.z, Time.fixedDeltaTime);
-			}
-
-			previousImuRotation = imuRotation;
-			previousImuPosition = currentPosition;
-			previousLinearVelocity = currentLinearVelocity;
+			_previousImuRotation = imuRotation;
+			_previousImuPosition = currentPosition;
+			_previousLinearVelocity = currentLinearVelocity;
 		}
 
 		protected override void GenerateMessage()
 		{
-			DeviceHelper.SetQuaternion(imu.Orientation, imuOrientation);
-			DeviceHelper.SetVector3d(imu.AngularVelocity, imuAngularVelocity * Mathf.Deg2Rad);
-			DeviceHelper.SetVector3d(imu.LinearAcceleration, imuLinearAcceleration);
-			DeviceHelper.SetCurrentTime(imu.Stamp);
-			PushDeviceMessage<messages.Imu>(imu);
+			DeviceHelper.SetQuaternion(_imu.Orientation, _imuOrientation);
+			DeviceHelper.SetVector3d(_imu.AngularVelocity, _imuAngularVelocity * Mathf.Deg2Rad);
+			DeviceHelper.SetVector3d(_imu.LinearAcceleration, _imuLinearAcceleration);
+			DeviceHelper.SetCurrentTime(_imu.Stamp);
+			PushDeviceMessage<messages.Imu>(_imu);
 		}
 
 		public messages.Imu GetImuMessage()
 		{
-			return imu;
+			return _imu;
 		}
 
 		public Vector3 GetOrientation()
 		{
-			return imuOrientation.eulerAngles;
+			return _imuOrientation.eulerAngles;
 		}
 
 		public Vector3 GetAngularVelocity()
 		{
-			return imuAngularVelocity;
+			return _imuAngularVelocity;
 		}
 
 		public Vector3 GetLinearAcceleration()
 		{
-			return imuLinearAcceleration;
+			return _imuLinearAcceleration;
 		}
 	}
 }

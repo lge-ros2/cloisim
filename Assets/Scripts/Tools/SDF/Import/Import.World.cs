@@ -58,7 +58,11 @@ namespace SDF
 
 					sphericalCoordinatesCore.SetWorldOrientation(sphericalCoordinates.world_frame_orientation);
 
-					sphericalCoordinatesCore.SetCoordinatesReference((float)sphericalCoordinates.latitude_deg, (float)sphericalCoordinates.longitude_deg, (float)sphericalCoordinates.elevation, (float)sphericalCoordinates.heading_deg);
+					sphericalCoordinatesCore.SetCoordinatesReference(
+						(float)sphericalCoordinates.latitude_deg,
+						(float)sphericalCoordinates.longitude_deg,
+						(float)sphericalCoordinates.elevation,
+						SDF2Unity.CurveOrientationAngle((float)sphericalCoordinates.heading_deg));
 				}
 
 				ImportRoads(world.GetRoads());

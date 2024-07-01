@@ -101,7 +101,7 @@ namespace SDF
 					var meshRenderer = meshFilter.GetComponent<UE.MeshRenderer>();
 					if (meshRenderer != null)
 					{
-						UE.Debug.LogWarning($"{meshFilter.name} MeshRenderer should not exist");
+						// UE.Debug.LogWarning($"{meshFilter.name} MeshRenderer should not exist");
 						UE.GameObject.Destroy(meshRenderer);
 					}
 					UE.GameObject.Destroy(meshFilter);
