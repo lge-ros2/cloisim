@@ -6,6 +6,7 @@
 
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
+using System.Linq;
 
 namespace SDF
 {
@@ -13,7 +14,7 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private static UE.Transform FindTransformByName(in string name, UE.Transform targetTransform)
+			private static UE.Transform FindTransformByName(string name, UE.Transform targetTransform)
 			{
 				UE.Transform foundLinkObject = null;
 
@@ -30,39 +31,17 @@ namespace SDF
 				if (string.IsNullOrEmpty(modelName))
 				{
 					// UE.Debug.Log(name + ", Find  => " + targetTransform.name + ", " + rootTransform.name);
-					foreach (var transform in targetTransform.GetComponentsInChildren<UE.Transform>())
-					{
-						if (transform.name.Equals(name))
-						{
-							foundLinkObject = transform;
-							break;
-						}
-					}
+					foundLinkObject = targetTransform.GetComponentsInChildren<UE.Transform>().FirstOrDefault(x => x.name.Equals(name));
 				}
 				else
 				{
-					UE.Transform modelTransform = null;
-
-					foreach (var modelObject in rootTransform.GetComponentsInChildren<SDF.Helper.Model>())
-					{
-						if (modelObject.name.Equals(modelName))
-						{
-							modelTransform = modelObject.transform;
-							break;
-						}
-					}
+					var modelHelper = rootTransform.GetComponentsInChildren<SDF.Helper.Model>().FirstOrDefault(x => x.name.Equals(modelName));
+					var modelTransform = modelHelper?.transform;
 
 					if (modelTransform != null)
 					{
-						foreach (var linkObject in modelTransform.GetComponentsInChildren<SDF.Helper.Link>())
-						{
-							var linkTransform = linkObject.transform;
-							if (linkTransform.name.Equals(linkName))
-							{
-								foundLinkObject = linkTransform;
-								break;
-							}
-						}
+						var foundLinkHelper = modelTransform.GetComponentsInChildren<SDF.Helper.Link>().FirstOrDefault(x => x.transform.name.Equals(linkName));
+						foundLinkObject = foundLinkHelper?.transform;
 					}
 				}
 
