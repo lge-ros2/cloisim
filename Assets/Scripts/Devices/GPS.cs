@@ -48,7 +48,7 @@ namespace SensorDevices
 
 			_sphericalCoordinates = DeviceHelper.GetGlobalSphericalCoordinates();
 			_worldFrameOrientation = (Vector3.up * _sphericalCoordinates.HeadingAngle);
-			Debug.Log("worldFrameOrientation=" + _worldFrameOrientation.ToString("F3"));
+			// Debug.Log("worldFrameOrientation=" + _worldFrameOrientation.ToString("F3"));
 		}
 
 		protected override void OnStart()

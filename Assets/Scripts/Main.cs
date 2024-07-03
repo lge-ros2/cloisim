@@ -45,6 +45,7 @@ public class Main : MonoBehaviour
 	private static CameraControl cameraControl = null;
 	private static SegmentationManager _segmentationManager = null;
 	private static MeshProcess.VHACD _vhacd = null;
+	private static ObjectSpawning _objectSpawning = null;
 
 	private static bool isResetting = false;
 	private static bool resetTriggered = false;
@@ -56,14 +57,13 @@ public class Main : MonoBehaviour
 	public static GameObject UIObject => _uiRoot;
 	public static GameObject UIMainCanvas => uiMainCanvasRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => transformGizmo;
+	public static ObjectSpawning ObjectSpawning = _objectSpawning;
 	public static SimulationDisplay Display => simulationDisplay;
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => worldNavMeshBuilder;
 	public static BridgeManager BridgeManager => _bridgeManager;
 	public static SegmentationManager SegmentationManager => _segmentationManager;
-
 	public static CameraControl CameraControl => cameraControl;
-
 	public static MeshProcess.VHACD MeshVHACD => _vhacd;
 
 	#region SDF Parser
@@ -254,7 +254,7 @@ public class Main : MonoBehaviour
 
 		SensorDevices.DepthCamera.LoadComputeShader();
 
-		gameObject.AddComponent<ObjectSpawning>();
+		_objectSpawning = gameObject.AddComponent<ObjectSpawning>();
 
 		_segmentationManager = gameObject.AddComponent<SegmentationManager>();
 
@@ -340,6 +340,7 @@ public class Main : MonoBehaviour
 			var buttonComponent = duplicatedbutton.GetComponentInChildren<Button>();
 			buttonComponent.onClick.AddListener(delegate ()
 			{
+				// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
 				StartCoroutine(LoadModel(itemValue.Item2, itemValue.Item3));
 			});
 		}
@@ -465,8 +466,6 @@ public class Main : MonoBehaviour
 				StartCoroutine(ResetSimulation());
 			}
 		}
-
-
 	}
 
 	public static bool TriggerResetService()
