@@ -36,35 +36,37 @@ public class Main : MonoBehaviour
 	private static GameObject _lightsRoot = null;
 	private static GameObject _roadsRoot = null;
 	private static GameObject _uiRoot = null;
-	private static GameObject uiMainCanvasRoot = null;
+	private static GameObject _uiMainCanvasRoot = null;
 
-	private static SimulationDisplay simulationDisplay = null;
+	private static SimulationDisplay _simulationDisplay = null;
 	private static InfoDisplay _infoDisplay = null;
-	private static WorldNavMeshBuilder worldNavMeshBuilder = null;
-	private static RuntimeGizmos.TransformGizmo transformGizmo = null;
-	private static CameraControl cameraControl = null;
+	private static WorldNavMeshBuilder _worldNavMeshBuilder = null;
+	private static RuntimeGizmos.TransformGizmo _transformGizmo = null;
+	private static CameraControl _cameraControl = null;
 	private static SegmentationManager _segmentationManager = null;
 	private static MeshProcess.VHACD _vhacd = null;
 	private static ObjectSpawning _objectSpawning = null;
+	private static Main _instance = null;
 
-	private static bool isResetting = false;
-	private static bool resetTriggered = false;
+	private static bool _isResetting = false;
+	private static bool _resetTriggered = false;
 
 	public static GameObject PropsRoot => _propsRoot;
 	public static GameObject WorldRoot => _worldRoot;
 	public static GameObject RoadsRoot => _roadsRoot;
 	public static GameObject CoreObject => _core;
 	public static GameObject UIObject => _uiRoot;
-	public static GameObject UIMainCanvas => uiMainCanvasRoot;
-	public static RuntimeGizmos.TransformGizmo Gizmos => transformGizmo;
+	public static GameObject UIMainCanvas => _uiMainCanvasRoot;
+	public static RuntimeGizmos.TransformGizmo Gizmos => _transformGizmo;
 	public static ObjectSpawning ObjectSpawning = _objectSpawning;
-	public static SimulationDisplay Display => simulationDisplay;
+	public static SimulationDisplay Display => _simulationDisplay;
 	public static InfoDisplay InfoDisplay => _infoDisplay;
-	public static WorldNavMeshBuilder WorldNavMeshBuilder => worldNavMeshBuilder;
+	public static WorldNavMeshBuilder WorldNavMeshBuilder => _worldNavMeshBuilder;
 	public static BridgeManager BridgeManager => _bridgeManager;
 	public static SegmentationManager SegmentationManager => _segmentationManager;
-	public static CameraControl CameraControl => cameraControl;
+	public static CameraControl CameraControl => _cameraControl;
 	public static MeshProcess.VHACD MeshVHACD => _vhacd;
+	public static Main Instance => _instance;
 
 	#region SDF Parser
 	private SDF.Root _sdfRoot = null;
@@ -171,6 +173,8 @@ public class Main : MonoBehaviour
 
 	void Awake()
 	{
+		_instance = this;
+
 		GetResourcesPaths();
 
 		// Load Library for Assimp
@@ -229,22 +233,22 @@ public class Main : MonoBehaviour
 		_roadsRoot = GameObject.Find("Roads");
 		_uiRoot = GameObject.Find("UI");
 
-		if (_uiRoot != null)
-		{
-			_infoDisplay = _uiRoot.GetComponentInChildren<InfoDisplay>();
-			transformGizmo = _uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
-			simulationDisplay = _uiRoot.GetComponentInChildren<SimulationDisplay>();
-
-			uiMainCanvasRoot = _uiRoot.transform.Find("Main Canvas").gameObject;
-			_followingList = uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
-		}
-
-		cameraControl = mainCamera.GetComponent<CameraControl>();
-
-		worldNavMeshBuilder = _worldRoot.GetComponent<WorldNavMeshBuilder>();
+		_worldNavMeshBuilder = _worldRoot.GetComponent<WorldNavMeshBuilder>();
 
 		var simWorld = _worldRoot.AddComponent<SimulationWorld>();
 		DeviceHelper.SetGlobalClock(simWorld.GetClock());
+
+		if (_uiRoot != null)
+		{
+			_infoDisplay = _uiRoot.GetComponentInChildren<InfoDisplay>();
+			_transformGizmo = _uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
+			_simulationDisplay = _uiRoot.GetComponentInChildren<SimulationDisplay>();
+
+			_uiMainCanvasRoot = _uiRoot.transform.Find("Main Canvas").gameObject;
+			_followingList = _uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
+		}
+
+		_cameraControl = mainCamera.GetComponent<CameraControl>();
 
 		Main._bridgeManager = new BridgeManager();
 		Main._simulationService = new SimulationService();
@@ -267,7 +271,7 @@ public class Main : MonoBehaviour
 		if (!SystemInfo.supportsAsyncGPUReadback)
 		{
 			Debug.LogError("This API does not support AsyncGPURreadback.");
-			simulationDisplay?.SetErrorMessage("This API does not support AsyncGPURreadback.");
+			_simulationDisplay?.SetErrorMessage("This API does not support AsyncGPURreadback.");
 			return;
 		}
 
@@ -302,7 +306,7 @@ public class Main : MonoBehaviour
 
 			if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
 			{
-				simulationDisplay?.SetEventMessage("Start to load world file: " + worldFileName);
+				_simulationDisplay?.SetEventMessage("Start to load world file: " + worldFileName);
 				StartCoroutine(LoadWorld());
 			}
 		}
@@ -317,7 +321,7 @@ public class Main : MonoBehaviour
 		}
 
 		// Update UI Model list
-		var modelList = uiMainCanvasRoot.transform.Find("ModelList").gameObject;
+		var modelList = _uiMainCanvasRoot.transform.Find("ModelList").gameObject;
 		var viewport = modelList.transform.GetChild(0);
 		var buttonTemplate = viewport.Find("ButtonTemplate").gameObject;
 
@@ -346,7 +350,7 @@ public class Main : MonoBehaviour
 		}
 	}
 
-	private static string GetClonedModelName(in string modelName)
+	private string GetClonedModelName(in string modelName)
 	{
 		var worldTrnasform = _worldRoot.transform;
 		var numbering = 0;
@@ -375,7 +379,7 @@ public class Main : MonoBehaviour
 
 			var targetObject = _worldRoot.transform.Find(model.Name);
 
-			var modelImporter = uiMainCanvasRoot.GetComponentInChildren<ModelImporter>();
+			var modelImporter = _uiMainCanvasRoot.GetComponentInChildren<ModelImporter>();
 			modelImporter.SetModelForDeploy(targetObject);
 
 			// Debug.Log("Model Loaded:" + targetObject.name);
@@ -413,7 +417,7 @@ public class Main : MonoBehaviour
 		{
 			var errorMessage = "Parsing failed!!! Failed to load world file: " + worldFileName;
 			Debug.LogError(errorMessage);
-			simulationDisplay?.SetErrorMessage(errorMessage);
+			_simulationDisplay?.SetErrorMessage(errorMessage);
 		}
 
 		_bridgeManager.PrintLog();
@@ -442,7 +446,7 @@ public class Main : MonoBehaviour
 		{
 		 	if (Input.GetKeyUp(KeyCode.R))
 			{
-				resetTriggered = true;
+				_resetTriggered = true;
 				// Debug.Log("Reset Triggered");
 			}
 			else if (Input.GetKeyUp(KeyCode.S))
@@ -451,18 +455,18 @@ public class Main : MonoBehaviour
 			}
 		}
 
-		if (resetTriggered && !isResetting)
+		if (_resetTriggered && !_isResetting)
 		{
 			if (Input.GetKey(KeyCode.LeftShift))
 			{
 				// full Reset
-				isResetting = true;
+				_isResetting = true;
 				SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-				isResetting = false;
+				_isResetting = false;
 			}
 			else
 			{
-				resetTriggered = false;
+				_resetTriggered = false;
 				StartCoroutine(ResetSimulation());
 			}
 		}
@@ -470,12 +474,12 @@ public class Main : MonoBehaviour
 
 	public static bool TriggerResetService()
 	{
-		if (isResetting)
+		if (_isResetting)
 		{
 			return false;
 		}
 
-		resetTriggered = true;
+		_resetTriggered = true;
 		return true;
 	}
 
@@ -494,10 +498,10 @@ public class Main : MonoBehaviour
 
 	private IEnumerator ResetSimulation()
 	{
-		isResetting = true;
+		_isResetting = true;
 		// Debug.LogWarning("Reset positions in simulation!!!");
 
-		transformGizmo?.ClearTargets();
+		_transformGizmo?.ClearTargets();
 
 		Reset();
 
@@ -505,14 +509,14 @@ public class Main : MonoBehaviour
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
 		yield return new WaitForSeconds(0.1f);
 
-		isResetting = false;
+		_isResetting = false;
 	}
 
 	/// <summary>
 	/// Eg:  CLOiSim.x86_64 -worldFile lg_seocho.world
 	/// read the "-worldFile" command line argument
 	/// </summary>
-	private static string GetArgument(in string arg_name)
+	private string GetArgument(in string arg_name)
 	{
 		var args = Environment.GetCommandLineArgs();
 		for (var i = 0; i < args.Length; i++)
