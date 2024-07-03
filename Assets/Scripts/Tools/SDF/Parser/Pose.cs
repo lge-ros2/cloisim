@@ -29,6 +29,12 @@ namespace SDF
 		{
 		}
 
+		public Pose(in string value)
+			: this(default(T), default(T), default(T))
+		{
+			FromString(value);
+		}
+
 		public Pose(in T x, in T y, in T z)
 			: this(x, y, z, default(T), default(T), default(T))
 		{

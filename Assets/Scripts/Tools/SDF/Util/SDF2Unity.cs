@@ -54,12 +54,22 @@ public partial class SDF2Unity
 		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
 	}
 
+	public static Vector3 Position(in SDF.Vector3<float> value)
+	{
+		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
+	}
+
 	public static Vector3 Position(in SDF.Vector3<int> value)
 	{
 		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
 	}
 
 	public static Quaternion Rotation(in SDF.Quaternion<double> value)
+	{
+		return (value == null) ? Quaternion.identity : Rotation(value.W, value.X, value.Y, value.Z);
+	}
+
+	public static Quaternion Rotation(in SDF.Quaternion<float> value)
 	{
 		return (value == null) ? Quaternion.identity : Rotation(value.W, value.X, value.Y, value.Z);
 	}
