@@ -60,10 +60,13 @@ namespace SDF
 				{
 					if (visualObject.transform.childCount > 0)
 					{
-						var geometryTransform = visualObject.transform.GetChild(0);
-						if (geometryTransform.CompareTag("Geometry"))
+						for (var i = 0; i < visualObject.transform.childCount; i++)
 						{
-							Implement.Visual.OptimizeMeshes(geometryTransform);
+							var geometryTransform = visualObject.transform.GetChild(i);
+							if (geometryTransform.CompareTag("Geometry"))
+							{
+								Implement.Visual.OptimizeMeshes(geometryTransform);
+							}
 						}
 					}
 					else
