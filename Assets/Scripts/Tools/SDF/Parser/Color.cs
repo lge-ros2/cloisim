@@ -15,6 +15,23 @@ namespace SDF
 		public double B = 0.0;
 		public double A = 1.0;
 
+		public Color()
+		: this(0.0, 0.0, 0.0, 1.0)
+		{ }
+
+		public Color(string value)
+		{
+			FromString(value);
+		}
+
+		public Color(double r, double g, double b, double a)
+		{
+			R = r;
+			G = g;
+			B = b;
+			A = a;
+		}
+
 		public void FromString(string value)
 		{
 			if (string.IsNullOrEmpty(value))
@@ -35,23 +52,6 @@ namespace SDF
 				return;
 
 			A = (double)Convert.ChangeType(tmp[3], TypeCode.Double);
-		}
-
-		public Color()
-		: this(0.0, 0.0, 0.0, 1.0)
-		{ }
-
-		public Color(string value)
-		{
-			FromString(value);
-		}
-
-		public Color(double r, double g, double b, double a)
-		{
-			R = r;
-			G = g;
-			B = b;
-			A = a;
 		}
 	}
 }

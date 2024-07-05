@@ -93,6 +93,14 @@ namespace SensorDevices
 			}
 		}
 
+		protected override void OnReset()
+		{
+			lock (_readbackList)
+			{
+				_readbackList.Clear();
+			}
+		}
+
 		protected virtual void SetupTexture()
 		{
 			// Debug.Log("This is not a Depth Camera!");

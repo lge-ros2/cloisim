@@ -101,7 +101,7 @@ public partial class SimulationDisplay : MonoBehaviour
 			doCheckScaleFactorValue = false;
 		}
 
-		objectSpawning?.SetPropType(_toolbarSelected);
-		objectSpawning?.SetScaleFactor(scaleFactorString);
+		Main.ObjectSpawning?.SetPropType(_toolbarSelected);
+		Main.ObjectSpawning?.SetScaleFactor(scaleFactorString);
 	}
 }

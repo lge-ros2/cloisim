@@ -11,7 +11,6 @@ using UnityEngine;
 public partial class SimulationDisplay : MonoBehaviour
 {
 	private Clock clock = null;
-	private ObjectSpawning objectSpawning = null;
 	private CameraControl cameraControl = null;
 
 	private StringBuilder eventMessage = new StringBuilder();
@@ -55,15 +54,6 @@ public partial class SimulationDisplay : MonoBehaviour
 	void Awake()
 	{
 		versionInfo = Application.version;
-
-		if (Main.CoreObject != null)
-		{
-			objectSpawning = Main.CoreObject.GetComponent<ObjectSpawning>();
-		}
-		else
-		{
-			Debug.LogError("Main.CoreObject is not ready!!");
-		}
 
 		cameraControl = GetComponentInChildren<CameraControl>();
 		clock = DeviceHelper.GetGlobalClock();

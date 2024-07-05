@@ -19,9 +19,9 @@ namespace SDF
 			private static void OptimizeMesh(in UE.Transform target)
 			{
 				var meshFilters = target.GetComponentsInChildren<UE.MeshFilter>();
-
 				if (meshFilters.Length <= 1)
 				{
+					Debug.LogWarning("No need to optimize -> " + target.name);
 					return;
 				}
 
@@ -54,14 +54,9 @@ namespace SDF
 						}
 						else
 						{
-							Debug.Log("Error!!");
+							Debug.LogError("Error on meshFilterTable.TryGetValue()!!");
 							Debug.Break();
 						}
-					}
-
-					if (!meshFilter.gameObject.CompareTag("Visual"))
-					{
-						UE.GameObject.Destroy(meshFilter.gameObject);
 					}
 				}
 
@@ -78,17 +73,25 @@ namespace SDF
 						var targetParent = meshFilterList[0].transform.parent;
 						var mergedMesh = SDF2Unity.MergeMeshes(meshFilterList);
 
-						var newName = meshFilterSet.Key.Replace("(Instance)", "Combined").Trim();
+						var newName = meshFilterSet.Key.Replace("(Instance)", "(Combined Mesh)").Trim();
 						var newVisualGeometryObject = new UE.GameObject(newName);
 
-						var meshFilter = newVisualGeometryObject.AddComponent<UE.MeshFilter>();
+						var newMeshFilter = newVisualGeometryObject.AddComponent<UE.MeshFilter>();
 						mergedMesh.name = newName;
-						meshFilter.sharedMesh = mergedMesh;
+						newMeshFilter.sharedMesh = mergedMesh;
 
 						var meshRenderer = newVisualGeometryObject.AddComponent<UE.MeshRenderer>();
 						meshRenderer.material = material;
 
 						newVisualGeometryObject.transform.SetParent(targetParent, true);
+
+						foreach (var meshFilter in meshFilters)
+						{
+							if (!meshFilter.gameObject.CompareTag("Visual"))
+							{
+								UE.GameObject.Destroy(meshFilter.gameObject);
+							}
+						}
 					}
 				}
 			}
@@ -98,11 +101,7 @@ namespace SDF
 				for (var i = 0; i< targetTransform.childCount; i++)
 				{
 					var child = targetTransform.GetChild(i);
-					var optimizationTarget
-						= (child.GetComponent<UE.MeshFilter>() == null)
-							? child : targetTransform;
-
-					OptimizeMesh(optimizationTarget);
+					OptimizeMesh(child);
 				}
 			}
 		}

@@ -151,9 +151,9 @@ namespace SDF
 			public IEnumerator<Model> Start(Model model)
 			{
 				jointObjectList.Clear();
-				var tempModels = new List<Model>() { model };
+				var models = new List<Model>() { model };
 
-				ImportModels(tempModels);
+				ImportModels(models);
 
 				foreach (var jointObject in jointObjectList)
 				{

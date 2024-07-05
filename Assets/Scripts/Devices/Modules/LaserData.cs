@@ -229,5 +229,4 @@ namespace SensorDevices
 			this.capturedTime = capturedTime;
 		}
 	}
-
 }

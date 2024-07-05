@@ -36,6 +36,11 @@ namespace SDF
 			Set(roll, pitch, yaw);
 		}
 
+		public Quaternion(in string value)
+		{
+			FromString(value);
+		}
+
 		private void SetTypeCode()
 		{
 			_code = Type.GetTypeCode(typeof(T));
@@ -169,19 +174,19 @@ namespace SDF
 
 			var s = Math.Sqrt(w * w + x * x + y * y + z * z);
 
-			if (Math.Equals(s, 0d))
+			if (Math.Abs(s - 0d) < double.Epsilon)
 			{
-				_w = (T)(object)(1.0d);
-				_x = (T)(object)(0.0d);
-				_y = (T)(object)(0.0d);
-				_z = (T)(object)(0.0d);
+				_w = (T)Convert.ChangeType(1d, typeof(T));
+				_x = (T)Convert.ChangeType(0d, typeof(T));
+				_y = (T)Convert.ChangeType(0d, typeof(T));
+				_z = (T)Convert.ChangeType(0d, typeof(T));
 			}
 			else
 			{
-				_w = (T)(object)(w / s);
-				_x = (T)(object)(x / s);
-				_y = (T)(object)(y / s);
-				_z = (T)(object)(z / s);
+				_w = (T)Convert.ChangeType(w / s, typeof(T));
+				_x = (T)Convert.ChangeType(x / s, typeof(T));
+				_y = (T)Convert.ChangeType(y / s, typeof(T));
+				_z = (T)Convert.ChangeType(z / s, typeof(T));
 			}
 		}
 
