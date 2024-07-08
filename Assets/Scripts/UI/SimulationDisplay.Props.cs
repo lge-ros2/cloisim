@@ -86,22 +86,25 @@ public partial class SimulationDisplay : MonoBehaviour
 					if (scaleFactor < 0.01f)
 					{
 						scaleFactorString = "0.01";
+						scaleFactor = 0.01f;
 					}
 					else if (scaleFactor > 10f)
 					{
 						scaleFactorString = "10";
+						scaleFactor = 10f;
 					}
 				}
 				else
 				{
 					scaleFactorString = prevScaleFactorString;
 				}
+
+				Main.ObjectSpawning?.SetScaleFactor(scaleFactor);
 			}
 
 			doCheckScaleFactorValue = false;
 		}
 
 		Main.ObjectSpawning?.SetPropType(_toolbarSelected);
-		Main.ObjectSpawning?.SetScaleFactor(scaleFactorString);
 	}
 }
