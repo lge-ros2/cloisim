@@ -38,6 +38,7 @@ namespace SDF
 
 		public Quaternion(in string value)
 		{
+			SetTypeCode();
 			FromString(value);
 		}
 
