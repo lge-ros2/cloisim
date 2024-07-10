@@ -498,8 +498,9 @@ public class ProceduralMesh
 		in int resolutionX = 10, in int resolutionZ = 10)
 	{
 		Mesh mesh;
+		var cacheKey = Type.PLANE + resolutionX * resolutionZ;
 
-		if (!MeshObjectCache.ContainsKey(Type.PLANE))
+		if (!MeshObjectCache.ContainsKey(cacheKey))
 		{
 			if (normal.Equals(default(Vector3)))
 			{
@@ -509,7 +510,6 @@ public class ProceduralMesh
 			mesh = new Mesh();
 			mesh.name = "Plane";
 
-			const float UnitSizeLength = 1f, UnitySizeWidth = 1f;
 			var resX = (resolutionX < 2) ? 2 : resolutionX + 1;
 			var resZ = (resolutionZ < 2) ? 2 : resolutionZ + 1;
 
@@ -518,12 +518,12 @@ public class ProceduralMesh
 			for (var z = 0; z < resZ; z++)
 			{
 				// [ -length / 2, length / 2 ]
-				var zPos = ((float)z / (resZ - 1) - .5f) * UnitSizeLength;
+				var zPos = ((float)z / (resZ - 1) - .5f);
 
 				for (var x = 0; x < resX; x++)
 				{
 					// [ -width / 2, width / 2 ]
-					var xPos = ((float)x / (resX - 1) - .5f) * UnitySizeWidth;
+					var xPos = ((float)x / (resX - 1) - .5f);
 					vertices[x + z * resX] = new Vector3(xPos, 0f, zPos);
 				}
 			}
@@ -574,11 +574,10 @@ public class ProceduralMesh
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
-			MeshObjectCache.Add(Type.PLANE, mesh);
+			MeshObjectCache.Add(cacheKey, mesh);
 		}
 
-		mesh = Object.Instantiate(MeshObjectCache[Type.PLANE]);
-		mesh.name = "Plane";
+		mesh = Object.Instantiate(MeshObjectCache[cacheKey]);
 
 		var meshVertices = mesh.vertices;
 		for (var i = 0; i < mesh.vertexCount; i++)
