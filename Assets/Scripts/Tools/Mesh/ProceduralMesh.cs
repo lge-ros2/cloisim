@@ -12,14 +12,15 @@ using Game.Utils.Triangulation;
 /// <summary>https://wiki.unity3d.com/index.php/ProceduralPrimitives</summary>
 public class ProceduralMesh
 {
-	private enum Type { BOX, CYLINDER, SPHERE, PLANE };
+	public enum Type { BOX, CYLINDER, SPHERE, ELLIPSOID, PLANE };
 
 	private static Dictionary<Type, Mesh> MeshObjectCache = new Dictionary<Type, Mesh>();
 
 	private const float PI = Mathf.PI;
 	private const float PI2 = PI * 2f;
 
-	public static Mesh CreateBox(in float length = 1f, in float width = 1f, in float height = 1f)
+	public static Mesh CreateBox(
+		in float length = 1f, in float width = 1f, in float height = 1f)
 	{
 		Mesh mesh;
 
@@ -147,7 +148,9 @@ public class ProceduralMesh
 		return mesh;
 	}
 
-	public static Mesh CreateCylinder(in float radius = 1f, in float height = 1f, in int nbSides = 36, in float upRotationAngle = 0)
+	public static Mesh CreateCylinder(
+		in float radius = 1f, in float height = 1f, in int nbSides = 36,
+		in float upRotationAngle = 0)
 	{
 		Mesh mesh;
 
@@ -176,7 +179,9 @@ public class ProceduralMesh
 		return mesh;
 	}
 
-	public static Mesh CreateCone(in float topRadius = .01f, in float bottomRadius = 0.5f, in float height = 1f, in int nbSides = 18)
+	public static Mesh CreateCone(
+		in float topRadius = .01f, in float bottomRadius = 0.5f,
+		in float height = 1f, in int nbSides = 18)
 	{
 		var mesh = new Mesh();
 		mesh.name = "Cone";
@@ -364,14 +369,16 @@ public class ProceduralMesh
 	// Latitude ---
 	public static Mesh CreateSphere(in float radius = 1f, in int nbLong = 24, in int nbLat = 24)
 	{
-		return CreateSphere(Vector3.one * radius, nbLong, nbLat, "Sphere");
+		return CreateSphere(Vector3.one * radius, nbLong, nbLat, "Sphere", Type.SPHERE);
 	}
 
-	public static Mesh CreateSphere(in Vector3 scale, in int nbLong = 24, in int nbLat = 24, in string meshName = "Ellipsoid")
+	public static Mesh CreateSphere(
+		in Vector3 scale, in int nbLong = 24, in int nbLat = 24,
+		in string meshName = "Ellipsoid", in Type meshType = Type.ELLIPSOID)
 	{
 		Mesh mesh;
 
-		if (!MeshObjectCache.ContainsKey(Type.SPHERE))
+		if (!MeshObjectCache.ContainsKey(meshType))
 		{
 			const float UnitRadius = 1f;
 			mesh = new Mesh();
@@ -486,7 +493,6 @@ public class ProceduralMesh
 		return mesh;
 	}
 
-	// 2 minimum
 	public static Mesh CreatePlane(
 		in float length = 1f, in float width = 1f, Vector3 normal = default(Vector3),
 		in int resolutionX = 10, in int resolutionZ = 10)
@@ -504,8 +510,8 @@ public class ProceduralMesh
 			mesh.name = "Plane";
 
 			const float UnitSizeLength = 1f, UnitySizeWidth = 1f;
-			var resX = resolutionX + 1;
-			var resZ = resolutionZ + 1;
+			var resX = (resolutionX < 2) ? 2 : resolutionX + 1;
+			var resZ = (resolutionZ < 2) ? 2 : resolutionZ + 1;
 
 			#region Vertices
 			var vertices = new Vector3[resX * resZ];
