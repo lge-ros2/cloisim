@@ -59,7 +59,7 @@ public class ProceduralMesh
 			};
 			#endregion
 
-			#region Normales
+			#region Normals
 			var up = Vector3.up;
 			var down = Vector3.down;
 			var front = Vector3.forward;
@@ -67,7 +67,7 @@ public class ProceduralMesh
 			var left = Vector3.left;
 			var right = Vector3.right;
 
-			var normales = new Vector3[]
+			var normals = new Vector3[]
 			{
 			down, down, down, down, // Bottom
 			left, left, left, left, // Left
@@ -125,7 +125,7 @@ public class ProceduralMesh
 			#endregion
 
 			mesh.vertices = vertices;
-			mesh.normals = normales;
+			mesh.normals = normals;
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
@@ -224,21 +224,21 @@ public class ProceduralMesh
 		vertices[vert + 1] = vertices[nbSides * 2 + 3];
 		#endregion
 
-		#region Normales
+		#region Normals
 		// bottom + top + sides
-		var normales = new Vector3[vertices.Length];
+		var normals = new Vector3[vertices.Length];
 		vert = 0;
 
 		// Bottom cap
 		while (vert <= nbSides)
 		{
-			normales[vert++] = Vector3.down;
+			normals[vert++] = Vector3.down;
 		}
 
 		// Top cap
 		while (vert <= nbSides * 2 + 1)
 		{
-			normales[vert++] = Vector3.up;
+			normals[vert++] = Vector3.up;
 		}
 
 		// Sides
@@ -249,14 +249,14 @@ public class ProceduralMesh
 			var cos = Mathf.Cos(rad);
 			var sin = Mathf.Sin(rad);
 
-			normales[vert] = new Vector3(cos, 0f, sin);
-			normales[vert + 1] = normales[vert];
+			normals[vert] = new Vector3(cos, 0f, sin);
+			normals[vert + 1] = normals[vert];
 
 			vert += 2;
 			v++;
 		}
-		normales[vert] = normales[nbSides * 2 + 2];
-		normales[vert + 1] = normales[nbSides * 2 + 3];
+		normals[vert] = normals[nbSides * 2 + 2];
+		normals[vert + 1] = normals[nbSides * 2 + 3];
 		#endregion
 
 		#region UVs
@@ -353,7 +353,7 @@ public class ProceduralMesh
 		#endregion
 
 		mesh.vertices = vertices;
-		mesh.normals = normales;
+		mesh.normals = normals;
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
@@ -399,11 +399,11 @@ public class ProceduralMesh
 			vertices[vertices.Length - 1] = Vector3.up * -UnitRadius;
 			#endregion
 
-			#region Normales
-			var normales = new Vector3[vertices.Length];
+			#region Normals
+			var normals = new Vector3[vertices.Length];
 			for (var n = 0; n < vertices.Length; n++)
 			{
-				normales[n] = vertices[n].normalized;
+				normals[n] = vertices[n].normalized;
 			}
 			#endregion
 
@@ -464,7 +464,7 @@ public class ProceduralMesh
 			#endregion
 
 			mesh.vertices = vertices;
-			mesh.normals = normales;
+			mesh.normals = normals;
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
@@ -487,7 +487,9 @@ public class ProceduralMesh
 	}
 
 	// 2 minimum
-	public static Mesh CreatePlane(in float length = 1f, in float width = 1f, Vector3 normal = default(Vector3), in int resX = 2, in int resZ = 2)
+	public static Mesh CreatePlane(
+		in float length = 1f, in float width = 1f, Vector3 normal = default(Vector3),
+		in int resolutionX = 10, in int resolutionZ = 10)
 	{
 		Mesh mesh;
 
@@ -502,6 +504,8 @@ public class ProceduralMesh
 			mesh.name = "Plane";
 
 			const float UnitSizeLength = 1f, UnitySizeWidth = 1f;
+			var resX = resolutionX + 1;
+			var resZ = resolutionZ + 1;
 
 			#region Vertices
 			var vertices = new Vector3[resX * resZ];
@@ -519,11 +523,11 @@ public class ProceduralMesh
 			}
 			#endregion
 
-			#region Normales
-			var normales = new Vector3[vertices.Length];
-			for (var n = 0; n < normales.Length; n++)
+			#region Normals
+			var normals = new Vector3[vertices.Length];
+			for (var n = 0; n < normals.Length; n++)
 			{
-				normales[n] = normal;
+				normals[n] = normal;
 			}
 			#endregion
 
@@ -560,7 +564,7 @@ public class ProceduralMesh
 			#endregion
 
 			mesh.vertices = vertices;
-			mesh.normals = normales;
+			mesh.normals = normals;
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
@@ -685,14 +689,14 @@ public class ProceduralMesh
 			}
 		}
 
-		var normales = new Vector3[vertices.Length];
+		var normals = new Vector3[vertices.Length];
 		for (var n = 0; n < vertices.Length; n++)
 		{
-			normales[n] = vertices[n].normalized;
+			normals[n] = vertices[n].normalized;
 		}
 
 		mesh.vertices = vertices;
-		mesh.normals = normales;
+		mesh.normals = normals;
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
