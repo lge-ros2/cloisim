@@ -119,6 +119,12 @@ public partial class SDF2Unity
 			SetSpecular(target, defaultSpecColor);
 		}
 
+		public static void SetNormalMap(UE.Material target, in string normalMapPath)
+		{
+			target.SetTexture("_BumpMap", MeshLoader.GetTexture(normalMapPath));
+			target.EnableKeyword("_NORMALMAP");
+		}
+
 		public static void SetSpecular(UE.Material target, UE.Color color)
 		{
 			target.SetColor("_SpecColor", color);
