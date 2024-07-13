@@ -272,6 +272,8 @@ namespace SDF
 			if (IsValidNode("wind"))
 			{
 				// Console.WriteLine("<wind> tag is NOT supported yet.");
+				wind = new Wind();
+				wind.linear_velocity = GetValue<Vector3<double>>("wind/linear_velocity");
 			}
 
 			if (IsValidNode("magnetic_field"))
