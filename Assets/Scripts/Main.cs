@@ -369,6 +369,38 @@ public class Main : MonoBehaviour
 		return tmpModelName;
 	}
 
+	public GameObject GetModel(string modelPath)
+	{
+		if (modelPath.EndsWith("/"))
+		{
+			modelPath = modelPath.Substring(0, modelPath.Length - 1);
+		}
+
+		foreach (var item in _sdfRoot.resourceModelTable)
+		{
+			var itemValue = item.Value;
+
+			// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
+			if (itemValue.Item2.CompareTo(modelPath) == 0)
+			{
+				// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
+				var modelFileName = itemValue.Item3;
+				if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
+				{
+					model.Name = GetClonedModelName(model.Name);
+
+					StartCoroutine(_sdfLoader.Start(model));
+
+					var targetObject = _worldRoot.transform.Find(model.Name);
+					// Debug.Log(targetObject);
+					return targetObject.gameObject;
+				}
+			}
+		}
+
+		return null;
+	}
+
 	private IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
