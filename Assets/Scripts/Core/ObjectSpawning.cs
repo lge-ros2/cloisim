@@ -125,7 +125,7 @@ public class ObjectSpawning : MonoBehaviour
 					break;
 
 				case PropsType.SPHERE:
-					mesh = ProceduralMesh.CreateSphere(0.5f, 14, 10);
+					mesh = ProceduralMesh.CreateSphere(0.5f, 11, 11);
 					break;
 			}
 

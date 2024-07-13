@@ -367,13 +367,13 @@ public class ProceduralMesh
 
 	// Longitude |||
 	// Latitude ---
-	public static Mesh CreateSphere(in float radius = 1f, in int nbLong = 24, in int nbLat = 24)
+	public static Mesh CreateSphere(in float radius = 1f, in int nbLong = 15, in int nbLat = 15)
 	{
 		return CreateSphere(Vector3.one * radius, nbLong, nbLat, "Sphere", Type.SPHERE);
 	}
 
 	public static Mesh CreateSphere(
-		in Vector3 scale, in int nbLong = 24, in int nbLat = 24,
+		in Vector3 scale, in int nbLong = 15, in int nbLat = 15,
 		in string meshName = "Ellipsoid", in Type meshType = Type.ELLIPSOID)
 	{
 		Mesh mesh;
