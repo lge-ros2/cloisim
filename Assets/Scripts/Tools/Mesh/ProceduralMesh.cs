@@ -495,7 +495,7 @@ public class ProceduralMesh
 
 	public static Mesh CreatePlane(
 		in float length = 1f, in float width = 1f, Vector3 normal = default(Vector3),
-		in int resolutionX = 10, in int resolutionZ = 10)
+		in int resolutionX = 15, in int resolutionZ = 15)
 	{
 		Mesh mesh;
 		var cacheKey = Type.PLANE + resolutionX * resolutionZ;
