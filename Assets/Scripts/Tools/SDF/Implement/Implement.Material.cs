@@ -42,6 +42,7 @@ namespace SDF
 					if (sdfMaterial.shader != null)
 					{
 						SDF2Unity.Material.SetNormalMap(material, sdfMaterial.shader.normal_map);
+						// UE.Debug.Log("ImportMaterial HasNormalmap " + sdfMaterial.shader.normal_map);
 					}
 				}
 

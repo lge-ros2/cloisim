@@ -30,15 +30,15 @@ public partial class SDF2Unity
 
 			newMaterial.SetColor("_BaseColor", UE.Color.white);
 
-			newMaterial.SetFloat("_SmoothnessSource", 1f); // Specular Alpha (0) vs Albedo Alpha (1)
-			var specularSmoothness = 0.45f;
-			SetSpecular(newMaterial, specularSmoothness);
+			// var specularSmoothness = 0.35f;
+			// SetSpecular(newMaterial, specularSmoothness);
 
 			newMaterial.SetFloat("_EnvironmentReflections", 0.5f);
 			newMaterial.DisableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
 
 			newMaterial.EnableKeyword("_INSTANCING_ON");
 			newMaterial.EnableKeyword("_DOTS_INSTANCING_ON");
+			newMaterial.DisableKeyword("_SPECGLOSSMAP");
 
 			newMaterial.enableInstancing = true;
 			newMaterial.doubleSidedGI = false;
@@ -127,6 +127,7 @@ public partial class SDF2Unity
 
 		public static void SetSpecular(UE.Material target, UE.Color color)
 		{
+			target.SetFloat("_SmoothnessSource", 0f); // Specular Alpha (0) vs Albedo Alpha (1)
 			target.SetColor("_SpecColor", color);
 			target.SetFloat("_Smoothness", color.a);
 			target.SetFloat("_SpecularHighlights", 1f);
