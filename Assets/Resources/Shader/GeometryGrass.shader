@@ -26,7 +26,7 @@ Shader "Custom/GeometryGrass"
 		// Grass visibility properties.
 		_GrassMap("Grass Visibility Map", 2D) = "white" {}
 		_GrassThreshold("Grass Visibility Threshold", Range(-0.1, 1)) = 0.5
-		_GrassFalloff("Grass Visibility Fade-In Falloff", Range(0, 0.5)) = 0.05
+		_GrassFalloff("Grass Visibility Fade-In Falloff", Range(0, 1)) = 0.05
 
 		// Wind properties.
 		_WindMap("Wind Offset Map", 2D) = "bump" {}
@@ -54,7 +54,7 @@ Shader "Custom/GeometryGrass"
 			#pragma multi_compile _ _SHADOWS_SOFT
 
 			#pragma multi_compile_local WIND_OFF _
-			#pragma multi_compile_local VISIBILITY_OFF _
+			#pragma multi_compile_local VISIBILITY_ON _
 
 			#define UNITY_PI 3.14159265359f
 			#define UNITY_TWO_PI 6.28318530718f
