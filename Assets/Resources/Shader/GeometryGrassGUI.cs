@@ -27,11 +27,11 @@ public class GeometryGrassGUI : ShaderGUI
 		var tipColorLabel = new GUIContent(tipColor.displayName, "Color of the grass blade at the very tip");
 		editor.ShaderProperty(tipColor, tipColorLabel);
 
-		var baseTexture = FindProperty("_BaseTex", properties);
-		var baseTextureLabel = new GUIContent(baseTexture.displayName, "Tint texture for each grass blade");
-		editor.TexturePropertySingleLine(baseTextureLabel, baseTexture);
+		// var baseTexture = FindProperty("_BaseTex", properties);
+		// var baseTextureLabel = new GUIContent(baseTexture.displayName, "Tint texture for each grass blade");
+		// editor.TexturePropertySingleLine(baseTextureLabel, baseTexture);
 
-		GUILayout.Space(30);
+		GUILayout.Space(20);
 
 		// Start a new section for grass size properties.
 		GUILayout.Label("Blade Size", EditorStyles.boldLabel);
@@ -52,7 +52,7 @@ public class GeometryGrassGUI : ShaderGUI
 		var bladeHeightMaxLabel = new GUIContent(bladeHeightMax.displayName, "Maximum height (in meters) of each grass blade.");
 		editor.ShaderProperty(bladeHeightMax, bladeHeightMaxLabel);
 
-		GUILayout.Space(30);
+		GUILayout.Space(20);
 
 		// Start a new section for grass bend properties.
 		GUILayout.Label("Bend", EditorStyles.boldLabel);
@@ -69,7 +69,7 @@ public class GeometryGrassGUI : ShaderGUI
 		var bladeBendDeltaLabel = new GUIContent(bladeBendDelta.displayName, "The amount of bend variation between blades.");
 		editor.ShaderProperty(bladeBendDelta, bladeBendDeltaLabel);
 
-		GUILayout.Space(30);
+		GUILayout.Space(20);
 
 		// Start a new section for tessellation.
 		GUILayout.Label("Tessellation", EditorStyles.boldLabel);
@@ -86,7 +86,7 @@ public class GeometryGrassGUI : ShaderGUI
 		var tessellationMaxDistanceLabel = new GUIContent(tessellationMaxDistance.displayName, "Applies no extra tessellation when the camera is further than this distance.");
 		editor.ShaderProperty(tessellationMaxDistance, tessellationMaxDistanceLabel);
 
-		GUILayout.Space(30);
+		GUILayout.Space(20);
 
 		// Start a new section for the grass visibility map.
 		GUILayout.Label("Visibility", EditorStyles.boldLabel);
@@ -114,7 +114,7 @@ public class GeometryGrassGUI : ShaderGUI
 			editor.ShaderProperty(grassFalloff, grassFalloffLabel);
 		}
 
-		GUILayout.Space(30);
+		GUILayout.Space(20);
 
 		// Start a new section for the wind map.
 		GUILayout.Label("Wind", EditorStyles.boldLabel);
