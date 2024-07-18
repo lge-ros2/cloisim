@@ -7,6 +7,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
+using System;
 using UE = UnityEngine;
 using messages = cloisim.msgs;
 
@@ -81,9 +82,14 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		}
 	}
 
+	private Dictionary<string, int> _propsClassId = new Dictionary<string, int>();
 	private Dictionary<string, SDF.Helper.Base> allLoadedModelList = new Dictionary<string, SDF.Helper.Base>();
-	private Dictionary<int, ObjectTracking> trackingObjectList = new Dictionary<int, ObjectTracking>();
-	private messages.PerceptionV messagePerceptions;
+	private Dictionary<int, ObjectTracking> _trackingObjectList = new Dictionary<int, ObjectTracking>();
+
+	private messages.PerceptionV _messagePerceptions;
+	private Dictionary<int, messages.Perception> _messagePerceptionProps = new Dictionary<int, messages.Perception>();
+	private List<messages.Perception> _messagePerceptionObjects = new List<messages.Perception>();
+
 	private int sleepPeriodForPublishInMilliseconds = 1000;
 
 	private UE.GameObject GetTrackingObject(in string modelName)
@@ -118,9 +124,9 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			allLoadedModelList.Add(actor.name, actor);
 		}
 
-		messagePerceptions = new messages.PerceptionV();
-		messagePerceptions.Header = new messages.Header();
-		messagePerceptions.Header.Stamp = new messages.Time();
+		_messagePerceptions = new messages.PerceptionV();
+		_messagePerceptions.Header = new messages.Header();
+		_messagePerceptions.Header.Stamp = new messages.Time();
 	}
 
 	private void CalculateFootprint(ref ObjectTracking trackingObject)
@@ -203,6 +209,47 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	{
 		var publishFrequency = GetPluginParameters().GetValue<float>("publish_frequency", 1);
 		sleepPeriodForPublishInMilliseconds = (int)(1f / publishFrequency * 1000f);
+
+		var enableProps = GetPluginParameters().GetAttributeInPath<bool>("props", "enable");
+		if (enableProps)
+		{
+			SetPropClassId();
+		}
+
+		AddPerceptionList();
+
+		if (RegisterTxDevice(out var portTx, "Data"))
+		{
+			AddThread(portTx, PublishThread);
+		}
+
+		StartCoroutine(DoUpdateFootprint());
+	}
+
+	protected override void OnReset()
+	{
+		foreach (var trackingObjectItem in _trackingObjectList)
+		{
+			var trackingObject = trackingObjectItem.Value;
+			trackingObject.velocity = UE.Vector3.zero;
+			trackingObject.position = UE.Vector3.zero;
+		}
+	}
+
+	private void SetPropClassId()
+	{
+		if (GetPluginParameters().GetValues<string>("props/prop", out var propList))
+		{
+			foreach (var propName in propList)
+			{
+				var classId = GetPluginParameters().GetAttributeInPath<int>("props/prop[text()='" + propName + "']", "class_id");
+				_propsClassId.Add(propName.ToUpper(), classId);
+			}
+		}
+	}
+
+	private void AddPerceptionList()
+	{
 		GetPluginParameters().GetValues<string>("list/target", out var targetList);
 
 		foreach (var target in targetList)
@@ -222,27 +269,10 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			var trackingGameObject = GetTrackingObject(target);
 			if (trackingGameObject != null)
 			{
-				trackingObjectList.Add(trackingId, new ObjectTracking(trackingGameObject));
+				_trackingObjectList.Add(trackingId, new ObjectTracking(trackingGameObject));
 			}
 
-			messagePerceptions.Perceptions.Add(perception);
-		}
-
-		if (RegisterTxDevice(out var portTx, "Data"))
-		{
-			AddThread(portTx, PublishThread);
-		}
-
-		StartCoroutine(DoUpdateFootprint());
-	}
-
-	protected override void OnReset()
-	{
-		foreach (var trackingObjectItem in trackingObjectList)
-		{
-			var trackingObject = trackingObjectItem.Value;
-			trackingObject.velocity = UE.Vector3.zero;
-			trackingObject.position = UE.Vector3.zero;
+			_messagePerceptionObjects.Add(perception);
 		}
 	}
 
@@ -250,7 +280,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	private void OnDrawGizmos()
 	{
 		var prevColor = UE.Gizmos.color;
-		foreach (var objectItem in trackingObjectList)
+		foreach (var objectItem in _trackingObjectList)
 		{
 			var trackingObject = objectItem.Value;
 
@@ -272,13 +302,13 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	{
 		yield return new UE.WaitForEndOfFrame();
 
-		for (var i = 0; i < messagePerceptions.Perceptions.Count; i++)
+		for (var i = 0; i < _messagePerceptionObjects.Count; i++)
 		{
-			var perception = messagePerceptions.Perceptions[i];
+			var perception = _messagePerceptionObjects[i];
 			var trackingId = perception.TrackingId;
 			try
 			{
-				var trackingObject = trackingObjectList[trackingId];
+				var trackingObject = _trackingObjectList[trackingId];
 				CalculateFootprint(ref trackingObject);
 
 				perception.Footprints.Capacity = trackingObject.Footprint().Length;
@@ -286,7 +316,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			catch
 			{
 				UE.Debug.LogWarning(trackingId + "(" + perception.ClassId + ") is wrong object to get");
-				// foreach (var track in trackingObjectList)
+				// foreach (var track in _trackingObjectList)
 				// {
 				// 	UE.Debug.Log(track.Key + ", " + track.Value.GetGameObject().name);
 				// }
@@ -296,13 +326,76 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	void LateUpdate()
 	{
-		var keys = trackingObjectList.Keys.ToArray();
+		var keys = _trackingObjectList.Keys.ToArray();
 		foreach (var key in keys)
 		{
-			var trackingObject = trackingObjectList[key];
+			var trackingObject = _trackingObjectList[key];
 			trackingObject.Update();
-			trackingObjectList[key] = trackingObject;
+			_trackingObjectList[key] = trackingObject;
 		}
+
+		StartCoroutine(UpdateProps());
+	}
+
+	private IEnumerator UpdateProps()
+	{
+		var props = Main.PropsRoot.GetComponentsInChildren<UE.Transform>();
+
+		lock (_messagePerceptionProps)
+		{
+			var propsInstanceIdlist = new HashSet<int>();
+			foreach (var prop in props)
+			{
+				if (!prop.CompareTag("Props"))
+				{
+					continue;
+				}
+
+				var propNameSplitted = prop.name.Split('-');
+
+				var propName = propNameSplitted[0];
+				var propId = Int32.Parse(propNameSplitted[1]);
+				var instanceId = prop.GetInstanceID();
+
+				if (_messagePerceptionProps.TryGetValue(instanceId, out var perception))
+				{
+					perception.Position.Set(prop.localPosition);
+					perception.Size.SetScale(prop.localScale);
+				}
+				else
+				{
+					if (_propsClassId.TryGetValue(propName, out var classId))
+					{
+						perception = new messages.Perception();
+						perception.Header = new messages.Header();
+						perception.Header.Stamp = new messages.Time();
+						perception.TrackingId = propName.GetHashCode() + propId;
+						perception.ClassId = classId;
+						perception.Position = new messages.Vector3d();
+						perception.Position.Set(prop.localPosition);
+						perception.Velocity = new messages.Vector3d();
+						perception.Size = new messages.Vector3d();
+						perception.Size.SetScale(prop.localScale);
+
+						_messagePerceptionProps.Add(instanceId, perception);
+					}
+				}
+
+				propsInstanceIdlist.Add(instanceId);
+			}
+
+			// remove unused props
+			for (var i = 0; i < _messagePerceptionProps.Keys.Count; i++)
+			{
+				var key = _messagePerceptionProps.Keys.ElementAt(i);
+				if (!propsInstanceIdlist.Contains(key))
+				{
+					_messagePerceptionProps.Remove(key);
+				}
+			}
+		}
+
+		yield return null;
 	}
 
 	private void PublishThread(System.Object threadObject)
@@ -315,39 +408,59 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		{
 			while (PluginThread.IsRunning)
 			{
-				for (var index = 0; index < messagePerceptions.Perceptions.Count; index++)
+				UpdatePeceptionObjects();
+
+				_messagePerceptions.Perceptions.AddRange(_messagePerceptionObjects);
+
+				var capacity = _messagePerceptions.Perceptions.Capacity;
+				lock (_messagePerceptionProps)
 				{
-					var perception = messagePerceptions.Perceptions[index];
-					if (trackingObjectList.TryGetValue(perception.TrackingId, out var trackingObject))
+					// UE.Debug.Log(capacity + " , " + _messagePerceptionObjects.Count  + " , " + _messagePerceptionProps.Count);
+					if (capacity < _messagePerceptionObjects.Count + _messagePerceptionProps.Count)
 					{
-						DeviceHelper.SetCurrentTime(perception.Header.Stamp);
-						DeviceHelper.SetVector3d(perception.Position, trackingObject.position);
-						DeviceHelper.SetVector3d(perception.Velocity, trackingObject.velocity);
-						DeviceHelper.SetVector3d(perception.Size, trackingObject.size);
-
-						var footprint = trackingObject.Footprint();
-						for (var i = 0; i < footprint.Length; i++)
-						{
-							var point = new messages.Vector3d();
-							DeviceHelper.SetVector3d(point, footprint[i]);
-
-							if (i < perception.Footprints.Count)
-							{
-								perception.Footprints[i] = point;
-							}
-							else
-							{
-								perception.Footprints.Add(point);
-							}
-						}
+						capacity = _messagePerceptionObjects.Count + _messagePerceptionProps.Count;
 					}
+					_messagePerceptions.Perceptions.Capacity = capacity;
+					_messagePerceptions.Perceptions.InsertRange(_messagePerceptionObjects.Count, _messagePerceptionProps.Values.ToList());
 				}
 
-				DeviceHelper.SetCurrentTime(messagePerceptions.Header.Stamp);
-				deviceMessage.SetMessage<messages.PerceptionV>(messagePerceptions);
+				_messagePerceptions.Header.Stamp.SetCurrentTime();
+				deviceMessage.SetMessage<messages.PerceptionV>(_messagePerceptions);
 				publisher.Publish(deviceMessage);
 
 				CLOiSimPluginThread.Sleep(sleepPeriodForPublishInMilliseconds);
+				_messagePerceptions.Perceptions.Clear();
+			}
+		}
+	}
+
+	private void UpdatePeceptionObjects()
+	{
+		for (var index = 0; index < _messagePerceptionObjects.Count; index++)
+		{
+			var perception = _messagePerceptionObjects[index];
+			if (_trackingObjectList.TryGetValue(perception.TrackingId, out var trackingObject))
+			{
+				perception.Header.Stamp.SetCurrentTime();
+				perception.Position.Set(trackingObject.position);
+				perception.Velocity.Set(trackingObject.velocity);
+				perception.Size.SetScale(trackingObject.size);
+
+				var footprint = trackingObject.Footprint();
+				for (var i = 0; i < footprint.Length; i++)
+				{
+					var point = new messages.Vector3d();
+					point.Set(footprint[i]);
+
+					if (i < perception.Footprints.Count)
+					{
+						perception.Footprints[i] = point;
+					}
+					else
+					{
+						perception.Footprints.Add(point);
+					}
+				}
 			}
 		}
 	}

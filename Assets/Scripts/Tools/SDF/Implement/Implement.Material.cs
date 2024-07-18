@@ -38,6 +38,12 @@ namespace SDF
 						SDF2Unity.Material.SetSpecular(material, SDF2Unity.Color(sdfMaterial.specular));
 						// UE.Debug.Log("ImportMaterial HasColorSpecular " + material.GetColor("_SpecColor"));
 					}
+
+					if (sdfMaterial.shader != null)
+					{
+						SDF2Unity.Material.SetNormalMap(material, sdfMaterial.shader.normal_map);
+						// UE.Debug.Log("ImportMaterial HasNormalmap " + sdfMaterial.shader.normal_map);
+					}
 				}
 
 				// apply material script

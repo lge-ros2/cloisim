@@ -10,6 +10,7 @@ using UnityEngine.AI;
 using UnityEngine.Rendering;
 using UnityEngine;
 
+[DefaultExecutionOrder(40)]
 public class ObjectSpawning : MonoBehaviour
 {
 	public enum PropsType { BOX = 0, CYLINDER = 1, SPHERE = 2 };
@@ -20,7 +21,7 @@ public class ObjectSpawning : MonoBehaviour
 	private GameObject propsRoot = null;
 	private Camera mainCam = null;
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
-	private FollowingTargetList followingList = null;
+	private FollowingTargetList _followingList = null;
 
 	private const float CylinderRotationAngle = 90;
 
@@ -28,14 +29,14 @@ public class ObjectSpawning : MonoBehaviour
 	public float maxRayDistance = 100;
 	private Dictionary<PropsType, uint> propsCount = new Dictionary<PropsType, uint>();
 
-	private string scaleFactorString = "0.5";
+	private float _scaleFactor = 0.5f;
 	private int propType = 0;
 
 	private const float UnitMass = 3f;
 
-	public void SetScaleFactor(in string value)
+	public void SetScaleFactor(in float value)
 	{
-		scaleFactorString = value;
+		_scaleFactor = value;
 	}
 
 	public void SetPropType(in int value)
@@ -53,7 +54,7 @@ public class ObjectSpawning : MonoBehaviour
 
 		if (Main.UIMainCanvas != null)
 		{
-			followingList = Main.UIMainCanvas.GetComponentInChildren<FollowingTargetList>();
+			_followingList = Main.UIMainCanvas.GetComponentInChildren<FollowingTargetList>();
 		}
 		else
 		{
@@ -79,8 +80,7 @@ public class ObjectSpawning : MonoBehaviour
 				// selected prefab and align its rotation to a surface normal
 				if (GetPositionAndNormalOnClick(out var hitPoint, out var hitNormal))
 				{
-					var scaleFactor = float.Parse(scaleFactorString);
-					var propsScale = Vector3.one * scaleFactor;
+					var propsScale = Vector3.one * _scaleFactor;
 					StartCoroutine(SpawnTargetObject((PropsType)propType, hitPoint, hitNormal, propsScale));
 				}
 			}
@@ -125,7 +125,7 @@ public class ObjectSpawning : MonoBehaviour
 					break;
 
 				case PropsType.SPHERE:
-					mesh = ProceduralMesh.CreateSphere(0.5f, 14, 10);
+					mesh = ProceduralMesh.CreateSphere(0.5f, 11, 11);
 					break;
 			}
 
@@ -245,7 +245,7 @@ public class ObjectSpawning : MonoBehaviour
 
 		yield return new WaitForEndOfFrame();
 
-		followingList?.UpdateList();
+		_followingList?.UpdateList();
 
 		yield return null;
 	}

@@ -58,7 +58,7 @@ public class Main : MonoBehaviour
 	public static GameObject UIObject => _uiRoot;
 	public static GameObject UIMainCanvas => _uiMainCanvasRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => _transformGizmo;
-	public static ObjectSpawning ObjectSpawning = _objectSpawning;
+	public static ObjectSpawning ObjectSpawning => _objectSpawning;
 	public static SimulationDisplay Display => _simulationDisplay;
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => _worldNavMeshBuilder;
@@ -366,6 +366,38 @@ public class Main : MonoBehaviour
 			}
 		}
 		return tmpModelName;
+	}
+
+	public GameObject GetModel(string modelPath)
+	{
+		if (modelPath.EndsWith("/"))
+		{
+			modelPath = modelPath.Substring(0, modelPath.Length - 1);
+		}
+
+		foreach (var item in _sdfRoot.resourceModelTable)
+		{
+			var itemValue = item.Value;
+
+			// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
+			if (itemValue.Item2.CompareTo(modelPath) == 0)
+			{
+				// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
+				var modelFileName = itemValue.Item3;
+				if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
+				{
+					model.Name = GetClonedModelName(model.Name);
+
+					StartCoroutine(_sdfLoader.Start(model));
+
+					var targetObject = _worldRoot.transform.Find(model.Name);
+					// Debug.Log(targetObject);
+					return targetObject.gameObject;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	private IEnumerator LoadModel(string modelPath, string modelFileName)

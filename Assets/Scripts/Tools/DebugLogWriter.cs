@@ -31,7 +31,7 @@ public class DebugLogWriter : TextWriter
 	{
 		if (value != null)
 		{
-			base.WriteLine(value);
+			base.Write(value + "\n");
 			Print(value);
 		}
 	}

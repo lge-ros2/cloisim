@@ -223,11 +223,11 @@ namespace SensorDevices
 			camSensor.targetTexture = _rtHandle.rt;
 
 			var camHFov = (float)camParameter.horizontal_fov * Mathf.Rad2Deg;
-			var camVFov = DeviceHelper.HorizontalToVerticalFOV(camHFov, camSensor.aspect);
+			var camVFov = SensorHelper.HorizontalToVerticalFOV(camHFov, camSensor.aspect);
 			camSensor.fieldOfView = camVFov;
 
 			// Invert projection matrix for cloisim msg
-			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(camHFov, camVFov, camSensor.nearClipPlane, camSensor.farClipPlane);
+			var projMatrix = SensorHelper.MakeCustomProjectionMatrix(camHFov, camVFov, camSensor.nearClipPlane, camSensor.farClipPlane);
 			var invertMatrix = Matrix4x4.Scale(new Vector3(1, -1, 1));
 			camSensor.projectionMatrix = projMatrix * invertMatrix;
 
@@ -344,7 +344,7 @@ namespace SensorDevices
 				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
 			}
 
-			DeviceHelper.SetCurrentTime(_imageStamped.Time);
+			_imageStamped.Time.SetCurrentTime();
 		}
 
 		public messages.CameraSensor GetCameraInfo()

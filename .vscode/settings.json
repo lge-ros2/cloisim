@@ -1,14 +1,15 @@
 {
     "files.exclude": {
-        ".vscode": true,
-        "**/*.meta": true,
-        "Library": true,
-        "Temp": true,
-        "UserSettings": true,
-		"obj": true,
+		".vscode": true,
+		"*.world": true,
+		"**/*.meta": true,
 		"**/TextMesh Pro": true,
-		"**/VSCode": true
-    },
+		"**/VSCode": true,
+		"Library": true,
+		"obj": true,
+		"Temp": true,
+		"UserSettings": true
+	},
     "editor.detectIndentation": false,
     "editor.indentSize": "tabSize",
     "editor.insertSpaces": false,

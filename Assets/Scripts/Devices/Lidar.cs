@@ -203,7 +203,7 @@ namespace SensorDevices
 
 			laserCam.targetTexture = _rtHandle.rt;
 
-			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(LaserCameraHFov, LaserCameraVFov, laserCam.nearClipPlane, laserCam.farClipPlane);
+			var projMatrix = SensorHelper.MakeCustomProjectionMatrix(LaserCameraHFov, LaserCameraVFov, laserCam.nearClipPlane, laserCam.farClipPlane);
 			// Debug.Log("Cam VFOV=" + laserCameraVFov);
 			laserCam.projectionMatrix = projMatrix;
 
@@ -396,8 +396,8 @@ namespace SensorDevices
 
 			var laserScan = laserScanStamped.Scan;
 
-			DeviceHelper.SetVector3d(laserScan.WorldPose.Position, lidarPosition);
-			DeviceHelper.SetQuaternion(laserScan.WorldPose.Orientation, lidarRotation);
+			laserScan.WorldPose.Position.Set(lidarPosition);
+			laserScan.WorldPose.Orientation.Set(lidarRotation);
 
 			const int BufferUnitSize = sizeof(double);
 			var laserSamplesH = (int)horizontal.samples;
@@ -510,7 +510,7 @@ namespace SensorDevices
 
 			capturedTimeSum += (float)DeviceHelper.GlobalClock.SimTime;
 			var capturedTime = capturedTimeSum / (numberOfLaserCamData + 1);
-			DeviceHelper.SetTime(laserScanStamped.Time, capturedTime);
+			laserScanStamped.Time.Set(capturedTime);
 
 			PushDeviceMessage<messages.LaserScanStamped>(laserScanStamped);
 		}

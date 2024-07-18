@@ -40,7 +40,7 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			DeviceHelper.SetCurrentTime(jointStateV.Header.Stamp);
+			jointStateV.Header.Stamp.SetCurrentTime();
 			PushDeviceMessage<messages.JointStateV>(jointStateV);
 		}
 

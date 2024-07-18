@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Xml;
+using System;
 
 namespace SDF
 {
@@ -125,6 +126,10 @@ namespace SDF
 		// Description: If false, dynamic lighting will be disabled
 		public bool lighting = true;
 
+		#region SDF 1.6 feature
+		public double shininess = 0;
+		#endregion
+
 		public Color ambient = null;
 		public Color diffuse = null;
 		public Color specular = null;
@@ -175,6 +180,15 @@ namespace SDF
 				}
 			}
 
+			if (IsValidNode("shader"))
+			{
+				shader = new Shader();
+				shader.type = GetAttributeInPath<string>("shader", "type");
+				shader.normal_map = GetValue<string>("shader/normal_map");
+			}
+
+			lighting = GetValue<bool>("lighting", true);
+
 			if (IsValidNode("ambient"))
 			{
 				ambient = new Color();
@@ -196,11 +210,20 @@ namespace SDF
 				// Console.Write("sdf/material/specular");
 			}
 
+			shininess = GetValue<float>("shininess");
+
 			if (IsValidNode("emissive"))
 			{
 				emissive = new Color();
 				emissive.FromString(GetValue<string>("emissive"));
 				// Console.Write("sdf/material/emissive");
+			}
+
+			double_sided = GetValue<bool>("double_sided");
+
+			if (IsValidNode("pbr"))
+			{
+				Console.Write("pbr: Not Supported yet");
 			}
 		}
 	}

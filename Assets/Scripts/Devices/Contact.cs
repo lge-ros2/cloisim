@@ -67,7 +67,7 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			DeviceHelper.SetCurrentTime(contacts.Time);
+			contacts.Time.SetCurrentTime();
 			// if (contacts.contact.Count > 0)
 			// {
 			// 	Debug.Log(contacts.contact[0].Depths.Length + " : " + contacts.contact[0].Normals.Count);
@@ -142,14 +142,14 @@ namespace SensorDevices
 					existingContact.Depths = depths;
 
 					var normal = new messages.Vector3d();
-					DeviceHelper.SetVector3d(normal, collisionContact.normal);
+					normal.Set(collisionContact.normal);
 					existingContact.Normals.Add(normal);
 
 					var position = new messages.Vector3d();
-					DeviceHelper.SetVector3d(position, collisionContact.point);
+					position.Set(collisionContact.point);
 					existingContact.Positions.Add(position);
 
-					DeviceHelper.SetCurrentTime(existingContact.Time);
+					existingContact.Time.SetCurrentTime();
 					// Debug.Log("CollisionStay: " + collision1 + " <-> " + collision2);
 				}
 
