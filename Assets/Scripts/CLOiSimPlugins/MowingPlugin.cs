@@ -4,26 +4,177 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
+using System;
 using UnityEngine;
-
 
 [DefaultExecutionOrder(800)]
 public class MowingPlugin : CLOiSimPlugin
 {
-	private float _grassMapResolution = 0.05f; // m/pixel
-	private float _bladingRatio = 0.1f;
+	public struct Target
+	{
+		public string modelName;
+		public string linkName;
 
-	private string _targetPlaneLinkName = string.Empty;
-	private GameObject _mowingList = null;
-	private Transform _targetPlaneTranform = null;
-	private Material _grassMaterial = null;
-	private Bounds _grassBounds = new Bounds();
-	private Texture2D _grassTexture = null;
-	private Texture2D _grassTextureInit = null;
-	private bool _started = false;
+		public Target(in string model, in string link)
+		{
+			modelName = model;
+			linkName = link;
+		}
+	}
+
+	private class Blade
+	{
+		public float ratio = 0.1f;
+
+		public Target target;
+
+		public float size = 0;
+
+		public void SetBladingRatio(in float bladeMin, in float bladeMax, in float bladingHeight)
+		{
+			this.ratio = Mathf.Lerp(bladeMin, bladeMax, bladingHeight);
+			// Debug.Log("_bladingRatio: " + this.ratio);
+		}
+	}
+
+	private class Grass
+	{
+		public struct Blade
+		{
+			public float heightMin;
+			public float heightMax;
+
+			public Blade(in float min, in float max)
+			{
+				heightMin = min;
+				heightMax = max;
+			}
+
+		}
+
+		public float mapResolution = 0.05f; // m/pixel
+		public Blade blade = new Blade(-1, -1);
+
+		public Target targetPlane;
+		public Material material = null;
+		public Bounds bounds = new Bounds();
+		public Texture2D texture = null;
+
+		public Grass(Shader shader)
+		{
+			material = new Material(shader);
+		}
+
+		public void SetBound(in Mesh mesh)
+		{
+			if (blade.heightMin < 0 || blade.heightMax < 0)
+			{
+				Debug.LogWarning("SetMaterial first");
+				return;
+			}
+
+			var boundSize = mesh.bounds.size;
+			var boundCenter = mesh.bounds.center;
+			boundSize.y = blade.heightMin;
+			boundCenter.y += boundSize.y * 0.5f;
+
+			bounds.size = boundSize;
+			bounds.center = boundCenter;
+		}
+
+		public void SetMaterial(in SDF.Plugin plugin)
+		{
+			var colorBaseStr = plugin.GetValue<string>("grass/color/base");
+			var colorTipStr = plugin.GetValue<string>("grass/color/tip");
+
+			var bladeWidthMin = plugin.GetValue<float>("grass/blade/width/min");
+			var bladeWidthMax = plugin.GetValue<float>("grass/blade/width/max");
+			blade.heightMin = plugin.GetValue<float>("grass/blade/height/min");
+			blade.heightMax = plugin.GetValue<float>("grass/blade/height/max");
+
+			var bendBladeForwardAmount = plugin.GetValue<float>("grass/bend/blade_amount/forward");
+			var bendBladeCurvatureAmount = plugin.GetValue<float>("grass/bend/blade_amount/curvature");
+			var bendVariation = plugin.GetValue<float>("grass/bend/variation");
+
+			var tessAmount = plugin.GetValue<float>("grass/tessellation/amount");
+			var tessDistanceMin = plugin.GetValue<float>("grass/tessellation/distance/min");
+			var tessDistanceMax = plugin.GetValue<float>("grass/tessellation/distance/max");
+
+			var visibilityThreshold = plugin.GetValue<float>("grass/visibility/threshold");
+			var visibilityFalloff = plugin.GetValue<float>("grass/visibility/falloff");
+
+			mapResolution = plugin.GetValue<float>("grass/map/resolution", 0.05f);
+
+			if (material != null)
+			{
+				if (string.IsNullOrEmpty(colorBaseStr) == false)
+				{
+					var colorBase = SDF2Unity.Color(colorBaseStr);
+					material.SetColor("_BaseColor", colorBase);
+				}
+
+				if (string.IsNullOrEmpty(colorTipStr) == false)
+				{
+					var colorTip = SDF2Unity.Color(colorTipStr);
+					material.SetColor("_TipColor", colorTip);
+				}
+
+				material.SetFloat("_BladeWidthMin", bladeWidthMin);
+				material.SetFloat("_BladeWidthMax", bladeWidthMax);
+				material.SetFloat("_BladeHeightMin", blade.heightMin);
+				material.SetFloat("_BladeHeightMax", blade.heightMax);
+				material.SetFloat("_BladeBendDistance", bendBladeForwardAmount);
+				material.SetFloat("_BladeBendCurve", bendBladeCurvatureAmount);
+				material.SetFloat("_BladeBendDelta", bendVariation);
+				material.SetFloat("_TessAmount", tessAmount);
+				material.SetFloat("_TessMinDistance", tessDistanceMin);
+				material.SetFloat("_TessMaxDistance", tessDistanceMax);
+
+				material.SetFloat("_GrassThreshold", visibilityThreshold);
+				material.SetFloat("_GrassFalloff", visibilityFalloff);
+			}
+		}
+
+		private void CreateGrassMapTexture()
+		{
+			var targetWidth = (int)(bounds.size.z / mapResolution);
+			var targetHeight = (int)(bounds.size.x / mapResolution);
+
+			texture = new Texture2D(targetWidth, targetHeight, TextureFormat.R8, false);
+			texture.name = "Grass Map";
+
+			var pixels = new Color[targetWidth * targetHeight];
+			for (var i = 0; i < pixels.Length; i++)
+			{
+				pixels[i] = Color.red;
+			}
+
+			texture.SetPixels(pixels);
+			texture.Apply();
+		}
+
+		public void Generate()
+		{
+			CreateGrassMapTexture();
+
+			if (texture != null)
+			{
+				material.SetTexture("_GrassMap", texture);
+				material.EnableKeyword("VISIBILITY_ON");
+			}
+		}
+	}
+
+	private Grass _grass = null;
+	private Blade _blade = null;
+
+	private Color[] _initialTexturePixels = null;
+	private Transform _targetPlane = null;
+	private Transform _targetBlade = null;
+
+	private bool _startMowing = true;
 
 	protected override void OnAwake()
 	{
@@ -32,137 +183,117 @@ public class MowingPlugin : CLOiSimPlugin
 		modelName = "Mowing";
 		partsName = "_";
 
-		_mowingList = new GameObject("MowingList");
-		_mowingList.transform.SetParent(transform);
-
 		var geomGrassShader = Shader.Find("Custom/GeometryGrass");
-		_grassMaterial = new Material(geomGrassShader);
+		_grass = new Grass(geomGrassShader);
+		_blade = new Blade();
 	}
 
 	protected override void OnStart()
 	{
-		_targetPlaneLinkName = GetPluginParameters().GetValue<string>("target/link");
+		StartCoroutine(Start());
+	}
 
-		if (FindTargetPlane(_targetPlaneLinkName) == false)
+	private IEnumerator Start()
+	{
+		yield return new WaitForEndOfFrame();
+
+		var grassTarget = GetPluginParameters().GetValue<string>("grass/target");
+		var grassTragetSplit = grassTarget.Split("::");
+
+		_grass.targetPlane = new Target(grassTragetSplit[0], grassTragetSplit[1]);
+
+		if (FindTargetPlane(_grass.targetPlane))
 		{
-			Debug.LogWarning("Target is not Plane");
+			PlantGrass();
 		}
 		else
 		{
-			PlantGrass();
+			Debug.LogWarning("Target is not Plane");
+		}
+
+		var bladeTarget = GetPluginParameters().GetValue<string>("mowing/blade/target");
+		var bladeTargetSplit = bladeTarget.Split("::");
+
+		_blade.target = new Target(bladeTargetSplit[0], bladeTargetSplit[1]);
+
+		if (FindTargetBlade(_blade.target) == false)
+		{
+			Debug.LogWarning("Target blade not found");
 		}
 	}
 
 	protected override void OnReset()
 	{
-		_grassTexture = Instantiate(_grassTextureInit);
-	}
-
-	private void SetGrassMaterial()
-	{
-		var colorBaseStr = GetPluginParameters().GetValue<string>("grass/color/base");
-		var colorTipStr = GetPluginParameters().GetValue<string>("grass/color/tip");
-
-		var bladeWidthMin = GetPluginParameters().GetValue<float>("grass/blade/width/min");
-		var bladeWidthMax = GetPluginParameters().GetValue<float>("grass/blade/width/max");
-		var bladeHeightMin = GetPluginParameters().GetValue<float>("grass/blade/height/min");
-		var bladeHeightMax = GetPluginParameters().GetValue<float>("grass/blade/height/max");
-
-		var bendBladeForwardAmount = GetPluginParameters().GetValue<float>("grass/bend/blade_amount/forward");
-		var bendBladeCurvatureAmount = GetPluginParameters().GetValue<float>("grass/bend/blade_amount/curvature");
-		var bendVariation = GetPluginParameters().GetValue<float>("grass/bend/variation");
-
-		var tessAmount = GetPluginParameters().GetValue<float>("grass/tessellation/amount");
-		var tessDistanceMin = GetPluginParameters().GetValue<float>("grass/tessellation/distance/min");
-		var tessDistanceMax = GetPluginParameters().GetValue<float>("grass/tessellation/distance/max");
-
-		var visibilityThreshold = GetPluginParameters().GetValue<float>("grass/visibility/threshold");
-		var visibilityFalloff = GetPluginParameters().GetValue<float>("grass/visibility/falloff");
-
-		_grassMapResolution = GetPluginParameters().GetValue<float>("grass/map/resolution", 0.05f);
-
-		var bladingHeight = GetPluginParameters().GetValue<float>("mowing/blade/height", 0.01f);
-		_bladingRatio = Mathf.Lerp(bladeHeightMin, bladeHeightMax, bladingHeight);
-		// Debug.Log("_bladingRatio: " + _bladingRatio);
-
-		if (_grassMaterial != null)
+		if (_initialTexturePixels != null)
 		{
-			if (string.IsNullOrEmpty(colorBaseStr) == false)
-			{
-				var colorBase = SDF2Unity.Color(colorBaseStr);
-				_grassMaterial.SetColor("_BaseColor", colorBase);
-			}
-
-			if (string.IsNullOrEmpty(colorTipStr) == false)
-			{
-				var colorTip = SDF2Unity.Color(colorTipStr);
-				_grassMaterial.SetColor("_TipColor", colorTip);
-			}
-
-			_grassMaterial.SetFloat("_BladeWidthMin", bladeWidthMin);
-			_grassMaterial.SetFloat("_BladeWidthMax", bladeWidthMax);
-			_grassMaterial.SetFloat("_BladeHeightMin", bladeHeightMin);
-			_grassMaterial.SetFloat("_BladeHeightMax", bladeHeightMax);
-			_grassMaterial.SetFloat("_BladeBendDistance", bendBladeForwardAmount);
-			_grassMaterial.SetFloat("_BladeBendCurve", bendBladeCurvatureAmount);
-			_grassMaterial.SetFloat("_BladeBendDelta", bendVariation);
-			_grassMaterial.SetFloat("_TessAmount", tessAmount);
-			_grassMaterial.SetFloat("_TessMinDistance", tessDistanceMin);
-			_grassMaterial.SetFloat("_TessMaxDistance", tessDistanceMax);
-
-			_grassMaterial.SetFloat("_GrassThreshold", visibilityThreshold);
-			_grassMaterial.SetFloat("_GrassFalloff", visibilityFalloff);
+			Debug.Log("Reset grass texture");
+			_grass.texture.SetPixels(_initialTexturePixels);
+			_grass.texture.Apply();
 		}
 	}
 
-	private void SetGrassTexture()
+	private bool FindTargetPlane(Target targetPlane)
 	{
-		if (_grassTexture != null)
-		{
-			_grassMaterial.SetTexture("_GrassMap", _grassTexture);
-			_grassMaterial.EnableKeyword("VISIBILITY_ON");
+		var modelHelpers = GetComponentsInChildren<SDF.Helper.Model>();
+		var targetModel = modelHelpers.FirstOrDefault(x => x.name == targetPlane.modelName);
 
-			StartCoroutine(PunchingGrass());
-		}
-	}
+		_targetPlane = targetModel?.GetComponentsInChildren<SDF.Helper.Link>()
+			.FirstOrDefault(x => x.name == targetPlane.linkName)?.transform;
 
-	private bool FindTargetPlane(string targetPlaneLinkName)
-	{
-		_targetPlaneTranform = GetComponentsInChildren<Transform>().FirstOrDefault(x => x.name == targetPlaneLinkName);
 		var targetPlaneCollision
-				= _targetPlaneTranform?.GetComponentsInChildren<Transform>()
+				= _targetPlane?.GetComponentsInChildren<SDF.Helper.Collision>()
 					.FirstOrDefault(x => x.gameObject.layer == LayerMask.NameToLayer("Plane"));
 
 		return targetPlaneCollision != null;
 	}
 
-	private void PlantGrass()
+	private bool FindTargetBlade(Target targetBlade)
 	{
-		if (_targetPlaneTranform == null)
-			return;
+		var modelHelpers = GetComponentsInChildren<SDF.Helper.Model>();
+		var targetModel = modelHelpers.FirstOrDefault(x => x.name == targetBlade.modelName);
 
-		var targetPlaneMesh = _targetPlaneTranform?.GetComponentInChildren<MeshFilter>();
-		SetGrassBound(targetPlaneMesh.sharedMesh);
+		_targetBlade = targetModel?.GetComponentsInChildren<SDF.Helper.Link>()
+			.FirstOrDefault(x => x.name == targetBlade.linkName)?.transform;
 
-		CreateGrassMap();
+		if (_targetBlade == null)
+		{
+			return false;
+		}
 
-		SetGrassMaterial();
-		SetGrassTexture();
+		var meshFilters = _targetBlade.GetComponentsInChildren<MeshFilter>();
 
-		AssignMaterial();
+		var bladeBounds = new Bounds();
+		foreach (var meshFilter in meshFilters)
+		{
+			// Debug.Log(meshFilter.name);
+			// Debug.Log(meshFilter.sharedMesh.bounds);
+			var bounds = meshFilter.sharedMesh.bounds;
+			bounds.center = Vector3.zero;
+			bladeBounds.Encapsulate(bounds);
+		}
 
-		_started = true;
+		_blade.size = Mathf.Max(bladeBounds.extents.x, bladeBounds.extents.z);
+		var bladeMin = _targetPlane.TransformPoint(_targetBlade.position);
+		// Debug.Log(bladeMin.y);
+
+		_blade.SetBladingRatio(_grass.blade.heightMin, _grass.blade.heightMax, bladeMin.y);
+
+		return true;
 	}
 
-	private void SetGrassBound(in Mesh mesh)
+	private void PlantGrass()
 	{
-		var grassBoundSize = mesh.bounds.size;
-		var grassBoundsCenter = mesh.bounds.center;
-		grassBoundSize.y = _grassMaterial.GetFloat("_BladeHeightMax");
-		grassBoundsCenter.y += grassBoundSize.y * 0.5f;
+		if (_targetPlane == null)
+			return;
 
-		_grassBounds.size = grassBoundSize;
-		_grassBounds.center = grassBoundsCenter;
+		var targetPlaneMesh = _targetPlane?.GetComponentInChildren<MeshFilter>();
+		_grass.SetMaterial(GetPluginParameters());
+		_grass.SetBound(targetPlaneMesh.sharedMesh);
+		_grass.Generate();
+
+		StartCoroutine(PunchingGrass());
+
+		AssignMaterial();
 	}
 
 	private IEnumerator PunchingGrass()
@@ -171,54 +302,48 @@ public class MowingPlugin : CLOiSimPlugin
 
 		var layerMask = LayerMask.GetMask("Default");
 
-		var hitColliders = Physics.OverlapBox(_grassBounds.center, _grassBounds.size * 0.5f, Quaternion.identity, layerMask);
+		var hitColliders = Physics.OverlapBox(_grass.bounds.center, _grass.bounds.size * 0.5f, Quaternion.identity, layerMask);
 		var i = 0;
 		while (i < hitColliders.Length)
 		{
 			var hitCollider = hitColliders[i++];
 			var helperModel = hitCollider.transform.GetComponentInParent<SDF.Helper.Model>();
 
-			if (helperModel != null)
+			if (helperModel == null)
 			{
-				// Debug.Log("Hit : " + hitCollider.name + "-" + i + "   " + helperModel.name);
-				if (helperModel.name.CompareTo(this.name) == 0)
-				{
-					var helperLink = hitCollider.transform.GetComponentInParent<SDF.Helper.Link>();
-					if (helperLink != null)
-					{
-						if (helperLink.name.CompareTo(_targetPlaneLinkName) == 0)
-						{
-							continue;
-						}
-
-						var meshFilter = helperLink.GetComponentInChildren<MeshFilter>();
-						PunchingTexture(_grassTexture, meshFilter);
-						yield return null;
-					}
-				}
-#if false // UNITY_EDITOR
-				else
-					Debug.Log("Another model Hit : " + helperModel.name + "-" + i);
-#endif
+				continue;
 			}
-#if fasle // UNITY_EDITOR
-			else
-				Debug.Log("Hit : " + hitCollider.name + "-" + i);
-#endif
+
+			// Debug.Log("Hit : " + hitCollider.name + "-" + i + "   " + helperModel.name);
+			if (helperModel.name.CompareTo(_grass.targetPlane.modelName) == 0)
+			{
+				var helperLink = hitCollider.transform.GetComponentInParent<SDF.Helper.Link>();
+
+				if (helperLink == null || helperLink.name.CompareTo(_grass.targetPlane.linkName) == 0)
+				{
+					continue;
+				}
+
+				var meshFilter = helperLink.GetComponentInChildren<MeshFilter>();
+				PunchingTexture(_grass.texture, meshFilter);
+				yield return null;
+			}
 		}
 
-		_grassTextureInit = Instantiate(_grassTexture);
 
-		yield return null;
+		_initialTexturePixels = new Color[_grass.texture.GetPixels().LongLength];
+		Array.Copy(_grass.texture.GetPixels(), _initialTexturePixels, _initialTexturePixels.LongLength);
+
+		yield return StartMowing();
 	}
 
 	private void AssignMaterial()
 	{
-		var targetPlaneMeshRenderer = _targetPlaneTranform?.GetComponentInChildren<MeshRenderer>();
+		var targetPlaneMeshRenderer = _targetPlane?.GetComponentInChildren<MeshRenderer>();
 		var materials = targetPlaneMeshRenderer.materials;
 		var newMaterials = new Material[materials.Length + 1];
 		materials.CopyTo(newMaterials, 0);
-		newMaterials[newMaterials.Length - 1] = _grassMaterial;
+		newMaterials[newMaterials.Length - 1] = _grass.material;
 		targetPlaneMeshRenderer.materials = newMaterials;
 	}
 
@@ -231,7 +356,7 @@ public class MowingPlugin : CLOiSimPlugin
 		var mesh = meshFilter.sharedMesh;
 		var vertices = mesh.vertices;
 		var triangles = mesh.triangles;
-		var threshold =  _grassBounds.center.y;
+		var threshold = _grass.bounds.center.y;
 
 		// Debug.Log("threshold = " + threshold.ToString("F10"));
 		// Debug.Log(triangles.Length);
@@ -239,12 +364,9 @@ public class MowingPlugin : CLOiSimPlugin
 
 		for (var i = 0; i < triangles.Length; i += 3)
 		{
-			var t0 = triangles[i + 0];
-			var t1 = triangles[i + 1];
-			var t2 = triangles[i + 2];
-			var p0 = vertices[t0];
-			var p1 = vertices[t1];
-			var p2 = vertices[t2];
+			var p0 = vertices[triangles[i + 0]];
+			var p1 = vertices[triangles[i + 1]];
+			var p2 = vertices[triangles[i + 2]];
 			var tp0 = meshFilter.transform.TransformPoint(p0);
 			var tp1 = meshFilter.transform.TransformPoint(p1);
 			var tp2 = meshFilter.transform.TransformPoint(p2);
@@ -257,21 +379,15 @@ public class MowingPlugin : CLOiSimPlugin
 				var P2 = new Vector2(tp1.z, tp1.x);
 				var P3 = new Vector2(tp2.z, tp2.x);
 
-				// Debug.Log("Punch >> " + P1 + ", " + P2 + ", " + P3);
-
-				P1 /= _grassMapResolution;
-				P2 /= _grassMapResolution;
-				P3 /= _grassMapResolution;
-
-				// Debug.Log("Punch >>>> " + P1 + ", " + P2 + ", " + P3);
+				P1 /= _grass.mapResolution;
+				P2 /= _grass.mapResolution;
+				P3 /= _grass.mapResolution;
 
 				P1 += textureCenter;
 				P2 += textureCenter;
 				P3 += textureCenter;
 
-				// Debug.Log("Punch >>>>>> " + P1 + ", " + P2 + ", " + P3);
-
-				FillTriangle(_grassTexture, P1, P2, P3, Color.clear);
+				texture.FillTriangle(P1, P2, P3, Color.clear);
 			}
 #if false // UNITY_EDITOR
 			else
@@ -282,97 +398,39 @@ public class MowingPlugin : CLOiSimPlugin
 		}
 	}
 
-	private void FillTriangle(Texture2D texture, Vector2 v1, Vector2 v2, Vector2 v3, Color color)
-	{
-		var minX = Mathf.FloorToInt(Mathf.Min(v1.x, v2.x, v3.x));
-		var minY = Mathf.FloorToInt(Mathf.Min(v1.y, v2.y, v3.y));
-		var maxX = Mathf.CeilToInt(Mathf.Max(v1.x, v2.x, v3.x));
-		var maxY = Mathf.CeilToInt(Mathf.Max(v1.y, v2.y, v3.y));
-
-		// Iterate over the pixels within the bounding box and set the color of the pixels inside the triangle:
-		for (var x = minX; x <= maxX; x++)
-		{
-			for (var y = minY; y <= maxY; y++)
-			{
-				var pixelCoord = new Vector2(x, y);
-				if (IsPointInTriangle(pixelCoord, v1, v2, v3))
-				{
-					texture.SetPixel(x, y, color);
-				}
-			}
-		}
-
-		texture.Apply();
-	}
-
-	private bool IsPointInTriangle(Vector2 p, Vector2 v1, Vector2 v2, Vector2 v3)
-	{
-		// Calculate the barycentric coordinates
-		var dominator = (v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y);
-		if (Mathf.Abs(dominator) < float.Epsilon)
-		{
-			// Triangle is degenerate (i.e., all vertices are collinear)
-			// Debug.LogWarning("denominator == 0 ");
-			return false;
-		}
-
-		var alpha = ((v2.y - v3.y) * (p.x - v3.x) + (v3.x - v2.x) * (p.y - v3.y)) /
-					  dominator;
-		var beta = ((v3.y - v1.y) * (p.x - v3.x) + (v1.x - v3.x) * (p.y - v3.y)) /
-					  dominator;
-		var gamma = 1 - alpha - beta;
-
-		// Check if the point is inside the triangle
-		return alpha >= 0 && beta >= 0 && gamma >= 0;
-	}
-
-	private void CreateGrassMap()
-	{
-		var targetWidth = (int)(_grassBounds.size.z / _grassMapResolution);
-		var targetHeight = (int)(_grassBounds.size.x / _grassMapResolution);
-
-		_grassTexture = new Texture2D(targetWidth, targetHeight, TextureFormat.R8, false);
-		_grassTexture.name = "Grass Map";
-
-		var pixels = new Color[targetWidth * targetHeight];
-		for (var i = 0; i < pixels.Length; i++)
-		{
-			pixels[i] = Color.red;
-		}
-
-		_grassTexture.SetPixels(pixels);
-		_grassTexture.Apply();
-	}
-
 	void LateUpdate()
 	{
 	}
 
-	List<Vector3> collisionPoints = new List<Vector3>();
-	List<string> colliderList = new List<string>();
-
-	private void OnTriggerStay(Collider collider)
+	private IEnumerator StartMowing()
 	{
-		if (_started)
+		yield return null;
+
+		var color = new Color(_blade.ratio, 0, 0, 0);
+		var planeCenterPosition = _targetPlane.position;
+		var bladeRadiusIntexture = (int)(_blade.size /_grass.mapResolution);
+
+		while (true)
 		{
-			// var collisionPoint = collider.ClosestPoint(transform.position);
-			// collisionPoints.Add(collisionPoint);
-			var helperLink = collider.transform.GetComponentInParent<SDF.Helper.Link>();
-			var helperModel = collider.transform.GetComponentInParent<SDF.Helper.Model>();
+			if (_startMowing)
+			{
+				var bladePositionInTexture = new Vector3(
+						_targetBlade.position.x,
+						0,
+						_targetBlade.position.z);
+				bladePositionInTexture -= planeCenterPosition;
+				bladePositionInTexture -= _grass.bounds.extents;
+				// Debug.Log(bladePositionInTexture);
 
-			if (helperLink == null)
-				Debug.Log("collider name = " + collider.transform.name);
-			else
-				Debug.Log("linkhelper name = " + helperLink.name);
+				bladePositionInTexture /= _grass.mapResolution;
 
-			if (helperModel != null)
-				Debug.Log("modelhelper name = " + helperModel.name);
+				_grass.texture.FillCircle(
+					(int)bladePositionInTexture.z,
+					(int)bladePositionInTexture.x,
+					bladeRadiusIntexture,
+					color);
+			}
+			yield return new WaitForEndOfFrame();
 		}
-	}
-
-	private void OnDrawGizmos()
-	{
-		foreach (var item in collisionPoints)
-			Gizmos.DrawSphere(item, 0.1f);
 	}
 }

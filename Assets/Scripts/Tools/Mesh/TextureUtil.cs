@@ -8,6 +8,20 @@ using UnityEngine;
 
 public static class TextureUtil
 {
+	public static Texture2D FillCircle(this Texture2D texture, int x, int y, int radius, Color color)
+	{
+		var rSquared = radius * radius;
+
+		for (var u = x - radius; u < x + radius + 1; u++)
+			for (var v = y - radius; v < y + radius + 1; v++)
+				if ((x - u) * (x - u) + (y - v) * (y - v) < rSquared)
+					texture.SetPixel(u, v, color);
+
+		texture.Apply();
+
+		return texture;
+	}
+
 	public static void FillTriangle(this Texture2D texture, Vector2 v1, Vector2 v2, Vector2 v3, Color color)
 	{
 		var minX = Mathf.FloorToInt(Mathf.Min(v1.x, v2.x, v3.x));
