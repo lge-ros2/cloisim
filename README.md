@@ -109,12 +109,14 @@ More details and usages for configuration/parameters in [here](https://github.co
 - `ActorPlugin`: add actor control functionality using AI(Unity) components
 - `ImuPlugin`: help to publish IMU sensor data
 - `SonarPlugin`: help to publish Sonar range data
+- `ParticleSystemPlugin`: Enable particla system of Unity
 
 #### World Specific
 
 - `ElevatorSystemPlugin`: control(lifting, cal) elevators
 - `GroundTruthPlugin`: retrieve all information(position, size, velocity) for objects
 - `ActorControlPlugin`: controls actor using AI(Unity) components(actor which loaded `ActorPlugin`)
+- `MowingPlugin`: plant grass and enable to mow
 
 ## How it works
 
@@ -147,7 +149,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.32f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.38f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 22.04.4 LTS

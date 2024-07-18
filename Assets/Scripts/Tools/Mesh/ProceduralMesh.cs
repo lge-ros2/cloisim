@@ -12,14 +12,15 @@ using Game.Utils.Triangulation;
 /// <summary>https://wiki.unity3d.com/index.php/ProceduralPrimitives</summary>
 public class ProceduralMesh
 {
-	private enum Type { BOX, CYLINDER, SPHERE, PLANE };
+	public enum Type { BOX, CYLINDER, SPHERE, ELLIPSOID, PLANE };
 
 	private static Dictionary<Type, Mesh> MeshObjectCache = new Dictionary<Type, Mesh>();
 
 	private const float PI = Mathf.PI;
 	private const float PI2 = PI * 2f;
 
-	public static Mesh CreateBox(in float length = 1f, in float width = 1f, in float height = 1f)
+	public static Mesh CreateBox(
+		in float length = 1f, in float width = 1f, in float height = 1f)
 	{
 		Mesh mesh;
 
@@ -59,7 +60,7 @@ public class ProceduralMesh
 			};
 			#endregion
 
-			#region Normales
+			#region Normals
 			var up = Vector3.up;
 			var down = Vector3.down;
 			var front = Vector3.forward;
@@ -67,7 +68,7 @@ public class ProceduralMesh
 			var left = Vector3.left;
 			var right = Vector3.right;
 
-			var normales = new Vector3[]
+			var normals = new Vector3[]
 			{
 			down, down, down, down, // Bottom
 			left, left, left, left, // Left
@@ -125,7 +126,7 @@ public class ProceduralMesh
 			#endregion
 
 			mesh.vertices = vertices;
-			mesh.normals = normales;
+			mesh.normals = normals;
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
@@ -147,7 +148,9 @@ public class ProceduralMesh
 		return mesh;
 	}
 
-	public static Mesh CreateCylinder(in float radius = 1f, in float height = 1f, in int nbSides = 36, in float upRotationAngle = 0)
+	public static Mesh CreateCylinder(
+		in float radius = 1f, in float height = 1f, in int nbSides = 36,
+		in float upRotationAngle = 0)
 	{
 		Mesh mesh;
 
@@ -176,7 +179,9 @@ public class ProceduralMesh
 		return mesh;
 	}
 
-	public static Mesh CreateCone(in float topRadius = .01f, in float bottomRadius = 0.5f, in float height = 1f, in int nbSides = 18)
+	public static Mesh CreateCone(
+		in float topRadius = .01f, in float bottomRadius = 0.5f,
+		in float height = 1f, in int nbSides = 18)
 	{
 		var mesh = new Mesh();
 		mesh.name = "Cone";
@@ -224,21 +229,21 @@ public class ProceduralMesh
 		vertices[vert + 1] = vertices[nbSides * 2 + 3];
 		#endregion
 
-		#region Normales
+		#region Normals
 		// bottom + top + sides
-		var normales = new Vector3[vertices.Length];
+		var normals = new Vector3[vertices.Length];
 		vert = 0;
 
 		// Bottom cap
 		while (vert <= nbSides)
 		{
-			normales[vert++] = Vector3.down;
+			normals[vert++] = Vector3.down;
 		}
 
 		// Top cap
 		while (vert <= nbSides * 2 + 1)
 		{
-			normales[vert++] = Vector3.up;
+			normals[vert++] = Vector3.up;
 		}
 
 		// Sides
@@ -249,14 +254,14 @@ public class ProceduralMesh
 			var cos = Mathf.Cos(rad);
 			var sin = Mathf.Sin(rad);
 
-			normales[vert] = new Vector3(cos, 0f, sin);
-			normales[vert + 1] = normales[vert];
+			normals[vert] = new Vector3(cos, 0f, sin);
+			normals[vert + 1] = normals[vert];
 
 			vert += 2;
 			v++;
 		}
-		normales[vert] = normales[nbSides * 2 + 2];
-		normales[vert + 1] = normales[nbSides * 2 + 3];
+		normals[vert] = normals[nbSides * 2 + 2];
+		normals[vert + 1] = normals[nbSides * 2 + 3];
 		#endregion
 
 		#region UVs
@@ -353,7 +358,7 @@ public class ProceduralMesh
 		#endregion
 
 		mesh.vertices = vertices;
-		mesh.normals = normales;
+		mesh.normals = normals;
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 
@@ -362,16 +367,18 @@ public class ProceduralMesh
 
 	// Longitude |||
 	// Latitude ---
-	public static Mesh CreateSphere(in float radius = 1f, in int nbLong = 24, in int nbLat = 24)
+	public static Mesh CreateSphere(in float radius = 1f, in int nbLong = 15, in int nbLat = 15)
 	{
-		return CreateSphere(Vector3.one * radius, nbLong, nbLat, "Sphere");
+		return CreateSphere(Vector3.one * radius, nbLong, nbLat, "Sphere", Type.SPHERE);
 	}
 
-	public static Mesh CreateSphere(in Vector3 scale, in int nbLong = 24, in int nbLat = 24, in string meshName = "Ellipsoid")
+	public static Mesh CreateSphere(
+		in Vector3 scale, in int nbLong = 15, in int nbLat = 15,
+		in string meshName = "Ellipsoid", in Type meshType = Type.ELLIPSOID)
 	{
 		Mesh mesh;
 
-		if (!MeshObjectCache.ContainsKey(Type.SPHERE))
+		if (!MeshObjectCache.ContainsKey(meshType))
 		{
 			const float UnitRadius = 1f;
 			mesh = new Mesh();
@@ -399,11 +406,11 @@ public class ProceduralMesh
 			vertices[vertices.Length - 1] = Vector3.up * -UnitRadius;
 			#endregion
 
-			#region Normales
-			var normales = new Vector3[vertices.Length];
+			#region Normals
+			var normals = new Vector3[vertices.Length];
 			for (var n = 0; n < vertices.Length; n++)
 			{
-				normales[n] = vertices[n].normalized;
+				normals[n] = vertices[n].normalized;
 			}
 			#endregion
 
@@ -464,7 +471,7 @@ public class ProceduralMesh
 			#endregion
 
 			mesh.vertices = vertices;
-			mesh.normals = normales;
+			mesh.normals = normals;
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
@@ -486,12 +493,14 @@ public class ProceduralMesh
 		return mesh;
 	}
 
-	// 2 minimum
-	public static Mesh CreatePlane(in float length = 1f, in float width = 1f, Vector3 normal = default(Vector3), in int resX = 2, in int resZ = 2)
+	public static Mesh CreatePlane(
+		in float length = 1f, in float width = 1f, Vector3 normal = default(Vector3),
+		in int resolutionX = 15, in int resolutionZ = 15)
 	{
 		Mesh mesh;
+		var cacheKey = Type.PLANE + resolutionX * resolutionZ;
 
-		if (!MeshObjectCache.ContainsKey(Type.PLANE))
+		if (!MeshObjectCache.ContainsKey(cacheKey))
 		{
 			if (normal.Equals(default(Vector3)))
 			{
@@ -501,29 +510,30 @@ public class ProceduralMesh
 			mesh = new Mesh();
 			mesh.name = "Plane";
 
-			const float UnitSizeLength = 1f, UnitySizeWidth = 1f;
+			var resX = (resolutionX < 2) ? 2 : resolutionX + 1;
+			var resZ = (resolutionZ < 2) ? 2 : resolutionZ + 1;
 
 			#region Vertices
 			var vertices = new Vector3[resX * resZ];
 			for (var z = 0; z < resZ; z++)
 			{
 				// [ -length / 2, length / 2 ]
-				var zPos = ((float)z / (resZ - 1) - .5f) * UnitSizeLength;
+				var zPos = ((float)z / (resZ - 1) - .5f);
 
 				for (var x = 0; x < resX; x++)
 				{
 					// [ -width / 2, width / 2 ]
-					var xPos = ((float)x / (resX - 1) - .5f) * UnitySizeWidth;
+					var xPos = ((float)x / (resX - 1) - .5f);
 					vertices[x + z * resX] = new Vector3(xPos, 0f, zPos);
 				}
 			}
 			#endregion
 
-			#region Normales
-			var normales = new Vector3[vertices.Length];
-			for (var n = 0; n < normales.Length; n++)
+			#region Normals
+			var normals = new Vector3[vertices.Length];
+			for (var n = 0; n < normals.Length; n++)
 			{
-				normales[n] = normal;
+				normals[n] = normal;
 			}
 			#endregion
 
@@ -560,15 +570,14 @@ public class ProceduralMesh
 			#endregion
 
 			mesh.vertices = vertices;
-			mesh.normals = normales;
+			mesh.normals = normals;
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
-			MeshObjectCache.Add(Type.PLANE, mesh);
+			MeshObjectCache.Add(cacheKey, mesh);
 		}
 
-		mesh = Object.Instantiate(MeshObjectCache[Type.PLANE]);
-		mesh.name = "Plane";
+		mesh = Object.Instantiate(MeshObjectCache[cacheKey]);
 
 		var meshVertices = mesh.vertices;
 		for (var i = 0; i < mesh.vertexCount; i++)
@@ -685,14 +694,14 @@ public class ProceduralMesh
 			}
 		}
 
-		var normales = new Vector3[vertices.Length];
+		var normals = new Vector3[vertices.Length];
 		for (var n = 0; n < vertices.Length; n++)
 		{
-			normales[n] = vertices[n].normalized;
+			normals[n] = vertices[n].normalized;
 		}
 
 		mesh.vertices = vertices;
-		mesh.normals = normales;
+		mesh.normals = normals;
 		mesh.uv = uvs;
 		mesh.triangles = triangles;
 

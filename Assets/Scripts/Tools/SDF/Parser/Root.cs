@@ -355,6 +355,7 @@ namespace SDF
 			ConvertPathToAbsolutePath("filename");
 			ConvertPathToAbsolutePath("texture/diffuse");
 			ConvertPathToAbsolutePath("texture/normal");
+			ConvertPathToAbsolutePath("normal_map");
 		}
 
 		private void ReplaceAllIncludedModel()
