@@ -128,7 +128,7 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			DeviceHelper.SetQuaternion(_imu.Orientation, _imuOrientation);
+			_imu.Orientation.Set(_imuOrientation);
 			_imu.AngularVelocity.Set(_imuAngularVelocity * Mathf.Deg2Rad);
 			_imu.LinearAcceleration.Set(_imuLinearAcceleration);
 			_imu.Stamp.SetCurrentTime();

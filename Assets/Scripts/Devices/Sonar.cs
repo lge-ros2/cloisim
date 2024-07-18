@@ -119,7 +119,7 @@ namespace SensorDevices
 			var sonar = sonarStamped.Sonar;
 			sonar.Frame = DeviceName;
 			sonar.WorldPose.Position.Set(sonarPosition);
-			DeviceHelper.SetQuaternion(sonar.WorldPose.Orientation, sonarRotation);
+			sonar.WorldPose.Orientation.Set(sonarRotation);
 			PushDeviceMessage<messages.SonarStamped>(sonarStamped);
 		}
 

@@ -141,7 +141,7 @@ namespace SensorDevices
 			var sensorRotation = _sensorCurrentRotation - _sensorInitialRotation + _worldFrameOrientation;
 			var sensorOrientation = Quaternion.Euler(sensorRotation.x, sensorRotation.y, sensorRotation.z);
 
-			DeviceHelper.SetQuaternion(_gps.Heading.Orientation, sensorOrientation);
+			_gps.Heading.Orientation.Set(sensorOrientation);
 			_gps.Heading.AngularVelocity.Set(Vector3.zero);
 			_gps.Heading.LinearAcceleration.Set(Vector3.zero);
 		}

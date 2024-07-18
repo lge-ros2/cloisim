@@ -138,7 +138,7 @@ public static partial class DeviceHelper
 		vector3d.Z = converted.Z;
 	}
 
-	public static void SetQuaternion(messages.Quaternion quaternion, in Quaternion rotation)
+	public static void Set(this messages.Quaternion quaternion, in Quaternion rotation)
 	{
 		if (quaternion == null)
 		{
