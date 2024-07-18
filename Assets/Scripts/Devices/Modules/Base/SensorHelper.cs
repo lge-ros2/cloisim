@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-public static partial class DeviceHelper
+public static class SensorHelper
 {
 	public static Matrix4x4 MakeCustomProjectionMatrix(in float hFov, in float vFov, in float near, in float far)
 	{

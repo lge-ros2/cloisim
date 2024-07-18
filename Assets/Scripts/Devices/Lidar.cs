@@ -203,7 +203,7 @@ namespace SensorDevices
 
 			laserCam.targetTexture = _rtHandle.rt;
 
-			var projMatrix = DeviceHelper.MakeCustomProjectionMatrix(LaserCameraHFov, LaserCameraVFov, laserCam.nearClipPlane, laserCam.farClipPlane);
+			var projMatrix = SensorHelper.MakeCustomProjectionMatrix(LaserCameraHFov, LaserCameraVFov, laserCam.nearClipPlane, laserCam.farClipPlane);
 			// Debug.Log("Cam VFOV=" + laserCameraVFov);
 			laserCam.projectionMatrix = projMatrix;
 
