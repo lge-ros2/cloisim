@@ -412,7 +412,7 @@ public class MowingPlugin : CLOiSimPlugin
 
 		while (true)
 		{
-			if (_startMowing)
+			if (_startMowing && _targetBlade != null)
 			{
 				var bladePositionInTexture = new Vector3(
 						_targetBlade.position.x,
