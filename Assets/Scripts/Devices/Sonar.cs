@@ -114,12 +114,12 @@ namespace SensorDevices
 			var sonarPosition = sonarLink.position;
 			var sonarRotation = sonarLink.rotation;
 
-			DeviceHelper.SetCurrentTime(sonarStamped.Time);
+			sonarStamped.Time.SetCurrentTime();
 
 			var sonar = sonarStamped.Sonar;
 			sonar.Frame = DeviceName;
-			DeviceHelper.SetVector3d(sonar.WorldPose.Position, sonarPosition);
-			DeviceHelper.SetQuaternion(sonar.WorldPose.Orientation, sonarRotation);
+			sonar.WorldPose.Position.Set(sonarPosition);
+			sonar.WorldPose.Orientation.Set(sonarRotation);
 			PushDeviceMessage<messages.SonarStamped>(sonarStamped);
 		}
 
@@ -209,7 +209,7 @@ namespace SensorDevices
 
 			var sonar = sonarStamped.Sonar;
 			sonar.Range = detectedRange;
-			DeviceHelper.SetVector3d(sonar.Contact, contactPoint);
+			sonar.Contact.Set(contactPoint);
 			// Debug.Log(deviceName + ": " + other.name + " |Stay| " + detectedRange.ToString("F5") + " | " + contactPoint);
 
 			pingpongindex++;
@@ -220,7 +220,7 @@ namespace SensorDevices
 		{
 			var sonar = sonarStamped.Sonar;
 			sonar.Range = (float)rangeMax;
-			DeviceHelper.SetVector3d(sonar.Contact, Vector3.zero);
+			sonar.Contact.Set(Vector3.zero);
 			// Debug.Log(other.name + " |Exit| " + "," + sonar.Range.ToString("F5"));
 		}
 

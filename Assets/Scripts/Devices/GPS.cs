@@ -110,7 +110,7 @@ namespace SensorDevices
 
 		private void AssembleGPSMessage()
 		{
-			DeviceHelper.SetCurrentTime(_gps.Time);
+			_gps.Time.SetCurrentTime();
 
 			// Convert to global frames
 			var convertedPosition = Unity2SDF.Position(_worldPosition);
@@ -137,13 +137,13 @@ namespace SensorDevices
 
 		public void AssembleHeadingMessage()
 		{
-			DeviceHelper.SetCurrentTime(_gps.Heading.Stamp);
+			_gps.Heading.Stamp.SetCurrentTime();
 			var sensorRotation = _sensorCurrentRotation - _sensorInitialRotation + _worldFrameOrientation;
 			var sensorOrientation = Quaternion.Euler(sensorRotation.x, sensorRotation.y, sensorRotation.z);
 
-			DeviceHelper.SetQuaternion(_gps.Heading.Orientation, sensorOrientation);
-			DeviceHelper.SetVector3d(_gps.Heading.AngularVelocity, Vector3.zero);
-			DeviceHelper.SetVector3d(_gps.Heading.LinearAcceleration, Vector3.zero);
+			_gps.Heading.Orientation.Set(sensorOrientation);
+			_gps.Heading.AngularVelocity.Set(Vector3.zero);
+			_gps.Heading.LinearAcceleration.Set(Vector3.zero);
 		}
 
 		protected override void GenerateMessage()

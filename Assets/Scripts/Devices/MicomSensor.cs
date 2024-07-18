@@ -276,7 +276,7 @@ namespace SensorDevices
 			UpdateIr();
 			UpdateBumper();
 
-			DeviceHelper.SetTime(micomSensorData.Time, DeviceHelper.GlobalClock.FixedSimTime);
+			micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
 		}
 
 		private void UpdateBumper()

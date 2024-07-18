@@ -396,8 +396,8 @@ namespace SensorDevices
 
 			var laserScan = laserScanStamped.Scan;
 
-			DeviceHelper.SetVector3d(laserScan.WorldPose.Position, lidarPosition);
-			DeviceHelper.SetQuaternion(laserScan.WorldPose.Orientation, lidarRotation);
+			laserScan.WorldPose.Position.Set(lidarPosition);
+			laserScan.WorldPose.Orientation.Set(lidarRotation);
 
 			const int BufferUnitSize = sizeof(double);
 			var laserSamplesH = (int)horizontal.samples;
@@ -510,7 +510,7 @@ namespace SensorDevices
 
 			capturedTimeSum += (float)DeviceHelper.GlobalClock.SimTime;
 			var capturedTime = capturedTimeSum / (numberOfLaserCamData + 1);
-			DeviceHelper.SetTime(laserScanStamped.Time, capturedTime);
+			laserScanStamped.Time.Set(capturedTime);
 
 			PushDeviceMessage<messages.LaserScanStamped>(laserScanStamped);
 		}

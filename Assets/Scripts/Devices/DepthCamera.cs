@@ -219,7 +219,7 @@ namespace SensorDevices
 			}
 			_depthCamBuffer.Deallocate();
 
-			DeviceHelper.SetCurrentTime(_imageStamped.Time);
+			_imageStamped.Time.SetCurrentTime();
 		}
 
 		private void SaveRawImageData(in string path, in string name)

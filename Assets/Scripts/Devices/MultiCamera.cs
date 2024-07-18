@@ -51,7 +51,7 @@ namespace SensorDevices
 				}
 			}
 
-			DeviceHelper.SetCurrentTime(imagesStamped.Time);
+			imagesStamped.Time.SetCurrentTime();
 			PushDeviceMessage<messages.ImagesStamped>(imagesStamped);
 		}
 

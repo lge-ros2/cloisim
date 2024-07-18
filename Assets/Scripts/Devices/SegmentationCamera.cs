@@ -107,7 +107,7 @@ namespace SensorDevices
 				}
 			}
 
-			DeviceHelper.SetCurrentTime(_imageStamped.Time);
+			_imageStamped.Time.SetCurrentTime();
 		}
 	}
 }

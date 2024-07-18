@@ -359,7 +359,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 				if (_messagePerceptionProps.TryGetValue(instanceId, out var perception))
 				{
-					perception.Position.SetVector(prop.localPosition);
+					perception.Position.Set(prop.localPosition);
 					perception.Size.SetScale(prop.localScale);
 				}
 				else
@@ -372,7 +372,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 						perception.TrackingId = propName.GetHashCode() + propId;
 						perception.ClassId = classId;
 						perception.Position = new messages.Vector3d();
-						perception.Position.SetVector(prop.localPosition);
+						perception.Position.Set(prop.localPosition);
 						perception.Velocity = new messages.Vector3d();
 						perception.Size = new messages.Vector3d();
 						perception.Size.SetScale(prop.localScale);
@@ -424,7 +424,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 					_messagePerceptions.Perceptions.InsertRange(_messagePerceptionObjects.Count, _messagePerceptionProps.Values.ToList());
 				}
 
-				DeviceHelper.SetCurrentTime(_messagePerceptions.Header.Stamp);
+				_messagePerceptions.Header.Stamp.SetCurrentTime();
 				deviceMessage.SetMessage<messages.PerceptionV>(_messagePerceptions);
 				publisher.Publish(deviceMessage);
 
@@ -441,16 +441,16 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			var perception = _messagePerceptionObjects[index];
 			if (_trackingObjectList.TryGetValue(perception.TrackingId, out var trackingObject))
 			{
-				DeviceHelper.SetCurrentTime(perception.Header.Stamp);
-				DeviceHelper.SetVector3d(perception.Position, trackingObject.position);
-				DeviceHelper.SetVector3d(perception.Velocity, trackingObject.velocity);
-				DeviceHelper.SetVector3d(perception.Size, trackingObject.size);
+				perception.Header.Stamp.SetCurrentTime();
+				perception.Position.Set(trackingObject.position);
+				perception.Velocity.Set(trackingObject.velocity);
+				perception.Size.SetScale(trackingObject.size);
 
 				var footprint = trackingObject.Footprint();
 				for (var i = 0; i < footprint.Length; i++)
 				{
 					var point = new messages.Vector3d();
-					DeviceHelper.SetVector3d(point, footprint[i]);
+					point.Set(footprint[i]);
 
 					if (i < perception.Footprints.Count)
 					{

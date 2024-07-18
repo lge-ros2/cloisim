@@ -84,48 +84,35 @@ public static partial class DeviceHelper
 	[DllImport("StdHash")]
 	public static extern ulong GetStringHashCode(string value);
 
-	public static void SetTime(messages.Time msgTime, in double time)
+	public static void Set(this messages.Time msg, in double time)
 	{
-		SetTime(msgTime, (float)time);
+		msg.Set((float)time);
 	}
 
-	public static void SetTime(messages.Time msgTime, in float time)
+	public static void Set(this messages.Time msg, in float time)
 	{
-		if (msgTime == null)
+		if (msg == null)
 		{
-			msgTime = new messages.Time();
+			msg = new messages.Time();
 		}
 
-		msgTime.Sec = (int)time;
-		msgTime.Nsec = (int)((time - (double)msgTime.Sec) * 1e+9);
+		msg.Sec = (int)time;
+		msg.Nsec = (int)((time - (double)msg.Sec) * 1e+9);
 	}
 
-	public static void SetCurrentTime(messages.Time msgTime, in bool useRealTime = false)
+	public static void SetCurrentTime(this messages.Time msg, in bool useRealTime = false)
 	{
-		if (msgTime == null)
+		if (msg == null)
 		{
-			msgTime = new messages.Time();
+			msg = new messages.Time();
 		}
 
 		var timeNow = (useRealTime) ? GetGlobalClock().RealTime : GetGlobalClock().SimTime;
-		msgTime.Sec = (int)timeNow;
-		msgTime.Nsec = (int)((timeNow - (double)msgTime.Sec) * 1e+9);
+		msg.Sec = (int)timeNow;
+		msg.Nsec = (int)((timeNow - (double)msg.Sec) * 1e+9);
 	}
 
-	public static void SetVector3d(messages.Vector3d vector3d, in Vector3 position)
-	{
-		if (vector3d == null)
-		{
-			vector3d = new messages.Vector3d();
-		}
-		var converted = Unity2SDF.Position(position);
-
-		vector3d.X = converted.X;
-		vector3d.Y = converted.Y;
-		vector3d.Z = converted.Z;
-	}
-
-	public static void SetVector(this messages.Vector3d vector3d, in Vector3 position)
+	public static void Set(this messages.Vector3d vector3d, in Vector3 position)
 	{
 		if (vector3d == null)
 		{
@@ -151,7 +138,7 @@ public static partial class DeviceHelper
 		vector3d.Z = converted.Z;
 	}
 
-	public static void SetQuaternion(messages.Quaternion quaternion, in Quaternion rotation)
+	public static void Set(this messages.Quaternion quaternion, in Quaternion rotation)
 	{
 		if (quaternion == null)
 		{
