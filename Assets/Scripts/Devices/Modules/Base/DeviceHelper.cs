@@ -10,7 +10,7 @@ using System.Linq;
 using UnityEngine;
 using messages = cloisim.msgs;
 
-public partial class DeviceHelper
+public static partial class DeviceHelper
 {
 	private static Clock globalClock = null;
 
@@ -119,6 +119,32 @@ public partial class DeviceHelper
 			vector3d = new messages.Vector3d();
 		}
 		var converted = Unity2SDF.Position(position);
+
+		vector3d.X = converted.X;
+		vector3d.Y = converted.Y;
+		vector3d.Z = converted.Z;
+	}
+
+	public static void SetVector(this messages.Vector3d vector3d, in Vector3 position)
+	{
+		if (vector3d == null)
+		{
+			vector3d = new messages.Vector3d();
+		}
+		var converted = Unity2SDF.Position(position);
+
+		vector3d.X = converted.X;
+		vector3d.Y = converted.Y;
+		vector3d.Z = converted.Z;
+	}
+
+	public static void SetScale(this messages.Vector3d vector3d, in Vector3 position)
+	{
+		if (vector3d == null)
+		{
+			vector3d = new messages.Vector3d();
+		}
+		var converted = Unity2SDF.Scale(position);
 
 		vector3d.X = converted.X;
 		vector3d.Y = converted.Y;
