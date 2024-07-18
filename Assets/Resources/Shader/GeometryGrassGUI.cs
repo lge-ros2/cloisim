@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 
+#if UNITY_EDITOR
 public class GeometryGrassGUI : ShaderGUI
 {
 	public override void OnGUI(MaterialEditor editor, MaterialProperty[] properties)
@@ -155,3 +156,4 @@ public class GeometryGrassGUI : ShaderGUI
 		}
 	}
 }
+#endif
