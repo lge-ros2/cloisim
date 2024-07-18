@@ -13,7 +13,6 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 [DefaultExecutionOrder(30)]
-[RequireComponent(typeof(ObjectSpawning), typeof(SegmentationManager), typeof(MeshProcess.VHACD))]
 public class Main : MonoBehaviour
 {
 	[Header("Block Loading SDF")]
@@ -259,11 +258,11 @@ public class Main : MonoBehaviour
 
 		SensorDevices.DepthCamera.LoadComputeShader();
 
-		_objectSpawning = GetComponent<ObjectSpawning>();
+		_objectSpawning = gameObject.AddComponent<ObjectSpawning>();
 
-		_segmentationManager = GetComponent<SegmentationManager>();
+		_segmentationManager = gameObject.AddComponent<SegmentationManager>();
 
-		_vhacd = GetComponent<MeshProcess.VHACD>();
+		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
 		_vhacd.m_parameters = VHACD.Params;
 	}
 
