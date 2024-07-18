@@ -130,8 +130,8 @@ public class Clock : Device
 
 	protected override void GenerateMessage()
 	{
-		DeviceHelper.SetCurrentTime(worldStat.SimTime);
-		DeviceHelper.SetCurrentTime(worldStat.RealTime, true);
+		worldStat.SimTime.SetCurrentTime();
+		worldStat.RealTime.SetCurrentTime(true);
 
 		// filter same clock info
 		if (prevSimTime >= SimTime)

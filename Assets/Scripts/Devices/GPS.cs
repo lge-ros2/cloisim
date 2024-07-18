@@ -110,7 +110,7 @@ namespace SensorDevices
 
 		private void AssembleGPSMessage()
 		{
-			DeviceHelper.SetCurrentTime(_gps.Time);
+			_gps.Time.SetCurrentTime();
 
 			// Convert to global frames
 			var convertedPosition = Unity2SDF.Position(_worldPosition);
@@ -137,7 +137,7 @@ namespace SensorDevices
 
 		public void AssembleHeadingMessage()
 		{
-			DeviceHelper.SetCurrentTime(_gps.Heading.Stamp);
+			_gps.Heading.Stamp.SetCurrentTime();
 			var sensorRotation = _sensorCurrentRotation - _sensorInitialRotation + _worldFrameOrientation;
 			var sensorOrientation = Quaternion.Euler(sensorRotation.x, sensorRotation.y, sensorRotation.z);
 

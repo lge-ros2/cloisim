@@ -510,7 +510,7 @@ namespace SensorDevices
 
 			capturedTimeSum += (float)DeviceHelper.GlobalClock.SimTime;
 			var capturedTime = capturedTimeSum / (numberOfLaserCamData + 1);
-			DeviceHelper.SetTime(laserScanStamped.Time, capturedTime);
+			laserScanStamped.Time.Set(capturedTime);
 
 			PushDeviceMessage<messages.LaserScanStamped>(laserScanStamped);
 		}

@@ -67,7 +67,7 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			DeviceHelper.SetCurrentTime(contacts.Time);
+			contacts.Time.SetCurrentTime();
 			// if (contacts.contact.Count > 0)
 			// {
 			// 	Debug.Log(contacts.contact[0].Depths.Length + " : " + contacts.contact[0].Normals.Count);
@@ -149,7 +149,7 @@ namespace SensorDevices
 					DeviceHelper.SetVector3d(position, collisionContact.point);
 					existingContact.Positions.Add(position);
 
-					DeviceHelper.SetCurrentTime(existingContact.Time);
+					existingContact.Time.SetCurrentTime();
 					// Debug.Log("CollisionStay: " + collision1 + " <-> " + collision2);
 				}
 

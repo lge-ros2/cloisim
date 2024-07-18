@@ -344,7 +344,7 @@ namespace SensorDevices
 				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
 			}
 
-			DeviceHelper.SetCurrentTime(_imageStamped.Time);
+			_imageStamped.Time.SetCurrentTime();
 		}
 
 		public messages.CameraSensor GetCameraInfo()

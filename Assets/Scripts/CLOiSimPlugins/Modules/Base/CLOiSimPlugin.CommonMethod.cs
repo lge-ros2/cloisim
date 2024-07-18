@@ -43,7 +43,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 					tfMessage.Transform.Name = tf.ChildFrameID;
 
 					var tfPose = tf.GetPose();
-					DeviceHelper.SetCurrentTime(tfMessage.Header.Stamp);
+					tfMessage.Header.Stamp.SetCurrentTime();
 					DeviceHelper.SetVector3d(tfMessage.Transform.Position, tfPose.position);
 					DeviceHelper.SetQuaternion(tfMessage.Transform.Orientation, tfPose.rotation);
 

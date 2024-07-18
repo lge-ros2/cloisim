@@ -131,7 +131,7 @@ namespace SensorDevices
 			DeviceHelper.SetQuaternion(_imu.Orientation, _imuOrientation);
 			DeviceHelper.SetVector3d(_imu.AngularVelocity, _imuAngularVelocity * Mathf.Deg2Rad);
 			DeviceHelper.SetVector3d(_imu.LinearAcceleration, _imuLinearAcceleration);
-			DeviceHelper.SetCurrentTime(_imu.Stamp);
+			_imu.Stamp.SetCurrentTime();
 			PushDeviceMessage<messages.Imu>(_imu);
 		}
 

@@ -424,7 +424,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 					_messagePerceptions.Perceptions.InsertRange(_messagePerceptionObjects.Count, _messagePerceptionProps.Values.ToList());
 				}
 
-				DeviceHelper.SetCurrentTime(_messagePerceptions.Header.Stamp);
+				_messagePerceptions.Header.Stamp.SetCurrentTime();
 				deviceMessage.SetMessage<messages.PerceptionV>(_messagePerceptions);
 				publisher.Publish(deviceMessage);
 
@@ -441,7 +441,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			var perception = _messagePerceptionObjects[index];
 			if (_trackingObjectList.TryGetValue(perception.TrackingId, out var trackingObject))
 			{
-				DeviceHelper.SetCurrentTime(perception.Header.Stamp);
+				perception.Header.Stamp.SetCurrentTime();
 				DeviceHelper.SetVector3d(perception.Position, trackingObject.position);
 				DeviceHelper.SetVector3d(perception.Velocity, trackingObject.velocity);
 				DeviceHelper.SetVector3d(perception.Size, trackingObject.size);

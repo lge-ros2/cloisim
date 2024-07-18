@@ -114,7 +114,7 @@ namespace SensorDevices
 			var sonarPosition = sonarLink.position;
 			var sonarRotation = sonarLink.rotation;
 
-			DeviceHelper.SetCurrentTime(sonarStamped.Time);
+			sonarStamped.Time.SetCurrentTime();
 
 			var sonar = sonarStamped.Sonar;
 			sonar.Frame = DeviceName;
