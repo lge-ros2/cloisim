@@ -396,7 +396,7 @@ namespace SensorDevices
 
 			var laserScan = laserScanStamped.Scan;
 
-			DeviceHelper.SetVector3d(laserScan.WorldPose.Position, lidarPosition);
+			laserScan.WorldPose.Position.Set(lidarPosition);
 			DeviceHelper.SetQuaternion(laserScan.WorldPose.Orientation, lidarRotation);
 
 			const int BufferUnitSize = sizeof(double);

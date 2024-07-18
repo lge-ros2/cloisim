@@ -142,8 +142,8 @@ namespace SensorDevices
 			var sensorOrientation = Quaternion.Euler(sensorRotation.x, sensorRotation.y, sensorRotation.z);
 
 			DeviceHelper.SetQuaternion(_gps.Heading.Orientation, sensorOrientation);
-			DeviceHelper.SetVector3d(_gps.Heading.AngularVelocity, Vector3.zero);
-			DeviceHelper.SetVector3d(_gps.Heading.LinearAcceleration, Vector3.zero);
+			_gps.Heading.AngularVelocity.Set(Vector3.zero);
+			_gps.Heading.LinearAcceleration.Set(Vector3.zero);
 		}
 
 		protected override void GenerateMessage()

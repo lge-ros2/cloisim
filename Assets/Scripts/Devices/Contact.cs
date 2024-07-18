@@ -142,11 +142,11 @@ namespace SensorDevices
 					existingContact.Depths = depths;
 
 					var normal = new messages.Vector3d();
-					DeviceHelper.SetVector3d(normal, collisionContact.normal);
+					normal.Set(collisionContact.normal);
 					existingContact.Normals.Add(normal);
 
 					var position = new messages.Vector3d();
-					DeviceHelper.SetVector3d(position, collisionContact.point);
+					position.Set(collisionContact.point);
 					existingContact.Positions.Add(position);
 
 					existingContact.Time.SetCurrentTime();

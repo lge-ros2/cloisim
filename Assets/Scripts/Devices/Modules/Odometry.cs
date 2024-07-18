@@ -137,7 +137,7 @@ public partial class Odometry
 			CalculateOdometry(angularVelocityLeft, angularVelocityRight, duration);
 		}
 
-		DeviceHelper.SetVector3d(odomMessage.Pose, Unity2SDF.Direction.Reverse(_odomPose));
+		odomMessage.Pose.Set(Unity2SDF.Direction.Reverse(_odomPose));
 
 		// rolling mean filtering
 		var odomTransVel = Unity2SDF.Direction.Curve(_odomTranslationalVelocity);

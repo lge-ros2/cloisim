@@ -44,7 +44,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 					var tfPose = tf.GetPose();
 					tfMessage.Header.Stamp.SetCurrentTime();
-					DeviceHelper.SetVector3d(tfMessage.Transform.Position, tfPose.position);
+					tfMessage.Transform.Position.Set(tfPose.position);
 					DeviceHelper.SetQuaternion(tfMessage.Transform.Orientation, tfPose.rotation);
 
 					deviceMessage.SetMessage<messages.TransformStamped>(tfMessage);
@@ -89,7 +89,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		objectPose.Position = new messages.Vector3d();
 		objectPose.Orientation = new messages.Quaternion();
 
-		DeviceHelper.SetVector3d(objectPose.Position, devicePose.position);
+		objectPose.Position.Set(devicePose.position);
 		DeviceHelper.SetQuaternion(objectPose.Orientation, devicePose.rotation);
 
 		var objectTransformInfo = new messages.Param();
@@ -217,7 +217,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 				poseMessage.Orientation = new messages.Quaternion();
 
 				poseMessage.Name = tf.ChildFrameID;
-				DeviceHelper.SetVector3d(poseMessage.Position, tfPose.position);
+				poseMessage.Position.Set(tfPose.position);
 				DeviceHelper.SetQuaternion(poseMessage.Orientation, tfPose.rotation);
 
 				var ros2StaticTransformElement = new messages.Param();

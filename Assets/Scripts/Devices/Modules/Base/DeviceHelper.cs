@@ -112,20 +112,7 @@ public static partial class DeviceHelper
 		msg.Nsec = (int)((timeNow - (double)msg.Sec) * 1e+9);
 	}
 
-	public static void SetVector3d(messages.Vector3d vector3d, in Vector3 position)
-	{
-		if (vector3d == null)
-		{
-			vector3d = new messages.Vector3d();
-		}
-		var converted = Unity2SDF.Position(position);
-
-		vector3d.X = converted.X;
-		vector3d.Y = converted.Y;
-		vector3d.Z = converted.Z;
-	}
-
-	public static void SetVector(this messages.Vector3d vector3d, in Vector3 position)
+	public static void Set(this messages.Vector3d vector3d, in Vector3 position)
 	{
 		if (vector3d == null)
 		{
