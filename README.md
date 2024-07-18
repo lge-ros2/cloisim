@@ -110,13 +110,13 @@ More details and usages for configuration/parameters in [here](https://github.co
 - `ImuPlugin`: help to publish IMU sensor data
 - `SonarPlugin`: help to publish Sonar range data
 - `ParticleSystemPlugin`: Enable particla system of Unity
-- `MowingPlugin`: plant grass and enable to mow
 
 #### World Specific
 
 - `ElevatorSystemPlugin`: control(lifting, cal) elevators
 - `GroundTruthPlugin`: retrieve all information(position, size, velocity) for objects
 - `ActorControlPlugin`: controls actor using AI(Unity) components(actor which loaded `ActorPlugin`)
+- `MowingPlugin`: plant grass and enable to mow
 
 ## How it works
 
