@@ -7,6 +7,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+[DefaultExecutionOrder(90)]
 public class CameraControl : MonoBehaviour
 {
 	/*
@@ -24,6 +25,8 @@ public class CameraControl : MonoBehaviour
 	private bool _blockMouseWheelControl = false;
 
 	private bool _verticalMovementLock = false;
+
+	private UIController _uiController = null;
 
 	public bool VerticalMovementLock
 	{
@@ -50,6 +53,8 @@ public class CameraControl : MonoBehaviour
 	void Awake()
 	{
 		_targetLayerMask = LayerMask.GetMask("Default");
+		_uiController = Main.UIObject?.GetComponent<UIController>();
+		// Debug.Log(_uiController);
 	}
 
 	void LateUpdate()
@@ -63,6 +68,7 @@ public class CameraControl : MonoBehaviour
 		{
 			_verticalMovementLock = !_verticalMovementLock;
 			// Debug.Log(_verticalMovementLock);
+			_uiController.SetVerticalMovementLockToggle(_verticalMovementLock);
 		}
 
 		lastMouse = Input.mousePosition - lastMouse;

@@ -34,7 +34,7 @@ public partial class SimulationDisplay : MonoBehaviour
 	private Color logMessageColor = Color.black;
 
 	[Header("Rect")]
-	private Rect rectVersion;
+	// private Rect rectVersion;
 	private Rect rectOption;
 	private Rect rectSimulationInfo;
 	private Rect rectFps;
@@ -47,13 +47,13 @@ public partial class SimulationDisplay : MonoBehaviour
 	private GUIStyle style;
 	private Texture2D textureBackground;
 
-	[Header("Data")]
-	private string versionInfo;
+	// [Header("Data")]
+	// private string versionInfo;
 
 	// Start is called before the first frame update
 	void Awake()
 	{
-		versionInfo = Application.version;
+		// versionInfo = Application.version;
 
 		cameraControl = GetComponentInChildren<CameraControl>();
 		clock = DeviceHelper.GetGlobalClock();
@@ -62,7 +62,7 @@ public partial class SimulationDisplay : MonoBehaviour
 		textureBackground.SetPixel(0, 0, new Color(0, 0, 0, 0.75f));
 		textureBackground.Apply(); // not sure if this is necessary
 
-		rectVersion = new Rect(textLeftMargin, topMargin, textWidthVersion, textHeight);
+		// rectVersion = new Rect(textLeftMargin, topMargin, textWidthVersion, textHeight);
 		rectOption = new Rect(textWidthVersion + textRightMargin, topMargin, textWidthOptionInfo, textHeight);
 		rectSimulationInfo = new Rect(textLeftMargin, Screen.height - textHeight - bottomMargin, textWidthSimulationInfo, textHeight);
 		rectFps = new Rect(rectSimulationInfo.width + rectSimulationInfo.x, Screen.height - textHeight - bottomMargin, textWidthFps, textHeight);
@@ -147,7 +147,7 @@ public partial class SimulationDisplay : MonoBehaviour
 
 		// version info
 		style.normal.textColor = Color.green;
-		DrawLabelWithShadow(rectVersion, versionInfo);
+		// DrawLabelWithShadow(rectVersion, versionInfo);
 
 		// logging: error message or event message
 		rectLogMessage.y = Screen.height - (textHeight * 2) - bottomMargin;
