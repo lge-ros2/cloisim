@@ -39,6 +39,7 @@ public class Main : MonoBehaviour
 	private static GameObject _uiMainCanvasRoot = null;
 
 	private static SimulationDisplay _simulationDisplay = null;
+	private static UIController _uiController = null;
 	private static InfoDisplay _infoDisplay = null;
 	private static WorldNavMeshBuilder _worldNavMeshBuilder = null;
 	private static RuntimeGizmos.TransformGizmo _transformGizmo = null;
@@ -60,6 +61,7 @@ public class Main : MonoBehaviour
 	public static RuntimeGizmos.TransformGizmo Gizmos => _transformGizmo;
 	public static ObjectSpawning ObjectSpawning => _objectSpawning;
 	public static SimulationDisplay Display => _simulationDisplay;
+	public static UIController UIController => _uiController;
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => _worldNavMeshBuilder;
 	public static BridgeManager BridgeManager => _bridgeManager;
@@ -243,6 +245,7 @@ public class Main : MonoBehaviour
 			_infoDisplay = _uiRoot.GetComponentInChildren<InfoDisplay>();
 			_transformGizmo = _uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
 			_simulationDisplay = _uiRoot.GetComponentInChildren<SimulationDisplay>();
+			_uiController = _uiRoot.GetComponent<UIController>();
 
 			_uiMainCanvasRoot = _uiRoot.transform.Find("Main Canvas").gameObject;
 			_followingList = _uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
@@ -271,7 +274,7 @@ public class Main : MonoBehaviour
 		if (!SystemInfo.supportsAsyncGPUReadback)
 		{
 			Debug.LogError("This API does not support AsyncGPURreadback.");
-			_simulationDisplay?.SetErrorMessage("This API does not support AsyncGPURreadback.");
+			_uiController?.SetErrorMessage("This API does not support AsyncGPURreadback.");
 			return;
 		}
 
@@ -306,7 +309,7 @@ public class Main : MonoBehaviour
 
 			if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
 			{
-				_simulationDisplay?.SetEventMessage("Start to load world file: " + worldFileName);
+				_uiController?.SetEventMessage("Start to load world file: " + worldFileName);
 				StartCoroutine(LoadWorld());
 			}
 		}
@@ -449,7 +452,7 @@ public class Main : MonoBehaviour
 		{
 			var errorMessage = "Parsing failed!!! Failed to load world file: " + worldFileName;
 			Debug.LogError(errorMessage);
-			_simulationDisplay?.SetErrorMessage(errorMessage);
+			_uiController?.SetErrorMessage(errorMessage);
 		}
 
 		_bridgeManager.PrintLog();

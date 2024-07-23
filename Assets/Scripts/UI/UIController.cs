@@ -3,6 +3,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
+
+using System.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,6 +14,7 @@ public class UIController : MonoBehaviour
 	private VisualElement _rootVisualElement = null;
 	private Toggle _toggleLockVerticalMoving = null;
 	private TextField _scaleField = null;
+	private Label _statusMessage = null;
 
 	private const float ScaleFactorMin = 0.01f;
 	private const float ScaleFactorMax = 10;
@@ -46,6 +49,9 @@ public class UIController : MonoBehaviour
 		var buttonPropsSphere = _rootVisualElement.Q<Button>("PropsSphere");
 		buttonPropsSphere.RegisterCallback<ClickEvent>(
 			x => objectSpawning?.SetPropType(ObjectSpawning.PropsType.SPHERE));
+
+		_statusMessage = _rootVisualElement.Q<Label>("StatusMessage");
+		ClearMessage();
 	}
 
 	void LateUpdate()
@@ -116,5 +122,49 @@ public class UIController : MonoBehaviour
 		}
 
 		Main.ObjectSpawning?.SetScaleFactor(scaleFactor);
+	}
+
+	public void ClearMessage()
+	{
+		SetStatusMessage(string.Empty, Color.clear);
+	}
+
+	public void SetStatusMessage(in string message, in Color color)
+	{
+		if (_statusMessage != null)
+		{
+			_statusMessage.style.color = color;
+			_statusMessage.text = message;
+		}
+	}
+
+	public void SetEventMessage(in string value)
+	{
+		ClearMessage();
+		SetStatusMessage(value, Color.green);
+	}
+
+	public void SetDebugMessage(in string value)
+	{
+		ClearMessage();
+		SetStatusMessage(value, Color.blue);
+	}
+
+	public void SetInfoMessage(in string value)
+	{
+		ClearMessage();
+		SetStatusMessage(value, Color.gray);
+	}
+
+	public void SetErrorMessage(in string value)
+	{
+		ClearMessage();
+		SetStatusMessage(value, Color.red);
+	}
+
+	public void SetWarningMessage(in string value)
+	{
+		ClearMessage();
+		SetStatusMessage(value, Color.yellow);
 	}
 }

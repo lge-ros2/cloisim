@@ -16,4 +16,5 @@
         </ui:GroupBox>
         <ui:Button text="Help" parse-escape-sequences="false" display-tooltip-when-elided="true" enable-rich-text="false" style="align-items: center; justify-content: center; align-self: flex-start; flex-direction: row; margin-top: 0; margin-right: 4px; margin-bottom: 0; margin-left: 4px; padding-top: 4px; padding-right: 8px; padding-bottom: 4px; padding-left: 8px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);" />
     </ui:VisualElement>
+    <ui:Label tabindex="-1" parse-escape-sequences="true" display-tooltip-when-elided="true" name="StatusMessage" text="{status message}" style="font-size: 11px; margin-bottom: 35px; margin-right: 10px; margin-left: 10px; text-shadow: 1px 1px 0 rgb(0, 0, 0);" />
 </ui:UXML>

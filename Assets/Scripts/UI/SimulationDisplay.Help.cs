@@ -124,21 +124,21 @@ public partial class SimulationDisplay : MonoBehaviour
 
 	private void DrawHelpInfo()
 	{
-		style.fontSize = labelFontSize;
-		style.wordWrap = true;
-		style.clipping = TextClipping.Overflow;
-		style.stretchHeight = false;
-		style.stretchWidth = false;
+		// style.fontSize = labelFontSize;
+		// style.wordWrap = true;
+		// style.clipping = TextClipping.Overflow;
+		// style.stretchHeight = false;
+		// style.stretchWidth = false;
 
-		GUI.skin.button.normal.textColor = Color.white;
-		GUI.skin.button.alignment = TextAnchor.MiddleCenter;
-		if (GUI.Button(rectHelpButton, "Help"))
-		{
-			popupHelpDialog = !popupHelpDialog;
-		}
+		// GUI.skin.button.normal.textColor = Color.white;
+		// GUI.skin.button.alignment = TextAnchor.MiddleCenter;
+		// if (GUI.Button(rectHelpButton, "Help"))
+		// {
+		// 	popupHelpDialog = !popupHelpDialog;
+		// }
 
-		style.fontSize = (int)(labelFontSize * 0.8f);
-		style.alignment = TextAnchor.MiddleLeft;
-		style.normal.textColor = Color.white;
+		// style.fontSize = (int)(labelFontSize * 0.8f);
+		// style.alignment = TextAnchor.MiddleLeft;
+		// style.normal.textColor = Color.white;
 	}
 }

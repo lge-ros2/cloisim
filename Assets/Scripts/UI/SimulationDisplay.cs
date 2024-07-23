@@ -13,7 +13,9 @@ public partial class SimulationDisplay : MonoBehaviour
 	private Clock clock = null;
 	private CameraControl cameraControl = null;
 
-	private StringBuilder eventMessage = new StringBuilder();
+	private const float guiHeight = 25f;
+	private const float toolbarWidth = 190f;
+	private RectOffset zeroPadding;
 
 	[Header("GUI properties")]
 	private const int labelFontSize = 14;
@@ -82,46 +84,6 @@ public partial class SimulationDisplay : MonoBehaviour
 		UpdateHelpContents();
 	}
 
-	public void ClearLogMessage()
-	{
-		eventMessage.Clear();
-	}
-
-	public void SetEventMessage(in string value)
-	{
-		ClearLogMessage();
-		logMessageColor = Color.green;
-		eventMessage.Append(value);
-	}
-
-	public void SetDebugMessage(in string value)
-	{
-		ClearLogMessage();
-		logMessageColor = Color.blue;
-		eventMessage.Append(value);
-	}
-
-	public void SetInfoMessage(in string value)
-	{
-		ClearLogMessage();
-		logMessageColor = Color.gray;
-		eventMessage.Append(value);
-	}
-
-	public void SetErrorMessage(in string value)
-	{
-		ClearLogMessage();
-		logMessageColor = Color.red;
-		eventMessage.Append(value);
-	}
-
-	public void SetWarningMessage(in string value)
-	{
-		ClearLogMessage();
-		logMessageColor = Color.yellow;
-		eventMessage.Append(value);
-	}
-
 	private void DrawLabelWithShadow(in Rect rect, in string value)
 	{
 		var styleShadow = new GUIStyle(style);
@@ -151,17 +113,16 @@ public partial class SimulationDisplay : MonoBehaviour
 
 		// logging: error message or event message
 		rectLogMessage.y = Screen.height - (textHeight * 2) - bottomMargin;
-		style.normal.textColor = logMessageColor;
-		DrawLabelWithShadow(rectLogMessage, eventMessage.ToString());
+		// style.normal.textColor = logMessageColor;
+		// DrawLabelWithShadow(rectLogMessage, eventMessage.ToString());
 	}
 
 	void OnGUI()
 	{
 		DrawText();
 
-		DrawPropsMenus();
-
-		DrawHelpInfo();
+		// DrawPropsMenus();
+		// DrawHelpInfo();
 
 		if (Event.current.type.Equals(EventType.KeyUp))
 		{
@@ -176,21 +137,6 @@ public partial class SimulationDisplay : MonoBehaviour
 				popupHelpDialog = false;
 				cameraControl.BlockMouseWheelControl(false);
 			}
-			// else if (keyCode >= KeyCode.Alpha1 && keyCode <= KeyCode.Alpha9 && isChangingScaleFactor == false)
-			// {
-			// 	switch (keyCode)
-			// 	{
-			// 		case KeyCode.Alpha1:
-			// 			_toolbarSelected = 0;
-			// 			break;
-			// 		case KeyCode.Alpha2:
-			// 			_toolbarSelected = 1;
-			// 			break;
-			// 		case KeyCode.Alpha3:
-			// 			_toolbarSelected = 2;
-			// 			break;
-			// 	}
-			// }
 		}
 
 		if (popupHelpDialog)

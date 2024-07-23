@@ -54,7 +54,7 @@ public class SimulationService : IDisposable
 		}
 		catch (Exception ex) {
 			var errMessage = "Failed to start SimulationService: " + ex.Message;
-			Main.Display?.SetErrorMessage(errMessage);
+			Main.UIController?.SetErrorMessage(errMessage);
 			Debug.LogError(errMessage);
 		}
 	}

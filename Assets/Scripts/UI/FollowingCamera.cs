@@ -104,7 +104,7 @@ public class FollowingCamera : MonoBehaviour
 			}
 			else
 			{
-				Main.Display?.SetWarningMessage("'" + targetObjectName + "' model seems removed from the world.");
+				Main.UIController?.SetWarningMessage("'" + targetObjectName + "' model seems removed from the world.");
 				ReleaseTargetObject();
 			}
 		}
@@ -118,7 +118,7 @@ public class FollowingCamera : MonoBehaviour
 	{
 		if (targetObjectTransform != null && !ReferenceEquals(targetObjectTransform.gameObject, null))
 		{
-			Main.Display?.SetInfoMessage("Camera view for '" + targetObjectTransform.name + "' model is released.");
+			Main.UIController?.SetInfoMessage("Camera view for '" + targetObjectTransform.name + "' model is released.");
 		}
 		targetObjectTransform = null;
 		isFollowing = false;
@@ -128,7 +128,7 @@ public class FollowingCamera : MonoBehaviour
 
 	private void LockTargetObject(in Transform targetTransform)
 	{
-		Main.Display?.SetInfoMessage("Camera view for '" + targetTransform.name + "' model is locked.");
+		Main.UIController?.SetInfoMessage("Camera view for '" + targetTransform.name + "' model is locked.");
 		targetObjectTransform = targetTransform;
 		isFollowing = true;
 		Main.CameraControl?.BlockControl();
