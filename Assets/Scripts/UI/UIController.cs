@@ -16,6 +16,8 @@ public class UIController : MonoBehaviour
 	private TextField _scaleField = null;
 	private Label _statusMessage = null;
 
+	private CameraControl _cameraControl = null;
+
 	private const float ScaleFactorMin = 0.01f;
 	private const float ScaleFactorMax = 10;
 	private string _prevScaleFactorString = string.Empty;
@@ -23,11 +25,11 @@ public class UIController : MonoBehaviour
 	// Start is called before the first frame update
 	void Start()
 	{
-		var cameraControl = Camera.main.GetComponent<CameraControl>();
+		_cameraControl = Camera.main.GetComponent<CameraControl>();
 		var objectSpawning = Main.ObjectSpawning;
 
 		_toggleLockVerticalMoving = _rootVisualElement.Q<Toggle>("LockVerticalMoving");
-		_toggleLockVerticalMoving.RegisterValueChangedCallback(x => cameraControl.VerticalMovementLock = x.newValue);
+		_toggleLockVerticalMoving.RegisterValueChangedCallback(x => _cameraControl.VerticalMovementLock = x.newValue);
 
 		_scaleField = _rootVisualElement.Q<TextField>("ScaleField");
 		if (float.TryParse(_scaleField.text, out var scaleFactor))
@@ -52,10 +54,21 @@ public class UIController : MonoBehaviour
 
 		_statusMessage = _rootVisualElement.Q<Label>("StatusMessage");
 		ClearMessage();
+
+		var buttonHelp = _rootVisualElement.Q<Button>("Help");
+		buttonHelp.RegisterCallback<ClickEvent>(x => ShowHelp());
 	}
 
 	void LateUpdate()
 	{
+		if (Input.GetKeyUp(KeyCode.F1))
+		{
+			ShowHelp();
+		}
+		else if (Input.GetKeyUp(KeyCode.Escape))
+		{
+			ShowHelp(true);
+		}
 	}
 
 	void OnEnable()
@@ -81,6 +94,22 @@ public class UIController : MonoBehaviour
 	public void SetVerticalMovementLockToggle(in bool value)
 	{
 		_toggleLockVerticalMoving.value = value;
+	}
+
+	private void ShowHelp(in bool doClose = false)
+	{
+		var helpDialogScrollView = _rootVisualElement.Q<ScrollView>("HelpDialog");
+
+		if (doClose || helpDialogScrollView.style.display == DisplayStyle.Flex)
+		{
+			helpDialogScrollView.style.display = DisplayStyle.None;
+			_cameraControl.BlockMouseWheelControl(false);
+		}
+		else
+		{
+			helpDialogScrollView.style.display = DisplayStyle.Flex;
+			_cameraControl.BlockMouseWheelControl(true);
+		}
 	}
 
 	// private void OnValueChangedScaleField(ChangeEvent<string> evt)

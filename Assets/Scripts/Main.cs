@@ -38,7 +38,6 @@ public class Main : MonoBehaviour
 	private static GameObject _uiRoot = null;
 	private static GameObject _uiMainCanvasRoot = null;
 
-	private static SimulationDisplay _simulationDisplay = null;
 	private static UIController _uiController = null;
 	private static InfoDisplay _infoDisplay = null;
 	private static WorldNavMeshBuilder _worldNavMeshBuilder = null;
@@ -60,7 +59,6 @@ public class Main : MonoBehaviour
 	public static GameObject UIMainCanvas => _uiMainCanvasRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => _transformGizmo;
 	public static ObjectSpawning ObjectSpawning => _objectSpawning;
-	public static SimulationDisplay Display => _simulationDisplay;
 	public static UIController UIController => _uiController;
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => _worldNavMeshBuilder;
@@ -244,7 +242,6 @@ public class Main : MonoBehaviour
 		{
 			_infoDisplay = _uiRoot.GetComponentInChildren<InfoDisplay>();
 			_transformGizmo = _uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
-			_simulationDisplay = _uiRoot.GetComponentInChildren<SimulationDisplay>();
 			_uiController = _uiRoot.GetComponent<UIController>();
 
 			_uiMainCanvasRoot = _uiRoot.transform.Find("Main Canvas").gameObject;
