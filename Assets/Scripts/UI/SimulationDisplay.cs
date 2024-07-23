@@ -176,21 +176,21 @@ public partial class SimulationDisplay : MonoBehaviour
 				popupHelpDialog = false;
 				cameraControl.BlockMouseWheelControl(false);
 			}
-			else if (keyCode >= KeyCode.Alpha1 && keyCode <= KeyCode.Alpha9 && isChangingScaleFactor == false)
-			{
-				switch (keyCode)
-				{
-					case KeyCode.Alpha1:
-						_toolbarSelected = 0;
-						break;
-					case KeyCode.Alpha2:
-						_toolbarSelected = 1;
-						break;
-					case KeyCode.Alpha3:
-						_toolbarSelected = 2;
-						break;
-				}
-			}
+			// else if (keyCode >= KeyCode.Alpha1 && keyCode <= KeyCode.Alpha9 && isChangingScaleFactor == false)
+			// {
+			// 	switch (keyCode)
+			// 	{
+			// 		case KeyCode.Alpha1:
+			// 			_toolbarSelected = 0;
+			// 			break;
+			// 		case KeyCode.Alpha2:
+			// 			_toolbarSelected = 1;
+			// 			break;
+			// 		case KeyCode.Alpha3:
+			// 			_toolbarSelected = 2;
+			// 			break;
+			// 	}
+			// }
 		}
 
 		if (popupHelpDialog)

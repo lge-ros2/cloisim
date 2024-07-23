@@ -11,9 +11,9 @@ public partial class SimulationDisplay : MonoBehaviour
 	[Header("Properties for Props menu")]
 	private const float guiHeight = 25f;
 	private const float toolbarWidth = 190f;
-	private readonly string[] toolbarStrings = new string[] { "Box", "Cylinder", "Sphere" };
+	// private readonly string[] toolbarStrings = new string[] { "Box", "Cylinder", "Sphere" };
 	private string scaleFactorString = "0.5";
-	private int _toolbarSelected = 0;
+	// private int _toolbarSelected = 0;
 	private string prevScaleFactorString;
 	private bool checkScaleFactorFocused = false;
 	private bool doCheckScaleFactorValue = false;
@@ -32,28 +32,28 @@ public partial class SimulationDisplay : MonoBehaviour
 
 		style.normal.textColor = Color.white;
 		rectToolbar.x = Screen.width * 0.5f - toolbarWidth * 0.5f;
-		_toolbarSelected = GUI.Toolbar(rectToolbar, _toolbarSelected, toolbarStrings);
+		// _toolbarSelected = GUI.Toolbar(rectToolbar, _toolbarSelected, toolbarStrings);
 
 		var rectToolbarLabel = rectToolbar;
 		rectToolbarLabel.x -= 45;
 		rectToolbarLabel.width = 45;
 
 		style.normal.textColor = Color.white;
-		DrawLabelWithShadow(rectToolbarLabel, "Props");
+		// DrawLabelWithShadow(rectToolbarLabel, "Props");
 
 		var rectScaleLabel = rectToolbar;
 		rectScaleLabel.x += (toolbarWidth + 10);
 		rectScaleLabel.width = 35;
 		style.normal.textColor = Color.white;
-		DrawLabelWithShadow(rectScaleLabel, "Size");
+		// DrawLabelWithShadow(rectScaleLabel, "Size");
 
 		var rectScale = rectScaleLabel;
 		rectScale.x += (rectScaleLabel.width);
 		rectScale.width = 45;
-		GUI.SetNextControlName("ScaleField");
+		// GUI.SetNextControlName("ScaleField");
 		GUI.skin.textField.normal.textColor = Color.white;
 		GUI.skin.textField.alignment = TextAnchor.MiddleCenter;
-		scaleFactorString = GUI.TextField(rectScale, scaleFactorString, 5);
+		// scaleFactorString = GUI.TextField(rectScale, scaleFactorString, 5);
 
 		isChangingScaleFactor = (GUI.GetNameOfFocusedControl().CompareTo("ScaleField") == 0);
 
@@ -105,6 +105,6 @@ public partial class SimulationDisplay : MonoBehaviour
 			doCheckScaleFactorValue = false;
 		}
 
-		Main.ObjectSpawning?.SetPropType(_toolbarSelected);
+		// Main.ObjectSpawning?.SetPropType(_toolbarSelected);
 	}
 }
