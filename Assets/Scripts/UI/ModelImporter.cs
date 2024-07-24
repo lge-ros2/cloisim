@@ -224,7 +224,7 @@ public class ModelImporter : MonoBehaviour
 				{
 					if (objectListForCopy.Count > 1)
 					{
-						Main.Display?.SetWarningMessage("Multiple Object is selected. Only single object can be copied.");
+						Main.UIController?.SetWarningMessage("Multiple Object is selected. Only single object can be copied.");
 					}
 
 					_targetObjectForCopy = objectListForCopy[objectListForCopy.Count - 1];

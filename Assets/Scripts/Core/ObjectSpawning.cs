@@ -18,8 +18,9 @@ public class ObjectSpawning : MonoBehaviour
 	private static PhysicMaterial _propsPhysicalMaterial = null;
 	private static Material _propMaterial = null;
 
-	private GameObject propsRoot = null;
-	private Camera mainCam = null;
+	private GameObject _propsRoot = null;
+	private Camera _mainCam = null;
+	private UIController _uiController = null;
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private FollowingTargetList _followingList = null;
 
@@ -30,7 +31,7 @@ public class ObjectSpawning : MonoBehaviour
 	private Dictionary<PropsType, uint> propsCount = new Dictionary<PropsType, uint>();
 
 	private float _scaleFactor = 0.5f;
-	private int propType = 0;
+	private PropsType _propType = 0;
 
 	private const float UnitMass = 3f;
 
@@ -39,17 +40,18 @@ public class ObjectSpawning : MonoBehaviour
 		_scaleFactor = value;
 	}
 
-	public void SetPropType(in int value)
+	public void SetPropType(in PropsType value)
 	{
-		propType = value;
+		_propType = value;
 	}
 
 	void Awake()
 	{
 		_propMaterial = SDF2Unity.Material.Create();
 		_propsPhysicalMaterial = Resources.Load<PhysicMaterial>("PhysicsMaterials/Props");
-		propsRoot = GameObject.Find("Props");
-		mainCam = Camera.main;
+		_propsRoot = GameObject.Find("Props");
+		_mainCam = Camera.main;
+		_uiController = Main.UIObject?.GetComponent<UIController>();
 		transformGizmo = Main.Gizmos;
 
 		if (Main.UIMainCanvas != null)
@@ -74,17 +76,17 @@ public class ObjectSpawning : MonoBehaviour
 
 		if (leftControlPressed)
 		{
-			if (Input.GetMouseButtonDown(0))
+			if (Input.GetMouseButtonUp(0))
 			{
 				// Add On left click spawn
 				// selected prefab and align its rotation to a surface normal
 				if (GetPositionAndNormalOnClick(out var hitPoint, out var hitNormal))
 				{
 					var propsScale = Vector3.one * _scaleFactor;
-					StartCoroutine(SpawnTargetObject((PropsType)propType, hitPoint, hitNormal, propsScale));
+					StartCoroutine(SpawnTargetObject((PropsType)_propType, hitPoint, hitNormal, propsScale));
 				}
 			}
-			else if (Input.GetMouseButtonDown(1))
+			else if (Input.GetMouseButtonUp(1))
 			{
 				// Remove spawned prefab when holding left control and right clicking
 				var selectedPropsTransform = GetTransformOnClick();
@@ -94,11 +96,31 @@ public class ObjectSpawning : MonoBehaviour
 				}
 			}
 		}
-		else if (Input.GetKey(KeyCode.Delete))
+		else if (Input.GetKeyUp(KeyCode.Alpha1))
+		{
+			ChnagePropType(PropsType.BOX);
+		}
+		else if (Input.GetKeyUp(KeyCode.Alpha2))
+		{
+			ChnagePropType(PropsType.CYLINDER);
+		}
+		else if (Input.GetKeyUp(KeyCode.Alpha3))
+		{
+			ChnagePropType(PropsType.SPHERE);
+		}
+		else if (Input.GetKeyUp(KeyCode.Delete))
 		{
 			transformGizmo.GetSelectedTargets(out var list);
 			StartCoroutine(DeleteTargetObject(list));
 			transformGizmo.ClearTargets();
+		}
+	}
+
+	private void ChnagePropType(in PropsType type)
+	{
+		if (!_uiController.IsScaleFieldFocused())
+		{
+			SetPropType(type);
 		}
 	}
 
@@ -125,13 +147,13 @@ public class ObjectSpawning : MonoBehaviour
 					break;
 
 				case PropsType.SPHERE:
-					mesh = ProceduralMesh.CreateSphere(0.5f, 11, 11);
+					mesh = ProceduralMesh.CreateSphere(0.5f, 13, 13);
 					break;
 			}
 
 			if (mesh != null)
 			{
-				var newTempPropsObject = CreateProps(type.ToString(), mesh, scale);
+				var newTempPropsObject = CreateUnitProps(type, mesh);
 				props.Add(type, newTempPropsObject);
 				newTempPropsObject.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSave;
 				newTempPropsObject.SetActive(false);
@@ -172,7 +194,7 @@ public class ObjectSpawning : MonoBehaviour
 		spawanedObjectTransform.rotation = Quaternion.FromToRotation(spawanedObjectTransform.up, normal);
 
 		spawnedObject.transform.localScale = scale;
-		spawnedObject.transform.SetParent(propsRoot.transform);
+		spawnedObject.transform.SetParent(_propsRoot.transform);
 
 		yield return null;
 	}
@@ -182,9 +204,9 @@ public class ObjectSpawning : MonoBehaviour
 		return (scale.x + scale.y + scale.z) / 3 * UnitMass;
 	}
 
-	private GameObject CreateProps(in string name, in Mesh targetMesh, in Vector3 scale)
+	private GameObject CreateUnitProps(in PropsType type, in Mesh targetMesh)
 	{
-		var newObject = new GameObject(name);
+		var newObject = new GameObject(type.ToString());
 		newObject.tag = "Props";
 		newObject.isStatic = true;
 
@@ -199,11 +221,29 @@ public class ObjectSpawning : MonoBehaviour
 		meshRenderer.material.name = targetMesh.name;
 		meshRenderer.material.color = Color.white;
 
-		var meshCollider = newObject.AddComponent<MeshCollider>();
-		meshCollider.sharedMesh = targetMesh;
-		meshCollider.sharedMaterial = _propsPhysicalMaterial;
-		meshCollider.convex = true;
-		meshCollider.isTrigger = false;
+		switch (type)
+		{
+			case PropsType.BOX:
+				var boxCollider = newObject.AddComponent<BoxCollider>();
+				boxCollider.center = Vector3.zero;
+				boxCollider.size = Vector3.one;
+				break;
+
+			case PropsType.SPHERE:
+				var sphereCollider = newObject.AddComponent<SphereCollider>();
+				sphereCollider.center = Vector3.zero;
+				sphereCollider.radius = 0.5f;
+				break;
+
+			case PropsType.CYLINDER:
+			default:
+				var meshCollider = newObject.AddComponent<MeshCollider>();
+				meshCollider.sharedMesh = targetMesh;
+				meshCollider.sharedMaterial = _propsPhysicalMaterial;
+				meshCollider.convex = true;
+				meshCollider.isTrigger = false;
+				break;
+		}
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
 		rigidBody.mass = 1;
@@ -252,7 +292,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	private bool GetPositionAndNormalOnClick(out Vector3 hitPoint, out Vector3 hitNormal)
 	{
-		var ray = mainCam.ScreenPointToRay(Input.mousePosition);
+		var ray = _mainCam.ScreenPointToRay(Input.mousePosition);
 		if (Physics.Raycast(ray, out var hit, maxRayDistance))
 		{
 			hitPoint = hit.point; // 0 = spawn poisiton
@@ -270,7 +310,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	private Transform GetTransformOnClick()
 	{
-		var screenPoint2Ray = mainCam.ScreenPointToRay(Input.mousePosition);
+		var screenPoint2Ray = _mainCam.ScreenPointToRay(Input.mousePosition);
 
 		if (Physics.Raycast(screenPoint2Ray, out var hit, maxRayDistance))
 		{

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
 using System;
@@ -302,6 +303,21 @@ public class MowingPlugin : CLOiSimPlugin
 
 		var layerMask = LayerMask.GetMask("Default");
 
+		var helperVisuals = GetComponentsInChildren<SDF.Helper.Visual>();
+		foreach (var helperVisual in helperVisuals)
+		{
+			var meshFilters = helperVisual.GetComponentsInChildren<MeshFilter>();
+			foreach (var meshFilter in meshFilters)
+			{
+				var meshCollider = meshFilter.transform.gameObject.AddComponent<MeshCollider>();
+				meshCollider.convex = true;
+				meshCollider.isTrigger = true;
+			}
+		}
+
+		yield return null;
+
+		var punchingMeshFilters = new List<MeshFilter>();
 		var hitColliders = Physics.OverlapBox(_grass.bounds.center, _grass.bounds.size * 0.5f, Quaternion.identity, layerMask);
 		var i = 0;
 		while (i < hitColliders.Length)
@@ -325,11 +341,28 @@ public class MowingPlugin : CLOiSimPlugin
 				}
 
 				var meshFilter = helperLink.GetComponentInChildren<MeshFilter>();
-				PunchingTexture(_grass.texture, meshFilter);
-				yield return null;
+				punchingMeshFilters.Add(meshFilter);
 			}
 		}
 
+		yield return null;
+
+		foreach (var helperVisual in helperVisuals)
+		{
+			var meshColliders = helperVisual.GetComponentsInChildren<MeshCollider>();
+			foreach (var meshCollider in meshColliders)
+			{
+				GameObject.Destroy(meshCollider);
+			}
+		}
+
+		yield return null;
+
+		foreach (var meshFilter in punchingMeshFilters)
+		{
+			PunchingTexture(_grass.texture, meshFilter);
+			yield return null;
+		}
 
 		_initialTexturePixels = new Color[_grass.texture.GetPixels().LongLength];
 		Array.Copy(_grass.texture.GetPixels(), _initialTexturePixels, _initialTexturePixels.LongLength);

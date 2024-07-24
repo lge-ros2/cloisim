@@ -257,7 +257,7 @@ public class BridgeManager : IDisposable
 		{
 			var errorMessage = string.Format("HashKey({0}) is already occupied.", hashKey);
 			Console.Error.Write(errorMessage);
-			Main.Display?.SetErrorMessage(errorMessage);
+			Main.UIController?.SetErrorMessage(errorMessage);
 			return 0;
 		}
 

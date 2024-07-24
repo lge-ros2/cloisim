@@ -48,7 +48,7 @@ public class DebugLogWriter : TextWriter
 			Debug.LogWarning(value);
 			if (showOnDisplay)
 			{
-				Main.Display?.SetErrorMessage(value);
+				Main.UIController?.SetErrorMessage(value);
 				showOnDisplay = false;
 			}
 		}
@@ -57,7 +57,7 @@ public class DebugLogWriter : TextWriter
 			Debug.Log(value);
 			if (showOnDisplay)
 			{
-				Main.Display?.SetEventMessage(value);
+				Main.UIController?.SetEventMessage(value);
 				showOnDisplay = false;
 			}
 		}

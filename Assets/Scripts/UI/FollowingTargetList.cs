@@ -79,7 +79,7 @@ public class FollowingTargetList : MonoBehaviour
 					{
 						if (objectListForFollowing.Count > 1)
 						{
-							Main.Display?.SetWarningMessage("Multiple Object is selected. Only single object can be followed.");
+							Main.UIController?.SetWarningMessage("Multiple Object is selected. Only single object can be followed.");
 						}
 
 						foreach (var target in objectListForFollowing)

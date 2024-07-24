@@ -22,13 +22,15 @@ namespace SDF
 				// Debug.Log("Import World");
 				if (world.gui != null)
 				{
-					var mainCamera = UnityEngine.Camera.main;
+					var mainCamera = UE.Camera.main;
 					if (mainCamera != null && world.gui.camera != null)
 					{
 						var cameraPose = world.gui.camera.Pose;
 						mainCamera.transform.localPosition = SDF2Unity.Position(cameraPose?.Pos);
 						mainCamera.transform.localRotation = SDF2Unity.Rotation(cameraPose?.Rot);
 					}
+
+					Main.CameraInitPose = new UE.Pose(mainCamera.transform.localPosition, mainCamera.transform.localRotation);
 
 					UE.Screen.fullScreen = world.gui.fullscreen;
 					if (world.gui.fullscreen)
@@ -42,7 +44,7 @@ namespace SDF
 						// for (int i = 0; i < UE.Screen.resolutions.Length; i++)
 						// 	UE.Debug.Log(UE.Screen.resolutions[i]);
 						var selectedResolution = UE.Screen.resolutions[resolutionIndex];
-						UE.Debug.Log($"SelectedWindowResolution={selectedResolution}");
+						// UE.Debug.Log($"SelectedWindowResolution={selectedResolution}");
 
 						UE.Screen.SetResolution(selectedResolution.width, selectedResolution.height, UE.FullScreenMode.Windowed);
 					}
@@ -67,7 +69,7 @@ namespace SDF
 
 				ImportRoads(world.GetRoads());
 
-				UnityEngine.Physics.gravity = SDF2Unity.Direction(world.gravity);
+				UE.Physics.gravity = SDF2Unity.Direction(world.gravity);
 
 				ImportLights(world.GetLights());
 

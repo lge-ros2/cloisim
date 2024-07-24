@@ -7,7 +7,6 @@
 using UnityEngine;
 using System.IO;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System;
 
 public class ProceduralHeightmap
