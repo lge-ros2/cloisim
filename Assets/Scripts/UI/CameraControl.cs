@@ -4,9 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+[DefaultExecutionOrder(90)]
 public class CameraControl : MonoBehaviour
 {
 	/*
@@ -25,31 +27,56 @@ public class CameraControl : MonoBehaviour
 
 	private bool _verticalMovementLock = false;
 
+	private UIController _uiController = null;
+
 	public bool VerticalMovementLock
 	{
 		set => _verticalMovementLock = value;
 		get => _verticalMovementLock;
 	}
 
-	public float mainSpeed = 10.0f; //regular speed
-	public float shiftAdd = 20.0f; //multiplied by how long shift is held.  Basically running
-	public float maxShift = 50.0f; //Maximum speed when holding shift
-	public float camSens = 0.1f; //How sensitive it with mouse
-	public float edgeWidth = 100.0f;
-	public float edgeSens = 0.02f;
-	public float edgeSensMax = 1.0f;
-	public float wheelMoveAmp = 50f;
-	public float angleStep = 1.5f;
+	private const float MoveSmoothSpeed = .05f;
 
-	private Vector3 lastMouse = new Vector3(255, 255, 255); //kind of in the middle of the screen, rather than at the top (play)
-	private float totalRun = 1.0f;
-	private float edgeSensAccumlated = 0.0f;
+	[SerializeField]
+	private float _mainSpeed = 10.0f; // regular speed
+
+	[SerializeField]
+	private float _shiftAdd = 20.0f; // multiplied by how long shift is held.  Basically running
+
+	[SerializeField]
+	private float _maxShift = 50.0f; // Maximum speed when holding shift
+
+	[SerializeField]
+	private float _camSens = 0.1f; // How sensitive it with mouse
+
+	[SerializeField]
+	private float _edgeWidth = 100.0f;
+
+	[SerializeField]
+	private float _edgeSens = 0.02f;
+
+	[SerializeField]
+	private float _edgeSensMax = 1.0f;
+
+	[SerializeField]
+	private float _wheelMoveAmp = 50f;
+
+	[SerializeField]
+	private float _angleStep = 1.5f;
+
+	private Vector3 _lastMouse = new Vector3(255, 255, 255); // kind of in the middle of the screen, rather than at the top (play)
+	private float _totalRun = 1.0f;
+	private float _edgeSensAccumlated = 0.0f;
 
 	private int _targetLayerMask = 0;
+
+	Coroutine _movingCoroutine = null;
 
 	void Awake()
 	{
 		_targetLayerMask = LayerMask.GetMask("Default");
+		_uiController = Main.UIObject?.GetComponent<UIController>();
+		// Debug.Log(_uiController);;
 	}
 
 	void LateUpdate()
@@ -63,13 +90,14 @@ public class CameraControl : MonoBehaviour
 		{
 			_verticalMovementLock = !_verticalMovementLock;
 			// Debug.Log(_verticalMovementLock);
+			_uiController.SetVerticalMovementLockToggle(_verticalMovementLock);
 		}
 
-		lastMouse = Input.mousePosition - lastMouse;
-		lastMouse.Set(-lastMouse.y * camSens, lastMouse.x * camSens, 0);
-		lastMouse.Set(transform.eulerAngles.x + lastMouse.x, transform.eulerAngles.y + lastMouse.y , 0);
+		_lastMouse = Input.mousePosition - _lastMouse;
+		_lastMouse.Set(-_lastMouse.y * _camSens, _lastMouse.x * _camSens, 0);
+		_lastMouse.Set(transform.eulerAngles.x + _lastMouse.x, transform.eulerAngles.y + _lastMouse.y, 0);
 
-		//Mouse camera angle done.
+		// Mouse camera angle done.
 		if (Input.GetMouseButton(0))
 		{
 			var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -85,64 +113,63 @@ public class CameraControl : MonoBehaviour
 		else if (Input.GetMouseButton(2) || Input.GetMouseButton(1))
 		{
 			// perspective move during the right or wheel click
-			// Debug.Log(lastMouse.ToString("F4"));
-
-			if (edgeSensAccumlated < edgeSensMax)
+			// Debug.Log(_lastMouse.ToString("F4"));
+			if (_edgeSensAccumlated < _edgeSensMax)
 			{
-				edgeSensAccumlated += edgeSens;
+				_edgeSensAccumlated += _edgeSens;
 			}
 
-			if (Input.mousePosition.x < edgeWidth)
+			if (Input.mousePosition.x < _edgeWidth)
 			{
 				// Debug.Log("rotate camera left here");
-				lastMouse.y -= edgeSensAccumlated;
-				transform.eulerAngles = lastMouse;
+				_lastMouse.y -= _edgeSensAccumlated;
+				transform.eulerAngles = _lastMouse;
 			}
-			else if (Input.mousePosition.x > Screen.width - edgeWidth)
+			else if (Input.mousePosition.x > Screen.width - _edgeWidth)
 			{
 				// Debug.Log("rotate camera right here");
-				lastMouse.y += edgeSensAccumlated;
-				transform.eulerAngles = lastMouse;
+				_lastMouse.y += _edgeSensAccumlated;
+				transform.eulerAngles = _lastMouse;
 			}
-			else  if (Input.mousePosition.y < edgeWidth)
+			else if (Input.mousePosition.y < _edgeWidth)
 			{
 				// Debug.Log("rotate camera down here");
-				lastMouse.x += edgeSensAccumlated;
-				transform.eulerAngles = lastMouse;
+				_lastMouse.x += _edgeSensAccumlated;
+				transform.eulerAngles = _lastMouse;
 			}
-			else if (Input.mousePosition.y > Screen.height - edgeWidth)
+			else if (Input.mousePosition.y > Screen.height - _edgeWidth)
 			{
 				// Debug.Log("rotate camera up here");
-				lastMouse.x -= edgeSensAccumlated;
-				transform.eulerAngles = lastMouse;
+				_lastMouse.x -= _edgeSensAccumlated;
+				transform.eulerAngles = _lastMouse;
 			}
 			else
 			{
-				edgeSensAccumlated = 0.0f;
-				transform.eulerAngles = lastMouse;
+				_edgeSensAccumlated = 0.0f;
+				transform.eulerAngles = _lastMouse;
 			}
 		}
 		else
 		{
-			edgeSensAccumlated = 0.0f;
+			_edgeSensAccumlated = 0.0f;
 		}
 
-		lastMouse = Input.mousePosition;
+		_lastMouse = Input.mousePosition;
 
 		// Keyboard commands for Translation
 		var p = GetBaseInput();
 		if (Input.GetKey(KeyCode.LeftShift))
 		{
-			totalRun += Time.deltaTime;
-			p *= (totalRun * shiftAdd);
-			p.x = Mathf.Clamp(p.x, -maxShift, maxShift);
-			p.y = Mathf.Clamp(p.y, -maxShift, maxShift);
-			p.z = Mathf.Clamp(p.z, -maxShift, maxShift);
+			_totalRun += Time.deltaTime;
+			p *= (_totalRun * _shiftAdd);
+			p.x = Mathf.Clamp(p.x, -_maxShift, _maxShift);
+			p.y = Mathf.Clamp(p.y, -_maxShift, _maxShift);
+			p.z = Mathf.Clamp(p.z, -_maxShift, _maxShift);
 		}
 		else
 		{
-			totalRun = Mathf.Clamp(totalRun * 0.5f, 1f, 1000f);
-			p *= mainSpeed;
+			_totalRun = Mathf.Clamp(_totalRun * 0.5f, 1f, 1000f);
+			p *= _mainSpeed;
 		}
 
 		p *= Time.deltaTime;
@@ -171,11 +198,11 @@ public class CameraControl : MonoBehaviour
 		{
 			if (Input.GetKey(KeyCode.Q))
 			{
-				transform.RotateAround(transform.position, Vector3.up, -angleStep);
+				transform.RotateAround(transform.position, Vector3.up, -_angleStep);
 			}
 			else if (Input.GetKey(KeyCode.E))
 			{
-				transform.RotateAround(transform.position, Vector3.up, angleStep);
+				transform.RotateAround(transform.position, Vector3.up, _angleStep);
 			}
 		}
 	}
@@ -205,7 +232,7 @@ public class CameraControl : MonoBehaviour
 			var scrollWheel = Input.GetAxisRaw("Mouse ScrollWheel");
 			if (scrollWheel != 0)
 			{
-				baseDirection += new Vector3(0, 0, Input.mouseScrollDelta.y * wheelMoveAmp);
+				baseDirection += new Vector3(0, 0, Input.mouseScrollDelta.y * _wheelMoveAmp);
 				// Debug.Log(scrollWheel.ToString("F4") + " | " + Input.mouseScrollDelta.y);
 			}
 		}
@@ -246,5 +273,30 @@ public class CameraControl : MonoBehaviour
 		}
 
 		return baseDirection;
+	}
+
+	public void Move(Pose targetPose)
+	{
+		if (_movingCoroutine != null)
+		{
+			StopCoroutine(_movingCoroutine);
+		}
+		_movingCoroutine = StartCoroutine(ChangeCameraView(targetPose));
+	}
+
+	private IEnumerator ChangeCameraView(Pose targetPose)
+	{
+		while (
+			Vector3.Distance(transform.position, targetPose.position) > Vector3.kEpsilon &&
+			Quaternion.Angle(transform.rotation, targetPose.rotation) > Quaternion.kEpsilon)
+		{
+			var smoothPosition = Vector3.Lerp(transform.position, targetPose.position, MoveSmoothSpeed);
+			transform.position = smoothPosition;
+
+			var smoothRotation = Quaternion.Lerp(transform.rotation, targetPose.rotation, MoveSmoothSpeed);
+			transform.rotation = smoothRotation;
+
+			yield return null;
+		}
 	}
 }
