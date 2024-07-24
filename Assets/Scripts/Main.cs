@@ -47,6 +47,7 @@ public class Main : MonoBehaviour
 	private static MeshProcess.VHACD _vhacd = null;
 	private static ObjectSpawning _objectSpawning = null;
 	private static Main _instance = null;
+	private static Pose _cameraInitPose = Pose.identity;
 
 	private static bool _isResetting = false;
 	private static bool _resetTriggered = false;
@@ -67,6 +68,11 @@ public class Main : MonoBehaviour
 	public static CameraControl CameraControl => _cameraControl;
 	public static MeshProcess.VHACD MeshVHACD => _vhacd;
 	public static Main Instance => _instance;
+	public static Pose CameraInitPose
+	{
+		get => _cameraInitPose;
+		set => _cameraInitPose = value;
+	}
 
 	#region SDF Parser
 	private SDF.Root _sdfRoot = null;

@@ -4,9 +4,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Text;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+
 
 public class UIController : MonoBehaviour
 {
@@ -15,9 +18,9 @@ public class UIController : MonoBehaviour
 	private Toggle _toggleLockVerticalMoving = null;
 	private TextField _scaleField = null;
 	private Label _statusMessage = null;
-
 	private CameraControl _cameraControl = null;
 
+	private const float CameraViewDistance = 30f;
 	private const float ScaleFactorMin = 0.01f;
 	private const float ScaleFactorMax = 10;
 	private string _prevScaleFactorString = string.Empty;
@@ -31,32 +34,95 @@ public class UIController : MonoBehaviour
 		_toggleLockVerticalMoving = _rootVisualElement.Q<Toggle>("LockVerticalMoving");
 		_toggleLockVerticalMoving.RegisterValueChangedCallback(x => _cameraControl.VerticalMovementLock = x.newValue);
 
+		var buttonCameraView = _rootVisualElement.Q<Button>("CameraView");
+		buttonCameraView.RegisterCallback<ClickEvent>(x => ShowCameraView());
+
 		_scaleField = _rootVisualElement.Q<TextField>("ScaleField");
 		if (float.TryParse(_scaleField.text, out var scaleFactor))
 		{
 			objectSpawning.SetScaleFactor(scaleFactor);
 		}
-		// _scaleField.RegisterValueChangedCallback(OnValueChangedScaleField);
 		_scaleField.RegisterCallback<FocusOutEvent>(OnFocusOutScaleField);
 		_prevScaleFactorString = _scaleField.text;
 
 		var buttonPropsBox = _rootVisualElement.Q<Button>("PropsBox");
-		buttonPropsBox.RegisterCallback<ClickEvent>(
-			x => objectSpawning?.SetPropType(ObjectSpawning.PropsType.BOX));
+		buttonPropsBox.clickable.clicked += () => objectSpawning?.SetPropType(ObjectSpawning.PropsType.BOX);
 
 		var buttonPropsCylinder = _rootVisualElement.Q<Button>("PropsCylinder");
-		buttonPropsCylinder.RegisterCallback<ClickEvent>(
-			x => objectSpawning?.SetPropType(ObjectSpawning.PropsType.CYLINDER));
+		buttonPropsCylinder.clickable.clicked += () => objectSpawning?.SetPropType(ObjectSpawning.PropsType.CYLINDER);
 
 		var buttonPropsSphere = _rootVisualElement.Q<Button>("PropsSphere");
-		buttonPropsSphere.RegisterCallback<ClickEvent>(
-			x => objectSpawning?.SetPropType(ObjectSpawning.PropsType.SPHERE));
+		buttonPropsSphere.clickable.clicked += () => objectSpawning?.SetPropType(ObjectSpawning.PropsType.SPHERE);
 
 		_statusMessage = _rootVisualElement.Q<Label>("StatusMessage");
 		ClearMessage();
 
 		var buttonHelp = _rootVisualElement.Q<Button>("Help");
-		buttonHelp.RegisterCallback<ClickEvent>(x => ShowHelp());
+		buttonHelp.clickable.clicked += () => ShowHelp();
+
+		var buttonHome = _rootVisualElement.Q<Button>("Home");
+ 		buttonHome.clickable.clicked += () => _cameraControl.Move(Main.CameraInitPose);
+		buttonHome.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonHome, Color.gray); });
+		buttonHome.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonHome, Color.clear); });
+
+		var buttonFront = _rootVisualElement.Q<Button>("Front");
+		buttonFront.clickable.clicked += () => {
+			var position = Vector3.forward * CameraViewDistance;
+			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			_cameraControl.Move(new Pose(position, rotation));
+		};
+		buttonFront.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonFront, Color.gray); });
+		buttonFront.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonFront, Color.clear); });
+
+		var buttonLeft = _rootVisualElement.Q<Button>("Left");
+		buttonLeft.clickable.clicked += () => {
+			var position = Vector3.right * CameraViewDistance;
+			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			_cameraControl.Move(new Pose(position, rotation));
+		};
+		buttonLeft.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonLeft, Color.gray); });
+		buttonLeft.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonLeft, Color.clear); });
+
+		var buttonBack = _rootVisualElement.Q<Button>("Back");
+		buttonBack.clickable.clicked += () => {
+			var position = Vector3.back * CameraViewDistance;
+			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			_cameraControl.Move(new Pose(position, rotation));
+		};
+		buttonBack.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBack, Color.gray); });
+		buttonBack.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonBack, Color.clear); });
+
+		var buttonRight = _rootVisualElement.Q<Button>("Right");
+		buttonRight.clickable.clicked += () => {
+			var position = Vector3.left * CameraViewDistance;
+			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			_cameraControl.Move(new Pose(position, rotation));
+		};
+		buttonRight.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonRight, Color.gray); });
+		buttonRight.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonRight, Color.clear); });
+
+		var buttonTop = _rootVisualElement.Q<Button>("Top");
+		buttonTop.clickable.clicked += () => {
+			var position = Vector3.up * CameraViewDistance;
+			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			_cameraControl.Move(new Pose(position, rotation));
+		};
+		buttonTop.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonTop, Color.gray); });
+		buttonTop.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonTop, Color.clear); });
+
+		var buttonBottom = _rootVisualElement.Q<Button>("Bottom");
+		buttonBottom.clickable.clicked += () => {
+			var position = Vector3.down * CameraViewDistance;
+			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			_cameraControl.Move(new Pose(position, rotation));
+		};
+		buttonBottom.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBottom, Color.gray); });
+		buttonBottom.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonBottom, Color.clear); });
+	}
+
+	private void ChangeBackground(ref Button button, in Color color)
+	{
+		button.style.backgroundColor = new StyleColor(color);
 	}
 
 	void LateUpdate()
@@ -68,6 +134,7 @@ public class UIController : MonoBehaviour
 		else if (Input.GetKeyUp(KeyCode.Escape))
 		{
 			ShowHelp(true);
+			ShowCameraView(true);
 		}
 	}
 
@@ -109,6 +176,20 @@ public class UIController : MonoBehaviour
 		{
 			helpDialogScrollView.style.display = DisplayStyle.Flex;
 			_cameraControl.BlockMouseWheelControl(true);
+		}
+	}
+
+	private void ShowCameraView(in bool doClose = false)
+	{
+		var cameraViewMenuVisElem = _rootVisualElement.Q<VisualElement>("CameraViewMenu");
+
+		if (doClose || cameraViewMenuVisElem.style.display == DisplayStyle.Flex)
+		{
+			cameraViewMenuVisElem.style.display = DisplayStyle.None;
+		}
+		else
+		{
+			cameraViewMenuVisElem.style.display = DisplayStyle.Flex;
 		}
 	}
 
