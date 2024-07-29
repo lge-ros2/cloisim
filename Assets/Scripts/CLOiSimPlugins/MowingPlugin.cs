@@ -303,15 +303,27 @@ public class MowingPlugin : CLOiSimPlugin
 
 		var layerMask = LayerMask.GetMask("Default");
 
-		var helperVisuals = GetComponentsInChildren<SDF.Helper.Visual>();
-		foreach (var helperVisual in helperVisuals)
+		var helperLinks = GetComponentsInChildren<SDF.Helper.Link>();
+		var tempVisualMeshCollider = new List<MeshCollider>();
+		foreach (var helperLink in helperLinks)
 		{
-			var meshFilters = helperVisual.GetComponentsInChildren<MeshFilter>();
-			foreach (var meshFilter in meshFilters)
+			var meshColliders = helperLink.GetComponentsInChildren<MeshCollider>();
+			if (meshColliders.Length == 0)
 			{
-				var meshCollider = meshFilter.transform.gameObject.AddComponent<MeshCollider>();
-				meshCollider.convex = true;
-				meshCollider.isTrigger = true;
+				var helperVisuals = GetComponentsInChildren<SDF.Helper.Visual>();
+				foreach (var helperVisual in helperVisuals)
+				{
+
+					var meshFilters = helperVisual.GetComponentsInChildren<MeshFilter>();
+					foreach (var meshFilter in meshFilters)
+					{
+						var meshCollider = meshFilter.transform.gameObject.AddComponent<MeshCollider>();
+						// Debug.Log(helperVisual.name + "," + meshFilter.name + "," + meshCollider.name);
+						meshCollider.convex = true;
+						meshCollider.isTrigger = true;
+						tempVisualMeshCollider.Add(meshCollider);
+					}
+				}
 			}
 		}
 
@@ -347,14 +359,7 @@ public class MowingPlugin : CLOiSimPlugin
 
 		yield return null;
 
-		foreach (var helperVisual in helperVisuals)
-		{
-			var meshColliders = helperVisual.GetComponentsInChildren<MeshCollider>();
-			foreach (var meshCollider in meshColliders)
-			{
-				GameObject.Destroy(meshCollider);
-			}
-		}
+		RemoveTempColliderInVisuals(ref tempVisualMeshCollider);
 
 		yield return null;
 
@@ -368,6 +373,14 @@ public class MowingPlugin : CLOiSimPlugin
 		Array.Copy(_grass.texture.GetPixels(), _initialTexturePixels, _initialTexturePixels.LongLength);
 
 		yield return StartMowing();
+	}
+
+	private void RemoveTempColliderInVisuals(ref List<MeshCollider> meshColliders)
+	{
+		for (var i = 0; i < meshColliders.Count; i++)
+		{
+			GameObject.Destroy(meshColliders[i]);
+		}
 	}
 
 	private void AssignMaterial()
