@@ -224,8 +224,7 @@ public abstract class Device : MonoBehaviour
 		try
 		{
 			deviceMessage.SetMessage<T>(instance);
-			deviceMessage.GetMessage(out var message);
-			return deviceMessageQueue.Push(message);
+			return deviceMessageQueue.Push(deviceMessage);
 		}
 		catch (Exception ex)
 		{
@@ -240,8 +239,7 @@ public abstract class Device : MonoBehaviour
 		{
 			if (deviceMessage.SetMessage(data))
 			{
-				deviceMessage.GetMessage(out var message);
-				return deviceMessageQueue.Push(message);
+				return deviceMessageQueue.Push(deviceMessage);
 			}
 		}
 		catch (Exception ex)
