@@ -14,14 +14,19 @@ public class MicomPlugin : CLOiSimPlugin
 	private List<TF> _tfList = new List<TF>();
 	private SensorDevices.MicomCommand _micomCommand = null;
 	private SensorDevices.MicomSensor _micomSensor = null;
+	private MotorControl _motorControl = null;
+	// public MotorControl MotorControl => this._motorControl;
 	private SDF.Helper.Link[] _linkHelperInChildren = null;
 
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.MICOM;
+
+		_motorControl = new MotorControl(this.transform);
+
 		_micomSensor = gameObject.AddComponent<SensorDevices.MicomSensor>();
 		_micomCommand = gameObject.AddComponent<SensorDevices.MicomCommand>();
-		_micomCommand.SetMotorControl(_micomSensor.MotorControl);
+		_micomCommand.SetMotorControl(_motorControl);
 
 		attachedDevices.Add("Command", _micomCommand);
 		attachedDevices.Add("Sensor", _micomSensor);
@@ -84,9 +89,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 		_micomSensor.SetMotorConfiguration(wheelRadius, wheelSeparation, P, I, D);
 
-		// TODO: to be utilized, currently not used
-		var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f);
-		var brakeFriction = GetPluginParameters().GetValue<float>("wheel/friction/brake", 0.1f);
+		var brakeFriction = GetPluginParameters().GetValue<float>("wheel/brake/friction", float.NaN);
 
 		var wheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='left']", string.Empty);
 		var wheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='right']", string.Empty);

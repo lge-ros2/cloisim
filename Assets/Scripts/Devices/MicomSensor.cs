@@ -25,14 +25,11 @@ namespace SensorDevices
 
 		private SensorDevices.Battery battery = null;
 
-		private MotorControl _motorControl = null;
-		public MotorControl MotorControl => this._motorControl;
 
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
 			DeviceName = "MicomSensor";
-			_motorControl = new MotorControl(this.transform);
 		}
 
 		protected override void OnStart()
