@@ -138,14 +138,14 @@ public class Clock : Device
 		{
 			if (prevSimTime > SimTime)
 			{
-				Debug.LogWarningFormat("Filter SimTime, Prev:{0} >= Current:{1}", prevSimTime, SimTime);
+				Debug.LogWarning($"Filter SimTime, Prev:{prevSimTime} >= Current:{SimTime}");
 			}
 		}
 		else if (prevRealTime >= RealTime)
 		{
-			if ((prevRealTime > RealTime))
+			if (prevRealTime > RealTime)
 			{
-				Debug.LogWarningFormat("Filter RealTime, Prev:{0} >= Current:{1}", prevRealTime, RealTime);
+				Debug.LogWarning($"Filter RealTime, Prev:{prevRealTime} >= Current:{RealTime}");
 			}
 		}
 		else

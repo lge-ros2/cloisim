@@ -38,7 +38,7 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 	{
 		if (Count >= MaxQueue)
 		{
-			UnityEngine.Debug.LogWarning($"Outbound queue is reached to maximum capacity({MaxQueue})!!");
+			// UnityEngine.Debug.LogWarning($"Outbound queue is reached to maximum capacity({MaxQueue})!!");
 			FlushPortion();
 		}
 
