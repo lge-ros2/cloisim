@@ -79,7 +79,11 @@ public class Motor : Articulation
 			}
 			else
 			{
-				var adjustValue = _pidControl.Update(_targetAngularVelocity, _currentMotorVelocity, duration);
+				var adjustValue = 0f;
+				if (_pidControl != null)
+				{
+					adjustValue = _pidControl.Update(_targetAngularVelocity, _currentMotorVelocity, duration);
+				}
 				Drive(_targetAngularVelocity + adjustValue);
 			}
 		}

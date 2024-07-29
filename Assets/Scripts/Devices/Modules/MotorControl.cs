@@ -22,7 +22,9 @@ public class MotorControl
 		{WheelLocation.REAR_RIGHT, null}
 	};
 
-	private float _pidGainP, _pidGainI, _pidGainD;
+	private float _pidGainP = float.NaN;
+	private float _pidGainI = float.NaN;
+	private float _pidGainD = float.NaN;
 
 	private Odometry odometry = null;
 
@@ -67,7 +69,10 @@ public class MotorControl
 	public void AttachWheel(in WheelLocation location, in GameObject targetMotorObject)
 	{
 		var motor = new Motor(targetMotorObject);
-		motor.SetPID(_pidGainP, _pidGainI, _pidGainD);
+		if (_pidGainP != float.NaN || _pidGainI != float.NaN || _pidGainD != float.NaN)
+		{
+			motor.SetPID(_pidGainP, _pidGainI, _pidGainD);
+		}
 
 		wheelList[location] = motor;
 	}
