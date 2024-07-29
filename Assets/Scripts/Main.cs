@@ -16,17 +16,25 @@ using UnityEngine.UI;
 public class Main : MonoBehaviour
 {
 	[Header("Block Loading SDF")]
-	public bool doNotLoad = false;
+	[SerializeField]
+	private bool _doNotLoad = false;
 
 	[Header("Clean all models and lights before load model")]
-	public bool clearAllOnStart = true;
+	[SerializeField]
+	private bool _clearAllOnStart = true;
 
 	[Header("World File")]
-	public string worldFileName;
+	[SerializeField]
+	private string _worldFilename;
 
-	public List<string> modelRootDirectories = new List<string>();
-	public List<string> worldRootDirectories = new List<string>();
-	public List<string> fileRootDirectories = new List<string>();
+	[SerializeField]
+	private List<string> _modelRootDirectories  = new List<string>();
+
+	[SerializeField]
+	private List<string> _worldRootDirectories = new List<string>();
+
+	[SerializeField]
+	private List<string> _fileRootDirectories = new List<string>();
 
 	private FollowingTargetList _followingList = null;
 
@@ -138,13 +146,13 @@ public class Main : MonoBehaviour
 
 		if (filePaths == null)
 		{
-			Debug.LogWarning("CLOISIM_FILES_PATH is null. It will use default path. \n" + String.Join(", ", fileRootDirectories));
+			Debug.LogWarning("CLOISIM_FILES_PATH is null. It will use default path. \n" + String.Join(", ", _fileRootDirectories));
 		}
 		else
 		{
-			fileRootDirectories.Clear();
-			fileRootDirectories.AddRange(filePaths);
-			Debug.Log("Files Directory Paths: " + String.Join(", ", fileRootDirectories));
+			_fileRootDirectories.Clear();
+			_fileRootDirectories.AddRange(filePaths);
+			Debug.Log("Files Directory Paths: " + String.Join(", ", _fileRootDirectories));
 		}
 
 		var modelPathEnv = Environment.GetEnvironmentVariable("CLOISIM_MODEL_PATH");
@@ -152,13 +160,13 @@ public class Main : MonoBehaviour
 
 		if (modelPaths == null)
 		{
-			Debug.LogWarning("CLOISIM_MODEL_PATH is null. It will use default path. \n" + String.Join(", ", modelRootDirectories));
+			Debug.LogWarning("CLOISIM_MODEL_PATH is null. It will use default path. \n" + String.Join(", ", _modelRootDirectories ));
 		}
 		else
 		{
-			modelRootDirectories.Clear();
-			modelRootDirectories.AddRange(modelPaths);
-			Debug.Log("Models Directory Paths: " + String.Join(", ", modelRootDirectories));
+			_modelRootDirectories .Clear();
+			_modelRootDirectories .AddRange(modelPaths);
+			Debug.Log("Models Directory Paths: " + String.Join(", ", _modelRootDirectories ));
 		}
 
 		var worldPathEnv = Environment.GetEnvironmentVariable("CLOISIM_WORLD_PATH");
@@ -166,13 +174,13 @@ public class Main : MonoBehaviour
 
 		if (worldPaths == null)
 		{
-			Debug.LogWarning("CLOISIM_WORLD_PATH is null. It will use default path. \n" + String.Join(", ", worldRootDirectories));
+			Debug.LogWarning("CLOISIM_WORLD_PATH is null. It will use default path. \n" + String.Join(", ", _worldRootDirectories));
 		}
 		else
 		{
-			worldRootDirectories.Clear();
-			worldRootDirectories.AddRange(worldPaths);
-			Debug.Log("World Directory Paths: " + String.Join(", ", worldRootDirectories));
+			_worldRootDirectories.Clear();
+			_worldRootDirectories.AddRange(worldPaths);
+			Debug.Log("World Directory Paths: " + String.Join(", ", _worldRootDirectories));
 		}
 #endif
 	}
@@ -283,7 +291,7 @@ public class Main : MonoBehaviour
 
 		ResetRootModelsTransform();
 
-		if (clearAllOnStart)
+		if (_clearAllOnStart)
 		{
 			CleanAllResources();
 		}
@@ -299,20 +307,20 @@ public class Main : MonoBehaviour
 
 			if (!string.IsNullOrEmpty(newWorldFilename))
 			{
-				worldFileName = newWorldFilename;
+				_worldFilename = newWorldFilename;
 			}
 
 			_sdfRoot = new SDF.Root();
-			_sdfRoot.fileDefaultPaths.AddRange(fileRootDirectories);
-			_sdfRoot.modelDefaultPaths.AddRange(modelRootDirectories);
-			_sdfRoot.worldDefaultPaths.AddRange(worldRootDirectories);
+			_sdfRoot.fileDefaultPaths.AddRange(_fileRootDirectories);
+			_sdfRoot.modelDefaultPaths.AddRange(_modelRootDirectories );
+			_sdfRoot.worldDefaultPaths.AddRange(_worldRootDirectories);
 			_sdfRoot.UpdateResourceModelTable();
 
 			UpdateUIModelList();
 
-			if (!doNotLoad && !string.IsNullOrEmpty(worldFileName))
+			if (!_doNotLoad && !string.IsNullOrEmpty(_worldFilename))
 			{
-				_uiController?.SetEventMessage("Start to load world file: " + worldFileName);
+				_uiController?.SetEventMessage("Start to load world file: " + _worldFilename);
 				StartCoroutine(LoadWorld());
 			}
 		}
@@ -433,9 +441,9 @@ public class Main : MonoBehaviour
 	private IEnumerator LoadWorld()
 	{
 		// Debug.Log("Hello CLOiSim World!!!!!");
-		Debug.Log("Target World: " + worldFileName);
+		Debug.Log("Target World: " + _worldFilename);
 
-		if (_sdfRoot.DoParse(out var world, worldFileName))
+		if (_sdfRoot.DoParse(out var world, _worldFilename))
 		{
 			_sdfLoader = new SDF.Import.Loader();
 			_sdfLoader.SetRootModels(_worldRoot);
@@ -453,7 +461,7 @@ public class Main : MonoBehaviour
 		}
 		else
 		{
-			var errorMessage = "Parsing failed!!! Failed to load world file: " + worldFileName;
+			var errorMessage = "Parsing failed!!! Failed to load world file: " + _worldFilename;
 			Debug.LogError(errorMessage);
 			_uiController?.SetErrorMessage(errorMessage);
 		}
