@@ -11,6 +11,7 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 {
 	private const int MaxQueue = 30;
 	private const int TimeoutInMilliseconds = 500;
+	private const float FlushLeaveRate = 0.3f;
 
 	public DeviceMessageQueue()
 		: base(MaxQueue)
@@ -25,9 +26,9 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 		}
 	}
 
-	private void FlushHalf()
+	private void FlushPortion()
 	{
-		while (Count > MaxQueue / 2)
+		while (Count > (int)(MaxQueue * FlushLeaveRate))
 		{
 			Pop(out var _);
 		}
@@ -37,8 +38,8 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 	{
 		if (Count >= MaxQueue)
 		{
-			// UnityEngine.Debug.LogWarning($"Outbound queue is reached to maximum capacity({MaxQueue})!!");
-			FlushHalf();
+			UnityEngine.Debug.LogWarning($"Outbound queue is reached to maximum capacity({MaxQueue})!!");
+			FlushPortion();
 		}
 
 		return TryAdd(data, TimeoutInMilliseconds);
