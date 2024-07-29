@@ -9,8 +9,8 @@ using System;
 
 public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 {
-	private const int MaxQueue = 15;
-	private const int TimeoutInMilliseconds = 200;
+	private const int MaxQueue = 30;
+	private const int TimeoutInMilliseconds = 500;
 
 	public DeviceMessageQueue()
 		: base(MaxQueue)
@@ -21,7 +21,7 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 	{
 		while (Count > 0)
 		{
-			Pop(out var item);
+			Pop(out var _);
 		}
 	}
 
@@ -29,7 +29,7 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 	{
 		while (Count > MaxQueue / 2)
 		{
-			Pop(out var item);
+			Pop(out var _);
 		}
 	}
 
@@ -37,26 +37,18 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 	{
 		if (Count >= MaxQueue)
 		{
-			// UnityEngine.Debug.LogWarningFormat("Outbound queue is reached to maximum capacity({0})!!", MaxQueue);
+			// UnityEngine.Debug.LogWarning($"Outbound queue is reached to maximum capacity({MaxQueue})!!");
 			FlushHalf();
 		}
 
-		if (TryAdd(data, TimeoutInMilliseconds))
-		{
-			return true;
-		}
-
-		return false;
+		return TryAdd(data, TimeoutInMilliseconds);
 	}
 
 	public bool Pop(out DeviceMessage item)
 	{
 		try
 		{
-			if (TryTake(out item, TimeoutInMilliseconds))
-			{
-				return true;
-			}
+			return TryTake(out item, TimeoutInMilliseconds);
 		}
 		catch (Exception ex)
 		{

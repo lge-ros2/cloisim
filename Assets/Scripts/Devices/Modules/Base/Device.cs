@@ -263,7 +263,7 @@ public abstract class Device : MonoBehaviour
 		catch (Exception ex)
 		{
 			instance = default(T);
-			Debug.LogWarning("ERROR: PopDeviceMessage<T>(): " + ex.Message);
+			Debug.LogWarning($"ERROR: PopDeviceMessage<{typeof(T).ToString()}>(): {ex.Message}");
 		}
 
 		return false;

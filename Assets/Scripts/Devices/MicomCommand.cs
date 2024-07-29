@@ -45,10 +45,12 @@ namespace SensorDevices
 
 				DoWheelDrive(linearVelocity, angularVelocity);
 			}
+#if UNITY_EDITOR
 			else
 			{
 				Debug.LogWarning("ERROR: failed to pop device message");
 			}
+#endif
 		}
 
 		/// <param name="linearVelocity">m/s</param>
