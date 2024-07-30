@@ -182,12 +182,6 @@ public class Articulation
 			return;
 		}
 
-		if (targetVelocity == float.NaN && targetPosition == float.NaN)
-		{
-			Debug.LogWarning("Invalid Value: targetVelocity or targetPosition is NaN");
-			return;
-		}
-
 		// Arccording to document(https://docs.unity3d.com/2020.3/Documentation/ScriptReference/ArticulationDrive.html)
 		// F = stiffness * (currentPosition - target) - damping * (currentVelocity - targetVelocity).
 		var drive = GetDrive();
