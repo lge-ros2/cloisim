@@ -21,11 +21,13 @@ public class CameraControl : MonoBehaviour
 		space : Moves camera on X and Z axis only.  So camera doesn't gain any height
 	*/
 
-	private bool blockControl = false;
+	private bool _blockControl = false;
 
 	private bool _blockMouseWheelControl = false;
 
 	private bool _verticalMovementLock = false;
+
+	private bool _doStopMoving = false;
 
 	private UIController _uiController = null;
 
@@ -81,7 +83,7 @@ public class CameraControl : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (blockControl)
+		if (_blockControl)
 		{
 			return;
 		}
@@ -148,6 +150,8 @@ public class CameraControl : MonoBehaviour
 				_edgeSensAccumlated = 0.0f;
 				transform.eulerAngles = _lastMouse;
 			}
+
+			_doStopMoving = true;
 		}
 		else
 		{
@@ -189,6 +193,12 @@ public class CameraControl : MonoBehaviour
 		}
 
 		Rotate();
+
+		if (_doStopMoving && _movingCoroutine != null)
+		{
+			StopCoroutine(_movingCoroutine);
+			_doStopMoving = false;
+		}
 	}
 
 	private void Rotate()
@@ -199,22 +209,24 @@ public class CameraControl : MonoBehaviour
 			if (Input.GetKey(KeyCode.Q))
 			{
 				transform.RotateAround(transform.position, Vector3.up, -_angleStep);
+				_doStopMoving = true;
 			}
 			else if (Input.GetKey(KeyCode.E))
 			{
 				transform.RotateAround(transform.position, Vector3.up, _angleStep);
+				_doStopMoving = true;
 			}
 		}
 	}
 
 	public void BlockControl()
 	{
-		blockControl = true;
+		_blockControl = true;
 	}
 
 	public void UnBlockControl()
 	{
-		blockControl = false;
+		_blockControl = false;
 	}
 
 	public void BlockMouseWheelControl(in bool value)
@@ -234,13 +246,13 @@ public class CameraControl : MonoBehaviour
 			{
 				baseDirection += new Vector3(0, 0, Input.mouseScrollDelta.y * _wheelMoveAmp);
 				// Debug.Log(scrollWheel.ToString("F4") + " | " + Input.mouseScrollDelta.y);
+				_doStopMoving = true;
 			}
 		}
 
 		if (!Input.GetKey(KeyCode.LeftControl))
 		{
 			if (Input.GetKey(KeyCode.W))
-
 			{
 				baseDirection.z += 1;
 			}
@@ -269,6 +281,13 @@ public class CameraControl : MonoBehaviour
 			else if (Input.GetKey(KeyCode.F))
 			{
 				baseDirection.y += -1;
+			}
+
+			if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.S) ||
+				Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D) ||
+				Input.GetKey(KeyCode.R) || Input.GetKey(KeyCode.F))
+			{
+				_doStopMoving = true;
 			}
 		}
 
