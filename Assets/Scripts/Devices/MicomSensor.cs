@@ -233,7 +233,7 @@ namespace SensorDevices
 
 		private void UpdateUss()
 		{
-			if ((micomSensorData == null || micomSensorData.uss == null))
+			if (micomSensorData == null || micomSensorData.uss == null)
 			{
 				return;
 			}
@@ -246,7 +246,7 @@ namespace SensorDevices
 
 		private void UpdateIr()
 		{
-			if ((micomSensorData == null || micomSensorData.ir == null))
+			if (micomSensorData == null || micomSensorData.ir == null)
 			{
 				return;
 			}

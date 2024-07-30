@@ -69,7 +69,7 @@ public class MotorControl
 	public void AttachWheel(in WheelLocation location, in GameObject targetMotorObject)
 	{
 		var motor = new Motor(targetMotorObject);
-		if (_pidGainP != float.NaN || _pidGainI != float.NaN || _pidGainD != float.NaN)
+		if (!float.IsNaN(_pidGainP) && !float.IsNaN(_pidGainI) && !float.IsNaN(_pidGainD))
 		{
 			motor.SetPID(_pidGainP, _pidGainI, _pidGainD);
 		}
@@ -149,44 +149,16 @@ public class MotorControl
 		return false;
 	}
 
-	public float _prevPositionY = 0;
-	public sbyte _lastRotationDirection = 0;
-
-	public bool IsDirectionChanged(in float duration)
-	{
-		var isChanged = false;
-		if (_rotationDirection != 0 && _rotationDirection != _lastRotationDirection)
-		{
-			var rotationVelocity = Mathf.DeltaAngle(_prevPositionY, _baseTransform.position.y) / duration;
-			var allVelocityStopped = (Mathf.Abs(rotationVelocity) < Vector3.kEpsilon) ? true : false;
-
-			if (allVelocityStopped)
-			{
-				_rotationDirection = 0;
-			}
-			else
-			{
-				isChanged = true;
-			}
-			// Debug.Log("IsDirectionChanged " + isChanged + ", " + _rotationDirection);
-		}
-
-		_prevPositionY = _baseTransform.position.y;
-		_lastRotationDirection = _rotationDirection;
-
-		return isChanged;
-	}
-
 	public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor = null)
 	{
-		var decreaseVelocity = IsDirectionChanged(duration);
+		// var decreaseVelocity = IsDirectionChanged(duration);
 
 		foreach (var wheel in wheelList)
 		{
 			var motor = wheel.Value;
 			if (motor != null)
 			{
-				motor.Update(duration, decreaseVelocity);
+				motor.Update(duration);
 			}
 		}
 
