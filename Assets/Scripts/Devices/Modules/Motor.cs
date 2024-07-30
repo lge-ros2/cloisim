@@ -8,16 +8,18 @@ using UnityEngine;
 
 public class Motor : Articulation
 {
-	private PID _pidControl = null;
-
 	private const float WheelResolution = 0.087890625f; // in degree, encoding 12bits,360°
 
+	private PID _pidControl = null;
 	private float _targetAngularVelocity = 0; // degree per seconds
 	private float _currentMotorVelocity = 0; // degree per seconds
 
 	public Motor(in GameObject gameObject)
 		: base(gameObject)
 	{
+		DriveType = ArticulationDriveType.Force;
+
+		CheckDriveType();
 	}
 
 	new public void Reset()
@@ -33,7 +35,28 @@ public class Motor : Articulation
 
 	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
 	{
-		_pidControl = new PID(pFactor, iFactor, dFactor, 100, -100, 1000, -1000);
+		if (_pidControl == null)
+		{
+			_pidControl = new PID(pFactor, iFactor, dFactor, 100, -100, 1000, -1000);
+		}
+		else
+		{
+			_pidControl.Change(pFactor, iFactor, dFactor);
+		}
+	}
+
+	private void CheckDriveType()
+	{
+		if (DriveType is ArticulationDriveType.Force)
+		{
+			if (_jointBody.xDrive.damping < float.Epsilon &&
+				_jointBody.yDrive.damping < float.Epsilon &&
+				_jointBody.zDrive.damping < float.Epsilon)
+			{
+				Debug.LogWarning("Force DriveType requires valid damping > 0, Forcefully set to target velocity");
+				DriveType = ArticulationDriveType.Velocity;
+			}
+		}
 	}
 
 	/// <summary>Get Current Joint angular Velocity</summary>
@@ -43,7 +66,6 @@ public class Motor : Articulation
 		return _currentMotorVelocity * Mathf.Deg2Rad;
 	}
 
-	// private bool _isRotatingMotion = false;
 	/// <summary>Set Target Velocity wmotorLeftith PID control</summary>
 	/// <remarks>degree per second</remarks>
 	public void SetTargetVelocity(in float targetAngularVelocity)
@@ -62,7 +84,8 @@ public class Motor : Articulation
 
 		var adjustValue = (_pidControl != null) ? _pidControl.Update(_targetAngularVelocity, _currentMotorVelocity, duration) : 0;
 		// Debug.Log(_targetAngularVelocity + "  ,   " + adjustValue + "  ,   " + _currentMotorVelocity);
-		Drive(_targetAngularVelocity + adjustValue);
+
+		Drive(targetVelocity: _targetAngularVelocity + adjustValue);
 	}
 
 	private float _prevJointPosition = 0; // in deg, for GetAngularVelocity()

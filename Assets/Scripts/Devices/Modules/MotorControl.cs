@@ -22,10 +22,6 @@ public class MotorControl
 		{WheelLocation.REAR_RIGHT, null}
 	};
 
-	private float _pidGainP = float.NaN;
-	private float _pidGainI = float.NaN;
-	private float _pidGainD = float.NaN;
-
 	private Odometry odometry = null;
 
 	#endregion
@@ -59,22 +55,43 @@ public class MotorControl
 		this.odometry = new Odometry(this, radius, separation);
 	}
 
-	public void SetPID(in float p, in float i, in float d)
+	private bool IsWheelAttached()
 	{
-		_pidGainP = p;
-		_pidGainI = i;
-		_pidGainD = d;
-	}
-
-	public void AttachWheel(in WheelLocation location, in GameObject targetMotorObject)
-	{
-		var motor = new Motor(targetMotorObject);
-		if (!float.IsNaN(_pidGainP) && !float.IsNaN(_pidGainI) && !float.IsNaN(_pidGainD))
+		foreach (var wheel in wheelList)
 		{
-			motor.SetPID(_pidGainP, _pidGainI, _pidGainD);
+			if (wheel.Value != null)
+			{
+				return true;
+			}
 		}
 
-		wheelList[location] = motor;
+		Debug.LogWarning("There is no Wheel, AttachWheel() first");
+		return false;
+	}
+
+	public void SetPID(in float p = float.NaN, in float i = float.NaN, in float d = float.NaN)
+	{
+		if (IsWheelAttached())
+		{
+			if (!float.IsNaN(p) && !float.IsNaN(i) && !float.IsNaN(d))
+			{
+				foreach (var wheel in wheelList)
+				{
+					wheel.Value?.SetPID(p, i, d);
+				}
+			}
+			else
+			{
+				Debug.LogWarning("PID Gain is NaN");
+			}
+		}
+	}
+
+	public void AttachWheel(
+		in WheelLocation location,
+		in GameObject targetMotorObject)
+	{
+		wheelList[location] =  new Motor(targetMotorObject);
 	}
 
 	/// <summary>Set differential driver</summary>

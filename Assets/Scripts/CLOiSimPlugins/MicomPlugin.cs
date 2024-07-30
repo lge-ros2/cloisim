@@ -92,14 +92,6 @@ public class MicomPlugin : CLOiSimPlugin
 		var wheelTread = GetPluginParameters().GetValue<float>("wheel/tread"); // TODO: to be deprecated
 		var wheelSeparation = GetPluginParameters().GetValue<float>("wheel/separation", wheelTread);
 
-		if (GetPluginParameters().IsValidNode("wheel/PID"))
-		{
-			var P = GetPluginParameters().GetValue<float>("wheel/PID/kp");
-			var I = GetPluginParameters().GetValue<float>("wheel/PID/ki");
-			var D = GetPluginParameters().GetValue<float>("wheel/PID/kd");
-			_motorControl.SetPID(P, I, D);
-		}
-
 		_motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
 
 		var wheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='left']", string.Empty);
@@ -114,6 +106,14 @@ public class MicomPlugin : CLOiSimPlugin
 		else
 		{
 			SetWheel(wheelLeftName, wheelRightName);
+		}
+
+		if (GetPluginParameters().IsValidNode("wheel/PID"))
+		{
+			var P = GetPluginParameters().GetValue<float>("wheel/PID/kp");
+			var I = GetPluginParameters().GetValue<float>("wheel/PID/ki");
+			var D = GetPluginParameters().GetValue<float>("wheel/PID/kd");
+			_motorControl.SetPID(P, I, D);
 		}
 
 		if (GetPluginParameters().IsValidNode("battery"))
@@ -205,7 +205,9 @@ public class MicomPlugin : CLOiSimPlugin
 		}
 	}
 
-	public void SetWheel(in string frontWheelLeftName, in string frontWheelRightName, in string rearWheelLeftName, in string rearWheelRightName)
+	public void SetWheel(
+		in string frontWheelLeftName, in string frontWheelRightName,
+		in string rearWheelLeftName, in string rearWheelRightName)
 	{
 		SetWheel(frontWheelLeftName, frontWheelRightName);
 
