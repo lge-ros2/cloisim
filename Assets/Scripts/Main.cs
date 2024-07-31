@@ -15,10 +15,6 @@ using UnityEngine.UI;
 [DefaultExecutionOrder(30)]
 public class Main : MonoBehaviour
 {
-	[Header("Block Loading SDF")]
-	[SerializeField]
-	private bool _doNotLoad = false;
-
 	[Header("Clean all models and lights before load model")]
 	[SerializeField]
 	private bool _clearAllOnStart = true;
@@ -318,7 +314,7 @@ public class Main : MonoBehaviour
 
 			UpdateUIModelList();
 
-			if (!_doNotLoad && !string.IsNullOrEmpty(_worldFilename))
+			if (!string.IsNullOrEmpty(_worldFilename))
 			{
 				_uiController?.SetEventMessage("Start to load world file: " + _worldFilename);
 				StartCoroutine(LoadWorld());
