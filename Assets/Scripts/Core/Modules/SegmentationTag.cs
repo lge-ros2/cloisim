@@ -129,7 +129,11 @@ public class SegmentationTag : MonoBehaviour
 		// Debug.Log($"{this.name} {renderers.Length}");
 		foreach (var renderer in renderers)
 		{
-			renderer.SetPropertyBlock(mpb);
+			// Debug.Log($"{this.name} material length {renderer.materials.Length}");
+			for (var i =0 ; i < renderer.materials.Length; i++)
+			{
+				renderer.SetPropertyBlock(mpb, i);
+			}
 		}
 
 		var terrains = GetComponentsInChildren<Terrain>();

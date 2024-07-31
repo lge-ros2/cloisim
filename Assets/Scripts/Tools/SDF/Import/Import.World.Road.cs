@@ -16,7 +16,7 @@ namespace SDF
 			{
 				var roadObject = Implement.Road.Generate(road);
 
-				SegmentationManager.AttachTag(roadObject.name, roadObject);
+				Main.SegmentationManager.AttachTag(roadObject.name, roadObject);
 				Main.SegmentationManager.UpdateTags();
 			}
 
