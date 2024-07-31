@@ -27,7 +27,7 @@ public class CameraControl : MonoBehaviour
 
 	private bool _verticalMovementLock = false;
 
-	private bool _doStopMoving = false;
+	private bool _terminateMoving = false;
 
 	private UIController _uiController = null;
 
@@ -151,7 +151,7 @@ public class CameraControl : MonoBehaviour
 				transform.eulerAngles = _lastMouse;
 			}
 
-			_doStopMoving = true;
+			_terminateMoving = true;
 		}
 		else
 		{
@@ -194,10 +194,10 @@ public class CameraControl : MonoBehaviour
 
 		Rotate();
 
-		if (_doStopMoving && _movingCoroutine != null)
+		if (_terminateMoving && _movingCoroutine != null)
 		{
 			StopCoroutine(_movingCoroutine);
-			_doStopMoving = false;
+			_terminateMoving = false;
 		}
 	}
 
@@ -209,12 +209,12 @@ public class CameraControl : MonoBehaviour
 			if (Input.GetKey(KeyCode.Q))
 			{
 				transform.RotateAround(transform.position, Vector3.up, -_angleStep);
-				_doStopMoving = true;
+				_terminateMoving = true;
 			}
 			else if (Input.GetKey(KeyCode.E))
 			{
 				transform.RotateAround(transform.position, Vector3.up, _angleStep);
-				_doStopMoving = true;
+				_terminateMoving = true;
 			}
 		}
 	}
@@ -246,7 +246,7 @@ public class CameraControl : MonoBehaviour
 			{
 				baseDirection += new Vector3(0, 0, Input.mouseScrollDelta.y * _wheelMoveAmp);
 				// Debug.Log(scrollWheel.ToString("F4") + " | " + Input.mouseScrollDelta.y);
-				_doStopMoving = true;
+				_terminateMoving = true;
 			}
 		}
 
@@ -287,7 +287,7 @@ public class CameraControl : MonoBehaviour
 				Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D) ||
 				Input.GetKey(KeyCode.R) || Input.GetKey(KeyCode.F))
 			{
-				_doStopMoving = true;
+				_terminateMoving = true;
 			}
 		}
 
