@@ -113,7 +113,14 @@ public class MicomPlugin : CLOiSimPlugin
 			var P = GetPluginParameters().GetValue<float>("wheel/PID/kp");
 			var I = GetPluginParameters().GetValue<float>("wheel/PID/ki");
 			var D = GetPluginParameters().GetValue<float>("wheel/PID/kd");
-			_motorControl.SetPID(P, I, D);
+
+			var iMin = GetPluginParameters().GetValue<float>("wheel/PID/limit/integral/min", -100);
+			var iMax = GetPluginParameters().GetValue<float>("wheel/PID/limit/integral/max", 100);
+			var outputMin = GetPluginParameters().GetValue<float>("wheel/PID/limit/output/min", -1000);
+			var outputMax = GetPluginParameters().GetValue<float>("wheel/PID/limit/output/max", 1000);
+			// Debug.Log(iMin + ", " + iMax + ", " + outputMin + ", " + outputMax);
+
+			_motorControl.SetPID(P, I, D, iMin, iMax, outputMin, outputMax);
 		}
 
 		if (GetPluginParameters().IsValidNode("battery"))

@@ -69,20 +69,24 @@ public class MotorControl
 		return false;
 	}
 
-	public void SetPID(in float p = float.NaN, in float i = float.NaN, in float d = float.NaN)
+	public void SetPID(
+		in float p, in float i, in float d,
+		in float integralMin, in float integralMax,
+		in float outputMin, in float outputMax)
 	{
 		if (IsWheelAttached())
 		{
-			if (!float.IsNaN(p) && !float.IsNaN(i) && !float.IsNaN(d))
+			if (!float.IsNaN(p) && !float.IsNaN(i) && !float.IsNaN(d) &&
+				!float.IsInfinity(p) && !float.IsInfinity(i) && !float.IsInfinity(d))
 			{
 				foreach (var wheel in wheelList)
 				{
-					wheel.Value?.SetPID(p, i, d);
+					wheel.Value?.SetPID(p, i, d, integralMin, integralMax, outputMin, outputMax);
 				}
 			}
 			else
 			{
-				Debug.LogWarning("PID Gain is NaN");
+				Debug.LogWarning("One of PID Gain value is NaN or Infinity. Set to default value");
 			}
 		}
 	}

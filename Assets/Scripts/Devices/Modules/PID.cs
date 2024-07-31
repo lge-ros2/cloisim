@@ -12,19 +12,29 @@ public class PID
 	private float _pGain, _iGain, _dGain;
 	private float _integralError = 0;
 	private float _lastError = 0;
-	private float _integralMax, _integralMin;
-	private float _cmdMax, _cmdMin;
+	private float _integralMin, _integralMax;
+	private float _cmdMin, _cmdMax;
 
 	public PID(
 		in float pGain, in float iGain, in float dGain,
-		in float integralMax = 100, in float integralMin = -100,
-		in float cmdMax = 1000, in float cmdMin = -1000)
+		in float integralMin = -100, in float integralMax = 100,
+		in float cmdMin = -1000, in float cmdMax = 1000)
 	{
 		Change(pGain, iGain, dGain);
-		this._integralMax = integralMax;
-		this._integralMin = integralMin;
-		this._cmdMax = cmdMax;
-		this._cmdMin = cmdMin;
+		SetIntegralRange(integralMin, integralMax);
+		SetOutputRange(cmdMin, cmdMax);
+	}
+
+	public void SetIntegralRange(in float min, in float max)
+	{
+		this._integralMin = min;
+		this._integralMax = max;
+	}
+
+	public void SetOutputRange(in float min, in float max)
+	{
+		this._cmdMin = min;
+		this._cmdMax = max;
 	}
 
 	public void Change(in float pGain, in float iGain, in float dGain)

@@ -33,11 +33,17 @@ public class Motor : Articulation
 		_prevJointPosition = 0;
 	}
 
-	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
+	public void SetPID(
+		in float pFactor, in float iFactor, in float dFactor,
+		in float integralMin, in float integralMax,
+		in float outputMin, in float outputMax)
 	{
 		if (_pidControl == null)
 		{
-			_pidControl = new PID(pFactor, iFactor, dFactor, 100, -100, 1000, -1000);
+			_pidControl = new PID(
+				pFactor, iFactor, dFactor,
+				integralMin, integralMax,
+				outputMin, outputMax);
 		}
 		else
 		{
