@@ -224,8 +224,7 @@ public abstract class Device : MonoBehaviour
 		try
 		{
 			deviceMessage.SetMessage<T>(instance);
-			deviceMessage.GetMessage(out var message);
-			return deviceMessageQueue.Push(message);
+			return deviceMessageQueue.Push(deviceMessage);
 		}
 		catch (Exception ex)
 		{
@@ -240,8 +239,7 @@ public abstract class Device : MonoBehaviour
 		{
 			if (deviceMessage.SetMessage(data))
 			{
-				deviceMessage.GetMessage(out var message);
-				return deviceMessageQueue.Push(message);
+				return deviceMessageQueue.Push(deviceMessage);
 			}
 		}
 		catch (Exception ex)
@@ -263,7 +261,7 @@ public abstract class Device : MonoBehaviour
 		catch (Exception ex)
 		{
 			instance = default(T);
-			Debug.LogWarning("ERROR: PopDeviceMessage<T>(): " + ex.Message);
+			Debug.LogWarning($"ERROR: PopDeviceMessage<{typeof(T).ToString()}>(): {ex.Message}");
 		}
 
 		return false;

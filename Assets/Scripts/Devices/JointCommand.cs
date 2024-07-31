@@ -25,16 +25,20 @@ namespace SensorDevices
 				this.joint = joint;
 				this.targetPosition = float.NaN;
 				this.targetVelocity = float.NaN;
-				Set(targetPosition_, targetVelocity_);
+				SetTarget(targetPosition_, targetVelocity_);
 			}
 
-			public void Set(in float targetPosition_, in float targetVelocity_)
+			public void SetTarget(in float position, in float velocity)
 			{
-				if (targetPosition_ != float.NaN)
-					this.targetPosition = (this.joint.IsRevoluteType() ? SDF2Unity.CurveOrientation(targetPosition_) : targetPosition_);
+				if (!float.IsNaN(position))
+				{
+					this.targetPosition = (this.joint.IsRevoluteType() ? SDF2Unity.CurveOrientation(position) : position);
+				}
 
-				if (targetVelocity_ != float.NaN)
-					this.targetVelocity = (this.joint.IsRevoluteType() ? SDF2Unity.CurveOrientation(targetVelocity_) : targetVelocity_);
+				if (!float.IsNaN(velocity))
+				{
+					this.targetVelocity = (this.joint.IsRevoluteType() ? SDF2Unity.CurveOrientation(velocity) : velocity);
+				}
 			}
 		}
 
@@ -117,9 +121,13 @@ namespace SensorDevices
 			{
 				var command = jointCommandQueue.Dequeue();
 				if (command.joint != null)
-					command.joint.Drive(command.targetVelocity, command.targetPosition);
+				{
+					command.joint.Drive(
+						targetPosition: command.targetPosition,
+						targetVelocity: command.targetVelocity);
+				}
 				else
-					Debug.LogWarning("Command joint is null. " + command.targetVelocity + ", " + command.targetPosition);
+					Debug.LogWarning($"Command joint is null. {command.targetVelocity}, {command.targetPosition}");
 			}
 		}
 	}

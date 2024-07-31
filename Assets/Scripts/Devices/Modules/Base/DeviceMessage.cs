@@ -15,16 +15,6 @@ public class DeviceMessage : MemoryStream
 		Reset();
 	}
 
-	public DeviceMessage GetMessage()
-	{
-		return (IsValid()) ? this : null;
-	}
-
-	public void GetMessage(out DeviceMessage message)
-	{
-		message = (IsValid()) ? this : null;
-	}
-
 	public bool SetMessage(in byte[] data)
 	{
 		if (data == null)
