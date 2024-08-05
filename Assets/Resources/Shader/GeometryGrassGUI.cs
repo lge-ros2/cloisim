@@ -90,6 +90,28 @@ public class GeometryGrassGUI : ShaderGUI
 		GUILayout.Space(20);
 
 		// Start a new section for the grass visibility map.
+		GUILayout.Label("Dry Grass", EditorStyles.boldLabel);
+		var dryGrassMap = FindProperty("_DryGrassMap", properties);
+		var dryGrassMapLabel = new GUIContent(dryGrassMap.displayName, "Dry grass map. black = normal grass, white = dry grass");
+		EditorGUI.BeginChangeCheck();
+		editor.TexturePropertySingleLine(dryGrassMapLabel, dryGrassMap);
+		if (EditorGUI.EndChangeCheck())
+		{
+			SetKeywordValue("DRY_GRASS_ON", dryGrassMap.textureValue, target);
+		}
+
+		if (dryGrassMap.textureValue)
+		{
+			editor.TextureScaleOffsetProperty(dryGrassMap);
+
+			var dryGrassColor = FindProperty("_DryGrassColor", properties);
+			var dryGrassColorLabel = new GUIContent(dryGrassColor.displayName, "Dry grass color");
+			editor.ShaderProperty(dryGrassColor, dryGrassColorLabel);
+		}
+
+		GUILayout.Space(20);
+
+		// Start a new section for the grass visibility map.
 		GUILayout.Label("Visibility", EditorStyles.boldLabel);
 
 		var grassMap = FindProperty("_GrassMap", properties);
