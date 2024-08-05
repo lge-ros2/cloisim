@@ -136,6 +136,14 @@ public class MowingPlugin : CLOiSimPlugin
 				material.SetFloat("_GrassThreshold", visibilityThreshold);
 				material.SetFloat("_GrassFalloff", visibilityFalloff);
 			}
+
+			var dryMapUri = plugin.GetValue<string>("grass/dry/map/uri");
+			if (!string.IsNullOrEmpty(dryMapUri))
+			{
+				var dryMapColorStr = plugin.GetValue<string>("grass/dry/color");
+				var dryMapColor = SDF2Unity.Color(dryMapColorStr);
+				SetDryGrass(dryMapUri, dryMapColor);
+			}
 		}
 
 		private void CreateGrassMapTexture()
@@ -165,6 +173,16 @@ public class MowingPlugin : CLOiSimPlugin
 				material.SetTexture("_GrassMap", texture);
 				material.EnableKeyword("VISIBILITY_ON");
 			}
+		}
+
+		private void SetDryGrass(in string mapUri, in Color color)
+		{
+			// Debug.Log(mapUri);
+			var texture = MeshLoader.GetTexture(mapUri);
+			texture.name = "Dry Grass Map";
+			material.SetColor("_DryGrassColor", color);
+			material.SetTexture("_DryGrassMap", texture);
+			material.EnableKeyword("DRY_GRASS_ON");
 		}
 	}
 

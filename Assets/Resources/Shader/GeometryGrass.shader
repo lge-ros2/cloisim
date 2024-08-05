@@ -28,6 +28,10 @@ Shader "Custom/GeometryGrass"
 		_GrassThreshold("Grass Visibility Threshold", Range(-0.1, 1)) = 0.5
 		_GrassFalloff("Grass Visibility Fade-In Falloff", Range(0, 1)) = 0.05
 
+		// Dry Grass properties.
+		_DryGrassMap("Dry Grass Map", 2D) = "black" {}
+		_DryGrassColor("Dry Grass Color", Color) = (1, 0.7, 0, 1)
+
 		// Wind properties.
 		_WindMap("Wind Offset Map", 2D) = "bump" {}
 		_WindVelocity("Wind Velocity", Vector) = (1, 0, 0, 0)
@@ -53,11 +57,10 @@ Shader "Custom/GeometryGrass"
 			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
 			#pragma multi_compile _ _SHADOWS_SOFT
 
-			#pragma multi_compile_local WIND_OFF _
+			#pragma multi_compile_local DRY_GRASS_ON _
 			#pragma multi_compile_local VISIBILITY_ON _
+			#pragma multi_compile_local WIND_OFF _
 
-			#define UNITY_PI 3.14159265359f
-			#define UNITY_TWO_PI 6.28318530718f
 			#define BLADE_SEGMENTS 4
 
 			CBUFFER_START(UnityPerMaterial)
@@ -83,6 +86,10 @@ Shader "Custom/GeometryGrass"
 				float4 _GrassMap_ST;
 				float  _GrassThreshold;
 				float  _GrassFalloff;
+
+				sampler2D _DryGrassMap;
+				float4 _DryGrassMap_ST;
+				float4 _DryGrassColor;
 
 				sampler2D _WindMap;
 				float4 _WindMap_ST;
@@ -127,6 +134,7 @@ Shader "Custom/GeometryGrass"
 				float4 positionCS : SV_POSITION;
 				float3 positionWS : TEXCOORD0;
 				float2 uv : TEXCOORD1;
+				float4 dryRate : BLENDWEIGHT;
 			};
 
 			// Following functions from Roystan's code:
@@ -269,14 +277,13 @@ Shader "Custom/GeometryGrass"
 
 			// This function applies a transformation (during the geometry shader),
 			// converting to clip space in the process.
-			g2f worldToClip(float3 pos, float3 offset, float3x3 transformationMatrix, float2 uv)
+			g2f worldToClip(float3 pos, float3 offset, float3x3 transformationMatrix, float2 uv, float dryRate = 0)
 			{
 				g2f o;
-
 				o.positionCS = TransformObjectToHClip(pos + mul(transformationMatrix, offset));
 				o.positionWS = TransformObjectToWorld(pos + mul(transformationMatrix, offset));
 				o.uv = TRANSFORM_TEX(uv, _BaseTex);
-
+				o.dryRate = dryRate;
 				return o;
 			}
 
@@ -306,20 +313,20 @@ Shader "Custom/GeometryGrass"
 					);
 
 					// Rotate around the y-axis a random amount.
-					float3x3 randRotMatrix = angleAxis3x3(rand(pos) * UNITY_TWO_PI, float3(0, 0, 1.0f));
+					float3x3 randRotMatrix = angleAxis3x3(rand(pos) * TWO_PI, float3(0, 0, 1.0f));
 
 					// Create a matrix that rotates the base of the blade.
 					float3x3 baseTransformationMatrix = mul(tangentToLocal, randRotMatrix);
 
 					// The rest of the grass blade rotates slightly around the base.
-					float3x3 randBendMatrix = angleAxis3x3(rand(pos.zzx) * _BladeBendDelta * UNITY_PI * 0.5f, float3(-1.0f, 0, 0));
+					float3x3 randBendMatrix = angleAxis3x3(rand(pos.zzx) * _BladeBendDelta * HALF_PI, float3(-1.0f, 0, 0));
 
 #if WIND_ON
 					float2 windUV = pos.xz * _WindMap_ST.xy + _WindMap_ST.zw + normalize(_WindVelocity.xz) * _WindFrequency * _Time.y;
 					float2 windSample = (tex2Dlod(_WindMap, float4(windUV, 0, 0)).xy * 2.0f - 0.5f) * length(_WindVelocity);
 
 					float3 windAxis = normalize(float3(windSample.x, windSample.y, 0));
-					float3x3 windMatrix = angleAxis3x3(UNITY_PI * windSample, windAxis);
+					float3x3 windMatrix = angleAxis3x3(PI * windSample, windAxis);
 
 					// Create a matrix for the non-base vertices of the grass blade, incorporating wind.
 					float3x3 tipTransformationMatrix = mul(mul(mul(tangentToLocal, windMatrix), randBendMatrix), randRotMatrix);
@@ -338,6 +345,12 @@ Shader "Custom/GeometryGrass"
 					float height = lerp(_BladeHeightMin, _BladeHeightMax, rand(pos.zyx) * falloff);
 					float forward = rand(pos.yyz) * _BladeBendDistance;
 
+#ifdef DRY_GRASS_ON
+					float dryRate = tex2Dlod(_DryGrassMap, float4(-input[0].uv, 0, 0)).r;
+#else
+					float dryRate = 0;
+#endif
+
 					// Create blade segments by adding two vertices at once.
 					for (int i = 0; i < BLADE_SEGMENTS; ++i)
 					{
@@ -346,12 +359,12 @@ Shader "Custom/GeometryGrass"
 
 						float3x3 transformationMatrix = (i == 0) ? baseTransformationMatrix : tipTransformationMatrix;
 
-						triStream.Append(worldToClip(pos, float3( offset.x, offset.y, offset.z), transformationMatrix, float2(0, t)));
-						triStream.Append(worldToClip(pos, float3(-offset.x, offset.y, offset.z), transformationMatrix, float2(1, t)));
+						triStream.Append(worldToClip(pos, float3( offset.x, offset.y, offset.z), transformationMatrix, float2(0, t), dryRate));
+						triStream.Append(worldToClip(pos, float3(-offset.x, offset.y, offset.z), transformationMatrix, float2(1, t), dryRate));
 					}
 
 					// Add the final vertex at the tip of the grass blade.
-					triStream.Append(worldToClip(pos, float3(0, forward, height), tipTransformationMatrix, float2(0.5, 1)));
+					triStream.Append(worldToClip(pos, float3(0, forward, height), tipTransformationMatrix, float2(0.5, 1), dryRate));
 
 					triStream.RestartStrip();
 				}
@@ -393,7 +406,13 @@ Shader "Custom/GeometryGrass"
 				float4 shadowColor = lerp(0.0f, 1.0f, shadowAttenuation);
 				color *= shadowColor;
 //#endif
-				return color * lerp(_BaseColor, _TipColor, i.uv.y);
+
+#ifdef DRY_GRASS_ON
+				float4 tipColor = lerp(_TipColor, _DryGrassColor, i.dryRate);
+#else
+				float4 tipColor = _TipColor;
+#endif
+				return color * lerp(_BaseColor, tipColor, i.uv.y);
 			}
 
 			ENDHLSL
