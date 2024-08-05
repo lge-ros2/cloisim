@@ -9,16 +9,18 @@ using System.IO;
 using System.Drawing;
 using System;
 
-public class ProceduralHeightmap
+public static class ProceduralHeightmap
 {
 	private static readonly string terrainShaderName = "Universal Render Pipeline/Terrain/Lit";
 	private static readonly Shader TerrainShader = Shader.Find(terrainShaderName);
 
-	private static readonly int ResolutionPerPatch = 32;
+	// private static readonly int ResolutionPerPatch = 32;
+	private static readonly int DetailResolutionRate = 2;
 	private static readonly int MinDetailResolution = 8;
 	private static readonly float DefaultSmootheness = 0.3f;
+	private static readonly float BaseMapDistance = 500f;
 
-	private static void UpdateHeightMap(TerrainData terrainData, in Texture2D heightmapTexture)
+	private static void UpdateHeightMap(this TerrainData terrainData, in Texture2D heightmapTexture)
 	{
 		// TerrainData terrainData = this.GetComponent<TerrainCollider>().terrainData;
 		var terrainWidth = terrainData.heightmapResolution;
@@ -95,8 +97,9 @@ public class ProceduralHeightmap
 			return;
 		}
 
-		TerrainData terrainData = null;
 		var parentObject = heightmapObject.transform.parent;
+
+		TerrainData terrainData = null;
 
 		if (isVisualMesh)
 		{
@@ -138,13 +141,13 @@ public class ProceduralHeightmap
 			terrainData.heightmapResolution = Mathf.Max(Mathf.NextPowerOfTwo(texture.width), Mathf.NextPowerOfTwo(texture.height)) + 1;
 
 			var sampling = (int)(property.sampling * MinDetailResolution);
-			terrainData.SetDetailResolution(sampling, ResolutionPerPatch);
+			terrainData.SetDetailResolution(sampling * DetailResolutionRate, sampling);
+
+			terrainData.UpdateHeightMap(texture);
 
 			var terrainSize = SDF2Unity.Scale(property.size);
 			var DefaultTerrainSize = new Vector3(texture.width, 1f, texture.height);
 			terrainData.size = (terrainSize == Vector3.one) ? DefaultTerrainSize : terrainSize;
-
-			UpdateHeightMap(terrainData, texture);
 		}
 
 		if (isVisualMesh)
@@ -178,11 +181,16 @@ public class ProceduralHeightmap
 			var terrain = heightmapObject.AddComponent<Terrain>();
 			terrain.materialTemplate = new Material(TerrainShader);
 			terrain.terrainData = terrainData;
+			terrain.drawInstanced = true;
+			terrain.basemapDistance = BaseMapDistance;
+			terrain.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
 		}
 		else
 		{
 			var terrainCollider = heightmapObject.AddComponent<TerrainCollider>();
 			terrainCollider.terrainData = terrainData;
 		}
+
+		heightmapObject.tag = "Geometry";
 	}
 }
