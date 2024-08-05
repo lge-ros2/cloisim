@@ -61,8 +61,6 @@ Shader "Custom/GeometryGrass"
 			#pragma multi_compile_local VISIBILITY_ON _
 			#pragma multi_compile_local WIND_OFF _
 
-			#define UNITY_PI 3.14159265359f
-			#define UNITY_TWO_PI 6.28318530718f
 			#define BLADE_SEGMENTS 4
 
 			CBUFFER_START(UnityPerMaterial)
@@ -315,20 +313,20 @@ Shader "Custom/GeometryGrass"
 					);
 
 					// Rotate around the y-axis a random amount.
-					float3x3 randRotMatrix = angleAxis3x3(rand(pos) * UNITY_TWO_PI, float3(0, 0, 1.0f));
+					float3x3 randRotMatrix = angleAxis3x3(rand(pos) * TWO_PI, float3(0, 0, 1.0f));
 
 					// Create a matrix that rotates the base of the blade.
 					float3x3 baseTransformationMatrix = mul(tangentToLocal, randRotMatrix);
 
 					// The rest of the grass blade rotates slightly around the base.
-					float3x3 randBendMatrix = angleAxis3x3(rand(pos.zzx) * _BladeBendDelta * UNITY_PI * 0.5f, float3(-1.0f, 0, 0));
+					float3x3 randBendMatrix = angleAxis3x3(rand(pos.zzx) * _BladeBendDelta * HALF_PI, float3(-1.0f, 0, 0));
 
 #if WIND_ON
 					float2 windUV = pos.xz * _WindMap_ST.xy + _WindMap_ST.zw + normalize(_WindVelocity.xz) * _WindFrequency * _Time.y;
 					float2 windSample = (tex2Dlod(_WindMap, float4(windUV, 0, 0)).xy * 2.0f - 0.5f) * length(_WindVelocity);
 
 					float3 windAxis = normalize(float3(windSample.x, windSample.y, 0));
-					float3x3 windMatrix = angleAxis3x3(UNITY_PI * windSample, windAxis);
+					float3x3 windMatrix = angleAxis3x3(PI * windSample, windAxis);
 
 					// Create a matrix for the non-base vertices of the grass blade, incorporating wind.
 					float3x3 tipTransformationMatrix = mul(mul(mul(tangentToLocal, windMatrix), randBendMatrix), randRotMatrix);
