@@ -8,18 +8,32 @@ using UnityEngine;
 
 public static class TextureUtil
 {
-	public static Texture2D FillCircle(this Texture2D texture, int x, int y, int radius, Color color)
+	public static void FillCircle(this Texture2D texture, in float x, in float y, in float radius, in Color color)
+	{
+		FillCircle(texture, (int)x, (int)y, (int)radius, color);
+	}
+
+	public static void FillCircle(this Texture2D texture, in int x, in int y, in int radius, in Color color)
 	{
 		var rSquared = radius * radius;
 
-		for (var u = x - radius; u < x + radius + 1; u++)
-			for (var v = y - radius; v < y + radius + 1; v++)
+		var minX = System.Math.Clamp(x - radius, 0, texture.width);
+		var minY = System.Math.Clamp(y - radius, 0, texture.height);
+		var maxX = System.Math.Clamp(x + radius + 1, 0, texture.width);
+		var maxY = System.Math.Clamp(y + radius + 1, 0, texture.height);
+
+		for (var u = minX; u < maxX; u++)
+		{
+			for (var v = minY; v < maxY; v++)
+			{
 				if ((x - u) * (x - u) + (y - v) * (y - v) < rSquared)
+				{
 					texture.SetPixel(u, v, color);
+				}
+			}
+		}
 
 		texture.Apply();
-
-		return texture;
 	}
 
 	public static void FillTriangle(this Texture2D texture, Vector2 v1, Vector2 v2, Vector2 v3, Color color)
@@ -29,10 +43,15 @@ public static class TextureUtil
 		var maxX = Mathf.CeilToInt(Mathf.Max(v1.x, v2.x, v3.x));
 		var maxY = Mathf.CeilToInt(Mathf.Max(v1.y, v2.y, v3.y));
 
+		minX = System.Math.Clamp(minX, 0, texture.width);
+		minY = System.Math.Clamp(minY, 0, texture.height);
+		maxX = System.Math.Clamp(maxX, 0, texture.width);
+		maxY = System.Math.Clamp(maxY, 0, texture.height);
+
 		// Iterate over the pixels within the bounding box and set the color of the pixels inside the triangle:
-		for (var x = minX; x <= maxX; x++)
+		for (var x = minX; x < maxX; x++)
 		{
-			for (var y = minY; y <= maxY; y++)
+			for (var y = minY; y < maxY; y++)
 			{
 				var pixelCoord = new Vector2(x, y);
 				if (IsPointInTriangle(pixelCoord, v1, v2, v3))
