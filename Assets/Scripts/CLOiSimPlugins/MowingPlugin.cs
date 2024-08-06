@@ -33,10 +33,13 @@ public class MowingPlugin : CLOiSimPlugin
 
 		public float size = 0;
 
+		public float heightThreshold = 0;
+
 		public void SetBladingRatio(in float bladeMin, in float bladeMax, in float bladingHeight)
 		{
+			this.heightThreshold = bladingHeight;
 			this.ratio = Mathf.Lerp(bladeMin, bladeMax, bladingHeight);
-			// Debug.Log("_bladingRatio: " + this.ratio);
+			Debug.Log("_bladingRatio: " + this.ratio);
 		}
 	}
 
@@ -184,6 +187,16 @@ public class MowingPlugin : CLOiSimPlugin
 			material.SetTexture("_DryGrassMap", texture);
 			material.EnableKeyword("DRY_GRASS_ON");
 		}
+
+		public void SetGrassOffset(Vector3 offset)
+		{
+			material.SetVector("_GrassOffset", offset);
+		}
+
+		public Vector3 GetGrassOffset()
+		{
+			return material.GetVector("_GrassOffset");
+		}
 	}
 
 	private Grass _grass = null;
@@ -193,6 +206,7 @@ public class MowingPlugin : CLOiSimPlugin
 	private Transform _targetPlane = null;
 	private Transform _targetBlade = null;
 
+	private List<MeshFilter> _punchingMeshFilters = new List<MeshFilter>();
 	private bool _startMowing = true;
 
 	protected override void OnAwake()
@@ -284,13 +298,14 @@ public class MowingPlugin : CLOiSimPlugin
 		var bladeBounds = new Bounds();
 		foreach (var meshFilter in meshFilters)
 		{
-			// Debug.Log(meshFilter.name);
-			// Debug.Log(meshFilter.sharedMesh.bounds);
+			Debug.Log(meshFilter.name);
+			Debug.Log(meshFilter.sharedMesh.bounds);
 			var bounds = meshFilter.sharedMesh.bounds;
-			bounds.center = Vector3.zero;
+			// bounds.center = Vector3.zero;
 			bladeBounds.Encapsulate(bounds);
 		}
 
+		// Debug.Log(bladeBounds);
 		_blade.size = Mathf.Max(bladeBounds.extents.x, bladeBounds.extents.z);
 		var bladeMin = _targetPlane.TransformPoint(_targetBlade.position);
 		// Debug.Log(bladeMin.y);
@@ -307,6 +322,7 @@ public class MowingPlugin : CLOiSimPlugin
 
 		var targetPlaneMesh = _targetPlane?.GetComponentInChildren<MeshFilter>();
 		_grass.SetMaterial(GetPluginParameters());
+		_grass.SetGrassOffset(_targetPlane.position);
 		_grass.SetBound(targetPlaneMesh.sharedMesh);
 		_grass.Generate();
 
@@ -319,69 +335,17 @@ public class MowingPlugin : CLOiSimPlugin
 	{
 		yield return null;
 
-		var layerMask = LayerMask.GetMask("Default");
-
-		var helperLinks = GetComponentsInChildren<SDF.Helper.Link>();
 		var tempVisualMeshCollider = new List<MeshCollider>();
-		foreach (var helperLink in helperLinks)
-		{
-			var meshColliders = helperLink.GetComponentsInChildren<MeshCollider>();
-			if (meshColliders.Length == 0)
-			{
-				var helperVisuals = GetComponentsInChildren<SDF.Helper.Visual>();
-				foreach (var helperVisual in helperVisuals)
-				{
 
-					var meshFilters = helperVisual.GetComponentsInChildren<MeshFilter>();
-					foreach (var meshFilter in meshFilters)
-					{
-						var meshCollider = meshFilter.transform.gameObject.AddComponent<MeshCollider>();
-						// Debug.Log(helperVisual.name + "," + meshFilter.name + "," + meshCollider.name);
-						meshCollider.convex = true;
-						meshCollider.isTrigger = true;
-						tempVisualMeshCollider.Add(meshCollider);
-					}
-				}
-			}
-		}
+		CreateTempColliderInVisuals(ref tempVisualMeshCollider);
 
-		yield return null;
-
-		var punchingMeshFilters = new List<MeshFilter>();
-		var hitColliders = Physics.OverlapBox(_grass.bounds.center, _grass.bounds.size * 0.5f, Quaternion.identity, layerMask);
-		var i = 0;
-		while (i < hitColliders.Length)
-		{
-			var hitCollider = hitColliders[i++];
-			var helperModel = hitCollider.transform.GetComponentInParent<SDF.Helper.Model>();
-
-			if (helperModel == null)
-			{
-				continue;
-			}
-
-			// Debug.Log("Hit : " + hitCollider.name + "-" + i + "   " + helperModel.name);
-			if (helperModel.name.CompareTo(_grass.targetPlane.modelName) == 0)
-			{
-				var helperLink = hitCollider.transform.GetComponentInParent<SDF.Helper.Link>();
-
-				if (helperLink == null || helperLink.name.CompareTo(_grass.targetPlane.linkName) == 0)
-				{
-					continue;
-				}
-
-				var meshFilter = helperLink.GetComponentInChildren<MeshFilter>();
-				punchingMeshFilters.Add(meshFilter);
-			}
-		}
-
-		yield return null;
+		yield return FindMeshFiltersToPunching();
 
 		RemoveTempColliderInVisuals(ref tempVisualMeshCollider);
 
 		yield return null;
 
-		foreach (var meshFilter in punchingMeshFilters)
+		foreach (var meshFilter in _punchingMeshFilters)
 		{
 			PunchingTexture(_grass.texture, meshFilter);
 			yield return null;
@@ -391,6 +355,75 @@ public class MowingPlugin : CLOiSimPlugin
 		Array.Copy(_grass.texture.GetPixels(), _initialTexturePixels, _initialTexturePixels.LongLength);
 
 		yield return StartMowing();
+	}
+
+	private void CreateTempColliderInVisuals(ref List<MeshCollider> tempMeshColliders)
+	{
+		var helperLinks = GetComponentsInChildren<SDF.Helper.Link>();
+		foreach (var helperLink in helperLinks)
+		{
+			var meshColliders = helperLink.GetComponentsInChildren<MeshCollider>();
+			if (meshColliders.Length == 0)
+			{
+				var helperVisuals = GetComponentsInChildren<SDF.Helper.Visual>();
+				foreach (var helperVisual in helperVisuals)
+				{
+					var meshFilters = helperVisual.GetComponentsInChildren<MeshFilter>();
+					foreach (var meshFilter in meshFilters)
+					{
+						var meshCollider = meshFilter.transform.gameObject.AddComponent<MeshCollider>();
+						// Debug.Log(helperVisual.name + "," + meshFilter.name + "," + meshCollider.name);
+						meshCollider.convex = true;
+						meshCollider.isTrigger = true;
+						tempMeshColliders.Add(meshCollider);
+					}
+				}
+			}
+		}
+	}
+
+	private IEnumerator FindMeshFiltersToPunching()
+	{
+		yield return null;
+
+		var layerMask = LayerMask.GetMask("Default");
+
+		var hitColliders = Physics.OverlapBox(_grass.bounds.center, _grass.bounds.extents, Quaternion.identity, layerMask);
+		var i = 0;
+		while (i < hitColliders.Length)
+		{
+			var hitCollider = hitColliders[i++];
+			var helperModel = hitCollider.GetComponentInParent<SDF.Helper.Model>();
+			// Debug.Log("Hit : " + hitCollider.name + "-" + i);
+
+			if (helperModel != null)
+			{
+				// punching  other object on same target model
+				if (helperModel.name.Equals(_grass.targetPlane.modelName))
+				{
+					var helperLink = hitCollider.GetComponentInParent<SDF.Helper.Link>();
+					if (helperLink != null && !helperLink.name.Equals(_grass.targetPlane.linkName))
+					{
+						var meshFilters = helperLink.GetComponentsInChildren<MeshFilter>();
+						_punchingMeshFilters.AddRange(meshFilters);
+					}
+				}
+				else
+				{
+					var meshFilters = hitCollider.GetComponentsInChildren<MeshFilter>();
+					_punchingMeshFilters.AddRange(meshFilters);
+				}
+			}
+			else
+			{
+				if (hitCollider.CompareTag("Road"))
+				{
+					var meshFilters = hitCollider.GetComponentsInChildren<MeshFilter>();
+					_punchingMeshFilters.AddRange(meshFilters);
+				}
+			}
+			yield return null;
+		}
 	}
 
 	private void RemoveTempColliderInVisuals(ref List<MeshCollider> meshColliders)
@@ -416,13 +449,12 @@ public class MowingPlugin : CLOiSimPlugin
 		var textureCenterX = (int)(texture.width * 0.5f);
 		var textureCenterY = (int)(texture.height * 0.5f);
 		var textureCenter = new Vector2(textureCenterX, textureCenterY);
+		var offset = _grass.GetGrassOffset();
 
 		var mesh = meshFilter.sharedMesh;
 		var vertices = mesh.vertices;
 		var triangles = mesh.triangles;
-		var threshold = _grass.bounds.center.y;
 
-		// Debug.Log("threshold = " + threshold.ToString("F10"));
 		// Debug.Log(triangles.Length);
 		// Debug.Log(vertices.Length);
 
@@ -431,13 +463,11 @@ public class MowingPlugin : CLOiSimPlugin
 			var p0 = vertices[triangles[i + 0]];
 			var p1 = vertices[triangles[i + 1]];
 			var p2 = vertices[triangles[i + 2]];
-			var tp0 = meshFilter.transform.TransformPoint(p0);
-			var tp1 = meshFilter.transform.TransformPoint(p1);
-			var tp2 = meshFilter.transform.TransformPoint(p2);
+			var tp0 = meshFilter.transform.TransformPoint(p0) - offset;
+			var tp1 = meshFilter.transform.TransformPoint(p1) - offset;
+			var tp2 = meshFilter.transform.TransformPoint(p2) - offset;
 
-			// Debug.Log("Punch >> " + p0 + ", " + p1 + ", " + p2);
-
-			if (!(tp0.y > threshold && tp1.y > threshold && tp2.y > threshold))
+			// Debug.Log("Punch >> " + tp0.y + ", " + tp1.y + ", " + tp2.y);
 			{
 				var P1 = new Vector2(tp0.z, tp0.x);
 				var P2 = new Vector2(tp1.z, tp1.x);
@@ -453,46 +483,43 @@ public class MowingPlugin : CLOiSimPlugin
 
 				texture.FillTriangle(P1, P2, P3, Color.clear);
 			}
-#if false // UNITY_EDITOR
-			else
-			{
-				Debug.Log(tp0 + ", " + tp1 + ", " + tp2);
-			}
-#endif
 		}
-	}
-
-	void LateUpdate()
-	{
 	}
 
 	private IEnumerator StartMowing()
 	{
+		const float mowingMargin = 0.01f;
+
 		yield return null;
 
+		var threshold =  _blade.heightThreshold + mowingMargin;
 		var color = new Color(_blade.ratio, 0, 0, 0);
 		var planeCenterPosition = _targetPlane.position;
-		var bladeRadiusIntexture = (int)(_blade.size /_grass.mapResolution);
+		var bladeRadiusIntexture = _blade.size /_grass.mapResolution;
 
+		// Debug.Log("blade threshold= " + threshold + ", bladeRadiusIntexture=" + bladeRadiusIntexture);
 		while (true)
 		{
 			if (_startMowing && _targetBlade != null)
 			{
-				var bladePositionInTexture = new Vector3(
-						_targetBlade.position.x,
-						0,
-						_targetBlade.position.z);
-				bladePositionInTexture -= planeCenterPosition;
-				bladePositionInTexture -= _grass.bounds.extents;
-				// Debug.Log(bladePositionInTexture);
+				var bladePositionInTexture = _targetBlade.position;
 
-				bladePositionInTexture /= _grass.mapResolution;
+				// Debug.Log("blade " + bladePositionInTexture.y.ToString("F4") + " threshold= " + threshold);
+				if (bladePositionInTexture.y <= threshold)
+				{
+					bladePositionInTexture -= planeCenterPosition;
+					bladePositionInTexture += _grass.bounds.extents;
+					bladePositionInTexture /= _grass.mapResolution;
+					// Debug.Log(bladePositionInTexture);
 
-				_grass.texture.FillCircle(
-					(int)bladePositionInTexture.z,
-					(int)bladePositionInTexture.x,
-					bladeRadiusIntexture,
-					color);
+					_grass.texture.FillCircle(
+						bladePositionInTexture.z,
+						bladePositionInTexture.x,
+						bladeRadiusIntexture,
+						color);
+
+					yield return null;
+				}
 			}
 			yield return new WaitForEndOfFrame();
 		}
