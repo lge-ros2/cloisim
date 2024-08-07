@@ -4,8 +4,8 @@ Shader "Sensor/Segmentation"
 	{
 		_SegmentationColor ("Segmentation Color", Color) = (1, 1, 1, 1)
 		_SegmentationClassId ("Segmentation Class ID Value in 16bits", Color) = (0, 0, 0, 1)
-		_DisableColor ("Disable Color method", int) = 0
-		_Hide ("Hide this label", int) = 0
+		[Toggle] _DisableColor ("Disable Color method", int) = 0
+		[Toggle] _Hide ("Hide this label", int) = 0
 	}
 
 	SubShader
@@ -61,7 +61,7 @@ Shader "Sensor/Segmentation"
 
 			half4 frag(Varyings i) : SV_Target
 			{
-				half4 segColor = half4(0, 0, 0, 1);
+				half4 segColor = half4(0, 0, 0, 0);
 				if (_Hide == 0)
 				{
 					segColor = (_DisableColor == 0)? _SegmentationColor : _SegmentationClassId;
