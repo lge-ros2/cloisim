@@ -116,8 +116,6 @@ namespace SDF
 				{
 					IgnoreSelfCollision();
 				}
-
-				StartCoroutine(HandleTerrainSize());
 			}
 
 			void LateUpdate()
@@ -188,19 +186,6 @@ namespace SDF
 				}
 			}
 #endif
-
-			private IEnumerator HandleTerrainSize()
-			{
-				yield return new UE.WaitForEndOfFrame();
-
-				var terrain = GetComponentInChildren<UE.Terrain>();
-				if (terrain != null)
-				{
-					// UE.Debug.LogWarning("due to bug gof Terrain. Re-set the size of terrain data in Terrain");
-					var size = terrain.terrainData.size;
-					terrain.terrainData.size = size;
-				}
-			}
 
 			private UE.Collider[] GetCollidersInChildren()
 			{
