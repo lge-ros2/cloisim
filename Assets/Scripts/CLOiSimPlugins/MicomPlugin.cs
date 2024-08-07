@@ -14,14 +14,19 @@ public class MicomPlugin : CLOiSimPlugin
 	private List<TF> _tfList = new List<TF>();
 	private SensorDevices.MicomCommand _micomCommand = null;
 	private SensorDevices.MicomSensor _micomSensor = null;
+	private MotorControl _motorControl = null;
 	private SDF.Helper.Link[] _linkHelperInChildren = null;
 
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.MICOM;
+
+		_motorControl = new MotorControl(this.transform);
+
 		_micomSensor = gameObject.AddComponent<SensorDevices.MicomSensor>();
+		_micomSensor.SetMotorControl(_motorControl);
 		_micomCommand = gameObject.AddComponent<SensorDevices.MicomCommand>();
-		_micomCommand.SetMotorControl(_micomSensor.MotorControl);
+		_micomCommand.SetMotorControl(_motorControl);
 
 		attachedDevices.Add("Command", _micomCommand);
 		attachedDevices.Add("Sensor", _micomSensor);
@@ -57,6 +62,14 @@ public class MicomPlugin : CLOiSimPlugin
 		LoadTF();
 	}
 
+	protected override void OnReset()
+	{
+		if (_motorControl != null)
+		{
+			_motorControl.Reset();
+		}
+	}
+
 	private void SetupMicom()
 	{
 		_micomSensor.EnableDebugging = GetPluginParameters().GetValue<bool>("debug", false);
@@ -78,15 +91,8 @@ public class MicomPlugin : CLOiSimPlugin
 
 		var wheelTread = GetPluginParameters().GetValue<float>("wheel/tread"); // TODO: to be deprecated
 		var wheelSeparation = GetPluginParameters().GetValue<float>("wheel/separation", wheelTread);
-		var P = GetPluginParameters().GetValue<float>("wheel/PID/kp");
-		var I = GetPluginParameters().GetValue<float>("wheel/PID/ki");
-		var D = GetPluginParameters().GetValue<float>("wheel/PID/kd");
 
-		_micomSensor.SetMotorConfiguration(wheelRadius, wheelSeparation, P, I, D);
-
-		// TODO: to be utilized, currently not used
-		var motorFriction = GetPluginParameters().GetValue<float>("wheel/friction/motor", 0.1f);
-		var brakeFriction = GetPluginParameters().GetValue<float>("wheel/friction/brake", 0.1f);
+		_motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
 
 		var wheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='left']", string.Empty);
 		var wheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='right']", string.Empty);
@@ -95,11 +101,26 @@ public class MicomPlugin : CLOiSimPlugin
 
 		if (!rearWheelLeftName.Equals(string.Empty) && !rearWheelRightName.Equals(string.Empty))
 		{
-			_micomSensor.SetWheel(wheelLeftName, wheelRightName, rearWheelLeftName, rearWheelRightName);
+			SetWheel(wheelLeftName, wheelRightName, rearWheelLeftName, rearWheelRightName);
 		}
 		else
 		{
-			_micomSensor.SetWheel(wheelLeftName, wheelRightName);
+			SetWheel(wheelLeftName, wheelRightName);
+		}
+
+		if (GetPluginParameters().IsValidNode("wheel/PID"))
+		{
+			var P = GetPluginParameters().GetValue<float>("wheel/PID/kp");
+			var I = GetPluginParameters().GetValue<float>("wheel/PID/ki");
+			var D = GetPluginParameters().GetValue<float>("wheel/PID/kd");
+
+			var iMin = GetPluginParameters().GetValue<float>("wheel/PID/limit/integral/min", -100);
+			var iMax = GetPluginParameters().GetValue<float>("wheel/PID/limit/integral/max", 100);
+			var outputMin = GetPluginParameters().GetValue<float>("wheel/PID/limit/output/min", -1000);
+			var outputMax = GetPluginParameters().GetValue<float>("wheel/PID/limit/output/max", 1000);
+			// Debug.Log(iMin + ", " + iMax + ", " + outputMin + ", " + outputMax);
+
+			_motorControl.SetPID(P, I, D, iMin, iMax, outputMin, outputMax);
 		}
 
 		if (GetPluginParameters().IsValidNode("battery"))
@@ -158,6 +179,68 @@ public class MicomPlugin : CLOiSimPlugin
 						}
 					}
 				}
+			}
+		}
+	}
+
+	public void SetWheel(in string wheelNameLeft, in string wheelNameRight)
+	{
+		var linkList = GetComponentsInChildren<SDF.Helper.Link>();
+		foreach (var link in linkList)
+		{
+			var wheelLocation = MotorControl.WheelLocation.NONE;
+
+			if (link.name.Equals(wheelNameLeft) || link.Model.name.Equals(wheelNameLeft))
+			{
+				wheelLocation = MotorControl.WheelLocation.LEFT;
+
+			}
+			else if (link.name.Equals(wheelNameRight) || link.Model.name.Equals(wheelNameRight))
+			{
+				wheelLocation = MotorControl.WheelLocation.RIGHT;
+			}
+			else
+			{
+				continue;
+			}
+
+			if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
+			{
+				var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
+				_motorControl.AttachWheel(wheelLocation, motorObject);
+			}
+		}
+	}
+
+	public void SetWheel(
+		in string frontWheelLeftName, in string frontWheelRightName,
+		in string rearWheelLeftName, in string rearWheelRightName)
+	{
+		SetWheel(frontWheelLeftName, frontWheelRightName);
+
+		var linkList = GetComponentsInChildren<SDF.Helper.Link>();
+		foreach (var link in linkList)
+		{
+			var wheelLocation = MotorControl.WheelLocation.NONE;
+
+			if (link.name.Equals(rearWheelLeftName) || link.Model.name.Equals(rearWheelLeftName))
+			{
+				wheelLocation = MotorControl.WheelLocation.REAR_LEFT;
+
+			}
+			else if (link.name.Equals(rearWheelRightName) || link.Model.name.Equals(rearWheelRightName))
+			{
+				wheelLocation = MotorControl.WheelLocation.REAR_RIGHT;
+			}
+			else
+			{
+				continue;
+			}
+
+			if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
+			{
+				var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
+				_motorControl.AttachWheel(wheelLocation, motorObject);
 			}
 		}
 	}

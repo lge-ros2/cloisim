@@ -4,34 +4,42 @@ Shader "Sensor/Segmentation"
 	{
 		_SegmentationColor ("Segmentation Color", Color) = (1, 1, 1, 1)
 		_SegmentationClassId ("Segmentation Class ID Value in 16bits", Color) = (0, 0, 0, 1)
-		_DisableColor ("Disable Color output", int) = 0
-		_Hide ("Hide this label", int) = 0
+		[Toggle] _DisableColor ("Disable Color method", int) = 0
+		[Toggle] _Hide ("Hide this label", int) = 0
 	}
 
 	SubShader
 	{
-		Tags {
+		Tags
+		{
+			"RenderPipeline" = "UniversalPipeline"
 			"RenderType" = "Opaque"
+			"Queue" = "Geometry"
 		}
+
+		Cull Off // Disable backface culling
+		Lighting Off
+
+		HLSLINCLUDE
+		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+		CBUFFER_START(UnityPerMaterial)
+		half4 _SegmentationColor;
+		half4 _SegmentationClassId;
+		int _DisableColor;
+		int _Hide;
+		CBUFFER_END
+
+		ENDHLSL
 
 		Pass
 		{
-			Name "Segmentation"
-
-			Cull Off // Disable backface culling
+			Name "PixelSegmentation"
 
 			HLSLPROGRAM
-			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
 			#pragma vertex vert
 			#pragma fragment frag
-
-			CBUFFER_START(UnityPerMaterial)
-			half4 _SegmentationColor;
-			half4 _SegmentationClassId;
-			int _DisableColor;
-			int _Hide;
-			CBUFFER_END
 
 			struct Attributes
 			{
@@ -41,32 +49,24 @@ Shader "Sensor/Segmentation"
 			struct Varyings
 			{
 				float4 positionCS : SV_POSITION;
-				half4 color : COLOR;
 			};
 
-			Varyings vert(Attributes input)
+			Varyings vert(Attributes i)
 			{
-				Varyings output = (Varyings)0;
-				VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
-				output.positionCS = vertexInput.positionCS;
-
-				half4 output_color = half4(0, 0, 0, 1);
-				if (_Hide == 0)
-				{
-					output_color = (_DisableColor == 0)? _SegmentationColor : _SegmentationClassId;
-				}
-				output.color = output_color;
-				return output;
+				Varyings o;
+				VertexPositionInputs vertexInput = GetVertexPositionInputs(i.positionOS.xyz);
+				o.positionCS = vertexInput.positionCS;
+				return o;
 			}
 
 			half4 frag(Varyings i) : SV_Target
 			{
-				half4 output_color = half4(0, 0, 0, 1);
+				half4 segColor = half4(0, 0, 0, 0);
 				if (_Hide == 0)
 				{
-					output_color = (_DisableColor == 0)? _SegmentationColor : _SegmentationClassId;
+					segColor = (_DisableColor == 0)? _SegmentationColor : _SegmentationClassId;
 				}
-				return output_color;
+				return segColor;
 			}
 			ENDHLSL
 		}

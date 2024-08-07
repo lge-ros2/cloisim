@@ -72,9 +72,7 @@ public class ObjectSpawning : MonoBehaviour
 	// Update is called once per frame
 	void LateUpdate()
 	{
-		var leftControlPressed = Input.GetKey(KeyCode.LeftControl);
-
-		if (leftControlPressed)
+		if (Input.GetKey(KeyCode.LeftControl))
 		{
 			if (Input.GetMouseButtonUp(0))
 			{
@@ -184,7 +182,7 @@ public class ObjectSpawning : MonoBehaviour
 
 			// var propTypeName = (type.ToString() + scale.ToString()).Trim();
 			// Debug.Log(propTypeName);
-			SegmentationManager.AttachTag(type.ToString(), spawnedObject);
+			Main.SegmentationManager.AttachTag(type.ToString(), spawnedObject);
 			Main.SegmentationManager.UpdateTags();
 		}
 

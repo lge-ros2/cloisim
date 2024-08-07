@@ -22,8 +22,6 @@ public class MotorControl
 		{WheelLocation.REAR_RIGHT, null}
 	};
 
-	private float _pidGainP, _pidGainI, _pidGainD;
-
 	private Odometry odometry = null;
 
 	#endregion
@@ -57,19 +55,47 @@ public class MotorControl
 		this.odometry = new Odometry(this, radius, separation);
 	}
 
-	public void SetPID(in float p, in float i, in float d)
+	private bool IsWheelAttached()
 	{
-		_pidGainP = p;
-		_pidGainI = i;
-		_pidGainD = d;
+		foreach (var wheel in wheelList)
+		{
+			if (wheel.Value != null)
+			{
+				return true;
+			}
+		}
+
+		Debug.LogWarning("There is no Wheel, AttachWheel() first");
+		return false;
 	}
 
-	public void AttachWheel(in WheelLocation location, in GameObject targetMotorObject)
+	public void SetPID(
+		in float p, in float i, in float d,
+		in float integralMin, in float integralMax,
+		in float outputMin, in float outputMax)
 	{
-		var motor = new Motor(targetMotorObject);
-		motor.SetPID(_pidGainP, _pidGainI, _pidGainD);
+		if (IsWheelAttached())
+		{
+			if (!float.IsNaN(p) && !float.IsNaN(i) && !float.IsNaN(d) &&
+				!float.IsInfinity(p) && !float.IsInfinity(i) && !float.IsInfinity(d))
+			{
+				foreach (var wheel in wheelList)
+				{
+					wheel.Value?.SetPID(p, i, d, integralMin, integralMax, outputMin, outputMax);
+				}
+			}
+			else
+			{
+				Debug.LogWarning("One of PID Gain value is NaN or Infinity. Set to default value");
+			}
+		}
+	}
 
-		wheelList[location] = motor;
+	public void AttachWheel(
+		in WheelLocation location,
+		in GameObject targetMotorObject)
+	{
+		wheelList[location] =  new Motor(targetMotorObject);
 	}
 
 	/// <summary>Set differential driver</summary>
@@ -144,44 +170,16 @@ public class MotorControl
 		return false;
 	}
 
-	public float _prevPositionY = 0;
-	public sbyte _lastRotationDirection = 0;
-
-	public bool IsDirectionChanged(in float duration)
-	{
-		var isChanged = false;
-		if (_rotationDirection != 0 && _rotationDirection != _lastRotationDirection)
-		{
-			var rotationVelocity = Mathf.DeltaAngle(_prevPositionY, _baseTransform.position.y) / duration;
-			var allVelocityStopped = (Mathf.Abs(rotationVelocity) < Vector3.kEpsilon) ? true : false;
-
-			if (allVelocityStopped)
-			{
-				_rotationDirection = 0;
-			}
-			else
-			{
-				isChanged = true;
-			}
-			// Debug.Log("IsDirectionChanged " + isChanged + ", " + _rotationDirection);
-		}
-
-		_prevPositionY = _baseTransform.position.y;
-		_lastRotationDirection = _rotationDirection;
-
-		return isChanged;
-	}
-
 	public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor = null)
 	{
-		var decreaseVelocity = IsDirectionChanged(duration);
+		// var decreaseVelocity = IsDirectionChanged(duration);
 
 		foreach (var wheel in wheelList)
 		{
 			var motor = wheel.Value;
 			if (motor != null)
 			{
-				motor.Update(duration, decreaseVelocity);
+				motor.Update(duration);
 			}
 		}
 

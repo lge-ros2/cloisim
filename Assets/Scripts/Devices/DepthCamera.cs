@@ -34,8 +34,8 @@ namespace SensorDevices
 
 		private uint depthScale = 1;
 		private int _imageDepth;
-
 		private const int BatchSize = 64;
+
 		private DepthData.CamBuffer _depthCamBuffer;
 		private byte[] _computedBufferOutput;
 		private const uint OutputUnitSize = 4;
@@ -115,12 +115,14 @@ namespace SensorDevices
 					break;
 			}
 
+			_imageDepth = CameraData.GetImageDepth(format);
+
 			_depthCamBuffer = new DepthData.CamBuffer(width, height);
 			_computedBufferOutputUnitLength = width * height;
 			_computedBufferOutput = new byte[_computedBufferOutputUnitLength * OutputUnitSize];
 
-			_threadGroupX = width / ThreadGroupsX;
-			_threadGroupY = height / ThreadGroupsY;
+			_threadGroupX = Mathf.RoundToInt(width / ThreadGroupsX);
+			_threadGroupY = Mathf.RoundToInt(height / ThreadGroupsY);
 
 			_textureForCapture = new Texture2D(width, height, graphicFormat, 0, TextureCreationFlags.None);
 			_textureForCapture.filterMode = FilterMode.Point;
@@ -130,7 +132,6 @@ namespace SensorDevices
 			if (_computeShader != null)
 			{
 				_kernelIndex = _computeShader.FindKernel("CSScaleDepthBuffer");
-				_imageDepth = CameraData.GetImageDepth(format);
 
 				_computeShader.SetFloat("_DepthMax", (float)camParameter.clip.far);
 				_computeShader.SetInt("_Width", width);
@@ -152,6 +153,7 @@ namespace SensorDevices
 
 			camSensor.clearFlags = CameraClearFlags.Depth;
 			camSensor.allowHDR = false;
+			camSensor.allowMSAA = false;
 			camSensor.depthTextureMode = DepthTextureMode.Depth;
 
 			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
@@ -189,7 +191,7 @@ namespace SensorDevices
 
 				var computeBufferDst = new ComputeBuffer(_computedBufferOutput.Length, sizeof(byte));
 				_computeShader.SetBuffer(_kernelIndex, "_Output", computeBufferDst);
-				_computeShader.Dispatch(_kernelIndex, _threadGroupX, _threadGroupY, 1);
+				_computeShader.Dispatch(_kernelIndex, _threadGroupX + 1, _threadGroupY + 1, 1);
 				computeBufferDst.GetData(_computedBufferOutput);
 
 				computeBufferSrc.Release();
@@ -202,14 +204,6 @@ namespace SensorDevices
 						_imageStamped.Image.Data, i * _imageDepth,
 						_imageDepth);
 				});
-
-				// Debug.LogFormat("{0:X} {1:X} {2:X} {3:X} => {4}, {5}, {6}, {7}",
-				// 	imageStamped.Image.Data[1000], imageStamped.Image.Data[2000],
-				// 	imageStamped.Image.Data[5000], imageStamped.Image.Data[8000],
-				// 	System.BitConverter.ToInt16(imageStamped.Image.Data, 0),
-				// 	System.BitConverter.ToUInt16(imageStamped.Image.Data, 2),
-				// 	System.BitConverter.ToInt32(imageStamped.Image.Data, 0),
-				// 	System.BitConverter.ToSingle(imageStamped.Image.Data, 0));
 
 				if (camParameter.save_enabled && _startCameraWork)
 				{

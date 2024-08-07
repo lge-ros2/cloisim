@@ -14,7 +14,8 @@ namespace SensorDevices
 	public partial class MicomSensor : Device
 	{
 		private messages.Micom micomSensorData = null;
-
+		private MotorControl _motorControl = null;
+		private SensorDevices.Battery battery = null;
 		private SensorDevices.IMU imuSensor = null;
 		private List<SensorDevices.Sonar> ussSensors = new List<SensorDevices.Sonar>();
 		private List<SensorDevices.Sonar> irSensors = new List<SensorDevices.Sonar>();
@@ -23,16 +24,11 @@ namespace SensorDevices
 
 		// private List<ArticulationBody> bumperSensors = new List<ArticulationBody>();
 
-		private SensorDevices.Battery battery = null;
-
-		private MotorControl _motorControl = null;
-		public MotorControl MotorControl => this._motorControl;
 
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
 			DeviceName = "MicomSensor";
-			_motorControl = new MotorControl(this.transform);
 		}
 
 		protected override void OnStart()
@@ -44,12 +40,17 @@ namespace SensorDevices
 			yield return null;
 		}
 
+		public void SetMotorControl(in MotorControl motorControl)
+		{
+			this._motorControl = motorControl;
+		}
+
 		public void SetIMU(in string sensorName)
 		{
 			var imuList = gameObject.GetComponentsInChildren<SensorDevices.IMU>();
 			foreach (var imu in imuList)
 			{
-				Debug.Log(imu.name + " , " + imu.DeviceName);
+				// Debug.Log(imu.name + " , " + imu.DeviceName);
 				if (imu.DeviceName.Contains("::" + sensorName + "::") ||
 					imu.name.CompareTo(sensorName) == 0)
 				{
@@ -59,72 +60,6 @@ namespace SensorDevices
 				}
 
 			}
-		}
-
-		public void SetWheel(in string wheelNameLeft, in string wheelNameRight)
-		{
-			var linkList = GetComponentsInChildren<SDF.Helper.Link>();
-			foreach (var link in linkList)
-			{
-				var wheelLocation = MotorControl.WheelLocation.NONE;
-
-				if (link.name.Equals(wheelNameLeft) || link.Model.name.Equals(wheelNameLeft))
-				{
-					wheelLocation = MotorControl.WheelLocation.LEFT;
-
-				}
-				else if (link.name.Equals(wheelNameRight) || link.Model.name.Equals(wheelNameRight))
-				{
-					wheelLocation = MotorControl.WheelLocation.RIGHT;
-				}
-				else
-				{
-					continue;
-				}
-
-				if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
-				{
-					var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
-					_motorControl.AttachWheel(wheelLocation, motorObject);
-				}
-			}
-		}
-
-		public void SetWheel(in string frontWheelLeftName, in string frontWheelRightName, in string rearWheelLeftName, in string rearWheelRightName)
-		{
-			SetWheel(frontWheelLeftName, frontWheelRightName);
-
-			var linkList = GetComponentsInChildren<SDF.Helper.Link>();
-			foreach (var link in linkList)
-			{
-				var wheelLocation = MotorControl.WheelLocation.NONE;
-
-				if (link.name.Equals(rearWheelLeftName) || link.Model.name.Equals(rearWheelLeftName))
-				{
-					wheelLocation = MotorControl.WheelLocation.REAR_LEFT;
-
-				}
-				else if (link.name.Equals(rearWheelRightName) || link.Model.name.Equals(rearWheelRightName))
-				{
-					wheelLocation = MotorControl.WheelLocation.REAR_RIGHT;
-				}
-				else
-				{
-					continue;
-				}
-
-				if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
-				{
-					var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
-					_motorControl.AttachWheel(wheelLocation, motorObject);
-				}
-			}
-		}
-
-		public void SetMotorConfiguration(in float wheelRadius, in float wheelSeparation, in float P, in float I, in float D)
-		{
-			_motorControl.SetPID(P, I, D);
-			_motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
 		}
 
 		public void SetUSS(in List<string> ussList)
@@ -192,23 +127,25 @@ namespace SensorDevices
 			micomSensorData.bumper.Bumpeds = new bool[bumperCount];
 		}
 
-		// public void SetBumperSensor(in List<string> bumperJointNameList)
-		// {
-		// 	if (bumperContact != null)
-		// 	{
-		// 		var linkList = GetComponentsInChildren<SDF.Helper.Link>();
-		// 		foreach (var link in linkList)
-		// 		{
-		// 			foreach (var bumperJointName in bumperJointNameList)
-		// 			{
-		// 				// TODO: to be implemented
-		// 			}
-		// 		}
+#if false
+		public void SetBumperSensor(in List<string> bumperJointNameList)
+		{
+			if (bumperContact != null)
+			{
+				var linkList = GetComponentsInChildren<SDF.Helper.Link>();
+				foreach (var link in linkList)
+				{
+					foreach (var bumperJointName in bumperJointNameList)
+					{
+						// TODO: to be implemented
+					}
+				}
 
-		// 		var bumperCount = bumperSensors.Count;
-		// 		micomSensorData.bumper.Bumpeds = new bool[bumperCount];
-		// 	}
-		// }
+				var bumperCount = bumperSensors.Count;
+				micomSensorData.bumper.Bumpeds = new bool[bumperCount];
+			}
+		}
+#endif
 
 		public void SetBattery(in SensorDevices.Battery targetBattery)
 		{
@@ -223,11 +160,6 @@ namespace SensorDevices
 			if (imuSensor != null)
 			{
 				imuSensor.Reset();
-			}
-
-			if (_motorControl != null)
-			{
-				_motorControl.Reset();
 			}
 		}
 
@@ -253,9 +185,14 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			if (_motorControl == null || micomSensorData == null)
+			if (micomSensorData == null)
 			{
-				Debug.LogWarning("micomSensorData or motorControl is NULL");
+				Debug.LogWarning("micomSensorData is NULL");
+				return;
+			}
+			else  if (_motorControl == null)
+			{
+				Debug.LogWarning("motorControl is NULL");
 				return;
 			}
 
@@ -296,7 +233,7 @@ namespace SensorDevices
 
 		private void UpdateUss()
 		{
-			if ((micomSensorData == null || micomSensorData.uss == null))
+			if (micomSensorData == null || micomSensorData.uss == null)
 			{
 				return;
 			}
@@ -309,7 +246,7 @@ namespace SensorDevices
 
 		private void UpdateIr()
 		{
-			if ((micomSensorData == null || micomSensorData.ir == null))
+			if (micomSensorData == null || micomSensorData.ir == null)
 			{
 				return;
 			}

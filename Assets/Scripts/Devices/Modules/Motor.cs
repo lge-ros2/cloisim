@@ -8,33 +8,61 @@ using UnityEngine;
 
 public class Motor : Articulation
 {
-	private PID _pidControl = null;
-
-	private bool _enable = false;
-
 	private const float WheelResolution = 0.087890625f; // in degree, encoding 12bits,360°
 
-	private const float DecelAmountForRapidControl = 30;
-
+	private PID _pidControl = null;
 	private float _targetAngularVelocity = 0; // degree per seconds
 	private float _currentMotorVelocity = 0; // degree per seconds
 
 	public Motor(in GameObject gameObject)
 		: base(gameObject)
 	{
+		DriveType = ArticulationDriveType.Force;
+
+		CheckDriveType();
 	}
 
 	new public void Reset()
 	{
 		base.Reset();
 
-		_pidControl.Reset();
+		if (_pidControl != null)
+		{
+			_pidControl.Reset();
+		}
 		_prevJointPosition = 0;
 	}
 
-	public void SetPID(in float pFactor, in float iFactor, in float dFactor)
+	public void SetPID(
+		in float pFactor, in float iFactor, in float dFactor,
+		in float integralMin, in float integralMax,
+		in float outputMin, in float outputMax)
 	{
-		_pidControl = new PID(pFactor, iFactor, dFactor, 10, -10, 100, -100);
+		if (_pidControl == null)
+		{
+			_pidControl = new PID(
+				pFactor, iFactor, dFactor,
+				integralMin, integralMax,
+				outputMin, outputMax);
+		}
+		else
+		{
+			_pidControl.Change(pFactor, iFactor, dFactor);
+		}
+	}
+
+	private void CheckDriveType()
+	{
+		if (DriveType is ArticulationDriveType.Force)
+		{
+			if (_jointBody.xDrive.damping < float.Epsilon &&
+				_jointBody.yDrive.damping < float.Epsilon &&
+				_jointBody.zDrive.damping < float.Epsilon)
+			{
+				Debug.LogWarning("Force DriveType requires valid damping > 0, Forcefully set to target velocity");
+				DriveType = ArticulationDriveType.Velocity;
+			}
+		}
 	}
 
 	/// <summary>Get Current Joint angular Velocity</summary>
@@ -44,75 +72,26 @@ public class Motor : Articulation
 		return _currentMotorVelocity * Mathf.Deg2Rad;
 	}
 
-	public bool IsZero(in float value)
-	{
-		return (Mathf.Abs(value) < Quaternion.kEpsilon);
-	}
-
-	// private bool _isRotatingMotion = false;
 	/// <summary>Set Target Velocity wmotorLeftith PID control</summary>
 	/// <remarks>degree per second</remarks>
 	public void SetTargetVelocity(in float targetAngularVelocity)
 	{
-		_enable = (IsZero(targetAngularVelocity) || float.IsInfinity(targetAngularVelocity)) ? false : true;
 		_targetAngularVelocity = targetAngularVelocity;
 	}
 
-	public void Update(in float duration, in bool doDecreaseVelocity = true)
+	public void Update(in float duration)
 	{
 		if (!IsRevoluteType())
 		{
-			// Debug.LogWarningFormat("joint type({0}) is not 'revolute'!!", Type);
 			return;
 		}
 
 		SolveAngularVelocity(duration);
 
-		// do stop motion of motor when motor disabled
-		if (_enable)
-		{
-			if (doDecreaseVelocity)
-			{
-				var decelVelocity = GetDecelerationVelocity(DecelAmountForRapidControl);
-				// Debug.Log("Update disable motor :" + _currentMotorVelocity.ToString("F5") + ", " + decelVelocity.ToString("F6"));
-				Stop(decelVelocity);
-			}
-			else
-			{
-				var adjustValue = _pidControl.Update(_targetAngularVelocity, _currentMotorVelocity, duration);
-				Drive(_targetAngularVelocity + adjustValue);
-			}
-		}
-		else
-		{
-			var decelVelocity = GetDecelerationVelocity();
-			// Debug.Log("decelVelocity current:" + _currentMotorVelocity.ToString("F5") + ", decel: " + decelVelocity.ToString("F6"));
-			Stop(decelVelocity);
-		}
-	}
+		var adjustValue = (_pidControl != null) ? _pidControl.Update(_targetAngularVelocity, _currentMotorVelocity, duration) : 0;
+		// Debug.Log(_targetAngularVelocity + "  ,   " + adjustValue + "  ,   " + _currentMotorVelocity);
 
-	// in Deg
-	private float GetDecelerationVelocity(in float DecreasingVelocityLevel = 10f)
-	{
-		var decelerationVelocity = _currentMotorVelocity - Mathf.Sign(_currentMotorVelocity) * DecreasingVelocityLevel;
-
-		if (Mathf.Abs(decelerationVelocity) <= DecreasingVelocityLevel)
-		{
-			decelerationVelocity = 0;
-		}
-
-		return decelerationVelocity;
-	}
-
-	private void Stop(in float decelerationVelocity = 0f)
-	{
-		Drive(decelerationVelocity);
-
-		if (IsZero(decelerationVelocity))
-		{
-			_pidControl.Reset();
-			base.Reset();
-		}
+		Drive(targetVelocity: _targetAngularVelocity + adjustValue);
 	}
 
 	private float _prevJointPosition = 0; // in deg, for GetAngularVelocity()

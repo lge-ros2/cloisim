@@ -11,7 +11,7 @@ namespace SensorDevices
 {
 	public class MicomCommand : Device
 	{
-		private MotorControl motorControl = null;
+		private MotorControl _motorControl = null;
 
 		protected override void OnAwake()
 		{
@@ -30,7 +30,7 @@ namespace SensorDevices
 
 		public void SetMotorControl(in MotorControl motorControl)
 		{
-			this.motorControl = motorControl;
+			this._motorControl = motorControl;
 		}
 
 		protected override void ProcessDevice()
@@ -45,17 +45,19 @@ namespace SensorDevices
 
 				DoWheelDrive(linearVelocity, angularVelocity);
 			}
+#if UNITY_EDITOR
 			else
 			{
 				Debug.LogWarning("ERROR: failed to pop device message");
 			}
+#endif
 		}
 
 		/// <param name="linearVelocity">m/s</param>
 		/// <param name="angularVelocity">rad/s</param>
 		private void DoWheelDrive(in Vector3 linearVelocity, in Vector3 angularVelocity)
 		{
-			if (motorControl == null)
+			if (_motorControl == null)
 			{
 				Debug.LogWarning("micom device for wheel drive is not ready!!");
 				return;
@@ -63,7 +65,7 @@ namespace SensorDevices
 
 			var targetLinearVelocity = linearVelocity.z;
 			var targetAngularVelocity = angularVelocity.y;
-			motorControl.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
+			_motorControl.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
 		}
 	}
 }

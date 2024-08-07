@@ -3,8 +3,8 @@ Shader "Sensor/Depth"
 {
 	Properties
 	{
-		_ReverseData ("reverse depth data", Int) = 0
-		_FlipX ("horizontal flip", Int) = 1
+		[Toggle] _ReverseData ("reverse depth data", int) = 0
+		[Toggle] _FlipX ("horizontal flip", int) = 1
 	}
 
 	SubShader
@@ -33,9 +33,10 @@ Shader "Sensor/Depth"
 			int _ReverseData;
 			int _FlipX;
 
+			#pragma multi_compile_instancing
 			#pragma vertex vert
 			#pragma fragment frag
-			#pragma target 4.0
+			#pragma target 5.0
 			#include "UnityCG.cginc"
 
 			uniform sampler2D _CameraDepthTexture;

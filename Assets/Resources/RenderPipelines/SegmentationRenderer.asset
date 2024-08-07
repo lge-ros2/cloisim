@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6b3d386ba5cd94485973aee1479b272e, type: 3}
-  m_Name: RenderObjects
+  m_Name: SegmentationRenderObjects
   m_EditorClassIdentifier: 
   m_Active: 1
   settings:
-    passTag: RenderObjects
-    Event: 550
+    passTag: SegmentationRenderObjects
+    Event: 300
     filterSettings:
       RenderQueueType: 0
       LayerMask:
@@ -26,9 +26,9 @@ MonoBehaviour:
     overrideMaterialPassIndex: 0
     overrideShader: {fileID: 4800000, guid: 419a697b1455619dea4cc9d729b3d0c8, type: 3}
     overrideShaderPassIndex: 0
-    overrideMode: 1
+    overrideMode: 2
     overrideDepthState: 0
-    depthCompareFunction: 2
+    depthCompareFunction: 0
     enableWrite: 0
     stencilSettings:
       overrideStencilState: 0

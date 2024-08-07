@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
-using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
+using UnityEngine;
 
 public class SegmentationManager : MonoBehaviour
 {
@@ -22,52 +22,34 @@ public class SegmentationManager : MonoBehaviour
 	private static readonly ReplacementMode _ReplaceMode = ReplacementMode.ObjectName;
 
 	[SerializeField]
-	private static readonly bool _disableColor = true;
-
-	private static Material _material = null; // linked to Render Objects
-
-	[SerializeField]
 	private const int MAX_LABEL_INFO = 256;
 
 	private Dictionary<string, List<SegmentationTag>> _labelInfo = new Dictionary<string, List<SegmentationTag>>();
 	private List<string> _labelClassFilters = new List<string>();
 
-	public static void AttachTag(in string className, GameObject target)
+	public void AttachTag(string className, GameObject target)
 	{
 		AttachTag(className, target?.transform);
 	}
 
-	public static void AttachTag(in string className, Transform target)
+	public void AttachTag(string className, Transform target)
 	{
-		var segmentationTag = target?.gameObject.GetComponentInChildren<SegmentationTag>();
+		StartCoroutine(AttachTagCoroutine(className, target));
+	}
+
+	private static IEnumerator AttachTagCoroutine(string className, Transform target)
+	{
+		var segmentationTag = target?.GetComponentInChildren<SegmentationTag>();
 		if (segmentationTag == null)
 		{
 			segmentationTag = target?.gameObject.AddComponent<SegmentationTag>();
+			yield return null;
 		}
 
 		segmentationTag.TagName = className;
 		segmentationTag.Refresh();
-	}
 
-	void OnEnable()
-	{
-		if (_material == null)
-		{
-			_material = Resources.Load<Material>("Materials/Segmentation");
-		}
-
-		if (_material != null)
-		{
-			_material.SetInt("_DisableColor", _disableColor ? 1 : 0);
-		}
-	}
-
-	void OnDisable()
-	{
-		if (_material != null)
-		{
-			_material.SetInt("_DisableColor", 0);
-		}
+		yield return null;
 	}
 
 	public void SetClassFilter(in List<string> items)

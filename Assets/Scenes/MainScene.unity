@@ -1835,10 +1835,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 009f9fd72f864e0feb5c2bbc723e437e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  doNotLoad: 0
-  clearAllOnStart: 1
-  worldFileName: empty.world
-  modelRootDirectories:
+  _clearAllOnStart: 1
+  _worldFilename: empty.world
+  _modelRootDirectories:
   - ../cloi_resources
   - ../sample_resources/models/
   - ../props_resources
@@ -1848,12 +1847,12 @@ MonoBehaviour:
   - ../world_resources/lawn_ground/models
   - ../world_resources/seocho_tower/models
   - ../world_resources/app.gazebosim.org
-  worldRootDirectories:
+  _worldRootDirectories:
   - ../sample_resources/worlds/
   - ../world_resources/bluepearl/worlds
   - ../world_resources/lawn_ground/worlds
   - ../world_resources/seocho_tower/worlds
-  fileRootDirectories:
+  _fileRootDirectories:
   - ../sample_resources/media/
   - ../world_resources/bluepearl/media
   - ../world_resources/lawn_ground
@@ -5478,15 +5477,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec65e03504ece92cbeb7b40065a589c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mainSpeed: 1
-  shiftAdd: 5
-  maxShift: 150
-  camSens: 0.15
-  edgeWidth: 20
-  edgeSens: 0.1
-  edgeSensMax: 1
-  wheelMoveAmp: 100
-  angleStep: 1.5
+  _mainSpeed: 10
+  _shiftAdd: 20
+  _maxShift: 50
+  _camSens: 0.1
+  _edgeWidth: 100
+  _edgeSens: 0.02
+  _edgeSensMax: 1
+  _wheelMoveAmp: 50
+  _angleStep: 1.5
 --- !u!20 &963194227
 Camera:
   m_ObjectHideFlags: 0

@@ -82,7 +82,7 @@ public class FollowingCamera : MonoBehaviour
 				followingAngle -= (angleStep);
 			}
 
-			if (Input.GetKey(KeyCode.R))
+			if (Input.GetKey(KeyCode.G))
 			{
 				height += moveAmount;
 			}

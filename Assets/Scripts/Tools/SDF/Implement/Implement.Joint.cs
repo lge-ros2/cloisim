@@ -236,7 +236,6 @@ namespace SDF
 					drive.stiffness = (float)axis.dynamics.spring_stiffness;
 					drive.target = (float)axis.dynamics.spring_reference;
 					drive.damping = (float)axis.dynamics.damping;
-
 					body.jointFriction = (float)axis.dynamics.friction;
 				}
 				else

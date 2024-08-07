@@ -251,7 +251,6 @@ public class ModelImporter : MonoBehaviour
 
 					var segmentationTag = instantiatedObject.GetComponentInChildren<SegmentationTag>();
 					segmentationTag?.Refresh();
-
 					Main.SegmentationManager.UpdateTags();
 				}
 			}
