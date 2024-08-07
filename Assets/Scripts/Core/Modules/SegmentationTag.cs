@@ -47,7 +47,7 @@ public class SegmentationTag : MonoBehaviour
 		get => _hide;
 		set {
 			_hide = value;
-			HideLabelForMaterialPropertyBlock(_hide);
+			HideLabelForMaterialPropertyBlock(value);
 		}
 	}
 
@@ -89,6 +89,7 @@ public class SegmentationTag : MonoBehaviour
 
 		mpb.SetColor("_SegmentationColor", color);
 		mpb.SetColor("_SegmentationClassId", classValue);
+		mpb.SetInt("_Hide", 0);
 
 		// Debug.Log(TagName + ": mode=" + Main.SegmentationManager.Mode +
 		// 			" color=" + color +
@@ -119,7 +120,7 @@ public class SegmentationTag : MonoBehaviour
 			default:
 				return;
 		}
-
+		// Debug.Log("UpdateClass(): " + _className);
 		Main.SegmentationManager.AddClass(_className, this);
 	}
 
@@ -130,8 +131,13 @@ public class SegmentationTag : MonoBehaviour
 		foreach (var renderer in renderers)
 		{
 			// Debug.Log($"{this.name} material length {renderer.materials.Length}");
-			for (var i =0 ; i < renderer.materials.Length; i++)
+			for (var i = 0; i < renderer.materials.Length; i++)
 			{
+				var existMpb = new MaterialPropertyBlock();
+				renderer.GetPropertyBlock(existMpb, i);
+				var hide = existMpb.GetInt("_Hide");
+				// Debug.Log($"{this.name} {i} hide={hide}");
+				mpb.SetInt("_Hide", hide);
 				renderer.SetPropertyBlock(mpb, i);
 			}
 		}
@@ -147,15 +153,19 @@ public class SegmentationTag : MonoBehaviour
 	/// Hides the label in material property block.
 	/// </summary>
 	/// <param name="value">if set to <c>true</c>, hide this segmentation.</param>
-	private void HideLabelForMaterialPropertyBlock(in bool value)
+	public void HideLabelForMaterialPropertyBlock(in bool value)
 	{
+		// Debug.Log("HideLabelForMaterialPropertyBlock: " + name);
 		var mpb = new MaterialPropertyBlock();
 		var renderers = GetComponentsInChildren<Renderer>();
 		foreach (var renderer in renderers)
 		{
-			renderer.GetPropertyBlock(mpb);
-			mpb.SetInt("_Hide", value? 1 : 0);
-			renderer.SetPropertyBlock(mpb);
+			for (var i = 0; i < renderer.materials.Length; i++)
+			{
+				renderer.GetPropertyBlock(mpb, i);
+				mpb.SetInt("_Hide", value ? 1 : 0);
+				renderer.SetPropertyBlock(mpb, i);
+			}
 		}
 	}
 }

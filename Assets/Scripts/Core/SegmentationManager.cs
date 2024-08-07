@@ -39,9 +39,7 @@ public class SegmentationManager : MonoBehaviour
 
 	private static IEnumerator AttachTagCoroutine(string className, Transform target)
 	{
-		yield return new WaitForEndOfFrame();
-
-		var segmentationTag = target?.gameObject.GetComponentInChildren<SegmentationTag>();
+		var segmentationTag = target?.GetComponentInChildren<SegmentationTag>();
 		if (segmentationTag == null)
 		{
 			segmentationTag = target?.gameObject.AddComponent<SegmentationTag>();

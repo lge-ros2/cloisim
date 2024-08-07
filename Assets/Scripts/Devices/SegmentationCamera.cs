@@ -43,17 +43,19 @@ namespace SensorDevices
 			camSensor.backgroundColor = Color.black;
 			camSensor.clearFlags = CameraClearFlags.SolidColor;
 			camSensor.allowHDR = false;
-			camSensor.allowMSAA = false;
+			camSensor.allowMSAA = true;
 
 			// Refer to SegmentationRenderer (Universal Renderer Data)
 			_universalCamData.SetRenderer(1);
 			_universalCamData.renderPostProcessing = true;
-			_universalCamData.requiresColorOption = CameraOverrideOption.On;
+			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
 			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
-			_universalCamData.requiresColorTexture = true;
+			_universalCamData.requiresColorTexture = false;
 			_universalCamData.requiresDepthTexture = false;
 			_universalCamData.renderShadows = false;
-			_universalCamData.dithering = false;
+			_universalCamData.dithering = true;
+			_universalCamData.antialiasing = AntialiasingMode.FastApproximateAntialiasing;
+
 		}
 
 		protected override void InitializeMessages()

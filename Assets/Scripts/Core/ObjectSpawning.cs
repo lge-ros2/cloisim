@@ -72,9 +72,7 @@ public class ObjectSpawning : MonoBehaviour
 	// Update is called once per frame
 	void LateUpdate()
 	{
-		var leftControlPressed = Input.GetKey(KeyCode.LeftControl);
-
-		if (leftControlPressed)
+		if (Input.GetKey(KeyCode.LeftControl))
 		{
 			if (Input.GetMouseButtonUp(0))
 			{

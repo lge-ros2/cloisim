@@ -44,9 +44,10 @@ Shader "Custom/GeometryGrass"
 	{
 		Tags
 		{
+			"RenderPipeline" = "UniversalPipeline"
 			"RenderType" = "Opaque"
 			"Queue" = "Geometry"
-			"RenderPipeline" = "UniversalPipeline"
+			"IgnoreProjector" = "True"
 		}
 
 		LOD 100
@@ -55,6 +56,9 @@ Shader "Custom/GeometryGrass"
 		HLSLINCLUDE
 		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
+		#pragma require geometry
+		#pragma require tessellation tessHW
 
 		#pragma multi_compile _ _MAIN_LIGHT_SHADOWS
 		#pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
@@ -65,6 +69,8 @@ Shader "Custom/GeometryGrass"
 		#pragma multi_compile_local WIND_OFF _
 
 		#pragma multi_compile_instancing
+		#pragma instancing_options renderinglayer
+		#include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
 		#define BLADE_SEGMENTS 4
 
@@ -311,7 +317,7 @@ Shader "Custom/GeometryGrass"
 				float4 tangent = (input[0].tangentWS + input[1].tangentWS + input[2].tangentWS) / 3.0f;
 				float3 bitangent = cross(normal, tangent.xyz) * tangent.w;
 
-				pos -= _GrassOffset;
+				pos -= _GrassOffset.xyz;
 
 				float3x3 tangentToLocal = float3x3
 				(
@@ -390,25 +396,17 @@ Shader "Custom/GeometryGrass"
 				"LightMode" = "UniversalForward"
 			}
 
-			ZWrite On
-			ZTest LEqual
-
 			HLSLPROGRAM
-			#pragma require geometry
-			#pragma require tessellation tessHW
-
 			#pragma vertex vert
 			#pragma hull hull
 			#pragma domain domain
 			#pragma geometry geom
 			#pragma fragment frag
 
-			#pragma multi_compile_instancing
-
 			// The lighting sections of the frag shader taken from this helpful post by Ben Golus:
 			// https://forum.unity.com/threads/water-shader-graph-transparency-and-shadows-universal-render-pipeline-order.748142/#post-5518747
 
-			float4 frag (g2f i) : SV_Target
+			float4 frag(g2f i) : SV_Target
 			{
 				float4 color = tex2D(_BaseTex, i.uv);
 
@@ -437,17 +435,12 @@ Shader "Custom/GeometryGrass"
 			Name "ShadowCaster"
 			Tags { "LightMode" = "ShadowCaster" }
 
-			ZWrite On
-			ZTest LEqual
-
 			HLSLPROGRAM
 			#pragma vertex shadowVert
 			#pragma hull hull
 			#pragma domain domain
 			#pragma geometry geom
 			#pragma fragment shadowFrag
-
-			// #pragma multi_compile_instancing
 
 			#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 			#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"

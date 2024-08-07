@@ -153,6 +153,7 @@ namespace SensorDevices
 
 			camSensor.clearFlags = CameraClearFlags.Depth;
 			camSensor.allowHDR = false;
+			camSensor.allowMSAA = false;
 			camSensor.depthTextureMode = DepthTextureMode.Depth;
 
 			_universalCamData.requiresColorOption = CameraOverrideOption.Off;

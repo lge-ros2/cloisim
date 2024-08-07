@@ -50,7 +50,7 @@ namespace SensorDevices
 			var imuList = gameObject.GetComponentsInChildren<SensorDevices.IMU>();
 			foreach (var imu in imuList)
 			{
-				Debug.Log(imu.name + " , " + imu.DeviceName);
+				// Debug.Log(imu.name + " , " + imu.DeviceName);
 				if (imu.DeviceName.Contains("::" + sensorName + "::") ||
 					imu.name.CompareTo(sensorName) == 0)
 				{
