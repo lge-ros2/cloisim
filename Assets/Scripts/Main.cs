@@ -484,15 +484,21 @@ public class Main : MonoBehaviour
 
 	void LateUpdate()
 	{
+#if UNITY_EDITOR
+		if (Input.GetKey(KeyCode.LeftAlt))
+#else
 		if (Input.GetKey(KeyCode.LeftControl))
+#endif
 		{
+			// Debug.Log("LeftControl Triggered");
 		 	if (Input.GetKeyUp(KeyCode.R))
 			{
-				_resetTriggered = true;
 				// Debug.Log("Reset Triggered");
+				_resetTriggered = true;
 			}
 			else if (Input.GetKeyUp(KeyCode.S))
 			{
+				// Debug.Log("Save World");
 				OnSaveButtonClicked();
 			}
 		}

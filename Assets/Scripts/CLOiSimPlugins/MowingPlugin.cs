@@ -39,7 +39,7 @@ public class MowingPlugin : CLOiSimPlugin
 		{
 			this.heightThreshold = bladingHeight;
 			this.ratio = Mathf.Lerp(bladeMin, bladeMax, bladingHeight);
-			Debug.Log("_bladingRatio: " + this.ratio);
+			// Debug.Log("_bladingRatio: " + this.ratio);
 		}
 	}
 
@@ -298,10 +298,9 @@ public class MowingPlugin : CLOiSimPlugin
 		var bladeBounds = new Bounds();
 		foreach (var meshFilter in meshFilters)
 		{
-			Debug.Log(meshFilter.name);
-			Debug.Log(meshFilter.sharedMesh.bounds);
+			// Debug.Log(meshFilter.name);
+			// Debug.Log(meshFilter.sharedMesh.bounds);
 			var bounds = meshFilter.sharedMesh.bounds;
-			// bounds.center = Vector3.zero;
 			bladeBounds.Encapsulate(bounds);
 		}
 
