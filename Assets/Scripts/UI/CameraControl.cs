@@ -274,7 +274,7 @@ public class CameraControl : MonoBehaviour
 				baseDirection.x += 1;
 			}
 
-			if (Input.GetKey(KeyCode.R))
+			if (Input.GetKey(KeyCode.G))
 			{
 				baseDirection.y += 1;
 			}
@@ -285,7 +285,7 @@ public class CameraControl : MonoBehaviour
 
 			if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.S) ||
 				Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D) ||
-				Input.GetKey(KeyCode.R) || Input.GetKey(KeyCode.F))
+				Input.GetKey(KeyCode.G) || Input.GetKey(KeyCode.F))
 			{
 				_terminateMoving = true;
 			}
