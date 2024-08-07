@@ -17,29 +17,26 @@ int _UnitSize;
 [numthreads(THREADS, GROUPS, 1)]
 void CSScaleDepthBuffer(uint3 id : SV_DispatchThreadID)
 {
-  const uint bufIndex = id.y *_Width + id.x;
-  const float data = _Input.Load(bufIndex);
-  const float rangedData = data * _DepthMax;
+	const uint bufIndex = id.y *_Width + id.x;
+	const float data = _Input.Load(bufIndex);
+	const float rangedData = data * _DepthMax;
 
-  if (_UnitSize == 4)
-  {
-    _Output[bufIndex] = asuint(rangedData);
-  }
-  else
-  {
-    uint finalData;
-    if (_UnitSize == 2)
-    {
-      const float max_scaled_range = MAX_RANGE_16BITS / _DepthScale;
-      const float scaledData = ((rangedData > max_scaled_range)? max_scaled_range : rangedData) * _DepthScale;
-      finalData = asuint((uint)scaledData) & 0xFFFF;
-    }
-    else // 1
-    {
-      // const float max_scaled_range = MAX_RANGE_8BITS;
-      const float scaledData = rangedData / _DepthMax * MAX_RANGE_8BITS;//((rangedData > max_scaled_range)? max_scaled_range : rangedData) * _DepthScale;
-      finalData = asuint((uint)scaledData) & 0xFF;
-    }
-    _Output[bufIndex] = finalData;
-  }
+	uint finalData = 0;
+
+	if (_UnitSize == 4)
+	{
+		finalData = asuint(rangedData);
+	}
+	else if (_UnitSize == 2)
+	{
+		const float max_scaled_range = MAX_RANGE_16BITS / _DepthScale;
+		const float scaledData = ((rangedData > max_scaled_range)? max_scaled_range : rangedData) * _DepthScale;
+		finalData = asuint((uint)scaledData) & 0xFFFF;
+	}
+	else // 1
+	{
+		const float scaledData = rangedData / _DepthMax * MAX_RANGE_8BITS;//((rangedData > max_scaled_range)? max_scaled_range : rangedData) * _DepthScale;
+		finalData = asuint((uint)scaledData) & 0xFF;
+	}
+	_Output[bufIndex] = finalData;
 }
