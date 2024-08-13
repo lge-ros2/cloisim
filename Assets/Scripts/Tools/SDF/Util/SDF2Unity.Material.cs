@@ -36,6 +36,8 @@ public partial class SDF2Unity
 			newMaterial.SetFloat("_EnvironmentReflections", 0.5f);
 			newMaterial.DisableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
 
+			newMaterial.DisableKeyword("_NORMALMAP");
+
 			newMaterial.EnableKeyword("_INSTANCING_ON");
 			newMaterial.EnableKeyword("_DOTS_INSTANCING_ON");
 			newMaterial.DisableKeyword("_SPECGLOSSMAP");
@@ -121,7 +123,8 @@ public partial class SDF2Unity
 
 		public static void SetNormalMap(UE.Material target, in string normalMapPath)
 		{
-			target.SetTexture("_BumpMap", MeshLoader.GetTexture(normalMapPath));
+			var texture = MeshLoader.GetTexture(normalMapPath);
+			target.SetTexture("_BumpMap", texture);
 			target.EnableKeyword("_NORMALMAP");
 		}
 
