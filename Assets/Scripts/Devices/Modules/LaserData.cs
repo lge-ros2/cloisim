@@ -216,17 +216,20 @@ namespace SensorDevices
 		}
 	}
 
-	struct AsyncLaserWork
+	namespace Laser
 	{
-		public int dataIndex;
-		public AsyncGPUReadbackRequest request;
-		public float capturedTime;
-
-		public AsyncLaserWork(in int dataIndex, in AsyncGPUReadbackRequest request, in float capturedTime)
+		public struct AsyncWork
 		{
-			this.dataIndex = dataIndex;
-			this.request = request;
-			this.capturedTime = capturedTime;
+			public int dataIndex;
+			public AsyncGPUReadbackRequest request;
+			public float capturedTime;
+
+			public AsyncWork(in int dataIndex, in AsyncGPUReadbackRequest request, in float capturedTime)
+			{
+				this.dataIndex = dataIndex;
+				this.request = request;
+				this.capturedTime = capturedTime;
+			}
 		}
 	}
 }
