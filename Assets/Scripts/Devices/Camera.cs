@@ -61,7 +61,7 @@ namespace SensorDevices
 			}
 		}
 
-		public void SetCamParameter(in SDF.Camera param)
+		public void SetParameter(in SDF.Camera param)
 		{
 			_camParam = param;
 		}
