@@ -54,6 +54,8 @@ Shader "Custom/GeometryGrass"
 		Cull Off
 
 		HLSLINCLUDE
+		#pragma target 4.5
+
 		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
