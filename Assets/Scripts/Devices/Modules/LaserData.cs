@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-using UnityEngine.Rendering;
 using UnityEngine;
 using Unity.Collections;
 using Unity.Jobs;
@@ -212,23 +211,6 @@ namespace SensorDevices
 			public double[] GetLaserData()
 			{
 				return laserData.ToArray();
-			}
-		}
-	}
-
-	namespace Laser
-	{
-		public struct AsyncWork
-		{
-			public int dataIndex;
-			public AsyncGPUReadbackRequest request;
-			public float capturedTime;
-
-			public AsyncWork(in int dataIndex, in AsyncGPUReadbackRequest request, in float capturedTime)
-			{
-				this.dataIndex = dataIndex;
-				this.request = request;
-				this.capturedTime = capturedTime;
 			}
 		}
 	}

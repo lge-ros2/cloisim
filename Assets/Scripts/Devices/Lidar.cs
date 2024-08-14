@@ -53,7 +53,7 @@ namespace SensorDevices
 		private RTHandle _rtHandle = null;
 		private ParallelOptions _parallelOptions = null;
 
-		private List<Laser.AsyncWork> _asyncWorkList = new List<Laser.AsyncWork>();
+		private List<AsyncWork.Laser> _asyncWorkList = new List<AsyncWork.Laser>();
 		private DepthData.CamBuffer[] _depthCamBuffers;
 		private LaserData.LaserCamData[] _laserCamData;
 		private LaserData.LaserDataOutput[] _laserDataOutput;
@@ -316,7 +316,7 @@ namespace SensorDevices
 
 						lock (_asyncWorkList)
 						{
-							_asyncWorkList.Add(new Laser.AsyncWork(dataIndex, readbackRequest, capturedTime));
+							_asyncWorkList.Add(new AsyncWork.Laser(dataIndex, readbackRequest, capturedTime));
 						}
 
 						laserCam.enabled = false;
@@ -343,7 +343,7 @@ namespace SensorDevices
 			}
 			else if (request.done)
 			{
-				Laser.AsyncWork asyncWork;
+				AsyncWork.Laser asyncWork;
 
 				lock (_asyncWorkList)
 				{
