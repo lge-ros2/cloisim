@@ -255,7 +255,7 @@ public class ObjectSpawning : MonoBehaviour
 		navMeshObstacle.carvingTimeToStationary = 0.2f;
 		navMeshObstacle.carveOnlyStationary = true;
 
-		newObject.AddComponent<SegmentationTag>();
+		newObject.AddComponent<Segmentation.Tag>();
 
 		GameObject.DontDestroyOnLoad(newObject);
 
