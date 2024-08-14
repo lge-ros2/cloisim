@@ -11,7 +11,7 @@ public partial class SDF2Unity
 {
 	public class Material
 	{
-		private static readonly string _commonShaderName = "Universal Render Pipeline/Simple Lit";
+		private static readonly string _commonShaderName = "Custom/URP/Simple Lit";
 		private static readonly string _speedTreeShaderName = "Universal Render Pipeline/Nature/SpeedTree8";
 		public static UE.Shader CommonShader = UE.Shader.Find(_commonShaderName);
 		public static UE.Shader SpeedTreeShader = UE.Shader.Find(_speedTreeShaderName);
