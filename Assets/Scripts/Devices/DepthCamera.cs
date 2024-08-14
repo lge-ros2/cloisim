@@ -92,13 +92,14 @@ namespace SensorDevices
 
 		protected override void SetupTexture()
 		{
+			Debug.Log("This is not a Depth Camera!");
 			_targetRTname = "CameraDepthTexture";
 			_targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
 			_readbackDstFormat = GraphicsFormat.R8G8B8A8_UNorm;
 
-			var width = camParameter.image.width;
-			var height = camParameter.image.height;
-			var format = CameraData.GetPixelFormat(camParameter.image.format);
+			var width = _camParam.image.width;
+			var height = _camParam.image.height;
+			var format = CameraData.GetPixelFormat(_camParam.image.format);
 
 			GraphicsFormat graphicFormat;
 			switch (format)
@@ -133,7 +134,7 @@ namespace SensorDevices
 			{
 				_kernelIndex = _computeShader.FindKernel("CSScaleDepthBuffer");
 
-				_computeShader.SetFloat("_DepthMax", (float)camParameter.clip.far);
+				_computeShader.SetFloat("_DepthMax", (float)_camParam.clip.far);
 				_computeShader.SetInt("_Width", width);
 				_computeShader.SetInt("_UnitSize", _imageDepth);
 				_computeShader.SetFloat("_DepthScale", (float)depthScale);
@@ -142,19 +143,20 @@ namespace SensorDevices
 
 		protected override void SetupCamera()
 		{
+			// Debug.Log("Depth Setup Camera");
 			var depthShader = Shader.Find("Sensor/Depth");
 			_depthMaterial = new Material(depthShader);
 
-			if (camParameter.depth_camera_output.Equals("points"))
+			if (_camParam.depth_camera_output.Equals("points"))
 			{
 				Debug.Log("Enable Point Cloud data mode - NOT SUPPORT YET!");
-				camParameter.image.format = "RGB_FLOAT32";
+				_camParam.image.format = "RGB_FLOAT32";
 			}
 
-			camSensor.clearFlags = CameraClearFlags.Depth;
-			camSensor.allowHDR = false;
-			camSensor.allowMSAA = false;
-			camSensor.depthTextureMode = DepthTextureMode.Depth;
+			_camSensor.clearFlags = CameraClearFlags.Depth;
+			_camSensor.allowHDR = false;
+			_camSensor.allowMSAA = false;
+			_camSensor.depthTextureMode = DepthTextureMode.Depth;
 
 			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
 			_universalCamData.requiresDepthOption = CameraOverrideOption.On;
@@ -168,7 +170,7 @@ namespace SensorDevices
 			cb.GetTemporaryRT(tempTextureId, -1, -1);
 			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
 			cb.ReleaseTemporaryRT(tempTextureId);
-			camSensor.AddCommandBuffer(CameraEvent.AfterEverything, cb);
+			_camSensor.AddCommandBuffer(CameraEvent.AfterEverything, cb);
 			cb.Release();
 
 			ReverseDepthData(false);
@@ -205,10 +207,10 @@ namespace SensorDevices
 						_imageDepth);
 				});
 
-				if (camParameter.save_enabled && _startCameraWork)
+				if (_camParam.save_enabled && _startCameraWork)
 				{
 					var saveName = name + "_" + Time.time;
-					SaveRawImageData(camParameter.save_path, saveName);
+					SaveRawImageData(_camParam.save_path, saveName);
 				}
 			}
 			_depthCamBuffer.Deallocate();
@@ -223,7 +225,7 @@ namespace SensorDevices
 			var bytes = _textureForCapture.EncodeToJPG();
 			var fileName = string.Format("{0}/{1}.jpg", path, name);
 			System.IO.File.WriteAllBytes(fileName, bytes);
-			// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
+			// Debug.LogFormat("{0}|{1} captured", _camParam.save_path, saveName);
 		}
 	}
 }

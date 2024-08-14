@@ -21,7 +21,7 @@ namespace SensorDevices
 		{
 			_targetRTname = "SegmentationTexture";
 
-			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
+			var pixelFormat = CameraData.GetPixelFormat(_camParam.image.format);
 			if (pixelFormat != CameraData.PixelFormat.L_INT16)
 			{
 				Debug.Log("Only support INT16 format");
@@ -31,20 +31,20 @@ namespace SensorDevices
 			_targetColorFormat = GraphicsFormat.R8G8_UNorm;
 			_readbackDstFormat = GraphicsFormat.R8G8_UNorm;
 
-			_camImageData = new CameraData.Image(camParameter.image.width, camParameter.image.height, pixelFormat);
+			_camImageData = new CameraData.Image(_camParam.image.width, _camParam.image.height, pixelFormat);
 		}
 
 		protected override void SetupCamera()
 		{
-			if (!camParameter.segmentation_type.Equals("semantic"))
+			// Debug.Log("Segmenataion Setup Camera");
+			if (!_camParam.segmentation_type.Equals("semantic"))
 			{
 				Debug.Log("Only support semantic segmentation");
 			}
-
-			camSensor.backgroundColor = Color.black;
-			camSensor.clearFlags = CameraClearFlags.SolidColor;
-			camSensor.allowHDR = false;
-			camSensor.allowMSAA = true;
+			_camSensor.backgroundColor = Color.black;
+			_camSensor.clearFlags = CameraClearFlags.SolidColor;
+			_camSensor.allowHDR = false;
+			_camSensor.allowMSAA = true;
 
 			// Refer to SegmentationRenderer (Universal Renderer Data)
 			_universalCamData.SetRenderer(1);
@@ -84,11 +84,11 @@ namespace SensorDevices
 			{
 				image.Data = imageData;
 
-				if (camParameter.save_enabled && _startCameraWork)
+				if (_camParam.save_enabled && _startCameraWork)
 				{
 					var saveName = name + "_" + Time.time;
-					_camImageData.SaveRawImageData(camParameter.save_path, saveName);
-					// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
+					_camImageData.SaveRawImageData(_camParam.save_path, saveName);
+					// Debug.LogFormat("{0}|{1} captured", _camParam.save_path, saveName);
 				}
 			}
 			else
