@@ -210,22 +210,12 @@ namespace SensorDevices
 				if (_camParam.save_enabled && _startCameraWork)
 				{
 					var saveName = name + "_" + Time.time;
-					SaveRawImageData(_camParam.save_path, saveName);
+					_textureForCapture.SaveRawImage(_imageStamped.Image.Data, _camParam.save_path, saveName);
 				}
 			}
 			_depthCamBuffer.Deallocate();
 
 			_imageStamped.Time.SetCurrentTime();
-		}
-
-		private void SaveRawImageData(in string path, in string name)
-		{
-			_textureForCapture.SetPixelData(_imageStamped.Image.Data, 0);
-			_textureForCapture.Apply();
-			var bytes = _textureForCapture.EncodeToJPG();
-			var fileName = string.Format("{0}/{1}.jpg", path, name);
-			System.IO.File.WriteAllBytes(fileName, bytes);
-			// Debug.LogFormat("{0}|{1} captured", _camParam.save_path, saveName);
 		}
 	}
 }

@@ -5,6 +5,7 @@
  */
 
 using UnityEngine;
+using Unity.Collections;
 
 public static class TextureUtil
 {
@@ -83,5 +84,23 @@ public static class TextureUtil
 
 		// Check if the point is inside the triangle
 		return alpha >= 0 && beta >= 0 && gamma >= 0;
+	}
+
+	public static void SaveRawImage(this Texture2D texture, in NativeArray<byte> buffer, in string path, in string name)
+	{
+		texture.SetPixelData(buffer, 0);
+		texture.Apply();
+		var bytes = texture.EncodeToPNG();
+		var fileName = string.Format("{0}/{1}.png", path, name);
+		System.IO.File.WriteAllBytes(fileName, bytes);
+	}
+
+	public static void SaveRawImage(this Texture2D texture, byte[] data, in string path, in string name)
+	{
+		texture.SetPixelData(data, 0);
+		texture.Apply();
+		var bytes = texture.EncodeToPNG();
+		var fileName = string.Format("{0}/{1}.png", path, name);
+		System.IO.File.WriteAllBytes(fileName, bytes);
 	}
 }

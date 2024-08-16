@@ -167,11 +167,7 @@ namespace SensorDevices
 
 			public void SaveRawImageData(in string path, in string name)
 			{
-				textureForCapture.SetPixelData(buffer, 0);
-				textureForCapture.Apply();
-				var bytes = textureForCapture.EncodeToPNG();
-				var fileName = string.Format("{0}/{1}.png", path, name);
-				System.IO.File.WriteAllBytes(fileName, bytes);
+				textureForCapture.SaveRawImage(buffer, path, name);
 			}
 		}
 	}
