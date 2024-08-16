@@ -9,6 +9,42 @@ using Unity.Collections;
 
 public static class TextureUtil
 {
+	public static void Clear(this Texture2D texture)
+	{
+		Clear(texture, Color.clear);
+	}
+
+	public static void Clear(this Texture2D texture, Color color)
+	{
+		Fill(texture, color);
+	}
+
+	public static void Fill(this Texture2D texture, in Color color)
+	{
+#if false
+		for (var i = 0; i < texture.width; i++)
+		{
+			for (var j = 0; j < texture.height; j++)
+			{
+				texture.SetPixel(i, j, color);
+			}
+		}
+#else
+		var pixels = new Color[texture.width * texture.height];
+		for (var i = 0; i < pixels.Length; i++)
+		{
+			pixels[i] = color;
+		}
+
+		Fill(texture, ref pixels);
+#endif
+	}
+
+	public static void Fill(this Texture2D texture, ref Color[] colors)
+	{
+		texture.SetPixels(colors);
+	}
+
 	public static void FillCircle(this Texture2D texture, in float x, in float y, in float radius, in Color color)
 	{
 		FillCircle(texture, (int)x, (int)y, (int)radius, color);
