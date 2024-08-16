@@ -42,7 +42,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] Sonar sensor
   - [X] IMU
   - [X] Contact
-  - [X] Camera
+  - [X] Camera: Due to performance issue, < 40fps is recommended
     - [ ] Camera intrinsic parameter
     - [X] Depth Camera
     - [X] Multi-camera

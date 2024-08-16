@@ -5,9 +5,46 @@
  */
 
 using UnityEngine;
+using Unity.Collections;
 
 public static class TextureUtil
 {
+	public static void Clear(this Texture2D texture)
+	{
+		Clear(texture, Color.clear);
+	}
+
+	public static void Clear(this Texture2D texture, Color color)
+	{
+		Fill(texture, color);
+	}
+
+	public static void Fill(this Texture2D texture, in Color color)
+	{
+#if false
+		for (var i = 0; i < texture.width; i++)
+		{
+			for (var j = 0; j < texture.height; j++)
+			{
+				texture.SetPixel(i, j, color);
+			}
+		}
+#else
+		var pixels = new Color[texture.width * texture.height];
+		for (var i = 0; i < pixels.Length; i++)
+		{
+			pixels[i] = color;
+		}
+
+		Fill(texture, ref pixels);
+#endif
+	}
+
+	public static void Fill(this Texture2D texture, ref Color[] colors)
+	{
+		texture.SetPixels(colors);
+	}
+
 	public static void FillCircle(this Texture2D texture, in float x, in float y, in float radius, in Color color)
 	{
 		FillCircle(texture, (int)x, (int)y, (int)radius, color);
@@ -83,5 +120,23 @@ public static class TextureUtil
 
 		// Check if the point is inside the triangle
 		return alpha >= 0 && beta >= 0 && gamma >= 0;
+	}
+
+	public static void SaveRawImage(this Texture2D texture, in NativeArray<byte> buffer, in string path, in string name)
+	{
+		texture.SetPixelData(buffer, 0);
+		texture.Apply();
+		var bytes = texture.EncodeToPNG();
+		var fileName = string.Format("{0}/{1}.png", path, name);
+		System.IO.File.WriteAllBytes(fileName, bytes);
+	}
+
+	public static void SaveRawImage(this Texture2D texture, byte[] data, in string path, in string name)
+	{
+		texture.SetPixelData(data, 0);
+		texture.Apply();
+		var bytes = texture.EncodeToPNG();
+		var fileName = string.Format("{0}/{1}.png", path, name);
+		System.IO.File.WriteAllBytes(fileName, bytes);
 	}
 }
