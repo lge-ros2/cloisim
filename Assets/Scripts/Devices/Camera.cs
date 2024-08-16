@@ -4,7 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
@@ -19,7 +21,8 @@ namespace SensorDevices
 	{
 		protected SDF.Camera _camParam = null;
 		protected messages.CameraSensor _sensorInfo = null;
-		protected messages.ImageStamped _imageStamped = null;
+		protected messages.Image _image = null; // for Parameters
+		protected BlockingCollection<messages.ImageStamped> _imageStampedQueue = new BlockingCollection<messages.ImageStamped>();
 
 		// TODO : Need to be implemented!!!
 		// <lens> TBD
@@ -33,10 +36,10 @@ namespace SensorDevices
 		protected GraphicsFormat _readbackDstFormat;
 
 		protected CameraData.Image _camImageData;
-		private List<AsyncGPUReadbackRequest> _readbackList = new List<AsyncGPUReadbackRequest>();
+		private List<AsyncWork.Camera> _asyncWorkList = new List<AsyncWork.Camera>();
+
 		public Noise noise = null;
 		protected bool _startCameraWork = false;
-		private float _lastTimeCameraWork = 0f;
 		private RTHandle _rtHandle;
 
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
@@ -86,14 +89,17 @@ namespace SensorDevices
 				SetupDefaultCamera();
 				SetupCamera();
 				_startCameraWork = true;
+				StartCoroutine(CameraWorker());
 			}
 		}
 
 		protected override void OnReset()
 		{
-			lock (_readbackList)
+			while (_imageStampedQueue.TryTake(out _)){}
+
+			lock (_asyncWorkList)
 			{
-				_readbackList.Clear();
+				_asyncWorkList.Clear();
 			}
 		}
 
@@ -122,9 +128,7 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			_imageStamped = new messages.ImageStamped();
-			_imageStamped.Time = new messages.Time();
-			_imageStamped.Image = new messages.Image();
+			_image = new messages.Image();
 
 			_sensorInfo = new messages.CameraSensor();
 			_sensorInfo.ImageSize = new messages.Vector2d();
@@ -134,13 +138,12 @@ namespace SensorDevices
 
 		protected override void SetupMessages()
 		{
-			var image = _imageStamped.Image;
 			var pixelFormat = CameraData.GetPixelFormat(_camParam.image.format);
-			image.Width = (uint)_camParam.image.width;
-			image.Height = (uint)_camParam.image.height;
-			image.PixelFormat = (uint)pixelFormat;
-			image.Step = image.Width * (uint)CameraData.GetImageStep(pixelFormat);
-			image.Data = new byte[image.Height * image.Step];
+			_image.Width = (uint)_camParam.image.width;
+			_image.Height = (uint)_camParam.image.height;
+			_image.PixelFormat = (uint)pixelFormat;
+			_image.Step = _image.Width * (uint)CameraData.GetImageStep(pixelFormat);
+			_image.Data = new byte[_image.Height * _image.Step];
 
 			_sensorInfo.HorizontalFov = _camParam.horizontal_fov;
 			_sensorInfo.ImageSize.X = _camParam.image.width;
@@ -264,17 +267,14 @@ namespace SensorDevices
 			base.OnDestroy();
 		}
 
-		void Update()
+		private IEnumerator CameraWorker()
 		{
-			if (_startCameraWork)
-			{
-				CameraWorker();
-			}
-		}
+			var MaxUpdateRate = (float)Application.targetFrameRate;
+			var messageGenerationTime = 1f / (MaxUpdateRate - UpdateRate);
 
-		private void CameraWorker()
-		{
-			if (Time.time - _lastTimeCameraWork >= WaitPeriod(0.00001f))
+			Debug.Log(messageGenerationTime);
+
+			while (_startCameraWork)
 			{
 				_universalCamData.enabled = true;
 
@@ -283,17 +283,18 @@ namespace SensorDevices
 				{
 					_camSensor.Render();
 
+					var capturedTime = (float)DeviceHelper.GetGlobalClock().SimTime;
 					var readbackRequest = AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, OnCompleteAsyncReadback);
 
-					lock (_readbackList)
+					lock (_asyncWorkList)
 					{
-						_readbackList.Add(readbackRequest);
+						_asyncWorkList.Add(new AsyncWork.Camera(readbackRequest, capturedTime));
 					}
 				}
 
 				_universalCamData.enabled = false;
 
-				_lastTimeCameraWork = Time.time;
+				yield return new WaitForSeconds(WaitPeriod(messageGenerationTime));
 			}
 		}
 
@@ -305,31 +306,47 @@ namespace SensorDevices
 			}
 			else if (request.done)
 			{
-				checked
-				{
-					var readbackData = request.GetData<byte>();
-					ImageProcessing(ref readbackData);
-					readbackData.Dispose();
-				}
+				AsyncWork.Camera asyncWork;
 
-				lock (_readbackList)
+				lock (_asyncWorkList)
 				{
-					_readbackList.Remove(request);
+					checked
+					{
+						var asyncWorkIndex = _asyncWorkList.FindIndex(x => x.request.Equals(request));
+						if (asyncWorkIndex >= 0 && asyncWorkIndex < _asyncWorkList.Count)
+						{
+							asyncWork = _asyncWorkList[asyncWorkIndex];
+							var readbackData = request.GetData<byte>();
+							ImageProcessing(ref readbackData, asyncWork.capturedTime);
+							readbackData.Dispose();
+							_asyncWorkList.RemoveAt(asyncWorkIndex);
+						}
+					}
 				}
 			}
 		}
 
 		protected override void GenerateMessage()
 		{
-			PushDeviceMessage<messages.ImageStamped>(_imageStamped);
+			if (_imageStampedQueue.TryTake(out var msg))
+			{
+				PushDeviceMessage<messages.ImageStamped>(msg);
+			}
 		}
 
-		protected virtual void ImageProcessing(ref NativeArray<byte> readbackData)
+		protected virtual void ImageProcessing(ref NativeArray<byte> readbackData, in float capturedTime)
 		{
-			var image = _imageStamped.Image;
+			var imageStamped = new messages.ImageStamped();
+
+			imageStamped.Time = new messages.Time();
+			imageStamped.Time.Set(capturedTime);
+
+			imageStamped.Image = new messages.Image();
+			imageStamped.Image = _image;
+
 			_camImageData.SetTextureBufferData(readbackData);
 
-			// Debug.Log(image.Data.Length);
+			var image = imageStamped.Image;
 			var imageData = _camImageData.GetImageData(image.Data.Length);
 			if (imageData != null)
 			{
@@ -346,7 +363,7 @@ namespace SensorDevices
 				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
 			}
 
-			_imageStamped.Time.SetCurrentTime();
+			_imageStampedQueue.TryAdd(imageStamped);
 		}
 
 		public messages.CameraSensor GetCameraInfo()
@@ -354,9 +371,14 @@ namespace SensorDevices
 			return _sensorInfo;
 		}
 
-		public messages.Image GetImageDataMessage()
+		public messages.ImageStamped GetImageDataMessage()
 		{
-			return (_imageStamped == null || _imageStamped.Image == null) ? null : _imageStamped.Image;
+			if (_imageStampedQueue.TryTake(out var msg))
+			{
+				return msg;
+			}
+
+			return null;
 		}
 	}
 }

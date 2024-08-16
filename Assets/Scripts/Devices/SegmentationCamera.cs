@@ -7,6 +7,7 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Experimental.Rendering;
+using System.Collections.Concurrent;
 using messages = cloisim.msgs;
 using Unity.Collections;
 
@@ -15,7 +16,14 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class SegmentationCamera : Camera
 	{
-		private messages.Segmentation _segmentation = null;
+		private BlockingCollection<messages.Segmentation> _segmentationQueue = new BlockingCollection<messages.Segmentation>();
+
+		protected override void OnReset()
+		{
+			while (_segmentationQueue.TryTake(out _)){}
+
+			base.OnReset();
+		}
 
 		protected override void SetupTexture()
 		{
@@ -64,26 +72,33 @@ namespace SensorDevices
 		protected override void InitializeMessages()
 		{
 			base.InitializeMessages();
-
-			_segmentation = new messages.Segmentation();
-			_segmentation.ImageStamped = _imageStamped;
 		}
 
 		protected override void GenerateMessage()
 		{
-			PushDeviceMessage<messages.Segmentation>(_segmentation);
+			if (_segmentationQueue.TryTake(out var msg))
+			{
+				PushDeviceMessage<messages.Segmentation>(msg);
+			}
 		}
 
-		protected override void ImageProcessing(ref NativeArray<byte> readbackData)
+		protected override void ImageProcessing(ref NativeArray<byte> readbackData, in float capturedTime)
 		{
-			var image = _imageStamped.Image;
+			var segmentation = new messages.Segmentation();
+			segmentation.ImageStamped = new messages.ImageStamped();
+			segmentation.ImageStamped.Time = new messages.Time();
+			segmentation.ImageStamped.Time.Set(capturedTime);
+
+			segmentation.ImageStamped.Image = new messages.Image();
+			segmentation.ImageStamped.Image = _image;
+
 			_camImageData.SetTextureBufferData(readbackData);
 
+			var image = segmentation.ImageStamped.Image;
 			var imageData = _camImageData.GetImageData(image.Data.Length);
 			if (imageData != null)
 			{
 				image.Data = imageData;
-
 				if (_camParam.save_enabled && _startCameraWork)
 				{
 					var saveName = name + "_" + Time.time;
@@ -98,7 +113,7 @@ namespace SensorDevices
 
 			// update labels
 			var labelInfo = Main.SegmentationManager.GetLabelInfo();
-			_segmentation.ClassMaps.Clear();
+			segmentation.ClassMaps.Clear();
 			foreach (var kv in labelInfo)
 			{
 				if (kv.Value.Count > 0 && !kv.Value[0].Hide)
@@ -108,11 +123,11 @@ namespace SensorDevices
 						ClassName = kv.Key,
 						ClassId = kv.Value[0].ClassId
 					};
-					_segmentation.ClassMaps.Add(visionClass);
+					segmentation.ClassMaps.Add(visionClass);
 				}
 			}
 
-			_imageStamped.Time.SetCurrentTime();
+			_segmentationQueue.TryAdd(segmentation);
 		}
 	}
 }

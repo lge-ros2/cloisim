@@ -4,9 +4,12 @@
  * SPDX-License-Identifier: MIT
  */
 
+// #define USE_AVERAGE_TIME_FOR_IMAGE_SYNC
+
 using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
+
 
 namespace SensorDevices
 {
@@ -41,17 +44,38 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
+#if USE_AVERAGE_TIME_FOR_IMAGE_SYNC
+			float imageStampTimeSum = 0;
+			int imageStampedCount = 0;
+#else
+			float imagesStampedTime = 0;
+#endif
 			for (var i = 0; i < cameras.Count; i++)
 			{
 				// Set images data only once
-				var image = cameras[i].GetImageDataMessage();
-				if (image != null && i < imagesStamped.Images.Count)
+				var imageStamped = cameras[i].GetImageDataMessage();
+				if (imageStamped != null && i < imagesStamped.Images.Count)
 				{
-					imagesStamped.Images[i] = image;
+					imagesStamped.Images[i] = imageStamped.Image;
+
+#if USE_AVERAGE_TIME_FOR_IMAGE_SYNC
+					imageStampTimeSum += ;
+					imageStampedCount++;
+#else
+					if (imageStamped.Time.Get() > imagesStampedTime)
+					{
+						imagesStampedTime = imageStamped.Time.Get();
+					}
+#endif
 				}
 			}
+#if USE_AVERAGE_TIME_FOR_IMAGE_SYNC
+			var imagesStampedAvgTime = imageStampTimeSum/(float)imageStampedCount;
+			imagesStamped.Time.Set(imagesStampedAvgTime);
+#else
+			imagesStamped.Time.Set(imagesStampedTime);
+#endif
 
-			imagesStamped.Time.SetCurrentTime();
 			PushDeviceMessage<messages.ImagesStamped>(imagesStamped);
 		}
 

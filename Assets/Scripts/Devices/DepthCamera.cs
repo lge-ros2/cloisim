@@ -12,6 +12,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using System.Threading.Tasks;
 using System;
+using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
@@ -177,8 +178,15 @@ namespace SensorDevices
 			FlipXDepthData(false);
 		}
 
-		protected override void ImageProcessing(ref NativeArray<byte> readbackData)
+		protected override void ImageProcessing(ref NativeArray<byte> readbackData, in float capturedTime)
 		{
+			var imageStamped = new messages.ImageStamped();
+			imageStamped.Time = new messages.Time();
+			imageStamped.Time.Set(capturedTime);
+
+			imageStamped.Image = new messages.Image();
+			imageStamped.Image = _image;
+
 			_depthCamBuffer.Allocate();
 			_depthCamBuffer.raw = readbackData;
 
@@ -203,19 +211,19 @@ namespace SensorDevices
 				{
 					Buffer.BlockCopy(
 						_computedBufferOutput, i * (int)OutputUnitSize,
-						_imageStamped.Image.Data, i * _imageDepth,
+						imageStamped.Image.Data, i * _imageDepth,
 						_imageDepth);
 				});
 
 				if (_camParam.save_enabled && _startCameraWork)
 				{
 					var saveName = name + "_" + Time.time;
-					_textureForCapture.SaveRawImage(_imageStamped.Image.Data, _camParam.save_path, saveName);
+					_textureForCapture.SaveRawImage(imageStamped.Image.Data, _camParam.save_path, saveName);
 				}
 			}
 			_depthCamBuffer.Deallocate();
 
-			_imageStamped.Time.SetCurrentTime();
+			_imageStampedQueue.TryAdd(imageStamped);
 		}
 	}
 }
