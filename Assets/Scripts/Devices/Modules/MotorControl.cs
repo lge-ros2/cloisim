@@ -196,8 +196,6 @@ public class MotorControl
 
 	public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor = null)
 	{
-		// var decreaseVelocity = IsDirectionChanged(duration);
-
 		foreach (var wheel in wheelList)
 		{
 			var motor = wheel.Value;
