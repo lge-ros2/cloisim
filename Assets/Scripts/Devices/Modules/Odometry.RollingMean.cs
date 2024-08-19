@@ -11,16 +11,16 @@ public partial class Odometry
 	private class RollingMean
 	{
 		private int _maxSize = 0;
-		private Queue<float> _accumulate = null;
-		private float _accumulateSum = 0f;
+		private Queue<double> _accumulate = null;
+		private double _accumulateSum = 0f;
 
 		public RollingMean(in int windowSize = 5)
 		{
 			_maxSize = windowSize;
-			_accumulate = new Queue<float>(windowSize);
+			_accumulate = new Queue<double>(windowSize);
 		}
 
-		public void Accumulate(in float value)
+		public void Accumulate(in double value)
 		{
 			if (_accumulate.Count == _maxSize)
 			{
@@ -37,9 +37,9 @@ public partial class Odometry
 			_accumulateSum = 0;
 		}
 
-		public float Get()
+		public double Get()
 		{
-			return _accumulateSum / (float)_accumulate.Count;
+			return _accumulateSum / (double)_accumulate.Count;
 		}
 	}
 }

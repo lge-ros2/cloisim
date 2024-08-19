@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
@@ -22,6 +23,20 @@ public class MotorControl
 		{WheelLocation.REAR_RIGHT, null}
 	};
 
+	public struct MotorTask
+	{
+		public Motor motor;
+		public float targetVelocity;
+
+		public MotorTask(Motor motor, float targetVelocity)
+		{
+			this.motor = motor;
+			this.targetVelocity = targetVelocity;
+		}
+	};
+
+	List<MotorTask> _motorTaskList = new List<MotorTask>();
+
 	private Odometry odometry = null;
 
 	#endregion
@@ -31,6 +46,8 @@ public class MotorControl
 	public MotorControl(in Transform controllerTransform)
 	{
 		_baseTransform = controllerTransform;
+
+		_motorTaskList.Clear();
 	}
 
 	public void Reset()
@@ -145,15 +162,22 @@ public class MotorControl
 			{
 				if (wheel.Key.Equals(WheelLocation.RIGHT) || wheel.Key.Equals(WheelLocation.REAR_RIGHT))
 				{
-					motor.SetTargetVelocity(angularVelocityRight);
+					_motorTaskList.Add(new MotorTask(motor, angularVelocityRight));
 				}
 
 				if (wheel.Key.Equals(WheelLocation.LEFT) || wheel.Key.Equals(WheelLocation.REAR_LEFT))
 				{
-					motor.SetTargetVelocity(angularVelocityLeft);
+					_motorTaskList.Add(new MotorTask(motor, angularVelocityLeft));
 				}
 			}
 		}
+
+		Parallel.ForEach(_motorTaskList, motorTask =>
+		{
+			motorTask.motor.SetTargetVelocity(motorTask.targetVelocity);
+		});
+
+		_motorTaskList.Clear();
 	}
 
 	/// <summary>Get target Motor Velocity</summary>
@@ -172,8 +196,6 @@ public class MotorControl
 
 	public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor = null)
 	{
-		// var decreaseVelocity = IsDirectionChanged(duration);
-
 		foreach (var wheel in wheelList)
 		{
 			var motor = wheel.Value;

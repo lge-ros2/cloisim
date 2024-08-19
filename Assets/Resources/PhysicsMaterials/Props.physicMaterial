@@ -9,6 +9,6 @@ PhysicMaterial:
   m_Name: Props
   dynamicFriction: 0.6
   staticFriction: 0.6
-  bounciness: 0.0001
+  bounciness: 0.00001
   frictionCombine: 0
   bounceCombine: 0

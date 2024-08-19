@@ -8,7 +8,7 @@ using UnityEngine;
 
 public class Motor : Articulation
 {
-	private const float WheelResolution = 0.087890625f; // in degree, encoding 12bits,360°
+	private const float WheelResolution = 0.043945312f; // in degree, encoding 13bits, 360°
 
 	private PID _pidControl = null;
 	private float _targetAngularVelocity = 0; // degree per seconds

@@ -67,7 +67,7 @@ namespace SDF
 
 				if (element.noise != null)
 				{
-					lidar.noise = new SensorDevices.Noise(element.noise, "lidar");
+					lidar.SetupNoise(element.noise);
 				}
 
 				return lidar;

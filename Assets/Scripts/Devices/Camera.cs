@@ -272,8 +272,6 @@ namespace SensorDevices
 			var MaxUpdateRate = (float)Application.targetFrameRate;
 			var messageGenerationTime = 1f / (MaxUpdateRate - UpdateRate);
 
-			Debug.Log(messageGenerationTime);
-
 			while (_startCameraWork)
 			{
 				_universalCamData.enabled = true;
@@ -310,10 +308,10 @@ namespace SensorDevices
 
 				lock (_asyncWorkList)
 				{
-					checked
+					var asyncWorkIndex = _asyncWorkList.FindIndex(x => x.request.Equals(request));
+					if (asyncWorkIndex >= 0 && asyncWorkIndex < _asyncWorkList.Count)
 					{
-						var asyncWorkIndex = _asyncWorkList.FindIndex(x => x.request.Equals(request));
-						if (asyncWorkIndex >= 0 && asyncWorkIndex < _asyncWorkList.Count)
+						checked
 						{
 							asyncWork = _asyncWorkList[asyncWorkIndex];
 							var readbackData = request.GetData<byte>();

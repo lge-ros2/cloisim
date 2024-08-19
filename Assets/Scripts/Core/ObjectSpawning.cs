@@ -237,11 +237,13 @@ public class ObjectSpawning : MonoBehaviour
 			default:
 				var meshCollider = newObject.AddComponent<MeshCollider>();
 				meshCollider.sharedMesh = targetMesh;
-				meshCollider.sharedMaterial = _propsPhysicalMaterial;
 				meshCollider.convex = true;
 				meshCollider.isTrigger = false;
 				break;
 		}
+
+		var collider = newObject.GetComponent<Collider>();
+		collider.sharedMaterial = _propsPhysicalMaterial;
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
 		rigidBody.mass = 1;
