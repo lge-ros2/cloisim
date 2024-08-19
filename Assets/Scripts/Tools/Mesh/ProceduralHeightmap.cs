@@ -14,11 +14,10 @@ public static class ProceduralHeightmap
 	private static readonly string terrainShaderName = "Universal Render Pipeline/Terrain/Lit";
 	private static readonly Shader TerrainShader = Shader.Find(terrainShaderName);
 
-	// private static readonly int ResolutionPerPatch = 32;
 	private static readonly int DetailResolutionRate = 2;
 	private static readonly int MinDetailResolution = 8;
 	private static readonly float DefaultSmootheness = 0.3f;
-	private static readonly float BaseMapDistance = 500f;
+	private static readonly float BaseMapDistance = 100f;
 
 	private static void UpdateHeightMap(this TerrainData terrainData, in Texture2D heightmapTexture)
 	{
@@ -45,6 +44,7 @@ public static class ProceduralHeightmap
 			}
 		}
 		terrainData.SetHeights(0, 0, heightValues);
+		terrainData.SyncHeightmap();
 	}
 
 	private static byte[] GetBytesFromImage(in string imagePath)
@@ -129,7 +129,6 @@ public static class ProceduralHeightmap
 
 		if (isVisualMesh)
 		{
-			// terrainData.terrainLayers = new TerrainLayer[property.texture.Count];
 			var terrainLayers = new TerrainLayer[property.texture.Count];
 			for (var i = 0; i < property.texture.Count; i++)
 			{

@@ -53,6 +53,11 @@ public class Unity2SDF
 			return -value;
 		}
 
+		public static double Curve(in double value)
+		{
+			return -value;
+		}
+
 		public class Joint
 		{
 			public static float Prismatic(in float value, in Vector3 rotation)

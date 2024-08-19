@@ -3,9 +3,11 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#define USE_ROLLINGMEAN_FOR_ODOM
 
 using UnityEngine;
 using messages = cloisim.msgs;
+using System;
 
 public partial class Odometry
 {
@@ -16,15 +18,15 @@ public partial class Odometry
 	private WheelInfo wheelInfo;
 
 	private float _lastImuYaw = 0f;
-	private Vector3 _odomPose = Vector3.zero;
-	private float _odomTranslationalVelocity = 0;
-	private float _odomRotationalVelocity = 0;
+	private Vector3d _odomPose = Vector3d.zero;
+	private double _odomTranslationalVelocity = 0;
+	private double _odomRotationalVelocity = 0;
 
-
+#if USE_ROLLINGMEAN_FOR_ODOM
 	private const int RollingMeanWindowSize = 10;
 	private RollingMean rollingMeanOdomTransVelocity = new RollingMean(RollingMeanWindowSize);
 	private RollingMean rollingMeanOdomTAngularVelocity = new RollingMean(RollingMeanWindowSize);
-
+#endif
 
 	public float WheelSeparation => this.wheelInfo.wheelSeparation;
 	public float InverseWheelRadius => this.wheelInfo.inversedWheelRadius;
@@ -42,13 +44,20 @@ public partial class Odometry
 		_odomPose.Set(0, 0, 0);
 		_lastImuYaw = 0.0f;
 
+#if USE_ROLLINGMEAN_FOR_ODOM
 		rollingMeanOdomTransVelocity.Reset();
 		rollingMeanOdomTAngularVelocity.Reset();
+#endif
 	}
 
 	private bool IsZero(in float value)
 	{
-		return Mathf.Abs(value) < Quaternion.kEpsilon;
+		return Mathf.Abs(value) < float.Epsilon;
+	}
+
+	private bool IsZero(in double value)
+	{
+		return Math.Abs(value) < float.Epsilon;
 	}
 
 	/// <summary>Calculate odometry on this robot</summary>
@@ -76,8 +85,8 @@ public partial class Odometry
 			var direction = _odomPose.y + angular * 0.5f;
 
 			// Runge-Kutta 2nd order integration:
-			_odomPose.z += linear * Mathf.Cos(direction);
-			_odomPose.x += linear * Mathf.Sin(direction);
+			_odomPose.z += linear * Math.Cos(direction);
+			_odomPose.x += linear * Math.Sin(direction);
 			_odomPose.y += angular;
 
 			// Debug.Log("CalcOdom 0 = " + _odomPose.y + ", " + angular);
@@ -89,8 +98,8 @@ public partial class Odometry
 			var r = linear / angular;
 
 			_odomPose.y += angular;
-			_odomPose.z += r * (Mathf.Sin(_odomPose.y) - Mathf.Sin(headingOld));
-			_odomPose.x += -r * (Mathf.Cos(_odomPose.y) - Mathf.Cos(headingOld));
+			_odomPose.z += r * (Math.Sin(_odomPose.y) - Math.Sin(headingOld));
+			_odomPose.x += -r * (Math.Cos(_odomPose.y) - Math.Cos(headingOld));
 
 			// Debug.Log("CalcOdom 1 = " + _odomPose.y + ", " + angular);
 		}
@@ -116,7 +125,6 @@ public partial class Odometry
 			return false;
 		}
 
-		var deltaThetaIMU = 0f;
 		if (imuSensor != null)
 		{
 			var imuOrientation = imuSensor.GetOrientation();
@@ -124,31 +132,30 @@ public partial class Odometry
 			var deltaAngleImu = Mathf.DeltaAngle(_lastImuYaw, imuYaw);
 			_lastImuYaw = imuYaw;
 
-			deltaThetaIMU = IsZero(deltaAngleImu) ? 0 : deltaAngleImu * Mathf.Deg2Rad;
-			// Debug.Log("deltaThetaIMU =" + deltaThetaIMU);
+			var deltaThetaIMU = IsZero(deltaAngleImu) ? 0 : deltaAngleImu * Mathf.Deg2Rad;
 			CalculateOdometry(angularVelocityLeft, angularVelocityRight, duration, deltaThetaIMU);
 		}
 		else
 		{
-			var diffRightLeft = angularVelocityRight - angularVelocityLeft;
-			var rotationVelocity = IsZero(diffRightLeft) ? 0 : (diffRightLeft * wheelInfo.wheelRadius * wheelInfo.inversedWheelSeparation);
-			var deltaTheta = rotationVelocity * duration;
-			// Debug.LogFormat("diff {0:F7}", deltaTheta - deltaThetaIMU);
 			CalculateOdometry(angularVelocityLeft, angularVelocityRight, duration);
 		}
 
-		odomMessage.Pose.Set(Unity2SDF.Direction.Reverse(_odomPose));
+		var odomPose = new Vector3((float)_odomPose.x, (float)_odomPose.y, (float)_odomPose.z);
+		odomMessage.Pose.Set(Unity2SDF.Direction.Reverse(odomPose));
 
 		// rolling mean filtering
 		var odomTransVel = Unity2SDF.Direction.Curve(_odomTranslationalVelocity);
-		rollingMeanOdomTransVelocity.Accumulate(odomTransVel);
-
 		var odomAngularVel = Unity2SDF.Direction.Curve(_odomRotationalVelocity);
-		rollingMeanOdomTAngularVelocity.Accumulate(odomAngularVel);
 
+#if USE_ROLLINGMEAN_FOR_ODOM
+		rollingMeanOdomTransVelocity.Accumulate(odomTransVel);
+		rollingMeanOdomTAngularVelocity.Accumulate(odomAngularVel);
 		odomMessage.TwistLinear.X = rollingMeanOdomTransVelocity.Get();
 		odomMessage.TwistAngular.Z = rollingMeanOdomTAngularVelocity.Get();
-
+#else
+		odomMessage.TwistLinear.X = odomTransVel;
+		odomMessage.TwistAngular.Z = odomAngularVel;
+#endif
 		// Debug.LogFormat("odom Vel: {0:F6}, {1:F6}", odomMessage.TwistLinear.X, odomMessage.TwistAngular.Z);
 		// Debug.LogFormat("Odom angular: {0:F6}, {1:F6}", odomMessage.AngularVelocity.Left, odomMessage.AngularVelocity.Right);
 		return true;

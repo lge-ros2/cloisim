@@ -110,6 +110,15 @@ public class ModelImporter : MonoBehaviour
 
 		modelDeployOffset.y = DeployOffsetMargin + ((totalBound.min.y < 0) ? -totalBound.min.y : 0);
 		// Debug.Log("Deploy == " + modelDeployOffset.y + " " + totalBound.min + ", " + totalBound.center + "," + totalBound.extents);
+
+		#region Workaround code for Wrong TerrainHeight issue
+		var terrain = targetTransform.GetComponentInChildren<Terrain>();
+		if (terrain != null)
+		{
+			var terrainSize = terrain.terrainData.size;
+			terrain.terrainData.size = terrainSize;
+		}
+		#endregion
 	}
 
 	private bool GetPointAndNormalOnClick(out Vector3 point, out Vector3 normal)
