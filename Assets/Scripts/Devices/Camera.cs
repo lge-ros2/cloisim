@@ -4,7 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
@@ -17,17 +19,16 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class Camera : Device
 	{
-		protected SDF.Camera camParameter = null;
-		protected messages.CameraSensor sensorInfo = null;
-		protected messages.ImageStamped _imageStamped = null;
+		protected SDF.Camera _camParam = null;
+		protected messages.CameraSensor _sensorInfo = null;
+		protected messages.Image _image = null; // for Parameters
+		protected BlockingCollection<messages.ImageStamped> _imageStampedQueue = new BlockingCollection<messages.ImageStamped>();
 
 		// TODO : Need to be implemented!!!
 		// <lens> TBD
 		// <distortion> TBD
 
-		protected Transform cameraLink = null;
-
-		protected UnityEngine.Camera camSensor = null;
+		protected UnityEngine.Camera _camSensor = null;
 		protected UniversalAdditionalCameraData _universalCamData = null;
 
 		protected string _targetRTname;
@@ -35,15 +36,15 @@ namespace SensorDevices
 		protected GraphicsFormat _readbackDstFormat;
 
 		protected CameraData.Image _camImageData;
-		private List<AsyncGPUReadbackRequest> _readbackList = new List<AsyncGPUReadbackRequest>();
+		private List<AsyncWork.Camera> _asyncWorkList = new List<AsyncWork.Camera>();
+
 		public Noise noise = null;
 		protected bool _startCameraWork = false;
-		private float _lastTimeCameraWork = 0f;
 		private RTHandle _rtHandle;
 
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
-			if (camera.Equals(camSensor))
+			if (camera.Equals(_camSensor))
 			{
 				var cmdBuffer = new CommandBuffer();
 				cmdBuffer.SetInvertCulling(true);
@@ -54,7 +55,7 @@ namespace SensorDevices
 
 		protected void OnEndCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
-			if (camera.Equals(camSensor))
+			if (camera.Equals(_camSensor))
 			{
 				var cmdBuffer = new CommandBuffer();
 				cmdBuffer.SetInvertCulling(false);
@@ -63,41 +64,42 @@ namespace SensorDevices
 			}
 		}
 
-		public void SetCamParameter(in SDF.Camera param)
+		public void SetParameter(in SDF.Camera param)
 		{
-			camParameter = param;
+			_camParam = param;
 		}
 
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
 
-			camSensor = GetComponent<UnityEngine.Camera>();
-			_universalCamData = camSensor.GetUniversalAdditionalCameraData();
+			_camSensor = GetComponent<UnityEngine.Camera>();
+			_universalCamData = _camSensor.GetUniversalAdditionalCameraData();
 
 			// for controlling targetDisplay
-			camSensor.targetDisplay = -1;
-			camSensor.stereoTargetEye = StereoTargetEyeMask.None;
-
-			cameraLink = transform.parent;
+			_camSensor.targetDisplay = -1;
+			_camSensor.stereoTargetEye = StereoTargetEyeMask.None;
 		}
 
 		protected override void OnStart()
 		{
-			if (camSensor)
+			if (_camSensor)
 			{
 				SetupTexture();
 				SetupDefaultCamera();
 				SetupCamera();
 				_startCameraWork = true;
+				StartCoroutine(CameraWorker());
 			}
 		}
 
 		protected override void OnReset()
 		{
-			lock (_readbackList)
+			while (_imageStampedQueue.TryTake(out _)){}
+
+			lock (_asyncWorkList)
 			{
-				_readbackList.Clear();
+				_asyncWorkList.Clear();
 			}
 		}
 
@@ -106,7 +108,7 @@ namespace SensorDevices
 			// Debug.Log("This is not a Depth Camera!");
 			_targetRTname = "CameraColorTexture";
 
-			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
+			var pixelFormat = CameraData.GetPixelFormat(_camParam.image.format);
 			switch (pixelFormat)
 			{
 				case CameraData.PixelFormat.L_INT8:
@@ -121,49 +123,46 @@ namespace SensorDevices
 					break;
 			}
 
-			_camImageData = new CameraData.Image(camParameter.image.width, camParameter.image.height, pixelFormat);
+			_camImageData = new CameraData.Image(_camParam.image.width, _camParam.image.height, pixelFormat);
 		}
 
 		protected override void InitializeMessages()
 		{
-			_imageStamped = new messages.ImageStamped();
-			_imageStamped.Time = new messages.Time();
-			_imageStamped.Image = new messages.Image();
+			_image = new messages.Image();
 
-			sensorInfo = new messages.CameraSensor();
-			sensorInfo.ImageSize = new messages.Vector2d();
-			sensorInfo.Distortion = new messages.Distortion();
-			sensorInfo.Distortion.Center = new messages.Vector2d();
+			_sensorInfo = new messages.CameraSensor();
+			_sensorInfo.ImageSize = new messages.Vector2d();
+			_sensorInfo.Distortion = new messages.Distortion();
+			_sensorInfo.Distortion.Center = new messages.Vector2d();
 		}
 
 		protected override void SetupMessages()
 		{
-			var image = _imageStamped.Image;
-			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
-			image.Width = (uint)camParameter.image.width;
-			image.Height = (uint)camParameter.image.height;
-			image.PixelFormat = (uint)pixelFormat;
-			image.Step = image.Width * (uint)CameraData.GetImageStep(pixelFormat);
-			image.Data = new byte[image.Height * image.Step];
+			var pixelFormat = CameraData.GetPixelFormat(_camParam.image.format);
+			_image.Width = (uint)_camParam.image.width;
+			_image.Height = (uint)_camParam.image.height;
+			_image.PixelFormat = (uint)pixelFormat;
+			_image.Step = _image.Width * (uint)CameraData.GetImageStep(pixelFormat);
+			_image.Data = new byte[_image.Height * _image.Step];
 
-			sensorInfo.HorizontalFov = camParameter.horizontal_fov;
-			sensorInfo.ImageSize.X = camParameter.image.width;
-			sensorInfo.ImageSize.Y = camParameter.image.height;
-			sensorInfo.ImageFormat = camParameter.image.format;
-			sensorInfo.NearClip = camParameter.clip.near;
-			sensorInfo.FarClip = camParameter.clip.far;
-			sensorInfo.SaveEnabled = camParameter.save_enabled;
-			sensorInfo.SavePath = camParameter.save_path;
+			_sensorInfo.HorizontalFov = _camParam.horizontal_fov;
+			_sensorInfo.ImageSize.X = _camParam.image.width;
+			_sensorInfo.ImageSize.Y = _camParam.image.height;
+			_sensorInfo.ImageFormat = _camParam.image.format;
+			_sensorInfo.NearClip = _camParam.clip.near;
+			_sensorInfo.FarClip = _camParam.clip.far;
+			_sensorInfo.SaveEnabled = _camParam.save_enabled;
+			_sensorInfo.SavePath = _camParam.save_path;
 
-			if (camParameter.distortion != null)
+			if (_camParam.distortion != null)
 			{
-				sensorInfo.Distortion.Center.X = camParameter.distortion.center.X;
-				sensorInfo.Distortion.Center.Y = camParameter.distortion.center.Y;
-				sensorInfo.Distortion.K1 = camParameter.distortion.k1;
-				sensorInfo.Distortion.K2 = camParameter.distortion.k2;
-				sensorInfo.Distortion.K3 = camParameter.distortion.k3;
-				sensorInfo.Distortion.P1 = camParameter.distortion.p1;
-				sensorInfo.Distortion.P2 = camParameter.distortion.p2;
+				_sensorInfo.Distortion.Center.X = _camParam.distortion.center.X;
+				_sensorInfo.Distortion.Center.Y = _camParam.distortion.center.Y;
+				_sensorInfo.Distortion.K1 = _camParam.distortion.k1;
+				_sensorInfo.Distortion.K2 = _camParam.distortion.k2;
+				_sensorInfo.Distortion.K3 = _camParam.distortion.k3;
+				_sensorInfo.Distortion.P1 = _camParam.distortion.p1;
+				_sensorInfo.Distortion.P2 = _camParam.distortion.p2;
 			}
 		}
 
@@ -181,27 +180,27 @@ namespace SensorDevices
 
 		private void SetupDefaultCamera()
 		{
-			camSensor.ResetWorldToCameraMatrix();
-			camSensor.ResetProjectionMatrix();
+			_camSensor.ResetWorldToCameraMatrix();
+			_camSensor.ResetProjectionMatrix();
 
-			camSensor.backgroundColor = Color.black;
-			camSensor.clearFlags = CameraClearFlags.Nothing;
-			camSensor.depthTextureMode = DepthTextureMode.None;
-			camSensor.renderingPath = RenderingPath.Forward;
-			camSensor.allowHDR = true;
-			camSensor.allowMSAA = true;
-			camSensor.allowDynamicResolution = true;
-			camSensor.useOcclusionCulling = true;
-			camSensor.stereoTargetEye = StereoTargetEyeMask.None;
-			camSensor.orthographic = false;
-			camSensor.nearClipPlane = (float)camParameter.clip.near;
-			camSensor.farClipPlane = (float)camParameter.clip.far;
-			camSensor.cullingMask = LayerMask.GetMask("Default");
+			_camSensor.backgroundColor = Color.black;
+			_camSensor.clearFlags = CameraClearFlags.Nothing;
+			_camSensor.depthTextureMode = DepthTextureMode.None;
+			_camSensor.renderingPath = RenderingPath.Forward;
+			_camSensor.allowHDR = true;
+			_camSensor.allowMSAA = true;
+			_camSensor.allowDynamicResolution = true;
+			_camSensor.useOcclusionCulling = true;
+			_camSensor.stereoTargetEye = StereoTargetEyeMask.None;
+			_camSensor.orthographic = false;
+			_camSensor.nearClipPlane = (float)_camParam.clip.near;
+			_camSensor.farClipPlane = (float)_camParam.clip.far;
+			_camSensor.cullingMask = LayerMask.GetMask("Default");
 
 			RTHandles.SetHardwareDynamicResolutionState(true);
 			_rtHandle = RTHandles.Alloc(
-				width: camParameter.image.width,
-				height: camParameter.image.height,
+				width: _camParam.image.width,
+				height: _camParam.image.height,
 				slices: 1,
 				depthBufferBits: DepthBits.None,
 				colorFormat: _targetColorFormat,
@@ -220,17 +219,25 @@ namespace SensorDevices
 				memoryless: RenderTextureMemoryless.None,
 				name: _targetRTname);
 
-			camSensor.targetTexture = _rtHandle.rt;
+			_camSensor.targetTexture = _rtHandle.rt;
 
-			var camHFov = (float)camParameter.horizontal_fov * Mathf.Rad2Deg;
-			var camVFov = SensorHelper.HorizontalToVerticalFOV(camHFov, camSensor.aspect);
-			camSensor.fieldOfView = camVFov;
+			var camHFov = (float)_camParam.horizontal_fov * Mathf.Rad2Deg;
+			var camVFov = SensorHelper.HorizontalToVerticalFOV(camHFov, _camSensor.aspect);
+			_camSensor.fieldOfView = camVFov;
 
 			// Invert projection matrix for cloisim msg
-			var projMatrix = SensorHelper.MakeCustomProjectionMatrix(camHFov, camVFov, camSensor.nearClipPlane, camSensor.farClipPlane);
+			var projMatrix = SensorHelper.MakeCustomProjectionMatrix(camHFov, camVFov, _camSensor.nearClipPlane, _camSensor.farClipPlane);
 			var invertMatrix = Matrix4x4.Scale(new Vector3(1, -1, 1));
-			camSensor.projectionMatrix = projMatrix * invertMatrix;
+			_camSensor.projectionMatrix = projMatrix * invertMatrix;
 
+			SetDefaultUniversalAdditionalCameraData();
+
+			_camSensor.enabled = false;
+			// _camSensor.hideFlags |= HideFlags.NotEditable;
+		}
+
+		private void SetDefaultUniversalAdditionalCameraData()
+		{
 			_universalCamData.requiresColorOption = CameraOverrideOption.On;
 			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
 			_universalCamData.requiresColorTexture = true;
@@ -244,14 +251,12 @@ namespace SensorDevices
 			_universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
 			_universalCamData.renderType = CameraRenderType.Base;
 			_universalCamData.cameraStack.Clear();
-
-			camSensor.enabled = false;
-			// camSensor.hideFlags |= HideFlags.NotEditable;
 		}
 
 		protected virtual void SetupCamera()
 		{
-			camSensor.clearFlags = CameraClearFlags.Skybox;
+			// Debug.Log("Base Setup Camera");
+			_camSensor.clearFlags = CameraClearFlags.Skybox;
 		}
 
 		protected new void OnDestroy()
@@ -262,36 +267,34 @@ namespace SensorDevices
 			base.OnDestroy();
 		}
 
-		void Update()
+		private IEnumerator CameraWorker()
 		{
-			if (_startCameraWork)
-			{
-				CameraWorker();
-			}
-		}
+			var MaxUpdateRate = (float)Application.targetFrameRate;
+			var messageGenerationTime = 1f / (MaxUpdateRate - UpdateRate);
 
-		private void CameraWorker()
-		{
-			if (Time.time - _lastTimeCameraWork >= WaitPeriod(0.00001f))
+			Debug.Log(messageGenerationTime);
+
+			while (_startCameraWork)
 			{
 				_universalCamData.enabled = true;
 
 				// Debug.Log("start render and request ");
 				if (_universalCamData.isActiveAndEnabled)
 				{
-					camSensor.Render();
+					_camSensor.Render();
 
-					var readbackRequest = AsyncGPUReadback.Request(camSensor.targetTexture, 0, _readbackDstFormat, OnCompleteAsyncReadback);
+					var capturedTime = (float)DeviceHelper.GetGlobalClock().SimTime;
+					var readbackRequest = AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, OnCompleteAsyncReadback);
 
-					lock (_readbackList)
+					lock (_asyncWorkList)
 					{
-						_readbackList.Add(readbackRequest);
+						_asyncWorkList.Add(new AsyncWork.Camera(readbackRequest, capturedTime));
 					}
 				}
 
 				_universalCamData.enabled = false;
 
-				_lastTimeCameraWork = Time.time;
+				yield return new WaitForSeconds(WaitPeriod(messageGenerationTime));
 			}
 		}
 
@@ -303,40 +306,56 @@ namespace SensorDevices
 			}
 			else if (request.done)
 			{
-				checked
-				{
-					var readbackData = request.GetData<byte>();
-					ImageProcessing(ref readbackData);
-					readbackData.Dispose();
-				}
+				AsyncWork.Camera asyncWork;
 
-				lock (_readbackList)
+				lock (_asyncWorkList)
 				{
-					_readbackList.Remove(request);
+					checked
+					{
+						var asyncWorkIndex = _asyncWorkList.FindIndex(x => x.request.Equals(request));
+						if (asyncWorkIndex >= 0 && asyncWorkIndex < _asyncWorkList.Count)
+						{
+							asyncWork = _asyncWorkList[asyncWorkIndex];
+							var readbackData = request.GetData<byte>();
+							ImageProcessing(ref readbackData, asyncWork.capturedTime);
+							readbackData.Dispose();
+							_asyncWorkList.RemoveAt(asyncWorkIndex);
+						}
+					}
 				}
 			}
 		}
 
 		protected override void GenerateMessage()
 		{
-			PushDeviceMessage<messages.ImageStamped>(_imageStamped);
+			if (_imageStampedQueue.TryTake(out var msg))
+			{
+				PushDeviceMessage<messages.ImageStamped>(msg);
+			}
 		}
 
-		protected virtual void ImageProcessing(ref NativeArray<byte> readbackData)
+		protected virtual void ImageProcessing(ref NativeArray<byte> readbackData, in float capturedTime)
 		{
-			var image = _imageStamped.Image;
+			var imageStamped = new messages.ImageStamped();
+
+			imageStamped.Time = new messages.Time();
+			imageStamped.Time.Set(capturedTime);
+
+			imageStamped.Image = new messages.Image();
+			imageStamped.Image = _image;
+
 			_camImageData.SetTextureBufferData(readbackData);
 
-			// Debug.Log(image.Data.Length);
+			var image = imageStamped.Image;
 			var imageData = _camImageData.GetImageData(image.Data.Length);
 			if (imageData != null)
 			{
 				image.Data = imageData;
-				if (camParameter.save_enabled && _startCameraWork)
+				if (_camParam.save_enabled && _startCameraWork)
 				{
 					var saveName = name + "_" + Time.time;
-					_camImageData.SaveRawImageData(camParameter.save_path, saveName);
-					// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
+					_camImageData.SaveRawImageData(_camParam.save_path, saveName);
+					// Debug.LogFormat("{0}|{1} captured", _camParam.save_path, saveName);
 				}
 			}
 			else
@@ -344,17 +363,22 @@ namespace SensorDevices
 				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
 			}
 
-			_imageStamped.Time.SetCurrentTime();
+			_imageStampedQueue.TryAdd(imageStamped);
 		}
 
 		public messages.CameraSensor GetCameraInfo()
 		{
-			return sensorInfo;
+			return _sensorInfo;
 		}
 
-		public messages.Image GetImageDataMessage()
+		public messages.ImageStamped GetImageDataMessage()
 		{
-			return (_imageStamped == null || _imageStamped.Image == null) ? null : _imageStamped.Image;
+			if (_imageStampedQueue.TryTake(out var msg))
+			{
+				return msg;
+			}
+
+			return null;
 		}
 	}
 }

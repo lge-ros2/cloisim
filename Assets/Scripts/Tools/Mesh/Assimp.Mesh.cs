@@ -21,7 +21,7 @@ public static partial class MeshLoader
 			var byteArray = File.ReadAllBytes(textureFullPath);
 			if (byteArray != null)
 			{
-				var texture = new Texture2D(1, 1);
+				var texture = new Texture2D(0, 0);
 				if (texture.LoadImage(byteArray))
 				{
 					return texture;
@@ -170,6 +170,7 @@ public static partial class MeshLoader
 					if (File.Exists(textureFullPath))
 					{
 						mat.SetTexture("_BumpMap", GetTexture(textureFullPath));
+						mat.EnableKeyword("_NORMALMAP");
 						// Debug.Log(sceneMat.Name + ": HasTextureNormal -> " + filePath);
 						break;
 					}

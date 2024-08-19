@@ -53,7 +53,7 @@ namespace SensorDevices
 		private RTHandle _rtHandle = null;
 		private ParallelOptions _parallelOptions = null;
 
-		private List<AsyncLaserWork> _asyncWorkList = new List<AsyncLaserWork>();
+		private List<AsyncWork.Laser> _asyncWorkList = new List<AsyncWork.Laser>();
 		private DepthData.CamBuffer[] _depthCamBuffers;
 		private LaserData.LaserCamData[] _laserCamData;
 		private LaserData.LaserDataOutput[] _laserDataOutput;
@@ -316,7 +316,7 @@ namespace SensorDevices
 
 						lock (_asyncWorkList)
 						{
-							_asyncWorkList.Add(new AsyncLaserWork(dataIndex, readbackRequest, capturedTime));
+							_asyncWorkList.Add(new AsyncWork.Laser(dataIndex, readbackRequest, capturedTime));
 						}
 
 						laserCam.enabled = false;
@@ -343,7 +343,7 @@ namespace SensorDevices
 			}
 			else if (request.done)
 			{
-				AsyncLaserWork asyncWork;
+				AsyncWork.Laser asyncWork;
 
 				lock (_asyncWorkList)
 				{
@@ -353,34 +353,37 @@ namespace SensorDevices
 				var dataIndex = asyncWork.dataIndex;
 				var depthCamBuffer = _depthCamBuffers[dataIndex];
 
-				depthCamBuffer.Allocate();
-				depthCamBuffer.raw = request.GetData<byte>();
-
-				if (depthCamBuffer.depth.IsCreated)
+				checked
 				{
-					var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
-					jobHandleDepthCamBuffer.Complete();
+					depthCamBuffer.Allocate();
+					depthCamBuffer.raw = request.GetData<byte>();
 
-					var laserCamData = _laserCamData[dataIndex];
-					laserCamData.depthBuffer = depthCamBuffer.depth;
-					laserCamData.Allocate();
-
-					var jobHandle = laserCamData.Schedule(laserCamData.OutputLength(), BatchSize);
-					jobHandle.Complete();
-
-					_laserDataOutput[dataIndex].data = laserCamData.GetLaserData();
-					_laserDataOutput[dataIndex].capturedTime = asyncWork.capturedTime;
-					_laserDataOutput[dataIndex].processingTime = (float)DeviceHelper.GlobalClock.SimTime - asyncWork.capturedTime;
-
-					if (noise != null)
+					if (depthCamBuffer.depth.IsCreated)
 					{
-						noise.Apply<double>(ref _laserDataOutput[dataIndex].data);
+						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
+						jobHandleDepthCamBuffer.Complete();
+
+						var laserCamData = _laserCamData[dataIndex];
+						laserCamData.depthBuffer = depthCamBuffer.depth;
+						laserCamData.Allocate();
+
+						var jobHandle = laserCamData.Schedule(laserCamData.OutputLength(), BatchSize);
+						jobHandle.Complete();
+
+						_laserDataOutput[dataIndex].data = laserCamData.GetLaserData();
+						_laserDataOutput[dataIndex].capturedTime = asyncWork.capturedTime;
+						_laserDataOutput[dataIndex].processingTime = (float)DeviceHelper.GlobalClock.SimTime - asyncWork.capturedTime;
+
+						if (noise != null)
+						{
+							noise.Apply<double>(ref _laserDataOutput[dataIndex].data);
+						}
+
+						laserCamData.Deallocate();
 					}
 
-					laserCamData.Deallocate();
+					depthCamBuffer.Deallocate();
 				}
-
-				depthCamBuffer.Deallocate();
 
 				lock (_asyncWorkList)
 				{

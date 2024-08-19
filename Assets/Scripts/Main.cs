@@ -47,7 +47,7 @@ public class Main : MonoBehaviour
 	private static WorldNavMeshBuilder _worldNavMeshBuilder = null;
 	private static RuntimeGizmos.TransformGizmo _transformGizmo = null;
 	private static CameraControl _cameraControl = null;
-	private static SegmentationManager _segmentationManager = null;
+	private static Segmentation.Manager _segmentationManager = null;
 	private static MeshProcess.VHACD _vhacd = null;
 	private static ObjectSpawning _objectSpawning = null;
 	private static Main _instance = null;
@@ -68,7 +68,7 @@ public class Main : MonoBehaviour
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => _worldNavMeshBuilder;
 	public static BridgeManager BridgeManager => _bridgeManager;
-	public static SegmentationManager SegmentationManager => _segmentationManager;
+	public static Segmentation.Manager SegmentationManager => _segmentationManager;
 	public static CameraControl CameraControl => _cameraControl;
 	public static MeshProcess.VHACD MeshVHACD => _vhacd;
 	public static Main Instance => _instance;
@@ -226,6 +226,16 @@ public class Main : MonoBehaviour
 		Application.targetFrameRate = 60;
 		OnDemandRendering.renderFrameInterval = 1;
 
+		// Debug.Log(    QualitySettings.GetQualityLevel());
+		var qualityLevel = Environment.GetEnvironmentVariable("CLOISIM_QUALITY");
+		var qualityLevelIndex = 3; // Very High Quality Preset
+		if (!string.IsNullOrEmpty(qualityLevel))
+		{
+			qualityLevelIndex = int.Parse(qualityLevel);
+			qualityLevelIndex = Mathf.Clamp(qualityLevelIndex, 0, 4);
+		}
+		QualitySettings.SetQualityLevel(qualityLevelIndex);
+
 		var mainCamera = Camera.main;
 		mainCamera.depthTextureMode = DepthTextureMode.None;
 		mainCamera.allowHDR = true;
@@ -270,7 +280,7 @@ public class Main : MonoBehaviour
 
 		_objectSpawning = gameObject.AddComponent<ObjectSpawning>();
 
-		_segmentationManager = gameObject.AddComponent<SegmentationManager>();
+		_segmentationManager = gameObject.AddComponent<Segmentation.Manager>();
 
 		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
 		_vhacd.m_parameters = VHACD.Params;

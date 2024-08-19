@@ -22,7 +22,7 @@ public abstract class Device : MonoBehaviour
 
 	private string deviceName = string.Empty;
 
-	private float updateRate = 1;
+	private float _updateRate = 1;
 
 	private bool debuggingOn = true;
 	private bool visualize = true;
@@ -34,7 +34,9 @@ public abstract class Device : MonoBehaviour
 
 	private bool runningDevice = false;
 
-	public float UpdatePeriod => 1f / updateRate;
+	public float UpdatePeriod => 1f / UpdateRate;
+
+	public float UpdateRate => _updateRate;
 
 	public string DeviceName
 	{
@@ -228,7 +230,7 @@ public abstract class Device : MonoBehaviour
 		}
 		catch (Exception ex)
 		{
-			Debug.LogWarning("ERROR: PushDeviceMessage<T>(): " + ex.Message);
+			Debug.LogWarning($"ERROR: PushDeviceMessage<{typeof(T).ToString()}>(): {ex.Message}");
 			return false;
 		}
 	}
@@ -296,7 +298,7 @@ public abstract class Device : MonoBehaviour
 
 	public void SetUpdateRate(in float value)
 	{
-		updateRate = value;
+		_updateRate = value;
 	}
 
 	public void SetTransportedTime(in float value)

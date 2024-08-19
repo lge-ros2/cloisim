@@ -81,7 +81,7 @@ namespace SDF
 				var camera = newSensorObject.AddComponent<SensorDevices.Camera>();
 				camera.tag = "Sensor";
 				camera.DeviceName = GetFrameName(newSensorObject);
-				camera.SetCamParameter(element);
+				camera.SetParameter(element);
 
 				if (element.noise != null)
 				{
@@ -119,7 +119,7 @@ namespace SDF
 						break;
 				}
 
-				segmentationCamera.SetCamParameter(element);
+				segmentationCamera.SetParameter(element);
 
 				if (element.noise != null)
 				{
@@ -161,7 +161,7 @@ namespace SDF
 						break;
 				}
 
-				depthCamera.SetCamParameter(element);
+				depthCamera.SetParameter(element);
 
 				if (element.noise != null)
 				{

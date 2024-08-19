@@ -47,29 +47,6 @@ public static class ProceduralHeightmap
 		terrainData.SetHeights(0, 0, heightValues);
 	}
 
-	private static Texture2D GenerateTexture(in string uri)
-	{
-		// Debug.Log(uri);
-		var texture = new Texture2D(1, 1);
-		try
-		{
-			var img = System.Drawing.Image.FromFile(uri);
-
-			// TODO: Support GeoTIFF
-			using (var ms = new MemoryStream())
-			{
-				img.Save(ms, img.RawFormat);
-				ImageConversion.LoadImage(texture, ms.ToArray(), false);
-			}
-		}
-		catch (Exception e)
-		{
-			Debug.LogWarning(e.Message);
-		}
-
-		return texture;
-	}
-
 	private static byte[] GetBytesFromImage(in string imagePath)
 	{
 		try
@@ -160,8 +137,8 @@ public static class ProceduralHeightmap
 				var terrainLayer = new TerrainLayer();
 
 				terrainLayer.name = Path.GetFileNameWithoutExtension(elem.diffuse);
-				terrainLayer.diffuseTexture = GenerateTexture(elem.diffuse);
-				terrainLayer.normalMapTexture = GenerateTexture(elem.normal);
+				terrainLayer.diffuseTexture = MeshLoader.GetTexture(elem.diffuse);
+				terrainLayer.normalMapTexture = MeshLoader.GetTexture(elem.normal);
 				terrainLayer.tileSize = (Vector2.one * (int)elem.size);
 				terrainLayer.smoothness = DefaultSmootheness;
 

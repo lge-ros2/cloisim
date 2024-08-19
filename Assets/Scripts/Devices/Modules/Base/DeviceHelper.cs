@@ -100,6 +100,11 @@ public static partial class DeviceHelper
 		msg.Nsec = (int)((time - (double)msg.Sec) * 1e+9);
 	}
 
+	public static float Get(this messages.Time msg)
+	{
+		return (float)msg.Sec + ((float)msg.Nsec / (float)1e-9);
+	}
+
 	public static void SetCurrentTime(this messages.Time msg, in bool useRealTime = false)
 	{
 		if (msg == null)

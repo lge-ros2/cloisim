@@ -156,14 +156,7 @@ public class MowingPlugin : CLOiSimPlugin
 
 			texture = new Texture2D(targetWidth, targetHeight, TextureFormat.R8, false);
 			texture.name = "Grass Map";
-
-			var pixels = new Color[targetWidth * targetHeight];
-			for (var i = 0; i < pixels.Length; i++)
-			{
-				pixels[i] = Color.red;
-			}
-
-			texture.SetPixels(pixels);
+			texture.Fill(Color.red);
 			texture.Apply();
 		}
 
@@ -260,7 +253,7 @@ public class MowingPlugin : CLOiSimPlugin
 		if (_initialTexturePixels != null)
 		{
 			Debug.Log("Reset grass texture");
-			_grass.texture.SetPixels(_initialTexturePixels);
+			_grass.texture.Fill(ref _initialTexturePixels);
 			_grass.texture.Apply();
 		}
 	}

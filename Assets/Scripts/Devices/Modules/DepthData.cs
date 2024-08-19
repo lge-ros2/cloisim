@@ -17,7 +17,6 @@ namespace SensorDevices
 		[BurstCompile]
 		public struct CamBuffer : IJobParallelFor
 		{
-
 			[ReadOnly]
 			public NativeArray<byte> raw;
 

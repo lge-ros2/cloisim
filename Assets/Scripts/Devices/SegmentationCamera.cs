@@ -7,6 +7,7 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Experimental.Rendering;
+using System.Collections.Concurrent;
 using messages = cloisim.msgs;
 using Unity.Collections;
 
@@ -15,35 +16,43 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class SegmentationCamera : Camera
 	{
-		private messages.Segmentation _segmentation = null;
+		private BlockingCollection<messages.Segmentation> _segmentationQueue = new BlockingCollection<messages.Segmentation>();
+
+		protected override void OnReset()
+		{
+			while (_segmentationQueue.TryTake(out _)){}
+
+			base.OnReset();
+		}
 
 		protected override void SetupTexture()
 		{
 			_targetRTname = "SegmentationTexture";
 
-			var pixelFormat = CameraData.GetPixelFormat(camParameter.image.format);
+			var pixelFormat = CameraData.GetPixelFormat(_camParam.image.format);
 			if (pixelFormat != CameraData.PixelFormat.L_INT16)
 			{
 				Debug.Log("Only support INT16 format");
 			}
 
-			_targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
-			_readbackDstFormat = GraphicsFormat.R8G8_UNorm; // for Unsigned 16-bit
+			// for Unsigned 16-bit
+			_targetColorFormat = GraphicsFormat.R8G8_UNorm;
+			_readbackDstFormat = GraphicsFormat.R8G8_UNorm;
 
-			_camImageData = new CameraData.Image(camParameter.image.width, camParameter.image.height, pixelFormat);
+			_camImageData = new CameraData.Image(_camParam.image.width, _camParam.image.height, pixelFormat);
 		}
 
 		protected override void SetupCamera()
 		{
-			if (!camParameter.segmentation_type.Equals("semantic"))
+			// Debug.Log("Segmenataion Setup Camera");
+			if (!_camParam.segmentation_type.Equals("semantic"))
 			{
 				Debug.Log("Only support semantic segmentation");
 			}
-
-			camSensor.backgroundColor = Color.black;
-			camSensor.clearFlags = CameraClearFlags.SolidColor;
-			camSensor.allowHDR = false;
-			camSensor.allowMSAA = true;
+			_camSensor.backgroundColor = Color.black;
+			_camSensor.clearFlags = CameraClearFlags.SolidColor;
+			_camSensor.allowHDR = false;
+			_camSensor.allowMSAA = true;
 
 			// Refer to SegmentationRenderer (Universal Renderer Data)
 			_universalCamData.SetRenderer(1);
@@ -54,38 +63,47 @@ namespace SensorDevices
 			_universalCamData.requiresDepthTexture = false;
 			_universalCamData.renderShadows = false;
 			_universalCamData.dithering = true;
+			_universalCamData.stopNaN = true;
+			_universalCamData.allowHDROutput = false;
+			_universalCamData.allowXRRendering = false;
 			_universalCamData.antialiasing = AntialiasingMode.FastApproximateAntialiasing;
-
 		}
 
 		protected override void InitializeMessages()
 		{
 			base.InitializeMessages();
-
-			_segmentation = new messages.Segmentation();
-			_segmentation.ImageStamped = _imageStamped;
 		}
 
 		protected override void GenerateMessage()
 		{
-			PushDeviceMessage<messages.Segmentation>(_segmentation);
+			if (_segmentationQueue.TryTake(out var msg))
+			{
+				PushDeviceMessage<messages.Segmentation>(msg);
+			}
 		}
 
-		protected override void ImageProcessing(ref NativeArray<byte> readbackData)
+		protected override void ImageProcessing(ref NativeArray<byte> readbackData, in float capturedTime)
 		{
-			var image = _imageStamped.Image;
+			var segmentation = new messages.Segmentation();
+			segmentation.ImageStamped = new messages.ImageStamped();
+			segmentation.ImageStamped.Time = new messages.Time();
+			segmentation.ImageStamped.Time.Set(capturedTime);
+
+			segmentation.ImageStamped.Image = new messages.Image();
+			segmentation.ImageStamped.Image = _image;
+
 			_camImageData.SetTextureBufferData(readbackData);
 
+			var image = segmentation.ImageStamped.Image;
 			var imageData = _camImageData.GetImageData(image.Data.Length);
 			if (imageData != null)
 			{
 				image.Data = imageData;
-
-				if (camParameter.save_enabled && _startCameraWork)
+				if (_camParam.save_enabled && _startCameraWork)
 				{
 					var saveName = name + "_" + Time.time;
-					_camImageData.SaveRawImageData(camParameter.save_path, saveName);
-					// Debug.LogFormat("{0}|{1} captured", camParameter.save_path, saveName);
+					_camImageData.SaveRawImageData(_camParam.save_path, saveName);
+					// Debug.LogFormat("{0}|{1} captured", _camParam.save_path, saveName);
 				}
 			}
 			else
@@ -95,7 +113,7 @@ namespace SensorDevices
 
 			// update labels
 			var labelInfo = Main.SegmentationManager.GetLabelInfo();
-			_segmentation.ClassMaps.Clear();
+			segmentation.ClassMaps.Clear();
 			foreach (var kv in labelInfo)
 			{
 				if (kv.Value.Count > 0 && !kv.Value[0].Hide)
@@ -105,11 +123,11 @@ namespace SensorDevices
 						ClassName = kv.Key,
 						ClassId = kv.Value[0].ClassId
 					};
-					_segmentation.ClassMaps.Add(visionClass);
+					segmentation.ClassMaps.Add(visionClass);
 				}
 			}
 
-			_imageStamped.Time.SetCurrentTime();
+			_segmentationQueue.TryAdd(segmentation);
 		}
 	}
 }

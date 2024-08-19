@@ -32,7 +32,7 @@ public class LidarVisualizer : MonoBehaviour
 
 		targetTexture = new Texture2D(textureSize, textureSize);
 
-		ClearTexture(targetTexture);
+		targetTexture.Clear(new Color(0, 1, 0, 0.3f));
 		targetTexture.Apply();
 
 		var targetRawImage = GetComponentInChildren<RawImage>();
@@ -49,28 +49,10 @@ public class LidarVisualizer : MonoBehaviour
 		StopCoroutine(DrawLidarVisualizer());
 	}
 
-	private void ClearTexture(in Texture2D targetTexture)
-	{
-		for (var i = 0; i < targetTexture.width; i++)
-		{
-			for (var j = 0; j < targetTexture.height; j++)
-			{
-				targetTexture.SetPixel(i, j, new Color(0, 1, 0, 0.3f));
-			}
-		}
-	}
-
 	private void DrawCenterMarker(in Texture2D targetTexture)
 	{
 		const int centerMarkerSize = 1;
-
-		for (var i = centerPosition - centerMarkerSize; i < centerPosition + centerMarkerSize; i++)
-		{
-			for (var j = centerPosition - centerMarkerSize; j < centerPosition + centerMarkerSize; j++)
-			{
-				targetTexture.SetPixel(i, j, new Color(0, 0, 1, 0.5f));
-			}
-		}
+		targetTexture.FillCircle(centerPosition, centerPosition, centerMarkerSize, new Color(0, 0, 1, 0.5f));
 	}
 
 	private SensorDevices.Lidar FindTargetLidar()
@@ -124,7 +106,7 @@ public class LidarVisualizer : MonoBehaviour
 
 		while (true)
 		{
-			ClearTexture(targetTexture);
+			targetTexture.Clear();
 			DrawCenterMarker(targetTexture);
 
 			var distances = targetLidar.GetRangeData();
