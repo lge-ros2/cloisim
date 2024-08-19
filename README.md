@@ -37,12 +37,12 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] Joint Pose
 - [X] Sensor models
   - [X] LiDAR Sensor
-    - [X] 2D
+    - [X] 2D: Due to performance issue, < 40hz is recommended
     - [X] 3D
   - [X] Sonar sensor
   - [X] IMU
   - [X] Contact
-  - [X] Camera: Due to performance issue, < 40fps is recommended
+  - [X] Camera: Due to performance issue, < 40hz is recommended
     - [ ] Camera intrinsic parameter
     - [X] Depth Camera
     - [X] Multi-camera
