@@ -272,8 +272,6 @@ namespace SensorDevices
 			var MaxUpdateRate = (float)Application.targetFrameRate;
 			var messageGenerationTime = 1f / (MaxUpdateRate - UpdateRate);
 
-			Debug.Log(messageGenerationTime);
-
 			while (_startCameraWork)
 			{
 				_universalCamData.enabled = true;
