@@ -55,10 +55,10 @@ Here are the list of items that is implemented(marked) or planned to be implemen
       - [X] Lidar
       - [ ] Camera
     - [ ] Custom
-- [ ] Physics
+- [X] Physics
   - [ ] Support all physics parameters in SDF specification
   - [X] Support `<Joint type="revolute2">`
-- [ ] Worlds
+- [X] Worlds
   - [X] Actors
     - [ ] interpolate_x in `<animation>`
   - [X] Lights
@@ -149,7 +149,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.40f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.42f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 22.04.4 LTS
