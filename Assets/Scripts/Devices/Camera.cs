@@ -308,10 +308,10 @@ namespace SensorDevices
 
 				lock (_asyncWorkList)
 				{
-					checked
+					var asyncWorkIndex = _asyncWorkList.FindIndex(x => x.request.Equals(request));
+					if (asyncWorkIndex >= 0 && asyncWorkIndex < _asyncWorkList.Count)
 					{
-						var asyncWorkIndex = _asyncWorkList.FindIndex(x => x.request.Equals(request));
-						if (asyncWorkIndex >= 0 && asyncWorkIndex < _asyncWorkList.Count)
+						checked
 						{
 							asyncWork = _asyncWorkList[asyncWorkIndex];
 							var readbackData = request.GetData<byte>();

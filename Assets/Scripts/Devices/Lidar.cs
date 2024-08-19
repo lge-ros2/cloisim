@@ -7,7 +7,9 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using Stopwatch = System.Diagnostics.Stopwatch;
 using System;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
@@ -21,7 +23,8 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public partial class Lidar : Device
 	{
-		private messages.LaserScanStamped laserScanStamped = null;
+		private messages.LaserScan _laserScan = null;
+		protected BlockingCollection<messages.LaserScanStamped> _laserStampedQueue = new BlockingCollection<messages.LaserScanStamped>();
 
 		private const int BatchSize = 8;
 		private const float DEG180 = Mathf.PI * Mathf.Rad2Deg;
@@ -57,8 +60,10 @@ namespace SensorDevices
 		private DepthData.CamBuffer[] _depthCamBuffers;
 		private LaserData.LaserCamData[] _laserCamData;
 		private LaserData.LaserDataOutput[] _laserDataOutput;
-		private LaserFilter laserFilter = null;
-		public Noise noise = null;
+		private LaserFilter _laserFilter = null;
+		private Noise _noise = null;
+
+		public double[] _rangesForVisualize = null;
 
 		protected override void OnAwake()
 		{
@@ -80,7 +85,10 @@ namespace SensorDevices
 				SetupLaserCameraData();
 
 				_startLaserWork = true;
+
 				StartCoroutine(CaptureLaserCamera());
+
+				StartCoroutine(LaserProcsssing());
 			}
 		}
 
@@ -103,12 +111,10 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			laserScanStamped = new messages.LaserScanStamped();
-			laserScanStamped.Time = new messages.Time();
-			laserScanStamped.Scan = new messages.LaserScan();
-			laserScanStamped.Scan.WorldPose = new messages.Pose();
-			laserScanStamped.Scan.WorldPose.Position = new messages.Vector3d();
-			laserScanStamped.Scan.WorldPose.Orientation = new messages.Quaternion();
+			_laserScan = new messages.LaserScan();
+			_laserScan.WorldPose = new messages.Pose();
+			_laserScan.WorldPose.Position = new messages.Vector3d();
+			_laserScan.WorldPose.Orientation = new messages.Quaternion();
 
 			if (vertical.Equals(default(LaserData.Scan)))
 			{
@@ -118,31 +124,32 @@ namespace SensorDevices
 
 		protected override void SetupMessages()
 		{
-			var laserScan = laserScanStamped.Scan;
-			laserScan.Frame = DeviceName;
-			laserScan.Count = horizontal.samples;
-			laserScan.AngleMin = horizontal.angle.min * Mathf.Deg2Rad;
-			laserScan.AngleMax = horizontal.angle.max * Mathf.Deg2Rad;
-			laserScan.AngleStep = horizontal.angleStep * Mathf.Deg2Rad;
+			_laserScan.Frame = DeviceName;
+			_laserScan.Count = horizontal.samples;
+			_laserScan.AngleMin = horizontal.angle.min * Mathf.Deg2Rad;
+			_laserScan.AngleMax = horizontal.angle.max * Mathf.Deg2Rad;
+			_laserScan.AngleStep = horizontal.angleStep * Mathf.Deg2Rad;
 
-			laserScan.RangeMin = range.min;
-			laserScan.RangeMax = range.max;
+			_laserScan.RangeMin = range.min;
+			_laserScan.RangeMax = range.max;
 
-			laserScan.VerticalCount = vertical.samples;
-			laserScan.VerticalAngleMin = vertical.angle.min * Mathf.Deg2Rad;
-			laserScan.VerticalAngleMax = vertical.angle.max * Mathf.Deg2Rad;
-			laserScan.VerticalAngleStep = vertical.angleStep * Mathf.Deg2Rad;
+			_laserScan.VerticalCount = vertical.samples;
+			_laserScan.VerticalAngleMin = vertical.angle.min * Mathf.Deg2Rad;
+			_laserScan.VerticalAngleMax = vertical.angle.max * Mathf.Deg2Rad;
+			_laserScan.VerticalAngleStep = vertical.angleStep * Mathf.Deg2Rad;
 			// Debug.Log(laserScan.VerticalCount + ", " + laserScan.VerticalAngleMin + ", " + laserScan.VerticalAngleMax + ", " + laserScan.VerticalAngleStep);
 
-			var totalSamples = laserScan.Count * laserScan.VerticalCount;
+			var totalSamples = _laserScan.Count * _laserScan.VerticalCount;
 			// Debug.Log(samples + " x " + vertical.samples + " = " + totalSamples);
 
-			laserScan.Ranges = new double[totalSamples];
-			laserScan.Intensities = new double[totalSamples];
-			Array.Clear(laserScan.Ranges, 0, laserScan.Ranges.Length);
-			Array.Clear(laserScan.Intensities, 0, laserScan.Intensities.Length);
-			Parallel.ForEach(laserScan.Ranges, item => item = double.NaN);
-			Parallel.ForEach(laserScan.Intensities, item => item = double.NaN);
+			_laserScan.Ranges = new double[totalSamples];
+			_laserScan.Intensities = new double[totalSamples];
+			Array.Clear(_laserScan.Ranges, 0, _laserScan.Ranges.Length);
+			Array.Clear(_laserScan.Intensities, 0, _laserScan.Intensities.Length);
+			Parallel.ForEach(_laserScan.Ranges, item => item = double.NaN);
+			Parallel.ForEach(_laserScan.Intensities, item => item = double.NaN);
+
+			_rangesForVisualize = new double[totalSamples];
 
 			laserAngleResolution = new LaserData.AngleResolution((float)horizontal.angleStep, (float)vertical.angleStep);
 			// Debug.Log("H resolution: " + laserAngleResolution.H + ", V resolution: " + laserAngleResolution.V);
@@ -237,10 +244,10 @@ namespace SensorDevices
 			// laserCam.hideFlags |= HideFlags.NotEditable;
 			laserCam.enabled = false;
 
-			if (noise != null)
+			if (_noise != null)
 			{
-				noise.SetClampMin(range.min);
-				noise.SetClampMax(range.max);
+				_noise.SetClampMin(range.min);
+				_noise.SetClampMax(range.max);
 			}
 		}
 
@@ -270,30 +277,38 @@ namespace SensorDevices
 			}
 		}
 
+		public void SetupNoise(in SDF.Noise param)
+		{
+			_noise = new SensorDevices.Noise(param, "lidar");
+		}
+
 		public void SetupLaserAngleFilter(in double filterAngleLower, in double filterAngleUpper, in bool useIntensity = false)
 		{
-			if (laserFilter == null)
+			if (_laserFilter == null)
 			{
-				laserFilter = new LaserFilter(laserScanStamped.Scan, useIntensity);
+				_laserFilter = new LaserFilter(_laserScan, useIntensity);
 			}
 
-			laserFilter.SetupAngleFilter(filterAngleLower, filterAngleUpper);
+			_laserFilter.SetupAngleFilter(filterAngleLower, filterAngleUpper);
 		}
 
 		public void SetupLaserRangeFilter(in double filterRangeMin, in double filterRangeMax, in bool useIntensity = false)
 		{
-			if (laserFilter == null)
+			if (_laserFilter == null)
 			{
-				laserFilter = new LaserFilter(laserScanStamped.Scan, useIntensity);
+				_laserFilter = new LaserFilter(_laserScan, useIntensity);
 			}
 
-			laserFilter.SetupRangeFilter(filterRangeMin, filterRangeMax);
+			_laserFilter.SetupRangeFilter(filterRangeMin, filterRangeMax);
 		}
 
 		private IEnumerator CaptureLaserCamera()
 		{
+			var sw = new Stopwatch();
 			while (_startLaserWork)
 			{
+				sw.Restart();
+
 				// Update lidar sensor pose
 				_lidarSensorPose.position = _lidarLink.position;
 				_lidarSensorPose.rotation = _lidarLink.rotation;
@@ -320,18 +335,14 @@ namespace SensorDevices
 						}
 
 						laserCam.enabled = false;
-						yield return null;
 					}
 				}
 
-				var processingTime = 0f;
-				for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
-				{
-					processingTime += _laserDataOutput[dataIndex].processingTime;
-				}
+				sw.Stop();
 
-				var averageProcessingTime = processingTime / numberOfLaserCamData;
-				yield return new WaitForSeconds(UpdatePeriod - averageProcessingTime);
+				var processingTime = (float)sw.Elapsed.TotalSeconds;
+				// Debug.Log("CaptureLaserCamera processingTime=" + (processingTime) + ", UpdatePeriod=" + UpdatePeriod);
+				yield return new WaitForSeconds(WaitPeriod(processingTime));
 			}
 		}
 
@@ -343,179 +354,215 @@ namespace SensorDevices
 			}
 			else if (request.done)
 			{
-				AsyncWork.Laser asyncWork;
+				var asyncWorkIndex = -1;
 
 				lock (_asyncWorkList)
 				{
-					asyncWork = _asyncWorkList.Find(x => x.request.Equals(request));
+					asyncWorkIndex = _asyncWorkList.FindIndex(x => x.request.Equals(request));
 				}
 
-				var dataIndex = asyncWork.dataIndex;
-				var depthCamBuffer = _depthCamBuffers[dataIndex];
-
-				checked
+				if (asyncWorkIndex >= 0 && asyncWorkIndex < _asyncWorkList.Count)
 				{
-					depthCamBuffer.Allocate();
-					depthCamBuffer.raw = request.GetData<byte>();
-
-					if (depthCamBuffer.depth.IsCreated)
+					checked
 					{
-						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
-						jobHandleDepthCamBuffer.Complete();
+						var asyncWork = _asyncWorkList[asyncWorkIndex];
+						var dataIndex = asyncWork.dataIndex;
+						var depthCamBuffer = _depthCamBuffers[dataIndex];
 
-						var laserCamData = _laserCamData[dataIndex];
-						laserCamData.depthBuffer = depthCamBuffer.depth;
-						laserCamData.Allocate();
+						depthCamBuffer.Allocate();
+						depthCamBuffer.raw = request.GetData<byte>();
 
-						var jobHandle = laserCamData.Schedule(laserCamData.OutputLength(), BatchSize);
-						jobHandle.Complete();
-
-						_laserDataOutput[dataIndex].data = laserCamData.GetLaserData();
-						_laserDataOutput[dataIndex].capturedTime = asyncWork.capturedTime;
-						_laserDataOutput[dataIndex].processingTime = (float)DeviceHelper.GlobalClock.SimTime - asyncWork.capturedTime;
-
-						if (noise != null)
+						if (depthCamBuffer.depth.IsCreated)
 						{
-							noise.Apply<double>(ref _laserDataOutput[dataIndex].data);
+							var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
+							jobHandleDepthCamBuffer.Complete();
+
+							var laserCamData = _laserCamData[dataIndex];
+							laserCamData.depthBuffer = depthCamBuffer.depth;
+							laserCamData.Allocate();
+
+							var jobHandle = laserCamData.Schedule(laserCamData.OutputLength(), BatchSize);
+							jobHandle.Complete();
+
+							var laserDataOutput = new LaserData.LaserDataOutput();
+							laserDataOutput.data = laserCamData.GetLaserData();
+							laserDataOutput.capturedTime = asyncWork.capturedTime;
+							laserDataOutput.processingTime = (float)DeviceHelper.GlobalClock.SimTime - asyncWork.capturedTime;
+
+							_laserDataOutput[dataIndex] = laserDataOutput;
+
+							laserCamData.Deallocate();
 						}
 
-						laserCamData.Deallocate();
+						depthCamBuffer.Deallocate();
 					}
 
-					depthCamBuffer.Deallocate();
+					lock (_asyncWorkList)
+					{
+						_asyncWorkList.RemoveAt(asyncWorkIndex);
+					}
+				}
+			}
+		}
+
+
+		private IEnumerator LaserProcsssing()
+		{
+			var laserScanStamped = new messages.LaserScanStamped();
+			laserScanStamped.Time = new messages.Time();
+
+			var sw = new Stopwatch();
+			while (_startLaserWork)
+			{
+				sw.Restart();
+				var lidarPosition = _lidarSensorPose.position + _lidarSensorInitPose.position;
+				var lidarRotation = _lidarSensorPose.rotation * _lidarSensorInitPose.rotation;
+
+				laserScanStamped.Scan = _laserScan;
+
+				var laserScan = laserScanStamped.Scan;
+
+				laserScan.WorldPose.Position.Set(lidarPosition);
+				laserScan.WorldPose.Orientation.Set(lidarRotation);
+
+				const int BufferUnitSize = sizeof(double);
+				var laserSamplesH = (int)horizontal.samples;
+				var laserStartAngleH = (float)horizontal.angle.min;
+				var laserEndAngleH = (float)horizontal.angle.max;
+				var laserTotalAngleH = (float)horizontal.angle.range;
+				var dividedLaserTotalAngleH = 1f / laserTotalAngleH;
+
+				var laserSamplesV = (int)vertical.samples;
+				var laserStartAngleV = (float)vertical.angle.min;
+				var laserEndAngleV = (float)vertical.angle.max;
+				var laserTotalAngleV = (float)vertical.angle.range;
+
+				var capturedTime = 0f;
+				var processingTimeSum = 0f;
+				Parallel.For(0, numberOfLaserCamData, _parallelOptions, index =>
+				{
+					var laserCamData = _laserCamData[index];
+					var srcBuffer = _laserDataOutput[index].data;
+					var srcBufferHorizontalLength = laserCamData.horizontalBufferLength;
+					var dataStartAngleH = laserCamData.StartAngleH;
+					var dataEndAngleH = laserCamData.EndAngleH;
+					var dividedDataTotalAngleH = 1f / laserCamData.TotalAngleH;
+
+					var srcBufferOffset = 0;
+					var dstBufferOffset = 0;
+					var copyLength = 0;
+					var dataLengthRatio = 0f;
+					var doCopy = true;
+
+					if (_laserDataOutput[index].capturedTime > capturedTime)
+					{
+						capturedTime = _laserDataOutput[index].capturedTime;
+					}
+
+					processingTimeSum += _laserDataOutput[index].processingTime;
+
+					if (srcBuffer != null)
+					{
+						if (laserStartAngleH < 0 && dataEndAngleH > DEG180)
+						{
+							dataStartAngleH -= DEG360;
+							dataEndAngleH -= DEG360;
+						}
+
+						// Debug.LogWarning(index + " capturedTime=" + _laserDataOutput[index].capturedTime.ToString("F8")
+						// 				+ ", processingTime=" + _laserDataOutput[index].processingTime.ToString("F8"));
+						// Debug.LogFormat("index {0}: {1}~{2}, {3}~{4}", dataIndex, laserStartAngleH, laserEndAngleH, dataStartAngleH, dataEndAngleH);
+
+						for (var sampleIndexV = 0; sampleIndexV < laserSamplesV; sampleIndexV++, doCopy = true)
+						{
+							if (dataStartAngleH <= laserStartAngleH) // start side of laser angle
+							{
+								dataLengthRatio = (laserStartAngleH - dataStartAngleH) * dividedDataTotalAngleH;
+								copyLength = srcBufferHorizontalLength - Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
+								srcBufferOffset = srcBufferHorizontalLength * sampleIndexV;
+								dstBufferOffset = laserSamplesH * (sampleIndexV + 1) - copyLength;
+							}
+							else if (dataStartAngleH > laserStartAngleH && dataEndAngleH < laserEndAngleH) // middle of laser angle
+							{
+								dataLengthRatio = (dataStartAngleH - laserStartAngleH) * dividedLaserTotalAngleH;
+								copyLength = srcBufferHorizontalLength;
+								srcBufferOffset = srcBufferHorizontalLength * sampleIndexV;
+								dstBufferOffset = Mathf.CeilToInt(laserSamplesH * ((float)(sampleIndexV + 1) - dataLengthRatio)) - copyLength;
+							}
+							else if (dataEndAngleH >= laserEndAngleH) // end side of laser angle
+							{
+								dataLengthRatio = (laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
+								copyLength = Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
+								srcBufferOffset = srcBufferHorizontalLength * (sampleIndexV + 1) - copyLength;
+								dstBufferOffset = laserSamplesH * sampleIndexV + 1;
+							}
+							else
+							{
+								Debug.LogWarning("Something wrong data copy type in Generating Laser Data....");
+								doCopy = false;
+							}
+
+							if (doCopy && copyLength >= 0 && dstBufferOffset >= 0)
+							{
+								try
+								{
+									lock (laserScan.Ranges.SyncRoot)
+									{
+										Buffer.BlockCopy(srcBuffer, srcBufferOffset * BufferUnitSize, laserScan.Ranges, dstBufferOffset * BufferUnitSize, copyLength * BufferUnitSize);
+									}
+								}
+								catch (Exception ex)
+								{
+									var copyType = -1;
+									if (dataStartAngleH <= laserStartAngleH)
+										copyType = 0;
+									else if (dataStartAngleH > laserStartAngleH && dataEndAngleH < laserEndAngleH)
+										copyType = 1;
+									else if (dataEndAngleH >= laserEndAngleH)
+										copyType = 2;
+
+									Debug.LogWarningFormat("Error occured with Buffer.BlockCopy: {0}, Type: {1} Offset: src({2}) dst({3}) Len: src({4}) dst({5}) copy_size({6})",
+										ex.Message, copyType, srcBufferOffset, dstBufferOffset, srcBuffer.Length, laserScan.Ranges.Length, copyLength);
+								}
+							}
+							// else
+							// {
+							// 	Debug.LogWarning("wrong data index "+ copyLength + ", "  + srcBufferOffset + ", "  + dataCopyType);
+							// }
+						}
+					}
+				});
+
+				if (_noise != null)
+				{
+					var ranges = laserScan.Ranges;
+					_noise.Apply<double>(ref ranges);
 				}
 
-				lock (_asyncWorkList)
+				if (_laserFilter != null)
 				{
-					_asyncWorkList.Remove(asyncWork);
+					_laserFilter.DoFilter(ref laserScan);
 				}
+
+				laserScanStamped.Time.Set(capturedTime);
+
+				_laserStampedQueue.TryAdd(laserScanStamped);
+
+				sw.Stop();
+				var laserProcsssingTime = (float)sw.Elapsed.TotalSeconds;
+				var avgProcessingTime = processingTimeSum / (float)numberOfLaserCamData;
+				// Debug.Log("LaserProcessing laserProcessingtime=" + laserProcsssingTime + ", " + avgProcessingTime);
+				yield return new WaitForSeconds(WaitPeriod(laserProcsssingTime + avgProcessingTime ));
 			}
 		}
 
 		protected override void GenerateMessage()
 		{
-			var lidarPosition = _lidarSensorPose.position + _lidarSensorInitPose.position;
-			var lidarRotation = _lidarSensorPose.rotation * _lidarSensorInitPose.rotation;
-
-			var laserScan = laserScanStamped.Scan;
-
-			laserScan.WorldPose.Position.Set(lidarPosition);
-			laserScan.WorldPose.Orientation.Set(lidarRotation);
-
-			const int BufferUnitSize = sizeof(double);
-			var laserSamplesH = (int)horizontal.samples;
-			var laserStartAngleH = (float)horizontal.angle.min;
-			var laserEndAngleH = (float)horizontal.angle.max;
-			var laserTotalAngleH = (float)horizontal.angle.range;
-			var dividedLaserTotalAngleH = 1f / laserTotalAngleH;
-
-			var laserSamplesV = (int)vertical.samples;
-			var laserStartAngleV = (float)vertical.angle.min;
-			var laserEndAngleV = (float)vertical.angle.max;
-			var laserTotalAngleV = (float)vertical.angle.range;
-
-			var capturedTimeSum = 0f;
-
-			Parallel.For(0, numberOfLaserCamData, _parallelOptions, index =>
+			if (_laserStampedQueue.TryTake(out var msg))
 			{
-				var laserCamData = _laserCamData[index];
-				var srcBuffer = _laserDataOutput[index].data;
-				var srcBufferHorizontalLength = laserCamData.horizontalBufferLength;
-				var dataStartAngleH = laserCamData.StartAngleH;
-				var dataEndAngleH = laserCamData.EndAngleH;
-				var dividedDataTotalAngleH = 1f / laserCamData.TotalAngleH;
-
-				var srcBufferOffset = 0;
-				var dstBufferOffset = 0;
-				var copyLength = 0;
-				var dataLengthRatio = 0f;
-				var doCopy = true;
-
-				if (srcBuffer == null)
-				{
-					return;
-				}
-
-				capturedTimeSum += _laserDataOutput[index].capturedTime;
-
-				if (laserStartAngleH < 0 && dataEndAngleH > DEG180)
-				{
-					dataStartAngleH -= DEG360;
-					dataEndAngleH -= DEG360;
-				}
-				// Debug.LogWarning(index + " capturedTime=" + _laserDataOutput[index].capturedTime.ToString("F8")
-				// 				+ ", processingTime=" + _laserDataOutput[index].processingTime.ToString("F8"));
-				// Debug.LogFormat("index {0}: {1}~{2}, {3}~{4}", dataIndex, laserStartAngleH, laserEndAngleH, dataStartAngleH, dataEndAngleH);
-
-				for (var sampleIndexV = 0; sampleIndexV < laserSamplesV; sampleIndexV++, doCopy = true)
-				{
-					if (dataStartAngleH <= laserStartAngleH) // start side of laser angle
-					{
-						dataLengthRatio = (laserStartAngleH - dataStartAngleH) * dividedDataTotalAngleH;
-						copyLength = srcBufferHorizontalLength - Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
-						srcBufferOffset = srcBufferHorizontalLength * sampleIndexV;
-						dstBufferOffset = laserSamplesH * (sampleIndexV + 1) - copyLength;
-					}
-					else if (dataStartAngleH > laserStartAngleH && dataEndAngleH < laserEndAngleH) // middle of laser angle
-					{
-						dataLengthRatio = (dataStartAngleH - laserStartAngleH) * dividedLaserTotalAngleH;
-						copyLength = srcBufferHorizontalLength;
-						srcBufferOffset = srcBufferHorizontalLength * sampleIndexV;
-						dstBufferOffset = Mathf.CeilToInt(laserSamplesH * ((float)(sampleIndexV + 1) - dataLengthRatio)) - copyLength;
-					}
-					else if (dataEndAngleH >= laserEndAngleH) // end side of laser angle
-					{
-						dataLengthRatio = (laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
-						copyLength = Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
-						srcBufferOffset = srcBufferHorizontalLength * (sampleIndexV + 1) - copyLength;
-						dstBufferOffset = laserSamplesH * sampleIndexV + 1;
-					}
-					else
-					{
-						Debug.LogWarning("Something wrong data copy type in Generating Laser Data....");
-						doCopy = false;
-					}
-
-					if (doCopy && copyLength >= 0 && dstBufferOffset >= 0)
-					{
-						try
-						{
-							lock (laserScan.Ranges.SyncRoot)
-							{
-								Buffer.BlockCopy(srcBuffer, srcBufferOffset * BufferUnitSize, laserScan.Ranges, dstBufferOffset * BufferUnitSize, copyLength * BufferUnitSize);
-							}
-						}
-						catch (Exception ex)
-						{
-							var copyType = -1;
-							if (dataStartAngleH <= laserStartAngleH)
-								copyType = 0;
-							else if (dataStartAngleH > laserStartAngleH && dataEndAngleH < laserEndAngleH)
-								copyType = 1;
-							else if (dataEndAngleH >= laserEndAngleH)
-								copyType = 2;
-
-							Debug.LogWarningFormat("Error occured with Buffer.BlockCopy: {0}, Type: {1} Offset: src({2}) dst({3}) Len: src({4}) dst({5}) copy_size({6})",
-								ex.Message, copyType, srcBufferOffset, dstBufferOffset, srcBuffer.Length, laserScan.Ranges.Length, copyLength);
-						}
-					}
-					else
-					{
-						// Debug.LogWarning("wrong data index "+ copyLength + ", "  + srcBufferOffset + ", "  + dataCopyType);
-					}
-				}
-			});
-
-			if (laserFilter != null)
-			{
-				laserFilter.DoFilter(ref laserScan);
+				_rangesForVisualize = msg.Scan.Ranges;
+				PushDeviceMessage<messages.LaserScanStamped>(msg);
 			}
-
-			capturedTimeSum += (float)DeviceHelper.GlobalClock.SimTime;
-			var capturedTime = capturedTimeSum / (numberOfLaserCamData + 1);
-			laserScanStamped.Time.Set(capturedTime);
-
-			PushDeviceMessage<messages.LaserScanStamped>(laserScanStamped);
 		}
 
 		protected override IEnumerator OnVisualize()
@@ -571,7 +618,7 @@ namespace SensorDevices
 		{
 			try
 			{
-				return laserScanStamped.Scan.Ranges;
+				return _rangesForVisualize;
 			}
 			catch
 			{
