@@ -129,7 +129,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.terrain-tools": {
-      "version": "5.0.4",
+      "version": "5.0.5",
       "depth": 0,
       "source": "registry",
       "dependencies": {
