@@ -29,6 +29,8 @@ namespace SensorDevices
 		private int _threadGroupX;
 		private int _threadGroupY;
 
+		private ParallelOptions _parallelOptions = null;
+
 		#endregion
 
 		private Material _depthMaterial = null;
@@ -93,7 +95,6 @@ namespace SensorDevices
 
 		protected override void SetupTexture()
 		{
-			Debug.Log("This is not a Depth Camera!");
 			_targetRTname = "CameraDepthTexture";
 			_targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
 			_readbackDstFormat = GraphicsFormat.R8G8B8A8_UNorm;
@@ -176,6 +177,20 @@ namespace SensorDevices
 
 			ReverseDepthData(false);
 			FlipXDepthData(false);
+
+			int MaxParallelism = 8;
+			do {
+				if (_computedBufferOutputUnitLength % MaxParallelism == 0)
+				{
+					_parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = MaxParallelism };
+					break;
+				}
+			} while (MaxParallelism-- > 0);
+
+			if (_parallelOptions == null)
+			{
+				Debug.Log($"Check Image size of depth camera!! width={_camParam.image.width} height={_camParam.image.height}");
+			}
 		}
 
 		protected override void ImageProcessing(ref NativeArray<byte> readbackData, in float capturedTime)
@@ -207,13 +222,24 @@ namespace SensorDevices
 				computeBufferSrc.Release();
 				computeBufferDst.Release();
 
-				Parallel.For(0, _computedBufferOutputUnitLength, (int i) =>
+				if (_parallelOptions != null)
 				{
-					Buffer.BlockCopy(
-						_computedBufferOutput, i * (int)OutputUnitSize,
-						imageStamped.Image.Data, i * _imageDepth,
-						_imageDepth);
-				});
+					var computeGroupSize = _computedBufferOutputUnitLength / _parallelOptions.MaxDegreeOfParallelism;
+					Parallel.For(0, _parallelOptions.MaxDegreeOfParallelism, _parallelOptions, groupIndex =>
+					{
+						for (var i = 0; i < computeGroupSize ; i++)
+						{
+							var bufferIndex = computeGroupSize * groupIndex + i;
+							var dataIndex = bufferIndex * _imageDepth;
+							var outputIndex = bufferIndex * (int)OutputUnitSize;
+
+							for (var j = 0; j < _imageDepth; j++)
+							{
+								imageStamped.Image.Data[dataIndex + j] = _computedBufferOutput[outputIndex + j];
+							}
+						}
+					});
+				}
 
 				if (_camParam.save_enabled && _startCameraWork)
 				{
