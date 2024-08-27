@@ -558,7 +558,7 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			if (_laserStampedQueue.TryTake(out var msg))
+			while (_laserStampedQueue.TryTake(out var msg))
 			{
 				_rangesForVisualize = msg.Scan.Ranges;
 				PushDeviceMessage<messages.LaserScanStamped>(msg);
