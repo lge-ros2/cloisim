@@ -16,11 +16,11 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class SegmentationCamera : Camera
 	{
-		private BlockingCollection<messages.Segmentation> _segmentationQueue = new BlockingCollection<messages.Segmentation>();
+		private BlockingCollection<messages.Segmentation> _messageQueue = new BlockingCollection<messages.Segmentation>();
 
 		protected override void OnReset()
 		{
-			while (_segmentationQueue.TryTake(out _)){}
+			while (_messageQueue.TryTake(out _)) { }
 
 			base.OnReset();
 		}
@@ -76,7 +76,7 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			if (_segmentationQueue.TryTake(out var msg))
+			while (_messageQueue.TryTake(out var msg))
 			{
 				PushDeviceMessage<messages.Segmentation>(msg);
 			}
@@ -127,7 +127,7 @@ namespace SensorDevices
 				}
 			}
 
-			_segmentationQueue.TryAdd(segmentation);
+			_messageQueue.TryAdd(segmentation);
 		}
 	}
 }

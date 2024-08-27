@@ -19,10 +19,12 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class Camera : Device
 	{
+		private const float MaxUpdateRate = 40;
+
 		protected SDF.Camera _camParam = null;
 		protected messages.CameraSensor _sensorInfo = null;
 		protected messages.Image _image = null; // for Parameters
-		protected BlockingCollection<messages.ImageStamped> _imageStampedQueue = new BlockingCollection<messages.ImageStamped>();
+		protected BlockingCollection<messages.ImageStamped> _messageQueue = new BlockingCollection<messages.ImageStamped>();
 
 		// TODO : Need to be implemented!!!
 		// <lens> TBD
@@ -95,7 +97,7 @@ namespace SensorDevices
 
 		protected override void OnReset()
 		{
-			while (_imageStampedQueue.TryTake(out _)){}
+			while (_messageQueue.TryTake(out _)) { }
 
 			lock (_asyncWorkList)
 			{
@@ -269,7 +271,6 @@ namespace SensorDevices
 
 		private IEnumerator CameraWorker()
 		{
-			var MaxUpdateRate = (float)Application.targetFrameRate;
 			var messageGenerationTime = 1f / (MaxUpdateRate - UpdateRate);
 
 			while (_startCameraWork)
@@ -300,7 +301,7 @@ namespace SensorDevices
 		{
 			if (request.hasError)
 			{
-				Debug.LogErrorFormat("{0}: Failed to read GPU texture", name);
+				Debug.LogError($"{name}: Failed to read GPU texture");
 			}
 			else if (request.done)
 			{
@@ -326,7 +327,7 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			if (_imageStampedQueue.TryTake(out var msg))
+			while (_messageQueue.TryTake(out var msg))
 			{
 				PushDeviceMessage<messages.ImageStamped>(msg);
 			}
@@ -361,7 +362,7 @@ namespace SensorDevices
 				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
 			}
 
-			_imageStampedQueue.TryAdd(imageStamped);
+			_messageQueue.TryAdd(imageStamped);
 		}
 
 		public messages.CameraSensor GetCameraInfo()
@@ -371,7 +372,7 @@ namespace SensorDevices
 
 		public messages.ImageStamped GetImageDataMessage()
 		{
-			if (_imageStampedQueue.TryTake(out var msg))
+			if (_messageQueue.TryTake(out var msg))
 			{
 				return msg;
 			}

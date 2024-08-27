@@ -3,10 +3,9 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
-// #define USE_AVERAGE_TIME_FOR_IMAGE_SYNC
-
+using System.Threading;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -16,8 +15,9 @@ namespace SensorDevices
 	public class MultiCamera : Device
 	{
 		private List<SensorDevices.Camera> cameras = new List<SensorDevices.Camera>();
-
-		private messages.ImagesStamped imagesStamped;
+		private BlockingCollection<messages.ImagesStamped> _messageQueue = new BlockingCollection<messages.ImagesStamped>();
+		private Thread _imagesProcessThread = null;
+		private bool _runningThread = false;
 
 		protected override void OnAwake()
 		{
@@ -26,57 +26,83 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
+			_imagesProcessThread = new Thread(MultiImageProcess);
+			_imagesProcessThread.Start();
+			_runningThread = true;
+		}
+
+		protected new void OnDestroy()
+		{
+			if (_imagesProcessThread != null && _imagesProcessThread.IsAlive)
+			{
+				_runningThread = false;
+				_imagesProcessThread.Join();
+				_imagesProcessThread.Abort();
+			}
+
+			base.OnDestroy();
+		}
+
+		protected override void OnReset()
+		{
+			while (_messageQueue.TryTake(out _)) { }
 		}
 
 		protected override void InitializeMessages()
 		{
-			imagesStamped = new messages.ImagesStamped();
-			imagesStamped.Time = new messages.Time();
 		}
 
 		protected override void SetupMessages()
 		{
-			for (var i = 0; i < cameras.Count; i++)
+		}
+
+		private void MultiImageProcess()
+		{
+			while (_runningThread)
 			{
-				imagesStamped.Images.Add(new messages.Image());
+				var imagesStamped = new messages.ImagesStamped();
+				imagesStamped.Time = new messages.Time();
+
+				var latestImageTimestamp = 0f;
+				for (var i = 0; i < cameras.Count; i++)
+				{
+					// Set images data only once
+					var image = new messages.Image();
+					var imageStamped = cameras[i].GetImageDataMessage();
+					if (imageStamped == null)
+					{
+						Debug.LogWarning($"MultiCam{i} is not ready");
+						latestImageTimestamp = 0;
+						break;
+					}
+					var timestamp = imagesStamped.Time.Get();
+					if (timestamp > latestImageTimestamp)
+					{
+						latestImageTimestamp = timestamp;
+					}
+					imagesStamped.Images.Add(image);
+				}
+
+				if (latestImageTimestamp == 0)
+				{
+					continue;
+				}
+				else
+				{
+					imagesStamped.Time.Set(latestImageTimestamp);
+					_messageQueue.TryAdd(imagesStamped);
+				}
+
+				Thread.Sleep(1);
 			}
 		}
 
 		protected override void GenerateMessage()
 		{
-#if USE_AVERAGE_TIME_FOR_IMAGE_SYNC
-			float imageStampTimeSum = 0;
-			int imageStampedCount = 0;
-#else
-			float imagesStampedTime = 0;
-#endif
-			for (var i = 0; i < cameras.Count; i++)
+			while (_messageQueue.TryTake(out var msg))
 			{
-				// Set images data only once
-				var imageStamped = cameras[i].GetImageDataMessage();
-				if (imageStamped != null && i < imagesStamped.Images.Count)
-				{
-					imagesStamped.Images[i] = imageStamped.Image;
-
-#if USE_AVERAGE_TIME_FOR_IMAGE_SYNC
-					imageStampTimeSum += ;
-					imageStampedCount++;
-#else
-					if (imageStamped.Time.Get() > imagesStampedTime)
-					{
-						imagesStampedTime = imageStamped.Time.Get();
-					}
-#endif
-				}
+				PushDeviceMessage<messages.ImagesStamped>(msg);
 			}
-#if USE_AVERAGE_TIME_FOR_IMAGE_SYNC
-			var imagesStampedAvgTime = imageStampTimeSum/(float)imageStampedCount;
-			imagesStamped.Time.Set(imagesStampedAvgTime);
-#else
-			imagesStamped.Time.Set(imagesStampedTime);
-#endif
-
-			PushDeviceMessage<messages.ImagesStamped>(imagesStamped);
 		}
 
 		public void AddCamera(in SensorDevices.Camera newCam)
