@@ -15,10 +15,10 @@ namespace SensorDevices
 	{
 		public struct Camera
 		{
-			public AsyncGPUReadbackRequest request;
+			public AsyncGPUReadbackRequest? request;
 			public float capturedTime;
 
-			public Camera(in AsyncGPUReadbackRequest request, in float capturedTime)
+			public Camera(in AsyncGPUReadbackRequest? request, in float capturedTime)
 			{
 				this.request = request;
 				this.capturedTime = capturedTime;
@@ -28,10 +28,10 @@ namespace SensorDevices
 		public struct Laser
 		{
 			public int dataIndex;
-			public AsyncGPUReadbackRequest request;
+			public AsyncGPUReadbackRequest? request;
 			public float capturedTime;
 
-			public Laser(in int dataIndex, in AsyncGPUReadbackRequest request, in float capturedTime)
+			public Laser(in int dataIndex, in AsyncGPUReadbackRequest? request, in float capturedTime)
 			{
 				this.dataIndex = dataIndex;
 				this.request = request;
