@@ -18,17 +18,32 @@ public static partial class MeshLoader
 	{
 		if (!string.IsNullOrEmpty(textureFullPath) && File.Exists(textureFullPath))
 		{
-			var byteArray = File.ReadAllBytes(textureFullPath);
-			if (byteArray != null)
+			if (textureFullPath.EndsWith(".tga"))
 			{
-				var texture = new Texture2D(0, 0);
-				if (texture.LoadImage(byteArray))
+				var texture = TextureUtil.LoadTGA(textureFullPath);
+				if (texture != null)
 				{
 					return texture;
 				}
 				else
 				{
-					throw new Exception("Cannot find texture file: " + textureFullPath);
+					Debug.LogWarning($"Cannot Load TGA file: {textureFullPath}");
+				}
+			}
+			else
+			{
+				var byteArray = File.ReadAllBytes(textureFullPath);
+				if (byteArray != null && byteArray.Length > 0)
+				{
+					var texture = new Texture2D(0, 0);
+					if (texture.LoadImage(byteArray))
+					{
+						return texture;
+					}
+					else
+					{
+						Debug.LogWarning($"Cannot load texture file: {textureFullPath}");
+					}
 				}
 			}
 		}
