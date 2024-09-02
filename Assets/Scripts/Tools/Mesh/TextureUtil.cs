@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
+using System.IO;
 using UnityEngine;
 using Unity.Collections;
 
@@ -138,5 +140,72 @@ public static class TextureUtil
 		var bytes = texture.EncodeToPNG();
 		var fileName = string.Format("{0}/{1}.png", path, name);
 		System.IO.File.WriteAllBytes(fileName, bytes);
+	}
+
+	public static Texture2D LoadTGA(in string fileName)
+	{
+		using (var imageFile = File.OpenRead(fileName))
+		{
+			return LoadTGA(imageFile);
+		}
+	}
+
+	public static Texture2D LoadTGA(in Stream stream)
+	{
+		if (stream.Length == 0)
+		{
+			return null;
+		}
+
+		using (var r = new BinaryReader(stream))
+		{
+			// Skip some header info we don't care about.
+			// Even if we did care, we have to move the stream seek point to the beginning,
+			// as the previous method in the workflow left it at the end.
+			r.BaseStream.Seek(12, SeekOrigin.Begin);
+
+			var width = r.ReadInt16();
+			var height = r.ReadInt16();
+			var bitDepth = r.ReadByte();
+
+			// Skip a byte of header information we don't care about.
+			r.BaseStream.Seek(1, SeekOrigin.Current);
+
+			var texture = new Texture2D(width, height);
+			var pulledColors = new Color32[width * height];
+
+			if (bitDepth == 32)
+			{
+				for (var i = 0; i < width * height; i++)
+				{
+					var red = r.ReadByte();
+					var green = r.ReadByte();
+					var blue = r.ReadByte();
+					var alpha = r.ReadByte();
+
+					pulledColors[i] = new Color32(blue, green, red, alpha);
+				}
+			}
+			else if (bitDepth == 24)
+			{
+				for (var i = 0; i < width * height; i++)
+				{
+					var red = r.ReadByte();
+					var green = r.ReadByte();
+					var blue = r.ReadByte();
+
+					pulledColors[i] = new Color32(blue, green, red, 1);
+				}
+			}
+			else
+			{
+				throw new Exception("TGA texture had non 32/24 bit depth.");
+			}
+
+			texture.SetPixels32(pulledColors);
+			texture.Apply();
+
+			return texture;
+		}
 	}
 }

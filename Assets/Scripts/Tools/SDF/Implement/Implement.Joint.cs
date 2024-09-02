@@ -29,6 +29,7 @@ namespace SDF
 				{
 					UE.Debug.LogWarningFormat("LinkParent({0}) has no ArticulationBody -> create empty one", linkParent.name);
 					linkParentArticulationBody = Import.Loader.CreateArticulationBody(linkParent);
+					linkParentArticulationBody.useGravity = false;
 				}
 
 				var anchorPose = new UE.Pose();

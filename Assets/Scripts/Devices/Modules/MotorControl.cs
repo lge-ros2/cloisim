@@ -188,6 +188,7 @@ public class MotorControl
 		if (motor != null)
 		{
 			angularVelocity = motor.GetCurrentAngularVelocity();
+			// Debug.Log(location.ToString() + " => " + angularVelocity.ToString("F8"));
 			return true;
 		}
 		angularVelocity = float.NaN;

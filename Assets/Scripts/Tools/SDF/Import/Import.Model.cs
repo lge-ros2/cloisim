@@ -24,26 +24,29 @@ namespace SDF
 					articulationBody = targetObject.AddComponent<UE.ArticulationBody>();
 				}
 
-				articulationBody.mass = 0;
 				articulationBody.useGravity = false;
 				articulationBody.immovable = false;
-				articulationBody.linearDamping = 0;
-				articulationBody.angularDamping = 0;
-#if true
-				// TODO: consider to set intertia value manually
-				articulationBody.automaticCenterOfMass = true;
-				articulationBody.automaticInertiaTensor = true;
-#else
+				articulationBody.linearDamping = 0.05f;
+				articulationBody.angularDamping = 0.05f;
+				articulationBody.jointFriction = 0;
+
 				articulationBody.ResetCenterOfMass();
+				articulationBody.mass = 1e-07f;
+				articulationBody.automaticCenterOfMass = false;
+
 				articulationBody.ResetInertiaTensor();
+				articulationBody.automaticInertiaTensor = false;
 				articulationBody.inertiaTensor = UE.Vector3.one * MinimumInertiaTensor;
 				articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
-#endif
+
 				articulationBody.solverIterations = 0;
 				articulationBody.solverVelocityIterations = 0;
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
+
+				articulationBody.sleepThreshold = 0.1f;
 				articulationBody.Sleep();
+
 				// UE.Debug.Log(targetObject.name + " Create root articulation body");
 			}
 

@@ -65,9 +65,9 @@ namespace SDF
 		private VelocityDecay _velocity_decay = null;
 
 		private Inertial _inertial = null;
-		private Collisions collisions;
-		private Visuals visuals;
-		private Sensors sensors;
+		private Collisions collisions = null;
+		private Visuals visuals = null;
+		private Sensors sensors = null;
 
 		// <projector> : TBD
 		// <audio_sink> : TBD

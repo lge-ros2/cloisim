@@ -14,19 +14,19 @@ public class Clock : Device
 	private messages.WorldStatistics worldStat = null;
 
 	#region Filter times
-	private double prevSimTime = 0f;
-	private double prevRealTime = 0f;
+	private double _prevSimTime = 0f;
+	private double _prevRealTime = 0f;
 	#endregion
 
-	private double restartedSimTime = 0;
-	private double restartedFixedSimTime = 0;
-	private double restartedRealTime = 0;
+	private double _restartedSimTime = 0;
+	private double _restartedFixedSimTime = 0;
+	private double _restartedRealTime = 0;
 
-	private double currentSimTime = 0;
-	private double currentFixedSimTime = 0;
-	private double currentRealTime = 0;
+	private double _currentSimTime = 0;
+	private double _currentFixedSimTime = 0;
+	private double _currentRealTime = 0;
 
-	#region time in hms format
+	#region time in _hms format
 	public class HMS
 	{
 		private string _simTime = string.Empty;
@@ -66,22 +66,22 @@ public class Clock : Device
 		public string DiffTime => _diffTime;
 	}
 
-	private HMS hms = new HMS();
+	private HMS _hms = new HMS();
 
-	private int hmsUpdateIndex = 0;
+	private int _hmsUpdateIndex = 0;
 	#endregion
 
-	public double SimTime => currentSimTime;
-	public double FixedSimTime => currentFixedSimTime;
-	public double RealTime => currentRealTime;
+	public double SimTime => _currentSimTime;
+	public double FixedSimTime => _currentFixedSimTime;
+	public double RealTime => _currentRealTime;
 
-	public HMS ToHMS() => hms;
+	public HMS ToHMS() => _hms;
 
 	protected override void OnAwake()
 	{
 		Mode = ModeType.TX_THREAD;
 		DeviceName = "WorldClock";
-		SetUpdateRate(20);
+		SetUpdateRate(50);
 	}
 
 	protected override void InitializeMessages()
@@ -94,9 +94,9 @@ public class Clock : Device
 
 	private void UpdateCurrentTime()
 	{
-		currentRealTime = Time.realtimeSinceStartupAsDouble - restartedRealTime;
-		currentSimTime = Time.timeAsDouble - restartedSimTime;
-		currentFixedSimTime = Time.fixedTimeAsDouble - restartedFixedSimTime;
+		_currentRealTime = Time.realtimeSinceStartupAsDouble - _restartedRealTime;
+		_currentSimTime = Time.timeAsDouble - _restartedSimTime;
+		_currentFixedSimTime = Time.fixedTimeAsDouble - _restartedFixedSimTime;
 	}
 
 	void FixedUpdate()
@@ -110,22 +110,22 @@ public class Clock : Device
 		var realTs = TimeSpan.FromSeconds(RealTime);
 		var diffTs = realTs - simTs;
 
-		switch (hmsUpdateIndex++)
+		switch (_hmsUpdateIndex++)
 		{
 			case 0:
-				hms.SetSimTime(simTs);
+				_hms.SetSimTime(simTs);
 				break;
 			case 1:
-				hms.SetRealTime(realTs);
+				_hms.SetRealTime(realTs);
 				break;
 			case 2:
-				hms.SetDiffTime(diffTs);
+				_hms.SetDiffTime(diffTs);
 				break;
 			default:
 				// skip
 				break;
 		}
-		hmsUpdateIndex %= 3;
+		_hmsUpdateIndex %= 3;
 	}
 
 	protected override void GenerateMessage()
@@ -134,37 +134,37 @@ public class Clock : Device
 		worldStat.RealTime.SetCurrentTime(true);
 
 		// filter same clock info
-		if (prevSimTime >= SimTime)
+		if (_prevSimTime >= SimTime)
 		{
-			if (prevSimTime > SimTime)
+			if (_prevSimTime > SimTime)
 			{
-				Debug.LogWarning($"Filter SimTime, Prev:{prevSimTime} >= Current:{SimTime}");
+				Debug.LogWarning($"Filter SimTime, Prev:{_prevSimTime} >= Current:{SimTime}");
 			}
 		}
-		else if (prevRealTime >= RealTime)
+		else if (_prevRealTime >= RealTime)
 		{
-			if (prevRealTime > RealTime)
+			if (_prevRealTime > RealTime)
 			{
-				Debug.LogWarning($"Filter RealTime, Prev:{prevRealTime} >= Current:{RealTime}");
+				Debug.LogWarning($"Filter RealTime, Prev:{_prevRealTime} >= Current:{RealTime}");
 			}
 		}
 		else
 		{
 			PushDeviceMessage<messages.WorldStatistics>(worldStat);
-			prevSimTime = SimTime;
-			prevRealTime = RealTime;
+			_prevSimTime = SimTime;
+			_prevRealTime = RealTime;
 		}
 	}
 
 	public void ResetTime()
 	{
-		restartedSimTime = Time.timeAsDouble;
-		restartedFixedSimTime = Time.fixedTimeAsDouble;
-		restartedRealTime = Time.realtimeSinceStartupAsDouble;
+		_restartedSimTime = Time.timeAsDouble;
+		_restartedFixedSimTime = Time.fixedTimeAsDouble;
+		_restartedRealTime = Time.realtimeSinceStartupAsDouble;
 
 		UpdateCurrentTime();
 
-		prevSimTime = SimTime;
-		prevRealTime = RealTime;
+		_prevSimTime = SimTime;
+		_prevRealTime = RealTime;
 	}
 }
