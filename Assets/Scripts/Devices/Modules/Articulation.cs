@@ -47,6 +47,7 @@ public class Articulation
 	public Articulation(in GameObject target)
 		: this(target.GetComponentInChildren<ArticulationBody>())
 	{
+		// _jointBody.solverVelocityIterations = Physics.defaultSolverVelocityIterations * 2;
 	}
 
 	public void SetVelocityLimit(in float value)

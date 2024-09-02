@@ -10,8 +10,8 @@ public partial class Odometry
 	{
 		public float wheelRadius; // considering contact offset
 		public float wheelSeparation; // wheel separation
-		public float inversedWheelRadius; // for computational performance
-		public float inversedWheelSeparation;  // for computational performance
+		public readonly float inversedWheelRadius; // for computational performance
+		public readonly float inversedWheelSeparation;  // for computational performance
 
 		public WheelInfo(in float radius = 0.1f, in float separation = 0)
 		{

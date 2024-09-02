@@ -11,8 +11,8 @@ using System;
 
 public partial class Odometry
 {
-	private const float _PI = Mathf.PI;
-	private const float _2_PI = _PI * 2.0f;
+	private const double PI = Math.PI;
+	private const double PI2 = PI * 2.0f;
 
 	private MotorControl _motorControl = null;
 	private WheelInfo wheelInfo;
@@ -52,12 +52,12 @@ public partial class Odometry
 
 	private bool IsZero(in float value)
 	{
-		return Mathf.Abs(value) < float.Epsilon;
+		return Mathf.Abs(value) < Quaternion.kEpsilon;
 	}
 
 	private bool IsZero(in double value)
 	{
-		return Math.Abs(value) < float.Epsilon;
+		return Math.Abs(value) < Quaternion.kEpsilon;
 	}
 
 	/// <summary>Calculate odometry on this robot</summary>
@@ -88,7 +88,6 @@ public partial class Odometry
 			_odomPose.z += linear * Math.Cos(direction);
 			_odomPose.x += linear * Math.Sin(direction);
 			_odomPose.y += angular;
-
 			// Debug.Log("CalcOdom 0 = " + _odomPose.y + ", " + angular);
 		}
 		else
@@ -100,9 +99,25 @@ public partial class Odometry
 			_odomPose.y += angular;
 			_odomPose.z += r * (Math.Sin(_odomPose.y) - Math.Sin(headingOld));
 			_odomPose.x += -r * (Math.Cos(_odomPose.y) - Math.Cos(headingOld));
-
 			// Debug.Log("CalcOdom 1 = " + _odomPose.y + ", " + angular);
 		}
+
+		_odomPose.y = NormalizeAngle(_odomPose.y);
+	}
+
+	private double NormalizeAngle(in double angle)
+	{
+		var normalizedAngle = angle;
+		if (normalizedAngle > PI)
+		{
+			normalizedAngle -= PI2;
+		}
+		else if (normalizedAngle < -PI)
+		{
+			normalizedAngle += PI2;
+		}
+		// Debug.Log($"{angle} => normalize => {normalizedAngle}");
+		return normalizedAngle;
 	}
 
 	public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor)
@@ -133,6 +148,7 @@ public partial class Odometry
 			_lastImuYaw = imuYaw;
 
 			var deltaThetaIMU = IsZero(deltaAngleImu) ? 0 : deltaAngleImu * Mathf.Deg2Rad;
+			// Debug.Log("IMUE deltatheta = " + deltaThetaIMU);
 			CalculateOdometry(angularVelocityLeft, angularVelocityRight, duration, deltaThetaIMU);
 		}
 		else
@@ -143,11 +159,11 @@ public partial class Odometry
 		var odomPose = new Vector3((float)_odomPose.x, (float)_odomPose.y, (float)_odomPose.z);
 		odomMessage.Pose.Set(Unity2SDF.Direction.Reverse(odomPose));
 
-		// rolling mean filtering
 		var odomTransVel = Unity2SDF.Direction.Curve(_odomTranslationalVelocity);
 		var odomAngularVel = Unity2SDF.Direction.Curve(_odomRotationalVelocity);
 
 #if USE_ROLLINGMEAN_FOR_ODOM
+		// rolling mean filtering
 		rollingMeanOdomTransVelocity.Accumulate(odomTransVel);
 		rollingMeanOdomTAngularVelocity.Accumulate(odomAngularVel);
 		odomMessage.TwistLinear.X = rollingMeanOdomTransVelocity.Get();
