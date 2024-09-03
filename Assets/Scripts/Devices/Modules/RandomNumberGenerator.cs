@@ -83,7 +83,7 @@ public class RandomNumberGenerator
 	{
 		if (standardDeviation <= 0)
 		{
-			var msg = string.Format("Shape must be positive. Received {0}.", standardDeviation);
+			var msg = string.Format($"Shape must be positive. Received {standardDeviation}.");
 			// throw new ArgumentOutOfRangeException(msg);
 			Console.Write(msg);
 		}

@@ -16,7 +16,7 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class SegmentationCamera : Camera
 	{
-		private BlockingCollection<messages.Segmentation> _messageQueue = new BlockingCollection<messages.Segmentation>();
+		private new BlockingCollection<messages.Segmentation> _messageQueue = new BlockingCollection<messages.Segmentation>();
 
 		protected override void OnReset()
 		{
