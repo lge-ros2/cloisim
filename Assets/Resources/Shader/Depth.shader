@@ -45,6 +45,8 @@ Shader "Sensor/Depth"
 			v2f_img vert(appdata_img v)
 			{
 				v2f_img o;
+				UNITY_INITIALIZE_OUTPUT(v2f_img, o);
+
 				o.pos = UnityObjectToClipPos(v.vertex);
 				o.uv = MultiplyUV(UNITY_MATRIX_TEXTURE0, v.texcoord);
 
