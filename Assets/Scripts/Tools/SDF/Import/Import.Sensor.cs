@@ -12,6 +12,7 @@ using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;
 
 namespace SDF
 {
+	using Implement;
 	namespace Import
 	{
 		public partial class Loader : Base
@@ -41,41 +42,41 @@ namespace SDF
 
 					case "gpu_lidar":
 						var lidar = sensor.GetSensor() as SDF.Lidar;
-						device = Implement.Sensor.AddLidar(lidar, targetObject);
+						device = targetObject.AddLidar(lidar);
 						break;
 
 					case "depth_camera":
 					case "depth":
 						var depthCamera = sensor.GetSensor() as SDF.Camera;
-						device = Implement.Sensor.AddDepthCamera(depthCamera, targetObject);
+						device = targetObject.AddDepthCamera(depthCamera);
 						break;
 
 					case "camera":
 						var camera = sensor.GetSensor() as SDF.Camera;
-						device = Implement.Sensor.AddCamera(camera, targetObject);
+						device = targetObject.AddCamera(camera);
 						break;
 
 					case "segmentation_camera":
 					case "segmentation":
 						var segmentationCamera = sensor.GetSensor() as SDF.Camera;
-						device = Implement.Sensor.AddSegmentaionCamera(segmentationCamera, targetObject);
+						device = targetObject.AddSegmentaionCamera(segmentationCamera);
 						break;
 
 					case "rgbd_camera":
 					case "rgbd":
 					case "multicamera":
 						var cameras = sensor.GetSensor() as SDF.Cameras;
-						device = Implement.Sensor.AddMultiCamera(cameras, targetObject);
+						device = targetObject.AddMultiCamera(cameras);
 						break;
 
 					case "imu":
 						var imu = sensor.GetSensor() as SDF.IMU;
-						device = Implement.Sensor.AddImu(imu, targetObject);
+						device = targetObject.AddImu(imu);
 						break;
 
 					case "sonar":
 						var sonar = sensor.GetSensor() as SDF.Sonar;
-						device = Implement.Sensor.AddSonar(sonar, targetObject);
+						device = targetObject.AddSonar(sonar);
 						break;
 
 					case "gps":
@@ -84,12 +85,12 @@ namespace SDF
 
 					case "navsat":
 						var navsat = sensor.GetSensor() as SDF.NavSat;
-						device = Implement.Sensor.AddNavSat(navsat, targetObject);
+						device = targetObject.AddNavSat(navsat);
 						break;
 
 					case "contact":
 						var contact = sensor.GetSensor() as SDF.Contact;
-						device = Implement.Sensor.AddContact(contact, targetObject);
+						device = targetObject.AddContact(contact);
 						break;
 
 					case "air_pressure":
