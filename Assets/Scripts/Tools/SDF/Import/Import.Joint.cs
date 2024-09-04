@@ -6,7 +6,6 @@
 
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
-using System.Linq;
 
 namespace SDF
 {
@@ -16,47 +15,13 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private static UE.Transform FindTransformByName(string name, UE.Transform targetTransform)
-			{
-				UE.Transform foundLinkObject = null;
-
-				var rootTransform = targetTransform;
-
-				while (!SDF2Unity.IsRootModel(rootTransform))
-				{
-					rootTransform = rootTransform.parent;
-				}
-
-				var (modelName, linkName) = SDF2Unity.GetModelLinkName(name, targetTransform.name);
-				// UE.Debug.Log("GetModelLinkName  => " + modelName + ", " + linkName);
-
-				if (string.IsNullOrEmpty(modelName))
-				{
-					// UE.Debug.Log(name + ", Find  => " + targetTransform.name + ", " + rootTransform.name);
-					foundLinkObject = targetTransform.GetComponentsInChildren<UE.Transform>().FirstOrDefault(x => x.name.Equals(name));
-				}
-				else
-				{
-					var modelHelper = rootTransform.GetComponentsInChildren<SDF.Helper.Model>().FirstOrDefault(x => x.name.Equals(modelName));
-					var modelTransform = modelHelper?.transform;
-
-					if (modelTransform != null)
-					{
-						var foundLinkHelper = modelTransform.GetComponentsInChildren<SDF.Helper.Link>().FirstOrDefault(x => x.transform.name.Equals(linkName));
-						foundLinkObject = foundLinkHelper?.transform;
-					}
-				}
-
-				return foundLinkObject;
-			}
-
 			protected override void ImportJoint(in Joint joint, in System.Object parentObject)
 			{
 				var targetObject = (parentObject as UE.GameObject);
 				// Debug.LogFormat("[Joint] {0}, {1} <= {2}", joint.Name, joint.ParentLinkName, joint.ChildLinkName);
 
-				var linkObjectParent = FindTransformByName(joint.ParentLinkName, targetObject.transform);
-				var linkObjectChild = FindTransformByName(joint.ChildLinkName, targetObject.transform);
+				var linkObjectParent = targetObject.FindTransformByName(joint.ParentLinkName);
+				var linkObjectChild = targetObject.FindTransformByName(joint.ChildLinkName);
 
 				if (linkObjectParent is null)
 				{
@@ -89,44 +54,7 @@ namespace SDF
 
 				articulationBodyChild.SetAnchor(anchorPose);
 
-				switch (joint.Type)
-				{
-					case "ball":
-						articulationBodyChild.MakeBall();
-						break;
-
-					case "prismatic":
-						articulationBodyChild.MakePrismatic(joint.Axis, joint.Pose);
-						break;
-
-					case "revolute":
-						articulationBodyChild.MakeRevolute(joint.Axis);
-						break;
-
-					case "universal":
-					case "revolute2":
-						articulationBodyChild.MakeRevolute2(joint.Axis, joint.Axis2);
-						break;
-
-					case "fixed":
-						articulationBodyChild.MakeFixed();
-						break;
-
-					case "gearbox":
-						// gearbox_ratio = GetValue<double>("gearbox_ratio");
-						// gearbox_reference_body = GetValue<string>("gearbox_reference_body");
-						Debug.LogWarning("This type[gearbox] is not supported now.");
-						break;
-
-					case "screw":
-						// thread_pitch = GetValue<double>("thread_pitch");
-						Debug.LogWarning("This type[screw] is not supported now.");
-						break;
-
-					default:
-						Debug.LogWarningFormat("Check Joint type[{0}]", joint.Type);
-						break;
-				}
+				articulationBodyChild.MakeJoint(joint);
 
 				var linkHelper = linkObjectChild.GetComponent<Helper.Link>();
 				if (linkHelper != null)

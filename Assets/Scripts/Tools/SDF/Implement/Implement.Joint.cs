@@ -5,6 +5,7 @@
  */
 
 using UE = UnityEngine;
+using System.Linq;
 
 namespace SDF
 {
@@ -79,7 +80,7 @@ namespace SDF
 				// body.parentAnchorRotation = parentAnchor.rotation; // TODO: matchAnchors is set to true
 			}
 
-			public static void MakeRevolute(this UE.ArticulationBody body, in SDF.Axis axis)
+			public static void MakeRevoluteJoint(this UE.ArticulationBody body, in SDF.Axis axis)
 			{
 				body.jointType = UE.ArticulationJointType.SphericalJoint;
 				body.linearDamping = DefaultJointLinearDamping;
@@ -145,13 +146,13 @@ namespace SDF
 				}
 				else
 				{
-					UE.Debug.LogWarning("MakeRevolute - Wrong axis, " + body.transform.parent.name + "::" + body.name + " = " + jointAxis);
+					UE.Debug.LogWarning("MakeRevoluteJoint - Wrong axis, " + body.transform.parent.name + "::" + body.name + " = " + jointAxis);
 				}
 			}
 
-			public static void MakeRevolute2(this UE.ArticulationBody body, in SDF.Axis axis1, in SDF.Axis axis2)
+			private static void MakeRevoluteJoint2(this UE.ArticulationBody body, in SDF.Axis axis1, in SDF.Axis axis2)
 			{
-				MakeRevolute(body, axis1);
+				MakeRevoluteJoint(body, axis1);
 
 				var drive = new UE.ArticulationDrive();
 
@@ -192,11 +193,11 @@ namespace SDF
 				}
 				else
 				{
-					UE.Debug.LogWarning("MakeRevolute2 - Wrong axis, " + body.transform.parent.name + "::" + body.name + " = " + joint2Axis);
+					UE.Debug.LogWarning("MakeRevoluteJoint2 - Wrong axis, " + body.transform.parent.name + "::" + body.name + " = " + joint2Axis);
 				}
 			}
 
-			public static void MakeFixed(this UE.ArticulationBody body)
+			private static void MakeFixedJoint(this UE.ArticulationBody body)
 			{
 				body.jointType = UE.ArticulationJointType.FixedJoint;
 				body.linearDamping = 0.00f;
@@ -204,7 +205,7 @@ namespace SDF
 				body.jointFriction = 0;
 			}
 
-			public static void MakeBall(this UE.ArticulationBody body)
+			private static void MakeBallJoint(this UE.ArticulationBody body)
 			{
 				body.jointType = UE.ArticulationJointType.SphericalJoint;
 				body.linearDamping = DefaultJointLinearDamping;
@@ -215,7 +216,7 @@ namespace SDF
 				body.twistLock = UE.ArticulationDofLock.FreeMotion;
 			}
 
-			public static void MakePrismatic(this UE.ArticulationBody body, in SDF.Axis axis, in SDF.Pose<double> pose)
+			private static void MakePrismaticJoint(this UE.ArticulationBody body, in SDF.Axis axis, in SDF.Pose<double> pose)
 			{
 				body.jointType = UE.ArticulationJointType.PrismaticJoint;
 				body.anchorRotation *= SDF2Unity.Rotation(pose?.Rot);
@@ -287,7 +288,50 @@ namespace SDF
 				}
 				else
 				{
-					UE.Debug.LogWarning("MakePrismatic - Wrong axis, " + body.transform.parent.name + "::" + body.name + " = " + jointAxis);
+					UE.Debug.LogWarning("MakePrismaticJoint - Wrong axis, " + body.transform.parent.name + "::" + body.name + " = " + jointAxis);
+				}
+			}
+
+			public static void MakeJoint(this UE.ArticulationBody body, in SDF.Joint joint)
+			{
+
+				switch (joint.Type)
+				{
+					case "ball":
+						body.MakeBallJoint();
+						break;
+
+					case "prismatic":
+						body.MakePrismaticJoint(joint.Axis, joint.Pose);
+						break;
+
+					case "revolute":
+						body.MakeRevoluteJoint(joint.Axis);
+						break;
+
+					case "universal":
+					case "revolute2":
+						body.MakeRevoluteJoint2(joint.Axis, joint.Axis2);
+						break;
+
+					case "fixed":
+						body.MakeFixedJoint();
+						break;
+
+					case "gearbox":
+						// gearbox_ratio = GetValue<double>("gearbox_ratio");
+						// gearbox_reference_body = GetValue<string>("gearbox_reference_body");
+						UE.Debug.LogWarning("This type[gearbox] is not supported now.");
+						break;
+
+					case "screw":
+						// thread_pitch = GetValue<double>("thread_pitch");
+						UE.Debug.LogWarning("This type[screw] is not supported now.");
+						break;
+
+					default:
+						UE.Debug.LogWarningFormat("Check Joint type[{0}]", joint.Type);
+						break;
 				}
 			}
 
@@ -301,6 +345,45 @@ namespace SDF
 			{
 				drive.lowerLimit = SDF2Unity.CurveOrientation((float)limit.upper);
 				drive.upperLimit = SDF2Unity.CurveOrientation((float)limit.lower);
+			}
+
+			public static UE.Transform FindTransformByName(this UE.GameObject targetObject, string name)
+			{
+				return targetObject?.transform.FindTransformByName(name);
+			}
+
+			public static UE.Transform FindTransformByName(this UE.Transform targetTransform, string name)
+			{
+				UE.Transform foundLinkObject = null;
+
+				var rootTransform = targetTransform;
+
+				while (!SDF2Unity.IsRootModel(rootTransform))
+				{
+					rootTransform = rootTransform.parent;
+				}
+
+				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(name, targetTransform.name);
+				// UE.Debug.Log("GetModelLinkName  => " + modelName + ", " + linkName);
+
+				if (string.IsNullOrEmpty(modelName))
+				{
+					// UE.Debug.Log(name + ", Find  => " + targetTransform.name + ", " + rootTransform.name);
+					foundLinkObject = targetTransform.GetComponentsInChildren<UE.Transform>().FirstOrDefault(x => x.name.Equals(name));
+				}
+				else
+				{
+					var modelHelper = rootTransform.GetComponentsInChildren<SDF.Helper.Model>().FirstOrDefault(x => x.name.Equals(modelName));
+					var modelTransform = modelHelper?.transform;
+
+					if (modelTransform != null)
+					{
+						var foundLinkHelper = modelTransform.GetComponentsInChildren<SDF.Helper.Link>().FirstOrDefault(x => x.transform.name.Equals(linkName));
+						foundLinkObject = foundLinkHelper?.transform;
+					}
+				}
+
+				return foundLinkObject;
 			}
 		}
 	}
