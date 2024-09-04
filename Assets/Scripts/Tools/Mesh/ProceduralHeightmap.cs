@@ -66,7 +66,7 @@ public static class ProceduralHeightmap
 		return null;
 	}
 
-	public static void Generate(in SDF.Heightmap property, in GameObject heightmapObject, in bool isVisualMesh)
+	public static void GenerateHeightMap(this GameObject heightmapObject, in SDF.Heightmap property, in bool isVisualMesh)
 	{
 		var byteArray = GetBytesFromImage(property.uri);
 		if (byteArray == null)
