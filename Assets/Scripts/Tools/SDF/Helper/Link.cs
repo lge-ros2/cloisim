@@ -5,7 +5,6 @@
  */
 
 using System.Collections.Generic;
-using System.Collections;
 using UE = UnityEngine;
 
 namespace SDF
@@ -28,7 +27,7 @@ namespace SDF
 
 			[UE.Header("SDF Properties")]
 			public bool isSelfCollide = false;
-			public bool useGravity = false;
+			public bool useGravity = true;
 
 			[UE.Header("Joint related")]
 			private string jointName = string.Empty;
@@ -85,13 +84,14 @@ namespace SDF
 				base.Awake();
 				_parentModelHelper = transform.parent?.GetComponent<Model>();
 				_jointAnchorPose = UE.Pose.identity;
+
+				UpdateRootModel();
 			}
 
 			// Start is called before the first frame update
 			void Start()
 			{
-				var modelHelpers = GetComponentsInParent(typeof(Model));
-				_rootModel = (Model)modelHelpers[modelHelpers.Length - 1];
+				UpdateRootModel();
 
 				var parentArtBodies = GetComponentsInParent<UE.ArticulationBody>();
 
@@ -135,7 +135,14 @@ namespace SDF
 				{
 					_jointPose.position -= _parentLink._jointPose.position;
 				}
-		}
+			}
+
+			private void UpdateRootModel()
+			{
+				var modelHelpers = GetComponentsInParent(typeof(Model));
+				_rootModel = (Model)modelHelpers[modelHelpers.Length - 1];
+				// UE.Debug.Log($"{name}: LinkHelper _rootModel={_rootModel}");
+			}
 
 			void OnDrawGizmos()
 			{
