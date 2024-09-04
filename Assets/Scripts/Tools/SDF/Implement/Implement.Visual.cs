@@ -14,9 +14,9 @@ namespace SDF
 {
 	namespace Implement
 	{
-		public class Visual
+		public static class Visual
 		{
-			private static void OptimizeMesh(in UE.Transform target)
+			private static void OptimizeMesh(this UE.Transform target)
 			{
 				var meshFilters = target.GetComponentsInChildren<UE.MeshFilter>();
 				if (meshFilters.Length <= 1)
@@ -96,12 +96,38 @@ namespace SDF
 				}
 			}
 
-			public static void OptimizeMeshes(in UE.Transform targetTransform)
+			public static void OptimizeMeshes(this UE.Transform targetTransform)
 			{
-				for (var i = 0; i< targetTransform.childCount; i++)
+				for (var i = 0; i < targetTransform.childCount; i++)
 				{
 					var child = targetTransform.GetChild(i);
-					OptimizeMesh(child);
+					child.OptimizeMesh();
+				}
+			}
+
+			public static void RemoveColliders(this UE.GameObject targetObject)
+			{
+				var colliders = targetObject.GetComponentsInChildren<UE.Collider>();
+				foreach (var collider in colliders)
+				{
+					UE.Debug.LogWarning($"{collider.name} Collider should not exit. There was collider");
+					UE.GameObject.Destroy(collider);
+				}
+			}
+
+			public static void AddRenderes(this UE.GameObject targetObject)
+			{
+				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
+				foreach (var meshFilter in meshFilters)
+				{
+					var meshRenderer = meshFilter.gameObject.GetComponent<UE.MeshRenderer>();
+					if (meshRenderer == null)
+					{
+						meshRenderer = meshFilter.gameObject.AddComponent<UE.MeshRenderer>();
+						meshRenderer.materials = new UE.Material[] { SDF2Unity.Material.Create(meshFilter.name + "_material") };
+						meshRenderer.allowOcclusionWhenDynamic = true;
+						meshRenderer.receiveShadows = true;
+					}
 				}
 			}
 		}

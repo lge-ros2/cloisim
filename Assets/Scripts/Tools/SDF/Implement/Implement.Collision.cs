@@ -12,7 +12,7 @@ namespace SDF
 {
 	namespace Implement
 	{
-		public class Collision
+		public static class Collision
 		{
 			public static readonly int PlaneLayerIndex = UE.LayerMask.NameToLayer("Plane");
 
@@ -28,7 +28,7 @@ namespace SDF
 					MCCookingOptions.WeldColocatedVertices |
 					MCCookingOptions.UseFastMidphase;
 
-			private static void KeepUnmergedMeshes(in UE.MeshFilter[] meshFilters)
+			private static void KeepUnmergedMeshes(ref UE.MeshFilter[] meshFilters)
 			{
 				foreach (var meshFilter in meshFilters)
 				{
@@ -41,7 +41,7 @@ namespace SDF
 				}
 			}
 
-			private static void MergeCollider(in UE.GameObject targetObject)
+			private static void MergeCollider(this UE.GameObject targetObject)
 			{
 				var geometryWorldToLocalMatrix = targetObject.transform.worldToLocalMatrix;
 				var meshColliders = targetObject.GetComponentsInChildren<UE.MeshCollider>();
@@ -65,7 +65,7 @@ namespace SDF
 				// mergedMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
 			}
 
-			public static void Make(UE.GameObject targetObject)
+			public static void MakeCollision(this UE.GameObject targetObject)
 			{
 				var modelHelper = targetObject.GetComponentInParent<SDF.Helper.Model>();
 				// UE.Debug.Log(modelHelper);
@@ -83,18 +83,18 @@ namespace SDF
 				{
 					if (targetObject.GetComponent<UE.Collider>() == null)
 					{
-						KeepUnmergedMeshes(meshFilters);
+						KeepUnmergedMeshes(ref meshFilters);
 
 #if ENABLE_MERGE_COLLIDER
-						MergeCollider(targetObject);
+						targetObject.MergeCollider();
 #endif
 					}
 				}
 
-				RemoveRenderers(meshFilters);
+				RemoveRenderers(ref meshFilters);
 			}
 
-			private static void RemoveRenderers(UE.MeshFilter[] meshFilters)
+			private static void RemoveRenderers(ref UE.MeshFilter[] meshFilters)
 			{
 				foreach (var meshFilter in meshFilters)
 				{
@@ -108,7 +108,7 @@ namespace SDF
 				}
 			}
 
-			public static void SetSurfaceFriction(in SDF.Surface surface, in UE.GameObject targetObject)
+			public static void SetSurfaceFriction(this UE.GameObject targetObject, in SDF.Surface surface)
 			{
 				var material = new UE.PhysicMaterial();
 

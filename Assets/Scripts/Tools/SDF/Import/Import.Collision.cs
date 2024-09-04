@@ -11,6 +11,8 @@ using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;
 
 namespace SDF
 {
+	using Implement;
+
 	namespace Import
 	{
 		public partial class Loader : Base
@@ -41,7 +43,7 @@ namespace SDF
 				if (collisionObject.CompareTag("Collision"))
 				{
 					var geometryObject = (collisionObject.transform.childCount == 0) ? collisionObject : collisionObject.transform.GetChild(0).gameObject;
-					Implement.Collision.Make(geometryObject);
+					geometryObject.MakeCollision();
 
 					var shape = collision.GetGeometry().GetShape();
 					if (shape != null)
@@ -78,7 +80,7 @@ namespace SDF
 				collisionObject.transform.localPosition = SDF2Unity.Position(collision.Pose?.Pos);
 				collisionObject.transform.localRotation = SDF2Unity.Rotation(collision.Pose?.Rot);
 
-				Implement.Collision.SetSurfaceFriction(collision.GetSurface(), collisionObject);
+				collisionObject.SetSurfaceFriction(collision.GetSurface());
 			}
 
 			private bool EnhanceCollisionPerformance(
