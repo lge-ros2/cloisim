@@ -79,7 +79,7 @@ namespace SDF
 				var newModelObject = new UE.GameObject(model.Name);
 				newModelObject.tag = "Model";
 
-				SetParentObject(newModelObject, targetObject);
+				targetObject.SetChild(newModelObject);
 
 				// Apply attributes
 				var localPosition = SDF2Unity.Position(model.Pose?.Pos);

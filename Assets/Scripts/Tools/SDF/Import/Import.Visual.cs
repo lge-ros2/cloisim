@@ -23,7 +23,7 @@ namespace SDF
 				var newVisualObject = new UE.GameObject(visual.Name);
 				newVisualObject.tag = "Visual";
 
-				SetParentObject(newVisualObject, targetObject);
+				targetObject.SetChild(newVisualObject);
 
 				var localPosition = SDF2Unity.Position(visual.Pose?.Pos);
 				var localRotation = SDF2Unity.Rotation(visual.Pose?.Rot);

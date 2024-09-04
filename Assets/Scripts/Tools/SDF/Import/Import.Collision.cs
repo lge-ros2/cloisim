@@ -21,7 +21,7 @@ namespace SDF
 				var newCollisionObject = new UE.GameObject(collision.Name);
 				newCollisionObject.tag = "Collision";
 
-				SetParentObject(newCollisionObject, targetObject);
+				targetObject.SetChild(newCollisionObject);
 
 				var localPosition = SDF2Unity.Position(collision.Pose?.Pos);
 				var localRotation = SDF2Unity.Rotation(collision.Pose?.Rot);

@@ -46,7 +46,7 @@ namespace SDF
 				var newLinkObject = new UE.GameObject(link.Name);
 				newLinkObject.tag = "Link";
 
-				SetParentObject(newLinkObject, targetObject);
+				targetObject.SetChild(newLinkObject);
 
 				var localPosition = SDF2Unity.Position(link.Pose?.Pos);
 				var localRotation = SDF2Unity.Rotation(link.Pose?.Rot);

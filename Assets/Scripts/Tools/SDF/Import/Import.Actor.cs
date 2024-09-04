@@ -28,8 +28,6 @@ namespace SDF
 				newActorObject.name = actor.Name;
 				newActorObject.tag = "Actor";
 
-				SetParentObject(newActorObject, null);
-
 				// Apply attributes
 				var localPosition = SDF2Unity.Position(actor.Pose?.Pos);
 				var localRotation = SDF2Unity.Rotation(actor.Pose?.Rot);
