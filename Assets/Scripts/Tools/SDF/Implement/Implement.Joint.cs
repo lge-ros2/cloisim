@@ -10,9 +10,11 @@ namespace SDF
 {
 	namespace Implement
 	{
-		public class Joint
+		public static class Joint
 		{
 			private static float DefaultJointFriction = 0.05f;
+			private static float DefaultJointLinearDamping = 0.05f;
+			private static float DefaultJointAngularDamping = 0.05f;
 
 			public static UE.Pose SetArticulationBodyRelationship(in SDF.Joint joint, UE.Transform linkParent, UE.Transform linkChild)
 			{
@@ -66,7 +68,7 @@ namespace SDF
 				return anchorPose;
 			}
 
-			public static void SetArticulationBodyAnchor(in UE.ArticulationBody body, in UE.Pose parentAnchor)
+			public static void SetAnchor(this UE.ArticulationBody body, in UE.Pose parentAnchor)
 			{
 				// UE.Debug.Log(parentAnchor.position);
 				body.anchorPosition = parentAnchor.position; //UE.Vector3.zero;
@@ -77,18 +79,18 @@ namespace SDF
 				// body.parentAnchorRotation = parentAnchor.rotation; // TODO: matchAnchors is set to true
 			}
 
-			public static void MakeRevolute(in UE.ArticulationBody body, in SDF.Axis axis)
+			public static void MakeRevolute(this UE.ArticulationBody body, in SDF.Axis axis)
 			{
 				body.jointType = UE.ArticulationJointType.SphericalJoint;
-				body.linearDamping = 0.05f; // TODO : value to find
-				body.angularDamping = 0.05f; // TODO : value to find
+				body.linearDamping = DefaultJointLinearDamping;
+				body.angularDamping = DefaultJointAngularDamping;
 
 				var drive = new UE.ArticulationDrive();
 
 				if (axis.limit.HasJoint())
 				{
 					// UE.Debug.LogWarningFormat("limit uppper{0}, lower{1}", axis.limit.upper, axis.limit.lower);
-					SetRevoluteArticulationDriveLimit(ref drive, axis.limit);
+					drive.SetRevoluteDriveLimit(axis.limit);
 				}
 
 				drive.forceLimit = (double.IsInfinity(axis.limit.effort)) ? float.MaxValue : (float)axis.limit.effort;
@@ -112,7 +114,7 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.left))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.forward);
+						body.ReverseAxis(UE.Vector3.forward);
 					}
 					body.xDrive = drive;
 					body.twistLock = (axis.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
@@ -123,7 +125,7 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.down))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.right);
+						body.ReverseAxis(UE.Vector3.right);
 					}
 					body.yDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
@@ -134,7 +136,7 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.back))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.up);
+						body.ReverseAxis(UE.Vector3.up);
 					}
 					body.zDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
@@ -147,7 +149,7 @@ namespace SDF
 				}
 			}
 
-			public static void MakeRevolute2(in UE.ArticulationBody body, in SDF.Axis axis1, in SDF.Axis axis2)
+			public static void MakeRevolute2(this UE.ArticulationBody body, in SDF.Axis axis1, in SDF.Axis axis2)
 			{
 				MakeRevolute(body, axis1);
 
@@ -155,7 +157,7 @@ namespace SDF
 
 				if (axis2.limit.HasJoint())
 				{
-					SetRevoluteArticulationDriveLimit(ref drive, axis2.limit);
+					drive.SetRevoluteDriveLimit(axis2.limit);
 				}
 
 				drive.forceLimit = (double.IsInfinity(axis2.limit.effort)) ? float.MaxValue : (float)axis2.limit.effort;
@@ -165,7 +167,7 @@ namespace SDF
 				{
 					if (joint2Axis.Equals(UE.Vector3.left))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.forward);
+						body.ReverseAxis(UE.Vector3.forward);
 					}
 					body.xDrive = drive;
 					body.twistLock = (axis2.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
@@ -174,7 +176,7 @@ namespace SDF
 				{
 					if (joint2Axis.Equals(UE.Vector3.down))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.right);
+						body.ReverseAxis(UE.Vector3.right);
 					}
 					body.yDrive = drive;
 					body.swingYLock = (axis2.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
@@ -183,7 +185,7 @@ namespace SDF
 				{
 					if (joint2Axis.Equals(UE.Vector3.back))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.up);
+						body.ReverseAxis(UE.Vector3.up);
 					}
 					body.zDrive = drive;
 					body.swingZLock = (axis2.limit.HasJoint()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
@@ -194,7 +196,7 @@ namespace SDF
 				}
 			}
 
-			public static void MakeFixed(in UE.ArticulationBody body)
+			public static void MakeFixed(this UE.ArticulationBody body)
 			{
 				body.jointType = UE.ArticulationJointType.FixedJoint;
 				body.linearDamping = 0.00f;
@@ -202,25 +204,25 @@ namespace SDF
 				body.jointFriction = 0;
 			}
 
-			public static void MakeBall(in UE.ArticulationBody body)
+			public static void MakeBall(this UE.ArticulationBody body)
 			{
 				body.jointType = UE.ArticulationJointType.SphericalJoint;
-				body.linearDamping = 0.05f;
-				body.angularDamping = 0.05f;
+				body.linearDamping = DefaultJointLinearDamping;
+				body.angularDamping = DefaultJointAngularDamping;
 
 				body.swingYLock = UE.ArticulationDofLock.FreeMotion;
 				body.swingZLock = UE.ArticulationDofLock.FreeMotion;
 				body.twistLock = UE.ArticulationDofLock.FreeMotion;
 			}
 
-			public static void MakePrismatic(in UE.ArticulationBody body, in SDF.Axis axis, in SDF.Pose<double> pose)
+			public static void MakePrismatic(this UE.ArticulationBody body, in SDF.Axis axis, in SDF.Pose<double> pose)
 			{
 				body.jointType = UE.ArticulationJointType.PrismaticJoint;
 				body.anchorRotation *= SDF2Unity.Rotation(pose?.Rot);
 				// body.parentAnchorRotation *= SDF2Unity.Rotation(pose?.Rot);  // TODO: matchAnchors is set to true
 
-				body.linearDamping = 0.05f;
-				body.angularDamping = 0.05f;
+				body.linearDamping = DefaultJointLinearDamping;
+				body.angularDamping = DefaultJointAngularDamping;
 
 				var drive = new UE.ArticulationDrive();
 
@@ -251,7 +253,7 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.left))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.forward);
+						body.ReverseAxis(UE.Vector3.forward);
 					}
 
 					body.xDrive = drive;
@@ -263,7 +265,7 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.down))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.right);
+						body.ReverseAxis(UE.Vector3.right);
 					}
 
 					body.yDrive = drive;
@@ -275,7 +277,7 @@ namespace SDF
 				{
 					if (jointAxis.Equals(UE.Vector3.back))
 					{
-						ReverseArticulationBodyAxis(body, UE.Vector3.up);
+						body.ReverseAxis(UE.Vector3.up);
 					}
 
 					body.zDrive = drive;
@@ -289,13 +291,13 @@ namespace SDF
 				}
 			}
 
-			private static void ReverseArticulationBodyAxis(in UE.ArticulationBody body, in UE.Vector3 euler)
+			private static void ReverseAxis(this UE.ArticulationBody body, in UE.Vector3 euler)
 			{
 				body.anchorRotation *= UE.Quaternion.Euler(euler * 180f);
 				// body.parentAnchorRotation *= UE.Quaternion.Euler(euler * 180);  // TODO: matchAnchors is set to true
 			}
 
-			private static void SetRevoluteArticulationDriveLimit(ref UE.ArticulationDrive drive, in SDF.Axis.Limit limit)
+			private static void SetRevoluteDriveLimit(this ref UE.ArticulationDrive drive, in SDF.Axis.Limit limit)
 			{
 				drive.lowerLimit = SDF2Unity.CurveOrientation((float)limit.upper);
 				drive.upperLimit = SDF2Unity.CurveOrientation((float)limit.lower);

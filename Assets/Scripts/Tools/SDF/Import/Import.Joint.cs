@@ -10,6 +10,8 @@ using System.Linq;
 
 namespace SDF
 {
+	using Implement;
+
 	namespace Import
 	{
 		public partial class Loader : Base
@@ -85,29 +87,29 @@ namespace SDF
 
 				var anchorPose = Implement.Joint.SetArticulationBodyRelationship(joint, linkObjectParent, linkObjectChild);
 
-				Implement.Joint.SetArticulationBodyAnchor(articulationBodyChild, anchorPose);
+				articulationBodyChild.SetAnchor(anchorPose);
 
 				switch (joint.Type)
 				{
 					case "ball":
-						Implement.Joint.MakeBall(articulationBodyChild);
+						articulationBodyChild.MakeBall();
 						break;
 
 					case "prismatic":
-						Implement.Joint.MakePrismatic(articulationBodyChild, joint.Axis, joint.Pose);
+						articulationBodyChild.MakePrismatic(joint.Axis, joint.Pose);
 						break;
 
 					case "revolute":
-						Implement.Joint.MakeRevolute(articulationBodyChild, joint.Axis);
+						articulationBodyChild.MakeRevolute(joint.Axis);
 						break;
 
 					case "universal":
 					case "revolute2":
-						Implement.Joint.MakeRevolute2(articulationBodyChild, joint.Axis, joint.Axis2);
+						articulationBodyChild.MakeRevolute2(joint.Axis, joint.Axis2);
 						break;
 
 					case "fixed":
-						Implement.Joint.MakeFixed(articulationBodyChild);
+						articulationBodyChild.MakeFixed();
 						break;
 
 					case "gearbox":
