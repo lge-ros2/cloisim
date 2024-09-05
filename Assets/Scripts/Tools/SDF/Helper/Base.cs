@@ -18,6 +18,15 @@ namespace SDF
 
 			private bool _isRootModel = false;
 
+			[UE.Header("SDF Properties")]
+			private SDF.Pose<double> _pose = null; // described in SDF file
+
+			public Pose<double> Pose
+			{
+				get => _pose;
+				set => _pose = value;
+			}
+
 			public Model RootModel => _rootModelInScopre;
 
 			public bool IsFirstChild => _isRootModel; // root model

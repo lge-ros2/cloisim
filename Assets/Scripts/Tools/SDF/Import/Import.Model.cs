@@ -83,8 +83,8 @@ namespace SDF
 				var modelHelper = newModelObject.AddComponent<Helper.Model>();
 				modelHelper.modelNameInPath = model.OriginalName;
 				modelHelper.isStatic = model.IsStatic;
-				modelHelper.SetPose(localPosition, localRotation);
-				modelHelper.ResetPose();
+				modelHelper.Pose = model?.Pose;
+				modelHelper.isNested = model.IsNested;
 
 				if (modelHelper.IsFirstChild)
 				{

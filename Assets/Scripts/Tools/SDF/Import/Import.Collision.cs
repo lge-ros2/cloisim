@@ -29,8 +29,7 @@ namespace SDF
 				var localRotation = SDF2Unity.Rotation(collision.Pose?.Rot);
 
 				var collisionHelper = newCollisionObject.AddComponent<Helper.Collision>();
-				collisionHelper.SetPose(localPosition, localRotation);
-				collisionHelper.ResetPose();
+				collisionHelper.Pose = collision?.Pose;
 
 				return newCollisionObject as System.Object;
 			}

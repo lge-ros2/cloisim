@@ -132,6 +132,8 @@ namespace SDF
 
 				ImportPlugins(world.GetPlugins(), worldObject);
 
+				worldObject.SpecifyPose();
+
 				yield return null;
 
 				ImportActors(world.GetActors());
@@ -149,6 +151,8 @@ namespace SDF
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
 				}
+
+				modelObject.SpecifyPose();
 
 				yield return null;
 			}

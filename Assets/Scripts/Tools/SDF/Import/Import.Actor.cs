@@ -31,8 +31,7 @@ namespace SDF
 					// Debug.Log(newActorObject.name + "::" + localPosition + ", " + localRotation);
 
 					var actorHelper = newActorObject.AddComponent<Helper.Actor>();
-					actorHelper.SetPose(localPosition, localRotation);
-					actorHelper.ResetPose();
+					actorHelper.Pose = actor?.Pose;
 
 					newActorObject.transform.localScale = UE.Vector3.one * (float)actor.skin.scale;
 

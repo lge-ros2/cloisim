@@ -247,11 +247,10 @@ namespace SDF
 
 						ResetArticulationBody(targetFrame);
 					}
-					else
-					{
-						_targetTransform.localPosition = targetPose.position;
-						_targetTransform.localRotation = targetPose.rotation;
-					}
+
+					_targetTransform.localPosition = targetPose.position;
+					_targetTransform.localRotation = targetPose.rotation;
+
 					// Debug.Log($"Reset: {_targetTransform.name} artbody({_articulationBody}) = {targetPose.position} {targetPose.rotation}");
 				}
 			}
