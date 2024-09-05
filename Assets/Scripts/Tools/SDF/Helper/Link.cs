@@ -13,7 +13,6 @@ namespace SDF
 	{
 		public class Link : Base
 		{
-			private Model _rootModel = null;
 			private Model _parentModelHelper = null;
 			private UE.ArticulationBody _artBody = null;
 			private UE.ArticulationBody _parentArtBody = null;
@@ -76,7 +75,6 @@ namespace SDF
 
 			public UE.Pose LinkJointPose => _jointPose;
 
-			public Model RootModel => _rootModel;
 			public Model Model => _parentModelHelper;
 
 			new protected void Awake()
@@ -84,14 +82,12 @@ namespace SDF
 				base.Awake();
 				_parentModelHelper = transform.parent?.GetComponent<Model>();
 				_jointAnchorPose = UE.Pose.identity;
-
-				UpdateRootModel();
 			}
 
 			// Start is called before the first frame update
-			void Start()
+			new protected void Start()
 			{
-				UpdateRootModel();
+				base.Start();
 
 				var parentArtBodies = GetComponentsInParent<UE.ArticulationBody>();
 
@@ -135,13 +131,6 @@ namespace SDF
 				{
 					_jointPose.position -= _parentLink._jointPose.position;
 				}
-			}
-
-			private void UpdateRootModel()
-			{
-				var modelHelpers = GetComponentsInParent(typeof(Model));
-				_rootModel = (Model)modelHelpers[modelHelpers.Length - 1];
-				// UE.Debug.Log($"{name}: LinkHelper _rootModel={_rootModel}");
 			}
 
 			void OnDrawGizmos()
@@ -201,12 +190,12 @@ namespace SDF
 
 			private void IgnoreSelfCollision()
 			{
-				if (_rootModel == null)
+				if (RootModel == null)
 				{
 					return;
 				}
 
-				var otherLinkPlugins = _rootModel.GetComponentsInChildren<Link>();
+				var otherLinkPlugins = RootModel.GetComponentsInChildren<Link>();
 				var thisColliders = GetCollidersInChildren();
 
 				foreach (var otherLinkPlugin in otherLinkPlugins)

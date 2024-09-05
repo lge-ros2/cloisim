@@ -17,8 +17,10 @@ namespace SDF
 
 			public int metaLayer = -1;
 
-			void Start()
+			new protected void Start()
 			{
+				base.Start();
+
 				SetShadowMode();
 			}
 
