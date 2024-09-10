@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 using Any = cloisim.msgs.Any;
 using UnityEngine;
 
@@ -82,45 +83,9 @@ public class MicomPlugin : CLOiSimPlugin
 		}
 		_micomSensor.SetUpdateRate(updateRate);
 
-		var wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
-
-		if (GetPluginParameters().IsValidNode("wheel/tread"))
+		if (GetPluginParameters().IsValidNode("wheel"))
 		{
-			Debug.LogWarning("<wheel/tread> will be depreacted!! please use wheel/separation");
-		}
-
-		var wheelTread = GetPluginParameters().GetValue<float>("wheel/tread"); // TODO: to be deprecated
-		var wheelSeparation = GetPluginParameters().GetValue<float>("wheel/separation", wheelTread);
-
-		_motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
-
-		var wheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='left']", string.Empty);
-		var wheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='right']", string.Empty);
-		var rearWheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_left']", string.Empty);
-		var rearWheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_right']", string.Empty);
-
-		if (!rearWheelLeftName.Equals(string.Empty) && !rearWheelRightName.Equals(string.Empty))
-		{
-			SetWheel(wheelLeftName, wheelRightName, rearWheelLeftName, rearWheelRightName);
-		}
-		else
-		{
-			SetWheel(wheelLeftName, wheelRightName);
-		}
-
-		if (GetPluginParameters().IsValidNode("wheel/PID"))
-		{
-			var P = GetPluginParameters().GetValue<float>("wheel/PID/kp");
-			var I = GetPluginParameters().GetValue<float>("wheel/PID/ki");
-			var D = GetPluginParameters().GetValue<float>("wheel/PID/kd");
-
-			var iMin = GetPluginParameters().GetValue<float>("wheel/PID/limit/integral/min", -100);
-			var iMax = GetPluginParameters().GetValue<float>("wheel/PID/limit/integral/max", 100);
-			var outputMin = GetPluginParameters().GetValue<float>("wheel/PID/limit/output/min", -1000);
-			var outputMax = GetPluginParameters().GetValue<float>("wheel/PID/limit/output/max", 1000);
-			// Debug.Log(iMin + ", " + iMax + ", " + outputMin + ", " + outputMax);
-
-			_motorControl.SetPID(P, I, D, iMin, iMax, outputMin, outputMax);
+			SetWheel();
 		}
 
 		if (GetPluginParameters().IsValidNode("battery"))
@@ -154,6 +119,55 @@ public class MicomPlugin : CLOiSimPlugin
 			// Debug.Log("Imu Sensor = " + targetImuName);
 			_micomSensor.SetIMU(targetImuSensorName);
 		}
+	}
+
+	private void SetWheel()
+	{
+		var wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
+
+		if (GetPluginParameters().IsValidNode("wheel/tread"))
+		{
+			Debug.LogWarning("<wheel/tread> will be depreacted!! please use wheel/separation");
+		}
+
+		var wheelTread = GetPluginParameters().GetValue<float>("wheel/tread"); // TODO: to be deprecated
+		var wheelSeparation = GetPluginParameters().GetValue<float>("wheel/separation", wheelTread);
+
+		_motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
+
+		var wheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='left']", string.Empty);
+		var wheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='right']", string.Empty);
+		var rearWheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_left']", string.Empty);
+		var rearWheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_right']", string.Empty);
+
+		if (!rearWheelLeftName.Equals(string.Empty) && !rearWheelRightName.Equals(string.Empty))
+		{
+			SetWheel(wheelLeftName, wheelRightName, rearWheelLeftName, rearWheelRightName);
+		}
+		else
+		{
+			SetWheel(wheelLeftName, wheelRightName);
+		}
+
+		if (GetPluginParameters().IsValidNode("wheel/PID"))
+		{
+			SetWheelPID();
+		}
+	}
+
+	private void SetWheelPID()
+	{
+		var P = GetPluginParameters().GetValue<float>("wheel/PID/kp");
+		var I = GetPluginParameters().GetValue<float>("wheel/PID/ki");
+		var D = GetPluginParameters().GetValue<float>("wheel/PID/kd");
+
+		var iMin = GetPluginParameters().GetValue<float>("wheel/PID/limit/integral/min", -100);
+		var iMax = GetPluginParameters().GetValue<float>("wheel/PID/limit/integral/max", 100);
+		var outputMin = GetPluginParameters().GetValue<float>("wheel/PID/limit/output/min", -1000);
+		var outputMax = GetPluginParameters().GetValue<float>("wheel/PID/limit/output/max", 1000);
+		// Debug.Log(iMin + ", " + iMax + ", " + outputMin + ", " + outputMax);
+
+		_motorControl.SetPID(P, I, D, iMin, iMax, outputMin, outputMax);
 	}
 
 	private void SetBattery()
@@ -256,7 +270,7 @@ public class MicomPlugin : CLOiSimPlugin
 			{
 				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("ros2/static_transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
 
-				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(link);
+				var (modelName, linkName) = SDF2Unity.GetModelLinkName(link);
 
 				foreach (var linkHelper in _linkHelperInChildren)
 				{
@@ -287,7 +301,7 @@ public class MicomPlugin : CLOiSimPlugin
 			{
 				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("ros2/transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
 
-				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(link);
+				var (modelName, linkName) = SDF2Unity.GetModelLinkName(link);
 
 				foreach (var linkHelper in _linkHelperInChildren)
 				{
