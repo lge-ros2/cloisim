@@ -8,14 +8,14 @@ using UnityEngine;
 
 public partial class SDF2Unity
 {
-	public static (string, string) GetModelLinkName(in string value, in string defaultModelName = "")
+	public static (string, string) GetModelLinkName(in string value, in string defaultModelName = "__default__")
 	{
 		var modelName = defaultModelName;
 		var linkName = value;
 
 		if (value.Contains("::"))
 		{
-			var splittedName = value.Replace("::", ":").Split(':');
+			var splittedName = value.Split("::", System.StringSplitOptions.RemoveEmptyEntries);
 			modelName = splittedName[0];
 			linkName = splittedName[1];
 		}
