@@ -7,6 +7,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using System;
 using Any = cloisim.msgs.Any;
 using UnityEngine;
 
@@ -86,6 +87,11 @@ public class MicomPlugin : CLOiSimPlugin
 		if (GetPluginParameters().IsValidNode("wheel"))
 		{
 			SetWheel();
+		}
+
+		if (GetPluginParameters().IsValidNode("mowing"))
+		{
+			SetMowing();
 		}
 
 		if (GetPluginParameters().IsValidNode("battery"))
@@ -168,6 +174,26 @@ public class MicomPlugin : CLOiSimPlugin
 		// Debug.Log(iMin + ", " + iMax + ", " + outputMin + ", " + outputMax);
 
 		_motorControl.SetPID(P, I, D, iMin, iMax, outputMin, outputMax);
+	}
+
+	private void SetMowing()
+	{
+		var targetBladeName = GetPluginParameters().GetAttributeInPath<string>("mowing/blade", "target");
+		if (!string.IsNullOrEmpty(targetBladeName))
+		{
+			var linkHelpers = GetComponentsInChildren<SDF.Helper.Link>();
+			var targetBlade = linkHelpers.FirstOrDefault(x => x.name == targetBladeName);
+
+			if (targetBlade != null)
+			{
+				var mowingBlade = targetBlade.gameObject.AddComponent<MowingBlade>();
+
+				mowingBlade.HeightMin = GetPluginParameters().GetValue<float>("mowing/blade/height/min", 0f);
+				mowingBlade.HeightMax = GetPluginParameters().GetValue<float>("mowing/blade/height/max", 0.1f);
+				mowingBlade.RevSpeedMax = GetPluginParameters().GetValue<UInt16>("mowing/blade/rev_speed/max", 1000);
+				mowingBlade.Height = 0;
+			}
+		}
 	}
 
 	private void SetBattery()
