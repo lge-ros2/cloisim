@@ -25,7 +25,7 @@ namespace SDF
 					rootTransform = rootTransform.parent;
 				}
 
-				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(name, targetTransform.name);
+				var (modelName, linkName) = SDF2Unity.GetModelLinkName(name, targetTransform.name);
 				// UE.Debug.Log("GetModelLinkName  => " + modelName + ", " + linkName);
 
 				if (string.IsNullOrEmpty(modelName))

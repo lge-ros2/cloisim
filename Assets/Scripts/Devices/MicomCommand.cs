@@ -12,6 +12,7 @@ namespace SensorDevices
 	public class MicomCommand : Device
 	{
 		private MotorControl _motorControl = null;
+		private MowingBlade _mowingBlade = null;
 
 		protected override void OnAwake()
 		{
@@ -21,6 +22,7 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
+			_mowingBlade = GetComponentInChildren<MowingBlade>();
 		}
 
 		protected override void OnReset()
@@ -35,22 +37,39 @@ namespace SensorDevices
 
 		protected override void ProcessDevice()
 		{
-			if (PopDeviceMessage<messages.Twist>(out var micomWritingData))
+			if (PopDeviceMessage(out var receivedMessage))
 			{
-				var linear = micomWritingData.Linear;
-				var angular = micomWritingData.Angular;
+				var cmdVelocity = receivedMessage.GetMessage<messages.Twist>();
 
-				var linearVelocity = SDF2Unity.Position(linear.X, linear.Y, linear.Z);
-				var angularVelocity = SDF2Unity.Position(angular.X, angular.Y, angular.Z);
+				if (cmdVelocity != null)
+				{
+					var linear = cmdVelocity.Linear;
+					var angular = cmdVelocity.Angular;
 
-				DoWheelDrive(linearVelocity, angularVelocity);
-			}
+					var linearVelocity = SDF2Unity.Position(linear.X, linear.Y, linear.Z);
+					var angularVelocity = SDF2Unity.Position(angular.X, angular.Y, angular.Z);
+
+					DoWheelDrive(linearVelocity, angularVelocity);
+				}
+				else
+				{
+					var cmdMowing = receivedMessage.GetMessage<messages.Param>();
+
+					if (cmdMowing != null)
+					{
+						if (!string.IsNullOrEmpty(cmdMowing.Name))
+						{
+							ControlMowing(cmdMowing.Name, cmdMowing.Value);
+						}
+					}
 #if UNITY_EDITOR
-			else
-			{
-				Debug.LogWarning("ERROR: failed to pop device message");
-			}
+					else
+					{
+						Debug.LogWarning("ERROR: failed to pop device message");
+					}
 #endif
+				}
+			}
 		}
 
 		/// <param name="linearVelocity">m/s</param>
@@ -65,7 +84,32 @@ namespace SensorDevices
 
 			var targetLinearVelocity = linearVelocity.z;
 			var targetAngularVelocity = angularVelocity.y;
+
 			_motorControl.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
+		}
+
+		private void ControlMowing(in string target, in cloisim.msgs.Any value)
+		{
+			if (string.Compare(target, "mowing_blade_height") == 0)
+			{
+				if (_mowingBlade != null && value.Type == messages.Any.ValueType.Double)
+				{
+					_mowingBlade.Height = (float)value.DoubleValue;
+					// Debug.Log($"mowing_blade_height {value} -> {_mowingBlade.Height}");
+				}
+			}
+			else if (string.Compare(target, "mowing_blade_rev_speed") == 0)
+			{
+				if (_mowingBlade != null && value.Type == messages.Any.ValueType.Int32)
+				{
+					_mowingBlade.RevSpeed = System.Convert.ToUInt16(value.IntValue);
+					// Debug.Log($"mowing_blade_rev_speed {value} -> {_mowingBlade.RevSpeed}");
+				}
+			}
+			else
+			{
+				Debug.LogWarning($"Invalid Control Mowing message received: {target}");
+			}
 		}
 	}
 }
