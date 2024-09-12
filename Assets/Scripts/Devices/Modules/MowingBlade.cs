@@ -12,6 +12,9 @@ using UnityEngine;
 public class MowingBlade : MonoBehaviour
 {
 	[SerializeField]
+	private float _bladeDiameter = 0;
+
+	[SerializeField]
 	private float _height = 0;
 
 	[SerializeField]
@@ -26,16 +29,11 @@ public class MowingBlade : MonoBehaviour
 	[SerializeField]
 	private UInt16 _revSpeedMax = 0;
 
-	[SerializeField]
-	private float _heightBaseInTransform = 0;
-
-	private Bounds _bladeBounds = new Bounds();
-
 	private bool _doAdjust = false;
 
 	public float Diameter
 	{
-		get => Mathf.Max(_bladeBounds.extents.x, _bladeBounds.extents.z);
+		get => _bladeDiameter;
 	}
 
 	public float HeightMin
@@ -92,13 +90,14 @@ public class MowingBlade : MonoBehaviour
 	{
 		var meshFilters = GetComponentsInChildren<MeshFilter>();
 
-		_bladeBounds.center = Vector3.zero;
-		_bladeBounds.size = Vector3.zero;
+		var bladeBounds = new Bounds();
 		foreach (var meshFilter in meshFilters)
 		{
 			var bounds = meshFilter.sharedMesh.bounds;
-			_bladeBounds.Encapsulate(bounds);
+			bladeBounds.Encapsulate(bounds);
 		}
+
+		_bladeDiameter = Mathf.Max(bladeBounds.extents.x, bladeBounds.extents.z);
 
 		_doAdjust = true;
 		yield return DoAdjust();
