@@ -105,6 +105,8 @@ public class ModelImporter : MonoBehaviour
 		foreach (var renderer in _targetObject.GetComponentsInChildren<Renderer>())
 		{
 			// Debug.Log(renderer.bounds.min + ", " + renderer.bounds.max);
+			var bounds = renderer.bounds;
+			bounds.center = _targetObject.transform.TransformPoint(bounds.center);
 			totalBound.Encapsulate(renderer.bounds);
 		}
 
