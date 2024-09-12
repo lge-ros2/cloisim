@@ -5,7 +5,6 @@
  */
 
 using System.Collections.Generic;
-using System.Collections;
 using UE = UnityEngine;
 
 namespace SDF
@@ -14,7 +13,6 @@ namespace SDF
 	{
 		public class Link : Base
 		{
-			private Model _rootModel = null;
 			private Model _parentModelHelper = null;
 			private UE.ArticulationBody _artBody = null;
 			private UE.ArticulationBody _parentArtBody = null;
@@ -28,7 +26,7 @@ namespace SDF
 
 			[UE.Header("SDF Properties")]
 			public bool isSelfCollide = false;
-			public bool useGravity = false;
+			public bool useGravity = true;
 
 			[UE.Header("Joint related")]
 			private string jointName = string.Empty;
@@ -77,7 +75,6 @@ namespace SDF
 
 			public UE.Pose LinkJointPose => _jointPose;
 
-			public Model RootModel => _rootModel;
 			public Model Model => _parentModelHelper;
 
 			new protected void Awake()
@@ -88,10 +85,9 @@ namespace SDF
 			}
 
 			// Start is called before the first frame update
-			void Start()
+			new protected void Start()
 			{
-				var modelHelpers = GetComponentsInParent(typeof(Model));
-				_rootModel = (Model)modelHelpers[modelHelpers.Length - 1];
+				base.Start();
 
 				var parentArtBodies = GetComponentsInParent<UE.ArticulationBody>();
 
@@ -135,7 +131,7 @@ namespace SDF
 				{
 					_jointPose.position -= _parentLink._jointPose.position;
 				}
-		}
+			}
 
 			void OnDrawGizmos()
 			{
@@ -194,12 +190,12 @@ namespace SDF
 
 			private void IgnoreSelfCollision()
 			{
-				if (_rootModel == null)
+				if (RootModel == null)
 				{
 					return;
 				}
 
-				var otherLinkPlugins = _rootModel.GetComponentsInChildren<Link>();
+				var otherLinkPlugins = RootModel.GetComponentsInChildren<Link>();
 				var thisColliders = GetCollidersInChildren();
 
 				foreach (var otherLinkPlugin in otherLinkPlugins)

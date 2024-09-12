@@ -4,10 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
-using Unity.Collections;
 using UnityEngine.Rendering;
-using UnityEngine;
 
 namespace SensorDevices
 {

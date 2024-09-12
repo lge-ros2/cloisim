@@ -102,10 +102,12 @@ public class ModelImporter : MonoBehaviour
 		}
 
 		var totalBound = new Bounds();
-		foreach (var collider in _targetObject.GetComponentsInChildren<Collider>())
+		foreach (var renderer in _targetObject.GetComponentsInChildren<Renderer>())
 		{
-			// Debug.Log(collider.bounds.min + ", " + collider.bounds.max);
-			totalBound.Encapsulate(collider.bounds);
+			// Debug.Log(renderer.bounds.min + ", " + renderer.bounds.max);
+			var bounds = renderer.bounds;
+			bounds.center = _targetObject.transform.TransformPoint(bounds.center);
+			totalBound.Encapsulate(renderer.bounds);
 		}
 
 		modelDeployOffset.y = DeployOffsetMargin + ((totalBound.min.y < 0) ? -totalBound.min.y : 0);
@@ -143,7 +145,7 @@ public class ModelImporter : MonoBehaviour
 		return false;
 	}
 
-	private void UpdateInitPose()
+	private void SetInitPose()
 	{
 		var modelHelper = _targetObject.GetComponent<SDF.Helper.Model>();
 		if (modelHelper != null)
@@ -159,7 +161,7 @@ public class ModelImporter : MonoBehaviour
 			_rootArticulationBody.immovable = false;
 		}
 
-		UpdateInitPose();
+		SetInitPose();
 
 		UnblockSelfRaycast();
 

@@ -11,12 +11,19 @@ using Unity.Collections;
 
 public static class TextureUtil
 {
+	public enum FillOptions
+	{
+		Overwrite,
+		Lesser,
+		Greater
+	};
+
 	public static void Clear(this Texture2D texture)
 	{
 		Clear(texture, Color.clear);
 	}
 
-	public static void Clear(this Texture2D texture, Color color)
+	public static void Clear(this Texture2D texture, in Color color)
 	{
 		Fill(texture, color);
 	}
@@ -47,12 +54,16 @@ public static class TextureUtil
 		texture.SetPixels(colors);
 	}
 
-	public static void FillCircle(this Texture2D texture, in float x, in float y, in float radius, in Color color)
+	public static void FillCircle(
+		this Texture2D texture, in float x, in float y, in float radius, in Color color,
+		in FillOptions option = FillOptions.Overwrite)
 	{
-		FillCircle(texture, (int)x, (int)y, (int)radius, color);
+		FillCircle(texture, (int)x, (int)y, (int)radius, color, option);
 	}
 
-	public static void FillCircle(this Texture2D texture, in int x, in int y, in int radius, in Color color)
+	public static void FillCircle(
+		this Texture2D texture, in int x, in int y, in int radius, in Color color,
+		in FillOptions option = FillOptions.Overwrite)
 	{
 		var rSquared = radius * radius;
 
@@ -67,7 +78,30 @@ public static class TextureUtil
 			{
 				if ((x - u) * (x - u) + (y - v) * (y - v) < rSquared)
 				{
-					texture.SetPixel(u, v, color);
+					var pixelColor = texture.GetPixel(u, v);
+					switch (option)
+					{
+						case FillOptions.Lesser:
+							pixelColor.r = (pixelColor.r < color.r) ? pixelColor.r : color.r;
+							pixelColor.g = (pixelColor.g < color.g) ? pixelColor.g : color.g;
+							pixelColor.b = (pixelColor.b < color.b) ? pixelColor.b : color.b;
+							pixelColor.a = (pixelColor.a < color.a) ? pixelColor.a : color.a;
+							break;
+
+						case FillOptions.Greater:
+							pixelColor.r = (pixelColor.r > color.r) ? pixelColor.r : color.r;
+							pixelColor.g = (pixelColor.g > color.g) ? pixelColor.g : color.g;
+							pixelColor.b = (pixelColor.b > color.b) ? pixelColor.b : color.b;
+							pixelColor.a = (pixelColor.a > color.a) ? pixelColor.a : color.a;
+							break;
+
+						default:
+						case FillOptions.Overwrite:
+							pixelColor = color;
+							break;
+					}
+
+					texture.SetPixel(u, v, pixelColor);
 				}
 			}
 		}

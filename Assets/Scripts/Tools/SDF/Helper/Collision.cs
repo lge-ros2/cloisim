@@ -14,8 +14,9 @@ namespace SDF
 		{
 			// [UE.Header("SDF Properties")]
 
-			void Start()
+			new protected void Start()
 			{
+				base.Start();
 			}
 		}
 	}

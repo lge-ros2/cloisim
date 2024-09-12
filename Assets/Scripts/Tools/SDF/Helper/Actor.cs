@@ -55,8 +55,10 @@ namespace SDF
 				RestartWayPointFollowing();
 			}
 
-			void Start()
+			new protected void Start()
 			{
+				base.Start();
+
 				capsuleCollider = GetComponentInChildren<UE.CapsuleCollider>();
 				skinMeshRenderer = GetComponentInChildren<UE.SkinnedMeshRenderer>();
 

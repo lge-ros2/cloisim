@@ -358,8 +358,8 @@ Shader "Custom/GeometryGrass"
 #endif
 
 				float width  = lerp(_BladeWidthMin, _BladeWidthMax, rand(pos.xzy) * falloff);
-				float height = lerp(_BladeHeightMin, _BladeHeightMax, rand(pos.zyx) * falloff);
-				float forward = rand(pos.yyz) * _BladeBendDistance;
+				float height = lerp(_BladeHeightMin, _BladeHeightMax * grassVisibility, rand(pos.zyx) * falloff);
+				float forward = rand(pos.yyz) * _BladeBendDistance * grassVisibility;
 
 #ifdef DRY_GRASS_ON
 				float dryRate = tex2Dlod(_DryGrassMap, float4(-input[0].uv, 0, 0)).r;
