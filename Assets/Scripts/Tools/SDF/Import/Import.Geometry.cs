@@ -8,6 +8,8 @@ using UE = UnityEngine;
 
 namespace SDF
 {
+	using Implement;
+
 	namespace Import
 	{
 		public partial class Loader : Base
@@ -26,16 +28,16 @@ namespace SDF
 				if (t != null && t.Equals(typeof(SDF.Mesh)))
 				{
 					var mesh = shape as SDF.Mesh;
-					Implement.Geometry.GenerateMeshObject(mesh, targetObject);
+					targetObject.GenerateMesh(mesh);
 				}
 				else if (t != null && t.Equals(typeof(SDF.Heightmap)))
 				{
 					var heightmap = shape as SDF.Heightmap;
-					Implement.Geometry.GenerateMeshObject(heightmap, targetObject);
+					targetObject.GenerateMesh(heightmap);
 				}
 				else if (t != null && typeof(SDF.ShapeType).IsAssignableFrom(t))
 				{
-					Implement.Geometry.GenerateMeshObject(shape, targetObject);
+					targetObject.GenerateMesh(shape);
 				}
 				else
 				{

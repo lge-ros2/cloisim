@@ -23,9 +23,12 @@ namespace SDF
 
 			[UE.Header("SDF Properties")]
 			public bool isStatic;
+			public bool isNested;
 
-			void Start()
+			new protected void Start()
 			{
+				base.Start();
+
 				if (isStatic)
 				{
 					// if parent model has static option, make it all static in children

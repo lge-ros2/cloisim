@@ -47,6 +47,11 @@ namespace SDF
 		public string OriginalName => _originalName;
 		#endregion
 
+		#region Check nested model
+		private bool _isNested = false;
+		public bool IsNested => _isNested;
+		#endregion
+
 		public Model(XmlNode _node)
 			: base(_node)
 		{
@@ -71,7 +76,12 @@ namespace SDF
 
 			#region SegmentationTag and SaveWorld
 			_originalName = GetAttribute<string>("original_name");
-			// Console.Write($"Model::ParseElements > [{_originalName}]");
+			// Console.Write($"Model::ParseElements original_name > [{_originalName}]");
+			#endregion
+
+			#region Check nested model
+			_isNested = GetAttribute<bool>("is_nested", false);
+			// Console.Write($"Model{Name}::ParseElements is_nested > [{_isNested}]");
 			#endregion
 		}
 

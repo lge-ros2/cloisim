@@ -451,8 +451,9 @@ public class Main : MonoBehaviour
 
 		if (_sdfRoot.DoParse(out var world, _worldFilename))
 		{
+			SDF.Import.Util.RootModels = _worldRoot;
+
 			_sdfLoader = new SDF.Import.Loader();
-			_sdfLoader.SetRootModels(_worldRoot);
 			_sdfLoader.SetRootLights(_lightsRoot);
 			_sdfLoader.SetRootRoads(_roadsRoot);
 

@@ -68,7 +68,7 @@ namespace SDF
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, link.Name);
 			}
 
-			protected virtual Object ImportModel(in Model model, in Object parentObject)
+			protected virtual Object ImportModel(in Model model, in Object parentObject = null)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, model.Name);
 				return null;

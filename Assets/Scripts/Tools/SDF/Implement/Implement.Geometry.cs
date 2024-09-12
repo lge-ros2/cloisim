@@ -6,13 +6,12 @@
 
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
-using System;
 
 namespace SDF
 {
 	namespace Implement
 	{
-		public class Geometry
+		public static class Geometry
 		{
 			private static bool IsVisualObject(in UE.GameObject target)
 			{
@@ -20,7 +19,7 @@ namespace SDF
 			}
 
 			/// <summary>Set mesh from external source</summary>
-			public static void GenerateMeshObject(in SDF.Mesh obj, in UE.GameObject targetParentObject)
+			public static void GenerateMesh(this UE.GameObject targetParentObject, in SDF.Mesh obj)
 			{
 				var loadedObject = MeshLoader.CreateMeshObject(obj.uri, obj.submesh_name);
 				var isVisualMesh = IsVisualObject(targetParentObject);
@@ -32,27 +31,24 @@ namespace SDF
 				else
 				{
 					loadedObject.transform.localScale = SDF2Unity.Scale(obj.scale);
+					loadedObject.transform.SetParent(targetParentObject.transform, false);
 				}
-
-				loadedObject.transform.SetParent(targetParentObject.transform, false);
 			}
 
-			public static void GenerateMeshObject(in SDF.Heightmap obj, in UE.GameObject targetParentObject)
+			public static void GenerateMesh(this UE.GameObject targetParentObject, in SDF.Heightmap obj)
 			{
 				var heightmapObject = new UE.GameObject("Heightmap");
 				var isVisualMesh = IsVisualObject(targetParentObject);
 
 				heightmapObject.transform.SetParent(targetParentObject.transform, false);
-
-				ProceduralHeightmap.Generate(obj, heightmapObject, isVisualMesh);
-
+				heightmapObject.GenerateHeightMap(obj, isVisualMesh);
 				heightmapObject.transform.localPosition = SDF2Unity.Position(obj.pos);
 			}
 
 			//
 			// Summary: Set primitive mesh
 			//
-			public static void GenerateMeshObject(in SDF.ShapeType shape, in UE.GameObject targetParentObject)
+			public static void GenerateMesh(this UE.GameObject targetParentObject, in SDF.ShapeType shape)
 			{
 				var createdObject = new UE.GameObject("Primitive Mesh");
 				createdObject.tag = "Geometry";

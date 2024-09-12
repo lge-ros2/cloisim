@@ -377,6 +377,11 @@ namespace SDF
 					{
 						// Console.Write("Node - " + modelNode);
 						var importNode = _doc.ImportNode(modelNode, true);
+
+						var newAttr = _doc.CreateAttribute("is_nested");
+						newAttr.Value = "true";
+						importNode.Attributes.Append(newAttr);
+
 						node.ParentNode.ReplaceChild(importNode, node);
 					}
 					else
@@ -512,7 +517,7 @@ namespace SDF
 
 			_originalDoc.Save(saveName);
 
-			Console.Write(saveName);
+			Console.Write($"Worldfile Saved: {saveName}");
 		}
 
 		public void Print()

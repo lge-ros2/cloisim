@@ -12,9 +12,22 @@ namespace SDF
 	{
 		public class Base : UE.MonoBehaviour
 		{
+			private Model _rootModelInScopre = null;
+
 			private PoseControl _poseControl = null;
 
 			private bool _isRootModel = false;
+
+			[UE.Header("SDF Properties")]
+			private SDF.Pose<double> _pose = null; // described in SDF file
+
+			public Pose<double> Pose
+			{
+				get => _pose;
+				set => _pose = value;
+			}
+
+			public Model RootModel => _rootModelInScopre;
 
 			public bool IsFirstChild => _isRootModel; // root model
 
@@ -23,11 +36,25 @@ namespace SDF
 				_isRootModel = SDF2Unity.IsRootModel(this.gameObject);
 				_poseControl = new PoseControl(this.transform);
 				Reset();
+
+				UpdateRootModel();
+			}
+
+			protected void Start()
+			{
+				UpdateRootModel();
 			}
 
 			public void Reset()
 			{
 				ResetPose();
+			}
+
+			private void UpdateRootModel()
+			{
+				var modelHelpers = GetComponentsInParent(typeof(Model));
+				_rootModelInScopre = (Model)modelHelpers[modelHelpers.Length - 1];
+				// UE.Debug.Log($"{name}: BaseHelper _rootModel={_rootModel}");
 			}
 
 			public void ClearPose()

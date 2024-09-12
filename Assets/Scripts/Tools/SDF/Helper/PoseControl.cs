@@ -14,10 +14,10 @@ namespace SDF
 	{
 		public class PoseControl
 		{
-			private UE.Transform targetTransform = null;
-			private UE.ArticulationBody articulationBody = null;
+			private UE.Transform _targetTransform = null;
+			private UE.ArticulationBody _articulationBody = null;
 
-			private List<UE.Pose> poseList = new List<UE.Pose>();
+			private List<UE.Pose> _poseList = new List<UE.Pose>();
 
 			struct JointTarget
 			{
@@ -25,13 +25,13 @@ namespace SDF
 				public float axis2;
 			}
 
-			private List<JointTarget> jointTargetList = new List<JointTarget>();
+			private List<JointTarget> _jointTargetList = new List<JointTarget>();
 
-			public int Count => poseList.Count;
+			public int Count => _poseList.Count;
 
 			public PoseControl(in UE.Transform target)
 			{
-				targetTransform = target;
+				_targetTransform = target;
 			}
 
 			public void SetJointTarget(in float targetAxis1, in float targetAxis2, in int targetFrame = 0)
@@ -40,15 +40,15 @@ namespace SDF
 				jointTarget.axis1 = targetAxis1;
 				jointTarget.axis2 = targetAxis2;
 
-				if (targetFrame < jointTargetList.Count)
+				if (targetFrame < _jointTargetList.Count)
 				{
-					jointTargetList[targetFrame] = jointTarget;
+					_jointTargetList[targetFrame] = jointTarget;
 				}
 				else
 				{
-					lock (jointTargetList)
+					lock (_jointTargetList)
 					{
-						jointTargetList.Add(jointTarget);
+						_jointTargetList.Add(jointTarget);
 					}
 				}
 			}
@@ -58,9 +58,9 @@ namespace SDF
 				targetAxis1 = 0;
 				targetAxis2 = 0;
 
-				if (targetFrame < jointTargetList.Count)
+				if (targetFrame < _jointTargetList.Count)
 				{
-					var jointTarget = jointTargetList[targetFrame];
+					var jointTarget = _jointTargetList[targetFrame];
 					targetAxis1 = jointTarget.axis1;
 					targetAxis2 = jointTarget.axis2;
 				}
@@ -68,17 +68,17 @@ namespace SDF
 
 			public void Add(in UE.Vector3 newPosition, in UE.Quaternion newRotation)
 			{
-				lock (poseList)
+				lock (_poseList)
 				{
-					poseList.Add(new UE.Pose(newPosition, newRotation));
+					_poseList.Add(new UE.Pose(newPosition, newRotation));
 				}
 			}
 
 			public void Set(in UE.Vector3 newPosition, in UE.Quaternion newRotation, in int targetFrame = 0)
 			{
-				if (targetFrame < poseList.Count)
+				if (targetFrame < _poseList.Count)
 				{
-					poseList[targetFrame] = new UE.Pose(newPosition, newRotation);
+					_poseList[targetFrame] = new UE.Pose(newPosition, newRotation);
 				}
 				else
 				{
@@ -90,11 +90,11 @@ namespace SDF
 			{
 				var getPose = UE.Pose.identity;
 
-				lock (poseList)
+				lock (_poseList)
 				{
-					if (targetFrame < poseList.Count)
+					if (targetFrame < _poseList.Count)
 					{
-						getPose = poseList[targetFrame];
+						getPose = _poseList[targetFrame];
 					}
 				}
 
@@ -103,74 +103,76 @@ namespace SDF
 
 			public void Clear()
 			{
-				lock (poseList)
+				lock (_poseList)
 				{
-					poseList.Clear();
+					_poseList.Clear();
 				}
 
-				lock (jointTargetList)
+				lock (_jointTargetList)
 				{
-					jointTargetList.Clear();
+					_jointTargetList.Clear();
 				}
 			}
 
 			private void ResetArticulationBody(in int targetFrame = 0)
 			{
-				if (articulationBody != null)
+				if (_articulationBody != null)
 				{
-					articulationBody.velocity = UE.Vector3.zero;
-					articulationBody.angularVelocity = UE.Vector3.zero;
+					var isPrismatic = _articulationBody.jointType.Equals(UE.ArticulationJointType.PrismaticJoint);
+
+					_articulationBody.velocity = UE.Vector3.zero;
+					_articulationBody.angularVelocity = UE.Vector3.zero;
 
 					var zeroSpace = new UE.ArticulationReducedSpace();
-					zeroSpace.dofCount = articulationBody.dofCount;
-					for (var i = 0; i < articulationBody.dofCount; i++)
+					zeroSpace.dofCount = _articulationBody.dofCount;
+					for (var i = 0; i < _articulationBody.dofCount; i++)
 					{
 						zeroSpace[i] = 0;
 					}
 
-					articulationBody.jointPosition = zeroSpace;
-					articulationBody.jointVelocity = zeroSpace;
-					articulationBody.jointForce = zeroSpace;
-					var isPrismatic = articulationBody.jointType.Equals(UE.ArticulationJointType.PrismaticJoint);
+					_articulationBody.jointPosition = zeroSpace;
+					_articulationBody.jointVelocity = zeroSpace;
+					_articulationBody.jointForce = zeroSpace;
 
 					GetJointTarget(out var targetJoint1, out var targetJoint2, targetFrame);
+					// Debug.Log($"PoseControl {_articulationBody.name} targetJoint1={targetJoint1.ToString("F6")} targetJoint2={targetJoint2}");
 
-					var xDrive = articulationBody.xDrive;
+					var xDrive = _articulationBody.xDrive;
 					if (!isPrismatic)
 					{
 						xDrive.targetVelocity = 0;
 					}
-					if (!articulationBody.linearLockX.Equals(UE.ArticulationDofLock.LockedMotion) ||
-						!articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion))
+					if (!_articulationBody.linearLockX.Equals(UE.ArticulationDofLock.LockedMotion) ||
+						!_articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion))
 					{
-						if (!articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
-							!articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
+						if (!_articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
+							!_articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
 						{
-							xDrive.target = targetJoint2;
+							xDrive.target = targetJoint1;
 						}
 						else
 						{
-							xDrive.target = targetJoint1;
+							xDrive.target = targetJoint2;
 						}
 					}
 					else
 					{
 						xDrive.target = 0;
 					}
-					articulationBody.xDrive = xDrive;
+					_articulationBody.xDrive = xDrive;
 
-					var yDrive = articulationBody.yDrive;
+					var yDrive = _articulationBody.yDrive;
 					if (!isPrismatic)
 					{
 						yDrive.targetVelocity = 0;
 					}
-					if (!articulationBody.linearLockY.Equals(UE.ArticulationDofLock.LockedMotion) ||
-						!articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion))
+					if (!_articulationBody.linearLockY.Equals(UE.ArticulationDofLock.LockedMotion) ||
+						!_articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion))
 					{
-						if (!articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
-							!articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
+						if (!_articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
+							!_articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
 						{
-							yDrive.target = targetJoint2;
+							yDrive.target = targetJoint1;
 						}
 						else
 						{
@@ -181,75 +183,75 @@ namespace SDF
 					{
 						yDrive.target = 0;
 					}
-					articulationBody.yDrive = yDrive;
+					_articulationBody.yDrive = yDrive;
 
-					var zDrive = articulationBody.zDrive;
+					var zDrive = _articulationBody.zDrive;
 					if (!isPrismatic)
 					{
 						zDrive.targetVelocity = 0;
 					}
-					if (!articulationBody.linearLockY.Equals(UE.ArticulationDofLock.LockedMotion) ||
-						!articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
+					if (!_articulationBody.linearLockY.Equals(UE.ArticulationDofLock.LockedMotion) ||
+						!_articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
 					{
-						if (!articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
-							!articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion))
+						if (!_articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
+							!_articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion))
 						{
-							zDrive.target = targetJoint2;
+							zDrive.target = targetJoint1;
 						}
 						else
 						{
-							zDrive.target = targetJoint1;
+							zDrive.target = targetJoint2;
 						}
 					}
 					else
 					{
 						zDrive.target = 0;
 					}
-					articulationBody.zDrive = zDrive;
+					_articulationBody.zDrive = zDrive;
 				}
 			}
 
 			public void Reset(in int targetFrame = 0)
 			{
-				lock (poseList)
+				lock (_poseList)
 				{
-					if (poseList.Count == 0)
+					if (_poseList.Count == 0)
 					{
 						// Debug.LogWarning("Nothing to reset, pose List is empty");
 						return;
 					}
 
-					if (targetFrame >= poseList.Count)
+					if (targetFrame >= _poseList.Count)
 					{
-						Debug.LogWarningFormat("exceed target frame({0}) in poseList({1})", targetFrame, poseList.Count);
+						Debug.LogWarningFormat("exceed target frame({0}) in _poseList({1})", targetFrame, _poseList.Count);
 						return;
 					}
 				}
 
-				if (targetTransform != null)
+				if (_targetTransform != null)
 				{
 					var targetPose = Get(targetFrame);
 
-					if (articulationBody == null)
+					if (_articulationBody == null)
 					{
-						articulationBody = targetTransform.GetComponent<UE.ArticulationBody>();
+						_articulationBody = _targetTransform.GetComponent<UE.ArticulationBody>();
 					}
 
-					if (articulationBody != null)
+					if (_articulationBody != null)
 					{
-						if (articulationBody.isRoot)
+						if (_articulationBody.isRoot)
 						{
-							articulationBody.Sleep();
-							articulationBody.TeleportRoot(targetPose.position, targetPose.rotation);
+							_articulationBody.Sleep();
+							_articulationBody.TeleportRoot(targetPose.position, targetPose.rotation);
 						}
 
 						ResetArticulationBody(targetFrame);
 					}
-					else
-					{
-						targetTransform.localPosition = targetPose.position;
-						targetTransform.localRotation = targetPose.rotation;
-					}
+
+					_targetTransform.localPosition = targetPose.position;
+					_targetTransform.localRotation = targetPose.rotation;
+
+					// Debug.Log($"Reset: {_targetTransform.name} artbody({_articulationBody}) = {targetPose.position} {targetPose.rotation}");
 				}
 			}
 		}

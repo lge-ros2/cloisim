@@ -23,7 +23,7 @@ public static class TextureUtil
 		Clear(texture, Color.clear);
 	}
 
-	public static void Clear(this Texture2D texture, Color color)
+	public static void Clear(this Texture2D texture, in Color color)
 	{
 		Fill(texture, color);
 	}

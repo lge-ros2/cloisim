@@ -68,18 +68,12 @@ namespace SDF
 				rigidBody.Sleep();
 			}
 
-			protected override System.Object ImportModel(in SDF.Model model, in System.Object parentObject)
+			private UE.GameObject CreateModel(in SDF.Model model, in UE.GameObject parentObject)
 			{
-				if (model == null)
-				{
-					return null;
-				}
-
-				var targetObject = (parentObject as UE.GameObject);
 				var newModelObject = new UE.GameObject(model.Name);
 				newModelObject.tag = "Model";
 
-				SetParentObject(newModelObject, targetObject);
+				parentObject.SetChild(newModelObject);
 
 				// Apply attributes
 				var localPosition = SDF2Unity.Position(model.Pose?.Pos);
@@ -89,8 +83,8 @@ namespace SDF
 				var modelHelper = newModelObject.AddComponent<Helper.Model>();
 				modelHelper.modelNameInPath = model.OriginalName;
 				modelHelper.isStatic = model.IsStatic;
-				modelHelper.SetPose(localPosition, localRotation);
-				modelHelper.ResetPose();
+				modelHelper.Pose = model?.Pose;
+				modelHelper.isNested = model.IsNested;
 
 				if (modelHelper.IsFirstChild)
 				{
@@ -103,6 +97,30 @@ namespace SDF
 						CreateRootArticulationBody(newModelObject);
 					}
 				}
+				return newModelObject;
+			}
+
+
+			protected override System.Object ImportModel(in SDF.Model model, in System.Object parentObject)
+			{
+				if (model == null)
+				{
+					return null;
+				}
+
+				var targetObject = (parentObject as UE.GameObject);
+				var newModelObject = CreateModel(model, targetObject);
+
+				ImportLinks(model.GetLinks(), newModelObject);
+
+				// Add nested models
+				ImportModels(model.GetModels(), newModelObject);
+
+				AfterImportModel(model, newModelObject);
+
+				ImportJoints(model.GetJoints(), newModelObject);
+
+				ImportPlugins(model.GetPlugins(), newModelObject);
 
 				return newModelObject as System.Object;
 			}

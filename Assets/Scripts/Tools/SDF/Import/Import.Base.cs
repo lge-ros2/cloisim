@@ -5,7 +5,6 @@
  */
 
 using System.Collections.Generic;
-using System.Threading;
 using System;
 
 namespace SDF
@@ -14,7 +13,7 @@ namespace SDF
 	{
 		public partial class Base
 		{
-			private Dictionary<Joint, Object> jointObjectList = new Dictionary<Joint, Object>();
+			private Dictionary<Joint, Object> _jointObjectList = new Dictionary<Joint, Object>();
 
 			private void ImportVisuals(IReadOnlyList<Visual> items, in Object parentObject)
 			{
@@ -56,7 +55,7 @@ namespace SDF
 				}
 			}
 
-			private void ImportLinks(IReadOnlyList<Link> items, in Object parentObject)
+			protected void ImportLinks(IReadOnlyList<Link> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -73,7 +72,7 @@ namespace SDF
 				}
 			}
 
-			private void ImportPlugins(IReadOnlyList<Plugin> items, Object parentObject)
+			protected void ImportPlugins(IReadOnlyList<Plugin> items, Object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -81,12 +80,12 @@ namespace SDF
 				}
 			}
 
-			private void ImportJoints(IReadOnlyList<Joint> items, Object parentObject)
+			protected void ImportJoints(IReadOnlyList<Joint> items, Object parentObject)
 			{
 				// Joints should be handled after all links of model loaded due to articulation body.
 				foreach (var item in items)
 				{
-					jointObjectList.Add(item, parentObject);
+					_jointObjectList.Add(item, parentObject);
 				}
 			}
 
@@ -95,18 +94,7 @@ namespace SDF
 				foreach (var item in items)
 				{
 					// Console.WriteLine("[Model][{0}][{1}]", item.Name, parentObject);
-					var createdObject = ImportModel(item, parentObject);
-
-					ImportLinks(item.GetLinks(), createdObject);
-
-					// Add nested models
-					ImportModels(item.GetModels(), createdObject);
-
-					AfterImportModel(item, createdObject);
-
-					ImportJoints(item.GetJoints(), createdObject);
-
-					ImportPlugins(item.GetPlugins(), createdObject);
+					ImportModel(item, parentObject);
 				}
 			}
 
@@ -131,34 +119,41 @@ namespace SDF
 			public IEnumerator<World> Start(World world)
 			{
 				// Console.WriteLine("Import Models({0})/Links/Joints", world.GetModels().Count);
-				jointObjectList.Clear();
+				_jointObjectList.Clear();
 
 				var worldObject = ImportWorld(world);
 
 				ImportModels(world.GetModels());
 
-				foreach (var jointObject in jointObjectList)
+				foreach (var jointObject in _jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
 				}
 
 				ImportPlugins(world.GetPlugins(), worldObject);
+
+				worldObject.SpecifyPose();
+
 				yield return null;
 
 				ImportActors(world.GetActors());
+
+				yield return null;
 			}
 
 			public IEnumerator<Model> Start(Model model)
 			{
-				jointObjectList.Clear();
-				var models = new List<Model>() { model };
+				_jointObjectList.Clear();
 
-				ImportModels(models);
+				var modelObject = ImportModel(model);
 
-				foreach (var jointObject in jointObjectList)
+				foreach (var jointObject in _jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
 				}
+
+				modelObject.SpecifyPose();
+
 				yield return null;
 			}
 		}

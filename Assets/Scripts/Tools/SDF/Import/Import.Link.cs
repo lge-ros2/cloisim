@@ -46,16 +46,12 @@ namespace SDF
 				var newLinkObject = new UE.GameObject(link.Name);
 				newLinkObject.tag = "Link";
 
-				SetParentObject(newLinkObject, targetObject);
-
-				var localPosition = SDF2Unity.Position(link.Pose?.Pos);
-				var localRotation = SDF2Unity.Rotation(link.Pose?.Rot);
+				targetObject.SetChild(newLinkObject);
 
 				var linkHelper = newLinkObject.AddComponent<Helper.Link>();
 				linkHelper.isSelfCollide = link.SelfCollide;
 				linkHelper.useGravity = (link.Kinematic) ? false : link.Gravity;
-				linkHelper.SetPose(localPosition, localRotation);
-				linkHelper.ResetPose();
+				linkHelper.Pose = link?.Pose;
 
 				if (link.Battery != null)
 				{

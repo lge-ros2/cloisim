@@ -10,9 +10,9 @@ namespace SDF
 {
 	namespace Implement
 	{
-		public class Sensor
+		public static class Sensor
 		{
-			private static string GetFrameName(in UE.GameObject currentObject)
+			private static string GetFrameName(this UE.GameObject currentObject)
 			{
 				var frameName = string.Empty;
 				var nextObject = currentObject.transform.parent;
@@ -28,8 +28,8 @@ namespace SDF
 			}
 
 			private static void AttachSensor(
+				this UE.GameObject targetObject,
 				in UE.GameObject sensorObject,
-				in UE.GameObject targetObject,
 				Pose<double> sensorPose = null)
 			{
 				try
@@ -48,13 +48,13 @@ namespace SDF
 				}
 			}
 
-			public static Device AddLidar(in SDF.Lidar element, in UE.GameObject targetObject)
+			public static Device AddLidar(this UE.GameObject targetObject, in SDF.Lidar element)
 			{
 				var newSensorObject = new UE.GameObject();
-				AttachSensor(newSensorObject, targetObject);
+				targetObject.AttachSensor(newSensorObject);
 
 				var lidar = newSensorObject.AddComponent<SensorDevices.Lidar>();
-				lidar.DeviceName = GetFrameName(newSensorObject);
+				lidar.DeviceName = newSensorObject.GetFrameName();
 				lidar.range = new SensorDevices.LaserData.MinMax(element.range.min, element.range.max);
 				var horizontal = element.horizontal;
 				lidar.horizontal = new SensorDevices.LaserData.Scan(horizontal.samples, horizontal.min_angle, horizontal.max_angle, horizontal.resolution);
@@ -73,14 +73,14 @@ namespace SDF
 				return lidar;
 			}
 
-			public static Device AddCamera(in SDF.Camera element, in UE.GameObject targetObject)
+			public static Device AddCamera(this UE.GameObject targetObject, in SDF.Camera element)
 			{
 				var newSensorObject = new UE.GameObject();
-				AttachSensor(newSensorObject, targetObject, element.Pose);
+				targetObject.AttachSensor(newSensorObject, element.Pose);
 
 				var camera = newSensorObject.AddComponent<SensorDevices.Camera>();
 				camera.tag = "Sensor";
-				camera.DeviceName = GetFrameName(newSensorObject);
+				camera.DeviceName = newSensorObject.GetFrameName();
 				camera.SetParameter(element);
 
 				if (element.noise != null)
@@ -91,13 +91,13 @@ namespace SDF
 				return camera;
 			}
 
-			public static Device AddSegmentaionCamera(in SDF.Camera element, in UE.GameObject targetObject)
+			public static Device AddSegmentaionCamera(this UE.GameObject targetObject, in SDF.Camera element)
 			{
 				var newSensorObject = new UE.GameObject();
-				AttachSensor(newSensorObject, targetObject, element.Pose);
+				targetObject.AttachSensor(newSensorObject, element.Pose);
 
 				var segmentationCamera = newSensorObject.AddComponent<SensorDevices.SegmentationCamera>();
-				segmentationCamera.DeviceName = GetFrameName(newSensorObject);
+				segmentationCamera.DeviceName = newSensorObject.GetFrameName();
 
 				switch (element.image.format)
 				{
@@ -129,13 +129,13 @@ namespace SDF
 				return segmentationCamera;
 			}
 
-			public static Device AddDepthCamera(in SDF.Camera element, in UE.GameObject targetObject)
+			public static Device AddDepthCamera(this UE.GameObject targetObject, in SDF.Camera element)
 			{
 				var newSensorObject = new UE.GameObject();
-				AttachSensor(newSensorObject, targetObject, element.Pose);
+				targetObject.AttachSensor(newSensorObject, element.Pose);
 
 				var depthCamera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
-				depthCamera.DeviceName = GetFrameName(newSensorObject);
+				depthCamera.DeviceName = newSensorObject.GetFrameName();
 
 				switch (element.image.format)
 				{
@@ -171,16 +171,16 @@ namespace SDF
 				return depthCamera;
 			}
 
-			public static Device AddMultiCamera(in SDF.Cameras element, in UE.GameObject targetObject)
+			public static Device AddMultiCamera(this UE.GameObject targetObject, in SDF.Cameras element)
 			{
 				var newSensorObject = new UE.GameObject();
-				AttachSensor(newSensorObject, targetObject);
+				targetObject.AttachSensor(newSensorObject);
 
 				var multicamera = newSensorObject.AddComponent<SensorDevices.MultiCamera>();
-				multicamera.DeviceName = GetFrameName(newSensorObject);
+				multicamera.DeviceName = newSensorObject.GetFrameName();
 				foreach (var camParam in element.cameras)
 				{
-					var newCam = AddCamera(camParam, newSensorObject);
+					var newCam = AddCamera(newSensorObject, camParam);
 					newCam.name = camParam.name;
 					newCam.Mode = Device.ModeType.NONE;
 					newCam.DeviceName = multicamera.DeviceName + "::" + element.name + "::" + newCam.name;
@@ -190,13 +190,13 @@ namespace SDF
 				return multicamera;
 			}
 
-			public static Device AddSonar(in SDF.Sonar element, in UE.GameObject targetObject)
+			public static Device AddSonar(this UE.GameObject targetObject, in SDF.Sonar element)
 			{
 				var newSensorObject = new UE.GameObject();
-				AttachSensor(newSensorObject, targetObject);
+				targetObject.AttachSensor(newSensorObject);
 
 				var sonar = newSensorObject.AddComponent<SensorDevices.Sonar>();
-				sonar.DeviceName = GetFrameName(newSensorObject);
+				sonar.DeviceName = newSensorObject.GetFrameName();
 				sonar.geometry = element.geometry;
 				sonar.rangeMin = element.min;
 				sonar.rangeMax = element.max;
@@ -205,13 +205,13 @@ namespace SDF
 				return sonar;
 			}
 
-			public static Device AddImu(in SDF.IMU element, in UE.GameObject targetObject)
+			public static Device AddImu(this UE.GameObject targetObject, in SDF.IMU element)
 			{
 				var newSensorObject = new UE.GameObject();
-				AttachSensor(newSensorObject, targetObject);
+				targetObject.AttachSensor(newSensorObject);
 
 				var imu = newSensorObject.AddComponent<SensorDevices.IMU>();
-				imu.DeviceName = GetFrameName(newSensorObject);
+				imu.DeviceName = newSensorObject.GetFrameName();
 
 				if (element != null)
 				{
@@ -249,13 +249,13 @@ namespace SDF
 				return imu;
 			}
 
-			public static Device AddNavSat(in SDF.NavSat element, in UE.GameObject targetObject)
+			public static Device AddNavSat(this UE.GameObject targetObject, in SDF.NavSat element)
 			{
 				var newSensorObject = new UE.GameObject();
-				AttachSensor(newSensorObject, targetObject);
+				targetObject.AttachSensor(newSensorObject);
 
 				var gps = newSensorObject.AddComponent<SensorDevices.GPS>();
-				gps.DeviceName = GetFrameName(newSensorObject);
+				gps.DeviceName = newSensorObject.GetFrameName();
 
 				if (element != null)
 				{
@@ -283,13 +283,14 @@ namespace SDF
 				return gps;
 			}
 
-			public static Device AddContact(in SDF.Contact element, in UE.GameObject targetObject)
+
+			public static Device AddContact(this UE.GameObject targetObject, in SDF.Contact element)
 			{
 				var newSensorObject = new UE.GameObject();
-				AttachSensor(newSensorObject, targetObject);
+				targetObject.AttachSensor(newSensorObject);
 
 				var contact = newSensorObject.AddComponent<SensorDevices.Contact>();
-				contact.DeviceName = GetFrameName(newSensorObject);
+				contact.DeviceName = newSensorObject.GetFrameName();
 				contact.targetCollision = element.collision;
 				contact.topic = element.topic;
 

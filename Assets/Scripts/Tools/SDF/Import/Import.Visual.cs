@@ -11,6 +11,8 @@ using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;
 
 namespace SDF
 {
+	using Implement;
+
 	namespace Import
 	{
 		public partial class Loader : Base
@@ -23,7 +25,7 @@ namespace SDF
 				var newVisualObject = new UE.GameObject(visual.Name);
 				newVisualObject.tag = "Visual";
 
-				SetParentObject(newVisualObject, targetObject);
+				targetObject.SetChild(newVisualObject);
 
 				var localPosition = SDF2Unity.Position(visual.Pose?.Pos);
 				var localRotation = SDF2Unity.Rotation(visual.Pose?.Rot);
@@ -31,8 +33,7 @@ namespace SDF
 				var visualHelper = newVisualObject.AddComponent<Helper.Visual>();
 				visualHelper.isCastingShadow = visual.CastShadow;
 				visualHelper.metaLayer = visual.GetMetaLayer();
-				visualHelper.SetPose(localPosition, localRotation);
-				visualHelper.ResetPose();
+				visualHelper.Pose = visual?.Pose;
 
 				return newVisualObject as System.Object;
 			}
@@ -52,9 +53,8 @@ namespace SDF
 					return;
 				}
 
-				RemoveColliders(visualObject);
-
-				AddRenderes(visualObject);
+				visualObject.RemoveColliders();
+				visualObject.AddRenderes();
 
 				if (EnableOptimization)
 				{
@@ -65,7 +65,7 @@ namespace SDF
 							var geometryTransform = visualObject.transform.GetChild(i);
 							if (geometryTransform.CompareTag("Geometry"))
 							{
-								Implement.Visual.OptimizeMeshes(geometryTransform);
+								geometryTransform.OptimizeMeshes();
 							}
 						}
 					}
@@ -79,32 +79,6 @@ namespace SDF
 				// SceneVisibilityManager.instance.ToggleVisibility(visualObject, true);
 				SceneVisibilityManager.instance.DisablePicking(visualObject, true);
 #endif
-			}
-
-			private void RemoveColliders(UE.GameObject targetObject)
-			{
-				var colliders = targetObject.GetComponentsInChildren<UE.Collider>();
-				foreach (var collider in colliders)
-				{
-					UE.Debug.LogWarning($"{collider.name} Collider should not exit. There was collider");
-					UE.GameObject.Destroy(collider);
-				}
-			}
-
-			private void AddRenderes(UE.GameObject targetObject)
-			{
-				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
-				foreach (var meshFilter in meshFilters)
-				{
-					var meshRenderer = meshFilter.gameObject.GetComponent<UE.MeshRenderer>();
-					if (meshRenderer == null)
-					{
-						meshRenderer = meshFilter.gameObject.AddComponent<UE.MeshRenderer>();
-						meshRenderer.materials = new UE.Material[] { SDF2Unity.Material.Create(meshFilter.name + "_material") };
-						meshRenderer.allowOcclusionWhenDynamic = true;
-						meshRenderer.receiveShadows = true;
-					}
-				}
 			}
 		}
 	}

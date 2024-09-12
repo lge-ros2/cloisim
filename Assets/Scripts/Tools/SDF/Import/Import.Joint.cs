@@ -6,55 +6,22 @@
 
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
-using System.Linq;
 
 namespace SDF
 {
+	using Implement;
+
 	namespace Import
 	{
 		public partial class Loader : Base
 		{
-			private static UE.Transform FindTransformByName(string name, UE.Transform targetTransform)
-			{
-				UE.Transform foundLinkObject = null;
-
-				var rootTransform = targetTransform;
-
-				while (!SDF2Unity.IsRootModel(rootTransform))
-				{
-					rootTransform = rootTransform.parent;
-				}
-
-				var (modelName, linkName) = SDF2Unity.GetModelLinkName(name, targetTransform.name);
-				// UE.Debug.Log("GetModelLinkName  => " + modelName + ", " + linkName);
-
-				if (string.IsNullOrEmpty(modelName))
-				{
-					// UE.Debug.Log(name + ", Find  => " + targetTransform.name + ", " + rootTransform.name);
-					foundLinkObject = targetTransform.GetComponentsInChildren<UE.Transform>().FirstOrDefault(x => x.name.Equals(name));
-				}
-				else
-				{
-					var modelHelper = rootTransform.GetComponentsInChildren<SDF.Helper.Model>().FirstOrDefault(x => x.name.Equals(modelName));
-					var modelTransform = modelHelper?.transform;
-
-					if (modelTransform != null)
-					{
-						var foundLinkHelper = modelTransform.GetComponentsInChildren<SDF.Helper.Link>().FirstOrDefault(x => x.transform.name.Equals(linkName));
-						foundLinkObject = foundLinkHelper?.transform;
-					}
-				}
-
-				return foundLinkObject;
-			}
-
 			protected override void ImportJoint(in Joint joint, in System.Object parentObject)
 			{
 				var targetObject = (parentObject as UE.GameObject);
 				// Debug.LogFormat("[Joint] {0}, {1} <= {2}", joint.Name, joint.ParentLinkName, joint.ChildLinkName);
 
-				var linkObjectParent = FindTransformByName(joint.ParentLinkName, targetObject.transform);
-				var linkObjectChild = FindTransformByName(joint.ChildLinkName, targetObject.transform);
+				var linkObjectParent = targetObject.FindTransformByName(joint.ParentLinkName);
+				var linkObjectChild = targetObject.FindTransformByName(joint.ChildLinkName);
 
 				if (linkObjectParent is null)
 				{
@@ -85,46 +52,9 @@ namespace SDF
 
 				var anchorPose = Implement.Joint.SetArticulationBodyRelationship(joint, linkObjectParent, linkObjectChild);
 
-				Implement.Joint.SetArticulationBodyAnchor(articulationBodyChild, anchorPose);
+				articulationBodyChild.SetAnchor(anchorPose);
 
-				switch (joint.Type)
-				{
-					case "ball":
-						Implement.Joint.MakeBall(articulationBodyChild);
-						break;
-
-					case "prismatic":
-						Implement.Joint.MakePrismatic(articulationBodyChild, joint.Axis, joint.Pose);
-						break;
-
-					case "revolute":
-						Implement.Joint.MakeRevolute(articulationBodyChild, joint.Axis);
-						break;
-
-					case "universal":
-					case "revolute2":
-						Implement.Joint.MakeRevolute2(articulationBodyChild, joint.Axis, joint.Axis2);
-						break;
-
-					case "fixed":
-						Implement.Joint.MakeFixed(articulationBodyChild);
-						break;
-
-					case "gearbox":
-						// gearbox_ratio = GetValue<double>("gearbox_ratio");
-						// gearbox_reference_body = GetValue<string>("gearbox_reference_body");
-						Debug.LogWarning("This type[gearbox] is not supported now.");
-						break;
-
-					case "screw":
-						// thread_pitch = GetValue<double>("thread_pitch");
-						Debug.LogWarning("This type[screw] is not supported now.");
-						break;
-
-					default:
-						Debug.LogWarningFormat("Check Joint type[{0}]", joint.Type);
-						break;
-				}
+				articulationBodyChild.MakeJoint(joint);
 
 				var linkHelper = linkObjectChild.GetComponent<Helper.Link>();
 				if (linkHelper != null)
@@ -166,16 +96,6 @@ namespace SDF
 					}
 
 					linkHelper.SetJointPoseTarget(axisSpringReference, axis2SpringReference);
-
-					// set adjusted position for pose control
-					var localPosition = linkHelper.transform.localPosition;
-					var localRotation = linkHelper.transform.localRotation;
-					linkHelper.SetPose(localPosition, localRotation);
-
-					var modelHelper = linkHelper.Model;
-					localPosition = modelHelper.transform.localPosition;
-					localRotation = modelHelper.transform.localRotation;
-					modelHelper.SetPose(localPosition, localRotation);
 				}
 			}
 		}
