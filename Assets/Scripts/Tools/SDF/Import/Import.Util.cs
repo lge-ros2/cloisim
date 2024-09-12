@@ -122,19 +122,12 @@ namespace SDF
 
 					var parentObject = baseHelper.transform.parent;
 
-					// UE.Debug.Log($"{baseHelper.name}: baseHelper: {localPosition.ToString("F5")} {localRotation.eulerAngles.ToString("F5")}");
-
 					if (string.IsNullOrEmpty(pose.relative_to))
 					{
 						// UE.Debug.Log($"{baseHelper.name}: non relative_to baseHelper: {localPosition.ToString("F5")} {localRotation.eulerAngles.ToString("F5")}");
 						var rootModelTransform = FindRootParentModel(baseHelper);
 						localRotation = UE.Quaternion.Inverse(UE.Quaternion.Inverse(rootModelTransform.localRotation) * parentObject.localRotation) * localRotation;
 						localPosition = (localPosition - (parentObject.position - rootModelTransform.position));
-
-						if (baseHelper is SDF.Helper.Link)
-						{
-							localPosition = localRotation * localPosition;
-						}
 					}
 					else
 					{
@@ -158,7 +151,6 @@ namespace SDF
 
 							localPosition = localPosition + (relativeObject.position - parentObject.position);
 							localRotation = UE.Quaternion.Inverse(UE.Quaternion.Inverse(parentObject.localRotation) * relativeObject.localRotation) * localRotation;
-							// UE.Debug.LogWarning($"{linkHelper.name}: ImportLink: FINAL relative_to: {pose.relative_to} => {localPosition.ToString("F9")}, {localRotation.eulerAngles.ToString("F9")}");
 						}
 						else
 						{
