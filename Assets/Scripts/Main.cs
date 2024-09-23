@@ -495,11 +495,7 @@ public class Main : MonoBehaviour
 
 	void LateUpdate()
 	{
-#if UNITY_EDITOR
-		if (Input.GetKey(KeyCode.LeftAlt))
-#else
 		if (Input.GetKey(KeyCode.LeftControl))
-#endif
 		{
 			// Debug.Log("LeftControl Triggered");
 		 	if (Input.GetKeyUp(KeyCode.R))
