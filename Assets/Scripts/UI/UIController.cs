@@ -60,6 +60,12 @@ public class UIController : MonoBehaviour
 		var buttonHelp = _rootVisualElement.Q<Button>("Help");
 		buttonHelp.clickable.clicked += () => ShowHelp();
 
+		var buttonSave = _rootVisualElement.Q<Button>("Save");
+		buttonSave.clickable.clicked += () => SaveWorld();
+
+		var buttonImport = _rootVisualElement.Q<Button>("Import");
+		buttonImport.clickable.clicked += () => ShowModelList();
+
 		var buttonHome = _rootVisualElement.Q<Button>("Home");
  		buttonHome.clickable.clicked += () => _cameraControl.Move(Main.CameraInitPose);
 		buttonHome.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonHome, Color.gray); });
@@ -131,10 +137,23 @@ public class UIController : MonoBehaviour
 		{
 			ShowHelp();
 		}
+		else if (Input.GetKeyUp(KeyCode.F3))
+		{
+			Main.ModelImporter.ToggleModelList();
+		}
 		else if (Input.GetKeyUp(KeyCode.Escape))
 		{
-			ShowHelp(true);
-			ShowCameraView(true);
+			ShowHelp(false);
+			ShowCameraView(false);
+			Main.ModelImporter.ShowModelList(false);
+		}
+		else if (Input.GetKey(KeyCode.LeftControl))
+		{
+			if (Input.GetKeyUp(KeyCode.S))
+			{
+				// Debug.Log("Save World");
+				SaveWorld();
+			}
 		}
 	}
 
@@ -163,11 +182,11 @@ public class UIController : MonoBehaviour
 		_toggleLockVerticalMoving.value = value;
 	}
 
-	private void ShowHelp(in bool doClose = false)
+	private void ShowHelp(in bool open = true)
 	{
 		var helpDialogScrollView = _rootVisualElement.Q<ScrollView>("HelpDialog");
 
-		if (doClose || helpDialogScrollView.style.display == DisplayStyle.Flex)
+		if (!open || helpDialogScrollView.style.display == DisplayStyle.Flex)
 		{
 			helpDialogScrollView.style.display = DisplayStyle.None;
 			_cameraControl.BlockMouseWheelControl(false);
@@ -179,11 +198,23 @@ public class UIController : MonoBehaviour
 		}
 	}
 
-	private void ShowCameraView(in bool doClose = false)
+	private void SaveWorld()
+	{
+		// Debug.Log("SaveWorld ButtonClicked");
+		Main.Instance.SaveWorld();
+	}
+
+	private void ShowModelList()
+	{
+		// Debug.Log("ShowModelList ButtonClicked");
+		Main.ModelImporter.ToggleModelList();
+	}
+
+	private void ShowCameraView(in bool open = false)
 	{
 		var cameraViewMenuVisElem = _rootVisualElement.Q<VisualElement>("CameraViewMenu");
 
-		if (doClose || cameraViewMenuVisElem.style.display == DisplayStyle.Flex)
+		if (!open || cameraViewMenuVisElem.style.display == DisplayStyle.Flex)
 		{
 			cameraViewMenuVisElem.style.display = DisplayStyle.None;
 		}
