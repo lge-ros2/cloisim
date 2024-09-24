@@ -16,7 +16,7 @@ public class MicomPlugin : CLOiSimPlugin
 	private List<TF> _tfList = new List<TF>();
 	private SensorDevices.MicomCommand _micomCommand = null;
 	private SensorDevices.MicomSensor _micomSensor = null;
-	private MotorControl _motorControl = null;
+	private MotorControl.DifferentialDrive _motorControl = null;
 	private SDF.Helper.Link[] _linkHelperInChildren = null;
 
 	protected override void OnAwake()
@@ -125,7 +125,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 	private void SetWheel()
 	{
-		_motorControl = new MotorControl(this.transform);
+		_motorControl = new MotorControl.DifferentialDrive(this.transform);
 
 		if (_micomSensor != null)
 		{
@@ -236,23 +236,23 @@ public class MicomPlugin : CLOiSimPlugin
 		var linkList = GetComponentsInChildren<SDF.Helper.Link>();
 		foreach (var link in linkList)
 		{
-			var wheelLocation = MotorControl.WheelLocation.NONE;
+			var wheelLocation = MotorControl.DifferentialDrive.WheelLocation.NONE;
 
 			if (link.name.Equals(wheelNameLeft) || link.Model.name.Equals(wheelNameLeft))
 			{
-				wheelLocation = MotorControl.WheelLocation.LEFT;
+				wheelLocation = MotorControl.DifferentialDrive.WheelLocation.LEFT;
 
 			}
 			else if (link.name.Equals(wheelNameRight) || link.Model.name.Equals(wheelNameRight))
 			{
-				wheelLocation = MotorControl.WheelLocation.RIGHT;
+				wheelLocation = MotorControl.DifferentialDrive.WheelLocation.RIGHT;
 			}
 			else
 			{
 				continue;
 			}
 
-			if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
+			if (!wheelLocation.Equals(MotorControl.DifferentialDrive.WheelLocation.NONE))
 			{
 				var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
 				_motorControl.AttachWheel(wheelLocation, motorObject);
@@ -269,23 +269,23 @@ public class MicomPlugin : CLOiSimPlugin
 		var linkList = GetComponentsInChildren<SDF.Helper.Link>();
 		foreach (var link in linkList)
 		{
-			var wheelLocation = MotorControl.WheelLocation.NONE;
+			var wheelLocation = MotorControl.DifferentialDrive.WheelLocation.NONE;
 
 			if (link.name.Equals(rearWheelLeftName) || link.Model.name.Equals(rearWheelLeftName))
 			{
-				wheelLocation = MotorControl.WheelLocation.REAR_LEFT;
+				wheelLocation = MotorControl.DifferentialDrive.WheelLocation.REAR_LEFT;
 
 			}
 			else if (link.name.Equals(rearWheelRightName) || link.Model.name.Equals(rearWheelRightName))
 			{
-				wheelLocation = MotorControl.WheelLocation.REAR_RIGHT;
+				wheelLocation = MotorControl.DifferentialDrive.WheelLocation.REAR_RIGHT;
 			}
 			else
 			{
 				continue;
 			}
 
-			if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
+			if (!wheelLocation.Equals(MotorControl.DifferentialDrive.WheelLocation.NONE))
 			{
 				var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
 				_motorControl.AttachWheel(wheelLocation, motorObject);

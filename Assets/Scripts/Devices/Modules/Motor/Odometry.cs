@@ -14,7 +14,7 @@ public partial class Odometry
 	private const double PI = Math.PI;
 	private const double PI2 = PI * 2.0f;
 
-	private MotorControl _motorControl = null;
+	private MotorControl.DifferentialDrive _motorControl = null;
 	private WheelInfo wheelInfo;
 
 	private float _lastImuYaw = 0f;
@@ -31,7 +31,7 @@ public partial class Odometry
 	public float WheelSeparation => this.wheelInfo.wheelSeparation;
 	public float InverseWheelRadius => this.wheelInfo.inversedWheelRadius;
 
-	public Odometry(in MotorControl motorControl, in float radius, in float separation)
+	public Odometry(in MotorControl.DifferentialDrive motorControl, in float radius, in float separation)
 	{
 		this._motorControl = motorControl;
 		this.wheelInfo = new WheelInfo(radius, separation);
@@ -127,8 +127,8 @@ public partial class Odometry
 			return false;
 		}
 
-		if (_motorControl.GetCurrentVelocity(MotorControl.WheelLocation.LEFT, out var angularVelocityLeft) &&
-			_motorControl.GetCurrentVelocity(MotorControl.WheelLocation.RIGHT, out var angularVelocityRight))
+		if (_motorControl.GetCurrentVelocity(MotorControl.DifferentialDrive.WheelLocation.LEFT, out var angularVelocityLeft) &&
+			_motorControl.GetCurrentVelocity(MotorControl.DifferentialDrive.WheelLocation.RIGHT, out var angularVelocityRight))
 		{
 			odomMessage.AngularVelocity.Left = Unity2SDF.Direction.Curve(angularVelocityLeft);
 			odomMessage.AngularVelocity.Right = Unity2SDF.Direction.Curve(angularVelocityRight);

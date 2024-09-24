@@ -14,7 +14,7 @@ namespace SensorDevices
 	public partial class MicomSensor : Device
 	{
 		private messages.Micom micomSensorData = null;
-		private MotorControl _motorControl = null;
+		private MotorControl.DifferentialDrive _motorControl = null;
 		private SensorDevices.Battery battery = null;
 		private SensorDevices.IMU imuSensor = null;
 		private List<SensorDevices.Sonar> ussSensors = new List<SensorDevices.Sonar>();
@@ -40,7 +40,7 @@ namespace SensorDevices
 			yield return null;
 		}
 
-		public void SetMotorControl(in MotorControl motorControl)
+		public void SetMotorControl(in MotorControl.DifferentialDrive motorControl)
 		{
 			this._motorControl = motorControl;
 		}

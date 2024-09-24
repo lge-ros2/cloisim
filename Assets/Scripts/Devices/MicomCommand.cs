@@ -11,7 +11,7 @@ namespace SensorDevices
 {
 	public class MicomCommand : Device
 	{
-		private MotorControl _motorControl = null;
+		private MotorControl.DifferentialDrive _motorControl = null;
 		private MowingBlade _mowingBlade = null;
 
 		protected override void OnAwake()
@@ -30,7 +30,7 @@ namespace SensorDevices
 			DoWheelDrive(Vector3.zero, Vector3.zero);
 		}
 
-		public void SetMotorControl(in MotorControl motorControl)
+		public void SetMotorControl(in MotorControl.DifferentialDrive motorControl)
 		{
 			this._motorControl = motorControl;
 		}
