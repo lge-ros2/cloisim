@@ -23,12 +23,8 @@ public class MicomPlugin : CLOiSimPlugin
 	{
 		type = ICLOiSimPlugin.Type.MICOM;
 
-		_motorControl = new MotorControl(this.transform);
-
 		_micomSensor = gameObject.AddComponent<SensorDevices.MicomSensor>();
-		_micomSensor.SetMotorControl(_motorControl);
 		_micomCommand = gameObject.AddComponent<SensorDevices.MicomCommand>();
-		_micomCommand.SetMotorControl(_motorControl);
 
 		attachedDevices.Add("Command", _micomCommand);
 		attachedDevices.Add("Sensor", _micomSensor);
@@ -129,6 +125,18 @@ public class MicomPlugin : CLOiSimPlugin
 
 	private void SetWheel()
 	{
+		_motorControl = new MotorControl(this.transform);
+
+		if (_micomSensor != null)
+		{
+			_micomSensor.SetMotorControl(_motorControl);
+		}
+
+		if (_micomCommand != null)
+		{
+			_micomCommand.SetMotorControl(_motorControl);
+		}
+
 		var wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
 
 		if (GetPluginParameters().IsValidNode("wheel/tread"))
