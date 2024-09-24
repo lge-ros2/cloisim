@@ -137,25 +137,8 @@ namespace MotorControl
 			SetDifferentialDrive(linearVelocityLeft, linearVelocityRight);
 		}
 
-		/// <summary>Set motor velocity</summary>
-		/// <remarks>degree per second</remarks>
-		private sbyte _rotationDirection = 0;
-		private void CheckRotationalBehavior(in float angularVelocityLeft, in float angularVelocityRight)
-		{
-			if (Mathf.Sign(angularVelocityLeft) == Mathf.Sign(angularVelocityRight))
-			{
-				_rotationDirection = 0;
-			}
-			else // (Mathf.Sign(angularVelocityLeft) != Mathf.Sign(angularVelocityRight))
-			{
-				_rotationDirection = (sbyte)((angularVelocityLeft > angularVelocityRight) ? 1 : -1);
-			}
-		}
-
 		private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)
 		{
-			CheckRotationalBehavior(angularVelocityLeft, angularVelocityRight);
-
 			foreach (var wheel in wheelList)
 			{
 				var motor = wheel.Value;
