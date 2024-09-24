@@ -58,7 +58,6 @@ namespace SensorDevices
 					imuSensor = imu;
 					break;
 				}
-
 			}
 		}
 
@@ -190,11 +189,6 @@ namespace SensorDevices
 				Debug.LogWarning("micomSensorData is NULL");
 				return;
 			}
-			else  if (_motorControl == null)
-			{
-				Debug.LogWarning("motorControl is NULL");
-				return;
-			}
 
 			var deltaTime = Time.fixedDeltaTime;
 
@@ -203,9 +197,12 @@ namespace SensorDevices
 				micomSensorData.Battery.Voltage = battery.Update(deltaTime);
 			}
 
-			if (_motorControl.Update(micomSensorData.Odom, deltaTime, imuSensor) == false)
+			if (_motorControl != null)
 			{
-				Debug.LogWarning("Update failed in MotorControl");
+				if (_motorControl.Update(micomSensorData.Odom, deltaTime, imuSensor) == false)
+				{
+					Debug.LogWarning("Update failed in MotorControl");
+				}
 			}
 
 			UpdateIMU();
