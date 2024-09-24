@@ -70,7 +70,7 @@ namespace MotorControl
 
 		public void SetWheelInfo(in float radius, in float separation)
 		{
-			this.odometry = new Odometry(this, radius, separation);
+			this.odometry = new Odometry(radius, separation);
 		}
 
 		private bool IsWheelAttached()
@@ -183,17 +183,16 @@ namespace MotorControl
 
 		/// <summary>Get target Motor Velocity</summary>
 		/// <remarks>radian per second</remarks>
-		public bool GetCurrentVelocity(in WheelLocation location, out float angularVelocity)
+		public float GetCurrentAngularVelocity(in WheelLocation location)
 		{
 			var motor = wheelList[location];
 			if (motor != null)
 			{
-				angularVelocity = motor.GetCurrentAngularVelocity();
 				// Debug.Log(location.ToString() + " => " + angularVelocity.ToString("F8"));
-				return true;
+				return motor.GetCurrentAngularVelocity();
 			}
-			angularVelocity = float.NaN;
-			return false;
+
+			return float.NaN;
 		}
 
 		public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor = null)
@@ -207,7 +206,10 @@ namespace MotorControl
 				}
 			}
 
-			return (odometry != null) ? odometry.Update(odomMessage, duration, imuSensor) : false;
+			var angularVelocityLeft =  GetCurrentAngularVelocity(DifferentialDrive.WheelLocation.LEFT);
+			var angularVelocityRight =  GetCurrentAngularVelocity(DifferentialDrive.WheelLocation.RIGHT);
+
+			return (odometry != null) ? odometry.Update(odomMessage, angularVelocityLeft, angularVelocityRight, duration, imuSensor) : false;
 		}
 	}
 }

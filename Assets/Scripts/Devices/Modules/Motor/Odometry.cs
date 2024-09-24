@@ -14,7 +14,6 @@ public partial class Odometry
 	private const double PI = Math.PI;
 	private const double PI2 = PI * 2.0f;
 
-	private MotorControl.DifferentialDrive _motorControl = null;
 	private WheelInfo wheelInfo;
 
 	private float _lastImuYaw = 0f;
@@ -31,9 +30,8 @@ public partial class Odometry
 	public float WheelSeparation => this.wheelInfo.wheelSeparation;
 	public float InverseWheelRadius => this.wheelInfo.inversedWheelRadius;
 
-	public Odometry(in MotorControl.DifferentialDrive motorControl, in float radius, in float separation)
+	public Odometry(in float radius, in float separation)
 	{
-		this._motorControl = motorControl;
 		this.wheelInfo = new WheelInfo(radius, separation);
 	}
 
@@ -120,15 +118,18 @@ public partial class Odometry
 		return normalizedAngle;
 	}
 
-	public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor)
+	public bool Update(
+		messages.Micom.Odometry odomMessage,
+		in float angularVelocityLeft, in float angularVelocityRight,
+		in float duration,
+		SensorDevices.IMU imuSensor)
 	{
-		if (odomMessage == null || _motorControl == null)
+		if (odomMessage == null)
 		{
 			return false;
 		}
 
-		if (_motorControl.GetCurrentVelocity(MotorControl.DifferentialDrive.WheelLocation.LEFT, out var angularVelocityLeft) &&
-			_motorControl.GetCurrentVelocity(MotorControl.DifferentialDrive.WheelLocation.RIGHT, out var angularVelocityRight))
+		if (!float.IsNaN(angularVelocityLeft) && !float.IsNaN(angularVelocityRight))
 		{
 			odomMessage.AngularVelocity.Left = Unity2SDF.Direction.Curve(angularVelocityLeft);
 			odomMessage.AngularVelocity.Right = Unity2SDF.Direction.Curve(angularVelocityRight);
