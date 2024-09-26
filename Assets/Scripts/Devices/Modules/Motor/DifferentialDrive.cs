@@ -100,25 +100,21 @@ namespace MotorControl
 			_wheelList[location] = new Motor(targetMotorObject);
 		}
 
-		/// <summary>Set differential driver</summary>
-		/// <remarks>rad per second for wheels</remarks>
-		public void SetDifferentialDrive(in float linearVelocityLeft, in float linearVelocityRight)
-		{
-			var angularVelocityLeft = SDF2Unity.CurveOrientation(linearVelocityLeft * _odometry.InverseWheelRadius);
-			var angularVelocityRight = SDF2Unity.CurveOrientation(linearVelocityRight * _odometry.InverseWheelRadius);
-			SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
-		}
-
-		public void SetTwistDrive(in float linearVelocity, in float angularVelocity)
+		public void TwistDrive(in float linearVelocity, in float angularVelocity)
 		{
 			// m/s, rad/s
 			// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * WheelSeparation)) / (2 * wheelRadius);
 			// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * WheelSeparation)) / (2 * wheelRadius);
 			var angularCalculation = (angularVelocity * _odometry.WheelSeparation * 0.5f);
 
+			// Velocity(rad per second) for wheels
 			var linearVelocityLeft = linearVelocity - angularCalculation;
 			var linearVelocityRight = linearVelocity + angularCalculation;
-			SetDifferentialDrive(linearVelocityLeft, linearVelocityRight);
+
+			var angularVelocityLeft = SDF2Unity.CurveOrientation(linearVelocityLeft * _odometry.InverseWheelRadius);
+			var angularVelocityRight = SDF2Unity.CurveOrientation(linearVelocityRight * _odometry.InverseWheelRadius);
+
+			SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
 		}
 
 		private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)
