@@ -24,20 +24,6 @@ namespace MotorControl
 			{WheelLocation.REAR_RIGHT, null}
 		};
 
-		public struct MotorTask
-		{
-			public Motor motor;
-			public float targetVelocity;
-
-			public MotorTask(Motor motor, float targetVelocity)
-			{
-				this.motor = motor;
-				this.targetVelocity = targetVelocity;
-			}
-		};
-
-		List<MotorTask> _motorTaskList = new List<MotorTask>();
-
 		private Odometry _odometry = null;
 
 		#endregion
@@ -47,8 +33,6 @@ namespace MotorControl
 		public DifferentialDrive(in Transform controllerTransform)
 		{
 			_baseTransform = controllerTransform;
-
-			_motorTaskList.Clear();
 		}
 
 		public virtual void Reset()
@@ -146,22 +130,15 @@ namespace MotorControl
 				{
 					if (wheel.Key.Equals(WheelLocation.RIGHT) || wheel.Key.Equals(WheelLocation.REAR_RIGHT))
 					{
-						_motorTaskList.Add(new MotorTask(motor, angularVelocityRight));
+						motor.SetTargetVelocity(angularVelocityRight);
 					}
 
 					if (wheel.Key.Equals(WheelLocation.LEFT) || wheel.Key.Equals(WheelLocation.REAR_LEFT))
 					{
-						_motorTaskList.Add(new MotorTask(motor, angularVelocityLeft));
+						motor.SetTargetVelocity(angularVelocityLeft);
 					}
 				}
 			}
-
-			Parallel.ForEach(_motorTaskList, motorTask =>
-			{
-				motorTask.motor.SetTargetVelocity(motorTask.targetVelocity);
-			});
-
-			_motorTaskList.Clear();
 		}
 
 		/// <summary>Get target Motor Velocity</summary>
