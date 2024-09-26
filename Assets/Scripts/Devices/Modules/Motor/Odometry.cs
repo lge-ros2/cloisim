@@ -9,7 +9,7 @@ using UnityEngine;
 using messages = cloisim.msgs;
 using System;
 
-public partial class Odometry
+public class Odometry
 {
 	private const double PI = Math.PI;
 	private const double PI2 = PI * 2.0f;
