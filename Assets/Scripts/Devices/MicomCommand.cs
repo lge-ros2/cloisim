@@ -85,7 +85,7 @@ namespace SensorDevices
 			var targetLinearVelocity = linearVelocity.z;
 			var targetAngularVelocity = angularVelocity.y;
 
-			_motorControl.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
+			_motorControl.TwistDrive(targetLinearVelocity, targetAngularVelocity);
 		}
 
 		private void ControlMowing(in string target, in cloisim.msgs.Any value)
