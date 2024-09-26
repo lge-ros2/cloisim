@@ -38,7 +38,7 @@ namespace MotorControl
 
 		List<MotorTask> _motorTaskList = new List<MotorTask>();
 
-		private Odometry odometry = null;
+		private Odometry _odometry = null;
 
 		#endregion
 
@@ -51,11 +51,11 @@ namespace MotorControl
 			_motorTaskList.Clear();
 		}
 
-		public void Reset()
+		public virtual void Reset()
 		{
-			if (odometry != null)
+			if (_odometry != null)
 			{
-				odometry.Reset();
+				_odometry.Reset();
 			}
 
 			foreach (var wheel in wheelList)
@@ -70,7 +70,7 @@ namespace MotorControl
 
 		public void SetWheelInfo(in float radius, in float separation)
 		{
-			this.odometry = new Odometry(radius, separation);
+			this._odometry = new Odometry(radius, separation);
 		}
 
 		private bool IsWheelAttached()
@@ -120,8 +120,8 @@ namespace MotorControl
 		/// <remarks>rad per second for wheels</remarks>
 		public void SetDifferentialDrive(in float linearVelocityLeft, in float linearVelocityRight)
 		{
-			var angularVelocityLeft = SDF2Unity.CurveOrientation(linearVelocityLeft * odometry.InverseWheelRadius);
-			var angularVelocityRight = SDF2Unity.CurveOrientation(linearVelocityRight * odometry.InverseWheelRadius);
+			var angularVelocityLeft = SDF2Unity.CurveOrientation(linearVelocityLeft * _odometry.InverseWheelRadius);
+			var angularVelocityRight = SDF2Unity.CurveOrientation(linearVelocityRight * _odometry.InverseWheelRadius);
 			SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
 		}
 
@@ -130,7 +130,7 @@ namespace MotorControl
 			// m/s, rad/s
 			// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * WheelSeparation)) / (2 * wheelRadius);
 			// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * WheelSeparation)) / (2 * wheelRadius);
-			var angularCalculation = (angularVelocity * odometry.WheelSeparation * 0.5f);
+			var angularCalculation = (angularVelocity * _odometry.WheelSeparation * 0.5f);
 
 			var linearVelocityLeft = linearVelocity - angularCalculation;
 			var linearVelocityRight = linearVelocity + angularCalculation;
@@ -178,7 +178,7 @@ namespace MotorControl
 			return float.NaN;
 		}
 
-		public bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor = null)
+		public virtual bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor = null)
 		{
 			foreach (var wheel in wheelList)
 			{
@@ -192,7 +192,7 @@ namespace MotorControl
 			var angularVelocityLeft =  GetCurrentAngularVelocity(DifferentialDrive.WheelLocation.LEFT);
 			var angularVelocityRight =  GetCurrentAngularVelocity(DifferentialDrive.WheelLocation.RIGHT);
 
-			return (odometry != null) ? odometry.Update(odomMessage, angularVelocityLeft, angularVelocityRight, duration, imuSensor) : false;
+			return (_odometry != null) ? _odometry.Update(odomMessage, angularVelocityLeft, angularVelocityRight, duration, imuSensor) : false;
 		}
 	}
 }

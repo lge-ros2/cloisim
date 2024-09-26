@@ -22,8 +22,9 @@ public class Motor : Articulation
 		CheckDriveType();
 	}
 
-	new public void Reset()
+	public override void Reset()
 	{
+		Debug.Log("Motor Reset");
 		base.Reset();
 
 		if (_pidControl != null)
