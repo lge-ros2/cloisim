@@ -55,7 +55,7 @@ public class Articulation
 		_velocityLimit = value;
 	}
 
-	public void Reset()
+	public virtual void Reset()
 	{
 		if (_jointBody != null)
 		{
