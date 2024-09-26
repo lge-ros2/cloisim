@@ -16,7 +16,7 @@ namespace MotorControl
 		public enum WheelLocation { NONE, LEFT, RIGHT, REAR_LEFT, REAR_RIGHT };
 
 		#region <Motor Related>
-		private Dictionary<WheelLocation, Motor> wheelList = new Dictionary<WheelLocation, Motor>()
+		protected Dictionary<WheelLocation, Motor> _wheelList = new Dictionary<WheelLocation, Motor>()
 		{
 			{WheelLocation.LEFT, null},
 			{WheelLocation.RIGHT, null},
@@ -58,7 +58,7 @@ namespace MotorControl
 				_odometry.Reset();
 			}
 
-			foreach (var wheel in wheelList)
+			foreach (var wheel in _wheelList)
 			{
 				var motor = wheel.Value;
 				if (motor != null)
@@ -68,14 +68,14 @@ namespace MotorControl
 			}
 		}
 
-		public void SetWheelInfo(in float radius, in float separation)
+		public virtual void SetWheelInfo(in float radius, in float separation)
 		{
 			this._odometry = new Odometry(radius, separation);
 		}
 
 		private bool IsWheelAttached()
 		{
-			foreach (var wheel in wheelList)
+			foreach (var wheel in _wheelList)
 			{
 				if (wheel.Value != null)
 				{
@@ -97,7 +97,7 @@ namespace MotorControl
 				if (!float.IsNaN(p) && !float.IsNaN(i) && !float.IsNaN(d) &&
 					!float.IsInfinity(p) && !float.IsInfinity(i) && !float.IsInfinity(d))
 				{
-					foreach (var wheel in wheelList)
+					foreach (var wheel in _wheelList)
 					{
 						wheel.Value?.SetPID(p, i, d, integralMin, integralMax, outputMin, outputMax);
 					}
@@ -113,7 +113,7 @@ namespace MotorControl
 			in WheelLocation location,
 			in GameObject targetMotorObject)
 		{
-			wheelList[location] = new Motor(targetMotorObject);
+			_wheelList[location] = new Motor(targetMotorObject);
 		}
 
 		/// <summary>Set differential driver</summary>
@@ -139,7 +139,7 @@ namespace MotorControl
 
 		private void SetMotorVelocity(in float angularVelocityLeft, in float angularVelocityRight)
 		{
-			foreach (var wheel in wheelList)
+			foreach (var wheel in _wheelList)
 			{
 				var motor = wheel.Value;
 				if (motor != null)
@@ -168,7 +168,7 @@ namespace MotorControl
 		/// <remarks>radian per second</remarks>
 		public float GetCurrentAngularVelocity(in WheelLocation location)
 		{
-			var motor = wheelList[location];
+			var motor = _wheelList[location];
 			if (motor != null)
 			{
 				// Debug.Log(location.ToString() + " => " + angularVelocity.ToString("F8"));
@@ -180,7 +180,7 @@ namespace MotorControl
 
 		public virtual bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor = null)
 		{
-			foreach (var wheel in wheelList)
+			foreach (var wheel in _wheelList)
 			{
 				var motor = wheel.Value;
 				if (motor != null)
