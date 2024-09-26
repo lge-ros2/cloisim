@@ -14,7 +14,7 @@ public partial class Odometry
 	private const double PI = Math.PI;
 	private const double PI2 = PI * 2.0f;
 
-	private WheelInfo wheelInfo;
+	private WheelInfo _wheelInfo;
 
 	private float _lastImuYaw = 0f;
 	private Vector3d _odomPose = Vector3d.zero;
@@ -27,12 +27,12 @@ public partial class Odometry
 	private RollingMean rollingMeanOdomTAngularVelocity = new RollingMean(RollingMeanWindowSize);
 #endif
 
-	public float WheelSeparation => this.wheelInfo.wheelSeparation;
-	public float InverseWheelRadius => this.wheelInfo.inversedWheelRadius;
+	public float WheelSeparation => this._wheelInfo.wheelSeparation;
+	public float InverseWheelRadius => this._wheelInfo.inversedWheelRadius;
 
 	public Odometry(in float radius, in float separation)
 	{
-		this.wheelInfo = new WheelInfo(radius, separation);
+		this._wheelInfo = new WheelInfo(radius, separation);
 	}
 
 	public void Reset()
@@ -65,14 +65,14 @@ public partial class Odometry
 		in float duration,
 		in float deltaTheta = float.NaN)
 	{
-		var linearVelocityLeftWheel = angularVelocityLeftWheel * wheelInfo.wheelRadius;
-		var linearVelocityRightWheel = angularVelocityRightWheel * wheelInfo.wheelRadius;
+		var linearVelocityLeftWheel = angularVelocityLeftWheel * _wheelInfo.wheelRadius;
+		var linearVelocityRightWheel = angularVelocityRightWheel * _wheelInfo.wheelRadius;
 
 		var sumLeftRight = linearVelocityLeftWheel + linearVelocityRightWheel;
 		var diffRightLeft = linearVelocityRightWheel - linearVelocityLeftWheel;
 
 		_odomTranslationalVelocity = IsZero(sumLeftRight) ? 0 : (sumLeftRight * 0.5f);
-		_odomRotationalVelocity = IsZero(diffRightLeft) ? 0 : (diffRightLeft * wheelInfo.inversedWheelSeparation);
+		_odomRotationalVelocity = IsZero(diffRightLeft) ? 0 : (diffRightLeft * _wheelInfo.inversedWheelSeparation);
 
 		var linear = _odomTranslationalVelocity * duration;
 		var angular = (float.IsNaN(deltaTheta)) ? (_odomRotationalVelocity * duration) : deltaTheta;
@@ -133,8 +133,8 @@ public partial class Odometry
 		{
 			odomMessage.AngularVelocity.Left = Unity2SDF.Direction.Curve(angularVelocityLeft);
 			odomMessage.AngularVelocity.Right = Unity2SDF.Direction.Curve(angularVelocityRight);
-			odomMessage.LinearVelocity.Left = odomMessage.AngularVelocity.Left * wheelInfo.wheelRadius;
-			odomMessage.LinearVelocity.Right = odomMessage.AngularVelocity.Right * wheelInfo.wheelRadius;
+			odomMessage.LinearVelocity.Left = odomMessage.AngularVelocity.Left * _wheelInfo.wheelRadius;
+			odomMessage.LinearVelocity.Right = odomMessage.AngularVelocity.Right * _wheelInfo.wheelRadius;
 		}
 		else
 		{
