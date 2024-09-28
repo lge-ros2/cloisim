@@ -11,17 +11,23 @@ using messages = cloisim.msgs;
 
 namespace MotorControl
 {
+	public enum Location
+	{
+		NONE,
+		LEFT = 1, RIGHT = 2,
+		FRONT_LEFT = 1, FRONT_RIGHT = 2,
+		REAR_LEFT = 3, REAR_RIGHT = 4
+	};
+
 	public class DifferentialDrive
 	{
-		public enum WheelLocation { NONE, LEFT, RIGHT, REAR_LEFT, REAR_RIGHT };
-
 		#region <Motor Related>
-		protected Dictionary<WheelLocation, Motor> _wheelList = new Dictionary<WheelLocation, Motor>()
+		protected Dictionary<Location, Motor> _wheelList = new Dictionary<Location, Motor>()
 		{
-			{WheelLocation.LEFT, null},
-			{WheelLocation.RIGHT, null},
-			{WheelLocation.REAR_LEFT, null},
-			{WheelLocation.REAR_RIGHT, null}
+			{Location.LEFT, null},
+			{Location.RIGHT, null},
+			{Location.REAR_LEFT, null},
+			{Location.REAR_RIGHT, null}
 		};
 
 		private Odometry _odometry = null;
@@ -93,11 +99,34 @@ namespace MotorControl
 			}
 		}
 
-		public void AttachWheel(
-			in WheelLocation location,
-			in GameObject targetMotorObject)
+		public void SetWheel(in string wheelNameLeft, in string wheelNameRight)
 		{
-			_wheelList[location] = new Motor(targetMotorObject);
+			AttachWheel(Location.LEFT, wheelNameLeft);
+			AttachWheel(Location.RIGHT, wheelNameRight);
+		}
+
+		public void SetWheel(
+			in string frontWheelLeftName, in string frontWheelRightName,
+			in string rearWheelLeftName, in string rearWheelRightName)
+		{
+			SetWheel(frontWheelLeftName, frontWheelRightName);
+
+			AttachWheel(Location.REAR_LEFT, rearWheelLeftName);
+			AttachWheel(Location.REAR_RIGHT, rearWheelRightName);
+		}
+
+		private void AttachWheel(in Location targetWheelLocation, in string targetWheelName)
+		{
+			var linkList = _baseTransform.GetComponentsInChildren<SDF.Helper.Link>();
+			foreach (var link in linkList)
+			{
+				if (link.name.Equals(targetWheelName) || link.Model.name.Equals(targetWheelName))
+				{
+					var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
+					_wheelList[targetWheelLocation] = new Motor(motorObject);
+					return;
+				}
+			}
 		}
 
 		public void TwistDrive(in float linearVelocity, in float angularVelocity)
@@ -124,12 +153,12 @@ namespace MotorControl
 				var motor = wheel.Value;
 				if (motor != null)
 				{
-					if (wheel.Key.Equals(WheelLocation.RIGHT) || wheel.Key.Equals(WheelLocation.REAR_RIGHT))
+					if (wheel.Key.Equals(Location.RIGHT) || wheel.Key.Equals(Location.REAR_RIGHT))
 					{
 						motor.SetTargetVelocity(angularVelocityRight);
 					}
 
-					if (wheel.Key.Equals(WheelLocation.LEFT) || wheel.Key.Equals(WheelLocation.REAR_LEFT))
+					if (wheel.Key.Equals(Location.LEFT) || wheel.Key.Equals(Location.REAR_LEFT))
 					{
 						motor.SetTargetVelocity(angularVelocityLeft);
 					}
@@ -139,7 +168,7 @@ namespace MotorControl
 
 		/// <summary>Get target Motor Velocity</summary>
 		/// <remarks>radian per second</remarks>
-		public float GetCurrentAngularVelocity(in WheelLocation location)
+		public float GetCurrentAngularVelocity(in Location location)
 		{
 			var motor = _wheelList[location];
 			if (motor != null)
@@ -162,8 +191,8 @@ namespace MotorControl
 				}
 			}
 
-			var angularVelocityLeft =  GetCurrentAngularVelocity(DifferentialDrive.WheelLocation.LEFT);
-			var angularVelocityRight =  GetCurrentAngularVelocity(DifferentialDrive.WheelLocation.RIGHT);
+			var angularVelocityLeft =  GetCurrentAngularVelocity(Location.LEFT);
+			var angularVelocityRight =  GetCurrentAngularVelocity(Location.RIGHT);
 
 			return (_odometry != null) ? _odometry.Update(odomMessage, angularVelocityLeft, angularVelocityRight, duration, imuSensor) : false;
 		}
