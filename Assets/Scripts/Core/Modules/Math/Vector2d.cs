@@ -9,13 +9,15 @@ using UnityEngine;
 
 public struct Vector2d
 {
+	public readonly int Size;
 	public double x;
 	public double y;
 
-	public Vector2d(in double p_x, in double p_y)
+	public Vector2d(in double x, in double y)
 	{
-		x = p_x;
-		y = p_y;
+		this.Size = 2;
+		this.x = x;
+		this.y = y;
 	}
 
 	public double this[int index]
