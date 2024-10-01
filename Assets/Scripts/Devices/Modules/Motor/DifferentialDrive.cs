@@ -78,9 +78,9 @@ namespace MotorControl
 		}
 
 		public void SetPID(
-			in float p, in float i, in float d,
-			in float integralMin, in float integralMax,
-			in float outputMin, in float outputMax)
+			float p, float i, float d,
+			float integralMin, float integralMax,
+			float outputMin, float outputMax)
 		{
 			if (IsWheelAttached())
 			{

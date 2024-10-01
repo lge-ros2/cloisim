@@ -165,23 +165,25 @@ public class MicomPlugin : CLOiSimPlugin
 
 		if (GetPluginParameters().IsValidNode("wheel/PID"))
 		{
-			SetWheelPID();
+			SetMotorPID("wheel/PID", _motorControl.SetPID);
 		}
 	}
 
-	private void SetWheelPID()
+	private void SetMotorPID(
+		in string parameterPrefix,
+		Action<float, float, float, float, float, float, float> SetPID)
 	{
-		var P = GetPluginParameters().GetValue<float>("wheel/PID/kp");
-		var I = GetPluginParameters().GetValue<float>("wheel/PID/ki");
-		var D = GetPluginParameters().GetValue<float>("wheel/PID/kd");
+		var P = GetPluginParameters().GetValue<float>($"{parameterPrefix}/kp");
+		var I = GetPluginParameters().GetValue<float>($"{parameterPrefix}/ki");
+		var D = GetPluginParameters().GetValue<float>($"{parameterPrefix}/kd");
 
-		var iMin = GetPluginParameters().GetValue<float>("wheel/PID/limit/integral/min", -100);
-		var iMax = GetPluginParameters().GetValue<float>("wheel/PID/limit/integral/max", 100);
-		var outputMin = GetPluginParameters().GetValue<float>("wheel/PID/limit/output/min", -1000);
-		var outputMax = GetPluginParameters().GetValue<float>("wheel/PID/limit/output/max", 1000);
+		var iMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/min", -100);
+		var iMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/max", 100);
+		var outputMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/min", -1000);
+		var outputMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/max", 1000);
 		// Debug.Log(iMin + ", " + iMax + ", " + outputMin + ", " + outputMax);
 
-		_motorControl.SetPID(P, I, D, iMin, iMax, outputMin, outputMax);
+		SetPID(P, I, D, iMin, iMax, outputMin, outputMax);
 	}
 
 	private void SetMowing()
