@@ -34,7 +34,7 @@ namespace MotorControl
 
 		#endregion
 
-		private Transform _baseTransform = null;
+		protected Transform _baseTransform = null;
 
 		public DifferentialDrive(in Transform controllerTransform)
 		{
