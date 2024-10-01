@@ -89,7 +89,7 @@ public class Motor : Articulation
 
 		SolveAngularVelocity(duration);
 
-		var adjustValue = (_pidControl != null) ? _pidControl.Update(_targetAngularVelocity, _currentMotorVelocity, duration) : 0;
+		var adjustValue = (_pidControl != null) ? (float)_pidControl.Update(_currentMotorVelocity, _targetAngularVelocity, duration) : 0;
 		// Debug.Log(_targetAngularVelocity + "  ,   " + adjustValue + "  ,   " + _currentMotorVelocity);
 
 		Drive(targetVelocity: _targetAngularVelocity + adjustValue);

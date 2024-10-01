@@ -9,35 +9,45 @@ using System;
 [Serializable]
 public class PID
 {
-	private float _pGain, _iGain, _dGain;
-	private float _integralError = 0;
-	private float _lastError = 0;
-	private float _integralMin, _integralMax;
-	private float _cmdMin, _cmdMax;
+	private double _pGain, _iGain, _dGain;
+	private double _integralError = 0;
+	private double _lastError = 0;
+	private double _integralMin, _integralMax;
+	private double _commandMin, _commandMax;
 
 	public PID(
-		in float pGain, in float iGain, in float dGain,
-		in float integralMin = -100, in float integralMax = 100,
-		in float cmdMin = -1000, in float cmdMax = 1000)
+		in double pGain, in double iGain, in double dGain,
+		in double integralMin = -100, in double integralMax = 100,
+		in double commandMin = -1000, in double commandMax = 1000)
 	{
 		Change(pGain, iGain, dGain);
 		SetIntegralRange(integralMin, integralMax);
-		SetOutputRange(cmdMin, cmdMax);
+		SetOutputRange(commandMin, commandMax);
 	}
 
-	public void SetIntegralRange(in float min, in float max)
+	public PID(
+		in double pGain, in double iGain, in double dGain,
+		in double integralLimit, in double commandLimit)
+		: this(
+			pGain, iGain, dGain,
+			-Math.Abs(integralLimit), Math.Abs(integralLimit),
+			-Math.Abs(commandLimit), Math.Abs(commandLimit))
+	{
+	}
+
+	public void SetIntegralRange(in double min, in double max)
 	{
 		this._integralMin = min;
 		this._integralMax = max;
 	}
 
-	public void SetOutputRange(in float min, in float max)
+	public void SetOutputRange(in double min, in double max)
 	{
-		this._cmdMin = min;
-		this._cmdMax = max;
+		this._commandMin = min;
+		this._commandMax = max;
 	}
 
-	public void Change(in float pGain, in float iGain, in float dGain)
+	public void Change(in double pGain, in double iGain, in double dGain)
 	{
 		this._pGain = pGain;
 		this._iGain = iGain;
@@ -50,13 +60,17 @@ public class PID
 		_lastError = 0;
 	}
 
-	public float Update(in float target, in float actual, in float deltaTime)
+	public double Update(in double actual, in double target, in double deltaTime)
 	{
-		if (UnityEngine.Mathf.Abs(deltaTime) < float.Epsilon ||
-			float.IsNaN(deltaTime) || float.IsInfinity(deltaTime))
-			return 0f;
-
 		var error = actual - target;
+		return Update(error, deltaTime);
+	}
+
+	public double Update(in double error, in double deltaTime)
+	{
+		if (Math.Abs(deltaTime) < double.Epsilon ||
+			double.IsNaN(deltaTime) || double.IsInfinity(deltaTime))
+			return 0f;
 
 		// Calculate proportional contribution to command
 		var pTerm = _pGain * error;
@@ -91,6 +105,6 @@ public class PID
 		var cmd = -pTerm - iTerm - dTerm;
 
 		// UnityEngine.Debug.Log("cmd=" + cmd + " cmdMin=" + _cmdMin + " cmdMax=" + _cmdMax);
-		return UnityEngine.Mathf.Clamp(cmd, _cmdMin, _cmdMax);
+		return Math.Clamp(cmd, _commandMin, _commandMax);
 	}
 }
