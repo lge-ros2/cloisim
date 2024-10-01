@@ -294,6 +294,26 @@ public struct Vector2d
 		return !(lhs == rhs);
 	}
 
+	public static implicit operator Vector2d(in VectorXd v)
+	{
+		if (v.Size != 2)
+		{
+			throw new IndexOutOfRangeException("Invalid VectorXd capacity!");
+		}
+
+		return new Vector2d(v[0], v[1]);
+	}
+
+	public static implicit operator Vector2d(in MatrixXd mat)
+	{
+		if (!(mat.Row == 2 && mat.Col == 1) && !(mat.Row == 1 && mat.Col == 2))
+		{
+			throw new IndexOutOfRangeException("Invalid MatrixXd size!");
+		}
+
+		return (mat.Row == 2)? new Vector2d(mat[0, 0], mat[1, 0]) : new Vector2d(mat[0, 0], mat[0, 1]);
+	}
+
 	public static implicit operator Vector2d(in Vector3d v)
 	{
 		return new Vector2d(v.x, v.y);
