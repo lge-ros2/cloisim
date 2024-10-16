@@ -6,7 +6,7 @@
 
 public struct WheelInfo
 {
-	public float wheelRadius; // considering contact offset
+	public float wheelRadius;
 	public float wheelSeparation; // wheel separation
 	public readonly float inversedWheelRadius; // for computational performance
 	public readonly float inversedWheelSeparation;  // for computational performance

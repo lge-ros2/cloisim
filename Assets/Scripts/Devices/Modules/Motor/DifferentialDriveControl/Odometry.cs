@@ -11,9 +11,6 @@ using System;
 
 public class Odometry
 {
-	private const double PI = Math.PI;
-	private const double PI2 = PI * 2.0f;
-
 	private WheelInfo _wheelInfo;
 
 	private float _lastImuYaw = 0f;
@@ -100,22 +97,7 @@ public class Odometry
 			// Debug.Log("CalcOdom 1 = " + _odomPose.y + ", " + angular);
 		}
 
-		_odomPose.y = NormalizeAngle(_odomPose.y);
-	}
-
-	private double NormalizeAngle(in double angle)
-	{
-		var normalizedAngle = angle;
-		if (normalizedAngle > PI)
-		{
-			normalizedAngle -= PI2;
-		}
-		else if (normalizedAngle < -PI)
-		{
-			normalizedAngle += PI2;
-		}
-		// Debug.Log($"{angle} => normalize => {normalizedAngle}");
-		return normalizedAngle;
+		_odomPose.y.NormalizeAngle();
 	}
 
 	public bool Update(
