@@ -6,9 +6,9 @@
 
 using System;
 
-public class MatrixXd
+public struct MatrixXd
 {
-	private double[,] _elements = null;
+	private double[,] _elements;
 	public readonly int Row;
 	public readonly int Col;
 
@@ -91,7 +91,7 @@ public class MatrixXd
 
 	public string ToString(in string format)
 	{
-		var str = "";
+		var str = "MatrixXd \n";
 		for (var i = 0; i < Row; i++)
 		{
 			str += "[";
@@ -103,7 +103,6 @@ public class MatrixXd
 		}
 		return str;
 	}
-
 
 	public MatrixXd Inverse
 	{
@@ -166,6 +165,32 @@ public class MatrixXd
 			}
 			return result;
 		}
+	}
+
+	public static bool operator ==(in MatrixXd lhs, in MatrixXd rhs)
+	{
+		if (lhs.Row != rhs.Row || lhs.Col != rhs.Col)
+		{
+			return false;
+		}
+
+		for (var i = 0; i < lhs.Row; i++)
+		{
+			for (var j = 0; j < lhs.Col; j++)
+			{
+				if (lhs[i, j] != rhs[i, j])
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	public static bool operator !=(in MatrixXd lhs, in MatrixXd rhs)
+	{
+		return !(lhs == rhs);
 	}
 
 	private static MatrixXd Add(in MatrixXd lhs, in MatrixXd rhs, in double sign)

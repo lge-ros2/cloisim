@@ -254,6 +254,16 @@ public struct Vector2d
 		return new Vector2((float)x, (float)y);
 	}
 
+	public static Vector2d operator +(in Vector2d a, in double v)
+	{
+		return new Vector2d(a.x + v, a.y + v);
+	}
+
+	public static Vector2d operator -(in Vector2d a, in double v)
+	{
+		return new Vector2d(a.x - v, a.y - v);
+	}
+
 	public static Vector2d operator +(in Vector2d a, in Vector2d b)
 	{
 		return new Vector2d(a.x + b.x, a.y + b.y);

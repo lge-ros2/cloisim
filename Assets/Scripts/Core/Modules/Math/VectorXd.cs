@@ -8,9 +8,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 
-public class VectorXd
+public struct VectorXd
 {
-	private double[] _elements = null;
+	private double[] _elements;
 	public int Size => _elements.Length;
 
 	public VectorXd(in int capacity)
@@ -79,6 +79,16 @@ public class VectorXd
 		}
 	}
 
+	public static VectorXd Zero(in int capacity)
+	{
+		var vec = new VectorXd(capacity);
+		for (var i = 0; i < vec.Size; i++)
+		{
+			vec[i] = 0;
+		}
+		return vec;
+	}
+
 	public override int GetHashCode()
 	{
 		var hashCode = 0;
@@ -101,7 +111,7 @@ public class VectorXd
 
 	public string ToString(in string format)
 	{
-		var str = "(";
+		var str = "VectorXd (";
 		for (var i = 0; i < this.Size; i++)
 		{
 			str += this[i].ToString(format) + (i == this.Size - 1 ? "" : ", ");
