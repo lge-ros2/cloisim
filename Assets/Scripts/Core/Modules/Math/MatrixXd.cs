@@ -110,59 +110,87 @@ public struct MatrixXd
 		{
 			var m = this.Row;
 			var n = this.Col;
-			var array = new double[2 * m + 1, 2 * n + 1];
 
+			if (m != n)
+			{
+				throw new InvalidOperationException("Matrix must be square to compute its inverse.");
+			}
+
+			var augmentedMatrix = new double[m, 2 * n];
+
+			// Copy the original matrix and append the identity matrix
 			for (var i = 0; i < m; i++)
 			{
 				for (var j = 0; j < n; j++)
 				{
-					array[i, j] = this[i, j];
+					augmentedMatrix[i, j] = this[i, j];
+				}
+				for (var j = 0; j < n; j++)
+				{
+					augmentedMatrix[i, j + n] = (i == j) ? 1.0 : 0.0;
 				}
 			}
 
+			// Perform Gaussian elimination
 			for (var k = 0; k < m; k++)
 			{
-				for (var t = n; t <= 2 * n; t++)
+				if (augmentedMatrix[k, k] == 0)
 				{
-					array[k, t] = ((t - k) == m) ? 1.0 : 0;
+					// Find a row to swap
+					var swapRow = -1;
+					for (var i = k + 1; i < m; i++)
+					{
+						if (augmentedMatrix[i, k] != 0)
+						{
+							swapRow = i;
+							break;
+						}
+					}
+					if (swapRow == -1)
+					{
+						throw new InvalidOperationException("Matrix is singular and cannot be inverted.");
+					}
+
+					// Swap rows
+					for (var j = 0; j < 2 * n; j++)
+					{
+						var temp = augmentedMatrix[k, j];
+						augmentedMatrix[k, j] = augmentedMatrix[swapRow, j];
+						augmentedMatrix[swapRow, j] = temp;
+					}
+				}
+
+				// Normalize the pivot row
+				var pivot = augmentedMatrix[k, k];
+				for (var j = 0; j < 2 * n; j++)
+				{
+					augmentedMatrix[k, j] /= pivot;
+				}
+
+				// Eliminate the current column in other rows
+				for (var i = 0; i < m; i++)
+				{
+					if (i != k)
+					{
+						var factor = augmentedMatrix[i, k];
+						for (var j = 0; j < 2 * n; j++)
+						{
+							augmentedMatrix[i, j] -= factor * augmentedMatrix[k, j];
+						}
+					}
 				}
 			}
 
-			for (var k = 0; k < m; k++)
-			{
-				if (array[k, k] != 1)
-				{
-					var bs = array[k, k];
-					array[k, k] = 1;
-					for (var p = k + 1; p < 2 * n; p++)
-					{
-						array[k, p] /= bs;
-					}
-				}
-
-				for (var q = 0; q < m; q++)
-				{
-					if (q == k)
-					{
-						continue;
-					}
-
-					var bs = array[q, k];
-					for (var p = 0; p < 2 * n; p++)
-					{
-						array[q, p] -= bs * array[k, p];
-					}
-				}
-			}
-
+			// Extract the inverse matrix
 			var result = new MatrixXd(m, n);
-			for (var x = 0; x < m; x++)
+			for (var i = 0; i < m; i++)
 			{
-				for (var y = n; y < 2 * n; y++)
+				for (var j = 0; j < n; j++)
 				{
-					result[x, y - n] = array[x, y];
+					result[i, j] = augmentedMatrix[i, j + n];
 				}
 			}
+
 			return result;
 		}
 	}
@@ -246,7 +274,7 @@ public struct MatrixXd
 		{
 			for (var j = 0; j < result.Col; j++)
 			{
-				result[i, j] = result[i, j] * rhs;
+				result[i, j] *= rhs;
 			}
 		}
 
@@ -308,23 +336,11 @@ public struct MatrixXd
 		{
 			for (var j = 0; j < rhs.Col; j++)
 			{
-				for (var k = 0; k < lhs.Col; k++)
+				for (var k = 0; k < rhs.Row; k++)
 				{
 					result[i, j] += lhs[i, k] * rhs[k, j];
 				}
 			}
-		}
-
-		return result;
-	}
-
-	public static implicit operator MatrixXd(in VectorXd v)
-	{
-		var result = new MatrixXd(v.Size, 1);
-
-		for (var i = 0; i < v.Size; i++)
-		{
-			result[i, 0] = v[i];
 		}
 
 		return result;
