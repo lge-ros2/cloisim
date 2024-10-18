@@ -160,7 +160,8 @@ public class Articulation
 	public float GetJointVelocity(int index = 0)
 	{
 		index = GetValidIndex(index);
-		var value = (_jointBody == null || index == -1) ? 0 : _jointBody.jointVelocity[index];
+		var value = (_jointBody == null || index == -1 || _jointBody.IsSleeping()) ? 0 : _jointBody.jointVelocity[index];
+		
 		return value;
 	}
 

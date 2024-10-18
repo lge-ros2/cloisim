@@ -14,8 +14,8 @@ namespace SDF
 		public static class Joint
 		{
 			private static float DefaultJointFriction = 0.05f;
-			private static float DefaultJointLinearDamping = 0.05f;
-			private static float DefaultJointAngularDamping = 0.05f;
+			private static float DefaultJointLinearDamping = 0.1f;
+			private static float DefaultJointAngularDamping = 0.1f;
 
 			public static UE.Pose SetArticulationBodyRelationship(in SDF.Joint joint, UE.Transform linkParent, UE.Transform linkChild)
 			{

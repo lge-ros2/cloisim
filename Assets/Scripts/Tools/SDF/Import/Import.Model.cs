@@ -26,28 +26,28 @@ namespace SDF
 
 				articulationBody.useGravity = false;
 				articulationBody.immovable = false;
-				articulationBody.linearDamping = 0.05f;
-				articulationBody.angularDamping = 0.05f;
+				articulationBody.linearDamping = 0.1f;
+				articulationBody.angularDamping = 0.1f;
 				articulationBody.jointFriction = 0;
 
-				articulationBody.ResetCenterOfMass();
-				articulationBody.mass = 1e-07f;
-				articulationBody.automaticCenterOfMass = false;
+				articulationBody.mass = 0.1f;
+				articulationBody.automaticCenterOfMass = true;
+				articulationBody.ResetCenterOfMass();	
 
+				articulationBody.automaticInertiaTensor = true;
 				articulationBody.ResetInertiaTensor();
-				articulationBody.automaticInertiaTensor = false;
-				articulationBody.inertiaTensor = UE.Vector3.one * MinimumInertiaTensor;
-				articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
+				// articulationBody.inertiaTensor = UE.Vector3.one * MinimumInertiaTensor;
+				// articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
 
 				articulationBody.solverIterations = 0;
 				articulationBody.solverVelocityIterations = 0;
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
+				
+				articulationBody.sleepThreshold = 0.5f;
+				// articulationBody.Sleep();
 
-				articulationBody.sleepThreshold = 0.1f;
-				articulationBody.Sleep();
-
-				// UE.Debug.Log(targetObject.name + " Create root articulation body");
+				UE.Debug.Log(targetObject.name + " Create root articulation body " + articulationBody.sleepThreshold.ToString("F10"));
 			}
 
 			private static void CreateRootRigidBody(in UE.GameObject targetObject)

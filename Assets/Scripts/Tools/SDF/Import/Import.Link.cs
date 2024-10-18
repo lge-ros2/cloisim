@@ -115,8 +115,8 @@ namespace SDF
 				articulationBody.useGravity = (linkHelper == null) ? false : linkHelper.useGravity;
 				articulationBody.jointType = UE.ArticulationJointType.FixedJoint;
 				articulationBody.mass = (inertial == null) ? 1e-07f : (float)inertial.mass;
-				articulationBody.linearDamping = 0.05f;
-				articulationBody.angularDamping = 0.05f;
+				articulationBody.linearDamping = 0.1f;
+				articulationBody.angularDamping = 0.1f;
 				articulationBody.jointFriction = 0f;
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
