@@ -133,7 +133,7 @@ public class ModelImporter : MonoBehaviour
 
 	public void SetModelForDeploy(in Transform targetTransform)
 	{
-		const float DeployOffsetMargin = 0.05f;
+		const float DeployOffsetMargin = 0.08f;
 
 		DiscardSelectedModel();
 
