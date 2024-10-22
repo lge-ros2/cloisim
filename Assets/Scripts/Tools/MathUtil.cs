@@ -21,7 +21,21 @@ public static class MathUtil
 			{
 				normalizedAngle -= PI2; // Shift to [-π, π]
 			}
+			// UnityEngine.Debug.Log("normalize :" +  angle.ToString("F5") + " -> " + normalizedAngle.ToString("F5"));
 			return normalizedAngle;
+		}
+
+		public static UnityEngine.Vector3 GetEuler(in UnityEngine.Quaternion rotation)
+		{
+			var euler = rotation.eulerAngles;
+			var angleX = Math.Atan2(2f * (rotation.w * rotation.x + rotation.y * rotation.z),
+									1f - 2f * (rotation.x * rotation.x + rotation.y * rotation.y));
+
+			angleX = Normalize(angleX);
+			angleX *= UnityEngine.Mathf.Rad2Deg;
+			euler.x = (float)angleX;
+
+			return euler;
 		}
 	}
 

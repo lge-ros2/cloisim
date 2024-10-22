@@ -14,14 +14,14 @@ namespace SensorDevices
 	{
 		private messages.Imu _imu = null;
 
-		private Vector3 _imuInitialRotation = Vector3.zero;
-		private Vector3 _lastImuInitialRotation = Vector3.zero;
+		private Quaternion _imuInitialRotation = Quaternion.identity;
+		private Quaternion _lastImuInitialRotation = Quaternion.identity;
 		private Quaternion _imuOrientation = Quaternion.identity;
 		private Vector3 _imuAngularVelocity = Vector3.zero;
 		private Vector3 _imuLinearAcceleration = Vector3.zero;
 
 		private Vector3 _previousImuPosition = Vector3.zero;
-		private Vector3 _previousImuRotation = Vector3.zero;
+		private Quaternion _previousImuRotation = Quaternion.identity;
 		private Vector3 _previousLinearVelocity = Vector3.zero;
 
 		public Dictionary<string, Noise> angular_velocity_noises = new Dictionary<string, Noise>()
@@ -47,13 +47,13 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
-			_imuInitialRotation = transform.rotation.eulerAngles;
+			_imuInitialRotation = transform.rotation;
 		}
 
 		protected override void OnReset()
 		{
 			// Debug.Log("IMU Reset");
-			_previousImuRotation = Vector3.zero;
+			_previousImuRotation = Quaternion.identity;
 		}
 
 		protected override void InitializeMessages()
@@ -105,23 +105,24 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			// Caculate orientation and acceleration
-			_lastImuInitialRotation = transform.rotation.eulerAngles;
-			var imuRotation = _lastImuInitialRotation - _imuInitialRotation;
-			_imuOrientation = Quaternion.Euler(imuRotation.x, imuRotation.y, imuRotation.z);
-
-			_imuAngularVelocity.x = Mathf.DeltaAngle(imuRotation.x, _previousImuRotation.x) / Time.fixedDeltaTime;
-			_imuAngularVelocity.y = Mathf.DeltaAngle(imuRotation.y, _previousImuRotation.y) / Time.fixedDeltaTime;
-			_imuAngularVelocity.z = Mathf.DeltaAngle(imuRotation.z, _previousImuRotation.z) / Time.fixedDeltaTime;
-
 			var currentPosition = transform.position;
+			_lastImuInitialRotation = transform.rotation;
+
+			// Caculate orientation and acceleration
+			// Rotation from A to B : B * Quaternion.Inverse(A);
+			_imuOrientation = _lastImuInitialRotation * Quaternion.Inverse(_imuInitialRotation);
+
+			var angleDiff = _imuOrientation * Quaternion.Inverse(_previousImuRotation);
+			_imuAngularVelocity = angleDiff.eulerAngles;
+			_imuAngularVelocity /= Time.fixedDeltaTime;
+
 			var currentLinearVelocity = (currentPosition - _previousImuPosition) / Time.fixedDeltaTime;
 			_imuLinearAcceleration = (currentLinearVelocity - _previousLinearVelocity) / Time.fixedDeltaTime;
 			_imuLinearAcceleration.y += (-Physics.gravity.y);
 
 			ApplyNoises(Time.fixedDeltaTime);
 
-			_previousImuRotation = imuRotation;
+			_previousImuRotation = _imuOrientation;
 			_previousImuPosition = currentPosition;
 			_previousLinearVelocity = currentLinearVelocity;
 		}
@@ -142,7 +143,7 @@ namespace SensorDevices
 
 		public Vector3 GetOrientation()
 		{
-			return _imuOrientation.eulerAngles;
+			return MathUtil.Angle.GetEuler(_imuOrientation);
 		}
 
 		public Vector3 GetAngularVelocity()
