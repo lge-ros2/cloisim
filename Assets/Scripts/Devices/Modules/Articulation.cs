@@ -8,7 +8,7 @@ using UnityEngine;
 
 public class Articulation
 {
-	protected ArticulationBody _jointBody = null;
+	public ArticulationBody _jointBody = null;
 	protected ArticulationJointType _jointType = ArticulationJointType.FixedJoint;
 	private ArticulationDriveType _driveType = ArticulationDriveType.Force;
 	protected float _velocityLimit = float.NaN;

@@ -203,6 +203,7 @@ public class MotorControl
 			if (motor != null)
 			{
 				motor.Update(duration);
+				Debug.Log($"{wheel.Key.ToString()} => {motor.GetJointVelocity().ToString("F10")} {motor.GetCurrentAngularVelocity()}");
 			}
 		}
 

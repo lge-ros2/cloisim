@@ -24,13 +24,13 @@ namespace SDF
 					articulationBody = targetObject.AddComponent<UE.ArticulationBody>();
 				}
 
-				articulationBody.useGravity = false;
+				articulationBody.useGravity = true;
 				articulationBody.immovable = false;
-				articulationBody.linearDamping = 0.1f;
-				articulationBody.angularDamping = 0.1f;
+				articulationBody.linearDamping = 6;
+				articulationBody.angularDamping = 5;
 				articulationBody.jointFriction = 0;
 
-				articulationBody.mass = 0.1f;
+				articulationBody.mass = 0.5f; //0.1f; //1e-07f;
 				articulationBody.automaticCenterOfMass = true;
 				articulationBody.ResetCenterOfMass();	
 
@@ -44,8 +44,8 @@ namespace SDF
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
 				
-				articulationBody.sleepThreshold = 0.5f;
-				// articulationBody.Sleep();
+				articulationBody.sleepThreshold = 0.6f;
+				articulationBody.Sleep();
 
 				UE.Debug.Log(targetObject.name + " Create root articulation body " + articulationBody.sleepThreshold.ToString("F10"));
 			}
@@ -132,6 +132,16 @@ namespace SDF
 				var modelHelper = modelObject.GetComponent<Helper.Model>();
 				if (modelHelper.IsFirstChild)
 				{
+					// var articulationBody = modelObject.GetComponent<UE.ArticulationBody>();
+					// if (articulationBody != null)
+					// {
+					// 	articulationBody.Sleep();
+					// 	UE.Debug.Log($"Before {articulationBody.inertiaTensor} {articulationBody.inertiaTensorRotation}");
+					// 	articulationBody.ResetCenterOfMass();	
+					// 	articulationBody.ResetInertiaTensor();
+					// 	UE.Debug.Log($"After {articulationBody.inertiaTensor} {articulationBody.inertiaTensorRotation}");
+					// }
+
 					// UE.Debug.Log("AfterImportModel: " + model.OriginalName + ", " + modelObject.name);
 					Main.SegmentationManager.AttachTag(model.OriginalName, modelObject);
 					Main.SegmentationManager.UpdateTags();
