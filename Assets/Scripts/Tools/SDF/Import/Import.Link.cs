@@ -114,13 +114,16 @@ namespace SDF
 				articulationBody.angularVelocity = UE.Vector3.zero;
 				articulationBody.useGravity = (linkHelper == null) ? false : linkHelper.useGravity;
 				articulationBody.jointType = UE.ArticulationJointType.FixedJoint;
-				articulationBody.mass = (inertial == null) ? 1e-07f : (float)inertial.mass;
-				articulationBody.linearDamping = 0.05f;
-				articulationBody.angularDamping = 0.05f;
+				articulationBody.mass = (inertial == null) ? 0.5f : (float)inertial.mass;
+				articulationBody.linearDamping = 3;
+				articulationBody.angularDamping = 1;
 				articulationBody.jointFriction = 0f;
+
+				articulationBody.solverIterations = 0;
+				articulationBody.solverVelocityIterations = 0;
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
-				articulationBody.jointType = UE.ArticulationJointType.FixedJoint;
+				articulationBody.sleepThreshold = 1f;
 				articulationBody.Sleep();
 
 				articulationBody.matchAnchors = true;
@@ -128,10 +131,14 @@ namespace SDF
 				articulationBody.anchorRotation = UE.Quaternion.identity;
 
 				articulationBody.ResetCenterOfMass();
-				articulationBody.automaticCenterOfMass = false;
 				if (inertial?.pose != null)
 				{
 					articulationBody.centerOfMass = SDF2Unity.Position(inertial.pose?.Pos);
+					articulationBody.automaticCenterOfMass = false;
+				}
+				else
+				{
+					articulationBody.automaticCenterOfMass = true;
 				}
 				// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
 
@@ -144,17 +151,17 @@ namespace SDF
 				if (inertial?.inertia != null)
 				{
 					var momentum = GetInertiaTensor(inertial?.inertia);
+					Debug.Log(momentum);
 					articulationBody.inertiaTensor = momentum.position;
 					articulationBody.inertiaTensorRotation = momentum.rotation;
+					articulationBody.automaticInertiaTensor = false;
 				}
 				else
 				{
-					articulationBody.inertiaTensor = UE.Vector3.one * MinimumInertiaTensor;
-					articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
+					articulationBody.automaticInertiaTensor = true;
 				}
-				articulationBody.automaticInertiaTensor = false;
 
-				// Debug.Log("Create link body " + linkObject.name);
+				Debug.Log("Create link body " + linkObject.name);
 				return articulationBody;
 			}
 		}
