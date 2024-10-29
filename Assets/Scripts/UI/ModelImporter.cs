@@ -218,6 +218,16 @@ public class ModelImporter : MonoBehaviour
 
 		UnblockSelfRaycast();
 
+		foreach (var helper in _targetObject.GetComponentsInChildren<SDF.Helper.Base>())
+		{
+			helper.Reset();
+		}
+
+		foreach (var plugin in _targetObject.GetComponentsInChildren<CLOiSimPlugin>())
+		{
+			plugin.Reset();
+		}
+
 		_targetObject = null;
 		_rootArticulationBody = null;
 	}
