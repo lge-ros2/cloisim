@@ -11,7 +11,7 @@ namespace SensorDevices
 {
 	public class MicomCommand : Device
 	{
-		private MotorControl.DifferentialDrive _motorControl = null;
+		private MotorControl _motorControl = null;
 		private MowingBlade _mowingBlade = null;
 
 		protected override void OnAwake()
@@ -30,7 +30,7 @@ namespace SensorDevices
 			DoWheelDrive(Vector3.zero, Vector3.zero);
 		}
 
-		public void SetMotorControl(in MotorControl.DifferentialDrive motorControl)
+		public void SetMotorControl(in dynamic motorControl)
 		{
 			this._motorControl = motorControl;
 		}
@@ -85,7 +85,7 @@ namespace SensorDevices
 			var targetLinearVelocity = linearVelocity.z;
 			var targetAngularVelocity = angularVelocity.y;
 
-			_motorControl.TwistDrive(targetLinearVelocity, targetAngularVelocity);
+			_motorControl?.Drive(targetLinearVelocity, targetAngularVelocity);
 		}
 
 		private void ControlMowing(in string target, in cloisim.msgs.Any value)
@@ -111,5 +111,72 @@ namespace SensorDevices
 				Debug.LogWarning($"Invalid Control Mowing message received: {target}");
 			}
 		}
+
+#if UNITY_EDITOR
+		void LateUpdate()
+		{
+			var balancedDrive = _motorControl as BalancedDrive;
+			if (balancedDrive != null)
+			{
+				if (Input.GetKey(KeyCode.H))
+				{
+					if (Input.GetKey(KeyCode.UpArrow))
+					{
+						balancedDrive.HeadsetTarget += 0.01f;
+					}
+					else if (Input.GetKey(KeyCode.DownArrow))
+					{
+						balancedDrive.HeadsetTarget -= 0.01f;
+					}
+
+					Debug.Log(balancedDrive.HeadsetTarget);
+				}
+				else if (Input.GetKey(KeyCode.N))
+				{
+					if (Input.GetKey(KeyCode.UpArrow))
+					{
+						balancedDrive.HipTarget += 0.01f;
+					}
+					else if (Input.GetKey(KeyCode.DownArrow))
+					{
+						balancedDrive.HipTarget -= 0.01f;
+					}
+
+					Debug.Log(balancedDrive.HipTarget);
+				}
+				else if (Input.GetKey(KeyCode.P))
+				{
+					if (Input.GetKey(KeyCode.UpArrow))
+					{
+						balancedDrive.PitchTarget += 0.001f;
+					}
+					else if (Input.GetKey(KeyCode.DownArrow))
+					{
+						balancedDrive.PitchTarget -= 0.001f;
+					}
+
+					// Debug.Log(balancedDrive.PitchTarget);
+				}
+				else if (Input.GetKey(KeyCode.J))
+				{
+					if (Input.GetKey(KeyCode.UpArrow))
+					{
+						balancedDrive.effortGain += 0.01f;
+					}
+					else if (Input.GetKey(KeyCode.DownArrow))
+					{
+						balancedDrive.effortGain -= 0.01f;
+					}
+
+					Debug.Log("effortGain=" + balancedDrive.effortGain.ToString("F4"));
+				}
+				else if (Input.GetKeyUp(KeyCode.B))
+				{
+					balancedDrive._onBalancing = !balancedDrive._onBalancing;
+					Debug.LogWarning("Toggle Balancing " + balancedDrive._onBalancing);
+				}
+			}
+		}
+#endif
 	}
 }

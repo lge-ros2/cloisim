@@ -70,7 +70,9 @@ public class PID
 	{
 		if (Math.Abs(deltaTime) < double.Epsilon ||
 			double.IsNaN(deltaTime) || double.IsInfinity(deltaTime))
-			return 0f;
+		{
+			return 0;
+		}
 
 		// Calculate proportional contribution to command
 		var pTerm = _pGain * error;
@@ -97,6 +99,7 @@ public class PID
 
 		// Calculate the derivative error
 		var dErr = (error - _lastError) / deltaTime;
+
 		_lastError = error;
 
 		// Calculate derivative contribution to command

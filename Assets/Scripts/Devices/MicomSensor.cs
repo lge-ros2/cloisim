@@ -14,9 +14,9 @@ namespace SensorDevices
 	public partial class MicomSensor : Device
 	{
 		private messages.Micom micomSensorData = null;
-		private MotorControl.DifferentialDrive _motorControl = null;
+		private MotorControl _motorControl = null;
 		private SensorDevices.Battery battery = null;
-		private SensorDevices.IMU imuSensor = null;
+		private SensorDevices.IMU _imuSensor = null;
 		private List<SensorDevices.Sonar> ussSensors = new List<SensorDevices.Sonar>();
 		private List<SensorDevices.Sonar> irSensors = new List<SensorDevices.Sonar>();
 		// private List<SensorDevices.Magnet> magnetSensors = null;
@@ -40,7 +40,7 @@ namespace SensorDevices
 			yield return null;
 		}
 
-		public void SetMotorControl(in MotorControl.DifferentialDrive motorControl)
+		public void SetMotorControl(in MotorControl motorControl)
 		{
 			this._motorControl = motorControl;
 		}
@@ -50,12 +50,11 @@ namespace SensorDevices
 			var imuList = gameObject.GetComponentsInChildren<SensorDevices.IMU>();
 			foreach (var imu in imuList)
 			{
-				// Debug.Log(imu.name + " , " + imu.DeviceName);
 				if (imu.DeviceName.Contains("::" + sensorName + "::") ||
 					imu.name.CompareTo(sensorName) == 0)
 				{
 					Debug.Log(imu.DeviceName + " attached to Micom");
-					imuSensor = imu;
+					_imuSensor = imu;
 					break;
 				}
 			}
@@ -156,9 +155,9 @@ namespace SensorDevices
 
 		protected override void OnReset()
 		{
-			if (imuSensor != null)
+			if (_imuSensor != null)
 			{
-				imuSensor.Reset();
+				_imuSensor.Reset();
 			}
 		}
 
@@ -199,7 +198,7 @@ namespace SensorDevices
 
 			if (_motorControl != null)
 			{
-				if (_motorControl.Update(micomSensorData.Odom, deltaTime, imuSensor) == false)
+				if (_motorControl.Update(micomSensorData.Odom, deltaTime, _imuSensor) == false)
 				{
 					Debug.LogWarning("Update failed in MotorControl");
 				}
@@ -256,12 +255,12 @@ namespace SensorDevices
 
 		private void UpdateIMU()
 		{
-			if (imuSensor == null || micomSensorData == null)
+			if (_imuSensor == null || micomSensorData == null)
 			{
 				return;
 			}
 
-			micomSensorData.Imu = imuSensor.GetImuMessage();
+			micomSensorData.Imu = _imuSensor.GetImuMessage();
 		}
 	}
 }

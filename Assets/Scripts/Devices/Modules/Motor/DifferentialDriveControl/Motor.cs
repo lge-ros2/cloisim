@@ -24,7 +24,7 @@ public class Motor : Articulation
 
 	public override void Reset()
 	{
-		Debug.Log("Motor Reset");
+		// Debug.Log("Motor Reset");
 		base.Reset();
 
 		if (_pidControl != null)
@@ -60,7 +60,7 @@ public class Motor : Articulation
 				_jointBody.yDrive.damping < float.Epsilon &&
 				_jointBody.zDrive.damping < float.Epsilon)
 			{
-				Debug.LogWarning("Force DriveType requires valid damping > 0, Forcefully set to target velocity");
+				Debug.LogWarning("Force DriveType requires valid damping > 0, Forcefully set to target velocity.");
 				DriveType = ArticulationDriveType.Velocity;
 			}
 		}
@@ -68,9 +68,9 @@ public class Motor : Articulation
 
 	/// <summary>Get Current Joint angular Velocity</summary>
 	/// <remarks>radian per second</remarks>
-	public float GetCurrentAngularVelocity()
+	public float GetAngularVelocity()
 	{
-		return _currentMotorVelocity * Mathf.Deg2Rad;
+		return GetVelocity() * Mathf.Deg2Rad;
 	}
 
 	/// <summary>Set Target Velocity wmotorLeftith PID control</summary>
@@ -80,33 +80,44 @@ public class Motor : Articulation
 		_targetAngularVelocity = targetAngularVelocity;
 	}
 
-	public void Update(in float duration)
+	public double UpdatePID(in double actual, in double target, in double duration)
 	{
-		if (!IsRevoluteType())
-		{
-			return;
-		}
-
-		SolveAngularVelocity(duration);
-
-		var adjustValue = (_pidControl != null) ? (float)_pidControl.Update(_currentMotorVelocity, _targetAngularVelocity, duration) : 0;
-		// Debug.Log(_targetAngularVelocity + "  ,   " + adjustValue + "  ,   " + _currentMotorVelocity);
-
-		Drive(targetVelocity: _targetAngularVelocity + adjustValue);
+		return (_pidControl != null) ? _pidControl.Update(actual, target, duration) : 0;
 	}
 
-	private float _prevJointPosition = 0; // in deg, for GetAngularVelocity()
-
-	/// <remarks>degree per second</remarks>
-	private void SolveAngularVelocity(in float duration)
+	public void Run(in float duration)
 	{
-		// calculate velocity using joint position is more accurate than joint velocity
-		var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
-		var motorVelocity = Mathf.DeltaAngle(_prevJointPosition, jointPosition) / duration;
-		var sampledVelocity = Mathf.Sign(motorVelocity) * Mathf.Floor(Mathf.Abs(motorVelocity) / WheelResolution) * WheelResolution;
-		// Debug.LogFormat("prv={0:F5} cur={1:F5} vel={2:F5} sampVel={3:F5}", _prevJointPosition, jointPosition, motorVelocity, sampledVelocity);
-		_prevJointPosition = jointPosition;
+		var adjustValue = UpdatePID(_currentMotorVelocity, _targetAngularVelocity, duration);
+		Drive(targetVelocity: _targetAngularVelocity + (float)adjustValue);
+	}
 
-		_currentMotorVelocity = (Mathf.Abs(sampledVelocity) < Quaternion.kEpsilon) ? 0 : sampledVelocity;
+	private float _prevJointPosition = float.NaN; // in deg, for GetAngularVelocity()
+	private double _prevTimeStamp = double.NaN;
+
+	public float GetVelocity()
+	{
+		if (float.IsNaN(_prevJointPosition) || double.IsNaN(_prevTimeStamp))
+		{
+			_prevJointPosition = GetJointPosition() * Mathf.Rad2Deg;
+			_prevTimeStamp = Time.timeAsDouble;
+			_currentMotorVelocity = 0;
+		}
+		else if (System.Math.Abs(Time.timeAsDouble - _prevTimeStamp) > float.Epsilon)
+		{
+			var timeDelta = Time.timeAsDouble - _prevTimeStamp;
+			// Debug.Log(timeDelta);
+
+			var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
+			var motorVelocity = (float)(Mathf.DeltaAngle(_prevJointPosition, jointPosition) / timeDelta);
+			var sampledVelocity = Mathf.Sign(motorVelocity) * Mathf.Floor(Mathf.Abs(motorVelocity) / WheelResolution) * WheelResolution;
+			// Debug.LogFormat("prv={0:F5} cur={1:F5} vel={2:F5} sampVel={3:F5}", _prevJointPosition, jointPosition, motorVelocity, sampledVelocity);
+
+			_prevJointPosition = jointPosition;
+			_prevTimeStamp = Time.timeAsDouble;
+
+			_currentMotorVelocity = (Mathf.Abs(sampledVelocity) < Quaternion.kEpsilon) ? 0 : sampledVelocity;
+		}
+
+		return _currentMotorVelocity;
 	}
 }
