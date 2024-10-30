@@ -151,7 +151,6 @@ namespace SDF
 				if (inertial?.inertia != null)
 				{
 					var momentum = GetInertiaTensor(inertial?.inertia);
-					Debug.Log(momentum);
 					articulationBody.inertiaTensor = momentum.position;
 					articulationBody.inertiaTensorRotation = momentum.rotation;
 					articulationBody.automaticInertiaTensor = false;
@@ -161,7 +160,7 @@ namespace SDF
 					articulationBody.automaticInertiaTensor = true;
 				}
 
-				Debug.Log("Create link body " + linkObject.name);
+				// Debug.Log("Create link body " + linkObject.name);
 				return articulationBody;
 			}
 		}

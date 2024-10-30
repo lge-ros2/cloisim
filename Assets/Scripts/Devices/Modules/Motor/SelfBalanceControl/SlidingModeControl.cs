@@ -57,6 +57,11 @@ namespace SelfBalanceControl
 			{
 				{-1.0966112 ,  0.70710678, -1.05096776, -6.36026143, -0.70710678},
 				{-1.0966112 , -0.70710678, -1.05096776, -6.36026143, -0.70710678}
+			}),
+			S = new MatrixXd(new double[,]
+			{
+				{ 1, -1, 1, 1, 1 },
+				{ 1,  1, 1, 1, 1 }
 			})
 		};
 
@@ -78,8 +83,8 @@ namespace SelfBalanceControl
 		// private double _sigmaIntegralLimit;
 		private double _ff = 0; // Feed forward (?)
 
-		OutputMode _outputMode;
-		SwitchingMode _switchingMode;
+		private OutputMode _outputMode;
+		private  SwitchingMode _switchingMode;
 
 		public SlidingModeControl(in double deltaTime, in NominalModel model, OutputMode outMode, SwitchingMode switchMode)
 		{
@@ -91,6 +96,15 @@ namespace SelfBalanceControl
 			SetDefault();
 		}
 
+		public SlidingModeControl(in double deltaTime, OutputMode outMode, SwitchingMode switchMode)
+		: this(
+				deltaTime,
+				_DefaultNominalModel,
+				outMode,
+				switchMode)
+		{
+		}
+
 		public SlidingModeControl(in double deltaTime)
 			: this(
 				deltaTime,
@@ -98,7 +112,28 @@ namespace SelfBalanceControl
 				OutputMode.SLIDING_MODE,
 				SwitchingMode.SAT)
 		{
-			this._deltaTime = deltaTime;
+		}
+
+		public void SetNominalModel(in string matrixA, in string matrixB, in string matrixK, in string matrixS)
+		{
+			var A = string.IsNullOrEmpty(matrixA) ? _DefaultNominalModel.A : new MatrixXd(matrixA);
+			var B = string.IsNullOrEmpty(matrixB) ? _DefaultNominalModel.B : new MatrixXd(matrixB);
+			var K = string.IsNullOrEmpty(matrixK) ? _DefaultNominalModel.K : new MatrixXd(matrixK);
+			var S = string.IsNullOrEmpty(matrixS) ? _DefaultNominalModel.S : new MatrixXd(matrixS);
+			// UnityEngine.Debug.Log(A.ToString("F15"));
+			// UnityEngine.Debug.Log(B.ToString("F15"));
+			// UnityEngine.Debug.Log(K.ToString("F15"));
+			// UnityEngine.Debug.Log(S.ToString("F15"));
+
+			this._nominalModel = new SlidingModeControl.NominalModel()
+			{
+				A = A,
+				B = B,
+				K = K,
+				S = S
+			};
+
+			SetDefault();
 		}
 
 		public void SetDefault()
@@ -106,11 +141,7 @@ namespace SelfBalanceControl
 			_sigmaIntegralElementPrev = Vector2d.zero;
 
 			// recommanded values
-			_nominalModel.S = new MatrixXd(new double[,]
-			{
-				{ 1, -1, 1, 1, 1 },
-				{ 1,  1, 1, 1, 1 }
-			});
+			_nominalModel.S = _DefaultNominalModel.S;
 
 			// this._kSW = 50;
 			// this._sigmaB = 0.5;

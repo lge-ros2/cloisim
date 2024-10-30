@@ -157,19 +157,6 @@ namespace SensorDevices
 
 					// Debug.Log(balancedDrive.PitchTarget);
 				}
-				else if (Input.GetKey(KeyCode.J))
-				{
-					if (Input.GetKey(KeyCode.UpArrow))
-					{
-						balancedDrive.effortGain += 0.01f;
-					}
-					else if (Input.GetKey(KeyCode.DownArrow))
-					{
-						balancedDrive.effortGain -= 0.01f;
-					}
-
-					Debug.Log("effortGain=" + balancedDrive.effortGain.ToString("F4"));
-				}
 				else if (Input.GetKeyUp(KeyCode.B))
 				{
 					balancedDrive._onBalancing = !balancedDrive._onBalancing;

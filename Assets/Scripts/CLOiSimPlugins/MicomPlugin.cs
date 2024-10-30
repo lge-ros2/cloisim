@@ -184,13 +184,29 @@ public class MicomPlugin : CLOiSimPlugin
 			SetMotorPID($"{parameterPrefix}/head/PID", (_motorControl as BalancedDrive).SetHeadJointPID);
 		}
 
-		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc/param"))
+		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc"))
 		{
-			var kSW = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/K_sw");
-			var sigmaB = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/sigma_b");
-			var wheelFF = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/wheel_ff");
-			(_motorControl as BalancedDrive).SetParams(kSW, sigmaB, wheelFF);
-			_log.AppendLine($"SetBalancedWheel() => kSW: {kSW}, sigmaB: {sigmaB}, wheelFF: {wheelFF}");
+			if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc/param"))
+			{
+				var kSW = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/K_sw");
+				var sigmaB = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/sigma_b");
+				var wheelFF = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/wheel_ff");
+				(_motorControl as BalancedDrive).SetSMCParams(kSW, sigmaB, wheelFF);
+				_log.AppendLine($"SetBalancedWheel() => kSW: {kSW}, sigmaB: {sigmaB}, wheelFF: {wheelFF}");
+			}
+
+			if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc/state_space"))
+			{
+				var A = GetPluginParameters().GetValue<string>($"{parameterPrefix}/smc/state_space/A");
+				var B = GetPluginParameters().GetValue<string>($"{parameterPrefix}/smc/state_space/B");
+				var K = GetPluginParameters().GetValue<string>($"{parameterPrefix}/smc/state_space/K");
+				var S = GetPluginParameters().GetValue<string>($"{parameterPrefix}/smc/state_space/S");
+				// Debug.Log(A.Trim());
+				// Debug.Log(B.Trim());
+				// Debug.Log(K.Trim());
+				// Debug.Log(S.Trim());
+				(_motorControl as BalancedDrive).SetSMCNominalModel(A, B, K, S);
+			}
 		}
 
 		SetDriveForWheel($"{parameterPrefix}/wheel");

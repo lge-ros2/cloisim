@@ -16,7 +16,6 @@ public class BalancedDrive : MotorControl
 	private readonly float  HIP_MAX_TORQUE = 10;
 	private readonly float HIP_MAX_SPEED = 30;
 
-
 	private SensorDevices.IMU _imuSensor = null;
 	private Kinematics _kinematics = null;
 	private ExpProfiler _pitchProfiler;
@@ -55,51 +54,11 @@ public class BalancedDrive : MotorControl
 	{
 		_pitchProfiler = new ExpProfiler(5);
 
-		var A = new MatrixXd(new double[,]
-		{
-			{ 0, 0, 0, -21.3786477933576, 0},
-			{ 0, 0, 0, 0, 0},
-			{ 0, 0, 0, 157.327135062243, 0},
-			{ 0, 0, 1, 0, 0},
-			{ 1, 0, 0, 0, 0}
-		});
-
-		var B = new MatrixXd(new double[,]
-		{
-			{ 12.8006009728263,  12.8006009728263},
-			{ 72.3797978548343, -72.3797978548343},
-			{-64.570990428082,  -64.570990428082},
-			{0.0, 0.0},
-			{0.0, 0.0}
-		});
-
-		var K = new MatrixXd(new double[,]
-		{
-			// { -0.9546829578466983,  0.15811388300841922, -0.4293224954933619,  -3.9680951068417047, -1.5811388300838725 },
-			// { -0.9546829578466983, -0.15811388300841864, -0.42932249549336127, -3.9680951068416976, -1.5811388300838907 }
-			{ -0.9546,  0.16, -1.85, -10.5, -3.16227766},
-			{ -0.9546, -0.16, -1.85, -10.5, -3.16227766}
-		});
-
-		var S = new MatrixXd(new double[,]
-		{
-			{ 0.0014770146239719926,  0.006908004924285716, -0.007450610900932959, 0.0, 0.0 },
-			{ 0.0014770146239719926, -0.006908004924285716, -0.007450610900932958, 0.0, 0.0 }
-		});
-
-		// Debug.Log(A.ToString("F15"));
-		// Debug.Log(B.ToString("F15"));
-		// Debug.Log(K.ToString("F15"));
-		// Debug.Log(S.ToString("F15"));
-
-		var nominalModel = new SlidingModeControl.NominalModel() { A = A, B = B, K = K, S = S };
-
 		_smc = new SlidingModeControl(
 					Time.fixedDeltaTime,
-					nominalModel,
 					// SlidingModeControl.OutputMode.EQUIVALENT,
-					// SlidingModeControl.OutputMode.SLIDING_MODE,
-					SlidingModeControl.OutputMode.LQR,
+					SlidingModeControl.OutputMode.SLIDING_MODE,
+					// SlidingModeControl.OutputMode.LQR,
 					SlidingModeControl.SwitchingMode.SAT
 					// SlidingModeControl.SwitchingMode.SIGN
 					);
@@ -118,8 +77,6 @@ public class BalancedDrive : MotorControl
 		var pitch = orientation.x;
 		var wheelVelocityLeft = GetAngularVelocity(Location.FRONT_WHEEL_LEFT);
 		var wheelVelocityRight = GetAngularVelocity(Location.FRONT_WHEEL_RIGHT);
-		// var wheelVelocityLeft = _motorList[Location.FRONT_WHEEL_LEFT].GetJointVelocity();
-		// var wheelVelocityRight = _motorList[Location.FRONT_WHEEL_RIGHT].GetJointVelocity();
 
 		_kinematics.Reset(wheelVelocityLeft, wheelVelocityRight, pitch);
 		_smc.Reset();
@@ -134,11 +91,19 @@ public class BalancedDrive : MotorControl
 		_kinematics = new Kinematics(radius, separation);
 	}
 
-	public void SetParams(in double K_sw, in double sigma_b, in double ff)
+	public void SetSMCParams(in double K_sw, in double sigma_b, in double ff)
 	{
 		if (_smc != null)
 		{
 			_smc.SetParams(K_sw, sigma_b, ff);
+		}
+	}
+
+	public void SetSMCNominalModel(in string matrixA, in string matrixB, in string matrixK, in string matrixS)
+	{
+		if (_smc != null)
+		{
+			_smc.SetNominalModel(matrixA, matrixB, matrixK, matrixS);
 		}
 	}
 
@@ -307,16 +272,10 @@ public class BalancedDrive : MotorControl
 		efforts[3] = Mathf.Clamp((float)efforts[3], -HIP_MAX_TORQUE, HIP_MAX_TORQUE);
 	}
 
-	public float effortGain = 1f;
-
 	private void SetEfforts(VectorXd efforts)
 	{
-		// const float _effortGain = 1.7f;
 		SaturateEfforts(ref efforts);
-		Debug.Log($"Effort:  {efforts}");
-		efforts *= effortGain;
-		// _motorList[Location.FRONT_WHEEL_LEFT]?.SetJointForce((float)efforts[0] * effortGain);
-		// _motorList[Location.FRONT_WHEEL_RIGHT]?.SetJointForce((float)efforts[1] * effortGain);
+		// Debug.Log($"Effort:  {efforts}");
 		_motorList[Location.FRONT_WHEEL_LEFT]?.SetJointForce((float)efforts[0]);
 		_motorList[Location.FRONT_WHEEL_RIGHT]?.SetJointForce((float)efforts[1]);
 		_motorList[Location.HIP_LEFT]?.SetJointForce((float)efforts[2]);
@@ -334,14 +293,8 @@ public class BalancedDrive : MotorControl
 			_imuSensor = imuSensor;
 		}
 
-		// foreach (var motor in _motorList)
-		// {
-		// 	motor.Value?.Loop(duration);
-		// }
 		var wheelVelocityLeft = GetAngularVelocity(Location.FRONT_WHEEL_LEFT);
 		var wheelVelocityRight = GetAngularVelocity(Location.FRONT_WHEEL_RIGHT);
-		// var wheelVelocityLeft = _motorList[Location.FRONT_WHEEL_LEFT].GetJointVelocity();
-		// var wheelVelocityRight = _motorList[Location.FRONT_WHEEL_RIGHT].GetJointVelocity();
 
 		var orientation = GetOrientation();
 		var roll = orientation.z;
