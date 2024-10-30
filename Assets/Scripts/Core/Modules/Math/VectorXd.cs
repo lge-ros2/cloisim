@@ -33,6 +33,11 @@ public struct VectorXd
 		}
 	}
 
+	public VectorXd(in string value)
+	{
+		_elements = value.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(double.Parse).ToArray();
+	}
+
 	public double this[int index]
 	{
 		get

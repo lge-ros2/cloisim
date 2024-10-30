@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Linq;
 using System;
 
 public struct MatrixXd
@@ -27,7 +28,7 @@ public struct MatrixXd
 		{
 			for (var j = 0; j < Col; j++)
 			{
-				_elements[i, j] = initialData[i, j];
+				this[i, j] = initialData[i, j];
 			}
 		}
 	}
@@ -40,6 +41,25 @@ public struct MatrixXd
 			for (var j = 0; j < Col; j++)
 			{
 				this[i, j] = mat[i, j];
+			}
+		}
+	}
+
+	public MatrixXd(in string value)
+	{
+		var lines = value.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+
+		this.Row = lines.Length;
+		this.Col = lines[0].Split(',', StringSplitOptions.RemoveEmptyEntries).Length;
+		_elements = new double[Row, Col];
+
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var colArray = lines[i].Split(',', StringSplitOptions.RemoveEmptyEntries).Select(double.Parse).ToArray();
+
+			for (var j = 0; j < colArray.Length; j++)
+			{
+				this[i, j] = colArray[j];
 			}
 		}
 	}
