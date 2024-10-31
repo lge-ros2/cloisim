@@ -15,8 +15,9 @@ namespace SensorDevices
 		private messages.Imu _imu = null;
 
 		private Quaternion _imuInitialRotation = Quaternion.identity;
-		private Quaternion _lastImuInitialRotation = Quaternion.identity;
-		private Quaternion _imuOrientation = Quaternion.identity;
+		private Quaternion _imuRotation = Quaternion.identity;
+
+		private Vector3 _imuOrientation = Vector3.zero;
 		private Vector3 _imuAngularVelocity = Vector3.zero;
 		private Vector3 _imuLinearAcceleration = Vector3.zero;
 
@@ -48,12 +49,17 @@ namespace SensorDevices
 		protected override void OnStart()
 		{
 			_imuInitialRotation = transform.rotation;
+			Debug.Log("_imuInitialRotation=" + _imuInitialRotation);
+			// _imuOrientation.x = _imuInitialRotation.eulerAngles.x;
 		}
 
 		protected override void OnReset()
 		{
 			// Debug.Log("IMU Reset");
 			_previousImuRotation = Quaternion.identity;
+			
+			_imuOrientation = Vector3.zero;
+			// _imuOrientation.x = _imuRotation.eulerAngles.x;
 		}
 
 		protected override void InitializeMessages()
@@ -102,19 +108,47 @@ namespace SensorDevices
 				linear_acceleration_noises["z"].Apply<float>(ref _imuLinearAcceleration.z, deltaTime);
 			}
 		}
+		
+		private float CalculatePitchFromForwardBaseAxis()
+		{
+			var rotatedBase = _imuRotation * Vector3.forward;
+
+			// Step 2: Calculate the Euler Angles
+			// Calculate the yaw angle (rotation around the Y-axis)
+			// var yaw = Mathf.Atan2(rotatedBase.x, rotatedBase.z) * Mathf.Rad2Deg;
+
+			// Calculate the pitch angle (rotation around the X-axis)
+			var horizontalDistance = new Vector2(rotatedBase.x, rotatedBase.z).magnitude;  // Projected distance on XZ-plane
+			var pitch = Mathf.Atan2(rotatedBase.y, horizontalDistance) * Mathf.Rad2Deg;
+
+			var adjustedPitch = 
+				(rotatedBase.x < 0 && rotatedBase.z < 0 &&
+				 rotatedBase.y >= 0.1f && rotatedBase.y < 1.0f) ? (pitch - 180) : -pitch;
+			
+			// Debug.Log($"{rotatedBase.ToString("F10")}, pitch={pitch} -> {adjustedPitch}");
+
+			// For roll, assuming this is relative to the base axis direction
+			// var projectedZ = Vector3.ProjectOnPlane(rotatedBase, Vector3.forward);
+			// var roll = Mathf.Atan2(projectedZ.y, projectedZ.x) * Mathf.Rad2Deg;
+
+			// return new Vector3(newPitch, yaw, roll);
+			return adjustedPitch;
+		}
 
 		void FixedUpdate()
 		{
 			var currentPosition = transform.position;
-			_lastImuInitialRotation = transform.rotation;
 
 			// Caculate orientation and acceleration
 			// Rotation from A to B : B * Quaternion.Inverse(A);
-			_imuOrientation = _lastImuInitialRotation * Quaternion.Inverse(_imuInitialRotation);
+			_imuRotation = transform.rotation * Quaternion.Inverse(_imuInitialRotation);
 
-			var angleDiff = _imuOrientation * Quaternion.Inverse(_previousImuRotation);
-			_imuAngularVelocity = angleDiff.eulerAngles;
-			_imuAngularVelocity /= Time.fixedDeltaTime;
+			var angularDisplacement = _imuRotation * Quaternion.Inverse(_previousImuRotation);
+			_imuAngularVelocity = angularDisplacement.eulerAngles / Time.fixedDeltaTime;
+			// angularDisplacement.ToAngleAxis(out var angle, out var angleAxis);
+			// _imuAngularVelocity = angleAxis * angle / Time.fixedDeltaTime;
+
+			// Debug.Log($"{_imuAngularVelocity} {angularDisplacement.eulerAngles / Time.fixedDeltaTime}");	
 
 			var currentLinearVelocity = (currentPosition - _previousImuPosition) / Time.fixedDeltaTime;
 			_imuLinearAcceleration = (currentLinearVelocity - _previousLinearVelocity) / Time.fixedDeltaTime;
@@ -122,14 +156,18 @@ namespace SensorDevices
 
 			ApplyNoises(Time.fixedDeltaTime);
 
-			_previousImuRotation = _imuOrientation;
+			_previousImuRotation = _imuRotation;
 			_previousImuPosition = currentPosition;
 			_previousLinearVelocity = currentLinearVelocity;
+
+			_imuOrientation = _imuRotation.eulerAngles;
+			var calculatedPitch = CalculatePitchFromForwardBaseAxis();
+			_imuOrientation.x = calculatedPitch;
 		}
 
 		protected override void GenerateMessage()
 		{
-			_imu.Orientation.Set(_imuOrientation);
+			_imu.Orientation.Set(_imuRotation);
 			_imu.AngularVelocity.Set(_imuAngularVelocity * Mathf.Deg2Rad);
 			_imu.LinearAcceleration.Set(_imuLinearAcceleration);
 			_imu.Stamp.SetCurrentTime();
@@ -143,7 +181,7 @@ namespace SensorDevices
 
 		public Vector3 GetOrientation()
 		{
-			return MathUtil.Angle.GetEuler(_imuOrientation);
+			return _imuOrientation;
 		}
 
 		public Vector3 GetAngularVelocity()

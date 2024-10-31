@@ -5,6 +5,7 @@
  */
 
 using System;
+using SDF;
 
 public static class MathUtil
 {
@@ -13,7 +14,7 @@ public static class MathUtil
 
 	public static class Angle
 	{
-		// in Radian
+		// in Radian 
 		public static double Normalize(in double angle)
 		{
 			var normalizedAngle = angle % (2 * PI); // Normalize angle to [0, 2π]
@@ -23,19 +24,6 @@ public static class MathUtil
 			}
 			// UnityEngine.Debug.Log("normalize :" +  angle.ToString("F5") + " -> " + normalizedAngle.ToString("F5"));
 			return normalizedAngle;
-		}
-
-		public static UnityEngine.Vector3 GetEuler(in UnityEngine.Quaternion rotation)
-		{
-			var euler = rotation.eulerAngles;
-			var angleX = Math.Atan2(2f * (rotation.w * rotation.x + rotation.y * rotation.z),
-									1f - 2f * (rotation.x * rotation.x + rotation.y * rotation.y));
-
-			angleX = Normalize(angleX);
-			angleX *= UnityEngine.Mathf.Rad2Deg;
-			euler.x = (float)angleX;
-
-			return euler;
 		}
 	}
 

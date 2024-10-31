@@ -139,14 +139,8 @@ namespace SelfBalanceControl
 		public void SetDefault()
 		{
 			_sigmaIntegralElementPrev = Vector2d.zero;
-
-			// recommanded values
-			_nominalModel.S = _DefaultNominalModel.S;
-
-			// this._kSW = 50;
-			// this._sigmaB = 0.5;
-			// // this._sigmaIntegralLimit = 100;
-			// this._ff = 0.15;
+			_nominalModel.S = _DefaultNominalModel.S; // recommanded values
+			// this._sigmaIntegralLimit = 100;
 		}
 
 		public void Reset()
@@ -155,10 +149,10 @@ namespace SelfBalanceControl
 			_sigmaIntegralElementPrev = Vector2d.zero;
 		}
 
-		public void SetParams(in double K_sw, in double sigma_b, in double ff)
+		public void SetParams(in double kSW, in double sigmaB, in double ff)
 		{
-			_kSW = K_sw;
-			_sigmaB = sigma_b;
+			_kSW = kSW;
+			_sigmaB = sigmaB;
 			_ff = ff;
 		}
 
@@ -239,14 +233,8 @@ namespace SelfBalanceControl
 			var res = Vector2d.zero;
 			for (var i = 0; i < 2; i++)
 			{
-				if (Math.Abs(sigma[i]) < _sigmaB)
-				{
-					res[i] = sigma[i] / _sigmaB;
-				}
-				else
-				{
-					res[i] = (sigma[i] > 0) ? 1 : -1;
-				}
+				res[i] = (Math.Abs(sigma[i]) < _sigmaB) ?
+					(sigma[i] / _sigmaB) : ((sigma[i] > 0) ? 1 : -1);
 			}
 			return res;
 		}

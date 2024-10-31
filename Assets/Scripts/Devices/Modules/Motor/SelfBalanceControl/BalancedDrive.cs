@@ -13,10 +13,9 @@ public class BalancedDrive : MotorControl
 	private readonly float WHEEL_MAX_TORQUE = 10;
 	private readonly float WHEEL_MAX_SPEED = 60;
 
-	private readonly float  HIP_MAX_TORQUE = 10;
+	private readonly float HIP_MAX_TORQUE = 10;
 	private readonly float HIP_MAX_SPEED = 30;
 
-	private SensorDevices.IMU _imuSensor = null;
 	private Kinematics _kinematics = null;
 	private ExpProfiler _pitchProfiler;
 	private SlidingModeControl _smc = null;
@@ -52,13 +51,13 @@ public class BalancedDrive : MotorControl
 	public BalancedDrive(in Transform controllerTransform)
 		: base(controllerTransform)
 	{
-		_pitchProfiler = new ExpProfiler(5);
+		_pitchProfiler = new ExpProfiler(10);
 
 		_smc = new SlidingModeControl(
 					Time.fixedDeltaTime,
 					// SlidingModeControl.OutputMode.EQUIVALENT,
-					SlidingModeControl.OutputMode.SLIDING_MODE,
-					// SlidingModeControl.OutputMode.LQR,
+					// SlidingModeControl.OutputMode.SLIDING_MODE,
+					SlidingModeControl.OutputMode.LQR,
 					SlidingModeControl.SwitchingMode.SAT
 					// SlidingModeControl.SwitchingMode.SIGN
 					);
@@ -73,11 +72,9 @@ public class BalancedDrive : MotorControl
 			wheel.Value?.Reset();
 		}
 
-		var orientation = GetOrientation();
-		var pitch = orientation.x;
 		var wheelVelocityLeft = GetAngularVelocity(Location.FRONT_WHEEL_LEFT);
 		var wheelVelocityRight = GetAngularVelocity(Location.FRONT_WHEEL_RIGHT);
-
+		var pitch = 0;
 		_kinematics.Reset(wheelVelocityLeft, wheelVelocityRight, pitch);
 		_smc.Reset();
 		PitchTarget = 0.000f;
@@ -246,21 +243,25 @@ public class BalancedDrive : MotorControl
 	public override void Drive(in float linearVelocity, in float angularVelocity)
 	{
 		_commandTwistLinear = linearVelocity;
-		_commandTwistAngular = angularVelocity;
+		_commandTwistAngular = -angularVelocity;
+
+		if (_commandTwistLinear == 0)
+		{
+			PitchTarget = 0;
+		}
 	}
 
-	private Vector3 GetOrientation()
+	private Vector3 GetOrientation(SensorDevices.IMU imuSensor)
 	{
-		var angles = (_imuSensor == null) ?
-				MathUtil.Angle.GetEuler(_baseTransform.rotation) : _imuSensor.GetOrientation();
+		var angles = imuSensor.GetOrientation();
 
 		angles.z *= Mathf.Deg2Rad; // roll, deg to rad
 		angles.x *= Mathf.Deg2Rad; // pitch, deg to rad
 		angles.y *= Mathf.Deg2Rad; // yaw, deg to rad
+		angles.z.NormalizeAngle();
 		angles.x.NormalizeAngle();
 		angles.y.NormalizeAngle();
-		angles.z.NormalizeAngle();
-		// Debug.Log(angles.x* Mathf.Rad2Deg + "," + angles.y * Mathf.Rad2Deg+  "," + angles.z* Mathf.Rad2Deg);
+		// Debug.Log("Orientation: " + angles.x * Mathf.Rad2Deg + "," + angles.y * Mathf.Rad2Deg + "," + angles.z * Mathf.Rad2Deg);
 		return angles;
 	}
 
@@ -274,8 +275,8 @@ public class BalancedDrive : MotorControl
 
 	private void SetEfforts(VectorXd efforts)
 	{
-		SaturateEfforts(ref efforts);
-		// Debug.Log($"Effort:  {efforts}");
+		// SaturateEfforts(ref efforts);
+		Debug.Log($"Effort:  {efforts}");
 		_motorList[Location.FRONT_WHEEL_LEFT]?.SetJointForce((float)efforts[0]);
 		_motorList[Location.FRONT_WHEEL_RIGHT]?.SetJointForce((float)efforts[1]);
 		_motorList[Location.HIP_LEFT]?.SetJointForce((float)efforts[2]);
@@ -285,18 +286,19 @@ public class BalancedDrive : MotorControl
 
 	public float _detectFalldownThreshold = 1.48f;
 
-	public override bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor = null)
+	public override bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor)
 	{
 		// Debug.Log("Update Balanced");
-		if (_imuSensor == null)
-		{
-			_imuSensor = imuSensor;
+		if (imuSensor == null)
+		{	
+			Debug.LogWarning("IMU sensor is missing");
+			return false;
 		}
 
 		var wheelVelocityLeft = GetAngularVelocity(Location.FRONT_WHEEL_LEFT);
 		var wheelVelocityRight = GetAngularVelocity(Location.FRONT_WHEEL_RIGHT);
 
-		var orientation = GetOrientation();
+		var orientation = GetOrientation(imuSensor);
 		var roll = orientation.z;
 		var pitch = orientation.x;
 		var yaw = orientation.y;
@@ -322,7 +324,7 @@ public class BalancedDrive : MotorControl
 		var wipStates = _kinematics.ComputeStates(wheelVelocityLeft, wheelVelocityRight, yaw, pitch, roll, duration);
 
 		var commandPitch = _pitchProfiler.Generate(Time.timeAsDouble);
-		var commandPitchDerivative = 0;//commandPitch / duration;
+		var commandPitchDerivative = commandPitch / duration;
 
 		// Debug.Log($"Pitch: {commandPitch * Mathf.Rad2Deg},{commandPitchDerivative * Mathf.Rad2Deg} | wheelVelocity L/R: {wheelVelocityLeft.ToString("F6")}/{wheelVelocityRight.ToString("F6")}");
 
