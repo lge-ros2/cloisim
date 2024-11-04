@@ -210,18 +210,10 @@ public class UIController : MonoBehaviour
 		Main.ModelImporter.ToggleModelList();
 	}
 
-	private void ShowCameraView(in bool open = false)
+	private void ShowCameraView(in bool open = true)
 	{
 		var cameraViewMenuVisElem = _rootVisualElement.Q<VisualElement>("CameraViewMenu");
-
-		if (!open || cameraViewMenuVisElem.style.display == DisplayStyle.Flex)
-		{
-			cameraViewMenuVisElem.style.display = DisplayStyle.None;
-		}
-		else
-		{
-			cameraViewMenuVisElem.style.display = DisplayStyle.Flex;
-		}
+		cameraViewMenuVisElem.style.visibility = (!open || cameraViewMenuVisElem.style.visibility == Visibility.Visible)? Visibility.Hidden : Visibility.Visible;
 	}
 
 	// private void OnValueChangedScaleField(ChangeEvent<string> evt)
