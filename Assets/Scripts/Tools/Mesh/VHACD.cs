@@ -38,10 +38,11 @@ public partial class VHACD
 			if (meshFilter.sharedMesh.vertexCount >= NumOfLimitConvexMeshTriangles)
 			{
 				// #if ENABLE_MERGE_COLLIDER
-				// 	Debug.LogFormat("Apply VHACD({0}), EnableMergeCollider will be ignored.", targetObject.name);
+				// 	Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{meshFilter.sharedMesh.name}) -> {meshFilter.sharedMesh.vertexCount}, EnableMergeCollider will be ignored.");
 				// #else
-				// 	Debug.LogFormat("Apply VHACD({0})", targetObject.name);
+				// 	Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{meshFilter.sharedMesh.name}) -> {meshFilter.sharedMesh.vertexCount}");
 				// #endif
+
 				var colliderMeshes = decomposer.GenerateConvexMeshes(meshFilter.sharedMesh);
 
 				for (var index = 0; index < colliderMeshes.Count; index++)

@@ -181,8 +181,13 @@ public static partial class MeshLoader
 			var newScale = new Vector3(scale.z, scale.y, scale.x);
 			scale = newScale;
 		}
-
-		// Debug.Log($"new scaling = {scale.x} {scale.y} {scale.z}");
+		else if (isRotZeroX && isRotZeroY && !isRotZeroZ &&
+				Mathf.Approximately(rot.eulerAngles.z, 90f))
+		{
+			var newScale = new Vector3(scale.y, scale.x, scale.z);
+			scale = newScale;
+		}
+		// Debug.Log($"new scaling={scale.x} {scale.y} {scale.z} rot={rot.eulerAngles}");
 #endregion
 
 		return Matrix4x4.TRS(pos, rot, scale);
