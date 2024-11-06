@@ -53,21 +53,30 @@ namespace SensorDevices
 				}
 				else
 				{
-					var cmdMowing = receivedMessage.GetMessage<messages.Param>();
-
-					if (cmdMowing != null)
+					var customCmd = receivedMessage.GetMessage<messages.Param>();
+					if (customCmd != null)
 					{
-						if (!string.IsNullOrEmpty(cmdMowing.Name))
+						if (customCmd.Name.StartsWith("mowing"))
 						{
-							ControlMowing(cmdMowing.Name, cmdMowing.Value);
+							ControlMowing(customCmd.Name, customCmd.Value);
 						}
 					}
-#if UNITY_EDITOR
 					else
 					{
-						Debug.LogWarning("ERROR: failed to pop device message");
-					}
+						var joystick = receivedMessage.GetMessage<messages.Joystick>();
+
+						if (joystick != null)
+						{
+							ControlJoystick(joystick);
+						}
+#if UNITY_EDITOR
+						else
+						{
+							Debug.LogWarning("ERROR: failed to pop device message");
+						}
 #endif
+
+					}
 				}
 			}
 		}
@@ -86,6 +95,28 @@ namespace SensorDevices
 			var targetAngularVelocity = angularVelocity.y;
 
 			_motorControl?.Drive(targetLinearVelocity, targetAngularVelocity);
+		}
+
+		/// <summary>
+		/// Control robot by joystick command based on PS5 controller
+		/// </summary>
+		/// <param name="message">Joystick message</param>
+		/// <remarks>
+		/// Currently supported buttons are:
+		/// - Triangle button: start balancing
+		/// </remarks>
+		private void ControlJoystick(in cloisim.msgs.Joystick message)
+		{
+			var balancedDrive = _motorControl as BalancedDrive;
+			if (balancedDrive != null)
+			{
+				var buttonTrianglePressed = message.Buttons[3];
+				if (buttonTrianglePressed > 0)
+				{
+					// Debug.Log(buttonTrianglePressed);
+					balancedDrive.Balancing = true;
+				}
+			}
 		}
 
 		private void ControlMowing(in string target, in cloisim.msgs.Any value)
@@ -159,8 +190,8 @@ namespace SensorDevices
 				}
 				else if (Input.GetKeyUp(KeyCode.B))
 				{
-					balancedDrive._onBalancing = !balancedDrive._onBalancing;
-					Debug.LogWarning("Toggle Balancing " + balancedDrive._onBalancing);
+					balancedDrive.Balancing = !balancedDrive.Balancing;
+					Debug.LogWarning("Toggle Balancing " + balancedDrive.Balancing);
 				}
 			}
 		}
