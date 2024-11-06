@@ -49,17 +49,15 @@ namespace SensorDevices
 		protected override void OnStart()
 		{
 			_imuInitialRotation = transform.rotation;
-			Debug.Log("_imuInitialRotation=" + _imuInitialRotation);
-			// _imuOrientation.x = _imuInitialRotation.eulerAngles.x;
+			// Debug.Log("_imuInitialRotation=" + _imuInitialRotation);
 		}
 
 		protected override void OnReset()
 		{
 			// Debug.Log("IMU Reset");
 			_previousImuRotation = Quaternion.identity;
-			
+
 			_imuOrientation = Vector3.zero;
-			// _imuOrientation.x = _imuRotation.eulerAngles.x;
 		}
 
 		protected override void InitializeMessages()
@@ -108,7 +106,7 @@ namespace SensorDevices
 				linear_acceleration_noises["z"].Apply<float>(ref _imuLinearAcceleration.z, deltaTime);
 			}
 		}
-		
+
 		private float CalculatePitchFromForwardBaseAxis()
 		{
 			var rotatedBase = _imuRotation * Vector3.forward;
@@ -119,20 +117,16 @@ namespace SensorDevices
 
 			// Calculate the pitch angle (rotation around the X-axis)
 			var horizontalDistance = new Vector2(rotatedBase.x, rotatedBase.z).magnitude;  // Projected distance on XZ-plane
-			var pitch = Mathf.Atan2(rotatedBase.y, horizontalDistance) * Mathf.Rad2Deg;
+			var pitch = -Mathf.Atan2(rotatedBase.y, horizontalDistance) * Mathf.Rad2Deg;
 
-			var adjustedPitch = 
-				(rotatedBase.x < 0 && rotatedBase.z < 0 &&
-				 rotatedBase.y >= 0.1f && rotatedBase.y < 1.0f) ? (pitch - 180) : -pitch;
-			
-			// Debug.Log($"{rotatedBase.ToString("F10")}, pitch={pitch} -> {adjustedPitch}");
+			// Debug.Log($"{rotatedBase.ToString("F5")}, {horizontalDistance.ToString("F5")}, {(rotatedBase * Mathf.Rad2Deg).ToString("F5")} , pitch={pitch}");
 
 			// For roll, assuming this is relative to the base axis direction
 			// var projectedZ = Vector3.ProjectOnPlane(rotatedBase, Vector3.forward);
 			// var roll = Mathf.Atan2(projectedZ.y, projectedZ.x) * Mathf.Rad2Deg;
 
 			// return new Vector3(newPitch, yaw, roll);
-			return adjustedPitch;
+			return pitch;
 		}
 
 		void FixedUpdate()
@@ -148,7 +142,7 @@ namespace SensorDevices
 			// angularDisplacement.ToAngleAxis(out var angle, out var angleAxis);
 			// _imuAngularVelocity = angleAxis * angle / Time.fixedDeltaTime;
 
-			// Debug.Log($"{_imuAngularVelocity} {angularDisplacement.eulerAngles / Time.fixedDeltaTime}");	
+			// Debug.Log($"{_imuAngularVelocity} {angularDisplacement.eulerAngles / Time.fixedDeltaTime}");
 
 			var currentLinearVelocity = (currentPosition - _previousImuPosition) / Time.fixedDeltaTime;
 			_imuLinearAcceleration = (currentLinearVelocity - _previousLinearVelocity) / Time.fixedDeltaTime;

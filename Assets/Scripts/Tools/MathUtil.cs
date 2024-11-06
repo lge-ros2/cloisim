@@ -5,7 +5,6 @@
  */
 
 using System;
-using SDF;
 
 public static class MathUtil
 {
@@ -14,7 +13,7 @@ public static class MathUtil
 
 	public static class Angle
 	{
-		// in Radian 
+		// in Radian
 		public static double Normalize(in double angle)
 		{
 			var normalizedAngle = angle % (2 * PI); // Normalize angle to [0, 2π]
@@ -32,8 +31,10 @@ public static class MathUtil
 		angle = Angle.Normalize(angle);
 	}
 
-	public static void NormalizeAngle(this ref float angle)
+	public static void NormalizeAngle(this ref UnityEngine.Vector3 vector)
 	{
-		angle = (float)Angle.Normalize((double)angle);
+		vector.x = (float)Angle.Normalize(vector.x);
+		vector.y = (float)Angle.Normalize(vector.y);
+		vector.z = (float)Angle.Normalize(vector.z);
 	}
 }

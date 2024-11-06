@@ -262,13 +262,8 @@ public class BalancedDrive : MotorControl
 	private Vector3 GetOrientation(SensorDevices.IMU imuSensor)
 	{
 		var angles = imuSensor.GetOrientation();
-
-		angles.z *= Mathf.Deg2Rad; // roll, deg to rad
-		angles.x *= Mathf.Deg2Rad; // pitch, deg to rad
-		angles.y *= Mathf.Deg2Rad; // yaw, deg to rad
-		angles.z.NormalizeAngle();
-		angles.x.NormalizeAngle();
-		angles.y.NormalizeAngle();
+		angles *= Mathf.Deg2Rad; // deg to rad
+		angles.NormalizeAngle();
 		// Debug.Log("Orientation: " + angles.x * Mathf.Rad2Deg + "," + angles.y * Mathf.Rad2Deg + "," + angles.z * Mathf.Rad2Deg);
 		return angles;
 	}
