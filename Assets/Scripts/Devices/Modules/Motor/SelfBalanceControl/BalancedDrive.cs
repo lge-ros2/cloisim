@@ -48,19 +48,27 @@ public class BalancedDrive : MotorControl
 		set => _commandHipTarget = value;
 	}
 
-	public BalancedDrive(in Transform controllerTransform)
+	public BalancedDrive(
+		in Transform controllerTransform,
+		in SlidingModeControl.OutputMode outputMode,
+		in SlidingModeControl.SwitchingMode switchingMode,
+		in double expProfilerTimeConstant)
 		: base(controllerTransform)
 	{
-		_pitchProfiler = new ExpProfiler(10);
+		_pitchProfiler = new ExpProfiler(expProfilerTimeConstant);
+		_smc = new SlidingModeControl(outputMode, switchingMode);
+	}
 
-		_smc = new SlidingModeControl(
-					Time.fixedDeltaTime,
-					// SlidingModeControl.OutputMode.EQUIVALENT,
-					// SlidingModeControl.OutputMode.SLIDING_MODE,
-					SlidingModeControl.OutputMode.LQR,
-					SlidingModeControl.SwitchingMode.SAT
-					// SlidingModeControl.SwitchingMode.SIGN
-					);
+	public BalancedDrive(
+		in Transform controllerTransform,
+		in string outputMode = "LQR",
+		in string switchingMode = "SAT",
+		in double expProfilerTimeConstant = 5)
+		: this(controllerTransform,
+			SlidingModeControl.ParseOutputMode(outputMode),
+			SlidingModeControl.ParseSwitchingMode(switchingMode),
+			expProfilerTimeConstant)
+	{
 	}
 
 	public override void Reset()
@@ -290,7 +298,7 @@ public class BalancedDrive : MotorControl
 	{
 		// Debug.Log("Update Balanced");
 		if (imuSensor == null)
-		{	
+		{
 			Debug.LogWarning("IMU sensor is missing");
 			return false;
 		}

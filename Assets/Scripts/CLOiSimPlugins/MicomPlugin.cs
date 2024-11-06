@@ -137,7 +137,18 @@ public class MicomPlugin : CLOiSimPlugin
 	{
 		_log.AppendLine($"SetBalancedWheel({parameterPrefix})");
 
-		_motorControl = new BalancedDrive(this.transform);
+		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc") &&
+			GetPluginParameters().IsValidNode($"{parameterPrefix}/smc/mode"))
+		{
+			var outputMode = GetPluginParameters().GetValue<string> ($"{parameterPrefix}/smc/mode/output", "LQR");
+			var switchingMode = GetPluginParameters().GetValue<string> ($"{parameterPrefix}/smc/mode/switching", "SAT");
+			_log.AppendLine($"outputMode: {outputMode}, switchingMode: {switchingMode}");
+			_motorControl = new BalancedDrive(this.transform, outputMode, switchingMode);
+		}
+		else
+		{
+			_motorControl = new BalancedDrive(this.transform);
+		}
 
 		if (_micomSensor != null)
 		{
