@@ -43,11 +43,8 @@ namespace SensorDevices
 
 				if (cmdVelocity != null)
 				{
-					var linear = cmdVelocity.Linear;
-					var angular = cmdVelocity.Angular;
-
-					var linearVelocity = SDF2Unity.Position(linear.X, linear.Y, linear.Z);
-					var angularVelocity = SDF2Unity.Position(angular.X, angular.Y, angular.Z);
+					var linearVelocity = SDF2Unity.Position(cmdVelocity.Linear);
+					var angularVelocity = SDF2Unity.Position(cmdVelocity.Angular);
 
 					DoWheelDrive(linearVelocity, angularVelocity);
 				}
@@ -107,6 +104,8 @@ namespace SensorDevices
 		/// </remarks>
 		private void ControlJoystick(in cloisim.msgs.Joystick message)
 		{
+			const float PitchRotationUnit = 0.005f;
+
 			var balancedDrive = _motorControl as BalancedDrive;
 			if (balancedDrive != null)
 			{
@@ -115,6 +114,14 @@ namespace SensorDevices
 				{
 					// Debug.Log(buttonTrianglePressed);
 					balancedDrive.Balancing = true;
+				}
+
+				var stickRotation = SDF2Unity.Rotation(message.Rotation);
+				// Debug.Log(stickRotation.ToString("F5"));
+				if (Mathf.Abs(stickRotation.x) > Quaternion.kEpsilon)
+				{
+					balancedDrive.PitchTarget += PitchRotationUnit * SDF2Unity.CurveOrientationAngle(stickRotation.x);
+					// Debug.Log($"Joy-PitchTarget={balancedDrive.PitchTarget}");
 				}
 			}
 		}
@@ -179,19 +186,18 @@ namespace SensorDevices
 				{
 					if (Input.GetKey(KeyCode.UpArrow))
 					{
-						balancedDrive.PitchTarget += 0.001f;
+						balancedDrive.PitchTarget += 0.002f;
 					}
 					else if (Input.GetKey(KeyCode.DownArrow))
 					{
-						balancedDrive.PitchTarget -= 0.001f;
+						balancedDrive.PitchTarget -= 0.002f;
 					}
-
 					// Debug.Log($"PitchTarget={balancedDrive.PitchTarget}");
 				}
 				else if (Input.GetKeyUp(KeyCode.B))
 				{
 					balancedDrive.Balancing = !balancedDrive.Balancing;
-					Debug.LogWarning("Toggle Balancing " + balancedDrive.Balancing);
+					Debug.LogWarning($"Toggle Balancing[{balancedDrive.Balancing}] ");
 				}
 			}
 		}
