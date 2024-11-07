@@ -23,15 +23,19 @@ namespace SelfBalanceControl
 			this._initTime = 0;
 		}
 
-		public void Reset(in double initTime, in double initialValue, in double offset)
+		public void Reset(in double initTime, in double initialValue, in double offset = 0)
 		{
+			this._initTime = initTime;
 			this._initValue = initialValue;
 			this._offset = offset;
-			this._initTime = initTime;
+			// UnityEngine.Debug.Log("ExpProfiler reset: " + this._initValue);
 		}
 
 		public double Generate(in double timeStamp)
 		{
+			// UnityEngine.Debug.Log("ExpProfiler: Generate=" + this._initValue.ToString("F5") +
+			// 	", exp=" + (Math.Exp(-_timeConstant * (timeStamp - _initTime)) +
+			// 	" timestamp=" + timeStamp.ToString("F5") + " initTime=" + _initTime.ToString("F5")));
 			return _initValue * Math.Exp(-_timeConstant * (timeStamp - _initTime)) + _offset;
 		}
 	}

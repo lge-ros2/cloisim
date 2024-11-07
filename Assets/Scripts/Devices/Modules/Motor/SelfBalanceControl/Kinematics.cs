@@ -17,7 +17,7 @@ namespace SelfBalanceControl
 		private double _s = 0; // displacement,s
 		private double _sRef = 0;
 		private double _previousLinearVelocity = 0;
-		private double _previousPitch = 0;
+		private double _previousPitch = double.NaN;
 
 		public WheelInfo WheelInfo => _wheelInfo;
 
@@ -26,10 +26,10 @@ namespace SelfBalanceControl
 			this._wheelInfo = new WheelInfo(radius, separation);
 		}
 
-		public void Reset(in double wheelVelocityLeft, in double wheelVelocityRight, in double initPitch)
+		public void Reset(in double wheelVelocityLeft, in double wheelVelocityRight)
 		{
-			_previousLinearVelocity = (this._wheelInfo.wheelRadius * 0.5) * (wheelVelocityLeft + wheelVelocityRight);
-			_previousPitch = initPitch;
+			_previousLinearVelocity = (this._wheelInfo.halfWheelRadius) * (wheelVelocityLeft + wheelVelocityRight);
+			_previousPitch = double.NaN;
 			_s = _sRef = 0;
 			_odomPose.Set(0, 0);
 		}
@@ -39,38 +39,41 @@ namespace SelfBalanceControl
 			in double yaw, in double pitch, in double roll,
 			in double deltaTime)
 		{
-			var halfWheelRadius = (this._wheelInfo.wheelRadius * 0.5);
-			var inverseDoubleWheelSeparation = 1 / (2 * this._wheelInfo.wheelSeparation);
+			var halfWheelRadius = this._wheelInfo.halfWheelRadius;
+			var halfInverseWheelSeparation = this._wheelInfo.inversedWheelSeparation * 0.5f;
 
-			var linearVelocity = halfWheelRadius * (wheelVelocityRight + wheelVelocityLeft);
-			var w = this._wheelInfo.wheelRadius * inverseDoubleWheelSeparation * (wheelVelocityRight - wheelVelocityLeft);
+			var wheelVelocitySum = wheelVelocityRight + wheelVelocityLeft;
+			var wheelVelocityDiff = wheelVelocityRight - wheelVelocityLeft;
+
+			var linearVelocity = halfWheelRadius * wheelVelocitySum;
+			var angularVelocity = this._wheelInfo.wheelRadius * halfInverseWheelSeparation * wheelVelocityDiff;
 			// UnityEngine.Debug.Log($"wheelVelocity R/L: {wheelVelocityRight}/{wheelVelocityLeft}");
 
-			var pitchDot = (pitch - _previousPitch) / deltaTime;
+			var pitchDot = (double.IsNaN(_previousPitch)) ? 0 : ((pitch - _previousPitch) / deltaTime);
 			_s += 0.5 * (linearVelocity + _previousLinearVelocity) * deltaTime;
+
+			// UnityEngine.Debug.Log($"{_previousLinearVelocity}->{linearVelocity} {_s}");
 
 			// v, w, pitch_dot, pitch, s
 			var states = new VectorXd(new double[]
 				{
 					linearVelocity,
-					w,
+					angularVelocity,
 					pitchDot,
 					pitch,
-					_s
+					-_s
 				});
 
-			// UnityEngine.Debug.Log($"ComputeStates: {_previousPitch} -> {pitch}");
+			// UnityEngine.Debug.Log($"ComputeStates: {_previousPitch} -> {pitch}: pitchDot={pitchDot}");
 			_previousLinearVelocity = linearVelocity;
 			_previousPitch = pitch;
 
 			// calculate odom
-			var sl = wheelVelocityLeft * (halfWheelRadius) * deltaTime;
-			var sr = wheelVelocityRight * (halfWheelRadius) * deltaTime;
-			var ssum = sl + sr;
-			var sdiff = sr - sl;
+			var ssum = wheelVelocitySum * halfWheelRadius * deltaTime;
+			var sdiff = wheelVelocityDiff * halfWheelRadius * deltaTime;
 
-			var deltaX = (ssum) * Math.Cos(yaw + sdiff / inverseDoubleWheelSeparation);
-			var deltaY = (ssum) * Math.Sin(yaw + sdiff / inverseDoubleWheelSeparation);
+			var deltaX = ssum * Math.Cos(yaw + sdiff / halfInverseWheelSeparation);
+			var deltaY = ssum * Math.Sin(yaw + sdiff / halfInverseWheelSeparation);
 
 			_odomPose.x += deltaX;
 			_odomPose.y += deltaY;

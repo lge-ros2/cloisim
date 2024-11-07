@@ -10,29 +10,28 @@ using messages = cloisim.msgs;
 
 public class BalancedDrive : MotorControl
 {
-	private readonly float WHEEL_MAX_TORQUE = 10;
-	private readonly float WHEEL_MAX_SPEED = 60;
-
-	private readonly float HIP_MAX_TORQUE = 10;
-	private readonly float HIP_MAX_SPEED = 30;
-
 	private Kinematics _kinematics = null;
 	private ExpProfiler _pitchProfiler;
 	private SlidingModeControl _smc = null;
 
-	public bool _onBalancing = false;
+	private bool _onBalancing = false;
 	private double _commandTwistLinear = 0;
 	private double _commandTwistAngular = 0;
-	private double _commandPitch = 0;
+	private double _commandTargetPitch = 0;
+	private double _prevCommandPitch = 0;
+	private bool _doUpdatePitchProfiler = false;
 	private double _commandHeadsetTarget = 0;
 	private Vector2d _commandHipTarget = Vector2d.zero;
+	private float _detectFalldownThresholdMin = -1.25f;
+	private float _detectFalldownThresholdMax = 1.35f;
 
 	public double PitchTarget
 	{
-		get => _commandPitch;
-		set {
-			_commandPitch = value;
-			_pitchProfiler.Reset(Time.timeAsDouble, _commandPitch, 0);
+		get => _commandTargetPitch;
+		set
+		{
+			_commandTargetPitch = value;
+			_doUpdatePitchProfiler = true;
 		}
 	}
 
@@ -46,6 +45,12 @@ public class BalancedDrive : MotorControl
 	{
 		get => _commandHipTarget;
 		set => _commandHipTarget = value;
+	}
+
+	public bool Balancing
+	{
+		get => _onBalancing;
+		set => _onBalancing = value;
 	}
 
 	public BalancedDrive(
@@ -73,7 +78,12 @@ public class BalancedDrive : MotorControl
 
 	public override void Reset()
 	{
-		Debug.Log("BalancedDrive Reset ========================");
+		Debug.Log("========== BalancedDrive Reset ==========");
+
+		_commandTargetPitch = 0;
+		_doUpdatePitchProfiler = false;
+		_prevCommandPitch = 0;
+		_commandHeadsetTarget = 0;
 
 		foreach (var wheel in _motorList)
 		{
@@ -82,12 +92,13 @@ public class BalancedDrive : MotorControl
 
 		var wheelVelocityLeft = GetAngularVelocity(Location.FRONT_WHEEL_LEFT);
 		var wheelVelocityRight = GetAngularVelocity(Location.FRONT_WHEEL_RIGHT);
-		var pitch = 0;
-		_kinematics.Reset(wheelVelocityLeft, wheelVelocityRight, pitch);
-		_smc.Reset();
-		PitchTarget = 0.000f;
 
-		_commandHeadsetTarget = 0f;
+		UpdatePitchProfiler();
+		ResetPose();
+
+		_kinematics.Reset(wheelVelocityLeft, wheelVelocityRight);
+		_smc.Reset();
+
 		SetEfforts(VectorXd.Zero(5));
 	}
 
@@ -251,13 +262,35 @@ public class BalancedDrive : MotorControl
 	public override void Drive(in float linearVelocity, in float angularVelocity)
 	{
 		_commandTwistLinear = linearVelocity;
-		_commandTwistAngular = -angularVelocity;
+		_commandTwistAngular = SDF2Unity.CurveOrientationAngle(angularVelocity);
 
 		if (_commandTwistLinear == 0)
 		{
 			PitchTarget = 0;
 		}
+		// Debug.Log($"Command - linear: {_commandTwistLinear} angular: {_commandTwistAngular} pitch: {PitchTarget}");
 	}
+
+	private void UpdatePitchProfiler()
+	{
+		_pitchProfiler.Reset(Time.timeAsDouble, _commandTargetPitch);
+	}
+
+	private void ResetPose()
+	{
+		_motorList[Location.HIP_LEFT]?.Reset();
+		_motorList[Location.HIP_RIGHT]?.Reset();
+
+		if (_motorList.ContainsKey(Location.LEG_LEFT) &&
+			_motorList.ContainsKey(Location.LEG_RIGHT))
+		{
+			_motorList[Location.LEG_LEFT]?.Reset();
+			_motorList[Location.LEG_RIGHT]?.Reset();
+		}
+
+		SetEfforts(VectorXd.Zero(5));
+	}
+
 
 	private Vector3 GetOrientation(SensorDevices.IMU imuSensor)
 	{
@@ -268,18 +301,9 @@ public class BalancedDrive : MotorControl
 		return angles;
 	}
 
-	private void SaturateEfforts(ref VectorXd efforts)
-	{
-		efforts[0] = Mathf.Clamp((float)efforts[0], -WHEEL_MAX_TORQUE, WHEEL_MAX_TORQUE);
-		efforts[1] = Mathf.Clamp((float)efforts[1], -WHEEL_MAX_TORQUE, WHEEL_MAX_TORQUE);
-		efforts[2] = Mathf.Clamp((float)efforts[2], -HIP_MAX_TORQUE, HIP_MAX_TORQUE);
-		efforts[3] = Mathf.Clamp((float)efforts[3], -HIP_MAX_TORQUE, HIP_MAX_TORQUE);
-	}
-
 	private void SetEfforts(VectorXd efforts)
 	{
-		// SaturateEfforts(ref efforts);
-		Debug.Log($"Effort:  {efforts}");
+		// Debug.Log($"Effort:  {efforts}");
 		_motorList[Location.FRONT_WHEEL_LEFT]?.SetJointForce((float)efforts[0]);
 		_motorList[Location.FRONT_WHEEL_RIGHT]?.SetJointForce((float)efforts[1]);
 		_motorList[Location.HIP_LEFT]?.SetJointForce((float)efforts[2]);
@@ -287,7 +311,18 @@ public class BalancedDrive : MotorControl
 		_motorList[Location.HEAD]?.SetJointForce((float)efforts[4]);
 	}
 
-	public float _detectFalldownThreshold = 1.48f;
+	private VectorXd GetTargetReferences(in float duration)
+	{
+		var commandPitch = _pitchProfiler.Generate(Time.timeAsDouble);
+		var commandPitchDerivative = (commandPitch - _prevCommandPitch) / Time.timeAsDouble;
+		// Debug.Log($"new commandPitch: {commandPitch}  _commandTargetPitch: {_commandTargetPitch} commandPitchDerivative: {commandPitchDerivative}");
+		_prevCommandPitch = commandPitch;
+
+		return _kinematics.GetReferences(
+			_commandTwistLinear, _commandTwistAngular,
+			commandPitch, commandPitchDerivative,
+			duration);
+	}
 
 	public override bool Update(messages.Micom.Odometry odomMessage, in float duration, SensorDevices.IMU imuSensor)
 	{
@@ -298,43 +333,57 @@ public class BalancedDrive : MotorControl
 			return false;
 		}
 
-		var wheelVelocityLeft = GetAngularVelocity(Location.FRONT_WHEEL_LEFT);
-		var wheelVelocityRight = GetAngularVelocity(Location.FRONT_WHEEL_RIGHT);
+		var imuRotation = GetOrientation(imuSensor);
+		var pitch = imuRotation.x;
 
-		var orientation = GetOrientation(imuSensor);
-		var roll = orientation.z;
-		var pitch = orientation.x;
-		var yaw = orientation.y;
-
-		// Debug.Log(orientation.ToString("F10"));
-		// Debug.Log($"wheelVelocity1 L/R: {wheelVelocityLeft}/{wheelVelocityRight}");
-		// Debug.Log($"wheelVelocity2 L/R: {wheelVelocityLeft2}/{wheelVelocityRight2}");
-		// Debug.Log($"Pitch: {pitch}, Roll: {roll}, Yaw: {yaw}");
-
-		if (_onBalancing && Mathf.Abs(pitch) > _detectFalldownThreshold)
+		if (_onBalancing && (pitch > _detectFalldownThresholdMax || pitch < _detectFalldownThresholdMin))
 		{
-			Debug.LogWarning($"Falldown detected!!!! pitch: {pitch}");
+			Debug.LogWarning($"Falldown detected !!! pitch: {pitch * Mathf.Rad2Deg}");
 			_onBalancing = false;
 			Reset();
 		}
 
-		if (_onBalancing == false)
+		if (_onBalancing)
 		{
-			return true;
+			return ProcessBalancing(odomMessage, duration, imuRotation);
 		}
 
-		// > observer's update
+		return true;
+	}
+
+	private bool ProcessBalancing(messages.Micom.Odometry odomMessage, in float duration, Vector3 imuRotation)
+	{
+		var wheelVelocityLeft = GetAngularVelocity(Location.FRONT_WHEEL_LEFT);
+		var wheelVelocityRight = GetAngularVelocity(Location.FRONT_WHEEL_RIGHT);
+
+		var roll = imuRotation.z;
+		var pitch = imuRotation.x;
+		var yaw = imuRotation.y;
+
 		var wipStates = _kinematics.ComputeStates(wheelVelocityLeft, wheelVelocityRight, yaw, pitch, roll, duration);
+		// Debug.Log($"wipStates: {wipStates}");
 
-		var commandPitch = _pitchProfiler.Generate(Time.timeAsDouble);
-		var commandPitchDerivative = commandPitch / duration;
+		var pitchUpdated = false;
+		if (_doUpdatePitchProfiler)
+		{
+			UpdatePitchProfiler();
+			pitchUpdated = true;
+			_doUpdatePitchProfiler = false;
+		}
 
-		// Debug.Log($"Pitch: {commandPitch * Mathf.Rad2Deg},{commandPitchDerivative * Mathf.Rad2Deg} | wheelVelocity L/R: {wheelVelocityLeft.ToString("F6")}/{wheelVelocityRight.ToString("F6")}");
+		var wipReferences = GetTargetReferences(duration);
+		// Debug.Log($"Cmd lin: {_commandTwistLinear} ang: {_commandTwistAngular} " +
+		// 		$"pitch: {wipReferences[3].ToString("F5")}=={(wipReferences[3] * Mathf.Rad2Deg).ToString("F5")} " +
+		// 		$"pitchd: {(wipReferences[2] * Mathf.Rad2Deg).ToString("F4")} | "+
+		// 		$"Current pitch: {pitch.ToString("F4")}=={(pitch * Mathf.Rad2Deg).ToString("F4")} " +
+		// 		$"pitchDot: {wipStates[2].ToString("F4")}=={(wipStates[2] * Mathf.Rad2Deg).ToString("F4")} | "+
+		// 		$"wheelVel L/R: {wheelVelocityLeft.ToString("F5")}/{wheelVelocityRight.ToString("F5")}");
 
-		var wipReferences = _kinematics.GetReferences(
-			_commandTwistLinear, _commandTwistAngular,
-			commandPitch, commandPitchDerivative,
-			duration);
+		if (pitchUpdated == false && Mathf.Abs((float)wipReferences[2]) < Quaternion.kEpsilon)
+		{
+			_commandTargetPitch = 0;
+			Debug.LogWarning("comandTargetPitch reset!!!");
+		}
 
 		var wipEfforts = _smc.ComputeControl(wipStates, wipReferences, duration);
 
@@ -347,19 +396,18 @@ public class BalancedDrive : MotorControl
 		var headsetEffort = UpdateHead(headsetPosition, _commandHeadsetTarget, duration);
 		// Debug.Log($"{headsetPosition} {_commandHeadsetTarget} {headsetEffort} {_motorList[Location.HEAD]?.GetForce()}");
 
-		var effortsZOH = new VectorXd(new double[] {
+		// Torque (ZOH manner)
+		var efforts = new VectorXd(new double[] {
 				Unity2SDF.Direction.Curve(wipEfforts.x),
 				Unity2SDF.Direction.Curve(wipEfforts.y),
-				hipEfforts.x,
-				hipEfforts.y,
+				(hipEfforts.x),
+				(hipEfforts.y),
 				headsetEffort
 			});
+		SetEfforts(efforts);
 
-		// Debug.Log($"Pitch:	 {pitch}, X {effortsZOH[0]}, Y: {effortsZOH[1]}");
+		// Debug.Log($"Pitch:	 {pitch}, X {efforts[0]}, Y: {efforts[1]}");
 		// Debug.Log("Balanced Control: " + wipEfforts + ", " + hipEfforts + ", " + headsetEffort);
-
-		// Torque (ZOH manner)
-		SetEfforts(effortsZOH);
 
 		if ((odomMessage != null) &&
 			!float.IsNaN(wheelVelocityLeft) && !float.IsNaN(wheelVelocityRight))

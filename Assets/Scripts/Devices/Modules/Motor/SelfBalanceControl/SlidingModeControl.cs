@@ -65,8 +65,6 @@ namespace SelfBalanceControl
 			})
 		};
 
-		private double _deltaTime;
-
 		private Vector2d _uLQ = Vector2d.zero;
 		private Vector2d _uEQ = Vector2d.zero;
 		private Vector2d _uSW = Vector2d.zero;
@@ -86,9 +84,8 @@ namespace SelfBalanceControl
 		private OutputMode _outputMode;
 		private  SwitchingMode _switchingMode;
 
-		public SlidingModeControl(in double deltaTime, in NominalModel model, OutputMode outMode, SwitchingMode switchMode)
+		public SlidingModeControl(in NominalModel model, OutputMode outMode, SwitchingMode switchMode)
 		{
-			this._deltaTime = deltaTime;
 			this._outputMode = outMode;
 			this._switchingMode = switchMode;
 			this._nominalModel = model;
@@ -96,22 +93,28 @@ namespace SelfBalanceControl
 			SetDefault();
 		}
 
-		public SlidingModeControl(in double deltaTime, OutputMode outMode, SwitchingMode switchMode)
-		: this(
-				deltaTime,
-				_DefaultNominalModel,
-				outMode,
-				switchMode)
+		public SlidingModeControl(OutputMode outMode, SwitchingMode switchMode)
+			: this(_DefaultNominalModel, outMode, switchMode)
 		{
 		}
 
-		public SlidingModeControl(in double deltaTime)
-			: this(
-				deltaTime,
-				_DefaultNominalModel,
-				OutputMode.SLIDING_MODE,
-				SwitchingMode.SAT)
+		public SlidingModeControl()
+			: this( _DefaultNominalModel, OutputMode.LQR, SwitchingMode.SAT)
 		{
+		}
+
+		public static OutputMode ParseOutputMode(in string mode)
+		{
+			return (Enum.IsDefined(typeof(OutputMode), mode.ToUpper()))?
+				OutputMode.LQR :
+				(OutputMode)Enum.Parse(typeof(SlidingModeControl.OutputMode), mode.ToUpper());
+		}
+
+		public static SwitchingMode ParseSwitchingMode(in string mode)
+		{
+			return (Enum.IsDefined(typeof(SwitchingMode), mode.ToUpper()))?
+				SwitchingMode.SAT :
+				(SwitchingMode)Enum.Parse(typeof(SlidingModeControl.SwitchingMode), mode.ToUpper());
 		}
 
 		public void SetNominalModel(in string matrixA, in string matrixB, in string matrixK, in string matrixS)
@@ -166,7 +169,8 @@ namespace SelfBalanceControl
 			_uLQ = -_nominalModel.K * delta;
 			_uEQ = _uLQ - (_nominalModel.SxB).Inverse * _nominalModel.S * _f;
 
-			// UnityEngine.Debug.Log($"states: {states} | references: {references} | Delta: {delta}");
+			// UnityEngine.Debug.Log($"states: {states.ToString("F4")} | references: {references.ToString("F4")} | Delta: {delta.ToString("F4")} | K: {_nominalModel.K.ToString("F4")} | uLQ({_uLQ.ToString("F4")})");
+			// UnityEngine.Debug.Log($"states: {states.ToString("F4")} | references: {references.ToString("F4")} | Delta: {delta.ToString("F4")} | uLQ({_uLQ.ToString("F4")})");
 			// UnityEngine.Debug.Log($"K: {_nominalModel.K} | f: {_f} | uLQ({_uLQ}) | uEQ({_uEQ})");
 			// UnityEngine.Debug.Log($"uLQ({_uLQ}) | K: {_nominalModel.K} | Delta: {delta}");
 
