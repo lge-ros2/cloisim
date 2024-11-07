@@ -78,6 +78,9 @@ public class DifferentialDrive : MotorControl
 		var angularVelocityLeft = GetAngularVelocity(Location.FRONT_WHEEL_LEFT);
 		var angularVelocityRight = GetAngularVelocity(Location.FRONT_WHEEL_RIGHT);
 
+		// var angularVelocityLeft = _motorList[Location.FRONT_WHEEL_LEFT].GetJointVelocity();
+		// var angularVelocityRight = _motorList[Location.FRONT_WHEEL_RIGHT].GetJointVelocity();
+
 		return (_odometry != null) ? _odometry.Update(odomMessage, angularVelocityLeft, angularVelocityRight, duration, imuSensor) : false;
 	}
 }

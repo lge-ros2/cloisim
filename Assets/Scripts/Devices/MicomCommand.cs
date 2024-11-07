@@ -186,7 +186,7 @@ namespace SensorDevices
 						balancedDrive.PitchTarget -= 0.001f;
 					}
 
-					// Debug.Log(balancedDrive.PitchTarget);
+					// Debug.Log($"PitchTarget={balancedDrive.PitchTarget}");
 				}
 				else if (Input.GetKeyUp(KeyCode.B))
 				{
