@@ -5,6 +5,7 @@
  */
 
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -48,6 +49,7 @@ public abstract class MotorControl
 		AttachMotor(Location.FRONT_WHEEL_RIGHT, wheelNameRight);
 	}
 
+
 	public void AttachWheel(
 		in string frontWheelLeftName, in string frontWheelRightName,
 		in string rearWheelLeftName, in string rearWheelRightName)
@@ -60,6 +62,8 @@ public abstract class MotorControl
 
 	protected void AttachMotor(in Location targetlLocation, in string targetName)
 	{
+		var log = new StringBuilder();
+
 		var linkHelperList = _baseTransform.GetComponentsInChildren<SDF.Helper.Link>();
 		foreach (var linkHelper in linkHelperList)
 		{
@@ -70,10 +74,11 @@ public abstract class MotorControl
 			{
 				var motorObject = (linkHelper.gameObject != null) ? linkHelper.gameObject : linkHelper.Model.gameObject;
 				_motorList[targetlLocation] = new Motor(motorObject);
-				Debug.Log($"AttachMotor: {_motorList[targetlLocation]} {targetlLocation} {targetName}");
+				log.AppendLine($"AttachMotor: {_motorList[targetlLocation]} {targetlLocation} {targetName}");
 				return;
 			}
 		}
+		Debug.Log(log.ToString());
 	}
 
 	public void SetWheelPID(

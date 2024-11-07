@@ -143,6 +143,7 @@ public class MicomPlugin : CLOiSimPlugin
 			var outputMode = GetPluginParameters().GetValue<string> ($"{parameterPrefix}/smc/mode/output", "LQR");
 			var switchingMode = GetPluginParameters().GetValue<string> ($"{parameterPrefix}/smc/mode/switching", "SAT");
 			_log.AppendLine($"outputMode: {outputMode}, switchingMode: {switchingMode}");
+
 			_motorControl = new BalancedDrive(this.transform, outputMode, switchingMode);
 		}
 		else
@@ -159,6 +160,13 @@ public class MicomPlugin : CLOiSimPlugin
 		{
 			_micomCommand.SetMotorControl(_motorControl);
 		}
+
+		var autostart = GetPluginParameters().GetAttributeInPath<bool>(parameterPrefix, "autostart");
+		if (autostart)
+		{
+			(_motorControl as BalancedDrive).Balancing = true;
+		}
+		_log.AppendLine($"AutoStart: {autostart}");
 
 		var hipJointLeft = GetPluginParameters().GetValue<string>($"{parameterPrefix}/hip/joint[@type='left']");
 		var hipJointRight = GetPluginParameters().GetValue<string>($"{parameterPrefix}/hip/joint[@type='right']");
