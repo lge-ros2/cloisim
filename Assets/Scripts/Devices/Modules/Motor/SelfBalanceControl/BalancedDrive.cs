@@ -22,6 +22,7 @@ public class BalancedDrive : MotorControl
 	private bool _doUpdatePitchProfiler = false;
 	private double _commandHeadsetTarget = 0;
 	private Vector2d _commandHipTarget = Vector2d.zero;
+	private Vector2d _commandLegTarget = Vector2d.zero;
 	private float _detectFalldownThresholdMin = -1.25f;
 	private float _detectFalldownThresholdMax = 1.35f;
 
@@ -30,7 +31,8 @@ public class BalancedDrive : MotorControl
 		get => _commandTargetPitch;
 		set
 		{
-			_commandTargetPitch = value;
+			const double commandMargin = 0.00001;
+			_commandTargetPitch = System.Math.Clamp(value, _detectFalldownThresholdMin + commandMargin, _detectFalldownThresholdMax - commandMargin);
 			_doUpdatePitchProfiler = true;
 		}
 	}
@@ -45,6 +47,12 @@ public class BalancedDrive : MotorControl
 	{
 		get => _commandHipTarget;
 		set => _commandHipTarget = value;
+	}
+
+	public Vector2d LegTarget
+	{
+		get => _commandLegTarget;
+		set => _commandLegTarget = value;
 	}
 
 	public bool Balancing
@@ -84,6 +92,8 @@ public class BalancedDrive : MotorControl
 		_doUpdatePitchProfiler = false;
 		_prevCommandPitch = 0;
 		_commandHeadsetTarget = 0;
+		_commandHipTarget = Vector2d.zero;
+		_commandLegTarget = Vector2d.zero;
 
 		foreach (var wheel in _motorList)
 		{
@@ -99,7 +109,7 @@ public class BalancedDrive : MotorControl
 		_kinematics.Reset(wheelVelocityLeft, wheelVelocityRight);
 		_smc.Reset();
 
-		SetEfforts(VectorXd.Zero(5));
+		SetEfforts(VectorXd.Zero(7));
 	}
 
 	public override void SetWheelInfo(in float radius, in float separation)
@@ -254,6 +264,14 @@ public class BalancedDrive : MotorControl
 			);
 	}
 
+	private Vector2d UpdateLeg(in Vector2d actual, in Vector2d target, in float duration)
+	{
+		return new Vector2d(
+				_motorList[Location.LEG_LEFT].UpdatePID(actual[0], target[0], duration),
+				_motorList[Location.LEG_RIGHT].UpdatePID(actual[1], target[1], duration)
+			);
+	}
+
 	private double UpdateHead(in double actual, in double target, in float duration)
 	{
 		return _motorList[Location.HEAD].UpdatePID(actual, target, duration);
@@ -288,7 +306,7 @@ public class BalancedDrive : MotorControl
 			_motorList[Location.LEG_RIGHT]?.Reset();
 		}
 
-		SetEfforts(VectorXd.Zero(5));
+		SetEfforts(VectorXd.Zero(7));
 	}
 
 
@@ -308,7 +326,15 @@ public class BalancedDrive : MotorControl
 		_motorList[Location.FRONT_WHEEL_RIGHT]?.SetJointForce((float)efforts[1]);
 		_motorList[Location.HIP_LEFT]?.SetJointForce((float)efforts[2]);
 		_motorList[Location.HIP_RIGHT]?.SetJointForce((float)efforts[3]);
-		_motorList[Location.HEAD]?.SetJointForce((float)efforts[4]);
+
+		if (_motorList.ContainsKey(Location.LEG_LEFT) &&
+			_motorList.ContainsKey(Location.LEG_RIGHT))
+		{
+			_motorList[Location.LEG_LEFT]?.SetJointForce((float)efforts[4]);
+			_motorList[Location.LEG_RIGHT]?.SetJointForce((float)efforts[5]);
+		}
+
+		_motorList[Location.HEAD]?.SetJointForce((float)efforts[6]);
 	}
 
 	private VectorXd GetTargetReferences(in float duration)
@@ -379,10 +405,10 @@ public class BalancedDrive : MotorControl
 		// 		$"pitchDot: {wipStates[2].ToString("F4")}=={(wipStates[2] * Mathf.Rad2Deg).ToString("F4")} | "+
 		// 		$"wheelVel L/R: {wheelVelocityLeft.ToString("F5")}/{wheelVelocityRight.ToString("F5")}");
 
-		if (pitchUpdated == false && Mathf.Abs((float)wipReferences[2]) < Quaternion.kEpsilon)
+		if (!pitchUpdated && Mathf.Abs((float)wipReferences[2]) < Quaternion.kEpsilon)
 		{
 			_commandTargetPitch = 0;
-			Debug.LogWarning("comandTargetPitch reset!!!");
+			// Debug.LogWarning("comandTargetPitch reset!!!");
 		}
 
 		var wipEfforts = _smc.ComputeControl(wipStates, wipReferences, duration);
@@ -391,17 +417,22 @@ public class BalancedDrive : MotorControl
 		// var hipVelocities = GetHipJointVelocities();
 		var headsetPosition = GetHeadJointPosition();
 		// var headsetVelocity = GetHeadJointVelocity();
+		var legPositions = GetLegJointPositions();
+		// var legVelocities = GetLegJointVelocities();
 
-		var hipEfforts = UpdateHip(hipPositions, _commandHipTarget, duration);
 		var headsetEffort = UpdateHead(headsetPosition, _commandHeadsetTarget, duration);
+		var hipEfforts = UpdateHip(hipPositions, _commandHipTarget, duration);
+		var legEfforts = UpdateLeg(legPositions, _commandLegTarget, duration);
 		// Debug.Log($"{headsetPosition} {_commandHeadsetTarget} {headsetEffort} {_motorList[Location.HEAD]?.GetForce()}");
 
 		// Torque (ZOH manner)
 		var efforts = new VectorXd(new double[] {
 				Unity2SDF.Direction.Curve(wipEfforts.x),
 				Unity2SDF.Direction.Curve(wipEfforts.y),
-				(hipEfforts.x),
-				(hipEfforts.y),
+				hipEfforts.x,
+				hipEfforts.y,
+				legEfforts.x,
+				legEfforts.y,
 				headsetEffort
 			});
 		SetEfforts(efforts);
