@@ -11,6 +11,27 @@ public static class MathUtil
 	private const double PI = Math.PI;
 	private const double PI2 = PI * 2;
 
+	readonly public struct MinMax
+	{
+		public readonly float min;
+		public readonly float max;
+		public readonly float range;
+
+		public MinMax(in float min = 0, in float max = 0)
+		{
+			this.min = min;
+			this.max = max;
+			this.range = max - min;
+		}
+
+		public MinMax(in double min = 0, in double max = 0)
+		{
+			this.min = (float)min;
+			this.max = (float)max;
+			this.range = (float)(max - min);
+		}
+	}
+
 	public static class Angle
 	{
 		// in Radian

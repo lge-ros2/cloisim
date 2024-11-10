@@ -93,8 +93,8 @@ public class LidarVisualizer : MonoBehaviour
 		var resolution = (float)targetLidar.horizontal.resolution;
 		var angleMin = (float)targetLidar.horizontal.angle.min; // -180 ~ 0
 		var angleMax = (float)targetLidar.horizontal.angle.max; //    0 ~ 180
-		var rangeMin = (float)targetLidar.range.min;
-		var rangeMax = (float)targetLidar.range.max;
+		var rangeMin = (float)targetLidar.scanRange.min;
+		var rangeMax = (float)targetLidar.scanRange.max;
 
 		// Transparency
 		var lidarNormalColor = new Color(1, 0, 0, 1f); // normal Lidar pixel color

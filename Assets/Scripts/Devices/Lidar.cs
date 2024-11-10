@@ -36,7 +36,7 @@ namespace SensorDevices
 		private float LaserCameraHFovHalf = 0;
 		private float LaserCameraVFov = 0;
 
-		public LaserData.MinMax range;
+		public MathUtil.MinMax scanRange;
 		public LaserData.Scan horizontal;
 		public LaserData.Scan vertical;
 
@@ -130,8 +130,8 @@ namespace SensorDevices
 			_laserScan.AngleMax = horizontal.angle.max * Mathf.Deg2Rad;
 			_laserScan.AngleStep = horizontal.angleStep * Mathf.Deg2Rad;
 
-			_laserScan.RangeMin = range.min;
-			_laserScan.RangeMax = range.max;
+			_laserScan.RangeMin = scanRange.min;
+			_laserScan.RangeMax = scanRange.max;
 
 			_laserScan.VerticalCount = vertical.samples;
 			_laserScan.VerticalAngleMin = vertical.angle.min * Mathf.Deg2Rad;
@@ -172,8 +172,8 @@ namespace SensorDevices
 			laserCam.stereoTargetEye = StereoTargetEyeMask.None;
 
 			laserCam.orthographic = false;
-			laserCam.nearClipPlane = (float)range.min;
-			laserCam.farClipPlane = (float)range.max;
+			laserCam.nearClipPlane = (float)scanRange.min;
+			laserCam.farClipPlane = (float)scanRange.max;
 			laserCam.cullingMask = LayerMask.GetMask("Default") | LayerMask.GetMask("Plane");
 
 			laserCam.clearFlags = CameraClearFlags.Nothing;
@@ -246,8 +246,8 @@ namespace SensorDevices
 
 			if (_noise != null)
 			{
-				_noise.SetClampMin(range.min);
-				_noise.SetClampMax(range.max);
+				_noise.SetClampMin(scanRange.min);
+				_noise.SetClampMax(scanRange.max);
 			}
 		}
 
@@ -273,7 +273,7 @@ namespace SensorDevices
 				_depthCamBuffers[index] = new DepthData.CamBuffer(width, height);
 
 				var centerAngle = LaserCameraRotationAngle * index + centerAngleOffset;
-				_laserCamData[index] = new LaserData.LaserCamData(width, height, range, laserAngleResolution, centerAngle, LaserCameraHFovHalf, LaserCameraVFovHalf);
+				_laserCamData[index] = new LaserData.LaserCamData(width, height, scanRange, laserAngleResolution, centerAngle, LaserCameraHFovHalf, LaserCameraVFovHalf);
 			}
 		}
 
@@ -575,8 +575,8 @@ namespace SensorDevices
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 
 			var horizontalSamples = horizontal.samples;
-			var rangeMin = (float)range.min;
-			var rangeMax = (float)range.max;
+			var rangeMin = (float)scanRange.min;
+			var rangeMax = (float)scanRange.max;
 
 			var rayColor = Color.red;
 
