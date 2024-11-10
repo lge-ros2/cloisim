@@ -37,8 +37,9 @@ public class SelfBalancedDrive : MotorControl
 	private Vector2d _commandHipTarget = Vector2d.zero;
 	private Vector2d _commandLegTarget = Vector2d.zero;
 
-	private float _detectFalldownThresholdMin = -1.25f;
-	private float _detectFalldownThresholdMax = 1.35f;
+	#region Limitation
+	private readonly MathUtil.MinMax FalldownPitchThreshold = new MathUtil.MinMax(-1.25f, 1.35f);
+	#endregion
 
 	public double PitchTarget
 	{
@@ -46,7 +47,7 @@ public class SelfBalancedDrive : MotorControl
 		set
 		{
 			const double commandMargin = 0.00001;
-			_commandTargetPitch = Math.Clamp(value, _detectFalldownThresholdMin + commandMargin, _detectFalldownThresholdMax - commandMargin);
+			_commandTargetPitch = Math.Clamp(value, FalldownPitchThreshold.min + commandMargin, FalldownPitchThreshold.max - commandMargin);
 			_doUpdatePitchProfiler = true;
 			_doControlPitchByCommandTimeout = commandTimeout;
 		}
@@ -397,7 +398,7 @@ public class SelfBalancedDrive : MotorControl
 		var imuRotation = GetOrientation(imuSensor);
 		var pitch = imuRotation.x;
 
-		if (_onBalancing && (pitch > _detectFalldownThresholdMax || pitch < _detectFalldownThresholdMin))
+		if (_onBalancing && (pitch > FalldownPitchThreshold.max || pitch < FalldownPitchThreshold.min))
 		{
 			Debug.LogWarning($"Falldown detected !!! pitch: {pitch * Mathf.Rad2Deg}");
 			_onBalancing = false;
@@ -427,7 +428,7 @@ public class SelfBalancedDrive : MotorControl
 			}
 			else
 			{
-				Debug.LogWarning($"Odometry is missing or Problem with wheelVelocity {wheelVelocity.x}|{wheelVelocity.y}	");
+				Debug.LogWarning($"Odometry is missing or Problem with wheelVelocity {wheelVelocity.x}|{wheelVelocity.y}");
 				return false;
 			}
 		}
