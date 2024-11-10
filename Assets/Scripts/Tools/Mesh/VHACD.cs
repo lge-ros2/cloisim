@@ -37,11 +37,13 @@ public partial class VHACD
 			// Just skip if the number of vertices in the mesh is less than the limit of convex mesh triangles
 			if (meshFilter.sharedMesh.vertexCount >= NumOfLimitConvexMeshTriangles)
 			{
-				// #if ENABLE_MERGE_COLLIDER
-				// 	Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{meshFilter.sharedMesh.name}) -> {meshFilter.sharedMesh.vertexCount}, EnableMergeCollider will be ignored.");
-				// #else
-				// 	Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{meshFilter.sharedMesh.name}) -> {meshFilter.sharedMesh.vertexCount}");
-				// #endif
+#if UNITY_EDITOR
+#if ENABLE_MERGE_COLLIDER
+				Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{meshFilter.sharedMesh.name}) -> {meshFilter.sharedMesh.vertexCount}, EnableMergeCollider will be ignored.");
+#else
+				Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{meshFilter.sharedMesh.name}) -> {meshFilter.sharedMesh.vertexCount}");
+#endif
+#endif
 
 				var colliderMeshes = decomposer.GenerateConvexMeshes(meshFilter.sharedMesh);
 

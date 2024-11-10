@@ -40,12 +40,12 @@ public static partial class MeshLoader
 		Assimp.PostProcessSteps.SplitLargeMeshes |
 		Assimp.PostProcessSteps.FindInvalidData |
 		Assimp.PostProcessSteps.MakeLeftHanded |
-		// Assimp.PostProcessSteps.CalculateTangentSpace | => defined in Preset RTFast
-		// Assimp.PostProcessSteps.GenerateNormals | => defined in Preset RTFast
-		// Assimp.PostProcessSteps.JoinIdenticalVertices | => defined in Preset RTFast
-		// Assimp.PostProcessSteps.Triangulate | => defined in Preset RTFast
-		// Assimp.PostProcessSteps.GenerateUVCoords | => defined in Preset RTFast
-		// Assimp.PostProcessSteps.SortByPrimitiveType | => defined in Preset RTFast
+		// Assimp.PostProcessSteps.CalculateTangentSpace | => defined in Preset TargetRealTimeFast
+		// Assimp.PostProcessSteps.GenerateNormals | => defined in Preset TargetRealTimeFast
+		// Assimp.PostProcessSteps.JoinIdenticalVertices | => defined in Preset TargetRealTimeFast
+		// Assimp.PostProcessSteps.Triangulate | => defined in Preset TargetRealTimeFast
+		// Assimp.PostProcessSteps.GenerateUVCoords | => defined in Preset TargetRealTimeFast
+		// Assimp.PostProcessSteps.SortByPrimitiveType | => defined in Preset TargetRealTimeFast
 		Assimp.PostProcessPreset.TargetRealTimeFast;
 
 	private static List<string> MaterialSearchPaths = new List<string>()

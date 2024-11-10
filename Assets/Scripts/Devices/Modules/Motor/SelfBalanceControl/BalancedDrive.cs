@@ -6,6 +6,7 @@
 
 using SelfBalanceControl;
 using UnityEngine;
+using System;
 using messages = cloisim.msgs;
 
 public class BalancedDrive : MotorControl
@@ -32,7 +33,7 @@ public class BalancedDrive : MotorControl
 		set
 		{
 			const double commandMargin = 0.00001;
-			_commandTargetPitch = System.Math.Clamp(value, _detectFalldownThresholdMin + commandMargin, _detectFalldownThresholdMax - commandMargin);
+			_commandTargetPitch = Math.Clamp(value, _detectFalldownThresholdMin + commandMargin, _detectFalldownThresholdMax - commandMargin);
 			_doUpdatePitchProfiler = true;
 		}
 	}
@@ -91,6 +92,8 @@ public class BalancedDrive : MotorControl
 		_commandTargetPitch = 0;
 		_doUpdatePitchProfiler = false;
 		_prevCommandPitch = 0;
+		UpdatePitchProfiler();
+
 		_commandHeadsetTarget = 0;
 		_commandHipTarget = Vector2d.zero;
 		_commandLegTarget = Vector2d.zero;
@@ -103,7 +106,6 @@ public class BalancedDrive : MotorControl
 		var wheelVelocityLeft = GetAngularVelocity(Location.FRONT_WHEEL_LEFT);
 		var wheelVelocityRight = GetAngularVelocity(Location.FRONT_WHEEL_RIGHT);
 
-		UpdatePitchProfiler();
 		ResetPose();
 
 		_kinematics.Reset(wheelVelocityLeft, wheelVelocityRight);
@@ -309,6 +311,19 @@ public class BalancedDrive : MotorControl
 		SetEfforts(VectorXd.Zero(7));
 	}
 
+	private void ResetCommandPitch(in double currentCommandPitch)
+	{
+		if (Math.Abs(currentCommandPitch) < Quaternion.kEpsilon)
+		{
+			_commandTargetPitch = 0;
+			// Debug.LogWarning("comandTargetPitch reset!!!");
+		}
+	}
+
+	private void AdjustHeadsetByPitch(in double currentPitch)
+	{
+		_commandHeadsetTarget = currentPitch;
+	}
 
 	private Vector3 GetOrientation(SensorDevices.IMU imuSensor)
 	{
@@ -405,11 +420,12 @@ public class BalancedDrive : MotorControl
 		// 		$"pitchDot: {wipStates[2].ToString("F4")}=={(wipStates[2] * Mathf.Rad2Deg).ToString("F4")} | "+
 		// 		$"wheelVel L/R: {wheelVelocityLeft.ToString("F5")}/{wheelVelocityRight.ToString("F5")}");
 
-		if (!pitchUpdated && Mathf.Abs((float)wipReferences[2]) < Quaternion.kEpsilon)
+		if (!pitchUpdated)
 		{
-			_commandTargetPitch = 0;
-			// Debug.LogWarning("comandTargetPitch reset!!!");
+			ResetCommandPitch(wipReferences[2]);
 		}
+
+		AdjustHeadsetByPitch(wipStates[3]);
 
 		var wipEfforts = _smc.ComputeControl(wipStates, wipReferences, duration);
 
