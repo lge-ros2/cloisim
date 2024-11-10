@@ -109,6 +109,21 @@ namespace SensorDevices
 			var balancedDrive = _motorControl as SelfBalancedDrive;
 			if (balancedDrive != null)
 			{
+				// var tmp = new System.Text.StringBuilder();
+				// tmp.Clear();
+				// foreach(var item in message.Buttons)
+				// 	tmp.Append($"{item},");
+				// Debug.Log(tmp.ToString());
+
+				var buttonUpPressed = message.Buttons[11]; // Up Button
+				var buttonDownPressed = message.Buttons[12]; // Down Button
+
+				if (buttonUpPressed > 0 || buttonDownPressed > 0)
+				{
+					balancedDrive.HeadsetTarget += (buttonUpPressed > 0) ? 0.025f : -0.025f;
+					// Debug.Log(balancedDrive.HeadsetTarget);
+				}
+
 				var buttonTrianglePressed = message.Buttons[3];
 				if (buttonTrianglePressed > 0)
 				{
@@ -122,6 +137,12 @@ namespace SensorDevices
 				{
 					balancedDrive.PitchTarget += PitchRotationUnit * SDF2Unity.CurveOrientationAngle(stickRotation.x);
 					// Debug.Log($"Joy-PitchTarget={balancedDrive.PitchTarget}");
+				}
+
+				if (Mathf.Abs(stickRotation.z) > Quaternion.kEpsilon)
+				{
+					// balancedDrive.PitchTarget += PitchRotationUnit * SDF2Unity.CurveOrientationAngle(stickRotation.x);
+					// Debug.Log($"Joy-RollTarget={balancedDrive.PitchTarget}");
 				}
 			}
 		}
@@ -160,11 +181,11 @@ namespace SensorDevices
 				{
 					if (Input.GetKey(KeyCode.UpArrow))
 					{
-						balancedDrive.HeadsetTarget += 0.01f;
+						balancedDrive.HeadsetTarget += 0.02f;
 					}
 					else if (Input.GetKey(KeyCode.DownArrow))
 					{
-						balancedDrive.HeadsetTarget -= 0.01f;
+						balancedDrive.HeadsetTarget -= 0.02f;
 					}
 
 					Debug.Log(balancedDrive.HeadsetTarget);
@@ -189,6 +210,18 @@ namespace SensorDevices
 						balancedDrive.PitchTarget += 0.002f;
 					}
 					else if (Input.GetKey(KeyCode.DownArrow))
+					{
+						balancedDrive.PitchTarget -= 0.002f;
+					}
+					// Debug.Log($"PitchTarget={balancedDrive.PitchTarget}");
+				}
+				else if (Input.GetKey(KeyCode.M))
+				{
+					if (Input.GetKey(KeyCode.LeftArrow))
+					{
+						balancedDrive.PitchTarget += 0.002f;
+					}
+					else if (Input.GetKey(KeyCode.RightArrow))
 					{
 						balancedDrive.PitchTarget -= 0.002f;
 					}
