@@ -144,11 +144,11 @@ public class MicomPlugin : CLOiSimPlugin
 			var switchingMode = GetPluginParameters().GetValue<string> ($"{parameterPrefix}/smc/mode/switching", "SAT");
 			_log.AppendLine($"outputMode: {outputMode}, switchingMode: {switchingMode}");
 
-			_motorControl = new BalancedDrive(this.transform, outputMode, switchingMode);
+			_motorControl = new SelfBalancedDrive(this.transform, outputMode, switchingMode);
 		}
 		else
 		{
-			_motorControl = new BalancedDrive(this.transform);
+			_motorControl = new SelfBalancedDrive(this.transform);
 		}
 
 		if (_micomSensor != null)
@@ -164,7 +164,7 @@ public class MicomPlugin : CLOiSimPlugin
 		var autostart = GetPluginParameters().GetAttributeInPath<bool>(parameterPrefix, "autostart");
 		if (autostart)
 		{
-			(_motorControl as BalancedDrive).Balancing = true;
+			(_motorControl as SelfBalancedDrive).Balancing = true;
 		}
 		_log.AppendLine($"AutoStart: {autostart}");
 
@@ -172,11 +172,11 @@ public class MicomPlugin : CLOiSimPlugin
 		var hipJointRight = GetPluginParameters().GetValue<string>($"{parameterPrefix}/hip/joint[@type='right']");
 		if (!string.IsNullOrEmpty(hipJointLeft) && !string.IsNullOrEmpty(hipJointRight))
 		{
-			(_motorControl as BalancedDrive).SetHipJoints(hipJointLeft, hipJointRight);
+			(_motorControl as SelfBalancedDrive).SetHipJoints(hipJointLeft, hipJointRight);
 
 			if (GetPluginParameters().IsValidNode($"{parameterPrefix}/hip/PID"))
 			{
-				SetMotorPID($"{parameterPrefix}/head/PID", (_motorControl as BalancedDrive).SetHipJointPID);
+				SetMotorPID($"{parameterPrefix}/head/PID", (_motorControl as SelfBalancedDrive).SetHipJointPID);
 			}
 		}
 
@@ -184,23 +184,23 @@ public class MicomPlugin : CLOiSimPlugin
 		var legJointRight = GetPluginParameters().GetValue<string>($"{parameterPrefix}/leg/joint[@type='right']");
 		if (!string.IsNullOrEmpty(legJointLeft) && !string.IsNullOrEmpty(legJointRight))
 		{
-			(_motorControl as BalancedDrive).SetLegJoints(legJointLeft, legJointRight);
+			(_motorControl as SelfBalancedDrive).SetLegJoints(legJointLeft, legJointRight);
 
 			if (GetPluginParameters().IsValidNode($"{parameterPrefix}/leg/PID"))
 			{
-				SetMotorPID($"{parameterPrefix}/leg/PID", (_motorControl as BalancedDrive).SetLegJointPID);
+				SetMotorPID($"{parameterPrefix}/leg/PID", (_motorControl as SelfBalancedDrive).SetLegJointPID);
 			}
 		}
 
 		var headJoint = GetPluginParameters().GetValue<string>($"{parameterPrefix}/head/joint");
 		if (!string.IsNullOrEmpty(headJoint))
 		{
-			(_motorControl as BalancedDrive).SetHeadJoint(headJoint);
+			(_motorControl as SelfBalancedDrive).SetHeadJoint(headJoint);
 		}
 
 		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/head/PID"))
 		{
-			SetMotorPID($"{parameterPrefix}/head/PID", (_motorControl as BalancedDrive).SetHeadJointPID);
+			SetMotorPID($"{parameterPrefix}/head/PID", (_motorControl as SelfBalancedDrive).SetHeadJointPID);
 		}
 
 		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc"))
@@ -210,7 +210,7 @@ public class MicomPlugin : CLOiSimPlugin
 				var kSW = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/K_sw");
 				var sigmaB = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/sigma_b");
 				var wheelFF = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/wheel_ff");
-				(_motorControl as BalancedDrive).SetSMCParams(kSW, sigmaB, wheelFF);
+				(_motorControl as SelfBalancedDrive).SetSMCParams(kSW, sigmaB, wheelFF);
 				_log.AppendLine($"SetBalancedWheel() => kSW: {kSW}, sigmaB: {sigmaB}, wheelFF: {wheelFF}");
 			}
 
@@ -224,13 +224,13 @@ public class MicomPlugin : CLOiSimPlugin
 				// Debug.Log(B.Trim());
 				// Debug.Log(K.Trim());
 				// Debug.Log(S.Trim());
-				(_motorControl as BalancedDrive).SetSMCNominalModel(A, B, K, S);
+				(_motorControl as SelfBalancedDrive).SetSMCNominalModel(A, B, K, S);
 			}
 		}
 
 		SetDriveForWheel($"{parameterPrefix}/wheel");
 
-		(_motorControl as BalancedDrive).ChangeWheelDriveType();
+		(_motorControl as SelfBalancedDrive).ChangeWheelDriveType();
 	}
 
 	private void SetDifferentialDrive(in string parameterPrefix)

@@ -106,7 +106,7 @@ namespace SensorDevices
 		{
 			const float PitchRotationUnit = 0.005f;
 
-			var balancedDrive = _motorControl as BalancedDrive;
+			var balancedDrive = _motorControl as SelfBalancedDrive;
 			if (balancedDrive != null)
 			{
 				var buttonTrianglePressed = message.Buttons[3];
@@ -153,7 +153,7 @@ namespace SensorDevices
 #if UNITY_EDITOR
 		void LateUpdate()
 		{
-			var balancedDrive = _motorControl as BalancedDrive;
+			var balancedDrive = _motorControl as SelfBalancedDrive;
 			if (balancedDrive != null)
 			{
 				if (Input.GetKey(KeyCode.H))

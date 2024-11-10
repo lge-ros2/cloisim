@@ -9,7 +9,7 @@ using UnityEngine;
 using System;
 using messages = cloisim.msgs;
 
-public class BalancedDrive : MotorControl
+public class SelfBalancedDrive : MotorControl
 {
 	private Kinematics _kinematics = null;
 	private ExpProfiler _pitchProfiler;
@@ -62,7 +62,7 @@ public class BalancedDrive : MotorControl
 		set => _onBalancing = value;
 	}
 
-	public BalancedDrive(
+	public SelfBalancedDrive(
 		in Transform controllerTransform,
 		in SlidingModeControl.OutputMode outputMode,
 		in SlidingModeControl.SwitchingMode switchingMode,
@@ -73,7 +73,7 @@ public class BalancedDrive : MotorControl
 		_smc = new SlidingModeControl(outputMode, switchingMode);
 	}
 
-	public BalancedDrive(
+	public SelfBalancedDrive(
 		in Transform controllerTransform,
 		in string outputMode = "LQR",
 		in string switchingMode = "SAT",
@@ -87,7 +87,7 @@ public class BalancedDrive : MotorControl
 
 	public override void Reset()
 	{
-		Debug.Log("========== BalancedDrive Reset ==========");
+		Debug.Log("========== SelfBalancedDrive Reset ==========");
 
 		_commandTargetPitch = 0;
 		_doUpdatePitchProfiler = false;
