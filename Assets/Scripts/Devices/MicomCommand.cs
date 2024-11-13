@@ -14,6 +14,21 @@ namespace SensorDevices
 		private MotorControl _motorControl = null;
 		private MowingBlade _mowingBlade = null;
 
+		#region Constant for SelfBalancedDrive
+		private const float RollRotationUnit = 0.25f; // deg
+		private const float PitchRotationUnit = 0.01f; // rad
+		private const float HeightMovementUnit = 0.5f; // deg
+		#endregion
+
+		#region Constant mapping index for JoyStick
+		private const int JoyUpKeyIndex = 11;
+		private const int JoyDownKeyIndex = 12;
+		private const int JoyLeftKeyIndex = 13;
+		private const int JoyRightKeyIndex = 14;
+		private const int JoyTriangleKeyIndex = 3;
+		private const int JoyCircleKeyIndex = 1;
+		#endregion
+
 		protected override void OnAwake()
 		{
 			Mode = ModeType.RX_THREAD;
@@ -72,7 +87,6 @@ namespace SensorDevices
 							Debug.LogWarning("ERROR: failed to pop device message");
 						}
 #endif
-
 					}
 				}
 			}
@@ -104,45 +118,71 @@ namespace SensorDevices
 		/// </remarks>
 		private void ControlJoystick(in cloisim.msgs.Joystick message)
 		{
-			const float PitchRotationUnit = 0.005f;
-
 			var balancedDrive = _motorControl as SelfBalancedDrive;
 			if (balancedDrive != null)
 			{
-				// var tmp = new System.Text.StringBuilder();
-				// tmp.Clear();
-				// foreach(var item in message.Buttons)
-				// 	tmp.Append($"{item},");
-				// Debug.Log(tmp.ToString());
+#if false
+				var tmp = new System.Text.StringBuilder();
+				tmp.Clear();
+				foreach (var item in message.Buttons)
+					tmp.Append($"{item},");
+				Debug.Log(tmp.ToString());
+#endif
 
-				var buttonUpPressed = message.Buttons[11]; // Up Button
-				var buttonDownPressed = message.Buttons[12]; // Down Button
+				var buttonUpPressed = message.Buttons[JoyUpKeyIndex]; // Up Button
+				var buttonDownPressed = message.Buttons[JoyDownKeyIndex]; // Down Button
 
 				if (buttonUpPressed > 0 || buttonDownPressed > 0)
 				{
-					balancedDrive.HeadsetTarget += (buttonUpPressed > 0) ? 0.025f : -0.025f;
-					// Debug.Log(balancedDrive.HeadsetTarget);
+					var heightAmount = ((buttonUpPressed > 0) ? -HeightMovementUnit : HeightMovementUnit);
+					balancedDrive.HeightTarget += heightAmount;
 				}
 
-				var buttonTrianglePressed = message.Buttons[3];
+				var buttonLeftPressed = message.Buttons[JoyLeftKeyIndex]; // Left Button
+				var buttonRightPressed = message.Buttons[JoyRightKeyIndex]; // Right Button
+
+				if (buttonLeftPressed > 0 || buttonRightPressed > 0)
+				{
+					var rollAmount = ((buttonLeftPressed > 0) ? -RollRotationUnit : RollRotationUnit);
+					balancedDrive.RollTarget += rollAmount;
+				}
+
+				var buttonTrianglePressed = message.Buttons[JoyTriangleKeyIndex];
 				if (buttonTrianglePressed > 0)
 				{
-					// Debug.Log(buttonTrianglePressed);
-					balancedDrive.Balancing = true;
+					balancedDrive.Balancing = !balancedDrive.Balancing;
 				}
 
-				var stickRotation = SDF2Unity.Rotation(message.Rotation);
-				// Debug.Log(stickRotation.ToString("F5"));
-				if (Mathf.Abs(stickRotation.x) > Quaternion.kEpsilon)
+				var buttonCirclePressed = message.Buttons[JoyCircleKeyIndex];
+				if (buttonCirclePressed > 0)
 				{
-					balancedDrive.PitchTarget += PitchRotationUnit * SDF2Unity.CurveOrientationAngle(stickRotation.x);
-					// Debug.Log($"Joy-PitchTarget={balancedDrive.PitchTarget}");
+					balancedDrive.DoResetPose();
 				}
 
-				if (Mathf.Abs(stickRotation.z) > Quaternion.kEpsilon)
+				if (message.Translation != null)
 				{
-					// balancedDrive.PitchTarget += PitchRotationUnit * SDF2Unity.CurveOrientationAngle(stickRotation.x);
-					// Debug.Log($"Joy-RollTarget={balancedDrive.PitchTarget}");
+					var stickTranslation = SDF2Unity.Position(message.Translation);
+					if (Mathf.Abs(stickTranslation.y) > float.Epsilon)
+					{
+						var headsetTarget = Mathf.Abs(stickTranslation.y) *
+							((stickTranslation.y >= 0) ? balancedDrive.HeightTargetMin : balancedDrive.HeightTargetMax);
+						balancedDrive.HeadsetTarget = headsetTarget;
+					}
+				}
+
+				if (message.Rotation != null)
+				{
+					var stickRotation = SDF2Unity.Rotation(message.Rotation);
+					// Debug.Log(stickRotation.ToString("F5"));
+					if (Mathf.Abs(stickRotation.x) > float.Epsilon)
+					{
+						balancedDrive.PitchTarget += PitchRotationUnit * SDF2Unity.CurveOrientationAngle(stickRotation.x);
+						// Debug.Log($"Joy-PitchTarget={balancedDrive.PitchTarget}");
+					}
+
+					// if (Mathf.Abs(stickRotation.z) > float.Epsilon)
+					// {
+					// }
 				}
 			}
 		}
@@ -172,6 +212,10 @@ namespace SensorDevices
 		}
 
 #if UNITY_EDITOR
+		#region Constant for SelfBalancedDrive
+		private const float HeadsetRotationUnit = 1f; // deg
+		#endregion
+
 		void LateUpdate()
 		{
 			var balancedDrive = _motorControl as SelfBalancedDrive;
@@ -181,37 +225,23 @@ namespace SensorDevices
 				{
 					if (Input.GetKey(KeyCode.UpArrow))
 					{
-						balancedDrive.HeadsetTarget += 0.02f;
+						balancedDrive.HeadsetTarget -= HeadsetRotationUnit;
 					}
 					else if (Input.GetKey(KeyCode.DownArrow))
 					{
-						balancedDrive.HeadsetTarget -= 0.02f;
+						balancedDrive.HeadsetTarget += HeadsetRotationUnit;
 					}
-
-					Debug.Log(balancedDrive.HeadsetTarget);
-				}
-				else if (Input.GetKey(KeyCode.N))
-				{
-					if (Input.GetKey(KeyCode.UpArrow))
-					{
-						balancedDrive.HipTarget += 0.01f;
-					}
-					else if (Input.GetKey(KeyCode.DownArrow))
-					{
-						balancedDrive.HipTarget -= 0.01f;
-					}
-
-					Debug.Log(balancedDrive.HipTarget);
+					// Debug.Log(balancedDrive.HeadsetTarget);
 				}
 				else if (Input.GetKey(KeyCode.P))
 				{
 					if (Input.GetKey(KeyCode.UpArrow))
 					{
-						balancedDrive.PitchTarget += 0.002f;
+						balancedDrive.PitchTarget += PitchRotationUnit;
 					}
 					else if (Input.GetKey(KeyCode.DownArrow))
 					{
-						balancedDrive.PitchTarget -= 0.002f;
+						balancedDrive.PitchTarget -= PitchRotationUnit;
 					}
 					// Debug.Log($"PitchTarget={balancedDrive.PitchTarget}");
 				}
@@ -219,18 +249,28 @@ namespace SensorDevices
 				{
 					if (Input.GetKey(KeyCode.LeftArrow))
 					{
-						balancedDrive.PitchTarget += 0.002f;
+						balancedDrive.RollTarget -= RollRotationUnit;
 					}
 					else if (Input.GetKey(KeyCode.RightArrow))
 					{
-						balancedDrive.PitchTarget -= 0.002f;
+						balancedDrive.RollTarget += RollRotationUnit;
 					}
-					// Debug.Log($"PitchTarget={balancedDrive.PitchTarget}");
+					// Debug.Log($"RollTarget={balancedDrive.RollTarget}");
+
+					if (Input.GetKey(KeyCode.UpArrow))
+					{
+						balancedDrive.HeightTarget -= HeightMovementUnit;
+					}
+					else if (Input.GetKey(KeyCode.DownArrow))
+					{
+						balancedDrive.HeightTarget += HeightMovementUnit;
+					}
+					// Debug.Log($"HeightTarget={balancedDrive.HeightTarget}");
 				}
 				else if (Input.GetKeyUp(KeyCode.B))
 				{
 					balancedDrive.Balancing = !balancedDrive.Balancing;
-					Debug.LogWarning($"Toggle Balancing[{balancedDrive.Balancing}] ");
+					Debug.LogWarning($"{name}::Toggle Balancing [{balancedDrive.Balancing}] ");
 				}
 			}
 		}

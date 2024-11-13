@@ -88,7 +88,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 		if (GetPluginParameters().IsValidNode("self_balanced"))
 		{
-			SetBalancedWheel("self_balanced");
+			SetSelfBalancedWheel("self_balanced");
 		}
 
 		if (GetPluginParameters().IsValidNode("wheel"))
@@ -133,9 +133,9 @@ public class MicomPlugin : CLOiSimPlugin
 		}
 	}
 
-	private void SetBalancedWheel(in string parameterPrefix)
+	private void SetSelfBalancedWheel(in string parameterPrefix)
 	{
-		_log.AppendLine($"SetBalancedWheel({parameterPrefix})");
+		_log.AppendLine($"SetSelfBalancedWheel({parameterPrefix})");
 
 		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc") &&
 			GetPluginParameters().IsValidNode($"{parameterPrefix}/smc/mode"))
@@ -173,11 +173,6 @@ public class MicomPlugin : CLOiSimPlugin
 		if (!string.IsNullOrEmpty(hipJointLeft) && !string.IsNullOrEmpty(hipJointRight))
 		{
 			(_motorControl as SelfBalancedDrive).SetHipJoints(hipJointLeft, hipJointRight);
-
-			if (GetPluginParameters().IsValidNode($"{parameterPrefix}/hip/PID"))
-			{
-				SetMotorPID($"{parameterPrefix}/head/PID", (_motorControl as SelfBalancedDrive).SetHipJointPID);
-			}
 		}
 
 		var legJointLeft = GetPluginParameters().GetValue<string>($"{parameterPrefix}/leg/joint[@type='left']");
@@ -185,11 +180,6 @@ public class MicomPlugin : CLOiSimPlugin
 		if (!string.IsNullOrEmpty(legJointLeft) && !string.IsNullOrEmpty(legJointRight))
 		{
 			(_motorControl as SelfBalancedDrive).SetLegJoints(legJointLeft, legJointRight);
-
-			if (GetPluginParameters().IsValidNode($"{parameterPrefix}/leg/PID"))
-			{
-				SetMotorPID($"{parameterPrefix}/leg/PID", (_motorControl as SelfBalancedDrive).SetLegJointPID);
-			}
 		}
 
 		var headJoint = GetPluginParameters().GetValue<string>($"{parameterPrefix}/head/joint");
@@ -198,9 +188,10 @@ public class MicomPlugin : CLOiSimPlugin
 			(_motorControl as SelfBalancedDrive).SetHeadJoint(headJoint);
 		}
 
-		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/head/PID"))
+		var bodyJoint = GetPluginParameters().GetValue<string>($"{parameterPrefix}/body/joint");
+		if (!string.IsNullOrEmpty(bodyJoint))
 		{
-			SetMotorPID($"{parameterPrefix}/head/PID", (_motorControl as SelfBalancedDrive).SetHeadJointPID);
+			(_motorControl as SelfBalancedDrive).SetBodyJoint(bodyJoint);
 		}
 
 		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc"))
@@ -220,10 +211,6 @@ public class MicomPlugin : CLOiSimPlugin
 				var B = GetPluginParameters().GetValue<string>($"{parameterPrefix}/smc/state_space/B");
 				var K = GetPluginParameters().GetValue<string>($"{parameterPrefix}/smc/state_space/K");
 				var S = GetPluginParameters().GetValue<string>($"{parameterPrefix}/smc/state_space/S");
-				// Debug.Log(A.Trim());
-				// Debug.Log(B.Trim());
-				// Debug.Log(K.Trim());
-				// Debug.Log(S.Trim());
 				(_motorControl as SelfBalancedDrive).SetSMCNominalModel(A, B, K, S);
 			}
 		}
@@ -293,17 +280,27 @@ public class MicomPlugin : CLOiSimPlugin
 		var I = GetPluginParameters().GetValue<float>($"{parameterPrefix}/ki");
 		var D = GetPluginParameters().GetValue<float>($"{parameterPrefix}/kd");
 
-		var limitIntegral = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral");
-		var limitOutput = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output");
+ 		var integralMin = float.NegativeInfinity;
+		var integralMax = float.PositiveInfinity;
+		var outputMin = float.NegativeInfinity;
+		var outputMax = float.PositiveInfinity;
 
-		var integralMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/min", -Mathf.Abs(limitIntegral));
-		var integralMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/max", Mathf.Abs(limitIntegral));
-		var outputMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/min", -Mathf.Abs(limitOutput));
-		var outputMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/max", Mathf.Abs(limitOutput));
-		_log.AppendLine($"SetMotorPID: {parameterPrefix}, {P}, {I}, {D}, {integralMin}, {integralMax}, {outputMin}, {outputMax}");
+		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/limit"))
+		{
+			var limitIntegral = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral");
+			var limitOutput = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output");
+
+			integralMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/min", -Mathf.Abs(limitIntegral));
+			integralMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/max", Mathf.Abs(limitIntegral));
+			outputMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/min", -Mathf.Abs(limitOutput));
+			outputMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/max", Mathf.Abs(limitOutput));
+		}
 
 		SetPID(P, I, D, integralMin, integralMax, outputMin, outputMax);
+
+		_log.AppendLine($"SetMotorPID: {parameterPrefix}, {P}, {I}, {D}, {integralMin}, {integralMax}, {outputMin}, {outputMax}");
 	}
+
 
 	private void SetMowing()
 	{

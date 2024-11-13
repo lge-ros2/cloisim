@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Articulation
@@ -187,9 +188,22 @@ public class Articulation
 		}
 	}
 
+	/// <returns>radian for angular and meter for linear</param>
+	public float GetDriveTarget(in int targetDegree = 0)
+	{
+		if (_jointBody != null)
+		{
+			var targets = new List<float>();
+			_jointBody.GetDriveTargets(targets);
+
+			return targets[targetDegree];
+		}
+		return 0;
+	}
+
 	/// <param name="driveType">ArticulationDriveType</param>
 	/// <param name="targetVelocity">angular velocity in degrees per second</param>
-	/// <param name="targetPosotion">target position </param>
+	/// <param name="targetPosotion">target position, degree or meter</param>
 	public void Drive(
 		in float targetVelocity = float.NaN,
 		in float targetPosition = float.NaN)

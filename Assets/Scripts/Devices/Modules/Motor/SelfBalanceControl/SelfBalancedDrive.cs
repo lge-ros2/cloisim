@@ -11,74 +11,104 @@ using messages = cloisim.msgs;
 
 public class SelfBalancedDrive : MotorControl
 {
-	const float commandTimeout = 0.8f;
-
 	private Kinematics _kinematics = null;
 	private ExpProfiler _pitchProfiler;
 	private SlidingModeControl _smc = null;
 
 	private bool _onBalancing = false;
+	private bool _resetPose = false;
 
 	private double _commandTwistLinear = 0;
 	private double _commandTwistAngular = 0;
 
+	#region Body Control
+	private double _commandTargetBody = 0; // in deg
+	#endregion
+
+	#region Roll/Height Control
+	private double _commandTargetHeight = 0; // in deg
+	private double _commandTargetRoll = 0; // in deg
+	private double _commandTargetRollByDrive = 0; // in deg
+	private float _doControlRollHeightByCommandTimeout = 0;
+	#endregion
+
 	#region Pitch Control
-	private double _commandTargetPitch = 0;
+	private double _commandTargetPitch = 0; // in rad
 	private double _prevCommandPitch = 0;
 	private bool _doUpdatePitchProfiler = false;
 	private float _doControlPitchByCommandTimeout = 0;
 	#endregion
 
 	#region Headset Control
-	private double _commandHeadsetTarget = 0;
+	private double _commandTargetHeadset = 0; // in deg
 	private float _doControlHeadsetByCommandTimeout = 0;
 	#endregion
 
-	private Vector2d _commandHipTarget = Vector2d.zero;
-	private Vector2d _commandLegTarget = Vector2d.zero;
+	private Vector2d _commandHipTarget = Vector2d.zero; // in deg
+	private Vector2d _commandLegTarget = Vector2d.zero; // in deg
 
 	#region Limitation
-	private readonly MathUtil.MinMax FalldownPitchThreshold = new MathUtil.MinMax(-1.25f, 1.35f);
+	private readonly float CommandTimeout = 5f;
+	private readonly double CommandMargin = 0.00001;
+	private readonly MathUtil.MinMax FalldownPitchThreshold = new MathUtil.MinMax(-1.25f, 1.35f); // in rad
+	private readonly MathUtil.MinMax RollLimit = new MathUtil.MinMax(-5f, 5f); // in deg
+	private readonly MathUtil.MinMax HeightLimit = new MathUtil.MinMax(-30f, 22f); // in deg
+	private readonly MathUtil.MinMax HeadsetLimit = new MathUtil.MinMax(-90f, 90f); // in deg
 	#endregion
+
+	public double HeightTarget
+	{
+		get => _commandTargetHeight;
+		set
+		{
+			_commandTargetHeight = Math.Clamp(value, HeightLimit.min + CommandMargin, HeightLimit.max - CommandMargin);
+			_doControlRollHeightByCommandTimeout = CommandTimeout;
+		}
+	}
+
+	public double RollTarget
+	{
+		get => _commandTargetRoll;
+		set
+		{
+			_commandTargetRoll = Math.Clamp(value, RollLimit.min + CommandMargin, RollLimit.max - CommandMargin);
+			_doControlRollHeightByCommandTimeout = CommandTimeout;
+		}
+	}
 
 	public double PitchTarget
 	{
 		get => _commandTargetPitch;
 		set
 		{
-			const double commandMargin = 0.00001;
-			_commandTargetPitch = Math.Clamp(value, FalldownPitchThreshold.min + commandMargin, FalldownPitchThreshold.max - commandMargin);
+			_commandTargetPitch = Math.Clamp(value, FalldownPitchThreshold.min + CommandMargin, FalldownPitchThreshold.max - CommandMargin);
 			_doUpdatePitchProfiler = true;
-			_doControlPitchByCommandTimeout = commandTimeout;
+			_doControlPitchByCommandTimeout = CommandTimeout;
 		}
 	}
 
 	public double HeadsetTarget
 	{
-		get => _commandHeadsetTarget;
+		get => _commandTargetHeadset;
 		set
 		{
-			_commandHeadsetTarget = value;
-			_doControlHeadsetByCommandTimeout = commandTimeout;
+			_commandTargetHeadset = Math.Clamp(value, HeadsetLimit.min + CommandMargin, HeadsetLimit.max - CommandMargin);
+			_doControlHeadsetByCommandTimeout = CommandTimeout;
 		}
 	}
 
-	public Vector2d HipTarget
-	{
-		get => _commandHipTarget;
-		set => _commandHipTarget = value;
-	}
-
-	public Vector2d LegTarget
-	{
-		get => _commandLegTarget;
-		set => _commandLegTarget = value;
-	}
+	public double HeightTargetMin => HeadsetLimit.min;
+	public double HeightTargetMax => HeadsetLimit.max;
 
 	public bool Balancing
 	{
 		get => _onBalancing;
 		set => _onBalancing = value;
+	}
+
+	public void DoResetPose()
+	{
+		_resetPose = true;
 	}
 
 	public SelfBalancedDrive(
@@ -108,12 +138,14 @@ public class SelfBalancedDrive : MotorControl
 	{
 		Debug.Log("========== SelfBalancedDrive Reset ==========");
 
+		_commandTargetHeadset = 0;
+		_commandTargetRollByDrive = 0;
+
 		_commandTargetPitch = 0;
 		_doUpdatePitchProfiler = false;
 		_prevCommandPitch = 0;
 		UpdatePitchProfiler();
 
-		_commandHeadsetTarget = 0;
 		_commandHipTarget = Vector2d.zero;
 		_commandLegTarget = Vector2d.zero;
 
@@ -126,11 +158,12 @@ public class SelfBalancedDrive : MotorControl
 		var wheelVelocityRight = GetAngularVelocity(Location.FRONT_WHEEL_RIGHT);
 
 		ResetPose();
+		_resetPose = false;
 
 		_kinematics.Reset(wheelVelocityLeft, wheelVelocityRight);
 		_smc.Reset();
 
-		SetEfforts(VectorXd.Zero(7));
+		ResetJoints();
 	}
 
 	public override void SetWheelInfo(in float radius, in float separation)
@@ -154,148 +187,38 @@ public class SelfBalancedDrive : MotorControl
 		}
 	}
 
-	public void SetHipJointPID(
-		float p, float i, float d,
-		float integralMin, float integralMax,
-		float outputMin, float outputMax)
+	public void SetHeadJoint(in string targetJointName)
 	{
-		if (_motorList[Location.HIP_LEFT] != null)
-			SetMotorPID(Location.HIP_LEFT, p, i, d, integralMin, integralMax, outputMin, outputMax);
-
-		if (_motorList[Location.HIP_RIGHT] != null)
-			SetMotorPID(Location.HIP_RIGHT, p, i, d, integralMin, integralMax, outputMin, outputMax);
+		AttachMotor(Location.HEAD, targetJointName);
+		ChangeDriveType(Location.HEAD, ArticulationDriveType.Target);
 	}
 
-	public void SetLegJointPID(
-		float p, float i, float d,
-		float integralMin, float integralMax,
-		float outputMin, float outputMax)
+	public void SetBodyJoint(in string targetJointName)
 	{
-		if (_motorList[Location.LEG_LEFT] != null)
-			SetMotorPID(Location.LEG_LEFT, p, i, d, integralMin, integralMax, outputMin, outputMax);
-
-		if (_motorList[Location.LEG_RIGHT] != null)
-			SetMotorPID(Location.LEG_RIGHT, p, i, d, integralMin, integralMax, outputMin, outputMax);
-	}
-
-	public void SetHeadJointPID(
-		float p, float i, float d,
-		float integralMin, float integralMax,
-		float outputMin, float outputMax)
-	{
-		if (_motorList[Location.HEAD] != null)
-			SetMotorPID(Location.HEAD, p, i, d, integralMin, integralMax, outputMin, outputMax);
-	}
-
-	public void SetHeadJoint(in string targetHeadJointName)
-	{
-		AttachMotor(Location.HEAD, targetHeadJointName);
-		_motorList[Location.HEAD].DriveType = ArticulationDriveType.Acceleration;
+		AttachMotor(Location.BODY, targetJointName);
+		ChangeDriveType(Location.BODY, ArticulationDriveType.Target);
 	}
 
 	public void SetHipJoints(in string hipJointLeft, in string hipJointright)
 	{
 		AttachMotor(Location.HIP_LEFT, hipJointLeft);
 		AttachMotor(Location.HIP_RIGHT, hipJointright);
-		_motorList[Location.HIP_LEFT].DriveType = ArticulationDriveType.Acceleration;
-		_motorList[Location.HIP_RIGHT].DriveType = ArticulationDriveType.Acceleration;
+		ChangeDriveType(Location.HIP_LEFT, ArticulationDriveType.Target);
+		ChangeDriveType(Location.HIP_RIGHT, ArticulationDriveType.Target);
 	}
 
 	public void SetLegJoints(in string legJointLeft, in string legJointright)
 	{
 		AttachMotor(Location.LEG_LEFT, legJointLeft);
 		AttachMotor(Location.LEG_RIGHT, legJointright);
-		_motorList[Location.LEG_LEFT].DriveType = ArticulationDriveType.Acceleration;
-		_motorList[Location.LEG_RIGHT].DriveType = ArticulationDriveType.Acceleration;
+		ChangeDriveType(Location.LEG_LEFT, ArticulationDriveType.Target);
+		ChangeDriveType(Location.LEG_RIGHT, ArticulationDriveType.Target);
 	}
 
 	public void ChangeWheelDriveType()
 	{
-		_motorList[Location.FRONT_WHEEL_LEFT].DriveType = ArticulationDriveType.Acceleration;
-		_motorList[Location.FRONT_WHEEL_RIGHT].DriveType = ArticulationDriveType.Acceleration;
-	}
-
-	private Vector2d GetHipJointPositions()
-	{
-		if (_motorList[Location.HIP_LEFT] == null || _motorList[Location.HIP_RIGHT] == null)
-		{
-			return Vector2d.zero;
-		}
-
-		return new Vector2d(
-			_motorList[Location.HIP_LEFT].GetJointPosition(),
-			_motorList[Location.HIP_RIGHT].GetJointPosition()
-		);
-	}
-
-	private Vector2d GetHipJointVelocities()
-	{
-		if (_motorList[Location.HIP_LEFT] == null || _motorList[Location.HIP_RIGHT] == null)
-		{
-			return Vector2d.zero;
-		}
-
-		return new Vector2d(
-			GetAngularVelocity(Location.HIP_LEFT),
-			GetAngularVelocity(Location.HIP_RIGHT)
-		);
-	}
-
-	private Vector2d GetLegJointPositions()
-	{
-		if (_motorList[Location.LEG_LEFT] == null || _motorList[Location.LEG_RIGHT] == null)
-		{
-			return Vector2d.zero;
-		}
-
-		return new Vector2d(
-			_motorList[Location.LEG_LEFT].GetJointPosition(),
-			_motorList[Location.LEG_RIGHT].GetJointPosition()
-		);
-	}
-
-	private Vector2d GetLegJointVelocities()
-	{
-		if (_motorList[Location.LEG_LEFT] == null || _motorList[Location.LEG_RIGHT] == null)
-		{
-			return Vector2d.zero;
-		}
-
-		return new Vector2d(
-			GetAngularVelocity(Location.LEG_LEFT),
-			GetAngularVelocity(Location.LEG_RIGHT)
-		);
-	}
-
-	private double GetHeadJointPosition()
-	{
-		return _motorList[Location.HEAD].GetJointPosition();
-	}
-
-	private double GetHeadJointVelocity()
-	{
-		return GetAngularVelocity(Location.HEAD);
-	}
-
-	private Vector2d UpdateHip(in Vector2d actual, in Vector2d target, in float duration)
-	{
-		return new Vector2d(
-				_motorList[Location.HIP_LEFT].UpdatePID(actual[0], target[0], duration),
-				_motorList[Location.HIP_RIGHT].UpdatePID(actual[1], target[1], duration)
-			);
-	}
-
-	private Vector2d UpdateLeg(in Vector2d actual, in Vector2d target, in float duration)
-	{
-		return new Vector2d(
-				_motorList[Location.LEG_LEFT].UpdatePID(actual[0], target[0], duration),
-				_motorList[Location.LEG_RIGHT].UpdatePID(actual[1], target[1], duration)
-			);
-	}
-
-	private double UpdateHead(in double actual, in double target, in float duration)
-	{
-		return _motorList[Location.HEAD].UpdatePID(actual, target, duration);
+		ChangeDriveType(Location.FRONT_WHEEL_LEFT, ArticulationDriveType.Acceleration);
+		ChangeDriveType(Location.FRONT_WHEEL_RIGHT, ArticulationDriveType.Acceleration);
 	}
 
 	public override void Drive(in float linearVelocity, in float angularVelocity)
@@ -303,9 +226,17 @@ public class SelfBalancedDrive : MotorControl
 		_commandTwistLinear = linearVelocity;
 		_commandTwistAngular = SDF2Unity.CurveOrientationAngle(angularVelocity);
 
-		if (_commandTwistLinear == 0)
+		if (Math.Abs(_commandTwistLinear) < float.Epsilon || Math.Abs(_commandTwistAngular) < float.Epsilon)
 		{
 			PitchTarget = 0;
+			_commandTargetRollByDrive = 0;
+		}
+
+		if (Math.Abs(_commandTwistLinear) > float.Epsilon && Math.Abs(_commandTwistAngular) > float.Epsilon)
+		{
+			var ratio = _commandTwistAngular / _commandTwistLinear;
+			_commandTargetRollByDrive = ((ratio > 0) ? RollLimit.min : RollLimit.max) * -Math.Abs(ratio);
+			// Debug.Log($"Command - linear: {_commandTwistLinear} angular: {_commandTwistAngular} ratio: {ratio} _commandTargetRoll: {_commandTargetRoll}");
 		}
 		// Debug.Log($"Command - linear: {_commandTwistLinear} angular: {_commandTwistAngular} pitch: {PitchTarget}");
 	}
@@ -315,8 +246,19 @@ public class SelfBalancedDrive : MotorControl
 		_pitchProfiler.Reset(Time.timeAsDouble, _commandTargetPitch);
 	}
 
+	private void ResetJoints()
+	{
+		SetWheelEfforts(VectorXd.Zero(2));
+		SetJoints(VectorXd.Zero(6));
+	}
+
 	private void ResetPose()
 	{
+		_commandTargetHeight = 0;
+		_commandTargetRoll = 0;
+
+		_commandHipTarget = Vector2d.zero;
+
 		_motorList[Location.HIP_LEFT]?.Reset();
 		_motorList[Location.HIP_RIGHT]?.Reset();
 
@@ -327,50 +269,97 @@ public class SelfBalancedDrive : MotorControl
 			_motorList[Location.LEG_RIGHT]?.Reset();
 		}
 
-		SetEfforts(VectorXd.Zero(7));
+		ResetJoints();
 	}
 
-	private void ResetCommandPitch(in double currentCommandPitch)
+	private void RestorePitchZero(in double currentCommandPitch, in float duration)
 	{
 		if (Math.Abs(currentCommandPitch) < Quaternion.kEpsilon)
 		{
-			_commandTargetPitch = 0;
+			_commandTargetPitch = Mathf.Lerp((float)currentCommandPitch, 0, duration);
 			// Debug.LogWarning("comandTargetPitch reset!!!");
 		}
 	}
 
-	private void AdjustHeadsetByPitch(in double currentPitch)
+	private void AdjustHeadsetByPitch(in double currentPitch, in float duration)
 	{
 		const double HeadsetTargetAdjustGain = 1.2f;
-		_commandHeadsetTarget = currentPitch * HeadsetTargetAdjustGain;
+		var target = currentPitch * HeadsetTargetAdjustGain * Mathf.Rad2Deg;
+		_commandTargetHeadset = Mathf.Lerp((float)_commandTargetHeadset, (float)target, duration);
 		// Debug.LogWarning("Adjusting head by pitch");
+	}
+
+	private void ControlHipAndLeg(in double currentRoll)
+	{
+		const float BodyUpperGain = 0.9f;
+		const float BodyLowerGain = 1.4f;
+
+		_commandTargetBody = _commandTargetHeight * ((_commandTargetHeight >= 0) ? BodyUpperGain : BodyLowerGain);
+		// Debug.Log($"_commandTargetHeight: {_commandTargetHeight} _commandTargetBody: {_commandTargetBody}");
+
+		_commandHipTarget.x = _commandTargetHeight;
+		_commandHipTarget.y = _commandTargetHeight;
+
+		_commandLegTarget.x = _commandTargetHeight;
+		_commandLegTarget.y = _commandTargetHeight;
+
+		_commandHipTarget.x += _commandTargetRoll;
+		_commandHipTarget.y += -_commandTargetRoll;
+
+		_commandLegTarget.x += -_commandTargetRoll;
+		_commandLegTarget.y += _commandTargetRoll;
+	}
+
+	private void ControlSmoothRollTarget(in float duration)
+	{
+		_commandTargetRoll = Mathf.Lerp((float)_commandTargetRoll, (float)_commandTargetRollByDrive, duration);
+		// _commandTargetHeight = Mathf.Lerp((float)_commandTargetHeight, 0, duration);
+		// Debug.Log($"_commandTargetRoll: {_commandTargetRoll} _commandTargetRollByDrive: {_commandTargetRollByDrive}");
+	}
+
+	private void RestoreHipAndLegZero(in float duration)
+	{
+		_commandTargetRoll = Mathf.Lerp((float)_commandTargetRoll, 0, duration);
+		_commandTargetHeight = Mathf.Lerp((float)_commandTargetHeight, 0, duration);
 	}
 
 	private Vector3 GetOrientation(SensorDevices.IMU imuSensor)
 	{
 		var angles = imuSensor.GetOrientation();
-		angles *= Mathf.Deg2Rad; // deg to rad
+		angles *= Mathf.Deg2Rad;
 		angles.NormalizeAngle();
 		// Debug.Log("Orientation: " + angles.x * Mathf.Rad2Deg + "," + angles.y * Mathf.Rad2Deg + "," + angles.z * Mathf.Rad2Deg);
 		return angles;
 	}
 
-	private void SetEfforts(VectorXd efforts)
+	private void SetWheelEfforts(in Vector2d efforts)
 	{
 		// Debug.Log($"Effort:  {efforts}");
-		_motorList[Location.FRONT_WHEEL_LEFT]?.SetJointForce((float)efforts[0]);
-		_motorList[Location.FRONT_WHEEL_RIGHT]?.SetJointForce((float)efforts[1]);
-		_motorList[Location.HIP_LEFT]?.SetJointForce((float)efforts[2]);
-		_motorList[Location.HIP_RIGHT]?.SetJointForce((float)efforts[3]);
+		_motorList[Location.FRONT_WHEEL_LEFT]?.SetJointForce((float)Unity2SDF.Direction.Curve(efforts.x));
+		_motorList[Location.FRONT_WHEEL_RIGHT]?.SetJointForce((float)Unity2SDF.Direction.Curve(efforts.y));
+	}
+
+	private void SetJoints(in VectorXd targets)
+	{
+		if (_motorList.ContainsKey(Location.HEAD))
+		{
+			_motorList[Location.HEAD]?.Drive(targetPosition: (float)targets[0]);
+		}
+
+		if (_motorList.ContainsKey(Location.BODY))
+		{
+			_motorList[Location.BODY]?.Drive(targetPosition: (float)targets[1]);
+		}
+
+		_motorList[Location.HIP_LEFT]?.Drive(targetPosition: (float)targets[2]);
+		_motorList[Location.HIP_RIGHT]?.Drive(targetPosition: (float)targets[3]);
 
 		if (_motorList.ContainsKey(Location.LEG_LEFT) &&
 			_motorList.ContainsKey(Location.LEG_RIGHT))
 		{
-			_motorList[Location.LEG_LEFT]?.SetJointForce((float)efforts[4]);
-			_motorList[Location.LEG_RIGHT]?.SetJointForce((float)efforts[5]);
+			_motorList[Location.LEG_LEFT]?.Drive(targetPosition: (float)targets[4]);
+			_motorList[Location.LEG_RIGHT]?.Drive(targetPosition: (float)targets[5]);
 		}
-
-		_motorList[Location.HEAD]?.SetJointForce((float)efforts[6]);
 	}
 
 	private VectorXd GetTargetReferences(in float duration)
@@ -398,38 +387,40 @@ public class SelfBalancedDrive : MotorControl
 		var imuRotation = GetOrientation(imuSensor);
 		var pitch = imuRotation.x;
 
-		if (_onBalancing && (pitch > FalldownPitchThreshold.max || pitch < FalldownPitchThreshold.min))
-		{
-			Debug.LogWarning($"Falldown detected !!! pitch: {pitch * Mathf.Rad2Deg}");
-			_onBalancing = false;
-			Reset();
-		}
-
 		if (_onBalancing)
 		{
-			var wheelVelocity = Vector2.zero;
-			wheelVelocity.x = GetAngularVelocity(Location.FRONT_WHEEL_LEFT);
-			wheelVelocity.y = GetAngularVelocity(Location.FRONT_WHEEL_RIGHT);
-
-			ProcessBalancing(wheelVelocity, duration, imuRotation);
-
-			if ((odomMessage != null) &&
-				!float.IsNaN(wheelVelocity.x) && !float.IsNaN(wheelVelocity.y))
+			if (pitch > FalldownPitchThreshold.max || pitch < FalldownPitchThreshold.min)
 			{
-				odomMessage.AngularVelocity.Left = Unity2SDF.Direction.Curve(wheelVelocity.x);
-				odomMessage.AngularVelocity.Right = Unity2SDF.Direction.Curve(wheelVelocity.y);
-				odomMessage.LinearVelocity.Left = odomMessage.AngularVelocity.Left * _kinematics.WheelInfo.wheelRadius;
-				odomMessage.LinearVelocity.Right = odomMessage.AngularVelocity.Right * _kinematics.WheelInfo.wheelRadius;
-
-				var odom = _kinematics.GetOdom();
-				var rotation = _kinematics.GetRotation();
-				var odomPose = new Vector3((float)odom.y, (float)rotation.z, (float)odom.x);
-				odomMessage.Pose.Set(Unity2SDF.Direction.Reverse(odomPose));
+				Debug.LogWarning($"Falldown detected !!! pitch: {pitch * Mathf.Rad2Deg}");
+				_onBalancing = false;
+				Reset();
 			}
 			else
 			{
-				Debug.LogWarning($"Odometry is missing or Problem with wheelVelocity {wheelVelocity.x}|{wheelVelocity.y}");
-				return false;
+				var wheelVelocity = Vector2.zero;
+				wheelVelocity.x = GetAngularVelocity(Location.FRONT_WHEEL_LEFT);
+				wheelVelocity.y = GetAngularVelocity(Location.FRONT_WHEEL_RIGHT);
+
+				ProcessBalancing(wheelVelocity, duration, imuRotation);
+
+				if ((odomMessage != null) &&
+					!float.IsNaN(wheelVelocity.x) && !float.IsNaN(wheelVelocity.y))
+				{
+					odomMessage.AngularVelocity.Left = Unity2SDF.Direction.Curve(wheelVelocity.x);
+					odomMessage.AngularVelocity.Right = Unity2SDF.Direction.Curve(wheelVelocity.y);
+					odomMessage.LinearVelocity.Left = odomMessage.AngularVelocity.Left * _kinematics.WheelInfo.wheelRadius;
+					odomMessage.LinearVelocity.Right = odomMessage.AngularVelocity.Right * _kinematics.WheelInfo.wheelRadius;
+
+					var odom = _kinematics.GetOdom();
+					var rotation = _kinematics.GetRotation();
+					var odomPose = new Vector3((float)odom.y, (float)rotation.z, (float)odom.x);
+					odomMessage.Pose.Set(Unity2SDF.Direction.Reverse(odomPose));
+				}
+				else
+				{
+					Debug.LogWarning($"Odometry is missing or Problem with wheelVelocity {wheelVelocity.x}|{wheelVelocity.y}");
+					return false;
+				}
 			}
 		}
 
@@ -444,8 +435,13 @@ public class SelfBalancedDrive : MotorControl
 		var pitch = imuRotation.x;
 		var yaw = imuRotation.y;
 
+		if (_resetPose)
+		{
+			ResetPose();
+			_resetPose= false;
+		}
+
 		var wipStates = _kinematics.ComputeStates(wheelVelocityLeft, wheelVelocityRight, yaw, pitch, roll, duration);
-		// Debug.Log($"wipStates: {wipStates}");
 
 		if (_doUpdatePitchProfiler)
 		{
@@ -462,7 +458,7 @@ public class SelfBalancedDrive : MotorControl
 
 		if (!_doUpdatePitchProfiler)
 		{
-			ResetCommandPitch(wipReferences[2]);
+			RestorePitchZero(wipReferences[2], duration);
 		}
 		else
 		{
@@ -472,33 +468,32 @@ public class SelfBalancedDrive : MotorControl
 			}
 		}
 
+		if (Math.Abs(_commandTargetRollByDrive) > float.Epsilon)
+		{
+			ControlSmoothRollTarget(duration);
+		}
+		else if ((_doControlRollHeightByCommandTimeout -= duration) < float.Epsilon)
+		{
+			RestoreHipAndLegZero(duration);
+		}
+
+		ControlHipAndLeg(roll);
+
 		if ((_doControlHeadsetByCommandTimeout -= duration) < float.Epsilon)
 		{
-			AdjustHeadsetByPitch(wipStates[3]);
+			AdjustHeadsetByPitch(wipStates[3], duration);
 		}
 
 		var wipEfforts = _smc.ComputeControl(wipStates, wipReferences, duration);
 
-		var hipPositions = GetHipJointPositions();
-		// var hipVelocities = GetHipJointVelocities();
-		var legPositions = GetLegJointPositions();
-		// var legVelocities = GetLegJointVelocities();
-		var headsetPosition = GetHeadJointPosition();
-		// var headsetVelocity = GetHeadJointVelocity();
+		SetWheelEfforts(wipEfforts);
 
-		var headsetEffort = UpdateHead(headsetPosition, _commandHeadsetTarget, duration);
-		var hipEfforts = UpdateHip(hipPositions, _commandHipTarget, duration);
-		var legEfforts = UpdateLeg(legPositions, _commandLegTarget, duration);
-		// Debug.Log($"{headsetPosition} {_commandHeadsetTarget} {headsetEffort} {_motorList[Location.HEAD]?.GetForce()}");
-
-		// Torque (ZOH manner)
-		var efforts = new VectorXd(new double[] {
-				Unity2SDF.Direction.Curve(wipEfforts.x), Unity2SDF.Direction.Curve(wipEfforts.y),
-				hipEfforts.x, hipEfforts.y,
-				legEfforts.x, legEfforts.y,
-				headsetEffort
+		var jointTargets = new VectorXd(new double[] {
+				_commandTargetHeadset,
+				_commandTargetBody,
+				_commandHipTarget.x, _commandHipTarget.y,
+				_commandLegTarget.x, _commandLegTarget.y,
 			});
-
-		SetEfforts(efforts);
+		SetJoints(jointTargets);
 	}
 }

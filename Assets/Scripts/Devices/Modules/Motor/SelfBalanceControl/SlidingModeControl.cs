@@ -78,7 +78,6 @@ namespace SelfBalanceControl
 
 		private double _kSW = 0.2; // switching gain
 		private double _sigmaB = 0.001;
-		// private double _sigmaIntegralLimit;
 		private double _ff = 0; // Feed forward (?)
 
 		private OutputMode _outputMode;
@@ -143,7 +142,6 @@ namespace SelfBalanceControl
 		{
 			_sigmaIntegralElementPrev = Vector2d.zero;
 			_nominalModel.S = _DefaultNominalModel.S; // recommanded values
-			// this._sigmaIntegralLimit = 100;
 		}
 
 		public void Reset()
@@ -174,9 +172,10 @@ namespace SelfBalanceControl
 			// UnityEngine.Debug.Log($"K: {_nominalModel.K} | f: {_f} | uLQ({_uLQ}) | uEQ({_uEQ})");
 			// UnityEngine.Debug.Log($"uLQ({_uLQ}) | K: {_nominalModel.K} | Delta: {delta}");
 
-			var sigmaIntegralElement = (_nominalModel.SxA - _nominalModel.SxBxK) * delta;
 			// UnityEngine.Debug.Log($"SA: {_nominalModel.SxA} SBK: {_nominalModel.SxBxK}");
 			// UnityEngine.Debug.Log($"SA-SBK: {_nominalModel.SxA - _nominalModel.SxBxK}  | Delta: {delta}");
+
+			var sigmaIntegralElement = (_nominalModel.SxA - _nominalModel.SxBxK) * delta;
 			// UnityEngine.Debug.Log($"sigmaintegralelem: {sigmaIntegralElement}");
 
 			for (var i = 0; i < sigmaIntegralElement.Size; i++)

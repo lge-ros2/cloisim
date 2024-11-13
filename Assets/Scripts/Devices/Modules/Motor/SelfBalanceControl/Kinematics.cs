@@ -82,6 +82,7 @@ namespace SelfBalanceControl
 			_rotation.y = pitch;
 			_rotation.z = yaw;
 
+			// Debug.Log($"wipStates: {wipStates}");
 			return states;
 		}
 

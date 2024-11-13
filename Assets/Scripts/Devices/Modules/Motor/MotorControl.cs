@@ -19,7 +19,7 @@ public abstract class MotorControl
 		REAR_WHEEL_LEFT = 3,	REAR_WHEEL_RIGHT = 4,
 		HIP_LEFT,	HIP_RIGHT,
 		LEG_LEFT,	LEG_RIGHT,
-		HEAD
+		BODY, HEAD
 	};
 
 	protected Dictionary<Location, Motor> _motorList
@@ -48,7 +48,6 @@ public abstract class MotorControl
 		AttachMotor(Location.FRONT_WHEEL_LEFT, wheelNameLeft);
 		AttachMotor(Location.FRONT_WHEEL_RIGHT, wheelNameRight);
 	}
-
 
 	public void AttachWheel(
 		in string frontWheelLeftName, in string frontWheelRightName,
@@ -81,22 +80,23 @@ public abstract class MotorControl
 		Debug.Log(log.ToString());
 	}
 
+	protected void ChangeDriveType(in Location targetlLocation, in ArticulationDriveType type)
+	{
+		if (_motorList.ContainsKey(targetlLocation) && _motorList[targetlLocation] != null)
+		{
+			_motorList[targetlLocation].DriveType = type;
+		}
+	}
+
 	public void SetWheelPID(
 		float p, float i, float d,
 		float integralMin, float integralMax,
 		float outputMin, float outputMax)
 	{
-		if (_motorList[Location.FRONT_WHEEL_LEFT] != null)
-			SetMotorPID(Location.FRONT_WHEEL_LEFT, p, i, d, integralMin, integralMax, outputMin, outputMax);
-
-		if (_motorList[Location.FRONT_WHEEL_RIGHT] != null)
-			SetMotorPID(Location.FRONT_WHEEL_RIGHT, p, i, d, integralMin, integralMax, outputMin, outputMax);
-
-		if (_motorList[Location.REAR_WHEEL_LEFT] != null)
-			SetMotorPID(Location.REAR_WHEEL_LEFT, p, i, d, integralMin, integralMax, outputMin, outputMax);
-
-		if (_motorList[Location.REAR_WHEEL_RIGHT] != null)
-			SetMotorPID(Location.REAR_WHEEL_RIGHT, p, i, d, integralMin, integralMax, outputMin, outputMax);
+		SetMotorPID(Location.FRONT_WHEEL_LEFT, p, i, d, integralMin, integralMax, outputMin, outputMax);
+		SetMotorPID(Location.FRONT_WHEEL_RIGHT, p, i, d, integralMin, integralMax, outputMin, outputMax);
+		SetMotorPID(Location.REAR_WHEEL_LEFT, p, i, d, integralMin, integralMax, outputMin, outputMax);
+		SetMotorPID(Location.REAR_WHEEL_RIGHT, p, i, d, integralMin, integralMax, outputMin, outputMax);
 	}
 
 	protected void SetMotorPID(
@@ -121,6 +121,12 @@ public abstract class MotorControl
 		{
 			Debug.LogWarning("One of PID Gain value is NaN or Infinity. Set to default value");
 		}
+	}
+
+	protected double UpdatePID(in Location location, in double actual, in double target, in float duration)
+	{
+		var motor = _motorList[location];
+		return (motor == null) ? 0 : _motorList[location].UpdatePID(actual, target, duration);
 	}
 
 	/// <summary>Get target Motor Velocity</summary>
