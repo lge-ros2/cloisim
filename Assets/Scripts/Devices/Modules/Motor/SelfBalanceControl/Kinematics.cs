@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+//  #define CALCULATE_ANGULAR_BY_YAW
 
 using System;
 
@@ -14,12 +15,21 @@ namespace SelfBalanceControl
 		private Vector2d _odomPose = Vector2d.zero;
 		private Vector3d _rotation = Vector3d.zero; // roll, pitch, yaw
 
+		private double _odomTranslationalVelocity = 0;
+		private double _odomRotationalVelocity = 0;
+
 		private double _s = 0; // displacement,s
 		private double _sRef = 0;
 		private double _previousLinearVelocity = 0;
 		private double _previousPitch = double.NaN;
 
+#if CALCULATE_ANGULAR_BY_YAW
+		private double _previousYaw = 0;
+#endif
 		public WheelInfo WheelInfo => _wheelInfo;
+
+		public double OdomTranslationalVelocity => Unity2SDF.Direction.Curve(_odomTranslationalVelocity);
+		public double OdomRotationalVelocity => Unity2SDF.Direction.Curve(_odomRotationalVelocity);
 
 		public Kinematics(in float radius, in float separation)
 		{
@@ -40,14 +50,22 @@ namespace SelfBalanceControl
 			in double deltaTime)
 		{
 			var halfWheelRadius = this._wheelInfo.halfWheelRadius;
-			var halfInverseWheelSeparation = this._wheelInfo.inversedWheelSeparation * 0.5f;
 
 			var wheelVelocitySum = wheelVelocityRight + wheelVelocityLeft;
 			var wheelVelocityDiff = wheelVelocityRight - wheelVelocityLeft;
 
 			var linearVelocity = halfWheelRadius * wheelVelocitySum;
-			var angularVelocity = this._wheelInfo.wheelRadius * halfInverseWheelSeparation * wheelVelocityDiff;
+#if CALCULATE_ANGULAR_BY_YAW
+			var angularVelocity = (yaw - _previousYaw) / deltaTime;
+			_previousYaw = yaw;
+#else
+			var angularVelocity = halfWheelRadius * wheelVelocityDiff * this._wheelInfo.inversedWheelSeparation;
+			// this._wheelInfo.wheelRadius * halfInverseWheelSeparation * wheelVelocityDiff;
+#endif
 			// UnityEngine.Debug.Log($"wheelVelocity R/L: {wheelVelocityRight}/{wheelVelocityLeft}");
+
+			_odomTranslationalVelocity = linearVelocity;
+			_odomRotationalVelocity = angularVelocity;
 
 			var pitchDot = (double.IsNaN(_previousPitch)) ? 0 : ((pitch - _previousPitch) / deltaTime);
 			_s += 0.5 * (linearVelocity + _previousLinearVelocity) * deltaTime;
@@ -72,6 +90,7 @@ namespace SelfBalanceControl
 			var ssum = wheelVelocitySum * halfWheelRadius * deltaTime;
 			var sdiff = wheelVelocityDiff * halfWheelRadius * deltaTime;
 
+			var halfInverseWheelSeparation = this._wheelInfo.inversedWheelSeparation * 0.5f;
 			var deltaX = ssum * Math.Cos(yaw + sdiff / halfInverseWheelSeparation);
 			var deltaY = ssum * Math.Sin(yaw + sdiff / halfInverseWheelSeparation);
 

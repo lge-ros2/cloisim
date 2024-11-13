@@ -51,6 +51,7 @@ public class SelfBalancedDrive : MotorControl
 	private readonly float CommandTimeout = 5f;
 	private readonly double CommandMargin = 0.00001;
 	private readonly MathUtil.MinMax FalldownPitchThreshold = new MathUtil.MinMax(-1.25f, 1.35f); // in rad
+	private readonly MathUtil.MinMax FalldownRollThreshold = new MathUtil.MinMax(-1.35f, 1.35f); // in rad
 	private readonly MathUtil.MinMax RollLimit = new MathUtil.MinMax(-5f, 5f); // in deg
 	private readonly MathUtil.MinMax HeightLimit = new MathUtil.MinMax(-30f, 22f); // in deg
 	private readonly MathUtil.MinMax HeadsetLimit = new MathUtil.MinMax(-90f, 90f); // in deg
@@ -236,7 +237,7 @@ public class SelfBalancedDrive : MotorControl
 		{
 			var ratio = _commandTwistAngular / _commandTwistLinear;
 			_commandTargetRollByDrive = ((ratio > 0) ? RollLimit.min : RollLimit.max) * -Math.Abs(ratio);
-			// Debug.Log($"Command - linear: {_commandTwistLinear} angular: {_commandTwistAngular} ratio: {ratio} _commandTargetRoll: {_commandTargetRoll}");
+			// Debug.Log($"Command - linear: {_commandTwistLinear} angular: {_commandTwistAngular} ratio: {ratio} _commandTargetRollByDrive: {_commandTargetRollByDrive}");
 		}
 		// Debug.Log($"Command - linear: {_commandTwistLinear} angular: {_commandTwistAngular} pitch: {PitchTarget}");
 	}
@@ -310,11 +311,26 @@ public class SelfBalancedDrive : MotorControl
 		_commandLegTarget.y += _commandTargetRoll;
 	}
 
+	private float _smoothControlTime = 0;
+	private double _prevCommandTargetRollByDrive = 0;
+
 	private void ControlSmoothRollTarget(in float duration)
 	{
-		_commandTargetRoll = Mathf.Lerp((float)_commandTargetRoll, (float)_commandTargetRollByDrive, duration);
-		// _commandTargetHeight = Mathf.Lerp((float)_commandTargetHeight, 0, duration);
-		// Debug.Log($"_commandTargetRoll: {_commandTargetRoll} _commandTargetRollByDrive: {_commandTargetRollByDrive}");
+		const float smoothTimeDiff = 0.00005f;
+		// Debug.Log($"_commandTwistLinear: {_commandTwistLinear} _kinematics.OdomTranslationalVelocity: {_kinematics.OdomTranslationalVelocity}");
+		if ((_commandTwistLinear > 0 && _kinematics.OdomTranslationalVelocity > 0) ||
+			(_commandTwistLinear < 0 && _kinematics.OdomTranslationalVelocity < 0) )
+		{
+			if (Math.Abs(_commandTargetRollByDrive - _prevCommandTargetRollByDrive) > Quaternion.kEpsilon)
+			{
+				_smoothControlTime = 0;
+				// Debug.LogWarning("Reset _smoothControlTime");
+			}
+
+			_commandTargetRoll = Mathf.Lerp((float)_commandTargetRoll, (float)_commandTargetRollByDrive, _smoothControlTime += smoothTimeDiff);
+			// Debug.Log($"_commandTargetRoll: {_commandTargetRoll} _commandTargetRollByDrive: {_commandTargetRollByDrive} _smoothControlTime: {_smoothControlTime}");
+			_prevCommandTargetRollByDrive = _commandTargetRollByDrive;
+		}
 	}
 
 	private void RestoreHipAndLegZero(in float duration)
@@ -386,12 +402,14 @@ public class SelfBalancedDrive : MotorControl
 
 		var imuRotation = GetOrientation(imuSensor);
 		var pitch = imuRotation.x;
+		var roll = imuRotation.z;
 
 		if (_onBalancing)
 		{
-			if (pitch > FalldownPitchThreshold.max || pitch < FalldownPitchThreshold.min)
+			if (pitch > FalldownPitchThreshold.max || pitch < FalldownPitchThreshold.min ||
+				roll > FalldownRollThreshold.max || roll < FalldownRollThreshold.min)
 			{
-				Debug.LogWarning($"Falldown detected !!! pitch: {pitch * Mathf.Rad2Deg}");
+				Debug.LogWarning($"Falldown detected !!! pitch: {pitch * Mathf.Rad2Deg} roll: {roll * Mathf.Rad2Deg}");
 				_onBalancing = false;
 				Reset();
 			}
@@ -415,6 +433,9 @@ public class SelfBalancedDrive : MotorControl
 					var rotation = _kinematics.GetRotation();
 					var odomPose = new Vector3((float)odom.y, (float)rotation.z, (float)odom.x);
 					odomMessage.Pose.Set(Unity2SDF.Direction.Reverse(odomPose));
+
+					odomMessage.TwistLinear.X = _kinematics.OdomTranslationalVelocity;
+					odomMessage.TwistAngular.Z = _kinematics.OdomRotationalVelocity;
 				}
 				else
 				{
