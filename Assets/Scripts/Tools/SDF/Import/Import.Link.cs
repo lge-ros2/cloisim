@@ -14,7 +14,6 @@ namespace SDF
 		public partial class Loader : Base
 		{
 			private static readonly float MinimumInertiaTensor = 1e-6f;
-			private static readonly float InertiaScalingFactor = 10f;
 
 			private static UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia inertia)
 			{
@@ -43,7 +42,7 @@ namespace SDF
 					}
 				}
 
-				inertiaMomentum.position = inertiaVector * InertiaScalingFactor;
+				inertiaMomentum.position = inertiaVector;
 				// inertiaMomentum.rotation = UE.Quaternion.Euler(inertiaRotationVector.x, inertiaRotationVector.y, inertiaRotationVector.z);
 
 				// Debug.Log("Inertia Tensor: " + inertiaMomentum.position + ", " + inertiaMomentum.rotation.eulerAngles);
