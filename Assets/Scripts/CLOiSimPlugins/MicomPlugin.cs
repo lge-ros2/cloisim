@@ -336,7 +336,7 @@ public class MicomPlugin : CLOiSimPlugin
 					var targetBattery = linkHelper.Battery;
 					if (targetBattery != null)
 					{
-						if (targetBattery.Name.CompareTo(batteryName) == 0)
+						if (targetBattery.Name.Equals(batteryName))
 						{
 							// _log.AppendLine("Battery: " + batteryName + ", Battery Consumer:" + consumption.ToString("F5"));
 							targetBattery.Discharge(consumption);

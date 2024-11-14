@@ -51,7 +51,7 @@ namespace SensorDevices
 			foreach (var imu in imuList)
 			{
 				if (imu.DeviceName.Contains("::" + sensorName + "::") ||
-					imu.name.CompareTo(sensorName) == 0)
+					imu.name.Equals(sensorName))
 				{
 					Debug.Log(imu.DeviceName + " attached to Micom");
 					_imuSensor = imu;

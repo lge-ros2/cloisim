@@ -104,7 +104,7 @@ public class SimulationControlService : WebSocketBehavior
 			return;
 		}
 
-		if (request.command.CompareTo("device_list") != 0)
+		if (!request.command.Equals("device_list"))
 			request.Print();
 
 		SimulationControlResponseBase output = null;

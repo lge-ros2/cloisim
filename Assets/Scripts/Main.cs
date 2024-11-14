@@ -345,7 +345,7 @@ public class Main : MonoBehaviour
 		{
 			var childTransform = worldTrnasform.GetChild(i);
 
-			if (childTransform.name.CompareTo(tmpModelName) == 0)
+			if (childTransform.name.Equals(tmpModelName))
 			{
 				tmpModelName = modelName + "_clone_" + numbering++;
 				i = 0;
@@ -366,7 +366,7 @@ public class Main : MonoBehaviour
 			var itemValue = item.Value;
 
 			// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
-			if (itemValue.Item2.CompareTo(modelPath) == 0)
+			if (itemValue.Item2.Equals(modelPath))
 			{
 				// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
 				var modelFileName = itemValue.Item3;
@@ -532,7 +532,7 @@ public class Main : MonoBehaviour
 		var args = Environment.GetCommandLineArgs();
 		for (var i = 0; i < args.Length; i++)
 		{
-			if (args[i].CompareTo(arg_name) == 0 && args.Length > i + 1)
+			if (args[i].Equals(arg_name) && args.Length > i + 1)
 			{
 				return args[i + 1];
 			}
