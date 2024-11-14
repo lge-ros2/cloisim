@@ -388,6 +388,8 @@ public class Main : MonoBehaviour
 
 	public IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
+		yield return null;
+
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
@@ -414,6 +416,8 @@ public class Main : MonoBehaviour
 
 	private IEnumerator LoadWorld()
 	{
+		yield return null;
+
 		// Debug.Log("Hello CLOiSim World!!!!!");
 		Debug.Log("Target World: " + _worldFilename);
 

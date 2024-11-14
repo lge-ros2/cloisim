@@ -144,6 +144,8 @@ namespace SDF
 
 			public IEnumerator<Model> Start(Model model)
 			{
+				yield return null;
+
 				_jointObjectList.Clear();
 
 				var modelObject = ImportModel(model);
