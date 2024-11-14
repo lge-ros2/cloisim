@@ -9,6 +9,9 @@ using System;
 [Serializable]
 public class PID
 {
+	private const double IntegralMax = 100;
+	private const double CommandMax = 1000;
+
 	private double _pGain, _iGain, _dGain;
 	private double _integralError = 0;
 	private double _lastError = 0;
@@ -17,17 +20,23 @@ public class PID
 
 	public PID(
 		in double pGain, in double iGain, in double dGain,
-		in double integralMin = -100, in double integralMax = 100,
-		in double commandMin = -1000, in double commandMax = 1000)
+		in double integralMin, in double integralMax,
+		in double commandMin, in double commandMax)
 	{
 		Change(pGain, iGain, dGain);
-		SetIntegralRange(integralMin, integralMax);
-		SetOutputRange(commandMin, commandMax);
+
+		SetIntegralRange(
+			double.IsNegativeInfinity(integralMin)? -IntegralMax: integralMin,
+			double.IsPositiveInfinity(integralMax)? IntegralMax: integralMax);
+
+		SetOutputRange(
+			double.IsNegativeInfinity(commandMin)? -CommandMax: commandMin,
+			double.IsPositiveInfinity(commandMax)? CommandMax: commandMax);
 	}
 
 	public PID(
 		in double pGain, in double iGain, in double dGain,
-		in double integralLimit, in double commandLimit)
+		in double integralLimit = IntegralMax, in double commandLimit = CommandMax)
 		: this(
 			pGain, iGain, dGain,
 			-Math.Abs(integralLimit), Math.Abs(integralLimit),
