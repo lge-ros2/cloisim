@@ -284,7 +284,7 @@ public class SelfBalancedDrive : MotorControl
 
 	private void AdjustHeadsetByPitch(in double currentPitch, in float duration)
 	{
-		const double HeadsetTargetAdjustGain = 1.2f;
+		const double HeadsetTargetAdjustGain = 1.5f;
 		var target = currentPitch * HeadsetTargetAdjustGain * Mathf.Rad2Deg;
 		_commandTargetHeadset = Mathf.Lerp((float)_commandTargetHeadset, (float)target, duration);
 		// Debug.LogWarning("Adjusting head by pitch");
