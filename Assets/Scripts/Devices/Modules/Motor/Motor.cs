@@ -9,6 +9,7 @@ using UnityEngine;
 public class Motor : Articulation
 {
 	private const float WheelResolution = 0.043945312f; // in degree, encoding 13bits, 360°
+	// private const float WheelResolution = 0.087890625f; // in degree, encoding 12bits, 360°
 
 	private PID _pidControl = null;
 	private float _targetAngularVelocity = 0; // degree per seconds
@@ -88,6 +89,7 @@ public class Motor : Articulation
 	public void Run(in float duration)
 	{
 		var adjustValue = UpdatePID(_currentMotorVelocity, _targetAngularVelocity, duration);
+		// Debug.Log($"_currentMotorVelocity: {_currentMotorVelocity} targetVelocity: {_targetAngularVelocity} {adjustValue}");
 		Drive(targetVelocity: _targetAngularVelocity + (float)adjustValue);
 	}
 
@@ -105,7 +107,6 @@ public class Motor : Articulation
 		else if (System.Math.Abs(Time.timeAsDouble - _prevTimeStamp) > float.Epsilon)
 		{
 			var timeDelta = Time.timeAsDouble - _prevTimeStamp;
-			// Debug.Log(timeDelta);
 
 			var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
 			var motorVelocity = (float)(Mathf.DeltaAngle(_prevJointPosition, jointPosition) / timeDelta);
