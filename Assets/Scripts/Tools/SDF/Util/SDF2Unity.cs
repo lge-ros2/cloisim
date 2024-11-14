@@ -44,11 +44,6 @@ public partial class SDF2Unity
 		return new Vector3(-(float)y, (float)z, (float)x);
 	}
 
-	public static Vector3 Position(in Vector3 value)
-	{
-		return Position(value.x, value.y, value.z);
-	}
-
 	public static Vector3 Position(in SDF.Vector3<double> value)
 	{
 		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
@@ -62,6 +57,16 @@ public partial class SDF2Unity
 	public static Vector3 Position(in SDF.Vector3<int> value)
 	{
 		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
+	}
+
+	public static Vector3 Position(in cloisim.msgs.Vector3d value)
+	{
+		return Position(value.X, value.Y, value.Z);
+	}
+
+	public static Vector3 Rotation(in cloisim.msgs.Vector3d value)
+	{
+		return Position(value);
 	}
 
 	public static Quaternion Rotation(in SDF.Quaternion<double> value)
@@ -134,7 +139,7 @@ public partial class SDF2Unity
 
 	public static float CurveOrientation(in float value)
 	{
-		return -value * Mathf.Rad2Deg;
+		return CurveOrientationAngle(value) * Mathf.Rad2Deg;
 	}
 
 	public static float CurveOrientationAngle(in float value)

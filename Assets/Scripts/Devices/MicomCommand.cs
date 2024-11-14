@@ -14,6 +14,21 @@ namespace SensorDevices
 		private MotorControl _motorControl = null;
 		private MowingBlade _mowingBlade = null;
 
+		#region Constant for SelfBalancedDrive
+		private const float RollRotationUnit = 0.25f; // deg
+		private const float PitchRotationUnit = 0.01f; // rad
+		private const float HeightMovementUnit = 0.5f; // deg
+		#endregion
+
+		#region Constant mapping index for JoyStick
+		private const int JoyUpKeyIndex = 11;
+		private const int JoyDownKeyIndex = 12;
+		private const int JoyLeftKeyIndex = 13;
+		private const int JoyRightKeyIndex = 14;
+		private const int JoyTriangleKeyIndex = 3;
+		private const int JoyCircleKeyIndex = 1;
+		#endregion
+
 		protected override void OnAwake()
 		{
 			Mode = ModeType.RX_THREAD;
@@ -30,7 +45,7 @@ namespace SensorDevices
 			DoWheelDrive(Vector3.zero, Vector3.zero);
 		}
 
-		public void SetMotorControl(in MotorControl motorControl)
+		public void SetMotorControl(in dynamic motorControl)
 		{
 			this._motorControl = motorControl;
 		}
@@ -43,31 +58,36 @@ namespace SensorDevices
 
 				if (cmdVelocity != null)
 				{
-					var linear = cmdVelocity.Linear;
-					var angular = cmdVelocity.Angular;
-
-					var linearVelocity = SDF2Unity.Position(linear.X, linear.Y, linear.Z);
-					var angularVelocity = SDF2Unity.Position(angular.X, angular.Y, angular.Z);
+					var linearVelocity = SDF2Unity.Position(cmdVelocity.Linear);
+					var angularVelocity = SDF2Unity.Position(cmdVelocity.Angular);
 
 					DoWheelDrive(linearVelocity, angularVelocity);
 				}
 				else
 				{
-					var cmdMowing = receivedMessage.GetMessage<messages.Param>();
-
-					if (cmdMowing != null)
+					var customCmd = receivedMessage.GetMessage<messages.Param>();
+					if (customCmd != null)
 					{
-						if (!string.IsNullOrEmpty(cmdMowing.Name))
+						if (customCmd.Name.StartsWith("mowing"))
 						{
-							ControlMowing(cmdMowing.Name, cmdMowing.Value);
+							ControlMowing(customCmd.Name, customCmd.Value);
 						}
 					}
-#if UNITY_EDITOR
 					else
 					{
-						Debug.LogWarning("ERROR: failed to pop device message");
-					}
+						var joystick = receivedMessage.GetMessage<messages.Joystick>();
+
+						if (joystick != null)
+						{
+							ControlJoystick(joystick);
+						}
+#if UNITY_EDITOR
+						else
+						{
+							Debug.LogWarning("ERROR: failed to pop device message");
+						}
 #endif
+					}
 				}
 			}
 		}
@@ -85,7 +105,86 @@ namespace SensorDevices
 			var targetLinearVelocity = linearVelocity.z;
 			var targetAngularVelocity = angularVelocity.y;
 
-			_motorControl.SetTwistDrive(targetLinearVelocity, targetAngularVelocity);
+			_motorControl?.Drive(targetLinearVelocity, targetAngularVelocity);
+		}
+
+		/// <summary>
+		/// Control robot by joystick command based on PS5 controller
+		/// </summary>
+		/// <param name="message">Joystick message</param>
+		/// <remarks>
+		/// Currently supported buttons are:
+		/// - Triangle button: start balancing
+		/// </remarks>
+		private void ControlJoystick(in cloisim.msgs.Joystick message)
+		{
+			var balancedDrive = _motorControl as SelfBalancedDrive;
+			if (balancedDrive != null)
+			{
+#if false
+				var tmp = new System.Text.StringBuilder();
+				tmp.Clear();
+				foreach (var item in message.Buttons)
+					tmp.Append($"{item},");
+				Debug.Log(tmp.ToString());
+#endif
+
+				var buttonUpPressed = message.Buttons[JoyUpKeyIndex]; // Up Button
+				var buttonDownPressed = message.Buttons[JoyDownKeyIndex]; // Down Button
+
+				if (buttonUpPressed > 0 || buttonDownPressed > 0)
+				{
+					var heightAmount = ((buttonUpPressed > 0) ? -HeightMovementUnit : HeightMovementUnit);
+					balancedDrive.HeightTarget += heightAmount;
+				}
+
+				var buttonLeftPressed = message.Buttons[JoyLeftKeyIndex]; // Left Button
+				var buttonRightPressed = message.Buttons[JoyRightKeyIndex]; // Right Button
+
+				if (buttonLeftPressed > 0 || buttonRightPressed > 0)
+				{
+					var rollAmount = ((buttonLeftPressed > 0) ? -RollRotationUnit : RollRotationUnit);
+					balancedDrive.RollTarget += rollAmount;
+				}
+
+				var buttonTrianglePressed = message.Buttons[JoyTriangleKeyIndex];
+				if (buttonTrianglePressed > 0)
+				{
+					balancedDrive.Balancing = !balancedDrive.Balancing;
+				}
+
+				var buttonCirclePressed = message.Buttons[JoyCircleKeyIndex];
+				if (buttonCirclePressed > 0)
+				{
+					balancedDrive.DoResetPose();
+				}
+
+				if (message.Translation != null)
+				{
+					var stickTranslation = SDF2Unity.Position(message.Translation);
+					if (Mathf.Abs(stickTranslation.y) > float.Epsilon)
+					{
+						var headsetTarget = Mathf.Abs(stickTranslation.y) *
+							((stickTranslation.y >= 0) ? balancedDrive.HeightTargetMin : balancedDrive.HeightTargetMax);
+						balancedDrive.HeadsetTarget = headsetTarget;
+					}
+				}
+
+				if (message.Rotation != null)
+				{
+					var stickRotation = SDF2Unity.Rotation(message.Rotation);
+					// Debug.Log(stickRotation.ToString("F5"));
+					if (Mathf.Abs(stickRotation.x) > float.Epsilon)
+					{
+						balancedDrive.PitchTarget += PitchRotationUnit * SDF2Unity.CurveOrientationAngle(stickRotation.x);
+						// Debug.Log($"Joy-PitchTarget={balancedDrive.PitchTarget}");
+					}
+
+					// if (Mathf.Abs(stickRotation.z) > float.Epsilon)
+					// {
+					// }
+				}
+			}
 		}
 
 		private void ControlMowing(in string target, in cloisim.msgs.Any value)
@@ -111,5 +210,70 @@ namespace SensorDevices
 				Debug.LogWarning($"Invalid Control Mowing message received: {target}");
 			}
 		}
+
+#if UNITY_EDITOR
+		#region Constant for SelfBalancedDrive
+		private const float HeadsetRotationUnit = 1f; // deg
+		#endregion
+
+		void LateUpdate()
+		{
+			var balancedDrive = _motorControl as SelfBalancedDrive;
+			if (balancedDrive != null)
+			{
+				if (Input.GetKey(KeyCode.H))
+				{
+					if (Input.GetKey(KeyCode.UpArrow))
+					{
+						balancedDrive.HeadsetTarget -= HeadsetRotationUnit;
+					}
+					else if (Input.GetKey(KeyCode.DownArrow))
+					{
+						balancedDrive.HeadsetTarget += HeadsetRotationUnit;
+					}
+					// Debug.Log(balancedDrive.HeadsetTarget);
+				}
+				else if (Input.GetKey(KeyCode.P))
+				{
+					if (Input.GetKey(KeyCode.UpArrow))
+					{
+						balancedDrive.PitchTarget += PitchRotationUnit;
+					}
+					else if (Input.GetKey(KeyCode.DownArrow))
+					{
+						balancedDrive.PitchTarget -= PitchRotationUnit;
+					}
+					// Debug.Log($"PitchTarget={balancedDrive.PitchTarget}");
+				}
+				else if (Input.GetKey(KeyCode.M))
+				{
+					if (Input.GetKey(KeyCode.LeftArrow))
+					{
+						balancedDrive.RollTarget -= RollRotationUnit;
+					}
+					else if (Input.GetKey(KeyCode.RightArrow))
+					{
+						balancedDrive.RollTarget += RollRotationUnit;
+					}
+					// Debug.Log($"RollTarget={balancedDrive.RollTarget}");
+
+					if (Input.GetKey(KeyCode.UpArrow))
+					{
+						balancedDrive.HeightTarget -= HeightMovementUnit;
+					}
+					else if (Input.GetKey(KeyCode.DownArrow))
+					{
+						balancedDrive.HeightTarget += HeightMovementUnit;
+					}
+					// Debug.Log($"HeightTarget={balancedDrive.HeightTarget}");
+				}
+				else if (Input.GetKeyUp(KeyCode.B))
+				{
+					balancedDrive.Balancing = !balancedDrive.Balancing;
+					Debug.LogWarning($"{name}::Toggle Balancing [{balancedDrive.Balancing}] ");
+				}
+			}
+		}
+#endif
 	}
 }

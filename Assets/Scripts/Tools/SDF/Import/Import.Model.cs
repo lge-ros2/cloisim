@@ -26,25 +26,23 @@ namespace SDF
 
 				articulationBody.useGravity = false;
 				articulationBody.immovable = false;
-				articulationBody.linearDamping = 0.05f;
-				articulationBody.angularDamping = 0.05f;
+				articulationBody.linearDamping = 3;
+				articulationBody.angularDamping = 1;
 				articulationBody.jointFriction = 0;
 
+				articulationBody.mass = 0.5f;
+				articulationBody.automaticCenterOfMass = true;
 				articulationBody.ResetCenterOfMass();
-				articulationBody.mass = 1e-07f;
-				articulationBody.automaticCenterOfMass = false;
 
+				articulationBody.automaticInertiaTensor = true;
 				articulationBody.ResetInertiaTensor();
-				articulationBody.automaticInertiaTensor = false;
-				articulationBody.inertiaTensor = UE.Vector3.one * MinimumInertiaTensor;
-				articulationBody.inertiaTensorRotation = UE.Quaternion.identity;
 
 				articulationBody.solverIterations = 0;
 				articulationBody.solverVelocityIterations = 0;
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
 
-				articulationBody.sleepThreshold = 0.1f;
+				articulationBody.sleepThreshold = 1f;
 				articulationBody.Sleep();
 
 				// UE.Debug.Log(targetObject.name + " Create root articulation body");
@@ -132,7 +130,7 @@ namespace SDF
 				var modelHelper = modelObject.GetComponent<Helper.Model>();
 				if (modelHelper.IsFirstChild)
 				{
-					// UE.Debug.Log("AfterImportModel: " + model.OriginalName + ", " + modelObject.name);
+					// UE.Debug.Log($"AfterImportModel: {model.OriginalName}, {modelObject.name}");
 					Main.SegmentationManager.AttachTag(model.OriginalName, modelObject);
 					Main.SegmentationManager.UpdateTags();
 				}

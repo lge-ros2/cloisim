@@ -13,10 +13,6 @@ namespace SDF
 	{
 		public static class Joint
 		{
-			private static float DefaultJointFriction = 0.05f;
-			private static float DefaultJointLinearDamping = 0.05f;
-			private static float DefaultJointAngularDamping = 0.05f;
-
 			public static UE.Pose SetArticulationBodyRelationship(in SDF.Joint joint, UE.Transform linkParent, UE.Transform linkChild)
 			{
 				var modelTransformParent = linkParent.parent;
@@ -83,8 +79,8 @@ namespace SDF
 			public static void MakeRevoluteJoint(this UE.ArticulationBody body, in SDF.Axis axis)
 			{
 				body.jointType = UE.ArticulationJointType.SphericalJoint;
-				body.linearDamping = DefaultJointLinearDamping;
-				body.angularDamping = DefaultJointAngularDamping;
+				body.linearDamping = 1.5f;
+				body.angularDamping = 2;
 
 				var drive = new UE.ArticulationDrive();
 
@@ -105,8 +101,10 @@ namespace SDF
 				}
 				else
 				{
-					body.jointFriction = DefaultJointFriction;
+					body.jointFriction = 0.5f;
 				}
+
+				body.maxJointVelocity = (float)axis.limit.velocity;;
 
 				var jointAxis = SDF2Unity.Axis(axis.xyz);
 				// UE.Debug.LogWarning(body.transform.parent.name + "::" + body.name + " = " + jointAxis + " - revolute");
@@ -161,6 +159,7 @@ namespace SDF
 					drive.SetRevoluteDriveLimit(axis2.limit);
 				}
 
+				body.maxJointVelocity = (float)axis2.limit.velocity;
 				drive.forceLimit = (double.IsInfinity(axis2.limit.effort)) ? float.MaxValue : (float)axis2.limit.effort;
 
 				var joint2Axis = SDF2Unity.Axis(axis2.xyz);
@@ -200,16 +199,18 @@ namespace SDF
 			private static void MakeFixedJoint(this UE.ArticulationBody body)
 			{
 				body.jointType = UE.ArticulationJointType.FixedJoint;
-				body.linearDamping = 0.00f;
-				body.angularDamping = 0.00f;
+				body.linearDamping = 2;
+				body.angularDamping = 2;
 				body.jointFriction = 0;
+				body.solverIterations = 0;
+				body.solverVelocityIterations = 0;
 			}
 
 			private static void MakeBallJoint(this UE.ArticulationBody body)
 			{
 				body.jointType = UE.ArticulationJointType.SphericalJoint;
-				body.linearDamping = DefaultJointLinearDamping;
-				body.angularDamping = DefaultJointAngularDamping;
+				body.linearDamping = 3;
+				body.angularDamping = 1;
 
 				body.swingYLock = UE.ArticulationDofLock.FreeMotion;
 				body.swingZLock = UE.ArticulationDofLock.FreeMotion;
@@ -222,8 +223,8 @@ namespace SDF
 				body.anchorRotation *= SDF2Unity.Rotation(pose?.Rot);
 				// body.parentAnchorRotation *= SDF2Unity.Rotation(pose?.Rot);  // TODO: matchAnchors is set to true
 
-				body.linearDamping = DefaultJointLinearDamping;
-				body.angularDamping = DefaultJointAngularDamping;
+				body.linearDamping = 1.5f;
+				body.angularDamping = 1;
 
 				var drive = new UE.ArticulationDrive();
 
@@ -232,6 +233,8 @@ namespace SDF
 					drive.lowerLimit = (float)axis.limit.lower;
 					drive.upperLimit = (float)axis.limit.upper;
 				}
+
+				body.maxJointVelocity = (float)axis.limit.velocity;
 
 				drive.forceLimit = (double.IsInfinity(axis.limit.effort)) ? float.MaxValue : (float)axis.limit.effort;
 
@@ -244,7 +247,7 @@ namespace SDF
 				}
 				else
 				{
-					body.jointFriction = DefaultJointFriction;
+					body.jointFriction = 0.1f;
 				}
 
 				var jointAxis = SDF2Unity.Axis(axis.xyz);
@@ -294,7 +297,6 @@ namespace SDF
 
 			public static void MakeJoint(this UE.ArticulationBody body, in SDF.Joint joint)
 			{
-
 				switch (joint.Type)
 				{
 					case "ball":

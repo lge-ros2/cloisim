@@ -14,12 +14,12 @@ public struct Quaterniond
 	public double z;
 	public double w;
 
-	public Quaterniond(double p_x, double p_y, double p_z, double p_w)
+	public Quaterniond(in double x, in double y, in double z, in double w)
 	{
-		this.x = p_x;
-		this.y = p_y;
-		this.z = p_z;
-		this.w = p_w;
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.w = w;
 	}
 
 	public double this[in int index]
@@ -79,7 +79,7 @@ public struct Quaterniond
 
 	public static double Angle(in Quaterniond a, in Quaterniond b)
 	{
-		double single = Dot(a, b);
+		var single = Dot(a, b);
 		return Math.Acos(Math.Min(Math.Abs(single), 1f)) * 2f * (180 / Math.PI);
 	}
 
@@ -88,17 +88,15 @@ public struct Quaterniond
 		axis = axis.normalized;
 		angle = angle / 180D * Math.PI;
 
-		var q = new Quaterniond();
-
 		var halfAngle = angle * 0.5D;
 		var s = Math.Sin(halfAngle);
 
-		q.w = Math.Cos(halfAngle);
-		q.x = s * axis.x;
-		q.y = s * axis.y;
-		q.z = s * axis.z;
-
-		return q;
+		return new Quaterniond(
+			x: s * axis.x,
+			y: s * axis.y,
+			z: s * axis.z,
+			w: Math.Cos(halfAngle)
+		);
 	}
 
 	public static double Dot(in Quaterniond a, in Quaterniond b)
@@ -126,9 +124,7 @@ public struct Quaterniond
 		var qY = new Quaterniond(0, sY, 0, cY);
 		var qZ = new Quaterniond(0, 0, sZ, cZ);
 
-		var q = (qY * qX) * qZ;
-
-		return q;
+		return (qY * qX) * qZ;
 	}
 
 	public static Quaterniond FromToRotation(in Vector3d fromDirection, in Vector3d toDirection)
@@ -147,10 +143,12 @@ public struct Quaterniond
 		{
 			t = 1;
 		}
+
 		if (t < 0)
 		{
 			t = 0;
 		}
+
 		return LerpUnclamped(a, b, t);
 	}
 
@@ -199,7 +197,7 @@ public struct Quaterniond
 		}
 		else
 		{
-			double t = Math.Min(1f, maxDegreesDelta / num);
+			var t = Math.Min(1f, maxDegreesDelta / num);
 			result = Quaterniond.SlerpUnclamped(from, to, t);
 		}
 		return result;
@@ -211,10 +209,12 @@ public struct Quaterniond
 		{
 			t = 1;
 		}
+
 		if (t < 0)
 		{
 			t = 0;
 		}
+
 		return SlerpUnclamped(a, b, t);
 	}
 
@@ -229,8 +229,9 @@ public struct Quaterniond
 			tmpQuat.Set(-q2.x, -q2.y, -q2.z, -q2.w);
 		}
 		else
+		{
 			tmpQuat = q2;
-
+		}
 
 		if (dot < 1)
 		{
@@ -311,7 +312,7 @@ public struct Quaterniond
 
 	private Vector3d MatrixToEuler(in Matrix4x4d m)
 	{
-		var v = new Vector3d();
+		var v = Vector3d.zero;
 		if (m[1, 2] < 1)
 		{
 			if (m[1, 2] > -1)
@@ -334,7 +335,7 @@ public struct Quaterniond
 			v.z = 0;
 		}
 
-		for (int i = 0; i < 3; i++)
+		for (var i = 0; i < v.Size; i++)
 		{
 			if (v[i] < 0)
 			{
@@ -493,7 +494,7 @@ public struct Quaterniond
 		var num11 = rotation.w * num2;
 		var num12 = rotation.w * num3;
 
-		Vector3d result;
+		var result = Vector3d.zero;
 		result.x = (1f - (num5 + num6)) * point.x + (num7 - num12) * point.y + (num8 + num11) * point.z;
 		result.y = (num7 + num12) * point.x + (1f - (num4 + num6)) * point.y + (num9 - num10) * point.z;
 		result.z = (num8 - num11) * point.x + (num9 + num10) * point.y + (1f - (num4 + num5)) * point.z;

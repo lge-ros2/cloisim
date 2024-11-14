@@ -18,20 +18,19 @@ public class MicomPlugin : CLOiSimPlugin
 	private SensorDevices.MicomSensor _micomSensor = null;
 	private MotorControl _motorControl = null;
 	private SDF.Helper.Link[] _linkHelperInChildren = null;
+	private StringBuilder _log = new StringBuilder();
 
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.MICOM;
 
-		_motorControl = new MotorControl(this.transform);
-
 		_micomSensor = gameObject.AddComponent<SensorDevices.MicomSensor>();
-		_micomSensor.SetMotorControl(_motorControl);
 		_micomCommand = gameObject.AddComponent<SensorDevices.MicomCommand>();
-		_micomCommand.SetMotorControl(_motorControl);
 
 		attachedDevices.Add("Command", _micomCommand);
 		attachedDevices.Add("Sensor", _micomSensor);
+
+		_log.Clear();
 	}
 
 	protected override void OnStart()
@@ -62,31 +61,39 @@ public class MicomPlugin : CLOiSimPlugin
 
 		LoadStaticTF();
 		LoadTF();
+
+		Debug.Log(_log.ToString());
 	}
+
 
 	protected override void OnReset()
 	{
-		if (_motorControl != null)
-		{
-			_motorControl.Reset();
-		}
+		_motorControl?.Reset();
+		_log.Clear();
 	}
 
 	private void SetupMicom()
 	{
+		_log.AppendLine($"SetupMicom({name})");
+
 		_micomSensor.EnableDebugging = GetPluginParameters().GetValue<bool>("debug", false);
 
 		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20f);
 		if (updateRate.Equals(0))
 		{
-			Debug.LogWarning("Update rate for micom CANNOT be 0. Set to default value 20 Hz");
+			_log.AppendLine("Update rate for micom CANNOT be 0. Set to default value 20 Hz");
 			updateRate = 20f;
 		}
 		_micomSensor.SetUpdateRate(updateRate);
 
+		if (GetPluginParameters().IsValidNode("self_balanced"))
+		{
+			SetSelfBalancedWheel("self_balanced");
+		}
+
 		if (GetPluginParameters().IsValidNode("wheel"))
 		{
-			SetWheel();
+			SetDifferentialDrive("wheel");
 		}
 
 		if (GetPluginParameters().IsValidNode("mowing"))
@@ -122,59 +129,178 @@ public class MicomPlugin : CLOiSimPlugin
 		var targetImuSensorName = GetPluginParameters().GetValue<string>("imu");
 		if (!string.IsNullOrEmpty(targetImuSensorName))
 		{
-			// Debug.Log("Imu Sensor = " + targetImuName);
 			_micomSensor.SetIMU(targetImuSensorName);
 		}
 	}
 
-	private void SetWheel()
+	private void SetSelfBalancedWheel(in string parameterPrefix)
 	{
-		var wheelRadius = GetPluginParameters().GetValue<float>("wheel/radius");
+		_log.AppendLine($"SetSelfBalancedWheel({parameterPrefix})");
 
-		if (GetPluginParameters().IsValidNode("wheel/tread"))
+		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc") &&
+			GetPluginParameters().IsValidNode($"{parameterPrefix}/smc/mode"))
 		{
-			Debug.LogWarning("<wheel/tread> will be depreacted!! please use wheel/separation");
-		}
+			var outputMode = GetPluginParameters().GetValue<string> ($"{parameterPrefix}/smc/mode/output", "LQR");
+			var switchingMode = GetPluginParameters().GetValue<string> ($"{parameterPrefix}/smc/mode/switching", "SAT");
+			_log.AppendLine($"outputMode: {outputMode}, switchingMode: {switchingMode}");
 
-		var wheelTread = GetPluginParameters().GetValue<float>("wheel/tread"); // TODO: to be deprecated
-		var wheelSeparation = GetPluginParameters().GetValue<float>("wheel/separation", wheelTread);
-
-		_motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
-
-		var wheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='left']", string.Empty);
-		var wheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='right']", string.Empty);
-		var rearWheelLeftName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_left']", string.Empty);
-		var rearWheelRightName = GetPluginParameters().GetValue<string>("wheel/location[@type='rear_right']", string.Empty);
-
-		if (!rearWheelLeftName.Equals(string.Empty) && !rearWheelRightName.Equals(string.Empty))
-		{
-			SetWheel(wheelLeftName, wheelRightName, rearWheelLeftName, rearWheelRightName);
+			_motorControl = new SelfBalancedDrive(this.transform, outputMode, switchingMode);
 		}
 		else
 		{
-			SetWheel(wheelLeftName, wheelRightName);
+			_motorControl = new SelfBalancedDrive(this.transform);
 		}
 
-		if (GetPluginParameters().IsValidNode("wheel/PID"))
+		if (_micomSensor != null)
 		{
-			SetWheelPID();
+			_micomSensor.SetMotorControl(_motorControl);
+		}
+
+		if (_micomCommand != null)
+		{
+			_micomCommand.SetMotorControl(_motorControl);
+		}
+
+		var autostart = GetPluginParameters().GetAttributeInPath<bool>(parameterPrefix, "autostart");
+		if (autostart)
+		{
+			(_motorControl as SelfBalancedDrive).Balancing = true;
+		}
+		_log.AppendLine($"AutoStart: {autostart}");
+
+		var hipJointLeft = GetPluginParameters().GetValue<string>($"{parameterPrefix}/hip/joint[@type='left']");
+		var hipJointRight = GetPluginParameters().GetValue<string>($"{parameterPrefix}/hip/joint[@type='right']");
+		if (!string.IsNullOrEmpty(hipJointLeft) && !string.IsNullOrEmpty(hipJointRight))
+		{
+			(_motorControl as SelfBalancedDrive).SetHipJoints(hipJointLeft, hipJointRight);
+		}
+
+		var legJointLeft = GetPluginParameters().GetValue<string>($"{parameterPrefix}/leg/joint[@type='left']");
+		var legJointRight = GetPluginParameters().GetValue<string>($"{parameterPrefix}/leg/joint[@type='right']");
+		if (!string.IsNullOrEmpty(legJointLeft) && !string.IsNullOrEmpty(legJointRight))
+		{
+			(_motorControl as SelfBalancedDrive).SetLegJoints(legJointLeft, legJointRight);
+		}
+
+		var headJoint = GetPluginParameters().GetValue<string>($"{parameterPrefix}/head/joint");
+		if (!string.IsNullOrEmpty(headJoint))
+		{
+			(_motorControl as SelfBalancedDrive).SetHeadJoint(headJoint);
+		}
+
+		var bodyJoint = GetPluginParameters().GetValue<string>($"{parameterPrefix}/body/joint");
+		if (!string.IsNullOrEmpty(bodyJoint))
+		{
+			(_motorControl as SelfBalancedDrive).SetBodyJoint(bodyJoint);
+		}
+
+		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc"))
+		{
+			if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc/param"))
+			{
+				var kSW = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/K_sw");
+				var sigmaB = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/sigma_b");
+				var wheelFF = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/wheel_ff");
+				(_motorControl as SelfBalancedDrive).SetSMCParams(kSW, sigmaB, wheelFF);
+				_log.AppendLine($"SetBalancedWheel() => kSW: {kSW}, sigmaB: {sigmaB}, wheelFF: {wheelFF}");
+			}
+
+			if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc/state_space"))
+			{
+				var A = GetPluginParameters().GetValue<string>($"{parameterPrefix}/smc/state_space/A");
+				var B = GetPluginParameters().GetValue<string>($"{parameterPrefix}/smc/state_space/B");
+				var K = GetPluginParameters().GetValue<string>($"{parameterPrefix}/smc/state_space/K");
+				var S = GetPluginParameters().GetValue<string>($"{parameterPrefix}/smc/state_space/S");
+				(_motorControl as SelfBalancedDrive).SetSMCNominalModel(A, B, K, S);
+			}
+		}
+
+		SetDriveForWheel($"{parameterPrefix}/wheel");
+
+		(_motorControl as SelfBalancedDrive).ChangeWheelDriveType();
+	}
+
+	private void SetDifferentialDrive(in string parameterPrefix)
+	{
+		_motorControl = new DifferentialDrive(this.transform);
+
+		if (_micomSensor != null)
+		{
+			_micomSensor.SetMotorControl(_motorControl);
+		}
+
+		if (_micomCommand != null)
+		{
+			_micomCommand.SetMotorControl(_motorControl);
+		}
+
+		SetDriveForWheel(parameterPrefix);
+	}
+
+	private void SetDriveForWheel(in string parameterPrefix)
+	{
+		var wheelRadius = GetPluginParameters().GetValue<float>($"{parameterPrefix}/radius");
+
+		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/tread"))
+		{
+			_log.AppendLine($"<tread> will be depreacted!! please use <separation>");
+		}
+
+		var wheelTread = GetPluginParameters().GetValue<float>($"{parameterPrefix}/tread"); // TODO: to be deprecated
+		var wheelSeparation = GetPluginParameters().GetValue<float>($"{parameterPrefix}/separation", wheelTread);
+
+		_motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
+
+		var wheelLeftName = GetPluginParameters().GetValue<string>($"{parameterPrefix}/location[@type='left']", string.Empty);
+		var wheelRightName = GetPluginParameters().GetValue<string>($"{parameterPrefix}/location[@type='right']", string.Empty);
+
+		var wheelRearNameLeft = GetPluginParameters().GetValue<string>($"{parameterPrefix}/location[@type='rear_left']", string.Empty);
+		var wheelRearNameRight = GetPluginParameters().GetValue<string>($"{parameterPrefix}/location[@type='rear_right']", string.Empty);
+
+		if (!wheelRearNameLeft.Equals(string.Empty) && !wheelRearNameRight.Equals(string.Empty))
+		{
+			_motorControl.AttachWheel(wheelLeftName, wheelRightName, wheelRearNameLeft, wheelRearNameRight);
+		}
+		else
+		{
+			_motorControl.AttachWheel(wheelLeftName, wheelRightName);
+		}
+
+		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/PID"))
+		{
+			SetMotorPID($"{parameterPrefix}/PID", _motorControl.SetWheelPID);
 		}
 	}
 
-	private void SetWheelPID()
+	private void SetMotorPID(
+		in string parameterPrefix,
+		Action<float, float, float, float, float, float, float> SetPID)
 	{
-		var P = GetPluginParameters().GetValue<float>("wheel/PID/kp");
-		var I = GetPluginParameters().GetValue<float>("wheel/PID/ki");
-		var D = GetPluginParameters().GetValue<float>("wheel/PID/kd");
+		var P = GetPluginParameters().GetValue<float>($"{parameterPrefix}/kp");
+		var I = GetPluginParameters().GetValue<float>($"{parameterPrefix}/ki");
+		var D = GetPluginParameters().GetValue<float>($"{parameterPrefix}/kd");
 
-		var iMin = GetPluginParameters().GetValue<float>("wheel/PID/limit/integral/min", -100);
-		var iMax = GetPluginParameters().GetValue<float>("wheel/PID/limit/integral/max", 100);
-		var outputMin = GetPluginParameters().GetValue<float>("wheel/PID/limit/output/min", -1000);
-		var outputMax = GetPluginParameters().GetValue<float>("wheel/PID/limit/output/max", 1000);
-		// Debug.Log(iMin + ", " + iMax + ", " + outputMin + ", " + outputMax);
+ 		var integralMin = float.NegativeInfinity;
+		var integralMax = float.PositiveInfinity;
+		var outputMin = float.NegativeInfinity;
+		var outputMax = float.PositiveInfinity;
 
-		_motorControl.SetPID(P, I, D, iMin, iMax, outputMin, outputMax);
+		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/limit"))
+		{
+			var limitIntegral = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral");
+			var limitOutput = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output");
+
+			integralMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/min", -Mathf.Abs(limitIntegral));
+			integralMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/max", Mathf.Abs(limitIntegral));
+			outputMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/min", -Mathf.Abs(limitOutput));
+			outputMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/max", Mathf.Abs(limitOutput));
+		}
+
+		SetPID(P, I, D, integralMin, integralMax, outputMin, outputMax);
+
+		_log.AppendLine($"SetMotorPID: {parameterPrefix}, {P}, {I}, {D}, {integralMin}, {integralMax}, {outputMin}, {outputMax}");
 	}
+
 
 	private void SetMowing()
 	{
@@ -212,7 +338,7 @@ public class MicomPlugin : CLOiSimPlugin
 					{
 						if (targetBattery.Name.CompareTo(batteryName) == 0)
 						{
-							// Debug.Log("Battery: " + batteryName + ", Battery Consumer:" + consumption.ToString("F5"));
+							// _log.AppendLine("Battery: " + batteryName + ", Battery Consumer:" + consumption.ToString("F5"));
 							targetBattery.Discharge(consumption);
 							_micomSensor.SetBattery(targetBattery);
 							break;
@@ -223,72 +349,9 @@ public class MicomPlugin : CLOiSimPlugin
 		}
 	}
 
-	public void SetWheel(in string wheelNameLeft, in string wheelNameRight)
-	{
-		var linkList = GetComponentsInChildren<SDF.Helper.Link>();
-		foreach (var link in linkList)
-		{
-			var wheelLocation = MotorControl.WheelLocation.NONE;
-
-			if (link.name.Equals(wheelNameLeft) || link.Model.name.Equals(wheelNameLeft))
-			{
-				wheelLocation = MotorControl.WheelLocation.LEFT;
-
-			}
-			else if (link.name.Equals(wheelNameRight) || link.Model.name.Equals(wheelNameRight))
-			{
-				wheelLocation = MotorControl.WheelLocation.RIGHT;
-			}
-			else
-			{
-				continue;
-			}
-
-			if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
-			{
-				var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
-				_motorControl.AttachWheel(wheelLocation, motorObject);
-			}
-		}
-	}
-
-	public void SetWheel(
-		in string frontWheelLeftName, in string frontWheelRightName,
-		in string rearWheelLeftName, in string rearWheelRightName)
-	{
-		SetWheel(frontWheelLeftName, frontWheelRightName);
-
-		var linkList = GetComponentsInChildren<SDF.Helper.Link>();
-		foreach (var link in linkList)
-		{
-			var wheelLocation = MotorControl.WheelLocation.NONE;
-
-			if (link.name.Equals(rearWheelLeftName) || link.Model.name.Equals(rearWheelLeftName))
-			{
-				wheelLocation = MotorControl.WheelLocation.REAR_LEFT;
-
-			}
-			else if (link.name.Equals(rearWheelRightName) || link.Model.name.Equals(rearWheelRightName))
-			{
-				wheelLocation = MotorControl.WheelLocation.REAR_RIGHT;
-			}
-			else
-			{
-				continue;
-			}
-
-			if (!wheelLocation.Equals(MotorControl.WheelLocation.NONE))
-			{
-				var motorObject = (link.gameObject != null) ? link.gameObject : link.Model.gameObject;
-				_motorControl.AttachWheel(wheelLocation, motorObject);
-			}
-		}
-	}
-
 	private void LoadStaticTF()
 	{
-		var staticTfLog = new StringBuilder();
-		staticTfLog.AppendLine("Loaded Static TF Info : " + modelName);
+		_log.AppendLine("Loaded Static TF Info : " + modelName);
 
 		if (GetPluginParameters().GetValues<string>("ros2/static_transforms/link", out var staticLinks))
 		{
@@ -306,44 +369,40 @@ public class MicomPlugin : CLOiSimPlugin
 					{
 						var tf = new TF(linkHelper, link, parentFrameId);
 						staticTfList.Add(tf);
-						staticTfLog.AppendLine(modelName + "::" + linkName + " : static TF added");
+						_log.AppendLine(modelName + "::" + linkName + " : Static TF added");
 						break;
 					}
 				}
 			}
 		}
-
-		Debug.Log(staticTfLog.ToString());
 	}
 
 	private void LoadTF()
 	{
-		var tfLog = new StringBuilder();
-		tfLog.AppendLine("Loaded TF Info : " + modelName);
+		_log.AppendLine("Loaded TF Info : " + modelName);
 
 		if (GetPluginParameters().GetValues<string>("ros2/transforms/link", out var links))
 		{
 			foreach (var link in links)
 			{
 				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("ros2/transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
-
 				var (modelName, linkName) = SDF2Unity.GetModelLinkName(link);
 
 				foreach (var linkHelper in _linkHelperInChildren)
 				{
-					if ((string.IsNullOrEmpty(modelName) || (!string.IsNullOrEmpty(modelName) && linkHelper.Model.name.Equals(modelName))) &&
+					if ((string.IsNullOrEmpty(modelName) ||
+						 modelName.Equals("__default__") ||
+						 (!string.IsNullOrEmpty(modelName) && linkHelper.Model.name.Equals(modelName))) &&
 						linkHelper.name.Equals(linkName))
 					{
 						var tf = new TF(linkHelper, link, parentFrameId);
 						_tfList.Add(tf);
-						tfLog.AppendLine(modelName + "::" + linkName + " : TF added");
+						_log.AppendLine(modelName + "::" + linkName + " : TF added");
 						break;
 					}
 				}
 			}
 		}
-
-		Debug.Log(tfLog.ToString());
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)

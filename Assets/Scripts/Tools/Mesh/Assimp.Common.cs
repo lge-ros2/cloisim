@@ -40,12 +40,12 @@ public static partial class MeshLoader
 		Assimp.PostProcessSteps.SplitLargeMeshes |
 		Assimp.PostProcessSteps.FindInvalidData |
 		Assimp.PostProcessSteps.MakeLeftHanded |
-		// Assimp.PostProcessSteps.CalculateTangentSpace | => defined in Preset RTFast
-		// Assimp.PostProcessSteps.GenerateNormals | => defined in Preset RTFast
-		// Assimp.PostProcessSteps.JoinIdenticalVertices | => defined in Preset RTFast
-		// Assimp.PostProcessSteps.Triangulate | => defined in Preset RTFast
-		// Assimp.PostProcessSteps.GenerateUVCoords | => defined in Preset RTFast
-		// Assimp.PostProcessSteps.SortByPrimitiveType | => defined in Preset RTFast
+		// Assimp.PostProcessSteps.CalculateTangentSpace | => defined in Preset TargetRealTimeFast
+		// Assimp.PostProcessSteps.GenerateNormals | => defined in Preset TargetRealTimeFast
+		// Assimp.PostProcessSteps.JoinIdenticalVertices | => defined in Preset TargetRealTimeFast
+		// Assimp.PostProcessSteps.Triangulate | => defined in Preset TargetRealTimeFast
+		// Assimp.PostProcessSteps.GenerateUVCoords | => defined in Preset TargetRealTimeFast
+		// Assimp.PostProcessSteps.SortByPrimitiveType | => defined in Preset TargetRealTimeFast
 		Assimp.PostProcessPreset.TargetRealTimeFast;
 
 	private static List<string> MaterialSearchPaths = new List<string>()
@@ -181,8 +181,13 @@ public static partial class MeshLoader
 			var newScale = new Vector3(scale.z, scale.y, scale.x);
 			scale = newScale;
 		}
-
-		// Debug.Log($"new scaling = {scale.x} {scale.y} {scale.z}");
+		else if (isRotZeroX && isRotZeroY && !isRotZeroZ &&
+				Mathf.Approximately(rot.eulerAngles.z, 90f))
+		{
+			var newScale = new Vector3(scale.y, scale.x, scale.z);
+			scale = newScale;
+		}
+		// Debug.Log($"new scaling={scale.x} {scale.y} {scale.z} rot={rot.eulerAngles}");
 #endregion
 
 		return Matrix4x4.TRS(pos, rot, scale);

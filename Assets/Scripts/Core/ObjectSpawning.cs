@@ -14,6 +14,8 @@ using UnityEngine;
 public class ObjectSpawning : MonoBehaviour
 {
 	public enum PropsType { BOX = 0, CYLINDER = 1, SPHERE = 2 };
+	private const float UnitMass = 3.5f;
+	private const float CylinderRotationAngle = 90;
 
 	private static PhysicMaterial _propsPhysicalMaterial = null;
 	private static Material _propMaterial = null;
@@ -24,16 +26,12 @@ public class ObjectSpawning : MonoBehaviour
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private FollowingTargetList _followingList = null;
 
-	private const float CylinderRotationAngle = 90;
-
 	private Dictionary<PropsType, GameObject> props = new Dictionary<PropsType, GameObject>();
 	public float maxRayDistance = 100;
 	private Dictionary<PropsType, uint> propsCount = new Dictionary<PropsType, uint>();
 
 	private float _scaleFactor = 0.5f;
 	private PropsType _propType = 0;
-
-	private const float UnitMass = 3f;
 
 	public void SetScaleFactor(in float value)
 	{
@@ -247,7 +245,7 @@ public class ObjectSpawning : MonoBehaviour
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
 		rigidBody.mass = 1;
-		rigidBody.drag = 0.25f;
+		rigidBody.drag = 0.8f;
 		rigidBody.angularDrag = 1f;
 
 		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
