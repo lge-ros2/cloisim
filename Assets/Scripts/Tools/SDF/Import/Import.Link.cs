@@ -13,18 +13,27 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			public static readonly float MinimumInertiaTensor = 1e-6f;
+			private static readonly float MinimumInertiaTensor = 1e-6f;
+			private static readonly float InertiaScalingFactor = 10f;
 
 			private static UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia inertia)
 			{
 				/**
+				 *  Inertia Tensor
+				 *  TBD for Ixy, Ixz, Iyz
 				 *  | Ixx  Ixy  Ixz |
 				 *  | Ixy  Iyy  Iyz |
 				 *  | Ixz  Iyz  Izz |
 				 */
 				var inertiaMomentum = UE.Pose.identity;
 				var inertiaVector = SDF2Unity.Scalar((float)inertia?.ixx, (float)inertia?.iyy, (float)inertia?.izz);
-				var inertiaRotationVector = SDF2Unity.Scalar((float)inertia?.ixy, (float)inertia?.iyz, (float)inertia?.ixz);
+
+				/*
+				 *  Unity’s ArticulationBody does not directly expose off-diagonal components of the inertia tensor(Ixy, Ixz, Iyz).
+				 *  If these are needed, you might have to approximate them by adjusting inertiaTensorRotation,
+				 *  which changes the orientation of the inertia tensor.
+				 */
+				// var inertiaRotationVector = SDF2Unity.Scalar((float)inertia?.ixy, (float)inertia?.iyz, (float)inertia?.ixz);
 
 				for (var index = 0; index < 3; index++)
 				{
@@ -34,9 +43,10 @@ namespace SDF
 					}
 				}
 
-				inertiaMomentum.position = inertiaVector;
-				inertiaMomentum.rotation = UE.Quaternion.Euler(inertiaRotationVector.x, inertiaRotationVector.y, inertiaRotationVector.z);
+				inertiaMomentum.position = inertiaVector * InertiaScalingFactor;
+				// inertiaMomentum.rotation = UE.Quaternion.Euler(inertiaRotationVector.x, inertiaRotationVector.y, inertiaRotationVector.z);
 
+				// Debug.Log("Inertia Tensor: " + inertiaMomentum.position + ", " + inertiaMomentum.rotation.eulerAngles);
 				return inertiaMomentum;
 			}
 
@@ -140,7 +150,7 @@ namespace SDF
 				{
 					articulationBody.automaticCenterOfMass = true;
 				}
-				// Debug.Log(linkObject.name + "  => Center Of Mass: " + articulationBody.centerOfMass.ToString("F6") + ", intertia: " + articulationBody.inertiaTensor.ToString("F6") + ", " + articulationBody.inertiaTensorRotation.ToString("F6"));
+				// Debug.Log($"{linkObject.name} => Center Of Mass: {articulationBody.centerOfMass.ToString("F5")} | intertia: {articulationBody.inertiaTensor.ToString("F5")}, {articulationBody.inertiaTensorRotation.ToString("F5")}");
 
 				if (colliders.Length == 0)
 				{

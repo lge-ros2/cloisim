@@ -167,6 +167,23 @@ namespace SDF
 					body.enabled = true;
 				}
 			}
+
+			public static void UpdateInertiaTensorRotation(this Object targetObject)
+			{
+				var rootObject = (targetObject as UE.GameObject);
+				foreach (var artBody in rootObject.GetComponentsInChildren<UE.ArticulationBody>())
+				{
+					var linkHelper = artBody.GetComponent<SDF.Helper.Link>();
+
+					if (linkHelper != null &&
+						linkHelper.Model != null &&
+						linkHelper.Model.IsFirstChild == false &&
+						artBody.automaticInertiaTensor == false)
+					{
+						artBody.inertiaTensorRotation = linkHelper.Model.transform.rotation;
+					}
+				}
+			}
 		}
 	}
 }
