@@ -113,7 +113,7 @@ public class Articulation
 	/// <returns>in (rad)ian for angular OR in (m)eters for linear</param>
 	public float GetJointPosition(int index = 0)
 	{
-		if (_jointBody == null || index < 0 || _jointBody.IsSleeping())
+		if (_jointBody == null || index < 0)
 		{
 			return 0;
 		}

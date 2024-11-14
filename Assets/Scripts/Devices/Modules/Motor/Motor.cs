@@ -9,7 +9,6 @@ using UnityEngine;
 public class Motor : Articulation
 {
 	private const float WheelResolution = 0.043945312f; // in degree, encoding 13bits, 360°
-	// private const float WheelResolution = 0.087890625f; // in degree, encoding 12bits, 360°
 
 	private PID _pidControl = null;
 	private float _targetAngularVelocity = 0; // degree per seconds
@@ -76,9 +75,9 @@ public class Motor : Articulation
 
 	/// <summary>Set Target Velocity wmotorLeftith PID control</summary>
 	/// <remarks>degree per second</remarks>
-	public void SetTargetVelocity(in float targetAngularVelocity)
+	public void SetTargetVelocity(in float angularVelocity)
 	{
-		_targetAngularVelocity = targetAngularVelocity;
+		_targetAngularVelocity = angularVelocity;
 	}
 
 	public double UpdatePID(in double actual, in double target, in double duration)
@@ -89,8 +88,9 @@ public class Motor : Articulation
 	public void Run(in float duration)
 	{
 		var adjustValue = UpdatePID(_currentMotorVelocity, _targetAngularVelocity, duration);
-		// Debug.Log($"_currentMotorVelocity: {_currentMotorVelocity} targetVelocity: {_targetAngularVelocity} {adjustValue}");
-		Drive(targetVelocity: _targetAngularVelocity + (float)adjustValue);
+		var targetVelocity = _targetAngularVelocity + (float)adjustValue;
+		// Debug.Log($"{_jointBody.name} currentMotorVelocity: {_currentMotorVelocity} targetVelocity: {_targetAngularVelocity} {adjustValue} => {targetVelocity}");
+		Drive(targetVelocity: targetVelocity);
 	}
 
 	private float _prevJointPosition = float.NaN; // in deg, for GetAngularVelocity()
