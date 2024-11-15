@@ -27,24 +27,24 @@ public partial class InfoDisplay : MonoBehaviour
 
 		foreach (var inputField in GetComponentsInChildren<TMP_InputField>())
 		{
-			if (inputField.name.CompareTo("FPS") == 0)
+			if (inputField.name.Equals("FPS"))
 			{
 				_inputFieldFPS = inputField;
 				_inputFieldFPS.enabled = false;
 			}
-			else if (inputField.name.CompareTo("SimTime") == 0)
+			else if (inputField.name.Equals("SimTime"))
 			{
 				_inputFieldSim = inputField;
 			}
-			else if (inputField.name.CompareTo("RealTime") == 0)
+			else if (inputField.name.Equals("RealTime"))
 			{
 				_inputFieldReal = inputField;
 			}
-			else if (inputField.name.CompareTo("DiffTime") == 0)
+			else if (inputField.name.Equals("DiffTime"))
 			{
 				_inputFieldDiff = inputField;
 			}
-			else if (inputField.name.CompareTo("HitPoint") == 0)
+			else if (inputField.name.Equals("HitPoint"))
 			{
 				_inputFieldHitPoint = inputField;
 			}

@@ -16,11 +16,11 @@ public class LaserFilter
 	private uint numberOfVerticalBeams = 0;
 	private uint totalNumberOfLaserBeams = 0;
 
-	private SensorDevices.LaserData.MinMax angle;
+	private MathUtil.MinMax angle;
 
 	[Header("Laser filter properties")]
-	private SensorDevices.LaserData.MinMax? rangeFilter = null;
-	private SensorDevices.LaserData.MinMax horizontalAnlgeFilter;
+	private MathUtil.MinMax? rangeFilter = null;
+	private MathUtil.MinMax horizontalAnlgeFilter;
 	private int? filterLowerHorizontalBeamIndex = null; // in rad
 	private int? filterUpperHorizontalBeamIndex = null; // in rad
 
@@ -30,14 +30,14 @@ public class LaserFilter
 		this.numberOfVerticalBeams = laserScan.VerticalCount;
 		this.totalNumberOfLaserBeams = this.numberOfHorizontalBeams * this.numberOfVerticalBeams;
 
-		angle = new SensorDevices.LaserData.MinMax(laserScan.AngleMin, laserScan.AngleMax);
+		angle = new MathUtil.MinMax(laserScan.AngleMin, laserScan.AngleMax);
 
 		this.useIntensity = useIntensity;
 	}
 
 	public void SetupAngleFilter(in double filterLowerHorizontalAngle, in double filterUpperHorizontalAngle)
 	{
-		this.horizontalAnlgeFilter = new SensorDevices.LaserData.MinMax(filterLowerHorizontalAngle, filterUpperHorizontalAngle);
+		this.horizontalAnlgeFilter = new MathUtil.MinMax(filterLowerHorizontalAngle, filterUpperHorizontalAngle);
 
 		var filterLowerBeamIndexRatio = (horizontalAnlgeFilter.min - angle.min) / angle.range;
 		var filterUpperBeamIndexRatio = (horizontalAnlgeFilter.max - angle.min) / angle.range;
@@ -48,7 +48,7 @@ public class LaserFilter
 
 	public void SetupRangeFilter(in double filterRangeMin, in double filterRangeMax)
 	{
-		this.rangeFilter = new SensorDevices.LaserData.MinMax(filterRangeMin, filterRangeMax);
+		this.rangeFilter = new MathUtil.MinMax(filterRangeMin, filterRangeMax);
 	}
 
 	private bool IsIndexFiltering(in int index)

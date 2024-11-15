@@ -104,7 +104,7 @@ public class FollowingTargetList : MonoBehaviour
 	{
 		foreach (var option in dropdown.options)
 		{
-			if (option.text.CompareTo(name) == 0)
+			if (option.text.Equals(name))
 			{
 				return dropdown.options.IndexOf(option);
 			}
@@ -143,7 +143,7 @@ public class FollowingTargetList : MonoBehaviour
 		var selectedValue = 0;
 		for (var i = 0; i < dropdown.options.Count; i++)
 		{
-			if (dropdown.options[i].text.CompareTo(currentSelectedText) == 0)
+			if (dropdown.options[i].text.Equals(currentSelectedText))
 			{
 				selectedValue = i;
 				break;

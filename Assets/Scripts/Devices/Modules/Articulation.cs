@@ -4,16 +4,18 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Articulation
 {
+	protected const int DOF = 6;
 	protected ArticulationBody _jointBody = null;
 	protected ArticulationJointType _jointType = ArticulationJointType.FixedJoint;
 	private ArticulationDriveType _driveType = ArticulationDriveType.Force;
 	protected float _velocityLimit = float.NaN;
 
-	protected ArticulationDriveType DriveType
+	public ArticulationDriveType DriveType
 	{
 		get => _driveType;
 		set {
@@ -47,7 +49,6 @@ public class Articulation
 	public Articulation(in GameObject target)
 		: this(target.GetComponentInChildren<ArticulationBody>())
 	{
-		// _jointBody.solverVelocityIterations = Physics.defaultSolverVelocityIterations * 2;
 	}
 
 	public void SetVelocityLimit(in float value)
@@ -55,7 +56,7 @@ public class Articulation
 		_velocityLimit = value;
 	}
 
-	public void Reset()
+	public virtual void Reset()
 	{
 		if (_jointBody != null)
 		{
@@ -101,7 +102,7 @@ public class Articulation
 
 	private int GetValidIndex(in int index)
 	{
-		return (_jointBody == null) ? -1 : ((index >= _jointBody.dofCount) ? (_jointBody.dofCount - 1) : index);
+		return (_jointBody == null) ? -1 : ((index >= _jointBody.dofCount || index >= DOF) ? (_jointBody.dofCount - 1) : index);
 	}
 
 	public Vector3 GetAnchorRotation()
@@ -112,12 +113,14 @@ public class Articulation
 	/// <returns>in (rad)ian for angular OR in (m)eters for linear</param>
 	public float GetJointPosition(int index = 0)
 	{
-		if (_jointBody == null)
+		if (_jointBody == null || index < 0)
+		{
 			return 0;
+		}
 
 		if (IsRevoluteType())
 		{
-			return (index == -1) ? 0 : _jointBody.jointPosition[index];
+			return _jointBody.jointPosition[index];
 		}
 		else
 		{
@@ -153,31 +156,57 @@ public class Articulation
 	{
 		index = GetValidIndex(index);
 		// Debug.Log(_jointBody.name + ": " + _jointBody.dofCount + ", " + _jointBody.jointAcceleration[0] + ", " + _jointBody.jointForce[0]);
-		return (_jointBody == null || index == -1) ? 0 : _jointBody.jointForce[index];
+		return (_jointBody == null || index < 0 || _jointBody.IsSleeping()) ? 0 : _jointBody.jointForce[index];
 	}
 
 	/// <returns>in radian for angular and in meters for linear</param>
 	public float GetJointVelocity(int index = 0)
 	{
 		index = GetValidIndex(index);
-		var value = (_jointBody == null || index == -1) ? 0 : _jointBody.jointVelocity[index];
-		return value;
+		var value = (_jointBody == null || index < 0 || _jointBody.IsSleeping()) ? 0 : _jointBody.jointVelocity[index];
+		return (Mathf.Abs(value) < Quaternion.kEpsilon) ? 0 : value;
 	}
 
 	/// <returns>torque for angular and force for linear</param>
 	public float GetForce(int index = 0)
 	{
 		index = GetValidIndex(index);
-		var value = (_jointBody == null || index == -1) ? 0 : _jointBody.driveForce[index];
+		var value = (_jointBody == null || index < 0 || _jointBody.IsSleeping()) ? 0 : _jointBody.driveForce[index];
 		return value;
+	}
+
+	public void SetJointForce(in float force, in int targetDegree = 0)
+	{
+		if (_jointBody != null)
+		{
+			var jointForce = _jointBody.jointForce;
+			if (targetDegree < jointForce.dofCount)
+			{
+				jointForce[targetDegree] = force;
+				_jointBody.jointForce = jointForce;
+			}
+		}
+	}
+
+	/// <returns>radian for angular and meter for linear</param>
+	public float GetDriveTarget(in int targetDegree = 0)
+	{
+		if (_jointBody != null)
+		{
+			var targets = new List<float>();
+			_jointBody.GetDriveTargets(targets);
+
+			return targets[targetDegree];
+		}
+		return 0;
 	}
 
 	/// <param name="driveType">ArticulationDriveType</param>
 	/// <param name="targetVelocity">angular velocity in degrees per second</param>
-	/// <param name="targetPosotion">target position </param>
+	/// <param name="targetPosotion">target position, degree or meter</param>
 	public void Drive(
-		in float targetVelocity = 0,
-		in float targetPosition = 0)
+		in float targetVelocity = float.NaN,
+		in float targetPosition = float.NaN)
 	{
 		if (_jointBody == null)
 		{
@@ -193,17 +222,23 @@ public class Articulation
 
 		if (_driveType == ArticulationDriveType.Acceleration ||
 			_driveType == ArticulationDriveType.Force ||
-			_driveType == ArticulationDriveType.Target)
+			_driveType == ArticulationDriveType.Velocity)
 		{
-			_jointBody.SetDriveTarget(drivceAxis, targetPosition);
+			if (!float.IsNaN(targetVelocity))
+			{
+				var limitedTargetVelocity = GetLimitedVelocity(targetVelocity);
+				_jointBody.SetDriveTargetVelocity(drivceAxis, limitedTargetVelocity);
+			}
 		}
 
 		if (_driveType == ArticulationDriveType.Acceleration ||
 			_driveType == ArticulationDriveType.Force ||
-			_driveType == ArticulationDriveType.Velocity)
+			_driveType == ArticulationDriveType.Target)
 		{
-			var limitedTargetVelocity = GetLimitedVelocity(targetVelocity);
-			_jointBody.SetDriveTargetVelocity(drivceAxis, limitedTargetVelocity);
+			if (!float.IsNaN(targetPosition))
+			{
+				_jointBody.SetDriveTarget(drivceAxis, targetPosition);
+			}
 		}
 	}
 

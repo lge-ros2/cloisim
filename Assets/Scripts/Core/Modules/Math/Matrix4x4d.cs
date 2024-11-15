@@ -393,7 +393,7 @@ public struct Matrix4x4d
 
 	public Vector3d MultiplyPoint(in Vector3d v)
 	{
-		Vector3d result;
+		var result = Vector3d.zero;
 		result.x = m00 * v.x + m01 * v.y + m02 * v.z + m03;
 		result.y = m10 * v.x + m11 * v.y + m12 * v.z + m13;
 		result.z = m20 * v.x + m21 * v.y + m22 * v.z + m23;
@@ -409,7 +409,7 @@ public struct Matrix4x4d
 
 	public Vector3d MultiplyPoint3x4(in Vector3d v)
 	{
-		Vector3d result;
+		var result = Vector3d.zero;
 		result.x = m00 * v.x + m01 * v.y + m02 * v.z + m03;
 		result.y = m10 * v.x + m11 * v.y + m12 * v.z + m13;
 		result.z = m20 * v.x + m21 * v.y + m22 * v.z + m23;
@@ -423,7 +423,7 @@ public struct Matrix4x4d
 
 	public Vector3d MultiplyVector(in Vector3d v)
 	{
-		Vector3d result;
+		var result = Vector3d.zero;
 		result.x = m00 * v.x + m01 * v.y + m02 * v.z;
 		result.y = m10 * v.x + m11 * v.y + m12 * v.z;
 		result.z = m20 * v.x + m21 * v.y + m22 * v.z;
@@ -478,7 +478,7 @@ public struct Matrix4x4d
 
 	public static Vector4d operator *(in Matrix4x4d lhs, in Vector4d v)
 	{
-		Vector4d result;
+		var result = Vector4d.zero;
 		result.x = lhs.m00 * v.x + lhs.m01 * v.y + lhs.m02 * v.z + lhs.m03 * v.w;
 		result.y = lhs.m10 * v.x + lhs.m11 * v.y + lhs.m12 * v.z + lhs.m13 * v.w;
 		result.z = lhs.m20 * v.x + lhs.m21 * v.y + lhs.m22 * v.z + lhs.m23 * v.w;

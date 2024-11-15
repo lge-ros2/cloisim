@@ -10,33 +10,29 @@ using UnityEngine.Internal;
 
 public struct Vector3d
 {
+	public readonly int Size;
 	public double x;
 	public double y;
 	public double z;
 
-	public Vector3d(in Vector3 val)
+	public Vector3d(in Vector3 v)
+		: this(v.x, v.y, v.z)
 	{
-		this.x = val.x;
-		this.y = val.y;
-		this.z = val.z;
 	}
 
-	public Vector3d(in Vector3d val)
+	public Vector3d(in Vector3d v)
+		: this(v.x, v.y, v.z)
 	{
-		this.x = val.x;
-		this.y = val.y;
-		this.z = val.z;
 	}
 
 	public Vector3d(in SDF.Vector3<double> v)
+		: this(v.X, v.Y, v.Z)
 	{
-		this.x = v.X;
-		this.y = v.Y;
-		this.z = v.Z;
 	}
 
-	public Vector3d(in double x, in double y, in double z)
+	public Vector3d(in double x = 0, in double y = 0, in double z = 0)
 	{
+		this.Size = 3;
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -217,10 +213,10 @@ public struct Vector3d
 		}
 		else
 		{
-			var tempDVec = new Vector3d();
-			tempDVec.x = value.x / value.magnitude;
-			tempDVec.y = value.y / value.magnitude;
-			tempDVec.z = value.z / value.magnitude;
+			var tempDVec = new Vector3d(value);
+			tempDVec.x /= value.magnitude;
+			tempDVec.y /= value.magnitude;
+			tempDVec.z /= value.magnitude;
 			return tempDVec;
 		}
 	}
@@ -294,10 +290,10 @@ public struct Vector3d
 
 		if (currentMag > 0 && targetMag > 0)
 		{
-			Vector3d currentNorm = current / currentMag;
-			Vector3d targetNorm = target / targetMag;
+			var currentNorm = current / currentMag;
+			var targetNorm = target / targetMag;
 
-			double dot = Dot(currentNorm, targetNorm);
+			var dot = Dot(currentNorm, targetNorm);
 
 			if (dot > 1)
 			{
@@ -305,7 +301,7 @@ public struct Vector3d
 			}
 			else if (dot < -1)
 			{
-				Vector3d axis = OrthoNormalVectorFast(currentNorm);
+				var axis = OrthoNormalVectorFast(currentNorm);
 				Matrix4x4d m = SetAxisAngle(axis, maxRadiansDelta);
 				Vector3d rotated = m * currentNorm;
 				rotated *= ClampedMove(currentMag, targetMag, maxMagnitudeDelta);
@@ -313,10 +309,10 @@ public struct Vector3d
 			}
 			else
 			{
-				double angle = Math.Acos(dot);
-				Vector3d axis = Normalize(Cross(currentNorm, targetNorm));
-				Matrix4x4d m = SetAxisAngle(axis, Math.Min(maxRadiansDelta, angle));
-				Vector3d rotated = m * currentNorm;
+				var angle = Math.Acos(dot);
+				var axis = Normalize(Cross(currentNorm, targetNorm));
+				var m = SetAxisAngle(axis, Math.Min(maxRadiansDelta, angle));
+				var rotated = m * currentNorm;
 				rotated *= ClampedMove(currentMag, targetMag, maxMagnitudeDelta);
 				return rotated;
 			}
@@ -329,7 +325,7 @@ public struct Vector3d
 
 	public static Vector3d Scale(in Vector3d a, in Vector3d b)
 	{
-		var temp = new Vector3d();
+		var temp = Vector3d.zero;
 		temp.x = a.x * b.x;
 		temp.y = a.y * b.y;
 		temp.z = a.z * b.z;
@@ -487,20 +483,20 @@ public struct Vector3d
 
 	private static Vector3d OrthoNormalVectorFast(in Vector3d normal)
 	{
-		double k1OverSqrt2 = Math.Sqrt(0.5);
-		Vector3d res;
+		var k1OverSqrt2 = Math.Sqrt(0.5);
+		var res = Vector3d.zero;
 		if (Math.Abs(normal.z) > k1OverSqrt2)
 		{
-			double a = normal.y * normal.y + normal.z * normal.z;
-			double k = 1 / Math.Sqrt(a);
+			var a = normal.y * normal.y + normal.z * normal.z;
+			var k = 1 / Math.Sqrt(a);
 			res.x = 0;
 			res.y = -normal.z * k;
 			res.z = normal.y * k;
 		}
 		else
 		{
-			double a = normal.x * normal.x + normal.y * normal.y;
-			double k = 1 / Math.Sqrt(a);
+			var a = normal.x * normal.x + normal.y * normal.y;
+			var k = 1 / Math.Sqrt(a);
 			res.x = -normal.y * k;
 			res.y = normal.x * k;
 			res.z = 0;
@@ -516,7 +512,7 @@ public struct Vector3d
 
 	public static Matrix4x4d SetAxisAngle(in Vector3d rotationAxis, in double radians)
 	{
-		var m = new Matrix4x4d();
+		var m = Matrix4x4d.zero;
 
 		var s = Math.Sin(radians);
 		var c = Math.Cos(radians);

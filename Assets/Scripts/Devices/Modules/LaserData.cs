@@ -12,32 +12,18 @@ namespace SensorDevices
 {
 	public static class LaserData
 	{
-		readonly public struct MinMax
-		{
-			public readonly double min;
-			public readonly double max;
-			public readonly double range;
-
-			public MinMax(in double min = 0, in double max = 0)
-			{
-				this.min = min;
-				this.max = max;
-				this.range = max - min;
-			}
-		}
-
 		readonly public struct Scan
 		{
 			public readonly uint samples;
 			public readonly double resolution;
-			public readonly MinMax angle; // degree
+			public readonly MathUtil.MinMax angle; // degree
 			public readonly double angleStep;
 
 			public Scan(in uint samples, in double angleMinRad, in double angleMaxRad, in double resolution = 1)
 			{
 				this.samples = samples;
 				this.resolution = resolution;
-				this.angle = new MinMax(angleMinRad * Mathf.Rad2Deg, angleMaxRad * Mathf.Rad2Deg);
+				this.angle = new MathUtil.MinMax(angleMinRad * Mathf.Rad2Deg, angleMaxRad * Mathf.Rad2Deg);
 
 				if (System.Math.Abs(this.angle.range) < double.Epsilon)
 				{
@@ -56,7 +42,7 @@ namespace SensorDevices
 			{
 				this.samples = samples;
 				this.resolution = 1;
-				this.angle = new MinMax();
+				this.angle = new MathUtil.MinMax();
 				this.angleStep = 1;
 			}
 		}
@@ -97,7 +83,7 @@ namespace SensorDevices
 			private float maxVAngleHalfTanInverse;
 			public AngleResolution angleResolution;
 			public float centerAngle;
-			public MinMax range;
+			public MathUtil.MinMax range;
 
 			public readonly int horizontalBufferLength;
 			public readonly int horizontalBufferLengthHalf;
@@ -115,7 +101,7 @@ namespace SensorDevices
 
 			public LaserCamData(
 					in int bufferWidth, in int bufferHeight,
-			 		in MinMax range, in AngleResolution angleResolution,
+			 		in MathUtil.MinMax range, in AngleResolution angleResolution,
 					in float centerAngle, in float halfHFovAngle, in float halfVFovAngle)
 			{
 				this.maxHAngleHalf = halfHFovAngle;

@@ -9,13 +9,15 @@ using UnityEngine;
 
 public struct Vector2d
 {
+	public readonly int Size;
 	public double x;
 	public double y;
 
-	public Vector2d(in double p_x, in double p_y)
+	public Vector2d(in double x, in double y)
 	{
-		x = p_x;
-		y = p_y;
+		this.Size = 2;
+		this.x = x;
+		this.y = y;
 	}
 
 	public double this[int index]
@@ -252,6 +254,16 @@ public struct Vector2d
 		return new Vector2((float)x, (float)y);
 	}
 
+	public static Vector2d operator +(in Vector2d a, in double v)
+	{
+		return new Vector2d(a.x + v, a.y + v);
+	}
+
+	public static Vector2d operator -(in Vector2d a, in double v)
+	{
+		return new Vector2d(a.x - v, a.y - v);
+	}
+
 	public static Vector2d operator +(in Vector2d a, in Vector2d b)
 	{
 		return new Vector2d(a.x + b.x, a.y + b.y);
@@ -290,6 +302,26 @@ public struct Vector2d
 	public static bool operator !=(in Vector2d lhs, in Vector2d rhs)
 	{
 		return !(lhs == rhs);
+	}
+
+	public static implicit operator Vector2d(in VectorXd v)
+	{
+		if (v.Size != 2)
+		{
+			throw new IndexOutOfRangeException("Invalid VectorXd capacity!");
+		}
+
+		return new Vector2d(v[0], v[1]);
+	}
+
+	public static implicit operator Vector2d(in MatrixXd mat)
+	{
+		if (!(mat.Row == 2 && mat.Col == 1) && !(mat.Row == 1 && mat.Col == 2))
+		{
+			throw new IndexOutOfRangeException("Invalid MatrixXd size!");
+		}
+
+		return (mat.Row == 2)? new Vector2d(mat[0, 0], mat[1, 0]) : new Vector2d(mat[0, 0], mat[0, 1]);
 	}
 
 	public static implicit operator Vector2d(in Vector3d v)

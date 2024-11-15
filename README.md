@@ -32,9 +32,8 @@ Other sensor models are work in progress.
 Here are the list of items that is implemented(marked) or planned to be implemented.
 
 - [X] Joint models
-  - [X] 2-Wheeled Motor driving
   - [X] Joint control
-  - [X] Joint Pose
+  - [ ] Joint Pose
 - [X] Sensor models
   - [X] LiDAR Sensor
     - [X] 2D: Due to performance issue, < 40hz is recommended
@@ -104,6 +103,7 @@ More details and usages for configuration/parameters in [here](https://github.co
 - `MultiCameraPlugin`: help to publish multiple color image data
 - `RealSensePlugin`: can handle ir1(left), ir2(right), depth, color
 - `MicomPlugin`: control micom(differential drive) input/output(sensor)
+  - 2/4-Wheeled Motor driving
 - `GpsPlugin`: gps position in world
 - `JointControlPlugin`: can control joints and help to publish joints status.
 - `ActorPlugin`: add actor control functionality using AI(Unity) components
@@ -149,10 +149,10 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.46f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.52f1 (LTS)'*.
 
 - Linux Machine
-  - OS: Ubuntu 22.04.4 LTS
+  - OS: Ubuntu 22.04.5 LTS
   - Processor: AMD® Ryzen 9 5950x 16-core processor × 32
   - Memory: 128.0 GiB
   - Graphics: NVIDIA Corporation [GeForce RTX 3090]

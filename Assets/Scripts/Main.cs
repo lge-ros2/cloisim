@@ -50,6 +50,7 @@ public class Main : MonoBehaviour
 	private static Segmentation.Manager _segmentationManager = null;
 	private static MeshProcess.VHACD _vhacd = null;
 	private static ObjectSpawning _objectSpawning = null;
+	private static ModelImporter _modelImporter = null;
 	private static Main _instance = null;
 	private static Pose _cameraInitPose = Pose.identity;
 
@@ -64,6 +65,7 @@ public class Main : MonoBehaviour
 	public static GameObject UIMainCanvas => _uiMainCanvasRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => _transformGizmo;
 	public static ObjectSpawning ObjectSpawning => _objectSpawning;
+	public static ModelImporter ModelImporter => _modelImporter;
 	public static UIController UIController => _uiController;
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => _worldNavMeshBuilder;
@@ -280,6 +282,8 @@ public class Main : MonoBehaviour
 
 		_objectSpawning = gameObject.AddComponent<ObjectSpawning>();
 
+		_modelImporter = gameObject.AddComponent<ModelImporter>();
+
 		_segmentationManager = gameObject.AddComponent<Segmentation.Manager>();
 
 		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
@@ -318,55 +322,17 @@ public class Main : MonoBehaviour
 
 			_sdfRoot = new SDF.Root();
 			_sdfRoot.fileDefaultPaths.AddRange(_fileRootDirectories);
-			_sdfRoot.modelDefaultPaths.AddRange(_modelRootDirectories );
+			_sdfRoot.modelDefaultPaths.AddRange(_modelRootDirectories);
 			_sdfRoot.worldDefaultPaths.AddRange(_worldRootDirectories);
 			_sdfRoot.UpdateResourceModelTable();
 
-			UpdateUIModelList();
+			ModelImporter.UpdateUIModelList(_sdfRoot.resourceModelTable);
 
 			if (!string.IsNullOrEmpty(_worldFilename))
 			{
 				_uiController?.SetEventMessage("Start to load world file: " + _worldFilename);
 				StartCoroutine(LoadWorld());
 			}
-		}
-	}
-
-	private void UpdateUIModelList()
-	{
-		if (_sdfRoot == null)
-		{
-			Debug.LogWarning("_sdfRoot is null");
-			return;
-		}
-
-		// Update UI Model list
-		var modelList = _uiMainCanvasRoot.transform.Find("ModelList").gameObject;
-		var viewport = modelList.transform.GetChild(0);
-		var buttonTemplate = viewport.Find("ButtonTemplate").gameObject;
-
-		var contentList = viewport.GetChild(0).gameObject;
-		foreach (var child in contentList.GetComponentsInChildren<Button>())
-		{
-			GameObject.Destroy(child.gameObject);
-		}
-
-		foreach (var item in _sdfRoot.resourceModelTable)
-		{
-			var itemValue = item.Value;
-			var duplicatedbutton = GameObject.Instantiate(buttonTemplate);
-			duplicatedbutton.SetActive(true);
-			duplicatedbutton.transform.SetParent(contentList.transform, false);
-
-			var textComponent = duplicatedbutton.GetComponentInChildren<Text>();
-			textComponent.text = itemValue.Item1;
-
-			var buttonComponent = duplicatedbutton.GetComponentInChildren<Button>();
-			buttonComponent.onClick.AddListener(delegate ()
-			{
-				// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
-				StartCoroutine(LoadModel(itemValue.Item2, itemValue.Item3));
-			});
 		}
 	}
 
@@ -379,7 +345,7 @@ public class Main : MonoBehaviour
 		{
 			var childTransform = worldTrnasform.GetChild(i);
 
-			if (childTransform.name.CompareTo(tmpModelName) == 0)
+			if (childTransform.name.Equals(tmpModelName))
 			{
 				tmpModelName = modelName + "_clone_" + numbering++;
 				i = 0;
@@ -400,7 +366,7 @@ public class Main : MonoBehaviour
 			var itemValue = item.Value;
 
 			// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
-			if (itemValue.Item2.CompareTo(modelPath) == 0)
+			if (itemValue.Item2.Equals(modelPath))
 			{
 				// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
 				var modelFileName = itemValue.Item3;
@@ -420,8 +386,10 @@ public class Main : MonoBehaviour
 		return null;
 	}
 
-	private IEnumerator LoadModel(string modelPath, string modelFileName)
+	public IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
+		yield return null;
+
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
@@ -431,8 +399,10 @@ public class Main : MonoBehaviour
 
 			var targetObject = _worldRoot.transform.Find(model.Name);
 
-			var modelImporter = _uiMainCanvasRoot.GetComponentInChildren<ModelImporter>();
-			modelImporter.SetModelForDeploy(targetObject);
+			if (_modelImporter != null)
+			{
+				_modelImporter.SetModelForDeploy(targetObject);
+			}
 
 			// Debug.Log("Model Loaded:" + targetObject.name);
 			yield return new WaitForEndOfFrame();
@@ -446,6 +416,8 @@ public class Main : MonoBehaviour
 
 	private IEnumerator LoadWorld()
 	{
+		yield return null;
+
 		// Debug.Log("Hello CLOiSim World!!!!!");
 		Debug.Log("Target World: " + _worldFilename);
 
@@ -476,13 +448,7 @@ public class Main : MonoBehaviour
 		_bridgeManager.PrintLog();
 	}
 
-	public void OnSaveButtonClicked()
-	{
-		// Debug.Log("OnSaveButtonClicked");
-		SaveWorld();
-	}
-
-	private void SaveWorld()
+	public void SaveWorld()
 	{
 		var saveDoc = _sdfRoot.GetOriginalDocument();
 
@@ -492,25 +458,15 @@ public class Main : MonoBehaviour
 		_sdfRoot.Save();
 	}
 
-
 	void LateUpdate()
 	{
-#if UNITY_EDITOR
-		if (Input.GetKey(KeyCode.LeftAlt))
-#else
 		if (Input.GetKey(KeyCode.LeftControl))
-#endif
 		{
 			// Debug.Log("LeftControl Triggered");
 		 	if (Input.GetKeyUp(KeyCode.R))
 			{
 				// Debug.Log("Reset Triggered");
 				_resetTriggered = true;
-			}
-			else if (Input.GetKeyUp(KeyCode.S))
-			{
-				// Debug.Log("Save World");
-				OnSaveButtonClicked();
 			}
 		}
 
@@ -580,7 +536,7 @@ public class Main : MonoBehaviour
 		var args = Environment.GetCommandLineArgs();
 		for (var i = 0; i < args.Length; i++)
 		{
-			if (args[i].CompareTo(arg_name) == 0 && args.Length > i + 1)
+			if (args[i].Equals(arg_name) && args.Length > i + 1)
 			{
 				return args[i + 1];
 			}
@@ -597,9 +553,9 @@ public class Main : MonoBehaviour
 			Main.BridgeManager.Dispose();
 		}
 
-		if (Main._simulationService != null)
+		if (_simulationService != null)
 		{
-			Main._simulationService.Dispose();
+			_simulationService.Dispose();
 		}
 
 		if (Assimp.Unmanaged.AssimpLibrary.Instance.IsLibraryLoaded)

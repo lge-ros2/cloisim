@@ -62,13 +62,13 @@ namespace SDF
 				mergedMeshCollider.sharedMesh = mergedMesh;
 				mergedMeshCollider.convex = false;
 				mergedMeshCollider.cookingOptions = CookingOptions;
-				// mergedMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
+				mergedMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
 			}
 
 			public static void MakeCollision(this UE.GameObject targetObject)
 			{
 				var modelHelper = targetObject.GetComponentInParent<SDF.Helper.Model>();
-				// UE.Debug.Log(modelHelper);
+				// UE.Debug.Log(modelHelper.name + " MakeCollision");
 
 				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
 

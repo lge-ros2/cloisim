@@ -14,9 +14,9 @@ public abstract class Device : MonoBehaviour
 	public enum ModeType { NONE, TX, RX, TX_THREAD, RX_THREAD };
 
 	public ModeType Mode = ModeType.NONE;
-	private DeviceMessageQueue deviceMessageQueue = new DeviceMessageQueue();
-	private DeviceMessage deviceMessage = new DeviceMessage();
-	private DevicePose devicePose = new DevicePose();
+	private DeviceMessageQueue _deviceMessageQueue = new DeviceMessageQueue();
+	private DeviceMessage _deviceMessage = new DeviceMessage();
+	private DevicePose _devicePose = new DevicePose();
 
 	private SDF.Plugin pluginParameters = null;
 
@@ -58,7 +58,7 @@ public abstract class Device : MonoBehaviour
 
 	public void SetSubParts(in bool value)
 	{
-		devicePose.SubParts = value;
+		_devicePose.SubParts = value;
 	}
 
 	void Awake()
@@ -69,7 +69,7 @@ public abstract class Device : MonoBehaviour
 
 	void Start()
 	{
-		devicePose.Store(this.transform);
+		_devicePose.Store(this.transform);
 
 		SetupMessages();
 
@@ -149,8 +149,8 @@ public abstract class Device : MonoBehaviour
 				break;
 		}
 
-		deviceMessage.Dispose();
-		deviceMessageQueue.Dispose();
+		_deviceMessage.Dispose();
+		_deviceMessageQueue.Dispose();
 	}
 
 	protected abstract void OnAwake();
@@ -193,7 +193,7 @@ public abstract class Device : MonoBehaviour
 
 	private IEnumerator DeviceCoroutineRx()
 	{
-		var waitUntil = new WaitUntil(() => (deviceMessageQueue.Count > 0));
+		var waitUntil = new WaitUntil(() => (_deviceMessageQueue.Count > 0));
 		while (runningDevice)
 		{
 			yield return waitUntil;
@@ -214,7 +214,7 @@ public abstract class Device : MonoBehaviour
 	{
 		while (runningDevice)
 		{
-			if (deviceMessageQueue.Count > 0)
+			if (_deviceMessageQueue.Count > 0)
 			{
 				ProcessDevice();
 			}
@@ -225,8 +225,8 @@ public abstract class Device : MonoBehaviour
 	{
 		try
 		{
-			deviceMessage.SetMessage<T>(instance);
-			return deviceMessageQueue.Push(deviceMessage);
+			_deviceMessage.SetMessage<T>(instance);
+			return _deviceMessageQueue.Push(_deviceMessage);
 		}
 		catch (Exception ex)
 		{
@@ -239,9 +239,9 @@ public abstract class Device : MonoBehaviour
 	{
 		try
 		{
-			if (deviceMessage.SetMessage(data))
+			if (_deviceMessage.SetMessage(data))
 			{
-				return deviceMessageQueue.Push(deviceMessage);
+				return _deviceMessageQueue.Push(_deviceMessage);
 			}
 		}
 		catch (Exception ex)
@@ -256,7 +256,7 @@ public abstract class Device : MonoBehaviour
 	{
 		try
 		{
-			var result = deviceMessageQueue.Pop(out var data);
+			var result = _deviceMessageQueue.Pop(out var data);
 			instance = (result) ? data.GetMessage<T>() : default(T);
 			return result;
 		}
@@ -271,14 +271,14 @@ public abstract class Device : MonoBehaviour
 
 	public bool PopDeviceMessage(out DeviceMessage data)
 	{
-		return deviceMessageQueue.Pop(out data);
+		return _deviceMessageQueue.Pop(out data);
 	}
 
 	public void Reset()
 	{
 		// Debug.Log("Reset(): flush message queue");
-		deviceMessage.Reset();
-		deviceMessageQueue.Flush();
+		_deviceMessage.Reset();
+		_deviceMessageQueue.Flush();
 
 		OnReset();
 	}
@@ -321,6 +321,6 @@ public abstract class Device : MonoBehaviour
 
 	public Pose GetPose()
 	{
-		return devicePose.Get();
+		return _devicePose.Get();
 	}
 }

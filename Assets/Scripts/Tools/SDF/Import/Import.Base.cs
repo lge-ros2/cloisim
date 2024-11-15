@@ -133,6 +133,7 @@ namespace SDF
 				ImportPlugins(world.GetPlugins(), worldObject);
 
 				worldObject.SpecifyPose();
+				worldObject.UpdateInertiaTensorRotation();
 
 				yield return null;
 
@@ -143,6 +144,8 @@ namespace SDF
 
 			public IEnumerator<Model> Start(Model model)
 			{
+				yield return null;
+
 				_jointObjectList.Clear();
 
 				var modelObject = ImportModel(model);
@@ -153,6 +156,7 @@ namespace SDF
 				}
 
 				modelObject.SpecifyPose();
+				modelObject.UpdateInertiaTensorRotation();
 
 				yield return null;
 			}

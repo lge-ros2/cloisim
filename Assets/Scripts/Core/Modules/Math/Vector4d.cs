@@ -9,31 +9,39 @@ using UnityEngine;
 
 public struct Vector4d
 {
+	public readonly int Size;
 	public double x;
 	public double y;
 	public double z;
 	public double w;
 
-	public Vector4d(in double p_x, in double p_y)
+	public Vector4d(in double x)
+		: this(x, 0, 0, 0)
 	{
-		x = p_x;
-		y = p_y;
-		z = 0;
-		w = 0;
 	}
-	public Vector4d(in double p_x, in double p_y, in double p_z)
+
+	public Vector4d(in double x, in double y)
+		: this(x, y, 0, 0)
 	{
-		x = p_x;
-		y = p_y;
-		z = p_z;
-		w = 0;
 	}
-	public Vector4d(in double p_x, in double p_y, in double p_z, in double p_w)
+
+	public Vector4d(in double x, in double y, in double z)
+		: this(x, y, z, 0)
 	{
-		x = p_x;
-		y = p_y;
-		z = p_z;
-		w = p_w;
+	}
+
+	public Vector4d(in Vector4d v)
+		: this(v.x, v.y, v.z, v.w)
+	{
+	}
+
+	public Vector4d(in double x, in double y, in double z, in double w)
+	{
+		this.Size = 4;
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.w = w;
 	}
 
 	public double this[int index]
@@ -122,22 +130,22 @@ public struct Vector4d
 
 	public static Vector4d Max(in Vector4d lhs, in Vector4d rhs)
 	{
-		var temp = new Vector4d();
-		temp.x = Math.Max(lhs.x, rhs.x);
-		temp.y = Math.Max(lhs.y, rhs.y);
-		temp.z = Math.Max(lhs.z, rhs.z);
-		temp.w = Math.Max(lhs.w, rhs.w);
-		return temp;
+		return new Vector4d(
+			x: Math.Max(lhs.x, rhs.x),
+			y: Math.Max(lhs.y, rhs.y),
+			z: Math.Max(lhs.z, rhs.z),
+			w: Math.Max(lhs.w, rhs.w)
+		);
 	}
 
 	public static Vector4d Min(in Vector4d lhs, in Vector4d rhs)
 	{
-		var temp = new Vector4d();
-		temp.x = Math.Min(lhs.x, rhs.x);
-		temp.y = Math.Min(lhs.y, rhs.y);
-		temp.z = Math.Min(lhs.z, rhs.z);
-		temp.w = Math.Min(lhs.w, rhs.w);
-		return temp;
+		return new Vector4d(
+			x: Math.Min(lhs.x, rhs.x),
+			y: Math.Min(lhs.y, rhs.y),
+			z: Math.Min(lhs.z, rhs.z),
+			w: Math.Min(lhs.w, rhs.w)
+		);
 	}
 
 	public static Vector4d MoveTowards(in Vector4d current, in Vector4d target, in double maxDistanceDelta)
@@ -159,11 +167,11 @@ public struct Vector4d
 		}
 		else
 		{
-			Vector4d tempDVec = new Vector4d();
-			tempDVec.x = value.x / value.magnitude;
-			tempDVec.y = value.y / value.magnitude;
-			tempDVec.z = value.z / value.magnitude;
-			tempDVec.w = value.w / value.magnitude;
+			var tempDVec = new Vector4d(value);
+			tempDVec.x /= value.magnitude;
+			tempDVec.y /= value.magnitude;
+			tempDVec.z /= value.magnitude;
+			tempDVec.w /= value.magnitude;
 			return tempDVec;
 		}
 	}
@@ -179,12 +187,12 @@ public struct Vector4d
 
 	public static Vector4d Scale(in Vector4d a, in Vector4d b)
 	{
-		var temp = new Vector4d();
-		temp.x = a.x * b.x;
-		temp.y = a.y * b.y;
-		temp.z = a.z * b.z;
-		temp.w = a.w * b.w;
-		return temp;
+		return new Vector4d(
+			x: a.x * b.x,
+			y: a.y * b.y,
+			z: a.z * b.z,
+			w: a.w * b.w
+		);
 	}
 
 	public static double SqrMagnitude(in Vector4d a)
@@ -204,6 +212,14 @@ public struct Vector4d
 		}
 	}
 
+	public void Scale(in double scale)
+	{
+		x *= scale;
+		y *= scale;
+		z *= scale;
+		w *= scale;
+	}
+
 	public void Scale(in Vector4d scale)
 	{
 		x *= scale.x;
@@ -214,10 +230,10 @@ public struct Vector4d
 
 	public void Set(in double new_x, in double new_y, in double new_z, in double new_w)
 	{
-		x = new_x;
-		y = new_y;
-		z = new_z;
-		w = new_w;
+		this.x = new_x;
+		this.y = new_y;
+		this.z = new_z;
+		this.w = new_w;
 	}
 
 	public double SqrMagnitude()
@@ -230,6 +246,11 @@ public struct Vector4d
 		return String.Format("({0}, {1}, {2}, {3})", x, y, z, w);
 	}
 
+	public string ToString(string format)
+	{
+		return String.Format("({0}, {1}, {2}, {3})", x.ToString(format), y.ToString(format), z.ToString(format), w.ToString(format));
+	}
+
 	public override int GetHashCode()
 	{
 		return this.x.GetHashCode() ^ this.y.GetHashCode() << 2 ^ this.z.GetHashCode() >> 2 ^ this.w.GetHashCode() >> 1;
@@ -238,11 +259,6 @@ public struct Vector4d
 	public override bool Equals(object other)
 	{
 		return this == (Vector4d)other;
-	}
-
-	public string ToString(string format)
-	{
-		return String.Format("({0}, {1}, {2}, {3})", x.ToString(format), y.ToString(format), z.ToString(format), w.ToString(format));
 	}
 
 	public Vector4 ToVector4()
@@ -269,10 +285,12 @@ public struct Vector4d
 	{
 		return new Vector4d(a.x * d, a.y * d, a.z * d, a.w * d);
 	}
+
 	public static Vector4d operator *(in Vector4d a, in double d)
 	{
 		return new Vector4d(a.x * d, a.y * d, a.z * d, a.w * d);
 	}
+
 	public static Vector4d operator /(in Vector4d a, in double d)
 	{
 		return new Vector4d(a.x / d, a.y / d, a.z / d, a.w / d);

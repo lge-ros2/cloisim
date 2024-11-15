@@ -194,7 +194,7 @@ namespace SensorDevices
 					// Debug.Log(hitCollider.transform.parent.name + " <=> " + sonarLink.name + "," + DeviceName);
 
 					// ignore itself
-					if (hitCollider.name.CompareTo(name) == 0 && hitCollider.transform.parent.name.CompareTo(sonarLink.name) == 0)
+					if (hitCollider.name.Equals(name) && hitCollider.transform.parent.name.Equals(sonarLink.name))
 						continue;
 
 					if ((hitDistance < detectedRange) && (hitDistance > (float)rangeMin))

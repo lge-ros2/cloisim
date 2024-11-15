@@ -4,34 +4,87 @@
  * SPDX-License-Identifier: MIT
  */
 
+using UnityEngine.UI;
 using UnityEngine;
-using System.Linq;
-using System.Collections.Generic;
 
 public class ModelImporter : MonoBehaviour
 {
-	private GameObject modelList = null;
+	private GameObject _modelList = null;
 	private Transform _targetObject = null;
 
 	#region variables for the object with articulation body
 	private ArticulationBody _rootArticulationBody = null;
-	private Vector3 modelDeployOffset = Vector3.zero;
+	private Vector3 _modelDeployOffset = Vector3.zero;
 	#endregion
 
 	private Transform _targetObjectForCopy = null;
 
 	[SerializeField]
-	private float maxRayDistance = 60.0f;
+	private float _maxRayDistance = 60.0f;
 
 	void Awake()
 	{
-		modelList = transform.parent.Find("ModelList").gameObject;
+		_modelList = Main.UIMainCanvas.transform.Find("ModelList").gameObject;
 	}
 
-	public void OnButtonClicked()
+	public void ToggleModelList()
 	{
-		modelList.SetActive(!modelList.activeSelf);
-		Main.CameraControl.BlockMouseWheelControl(modelList.activeSelf);
+		ShowModelList(!_modelList.activeSelf);
+	}
+
+	public void ShowModelList(in bool open)
+	{
+		_modelList.SetActive(open);
+		Main.CameraControl.BlockMouseWheelControl(open);
+	}
+
+	private void ClearUIModelList()
+	{
+		if (_modelList != null)
+		{
+			// Update UI Model list
+			var viewport = _modelList.transform.GetChild(0);
+			var contentList = viewport.GetChild(0).gameObject;
+			foreach (var child in contentList.GetComponentsInChildren<Button>())
+			{
+				GameObject.Destroy(child.gameObject);
+			}
+		}
+	}
+
+	public void UpdateUIModelList(in dynamic resourceModelTable)
+	{
+		if (_modelList == null)
+		{
+			Debug.LogWarning("_modelList is null");
+			return;
+		}
+
+		ClearUIModelList();
+
+		// Update UI Model list
+		var viewport = _modelList.transform.GetChild(0);
+		var contentList = viewport.GetChild(0).gameObject;
+		var buttonTemplate = viewport.Find("ButtonTemplate").gameObject;
+		var mainCore = gameObject.GetComponent<Main>();
+
+		foreach (var item in resourceModelTable)
+		{
+			var itemValue = item.Value;
+			var duplicatedbutton = GameObject.Instantiate(buttonTemplate);
+			duplicatedbutton.SetActive(true);
+			duplicatedbutton.transform.SetParent(contentList.transform, false);
+
+			var textComponent = duplicatedbutton.GetComponentInChildren<Text>();
+			textComponent.text = itemValue.Item1;
+
+			var buttonComponent = duplicatedbutton.GetComponentInChildren<Button>();
+			buttonComponent.onClick.AddListener(delegate ()
+			{
+				// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
+				StartCoroutine(mainCore.LoadModel(itemValue.Item2, itemValue.Item3));
+			});
+		}
 	}
 
 	private static void ChangeColliderObjectLayer(Transform target, in string layerName)
@@ -80,7 +133,7 @@ public class ModelImporter : MonoBehaviour
 
 	public void SetModelForDeploy(in Transform targetTransform)
 	{
-		const float DeployOffsetMargin = 0.1f;
+		const float DeployOffsetMargin = 0.08f;
 
 		DiscardSelectedModel();
 
@@ -110,8 +163,8 @@ public class ModelImporter : MonoBehaviour
 			totalBound.Encapsulate(renderer.bounds);
 		}
 
-		modelDeployOffset.y = DeployOffsetMargin + ((totalBound.min.y < 0) ? -totalBound.min.y : 0);
-		// Debug.Log("Deploy == " + modelDeployOffset.y + " " + totalBound.min + ", " + totalBound.center + "," + totalBound.extents);
+		_modelDeployOffset.y = DeployOffsetMargin + ((totalBound.min.y < 0) ? -totalBound.min.y : 0);
+		// Debug.Log("Deploy == " + _modelDeployOffset.y + " " + totalBound.min + ", " + totalBound.center + "," + totalBound.extents);
 
 		#region Workaround code for Wrong TerrainHeight issue
 		var terrain = targetTransform.GetComponentInChildren<Terrain>();
@@ -130,7 +183,7 @@ public class ModelImporter : MonoBehaviour
 						| LayerMask.GetMask("TransparentFX")
 						| LayerMask.GetMask("UI")
 						| LayerMask.GetMask("Water"));
-		if (Physics.Raycast(ray, out var hitInfo, maxRayDistance, layerMask))
+		if (Physics.Raycast(ray, out var hitInfo, _maxRayDistance, layerMask))
 		{
 			point = hitInfo.point;
 			normal = hitInfo.normal;
@@ -150,7 +203,7 @@ public class ModelImporter : MonoBehaviour
 		var modelHelper = _targetObject.GetComponent<SDF.Helper.Model>();
 		if (modelHelper != null)
 		{
-			modelHelper.SetPose(_targetObject.localPosition + modelDeployOffset, _targetObject.localRotation);
+			modelHelper.SetPose(_targetObject.localPosition + _modelDeployOffset, _targetObject.localRotation);
 		}
 	}
 
@@ -164,6 +217,16 @@ public class ModelImporter : MonoBehaviour
 		SetInitPose();
 
 		UnblockSelfRaycast();
+
+		foreach (var helper in _targetObject.GetComponentsInChildren<SDF.Helper.Base>())
+		{
+			helper.Reset();
+		}
+
+		foreach (var plugin in _targetObject.GetComponentsInChildren<CLOiSimPlugin>())
+		{
+			plugin.Reset();
+		}
 
 		_targetObject = null;
 		_rootArticulationBody = null;
@@ -179,11 +242,11 @@ public class ModelImporter : MonoBehaviour
 				{
 					_rootArticulationBody.Sleep();
 					var bodyRotation = Quaternion.FromToRotation(transform.up, normal);
-					_rootArticulationBody.TeleportRoot(point + modelDeployOffset, bodyRotation);
+					_rootArticulationBody.TeleportRoot(point + _modelDeployOffset, bodyRotation);
 				}
 				else
 				{
-					_targetObject.position = point + modelDeployOffset;
+					_targetObject.position = point + _modelDeployOffset;
 				}
 			}
 		}
@@ -216,12 +279,8 @@ public class ModelImporter : MonoBehaviour
 			// close 'Add model' list Panel
 			if (Input.GetKeyUp(KeyCode.Escape))
 			{
-				modelList.SetActive(false);
+				_modelList.SetActive(false);
 				Main.CameraControl.BlockMouseWheelControl(false);
-			}
-			else if (Input.GetKeyUp(KeyCode.F3))
-			{
-				OnButtonClicked();
 			}
 		}
 
