@@ -35,16 +35,16 @@ public class DifferentialDrive : MotorControl
 	public override void Drive(in float linearVelocity, in float angularVelocity)
 	{
 		// m/s, rad/s
-		// var linearVelocityLeft = ((2 * linearVelocity) + (angularVelocity * WheelSeparation)) / (2 * wheelRadius);
+		// var linearVelocityLeft = ((2 * linearVelocity) - (angularVelocity * WheelSeparation)) / (2 * wheelRadius);
 		// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * WheelSeparation)) / (2 * wheelRadius);
 		var angularCalculation = (angularVelocity * _odometry.WheelSeparation * 0.5f);
 
 		// Velocity(rad per second) for wheels
-		var linearVelocityLeft = linearVelocity - angularCalculation;
-		var linearVelocityRight = linearVelocity + angularCalculation;
+		var linearVelocityLeft = (linearVelocity - angularCalculation) * _odometry.InverseWheelRadius;
+		var linearVelocityRight = (linearVelocity + angularCalculation) * _odometry.InverseWheelRadius;
 
-		var angularVelocityLeft = SDF2Unity.CurveOrientation(linearVelocityLeft * _odometry.InverseWheelRadius);
-		var angularVelocityRight = SDF2Unity.CurveOrientation(linearVelocityRight * _odometry.InverseWheelRadius);
+		var angularVelocityLeft = SDF2Unity.CurveOrientation(linearVelocityLeft);
+		var angularVelocityRight = SDF2Unity.CurveOrientation(linearVelocityRight);
 
 		SetMotorVelocity(angularVelocityLeft, angularVelocityRight);
 	}

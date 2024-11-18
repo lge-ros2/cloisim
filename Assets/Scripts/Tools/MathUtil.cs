@@ -58,4 +58,9 @@ public static class MathUtil
 		vector.y = (float)Angle.Normalize(vector.y);
 		vector.z = (float)Angle.Normalize(vector.z);
 	}
+
+	public static bool IsZero(in double value)
+	{
+		return Math.Abs(value) < float.Epsilon;
+	}
 }

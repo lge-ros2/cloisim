@@ -249,6 +249,7 @@ public class MicomPlugin : CLOiSimPlugin
 		var wheelTread = GetPluginParameters().GetValue<float>($"{parameterPrefix}/tread"); // TODO: to be deprecated
 		var wheelSeparation = GetPluginParameters().GetValue<float>($"{parameterPrefix}/separation", wheelTread);
 
+		_log.AppendLine($"wheel separation/radius: {wheelSeparation}/{wheelRadius}");
 		_motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
 
 		var wheelLeftName = GetPluginParameters().GetValue<string>($"{parameterPrefix}/location[@type='left']", string.Empty);

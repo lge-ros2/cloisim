@@ -45,16 +45,6 @@ public class Odometry
 #endif
 	}
 
-	private bool IsZero(in float value)
-	{
-		return Mathf.Abs(value) < Quaternion.kEpsilon;
-	}
-
-	private bool IsZero(in double value)
-	{
-		return Math.Abs(value) < Quaternion.kEpsilon;
-	}
-
 	/// <summary>Calculate odometry on this robot</summary>
 	/// <remarks>rad per second for `angularVelocity`</remarks>
 	private void CalculateOdometry(
@@ -68,14 +58,14 @@ public class Odometry
 		var sumLeftRight = linearVelocityLeftWheel + linearVelocityRightWheel;
 		var diffRightLeft = linearVelocityRightWheel - linearVelocityLeftWheel;
 
-		_odomTranslationalVelocity = IsZero(sumLeftRight) ? 0 : (sumLeftRight * 0.5f);
-		_odomRotationalVelocity = IsZero(diffRightLeft) ? 0 : (diffRightLeft * _wheelInfo.inversedWheelSeparation);
+		_odomTranslationalVelocity = MathUtil.IsZero(sumLeftRight) ? 0 : (sumLeftRight * 0.5f);
+		_odomRotationalVelocity = MathUtil.IsZero(diffRightLeft) ? 0 : (diffRightLeft * _wheelInfo.inversedWheelSeparation);
 
 		var linear = _odomTranslationalVelocity * duration;
 		var angular = (float.IsNaN(deltaTheta)) ? (_odomRotationalVelocity * duration) : deltaTheta;
 
 		// Acculumate odometry:
-		if (IsZero(angular)) // RungeKutta2
+		if (MathUtil.IsZero(angular)) // RungeKutta2
 		{
 			var direction = _odomPose.y + angular * 0.5f;
 
@@ -130,7 +120,7 @@ public class Odometry
 			var deltaAngleImu = Mathf.DeltaAngle(_lastImuYaw, imuYaw);
 			_lastImuYaw = imuYaw;
 
-			var deltaThetaIMU = IsZero(deltaAngleImu) ? 0 : deltaAngleImu * Mathf.Deg2Rad;
+			var deltaThetaIMU = MathUtil.IsZero(deltaAngleImu) ? 0 : deltaAngleImu * Mathf.Deg2Rad;
 			// Debug.Log("IMUE deltatheta = " + deltaThetaIMU);
 			CalculateOdometry(angularVelocityLeft, angularVelocityRight, duration, deltaThetaIMU);
 		}
