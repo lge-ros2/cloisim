@@ -31,7 +31,7 @@ namespace SensorDevices
 		private const float DEG360 = DEG180 * 2;
 
 		private const float HFOV_FOR_2D_LIDAR = 120f;
-		private const float HFOV_FOR_3D_LIDAR = 10f;
+		private const float HFOV_FOR_3D_LIDAR = 90f;
 		private float LaserCameraHFov = 0f;
 		private float LaserCameraHFovHalf = 0;
 		private float LaserCameraVFov = 0;
@@ -157,7 +157,7 @@ namespace SensorDevices
 
 		private void SetupLaserCamera()
 		{
-			LaserCameraVFov = (vertical.samples == 1) ? 1 : (float)vertical.angle.max - (float)vertical.angle.min;
+			LaserCameraVFov = (vertical.samples == 1) ? 1 : vertical.angle.range;
 			LaserCameraHFov = (vertical.samples > 1) ? HFOV_FOR_3D_LIDAR : HFOV_FOR_2D_LIDAR;
 			LaserCameraHFovHalf = LaserCameraHFov * 0.5f;
 
@@ -172,8 +172,8 @@ namespace SensorDevices
 			laserCam.stereoTargetEye = StereoTargetEyeMask.None;
 
 			laserCam.orthographic = false;
-			laserCam.nearClipPlane = (float)scanRange.min;
-			laserCam.farClipPlane = (float)scanRange.max;
+			laserCam.nearClipPlane = scanRange.min;
+			laserCam.farClipPlane = scanRange.max;
 			laserCam.cullingMask = LayerMask.GetMask("Default") | LayerMask.GetMask("Plane");
 
 			laserCam.clearFlags = CameraClearFlags.Nothing;
@@ -183,8 +183,7 @@ namespace SensorDevices
 
 			var renderTextrueWidth = Mathf.CeilToInt(LaserCameraHFov / laserAngleResolution.H);
 			var renderTextrueHeight = Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
-			// Debug.Log(maxVFov + "," + LaserCameraVFov + "," + renderTextrueWidth + "," + renderTextrueHeight);
-			// Debug.Log(LaserCameraVFov + "," + renderTextrueWidth + "," + renderTextrueHeight);
+			// Debug.Log("SetupLaserCamera: " + LaserCameraVFov + ","  + laserAngleResolution.V + "," + renderTextrueWidth + "," + renderTextrueHeight);
 
 			RTHandles.SetHardwareDynamicResolutionState(true);
 			_rtHandle = RTHandles.Alloc(
@@ -408,6 +407,8 @@ namespace SensorDevices
 
 		private IEnumerator LaserProcsssing()
 		{
+			const int BufferUnitSize = sizeof(double);
+
 			var laserScanStamped = new messages.LaserScanStamped();
 			laserScanStamped.Time = new messages.Time();
 
@@ -424,8 +425,7 @@ namespace SensorDevices
 
 				laserScan.WorldPose.Position.Set(lidarPosition);
 				laserScan.WorldPose.Orientation.Set(lidarRotation);
-
-				const int BufferUnitSize = sizeof(double);
+					
 				var laserSamplesH = (int)horizontal.samples;
 				var laserStartAngleH = (float)horizontal.angle.min;
 				var laserEndAngleH = (float)horizontal.angle.max;
@@ -433,9 +433,9 @@ namespace SensorDevices
 				var dividedLaserTotalAngleH = 1f / laserTotalAngleH;
 
 				var laserSamplesV = (int)vertical.samples;
-				var laserStartAngleV = (float)vertical.angle.min;
-				var laserEndAngleV = (float)vertical.angle.max;
-				var laserTotalAngleV = (float)vertical.angle.range;
+				// var laserStartAngleV = (float)vertical.angle.min;
+				// var laserEndAngleV = (float)vertical.angle.max;
+				// var laserTotalAngleV = (float)vertical.angle.range;
 
 				var capturedTime = 0f;
 				var processingTimeSum = 0f;
