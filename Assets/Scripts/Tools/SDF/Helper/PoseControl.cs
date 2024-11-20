@@ -118,8 +118,6 @@ namespace SDF
 			{
 				if (_articulationBody != null)
 				{
-					var isPrismatic = _articulationBody.jointType.Equals(UE.ArticulationJointType.PrismaticJoint);
-
 					_articulationBody.velocity = UE.Vector3.zero;
 					_articulationBody.angularVelocity = UE.Vector3.zero;
 
@@ -134,16 +132,18 @@ namespace SDF
 					_articulationBody.jointVelocity = zeroSpace;
 					_articulationBody.jointForce = zeroSpace;
 
+					if (_articulationBody.jointType.Equals(UE.ArticulationJointType.FixedJoint))
+					{
+						return;
+					}
+
 					GetJointTarget(out var targetJoint1, out var targetJoint2, targetFrame);
-					// Debug.Log($"PoseControl {_articulationBody.name} targetJoint1={targetJoint1.ToString("F6")} targetJoint2={targetJoint2}");
+					// Debug.Log($"PoseControl {_articulationBody.name} targetJoint1={targetJoint1.ToString("F6")} targetJoint2={targetJoint2.ToString("F6")}");
+					// Debug.Log($"PoseControl {_articulationBody.name} X({_articulationBody.linearLockX}|{_articulationBody.twistLock}) Y({_articulationBody.linearLockY}|{_articulationBody.swingYLock}) Z({_articulationBody.linearLockZ}|{_articulationBody.swingZLock})");
 
 					var xDrive = _articulationBody.xDrive;
-					if (!isPrismatic)
-					{
-						xDrive.targetVelocity = 0;
-					}
-					if (!_articulationBody.linearLockX.Equals(UE.ArticulationDofLock.LockedMotion) ||
-						!_articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion))
+
+					if (!_articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion))
 					{
 						if (!_articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
 							!_articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
@@ -159,15 +159,10 @@ namespace SDF
 					{
 						xDrive.target = 0;
 					}
-					_articulationBody.xDrive = xDrive;
 
 					var yDrive = _articulationBody.yDrive;
-					if (!isPrismatic)
-					{
-						yDrive.targetVelocity = 0;
-					}
-					if (!_articulationBody.linearLockY.Equals(UE.ArticulationDofLock.LockedMotion) ||
-						!_articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion))
+
+					if (!_articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion))
 					{
 						if (!_articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
 							!_articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
@@ -176,22 +171,17 @@ namespace SDF
 						}
 						else
 						{
-							yDrive.target = targetJoint1;
+							yDrive.target = targetJoint2;
 						}
 					}
 					else
 					{
 						yDrive.target = 0;
 					}
-					_articulationBody.yDrive = yDrive;
 
 					var zDrive = _articulationBody.zDrive;
-					if (!isPrismatic)
-					{
-						zDrive.targetVelocity = 0;
-					}
-					if (!_articulationBody.linearLockY.Equals(UE.ArticulationDofLock.LockedMotion) ||
-						!_articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
+
+					if (!_articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
 					{
 						if (!_articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
 							!_articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion))
@@ -207,6 +197,17 @@ namespace SDF
 					{
 						zDrive.target = 0;
 					}
+
+					var isPrismatic = _articulationBody.jointType.Equals(UE.ArticulationJointType.PrismaticJoint);
+					if (!isPrismatic)
+					{
+						xDrive.targetVelocity = 0;
+						yDrive.targetVelocity = 0;
+						zDrive.targetVelocity = 0;
+					}
+
+					_articulationBody.xDrive = xDrive;
+					_articulationBody.yDrive = yDrive;
 					_articulationBody.zDrive = zDrive;
 				}
 			}

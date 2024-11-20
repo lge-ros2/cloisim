@@ -13,7 +13,10 @@ public class Articulation
 	protected ArticulationBody _jointBody = null;
 	protected ArticulationJointType _jointType = ArticulationJointType.FixedJoint;
 	private ArticulationDriveType _driveType = ArticulationDriveType.Force;
+
+#if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 	protected float _velocityLimit = float.NaN;
+#endif
 
 	public ArticulationDriveType DriveType
 	{
@@ -51,10 +54,12 @@ public class Articulation
 	{
 	}
 
+#if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 	public void SetVelocityLimit(in float value)
 	{
 		_velocityLimit = value;
 	}
+#endif
 
 	public virtual void Reset()
 	{
@@ -81,11 +86,13 @@ public class Articulation
 			_jointType == ArticulationJointType.PrismaticJoint) ? true : false;
 	}
 
+#if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 	private float GetLimitedVelocity(in float velocity)
 	{
 		return (!float.IsNaN(_velocityLimit) && Mathf.Abs(velocity) > Mathf.Abs(_velocityLimit)) ?
 				Mathf.Sign(velocity) * Mathf.Abs(_velocityLimit) : velocity;
 	}
+#endif
 
 	protected void SetJointVelocity(in float velocity, in int targetDegree = 0)
 	{
@@ -94,7 +101,11 @@ public class Articulation
 			var jointVelocity = _jointBody.jointVelocity;
 			if (targetDegree < jointVelocity.dofCount)
 			{
+#if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 				jointVelocity[targetDegree] = GetLimitedVelocity(velocity);
+#else
+				jointVelocity[targetDegree] = velocity;
+#endif
 				_jointBody.jointVelocity = jointVelocity;
 			}
 		}

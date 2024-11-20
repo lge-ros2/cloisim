@@ -31,18 +31,17 @@ namespace SDF
 
 				if (linkObjectChild is null)
 				{
-					Debug.LogWarningFormat("child Link object is NULL!!! {0}", joint.ChildLinkName);
+					Debug.LogWarning($"child Link object is NULL!!! {joint.ChildLinkName}");
+					return;
+				}
+
+				if (linkObjectChild is null || linkObjectParent is null)
+				{
+					Debug.LogWarning($"RigidBody of Link is NULL!!! child({linkObjectChild}) parent({linkObjectParent})");
 					return;
 				}
 
 				var articulationBodyChild = linkObjectChild.GetComponent<UE.ArticulationBody>();
-
-				if (linkObjectChild is null || linkObjectParent is null)
-				{
-					Debug.LogWarningFormat("RigidBody of Link is NULL!!! child({0}) parent({1})", linkObjectChild, linkObjectParent);
-					return;
-				}
-
 				if (articulationBodyChild == null)
 				{
 					Debug.LogWarningFormat("Link Child has NO Articulation Body, will create an articulation body for linking, parent({0}) child({1})",
@@ -70,16 +69,16 @@ namespace SDF
 					{
 						if (joint.Axis.dynamics != null)
 						{
-							if (joint.Type.Equals("prismatic"))
-								axisSpringReference = (float)joint.Axis.dynamics.spring_reference;
-							else
-								axisSpringReference = SDF2Unity.CurveOrientation((float)joint.Axis.dynamics.spring_reference);
+							axisSpringReference = (joint.Type.Equals("prismatic")) ?
+							 	(float)joint.Axis.dynamics.spring_reference :
+								SDF2Unity.CurveOrientation((float)joint.Axis.dynamics.spring_reference);
 						}
-
+#if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 						if (!double.IsInfinity(joint.Axis.limit.velocity))
 						{
 							linkHelper.JointAxisLimitVelocity = (float)joint.Axis.limit.velocity;
 						}
+#endif
 					}
 
 					if (joint.Axis2 != null)
@@ -88,11 +87,12 @@ namespace SDF
 						{
 							axis2SpringReference = SDF2Unity.CurveOrientation((float)joint.Axis2.dynamics.spring_reference);
 						}
-
+#if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 						if (!double.IsInfinity(joint.Axis2.limit.velocity))
 						{
 							linkHelper.JointAxis2LimitVelocity = (float)joint.Axis2.limit.velocity;
 						}
+#endif
 					}
 
 					linkHelper.SetJointPoseTarget(axisSpringReference, axis2SpringReference);

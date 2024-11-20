@@ -35,8 +35,10 @@ namespace SDF
 
 			private UE.Pose _jointAnchorPose = new UE.Pose();
 
+#if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 			private float _jointAxisLimitVelocity = float.NaN;
 			private float _jointAxis2LimitVelocity = float.NaN;
+#endif
 
 			private List<UE.ContactPoint> collisionContacts = new List<UE.ContactPoint>();
 
@@ -60,7 +62,7 @@ namespace SDF
 				get => this.jointChildLinkName;
 				set => this.jointChildLinkName = value;
 			}
-
+#if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 			public float JointAxisLimitVelocity
 			{
 				get => this._jointAxisLimitVelocity;
@@ -72,6 +74,7 @@ namespace SDF
 				get => this._jointAxis2LimitVelocity;
 				set => this._jointAxis2LimitVelocity = value;
 			}
+#endif
 
 			public UE.Pose LinkJointPose => _jointPose;
 
