@@ -97,7 +97,6 @@ namespace SDF
 					drive.stiffness = (float)axis.dynamics.spring_stiffness;
 					drive.target = SDF2Unity.CurveOrientation((float)axis.dynamics.spring_reference);
 					drive.damping = (float)axis.dynamics.damping;
-					UE.Debug.LogWarning($"{body.name} axis.dynamics.spring_reference=" + drive.target);
 				}
 
 				body.jointFriction = (axis.dynamics != null) ? (float)axis.dynamics.friction : 0.5f;

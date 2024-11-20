@@ -21,7 +21,9 @@ namespace SDF
 
 			struct JointTarget
 			{
+				public UE.Vector3 axis1xyz;
 				public float axis1;
+				public UE.Vector3 axis2xyz;
 				public float axis2;
 			}
 
@@ -34,10 +36,15 @@ namespace SDF
 				_targetTransform = target;
 			}
 
-			public void SetJointTarget(in float targetAxis1, in float targetAxis2, in int targetFrame = 0)
+			public void SetJointTarget(
+				in UE.Vector3 axis1xyz, in float targetAxis1,
+				in UE.Vector3 axis2xyz, in float targetAxis2,
+				in int targetFrame = 0)
 			{
 				var jointTarget = new JointTarget();
+				jointTarget.axis1xyz = axis1xyz;
 				jointTarget.axis1 = targetAxis1;
+				jointTarget.axis2xyz = axis2xyz;
 				jointTarget.axis2 = targetAxis2;
 
 				if (targetFrame < _jointTargetList.Count)
@@ -53,16 +60,25 @@ namespace SDF
 				}
 			}
 
-			public void GetJointTarget(out float targetAxis1, out float targetAxis2, in int targetFrame = 0)
+			public void GetJointTarget(
+				out UE.Vector3 axis1xyz, out float targetAxis1,
+				out UE.Vector3 axis2xyz, out float targetAxis2,
+				in int targetFrame = 0)
 			{
-				targetAxis1 = 0;
-				targetAxis2 = 0;
-
 				if (targetFrame < _jointTargetList.Count)
 				{
 					var jointTarget = _jointTargetList[targetFrame];
+					axis1xyz = jointTarget.axis1xyz;
 					targetAxis1 = jointTarget.axis1;
+					axis2xyz = jointTarget.axis2xyz;
 					targetAxis2 = jointTarget.axis2;
+				}
+				else
+				{
+					axis1xyz = UE.Vector3.zero;
+					targetAxis1 = 0;
+					axis2xyz = UE.Vector3.zero;
+					targetAxis2 = 0;
 				}
 			}
 
@@ -137,65 +153,38 @@ namespace SDF
 						return;
 					}
 
-					GetJointTarget(out var targetJoint1, out var targetJoint2, targetFrame);
+					GetJointTarget(out var joint1Axis, out var targetJoint1, out var joint2Axis, out var targetJoint2, targetFrame);
 					// Debug.Log($"PoseControl {_articulationBody.name} targetJoint1={targetJoint1.ToString("F6")} targetJoint2={targetJoint2.ToString("F6")}");
 					// Debug.Log($"PoseControl {_articulationBody.name} X({_articulationBody.linearLockX}|{_articulationBody.twistLock}) Y({_articulationBody.linearLockY}|{_articulationBody.swingYLock}) Z({_articulationBody.linearLockZ}|{_articulationBody.swingZLock})");
 
 					var xDrive = _articulationBody.xDrive;
-
-					if (!_articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion))
-					{
-						if (!_articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
-							!_articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
-						{
-							xDrive.target = targetJoint1;
-						}
-						else
-						{
-							xDrive.target = targetJoint2;
-						}
-					}
-					else
-					{
-						xDrive.target = 0;
-					}
-
 					var yDrive = _articulationBody.yDrive;
-
-					if (!_articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion))
-					{
-						if (!_articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
-							!_articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
-						{
-							yDrive.target = targetJoint1;
-						}
-						else
-						{
-							yDrive.target = targetJoint2;
-						}
-					}
-					else
-					{
-						yDrive.target = 0;
-					}
-
 					var zDrive = _articulationBody.zDrive;
 
-					if (!_articulationBody.swingZLock.Equals(UE.ArticulationDofLock.LockedMotion))
+					if (joint1Axis.Equals(UE.Vector3.right) || joint1Axis.Equals(UE.Vector3.left))
 					{
-						if (!_articulationBody.twistLock.Equals(UE.ArticulationDofLock.LockedMotion) ||
-							!_articulationBody.swingYLock.Equals(UE.ArticulationDofLock.LockedMotion))
-						{
-							zDrive.target = targetJoint1;
-						}
-						else
-						{
-							zDrive.target = targetJoint2;
-						}
+						xDrive.target = targetJoint1;
 					}
-					else
+					else if (joint1Axis.Equals(UE.Vector3.up) || joint1Axis.Equals(UE.Vector3.down))
 					{
-						zDrive.target = 0;
+						yDrive.target = targetJoint1;
+					}
+					else if (joint1Axis.Equals(UE.Vector3.forward) || joint1Axis.Equals(UE.Vector3.back))
+					{
+						zDrive.target = targetJoint1;
+					}
+
+					if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
+					{
+						xDrive.target = targetJoint2;
+					}
+					else if (joint2Axis.Equals(UE.Vector3.up) || joint2Axis.Equals(UE.Vector3.down))
+					{
+						yDrive.target = targetJoint2;
+					}
+					else if (joint2Axis.Equals(UE.Vector3.forward) || joint2Axis.Equals(UE.Vector3.back))
+					{
+						zDrive.target = targetJoint2;
 					}
 
 					var isPrismatic = _articulationBody.jointType.Equals(UE.ArticulationJointType.PrismaticJoint);

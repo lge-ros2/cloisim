@@ -58,7 +58,9 @@ namespace SDF
 				var linkHelper = linkObjectChild.GetComponent<Helper.Link>();
 				if (linkHelper != null)
 				{
+					var axis1xyz = UE.Vector3.zero;
 					var axisSpringReference = 0f;
+					var axis2xyz = UE.Vector3.zero;
 					var axis2SpringReference = 0f;
 
 					linkHelper.JointName = joint.Name;
@@ -69,10 +71,12 @@ namespace SDF
 					{
 						if (joint.Axis.dynamics != null)
 						{
+							axis1xyz = SDF2Unity.Axis(joint.Axis.xyz);
 							axisSpringReference = (joint.Type.Equals("prismatic")) ?
 							 	(float)joint.Axis.dynamics.spring_reference :
 								SDF2Unity.CurveOrientation((float)joint.Axis.dynamics.spring_reference);
 						}
+
 #if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 						if (!double.IsInfinity(joint.Axis.limit.velocity))
 						{
@@ -85,8 +89,10 @@ namespace SDF
 					{
 						if (joint.Axis2.dynamics != null)
 						{
+							axis2xyz = SDF2Unity.Axis(joint.Axis2.xyz);
 							axis2SpringReference = SDF2Unity.CurveOrientation((float)joint.Axis2.dynamics.spring_reference);
 						}
+
 #if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 						if (!double.IsInfinity(joint.Axis2.limit.velocity))
 						{
@@ -95,7 +101,7 @@ namespace SDF
 #endif
 					}
 
-					linkHelper.SetJointPoseTarget(axisSpringReference, axis2SpringReference);
+					linkHelper.SetJointPoseTarget(axis1xyz, axisSpringReference, axis2xyz, axis2SpringReference);
 				}
 			}
 		}

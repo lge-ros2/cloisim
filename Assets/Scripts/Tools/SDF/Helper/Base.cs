@@ -65,11 +65,14 @@ namespace SDF
 				}
 			}
 
-			public void SetJointPoseTarget(in float targetAxis1, in float targetAxis2, in int targetFrame = 0)
+			public void SetJointPoseTarget(
+				in UE.Vector3 axis1xyz, in float targetAxis1,
+				in UE.Vector3 axis2xyz, in float targetAxis2,
+				in int targetFrame = 0)
 			{
 				if (_poseControl != null)
 				{
-					_poseControl.SetJointTarget(targetAxis1, targetAxis2, targetFrame);
+					_poseControl.SetJointTarget(axis1xyz, targetAxis1, axis2xyz, targetAxis2, targetFrame);
 				}
 			}
 
