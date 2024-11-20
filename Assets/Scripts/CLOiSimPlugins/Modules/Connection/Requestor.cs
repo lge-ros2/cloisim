@@ -88,7 +88,7 @@ public class Requestor : RequestSocket
 		if (!IsDisposed)
 		{
 			var frameReceived = this.ReceiveFrameBytes();
-			return TransportHelper.RetrieveData(frameReceived, (checkTag)? hashValue : null);;
+			return TransportHelper.RetrieveData(frameReceived, (checkTag)? hashValue : null);
 		}
 		else
 		{

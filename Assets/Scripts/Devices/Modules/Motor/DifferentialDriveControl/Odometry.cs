@@ -63,6 +63,7 @@ public class Odometry
 
 		var linear = _odomTranslationalVelocity * duration;
 		var angular = (float.IsNaN(deltaTheta)) ? (_odomRotationalVelocity * duration) : deltaTheta;
+		// Debug.Log($"angular: {angular}, angular(calc): {(_odomRotationalVelocity * duration)}  delta: {((_odomRotationalVelocity * duration)-angular).ToString("F5")}");
 
 		// Acculumate odometry:
 		if (MathUtil.IsZero(angular)) // RungeKutta2

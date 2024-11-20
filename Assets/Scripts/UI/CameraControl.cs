@@ -78,7 +78,7 @@ public class CameraControl : MonoBehaviour
 	{
 		_targetLayerMask = LayerMask.GetMask("Default");
 		_uiController = Main.UIObject?.GetComponent<UIController>();
-		// Debug.Log(_uiController);;
+		// Debug.Log(_uiController);
 	}
 
 	void LateUpdate()
