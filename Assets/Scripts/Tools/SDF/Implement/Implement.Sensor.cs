@@ -295,9 +295,8 @@ namespace SDF
 				contact.topic = element.topic;
 
 				var contactTrigger = targetObject.AddComponent<SensorDevices.ContactTrigger>();
-				contactTrigger.collisionEnter = contact.CollisionEnter;
-				contactTrigger.collisionExit = contact.CollisionExit;
 				contactTrigger.collisionStay = contact.CollisionStay;
+				contactTrigger.collisionExit = contact.CollisionExit;
 
 				return contact;
 			}
