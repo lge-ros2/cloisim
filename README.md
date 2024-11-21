@@ -69,7 +69,8 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] Road
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.6) file basically targeting and supporting version 1.6 and works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
-It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<road>`, `<population>`.
+
+It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<population>`.
 
 There is problem with `<pose>` in `<joint>` since introduction of articulation body model. Therefore, plaese
 
@@ -103,7 +104,8 @@ More details and usages for configuration/parameters in [here](https://github.co
 - `MultiCameraPlugin`: help to publish multiple color image data
 - `RealSensePlugin`: can handle ir1(left), ir2(right), depth, color
 - `MicomPlugin`: control micom(differential drive) input/output(sensor)
-  - 2/4-Wheeled Motor driving
+  - 2/4-Wheeled Motor differntial drive
+  - 2-Wheel Self-balancing drive
 - `GpsPlugin`: gps position in world
 - `JointControlPlugin`: can control joints and help to publish joints status.
 - `ActorPlugin`: add actor control functionality using AI(Unity) components
@@ -149,7 +151,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.52f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.53f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 22.04.5 LTS
