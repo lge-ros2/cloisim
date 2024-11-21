@@ -288,13 +288,26 @@ public class MicomPlugin : CLOiSimPlugin
 
 		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/limit"))
 		{
-			var limitIntegral = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral");
-			var limitOutput = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output");
+			if (!GetPluginParameters().IsValidNode($"{parameterPrefix}/limit/integral/min") &&
+				!GetPluginParameters().IsValidNode($"{parameterPrefix}/limit/integral/max"))
+			{
+				var limitIntegral = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral");
+				integralMin = -Math.Abs(limitIntegral);
+				integralMax = Math.Abs(limitIntegral);
+			}
 
-			integralMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/min", -Mathf.Abs(limitIntegral));
-			integralMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/max", Mathf.Abs(limitIntegral));
-			outputMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/min", -Mathf.Abs(limitOutput));
-			outputMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/max", Mathf.Abs(limitOutput));
+			if (!GetPluginParameters().IsValidNode($"{parameterPrefix}/limit/integral/min") &&
+				!GetPluginParameters().IsValidNode($"{parameterPrefix}/limit/integral/max"))
+			{
+				var limitOutput = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output");
+				outputMin = -Math.Abs(limitOutput);
+				outputMax = Math.Abs(limitOutput);
+			}
+
+			integralMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/min", integralMin);
+			integralMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/max", integralMax);
+			outputMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/min", outputMin);
+			outputMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/max", outputMax);
 		}
 
 		SetPID(P, I, D, integralMin, integralMax, outputMin, outputMax);
@@ -413,6 +426,9 @@ public class MicomPlugin : CLOiSimPlugin
 			case "reset_odometry":
 				Reset();
 				SetEmptyResponse(ref response);
+				break;
+
+			case "request_bumper_topic_name":
 				break;
 
 			default:
