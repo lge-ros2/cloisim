@@ -122,12 +122,19 @@ namespace SDF
 
 					var parentObject = baseHelper.transform.parent;
 
+					// UE.Debug.Log($"SpecifyPose {baseHelper.name} {pose.relative_to}");
 					if (string.IsNullOrEmpty(pose.relative_to))
 					{
-						// UE.Debug.Log($"{baseHelper.name}: non relative_to baseHelper: {localPosition.ToString("F5")} {localRotation.eulerAngles.ToString("F5")}");
 						var rootModelTransform = FindRootParentModel(baseHelper);
-						localRotation = UE.Quaternion.Inverse(UE.Quaternion.Inverse(rootModelTransform.localRotation) * parentObject.localRotation) * localRotation;
-						localPosition = (localPosition - (parentObject.position - rootModelTransform.position));
+						// UE.Debug.Log($"SpecifyPose {baseHelper.name}: non relative_to baseHelper: {localRotation.eulerAngles.ToString("F5")}");
+						// UE.Debug.LogWarning($"SpecifyPose {baseHelper.name}: {rootModelTransform.localRotation.eulerAngles.ToString("F6")} * {parentObject.localRotation.eulerAngles.ToString("F6")} *  {localRotation.eulerAngles.ToString("F6")}");
+						// UE.Debug.LogWarning($"SpecifyPose {baseHelper.name}: rootModelTransform === {rootModelTransform.name} <-> {parentObject.name}");
+
+						var positionOffset = (rootModelTransform.Equals(parentObject)) ? UE.Vector3.zero : (parentObject.position - rootModelTransform.position);
+						var rotationOffset = (rootModelTransform.Equals(parentObject))? UE.Quaternion.identity : (rootModelTransform.localRotation * parentObject.localRotation);
+
+						localRotation = rotationOffset * localRotation;
+						localPosition = localPosition - positionOffset;
 					}
 					else
 					{
@@ -139,18 +146,16 @@ namespace SDF
 						{
 							var relativeObject = relativeObjectBaseHelper.transform;
 
-							// UE.Debug.Log(linkHelper.name + ":  ImportLink:  => parent " + parentObject.name + ",  " +
-							// 	parentObject.localPosition.ToString("F9") + ", " + parentObject.position.ToString("F9"));
-							// UE.Debug.Log(linkHelper.name + ":  ImportLink:  => parent " + parentObject.name + ",  " +
-							// 	parentObject.localRotation.eulerAngles.ToString("F9") + ", " + parentObject.rotation.eulerAngles.ToString("F9"));
+							// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => parent {parentObject.name}, {parentObject.localPosition.ToString("F9")}, {parentObject.position.ToString("F9")}");
+							// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => parent {parentObject.name}, {parentObject.localRotation.eulerAngles.ToString("F9")}, {parentObject.rotation.eulerAngles.ToString("F9")}");
+							// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localPosition.ToString("F9")}, {relativeObject.position.ToString("F9")}");
+							// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localRotation.eulerAngles.ToString("F9")}, {relativeObject.rotation.eulerAngles.ToString("F9")}");
 
-							// UE.Debug.Log(linkHelper.name + ":  ImportLink:  => relative_to " + relativeObject.name + ",  " +
-							// 	relativeObject.localPosition.ToString("F9") + ", " + relativeObject.position.ToString("F9"));
-							// UE.Debug.Log(linkHelper.name + ":  ImportLink:  => relative_to " + relativeObject.name + ",  " +
-							// 	relativeObject.localRotation.eulerAngles.ToString("F9") + ", " + relativeObject.rotation.eulerAngles.ToString("F9"));
+							var positionOffset = (relativeObject.Equals(parentObject)) ? UE.Vector3.zero : (relativeObject.position - parentObject.position);
+							var rotationOffset = (relativeObject.Equals(parentObject)) ? UE.Quaternion.identity : (parentObject.localRotation * relativeObject.localRotation);
 
-							localPosition = localPosition + (relativeObject.position - parentObject.position);
-							localRotation = UE.Quaternion.Inverse(UE.Quaternion.Inverse(parentObject.localRotation) * relativeObject.localRotation) * localRotation;
+							localPosition = localPosition + positionOffset;
+							localRotation = rotationOffset * localRotation;
 						}
 						else
 						{
