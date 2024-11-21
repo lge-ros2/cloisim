@@ -108,8 +108,7 @@ namespace SDF
 					body.enabled = false;
 				}
 
-				var baseHelpers = rootObject.GetComponentsInChildren<SDF.Helper.Base>();
-				foreach (var baseHelper in baseHelpers)
+				foreach (var baseHelper in rootObject.GetComponentsInChildren<SDF.Helper.Base>())
 				{
 					var pose = baseHelper?.Pose;
 					if (pose == null)
@@ -126,12 +125,13 @@ namespace SDF
 					if (string.IsNullOrEmpty(pose.relative_to))
 					{
 						var rootModelTransform = FindRootParentModel(baseHelper);
-						// UE.Debug.Log($"SpecifyPose {baseHelper.name}: non relative_to baseHelper: {localRotation.eulerAngles.ToString("F5")}");
-						// UE.Debug.LogWarning($"SpecifyPose {baseHelper.name}: {rootModelTransform.localRotation.eulerAngles.ToString("F6")} * {parentObject.localRotation.eulerAngles.ToString("F6")} *  {localRotation.eulerAngles.ToString("F6")}");
-						// UE.Debug.LogWarning($"SpecifyPose {baseHelper.name}: rootModelTransform === {rootModelTransform.name} <-> {parentObject.name}");
+						// UE.Debug.Log($"SpecifyPose {baseHelper.name}: non relative_to baseHelper: {localRotation.eulerAngles.ToString("F5")} rootModelTransform: {rootModelTransform.name}");
+						// UE.Debug.LogWarning($"SpecifyPose {baseHelper.name}: {rootModelTransform.localRotation.eulerAngles.ToString("F6")} * {parentObject.localRotation.eulerAngles.ToString("F6")} * {localRotation.eulerAngles.ToString("F6")}");
+						// UE.Debug.LogWarning($"SpecifyPose {baseHelper.name}: rootModelTransform == {rootModelTransform.name} <-> {parentObject.name}");
 
+						var rotationOffset = (rootModelTransform.Equals(parentObject)) ? UE.Quaternion.identity : parentObject.localRotation;
 						var positionOffset = (rootModelTransform.Equals(parentObject)) ? UE.Vector3.zero : (parentObject.position - rootModelTransform.position);
-						var rotationOffset = (rootModelTransform.Equals(parentObject))? UE.Quaternion.identity : (rootModelTransform.localRotation * parentObject.localRotation);
+						positionOffset = UE.Quaternion.Inverse(rootModelTransform.localRotation) * positionOffset;
 
 						localRotation = rotationOffset * localRotation;
 						localPosition = localPosition - positionOffset;

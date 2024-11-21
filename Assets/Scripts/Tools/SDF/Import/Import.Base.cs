@@ -136,7 +136,6 @@ namespace SDF
 				yield return null;
 
 				ImportActors(world.GetActors());
-
 				yield return null;
 			}
 
@@ -154,7 +153,6 @@ namespace SDF
 				}
 
 				modelObject.SpecifyPose();
-
 				yield return null;
 			}
 		}
