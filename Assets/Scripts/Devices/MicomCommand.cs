@@ -37,7 +37,6 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
-			_mowingBlade = GetComponentInChildren<MowingBlade>();
 		}
 
 		protected override void OnReset()
@@ -48,6 +47,11 @@ namespace SensorDevices
 		public void SetMotorControl(in dynamic motorControl)
 		{
 			this._motorControl = motorControl;
+		}
+
+		public void SetMowingBlade(in dynamic mowingBlade)
+		{
+			this._mowingBlade = mowingBlade;
 		}
 
 		protected override void ProcessDevice()
@@ -189,7 +193,7 @@ namespace SensorDevices
 
 		private void ControlMowing(in string target, in cloisim.msgs.Any value)
 		{
-			if (string.Compare(target, "mowing_blade_height") == 0)
+			if (target.Equals("mowing_blade_height"))
 			{
 				if (_mowingBlade != null && value.Type == messages.Any.ValueType.Double)
 				{
@@ -197,7 +201,7 @@ namespace SensorDevices
 					// Debug.Log($"mowing_blade_height {value} -> {_mowingBlade.Height}");
 				}
 			}
-			else if (string.Compare(target, "mowing_blade_rev_speed") == 0)
+			else if (target.Equals("mowing_blade_rev_speed"))
 			{
 				if (_mowingBlade != null && value.Type == messages.Any.ValueType.Int32)
 				{

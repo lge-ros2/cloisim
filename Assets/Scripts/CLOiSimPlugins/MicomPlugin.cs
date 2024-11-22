@@ -332,6 +332,11 @@ public class MicomPlugin : CLOiSimPlugin
 				mowingBlade.HeightMax = GetPluginParameters().GetValue<float>("mowing/blade/height/max", 0.1f);
 				mowingBlade.RevSpeedMax = GetPluginParameters().GetValue<UInt16>("mowing/blade/rev_speed/max", 1000);
 				mowingBlade.Height = 0;
+
+				if (_micomCommand != null)
+				{
+					_micomCommand.SetMowingBlade(mowingBlade);
+				}
 			}
 		}
 	}
