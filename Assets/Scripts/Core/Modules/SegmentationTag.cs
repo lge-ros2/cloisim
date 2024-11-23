@@ -85,19 +85,12 @@ namespace Segmentation
 					break;
 			}
 
-			var grayscale = color.grayscale;
-
-			_classId = (UInt16)(grayscale * UInt16.MaxValue);
-
-			var classValue = ColorEncoding.Encode16BitsToGR(_classId);
-
-			mpb.SetColor("_SegmentationColor", color);
-			mpb.SetColor("_SegmentationClassId", classValue);
+			_classId = (UInt16)(color.grayscale * UInt16.MaxValue);
+			
+			mpb.SetInt("_SegmentationValue", (int)_classId);
 			mpb.SetInt("_Hide", 0);
 
-			// Debug.Log(TagName + ": mode=" + Main.SegmentationManager.Mode +
-			// 			" color=" + color +
-			// 			" calssId=" + classValue.r + " "  + classValue.g);
+			// Debug.Log($"{TagName}: mode={Main.SegmentationManager.Mode} color={color} {_classId}");
 			// Debug.Log($"{TagName} : {grayscale} > {_classId}");
 
 			AllocateMaterialPropertyBlock(mpb);

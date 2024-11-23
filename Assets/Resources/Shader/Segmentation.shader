@@ -2,9 +2,7 @@ Shader "Sensor/Segmentation"
 {
 	Properties
 	{
-		_SegmentationColor ("Segmentation Color", Color) = (1, 1, 1, 1)
-		_SegmentationClassId ("Segmentation Class ID Value in 16bits", Color) = (0, 0, 0, 1)
-		[Toggle] _DisableColor ("Disable Color method", int) = 0
+		_SegmentationValue  ("Segmentation Value", int) = 0
 		[Toggle] _Hide ("Hide this label", int) = 0
 	}
 
@@ -24,9 +22,7 @@ Shader "Sensor/Segmentation"
 		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
 		CBUFFER_START(UnityPerMaterial)
-		half4 _SegmentationColor;
-		half4 _SegmentationClassId;
-		int _DisableColor;
+		int _SegmentationValue;
 		int _Hide;
 		CBUFFER_END
 
@@ -38,18 +34,18 @@ Shader "Sensor/Segmentation"
 
 			HLSLPROGRAM
 
-			#pragma target 4.5
+			#pragma target 4.6
 			#pragma vertex vert
 			#pragma fragment frag
 
 			struct Attributes
 			{
-				float4 positionOS : POSITION;
+				half4 positionOS : POSITION;
 			};
 
 			struct Varyings
 			{
-				float4 positionCS : SV_POSITION;
+				half4 positionCS : SV_POSITION;
 			};
 
 			Varyings vert(Attributes i)
@@ -65,7 +61,13 @@ Shader "Sensor/Segmentation"
 				half4 segColor = half4(0, 0, 0, 0);
 				if (_Hide == 0)
 				{
-					segColor = (_DisableColor == 0)? _SegmentationColor : _SegmentationClassId;
+					// Encode 16Bits To RG
+					float R = ((_SegmentationValue >> 8) & 0xFF) / 255.0;
+					float G = (_SegmentationValue & 0xFF) / 255.0;
+					
+					// Due to little-endian data, SWAP
+					segColor.r = G;
+					segColor.g = R;
 				}
 				return segColor;
 			}
