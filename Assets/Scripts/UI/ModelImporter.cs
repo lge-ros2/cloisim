@@ -241,7 +241,7 @@ public class ModelImporter : MonoBehaviour
 				if (_rootArticulationBody != null)
 				{
 					_rootArticulationBody.Sleep();
-					var bodyRotation = Quaternion.FromToRotation(transform.up, normal);
+					var bodyRotation = Quaternion.FromToRotation(transform.up, normal) * _rootArticulationBody.transform.rotation;
 					_rootArticulationBody.TeleportRoot(point + _modelDeployOffset, bodyRotation);
 				}
 				else

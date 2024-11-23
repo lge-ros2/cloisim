@@ -111,7 +111,7 @@ public abstract class MotorControl
 			var motor = _motorList[targetMotorLocation];
 			if (motor == null)
 			{
-				Debug.LogWarning("There is no Wheel, AttachWheel() first");
+				Debug.LogWarning($"There is no Wheel on {targetMotorLocation}, AttachWheel() first");
 				return;
 			}
 

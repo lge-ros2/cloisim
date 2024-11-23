@@ -20,9 +20,7 @@ namespace SensorDevices
 		private List<SensorDevices.Sonar> ussSensors = new List<SensorDevices.Sonar>();
 		private List<SensorDevices.Sonar> irSensors = new List<SensorDevices.Sonar>();
 		// private List<SensorDevices.Magnet> magnetSensors = null;
-		private List<SensorDevices.Contact> bumperSensors = new List<SensorDevices.Contact>();
-
-		// private List<ArticulationBody> bumperSensors = new List<ArticulationBody>();
+		private List<SensorDevices.Contact> _bumperSensors = new List<SensorDevices.Contact>();
 
 
 		protected override void OnAwake()
@@ -103,47 +101,30 @@ namespace SensorDevices
 			{
 				// TODO: to be implemented
 			}
+			Debug.Log("Magnet is to be implemented");
 		}
 
 		public void SetBumper(in List<string> bumperList)
 		{
-			// Debug.Log(targetContactName);
 			var contactsInChild = GetComponentsInChildren<SensorDevices.Contact>();
+
+			var bumperCount = 0;
 			foreach (var bumper in bumperList)
 			{
 				foreach (var contact in contactsInChild)
 				{
 					if (contact.name.Equals(bumper))
 					{
-						bumperSensors.Add(contact);
+						_bumperSensors.Add(contact);
+						bumperCount++;
 						Debug.Log("Found " + contact.name);
+						break;
 					}
 				}
 			}
 
-			var bumperCount = bumperSensors.Count;
 			micomSensorData.bumper.Bumpeds = new bool[bumperCount];
 		}
-
-#if false
-		public void SetBumperSensor(in List<string> bumperJointNameList)
-		{
-			if (bumperContact != null)
-			{
-				var linkList = GetComponentsInChildren<SDF.Helper.Link>();
-				foreach (var link in linkList)
-				{
-					foreach (var bumperJointName in bumperJointNameList)
-					{
-						// TODO: to be implemented
-					}
-				}
-
-				var bumperCount = bumperSensors.Count;
-				micomSensorData.bumper.Bumpeds = new bool[bumperCount];
-			}
-		}
-#endif
 
 		public void SetBattery(in SensorDevices.Battery targetBattery)
 		{
@@ -219,9 +200,9 @@ namespace SensorDevices
 				return;
 			}
 
-			for (var index = 0; index < bumperSensors.Count; index++)
+			for (var index = 0; index < _bumperSensors.Count; index++)
 			{
-				var bumperSensor = bumperSensors[index];
+				var bumperSensor = _bumperSensors[index];
 				micomSensorData.bumper.Bumpeds[index] = bumperSensor.IsContacted();
 				// Debug.Log(micomSensorData.bumper.Bumpeds[index]);
 			}

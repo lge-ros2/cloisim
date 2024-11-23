@@ -97,14 +97,10 @@ namespace SDF
 					drive.stiffness = (float)axis.dynamics.spring_stiffness;
 					drive.target = SDF2Unity.CurveOrientation((float)axis.dynamics.spring_reference);
 					drive.damping = (float)axis.dynamics.damping;
-					body.jointFriction = (float)axis.dynamics.friction;
-				}
-				else
-				{
-					body.jointFriction = 0.5f;
 				}
 
-				body.maxJointVelocity = (float)axis.limit.velocity;;
+				body.jointFriction = (axis.dynamics != null) ? (float)axis.dynamics.friction : 0.5f;
+				body.maxJointVelocity = (float)axis.limit.velocity;
 
 				var jointAxis = SDF2Unity.Axis(axis.xyz);
 				// UE.Debug.LogWarning(body.transform.parent.name + "::" + body.name + " = " + jointAxis + " - revolute");
@@ -159,10 +155,15 @@ namespace SDF
 					drive.SetRevoluteDriveLimit(axis2.limit);
 				}
 
-				body.maxJointVelocity = (float)axis2.limit.velocity;
 				drive.forceLimit = (double.IsInfinity(axis2.limit.effort)) ? float.MaxValue : (float)axis2.limit.effort;
 
+				var axis2JointFriction = (axis2.dynamics != null) ? (float)axis2.dynamics.friction : 0.5f;
+
+				body.jointFriction = UE.Mathf.Min(body.jointFriction, axis2JointFriction);
+				body.maxJointVelocity = UE.Mathf.Min(body.maxJointVelocity, (float)axis2.limit.velocity);
+
 				var joint2Axis = SDF2Unity.Axis(axis2.xyz);
+
 				if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
 				{
 					if (joint2Axis.Equals(UE.Vector3.left))
@@ -192,7 +193,7 @@ namespace SDF
 				}
 				else
 				{
-					UE.Debug.LogWarning("MakeRevoluteJoint2 - Wrong axis, " + body.transform.parent.name + "::" + body.name + " = " + joint2Axis);
+					UE.Debug.LogWarning("MakeRevoluteJoint2 - Wrong axis2, " + body.transform.parent.name + "::" + body.name + " = " + joint2Axis);
 				}
 			}
 

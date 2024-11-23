@@ -77,7 +77,7 @@ public partial class SDF2Unity
 		{
 			var existingTexture = target.GetTexture("_BaseMap");
 			var existingTextureScale = target.GetTextureScale("_BaseMap");
-			var existingColor = target.GetColor("_BaseColor");
+			var existingColor = target.GetColor("_Color");
 
 			target.shader = SpeedTreeShader;
 			target.SetTexture("_MainTex", existingTexture);

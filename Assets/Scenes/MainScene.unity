@@ -1848,11 +1848,15 @@ MonoBehaviour:
   - ../world_resources/lawn_ground/models
   - ../world_resources/seocho_tower/models
   - ../world_resources/app.gazebosim.org
+  - ../world_resources/logistics_center/models
+  - ../world_resources/smallhouse/models
   _worldRootDirectories:
   - ../sample_resources/worlds/
   - ../world_resources/bluepearl/worlds
   - ../world_resources/lawn_ground/worlds
   - ../world_resources/seocho_tower/worlds
+  - ../world_resources/logistics_center/worlds
+  - ../world_resources/smallhouse/worlds
   _fileRootDirectories:
   - ../sample_resources/media/
   - ../world_resources/bluepearl/media

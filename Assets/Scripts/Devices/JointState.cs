@@ -62,6 +62,7 @@ namespace SensorDevices
 
 				var parentObject = childArticulationBody.transform.parent;
 				var parentModelName = parentObject.name;
+
 				var linkHelper = childArticulationBody.GetComponentInChildren<SDF.Helper.Link>();
 				// Debug.Log("linkHelper.JointName " + linkHelper.JointName);
 				if (linkHelper.JointName.Equals(targetJointName))

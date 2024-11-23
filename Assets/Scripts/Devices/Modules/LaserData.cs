@@ -7,6 +7,7 @@ using UnityEngine;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Burst;
+using System;
 
 namespace SensorDevices
 {
@@ -25,16 +26,20 @@ namespace SensorDevices
 				this.resolution = resolution;
 				this.angle = new MathUtil.MinMax(angleMinRad * Mathf.Rad2Deg, angleMaxRad * Mathf.Rad2Deg);
 
-				if (System.Math.Abs(this.angle.range) < double.Epsilon)
+				if (Math.Abs(this.angle.range) < double.Epsilon)
 				{
 					this.angleStep = 1;
 				}
 				else
 				{
-					var residual = (System.Math.Abs(this.angle.range - 360d) < double.Epsilon) ? 0 : 1;
-					var rangeCount = resolution * samples - residual;
+					var rangeCount = resolution * samples;
+					this.angleStep = (rangeCount <= 0) ? 0 : (this.angle.range / rangeCount);
 
-					this.angleStep = (rangeCount <= 0) ? 0 : ((angle.range) / rangeCount);
+					var residual = (Math.Abs(360d - this.angle.range) < this.angleStep) ? 0 : 1;
+					if (residual > 0 && rangeCount > 0)
+					{
+						this.angleStep = this.angle.range / (rangeCount + 1);
+					}
 				}
 			}
 

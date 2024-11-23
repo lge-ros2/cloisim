@@ -36,23 +36,15 @@ namespace SensorDevices
 			}
 
 			// for Unsigned 16-bit
-			_targetColorFormat = GraphicsFormat.R8G8_UNorm;
+			_targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
 			_readbackDstFormat = GraphicsFormat.R8G8_UNorm;
-
+			
 			_camImageData = new CameraData.Image(_camParam.image.width, _camParam.image.height, pixelFormat);
 		}
 
 		protected override void SetupCamera()
 		{
-			// Debug.Log("Segmenataion Setup Camera");
-			if (!_camParam.segmentation_type.Equals("semantic"))
-			{
-				Debug.Log("Only support semantic segmentation");
-			}
-			_camSensor.backgroundColor = Color.black;
-			_camSensor.clearFlags = CameraClearFlags.SolidColor;
-			_camSensor.allowHDR = false;
-			_camSensor.allowMSAA = true;
+			// Debug.Log("Segmenataion Setup");
 
 			// Refer to SegmentationRenderer (Universal Renderer Data)
 			_universalCamData.SetRenderer(1);
@@ -99,6 +91,7 @@ namespace SensorDevices
 			if (imageData != null)
 			{
 				image.Data = imageData;
+				// Debug.LogFormat($"{image.Data[0]}|{image.Data[1]}|{image.Data[2]}|{image.Data[3]}");
 				if (_camParam.save_enabled && _startCameraWork)
 				{
 					var saveName = name + "_" + Time.time;

@@ -108,8 +108,7 @@ namespace SDF
 					body.enabled = false;
 				}
 
-				var baseHelpers = rootObject.GetComponentsInChildren<SDF.Helper.Base>();
-				foreach (var baseHelper in baseHelpers)
+				foreach (var baseHelper in rootObject.GetComponentsInChildren<SDF.Helper.Base>())
 				{
 					var pose = baseHelper?.Pose;
 					if (pose == null)
@@ -122,12 +121,20 @@ namespace SDF
 
 					var parentObject = baseHelper.transform.parent;
 
+					// UE.Debug.Log($"SpecifyPose {baseHelper.name} {pose.relative_to}");
 					if (string.IsNullOrEmpty(pose.relative_to))
 					{
-						// UE.Debug.Log($"{baseHelper.name}: non relative_to baseHelper: {localPosition.ToString("F5")} {localRotation.eulerAngles.ToString("F5")}");
 						var rootModelTransform = FindRootParentModel(baseHelper);
-						localRotation = UE.Quaternion.Inverse(UE.Quaternion.Inverse(rootModelTransform.localRotation) * parentObject.localRotation) * localRotation;
-						localPosition = (localPosition - (parentObject.position - rootModelTransform.position));
+						// UE.Debug.Log($"SpecifyPose {baseHelper.name}: non relative_to baseHelper: {localRotation.eulerAngles.ToString("F5")} rootModelTransform: {rootModelTransform.name}");
+						// UE.Debug.LogWarning($"SpecifyPose {baseHelper.name}: {rootModelTransform.localRotation.eulerAngles.ToString("F6")} * {parentObject.localRotation.eulerAngles.ToString("F6")} * {localRotation.eulerAngles.ToString("F6")}");
+						// UE.Debug.LogWarning($"SpecifyPose {baseHelper.name}: rootModelTransform == {rootModelTransform.name} <-> {parentObject.name}");
+
+						var rotationOffset = (rootModelTransform.Equals(parentObject)) ? UE.Quaternion.identity : parentObject.localRotation;
+						var positionOffset = (rootModelTransform.Equals(parentObject)) ? UE.Vector3.zero : (parentObject.position - rootModelTransform.position);
+						positionOffset = UE.Quaternion.Inverse(rootModelTransform.localRotation) * positionOffset;
+
+						localRotation = rotationOffset * localRotation;
+						localPosition = localPosition - positionOffset;
 					}
 					else
 					{
@@ -139,18 +146,16 @@ namespace SDF
 						{
 							var relativeObject = relativeObjectBaseHelper.transform;
 
-							// UE.Debug.Log(linkHelper.name + ":  ImportLink:  => parent " + parentObject.name + ",  " +
-							// 	parentObject.localPosition.ToString("F9") + ", " + parentObject.position.ToString("F9"));
-							// UE.Debug.Log(linkHelper.name + ":  ImportLink:  => parent " + parentObject.name + ",  " +
-							// 	parentObject.localRotation.eulerAngles.ToString("F9") + ", " + parentObject.rotation.eulerAngles.ToString("F9"));
+							// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => parent {parentObject.name}, {parentObject.localPosition.ToString("F9")}, {parentObject.position.ToString("F9")}");
+							// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => parent {parentObject.name}, {parentObject.localRotation.eulerAngles.ToString("F9")}, {parentObject.rotation.eulerAngles.ToString("F9")}");
+							// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localPosition.ToString("F9")}, {relativeObject.position.ToString("F9")}");
+							// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localRotation.eulerAngles.ToString("F9")}, {relativeObject.rotation.eulerAngles.ToString("F9")}");
 
-							// UE.Debug.Log(linkHelper.name + ":  ImportLink:  => relative_to " + relativeObject.name + ",  " +
-							// 	relativeObject.localPosition.ToString("F9") + ", " + relativeObject.position.ToString("F9"));
-							// UE.Debug.Log(linkHelper.name + ":  ImportLink:  => relative_to " + relativeObject.name + ",  " +
-							// 	relativeObject.localRotation.eulerAngles.ToString("F9") + ", " + relativeObject.rotation.eulerAngles.ToString("F9"));
+							var positionOffset = (relativeObject.Equals(parentObject)) ? UE.Vector3.zero : (relativeObject.position - parentObject.position);
+							var rotationOffset = (relativeObject.Equals(parentObject)) ? UE.Quaternion.identity : (parentObject.localRotation * relativeObject.localRotation);
 
-							localPosition = localPosition + (relativeObject.position - parentObject.position);
-							localRotation = UE.Quaternion.Inverse(UE.Quaternion.Inverse(parentObject.localRotation) * relativeObject.localRotation) * localRotation;
+							localPosition = localPosition + positionOffset;
+							localRotation = rotationOffset * localRotation;
 						}
 						else
 						{
@@ -165,23 +170,6 @@ namespace SDF
 				foreach (var body in articulationBodies)
 				{
 					body.enabled = true;
-				}
-			}
-
-			public static void UpdateInertiaTensorRotation(this Object targetObject)
-			{
-				var rootObject = (targetObject as UE.GameObject);
-				foreach (var artBody in rootObject.GetComponentsInChildren<UE.ArticulationBody>())
-				{
-					var linkHelper = artBody.GetComponent<SDF.Helper.Link>();
-
-					if (linkHelper != null &&
-						linkHelper.Model != null &&
-						linkHelper.Model.IsFirstChild == false &&
-						artBody.automaticInertiaTensor == false)
-					{
-						artBody.inertiaTensorRotation = linkHelper.Model.transform.rotation;
-					}
 				}
 			}
 		}

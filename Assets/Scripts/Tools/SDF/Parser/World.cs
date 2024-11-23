@@ -245,7 +245,7 @@ namespace SDF
 			lights = new Lights(root);
 			plugins = new Plugins(root);
 
-			var gravityStr = (IsValidNode("gravity")) ? GetValue<string>("gravity") : "0 0 -9.8";
+			var gravityStr = (IsValidNode("gravity")) ? GetValue<string>("gravity") : "0 0 -9.8000000000000007";
 			gravity.FromString(gravityStr);
 
 			// Console.WriteLine("{0}", GetType().Name);

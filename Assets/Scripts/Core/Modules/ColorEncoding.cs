@@ -56,8 +56,8 @@ public class ColorEncoding
 		var r = (byte)(hash >> 16);
 		var g = (byte)(hash >> 8);
 		var b = (byte)(hash);
-		// Debug.Log($"EncodeTagAsColor({tag}): {r} {g} {b}");
-		return new Color32(r, g, b, 255);
+		// Debug.Log($"EncodeTagAsColor({tag}): {r} {g} {b} {a}");
+		return new Color32(r, g, b, a);
 	}
 
 	public static Color EncodeLayerAsColor(in int layer)
@@ -83,19 +83,5 @@ public class ColorEncoding
 		color /= divider;
 
 		return color;
-	}
-
-	public static Color Encode16BitsToRG(in UInt16 value)
-	{
-		var classIdR = (byte)((value >> 8) & 0xFF);
-		var classIdG = (byte)(value & 0xFF);
-		return new Color32(classIdR, classIdG, 0, 0);
-	}
-
-	// for little endian order
-	public static Color Encode16BitsToGR(in UInt16 value)
-	{
-		var rgColor = Encode16BitsToRG(value);
-		return new Color(rgColor.g, rgColor.r, 0, 0);
 	}
 }

@@ -133,12 +133,9 @@ namespace SDF
 				ImportPlugins(world.GetPlugins(), worldObject);
 
 				worldObject.SpecifyPose();
-				worldObject.UpdateInertiaTensorRotation();
-
 				yield return null;
 
 				ImportActors(world.GetActors());
-
 				yield return null;
 			}
 
@@ -156,8 +153,6 @@ namespace SDF
 				}
 
 				modelObject.SpecifyPose();
-				modelObject.UpdateInertiaTensorRotation();
-
 				yield return null;
 			}
 		}
