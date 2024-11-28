@@ -65,9 +65,10 @@ namespace SDF
 		private VelocityDecay _velocity_decay = null;
 
 		private Inertial _inertial = null;
-		private Collisions collisions = null;
-		private Visuals visuals = null;
-		private Sensors sensors = null;
+		private Collisions _collisions = null;
+		private Visuals _visuals = null;
+		private Sensors _sensors = null;
+		private Lights _lights = null;
 
 		// <projector> : TBD
 		// <audio_sink> : TBD
@@ -96,9 +97,10 @@ namespace SDF
 
 		protected override void ParseElements()
 		{
-			collisions = new Collisions(root);
-			visuals = new Visuals(root);
-			sensors = new Sensors(root);
+			_collisions = new Collisions(root);
+			_visuals = new Visuals(root);
+			_sensors = new Sensors(root);
+			_lights = new Lights(root);
 
 			gravity = GetValue<bool>("gravity", true);
 			enable_wind = GetValue<bool>("enable_wind", false);
@@ -152,17 +154,22 @@ namespace SDF
 
 		public List<Collision> GetCollisions()
 		{
-			return collisions.GetData();
+			return _collisions.GetData();
 		}
 
 		public List<Visual> GetVisuals()
 		{
-			return visuals.GetData();
+			return _visuals.GetData();
 		}
 
 		public List<Sensor> GetSensors()
 		{
-			return sensors.GetData();
+			return _sensors.GetData();
+		}
+
+		public List<Light> GetLights()
+		{
+			return _lights.GetData();
 		}
 	}
 }
