@@ -53,5 +53,10 @@ namespace SDF
 
 			A = (double)Convert.ChangeType(tmp[3], TypeCode.Double);
 		}
+
+		public override string ToString()
+		{
+			return $"{base.ToString()} R={R:f5} G={G:f5} B={B:f5} A={A:f5}";
+		}
 	}
 }
