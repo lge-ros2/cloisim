@@ -53,8 +53,10 @@ namespace SDF
 			private void UpdateRootModel()
 			{
 				var modelHelpers = GetComponentsInParent(typeof(Model));
-				_rootModelInScopre = (Model)modelHelpers[modelHelpers.Length - 1];
-				// UE.Debug.Log($"{name}: BaseHelper _rootModel={_rootModel}");
+				if (modelHelpers.Length > 0)
+				{
+					_rootModelInScopre = (Model)modelHelpers[modelHelpers.Length - 1];
+				}
 			}
 
 			public void ClearPose()
