@@ -1861,6 +1861,7 @@ MonoBehaviour:
   - ../sample_resources/media/
   - ../world_resources/bluepearl/media
   - ../world_resources/lawn_ground
+  - ../world_resources/smallhouse
 --- !u!1 &314493398
 GameObject:
   m_ObjectHideFlags: 0
