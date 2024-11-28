@@ -80,11 +80,27 @@ namespace SDF
 					return;
 				}
 
-				var linkHelper = linkObject.GetComponent<Helper.Link>();
-
 				// skip to create articulation body when inertial element is null
+				var modelHelpers = linkObject.GetComponentsInParent<Helper.Model>();
+
+				var hasStaticModel = false;
+				for (var i = 0; i < modelHelpers.Length; i++)
+				{
+					var modelHelper = modelHelpers[i];
+					// Debug.LogWarning($"AfterImportLink: {linkObject.name} {modelHelper.name} {link.Name} {modelHelper.isStatic} {modelHelper.gameObject.isStatic}");
+					if (modelHelper.isStatic)
+					{
+						hasStaticModel = true;
+					}
+
+					if (modelHelper.IsFirstChild || hasStaticModel)
+					{
+						break;
+					}
+				}
+
 				var inertial = link.Inertial;
-				if (!linkHelper.Model.isStatic && inertial != null)
+				if (!hasStaticModel && inertial != null)
 				{
 					Loader.CreateArticulationBody(linkObject, inertial);
 				}
