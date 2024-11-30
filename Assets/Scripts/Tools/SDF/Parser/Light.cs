@@ -83,7 +83,7 @@ namespace SDF
 
 			if (IsValidNode("specular"))
 			{
-				diffuse.FromString(GetValue<string>("specular"));
+				specular.FromString(GetValue<string>("specular"));
 			}
 
 			if (IsValidNode("attenuation"))

@@ -68,6 +68,8 @@ namespace SDF
 
 					ImportSensors(item.GetSensors(), createdObject);
 
+					ImportLights(item.GetLights());
+
 					AfterImportLink(item, createdObject);
 				}
 			}

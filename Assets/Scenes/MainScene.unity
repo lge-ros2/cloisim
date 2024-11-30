@@ -1850,6 +1850,7 @@ MonoBehaviour:
   - ../world_resources/app.gazebosim.org
   - ../world_resources/logistics_center/models
   - ../world_resources/smallhouse/models
+  - ../world_resources/meta-home/models
   _worldRootDirectories:
   - ../sample_resources/worlds/
   - ../world_resources/bluepearl/worlds
@@ -1857,10 +1858,12 @@ MonoBehaviour:
   - ../world_resources/seocho_tower/worlds
   - ../world_resources/logistics_center/worlds
   - ../world_resources/smallhouse/worlds
+  - ../world_resources/meta-home/worlds
   _fileRootDirectories:
   - ../sample_resources/media/
   - ../world_resources/bluepearl/media
   - ../world_resources/lawn_ground
+  - ../world_resources/smallhouse
 --- !u!1 &314493398
 GameObject:
   m_ObjectHideFlags: 0

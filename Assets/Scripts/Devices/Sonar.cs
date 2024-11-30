@@ -210,7 +210,7 @@ namespace SensorDevices
 			var sonar = sonarStamped.Sonar;
 			sonar.Range = detectedRange;
 			sonar.Contact.Set(contactPoint);
-			// Debug.Log(deviceName + ": " + other.name + " |Stay| " + detectedRange.ToString("F5") + " | " + contactPoint);
+			// Debug.Log(DeviceName + ": " + other.name + " |Stay| " + detectedRange.ToString("F5") + " | " + contactPoint);
 
 			pingpongindex++;
 			pingpongindex %= 2;

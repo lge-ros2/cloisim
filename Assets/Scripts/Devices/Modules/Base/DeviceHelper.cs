@@ -42,19 +42,15 @@ public static partial class DeviceHelper
 	{
 		try
 		{
-			var nextObject = targetObject.GetComponentInParent<SDF.Helper.Model>() as SDF.Helper.Base;
+			SDF.Helper.Base nextObject = targetObject.GetComponentInParent<SDF.Helper.Model>();
 
 			if (nextObject == null)
 			{
-				nextObject = targetObject.GetComponentInParent<SDF.Helper.Actor>() as SDF.Helper.Base;
+				nextObject = targetObject.GetComponentInParent<SDF.Helper.Actor>();
 			}
 
-			if (nextObject == null)
-			{
-				return string.Empty;
-			}
-
-			if (searchOnlyOneDepth == false)
+			if (searchOnlyOneDepth == false && nextObject != null &&
+				!nextObject.CompareTag("Actor"))
 			{
 				while (!SDF2Unity.IsRootModel(nextObject.transform))
 				{
@@ -62,9 +58,14 @@ public static partial class DeviceHelper
 
 					if (nextObject == null)
 					{
-						return string.Empty;
+						break;
 					}
 				}
+			}
+
+			if (nextObject == null)
+			{
+				return string.Empty;
 			}
 
 			return nextObject.name;
