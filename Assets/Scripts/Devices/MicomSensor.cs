@@ -155,15 +155,20 @@ namespace SensorDevices
 		{
 			micomSensorData = new messages.Micom();
 			micomSensorData.Time = new messages.Time();
+			micomSensorData.Odom = null;
+			micomSensorData.uss = new messages.Micom.Uss();
+			micomSensorData.ir = new messages.Micom.Ir();
+			micomSensorData.bumper = new messages.Micom.Bumper();
+		}
+
+		private void InitializeOdometryMessage()
+		{
 			micomSensorData.Odom = new messages.Micom.Odometry();
 			micomSensorData.Odom.AngularVelocity = new messages.Micom.Odometry.Wheel();
 			micomSensorData.Odom.LinearVelocity = new messages.Micom.Odometry.Wheel();
 			micomSensorData.Odom.Pose = new messages.Vector3d();
 			micomSensorData.Odom.TwistLinear = new messages.Vector3d();
 			micomSensorData.Odom.TwistAngular = new messages.Vector3d();
-			micomSensorData.uss = new messages.Micom.Uss();
-			micomSensorData.ir = new messages.Micom.Ir();
-			micomSensorData.bumper = new messages.Micom.Bumper();
 		}
 
 		protected override void GenerateMessage()
@@ -188,6 +193,11 @@ namespace SensorDevices
 
 			if (_motorControl != null)
 			{
+				if (micomSensorData.Odom == null)
+				{
+					InitializeOdometryMessage();
+				}
+
 				if (_motorControl.Update(micomSensorData.Odom, deltaTime, _imuSensor) == false)
 				{
 					Debug.LogWarning("Update failed in MotorControl");
