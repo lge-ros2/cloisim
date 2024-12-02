@@ -26,12 +26,13 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		tfMessage.Transform.Orientation = new messages.Quaternion();
 
 		var deviceMessage = new DeviceMessage();
-		if (publisher != null && tfList.Count > 0)
+		if (publisher != null)
 		{
+			const int EmptyTfPublishPeriod = 2000;
 			const float publishFrequency = 50;
 			const int updatePeriod = (int)(1f / publishFrequency * 1000f);
-			int updatePeriodPerEachTf = (int)(updatePeriod / tfList.Count);
-			// Debug.Log(updatePeriod + " , " + updatePeriodPerEachTf);
+			var updatePeriodPerEachTf = (tfList.Count == 0) ? int.MaxValue : (int)(updatePeriod / tfList.Count);
+			// Debug.Log("PublishTfThread: " + updatePeriod + " , " + updatePeriodPerEachTf);
 
 			while (PluginThread.IsRunning)
 			{
@@ -57,6 +58,16 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 						// Debug.Log(tfMessage.Header.Stamp.Sec + "." + tfMessage.Header.Stamp.Nsec + ": " + tfMessage.Header.StrId + ", " + tfMessage.Transform.Name);
 					}
 					CLOiSimPluginThread.Sleep(updatePeriodPerEachTf);
+				}
+
+				if (tfList.Count == 0)
+				{
+					deviceMessage.SetMessage<messages.TransformStamped>(tfMessage);
+					if (publisher.Publish(deviceMessage) == false)
+					{
+						Debug.Log(tfMessage.Header.StrId + ", " + tfMessage.Transform.Name + " error to send TF!!");
+					}
+					CLOiSimPluginThread.Sleep(EmptyTfPublishPeriod);
 				}
 			}
 		}
