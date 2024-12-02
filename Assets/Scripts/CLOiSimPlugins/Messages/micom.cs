@@ -19,7 +19,7 @@ namespace cloisim.msgs
         [global::ProtoBuf.ProtoMember(1, Name = @"time", IsRequired = true)]
         public Time Time { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"odom", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(2, Name = @"odom")]
         public Odometry Odom { get; set; }
 
         [global::ProtoBuf.ProtoMember(3)]
