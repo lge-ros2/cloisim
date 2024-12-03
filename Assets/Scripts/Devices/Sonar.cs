@@ -13,6 +13,8 @@ namespace SensorDevices
 {
 	public class Sonar : Device
 	{
+		private static readonly float Margin = 0.001f;
+
 		private messages.SonarStamped sonarStamped = null;
 
 		public string geometry = string.Empty;
@@ -26,33 +28,29 @@ namespace SensorDevices
 		[Range(0, 100)]
 		public double radius = 0;
 
-		public Vector3 sensorStartPoint = Vector3.zero;
+		public Vector3 _sensorStartPoint = Vector3.zero;
 
-		private List<Vector3> meshSensorRegionVertices = new List<Vector3>();
+		private List<Vector3> _meshSensorRegionVertices = new List<Vector3>();
 
-		private int pingpongindex = 0;
+		private Transform _sonarLink = null;
 
-		private Transform sonarLink = null;
-
-		private float sensorStartOffset = 0;
+		private float _sensorStartOffset = 0;
 
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX;
 			DeviceName = name;
-			sonarLink = transform.parent;
+			_sonarLink = transform.parent;
 		}
 
 		protected override void OnStart()
 		{
-			var visualMesh = sonarLink.GetComponentInChildren<MeshFilter>();
-			sensorStartOffset = (visualMesh == null) ? 0f : visualMesh.sharedMesh.bounds.max.y;
+			var visualMesh = _sonarLink.GetComponentInChildren<MeshFilter>();
+			_sensorStartOffset = (visualMesh == null) ? 0f : visualMesh.sharedMesh.bounds.max.y;
 
 			// Create a new sensing area
-			var meshCollider = gameObject.AddComponent<MeshCollider>();
-
-			float sensorMeshOffset = 0;
 			Mesh mesh = null;
+			var sensorMeshOffset = 0f;
 			if (geometry.Equals("sphere"))
 			{
 				mesh = ProceduralMesh.CreateSphere((float)radius);
@@ -64,8 +62,10 @@ namespace SensorDevices
 				sensorMeshOffset = (float)rangeMax / 2;
 			}
 
-			TranslateDetectionArea(mesh, 0.0001f + sensorStartOffset + sensorMeshOffset + (float)rangeMin);
+			var translationOffset = Margin + _sensorStartOffset + sensorMeshOffset; // + (float)rangeMin;
+			TranslateDetectionArea(mesh, translationOffset);
 
+			var meshCollider = gameObject.AddComponent<MeshCollider>();
 			meshCollider.sharedMesh = mesh;
 			meshCollider.convex = true;
 			meshCollider.isTrigger = true;
@@ -89,9 +89,10 @@ namespace SensorDevices
 
 				if (!detectedPoint.Equals(Vector3.zero))
 				{
-					var direction = (GetDetectedPoint() - sensorStartPoint).normalized;
+					var direction = (GetDetectedPoint() - _sensorStartPoint).normalized;
 					var detectedRange = GetDetectedRange();
-					Debug.DrawRay(sensorStartPoint, direction * detectedRange, Color.blue, UpdatePeriod);
+					Debug.DrawRay(_sensorStartPoint, direction * detectedRange, Color.blue, UpdatePeriod);
+					// Debug.Log($"{name} direction={direction} detectedRange{detectedRange}");
 				}
 
 				yield return waitForSeconds;
@@ -111,8 +112,8 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			var sonarPosition = sonarLink.position;
-			var sonarRotation = sonarLink.rotation;
+			var sonarPosition = _sonarLink.position;
+			var sonarRotation = _sonarLink.rotation;
 
 			sonarStamped.Time.SetCurrentTime();
 
@@ -129,13 +130,12 @@ namespace SensorDevices
 			for (var i = 0; i < targetMesh.vertices.Length; i++)
 			{
 				var targetPoint = targetMesh.vertices[i];
-				var distance = (Vector3.zero - targetPoint).magnitude;
+				var distance = targetPoint.magnitude;
 				if (distance < (float)rangeMin)
 				{
 					continue;
 				}
-
-				meshSensorRegionVertices.Add(targetMesh.vertices[i]);
+				_meshSensorRegionVertices.Add(targetPoint);
 			}
 		}
 
@@ -150,54 +150,58 @@ namespace SensorDevices
 			mesh.vertices = vertices;
 		}
 
-		private float sensorTimeElapsed = 0.0f;
+		private int _pingPongIndex = 0;
+		private float _sensorTimeElapsed = 0.0f;
 
 		void OnTriggerStay(Collider other)
 		{
-			if (meshSensorRegionVertices.Count == 0)
+			if (_meshSensorRegionVertices.Count == 0)
 			{
 				return;
 			}
 
-			if ((sensorTimeElapsed += Time.fixedDeltaTime) < UpdatePeriod * 2)
+			if ((_sensorTimeElapsed += Time.fixedDeltaTime) < UpdatePeriod * 2)
 			{
 				return;
 			}
 			else
 			{
-				sensorTimeElapsed = 0.0f;
+				_sensorTimeElapsed = 0.0f;
 			}
 
-			var detectedRange = (float)rangeMax;
+			var detectedRange = float.NegativeInfinity;
 			var contactPoint = Vector3.zero;
 			var contactDirection = Vector3.zero;
-			var localToWorld = sonarLink.localToWorldMatrix;
+			var localToWorld = this.transform.localToWorldMatrix;
 
-			sensorStartPoint.Set(0, -(sensorStartOffset + (float)rangeMin), 0);
-			sensorStartPoint = localToWorld.MultiplyPoint3x4(sensorStartPoint);
+			_sensorStartPoint.Set(0, -(Margin + _sensorStartOffset), 0);
+			_sensorStartPoint = this.transform.localRotation * _sensorStartPoint;
+			_sensorStartPoint += localToWorld.GetPosition();
 
-			// Debug.Log("Hit Points: " + meshSensorRegionVertices.Count);
-			for (var i = pingpongindex; i < meshSensorRegionVertices.Count; i += 2)
+			// Debug.Log("Hit Points: " + _meshSensorRegionVertices.Count);
+			for (var i = _pingPongIndex; i < _meshSensorRegionVertices.Count; i += 2)
 			{
-				var targetPoint = localToWorld.MultiplyPoint3x4(meshSensorRegionVertices[i]);
-				var direction = (targetPoint - sensorStartPoint);
+				var targetPoint = localToWorld.MultiplyPoint3x4(_meshSensorRegionVertices[i]);
+				var direction = targetPoint - _sensorStartPoint;
 
-				if (Physics.Raycast(sensorStartPoint, direction, out var hitInfo, (float)rangeMax))
+				// Debug.DrawLine(_sensorStartPoint, targetPoint, Color.red, 0.5f);
+				if (Physics.Raycast(_sensorStartPoint, direction, out var hitInfo, (float)rangeMax))
 				{
-					// Debug.DrawRay(sensorStartPoint, direction, Color.magenta, 0.01f);
-					// Debug.Log("Hit Point of contact: " + hitInfo.point + " | " + sensorStartPoint.ToString("F4"));
+					// Debug.DrawRay(_sensorStartPoint, direction, Color.magenta, 0.01f);
+					// Debug.Log("Hit Point of contact: " + hitInfo.point + " | " + _sensorStartPoint.ToString("F4"));
+
 					var hitPoint = hitInfo.point;
-					var hitDistance = Vector3.Distance(sensorStartPoint, hitPoint);
+					var hitDistance = Vector3.Distance(_sensorStartPoint, hitPoint);
 					var hitCollider = hitInfo.collider;
 
-					// Debug.Log(hitCollider.name + " <=> " + name + "," + DeviceName);
-					// Debug.Log(hitCollider.transform.parent.name + " <=> " + sonarLink.name + "," + DeviceName);
-
+					// Debug.Log($"Hit Point {hitCollider.name}<->{name} | {hitCollider.transform.parent.name}<->{_sonarLink.name}");
 					// ignore itself
-					if (hitCollider.name.Equals(name) && hitCollider.transform.parent.name.Equals(sonarLink.name))
+					if (hitCollider.name.Equals(name) && hitCollider.transform.parent.name.Equals(_sonarLink.name))
+					{
 						continue;
+					}
 
-					if ((hitDistance < detectedRange) && (hitDistance > (float)rangeMin))
+					if ((hitDistance <= (float)rangeMax) && (hitDistance > (float)rangeMin))
 					{
 						// Debug.Log("Hit Point " + i + " of contacts: " + hitCollider.name + "," + hitInfo.point + "|" + hitDistance.ToString("F4"));
 						detectedRange = hitDistance;
@@ -210,10 +214,10 @@ namespace SensorDevices
 			var sonar = sonarStamped.Sonar;
 			sonar.Range = detectedRange;
 			sonar.Contact.Set(contactPoint);
-			// Debug.Log(DeviceName + ": " + other.name + " |Stay| " + detectedRange.ToString("F5") + " | " + contactPoint);
+			// Debug.Log($"{DeviceName}: |Stay| {detectedRange.ToString("F5")} | {contactPoint}");
 
-			pingpongindex++;
-			pingpongindex %= 2;
+			_pingPongIndex++;
+			_pingPongIndex %= 2;
 		}
 
 		void OnTriggerExit(Collider other)
