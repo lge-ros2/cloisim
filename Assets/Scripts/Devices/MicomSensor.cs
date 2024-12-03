@@ -17,8 +17,8 @@ namespace SensorDevices
 		private MotorControl _motorControl = null;
 		private SensorDevices.Battery battery = null;
 		private SensorDevices.IMU _imuSensor = null;
-		private List<SensorDevices.Sonar> ussSensors = new List<SensorDevices.Sonar>();
-		private List<SensorDevices.Sonar> irSensors = new List<SensorDevices.Sonar>();
+		private List<SensorDevices.Sonar> _ussSensors = new List<SensorDevices.Sonar>();
+		private List<SensorDevices.Sonar> _irSensors = new List<SensorDevices.Sonar>();
 		// private List<SensorDevices.Magnet> magnetSensors = null;
 		private List<SensorDevices.Contact> _bumperSensors = new List<SensorDevices.Contact>();
 
@@ -48,10 +48,11 @@ namespace SensorDevices
 			var imuList = gameObject.GetComponentsInChildren<SensorDevices.IMU>();
 			foreach (var imu in imuList)
 			{
-				if (imu.DeviceName.Contains("::" + sensorName + "::") ||
+				if (imu.DeviceName.Contains($"::{sensorName}::") || // Model name
+					imu.DeviceName.EndsWith($"::{sensorName}") || // Link name
 					imu.name.Equals(sensorName))
 				{
-					Debug.Log(imu.DeviceName + " attached to Micom");
+					Debug.Log($"IMU: {imu.DeviceName} attached to Micom");
 					_imuSensor = imu;
 					break;
 				}
@@ -60,38 +61,46 @@ namespace SensorDevices
 
 		public void SetUSS(in List<string> ussList)
 		{
-			var modelList = GetComponentsInChildren<SDF.Helper.Model>();
-			foreach (var uss in ussList)
+			var sonarList = GetComponentsInChildren<SensorDevices.Sonar>();
+
+			foreach (var ussName in ussList)
 			{
-				foreach (var model in modelList)
+				foreach (var sonar in sonarList)
 				{
-					if (model.name.Equals(uss))
+					if (sonar.DeviceName.Contains($"::{ussName}::") || // Model name
+						sonar.DeviceName.EndsWith($"::{ussName}") || // Link name
+						sonar.name.Equals(ussName))
 					{
-						var sonarSensor = model.GetComponentInChildren<SensorDevices.Sonar>();
-						ussSensors.Add(sonarSensor);
-						// Debug.Log("ussSensor found : " + sonarSensor.name);
+						Debug.Log($"USS: {sonar.DeviceName} attached to Micom");
+						_ussSensors.Add(sonar);
+						break;
 					}
 				}
 			}
-			micomSensorData.uss.Distances = new double[ussList.Count];
+
+			micomSensorData.uss.Distances = new double[_ussSensors.Count];
 		}
 
 		public void SetIRSensor(in List<string> irList)
 		{
-			var modelList = GetComponentsInChildren<SDF.Helper.Model>();
-			foreach (var ir in irList)
+			var sonarList = GetComponentsInChildren<SensorDevices.Sonar>();
+
+			foreach (var irName in irList)
 			{
-				foreach (var model in modelList)
+				foreach (var sonar in sonarList)
 				{
-					if (model.name.Equals(ir))
+					if (sonar.DeviceName.Contains($"::{irName}::") || // Model name
+						sonar.DeviceName.EndsWith($"::{irName}") || // Link name
+						sonar.name.Equals(irName))
 					{
-						var sonarSensor = model.GetComponentInChildren<SensorDevices.Sonar>();
-						irSensors.Add(sonarSensor);
-						// Debug.Log("irSensor found : " + sonarSensor.name);
+						Debug.Log($"IR: {sonar.DeviceName} attached to Micom");
+						_irSensors.Add(sonar);
+						break;
 					}
 				}
 			}
-			micomSensorData.ir.Distances = new double[irList.Count];
+
+			micomSensorData.ir.Distances = new double[_irSensors.Count];
 		}
 
 		public void SetMagnet(in List<string> magnetList)
@@ -106,24 +115,24 @@ namespace SensorDevices
 
 		public void SetBumper(in List<string> bumperList)
 		{
-			var contactsInChild = GetComponentsInChildren<SensorDevices.Contact>();
+			var contactList = GetComponentsInChildren<SensorDevices.Contact>();
 
-			var bumperCount = 0;
-			foreach (var bumper in bumperList)
+			foreach (var bumperName in bumperList)
 			{
-				foreach (var contact in contactsInChild)
+				foreach (var contact in contactList)
 				{
-					if (contact.name.Equals(bumper))
+					if (contact.DeviceName.Contains($"::{bumperName}::") || // Model name
+						contact.DeviceName.EndsWith($"::{bumperName}") || // Link name
+						contact.name.Equals(bumperName))
 					{
+						Debug.Log($"Bumper: {contact.DeviceName} attached to Micom");
 						_bumperSensors.Add(contact);
-						bumperCount++;
-						Debug.Log("Found " + contact.name);
 						break;
 					}
 				}
 			}
 
-			micomSensorData.bumper.Bumpeds = new bool[bumperCount];
+			micomSensorData.bumper.Bumpeds = new bool[_bumperSensors.Count];
 		}
 
 		public void SetBattery(in SensorDevices.Battery targetBattery)
@@ -146,15 +155,20 @@ namespace SensorDevices
 		{
 			micomSensorData = new messages.Micom();
 			micomSensorData.Time = new messages.Time();
+			micomSensorData.Odom = null;
+			micomSensorData.uss = new messages.Micom.Uss();
+			micomSensorData.ir = new messages.Micom.Ir();
+			micomSensorData.bumper = new messages.Micom.Bumper();
+		}
+
+		private void InitializeOdometryMessage()
+		{
 			micomSensorData.Odom = new messages.Micom.Odometry();
 			micomSensorData.Odom.AngularVelocity = new messages.Micom.Odometry.Wheel();
 			micomSensorData.Odom.LinearVelocity = new messages.Micom.Odometry.Wheel();
 			micomSensorData.Odom.Pose = new messages.Vector3d();
 			micomSensorData.Odom.TwistLinear = new messages.Vector3d();
 			micomSensorData.Odom.TwistAngular = new messages.Vector3d();
-			micomSensorData.uss = new messages.Micom.Uss();
-			micomSensorData.ir = new messages.Micom.Ir();
-			micomSensorData.bumper = new messages.Micom.Bumper();
 		}
 
 		protected override void GenerateMessage()
@@ -179,6 +193,11 @@ namespace SensorDevices
 
 			if (_motorControl != null)
 			{
+				if (micomSensorData.Odom == null)
+				{
+					InitializeOdometryMessage();
+				}
+
 				if (_motorControl.Update(micomSensorData.Odom, deltaTime, _imuSensor) == false)
 				{
 					Debug.LogWarning("Update failed in MotorControl");
@@ -215,9 +234,9 @@ namespace SensorDevices
 				return;
 			}
 
-			for (var index = 0; index < ussSensors.Count; index++)
+			for (var index = 0; index < _ussSensors.Count; index++)
 			{
-				micomSensorData.uss.Distances[index] = ussSensors[index].GetDetectedRange();
+				micomSensorData.uss.Distances[index] = _ussSensors[index].GetDetectedRange();
 			}
 		}
 
@@ -228,9 +247,9 @@ namespace SensorDevices
 				return;
 			}
 
-			for (var index = 0; index < irSensors.Count; index++)
+			for (var index = 0; index < _irSensors.Count; index++)
 			{
-				micomSensorData.ir.Distances[index] = irSensors[index].GetDetectedRange();
+				micomSensorData.ir.Distances[index] = _irSensors[index].GetDetectedRange();
 			}
 		}
 

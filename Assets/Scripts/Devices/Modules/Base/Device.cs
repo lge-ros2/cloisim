@@ -20,11 +20,15 @@ public abstract class Device : MonoBehaviour
 
 	private SDF.Plugin pluginParameters = null;
 
+	[SerializeField]
 	private string deviceName = string.Empty;
 
+	[SerializeField]
 	private float _updateRate = 1;
 
 	private bool debuggingOn = true;
+
+	[SerializeField]
 	private bool visualize = true;
 
 	private float transportingTimeSeconds = 0;
