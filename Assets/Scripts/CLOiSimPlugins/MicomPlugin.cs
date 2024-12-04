@@ -168,6 +168,12 @@ public class MicomPlugin : CLOiSimPlugin
 		}
 		_log.AppendLine($"AutoStart: {autostart}");
 
+		var headJoint = GetPluginParameters().GetValue<string>($"{parameterPrefix}/head/joint");
+		if (!string.IsNullOrEmpty(headJoint))
+		{
+			(_motorControl as SelfBalancedDrive).SetHeadJoint(headJoint);
+		}
+
 		var hipJointLeft = GetPluginParameters().GetValue<string>($"{parameterPrefix}/hip/joint[@type='left']");
 		var hipJointRight = GetPluginParameters().GetValue<string>($"{parameterPrefix}/hip/joint[@type='right']");
 		if (!string.IsNullOrEmpty(hipJointLeft) && !string.IsNullOrEmpty(hipJointRight))
@@ -180,12 +186,6 @@ public class MicomPlugin : CLOiSimPlugin
 		if (!string.IsNullOrEmpty(legJointLeft) && !string.IsNullOrEmpty(legJointRight))
 		{
 			(_motorControl as SelfBalancedDrive).SetLegJoints(legJointLeft, legJointRight);
-		}
-
-		var headJoint = GetPluginParameters().GetValue<string>($"{parameterPrefix}/head/joint");
-		if (!string.IsNullOrEmpty(headJoint))
-		{
-			(_motorControl as SelfBalancedDrive).SetHeadJoint(headJoint);
 		}
 
 		var bodyJoint = GetPluginParameters().GetValue<string>($"{parameterPrefix}/body/joint");
