@@ -368,11 +368,6 @@ public static partial class MeshLoader
 		return meshMatList;
 	}
 
-	private static Vector3 ToUnityScale(in Vector3 value)
-	{
-		return new Vector3(value.z,	value.x, value.y);
-	}
-
 	private static GameObject ToUnityMeshObject(
 		this Assimp.Node node,
 		in MeshMaterialList meshMatList,
@@ -405,14 +400,9 @@ public static partial class MeshLoader
 
 		// Convert Assimp transfrom into Unity transform
 		var nodeTransformMatrix = node.Transform.ToUnity();
-
 		nodeObject.transform.localPosition = nodeTransformMatrix.GetPosition();
 		nodeObject.transform.localRotation = nodeTransformMatrix.rotation;
-		nodeObject.transform.localScale = ToUnityScale(nodeTransformMatrix.lossyScale);
-
-		// Debug.Log("ToUnityMeshObject : " + node.Name + ", " + nodeTransformMatrix.GetPosition() );
-		// Debug.Log("ToUnityMeshObject : " + node.Name + ", " + nodeTransformMatrix.rotation );
-		// Debug.Log("ToUnityMeshObject : " + node.Name + ", " + nodeTransformMatrix.lossyScale );
+		nodeObject.transform.localScale = nodeTransformMatrix.lossyScale;
 
 		doFlip = (nodeObject.transform.localScale.x < 0 ||
 				  nodeObject.transform.localScale.y < 0 ||
