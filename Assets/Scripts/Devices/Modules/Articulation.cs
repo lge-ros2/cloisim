@@ -199,6 +199,14 @@ public class Articulation
 		}
 	}
 
+	public void SetJointFriction(in float friction)
+	{
+		if (_jointBody != null)
+		{
+			_jointBody.jointFriction = friction;
+		}
+	}
+
 	/// <returns>radian for angular and meter for linear</param>
 	public float GetDriveTarget(in int targetDegree = 0)
 	{

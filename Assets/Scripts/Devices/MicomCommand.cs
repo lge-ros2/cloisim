@@ -218,6 +218,8 @@ namespace SensorDevices
 #if UNITY_EDITOR
 		#region Constant for SelfBalancedDrive
 		private const float HeadsetRotationUnit = 1f; // deg
+		private const float RollRotationUnitKeyboard = 0.01f; // deg
+		private const float HeightMovementUnitKeyboard = 0.25f; // deg
 		#endregion
 
 		void LateUpdate()
@@ -263,11 +265,11 @@ namespace SensorDevices
 
 					if (Input.GetKey(KeyCode.UpArrow))
 					{
-						balancedDrive.HeightTarget -= HeightMovementUnit;
+						balancedDrive.HeightTarget -= HeightMovementUnitKeyboard;
 					}
 					else if (Input.GetKey(KeyCode.DownArrow))
 					{
-						balancedDrive.HeightTarget += HeightMovementUnit;
+						balancedDrive.HeightTarget += HeightMovementUnitKeyboard;
 					}
 					// Debug.Log($"HeightTarget={balancedDrive.HeightTarget}");
 				}

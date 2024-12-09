@@ -168,6 +168,7 @@ namespace SelfBalanceControl
 			_uEQ = _uLQ - (_nominalModel.SxB).Inverse * _nominalModel.S * _f;
 
 			// UnityEngine.Debug.Log($"states: {states.ToString("F4")} | references: {references.ToString("F4")} | Delta: {delta.ToString("F4")} | K: {_nominalModel.K.ToString("F4")} | uLQ({_uLQ.ToString("F4")})");
+			// UnityEngine.Debug.Log($"Delta: {delta.ToString("F4")}");
 			// UnityEngine.Debug.Log($"states: {states.ToString("F4")} | references: {references.ToString("F4")} | Delta: {delta.ToString("F4")} | uLQ({_uLQ.ToString("F4")})");
 			// UnityEngine.Debug.Log($"K: {_nominalModel.K} | f: {_f} | uLQ({_uLQ}) | uEQ({_uEQ})");
 			// UnityEngine.Debug.Log($"uLQ({_uLQ}) | K: {_nominalModel.K} | Delta: {delta}");
