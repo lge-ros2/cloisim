@@ -200,18 +200,18 @@ public class SelfBalancedDrive : MotorControl
 		ChangeDriveType(Location.BODY, ArticulationDriveType.Target);
 	}
 
-	public void SetHipJoints(in string hipJointLeft, in string hipJointright)
+	public void SetHipJoints(in string targetLeft, in string targetRight)
 	{
-		AttachMotor(Location.HIP_LEFT, hipJointLeft);
-		AttachMotor(Location.HIP_RIGHT, hipJointright);
+		AttachMotor(Location.HIP_LEFT, targetLeft);
+		AttachMotor(Location.HIP_RIGHT, targetRight);
 		ChangeDriveType(Location.HIP_LEFT, ArticulationDriveType.Target);
 		ChangeDriveType(Location.HIP_RIGHT, ArticulationDriveType.Target);
 	}
 
-	public void SetLegJoints(in string legJointLeft, in string legJointright)
+	public void SetLegJoints(in string targetLeft, in string targetRight)
 	{
-		AttachMotor(Location.LEG_LEFT, legJointLeft);
-		AttachMotor(Location.LEG_RIGHT, legJointright);
+		AttachMotor(Location.LEG_LEFT, targetLeft);
+		AttachMotor(Location.LEG_RIGHT, targetRight);
 		ChangeDriveType(Location.LEG_LEFT, ArticulationDriveType.Target);
 		ChangeDriveType(Location.LEG_RIGHT, ArticulationDriveType.Target);
 	}
@@ -224,8 +224,9 @@ public class SelfBalancedDrive : MotorControl
 
 	public override void Drive(in float linearVelocity, in float angularVelocity)
 	{
+		const float BoostAngularSpeed = 3.0f;
 		_commandTwistLinear = linearVelocity;
-		_commandTwistAngular = SDF2Unity.CurveOrientationAngle(angularVelocity);
+		_commandTwistAngular = SDF2Unity.CurveOrientationAngle(angularVelocity) * BoostAngularSpeed;
 
 		if (Math.Abs(_commandTwistLinear) < float.Epsilon || Math.Abs(_commandTwistAngular) < float.Epsilon)
 		{
@@ -290,16 +291,18 @@ public class SelfBalancedDrive : MotorControl
 		// Debug.LogWarning("Adjusting head by pitch");
 	}
 
-	private void ControlHipAndLeg(in double currentRoll)
+	private double adjustBody = 1.84;
+
+	private VectorXd ControlHipAndLeg(in double currentPitch)
 	{
-		const float BodyUpperGain = 0.9f;
-		const float BodyLowerGain = 1.4f;
+		var hipTarget = _commandTargetHeight * 0.5;
 
-		_commandTargetBody = _commandTargetHeight * ((_commandTargetHeight >= 0) ? BodyUpperGain : BodyLowerGain);
-		// Debug.Log($"_commandTargetHeight: {_commandTargetHeight} _commandTargetBody: {_commandTargetBody}");
+		// Debug.Log($"{currentPitch} {hipTarget} | {hipTarget * 0.5} | {hipTarget * 0.8} | {hipTarget * 1.1} | {hipTarget * 1.3} | {hipTarget * 1.5} ");
+		_commandHipTarget.x = hipTarget;
+		_commandHipTarget.y = hipTarget;
 
-		_commandHipTarget.x = _commandTargetHeight;
-		_commandHipTarget.y = _commandTargetHeight;
+		_commandTargetBody = hipTarget * adjustBody;
+		// Debug.Log($"{hipTarget} {_commandTargetBody} ");
 
 		_commandLegTarget.x = _commandTargetHeight;
 		_commandLegTarget.y = _commandTargetHeight;
@@ -309,12 +312,19 @@ public class SelfBalancedDrive : MotorControl
 
 		_commandLegTarget.x += -_commandTargetRoll;
 		_commandLegTarget.y += _commandTargetRoll;
+
+		return new VectorXd(new double[] {
+				_commandTargetHeadset,
+				_commandTargetBody,
+				_commandHipTarget.x, _commandHipTarget.y,
+				_commandLegTarget.x, _commandLegTarget.y
+			});
 	}
 
 	private float _smoothControlTime = 0;
 	private double _prevCommandTargetRollByDrive = 0;
 
-	private void ControlSmoothRollTarget(in float duration)
+	private void ControlSmoothRollTarget()
 	{
 		const float smoothTimeDiff = 0.00005f;
 		// Debug.Log($"_commandTwistLinear: {_commandTwistLinear} _kinematics.OdomTranslationalVelocity: {_kinematics.OdomTranslationalVelocity}");
@@ -333,10 +343,11 @@ public class SelfBalancedDrive : MotorControl
 		}
 	}
 
-	private void RestoreHipAndLegZero(in float duration)
+	private void RestoreHipAndLegZero()
 	{
-		_commandTargetRoll = Mathf.Lerp((float)_commandTargetRoll, 0, duration);
-		_commandTargetHeight = Mathf.Lerp((float)_commandTargetHeight, 0, duration);
+		const float smoothLerpTime = 0.008f;
+		_commandTargetRoll = Mathf.Lerp((float)_commandTargetRoll, 0, smoothLerpTime);
+		_commandTargetHeight = Mathf.Lerp((float)_commandTargetHeight, 0, smoothLerpTime);
 	}
 
 	private Vector3 GetOrientation(SensorDevices.IMU imuSensor)
@@ -350,7 +361,7 @@ public class SelfBalancedDrive : MotorControl
 
 	private void SetWheelEfforts(in Vector2d efforts)
 	{
-		// Debug.Log($"Effort:  {efforts}");
+		// Debug.Log($"Effort: {efforts}");
 		_motorList[Location.FRONT_WHEEL_LEFT]?.SetJointForce((float)Unity2SDF.Direction.Curve(efforts.x));
 		_motorList[Location.FRONT_WHEEL_RIGHT]?.SetJointForce((float)Unity2SDF.Direction.Curve(efforts.y));
 	}
@@ -376,6 +387,9 @@ public class SelfBalancedDrive : MotorControl
 			_motorList[Location.LEG_LEFT]?.Drive(targetPosition: (float)targets[4]);
 			_motorList[Location.LEG_RIGHT]?.Drive(targetPosition: (float)targets[5]);
 		}
+
+		_motorList[Location.FRONT_WHEEL_LEFT]?.Drive(targetPosition: (float)Unity2SDF.Direction.Curve(targets[2]));
+		_motorList[Location.FRONT_WHEEL_RIGHT]?.Drive(targetPosition: (float)Unity2SDF.Direction.Curve(targets[3]));
 	}
 
 	private VectorXd GetTargetReferences(in float duration)
@@ -462,6 +476,20 @@ public class SelfBalancedDrive : MotorControl
 			_resetPose= false;
 		}
 
+		#region Body Pose Control
+		if (Math.Abs(_commandTargetRollByDrive) > float.Epsilon)
+		{
+			ControlSmoothRollTarget();
+		}
+		else if ((_doControlRollHeightByCommandTimeout -= duration) < float.Epsilon)
+		{
+			RestoreHipAndLegZero();
+		}
+
+		var jointTargets = ControlHipAndLeg(pitch);
+		#endregion
+
+		#region Self-Balanced Control
 		var wipStates = _kinematics.ComputeStates(wheelVelocityLeft, wheelVelocityRight, yaw, pitch, roll, duration);
 
 		if (_doUpdatePitchProfiler)
@@ -489,32 +517,15 @@ public class SelfBalancedDrive : MotorControl
 			}
 		}
 
-		if (Math.Abs(_commandTargetRollByDrive) > float.Epsilon)
-		{
-			ControlSmoothRollTarget(duration);
-		}
-		else if ((_doControlRollHeightByCommandTimeout -= duration) < float.Epsilon)
-		{
-			RestoreHipAndLegZero(duration);
-		}
-
-		ControlHipAndLeg(roll);
-
 		if ((_doControlHeadsetByCommandTimeout -= duration) < float.Epsilon)
 		{
 			AdjustHeadsetByPitch(wipStates[3], duration);
 		}
 
-		var wipEfforts = _smc.ComputeControl(wipStates, wipReferences, duration);
-
-		SetWheelEfforts(wipEfforts);
-
-		var jointTargets = new VectorXd(new double[] {
-				_commandTargetHeadset,
-				_commandTargetBody,
-				_commandHipTarget.x, _commandHipTarget.y,
-				_commandLegTarget.x, _commandLegTarget.y,
-			});
 		SetJoints(jointTargets);
+
+		var wipEfforts = _smc.ComputeControl(wipStates, wipReferences, duration);
+		SetWheelEfforts(wipEfforts);
+		#endregion
 	}
 }

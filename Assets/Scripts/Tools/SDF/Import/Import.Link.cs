@@ -15,7 +15,7 @@ namespace SDF
 		{
 			private static readonly float MinimumInertiaTensor = 1e-6f;
 
-			private static UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia inertia)
+			private static UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia inertia, in UE.ArticulationBody tempArticulationBodyForCalculation)
 			{
 				/**
 				 *  Inertia Tensor
@@ -27,13 +27,6 @@ namespace SDF
 				var inertiaMomentum = UE.Pose.identity;
 				var inertiaVector = SDF2Unity.Scalar((float)inertia?.ixx, (float)inertia?.iyy, (float)inertia?.izz);
 
-				/*
-				 *  Unity’s ArticulationBody does not directly expose off-diagonal components of the inertia tensor(Ixy, Ixz, Iyz).
-				 *  If these are needed, you might have to approximate them by adjusting inertiaTensorRotation,
-				 *  which changes the orientation of the inertia tensor.
-				 */
-				// var inertiaRotationVector = SDF2Unity.Scalar((float)inertia?.ixy, (float)inertia?.iyz, (float)inertia?.ixz);
-
 				for (var index = 0; index < 3; index++)
 				{
 					if (inertiaVector[index] <= MinimumInertiaTensor)
@@ -42,8 +35,22 @@ namespace SDF
 					}
 				}
 
+				/*
+				 *  Unity’s ArticulationBody does not directly expose off-diagonal components of the inertia tensor(Ixy, Ixz, Iyz).
+				 *  If these are needed, you might have to approximate them by adjusting inertiaTensorRotation,
+				 *  which changes the orientation of the inertia tensor.
+				 */
+				// var inertiaRotationVector = SDF2Unity.Scalar((float)inertia?.ixy, (float)inertia?.iyz, (float)inertia?.ixz);
+
 				inertiaMomentum.position = inertiaVector;
 				// inertiaMomentum.rotation = UE.Quaternion.Euler(inertiaRotationVector.x, inertiaRotationVector.y, inertiaRotationVector.z);
+
+				#region Temporary Code for intertia tensor rotation
+				tempArticulationBodyForCalculation.automaticInertiaTensor = true;
+				// UE.Debug.LogWarning($"{tempArticulationBodyForCalculation.name} Inertia Tensor: {tempArticulationBodyForCalculation.inertiaTensor}, {tempArticulationBodyForCalculation.inertiaTensorRotation.eulerAngles}");
+				inertiaMomentum.rotation = tempArticulationBodyForCalculation.inertiaTensorRotation;
+				tempArticulationBodyForCalculation.automaticInertiaTensor = false;
+				#endregion
 
 				// Debug.Log("Inertia Tensor: " + inertiaMomentum.position + ", " + inertiaMomentum.rotation.eulerAngles);
 				return inertiaMomentum;
@@ -175,7 +182,7 @@ namespace SDF
 				articulationBody.ResetInertiaTensor();
 				if (inertial?.inertia != null)
 				{
-					var momentum = GetInertiaTensor(inertial?.inertia);
+					var momentum = GetInertiaTensor(inertial?.inertia, articulationBody);
 					articulationBody.inertiaTensor = momentum.position;
 					articulationBody.inertiaTensorRotation = momentum.rotation;
 					articulationBody.automaticInertiaTensor = false;
