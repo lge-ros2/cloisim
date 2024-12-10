@@ -291,14 +291,18 @@ public class SelfBalancedDrive : MotorControl
 		// Debug.LogWarning("Adjusting head by pitch");
 	}
 
-	private void ControlHipAndLeg()
+	private double adjustBody = 1.84;
+
+	private VectorXd ControlHipAndLeg(in double currentPitch)
 	{
 		var hipTarget = _commandTargetHeight * 0.5;
-	
+
+		// Debug.Log($"{currentPitch} {hipTarget} | {hipTarget * 0.5} | {hipTarget * 0.8} | {hipTarget * 1.1} | {hipTarget * 1.3} | {hipTarget * 1.5} ");
 		_commandHipTarget.x = hipTarget;
 		_commandHipTarget.y = hipTarget;
 
-		_commandTargetBody = _commandTargetHeight;
+		_commandTargetBody = hipTarget * adjustBody;
+		// Debug.Log($"{hipTarget} {_commandTargetBody} ");
 
 		_commandLegTarget.x = _commandTargetHeight;
 		_commandLegTarget.y = _commandTargetHeight;
@@ -308,12 +312,19 @@ public class SelfBalancedDrive : MotorControl
 
 		_commandLegTarget.x += -_commandTargetRoll;
 		_commandLegTarget.y += _commandTargetRoll;
+
+		return new VectorXd(new double[] {
+				_commandTargetHeadset,
+				_commandTargetBody,
+				_commandHipTarget.x, _commandHipTarget.y,
+				_commandLegTarget.x, _commandLegTarget.y
+			});
 	}
 
 	private float _smoothControlTime = 0;
 	private double _prevCommandTargetRollByDrive = 0;
 
-	private void ControlSmoothRollTarget(in float duration)
+	private void ControlSmoothRollTarget()
 	{
 		const float smoothTimeDiff = 0.00005f;
 		// Debug.Log($"_commandTwistLinear: {_commandTwistLinear} _kinematics.OdomTranslationalVelocity: {_kinematics.OdomTranslationalVelocity}");
@@ -332,10 +343,11 @@ public class SelfBalancedDrive : MotorControl
 		}
 	}
 
-	private void RestoreHipAndLegZero(in float duration)
+	private void RestoreHipAndLegZero()
 	{
-		_commandTargetRoll = Mathf.Lerp((float)_commandTargetRoll, 0, duration);
-		_commandTargetHeight = Mathf.Lerp((float)_commandTargetHeight, 0, duration);
+		const float smoothLerpTime = 0.008f;
+		_commandTargetRoll = Mathf.Lerp((float)_commandTargetRoll, 0, smoothLerpTime);
+		_commandTargetHeight = Mathf.Lerp((float)_commandTargetHeight, 0, smoothLerpTime);
 	}
 
 	private Vector3 GetOrientation(SensorDevices.IMU imuSensor)
@@ -467,14 +479,14 @@ public class SelfBalancedDrive : MotorControl
 		#region Body Pose Control
 		if (Math.Abs(_commandTargetRollByDrive) > float.Epsilon)
 		{
-			ControlSmoothRollTarget(duration);
+			ControlSmoothRollTarget();
 		}
 		else if ((_doControlRollHeightByCommandTimeout -= duration) < float.Epsilon)
 		{
-			RestoreHipAndLegZero(duration);
+			RestoreHipAndLegZero();
 		}
 
-		ControlHipAndLeg();
+		var jointTargets = ControlHipAndLeg(pitch);
 		#endregion
 
 		#region Self-Balanced Control
@@ -510,12 +522,6 @@ public class SelfBalancedDrive : MotorControl
 			AdjustHeadsetByPitch(wipStates[3], duration);
 		}
 
-		var jointTargets = new VectorXd(new double[] {
-				_commandTargetHeadset,
-				_commandTargetBody,
-				_commandHipTarget.x, _commandHipTarget.y,
-				_commandLegTarget.x, _commandLegTarget.y
-			});
 		SetJoints(jointTargets);
 
 		var wipEfforts = _smc.ComputeControl(wipStates, wipReferences, duration);
