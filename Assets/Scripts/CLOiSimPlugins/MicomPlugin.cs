@@ -239,6 +239,12 @@ public class MicomPlugin : CLOiSimPlugin
 			(_motorControl as SelfBalancedDrive).SetBodyJoint(bodyJoint);
 		}
 
+		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/body/rotation/hip_adjust"))
+		{
+			var adjust = GetPluginParameters().GetValue<double>($"{parameterPrefix}/body/rotation/hip_adjust", 1.88);
+			(_motorControl as SelfBalancedDrive).AdjustBodyRotation = adjust;
+		}
+
 		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc"))
 		{
 			if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc/param"))
