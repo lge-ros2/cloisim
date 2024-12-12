@@ -23,6 +23,7 @@ public class SelfBalancedDrive : MotorControl
 
 	#region Body Control
 	private double _commandTargetBody = 0; // in deg
+	private double _adjustBodyRotation = 1.88;
 	#endregion
 
 	#region Roll/Height Control
@@ -105,6 +106,12 @@ public class SelfBalancedDrive : MotorControl
 	{
 		get => _onBalancing;
 		set => _onBalancing = value;
+	}
+
+	public double AdjustBodyRotation
+	{
+		get => _adjustBodyRotation;
+		set => _adjustBodyRotation = value;
 	}
 
 	public void DoResetPose()
@@ -291,8 +298,6 @@ public class SelfBalancedDrive : MotorControl
 		// Debug.LogWarning("Adjusting head by pitch");
 	}
 
-	private double adjustBody = 1.84;
-
 	private VectorXd ControlHipAndLeg(in double currentPitch)
 	{
 		var hipTarget = _commandTargetHeight * 0.5;
@@ -301,7 +306,7 @@ public class SelfBalancedDrive : MotorControl
 		_commandHipTarget.x = hipTarget;
 		_commandHipTarget.y = hipTarget;
 
-		_commandTargetBody = hipTarget * adjustBody;
+		_commandTargetBody = hipTarget * _adjustBodyRotation;
 		// Debug.Log($"{hipTarget} {_commandTargetBody} ");
 
 		_commandLegTarget.x = _commandTargetHeight;

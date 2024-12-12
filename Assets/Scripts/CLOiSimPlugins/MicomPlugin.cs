@@ -10,6 +10,7 @@ using System.Linq;
 using System;
 using Any = cloisim.msgs.Any;
 using UnityEngine;
+using UnityEngine.Video;
 
 public class MicomPlugin : CLOiSimPlugin
 {
@@ -64,7 +65,6 @@ public class MicomPlugin : CLOiSimPlugin
 
 		Debug.Log(_log.ToString());
 	}
-
 
 	protected override void OnReset()
 	{
@@ -131,6 +131,51 @@ public class MicomPlugin : CLOiSimPlugin
 		{
 			_micomSensor.SetIMU(targetImuSensorName);
 		}
+
+		if (GetPluginParameters().IsValidNode("display"))
+		{
+			SetDisplay();
+		}
+	}
+
+	private void SetDisplay()
+	{
+		const float meshScalingFactor = 1000f;
+		var targetVisual = GetPluginParameters().GetValue<string>("display/target/visual", string.Empty);
+
+		var visualHelpers = GetComponentsInChildren<SDF.Helper.Visual>();
+		foreach (var visualHelper in visualHelpers)
+		{
+			if (visualHelper.name.Equals(targetVisual))
+			{
+				var meshFilter = visualHelper.GetComponentInChildren<MeshFilter>();
+				var mesh = meshFilter.sharedMesh;
+				var displaySize = mesh.bounds.size;
+				var videoWidth = (int)(displaySize.x * meshScalingFactor);
+				var videoHeight = (int)(displaySize.z * meshScalingFactor);
+
+				var renderTexture = new RenderTexture(videoWidth, videoHeight, 0);
+				renderTexture.name = "VideoTexture";
+
+				var meshRenderer = visualHelper.GetComponentInChildren<MeshRenderer>();
+				var shader = Shader.Find("Custom/Unlit/VideoTexture");
+				meshRenderer.material = new Material(shader);
+				meshRenderer.sharedMaterial.SetTexture("_MainTex", renderTexture);
+
+				var sourceUri = GetPluginParameters().GetValue<string>("display/source/uri", string.Empty);
+				var videoPlayer = visualHelper.gameObject.AddComponent<VideoPlayer>();
+				videoPlayer.audioOutputMode = VideoAudioOutputMode.None;
+				videoPlayer.isLooping = true;
+				videoPlayer.source = VideoSource.Url;
+				videoPlayer.playOnAwake = true;
+				videoPlayer.waitForFirstFrame = true;
+				videoPlayer.url = sourceUri;
+				videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+				videoPlayer.targetTexture = renderTexture;
+				videoPlayer.aspectRatio = VideoAspectRatio.Stretch;
+				break;
+			}
+		}
 	}
 
 	private void SetSelfBalancedWheel(in string parameterPrefix)
@@ -192,6 +237,12 @@ public class MicomPlugin : CLOiSimPlugin
 		if (!string.IsNullOrEmpty(bodyJoint))
 		{
 			(_motorControl as SelfBalancedDrive).SetBodyJoint(bodyJoint);
+		}
+
+		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/body/rotation/hip_adjust"))
+		{
+			var adjust = GetPluginParameters().GetValue<double>($"{parameterPrefix}/body/rotation/hip_adjust", 1.88);
+			(_motorControl as SelfBalancedDrive).AdjustBodyRotation = adjust;
 		}
 
 		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc"))
