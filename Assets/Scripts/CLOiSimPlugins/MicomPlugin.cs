@@ -21,6 +21,8 @@ public class MicomPlugin : CLOiSimPlugin
 	private SDF.Helper.Link[] _linkHelperInChildren = null;
 	private StringBuilder _log = new StringBuilder();
 
+	private List<string> _displaySourceUris = new List<string>();
+
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.MICOM;
@@ -143,6 +145,20 @@ public class MicomPlugin : CLOiSimPlugin
 		const float meshScalingFactor = 1000f;
 		var targetVisual = GetPluginParameters().GetValue<string>("display/target/visual", string.Empty);
 
+		if (string.IsNullOrEmpty(targetVisual))
+		{
+			_log.AppendLine("Failed to set display - Empty target visual for display");
+			return;
+		}
+
+		if (GetPluginParameters().GetValues<string>("display/source/uri", out _displaySourceUris) == false)
+		{
+			_log.AppendLine("Failed to set display - Empty display source uri");
+			return;
+		}
+
+		var defaultSourceUri = GetPluginParameters().GetValue<string>("display/source/uri[@default='true']", _displaySourceUris[0]);
+
 		var visualHelpers = GetComponentsInChildren<SDF.Helper.Visual>();
 		foreach (var visualHelper in visualHelpers)
 		{
@@ -162,14 +178,13 @@ public class MicomPlugin : CLOiSimPlugin
 				meshRenderer.material = new Material(shader);
 				meshRenderer.sharedMaterial.SetTexture("_MainTex", renderTexture);
 
-				var sourceUri = GetPluginParameters().GetValue<string>("display/source/uri", string.Empty);
 				var videoPlayer = visualHelper.gameObject.AddComponent<VideoPlayer>();
 				videoPlayer.audioOutputMode = VideoAudioOutputMode.None;
 				videoPlayer.isLooping = true;
 				videoPlayer.source = VideoSource.Url;
 				videoPlayer.playOnAwake = true;
 				videoPlayer.waitForFirstFrame = true;
-				videoPlayer.url = sourceUri;
+				videoPlayer.url = defaultSourceUri;
 				videoPlayer.renderMode = VideoRenderMode.RenderTexture;
 				videoPlayer.targetTexture = renderTexture;
 				videoPlayer.aspectRatio = VideoAspectRatio.Stretch;
