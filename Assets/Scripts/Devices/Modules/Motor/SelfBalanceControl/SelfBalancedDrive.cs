@@ -232,8 +232,9 @@ public class SelfBalancedDrive : MotorControl
 	public override void Drive(in float linearVelocity, in float angularVelocity)
 	{
 		const float BoostAngularSpeed = 3.0f;
+
 		_commandTwistLinear = linearVelocity;
-		_commandTwistAngular = SDF2Unity.CurveOrientationAngle(angularVelocity) * BoostAngularSpeed;
+		_commandTwistAngular = SDF2Unity.CurveOrientationAngle(angularVelocity);
 
 		if (Math.Abs(_commandTwistLinear) < float.Epsilon || Math.Abs(_commandTwistAngular) < float.Epsilon)
 		{
@@ -243,11 +244,13 @@ public class SelfBalancedDrive : MotorControl
 
 		if (Math.Abs(_commandTwistLinear) > float.Epsilon && Math.Abs(_commandTwistAngular) > float.Epsilon)
 		{
-			var ratio = _commandTwistAngular / _commandTwistLinear;
-			_commandTargetRollByDrive = ((ratio > 0) ? RollLimit.min : RollLimit.max) * -Math.Abs(ratio);
+			var ratio = Mathf.Clamp01(Mathf.Abs((float)(_commandTwistAngular/ _commandTwistLinear)));
+			_commandTargetRollByDrive = ((_commandTwistAngular > 0) ? RollLimit.max : RollLimit.min) * Math.Abs(ratio);
 			// Debug.Log($"Command - linear: {_commandTwistLinear} angular: {_commandTwistAngular} ratio: {ratio} _commandTargetRollByDrive: {_commandTargetRollByDrive}");
 		}
 		// Debug.Log($"Command - linear: {_commandTwistLinear} angular: {_commandTwistAngular} pitch: {PitchTarget}");
+
+		_commandTwistAngular *= BoostAngularSpeed;
 	}
 
 	private void UpdatePitchProfiler()
