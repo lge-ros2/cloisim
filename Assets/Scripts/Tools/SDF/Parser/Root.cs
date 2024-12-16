@@ -50,16 +50,16 @@ namespace SDF
 			Console.SetError(_loggerErr);
 		}
 
-		public bool DoParse(out World world, in string worldFileName)
+		public bool DoParse(out World world, out string worldFilePath, in string worldFileName)
 		{
 			// Console.Write("Loading World File from SDF!!!!!");
 			world = null;
+			worldFilePath = string.Empty;
 			if (worldFileName.Trim().Length <= 0)
 			{
 				return false;
 			}
 
-			var worldFound = false;
 			// Console.Write("World file, PATH: " + worldFileName);
 			foreach (var worldPath in worldDefaultPaths)
 			{
@@ -80,12 +80,12 @@ namespace SDF
 						// Console.Write("Load World");
 						var worldNode = _doc.SelectSingleNode("/sdf/world");
 						world = new World(worldNode);
-						worldFound = true;
+						worldFilePath = worldPath;
 
 						var infoMessage = "World(" + worldFileName + ") is loaded.";
 						_logger.Write(infoMessage);
 						// _logger.SetShowOnDisplayOnce();
-						break;
+						return true;
 					}
 					catch (XmlException ex)
 					{
@@ -96,12 +96,8 @@ namespace SDF
 				}
 			}
 
-			if (!worldFound)
-			{
-				_loggerErr.Write("World file not exist: " + worldFileName);
-			}
-
-			return worldFound;
+			_loggerErr.Write("World file not exist: " + worldFileName);
+			return false;
 		}
 
 		public bool DoParse(out Model model, in string modelFullPath, in string modelFileName)
@@ -508,13 +504,12 @@ namespace SDF
 			return sdfNode;
 		}
 
-		public void Save()
+		public void Save(in string filePath = "")
 		{
 			var fileName = Path.GetFileNameWithoutExtension(_worldFileName);
 			var datetime = DateTime.Now.ToString("yyMMddHHmmss"); // DateTime.Now.ToString("yyyyMMddHHmmss");
 
-			var saveName = fileName + datetime + ".world";
-
+			var saveName = $"{filePath}/{fileName}{datetime}.world";
 			_originalDoc.Save(saveName);
 
 			Console.Write($"Worldfile Saved: {saveName}");
