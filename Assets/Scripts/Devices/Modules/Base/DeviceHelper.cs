@@ -38,7 +38,7 @@ public static partial class DeviceHelper
 		return globalSphericalCoordinates;
 	}
 
-	public static string GetModelName(in GameObject targetObject, in bool searchOnlyOneDepth = false)
+	public static string GetModelName(in GameObject targetObject)
 	{
 		try
 		{
@@ -49,8 +49,7 @@ public static partial class DeviceHelper
 				nextObject = targetObject.GetComponentInParent<SDF.Helper.Actor>();
 			}
 
-			if (searchOnlyOneDepth == false && nextObject != null &&
-				!nextObject.CompareTag("Actor"))
+			if (nextObject != null && !nextObject.CompareTag("Actor"))
 			{
 				while (!SDF2Unity.IsRootModel(nextObject.transform))
 				{
@@ -77,9 +76,28 @@ public static partial class DeviceHelper
 		}
 	}
 
-	public static string GetPartName(in GameObject targetObject)
+	public static string GetPartsName(in GameObject targetObject)
 	{
-		return GetModelName(targetObject, true);
+		try
+		{
+			if (targetObject.CompareTag("Model"))
+			{
+				return "MODEL";
+			}
+			else if (targetObject.CompareTag("Sensor"))
+			{
+				return "SENSOR_" + targetObject.name;
+			}
+			else
+			{
+				return targetObject.name;
+			}
+		}
+		catch
+		{
+			Debug.LogError("Thee is no parent object model");
+			return string.Empty;
+		}
 	}
 
 	[DllImport("StdHash")]

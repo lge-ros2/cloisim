@@ -29,9 +29,9 @@ public class CameraPlugin : CLOiSimPlugin
 		}
 
 		if (!string.IsNullOrEmpty(deviceName))
+		{
 			attachedDevices.Add(deviceName, _cam);
-
-		partsName = DeviceHelper.GetPartName(gameObject);
+		}
 	}
 
 	protected override void OnStart()

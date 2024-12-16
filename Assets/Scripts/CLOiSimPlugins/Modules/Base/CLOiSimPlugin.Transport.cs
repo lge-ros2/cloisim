@@ -9,19 +9,19 @@ using UnityEngine;
 
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
-	private Transporter transport = new Transporter();
+	private Transporter _transport = new Transporter();
 
-	private string subPartsName = string.Empty;
+	private string _subPartsName = string.Empty;
 
 	public string SubPartsName
 	{
-		get => this.subPartsName;
-		set => this.subPartsName = value;
+		get => this._subPartsName;
+		set => this._subPartsName = value;
 	}
 
 	public Transporter GetTransport()
 	{
-		return transport;
+		return _transport;
 	}
 
 	private bool PrepareDevice(in string subPartsAndKey, out ushort port, out ulong hash)
@@ -36,7 +36,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			return true;
 		}
 
-		Debug.LogError("Port for device is not allocated!!!!!!!! - " + hashKey);
+		Debug.LogError($"Port for device is not allocated !!! {hashKey}");
 		hash = 0;
 		return false;
 	}
@@ -49,52 +49,52 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected bool RegisterTxDevice(out ushort port, in string key = "")
 	{
-		if (PrepareDevice(subPartsName + key, out port, out var hash))
+		if (PrepareDevice(_subPartsName + key, out port, out var hash))
 		{
-			transport.InitializePublisher(port, hash);
+			_transport.InitializePublisher(port, hash);
 			return true;
 		}
 
-		Debug.LogErrorFormat("Failed to register Tx device {0}, {1}", modelName, partsName);
+		Debug.LogErrorFormat($"Failed to register Tx device {modelName}, {partsName}, {_subPartsName}");
 
 		return false;
 	}
 
 	protected bool RegisterRxDevice(out ushort port, in string key = "")
 	{
-		if (PrepareDevice(subPartsName + key, out port, out var hash))
+		if (PrepareDevice(_subPartsName + key, out port, out var hash))
 		{
-			transport.InitializeSubscriber(port, hash);
+			_transport.InitializeSubscriber(port, hash);
 			return true;
 		}
 
-		Debug.LogErrorFormat("Failed to register Rx device {0}, {1}", modelName, partsName);
+		Debug.LogErrorFormat($"Failed to register Rx device {modelName}, {partsName}, {_subPartsName}");
 
 		return false;
 	}
 
 	protected bool RegisterServiceDevice(out ushort port, in string key = "")
 	{
-		if (PrepareDevice(subPartsName + key, out port, out var hash))
+		if (PrepareDevice(_subPartsName + key, out port, out var hash))
 		{
-			transport.InitializeResponsor(port, hash);
+			_transport.InitializeResponsor(port, hash);
 			return true;
 		}
 
-		Debug.LogErrorFormat("Failed to register service device {0}, {1}", modelName, partsName);
+		Debug.LogErrorFormat($"Failed to register service device {modelName}, {partsName}, {_subPartsName}");
 
 		return false;
 	}
 
 	protected bool RegisterClientDevice(out ushort port, in string key = "")
 	{
-		if (PrepareDevice(subPartsName + key, out port, out var hash))
+		if (PrepareDevice(_subPartsName + key, out port, out var hash))
 		{
-			transport.InitializeRequester(port, hash);
+			_transport.InitializeRequester(port, hash);
 			return true;
 		}
 
-		Debug.LogErrorFormat("Failed to register client device {0}, {1}", modelName, partsName);
+		Debug.LogErrorFormat($"Failed to register client device {modelName}, {partsName}, {_subPartsName}");
 
 		return false;
 	}

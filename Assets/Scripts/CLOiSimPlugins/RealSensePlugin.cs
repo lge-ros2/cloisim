@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
-using UnityEngine;
 
 public class RealSensePlugin : CLOiSimMultiPlugin
 {
@@ -19,9 +18,10 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.REALSENSE;
+		_partsName = name;
+
 		cameras = GetComponentsInChildren<SensorDevices.Camera>();
 		imu = GetComponentInChildren<SensorDevices.IMU>();
-		partsName = name;
 	}
 
 	protected override void OnStart()
@@ -90,11 +90,10 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		{
 			if (camera.name.Equals(name))
 			{
+				camera.SetSubParts(true);
 				var plugin = camera.gameObject.AddComponent<CameraPlugin>();
 				plugin.ChangePluginType(ICLOiSimPlugin.Type.REALSENSE);
 				plugin.SubPartsName = name;
-
-				camera.SetSubParts(true);
 
 				AddCLOiSimPlugin(name, plugin);
 				activatedModules.Add(new Tuple<string, string>("camera", name));

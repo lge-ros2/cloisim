@@ -13,19 +13,14 @@ using ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode;
 [RequireComponent(typeof(ParticleSystem))]
 public class ParticleSystemPlugin : CLOiSimPlugin
 {
-	// private GameObject _mowingList = null;
-	// private Transform _targetPlaneTranform = null;
 	private ParticleSystem _particleSystem = null;
 	private ParticleSystemRenderer _particleSystemRenderer = null;
-
-	// private Rect _planeSize = new Rect();
 
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.NONE;
-
-		modelName = "ParticleSystem";
-		partsName = pluginName;
+		modelName = "World";
+		partsName = this.GetType().Name;
 
 		_particleSystem = this.gameObject.GetComponent<ParticleSystem>();
 		_particleSystemRenderer = this.gameObject.GetComponent<ParticleSystemRenderer>();

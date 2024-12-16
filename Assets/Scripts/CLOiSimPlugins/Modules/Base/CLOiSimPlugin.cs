@@ -23,7 +23,6 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
 	public ICLOiSimPlugin.Type type { get; protected set; }
 
-	public string pluginName { get; set; } = string.Empty;
 	public string modelName { get; protected set; } = string.Empty;
 	public string partsName { get; protected set; } = string.Empty;
 
@@ -31,7 +30,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	private Pose pluginPose = Pose.identity;
 
-	private SDF.Plugin _pluginParameters;
+	private SDF.Plugin _pluginParameters = null;
 
 	private List<ushort> allocatedDevicePorts = new List<ushort>();
 	private List<string> allocatedDeviceHashKeys = new List<string>();
@@ -50,7 +49,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	protected void OnDestroy()
 	{
 		thread.Dispose();
-		transport.Dispose();
+		_transport.Dispose();
 
 		DeregisterDevice(allocatedDevicePorts, allocatedDeviceHashKeys);
 		// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
@@ -102,8 +101,10 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 		if (string.IsNullOrEmpty(partsName))
 		{
-			partsName = _pluginParameters.Name;
+			partsName = DeviceHelper.GetPartsName(gameObject);
 		}
+
+		// Debug.LogWarning($"modelName={modelName} partsName={partsName} pluginName={pluginName}");
 
 		OnStart();
 
