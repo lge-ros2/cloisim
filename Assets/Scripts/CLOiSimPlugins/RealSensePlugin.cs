@@ -11,17 +11,17 @@ using Any = cloisim.msgs.Any;
 
 public class RealSensePlugin : CLOiSimMultiPlugin
 {
-	private SensorDevices.Camera[] cameras = null;
-	private SensorDevices.IMU imu = null;
-	private List<Tuple<string, string>> activatedModules = new List<Tuple<string, string>>();
+	private SensorDevices.Camera[] _cameras = null;
+	private SensorDevices.IMU _imu = null;
+	private List<Tuple<string, string>> _activatedModules = new List<Tuple<string, string>>();
 
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.REALSENSE;
 		_partsName = name;
 
-		cameras = GetComponentsInChildren<SensorDevices.Camera>();
-		imu = GetComponentInChildren<SensorDevices.IMU>();
+		_cameras = GetComponentsInChildren<SensorDevices.Camera>();
+		_imu = GetComponentInChildren<SensorDevices.IMU>();
 	}
 
 	protected override void OnStart()
@@ -71,32 +71,33 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 	private void AddImuPlugin(in string name)
 	{
-		if (imu.name.Equals(name))
+		if (_imu.name.Equals(name))
 		{
-			var plugin = imu.gameObject.AddComponent<ImuPlugin>();
+			_imu.SetSubParts(true);
+			var plugin = _imu.gameObject.AddComponent<ImuPlugin>();
 			plugin.ChangePluginType(ICLOiSimPlugin.Type.REALSENSE);
+			plugin.PartsName = _partsName;
 			plugin.SubPartsName = name;
 
-			imu.SetSubParts(true);
-
-			AddCLOiSimPlugin(name, plugin);
-			activatedModules.Add(new Tuple<string, string>("imu", name));
+			AddPlugin(name, plugin);
+			_activatedModules.Add(new Tuple<string, string>("imu", name));
 		}
 	}
 
 	private CameraPlugin FindAndAddCameraPlugin(in string name)
 	{
-		foreach (var camera in cameras)
+		foreach (var camera in _cameras)
 		{
 			if (camera.name.Equals(name))
 			{
 				camera.SetSubParts(true);
 				var plugin = camera.gameObject.AddComponent<CameraPlugin>();
 				plugin.ChangePluginType(ICLOiSimPlugin.Type.REALSENSE);
+				plugin.PartsName = _partsName;
 				plugin.SubPartsName = name;
 
-				AddCLOiSimPlugin(name, plugin);
-				activatedModules.Add(new Tuple<string, string>("camera", name));
+				AddPlugin(name, plugin);
+				_activatedModules.Add(new Tuple<string, string>("camera", name));
 				return plugin;
 			}
 		}
@@ -134,7 +135,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		modulesInfo.Name = "activated_modules";
 		modulesInfo.Value = new Any { Type = Any.ValueType.None };
 
-		foreach (var module in activatedModules)
+		foreach (var module in _activatedModules)
 		{
 			var moduleInfo = new messages.Param();
 			moduleInfo.Name = "module";

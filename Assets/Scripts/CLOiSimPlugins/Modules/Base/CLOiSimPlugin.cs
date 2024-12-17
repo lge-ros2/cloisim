@@ -33,11 +33,13 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	public string ModelName
 	{
 		get => _modelName;
+		set => _modelName = value;
 	}
 
 	public string PartsName
 	{
 		get => _partsName;
+		set => _partsName = value;
 	}
 
 	protected List<TF> staticTfList = new List<TF>();

@@ -8,10 +8,10 @@ using System.Collections.Generic;
 
 public abstract class CLOiSimMultiPlugin : CLOiSimPlugin
 {
-	private Dictionary<string, CLOiSimPlugin> CLOiSimPlugins = new Dictionary<string, CLOiSimPlugin>();
+	private Dictionary<string, CLOiSimPlugin> _CLOiSimPlugins = new Dictionary<string, CLOiSimPlugin>();
 
-	public void AddCLOiSimPlugin(in string deviceName, in CLOiSimPlugin CLOiSimPlugin)
+	public void AddPlugin(in string deviceName, in CLOiSimPlugin CLOiSimPlugin)
 	{
-		CLOiSimPlugins.Add(deviceName, CLOiSimPlugin);
+		_CLOiSimPlugins.Add(deviceName, CLOiSimPlugin);
 	}
 }
