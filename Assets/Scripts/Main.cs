@@ -23,6 +23,8 @@ public class Main : MonoBehaviour
 	[SerializeField]
 	private string _worldFilename;
 
+	private string _loadedWorldFilePath = string.Empty;
+
 	[SerializeField]
 	private List<string> _modelRootDirectories  = new List<string>();
 
@@ -421,7 +423,7 @@ public class Main : MonoBehaviour
 		// Debug.Log("Hello CLOiSim World!!!!!");
 		Debug.Log("Target World: " + _worldFilename);
 
-		if (_sdfRoot.DoParse(out var world, _worldFilename))
+		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
 		{
 			SDF.Import.Util.RootModels = _worldRoot;
 
@@ -455,7 +457,7 @@ public class Main : MonoBehaviour
 		var worldSaver = new WorldSaver(saveDoc);
 		worldSaver.Update();
 
-		_sdfRoot.Save();
+		_sdfRoot.Save(_loadedWorldFilePath);
 	}
 
 	void LateUpdate()

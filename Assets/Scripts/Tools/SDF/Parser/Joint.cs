@@ -121,7 +121,7 @@ namespace SDF
 
 		private Physics physics = new Physics();
 
-		// private Sensors sensors = null;
+		private Sensors _sensors = null;
 
 		public string ParentLinkName => parent;
 
@@ -139,6 +139,8 @@ namespace SDF
 
 		protected override void ParseElements()
 		{
+			_sensors = new Sensors(root);
+
 			parent = GetValue<string>("parent");
 			child = GetValue<string>("child");
 

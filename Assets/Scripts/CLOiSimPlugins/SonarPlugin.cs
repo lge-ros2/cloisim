@@ -14,9 +14,9 @@ public class SonarPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.SONAR;
+
 		sonar = gameObject.GetComponent<SensorDevices.Sonar>();
 		attachedDevices.Add("SONAR", sonar);
-		partsName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnStart()

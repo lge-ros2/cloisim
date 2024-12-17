@@ -50,16 +50,16 @@ namespace SDF
 			Console.SetError(_loggerErr);
 		}
 
-		public bool DoParse(out World world, in string worldFileName)
+		public bool DoParse(out World world, out string worldFilePath, in string worldFileName)
 		{
 			// Console.Write("Loading World File from SDF!!!!!");
 			world = null;
+			worldFilePath = string.Empty;
 			if (worldFileName.Trim().Length <= 0)
 			{
 				return false;
 			}
 
-			var worldFound = false;
 			// Console.Write("World file, PATH: " + worldFileName);
 			foreach (var worldPath in worldDefaultPaths)
 			{
@@ -80,28 +80,22 @@ namespace SDF
 						// Console.Write("Load World");
 						var worldNode = _doc.SelectSingleNode("/sdf/world");
 						world = new World(worldNode);
-						worldFound = true;
+						worldFilePath = worldPath;
 
-						var infoMessage = "World(" + worldFileName + ") is loaded.";
-						_logger.Write(infoMessage);
+						_logger.Write($"World({worldFileName}) is loaded.");
 						// _logger.SetShowOnDisplayOnce();
-						break;
+						return true;
 					}
 					catch (XmlException ex)
 					{
-						var errorMessage = "Failed to Load World(" + fullFilePath + ") - " + ex.Message;
 						_loggerErr.SetShowOnDisplayOnce();
-						_loggerErr.Write(errorMessage);
+						_loggerErr.Write($"Failed to Load World({fullFilePath}) - {ex.Message}");
 					}
 				}
 			}
 
-			if (!worldFound)
-			{
-				_loggerErr.Write("World file not exist: " + worldFileName);
-			}
-
-			return worldFound;
+			_loggerErr.Write("World file not exist: " + worldFileName);
+			return false;
 		}
 
 		public bool DoParse(out Model model, in string modelFullPath, in string modelFileName)
@@ -191,7 +185,7 @@ namespace SDF
 					}
 					catch (XmlException e)
 					{
-						Console.Write("Failed to Load model file(" + modelConfig + ") - " + e.Message);
+						Console.Write($"Failed to Load model file({modelConfig}) - {e.Message}");
 						continue;
 					}
 
@@ -210,7 +204,7 @@ namespace SDF
 					{
 						// Console.Write(version);
 						// Console.Write(modelNode);
-						var sdfNode = modelNode.SelectSingleNode("sdf[@version=" + version + " or not(@version)]");
+						var sdfNode = modelNode.SelectSingleNode($"sdf[@version={version} or not(@version)]");
 						if (sdfNode != null)
 						{
 							sdfFileName = sdfNode.InnerText;
@@ -222,7 +216,7 @@ namespace SDF
 
 					if (string.IsNullOrEmpty(sdfFileName))
 					{
-						Console.Write(modelName + ": SDF FileName is empty!!");
+						Console.Write($"{modelName}: SDF FileName is empty!!");
 						continue;
 					}
 
@@ -403,31 +397,31 @@ namespace SDF
 		}
 		#endregion
 
-		private XmlNode GetIncludedModel(XmlNode included_node)
+		private XmlNode GetIncludedModel(XmlNode includedNode)
 		{
-			var uri_node = included_node.SelectSingleNode("uri");
-			if (uri_node == null)
+			var uriNode = includedNode.SelectSingleNode("uri");
+			if (uriNode == null)
 			{
 				Console.Write("uri is empty.");
 				return null;
 			}
 
-			var nameNode = included_node.SelectSingleNode("name");
+			var nameNode = includedNode.SelectSingleNode("name");
 			var name = (nameNode == null) ? null : nameNode.InnerText;
 
-			var staticNode = included_node.SelectSingleNode("static");
+			var staticNode = includedNode.SelectSingleNode("static");
 			var isStatic = (staticNode == null) ? null : staticNode.InnerText;
 
-			var placementFrameNode = included_node.SelectSingleNode("placement_frame");
+			var placementFrameNode = includedNode.SelectSingleNode("placement_frame");
 			var placementFrame = (placementFrameNode == null) ? null : placementFrameNode.InnerText;
 
-			var poseNode = included_node.SelectSingleNode("pose");
+			var poseNode = includedNode.SelectSingleNode("pose");
 			var pose = (poseNode == null) ? null : poseNode.InnerText;
 
-			// var pluginNode = included_node.SelectSingleNode("plugin");
+			var pluginNode = includedNode.SelectSingleNode("plugin");
 			// var plugin = (pluginNode == null) ? null : pluginNode.InnerText;
 
-			var uri = uri_node.InnerText;
+			var uri = uriNode.InnerText;
 			var modelName = uri.Replace(ProtocolModel, string.Empty);
 
 			if (resourceModelTable.TryGetValue(modelName, out var value))
@@ -448,9 +442,8 @@ namespace SDF
 			}
 			catch (XmlException e)
 			{
-				var errorMessage = "Failed to Load included model(" + modelName + ") file - " + e.Message;
 				_loggerErr.SetShowOnDisplayOnce();
-				_loggerErr.Write(errorMessage);
+				_loggerErr.Write($"Failed to Load included model({modelName}) file - {e.Message}");
 				return null;
 			}
 
@@ -473,16 +466,16 @@ namespace SDF
 			// Edit custom parameter
 			if (nameNode != null)
 			{
-				sdfNode.Attributes["name"].Value = name;
+				attributes.GetNamedItem("name").Value = name;
 			}
 
 			if (poseNode != null)
 			{
-				if (sdfNode.SelectSingleNode("pose") != null)
+				var poseElem = sdfNode.SelectSingleNode("pose");
+				if (poseElem != null)
 				{
-					sdfNode.SelectSingleNode("pose").InnerText = pose;
+					poseElem.InnerText = pose;
 				}
-
 				else
 				{
 					var elem = sdfNode.OwnerDocument.CreateElement("pose");
@@ -493,9 +486,10 @@ namespace SDF
 
 			if (staticNode != null)
 			{
-				if (sdfNode.SelectSingleNode("static") != null)
+				var staticElem = sdfNode.SelectSingleNode("static");
+				if (staticElem != null)
 				{
-					sdfNode.SelectSingleNode("static").InnerText = isStatic;
+					staticElem.InnerText = isStatic;
 				}
 				else
 				{
@@ -505,16 +499,20 @@ namespace SDF
 				}
 			}
 
+			if (pluginNode != null)
+			{
+				sdfNode.InsertBefore(pluginNode, sdfNode.LastChild);
+			}
+
 			return sdfNode;
 		}
 
-		public void Save()
+		public void Save(in string filePath = "")
 		{
 			var fileName = Path.GetFileNameWithoutExtension(_worldFileName);
 			var datetime = DateTime.Now.ToString("yyMMddHHmmss"); // DateTime.Now.ToString("yyyyMMddHHmmss");
 
-			var saveName = fileName + datetime + ".world";
-
+			var saveName = $"{filePath}/{fileName}{datetime}.world";
 			_originalDoc.Save(saveName);
 
 			Console.Write($"Worldfile Saved: {saveName}");
@@ -523,8 +521,8 @@ namespace SDF
 		public void Print()
 		{
 			// Print all SDF contents
-			StringWriter sw = new StringWriter();
-			XmlTextWriter xw = new XmlTextWriter(sw);
+			var sw = new StringWriter();
+			var xw = new XmlTextWriter(sw);
 			_doc.WriteTo(xw);
 			Console.Write(sw.ToString());
 		}

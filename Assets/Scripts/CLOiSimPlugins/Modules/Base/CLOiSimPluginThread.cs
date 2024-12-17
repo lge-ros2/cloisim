@@ -26,10 +26,10 @@ public class CLOiSimPluginThread : IDisposable
 		}
 	}
 
-	private List<(Thread, ParamObject)> threadList = new List<(Thread, ParamObject)>();
+	private List<(Thread, ParamObject)> _threadList = new List<(Thread, ParamObject)>();
 
-	private bool runningThread = true;
-	public bool IsRunning => runningThread;
+	private bool _runningThread = true;
+	public bool IsRunning => _runningThread;
 
 	public delegate void RefAction<T1, T2, T3>(in T1 arg1, in T2 arg2, ref T3 arg3);
 	public delegate void RefAction<T1, T2>(in T1 arg1, ref T2 arg3);
@@ -56,7 +56,7 @@ public class CLOiSimPluginThread : IDisposable
 			var thread = new Thread(function);
 			var threadObject = new ParamObject(targetPortForThread, paramObject);
 			// thread.Priority = System.Threading.ThreadPriority.AboveNormal;
-			threadList.Add((thread, threadObject));
+			_threadList.Add((thread, threadObject));
 			return true;
 		}
 
@@ -65,9 +65,9 @@ public class CLOiSimPluginThread : IDisposable
 
 	public void Start()
 	{
-		runningThread = true;
+		_runningThread = true;
 
-		foreach (var threadTuple in threadList)
+		foreach (var threadTuple in _threadList)
 		{
 			var thread = threadTuple.Item1;
 			if (thread != null && !thread.IsAlive)
@@ -80,9 +80,9 @@ public class CLOiSimPluginThread : IDisposable
 
 	public void Stop()
 	{
-		runningThread = false;
+		_runningThread = false;
 
-		foreach (var threadTuple in threadList)
+		foreach (var threadTuple in _threadList)
 		{
 			var thread = threadTuple.Item1;
 			if (thread != null)
@@ -94,7 +94,7 @@ public class CLOiSimPluginThread : IDisposable
 				}
 			}
 		}
-		threadList.Clear();
+		_threadList.Clear();
 	}
 
 	public void Sender(Publisher publisher, Device device)
