@@ -13,6 +13,8 @@ using messages = cloisim.msgs;
 public static partial class DeviceHelper
 {
 	private static Clock globalClock = null;
+	private static double Sec2NSec = 1e+9;
+	private static double NSec2Sec = 1 / Sec2NSec;
 
 	private static SphericalCoordinates globalSphericalCoordinates = null;
 
@@ -84,10 +86,6 @@ public static partial class DeviceHelper
 			{
 				return "MODEL";
 			}
-			else if (targetObject.CompareTag("Sensor"))
-			{
-				return "SENSOR_" + targetObject.name;
-			}
 			else
 			{
 				return targetObject.name;
@@ -116,12 +114,12 @@ public static partial class DeviceHelper
 		}
 
 		msg.Sec = (int)time;
-		msg.Nsec = (int)((time - (double)msg.Sec) * 1e+9);
+		msg.Nsec = (int)((time - (double)msg.Sec) * Sec2NSec);
 	}
 
 	public static float Get(this messages.Time msg)
 	{
-		return (float)msg.Sec + ((float)msg.Nsec / (float)1e-9);
+		return (float)((double)msg.Sec + ((double)msg.Nsec * NSec2Sec));
 	}
 
 	public static void SetCurrentTime(this messages.Time msg, in bool useRealTime = false)
@@ -133,7 +131,7 @@ public static partial class DeviceHelper
 
 		var timeNow = (useRealTime) ? GetGlobalClock().RealTime : GetGlobalClock().SimTime;
 		msg.Sec = (int)timeNow;
-		msg.Nsec = (int)((timeNow - (double)msg.Sec) * 1e+9);
+		msg.Nsec = (int)((timeNow - (double)msg.Sec) * Sec2NSec);
 	}
 
 	public static void Set(this messages.Vector3d vector3d, in Vector3 position)
