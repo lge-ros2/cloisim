@@ -183,14 +183,16 @@ public class BridgeManager : IDisposable
 		return true;
 	}
 
-	private static string MakeHashKey(in string modelName, in string partsName, in string subPartsName)
+	private static string MakeHashKey(params string[] data)
 	{
-		return modelName + partsName + subPartsName;
+		return string.Join("", data);
 	}
 
-	public static bool AllocateDevice(in string deviceType, in string modelName, in string partsName, in string subPartsName, out string hashKey, out ushort port)
+	public static bool AllocateDevice(
+		in string deviceType, in string modelName, in string partsName, in string subPartsNameAndKey,
+		out string hashKey, out ushort port)
 	{
-		hashKey = MakeHashKey(modelName, partsName, subPartsName);
+		hashKey = MakeHashKey(modelName, partsName, subPartsNameAndKey);
 
 		if (string.IsNullOrEmpty(hashKey))
 		{
@@ -209,19 +211,19 @@ public class BridgeManager : IDisposable
 				{
 					if (partsMapTable.TryGetValue(partsName, out var portsMapTable))
 					{
-						portsMapTable.Add(subPartsName, port);
+						portsMapTable.Add(subPartsNameAndKey, port);
 					}
 					else
 					{
 						var newPortsMapTable = new Dictionary<string, ushort>();
-						newPortsMapTable.Add(subPartsName, port);
+						newPortsMapTable.Add(subPartsNameAndKey, port);
 						partsMapTable.Add(partsName, newPortsMapTable);
 					}
 				}
 				else
 				{
 					var portsMapTable = new Dictionary<string, ushort>();
-					portsMapTable.Add(subPartsName, port);
+					portsMapTable.Add(subPartsNameAndKey, port);
 					var newPartsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
 					newPartsMapTable.Add(partsName, portsMapTable);
 
@@ -231,7 +233,7 @@ public class BridgeManager : IDisposable
 			else
 			{
 				var portsMapTable = new Dictionary<string, ushort>();
-				portsMapTable.Add(subPartsName, port);
+				portsMapTable.Add(subPartsNameAndKey, port);
 
 				var partsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
 				partsMapTable.Add(partsName, portsMapTable);

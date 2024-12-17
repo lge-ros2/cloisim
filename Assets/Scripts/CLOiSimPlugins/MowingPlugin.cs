@@ -175,9 +175,8 @@ public class MowingPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.NONE;
-
-		modelName = "Mowing";
-		partsName = "_";
+		_modelName = "World";
+		_partsName = this.GetType().Name;
 
 		var geomGrassShader = Shader.Find("Custom/GeometryGrass");
 		_grass = new Grass(geomGrassShader);

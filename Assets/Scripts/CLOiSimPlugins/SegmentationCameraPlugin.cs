@@ -24,8 +24,6 @@ public class SegmentationCameraPlugin : CameraPlugin
 		{
 			Debug.LogError("SensorDevices.SegmentationCamera is missing.");
 		}
-
-		partsName = DeviceHelper.GetPartName(gameObject);
 	}
 
 	protected override void OnPluginLoad()

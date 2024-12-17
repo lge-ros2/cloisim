@@ -11,7 +11,8 @@ public interface ICLOiSimPlugin
 {
 	enum Type {
 		NONE,
-		WORLD, GROUNDTRUTH, ELEVATOR, ACTOR, MICOM, JOINTCONTROL,
+		WORLD, GROUNDTRUTH, ELEVATOR, ACTOR,
+		MICOM, JOINTCONTROL,
 		SENSOR, GPS, IMU, SONAR, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE, SEGMENTCAMERA
 	};
 	void SetPluginParameters(in SDF.Plugin node);
@@ -23,15 +24,29 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
 	public ICLOiSimPlugin.Type type { get; protected set; }
 
-	public string pluginName { get; set; } = string.Empty;
-	public string modelName { get; protected set; } = string.Empty;
-	public string partsName { get; protected set; } = string.Empty;
+	[SerializeField]
+	protected string _modelName = string.Empty;
+
+	[SerializeField]
+	protected string _partsName = string.Empty;
+
+	public string ModelName
+	{
+		get => _modelName;
+		set => _modelName = value;
+	}
+
+	public string PartsName
+	{
+		get => _partsName;
+		set => _partsName = value;
+	}
 
 	protected List<TF> staticTfList = new List<TF>();
 
 	private Pose pluginPose = Pose.identity;
 
-	private SDF.Plugin _pluginParameters;
+	private SDF.Plugin _pluginParameters = null;
 
 	private List<ushort> allocatedDevicePorts = new List<ushort>();
 	private List<string> allocatedDeviceHashKeys = new List<string>();
@@ -49,8 +64,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected void OnDestroy()
 	{
-		thread.Dispose();
-		transport.Dispose();
+		_thread.Dispose();
+		_transport.Dispose();
 
 		DeregisterDevice(allocatedDevicePorts, allocatedDeviceHashKeys);
 		// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
@@ -95,19 +110,21 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	{
 		StorePose();
 
-		if (string.IsNullOrEmpty(modelName))
+		if (string.IsNullOrEmpty(_modelName))
 		{
-			modelName = DeviceHelper.GetModelName(gameObject);
+			_modelName = DeviceHelper.GetModelName(gameObject);
 		}
 
-		if (string.IsNullOrEmpty(partsName))
+		if (string.IsNullOrEmpty(_partsName))
 		{
-			partsName = _pluginParameters.Name;
+			_partsName = DeviceHelper.GetPartsName(gameObject);
 		}
+
+		// Debug.LogWarning($"modelName={modelName} partsName={partsName} pluginName={pluginName}");
 
 		OnStart();
 
-		thread.Start();
+		_thread.Start();
 	}
 
 	public void Reset()

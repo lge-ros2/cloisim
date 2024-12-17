@@ -18,6 +18,7 @@ public class JointControlPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.JOINTCONTROL;
+
 		jointState = gameObject.AddComponent<SensorDevices.JointState>();
 		jointCommand = gameObject.AddComponent<SensorDevices.JointCommand>();
 		jointCommand.SetJointState(jointState);
