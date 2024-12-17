@@ -84,11 +84,19 @@ public static partial class DeviceHelper
 		{
 			if (targetObject.CompareTag("Model"))
 			{
-				return "MODEL";
+				return targetObject.name;
 			}
 			else
 			{
-				return targetObject.name;
+				var linkHelper = targetObject.GetComponentInParent<SDF.Helper.Link>();
+				if (linkHelper.transform.parent.CompareTag("Link"))
+				{
+					return linkHelper.transform.parent.name; // link name
+				}
+				else
+				{
+					return linkHelper.Model.name; // model name
+				}
 			}
 		}
 		catch
