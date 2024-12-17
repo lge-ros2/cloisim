@@ -19,8 +19,8 @@ public class ParticleSystemPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.NONE;
-		modelName = "World";
-		partsName = this.GetType().Name;
+		_modelName = "World";
+		_partsName = this.GetType().Name;
 
 		_particleSystem = this.gameObject.GetComponent<ParticleSystem>();
 		_particleSystemRenderer = this.gameObject.GetComponent<ParticleSystemRenderer>();

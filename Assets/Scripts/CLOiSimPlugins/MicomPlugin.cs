@@ -436,7 +436,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 	private void LoadStaticTF()
 	{
-		_log.AppendLine("Loaded Static TF Info : " + modelName);
+		_log.AppendLine("Loaded Static TF Info : " + _modelName);
 
 		if (GetPluginParameters().GetValues<string>("ros2/static_transforms/link", out var staticLinks))
 		{
@@ -464,7 +464,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 	private void LoadTF()
 	{
-		_log.AppendLine("Loaded TF Info : " + modelName);
+		_log.AppendLine("Loaded TF Info : " + _modelName);
 
 		if (GetPluginParameters().GetValues<string>("ros2/transforms/link", out var links))
 		{

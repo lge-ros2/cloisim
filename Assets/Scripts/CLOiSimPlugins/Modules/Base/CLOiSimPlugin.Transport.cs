@@ -11,6 +11,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
 	private Transporter _transport = new Transporter();
 
+	[SerializeField]
 	private string _subPartsName = string.Empty;
 
 	public string SubPartsName
@@ -26,7 +27,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	private bool PrepareDevice(in string subPartsAndKey, out ushort port, out ulong hash)
 	{
-		if (BridgeManager.AllocateDevice(type.ToString(), modelName, partsName, subPartsAndKey, out var hashKey, out port))
+		if (BridgeManager.AllocateDevice(type.ToString(), _modelName, _partsName, subPartsAndKey, out var hashKey, out port))
 		{
 			allocatedDeviceHashKeys.Add(hashKey);
 			allocatedDevicePorts.Add(port);
@@ -55,7 +56,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			return true;
 		}
 
-		Debug.LogErrorFormat($"Failed to register Tx device {modelName}, {partsName}, {_subPartsName}");
+		Debug.LogErrorFormat($"Failed to register Tx device {_modelName}, {_partsName}, {_subPartsName}");
 
 		return false;
 	}
@@ -68,7 +69,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			return true;
 		}
 
-		Debug.LogErrorFormat($"Failed to register Rx device {modelName}, {partsName}, {_subPartsName}");
+		Debug.LogErrorFormat($"Failed to register Rx device {_modelName}, {_partsName}, {_subPartsName}");
 
 		return false;
 	}
@@ -81,7 +82,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			return true;
 		}
 
-		Debug.LogErrorFormat($"Failed to register service device {modelName}, {partsName}, {_subPartsName}");
+		Debug.LogErrorFormat($"Failed to register service device {_modelName}, {_partsName}, {_subPartsName}");
 
 		return false;
 	}
@@ -94,7 +95,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			return true;
 		}
 
-		Debug.LogErrorFormat($"Failed to register client device {modelName}, {partsName}, {_subPartsName}");
+		Debug.LogErrorFormat($"Failed to register client device {_modelName}, {_partsName}, {_subPartsName}");
 
 		return false;
 	}

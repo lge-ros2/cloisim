@@ -105,8 +105,8 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.GROUNDTRUTH;
-		modelName = "World";
-		partsName = this.GetType().Name;
+		_modelName = "World";
+		_partsName = this.GetType().Name;
 
 		var worldRoot = Main.WorldRoot;
 		foreach (var model in worldRoot.GetComponentsInChildren<SDF.Helper.Model>())

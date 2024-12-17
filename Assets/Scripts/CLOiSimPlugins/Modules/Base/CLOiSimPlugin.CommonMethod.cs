@@ -158,7 +158,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	private void SetCustomHandleRequestMessage()
 	{
-		thread.HandleRequestTypeValue = delegate (in string requestType, in Any requestValue, ref DeviceMessage response)
+		_thread.HandleRequestTypeValue = delegate (in string requestType, in Any requestValue, ref DeviceMessage response)
 		{
 			switch (requestType)
 			{
@@ -168,19 +168,19 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 						var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name[@add_parts_name_prefix='true']");
 						if (string.IsNullOrEmpty(topic_name))
 						{
-							topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name", partsName);
-							topic_name = topic_name.Replace("{parts_name}", partsName);
+							topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name", _partsName);
+							topic_name = topic_name.Replace("{parts_name}", _partsName);
 						}
 						else
 						{
-							topic_name = partsName + "/" + topic_name;
+							topic_name = _partsName + "/" + topic_name;
 						}
 
 						GetPluginParameters().GetValues<string>("ros2/frame_id", out var frameIdList);
 
 						for (var i = 0; i < frameIdList.Count; i++)
 						{
-							frameIdList[i] = frameIdList[i].Replace("{parts_name}", partsName);
+							frameIdList[i] = frameIdList[i].Replace("{parts_name}", _partsName);
 						}
 
 						SetROS2CommonInfoResponse(ref response, topic_name, frameIdList);
@@ -197,7 +197,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			}
 		};
 
-		thread.HandleRequestTypeChildren = delegate (in string requestType, in List<messages.Param> requestChildren, ref DeviceMessage response)
+		_thread.HandleRequestTypeChildren = delegate (in string requestType, in List<messages.Param> requestChildren, ref DeviceMessage response)
 		{
 			HandleCustomRequestMessage(requestType, requestChildren, ref response);
 		};

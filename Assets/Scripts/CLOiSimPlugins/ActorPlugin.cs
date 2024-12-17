@@ -12,8 +12,8 @@ public class ActorPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		type = ICLOiSimPlugin.Type.ACTOR;
-		modelName = "World";
-		partsName = this.GetType().Name;
+		_modelName = "World";
+		_partsName = this.GetType().Name;
 	}
 
 	protected override void OnStart()

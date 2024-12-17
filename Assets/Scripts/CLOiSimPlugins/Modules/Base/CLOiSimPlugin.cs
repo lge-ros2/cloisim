@@ -11,7 +11,8 @@ public interface ICLOiSimPlugin
 {
 	enum Type {
 		NONE,
-		WORLD, GROUNDTRUTH, ELEVATOR, ACTOR, MICOM, JOINTCONTROL,
+		WORLD, GROUNDTRUTH, ELEVATOR, ACTOR,
+		MICOM, JOINTCONTROL,
 		SENSOR, GPS, IMU, SONAR, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE, SEGMENTCAMERA
 	};
 	void SetPluginParameters(in SDF.Plugin node);
@@ -23,8 +24,21 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
 	public ICLOiSimPlugin.Type type { get; protected set; }
 
-	public string modelName { get; protected set; } = string.Empty;
-	public string partsName { get; protected set; } = string.Empty;
+	[SerializeField]
+	protected string _modelName = string.Empty;
+
+	[SerializeField]
+	protected string _partsName = string.Empty;
+
+	public string ModelName
+	{
+		get => _modelName;
+	}
+
+	public string PartsName
+	{
+		get => _partsName;
+	}
 
 	protected List<TF> staticTfList = new List<TF>();
 
@@ -48,7 +62,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected void OnDestroy()
 	{
-		thread.Dispose();
+		_thread.Dispose();
 		_transport.Dispose();
 
 		DeregisterDevice(allocatedDevicePorts, allocatedDeviceHashKeys);
@@ -94,21 +108,21 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	{
 		StorePose();
 
-		if (string.IsNullOrEmpty(modelName))
+		if (string.IsNullOrEmpty(_modelName))
 		{
-			modelName = DeviceHelper.GetModelName(gameObject);
+			_modelName = DeviceHelper.GetModelName(gameObject);
 		}
 
-		if (string.IsNullOrEmpty(partsName))
+		if (string.IsNullOrEmpty(_partsName))
 		{
-			partsName = DeviceHelper.GetPartsName(gameObject);
+			_partsName = DeviceHelper.GetPartsName(gameObject);
 		}
 
 		// Debug.LogWarning($"modelName={modelName} partsName={partsName} pluginName={pluginName}");
 
 		OnStart();
 
-		thread.Start();
+		_thread.Start();
 	}
 
 	public void Reset()
