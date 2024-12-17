@@ -155,7 +155,6 @@ namespace SDF
 				}
 
 				modelObject.SpecifyPose();
-				yield return null;
 			}
 		}
 	}
