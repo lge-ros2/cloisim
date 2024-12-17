@@ -193,16 +193,16 @@ public class Main : MonoBehaviour
 
 		// Load Library for Assimp
 #if UNITY_EDITOR
-		var AssimpVersion = "5.0.0-beta1";
+		var AssimpVersion = "5.4.3";
 #	if UNITY_EDITOR_LINUX
-		var assimpLibraryPath = $"./Assets/Plugins/AssimpNet.{AssimpVersion}/runtimes/linux-x64/native/libassimp";
+		var assimpLibraryPath = $"./Assets/Plugins/AssimpNetter.{AssimpVersion}/runtimes/linux-x64/native/libassimp";
 #	elif UNITY_EDITOR_OSX // TODO: need to be verified,
-		var assimpLibraryPath = $"./Assets/Plugins/AssimpNet.{AssimpVersion}/runtimes/osx-x64/native/libassimp";
+		var assimpLibraryPath = $"./Assets/Plugins/AssimpNetter.{AssimpVersion}/runtimes/osx-x64/native/libassimp";
 #	else // == UNITY_EDITOR_WIN
 #		if UNITY_64
-		var assimpLibraryPath = $"./Assets/Plugins/AssimpNet.{AssimpVersion}/runtimes/win-x64/native/assimp";
+		var assimpLibraryPath = $"./Assets/Plugins/AssimpNetter.{AssimpVersion}/runtimes/win-x64/native/assimp";
 #		else
-		var assimpLibraryPath = $"./Assets/Plugins/AssimpNet.{AssimpVersion}/runtimes/win-x86/native/assimp";
+		var assimpLibraryPath = $"./Assets/Plugins/AssimpNetter.{AssimpVersion}/runtimes/win-x86/native/assimp";
 #		endif
 #	endif
 #else
@@ -214,7 +214,8 @@ public class Main : MonoBehaviour
 		var assimpLibraryPath = "./CLOiSim_Data/Plugins/libassimp";
 #	endif
 #endif
-		Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath);
+		// Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath);
+		Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary();
 
 		if (Assimp.Unmanaged.AssimpLibrary.Instance.IsLibraryLoaded == false)
 		{

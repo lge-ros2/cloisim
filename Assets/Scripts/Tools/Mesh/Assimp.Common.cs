@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System;
 using UnityEngine;
+using SN = System.Numerics;
 
 public static partial class MeshLoader
 {
@@ -144,14 +145,14 @@ public static partial class MeshLoader
 		return eulerRotation;
 	}
 
-	private static Color ToUnity(this Assimp.Color4D color)
+	private static Color ToUnity(this SN.Vector4 color)
 	{
-		return (color == null) ? Color.clear : new Color(color.R, color.G, color.B, color.A);
+		return (color == null) ? Color.clear : new Color(color.X, color.Y, color.Z, color.W);
 	}
 
-	private static Matrix4x4 ToUnity(this Assimp.Matrix4x4 assimpMatrix)
+	private static Matrix4x4 ToUnity(this SN.Matrix4x4 assimpMatrix)
 	{
-		assimpMatrix.Decompose(out var scaling, out var rotation, out var translation);
+		Assimp.Unmanaged.AssimpLibrary.Instance.DecomposeMatrix(ref assimpMatrix, out var scaling, out var rotation, out var translation);
 		var pos = new Vector3(translation.X, translation.Y, translation.Z);
 		var rot = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
 		var scale = new Vector3(scaling.X, scaling.Y, scaling.Z);
@@ -252,7 +253,7 @@ public static partial class MeshLoader
 			var rootNodeMatrix = rootNode.Transform.ToUnity();
 			rootNodeMatrix = Matrix4x4.Rotate(meshRotation) * rootNodeMatrix;
 
-			rootNode.Transform = new Assimp.Matrix4x4(
+			rootNode.Transform = new SN.Matrix4x4(
 				rootNodeMatrix.m00, rootNodeMatrix.m01, rootNodeMatrix.m02, rootNodeMatrix.m03,
 				rootNodeMatrix.m10,	rootNodeMatrix.m11, rootNodeMatrix.m12, rootNodeMatrix.m13,
 				rootNodeMatrix.m20, rootNodeMatrix.m21, rootNodeMatrix.m22, rootNodeMatrix.m23,

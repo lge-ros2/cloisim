@@ -1837,7 +1837,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _clearAllOnStart: 1
-  _worldFilename: empty.world
+  _worldFilename: small_house.world
   _modelRootDirectories:
   - ../cloi_resources
   - ../sample_resources/models/
