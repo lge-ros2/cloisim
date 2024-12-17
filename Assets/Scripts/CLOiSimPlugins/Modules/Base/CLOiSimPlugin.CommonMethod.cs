@@ -163,28 +163,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			switch (requestType)
 			{
 				case "request_ros2":
-					if (GetPluginParameters().IsValidNode("ros2"))
-					{
-						var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name[@add_parts_name_prefix='true']");
-						if (string.IsNullOrEmpty(topic_name))
-						{
-							topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name", _partsName);
-							topic_name = topic_name.Replace("{parts_name}", _partsName);
-						}
-						else
-						{
-							topic_name = _partsName + "/" + topic_name;
-						}
-
-						GetPluginParameters().GetValues<string>("ros2/frame_id", out var frameIdList);
-
-						for (var i = 0; i < frameIdList.Count; i++)
-						{
-							frameIdList[i] = frameIdList[i].Replace("{parts_name}", _partsName);
-						}
-
-						SetROS2CommonInfoResponse(ref response, topic_name, frameIdList);
-					}
+					SetRequestRos2Response(ref response);
 					break;
 
 				case "request_static_transforms":
@@ -201,6 +180,32 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		{
 			HandleCustomRequestMessage(requestType, requestChildren, ref response);
 		};
+	}
+
+	protected virtual void SetRequestRos2Response(ref DeviceMessage msRos2Info)
+	{
+		if (GetPluginParameters().IsValidNode("ros2"))
+		{
+			var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name[@add_parts_name_prefix='true']");
+			if (string.IsNullOrEmpty(topic_name))
+			{
+				topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name", _partsName);
+				topic_name = topic_name.Replace("{parts_name}", _partsName);
+			}
+			else
+			{
+				topic_name = _partsName + "/" + topic_name;
+			}
+
+			GetPluginParameters().GetValues<string>("ros2/frame_id", out var frameIdList);
+
+			for (var i = 0; i < frameIdList.Count; i++)
+			{
+				frameIdList[i] = frameIdList[i].Replace("{parts_name}", _partsName);
+			}
+
+			SetROS2CommonInfoResponse(ref msRos2Info, topic_name, frameIdList);
+		}
 	}
 
 	private void SetStaticTransformsResponse(ref DeviceMessage msRos2Info)
