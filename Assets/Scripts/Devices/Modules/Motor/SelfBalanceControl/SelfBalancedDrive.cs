@@ -41,6 +41,7 @@ public class SelfBalancedDrive : MotorControl
 	#endregion
 
 	#region Headset Control
+	private double _initialHeadsetTarget = 0;
 	private double _commandTargetHeadset = 0; // in deg
 	private float _doControlHeadsetByCommandTimeout = 0;
 	#endregion
@@ -55,7 +56,7 @@ public class SelfBalancedDrive : MotorControl
 	private readonly MathUtil.MinMax FalldownRollThreshold = new MathUtil.MinMax(-1.35f, 1.35f); // in rad
 	private readonly MathUtil.MinMax RollLimit = new MathUtil.MinMax(-5f, 5f); // in deg
 	private readonly MathUtil.MinMax HeightLimit = new MathUtil.MinMax(-30f, 22f); // in deg
-	private readonly MathUtil.MinMax HeadsetLimit = new MathUtil.MinMax(-90f, 90f); // in deg
+	private MathUtil.MinMax _limitHeadset = new MathUtil.MinMax(-130f, 130f); // in deg
 	#endregion
 
 	public double HeightTarget
@@ -94,13 +95,13 @@ public class SelfBalancedDrive : MotorControl
 		get => _commandTargetHeadset;
 		set
 		{
-			_commandTargetHeadset = Math.Clamp(value, HeadsetLimit.min + CommandMargin, HeadsetLimit.max - CommandMargin);
+			_commandTargetHeadset = Math.Clamp(value, _limitHeadset.min + CommandMargin, _limitHeadset.max - CommandMargin);
 			_doControlHeadsetByCommandTimeout = CommandTimeout;
 		}
 	}
 
-	public double HeightTargetMin => HeadsetLimit.min;
-	public double HeightTargetMax => HeadsetLimit.max;
+	public double HeadsetTargetMin => _limitHeadset.min;
+	public double HeadsetTargetMax => _limitHeadset.max;
 
 	public bool Balancing
 	{
@@ -146,7 +147,7 @@ public class SelfBalancedDrive : MotorControl
 	{
 		Debug.Log("========== SelfBalancedDrive Reset ==========");
 
-		_commandTargetHeadset = 0;
+		_commandTargetHeadset = _initialHeadsetTarget;
 		_commandTargetRollByDrive = 0;
 
 		_commandTargetPitch = 0;
@@ -199,6 +200,9 @@ public class SelfBalancedDrive : MotorControl
 	{
 		AttachMotor(Location.HEAD, targetJointName);
 		ChangeDriveType(Location.HEAD, ArticulationDriveType.Target);
+		var drive = _motorList[Location.HEAD].GetDrive();
+		_initialHeadsetTarget = drive.target;
+		_limitHeadset = new MathUtil.MinMax(drive.lowerLimit, drive.upperLimit);
 	}
 
 	public void SetBodyJoint(in string targetJointName)
@@ -296,7 +300,7 @@ public class SelfBalancedDrive : MotorControl
 	private void AdjustHeadsetByPitch(in double currentPitch, in float duration)
 	{
 		const double HeadsetTargetAdjustGain = 1.5f;
-		var target = currentPitch * HeadsetTargetAdjustGain * Mathf.Rad2Deg;
+		var target = _initialHeadsetTarget + (currentPitch * HeadsetTargetAdjustGain * Mathf.Rad2Deg);
 		_commandTargetHeadset = Mathf.Lerp((float)_commandTargetHeadset, (float)target, duration);
 		// Debug.LogWarning("Adjusting head by pitch");
 	}
@@ -374,12 +378,17 @@ public class SelfBalancedDrive : MotorControl
 		_motorList[Location.FRONT_WHEEL_RIGHT]?.SetJointForce((float)Unity2SDF.Direction.Curve(efforts.y));
 	}
 
-	private void SetJoints(in VectorXd targets)
+	public void SetJointHeadset(in float target)
 	{
 		if (_motorList.ContainsKey(Location.HEAD))
 		{
-			_motorList[Location.HEAD]?.Drive(targetPosition: (float)targets[0]);
+			_motorList[Location.HEAD]?.Drive(targetPosition: target);
 		}
+	}
+
+	private void SetJoints(in VectorXd targets)
+	{
+		SetJointHeadset((float)targets[0]);
 
 		if (_motorList.ContainsKey(Location.BODY))
 		{
@@ -493,8 +502,6 @@ public class SelfBalancedDrive : MotorControl
 		{
 			RestoreHipAndLegZero();
 		}
-
-		var jointTargets = ControlHipAndLeg(pitch);
 		#endregion
 
 		#region Self-Balanced Control
@@ -529,11 +536,12 @@ public class SelfBalancedDrive : MotorControl
 		{
 			AdjustHeadsetByPitch(wipStates[3], duration);
 		}
+		#endregion
 
+		var jointTargets = ControlHipAndLeg(pitch);
 		SetJoints(jointTargets);
 
 		var wipEfforts = _smc.ComputeControl(wipStates, wipReferences, duration);
 		SetWheelEfforts(wipEfforts);
-		#endregion
 	}
 }

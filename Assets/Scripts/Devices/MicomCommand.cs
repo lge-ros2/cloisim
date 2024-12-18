@@ -169,7 +169,7 @@ namespace SensorDevices
 					if (Mathf.Abs(stickTranslation.y) > float.Epsilon)
 					{
 						var headsetTarget = Mathf.Abs(stickTranslation.y) *
-							((stickTranslation.y >= 0) ? balancedDrive.HeightTargetMin : balancedDrive.HeightTargetMax);
+							((stickTranslation.y >= 0) ? balancedDrive.HeadsetTargetMin : balancedDrive.HeadsetTargetMax);
 						balancedDrive.HeadsetTarget = headsetTarget;
 					}
 				}
