@@ -89,9 +89,9 @@ public static partial class DeviceHelper
 			else
 			{
 				var linkHelper = targetObject.GetComponentInParent<SDF.Helper.Link>();
-				if (linkHelper.transform.parent.CompareTag("Link"))
+				if (linkHelper.transform.parent.CompareTag("Link")) // if sensor link is nested in link element
 				{
-					return linkHelper.transform.parent.name; // link name
+					return linkHelper.name; // link name
 				}
 				else
 				{
