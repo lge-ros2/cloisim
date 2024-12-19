@@ -1291,6 +1291,11 @@
             Record the sub-type relationship formally in schemas
             </summary>
         </member>
+        <member name="F:ProtoBuf.Meta.SchemaGenerationFlags.IncludeEnumNamePrefix">
+            <summary>
+            Provides support for adding Prefix to names of Enum members in schemas
+            </summary>
+        </member>
         <member name="T:ProtoBuf.Meta.Service">
             <summary>
             Describes a service.
@@ -4091,6 +4096,9 @@
         </member>
         <member name="M:ProtoBuf.Serializers.RepeatedSerializer.CreateStack``2">
             <summary>Create a serializer that operates on lists</summary>
+        </member>
+        <member name="M:ProtoBuf.Serializers.RepeatedSerializer.CreateSet``2">
+            <summary>Create a serializer that operates on sets</summary>
         </member>
         <member name="M:ProtoBuf.Serializers.RepeatedSerializer.ReverseInPlace``1(System.ArraySegment{``0}@)">
             <summary>Reverses a range of values</summary>

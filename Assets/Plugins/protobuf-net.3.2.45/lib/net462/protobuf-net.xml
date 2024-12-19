@@ -261,6 +261,11 @@
             Indicates whether the current type has defined subtypes
             </summary>
         </member>
+        <member name="P:ProtoBuf.Meta.MetaType.SubtypesCount">
+            <summary>
+            Returns the number of defined subtypes on the current type
+            </summary>
+        </member>
         <member name="P:ProtoBuf.Meta.MetaType.Callbacks">
             <summary>
             Returns the set of callbacks defined for this type

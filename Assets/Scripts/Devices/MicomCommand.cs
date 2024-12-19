@@ -69,21 +69,23 @@ namespace SensorDevices
 				}
 				else
 				{
-					var customCmd = receivedMessage.GetMessage<messages.Param>();
-					if (customCmd != null)
+					var joystick = receivedMessage.GetMessage<messages.Joystick>();
+					if (joystick != null)
 					{
-						if (customCmd.Name.StartsWith("mowing"))
-						{
-							ControlMowing(customCmd.Name, customCmd.Value);
-						}
+						ControlJoystick(joystick);
 					}
 					else
 					{
-						var joystick = receivedMessage.GetMessage<messages.Joystick>();
-
-						if (joystick != null)
+						var customCmd = receivedMessage.GetMessage<messages.Param>();
+						if (customCmd != null)
 						{
-							ControlJoystick(joystick);
+							if (customCmd.Name.StartsWith("mowing"))
+							{
+								ControlMowing(customCmd.Name, customCmd.Value);
+							}
+							else if (customCmd.Name.StartsWith("display"))
+							{
+							}
 						}
 #if UNITY_EDITOR
 						else
@@ -169,7 +171,7 @@ namespace SensorDevices
 					if (Mathf.Abs(stickTranslation.y) > float.Epsilon)
 					{
 						var headsetTarget = Mathf.Abs(stickTranslation.y) *
-							((stickTranslation.y >= 0) ? balancedDrive.HeightTargetMin : balancedDrive.HeightTargetMax);
+							((stickTranslation.y >= 0) ? balancedDrive.HeadsetTargetMin : balancedDrive.HeadsetTargetMax);
 						balancedDrive.HeadsetTarget = headsetTarget;
 					}
 				}

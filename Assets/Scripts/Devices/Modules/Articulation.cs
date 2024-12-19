@@ -54,6 +54,34 @@ public class Articulation
 	{
 	}
 
+	public ArticulationDrive GetDrive()
+	{
+		var drive = new ArticulationDrive();
+		if (_jointBody.swingYLock == ArticulationDofLock.LockedMotion &&
+			_jointBody.swingZLock == ArticulationDofLock.LockedMotion &&
+			_jointBody.twistLock != ArticulationDofLock.LockedMotion)
+		{
+			drive = _jointBody.xDrive;
+		}
+		else if (_jointBody.swingYLock == ArticulationDofLock.LockedMotion &&
+				 _jointBody.swingZLock != ArticulationDofLock.LockedMotion &&
+				 _jointBody.twistLock == ArticulationDofLock.LockedMotion)
+		{
+			drive = _jointBody.xDrive;
+		}
+		else if (_jointBody.swingYLock != ArticulationDofLock.LockedMotion &&
+				 _jointBody.swingZLock == ArticulationDofLock.LockedMotion &&
+				 _jointBody.twistLock == ArticulationDofLock.LockedMotion)
+		{
+			drive = _jointBody.yDrive;
+		}
+		else
+		{
+			Debug.LogWarning("Cannot Get Drive(), axis of drive joint is complex!!!!");
+		}
+		return drive;
+	}
+
 #if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 	public void SetVelocityLimit(in float value)
 	{

@@ -11,7 +11,7 @@ public static class MathUtil
 	private const double PI = Math.PI;
 	private const double PI2 = PI * 2;
 
-	readonly public struct MinMax
+	public readonly struct MinMax
 	{
 		public readonly float min;
 		public readonly float max;
@@ -29,6 +29,11 @@ public static class MathUtil
 			this.min = (float)min;
 			this.max = (float)max;
 			this.range = (float)(max - min);
+		}
+
+		public override string ToString()
+		{
+			return $"MinMax[ min:{min}, max:{max}, range:{range} ]";
 		}
 	}
 
