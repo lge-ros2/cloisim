@@ -425,7 +425,7 @@ namespace SensorDevices
 
 				laserScan.WorldPose.Position.Set(lidarPosition);
 				laserScan.WorldPose.Orientation.Set(lidarRotation);
-					
+
 				var laserSamplesH = (int)horizontal.samples;
 				var laserStartAngleH = (float)horizontal.angle.min;
 				var laserEndAngleH = (float)horizontal.angle.max;
