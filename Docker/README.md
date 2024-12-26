@@ -7,47 +7,19 @@ Dockerfile creates minimal image with Vulkan capabilities, and downloads latest 
 
 Make sure you if NVIDIA Container Toolkit and Docker are already installed on your machine.
 
+Installation docker using snap does not recommended.
+
 ### docker
 
 Please refer to [here](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) for latest guideline
 
-```shell
-$ sudo apt-get update
-
-$ sudo apt-get install \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    software-properties-common
-
-$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-
-$ sudo add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable"
-
-$ sudo apt-get update
-$ sudo apt-get install docker-ce docker-ce-cli containerd.io
-```
-
 ### nvidia-docker
 
-Refer here for install guide [nvidia-docker2](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker).
-It may differ from latest guide.
+Refer here for install guide [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
 ```shell
-$ distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-   && curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add - \
-   && curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-
-$ sudo apt-get update
-$ sudo apt-get install -y nvidia-docker2
-$ sudo systemctl restart docker
-
 ### test if it installed successfully
-$ sudo docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
+$ sudo docker run --rm --gpus all nvidia/cuda:11.0.3-base-ubuntu20.04 nvidia-smi
 ```
 
 ## Run Docker
@@ -64,18 +36,24 @@ docker build -t cloisim .
 
 You can change paths for resources in docker run command.
 
+refer to [samples_resource](https://github.com/lge-ros2/sample_resources) more details about resource
+
 For example,
 
-change to
-
 ```shell
+# change to
 -v ${CLOISIM_RESOURCES_PATH}/assets/models:/opt/resources/models/
+
+# instead of
+-v ${CLOISIM_RESOURCES_PATH}/models:/opt/resources/models/
 ```
 
-instead of
+Default resource paths in container is like below.
 
-```shell
--v ${CLOISIM_RESOURCES_PATH}/models:/opt/resources/models/
+```dockerfile
+ENV CLOISIM_FILES_PATH=/opt/resources/media \
+    CLOISIM_MODEL_PATH=/opt/resources/models \
+    CLOISIM_WORLD_PATH=/opt/resources/worlds
 ```
 
 #### Option A
@@ -85,16 +63,39 @@ Use following command to run CLOiSim docker container:
 ```shell
 export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample_resources/
 
-docker run -ti --rm --gpus all --net=host \
-    -e DISPLAY \
-    -v /tmp/.Xauthority:/tmp/.Xauthority \
+docker run -it --rm --net=host --gpus '"device=0"' \
+    -e DISPLAY=$DISPLAY \
+    -v ${HOME}/.Xauthority:/root/.Xauthority:rw \
     -v /tmp/cloisim/unity3d:/root/.config/unity3d \
-    -v /tmp/.X11-unix:/tmp/.X11-unix  \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /usr/share/fonts/:/usr/share/fonts/ \
-    -v ${CLOISIM_RESOURCES_PATH}/media:/opt/resources/media/ \
+    -v ${CLOISIM_RESOURCES_PATH}/materials:/opt/resources/materials/ \
     -v ${CLOISIM_RESOURCES_PATH}/models:/opt/resources/models/ \
     -v ${CLOISIM_RESOURCES_PATH}/worlds:/opt/resources/worlds/ \
     cloisim lg_seocho.world
+```
+
+you can add optional arguments.
+
+```shell
+docker run -ti --rm --gpus all --net=host
+    ...
+    cloisim --world lg_seocho.world
+
+## headless mode
+docker run -ti --rm --gpus all --net=host
+    ...
+    cloisim --headless --world lg_seocho.world
+```
+
+You can change gpu options. 
+
+It is possible to select GPU device through `--gpus '"device=0"'` instead of `--gpus all`.
+
+for example,
+
+```shell
+docker run -it --rm --net=host --gpus '"device=0"'  ...
 ```
 
 #### Option B
@@ -104,9 +105,11 @@ Option B: just run with target world file name in 'worlds'
 ```shell
 export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample_resources/
 ./start.sh lg_seocho.world
-```
+./start.sh --world lg_seocho.world
 
-refer to [samples_resource](https://github.com/lge-ros2/sample_resources) more details about resource
+## headless mode
+./start.sh --headless --world lg_seocho.world
+```
 
 -------------------------------
 
