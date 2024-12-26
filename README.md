@@ -181,7 +181,9 @@ Please visit here [build guide](https://github.com/lge-ros2/cloisim/wiki/Build-G
 
 Any problem during launching the simultion, please refer to [Wiki Page/Usage](https://github.com/lge-ros2/cloisim/wiki/Usage)' section.
 
-### Run 'CLOiSim'
+### How to run 'CLOiSim'
+
+#### Environment configuration
 
 Set environment path like below. You can find the sample resources [here](https://github.com/lge-ros2/sample_resources)
 
@@ -193,11 +195,19 @@ export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample_resources/models:/home/Uni
 export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample_resources/worlds"
 ```
 
-Run CLOiSim
+#### Run 'CLOiSim'
+
+Run script with world file name.
 
 ```shell
- ./run.sh cloisim.world
- ```
+./run.sh cloisim.world
+```
+
+or can run headless mode (experimental only for linux)
+
+```shell
+./run.sh --headless --world cloisim.world
+```
 
 or you can execute [binary](https://github.com/lge-ros2/cloisim/releases) file directly.
 
