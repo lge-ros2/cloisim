@@ -111,6 +111,14 @@ public class SimulationControlService : WebSocketBehavior
 
 		switch (request.command)
 		{
+			case "fps":
+				{
+					var fps = Main.InfoDisplay.FPS();
+					output = new SimulationControlResponseNormal();
+					(output as SimulationControlResponseNormal).result = fps.ToString();
+				}
+				break;
+
 			case "reset":
 				{
 					var wasSuccessful = Main.TriggerResetService();
