@@ -223,14 +223,35 @@ namespace SensorDevices
 
 			_camSensor.targetTexture = _rtHandle.rt;
 
-			var camHFov = (float)_camParam.horizontal_fov * Mathf.Rad2Deg;
-			var camVFov = SensorHelper.HorizontalToVerticalFOV(camHFov, _camSensor.aspect);
-			_camSensor.fieldOfView = camVFov;
+			var isOrthoGraphic = false;
+			if (_camParam.lens != null)
+			{
+				if (_camParam.lens.type.Equals("orthographic"))
+				{
+					isOrthoGraphic = true;
+				}
+			}
+
+			if (isOrthoGraphic)
+			{
+				_camSensor.orthographic = true;
+				_camSensor.orthographicSize = 5;
+			}
+			else
+			{
+				var camHFov = (float)_camParam.horizontal_fov * Mathf.Rad2Deg;
+				var camVFov = SensorHelper.HorizontalToVerticalFOV(camHFov, _camSensor.aspect);
+
+				_camSensor.orthographic = false;
+				_camSensor.fieldOfView = camVFov;
+
+				var projMatrix = SensorHelper.MakeProjectionMatrixPerspective(camHFov, camVFov, _camSensor.nearClipPlane, _camSensor.farClipPlane);
+				_camSensor.projectionMatrix = projMatrix;
+			}
 
 			// Invert projection matrix for cloisim msg
-			var projMatrix = SensorHelper.MakeCustomProjectionMatrix(camHFov, camVFov, _camSensor.nearClipPlane, _camSensor.farClipPlane);
 			var invertMatrix = Matrix4x4.Scale(new Vector3(1, -1, 1));
-			_camSensor.projectionMatrix = projMatrix * invertMatrix;
+			_camSensor.projectionMatrix *= invertMatrix;
 
 			SetDefaultUniversalAdditionalCameraData();
 
