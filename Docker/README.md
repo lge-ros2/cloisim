@@ -56,12 +56,22 @@ ENV CLOISIM_FILES_PATH=/opt/resources/media \
     CLOISIM_WORLD_PATH=/opt/resources/worlds
 ```
 
-#### Option A
+It is possible to select GPU device through `--gpus '"device=0"'` instead of `--gpus all`.
+
+for example,
+
+```shell
+docker run -it --rm --net=host --gpus '"device=0"'  ...
+```
+
+#### Option A (non-headless)
 
 Use following command to run CLOiSim docker container:
 
 ```shell
 export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample_resources/
+
+xhost +
 
 docker run -it --rm --net=host --gpus '"device=0"' \
     -e DISPLAY=$DISPLAY \
@@ -75,32 +85,29 @@ docker run -it --rm --net=host --gpus '"device=0"' \
     cloisim lg_seocho.world
 ```
 
-you can add optional arguments.
+You can input other style of optional arguments.
 
 ```shell
 docker run -ti --rm --gpus all --net=host
     ...
     cloisim --world lg_seocho.world
+```
 
-## headless mode
-docker run -ti --rm --gpus all --net=host
-    ...
+#### Option B (headless)
+
+```shell
+docker run -it --rm --net=host --gpus '"device=0"' \
+    -v /tmp/cloisim/unity3d:/root/.config/unity3d \
+    -v /usr/share/fonts/:/usr/share/fonts/ \
+    -v ${CLOISIM_RESOURCES_PATH}/materials:/opt/resources/materials/ \
+    -v ${CLOISIM_RESOURCES_PATH}/models:/opt/resources/models/ \
+    -v ${CLOISIM_RESOURCES_PATH}/worlds:/opt/resources/worlds/ \
     cloisim --headless --world lg_seocho.world
 ```
 
-You can change gpu options. 
+#### Option C (Predefined script)
 
-It is possible to select GPU device through `--gpus '"device=0"'` instead of `--gpus all`.
-
-for example,
-
-```shell
-docker run -it --rm --net=host --gpus '"device=0"'  ...
-```
-
-#### Option B
-
-Option B: just run with target world file name in 'worlds'
+just run with target world file name in 'worlds'
 
 ```shell
 export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample_resources/
@@ -109,6 +116,7 @@ export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample_resources/
 
 ## headless mode
 ./start.sh --headless --world lg_seocho.world
+./start-headless.sh --headless --world lg_seocho.world
 ```
 
 -------------------------------
