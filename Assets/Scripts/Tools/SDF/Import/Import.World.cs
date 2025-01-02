@@ -26,6 +26,21 @@ namespace SDF
 					if (mainCamera != null && world.gui.camera != null)
 					{
 						var cameraPose = world.gui.camera.Pose;
+
+						if (world.gui.camera.projection_type.Equals("orthographic"))
+						{
+							mainCamera.orthographic = true;
+						}
+						else if (world.gui.camera.projection_type.Equals("perspective"))
+						{
+							mainCamera.orthographic = false;
+						}
+						else
+						{
+							UE.Debug.LogWarning($"{world.gui.camera.projection_type} is not supported. Default value is set to 'perspective'");
+							mainCamera.orthographic = false;
+						}
+
 						mainCamera.transform.localPosition = SDF2Unity.Position(cameraPose?.Pos);
 						mainCamera.transform.localRotation = SDF2Unity.Rotation(cameraPose?.Rot);
 					}
