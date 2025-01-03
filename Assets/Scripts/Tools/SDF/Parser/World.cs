@@ -58,7 +58,7 @@ namespace SDF
 					public double max_dist = 0;
 
 					// Description: If set to true, the position of the camera is fixed relatively to the model or to the world, depending on the value of the use_model_frame element. Otherwise, the position of the camera may vary but the distance between the camera and the model will depend on the value of the min_dist and max_dist elements. In any case, the camera will always follow the model by changing its orientation.
-					public bool _static = false;
+					public bool static_ = false;
 
 					// Description: If set to true, the position of the camera is relative to the model reference frame, which means that its position relative to the model will not change. Otherwise, the position of the camera is relative to the world reference frame, which means that its position relative to the world will not change. This parameter is only used if static is set to true.
 					public bool use_model_frame = true;
@@ -87,6 +87,21 @@ namespace SDF
 					if (IsValidNode("projection_type"))
 					{
 						projection_type = GetValue<string>("projection_type");
+					}
+
+					if (IsValidNode("track_visual"))
+					{
+						track_visual = new TrackVisual();
+
+						track_visual.name = GetValue<string>("track_visual/name", track_visual.name);
+						track_visual.min_dist = GetValue<double>("track_visual/min_dist", track_visual.min_dist);
+						track_visual.max_dist = GetValue<double>("track_visual/max_dist", track_visual.max_dist);
+						track_visual.static_ = GetValue<bool>("track_visual/static", track_visual.static_);
+						track_visual.use_model_frame = GetValue<bool>("track_visual/use_model_frame", track_visual.use_model_frame);
+
+						var xyzStr = GetValue<string>("track_visual/xyz", track_visual.xyz.ToString());
+						track_visual.xyz = new Vector3<double>(xyzStr);
+						track_visual.inherit_yaw = GetValue<bool>("track_visual/inherit_yaw", track_visual.inherit_yaw);
 					}
 				}
 			}
