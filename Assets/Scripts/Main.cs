@@ -55,6 +55,9 @@ public class Main : MonoBehaviour
 	private static ModelImporter _modelImporter = null;
 	private static Main _instance = null;
 	private static Pose _cameraInitPose = Pose.identity;
+	private static string _trackVisualModelName = string.Empty;
+	private static Vector3 _trackVisualPosition = Vector3.zero;
+	private static bool _trackVisualInheritYaw = false;
 
 	private static bool _isResetting = false;
 	private static bool _resetTriggered = false;
@@ -80,6 +83,21 @@ public class Main : MonoBehaviour
 	{
 		get => _cameraInitPose;
 		set => _cameraInitPose = value;
+	}
+	public static string TrackVisualModelName
+	{
+		get => _trackVisualModelName;
+		set => _trackVisualModelName = value;
+	}
+	public static Vector3 TrackVisualPosition
+	{
+		get => _trackVisualPosition;
+		set => _trackVisualPosition = value;
+	}
+	public static bool TrackVisualInheritYaw
+	{
+		get => _trackVisualInheritYaw;
+		set => _trackVisualInheritYaw = value;
 	}
 
 	#region SDF Parser
@@ -439,6 +457,20 @@ public class Main : MonoBehaviour
 			yield return new WaitForEndOfFrame();
 
 			Reset();
+
+			yield return new WaitForEndOfFrame();
+
+			if (!string.IsNullOrEmpty(_trackVisualModelName))
+			{
+				_followingList.StartFollowing(_trackVisualModelName);
+				var followingCamera = Main.UIObject.GetComponentInChildren<FollowingCamera>();
+				
+				if (followingCamera != null)
+				{
+					followingCamera.SetInitialRelativePosition(_trackVisualPosition);
+					followingCamera.AlignSameDirection(_trackVisualInheritYaw);
+				}
+			}
 		}
 		else
 		{
