@@ -64,6 +64,9 @@ public class CameraControl : MonoBehaviour
 	private float _wheelMoveAmp = 50f;
 
 	[SerializeField]
+	private float _wheelMoveOrthoSize = 0.25f;
+
+	[SerializeField]
 	private float _angleStep = 1.5f;
 
 	private Vector3 _lastMouse = new Vector3(255, 255, 255); // kind of in the middle of the screen, rather than at the top (play)
@@ -73,6 +76,11 @@ public class CameraControl : MonoBehaviour
 	private int _targetLayerMask = 0;
 
 	Coroutine _movingCoroutine = null;
+
+	private bool IsOrthographicMode()
+	{
+		return Camera.main.orthographic;
+	}
 
 	void Awake()
 	{
@@ -244,7 +252,14 @@ public class CameraControl : MonoBehaviour
 			var scrollWheel = Input.GetAxisRaw("Mouse ScrollWheel");
 			if (scrollWheel != 0)
 			{
-				baseDirection += new Vector3(0, 0, Input.mouseScrollDelta.y * _wheelMoveAmp);
+				if (IsOrthographicMode())
+				{
+					Camera.main.orthographicSize += Input.mouseScrollDelta.y * _wheelMoveOrthoSize;
+				}
+				else
+				{
+					baseDirection += new Vector3(0, 0, Input.mouseScrollDelta.y * _wheelMoveAmp);
+				}
 				// Debug.Log(scrollWheel.ToString("F4") + " | " + Input.mouseScrollDelta.y);
 				_terminateMoving = true;
 			}
@@ -254,11 +269,25 @@ public class CameraControl : MonoBehaviour
 		{
 			if (Input.GetKey(KeyCode.W))
 			{
-				baseDirection.z += 1;
+				if (IsOrthographicMode())
+				{
+					Camera.main.orthographicSize -= _wheelMoveOrthoSize;
+				}
+				else
+				{
+					baseDirection.z += 1;
+				}
 			}
 			else if (Input.GetKey(KeyCode.S))
 			{
-				baseDirection.z += -1;
+				if (IsOrthographicMode())
+				{
+					Camera.main.orthographicSize += _wheelMoveOrthoSize;
+				}
+				else
+				{
+					baseDirection.z -= 1;
+				}
 			}
 
 			if (Input.GetKey(KeyCode.A) && Input.GetKey(KeyCode.D))
