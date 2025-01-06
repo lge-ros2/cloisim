@@ -12,6 +12,8 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
+			private static float defaultOrthographicSize = 8;
+
 			protected override System.Object ImportWorld(in World world)
 			{
 				if (world == null)
@@ -30,6 +32,7 @@ namespace SDF
 						if (world.gui.camera.projection_type.Equals("orthographic"))
 						{
 							mainCamera.orthographic = true;
+							mainCamera.orthographicSize = defaultOrthographicSize;
 						}
 						else if (world.gui.camera.projection_type.Equals("perspective"))
 						{
