@@ -38,7 +38,7 @@ public class FollowingTargetList : MonoBehaviour
 
 			_emptyOption = new TMP_Dropdown.OptionData("UNFOLLOWING");
 			dropdown.options.Add(_emptyOption);
-			SelectItem(0);
+			StopFollowing();
 		}
 	}
 
@@ -61,6 +61,44 @@ public class FollowingTargetList : MonoBehaviour
 		_followingCamera?.SetTargetObject(target);
 	}
 
+	private void StartFollowing()
+	{
+		Main.Gizmos.GetSelectedTargets(out var objectListForFollowing);
+
+		if (objectListForFollowing.Count == 0)
+		{
+			return;
+		}
+
+		if (objectListForFollowing.Count > 1)
+		{
+			Main.UIController?.SetWarningMessage("Multiple Object is selected. Only single object can be followed.");
+		}
+
+		foreach (var target in objectListForFollowing)
+		{
+			var articulationBody = target.GetComponent<ArticulationBody>();
+			if (articulationBody != null && articulationBody.isRoot)
+			{
+				var selectedObjectName = target.gameObject.name;
+				StartFollowing(selectedObjectName);
+				Main.Gizmos.ClearTargets();
+				break;
+			}
+		}
+	}
+
+	public void StartFollowing(in string targetObjectName)
+	{
+		var selectedIndex = FindItemIndex(targetObjectName);
+		SelectItem(selectedIndex);
+	}
+
+	public void StopFollowing()
+	{
+		SelectItem(0);
+	}
+
 	void LateUpdate()
 	{
 		if (Input.GetKey(KeyCode.LeftControl))
@@ -69,32 +107,11 @@ public class FollowingTargetList : MonoBehaviour
 			{
 				if (Input.GetKey(KeyCode.LeftShift))
 				{
-					SelectItem(0);
+					StopFollowing();
 				}
 				else
 				{
-					Main.Gizmos.GetSelectedTargets(out var objectListForFollowing);
-
-					if (objectListForFollowing.Count > 0)
-					{
-						if (objectListForFollowing.Count > 1)
-						{
-							Main.UIController?.SetWarningMessage("Multiple Object is selected. Only single object can be followed.");
-						}
-
-						foreach (var target in objectListForFollowing)
-						{
-							var articulationBody = target.GetComponent<ArticulationBody>();
-							if (articulationBody != null && articulationBody.isRoot)
-							{
-								var selectedObjectName = target.gameObject.name;
-								var selectedIndex = FindItemIndex(selectedObjectName);
-								SelectItem(selectedIndex);
-								Main.Gizmos.ClearTargets();
-								break;
-							}
-						}
-					}
+					StartFollowing();
 				}
 			}
 		}

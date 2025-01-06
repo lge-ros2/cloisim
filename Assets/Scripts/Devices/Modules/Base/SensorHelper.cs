@@ -8,7 +8,7 @@ using UnityEngine;
 
 public static class SensorHelper
 {
-	public static Matrix4x4 MakeCustomProjectionMatrix(in float hFov, in float vFov, in float near, in float far)
+	public static Matrix4x4 MakeProjectionMatrixPerspective(in float hFov, in float vFov, in float near, in float far)
 	{
 		// construct custom aspect ratio projection matrix
 		// math from https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/opengl-perspective-projection-matrix
