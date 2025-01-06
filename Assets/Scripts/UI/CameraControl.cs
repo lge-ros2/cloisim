@@ -254,7 +254,7 @@ public class CameraControl : MonoBehaviour
 			{
 				if (IsOrthographicMode())
 				{
-					Camera.main.orthographicSize += Input.mouseScrollDelta.y * _wheelMoveOrthoSize;
+					Camera.main.orthographicSize -= Input.mouseScrollDelta.y * _wheelMoveOrthoSize;
 				}
 				else
 				{
