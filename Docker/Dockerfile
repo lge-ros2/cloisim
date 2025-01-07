@@ -5,6 +5,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     NVIDIA_VISIBLE_DEVICES=all \
     NVIDIA_DRIVER_CAPABILITIES=all
 
+ENV XDG_RUNTIME_DIR=/tmp
+
 # Prerequisite for Vulkan capability in Docker Container
 ADD https://gitlab.com/nvidia/container-images/vulkan/-/raw/ubuntu18.04/nvidia_icd.json /etc/vulkan/icd.d/nvidia_icd.json
 
