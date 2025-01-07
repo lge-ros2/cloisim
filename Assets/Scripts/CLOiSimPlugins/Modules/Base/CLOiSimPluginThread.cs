@@ -114,7 +114,8 @@ public class CLOiSimPluginThread : IDisposable
 				if (publisher.Publish(dataStreamToSend))
 				{
 					sw.Stop();
-					device.SetTransportedTime((float)sw.Elapsed.TotalSeconds);
+					var transportingTime = (float)sw.ElapsedMilliseconds * 0.001f;
+					device.SetTransportedTime(transportingTime);
 				}
 			}
 		}

@@ -24,18 +24,19 @@ public class DeviceMessage : MemoryStream
 
 		Reset();
 
-		lock (this)
+		if (CanWrite)
 		{
-			if (CanWrite)
+			lock (this)
 			{
 				Write(data, 0, data.Length);
 				Position = 0;
 			}
-			else
-			{
-				Console.WriteLine("Failed to write memory stream");
-			}
 		}
+		else
+		{
+			Console.WriteLine("Failed to write memory stream");
+		}
+
 		return true;
 	}
 
@@ -45,6 +46,7 @@ public class DeviceMessage : MemoryStream
 
 		lock (this)
 		{
+			Seek(0, SeekOrigin.Begin);
 			Serializer.Serialize<T>(this, instance);
 		}
 	}

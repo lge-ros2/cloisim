@@ -19,12 +19,10 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class Camera : Device
 	{
-		private const float MaxUpdateRate = 40;
-
 		protected SDF.Camera _camParam = null;
 		protected messages.CameraSensor _sensorInfo = null;
 		protected messages.Image _image = null; // for Parameters
-		protected BlockingCollection<messages.ImageStamped> _messageQueue = new BlockingCollection<messages.ImageStamped>();
+		protected ConcurrentQueue<messages.ImageStamped> _messageQueue = new ConcurrentQueue<messages.ImageStamped>();
 
 		// TODO : Need to be implemented!!!
 		// <lens> TBD
@@ -97,7 +95,7 @@ namespace SensorDevices
 
 		protected override void OnReset()
 		{
-			while (_messageQueue.TryTake(out _)) { }
+			while (_messageQueue.TryDequeue(out _)) { }
 
 			lock (_asyncWorkList)
 			{
@@ -189,7 +187,7 @@ namespace SensorDevices
 			_camSensor.clearFlags = CameraClearFlags.Nothing;
 			_camSensor.depthTextureMode = DepthTextureMode.None;
 			_camSensor.renderingPath = RenderingPath.Forward;
-			_camSensor.allowHDR = true;
+			_camSensor.allowHDR = false;
 			_camSensor.allowMSAA = true;
 			_camSensor.allowDynamicResolution = true;
 			_camSensor.useOcclusionCulling = true;
@@ -214,7 +212,7 @@ namespace SensorDevices
 				useMipMap: false,
 				autoGenerateMips: false,
 				isShadowMap: false,
-				anisoLevel: 3,
+				anisoLevel: 2,
 				mipMapBias: 0,
 				bindTextureMS: false,
 				useDynamicScale: true,
@@ -292,7 +290,8 @@ namespace SensorDevices
 
 		private IEnumerator CameraWorker()
 		{
-			var messageGenerationTime = 1f / (MaxUpdateRate - UpdateRate);
+			const float workingTime = 0.005f;
+			var waitNextwork = new WaitForSeconds(WaitPeriod(workingTime));
 
 			while (_startCameraWork)
 			{
@@ -314,7 +313,7 @@ namespace SensorDevices
 
 				_universalCamData.enabled = false;
 
-				yield return new WaitForSeconds(WaitPeriod(messageGenerationTime));
+				yield return null;
 			}
 		}
 
@@ -326,21 +325,16 @@ namespace SensorDevices
 			}
 			else if (request.done)
 			{
-				AsyncWork.Camera asyncWork;
-
 				lock (_asyncWorkList)
 				{
 					var asyncWorkIndex = _asyncWorkList.FindIndex(x => x.request.Equals(request));
 					if (asyncWorkIndex >= 0 && asyncWorkIndex < _asyncWorkList.Count)
 					{
-						checked
-						{
-							asyncWork = _asyncWorkList[asyncWorkIndex];
-							var readbackData = request.GetData<byte>();
-							ImageProcessing(ref readbackData, asyncWork.capturedTime);
-							readbackData.Dispose();
-							_asyncWorkList.RemoveAt(asyncWorkIndex);
-						}
+						var asyncWork = _asyncWorkList[asyncWorkIndex];
+						var readbackData = request.GetData<byte>();
+						ImageProcessing(ref readbackData, asyncWork.capturedTime);
+						readbackData.Dispose();
+						_asyncWorkList.RemoveAt(asyncWorkIndex);
 					}
 				}
 			}
@@ -348,7 +342,7 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			while (_messageQueue.TryTake(out var msg))
+			while (_messageQueue.TryDequeue(out var msg))
 			{
 				PushDeviceMessage<messages.ImageStamped>(msg);
 			}
@@ -364,7 +358,7 @@ namespace SensorDevices
 			imageStamped.Image = new messages.Image();
 			imageStamped.Image = _image;
 
-			_camImageData.SetTextureBufferData(readbackData);
+			_camImageData.SetTextureBufferData(ref readbackData);
 
 			var image = imageStamped.Image;
 			var imageData = _camImageData.GetImageData(image.Data.Length);
@@ -383,7 +377,8 @@ namespace SensorDevices
 				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
 			}
 
-			_messageQueue.TryAdd(imageStamped);
+			// Debug.Log(DeviceName + "=" + imageProcessingTime.ToString("F6"));
+			_messageQueue.Enqueue(imageStamped);
 		}
 
 		public messages.CameraSensor GetCameraInfo()
@@ -393,7 +388,7 @@ namespace SensorDevices
 
 		public messages.ImageStamped GetImageDataMessage()
 		{
-			if (_messageQueue.TryTake(out var msg))
+			if (_messageQueue.TryDequeue(out var msg))
 			{
 				return msg;
 			}

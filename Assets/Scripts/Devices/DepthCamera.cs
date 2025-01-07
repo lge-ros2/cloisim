@@ -249,7 +249,7 @@ namespace SensorDevices
 			}
 			_depthCamBuffer.Deallocate();
 
-			_messageQueue.TryAdd(imageStamped);
+			_messageQueue.Enqueue(imageStamped);
 		}
 	}
 }
