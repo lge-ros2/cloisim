@@ -58,7 +58,7 @@ namespace SensorDevices
 		private RTHandle _rtHandle = null;
 		private ParallelOptions _parallelOptions = null;
 
-		private List<AsyncWork.Laser> _asyncWorkList = new List<AsyncWork.Laser>();
+		private ConcurrentDictionary<int, AsyncWork.Laser> _asyncWorkList = new ConcurrentDictionary<int, AsyncWork.Laser>(); 
 		private DepthData.CamBuffer[] _depthCamBuffers;
 		private LaserData.LaserCamData[] _laserCamData;
 		private LaserData.LaserDataOutput[] _laserDataOutput;
@@ -98,10 +98,7 @@ namespace SensorDevices
 
 		protected override void OnReset()
 		{
-			lock (_asyncWorkList)
-			{
-				_asyncWorkList.Clear();
-			}
+			_asyncWorkList.Clear();
 		}
 
 		protected new void OnDestroy()
@@ -333,10 +330,7 @@ namespace SensorDevices
 						var capturedTime = (float)DeviceHelper.GetGlobalClock().SimTime;
 						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, OnCompleteAsyncReadback);
 
-						lock (_asyncWorkList)
-						{
-							_asyncWorkList.Add(new AsyncWork.Laser(dataIndex, readbackRequest, capturedTime));
-						}
+						_asyncWorkList.TryAdd(readbackRequest.GetHashCode(), new AsyncWork.Laser(dataIndex, readbackRequest, capturedTime));
 
 						laserCam.enabled = false;
 					}
@@ -358,16 +352,8 @@ namespace SensorDevices
 			}
 			else if (request.done)
 			{
-				var asyncWorkIndex = -1;
-
-				lock (_asyncWorkList)
+				if (_asyncWorkList.Remove(request.GetHashCode(), out var asyncWork))
 				{
-					asyncWorkIndex = _asyncWorkList.FindIndex(x => x.request.Equals(request));
-				}
-
-				if (asyncWorkIndex >= 0 && asyncWorkIndex < _asyncWorkList.Count)
-				{
-					var asyncWork = _asyncWorkList[asyncWorkIndex];
 					var dataIndex = asyncWork.dataIndex;
 					var depthCamBuffer = _depthCamBuffers[dataIndex];
 
@@ -397,12 +383,6 @@ namespace SensorDevices
 					}
 
 					depthCamBuffer.Deallocate();
-
-
-					lock (_asyncWorkList)
-					{
-						_asyncWorkList.RemoveAt(asyncWorkIndex);
-					}
 				}
 			}
 		}
@@ -551,12 +531,8 @@ namespace SensorDevices
 				_messageQueue.Enqueue(laserScanStamped);
 
 				sw.Stop();
-				// var laserProcsssingTime = (float)sw.ElapsedMilliseconds * 0.001f;
-				// var avgProcessingTime = processingTimeSum / (float)numberOfLaserCamData;
 				var laserProcsssingTime = (int)sw.ElapsedMilliseconds;
 				var avgProcessingTime = (int)(processingTimeSum / (float)numberOfLaserCamData * 1000f);
-				// Debug.Log("LaserProcessing laserProcessingtime=" + laserProcsssingTime + ", " + avgProcessingTime);
-				// yield return new WaitForSeconds(WaitPeriod(laserProcsssingTime + avgProcessingTime));
 				Thread.Sleep(laserProcsssingTime + avgProcessingTime);
 			}
 		}

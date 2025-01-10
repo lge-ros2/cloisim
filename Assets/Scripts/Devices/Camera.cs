@@ -5,8 +5,8 @@
  */
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using Stopwatch = System.Diagnostics.Stopwatch;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
@@ -36,7 +36,7 @@ namespace SensorDevices
 		protected GraphicsFormat _readbackDstFormat;
 
 		protected CameraData.Image _camImageData;
-		private List<AsyncWork.Camera> _asyncWorkList = new List<AsyncWork.Camera>();
+		private ConcurrentDictionary<int, AsyncWork.Camera> _asyncWorkList = new ConcurrentDictionary<int, AsyncWork.Camera>(); 
 
 		public Noise noise = null;
 		protected bool _startCameraWork = false;
@@ -97,10 +97,7 @@ namespace SensorDevices
 		{
 			while (_messageQueue.TryDequeue(out _)) { }
 
-			lock (_asyncWorkList)
-			{
-				_asyncWorkList.Clear();
-			}
+			_asyncWorkList.Clear();
 		}
 
 		protected virtual void SetupTexture()
@@ -290,8 +287,7 @@ namespace SensorDevices
 
 		private IEnumerator CameraWorker()
 		{
-			const float workingTime = 0.005f;
-			var waitNextwork = new WaitForSeconds(WaitPeriod(workingTime));
+			var waitNextwork = new WaitForSeconds(WaitPeriod());
 
 			while (_startCameraWork)
 			{
@@ -304,16 +300,13 @@ namespace SensorDevices
 
 					var capturedTime = (float)DeviceHelper.GetGlobalClock().SimTime;
 					var readbackRequest = AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, OnCompleteAsyncReadback);
-
-					lock (_asyncWorkList)
-					{
-						_asyncWorkList.Add(new AsyncWork.Camera(readbackRequest, capturedTime));
-					}
+					
+					_asyncWorkList.TryAdd(readbackRequest.GetHashCode(), new AsyncWork.Camera(readbackRequest, capturedTime));
 				}
 
 				_universalCamData.enabled = false;
 
-				yield return null;
+				yield return waitNextwork;
 			}
 		}
 
@@ -325,18 +318,17 @@ namespace SensorDevices
 			}
 			else if (request.done)
 			{
-				lock (_asyncWorkList)
+				var sw = new Stopwatch();
+				sw.Start();
+				if (_asyncWorkList.TryRemove(request.GetHashCode(), out var asyncWork))
 				{
-					var asyncWorkIndex = _asyncWorkList.FindIndex(x => x.request.Equals(request));
-					if (asyncWorkIndex >= 0 && asyncWorkIndex < _asyncWorkList.Count)
-					{
-						var asyncWork = _asyncWorkList[asyncWorkIndex];
-						var readbackData = request.GetData<byte>();
-						ImageProcessing(ref readbackData, asyncWork.capturedTime);
-						readbackData.Dispose();
-						_asyncWorkList.RemoveAt(asyncWorkIndex);
-					}
+					var readbackData = request.GetData<byte>();
+					ImageProcessing(ref readbackData, asyncWork.capturedTime);
+					readbackData.Dispose();
 				}
+				sw.Stop();
+				if (sw.ElapsedMilliseconds > 0)
+				Debug.Log(sw.ElapsedMilliseconds);	
 			}
 		}
 
@@ -377,7 +369,6 @@ namespace SensorDevices
 				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
 			}
 
-			// Debug.Log(DeviceName + "=" + imageProcessingTime.ToString("F6"));
 			_messageQueue.Enqueue(imageStamped);
 		}
 
