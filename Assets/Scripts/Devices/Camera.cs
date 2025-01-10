@@ -6,7 +6,7 @@
 
 using System.Collections;
 using System.Collections.Concurrent;
-using Stopwatch = System.Diagnostics.Stopwatch;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
@@ -36,7 +36,7 @@ namespace SensorDevices
 		protected GraphicsFormat _readbackDstFormat;
 
 		protected CameraData.Image _camImageData;
-		private ConcurrentDictionary<int, AsyncWork.Camera> _asyncWorkList = new ConcurrentDictionary<int, AsyncWork.Camera>(); 
+		private ConcurrentDictionary<int, AsyncWork.Camera> _asyncWorkList = new ConcurrentDictionary<int, AsyncWork.Camera>();
 
 		public Noise noise = null;
 		protected bool _startCameraWork = false;
@@ -287,8 +287,9 @@ namespace SensorDevices
 
 		private IEnumerator CameraWorker()
 		{
-			var waitNextwork = new WaitForSeconds(WaitPeriod());
-
+			var rateGap = (float)Application.targetFrameRate - UpdateRate;
+			var messageGenerationTime = Mathf.Approximately(rateGap, 0) ? float.PositiveInfinity : 1f / rateGap;
+			var waitNextCapture = new WaitForSeconds(WaitPeriod(messageGenerationTime));
 			while (_startCameraWork)
 			{
 				_universalCamData.enabled = true;
@@ -300,13 +301,13 @@ namespace SensorDevices
 
 					var capturedTime = (float)DeviceHelper.GetGlobalClock().SimTime;
 					var readbackRequest = AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, OnCompleteAsyncReadback);
-					
+
 					_asyncWorkList.TryAdd(readbackRequest.GetHashCode(), new AsyncWork.Camera(readbackRequest, capturedTime));
 				}
 
 				_universalCamData.enabled = false;
 
-				yield return waitNextwork;
+				yield return waitNextCapture;
 			}
 		}
 
@@ -318,25 +319,24 @@ namespace SensorDevices
 			}
 			else if (request.done)
 			{
-				var sw = new Stopwatch();
-				sw.Start();
 				if (_asyncWorkList.TryRemove(request.GetHashCode(), out var asyncWork))
 				{
 					var readbackData = request.GetData<byte>();
+					var asyncWorkTime = (float)DeviceHelper.GetGlobalClock().SimTime - asyncWork.capturedTime;
 					ImageProcessing(ref readbackData, asyncWork.capturedTime);
 					readbackData.Dispose();
 				}
-				sw.Stop();
-				if (sw.ElapsedMilliseconds > 0)
-				Debug.Log(sw.ElapsedMilliseconds);	
 			}
 		}
 
 		protected override void GenerateMessage()
 		{
+			var count = _messageQueue.Count;
 			while (_messageQueue.TryDequeue(out var msg))
 			{
 				PushDeviceMessage<messages.ImageStamped>(msg);
+				Thread.Sleep(WaitPeriodInMilliseconds() / count);
+				Thread.SpinWait(1);
 			}
 		}
 
