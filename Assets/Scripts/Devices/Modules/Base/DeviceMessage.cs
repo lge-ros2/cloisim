@@ -10,6 +10,8 @@ using ProtoBuf;
 
 public class DeviceMessage : MemoryStream
 {
+	private readonly object _lock = new object();
+
 	public DeviceMessage()
 	{
 		Reset();
@@ -22,11 +24,11 @@ public class DeviceMessage : MemoryStream
 			return false;
 		}
 
-		Reset();
-
 		if (CanWrite)
 		{
-			lock (this)
+			Reset();
+
+			lock (_lock)
 			{
 				Write(data, 0, data.Length);
 				Position = 0;
@@ -42,12 +44,19 @@ public class DeviceMessage : MemoryStream
 
 	public void SetMessage<T>(T instance)
 	{
-		Reset();
-
-		lock (this)
+		if (CanWrite)
 		{
-			Seek(0, SeekOrigin.Begin);
-			Serializer.Serialize<T>(this, instance);
+			Reset();
+
+			lock (_lock)
+			{
+				Seek(0, SeekOrigin.Begin);
+				Serializer.Serialize<T>(this, instance);
+			}
+		}
+		else
+		{
+			Console.WriteLine("Failed to write memory stream");
 		}
 	}
 
@@ -55,17 +64,17 @@ public class DeviceMessage : MemoryStream
 	{
 		T result;
 
-		lock (this)
+		try
 		{
-			Seek(0, SeekOrigin.Begin);
-			try
+			lock (_lock)
 			{
+				Seek(0, SeekOrigin.Begin);
 				result = Serializer.Deserialize<T>(this);
 			}
-			catch (Exception)
-			{
-				result = default(T);
-			}
+		}
+		catch (Exception)
+		{
+			result = default(T);
 		}
 
 		return result;
@@ -73,7 +82,7 @@ public class DeviceMessage : MemoryStream
 
 	public void Reset()
 	{
-		lock (this)
+		lock (_lock)
 		{
 			Flush();
 			SetLength(0);
