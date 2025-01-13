@@ -153,7 +153,7 @@ public class CLOiSimPluginThread : IDisposable
 
 			if (receivedBuffer != null)
 			{
-				var requestMessage = CLOiSimPluginThread.ParsingRequestMessage(receivedBuffer);
+				var requestMessage = CLOiSimPluginThread.ParseRequestMessage(receivedBuffer);
 
 				if (requestMessage != null && dmResponse != null)
 				{
@@ -170,9 +170,10 @@ public class CLOiSimPluginThread : IDisposable
 
 			Wait();
 		}
+		dmResponse.Dispose();
 	}
 
-	private static messages.Param ParsingRequestMessage(in byte[] infoBuffer)
+	private static messages.Param ParseRequestMessage(in byte[] infoBuffer)
 	{
 		if (infoBuffer != null)
 		{

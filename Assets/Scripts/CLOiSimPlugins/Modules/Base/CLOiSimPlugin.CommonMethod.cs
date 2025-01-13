@@ -16,8 +16,13 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	{
 		var paramsObject = threadObject as CLOiSimPluginThread.ParamObject;
 		var publisher = GetTransport().Get<Publisher>(paramsObject.targetPort);
-		var tfList = paramsObject.param as List<TF>;
 
+		if (publisher == null)
+		{
+			return;
+		}
+
+		var tfList = paramsObject.param as List<TF>;
 		var tfMessage = new messages.TransformStamped();
 		tfMessage.Header = new messages.Header();
 		tfMessage.Header.Stamp = new messages.Time();
@@ -26,51 +31,49 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		tfMessage.Transform.Orientation = new messages.Quaternion();
 
 		var deviceMessage = new DeviceMessage();
-		if (publisher != null)
+		const int EmptyTfPublishPeriod = 2000;
+		const float publishFrequency = 50;
+		const int updatePeriod = (int)(1f / publishFrequency * 1000f);
+		var updatePeriodPerEachTf = (tfList.Count == 0) ? int.MaxValue : (int)(updatePeriod / tfList.Count);
+		// Debug.Log("PublishTfThread: " + updatePeriod + " , " + updatePeriodPerEachTf);
+
+		while (PluginThread.IsRunning)
 		{
-			const int EmptyTfPublishPeriod = 2000;
-			const float publishFrequency = 50;
-			const int updatePeriod = (int)(1f / publishFrequency * 1000f);
-			var updatePeriodPerEachTf = (tfList.Count == 0) ? int.MaxValue : (int)(updatePeriod / tfList.Count);
-			// Debug.Log("PublishTfThread: " + updatePeriod + " , " + updatePeriodPerEachTf);
-
-			while (PluginThread.IsRunning)
+			for (var i = 0; i < tfList.Count; i++)
 			{
-				for (var i = 0; i < tfList.Count; i++)
+				var tf = tfList[i];
+
+				tfMessage.Header.StrId = tf.ParentFrameID;
+				tfMessage.Transform.Name = tf.ChildFrameID;
+
+				var tfPose = tf.GetPose();
+				tfMessage.Header.Stamp.SetCurrentTime();
+				tfMessage.Transform.Position.Set(tfPose.position);
+				tfMessage.Transform.Orientation.Set(tfPose.rotation);
+
+				deviceMessage.SetMessage<messages.TransformStamped>(tfMessage);
+				if (publisher.Publish(deviceMessage) == false)
 				{
-					var tf = tfList[i];
-
-					tfMessage.Header.StrId = tf.ParentFrameID;
-					tfMessage.Transform.Name = tf.ChildFrameID;
-
-					var tfPose = tf.GetPose();
-					tfMessage.Header.Stamp.SetCurrentTime();
-					tfMessage.Transform.Position.Set(tfPose.position);
-					tfMessage.Transform.Orientation.Set(tfPose.rotation);
-
-					deviceMessage.SetMessage<messages.TransformStamped>(tfMessage);
-					if (publisher.Publish(deviceMessage) == false)
-					{
-						Debug.Log(tfMessage.Header.StrId + ", " + tfMessage.Transform.Name + " error to send TF!!");
-					}
-					else
-					{
-						// Debug.Log(tfMessage.Header.Stamp.Sec + "." + tfMessage.Header.Stamp.Nsec + ": " + tfMessage.Header.StrId + ", " + tfMessage.Transform.Name);
-					}
-					CLOiSimPluginThread.Sleep(updatePeriodPerEachTf);
+					Debug.Log(tfMessage.Header.StrId + ", " + tfMessage.Transform.Name + " error to send TF!!");
 				}
-
-				if (tfList.Count == 0)
+				else
 				{
-					deviceMessage.SetMessage<messages.TransformStamped>(tfMessage);
-					if (publisher.Publish(deviceMessage) == false)
-					{
-						Debug.Log(tfMessage.Header.StrId + ", " + tfMessage.Transform.Name + " error to send TF!!");
-					}
-					CLOiSimPluginThread.Sleep(EmptyTfPublishPeriod);
+					// Debug.Log(tfMessage.Header.Stamp.Sec + "." + tfMessage.Header.Stamp.Nsec + ": " + tfMessage.Header.StrId + ", " + tfMessage.Transform.Name);
 				}
+				CLOiSimPluginThread.Sleep(updatePeriodPerEachTf);
+			}
+
+			if (tfList.Count == 0)
+			{
+				deviceMessage.SetMessage<messages.TransformStamped>(tfMessage);
+				if (publisher.Publish(deviceMessage) == false)
+				{
+					Debug.Log(tfMessage.Header.StrId + ", " + tfMessage.Transform.Name + " error to send TF!!");
+				}
+				CLOiSimPluginThread.Sleep(EmptyTfPublishPeriod);
 			}
 		}
+		deviceMessage.Dispose();
 	}
 
 	protected static void SetCameraInfoResponse(ref DeviceMessage msCameraInfo, in messages.CameraSensor sensorInfo)

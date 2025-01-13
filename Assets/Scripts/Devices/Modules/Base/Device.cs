@@ -15,7 +15,6 @@ public abstract class Device : MonoBehaviour
 	public ModeType Mode = ModeType.NONE;
 
 	private DeviceMessageQueue _deviceMessageQueue = new DeviceMessageQueue();
-	private DeviceMessage _deviceMessage = new DeviceMessage();
 	private DevicePose _devicePose = new DevicePose();
 
 	private SDF.Plugin _pluginParameters = null;
@@ -154,7 +153,6 @@ public abstract class Device : MonoBehaviour
 				break;
 		}
 
-		_deviceMessage.Dispose();
 		_deviceMessageQueue.Dispose();
 	}
 
@@ -230,8 +228,9 @@ public abstract class Device : MonoBehaviour
 	{
 		try
 		{
-			_deviceMessage.SetMessage<T>(instance);
-			return _deviceMessageQueue.Push(_deviceMessage);
+			var deviceMessage = new DeviceMessage();
+			deviceMessage.SetMessage<T>(instance);
+			return _deviceMessageQueue.Push(deviceMessage);
 		}
 		catch (Exception ex)
 		{
@@ -244,9 +243,10 @@ public abstract class Device : MonoBehaviour
 	{
 		try
 		{
-			if (_deviceMessage.SetMessage(data))
+			var deviceMessage = new DeviceMessage();
+			if (deviceMessage.SetMessage(data))
 			{
-				return _deviceMessageQueue.Push(_deviceMessage);
+				return _deviceMessageQueue.Push(deviceMessage);
 			}
 		}
 		catch (Exception ex)
@@ -282,7 +282,6 @@ public abstract class Device : MonoBehaviour
 	public void Reset()
 	{
 		// Debug.Log("Reset(): flush message queue");
-		_deviceMessage.Reset();
 		_deviceMessageQueue.Flush();
 
 		OnReset();
