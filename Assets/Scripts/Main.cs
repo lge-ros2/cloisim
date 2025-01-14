@@ -262,6 +262,8 @@ public class Main : MonoBehaviour
 		mainCamera.depthTextureMode = DepthTextureMode.None;
 		mainCamera.allowHDR = true;
 		mainCamera.allowMSAA = true;
+		mainCamera.allowDynamicResolution = true;
+		mainCamera.useOcclusionCulling = true;
 
 		_core = GameObject.Find("Core");
 		if (_core == null)

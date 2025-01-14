@@ -22,30 +22,31 @@ public class DeviceMessage : MemoryStream
 			return false;
 		}
 
-		Reset();
-
-		lock (this)
+		if (CanWrite)
 		{
-			if (CanWrite)
-			{
-				Write(data, 0, data.Length);
-				Position = 0;
-			}
-			else
-			{
-				Console.WriteLine("Failed to write memory stream");
-			}
+			Reset();
+			Write(data, 0, data.Length);
+			Position = 0;
 		}
+		else
+		{
+			Console.WriteLine("Failed to write memory stream");
+		}
+
 		return true;
 	}
 
 	public void SetMessage<T>(T instance)
 	{
-		Reset();
-
-		lock (this)
+		if (CanWrite)
 		{
+			Reset();
+			Seek(0, SeekOrigin.Begin);
 			Serializer.Serialize<T>(this, instance);
+		}
+		else
+		{
+			Console.WriteLine("Failed to write memory stream");
 		}
 	}
 
@@ -53,17 +54,14 @@ public class DeviceMessage : MemoryStream
 	{
 		T result;
 
-		lock (this)
+		try
 		{
 			Seek(0, SeekOrigin.Begin);
-			try
-			{
-				result = Serializer.Deserialize<T>(this);
-			}
-			catch (Exception)
-			{
-				result = default(T);
-			}
+			result = Serializer.Deserialize<T>(this);
+		}
+		catch (Exception)
+		{
+			result = default(T);
 		}
 
 		return result;
@@ -71,13 +69,10 @@ public class DeviceMessage : MemoryStream
 
 	public void Reset()
 	{
-		lock (this)
-		{
-			Flush();
-			SetLength(0);
-			Position = 0;
-			Capacity = 0;
-		}
+		Flush();
+		SetLength(0);
+		Position = 0;
+		Capacity = 0;
 	}
 
 	public bool IsValid()
