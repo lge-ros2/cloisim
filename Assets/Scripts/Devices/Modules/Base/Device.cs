@@ -220,6 +220,7 @@ public abstract class Device : MonoBehaviour
 			if (_deviceMessageQueue.Count > 0)
 			{
 				ProcessDevice();
+				Thread.SpinWait(1);
 			}
 		}
 	}

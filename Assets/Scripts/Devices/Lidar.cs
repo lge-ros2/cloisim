@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
@@ -58,7 +57,7 @@ namespace SensorDevices
 		private RTHandle _rtHandle = null;
 		private ParallelOptions _parallelOptions = null;
 
-		private ConcurrentDictionary<int, AsyncWork.Laser> _asyncWorkList = new ConcurrentDictionary<int, AsyncWork.Laser>(); 
+		private ConcurrentDictionary<int, AsyncWork.Laser> _asyncWorkList = new ConcurrentDictionary<int, AsyncWork.Laser>();
 		private DepthData.CamBuffer[] _depthCamBuffers;
 		private LaserData.LaserCamData[] _laserCamData;
 		private LaserData.LaserDataOutput[] _laserDataOutput;
@@ -339,7 +338,6 @@ namespace SensorDevices
 				sw.Stop();
 
 				var requestingTime = (float)sw.ElapsedMilliseconds * 0.001f;
-				// Debug.Log("CaptureLaserCamera processingTime=" + (processingTime) + ", UpdatePeriod=" + UpdatePeriod);
 				yield return new WaitForSeconds(WaitPeriod(requestingTime));
 			}
 		}
@@ -531,18 +529,19 @@ namespace SensorDevices
 				_messageQueue.Enqueue(laserScanStamped);
 
 				sw.Stop();
-				var laserProcsssingTime = (int)sw.ElapsedMilliseconds;
-				var avgProcessingTime = (int)(processingTimeSum / (float)numberOfLaserCamData * 1000f);
-				Thread.Sleep(laserProcsssingTime + avgProcessingTime);
+
+				Thread.Sleep(WaitPeriodInMilliseconds());
 			}
 		}
 
 		protected override void GenerateMessage()
 		{
+			var count = _messageQueue.Count;
 			while (_messageQueue.TryDequeue(out var msg))
 			{
 				_rangesForVisualize = msg.Scan.Ranges;
 				PushDeviceMessage<messages.LaserScanStamped>(msg);
+				Thread.Sleep(WaitPeriodInMilliseconds() / count);
 			}
 		}
 
