@@ -8,12 +8,15 @@ using UnityEngine;
 
 public class FollowingCamera : MonoBehaviour
 {
-	private bool isFollowing = false;
-	private Transform targetObjectTransform = null;
-	private CameraControl cameraControl = null;
+	private bool _isFollowing = false;
+	private Transform _targetObjectTransform = null;
+	private CameraControl _cameraControl = null;
 
 	[Header("Following Camera Parameters")]
 	public bool blockControl = false;
+
+	[Range(-20, 20)]
+	public float horizontalOffset = 0;
 
 	[Range(0.1f, 20)]
 	public float distance = 8f;
@@ -30,10 +33,25 @@ public class FollowingCamera : MonoBehaviour
 	[SerializeField]
 	public float angleStep = 1.5f;
 
+	private bool _alignSameDirection = false;
+
+	public void SetInitialRelativePosition(Vector3 position)
+	{
+		followingAngle = 0;
+		horizontalOffset = position.x;
+		distance = position.magnitude;
+		height = position.y;
+	}
+
+	public void AlignSameDirection(in bool value)
+	{
+		_alignSameDirection = value;
+	}
+
 	// Start is called before the first frame update
 	void Start()
 	{
-		cameraControl = Main.CameraControl;
+		_cameraControl = Main.CameraControl;
 	}
 
 	void LateUpdate()
@@ -43,15 +61,19 @@ public class FollowingCamera : MonoBehaviour
 			ChangeParameterByBaseInput();
 		}
 
-		if (isFollowing && targetObjectTransform != null)
+		if (_isFollowing && _targetObjectTransform != null)
 		{
-			var rotation = Quaternion.Euler(0, followingAngle, 0);
+			var targetAngle = (_alignSameDirection) ?
+				_targetObjectTransform.rotation.eulerAngles.y : followingAngle;
+			var rotation = Quaternion.Euler(0, targetAngle, 0);
 
 			transform.position
-				= targetObjectTransform.position
-					- (rotation * Vector3.forward * distance) + (Vector3.up * height);
+				= _targetObjectTransform.position
+					- (rotation * Vector3.forward * distance)
+					+ (Vector3.right * horizontalOffset)
+					+ (Vector3.up * height);
 
-			transform.LookAt(targetObjectTransform);
+			transform.LookAt(_targetObjectTransform);
 		}
 	}
 
@@ -116,12 +138,12 @@ public class FollowingCamera : MonoBehaviour
 
 	private void ReleaseTargetObject()
 	{
-		if (targetObjectTransform != null && !ReferenceEquals(targetObjectTransform.gameObject, null))
+		if (_targetObjectTransform != null && !ReferenceEquals(_targetObjectTransform.gameObject, null))
 		{
-			Main.UIController?.SetInfoMessage("Camera view for '" + targetObjectTransform.name + "' model is released.");
+			Main.UIController?.SetInfoMessage("Camera view for '" + _targetObjectTransform.name + "' model is released.");
 		}
-		targetObjectTransform = null;
-		isFollowing = false;
+		_targetObjectTransform = null;
+		_isFollowing = false;
 		Main.CameraControl?.UnBlockControl();
 		this.blockControl = true;
 	}
@@ -129,8 +151,8 @@ public class FollowingCamera : MonoBehaviour
 	private void LockTargetObject(in Transform targetTransform)
 	{
 		Main.UIController?.SetInfoMessage("Camera view for '" + targetTransform.name + "' model is locked.");
-		targetObjectTransform = targetTransform;
-		isFollowing = true;
+		_targetObjectTransform = targetTransform;
+		_isFollowing = true;
 		Main.CameraControl?.BlockControl();
 		this.blockControl = false;
 	}

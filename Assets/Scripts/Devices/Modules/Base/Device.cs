@@ -12,31 +12,31 @@ using UnityEngine;
 public abstract class Device : MonoBehaviour
 {
 	public enum ModeType { NONE, TX, RX, TX_THREAD, RX_THREAD };
-
 	public ModeType Mode = ModeType.NONE;
+
 	private DeviceMessageQueue _deviceMessageQueue = new DeviceMessageQueue();
-	private DeviceMessage _deviceMessage = new DeviceMessage();
 	private DevicePose _devicePose = new DevicePose();
 
-	private SDF.Plugin pluginParameters = null;
+	private SDF.Plugin _pluginParameters = null;
 
 	[SerializeField]
-	private string deviceName = string.Empty;
+	private string _deviceName = string.Empty;
 
 	[SerializeField]
 	private float _updateRate = 1;
 
-	private bool debuggingOn = true;
+	private bool _debuggingOn = true;
 
 	[SerializeField]
-	private bool visualize = true;
+	private bool _visualize = true;
 
-	private float transportingTimeSeconds = 0;
+	[SerializeField]
+	private float _transportingTimeSeconds = 0;
 
-	private Thread txThread = null;
-	private Thread rxThread = null;
+	private Thread _txThread = null;
+	private Thread _rxThread = null;
 
-	private bool runningDevice = false;
+	private bool _running = false;
 
 	public float UpdatePeriod => 1f / UpdateRate;
 
@@ -44,20 +44,20 @@ public abstract class Device : MonoBehaviour
 
 	public string DeviceName
 	{
-		get => deviceName;
-		set => deviceName = value;
+		get => _deviceName;
+		set => _deviceName = value;
 	}
 
 	public bool EnableDebugging
 	{
-		get => debuggingOn;
-		set => debuggingOn = value;
+		get => _debuggingOn;
+		set => _debuggingOn = value;
 	}
 
 	public bool EnableVisualize
 	{
-		get => visualize;
-		set => visualize = value;
+		get => _visualize;
+		set => _visualize = value;
 	}
 
 	public void SetSubParts(in bool value)
@@ -79,7 +79,7 @@ public abstract class Device : MonoBehaviour
 
 		OnStart();
 
-		runningDevice = true;
+		_running = true;
 
 		switch (Mode)
 		{
@@ -92,18 +92,18 @@ public abstract class Device : MonoBehaviour
 				break;
 
 			case ModeType.TX_THREAD:
-				txThread = new Thread(DeviceThreadTx);
-				txThread.Start();
+				_txThread = new Thread(DeviceThreadTx);
+				_txThread.Start();
 				break;
 
 			case ModeType.RX_THREAD:
-				rxThread = new Thread(DeviceThreadRx);
-				rxThread.Start();
+				_rxThread = new Thread(DeviceThreadRx);
+				_rxThread.Start();
 				break;
 
 			case ModeType.NONE:
 			default:
-				runningDevice = false;
+				_running = false;
 				// Debug.LogWarning("Device(" + name + ") Mode is None");
 				break;
 		}
@@ -116,7 +116,7 @@ public abstract class Device : MonoBehaviour
 
 	protected void OnDestroy()
 	{
-		runningDevice = false;
+		_running = false;
 
 		switch (Mode)
 		{
@@ -131,19 +131,19 @@ public abstract class Device : MonoBehaviour
 				break;
 
 			case ModeType.TX_THREAD:
-				if (txThread != null && txThread.IsAlive)
+				if (_txThread != null && _txThread.IsAlive)
 				{
-					txThread.Join();
-					txThread.Abort();
+					_txThread.Join();
+					_txThread.Abort();
 					Debug.Log("Stop TX device thread: " + name);
 				}
 				break;
 
 			case ModeType.RX_THREAD:
-				if (rxThread != null && rxThread.IsAlive)
+				if (_rxThread != null && _rxThread.IsAlive)
 				{
-					rxThread.Join();
-					rxThread.Abort();
+					_rxThread.Join();
+					_rxThread.Abort();
 					Debug.Log("Stop RX device thread: " + name);
 				}
 				break;
@@ -153,7 +153,6 @@ public abstract class Device : MonoBehaviour
 				break;
 		}
 
-		_deviceMessage.Dispose();
 		_deviceMessageQueue.Dispose();
 	}
 
@@ -188,7 +187,7 @@ public abstract class Device : MonoBehaviour
 	private IEnumerator DeviceCoroutineTx()
 	{
 		var waitForSeconds = new WaitForSeconds(WaitPeriod());
-		while (runningDevice)
+		while (_running)
 		{
 			GenerateMessage();
 			yield return waitForSeconds;
@@ -198,7 +197,7 @@ public abstract class Device : MonoBehaviour
 	private IEnumerator DeviceCoroutineRx()
 	{
 		var waitUntil = new WaitUntil(() => (_deviceMessageQueue.Count > 0));
-		while (runningDevice)
+		while (_running)
 		{
 			yield return waitUntil;
 			ProcessDevice();
@@ -207,7 +206,7 @@ public abstract class Device : MonoBehaviour
 
 	private void DeviceThreadTx()
 	{
-		while (runningDevice)
+		while (_running)
 		{
 			GenerateMessage();
 			Thread.Sleep(WaitPeriodInMilliseconds());
@@ -216,11 +215,12 @@ public abstract class Device : MonoBehaviour
 
 	private void DeviceThreadRx()
 	{
-		while (runningDevice)
+		while (_running)
 		{
 			if (_deviceMessageQueue.Count > 0)
 			{
 				ProcessDevice();
+				Thread.SpinWait(1);
 			}
 		}
 	}
@@ -229,8 +229,9 @@ public abstract class Device : MonoBehaviour
 	{
 		try
 		{
-			_deviceMessage.SetMessage<T>(instance);
-			return _deviceMessageQueue.Push(_deviceMessage);
+			var deviceMessage = new DeviceMessage();
+			deviceMessage.SetMessage<T>(instance);
+			return _deviceMessageQueue.Push(deviceMessage);
 		}
 		catch (Exception ex)
 		{
@@ -243,9 +244,10 @@ public abstract class Device : MonoBehaviour
 	{
 		try
 		{
-			if (_deviceMessage.SetMessage(data))
+			var deviceMessage = new DeviceMessage();
+			if (deviceMessage.SetMessage(data))
 			{
-				return _deviceMessageQueue.Push(_deviceMessage);
+				return _deviceMessageQueue.Push(deviceMessage);
 			}
 		}
 		catch (Exception ex)
@@ -281,7 +283,6 @@ public abstract class Device : MonoBehaviour
 	public void Reset()
 	{
 		// Debug.Log("Reset(): flush message queue");
-		_deviceMessage.Reset();
 		_deviceMessageQueue.Flush();
 
 		OnReset();
@@ -289,15 +290,15 @@ public abstract class Device : MonoBehaviour
 
 	protected float WaitPeriod(in float messageGenerationTime = 0)
 	{
-		var waitTime = UpdatePeriod - messageGenerationTime - transportingTimeSeconds;
-		// Debug.LogFormat(deviceName + ": waitTime({0}) = period({1}) - elapsedTime({2}) - TransportingTime({3})",
-		// 	waitTime.ToString("F5"), UpdatePeriod.ToString("F5"), messageGenerationTime.ToString("F5"), TransportingTime.ToString("F5"));
+		var waitTime = UpdatePeriod - messageGenerationTime - _transportingTimeSeconds;
+		// Debug.LogFormat(_deviceName + ": waitTime({0}) = period({1}) - elapsedTime({2}) - TransportingTime({3})",
+		// 	waitTime.ToString("F5"), UpdatePeriod.ToString("F5"), messageGenerationTime.ToString("F5"), _transportingTimeSeconds.ToString("F5"));
 		return (waitTime < 0) ? 0 : waitTime;
 	}
 
 	protected int WaitPeriodInMilliseconds()
 	{
-		return (int)(WaitPeriod() * 1000f);
+		return Mathf.CeilToInt(WaitPeriod() * 1000f);
 	}
 
 	public void SetUpdateRate(in float value)
@@ -307,7 +308,7 @@ public abstract class Device : MonoBehaviour
 
 	public void SetTransportedTime(in float value)
 	{
-		transportingTimeSeconds = value;
+		_transportingTimeSeconds = value;
 	}
 
 	/// <summary>
@@ -315,12 +316,12 @@ public abstract class Device : MonoBehaviour
 	/// </summary>
 	public void SetPluginParameters(in SDF.Plugin plugin)
 	{
-		pluginParameters = plugin;
+		_pluginParameters = plugin;
 	}
 
 	public SDF.Plugin GetPluginParameters()
 	{
-		return pluginParameters;
+		return _pluginParameters;
 	}
 
 	public Pose GetPose()

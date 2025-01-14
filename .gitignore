@@ -1,12 +1,12 @@
 #
-# Copyright (c) 2020 LG Electronics Inc.
+# Copyright (c) 2025 LG Electronics Inc.
 #
 # SPDX-License-Identifier: MIT
 #
 
 # This .gitignore file should be placed at the root of your Unity project directory
 #
-# Get latest from https://github.com/github/gitignore/blob/master/Unity.gitignore
+# Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
 /[Ll]ibrary/
 /[Tt]emp/
@@ -20,8 +20,8 @@
 # They also could contain extremely sensitive data
 /[Mm]emoryCaptures/
 
-# Asset meta data should only be ignored when the corresponding asset is also ignored
-!/[Aa]ssets/**/*.meta
+# Recordings can get excessive in size
+/[Rr]ecordings/
 
 # Uncomment this line if you wish to ignore the asset store tools plugin
 # /[Aa]ssets/AssetStoreTools*
@@ -65,6 +65,8 @@ sysinfo.txt
 *.apk
 *.aab
 *.unitypackage
+*.unitypackage.meta
+*.app
 
 # Crashlytics generated file
 crashlytics-build.properties
@@ -76,9 +78,10 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
-###########################
-## Additional .gitignore ##
-###########################
+
+###############################
+##   Additional .gitignore   ##
+###############################
 
 # Visual Studio Code user settings
 .vscode/
@@ -90,7 +93,7 @@ crashlytics-build.properties
 /[Aa]ssets/TextMesh*Pro/
 /[Aa]ssets/TextMesh*Pro.meta
 
-README.md.meta
+/[Aa]ssets/**/*.md.meta
 
 !*.svg
 
@@ -115,9 +118,8 @@ tags
 # Persistent undo
 [._]*.un~
 
-# UI 
+# UI
 /UIElementsSchema
-
 
 # SDF files
 *.world

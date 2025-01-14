@@ -402,35 +402,38 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
 		var publisher = GetTransport().Get<Publisher>(paramObject.targetPort);
 
-		var deviceMessage = new DeviceMessage();
-		if (publisher != null)
+		if (publisher == null)
 		{
-			while (PluginThread.IsRunning)
-			{
-				UpdatePeceptionObjects();
-
-				_messagePerceptions.Perceptions.AddRange(_messagePerceptionObjects);
-
-				var capacity = _messagePerceptions.Perceptions.Capacity;
-				lock (_messagePerceptionProps)
-				{
-					// UE.Debug.Log(capacity + " , " + _messagePerceptionObjects.Count  + " , " + _messagePerceptionProps.Count);
-					if (capacity < _messagePerceptionObjects.Count + _messagePerceptionProps.Count)
-					{
-						capacity = _messagePerceptionObjects.Count + _messagePerceptionProps.Count;
-					}
-					_messagePerceptions.Perceptions.Capacity = capacity;
-					_messagePerceptions.Perceptions.InsertRange(_messagePerceptionObjects.Count, _messagePerceptionProps.Values.ToList());
-				}
-
-				_messagePerceptions.Header.Stamp.SetCurrentTime();
-				deviceMessage.SetMessage<messages.PerceptionV>(_messagePerceptions);
-				publisher.Publish(deviceMessage);
-
-				CLOiSimPluginThread.Sleep(sleepPeriodForPublishInMilliseconds);
-				_messagePerceptions.Perceptions.Clear();
-			}
+			return;
 		}
+
+		var deviceMessage = new DeviceMessage();
+		while (PluginThread.IsRunning)
+		{
+			UpdatePeceptionObjects();
+
+			_messagePerceptions.Perceptions.AddRange(_messagePerceptionObjects);
+
+			var capacity = _messagePerceptions.Perceptions.Capacity;
+			lock (_messagePerceptionProps)
+			{
+				// UE.Debug.Log(capacity + " , " + _messagePerceptionObjects.Count  + " , " + _messagePerceptionProps.Count);
+				if (capacity < _messagePerceptionObjects.Count + _messagePerceptionProps.Count)
+				{
+					capacity = _messagePerceptionObjects.Count + _messagePerceptionProps.Count;
+				}
+				_messagePerceptions.Perceptions.Capacity = capacity;
+				_messagePerceptions.Perceptions.InsertRange(_messagePerceptionObjects.Count, _messagePerceptionProps.Values.ToList());
+			}
+
+			_messagePerceptions.Header.Stamp.SetCurrentTime();
+			deviceMessage.SetMessage<messages.PerceptionV>(_messagePerceptions);
+			publisher.Publish(deviceMessage);
+
+			CLOiSimPluginThread.Sleep(sleepPeriodForPublishInMilliseconds);
+			_messagePerceptions.Perceptions.Clear();
+		}
+		deviceMessage.Dispose();
 	}
 
 	private void UpdatePeceptionObjects()

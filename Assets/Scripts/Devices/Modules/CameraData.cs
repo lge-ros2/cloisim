@@ -155,7 +155,7 @@ namespace SensorDevices
 				textureForCapture = new Texture2D(width, height, textureFormat, false, true);
 			}
 
-			public void SetTextureBufferData(in NativeArray<byte> data)
+			public void SetTextureBufferData(ref NativeArray<byte> data)
 			{
 				buffer = data;
 			}

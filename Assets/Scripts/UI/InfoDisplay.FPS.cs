@@ -8,20 +8,25 @@ using UnityEngine;
 
 public partial class InfoDisplay : MonoBehaviour
 {
-	private const float fpsUpdatePeriod = 1f;
-	private int frameCount = 0;
-	private float dT = 0.0F;
-	private float fps = 0.0F;
+	private const float _fpsUpdatePeriod = 1f;
+	private int _frameCount = 0;
+	private float _deltaTime = 0.0F;
+	private float _fps = 0.0F;
+
+	public float FPS()
+	{
+		return _fps;
+	}
 
 	private void CalculateFPS()
 	{
-		frameCount++;
-		dT += Time.deltaTime;
-		if (dT > fpsUpdatePeriod)
+		_frameCount++;
+		_deltaTime += Time.deltaTime;
+		if (_deltaTime > _fpsUpdatePeriod)
 		{
-			fps = Mathf.Round(frameCount / dT);
-			dT -= fpsUpdatePeriod;
-			frameCount = 0;
+			_fps = Mathf.Round(_frameCount / _deltaTime);
+			_deltaTime -= _fpsUpdatePeriod;
+			_frameCount = 0;
 		}
 	}
 
@@ -29,7 +34,7 @@ public partial class InfoDisplay : MonoBehaviour
 	{
 		if (_inputFieldFPS != null)
 		{
-			_inputFieldFPS.text = fps.ToString();
+			_inputFieldFPS.text = _fps.ToString();
 		}
 	}
 }
