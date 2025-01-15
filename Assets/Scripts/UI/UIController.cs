@@ -9,6 +9,12 @@ using UnityEngine.UIElements;
 
 public class UIController : MonoBehaviour
 {
+	public enum CameraViewModeEnum
+	{
+		Perspective,
+		Orthographic
+	}
+
 	private UIDocument _uiDocument = null;
 	private VisualElement _rootVisualElement = null;
 	private Toggle _toggleLockVerticalMoving = null;
@@ -120,6 +126,17 @@ public class UIController : MonoBehaviour
 		};
 		buttonBottom.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBottom, Color.gray); });
 		buttonBottom.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonBottom, Color.clear); });
+
+		var camViewEnumField = _rootVisualElement.Q<EnumField>("CameraViewModeEnum");
+		var enumFieldTextElem = camViewEnumField.Q<TextElement>();
+		enumFieldTextElem.style.marginRight = 0;
+
+		camViewEnumField.Init(CameraViewModeEnum.Perspective);
+		camViewEnumField.SetEnabled(true);
+		camViewEnumField.RegisterValueChangedCallback(evt =>
+		{
+			Debug.Log("Selected Enum: " + evt.newValue);
+		});
 	}
 
 	private void ChangeBackground(ref Button button, in Color color)
