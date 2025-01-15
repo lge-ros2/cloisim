@@ -21,13 +21,13 @@ public class CameraControl : MonoBehaviour
 		space : Moves camera on X and Z axis only.  So camera doesn't gain any height
 	*/
 
-	private bool _blockControl = false;
+	protected bool _blockControl = false;
 
-	private bool _blockMouseWheelControl = false;
+	protected bool _blockMouseWheelControl = false;
 
-	private bool _verticalMovementLock = false;
+	protected bool _verticalMovementLock = false;
 
-	private bool _terminateMoving = false;
+	protected bool _terminateMoving = false;
 
 	private UIController _uiController = null;
 
@@ -37,50 +37,51 @@ public class CameraControl : MonoBehaviour
 		get => _verticalMovementLock;
 	}
 
-	private const float MoveSmoothSpeed = .0025f;
+	[SerializeField]
+	protected const float MoveSmoothSpeed = .0025f;
 
 	[SerializeField]
-	private float _mainSpeed = 10.0f; // regular speed
+	protected float _mainSpeed = 10.0f; // regular speed
 
 	[SerializeField]
-	private float _shiftAdd = 20.0f; // multiplied by how long shift is held.  Basically running
+	protected float _shiftAdd = 20.0f; // multiplied by how long shift is held.  Basically running
 
 	[SerializeField]
-	private float _maxShift = 50.0f; // Maximum speed when holding shift
+	protected float _maxShift = 50.0f; // Maximum speed when holding shift
 
 	[SerializeField]
-	private float _camSens = 0.1f; // How sensitive it with mouse
+	protected float _camSens = 0.1f; // How sensitive it with mouse
 
 	[SerializeField]
-	private float _edgeWidth = 100.0f;
+	protected float _edgeWidth = 100.0f;
 
 	[SerializeField]
-	private float _edgeSens = 0.02f;
+	protected float _edgeSens = 0.02f;
 
 	[SerializeField]
-	private float _edgeSensMax = 1.0f;
+	protected float _edgeSensMax = 1.0f;
 
 	[SerializeField]
-	private float _wheelMoveAmp = 50f;
+	protected float _wheelMoveAmp = 50f;
 
 	[SerializeField]
-	private float _wheelMoveOrthoSize = 0.25f;
+	protected float _wheelMoveOrthoSize = 0.25f;
 
 	[SerializeField]
-	private float _angleStep = 1.5f;
+	protected float _angleStep = 1.5f;
 
-	private Vector3 _lastMouse = new Vector3(255, 255, 255); // kind of in the middle of the screen, rather than at the top (play)
-	private float _totalRun = 1.0f;
-	private float _edgeSensAccumlated = 0.0f;
+	protected Vector3 _lastMouse = Vector3.zero; // kind of in the middle of the screen, rather than at the top (play)
+	protected float _totalRun = 1.0f;
+	protected float _edgeSensAccumlated = 0.0f;
 
-	private int _targetLayerMask = 0;
+	protected int _targetLayerMask = 0;
 
-	Coroutine _movingCoroutine = null;
+	private Coroutine _movingCoroutine = null;
 
-	private bool IsOrthographicMode()
-	{
-		return Camera.main.orthographic;
-	}
+	// private bool IsOrthographicMode()
+	// {
+	// 	return Camera.main.orthographic;
+	// }
 
 	void Awake()
 	{
@@ -98,9 +99,7 @@ public class CameraControl : MonoBehaviour
 
 		if (Input.GetKeyUp(KeyCode.Space))
 		{
-			_verticalMovementLock = !_verticalMovementLock;
-			// Debug.Log(_verticalMovementLock);
-			_uiController.SetVerticalMovementLockToggle(_verticalMovementLock);
+			LockVerticalMovement();
 		}
 
 		_lastMouse = Input.mousePosition - _lastMouse;
@@ -110,54 +109,11 @@ public class CameraControl : MonoBehaviour
 		// Mouse camera angle done.
 		if (Input.GetMouseButton(0))
 		{
-			var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-			if (Physics.Raycast(ray.origin, ray.direction, out var hitInfo, 100f, _targetLayerMask))
-			{
-				if (!EventSystem.current.IsPointerOverGameObject())
-				{
-					var sdfPoint = Unity2SDF.Position(hitInfo.point);
-					Main.InfoDisplay.SetPointInfo(sdfPoint);
-				}
-			}
+			HandleLeftClickOnScreen();
 		}
 		else if (Input.GetMouseButton(2) || Input.GetMouseButton(1))
 		{
-			// perspective move during the right or wheel click
-			// Debug.Log(_lastMouse.ToString("F4"));
-			if (_edgeSensAccumlated < _edgeSensMax)
-			{
-				_edgeSensAccumlated += _edgeSens;
-			}
-
-			if (Input.mousePosition.x < _edgeWidth)
-			{
-				// Debug.Log("rotate camera left here");
-				_lastMouse.y -= _edgeSensAccumlated;
-				transform.eulerAngles = _lastMouse;
-			}
-			else if (Input.mousePosition.x > Screen.width - _edgeWidth)
-			{
-				// Debug.Log("rotate camera right here");
-				_lastMouse.y += _edgeSensAccumlated;
-				transform.eulerAngles = _lastMouse;
-			}
-			else if (Input.mousePosition.y < _edgeWidth)
-			{
-				// Debug.Log("rotate camera down here");
-				_lastMouse.x += _edgeSensAccumlated;
-				transform.eulerAngles = _lastMouse;
-			}
-			else if (Input.mousePosition.y > Screen.height - _edgeWidth)
-			{
-				// Debug.Log("rotate camera up here");
-				_lastMouse.x -= _edgeSensAccumlated;
-				transform.eulerAngles = _lastMouse;
-			}
-			else
-			{
-				_edgeSensAccumlated = 0.0f;
-				transform.eulerAngles = _lastMouse;
-			}
+			HandleScreenOrbitControl();
 
 			_terminateMoving = true;
 		}
@@ -169,6 +125,39 @@ public class CameraControl : MonoBehaviour
 		_lastMouse = Input.mousePosition;
 
 		// Keyboard commands for Translation
+		var targetPosByKey = HandleKeyboardCommands();
+
+		targetPosByKey *= Time.deltaTime;
+
+		var newPosition = transform.position;
+		if (_verticalMovementLock)
+		{
+			// If player wants to move on X and Z axis only
+			transform.Translate(targetPosByKey);
+			newPosition.x = transform.position.x;
+			newPosition.z = transform.position.z;
+			transform.position = newPosition;
+		}
+		else
+		{
+			transform.Translate(targetPosByKey);
+		}
+
+		Rotate();
+
+		StopCameraChange();
+	}
+
+
+	private void LockVerticalMovement()
+	{
+		_verticalMovementLock = !_verticalMovementLock;
+		// Debug.Log(_verticalMovementLock);
+		_uiController.SetVerticalMovementLockToggle(_verticalMovementLock);
+	}
+
+	private Vector3 HandleKeyboardCommands()
+	{
 		var p = GetBaseInput();
 		if (Input.GetKey(KeyCode.LeftShift))
 		{
@@ -183,29 +172,59 @@ public class CameraControl : MonoBehaviour
 			_totalRun = Mathf.Clamp(_totalRun * 0.5f, 1f, 1000f);
 			p *= _mainSpeed;
 		}
+		return p;
+	}
 
-		p *= Time.deltaTime;
-
-		var newPosition = transform.position;
-		if (_verticalMovementLock)
+	private void HandleLeftClickOnScreen()
+	{
+		var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+		if (Physics.Raycast(ray.origin, ray.direction, out var hitInfo, 100f, _targetLayerMask))
 		{
-			// If player wants to move on X and Z axis only
-			transform.Translate(p);
-			newPosition.x = transform.position.x;
-			newPosition.z = transform.position.z;
-			transform.position = newPosition;
+			if (!EventSystem.current.IsPointerOverGameObject())
+			{
+				var sdfPoint = Unity2SDF.Position(hitInfo.point);
+				Main.InfoDisplay.SetPointInfo(sdfPoint);
+			}
+		}
+	}
+
+	private void HandleScreenOrbitControl()
+	{
+		// perspective move during the right or wheel click
+		// Debug.Log(_lastMouse.ToString("F4"));
+		if (_edgeSensAccumlated < _edgeSensMax)
+		{
+			_edgeSensAccumlated += _edgeSens;
+		}
+
+		if (Input.mousePosition.x < _edgeWidth)
+		{
+			// Debug.Log("rotate camera left here");
+			_lastMouse.y -= _edgeSensAccumlated;
+			transform.eulerAngles = _lastMouse;
+		}
+		else if (Input.mousePosition.x > Screen.width - _edgeWidth)
+		{
+			// Debug.Log("rotate camera right here");
+			_lastMouse.y += _edgeSensAccumlated;
+			transform.eulerAngles = _lastMouse;
+		}
+		else if (Input.mousePosition.y < _edgeWidth)
+		{
+			// Debug.Log("rotate camera down here");
+			_lastMouse.x += _edgeSensAccumlated;
+			transform.eulerAngles = _lastMouse;
+		}
+		else if (Input.mousePosition.y > Screen.height - _edgeWidth)
+		{
+			// Debug.Log("rotate camera up here");
+			_lastMouse.x -= _edgeSensAccumlated;
+			transform.eulerAngles = _lastMouse;
 		}
 		else
 		{
-			transform.Translate(p);
-		}
-
-		Rotate();
-
-		if (_terminateMoving && _movingCoroutine != null)
-		{
-			StopCoroutine(_movingCoroutine);
-			_terminateMoving = false;
+			_edgeSensAccumlated = 0.0f;
+			transform.eulerAngles = _lastMouse;
 		}
 	}
 
@@ -242,6 +261,10 @@ public class CameraControl : MonoBehaviour
 		_blockMouseWheelControl = value;
 	}
 
+	protected virtual Vector3 HandleMouseWheelScroll() { return Vector3.zero; }
+
+	protected virtual Vector3 HandleKeyboardDirection() { return Vector3.zero; }
+
 	private Vector3 GetBaseInput()
 	{
 		//returns the basic values, if it's 0 than it's not active.
@@ -252,14 +275,7 @@ public class CameraControl : MonoBehaviour
 			var scrollWheel = Input.GetAxisRaw("Mouse ScrollWheel");
 			if (scrollWheel != 0)
 			{
-				if (IsOrthographicMode())
-				{
-					Camera.main.orthographicSize -= Input.mouseScrollDelta.y * _wheelMoveOrthoSize;
-				}
-				else
-				{
-					baseDirection += new Vector3(0, 0, Input.mouseScrollDelta.y * _wheelMoveAmp);
-				}
+				baseDirection += HandleMouseWheelScroll();
 				// Debug.Log(scrollWheel.ToString("F4") + " | " + Input.mouseScrollDelta.y);
 				_terminateMoving = true;
 			}
@@ -267,50 +283,7 @@ public class CameraControl : MonoBehaviour
 
 		if (!Input.GetKey(KeyCode.LeftControl))
 		{
-			if (Input.GetKey(KeyCode.W))
-			{
-				if (IsOrthographicMode())
-				{
-					Camera.main.orthographicSize -= _wheelMoveOrthoSize;
-				}
-				else
-				{
-					baseDirection.z += 1;
-				}
-			}
-			else if (Input.GetKey(KeyCode.S))
-			{
-				if (IsOrthographicMode())
-				{
-					Camera.main.orthographicSize += _wheelMoveOrthoSize;
-				}
-				else
-				{
-					baseDirection.z -= 1;
-				}
-			}
-
-			if (Input.GetKey(KeyCode.A) && Input.GetKey(KeyCode.D))
-			{
-				baseDirection.x = 0;
-			}
-			else if (Input.GetKey(KeyCode.A))
-			{
-				baseDirection.x += -1;
-			}
-			else if (Input.GetKey(KeyCode.D))
-			{
-				baseDirection.x += 1;
-			}
-
-			if (Input.GetKey(KeyCode.G))
-			{
-				baseDirection.y += 1;
-			}
-			else if (Input.GetKey(KeyCode.F))
-			{
-				baseDirection.y += -1;
-			}
+			baseDirection += HandleKeyboardDirection();
 
 			if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.S) ||
 				Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D) ||
@@ -323,13 +296,22 @@ public class CameraControl : MonoBehaviour
 		return baseDirection;
 	}
 
-	public void Move(Pose targetPose)
+	public void StartCameraChange(Pose targetPose)
 	{
 		if (_movingCoroutine != null)
 		{
 			StopCoroutine(_movingCoroutine);
 		}
 		_movingCoroutine = StartCoroutine(ChangeCameraView(targetPose));
+	}
+
+	public void StopCameraChange()
+	{
+		if (_terminateMoving && _movingCoroutine != null)
+		{
+			StopCoroutine(_movingCoroutine);
+			_terminateMoving = false;
+		}
 	}
 
 	private IEnumerator ChangeCameraView(Pose targetPose)
