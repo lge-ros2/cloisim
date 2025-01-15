@@ -37,7 +37,7 @@ public class CameraControl : MonoBehaviour
 		get => _verticalMovementLock;
 	}
 
-	private const float MoveSmoothSpeed = .025f;
+	private const float MoveSmoothSpeed = .0025f;
 
 	[SerializeField]
 	private float _mainSpeed = 10.0f; // regular speed
@@ -334,15 +334,18 @@ public class CameraControl : MonoBehaviour
 
 	private IEnumerator ChangeCameraView(Pose targetPose)
 	{
+		var t = 0f;
 		while (
 			Vector3.Distance(transform.position, targetPose.position) > Vector3.kEpsilon &&
 			Quaternion.Angle(transform.rotation, targetPose.rotation) > Quaternion.kEpsilon)
 		{
-			var smoothPosition = Vector3.Lerp(transform.position, targetPose.position, MoveSmoothSpeed);
+			var smoothPosition = Vector3.Lerp(transform.position, targetPose.position, t);
 			transform.position = smoothPosition;
 
-			var smoothRotation = Quaternion.Lerp(transform.rotation, targetPose.rotation, MoveSmoothSpeed);
+			var smoothRotation = Quaternion.Lerp(transform.rotation, targetPose.rotation, t);
 			transform.rotation = smoothRotation;
+
+			t += MoveSmoothSpeed;
 
 			yield return null;
 		}
