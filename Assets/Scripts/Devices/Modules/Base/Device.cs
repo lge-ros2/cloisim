@@ -33,8 +33,8 @@ public abstract class Device : MonoBehaviour
 	[SerializeField]
 	private float _transportingTimeSeconds = 0;
 
-	private Thread _txThread = null;
-	private Thread _rxThread = null;
+	private Coroutine _coroutine = null;
+	private Thread _thread = null;
 
 	private bool _running = false;
 
@@ -84,21 +84,19 @@ public abstract class Device : MonoBehaviour
 		switch (Mode)
 		{
 			case ModeType.TX:
-				StartCoroutine(DeviceCoroutineTx());
+				_coroutine = StartCoroutine(DeviceCoroutineTx());
 				break;
 
 			case ModeType.RX:
-				StartCoroutine(DeviceCoroutineRx());
+				_coroutine = StartCoroutine(DeviceCoroutineRx());
 				break;
 
 			case ModeType.TX_THREAD:
-				_txThread = new Thread(DeviceThreadTx);
-				_txThread.Start();
+				_thread = new Thread(DeviceThreadTx);
 				break;
 
 			case ModeType.RX_THREAD:
-				_rxThread = new Thread(DeviceThreadRx);
-				_rxThread.Start();
+				_thread = new Thread(DeviceThreadRx);
 				break;
 
 			case ModeType.NONE:
@@ -106,6 +104,11 @@ public abstract class Device : MonoBehaviour
 				_running = false;
 				// Debug.LogWarning("Device(" + name + ") Mode is None");
 				break;
+		}
+
+		if (_thread != null)
+		{
+			_thread.Start();
 		}
 
 		if (EnableVisualize)
@@ -121,34 +124,16 @@ public abstract class Device : MonoBehaviour
 		switch (Mode)
 		{
 			case ModeType.TX:
-				StopCoroutine(DeviceCoroutineTx());
-				Debug.Log("Stop TX device coroutine: " + name);
-				break;
-
 			case ModeType.RX:
-				StopCoroutine(DeviceCoroutineRx());
-				Debug.Log("Stop TX device coroutine: " + name);
+				StopCoroutine(_coroutine);
 				break;
 
 			case ModeType.TX_THREAD:
-				if (_txThread != null && _txThread.IsAlive)
-				{
-					Debug.Log("1Stop TX device thread: " + name);
-					_txThread.Join();
-					Debug.Log("2Stop TX device thread: " + name);
-					_txThread.Abort();
-					Debug.Log("Stop TX device thread: " + name);
-				}
-				break;
-
 			case ModeType.RX_THREAD:
-				if (_rxThread != null && _rxThread.IsAlive)
+				if (_thread != null && _thread.IsAlive)
 				{
-					Debug.Log("1Stop RX device thread: " + name);
-					_rxThread.Join();
-					Debug.Log("2Stop RX device thread: " + name);
-					_rxThread.Abort();
-					Debug.Log("Stop RX device thread: " + name);
+					_thread.Join();
+					_thread.Abort();
 				}
 				break;
 
@@ -156,6 +141,8 @@ public abstract class Device : MonoBehaviour
 			default:
 				break;
 		}
+
+		Debug.Log($"Stop {Mode.ToString()} device {name}-{DeviceName}");
 
 		_deviceMessageQueue.Flush();
 		_deviceMessageQueue.Dispose();
