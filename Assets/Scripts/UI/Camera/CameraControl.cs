@@ -9,7 +9,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 [DefaultExecutionOrder(90)]
-public class CameraControl : MonoBehaviour
+public abstract class CameraControl : MonoBehaviour
 {
 	/*
 		Writen by Windexglow 11-13-10.  Use it, edit it, steal it I don't care.
@@ -77,11 +77,6 @@ public class CameraControl : MonoBehaviour
 	protected int _targetLayerMask = 0;
 
 	private Coroutine _movingCoroutine = null;
-
-	// private bool IsOrthographicMode()
-	// {
-	// 	return Camera.main.orthographic;
-	// }
 
 	void Awake()
 	{
@@ -261,9 +256,8 @@ public class CameraControl : MonoBehaviour
 		_blockMouseWheelControl = value;
 	}
 
-	protected virtual Vector3 HandleMouseWheelScroll() { return Vector3.zero; }
-
-	protected virtual Vector3 HandleKeyboardDirection() { return Vector3.zero; }
+	protected abstract Vector3 HandleMouseWheelScroll();
+	protected abstract Vector3 HandleKeyboardDirection();
 
 	private Vector3 GetBaseInput()
 	{
