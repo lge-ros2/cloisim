@@ -40,12 +40,14 @@ namespace SensorDevices
 				_imagesProcessThread.Abort();
 			}
 
+			OnReset();
+
 			base.OnDestroy();
 		}
 
 		protected override void OnReset()
 		{
-			while (_messageQueue.TryDequeue(out _)) { }
+			_messageQueue.Clear();
 		}
 
 		protected override void InitializeMessages()

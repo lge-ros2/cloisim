@@ -10,7 +10,6 @@ public class FollowingCamera : MonoBehaviour
 {
 	private bool _isFollowing = false;
 	private Transform _targetObjectTransform = null;
-	private CameraControl _cameraControl = null;
 
 	[Header("Following Camera Parameters")]
 	public bool blockControl = false;
@@ -46,12 +45,6 @@ public class FollowingCamera : MonoBehaviour
 	public void AlignSameDirection(in bool value)
 	{
 		_alignSameDirection = value;
-	}
-
-	// Start is called before the first frame update
-	void Start()
-	{
-		_cameraControl = Main.CameraControl;
 	}
 
 	void LateUpdate()

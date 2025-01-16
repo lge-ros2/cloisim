@@ -9,12 +9,17 @@ using UnityEngine.UIElements;
 
 public class UIController : MonoBehaviour
 {
+	public enum CameraViewModeEnum
+	{
+		Perspective,
+		Orthographic
+	}
+
 	private UIDocument _uiDocument = null;
 	private VisualElement _rootVisualElement = null;
 	private Toggle _toggleLockVerticalMoving = null;
 	private TextField _scaleField = null;
 	private Label _statusMessage = null;
-	private CameraControl _cameraControl = null;
 
 	private const float CameraViewDistance = 30f;
 	private const float ScaleFactorMin = 0.01f;
@@ -24,16 +29,18 @@ public class UIController : MonoBehaviour
 	// Start is called before the first frame update
 	void Start()
 	{
-		_cameraControl = Camera.main.GetComponent<CameraControl>();
 		var objectSpawning = Main.ObjectSpawning;
 
 		_toggleLockVerticalMoving = _rootVisualElement.Q<Toggle>("LockVerticalMoving");
-		_toggleLockVerticalMoving.RegisterValueChangedCallback(x => _cameraControl.VerticalMovementLock = x.newValue);
+		_toggleLockVerticalMoving.RegisterValueChangedCallback(x => Main.CameraControl.VerticalMovementLock = x.newValue);
 
 		var buttonCameraView = _rootVisualElement.Q<Button>("CameraView");
 		buttonCameraView.RegisterCallback<ClickEvent>(x => ShowCameraView());
 
 		_scaleField = _rootVisualElement.Q<TextField>("ScaleField");
+		var scaleFieldTextElem = _scaleField.Q<TextElement>();
+		scaleFieldTextElem.style.unityTextAlign = TextAnchor.MiddleCenter;
+
 		if (float.TryParse(_scaleField.text, out var scaleFactor))
 		{
 			objectSpawning.SetScaleFactor(scaleFactor);
@@ -63,7 +70,7 @@ public class UIController : MonoBehaviour
 		buttonImport.clickable.clicked += () => ShowModelList();
 
 		var buttonHome = _rootVisualElement.Q<Button>("Home");
- 		buttonHome.clickable.clicked += () => _cameraControl.Move(Main.CameraInitPose);
+ 		buttonHome.clickable.clicked += () => Main.CameraControl.StartCameraChange(Main.CameraInitPose);
 		buttonHome.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonHome, Color.gray); });
 		buttonHome.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonHome, Color.clear); });
 
@@ -71,7 +78,7 @@ public class UIController : MonoBehaviour
 		buttonFront.clickable.clicked += () => {
 			var position = Vector3.forward * CameraViewDistance;
 			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
-			_cameraControl.Move(new Pose(position, rotation));
+			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonFront.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonFront, Color.gray); });
 		buttonFront.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonFront, Color.clear); });
@@ -80,7 +87,7 @@ public class UIController : MonoBehaviour
 		buttonLeft.clickable.clicked += () => {
 			var position = Vector3.right * CameraViewDistance;
 			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
-			_cameraControl.Move(new Pose(position, rotation));
+			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonLeft.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonLeft, Color.gray); });
 		buttonLeft.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonLeft, Color.clear); });
@@ -89,7 +96,7 @@ public class UIController : MonoBehaviour
 		buttonBack.clickable.clicked += () => {
 			var position = Vector3.back * CameraViewDistance;
 			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
-			_cameraControl.Move(new Pose(position, rotation));
+			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonBack.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBack, Color.gray); });
 		buttonBack.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonBack, Color.clear); });
@@ -98,7 +105,7 @@ public class UIController : MonoBehaviour
 		buttonRight.clickable.clicked += () => {
 			var position = Vector3.left * CameraViewDistance;
 			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
-			_cameraControl.Move(new Pose(position, rotation));
+			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonRight.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonRight, Color.gray); });
 		buttonRight.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonRight, Color.clear); });
@@ -107,7 +114,7 @@ public class UIController : MonoBehaviour
 		buttonTop.clickable.clicked += () => {
 			var position = Vector3.up * CameraViewDistance;
 			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
-			_cameraControl.Move(new Pose(position, rotation));
+			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonTop.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonTop, Color.gray); });
 		buttonTop.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonTop, Color.clear); });
@@ -116,10 +123,31 @@ public class UIController : MonoBehaviour
 		buttonBottom.clickable.clicked += () => {
 			var position = Vector3.down * CameraViewDistance;
 			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
-			_cameraControl.Move(new Pose(position, rotation));
+			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonBottom.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBottom, Color.gray); });
 		buttonBottom.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonBottom, Color.clear); });
+
+		var camViewEnumField = _rootVisualElement.Q<EnumField>("CameraViewModeEnum");
+		var enumFieldTextElem = camViewEnumField.Q<TextElement>();
+		enumFieldTextElem.style.marginRight = 0;
+		camViewEnumField.Init(CameraViewModeEnum.Perspective);
+		camViewEnumField.SetEnabled(true);
+		camViewEnumField.RegisterValueChangedCallback(evt =>
+		{
+			if (!evt.previousValue.Equals(evt.newValue))
+			{
+				// Debug.Log("Change Camera view mode: " + evt.newValue);
+				if (evt.newValue.Equals(CameraViewModeEnum.Perspective))
+				{
+					Main.SetCameraPerspective();
+				}
+				else
+				{
+					Main.SetCameraOrthographic();
+				}
+			}
+		});
 	}
 
 	private void ChangeBackground(ref Button button, in Color color)
@@ -161,6 +189,12 @@ public class UIController : MonoBehaviour
 		UpdateVersionInfo();
 	}
 
+	public void ChangeCameraViewMode(in CameraViewModeEnum value)
+	{
+		var camViewEnumField = _rootVisualElement.Q<EnumField>("CameraViewModeEnum");
+		camViewEnumField.SetValueWithoutNotify(value);
+	}
+
 	private void UpdateVersionInfo()
 	{
 		var label = _rootVisualElement.Q<Label>("VersionInfo");
@@ -185,12 +219,12 @@ public class UIController : MonoBehaviour
 		if (!open || helpDialogScrollView.style.display == DisplayStyle.Flex)
 		{
 			helpDialogScrollView.style.display = DisplayStyle.None;
-			_cameraControl.BlockMouseWheelControl(false);
+			Main.CameraControl.BlockMouseWheelControl(false);
 		}
 		else
 		{
 			helpDialogScrollView.style.display = DisplayStyle.Flex;
-			_cameraControl.BlockMouseWheelControl(true);
+			Main.CameraControl.BlockMouseWheelControl(true);
 		}
 	}
 

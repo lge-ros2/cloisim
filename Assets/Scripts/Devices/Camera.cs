@@ -95,8 +95,7 @@ namespace SensorDevices
 
 		protected override void OnReset()
 		{
-			while (_messageQueue.TryDequeue(out _)) { }
-
+			_messageQueue.Clear();
 			_asyncWorkList.Clear();
 		}
 
@@ -281,7 +280,13 @@ namespace SensorDevices
 		{
 			// Debug.Log("OnDestroy(Camera)");
 			_startCameraWork = false;
+			Thread.Sleep(1);
+			StopAllCoroutines();
+
 			_rtHandle?.Release();
+
+			OnReset();
+
 			base.OnDestroy();
 		}
 
