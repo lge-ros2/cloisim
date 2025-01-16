@@ -97,16 +97,24 @@ namespace SensorDevices
 
 		protected override void OnReset()
 		{
+			_messageQueue.Clear();
 			_asyncWorkList.Clear();
 		}
 
 		protected new void OnDestroy()
 		{
 			_startLaserWork = false;
+			Thread.Sleep(1);
+			StopAllCoroutines();
 
 			_rtHandle?.Release();
 
-			_laserProcessThread.Join();
+			if (_laserProcessThread != null && _laserProcessThread.IsAlive)
+			{
+				_laserProcessThread.Join();
+			}
+
+			OnReset();
 
 			base.OnDestroy();
 		}

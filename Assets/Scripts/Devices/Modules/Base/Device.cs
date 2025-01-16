@@ -133,7 +133,9 @@ public abstract class Device : MonoBehaviour
 			case ModeType.TX_THREAD:
 				if (_txThread != null && _txThread.IsAlive)
 				{
+					Debug.Log("1Stop TX device thread: " + name);
 					_txThread.Join();
+					Debug.Log("2Stop TX device thread: " + name);
 					_txThread.Abort();
 					Debug.Log("Stop TX device thread: " + name);
 				}
@@ -142,7 +144,9 @@ public abstract class Device : MonoBehaviour
 			case ModeType.RX_THREAD:
 				if (_rxThread != null && _rxThread.IsAlive)
 				{
+					Debug.Log("1Stop RX device thread: " + name);
 					_rxThread.Join();
+					Debug.Log("2Stop RX device thread: " + name);
 					_rxThread.Abort();
 					Debug.Log("Stop RX device thread: " + name);
 				}
@@ -153,6 +157,7 @@ public abstract class Device : MonoBehaviour
 				break;
 		}
 
+		_deviceMessageQueue.Flush();
 		_deviceMessageQueue.Dispose();
 	}
 

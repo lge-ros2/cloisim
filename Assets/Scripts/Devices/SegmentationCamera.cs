@@ -20,8 +20,7 @@ namespace SensorDevices
 
 		protected override void OnReset()
 		{
-			while (_messageQueue.TryDequeue(out _)) { }
-
+			_messageQueue.Clear();
 			base.OnReset();
 		}
 
@@ -38,7 +37,7 @@ namespace SensorDevices
 			// for Unsigned 16-bit
 			_targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
 			_readbackDstFormat = GraphicsFormat.R8G8_UNorm;
-			
+
 			_camImageData = new CameraData.Image(_camParam.image.width, _camParam.image.height, pixelFormat);
 		}
 
