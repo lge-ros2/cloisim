@@ -6,7 +6,6 @@
 
 using UnityEngine;
 
-[DefaultExecutionOrder(90)]
 public class OrthographicCameraControl : CameraControl
 {
 	protected override Vector3 HandleMouseWheelScroll()

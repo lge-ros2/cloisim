@@ -10,11 +10,12 @@ using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 [DefaultExecutionOrder(30)]
 public class Main : MonoBehaviour
 {
+	private static float DefaultOrthographicSize = 8;
+
 	[Header("Clean all models and lights before load model")]
 	[SerializeField]
 	private bool _clearAllOnStart = true;
@@ -264,6 +265,8 @@ public class Main : MonoBehaviour
 		mainCamera.allowMSAA = true;
 		mainCamera.allowDynamicResolution = true;
 		mainCamera.useOcclusionCulling = true;
+		mainCamera.orthographic = false;
+		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
 
 		_core = GameObject.Find("Core");
 		if (_core == null)
@@ -291,8 +294,6 @@ public class Main : MonoBehaviour
 			_uiMainCanvasRoot = _uiRoot.transform.Find("Main Canvas").gameObject;
 			_followingList = _uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
 		}
-
-		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
 
 		Main._bridgeManager = new BridgeManager();
 		Main._simulationService = new SimulationService();
@@ -492,6 +493,26 @@ public class Main : MonoBehaviour
 		worldSaver.Update();
 
 		_sdfRoot.Save(_loadedWorldFilePath);
+	}
+
+	public static void SetCameraPerspective()
+	{
+		GameObject.Destroy(Camera.main.GetComponent<CameraControl>());
+
+		Camera.main.orthographic = false;
+		_cameraControl = Camera.main.gameObject.AddComponent<PerspectiveCameraControl>();
+	}
+
+	public static void SetCameraOrthographic()
+	{
+		var cameraControl = Camera.main.GetComponent<CameraControl>();
+		Debug.Log(cameraControl);
+
+		GameObject.Destroy(Camera.main.GetComponent<CameraControl>());
+
+		Camera.main.orthographic = true;
+		Camera.main.orthographicSize = DefaultOrthographicSize;
+		_cameraControl = Camera.main.gameObject.AddComponent<OrthographicCameraControl>();
 	}
 
 	void LateUpdate()

@@ -12,8 +12,6 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			public static float DefaultOrthographicSize = 8;
-
 			protected override System.Object ImportWorld(in World world)
 			{
 				if (world == null)
@@ -31,17 +29,17 @@ namespace SDF
 
 						if (world.gui.camera.projection_type.Equals("orthographic"))
 						{
-							mainCamera.orthographic = true;
-							mainCamera.orthographicSize = DefaultOrthographicSize;
+							Main.SetCameraOrthographic();
+							Main.UIController.ChangeCameraViewMode(UIController.CameraViewModeEnum.Orthographic);
 						}
 						else if (world.gui.camera.projection_type.Equals("perspective"))
 						{
-							mainCamera.orthographic = false;
+							Main.UIController.ChangeCameraViewMode(UIController.CameraViewModeEnum.Perspective);
 						}
 						else
 						{
 							UE.Debug.LogWarning($"{world.gui.camera.projection_type} is not supported. Default value is set to 'perspective'");
-							mainCamera.orthographic = false;
+							Main.UIController.ChangeCameraViewMode(UIController.CameraViewModeEnum.Perspective);
 						}
 
 						mainCamera.transform.localPosition = SDF2Unity.Position(cameraPose?.Pos);

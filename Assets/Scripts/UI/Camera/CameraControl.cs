@@ -8,7 +8,6 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-[DefaultExecutionOrder(90)]
 public abstract class CameraControl : MonoBehaviour
 {
 	/*
@@ -97,27 +96,7 @@ public abstract class CameraControl : MonoBehaviour
 			LockVerticalMovement();
 		}
 
-		_lastMouse = Input.mousePosition - _lastMouse;
-		_lastMouse.Set(-_lastMouse.y * _camSens, _lastMouse.x * _camSens, 0);
-		_lastMouse.Set(transform.eulerAngles.x + _lastMouse.x, transform.eulerAngles.y + _lastMouse.y, 0);
-
-		// Mouse camera angle done.
-		if (Input.GetMouseButton(0))
-		{
-			HandleLeftClickOnScreen();
-		}
-		else if (Input.GetMouseButton(2) || Input.GetMouseButton(1))
-		{
-			HandleScreenOrbitControl();
-
-			_terminateMoving = true;
-		}
-		else
-		{
-			_edgeSensAccumlated = 0.0f;
-		}
-
-		_lastMouse = Input.mousePosition;
+		HandleMouseControl();
 
 		// Keyboard commands for Translation
 		var targetPosByKey = HandleKeyboardCommands();
@@ -143,12 +122,36 @@ public abstract class CameraControl : MonoBehaviour
 		StopCameraChange();
 	}
 
-
 	private void LockVerticalMovement()
 	{
 		_verticalMovementLock = !_verticalMovementLock;
 		// Debug.Log(_verticalMovementLock);
 		_uiController.SetVerticalMovementLockToggle(_verticalMovementLock);
+	}
+
+	private void HandleMouseControl()
+	{
+		_lastMouse = Input.mousePosition - _lastMouse;
+		_lastMouse.Set(-_lastMouse.y * _camSens, _lastMouse.x * _camSens, 0);
+		_lastMouse.Set(transform.eulerAngles.x + _lastMouse.x, transform.eulerAngles.y + _lastMouse.y, 0);
+
+		// Mouse camera angle done.
+		if (Input.GetMouseButton(0))
+		{
+			HandleLeftClickOnScreen();
+		}
+		else if (Input.GetMouseButton(2) || Input.GetMouseButton(1))
+		{
+			HandleScreenOrbitControl();
+
+			_terminateMoving = true;
+		}
+		else
+		{
+			_edgeSensAccumlated = 0.0f;
+		}
+
+		_lastMouse = Input.mousePosition;
 	}
 
 	private Vector3 HandleKeyboardCommands()
@@ -278,7 +281,6 @@ public abstract class CameraControl : MonoBehaviour
 		if (!Input.GetKey(KeyCode.LeftControl))
 		{
 			baseDirection += HandleKeyboardDirection();
-
 			if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.S) ||
 				Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D) ||
 				Input.GetKey(KeyCode.G) || Input.GetKey(KeyCode.F))
@@ -296,6 +298,7 @@ public abstract class CameraControl : MonoBehaviour
 		{
 			StopCoroutine(_movingCoroutine);
 		}
+
 		_movingCoroutine = StartCoroutine(ChangeCameraView(targetPose));
 	}
 
@@ -312,7 +315,7 @@ public abstract class CameraControl : MonoBehaviour
 	{
 		var t = 0f;
 		while (
-			Vector3.Distance(transform.position, targetPose.position) > Vector3.kEpsilon &&
+			Vector3.Distance(transform.position, targetPose.position) > Vector3.kEpsilon ||
 			Quaternion.Angle(transform.rotation, targetPose.rotation) > Quaternion.kEpsilon)
 		{
 			var smoothPosition = Vector3.Lerp(transform.position, targetPose.position, t);

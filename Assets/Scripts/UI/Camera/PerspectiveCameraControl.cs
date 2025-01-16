@@ -6,7 +6,6 @@
 
 using UnityEngine;
 
-[DefaultExecutionOrder(90)]
 public class PerspectiveCameraControl : CameraControl
 {
 	protected override Vector3 HandleMouseWheelScroll()

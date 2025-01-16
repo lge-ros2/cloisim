@@ -4915,7 +4915,6 @@ GameObject:
   - component: {fileID: 963194228}
   - component: {fileID: 963194227}
   - component: {fileID: 963194231}
-  - component: {fileID: 963194226}
   - component: {fileID: 963194229}
   - component: {fileID: 963194230}
   m_Layer: 0
@@ -4925,28 +4924,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &963194226
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 963194225}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8ec65e03504ece92cbeb7b40065a589c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _mainSpeed: 10
-  _shiftAdd: 20
-  _maxShift: 50
-  _camSens: 0.1
-  _edgeWidth: 100
-  _edgeSens: 0.02
-  _edgeSensMax: 1
-  _wheelMoveAmp: 50
-  _wheelMoveOrthoSize: 0.25
-  _angleStep: 1.5
 --- !u!20 &963194227
 Camera:
   m_ObjectHideFlags: 0
