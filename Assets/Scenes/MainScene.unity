@@ -4945,6 +4945,7 @@ MonoBehaviour:
   _edgeSens: 0.02
   _edgeSensMax: 1
   _wheelMoveAmp: 50
+  _wheelMoveOrthoSize: 0.25
   _angleStep: 1.5
 --- !u!20 &963194227
 Camera:
@@ -5025,6 +5026,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blockControl: 0
+  horizontalOffset: 0
   distance: 1
   height: 3
   followingAngle: -90

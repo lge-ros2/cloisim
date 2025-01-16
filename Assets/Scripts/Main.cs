@@ -292,7 +292,7 @@ public class Main : MonoBehaviour
 			_followingList = _uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
 		}
 
-		_cameraControl = mainCamera.GetComponent<CameraControl>();
+		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
 
 		Main._bridgeManager = new BridgeManager();
 		Main._simulationService = new SimulationService();
@@ -466,7 +466,7 @@ public class Main : MonoBehaviour
 			{
 				_followingList.StartFollowing(_trackVisualModelName);
 				var followingCamera = Main.UIObject.GetComponentInChildren<FollowingCamera>();
-				
+
 				if (followingCamera != null)
 				{
 					followingCamera.SetInitialRelativePosition(_trackVisualPosition);
