@@ -89,6 +89,11 @@ namespace SDF
 						projection_type = GetValue<string>("projection_type");
 					}
 
+					if (IsValidNode("view_controller"))
+					{
+						view_controller = GetValue<string>("view_controller");
+					}
+
 					if (IsValidNode("track_visual"))
 					{
 						track_visual = new TrackVisual();
