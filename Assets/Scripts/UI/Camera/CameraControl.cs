@@ -40,13 +40,13 @@ public abstract class CameraControl : MonoBehaviour
 	protected const float MoveSmoothSpeed = .0025f;
 
 	[SerializeField]
-	protected float _mainSpeed = 10.0f; // regular speed
+	protected float _mainSpeed = 3.5f; // regular speed
 
 	[SerializeField]
-	protected float _shiftAdd = 20.0f; // multiplied by how long shift is held.  Basically running
+	protected float _shiftAdd = 10.0f; // multiplied by how long shift is held.  Basically running
 
 	[SerializeField]
-	protected float _maxShift = 50.0f; // Maximum speed when holding shift
+	protected float _maxShift = 60.0f; // Maximum speed when holding shift
 
 	[SerializeField]
 	protected float _camSens = 0.1f; // How sensitive it with mouse
