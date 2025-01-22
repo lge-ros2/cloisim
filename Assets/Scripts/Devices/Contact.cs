@@ -34,7 +34,7 @@ namespace SensorDevices
 
 	public class Contact : Device
 	{
-		private messages.Contacts contacts = null;
+		private messages.Contacts _contacts = null;
 
 		public string targetCollision = string.Empty;
 		public string topic = string.Empty;
@@ -52,14 +52,14 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			contacts = new messages.Contacts();
-			contacts.Time = new messages.Time();
+			_contacts = new messages.Contacts();
+			_contacts.Time = new messages.Time();
 		}
 
 		protected override void GenerateMessage()
 		{
-			contacts.Time.SetCurrentTime();
-			PushDeviceMessage<messages.Contacts>(contacts);
+			_contacts.Time.SetCurrentTime();
+			PushDeviceMessage<messages.Contacts>(_contacts);
 		}
 
 		public string GetColliderName(in Collider collider)
@@ -94,7 +94,7 @@ namespace SensorDevices
 				if (collision1.EndsWith("::" + targetCollision))
 				{
 					// find existing collision set
-					var existingContact = contacts.contact.Find(x => x.Collision1.Contains(collision1) && x.Collision2.Contains(collision2));
+					var existingContact = _contacts.contact.Find(x => x.Collision1.Contains(collision1) && x.Collision2.Contains(collision2));
 					if (existingContact == null)
 					{
 						var newContact = new messages.Contact();
@@ -117,7 +117,7 @@ namespace SensorDevices
 						newContact.Time.SetCurrentTime();
 						// Debug.Log("CollisionStay: " + collision1 + " <-> " + collision2);
 
-						contacts.contact.Add(newContact);
+						_contacts.contact.Add(newContact);
 					}
 				}
 				// Debug.DrawLine(collisionContact.point, collisionContact.normal, Color.white);
@@ -129,12 +129,12 @@ namespace SensorDevices
 		public void CollisionExit(Collision other)
 		{
 			// Debug.Log($"CollisionExit: {other.contacts.Length}");
-			contacts.contact.Clear();
+			_contacts.contact.Clear();
 		}
 
 		public bool IsContacted()
 		{
-			return (contacts.contact.Count == 0) ? false : true;
+			return (_contacts.contact.Count == 0) ? false : true;
 		}
 	}
 }
