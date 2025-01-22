@@ -167,8 +167,9 @@ namespace SensorDevices
 			micomSensorData.Odom.AngularVelocity = new messages.Micom.Odometry.Wheel();
 			micomSensorData.Odom.LinearVelocity = new messages.Micom.Odometry.Wheel();
 			micomSensorData.Odom.Pose = new messages.Vector3d();
-			micomSensorData.Odom.TwistLinear = new messages.Vector3d();
-			micomSensorData.Odom.TwistAngular = new messages.Vector3d();
+			micomSensorData.Odom.Twist = new messages.Twist();
+			micomSensorData.Odom.Twist.Linear = new messages.Vector3d();
+			micomSensorData.Odom.Twist.Angular = new messages.Vector3d();
 		}
 
 		protected override void GenerateMessage()
