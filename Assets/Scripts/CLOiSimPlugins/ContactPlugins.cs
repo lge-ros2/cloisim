@@ -1,22 +1,21 @@
 /*
- * Copyright (c) 2020 LG Electronics Inc.
+ * Copyright (c) 2025 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
  */
 
-// using UnityEngine;
 using Any = cloisim.msgs.Any;
 
-public class SonarPlugin : CLOiSimPlugin
+public class ContactPlugin : CLOiSimPlugin
 {
-	private SensorDevices.Sonar _sonar = null;
+	private SensorDevices.Contact _contact = null;
 
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.SONAR;
+		type = ICLOiSimPlugin.Type.CONTACT;
 
-		_sonar = gameObject.GetComponent<SensorDevices.Sonar>();
-		attachedDevices.Add("SONAR", _sonar);
+		_contact = gameObject.GetComponent<SensorDevices.Contact>();
+		attachedDevices.Add("CONTACT", _contact);
 	}
 
 	protected override void OnStart()
@@ -28,7 +27,7 @@ public class SonarPlugin : CLOiSimPlugin
 
 		if (RegisterTxDevice(out var portTx, "Data"))
 		{
-			AddThread(portTx, SenderThread, _sonar);
+			AddThread(portTx, SenderThread, _contact);
 		}
 	}
 
@@ -37,8 +36,8 @@ public class SonarPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_transform":
-				var devicePose = _sonar.GetPose();
-				var deviceName = _sonar.DeviceName;
+				var devicePose = _contact.GetPose();
+				var deviceName = _contact.DeviceName;
 				SetTransformInfoResponse(ref response, deviceName, devicePose);
 				break;
 

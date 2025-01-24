@@ -53,6 +53,9 @@ namespace cloisim.msgs
             [global::ProtoBuf.ProtoMember(1, Name = @"distance")]
             public double[] Distances { get; set; }
 
+            [global::ProtoBuf.ProtoMember(2, Name = @"states")]
+            public global::System.Collections.Generic.List<Sonar> States { get; } = new global::System.Collections.Generic.List<Sonar>();
+
         }
 
         [global::ProtoBuf.ProtoContract(Name = @"IR")]
@@ -64,6 +67,9 @@ namespace cloisim.msgs
 
             [global::ProtoBuf.ProtoMember(1, Name = @"distance")]
             public double[] Distances { get; set; }
+
+            [global::ProtoBuf.ProtoMember(2, Name = @"states")]
+            public global::System.Collections.Generic.List<Sonar> States { get; } = new global::System.Collections.Generic.List<Sonar>();
 
         }
 
@@ -83,11 +89,8 @@ namespace cloisim.msgs
             [global::ProtoBuf.ProtoMember(3, Name = @"pose")]
             public Vector3d Pose { get; set; }
 
-            [global::ProtoBuf.ProtoMember(4, Name = @"twist_linear")]
-            public Vector3d TwistLinear { get; set; }
-
-            [global::ProtoBuf.ProtoMember(5, Name = @"twist_angular")]
-            public Vector3d TwistAngular { get; set; }
+            [global::ProtoBuf.ProtoMember(4, Name = @"twist")]
+            public Twist Twist { get; set; }
 
             [global::ProtoBuf.ProtoContract()]
             public partial class Wheel : global::ProtoBuf.IExtensible
@@ -127,6 +130,9 @@ namespace cloisim.msgs
 
             [global::ProtoBuf.ProtoMember(1, Name = @"bumped")]
             public bool[] Bumpeds { get; set; }
+
+            [global::ProtoBuf.ProtoMember(2, Name = @"contacts")]
+            public global::System.Collections.Generic.List<Contacts> Contacts { get; } = new global::System.Collections.Generic.List<Contacts>();
 
         }
 
