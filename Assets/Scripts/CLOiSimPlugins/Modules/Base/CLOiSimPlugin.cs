@@ -90,7 +90,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	{
 		foreach (var device in attachedDevices.Values)
 		{
-			device.SetPluginParameters(_pluginParameters);
+			device?.SetPluginParameters(_pluginParameters);
 		}
 	}
 
@@ -131,7 +131,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	{
 		foreach (var device in attachedDevices.Values)
 		{
-			device.Reset();
+			device?.Reset();
 		}
 
 		OnReset();
