@@ -197,10 +197,10 @@ namespace SDF
 
 				var sonar = newSensorObject.AddComponent<SensorDevices.Sonar>();
 				sonar.DeviceName = newSensorObject.GetFrameName();
-				sonar.geometry = element.geometry;
-				sonar.rangeMin = element.min;
-				sonar.rangeMax = element.max;
-				sonar.radius = element.radius;
+				sonar.Geometry = element.geometry;
+				sonar.RangeMin = element.min;
+				sonar.RangeMax = element.max;
+				sonar.Radius = element.radius;
 
 				return sonar;
 			}
