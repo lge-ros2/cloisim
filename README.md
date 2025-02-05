@@ -38,7 +38,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] LiDAR Sensor
     - [X] 2D: Due to performance issue, < 40hz is recommended
     - [X] 3D
-  - [X] Sonar sensor
+  - [X] Sonar/IR sensor
   - [X] IMU
   - [X] Contact
   - [X] Camera: Due to performance issue, < 40hz is recommended
@@ -111,6 +111,7 @@ More details and usages for configuration/parameters in [here](https://github.co
 - `ActorPlugin`: add actor control functionality using AI(Unity) components
 - `ImuPlugin`: help to publish IMU sensor data
 - `SonarPlugin`: help to publish Sonar range data
+- `IRPlugin`: help to publish IR range data
 - `ParticleSystemPlugin`: Enable particla system of Unity
 
 #### World Specific
@@ -151,7 +152,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.55f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.57f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 22.04.5 LTS
