@@ -12,7 +12,7 @@ public class SimulationWorld : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.WORLD;
+		_type = ICLOiSimPlugin.Type.WORLD;
 		_modelName = "World";
 		_partsName = this.GetType().Name;
 

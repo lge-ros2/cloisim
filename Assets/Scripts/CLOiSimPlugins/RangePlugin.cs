@@ -21,11 +21,11 @@ public class RangePlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = (_radiationType == RadiationType.ULTRASOUND) ? ICLOiSimPlugin.Type.SONAR : ICLOiSimPlugin.Type.IR;
+		_type = (_radiationType == RadiationType.ULTRASOUND) ? ICLOiSimPlugin.Type.SONAR : ICLOiSimPlugin.Type.IR;
 
 		_sonar = gameObject.GetComponent<SensorDevices.Sonar>();
 
-		attachedDevices.Add(type.ToString(), _sonar);
+		attachedDevices.Add(_type.ToString(), _sonar);
 	}
 
 	protected override void OnStart()

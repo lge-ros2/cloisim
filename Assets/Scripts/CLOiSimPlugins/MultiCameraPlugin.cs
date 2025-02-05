@@ -12,7 +12,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.MULTICAMERA;
+		_type = ICLOiSimPlugin.Type.MULTICAMERA;
 
 		multiCam = gameObject.GetComponent<SensorDevices.MultiCamera>();
 		attachedDevices.Add("MultiCamera", multiCam);

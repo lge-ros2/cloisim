@@ -20,7 +20,7 @@ public class ActorControlPlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.ACTOR;
+		_type = ICLOiSimPlugin.Type.ACTOR;
 		_modelName = "World";
 		_partsName = this.GetType().Name;
 

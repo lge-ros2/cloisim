@@ -23,7 +23,7 @@ public interface ICLOiSimPlugin
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
 	[field: SerializeField]
-	protected ICLOiSimPlugin.Type type { get; set; }
+	protected ICLOiSimPlugin.Type _type { get; set; }
 
 	[SerializeField]
 	protected string _modelName = string.Empty;
@@ -74,7 +74,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)
 	{
-		type = targetType;
+		_type = targetType;
 	}
 
 	public void SetPluginParameters(in SDF.Plugin plugin)

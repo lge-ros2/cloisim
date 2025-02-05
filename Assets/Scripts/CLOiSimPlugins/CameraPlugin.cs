@@ -49,7 +49,7 @@ public class CameraPlugin : CLOiSimPlugin
 
 	protected override void OnPluginLoad()
 	{
-		if (GetPluginParameters() != null && type == ICLOiSimPlugin.Type.DEPTHCAMERA)
+		if (GetPluginParameters() != null && _type == ICLOiSimPlugin.Type.DEPTHCAMERA)
 		{
 			var depthScale = GetPluginParameters().GetValue<uint>("configuration/depth_scale", 1000);
 			if (_cam != null)
