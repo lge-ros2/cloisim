@@ -29,8 +29,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	{
 		if (BridgeManager.AllocateDevice(_type.ToString(), _modelName, _partsName, subPartsAndKey, out var hashKey, out port))
 		{
-			allocatedDeviceHashKeys.Add(hashKey);
-			allocatedDevicePorts.Add(port);
+			_allocatedDeviceHashKeys.Add(hashKey);
+			_allocatedDevicePorts.Add(port);
 
 			hash = DeviceHelper.GetStringHashCode(hashKey);
 			// Debug.LogFormat("PrepareDevice - port({0}) hashKey({1}) hashValue({2:X})", port, hashKey, hash);

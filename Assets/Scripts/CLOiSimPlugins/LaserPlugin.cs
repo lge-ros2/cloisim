@@ -16,7 +16,7 @@ public class LaserPlugin : CLOiSimPlugin
 		_type = ICLOiSimPlugin.Type.LASER;
 
 		lidar = GetComponent<SensorDevices.Lidar>();
-		attachedDevices.Add("LIDAR", lidar);
+		_attachedDevices.Add(lidar);
 	}
 
 	protected override void OnStart()

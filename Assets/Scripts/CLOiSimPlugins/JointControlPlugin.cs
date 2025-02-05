@@ -23,8 +23,8 @@ public class JointControlPlugin : CLOiSimPlugin
 		jointCommand = gameObject.AddComponent<SensorDevices.JointCommand>();
 		jointCommand.SetJointState(jointState);
 
-		attachedDevices.Add("Command", jointCommand);
-		attachedDevices.Add("States", jointState);
+		_attachedDevices.Add(jointCommand);
+		_attachedDevices.Add(jointState);
 	}
 
 	protected override void OnStart()

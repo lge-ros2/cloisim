@@ -25,7 +25,7 @@ public class RangePlugin : CLOiSimPlugin
 
 		_sonar = gameObject.GetComponent<SensorDevices.Sonar>();
 
-		attachedDevices.Add(_type.ToString(), _sonar);
+		_attachedDevices.Add(_sonar);
 	}
 
 	protected override void OnStart()

@@ -15,7 +15,7 @@ public class GpsPlugin : CLOiSimPlugin
 		_type = ICLOiSimPlugin.Type.GPS;
 
 		gps = gameObject.GetComponent<SensorDevices.GPS>();
-		attachedDevices.Add("GPS", gps);
+		_attachedDevices.Add(gps);
 	}
 
 	protected override void OnStart()

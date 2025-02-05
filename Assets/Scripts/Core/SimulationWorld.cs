@@ -17,7 +17,7 @@ public class SimulationWorld : CLOiSimPlugin
 		_partsName = this.GetType().Name;
 
 		clock = gameObject.GetComponent<Clock>();
-		attachedDevices.Add("Clock", clock);
+		_attachedDevices.Add(clock);
 	}
 
 	protected override void OnStart()

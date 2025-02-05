@@ -49,10 +49,10 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	private SDF.Plugin _pluginParameters = null;
 
-	private List<ushort> allocatedDevicePorts = new List<ushort>();
-	private List<string> allocatedDeviceHashKeys = new List<string>();
+	private List<ushort> _allocatedDevicePorts = new List<ushort>();
+	private List<string> _allocatedDeviceHashKeys = new List<string>();
 
-	protected Dictionary<string, Device> attachedDevices = new Dictionary<string, Device>();
+	protected List<Device> _attachedDevices = new List<Device>();
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
@@ -68,7 +68,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		_thread.Dispose();
 		_transport.Dispose();
 
-		DeregisterDevice(allocatedDevicePorts, allocatedDeviceHashKeys);
+		DeregisterDevice(_allocatedDevicePorts, _allocatedDeviceHashKeys);
 		// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
 	}
 
@@ -89,7 +89,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	public void StorePluginParametersInAttachedDevices()
 	{
-		foreach (var device in attachedDevices.Values)
+		foreach (var device in _attachedDevices)
 		{
 			device?.SetPluginParameters(_pluginParameters);
 		}
@@ -130,7 +130,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	public void Reset()
 	{
-		foreach (var device in attachedDevices.Values)
+		foreach (var device in _attachedDevices)
 		{
 			device?.Reset();
 		}
