@@ -12,12 +12,12 @@ public class SimulationWorld : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.WORLD;
+		_type = ICLOiSimPlugin.Type.WORLD;
 		_modelName = "World";
 		_partsName = this.GetType().Name;
 
 		clock = gameObject.GetComponent<Clock>();
-		attachedDevices.Add("Clock", clock);
+		_attachedDevices.Add(clock);
 	}
 
 	protected override void OnStart()

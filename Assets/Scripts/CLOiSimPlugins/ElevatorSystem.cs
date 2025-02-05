@@ -52,7 +52,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.ELEVATOR;
+		_type = ICLOiSimPlugin.Type.ELEVATOR;
 		_modelName = "World";
 		_partsName = this.GetType().Name;
 	}

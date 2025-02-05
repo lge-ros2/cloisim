@@ -17,7 +17,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.REALSENSE;
+		_type = ICLOiSimPlugin.Type.REALSENSE;
 		_partsName = name;
 
 		_cameras = GetComponentsInChildren<SensorDevices.Camera>();

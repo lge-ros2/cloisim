@@ -13,10 +13,10 @@ public class LaserPlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.LASER;
+		_type = ICLOiSimPlugin.Type.LASER;
 
 		lidar = GetComponent<SensorDevices.Lidar>();
-		attachedDevices.Add("LIDAR", lidar);
+		_attachedDevices.Add(lidar);
 	}
 
 	protected override void OnStart()

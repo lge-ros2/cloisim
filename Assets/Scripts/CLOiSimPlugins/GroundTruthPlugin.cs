@@ -104,7 +104,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.GROUNDTRUTH;
+		_type = ICLOiSimPlugin.Type.GROUNDTRUTH;
 		_modelName = "World";
 		_partsName = this.GetType().Name;
 

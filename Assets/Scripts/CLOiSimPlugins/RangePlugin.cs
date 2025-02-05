@@ -4,18 +4,28 @@
  * SPDX-License-Identifier: MIT
  */
 
+using UnityEngine;
 using Any = cloisim.msgs.Any;
 
-public class ContactPlugin : CLOiSimPlugin
+public class RangePlugin : CLOiSimPlugin
 {
-	private SensorDevices.Contact _contact = null;
+	protected enum RadiationType {
+		ULTRASOUND=0,
+		INFRARED
+	}
+
+	private SensorDevices.Sonar _sonar = null;
+
+	[field: SerializeField]
+	protected RadiationType _radiationType = RadiationType.ULTRASOUND;
 
 	protected override void OnAwake()
 	{
-		_type = ICLOiSimPlugin.Type.CONTACT;
+		_type = (_radiationType == RadiationType.ULTRASOUND) ? ICLOiSimPlugin.Type.SONAR : ICLOiSimPlugin.Type.IR;
 
-		_contact = gameObject.GetComponent<SensorDevices.Contact>();
-		_attachedDevices.Add(_contact);
+		_sonar = gameObject.GetComponent<SensorDevices.Sonar>();
+
+		_attachedDevices.Add(_sonar);
 	}
 
 	protected override void OnStart()
@@ -27,7 +37,7 @@ public class ContactPlugin : CLOiSimPlugin
 
 		if (RegisterTxDevice(out var portTx, "Data"))
 		{
-			AddThread(portTx, SenderThread, _contact);
+			AddThread(portTx, SenderThread, _sonar);
 		}
 	}
 
@@ -36,8 +46,8 @@ public class ContactPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_transform":
-				var devicePose = _contact.GetPose();
-				var deviceName = _contact.DeviceName;
+				var devicePose = _sonar.GetPose();
+				var deviceName = _sonar.DeviceName;
 				SetTransformInfoResponse(ref response, deviceName, devicePose);
 				break;
 

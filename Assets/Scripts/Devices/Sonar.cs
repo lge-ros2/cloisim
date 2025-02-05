@@ -15,26 +15,55 @@ namespace SensorDevices
 	{
 		private static readonly float Margin = 0.001f;
 
-		private messages.SonarStamped sonarStamped = null;
+		private messages.SonarStamped _sonarStamped = null;
 
-		public string geometry = string.Empty;
+		[SerializeField]
+		private string _geometry = string.Empty;
 
+		[SerializeField]
 		[Range(0, 100)]
-		public double rangeMin = 0.001f;
+		private double _rangeMin = 0.001f;
 
+		[SerializeField]
 		[Range(0, 100)]
-		public double rangeMax = 0.0f;
+		private double _rangeMax = 0.0f;
 
+		[SerializeField]
 		[Range(0, 100)]
-		public double radius = 0;
+		public double _radius = 0;
 
-		public Vector3 _sensorStartPoint = Vector3.zero;
+		[SerializeField]
+		private Vector3 _sensorStartPoint = Vector3.zero;
 
 		private List<Vector3> _meshSensorRegionVertices = new List<Vector3>();
 
 		private Transform _sonarLink = null;
 
 		private float _sensorStartOffset = 0;
+
+		public string Geometry
+		{
+			get => _geometry;
+			set => _geometry = value;
+		}
+
+		public double RangeMin
+		{
+			get => _rangeMin;
+			set => _rangeMin = value;
+		}
+
+		public double RangeMax
+		{
+			get => _rangeMax;
+			set => _rangeMax = value;
+		}
+
+		public double Radius
+		{
+			get => _radius;
+			set => _radius = value;
+		}
 
 		protected override void OnAwake()
 		{
@@ -51,18 +80,18 @@ namespace SensorDevices
 			// Create a new sensing area
 			Mesh mesh = null;
 			var sensorMeshOffset = 0f;
-			if (geometry.Equals("sphere"))
+			if (_geometry.Equals("sphere"))
 			{
-				mesh = ProceduralMesh.CreateSphere((float)radius);
-				sensorMeshOffset = (float)radius;
+				mesh = ProceduralMesh.CreateSphere((float)_radius);
+				sensorMeshOffset = (float)_radius;
 			}
 			else
 			{
-				mesh = ProceduralMesh.CreateCone((float)radius, 0, (float)rangeMax, 14);
-				sensorMeshOffset = (float)rangeMax / 2;
+				mesh = ProceduralMesh.CreateCone((float)_radius, 0, (float)_rangeMax, 14);
+				sensorMeshOffset = (float)_rangeMax / 2;
 			}
 
-			var translationOffset = Margin + _sensorStartOffset + sensorMeshOffset; // + (float)rangeMin;
+			var translationOffset = Margin + _sensorStartOffset + sensorMeshOffset; // + (float)_rangeMin;
 			TranslateDetectionArea(mesh, translationOffset);
 
 			var meshCollider = gameObject.AddComponent<MeshCollider>();
@@ -72,11 +101,13 @@ namespace SensorDevices
 
 			ResolveSensingArea(meshCollider.sharedMesh);
 
-			var sonar = sonarStamped.Sonar;
+			var sonar = _sonarStamped.Sonar;
 			sonar.Frame = DeviceName;
-			sonar.Radius = radius;
-			sonar.RangeMin = rangeMin;
-			sonar.RangeMax = rangeMax;
+			sonar.Radius = _radius;
+			sonar.RangeMin = _rangeMin;
+			sonar.RangeMax = _rangeMax;
+			sonar.Range = (float)_rangeMax;
+			sonar.Contact.Set(Vector3.zero);
 		}
 
 		protected override IEnumerator OnVisualize()
@@ -101,13 +132,13 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			sonarStamped = new messages.SonarStamped();
-			sonarStamped.Time = new messages.Time();
-			sonarStamped.Sonar = new messages.Sonar();
-			sonarStamped.Sonar.WorldPose = new messages.Pose();
-			sonarStamped.Sonar.WorldPose.Position = new messages.Vector3d();
-			sonarStamped.Sonar.WorldPose.Orientation = new messages.Quaternion();
-			sonarStamped.Sonar.Contact = new messages.Vector3d();
+			_sonarStamped = new messages.SonarStamped();
+			_sonarStamped.Time = new messages.Time();
+			_sonarStamped.Sonar = new messages.Sonar();
+			_sonarStamped.Sonar.WorldPose = new messages.Pose();
+			_sonarStamped.Sonar.WorldPose.Position = new messages.Vector3d();
+			_sonarStamped.Sonar.WorldPose.Orientation = new messages.Quaternion();
+			_sonarStamped.Sonar.Contact = new messages.Vector3d();
 		}
 
 		protected override void GenerateMessage()
@@ -115,13 +146,13 @@ namespace SensorDevices
 			var sonarPosition = _sonarLink.position;
 			var sonarRotation = _sonarLink.rotation;
 
-			sonarStamped.Time.SetCurrentTime();
+			_sonarStamped.Time.SetCurrentTime();
 
-			var sonar = sonarStamped.Sonar;
+			var sonar = _sonarStamped.Sonar;
 			sonar.Frame = DeviceName;
 			sonar.WorldPose.Position.Set(sonarPosition);
 			sonar.WorldPose.Orientation.Set(sonarRotation);
-			PushDeviceMessage<messages.SonarStamped>(sonarStamped);
+			PushDeviceMessage<messages.SonarStamped>(_sonarStamped);
 		}
 
 		private void ResolveSensingArea(Mesh targetMesh)
@@ -131,7 +162,7 @@ namespace SensorDevices
 			{
 				var targetPoint = targetMesh.vertices[i];
 				var distance = targetPoint.magnitude;
-				if (distance < (float)rangeMin)
+				if (distance < (float)_rangeMin)
 				{
 					continue;
 				}
@@ -185,7 +216,7 @@ namespace SensorDevices
 				var direction = targetPoint - _sensorStartPoint;
 
 				// Debug.DrawLine(_sensorStartPoint, targetPoint, Color.red, 0.5f);
-				if (Physics.Raycast(_sensorStartPoint, direction, out var hitInfo, (float)rangeMax))
+				if (Physics.Raycast(_sensorStartPoint, direction, out var hitInfo, (float)_rangeMax))
 				{
 					// Debug.DrawRay(_sensorStartPoint, direction, Color.magenta, 0.01f);
 					// Debug.Log("Hit Point of contact: " + hitInfo.point + " | " + _sensorStartPoint.ToString("F4"));
@@ -201,7 +232,7 @@ namespace SensorDevices
 						continue;
 					}
 
-					if ((hitDistance <= (float)rangeMax) && (hitDistance > (float)rangeMin))
+					if ((hitDistance <= (float)_rangeMax) && (hitDistance > (float)_rangeMin))
 					{
 						// Debug.Log("Hit Point " + i + " of contacts: " + hitCollider.name + "," + hitInfo.point + "|" + hitDistance.ToString("F4"));
 						detectedRange = hitDistance;
@@ -211,7 +242,7 @@ namespace SensorDevices
 				}
 			}
 
-			var sonar = sonarStamped.Sonar;
+			var sonar = _sonarStamped.Sonar;
 			sonar.Range = detectedRange;
 			sonar.Contact.Set(contactPoint);
 			// Debug.Log($"{DeviceName}: |Stay| {detectedRange.ToString("F5")} | {contactPoint}");
@@ -222,8 +253,8 @@ namespace SensorDevices
 
 		void OnTriggerExit(Collider other)
 		{
-			var sonar = sonarStamped.Sonar;
-			sonar.Range = (float)rangeMax;
+			var sonar = _sonarStamped.Sonar;
+			sonar.Range = (float)_rangeMax;
 			sonar.Contact.Set(Vector3.zero);
 			// Debug.Log(other.name + " |Exit| " + "," + sonar.Range.ToString("F5"));
 		}
@@ -232,7 +263,7 @@ namespace SensorDevices
 		{
 			try
 			{
-				return (float)sonarStamped.Sonar.Range;
+				return (float)_sonarStamped.Sonar.Range;
 			}
 			catch
 			{
@@ -244,7 +275,7 @@ namespace SensorDevices
 		{
 			try
 			{
-				var contactPoint = sonarStamped.Sonar.Contact;
+				var contactPoint = _sonarStamped.Sonar.Contact;
 				var point = SDF2Unity.Position(contactPoint.X, contactPoint.Y, contactPoint.Z);
 				return point;
 			}

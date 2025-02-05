@@ -174,7 +174,7 @@ public class MowingPlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.NONE;
+		_type = ICLOiSimPlugin.Type.NONE;
 		_modelName = "World";
 		_partsName = this.GetType().Name;
 
