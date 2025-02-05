@@ -13,7 +13,7 @@ public interface ICLOiSimPlugin
 		NONE,
 		WORLD, GROUNDTRUTH, ELEVATOR, ACTOR,
 		MICOM, JOINTCONTROL,
-		SENSOR, GPS, IMU, SONAR, CONTACT, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE, SEGMENTCAMERA
+		SENSOR, GPS, IMU, IR, SONAR, CONTACT, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE, SEGMENTCAMERA
 	};
 	void SetPluginParameters(in SDF.Plugin node);
 	SDF.Plugin GetPluginParameters();
@@ -22,7 +22,8 @@ public interface ICLOiSimPlugin
 
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
-	public ICLOiSimPlugin.Type type { get; protected set; }
+	[field: SerializeField]
+	protected ICLOiSimPlugin.Type type { get; set; }
 
 	[SerializeField]
 	protected string _modelName = string.Empty;
