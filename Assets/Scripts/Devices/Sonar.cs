@@ -106,6 +106,8 @@ namespace SensorDevices
 			sonar.Radius = _radius;
 			sonar.RangeMin = _rangeMin;
 			sonar.RangeMax = _rangeMax;
+			sonar.Range = (float)_rangeMax;
+			sonar.Contact.Set(Vector3.zero);
 		}
 
 		protected override IEnumerator OnVisualize()
