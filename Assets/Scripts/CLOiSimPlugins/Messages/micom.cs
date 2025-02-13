@@ -22,56 +22,26 @@ namespace cloisim.msgs
         [global::ProtoBuf.ProtoMember(2, Name = @"odom")]
         public Odometry Odom { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3)]
-        public Uss uss { get; set; }
-
-        [global::ProtoBuf.ProtoMember(4)]
-        public Ir ir { get; set; }
-
-        [global::ProtoBuf.ProtoMember(5)]
-        public Magnet magnet { get; set; }
-
-        [global::ProtoBuf.ProtoMember(6, Name = @"imu")]
+        [global::ProtoBuf.ProtoMember(3, Name = @"imu")]
         public Imu Imu { get; set; }
 
-        [global::ProtoBuf.ProtoMember(7)]
-        public Bumper bumper { get; set; }
+        [global::ProtoBuf.ProtoMember(4, Name = @"uss")]
+        public global::System.Collections.Generic.List<Uss> Usses { get; } = new global::System.Collections.Generic.List<Uss>();
+
+        [global::ProtoBuf.ProtoMember(5, Name = @"ir")]
+        public global::System.Collections.Generic.List<Ir> Irs { get; } = new global::System.Collections.Generic.List<Ir>();
+
+        [global::ProtoBuf.ProtoMember(6, Name = @"magnet")]
+        public global::System.Collections.Generic.List<Magnet> Magnets { get; } = new global::System.Collections.Generic.List<Magnet>();
+
+        [global::ProtoBuf.ProtoMember(7, Name = @"bumper")]
+        public global::System.Collections.Generic.List<Bumper> Bumpers { get; } = new global::System.Collections.Generic.List<Bumper>();
 
         [global::ProtoBuf.ProtoMember(8, Name = @"battery")]
         public Battery Battery { get; set; }
 
         [global::ProtoBuf.ProtoMember(9, Name = @"pose")]
         public Pose Pose { get; set; }
-
-        [global::ProtoBuf.ProtoContract(Name = @"USS")]
-        public partial class Uss : global::ProtoBuf.IExtensible
-        {
-            private global::ProtoBuf.IExtension __pbn__extensionData;
-            global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
-                => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
-
-            [global::ProtoBuf.ProtoMember(1, Name = @"distance")]
-            public double[] Distances { get; set; }
-
-            [global::ProtoBuf.ProtoMember(2, Name = @"states")]
-            public global::System.Collections.Generic.List<Sonar> States { get; } = new global::System.Collections.Generic.List<Sonar>();
-
-        }
-
-        [global::ProtoBuf.ProtoContract(Name = @"IR")]
-        public partial class Ir : global::ProtoBuf.IExtensible
-        {
-            private global::ProtoBuf.IExtension __pbn__extensionData;
-            global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
-                => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
-
-            [global::ProtoBuf.ProtoMember(1, Name = @"distance")]
-            public double[] Distances { get; set; }
-
-            [global::ProtoBuf.ProtoMember(2, Name = @"states")]
-            public global::System.Collections.Generic.List<Sonar> States { get; } = new global::System.Collections.Generic.List<Sonar>();
-
-        }
 
         [global::ProtoBuf.ProtoContract()]
         public partial class Odometry : global::ProtoBuf.IExtensible
@@ -109,6 +79,36 @@ namespace cloisim.msgs
 
         }
 
+        [global::ProtoBuf.ProtoContract(Name = @"USS")]
+        public partial class Uss : global::ProtoBuf.IExtensible
+        {
+            private global::ProtoBuf.IExtension __pbn__extensionData;
+            global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+                => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+            [global::ProtoBuf.ProtoMember(1, Name = @"distance", IsRequired = true)]
+            public double Distance { get; set; }
+
+            [global::ProtoBuf.ProtoMember(2, Name = @"state")]
+            public Sonar State { get; set; }
+
+        }
+
+        [global::ProtoBuf.ProtoContract(Name = @"IR")]
+        public partial class Ir : global::ProtoBuf.IExtensible
+        {
+            private global::ProtoBuf.IExtension __pbn__extensionData;
+            global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+                => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+            [global::ProtoBuf.ProtoMember(1, Name = @"distance", IsRequired = true)]
+            public double Distance { get; set; }
+
+            [global::ProtoBuf.ProtoMember(2, Name = @"state")]
+            public Sonar State { get; set; }
+
+        }
+
         [global::ProtoBuf.ProtoContract()]
         public partial class Magnet : global::ProtoBuf.IExtensible
         {
@@ -116,8 +116,8 @@ namespace cloisim.msgs
             global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
                 => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-            [global::ProtoBuf.ProtoMember(1, Name = @"detected")]
-            public bool[] Detecteds { get; set; }
+            [global::ProtoBuf.ProtoMember(1, Name = @"detected", IsRequired = true)]
+            public bool Detected { get; set; }
 
         }
 
@@ -128,11 +128,11 @@ namespace cloisim.msgs
             global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
                 => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-            [global::ProtoBuf.ProtoMember(1, Name = @"bumped")]
-            public bool[] Bumpeds { get; set; }
+            [global::ProtoBuf.ProtoMember(1, Name = @"bumped", IsRequired = true)]
+            public bool Bumped { get; set; }
 
             [global::ProtoBuf.ProtoMember(2, Name = @"contacts")]
-            public global::System.Collections.Generic.List<Contacts> Contacts { get; } = new global::System.Collections.Generic.List<Contacts>();
+            public Contacts Contacts { get; set; }
 
         }
 
