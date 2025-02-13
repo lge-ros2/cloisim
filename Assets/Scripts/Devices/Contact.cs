@@ -37,6 +37,8 @@ namespace SensorDevices
 	{
 		private ConcurrentQueue<messages.Contacts> _messageQueue = new ConcurrentQueue<messages.Contacts>();
 
+		private messages.Contacts _lastContacts = null;
+
 		private double _lastTimeContactsMessageGenerated = 0;
 
 		public string targetCollision = string.Empty;
@@ -193,20 +195,28 @@ namespace SensorDevices
 			}
 
 			// Debug.Log("CollisionStay: " + contacts.contact.Count);
+			_lastContacts = contactsMessage;
 
 			_messageQueue.Enqueue(contactsMessage);
 			_lastTimeContactsMessageGenerated = Time.timeAsDouble;
 		}
 
+
 		public void CollisionExit(Collision other)
 		{
+			_lastContacts = null;
 			// Debug.Log($"CollisionExit: {other.contacts.Length}");
 			_lastTimeContactsMessageGenerated = 0;
 		}
 
 		public bool IsContacted()
 		{
-			return (_messageQueue.Count > 0) ? true : false;
+			return (_lastContacts != null && _lastContacts.contact.Count > 0) ? true : false;
+		}
+
+		public messages.Contacts GetContacts()
+		{
+			return _lastContacts;
 		}
 	}
 }

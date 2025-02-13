@@ -271,6 +271,11 @@ namespace SensorDevices
 			}
 		}
 
+		public messages.SonarStamped GetSonar()
+		{
+			return _sonarStamped;
+		}
+
 		public Vector3 GetDetectedPoint()
 		{
 			try
