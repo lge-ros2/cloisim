@@ -6,6 +6,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -16,6 +17,8 @@ namespace SensorDevices
 		private static readonly float Margin = 0.001f;
 
 		private messages.SonarStamped _sonarStamped = null;
+
+		private ConcurrentDictionary<int, int> _collisionMonitoringList = new ConcurrentDictionary<int, int>();
 
 		[SerializeField]
 		private string _geometry = string.Empty;
@@ -110,6 +113,13 @@ namespace SensorDevices
 			sonar.Contact.Set(Vector3.zero);
 		}
 
+		protected override void OnReset()
+		{
+			var sonar = _sonarStamped.Sonar;
+			sonar.Range = (float)_rangeMax;
+			sonar.Contact.Set(Vector3.zero);
+		}
+
 		protected override IEnumerator OnVisualize()
 		{
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
@@ -181,11 +191,18 @@ namespace SensorDevices
 			mesh.vertices = vertices;
 		}
 
+		void OnTriggerEnter(Collider other)
+		{
+			_collisionMonitoringList.TryAdd(other.gameObject.GetInstanceID(), 0);
+		}
+
 		private int _pingPongIndex = 0;
 		private float _sensorTimeElapsed = 0.0f;
 
 		void OnTriggerStay(Collider other)
 		{
+			_collisionMonitoringList.AddOrUpdate(other.gameObject.GetInstanceID(), 0, (key, existingValues) => existingValues + 1);
+
 			if (_meshSensorRegionVertices.Count == 0)
 			{
 				return;
@@ -253,10 +270,31 @@ namespace SensorDevices
 
 		void OnTriggerExit(Collider other)
 		{
-			var sonar = _sonarStamped.Sonar;
-			sonar.Range = (float)_rangeMax;
-			sonar.Contact.Set(Vector3.zero);
+			_collisionMonitoringList.TryRemove(other.gameObject.GetInstanceID(), out var _);
+
 			// Debug.Log(other.name + " |Exit| " + "," + sonar.Range.ToString("F5"));
+		}
+
+		void LateUpdate()
+		{
+			if (_collisionMonitoringList.Count > 0)
+			{
+				foreach (var elem in _collisionMonitoringList)
+				{
+					if (elem.Value < 0)
+					{
+						_collisionMonitoringList.TryRemove(elem.Key, out var _);
+					}
+					else
+					{
+						_collisionMonitoringList.AddOrUpdate(elem.Key, 0, (key, existingValues) => existingValues - 5);
+					}
+				}
+			}
+			else
+			{
+				OnReset();
+			}
 		}
 
 		public float GetDetectedRange()
