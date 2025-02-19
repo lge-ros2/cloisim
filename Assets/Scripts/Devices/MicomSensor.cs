@@ -187,22 +187,25 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
+			UpdateBattery(UpdatePeriod);
+			UpdateIMU();
+			UpdateUss();
+			UpdateIr();
+			UpdateBumper();
+
+			_micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
+
 			PushDeviceMessage<messages.Micom>(_micomSensorData);
 		}
 
 		void FixedUpdate()
 		{
+			var delta = Time.fixedDeltaTime;
+
 			if (_micomSensorData == null)
 			{
 				Debug.LogWarning("_micomSensorData is NULL");
 				return;
-			}
-
-			var deltaTime = Time.fixedDeltaTime;
-
-			if (_battery != null)
-			{
-				_micomSensorData.Battery.Voltage = _battery.Update(deltaTime);
 			}
 
 			if (_motorControl != null)
@@ -212,18 +215,19 @@ namespace SensorDevices
 					InitializeOdometryMessage();
 				}
 
-				if (_motorControl.Update(_micomSensorData.Odom, deltaTime, _imuSensor) == false)
+				if (_motorControl.Update(_micomSensorData.Odom, delta, _imuSensor) == false)
 				{
 					Debug.LogWarning("Update failed in MotorControl");
 				}
 			}
+		}
 
-			UpdateIMU();
-			UpdateUss();
-			UpdateIr();
-			UpdateBumper();
-
-			_micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
+		private void UpdateBattery(float deltaTime)
+		{
+			if (_battery != null && _micomSensorData != null)
+			{
+				_micomSensorData.Battery.Voltage = _battery.Update(deltaTime);
+			}
 		}
 
 		private void UpdateBumper()
@@ -275,12 +279,10 @@ namespace SensorDevices
 
 		private void UpdateIMU()
 		{
-			if (_imuSensor == null || _micomSensorData == null)
+			if (_imuSensor != null && _micomSensorData != null)
 			{
-				return;
+				_micomSensorData.Imu = _imuSensor.GetImuMessage();
 			}
-
-			_micomSensorData.Imu = _imuSensor.GetImuMessage();
 		}
 	}
 }
