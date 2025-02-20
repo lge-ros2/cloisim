@@ -96,6 +96,53 @@ namespace SDF
 				return foundRootModelTransform;
 			}
 
+			private static void SpecifyPoseAbsolute(in SDF.Helper.Base baseHelper, ref UE.Vector3 localPosition, ref UE.Quaternion localRotation)
+			{
+				var parentObject = baseHelper.transform.parent;
+
+				var rootModelTransform = FindRootParentModel(baseHelper);
+				// UE.Debug.Log($"SpecifyPose {baseHelper.name}: non relative_to baseHelper: {localRotation.eulerAngles.ToString("F5")} rootModelTransform: {rootModelTransform.name}");
+				// UE.Debug.LogWarning($"SpecifyPose {baseHelper.name}: {rootModelTransform.localRotation.eulerAngles.ToString("F6")} * {parentObject.localRotation.eulerAngles.ToString("F6")} * {localRotation.eulerAngles.ToString("F6")}");
+				// UE.Debug.LogWarning($"SpecifyPose {baseHelper.name}: rootModelTransform == {rootModelTransform.name} <-> {parentObject.name}");
+
+				var rotationOffset = (rootModelTransform.Equals(parentObject)) ? UE.Quaternion.identity : parentObject.localRotation;
+				var positionOffset = (rootModelTransform.Equals(parentObject)) ? UE.Vector3.zero : (parentObject.position - rootModelTransform.position);
+				positionOffset = UE.Quaternion.Inverse(rootModelTransform.localRotation) * positionOffset;
+
+				localRotation = rotationOffset * localRotation;
+				localPosition = localPosition - positionOffset;
+			}
+
+			private static void SpecifyPoseRelative(in SDF.Helper.Base baseHelper, ref UE.Vector3 localPosition, ref UE.Quaternion localRotation)
+			{
+				var parentObject = baseHelper.transform.parent;
+				var pose = baseHelper?.Pose;
+
+				var relativeObjectBaseHelper =
+					baseHelper.RootModel.GetComponentsInChildren<SDF.Helper.Base>()
+						.FirstOrDefault(x => x.name.Equals(pose.relative_to));
+
+				if (relativeObjectBaseHelper != null)
+				{
+					var relativeObject = relativeObjectBaseHelper.transform;
+
+					// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => parent {parentObject.name}, {parentObject.localPosition.ToString("F9")}, {parentObject.position.ToString("F9")}");
+					// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => parent {parentObject.name}, {parentObject.localRotation.eulerAngles.ToString("F9")}, {parentObject.rotation.eulerAngles.ToString("F9")}");
+					// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localPosition.ToString("F9")}, {relativeObject.position.ToString("F9")}");
+					// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localRotation.eulerAngles.ToString("F9")}, {relativeObject.rotation.eulerAngles.ToString("F9")}");
+
+					var positionOffset = (relativeObject.Equals(parentObject)) ? UE.Vector3.zero : (relativeObject.position - parentObject.position);
+					var rotationOffset = (relativeObject.Equals(parentObject)) ? UE.Quaternion.identity : (parentObject.localRotation * relativeObject.localRotation);
+
+					localPosition = localPosition + positionOffset;
+					localRotation = rotationOffset * localRotation;
+				}
+				else
+				{
+					UE.Debug.LogWarning($"{baseHelper.name}: AdjustPose: relative_to: {pose.relative_to} NOT FOUND !!!!!!");
+				}
+			}
+
 			public static void SpecifyPose(this Object targetObject)
 			{
 				var rootObject = (targetObject as UE.GameObject);
@@ -111,60 +158,24 @@ namespace SDF
 				foreach (var baseHelper in rootObject.GetComponentsInChildren<SDF.Helper.Base>())
 				{
 					var pose = baseHelper?.Pose;
-					if (pose == null)
+					if (pose != null)
 					{
-						continue;
-					}
+						var localPosition = SDF2Unity.Position(pose?.Pos);
+						var localRotation = SDF2Unity.Rotation(pose?.Rot);
 
-					var localPosition = SDF2Unity.Position(pose?.Pos);
-					var localRotation = SDF2Unity.Rotation(pose?.Rot);
-
-					var parentObject = baseHelper.transform.parent;
-
-					// UE.Debug.Log($"SpecifyPose {baseHelper.name} {pose.relative_to}");
-					if (string.IsNullOrEmpty(pose.relative_to))
-					{
-						var rootModelTransform = FindRootParentModel(baseHelper);
-						// UE.Debug.Log($"SpecifyPose {baseHelper.name}: non relative_to baseHelper: {localRotation.eulerAngles.ToString("F5")} rootModelTransform: {rootModelTransform.name}");
-						// UE.Debug.LogWarning($"SpecifyPose {baseHelper.name}: {rootModelTransform.localRotation.eulerAngles.ToString("F6")} * {parentObject.localRotation.eulerAngles.ToString("F6")} * {localRotation.eulerAngles.ToString("F6")}");
-						// UE.Debug.LogWarning($"SpecifyPose {baseHelper.name}: rootModelTransform == {rootModelTransform.name} <-> {parentObject.name}");
-
-						var rotationOffset = (rootModelTransform.Equals(parentObject)) ? UE.Quaternion.identity : parentObject.localRotation;
-						var positionOffset = (rootModelTransform.Equals(parentObject)) ? UE.Vector3.zero : (parentObject.position - rootModelTransform.position);
-						positionOffset = UE.Quaternion.Inverse(rootModelTransform.localRotation) * positionOffset;
-
-						localRotation = rotationOffset * localRotation;
-						localPosition = localPosition - positionOffset;
-					}
-					else
-					{
-						var relativeObjectBaseHelper =
-							baseHelper.RootModel.GetComponentsInChildren<SDF.Helper.Base>()
-								.FirstOrDefault(x => x.name.Equals(pose.relative_to));
-
-						if (relativeObjectBaseHelper != null)
+						// UE.Debug.Log($"SpecifyPose {baseHelper.name} {pose.relative_to}");
+						if (string.IsNullOrEmpty(pose.relative_to))
 						{
-							var relativeObject = relativeObjectBaseHelper.transform;
-
-							// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => parent {parentObject.name}, {parentObject.localPosition.ToString("F9")}, {parentObject.position.ToString("F9")}");
-							// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => parent {parentObject.name}, {parentObject.localRotation.eulerAngles.ToString("F9")}, {parentObject.rotation.eulerAngles.ToString("F9")}");
-							// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localPosition.ToString("F9")}, {relativeObject.position.ToString("F9")}");
-							// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localRotation.eulerAngles.ToString("F9")}, {relativeObject.rotation.eulerAngles.ToString("F9")}");
-
-							var positionOffset = (relativeObject.Equals(parentObject)) ? UE.Vector3.zero : (relativeObject.position - parentObject.position);
-							var rotationOffset = (relativeObject.Equals(parentObject)) ? UE.Quaternion.identity : (parentObject.localRotation * relativeObject.localRotation);
-
-							localPosition = localPosition + positionOffset;
-							localRotation = rotationOffset * localRotation;
+							SpecifyPoseAbsolute(baseHelper, ref localPosition, ref localRotation);
 						}
 						else
 						{
-							UE.Debug.LogWarning($"{baseHelper.name}: AdjustPose: relative_to: {pose.relative_to} NOT FOUND !!!!!!");
+							SpecifyPoseRelative(baseHelper, ref localPosition, ref localRotation);
 						}
-					}
 
-					baseHelper.SetPose(localPosition, localRotation);
-					baseHelper.ResetPose();
+						baseHelper.SetPose(localPosition, localRotation);
+						baseHelper.ResetPose();
+					}
 				}
 
 				foreach (var body in articulationBodies)
