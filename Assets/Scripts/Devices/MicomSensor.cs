@@ -193,8 +193,6 @@ namespace SensorDevices
 			UpdateIr();
 			UpdateBumper();
 
-			_micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
-
 			PushDeviceMessage<messages.Micom>(_micomSensorData);
 		}
 
@@ -220,6 +218,8 @@ namespace SensorDevices
 					Debug.LogWarning("Update failed in MotorControl");
 				}
 			}
+
+			_micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
 		}
 
 		private void UpdateBattery(float deltaTime)
