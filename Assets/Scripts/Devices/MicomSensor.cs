@@ -13,9 +13,9 @@ namespace SensorDevices
 {
 	public partial class MicomSensor : Device
 	{
-		private messages.Micom micomSensorData = null;
+		private messages.Micom _micomSensorData = null;
 		private MotorControl _motorControl = null;
-		private SensorDevices.Battery battery = null;
+		private SensorDevices.Battery _battery = null;
 		private SensorDevices.IMU _imuSensor = null;
 		private List<SensorDevices.Sonar> _ussSensors = new List<SensorDevices.Sonar>();
 		private List<SensorDevices.Sonar> _irSensors = new List<SensorDevices.Sonar>();
@@ -78,7 +78,12 @@ namespace SensorDevices
 				}
 			}
 
-			micomSensorData.uss.Distances = new double[_ussSensors.Count];
+			_micomSensorData.Usses.Capacity =_ussSensors.Count;
+			for (var i = 0; i < _micomSensorData.Usses.Capacity; i++)
+			{
+				var uss = new messages.Micom.Uss();
+				_micomSensorData.Usses[i] = uss;
+			}
 		}
 
 		public void SetIRSensor(in List<string> irList)
@@ -100,7 +105,12 @@ namespace SensorDevices
 				}
 			}
 
-			micomSensorData.ir.Distances = new double[_irSensors.Count];
+			_micomSensorData.Irs.Capacity =_irSensors.Count;
+			for (var i = 0; i < _micomSensorData.Irs.Capacity; i++)
+			{
+				var ir = new messages.Micom.Ir();
+				_micomSensorData.Irs.Add(ir);
+			}
 		}
 
 		public void SetMagnet(in List<string> magnetList)
@@ -132,15 +142,21 @@ namespace SensorDevices
 				}
 			}
 
-			micomSensorData.bumper.Bumpeds = new bool[_bumperSensors.Count];
+			_micomSensorData.Bumpers.Capacity =_bumperSensors.Count;
+			for (var i = 0; i < _micomSensorData.Bumpers.Capacity; i++)
+			{
+				var bumper = new messages.Micom.Bumper();
+				bumper.Contacts = new messages.Contacts();
+				_micomSensorData.Bumpers.Add(bumper);
+			}
 		}
 
 		public void SetBattery(in SensorDevices.Battery targetBattery)
 		{
-			micomSensorData.Battery = new messages.Battery();
+			_micomSensorData.Battery = new messages.Battery();
 
-			this.battery = targetBattery;
-			micomSensorData.Battery.Name = battery.Name;
+			this._battery = targetBattery;
+			_micomSensorData.Battery.Name = _battery.Name;
 		}
 
 		protected override void OnReset()
@@ -153,114 +169,120 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			micomSensorData = new messages.Micom();
-			micomSensorData.Time = new messages.Time();
-			micomSensorData.Odom = null;
-			micomSensorData.uss = new messages.Micom.Uss();
-			micomSensorData.ir = new messages.Micom.Ir();
-			micomSensorData.bumper = new messages.Micom.Bumper();
+			_micomSensorData = new messages.Micom();
+			_micomSensorData.Time = new messages.Time();
+			_micomSensorData.Odom = null;
 		}
 
 		private void InitializeOdometryMessage()
 		{
-			micomSensorData.Odom = new messages.Micom.Odometry();
-			micomSensorData.Odom.AngularVelocity = new messages.Micom.Odometry.Wheel();
-			micomSensorData.Odom.LinearVelocity = new messages.Micom.Odometry.Wheel();
-			micomSensorData.Odom.Pose = new messages.Vector3d();
-			micomSensorData.Odom.TwistLinear = new messages.Vector3d();
-			micomSensorData.Odom.TwistAngular = new messages.Vector3d();
+			_micomSensorData.Odom = new messages.Micom.Odometry();
+			_micomSensorData.Odom.AngularVelocity = new messages.Micom.Odometry.Wheel();
+			_micomSensorData.Odom.LinearVelocity = new messages.Micom.Odometry.Wheel();
+			_micomSensorData.Odom.Pose = new messages.Vector3d();
+			_micomSensorData.Odom.Twist = new messages.Twist();
+			_micomSensorData.Odom.Twist.Linear = new messages.Vector3d();
+			_micomSensorData.Odom.Twist.Angular = new messages.Vector3d();
 		}
 
 		protected override void GenerateMessage()
 		{
-			PushDeviceMessage<messages.Micom>(micomSensorData);
-		}
-
-		void FixedUpdate()
-		{
-			if (micomSensorData == null)
-			{
-				Debug.LogWarning("micomSensorData is NULL");
-				return;
-			}
-
-			var deltaTime = Time.fixedDeltaTime;
-
-			if (battery != null)
-			{
-				micomSensorData.Battery.Voltage = battery.Update(deltaTime);
-			}
-
-			if (_motorControl != null)
-			{
-				if (micomSensorData.Odom == null)
-				{
-					InitializeOdometryMessage();
-				}
-
-				if (_motorControl.Update(micomSensorData.Odom, deltaTime, _imuSensor) == false)
-				{
-					Debug.LogWarning("Update failed in MotorControl");
-				}
-			}
-
+			UpdateBattery(UpdatePeriod);
 			UpdateIMU();
 			UpdateUss();
 			UpdateIr();
 			UpdateBumper();
 
-			micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
+			PushDeviceMessage<messages.Micom>(_micomSensorData);
+		}
+
+		void FixedUpdate()
+		{
+			var delta = Time.fixedDeltaTime;
+
+			if (_micomSensorData == null)
+			{
+				Debug.LogWarning("_micomSensorData is NULL");
+				return;
+			}
+
+			if (_motorControl != null)
+			{
+				if (_micomSensorData.Odom == null)
+				{
+					InitializeOdometryMessage();
+				}
+
+				if (_motorControl.Update(_micomSensorData.Odom, delta, _imuSensor) == false)
+				{
+					Debug.LogWarning("Update failed in MotorControl");
+				}
+			}
+
+			_micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
+		}
+
+		private void UpdateBattery(float deltaTime)
+		{
+			if (_battery != null && _micomSensorData != null)
+			{
+				_micomSensorData.Battery.Voltage = _battery.Update(deltaTime);
+			}
 		}
 
 		private void UpdateBumper()
 		{
-			if (micomSensorData == null || micomSensorData.bumper == null)
+			if (_micomSensorData != null)
 			{
-				return;
-			}
+				for (var index = 0; index < _bumperSensors.Count; index++)
+				{
+					var bumper = _micomSensorData.Bumpers[index];
+					var bumperSensor = _bumperSensors[index];
+					bumper.Bumped = bumperSensor.IsContacted();
+					bumper.Contacts = bumperSensor.GetContacts();
 
-			for (var index = 0; index < _bumperSensors.Count; index++)
-			{
-				var bumperSensor = _bumperSensors[index];
-				micomSensorData.bumper.Bumpeds[index] = bumperSensor.IsContacted();
-				// Debug.Log(micomSensorData.bumper.Bumpeds[index]);
+					_micomSensorData.Bumpers[index] = bumper;
+					// Debug.Log(_micomSensorData.Bumpers.Count + " " + bumper.Bumped + ", " + bumper.Contacts);
+				}
 			}
 		}
 
 		private void UpdateUss()
 		{
-			if (micomSensorData == null || micomSensorData.uss == null)
+			if (_micomSensorData != null)
 			{
-				return;
-			}
+				for (var index = 0; index < _ussSensors.Count; index++)
+				{
+					var uss = _micomSensorData.Usses[index];
+					uss.Distance = _ussSensors[index].GetDetectedRange();
+					uss.State = _ussSensors[index].GetSonar().Sonar;
 
-			for (var index = 0; index < _ussSensors.Count; index++)
-			{
-				micomSensorData.uss.Distances[index] = _ussSensors[index].GetDetectedRange();
+					_micomSensorData.Usses[index] = uss;
+				}
 			}
 		}
 
 		private void UpdateIr()
 		{
-			if (micomSensorData == null || micomSensorData.ir == null)
+			if (_micomSensorData != null)
 			{
-				return;
-			}
+				for (var index = 0; index < _irSensors.Count; index++)
+				{
+					var ir = _micomSensorData.Irs[index];
+					ir.Distance = _irSensors[index].GetDetectedRange();
+					ir.State = _irSensors[index].GetSonar().Sonar;
 
-			for (var index = 0; index < _irSensors.Count; index++)
-			{
-				micomSensorData.ir.Distances[index] = _irSensors[index].GetDetectedRange();
+					_micomSensorData.Irs[index] = ir;
+				}
 			}
 		}
 
 		private void UpdateIMU()
 		{
-			if (_imuSensor == null || micomSensorData == null)
+			if (_imuSensor != null && _micomSensorData != null)
 			{
-				return;
+				_micomSensorData.Imu = _imuSensor.GetImuMessage();
 			}
-
-			micomSensorData.Imu = _imuSensor.GetImuMessage();
 		}
 	}
 }

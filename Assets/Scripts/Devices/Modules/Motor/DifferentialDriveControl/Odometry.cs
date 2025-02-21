@@ -140,11 +140,11 @@ public class Odometry
 		// rolling mean filtering
 		rollingMeanOdomTransVelocity.Accumulate(odomTransVel);
 		rollingMeanOdomTAngularVelocity.Accumulate(odomAngularVel);
-		odomMessage.TwistLinear.X = rollingMeanOdomTransVelocity.Get();
-		odomMessage.TwistAngular.Z = rollingMeanOdomTAngularVelocity.Get();
+		odomMessage.Twist.Linear.X = rollingMeanOdomTransVelocity.Get();
+		odomMessage.Twist.Angular.Z = rollingMeanOdomTAngularVelocity.Get();
 #else
-		odomMessage.TwistLinear.X = odomTransVel;
-		odomMessage.TwistAngular.Z = odomAngularVel;
+		odomMessage.Twist.Linear.X = odomTransVel;
+		odomMessage.Twist.Angular.Z = odomAngularVel;
 #endif
 		// Debug.LogFormat("odom Vel: {0:F6}, {1:F6}", odomMessage.TwistLinear.X, odomMessage.TwistAngular.Z);
 		// Debug.LogFormat("Odom angular: {0:F6}, {1:F6}", odomMessage.AngularVelocity.Left, odomMessage.AngularVelocity.Right);

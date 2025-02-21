@@ -42,7 +42,15 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 			FlushPortion();
 		}
 
-		return TryAdd(data, TimeoutInMilliseconds);
+		try
+		{
+			return TryAdd(data, TimeoutInMilliseconds);
+		}
+		catch (Exception ex)
+		{
+			UnityEngine.Debug.LogWarning(ex.Message);
+			return false;
+		}
 	}
 
 	public bool Pop(out DeviceMessage item)

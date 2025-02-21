@@ -495,24 +495,38 @@ public class Main : MonoBehaviour
 		_sdfRoot.Save(_loadedWorldFilePath);
 	}
 
-	public static void SetCameraPerspective()
+	public static void SetCameraPerspective(in bool isPerspectiveViewControl = true)
 	{
 		GameObject.Destroy(Camera.main.GetComponent<CameraControl>());
 
 		Camera.main.orthographic = false;
-		_cameraControl = Camera.main.gameObject.AddComponent<PerspectiveCameraControl>();
+
+		if (isPerspectiveViewControl)
+		{
+			_cameraControl = Camera.main.gameObject.AddComponent<PerspectiveCameraControl>();
+		}
+		else
+		{
+			_cameraControl = Camera.main.gameObject.AddComponent<OrthographicCameraControl>();
+		}
 	}
 
-	public static void SetCameraOrthographic()
+	public static void SetCameraOrthographic(in bool isOrthographicViewControl = true)
 	{
-		var cameraControl = Camera.main.GetComponent<CameraControl>();
-		Debug.Log(cameraControl);
-
 		GameObject.Destroy(Camera.main.GetComponent<CameraControl>());
 
 		Camera.main.orthographic = true;
 		Camera.main.orthographicSize = DefaultOrthographicSize;
-		_cameraControl = Camera.main.gameObject.AddComponent<OrthographicCameraControl>();
+
+		if (isOrthographicViewControl)
+		{
+			_cameraControl = Camera.main.gameObject.AddComponent<OrthographicCameraControl>();
+		}
+		else
+		{
+			_cameraControl = Camera.main.gameObject.AddComponent<PerspectiveCameraControl>();
+
+		}
 	}
 
 	void LateUpdate()

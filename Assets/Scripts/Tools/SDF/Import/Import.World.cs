@@ -27,13 +27,17 @@ namespace SDF
 					{
 						var cameraPose = world.gui.camera.Pose;
 
+						var isOrbitControl = (world.gui.camera.view_controller.Equals("orbit")) ?
+							true : (world.gui.camera.view_controller.Equals("ortho") ? false : true);
+
 						if (world.gui.camera.projection_type.Equals("orthographic"))
 						{
-							Main.SetCameraOrthographic();
+							Main.SetCameraOrthographic(!isOrbitControl);
 							Main.UIController.ChangeCameraViewMode(UIController.CameraViewModeEnum.Orthographic);
 						}
 						else if (world.gui.camera.projection_type.Equals("perspective"))
 						{
+							Main.SetCameraPerspective(isOrbitControl);
 							Main.UIController.ChangeCameraViewMode(UIController.CameraViewModeEnum.Perspective);
 						}
 						else

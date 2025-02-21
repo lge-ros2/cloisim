@@ -1,21 +1,21 @@
 /*
- * Copyright (c) 2020 LG Electronics Inc.
+ * Copyright (c) 2025 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
  */
 
 using Any = cloisim.msgs.Any;
 
-public class GpsPlugin : CLOiSimPlugin
+public class ContactPlugin : CLOiSimPlugin
 {
-	private SensorDevices.GPS gps = null;
+	private SensorDevices.Contact _contact = null;
 
 	protected override void OnAwake()
 	{
-		_type = ICLOiSimPlugin.Type.GPS;
+		_type = ICLOiSimPlugin.Type.CONTACT;
 
-		gps = gameObject.GetComponent<SensorDevices.GPS>();
-		_attachedDevices.Add(gps);
+		_contact = gameObject.GetComponent<SensorDevices.Contact>();
+		_attachedDevices.Add(_contact);
 	}
 
 	protected override void OnStart()
@@ -27,7 +27,7 @@ public class GpsPlugin : CLOiSimPlugin
 
 		if (RegisterTxDevice(out var portTx, "Data"))
 		{
-			AddThread(portTx, SenderThread, gps);
+			AddThread(portTx, SenderThread, _contact);
 		}
 	}
 
@@ -36,8 +36,8 @@ public class GpsPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_transform":
-				var devicePose = gps.GetPose();
-				var deviceName = gps.DeviceName;
+				var devicePose = _contact.GetPose();
+				var deviceName = _contact.DeviceName;
 				SetTransformInfoResponse(ref response, deviceName, devicePose);
 				break;
 

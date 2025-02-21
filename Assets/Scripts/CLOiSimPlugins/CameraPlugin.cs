@@ -28,10 +28,7 @@ public class CameraPlugin : CLOiSimPlugin
 			_cam = gameObject.GetComponent<SensorDevices.Camera>();
 		}
 
-		if (!string.IsNullOrEmpty(deviceName))
-		{
-			attachedDevices.Add(deviceName, _cam);
-		}
+		_attachedDevices.Add(_cam);
 	}
 
 	protected override void OnStart()
@@ -49,7 +46,7 @@ public class CameraPlugin : CLOiSimPlugin
 
 	protected override void OnPluginLoad()
 	{
-		if (GetPluginParameters() != null && type == ICLOiSimPlugin.Type.DEPTHCAMERA)
+		if (GetPluginParameters() != null && _type == ICLOiSimPlugin.Type.DEPTHCAMERA)
 		{
 			var depthScale = GetPluginParameters().GetValue<uint>("configuration/depth_scale", 1000);
 			if (_cam != null)

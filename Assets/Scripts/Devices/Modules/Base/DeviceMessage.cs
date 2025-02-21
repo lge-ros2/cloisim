@@ -41,8 +41,14 @@ public class DeviceMessage : MemoryStream
 		if (CanWrite)
 		{
 			Reset();
-			Seek(0, SeekOrigin.Begin);
-			Serializer.Serialize<T>(this, instance);
+			try
+			{
+				Serializer.Serialize<T>(this, instance);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"ERROR: SetMessage<{typeof(T).ToString()}>() during Serializer.Serialize: {ex.Message}");
+			}
 		}
 		else
 		{
@@ -52,11 +58,11 @@ public class DeviceMessage : MemoryStream
 
 	public T GetMessage<T>()
 	{
-		T result;
+		Position = 0;
 
+		T result;
 		try
 		{
-			Seek(0, SeekOrigin.Begin);
 			result = Serializer.Deserialize<T>(this);
 		}
 		catch (Exception)

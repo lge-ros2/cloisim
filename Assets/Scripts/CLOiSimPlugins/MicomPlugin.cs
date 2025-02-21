@@ -25,14 +25,14 @@ public class MicomPlugin : CLOiSimPlugin
 
 	protected override void OnAwake()
 	{
-		type = ICLOiSimPlugin.Type.MICOM;
+		_type = ICLOiSimPlugin.Type.MICOM;
 		_partsName = (GetPluginParameters() == null || string.IsNullOrEmpty(GetPluginParameters().Name)) ? "Micom" : GetPluginParameters().Name;
 
 		_micomSensor = gameObject.AddComponent<SensorDevices.MicomSensor>();
 		_micomCommand = gameObject.AddComponent<SensorDevices.MicomCommand>();
 
-		attachedDevices.Add("Command", _micomCommand);
-		attachedDevices.Add("Sensor", _micomSensor);
+		_attachedDevices.Add(_micomCommand);
+		_attachedDevices.Add(_micomSensor);
 
 		_log.Clear();
 	}

@@ -18,7 +18,7 @@ public class SegmentationCameraPlugin : CameraPlugin
 		{
 			ChangePluginType(ICLOiSimPlugin.Type.SEGMENTCAMERA);
 			_cam = segCam;
-			attachedDevices.Add("SegmentationCamera", _cam);
+			_attachedDevices.Add(_cam);
 		}
 		else
 		{
@@ -28,7 +28,7 @@ public class SegmentationCameraPlugin : CameraPlugin
 
 	protected override void OnPluginLoad()
 	{
-		if (GetPluginParameters() != null && type == ICLOiSimPlugin.Type.SEGMENTCAMERA)
+		if (GetPluginParameters() != null && _type == ICLOiSimPlugin.Type.SEGMENTCAMERA)
 		{
 			if (GetPluginParameters().GetValues<string>("segmentation/label", out var labelList))
 			{

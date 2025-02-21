@@ -465,8 +465,8 @@ public class SelfBalancedDrive : MotorControl
 					var odomPose = new Vector3((float)odom.y, (float)rotation.z, (float)odom.x);
 					odomMessage.Pose.Set(Unity2SDF.Direction.Reverse(odomPose));
 
-					odomMessage.TwistLinear.X = _kinematics.OdomTranslationalVelocity;
-					odomMessage.TwistAngular.Z = _kinematics.OdomRotationalVelocity;
+					odomMessage.Twist.Linear.X = _kinematics.OdomTranslationalVelocity;
+					odomMessage.Twist.Angular.Z = _kinematics.OdomRotationalVelocity;
 				}
 				else
 				{

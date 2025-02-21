@@ -40,13 +40,13 @@ public abstract class CameraControl : MonoBehaviour
 	protected const float MoveSmoothSpeed = .0025f;
 
 	[SerializeField]
-	protected float _mainSpeed = 10.0f; // regular speed
+	protected float _mainSpeed = 3.5f; // regular speed
 
 	[SerializeField]
-	protected float _shiftAdd = 20.0f; // multiplied by how long shift is held.  Basically running
+	protected float _shiftAdd = 10.0f; // multiplied by how long shift is held.  Basically running
 
 	[SerializeField]
-	protected float _maxShift = 50.0f; // Maximum speed when holding shift
+	protected float _maxShift = 60.0f; // Maximum speed when holding shift
 
 	[SerializeField]
 	protected float _camSens = 0.1f; // How sensitive it with mouse
@@ -132,8 +132,10 @@ public abstract class CameraControl : MonoBehaviour
 	private void HandleMouseControl()
 	{
 		_lastMouse = Input.mousePosition - _lastMouse;
-		_lastMouse.Set(-_lastMouse.y * _camSens, _lastMouse.x * _camSens, 0);
-		_lastMouse.Set(transform.eulerAngles.x + _lastMouse.x, transform.eulerAngles.y + _lastMouse.y, 0);
+
+		var mousePoseX = transform.eulerAngles.x - _lastMouse.y * _camSens;
+		var mousePoseY = transform.eulerAngles.y + _lastMouse.x * _camSens;
+		_lastMouse.Set(mousePoseX, mousePoseY, 0);
 
 		// Mouse camera angle done.
 		if (Input.GetMouseButton(0))
@@ -199,31 +201,32 @@ public abstract class CameraControl : MonoBehaviour
 		{
 			// Debug.Log("rotate camera left here");
 			_lastMouse.y -= _edgeSensAccumlated;
-			transform.eulerAngles = _lastMouse;
 		}
 		else if (Input.mousePosition.x > Screen.width - _edgeWidth)
 		{
 			// Debug.Log("rotate camera right here");
 			_lastMouse.y += _edgeSensAccumlated;
-			transform.eulerAngles = _lastMouse;
 		}
 		else if (Input.mousePosition.y < _edgeWidth)
 		{
 			// Debug.Log("rotate camera down here");
 			_lastMouse.x += _edgeSensAccumlated;
-			transform.eulerAngles = _lastMouse;
 		}
 		else if (Input.mousePosition.y > Screen.height - _edgeWidth)
 		{
-			// Debug.Log("rotate camera up here");
 			_lastMouse.x -= _edgeSensAccumlated;
-			transform.eulerAngles = _lastMouse;
 		}
 		else
 		{
 			_edgeSensAccumlated = 0.0f;
-			transform.eulerAngles = _lastMouse;
 		}
+
+		var xRotation =
+			((_lastMouse.x >= -1 && _lastMouse.x < 90) ||
+			 (_lastMouse.x > 270 && _lastMouse.x <= 361)) ?
+				_lastMouse.x : transform.localRotation.eulerAngles.x;
+
+		transform.localRotation = Quaternion.Euler(xRotation, _lastMouse.y, 0);
 	}
 
 	private void Rotate()
@@ -299,6 +302,7 @@ public abstract class CameraControl : MonoBehaviour
 			StopCoroutine(_movingCoroutine);
 		}
 
+		_terminateMoving = false;
 		_movingCoroutine = StartCoroutine(ChangeCameraView(targetPose));
 	}
 
@@ -307,6 +311,7 @@ public abstract class CameraControl : MonoBehaviour
 		if (_terminateMoving && _movingCoroutine != null)
 		{
 			StopCoroutine(_movingCoroutine);
+			_movingCoroutine = null;
 			_terminateMoving = false;
 		}
 	}
