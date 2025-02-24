@@ -1,3 +1,4 @@
+using System.Collections;
 using System;
 using UnityEngine;
 
@@ -20,7 +21,8 @@ namespace RuntimeGizmos
 		{
 			if(transformGizmo == null && autoFindTransformGizmo)
 			{
-				transformGizmo = GameObject.FindObjectOfType<TransformGizmo>();
+				// transformGizmo = GameObject.FindObjectOfType<TransformGizmo>();
+				transformGizmo = FindAnyObjectByType<TransformGizmo>();
 			}
 
 			transformGizmo.manuallyHandleGizmo = true;
