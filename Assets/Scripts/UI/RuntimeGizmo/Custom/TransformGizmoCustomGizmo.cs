@@ -20,7 +20,7 @@ namespace RuntimeGizmos
 		{
 			if(transformGizmo == null && autoFindTransformGizmo)
 			{
-				transformGizmo = GameObject.FindObjectOfType<TransformGizmo>();
+				transformGizmo = GameObject.FindFirstObjectByType<TransformGizmo>(); // FindAnyObjectByType
 			}
 
 			transformGizmo.manuallyHandleGizmo = true;
