@@ -87,6 +87,7 @@ crashlytics-build.properties
 .vscode/
 *.code-workspace
 
+.history/
 .config/
 
 # TextMesh Pro files
