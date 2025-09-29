@@ -7,7 +7,7 @@
     "com.unity.render-pipelines.universal": "14.0.12",
     "com.unity.robotics.vhacd": "https://github.com/Unity-Technologies/VHACD.git?path=/com.unity.robotics.vhacd",
     "com.unity.searcher": "4.9.3",
-    "com.unity.splines": "2.8.1",
+    "com.unity.splines": "2.8.2",
     "com.unity.terrain-tools": "5.0.6",
     "com.unity.textmeshpro": "3.0.9",
     "com.unity.toolchain.linux-x86_64": "2.0.10",
