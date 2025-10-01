@@ -45,6 +45,7 @@ public class Main : MonoBehaviour
 	private static GameObject _uiRoot = null;
 	private static GameObject _uiMainCanvasRoot = null;
 
+	private static SimulationWorld _simulationWorld = null;
 	private static UIController _uiController = null;
 	private static InfoDisplay _infoDisplay = null;
 	private static WorldNavMeshBuilder _worldNavMeshBuilder = null;
@@ -282,8 +283,8 @@ public class Main : MonoBehaviour
 
 		_worldNavMeshBuilder = _worldRoot.GetComponent<WorldNavMeshBuilder>();
 
-		var simWorld = _worldRoot.AddComponent<SimulationWorld>();
-		DeviceHelper.SetGlobalClock(simWorld.GetClock());
+		_simulationWorld = _worldRoot.AddComponent<SimulationWorld>();
+		DeviceHelper.SetGlobalClock(_simulationWorld.GetClock());
 
 		if (_uiRoot != null)
 		{
@@ -586,6 +587,8 @@ public class Main : MonoBehaviour
 	{
 		_isResetting = true;
 		// Debug.LogWarning("Reset positions in simulation!!!");
+
+		_simulationWorld?.SignalReset();
 
 		_transformGizmo?.ClearTargets();
 
