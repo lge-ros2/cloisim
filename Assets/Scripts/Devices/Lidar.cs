@@ -576,24 +576,30 @@ namespace SensorDevices
 
 				if (rangeData != null)
 				{
+					var localUp = _lidarLink.up;
+					var localRight = _lidarLink.right;
+					var localForward = _lidarLink.forward;
+
 					for (var scanIndex = 0; scanIndex < rangeData.Length; scanIndex++)
 					{
 						var scanIndexH = scanIndex % horizontalSamples;
 						var scanIndexV = scanIndex / horizontalSamples;
 
-						var rayAngleH = ((laserAngleResolution.H * scanIndexH)) + startAngleH;
-						var rayAngleV = ((laserAngleResolution.V * scanIndexV)) + startAngleV;
+						var rayAngleH = (laserAngleResolution.H * scanIndexH) + startAngleH;
+						var rayAngleV = (laserAngleResolution.V * scanIndexV) + startAngleV;
 
 						var ccwIndex = (uint)(rangeData.Length - scanIndex - 1);
 						var rayData = (float)rangeData[ccwIndex];
 
-						if (rayData != float.NaN && rayData <= rangeMax)
+						if (!float.IsNaN(rayData) && rayData <= rangeMax)
 						{
 							rayColor.g = rayAngleV / (float)angleRangeV;
 
-							var rayRotation = Quaternion.AngleAxis((float)rayAngleH, transform.up) * Quaternion.AngleAxis((float)rayAngleV, -transform.forward) * _lidarLink.forward;
-							var rayDirection = rayRotation * (rayData);
-							Debug.DrawRay(rayStart, rayDirection, rayColor, visualDrawDuration, true);
+							var rayRotation = Quaternion.AngleAxis(rayAngleH, localUp) * Quaternion.AngleAxis(rayAngleV, localRight);
+							var rayOffsetStart = rayStart + (rayRotation * localForward * rangeMin);
+							var rayDirection = rayRotation * localForward * (rayData - rangeMin);
+
+							Debug.DrawRay(rayOffsetStart, rayDirection, rayColor, visualDrawDuration, true);
 						}
 					}
 				}
