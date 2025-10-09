@@ -12,7 +12,7 @@ namespace SDF
 	{
 		public class Base : UE.MonoBehaviour
 		{
-			private Model _rootModelInScopre = null;
+			private Model _rootModelInScope = null;
 
 			private PoseControl _poseControl = null;
 
@@ -27,7 +27,7 @@ namespace SDF
 				set => _pose = value;
 			}
 
-			public Model RootModel => _rootModelInScopre;
+			public Model RootModel => _rootModelInScope;
 
 			public bool IsFirstChild => _isRootModel; // root model
 
@@ -55,7 +55,7 @@ namespace SDF
 				var modelHelpers = GetComponentsInParent(typeof(Model));
 				if (modelHelpers.Length > 0)
 				{
-					_rootModelInScopre = (Model)modelHelpers[modelHelpers.Length - 1];
+					_rootModelInScope = (Model)modelHelpers[modelHelpers.Length - 1];
 				}
 			}
 
