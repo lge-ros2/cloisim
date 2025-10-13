@@ -32,7 +32,7 @@ namespace SensorDevices
 		private const float DEG360 = DEG180 * 2;
 
 		private const float HFOV_FOR_2D_LIDAR = 120f;
-		private const float HFOV_FOR_3D_LIDAR = 90f;
+		private const float HFOV_FOR_3D_LIDAR = 10f;
 		private float LaserCameraHFov = 0f;
 		private float LaserCameraHFovHalf = 0;
 		private float LaserCameraVFov = 0;
@@ -192,7 +192,8 @@ namespace SensorDevices
 			var renderTextrueHeight = Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
 			// Debug.Log("SetupLaserCamera: " + LaserCameraVFov + ","  + laserAngleResolution.V + "," + renderTextrueWidth + "," + renderTextrueHeight);
 
-			RTHandles.SetHardwareDynamicResolutionState(true);
+			RTHandles.SetHardwareDynamicResolutionState(false);
+			_rtHandle?.Release();
 			_rtHandle = RTHandles.Alloc(
 				width: renderTextrueWidth,
 				height: renderTextrueHeight,
@@ -210,7 +211,7 @@ namespace SensorDevices
 				anisoLevel: 0,
 				mipMapBias: 0,
 				bindTextureMS: false,
-				useDynamicScale: true,
+				useDynamicScale: false,
 				memoryless: RenderTextureMemoryless.None,
 				name: "LidarDepthTexture");
 
