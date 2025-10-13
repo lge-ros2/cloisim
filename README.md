@@ -37,7 +37,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
 - [X] Sensor models
   - [X] LiDAR Sensor
     - [X] 2D: Due to performance issue, < 40hz is recommended
-    - [X] 3D
+    - [X] 3D: Raster method using depth shader, same vertical angle `-N° to N°` required
   - [X] Sonar/IR sensor
   - [X] IMU
   - [X] Contact
