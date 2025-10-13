@@ -193,7 +193,7 @@
             <inheritdoc/>
         </member>
         <member name="M:ProtoBuf.Meta.EnumMember.Equals(ProtoBuf.Meta.EnumMember)">
-            <summary>Compare two enum-member definitions</summary>
+            <inheritdoc cref="M:System.IEquatable`1.Equals(`0)"/>
         </member>
         <member name="M:ProtoBuf.Meta.EnumMember.op_Equality(ProtoBuf.Meta.EnumMember,ProtoBuf.Meta.EnumMember)">
             <summary>
@@ -209,6 +209,9 @@
             <summary>
             Create an EnumMember instance from an enum value
             </summary>
+        </member>
+        <member name="M:ProtoBuf.Meta.EnumMember.CompareTo(ProtoBuf.Meta.EnumMember)">
+            <inheritdoc cref="M:System.IComparable`1.CompareTo(`0)"/>
         </member>
         <member name="T:ProtoBuf.Meta.MetaType">
             <summary>
@@ -789,7 +792,7 @@
         </member>
         <member name="P:ProtoBuf.Meta.RuntimeTypeModel.CompilerOptions.Accessibility">
             <summary>
-            The acecssibility of the generated serializer
+            The accessibility of the generated serializer
             </summary>
         </member>
         <member name="E:ProtoBuf.Meta.RuntimeTypeModel.CompilerOptions.IncludeType">
@@ -894,9 +897,9 @@
         </member>
         <member name="M:ProtoBuf.Meta.RuntimeTypeModel.AddSerializer(System.Type,System.Type)">
             <summary>
-            Add an externally defined serialiser
+            Add an externally defined serializer
             </summary>
-            <param name="collectionType">type of the collectionn e.g. F# Map</param>
+            <param name="collectionType">type of the collection e.g. F# Map</param>
             <param name="serializerType">type of the External Serializer</param>
             <returns></returns>
         </member>
@@ -1197,7 +1200,7 @@
             <typeparam name="TFrom">The type of the object being copied.</typeparam>
             <typeparam name="TTo">The type of the new object to be created.</typeparam>
             <param name="instance">The existing instance to use as a template.</param>
-            <returns>A new instane of type TNewType, with the data from TOldType.</returns>
+            <returns>A new instance of type TNewType, with the data from TOldType.</returns>
         </member>
         <member name="M:ProtoBuf.Serializer.Merge``1(System.Xml.XmlReader,``0)">
             <summary>

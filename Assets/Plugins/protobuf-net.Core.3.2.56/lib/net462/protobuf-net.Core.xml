@@ -4358,6 +4358,12 @@
         <member name="M:ProtoBuf.WellKnownTypes.Timestamp.AsDateTime">
             <summary>Converts a Timestamp to a DateTime</summary>
         </member>
+        <member name="M:ProtoBuf.WellKnownTypes.Timestamp.CompareTo(ProtoBuf.WellKnownTypes.Timestamp)">
+            <inheritdoc cref="M:System.IComparable`1.CompareTo(`0)" />
+        </member>
+        <member name="M:ProtoBuf.WellKnownTypes.Timestamp.Equals(ProtoBuf.WellKnownTypes.Timestamp)">
+            <inheritdoc cref="M:System.IEquatable`1.Equals(`0)" />
+        </member>
         <member name="M:ProtoBuf.WellKnownTypes.Timestamp.op_Implicit(ProtoBuf.WellKnownTypes.Timestamp)~System.DateTime">
             <summary>Converts a Timestamp to a DateTime</summary>
         </member>
