@@ -577,7 +577,7 @@ namespace SensorDevices
 
 							var rayRotation = Quaternion.AngleAxis(rayAngleH, localUp) * Quaternion.AngleAxis(rayAngleV, localRight);
 							var rayOffsetStart = rayStart + (rayRotation * localForward * rangeMin);
-							var rayDirection = rayRotation * localForward * (rayData - rangeMin);
+							var rayDirection = rayRotation * localForward * rayData;
 
 							Debug.DrawRay(rayOffsetStart, rayDirection, rayColor, visualDrawDuration, true);
 						}
