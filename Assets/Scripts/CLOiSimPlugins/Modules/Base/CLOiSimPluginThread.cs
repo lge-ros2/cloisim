@@ -49,14 +49,14 @@ public class CLOiSimPluginThread : IDisposable
 		Stop();
 	}
 
-	public bool Add(in ushort targetPortForThread, in ParameterizedThreadStart function, in System.Object paramObject = null)
+	public bool Add(in ushort targetPortForThread, in ParameterizedThreadStart function, in System.Object pluginObject = null)
 	{
 		if (function != null)
 		{
 			var thread = new Thread(function);
-			var threadObject = new ParamObject(targetPortForThread, paramObject);
+			var paramObject = new ParamObject(targetPortForThread, pluginObject);
 			// thread.Priority = System.Threading.ThreadPriority.AboveNormal;
-			_threadList.Add((thread, threadObject));
+			_threadList.Add((thread, paramObject));
 			return true;
 		}
 
@@ -153,7 +153,7 @@ public class CLOiSimPluginThread : IDisposable
 
 			if (receivedBuffer != null)
 			{
-				var requestMessage = CLOiSimPluginThread.ParseRequestMessage(receivedBuffer);
+				var requestMessage = CLOiSimPluginThread.ParseMessageParam(receivedBuffer);
 
 				if (requestMessage != null && dmResponse != null)
 				{
@@ -162,7 +162,7 @@ public class CLOiSimPluginThread : IDisposable
 				}
 				else
 				{
-					Debug.Log("DeviceMessage for response or requestMesasge is null");
+					Debug.Log("DeviceMessage for response or requestMessage is null");
 				}
 
 				responsor.SendResponse(dmResponse);
@@ -173,7 +173,7 @@ public class CLOiSimPluginThread : IDisposable
 		dmResponse.Dispose();
 	}
 
-	private static messages.Param ParseRequestMessage(in byte[] infoBuffer)
+	public static messages.Param ParseMessageParam(in byte[] infoBuffer)
 	{
 		if (infoBuffer != null)
 		{

@@ -57,7 +57,7 @@ namespace Segmentation
 		void OnDestroy()
 		{
 			// Debug.Log($"Destroy segmentation tag {this.name}");
-			Main.SegmentationManager.RemoveClass(_className, this);
+			Main.SegmentationManager?.RemoveClass(_className, this);
 		}
 
 		public void Refresh()

@@ -407,16 +407,17 @@ namespace SDF
 			}
 
 			var nameNode = includedNode.SelectSingleNode("name");
-			var name = (nameNode == null) ? null : nameNode.InnerText;
+			var name = nameNode?.InnerText;
 
 			var staticNode = includedNode.SelectSingleNode("static");
-			var isStatic = (staticNode == null) ? null : staticNode.InnerText;
+			var isStatic = staticNode?.InnerText;
 
 			var placementFrameNode = includedNode.SelectSingleNode("placement_frame");
-			var placementFrame = (placementFrameNode == null) ? null : placementFrameNode.InnerText;
+			var placementFrame = placementFrameNode?.InnerText;
 
-			var poseNode = includedNode.SelectSingleNode("pose");
-			var pose = (poseNode == null) ? null : poseNode.InnerText;
+			var poseNode = includedNode.SelectSingleNode("pose") as XmlElement;
+			var pose = poseNode?.InnerText;
+			var poseAttributes = poseNode?.Attributes;
 
 			var pluginNode = includedNode.SelectSingleNode("plugin");
 			// var plugin = (pluginNode == null) ? null : pluginNode.InnerText;
@@ -447,11 +448,11 @@ namespace SDF
 				return null;
 			}
 
-			var sdfNode = modelSdfDoc.SelectSingleNode("/sdf/model");
-
+			var sdfNode = modelSdfDoc.SelectSingleNode("/sdf/model") ?? modelSdfDoc.SelectSingleNode("/sdf/light");
 			if (sdfNode == null)
 			{
-				sdfNode = modelSdfDoc.SelectSingleNode("/sdf/light");
+				Console.Write($"<model> or <light> element not exist");
+				return null;
 			}
 
 			var attributes = sdfNode.Attributes;
@@ -463,37 +464,50 @@ namespace SDF
 
 			StoreOriginalModelName(modelSdfDoc, modelName, sdfNode);
 
-			// Edit custom parameter
-			if (nameNode != null)
+			if (nameNode != null && attributes.GetNamedItem("name") != null)
 			{
 				attributes.GetNamedItem("name").Value = name;
 			}
 
 			if (poseNode != null)
 			{
-				var poseElem = sdfNode.SelectSingleNode("pose");
+				var poseElem = sdfNode.SelectSingleNode("pose") as XmlElement;
 				if (poseElem != null)
 				{
 					poseElem.InnerText = pose;
+					if (poseAttributes != null)
+					{
+						foreach (XmlAttribute attr in poseAttributes)
+						{
+							poseElem.SetAttribute(attr.Name, attr.Value);
+						}
+					}
 				}
 				else
 				{
-					var elem = sdfNode.OwnerDocument.CreateElement("pose");
+					var elem = modelSdfDoc.CreateElement("pose");
 					elem.InnerText = pose;
+					if (poseAttributes != null)
+					{
+						foreach (XmlAttribute attr in poseAttributes)
+						{
+							elem.SetAttribute(attr.Name, attr.Value);
+						}
+					}
 					sdfNode.InsertBefore(elem, sdfNode.FirstChild);
 				}
 			}
 
 			if (staticNode != null)
 			{
-				var staticElem = sdfNode.SelectSingleNode("static");
+				var staticElem = sdfNode.SelectSingleNode("static") as XmlElement;
 				if (staticElem != null)
 				{
 					staticElem.InnerText = isStatic;
 				}
 				else
 				{
-					var elem = sdfNode.OwnerDocument.CreateElement("static");
+					var elem = modelSdfDoc.CreateElement("static");
 					elem.InnerText = isStatic;
 					sdfNode.InsertBefore(elem, sdfNode.FirstChild);
 				}
@@ -501,7 +515,7 @@ namespace SDF
 
 			if (pluginNode != null)
 			{
-				sdfNode.InsertBefore(pluginNode, sdfNode.LastChild);
+				sdfNode.InsertBefore(modelSdfDoc.ImportNode(pluginNode, true), sdfNode.LastChild);
 			}
 
 			return sdfNode;

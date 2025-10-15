@@ -37,7 +37,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
 - [X] Sensor models
   - [X] LiDAR Sensor
     - [X] 2D: Due to performance issue, < 40hz is recommended
-    - [X] 3D
+    - [X] 3D: Raster method using depth shader, same vertical angle `-N° to N°` required
   - [X] Sonar/IR sensor
   - [X] IMU
   - [X] Contact
@@ -54,6 +54,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
       - [X] Lidar
       - [ ] Camera
     - [ ] Custom
+  - [ ] <visualize>true</visualize>, only works in editor for lidar sensor
 - [X] Physics
   - [ ] Support all physics parameters in SDF specification
   - [X] Support `<Joint type="revolute2">`
@@ -152,7 +153,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.58f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.59f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 22.04.5 LTS

@@ -52,7 +52,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 			case "request_transform":
 				var devicePose = camera.GetPose();
 				var deviceName = camera.DeviceName;
-				SetTransformInfoResponse(ref response, deviceName, devicePose);
+				SetTransformInfoResponse(ref response, deviceName, devicePose, _parentLinkName);
 				break;
 
 			default:

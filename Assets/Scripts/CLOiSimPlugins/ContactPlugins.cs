@@ -38,7 +38,7 @@ public class ContactPlugin : CLOiSimPlugin
 			case "request_transform":
 				var devicePose = _contact.GetPose();
 				var deviceName = _contact.DeviceName;
-				SetTransformInfoResponse(ref response, deviceName, devicePose);
+				SetTransformInfoResponse(ref response, deviceName, devicePose, _parentLinkName);
 				break;
 
 			default:

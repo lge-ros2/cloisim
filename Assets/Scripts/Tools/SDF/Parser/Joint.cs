@@ -169,12 +169,26 @@ namespace SDF
 					{
 						if (IsValidNode("axis/limit/lower"))
 						{
-							axis.limit.lower = GetValue<double>("axis/limit/lower");
+							var checkInfValue = GetValue<string>("axis/limit/lower");
+							if (checkInfValue.ToLower() == "inf") {
+								axis.limit.lower = double.PositiveInfinity;
+							} else if (checkInfValue.ToLower() == "-inf") {
+								axis.limit.lower = double.NegativeInfinity;
+							} else {
+								axis.limit.lower = GetValue<double>("axis/limit/lower");
+							}
 						}
 
 						if (IsValidNode("axis/limit/upper"))
 						{
-							axis.limit.upper = GetValue<double>("axis/limit/upper");
+							var checkInfValue = GetValue<string>("axis/limit/upper");
+							if (checkInfValue.ToLower() == "inf") {
+								axis.limit.upper = double.PositiveInfinity;
+							} else if (checkInfValue.ToLower() == "-inf") {
+								axis.limit.upper = double.NegativeInfinity;
+							} else {
+								axis.limit.upper = GetValue<double>("axis/limit/upper");
+							}
 						}
 
 						if (IsValidNode("axis/limit/effort"))
@@ -224,8 +238,29 @@ namespace SDF
 
 						if (IsValidNode("axis2/limit"))
 						{
-							axis2.limit.lower = GetValue<double>("axis2/limit/lower");
-							axis2.limit.upper = GetValue<double>("axis2/limit/upper");
+							if (IsValidNode("axis2/limit/lower"))
+							{
+								var checkInfValue = GetValue<string>("axis2/limit/lower");
+								if (checkInfValue.ToLower() == "inf") {
+									axis2.limit.lower = double.PositiveInfinity;
+								} else if (checkInfValue.ToLower() == "-inf") {
+									axis2.limit.lower = double.NegativeInfinity;
+								} else {
+									axis2.limit.lower = GetValue<double>("axis2/limit/lower");
+								}
+							}
+
+							if (IsValidNode("axis2/limit/upper"))
+							{
+								var checkInfValue = GetValue<string>("axis2/limit/upper");
+								if (checkInfValue.ToLower() == "inf") {
+									axis2.limit.upper = double.PositiveInfinity;
+								} else if (checkInfValue.ToLower() == "-inf") {
+									axis2.limit.upper = double.NegativeInfinity;
+								} else {
+									axis2.limit.upper = GetValue<double>("axis2/limit/upper");
+								}
+							}
 
 							if (IsValidNode("axis2/limit/effort"))
 							{

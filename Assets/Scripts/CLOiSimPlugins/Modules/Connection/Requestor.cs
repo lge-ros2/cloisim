@@ -10,6 +10,8 @@ using NetMQ.Sockets;
 
 public class Requestor : RequestSocket
 {
+	private TimeSpan timeout = TimeSpan.FromMilliseconds(500);
+
 	private byte[] hashValue = null;
 	private byte[] dataToSendRequest = null;
 
@@ -35,7 +37,7 @@ public class Requestor : RequestSocket
 		return TransportHelper.StoreTag(ref dataToSendRequest, hashValue);
 	}
 
-	protected bool SendRequest(in DeviceMessage messageToSend)
+	public bool SendRequest(in DeviceMessage messageToSend)
 	{
 		if (messageToSend.IsValid())
 		{
@@ -47,7 +49,7 @@ public class Requestor : RequestSocket
 		return false;
 	}
 
-	protected bool SendRequest(in string stringToSend)
+	public bool SendRequest(in string stringToSend)
 	{
 		var buffer = System.Text.Encoding.UTF8.GetBytes(stringToSend);
 		return SendRequest(buffer, stringToSend.Length);
@@ -87,12 +89,18 @@ public class Requestor : RequestSocket
 	{
 		if (!IsDisposed)
 		{
-			var frameReceived = this.ReceiveFrameBytes();
-			return TransportHelper.RetrieveData(frameReceived, (checkTag)? hashValue : null);
+			if (this.TryReceiveFrameBytes(timeout, out var frameReceived))
+			{
+				return TransportHelper.RetrieveData(frameReceived, (checkTag) ? hashValue : null);
+			}
+			else
+			{
+				Console.Error.WriteLine("failed to receive frame.");
+			}
 		}
 		else
 		{
-			Console.Error.WriteLine("Socket for request is not ready yet.");
+			Console.Error.WriteLine("Socket for receive response is not ready yet.");
 		}
 
 		return null;

@@ -13,9 +13,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	private CLOiSimPluginThread _thread = new CLOiSimPluginThread();
 	protected CLOiSimPluginThread PluginThread => _thread;
 
-	protected bool AddThread(in ushort targetPortForThread, in ParameterizedThreadStart function, in System.Object paramObject = null)
+	protected bool AddThread(in ushort targetPortForThread, in ParameterizedThreadStart function, in System.Object pluginObject = null)
 	{
-		return _thread.Add(targetPortForThread, function, paramObject);
+		return _thread.Add(targetPortForThread, function, pluginObject);
 	}
 
 	protected void SenderThread(System.Object threadObject)
@@ -39,8 +39,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	protected void ServiceThread(System.Object threadObject)
 	{
 		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
-		var responsor = GetTransport().Get<Responsor>(paramObject.targetPort);
+		var responser = GetTransport().Get<Responsor>(paramObject.targetPort);
 
-		_thread.Service(responsor);
+		_thread.Service(responser);
 	}
 }

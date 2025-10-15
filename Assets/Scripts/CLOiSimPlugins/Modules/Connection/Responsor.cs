@@ -10,7 +10,7 @@ using NetMQ.Sockets;
 
 public class Responsor : ResponseSocket
 {
-	private TimeSpan timeout = TimeSpan.FromMilliseconds(500);
+	private TimeSpan timeout = TimeSpan.FromMilliseconds(800);
 
 	private byte[] hashValue = null;
 	private byte[] dataToSendResponse = null;

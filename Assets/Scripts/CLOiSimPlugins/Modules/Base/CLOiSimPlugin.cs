@@ -43,6 +43,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		set => _partsName = value;
 	}
 
+	protected string _parentLinkName = string.Empty;
+
 	protected List<TF> staticTfList = new List<TF>();
 
 	private Pose pluginPose = Pose.identity;
@@ -121,7 +123,12 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			_partsName = DeviceHelper.GetPartsName(gameObject);
 		}
 
-		// Debug.LogWarning($"modelName={modelName} partsName={partsName} pluginName={pluginName}");
+		var helperLink = this.GetComponentInParent<SDF.Helper.Link>();
+		if (helperLink != null)
+		{
+			_parentLinkName = string.IsNullOrEmpty(helperLink.JointParentLinkName) ? null : helperLink.JointParentLinkName;
+		}
+		// Debug.LogWarning($"modelName={_modelName} partsName={_partsName} parentLinkName={_parentLinkName}");
 
 		OnStart();
 

@@ -38,7 +38,7 @@ public class ImuPlugin : CLOiSimPlugin
 			case "request_transform":
 				var devicePose = imu.GetPose();
 				var deviceName = imu.DeviceName;
-				SetTransformInfoResponse(ref response, deviceName, devicePose);
+				SetTransformInfoResponse(ref response, deviceName, devicePose, _parentLinkName);
 				break;
 
 			default:
