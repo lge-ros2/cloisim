@@ -230,7 +230,7 @@ or you can execute [binary](https://github.com/lge-ros2/cloisim/releases) file d
 #### Debugging log
 
 ```shell
-tail -f ~/.config/unity3d/LGE.CTO.AdvancedRoboticsLab/CLOiSim/Player.log
+tail -f ~/.config/unity3d/LGE.RoboticsPlatform/CLOiSim/Player.log
 ```
 
 #### Control and external UI service
