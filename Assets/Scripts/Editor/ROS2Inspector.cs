@@ -34,16 +34,16 @@ public class ROS2Inspector : Editor
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("ROS2 Coordinates", EditorStyles.boldLabel);
 
-			GUI.enabled = false;
+			// GUI.enabled = false;
 			EditorGUILayout.Vector3Field("Position (m)", ros2Position);
 			EditorGUILayout.Vector3Field("Rotation(Roll, Pitch, Yaw) (rad)", ros2Rotation);
 			EditorGUILayout.Vector3Field("Rotation(Roll, Pitch, Yaw) (deg)", ros2RotationDegree);
-			GUI.enabled = true;
+			// GUI.enabled = true;
 
 			if (GUILayout.Button("Copy pose"))
 			{
-				var poseText = $"{ros2Position.x.ToString("f")}, {ros2Position.y.ToString("f")}, {ros2Position.z.ToString("f")}, "
-							+ $"{ros2Rotation.x.ToString("f")}, {ros2Rotation.y.ToString("f")}, {ros2Rotation.z.ToString("f")}";
+				var poseText = $"{ros2Position.x.ToString("f")} {ros2Position.y.ToString("f")} {ros2Position.z.ToString("f")} "
+							+ $"{ros2Rotation.x.ToString("f")} {ros2Rotation.y.ToString("f")} {ros2Rotation.z.ToString("f")}";
 				GUIUtility.systemCopyBuffer = poseText;
 				Debug.LogFormat("Pose '{0}' Copied for {1}", poseText, targetTransform.name);
 			}
