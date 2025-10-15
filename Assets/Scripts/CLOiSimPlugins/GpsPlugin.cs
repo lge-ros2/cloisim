@@ -38,7 +38,7 @@ public class GpsPlugin : CLOiSimPlugin
 			case "request_transform":
 				var devicePose = gps.GetPose();
 				var deviceName = gps.DeviceName;
-				SetTransformInfoResponse(ref response, deviceName, devicePose);
+				SetTransformInfoResponse(ref response, deviceName, devicePose, _parentLinkName);
 				break;
 
 			default:
