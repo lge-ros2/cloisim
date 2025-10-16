@@ -545,21 +545,24 @@ namespace SensorDevices
 		{
 			var visualDrawDuration = UpdatePeriod * 2.01f;
 
-			var startAngleH = (float)horizontal.angle.min;
-			var startAngleV = (float)vertical.angle.min;
+			var startAngleH = horizontal.angle.min;
+			var startAngleV = vertical.angle.min;
+			var endAngleV = vertical.angle.max;
 			var angleRangeV = vertical.angle.range;
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 
 			var horizontalSamples = horizontal.samples;
-			var rangeMin = (float)scanRange.min;
-			var rangeMax = (float)scanRange.max;
+			var rangeMin = scanRange.min;
+			var rangeMax = scanRange.max;
 
 			var rayColor = Color.red;
+			rayColor.a = 0.7f;
+
+			var lidarModel = _lidarLink.parent;
 
 			while (true)
 			{
-				var lidarModel = _lidarLink.parent;
-				var rayStart = _lidarLink.position + lidarModel.rotation * _lidarSensorInitPose.position;
+				var rayStartBase = _lidarLink.position + lidarModel.rotation * _lidarSensorInitPose.position;
 				var rangeData = GetRangeData();
 
 				if (rangeData != null)
@@ -581,13 +584,14 @@ namespace SensorDevices
 
 						if (!float.IsNaN(rayData) && rayData <= rangeMax)
 						{
-							rayColor.g = rayAngleV / (float)angleRangeV;
+							rayColor.g = Mathf.InverseLerp(startAngleV, endAngleV, rayAngleV);
 
-							var rayRotation = Quaternion.AngleAxis(rayAngleH, localUp) * Quaternion.AngleAxis(rayAngleV, localRight);
-							var rayOffsetStart = rayStart + (rayRotation * localForward * rangeMin);
-							var rayDirection = rayRotation * localForward * rayData;
+							var rayRotation = Quaternion.AngleAxis(rayAngleH, localUp) * Quaternion.AngleAxis(rayAngleV, localRight) * localForward;
 
-							Debug.DrawRay(rayOffsetStart, rayDirection, rayColor, visualDrawDuration, true);
+							var start = rayStartBase + rayRotation * rangeMin;
+							var end = start + rayRotation * (rayData - rangeMin);
+
+							Debug.DrawLine(start, end, rayColor, visualDrawDuration, true);
 						}
 					}
 				}
