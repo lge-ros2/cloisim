@@ -69,13 +69,11 @@ namespace SensorDevices
 			public double[] data;
 
 			public float capturedTime;
-			public float processingTime;
 
 			public LaserDataOutput(in int length = 0)
 			{
 				data = (length == 0) ? null : new double[length];
 				capturedTime = 0;
-				processingTime = 0;
 			}
 		}
 

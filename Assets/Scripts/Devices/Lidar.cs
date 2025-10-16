@@ -379,7 +379,6 @@ namespace SensorDevices
 						var laserDataOutput = new LaserData.LaserDataOutput();
 						laserDataOutput.data = laserCamData.GetLaserData();
 						laserDataOutput.capturedTime = asyncWork.capturedTime;
-						laserDataOutput.processingTime = (float)DeviceHelper.GlobalClock.SimTime - asyncWork.capturedTime;
 
 						_laserDataOutput[dataIndex] = laserDataOutput;
 
@@ -427,7 +426,6 @@ namespace SensorDevices
 				Array.Fill(laserScan.Ranges, double.NaN);
 
 				var capturedTime = 0f;
-				var processingTimeSum = 0f;
 
 				Parallel.For(0, numberOfLaserCamData, _parallelOptions, index =>
 				{
@@ -445,8 +443,6 @@ namespace SensorDevices
 
 					if (_laserDataOutput[index].capturedTime > capturedTime)
 						capturedTime = _laserDataOutput[index].capturedTime;
-
-					processingTimeSum += _laserDataOutput[index].processingTime;
 
 					if (laserStartAngleH < 0 && dataEndAngleH > DEG180)
 					{
