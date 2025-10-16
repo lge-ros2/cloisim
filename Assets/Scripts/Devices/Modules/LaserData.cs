@@ -20,7 +20,7 @@ namespace SensorDevices
 			public readonly MathUtil.MinMax angle; // degree
 			public readonly double angleStep;
 
-			public Scan(in uint samples, in double angleMinRad, in double angleMaxRad, in double resolution = 1)
+			public Scan(in uint samples, in double angleMinRad, in double angleMaxRad, in double resolution)
 			{
 				this.samples = samples;
 				this.resolution = resolution;
@@ -96,7 +96,7 @@ namespace SensorDevices
 			[ReadOnly]
 			public NativeArray<float> depthBuffer;
 
-			private NativeArray<double> laserData;
+			private NativeArray<double> rayData;
 
 			public float StartAngleH;
 			public float EndAngleH;
@@ -105,7 +105,8 @@ namespace SensorDevices
 			public LaserCamData(
 					in int bufferWidth, in int bufferHeight,
 			 		in MathUtil.MinMax range, in AngleResolution angleResolution,
-					in float centerAngle, in float halfHFovAngle, in float halfVFovAngle)
+					in float centerAngle,
+					in float halfHFovAngle, in float halfVFovAngle)
 			{
 				this.maxHAngleHalf = halfHFovAngle;
 				this.maxHAngleHalfTanInverse = 1 / Mathf.Tan(maxHAngleHalf * Mathf.Deg2Rad);
@@ -124,23 +125,23 @@ namespace SensorDevices
 				this.verticalBufferLength = bufferHeight;
 				this.verticalBufferLengthHalf = (int)(bufferHeight >> 1);
 				this.depthBuffer = default(NativeArray<float>);
-				this.laserData = default(NativeArray<double>);
+				this.rayData = default(NativeArray<double>);
 			}
 
 			public void Allocate()
 			{
 				var dataLength = horizontalBufferLength * verticalBufferLength;
-				this.laserData = new NativeArray<double>(dataLength, Allocator.TempJob);
+				this.rayData = new NativeArray<double>(dataLength, Allocator.TempJob);
 			}
 
 			public void Deallocate()
 			{
-				this.laserData.Dispose();
+				this.rayData.Dispose();
 			}
 
 			public int OutputLength()
 			{
-				return laserData.Length;
+				return rayData.Length;
 			}
 
 			private float GetDepthRange(in int offsetX, in int offsetY)
@@ -188,7 +189,7 @@ namespace SensorDevices
 
 				// filter min/max range
 				var rayDistance = depthData * range.max;
-				laserData[index] = (rayDistance < range.min) ? double.NaN : rayDistance;
+				rayData[index] = (rayDistance < range.min) ? double.NaN : rayDistance;
 			}
 
 			// The code actually running on the job
@@ -199,7 +200,7 @@ namespace SensorDevices
 
 			public double[] GetLaserData()
 			{
-				return laserData.ToArray();
+				return rayData.ToArray();
 			}
 		}
 	}
