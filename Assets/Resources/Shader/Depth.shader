@@ -66,7 +66,14 @@ Shader "Sensor/Depth"
 			{
 				float depth = UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, i.uv.xy));
 				float linearDepth = Linear01Depth(depth);
-				return EncodeFloatRGBA((_ReverseData > 0)? (1.0 - linearDepth) : linearDepth);
+
+				float nearClip = _ProjectionParams.y;
+				float farClip  = _ProjectionParams.z;
+
+				float eyeSpaceDepth = linearDepth * (farClip - nearClip) + nearClip;
+				float normalizedDepth = saturate((eyeSpaceDepth - nearClip) / (farClip - nearClip));
+
+				return EncodeFloatRGBA((_ReverseData > 0) ? (1.0 - normalizedDepth) : normalizedDepth);
 			}
 
 			ENDCG
