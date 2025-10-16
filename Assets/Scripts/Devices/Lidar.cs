@@ -164,7 +164,7 @@ namespace SensorDevices
 
 		private void SetupLaserCamera()
 		{
-			LaserCameraVFov = (vertical.samples == 1) ? 1 : vertical.angle.range;
+			LaserCameraVFov = (vertical.samples == 1) ? 1 : Mathf.Max(Mathf.Abs(vertical.angle.min), Mathf.Abs(vertical.angle.max));
 			LaserCameraHFov = (vertical.samples > 1) ? HFOV_FOR_3D_LIDAR : HFOV_FOR_2D_LIDAR;
 			LaserCameraHFovHalf = LaserCameraHFov * 0.5f;
 
@@ -188,15 +188,15 @@ namespace SensorDevices
 
 			laserCam.renderingPath = RenderingPath.DeferredShading;
 
-			var renderTextrueWidth = Mathf.CeilToInt(LaserCameraHFov / laserAngleResolution.H);
-			var renderTextrueHeight = Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
-			// Debug.Log("SetupLaserCamera: " + LaserCameraVFov + ","  + laserAngleResolution.V + "," + renderTextrueWidth + "," + renderTextrueHeight);
+			var renderTextureWidth = Mathf.CeilToInt(LaserCameraHFov / laserAngleResolution.H);
+			var renderTextureHeight = Mathf.CeilToInt(LaserCameraVFov / laserAngleResolution.V);
+			// Debug.Log("SetupLaserCamera: " + LaserCameraVFov + ","  + laserAngleResolution.V + "," + renderTextureWidth + "," + renderTextureHeight);
 
 			RTHandles.SetHardwareDynamicResolutionState(false);
 			_rtHandle?.Release();
 			_rtHandle = RTHandles.Alloc(
-				width: renderTextrueWidth,
-				height: renderTextrueHeight,
+				width: renderTextureWidth,
+				height: renderTextureHeight,
 				slices: 1,
 				depthBufferBits: DepthBits.None,
 				colorFormat: GraphicsFormat.R8G8B8A8_UNorm,
