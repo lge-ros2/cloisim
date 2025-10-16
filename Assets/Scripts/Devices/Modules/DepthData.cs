@@ -54,7 +54,7 @@ namespace SensorDevices
 			private float GetDecodedData(in int index)
 			{
 				var imageOffset = index * ColorFormatUnitSize;
-				if (raw == null || imageOffset >= raw.Length)
+				if (!raw.IsCreated || imageOffset + 3 >= raw.Length)
 				{
 					return 0;
 				}
@@ -70,7 +70,9 @@ namespace SensorDevices
 			private float DecodeFloatRGBA(in byte r, in byte g, in byte b, in byte a)
 			{
 				// decodedData = (r / 255f) + (g / 255f) / 255f + (b / 255f) / 65025f + (a / 255f) / 16581375f;
-				return (r * 0.00392156862f) + (g * 0.0000153787f) + (b * 0.0000000603086f) + (a * 0.0000000002365f);
+				// return (r * 0.00392156862f) + (g * 0.0000153787f) + (b * 0.0000000603086f) + (a * 0.0000000002365f);
+				var encoded = (uint)(r << 24 | g << 16 | b << 8 | a);
+				return encoded * 0.00000000023283064370807974f;
 			}
 		}
 	}
