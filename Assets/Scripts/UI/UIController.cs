@@ -304,7 +304,7 @@ public class UIController : MonoBehaviour
 	public void SetEventMessage(in string value)
 	{
 		ClearMessage();
-		SetStatusMessage(value, Color.green);
+		SetStatusMessage(value, new Color(0.25f, 0.95f, 0.25f, 1));
 	}
 
 	public void SetDebugMessage(in string value)

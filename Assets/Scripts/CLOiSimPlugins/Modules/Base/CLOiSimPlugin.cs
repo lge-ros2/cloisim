@@ -128,7 +128,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		{
 			_parentLinkName = string.IsNullOrEmpty(helperLink.JointParentLinkName) ? null : helperLink.JointParentLinkName;
 		}
-		// Debug.LogWarning($"modelName={_modelName} partsName={_partsName} parentLinkName={_parentLinkName}");
+		Debug.Log($"modelName={_modelName} partsName={_partsName} parentLinkName={_parentLinkName}");
 
 		OnStart();
 
