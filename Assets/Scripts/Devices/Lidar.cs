@@ -38,6 +38,7 @@ namespace SensorDevices
 		private float LaserCameraVFov = 0;
 
 		public MathUtil.MinMax scanRange;
+		public float rangeResolution = 0;
 		public LaserData.Scan horizontal;
 		public LaserData.Scan vertical;
 
@@ -280,7 +281,7 @@ namespace SensorDevices
 				_depthCamBuffers[index] = new DepthData.CamBuffer(width, height);
 
 				var centerAngle = LaserCameraRotationAngle * index + centerAngleOffset;
-				_laserCamData[index] = new LaserData.LaserCamData(width, height, scanRange, _laserAngleResolution, centerAngle, LaserCameraHFovHalf, LaserCameraVFovHalf);
+				_laserCamData[index] = new LaserData.LaserCamData(width, height, scanRange, rangeResolution, _laserAngleResolution, centerAngle, LaserCameraHFovHalf, LaserCameraVFovHalf);
 			}
 		}
 
