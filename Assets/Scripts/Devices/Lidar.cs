@@ -467,12 +467,27 @@ namespace SensorDevices
 						int copyLength = 0;
 						bool doCopy = true;
 
-						if (dataStartAngleH <= laserStartAngleH) // start side
+						if (dataStartAngleH <= laserStartAngleH && laserStartAngleH < dataEndAngleH) // start side
 						{
-							var dataLengthRatio = (laserStartAngleH - dataStartAngleH) * dividedDataTotalAngleH;
-							copyLength = srcBufferHorizontalLength - Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
-							srcBufferOffset = srcBufferHorizontalLength * srcSampleIndexV;
-							dstBufferOffset = laserSamplesH * dstSampleIndexV + (laserSamplesH - copyLength);
+							if (laserEndAngleH >= dataEndAngleH)
+							{
+								var dataLengthRatio = (laserStartAngleH - dataStartAngleH) * dividedDataTotalAngleH;
+								copyLength = srcBufferHorizontalLength - Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
+								srcBufferOffset = srcBufferHorizontalLength * srcSampleIndexV;
+								dstBufferOffset = laserSamplesH * dstSampleIndexV + (laserSamplesH - copyLength);
+								// Debug.LogFormat("dataAngleH {0}~{1} laserAngleH {2}~{3} dataLengthRatio {4} copyLength{5} srcBufferOffset {6} dstBufferOffset {7}",
+								// 	dataStartAngleH, dataEndAngleH, laserStartAngleH, laserEndAngleH, dataLengthRatio, copyLength, srcBufferOffset, dstBufferOffset);
+							}
+							else
+							{
+								var dataLengthRatio = (laserEndAngleH - laserStartAngleH) * dividedDataTotalAngleH;
+								var startBufferOffsetRatio = (laserStartAngleH - dataStartAngleH) * dividedDataTotalAngleH;
+								copyLength = Mathf.FloorToInt(srcBufferHorizontalLength * dataLengthRatio) - 1;
+								srcBufferOffset = srcBufferHorizontalLength * srcSampleIndexV + Mathf.CeilToInt(srcBufferHorizontalLength * startBufferOffsetRatio);
+								dstBufferOffset = laserSamplesH * dstSampleIndexV;
+								// Debug.LogFormat("dataAngleH {0}~{1} laserAngleH {2}~{3} dataLengthRatio {4} copyLength{5} srcBufferOffset {6} dstBufferOffset {7} startBufferOffsetRatio{8} index{9} srcBufferHorizontalLength{10} srcBuffer.Length{11}" ,
+								// 	dataStartAngleH, dataEndAngleH, laserStartAngleH, laserEndAngleH, dataLengthRatio, copyLength, srcBufferOffset, dstBufferOffset, startBufferOffsetRatio, index, srcBufferHorizontalLength, srcBuffer.Length);
+							}
 						}
 						else if (dataStartAngleH > laserStartAngleH && dataEndAngleH < laserEndAngleH) // middle
 						{
@@ -480,16 +495,21 @@ namespace SensorDevices
 							copyLength = srcBufferHorizontalLength;
 							srcBufferOffset = srcBufferHorizontalLength * srcSampleIndexV;
 							dstBufferOffset = Mathf.CeilToInt(laserSamplesH * (dstSampleIndexV + 1 - dataLengthRatio)) - copyLength;
+							// Debug.LogFormat("dataAngleH {0}~{1} laserAngleH {2}~{3} dataLengthRatio {4} copyLength{5} srcBufferOffset {6} dstBufferOffset {7}",
+							// 	dataStartAngleH, dataEndAngleH, laserStartAngleH, laserEndAngleH, dataLengthRatio, copyLength, srcBufferOffset, dstBufferOffset);
 						}
-						else if (dataEndAngleH >= laserEndAngleH) // end side
+						else if (dataStartAngleH > laserStartAngleH && laserEndAngleH >= dataStartAngleH) // end side
 						{
-							var dataLengthRatio = (laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
+							var dataLengthRatio = Mathf.Abs(laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
 							copyLength = Mathf.CeilToInt(srcBufferHorizontalLength * dataLengthRatio);
 							srcBufferOffset = srcBufferHorizontalLength * (srcSampleIndexV + 1) - copyLength;
 							dstBufferOffset = laserSamplesH * dstSampleIndexV;
+							// Debug.LogFormat("dataAngleH {0}~{1} laserAngleH {2}~{3} dataLengthRatio {4} copyLength{5} srcBufferOffset {6} dstBufferOffset {7}",
+							// 	dataStartAngleH, dataEndAngleH, laserStartAngleH, laserEndAngleH, dataLengthRatio, copyLength, srcBufferOffset, dstBufferOffset);
 						}
 						else
 						{
+							// Debug.LogFormat("exception case dataAngleH {0}~{1} laserAngleH {2}~{3}", dataStartAngleH, dataEndAngleH, laserStartAngleH, laserEndAngleH);
 							doCopy = false;
 						}
 
@@ -503,7 +523,13 @@ namespace SensorDevices
 							}
 							catch (Exception ex)
 							{
-								Debug.LogWarning($"Buffer copy error: {ex.Message} idx={index} srcVidx={srcSampleIndexV} dstVidx={dstSampleIndexV}");
+								Debug.LogWarning(
+									$"[BufferCopyError] {ex.Message}\n" +
+									$"idx={index} srcVidx={srcSampleIndexV} dstVidx={dstSampleIndexV}\n" +
+									$"srcTotalLen={srcBuffer.Length} dstTotalLen={laserScan.Ranges.Length}\n" +
+									$"srcOffset={srcBufferOffset} dstOffset={dstBufferOffset} copyLen={copyLength}\n" +
+									$"srcOffsetEnd={srcBufferOffset + copyLength} dstOffsetEnd={dstBufferOffset + copyLength}"
+								);
 							}
 						}
 						dstSampleIndexV++;
