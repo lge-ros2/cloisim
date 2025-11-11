@@ -87,6 +87,7 @@ namespace SensorDevices
 			public AngleResolution angleResolution;
 			public float centerAngle;
 			public MathUtil.MinMax range;
+			public float rangeLinearResolution;
 
 			public readonly int horizontalBufferLength;
 			public readonly int horizontalBufferLengthHalf;
@@ -104,7 +105,8 @@ namespace SensorDevices
 
 			public LaserCamData(
 					in int bufferWidth, in int bufferHeight,
-			 		in MathUtil.MinMax range, in AngleResolution angleResolution,
+			 		in MathUtil.MinMax range, in float rangeLinearResolution,
+					in AngleResolution angleResolution,
 					in float centerAngle,
 					in float halfHFovAngle, in float halfVFovAngle)
 			{
@@ -120,6 +122,7 @@ namespace SensorDevices
 				this.TotalAngleH = this.maxHAngleHalf * 2f;
 
 				this.range = range;
+				this.rangeLinearResolution = rangeLinearResolution;
 				this.horizontalBufferLength = bufferWidth;
 				this.horizontalBufferLengthHalf = (int)(bufferWidth >> 1);
 				this.verticalBufferLength = bufferHeight;
@@ -192,6 +195,12 @@ namespace SensorDevices
 
 				// filter min/max range
 				var rayDistance = depthData * range.max;
+
+				// apply linear resolution
+				if (rangeLinearResolution > 0)
+				{
+					rayDistance = Mathf.Round(rayDistance / rangeLinearResolution) * rangeLinearResolution;
+				}
 				rayData[index] = (rayDistance < range.min) ? double.NaN : rayDistance;
 			}
 
