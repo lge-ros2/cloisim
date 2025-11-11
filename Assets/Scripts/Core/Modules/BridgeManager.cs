@@ -189,10 +189,11 @@ public class BridgeManager : IDisposable
 	}
 
 	public static bool AllocateDevice(
-		in string deviceType, in string modelName, in string partsName, in string subPartsNameAndKey,
+		in string deviceType, in string modelName, in string partsName, in string subPartsName, in string controlKey,
 		out string hashKey, out ushort port)
 	{
-		hashKey = MakeHashKey(modelName, partsName, subPartsNameAndKey);
+		var fullPartsName = partsName + subPartsName;
+		hashKey = MakeHashKey(modelName, fullPartsName, controlKey);
 
 		if (string.IsNullOrEmpty(hashKey))
 		{
@@ -211,21 +212,25 @@ public class BridgeManager : IDisposable
 				{
 					if (partsMapTable.TryGetValue(partsName, out var portsMapTable))
 					{
-						portsMapTable.Add(subPartsNameAndKey, port);
+						portsMapTable.Add(subPartsName + controlKey, port);
+					}
+					else if (partsMapTable.TryGetValue(fullPartsName, out portsMapTable))
+					{
+						portsMapTable.Add(controlKey, port);
 					}
 					else
 					{
 						var newPortsMapTable = new Dictionary<string, ushort>();
-						newPortsMapTable.Add(subPartsNameAndKey, port);
-						partsMapTable.Add(partsName, newPortsMapTable);
+						newPortsMapTable.Add(controlKey, port);
+						partsMapTable.Add(fullPartsName, newPortsMapTable);
 					}
 				}
 				else
 				{
 					var portsMapTable = new Dictionary<string, ushort>();
-					portsMapTable.Add(subPartsNameAndKey, port);
+					portsMapTable.Add(controlKey, port);
 					var newPartsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
-					newPartsMapTable.Add(partsName, portsMapTable);
+					newPartsMapTable.Add(fullPartsName, portsMapTable);
 
 					devicesTypeMapTable.Add(deviceType, newPartsMapTable);
 				}
@@ -233,10 +238,10 @@ public class BridgeManager : IDisposable
 			else
 			{
 				var portsMapTable = new Dictionary<string, ushort>();
-				portsMapTable.Add(subPartsNameAndKey, port);
+				portsMapTable.Add(controlKey, port);
 
 				var partsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
-				partsMapTable.Add(partsName, portsMapTable);
+				partsMapTable.Add(fullPartsName, portsMapTable);
 
 				var devicesTypeMap = new Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>();
 				devicesTypeMap.Add(deviceType, partsMapTable);

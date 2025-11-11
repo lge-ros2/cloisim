@@ -33,6 +33,12 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		var alignedDepthToColorName = GetPluginParameters().GetValue<string>("activate/module[@name='aligned_depth_to_color']");
 		var imuName = GetPluginParameters().GetValue<string>("activate/module[@name='imu']");
 
+		// Important Register base parts first!
+		if (RegisterServiceDevice(out var portService, "Info"))
+		{
+			AddThread(portService, ServiceThread);
+		}
+
 		if (!string.IsNullOrEmpty(colorName))
 		{
 			FindAndAddCameraPlugin(colorName);
@@ -61,11 +67,6 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		if (!string.IsNullOrEmpty(imuName))
 		{
 			AddImuPlugin(imuName);
-		}
-
-		if (RegisterServiceDevice(out var portService, "Info"))
-		{
-			AddThread(portService, ServiceThread);
 		}
 	}
 

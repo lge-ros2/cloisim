@@ -25,9 +25,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return _transport;
 	}
 
-	private bool PrepareDevice(in string subPartsAndKey, out ushort port, out ulong hash)
+	private bool PrepareDevice(in string controlKey, out ushort port, out ulong hash)
 	{
-		if (BridgeManager.AllocateDevice(_type.ToString(), _modelName, _partsName, subPartsAndKey, out var hashKey, out port))
+		if (BridgeManager.AllocateDevice(_type.ToString(), _modelName, _partsName, _subPartsName, controlKey, out var hashKey, out port))
 		{
 			_allocatedDeviceHashKeys.Add(hashKey);
 			_allocatedDevicePorts.Add(port);
@@ -50,7 +50,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected bool RegisterTxDevice(out ushort port, in string key = "")
 	{
-		if (PrepareDevice(_subPartsName + key, out port, out var hash))
+		if (PrepareDevice(key, out port, out var hash))
 		{
 			_transport.InitializePublisher(port, hash);
 			return true;
@@ -63,7 +63,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected bool RegisterRxDevice(out ushort port, in string key = "")
 	{
-		if (PrepareDevice(_subPartsName + key, out port, out var hash))
+		if (PrepareDevice(key, out port, out var hash))
 		{
 			_transport.InitializeSubscriber(port, hash);
 			return true;
@@ -76,7 +76,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected bool RegisterServiceDevice(out ushort port, in string key = "")
 	{
-		if (PrepareDevice(_subPartsName + key, out port, out var hash))
+		if (PrepareDevice(key, out port, out var hash))
 		{
 			_transport.InitializeResponsor(port, hash);
 			return true;
@@ -89,7 +89,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected bool RegisterClientDevice(out ushort port, in string key = "")
 	{
-		if (PrepareDevice(_subPartsName + key, out port, out var hash))
+		if (PrepareDevice(key, out port, out var hash))
 		{
 			_transport.InitializeRequester(port, hash);
 			return true;
