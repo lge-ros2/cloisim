@@ -89,11 +89,35 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return _pluginParameters;
 	}
 
-	public void StorePluginParametersInAttachedDevices()
+	private void StorePluginParametersInAttachedDevices()
 	{
 		foreach (var device in _attachedDevices)
 		{
 			device?.SetPluginParameters(_pluginParameters);
+		}
+	}
+
+	private void DetectMultiplePlugin()
+	{
+		if (GetType() == typeof(LaserPlugin) ||
+			GetType() == typeof(SonarPlugin) ||
+			GetType() == typeof(RangePlugin) ||
+			GetType() == typeof(IRPlugin) ||
+			GetType() == typeof(ContactPlugin))
+		{
+			var helperLink = this.GetComponentInParent<SDF.Helper.Link>();
+			var modelLink = (helperLink != null) ? helperLink.Model : null;
+
+			if (modelLink != null)
+			{
+				var plugins = modelLink.GetComponentsInChildren<CLOiSimPlugin>();
+				if (plugins.Length > 1)
+				{
+					SubPartsName = name;
+					Debug.LogWarningFormat("Multiple Plugin detected in Model({0}) => Set subparts name({1})",
+						modelLink.name, SubPartsName);
+				}
+			}
 		}
 	}
 
@@ -111,6 +135,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	// Start is called before the first frame update
 	void Start()
 	{
+		DetectMultiplePlugin();
+
 		StorePose();
 
 		if (string.IsNullOrEmpty(_modelName))
@@ -128,7 +154,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		{
 			_parentLinkName = string.IsNullOrEmpty(helperLink.JointParentLinkName) ? null : helperLink.JointParentLinkName;
 		}
-		// Debug.LogWarning($"modelName={_modelName} partsName={_partsName} parentLinkName={_parentLinkName}");
+		Debug.Log($"modelName={_modelName} partsName={_partsName} parentLinkName={_parentLinkName}");
 
 		OnStart();
 

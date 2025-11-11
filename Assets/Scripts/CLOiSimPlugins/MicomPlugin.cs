@@ -483,7 +483,7 @@ public class MicomPlugin : CLOiSimPlugin
 					{
 						var tf = new TF(linkHelper, link, parentFrameId);
 						_tfList.Add(tf);
-						_log.AppendLine(modelName + "::" + linkName + " : TF added");
+						_log.AppendLine(modelName + "::" + linkName + " -> " + parentFrameId + " : TF added");
 						break;
 					}
 				}

@@ -146,7 +146,10 @@ namespace SensorDevices
 
 			private float GetDepthRange(in int offsetX, in int offsetY)
 			{
-				var bufferOffset = (horizontalBufferLength * offsetY) + offsetX;
+				var safeOffsetX = Mathf.Clamp(offsetX, 0, horizontalBufferLength - 1);
+    			var safeOffsetY = Mathf.Clamp(offsetY, 0, verticalBufferLength - 1);
+
+    			var bufferOffset = (horizontalBufferLength * safeOffsetY) + safeOffsetX;
 				// Debug.LogFormat("OffsetX: {0}, OffsetY: {1}", offsetX, offsetY);
 				return depthBuffer[bufferOffset];
 			}
