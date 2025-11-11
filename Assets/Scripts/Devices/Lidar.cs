@@ -461,7 +461,7 @@ namespace SensorDevices
 
 					var dstSampleIndexV = 0;
 					for (var srcSampleIndexV = laserSamplesVStart; srcSampleIndexV < laserSamplesVEnd; srcSampleIndexV++)
-					{	
+					{
 						int srcBufferOffset = 0;
 						int dstBufferOffset = 0;
 						int copyLength = 0;
@@ -506,7 +506,6 @@ namespace SensorDevices
 								Debug.LogWarning($"Buffer copy error: {ex.Message} idx={index} srcVidx={srcSampleIndexV} dstVidx={dstSampleIndexV}");
 							}
 						}
-
 						dstSampleIndexV++;
 					}
 				});
@@ -537,7 +536,10 @@ namespace SensorDevices
 			{
 				_rangesForVisualize = msg.Scan.Ranges;
 				PushDeviceMessage<messages.LaserScanStamped>(msg);
-				Thread.Sleep(WaitPeriodInMilliseconds() / count);
+				if (count > 0)
+				{
+					Thread.Sleep(WaitPeriodInMilliseconds() / count);
+				}
 			}
 		}
 
