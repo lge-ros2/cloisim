@@ -20,7 +20,6 @@ using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
-	[RequireComponent(typeof(UnityEngine.Camera))]
 	public partial class Lidar : Device
 	{
 		private messages.LaserScan _laserScan = null;
@@ -46,7 +45,7 @@ namespace SensorDevices
 		private Pose _lidarSensorInitPose = new Pose();
 		private Pose _lidarSensorPose = new Pose();
 
-		private UnityEngine.Camera laserCam = null;
+		private UnityEngine.Camera _laserCam = null;
 		private Material depthMaterial = null;
 
 		private LaserData.AngleResolution _laserAngleResolution;
@@ -72,14 +71,18 @@ namespace SensorDevices
 			Mode = ModeType.TX_THREAD;
 			_lidarLink = transform.parent;
 
-			laserCam = GetComponent<UnityEngine.Camera>();
+			var laserSensor = new GameObject("__laser__");
+			laserSensor.transform.SetParent(this.transform, true);
+			laserSensor.transform.localPosition = Vector3.zero;
+			laserSensor.transform.localRotation = Quaternion.identity;
+			_laserCam = laserSensor.AddComponent<UnityEngine.Camera>();
 
 			_laserProcessThread = new Thread(() => LaserProcessing());
 		}
 
 		protected override void OnStart()
 		{
-			if (laserCam != null)
+			if (_laserCam != null)
 			{
 				_lidarSensorInitPose.position = transform.localPosition;
 				_lidarSensorInitPose.rotation = transform.localRotation;
@@ -170,25 +173,25 @@ namespace SensorDevices
 			LaserCameraHFov = (vertical.samples > 1) ? HFOV_FOR_3D_LIDAR : HFOV_FOR_2D_LIDAR;
 			LaserCameraHFovHalf = LaserCameraHFov * 0.5f;
 
-			laserCam.ResetWorldToCameraMatrix();
-			laserCam.ResetProjectionMatrix();
+			_laserCam.ResetWorldToCameraMatrix();
+			_laserCam.ResetProjectionMatrix();
 
-			laserCam.allowHDR = true;
-			laserCam.allowMSAA = false;
-			laserCam.allowDynamicResolution = false;
-			laserCam.useOcclusionCulling = true;
+			_laserCam.allowHDR = true;
+			_laserCam.allowMSAA = false;
+			_laserCam.allowDynamicResolution = false;
+			_laserCam.useOcclusionCulling = true;
 
-			laserCam.stereoTargetEye = StereoTargetEyeMask.None;
+			_laserCam.stereoTargetEye = StereoTargetEyeMask.None;
 
-			laserCam.orthographic = false;
-			laserCam.nearClipPlane = scanRange.min;
-			laserCam.farClipPlane = scanRange.max;
-			laserCam.cullingMask = LayerMask.GetMask("Default") | LayerMask.GetMask("Plane");
+			_laserCam.orthographic = false;
+			_laserCam.nearClipPlane = scanRange.min;
+			_laserCam.farClipPlane = scanRange.max;
+			_laserCam.cullingMask = LayerMask.GetMask("Default") | LayerMask.GetMask("Plane");
 
-			laserCam.clearFlags = CameraClearFlags.Nothing;
-			laserCam.depthTextureMode = DepthTextureMode.Depth;
+			_laserCam.clearFlags = CameraClearFlags.Nothing;
+			_laserCam.depthTextureMode = DepthTextureMode.Depth;
 
-			laserCam.renderingPath = RenderingPath.DeferredShading;
+			_laserCam.renderingPath = RenderingPath.DeferredShading;
 
 			var renderTextureWidth = Mathf.CeilToInt(LaserCameraHFov / _laserAngleResolution.H);
 			var renderTextureHeight = Mathf.CeilToInt(LaserCameraVFov / _laserAngleResolution.V);
@@ -217,12 +220,12 @@ namespace SensorDevices
 				memoryless: RenderTextureMemoryless.None,
 				name: "LidarDepthTexture");
 
-			laserCam.targetTexture = _rtHandle.rt;
+			_laserCam.targetTexture = _rtHandle.rt;
 
-			var projMatrix = SensorHelper.MakeProjectionMatrixPerspective(LaserCameraHFov, LaserCameraVFov, laserCam.nearClipPlane, laserCam.farClipPlane);
-			laserCam.projectionMatrix = projMatrix;
+			var projMatrix = SensorHelper.MakeProjectionMatrixPerspective(LaserCameraHFov, LaserCameraVFov, _laserCam.nearClipPlane, _laserCam.farClipPlane);
+			_laserCam.projectionMatrix = projMatrix;
 
-			var universalLaserCamData = laserCam.GetUniversalAdditionalCameraData();
+			var universalLaserCamData = _laserCam.GetUniversalAdditionalCameraData();
 			universalLaserCamData.renderShadows = false;
 			universalLaserCamData.stopNaN = true;
 			universalLaserCamData.dithering = true;
@@ -244,13 +247,13 @@ namespace SensorDevices
 			cb.GetTemporaryRT(tempTextureId, -1, -1);
 			cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
 			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
-			laserCam.AddCommandBuffer(CameraEvent.AfterEverything, cb);
+			_laserCam.AddCommandBuffer(CameraEvent.AfterEverything, cb);
 
 			cb.ReleaseTemporaryRT(tempTextureId);
 			cb.Release();
 
-			// laserCam.hideFlags |= HideFlags.NotEditable;
-			laserCam.enabled = false;
+			// _laserCam.hideFlags |= HideFlags.NotEditable;
+			_laserCam.enabled = false;
 
 			if (_noise != null)
 			{
@@ -271,7 +274,7 @@ namespace SensorDevices
 			_laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
 			_laserDataOutput = new LaserData.LaserDataOutput[numberOfLaserCamData];
 
-			var targetDepthRT = laserCam.targetTexture;
+			var targetDepthRT = _laserCam.targetTexture;
 			var width = targetDepthRT.width;
 			var height = targetDepthRT.height;
 			var centerAngleOffset = (horizontal.angle.min < 0) ? (isEven ? -LaserCameraHFovHalf : 0) : LaserCameraHFovHalf;
@@ -328,18 +331,18 @@ namespace SensorDevices
 					var laserCamData = _laserCamData[dataIndex];
 					axisRotation.y = laserCamData.centerAngle;
 
-					laserCam.transform.localRotation = _lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
-					laserCam.enabled = true;
+					_laserCam.transform.localRotation = _lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
+					_laserCam.enabled = true;
 
-					if (laserCam.isActiveAndEnabled)
+					if (_laserCam.isActiveAndEnabled)
 					{
-						laserCam.Render();
+						_laserCam.Render();
 						var capturedTime = (float)DeviceHelper.GetGlobalClock().SimTime;
-						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, OnCompleteAsyncReadback);
+						var readbackRequest = AsyncGPUReadback.Request(_laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, OnCompleteAsyncReadback);
 
 						_asyncWorkList.TryAdd(readbackRequest.GetHashCode(), new AsyncWork.Laser(dataIndex, readbackRequest, capturedTime));
 
-						laserCam.enabled = false;
+						_laserCam.enabled = false;
 					}
 				}
 
