@@ -112,7 +112,7 @@ public class LidarVisualizer : MonoBehaviour
 			var distances = targetLidar.GetRangeData();
 			if (distances != null)
 			{
-				for (var index = 0; index < distances.Length; index++)
+				for (var index = 0; index < distances.Count; index++)
 				{
 					rayDirection = Quaternion.AngleAxis((angleMin + (resolutionAngle * index)), Vector3.up) * transform.forward;
 

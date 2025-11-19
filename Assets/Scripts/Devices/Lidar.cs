@@ -64,8 +64,6 @@ namespace SensorDevices
 		private LaserFilter _laserFilter = null;
 		private Noise _noise = null;
 
-		public double[] _rangesForVisualize = null;
-
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
@@ -160,8 +158,6 @@ namespace SensorDevices
 			_laserScan.Intensities = new double[totalSamples];
 			Array.Fill(_laserScan.Ranges, double.NaN);
 			Array.Fill(_laserScan.Intensities, double.NaN);
-
-			_rangesForVisualize = new double[totalSamples];
 
 			_laserAngleResolution = new LaserData.AngleResolution((float)horizontal.angleStep, (float)vertical.angleStep);
 			// Debug.Log("H resolution: " + _laserAngleResolution.H + ", V resolution: " + _laserAngleResolution.V);
@@ -564,7 +560,6 @@ namespace SensorDevices
 			var count = _messageQueue.Count;
 			while (_messageQueue.TryDequeue(out var msg))
 			{
-				_rangesForVisualize = msg.Scan.Ranges;
 				PushDeviceMessage<messages.LaserScanStamped>(msg);
 				if (count > 0)
 				{
@@ -575,7 +570,7 @@ namespace SensorDevices
 
 		protected override IEnumerator OnVisualize()
 		{
-			var visualDrawDuration = UpdatePeriod * 2.01f;
+			var visualDrawDuration = UpdatePeriod;
 
 			var startAngleH = horizontal.angle.min;
 			var startAngleV = vertical.angle.min;
@@ -603,7 +598,7 @@ namespace SensorDevices
 					var localRight = _lidarLink.right;
 					var localForward = _lidarLink.forward;
 
-					for (var scanIndex = 0; scanIndex < rangeData.Length; scanIndex++)
+					for (var scanIndex = 0; scanIndex < rangeData.Count; scanIndex++)
 					{
 						var scanIndexH = scanIndex % horizontalSamples;
 						var scanIndexV = scanIndex / horizontalSamples;
@@ -611,7 +606,7 @@ namespace SensorDevices
 						var rayAngleH = (_laserAngleResolution.H * scanIndexH) + startAngleH;
 						var rayAngleV = (_laserAngleResolution.V * scanIndexV) + startAngleV;
 
-						var ccwIndex = (uint)(rangeData.Length - scanIndex - 1);
+						var ccwIndex = (int)(rangeData.Count - scanIndex - 1);
 						var rayData = (float)rangeData[ccwIndex];
 
 						if (!float.IsNaN(rayData) && rayData <= rangeMax)
@@ -632,11 +627,11 @@ namespace SensorDevices
 			}
 		}
 
-		public double[] GetRangeData()
+		public IReadOnlyList<double> GetRangeData()
 		{
 			try
 			{
-				return _rangesForVisualize;
+				return Array.AsReadOnly(_laserScan.Ranges);
 			}
 			catch
 			{
