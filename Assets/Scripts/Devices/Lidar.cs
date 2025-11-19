@@ -573,8 +573,8 @@ namespace SensorDevices
 			var visualDrawDuration = UpdatePeriod;
 
 			var startAngleH = horizontal.angle.min;
-			var startAngleV = vertical.angle.min;
-			var endAngleV = vertical.angle.max;
+			var startAngleV = vertical.angle.max;
+			var endAngleV = vertical.angle.min;
 			var angleRangeV = vertical.angle.range;
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 
@@ -595,7 +595,7 @@ namespace SensorDevices
 				if (rangeData != null)
 				{
 					var localUp = _lidarLink.up;
-					var localRight = _lidarLink.right;
+					var localRight = -_lidarLink.right;
 					var localForward = _lidarLink.forward;
 
 					for (var scanIndex = 0; scanIndex < rangeData.Count; scanIndex++)
@@ -603,15 +603,15 @@ namespace SensorDevices
 						var scanIndexH = scanIndex % horizontalSamples;
 						var scanIndexV = scanIndex / horizontalSamples;
 
-						var rayAngleH = (_laserAngleResolution.H * scanIndexH) + startAngleH;
-						var rayAngleV = (_laserAngleResolution.V * scanIndexV) + startAngleV;
+						var rayAngleH = startAngleH + (_laserAngleResolution.H * scanIndexH);
+						var rayAngleV = startAngleV - (_laserAngleResolution.V * scanIndexV);
 
 						var ccwIndex = (int)(rangeData.Count - scanIndex - 1);
 						var rayData = (float)rangeData[ccwIndex];
 
 						if (!float.IsNaN(rayData) && rayData <= rangeMax)
 						{
-							rayColor.g = Mathf.InverseLerp(startAngleV, endAngleV, rayAngleV);
+							rayColor.g = Mathf.InverseLerp(endAngleV, startAngleV, rayAngleV);
 
 							var rayRotation = Quaternion.AngleAxis(rayAngleH, localUp) * Quaternion.AngleAxis(rayAngleV, localRight) * localForward;
 
