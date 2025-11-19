@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 using Stopwatch = System.Diagnostics.Stopwatch;
 using System;
 using UnityEngine.Rendering.Universal;
@@ -568,6 +569,12 @@ namespace SensorDevices
 			}
 		}
 
+		[SerializeField] private static int _indexForVisualize = 0;
+		[SerializeField] private static int _maxCountForVisualize = 3;
+		[SerializeField] private static float _hueOffsetForVisualize = 0f; 
+		[SerializeField] private const float UnitHueOffsetForVisualize = 0.07f; 
+		[SerializeField] private const float AlphaForVisualize = 0.75f;
+
 		protected override IEnumerator OnVisualize()
 		{
 			var visualDrawDuration = UpdatePeriod;
@@ -581,9 +588,16 @@ namespace SensorDevices
 			var horizontalSamples = horizontal.samples;
 			var rangeMin = scanRange.min;
 			var rangeMax = scanRange.max;
-
-			var rayColor = Color.red;
-			rayColor.a = 0.7f;
+			
+			if (_indexForVisualize >= _maxCountForVisualize)
+			{
+				_indexForVisualize = 0;
+				_hueOffsetForVisualize += UnitHueOffsetForVisualize;
+			}
+			var hue = ((float)_indexForVisualize++ / Mathf.Max(1, _maxCountForVisualize)) + _hueOffsetForVisualize;
+			hue = (hue % 1f + 1f) % 1f;
+			// Debug.Log($"hue{hue} _indexForVisualize{_indexForVisualize}");
+			var baseRayColor = Color.HSVToRGB(hue, 0.9f, 1f);
 
 			var lidarModel = _lidarLink.parent;
 
@@ -611,7 +625,10 @@ namespace SensorDevices
 
 						if (!float.IsNaN(rayData) && rayData <= rangeMax)
 						{
-							rayColor.g = Mathf.InverseLerp(endAngleV, startAngleV, rayAngleV);
+							var t = Mathf.InverseLerp(endAngleV, startAngleV, rayAngleV);
+							var s = Mathf.Lerp(0.55f, 0.95f, t);
+							var rayColor = Color.HSVToRGB(hue, s, 0.95f);
+							rayColor.a = AlphaForVisualize;
 
 							var rayRotation = Quaternion.AngleAxis(rayAngleH, localUp) * Quaternion.AngleAxis(rayAngleV, localRight) * localForward;
 
