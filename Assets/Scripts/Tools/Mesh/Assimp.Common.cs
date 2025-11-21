@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System;
 using UnityEngine;
+using SN = System.Numerics;
 
 public static partial class MeshLoader
 {
@@ -101,19 +102,13 @@ public static partial class MeshLoader
 
 	private static bool CheckFileSupport(in string fileExtension)
 	{
-		var isFileSupported = true;
-
-		switch (fileExtension)
+		var isFileSupported = false;
+		if (fileExtension == ".dae" ||
+			fileExtension == ".obj" ||
+			fileExtension == ".stl" ||
+			fileExtension == ".fbx")
 		{
-			case ".dae":
-			case ".obj":
-			case ".stl":
-			case ".fbx":
-				break;
-
-			default:
-				isFileSupported = false;
-				break;
+			isFileSupported = true;
 		}
 
 		return isFileSupported;
@@ -127,7 +122,7 @@ public static partial class MeshLoader
 		{
 			case ".obj":
 			case ".stl":
-				eulerRotation = Quaternion.Euler(90, 0, 0) * Quaternion.Euler(0, 0, 90);
+				eulerRotation = Quaternion.Euler(-90, 0, 0) * Quaternion.Euler(0, 90, 0);
 				break;
 
 			case ".dae":
@@ -144,56 +139,61 @@ public static partial class MeshLoader
 		return eulerRotation;
 	}
 
-	private static Color ToUnity(this Assimp.Color4D color)
+	private static Color ToUnity(this SN.Vector4 color)
 	{
-		return (color == null) ? Color.clear : new Color(color.R, color.G, color.B, color.A);
+		return (color == null) ? Color.clear : new Color(color.X, color.Y, color.Z, color.W);
 	}
 
-	private static Matrix4x4 ToUnity(this Assimp.Matrix4x4 assimpMatrix)
+	private static Matrix4x4 ToUnity(this SN.Matrix4x4 assimpMatrix)
 	{
-		assimpMatrix.Decompose(out var scaling, out var rotation, out var translation);
+		var success = SN.Matrix4x4.Decompose(assimpMatrix, out var scaling, out var rotation, out var translation);
+		if (success == false)
+		{
+			return Matrix4x4.identity;
+		}
+
 		var pos = new Vector3(translation.X, translation.Y, translation.Z);
 		var rot = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
 		var scale = new Vector3(scaling.X, scaling.Y, scaling.Z);
 
-#region  Temporay CODE until Assimp Library is fixed.
-		// Debug.Log($"rotation = {rot.eulerAngles}");
-		// Debug.Log($"scaling  = {scaling.X} {scaling.Y} {scaling.Z}");
+// #region  Temporay CODE until Assimp Library is fixed.
+// 		// Debug.Log($"rotation = {rot.eulerAngles}");
+// 		// Debug.Log($"scaling  = {scaling.X} {scaling.Y} {scaling.Z}");
 
-		const float precision = 1000f;
-		var isRotZeroX = Mathf.Approximately((int)(rot.eulerAngles.x * precision), 0);
-		var isRotZeroY = Mathf.Approximately((int)(rot.eulerAngles.y * precision), 0);
-		var isRotZeroZ = Mathf.Approximately((int)(rot.eulerAngles.z * precision), 0);
+// 		const float precision = 1000f;
+// 		var isRotZeroX = Mathf.Approximately((int)(rot.eulerAngles.x * precision), 0);
+// 		var isRotZeroY = Mathf.Approximately((int)(rot.eulerAngles.y * precision), 0);
+// 		var isRotZeroZ = Mathf.Approximately((int)(rot.eulerAngles.z * precision), 0);
 
-		if (isRotZeroX && !isRotZeroY && !isRotZeroZ)
-		{
-			var newScale = new Vector3(scale.y, scale.z, scale.x);
-			scale = newScale;
-		}
-		else if (isRotZeroX && !isRotZeroY &&  isRotZeroZ &&
-				!Mathf.Approximately(rot.eulerAngles.y, 180f))
-		{
-			var newScale = new Vector3(scale.z, scale.y, scale.x);
-			scale = newScale;
-		}
-		else if (isRotZeroX && isRotZeroY && !isRotZeroZ &&
-				Mathf.Approximately(rot.eulerAngles.z, 90f))
-		{
-			var newScale = new Vector3(scale.y, scale.x, scale.z);
-			scale = newScale;
-		}
-		else if	(!isRotZeroX && isRotZeroY && isRotZeroZ)
-		{
-			var newScale = new Vector3(scale.x, scale.z, scale.y);
-			scale = newScale;
-		}
-		else if	(!isRotZeroX && !isRotZeroY && isRotZeroZ)
-		{
-			var newScale = new Vector3(scale.z, scale.x, scale.y);
-			scale = newScale;
-		}
-		// Debug.Log($"new isRotZero={isRotZeroX}/{isRotZeroY}/{isRotZeroZ} scaling={scale.x} {scale.y} {scale.z} rot={rot.eulerAngles}");
-#endregion
+// 		if (isRotZeroX && !isRotZeroY && !isRotZeroZ)
+// 		{
+// 			var newScale = new Vector3(scale.y, scale.z, scale.x);
+// 			scale = newScale;
+// 		}
+// 		else if (isRotZeroX && !isRotZeroY &&  isRotZeroZ &&
+// 				!Mathf.Approximately(rot.eulerAngles.y, 180f))
+// 		{
+// 			var newScale = new Vector3(scale.z, scale.y, scale.x);
+// 			scale = newScale;
+// 		}
+// 		else if (isRotZeroX && isRotZeroY && !isRotZeroZ &&
+// 				Mathf.Approximately(rot.eulerAngles.z, 90f))
+// 		{
+// 			var newScale = new Vector3(scale.y, scale.x, scale.z);
+// 			scale = newScale;
+// 		}
+// 		else if	(!isRotZeroX && isRotZeroY && isRotZeroZ)
+// 		{
+// 			var newScale = new Vector3(scale.x, scale.z, scale.y);
+// 			scale = newScale;
+// 		}
+// 		else if	(!isRotZeroX && !isRotZeroY && isRotZeroZ)
+// 		{
+// 			var newScale = new Vector3(scale.z, scale.x, scale.y);
+// 			scale = newScale;
+// 		}
+// 		// Debug.Log($"new isRotZero={isRotZeroX}/{isRotZeroY}/{isRotZeroZ} scaling={scale.x} {scale.y} {scale.z} rot={rot.eulerAngles}");
+// #endregion
 
 		return Matrix4x4.TRS(pos, rot, scale);
 	}
@@ -244,20 +244,25 @@ public static partial class MeshLoader
 			// 	var metaDataValue = metaDataSet.Value;
 			// 	Debug.Log($"{metaDataKey} : {metaDataValue}");
 			// }
-			// Debug.Log("rootNode.Transform=" + rootNode.Transform);
+			Debug.Log($"(Before) rootNode.Transform={rootNode.Transform}");
 
 			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
 			var meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
 
-			var rootNodeMatrix = rootNode.Transform.ToUnity();
-			rootNodeMatrix = Matrix4x4.Rotate(meshRotation) * rootNodeMatrix;
+			// var rootNodeMatrix = rootNode.Transform.ToUnity();
 
-			rootNode.Transform = new Assimp.Matrix4x4(
+			// var fix = Matrix4x4.Rotate(Quaternion.Euler(90, 0, 0));
+			Debug.Log($"(Before) rootNode.Transform isidentity={rootNode.Transform.IsIdentity} meshRot={meshRotation} ext={fileExtension} path={targetPath}");
+			// var rootNodeMatrix = Matrix4x4.Rotate(meshRotation) * ((rootNode.Transform.IsIdentity)? Matrix4x4.identity : fix) * rootNode.Transform.ToUnity();
+			var rootNodeMatrix = Matrix4x4.Rotate(meshRotation) * rootNode.Transform.ToUnity();
+
+			rootNode.Transform = new SN.Matrix4x4(
 				rootNodeMatrix.m00, rootNodeMatrix.m01, rootNodeMatrix.m02, rootNodeMatrix.m03,
 				rootNodeMatrix.m10,	rootNodeMatrix.m11, rootNodeMatrix.m12, rootNodeMatrix.m13,
 				rootNodeMatrix.m20, rootNodeMatrix.m21, rootNodeMatrix.m22, rootNodeMatrix.m23,
 				rootNodeMatrix.m30, rootNodeMatrix.m31, rootNodeMatrix.m32, rootNodeMatrix.m33
 			);
+			Debug.Log("(After) rootNode.Transform=" + rootNode.Transform);
 		}
 		catch (Assimp.AssimpException e)
 		{
