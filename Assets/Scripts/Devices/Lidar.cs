@@ -65,6 +65,15 @@ namespace SensorDevices
 		private LaserFilter _laserFilter = null;
 		private Noise _noise = null;
 
+		public void SetupNoise(in SDF.Noise param)
+		{
+			if (param != null)
+			{
+				Debug.Log($"{DeviceName}: Apply noise type:{param.type} mean:{param.mean} stddev:{param.stddev}");
+				_noise = new Noise(param);
+			}
+		}
+
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
@@ -283,11 +292,6 @@ namespace SensorDevices
 				var centerAngle = LaserCameraRotationAngle * index + centerAngleOffset;
 				_laserCamData[index] = new LaserData.LaserCamData(width, height, scanRange, rangeResolution, _laserAngleResolution, centerAngle, LaserCameraHFovHalf, LaserCameraVFovHalf);
 			}
-		}
-
-		public void SetupNoise(in SDF.Noise param)
-		{
-			_noise = new SensorDevices.Noise(param, "lidar");
 		}
 
 		public void SetupLaserAngleFilter(in double filterAngleLower, in double filterAngleUpper, in bool useIntensity = false)
@@ -540,7 +544,7 @@ namespace SensorDevices
 				if (_noise != null)
 				{
 					var ranges = laserScan.Ranges;
-					_noise.Apply<double>(ref ranges);
+					_noise.Apply<double>(ranges);
 				}
 
 				if (_laserFilter != null)

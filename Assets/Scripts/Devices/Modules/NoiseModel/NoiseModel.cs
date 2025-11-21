@@ -1,23 +1,17 @@
 /*
- * Copyright (c) 2020 LG Electronics Inc.
+ * Copyright (c) 2025 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
  */
 
 using System;
 
-public interface INoiseModel
+public abstract class NoiseModel
 {
-	void Apply<T>(ref T data, in float deltaTime);
-	void Apply<T>(ref T[] data, in float deltaTime);
-}
-
-public class NoiseModel : INoiseModel
-{
-	protected readonly SDF.Noise parameter;
+	protected readonly SDF.Noise _parameter;
 
 	protected double bias = 0;
-	protected bool quantized = false;
+	protected bool _quantized = false;
 	protected const double Epsilon = 1e-6d;
 
 	protected double clampMin = double.NegativeInfinity;
@@ -25,20 +19,26 @@ public class NoiseModel : INoiseModel
 
 	protected NoiseModel(in SDF.Noise parameter)
 	{
-		this.parameter = parameter;
+		this._parameter = parameter;
 
-		if (double.IsNaN(this.parameter.precision))
+		if (double.IsNaN(_parameter.precision))
 		{
-			if (this.parameter.precision < 0)
+			if (_parameter.precision < 0)
 			{
 				System.Console.WriteLine("Noise precision cannot be less than 0");
 			}
-			else if (Math.Abs(this.parameter.precision - 0d) > Epsilon)
+			else if (Math.Abs(_parameter.precision - 0d) > Epsilon)
 			{
-				this.quantized = true;
+				this._quantized = true;
+				System.Console.WriteLine($"Noise Quantized, precision={_parameter.precision}");
 			}
 		}
 		SampleBias();
+	}
+
+	public void SetQuantization(in bool val)
+	{
+		_quantized = val;
 	}
 
 	public void SetClampMin(in double val)
@@ -51,19 +51,9 @@ public class NoiseModel : INoiseModel
 		this.clampMax = val;
 	}
 
-	public virtual void Apply<T>(ref T data, in float deltaTime = 0) {}
-
-	public void Apply<T>(ref T[] data, in float deltaTime = 0)
-	{
-		for (var i = 0; i < data.LongLength; i++)
-		{
-			Apply<T>(ref data[i], deltaTime);
-		}
-	}
-
 	private void SampleBias()
 	{
-		this.bias = RandomNumberGenerator.GetNormal(parameter.bias_mean, parameter.bias_stddev);
+		this.bias = RandomNumberGenerator.GetNormal(_parameter.bias_mean, _parameter.bias_stddev);
 		// With equal probability, we pick a negative bias
 		// (by convention, rateBiasMean should be positive, though it would work fine if negative).
 
@@ -83,4 +73,6 @@ public class NoiseModel : INoiseModel
 		return (clampMax != double.PositiveInfinity && value > clampMax) ?
 			this.clampMax : ((clampMin != double.NegativeInfinity && value < clampMin) ? clampMin : value);
 	}
+
+	public abstract T Generate<T>(T data, float deltaTime);
 }

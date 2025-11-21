@@ -16,7 +16,6 @@ public abstract class Device : MonoBehaviour
 
 	private DeviceMessageQueue _deviceMessageQueue = new DeviceMessageQueue();
 	private DevicePose _devicePose = new DevicePose();
-
 	private SDF.Plugin _pluginParameters = null;
 
 	[SerializeField]

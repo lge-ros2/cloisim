@@ -33,8 +33,6 @@ namespace SensorDevices
 
 		#endregion
 
-		private Material _depthMaterial = null;
-
 		private uint _depthScale = 1;
 		private int _imageDepth;
 		private const int BatchSize = 64;
@@ -149,15 +147,6 @@ namespace SensorDevices
 			_universalCamData.requiresColorTexture = false;
 			_universalCamData.requiresDepthTexture = true;
 			_universalCamData.renderShadows = false;
-
-			var cb = new CommandBuffer();
-			cb.name = "CommandBufferForDepthShading";
-			var tempTextureId = Shader.PropertyToID("_RenderImageCameraDepthTexture");
-			cb.GetTemporaryRT(tempTextureId, -1, -1);
-			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
-			cb.ReleaseTemporaryRT(tempTextureId);
-			_camSensor.AddCommandBuffer(CameraEvent.AfterEverything, cb);
-			cb.Release();
 
 			ReverseDepthData(false);
 			FlipXDepthData(false);
