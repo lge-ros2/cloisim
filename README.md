@@ -52,7 +52,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
     - [X] Gaussian
       - [X] GPS, IMU
       - [X] Lidar
-      - [ ] Camera
+      - [X] Camera
     - [ ] Custom
   - [ ] <visualize>true</visualize>, only works in editor for lidar sensor
 - [X] Physics
