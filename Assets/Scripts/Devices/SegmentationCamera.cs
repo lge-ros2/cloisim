@@ -5,6 +5,7 @@
  */
 
 using UnityEngine;
+using System.Threading;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Experimental.Rendering;
 using System.Collections.Concurrent;
@@ -38,7 +39,7 @@ namespace SensorDevices
 			_targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
 			_readbackDstFormat = GraphicsFormat.R8G8_UNorm;
 
-			_camImageData = new CameraData.Image(_camParam.image.width, _camParam.image.height, pixelFormat);
+			_textureForCapture = new Texture2D(_camParam.image.width, _camParam.image.height, TextureFormat.R16, false, true);
 		}
 
 		protected override void SetupCamera()
@@ -67,9 +68,23 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
+			var count = _messageQueue.Count;
 			while (_messageQueue.TryDequeue(out var msg))
 			{
 				PushDeviceMessage<messages.Segmentation>(msg);
+				Thread.Sleep(WaitPeriodInMilliseconds() / count);
+				Thread.SpinWait(1);
+			}
+		}
+
+		void LateUpdate()
+		{
+			if (_startCameraWork &&
+				_camParam.save_enabled &&
+				_messageQueue.TryPeek(out var msg))
+			{
+				var saveName = $"{DeviceName}_{msg.ImageStamped.Time.Sec}.{msg.ImageStamped.Time.Nsec}";
+				_textureForCapture.SaveRawImage(msg.ImageStamped.Image.Data, _camParam.save_path, saveName);
 			}
 		}
 
@@ -83,20 +98,12 @@ namespace SensorDevices
 			segmentation.ImageStamped.Image = new messages.Image();
 			segmentation.ImageStamped.Image = _image;
 
-			_camImageData.SetTextureBufferData(ref readbackData);
-
 			var image = segmentation.ImageStamped.Image;
-			var imageData = _camImageData.GetImageData(image.Data.Length);
+			var imageData = (image.Data.Length == readbackData.Length) ? readbackData.ToArray() : null;
 			if (imageData != null)
 			{
 				image.Data = imageData;
 				// Debug.LogFormat($"{image.Data[0]}|{image.Data[1]}|{image.Data[2]}|{image.Data[3]}");
-				if (_camParam.save_enabled && _startCameraWork)
-				{
-					var saveName = name + "_" + Time.time;
-					_camImageData.SaveRawImageData(_camParam.save_path, saveName);
-					// Debug.LogFormat("{0}|{1} captured", _camParam.save_path, saveName);
-				}
 			}
 			else
 			{

@@ -92,7 +92,7 @@ namespace SDF
 				return camera;
 			}
 
-			public static Device AddSegmentaionCamera(this UE.GameObject targetObject, in SDF.Camera element)
+			public static Device AddSegmentationCamera(this UE.GameObject targetObject, in SDF.Camera element)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject, element.Pose);

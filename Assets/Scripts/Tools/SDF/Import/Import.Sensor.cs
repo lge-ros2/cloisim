@@ -59,7 +59,7 @@ namespace SDF
 					case "segmentation_camera":
 					case "segmentation":
 						var segmentationCamera = sensor.GetSensor() as SDF.Camera;
-						device = targetObject.AddSegmentaionCamera(segmentationCamera);
+						device = targetObject.AddSegmentationCamera(segmentationCamera);
 						break;
 
 					case "rgbd_camera":
