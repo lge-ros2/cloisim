@@ -34,6 +34,7 @@ namespace SDF
 			private bool _followingWaypoint = false;
 			private double _elapsedTimeSinceAnimationStarted = 0;
 			private UE.Pose targetPose = new UE.Pose();
+			private const float AgentMarginRatio = 1.5f;
 
 			[UE.Header("SDF Properties")]
 			public bool isStatic = false;
@@ -41,7 +42,7 @@ namespace SDF
 
 			private UE.CapsuleCollider capsuleCollider = null;
 			private UE.SkinnedMeshRenderer skinMeshRenderer = null;
-			private UEAI.NavMeshAgent navMeshAgent = null;
+			private UEAI.NavMeshAgent _navMeshAgent = null;
 
 			public bool HasWayPoints => (_script.trajectories != null && _script.trajectories.Count > 0);
 
@@ -83,20 +84,17 @@ namespace SDF
 				center.y = bounds.extents.y;
 				capsuleCollider.center = center;
 
-				navMeshAgent = gameObject.GetComponent<UEAI.NavMeshAgent>();
-				if (navMeshAgent == null)
+				_navMeshAgent = gameObject.GetComponent<UEAI.NavMeshAgent>();
+				if (_navMeshAgent != null)
 				{
-					navMeshAgent = gameObject.AddComponent<UEAI.NavMeshAgent>();
+					_navMeshAgent.radius = radius * AgentMarginRatio;
+					_navMeshAgent.height = capsuleCollider.height;
+					_navMeshAgent.obstacleAvoidanceType = UEAI.ObstacleAvoidanceType.MedQualityObstacleAvoidance;
+					_navMeshAgent.avoidancePriority = AvoidancePriorityNumber++;
+					_navMeshAgent.autoBraking = true;
+					_navMeshAgent.autoRepath = true;
+					_navMeshAgent.autoTraverseOffMeshLink = false;
 				}
-
-				const float agentMarginRatio = 1.5f;
-				navMeshAgent.radius = radius * agentMarginRatio;
-				navMeshAgent.height = capsuleCollider.height;
-				navMeshAgent.obstacleAvoidanceType = UEAI.ObstacleAvoidanceType.MedQualityObstacleAvoidance;
-				navMeshAgent.avoidancePriority = AvoidancePriorityNumber++;
-				navMeshAgent.autoBraking = true;
-				navMeshAgent.autoRepath = true;
-				navMeshAgent.autoTraverseOffMeshLink = false;
 
 				yield return null;
 			}
