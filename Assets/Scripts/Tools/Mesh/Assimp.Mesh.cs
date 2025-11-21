@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+// #define ENABLE_MESH_CACHE
 
 using System.Collections.Generic;
 using System.IO;
@@ -220,13 +221,13 @@ public static partial class MeshLoader
 		return materials;
 	}
 
-	private static MeshMaterialList LoadMeshes(in List<Assimp.Mesh> sceneMeshes)
+	private static MeshMaterialList LoadMeshes(in IReadOnlyList<Assimp.Mesh> sceneMeshes)
 	{
 		var meshMatList = new MeshMaterialList();
 
 		foreach (var sceneMesh in sceneMeshes)
 		{
-			var newMesh = new Mesh();
+    		var newMesh = new Mesh();
 			newMesh.name = sceneMesh.Name;
 
 			if (sceneMesh.VertexCount < 3)
@@ -243,9 +244,7 @@ public static partial class MeshLoader
 
 				var vertices = new Queue<Vector3>();
 				foreach (var v in sceneMesh.Vertices)
-				{
 					vertices.Enqueue(new Vector3(v.X, v.Y, v.Z));
-				}
 
 				newMesh.vertices = vertices.ToArray();
 			}
@@ -257,9 +256,7 @@ public static partial class MeshLoader
 				{
 					var uvs = new Queue<Vector2>();
 					foreach (var uv in sceneMesh.TextureCoordinateChannels[channelIndex])
-					{
 						uvs.Enqueue(new Vector2(uv.X, uv.Y));
-					}
 
 					switch (channelIndex)
 					{
@@ -335,9 +332,7 @@ public static partial class MeshLoader
 			{
 				var normals = new Queue<Vector3>();
 				foreach (var n in sceneMesh.Normals)
-				{
 					normals.Enqueue(new Vector3(n.X, n.Y, n.Z));
-				}
 
 				newMesh.normals = normals.ToArray();
 			}
@@ -359,6 +354,8 @@ public static partial class MeshLoader
 				// }
 
 				newMesh.tangents = tangents.ToArray();
+
+				newMesh.RecalculateNormals();
 			}
 
 			// Debug.Log("Done - " + sceneMesh.Name + ", " + newMesh.vertexCount + " : " + sceneMesh.MaterialIndex + ", " + newMesh.bindposes.LongLength);
@@ -370,11 +367,10 @@ public static partial class MeshLoader
 
 	private static GameObject ToUnityMeshObject(
 		this Assimp.Node node,
-		in MeshMaterialList meshMatList,
-		out bool doFlip)
+		in MeshMaterialList meshMatList)
 	{
 		var nodeObject = new GameObject(node.Name);
-		// Debug.Log($"ToUnityMeshObject : {node.Name}");
+		// Debug.Log($"ToUnityMeshObject : {node.Name} {node.Transform}");
 
 		// Set Mesh
 		if (node.HasMeshes)
@@ -404,10 +400,6 @@ public static partial class MeshLoader
 		nodeObject.transform.localRotation = nodeTransformMatrix.rotation;
 		nodeObject.transform.localScale = nodeTransformMatrix.lossyScale;
 
-		doFlip = (nodeObject.transform.localScale.x < 0 ||
-				  nodeObject.transform.localScale.y < 0 ||
-				  nodeObject.transform.localScale.z < 0) ? true : false;
-
 		if (node.HasChildren)
 		{
 			foreach (var child in node.Children)
@@ -417,11 +409,9 @@ public static partial class MeshLoader
 					continue;
 				}
 
-				// Debug.Log(" => Child Object: " + child.Name);
-				var childObject = child.ToUnityMeshObject(meshMatList, out var doFlipChild);
+				// Debug.Log(" => Child Object: " + child.Name + " " + child.Transform);
+				var childObject = child.ToUnityMeshObject(meshMatList);
 				childObject.transform.SetParent(nodeObject.transform, false);
-
-				doFlip |= doFlipChild;
 			}
 		}
 
@@ -444,7 +434,15 @@ public static partial class MeshLoader
 
 		var cacheKey = meshPath + (string.IsNullOrEmpty(subMesh) ? "" : subMesh);
 
-		if (!MeshCache.ContainsKey(cacheKey))
+#if !ENABLE_MESH_CACHE
+		GameObject sceneMeshObject;
+#else
+		if (MeshCache.ContainsKey(cacheKey))
+		{
+			Debug.Log($"Use cached mesh({cacheKey}) for {meshPath}");
+		}
+		else
+#endif
 		{
 			var scene = GetScene(meshPath, subMesh);
 			if (scene == null)
@@ -471,29 +469,25 @@ public static partial class MeshLoader
 			}
 
 			// Create GameObjects from nodes
-			var createdMeshObject = scene.RootNode.ToUnityMeshObject(meshMatList, out var doFlip);
+			var createdMeshObject = scene.RootNode.ToUnityMeshObject(meshMatList);
 			// Debug.Log(createdMeshObject.name + ": " + createdMeshObject.transform.localRotation.eulerAngles);
 
-			if (doFlip)
-			{
-				createdMeshObject.transform.localScale = -createdMeshObject.transform.localScale;
-			}
-
 			createdMeshObject.SetActive(false);
+#if ENABLE_MESH_CACHE
 			GameObject.DontDestroyOnLoad(createdMeshObject);
-
 			MeshCache.Add(cacheKey, createdMeshObject);
-		}
-		else
-		{
-			Debug.Log($"Use cached mesh({cacheKey}) for {meshPath}");
+#else
+ 			sceneMeshObject = createdMeshObject;
+#endif
 		}
 
 		meshObject = new GameObject("Non-Primitive Mesh");
 		meshObject.SetActive(true);
 		meshObject.tag = "Geometry";
 
+#if ENABLE_MESH_CACHE
 		var sceneMeshObject = GameObject.Instantiate(MeshCache[cacheKey]);
+#endif
 		sceneMeshObject.SetActive(true);
 		sceneMeshObject.transform.SetParent(meshObject.transform, false);
 

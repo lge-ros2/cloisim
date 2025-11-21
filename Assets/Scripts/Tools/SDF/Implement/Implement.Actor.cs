@@ -70,7 +70,7 @@ namespace SDF
 				var animationClip = MeshLoader.LoadAnimation(animation.name, animation.filename, relativePaths, (float)animation.scale);
 				if (animationClip != null)
 				{
-					// UE.Debug.Log("animation clip name: " + clipName);
+					// UE.Debug.Log("animation clip name: " + animationClip.name);
 					animationComponent.AddClip(animationClip, animationClip.name);
 					animationComponent.clip = animationClip;
 				}

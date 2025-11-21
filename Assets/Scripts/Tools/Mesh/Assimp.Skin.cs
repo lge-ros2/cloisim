@@ -178,7 +178,7 @@ public static partial class MeshLoader
 			foreach (var child in node.Children)
 			{
 				var childObject = child.GetBones();
-				childObject.transform.SetParent(rootObject.transform, true);
+				childObject.transform.SetParent(rootObject.transform, false);
 			}
 		}
 
@@ -262,6 +262,7 @@ public static partial class MeshLoader
 		skinnedMeshRenderer.sharedMaterials = combinedMaterials.ToArray();
 		skinnedMeshRenderer.sharedMesh = combinedMesh;
 
+		rootObject.name = "skin";
 		return rootObject;
 	}
 }
