@@ -12,6 +12,26 @@ namespace SensorDevices
 {
 	public class GPS : Device
 	{
+		private class NoiseGPS
+		{
+			public Dictionary<string, Noise> position_sensing;
+			public Dictionary<string, Noise> velocity_sensing;
+
+			public NoiseGPS(in Noise defaultNoise = null)
+			{
+				position_sensing = new Dictionary<string, Noise>
+				{
+					{"horizontal", defaultNoise},
+					{"vertical", defaultNoise}
+				};
+				
+				velocity_sensing = new Dictionary<string, Noise>
+				{
+					{"horizontal", defaultNoise},
+					{"vertical", defaultNoise}
+				};
+			}
+		}
 		private messages.Gps _gps = null;
 
 		private Transform _gpsLink = null;
@@ -28,17 +48,35 @@ namespace SensorDevices
 		// public Vector3d _gpsCoordinates;
 		// public Vector3d _gpsVelocity;
 
-		public Dictionary<string, Noise> position_sensing_noises = new Dictionary<string, Noise>()
-		{
-			{"horizontal", null},
-			{"vertical", null}
-		};
+		private NoiseGPS _noises = new NoiseGPS();
 
-		public Dictionary<string, Noise> velocity_sensing_noises = new Dictionary<string, Noise>()
+		public void SetupNoises(in SDF.NavSat element)
 		{
-			{"horizontal", null},
-			{"vertical", null}
-		};
+			if (element == null)
+				return;
+
+			Debug.Log($"{DeviceName}: Apply noise type:{element.type}");
+
+			if (element.position_sensing.horizontal_noise != null)
+			{
+				_noises.position_sensing["horizontal"] = new SensorDevices.Noise(element.position_sensing.horizontal_noise);
+			}
+
+			if (element.position_sensing.vertical_noise != null)
+			{
+				_noises.position_sensing["vertical"] = new SensorDevices.Noise(element.position_sensing.vertical_noise);
+			}
+
+			if (element.velocity_sensing.horizontal_noise != null)
+			{
+				_noises.velocity_sensing["horizontal"] = new SensorDevices.Noise(element.velocity_sensing.horizontal_noise);
+			}
+
+			if (element.velocity_sensing.vertical_noise != null)
+			{
+				_noises.velocity_sensing["vertical"] = new SensorDevices.Noise(element.velocity_sensing.vertical_noise);
+			}
+		}
 
 		protected override void OnAwake()
 		{
@@ -87,24 +125,24 @@ namespace SensorDevices
 
 		private void ApplyNoises(ref Vector3d coordinates, ref Vector3d velocity)
 		{
-			if (position_sensing_noises["horizontal"] != null)
+			if (_noises.position_sensing["horizontal"] != null)
 			{
-				position_sensing_noises["horizontal"].Apply<double>(ref coordinates.x);
+				_noises.position_sensing["horizontal"].Apply<double>(ref coordinates.x);
 			}
 
-			if (position_sensing_noises["vertical"] != null)
+			if (_noises.position_sensing["vertical"] != null)
 			{
-				position_sensing_noises["vertical"].Apply<double>(ref coordinates.y);
+				_noises.position_sensing["vertical"].Apply<double>(ref coordinates.y);
 			}
 
-			if (velocity_sensing_noises["horizontal"] != null)
+			if (_noises.velocity_sensing["horizontal"] != null)
 			{
-				velocity_sensing_noises["horizontal"].Apply<double>(ref velocity.x);
+				_noises.velocity_sensing["horizontal"].Apply<double>(ref velocity.x);
 			}
 
-			if (velocity_sensing_noises["vertical"] != null)
+			if (_noises.velocity_sensing["vertical"] != null)
 			{
-				velocity_sensing_noises["vertical"].Apply<double>(ref velocity.y);
+				_noises.velocity_sensing["vertical"].Apply<double>(ref velocity.y);
 			}
 		}
 

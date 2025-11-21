@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
 using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
@@ -12,6 +11,28 @@ namespace SensorDevices
 {
 	public class IMU : Device
 	{
+		private class NoiseIMU
+		{
+			public Dictionary<string, Noise> angular_velocity;
+			public Dictionary<string, Noise> linear_acceleration;
+			public NoiseIMU(in Noise defaultNoise = null)
+			{
+				angular_velocity = new Dictionary<string, Noise>
+				{
+					{"x", defaultNoise},
+					{"y", defaultNoise},
+					{"z", defaultNoise}
+				};
+				
+				linear_acceleration = new Dictionary<string, Noise>
+				{
+					{"x", defaultNoise},
+					{"y", defaultNoise},
+					{"z", defaultNoise}
+				};
+			}
+		}
+
 		private messages.Imu _imu = null;
 
 		private Quaternion _imuInitialRotation = Quaternion.identity;
@@ -25,19 +46,45 @@ namespace SensorDevices
 		private Quaternion _previousImuRotation = Quaternion.identity;
 		private Vector3 _previousLinearVelocity = Vector3.zero;
 
-		public Dictionary<string, Noise> angular_velocity_noises = new Dictionary<string, Noise>()
-		{
-			{"x", null},
-			{"y", null},
-			{"z", null}
-		};
+		private NoiseIMU _noises = new NoiseIMU();
 
-		public Dictionary<string, Noise> linear_acceleration_noises = new Dictionary<string, Noise>()
+		public void SetupNoises(in SDF.IMU element)
 		{
-			{"x", null},
-			{"y", null},
-			{"z", null}
-		};
+			if (element == null)
+				return;
+
+			Debug.Log($"{DeviceName}: Apply noise type:{element.type}");
+
+			if (element.noise_angular_velocity.x != null)
+			{
+				_noises.angular_velocity["x"] = new Noise(element.noise_angular_velocity.x);
+			}
+
+			if (element.noise_angular_velocity.y != null)
+			{
+				_noises.angular_velocity["y"] = new Noise(element.noise_angular_velocity.y);
+			}
+
+			if (element.noise_angular_velocity.z != null)
+			{
+				_noises.angular_velocity["z"] = new Noise(element.noise_angular_velocity.z);
+			}
+
+			if (element.noise_linear_acceleration.x != null)
+			{
+				_noises.linear_acceleration["x"] = new Noise(element.noise_linear_acceleration.x);
+			}
+
+			if (element.noise_linear_acceleration.y != null)
+			{
+				_noises.linear_acceleration["y"] = new Noise(element.noise_linear_acceleration.y);
+			}
+
+			if (element.noise_linear_acceleration.z != null)
+			{
+				_noises.linear_acceleration["z"] = new Noise(element.noise_linear_acceleration.z);
+			}
+		}
 
 		protected override void OnAwake()
 		{
@@ -76,34 +123,34 @@ namespace SensorDevices
 
 		private void ApplyNoises(in float deltaTime)
 		{
-			if (angular_velocity_noises["x"] != null)
+			if (_noises.angular_velocity["x"] != null)
 			{
-				angular_velocity_noises["x"].Apply<float>(ref _imuAngularVelocity.x, deltaTime);
+				_noises.angular_velocity["x"].Apply<float>(ref _imuAngularVelocity.x, deltaTime);
 			}
 
-			if (angular_velocity_noises["y"] != null)
+			if (_noises.angular_velocity["y"] != null)
 			{
-				angular_velocity_noises["y"].Apply<float>(ref _imuAngularVelocity.y, deltaTime);
+				_noises.angular_velocity["y"].Apply<float>(ref _imuAngularVelocity.y, deltaTime);
 			}
 
-			if (angular_velocity_noises["z"] != null)
+			if (_noises.angular_velocity["z"] != null)
 			{
-				angular_velocity_noises["z"].Apply<float>(ref _imuAngularVelocity.z, deltaTime);
+				_noises.angular_velocity["z"].Apply<float>(ref _imuAngularVelocity.z, deltaTime);
 			}
 
-			if (linear_acceleration_noises["x"] != null)
+			if (_noises.linear_acceleration["x"] != null)
 			{
-				linear_acceleration_noises["x"].Apply<float>(ref _imuLinearAcceleration.x, deltaTime);
+				_noises.linear_acceleration["x"].Apply<float>(ref _imuLinearAcceleration.x, deltaTime);
 			}
 
-			if (linear_acceleration_noises["y"] != null)
+			if (_noises.linear_acceleration["y"] != null)
 			{
-				linear_acceleration_noises["y"].Apply<float>(ref _imuLinearAcceleration.y, deltaTime);
+				_noises.linear_acceleration["y"].Apply<float>(ref _imuLinearAcceleration.y, deltaTime);
 			}
 
-			if (linear_acceleration_noises["z"] != null)
+			if (_noises.linear_acceleration["z"] != null)
 			{
-				linear_acceleration_noises["z"].Apply<float>(ref _imuLinearAcceleration.z, deltaTime);
+				_noises.linear_acceleration["z"].Apply<float>(ref _imuLinearAcceleration.z, deltaTime);
 			}
 		}
 
