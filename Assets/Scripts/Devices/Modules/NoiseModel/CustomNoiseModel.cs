@@ -11,8 +11,9 @@ public class CustomNoiseModel : NoiseModel
 	{
 	}
 
-	public override void Apply<T>(ref T data, in float deltaTime = 0)
+	public override T Generate<T>(T data, float deltaTime)
 	{
 		// TODO: TBD
+		return data;
 	}
 }

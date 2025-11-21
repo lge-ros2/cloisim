@@ -39,26 +39,77 @@ namespace SensorDevices
 		protected bool _startCameraWork = false;
 		private RTHandle _rtHandle;
 		protected Texture2D _textureForCapture = null;
+		
+		private CommandBuffer _invertCullingOnCmdBuffer = null;
+		private CommandBuffer _invertCullingOffCmdBuffer = null;
+		private CommandBuffer _noiseCmdBuffer = null;
+		private CommandBuffer _postProcessCmdBuffer = null;
+		private Material _noiseMaterial = null;
+		protected Material _depthMaterial = null;
 
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
-			if (camera.Equals(_camSensor))
+			if (camera == _camSensor)
 			{
-				var cmdBuffer = new CommandBuffer();
-				cmdBuffer.SetInvertCulling(true);
-				context.ExecuteCommandBuffer(cmdBuffer);
+				context.ExecuteCommandBuffer(_invertCullingOnCmdBuffer);
 				context.Submit();
 			}
 		}
 
 		protected void OnEndCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
-			if (camera.Equals(_camSensor))
+			if (camera == _camSensor)
 			{
-				var cmdBuffer = new CommandBuffer();
-				cmdBuffer.SetInvertCulling(false);
-				context.ExecuteCommandBuffer(cmdBuffer);
+				context.ExecuteCommandBuffer(_invertCullingOffCmdBuffer);
+
+				if (_noiseMaterial != null || _depthMaterial != null)
+				{
+					int tempID1 = Shader.PropertyToID("_TempDepthRT");
+					int tempID2 = Shader.PropertyToID("_TempNoiseRT");
+					_postProcessCmdBuffer.GetTemporaryRT(tempID1, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear);
+					_postProcessCmdBuffer.GetTemporaryRT(tempID2, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear);
+
+					if (_depthMaterial != null)
+					{
+						_postProcessCmdBuffer.Blit(BuiltinRenderTextureType.CameraTarget, tempID1);
+
+						if (_noiseMaterial != null)
+							_postProcessCmdBuffer.Blit(tempID1, tempID2, _depthMaterial);
+						else
+							_postProcessCmdBuffer.Blit(tempID1, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
+						
+
+					}
+					else
+					{
+						if (_noiseMaterial != null)
+							_postProcessCmdBuffer.Blit(BuiltinRenderTextureType.CameraTarget, tempID2);
+					}
+				
+					if (_noiseMaterial != null)
+					{
+						_postProcessCmdBuffer.Blit(tempID2, BuiltinRenderTextureType.CameraTarget, _noiseMaterial);
+					}
+
+					_postProcessCmdBuffer.ReleaseTemporaryRT(tempID1);
+					_postProcessCmdBuffer.ReleaseTemporaryRT(tempID2);
+					context.ExecuteCommandBuffer(_postProcessCmdBuffer);
+					_postProcessCmdBuffer.Clear();
+				}				
+
 				context.Submit();
+			}
+		}
+
+		public void SetupNoise(in SDF.Noise param)
+		{
+			if (param != null)
+			{
+				Debug.Log($"{DeviceName}: Apply noise type:{param.type} mean:{param.mean} stddev:{param.stddev}");
+				_noiseMaterial = new Material(Shader.Find("Sensor/Camera/GaussianNoise"));
+				_noiseMaterial.SetFloat("_Mean", (float)param.mean);
+				_noiseMaterial.SetFloat("_StdDev", (float)param.stddev);
+				_noiseCmdBuffer = new CommandBuffer { name = "Gaussian Noise" };
 			}
 		}
 
@@ -166,6 +217,14 @@ namespace SensorDevices
 
 		private void OnEnable()
 		{
+			_invertCullingOnCmdBuffer = new CommandBuffer { name = "Invert Culling On" };
+			_invertCullingOnCmdBuffer.SetInvertCulling(true);
+
+			_invertCullingOffCmdBuffer = new CommandBuffer { name = "Invert Culling Off" };
+			_invertCullingOffCmdBuffer.SetInvertCulling(false);
+
+			_postProcessCmdBuffer = new CommandBuffer { name = "Depth + Noise or Noise PostProcess" };
+
 			RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
 			RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
 		}
@@ -174,6 +233,11 @@ namespace SensorDevices
 		{
 			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
+
+			_postProcessCmdBuffer?.Release();
+
+			_invertCullingOnCmdBuffer?.Release();
+			_invertCullingOffCmdBuffer?.Release();
 		}
 
 		private void SetupDefaultCamera()
