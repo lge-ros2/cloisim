@@ -27,12 +27,14 @@ namespace SensorDevices
 			public int dataIndex;
 			public AsyncGPUReadbackRequest? request;
 			public float capturedTime;
+			public UnityEngine.Pose worldPose;
 
-			public Laser(in int dataIndex, in AsyncGPUReadbackRequest? request, in float capturedTime)
+			public Laser(in int dataIndex, in AsyncGPUReadbackRequest? request, in float capturedTime, in UnityEngine.Pose worldPose)
 			{
 				this.dataIndex = dataIndex;
 				this.request = request;
 				this.capturedTime = capturedTime;
+				this.worldPose = worldPose;
 			}
 		}
 	}
