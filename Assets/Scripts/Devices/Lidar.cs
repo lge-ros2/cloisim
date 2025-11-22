@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System.Threading;
-using System.Linq;
 using Stopwatch = System.Diagnostics.Stopwatch;
 using System;
 using UnityEngine.Rendering.Universal;
@@ -43,8 +42,6 @@ namespace SensorDevices
 		public LaserData.Scan vertical;
 
 		private Transform _lidarLink = null;
-		private Pose _lidarSensorInitPose = new Pose();
-		private Pose _lidarSensorPose = new Pose();
 
 		private UnityEngine.Camera _laserCam = null;
 		private Material depthMaterial = null;
@@ -80,7 +77,7 @@ namespace SensorDevices
 			_lidarLink = transform.parent;
 
 			var laserSensor = new GameObject("__laser__");
-			laserSensor.transform.SetParent(this.transform, true);
+			laserSensor.transform.SetParent(this.transform, false);
 			laserSensor.transform.localPosition = Vector3.zero;
 			laserSensor.transform.localRotation = Quaternion.identity;
 			_laserCam = laserSensor.AddComponent<UnityEngine.Camera>();
@@ -92,9 +89,6 @@ namespace SensorDevices
 		{
 			if (_laserCam != null)
 			{
-				_lidarSensorInitPose.position = transform.localPosition;
-				_lidarSensorInitPose.rotation = transform.localRotation;
-
 				SetupLaserCamera();
 
 				SetupLaserCameraData();
@@ -316,23 +310,22 @@ namespace SensorDevices
 
 		private IEnumerator CaptureLaserCamera()
 		{
+			var lidarSensorWorldPose = new Pose();
+			var axisRotation = Vector3.zero;
 			var sw = new Stopwatch();
 			while (_startLaserWork)
 			{
 				sw.Restart();
 
-				// Update lidar sensor pose
-				_lidarSensorPose.position = _lidarLink.position;
-				_lidarSensorPose.rotation = _lidarLink.rotation;
-
-				var axisRotation = Vector3.zero;
+				lidarSensorWorldPose.position = transform.position;
+				lidarSensorWorldPose.rotation = transform.rotation;
 
 				for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
 				{
 					var laserCamData = _laserCamData[dataIndex];
 					axisRotation.y = laserCamData.centerAngle;
 
-					_laserCam.transform.localRotation = _lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
+					_laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
 					_laserCam.enabled = true;
 
 					if (_laserCam.isActiveAndEnabled)
@@ -341,7 +334,7 @@ namespace SensorDevices
 						var capturedTime = (float)DeviceHelper.GetGlobalClock().SimTime;
 						var readbackRequest = AsyncGPUReadback.Request(_laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, OnCompleteAsyncReadback);
 
-						_asyncWorkList.TryAdd(readbackRequest.GetHashCode(), new AsyncWork.Laser(dataIndex, readbackRequest, capturedTime));
+						_asyncWorkList.TryAdd(readbackRequest.GetHashCode(), new AsyncWork.Laser(dataIndex, readbackRequest, capturedTime, lidarSensorWorldPose));
 
 						_laserCam.enabled = false;
 					}
@@ -385,6 +378,7 @@ namespace SensorDevices
 						var laserDataOutput = new LaserData.LaserDataOutput();
 						laserDataOutput.data = laserCamData.GetLaserData();
 						laserDataOutput.capturedTime = asyncWork.capturedTime;
+						laserDataOutput.worldPose = asyncWork.worldPose;
 
 						_laserDataOutput[dataIndex] = laserDataOutput;
 
@@ -427,14 +421,12 @@ namespace SensorDevices
 			{
 				sw.Restart();
 
-				var lidarPosition = _lidarSensorInitPose.position + _lidarSensorPose.position;
-				var lidarRotation = _lidarSensorInitPose.rotation * _lidarSensorPose.rotation;
-
 				laserScanStamped.Scan = _laserScan;
 				var laserScan = laserScanStamped.Scan;
 
-				laserScan.WorldPose.Position.Set(lidarPosition);
-				laserScan.WorldPose.Orientation.Set(lidarRotation);
+				var sensorWorldPose = _laserDataOutput[0].worldPose;
+				laserScan.WorldPose.Position.Set(sensorWorldPose.position);
+				laserScan.WorldPose.Orientation.Set(sensorWorldPose.rotation);
 
 				Array.Fill(laserScan.Ranges, double.NaN);
 
@@ -575,8 +567,8 @@ namespace SensorDevices
 
 		[SerializeField] private static int _indexForVisualize = 0;
 		[SerializeField] private static int _maxCountForVisualize = 3;
-		[SerializeField] private static float _hueOffsetForVisualize = 0f; 
-		[SerializeField] private const float UnitHueOffsetForVisualize = 0.07f; 
+		[SerializeField] private static float _hueOffsetForVisualize = 0f;
+		[SerializeField] private const float UnitHueOffsetForVisualize = 0.07f;
 		[SerializeField] private const float AlphaForVisualize = 0.75f;
 
 		protected override IEnumerator OnVisualize()
@@ -592,7 +584,7 @@ namespace SensorDevices
 			var horizontalSamples = horizontal.samples;
 			var rangeMin = scanRange.min;
 			var rangeMax = scanRange.max;
-			
+
 			if (_indexForVisualize >= _maxCountForVisualize)
 			{
 				_indexForVisualize = 0;
@@ -607,7 +599,7 @@ namespace SensorDevices
 
 			while (true)
 			{
-				var rayStartBase = _lidarLink.position + lidarModel.rotation * _lidarSensorInitPose.position;
+				var rayStartBase = transform.position;
 				var rangeData = GetRangeData();
 
 				if (rangeData != null)

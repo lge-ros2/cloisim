@@ -69,11 +69,13 @@ namespace SensorDevices
 			public double[] data;
 
 			public float capturedTime;
+			public Pose worldPose;
 
 			public LaserDataOutput(in int length = 0)
 			{
 				data = (length == 0) ? null : new double[length];
 				capturedTime = 0;
+				worldPose = Pose.identity;
 			}
 		}
 
