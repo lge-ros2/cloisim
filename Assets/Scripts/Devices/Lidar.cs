@@ -600,6 +600,8 @@ namespace SensorDevices
 			while (true)
 			{
 				var rayStartBase = transform.position;
+				var sensorWorldRotation = transform.rotation;
+
 				var rangeData = GetRangeData();
 
 				if (rangeData != null)
@@ -626,10 +628,13 @@ namespace SensorDevices
 							var rayColor = Color.HSVToRGB(hue, s, 0.95f);
 							rayColor.a = AlphaForVisualize;
 
-							var rayRotation = Quaternion.AngleAxis(rayAngleH, localUp) * Quaternion.AngleAxis(rayAngleV, localRight) * localForward;
+							var localAngles = Quaternion.AngleAxis(rayAngleH, Vector3.up) * Quaternion.AngleAxis(rayAngleV, -Vector3.right);
 
-							var start = rayStartBase + rayRotation * rangeMin;
-							var end = start + rayRotation * (rayData - rangeMin);
+							var dir = sensorWorldRotation * localAngles * Vector3.forward;
+							dir.Normalize();
+
+							var start = rayStartBase + dir * rangeMin;
+							var end = start + dir * (rayData - rangeMin);
 
 							Debug.DrawLine(start, end, rayColor, visualDrawDuration, true);
 						}
