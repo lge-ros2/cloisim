@@ -30,7 +30,7 @@ namespace SensorDevices
 		private const float DEG180 = Mathf.PI * Mathf.Rad2Deg;
 		private const float DEG360 = DEG180 * 2;
 
-		private const float HFOV_FOR_2D_LIDAR = 120f;
+		private const float HFOV_FOR_2D_LIDAR = 90f;
 		private const float HFOV_FOR_3D_LIDAR = 10f;
 		private float LaserCameraHFov = 0f;
 		private float LaserCameraHFovHalf = 0;
