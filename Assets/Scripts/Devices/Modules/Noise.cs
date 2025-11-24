@@ -28,7 +28,7 @@ namespace SensorDevices
 					break;
 
 				case "custom":
-					_noiseModel = null; // CustomNoiseModel(noise);
+					_noiseModel = new CustomNoiseModel(noise);
 					break;
 
 				case "none":
@@ -36,6 +36,18 @@ namespace SensorDevices
 					_noiseModel = null;
 					break;
 			}
+		}
+
+		public void SetCustomNoiseParameter(in SDF.Plugin plugin)
+		{
+			if (_noiseModel as CustomNoiseModel != null)
+			{
+				(_noiseModel as CustomNoiseModel).ParseParameter(plugin);
+			}
+			// else
+			// {
+			// 	Console.Write("noise type is not a 'custom'");
+			// }
 		}
 
 		public void SetClampMin(in double val)

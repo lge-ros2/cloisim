@@ -21,7 +21,7 @@ namespace SensorDevices
 		protected SDF.Camera _camParam = null;
 		protected messages.CameraSensor _sensorInfo = null;
 		protected messages.Image _image = null; // for Parameters
-		protected ConcurrentQueue<messages.ImageStamped> _messageQueue = new ConcurrentQueue<messages.ImageStamped>();
+		protected ConcurrentQueue<messages.ImageStamped> _messageQueue = new();
 
 		// TODO : Need to be implemented!!!
 		// <lens> TBD
@@ -33,7 +33,7 @@ namespace SensorDevices
 		protected GraphicsFormat _targetColorFormat;
 		protected GraphicsFormat _readbackDstFormat;
 
-		private ConcurrentDictionary<int, AsyncWork.Camera> _asyncWorkList = new ConcurrentDictionary<int, AsyncWork.Camera>();
+		private ConcurrentDictionary<int, AsyncWork.Camera> _asyncWorkList = new();
 
 		public Noise noise = null;
 		protected bool _startCameraWork = false;

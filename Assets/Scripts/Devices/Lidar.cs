@@ -23,7 +23,7 @@ namespace SensorDevices
 	public partial class Lidar : Device
 	{
 		private messages.LaserScan _laserScan = null;
-		protected ConcurrentQueue<messages.LaserScanStamped> _messageQueue = new ConcurrentQueue<messages.LaserScanStamped>();
+		protected ConcurrentQueue<messages.LaserScanStamped> _messageQueue = new();
 		private Thread _laserProcessThread = null;
 
 		private const int BatchSize = 8;
@@ -257,6 +257,7 @@ namespace SensorDevices
 
 			if (_noise != null)
 			{
+				_noise.SetCustomNoiseParameter(GetPluginParameters());
 				_noise.SetClampMin(scanRange.min);
 				_noise.SetClampMax(scanRange.max);
 			}

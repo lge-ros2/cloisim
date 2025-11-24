@@ -13,7 +13,7 @@ public class GaussianNoiseModel : NoiseModel
 	{
 	}
 
-	private double ComputeDynamicBias(in float deltaTime)
+	protected double ComputeDynamicBias(in float deltaTime)
 	{
 		var bias = this.bias;
 		if (_parameter.dynamic_bias_stddev > 0 && 
