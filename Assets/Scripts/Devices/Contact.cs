@@ -43,9 +43,6 @@ namespace SensorDevices
 
 		public string _targetCollision = string.Empty;
 		public string _topic = string.Empty;
-			
-		private static double _contactDepthThreshold = -0.001; 
-		private static double _impulseThreshold = 0.05;
 
 		public string TargetCollision
 		{
