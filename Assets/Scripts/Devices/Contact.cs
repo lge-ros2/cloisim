@@ -41,8 +41,23 @@ namespace SensorDevices
 
 		private double _lastTimeContactsMessageGenerated = 0;
 
-		public string targetCollision = string.Empty;
-		public string topic = string.Empty;
+		public string _targetCollision = string.Empty;
+		public string _topic = string.Empty;
+			
+		private static double _contactDepthThreshold = -0.001; 
+		private static double _impulseThreshold = 0.05;
+
+		public string TargetCollision
+		{
+			get => _targetCollision;
+			set => _targetCollision = value;
+		}
+
+		public string Topic
+		{
+			get => _topic;
+			set => _topic = value;
+		}
 
 		protected override void OnAwake()
 		{
@@ -52,7 +67,7 @@ namespace SensorDevices
 
 		protected override void OnStart()
 		{
-			// Debug.Log("Contact target collision: " + targetCollision);
+			// Debug.Log("Contact target collision: " + _targetCollision);
 		}
 
 		protected override void OnReset()
@@ -66,14 +81,6 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			if (_messageQueue.Count == 0)
-			{
-				var contactsMessage = new messages.Contacts();
-				contactsMessage.Time = new messages.Time();
-				contactsMessage.Time.SetCurrentTime();
-				_messageQueue.Enqueue(contactsMessage);
-			}
-
 			while (_messageQueue.TryDequeue(out var msg))
 			{
 				PushDeviceMessage<messages.Contacts>(msg);
@@ -108,7 +115,7 @@ namespace SensorDevices
 
 		public void CollisionEnter(Collision other)
 		{
-			// Debug.Log("CollisionEnter: " + other.contacts.Length);
+			// Debug.Log("{DeviceName} CollisionEnter: " + other.contacts.Length);
 		}
 
 		public void CollisionStay(Collision other)
@@ -119,7 +126,7 @@ namespace SensorDevices
 			}
 
 			var contactsMessage = new messages.Contacts();
-			// Debug.Log("CollisionStay: " + other.contacts.Length);
+			// Debug.Log("{DeviceName} CollisionStay: " + other.contacts.Length);
 
 			contactsMessage.Time = new messages.Time();
 			contactsMessage.Time.SetCurrentTime();
@@ -130,9 +137,9 @@ namespace SensorDevices
 				var collisionContact = other.contacts[i];
 				var collision1 = GetColliderName(collisionContact.thisCollider);
 				var collision2 = GetColliderName(collisionContact.otherCollider);
-				// Debug.Log($"CollisionStay: {collision1} <-> {collision2}");
+				// Debug.Log($"{DeviceName} CollisionStay: {collision1} <-> {collision2}");
 
-				if (collision1.EndsWith("::" + targetCollision))
+				if (collision1.EndsWith("::" + _targetCollision))
 				{
 					// find existing collision set
 					var existingContact = contactsMessage.contact.Find(x => x.Collision1.Contains(collision1) && x.Collision2.Contains(collision2));
@@ -186,15 +193,16 @@ namespace SensorDevices
 
 						newContact.Time = new messages.Time();
 						newContact.Time.SetCurrentTime();
-						// Debug.Log("CollisionStay: " + collision1 + " <-> " + collision2);
+						// Debug.Log("{DeviceName} CollisionStay: " + collision1 + " <-> " + collision2);
 
 						contactsMessage.contact.Add(newContact);
 					}
+					// Debug.Log($"{_targetCollision} collisionContact.separation = {collisionContact.separation.ToString("F10")} .impulse = {collisionContact.impulse.ToString("F10")}");
 				}
 				// Debug.DrawLine(collisionContact.point, collisionContact.normal, Color.white);
 			}
 
-			// Debug.Log("CollisionStay: " + contacts.contact.Count);
+			// Debug.Log("{DeviceName} CollisionStay: " + contacts.contact.Count);
 			_lastContacts = contactsMessage;
 
 			_messageQueue.Enqueue(contactsMessage);
@@ -205,8 +213,14 @@ namespace SensorDevices
 		public void CollisionExit(Collision other)
 		{
 			_lastContacts = null;
-			// Debug.Log($"CollisionExit: {other.contacts.Length}");
 			_lastTimeContactsMessageGenerated = 0;
+
+			var contactsMessage = new messages.Contacts();
+			contactsMessage.Time = new messages.Time();
+			contactsMessage.Time.SetCurrentTime();
+			_messageQueue.Enqueue(contactsMessage);
+
+			// Debug.Log($"{DeviceName} {_targetCollision} CollisionExit: {other.contacts.Length}");
 		}
 
 		public bool IsContacted()
