@@ -52,6 +52,24 @@ public static partial class MeshLoader
 		return null;
 	}
 
+	private static Texture2D TryLoadTexture(string filePath, IEnumerable<string> textureDirectories)
+	{
+		if (string.IsNullOrEmpty(filePath))
+			return null;
+
+		if (filePath.Contains("model://"))
+			filePath = filePath.Replace("model://", "");
+
+		foreach (var dir in textureDirectories)
+		{
+			var fullPath = Path.Combine(dir, filePath);
+			if (File.Exists(fullPath))
+				return GetTexture(fullPath);
+		}
+
+		return null;
+	}
+
 	private static List<Material> LoadMaterials(in string meshPath, in List<Assimp.Material> sceneMaterials)
 	{
 		var parentPath = Directory.GetParent(meshPath).FullName;
@@ -62,159 +80,144 @@ public static partial class MeshLoader
 		{
 			var mat = SDF2Unity.Material.Create(sceneMat.Name);
 
-			if (sceneMat.HasColorAmbient)
-			{
-#if UNITY_EDITOR
-				Debug.LogWarning(sceneMat.Name + ": ColorAmbient but not support. " + sceneMat.ColorAmbient.ToUnity());
-#endif
-			}
-
 			if (sceneMat.HasColorDiffuse)
 			{
 				SDF2Unity.Material.SetBaseColor(mat, sceneMat.ColorDiffuse.ToUnity());
-				// Debug.Log(sceneMat.Name + ": HasColorDiffuse " + sceneMat.ColorDiffuse.ToUnity());
+				// Debug.LogWarning($"HasColorDiffuse({sceneMat.ColorDiffuse.ToUnity()}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorEmissive)
 			{
 				SDF2Unity.Material.SetEmission(mat, sceneMat.ColorEmissive.ToUnity());
-				// Debug.Log(sceneMat.Name + ": HasColorEmissive " + sceneMat.ColorEmissive.ToUnity());
+				// Debug.LogWarning($"HasColorEmissive({sceneMat.ColorEmissive.ToUnity()}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorSpecular)
 			{
 				SDF2Unity.Material.SetSpecular(mat, sceneMat.ColorSpecular.ToUnity());
-				// Debug.Log(sceneMat.Name + ": HasColorSpecular " + sceneMat.ColorSpecular.ToUnity());
+				// Debug.LogWarning($"HasColorSpecular({sceneMat.ColorSpecular.ToUnity()}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorTransparent)
 			{
-#if UNITY_EDITOR
-				Debug.LogWarning(sceneMat.Name + ": HasColorTransparent but not support. " + sceneMat.ColorTransparent);
-#endif
-			}
+#if false
+				var baseColor = mat.GetColor("_BaseColor");
+				baseColor.a = 1f - sceneMat.ColorTransparent.W;
+				mat.SetColor("_BaseColor", baseColor);
+				mat.SetFloat("_Surface", 1f);
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+				mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
 
-			// Reflectivity
-			if (sceneMat.HasReflectivity)
-			{
-#if UNITY_EDITOR
-				Debug.LogWarning(sceneMat.Name + ": HasReflectivity but not support. " + sceneMat.Reflectivity);
-#endif
-			}
-
-			// reflective
-			if (sceneMat.HasColorReflective)
-			{
-#if UNITY_EDITOR
-				Debug.LogWarning(sceneMat.Name + ": HasColorReflective but not support. " + sceneMat.ColorReflective);
+				Debug.LogWarning($"HasColorTransparent({sceneMat.ColorTransparent.ToUnity()}) experimentally support for {sceneMat.Name}");
+#else
+				Debug.LogWarning($"HasColorTransparent({sceneMat.ColorSpecular.ToUnity()}) not support for {sceneMat.Name}");
 #endif
 			}
 
 			if (sceneMat.HasShininess)
 			{
-				mat.SetFloat("_Shininess", sceneMat.Shininess);
+				mat.SetFloat("_Smoothness", sceneMat.Shininess);
+				Debug.LogWarning($"HasShinines({sceneMat.Shininess}) for {sceneMat.Name}");
 			}
 
-			// Texture
-			if (sceneMat.HasTextureAmbient)
+			if (sceneMat.HasReflectivity)
 			{
-#if UNITY_EDITOR
-				Debug.LogWarning(sceneMat.Name + ": HasTextureAmbient but not support. " + sceneMat.TextureAmbient.FilePath);
-#endif
+				mat.SetFloat("_Smoothness", Mathf.Clamp01((float)sceneMat.Reflectivity));
+				Debug.Log($"HasReflectivity({sceneMat.Reflectivity}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureDiffuse)
 			{
-				var filePath = sceneMat.TextureDiffuse.FilePath;
-				if (filePath.Contains("model://"))
+				var tex = TryLoadTexture(sceneMat.TextureDiffuse.FilePath, textureDirectories);
+				if (tex != null)
+					mat.SetTexture("_BaseMap", tex);
+			}
+
+			if (sceneMat.HasTextureNormal)
+			{
+				var tex = TryLoadTexture(sceneMat.TextureNormal.FilePath, textureDirectories);
+				if (tex != null)
 				{
-					filePath = filePath.Replace("model://", "");
+					mat.SetTexture("_BumpMap", tex);
+					mat.EnableKeyword("_NORMALMAP");
 				}
-
-				foreach (var textureDirectory in textureDirectories)
-				{
-					var textureFullPath = Path.Combine(textureDirectory, filePath);
-					if (File.Exists(textureFullPath))
-					{
-						mat.SetTexture("_BaseMap", GetTexture(textureFullPath));
-						// Debug.Log(sceneMat.Name + ": HasTextureDiffuse -> " + filePath);
-						break;
-					}
-				}
-			}
-
-			if (sceneMat.HasTextureEmissive)
-			{
-#if UNITY_EDITOR
-				Debug.LogWarning(sceneMat.Name + ": HasTextureEmissive but not support. " + sceneMat.TextureEmissive.FilePath);
-#endif
-			}
-
-			if (sceneMat.HasTextureSpecular)
-			{
-#if UNITY_EDITOR
-				Debug.LogWarning(sceneMat.Name + ": HasTextureSpecular but not support. " + sceneMat.TextureSpecular.FilePath);
-#endif
-			}
-
-			if (sceneMat.HasTextureDisplacement)
-			{
-#if UNITY_EDITOR
-				Debug.LogWarning(sceneMat.Name + ": HasTextureDisplacement but not support. " + sceneMat.TextureDisplacement.FilePath);
-#endif
-			}
-
-			if (sceneMat.HasTextureHeight)
-			{
-#if UNITY_EDITOR
-				Debug.LogWarning(sceneMat.Name + ": HasTextureHeight but not support. " + sceneMat.TextureHeight.FilePath);
-#endif
+				Debug.Log($"HasTextureNormal({sceneMat.TextureNormal.FilePath}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasBumpScaling)
 			{
 				mat.SetFloat("_BumpScale", sceneMat.BumpScaling);
-				Debug.LogWarning(sceneMat.Name + ": HasBumpScaling but not support. " + sceneMat.BumpScaling);
+				Debug.Log($"HasBumpScaling({sceneMat.BumpScaling}) for {sceneMat.Name}");
 			}
 
-			if (sceneMat.HasTextureNormal)
+			if (sceneMat.HasTextureSpecular)
 			{
-				var filePath = sceneMat.TextureNormal.FilePath;
-				foreach (var textureDirectory in textureDirectories)
+				var tex = TryLoadTexture(sceneMat.TextureSpecular.FilePath, textureDirectories);
+				if (tex != null)
 				{
-					var textureFullPath = Path.Combine(textureDirectory, filePath);
-					if (File.Exists(textureFullPath))
-					{
-						mat.SetTexture("_BumpMap", GetTexture(textureFullPath));
-						mat.EnableKeyword("_NORMALMAP");
-						// Debug.Log(sceneMat.Name + ": HasTextureNormal -> " + filePath);
-						break;
-					}
+					mat.SetTexture("_SpecGlossMap", tex);
+					mat.EnableKeyword("_SPECGLOSSMAP");
 				}
-				// Debug.Log(sceneMat.Name + ": HasTextureNormal but not support. " + sceneMat.TextureNormal.FilePath);
+			}
+
+			if (sceneMat.HasTextureEmissive)
+			{
+				var tex = TryLoadTexture(sceneMat.TextureEmissive.FilePath, textureDirectories);
+				if (tex != null)
+				{
+					mat.SetTexture("_EmissionMap", tex);
+					mat.EnableKeyword("_EMISSION");
+				}
 			}
 
 			if (sceneMat.HasTextureOpacity)
 			{
+				var tex = TryLoadTexture(sceneMat.TextureOpacity.FilePath, textureDirectories);
+				if (tex != null)
+				{
+					mat.SetTexture("_BaseMap", tex);
+					mat.SetFloat("_Surface", 1f);
+					mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+					mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+				}
+			}
+
 #if UNITY_EDITOR
-				Debug.LogWarning(sceneMat.Name + ": HasTextureOpacity but not support. " + sceneMat.TextureOpacity.FilePath);
-#endif
+			if (sceneMat.HasColorAmbient)
+			{
+				Debug.LogWarning($"HasColorAmbient({sceneMat.ColorAmbient.ToUnity()}) but not support for {sceneMat.Name}");
+			}
+
+			if (sceneMat.HasColorReflective)
+			{
+				Debug.LogWarning($"HasColorReflective({sceneMat.ColorReflective.ToUnity()}) but not support for {sceneMat.Name}");
+			}
+
+			if (sceneMat.HasTextureAmbient)
+			{
+				Debug.LogWarning($"HasTextureAmbient({sceneMat.TextureAmbient.FilePath}) but not support for {sceneMat.Name}");
+			}
+
+			if (sceneMat.HasTextureDisplacement)
+			{
+				Debug.LogWarning($"HasTextureDisplacement({sceneMat.TextureDisplacement.FilePath}) but not support for {sceneMat.Name}");
+			}
+
+			if (sceneMat.HasTextureHeight)
+			{
+				Debug.LogWarning($"HasTextureHeight({sceneMat.TextureHeight.FilePath}) but not support for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureReflection)
 			{
-#if UNITY_EDITOR
-				Debug.LogWarning(sceneMat.Name + ": HasTextureReflection but not support. " + sceneMat.TextureReflection.FilePath);
-#endif
+				Debug.LogWarning($"HasTextureReflection({sceneMat.TextureReflection.FilePath}) but not support for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureLightMap)
 			{
-#if UNITY_EDITOR
-				Debug.LogWarning(sceneMat.Name + ": HasTextureLightMap but not support. " + sceneMat.TextureLightMap.FilePath);
-#endif
+				Debug.LogWarning($"HasTextureLightMap({sceneMat.TextureLightMap.FilePath}) but not support for {sceneMat.Name}");
 			}
-
+#endif
 			materials.Add(mat);
 		}
 
@@ -227,7 +230,7 @@ public static partial class MeshLoader
 
 		foreach (var sceneMesh in sceneMeshes)
 		{
-    		var newMesh = new Mesh();
+			var newMesh = new Mesh();
 			newMesh.name = sceneMesh.Name;
 
 			if (sceneMesh.VertexCount < 3)
