@@ -55,7 +55,7 @@ namespace SensorDevices
 		private RTHandle _rtHandle = null;
 		private ParallelOptions _parallelOptions = null;
 
-		private ConcurrentDictionary<int, AsyncWork.Laser> _asyncWorkList = new ConcurrentDictionary<int, AsyncWork.Laser>();
+		private ConcurrentDictionary<int, AsyncWork.Laser> _asyncWorkList = new();
 		private DepthData.CamBuffer[] _depthCamBuffers;
 		private LaserData.LaserCamData[] _laserCamData;
 		private LaserData.LaserDataOutput[] _laserDataOutput;
@@ -314,9 +314,12 @@ namespace SensorDevices
 			var lidarSensorWorldPose = new Pose();
 			var axisRotation = Vector3.zero;
 			var sw = new Stopwatch();
+
 			while (_startLaserWork)
 			{
 				sw.Restart();
+
+				var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
 
 				lidarSensorWorldPose.position = transform.position;
 				lidarSensorWorldPose.rotation = transform.rotation;
@@ -332,9 +335,8 @@ namespace SensorDevices
 					if (_laserCam.isActiveAndEnabled)
 					{
 						_laserCam.Render();
-						var capturedTime = (float)DeviceHelper.GetGlobalClock().SimTime;
-						var readbackRequest = AsyncGPUReadback.Request(_laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, OnCompleteAsyncReadback);
 
+						var readbackRequest = AsyncGPUReadback.Request(_laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, OnCompleteAsyncReadback);
 						_asyncWorkList.TryAdd(readbackRequest.GetHashCode(), new AsyncWork.Laser(dataIndex, readbackRequest, capturedTime, lidarSensorWorldPose));
 
 						_laserCam.enabled = false;
@@ -343,7 +345,7 @@ namespace SensorDevices
 
 				sw.Stop();
 
-				var requestingTime = (float)sw.ElapsedMilliseconds * 0.001f;
+				var requestingTime = (float)sw.ElapsedMilliseconds + 0.001f;
 				yield return new WaitForSeconds(WaitPeriod(requestingTime));
 			}
 		}
@@ -431,7 +433,7 @@ namespace SensorDevices
 
 				Array.Fill(laserScan.Ranges, double.NaN);
 
-				var capturedTime = 0f;
+				var capturedTime = _laserDataOutput[0].capturedTime;
 
 				Parallel.For(0, numberOfLaserCamData, _parallelOptions, index =>
 				{
@@ -447,9 +449,6 @@ namespace SensorDevices
 					var dataStartAngleH = laserCamData.StartAngleH;
 					var dataEndAngleH = laserCamData.EndAngleH;
 					var dividedDataTotalAngleH = 1f / laserCamData.TotalAngleH;
-
-					if (laserDataOutput.capturedTime > capturedTime)
-						capturedTime = laserDataOutput.capturedTime;
 
 					if (laserStartAngleH < 0 && dataEndAngleH > DEG180)
 					{

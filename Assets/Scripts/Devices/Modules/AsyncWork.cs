@@ -13,9 +13,9 @@ namespace SensorDevices
 		public struct Camera
 		{
 			public AsyncGPUReadbackRequest? request;
-			public float capturedTime;
+			public double capturedTime;
 
-			public Camera(in AsyncGPUReadbackRequest? request, in float capturedTime)
+			public Camera(in AsyncGPUReadbackRequest? request, in double capturedTime)
 			{
 				this.request = request;
 				this.capturedTime = capturedTime;
@@ -26,10 +26,10 @@ namespace SensorDevices
 		{
 			public int dataIndex;
 			public AsyncGPUReadbackRequest? request;
-			public float capturedTime;
+			public double capturedTime;
 			public UnityEngine.Pose worldPose;
 
-			public Laser(in int dataIndex, in AsyncGPUReadbackRequest? request, in float capturedTime, in UnityEngine.Pose worldPose)
+			public Laser(in int dataIndex, in AsyncGPUReadbackRequest? request, in double capturedTime, in UnityEngine.Pose worldPose)
 			{
 				this.dataIndex = dataIndex;
 				this.request = request;

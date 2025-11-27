@@ -370,7 +370,7 @@ namespace SensorDevices
 				{
 					_camSensor.Render();
 
-					var capturedTime = (float)DeviceHelper.GetGlobalClock().SimTime;
+					var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
 					var readbackRequest = AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, OnCompleteAsyncReadback);
 
 					_asyncWorkList.TryAdd(readbackRequest.GetHashCode(), new AsyncWork.Camera(readbackRequest, capturedTime));
@@ -393,7 +393,7 @@ namespace SensorDevices
 				if (_asyncWorkList.TryRemove(request.GetHashCode(), out var asyncWork))
 				{
 					var readbackData = request.GetData<byte>();
-					var asyncWorkTime = (float)DeviceHelper.GetGlobalClock().SimTime - asyncWork.capturedTime;
+					var asyncWorkTime = DeviceHelper.GetGlobalClock().SimTime - asyncWork.capturedTime;
 					ImageProcessing(ref readbackData, asyncWork.capturedTime);
 					readbackData.Dispose();
 				}
@@ -424,7 +424,7 @@ namespace SensorDevices
 			}
 		}
 
-		protected virtual void ImageProcessing(ref NativeArray<byte> readbackData, in float capturedTime)
+		protected virtual void ImageProcessing(ref NativeArray<byte> readbackData, in double capturedTime)
 		{
 			var imageStamped = new messages.ImageStamped();
 

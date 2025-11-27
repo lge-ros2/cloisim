@@ -92,16 +92,15 @@ public class Clock : Device
 		worldStat.RealTime = new messages.Time();
 	}
 
-	private void UpdateCurrentTime()
+	void Update()
 	{
 		_currentRealTime = Time.realtimeSinceStartupAsDouble - _restartedRealTime;
 		_currentSimTime = Time.timeAsDouble - _restartedSimTime;
-		_currentFixedSimTime = Time.fixedTimeAsDouble - _restartedFixedSimTime;
 	}
 
 	void FixedUpdate()
 	{
-		UpdateCurrentTime();
+		_currentFixedSimTime = Time.fixedTimeAsDouble - _restartedFixedSimTime;
 	}
 
 	void LateUpdate()
@@ -161,8 +160,6 @@ public class Clock : Device
 		_restartedSimTime = Time.timeAsDouble;
 		_restartedFixedSimTime = Time.fixedTimeAsDouble;
 		_restartedRealTime = Time.realtimeSinceStartupAsDouble;
-
-		UpdateCurrentTime();
 
 		_prevSimTime = SimTime;
 		_prevRealTime = RealTime;

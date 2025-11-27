@@ -88,7 +88,7 @@ namespace SensorDevices
 			}
 		}
 
-		protected override void ImageProcessing(ref NativeArray<byte> readbackData, in float capturedTime)
+		protected override void ImageProcessing(ref NativeArray<byte> readbackData, in double capturedTime)
 		{
 			var segmentation = new messages.Segmentation();
 			segmentation.ImageStamped = new messages.ImageStamped();
