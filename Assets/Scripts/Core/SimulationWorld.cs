@@ -71,24 +71,33 @@ public class SimulationWorld : CLOiSimPlugin
 			}
 
 			deviceMessage.SetMessage<messages.Param>(requestResetMessage);
-			// Debug.Log("SendRequest");
-			if (requestor.SendRequest(deviceMessage))
-			{
-				var receivedBuffer = requestor.ReceiveResponse();
-				if (receivedBuffer != null)
+			try {
+				if (requestor.SendRequest(deviceMessage))
 				{
-					// Debug.Log("receivedBuffer");
-					var responseMessage = CLOiSimPluginThread.ParseMessageParam(receivedBuffer);
-					if (responseMessage.Name == "result")
+					var receivedBuffer = requestor.ReceiveResponse();
+					if (receivedBuffer != null)
 					{
-						Debug.LogFormat("simulation reset result: {0}", responseMessage.Value.StringValue);
+						var responseMessage = CLOiSimPluginThread.ParseMessageParam(receivedBuffer);
+						if (responseMessage.Name == "result")
+						{
+							Debug.LogFormat("simulation reset result: {0}", responseMessage.Value.StringValue);
+						}
 					}
 				}
+				else
+				{
+					Debug.LogError("SendRequest(ResetMessage) failed");
+				}
 			}
-			else
-			{
-				Debug.Log("SendRequest(ResetMessage) failed");
-			}
+			catch (NetMQ.FiniteStateMachineException ex)
+            {
+                Debug.LogErrorFormat($"[SimulationWorld] FSM error: {ex.Message}.");
+				var usedTargetPort = requestor.TargetPort;
+				var usedHash = requestor.Hash;
+				requestor.Dispose();
+				requestor = new Requestor(usedHash);
+				requestor.Initialize(usedTargetPort);
+            }
 
 			_signalReset = false;
 		}
