@@ -10,7 +10,7 @@ using NetMQ;
 
 public class Transporter : IDisposable
 {
-	private Dictionary<ushort, NetMQSocket> transportList = new Dictionary<ushort, NetMQSocket>();
+	private Dictionary<ushort, NetMQSocket> transportList = new();
 
 	public T Get<T>(in ushort targetPort) where T : class
 	{

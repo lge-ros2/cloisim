@@ -10,13 +10,20 @@ using NetMQ.Sockets;
 
 public class Requestor : RequestSocket
 {
-	private TimeSpan timeout = TimeSpan.FromMilliseconds(500);
+	private TimeSpan timeout = TimeSpan.FromMilliseconds(5000);
+
+	private ushort _targetPortForRebind;
+	private ulong _hashForRebind;
 
 	private byte[] hashValue = null;
 	private byte[] dataToSendRequest = null;
 
+	public ushort TargetPort => _targetPortForRebind;
+	public ulong Hash => _hashForRebind;
+
 	public Requestor(in ulong hash)
 	{
+		_hashForRebind = hash;
 		SetHash(hash);
 	}
 
@@ -27,6 +34,8 @@ public class Requestor : RequestSocket
 
 	public bool Initialize(in ushort targetPort)
 	{
+		_targetPortForRebind = targetPort;
+
 		Options.Linger = TimeSpan.FromTicks(0);
 		Options.IPv4Only = true;
 		Options.TcpKeepalive = true;
