@@ -10,6 +10,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
+using Assimp.Unmanaged;
 
 [DefaultExecutionOrder(30)]
 public class Main : MonoBehaviour
@@ -17,6 +18,7 @@ public class Main : MonoBehaviour
 	private static float DefaultOrthographicSize = 8;
 
 	[Header("Clean all models and lights before load model")]
+
 	[SerializeField]
 	private bool _clearAllOnStart = true;
 
@@ -213,17 +215,14 @@ public class Main : MonoBehaviour
 
 		// Load Library for Assimp
 #if UNITY_EDITOR
-		var AssimpVersion = "5.0.0-beta1";
+ 		var pluginsFolder = System.IO.Path.Combine(Application.dataPath, "Plugins");
+		var AssimpVersion = "6.0.2.1";
 #	if UNITY_EDITOR_LINUX
-		var assimpLibraryPath = $"./Assets/Plugins/AssimpNet.{AssimpVersion}/runtimes/linux-x64/native/libassimp";
+		var assimpLibraryPath = $"{pluginsFolder}/AssimpNetter.{AssimpVersion}/runtimes/linux-x64/native/libassimp";
 #	elif UNITY_EDITOR_OSX // TODO: need to be verified,
-		var assimpLibraryPath = $"./Assets/Plugins/AssimpNet.{AssimpVersion}/runtimes/osx-x64/native/libassimp";
+		var assimpLibraryPath = $"{pluginsFolder}/AssimpNetter.{AssimpVersion}/runtimes/osx-x64/native/libassimp";
 #	else // == UNITY_EDITOR_WIN
-#		if UNITY_64
-		var assimpLibraryPath = $"./Assets/Plugins/AssimpNet.{AssimpVersion}/runtimes/win-x64/native/assimp";
-#		else
-		var assimpLibraryPath = $"./Assets/Plugins/AssimpNet.{AssimpVersion}/runtimes/win-x86/native/assimp";
-#		endif
+		var assimpLibraryPath = $"{pluginsFolder}/AssimpNetter.{AssimpVersion}/runtimes/win-x64/native/assimp";
 #	endif
 #else
 #	if UNITY_STANDALONE_WIN
@@ -234,9 +233,9 @@ public class Main : MonoBehaviour
 		var assimpLibraryPath = "./CLOiSim_Data/Plugins/libassimp";
 #	endif
 #endif
-		Assimp.Unmanaged.AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath);
+  		AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath);
 
-		if (Assimp.Unmanaged.AssimpLibrary.Instance.IsLibraryLoaded == false)
+		if (AssimpLibrary.Instance.IsLibraryLoaded == false)
 		{
 			Debug.LogError("Failed to load assimp library!!!!");
 			return;

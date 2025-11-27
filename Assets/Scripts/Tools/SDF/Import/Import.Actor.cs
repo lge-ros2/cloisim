@@ -19,36 +19,39 @@ namespace SDF
 					return null;
 				}
 
-				var newActorObject = Implement.Actor.CreateSkin(actor.skin);
-				if (newActorObject != null)
+				var newActorObject = new UE.GameObject(actor.Name);
+				newActorObject.tag = "Actor";
+				Util.RootModels.SetChild(newActorObject);
+
+				// Apply attributes
+				var localPosition = SDF2Unity.Position(actor.Pose?.Pos);
+				var localRotation = SDF2Unity.Rotation(actor.Pose?.Rot);
+				// Debug.Log(newActorObject.name + "::" + localPosition + ", " + localRotation);
+
+				var actorHelper = newActorObject.AddComponent<Helper.Actor>();
+				actorHelper.Pose = actor?.Pose;
+
+				var newSkinObject = Implement.Actor.CreateSkin(actor.skin);
+
+				if (newSkinObject != null)
 				{
-					newActorObject.name = actor.Name;
-					newActorObject.tag = "Actor";
-
-					// Apply attributes
-					var localPosition = SDF2Unity.Position(actor.Pose?.Pos);
-					var localRotation = SDF2Unity.Rotation(actor.Pose?.Rot);
-					// Debug.Log(newActorObject.name + "::" + localPosition + ", " + localRotation);
-
-					var actorHelper = newActorObject.AddComponent<Helper.Actor>();
-					actorHelper.Pose = actor?.Pose;
-
-					newActorObject.transform.localScale = UE.Vector3.one * (float)actor.skin.scale;
+					newActorObject.SetChild(newSkinObject);
+					newSkinObject.transform.localScale = UE.Vector3.one * (float)actor.skin.scale;
 
 					var script = actor.script;
 					if (actor.animations != null)
 					{
 						foreach (var animation in actor.animations)
 						{
-							Implement.Actor.SetAnimation(newActorObject, animation, script.auto_start, script.loop);
+							Implement.Actor.SetAnimation(newSkinObject, animation, script.auto_start, script.loop);
 						}
 					}
 
 					actorHelper.SetScript(script);
-
-					var capsuleCollider = newActorObject.AddComponent<UE.CapsuleCollider>();
-					capsuleCollider.direction = 1;
 				}
+
+				var capsuleCollider = newActorObject.AddComponent<UE.CapsuleCollider>();
+				capsuleCollider.direction = 1;
 
 				return newActorObject as System.Object;
 			}

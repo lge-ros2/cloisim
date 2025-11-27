@@ -124,7 +124,7 @@ public static partial class MeshLoader
 		{
 			// Debug.Log("Total Animations = " + scene.AnimationCount);
 			var lastAnimationTime = 0f;
-			const float AnimationSpeedTimeRatio = 0.8f;
+			const float TicksPerSecondDefaultFallback = 25f;
 			foreach (var animation in scene.Animations)
 			{
 				clip.legacy = true;
@@ -142,8 +142,10 @@ public static partial class MeshLoader
 				else if (animation.HasNodeAnimations)
 				{
 					var isRoot = true;
-					var lastMaxAnimationTime = 0f;
 					// Debug.Log(animationName + ", Total NodeAnimationChannels = " + animation.NodeAnimationChannels.Count);
+					var ticksPerSecond = animation.TicksPerSecond != 0 ? (float)animation.TicksPerSecond : TicksPerSecondDefaultFallback;
+					var lastPostionTime = 0f;
+
 					foreach (var node in animation.NodeAnimationChannels)
 					{
 						var relativeName = relativePaths[node.NodeName];
@@ -151,13 +153,13 @@ public static partial class MeshLoader
 
 						// Debug.Log("PositionKeyCount=" + node.PositionKeyCount);
 						var keyFramesPos = new KeyFramesPosition();
-						var lastPostionKeyTime = 0f;
+						lastPostionTime = 0f;
 						foreach (var positionKey in node.PositionKeys)
 						{
+							lastPostionTime = lastAnimationTime + (float)(positionKey.Time / ticksPerSecond);
 							var vectorKey = positionKey.Value;
-							lastPostionKeyTime = lastAnimationTime + ((float)positionKey.Time * AnimationSpeedTimeRatio);
-							keyFramesPos.Add(lastPostionKeyTime, vectorKey.X, vectorKey.Y, vectorKey.Z);
-							// Debug.Log("["+node.NodeName+"] PositionKey: " + lastPostionKeyTime + "..." + (float)positionKey.Time + ", " + vectorKey.X + ", " + vectorKey.Y + ", " + vectorKey.Z);
+							keyFramesPos.Add(lastPostionTime, vectorKey.X, vectorKey.Y, vectorKey.Z);
+							// Debug.Log("["+node.NodeName+"] PositionKey: " + lastPostionTime + "..." + (float)positionKey.Time + ", " + vectorKey.X + ", " + vectorKey.Y + ", " + vectorKey.Z);
 						}
 
 						var curveX = keyFramesPos.GetAnimationCurvePosX();
@@ -173,13 +175,13 @@ public static partial class MeshLoader
 
 						var keyFramesRot = new KeyFramesRotation();
 						// Debug.Log("RotationKeyCount=" + node.RotationKeyCount);
-						var lastRotationKeyTime = 0f;
+						lastPostionTime = 0f;
 						foreach (var rotationKey in node.RotationKeys)
 						{
+							lastPostionTime = lastAnimationTime + (float)(rotationKey.Time / ticksPerSecond);
 							var vectorKey = rotationKey.Value;
-							lastRotationKeyTime = lastAnimationTime + ((float)rotationKey.Time * AnimationSpeedTimeRatio);
-							keyFramesRot.Add(lastRotationKeyTime, vectorKey.X, vectorKey.Y, vectorKey.Z, vectorKey.W);
-							// Debug.Log("["+node.NodeName+"] RotationKey: " + lastRotationKeyTime + "..." +  (float)rotationKey.Time + ", " + vectorKey.X + ", " + vectorKey.Y + ", " + vectorKey.Z + ", " + vectorKey.W);
+							keyFramesRot.Add(lastPostionTime, vectorKey.X, vectorKey.Y, vectorKey.Z, vectorKey.W);
+							// Debug.Log("["+node.NodeName+"] RotationKey: " + lastPostionTime + "..." +  (float)rotationKey.Time + ", " + vectorKey.X + ", " + vectorKey.Y + ", " + vectorKey.Z + ", " + vectorKey.W);
 						}
 
 						var curveRotX = keyFramesRot.GetAnimationCurveRotX();
@@ -194,13 +196,13 @@ public static partial class MeshLoader
 
 						var keyFramesScale = new KeyFramesScale();
 						// Debug.Log("ScalingKeyCount=" + node.ScalingKeyCount);
-						var lastScalingKeyTime = 0f;
+						lastPostionTime = 0f;
 						foreach (var scalingKey in node.ScalingKeys)
 						{
+							lastPostionTime = lastAnimationTime + (float)(scalingKey.Time / ticksPerSecond);
 							var vectorKey = scalingKey.Value * scale;
-							lastScalingKeyTime = lastAnimationTime + ((float)scalingKey.Time * AnimationSpeedTimeRatio);
-							keyFramesScale.Add(lastScalingKeyTime, vectorKey.X, vectorKey.Y, vectorKey.Z);
-							// Debug.Log("["+node.NodeName+"] ScalingKey: " + lastScalingKeyTime + "..." + (float)scalingKey.Time + ", " + vectorKey.X + ", " + vectorKey.Y + ", " + vectorKey.Z);
+							keyFramesScale.Add(lastPostionTime, vectorKey.X, vectorKey.Y, vectorKey.Z);
+							// Debug.Log("["+node.NodeName+"] ScalingKey: " + lastPostionTime + "..." + (float)scalingKey.Time + ", " + vectorKey.X + ", " + vectorKey.Y + ", " + vectorKey.Z);
 						}
 
 						var curveScaleX = keyFramesScale.GetAnimationCurveScaleX();
@@ -212,11 +214,9 @@ public static partial class MeshLoader
 						clip.SetCurve(relativeName, typeof(Transform), "localScale.z", curveScaleZ);
 
 						isRoot = false;
-
-						lastMaxAnimationTime = Mathf.Max(lastPostionKeyTime, Mathf.Max(lastRotationKeyTime, lastScalingKeyTime));
 					}
 
-					lastAnimationTime = lastMaxAnimationTime;
+					lastAnimationTime = lastPostionTime;
 				}
 			}
 		}

@@ -33,9 +33,9 @@ public class WorldNavMeshBuilder : MonoBehaviour
 
 		private Vector3 Quantize(in Vector3 v, in Vector3 quant)
 		{
-			var x = quant.x * Mathf.Floor(v.x / quant.x);
-			var y = quant.y * Mathf.Floor(v.y / quant.y);
-			var z = quant.z * Mathf.Floor(v.z / quant.z);
+			var x = (quant.x == 0) ? 0 : (quant.x * Mathf.Floor(v.x / quant.x));
+			var y = (quant.y == 0) ? 0 : (quant.y * Mathf.Floor(v.y / quant.y));
+			var z = (quant.z == 0) ? 0 : (quant.z * Mathf.Floor(v.z / quant.z));
 			return new Vector3(x, y, z);
 		}
 
@@ -166,7 +166,6 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		{
 			m_NavMeshTracks[i].Collect(ref m_Sources);
 			var bounds = m_NavMeshTracks[i].QuantizedBounds();
-
 			if (asyncUpdate)
 			{
 				m_Operation = NavMeshBuilder.UpdateNavMeshDataAsync(m_NavMesh, m_defaultBuildSettings, m_Sources, bounds);

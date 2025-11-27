@@ -162,7 +162,7 @@ namespace SDF
 						}
 						else
 						{
-							var relativeObjectBaseHelper 
+							var relativeObjectBaseHelper
 								= baseHelper.RootModel.GetComponentsInChildren<SDF.Helper.Base>().FirstOrDefault(x => x.name.Equals(pose.relative_to));
 
 							if (relativeObjectBaseHelper != null)
@@ -173,7 +173,7 @@ namespace SDF
 							{
 								UE.Debug.LogWarning($"{baseHelper.name}: AdjustPose: relative_to: {pose.relative_to} NOT FOUND !!!!!!");
 							}
-							
+
 						}
 
 						baseHelper.SetPose(localPosition, localRotation);

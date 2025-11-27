@@ -68,7 +68,7 @@ namespace SensorDevices
 		{
 			public double[] data;
 
-			public float capturedTime;
+			public double capturedTime;
 			public Pose worldPose;
 
 			public LaserDataOutput(in int length = 0)

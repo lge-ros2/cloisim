@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System;
 using UnityEngine;
+using SN = System.Numerics;
 
 public static partial class MeshLoader
 {
@@ -101,102 +102,45 @@ public static partial class MeshLoader
 
 	private static bool CheckFileSupport(in string fileExtension)
 	{
-		var isFileSupported = true;
-
-		switch (fileExtension)
-		{
-			case ".dae":
-			case ".obj":
-			case ".stl":
-			case ".fbx":
-				break;
-
-			default:
-				isFileSupported = false;
-				break;
-		}
-
-		return isFileSupported;
+		if (fileExtension ==  ".dae" ||
+			fileExtension ==  ".obj" ||
+			fileExtension ==  ".stl" ||
+			fileExtension ==  ".fbx")
+			return true;
+		else
+			return false;
 	}
 
-	private static Quaternion GetRotationByFileExtension(in string fileExtension, in string meshPath)
+	private static SN.Quaternion GetRotationByFileExtension(in string fileExtension, in string meshPath)
 	{
-		var eulerRotation = Quaternion.identity;
-
-		switch (fileExtension)
-		{
-			case ".obj":
-			case ".stl":
-				eulerRotation = Quaternion.Euler(90, 0, 0) * Quaternion.Euler(0, 0, 90);
-				break;
-
-			case ".dae":
-				eulerRotation = Quaternion.Euler(0, -90, 0);
-				break;
-
-			case ".fbx":
-				break;
-
-			default:
-				break;
-		}
-
-		return eulerRotation;
+		if (fileExtension == ".obj" || fileExtension == ".stl")
+			return Quaternion.Euler(90, -90, 0).ToNumerics();
+		else if (fileExtension == ".dae")
+			return Quaternion.Euler(0, -90, 0).ToNumerics();
+		else // ".fbx" or etc
+			return Quaternion.identity.ToNumerics();
 	}
 
-	private static Color ToUnity(this Assimp.Color4D color)
+	private static SN.Quaternion ToNumerics(this Quaternion q)
 	{
-		return (color == null) ? Color.clear : new Color(color.R, color.G, color.B, color.A);
+		return new SN.Quaternion(q.x, q.y, q.z, q.w);
 	}
 
-	private static Matrix4x4 ToUnity(this Assimp.Matrix4x4 assimpMatrix)
+	private static SN.Matrix4x4 Transpose(this SN.Matrix4x4 m)
 	{
-		assimpMatrix.Decompose(out var scaling, out var rotation, out var translation);
-		var pos = new Vector3(translation.X, translation.Y, translation.Z);
-		var rot = new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W);
-		var scale = new Vector3(scaling.X, scaling.Y, scaling.Z);
-
-#region  Temporay CODE until Assimp Library is fixed.
-		// Debug.Log($"rotation = {rot.eulerAngles}");
-		// Debug.Log($"scaling  = {scaling.X} {scaling.Y} {scaling.Z}");
-
-		const float precision = 1000f;
-		var isRotZeroX = Mathf.Approximately((int)(rot.eulerAngles.x * precision), 0);
-		var isRotZeroY = Mathf.Approximately((int)(rot.eulerAngles.y * precision), 0);
-		var isRotZeroZ = Mathf.Approximately((int)(rot.eulerAngles.z * precision), 0);
-
-		if (isRotZeroX && !isRotZeroY && !isRotZeroZ)
-		{
-			var newScale = new Vector3(scale.y, scale.z, scale.x);
-			scale = newScale;
-		}
-		else if (isRotZeroX && !isRotZeroY &&  isRotZeroZ &&
-				!Mathf.Approximately(rot.eulerAngles.y, 180f))
-		{
-			var newScale = new Vector3(scale.z, scale.y, scale.x);
-			scale = newScale;
-		}
-		else if (isRotZeroX && isRotZeroY && !isRotZeroZ &&
-				Mathf.Approximately(rot.eulerAngles.z, 90f))
-		{
-			var newScale = new Vector3(scale.y, scale.x, scale.z);
-			scale = newScale;
-		}
-		else if	(!isRotZeroX && isRotZeroY && isRotZeroZ)
-		{
-			var newScale = new Vector3(scale.x, scale.z, scale.y);
-			scale = newScale;
-		}
-		else if	(!isRotZeroX && !isRotZeroY && isRotZeroZ)
-		{
-			var newScale = new Vector3(scale.z, scale.x, scale.y);
-			scale = newScale;
-		}
-		// Debug.Log($"new isRotZero={isRotZeroX}/{isRotZeroY}/{isRotZeroZ} scaling={scale.x} {scale.y} {scale.z} rot={rot.eulerAngles}");
-#endregion
-
-		return Matrix4x4.TRS(pos, rot, scale);
+		return SN.Matrix4x4.Transpose(m);
 	}
+
+	private static Color ToUnity(this SN.Vector4 color)
+		=> (color == null) ? Color.clear : new Color(color.X, color.Y, color.Z, color.W);
+
+	private static Matrix4x4 ToUnity(this SN.Matrix4x4 m)
+		=> new Matrix4x4(
+			new Vector4(m.M11, m.M21, m.M31, m.M41),
+			new Vector4(m.M12, m.M22, m.M32, m.M42),
+			new Vector4(m.M13, m.M23, m.M33, m.M43),
+			new Vector4(m.M14, m.M24, m.M34, m.M44)
+		);
 
 	private static Assimp.Scene GetScene(in string targetPath, in string subMesh = null)
 	{
@@ -216,9 +160,8 @@ public static partial class MeshLoader
 			return null;
 		}
 
-		Assimp.Scene scene = null;
 		try {
-			scene = importer.ImportFile(targetPath, PostProcessFlags);
+			var scene = importer.ImportFile(targetPath, PostProcessFlags);
 
 			// Remove cameras and lights
 			scene.Cameras.Clear();
@@ -244,26 +187,18 @@ public static partial class MeshLoader
 			// 	var metaDataValue = metaDataSet.Value;
 			// 	Debug.Log($"{metaDataKey} : {metaDataValue}");
 			// }
-			// Debug.Log("rootNode.Transform=" + rootNode.Transform);
 
 			// Rotate meshes for Unity world since all 3D object meshes are oriented to right handed coordinates
 			var meshRotation = GetRotationByFileExtension(fileExtension, targetPath);
+			rootNode.Transform = SN.Matrix4x4.CreateFromQuaternion(meshRotation).Transpose() * rootNode.Transform;
 
-			var rootNodeMatrix = rootNode.Transform.ToUnity();
-			rootNodeMatrix = Matrix4x4.Rotate(meshRotation) * rootNodeMatrix;
-
-			rootNode.Transform = new Assimp.Matrix4x4(
-				rootNodeMatrix.m00, rootNodeMatrix.m01, rootNodeMatrix.m02, rootNodeMatrix.m03,
-				rootNodeMatrix.m10,	rootNodeMatrix.m11, rootNodeMatrix.m12, rootNodeMatrix.m13,
-				rootNodeMatrix.m20, rootNodeMatrix.m21, rootNodeMatrix.m22, rootNodeMatrix.m23,
-				rootNodeMatrix.m30, rootNodeMatrix.m31, rootNodeMatrix.m32, rootNodeMatrix.m33
-			);
+			return scene;
 		}
 		catch (Assimp.AssimpException e)
 		{
 			Debug.LogError(e.Message);
 		}
 
-		return scene;
+		return null;
 	}
 }

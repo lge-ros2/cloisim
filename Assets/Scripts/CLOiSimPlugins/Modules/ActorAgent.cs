@@ -19,14 +19,17 @@ public class ActorAgent : MonoBehaviour
 
 	private Type currentType = Type.STANDBY;
 
-	private NavMeshAgent m_Agent;
-	private Animation m_Animation;
+	private NavMeshAgent _navMeshAgent;
+	private Animation _animation;
 
-	public float goalTolerance = 0.1f;
+	[SerializeField]
+	private float _goalTolerance = 0.1f;
 
-	public float m_MaxTargetRange = 5f;
+	[SerializeField]
+	private float _maxTargetRange = 5f;
 
-	private bool isRandomWalking = true;
+	[SerializeField]
+	private bool _isRandomWalking = true;
 
 	private Dictionary<Type, string> motionTypeAnimations = new Dictionary<Type, string>()
 	{
@@ -36,17 +39,17 @@ public class ActorAgent : MonoBehaviour
 
 	public bool RandomWalking
 	{
-		get => isRandomWalking;
-		set => isRandomWalking = value;
+		get => _isRandomWalking;
+		set => _isRandomWalking = value;
 	}
 
 	void Awake()
 	{
-		m_Agent = GetComponent<NavMeshAgent>();
-		m_Animation = GetComponent<Animation>();
-		m_Agent.obstacleAvoidanceType = ObstacleAvoidanceType.MedQualityObstacleAvoidance;
-		m_Agent.agentTypeID = WorldNavMeshBuilder.AgentTypeId;
-		m_Agent.autoTraverseOffMeshLink = false;
+		_navMeshAgent = GetComponent<NavMeshAgent>();
+		_animation = GetComponentInChildren<Animation>();
+		_navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.MedQualityObstacleAvoidance;
+		_navMeshAgent.agentTypeID = WorldNavMeshBuilder.AgentTypeId;
+		_navMeshAgent.autoTraverseOffMeshLink = false;
 	}
 
 	void Start()
@@ -56,22 +59,22 @@ public class ActorAgent : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (m_Agent == null || m_Agent.pathStatus.Equals(NavMeshPathStatus.PathInvalid))
+		if (_navMeshAgent == null || _navMeshAgent.pathStatus.Equals(NavMeshPathStatus.PathInvalid))
 		{
 			// Debug.LogWarning("agent is null or path status is invalid");
 			return;
 		}
 
-		if (!m_Agent.pathPending)
+		if (!_navMeshAgent.pathPending)
 		{
-			if (m_Agent.remainingDistance < goalTolerance)
+			if (_navMeshAgent.remainingDistance < _goalTolerance)
 			{
-				// Debug.LogWarning("remainingDistance:" + m_Agent.remainingDistance);
+				// Debug.LogWarning("remainingDistance:" + _navMeshAgent.remainingDistance);
 				Stop();
 
-				if (isRandomWalking)
+				if (_isRandomWalking)
 				{
-					var nextTarget = m_MaxTargetRange * Random.insideUnitCircle;
+					var nextTarget = _maxTargetRange * Random.insideUnitCircle;
 					// Debug.Log("next random moving: " + nextTarget.ToString("F7"));
 					AssignTargetDestination(nextTarget);
 				}
@@ -85,11 +88,11 @@ public class ActorAgent : MonoBehaviour
 
 	public void Stop()
 	{
-		if (m_Agent && m_Agent.isOnNavMesh)
+		if (_navMeshAgent && _navMeshAgent.isOnNavMesh)
 		{
 			// Debug.Log("stop");
-			m_Agent.isStopped = true;
-			m_Agent.SetDestination(transform.position);
+			_navMeshAgent.isStopped = true;
+			_navMeshAgent.SetDestination(transform.position);
 			SetAnimationMotion(Type.STANDBY);
 		}
 	}
@@ -98,11 +101,11 @@ public class ActorAgent : MonoBehaviour
 	{
 	 	Stop();
 
-		if (m_Agent && m_Agent.isOnNavMesh)
+		if (_navMeshAgent && _navMeshAgent.isOnNavMesh)
 		{
 			SetAnimationMotion(Type.MOVING);
-			m_Agent.isStopped = false;
-			m_Agent.SetDestination(point);
+			_navMeshAgent.isStopped = false;
+			_navMeshAgent.SetDestination(point);
 		}
 	}
 
@@ -116,14 +119,14 @@ public class ActorAgent : MonoBehaviour
 
 	private void SetAnimationMotion(in Type motionType)
 	{
-		if (m_Animation)
+		if (_animation)
 		{
 			var animationName = motionTypeAnimations[motionType];
 
 			if (currentType != motionType)
 			{
-				m_Animation.Stop();
-				m_Animation.Play(animationName);
+				_animation.Stop();
+				_animation.Play(animationName);
 
 				currentType = motionType;
 			}
@@ -132,11 +135,11 @@ public class ActorAgent : MonoBehaviour
 
 	public void SetSteering(in float speed, in float angularSpeed, in float acceleration)
 	{
-		if (m_Agent)
+		if (_navMeshAgent)
 		{
-			m_Agent.speed = speed;
-			m_Agent.angularSpeed = angularSpeed;
-			m_Agent.acceleration = acceleration;
+			_navMeshAgent.speed = speed;
+			_navMeshAgent.angularSpeed = angularSpeed;
+			_navMeshAgent.acceleration = acceleration;
 		}
 	}
 }
