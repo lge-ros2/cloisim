@@ -71,13 +71,13 @@ public class SimulationWorld : CLOiSimPlugin
 			}
 
 			deviceMessage.SetMessage<messages.Param>(requestResetMessage);
-			Debug.Log("SendRequest");
+			// Debug.Log("SendRequest");
 			if (requestor.SendRequest(deviceMessage))
 			{
 				var receivedBuffer = requestor.ReceiveResponse();
 				if (receivedBuffer != null)
 				{
-					Debug.Log("receivedBuffer");
+					// Debug.Log("receivedBuffer");
 					var responseMessage = CLOiSimPluginThread.ParseMessageParam(receivedBuffer);
 					if (responseMessage.Name == "result")
 					{
@@ -87,7 +87,7 @@ public class SimulationWorld : CLOiSimPlugin
 			}
 			else
 			{
-				Debug.Log("SendRequest failed");
+				Debug.Log("SendRequest(ResetMessage) failed");
 			}
 
 			_signalReset = false;

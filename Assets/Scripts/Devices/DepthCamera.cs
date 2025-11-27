@@ -33,17 +33,14 @@ namespace SensorDevices
 
 		#endregion
 
-		private Material _depthMaterial = null;
-
-		private uint depthScale = 1;
+		private uint _depthScale = 1;
 		private int _imageDepth;
 		private const int BatchSize = 64;
 
 		private DepthData.CamBuffer _depthCamBuffer;
 		private byte[] _computedBufferOutput;
-		private const uint OutputUnitSize = 4;
+		private const uint OutputMaxUnitSize = 4;
 		private int _computedBufferOutputUnitLength;
-		private Texture2D _textureForCapture;
 
 		public static void LoadComputeShader()
 		{
@@ -81,7 +78,7 @@ namespace SensorDevices
 
 		public void SetDepthScale(in uint value)
 		{
-			depthScale = value;
+			_depthScale = value;
 		}
 
 		new void OnDestroy()
@@ -103,31 +100,16 @@ namespace SensorDevices
 			var height = _camParam.image.height;
 			var format = CameraData.GetPixelFormat(_camParam.image.format);
 
-			GraphicsFormat graphicFormat;
-			switch (format)
-			{
-				case CameraData.PixelFormat.L_INT8:
-					graphicFormat = GraphicsFormat.R8_UNorm;
-					break;
-				case CameraData.PixelFormat.R_FLOAT32:
-					graphicFormat = GraphicsFormat.R16G16_UNorm;
-					break;
-				case CameraData.PixelFormat.L_INT16:
-				default:
-					graphicFormat = GraphicsFormat.R16_UNorm;
-					break;
-			}
-
 			_imageDepth = CameraData.GetImageDepth(format);
 
 			_depthCamBuffer = new DepthData.CamBuffer(width, height);
 			_computedBufferOutputUnitLength = width * height;
-			_computedBufferOutput = new byte[_computedBufferOutputUnitLength * OutputUnitSize];
+			_computedBufferOutput = new byte[_computedBufferOutputUnitLength * OutputMaxUnitSize];
 
 			_threadGroupX = Mathf.RoundToInt(width / ThreadGroupsX);
 			_threadGroupY = Mathf.RoundToInt(height / ThreadGroupsY);
 
-			_textureForCapture = new Texture2D(width, height, graphicFormat, 0, TextureCreationFlags.None);
+			_textureForCapture = new Texture2D(width, height, TextureFormat.R8, false);
 			_textureForCapture.filterMode = FilterMode.Point;
 
 			_computeShader = Instantiate(ComputeShaderDepthBuffer);
@@ -139,7 +121,7 @@ namespace SensorDevices
 				_computeShader.SetFloat("_DepthMax", (float)_camParam.clip.far);
 				_computeShader.SetInt("_Width", width);
 				_computeShader.SetInt("_UnitSize", _imageDepth);
-				_computeShader.SetFloat("_DepthScale", (float)depthScale);
+				_computeShader.SetFloat("_DepthScale", (float)_depthScale);
 			}
 		}
 
@@ -165,15 +147,6 @@ namespace SensorDevices
 			_universalCamData.requiresColorTexture = false;
 			_universalCamData.requiresDepthTexture = true;
 			_universalCamData.renderShadows = false;
-
-			var cb = new CommandBuffer();
-			cb.name = "CommandBufferForDepthShading";
-			var tempTextureId = Shader.PropertyToID("_RenderImageCameraDepthTexture");
-			cb.GetTemporaryRT(tempTextureId, -1, -1);
-			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
-			cb.ReleaseTemporaryRT(tempTextureId);
-			_camSensor.AddCommandBuffer(CameraEvent.AfterEverything, cb);
-			cb.Release();
 
 			ReverseDepthData(false);
 			FlipXDepthData(false);
@@ -231,20 +204,15 @@ namespace SensorDevices
 						{
 							var bufferIndex = computeGroupSize * groupIndex + i;
 							var dataIndex = bufferIndex * _imageDepth;
-							var outputIndex = bufferIndex * (int)OutputUnitSize;
+							var outputGroupIndex = bufferIndex * (int)OutputMaxUnitSize;
 
 							for (var j = 0; j < _imageDepth; j++)
 							{
-								imageStamped.Image.Data[dataIndex + j] = _computedBufferOutput[outputIndex + j];
+								var outputIndex = outputGroupIndex + j;
+								imageStamped.Image.Data[dataIndex + j] = _computedBufferOutput[outputIndex];
 							}
 						}
 					});
-				}
-
-				if (_camParam.save_enabled && _startCameraWork)
-				{
-					var saveName = name + "_" + Time.time;
-					_textureForCapture.SaveRawImage(imageStamped.Image.Data, _camParam.save_path, saveName);
 				}
 			}
 			_depthCamBuffer.Deallocate();

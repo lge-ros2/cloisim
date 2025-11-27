@@ -6,8 +6,9 @@
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
-using Unity.Collections;
 
 public static class TextureUtil
 {
@@ -17,6 +18,37 @@ public static class TextureUtil
 		Lesser,
 		Greater
 	};
+
+	private static Material _rotateMaterial = new Material(Shader.Find("Hidden/Rotate180"));
+	private static readonly Dictionary<int, RenderTexture> _rtForSaveImageCache = new();
+
+	static TextureUtil()
+	{
+#if UNITY_EDITOR
+		AssemblyReloadEvents.beforeAssemblyReload += CleanUp;
+		EditorApplication.quitting += CleanUp;
+#endif
+		Application.quitting += CleanUp;
+	}
+
+	private static void CleanUp()
+	{
+		foreach (var kv in _rtForSaveImageCache)
+		{
+			if (kv.Value != null)
+			{
+				kv.Value.Release();
+				UnityEngine.Object.DestroyImmediate(kv.Value);
+			}
+		}
+		_rtForSaveImageCache.Clear();
+
+		if (_rotateMaterial != null)
+		{
+			UnityEngine.Object.DestroyImmediate(_rotateMaterial);
+			_rotateMaterial = null;
+		}
+	}
 
 	public static void Clear(this Texture2D texture)
 	{
@@ -158,22 +190,53 @@ public static class TextureUtil
 		return alpha >= 0 && beta >= 0 && gamma >= 0;
 	}
 
-	public static void SaveRawImage(this Texture2D texture, in NativeArray<byte> buffer, in string path, in string name)
+	private static void SaveRawImage(this Texture2D texture, in string path, in string name)
 	{
-		texture.SetPixelData(buffer, 0);
+		var id = texture.GetInstanceID();
+		if (!_rtForSaveImageCache.TryGetValue(id, out var rt) ||
+			rt == null || !rt.IsCreated() ||
+			rt.width != texture.width || rt.height != texture.height)
+		{
+			if (rt != null)
+				rt.Release();
+			rt = new RenderTexture(texture.width, texture.height, 0, RenderTextureFormat.ARGB32);
+			rt.Create();
+			_rtForSaveImageCache[id] = rt;
+		}
+
+		Graphics.Blit(texture, rt, _rotateMaterial);
+
+		RenderTexture.active = rt;
+		texture.ReadPixels(new Rect(0, 0, texture.width, texture.height), 0, 0);
 		texture.Apply();
+		RenderTexture.active = null;
+
 		var bytes = texture.EncodeToPNG();
 		var fileName = string.Format("{0}/{1}.png", path, name);
+
+		if (!Directory.Exists(path))
+		{
+			Directory.CreateDirectory(path);
+		}
 		System.IO.File.WriteAllBytes(fileName, bytes);
+
+		UnityEngine.Object.DestroyImmediate(rt);
 	}
 
-	public static void SaveRawImage(this Texture2D texture, byte[] data, in string path, in string name)
+	public static void SaveRawImage(this Texture2D texture, byte[] data, in string path, in string filename, in SensorDevices.CameraData.PixelFormat format)
+	{
+		if (format != SensorDevices.CameraData.PixelFormat.L_INT8)
+		{
+			Debug.LogWarning($"{format.ToString()} is not support to save file");
+		}
+		texture.SaveRawImage(data, path, filename);
+	}
+
+	public static void SaveRawImage(this Texture2D texture, byte[] data, in string path, in string filename)
 	{
 		texture.SetPixelData(data, 0);
 		texture.Apply();
-		var bytes = texture.EncodeToPNG();
-		var fileName = string.Format("{0}/{1}.png", path, name);
-		System.IO.File.WriteAllBytes(fileName, bytes);
+		texture.SaveRawImage(path, filename);
 	}
 
 	public static Texture2D LoadTGA(in string fileName)

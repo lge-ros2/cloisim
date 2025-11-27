@@ -37,60 +37,57 @@ namespace SDF
 
 			private static UE.Transform FindRootParentModel(SDF.Helper.Base targetBaseHelper)
 			{
+				if (targetBaseHelper == null)
+					return null;
+
 				var foundRootModelTransform = targetBaseHelper.RootModel.transform;
 
-				if (targetBaseHelper as SDF.Helper.Model)
+				// 공통 부모 탐색 함수
+				UE.Transform FindParent<T>(UE.Transform start, Func<T, bool> condition) where T : UE.Component
 				{
-					// UE.Debug.Log($"Is Model helper {targetBaseHelper.name}");
-					for (var parentTransform = targetBaseHelper.transform.parent;
-						parentTransform != null;
-						parentTransform = parentTransform.parent)
+					for (var parent = start.parent; parent != null; parent = parent.parent)
 					{
-						var modelHelper = parentTransform?.GetComponent<SDF.Helper.Model>();
-						if (modelHelper != null)
-						{
-							if (!modelHelper.isNested)
-							{
-								// UE.Debug.Log($"FindRootModel: modelHelper  {modelHelper.name} {modelHelper.isNested} {modelHelper.name}");
-								foundRootModelTransform = modelHelper.transform;
-								break;
-							}
-						}
+						var comp = parent.GetComponent<T>();
+						if (comp != null && condition(comp))
+							return comp.transform;
 					}
+					return null;
 				}
-				else if (targetBaseHelper as SDF.Helper.Link)
+
+				switch (targetBaseHelper)
 				{
-					// UE.Debug.Log($"Is not Model helper {targetBaseHelper.name}");
-					for (var parentTransform = targetBaseHelper.transform.parent;
-						parentTransform != null;
-						parentTransform = parentTransform.parent)
-					{
-						var linkHelper = parentTransform?.GetComponent<SDF.Helper.Link>();
-						if (linkHelper != null)
+					case SDF.Helper.Model modelHelper:
 						{
-							if (linkHelper.Model.isNested)
-							{
-								// UE.Debug.Log($"FindRootModel: {linkHelper.Model.name} {linkHelper.Model.isNested} {linkHelper.name}");
-								foundRootModelTransform = linkHelper.transform;
-								break;
-							}
-						}
-					}
-				}
-				else // SDF.Helper.Collision or SDF.Helper.Visual
-				{
-					for (var parentTransform = targetBaseHelper.transform.parent;
-						parentTransform != null;
-						parentTransform = parentTransform.parent)
-					{
-						var linkHelper = parentTransform?.GetComponent<SDF.Helper.Link>();
-						if (linkHelper != null)
-						{
-							// UE.Debug.Log($"FindRootModel: {linkHelper.Model.name} {linkHelper.Model.isNested} {linkHelper.name}");
-							foundRootModelTransform = linkHelper.transform;
+							var result = FindParent<SDF.Helper.Model>(
+								modelHelper.transform,
+								m => !m.isNested
+							);
+							if (result != null)
+								foundRootModelTransform = result;
 							break;
 						}
-					}
+
+					case SDF.Helper.Link linkHelper:
+						{
+							var result = FindParent<SDF.Helper.Link>(
+								linkHelper.transform,
+								l => l.Model.isNested
+							);
+							if (result != null)
+								foundRootModelTransform = result;
+							break;
+						}
+
+					default:
+						{
+							var result = FindParent<SDF.Helper.Link>(
+								targetBaseHelper.transform,
+								_ => true
+							);
+							if (result != null)
+								foundRootModelTransform = result;
+							break;
+						}
 				}
 
 				return foundRootModelTransform;
@@ -109,38 +106,33 @@ namespace SDF
 				var positionOffset = (rootModelTransform.Equals(parentObject)) ? UE.Vector3.zero : (parentObject.position - rootModelTransform.position);
 				positionOffset = UE.Quaternion.Inverse(rootModelTransform.localRotation) * positionOffset;
 
-				localRotation = rotationOffset * localRotation;
 				localPosition = localPosition - positionOffset;
+				localRotation = rotationOffset * localRotation;
 			}
 
-			private static void SpecifyPoseRelative(in SDF.Helper.Base baseHelper, ref UE.Vector3 localPosition, ref UE.Quaternion localRotation)
+			private static void SpecifyPoseRelative(in SDF.Helper.Base baseHelper, in SDF.Helper.Base targetBaseHelper, ref UE.Vector3 localPosition, ref UE.Quaternion localRotation)
 			{
+				if (baseHelper == null || targetBaseHelper == null)
+				{
+					UE.Debug.LogWarning($"SpecifyPoseRelative(): baseHelper: {baseHelper.name} or targgetBaseHelper: {targetBaseHelper.name} is null");
+					return;
+				}
+
 				var parentObject = baseHelper.transform.parent;
 				var pose = baseHelper?.Pose;
 
-				var relativeObjectBaseHelper =
-					baseHelper.RootModel.GetComponentsInChildren<SDF.Helper.Base>()
-						.FirstOrDefault(x => x.name.Equals(pose.relative_to));
+				var relativeObject = targetBaseHelper.transform;
 
-				if (relativeObjectBaseHelper != null)
-				{
-					var relativeObject = relativeObjectBaseHelper.transform;
+				// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => parent {parentObject.name}, {parentObject.localPosition.ToString("F9")}, {parentObject.position.ToString("F9")}");
+				// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => parent {parentObject.name}, {parentObject.localRotation.eulerAngles.ToString("F9")}, {parentObject.rotation.eulerAngles.ToString("F9")}");
+				// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localPosition.ToString("F9")}, {relativeObject.position.ToString("F9")}");
+				// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localRotation.eulerAngles.ToString("F9")}, {relativeObject.rotation.eulerAngles.ToString("F9")}");
 
-					// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => parent {parentObject.name}, {parentObject.localPosition.ToString("F9")}, {parentObject.position.ToString("F9")}");
-					// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => parent {parentObject.name}, {parentObject.localRotation.eulerAngles.ToString("F9")}, {parentObject.rotation.eulerAngles.ToString("F9")}");
-					// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localPosition.ToString("F9")}, {relativeObject.position.ToString("F9")}");
-					// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localRotation.eulerAngles.ToString("F9")}, {relativeObject.rotation.eulerAngles.ToString("F9")}");
+				var positionOffset = (relativeObject.Equals(parentObject)) ? UE.Vector3.zero : (relativeObject.position - parentObject.position);
+				var rotationOffset = (relativeObject.Equals(parentObject)) ? UE.Quaternion.identity : (parentObject.localRotation * relativeObject.localRotation);
 
-					var positionOffset = (relativeObject.Equals(parentObject)) ? UE.Vector3.zero : (relativeObject.position - parentObject.position);
-					var rotationOffset = (relativeObject.Equals(parentObject)) ? UE.Quaternion.identity : (parentObject.localRotation * relativeObject.localRotation);
-
-					localPosition = localPosition + positionOffset;
-					localRotation = rotationOffset * localRotation;
-				}
-				else
-				{
-					UE.Debug.LogWarning($"{baseHelper.name}: AdjustPose: relative_to: {pose.relative_to} NOT FOUND !!!!!!");
-				}
+				localPosition = localPosition + positionOffset;
+				localRotation = rotationOffset * localRotation;
 			}
 
 			public static void SpecifyPose(this Object targetObject)
@@ -170,7 +162,18 @@ namespace SDF
 						}
 						else
 						{
-							SpecifyPoseRelative(baseHelper, ref localPosition, ref localRotation);
+							var relativeObjectBaseHelper 
+								= baseHelper.RootModel.GetComponentsInChildren<SDF.Helper.Base>().FirstOrDefault(x => x.name.Equals(pose.relative_to));
+
+							if (relativeObjectBaseHelper != null)
+							{
+								SpecifyPoseRelative(baseHelper, relativeObjectBaseHelper, ref localPosition, ref localRotation);
+							}
+							else
+							{
+								UE.Debug.LogWarning($"{baseHelper.name}: AdjustPose: relative_to: {pose.relative_to} NOT FOUND !!!!!!");
+							}
+							
 						}
 
 						baseHelper.SetPose(localPosition, localRotation);

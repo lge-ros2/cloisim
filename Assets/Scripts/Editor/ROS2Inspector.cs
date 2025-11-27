@@ -42,8 +42,8 @@ public class ROS2Inspector : Editor
 
 			if (GUILayout.Button("Copy pose"))
 			{
-				var poseText = $"{ros2Position.x.ToString("f")} {ros2Position.y.ToString("f")} {ros2Position.z.ToString("f")} "
-							+ $"{ros2Rotation.x.ToString("f")} {ros2Rotation.y.ToString("f")} {ros2Rotation.z.ToString("f")}";
+				var poseText = $"{ros2Position.x.ToString("f10")} {ros2Position.y.ToString("f10")} {ros2Position.z.ToString("f10")} "
+							+ $"{ros2Rotation.x.ToString("f10")} {ros2Rotation.y.ToString("f10")} {ros2Rotation.z.ToString("f10")}";
 				GUIUtility.systemCopyBuffer = poseText;
 				Debug.LogFormat("Pose '{0}' Copied for {1}", poseText, targetTransform.name);
 			}

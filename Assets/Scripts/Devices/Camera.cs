@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -22,12 +21,11 @@ namespace SensorDevices
 		protected SDF.Camera _camParam = null;
 		protected messages.CameraSensor _sensorInfo = null;
 		protected messages.Image _image = null; // for Parameters
-		protected ConcurrentQueue<messages.ImageStamped> _messageQueue = new ConcurrentQueue<messages.ImageStamped>();
+		protected ConcurrentQueue<messages.ImageStamped> _messageQueue = new();
 
 		// TODO : Need to be implemented!!!
 		// <lens> TBD
 		// <distortion> TBD
-
 		protected UnityEngine.Camera _camSensor = null;
 		protected UniversalAdditionalCameraData _universalCamData = null;
 
@@ -35,32 +33,83 @@ namespace SensorDevices
 		protected GraphicsFormat _targetColorFormat;
 		protected GraphicsFormat _readbackDstFormat;
 
-		protected CameraData.Image _camImageData;
-		private ConcurrentDictionary<int, AsyncWork.Camera> _asyncWorkList = new ConcurrentDictionary<int, AsyncWork.Camera>();
+		private ConcurrentDictionary<int, AsyncWork.Camera> _asyncWorkList = new();
 
 		public Noise noise = null;
 		protected bool _startCameraWork = false;
 		private RTHandle _rtHandle;
+		protected Texture2D _textureForCapture = null;
+		
+		private CommandBuffer _invertCullingOnCmdBuffer = null;
+		private CommandBuffer _invertCullingOffCmdBuffer = null;
+		private CommandBuffer _noiseCmdBuffer = null;
+		private CommandBuffer _postProcessCmdBuffer = null;
+		private Material _noiseMaterial = null;
+		protected Material _depthMaterial = null;
 
 		protected void OnBeginCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
-			if (camera.Equals(_camSensor))
+			if (camera == _camSensor)
 			{
-				var cmdBuffer = new CommandBuffer();
-				cmdBuffer.SetInvertCulling(true);
-				context.ExecuteCommandBuffer(cmdBuffer);
+				context.ExecuteCommandBuffer(_invertCullingOnCmdBuffer);
 				context.Submit();
 			}
 		}
 
 		protected void OnEndCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
-			if (camera.Equals(_camSensor))
+			if (camera == _camSensor)
 			{
-				var cmdBuffer = new CommandBuffer();
-				cmdBuffer.SetInvertCulling(false);
-				context.ExecuteCommandBuffer(cmdBuffer);
+				context.ExecuteCommandBuffer(_invertCullingOffCmdBuffer);
+
+				if (_noiseMaterial != null || _depthMaterial != null)
+				{
+					int tempID1 = Shader.PropertyToID("_TempDepthRT");
+					int tempID2 = Shader.PropertyToID("_TempNoiseRT");
+					_postProcessCmdBuffer.GetTemporaryRT(tempID1, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear);
+					_postProcessCmdBuffer.GetTemporaryRT(tempID2, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear);
+
+					if (_depthMaterial != null)
+					{
+						_postProcessCmdBuffer.Blit(BuiltinRenderTextureType.CameraTarget, tempID1);
+
+						if (_noiseMaterial != null)
+							_postProcessCmdBuffer.Blit(tempID1, tempID2, _depthMaterial);
+						else
+							_postProcessCmdBuffer.Blit(tempID1, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
+						
+
+					}
+					else
+					{
+						if (_noiseMaterial != null)
+							_postProcessCmdBuffer.Blit(BuiltinRenderTextureType.CameraTarget, tempID2);
+					}
+				
+					if (_noiseMaterial != null)
+					{
+						_postProcessCmdBuffer.Blit(tempID2, BuiltinRenderTextureType.CameraTarget, _noiseMaterial);
+					}
+
+					_postProcessCmdBuffer.ReleaseTemporaryRT(tempID1);
+					_postProcessCmdBuffer.ReleaseTemporaryRT(tempID2);
+					context.ExecuteCommandBuffer(_postProcessCmdBuffer);
+					_postProcessCmdBuffer.Clear();
+				}				
+
 				context.Submit();
+			}
+		}
+
+		public void SetupNoise(in SDF.Noise param)
+		{
+			if (param != null)
+			{
+				Debug.Log($"{DeviceName}: Apply noise type:{param.type} mean:{param.mean} stddev:{param.stddev}");
+				_noiseMaterial = new Material(Shader.Find("Sensor/Camera/GaussianNoise"));
+				_noiseMaterial.SetFloat("_Mean", (float)param.mean);
+				_noiseMaterial.SetFloat("_StdDev", (float)param.stddev);
+				_noiseCmdBuffer = new CommandBuffer { name = "Gaussian Noise" };
 			}
 		}
 
@@ -105,21 +154,25 @@ namespace SensorDevices
 			_targetRTname = "CameraColorTexture";
 
 			var pixelFormat = CameraData.GetPixelFormat(_camParam.image.format);
+			var textureFormatForCapture = TextureFormat.RGB24;
 			switch (pixelFormat)
 			{
 				case CameraData.PixelFormat.L_INT8:
 					_targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
 					_readbackDstFormat = GraphicsFormat.R8_SRGB;
+					textureFormatForCapture = TextureFormat.R8;
 					break;
 
 				case CameraData.PixelFormat.RGB_INT8:
 				default:
 					_targetColorFormat = GraphicsFormat.R8G8B8A8_SRGB;
 					_readbackDstFormat = GraphicsFormat.R8G8B8_SRGB;
+					textureFormatForCapture = TextureFormat.RGB24;
 					break;
 			}
 
-			_camImageData = new CameraData.Image(_camParam.image.width, _camParam.image.height, pixelFormat);
+			_textureForCapture = new Texture2D(_camParam.image.width, _camParam.image.height, textureFormatForCapture, false, true);
+			_textureForCapture.filterMode = FilterMode.Point;
 		}
 
 		protected override void InitializeMessages()
@@ -164,6 +217,14 @@ namespace SensorDevices
 
 		private void OnEnable()
 		{
+			_invertCullingOnCmdBuffer = new CommandBuffer { name = "Invert Culling On" };
+			_invertCullingOnCmdBuffer.SetInvertCulling(true);
+
+			_invertCullingOffCmdBuffer = new CommandBuffer { name = "Invert Culling Off" };
+			_invertCullingOffCmdBuffer.SetInvertCulling(false);
+
+			_postProcessCmdBuffer = new CommandBuffer { name = "Depth + Noise or Noise PostProcess" };
+
 			RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
 			RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
 		}
@@ -172,6 +233,11 @@ namespace SensorDevices
 		{
 			RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 			RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
+
+			_postProcessCmdBuffer?.Release();
+
+			_invertCullingOnCmdBuffer?.Release();
+			_invertCullingOffCmdBuffer?.Release();
 		}
 
 		private void SetupDefaultCamera()
@@ -345,6 +411,19 @@ namespace SensorDevices
 			}
 		}
 
+		void LateUpdate()
+		{
+			if (_startCameraWork &&
+				_textureForCapture != null &&
+				_camParam.save_enabled &&
+				_messageQueue.TryPeek(out var msg))
+			{
+				var saveName = $"{DeviceName}_{msg.Time.Sec}.{msg.Time.Nsec}";
+				var format = CameraData.GetPixelFormat(_camParam.image.format);
+				_textureForCapture.SaveRawImage(msg.Image.Data, _camParam.save_path, saveName, format);
+			}
+		}
+
 		protected virtual void ImageProcessing(ref NativeArray<byte> readbackData, in float capturedTime)
 		{
 			var imageStamped = new messages.ImageStamped();
@@ -355,19 +434,11 @@ namespace SensorDevices
 			imageStamped.Image = new messages.Image();
 			imageStamped.Image = _image;
 
-			_camImageData.SetTextureBufferData(ref readbackData);
-
 			var image = imageStamped.Image;
-			var imageData = _camImageData.GetImageData(image.Data.Length);
+			var imageData = (image.Data.Length == readbackData.Length) ? readbackData.ToArray() : null;
 			if (imageData != null)
 			{
 				image.Data = imageData;
-				if (_camParam.save_enabled && _startCameraWork)
-				{
-					var saveName = name + "_" + Time.time;
-					_camImageData.SaveRawImageData(_camParam.save_path, saveName);
-					// Debug.LogFormat("{0}|{1} captured", _camParam.save_path, saveName);
-				}
 			}
 			else
 			{

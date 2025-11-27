@@ -66,10 +66,7 @@ namespace SDF
 					lidar.vertical = new SensorDevices.LaserData.Scan(vertical.samples, vertical.min_angle, vertical.max_angle, vertical.resolution);
 				}
 
-				if (element.noise != null)
-				{
-					lidar.SetupNoise(element.noise);
-				}
+				lidar.SetupNoise(element.noise);
 
 				return lidar;
 			}
@@ -84,21 +81,18 @@ namespace SDF
 				camera.DeviceName = newSensorObject.GetFrameName();
 				camera.SetParameter(element);
 
-				if (element.noise != null)
-				{
-					camera.noise = new SensorDevices.Noise(element.noise, element.type);
-				}
+				camera.SetupNoise(element.noise);
 
 				return camera;
 			}
 
-			public static Device AddSegmentaionCamera(this UE.GameObject targetObject, in SDF.Camera element)
+			public static Device AddSegmentationCamera(this UE.GameObject targetObject, in SDF.Camera element)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject, element.Pose);
 
-				var segmentationCamera = newSensorObject.AddComponent<SensorDevices.SegmentationCamera>();
-				segmentationCamera.DeviceName = newSensorObject.GetFrameName();
+				var camera = newSensorObject.AddComponent<SensorDevices.SegmentationCamera>();
+				camera.DeviceName = newSensorObject.GetFrameName();
 
 				switch (element.image.format)
 				{
@@ -120,14 +114,11 @@ namespace SDF
 						break;
 				}
 
-				segmentationCamera.SetParameter(element);
+				camera.SetParameter(element);
 
-				if (element.noise != null)
-				{
-					segmentationCamera.noise = new SensorDevices.Noise(element.noise, element.type);
-				}
+				camera.SetupNoise(element.noise);
 
-				return segmentationCamera;
+				return camera;
 			}
 
 			public static Device AddDepthCamera(this UE.GameObject targetObject, in SDF.Camera element)
@@ -135,8 +126,8 @@ namespace SDF
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject, element.Pose);
 
-				var depthCamera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
-				depthCamera.DeviceName = newSensorObject.GetFrameName();
+				var camera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
+				camera.DeviceName = newSensorObject.GetFrameName();
 
 				switch (element.image.format)
 				{
@@ -162,14 +153,11 @@ namespace SDF
 						break;
 				}
 
-				depthCamera.SetParameter(element);
+				camera.SetParameter(element);
 
-				if (element.noise != null)
-				{
-					depthCamera.noise = new SensorDevices.Noise(element.noise, element.type);
-				}
+				camera.SetupNoise(element.noise);
 
-				return depthCamera;
+				return camera;
 			}
 
 			public static Device AddMultiCamera(this UE.GameObject targetObject, in SDF.Cameras element)
@@ -214,38 +202,7 @@ namespace SDF
 				var imu = newSensorObject.AddComponent<SensorDevices.IMU>();
 				imu.DeviceName = newSensorObject.GetFrameName();
 
-				if (element != null)
-				{
-					if (element.noise_angular_velocity.x != null)
-					{
-						imu.angular_velocity_noises["x"] = new SensorDevices.Noise(element.noise_angular_velocity.x, "imu");
-					}
-
-					if (element.noise_angular_velocity.y != null)
-					{
-						imu.angular_velocity_noises["y"] = new SensorDevices.Noise(element.noise_angular_velocity.y, "imu");
-					}
-
-					if (element.noise_angular_velocity.z != null)
-					{
-						imu.angular_velocity_noises["z"] = new SensorDevices.Noise(element.noise_angular_velocity.z, "imu");
-					}
-
-					if (element.noise_linear_acceleration.x != null)
-					{
-						imu.linear_acceleration_noises["x"] = new SensorDevices.Noise(element.noise_linear_acceleration.x, "imu");
-					}
-
-					if (element.noise_linear_acceleration.y != null)
-					{
-						imu.linear_acceleration_noises["y"] = new SensorDevices.Noise(element.noise_linear_acceleration.y, "imu");
-					}
-
-					if (element.noise_linear_acceleration.z != null)
-					{
-						imu.linear_acceleration_noises["z"] = new SensorDevices.Noise(element.noise_linear_acceleration.z, "imu");
-					}
-				}
+				imu.SetupNoises(element);
 
 				return imu;
 			}
@@ -257,29 +214,7 @@ namespace SDF
 
 				var gps = newSensorObject.AddComponent<SensorDevices.GPS>();
 				gps.DeviceName = newSensorObject.GetFrameName();
-
-				if (element != null)
-				{
-					if (element.position_sensing.horizontal_noise != null)
-					{
-						gps.position_sensing_noises["horizontal"] = new SensorDevices.Noise(element.position_sensing.horizontal_noise, "gps");
-					}
-
-					if (element.position_sensing.vertical_noise != null)
-					{
-						gps.position_sensing_noises["vertical"] = new SensorDevices.Noise(element.position_sensing.vertical_noise, "gps");
-					}
-
-					if (element.velocity_sensing.horizontal_noise != null)
-					{
-						gps.velocity_sensing_noises["horizontal"] = new SensorDevices.Noise(element.velocity_sensing.horizontal_noise, "gps");
-					}
-
-					if (element.velocity_sensing.vertical_noise != null)
-					{
-						gps.velocity_sensing_noises["vertical"] = new SensorDevices.Noise(element.velocity_sensing.vertical_noise, "gps");
-					}
-				}
+				gps.SetupNoises(element);
 
 				return gps;
 			}

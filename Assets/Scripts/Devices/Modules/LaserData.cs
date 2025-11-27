@@ -69,11 +69,13 @@ namespace SensorDevices
 			public double[] data;
 
 			public float capturedTime;
+			public Pose worldPose;
 
 			public LaserDataOutput(in int length = 0)
 			{
 				data = (length == 0) ? null : new double[length];
 				capturedTime = 0;
+				worldPose = Pose.identity;
 			}
 		}
 
@@ -150,9 +152,9 @@ namespace SensorDevices
 			private float GetDepthRange(in int offsetX, in int offsetY)
 			{
 				var safeOffsetX = Mathf.Clamp(offsetX, 0, horizontalBufferLength - 1);
-    			var safeOffsetY = Mathf.Clamp(offsetY, 0, verticalBufferLength - 1);
+				var safeOffsetY = Mathf.Clamp(offsetY, 0, verticalBufferLength - 1);
 
-    			var bufferOffset = (horizontalBufferLength * safeOffsetY) + safeOffsetX;
+				var bufferOffset = (horizontalBufferLength * safeOffsetY) + safeOffsetX;
 				// Debug.LogFormat("OffsetX: {0}, OffsetY: {1}", offsetX, offsetY);
 				return depthBuffer[bufferOffset];
 			}

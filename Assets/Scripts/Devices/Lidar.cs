@@ -20,18 +20,17 @@ using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
-	[RequireComponent(typeof(UnityEngine.Camera))]
 	public partial class Lidar : Device
 	{
 		private messages.LaserScan _laserScan = null;
-		protected ConcurrentQueue<messages.LaserScanStamped> _messageQueue = new ConcurrentQueue<messages.LaserScanStamped>();
+		protected ConcurrentQueue<messages.LaserScanStamped> _messageQueue = new();
 		private Thread _laserProcessThread = null;
 
 		private const int BatchSize = 8;
 		private const float DEG180 = Mathf.PI * Mathf.Rad2Deg;
 		private const float DEG360 = DEG180 * 2;
 
-		private const float HFOV_FOR_2D_LIDAR = 120f;
+		private const float HFOV_FOR_2D_LIDAR = 90f;
 		private const float HFOV_FOR_3D_LIDAR = 10f;
 		private float LaserCameraHFov = 0f;
 		private float LaserCameraHFovHalf = 0;
@@ -43,10 +42,8 @@ namespace SensorDevices
 		public LaserData.Scan vertical;
 
 		private Transform _lidarLink = null;
-		private Pose _lidarSensorInitPose = new Pose();
-		private Pose _lidarSensorPose = new Pose();
 
-		private UnityEngine.Camera laserCam = null;
+		private UnityEngine.Camera _laserCam = null;
 		private Material depthMaterial = null;
 
 		private LaserData.AngleResolution _laserAngleResolution;
@@ -65,25 +62,33 @@ namespace SensorDevices
 		private LaserFilter _laserFilter = null;
 		private Noise _noise = null;
 
-		public double[] _rangesForVisualize = null;
+		public void SetupNoise(in SDF.Noise param)
+		{
+			if (param != null)
+			{
+				Debug.Log($"{DeviceName}: Apply noise type:{param.type} mean:{param.mean} stddev:{param.stddev}");
+				_noise = new Noise(param);
+			}
+		}
 
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
 			_lidarLink = transform.parent;
 
-			laserCam = GetComponent<UnityEngine.Camera>();
+			var laserSensor = new GameObject("__laser__");
+			laserSensor.transform.SetParent(this.transform, false);
+			laserSensor.transform.localPosition = Vector3.zero;
+			laserSensor.transform.localRotation = Quaternion.identity;
+			_laserCam = laserSensor.AddComponent<UnityEngine.Camera>();
 
 			_laserProcessThread = new Thread(() => LaserProcessing());
 		}
 
 		protected override void OnStart()
 		{
-			if (laserCam != null)
+			if (_laserCam != null)
 			{
-				_lidarSensorInitPose.position = transform.localPosition;
-				_lidarSensorInitPose.rotation = transform.localRotation;
-
 				SetupLaserCamera();
 
 				SetupLaserCameraData();
@@ -158,8 +163,6 @@ namespace SensorDevices
 			Array.Fill(_laserScan.Ranges, double.NaN);
 			Array.Fill(_laserScan.Intensities, double.NaN);
 
-			_rangesForVisualize = new double[totalSamples];
-
 			_laserAngleResolution = new LaserData.AngleResolution((float)horizontal.angleStep, (float)vertical.angleStep);
 			// Debug.Log("H resolution: " + _laserAngleResolution.H + ", V resolution: " + _laserAngleResolution.V);
 		}
@@ -170,25 +173,25 @@ namespace SensorDevices
 			LaserCameraHFov = (vertical.samples > 1) ? HFOV_FOR_3D_LIDAR : HFOV_FOR_2D_LIDAR;
 			LaserCameraHFovHalf = LaserCameraHFov * 0.5f;
 
-			laserCam.ResetWorldToCameraMatrix();
-			laserCam.ResetProjectionMatrix();
+			_laserCam.ResetWorldToCameraMatrix();
+			_laserCam.ResetProjectionMatrix();
 
-			laserCam.allowHDR = true;
-			laserCam.allowMSAA = false;
-			laserCam.allowDynamicResolution = false;
-			laserCam.useOcclusionCulling = true;
+			_laserCam.allowHDR = true;
+			_laserCam.allowMSAA = false;
+			_laserCam.allowDynamicResolution = false;
+			_laserCam.useOcclusionCulling = true;
 
-			laserCam.stereoTargetEye = StereoTargetEyeMask.None;
+			_laserCam.stereoTargetEye = StereoTargetEyeMask.None;
 
-			laserCam.orthographic = false;
-			laserCam.nearClipPlane = scanRange.min;
-			laserCam.farClipPlane = scanRange.max;
-			laserCam.cullingMask = LayerMask.GetMask("Default") | LayerMask.GetMask("Plane");
+			_laserCam.orthographic = false;
+			_laserCam.nearClipPlane = scanRange.min;
+			_laserCam.farClipPlane = scanRange.max;
+			_laserCam.cullingMask = LayerMask.GetMask("Default") | LayerMask.GetMask("Plane");
 
-			laserCam.clearFlags = CameraClearFlags.Nothing;
-			laserCam.depthTextureMode = DepthTextureMode.Depth;
+			_laserCam.clearFlags = CameraClearFlags.Nothing;
+			_laserCam.depthTextureMode = DepthTextureMode.Depth;
 
-			laserCam.renderingPath = RenderingPath.DeferredShading;
+			_laserCam.renderingPath = RenderingPath.DeferredShading;
 
 			var renderTextureWidth = Mathf.CeilToInt(LaserCameraHFov / _laserAngleResolution.H);
 			var renderTextureHeight = Mathf.CeilToInt(LaserCameraVFov / _laserAngleResolution.V);
@@ -217,12 +220,12 @@ namespace SensorDevices
 				memoryless: RenderTextureMemoryless.None,
 				name: "LidarDepthTexture");
 
-			laserCam.targetTexture = _rtHandle.rt;
+			_laserCam.targetTexture = _rtHandle.rt;
 
-			var projMatrix = SensorHelper.MakeProjectionMatrixPerspective(LaserCameraHFov, LaserCameraVFov, laserCam.nearClipPlane, laserCam.farClipPlane);
-			laserCam.projectionMatrix = projMatrix;
+			var projMatrix = SensorHelper.MakeProjectionMatrixPerspective(LaserCameraHFov, LaserCameraVFov, _laserCam.nearClipPlane, _laserCam.farClipPlane);
+			_laserCam.projectionMatrix = projMatrix;
 
-			var universalLaserCamData = laserCam.GetUniversalAdditionalCameraData();
+			var universalLaserCamData = _laserCam.GetUniversalAdditionalCameraData();
 			universalLaserCamData.renderShadows = false;
 			universalLaserCamData.stopNaN = true;
 			universalLaserCamData.dithering = true;
@@ -244,16 +247,17 @@ namespace SensorDevices
 			cb.GetTemporaryRT(tempTextureId, -1, -1);
 			cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
 			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
-			laserCam.AddCommandBuffer(CameraEvent.AfterEverything, cb);
+			_laserCam.AddCommandBuffer(CameraEvent.AfterEverything, cb);
 
 			cb.ReleaseTemporaryRT(tempTextureId);
 			cb.Release();
 
-			// laserCam.hideFlags |= HideFlags.NotEditable;
-			laserCam.enabled = false;
+			// _laserCam.hideFlags |= HideFlags.NotEditable;
+			_laserCam.enabled = false;
 
 			if (_noise != null)
 			{
+				_noise.SetCustomNoiseParameter(GetPluginParameters());
 				_noise.SetClampMin(scanRange.min);
 				_noise.SetClampMax(scanRange.max);
 			}
@@ -271,7 +275,7 @@ namespace SensorDevices
 			_laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
 			_laserDataOutput = new LaserData.LaserDataOutput[numberOfLaserCamData];
 
-			var targetDepthRT = laserCam.targetTexture;
+			var targetDepthRT = _laserCam.targetTexture;
 			var width = targetDepthRT.width;
 			var height = targetDepthRT.height;
 			var centerAngleOffset = (horizontal.angle.min < 0) ? (isEven ? -LaserCameraHFovHalf : 0) : LaserCameraHFovHalf;
@@ -283,11 +287,6 @@ namespace SensorDevices
 				var centerAngle = LaserCameraRotationAngle * index + centerAngleOffset;
 				_laserCamData[index] = new LaserData.LaserCamData(width, height, scanRange, rangeResolution, _laserAngleResolution, centerAngle, LaserCameraHFovHalf, LaserCameraVFovHalf);
 			}
-		}
-
-		public void SetupNoise(in SDF.Noise param)
-		{
-			_noise = new SensorDevices.Noise(param, "lidar");
 		}
 
 		public void SetupLaserAngleFilter(in double filterAngleLower, in double filterAngleUpper, in bool useIntensity = false)
@@ -312,34 +311,33 @@ namespace SensorDevices
 
 		private IEnumerator CaptureLaserCamera()
 		{
+			var lidarSensorWorldPose = new Pose();
+			var axisRotation = Vector3.zero;
 			var sw = new Stopwatch();
 			while (_startLaserWork)
 			{
 				sw.Restart();
 
-				// Update lidar sensor pose
-				_lidarSensorPose.position = _lidarLink.position;
-				_lidarSensorPose.rotation = _lidarLink.rotation;
-
-				var axisRotation = Vector3.zero;
+				lidarSensorWorldPose.position = transform.position;
+				lidarSensorWorldPose.rotation = transform.rotation;
 
 				for (var dataIndex = 0; dataIndex < numberOfLaserCamData; dataIndex++)
 				{
 					var laserCamData = _laserCamData[dataIndex];
 					axisRotation.y = laserCamData.centerAngle;
 
-					laserCam.transform.localRotation = _lidarSensorInitPose.rotation * Quaternion.Euler(axisRotation);
-					laserCam.enabled = true;
+					_laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
+					_laserCam.enabled = true;
 
-					if (laserCam.isActiveAndEnabled)
+					if (_laserCam.isActiveAndEnabled)
 					{
-						laserCam.Render();
+						_laserCam.Render();
 						var capturedTime = (float)DeviceHelper.GetGlobalClock().SimTime;
-						var readbackRequest = AsyncGPUReadback.Request(laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, OnCompleteAsyncReadback);
+						var readbackRequest = AsyncGPUReadback.Request(_laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, OnCompleteAsyncReadback);
 
-						_asyncWorkList.TryAdd(readbackRequest.GetHashCode(), new AsyncWork.Laser(dataIndex, readbackRequest, capturedTime));
+						_asyncWorkList.TryAdd(readbackRequest.GetHashCode(), new AsyncWork.Laser(dataIndex, readbackRequest, capturedTime, lidarSensorWorldPose));
 
-						laserCam.enabled = false;
+						_laserCam.enabled = false;
 					}
 				}
 
@@ -381,6 +379,7 @@ namespace SensorDevices
 						var laserDataOutput = new LaserData.LaserDataOutput();
 						laserDataOutput.data = laserCamData.GetLaserData();
 						laserDataOutput.capturedTime = asyncWork.capturedTime;
+						laserDataOutput.worldPose = asyncWork.worldPose;
 
 						_laserDataOutput[dataIndex] = laserDataOutput;
 
@@ -423,14 +422,12 @@ namespace SensorDevices
 			{
 				sw.Restart();
 
-				var lidarPosition = _lidarSensorInitPose.position + _lidarSensorPose.position;
-				var lidarRotation = _lidarSensorInitPose.rotation * _lidarSensorPose.rotation;
-
 				laserScanStamped.Scan = _laserScan;
 				var laserScan = laserScanStamped.Scan;
 
-				laserScan.WorldPose.Position.Set(lidarPosition);
-				laserScan.WorldPose.Orientation.Set(lidarRotation);
+				var sensorWorldPose = _laserDataOutput[0].worldPose;
+				laserScan.WorldPose.Position.Set(sensorWorldPose.position);
+				laserScan.WorldPose.Orientation.Set(sensorWorldPose.rotation);
 
 				Array.Fill(laserScan.Ranges, double.NaN);
 
@@ -540,7 +537,7 @@ namespace SensorDevices
 				if (_noise != null)
 				{
 					var ranges = laserScan.Ranges;
-					_noise.Apply<double>(ref ranges);
+					_noise.Apply<double>(ranges);
 				}
 
 				if (_laserFilter != null)
@@ -561,7 +558,6 @@ namespace SensorDevices
 			var count = _messageQueue.Count;
 			while (_messageQueue.TryDequeue(out var msg))
 			{
-				_rangesForVisualize = msg.Scan.Ranges;
 				PushDeviceMessage<messages.LaserScanStamped>(msg);
 				if (count > 0)
 				{
@@ -570,13 +566,19 @@ namespace SensorDevices
 			}
 		}
 
+		[SerializeField] private static int _indexForVisualize = 0;
+		[SerializeField] private static int _maxCountForVisualize = 3;
+		[SerializeField] private static float _hueOffsetForVisualize = 0f;
+		[SerializeField] private const float UnitHueOffsetForVisualize = 0.07f;
+		[SerializeField] private const float AlphaForVisualize = 0.75f;
+
 		protected override IEnumerator OnVisualize()
 		{
-			var visualDrawDuration = UpdatePeriod * 2.01f;
+			var visualDrawDuration = UpdatePeriod;
 
 			var startAngleH = horizontal.angle.min;
-			var startAngleV = vertical.angle.min;
-			var endAngleV = vertical.angle.max;
+			var startAngleV = vertical.angle.max;
+			var endAngleV = vertical.angle.min;
 			var angleRangeV = vertical.angle.range;
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 
@@ -584,41 +586,56 @@ namespace SensorDevices
 			var rangeMin = scanRange.min;
 			var rangeMax = scanRange.max;
 
-			var rayColor = Color.red;
-			rayColor.a = 0.7f;
+			if (_indexForVisualize >= _maxCountForVisualize)
+			{
+				_indexForVisualize = 0;
+				_hueOffsetForVisualize += UnitHueOffsetForVisualize;
+			}
+			var hue = ((float)_indexForVisualize++ / Mathf.Max(1, _maxCountForVisualize)) + _hueOffsetForVisualize;
+			hue = (hue % 1f + 1f) % 1f;
+			// Debug.Log($"hue{hue} _indexForVisualize{_indexForVisualize}");
+			var baseRayColor = Color.HSVToRGB(hue, 0.9f, 1f);
 
 			var lidarModel = _lidarLink.parent;
 
 			while (true)
 			{
-				var rayStartBase = _lidarLink.position + lidarModel.rotation * _lidarSensorInitPose.position;
+				var rayStartBase = transform.position;
+				var sensorWorldRotation = transform.rotation;
+
 				var rangeData = GetRangeData();
 
 				if (rangeData != null)
 				{
 					var localUp = _lidarLink.up;
-					var localRight = _lidarLink.right;
+					var localRight = -_lidarLink.right;
 					var localForward = _lidarLink.forward;
 
-					for (var scanIndex = 0; scanIndex < rangeData.Length; scanIndex++)
+					for (var scanIndex = 0; scanIndex < rangeData.Count; scanIndex++)
 					{
 						var scanIndexH = scanIndex % horizontalSamples;
 						var scanIndexV = scanIndex / horizontalSamples;
 
-						var rayAngleH = (_laserAngleResolution.H * scanIndexH) + startAngleH;
-						var rayAngleV = (_laserAngleResolution.V * scanIndexV) + startAngleV;
+						var rayAngleH = startAngleH + (_laserAngleResolution.H * scanIndexH);
+						var rayAngleV = startAngleV - (_laserAngleResolution.V * scanIndexV);
 
-						var ccwIndex = (uint)(rangeData.Length - scanIndex - 1);
+						var ccwIndex = (int)(rangeData.Count - scanIndex - 1);
 						var rayData = (float)rangeData[ccwIndex];
 
 						if (!float.IsNaN(rayData) && rayData <= rangeMax)
 						{
-							rayColor.g = Mathf.InverseLerp(startAngleV, endAngleV, rayAngleV);
+							var t = Mathf.InverseLerp(endAngleV, startAngleV, rayAngleV);
+							var s = Mathf.Lerp(0.55f, 0.95f, t);
+							var rayColor = Color.HSVToRGB(hue, s, 0.95f);
+							rayColor.a = AlphaForVisualize;
 
-							var rayRotation = Quaternion.AngleAxis(rayAngleH, localUp) * Quaternion.AngleAxis(rayAngleV, localRight) * localForward;
+							var localAngles = Quaternion.AngleAxis(rayAngleH, Vector3.up) * Quaternion.AngleAxis(rayAngleV, -Vector3.right);
 
-							var start = rayStartBase + rayRotation * rangeMin;
-							var end = start + rayRotation * (rayData - rangeMin);
+							var dir = sensorWorldRotation * localAngles * Vector3.forward;
+							dir.Normalize();
+
+							var start = rayStartBase + dir * rangeMin;
+							var end = start + dir * (rayData - rangeMin);
 
 							Debug.DrawLine(start, end, rayColor, visualDrawDuration, true);
 						}
@@ -629,11 +646,11 @@ namespace SensorDevices
 			}
 		}
 
-		public double[] GetRangeData()
+		public IReadOnlyList<double> GetRangeData()
 		{
 			try
 			{
-				return _rangesForVisualize;
+				return Array.AsReadOnly(_laserScan.Ranges);
 			}
 			catch
 			{

@@ -5,6 +5,7 @@
  */
 
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Linq;
 using System.Xml;
 using System;
@@ -228,7 +229,7 @@ namespace SDF
 				pose.relative_to = GetAttributeInPath<string>("pose", "relative_to");
 
 				// x y z roll pitch yaw
-				value = value.Trim().Replace("    ", " ").Replace("   ", " ").Replace("  ", " ");
+				value = Regex.Replace(value.Trim(), @"\s+", " ");
 				var poseStr = value.Replace('\t', ' ').Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
 				try
