@@ -35,7 +35,7 @@ namespace SensorDevices
 
 	public class Contact : Device
 	{
-		private ConcurrentQueue<messages.Contacts> _messageQueue = new ConcurrentQueue<messages.Contacts>();
+		private ConcurrentQueue<messages.Contacts> _messageQueue = new();
 
 		private messages.Contacts _lastContacts = null;
 

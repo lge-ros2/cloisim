@@ -22,7 +22,7 @@ public abstract class Device : MonoBehaviour
 	private string _deviceName = string.Empty;
 
 	[SerializeField]
-	private float _updateRate = 1;
+	private float _updateRate = -1;
 
 	private bool _debuggingOn = true;
 
