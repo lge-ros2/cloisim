@@ -94,8 +94,8 @@ public class Clock : Device
 
 	void Update()
 	{
-		_currentRealTime = Time.realtimeSinceStartupAsDouble - _restartedRealTime;
 		_currentSimTime = Time.timeAsDouble - _restartedSimTime;
+		_currentRealTime = Time.realtimeSinceStartupAsDouble - _restartedRealTime;
 	}
 
 	void FixedUpdate()
@@ -133,26 +133,22 @@ public class Clock : Device
 		worldStat.RealTime.SetCurrentTime(true);
 
 		// filter same clock info
-		if (_prevSimTime >= SimTime)
+		if ((_prevSimTime >= SimTime) ||
+			(_prevRealTime >= RealTime))
 		{
-			if (_prevSimTime > SimTime)
+			if ((_prevSimTime > SimTime) ||
+				(_prevRealTime > RealTime))
 			{
-				Debug.LogWarning($"Filter SimTime, Prev:{_prevSimTime} >= Current:{SimTime}");
-			}
-		}
-		else if (_prevRealTime >= RealTime)
-		{
-			if (_prevRealTime > RealTime)
-			{
-				Debug.LogWarning($"Filter RealTime, Prev:{_prevRealTime} >= Current:{RealTime}");
+				Debug.LogWarning($"Filter SimTime, Prev:{_prevSimTime} > Current:{SimTime} | RealTime, Prev:{_prevRealTime} > Current:{RealTime}");
 			}
 		}
 		else
 		{
 			PushDeviceMessage<messages.WorldStatistics>(worldStat);
-			_prevSimTime = SimTime;
-			_prevRealTime = RealTime;
 		}
+
+		_prevSimTime = SimTime;
+		_prevRealTime = RealTime;
 	}
 
 	public void ResetTime()
@@ -160,8 +156,5 @@ public class Clock : Device
 		_restartedSimTime = Time.timeAsDouble;
 		_restartedFixedSimTime = Time.fixedTimeAsDouble;
 		_restartedRealTime = Time.realtimeSinceStartupAsDouble;
-
-		_prevSimTime = SimTime;
-		_prevRealTime = RealTime;
 	}
 }
