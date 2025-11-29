@@ -81,11 +81,9 @@ namespace SensorDevices
 			segmentation.ImageStamped.Image = _image;
 
 			var image = segmentation.ImageStamped.Image;
-			var imageData = (image.Data.Length == readbackData.Length) ? readbackData.ToArray() : null;
-			if (imageData != null)
+			if (image.Data != null && image.Data.Length == readbackData.Length)
 			{
-				image.Data = imageData;
-				// Debug.LogFormat($"{image.Data[0]}|{image.Data[1]}|{image.Data[2]}|{image.Data[3]}");
+				readbackData.CopyTo(image.Data);
 			}
 			else
 			{

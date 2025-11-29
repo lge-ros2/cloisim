@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -32,9 +31,6 @@ namespace SensorDevices
 		protected GraphicsFormat _targetColorFormat;
 		protected GraphicsFormat _readbackDstFormat;
 
-		private ConcurrentDictionary<int, AsyncWork.Camera> _asyncWorkList = new();
-
-		public Noise noise = null;
 		protected bool _startCameraWork = false;
 		private RTHandle _rtHandle;
 		protected Texture2D _textureForCapture = null;
@@ -63,35 +59,34 @@ namespace SensorDevices
 
 				if (_noiseMaterial != null || _depthMaterial != null)
 				{
-					int tempID1 = Shader.PropertyToID("_TempDepthRT");
-					int tempID2 = Shader.PropertyToID("_TempNoiseRT");
-					_postProcessCmdBuffer.GetTemporaryRT(tempID1, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear);
-					_postProcessCmdBuffer.GetTemporaryRT(tempID2, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear);
+					int depthRT = Shader.PropertyToID("_TempDepthRT");
+					int noiseRT = Shader.PropertyToID("_TempNoiseRT");
+					_postProcessCmdBuffer.GetTemporaryRT(depthRT, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear);
+					_postProcessCmdBuffer.GetTemporaryRT(noiseRT, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear);
 
 					if (_depthMaterial != null)
 					{
-						_postProcessCmdBuffer.Blit(BuiltinRenderTextureType.CameraTarget, tempID1);
+						_postProcessCmdBuffer.Blit(BuiltinRenderTextureType.CameraTarget, depthRT);
 
 						if (_noiseMaterial != null)
-							_postProcessCmdBuffer.Blit(tempID1, tempID2, _depthMaterial);
+						{
+							_postProcessCmdBuffer.Blit(depthRT, noiseRT, _depthMaterial);
+							_postProcessCmdBuffer.Blit(noiseRT, BuiltinRenderTextureType.CameraTarget, _noiseMaterial);
+						}
 						else
-							_postProcessCmdBuffer.Blit(tempID1, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
-
-
+							_postProcessCmdBuffer.Blit(depthRT, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
 					}
 					else
 					{
 						if (_noiseMaterial != null)
-							_postProcessCmdBuffer.Blit(BuiltinRenderTextureType.CameraTarget, tempID2);
+						{
+							_postProcessCmdBuffer.Blit(BuiltinRenderTextureType.CameraTarget, noiseRT);
+							_postProcessCmdBuffer.Blit(noiseRT, BuiltinRenderTextureType.CameraTarget, _noiseMaterial);
+						}
 					}
 
-					if (_noiseMaterial != null)
-					{
-						_postProcessCmdBuffer.Blit(tempID2, BuiltinRenderTextureType.CameraTarget, _noiseMaterial);
-					}
-
-					_postProcessCmdBuffer.ReleaseTemporaryRT(tempID1);
-					_postProcessCmdBuffer.ReleaseTemporaryRT(tempID2);
+					_postProcessCmdBuffer.ReleaseTemporaryRT(depthRT);
+					_postProcessCmdBuffer.ReleaseTemporaryRT(noiseRT);
 					context.ExecuteCommandBuffer(_postProcessCmdBuffer);
 					_postProcessCmdBuffer.Clear();
 				}
@@ -139,12 +134,6 @@ namespace SensorDevices
 				_startCameraWork = true;
 				StartCoroutine(CameraWorker());
 			}
-		}
-
-		protected override void OnReset()
-		{
-			_asyncWorkList.Clear();
-			base.OnReset();
 		}
 
 		protected virtual void SetupTexture()
@@ -350,7 +339,6 @@ namespace SensorDevices
 
 			_rtHandle?.Release();
 
-			_asyncWorkList.Clear();
 			base.OnDestroy();
 		}
 
@@ -359,6 +347,7 @@ namespace SensorDevices
 			var rateGap = (float)Application.targetFrameRate - UpdateRate;
 			var messageGenerationTime = Mathf.Approximately(rateGap, 0) ? float.PositiveInfinity : 1f / rateGap;
 			var waitNextCapture = new WaitForSeconds(WaitPeriod(messageGenerationTime));
+			Debug.Log($"CameraWorker {rateGap} {messageGenerationTime} {WaitPeriod(messageGenerationTime)}");
 			while (_startCameraWork)
 			{
 				_universalCamData.enabled = true;
@@ -369,31 +358,22 @@ namespace SensorDevices
 					_camSensor.Render();
 
 					var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
-					var readbackRequest = AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, OnCompleteAsyncReadback);
-
-					_asyncWorkList.TryAdd(readbackRequest.GetHashCode(), new AsyncWork.Camera(readbackRequest, capturedTime));
+					AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, (req) => {
+						if (req.hasError)
+						{
+							Debug.LogError($"{name}: Failed to read GPU texture");
+						}
+						else if (req.done)
+						{
+							var readbackData = req.GetData<byte>();
+							ImageProcessing(ref readbackData, capturedTime);
+						}
+					});
 				}
 
 				_universalCamData.enabled = false;
 
 				yield return waitNextCapture;
-			}
-		}
-
-		protected void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
-		{
-			if (request.hasError)
-			{
-				Debug.LogError($"{name}: Failed to read GPU texture");
-			}
-			else if (request.done)
-			{
-				if (_asyncWorkList.TryRemove(request.GetHashCode(), out var asyncWork))
-				{
-					var readbackData = request.GetData<byte>();
-					ImageProcessing(ref readbackData, asyncWork.capturedTime);
-					readbackData.Dispose();
-				}
 			}
 		}
 
@@ -422,10 +402,10 @@ namespace SensorDevices
 			imageStamped.Image = _image;
 
 			var image = imageStamped.Image;
-			var imageData = (image.Data.Length == readbackData.Length) ? readbackData.ToArray() : null;
-			if (imageData != null)
+
+			if (image.Data != null && image.Data.Length == readbackData.Length)
 			{
-				image.Data = imageData;
+				readbackData.CopyTo(image.Data);
 			}
 			else
 			{
