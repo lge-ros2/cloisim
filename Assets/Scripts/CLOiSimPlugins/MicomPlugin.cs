@@ -139,6 +139,8 @@ public class MicomPlugin : CLOiSimPlugin
 		{
 			SetDisplay();
 		}
+
+		_micomSensor.PrintSensors();
 	}
 
 	private void SetDisplay()

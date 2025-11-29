@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Collections;
+using System.Text;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -21,16 +22,19 @@ namespace SensorDevices
 		private List<SensorDevices.Sonar> _irSensors = new List<SensorDevices.Sonar>();
 		// private List<SensorDevices.Magnet> magnetSensors = null;
 		private List<SensorDevices.Contact> _bumperSensors = new List<SensorDevices.Contact>();
+		private StringBuilder _log = new StringBuilder();
 
+		public void PrintSensors()
+		{
+			Debug.Log(_log.ToString());
+		}
 
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
 			DeviceName = "MicomSensor";
-		}
-
-		protected override void OnStart()
-		{
+			_log.Clear();
+			_log.AppendLine($"Attached Sensor in ({DeviceName})");
 		}
 
 		protected override IEnumerator OnVisualize()
@@ -52,7 +56,7 @@ namespace SensorDevices
 					imu.DeviceName.EndsWith($"::{sensorName}") || // Link name
 					imu.name.Equals(sensorName))
 				{
-					Debug.Log($"IMU: {imu.DeviceName} attached to Micom");
+					_log.AppendLine($"IMU: {imu.DeviceName} attached to Micom");
 					_imuSensor = imu;
 					break;
 				}
@@ -71,7 +75,7 @@ namespace SensorDevices
 						sonar.DeviceName.EndsWith($"::{ussName}") || // Link name
 						sonar.name.Equals(ussName))
 					{
-						Debug.Log($"USS: {sonar.DeviceName} attached to Micom");
+						_log.AppendLine($"USS: {sonar.DeviceName} attached to Micom");
 						_ussSensors.Add(sonar);
 						break;
 					}
@@ -98,7 +102,7 @@ namespace SensorDevices
 						sonar.DeviceName.EndsWith($"::{irName}") || // Link name
 						sonar.name.Equals(irName))
 					{
-						Debug.Log($"IR: {sonar.DeviceName} attached to Micom");
+						_log.AppendLine($"IR: {sonar.DeviceName} attached to Micom");
 						_irSensors.Add(sonar);
 						break;
 					}
@@ -120,7 +124,7 @@ namespace SensorDevices
 			{
 				// TODO: to be implemented
 			}
-			Debug.Log("Magnet is to be implemented");
+			_log.AppendLine("Magnet is to be implemented");
 		}
 
 		public void SetBumper(in List<string> bumperList)
@@ -135,7 +139,7 @@ namespace SensorDevices
 						contact.DeviceName.EndsWith($"::{bumperName}") || // Link name
 						contact.name.Equals(bumperName))
 					{
-						Debug.Log($"Bumper: {contact.DeviceName} attached to Micom");
+						_log.AppendLine($"Bumper: {contact.DeviceName} attached to Micom");
 						_bumperSensors.Add(contact);
 						break;
 					}
@@ -239,7 +243,7 @@ namespace SensorDevices
 					bumper.Contacts = bumperSensor.GetContacts();
 
 					_micomSensorData.Bumpers[index] = bumper;
-					// Debug.Log(_micomSensorData.Bumpers.Count + " " + bumper.Bumped + ", " + bumper.Contacts);
+					// _log.AppendLine(_micomSensorData.Bumpers.Count + " " + bumper.Bumped + ", " + bumper.Contacts);
 				}
 			}
 		}
