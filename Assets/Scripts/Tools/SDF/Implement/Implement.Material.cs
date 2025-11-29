@@ -54,7 +54,7 @@ namespace SDF
 				{
 					// Name of material from an installed script file.
 					// This will override the color element if the script exists.
-					var scriptAppliedMaterials = ApplyScript(sdfMaterial.script, renderer.materials);
+					var scriptAppliedMaterials = sdfMaterial.script.ApplyScript(renderer.materials);
 					renderer.materials = scriptAppliedMaterials;
 
 					if (sdfMaterial.script.name.ToLower().Contains("tree"))
@@ -67,16 +67,16 @@ namespace SDF
 				}
 			}
 
-			public static UE.Material ApplyScript(in SDF.Material.Script script, in UE.Material baseMasterial)
+			public static UE.Material ApplyScript(this SDF.Material.Script script, in UE.Material baseMasterial)
 			{
-				var materials = ApplyScript(script, new UE.Material[] { baseMasterial });
+				var materials = script.ApplyScript(new UE.Material[] { baseMasterial });
 				return materials[0];
 			}
 
-			public static UE.Material[] ApplyScript(in SDF.Material.Script script, in UE.Material[] baseMaterials)
+			public static UE.Material[] ApplyScript(this SDF.Material.Script script, in UE.Material[] baseMaterials)
 			{
 				var targetMaterialName = script.name;
-				var targetMaterialFilepath = FindMaterialFilepathAndUpdateURIs(script.uri, out var texturesPath);
+				FindMaterialFilepathAndUpdateURIs(script.uri, out var targetMaterialFilepath, out var texturesPath);
 
 				var outputMaterials = baseMaterials;
 
@@ -86,17 +86,17 @@ namespace SDF
 					if (ogreMaterial != null)
 					{
 						// UE.Debug.Log($"Found: '{ogreMaterial.name}' material, techniques: {ogreMaterial.techniques.Count}");
-						outputMaterials = Ogre.ApplyMaterial(ogreMaterial, baseMaterials, texturesPath);
+						outputMaterials = ogreMaterial.ApplyMaterial(baseMaterials, texturesPath);
 					}
 				}
 
 				return outputMaterials;
 			}
 
-			private static string FindMaterialFilepathAndUpdateURIs(in List<string> scriptUris, out List<string> texturesPath)
+			private static void FindMaterialFilepathAndUpdateURIs(in List<string> scriptUris, out string targetMaterialFilepath, out List<string> texturesPath)
 			{
+				targetMaterialFilepath = string.Empty;
 				texturesPath = new List<string>();
-				var targetMaterialFilepath = string.Empty;
 
 				foreach (var uri in scriptUris)
 				{
@@ -123,8 +123,6 @@ namespace SDF
 						texturesPath.Add(uri);
 					}
 				}
-
-				return targetMaterialFilepath;
 			}
 		}
 	}
