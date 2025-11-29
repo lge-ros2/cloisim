@@ -165,7 +165,7 @@ namespace SDF
 				articulationBody.ResetCenterOfMass();
 				if (inertial?.pose != null)
 				{
-					articulationBody.centerOfMass = SDF2Unity.Position(inertial.pose?.Pos);
+					articulationBody.centerOfMass = inertial.pose?.Pos.ToUnity() ?? UE.Vector3.zero;
 					articulationBody.automaticCenterOfMass = false;
 				}
 				else
@@ -176,7 +176,7 @@ namespace SDF
 
 				if (colliders.Length == 0)
 				{
-					Debug.LogWarningFormat(articulationBody.name + " => no mesh collider exists in child");
+					Debug.LogWarning($"{articulationBody.name} => no mesh collider exists in child");
 				}
 
 				articulationBody.ResetInertiaTensor();

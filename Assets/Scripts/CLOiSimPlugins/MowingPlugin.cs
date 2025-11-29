@@ -86,13 +86,13 @@ public class MowingPlugin : CLOiSimPlugin
 			{
 				if (string.IsNullOrEmpty(colorBaseStr) == false)
 				{
-					var colorBase = SDF2Unity.Color(colorBaseStr);
+					var colorBase = colorBaseStr.ToColor();
 					material.SetColor("_BaseColor", colorBase);
 				}
 
 				if (string.IsNullOrEmpty(colorTipStr) == false)
 				{
-					var colorTip = SDF2Unity.Color(colorTipStr);
+					var colorTip = colorTipStr.ToColor();
 					material.SetColor("_TipColor", colorTip);
 				}
 
@@ -115,7 +115,7 @@ public class MowingPlugin : CLOiSimPlugin
 			if (!string.IsNullOrEmpty(dryMapUri))
 			{
 				var dryMapColorStr = plugin.GetValue<string>("grass/dry/color");
-				var dryMapColor = SDF2Unity.Color(dryMapColorStr);
+				var dryMapColor = dryMapColorStr.ToColor();
 				SetDryGrass(dryMapUri, dryMapColor);
 			}
 		}

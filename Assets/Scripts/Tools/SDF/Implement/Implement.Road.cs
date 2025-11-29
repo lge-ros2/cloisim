@@ -28,20 +28,20 @@ namespace SDF
 										road.points.Average(x => x.Y),
 										road.points.Average(x => x.Z));
 
-				newRoadObject.transform.localPosition = SDF2Unity.Position(centerPosOfRoad);
+				newRoadObject.transform.localPosition = centerPosOfRoad.ToUnity();
 
 				foreach (var point in road.points)
 				{
 					var offset = point - centerPosOfRoad;
-					splineContainer.Spline.Add(SDF2Unity.Position(offset), Splines.TangentMode.AutoSmooth);
+					splineContainer.Spline.Add(offset.ToUnity(), Splines.TangentMode.AutoSmooth);
 				}
 
 				splineContainer.Spline.SetTangentMode(0, Splines.TangentMode.Linear);
 				splineContainer.Spline.SetTangentMode(road.points.Count - 1, Splines.TangentMode.Linear);
 
-				var material = SDF2Unity.Material.Create(road.Name + "_Material");
+				var material = SDF2Unity.CreateMaterial(road.Name + "_Material");
 
-				material = Material.ApplyScript(road.material.script, material);
+				material = road.material.script.ApplyScript(material);
 
 				var roadGenerator = newRoadObject.AddComponent<Unity.Splines.LoftRoadGenerator>();
 				roadGenerator.SdfMaterial = road.material;

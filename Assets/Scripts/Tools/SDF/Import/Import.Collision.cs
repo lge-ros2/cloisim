@@ -25,8 +25,8 @@ namespace SDF
 
 				targetObject.SetChild(newCollisionObject);
 
-				var localPosition = SDF2Unity.Position(collision.Pose?.Pos);
-				var localRotation = SDF2Unity.Rotation(collision.Pose?.Rot);
+				var localPosition = collision.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
+				var localRotation = collision.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
 
 				var collisionHelper = newCollisionObject.AddComponent<Helper.Collision>();
 				collisionHelper.Pose = collision?.Pose;
@@ -76,8 +76,8 @@ namespace SDF
 				}
 
 				// Due to making collision function, it should be called after make collision regioin
-				collisionObject.transform.localPosition = SDF2Unity.Position(collision.Pose?.Pos);
-				collisionObject.transform.localRotation = SDF2Unity.Rotation(collision.Pose?.Rot);
+				collisionObject.transform.localPosition = collision.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
+				collisionObject.transform.localRotation = collision.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
 
 				collisionObject.SetSurfaceFriction(collision.GetSurface());
 			}

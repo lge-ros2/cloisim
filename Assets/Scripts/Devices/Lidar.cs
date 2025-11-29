@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
@@ -23,7 +22,6 @@ namespace SensorDevices
 	public partial class Lidar : Device
 	{
 		private messages.LaserScan _laserScan = null;
-		protected ConcurrentQueue<messages.LaserScanStamped> _messageQueue = new();
 		private Thread _laserProcessThread = null;
 
 		private const int BatchSize = 8;
@@ -55,7 +53,6 @@ namespace SensorDevices
 		private RTHandle _rtHandle = null;
 		private ParallelOptions _parallelOptions = null;
 
-		private ConcurrentDictionary<int, AsyncWork.Laser> _asyncWorkList = new();
 		private DepthData.CamBuffer[] _depthCamBuffers;
 		private LaserData.LaserCamData[] _laserCamData;
 		private LaserData.LaserDataOutput[] _laserDataOutput;
@@ -101,11 +98,6 @@ namespace SensorDevices
 			}
 		}
 
-		protected override void OnReset()
-		{
-			_messageQueue.Clear();
-			_asyncWorkList.Clear();
-		}
 
 		protected new void OnDestroy()
 		{
@@ -119,7 +111,6 @@ namespace SensorDevices
 			StopAllCoroutines();
 			_rtHandle?.Release();
 
-			OnReset();
 			base.OnDestroy();
 		}
 
@@ -336,8 +327,47 @@ namespace SensorDevices
 					{
 						_laserCam.Render();
 
-						var readbackRequest = AsyncGPUReadback.Request(_laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, OnCompleteAsyncReadback);
-						_asyncWorkList.TryAdd(readbackRequest.GetHashCode(), new AsyncWork.Laser(dataIndex, readbackRequest, capturedTime, lidarSensorWorldPose));
+						int localDataIndex = dataIndex;
+						var localCapturedTime = capturedTime;
+						var localSensorWorldPose = lidarSensorWorldPose;
+
+						AsyncGPUReadback.Request(_laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, (req) => {
+							if (req.hasError)
+							{
+								Debug.LogWarning("Failed to read GPU texture");
+							}
+							else if (req.done)
+							{
+								var depthCamBuffer = _depthCamBuffers[localDataIndex];
+
+								depthCamBuffer.Allocate();
+								depthCamBuffer.raw = req.GetData<byte>();
+
+								if (depthCamBuffer.depth.IsCreated)
+								{
+									var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
+									jobHandleDepthCamBuffer.Complete();
+
+									var laserCamData = _laserCamData[localDataIndex];
+									laserCamData.depthBuffer = depthCamBuffer.depth;
+									laserCamData.Allocate();
+
+									var jobHandle = laserCamData.Schedule(laserCamData.OutputLength(), BatchSize);
+									jobHandle.Complete();
+
+									var laserDataOutput = new LaserData.LaserDataOutput(laserCamData.OutputLength());
+									laserDataOutput.capturedTime = localCapturedTime;
+									laserDataOutput.worldPose = localSensorWorldPose;
+									laserCamData.CopyLaserData(ref laserDataOutput.data);
+
+									_laserDataOutput[localDataIndex] = laserDataOutput;
+
+									laserCamData.Deallocate();
+								}
+
+								depthCamBuffer.Deallocate();
+							}
+						});
 
 						_laserCam.enabled = false;
 					}
@@ -347,49 +377,6 @@ namespace SensorDevices
 
 				var requestingTime = (float)sw.ElapsedMilliseconds + 0.001f;
 				yield return new WaitForSeconds(WaitPeriod(requestingTime));
-			}
-		}
-
-		protected void OnCompleteAsyncReadback(AsyncGPUReadbackRequest request)
-		{
-			if (request.hasError)
-			{
-				Debug.LogWarning("Failed to read GPU texture");
-			}
-			else if (request.done)
-			{
-				if (_asyncWorkList.Remove(request.GetHashCode(), out var asyncWork))
-				{
-					var dataIndex = asyncWork.dataIndex;
-					var depthCamBuffer = _depthCamBuffers[dataIndex];
-
-					depthCamBuffer.Allocate();
-					depthCamBuffer.raw = request.GetData<byte>();
-
-					if (depthCamBuffer.depth.IsCreated)
-					{
-						var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
-						jobHandleDepthCamBuffer.Complete();
-
-						var laserCamData = _laserCamData[dataIndex];
-						laserCamData.depthBuffer = depthCamBuffer.depth;
-						laserCamData.Allocate();
-
-						var jobHandle = laserCamData.Schedule(laserCamData.OutputLength(), BatchSize);
-						jobHandle.Complete();
-
-						var laserDataOutput = new LaserData.LaserDataOutput();
-						laserDataOutput.data = laserCamData.GetLaserData();
-						laserDataOutput.capturedTime = asyncWork.capturedTime;
-						laserDataOutput.worldPose = asyncWork.worldPose;
-
-						_laserDataOutput[dataIndex] = laserDataOutput;
-
-						laserCamData.Deallocate();
-					}
-
-					depthCamBuffer.Deallocate();
-				}
 			}
 		}
 
@@ -549,19 +536,6 @@ namespace SensorDevices
 
 				sw.Stop();
 				Thread.Sleep(WaitPeriodInMilliseconds());
-			}
-		}
-
-		protected override void GenerateMessage()
-		{
-			var count = _messageQueue.Count;
-			while (_messageQueue.TryDequeue(out var msg))
-			{
-				PushDeviceMessage<messages.LaserScanStamped>(msg);
-				if (count > 0)
-				{
-					Thread.Sleep(WaitPeriodInMilliseconds() / count);
-				}
 			}
 		}
 

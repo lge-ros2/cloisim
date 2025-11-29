@@ -6,7 +6,7 @@
 
 using UnityEngine;
 
-public partial class SDF2Unity
+public static partial class SDF2Unity
 {
 	public static (string, string) GetModelLinkName(in string value, in string defaultModelName = "__default__")
 	{
@@ -23,12 +23,12 @@ public partial class SDF2Unity
 		return (modelName, linkName);
 	}
 
-	public static bool IsRootModel(in GameObject targetObject)
+	public static bool IsRootModel(this GameObject targetObject)
 	{
-		return IsRootModel(targetObject.transform);
+		return targetObject.transform.IsRootModel();
 	}
 
-	public static bool IsRootModel(in Transform targetTransform)
+	public static bool IsRootModel(this Transform targetTransform)
 	{
 		return (targetTransform.parent == null) ?
 			false : (targetTransform.parent.Equals(targetTransform.root));

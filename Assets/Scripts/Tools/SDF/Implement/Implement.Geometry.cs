@@ -27,7 +27,7 @@ namespace SDF
 
 				if (loadedObject == null)
 				{
-					Debug.LogWarning("Cannot load mesh: " + obj.uri);
+					Debug.LogWarning($"Cannot load mesh: {obj.uri}");
 				}
 				else
 				{
@@ -43,7 +43,7 @@ namespace SDF
 
 				heightmapObject.transform.SetParent(targetParentObject.transform, false);
 				heightmapObject.GenerateHeightMap(obj, isVisualMesh);
-				heightmapObject.transform.localPosition = SDF2Unity.Position(obj.pos);
+				heightmapObject.transform.localPosition = obj.pos.ToUnity();
 			}
 
 			//
@@ -80,7 +80,7 @@ namespace SDF
 				else if (shape is SDF.Plane)
 				{
 					var plane = shape as SDF.Plane;
-					var normal = SDF2Unity.Normal(plane.normal);
+					var normal = plane.normal.ToUnity();
 					var size = SDF2Unity.Size(plane.size);
 					mesh = ProceduralMesh.CreatePlane(size.x, size.y, normal);
 				}

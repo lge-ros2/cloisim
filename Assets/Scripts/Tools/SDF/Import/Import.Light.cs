@@ -33,11 +33,11 @@ namespace SDF
 				lightComponent.shadows = (light.cast_shadow) ? UE.LightShadows.Hard : UE.LightShadows.None;
 				lightComponent.shadowResolution = UE.Rendering.LightShadowResolution.Medium;
 
-				lightComponent.color = SDF2Unity.Color(light.diffuse);
+				lightComponent.color = light.diffuse.ToUnity();
 				lightComponent.cullingMask = UE.LayerMask.GetMask("Default") | UE.LayerMask.GetMask("Plane");
-				// SDF2Unity.Color(light.specular);
+				// light.specular.ToUnity();
 
-				var direction = SDF2Unity.Direction(light.direction);
+				var direction = light.direction.ToUnity();
 
 				var defaultLightDirection = UE.Quaternion.identity;
 				var defaultIntensity = 1f;
@@ -71,8 +71,8 @@ namespace SDF
 				// As a workaround code, set half of range value for intensity.
 				lightComponent.intensity = (light.intensity.Equals(1)) ? defaultIntensity : (float)light.intensity;
 
-				var localPosition = SDF2Unity.Position(light.Pose?.Pos);
-				var localRotation = SDF2Unity.Rotation(light.Pose?.Rot);
+				var localPosition = light.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
+				var localRotation = light.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
 
 				newLightObject.transform.localPosition = localPosition;
 				newLightObject.transform.localRotation *= (localRotation * defaultLightDirection);

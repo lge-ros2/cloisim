@@ -46,8 +46,8 @@ namespace SDF
 							Main.UIController.ChangeCameraViewMode(UIController.CameraViewModeEnum.Perspective);
 						}
 
-						mainCamera.transform.localPosition = SDF2Unity.Position(cameraPose?.Pos);
-						mainCamera.transform.localRotation = SDF2Unity.Rotation(cameraPose?.Rot);
+						mainCamera.transform.localPosition = cameraPose?.Pos.ToUnity() ?? UE.Vector3.zero;
+						mainCamera.transform.localRotation = cameraPose?.Rot.ToUnity() ?? UE.Quaternion.identity;
 
 						var trackVisual = world.gui.camera.track_visual;
 						if (trackVisual != null)
@@ -62,7 +62,7 @@ namespace SDF
 							if (trackVisual.static_ &&
 								trackVisual.use_model_frame)
 							{
-								Main.TrackVisualPosition = SDF2Unity.Position(trackVisual.xyz);
+								Main.TrackVisualPosition = trackVisual.xyz.ToUnity();
 								Main.TrackVisualInheritYaw = trackVisual.inherit_yaw;
 							}
 						}
@@ -107,7 +107,7 @@ namespace SDF
 
 				ImportRoads(world.GetRoads());
 
-				UE.Physics.gravity = SDF2Unity.Direction(world.gravity);
+				UE.Physics.gravity = world.gravity.ToUnity();
 
 				ImportLights(world.GetLights());
 

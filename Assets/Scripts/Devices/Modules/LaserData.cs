@@ -71,9 +71,9 @@ namespace SensorDevices
 			public double capturedTime;
 			public Pose worldPose;
 
-			public LaserDataOutput(in int length = 0)
+			public LaserDataOutput(in int length)
 			{
-				data = (length == 0) ? null : new double[length];
+				data = new double[length];
 				capturedTime = 0;
 				worldPose = Pose.identity;
 			}
@@ -212,9 +212,12 @@ namespace SensorDevices
 				ResolveLaserRange(i);
 			}
 
-			public double[] GetLaserData()
+			public void CopyLaserData(ref double[] buffer)
 			{
-				return rayData.ToArray();
+				if (buffer.Length == rayData.Length)
+					rayData.CopyTo(buffer);
+				else
+					Debug.LogError("Failed to copy laser Data");
 			}
 		}
 	}

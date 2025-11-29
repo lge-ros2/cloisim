@@ -35,17 +35,12 @@ namespace SensorDevices
 
 	public class Contact : Device
 	{
-		private ConcurrentQueue<messages.Contacts> _messageQueue = new();
-
 		private messages.Contacts _lastContacts = null;
 
 		private double _lastTimeContactsMessageGenerated = 0;
 
 		public string _targetCollision = string.Empty;
 		public string _topic = string.Empty;
-			
-		private static double _contactDepthThreshold = -0.001; 
-		private static double _impulseThreshold = 0.05;
 
 		public string TargetCollision
 		{
@@ -63,28 +58,6 @@ namespace SensorDevices
 		{
 			Mode = ModeType.TX_THREAD;
 			DeviceName = name;
-		}
-
-		protected override void OnStart()
-		{
-			// Debug.Log("Contact target collision: " + _targetCollision);
-		}
-
-		protected override void OnReset()
-		{
-			_messageQueue.Clear();
-		}
-
-		protected override void InitializeMessages()
-		{
-		}
-
-		protected override void GenerateMessage()
-		{
-			while (_messageQueue.TryDequeue(out var msg))
-			{
-				PushDeviceMessage<messages.Contacts>(msg);
-			}
 		}
 
 		private messages.JointWrench MakeJointWrenchMessage()

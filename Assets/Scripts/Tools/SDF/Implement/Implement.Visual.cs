@@ -71,7 +71,7 @@ namespace SDF
 					if (meshFilterList.Length > 0)
 					{
 						var targetParent = meshFilterList[0].transform.parent;
-						var mergedMesh = SDF2Unity.MergeMeshes(meshFilterList);
+						var mergedMesh = meshFilterList.MergeMeshes();
 
 						var newName = meshFilterSet.Key.Replace("(Instance)", "(Combined Mesh)").Trim();
 						var newVisualGeometryObject = new UE.GameObject(newName);
@@ -124,7 +124,7 @@ namespace SDF
 					if (meshRenderer == null)
 					{
 						meshRenderer = meshFilter.gameObject.AddComponent<UE.MeshRenderer>();
-						meshRenderer.materials = new UE.Material[] { SDF2Unity.Material.Create(meshFilter.name + "_material") };
+						meshRenderer.materials = new UE.Material[] { SDF2Unity.CreateMaterial(meshFilter.name + "_material") };
 						meshRenderer.allowOcclusionWhenDynamic = true;
 						meshRenderer.receiveShadows = true;
 					}

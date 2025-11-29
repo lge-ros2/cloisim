@@ -23,14 +23,6 @@ namespace SensorDevices
 			DeviceName = "JointState";
 		}
 
-		protected override void OnStart()
-		{
-		}
-
-		protected override void OnReset()
-		{
-		}
-
 		protected override void InitializeMessages()
 		{
 			jointStateV = new messages.JointStateV();

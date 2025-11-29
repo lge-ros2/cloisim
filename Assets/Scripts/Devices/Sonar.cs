@@ -318,8 +318,7 @@ namespace SensorDevices
 		{
 			try
 			{
-				var contactPoint = _sonarStamped.Sonar.Contact;
-				var point = SDF2Unity.Position(contactPoint.X, contactPoint.Y, contactPoint.Z);
+				var point = _sonarStamped.Sonar.Contact.ToUnity();
 				return point;
 			}
 			catch

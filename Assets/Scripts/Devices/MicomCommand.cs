@@ -35,10 +35,6 @@ namespace SensorDevices
 			DeviceName = "MicomCommand";
 		}
 
-		protected override void OnStart()
-		{
-		}
-
 		protected override void OnReset()
 		{
 			DoWheelDrive(Vector3.zero, Vector3.zero);
@@ -62,8 +58,8 @@ namespace SensorDevices
 
 				if (cmdVelocity != null)
 				{
-					var linearVelocity = SDF2Unity.Position(cmdVelocity.Linear);
-					var angularVelocity = SDF2Unity.Position(cmdVelocity.Angular);
+					var linearVelocity =  cmdVelocity.Linear.ToUnity();
+					var angularVelocity = cmdVelocity.Angular.ToUnity();
 
 					DoWheelDrive(linearVelocity, angularVelocity);
 				}
@@ -167,7 +163,7 @@ namespace SensorDevices
 
 				if (message.Translation != null)
 				{
-					var stickTranslation = SDF2Unity.Position(message.Translation);
+					var stickTranslation = message.Translation.ToUnity();
 					if (Mathf.Abs(stickTranslation.y) > float.Epsilon)
 					{
 						var headsetTarget = Mathf.Abs(stickTranslation.y) *
@@ -178,7 +174,7 @@ namespace SensorDevices
 
 				if (message.Rotation != null)
 				{
-					var stickRotation = SDF2Unity.Rotation(message.Rotation);
+					var stickRotation = message.Rotation.ToUnity();
 					// Debug.Log(stickRotation.ToString("F5"));
 					if (Mathf.Abs(stickRotation.x) > float.Epsilon)
 					{

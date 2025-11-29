@@ -53,7 +53,7 @@ public static partial class DeviceHelper
 
 			if (nextObject != null && !nextObject.CompareTag("Actor"))
 			{
-				while (!SDF2Unity.IsRootModel(nextObject.transform))
+				while (!nextObject.transform.IsRootModel())
 				{
 					nextObject = nextObject.transform.parent.GetComponentInParent<SDF.Helper.Base>();
 

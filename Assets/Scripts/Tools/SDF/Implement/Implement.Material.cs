@@ -5,6 +5,7 @@
  */
 
 using System.Collections.Generic;
+using System.Text;
 using System.IO;
 using UE = UnityEngine;
 
@@ -12,37 +13,39 @@ namespace SDF
 {
 	namespace Implement
 	{
-		public partial class Material
+		public static partial class Material
 		{
-			public static void Apply(in SDF.Material sdfMaterial, UE.Renderer renderer)
+			public static void Apply(this SDF.Material sdfMaterial, UE.Renderer renderer, out StringBuilder logs)
 			{
+				logs = new StringBuilder();
+
 				foreach (var material in renderer.materials)
 				{
 					if (sdfMaterial.ambient != null)
 					{
-						UE.Debug.LogWarning(material.name + ": ambient is not support. " + SDF2Unity.Color(sdfMaterial.ambient));
+						logs.AppendLine($"{material.name}: ambient({sdfMaterial.ambient.ToUnity()}) is not support.");
 					}
 
 					if (sdfMaterial.diffuse != null)
 					{
-						SDF2Unity.Material.SetBaseColor(material, SDF2Unity.Color(sdfMaterial.diffuse));
+						material.SetBaseColor(sdfMaterial.diffuse.ToUnity());
 					}
 
 					if (sdfMaterial.emissive != null)
 					{
-						SDF2Unity.Material.SetEmission(material, SDF2Unity.Color(sdfMaterial.emissive));
+						material.SetEmission(sdfMaterial.emissive.ToUnity());
 					}
 
 					if (sdfMaterial.specular != null)
 					{
-						SDF2Unity.Material.SetSpecular(material, SDF2Unity.Color(sdfMaterial.specular));
-						// UE.Debug.Log("ImportMaterial HasColorSpecular " + material.GetColor("_SpecColor"));
+						material.SetSpecular(sdfMaterial.specular.ToUnity());
+						// logs.AppendLine($"{material.name}: specular({material.GetColor("_SpecColor")})");
 					}
 
 					if (sdfMaterial.shader != null)
 					{
-						SDF2Unity.Material.SetNormalMap(material, sdfMaterial.shader.normal_map);
-						// UE.Debug.Log("ImportMaterial HasNormalmap " + sdfMaterial.shader.normal_map);
+						material.SetNormalMap(sdfMaterial.shader.normal_map);
+						// logs.AppendLine($"{material.name}: normalmap({sdfMaterial.shader.normal_map})");
 					}
 				}
 
@@ -51,29 +54,29 @@ namespace SDF
 				{
 					// Name of material from an installed script file.
 					// This will override the color element if the script exists.
-					var scriptAppliedMaterials = ApplyScript(sdfMaterial.script, renderer.materials);
+					var scriptAppliedMaterials = sdfMaterial.script.ApplyScript(renderer.materials);
 					renderer.materials = scriptAppliedMaterials;
 
 					if (sdfMaterial.script.name.ToLower().Contains("tree"))
 					{
 						foreach (var material in renderer.materials)
 						{
-							SDF2Unity.Material.ConvertToSpeedTree(material);
+							material.ConvertToSpeedTree();
 						}
 					}
 				}
 			}
 
-			public static UE.Material ApplyScript(in SDF.Material.Script script, in UE.Material baseMasterial)
+			public static UE.Material ApplyScript(this SDF.Material.Script script, in UE.Material baseMasterial)
 			{
-				var materials = ApplyScript(script, new UE.Material[] { baseMasterial });
+				var materials = script.ApplyScript(new UE.Material[] { baseMasterial });
 				return materials[0];
 			}
 
-			public static UE.Material[] ApplyScript(in SDF.Material.Script script, in UE.Material[] baseMaterials)
+			public static UE.Material[] ApplyScript(this SDF.Material.Script script, in UE.Material[] baseMaterials)
 			{
 				var targetMaterialName = script.name;
-				var targetMaterialFilepath = FindMaterialFilepathAndUpdateURIs(script.uri, out var texturesPath);
+				FindMaterialFilepathAndUpdateURIs(script.uri, out var targetMaterialFilepath, out var texturesPath);
 
 				var outputMaterials = baseMaterials;
 
@@ -83,17 +86,17 @@ namespace SDF
 					if (ogreMaterial != null)
 					{
 						// UE.Debug.Log($"Found: '{ogreMaterial.name}' material, techniques: {ogreMaterial.techniques.Count}");
-						outputMaterials = Ogre.ApplyMaterial(ogreMaterial, baseMaterials, texturesPath);
+						outputMaterials = ogreMaterial.ApplyMaterial(baseMaterials, texturesPath);
 					}
 				}
 
 				return outputMaterials;
 			}
 
-			private static string FindMaterialFilepathAndUpdateURIs(in List<string> scriptUris, out List<string> texturesPath)
+			private static void FindMaterialFilepathAndUpdateURIs(in List<string> scriptUris, out string targetMaterialFilepath, out List<string> texturesPath)
 			{
+				targetMaterialFilepath = string.Empty;
 				texturesPath = new List<string>();
-				var targetMaterialFilepath = string.Empty;
 
 				foreach (var uri in scriptUris)
 				{
@@ -120,8 +123,6 @@ namespace SDF
 						texturesPath.Add(uri);
 					}
 				}
-
-				return targetMaterialFilepath;
 			}
 		}
 	}
