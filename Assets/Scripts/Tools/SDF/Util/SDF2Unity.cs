@@ -3,28 +3,44 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#nullable enable
 
 using UnityEngine;
 
-public partial class SDF2Unity
+public static partial class SDF2Unity
 {
-	public static Vector3 Abs(in Vector3 value)
-	{
-		return new Vector3(
-			Mathf.Abs(value.x),
-			Mathf.Abs(value.y),
-			Mathf.Abs(value.z));
-	}
-
-	public static Color Color(in SDF.Color value)
+	public static Color ToUnity(this SDF.Color value)
 	{
 		return new Color((float)value.R, (float)value.G, (float)value.B, (float)value.A);
 	}
 
-	public static Color Color(in string value)
+	public static Color ToColor(this string value)
 	{
 		var color = new SDF.Color(value);
-		return Color(color);
+		return color.ToUnity();
+	}
+
+	/// <param name="x">right handed system x</param>
+	/// <param name="y">right handed system y</param>
+	/// <param name="z">right handed system z</param>
+	public static Vector3 Position(in double x, in double y, in double z)
+	{
+		return new Vector3(-(float)y, (float)z, (float)x);
+	}
+
+	public static Vector3 ToUnity(this SDF.Vector3<double>? value)
+	{
+		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
+	}
+
+	public static Vector3 ToUnity(this SDF.Vector3<int>? value)
+	{
+		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
+	}
+
+	public static Vector3 ToUnity(this cloisim.msgs.Vector3d value)
+	{
+		return Position(value.X, value.Y, value.Z);
 	}
 
 	public static Vector3 Scalar(in double x, in double y, in double z)
@@ -36,47 +52,24 @@ public partial class SDF2Unity
 		return scalarVector;
 	}
 
-	/// <param name="x">right handed system x</param>
-	/// <param name="y">right handed system y</param>
-	/// <param name="z">right handed system z</param>
-	public static Vector3 Position(in double x, in double y, in double z)
+	public static Vector2 Scale(in SDF.Vector2<double> value)
 	{
-		return new Vector3(-(float)y, (float)z, (float)x);
+		return new Vector2(Mathf.Abs((float)value.X), Mathf.Abs((float)value.Y));
 	}
 
-	public static Vector3 Position(in SDF.Vector3<double> value)
+	public static Vector2 Scale(in string value)
 	{
-		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
+		return Scale(new SDF.Vector2<double>(value));
 	}
 
-	public static Vector3 Position(in SDF.Vector3<float> value)
+	public static Vector3 Scale(in double x, in double y, in double z)
 	{
-		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
+		return Scalar(x, y, z);
 	}
 
-	public static Vector3 Position(in SDF.Vector3<int> value)
+	public static Vector3 Scale(in SDF.Vector3<double> value)
 	{
-		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
-	}
-
-	public static Vector3 Position(in cloisim.msgs.Vector3d value)
-	{
-		return Position(value.X, value.Y, value.Z);
-	}
-
-	public static Vector3 Rotation(in cloisim.msgs.Vector3d value)
-	{
-		return Position(value);
-	}
-
-	public static Quaternion Rotation(in SDF.Quaternion<double> value)
-	{
-		return (value == null) ? Quaternion.identity : Rotation(value.W, value.X, value.Y, value.Z);
-	}
-
-	public static Quaternion Rotation(in SDF.Quaternion<float> value)
-	{
-		return (value == null) ? Quaternion.identity : Rotation(value.W, value.X, value.Y, value.Z);
+		return Scale(value.X, value.Y, value.Z);
 	}
 
 	/// <param name="w">right handed system w</param>
@@ -88,28 +81,14 @@ public partial class SDF2Unity
 		return new Quaternion((float)y, (float)-z, (float)-x, (float)w);
 	}
 
-	public static Vector2 Scale(in string value)
+	public static Quaternion ToUnity(this SDF.Quaternion<double>? value)
 	{
-		return Scale(new SDF.Vector2<double>(value));
+		return (value == null) ? Quaternion.identity : Rotation(value.W, value.X, value.Y, value.Z);
 	}
 
-	public static Vector2 Scale(in SDF.Vector2<double> value)
+	public static Quaternion ToUnity(this SDF.Quaternion<float>? value)
 	{
-		return new Vector2(Mathf.Abs((float)value.X), Mathf.Abs((float)value.Y));
-	}
-
-	public static Vector3 Scale(in SDF.Vector3<double> value)
-	{
-		return Scale(value.X, value.Y, value.Z);
-	}
-
-	public static Vector3 Scale(in double x, in double y, in double z)
-	{
-		var scaleVector = Position(x, y, z);
-		scaleVector.x = Mathf.Abs(scaleVector.x);
-		scaleVector.y = Mathf.Abs(scaleVector.y);
-		scaleVector.z = Mathf.Abs(scaleVector.z);
-		return scaleVector;
+		return (value == null) ? Quaternion.identity : Rotation(value.W, value.X, value.Y, value.Z);
 	}
 
 	public static Vector2 Size(in SDF.Vector2<double> value)
@@ -120,21 +99,6 @@ public partial class SDF2Unity
 	public static Vector2 Point(in SDF.Vector2<double> value)
 	{
 		return new Vector2((float)value.Y, (float)value.X);
-	}
-
-	public static Vector3 Normal(in SDF.Vector3<int> value)
-	{
-		return Position(value);
-	}
-
-	public static Vector3 Axis(SDF.Vector3<int> axis)
-	{
-		return Position(axis);
-	}
-
-	public static Vector3 Direction(SDF.Vector3<double> direction)
-	{
-		return Position(direction);
 	}
 
 	public static float CurveOrientation(in float value)

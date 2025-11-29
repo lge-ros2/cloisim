@@ -165,7 +165,7 @@ namespace SDF
 				articulationBody.ResetCenterOfMass();
 				if (inertial?.pose != null)
 				{
-					articulationBody.centerOfMass = SDF2Unity.Position(inertial.pose?.Pos);
+					articulationBody.centerOfMass = inertial.pose?.Pos.ToUnity() ?? UE.Vector3.zero;
 					articulationBody.automaticCenterOfMass = false;
 				}
 				else

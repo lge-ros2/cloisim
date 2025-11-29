@@ -44,13 +44,13 @@ namespace SDF
 				if (passProperties.ContainsKey("diffuse"))
 				{
 					var diffuse = passProperties["diffuse"].Trim();
-					SDF2Unity.Material.SetBaseColor(material, SDF2Unity.Color(diffuse));
+					material.SetBaseColor(diffuse.ToColor());
 				}
 
 				if (passProperties.ContainsKey("emissive"))
 				{
 					var emissive = passProperties["emissive"].Trim();
-					SDF2Unity.Material.SetEmission(material, SDF2Unity.Color(emissive));
+					material.SetEmission(emissive.ToColor());
 				}
 
 				if (passProperties.ContainsKey("specular"))
@@ -81,7 +81,7 @@ namespace SDF
 						specular = string.Join(" ", tmp, 0, 4);
 					}
 
-					SDF2Unity.Material.SetSpecular(material, SDF2Unity.Color(specular));
+					material.SetSpecular(specular.ToColor());
 				}
 
 				if (passProperties.ContainsKey("scene_blend"))
@@ -89,7 +89,7 @@ namespace SDF
 					var sceneBlend = passProperties["scene_blend"].Trim();
 					if (sceneBlend == "alpha_blend")
 					{
-						SDF2Unity.Material.SetTransparent(material);
+						material.SetTransparent();
 					}
 				}
 			}

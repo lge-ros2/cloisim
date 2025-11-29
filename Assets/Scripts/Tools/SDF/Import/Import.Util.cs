@@ -152,8 +152,8 @@ namespace SDF
 					var pose = baseHelper?.Pose;
 					if (pose != null)
 					{
-						var localPosition = SDF2Unity.Position(pose?.Pos);
-						var localRotation = SDF2Unity.Rotation(pose?.Rot);
+						var localPosition = pose?.Pos.ToUnity() ?? UE.Vector3.zero;
+						var localRotation = pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
 
 						// UE.Debug.Log($"SpecifyPose {baseHelper.name} {pose.relative_to}");
 						if (string.IsNullOrEmpty(pose.relative_to))

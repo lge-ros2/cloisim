@@ -57,8 +57,8 @@ namespace SDF
 					// UE.Debug.LogWarningFormat("Linking2 ({0}) => ({1})", modelTransformChild.name, linkParent.name);
 				}
 
-				var jointPosition = SDF2Unity.Position(joint.Pose?.Pos);
-				var jointRotation = SDF2Unity.Rotation(joint.Pose?.Rot);
+				var jointPosition = joint.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
+				var jointRotation = joint.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
 				anchorPose.position += jointPosition;
 				anchorPose.rotation *= jointRotation;
 
@@ -102,7 +102,7 @@ namespace SDF
 				body.jointFriction = (axis.dynamics != null) ? (float)axis.dynamics.friction : 0.5f;
 				body.maxJointVelocity = (float)axis.limit.velocity;
 
-				var jointAxis = SDF2Unity.Axis(axis.xyz);
+				var jointAxis = axis.xyz.ToUnity();
 				// UE.Debug.LogWarning(body.transform.parent.name + "::" + body.name + " = " + jointAxis + " - revolute");
 
 				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
@@ -162,7 +162,7 @@ namespace SDF
 				body.jointFriction = UE.Mathf.Min(body.jointFriction, axis2JointFriction);
 				body.maxJointVelocity = UE.Mathf.Min(body.maxJointVelocity, (float)axis2.limit.velocity);
 
-				var joint2Axis = SDF2Unity.Axis(axis2.xyz);
+				var joint2Axis = axis2.xyz.ToUnity();
 
 				if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
 				{
@@ -221,8 +221,8 @@ namespace SDF
 			private static void MakePrismaticJoint(this UE.ArticulationBody body, in SDF.Axis axis, in SDF.Pose<double> pose)
 			{
 				body.jointType = UE.ArticulationJointType.PrismaticJoint;
-				body.anchorRotation *= SDF2Unity.Rotation(pose?.Rot);
-				// body.parentAnchorRotation *= SDF2Unity.Rotation(pose?.Rot);  // TODO: matchAnchors is set to true
+				body.anchorRotation *= pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
+				// body.parentAnchorRotation *= pose?.Rot.ToUnity() ?? UE.Quaternion.identity;  // TODO: matchAnchors is set to true
 
 				body.linearDamping = 1.5f;
 				body.angularDamping = 1;
@@ -251,7 +251,7 @@ namespace SDF
 					body.jointFriction = 0.1f;
 				}
 
-				var jointAxis = SDF2Unity.Axis(axis.xyz);
+				var jointAxis = axis.xyz.ToUnity();
 				// UE.Debug.LogWarning(body.transform.parent.name + "::" + body.name + " = " + jointAxis + " - Prismatic");
 
 				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
@@ -361,7 +361,7 @@ namespace SDF
 
 				var rootTransform = targetTransform;
 
-				while (!SDF2Unity.IsRootModel(rootTransform))
+				while (!rootTransform.IsRootModel())
 				{
 					rootTransform = rootTransform.parent;
 				}

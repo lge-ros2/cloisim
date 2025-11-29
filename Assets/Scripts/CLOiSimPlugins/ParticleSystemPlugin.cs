@@ -65,7 +65,7 @@ public class ParticleSystemPlugin : CLOiSimPlugin
 		var angle = GetPluginParameters().GetValue<float>("shape/angle");
 		var radius = GetPluginParameters().GetValue<float>("shape/radius");
 		var rotationStr = GetPluginParameters().GetValue<string>("shape/rotation");
-		var rotation = SDF2Unity.Rotation(new SDF.Quaternion<float>(rotationStr));
+		var rotation = (new SDF.Quaternion<float>(rotationStr)).ToUnity();
 		// Debug.Log("shapeRotation: " + shapeRotation);
 
 		var particleShape = _particleSystem.shape;
@@ -116,7 +116,7 @@ public class ParticleSystemPlugin : CLOiSimPlugin
 		var sizeMax = GetPluginParameters().GetValue<float>("renderer/billboard/particle_size/max");
 		var castShadows = GetPluginParameters().GetValue<bool>("renderer/cast_shadows");
 		var materilColorString = GetPluginParameters().GetValue<string>("renderer/material/color");
-		var materialColor = SDF2Unity.Color(materilColorString);
+		var materialColor = materilColorString.ToColor();
 
 		var particleMaterial = Instantiate(Resources.Load<Material>("Materials/Particle Material"));
 		particleMaterial.color = materialColor;

@@ -23,28 +23,28 @@ namespace SDF
 				{
 					if (sdfMaterial.ambient != null)
 					{
-						logs.AppendLine($"{material.name}: ambient({SDF2Unity.Color(sdfMaterial.ambient)}) is not support.");
+						logs.AppendLine($"{material.name}: ambient({sdfMaterial.ambient.ToUnity()}) is not support.");
 					}
 
 					if (sdfMaterial.diffuse != null)
 					{
-						SDF2Unity.Material.SetBaseColor(material, SDF2Unity.Color(sdfMaterial.diffuse));
+						material.SetBaseColor(sdfMaterial.diffuse.ToUnity());
 					}
 
 					if (sdfMaterial.emissive != null)
 					{
-						SDF2Unity.Material.SetEmission(material, SDF2Unity.Color(sdfMaterial.emissive));
+						material.SetEmission(sdfMaterial.emissive.ToUnity());
 					}
 
 					if (sdfMaterial.specular != null)
 					{
-						SDF2Unity.Material.SetSpecular(material, SDF2Unity.Color(sdfMaterial.specular));
+						material.SetSpecular(sdfMaterial.specular.ToUnity());
 						// logs.AppendLine($"{material.name}: specular({material.GetColor("_SpecColor")})");
 					}
 
 					if (sdfMaterial.shader != null)
 					{
-						SDF2Unity.Material.SetNormalMap(material, sdfMaterial.shader.normal_map);
+						material.SetNormalMap(sdfMaterial.shader.normal_map);
 						// logs.AppendLine($"{material.name}: normalmap({sdfMaterial.shader.normal_map})");
 					}
 				}
@@ -61,7 +61,7 @@ namespace SDF
 					{
 						foreach (var material in renderer.materials)
 						{
-							SDF2Unity.Material.ConvertToSpeedTree(material);
+							material.ConvertToSpeedTree();
 						}
 					}
 				}

@@ -24,8 +24,8 @@ namespace SDF
 				Util.RootModels.SetChild(newActorObject);
 
 				// Apply attributes
-				var localPosition = SDF2Unity.Position(actor.Pose?.Pos);
-				var localRotation = SDF2Unity.Rotation(actor.Pose?.Rot);
+				var localPosition = actor.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
+				var localRotation = actor.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
 				// Debug.Log(newActorObject.name + "::" + localPosition + ", " + localRotation);
 
 				var actorHelper = newActorObject.AddComponent<Helper.Actor>();

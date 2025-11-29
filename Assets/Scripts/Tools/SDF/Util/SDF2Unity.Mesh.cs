@@ -8,9 +8,9 @@ using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public partial class SDF2Unity
+public static partial class SDF2Unity
 {
-	public static Mesh MergeMeshes(in MeshFilter[] meshFilters)
+	public static Mesh MergeMeshes(this MeshFilter[] meshFilters)
 	{
 		var combine = new CombineInstance[meshFilters.Length];
 		var totalVertexCount = 0;
@@ -36,7 +36,7 @@ public partial class SDF2Unity
 		return newCombinedMesh;
 	}
 
-	public static Mesh MergeMeshes(in MeshCollider[] meshColliders, in Matrix4x4 geometryWorldToLocalMatrix)
+	public static Mesh MergeMeshes(this MeshCollider[] meshColliders, in Matrix4x4 geometryWorldToLocalMatrix)
 	{
 		var combine = new CombineInstance[meshColliders.Length];
 		var totalVertexCount = 0;

@@ -80,23 +80,23 @@ public static partial class MeshLoader
 
 		foreach (var sceneMat in sceneMaterials)
 		{
-			var mat = SDF2Unity.Material.Create(sceneMat.Name);
+			var mat = SDF2Unity.CreateMaterial(sceneMat.Name);
 
 			if (sceneMat.HasColorDiffuse)
 			{
-				SDF2Unity.Material.SetBaseColor(mat, sceneMat.ColorDiffuse.ToUnity());
+				mat.SetBaseColor(sceneMat.ColorDiffuse.ToUnity());
 				// logs.AppendLine($"HasColorDiffuse({sceneMat.ColorDiffuse.ToUnity()}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorEmissive)
 			{
-				SDF2Unity.Material.SetEmission(mat, sceneMat.ColorEmissive.ToUnity());
+				mat.SetEmission(sceneMat.ColorEmissive.ToUnity());
 				// logs.AppendLine($"HasColorEmissive({sceneMat.ColorEmissive.ToUnity()}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorSpecular)
 			{
-				SDF2Unity.Material.SetSpecular(mat, sceneMat.ColorSpecular.ToUnity());
+				mat.SetSpecular(sceneMat.ColorSpecular.ToUnity());
 				// logs.AppendLine($"HasColorSpecular({sceneMat.ColorSpecular.ToUnity()}) for {sceneMat.Name}");
 			}
 

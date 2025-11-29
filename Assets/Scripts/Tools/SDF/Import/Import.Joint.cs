@@ -71,7 +71,7 @@ namespace SDF
 					{
 						if (joint.Axis.dynamics != null)
 						{
-							axis1xyz = SDF2Unity.Axis(joint.Axis.xyz);
+							axis1xyz = joint.Axis.xyz.ToUnity();
 							axisSpringReference = (joint.Type.Equals("prismatic")) ?
 							 	(float)joint.Axis.dynamics.spring_reference :
 								SDF2Unity.CurveOrientation((float)joint.Axis.dynamics.spring_reference);
@@ -89,7 +89,7 @@ namespace SDF
 					{
 						if (joint.Axis2.dynamics != null)
 						{
-							axis2xyz = SDF2Unity.Axis(joint.Axis2.xyz);
+							axis2xyz = joint.Axis2.xyz.ToUnity();
 							axis2SpringReference = SDF2Unity.CurveOrientation((float)joint.Axis2.dynamics.spring_reference);
 						}
 

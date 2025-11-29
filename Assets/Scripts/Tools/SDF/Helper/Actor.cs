@@ -204,8 +204,8 @@ namespace SDF
 
 							if (firstWayPoint.time == 0)
 							{
-								lastPosition = SDF2Unity.Position(firstWayPoint.Pose?.Pos);
-								lastRotation = SDF2Unity.Rotation(firstWayPoint.Pose?.Rot);
+								lastPosition = firstWayPoint.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
+								lastRotation = firstWayPoint.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
 								startIndex = 1;
 							}
 
@@ -215,12 +215,13 @@ namespace SDF
 							for (var i = startIndex; i < trajectory.waypoints.Count; i++)
 							{
 								var waypoint = trajectory.waypoints[i];
-								// UE.Debug.Log("Time: " + waypoint.time + ", Position: " + SDF2Unity.Position(waypoint.Pose?.Pos) + ", Rotation: " + SDF2Unity.Rotation(waypoint.Pose?.Rot));
 
 								var waypointToward = new WaypointToward();
 								var nextTime = (float)waypoint.time;
-								var nextPosition = SDF2Unity.Position(waypoint.Pose?.Pos);
-								var nextRotation = SDF2Unity.Rotation(waypoint.Pose?.Rot);
+								var nextPosition = waypoint.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
+								var nextRotation = waypoint.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
+
+								// UE.Debug.Log("Time: " + waypoint.time + ", Position: " + nextPosition + ", Rotation: " + nextRotation);
 
 								waypointToward.linearSpeed = UE.Vector3.Distance(nextPosition, lastPosition) / (nextTime - lastTime);
 								waypointToward.angularSpeed = UE.Quaternion.Angle(nextRotation, lastRotation) / (nextTime - lastTime);

@@ -33,7 +33,7 @@ namespace SDF
 
 			protected void Awake()
 			{
-				_isRootModel = SDF2Unity.IsRootModel(this.gameObject);
+				_isRootModel = this.gameObject.IsRootModel();
 				_poseControl = new PoseControl(this.transform);
 				Reset();
 

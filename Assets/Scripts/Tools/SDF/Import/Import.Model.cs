@@ -74,8 +74,8 @@ namespace SDF
 				parentObject.SetChild(newModelObject);
 
 				// Apply attributes
-				var localPosition = SDF2Unity.Position(model.Pose?.Pos);
-				var localRotation = SDF2Unity.Rotation(model.Pose?.Rot);
+				var localPosition = model.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
+				var localRotation = model.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
 				// UE.Debug.Log(newModelObject.name + "::" + localPosition + ", " + localRotation);
 
 				var modelHelper = newModelObject.AddComponent<Helper.Model>();

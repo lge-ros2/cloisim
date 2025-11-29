@@ -45,7 +45,7 @@ namespace SDF
 			{
 				var geometryWorldToLocalMatrix = targetObject.transform.worldToLocalMatrix;
 				var meshColliders = targetObject.GetComponentsInChildren<UE.MeshCollider>();
-				var mergedMesh = SDF2Unity.MergeMeshes(meshColliders, geometryWorldToLocalMatrix);
+				var mergedMesh = meshColliders.MergeMeshes(geometryWorldToLocalMatrix);
 
 				for (var index = 0; index < meshColliders.Length; index++)
 				{
