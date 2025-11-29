@@ -71,7 +71,7 @@ public static partial class MeshLoader
 		return null;
 	}
 
-	private static List<Material> LoadMaterials(in string meshPath, in List<Assimp.Material> sceneMaterials)
+	private static List<Material> ToUnity(this List<Assimp.Material> sceneMaterials, in string meshPath)
 	{
 		var parentPath = Directory.GetParent(meshPath).FullName;
 		var textureDirectories = GetRootTexturePaths(parentPath);
@@ -229,7 +229,7 @@ public static partial class MeshLoader
 		return materials;
 	}
 
-	private static MeshMaterialList LoadMeshes(in IReadOnlyList<Assimp.Mesh> sceneMeshes)
+	private static MeshMaterialList ToUnity(this IReadOnlyList<Assimp.Mesh> sceneMeshes)
 	{
 		var meshMatList = new MeshMaterialList();
 
@@ -469,10 +469,10 @@ public static partial class MeshLoader
 				List<Material> materials = null;
 				if (scene.HasMaterials)
 				{
-					materials = LoadMaterials(meshPath, scene.Materials);
+					materials = scene.Materials.ToUnity(meshPath);
 				}
 
-				meshMatList = LoadMeshes(scene.Meshes);
+				meshMatList = scene.Meshes.ToUnity();
 				meshMatList.SetMaterials(materials);
 			}
 

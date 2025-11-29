@@ -13,11 +13,11 @@ namespace SDF
 {
 	namespace Implement
 	{
-		public partial class Material
+		public static partial class Material
 		{
-			public static void Apply(in SDF.Material sdfMaterial, UE.Renderer renderer)
+			public static void Apply(this SDF.Material sdfMaterial, UE.Renderer renderer, out StringBuilder logs)
 			{
-				var logs = new StringBuilder();
+				logs = new StringBuilder();
 
 				foreach (var material in renderer.materials)
 				{
@@ -65,9 +65,6 @@ namespace SDF
 						}
 					}
 				}
-
-				if (logs.Length > 0)
-					UE.Debug.LogWarning("SDF.Implement.Material.Apply() - Implementation logs\n" + logs.ToString());
 			}
 
 			public static UE.Material ApplyScript(in SDF.Material.Script script, in UE.Material baseMasterial)

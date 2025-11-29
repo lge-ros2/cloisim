@@ -145,9 +145,10 @@ namespace SDF
 				return;
 			}
 
+			var directoryErrlogs = new StringBuilder();
+			var fileErrlogs = new StringBuilder();
+			var sdfModelErrlogs = new StringBuilder();
 			var failedModelTableList = new StringBuilder();
-			var numberOfFailedModelTable = 0;
-
 			var modelConfigDoc = new XmlDocument();
 
 			// Loop model paths
@@ -155,7 +156,7 @@ namespace SDF
 			{
 				if (!Directory.Exists(modelPath))
 				{
-					Console.Write("Directory does not exists: " + modelPath);
+					directoryErrlogs.AppendLine(modelPath);
 					continue;
 				}
 
@@ -175,7 +176,7 @@ namespace SDF
 
 					if (!File.Exists(modelConfig))
 					{
-						Console.Write("File does not exists: " + modelConfig);
+						fileErrlogs.AppendLine(modelConfig);
 						continue;
 					}
 
@@ -185,7 +186,7 @@ namespace SDF
 					}
 					catch (XmlException e)
 					{
-						Console.Write($"Failed to Load model file({modelConfig}) - {e.Message}");
+						sdfModelErrlogs.AppendLine($"{modelConfig} - {e.Message}");
 						continue;
 					}
 
@@ -216,7 +217,7 @@ namespace SDF
 
 					if (string.IsNullOrEmpty(sdfFileName))
 					{
-						Console.Write($"{modelName}: SDF FileName is empty!!");
+						sdfModelErrlogs.AppendLine($"{modelName} - empty SDF FileName!!!");
 						continue;
 					}
 
@@ -229,8 +230,7 @@ namespace SDF
 						if (resourceModelTable.ContainsKey(modelName))
 						{
 							failedModelTableList.AppendLine(string.Empty);
-							failedModelTableList.Append(String.Concat(modelName, " => Cannot register", modelValue));
-							numberOfFailedModelTable++;
+							failedModelTableList.Append(String.Concat(modelName, " => ", modelValue));
 						}
 						else
 						{
@@ -244,13 +244,31 @@ namespace SDF
 				}
 			}
 
-			if (numberOfFailedModelTable > 0)
+			if (directoryErrlogs.Length > 0)
 			{
-				failedModelTableList.Insert(0, $"All failed models({numberOfFailedModelTable}) are already registered.");
+				directoryErrlogs.Insert(0, "Directory does not exists: \n");
+				_loggerErr.Write(directoryErrlogs.ToString());
+			}
+
+			if (fileErrlogs.Length > 0)
+			{
+				fileErrlogs.Insert(0, "File does not exists:\n");
+				_loggerErr.Write(fileErrlogs.ToString());
+			}
+
+			if (sdfModelErrlogs.Length > 0)
+			{
+				sdfModelErrlogs.Insert(0, "Failed to load model files:");
+				_loggerErr.Write(sdfModelErrlogs.ToString());
+			}
+
+			if (failedModelTableList.Length > 0)
+			{
+				failedModelTableList.Insert(0, $"Below models are already registered. - expected duplication of registeration");
 				_loggerErr.Write(failedModelTableList);
 			}
 
-			Console.Write($"Total Models: {resourceModelTable.Count}");
+			Console.Write($"Loaded total Models: {resourceModelTable.Count}");
 		}
 
 		private string FindParentModelFolderName(in XmlNode targetNode)

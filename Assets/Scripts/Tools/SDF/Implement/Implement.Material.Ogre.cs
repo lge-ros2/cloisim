@@ -13,7 +13,7 @@ namespace SDF
 {
 	namespace Implement
 	{
-		public partial class Material
+		public static partial class Material
 		{
 			public static class Ogre
 			{
@@ -40,7 +40,6 @@ namespace SDF
 
 					return string.Empty;
 				}
-
 
 				private static void ApplyVertexColour(in Dictionary<string, string> passProperties, UE.Material material)
 				{
