@@ -550,19 +550,6 @@ namespace SensorDevices
 			}
 		}
 
-		protected override void GenerateMessage()
-		{
-			var count = _messageQueue.Count;
-			while (_messageQueue.TryDequeue(out var msg))
-			{
-				PushDeviceMessage(msg);
-				if (count > 0)
-				{
-					Thread.Sleep(WaitPeriodInMilliseconds() / count);
-				}
-			}
-		}
-
 		[SerializeField] private static int _indexForVisualize = 0;
 		[SerializeField] private static int _maxCountForVisualize = 3;
 		[SerializeField] private static float _hueOffsetForVisualize = 0f;

@@ -60,14 +60,6 @@ namespace SensorDevices
 			DeviceName = name;
 		}
 
-		protected override void GenerateMessage()
-		{
-			while (_messageQueue.TryDequeue(out var msg))
-			{
-				PushDeviceMessage(msg);
-			}
-		}
-
 		private messages.JointWrench MakeJointWrenchMessage()
 		{
 			var jointWrench = new messages.JointWrench();

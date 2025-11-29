@@ -58,17 +58,6 @@ namespace SensorDevices
 			base.InitializeMessages();
 		}
 
-		protected override void GenerateMessage()
-		{
-			var count = _messageQueue.Count;
-			while (_messageQueue.TryDequeue(out var msg))
-			{
-				PushDeviceMessage(msg);
-				Thread.Sleep(WaitPeriodInMilliseconds() / count);
-				Thread.SpinWait(1);
-			}
-		}
-
 		void LateUpdate()
 		{
 			if (_startCameraWork &&

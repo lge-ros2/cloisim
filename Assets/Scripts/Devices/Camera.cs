@@ -391,21 +391,9 @@ namespace SensorDevices
 				if (_asyncWorkList.TryRemove(request.GetHashCode(), out var asyncWork))
 				{
 					var readbackData = request.GetData<byte>();
-					var asyncWorkTime = DeviceHelper.GetGlobalClock().SimTime - asyncWork.capturedTime;
 					ImageProcessing(ref readbackData, asyncWork.capturedTime);
 					readbackData.Dispose();
 				}
-			}
-		}
-
-		protected override void GenerateMessage()
-		{
-			var count = _messageQueue.Count;
-			while (_messageQueue.TryDequeue(out var msg))
-			{
-				PushDeviceMessage(msg);
-				Thread.Sleep(WaitPeriodInMilliseconds() / count);
-				Thread.SpinWait(1);
 			}
 		}
 

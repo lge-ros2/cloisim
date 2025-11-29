@@ -15,10 +15,10 @@ public abstract class Device : MonoBehaviour
 	public enum ModeType { NONE, TX, RX, TX_THREAD, RX_THREAD };
 	public ModeType Mode = ModeType.NONE;
 
-	protected ConcurrentQueue<global::ProtoBuf.IExtensible> _messageQueue = new ConcurrentQueue<ProtoBuf.IExtensible>();
+	protected ConcurrentQueue<global::ProtoBuf.IExtensible> _messageQueue = new();
 
-	private DeviceMessageQueue _deviceMessageQueue = new DeviceMessageQueue();
-	private DevicePose _devicePose = new DevicePose();
+	private DeviceMessageQueue _deviceMessageQueue = new();
+	private DevicePose _devicePose = new();
 	private SDF.Plugin _pluginParameters = null;
 
 	[SerializeField]
@@ -177,7 +177,19 @@ public abstract class Device : MonoBehaviour
 	protected virtual void ProcessDevice() { }
 
 	// Used for TX
-	protected virtual void GenerateMessage() { }
+	protected virtual void GenerateMessage()
+	{
+		var totalCountToPush = _messageQueue.Count;
+		var countToPush = totalCountToPush;
+		while (_messageQueue.TryDequeue(out var msg))
+		{
+			PushDeviceMessage(msg);
+			if (countToPush-- > 1)
+				Thread.Sleep(WaitPeriodInMilliseconds() / totalCountToPush);
+			else
+				Thread.SpinWait(1);
+		}
+	}
 
 	private IEnumerator DeviceCoroutineTx()
 	{

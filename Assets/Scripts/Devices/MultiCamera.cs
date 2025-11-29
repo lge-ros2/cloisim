@@ -83,14 +83,6 @@ namespace SensorDevices
 			}
 		}
 
-		protected override void GenerateMessage()
-		{
-			while (_messageQueue.TryDequeue(out var msg))
-			{
-				PushDeviceMessage(msg);
-			}
-		}
-
 		public void AddCamera(in SensorDevices.Camera newCam)
 		{
 			cameras.Add(newCam);
