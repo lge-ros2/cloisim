@@ -5,6 +5,7 @@
  */
 
 using System.Collections.Generic;
+using System.Text;
 using System.IO;
 using UE = UnityEngine;
 
@@ -16,11 +17,13 @@ namespace SDF
 		{
 			public static void Apply(in SDF.Material sdfMaterial, UE.Renderer renderer)
 			{
+				var logs = new StringBuilder();
+
 				foreach (var material in renderer.materials)
 				{
 					if (sdfMaterial.ambient != null)
 					{
-						UE.Debug.LogWarning(material.name + ": ambient is not support. " + SDF2Unity.Color(sdfMaterial.ambient));
+						logs.AppendLine($"{material.name}: ambient({SDF2Unity.Color(sdfMaterial.ambient)}) is not support.");
 					}
 
 					if (sdfMaterial.diffuse != null)
@@ -36,13 +39,13 @@ namespace SDF
 					if (sdfMaterial.specular != null)
 					{
 						SDF2Unity.Material.SetSpecular(material, SDF2Unity.Color(sdfMaterial.specular));
-						// UE.Debug.Log("ImportMaterial HasColorSpecular " + material.GetColor("_SpecColor"));
+						// logs.AppendLine($"{material.name}: specular({material.GetColor("_SpecColor")})");
 					}
 
 					if (sdfMaterial.shader != null)
 					{
 						SDF2Unity.Material.SetNormalMap(material, sdfMaterial.shader.normal_map);
-						// UE.Debug.Log("ImportMaterial HasNormalmap " + sdfMaterial.shader.normal_map);
+						// logs.AppendLine($"{material.name}: normalmap({sdfMaterial.shader.normal_map})");
 					}
 				}
 
@@ -62,6 +65,9 @@ namespace SDF
 						}
 					}
 				}
+
+				if (logs.Length > 0)
+					UE.Debug.LogWarning("SDF.Implement.Material.Apply() - Implementation logs\n" + logs.ToString());
 			}
 
 			public static UE.Material ApplyScript(in SDF.Material.Script script, in UE.Material baseMasterial)

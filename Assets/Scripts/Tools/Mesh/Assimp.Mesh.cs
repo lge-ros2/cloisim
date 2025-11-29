@@ -6,6 +6,7 @@
 // #define ENABLE_MESH_CACHE
 
 using System.Collections.Generic;
+using System.Text;
 using System.IO;
 using System;
 using UnityEngine;
@@ -75,6 +76,7 @@ public static partial class MeshLoader
 		var parentPath = Directory.GetParent(meshPath).FullName;
 		var textureDirectories = GetRootTexturePaths(parentPath);
 		var materials = new List<Material>();
+		var logs = new StringBuilder();
 
 		foreach (var sceneMat in sceneMaterials)
 		{
@@ -83,19 +85,19 @@ public static partial class MeshLoader
 			if (sceneMat.HasColorDiffuse)
 			{
 				SDF2Unity.Material.SetBaseColor(mat, sceneMat.ColorDiffuse.ToUnity());
-				// Debug.LogWarning($"HasColorDiffuse({sceneMat.ColorDiffuse.ToUnity()}) for {sceneMat.Name}");
+				// logs.AppendLine($"HasColorDiffuse({sceneMat.ColorDiffuse.ToUnity()}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorEmissive)
 			{
 				SDF2Unity.Material.SetEmission(mat, sceneMat.ColorEmissive.ToUnity());
-				// Debug.LogWarning($"HasColorEmissive({sceneMat.ColorEmissive.ToUnity()}) for {sceneMat.Name}");
+				// logs.AppendLine($"HasColorEmissive({sceneMat.ColorEmissive.ToUnity()}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorSpecular)
 			{
 				SDF2Unity.Material.SetSpecular(mat, sceneMat.ColorSpecular.ToUnity());
-				// Debug.LogWarning($"HasColorSpecular({sceneMat.ColorSpecular.ToUnity()}) for {sceneMat.Name}");
+				// logs.AppendLine($"HasColorSpecular({sceneMat.ColorSpecular.ToUnity()}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorTransparent)
@@ -108,22 +110,22 @@ public static partial class MeshLoader
 				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
 				mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
 
-				Debug.LogWarning($"HasColorTransparent({sceneMat.ColorTransparent.ToUnity()}) experimentally support for {sceneMat.Name}");
+				logs.AppendLine($"HasColorTransparent({sceneMat.ColorTransparent.ToUnity()}) experimentally support for {sceneMat.Name}");
 #else
-				Debug.LogWarning($"HasColorTransparent({sceneMat.ColorSpecular.ToUnity()}) not support for {sceneMat.Name}");
+				logs.AppendLine($"HasColorTransparent({sceneMat.ColorSpecular.ToUnity()}) not support for {sceneMat.Name}");
 #endif
 			}
 
 			if (sceneMat.HasShininess)
 			{
 				mat.SetFloat("_Smoothness", sceneMat.Shininess);
-				Debug.LogWarning($"HasShinines({sceneMat.Shininess}) for {sceneMat.Name}");
+				logs.AppendLine($"HasShinines({sceneMat.Shininess}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasReflectivity)
 			{
 				mat.SetFloat("_Smoothness", Mathf.Clamp01((float)sceneMat.Reflectivity));
-				Debug.Log($"HasReflectivity({sceneMat.Reflectivity}) for {sceneMat.Name}");
+				logs.AppendLine($"HasReflectivity({sceneMat.Reflectivity}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureDiffuse)
@@ -141,13 +143,13 @@ public static partial class MeshLoader
 					mat.SetTexture("_BumpMap", tex);
 					mat.EnableKeyword("_NORMALMAP");
 				}
-				Debug.Log($"HasTextureNormal({sceneMat.TextureNormal.FilePath}) for {sceneMat.Name}");
+				logs.AppendLine($"HasTextureNormal({sceneMat.TextureNormal.FilePath}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasBumpScaling)
 			{
 				mat.SetFloat("_BumpScale", sceneMat.BumpScaling);
-				Debug.Log($"HasBumpScaling({sceneMat.BumpScaling}) for {sceneMat.Name}");
+				logs.AppendLine($"HasBumpScaling({sceneMat.BumpScaling}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureSpecular)
@@ -185,41 +187,44 @@ public static partial class MeshLoader
 #if UNITY_EDITOR
 			if (sceneMat.HasColorAmbient)
 			{
-				Debug.LogWarning($"HasColorAmbient({sceneMat.ColorAmbient.ToUnity()}) but not support for {sceneMat.Name}");
+				logs.AppendLine($"HasColorAmbient({sceneMat.ColorAmbient.ToUnity()}) but not support for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorReflective)
 			{
-				Debug.LogWarning($"HasColorReflective({sceneMat.ColorReflective.ToUnity()}) but not support for {sceneMat.Name}");
+				logs.AppendLine($"HasColorReflective({sceneMat.ColorReflective.ToUnity()}) but not support for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureAmbient)
 			{
-				Debug.LogWarning($"HasTextureAmbient({sceneMat.TextureAmbient.FilePath}) but not support for {sceneMat.Name}");
+				logs.AppendLine($"HasTextureAmbient({sceneMat.TextureAmbient.FilePath}) but not support for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureDisplacement)
 			{
-				Debug.LogWarning($"HasTextureDisplacement({sceneMat.TextureDisplacement.FilePath}) but not support for {sceneMat.Name}");
+				logs.AppendLine($"HasTextureDisplacement({sceneMat.TextureDisplacement.FilePath}) but not support for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureHeight)
 			{
-				Debug.LogWarning($"HasTextureHeight({sceneMat.TextureHeight.FilePath}) but not support for {sceneMat.Name}");
+				logs.AppendLine($"HasTextureHeight({sceneMat.TextureHeight.FilePath}) but not support for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureReflection)
 			{
-				Debug.LogWarning($"HasTextureReflection({sceneMat.TextureReflection.FilePath}) but not support for {sceneMat.Name}");
+				logs.AppendLine($"HasTextureReflection({sceneMat.TextureReflection.FilePath}) but not support for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureLightMap)
 			{
-				Debug.LogWarning($"HasTextureLightMap({sceneMat.TextureLightMap.FilePath}) but not support for {sceneMat.Name}");
+				logs.AppendLine($"HasTextureLightMap({sceneMat.TextureLightMap.FilePath}) but not support for {sceneMat.Name}");
 			}
 #endif
 			materials.Add(mat);
 		}
+
+		if (logs.Length > 0)
+			Debug.LogWarning("LoadMaterials() - Implementation logs\n" + logs.ToString());
 
 		return materials;
 	}

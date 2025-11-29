@@ -176,7 +176,7 @@ namespace SDF
 
 				if (colliders.Length == 0)
 				{
-					Debug.LogWarningFormat(articulationBody.name + " => no mesh collider exists in child");
+					Debug.LogWarning($"{articulationBody.name} => no mesh collider exists in child");
 				}
 
 				articulationBody.ResetInertiaTensor();
