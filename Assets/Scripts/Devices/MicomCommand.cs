@@ -35,10 +35,6 @@ namespace SensorDevices
 			DeviceName = "MicomCommand";
 		}
 
-		protected override void OnStart()
-		{
-		}
-
 		protected override void OnReset()
 		{
 			DoWheelDrive(Vector3.zero, Vector3.zero);

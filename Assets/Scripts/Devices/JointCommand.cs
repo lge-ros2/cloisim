@@ -55,14 +55,6 @@ namespace SensorDevices
 			DeviceName = "JointCommand";
 		}
 
-		protected override void OnStart()
-		{
-		}
-
-		protected override void OnReset()
-		{
-		}
-
 		protected override void ProcessDevice()
 		{
 			if (PopDeviceMessage<messages.JointCmdV>(out var jointCommandV))

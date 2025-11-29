@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
@@ -23,7 +22,6 @@ namespace SensorDevices
 	public partial class Lidar : Device
 	{
 		private messages.LaserScan _laserScan = null;
-		protected ConcurrentQueue<messages.LaserScanStamped> _messageQueue = new();
 		private Thread _laserProcessThread = null;
 
 		private const int BatchSize = 8;
@@ -103,8 +101,8 @@ namespace SensorDevices
 
 		protected override void OnReset()
 		{
-			_messageQueue.Clear();
 			_asyncWorkList.Clear();
+			base.OnReset();
 		}
 
 		protected new void OnDestroy()
@@ -119,7 +117,7 @@ namespace SensorDevices
 			StopAllCoroutines();
 			_rtHandle?.Release();
 
-			OnReset();
+			_asyncWorkList.Clear();
 			base.OnDestroy();
 		}
 
@@ -557,7 +555,7 @@ namespace SensorDevices
 			var count = _messageQueue.Count;
 			while (_messageQueue.TryDequeue(out var msg))
 			{
-				PushDeviceMessage<messages.LaserScanStamped>(msg);
+				PushDeviceMessage(msg);
 				if (count > 0)
 				{
 					Thread.Sleep(WaitPeriodInMilliseconds() / count);

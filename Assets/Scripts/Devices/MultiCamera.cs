@@ -15,7 +15,6 @@ namespace SensorDevices
 	public class MultiCamera : Device
 	{
 		private List<SensorDevices.Camera> cameras = new List<SensorDevices.Camera>();
-		protected ConcurrentQueue<messages.ImagesStamped> _messageQueue = new ConcurrentQueue<messages.ImagesStamped>();
 		private Thread _imagesProcessThread = null;
 		private bool _runningThread = false;
 
@@ -40,22 +39,7 @@ namespace SensorDevices
 				_imagesProcessThread.Abort();
 			}
 
-			OnReset();
-
 			base.OnDestroy();
-		}
-
-		protected override void OnReset()
-		{
-			_messageQueue.Clear();
-		}
-
-		protected override void InitializeMessages()
-		{
-		}
-
-		protected override void SetupMessages()
-		{
 		}
 
 		private void MultiImageProcess()
@@ -103,7 +87,7 @@ namespace SensorDevices
 		{
 			while (_messageQueue.TryDequeue(out var msg))
 			{
-				PushDeviceMessage<messages.ImagesStamped>(msg);
+				PushDeviceMessage(msg);
 			}
 		}
 

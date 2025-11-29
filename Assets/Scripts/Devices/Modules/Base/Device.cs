@@ -7,12 +7,15 @@
 using System;
 using System.Threading;
 using System.Collections;
+using System.Collections.Concurrent;
 using UnityEngine;
 
 public abstract class Device : MonoBehaviour
 {
 	public enum ModeType { NONE, TX, RX, TX_THREAD, RX_THREAD };
 	public ModeType Mode = ModeType.NONE;
+
+	protected ConcurrentQueue<global::ProtoBuf.IExtensible> _messageQueue = new ConcurrentQueue<ProtoBuf.IExtensible>();
 
 	private DeviceMessageQueue _deviceMessageQueue = new DeviceMessageQueue();
 	private DevicePose _devicePose = new DevicePose();
@@ -120,6 +123,8 @@ public abstract class Device : MonoBehaviour
 	{
 		_running = false;
 
+		_messageQueue.Clear();
+
 		switch (Mode)
 		{
 			case ModeType.TX:
@@ -152,7 +157,6 @@ public abstract class Device : MonoBehaviour
 	protected virtual void OnStart() { }
 
 	protected virtual void OnReset() { }
-
 
 	protected virtual IEnumerator OnVisualize()
 	{
@@ -216,7 +220,7 @@ public abstract class Device : MonoBehaviour
 		}
 	}
 
-	public bool PushDeviceMessage<T>(T instance)
+	public bool PushDeviceMessage<T>(T instance) where T : global::ProtoBuf.IExtensible
 	{
 		try
 		{
@@ -274,6 +278,7 @@ public abstract class Device : MonoBehaviour
 	public void Reset()
 	{
 		// Debug.Log("Reset(): flush message queue");
+		_messageQueue.Clear();
 		_deviceMessageQueue.Flush();
 
 		OnReset();

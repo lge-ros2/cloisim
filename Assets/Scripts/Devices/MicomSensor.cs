@@ -161,10 +161,7 @@ namespace SensorDevices
 
 		protected override void OnReset()
 		{
-			if (_imuSensor != null)
-			{
-				_imuSensor.Reset();
-			}
+			_imuSensor?.Reset();
 		}
 
 		protected override void InitializeMessages()

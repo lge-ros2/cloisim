@@ -21,7 +21,6 @@ namespace SensorDevices
 		protected SDF.Camera _camParam = null;
 		protected messages.CameraSensor _sensorInfo = null;
 		protected messages.Image _image = null; // for Parameters
-		protected ConcurrentQueue<messages.ImageStamped> _messageQueue = new();
 
 		// TODO : Need to be implemented!!!
 		// <lens> TBD
@@ -39,7 +38,7 @@ namespace SensorDevices
 		protected bool _startCameraWork = false;
 		private RTHandle _rtHandle;
 		protected Texture2D _textureForCapture = null;
-		
+
 		private CommandBuffer _invertCullingOnCmdBuffer = null;
 		private CommandBuffer _invertCullingOffCmdBuffer = null;
 		private CommandBuffer _noiseCmdBuffer = null;
@@ -77,7 +76,7 @@ namespace SensorDevices
 							_postProcessCmdBuffer.Blit(tempID1, tempID2, _depthMaterial);
 						else
 							_postProcessCmdBuffer.Blit(tempID1, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
-						
+
 
 					}
 					else
@@ -85,7 +84,7 @@ namespace SensorDevices
 						if (_noiseMaterial != null)
 							_postProcessCmdBuffer.Blit(BuiltinRenderTextureType.CameraTarget, tempID2);
 					}
-				
+
 					if (_noiseMaterial != null)
 					{
 						_postProcessCmdBuffer.Blit(tempID2, BuiltinRenderTextureType.CameraTarget, _noiseMaterial);
@@ -95,7 +94,7 @@ namespace SensorDevices
 					_postProcessCmdBuffer.ReleaseTemporaryRT(tempID2);
 					context.ExecuteCommandBuffer(_postProcessCmdBuffer);
 					_postProcessCmdBuffer.Clear();
-				}				
+				}
 
 				context.Submit();
 			}
@@ -144,8 +143,8 @@ namespace SensorDevices
 
 		protected override void OnReset()
 		{
-			_messageQueue.Clear();
 			_asyncWorkList.Clear();
+			base.OnReset();
 		}
 
 		protected virtual void SetupTexture()
@@ -351,8 +350,7 @@ namespace SensorDevices
 
 			_rtHandle?.Release();
 
-			OnReset();
-
+			_asyncWorkList.Clear();
 			base.OnDestroy();
 		}
 
@@ -405,7 +403,7 @@ namespace SensorDevices
 			var count = _messageQueue.Count;
 			while (_messageQueue.TryDequeue(out var msg))
 			{
-				PushDeviceMessage<messages.ImageStamped>(msg);
+				PushDeviceMessage(msg);
 				Thread.Sleep(WaitPeriodInMilliseconds() / count);
 				Thread.SpinWait(1);
 			}
@@ -418,9 +416,10 @@ namespace SensorDevices
 				_camParam.save_enabled &&
 				_messageQueue.TryPeek(out var msg))
 			{
-				var saveName = $"{DeviceName}_{msg.Time.Sec}.{msg.Time.Nsec}";
+				var imageStampedMsg = (messages.ImageStamped)msg;
+				var saveName = $"{DeviceName}_{imageStampedMsg.Time.Sec}.{imageStampedMsg.Time.Nsec}";
 				var format = CameraData.GetPixelFormat(_camParam.image.format);
-				_textureForCapture.SaveRawImage(msg.Image.Data, _camParam.save_path, saveName, format);
+				_textureForCapture.SaveRawImage(imageStampedMsg.Image.Data, _camParam.save_path, saveName, format);
 			}
 		}
 
@@ -453,7 +452,7 @@ namespace SensorDevices
 			return _sensorInfo;
 		}
 
-		public messages.ImageStamped GetImageDataMessage()
+		public global::ProtoBuf.IExtensible GetImageDataMessage()
 		{
 			if (_messageQueue.TryDequeue(out var msg))
 			{

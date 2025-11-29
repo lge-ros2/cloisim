@@ -17,14 +17,6 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class SegmentationCamera : Camera
 	{
-		private new ConcurrentQueue<messages.Segmentation> _messageQueue = new ConcurrentQueue<messages.Segmentation>();
-
-		protected override void OnReset()
-		{
-			_messageQueue.Clear();
-			base.OnReset();
-		}
-
 		protected override void SetupTexture()
 		{
 			_targetRTname = "SegmentationTexture";
@@ -71,7 +63,7 @@ namespace SensorDevices
 			var count = _messageQueue.Count;
 			while (_messageQueue.TryDequeue(out var msg))
 			{
-				PushDeviceMessage<messages.Segmentation>(msg);
+				PushDeviceMessage(msg);
 				Thread.Sleep(WaitPeriodInMilliseconds() / count);
 				Thread.SpinWait(1);
 			}
@@ -83,8 +75,9 @@ namespace SensorDevices
 				_camParam.save_enabled &&
 				_messageQueue.TryPeek(out var msg))
 			{
-				var saveName = $"{DeviceName}_{msg.ImageStamped.Time.Sec}.{msg.ImageStamped.Time.Nsec}";
-				_textureForCapture.SaveRawImage(msg.ImageStamped.Image.Data, _camParam.save_path, saveName);
+				var imageStampedMsg = ((messages.Segmentation)msg).ImageStamped;
+				var saveName = $"{DeviceName}_{imageStampedMsg.Time.Sec}.{imageStampedMsg.Time.Nsec}";
+				_textureForCapture.SaveRawImage(imageStampedMsg.Image.Data, _camParam.save_path, saveName);
 			}
 		}
 

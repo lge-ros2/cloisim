@@ -35,8 +35,6 @@ namespace SensorDevices
 
 	public class Contact : Device
 	{
-		private ConcurrentQueue<messages.Contacts> _messageQueue = new();
-
 		private messages.Contacts _lastContacts = null;
 
 		private double _lastTimeContactsMessageGenerated = 0;
@@ -62,25 +60,11 @@ namespace SensorDevices
 			DeviceName = name;
 		}
 
-		protected override void OnStart()
-		{
-			// Debug.Log("Contact target collision: " + _targetCollision);
-		}
-
-		protected override void OnReset()
-		{
-			_messageQueue.Clear();
-		}
-
-		protected override void InitializeMessages()
-		{
-		}
-
 		protected override void GenerateMessage()
 		{
 			while (_messageQueue.TryDequeue(out var msg))
 			{
-				PushDeviceMessage<messages.Contacts>(msg);
+				PushDeviceMessage(msg);
 			}
 		}
 
