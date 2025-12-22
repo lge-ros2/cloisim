@@ -93,7 +93,7 @@ public class Articulation
 	{
 		if (_jointBody != null)
 		{
-			_jointBody.velocity = Vector3.zero;
+			_jointBody.linearVelocity = Vector3.zero;
 			_jointBody.angularVelocity = Vector3.zero;
 
 			SetJointVelocity(0);

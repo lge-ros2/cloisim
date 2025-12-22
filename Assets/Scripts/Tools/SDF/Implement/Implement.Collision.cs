@@ -110,7 +110,7 @@ namespace SDF
 
 			public static void SetSurfaceFriction(this UE.GameObject targetObject, in SDF.Surface surface)
 			{
-				var material = new UE.PhysicMaterial();
+				var material = new UE.PhysicsMaterial();
 
 				if (surface != null)
 				{
@@ -124,15 +124,15 @@ namespace SDF
 						{
 							material.staticFriction = (float)surface.friction.ode.mu;
 							material.dynamicFriction = (float)surface.friction.ode.mu * DynamicFrictionRatio;
-							material.frictionCombine = ((float)surface.friction.ode.mu2 <= ThresholdFrictionCombineMultiply) ? UE.PhysicMaterialCombine.Multiply : UE.PhysicMaterialCombine.Average;
+							material.frictionCombine = ((float)surface.friction.ode.mu2 <= ThresholdFrictionCombineMultiply) ? UE.PhysicsMaterialCombine.Multiply : UE.PhysicsMaterialCombine.Average;
 						}
 					}
 					else
 					{
-						material.frictionCombine = UE.PhysicMaterialCombine.Average;
+						material.frictionCombine = UE.PhysicsMaterialCombine.Average;
 					}
 
-					material.bounceCombine = UE.PhysicMaterialCombine.Average;
+					material.bounceCombine = UE.PhysicsMaterialCombine.Average;
 				}
 				else
 				{
@@ -141,8 +141,8 @@ namespace SDF
 					material.dynamicFriction = 0.6f;
 					material.staticFriction = 0.6f;
 					material.bounciness = 0.0f;
-					material.frictionCombine = UE.PhysicMaterialCombine.Average;
-					material.bounceCombine = UE.PhysicMaterialCombine.Average;
+					material.frictionCombine = UE.PhysicsMaterialCombine.Average;
+					material.bounceCombine = UE.PhysicsMaterialCombine.Average;
 
 #if false
 					// Rubber Material

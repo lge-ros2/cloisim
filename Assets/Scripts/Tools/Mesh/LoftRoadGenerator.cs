@@ -17,7 +17,7 @@ namespace Unity.Splines
 	[RequireComponent(typeof(MeshRenderer), typeof(MeshCollider), typeof(MeshFilter))]
 	public class LoftRoadGenerator : MonoBehaviour
 	{
-		private static PhysicMaterial _physicalMaterial;
+		private static PhysicsMaterial _physicalMaterial;
 
 		[SerializeField]
 		List<SplineData<float>> m_Widths = new List<SplineData<float>>();
@@ -106,7 +106,7 @@ namespace Unity.Splines
 
 		void Awake()
 		{
-			_physicalMaterial = Resources.Load<PhysicMaterial>("PhysicsMaterials/Asphalt");
+			_physicalMaterial = Resources.Load<PhysicsMaterial>("PhysicsMaterials/Asphalt");
 		}
 
 		public void OnEnable()
