@@ -1,5 +1,5 @@
 // Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-Shader "Sensor/Depth"
+Shader "Sensor/DepthRange"
 {
 	Properties
 	{
@@ -71,9 +71,16 @@ Shader "Sensor/Depth"
 				float farClip  = _ProjectionParams.z;
 
 				float eyeSpaceDepth = linearDepth * (farClip - nearClip) + nearClip;
+					
+				// if depth is near farclip, return nothing
+				if (linearDepth > 0.9999)
+					return float4(0, 0, 0, 0);
+				
 				float normalizedDepth = saturate((eyeSpaceDepth - nearClip) / (farClip - nearClip));
 
-				return EncodeFloatRGBA((_ReverseData > 0) ? (1.0 - normalizedDepth) : normalizedDepth);
+				float finalDepthRange = (_ReverseData > 0) ? (1.0 - normalizedDepth) : normalizedDepth;
+				
+				return float4(finalDepthRange, 0, 0, 0);
 			}
 
 			ENDCG

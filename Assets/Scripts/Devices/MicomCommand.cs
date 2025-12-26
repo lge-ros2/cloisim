@@ -50,46 +50,43 @@ namespace SensorDevices
 			this._mowingBlade = mowingBlade;
 		}
 
-		protected override void ProcessDevice()
+		protected override void ProcessReceivedDeviceMessage(DeviceMessage receivedMessage)
 		{
-			if (PopDeviceMessage(out var receivedMessage))
+			var cmdVelocity = receivedMessage.GetMessage<messages.Twist>();
+
+			if (cmdVelocity != null)
 			{
-				var cmdVelocity = receivedMessage.GetMessage<messages.Twist>();
+				var linearVelocity =  cmdVelocity.Linear.ToUnity();
+				var angularVelocity = cmdVelocity.Angular.ToUnity();
 
-				if (cmdVelocity != null)
+				DoWheelDrive(linearVelocity, angularVelocity);
+			}
+			else
+			{
+				var joystick = receivedMessage.GetMessage<messages.Joystick>();
+				if (joystick != null)
 				{
-					var linearVelocity =  cmdVelocity.Linear.ToUnity();
-					var angularVelocity = cmdVelocity.Angular.ToUnity();
-
-					DoWheelDrive(linearVelocity, angularVelocity);
+					ControlJoystick(joystick);
 				}
 				else
 				{
-					var joystick = receivedMessage.GetMessage<messages.Joystick>();
-					if (joystick != null)
+					var customCmd = receivedMessage.GetMessage<messages.Param>();
+					if (customCmd != null)
 					{
-						ControlJoystick(joystick);
+						if (customCmd.Name.StartsWith("mowing"))
+						{
+							ControlMowing(customCmd.Name, customCmd.Value);
+						}
+						else if (customCmd.Name.StartsWith("display"))
+						{
+						}
 					}
+#if UNITY_EDITOR
 					else
 					{
-						var customCmd = receivedMessage.GetMessage<messages.Param>();
-						if (customCmd != null)
-						{
-							if (customCmd.Name.StartsWith("mowing"))
-							{
-								ControlMowing(customCmd.Name, customCmd.Value);
-							}
-							else if (customCmd.Name.StartsWith("display"))
-							{
-							}
-						}
-#if UNITY_EDITOR
-						else
-						{
-							Debug.LogWarning("ERROR: failed to pop device message");
-						}
-#endif
+						Debug.LogWarning("ERROR: failed to pop device message");
 					}
+#endif
 				}
 			}
 		}

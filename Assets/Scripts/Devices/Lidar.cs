@@ -53,7 +53,6 @@ namespace SensorDevices
 		private RTHandle _rtHandle = null;
 		private ParallelOptions _parallelOptions = null;
 
-		private DepthData.CamBuffer[] _depthCamBuffers;
 		private LaserData.LaserCamData[] _laserCamData;
 		private LaserData.LaserDataOutput[] _laserDataOutput;
 		private LaserFilter _laserFilter = null;
@@ -195,7 +194,7 @@ namespace SensorDevices
 				height: renderTextureHeight,
 				slices: 1,
 				depthBufferBits: DepthBits.None,
-				colorFormat: GraphicsFormat.R8G8B8A8_UNorm,
+				colorFormat: GraphicsFormat.R32_SFloat,
 				filterMode: FilterMode.Point,
 				wrapMode: TextureWrapMode.Clamp,
 				dimension: TextureDimension.Tex2D,
@@ -229,9 +228,8 @@ namespace SensorDevices
 			universalLaserCamData.requiresDepthTexture = true;
 			universalLaserCamData.cameraStack.Clear();
 
-			var depthShader = Shader.Find("Sensor/Depth");
+			var depthShader = Shader.Find("Sensor/DepthRange");
 			depthMaterial = new Material(depthShader);
-			depthMaterial.SetInt("_FlipX", 1); // Store CCW direction for ROS2 sensor data
 
 			var cb = new CommandBuffer();
 			var tempTextureId = Shader.PropertyToID("_RenderCameraDepthTexture");
@@ -262,7 +260,6 @@ namespace SensorDevices
 			var isEven = (numberOfLaserCamData % 2 == 0) ? true : false;
 
 			_parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = numberOfLaserCamData };
-			_depthCamBuffers = new DepthData.CamBuffer[numberOfLaserCamData];
 			_laserCamData = new LaserData.LaserCamData[numberOfLaserCamData];
 			_laserDataOutput = new LaserData.LaserDataOutput[numberOfLaserCamData];
 
@@ -273,8 +270,6 @@ namespace SensorDevices
 
 			for (var index = 0; index < numberOfLaserCamData; index++)
 			{
-				_depthCamBuffers[index] = new DepthData.CamBuffer(width, height);
-
 				var centerAngle = LaserCameraRotationAngle * index + centerAngleOffset;
 				_laserCamData[index] = new LaserData.LaserCamData(width, height, scanRange, rangeResolution, _laserAngleResolution, centerAngle, LaserCameraHFovHalf, LaserCameraVFovHalf);
 			}
@@ -331,41 +326,28 @@ namespace SensorDevices
 						var localCapturedTime = capturedTime;
 						var localSensorWorldPose = lidarSensorWorldPose;
 
-						AsyncGPUReadback.Request(_laserCam.targetTexture, 0, GraphicsFormat.R8G8B8A8_UNorm, (req) => {
+						AsyncGPUReadback.Request(_laserCam.targetTexture, 0, GraphicsFormat.R32_SFloat, (req) => {
 							if (req.hasError)
 							{
 								Debug.LogWarning("Failed to read GPU texture");
 							}
 							else if (req.done)
 							{
-								var depthCamBuffer = _depthCamBuffers[localDataIndex];
+								var laserCamData = _laserCamData[localDataIndex];
+								laserCamData.depthBuffer = req.GetData<float>();
+								laserCamData.Allocate();
 
-								depthCamBuffer.Allocate();
-								depthCamBuffer.raw = req.GetData<byte>();
+								var jobHandle = laserCamData.Schedule(laserCamData.OutputLength(), BatchSize);
+								jobHandle.Complete();
 
-								if (depthCamBuffer.depth.IsCreated)
-								{
-									var jobHandleDepthCamBuffer = depthCamBuffer.Schedule(depthCamBuffer.Length(), BatchSize);
-									jobHandleDepthCamBuffer.Complete();
+								var laserDataOutput = new LaserData.LaserDataOutput(laserCamData.OutputLength());
+								laserDataOutput.capturedTime = localCapturedTime;
+								laserDataOutput.worldPose = localSensorWorldPose;
+								laserCamData.CopyLaserData(ref laserDataOutput.data);
 
-									var laserCamData = _laserCamData[localDataIndex];
-									laserCamData.depthBuffer = depthCamBuffer.depth;
-									laserCamData.Allocate();
+								_laserDataOutput[localDataIndex] = laserDataOutput;
 
-									var jobHandle = laserCamData.Schedule(laserCamData.OutputLength(), BatchSize);
-									jobHandle.Complete();
-
-									var laserDataOutput = new LaserData.LaserDataOutput(laserCamData.OutputLength());
-									laserDataOutput.capturedTime = localCapturedTime;
-									laserDataOutput.worldPose = localSensorWorldPose;
-									laserCamData.CopyLaserData(ref laserDataOutput.data);
-
-									_laserDataOutput[localDataIndex] = laserDataOutput;
-
-									laserCamData.Deallocate();
-								}
-
-								depthCamBuffer.Deallocate();
+								laserCamData.Deallocate();
 							}
 						});
 

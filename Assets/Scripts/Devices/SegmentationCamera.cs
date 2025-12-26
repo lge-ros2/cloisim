@@ -5,12 +5,11 @@
  */
 
 using UnityEngine;
-using System.Threading;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Experimental.Rendering;
-using System.Collections.Concurrent;
 using messages = cloisim.msgs;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace SensorDevices
 {
@@ -70,7 +69,7 @@ namespace SensorDevices
 			}
 		}
 
-		protected override void ImageProcessing(ref NativeArray<byte> readbackData, in double capturedTime)
+		protected override void ImageProcessing<T>(ref NativeArray<T> readbackData, in double capturedTime) where T : struct
 		{
 			var segmentation = new messages.Segmentation();
 			segmentation.ImageStamped = new messages.ImageStamped();
@@ -81,13 +80,16 @@ namespace SensorDevices
 			segmentation.ImageStamped.Image = _image;
 
 			var image = segmentation.ImageStamped.Image;
-			if (image.Data != null && image.Data.Length == readbackData.Length)
+			var sizeOfT = UnsafeUtility.SizeOf<T>();
+			var byteView = readbackData.Reinterpret<byte>(sizeOfT);
+
+			if (image.Data != null && image.Data.Length == byteView.Length)
 			{
-				readbackData.CopyTo(image.Data);
+				byteView.CopyTo(image.Data);
 			}
 			else
 			{
-				Debug.LogWarning($"{name}: Failed to get image Data");
+				Debug.LogWarning($"{name}: Failed to get image Data. Size mismatch (Image: {image.Data?.Length}, Buffer: {byteView.Length})");
 			}
 
 			// update labels

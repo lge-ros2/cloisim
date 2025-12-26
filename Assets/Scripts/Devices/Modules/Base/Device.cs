@@ -174,20 +174,32 @@ public abstract class Device : MonoBehaviour
 	protected virtual void SetupMessages() { }
 
 	// Used for RX
-	protected virtual void ProcessDevice() { }
+	protected virtual void ProcessReceivedDeviceMessage(DeviceMessage receivedMessage) { }
 
 	// Used for TX
 	protected virtual void GenerateMessage()
 	{
 		var totalCountToPush = _messageQueue.Count;
+
+		if (totalCountToPush <= 0)
+			return;
+
 		var countToPush = totalCountToPush;
 		while (_messageQueue.TryDequeue(out var msg))
 		{
-			PushDeviceMessage(msg);
-			if (countToPush-- > 1)
+			try
+			{
+				PushDeviceMessage(msg);
+			}
+			catch (Exception ex)
+			{
+				Debug.LogWarning($"failed to PushDeviceMessage(): {ex.Message}");
+			}
+
+			if (--countToPush > 0)
 				Thread.Sleep(WaitPeriodInMilliseconds() / totalCountToPush);
 			else
-				Thread.SpinWait(1);
+				break;
 		}
 	}
 
@@ -207,7 +219,10 @@ public abstract class Device : MonoBehaviour
 		while (_running)
 		{
 			yield return waitUntil;
-			ProcessDevice();
+			if (PopDeviceMessage(out var receivedMessage))
+			{
+				ProcessReceivedDeviceMessage(receivedMessage);
+			}
 		}
 	}
 
@@ -226,7 +241,13 @@ public abstract class Device : MonoBehaviour
 		{
 			if (_deviceMessageQueue.Count > 0)
 			{
-				ProcessDevice();
+				if (PopDeviceMessage(out var receivedMessage))
+				{
+					ProcessReceivedDeviceMessage(receivedMessage);
+				}
+			}
+			else
+			{
 				Thread.SpinWait(1);
 			}
 		}
@@ -260,23 +281,6 @@ public abstract class Device : MonoBehaviour
 		catch (Exception ex)
 		{
 			Debug.LogWarning("ERROR: PushDeviceMessage(): " + ex.Message);
-		}
-
-		return false;
-	}
-
-	public bool PopDeviceMessage<T>(out T instance)
-	{
-		try
-		{
-			var result = _deviceMessageQueue.Pop(out var data);
-			instance = (result) ? data.GetMessage<T>() : default(T);
-			return result;
-		}
-		catch (Exception ex)
-		{
-			instance = default(T);
-			Debug.LogWarning($"ERROR: PopDeviceMessage<{typeof(T).ToString()}>(): {ex.Message}");
 		}
 
 		return false;
