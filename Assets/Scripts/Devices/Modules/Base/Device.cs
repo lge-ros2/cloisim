@@ -180,14 +180,26 @@ public abstract class Device : MonoBehaviour
 	protected virtual void GenerateMessage()
 	{
 		var totalCountToPush = _messageQueue.Count;
+
+		if (totalCountToPush <= 0)
+			return;
+
 		var countToPush = totalCountToPush;
 		while (_messageQueue.TryDequeue(out var msg))
 		{
-			PushDeviceMessage(msg);
-			if (countToPush-- > 1)
+			try
+			{
+				PushDeviceMessage(msg);
+			}
+			catch (Exception ex)
+			{
+				Debug.LogWarning($"failed to PushDeviceMessage(): {ex.Message}");
+			}
+
+			if (--countToPush > 0)
 				Thread.Sleep(WaitPeriodInMilliseconds() / totalCountToPush);
 			else
-				Thread.SpinWait(1);
+				break;
 		}
 	}
 
