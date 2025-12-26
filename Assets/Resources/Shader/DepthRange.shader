@@ -71,6 +71,11 @@ Shader "Sensor/DepthRange"
 				float farClip  = _ProjectionParams.z;
 
 				float eyeSpaceDepth = linearDepth * (farClip - nearClip) + nearClip;
+					
+				// if depth is near farclip, return nothing
+				if (linearDepth > 0.9999)
+					return float4(0, 0, 0, 0);
+				
 				float normalizedDepth = saturate((eyeSpaceDepth - nearClip) / (farClip - nearClip));
 
 				float finalDepthRange = (_ReverseData > 0) ? (1.0 - normalizedDepth) : normalizedDepth;

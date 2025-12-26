@@ -11,6 +11,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using messages = cloisim.msgs;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace SensorDevices
 {
@@ -234,7 +235,7 @@ namespace SensorDevices
 			_camSensor.ResetProjectionMatrix();
 
 			_camSensor.backgroundColor = Color.black;
-			_camSensor.clearFlags = CameraClearFlags.Nothing;
+			_camSensor.clearFlags = CameraClearFlags.Skybox;
 			_camSensor.depthTextureMode = DepthTextureMode.None;
 			_camSensor.renderingPath = RenderingPath.Forward;
 			_camSensor.allowHDR = false;
@@ -327,7 +328,6 @@ namespace SensorDevices
 		protected virtual void SetupCamera()
 		{
 			// Debug.Log("Base Setup Camera");
-			_camSensor.clearFlags = CameraClearFlags.Skybox;
 		}
 
 		protected new void OnDestroy()
@@ -365,8 +365,16 @@ namespace SensorDevices
 						}
 						else if (req.done)
 						{
-							var readbackData = req.GetData<byte>();
-							ImageProcessing(ref readbackData, capturedTime);
+							if (_depthMaterial == null)
+							{
+								var readbackData = req.GetData<byte>();
+								ImageProcessing<byte>(ref readbackData, capturedTime);
+							}
+							else
+							{
+								var readbackData = req.GetData<float>();
+								ImageProcessing<float>(ref readbackData, capturedTime);
+							}
 						}
 					});
 				}
@@ -391,7 +399,7 @@ namespace SensorDevices
 			}
 		}
 
-		protected virtual void ImageProcessing(ref NativeArray<byte> readbackData, in double capturedTime)
+		protected virtual void ImageProcessing<T>(ref NativeArray<T> readbackData, in double capturedTime) where T : struct
 		{
 			var imageStamped = new messages.ImageStamped();
 
@@ -402,14 +410,16 @@ namespace SensorDevices
 			imageStamped.Image = _image;
 
 			var image = imageStamped.Image;
+			var sizeOfT = UnsafeUtility.SizeOf<T>();
+			var byteView = readbackData.Reinterpret<byte>(sizeOfT);
 
-			if (image.Data != null && image.Data.Length == readbackData.Length)
+			if (image.Data != null && image.Data.Length == byteView.Length)
 			{
-				readbackData.CopyTo(image.Data);
+				byteView.CopyTo(image.Data);
 			}
 			else
 			{
-				Debug.LogWarningFormat("{0}: Failed to get image Data", name);
+				Debug.LogWarning($"{name}: Failed to get image Data. Size mismatch (Image: {image.Data?.Length}, Buffer: {byteView.Length})");
 			}
 
 			_messageQueue.Enqueue(imageStamped);

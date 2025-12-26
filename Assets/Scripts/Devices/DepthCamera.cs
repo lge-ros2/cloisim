@@ -37,7 +37,6 @@ namespace SensorDevices
 		private int _imageDepth;
 		private const int BatchSize = 64;
 
-		private DepthData.CamBuffer _depthCamBuffer;
 		private byte[] _computedBufferOutput;
 		private const uint OutputMaxUnitSize = 4;
 		private int _computedBufferOutputUnitLength;
@@ -93,8 +92,8 @@ namespace SensorDevices
 		protected override void SetupTexture()
 		{
 			_targetRTname = "CameraDepthTexture";
-			_targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
-			_readbackDstFormat = GraphicsFormat.R8G8B8A8_UNorm;
+			_targetColorFormat = GraphicsFormat.R32_SFloat;
+			_readbackDstFormat = GraphicsFormat.R32_SFloat;
 
 			var width = _camParam.image.width;
 			var height = _camParam.image.height;
@@ -102,7 +101,6 @@ namespace SensorDevices
 
 			_imageDepth = CameraData.GetImageDepth(format);
 
-			_depthCamBuffer = new DepthData.CamBuffer(width, height);
 			_computedBufferOutputUnitLength = width * height;
 			_computedBufferOutput = new byte[_computedBufferOutputUnitLength * OutputMaxUnitSize];
 
@@ -128,7 +126,7 @@ namespace SensorDevices
 		protected override void SetupCamera()
 		{
 			// Debug.Log("Depth Setup Camera");
-			var depthShader = Shader.Find("Sensor/Depth");
+			var depthShader = Shader.Find("Sensor/DepthRange");
 			_depthMaterial = new Material(depthShader);
 
 			if (_camParam.depth_camera_output.Equals("points"))
@@ -137,7 +135,6 @@ namespace SensorDevices
 				_camParam.image.format = "RGB_FLOAT32";
 			}
 
-			_camSensor.clearFlags = CameraClearFlags.Depth;
 			_camSensor.allowHDR = false;
 			_camSensor.allowMSAA = false;
 			_camSensor.depthTextureMode = DepthTextureMode.Depth;
@@ -166,7 +163,7 @@ namespace SensorDevices
 			}
 		}
 
-		protected override void ImageProcessing(ref NativeArray<byte> readbackData, in double capturedTime)
+		protected override void ImageProcessing<T>(ref NativeArray<T> readbackData, in double capturedTime) where T : struct
 		{
 			var imageStamped = new messages.ImageStamped();
 			imageStamped.Time = new messages.Time();
@@ -175,17 +172,11 @@ namespace SensorDevices
 			imageStamped.Image = new messages.Image();
 			imageStamped.Image = _image;
 
-			_depthCamBuffer.Allocate();
-			_depthCamBuffer.raw = readbackData;
-
-			if (_depthCamBuffer.depth.IsCreated && _computeShader != null)
+			if (_computeShader != null)
 			{
-				var jobHandleDepthCamBuffer = _depthCamBuffer.Schedule(_depthCamBuffer.Length(), BatchSize);
-				jobHandleDepthCamBuffer.Complete();
-
-				var computeBufferSrc = new ComputeBuffer(_depthCamBuffer.depth.Length, sizeof(float));
+				var computeBufferSrc = new ComputeBuffer(readbackData.Length, sizeof(float));
 				_computeShader.SetBuffer(_kernelIndex, "_Input", computeBufferSrc);
-				computeBufferSrc.SetData(_depthCamBuffer.depth);
+				computeBufferSrc.SetData(readbackData);
 
 				var computeBufferDst = new ComputeBuffer(_computedBufferOutput.Length, sizeof(byte));
 				_computeShader.SetBuffer(_kernelIndex, "_Output", computeBufferDst);
@@ -215,7 +206,6 @@ namespace SensorDevices
 					});
 				}
 			}
-			_depthCamBuffer.Deallocate();
 
 			_messageQueue.Enqueue(imageStamped);
 		}
