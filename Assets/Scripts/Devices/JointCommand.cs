@@ -55,51 +55,50 @@ namespace SensorDevices
 			DeviceName = "JointCommand";
 		}
 
-		protected override void ProcessDevice()
+		protected override void ProcessReceivedDeviceMessage(DeviceMessage receivedMessage)
 		{
-			if (PopDeviceMessage<messages.JointCmdV>(out var jointCommandV))
+			var jointCommandV = receivedMessage.GetMessage<messages.JointCmdV>();
+
+			if (jointCommandV == null)
 			{
-				if (jointCommandV == null)
-				{
-					Debug.LogWarning("JointCommand: Pop Message failed.");
-					return;
-				}
-#if PRINT_COMMAND_LOG
-				commandLog.Clear();
-#endif
-				foreach (var jointCommand in jointCommandV.JointCmds)
-				{
-					var jointName = jointCommand.Name;
-					var articulation = jointState.GetArticulation(jointName);
-					if (articulation != null)
-					{
-						var targetPosition = float.NaN;
-						if (jointCommand.Position != null)
-						{
-							targetPosition = (float)jointCommand.Position.Target;
-#if PRINT_COMMAND_LOG
-							commandLog.AppendLine(jointName + ": targetPosition=" + targetPosition);
-#endif
-						}
-
-						var targetVelocity = float.NaN;
-						if (jointCommand.Velocity != null)
-						{
-							targetVelocity = (float)jointCommand.Velocity.Target;
-#if PRINT_COMMAND_LOG
-							commandLog.AppendLine(jointName + ": targetVelocity=" + targetVelocity);
-#endif
-						}
-
-						var newCommand = new Command(articulation, targetPosition, targetVelocity);
-						jointCommandQueue.Enqueue(newCommand);
-					}
-				}
-#if PRINT_COMMAND_LOG
-				if (commandLog.Length > 0)
-					Debug.Log(commandLog.ToString());
-#endif
+				Debug.LogWarning("JointCommand: Pop Message failed.");
+				return;
 			}
+#if PRINT_COMMAND_LOG
+			commandLog.Clear();
+#endif
+			foreach (var jointCommand in jointCommandV.JointCmds)
+			{
+				var jointName = jointCommand.Name;
+				var articulation = jointState.GetArticulation(jointName);
+				if (articulation != null)
+				{
+					var targetPosition = float.NaN;
+					if (jointCommand.Position != null)
+					{
+						targetPosition = (float)jointCommand.Position.Target;
+#if PRINT_COMMAND_LOG
+						commandLog.AppendLine(jointName + ": targetPosition=" + targetPosition);
+#endif
+					}
+
+					var targetVelocity = float.NaN;
+					if (jointCommand.Velocity != null)
+					{
+						targetVelocity = (float)jointCommand.Velocity.Target;
+#if PRINT_COMMAND_LOG
+						commandLog.AppendLine(jointName + ": targetVelocity=" + targetVelocity);
+#endif
+					}
+
+					var newCommand = new Command(articulation, targetPosition, targetVelocity);
+					jointCommandQueue.Enqueue(newCommand);
+				}
+			}
+#if PRINT_COMMAND_LOG
+			if (commandLog.Length > 0)
+				Debug.Log(commandLog.ToString());
+#endif
 		}
 
 		public void SetJointState(in JointState jointState)
