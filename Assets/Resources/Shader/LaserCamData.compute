@@ -1,0 +1,59 @@
+// LaserCamData.compute
+#pragma kernel ComputeLaserData
+
+#define THREADS_X 8
+#define THREADS_Y 8
+
+Texture2D<float> _DepthTexture; // Input - Depth texture
+RWStructuredBuffer<float> _RayData; // Output
+
+cbuffer Params
+{
+    float _MaxHAngleHalf;
+    float _MaxVAngleHalf;
+    float _MaxHAngleHalfTanInv;
+    float _MaxVAngleHalfTanInv;
+    float _RangeMin;
+    float _RangeMax;
+    float _RangeLinearResolution;
+    float _AngleResH;
+    float _AngleResV;
+    uint _Width;
+    uint _Height;
+};
+
+[numthreads(THREADS_X, THREADS_Y, 1)]
+void ComputeLaserData(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Width || id.y >= _Height)
+        return;
+
+    float hAngle = _AngleResH * id.x;
+    float vAngle = _AngleResV * id.y;
+
+    float hAngleInCam = radians(hAngle - _MaxHAngleHalf);
+    float vAngleInCam = radians(vAngle - _MaxVAngleHalf);
+
+    float offsetXratio = tan(hAngleInCam) * _MaxHAngleHalfTanInv;
+    float offsetYratio = tan(vAngleInCam) * _MaxVAngleHalfTanInv;
+
+    int px = clamp((int)((1 + offsetXratio) * 0.5 * _Width), 0, _Width - 1);
+    int py = clamp((int)((1 + offsetYratio) * 0.5 * _Height), 0, _Height - 1);
+	
+    float depth = _DepthTexture.Load(int3(px, py, 0));
+
+    float hCos = cos(hAngleInCam);
+    float vCos = cos(vAngleInCam);
+    depth *= 1.0 / (hCos * vCos);
+
+    float rayDist = depth * _RangeMax;
+
+    if (_RangeLinearResolution > 0)
+        rayDist = round(rayDist / _RangeLinearResolution) * _RangeLinearResolution;
+
+    if (rayDist < _RangeMin)
+        rayDist = asfloat(0x7FC00000); // NaN
+
+    uint index = id.y * _Width + id.x;
+    _RayData[index] = rayDist;
+}
