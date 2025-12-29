@@ -1,7 +1,7 @@
 #pragma kernel CSScaleDepthBuffer
 
-#define THREADS 32
-#define GROUPS 32
+#define THREADS 16
+#define GROUPS 16
 
 #define MAX_RANGE_16BITS 65535.0
 #define MAX_RANGE_8BITS 255.0
