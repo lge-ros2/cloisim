@@ -391,7 +391,7 @@ namespace SensorDevices
 
 				sw.Stop();
 
-				var requestingTime = (float)sw.ElapsedMilliseconds + 0.001f;
+				var requestingTime = (float)sw.Elapsed.TotalSeconds;
 				yield return new WaitForSeconds(WaitPeriod(requestingTime));
 			}
 		}
