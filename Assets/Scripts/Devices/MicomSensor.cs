@@ -164,17 +164,9 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			if (_motorControl == null)
-			{
-				return;
-			}
-
-			var micomSensorData = new messages.Micom();
-			micomSensorData.Time = new messages.Time();
-			micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
-
 			var delta = Time.fixedDeltaTime;
-			if (_motorControl.Update(_odomData, Time.fixedDeltaTime, _imuSensor) == false)
+
+			if (_motorControl?.Update(_odomData, Time.fixedDeltaTime, _imuSensor) == false)
 			{
 				Debug.LogWarning("Update failed in MotorControl");
 			}
@@ -184,12 +176,14 @@ namespace SensorDevices
 				return;
 			}
 
-			_elpasedDeltaTime = 0;
+			var micomSensorData = new messages.Micom();
+			micomSensorData.Time = new messages.Time();
+			micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
 
 			if (prevMessageTime.Sec == micomSensorData.Time.Sec && prevMessageTime.Nsec == micomSensorData.Time.Nsec)
 				Debug.LogWarning($"Same Micom Time {micomSensorData.Time.Sec}.{micomSensorData.Time.Nsec}");
 
-			UpdateBattery(micomSensorData, UpdatePeriod);
+			UpdateBattery(micomSensorData, _elpasedDeltaTime);
 			UpdateUss(micomSensorData);
 			UpdateIr(micomSensorData);
 			UpdateBumper(micomSensorData);
@@ -198,6 +192,8 @@ namespace SensorDevices
 			micomSensorData.Odom = _odomData;
 
 			_messageQueue.Enqueue(micomSensorData);
+
+			_elpasedDeltaTime = 0;
 
 			prevMessageTime.Sec = micomSensorData.Time.Sec;
 			prevMessageTime.Nsec = micomSensorData.Time.Nsec;
@@ -219,9 +215,7 @@ namespace SensorDevices
 				for (var index = 0; index < _bumperSensors.Count; index++)
 				{
 					var bumperSensor = _bumperSensors[index];
-
 					var bumper = new messages.Micom.Bumper();
-					bumper.Contacts = new messages.Contacts();
 					bumper.Bumped = bumperSensor.IsContacted();
 					bumper.Contacts = bumperSensor.GetContacts();
 
@@ -237,9 +231,10 @@ namespace SensorDevices
 			{
 				for (var index = 0; index < _ussSensors.Count; index++)
 				{
+					var ussSensor = _ussSensors[index];
 					var uss = new messages.Micom.Uss();
-					uss.Distance = _ussSensors[index].GetDetectedRange();
-					uss.State = _ussSensors[index].GetSonar().Sonar;
+					uss.Distance = ussSensor.GetDetectedRange();
+					uss.State = ussSensor.GetSonar().Sonar;
 
 					micomData.Usses.Add(uss);
 				}
@@ -252,9 +247,10 @@ namespace SensorDevices
 			{
 				for (var index = 0; index < _irSensors.Count; index++)
 				{
+					var irSensor =_irSensors[index];
 					var ir = new messages.Micom.Ir();
-					ir.Distance = _irSensors[index].GetDetectedRange();
-					ir.State = _irSensors[index].GetSonar().Sonar;
+					ir.Distance = irSensor.GetDetectedRange();
+					ir.State = irSensor.GetSonar().Sonar;
 
 					micomData.Irs.Add(ir);
 				}

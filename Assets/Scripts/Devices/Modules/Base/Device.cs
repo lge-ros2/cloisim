@@ -300,11 +300,11 @@ public abstract class Device : MonoBehaviour
 		OnReset();
 	}
 
-	protected float WaitPeriod(in float messageGenerationTime = 0)
+	protected float WaitPeriod(in float messageGenerationTimeInSec = 0)
 	{
-		var waitTime = UpdatePeriod - messageGenerationTime - _transportingTimeSeconds;
+		var waitTime = UpdatePeriod - messageGenerationTimeInSec - _transportingTimeSeconds;
 		// Debug.LogFormat(_deviceName + ": waitTime({0}) = period({1}) - elapsedTime({2}) - TransportingTime({3})",
-		// 	waitTime.ToString("F5"), UpdatePeriod.ToString("F5"), messageGenerationTime.ToString("F5"), _transportingTimeSeconds.ToString("F5"));
+		// 	waitTime.ToString("F5"), UpdatePeriod.ToString("F5"), messageGenerationTimeInSec.ToString("F5"), _transportingTimeSeconds.ToString("F5"));
 		return (waitTime < 0) ? 0 : waitTime;
 	}
 

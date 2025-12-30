@@ -4,9 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 using UnityEngine;
-using Unity.Collections;
-using Unity.Jobs;
-using Unity.Burst;
+using UnityEngine.Rendering;
 using System;
 
 namespace SensorDevices
@@ -64,160 +62,42 @@ namespace SensorDevices
 			}
 		}
 
-		public struct LaserDataOutput
+		public struct Output : IDisposable
 		{
-			public double[] data;
-
+			public bool isOverlapping;
+			public float rotationAngle;
 			public double capturedTime;
 			public Pose worldPose;
+			public double[] rayData;
+			public ComputeBuffer computedRayBuffer;
 
-			public LaserDataOutput(in int length)
+			public Output(in float centerAngle, in int bufferLength, in bool overlapping)
 			{
-				data = new double[length];
+				isOverlapping = overlapping;
+				rotationAngle = centerAngle;
+				rayData = new double[bufferLength];
 				capturedTime = 0;
 				worldPose = Pose.identity;
-			}
-		}
-
-		[BurstCompile]
-		public struct LaserCamData : IJobParallelFor
-		{
-			private float maxHAngleHalf;
-			private float maxHAngleHalfTanInverse;
-			private float maxVAngleHalf;
-			private float maxVAngleHalfTanInverse;
-			public AngleResolution angleResolution;
-			public float centerAngle;
-			public MathUtil.MinMax range;
-			public float rangeLinearResolution;
-
-			public readonly int horizontalBufferLength;
-			public readonly int horizontalBufferLengthHalf;
-			public readonly int verticalBufferLength;
-			public readonly int verticalBufferLengthHalf;
-
-			[ReadOnly]
-			public NativeArray<float> depthBuffer;
-
-			private NativeArray<double> rayData;
-
-			public float StartAngleH;
-			public float EndAngleH;
-			public float TotalAngleH;
-
-			public LaserCamData(
-					in int bufferWidth, in int bufferHeight,
-			 		in MathUtil.MinMax range, in float rangeLinearResolution,
-					in AngleResolution angleResolution,
-					in float centerAngle,
-					in float halfHFovAngle, in float halfVFovAngle)
-			{
-				this.maxHAngleHalf = halfHFovAngle;
-				this.maxHAngleHalfTanInverse = 1 / Mathf.Tan(maxHAngleHalf * Mathf.Deg2Rad);
-				this.maxVAngleHalf = halfVFovAngle;
-				this.maxVAngleHalfTanInverse = 1 / Mathf.Tan(maxVAngleHalf * Mathf.Deg2Rad);
-				this.angleResolution = angleResolution;
-
-				this.centerAngle = centerAngle;
-				this.StartAngleH = centerAngle - maxHAngleHalf;
-				this.EndAngleH = centerAngle + maxHAngleHalf;
-				this.TotalAngleH = this.maxHAngleHalf * 2f;
-
-				this.range = range;
-				this.rangeLinearResolution = rangeLinearResolution;
-				this.horizontalBufferLength = bufferWidth;
-				this.horizontalBufferLengthHalf = (int)(bufferWidth >> 1);
-				this.verticalBufferLength = bufferHeight;
-				this.verticalBufferLengthHalf = (int)(bufferHeight >> 1);
-				this.depthBuffer = default(NativeArray<float>);
-				this.rayData = default(NativeArray<double>);
+				computedRayBuffer = new ComputeBuffer(bufferLength, sizeof(float));
 			}
 
-			public void Allocate()
+			public void ConvertData(AsyncGPUReadbackRequest req)
 			{
-				var dataLength = horizontalBufferLength * verticalBufferLength;
-				this.rayData = new NativeArray<double>(dataLength, Allocator.TempJob);
+				var srcSpan = req.GetData<float>().AsSpan();
+				var dstSpan = rayData.AsSpan();
+
+				var len = Math.Min(srcSpan.Length, dstSpan.Length);
+				for (var i = 0; i < len; i++)
+					dstSpan[i] = srcSpan[i];
 			}
-
-			public void Deallocate()
+			
+			public void Dispose()
 			{
-				this.rayData.Dispose();
-			}
-
-			public int OutputLength()
-			{
-				return rayData.Length;
-			}
-
-			private float GetDepthRange(in int offsetX, in int offsetY)
-			{
-				var safeOffsetX = Mathf.Clamp(offsetX, 0, horizontalBufferLength - 1);
-				var safeOffsetY = Mathf.Clamp(offsetY, 0, verticalBufferLength - 1);
-
-				var bufferOffset = (horizontalBufferLength * safeOffsetY) + safeOffsetX;
-				// Debug.LogFormat("OffsetX: {0}, OffsetY: {1}", offsetX, offsetY);
-				return depthBuffer[bufferOffset];
-			}
-
-			private float GetDepthData(in float horizontalAngle, in float verticalAngle)
-			{
-				var horizontalAngleInCam = (horizontalAngle - maxHAngleHalf) * Mathf.Deg2Rad;
-				var verticalAngleInCam = (verticalAngle - maxVAngleHalf) * Mathf.Deg2Rad;
-
-				var offsetYratio = Mathf.Tan(verticalAngleInCam) * maxVAngleHalfTanInverse;
-				var offsetY = Mathf.CeilToInt(verticalBufferLengthHalf * (1f + offsetYratio));
-
-				var offsetXratio = Mathf.Tan(horizontalAngleInCam) * maxHAngleHalfTanInverse;
-				var offsetX = Mathf.CeilToInt(horizontalBufferLengthHalf * (1f + offsetXratio));
-
-				var depthRange = GetDepthRange(offsetX, offsetY);
-
-				var horizontalCos = Mathf.Cos(horizontalAngleInCam);
-				var verticalCos = Mathf.Cos(verticalAngleInCam);
-				depthRange *= 1 / (verticalCos * horizontalCos);
-
-				return (depthRange > 1) ? Mathf.Infinity : depthRange;
-			}
-
-			private void ResolveLaserRange(in int index)
-			{
-				if (index >= OutputLength())
+				if (computedRayBuffer != null)
 				{
-					// Debug.LogWarning("index exceeded range " + index + " / " + OutputLength());
-					return;
+					computedRayBuffer.Release();
+					computedRayBuffer = null;
 				}
-
-				var indexH = (int)(index % horizontalBufferLength);
-				var indexV = (int)(index / horizontalBufferLength);
-				// Debug.Log("H: " + indexH + ", V:" + indexV);
-
-				var rayAngleH = angleResolution.H * indexH;
-				var rayAngleV = angleResolution.V * indexV;
-				var depthData = GetDepthData(rayAngleH, rayAngleV);
-
-				// filter min/max range
-				var rayDistance = depthData * range.max;
-
-				// apply linear resolution
-				if (rangeLinearResolution > 0)
-				{
-					rayDistance = Mathf.Round(rayDistance / rangeLinearResolution) * rangeLinearResolution;
-				}
-				rayData[index] = (rayDistance < range.min) ? double.NaN : rayDistance;
-			}
-
-			// The code actually running on the job
-			public void Execute(int i)
-			{
-				ResolveLaserRange(i);
-			}
-
-			public void CopyLaserData(ref double[] buffer)
-			{
-				if (buffer.Length == rayData.Length)
-					rayData.CopyTo(buffer);
-				else
-					Debug.LogError("Failed to copy laser Data");
 			}
 		}
 	}
