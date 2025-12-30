@@ -19,6 +19,7 @@ namespace SensorDevices
 {
 	public partial class Lidar : Device
 	{
+		[SerializeField] private static int _globalLidarSequence = 0;
 		[SerializeField] private messages.LaserScan _laserScan = null;
 		[SerializeField] private Thread _laserProcessThread = null;
 
@@ -283,7 +284,7 @@ namespace SensorDevices
 				// var camMin = centerAngle - LaserCameraHFovHalf;
 				// var camMax = centerAngle + LaserCameraHFovHalf;
     	        // var isOverlapping = (horizontal.angle.min <= camMax) && (horizontal.angle.max >= camMin);
-				
+
 				var angleDiff = Mathf.Abs(Mathf.DeltaAngle(scanCenter, centerAngle));
 
 				var isOverlapping = angleDiff <= (scanHalfFov + LaserCameraHFovHalf);
@@ -332,8 +333,17 @@ namespace SensorDevices
 			_laserFilter.SetupRangeFilter(filterRangeMin, filterRangeMax);
 		}
 
+		private IEnumerator WaitStartSequence()
+		{
+			var lidarSequence = _globalLidarSequence++;
+			for (var i = 0; i < lidarSequence; i++)
+				yield return null;
+		}
+
 		private IEnumerator CaptureLaserCamera()
 		{
+			yield return WaitStartSequence();
+
 			var lidarSensorWorldPose = new Pose();
 			var axisRotation = Vector3.zero;
 			var sw = new Stopwatch();
@@ -360,7 +370,7 @@ namespace SensorDevices
 					axisRotation.y = laserDataOutput.rotationAngle;
 
 					_laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
-					
+
 					_laserCam.Render();
 					_laserCam.enabled = false;
 
@@ -388,7 +398,6 @@ namespace SensorDevices
 						}
 					});
 				}
-
 				sw.Stop();
 
 				var requestingTime = (float)sw.Elapsed.TotalSeconds;
@@ -409,7 +418,7 @@ namespace SensorDevices
 			var laserStartAngleH = horizontal.angle.min;
 			var laserEndAngleH = horizontal.angle.max;
 			var laserTotalAngleH = horizontal.angle.range;
-			
+
 			var dividedLaserTotalAngleH = 1 / laserTotalAngleH;
 			var srcBufferHorizontalLength = _horizontalBufferLength;
 			var dividedDataTotalAngleH = 1 / LaserCameraHFov;
@@ -451,7 +460,7 @@ namespace SensorDevices
 					}
 
 					var dataStartAngleH = laserDataOutput.rotationAngle - LaserCameraHFovHalf;
-					var dataEndAngleH = laserDataOutput.rotationAngle + LaserCameraHFovHalf;					
+					var dataEndAngleH = laserDataOutput.rotationAngle + LaserCameraHFovHalf;
 
 					if (laserStartAngleH < 0 && dataEndAngleH > DEG180)
 					{
