@@ -62,7 +62,7 @@ namespace SensorDevices
 			}
 		}
 
-		public struct Output : IDisposable
+		public class Output : IDisposable
 		{
 			public bool isOverlapping;
 			public float rotationAngle;
@@ -90,7 +90,7 @@ namespace SensorDevices
 				for (var i = 0; i < len; i++)
 					dstSpan[i] = srcSpan[i];
 			}
-			
+
 			public void Dispose()
 			{
 				if (computedRayBuffer != null)
