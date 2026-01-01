@@ -371,10 +371,10 @@ namespace SensorDevices
 
 					_laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
 
+					_laserCam.enabled = true;
 					_laserCam.Render();
 					_laserCam.enabled = false;
 
-					int localDataIndex = dataIndex;
 					var localCapturedTime = capturedTime;
 					var localSensorWorldPose = lidarSensorWorldPose;
 
@@ -383,20 +383,20 @@ namespace SensorDevices
 						_laserCompute.SetTexture(_laserComputeKernel, "_DepthTexture", _laserCam.targetTexture);
 						_laserCompute.SetBuffer(_laserComputeKernel, "_RayData", laserDataOutput.computedRayBuffer);
 						_laserCompute.Dispatch(_laserComputeKernel, _laserComputeGroupsX, _laserComputeGroupsY, 1);
-					}
 
-					AsyncGPUReadback.Request(laserDataOutput.computedRayBuffer, (req) => {
-						if (req.hasError)
-						{
-							Debug.LogWarning("Failed to read GPU texture");
-						}
-						else if (req.done)
-						{
-							laserDataOutput.capturedTime = localCapturedTime;
-							laserDataOutput.worldPose = localSensorWorldPose;
-							laserDataOutput.ConvertData(req);	// Copy result of GPU to CPU
-						}
-					});
+						AsyncGPUReadback.Request(laserDataOutput.computedRayBuffer, (req) => {
+							if (req.hasError)
+							{
+								Debug.LogWarning("Failed to read GPU texture");
+							}
+							else if (req.done)
+							{
+								laserDataOutput.capturedTime = localCapturedTime;
+								laserDataOutput.worldPose = localSensorWorldPose;
+								laserDataOutput.ConvertData(req);	// Copy result of GPU to CPU
+							}
+						});
+					}
 				}
 				sw.Stop();
 
