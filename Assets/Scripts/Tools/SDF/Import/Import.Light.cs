@@ -13,20 +13,21 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportLight(in Light light)
+			protected override void ImportLight(in Light light, in System.Object parentObject)
 			{
 				if (light == null)
 				{
 					return;
 				}
 
+				var targetObject = (parentObject as UE.GameObject);
 				var newLightObject = new UE.GameObject();
 				newLightObject.name = light.Name;
 				newLightObject.tag = "Light";
 
 				var lightComponent = newLightObject.AddComponent<UE.Light>();
 
-				lightComponent.transform.SetParent(_rootLights.transform);
+				lightComponent.transform.SetParent(targetObject.transform);
 
 				lightComponent.renderMode = UE.LightRenderMode.ForcePixel;
 

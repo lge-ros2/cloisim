@@ -95,7 +95,7 @@ namespace SDF
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, sdfMaterial.Name);
 			}
 
-			protected virtual void ImportLight(in Light light)
+			protected virtual void ImportLight(in Light light, in Object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, light.Name);
 			}
