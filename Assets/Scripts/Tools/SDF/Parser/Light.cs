@@ -47,7 +47,10 @@ namespace SDF
 		}
 
 		public bool cast_shadow = false;
-		public double intensity = 1; // from 1.8 spec
+		
+		// TODO: Since <intensity> element was introduced from SDF 1.8, the intensity may not exist.		
+		// Description: Scale factor to set the relative power of a light.
+		public double intensity = 1;
 		public Color diffuse = new Color(1, 1, 1, 1);
 		public Color specular = new Color(0.1, 0.1, 0.1, 1.0);
 
