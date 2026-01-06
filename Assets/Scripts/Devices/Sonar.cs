@@ -24,15 +24,12 @@ namespace SensorDevices
 		private string _geometry = string.Empty;
 
 		[SerializeField]
-		[Range(0, 100)]
 		private double _rangeMin = 0.001f;
 
 		[SerializeField]
-		[Range(0, 100)]
 		private double _rangeMax = 0.0f;
 
 		[SerializeField]
-		[Range(0, 100)]
 		public double _radius = 0;
 
 		[SerializeField]
