@@ -9,14 +9,6 @@ Shader "Sensor/DepthRange"
 
 	SubShader
 	{
-		Pass
-		{
-			Cull Back
-			ZWrite On
-			ZTest LEqual
-			ColorMask 0
-		}
-
 		Tags
 		{
 			"RenderType" = "Opaque"
@@ -26,18 +18,21 @@ Shader "Sensor/DepthRange"
 
 		Pass
 		{
+			Cull Back
+			ZWrite On
+			ZTest LEqual
 			Fog { Mode Off }
 
 			CGPROGRAM
-
-			int _ReverseData;
-			int _FlipX;
 
 			#pragma multi_compile_instancing
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma target 5.0
 			#include "UnityCG.cginc"
+
+			int _ReverseData;
+			int _FlipX;
 
 			uniform sampler2D _CameraDepthTexture;
 			uniform half4 _MainTex_TexelSize;
@@ -71,15 +66,15 @@ Shader "Sensor/DepthRange"
 				float farClip  = _ProjectionParams.z;
 
 				float eyeSpaceDepth = linearDepth * (farClip - nearClip) + nearClip;
-					
+
 				// if depth is near farclip, return nothing
 				if (linearDepth > 0.9999)
 					return float4(0, 0, 0, 0);
-				
+
 				float normalizedDepth = saturate((eyeSpaceDepth - nearClip) / (farClip - nearClip));
 
 				float finalDepthRange = (_ReverseData > 0) ? (1.0 - normalizedDepth) : normalizedDepth;
-				
+
 				return float4(finalDepthRange, 0, 0, 0);
 			}
 
