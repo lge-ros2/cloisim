@@ -110,13 +110,18 @@ public class CLOiSimPluginThread : IDisposable
 		{
 			if (device.PopDeviceMessage(out var dataStreamToSend))
 			{
-				sw.Restart();
+				var t0 = Stopwatch.GetTimestamp();
 				if (publisher.Publish(dataStreamToSend))
 				{
-					sw.Stop();
-					var transportingTime = (float)sw.ElapsedMilliseconds * 0.001f;
+					var t1 = Stopwatch.GetTimestamp();
+					var transportingTime = (float)((t1 - t0) / (double)Stopwatch.Frequency);
+					// Debug.Log($"{transportingTime:F5}");
 					device.SetTransportedTime(transportingTime);
 				}
+			}
+			else
+			{
+				Sleep();
 			}
 		}
 	}
@@ -133,7 +138,6 @@ public class CLOiSimPluginThread : IDisposable
 		{
 			var receivedData = subscriber.Subscribe();
 			device.PushDeviceMessage(receivedData);
-
 			Wait();
 		}
 	}

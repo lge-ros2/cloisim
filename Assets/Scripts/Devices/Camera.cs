@@ -347,7 +347,7 @@ namespace SensorDevices
 			var rateGap = (float)Application.targetFrameRate - UpdateRate;
 			var messageGenerationTime = Mathf.Approximately(rateGap, 0) ? float.PositiveInfinity : 1f / rateGap;
 			var waitNextCapture = new WaitForSeconds(WaitPeriod(messageGenerationTime));
-			Debug.Log($"CameraWorker {rateGap} {messageGenerationTime} {WaitPeriod(messageGenerationTime)}");
+			// Debug.Log($"CameraWorker {rateGap} {messageGenerationTime} {WaitPeriod(messageGenerationTime)}");
 			while (_startCameraWork)
 			{
 				_universalCamData.enabled = true;

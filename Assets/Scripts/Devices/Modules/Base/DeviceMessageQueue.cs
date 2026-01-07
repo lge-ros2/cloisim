@@ -10,28 +10,25 @@ using System;
 public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 {
 	private const int MaxQueue = 100;
-	private const int TimeoutInMilliseconds = 700;
+	private const int TimeoutInMilliseconds = 100;
 	private const float FlushLeaveRate = 0.1f;
+	private readonly int _flushThreshold;
 
 	public DeviceMessageQueue()
 		: base(MaxQueue)
 	{
+		_flushThreshold = (int)(MaxQueue * FlushLeaveRate);
 	}
 
 	public void Flush()
 	{
-		while (Count > 0)
-		{
-			Pop(out var _);
-		}
+		while (TryTake(out _)) { };
 	}
 
 	private void FlushPortion()
 	{
-		while (Count > (int)(MaxQueue * FlushLeaveRate))
-		{
-			Pop(out var _);
-		}
+		var currentCount = Count;
+		while (currentCount-- > _flushThreshold && TryTake(out _)) { };
 	}
 
 	public bool Push(in DeviceMessage data)
@@ -63,7 +60,7 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 		{
 			UnityEngine.Debug.LogWarning(ex.Message);
 			item = default(DeviceMessage);
+			return false;
 		}
-		return false;
 	}
 }

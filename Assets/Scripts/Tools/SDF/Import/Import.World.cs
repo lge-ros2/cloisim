@@ -109,7 +109,7 @@ namespace SDF
 
 				UE.Physics.gravity = world.gravity.ToUnity();
 
-				ImportLights(world.GetLights());
+				ImportLights(world.GetLights(), _rootLights);
 
 				return Main.WorldRoot;
 			}

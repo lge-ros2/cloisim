@@ -68,13 +68,13 @@ namespace SDF
 
 					ImportSensors(item.GetSensors(), createdObject);
 
-					ImportLights(item.GetLights());
+					ImportLights(item.GetLights(), createdObject);
 
 					AfterImportLink(item, createdObject);
 				}
 			}
 
-			protected void ImportPlugins(IReadOnlyList<Plugin> items, Object parentObject)
+			protected void ImportPlugins(IReadOnlyList<Plugin> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -82,7 +82,7 @@ namespace SDF
 				}
 			}
 
-			protected void ImportJoints(IReadOnlyList<Joint> items, Object parentObject)
+			protected void ImportJoints(IReadOnlyList<Joint> items, in Object parentObject)
 			{
 				// Joints should be handled after all links of model loaded due to articulation body.
 				foreach (var item in items)
@@ -110,11 +110,11 @@ namespace SDF
 				}
 			}
 
-			protected void ImportLights(IReadOnlyList<Light> items)
+			protected void ImportLights(IReadOnlyList<Light> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
-					ImportLight(item);
+					ImportLight(item, parentObject);
 				}
 			}
 

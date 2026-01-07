@@ -13,20 +13,31 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportLight(in Light light)
+			static private float GetIntensity(in SDF.Light.Attenuation attenuation)
+			{
+				var range = (float)attenuation.range;
+				var constant = (float)attenuation.constant;
+				var linear = (float)attenuation.linear;
+				var quadratic = (float)attenuation.quadratic;
+				var attenuationFactor = 1.0f / Mathf.Max(0.001f, constant + linear + quadratic);
+				return Mathf.Clamp(range * attenuationFactor, 0.1f, 10f);
+			}
+
+			protected override void ImportLight(in Light light, in System.Object parentObject)
 			{
 				if (light == null)
 				{
 					return;
 				}
 
+				var targetObject = (parentObject as UE.GameObject);
 				var newLightObject = new UE.GameObject();
 				newLightObject.name = light.Name;
 				newLightObject.tag = "Light";
 
 				var lightComponent = newLightObject.AddComponent<UE.Light>();
 
-				lightComponent.transform.SetParent(_rootLights.transform);
+				lightComponent.transform.SetParent(targetObject.transform);
 
 				lightComponent.renderMode = UE.LightRenderMode.ForcePixel;
 
@@ -41,7 +52,6 @@ namespace SDF
 
 				var defaultLightDirection = UE.Quaternion.identity;
 				var defaultIntensity = 1f;
-				const float rangeIntensityRatio = 0.3f;
 				switch (light.Type)
 				{
 					case "directional":
@@ -53,8 +63,10 @@ namespace SDF
 						lightComponent.type = UE.LightType.Spot;
 						lightComponent.spotAngle = (float)light.spot.outer_angle * Mathf.Rad2Deg;
 						lightComponent.innerSpotAngle = (float)light.spot.inner_angle * Mathf.Rad2Deg;
+
 						lightComponent.range = (float)light.attenuation.range;
-						defaultIntensity = lightComponent.range * rangeIntensityRatio;
+						defaultIntensity = GetIntensity(light.attenuation);
+
 						defaultLightDirection = UE.Quaternion.Euler(90, 0, 0);
 						break;
 
@@ -62,14 +74,11 @@ namespace SDF
 					default:
 						lightComponent.type = UE.LightType.Point;
 						lightComponent.range = (float)light.attenuation.range;
-						lightComponent.transform.localRotation = UE.Quaternion.LookRotation(UE.Vector3.down, direction);
-						defaultIntensity = lightComponent.range * rangeIntensityRatio;
+						defaultIntensity = GetIntensity(light.attenuation);
 						break;
 				}
 
-				// TODO: Since <intensity> element was introdueced from SDF 1.7, the intensity may not exist.
-				// As a workaround code, set half of range value for intensity.
-				lightComponent.intensity = (light.intensity.Equals(1)) ? defaultIntensity : (float)light.intensity;
+				lightComponent.intensity = defaultIntensity * (float)light.intensity;
 
 				var localPosition = light.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
 				var localRotation = light.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;

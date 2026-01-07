@@ -4,9 +4,6 @@
 #define THREADS_X 8
 #define THREADS_Y 8
 
-Texture2D<float> _DepthTexture; // Input - Depth texture
-RWStructuredBuffer<float> _RayData; // Output
-
 cbuffer Params
 {
     float _MaxHAngleHalf;
@@ -20,7 +17,11 @@ cbuffer Params
     float _AngleResV;
     uint _Width;
     uint _Height;
+    uint _DataOffset;
 };
+
+Texture2D<float> _DepthTexture; // Input - Depth texture
+RWStructuredBuffer<float> _RayData; // Output
 
 [numthreads(THREADS_X, THREADS_Y, 1)]
 void ComputeLaserData(uint3 id : SV_DispatchThreadID)
@@ -39,7 +40,7 @@ void ComputeLaserData(uint3 id : SV_DispatchThreadID)
 
     int px = clamp((int)((1 + offsetXratio) * 0.5 * _Width), 0, _Width - 1);
     int py = clamp((int)((1 + offsetYratio) * 0.5 * _Height), 0, _Height - 1);
-	
+
     float depth = _DepthTexture.Load(int3(px, py, 0));
 
     float hCos = cos(hAngleInCam);
@@ -54,6 +55,7 @@ void ComputeLaserData(uint3 id : SV_DispatchThreadID)
     if (rayDist < _RangeMin)
         rayDist = asfloat(0x7FC00000); // NaN
 
-    uint index = id.y * _Width + id.x;
+    // uint index = id.y * _Width + id.x;
+    uint index = id.y * _Width + id.x + _DataOffset;
     _RayData[index] = rayDist;
 }

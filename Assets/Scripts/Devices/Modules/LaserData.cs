@@ -4,12 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 using UnityEngine;
-using UnityEngine.Rendering;
 using System;
 
 namespace SensorDevices
 {
-	public static class LaserData
+	namespace LaserData
 	{
 		readonly public struct Scan
 		{
@@ -24,7 +23,7 @@ namespace SensorDevices
 				this.resolution = resolution;
 				this.angle = new MathUtil.MinMax(angleMinRad * Mathf.Rad2Deg, angleMaxRad * Mathf.Rad2Deg);
 
-				if (Math.Abs(this.angle.range) < double.Epsilon)
+				if (Math.Abs(this.angle.range) < Quaternion.kEpsilon)
 				{
 					this.angleStep = 1;
 				}
@@ -62,42 +61,28 @@ namespace SensorDevices
 			}
 		}
 
-		public class Output : IDisposable
+		public struct CameraControlInfo
 		{
-			public bool isOverlapping;
-			public float rotationAngle;
-			public double capturedTime;
-			public Pose worldPose;
+			public bool isOverlappingDirection;
+			public float laserCamRotationalAngle;
+		}
+
+		public struct Output
+		{
+			public int dataIndex;
 			public double[] rayData;
-			public ComputeBuffer computedRayBuffer;
 
-			public Output(in float centerAngle, in int bufferLength, in bool overlapping)
+			public Output(in int index, in int bufferLength = 0)
 			{
-				isOverlapping = overlapping;
-				rotationAngle = centerAngle;
-				rayData = new double[bufferLength];
-				capturedTime = 0;
-				worldPose = Pose.identity;
-				computedRayBuffer = new ComputeBuffer(bufferLength, sizeof(float));
+				dataIndex = index;
+				rayData = bufferLength > 0 ? new double[bufferLength] : null;
 			}
 
-			public void ConvertData(AsyncGPUReadbackRequest req)
+			public void ConvertDataType(Unity.Collections.NativeArray<float> src)
 			{
-				var srcSpan = req.GetData<float>().AsSpan();
-				var dstSpan = rayData.AsSpan();
-
-				var len = Math.Min(srcSpan.Length, dstSpan.Length);
-				for (var i = 0; i < len; i++)
-					dstSpan[i] = srcSpan[i];
-			}
-
-			public void Dispose()
-			{
-				if (computedRayBuffer != null)
-				{
-					computedRayBuffer.Release();
-					computedRayBuffer = null;
-				}
+				var offset = dataIndex * rayData.Length;
+				for (var i = 0; i < rayData.Length; i++)
+					rayData[i] = src[offset + i];
 			}
 		}
 	}
