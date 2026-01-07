@@ -611,14 +611,19 @@ namespace SensorDevices
 
 		protected override IEnumerator OnVisualize()
 		{
-			var visualDrawDuration = UpdatePeriod;
+			var lineRenderer = gameObject.GetComponent<LineRenderer>();
+			if (lineRenderer == null)
+				lineRenderer = gameObject.AddComponent<LineRenderer>();
+			lineRenderer.positionCount = 0;
+			lineRenderer.widthMultiplier = 0.001f;
+			lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+			lineRenderer.useWorldSpace = true;
 
+			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 			var startAngleH = horizontal.angle.min;
 			var startAngleV = vertical.angle.max;
 			var endAngleV = vertical.angle.min;
 			var angleRangeV = vertical.angle.range;
-			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
-
 			var horizontalSamples = horizontal.samples;
 			var rangeMin = scanRange.min;
 			var rangeMax = scanRange.max;
@@ -635,49 +640,58 @@ namespace SensorDevices
 
 			var lidarModel = _lidarLink.parent;
 
+			var positions = new List<Vector3>((int)(horizontalSamples * vertical.samples) * 2);
+
 			while (true)
 			{
+				var rangeData = GetRangeData();
+				if (rangeData == null)
+				{
+					yield return waitForSeconds;
+					continue;
+				}
+
+				positions.Clear();
 				var rayStartBase = transform.position;
 				var sensorWorldRotation = transform.rotation;
 
-				var rangeData = GetRangeData();
-
-				if (rangeData != null)
+				for (var scanIndex = 0; scanIndex < rangeData.Count; scanIndex++)
 				{
-					var localUp = _lidarLink.up;
-					var localRight = -_lidarLink.right;
-					var localForward = _lidarLink.forward;
+					var scanIndexH = scanIndex % horizontalSamples;
+					var scanIndexV = scanIndex / horizontalSamples;
 
-					for (var scanIndex = 0; scanIndex < rangeData.Count; scanIndex++)
-					{
-						var scanIndexH = scanIndex % horizontalSamples;
-						var scanIndexV = scanIndex / horizontalSamples;
+					var rayAngleH = startAngleH + (_laserAngleResolution.H * scanIndexH);
+					var rayAngleV = startAngleV - (_laserAngleResolution.V * scanIndexV);
 
-						var rayAngleH = startAngleH + (_laserAngleResolution.H * scanIndexH);
-						var rayAngleV = startAngleV - (_laserAngleResolution.V * scanIndexV);
+					var ccwIndex = (int)(rangeData.Count - scanIndex - 1);
+					var rayData = (float)rangeData[ccwIndex];
 
-						var ccwIndex = (int)(rangeData.Count - scanIndex - 1);
-						var rayData = (float)rangeData[ccwIndex];
+					if (float.IsNaN(rayData) || rayData > rangeMax)
+						continue;
 
-						if (!float.IsNaN(rayData) && rayData <= rangeMax)
-						{
-							var t = Mathf.InverseLerp(endAngleV, startAngleV, rayAngleV);
-							var s = Mathf.Lerp(0.55f, 0.95f, t);
-							var rayColor = Color.HSVToRGB(hue, s, 0.95f);
-							rayColor.a = AlphaForVisualize;
+					var t = Mathf.InverseLerp(endAngleV, startAngleV, rayAngleV);
+					var s = Mathf.Lerp(0.55f, 0.95f, t);
+					var rayColor = Color.HSVToRGB(hue, s, 0.95f);
+					rayColor.a = AlphaForVisualize;
 
-							var localAngles = Quaternion.AngleAxis(rayAngleH, Vector3.up) * Quaternion.AngleAxis(rayAngleV, -Vector3.right);
+					var localAngles = Quaternion.AngleAxis(rayAngleH, Vector3.up) * Quaternion.AngleAxis(rayAngleV, -Vector3.right);
+					var dir = sensorWorldRotation * localAngles * Vector3.forward;
+					dir.Normalize();
 
-							var dir = sensorWorldRotation * localAngles * Vector3.forward;
-							dir.Normalize();
+					var start = rayStartBase + dir * rangeMin;
+					var end = start + dir * (rayData - rangeMin);
 
-							var start = rayStartBase + dir * rangeMin;
-							var end = start + dir * (rayData - rangeMin);
-
-							Debug.DrawLine(start, end, rayColor, visualDrawDuration, true);
-						}
-					}
+					positions.Add(start);
+					positions.Add(end);
 				}
+
+				lineRenderer.positionCount = positions.Count;
+				lineRenderer.SetPositions(positions.ToArray());
+
+				var baseColor = Color.HSVToRGB(hue, 0.9f, 1f);
+				baseColor.a = AlphaForVisualize;
+				lineRenderer.startColor = baseColor;
+				lineRenderer.endColor = baseColor;
 
 				yield return waitForSeconds;
 			}
