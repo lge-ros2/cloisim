@@ -6,12 +6,9 @@
 
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using Unity.Collections;
-using Unity.Jobs;
 using System.Threading.Tasks;
-using System;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -24,8 +21,6 @@ namespace SensorDevices
 		private static ComputeShader ComputeShaderDepthBuffer = null;
 		private ComputeShader _computeShader = null;
 		private int _kernelIndex = -1;
-		private const int ThreadGroupsX = 32;
-		private const int ThreadGroupsY = 32;
 		private int _threadGroupX;
 		private int _threadGroupY;
 
@@ -35,7 +30,6 @@ namespace SensorDevices
 
 		private uint _depthScale = 1;
 		private int _imageDepth;
-		private const int BatchSize = 64;
 
 		private byte[] _computedBufferOutput;
 		private const uint OutputMaxUnitSize = 4;
@@ -104,9 +98,6 @@ namespace SensorDevices
 			_computedBufferOutputUnitLength = width * height;
 			_computedBufferOutput = new byte[_computedBufferOutputUnitLength * OutputMaxUnitSize];
 
-			_threadGroupX = Mathf.RoundToInt(width / ThreadGroupsX);
-			_threadGroupY = Mathf.RoundToInt(height / ThreadGroupsY);
-
 			_textureForCapture = new Texture2D(width, height, TextureFormat.R8, false);
 			_textureForCapture.filterMode = FilterMode.Point;
 
@@ -120,6 +111,11 @@ namespace SensorDevices
 				_computeShader.SetInt("_Width", width);
 				_computeShader.SetInt("_UnitSize", _imageDepth);
 				_computeShader.SetFloat("_DepthScale", (float)_depthScale);
+
+				_computeShader.GetKernelThreadGroupSizes(_kernelIndex, out var threadX, out var threadY, out var _);
+
+				_threadGroupX = Mathf.CeilToInt(width / (float)threadX);
+				_threadGroupY = Mathf.CeilToInt(height / (float)threadY);
 			}
 		}
 
