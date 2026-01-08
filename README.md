@@ -54,7 +54,10 @@ Here are the list of items that is implemented(marked) or planned to be implemen
       - [X] Lidar
       - [X] Camera
     - [ ] Custom
-  - [ ] <visualize>true</visualize>, only works in editor for lidar sensor
+  - [X] Visualization, <visualize>true</visualize>
+	- [X] LiDAR Sensor
+	  - [X] line visualization
+	  - [ ] point cloud for 3D
 - [X] Physics
   - [ ] Support all physics parameters in SDF specification
   - [X] Support `<Joint type="revolute2">`
