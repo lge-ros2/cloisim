@@ -132,15 +132,15 @@ namespace SensorDevices
 			_laserScan.WorldPose = new messages.Pose();
 			_laserScan.WorldPose.Position = new messages.Vector3d();
 			_laserScan.WorldPose.Orientation = new messages.Quaternion();
-
-			if (vertical.Equals(default(LaserData.Scan)))
-			{
-				vertical = new LaserData.Scan(1);
-			}
 		}
 
 		protected override void SetupMessages()
 		{
+			if (vertical.Equals(default(LaserData.Scan)))
+			{
+				vertical = new LaserData.Scan(1);
+			}
+
 			_laserScan.Frame = DeviceName;
 			_laserScan.Count = horizontal.samples;
 			_laserScan.AngleMin = horizontal.angle.min * Mathf.Deg2Rad;
@@ -444,9 +444,6 @@ namespace SensorDevices
 		{
 			const int BufferUnitSize = sizeof(double);
 
-			var laserScanStamped = new messages.LaserScanStamped();
-			laserScanStamped.Time = new messages.Time();
-
 			var laserSamplesH = (int)horizontal.samples;
 			var laserStartAngleH = horizontal.angle.min;
 			var laserEndAngleH = horizontal.angle.max;
@@ -474,10 +471,13 @@ namespace SensorDevices
 			{
 				if (_outputQueue.TryDequeue(out item))
 				{
+					var laserScanStamped = new messages.LaserScanStamped();
+					laserScanStamped.Time = new messages.Time();
+					laserScanStamped.Time.Set(item.capturedTime);
+
 					laserScanStamped.Scan = _laserScan;
 
 					var laserScan = laserScanStamped.Scan;
-
 					laserScan.WorldPose.Position.Set(item.sensorWorldPose.position);
 					laserScan.WorldPose.Orientation.Set(item.sensorWorldPose.rotation);
 
@@ -592,7 +592,6 @@ namespace SensorDevices
 						_laserFilter.DoFilter(ref laserScan);
 					}
 
-					laserScanStamped.Time.Set(item.capturedTime);
 
 					_messageQueue.Enqueue(laserScanStamped);
 				}
