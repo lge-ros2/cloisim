@@ -24,8 +24,7 @@ namespace SensorDevices
 		// private List<SensorDevices.Magnet> magnetSensors = null;
 		private List<SensorDevices.Contact> _bumperSensors = new();
 
-		private float _elpasedDeltaTime = 0;
-		private messages.Time prevMessageTime = new();
+		private float _accumulatedTime = 0f;
 
 		private StringBuilder _log = new StringBuilder();
 
@@ -166,24 +165,23 @@ namespace SensorDevices
 		{
 			var delta = Time.fixedDeltaTime;
 
+			_accumulatedTime += delta;
+
 			if (_motorControl?.Update(_odomData, Time.fixedDeltaTime, _imuSensor) == false)
 			{
 				Debug.LogWarning("Update failed in MotorControl");
 			}
 
-			if ((_elpasedDeltaTime += delta) < UpdatePeriod)
-			{
+			if (_accumulatedTime < UpdatePeriod)
 				return;
-			}
+
+			 _accumulatedTime -= UpdatePeriod;
 
 			var micomSensorData = new messages.Micom();
 			micomSensorData.Time = new messages.Time();
 			micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
 
-			if (prevMessageTime.Sec == micomSensorData.Time.Sec && prevMessageTime.Nsec == micomSensorData.Time.Nsec)
-				Debug.LogWarning($"Same Micom Time {micomSensorData.Time.Sec}.{micomSensorData.Time.Nsec}");
-
-			UpdateBattery(micomSensorData, _elpasedDeltaTime);
+			UpdateBattery(micomSensorData, delta);
 			UpdateUss(micomSensorData);
 			UpdateIr(micomSensorData);
 			UpdateBumper(micomSensorData);
@@ -192,11 +190,6 @@ namespace SensorDevices
 			micomSensorData.Odom = _odomData;
 
 			_messageQueue.Enqueue(micomSensorData);
-
-			_elpasedDeltaTime = 0;
-
-			prevMessageTime.Sec = micomSensorData.Time.Sec;
-			prevMessageTime.Nsec = micomSensorData.Time.Nsec;
 		}
 
 		private void UpdateBattery(messages.Micom micomData, in float deltaTime)
