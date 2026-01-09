@@ -163,16 +163,9 @@ namespace SDF
 				articulationBody.anchorRotation = UE.Quaternion.identity;
 
 				articulationBody.ResetCenterOfMass();
-				if (inertial?.pose != null)
-				{
-					articulationBody.centerOfMass = inertial.pose?.Pos.ToUnity() ?? UE.Vector3.zero;
-					articulationBody.automaticCenterOfMass = false;
-				}
-				else
-				{
-					articulationBody.automaticCenterOfMass = true;
-				}
-				// Debug.Log($"{linkObject.name} => Center Of Mass: {articulationBody.centerOfMass.ToString("F5")} | intertia: {articulationBody.inertiaTensor.ToString("F5")}, {articulationBody.inertiaTensorRotation.ToString("F5")}");
+				articulationBody.automaticCenterOfMass = false;
+				articulationBody.centerOfMass = inertial.pose?.Pos.ToUnity() ?? UE.Vector3.zero;
+				// Debug.Log($"{linkObject.name} => Center Of Mass: {articulationBody.centerOfMass.ToString("F5")} | inertia: {articulationBody.inertiaTensor.ToString("F5")}, {articulationBody.inertiaTensorRotation.ToString("F5")}");
 
 				if (colliders.Length == 0)
 				{

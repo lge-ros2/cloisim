@@ -31,8 +31,9 @@ namespace SDF
 				articulationBody.jointFriction = 0;
 
 				articulationBody.mass = 0.5f;
-				articulationBody.automaticCenterOfMass = true;
+				articulationBody.automaticCenterOfMass = false;
 				articulationBody.ResetCenterOfMass();
+				articulationBody.centerOfMass = UE.Vector3.zero;
 
 				articulationBody.automaticInertiaTensor = true;
 				articulationBody.ResetInertiaTensor();
