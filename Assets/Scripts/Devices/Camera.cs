@@ -167,7 +167,6 @@ namespace SensorDevices
 		protected override void InitializeMessages()
 		{
 			_image = new messages.Image();
-
 			_sensorInfo = new messages.CameraSensor();
 			_sensorInfo.ImageSize = new messages.Vector2d();
 			_sensorInfo.Distortion = new messages.Distortion();
