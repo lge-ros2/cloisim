@@ -59,22 +59,20 @@ Shader "Sensor/DepthRange"
 
 			float4 frag(v2f_img i) : COLOR
 			{
-				float depth = UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, i.uv.xy));
-				float linearDepth = Linear01Depth(depth);
-
-				float nearClip = _ProjectionParams.y;
-				float farClip  = _ProjectionParams.z;
-
-				float eyeSpaceDepth = linearDepth * (farClip - nearClip) + nearClip;
-
-				// if depth is near farclip, return nothing
-				if (linearDepth > 0.9999)
+				const float depth = UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, i.uv.xy));
+				const float linearDepth = Linear01Depth(depth);
+	
+				// if depth is near to far clip, return nothing
+				if (linearDepth > 0.999999)
 					return float4(0, 0, 0, 0);
 
-				float normalizedDepth = saturate((eyeSpaceDepth - nearClip) / (farClip - nearClip));
+				const float nearClip = _ProjectionParams.y;
+				const float farClip  = _ProjectionParams.z;
 
-				float finalDepthRange = (_ReverseData > 0) ? (1.0 - normalizedDepth) : normalizedDepth;
+				const float eyeSpaceDepth = linearDepth * (farClip - nearClip) + nearClip;
+				const float normalizedDepth = saturate((eyeSpaceDepth - nearClip) / (farClip - nearClip));
 
+				const float finalDepthRange = (_ReverseData > 0) ? (1.0 - normalizedDepth) : normalizedDepth;
 				return float4(finalDepthRange, 0, 0, 0);
 			}
 

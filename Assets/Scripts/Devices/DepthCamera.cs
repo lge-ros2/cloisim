@@ -23,6 +23,8 @@ namespace SensorDevices
 		private int _kernelIndex = -1;
 		private int _threadGroupX;
 		private int _threadGroupY;
+		ComputeBuffer _computeBufferSrc = null;
+		ComputeBuffer _computeBufferDst = null;
 
 		private ParallelOptions _parallelOptions = null;
 
@@ -80,6 +82,9 @@ namespace SensorDevices
 			Destroy(_computeShader);
 			_computeShader = null;
 
+			_computeBufferSrc?.Release();
+			_computeBufferDst?.Release();
+
 			base.OnDestroy();
 		}
 
@@ -107,6 +112,7 @@ namespace SensorDevices
 			{
 				_kernelIndex = _computeShader.FindKernel("CSScaleDepthBuffer");
 
+				_computeShader.SetFloat("_DepthMin", (float)_camParam.clip.near);
 				_computeShader.SetFloat("_DepthMax", (float)_camParam.clip.far);
 				_computeShader.SetInt("_Width", width);
 				_computeShader.SetInt("_UnitSize", _imageDepth);
@@ -117,6 +123,9 @@ namespace SensorDevices
 				_threadGroupX = Mathf.CeilToInt(width / (float)threadX);
 				_threadGroupY = Mathf.CeilToInt(height / (float)threadY);
 			}
+
+			_computeBufferSrc = new ComputeBuffer(_computedBufferOutput.Length / sizeof(float), sizeof(float));
+			_computeBufferDst = new ComputeBuffer(_computedBufferOutput.Length, sizeof(byte));
 		}
 
 		protected override void SetupCamera()
@@ -170,17 +179,12 @@ namespace SensorDevices
 
 			if (_computeShader != null)
 			{
-				var computeBufferSrc = new ComputeBuffer(readbackData.Length, sizeof(float));
-				_computeShader.SetBuffer(_kernelIndex, "_Input", computeBufferSrc);
-				computeBufferSrc.SetData(readbackData);
+				_computeShader.SetBuffer(_kernelIndex, "_Input", _computeBufferSrc);
+				_computeBufferSrc.SetData(readbackData);
 
-				var computeBufferDst = new ComputeBuffer(_computedBufferOutput.Length, sizeof(byte));
-				_computeShader.SetBuffer(_kernelIndex, "_Output", computeBufferDst);
-				_computeShader.Dispatch(_kernelIndex, _threadGroupX + 1, _threadGroupY + 1, 1);
-				computeBufferDst.GetData(_computedBufferOutput);
-
-				computeBufferSrc.Release();
-				computeBufferDst.Release();
+				_computeShader.SetBuffer(_kernelIndex, "_Output", _computeBufferDst);
+				_computeShader.Dispatch(_kernelIndex, _threadGroupX, _threadGroupY, 1);
+				_computeBufferDst.GetData(_computedBufferOutput);
 
 				if (_parallelOptions != null)
 				{

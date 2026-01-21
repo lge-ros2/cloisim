@@ -55,7 +55,6 @@ void ComputeLaserData(uint3 id : SV_DispatchThreadID)
     if (rayDist < _RangeMin)
         rayDist = asfloat(0x7FC00000); // NaN
 
-    // uint index = id.y * _Width + id.x;
     uint index = id.y * _Width + id.x + _DataOffset;
     _RayData[index] = rayDist;
 }
