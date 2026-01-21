@@ -18,7 +18,6 @@ public class SegmentationCameraPlugin : CameraPlugin
 		{
 			ChangePluginType(ICLOiSimPlugin.Type.SEGMENTCAMERA);
 			_cam = segCam;
-			_attachedDevices.Add(_cam);
 		}
 		else
 		{

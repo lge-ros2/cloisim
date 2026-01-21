@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
+using UnityEngine;
 
 public class RealSensePlugin : CLOiSimMultiPlugin
 {
@@ -23,6 +24,27 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		_cameras = GetComponentsInChildren<SensorDevices.Camera>();
 		_imu = GetComponentInChildren<SensorDevices.IMU>();
 	}
+
+	private void ConfigureDepthScaleFromParameters(SensorDevices.DepthCamera depthCam)
+	{
+		var parameters = GetPluginParameters();
+		if (parameters == null)
+		{
+			Debug.LogWarning("GetPluginParameters() is null");
+			return;
+		}
+
+		var depthScale = parameters.GetValue<uint>("configuration/depth_scale", 1000);
+		if (depthCam != null)
+		{
+			depthCam.SetDepthScale(depthScale);
+		}
+		else
+		{
+			Debug.LogWarning("DepthCamera is null");
+		}
+	}
+
 
 	protected override void OnStart()
 	{
@@ -56,12 +78,12 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 		if (!string.IsNullOrEmpty(depthName))
 		{
-			FindAndAddCameraPlugin(depthName);
+			FindAndAddCameraPlugin(depthName, camera => ConfigureDepthScaleFromParameters((SensorDevices.DepthCamera)camera));
 		}
 
 		if (!string.IsNullOrEmpty(alignedDepthToColorName))
 		{
-			FindAndAddCameraPlugin(alignedDepthToColorName);
+			FindAndAddCameraPlugin(alignedDepthToColorName, camera => ConfigureDepthScaleFromParameters((SensorDevices.DepthCamera)camera));
 		}
 
 		if (!string.IsNullOrEmpty(imuName))
@@ -85,7 +107,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		}
 	}
 
-	private CameraPlugin FindAndAddCameraPlugin(in string name)
+	private void FindAndAddCameraPlugin(in string name, Action<Device> onPluginCreated = null)
 	{
 		foreach (var camera in _cameras)
 		{
@@ -99,11 +121,11 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 
 				AddPlugin(name, plugin);
 				_activatedModules.Add(new Tuple<string, string>("camera", name));
-				return plugin;
+
+	            onPluginCreated?.Invoke(camera);
+				break;
 			}
 		}
-
-		return null;
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)

@@ -12,19 +12,16 @@ public class JointControlPlugin : CLOiSimPlugin
 {
 	private List<TF> tfList = new List<TF>();
 	private string _robotDescription = "<?xml version='1.0' ?><sdf></sdf>";
-	private SensorDevices.JointCommand jointCommand = null;
-	private SensorDevices.JointState jointState = null;
+	private SensorDevices.JointCommand _jointCommand = null;
+	private SensorDevices.JointState _jointState = null;
 
 	protected override void OnAwake()
 	{
 		_type = ICLOiSimPlugin.Type.JOINTCONTROL;
 
-		jointState = gameObject.AddComponent<SensorDevices.JointState>();
-		jointCommand = gameObject.AddComponent<SensorDevices.JointCommand>();
-		jointCommand.SetJointState(jointState);
-
-		_attachedDevices.Add(jointCommand);
-		_attachedDevices.Add(jointState);
+		_jointState = gameObject.AddComponent<SensorDevices.JointState>();
+		_jointCommand = gameObject.AddComponent<SensorDevices.JointCommand>();
+		_jointCommand.SetJointState(_jointState);
 	}
 
 	protected override void OnStart()
@@ -36,12 +33,12 @@ public class JointControlPlugin : CLOiSimPlugin
 
 		if (RegisterRxDevice(out var portRx, "Rx"))
 		{
-			AddThread(portRx, ReceiverThread, jointCommand);
+			AddThread(portRx, ReceiverThread, _jointCommand);
 		}
 
 		if (RegisterTxDevice(out var portTx, "Tx"))
 		{
-			AddThread(portTx, SenderThread, jointState);
+			AddThread(portTx, SenderThread, _jointState);
 		}
 
 		if (RegisterTxDevice(out var portTf, "Tf"))
@@ -62,14 +59,14 @@ public class JointControlPlugin : CLOiSimPlugin
 	private void LoadJoints()
 	{
 		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
-		jointState.SetUpdateRate(updateRate);
+		_jointState.SetUpdateRate(updateRate);
 
 		if (GetPluginParameters().GetValues<string>("joints/joint", out var joints))
 		{
 			foreach (var jointName in joints)
 			{
 				// UnityEngine.Debug.Log("Joints loaded "+ jointName);
-				if (jointState.AddTargetJoint(jointName, out var targetLink, out var isStatic))
+				if (_jointState.AddTargetJoint(jointName, out var targetLink, out var isStatic))
 				{
 					var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("joints/joint[text()='" + jointName + "']", "parent_frame_id");
 					var jointParentLinkName = (string.IsNullOrEmpty(parentFrameId)) ? targetLink.JointParentLinkName : parentFrameId;

@@ -54,8 +54,6 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	private List<ushort> _allocatedDevicePorts = new List<ushort>();
 	private List<string> _allocatedDeviceHashKeys = new List<string>();
 
-	protected List<Device> _attachedDevices = new List<Device>();
-
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
 	protected virtual void OnReset() { }
@@ -89,14 +87,6 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		return _pluginParameters;
 	}
 
-	private void StorePluginParametersInAttachedDevices()
-	{
-		foreach (var device in _attachedDevices)
-		{
-			device?.SetPluginParameters(_pluginParameters);
-		}
-	}
-
 	private void DetectMultiplePlugin()
 	{
 		if (GetType() == typeof(LaserPlugin) ||
@@ -126,8 +116,6 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		SetCustomHandleRequestMessage();
 
 		OnAwake();
-
-		StorePluginParametersInAttachedDevices();
 
 		OnPluginLoad();
 	}
@@ -163,11 +151,6 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	public void Reset()
 	{
-		foreach (var device in _attachedDevices)
-		{
-			device?.Reset();
-		}
-
 		OnReset();
 	}
 

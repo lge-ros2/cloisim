@@ -112,7 +112,6 @@ namespace SensorDevices
 			{
 				_kernelIndex = _computeShader.FindKernel("CSScaleDepthBuffer");
 
-				_computeShader.SetFloat("_DepthMin", (float)_camParam.clip.near);
 				_computeShader.SetFloat("_DepthMax", (float)_camParam.clip.far);
 				_computeShader.SetInt("_Width", width);
 				_computeShader.SetInt("_UnitSize", _imageDepth);

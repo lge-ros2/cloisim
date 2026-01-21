@@ -79,6 +79,13 @@ public abstract class Device : MonoBehaviour
 
 		SetupMessages();
 
+		StartCoroutine(DelayedStart());
+	}
+
+	protected virtual IEnumerator DelayedStart()
+	{
+		yield return new WaitForEndOfFrame();
+
 		OnStart();
 
 		_running = true;

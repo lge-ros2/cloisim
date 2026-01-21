@@ -27,8 +27,6 @@ public class CameraPlugin : CLOiSimPlugin
 			deviceName = "Camera";
 			_cam = gameObject.GetComponent<SensorDevices.Camera>();
 		}
-
-		_attachedDevices.Add(_cam);
 	}
 
 	protected override void OnStart()

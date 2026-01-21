@@ -30,10 +30,6 @@ public class MicomPlugin : CLOiSimPlugin
 
 		_micomSensor = gameObject.AddComponent<SensorDevices.MicomSensor>();
 		_micomCommand = gameObject.AddComponent<SensorDevices.MicomCommand>();
-
-		_attachedDevices.Add(_micomCommand);
-		_attachedDevices.Add(_micomSensor);
-
 		_log.Clear();
 	}
 

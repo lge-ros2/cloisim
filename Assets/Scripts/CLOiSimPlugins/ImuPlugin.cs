@@ -13,9 +13,7 @@ public class ImuPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		_type = ICLOiSimPlugin.Type.IMU;
-
 		imu = gameObject.GetComponent<SensorDevices.IMU>();
-		_attachedDevices.Add(imu);
 	}
 
 	protected override void OnStart()

@@ -13,9 +13,7 @@ public class ContactPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		_type = ICLOiSimPlugin.Type.CONTACT;
-
 		_contact = gameObject.GetComponent<SensorDevices.Contact>();
-		_attachedDevices.Add(_contact);
 	}
 
 	protected override void OnStart()

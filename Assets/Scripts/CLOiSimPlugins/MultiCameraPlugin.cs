@@ -13,9 +13,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		_type = ICLOiSimPlugin.Type.MULTICAMERA;
-
 		multiCam = gameObject.GetComponent<SensorDevices.MultiCamera>();
-		_attachedDevices.Add(multiCam);
 	}
 
 	protected override void OnStart()
@@ -38,7 +36,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 
 		if (camera == null)
 		{
-			UnityEngine.Debug.LogWarning("cannot find camera from multicamera: " + cameraName);
+			UnityEngine.Debug.LogWarning($"cannot find camera from multicamera: {cameraName}");
 			return;
 		}
 

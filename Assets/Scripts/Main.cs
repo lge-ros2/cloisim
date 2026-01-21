@@ -576,6 +576,11 @@ public class Main : MonoBehaviour
 			helper.Reset();
 		}
 
+		foreach (var device in _worldRoot.GetComponentsInChildren<Device>())
+		{
+			device.Reset();
+		}
+
 		foreach (var plugin in _worldRoot.GetComponentsInChildren<CLOiSimPlugin>())
 		{
 			plugin.Reset();
