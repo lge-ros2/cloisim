@@ -223,15 +223,6 @@ public static class TextureUtil
 		UnityEngine.Object.DestroyImmediate(rt);
 	}
 
-	public static void SaveRawImage(this Texture2D texture, byte[] data, in string path, in string filename, in SensorDevices.CameraData.PixelFormat format)
-	{
-		if (format != SensorDevices.CameraData.PixelFormat.L_INT8)
-		{
-			Debug.LogWarning($"{format.ToString()} is not support to save file");
-		}
-		texture.SaveRawImage(data, path, filename);
-	}
-
 	public static void SaveRawImage(this Texture2D texture, byte[] data, in string path, in string filename)
 	{
 		texture.SetPixelData(data, 0);

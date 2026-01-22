@@ -394,7 +394,13 @@ namespace SensorDevices
 				var imageStampedMsg = (messages.ImageStamped)msg;
 				var saveName = $"{DeviceName}_{imageStampedMsg.Time.Sec}.{imageStampedMsg.Time.Nsec}";
 				var format = CameraData.GetPixelFormat(_camParam.image.format);
-				_textureForCapture.SaveRawImage(imageStampedMsg.Image.Data, _camParam.save_path, saveName, format);
+
+				if (format != SensorDevices.CameraData.PixelFormat.L_INT8)
+				{
+					Debug.LogWarning($"{format.ToString()} is not support to save file");
+					return;
+				}
+				_textureForCapture.SaveRawImage(imageStampedMsg.Image.Data, _camParam.save_path, saveName);
 			}
 		}
 
