@@ -270,7 +270,11 @@ namespace SDF
 			{
 				this.samples = samples;
 			}
+			
+			// Description: The number of simulated lidar rays to generate per complete laser sweep cycle.
 			public uint samples;
+
+			// Description: This number is multiplied by samples to determine the number of range data points returned. If resolution is not equal to one, range data is interpolate
 			public double resolution = 1;
 			public double min_angle = 0.0;
 			public double max_angle = 0.0;
