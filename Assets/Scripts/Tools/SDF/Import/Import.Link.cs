@@ -164,7 +164,7 @@ namespace SDF
 
 				articulationBody.ResetCenterOfMass();
 				articulationBody.automaticCenterOfMass = false;
-				articulationBody.centerOfMass = inertial.pose?.Pos.ToUnity() ?? UE.Vector3.zero;
+				articulationBody.centerOfMass = inertial?.pose?.Pos?.ToUnity() ?? UE.Vector3.zero;
 				// Debug.Log($"{linkObject.name} => Center Of Mass: {articulationBody.centerOfMass.ToString("F5")} | inertia: {articulationBody.inertiaTensor.ToString("F5")}, {articulationBody.inertiaTensorRotation.ToString("F5")}");
 
 				if (colliders.Length == 0)
