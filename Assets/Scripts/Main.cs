@@ -209,6 +209,11 @@ public class Main : MonoBehaviour
 
 	void Awake()
 	{
+		var logger = new DebugLogWriter();
+		var loggerErr = new DebugLogWriter(true);
+		Console.SetOut(logger);
+		Console.SetError(loggerErr);
+
 		_instance = this;
 
 		GetResourcesPaths();
@@ -427,6 +432,10 @@ public class Main : MonoBehaviour
 				_modelImporter.SetModelForDeploy(targetObject);
 			}
 
+			var message = $"Model({modelFileName}) is loaded. > {model.Name}";
+			Debug.Log(message);
+			Main.UIController?.SetInfoMessage(message);
+
 			// Debug.Log("Model Loaded:" + targetObject.name);
 			yield return new WaitForEndOfFrame();
 
@@ -474,6 +483,10 @@ public class Main : MonoBehaviour
 					followingCamera.AlignSameDirection(_trackVisualInheritYaw);
 				}
 			}
+
+			var message = $"World({_worldFilename}) is loaded.";
+			Debug.Log(message);
+			Main.UIController?.SetInfoMessage(message);
 		}
 		else
 		{

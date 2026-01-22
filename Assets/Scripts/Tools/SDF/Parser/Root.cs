@@ -30,9 +30,6 @@ namespace SDF
 
 		private string _sdfVersion = "1.7";
 
-		private DebugLogWriter _logger;
-		private DebugLogWriter _loggerErr;
-
 		public XmlDocument GetOriginalDocument() => _originalDoc;
 
 		public List<string> fileDefaultPaths = new List<string>();
@@ -44,10 +41,6 @@ namespace SDF
 
 		public Root()
 		{
-			_logger = new DebugLogWriter();
-			_loggerErr = new DebugLogWriter(true);
-			Console.SetOut(_logger);
-			Console.SetError(_loggerErr);
 		}
 
 		public bool DoParse(out World world, out string worldFilePath, in string worldFileName)
@@ -82,19 +75,17 @@ namespace SDF
 						world = new World(worldNode);
 						worldFilePath = worldPath;
 
-						_logger.Write($"World({worldFileName}) is loaded.");
-						// _logger.SetShowOnDisplayOnce();
 						return true;
 					}
 					catch (XmlException ex)
 					{
-						_loggerErr.SetShowOnDisplayOnce();
-						_loggerErr.Write($"Failed to Load World({fullFilePath}) - {ex.Message}");
+						Console.Error.Write($"Failed to Load World({fullFilePath}) - {ex.Message}");
+						return false;
 					}
 				}
 			}
 
-			_loggerErr.Write("World file not exist: " + worldFileName);
+			Console.Error.Write("World file not exist: " + worldFileName);
 			return false;
 		}
 
@@ -122,16 +113,12 @@ namespace SDF
 
 				model = new Model(modelNode);
 
-				_logger.SetShowOnDisplayOnce();
-				_logger.Write($"Model({modelName}) is loaded. > {model.Name}");
-
 				return true;
 			}
 			catch (XmlException ex)
 			{
 				var errorMessage = "Failed to Load Model file(" + modelLocation + ") file - " + ex.Message;
-				_loggerErr.SetShowOnDisplayOnce();
-				_loggerErr.Write(errorMessage);
+				Console.Error.Write(errorMessage);
 			}
 
 			return false;
@@ -247,25 +234,25 @@ namespace SDF
 			if (directoryErrlogs.Length > 0)
 			{
 				directoryErrlogs.Insert(0, "Directory does not exists: \n");
-				_loggerErr.Write(directoryErrlogs.ToString());
+				Console.Error.Write(directoryErrlogs.ToString());
 			}
 
 			if (fileErrlogs.Length > 0)
 			{
 				fileErrlogs.Insert(0, "File does not exists:\n");
-				_loggerErr.Write(fileErrlogs.ToString());
+				Console.Error.Write(fileErrlogs.ToString());
 			}
 
 			if (sdfModelErrlogs.Length > 0)
 			{
 				sdfModelErrlogs.Insert(0, "Failed to load model files:");
-				_loggerErr.Write(sdfModelErrlogs.ToString());
+				Console.Error.Write(sdfModelErrlogs.ToString());
 			}
 
 			if (failedModelTableList.Length > 0)
 			{
 				failedModelTableList.Insert(0, $"Below models are already registered. - expected duplication of registeration");
-				_loggerErr.Write(failedModelTableList);
+				Console.Error.Write(failedModelTableList);
 			}
 
 			Console.Write($"Loaded total Models: {resourceModelTable.Count}");
@@ -461,8 +448,7 @@ namespace SDF
 			}
 			catch (XmlException e)
 			{
-				_loggerErr.SetShowOnDisplayOnce();
-				_loggerErr.Write($"Failed to Load included model({modelName}) file - {e.Message}");
+				Console.Error.Write($"Failed to Load included model({modelName}) file - {e.Message}");
 				return null;
 			}
 
