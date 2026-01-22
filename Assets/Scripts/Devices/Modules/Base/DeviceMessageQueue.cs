@@ -5,19 +5,46 @@
  */
 
 using System.Collections.Concurrent;
+using System.Threading;
 using System;
 
-public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
+public sealed class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 {
 	private const int MaxQueue = 100;
 	private const int TimeoutInMilliseconds = 100;
 	private const float FlushLeaveRate = 0.1f;
 	private readonly int _flushThreshold;
+	private CancellationTokenSource _cts;
+	private int _disposed;
 
 	public DeviceMessageQueue()
 		: base(MaxQueue)
 	{
+		_cts = new CancellationTokenSource();
 		_flushThreshold = (int)(MaxQueue * FlushLeaveRate);
+	}
+
+	protected override void Dispose(bool disposing)
+	{
+		if (Interlocked.Exchange(ref _disposed, 1) == 1)
+		{
+			base.Dispose(disposing);
+			return;
+		}
+
+		if (disposing)
+		{
+			try
+			{
+				_cts?.Cancel();
+			}
+			catch { /* ignore */ }
+
+			_cts?.Dispose();
+			_cts = null;
+		}
+
+		base.Dispose(disposing);
 	}
 
 	public void Flush()
@@ -41,7 +68,7 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 
 		try
 		{
-			return TryAdd(data, TimeoutInMilliseconds);
+			return TryAdd(data, TimeoutInMilliseconds, _cts.Token);
 		}
 		catch (Exception ex)
 		{
@@ -54,13 +81,21 @@ public class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 	{
 		try
 		{
-			return TryTake(out item, TimeoutInMilliseconds);
+			return TryTake(out item, TimeoutInMilliseconds, _cts.Token);
+		}
+		catch (ObjectDisposedException)
+		{
+			// UnityEngine.Debug.LogWarning("ObjectDisposedException");
+		}
+		catch (InvalidOperationException ex)
+		{
+			UnityEngine.Debug.LogWarning($"InvalidOperationException - {ex.Message}");
 		}
 		catch (Exception ex)
 		{
-			UnityEngine.Debug.LogWarning(ex.Message);
-			item = default(DeviceMessage);
-			return false;
+			// UnityEngine.Debug.LogException(ex);
 		}
+		item = default(DeviceMessage);
+		return false;
 	}
 }
