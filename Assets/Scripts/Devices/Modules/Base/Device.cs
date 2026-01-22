@@ -143,7 +143,6 @@ public abstract class Device : MonoBehaviour
 				if (_thread != null && _thread.IsAlive)
 				{
 					_thread.Join();
-					_thread.Abort();
 				}
 				break;
 
@@ -225,7 +224,7 @@ public abstract class Device : MonoBehaviour
 		while (_running)
 		{
 			yield return waitUntil;
-			if (PopDeviceMessage(out var receivedMessage))
+			if (PopDeviceMessage(out var receivedMessage) && receivedMessage != null)
 			{
 				ProcessReceivedDeviceMessage(receivedMessage);
 			}
@@ -247,7 +246,7 @@ public abstract class Device : MonoBehaviour
 		{
 			if (_deviceMessageQueue.Count > 0)
 			{
-				if (PopDeviceMessage(out var receivedMessage))
+				if (PopDeviceMessage(out var receivedMessage) && receivedMessage != null)
 				{
 					ProcessReceivedDeviceMessage(receivedMessage);
 				}
