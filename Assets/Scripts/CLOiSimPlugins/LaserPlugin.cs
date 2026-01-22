@@ -38,6 +38,12 @@ public class LaserPlugin : CLOiSimPlugin
 			}
 		}
 
+		if (GetPluginParameters().IsValidNode("custom_noise"))
+		{
+			var customNoiseInRawXml = GetPluginParameters().GetValue<string>("custom_noise");
+			_lidar.SetupCustomNoise(customNoiseInRawXml);
+		}
+
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
 			AddThread(portService, ServiceThread);

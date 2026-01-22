@@ -98,16 +98,12 @@ public class CustomNoiseModel : GaussianNoiseModel
 		return data;
 	}
 
-	public void ParseParameter(in SDF.Plugin plugin)
+	public void ParseParameter(in string customNoiseParamInRawXml)
 	{
 		var innerDoc = new XmlDocument();
-		innerDoc.LoadXml($"<root>{plugin.RawXml()}</root>");
+		innerDoc.LoadXml($"<root>{customNoiseParamInRawXml}</root>");
 
-		var customNoiseNode = innerDoc.SelectSingleNode("//custom_noise");
-		if (customNoiseNode == null)
-			return;
-
-		var noiseNodes = customNoiseNode.SelectNodes("noise");
+		var noiseNodes = innerDoc.SelectNodes("/root/noise");
 		foreach (XmlNode noiseNode in noiseNodes)
 		{
 			var type = noiseNode.Attributes["type"]?.Value ?? string.Empty;

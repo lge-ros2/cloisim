@@ -19,7 +19,6 @@ public abstract class Device : MonoBehaviour
 
 	private DeviceMessageQueue _deviceMessageQueue = new();
 	private DevicePose _devicePose = new();
-	private SDF.Plugin _pluginParameters = null;
 
 	[SerializeField]
 	private string _deviceName = string.Empty;
@@ -328,19 +327,6 @@ public abstract class Device : MonoBehaviour
 	public void SetTransportedTime(in float value)
 	{
 		_transportingTimeSeconds = value;
-	}
-
-	/// <summary>
-	/// This method should be called in OnStart()
-	/// </summary>
-	public void SetPluginParameters(in SDF.Plugin plugin)
-	{
-		_pluginParameters = plugin;
-	}
-
-	public SDF.Plugin GetPluginParameters()
-	{
-		return _pluginParameters;
 	}
 
 	public Pose GetPose()

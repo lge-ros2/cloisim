@@ -38,16 +38,10 @@ namespace SensorDevices
 			}
 		}
 
-		public void SetCustomNoiseParameter(in SDF.Plugin plugin)
+		public void SetCustomNoiseParameter(in string customNoiseParamInRawXml)
 		{
-			if (_noiseModel as CustomNoiseModel != null)
-			{
-				(_noiseModel as CustomNoiseModel).ParseParameter(plugin);
-			}
-			// else
-			// {
-			// 	Console.Write("noise type is not a 'custom'");
-			// }
+			var customNoiseModel = _noiseModel as CustomNoiseModel;
+			customNoiseModel?.ParseParameter(customNoiseParamInRawXml);
 		}
 
 		public void SetClampMin(in double val)

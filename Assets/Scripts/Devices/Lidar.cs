@@ -36,6 +36,7 @@ namespace SensorDevices
 		public float rangeResolution = 0;
 		public LaserData.Scan horizontal;
 		public LaserData.Scan vertical;
+		public string _noiseParamInRawXml;
 
 		private Transform _lidarLink = null;
 
@@ -256,7 +257,7 @@ namespace SensorDevices
 
 			if (_noise != null)
 			{
-				_noise.SetCustomNoiseParameter(GetPluginParameters());
+				_noise.SetCustomNoiseParameter(_noiseParamInRawXml);
 				_noise.SetClampMin(scanRange.min);
 				_noise.SetClampMax(scanRange.max);
 			}
@@ -336,6 +337,11 @@ namespace SensorDevices
 			}
 
 			_laserFilter.SetupRangeFilter(filterRangeMin, filterRangeMax);
+		}
+
+		public void SetupCustomNoise(in string noiseParamInRawXml)
+		{
+			_noiseParamInRawXml = noiseParamInRawXml;
 		}
 
 		private IEnumerator WaitStartSequence()
