@@ -17,6 +17,7 @@ public abstract class Device : MonoBehaviour
 
 	protected ConcurrentQueue<global::ProtoBuf.IExtensible> _messageQueue = new();
 
+	[NonSerialized]
 	private DeviceMessageQueue _deviceMessageQueue = new();
 	private DevicePose _devicePose = new();
 
@@ -150,9 +151,9 @@ public abstract class Device : MonoBehaviour
 			default:
 				break;
 		}
-
-		Debug.Log($"Stop {Mode.ToString()} device {name}-{DeviceName}");
-
+#if UNITY_EDITOR
+		Debug.Log($"Stop Device [{Mode.ToString()}] [{name}/{DeviceName}]");
+#endif
 		_deviceMessageQueue.Flush();
 		_deviceMessageQueue.Dispose();
 	}

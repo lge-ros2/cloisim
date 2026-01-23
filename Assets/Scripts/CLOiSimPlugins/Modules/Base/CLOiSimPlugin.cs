@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public interface ICLOiSimPlugin
@@ -45,14 +45,14 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected string _parentLinkName = string.Empty;
 
-	protected List<TF> staticTfList = new List<TF>();
+	protected List<TF> staticTfList = new();
 
 	private Pose pluginPose = Pose.identity;
 
 	private SDF.Plugin _pluginParameters = null;
 
-	private List<ushort> _allocatedDevicePorts = new List<ushort>();
-	private List<string> _allocatedDeviceHashKeys = new List<string>();
+	private List<ushort> _allocatedDevicePorts = new();
+	private List<string> _allocatedDeviceHashKeys = new();
 
 	protected abstract void OnAwake();
 	protected abstract void OnStart();
@@ -63,13 +63,26 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	/// </summary>
 	protected virtual void OnPluginLoad() { }
 
-	protected void OnDestroy()
+	protected async void OnDestroy()
 	{
 		_thread.Dispose();
+		await TryCompleteThreadShutdownAsync(joinTimeoutMs: 50);
+
 		_transport.Dispose();
 
 		DeregisterDevice(_allocatedDevicePorts, _allocatedDeviceHashKeys);
 		// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
+	}
+
+	private async Task TryCompleteThreadShutdownAsync(int joinTimeoutMs = 50)
+	{
+		while (true)
+		{
+			if (_thread.TryJoinStep(joinTimeoutMs))
+				break;
+	        await Task.Yield();
+		}
+        await Task.Yield();
 	}
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)
@@ -142,7 +155,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		{
 			_parentLinkName = string.IsNullOrEmpty(helperLink.JointParentLinkName) ? null : helperLink.JointParentLinkName;
 		}
-		Debug.Log($"modelName={_modelName} partsName={_partsName} parentLinkName={_parentLinkName}");
+		Debug.Log($"modelName=[{_modelName}] partsName=[{_partsName}] parentLinkName=[{_parentLinkName}]");
 
 		OnStart();
 
