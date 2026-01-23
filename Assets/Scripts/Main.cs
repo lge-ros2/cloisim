@@ -418,6 +418,8 @@ public class Main : MonoBehaviour
 	{
 		yield return null;
 
+		Main.UIController?.SetInfoMessage($"Model({modelFileName}) is now loading....");
+
 		_bridgeManager.ClearAllocatedHistory();
 
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
@@ -456,6 +458,7 @@ public class Main : MonoBehaviour
 
 		// Debug.Log("Hello CLOiSim World!!!!!");
 		Debug.Log("Target World: " + _worldFilename);
+		Main.UIController?.SetInfoMessage($"World({_worldFilename}) is now loading....");
 
 		_bridgeManager.ClearAllocatedHistory();
 
