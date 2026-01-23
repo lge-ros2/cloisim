@@ -45,7 +45,7 @@ namespace SDF
 				lightComponent.shadowResolution = UE.Rendering.LightShadowResolution.Medium;
 
 				lightComponent.color = light.diffuse.ToUnity();
-				lightComponent.cullingMask = UE.LayerMask.GetMask("Default") | UE.LayerMask.GetMask("Plane");
+				lightComponent.cullingMask = UE.LayerMask.GetMask("Default", "Plane");
 				// light.specular.ToUnity();
 
 				var direction = light.direction.ToUnity();

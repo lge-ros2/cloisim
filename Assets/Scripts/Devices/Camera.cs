@@ -245,7 +245,7 @@ namespace SensorDevices
 			_camSensor.orthographic = false;
 			_camSensor.nearClipPlane = (float)_camParam.clip.near;
 			_camSensor.farClipPlane = (float)_camParam.clip.far;
-			_camSensor.cullingMask = LayerMask.GetMask("Default");
+			_camSensor.cullingMask = LayerMask.GetMask("Default", "Plane");
 
 			RTHandles.SetHardwareDynamicResolutionState(true);
 			_rtHandle = RTHandles.Alloc(
@@ -319,7 +319,7 @@ namespace SensorDevices
 			_universalCamData.dithering = true;
 			_universalCamData.renderPostProcessing = false;
 			_universalCamData.allowXRRendering = false;
-			_universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
+			_universalCamData.volumeLayerMask = default;
 			_universalCamData.renderType = CameraRenderType.Base;
 			_universalCamData.cameraStack.Clear();
 		}

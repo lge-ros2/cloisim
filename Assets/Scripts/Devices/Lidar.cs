@@ -211,7 +211,7 @@ namespace SensorDevices
 			_laserCam.orthographic = false;
 			_laserCam.nearClipPlane = _scanRange.min;
 			_laserCam.farClipPlane = _scanRange.max;
-			_laserCam.cullingMask = LayerMask.GetMask("Default") | LayerMask.GetMask("Plane");
+			_laserCam.cullingMask = LayerMask.GetMask("Default", "Plane");
 			_laserCam.clearFlags = CameraClearFlags.Nothing;
 			_laserCam.depthTextureMode = DepthTextureMode.Depth;
 			_laserCam.renderingPath = RenderingPath.Forward;
@@ -253,7 +253,7 @@ namespace SensorDevices
 			universalLaserCamData.stopNaN = true;
 			universalLaserCamData.dithering = true;
 			universalLaserCamData.allowXRRendering = false;
-			universalLaserCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
+			universalLaserCamData.volumeLayerMask = default;
 			universalLaserCamData.renderType = CameraRenderType.Base;
 			universalLaserCamData.requiresColorOption = CameraOverrideOption.Off;
 			universalLaserCamData.requiresDepthOption = CameraOverrideOption.Off;
@@ -645,9 +645,11 @@ namespace SensorDevices
 
 		protected override IEnumerator OnVisualize()
 		{
-			var lineRenderer = gameObject.GetComponent<LineRenderer>();
-			if (lineRenderer == null)
-				lineRenderer = gameObject.AddComponent<LineRenderer>();
+			var visualizer = new GameObject("__laser_visualizer__");
+			visualizer.layer = LayerMask.NameToLayer("Visualization");
+			visualizer.transform.SetParent(this.transform, false);
+
+			var lineRenderer = visualizer.AddComponent<LineRenderer>();
 			lineRenderer.positionCount = 0;
 			lineRenderer.widthMultiplier = 0.001f;
 			lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
@@ -671,8 +673,6 @@ namespace SensorDevices
 			hue = (hue % 1f + 1f) % 1f;
 			// Debug.Log($"hue{hue} _indexForVisualize{_indexForVisualize}");
 			var baseRayColor = Color.HSVToRGB(hue, 0.9f, 1f);
-
-			var lidarModel = _lidarLink.parent;
 
 			var positions = new List<Vector3>((int)(horizontalSamples * _vertical.samples) * 2);
 
