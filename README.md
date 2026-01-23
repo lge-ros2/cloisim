@@ -156,7 +156,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environement (latest)
 
-- Unity Editor Version: *'2022.3.70f1 (LTS)'*.
+- Unity Editor Version: *'2022.3.71f1 (LTS)'*.
 
 - Linux Machine
   - OS: Ubuntu 22.04.5 LTS
@@ -212,6 +212,7 @@ or can run headless mode (experimental only for linux)
 
 ```shell
 ./run.sh --headless --world cloisim.world
+./run.sh --headless --capture-screen --world cloisim.world # Capture screen
 ```
 
 or you can execute [binary](https://github.com/lge-ros2/cloisim/releases) file directly.
