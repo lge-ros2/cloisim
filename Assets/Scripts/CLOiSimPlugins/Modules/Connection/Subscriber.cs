@@ -10,9 +10,9 @@ using NetMQ.Sockets;
 
 public class Subscriber : SubscriberSocket
 {
-	private TimeSpan timeout = TimeSpan.FromMilliseconds(100);
+	private TimeSpan _timeout = TimeSpan.FromMilliseconds(100);
 
-	private byte[] hashValue = null;
+	private byte[] _hashValue = null;
 
 	public Subscriber(in ulong hash)
 	{
@@ -21,7 +21,7 @@ public class Subscriber : SubscriberSocket
 
 	private void SetHash(in ulong hash)
 	{
-		hashValue = BitConverter.GetBytes(hash);
+		_hashValue = BitConverter.GetBytes(hash);
 	}
 
 	public bool Initialize(in ushort targetPort)
@@ -32,9 +32,9 @@ public class Subscriber : SubscriberSocket
 		Options.DisableTimeWait = false;
 		Options.ReceiveHighWatermark = TransportHelper.HighWaterMark;
 
-		if (hashValue != null)
+		if (_hashValue != null)
 		{
-			this.Subscribe(hashValue);
+			this.Subscribe(_hashValue);
 		}
 
 		Bind(TransportHelper.GetAddress(targetPort));
@@ -51,7 +51,7 @@ public class Subscriber : SubscriberSocket
 		}
 		else
 		{
-			if (this.TryReceiveFrameBytes(timeout, out var frameReceived))
+			if (this.TryReceiveFrameBytes(_timeout, out var frameReceived))
 			{
 				// Console.Error.WriteLine(frameReceived.Length);
 				return TransportHelper.RetrieveData(frameReceived);

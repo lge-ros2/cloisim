@@ -70,7 +70,7 @@ public class Publisher : PublisherSocket
 			}
 			else
 			{
-				Console.Error.WriteLine("Socket for publisher is not ready yet.");
+				Console.Error.WriteLine("Socket for publisher is not ready yet or removed!");
 			}
 		}
 
