@@ -42,7 +42,6 @@ namespace SDF
 
 				var foundRootModelTransform = targetBaseHelper.RootModel.transform;
 
-				// 공통 부모 탐색 함수
 				UE.Transform FindParent<T>(UE.Transform start, Func<T, bool> condition) where T : UE.Component
 				{
 					for (var parent = start.parent; parent != null; parent = parent.parent)

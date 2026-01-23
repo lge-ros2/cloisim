@@ -25,13 +25,13 @@ namespace SDF
 					return;
 				}
 
-				var meshRenderers = targetObject.GetComponentsInChildren<UE.Renderer>(true);
+				var meshRenderers = targetObject.GetComponentsInChildren<UE.Renderer>();
 				foreach (var renderer in meshRenderers)
 				{
 					sdfMaterial.Apply(renderer, out var outputLogs);
 					logs.Append(outputLogs);
 
-					// Turn off high-loading features in renderer as a performance tunig
+					// Turn off high-loading features in renderer as a performance tuning
 					renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
 					renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
 					renderer.motionVectorGenerationMode = UnityEngine.MotionVectorGenerationMode.ForceNoMotion;

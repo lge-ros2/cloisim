@@ -382,42 +382,8 @@ public class Main : MonoBehaviour
 		return tmpModelName;
 	}
 
-	public GameObject GetModel(string modelPath)
-	{
-		if (modelPath.EndsWith("/"))
-		{
-			modelPath = modelPath.Substring(0, modelPath.Length - 1);
-		}
-
-		foreach (var item in _sdfRoot.resourceModelTable)
-		{
-			var itemValue = item.Value;
-
-			// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
-			if (itemValue.Item2.Equals(modelPath))
-			{
-				// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
-				var modelFileName = itemValue.Item3;
-				if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
-				{
-					model.Name = GetClonedModelName(model.Name);
-
-					StartCoroutine(_sdfLoader.Start(model));
-
-					var targetObject = _worldRoot.transform.Find(model.Name);
-					// Debug.Log(targetObject);
-					return targetObject.gameObject;
-				}
-			}
-		}
-
-		return null;
-	}
-
 	public IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
-		yield return null;
-
 		Main.UIController?.SetInfoMessage($"Model({modelFileName}) is now loading....");
 
 		_bridgeManager.ClearAllocatedHistory();
@@ -427,21 +393,18 @@ public class Main : MonoBehaviour
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
 			model.Name = GetClonedModelName(model.Name);
 
-			yield return StartCoroutine(_sdfLoader.Start(model));
+			Physics.simulationMode = SimulationMode.Script;
+			GameObject targetObject = null;
+			yield return _sdfLoader.Start(model, onCreatedRoot: obj => targetObject = (obj as GameObject));
 
-			var targetObject = _worldRoot.transform.Find(model.Name);
+			Physics.SyncTransforms();
+			Physics.simulationMode = SimulationMode.FixedUpdate;
 
-			if (_modelImporter != null)
-			{
-				_modelImporter.SetModelForDeploy(targetObject);
-			}
+			_modelImporter?.SetModelForDeploy(targetObject.transform);
 
-			var message = $"Model({modelFileName}) is loaded. > {model.Name}";
+			var message = $"Model({modelFileName}) is loaded > {model.Name}";
 			Debug.Log(message);
 			Main.UIController?.SetInfoMessage(message);
-
-			// Debug.Log("Model Loaded:" + targetObject.name);
-			yield return new WaitForEndOfFrame();
 
 			// for GUI
 			_followingList?.UpdateList();
@@ -454,9 +417,6 @@ public class Main : MonoBehaviour
 
 	private IEnumerator LoadWorld()
 	{
-		yield return null;
-
-		// Debug.Log("Hello CLOiSim World!!!!!");
 		Debug.Log("Target World: " + _worldFilename);
 		Main.UIController?.SetInfoMessage($"World({_worldFilename}) is now loading....");
 
@@ -470,41 +430,46 @@ public class Main : MonoBehaviour
 			_sdfLoader.SetRootLights(_lightsRoot);
 			_sdfLoader.SetRootRoads(_roadsRoot);
 
+			Physics.simulationMode = SimulationMode.Script;
 			yield return _sdfLoader.Start(world);
+
+			Physics.SyncTransforms();
+			Physics.simulationMode = SimulationMode.FixedUpdate;
 
 			// for GUI
 			_followingList?.UpdateList();
 
-			yield return new WaitForEndOfFrame();
-
 			Reset();
 
-			yield return new WaitForEndOfFrame();
+			TrackModel();
 
-			if (!string.IsNullOrEmpty(_trackVisualModelName))
-			{
-				_followingList.StartFollowing(_trackVisualModelName);
-				var followingCamera = Main.UIObject.GetComponentInChildren<FollowingCamera>();
-
-				if (followingCamera != null)
-				{
-					followingCamera.SetInitialRelativePosition(_trackVisualPosition);
-					followingCamera.AlignSameDirection(_trackVisualInheritYaw);
-				}
-			}
-
-			var message = $"World({_worldFilename}) is loaded.";
+			var message = $"World({_worldFilename}) is loaded";
 			Debug.Log(message);
 			Main.UIController?.SetInfoMessage(message);
 		}
 		else
 		{
-			var errorMessage = "Parsing failed!!! Failed to load world file: " + _worldFilename;
+			var errorMessage = $"Parsing failed!!! Failed to load world file: {_worldFilename}";
 			Debug.LogError(errorMessage);
 			_uiController?.SetErrorMessage(errorMessage);
 		}
 
 		_bridgeManager.PrintAllocatedHistory();
+	}
+
+	public void TrackModel()
+	{
+		if (!string.IsNullOrEmpty(_trackVisualModelName))
+		{
+			_followingList.StartFollowing(_trackVisualModelName);
+			var followingCamera = Main.UIObject.GetComponentInChildren<FollowingCamera>();
+
+			if (followingCamera != null)
+			{
+				followingCamera.SetInitialRelativePosition(_trackVisualPosition);
+				followingCamera.AlignSameDirection(_trackVisualInheritYaw);
+			}
+		}
 	}
 
 	public void SaveWorld()

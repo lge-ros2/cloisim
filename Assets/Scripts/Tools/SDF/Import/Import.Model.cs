@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections;
+using System;
 using UE = UnityEngine;
 
 namespace SDF
@@ -42,7 +44,6 @@ namespace SDF
 				articulationBody.solverVelocityIterations = 0;
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
-
 				articulationBody.sleepThreshold = 1f;
 				articulationBody.Sleep();
 
@@ -99,13 +100,14 @@ namespace SDF
 				return newModelObject;
 			}
 
-
-			protected override System.Object ImportModel(in SDF.Model model, in System.Object parentObject)
+			protected override IEnumerator ImportModel(SDF.Model model, System.Object parentObject, Action<System.Object> onCreatedRoot)
 			{
 				if (model == null)
 				{
-					return null;
+					yield break;
 				}
+
+				Console.WriteLine("ImportModel({0})", model.Name);
 
 				var targetObject = (parentObject as UE.GameObject);
 				var newModelObject = CreateModel(model, targetObject);
@@ -113,15 +115,20 @@ namespace SDF
 				ImportLinks(model.GetLinks(), newModelObject);
 
 				// Add nested models
-				ImportModels(model.GetModels(), newModelObject);
+				yield return ImportModels(model.GetModels(), newModelObject);
 
 				AfterImportModel(model, newModelObject);
 
-				ImportJoints(model.GetJoints(), newModelObject);
+				StoreJoints(model.GetJoints(), newModelObject);
 
-				ImportPlugins(model.GetPlugins(), newModelObject);
+				StorePlugins(model.GetPlugins(), newModelObject);
 
-				return newModelObject as System.Object;
+				if (parentObject == null)
+				{
+					onCreatedRoot?.Invoke(newModelObject);
+				}
+
+				yield return null;
 			}
 
 			protected override void AfterImportModel(in SDF.Model model, in System.Object targetObject)
