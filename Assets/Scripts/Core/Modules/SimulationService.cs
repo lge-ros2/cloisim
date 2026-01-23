@@ -95,8 +95,7 @@ public class SimulationService : IDisposable
 			IgnoreExtensions = true
 		});
 
-		var UIRoot = Main.UIObject;
-		var markerVisualizer = UIRoot.GetComponent<MarkerVisualizer>();
+		var markerVisualizer = Main.UIObject?.GetComponent<MarkerVisualizer>();
 		wsServer.AddWebSocketService<MarkerVisualizerService>("/markers", () => new MarkerVisualizerService(markerVisualizer)
 		{
 			IgnoreExtensions = true

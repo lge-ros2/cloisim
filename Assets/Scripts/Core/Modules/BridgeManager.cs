@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: MIT
  *
- *
  * Description for deviceMapTable
  * ModelName, CLOiSimPluginType, Devicename, topic : portnumber
  *
@@ -34,16 +33,16 @@ public class BridgeManager : IDisposable
 {
 	private const ushort MinPortRange = 49152;
 	private const ushort MaxPortRange = IPEndPoint.MaxPort;
-	private static StringBuilder sbLogs = new StringBuilder();
+	private static StringBuilder _sbAllocatedHistory = new();
+	private static StringBuilder _sbDeallocatedLogs = new();
 
-	private static Dictionary<string, ushort> haskKeyPortMapTable = new Dictionary<string, ushort>();
-	private static Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> deviceMapTable = new Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>>();
-
-	private static IPGlobalProperties properties = IPGlobalProperties.GetIPGlobalProperties();
+	private static Dictionary<string, ushort> _haskKeyPortMapTable = new Dictionary<string, ushort>();
+	private static Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> _deviceMapTable = new Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>>();
+	private static IPGlobalProperties _properties = IPGlobalProperties.GetIPGlobalProperties();
 
 	public BridgeManager()
 	{
-		ClearLog();
+		ClearAllocatedHistory();
 	}
 
 	~BridgeManager()
@@ -53,43 +52,45 @@ public class BridgeManager : IDisposable
 
 	public void Dispose()
 	{
-		ClearLog();
 		GC.SuppressFinalize(this);
 	}
 
 	private static void RemoveDevice(in ushort devicePort)
 	{
-		foreach (var deviceMap in deviceMapTable.ToList())
+		lock (_deviceMapTable)
 		{
-			var deviceMapValue = deviceMap.Value;
-			foreach (var partMaps in deviceMapValue.ToList())
+			foreach (var deviceMap in _deviceMapTable.ToList())
 			{
-				var partMapsValue = partMaps.Value;
-				foreach (var portMaps in partMapsValue.ToList())
+				var deviceMapValue = deviceMap.Value;
+				foreach (var partMaps in deviceMapValue.ToList())
 				{
-					var portMapsValue = portMaps.Value;
-					foreach (var portMap in portMapsValue.ToList())
+					var partMapsValue = partMaps.Value;
+					foreach (var portMaps in partMapsValue.ToList())
 					{
-						if (portMap.Value == devicePort)
-							portMapsValue.Remove(portMap.Key);
+						var portMapsValue = portMaps.Value;
+						foreach (var portMap in portMapsValue.ToList())
+						{
+							if (portMap.Value == devicePort)
+								portMapsValue.Remove(portMap.Key);
+						}
+
+						if (portMapsValue.Count == 0)
+							partMapsValue.Remove(portMaps.Key);
 					}
 
-					if (portMapsValue.Count == 0)
-						partMapsValue.Remove(portMaps.Key);
+					if (partMapsValue.Count == 0)
+						deviceMapValue.Remove(partMaps.Key);
 				}
 
-				if (partMapsValue.Count == 0)
-					deviceMapValue.Remove(partMaps.Key);
+				if (deviceMapValue.Count == 0)
+					_deviceMapTable.Remove(deviceMap.Key);
 			}
-
-			if (deviceMapValue.Count == 0)
-				deviceMapTable.Remove(deviceMap.Key);
 		}
 	}
 
 	public static void DeallocateDevice(in List<ushort> devicePorts, in List<string> hashKeys)
 	{
-		lock (deviceMapTable)
+		lock (_deviceMapTable)
 		{
 			foreach (var devicePort in devicePorts)
 			{
@@ -102,30 +103,33 @@ public class BridgeManager : IDisposable
 
 	public static void DeallocateDevicePort(in List<string> hashKeys)
 	{
-		lock (haskKeyPortMapTable)
+		_sbDeallocatedLogs.Clear();
+		_sbDeallocatedLogs.AppendLine("HashKey Removed list");
+		lock (_haskKeyPortMapTable)
 		{
 			var isRemoved = false;
 			foreach (var hashKey in hashKeys)
 			{
-				isRemoved = haskKeyPortMapTable.Remove(hashKey);
+				isRemoved = _haskKeyPortMapTable.Remove(hashKey);
 
 				if (!isRemoved)
 				{
-					Console.Error.Write("Failed to remove HashKey({0})!!!!", hashKey);
+					Console.Error.Write($"Failed to remove HashKey({hashKey})!!!!");
 				}
 				else
 				{
-					Console.Write("HashKey({0}) Removed.", hashKey);
+					_sbDeallocatedLogs.AppendLine($"- {hashKey}");
 				}
 			}
 		}
+		Console.Write(_sbDeallocatedLogs.ToString());
 	}
 
 	public static ushort SearchSensorPort(in string hashKey)
 	{
-		lock (haskKeyPortMapTable)
+		lock (_haskKeyPortMapTable)
 		{
-			if (haskKeyPortMapTable.TryGetValue(hashKey, out var port))
+			if (_haskKeyPortMapTable.TryGetValue(hashKey, out var port))
 			{
 				return port;
 			}
@@ -136,39 +140,39 @@ public class BridgeManager : IDisposable
 
 	public Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> GetDeviceMapList(string filter = "")
 	{
-		lock (deviceMapTable)
+		lock (_deviceMapTable)
 		{
 			if (string.IsNullOrEmpty(filter))
 			{
-				return deviceMapTable;
+				return _deviceMapTable;
 			}
 			else
 			{
-				return deviceMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(p => p.Key, p => p.Value);
+				return _deviceMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(k => k.Key, v => v.Value);
 			}
 		}
 	}
 
 	public Dictionary<string, ushort> GetDevicePortList(string filter = "")
 	{
-		lock (haskKeyPortMapTable)
+		lock (_haskKeyPortMapTable)
 		{
 			if (string.IsNullOrEmpty(filter))
 			{
-				return haskKeyPortMapTable;
+				return _haskKeyPortMapTable;
 			}
 			else
 			{
-				return haskKeyPortMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(p => p.Key, p => p.Value);
+				return _haskKeyPortMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(k => k.Key, v => v.Value);
 			}
 		}
 	}
 
 	public static bool IsAvailablePort(in ushort port)
 	{
-		if (properties != null)
+		if (_properties != null)
 		{
-			var connections = properties.GetActiveTcpConnections();
+			var connections = _properties.GetActiveTcpConnections();
 			foreach (var connection in connections)
 			{
 				// Debug.Log("TCP conn Local: " + connection.LocalEndPoint.Port);
@@ -206,7 +210,7 @@ public class BridgeManager : IDisposable
 
 		if (port > 0)
 		{
-			if (deviceMapTable.TryGetValue(modelName, out var devicesTypeMapTable))
+			if (_deviceMapTable.TryGetValue(modelName, out var devicesTypeMapTable))
 			{
 				if (devicesTypeMapTable.TryGetValue(deviceType, out var partsMapTable))
 				{
@@ -246,7 +250,7 @@ public class BridgeManager : IDisposable
 				var devicesTypeMap = new Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>();
 				devicesTypeMap.Add(deviceType, partsMapTable);
 
-				deviceMapTable.Add(modelName, devicesTypeMap);
+				_deviceMapTable.Add(modelName, devicesTypeMap);
 			}
 
 			return true;
@@ -274,9 +278,9 @@ public class BridgeManager : IDisposable
 			var port = (ushort)(MinPortRange + index);
 			var isContained = false;
 
-			lock (haskKeyPortMapTable)
+			lock (_haskKeyPortMapTable)
 			{
-				isContained = haskKeyPortMapTable.ContainsValue(port);
+				isContained = _haskKeyPortMapTable.ContainsValue(port);
 			}
 
 			// check if already binded
@@ -289,30 +293,30 @@ public class BridgeManager : IDisposable
 
 		if (newPort > 0)
 		{
-			lock (haskKeyPortMapTable)
+			lock (_haskKeyPortMapTable)
 			{
-				haskKeyPortMapTable.Add(hashKey, newPort);
+				_haskKeyPortMapTable.Add(hashKey, newPort);
 			}
 
-			sbLogs.AppendFormat("Allocated for HashKey({0}) Port({1})", hashKey, newPort);
+			_sbAllocatedHistory.AppendFormat("Allocated for HashKey({0}) Port({1})", hashKey, newPort);
 		}
 		else
 		{
-			sbLogs.AppendFormat("Failed to allocate port for HashKey({0}).", hashKey);
+			Console.Error.WriteLine($"Failed to allocate port for HashKey({hashKey}).");
 		}
-		sbLogs.AppendLine();
+		_sbAllocatedHistory.AppendLine();
 
 		return newPort;
 	}
 
-	public void PrintLog()
+	public void ClearAllocatedHistory()
 	{
-		Console.Write(sbLogs);
+		_sbAllocatedHistory.Clear();
+		_sbAllocatedHistory.AppendLine("<Allocated information in BridgeManager>");
 	}
 
-	public void ClearLog()
+	public void PrintAllocatedHistory()
 	{
-		sbLogs.Clear();
-		sbLogs.AppendLine("<Allocated information in BridgeManager>");
+		Console.Write(_sbAllocatedHistory);
 	}
 }

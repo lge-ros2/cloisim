@@ -300,8 +300,8 @@ public class Main : MonoBehaviour
 			_followingList = _uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
 		}
 
-		Main._bridgeManager = new BridgeManager();
-		Main._simulationService = new SimulationService();
+		_bridgeManager = new BridgeManager();
+		_simulationService = new SimulationService();
 
 		var sphericalCoordinates = new SphericalCoordinates();
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
@@ -418,6 +418,8 @@ public class Main : MonoBehaviour
 	{
 		yield return null;
 
+		_bridgeManager.ClearAllocatedHistory();
+
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
@@ -443,6 +445,8 @@ public class Main : MonoBehaviour
 			_followingList?.UpdateList();
 		}
 
+		_bridgeManager.PrintAllocatedHistory();
+
 		yield return null;
 	}
 
@@ -452,6 +456,8 @@ public class Main : MonoBehaviour
 
 		// Debug.Log("Hello CLOiSim World!!!!!");
 		Debug.Log("Target World: " + _worldFilename);
+
+		_bridgeManager.ClearAllocatedHistory();
 
 		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
 		{
@@ -495,7 +501,7 @@ public class Main : MonoBehaviour
 			_uiController?.SetErrorMessage(errorMessage);
 		}
 
-		_bridgeManager.PrintLog();
+		_bridgeManager.PrintAllocatedHistory();
 	}
 
 	public void SaveWorld()

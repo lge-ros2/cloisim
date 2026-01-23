@@ -93,6 +93,7 @@ public sealed class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 		}
 		catch (Exception ex)
 		{
+			_ = ex;
 			// UnityEngine.Debug.LogException(ex);
 		}
 		item = default(DeviceMessage);
