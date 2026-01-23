@@ -105,6 +105,7 @@ namespace SensorDevices
 			laserSensor.transform.localPosition = Vector3.zero;
 			laserSensor.transform.localRotation = Quaternion.identity;
 			_laserCam = laserSensor.AddComponent<UnityEngine.Camera>();
+			_laserCam.enabled = false;
 
 			_laserProcessThread = new Thread(() => LaserProcessing());
 		}
@@ -274,7 +275,6 @@ namespace SensorDevices
 			cb.Release();
 
 			// _laserCam.hideFlags |= HideFlags.NotEditable;
-			_laserCam.enabled = false;
 
 			if (_noise != null)
 			{
@@ -420,7 +420,6 @@ namespace SensorDevices
 				lidarSensorWorldPose.rotation = transform.rotation;
 
 				var currentComputeBuffer = computedBuffers[bufferIndex];
-				_laserCam.enabled = true;
 				for (var dataIndex = 0; dataIndex < _numberOfLaserCamData; dataIndex++)
 				{
 					if (!_camControlInfo[dataIndex].isOverlappingDirection)
@@ -446,8 +445,8 @@ namespace SensorDevices
 						_laserCompute.SetBuffer(_laserComputeKernel, "_RayData", currentComputeBuffer);
 						_laserCompute.Dispatch(_laserComputeKernel, _laserComputeGroupsX, _laserComputeGroupsY, 1);
 					}
+					_laserCam.enabled = false;
 				}
-				_laserCam.enabled = false;
 
 				AsyncGPUReadback.Request(currentComputeBuffer, (req) =>
 					{
