@@ -1,3 +1,14 @@
 Button:hover {
     background-color: rgb(130, 130, 130);
 }
+
+Button#CameraView:active,
+Button#PropsBox:active,
+Button#PropsCylinder:active,
+Button#PropsSphere:active,
+Button#Help:active,
+Button#Save:active,
+Button#Import:active, {
+    scale: 0.9;
+    background-color: #2f2f2f;
+}
