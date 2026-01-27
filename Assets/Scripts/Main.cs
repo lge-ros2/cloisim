@@ -29,13 +29,13 @@ public class Main : MonoBehaviour
 	private string _loadedWorldFilePath = string.Empty;
 
 	[SerializeField]
-	private List<string> _modelRootDirectories  = new List<string>();
+	private List<string> _modelRootDirectories  = new();
 
 	[SerializeField]
-	private List<string> _worldRootDirectories = new List<string>();
+	private List<string> _worldRootDirectories = new();
 
 	[SerializeField]
-	private List<string> _fileRootDirectories = new List<string>();
+	private List<string> _fileRootDirectories = new();
 
 	private FollowingTargetList _followingList = null;
 
@@ -79,6 +79,7 @@ public class Main : MonoBehaviour
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => _worldNavMeshBuilder;
 	public static BridgeManager BridgeManager => _bridgeManager;
+	public static SimulationService SimulationService => _simulationService;
 	public static Segmentation.Manager SegmentationManager => _segmentationManager;
 	public static CameraControl CameraControl => _cameraControl;
 	public static MeshProcess.VHACD MeshVHACD => _vhacd;
@@ -111,7 +112,7 @@ public class Main : MonoBehaviour
 
 	#region Non-Component class
 	private static BridgeManager _bridgeManager = null;
-	private static SimulationService _simulationService = null;
+	private static SimulationService _simulationService = new();
 	#endregion
 
 	private void CleanAllModels()
@@ -301,7 +302,6 @@ public class Main : MonoBehaviour
 		}
 
 		_bridgeManager = new BridgeManager();
-		_simulationService = new SimulationService();
 
 		var sphericalCoordinates = new SphericalCoordinates();
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);

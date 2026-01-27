@@ -11,22 +11,21 @@ using WebSocketSharp.Server;
 
 public class SimulationService : IDisposable
 {
-	public const string SUCCESS = "ok";
-	public const string FAIL = "fail";
-	public const string Delimiter = "!%!";
-	public const string SERVICE_PORT_ENVIRONMENT_NAME = "CLOISIM_SERVICE_PORT";
+	public static readonly string SUCCESS = "ok";
+	public static readonly string FAIL = "fail";
+	public static readonly string Delimiter = "!%!";
+	public static readonly string SERVICE_PORT_ENVIRONMENT_NAME = "CLOISIM_SERVICE_PORT";
 
-	public int defaultWebSocketServicePort;
+	private int _servicePort;
+	public int ServicePort => _servicePort;
 
 	private WebSocketServer wsServer = null;
 
-	public SimulationService(in int port = 8080)
+	public SimulationService(in int defaultWebSocketServicePort = 8080)
 	{
-		this.defaultWebSocketServicePort = port;
-
 		var envServicePort = Environment.GetEnvironmentVariable(SERVICE_PORT_ENVIRONMENT_NAME);
-		var servicePort = (envServicePort == null || envServicePort.Equals("")) ? defaultWebSocketServicePort : int.Parse(envServicePort);
-		wsServer = new WebSocketServer(servicePort);
+		_servicePort = (envServicePort == null || envServicePort.Equals("")) ? defaultWebSocketServicePort : int.Parse(envServicePort);
+		wsServer = new WebSocketServer(_servicePort);
 		wsServer.ReuseAddress = true;
 		wsServer.KeepClean = true;
 		wsServer.WaitTime = TimeSpan.FromMilliseconds(5000);
