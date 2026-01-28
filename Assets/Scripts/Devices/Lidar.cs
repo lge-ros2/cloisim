@@ -19,7 +19,7 @@ namespace SensorDevices
 {
 	public partial class Lidar : Device
 	{
-		[SerializeField] private static int _globalLidarSequence = 0;
+		private static int _globalSequence = 0;
 		[SerializeField] private messages.LaserScan _laserScan = null;
 		[SerializeField] private Thread _laserProcessThread = null;
 
@@ -377,7 +377,7 @@ namespace SensorDevices
 
 		private IEnumerator WaitStartSequence()
 		{
-			var lidarSequence = _globalLidarSequence++;
+			var lidarSequence = _globalSequence++;
 			for (var i = 0; i < lidarSequence; i++)
 				yield return null;
 		}

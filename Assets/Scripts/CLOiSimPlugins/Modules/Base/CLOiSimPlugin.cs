@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 using System.Collections.Generic;
+using System.Collections;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -22,6 +23,8 @@ public interface ICLOiSimPlugin
 
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
+	private static int _globalSequence = 0;
+
 	[field: SerializeField]
 	protected ICLOiSimPlugin.Type _type { get; set; }
 
@@ -155,11 +158,21 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		{
 			_parentLinkName = string.IsNullOrEmpty(helperLink.JointParentLinkName) ? null : helperLink.JointParentLinkName;
 		}
-		Debug.Log($"modelName=[{_modelName}] partsName=[{_partsName}] parentLinkName=[{_parentLinkName}]");
 
-		OnStart();
+		StartCoroutine(DelayedOnStart());
 
 		_thread.Start();
+
+		Debug.Log($"modelName=[{_modelName}] partsName=[{_partsName}] parentLinkName=[{_parentLinkName}]");
+	}
+
+	private IEnumerator DelayedOnStart()
+	{
+		var sequence = _globalSequence++;
+		for (var i = 0; i < sequence; i++)
+			yield return null;
+
+		OnStart();
 	}
 
 	public void Reset()
