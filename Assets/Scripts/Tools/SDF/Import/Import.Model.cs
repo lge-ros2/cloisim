@@ -44,7 +44,7 @@ namespace SDF
 				articulationBody.solverVelocityIterations = 0;
 				articulationBody.velocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
-				articulationBody.sleepThreshold = 1f;
+				articulationBody.sleepThreshold = 0.01f;
 				articulationBody.Sleep();
 
 				// UE.Debug.Log(targetObject.name + " Create root articulation body");
@@ -86,17 +86,6 @@ namespace SDF
 				modelHelper.Pose = model?.Pose;
 				modelHelper.isNested = model.IsNested;
 
-				if (modelHelper.IsFirstChild)
-				{
-					if (modelHelper.isStatic)
-					{
-						CreateRootRigidBody(newModelObject);
-					}
-					else
-					{
-						CreateRootArticulationBody(newModelObject);
-					}
-				}
 				return newModelObject;
 			}
 
@@ -107,7 +96,7 @@ namespace SDF
 					yield break;
 				}
 
-				Console.WriteLine("ImportModel({0})", model.Name);
+				// Console.WriteLine("ImportModel({0})", model.Name);
 
 				var targetObject = (parentObject as UE.GameObject);
 				var newModelObject = CreateModel(model, targetObject);
@@ -141,6 +130,15 @@ namespace SDF
 					// UE.Debug.Log($"AfterImportModel: {model.OriginalName}, {modelObject.name}");
 					Main.SegmentationManager.AttachTag(model.OriginalName, modelObject);
 					Main.SegmentationManager.UpdateTags();
+
+					if (modelHelper.isStatic)
+					{
+						CreateRootRigidBody(modelObject);
+					}
+					else
+					{
+						CreateRootArticulationBody(modelObject);
+					}
 				}
 			}
 		}
