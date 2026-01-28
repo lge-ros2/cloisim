@@ -205,20 +205,20 @@ namespace SensorDevices
 			_laserCam.allowHDR = false;
 			_laserCam.allowMSAA = false;
 			_laserCam.allowDynamicResolution = false;
-			_laserCam.useOcclusionCulling = true;
+			_laserCam.useOcclusionCulling = false;
 			_laserCam.usePhysicalProperties = false;
 			_laserCam.stereoTargetEye = StereoTargetEyeMask.None;
 			_laserCam.orthographic = false;
 			_laserCam.nearClipPlane = _scanRange.min;
 			_laserCam.farClipPlane = _scanRange.max;
 			_laserCam.cullingMask = LayerMask.GetMask("Default", "Plane");
-			_laserCam.clearFlags = CameraClearFlags.Nothing;
+			_laserCam.clearFlags = CameraClearFlags.Depth;
 			_laserCam.depthTextureMode = DepthTextureMode.Depth;
 			_laserCam.renderingPath = RenderingPath.Forward;
 
 			var renderTextureWidth = Mathf.CeilToInt(LaserCameraHFov / _resolution.angleH);
 			var renderTextureHeight = Mathf.CeilToInt(LaserCameraVFov / _resolution.angleV);
-			// Debug.Log($"SetupLaserCamera: {LaserCameraHFov} {_resolution.H} {LaserCameraVFov} {_resolution.V}, {renderTextureWidth} {renderTextureHeight}");
+			// Debug.Log($"SetupLaserCamera: {_resolution.linear} {LaserCameraHFov} {_resolution.angleH} {LaserCameraVFov} {_resolution.angleV}, {renderTextureWidth} {renderTextureHeight}");
 
 			RTHandles.SetHardwareDynamicResolutionState(false);
 			_rtHandle?.Release();
@@ -265,6 +265,7 @@ namespace SensorDevices
 			var depthMaterial = new Material(depthShader);
 
 			var cb = new CommandBuffer();
+			cb.ClearRenderTarget(true, true, Color.clear);
 			var tempTextureId = Shader.PropertyToID("_RenderCameraDepthTexture");
 			cb.GetTemporaryRT(tempTextureId, -1, -1);
 			cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
