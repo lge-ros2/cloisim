@@ -25,26 +25,26 @@ namespace SDF
 
 				if (linkObjectParent is null)
 				{
-					Debug.LogWarningFormat("parent Link object is NULL!!! {0}", joint.ParentLinkName);
+					Debug.LogWarningFormat("Parent Link object is NULL!!! {0}", joint.ParentLinkName);
 					return;
 				}
 
 				if (linkObjectChild is null)
 				{
-					Debug.LogWarning($"child Link object is NULL!!! {joint.ChildLinkName}");
+					Debug.LogWarning($"Child Link object is NULL!!! {joint.ChildLinkName}");
 					return;
 				}
 
 				if (linkObjectChild is null || linkObjectParent is null)
 				{
-					Debug.LogWarning($"RigidBody of Link is NULL!!! child({linkObjectChild}) parent({linkObjectParent})");
+					Debug.LogWarning($"RigidBody of Link is NULL!!! Child({linkObjectChild}) Parent({linkObjectParent})");
 					return;
 				}
 
 				var articulationBodyChild = linkObjectChild.GetComponent<UE.ArticulationBody>();
 				if (articulationBodyChild == null)
 				{
-					Debug.LogWarningFormat("Link Child has NO Articulation Body, will create an articulation body for linking, parent({0}) child({1})",
+					Debug.LogWarningFormat("Link Child has NO Articulation Body, will create an articulation body for linking, Parent({0}) Child({1})",
 						linkObjectParent.name, linkObjectChild.name);
 					articulationBodyChild = CreateArticulationBody(linkObjectChild.gameObject);
 				}

@@ -318,7 +318,7 @@ public class Articulation
 				}
 				else
 				{
-					Debug.LogWarning("Wrong Joint configuration!!! -> " + _jointBody.name);
+					Debug.LogWarning($"Wrong Joint configuration!!! -> {_jointBody.name}");
 					goto default;
 				}
 				break;
@@ -342,13 +342,17 @@ public class Articulation
 				}
 				else
 				{
-					Debug.LogWarning("Wrong Joint configuration!!! -> " + _jointBody.name);
+					Debug.LogWarning($"Wrong Joint configuration!!! -> {_jointBody.name}");
 					goto default;
 				}
 				break;
 
+			case ArticulationJointType.FixedJoint:
+				Debug.LogWarning("GetDriveAxis() It is FixedJoint do nothing.");
+				break;
+
 			default:
-				Debug.LogWarning("GetDriveAxis() unsupported joint type: " + _jointType);
+				Debug.LogWarning($"GetDriveAxis() unsupported joint type: {_jointType}");
 				axis = ArticulationDriveAxis.X;
 				break;
 		}
