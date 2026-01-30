@@ -57,12 +57,14 @@ public class Main : MonoBehaviour
 	private static MeshProcess.VHACD _vhacd = null;
 	private static ObjectSpawning _objectSpawning = null;
 	private static ModelImporter _modelImporter = null;
+	private static PluginStartTracker _pluginStartTracker = new();
 	private static Main _instance = null;
 	private static Pose _cameraInitPose = Pose.identity;
 	private static string _trackVisualModelName = string.Empty;
 	private static Vector3 _trackVisualPosition = Vector3.zero;
 	private static bool _trackVisualInheritYaw = false;
 
+	private static bool _pluginAllStarted = false;
 	private static bool _isResetting = false;
 	private static bool _resetTriggered = false;
 
@@ -386,10 +388,10 @@ public class Main : MonoBehaviour
 	{
 		Main.UIController?.SetInfoMessage($"Model({modelFileName}) is now loading....");
 
-		_bridgeManager.ClearAllocatedHistory();
-
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
+			_bridgeManager.ClearAllocatedHistory();
+
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
 			model.Name = GetClonedModelName(model.Name);
 
@@ -397,30 +399,38 @@ public class Main : MonoBehaviour
 			GameObject targetObject = null;
 			yield return _sdfLoader.Start(model, onCreatedRoot: obj => targetObject = (obj as GameObject));
 
+			yield return new WaitUntil(() => targetObject != null);
+
+			_pluginAllStarted = false;
+
+			_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
+			_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
+
+			_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
+			_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
+
+			_pluginStartTracker.Bind(targetObject);
+
 			Physics.SyncTransforms();
 			Physics.simulationMode = SimulationMode.FixedUpdate;
 
 			_modelImporter?.SetModelForDeploy(targetObject.transform);
 
+			_followingList?.UpdateList();
+
+			yield return new WaitUntil(() => _pluginAllStarted);
+			_bridgeManager.PrintAllocatedHistory();
+
 			var message = $"Model({modelFileName}) is loaded > {model.Name}";
 			Debug.Log(message);
 			Main.UIController?.SetInfoMessage(message);
-
-			// for GUI
-			_followingList?.UpdateList();
 		}
-
-		_bridgeManager.PrintAllocatedHistory();
-
-		yield return null;
 	}
 
 	private IEnumerator LoadWorld()
 	{
 		Debug.Log("Target World: " + _worldFilename);
 		Main.UIController?.SetInfoMessage($"World({_worldFilename}) is now loading....");
-
-		_bridgeManager.ClearAllocatedHistory();
 
 		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
 		{
@@ -431,15 +441,29 @@ public class Main : MonoBehaviour
 			Physics.simulationMode = SimulationMode.Script;
 			yield return _sdfLoader.Start(world);
 
+			yield return new WaitUntil(() => _worldRoot.transform.childCount > 0);
+
+			_pluginAllStarted = false;
+
+			_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
+			_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
+
+			_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
+			_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
+
+			_pluginStartTracker.Bind(_worldRoot);
+
 			Physics.SyncTransforms();
 			Physics.simulationMode = SimulationMode.FixedUpdate;
-
-			// for GUI
-			_followingList?.UpdateList();
 
 			Reset();
 
 			TrackModel();
+
+			_followingList?.UpdateList();
+
+			yield return new WaitUntil(() => _pluginAllStarted);
+			_bridgeManager.PrintAllocatedHistory();
 
 			var message = $"World({_worldFilename}) is loaded";
 			Debug.Log(message);
@@ -451,8 +475,17 @@ public class Main : MonoBehaviour
 			Debug.LogError(errorMessage);
 			_uiController?.SetErrorMessage(errorMessage);
 		}
+	}
 
-		_bridgeManager.PrintAllocatedHistory();
+	private void OnPluginProgressChanged(int started, int total)
+	{
+		Main.UIController?.SetInfoMessage($"Starting plugins... ({started}/{total})");
+	}
+
+	private void OnAllPluginsStarted()
+	{
+		_pluginAllStarted = true;
+		Debug.Log($"All plugins started! ({_pluginStartTracker.StartedCount}/{_pluginStartTracker.TotalCount})");
 	}
 
 	public void TrackModel()

@@ -93,7 +93,7 @@ namespace SDF
 			{
 				if (model == null)
 				{
-					yield break;
+					yield return null;
 				}
 
 				// Console.WriteLine("ImportModel({0})", model.Name);

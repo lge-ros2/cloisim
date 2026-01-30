@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using Any = cloisim.msgs.Any;
 
 public class ContactPlugin : CLOiSimPlugin
@@ -16,7 +16,7 @@ public class ContactPlugin : CLOiSimPlugin
 		_contact = gameObject.GetComponent<SensorDevices.Contact>();
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -27,6 +27,8 @@ public class ContactPlugin : CLOiSimPlugin
 		{
 			AddThread(portTx, SenderThread, _contact);
 		}
+
+		yield return null;
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)

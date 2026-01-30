@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using Any = cloisim.msgs.Any;
 
 public class GpsPlugin : CLOiSimPlugin
@@ -16,7 +16,7 @@ public class GpsPlugin : CLOiSimPlugin
 		_gps = gameObject.GetComponent<SensorDevices.GPS>();
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -27,6 +27,7 @@ public class GpsPlugin : CLOiSimPlugin
 		{
 			AddThread(portTx, SenderThread, _gps);
 		}
+		yield return null;
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)

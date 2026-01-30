@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using System.Collections.Generic;
 using Any = cloisim.msgs.Any;
 using messages = cloisim.msgs;
@@ -24,7 +24,7 @@ public class JointControlPlugin : CLOiSimPlugin
 		_jointCommand.SetJointState(_jointState);
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -50,6 +50,8 @@ public class JointControlPlugin : CLOiSimPlugin
 
 		_robotDescription = "<?xml version='1.0' ?><sdf>" + GetPluginParameters().ParentRawXml() + "</sdf>";
 		// UnityEngine.Debug.Log(_robotDescription);
+
+		yield return null;
 	}
 
 	protected override void OnReset()

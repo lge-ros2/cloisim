@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Collections;
@@ -57,7 +56,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		_partsName = this.GetType().Name;
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterServiceDevice(out var portService, "Control"))
 		{
@@ -67,8 +66,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		ReadFloorContext();
 		ReadElevatorContext();
 
-
-		StartCoroutine(ServiceLoop());
+		yield return ServiceLoop();
 	}
 
 	new void OnDestroy()

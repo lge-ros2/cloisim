@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System;
 using System.Collections.Generic;
+using System.Collections;
+using System;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 using UnityEngine;
@@ -46,7 +47,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 	}
 
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		var colorName = GetPluginParameters().GetValue<string>("activate/module[@name='color']");
 		var leftImagerName = GetPluginParameters().GetValue<string>("activate/module[@name='left_imager']");
@@ -90,6 +91,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		{
 			AddImuPlugin(imuName);
 		}
+		yield return null;
 	}
 
 	private void AddImuPlugin(in string name)

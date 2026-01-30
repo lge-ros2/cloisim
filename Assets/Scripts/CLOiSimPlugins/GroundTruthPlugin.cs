@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
@@ -204,7 +203,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		}
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		var publishFrequency = GetPluginParameters().GetValue<float>("publish_frequency", 1);
 		sleepPeriodForPublishInMilliseconds = (int)(1f / publishFrequency * 1000f);
@@ -214,6 +213,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		{
 			SetPropClassId();
 		}
+		yield return null;
 
 		AddPerceptionList();
 
@@ -222,7 +222,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			AddThread(portTx, PublishThread);
 		}
 
-		StartCoroutine(DoUpdateFootprint());
+		yield return DoUpdateFootprint();
 	}
 
 	protected override void OnReset()

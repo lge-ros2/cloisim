@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using Any = cloisim.msgs.Any;
 
 public class MultiCameraPlugin : CLOiSimPlugin
@@ -16,7 +16,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		multiCam = gameObject.GetComponent<SensorDevices.MultiCamera>();
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -27,6 +27,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		{
 			AddThread(portTx, SenderThread, multiCam);
 		}
+		yield return null;
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)

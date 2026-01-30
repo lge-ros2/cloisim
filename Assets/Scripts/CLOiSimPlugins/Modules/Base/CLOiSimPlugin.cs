@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using System.Threading.Tasks;
+using System;
 using UnityEngine;
 
 public interface ICLOiSimPlugin
@@ -24,6 +25,8 @@ public interface ICLOiSimPlugin
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
 	private static int _globalSequence = 0;
+	public bool IsStarted { get; private set; } = false;
+	public event Action<CLOiSimPlugin> Started;
 
 	[field: SerializeField]
 	protected ICLOiSimPlugin.Type _type { get; set; }
@@ -58,7 +61,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	private List<string> _allocatedDeviceHashKeys = new();
 
 	protected abstract void OnAwake();
-	protected abstract void OnStart();
+	protected abstract IEnumerator OnStart();
 	protected virtual void OnReset() { }
 
 	/// <summary>
@@ -160,10 +163,6 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		}
 
 		StartCoroutine(DelayedOnStart());
-
-		_thread.Start();
-
-		Debug.Log($"modelName=[{_modelName}] partsName=[{_partsName}] parentLinkName=[{_parentLinkName}]");
 	}
 
 	private IEnumerator DelayedOnStart()
@@ -172,7 +171,19 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		for (var i = 0; i < sequence; i++)
 			yield return null;
 
-		OnStart();
+		try
+		{
+			yield return OnStart();
+		}
+		finally
+		{
+			_thread.Start();
+
+			IsStarted = true;
+			Started?.Invoke(this);
+
+			Debug.Log($"modelName=[{_modelName}] partsName=[{_partsName}] parentLinkName=[{_parentLinkName}]");
+		}
 	}
 
 	public void Reset()

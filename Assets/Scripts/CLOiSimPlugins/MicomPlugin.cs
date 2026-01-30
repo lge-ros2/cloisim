@@ -5,12 +5,13 @@
  */
 
 using System.Collections.Generic;
+using System.Collections;
 using System.Text;
-using System.Linq;
 using System;
 using Any = cloisim.msgs.Any;
 using UnityEngine;
 using UnityEngine.Video;
+using Unity.Profiling;
 
 public class MicomPlugin : CLOiSimPlugin
 {
@@ -33,11 +34,17 @@ public class MicomPlugin : CLOiSimPlugin
 		_log.Clear();
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		_linkHelperInChildren = GetComponentsInChildren<SDF.Helper.Link>();
 
 		SetupMicom();
+
+		LoadStaticTF();
+		LoadTF();
+
+		Debug.Log(_log.ToString());
+		yield return null;
 
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -59,10 +66,7 @@ public class MicomPlugin : CLOiSimPlugin
 			AddThread(portTf, PublishTfThread, _tfList);
 		}
 
-		LoadStaticTF();
-		LoadTF();
-
-		Debug.Log(_log.ToString());
+		yield return null;
 	}
 
 	protected override void OnReset()
@@ -384,24 +388,26 @@ public class MicomPlugin : CLOiSimPlugin
 	private void SetMowing()
 	{
 		var targetBladeName = GetPluginParameters().GetAttributeInPath<string>("mowing/blade", "target");
-		if (!string.IsNullOrEmpty(targetBladeName))
+
+		if (string.IsNullOrEmpty(targetBladeName))
+			return;
+
+		SDF.Helper.Link targetBlade = null;
+		foreach (var linkHelper in _linkHelperInChildren)
+			if (linkHelper.name == targetBladeName) { targetBlade = linkHelper; break; }
+
+		if (targetBlade != null)
 		{
-			var linkHelpers = GetComponentsInChildren<SDF.Helper.Link>();
-			var targetBlade = linkHelpers.FirstOrDefault(x => x.name == targetBladeName);
+			var mowingBlade = targetBlade.gameObject.AddComponent<MowingBlade>();
 
-			if (targetBlade != null)
+			mowingBlade.HeightMin = GetPluginParameters().GetValue<float>("mowing/blade/height/min", 0f);
+			mowingBlade.HeightMax = GetPluginParameters().GetValue<float>("mowing/blade/height/max", 0.1f);
+			mowingBlade.RevSpeedMax = GetPluginParameters().GetValue<UInt16>("mowing/blade/rev_speed/max", 1000);
+			mowingBlade.Height = 0;
+
+			if (_micomCommand != null)
 			{
-				var mowingBlade = targetBlade.gameObject.AddComponent<MowingBlade>();
-
-				mowingBlade.HeightMin = GetPluginParameters().GetValue<float>("mowing/blade/height/min", 0f);
-				mowingBlade.HeightMax = GetPluginParameters().GetValue<float>("mowing/blade/height/max", 0.1f);
-				mowingBlade.RevSpeedMax = GetPluginParameters().GetValue<UInt16>("mowing/blade/rev_speed/max", 1000);
-				mowingBlade.Height = 0;
-
-				if (_micomCommand != null)
-				{
-					_micomCommand.SetMowingBlade(mowingBlade);
-				}
+				_micomCommand.SetMowingBlade(mowingBlade);
 			}
 		}
 	}

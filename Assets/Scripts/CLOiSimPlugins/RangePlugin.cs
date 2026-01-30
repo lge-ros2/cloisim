@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using UnityEngine;
 using Any = cloisim.msgs.Any;
 
@@ -25,7 +25,7 @@ public class RangePlugin : CLOiSimPlugin
 		_sonar = gameObject.GetComponent<SensorDevices.Sonar>();
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -36,6 +36,7 @@ public class RangePlugin : CLOiSimPlugin
 		{
 			AddThread(portTx, SenderThread, _sonar);
 		}
+		yield return null;
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)

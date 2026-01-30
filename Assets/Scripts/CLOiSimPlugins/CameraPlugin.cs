@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using Any = cloisim.msgs.Any;
 
 public class CameraPlugin : CLOiSimPlugin
@@ -29,7 +29,7 @@ public class CameraPlugin : CLOiSimPlugin
 		}
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -40,6 +40,8 @@ public class CameraPlugin : CLOiSimPlugin
 		{
 			AddThread(portTx, SenderThread, _cam);
 		}
+
+		yield return null;
 	}
 
 	protected override void OnPluginLoad()

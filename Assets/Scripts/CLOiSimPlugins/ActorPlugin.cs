@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using UnityEngine;
 
 [DefaultExecutionOrder(600)]
@@ -16,21 +16,21 @@ public class ActorPlugin : CLOiSimPlugin
 		_partsName = this.GetType().Name;
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		var actorHelper = GetComponent<SDF.Helper.Actor>();
 
 		if (actorHelper.HasWayPoints)
 		{
 			Debug.LogError("Cannot load plugins(" + name + ") with actor trajectories: Check actor/script/trajectory/waypoint");
-			return;
+			yield return null;
 		}
 
 		var defaultMotion = GetPluginParameters().GetValue<string>("default/motion", "random");
 		if (!defaultMotion.Equals("random") && !defaultMotion.Equals("manual"))
 		{
 			Debug.LogWarningFormat("Failed to ActorPlugin: default motion type({0}) is invalid", defaultMotion);
-			return;
+			yield return null;
 		}
 
 		GetPluginParameters().GetValues<string>("activity_zone/model", out var zoneList);

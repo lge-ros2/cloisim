@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
@@ -17,7 +17,7 @@ public class LaserPlugin : CLOiSimPlugin
 		_lidar = GetComponent<SensorDevices.Lidar>();
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (GetPluginParameters().IsValidNode("filter"))
 		{
@@ -43,6 +43,7 @@ public class LaserPlugin : CLOiSimPlugin
 			var customNoiseInRawXml = GetPluginParameters().GetValue<string>("custom_noise");
 			_lidar.SetupCustomNoise(customNoiseInRawXml);
 		}
+		yield return null;
 
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -53,6 +54,8 @@ public class LaserPlugin : CLOiSimPlugin
 		{
 			AddThread(portTx, SenderThread, _lidar);
 		}
+
+		yield return null;
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)

@@ -72,7 +72,7 @@ namespace SDF
 			protected virtual IEnumerator ImportModel(Model model, Object parentObject = null, Action<Object> onCreatedRoot = null)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, model.Name);
-				yield break;
+				yield return null;
 			}
 
 			protected virtual void AfterImportModel(in Model model, in Object targetObject)
