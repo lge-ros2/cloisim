@@ -29,13 +29,13 @@ public class Main : MonoBehaviour
 	private string _loadedWorldFilePath = string.Empty;
 
 	[SerializeField]
-	private List<string> _modelRootDirectories  = new List<string>();
+	private List<string> _modelRootDirectories  = new();
 
 	[SerializeField]
-	private List<string> _worldRootDirectories = new List<string>();
+	private List<string> _worldRootDirectories = new();
 
 	[SerializeField]
-	private List<string> _fileRootDirectories = new List<string>();
+	private List<string> _fileRootDirectories = new();
 
 	private FollowingTargetList _followingList = null;
 
@@ -57,12 +57,14 @@ public class Main : MonoBehaviour
 	private static MeshProcess.VHACD _vhacd = null;
 	private static ObjectSpawning _objectSpawning = null;
 	private static ModelImporter _modelImporter = null;
+	private static PluginStartTracker _pluginStartTracker = new();
 	private static Main _instance = null;
 	private static Pose _cameraInitPose = Pose.identity;
 	private static string _trackVisualModelName = string.Empty;
 	private static Vector3 _trackVisualPosition = Vector3.zero;
 	private static bool _trackVisualInheritYaw = false;
 
+	private static bool _pluginAllStarted = false;
 	private static bool _isResetting = false;
 	private static bool _resetTriggered = false;
 
@@ -79,6 +81,7 @@ public class Main : MonoBehaviour
 	public static InfoDisplay InfoDisplay => _infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => _worldNavMeshBuilder;
 	public static BridgeManager BridgeManager => _bridgeManager;
+	public static SimulationService SimulationService => _simulationService;
 	public static Segmentation.Manager SegmentationManager => _segmentationManager;
 	public static CameraControl CameraControl => _cameraControl;
 	public static MeshProcess.VHACD MeshVHACD => _vhacd;
@@ -111,7 +114,7 @@ public class Main : MonoBehaviour
 
 	#region Non-Component class
 	private static BridgeManager _bridgeManager = null;
-	private static SimulationService _simulationService = null;
+	private static SimulationService _simulationService = new();
 	#endregion
 
 	private void CleanAllModels()
@@ -209,6 +212,11 @@ public class Main : MonoBehaviour
 
 	void Awake()
 	{
+		var logger = new DebugLogWriter();
+		var loggerErr = new DebugLogWriter(true);
+		Console.SetOut(logger);
+		Console.SetError(loggerErr);
+
 		_instance = this;
 
 		GetResourcesPaths();
@@ -295,8 +303,7 @@ public class Main : MonoBehaviour
 			_followingList = _uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
 		}
 
-		Main._bridgeManager = new BridgeManager();
-		Main._simulationService = new SimulationService();
+		_bridgeManager = new BridgeManager();
 
 		var sphericalCoordinates = new SphericalCoordinates();
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
@@ -377,112 +384,126 @@ public class Main : MonoBehaviour
 		return tmpModelName;
 	}
 
-	public GameObject GetModel(string modelPath)
-	{
-		if (modelPath.EndsWith("/"))
-		{
-			modelPath = modelPath.Substring(0, modelPath.Length - 1);
-		}
-
-		foreach (var item in _sdfRoot.resourceModelTable)
-		{
-			var itemValue = item.Value;
-
-			// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
-			if (itemValue.Item2.Equals(modelPath))
-			{
-				// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
-				var modelFileName = itemValue.Item3;
-				if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
-				{
-					model.Name = GetClonedModelName(model.Name);
-
-					StartCoroutine(_sdfLoader.Start(model));
-
-					var targetObject = _worldRoot.transform.Find(model.Name);
-					// Debug.Log(targetObject);
-					return targetObject.gameObject;
-				}
-			}
-		}
-
-		return null;
-	}
-
 	public IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
-		yield return null;
+		Main.UIController?.SetInfoMessage($"Model({modelFileName}) is now loading....");
 
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
+			_bridgeManager.ClearAllocatedHistory();
+
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
 			model.Name = GetClonedModelName(model.Name);
 
-			yield return StartCoroutine(_sdfLoader.Start(model));
+			Physics.simulationMode = SimulationMode.Script;
+			GameObject targetObject = null;
+			yield return _sdfLoader.Start(model, onCreatedRoot: obj => targetObject = (obj as GameObject));
 
-			var targetObject = _worldRoot.transform.Find(model.Name);
+			yield return new WaitUntil(() => targetObject != null);
 
-			if (_modelImporter != null)
-			{
-				_modelImporter.SetModelForDeploy(targetObject);
-			}
+			_pluginAllStarted = false;
 
-			// Debug.Log("Model Loaded:" + targetObject.name);
-			yield return new WaitForEndOfFrame();
+			_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
+			_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
 
-			// for GUI
+			_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
+			_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
+
+			_pluginStartTracker.Bind(targetObject);
+
+			Physics.SyncTransforms();
+			Physics.simulationMode = SimulationMode.FixedUpdate;
+
+			_modelImporter?.SetModelForDeploy(targetObject.transform);
+
 			_followingList?.UpdateList();
-		}
 
-		yield return null;
+			yield return new WaitUntil(() => _pluginAllStarted);
+			_bridgeManager.PrintAllocatedHistory();
+
+			var message = $"Model({modelFileName}) is loaded > {model.Name}";
+			Debug.Log(message);
+			Main.UIController?.SetInfoMessage(message);
+		}
 	}
 
 	private IEnumerator LoadWorld()
 	{
-		yield return null;
-
-		// Debug.Log("Hello CLOiSim World!!!!!");
 		Debug.Log("Target World: " + _worldFilename);
+		Main.UIController?.SetInfoMessage($"World({_worldFilename}) is now loading....");
 
 		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
 		{
-			SDF.Import.Util.RootModels = _worldRoot;
-
 			_sdfLoader = new SDF.Import.Loader();
 			_sdfLoader.SetRootLights(_lightsRoot);
 			_sdfLoader.SetRootRoads(_roadsRoot);
 
+			Physics.simulationMode = SimulationMode.Script;
 			yield return _sdfLoader.Start(world);
 
-			// for GUI
-			_followingList?.UpdateList();
+			yield return new WaitUntil(() => _worldRoot.transform.childCount > 0);
 
-			yield return new WaitForEndOfFrame();
+			_pluginAllStarted = false;
+
+			_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
+			_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
+
+			_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
+			_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
+
+			_pluginStartTracker.Bind(_worldRoot);
+
+			Physics.SyncTransforms();
+			Physics.simulationMode = SimulationMode.FixedUpdate;
 
 			Reset();
 
-			yield return new WaitForEndOfFrame();
+			TrackModel();
 
-			if (!string.IsNullOrEmpty(_trackVisualModelName))
-			{
-				_followingList.StartFollowing(_trackVisualModelName);
-				var followingCamera = Main.UIObject.GetComponentInChildren<FollowingCamera>();
+			_followingList?.UpdateList();
 
-				if (followingCamera != null)
-				{
-					followingCamera.SetInitialRelativePosition(_trackVisualPosition);
-					followingCamera.AlignSameDirection(_trackVisualInheritYaw);
-				}
-			}
+			yield return new WaitUntil(() => _pluginAllStarted);
+			_bridgeManager.PrintAllocatedHistory();
+
+			var message = $"World({_worldFilename}) is loaded";
+			Debug.Log(message);
+			Main.UIController?.SetInfoMessage(message);
 		}
 		else
 		{
-			var errorMessage = "Parsing failed!!! Failed to load world file: " + _worldFilename;
+			var errorMessage = $"Parsing failed!!! Failed to load world file: {_worldFilename}";
 			Debug.LogError(errorMessage);
 			_uiController?.SetErrorMessage(errorMessage);
 		}
+	}
 
-		_bridgeManager.PrintLog();
+	private void OnPluginProgressChanged(int started, int total)
+	{
+		Main.UIController?.SetInfoMessage($"Starting plugins... ({started}/{total})");
+	}
+
+	private void OnAllPluginsStarted()
+	{
+		_pluginAllStarted = true;
+		Debug.LogWarning(_pluginStartTracker.AllSummaries);
+		var message = $"All plugins started! ({_pluginStartTracker.StartedCount}/{_pluginStartTracker.TotalCount})";
+		Main.UIController?.SetInfoMessage(message);
+		Debug.Log(message);
+	}
+
+	public void TrackModel()
+	{
+		if (!string.IsNullOrEmpty(_trackVisualModelName))
+		{
+			_followingList.StartFollowing(_trackVisualModelName);
+			var followingCamera = Main.UIObject.GetComponentInChildren<FollowingCamera>();
+
+			if (followingCamera != null)
+			{
+				followingCamera.SetInitialRelativePosition(_trackVisualPosition);
+				followingCamera.AlignSameDirection(_trackVisualInheritYaw);
+			}
+		}
 	}
 
 	public void SaveWorld()
@@ -574,6 +595,11 @@ public class Main : MonoBehaviour
 		foreach (var helper in _worldRoot.GetComponentsInChildren<SDF.Helper.Base>())
 		{
 			helper.Reset();
+		}
+
+		foreach (var device in _worldRoot.GetComponentsInChildren<Device>())
+		{
+			device.Reset();
 		}
 
 		foreach (var plugin in _worldRoot.GetComponentsInChildren<CLOiSimPlugin>())

@@ -14,38 +14,37 @@ public class LiftControl : MonoBehaviour
 	private const float MAX_HEIGHT = 1000f;
 	private const float MIN_HEIGHT = -1000f;
 
-	private Actuator lift = new Actuator();
+	private Actuator _lift = new();
 
+	private Dictionary<ArticulationBody, Transform> _bodyOriginalTransform = new();
+	private HashSet<GameObject> _hashsetLiftingObjects = new();
+	private HashSet<GameObject> _hashsetLiftingProps = new();
 
-	private Dictionary<ArticulationBody, Transform> bodyOriginalTransform = new Dictionary<ArticulationBody, Transform>();
-	private HashSet<GameObject> hashsetLiftingObjects = new HashSet<GameObject>();
-	private HashSet<GameObject> hashsetLiftingProps = new HashSet<GameObject>();
-
-	private UnityEvent finishedLiftingEvent = new UnityEvent();
-	private Transform rootModelTransform = null;
-	private Transform rootPropsTransform = null;
+	private UnityEvent _finishedLiftingEvent = new();
+	private Transform _rootModelTransform = null;
+	private Transform _rootPropsTransform = null;
 
 	public string floorColliderName = string.Empty;
-	private MeshCollider floorCollider = null;
+	private MeshCollider _floorCollider = null;
 
 	public float speed = 1;
-	public bool IsMoving => lift.IsMoving;
+	public bool IsMoving => _lift.IsMoving;
 
 	void Awake()
 	{
-		rootModelTransform = Main.WorldRoot.transform;
-		rootPropsTransform = Main.PropsRoot.transform;
+		_rootModelTransform = Main.WorldRoot.transform;
+		_rootPropsTransform = Main.PropsRoot.transform;
 	}
 
 	void Start()
 	{
-		lift.SetTarget(transform);
-		lift.SetInitialPose(transform.localPosition);
-		lift.SetMovingType(Actuator.MovingType.SmoothDamp);
-		lift.SetMaxSpeed(speed);
-		lift.SetDirection(Vector3.up);
-		lift.SetMaxOffset(MAX_HEIGHT);
-		lift.SetMinOffset(MIN_HEIGHT);
+		_lift.SetTarget(transform);
+		_lift.SetInitialPose(transform.localPosition);
+		_lift.SetMovingType(Actuator.MovingType.SmoothDamp);
+		_lift.SetMaxSpeed(speed);
+		_lift.SetDirection(Vector3.up);
+		_lift.SetMaxOffset(MAX_HEIGHT);
+		_lift.SetMinOffset(MIN_HEIGHT);
 		// Debug.Log(name + "::" + speed);
 
 		FindFloorRegionInLift();
@@ -53,7 +52,7 @@ public class LiftControl : MonoBehaviour
 
 	public void SetFinishedEventListener(UnityAction call)
 	{
-		finishedLiftingEvent.AddListener(call);
+		_finishedLiftingEvent.AddListener(call);
 	}
 
 	private void FindFloorRegionInLift()
@@ -63,42 +62,42 @@ public class LiftControl : MonoBehaviour
 		{
 			if (collision.name.Equals(floorColliderName))
 			{
-				floorCollider = collision.GetComponentInChildren<MeshCollider>();
-				floorCollider.convex = false;
+				_floorCollider = collision.GetComponentInChildren<MeshCollider>();
+				_floorCollider.convex = false;
 			}
 		}
 	}
 
 	private void DetectObjectsToLiftAndLiftIt()
 	{
-		hashsetLiftingObjects.Clear();
-		hashsetLiftingProps.Clear();
+		_hashsetLiftingObjects.Clear();
+		_hashsetLiftingProps.Clear();
 
-		var allModelHelpers = rootModelTransform.GetComponentsInChildren<SDF.Helper.Model>();
+		var allModelHelpers = _rootModelTransform.GetComponentsInChildren<SDF.Helper.Model>();
 		foreach (var modelHelper in allModelHelpers)
 		{
 			if (modelHelper.IsFirstChild)
 			{
 				var topModel = modelHelper.gameObject;
 				var topModelPosition = topModel.transform.position;
-				if (floorCollider != null && floorCollider.bounds.Contains(topModelPosition))
+				if (_floorCollider != null && _floorCollider.bounds.Contains(topModelPosition))
 				{
-					hashsetLiftingObjects.Add(topModel);
+					_hashsetLiftingObjects.Add(topModel);
 					topModel.transform.SetParent(transform, true);
 				}
 			}
 		}
 
-		var allProps = rootPropsTransform.GetComponentsInChildren<Transform>();
+		var allProps = _rootPropsTransform.GetComponentsInChildren<Transform>();
 		foreach (var prop in allProps)
 		{
 			if (prop.CompareTag("Props"))
 			{
 				var propPosition = prop.transform.position;
-				if (floorCollider != null && floorCollider.bounds.Contains(propPosition))
+				if (_floorCollider != null && _floorCollider.bounds.Contains(propPosition))
 				{
 					var propObject = prop.gameObject;
-					hashsetLiftingProps.Add(propObject);
+					_hashsetLiftingProps.Add(propObject);
 					prop.transform.SetParent(transform, true);
 				}
 			}
@@ -108,30 +107,30 @@ public class LiftControl : MonoBehaviour
 	private void DropLiftedObjects()
 	{
 		// Unlink parenting between lifted objects if arrived at the target floor.
-		if (rootModelTransform != null)
+		if (_rootModelTransform != null)
 		{
-			foreach (var obj in hashsetLiftingObjects)
+			foreach (var obj in _hashsetLiftingObjects)
 			{
-				obj.transform.SetParent(rootModelTransform, true);
+				obj.transform.SetParent(_rootModelTransform, true);
 			}
 		}
 
-		if (rootPropsTransform != null)
+		if (_rootPropsTransform != null)
 		{
-			foreach (var obj in hashsetLiftingProps)
+			foreach (var obj in _hashsetLiftingProps)
 			{
-				obj.transform.SetParent(rootPropsTransform, true);
+				obj.transform.SetParent(_rootPropsTransform, true);
 			}
 		}
 	}
 
 	public void MoveTo(in float targetHeight)
 	{
-		if (!lift.IsMoving)
+		if (!_lift.IsMoving)
 		{
 			DetectObjectsToLiftAndLiftIt();
 
-			lift.SetTargetPosition(targetHeight);
+			_lift.SetTargetPosition(targetHeight);
 			StartCoroutine(DoLifting());
 		}
 	}
@@ -139,14 +138,14 @@ public class LiftControl : MonoBehaviour
 	private IEnumerator DoLifting()
 	{
 		// handling the gameobhect which has articulation body
-		foreach (var obj in hashsetLiftingObjects)
+		foreach (var obj in _hashsetLiftingObjects)
 		{
 			var articulationBodies = obj.GetComponentsInChildren<ArticulationBody>();
 			foreach (var articulationBody in articulationBodies)
 			{
 				if (articulationBody.isRoot)
 				{
-					bodyOriginalTransform.Add(articulationBody, articulationBody.transform);
+					_bodyOriginalTransform.Add(articulationBody, articulationBody.transform);
 					break;
 				}
 			}
@@ -157,15 +156,15 @@ public class LiftControl : MonoBehaviour
 
 		do
 		{
-			lift.Drive();
+			_lift.Drive();
 			yield return waitForEOF;
 			yield return waitForFU;
-		} while (lift.IsMoving);
+		} while (_lift.IsMoving);
 
-		bodyOriginalTransform.Clear();
+		_bodyOriginalTransform.Clear();
 
 		DropLiftedObjects();
-		finishedLiftingEvent.Invoke();
+		_finishedLiftingEvent.Invoke();
 
 		yield return null;
 	}
@@ -174,10 +173,10 @@ public class LiftControl : MonoBehaviour
 	{
 		const float GAP_BETWEEN_ELEVATOR_FLOOR = 0.02f;
 
-		if (bodyOriginalTransform.Count > 0)
+		if (_bodyOriginalTransform.Count > 0)
 		{
 			// find root articulation body and teleport the body following as elevator's height
-			foreach (var item in bodyOriginalTransform)
+			foreach (var item in _bodyOriginalTransform)
 			{
 				var articulationBody = item.Key;
 				var originalTransform = item.Value;
@@ -193,7 +192,7 @@ public class LiftControl : MonoBehaviour
 	// just for test
 	// void Update()
 	// {
-	// 	if (!lift.IsMoving)
+	// 	if (!_lift.IsMoving)
 	// 	{
 	// 		if (Input.GetKeyUp(KeyCode.U))
 	// 		{

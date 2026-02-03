@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+using System.Collections;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -20,10 +21,9 @@ public class SimulationWorld : CLOiSimPlugin
 		_partsName = this.GetType().Name;
 
 		_clock = gameObject.GetComponent<Clock>();
-		_attachedDevices.Add(_clock);
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterTxDevice(out var portTx, "Clock"))
 		{
@@ -34,6 +34,8 @@ public class SimulationWorld : CLOiSimPlugin
 		{
 			AddThread(portClient, ClientThread);
 		}
+
+		yield return null;
 	}
 
 	public Clock GetClock()

@@ -5,6 +5,7 @@
  */
 
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
@@ -27,12 +28,14 @@ public class ActorControlPlugin : CLOiSimPlugin
 		UpdateActorList();
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterServiceDevice(out var port, "Control"))
 		{
 			AddThread(port, ServiceThread);
 		}
+
+		yield return null;
 	}
 
 	void LateUpdate()

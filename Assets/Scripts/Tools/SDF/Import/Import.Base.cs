@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
 using System.Collections.Generic;
+using System.Collections;
 using System;
 
 namespace SDF
@@ -13,7 +13,8 @@ namespace SDF
 	{
 		public partial class Base
 		{
-			private Dictionary<Joint, Object> _jointObjectList = new Dictionary<Joint, Object>();
+			private Dictionary<Joint, Object> _jointObjectList = new();
+			private Dictionary<Plugin, Object> _pluginObjectList = new();
 
 			private void ImportVisuals(IReadOnlyList<Visual> items, in Object parentObject)
 			{
@@ -24,11 +25,11 @@ namespace SDF
 
 					ImportGeometry(item.GetGeometry(), createdObject);
 
-					ImportPlugins(item.GetPlugins(), createdObject);
-
 					AfterImportVisual(item, createdObject);
 
 					ImportMaterial(item.GetMaterial(), createdObject);
+
+					StorePlugins(item.GetPlugins(), createdObject);
 				}
 			}
 
@@ -50,8 +51,7 @@ namespace SDF
 				foreach (var item in items)
 				{
 					var createdObject = ImportSensor(item, parentObject);
-
-					ImportPlugins(item.GetPlugins(), createdObject);
+					StorePlugins(item.GetPlugins(), createdObject);
 				}
 			}
 
@@ -74,29 +74,32 @@ namespace SDF
 				}
 			}
 
-			protected void ImportPlugins(IReadOnlyList<Plugin> items, in Object parentObject)
+			protected void StorePlugins(IReadOnlyList<Plugin> items, Object parentObject)
 			{
+				// Plugin should be handled after all links of model are loaded due to articulation body.
 				foreach (var item in items)
 				{
-					ImportPlugin(item, parentObject);
+					// Console.WriteLine($"PluginName: {item.Name}");
+					_pluginObjectList.Add(item, parentObject);
 				}
 			}
 
-			protected void ImportJoints(IReadOnlyList<Joint> items, in Object parentObject)
+			protected void StoreJoints(IReadOnlyList<Joint> items, in Object parentObject)
 			{
-				// Joints should be handled after all links of model loaded due to articulation body.
+				// Joints should be handled after all links of model are loaded due to articulation body.
 				foreach (var item in items)
 				{
+					// Console.WriteLine($"JointName: {item.Name} Child: {item.ChildLinkName} Parent: {item.ParentLinkName}");
 					_jointObjectList.Add(item, parentObject);
 				}
 			}
 
-			protected void ImportModels(IReadOnlyList<Model> items, in Object parentObject = null)
+			protected IEnumerator ImportModels(IReadOnlyList<Model> items, Object parentObject = null)
 			{
 				foreach (var item in items)
 				{
 					// Console.WriteLine("[Model][{0}][{1}]", item.Name, parentObject);
-					ImportModel(item, parentObject);
+					yield return ImportModel(item, parentObject);
 				}
 			}
 
@@ -105,8 +108,7 @@ namespace SDF
 				foreach (var item in items)
 				{
 					var createdObject = ImportActor(item);
-
-					ImportPlugins(item.GetPlugins(), createdObject);
+					StorePlugins(item.GetPlugins(), createdObject);
 				}
 			}
 
@@ -118,43 +120,55 @@ namespace SDF
 				}
 			}
 
-			public IEnumerator<World> Start(World world)
+			public IEnumerator Start(World world)
 			{
 				// Console.WriteLine("Import Models({0})/Links/Joints", world.GetModels().Count);
 				_jointObjectList.Clear();
+				_pluginObjectList.Clear();
 
 				var worldObject = ImportWorld(world);
 
-				ImportModels(world.GetModels());
+				yield return ImportModels(world.GetModels());
 
 				foreach (var jointObject in _jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
 				}
 
-				ImportPlugins(world.GetPlugins(), worldObject);
-
-				worldObject.SpecifyPose();
-				yield return null;
+				StorePlugins(world.GetPlugins(), worldObject);
 
 				ImportActors(world.GetActors());
 				yield return null;
+
+				foreach (var pluginObject in _pluginObjectList)
+				{
+					ImportPlugin(pluginObject.Key, pluginObject.Value);
+				}
+
+				worldObject?.SpecifyPose();
 			}
 
-			public IEnumerator<Model> Start(Model model)
+			public IEnumerator Start(Model model, Action<Object> onCreatedRoot = null)
 			{
-				yield return null;
-
 				_jointObjectList.Clear();
+				_pluginObjectList.Clear();
 
-				var modelObject = ImportModel(model);
+				Object modelObject = null;
+				yield return ImportModel(model, onCreatedRoot: obj => modelObject = obj);
 
 				foreach (var jointObject in _jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
 				}
 
-				modelObject.SpecifyPose();
+				foreach (var pluginObject in _pluginObjectList)
+				{
+					ImportPlugin(pluginObject.Key, pluginObject.Value);
+				}
+
+				modelObject?.SpecifyPose();
+
+				onCreatedRoot?.Invoke(modelObject);
 			}
 		}
 	}

@@ -5,9 +5,9 @@
  */
 
 using System.Collections.Generic;
+using System;
 using WebSocketSharp;
 using WebSocketSharp.Server;
-using UnityEngine;
 using Newtonsoft.Json;
 
 public class SimulationControlRequest
@@ -23,7 +23,7 @@ public class SimulationControlRequest
 
 	public void Print()
 	{
-		Debug.LogFormat("## {0}: {1}", this.GetType().Name, command);
+		Console.WriteLine($"## {this.GetType().Name}: {command}");
 	}
 }
 
@@ -34,7 +34,7 @@ public class SimulationControlResponseBase
 
 	public virtual void Print()
 	{
-		Debug.LogFormat("## {0}: {1}", this.GetType().Name, command);
+		Console.WriteLine($"## {this.GetType().Name}: {command}");
 	}
 }
 
@@ -45,7 +45,7 @@ public class SimulationControlResponseNormal : SimulationControlResponseBase
 
 	public override void Print()
 	{
-		Debug.LogFormat("## {0}: {1}, {2}", this.GetType().Name, command, result);
+		Console.WriteLine($"## {this.GetType().Name}: {command}, {result}");
 	}
 }
 
@@ -56,7 +56,7 @@ public class SimulationControlResponseDeviceList : SimulationControlResponseBase
 
 	public override void Print()
 	{
-		Debug.LogFormat("## {0}: {1}, {2}", this.GetType().Name, command, result);
+		Console.WriteLine($"## {this.GetType().Name}: {command}, {result}");
 	}
 }
 
@@ -67,7 +67,7 @@ public class SimulationControlResponseTopicList : SimulationControlResponseBase
 
 	public override void Print()
 	{
-		Debug.LogFormat("## {0}: {1}, {2}", this.GetType().Name, command, result);
+		Console.WriteLine($"## {this.GetType().Name}: {command}, {result}");
 	}
 }
 
@@ -79,13 +79,13 @@ public class SimulationControlService : WebSocketBehavior
 	{
 		bridgeManager = Main.BridgeManager;
 		Log.Level = LogLevel.Fatal;
-		Debug.Log("Open SimulationControlService");
+		Console.WriteLine("Open SimulationControlService");
 	}
 
 	protected override void OnClose(CloseEventArgs e)
 	{
 		Sessions.Sweep();
-		Debug.LogFormat("Close SimulationControlService({0}), {1}", e.Code, e.Reason);
+		Console.WriteLine($"Close SimulationControlService({e.Code}), {e.Reason}, {e.WasClean}");
 	}
 
 	protected override void OnMessage(MessageEventArgs e)
@@ -96,11 +96,14 @@ public class SimulationControlService : WebSocketBehavior
 			return;
 		}
 
-		var request = JsonConvert.DeserializeObject<SimulationControlRequest>(e.Data);
-
-		if (request == null)
+		SimulationControlRequest request = null;
+		try
 		{
-			Debug.Log("Invalid JSON format");
+			request = JsonConvert.DeserializeObject<SimulationControlRequest>(e.Data);
+		}
+		catch (System.Exception ex)
+		{
+			Console.Error.WriteLine($"Invalid JSON: {ex.Message}\nraw={e.Data}");
 			return;
 		}
 
@@ -155,11 +158,20 @@ public class SimulationControlService : WebSocketBehavior
 		output.command = request.command;
 
 		var responseJsonData = JsonConvert.SerializeObject(output, (request.indent) ? Formatting.Indented : Formatting.None);
-		Send(responseJsonData);
+
+		try
+		{
+			if (State == WebSocketState.Open)
+				Send(responseJsonData);
+		}
+		catch (System.Exception ex)
+		{
+			Console.Error.WriteLine($"Send failed: {ex.GetType().Name} {ex.Message}");
+		}
 	}
 
 	protected override void OnError(ErrorEventArgs e)
 	{
-		Debug.LogFormat("{0}::OnError : {1}", GetType().Name, e.Message);
+		Console.Error.WriteLine($"{GetType().Name}::OnError : {e.Message}");
 	}
 }

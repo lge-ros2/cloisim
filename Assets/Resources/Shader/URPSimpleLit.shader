@@ -308,116 +308,116 @@ Shader "Custom/URP/Simple Lit"
         }
 
         // This pass is used when drawing to a _CameraNormalsTexture texture
-        Pass
-        {
-            Name "DepthNormals"
-            Tags
-            {
-                "LightMode" = "DepthNormals"
-            }
+        // Pass
+        // {
+        //     Name "DepthNormals"
+        //     Tags
+        //     {
+        //         "LightMode" = "DepthNormals"
+        //     }
 
-            // -------------------------------------
-            // Render State Commands
-            ZWrite On
-            Cull[_Cull]
+        //     // -------------------------------------
+        //     // Render State Commands
+        //     ZWrite On
+        //     Cull[_Cull]
 
-            HLSLPROGRAM
-            #pragma target 2.0
+        //     HLSLPROGRAM
+        //     #pragma target 2.0
 
-            // -------------------------------------
-            // Shader Stages
-            #pragma vertex DepthNormalsVertex
-            #pragma fragment DepthNormalsFragment
+        //     // -------------------------------------
+        //     // Shader Stages
+        //     #pragma vertex DepthNormalsVertex
+        //     #pragma fragment DepthNormalsFragment
 
-            // -------------------------------------
-            // Material Keywords
-            #pragma multi_compile_local _NORMALMAP
-            #pragma shader_feature_local _ALPHATEST_ON
-            #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
+        //     // -------------------------------------
+        //     // Material Keywords
+        //     #pragma multi_compile_local _NORMALMAP
+        //     #pragma shader_feature_local _ALPHATEST_ON
+        //     #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
 
-            // -------------------------------------
-            // Unity defined keywords
-            #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
+        //     // -------------------------------------
+        //     // Unity defined keywords
+        //     #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
 
-            // Universal Pipeline keywords
-            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
+        //     // Universal Pipeline keywords
+        //     #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
 
-            //--------------------------------------
-            // GPU Instancing
-            #pragma multi_compile_instancing
-            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
+        //     //--------------------------------------
+        //     // GPU Instancing
+        //     #pragma multi_compile_instancing
+        //     #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
-            // -------------------------------------
-            // Includes
-            #include "Packages/com.unity.render-pipelines.universal/Shaders/SimpleLitInput.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/Shaders/SimpleLitDepthNormalsPass.hlsl"
-            ENDHLSL
-        }
+        //     // -------------------------------------
+        //     // Includes
+        //     #include "Packages/com.unity.render-pipelines.universal/Shaders/SimpleLitInput.hlsl"
+        //     #include "Packages/com.unity.render-pipelines.universal/Shaders/SimpleLitDepthNormalsPass.hlsl"
+        //     ENDHLSL
+        // }
 
         // This pass it not used during regular rendering, only for lightmap baking.
-        Pass
-        {
-            Name "Meta"
-            Tags
-            {
-                "LightMode" = "Meta"
-            }
+        // Pass
+        // {
+        //     Name "Meta"
+        //     Tags
+        //     {
+        //         "LightMode" = "Meta"
+        //     }
 
-            // -------------------------------------
-            // Render State Commands
-            Cull Off
+        //     // -------------------------------------
+        //     // Render State Commands
+        //     Cull Off
 
-            HLSLPROGRAM
-            #pragma target 2.0
+        //     HLSLPROGRAM
+        //     #pragma target 2.0
 
-            // -------------------------------------
-            // Shader Stages
-            #pragma vertex UniversalVertexMeta
-            #pragma fragment UniversalFragmentMetaSimple
+        //     // -------------------------------------
+        //     // Shader Stages
+        //     #pragma vertex UniversalVertexMeta
+        //     #pragma fragment UniversalFragmentMetaSimple
 
-            // -------------------------------------
-            // Material Keywords
-            #pragma shader_feature_local_fragment _EMISSION
-            #pragma shader_feature_local_fragment _SPECGLOSSMAP
-            #pragma shader_feature EDITOR_VISUALIZATION
+        //     // -------------------------------------
+        //     // Material Keywords
+        //     #pragma shader_feature_local_fragment _EMISSION
+        //     #pragma shader_feature_local_fragment _SPECGLOSSMAP
+        //     #pragma shader_feature EDITOR_VISUALIZATION
 
-            // -------------------------------------
-            // Includes
-            #include "Packages/com.unity.render-pipelines.universal/Shaders/SimpleLitInput.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/Shaders/SimpleLitMetaPass.hlsl"
+        //     // -------------------------------------
+        //     // Includes
+        //     #include "Packages/com.unity.render-pipelines.universal/Shaders/SimpleLitInput.hlsl"
+        //     #include "Packages/com.unity.render-pipelines.universal/Shaders/SimpleLitMetaPass.hlsl"
 
-            ENDHLSL
-        }
+        //     ENDHLSL
+        // }
 
-        Pass
-        {
-            Name "Universal2D"
-            Tags
-            {
-                "LightMode" = "Universal2D"
-                "RenderType" = "Transparent"
-                "Queue" = "Transparent"
-            }
+        // Pass
+        // {
+        //     Name "Universal2D"
+        //     Tags
+        //     {
+        //         "LightMode" = "Universal2D"
+        //         "RenderType" = "Transparent"
+        //         "Queue" = "Transparent"
+        //     }
 
-            HLSLPROGRAM
-            #pragma target 2.0
+        //     HLSLPROGRAM
+        //     #pragma target 2.0
 
-            // -------------------------------------
-            // Shader Stages
-            #pragma vertex vert
-            #pragma fragment frag
+        //     // -------------------------------------
+        //     // Shader Stages
+        //     #pragma vertex vert
+        //     #pragma fragment frag
 
-            // -------------------------------------
-            // Material Keywords
-            #pragma shader_feature_local_fragment _ALPHATEST_ON
-            #pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
+        //     // -------------------------------------
+        //     // Material Keywords
+        //     #pragma shader_feature_local_fragment _ALPHATEST_ON
+        //     #pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
 
-            // -------------------------------------
-            // Includes
-            #include "Packages/com.unity.render-pipelines.universal/Shaders/SimpleLitInput.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/Shaders/Utils/Universal2D.hlsl"
-            ENDHLSL
-        }
+        //     // -------------------------------------
+        //     // Includes
+        //     #include "Packages/com.unity.render-pipelines.universal/Shaders/SimpleLitInput.hlsl"
+        //     #include "Packages/com.unity.render-pipelines.universal/Shaders/Utils/Universal2D.hlsl"
+        //     ENDHLSL
+        // }
     }
 
     Fallback  "Hidden/Universal Render Pipeline/FallbackError"

@@ -5,6 +5,7 @@
  */
 
 using System.Reflection;
+using System.Collections;
 using System;
 
 namespace SDF
@@ -68,10 +69,10 @@ namespace SDF
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, link.Name);
 			}
 
-			protected virtual Object ImportModel(in Model model, in Object parentObject = null)
+			protected virtual IEnumerator ImportModel(Model model, Object parentObject = null, Action<Object> onCreatedRoot = null)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, model.Name);
-				return null;
+				yield return null;
 			}
 
 			protected virtual void AfterImportModel(in Model model, in Object targetObject)
@@ -102,12 +103,12 @@ namespace SDF
 
 			private void PrintNotImported(in string methodName, in string name)
 			{
-				Console.Error.WriteLine("[{0}][{1}] Not Imported yet", methodName, name);
+				Console.Error.WriteLine($"[{methodName}][{name}] Not Imported yet");
 			}
 
 			private void PrintNotImported(in string methodName)
 			{
-				Console.Error.WriteLine("[{0}] Not Imported yet", methodName);
+				Console.Error.WriteLine($"[{methodName}] Not Imported yet");
 			}
 		}
 	}

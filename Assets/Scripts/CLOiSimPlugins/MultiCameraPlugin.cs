@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using Any = cloisim.msgs.Any;
 
 public class MultiCameraPlugin : CLOiSimPlugin
@@ -13,12 +13,10 @@ public class MultiCameraPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		_type = ICLOiSimPlugin.Type.MULTICAMERA;
-
 		multiCam = gameObject.GetComponent<SensorDevices.MultiCamera>();
-		_attachedDevices.Add(multiCam);
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -29,6 +27,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		{
 			AddThread(portTx, SenderThread, multiCam);
 		}
+		yield return null;
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
@@ -38,7 +37,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 
 		if (camera == null)
 		{
-			UnityEngine.Debug.LogWarning("cannot find camera from multicamera: " + cameraName);
+			UnityEngine.Debug.LogWarning($"cannot find camera from multicamera: {cameraName}");
 			return;
 		}
 

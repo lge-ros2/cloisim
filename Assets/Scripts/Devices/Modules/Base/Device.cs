@@ -17,9 +17,9 @@ public abstract class Device : MonoBehaviour
 
 	protected ConcurrentQueue<global::ProtoBuf.IExtensible> _messageQueue = new();
 
+	[NonSerialized]
 	private DeviceMessageQueue _deviceMessageQueue = new();
 	private DevicePose _devicePose = new();
-	private SDF.Plugin _pluginParameters = null;
 
 	[SerializeField]
 	private string _deviceName = string.Empty;
@@ -79,6 +79,13 @@ public abstract class Device : MonoBehaviour
 
 		SetupMessages();
 
+		StartCoroutine(DelayedStart());
+	}
+
+	protected virtual IEnumerator DelayedStart()
+	{
+		yield return new WaitForEndOfFrame();
+
 		OnStart();
 
 		_running = true;
@@ -137,7 +144,6 @@ public abstract class Device : MonoBehaviour
 				if (_thread != null && _thread.IsAlive)
 				{
 					_thread.Join();
-					_thread.Abort();
 				}
 				break;
 
@@ -145,9 +151,9 @@ public abstract class Device : MonoBehaviour
 			default:
 				break;
 		}
-
-		Debug.Log($"Stop {Mode.ToString()} device {name}-{DeviceName}");
-
+#if UNITY_EDITOR
+		Debug.Log($"Stop Device [{Mode.ToString()}] [{name}/{DeviceName}]");
+#endif
 		_deviceMessageQueue.Flush();
 		_deviceMessageQueue.Dispose();
 	}
@@ -219,7 +225,7 @@ public abstract class Device : MonoBehaviour
 		while (_running)
 		{
 			yield return waitUntil;
-			if (PopDeviceMessage(out var receivedMessage))
+			if (PopDeviceMessage(out var receivedMessage) && receivedMessage != null)
 			{
 				ProcessReceivedDeviceMessage(receivedMessage);
 			}
@@ -241,7 +247,7 @@ public abstract class Device : MonoBehaviour
 		{
 			if (_deviceMessageQueue.Count > 0)
 			{
-				if (PopDeviceMessage(out var receivedMessage))
+				if (PopDeviceMessage(out var receivedMessage) && receivedMessage != null)
 				{
 					ProcessReceivedDeviceMessage(receivedMessage);
 				}
@@ -321,19 +327,6 @@ public abstract class Device : MonoBehaviour
 	public void SetTransportedTime(in float value)
 	{
 		_transportingTimeSeconds = value;
-	}
-
-	/// <summary>
-	/// This method should be called in OnStart()
-	/// </summary>
-	public void SetPluginParameters(in SDF.Plugin plugin)
-	{
-		_pluginParameters = plugin;
-	}
-
-	public SDF.Plugin GetPluginParameters()
-	{
-		return _pluginParameters;
 	}
 
 	public Pose GetPose()

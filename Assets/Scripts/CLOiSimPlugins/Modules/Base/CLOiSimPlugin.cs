@@ -3,8 +3,11 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
 using System.Collections.Generic;
+using System.Collections;
+using System.Threading.Tasks;
+using System.Text;
+using System;
 using UnityEngine;
 
 public interface ICLOiSimPlugin
@@ -22,6 +25,11 @@ public interface ICLOiSimPlugin
 
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
+	private static int _globalSequence = 0;
+	public StringBuilder StartSummary { get; protected set; } = new();
+	public bool IsStarted { get; private set; } = false;
+	public event Action<CLOiSimPlugin> Started;
+
 	[field: SerializeField]
 	protected ICLOiSimPlugin.Type _type { get; set; }
 
@@ -45,19 +53,17 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected string _parentLinkName = string.Empty;
 
-	protected List<TF> staticTfList = new List<TF>();
+	protected List<TF> staticTfList = new();
 
 	private Pose pluginPose = Pose.identity;
 
 	private SDF.Plugin _pluginParameters = null;
 
-	private List<ushort> _allocatedDevicePorts = new List<ushort>();
-	private List<string> _allocatedDeviceHashKeys = new List<string>();
-
-	protected List<Device> _attachedDevices = new List<Device>();
+	private List<ushort> _allocatedDevicePorts = new();
+	private List<string> _allocatedDeviceHashKeys = new();
 
 	protected abstract void OnAwake();
-	protected abstract void OnStart();
+	protected abstract IEnumerator OnStart();
 	protected virtual void OnReset() { }
 
 	/// <summary>
@@ -65,13 +71,26 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	/// </summary>
 	protected virtual void OnPluginLoad() { }
 
-	protected void OnDestroy()
+	protected async void OnDestroy()
 	{
 		_thread.Dispose();
+		await TryCompleteThreadShutdownAsync(joinTimeoutMs: 50);
+
 		_transport.Dispose();
 
 		DeregisterDevice(_allocatedDevicePorts, _allocatedDeviceHashKeys);
 		// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
+	}
+
+	private async Task TryCompleteThreadShutdownAsync(int joinTimeoutMs = 50)
+	{
+		while (true)
+		{
+			if (_thread.TryJoinStep(joinTimeoutMs))
+				break;
+	        await Task.Yield();
+		}
+        await Task.Yield();
 	}
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)
@@ -87,14 +106,6 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	public SDF.Plugin GetPluginParameters()
 	{
 		return _pluginParameters;
-	}
-
-	private void StorePluginParametersInAttachedDevices()
-	{
-		foreach (var device in _attachedDevices)
-		{
-			device?.SetPluginParameters(_pluginParameters);
-		}
 	}
 
 	private void DetectMultiplePlugin()
@@ -114,8 +125,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 				if (plugins.Length > 1)
 				{
 					SubPartsName = name;
-					Debug.LogWarningFormat("Multiple Plugin detected in Model({0}) => Set subparts name({1})",
-						modelLink.name, SubPartsName);
+					StartSummary.AppendLine($"Multiple Plugin detected in Model({modelLink.name}) => Set subparts name({SubPartsName})");
 				}
 			}
 		}
@@ -126,8 +136,6 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		SetCustomHandleRequestMessage();
 
 		OnAwake();
-
-		StorePluginParametersInAttachedDevices();
 
 		OnPluginLoad();
 	}
@@ -154,20 +162,33 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		{
 			_parentLinkName = string.IsNullOrEmpty(helperLink.JointParentLinkName) ? null : helperLink.JointParentLinkName;
 		}
-		Debug.Log($"modelName={_modelName} partsName={_partsName} parentLinkName={_parentLinkName}");
 
-		OnStart();
+		StartCoroutine(DelayedOnStart());
+	}
 
-		_thread.Start();
+	private IEnumerator DelayedOnStart()
+	{
+		var sequence = _globalSequence++;
+		for (var i = 0; i < sequence; i++)
+			yield return null;
+
+		try
+		{
+			yield return OnStart();
+		}
+		finally
+		{
+			_thread.Start();
+
+			IsStarted = true;
+			Started?.Invoke(this);
+
+			StartSummary.AppendLine($"modelName=[{_modelName}] partsName=[{_partsName}] parentLinkName=[{_parentLinkName}]");
+		}
 	}
 
 	public void Reset()
 	{
-		foreach (var device in _attachedDevices)
-		{
-			device?.Reset();
-		}
-
 		OnReset();
 	}
 

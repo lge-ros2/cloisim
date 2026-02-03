@@ -26,7 +26,7 @@ public class CLOiSimPluginThread : IDisposable
 		}
 	}
 
-	private List<(Thread, ParamObject)> _threadList = new List<(Thread, ParamObject)>();
+	private List<(Thread, ParamObject)> _threadList = new();
 
 	private bool _runningThread = true;
 	public bool IsRunning => _runningThread;
@@ -40,13 +40,13 @@ public class CLOiSimPluginThread : IDisposable
 	~CLOiSimPluginThread()
 	{
 		// Debug.Log("Destroy Thread");
-		Dispose();
+		RequestStop();
 	}
 
 	public virtual void Dispose()
 	{
 		// Debug.Log("Dispose Thread");
-		Stop();
+		RequestStop();
 	}
 
 	public bool Add(in ushort targetPortForThread, in ParameterizedThreadStart function, in System.Object pluginObject = null)
@@ -54,6 +54,7 @@ public class CLOiSimPluginThread : IDisposable
 		if (function != null)
 		{
 			var thread = new Thread(function);
+			thread.IsBackground = true;
 			var paramObject = new ParamObject(targetPortForThread, pluginObject);
 			// thread.Priority = System.Threading.ThreadPriority.AboveNormal;
 			_threadList.Add((thread, paramObject));
@@ -78,23 +79,42 @@ public class CLOiSimPluginThread : IDisposable
 		}
 	}
 
-	public void Stop()
+	public void RequestStop()
 	{
 		_runningThread = false;
+		GC.SuppressFinalize(this);
+	}
 
+	public bool TryJoinStep(in int joinTimeoutMs = 50)
+	{
+		var allStopped = true;
 		foreach (var threadTuple in _threadList)
 		{
 			var thread = threadTuple.Item1;
-			if (thread != null)
+
+			if (thread == null) continue;
+			if (!thread.IsAlive) continue;
+
+			if (thread.Join(joinTimeoutMs))
 			{
-				if (thread.IsAlive)
-				{
-					thread.Join();
-					thread.Abort();
-				}
+#if UNITY_EDITOR
+				Debug.LogWarning($"Thread({thread.ManagedThreadId}) did not stop within {joinTimeoutMs}ms");
+#endif
 			}
+
+			if (thread.IsAlive)
+				allStopped = false;
 		}
-		_threadList.Clear();
+
+		if (allStopped)
+		{
+#if UNITY_EDITOR
+			Debug.LogWarning($"All Thread stopped!!");
+#endif
+			_threadList.Clear();
+		}
+
+		return allStopped;
 	}
 
 	public void Sender(Publisher publisher, Device device)

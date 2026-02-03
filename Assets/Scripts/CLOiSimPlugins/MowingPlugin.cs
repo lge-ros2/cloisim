@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
@@ -182,12 +181,7 @@ public class MowingPlugin : CLOiSimPlugin
 		_grass = new Grass(geomGrassShader);
 	}
 
-	protected override void OnStart()
-	{
-		StartCoroutine(Start());
-	}
-
-	private IEnumerator Start()
+	protected override IEnumerator OnStart()
 	{
 		yield return new WaitForEndOfFrame();
 

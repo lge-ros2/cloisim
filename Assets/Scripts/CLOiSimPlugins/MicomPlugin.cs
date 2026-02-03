@@ -5,8 +5,8 @@
  */
 
 using System.Collections.Generic;
+using System.Collections;
 using System.Text;
-using System.Linq;
 using System;
 using Any = cloisim.msgs.Any;
 using UnityEngine;
@@ -19,8 +19,6 @@ public class MicomPlugin : CLOiSimPlugin
 	private SensorDevices.MicomSensor _micomSensor = null;
 	private MotorControl _motorControl = null;
 	private SDF.Helper.Link[] _linkHelperInChildren = null;
-	private StringBuilder _log = new StringBuilder();
-
 	private List<string> _displaySourceUris = new List<string>();
 
 	protected override void OnAwake()
@@ -30,18 +28,18 @@ public class MicomPlugin : CLOiSimPlugin
 
 		_micomSensor = gameObject.AddComponent<SensorDevices.MicomSensor>();
 		_micomCommand = gameObject.AddComponent<SensorDevices.MicomCommand>();
-
-		_attachedDevices.Add(_micomCommand);
-		_attachedDevices.Add(_micomSensor);
-
-		_log.Clear();
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		_linkHelperInChildren = GetComponentsInChildren<SDF.Helper.Link>();
 
 		SetupMicom();
+
+		LoadStaticTF();
+		LoadTF();
+
+		yield return null;
 
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -63,28 +61,24 @@ public class MicomPlugin : CLOiSimPlugin
 			AddThread(portTf, PublishTfThread, _tfList);
 		}
 
-		LoadStaticTF();
-		LoadTF();
-
-		Debug.Log(_log.ToString());
+		yield return null;
 	}
 
 	protected override void OnReset()
 	{
 		_motorControl?.Reset();
-		_log.Clear();
 	}
 
 	private void SetupMicom()
 	{
-		_log.AppendLine($"SetupMicom({name})");
+		StartSummary.AppendLine($"[SetupMicom({name})]");
 
 		_micomSensor.EnableDebugging = GetPluginParameters().GetValue<bool>("debug", false);
 
 		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20f);
 		if (updateRate.Equals(0))
 		{
-			_log.AppendLine("Update rate for micom CANNOT be 0. Set to default value 20 Hz");
+			StartSummary.AppendLine("Update rate for micom CANNOT be 0. Set to default value 20 Hz");
 			updateRate = 20f;
 		}
 		_micomSensor.SetUpdateRate(updateRate);
@@ -150,13 +144,13 @@ public class MicomPlugin : CLOiSimPlugin
 
 		if (string.IsNullOrEmpty(targetVisual))
 		{
-			_log.AppendLine("Failed to set display - Empty target visual for display");
+			StartSummary.AppendLine("Failed to set display - Empty target visual for display");
 			return;
 		}
 
 		if (GetPluginParameters().GetValues<string>("display/source/uri", out _displaySourceUris) == false)
 		{
-			_log.AppendLine("Failed to set display - Empty display source uri");
+			StartSummary.AppendLine("Failed to set display - Empty display source uri");
 			return;
 		}
 
@@ -198,14 +192,14 @@ public class MicomPlugin : CLOiSimPlugin
 
 	private void SetSelfBalancedWheel(in string parameterPrefix)
 	{
-		_log.AppendLine($"SetSelfBalancedWheel({parameterPrefix})");
+		StartSummary.AppendLine($"SetSelfBalancedWheel({parameterPrefix})");
 
 		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc") &&
 			GetPluginParameters().IsValidNode($"{parameterPrefix}/smc/mode"))
 		{
 			var outputMode = GetPluginParameters().GetValue<string> ($"{parameterPrefix}/smc/mode/output", "LQR");
 			var switchingMode = GetPluginParameters().GetValue<string> ($"{parameterPrefix}/smc/mode/switching", "SAT");
-			_log.AppendLine($"outputMode: {outputMode}, switchingMode: {switchingMode}");
+			StartSummary.AppendLine($"outputMode: {outputMode}, switchingMode: {switchingMode}");
 
 			_motorControl = new SelfBalancedDrive(this.transform, outputMode, switchingMode);
 		}
@@ -229,7 +223,7 @@ public class MicomPlugin : CLOiSimPlugin
 		{
 			(_motorControl as SelfBalancedDrive).Balancing = true;
 		}
-		_log.AppendLine($"AutoStart: {autostart}");
+		StartSummary.AppendLine($"AutoStart: {autostart}");
 
 		var headJoint = GetPluginParameters().GetValue<string>($"{parameterPrefix}/head/joint");
 		if (!string.IsNullOrEmpty(headJoint))
@@ -271,7 +265,7 @@ public class MicomPlugin : CLOiSimPlugin
 				var sigmaB = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/sigma_b");
 				var wheelFF = GetPluginParameters().GetValue<double>($"{parameterPrefix}/smc/param/wheel_ff");
 				(_motorControl as SelfBalancedDrive).SetSMCParams(kSW, sigmaB, wheelFF);
-				_log.AppendLine($"SetBalancedWheel() => kSW: {kSW}, sigmaB: {sigmaB}, wheelFF: {wheelFF}");
+				StartSummary.AppendLine($"SetBalancedWheel() => kSW: {kSW}, sigmaB: {sigmaB}, wheelFF: {wheelFF}");
 			}
 
 			if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc/state_space"))
@@ -312,13 +306,13 @@ public class MicomPlugin : CLOiSimPlugin
 
 		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/tread"))
 		{
-			_log.AppendLine($"<tread> will be depreacted!! please use <separation>");
+			StartSummary.AppendLine($"<tread> will be depreacted!! please use <separation>");
 		}
 
 		var wheelTread = GetPluginParameters().GetValue<float>($"{parameterPrefix}/tread"); // TODO: to be deprecated
 		var wheelSeparation = GetPluginParameters().GetValue<float>($"{parameterPrefix}/separation", wheelTread);
 
-		_log.AppendLine($"wheel separation/radius: {wheelSeparation}/{wheelRadius}");
+		StartSummary.AppendLine($"wheel separation/radius: {wheelSeparation}/{wheelRadius}");
 		_motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
 
 		var wheelLeftName = GetPluginParameters().GetValue<string>($"{parameterPrefix}/location[@type='left']", string.Empty);
@@ -381,31 +375,33 @@ public class MicomPlugin : CLOiSimPlugin
 
 		SetPID(P, I, D, integralMin, integralMax, outputMin, outputMax);
 
-		_log.AppendLine($"SetMotorPID: {parameterPrefix}, {P}, {I}, {D}, {integralMin}, {integralMax}, {outputMin}, {outputMax}");
+		StartSummary.AppendLine($"SetMotorPID: {parameterPrefix}, {P}, {I}, {D}, {integralMin}, {integralMax}, {outputMin}, {outputMax}");
 	}
 
 
 	private void SetMowing()
 	{
 		var targetBladeName = GetPluginParameters().GetAttributeInPath<string>("mowing/blade", "target");
-		if (!string.IsNullOrEmpty(targetBladeName))
+
+		if (string.IsNullOrEmpty(targetBladeName))
+			return;
+
+		SDF.Helper.Link targetBlade = null;
+		foreach (var linkHelper in _linkHelperInChildren)
+			if (linkHelper.name == targetBladeName) { targetBlade = linkHelper; break; }
+
+		if (targetBlade != null)
 		{
-			var linkHelpers = GetComponentsInChildren<SDF.Helper.Link>();
-			var targetBlade = linkHelpers.FirstOrDefault(x => x.name == targetBladeName);
+			var mowingBlade = targetBlade.gameObject.AddComponent<MowingBlade>();
 
-			if (targetBlade != null)
+			mowingBlade.HeightMin = GetPluginParameters().GetValue<float>("mowing/blade/height/min", 0f);
+			mowingBlade.HeightMax = GetPluginParameters().GetValue<float>("mowing/blade/height/max", 0.1f);
+			mowingBlade.RevSpeedMax = GetPluginParameters().GetValue<UInt16>("mowing/blade/rev_speed/max", 1000);
+			mowingBlade.Height = 0;
+
+			if (_micomCommand != null)
 			{
-				var mowingBlade = targetBlade.gameObject.AddComponent<MowingBlade>();
-
-				mowingBlade.HeightMin = GetPluginParameters().GetValue<float>("mowing/blade/height/min", 0f);
-				mowingBlade.HeightMax = GetPluginParameters().GetValue<float>("mowing/blade/height/max", 0.1f);
-				mowingBlade.RevSpeedMax = GetPluginParameters().GetValue<UInt16>("mowing/blade/rev_speed/max", 1000);
-				mowingBlade.Height = 0;
-
-				if (_micomCommand != null)
-				{
-					_micomCommand.SetMowingBlade(mowingBlade);
-				}
+				_micomCommand.SetMowingBlade(mowingBlade);
 			}
 		}
 	}
@@ -426,7 +422,7 @@ public class MicomPlugin : CLOiSimPlugin
 					{
 						if (targetBattery.Name.Equals(batteryName))
 						{
-							// _log.AppendLine("Battery: " + batteryName + ", Battery Consumer:" + consumption.ToString("F5"));
+							// StartSummary.AppendLine("Battery: " + batteryName + ", Battery Consumer:" + consumption.ToString("F5"));
 							targetBattery.Discharge(consumption);
 							_micomSensor.SetBattery(targetBattery);
 							break;
@@ -439,7 +435,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 	private void LoadStaticTF()
 	{
-		_log.AppendLine("Loaded Static TF Info : " + _modelName);
+		StartSummary.AppendLine("Loaded Static TF Info : " + _modelName);
 
 		if (GetPluginParameters().GetValues<string>("ros2/static_transforms/link", out var staticLinks))
 		{
@@ -457,7 +453,7 @@ public class MicomPlugin : CLOiSimPlugin
 					{
 						var tf = new TF(linkHelper, link, parentFrameId);
 						staticTfList.Add(tf);
-						_log.AppendLine(modelName + "::" + linkName + " : Static TF added");
+						StartSummary.AppendLine(modelName + "::" + linkName + " : Static TF added");
 						break;
 					}
 				}
@@ -467,7 +463,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 	private void LoadTF()
 	{
-		_log.AppendLine("Loaded TF Info : " + _modelName);
+		StartSummary.AppendLine("Loaded TF Info : " + _modelName);
 
 		if (GetPluginParameters().GetValues<string>("ros2/transforms/link", out var links))
 		{
@@ -485,7 +481,7 @@ public class MicomPlugin : CLOiSimPlugin
 					{
 						var tf = new TF(linkHelper, link, parentFrameId);
 						_tfList.Add(tf);
-						_log.AppendLine(modelName + "::" + linkName + " -> " + parentFrameId + " : TF added");
+						StartSummary.AppendLine(modelName + "::" + linkName + " -> " + parentFrameId + " : TF added");
 						break;
 					}
 				}

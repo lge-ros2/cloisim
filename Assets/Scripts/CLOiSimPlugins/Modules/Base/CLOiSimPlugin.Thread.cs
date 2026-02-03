@@ -1,16 +1,14 @@
-
 /*
  * Copyright (c) 2020 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
  */
-
 using System.Threading;
 using UnityEngine;
 
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
-	private CLOiSimPluginThread _thread = new CLOiSimPluginThread();
+	private CLOiSimPluginThread _thread = new();
 	protected CLOiSimPluginThread PluginThread => _thread;
 
 	protected bool AddThread(in ushort targetPortForThread, in ParameterizedThreadStart function, in System.Object pluginObject = null)

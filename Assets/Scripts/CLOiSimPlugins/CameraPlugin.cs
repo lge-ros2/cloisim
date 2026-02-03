@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using Any = cloisim.msgs.Any;
 
 public class CameraPlugin : CLOiSimPlugin
@@ -27,11 +27,9 @@ public class CameraPlugin : CLOiSimPlugin
 			deviceName = "Camera";
 			_cam = gameObject.GetComponent<SensorDevices.Camera>();
 		}
-
-		_attachedDevices.Add(_cam);
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -42,6 +40,8 @@ public class CameraPlugin : CLOiSimPlugin
 		{
 			AddThread(portTx, SenderThread, _cam);
 		}
+
+		yield return null;
 	}
 
 	protected override void OnPluginLoad()

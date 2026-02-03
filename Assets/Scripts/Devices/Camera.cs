@@ -245,7 +245,7 @@ namespace SensorDevices
 			_camSensor.orthographic = false;
 			_camSensor.nearClipPlane = (float)_camParam.clip.near;
 			_camSensor.farClipPlane = (float)_camParam.clip.far;
-			_camSensor.cullingMask = LayerMask.GetMask("Default");
+			_camSensor.cullingMask = LayerMask.GetMask("Default", "Plane");
 
 			RTHandles.SetHardwareDynamicResolutionState(true);
 			_rtHandle = RTHandles.Alloc(
@@ -319,7 +319,7 @@ namespace SensorDevices
 			_universalCamData.dithering = true;
 			_universalCamData.renderPostProcessing = false;
 			_universalCamData.allowXRRendering = false;
-			_universalCamData.volumeLayerMask = LayerMask.GetMask("Nothing");
+			_universalCamData.volumeLayerMask = default;
 			_universalCamData.renderType = CameraRenderType.Base;
 			_universalCamData.cameraStack.Clear();
 		}
@@ -394,7 +394,13 @@ namespace SensorDevices
 				var imageStampedMsg = (messages.ImageStamped)msg;
 				var saveName = $"{DeviceName}_{imageStampedMsg.Time.Sec}.{imageStampedMsg.Time.Nsec}";
 				var format = CameraData.GetPixelFormat(_camParam.image.format);
-				_textureForCapture.SaveRawImage(imageStampedMsg.Image.Data, _camParam.save_path, saveName, format);
+
+				if (format != SensorDevices.CameraData.PixelFormat.L_INT8)
+				{
+					Debug.LogWarning($"{format.ToString()} is not support to save file");
+					return;
+				}
+				_textureForCapture.SaveRawImage(imageStampedMsg.Image.Data, _camParam.save_path, saveName);
 			}
 		}
 

@@ -36,7 +36,6 @@ namespace SensorDevices
 			{
 				_runningThread = false;
 				_imagesProcessThread.Join();
-				_imagesProcessThread.Abort();
 			}
 
 			base.OnDestroy();

@@ -21,7 +21,7 @@ namespace SDF
 
 				var newActorObject = new UE.GameObject(actor.Name);
 				newActorObject.tag = "Actor";
-				Util.RootModels.SetChild(newActorObject);
+				Main.WorldRoot.SetChild(newActorObject);
 
 				// Apply attributes
 				var localPosition = actor.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;

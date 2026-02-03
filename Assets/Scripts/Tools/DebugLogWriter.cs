@@ -10,7 +10,6 @@ using System.IO;
 public class DebugLogWriter : TextWriter
 {
 	private bool isError = false;
-	private bool showOnDisplay = false;
 
 	public DebugLogWriter(in bool errorLog = false)
 	{
@@ -36,30 +35,16 @@ public class DebugLogWriter : TextWriter
 		}
 	}
 
-	public void SetShowOnDisplayOnce()
-	{
-		showOnDisplay = true;
-	}
-
 	private void Print(in string value)
 	{
 		if (isError)
 		{
 			Debug.LogWarning(value);
-			if (showOnDisplay)
-			{
-				Main.UIController?.SetErrorMessage(value);
-				showOnDisplay = false;
-			}
+			Main.UIController?.SetErrorMessage(value);
 		}
 		else
 		{
 			Debug.Log(value);
-			if (showOnDisplay)
-			{
-				Main.UIController?.SetEventMessage(value);
-				showOnDisplay = false;
-			}
 		}
 	}
 

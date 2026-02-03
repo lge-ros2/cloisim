@@ -278,10 +278,9 @@ public class ObjectSpawning : MonoBehaviour
 				targetObjectTransform.CompareTag("Model"))
 			{
 				Destroy(targetObjectTransform.gameObject);
+				yield return null;
 			}
 		}
-
-		yield return new WaitForEndOfFrame();
 
 		_followingList?.UpdateList();
 

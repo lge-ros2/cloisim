@@ -14,20 +14,12 @@ namespace SDF
 	{
 		public static class Util
 		{
-			private static UE.GameObject _rootModels = null;
-
-			public static UE.GameObject RootModels
-			{
-				get => _rootModels;
-				set => _rootModels = value;
-			}
-
 			public static void SetChild(this UE.GameObject parent, in UE.GameObject child)
 			{
 				child.transform.position = UE.Vector3.zero;
 				child.transform.rotation = UE.Quaternion.identity;
 
-				var targetParentTransform = (parent == null) ? _rootModels.transform : parent.transform;
+				var targetParentTransform = (parent == null) ? Main.WorldRoot.transform : parent.transform;
 				child.transform.SetParent(targetParentTransform, false);
 
 				child.transform.localScale = UE.Vector3.one;
@@ -42,7 +34,6 @@ namespace SDF
 
 				var foundRootModelTransform = targetBaseHelper.RootModel.transform;
 
-				// 공통 부모 탐색 함수
 				UE.Transform FindParent<T>(UE.Transform start, Func<T, bool> condition) where T : UE.Component
 				{
 					for (var parent = start.parent; parent != null; parent = parent.parent)

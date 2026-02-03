@@ -15,7 +15,7 @@ namespace SensorDevices
 			public readonly uint samples;
 			public readonly double resolution;
 			public readonly MathUtil.MinMax angle; // degree
-			public readonly double angleStep;
+			public readonly double angleStep; // degree
 
 			public Scan(in uint samples, in double angleMinRad, in double angleMaxRad, in double resolution)
 			{
@@ -49,15 +49,17 @@ namespace SensorDevices
 			}
 		}
 
-		public struct AngleResolution
+		public struct Resolution
 		{
-			public readonly float H; // degree
-			public readonly float V; // degree
+			public float angleH; // degree
+			public float angleV; // degree
+			public readonly float linear;
 
-			public AngleResolution(in float angleResolutionH = 0, in float angleResolutionV = 0)
+			public Resolution(in float rangeResolution)
 			{
-				this.H = angleResolutionH;
-				this.V = angleResolutionV;
+				this.angleH = 0;
+				this.angleV = 0;
+				this.linear = rangeResolution;
 			}
 		}
 

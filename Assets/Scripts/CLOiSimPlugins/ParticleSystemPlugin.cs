@@ -3,10 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
-using System.Collections.Generic;
 using System.Collections;
-using System.Linq;
 using UnityEngine;
 using ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode;
 
@@ -26,7 +23,7 @@ public class ParticleSystemPlugin : CLOiSimPlugin
 		_particleSystemRenderer = this.gameObject.GetComponent<ParticleSystemRenderer>();
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		SetParticleMain();
 		SetParticleEmission();
@@ -34,6 +31,7 @@ public class ParticleSystemPlugin : CLOiSimPlugin
 		SetParticleNoise();
 		SetParticleCollision(); // TODO: consider performance
 		SetParticleRenderer();
+		yield return null;
 	}
 
 	private void SetParticleMain()

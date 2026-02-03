@@ -35,7 +35,7 @@ void CSScaleDepthBuffer(uint3 id : SV_DispatchThreadID)
 	}
 	else // 1
 	{
-		const float scaledData = rangedData / _DepthMax * MAX_RANGE_8BITS;//((rangedData > max_scaled_range)? max_scaled_range : rangedData) * _DepthScale;
+		const float scaledData = rangedData / _DepthMax * MAX_RANGE_8BITS;
 		finalData = asuint((uint)scaledData) & 0xFF;
 	}
 	_Output[bufIndex] = finalData;

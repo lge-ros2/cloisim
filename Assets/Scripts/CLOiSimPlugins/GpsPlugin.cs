@@ -3,22 +3,20 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using Any = cloisim.msgs.Any;
 
 public class GpsPlugin : CLOiSimPlugin
 {
-	private SensorDevices.GPS gps = null;
+	private SensorDevices.GPS _gps = null;
 
 	protected override void OnAwake()
 	{
 		_type = ICLOiSimPlugin.Type.GPS;
-
-		gps = gameObject.GetComponent<SensorDevices.GPS>();
-		_attachedDevices.Add(gps);
+		_gps = gameObject.GetComponent<SensorDevices.GPS>();
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -27,8 +25,9 @@ public class GpsPlugin : CLOiSimPlugin
 
 		if (RegisterTxDevice(out var portTx, "Data"))
 		{
-			AddThread(portTx, SenderThread, gps);
+			AddThread(portTx, SenderThread, _gps);
 		}
+		yield return null;
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
@@ -36,8 +35,8 @@ public class GpsPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_transform":
-				var devicePose = gps.GetPose();
-				var deviceName = gps.DeviceName;
+				var devicePose = _gps.GetPose();
+				var deviceName = _gps.DeviceName;
 				SetTransformInfoResponse(ref response, deviceName, devicePose, _parentLinkName);
 				break;
 

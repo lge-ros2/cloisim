@@ -3,23 +3,21 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
 public class LaserPlugin : CLOiSimPlugin
 {
-	private SensorDevices.Lidar lidar = null;
+	private SensorDevices.Lidar _lidar = null;
 
 	protected override void OnAwake()
 	{
 		_type = ICLOiSimPlugin.Type.LASER;
-
-		lidar = GetComponent<SensorDevices.Lidar>();
-		_attachedDevices.Add(lidar);
+		_lidar = GetComponent<SensorDevices.Lidar>();
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (GetPluginParameters().IsValidNode("filter"))
 		{
@@ -29,16 +27,23 @@ public class LaserPlugin : CLOiSimPlugin
 			{
 				var filterAngleLower = GetPluginParameters().GetValue<double>("filter/angle/horizontal/lower", double.NegativeInfinity);
 				var filterAngleUpper = GetPluginParameters().GetValue<double>("filter/angle/horizontal/upper", double.PositiveInfinity);
-				lidar.SetupLaserAngleFilter(filterAngleLower, filterAngleUpper, useIntensity);
+				_lidar.SetupLaserAngleFilter(filterAngleLower, filterAngleUpper, useIntensity);
 			}
 
 			if (GetPluginParameters().IsValidNode("filter/range"))
 			{
 				var filterRangeMin = GetPluginParameters().GetValue<double>("filter/range/min", double.NegativeInfinity);
 				var filterRangeMax = GetPluginParameters().GetValue<double>("filter/range/max", double.PositiveInfinity);
-				lidar.SetupLaserRangeFilter(filterRangeMin, filterRangeMax, useIntensity);
+				_lidar.SetupLaserRangeFilter(filterRangeMin, filterRangeMax, useIntensity);
 			}
 		}
+
+		if (GetPluginParameters().IsValidNode("custom_noise"))
+		{
+			var customNoiseInRawXml = GetPluginParameters().GetValue<string>("custom_noise");
+			_lidar.SetupCustomNoise(customNoiseInRawXml);
+		}
+		yield return null;
 
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -47,8 +52,10 @@ public class LaserPlugin : CLOiSimPlugin
 
 		if (RegisterTxDevice(out var portTx, "Data"))
 		{
-			AddThread(portTx, SenderThread, lidar);
+			AddThread(portTx, SenderThread, _lidar);
 		}
+
+		yield return null;
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
@@ -60,8 +67,8 @@ public class LaserPlugin : CLOiSimPlugin
 				break;
 
 			case "request_transform":
-				var devicePose = lidar.GetPose();
-				var deviceName = lidar.DeviceName;
+				var devicePose = _lidar.GetPose();
+				var deviceName = _lidar.DeviceName;
 				SetTransformInfoResponse(ref response, deviceName, devicePose, _parentLinkName);
 				break;
 

@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Collections;
 using Any = cloisim.msgs.Any;
 
 public class ImuPlugin : CLOiSimPlugin
@@ -13,12 +13,10 @@ public class ImuPlugin : CLOiSimPlugin
 	protected override void OnAwake()
 	{
 		_type = ICLOiSimPlugin.Type.IMU;
-
 		imu = gameObject.GetComponent<SensorDevices.IMU>();
-		_attachedDevices.Add(imu);
 	}
 
-	protected override void OnStart()
+	protected override IEnumerator OnStart()
 	{
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -29,6 +27,8 @@ public class ImuPlugin : CLOiSimPlugin
 		{
 			AddThread(portTx, SenderThread, imu);
 		}
+
+		yield return null;
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
