@@ -153,13 +153,14 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 - Processor: testing and looking for the minimum
 - Memory: testing and looking for the minimum
 - Graphics: testing and looking for the minimum
+- OS: Ubuntu 22.04 since CLOiSim-4.12.0
 
-### Tested environement (latest)
+### Tested environment (latest)
 
 - Unity Editor Version: *'2022.3.71f1 (LTS)'*.
 
 - Linux Machine
-  - OS: Ubuntu 22.04.5 LTS
+  - OS: Ubuntu 24.04.3 LTS
   - Processor: AMD® Ryzen 9 5950x 16-core processor × 32
   - Memory: 128.0 GiB
   - Graphics: NVIDIA Corporation [GeForce RTX 3090]
@@ -256,7 +257,7 @@ Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-servi
 
 New features or functions shall be developed on demand.
 
-- Fully support to keep up with the latest version of 'SDF specifiaction'
+- Fully support to keep up with the latest version of 'SDF specification'
 
   - Considering wrapper class for SDF c++ library.
 
@@ -264,7 +265,7 @@ New features or functions shall be developed on demand.
 
 - introduce programmable c++ plugin
 
-- Performance optimization for sensors (Use DOT by unity?)
+- Performance optimization for sensors
 
 - Upgrade quality of graphical elements
 

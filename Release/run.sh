@@ -15,7 +15,7 @@ ShowEnvironmentHelp()
 
 PrintWorldList()
 {
-  echo -e "<Possible all world list in CLOISIM_WORLD_PATH>\n"
+  echo -e "\n\n<Possible all world list in CLOISIM_WORLD_PATH>\n"
 
   IFS=':'
   read -ra newarr <<< "$CLOISIM_WORLD_PATH"

@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 # Configuration for Nvidia device capability
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -14,8 +14,7 @@ RUN \
 apt-get update -qq && \
 apt-get upgrade -qq -y && \
 apt-get install --no-install-recommends -qq -y \
- sudo libgomp1 libxi6 \
- libglu1 libxcursor1 xvfb \
+ sudo libgomp1 libxi6 libglu1 libxcursor1 xvfb \
  xz-utils wget curl ca-certificates \
  libgl1 libvulkan1 libc6-dev libxcursor1 libminizip-dev && \
 rm -rf /var/lib/apt/lists/* && \
@@ -35,7 +34,7 @@ ENV CLOISIM_FILES_PATH=/opt/resources/media \
     CLOISIM_MODEL_PATH=/opt/resources/models \
     CLOISIM_WORLD_PATH=/opt/resources/worlds
 
-# final simulatior location
+# final simulator location
 WORKDIR /opt/CLOiSim
 
 ENTRYPOINT ["./run.sh"]

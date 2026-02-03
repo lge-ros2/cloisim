@@ -19,7 +19,7 @@ Refer here for install guide [NVIDIA Container Toolkit](https://docs.nvidia.com/
 
 ```shell
 ### test if it installed successfully
-$ sudo docker run --rm --gpus all nvidia/cuda:11.0.3-base-ubuntu20.04 nvidia-smi
+$ sudo docker run --rm --gpus all docker pull nvidia/cuda:13.1.1-base-ubuntu22.04 nvidia-smi
 ```
 
 ## Run Docker
@@ -64,25 +64,27 @@ for example,
 docker run -it --rm --net=host --gpus '"device=0"'  ...
 ```
 
-#### Option A (non-headless)
-
 Use following command to run CLOiSim docker container:
 
+#### Option A (non-headless)
+
+refer to start.sh
+
 ```shell
-export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample_resources/
+export CLOISIM_RESOURCES_PATH=/home/cloisim/SimulatorInstance/sample_resources/
 
-xhost +
-
-docker run -it --rm --net=host --gpus '"device=0"' \
+xhost +SI:localuser:root
+docker run -it --rm --net=host --ipc=host --gpus '"device=0"' \
     -e DISPLAY=$DISPLAY \
     -v ${HOME}/.Xauthority:/root/.Xauthority:rw \
     -v /tmp/cloisim/unity3d:/root/.config/unity3d \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /usr/share/fonts/:/usr/share/fonts/ \
-    -v ${CLOISIM_RESOURCES_PATH}/materials:/opt/resources/materials/ \
-    -v ${CLOISIM_RESOURCES_PATH}/models:/opt/resources/models/ \
-    -v ${CLOISIM_RESOURCES_PATH}/worlds:/opt/resources/worlds/ \
+    -v ${CLOISIM_RESOURCES_PATH}/materials:/opt/resources/materials:ro \
+    -v ${CLOISIM_RESOURCES_PATH}/models:/opt/resources/models:ro \
+    -v ${CLOISIM_RESOURCES_PATH}/worlds:/opt/resources/worlds:ro \
     cloisim lg_seocho.world
+xhost -SI:localuser:root
 ```
 
 You can input other style of optional arguments.
@@ -95,14 +97,18 @@ docker run -ti --rm --gpus all --net=host
 
 #### Option B (headless)
 
+refer to start-headless.sh
+
 ```shell
-docker run -it --rm --net=host --gpus '"device=0"' \
+xhost +SI:localuser:root
+docker run -it --rm --net=host --ipc=host --gpus '"device=0"' \
     -v /tmp/cloisim/unity3d:/root/.config/unity3d \
     -v /usr/share/fonts/:/usr/share/fonts/ \
-    -v ${CLOISIM_RESOURCES_PATH}/materials:/opt/resources/materials/ \
-    -v ${CLOISIM_RESOURCES_PATH}/models:/opt/resources/models/ \
-    -v ${CLOISIM_RESOURCES_PATH}/worlds:/opt/resources/worlds/ \
+    -v ${CLOISIM_RESOURCES_PATH}/materials:/opt/resources/materials:ro \
+    -v ${CLOISIM_RESOURCES_PATH}/models:/opt/resources/models:ro \
+    -v ${CLOISIM_RESOURCES_PATH}/worlds:/opt/resources/worlds:ro \
     cloisim --headless --world lg_seocho.world
+xhost -SI:localuser:root
 ```
 
 #### Option C (Predefined script)
@@ -116,9 +122,9 @@ export CLOISIM_RESOURCES_PATH=/home/closim/SimulatorInstance/sample_resources/
 
 ## headless mode
 ./start.sh --headless --world lg_seocho.world
-./start-headless.sh --headless --world lg_seocho.world
+./start-headless.sh --world lg_seocho.world
 ```
 
 -------------------------------
 
-This docker image has been tested on __Ubuntu 20.04__.
+This docker image has been tested on __Ubuntu 22.04__.
