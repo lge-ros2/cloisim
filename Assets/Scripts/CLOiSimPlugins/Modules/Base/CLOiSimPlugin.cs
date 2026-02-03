@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using System.Threading.Tasks;
+using System.Text;
 using System;
 using UnityEngine;
 
@@ -25,6 +26,7 @@ public interface ICLOiSimPlugin
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
 	private static int _globalSequence = 0;
+	public StringBuilder StartSummary { get; protected set; } = new();
 	public bool IsStarted { get; private set; } = false;
 	public event Action<CLOiSimPlugin> Started;
 
@@ -123,8 +125,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 				if (plugins.Length > 1)
 				{
 					SubPartsName = name;
-					Debug.LogWarningFormat("Multiple Plugin detected in Model({0}) => Set subparts name({1})",
-						modelLink.name, SubPartsName);
+					StartSummary.AppendLine($"Multiple Plugin detected in Model({modelLink.name}) => Set subparts name({SubPartsName})");
 				}
 			}
 		}
@@ -182,7 +183,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			IsStarted = true;
 			Started?.Invoke(this);
 
-			Debug.Log($"modelName=[{_modelName}] partsName=[{_partsName}] parentLinkName=[{_parentLinkName}]");
+			StartSummary.AppendLine($"modelName=[{_modelName}] partsName=[{_partsName}] parentLinkName=[{_parentLinkName}]");
 		}
 	}
 

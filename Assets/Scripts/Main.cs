@@ -485,7 +485,10 @@ public class Main : MonoBehaviour
 	private void OnAllPluginsStarted()
 	{
 		_pluginAllStarted = true;
-		Debug.Log($"All plugins started! ({_pluginStartTracker.StartedCount}/{_pluginStartTracker.TotalCount})");
+		Debug.LogWarning(_pluginStartTracker.AllSummaries);
+		var message = $"All plugins started! ({_pluginStartTracker.StartedCount}/{_pluginStartTracker.TotalCount})";
+		Main.UIController?.SetInfoMessage(message);
+		Debug.Log(message);
 	}
 
 	public void TrackModel()
