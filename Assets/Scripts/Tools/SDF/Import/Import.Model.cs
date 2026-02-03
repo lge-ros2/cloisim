@@ -96,7 +96,7 @@ namespace SDF
 					yield return null;
 				}
 
-				// Console.WriteLine("ImportModel({0})", model.Name);
+				// UE.Debug.Log("ImportModel({0})", model.Name);
 
 				var targetObject = (parentObject as UE.GameObject);
 				var newModelObject = CreateModel(model, targetObject);
@@ -137,7 +137,11 @@ namespace SDF
 					}
 					else
 					{
-						CreateRootArticulationBody(modelObject);
+						var bodies = modelHelper.GetComponentsInChildren<UE.ArticulationBody>(true);
+						if (bodies.Length > 0)
+							CreateRootArticulationBody(modelObject);
+						else
+							UE.Debug.LogWarning($"{modelHelper.name} has no articulation bodies in children");
 					}
 				}
 			}
