@@ -4915,9 +4915,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blockControl: 0
-  horizontalOffset: 0
-  distance: 1
-  height: 3
+  _horizontalOffset: 0
+  _distance: 8
+  _height: 3
   followingAngle: -90
   moveAmount: 0.1
   angleStep: 1.5

@@ -458,12 +458,12 @@ public class Main : MonoBehaviour
 
 			Reset();
 
-			TrackModel();
-
 			_followingList?.UpdateList();
 
 			yield return new WaitUntil(() => _pluginAllStarted);
 			_bridgeManager.PrintAllocatedHistory();
+
+			TrackModel();
 
 			var message = $"World({_worldFilename}) is loaded";
 			Debug.Log(message);
