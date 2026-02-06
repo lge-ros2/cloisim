@@ -26,6 +26,12 @@ public class UIController : MonoBehaviour
 	private const float ScaleFactorMax = 10;
 	private string _prevScaleFactorString = string.Empty;
 
+	void Awake()
+	{
+		_uiDocument = GetComponent<UIDocument>();
+		_rootVisualElement = _uiDocument.rootVisualElement;
+	}
+
 	// Start is called before the first frame update
 	void Start()
 	{
@@ -71,10 +77,10 @@ public class UIController : MonoBehaviour
 		};
 
 		var buttonSave = _rootVisualElement.Q<Button>("Save");
-		buttonSave.clickable.clicked += () => SaveWorld();
+		buttonSave.clickable.clicked += () => Main.Instance.SaveWorld();
 
 		var buttonImport = _rootVisualElement.Q<Button>("Import");
-		buttonImport.clickable.clicked += () => ShowModelList();
+		buttonImport.clickable.clicked += () => Main.ModelImporter.ToggleModelList();
 
 		var buttonHome = _rootVisualElement.Q<Button>("Home");
  		buttonHome.clickable.clicked += () => Main.CameraControl.StartCameraChange(Main.CameraInitPose);
@@ -155,6 +161,9 @@ public class UIController : MonoBehaviour
 				}
 			}
 		});
+
+		UpdateWebServiceInfo();
+		UpdateVersionInfo();
 	}
 
 	private void ChangeBackground(ref Button button, in Color color)
@@ -183,19 +192,9 @@ public class UIController : MonoBehaviour
 			if (Input.GetKeyUp(KeyCode.S))
 			{
 				// Debug.Log("Save World");
-				SaveWorld();
+				Main.Instance.SaveWorld();
 			}
 		}
-	}
-
-	void OnEnable()
-	{
-		_uiDocument = GetComponent<UIDocument>();
-		_rootVisualElement = _uiDocument.rootVisualElement;
-
-		UpdateWebServiceInfo();
-
-		UpdateVersionInfo();
 	}
 
 	public void ChangeCameraViewMode(in CameraViewModeEnum value)
@@ -241,18 +240,6 @@ public class UIController : MonoBehaviour
 			helpDialogScrollView.style.display = DisplayStyle.Flex;
 			Main.CameraControl.BlockMouseWheelControl(true);
 		}
-	}
-
-	private void SaveWorld()
-	{
-		// Debug.Log("SaveWorld ButtonClicked");
-		Main.Instance.SaveWorld();
-	}
-
-	private void ShowModelList()
-	{
-		// Debug.Log("ShowModelList ButtonClicked");
-		Main.ModelImporter.ToggleModelList();
 	}
 
 	private void ShowCameraView(in bool open = true)

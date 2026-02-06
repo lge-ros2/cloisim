@@ -39,72 +39,71 @@ public class Main : MonoBehaviour
 
 	private FollowingTargetList _followingList = null;
 
-	private static GameObject _core = null;
-	private static GameObject _propsRoot = null;
-	private static GameObject _worldRoot = null;
-	private static GameObject _lightsRoot = null;
-	private static GameObject _roadsRoot = null;
-	private static GameObject _uiRoot = null;
-	private static GameObject _uiMainCanvasRoot = null;
-
-	private static SimulationWorld _simulationWorld = null;
-	private static UIController _uiController = null;
-	private static InfoDisplay _infoDisplay = null;
-	private static WorldNavMeshBuilder _worldNavMeshBuilder = null;
-	private static RuntimeGizmos.TransformGizmo _transformGizmo = null;
-	private static CameraControl _cameraControl = null;
-	private static Segmentation.Manager _segmentationManager = null;
-	private static MeshProcess.VHACD _vhacd = null;
-	private static ObjectSpawning _objectSpawning = null;
-	private static ModelImporter _modelImporter = null;
-	private static PluginStartTracker _pluginStartTracker = new();
 	private static Main _instance = null;
-	private static Pose _cameraInitPose = Pose.identity;
-	private static string _trackVisualModelName = string.Empty;
-	private static Vector3 _trackVisualPosition = Vector3.zero;
-	private static bool _trackVisualInheritYaw = false;
+	private GameObject _core = null;
+	private GameObject _propsRoot = null;
+	private GameObject _worldRoot = null;
+	private GameObject _lightsRoot = null;
+	private GameObject _roadsRoot = null;
+	private GameObject _uiRoot = null;
+	private GameObject _uiMainCanvasRoot = null;
+	private SimulationWorld _simulationWorld = null;
+	private UIController _uiController = null;
+	private InfoDisplay _infoDisplay = null;
+	private WorldNavMeshBuilder _worldNavMeshBuilder = null;
+	private RuntimeGizmos.TransformGizmo _transformGizmo = null;
+	private CameraControl _cameraControl = null;
+	private Segmentation.Manager _segmentationManager = null;
+	private MeshProcess.VHACD _vhacd = null;
+	private ObjectSpawning _objectSpawning = null;
+	private ModelImporter _modelImporter = null;
+	private PluginStartTracker _pluginStartTracker = new();
+	private Pose _cameraInitPose = Pose.identity;
+	private string _trackVisualModelName = string.Empty;
+	private Vector3 _trackVisualPosition = Vector3.zero;
+	private bool _trackVisualInheritYaw = false;
 
-	private static bool _pluginAllStarted = false;
-	private static bool _isResetting = false;
-	private static bool _resetTriggered = false;
+	private bool _pluginAllStarted = false;
+	private bool _isResetting = false;
+	private bool _resetTriggered = false;
 
-	public static GameObject PropsRoot => _propsRoot;
-	public static GameObject WorldRoot => _worldRoot;
-	public static GameObject RoadsRoot => _roadsRoot;
-	public static GameObject CoreObject => _core;
-	public static GameObject UIObject => _uiRoot;
-	public static GameObject UIMainCanvas => _uiMainCanvasRoot;
-	public static RuntimeGizmos.TransformGizmo Gizmos => _transformGizmo;
-	public static ObjectSpawning ObjectSpawning => _objectSpawning;
-	public static ModelImporter ModelImporter => _modelImporter;
-	public static UIController UIController => _uiController;
-	public static InfoDisplay InfoDisplay => _infoDisplay;
-	public static WorldNavMeshBuilder WorldNavMeshBuilder => _worldNavMeshBuilder;
-	public static BridgeManager BridgeManager => _bridgeManager;
-	public static SimulationService SimulationService => _simulationService;
-	public static Segmentation.Manager SegmentationManager => _segmentationManager;
-	public static CameraControl CameraControl => _cameraControl;
-	public static MeshProcess.VHACD MeshVHACD => _vhacd;
+	public static GameObject PropsRoot => _instance._propsRoot;
+	public static GameObject WorldRoot => _instance._worldRoot;
+	public static GameObject RoadsRoot => _instance._roadsRoot;
+	public static GameObject CoreObject => _instance._core;
+	public static GameObject UIObject => _instance._uiRoot;
+	public static GameObject UIMainCanvas => _instance._uiMainCanvasRoot;
+	public static RuntimeGizmos.TransformGizmo Gizmos => _instance._transformGizmo;
+	public static ObjectSpawning ObjectSpawning => _instance._objectSpawning;
+	public static ModelImporter ModelImporter => _instance._modelImporter;
+	public static UIController UIController => _instance._uiController;
+	public static InfoDisplay InfoDisplay => _instance._infoDisplay;
+	public static WorldNavMeshBuilder WorldNavMeshBuilder => _instance._worldNavMeshBuilder;
+	public static BridgeManager BridgeManager => _instance._bridgeManager;
+	public static SimulationService SimulationService => _instance._simulationService;
+	public static Segmentation.Manager SegmentationManager => _instance._segmentationManager;
+	public static CameraControl CameraControl => _instance._cameraControl;
+	public static MeshProcess.VHACD MeshVHACD => _instance._vhacd;
 	public static Main Instance => _instance;
 	public static Pose CameraInitPose
 	{
-		get => _cameraInitPose;
-		set => _cameraInitPose = value;
+		get => _instance._cameraInitPose;
+		set => _instance._cameraInitPose = value;
 	}
 	public static string TrackVisualModelName
 	{
-		get => _trackVisualModelName;
-		set => _trackVisualModelName = value;
+		get => _instance._trackVisualModelName;
+		set => _instance._trackVisualModelName = value;
 	}
 	public static Vector3 TrackVisualPosition
 	{
-		get => _trackVisualPosition;
-		set => _trackVisualPosition = value;
+		get => _instance._trackVisualPosition;
+		set => _instance._trackVisualPosition = value;
 	}
 	public static bool TrackVisualInheritYaw
 	{
-		get => _trackVisualInheritYaw;
-		set => _trackVisualInheritYaw = value;
+		get => _instance._trackVisualInheritYaw;
+		set => _instance._trackVisualInheritYaw = value;
 	}
 
 	#region SDF Parser
@@ -113,8 +112,8 @@ public class Main : MonoBehaviour
 	#endregion
 
 	#region Non-Component class
-	private static BridgeManager _bridgeManager = null;
-	private static SimulationService _simulationService = new();
+	private BridgeManager _bridgeManager = null;
+	private SimulationService _simulationService = null;
 	#endregion
 
 	private void CleanAllModels()
@@ -212,12 +211,12 @@ public class Main : MonoBehaviour
 
 	void Awake()
 	{
+		_instance = this;
+
 		var logger = new DebugLogWriter();
 		var loggerErr = new DebugLogWriter(true);
 		Console.SetOut(logger);
 		Console.SetError(loggerErr);
-
-		_instance = this;
 
 		GetResourcesPaths();
 
@@ -303,7 +302,8 @@ public class Main : MonoBehaviour
 			_followingList = _uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
 		}
 
-		_bridgeManager = new BridgeManager();
+		_bridgeManager = new();
+		_simulationService = new();
 
 		var sphericalCoordinates = new SphericalCoordinates();
 		DeviceHelper.SetGlobalSphericalCoordinates(sphericalCoordinates);
@@ -524,11 +524,11 @@ public class Main : MonoBehaviour
 
 		if (isPerspectiveViewControl)
 		{
-			_cameraControl = Camera.main.gameObject.AddComponent<PerspectiveCameraControl>();
+			Instance._cameraControl = Camera.main.gameObject.AddComponent<PerspectiveCameraControl>();
 		}
 		else
 		{
-			_cameraControl = Camera.main.gameObject.AddComponent<OrthographicCameraControl>();
+			Instance._cameraControl = Camera.main.gameObject.AddComponent<OrthographicCameraControl>();
 		}
 	}
 
@@ -541,11 +541,11 @@ public class Main : MonoBehaviour
 
 		if (isOrthographicViewControl)
 		{
-			_cameraControl = Camera.main.gameObject.AddComponent<OrthographicCameraControl>();
+			Instance._cameraControl = Camera.main.gameObject.AddComponent<OrthographicCameraControl>();
 		}
 		else
 		{
-			_cameraControl = Camera.main.gameObject.AddComponent<PerspectiveCameraControl>();
+			Instance._cameraControl = Camera.main.gameObject.AddComponent<PerspectiveCameraControl>();
 
 		}
 	}
@@ -581,12 +581,12 @@ public class Main : MonoBehaviour
 
 	public static bool TriggerResetService()
 	{
-		if (_isResetting)
+		if (Main.Instance._isResetting)
 		{
 			return false;
 		}
 
-		_resetTriggered = true;
+		Main.Instance._resetTriggered = true;
 		return true;
 	}
 
