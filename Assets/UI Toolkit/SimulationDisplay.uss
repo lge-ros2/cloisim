@@ -1,14 +1,17 @@
+Button.recording {
+	background-color: rgb(219, 41, 41);
+}
+
+Button.recording:hover {
+    background-color: rgb(180, 30, 30); 
+}
+
 Button:hover {
     background-color: rgb(130, 130, 130);
 }
 
-Button#CameraView:active,
-Button#PropsBox:active,
-Button#PropsCylinder:active,
-Button#PropsSphere:active,
-Button#Help:active,
-Button#Save:active,
-Button#Import:active, {
-    scale: 0.9;
+VisualElement#MainVisualElement>Button:active,
+VisualElement#RightMenuVisualElement>Button:active {
+    scale: 0.85;
     background-color: #2f2f2f;
 }

@@ -63,6 +63,13 @@ public class UIController : MonoBehaviour
 		var buttonHelp = _rootVisualElement.Q<Button>("Help");
 		buttonHelp.clickable.clicked += () => ShowHelp();
 
+		var recordSave = _rootVisualElement.Q<Button>("Record");
+		recordSave.clickable.clicked += () =>
+		{
+			var recording = Main.Instance.ToggleRecord();
+			recordSave.EnableInClassList("recording", recording);
+		};
+
 		var buttonSave = _rootVisualElement.Q<Button>("Save");
 		buttonSave.clickable.clicked += () => SaveWorld();
 
