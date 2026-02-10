@@ -140,10 +140,9 @@ public class SimulationControlService : WebSocketBehavior
 				}
 				break;
 
-			case "topic_list":
+			case "port_list":
 				{
 					var result = bridgeManager.GetDevicePortList(request.filter);
-
 					output = new SimulationControlResponseTopicList();
 					(output as SimulationControlResponseTopicList).result = result;
 				}
