@@ -365,7 +365,7 @@ public class Main : MonoBehaviour
 			_sdfRoot.worldDefaultPaths.AddRange(_worldRootDirectories);
 			_sdfRoot.UpdateResourceModelTable();
 
-			ModelImporter.UpdateUIModelList(_sdfRoot.resourceModelTable);
+			ModelImporter.UpdateUIModelList(_sdfRoot.ResourceModelTable);
 
 			if (!string.IsNullOrEmpty(_worldFilename))
 			{

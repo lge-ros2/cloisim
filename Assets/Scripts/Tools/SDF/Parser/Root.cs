@@ -13,6 +13,11 @@ using System;
 
 namespace SDF
 {
+	public sealed class ResourceModelTable
+        : Dictionary<string, (string configName, string path, string filename)>
+    {
+    }
+
 	public class Root
 	{
 		private readonly string[] SdfVersions = {
@@ -22,9 +27,9 @@ namespace SDF
 		private static readonly string ProtocolFile = "file://";
 
 		// {Model Name, (Model Config Name, Model Path, Model File)}
-		public Dictionary<string, Tuple<string, string, string>> resourceModelTable = new Dictionary<string, Tuple<string, string, string>>();
+		private ResourceModelTable _resourceModelTable = new();
 
-		private XmlDocument _doc = new XmlDocument();
+		private XmlDocument _doc = new();
 		private XmlDocument _originalDoc = null; // for Save
 		private string _worldFileName = string.Empty;
 
@@ -32,12 +37,13 @@ namespace SDF
 
 		public XmlDocument GetOriginalDocument() => _originalDoc;
 
-		public List<string> fileDefaultPaths = new List<string>();
+		public List<string> fileDefaultPaths = new();
 
-		public List<string> modelDefaultPaths = new List<string>();
+		public List<string> modelDefaultPaths = new();
 
-		public List<string> worldDefaultPaths = new List<string>();
+		public List<string> worldDefaultPaths = new();
 
+		public ResourceModelTable ResourceModelTable { get => _resourceModelTable; }
 
 		public Root()
 		{
@@ -126,7 +132,7 @@ namespace SDF
 
 		public void UpdateResourceModelTable()
 		{
-			if (resourceModelTable == null)
+			if (_resourceModelTable == null)
 			{
 				Console.Write("ERROR: Resource model table is not initialized!!!!");
 				return;
@@ -209,19 +215,19 @@ namespace SDF
 					}
 
 					// Insert resource table
-					var modelValue = new Tuple<string, string, string>(modelConfigName, subDirectory.FullName, sdfFileName);
+					var modelValue = (configName: modelConfigName, path: subDirectory.FullName, filename: sdfFileName);
 					try
 					{
 						// Console.Write(modelName + ":" + subDirectory.FullName + ":" + sdfFileName);
 						// Console.Write(modelName + ", " + modelValue);
-						if (resourceModelTable.ContainsKey(modelName))
+						if (_resourceModelTable.ContainsKey(modelName))
 						{
 							failedModelTableList.AppendLine(string.Empty);
 							failedModelTableList.Append(String.Concat(modelName, " => ", modelValue));
 						}
 						else
 						{
-							resourceModelTable.Add(modelName, modelValue);
+							_resourceModelTable.Add(modelName, modelValue);
 						}
 					}
 					catch (NullReferenceException e)
@@ -255,7 +261,7 @@ namespace SDF
 				Console.Error.Write(failedModelTableList);
 			}
 
-			Console.Write($"Loaded total Models: {resourceModelTable.Count}");
+			Console.Write($"Loaded total Models: {_resourceModelTable.Count}");
 		}
 
 		private string FindParentModelFolderName(in XmlNode targetNode)
@@ -301,7 +307,7 @@ namespace SDF
 					// remove Model name in array
 					modelUri = string.Join("/", stringArray.Skip(1));
 
-					if (resourceModelTable.TryGetValue(modelName, out var value))
+					if (_resourceModelTable.TryGetValue(modelName, out var value))
 					{
 						node.InnerText = value.Item2 + "/" + modelUri;
 					}
@@ -324,7 +330,7 @@ namespace SDF
 
 					var meshUri = string.Join("/", uri);
 
-					if (resourceModelTable.TryGetValue(currentModelName, out var value))
+					if (_resourceModelTable.TryGetValue(currentModelName, out var value))
 					{
 						node.InnerText = value.Item2 + "/" + meshUri;
 					}
@@ -430,7 +436,7 @@ namespace SDF
 			var uri = uriNode.InnerText;
 			var modelName = uri.Replace(ProtocolModel, string.Empty);
 
-			if (resourceModelTable.TryGetValue(modelName, out var value))
+			if (_resourceModelTable.TryGetValue(modelName, out var value))
 			{
 				uri = value.Item2 + "/" + value.Item3;
 				// Console.WriteLine($"include/modelname = {name} | {uri} | {modelName} | {pose} | {isStatic}");

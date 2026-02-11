@@ -52,7 +52,7 @@ public class ModelImporter : MonoBehaviour
 		}
 	}
 
-	public void UpdateUIModelList(in dynamic resourceModelTable)
+	public void UpdateUIModelList(in SDF.ResourceModelTable resourceModelTable)
 	{
 		if (_modelList == null)
 		{
@@ -66,23 +66,23 @@ public class ModelImporter : MonoBehaviour
 		var viewport = _modelList.transform.GetChild(0);
 		var contentList = viewport.GetChild(0).gameObject;
 		var buttonTemplate = viewport.Find("ButtonTemplate").gameObject;
-		var mainCore = gameObject.GetComponent<Main>();
 
 		foreach (var item in resourceModelTable)
 		{
+			// var itemKey = item.Key;
 			var itemValue = item.Value;
-			var duplicatedbutton = GameObject.Instantiate(buttonTemplate);
-			duplicatedbutton.SetActive(true);
-			duplicatedbutton.transform.SetParent(contentList.transform, false);
+			var duplicatedButton = GameObject.Instantiate(buttonTemplate);
+			duplicatedButton.SetActive(true);
+			duplicatedButton.transform.SetParent(contentList.transform, false);
 
-			var textComponent = duplicatedbutton.GetComponentInChildren<Text>();
-			textComponent.text = itemValue.Item1;
+			var textComponent = duplicatedButton.GetComponentInChildren<Text>();
+			textComponent.text = itemValue.configName;
 
-			var buttonComponent = duplicatedbutton.GetComponentInChildren<Button>();
+			var buttonComponent = duplicatedButton.GetComponentInChildren<Button>();
 			buttonComponent.onClick.AddListener(delegate ()
 			{
-				// Debug.Log(itemValue.Item1 + ", " + itemValue.Item2 + ", " + itemValue.Item3);
-				StartCoroutine(mainCore.LoadModel(itemValue.Item2, itemValue.Item3));
+				// Debug.Log(itemValue.configName + ", " + itemValue.FullName + ", " + itemValue.sdfFileName);
+				StartCoroutine(Main.Instance.LoadModel(itemValue.path, itemValue.filename));
 			});
 		}
 	}
