@@ -165,19 +165,15 @@ else
         export DISPLAY=:$serverNumber
       fi
 
+      captureArgs=()
       if $captureScreen ; then
-	  	captureApps=("ffmpeg")
+        captureApps=("ffmpeg")
         InstallApps "${captureApps[@]}"
-        captureFileName=capture_$(date '+%Y%m%d%H%M%S').mp4
-        echo "Start screen capture: "${captureFileName}
-        ffmpeg -y  -an -video_size ${displaySize} -framerate 10 -threads 4 -f x11grab -i :${serverNumber} -vcodec rawvideo ${captureFileName} &
+        captureFileName=simulation_$(date '+%Y%m%d%H%M%S')
+        captureArgs=("-capture" "${captureFileName}")
       fi
 
-      ./CLOiSim.x86_64 -world $targetWorld
-
-      if $captureScreen ; then
-        pkill -SIGINT -f ffmpeg
-      fi
+      ./CLOiSim.x86_64 -world $targetWorld "${captureArgs[@]}"
     else
       echo -e "\n Invalid world file name or World file NOT exist.\n"
       PrintWorldList

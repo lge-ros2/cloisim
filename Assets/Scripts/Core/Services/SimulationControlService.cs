@@ -21,9 +21,12 @@ public class SimulationControlRequest
 	[JsonProperty(Order = 2)]
 	public string filter = string.Empty;
 
+	[JsonProperty(Order = 3)]
+	public string filename = string.Empty;
+
 	public void Print()
 	{
-		Console.WriteLine($"## {this.GetType().Name}: {command}");
+		Console.WriteLine($"## {this.GetType().Name}: {command} {indent} {filter} {filename}");
 	}
 }
 
@@ -124,7 +127,7 @@ public class SimulationControlService : WebSocketBehavior
 
 			case "reset":
 				{
-					var wasSuccessful = Main.TriggerResetService();
+					var wasSuccessful = Main.Instance.TriggerResetService();
 					var result = (wasSuccessful) ? SimulationService.SUCCESS : SimulationService.FAIL;
 
 					output = new SimulationControlResponseNormal();
@@ -148,6 +151,26 @@ public class SimulationControlService : WebSocketBehavior
 				}
 				break;
 
+			case "start_record":
+				{
+					var result = "filename is empty!!";
+					if (!string.IsNullOrEmpty(request.filename))
+					{
+						Main.Instance.TriggerStartRecordService(request.filename);
+						result = true.ToString();
+					}
+					output = new SimulationControlResponseNormal();
+					(output as SimulationControlResponseNormal).result = result;
+				}
+				break;
+
+			case "stop_record":
+				{
+					Main.Instance.TriggerStopRecordService();
+					output = new SimulationControlResponseNormal();
+					(output as SimulationControlResponseNormal).result = true.ToString();
+				}
+				break;
 			default:
 				output = new SimulationControlResponseBase();
 				request.command = "Invalid Command";

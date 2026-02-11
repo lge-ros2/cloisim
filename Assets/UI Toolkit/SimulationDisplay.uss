@@ -1,3 +1,11 @@
+Button#Record {
+  background-image: resource("icons/record");
+  background-repeat: no-repeat;
+  background-position: 4px 50%;
+  background-size: 16px 16px;
+  padding-left: 48px;
+}
+
 Button.recording {
 	background-color: rgb(219, 41, 41);
 }

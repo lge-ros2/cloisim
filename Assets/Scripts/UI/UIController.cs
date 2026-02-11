@@ -20,6 +20,7 @@ public class UIController : MonoBehaviour
 	private Toggle _toggleLockVerticalMoving = null;
 	private TextField _scaleField = null;
 	private Label _statusMessage = null;
+	private Button _recordSave = null;
 
 	private const float CameraViewDistance = 30f;
 	private const float ScaleFactorMin = 0.01f;
@@ -69,11 +70,11 @@ public class UIController : MonoBehaviour
 		var buttonHelp = _rootVisualElement.Q<Button>("Help");
 		buttonHelp.clickable.clicked += () => ShowHelp();
 
-		var recordSave = _rootVisualElement.Q<Button>("Record");
-		recordSave.clickable.clicked += () =>
-		{
+		_recordSave = _rootVisualElement.Q<Button>("Record");
+		_recordSave.clickable.clicked += () => {
+
 			var recording = Main.Instance.ToggleRecord();
-			recordSave.EnableInClassList("recording", recording);
+			OnRecordClicked(recording);
 		};
 
 		var buttonSave = _rootVisualElement.Q<Button>("Save");
@@ -195,6 +196,11 @@ public class UIController : MonoBehaviour
 				Main.Instance.SaveWorld();
 			}
 		}
+	}
+
+	public void OnRecordClicked(bool enable)
+	{
+		_recordSave?.EnableInClassList("recording", enable);
 	}
 
 	public void ChangeCameraViewMode(in CameraViewModeEnum value)

@@ -16,7 +16,7 @@ apt-get upgrade -qq -y && \
 apt-get install --no-install-recommends -qq -y \
  sudo libgomp1 libxi6 libglu1 libxcursor1 xvfb \
  xz-utils wget curl ca-certificates \
- libgl1 libvulkan1 libc6-dev libxcursor1 libminizip-dev && \
+ libgl1 libvulkan1 libc6-dev libxcursor1 libminizip-dev ffmpeg && \
 rm -rf /var/lib/apt/lists/* && \
 apt-get clean
 

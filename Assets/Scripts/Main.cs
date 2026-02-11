@@ -7,6 +7,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
@@ -25,6 +26,10 @@ public class Main : MonoBehaviour
 	[Header("World File")]
 	[SerializeField]
 	private string _worldFilename;
+
+	[Header("Screen capture file name")]
+	[SerializeField]
+	private string _screenCaptureFilename;
 
 	private string _loadedWorldFilePath = string.Empty;
 
@@ -66,6 +71,8 @@ public class Main : MonoBehaviour
 	private bool _pluginAllStarted = false;
 	private bool _isResetting = false;
 	private bool _resetTriggered = false;
+	private bool _startRecordTriggered = false;
+	private bool _stopRecordTriggered = false;
 
 	public static GameObject PropsRoot => _instance._propsRoot;
 	public static GameObject WorldRoot => _instance._worldRoot;
@@ -318,6 +325,13 @@ public class Main : MonoBehaviour
 
 		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
 		_vhacd.m_parameters = VHACD.Params;
+
+		if (_clearAllOnStart)
+		{
+			CleanAllResources();
+		}
+
+		ResetRootModelsTransform();
 	}
 
 	void Start()
@@ -329,15 +343,10 @@ public class Main : MonoBehaviour
 			return;
 		}
 
-		ResetRootModelsTransform();
-
-		if (_clearAllOnStart)
-		{
-			CleanAllResources();
-		}
-
 		if (_simulationService.IsStarted())
 		{
+			_screenCaptureFilename = GetArgument("-capture");
+
 			var newWorldFilename = GetArgument("-world");
 
 			if (string.IsNullOrEmpty(newWorldFilename))
@@ -386,7 +395,7 @@ public class Main : MonoBehaviour
 
 	public IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
-		Main.UIController?.SetInfoMessage($"Model({modelFileName}) is now loading....");
+		_uiController?.SetInfoMessage($"Model({modelFileName}) is now loading....");
 
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
@@ -423,14 +432,14 @@ public class Main : MonoBehaviour
 
 			var message = $"Model({modelFileName}) is loaded > {model.Name}";
 			Debug.Log(message);
-			Main.UIController?.SetInfoMessage(message);
+			_uiController?.SetInfoMessage(message);
 		}
 	}
 
 	private IEnumerator LoadWorld()
 	{
 		Debug.Log("Target World: " + _worldFilename);
-		Main.UIController?.SetInfoMessage($"World({_worldFilename}) is now loading....");
+		_uiController?.SetInfoMessage($"World({_worldFilename}) is now loading....");
 
 		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
 		{
@@ -467,7 +476,7 @@ public class Main : MonoBehaviour
 
 			var message = $"World({_worldFilename}) is loaded";
 			Debug.Log(message);
-			Main.UIController?.SetInfoMessage(message);
+			_uiController?.SetInfoMessage(message);
 		}
 		else
 		{
@@ -475,11 +484,17 @@ public class Main : MonoBehaviour
 			Debug.LogError(errorMessage);
 			_uiController?.SetErrorMessage(errorMessage);
 		}
+
+		if (!string.IsNullOrEmpty(_screenCaptureFilename))
+		{
+			var recording = ToggleRecord();
+			_uiController?.OnRecordClicked(recording);
+		}
 	}
 
 	private void OnPluginProgressChanged(int started, int total)
 	{
-		Main.UIController?.SetInfoMessage($"Starting plugins... ({started}/{total})");
+		_uiController?.SetInfoMessage($"Starting plugins... ({started}/{total})");
 	}
 
 	private void OnAllPluginsStarted()
@@ -487,7 +502,7 @@ public class Main : MonoBehaviour
 		_pluginAllStarted = true;
 		Debug.LogWarning(_pluginStartTracker.AllSummaries);
 		var message = $"All plugins started! ({_pluginStartTracker.StartedCount}/{_pluginStartTracker.TotalCount})";
-		Main.UIController?.SetInfoMessage(message);
+		_uiController?.SetInfoMessage(message);
 		Debug.Log(message);
 	}
 
@@ -504,6 +519,39 @@ public class Main : MonoBehaviour
 				followingCamera.AlignSameDirection(_trackVisualInheritYaw);
 			}
 		}
+	}
+
+	public bool ToggleRecord()
+	{
+		var recordStarted = false;
+		var recorder = Camera.main.GetComponent<UltraFastWebMRecorder>();
+		if (!recorder.IsRecording)
+		{
+			recorder.SetOutput(baseName: _screenCaptureFilename);
+			recordStarted = recorder.StartCapture();
+		}
+		else
+			recorder.StopCapture();
+
+		return recordStarted;
+	}
+
+	public void StartRecord()
+	{
+		var recorder = Camera.main.GetComponent<UltraFastWebMRecorder>();
+		if (recorder.IsRecording)
+			return;
+
+		recorder.SetOutput(baseName: _screenCaptureFilename);
+		var recordStarted = recorder.StartCapture();
+		Main.UIController?.OnRecordClicked(recordStarted);
+	}
+
+	public void StopRecord()
+	{
+		var recorder = UnityEngine.Camera.main.GetComponent<UltraFastWebMRecorder>();
+		recorder.StopCapture();
+		Main.UIController?.OnRecordClicked(false);
 	}
 
 	public void SaveWorld()
@@ -577,17 +625,39 @@ public class Main : MonoBehaviour
 				StartCoroutine(ResetSimulation());
 			}
 		}
+
+		if (_startRecordTriggered)
+		{
+			StartRecord();
+			_startRecordTriggered = false;
+		}
+		else if (_stopRecordTriggered)
+		{
+			StopRecord();
+			_stopRecordTriggered = false;
+		}
 	}
 
-	public static bool TriggerResetService()
+	public bool TriggerResetService()
 	{
-		if (Main.Instance._isResetting)
+		if (_isResetting)
 		{
 			return false;
 		}
 
-		Main.Instance._resetTriggered = true;
+		_resetTriggered = true;
 		return true;
+	}
+
+	public void TriggerStartRecordService(in string captureFilename)
+	{
+		_screenCaptureFilename = captureFilename;
+		_startRecordTriggered = true;
+	}
+
+	public void TriggerStopRecordService()
+	{
+		_stopRecordTriggered = true;
 	}
 
 	void Reset()
