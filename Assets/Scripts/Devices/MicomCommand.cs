@@ -40,12 +40,12 @@ namespace SensorDevices
 			DoWheelDrive(Vector3.zero, Vector3.zero);
 		}
 
-		public void SetMotorControl(in dynamic motorControl)
+		public void SetMotorControl(in MotorControl motorControl)
 		{
 			this._motorControl = motorControl;
 		}
 
-		public void SetMowingBlade(in dynamic mowingBlade)
+		public void SetMowingBlade(in MowingBlade mowingBlade)
 		{
 			this._mowingBlade = mowingBlade;
 		}

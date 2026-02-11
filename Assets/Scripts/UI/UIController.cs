@@ -20,11 +20,18 @@ public class UIController : MonoBehaviour
 	private Toggle _toggleLockVerticalMoving = null;
 	private TextField _scaleField = null;
 	private Label _statusMessage = null;
+	private Button _recordSave = null;
 
 	private const float CameraViewDistance = 30f;
 	private const float ScaleFactorMin = 0.01f;
 	private const float ScaleFactorMax = 10;
 	private string _prevScaleFactorString = string.Empty;
+
+	void Awake()
+	{
+		_uiDocument = GetComponent<UIDocument>();
+		_rootVisualElement = _uiDocument.rootVisualElement;
+	}
 
 	// Start is called before the first frame update
 	void Start()
@@ -63,11 +70,18 @@ public class UIController : MonoBehaviour
 		var buttonHelp = _rootVisualElement.Q<Button>("Help");
 		buttonHelp.clickable.clicked += () => ShowHelp();
 
+		_recordSave = _rootVisualElement.Q<Button>("Record");
+		_recordSave.clickable.clicked += () => {
+
+			var recording = Main.Instance.ToggleRecord();
+			OnRecordClicked(recording);
+		};
+
 		var buttonSave = _rootVisualElement.Q<Button>("Save");
-		buttonSave.clickable.clicked += () => SaveWorld();
+		buttonSave.clickable.clicked += () => Main.Instance.SaveWorld();
 
 		var buttonImport = _rootVisualElement.Q<Button>("Import");
-		buttonImport.clickable.clicked += () => ShowModelList();
+		buttonImport.clickable.clicked += () => Main.ModelImporter.ToggleModelList();
 
 		var buttonHome = _rootVisualElement.Q<Button>("Home");
  		buttonHome.clickable.clicked += () => Main.CameraControl.StartCameraChange(Main.CameraInitPose);
@@ -148,6 +162,9 @@ public class UIController : MonoBehaviour
 				}
 			}
 		});
+
+		UpdateWebServiceInfo();
+		UpdateVersionInfo();
 	}
 
 	private void ChangeBackground(ref Button button, in Color color)
@@ -176,19 +193,14 @@ public class UIController : MonoBehaviour
 			if (Input.GetKeyUp(KeyCode.S))
 			{
 				// Debug.Log("Save World");
-				SaveWorld();
+				Main.Instance.SaveWorld();
 			}
 		}
 	}
 
-	void OnEnable()
+	public void OnRecordClicked(bool enable)
 	{
-		_uiDocument = GetComponent<UIDocument>();
-		_rootVisualElement = _uiDocument.rootVisualElement;
-
-		UpdateWebServiceInfo();
-
-		UpdateVersionInfo();
+		_recordSave?.EnableInClassList("recording", enable);
 	}
 
 	public void ChangeCameraViewMode(in CameraViewModeEnum value)
@@ -234,18 +246,6 @@ public class UIController : MonoBehaviour
 			helpDialogScrollView.style.display = DisplayStyle.Flex;
 			Main.CameraControl.BlockMouseWheelControl(true);
 		}
-	}
-
-	private void SaveWorld()
-	{
-		// Debug.Log("SaveWorld ButtonClicked");
-		Main.Instance.SaveWorld();
-	}
-
-	private void ShowModelList()
-	{
-		// Debug.Log("ShowModelList ButtonClicked");
-		Main.ModelImporter.ToggleModelList();
 	}
 
 	private void ShowCameraView(in bool open = true)

@@ -14,14 +14,17 @@ public class FollowingCamera : MonoBehaviour
 	[Header("Following Camera Parameters")]
 	public bool blockControl = false;
 
+	[SerializeField]
 	[Range(-20, 20)]
-	public float horizontalOffset = 0;
+	private float _horizontalOffset = 0;
 
+	[SerializeField]
 	[Range(0.1f, 20)]
-	public float distance = 8f;
+	private float _distance = 8f;
 
+	[SerializeField]
 	[Range(-20, 20)]
-	public float height = 3f;
+	private float _height = 3f;
 
 	[Range(-180, 180)]
 	public float followingAngle = 40f;
@@ -37,9 +40,9 @@ public class FollowingCamera : MonoBehaviour
 	public void SetInitialRelativePosition(Vector3 position)
 	{
 		followingAngle = 0;
-		horizontalOffset = position.x;
-		distance = position.magnitude;
-		height = position.y;
+		_horizontalOffset = position.x;
+		_height = position.y;
+		_distance = -position.z;
 	}
 
 	public void AlignSameDirection(in bool value)
@@ -58,15 +61,22 @@ public class FollowingCamera : MonoBehaviour
 		{
 			var targetAngle = (_alignSameDirection) ?
 				_targetObjectTransform.rotation.eulerAngles.y : followingAngle;
-			var rotation = Quaternion.Euler(0, targetAngle, 0);
+			var yawRot = Quaternion.Euler(0, targetAngle, 0);
 
-			transform.position
-				= _targetObjectTransform.position
-					- (rotation * Vector3.forward * distance)
-					+ (Vector3.right * horizontalOffset)
-					+ (Vector3.up * height);
+			var localOffset = new Vector3(_horizontalOffset, _height, -_distance);
+			transform.position = _targetObjectTransform.position + (yawRot * localOffset);
 
-			transform.LookAt(_targetObjectTransform);
+			var toTarget = (_targetObjectTransform.position - transform.position);
+			var dir = toTarget.normalized;
+
+			var stableUp = yawRot * Vector3.forward;
+			var verticalness = Mathf.Abs(Vector3.Dot(dir, Vector3.up));
+			if (verticalness > 0.99999f)
+			{
+				dir = Vector3.down;
+			}
+
+			transform.rotation = Quaternion.LookRotation(dir, stableUp);
 		}
 	}
 
@@ -78,14 +88,14 @@ public class FollowingCamera : MonoBehaviour
 			{
 				const float blockZeroDistance = 0.001f;
 
-				if (distance > moveAmount + blockZeroDistance)
+				if (_distance > moveAmount + blockZeroDistance)
 				{
-					distance -= moveAmount;
+					_distance -= moveAmount;
 				}
 			}
 			else if (Input.GetKey(KeyCode.S))
 			{
-				distance += moveAmount;
+				_distance += moveAmount;
 			}
 
 			if (Input.GetKey(KeyCode.A))
@@ -99,11 +109,11 @@ public class FollowingCamera : MonoBehaviour
 
 			if (Input.GetKey(KeyCode.G))
 			{
-				height += moveAmount;
+				_height += moveAmount;
 			}
 			else if (Input.GetKey(KeyCode.F))
 			{
-				height -= moveAmount;
+				_height -= moveAmount;
 			}
 		}
 	}

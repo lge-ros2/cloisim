@@ -83,6 +83,8 @@ namespace SensorDevices
 		private RTHandle _rtHandle = null;
 		private ParallelOptions _parallelOptions = null;
 
+		private Material _depthMaterial;
+		private CommandBuffer _cb;
 		private ComputeShader _laserCompute;
 		private int _laserComputeGroupsX;
 		private int _laserComputeGroupsY;
@@ -141,6 +143,33 @@ namespace SensorDevices
 			}
 
 			StopAllCoroutines();
+
+			if (_cb != null)
+			{
+				if (_laserCam != null)
+					_laserCam.RemoveCommandBuffer(CameraEvent.AfterEverything, _cb);
+				_cb.Release();
+				_cb = null;
+			}
+
+			if (_laserCam != null)
+			{
+				try
+				{
+					 _laserCam.RemoveAllCommandBuffers();
+				}
+				catch
+				{
+					Debug.LogWarning("Failed to remove RemoveAllCommandBuffers");
+				}
+			}
+
+			if (_depthMaterial != null)
+			{
+				Destroy(_depthMaterial);
+				_depthMaterial = null;
+			}
+
 			_rtHandle?.Release();
 			Destroy(_laserCompute);
 			_laserCompute = null;
@@ -190,7 +219,7 @@ namespace SensorDevices
 			_laserScan.Ranges = new double[totalSamples];
 			_laserScan.Intensities = new double[totalSamples];
 			Array.Fill(_laserScan.Ranges, double.NaN);
-			Array.Fill(_laserScan.Intensities, double.NaN);			
+			Array.Fill(_laserScan.Intensities, double.NaN);
 		}
 
 		private void SetupLaserCamera()
@@ -262,18 +291,17 @@ namespace SensorDevices
 			universalLaserCamData.cameraStack.Clear();
 
 			var depthShader = Shader.Find("Sensor/DepthRange");
-			var depthMaterial = new Material(depthShader);
+			_depthMaterial = new Material(depthShader);
 
-			var cb = new CommandBuffer();
-			cb.ClearRenderTarget(true, true, Color.clear);
+			_cb = new CommandBuffer();
+			_cb.ClearRenderTarget(true, true, Color.clear);
 			var tempTextureId = Shader.PropertyToID("_RenderCameraDepthTexture");
-			cb.GetTemporaryRT(tempTextureId, -1, -1);
-			cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
-			cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, depthMaterial);
-			_laserCam.AddCommandBuffer(CameraEvent.AfterEverything, cb);
+			_cb.GetTemporaryRT(tempTextureId, -1, -1);
+			_cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
+			_cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
+			_cb.ReleaseTemporaryRT(tempTextureId);
 
-			cb.ReleaseTemporaryRT(tempTextureId);
-			cb.Release();
+			_laserCam.AddCommandBuffer(CameraEvent.AfterEverything, _cb);
 
 			// _laserCam.hideFlags |= HideFlags.NotEditable;
 
@@ -406,7 +434,7 @@ namespace SensorDevices
 			{
 				var now = Time.realtimeSinceStartup;
 				lastUpdateTime += Time.unscaledDeltaTime;
-				if (lastUpdateTime < UpdatePeriod) // - compensate))
+				if (lastUpdateTime < UpdatePeriod)
 				{
 					yield return null;
 					continue;
@@ -449,6 +477,12 @@ namespace SensorDevices
 					_laserCam.enabled = false;
 				}
 
+				var framePose = lidarSensorWorldPose;
+				var frameCapturedTime = capturedTime;
+				var frameOutputs = new LaserData.Output[_numberOfLaserCamData];
+				for (var i = 0; i < _numberOfLaserCamData; i++)
+					frameOutputs[i] = new LaserData.Output(outputs[i].dataIndex, outputs[i].rayData != null ? outputs[i].rayData.Length : 0);
+
 				AsyncGPUReadback.Request(currentComputeBuffer, (req) =>
 					{
 						if (req.hasError || !req.done)
@@ -460,12 +494,12 @@ namespace SensorDevices
 						var src = req.GetData<float>();
 						for (var i = 0; i < _numberOfLaserCamData; i++)
 						{
-							if (outputs[i].rayData == null)
+							if (frameOutputs[i].rayData == null)
 								continue;
-							outputs[i].ConvertDataType(src);
+							frameOutputs[i].ConvertDataType(src);
 						}
 
-						_outputQueue.Enqueue((capturedTime, lidarSensorWorldPose, outputs));
+						_outputQueue.Enqueue((frameCapturedTime, framePose, frameOutputs));
 						_dataAvailable.Set();
 					});
 

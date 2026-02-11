@@ -1838,6 +1838,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _clearAllOnStart: 1
   _worldFilename: empty.world
+  _screenCaptureFilename: 
   _modelRootDirectories:
   - ../cloi_resources
   - ../sample_resources/models/
@@ -4103,7 +4104,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -140, y: 5.000001}
+  m_AnchoredPosition: {x: -140, y: 5}
   m_SizeDelta: {x: 250, y: -90}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &775674123
@@ -4829,6 +4830,7 @@ GameObject:
   - component: {fileID: 963194231}
   - component: {fileID: 963194229}
   - component: {fileID: 963194230}
+  - component: {fileID: 963194232}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -4915,9 +4917,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blockControl: 0
-  horizontalOffset: 0
-  distance: 1
-  height: 3
+  _horizontalOffset: 0
+  _distance: 8
+  _height: 3
   followingAngle: -90
   moveAmount: 0.1
   angleStep: 1.5
@@ -5012,6 +5014,32 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+--- !u!114 &963194232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 963194225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f69fff399562bca90998b2de01e7aed6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _width: 960
+  _height: 540
+  _targetFps: 24
+  _outputDir: 
+  _baseName: capture
+  _maxQueuedFrames: 128
+  _dropWhenBackedUp: 1
+  crf: 24
+  videoBitrate: 6M
+  realtimeDeadline: 0
+  cpuUsed: 8
+  threads: 0
+  rowMT: 1
+  ffmpegPath: ffmpeg
 --- !u!1 &970763216
 GameObject:
   m_ObjectHideFlags: 0
@@ -5891,8 +5919,8 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_VertexColorAlwaysGammaSpace: 0
-  m_AdditionalShaderChannelsFlag: 25
+  m_VertexColorAlwaysGammaSpace: 1
+  m_AdditionalShaderChannelsFlag: 1
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
