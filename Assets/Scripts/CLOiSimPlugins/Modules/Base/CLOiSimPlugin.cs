@@ -134,15 +134,14 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	void Awake()
 	{
 		SetCustomHandleRequestMessage();
-
 		OnAwake();
-
-		OnPluginLoad();
 	}
 
 	// Start is called before the first frame update
 	void Start()
 	{
+		OnPluginLoad();
+
 		DetectMultiplePlugin();
 
 		StorePose();
