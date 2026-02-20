@@ -82,7 +82,7 @@ public static partial class DeviceHelper
 	{
 		try
 		{
-			if (targetObject.CompareTag("Model"))
+			if (targetObject.CompareTag("Model") || targetObject.CompareTag("Sensor"))
 			{
 				return targetObject.name;
 			}
