@@ -1844,7 +1844,7 @@ MonoBehaviour:
   - ../sample_resources/models/
   - ../props_resources
   - ../gazebo_models/
-  - ../world_resources/yangjae_city
+  - ../world_resources/yangjae_city/models
   - ../world_resources/bluepearl/models
   - ../world_resources/lawn_ground/models
   - ../world_resources/seocho_tower/models
@@ -5920,7 +5920,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 1
-  m_AdditionalShaderChannelsFlag: 1
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
