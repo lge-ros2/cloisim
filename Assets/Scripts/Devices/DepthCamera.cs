@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Experimental.Rendering;
 using Unity.Collections;
-using System.Threading.Tasks;
+using System;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -25,17 +25,10 @@ namespace SensorDevices
 		private int _threadGroupY;
 		ComputeBuffer _computeBufferSrc = null;
 		ComputeBuffer _computeBufferDst = null;
-
-		private ParallelOptions _parallelOptions = null;
-
+		private byte[] _computedBufferOutput;
 		#endregion
 
 		private uint _depthScale = 1;
-		private int _imageDepth;
-
-		private byte[] _computedBufferOutput;
-		private const uint OutputMaxUnitSize = 4;
-		private int _computedBufferOutputUnitLength;
 
 		public static void LoadComputeShader()
 		{
@@ -97,11 +90,7 @@ namespace SensorDevices
 			var width = _camParam.image.width;
 			var height = _camParam.image.height;
 			var format = CameraData.GetPixelFormat(_camParam.image.format);
-
-			_imageDepth = CameraData.GetImageDepth(format);
-
-			_computedBufferOutputUnitLength = width * height;
-			_computedBufferOutput = new byte[_computedBufferOutputUnitLength * OutputMaxUnitSize];
+			var imageDepth = CameraData.GetImageDepth(format);
 
 			_textureForCapture = new Texture2D(width, height, TextureFormat.R8, false);
 			_textureForCapture.filterMode = FilterMode.Point;
@@ -113,18 +102,29 @@ namespace SensorDevices
 				_kernelIndex = _computeShader.FindKernel("CSScaleDepthBuffer");
 
 				_computeShader.SetFloat("_DepthMax", (float)_camParam.clip.far);
-				_computeShader.SetInt("_Width", width);
-				_computeShader.SetInt("_UnitSize", _imageDepth);
 				_computeShader.SetFloat("_DepthScale", (float)_depthScale);
+				_computeShader.SetInt("_Width", width);
+				_computeShader.SetInt("_Height", height);
+				_computeShader.SetInt("_UnitSize", imageDepth);
 
 				_computeShader.GetKernelThreadGroupSizes(_kernelIndex, out var threadX, out var threadY, out var _);
 
-				_threadGroupX = Mathf.CeilToInt(width / (float)threadX);
+				// Consider packWidth, (8bit=4, 16bit=2, 32bit=1)
+				var pack = (imageDepth == 4) ? 1 : (imageDepth == 2 ? 2 : 4);
+				var packedWidth = Mathf.CeilToInt(width / (float)pack);
+
+				_threadGroupX = Mathf.CeilToInt(packedWidth / (float)threadX);
 				_threadGroupY = Mathf.CeilToInt(height / (float)threadY);
 			}
+			
+			var pixelCount = width * height;
+			var packedCount = (imageDepth == 4)
+				? pixelCount
+				: (imageDepth == 2 ? (pixelCount + 1) / 2 : (pixelCount + 3) / 4);
 
-			_computeBufferSrc = new ComputeBuffer(_computedBufferOutput.Length / sizeof(float), sizeof(float));
-			_computeBufferDst = new ComputeBuffer(_computedBufferOutput.Length, sizeof(byte));
+			_computeBufferSrc = new ComputeBuffer(pixelCount, sizeof(float));
+			_computeBufferDst = new ComputeBuffer(packedCount, sizeof(uint));
+			_computedBufferOutput = new byte[packedCount * sizeof(uint)];
 		}
 
 		protected override void SetupCamera()
@@ -151,20 +151,6 @@ namespace SensorDevices
 
 			ReverseDepthData(false);
 			FlipXDepthData(false);
-
-			int MaxParallelism = 8;
-			do {
-				if (_computedBufferOutputUnitLength % MaxParallelism == 0)
-				{
-					_parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = MaxParallelism };
-					break;
-				}
-			} while (MaxParallelism-- > 0);
-
-			if (_parallelOptions == null)
-			{
-				Debug.Log($"Check Image size of depth camera!! width={_camParam.image.width} height={_camParam.image.height}");
-			}
 		}
 
 		protected override void ImageProcessing<T>(ref NativeArray<T> readbackData, in double capturedTime) where T : struct
@@ -185,25 +171,7 @@ namespace SensorDevices
 				_computeShader.Dispatch(_kernelIndex, _threadGroupX, _threadGroupY, 1);
 				_computeBufferDst.GetData(_computedBufferOutput);
 
-				if (_parallelOptions != null)
-				{
-					var computeGroupSize = _computedBufferOutputUnitLength / _parallelOptions.MaxDegreeOfParallelism;
-					Parallel.For(0, _parallelOptions.MaxDegreeOfParallelism, _parallelOptions, groupIndex =>
-					{
-						for (var i = 0; i < computeGroupSize ; i++)
-						{
-							var bufferIndex = computeGroupSize * groupIndex + i;
-							var dataIndex = bufferIndex * _imageDepth;
-							var outputGroupIndex = bufferIndex * (int)OutputMaxUnitSize;
-
-							for (var j = 0; j < _imageDepth; j++)
-							{
-								var outputIndex = outputGroupIndex + j;
-								imageStamped.Image.Data[dataIndex + j] = _computedBufferOutput[outputIndex];
-							}
-						}
-					});
-				}
+        		Buffer.BlockCopy(_computedBufferOutput, 0, imageStamped.Image.Data, 0, imageStamped.Image.Data.Length);
 			}
 
 			_messageQueue.Enqueue(imageStamped);
