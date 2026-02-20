@@ -141,7 +141,7 @@ namespace SDF
 						if (bodies.Length > 0)
 							CreateRootArticulationBody(modelObject);
 						else
-							UE.Debug.LogWarning($"{modelHelper.name} has no articulation bodies in children");
+							UE.Debug.LogWarning($"'{modelHelper.name}' has no articulation bodies in children");
 					}
 				}
 			}

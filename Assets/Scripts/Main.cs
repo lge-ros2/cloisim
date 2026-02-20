@@ -500,7 +500,12 @@ public class Main : MonoBehaviour
 	private void OnAllPluginsStarted()
 	{
 		_pluginAllStarted = true;
-		Debug.LogWarning(_pluginStartTracker.AllSummaries);
+
+		if (!string.IsNullOrEmpty(_pluginStartTracker.AllSummaries))
+		{
+			Debug.LogWarning(_pluginStartTracker.AllSummaries);
+		}
+
 		var message = $"All plugins started! ({_pluginStartTracker.StartedCount}/{_pluginStartTracker.TotalCount})";
 		_uiController?.SetInfoMessage(message);
 		Debug.Log(message);
