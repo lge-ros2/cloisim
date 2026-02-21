@@ -5,7 +5,8 @@
  */
 
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using messages = cloisim.msgs;
 using Unity.Collections;
@@ -37,19 +38,31 @@ namespace SensorDevices
 		{
 			// Debug.Log("Segmenataion Setup");
 
-			// Refer to SegmentationRenderer (Universal Renderer Data)
-			_universalCamData.SetRenderer(1);
-			_universalCamData.renderPostProcessing = true;
-			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
-			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
-			_universalCamData.requiresColorTexture = false;
-			_universalCamData.requiresDepthTexture = false;
-			_universalCamData.renderShadows = false;
-			_universalCamData.dithering = true;
-			_universalCamData.stopNaN = true;
-			_universalCamData.allowHDROutput = false;
-			_universalCamData.allowXRRendering = false;
-			_universalCamData.antialiasing = AntialiasingMode.FastApproximateAntialiasing;
+			if (_hdCamData != null)
+			{
+				// HDRP segmentation camera: disable shadows and most effects
+				_hdCamData.customRenderingSettings = true;
+				var overrideMask = _hdCamData.renderingPathCustomFrameSettingsOverrideMask;
+				overrideMask.mask[(uint)FrameSettingsField.ShadowMaps] = true;
+				overrideMask.mask[(uint)FrameSettingsField.ContactShadows] = true;
+				overrideMask.mask[(uint)FrameSettingsField.Volumetrics] = true;
+				overrideMask.mask[(uint)FrameSettingsField.AtmosphericScattering] = true;
+				overrideMask.mask[(uint)FrameSettingsField.SSAO] = true;
+				overrideMask.mask[(uint)FrameSettingsField.SSR] = true;
+				overrideMask.mask[(uint)FrameSettingsField.MotionVectors] = true;
+				_hdCamData.renderingPathCustomFrameSettingsOverrideMask = overrideMask;
+
+				var frameSettings = _hdCamData.renderingPathCustomFrameSettings;
+				frameSettings.SetEnabled(FrameSettingsField.ShadowMaps, false);
+				frameSettings.SetEnabled(FrameSettingsField.ContactShadows, false);
+				frameSettings.SetEnabled(FrameSettingsField.Volumetrics, false);
+				frameSettings.SetEnabled(FrameSettingsField.AtmosphericScattering, false);
+				frameSettings.SetEnabled(FrameSettingsField.SSAO, false);
+				frameSettings.SetEnabled(FrameSettingsField.SSR, false);
+				frameSettings.SetEnabled(FrameSettingsField.MotionVectors, false);
+				_hdCamData.renderingPathCustomFrameSettings = frameSettings;
+			}
+// 			_hdCamData.antialiasing = AntialiasingMode.FastApproximateAntialiasing;
 		}
 
 		protected override void InitializeMessages()

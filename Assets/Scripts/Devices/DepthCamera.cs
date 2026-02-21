@@ -5,7 +5,8 @@
  */
 
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using Unity.Collections;
 using System.Threading.Tasks;
@@ -142,12 +143,33 @@ namespace SensorDevices
 			_camSensor.allowHDR = false;
 			_camSensor.allowMSAA = false;
 			_camSensor.depthTextureMode = DepthTextureMode.Depth;
+			if (_hdCamData != null)
+			{
+				// HDRP depth camera: disable shadows and other expensive features
+				_hdCamData.customRenderingSettings = true;
+				var overrideMask = _hdCamData.renderingPathCustomFrameSettingsOverrideMask;
+				overrideMask.mask[(uint)FrameSettingsField.ShadowMaps] = true;
+				overrideMask.mask[(uint)FrameSettingsField.ContactShadows] = true;
+				overrideMask.mask[(uint)FrameSettingsField.Volumetrics] = true;
+				overrideMask.mask[(uint)FrameSettingsField.AtmosphericScattering] = true;
+				overrideMask.mask[(uint)FrameSettingsField.Postprocess] = true;
+				overrideMask.mask[(uint)FrameSettingsField.SSAO] = true;
+				overrideMask.mask[(uint)FrameSettingsField.SSR] = true;
+				overrideMask.mask[(uint)FrameSettingsField.TransparentObjects] = true;
+				_hdCamData.renderingPathCustomFrameSettingsOverrideMask = overrideMask;
 
-			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
-			_universalCamData.requiresDepthOption = CameraOverrideOption.On;
-			_universalCamData.requiresColorTexture = false;
-			_universalCamData.requiresDepthTexture = true;
-			_universalCamData.renderShadows = false;
+				var frameSettings = _hdCamData.renderingPathCustomFrameSettings;
+				frameSettings.SetEnabled(FrameSettingsField.ShadowMaps, false);
+				frameSettings.SetEnabled(FrameSettingsField.ContactShadows, false);
+				frameSettings.SetEnabled(FrameSettingsField.Volumetrics, false);
+				frameSettings.SetEnabled(FrameSettingsField.AtmosphericScattering, false);
+				frameSettings.SetEnabled(FrameSettingsField.Postprocess, false);
+				frameSettings.SetEnabled(FrameSettingsField.SSAO, false);
+				frameSettings.SetEnabled(FrameSettingsField.SSR, false);
+				frameSettings.SetEnabled(FrameSettingsField.TransparentObjects, false);
+				_hdCamData.renderingPathCustomFrameSettings = frameSettings;
+			}
+// 			_hdCamData.renderShadows = false;
 
 			ReverseDepthData(false);
 			FlipXDepthData(false);

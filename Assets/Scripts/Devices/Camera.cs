@@ -6,7 +6,7 @@
 using System.Collections;
 using System.Threading;
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using messages = cloisim.msgs;
@@ -26,7 +26,7 @@ namespace SensorDevices
 		// <lens> TBD
 		// <distortion> TBD
 		protected UnityEngine.Camera _camSensor = null;
-		protected UniversalAdditionalCameraData _universalCamData = null;
+		protected HDAdditionalCameraData _hdCamData = null;
 
 		protected string _targetRTname;
 		protected GraphicsFormat _targetColorFormat;
@@ -118,11 +118,18 @@ namespace SensorDevices
 			Mode = ModeType.TX_THREAD;
 
 			_camSensor = GetComponent<UnityEngine.Camera>();
-			_universalCamData = _camSensor.GetUniversalAdditionalCameraData();
+			_hdCamData = _camSensor.GetComponent<HDAdditionalCameraData>();
+			if (_hdCamData == null)
+			{
+				_hdCamData = _camSensor.gameObject.AddComponent<HDAdditionalCameraData>();
+			}
 
 			// for controlling targetDisplay
 			_camSensor.targetDisplay = -1;
-			_camSensor.stereoTargetEye = StereoTargetEyeMask.None;
+			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null)
+			{
+				_camSensor.stereoTargetEye = StereoTargetEyeMask.None;
+			}
 		}
 
 		protected override void OnStart()
@@ -236,12 +243,16 @@ namespace SensorDevices
 			_camSensor.backgroundColor = Color.black;
 			_camSensor.clearFlags = CameraClearFlags.Skybox;
 			_camSensor.depthTextureMode = DepthTextureMode.None;
-			_camSensor.renderingPath = RenderingPath.Forward;
+			// These APIs are only available with the built-in renderer, not HDRP/URP
+			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null)
+			{
+				_camSensor.renderingPath = RenderingPath.Forward;
+				_camSensor.stereoTargetEye = StereoTargetEyeMask.None;
+			}
 			_camSensor.allowHDR = false;
 			_camSensor.allowMSAA = true;
 			_camSensor.allowDynamicResolution = true;
 			_camSensor.useOcclusionCulling = true;
-			_camSensor.stereoTargetEye = StereoTargetEyeMask.None;
 			_camSensor.orthographic = false;
 			_camSensor.nearClipPlane = (float)_camParam.clip.near;
 			_camSensor.farClipPlane = (float)_camParam.clip.far;
@@ -301,27 +312,34 @@ namespace SensorDevices
 			var invertMatrix = Matrix4x4.Scale(new Vector3(1, -1, 1));
 			_camSensor.projectionMatrix *= invertMatrix;
 
-			SetDefaultUniversalAdditionalCameraData();
+			SetDefaultHDAdditionalCameraData();
 
 			_camSensor.enabled = false;
 			// _camSensor.hideFlags |= HideFlags.NotEditable;
 		}
 
-		private void SetDefaultUniversalAdditionalCameraData()
+		private void SetDefaultHDAdditionalCameraData()
 		{
-			_universalCamData.requiresColorOption = CameraOverrideOption.On;
-			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
-			_universalCamData.requiresColorTexture = true;
-			_universalCamData.requiresDepthTexture = false;
-			_universalCamData.renderShadows = true;
-			_universalCamData.enabled = false;
-			_universalCamData.stopNaN = true;
-			_universalCamData.dithering = true;
-			_universalCamData.renderPostProcessing = false;
-			_universalCamData.allowXRRendering = false;
-			_universalCamData.volumeLayerMask = default;
-			_universalCamData.renderType = CameraRenderType.Base;
-			_universalCamData.cameraStack.Clear();
+			if (_hdCamData == null)
+				return;
+
+			// Configure HDRP camera data for sensor rendering
+			_hdCamData.customRenderingSettings = true;
+			var overrideMask = _hdCamData.renderingPathCustomFrameSettingsOverrideMask;
+			overrideMask.mask[(uint)FrameSettingsField.Postprocess] = true;
+			overrideMask.mask[(uint)FrameSettingsField.MotionVectors] = true;
+			overrideMask.mask[(uint)FrameSettingsField.Decals] = true;
+			overrideMask.mask[(uint)FrameSettingsField.SSAO] = true;
+			overrideMask.mask[(uint)FrameSettingsField.SSR] = true;
+			_hdCamData.renderingPathCustomFrameSettingsOverrideMask = overrideMask;
+
+			var frameSettings = _hdCamData.renderingPathCustomFrameSettings;
+			frameSettings.SetEnabled(FrameSettingsField.Postprocess, false);
+			frameSettings.SetEnabled(FrameSettingsField.MotionVectors, false);
+			frameSettings.SetEnabled(FrameSettingsField.Decals, false);
+			frameSettings.SetEnabled(FrameSettingsField.SSAO, false);
+			frameSettings.SetEnabled(FrameSettingsField.SSR, false);
+			_hdCamData.renderingPathCustomFrameSettings = frameSettings;
 		}
 
 		protected virtual void SetupCamera()
@@ -349,10 +367,10 @@ namespace SensorDevices
 			// Debug.Log($"CameraWorker {rateGap} {messageGenerationTime} {WaitPeriod(messageGenerationTime)}");
 			while (_startCameraWork)
 			{
-				_universalCamData.enabled = true;
+				_hdCamData.enabled = true;
 
 				// Debug.Log("start render and request ");
-				if (_universalCamData.isActiveAndEnabled)
+// 				if (_hdCamData.isActiveAndEnabled)
 				{
 					_camSensor.Render();
 
@@ -378,7 +396,7 @@ namespace SensorDevices
 					});
 				}
 
-				_universalCamData.enabled = false;
+				_hdCamData.enabled = false;
 
 				yield return waitNextCapture;
 			}
