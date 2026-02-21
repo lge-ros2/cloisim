@@ -82,6 +82,8 @@ namespace SensorDevices
 			}
 		}
 
+		public System.Action<messages.Segmentation> OnSegmentationDataGenerated;
+
 		protected override void ImageProcessing<T>(ref NativeArray<T> readbackData, in double capturedTime) where T : struct
 		{
 			var segmentation = new messages.Segmentation();
@@ -120,6 +122,8 @@ namespace SensorDevices
 					segmentation.ClassMaps.Add(visionClass);
 				}
 			}
+
+			if (OnSegmentationDataGenerated != null) OnSegmentationDataGenerated.Invoke(segmentation);
 
 			_messageQueue.Enqueue(segmentation);
 		}

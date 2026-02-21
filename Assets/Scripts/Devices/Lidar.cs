@@ -22,6 +22,7 @@ namespace SensorDevices
 		private static int _globalSequence = 0;
 		[SerializeField] private messages.LaserScan _laserScan = null;
 		[SerializeField] private Thread _laserProcessThread = null;
+		public Action<messages.LaserScanStamped> OnLidarDataGenerated;
 
 		[SerializeField] private const float DEG180 = Mathf.PI * Mathf.Rad2Deg;
 		[SerializeField] private const float DEG360 = DEG180 * 2;
@@ -703,6 +704,11 @@ namespace SensorDevices
 						_laserFilter.DoFilter(ref laserScan);
 					}
 
+
+					if (OnLidarDataGenerated != null)
+					{
+						OnLidarDataGenerated.Invoke(laserScanStamped);
+					}
 
 					_messageQueue.Enqueue(laserScanStamped);
 				}

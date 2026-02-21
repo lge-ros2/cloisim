@@ -184,10 +184,23 @@ namespace SensorDevices
 			_gps.Heading.LinearAcceleration.Set(Vector3.zero);
 		}
 
+		public System.Action<messages.Gps> OnGpsDataGenerated;
+		public System.Action<messages.Imu> OnGpsHeadingGenerated;
+
 		protected override void GenerateMessage()
 		{
 			AssembleGPSMessage();
 			AssembleHeadingMessage();
+
+			if (OnGpsDataGenerated != null)
+			{
+				OnGpsDataGenerated.Invoke(_gps);
+			}
+			
+			if (OnGpsHeadingGenerated != null)
+			{
+				OnGpsHeadingGenerated.Invoke(_gps.Heading);
+			}
 
 			PushDeviceMessage<messages.Gps>(_gps);
 		}

@@ -422,6 +422,9 @@ namespace SensorDevices
 			}
 		}
 
+		public System.Action<messages.ImageStamped> OnCameraDataGenerated;
+		public System.Action<messages.CameraSensor> OnCameraInfoGenerated;
+
 		protected virtual void ImageProcessing<T>(ref NativeArray<T> readbackData, in double capturedTime) where T : struct
 		{
 			var imageStamped = new messages.ImageStamped();
@@ -444,6 +447,9 @@ namespace SensorDevices
 			{
 				Debug.LogWarning($"{name}: Failed to get image Data. Size mismatch (Image: {image.Data?.Length}, Buffer: {byteView.Length})");
 			}
+
+			if (OnCameraDataGenerated != null) OnCameraDataGenerated.Invoke(imageStamped);
+			if (OnCameraInfoGenerated != null) OnCameraInfoGenerated.Invoke(_sensorInfo);
 
 			_messageQueue.Enqueue(imageStamped);
 		}

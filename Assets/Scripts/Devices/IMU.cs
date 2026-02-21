@@ -206,12 +206,20 @@ namespace SensorDevices
 			_imuOrientation.x = calculatedPitch;
 		}
 
+		public System.Action<messages.Imu> OnImuDataGenerated;
+
 		protected override void GenerateMessage()
 		{
 			_imu.Orientation.Set(_imuRotation);
 			_imu.AngularVelocity.Set(_imuAngularVelocity * Mathf.Deg2Rad);
 			_imu.LinearAcceleration.Set(_imuLinearAcceleration);
 			_imu.Stamp.SetCurrentTime();
+			
+			if (OnImuDataGenerated != null)
+			{
+				OnImuDataGenerated.Invoke(_imu);
+			}
+
 			PushDeviceMessage<messages.Imu>(_imu);
 		}
 

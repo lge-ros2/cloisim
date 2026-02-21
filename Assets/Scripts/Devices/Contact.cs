@@ -91,6 +91,8 @@ namespace SensorDevices
 			// Debug.Log("{DeviceName} CollisionEnter: " + other.contacts.Length);
 		}
 
+		public System.Action<messages.Contacts> OnContactsDataGenerated;
+
 		public void CollisionStay(Collision other)
 		{
 			if (Time.timeAsDouble - _lastTimeContactsMessageGenerated < UpdatePeriod)
@@ -178,6 +180,8 @@ namespace SensorDevices
 			// Debug.Log("{DeviceName} CollisionStay: " + contacts.contact.Count);
 			_lastContacts = contactsMessage;
 
+			if (OnContactsDataGenerated != null) OnContactsDataGenerated.Invoke(contactsMessage);
+
 			_messageQueue.Enqueue(contactsMessage);
 			_lastTimeContactsMessageGenerated = Time.timeAsDouble;
 		}
@@ -191,6 +195,9 @@ namespace SensorDevices
 			var contactsMessage = new messages.Contacts();
 			contactsMessage.Time = new messages.Time();
 			contactsMessage.Time.SetCurrentTime();
+
+			if (OnContactsDataGenerated != null) OnContactsDataGenerated.Invoke(contactsMessage);
+
 			_messageQueue.Enqueue(contactsMessage);
 
 			// Debug.Log($"{DeviceName} {_targetCollision} CollisionExit: {other.contacts.Length}");
