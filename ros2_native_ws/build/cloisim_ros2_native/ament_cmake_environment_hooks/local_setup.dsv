@@ -1,0 +1,3 @@
+source;share/cloisim_ros2_native/environment/ament_prefix_path.sh
+source;share/cloisim_ros2_native/environment/library_path.sh
+source;share/cloisim_ros2_native/environment/path.sh

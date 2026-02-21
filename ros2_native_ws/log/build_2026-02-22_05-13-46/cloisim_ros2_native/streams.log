@@ -1,0 +1,59 @@
+[0.038s] Invoking command in '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/nav/workspace/cloisim/cloisim/ros2_native_ws/src/ros2_native_plugin -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native
+[0.329s] -- The C compiler identification is GNU 13.3.0
+[0.507s] -- The CXX compiler identification is GNU 13.3.0
+[0.574s] -- Detecting C compiler ABI info
+[0.825s] -- Detecting C compiler ABI info - done
+[0.867s] -- Check for working C compiler: /usr/lib/ccache/cc - skipped
+[0.868s] -- Detecting C compile features
+[0.868s] -- Detecting C compile features - done
+[0.900s] -- Detecting CXX compiler ABI info
+[1.142s] -- Detecting CXX compiler ABI info - done
+[1.166s] -- Check for working CXX compiler: /usr/lib/ccache/c++ - skipped
+[1.167s] -- Detecting CXX compile features
+[1.168s] -- Detecting CXX compile features - done
+[1.184s] -- Found ament_cmake: 2.5.5 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[1.522s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[1.734s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[1.881s] -- Found rclcpp: 28.1.16 (/opt/ros/jazzy/share/rclcpp/cmake)
+[2.033s] -- Found rosidl_generator_c: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[2.079s] -- Found rosidl_generator_cpp: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[2.131s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[2.180s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[2.407s] -- Found rmw_implementation_cmake: 7.3.3 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[2.419s] -- Found rmw_cyclonedds_cpp: 2.2.3 (/opt/ros/jazzy/share/rmw_cyclonedds_cpp/cmake)
+[2.497s] -- Using RMW implementation 'rmw_cyclonedds_cpp' as default
+[2.649s] -- Found std_msgs: 5.3.6 (/opt/ros/jazzy/share/std_msgs/cmake)
+[2.683s] -- Found sensor_msgs: 5.3.6 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[2.978s] -- Configuring done (2.9s)
+[3.006s] -- Generating done (0.0s)
+[3.016s] -- Build files have been written to: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native
+[3.034s] Invoked command in '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/nav/workspace/cloisim/cloisim/ros2_native_ws/src/ros2_native_plugin -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native
+[3.038s] Invoking command in '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native -- -j16 -l16
+[3.151s] [ 50%] [32mBuilding CXX object CMakeFiles/cloisim_ros2_native.dir/src/cloisim_ros2.cpp.o[0m
+[12.256s] [100%] [32m[1mLinking CXX shared library libcloisim_ros2_native.so[0m
+[12.596s] [100%] Built target cloisim_ros2_native
+[12.629s] Invoked command in '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native -- -j16 -l16
+[12.654s] Invoking command in '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native
+[12.673s] -- Install configuration: ""
+[12.675s] -- Execute custom install script
+[12.675s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/library_path.sh
+[12.696s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/library_path.dsv
+[12.714s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/lib/libcloisim_ros2_native.so
+[12.757s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/ament_index/resource_index/package_run_dependencies/cloisim_ros2_native
+[12.777s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/ament_index/resource_index/parent_prefix_path/cloisim_ros2_native
+[12.804s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/ament_prefix_path.sh
+[12.825s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/ament_prefix_path.dsv
+[12.857s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/path.sh
+[12.885s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/path.dsv
+[12.916s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/local_setup.bash
+[12.963s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/local_setup.sh
+[12.987s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/local_setup.zsh
+[13.016s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/local_setup.dsv
+[13.054s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/package.dsv
+[13.085s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/ament_index/resource_index/packages/cloisim_ros2_native
+[13.105s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/cmake/ament_cmake_export_libraries-extras.cmake
+[13.130s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/cmake/ament_cmake_export_dependencies-extras.cmake
+[13.152s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/cmake/cloisim_ros2_nativeConfig.cmake
+[13.181s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/cmake/cloisim_ros2_nativeConfig-version.cmake
+[13.211s] -- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/package.xml
+[13.237s] Invoked command in '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native

@@ -1,0 +1,198 @@
+[0.000000] (-) TimerEvent: {}
+[0.002368] (cloisim_ros2_native) JobQueued: {'identifier': 'cloisim_ros2_native', 'dependencies': OrderedDict()}
+[0.002651] (cloisim_ros2_native) JobStarted: {'identifier': 'cloisim_ros2_native'}
+[0.027563] (cloisim_ros2_native) JobProgress: {'identifier': 'cloisim_ros2_native', 'progress': 'cmake'}
+[0.035991] (cloisim_ros2_native) Command: {'cmd': ['/usr/bin/cmake', '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/src/ros2_native_plugin', '-DAMENT_CMAKE_SYMLINK_INSTALL=1', '-DCMAKE_INSTALL_PREFIX=/home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native'], 'cwd': '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native', 'env': OrderedDict({'GJS_DEBUG_TOPICS': 'JS ERROR;JS LOG', 'PYTHON_BASIC_REPL': '1', 'LESSOPEN': '| /usr/bin/lesspipe %s', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'nav', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'XDG_SESSION_TYPE': 'x11', 'GIT_ASKPASS': '/usr/share/antigravity/resources/app/extensions/git/dist/askpass.sh', 'CLUTTER_DISABLE_MIPMAPPED_TEXT': '1', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'ANTIGRAVITY_CLI_ALIAS': 'agy', 'HOME': '/home/nav', 'CHROME_DESKTOP': 'antigravity.desktop', 'CYCLONEDDS_URI': 'file:///home/nav/.cyclonedds.xml', 'OLDPWD': '/home/nav/workspace/cloisim/cloisim/ros2_native_ws', 'TERM_PROGRAM_VERSION': '1.107.0', 'DESKTOP_SESSION': 'ubuntu', 'GIO_LAUNCHED_DESKTOP_FILE': '/usr/share/applications/antigravity.desktop', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'PAGER': 'cat', 'VSCODE_GIT_ASKPASS_MAIN': '/usr/share/antigravity/resources/app/extensions/git/dist/askpass-main.js', 'VSCODE_GIT_ASKPASS_NODE': '/usr/share/antigravity/antigravity', 'MANAGERPID': '2483', 'SYSTEMD_EXEC_PID': '2814', 'VSCODE_PYTHON_AUTOACTIVATE_GUARD': '1', 'GSM_SKIP_SSH_AGENT_WORKAROUND': 'true', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus', 'COLORTERM': 'truecolor', 'ANTIGRAVITY_AGENT': '1', 'GIO_LAUNCHED_DESKTOP_FILE_PID': '1014065', 'DEBUGINFOD_URLS': 'https://debuginfod.ubuntu.com', 'ROS_DISTRO': 'jazzy', 'LOGNAME': 'nav', 'JOURNAL_STREAM': '9:27720', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'MEMORY_PRESSURE_WATCH': '/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/session.slice/org.gnome.Shell@x11.service/memory.pressure', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 'nav', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'FC_FONTATIONS': '1', 'WINDOWPATH': '2', 'PATH': '/usr/lib/ccache:/home/nav/.local/bin:/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/lib/ccache:/home/nav/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin', 'SESSION_MANAGER': 'local/nav-Strix:@/tmp/.ICE-unix/2783,unix/nav-Strix:/tmp/.ICE-unix/2783', 'INVOCATION_ID': '53eac7c8f3e24602a0b4d23b03765904', 'XDG_MENU_PREFIX': 'gnome-', 'XDG_RUNTIME_DIR': '/run/user/1000', 'GDK_BACKEND': 'x11', 'DISPLAY': ':1', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'PYTHONSTARTUP': '/home/nav/.config/Antigravity/User/workspaceStorage/7ea7b6f832d21449f74e4366d2e3c159/ms-python.python/pythonrc.py', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/gdm/Xauthority', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:', 'SBX_CHROME_API_RQ': '1', 'VSCODE_GIT_IPC_HANDLE': '/run/user/1000/vscode-git-5887e43eb7.sock', 'TERM_PROGRAM': 'vscode', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'ROS_DOMAIN_ID': '38', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'GPG_AGENT_INFO': '/run/user/1000/gnupg/S.gpg-agent:0:1', 'GJS_DEBUG_OUTPUT': 'stderr', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'VSCODE_GIT_ASKPASS_EXTRA_ARGS': '', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native', 'LC_ALL': 'en_US.UTF-8', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'MEMORY_PRESSURE_WRITE': 'c29tZSAyMDAwMDAgMjAwMDAwMAA=', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.099936] (-) TimerEvent: {}
+[0.200806] (-) TimerEvent: {}
+[0.303311] (-) TimerEvent: {}
+[0.332175] (cloisim_ros2_native) StdoutLine: {'line': b'-- The C compiler identification is GNU 13.3.0\n'}
+[0.403787] (-) TimerEvent: {}
+[0.504299] (-) TimerEvent: {}
+[0.510260] (cloisim_ros2_native) StdoutLine: {'line': b'-- The CXX compiler identification is GNU 13.3.0\n'}
+[0.576491] (cloisim_ros2_native) StdoutLine: {'line': b'-- Detecting C compiler ABI info\n'}
+[0.604465] (-) TimerEvent: {}
+[0.706323] (-) TimerEvent: {}
+[0.807345] (-) TimerEvent: {}
+[0.827640] (cloisim_ros2_native) StdoutLine: {'line': b'-- Detecting C compiler ABI info - done\n'}
+[0.870395] (cloisim_ros2_native) StdoutLine: {'line': b'-- Check for working C compiler: /usr/lib/ccache/cc - skipped\n'}
+[0.870711] (cloisim_ros2_native) StdoutLine: {'line': b'-- Detecting C compile features\n'}
+[0.870918] (cloisim_ros2_native) StdoutLine: {'line': b'-- Detecting C compile features - done\n'}
+[0.902146] (cloisim_ros2_native) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info\n'}
+[0.907523] (-) TimerEvent: {}
+[1.010519] (-) TimerEvent: {}
+[1.111861] (-) TimerEvent: {}
+[1.145409] (cloisim_ros2_native) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info - done\n'}
+[1.169135] (cloisim_ros2_native) StdoutLine: {'line': b'-- Check for working CXX compiler: /usr/lib/ccache/c++ - skipped\n'}
+[1.169955] (cloisim_ros2_native) StdoutLine: {'line': b'-- Detecting CXX compile features\n'}
+[1.170931] (cloisim_ros2_native) StdoutLine: {'line': b'-- Detecting CXX compile features - done\n'}
+[1.186440] (cloisim_ros2_native) StdoutLine: {'line': b'-- Found ament_cmake: 2.5.5 (/opt/ros/jazzy/share/ament_cmake/cmake)\n'}
+[1.211987] (-) TimerEvent: {}
+[1.313267] (-) TimerEvent: {}
+[1.413772] (-) TimerEvent: {}
+[1.515939] (-) TimerEvent: {}
+[1.525052] (cloisim_ros2_native) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter \n'}
+[1.616450] (-) TimerEvent: {}
+[1.717378] (-) TimerEvent: {}
+[1.737421] (cloisim_ros2_native) StdoutLine: {'line': b'-- Override CMake install command with custom implementation using symlinks instead of copying resources\n'}
+[1.817492] (-) TimerEvent: {}
+[1.883410] (cloisim_ros2_native) StdoutLine: {'line': b'-- Found rclcpp: 28.1.16 (/opt/ros/jazzy/share/rclcpp/cmake)\n'}
+[1.917910] (-) TimerEvent: {}
+[2.018938] (-) TimerEvent: {}
+[2.035378] (cloisim_ros2_native) StdoutLine: {'line': b'-- Found rosidl_generator_c: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)\n'}
+[2.082055] (cloisim_ros2_native) StdoutLine: {'line': b'-- Found rosidl_generator_cpp: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)\n'}
+[2.120487] (-) TimerEvent: {}
+[2.132573] (cloisim_ros2_native) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[2.182682] (cloisim_ros2_native) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[2.221322] (-) TimerEvent: {}
+[2.321803] (-) TimerEvent: {}
+[2.409788] (cloisim_ros2_native) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 7.3.3 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)\n'}
+[2.420602] (cloisim_ros2_native) StdoutLine: {'line': b'-- Found rmw_cyclonedds_cpp: 2.2.3 (/opt/ros/jazzy/share/rmw_cyclonedds_cpp/cmake)\n'}
+[2.422350] (-) TimerEvent: {}
+[2.499038] (cloisim_ros2_native) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_cyclonedds_cpp' as default\n"}
+[2.523322] (-) TimerEvent: {}
+[2.624514] (-) TimerEvent: {}
+[2.651414] (cloisim_ros2_native) StdoutLine: {'line': b'-- Found std_msgs: 5.3.6 (/opt/ros/jazzy/share/std_msgs/cmake)\n'}
+[2.686116] (cloisim_ros2_native) StdoutLine: {'line': b'-- Found sensor_msgs: 5.3.6 (/opt/ros/jazzy/share/sensor_msgs/cmake)\n'}
+[2.724699] (-) TimerEvent: {}
+[2.825327] (-) TimerEvent: {}
+[2.926372] (-) TimerEvent: {}
+[2.981382] (cloisim_ros2_native) StdoutLine: {'line': b'-- Configuring done (2.9s)\n'}
+[3.009040] (cloisim_ros2_native) StdoutLine: {'line': b'-- Generating done (0.0s)\n'}
+[3.019176] (cloisim_ros2_native) StdoutLine: {'line': b'-- Build files have been written to: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native\n'}
+[3.026491] (-) TimerEvent: {}
+[3.034961] (cloisim_ros2_native) CommandEnded: {'returncode': 0}
+[3.040201] (cloisim_ros2_native) JobProgress: {'identifier': 'cloisim_ros2_native', 'progress': 'build'}
+[3.040513] (cloisim_ros2_native) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native', '--', '-j16', '-l16'], 'cwd': '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native', 'env': OrderedDict({'GJS_DEBUG_TOPICS': 'JS ERROR;JS LOG', 'PYTHON_BASIC_REPL': '1', 'LESSOPEN': '| /usr/bin/lesspipe %s', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'nav', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'XDG_SESSION_TYPE': 'x11', 'GIT_ASKPASS': '/usr/share/antigravity/resources/app/extensions/git/dist/askpass.sh', 'CLUTTER_DISABLE_MIPMAPPED_TEXT': '1', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'ANTIGRAVITY_CLI_ALIAS': 'agy', 'HOME': '/home/nav', 'CHROME_DESKTOP': 'antigravity.desktop', 'CYCLONEDDS_URI': 'file:///home/nav/.cyclonedds.xml', 'OLDPWD': '/home/nav/workspace/cloisim/cloisim/ros2_native_ws', 'TERM_PROGRAM_VERSION': '1.107.0', 'DESKTOP_SESSION': 'ubuntu', 'GIO_LAUNCHED_DESKTOP_FILE': '/usr/share/applications/antigravity.desktop', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'PAGER': 'cat', 'VSCODE_GIT_ASKPASS_MAIN': '/usr/share/antigravity/resources/app/extensions/git/dist/askpass-main.js', 'VSCODE_GIT_ASKPASS_NODE': '/usr/share/antigravity/antigravity', 'MANAGERPID': '2483', 'SYSTEMD_EXEC_PID': '2814', 'VSCODE_PYTHON_AUTOACTIVATE_GUARD': '1', 'GSM_SKIP_SSH_AGENT_WORKAROUND': 'true', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus', 'COLORTERM': 'truecolor', 'ANTIGRAVITY_AGENT': '1', 'GIO_LAUNCHED_DESKTOP_FILE_PID': '1014065', 'DEBUGINFOD_URLS': 'https://debuginfod.ubuntu.com', 'ROS_DISTRO': 'jazzy', 'LOGNAME': 'nav', 'JOURNAL_STREAM': '9:27720', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'MEMORY_PRESSURE_WATCH': '/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/session.slice/org.gnome.Shell@x11.service/memory.pressure', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 'nav', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'FC_FONTATIONS': '1', 'WINDOWPATH': '2', 'PATH': '/usr/lib/ccache:/home/nav/.local/bin:/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/lib/ccache:/home/nav/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin', 'SESSION_MANAGER': 'local/nav-Strix:@/tmp/.ICE-unix/2783,unix/nav-Strix:/tmp/.ICE-unix/2783', 'INVOCATION_ID': '53eac7c8f3e24602a0b4d23b03765904', 'XDG_MENU_PREFIX': 'gnome-', 'XDG_RUNTIME_DIR': '/run/user/1000', 'GDK_BACKEND': 'x11', 'DISPLAY': ':1', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'PYTHONSTARTUP': '/home/nav/.config/Antigravity/User/workspaceStorage/7ea7b6f832d21449f74e4366d2e3c159/ms-python.python/pythonrc.py', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/gdm/Xauthority', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:', 'SBX_CHROME_API_RQ': '1', 'VSCODE_GIT_IPC_HANDLE': '/run/user/1000/vscode-git-5887e43eb7.sock', 'TERM_PROGRAM': 'vscode', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'ROS_DOMAIN_ID': '38', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'GPG_AGENT_INFO': '/run/user/1000/gnupg/S.gpg-agent:0:1', 'GJS_DEBUG_OUTPUT': 'stderr', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'VSCODE_GIT_ASKPASS_EXTRA_ARGS': '', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native', 'LC_ALL': 'en_US.UTF-8', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'MEMORY_PRESSURE_WRITE': 'c29tZSAyMDAwMDAgMjAwMDAwMAA=', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[3.126718] (-) TimerEvent: {}
+[3.153930] (cloisim_ros2_native) StdoutLine: {'line': b'[ 50%] \x1b[32mBuilding CXX object CMakeFiles/cloisim_ros2_native.dir/src/cloisim_ros2.cpp.o\x1b[0m\n'}
+[3.226832] (-) TimerEvent: {}
+[3.327192] (-) TimerEvent: {}
+[3.429084] (-) TimerEvent: {}
+[3.530692] (-) TimerEvent: {}
+[3.631329] (-) TimerEvent: {}
+[3.732174] (-) TimerEvent: {}
+[3.834863] (-) TimerEvent: {}
+[3.938844] (-) TimerEvent: {}
+[4.039328] (-) TimerEvent: {}
+[4.140682] (-) TimerEvent: {}
+[4.241200] (-) TimerEvent: {}
+[4.341734] (-) TimerEvent: {}
+[4.442917] (-) TimerEvent: {}
+[4.543588] (-) TimerEvent: {}
+[4.644039] (-) TimerEvent: {}
+[4.744881] (-) TimerEvent: {}
+[4.845264] (-) TimerEvent: {}
+[4.945675] (-) TimerEvent: {}
+[5.048478] (-) TimerEvent: {}
+[5.148958] (-) TimerEvent: {}
+[5.251364] (-) TimerEvent: {}
+[5.351842] (-) TimerEvent: {}
+[5.452835] (-) TimerEvent: {}
+[5.553303] (-) TimerEvent: {}
+[5.654315] (-) TimerEvent: {}
+[5.754733] (-) TimerEvent: {}
+[5.858304] (-) TimerEvent: {}
+[5.958665] (-) TimerEvent: {}
+[6.059308] (-) TimerEvent: {}
+[6.160552] (-) TimerEvent: {}
+[6.261627] (-) TimerEvent: {}
+[6.362263] (-) TimerEvent: {}
+[6.462631] (-) TimerEvent: {}
+[6.563325] (-) TimerEvent: {}
+[6.664527] (-) TimerEvent: {}
+[6.764949] (-) TimerEvent: {}
+[6.865892] (-) TimerEvent: {}
+[6.969209] (-) TimerEvent: {}
+[7.069717] (-) TimerEvent: {}
+[7.170728] (-) TimerEvent: {}
+[7.278318] (-) TimerEvent: {}
+[7.379655] (-) TimerEvent: {}
+[7.480035] (-) TimerEvent: {}
+[7.580625] (-) TimerEvent: {}
+[7.681920] (-) TimerEvent: {}
+[7.783290] (-) TimerEvent: {}
+[7.884338] (-) TimerEvent: {}
+[7.985325] (-) TimerEvent: {}
+[8.085669] (-) TimerEvent: {}
+[8.186045] (-) TimerEvent: {}
+[8.286803] (-) TimerEvent: {}
+[8.387851] (-) TimerEvent: {}
+[8.489158] (-) TimerEvent: {}
+[8.589823] (-) TimerEvent: {}
+[8.691356] (-) TimerEvent: {}
+[8.791733] (-) TimerEvent: {}
+[8.892124] (-) TimerEvent: {}
+[8.993644] (-) TimerEvent: {}
+[9.093996] (-) TimerEvent: {}
+[9.194374] (-) TimerEvent: {}
+[9.295065] (-) TimerEvent: {}
+[9.395538] (-) TimerEvent: {}
+[9.497949] (-) TimerEvent: {}
+[9.598419] (-) TimerEvent: {}
+[9.699312] (-) TimerEvent: {}
+[9.799890] (-) TimerEvent: {}
+[9.901287] (-) TimerEvent: {}
+[10.005359] (-) TimerEvent: {}
+[10.105744] (-) TimerEvent: {}
+[10.206711] (-) TimerEvent: {}
+[10.307504] (-) TimerEvent: {}
+[10.410689] (-) TimerEvent: {}
+[10.511122] (-) TimerEvent: {}
+[10.612314] (-) TimerEvent: {}
+[10.712736] (-) TimerEvent: {}
+[10.814172] (-) TimerEvent: {}
+[10.914682] (-) TimerEvent: {}
+[11.015307] (-) TimerEvent: {}
+[11.120534] (-) TimerEvent: {}
+[11.220933] (-) TimerEvent: {}
+[11.321608] (-) TimerEvent: {}
+[11.422569] (-) TimerEvent: {}
+[11.525685] (-) TimerEvent: {}
+[11.628314] (-) TimerEvent: {}
+[11.728689] (-) TimerEvent: {}
+[11.830360] (-) TimerEvent: {}
+[11.931974] (-) TimerEvent: {}
+[12.036118] (-) TimerEvent: {}
+[12.136557] (-) TimerEvent: {}
+[12.237620] (-) TimerEvent: {}
+[12.259174] (cloisim_ros2_native) StdoutLine: {'line': b'[100%] \x1b[32m\x1b[1mLinking CXX shared library libcloisim_ros2_native.so\x1b[0m\n'}
+[12.337730] (-) TimerEvent: {}
+[12.438098] (-) TimerEvent: {}
+[12.539657] (-) TimerEvent: {}
+[12.597521] (cloisim_ros2_native) StdoutLine: {'line': b'[100%] Built target cloisim_ros2_native\n'}
+[12.631629] (cloisim_ros2_native) CommandEnded: {'returncode': 0}
+[12.633741] (cloisim_ros2_native) JobProgress: {'identifier': 'cloisim_ros2_native', 'progress': 'install'}
+[12.639775] (-) TimerEvent: {}
+[12.656177] (cloisim_ros2_native) Command: {'cmd': ['/usr/bin/cmake', '--install', '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native'], 'cwd': '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native', 'env': OrderedDict({'GJS_DEBUG_TOPICS': 'JS ERROR;JS LOG', 'PYTHON_BASIC_REPL': '1', 'LESSOPEN': '| /usr/bin/lesspipe %s', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'USER': 'nav', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'XDG_SESSION_TYPE': 'x11', 'GIT_ASKPASS': '/usr/share/antigravity/resources/app/extensions/git/dist/askpass.sh', 'CLUTTER_DISABLE_MIPMAPPED_TEXT': '1', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'ANTIGRAVITY_CLI_ALIAS': 'agy', 'HOME': '/home/nav', 'CHROME_DESKTOP': 'antigravity.desktop', 'CYCLONEDDS_URI': 'file:///home/nav/.cyclonedds.xml', 'OLDPWD': '/home/nav/workspace/cloisim/cloisim/ros2_native_ws', 'TERM_PROGRAM_VERSION': '1.107.0', 'DESKTOP_SESSION': 'ubuntu', 'GIO_LAUNCHED_DESKTOP_FILE': '/usr/share/applications/antigravity.desktop', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'PAGER': 'cat', 'VSCODE_GIT_ASKPASS_MAIN': '/usr/share/antigravity/resources/app/extensions/git/dist/askpass-main.js', 'VSCODE_GIT_ASKPASS_NODE': '/usr/share/antigravity/antigravity', 'MANAGERPID': '2483', 'SYSTEMD_EXEC_PID': '2814', 'VSCODE_PYTHON_AUTOACTIVATE_GUARD': '1', 'GSM_SKIP_SSH_AGENT_WORKAROUND': 'true', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus', 'COLORTERM': 'truecolor', 'ANTIGRAVITY_AGENT': '1', 'GIO_LAUNCHED_DESKTOP_FILE_PID': '1014065', 'DEBUGINFOD_URLS': 'https://debuginfod.ubuntu.com', 'ROS_DISTRO': 'jazzy', 'LOGNAME': 'nav', 'JOURNAL_STREAM': '9:27720', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'MEMORY_PRESSURE_WATCH': '/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/session.slice/org.gnome.Shell@x11.service/memory.pressure', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 'nav', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'FC_FONTATIONS': '1', 'WINDOWPATH': '2', 'PATH': '/usr/lib/ccache:/home/nav/.local/bin:/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/lib/ccache:/home/nav/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin', 'SESSION_MANAGER': 'local/nav-Strix:@/tmp/.ICE-unix/2783,unix/nav-Strix:/tmp/.ICE-unix/2783', 'INVOCATION_ID': '53eac7c8f3e24602a0b4d23b03765904', 'XDG_MENU_PREFIX': 'gnome-', 'XDG_RUNTIME_DIR': '/run/user/1000', 'GDK_BACKEND': 'x11', 'DISPLAY': ':1', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'PYTHONSTARTUP': '/home/nav/.config/Antigravity/User/workspaceStorage/7ea7b6f832d21449f74e4366d2e3c159/ms-python.python/pythonrc.py', 'RMW_IMPLEMENTATION': 'rmw_cyclonedds_cpp', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/gdm/Xauthority', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:', 'SBX_CHROME_API_RQ': '1', 'VSCODE_GIT_IPC_HANDLE': '/run/user/1000/vscode-git-5887e43eb7.sock', 'TERM_PROGRAM': 'vscode', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'ROS_DOMAIN_ID': '38', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'GPG_AGENT_INFO': '/run/user/1000/gnupg/S.gpg-agent:0:1', 'GJS_DEBUG_OUTPUT': 'stderr', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'VSCODE_GIT_ASKPASS_EXTRA_ARGS': '', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native', 'LC_ALL': 'en_US.UTF-8', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'MEMORY_PRESSURE_WRITE': 'c29tZSAyMDAwMDAgMjAwMDAwMAA=', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[12.676031] (cloisim_ros2_native) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[12.677710] (cloisim_ros2_native) StdoutLine: {'line': b'-- Execute custom install script\n'}
+[12.678157] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/library_path.sh\n'}
+[12.698604] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/library_path.dsv\n'}
+[12.717130] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/lib/libcloisim_ros2_native.so\n'}
+[12.739933] (-) TimerEvent: {}
+[12.760291] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/ament_index/resource_index/package_run_dependencies/cloisim_ros2_native\n'}
+[12.779324] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/ament_index/resource_index/parent_prefix_path/cloisim_ros2_native\n'}
+[12.806690] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/ament_prefix_path.sh\n'}
+[12.827635] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/ament_prefix_path.dsv\n'}
+[12.840366] (-) TimerEvent: {}
+[12.859489] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/path.sh\n'}
+[12.887648] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/path.dsv\n'}
+[12.918873] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/local_setup.bash\n'}
+[12.940489] (-) TimerEvent: {}
+[12.966001] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/local_setup.sh\n'}
+[12.990159] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/local_setup.zsh\n'}
+[13.017083] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/local_setup.dsv\n'}
+[13.042428] (-) TimerEvent: {}
+[13.056768] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/package.dsv\n'}
+[13.083605] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/ament_index/resource_index/packages/cloisim_ros2_native\n'}
+[13.107840] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/cmake/ament_cmake_export_libraries-extras.cmake\n'}
+[13.133360] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/cmake/ament_cmake_export_dependencies-extras.cmake\n'}
+[13.142972] (-) TimerEvent: {}
+[13.154495] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/cmake/cloisim_ros2_nativeConfig.cmake\n'}
+[13.182594] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/cmake/cloisim_ros2_nativeConfig-version.cmake\n'}
+[13.211536] (cloisim_ros2_native) StdoutLine: {'line': b'-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/package.xml\n'}
+[13.239348] (cloisim_ros2_native) CommandEnded: {'returncode': 0}
+[13.245127] (-) TimerEvent: {}
+[13.318540] (cloisim_ros2_native) JobEnded: {'identifier': 'cloisim_ros2_native', 'rc': 0}
+[13.323423] (-) EventReactorShutdown: {}

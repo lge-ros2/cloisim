@@ -1,0 +1,44 @@
+[0.010s] Invoking command in '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native -- -j16 -l16
+[0.038s] -- Found ament_cmake: 2.5.5 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.237s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.242s] -- Found rclcpp: 28.1.16 (/opt/ros/jazzy/share/rclcpp/cmake)
+[0.268s] -- Found rosidl_generator_c: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[0.276s] -- Found rosidl_generator_cpp: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[0.286s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.297s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.355s] -- Found rmw_implementation_cmake: 7.3.3 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[0.356s] -- Found rmw_cyclonedds_cpp: 2.2.3 (/opt/ros/jazzy/share/rmw_cyclonedds_cpp/cmake)
+[0.378s] -- Using RMW implementation 'rmw_cyclonedds_cpp' as default
+[0.432s] -- Found std_msgs: 5.3.6 (/opt/ros/jazzy/share/std_msgs/cmake)
+[0.445s] -- Found sensor_msgs: 5.3.6 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[0.479s] -- Found nav_msgs: 5.3.6 (/opt/ros/jazzy/share/nav_msgs/cmake)
+[0.504s] -- Found vision_msgs: 4.1.1 (/opt/ros/jazzy/share/vision_msgs/cmake)
+[0.592s] Error parsing '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/src/ros2_native_plugin/package.xml':
+[2.073s] Traceback (most recent call last):
+[2.073s]   File "/opt/ros/jazzy/share/ament_cmake_core/cmake/core/package_xml_2_cmake.py", line 150, in <module>
+[2.073s]     main()
+[2.073s]   File "/opt/ros/jazzy/share/ament_cmake_core/cmake/core/package_xml_2_cmake.py", line 53, in main
+[2.073s]     raise e
+[2.074s]   File "/opt/ros/jazzy/share/ament_cmake_core/cmake/core/package_xml_2_cmake.py", line 49, in main
+[2.074s]     package = parse_package_string(
+[2.074s]               ^^^^^^^^^^^^^^^^^^^^^
+[2.074s]   File "/usr/lib/python3/dist-packages/catkin_pkg/package.py", line 786, in parse_package_string
+[2.074s]     raise InvalidPackage('Error(s):%s' % (''.join(['\n- %s' % e for e in errors])), filename)
+[2.074s] catkin_pkg.package.InvalidPackage: Error(s) in package '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/src/ros2_native_plugin/package.xml':
+[2.074s] Error(s):
+[2.074s] - The generic dependency on 'rclcpp' is redundant with: build_depend, build_export_depend, exec_depend
+[2.118s] [31mCMake Error at /opt/ros/jazzy/share/ament_cmake_core/cmake/core/ament_package_xml.cmake:95 (message):
+[2.119s]   execute_process(/usr/bin/python3
+[2.119s]   /opt/ros/jazzy/share/ament_cmake_core/cmake/core/package_xml_2_cmake.py
+[2.119s]   /home/nav/workspace/cloisim/cloisim/ros2_native_ws/src/ros2_native_plugin/package.xml
+[2.119s]   /home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native/ament_cmake_core/package.cmake)
+[2.119s]   returned error code 1
+[2.120s] Call Stack (most recent call first):
+[2.120s]   /opt/ros/jazzy/share/ament_cmake_core/cmake/core/ament_package_xml.cmake:49 (_ament_package_xml)
+[2.120s]   /opt/ros/jazzy/share/ament_cmake_core/cmake/core/ament_package.cmake:63 (ament_package_xml)
+[2.120s]   CMakeLists.txt:44 (ament_package)
+[2.120s] 
+[2.120s] [0m
+[2.120s] -- Configuring incomplete, errors occurred!
+[2.126s] gmake: *** [Makefile:267: cmake_check_build_system] Error 1
+[2.128s] Invoked command in '/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native' returned '2': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native -- -j16 -l16

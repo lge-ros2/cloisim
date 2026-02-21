@@ -1,0 +1,3 @@
+gmake[2]: *** [CMakeFiles/cloisim_ros2_native.dir/build.make:76: CMakeFiles/cloisim_ros2_native.dir/src/cloisim_ros2.cpp.o] Interrupt
+gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/cloisim_ros2_native.dir/all] Interrupt
+gmake: *** [Makefile:146: all] Interrupt

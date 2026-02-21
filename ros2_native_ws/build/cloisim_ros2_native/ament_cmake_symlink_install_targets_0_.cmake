@@ -1,0 +1,1 @@
+ament_cmake_symlink_install_targets("TARGET_FILES" "/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native/libcloisim_ros2_native.so" "TARGETS" "cloisim_ros2_native" "ARCHIVE_DESTINATION" "lib" "LIBRARY_DESTINATION" "lib" "RUNTIME_DESTINATION" "bin")

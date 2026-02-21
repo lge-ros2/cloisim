@@ -1,0 +1,25 @@
+[ 50%] [32mBuilding CXX object CMakeFiles/cloisim_ros2_native.dir/src/cloisim_ros2.cpp.o[0m
+[100%] [32m[1mLinking CXX shared library libcloisim_ros2_native.so[0m
+[100%] Built target cloisim_ros2_native
+-- Install configuration: ""
+-- Execute custom install script
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/library_path.sh
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/library_path.dsv
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/lib/libcloisim_ros2_native.so
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/ament_index/resource_index/package_run_dependencies/cloisim_ros2_native
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/ament_index/resource_index/parent_prefix_path/cloisim_ros2_native
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/ament_prefix_path.sh
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/ament_prefix_path.dsv
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/path.sh
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/environment/path.dsv
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/local_setup.bash
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/local_setup.sh
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/local_setup.zsh
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/local_setup.dsv
+-- Symlinking: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/package.dsv
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/ament_index/resource_index/packages/cloisim_ros2_native
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/cmake/ament_cmake_export_libraries-extras.cmake
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/cmake/cloisim_ros2_nativeConfig.cmake
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/cmake/cloisim_ros2_nativeConfig-version.cmake
+-- Up-to-date symlink: /home/nav/workspace/cloisim/cloisim/ros2_native_ws/install/cloisim_ros2_native/share/cloisim_ros2_native/package.xml

@@ -1,0 +1,4 @@
+source;share/cloisim_ros2_native/local_setup.bash
+source;share/cloisim_ros2_native/local_setup.dsv
+source;share/cloisim_ros2_native/local_setup.sh
+source;share/cloisim_ros2_native/local_setup.zsh

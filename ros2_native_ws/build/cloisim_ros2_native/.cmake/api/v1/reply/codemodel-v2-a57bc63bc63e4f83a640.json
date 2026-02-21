@@ -1,0 +1,79 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-b44d93d44ac7f7bcf903.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.20"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "cloisim_ros2_native",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "cloisim_ros2_native::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-cloisim_ros2_native-4036dd657657475755bb.json",
+					"name" : "cloisim_ros2_native",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "cloisim_ros2_native_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-cloisim_ros2_native_uninstall-dec3de7dd20b0511ff7f.json",
+					"name" : "cloisim_ros2_native_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-b350bdfdd0a98dcb3c1f.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/nav/workspace/cloisim/cloisim/ros2_native_ws/build/cloisim_ros2_native",
+		"source" : "/home/nav/workspace/cloisim/cloisim/ros2_native_ws/src/ros2_native_plugin"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}
