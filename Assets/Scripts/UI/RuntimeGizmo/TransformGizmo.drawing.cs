@@ -413,6 +413,36 @@ namespace RuntimeGizmos
 			{
 				lineMaterial = Resources.Load<Material>("Materials/Lines");
 				outlineMaterial = Resources.Load<Material>("Materials/Outline");
+
+				// Fix URP materials for HDRP: recreate with HDRP/Unlit shader
+				if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null)
+				{
+					var hdrpUnlitShader = Shader.Find("HDRP/Unlit");
+					if (hdrpUnlitShader != null)
+					{
+						// Recreate Lines material for HDRP
+						lineMaterial = new Material(hdrpUnlitShader);
+						lineMaterial.name = "Lines_HDRP";
+						lineMaterial.SetColor("_UnlitColor", Color.white);
+						lineMaterial.SetFloat("_SurfaceType", 1); // Transparent
+						lineMaterial.SetFloat("_BlendMode", 0); // Alpha
+						lineMaterial.SetFloat("_ZWrite", 0);
+						lineMaterial.SetFloat("_CullMode", 0); // Off
+						lineMaterial.renderQueue = 3050;
+						lineMaterial.enableInstancing = true;
+
+						// Recreate Outline material for HDRP
+						outlineMaterial = new Material(hdrpUnlitShader);
+						outlineMaterial.name = "Outline_HDRP";
+						outlineMaterial.SetColor("_UnlitColor", new Color(1f, 0.9f, 0f, 0.35f));
+						outlineMaterial.SetFloat("_SurfaceType", 1); // Transparent
+						outlineMaterial.SetFloat("_BlendMode", 0); // Alpha
+						outlineMaterial.SetFloat("_ZWrite", 0);
+						outlineMaterial.SetFloat("_CullMode", 2); // Back
+						outlineMaterial.renderQueue = 3050;
+						outlineMaterial.enableInstancing = true;
+					}
+				}
 			}
 		}
 
