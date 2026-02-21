@@ -9,7 +9,7 @@ using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine;
@@ -236,14 +236,19 @@ namespace SensorDevices
 			_laserCam.allowDynamicResolution = false;
 			_laserCam.useOcclusionCulling = false;
 			_laserCam.usePhysicalProperties = false;
-			_laserCam.stereoTargetEye = StereoTargetEyeMask.None;
 			_laserCam.orthographic = false;
 			_laserCam.nearClipPlane = _scanRange.min;
 			_laserCam.farClipPlane = _scanRange.max;
 			_laserCam.cullingMask = LayerMask.GetMask("Default", "Plane");
 			_laserCam.clearFlags = CameraClearFlags.Depth;
 			_laserCam.depthTextureMode = DepthTextureMode.Depth;
-			_laserCam.renderingPath = RenderingPath.Forward;
+
+			// These APIs are only available with the built-in renderer, not HDRP/URP
+			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null)
+			{
+				_laserCam.stereoTargetEye = StereoTargetEyeMask.None;
+				_laserCam.renderingPath = RenderingPath.Forward;
+			}
 
 			var renderTextureWidth = Mathf.CeilToInt(LaserCameraHFov / _resolution.angleH);
 			var renderTextureHeight = Mathf.CeilToInt(LaserCameraVFov / _resolution.angleV);
@@ -277,18 +282,50 @@ namespace SensorDevices
 			var projMatrix = SensorHelper.MakeProjectionMatrixPerspective(LaserCameraHFov, LaserCameraVFov, _laserCam.nearClipPlane, _laserCam.farClipPlane);
 			_laserCam.projectionMatrix = projMatrix;
 
-			var universalLaserCamData = _laserCam.GetUniversalAdditionalCameraData();
-			universalLaserCamData.renderShadows = false;
-			universalLaserCamData.stopNaN = true;
-			universalLaserCamData.dithering = true;
-			universalLaserCamData.allowXRRendering = false;
-			universalLaserCamData.volumeLayerMask = default;
-			universalLaserCamData.renderType = CameraRenderType.Base;
-			universalLaserCamData.requiresColorOption = CameraOverrideOption.Off;
-			universalLaserCamData.requiresDepthOption = CameraOverrideOption.Off;
-			universalLaserCamData.requiresColorTexture = false;
-			universalLaserCamData.requiresDepthTexture = true;
-			universalLaserCamData.cameraStack.Clear();
+			var hdLaserCamData = _laserCam.GetComponent<HDAdditionalCameraData>();
+			if (hdLaserCamData == null)
+			{
+				hdLaserCamData = _laserCam.gameObject.AddComponent<HDAdditionalCameraData>();
+			}
+
+			// Optimize HDRP lidar camera — we only need depth, disable all expensive features
+			hdLaserCamData.customRenderingSettings = true;
+			// Disable shadows
+			var shadowMask = hdLaserCamData.renderingPathCustomFrameSettingsOverrideMask;
+			shadowMask.mask[(uint)FrameSettingsField.ShadowMaps] = true;
+			shadowMask.mask[(uint)FrameSettingsField.ContactShadows] = true;
+			shadowMask.mask[(uint)FrameSettingsField.ScreenSpaceShadows] = true;
+			// Disable volumetrics and atmosphere
+			shadowMask.mask[(uint)FrameSettingsField.Volumetrics] = true;
+			shadowMask.mask[(uint)FrameSettingsField.ReprojectionForVolumetrics] = true;
+			shadowMask.mask[(uint)FrameSettingsField.AtmosphericScattering] = true;
+			// Disable post-processing and effects
+			shadowMask.mask[(uint)FrameSettingsField.Postprocess] = true;
+			shadowMask.mask[(uint)FrameSettingsField.SSAO] = true;
+			shadowMask.mask[(uint)FrameSettingsField.SSR] = true;
+			shadowMask.mask[(uint)FrameSettingsField.SubsurfaceScattering] = true;
+			shadowMask.mask[(uint)FrameSettingsField.Refraction] = true;
+			shadowMask.mask[(uint)FrameSettingsField.MotionVectors] = true;
+			shadowMask.mask[(uint)FrameSettingsField.Decals] = true;
+			shadowMask.mask[(uint)FrameSettingsField.TransparentObjects] = true;
+			hdLaserCamData.renderingPathCustomFrameSettingsOverrideMask = shadowMask;
+
+			var frameSettings = hdLaserCamData.renderingPathCustomFrameSettings;
+			frameSettings.SetEnabled(FrameSettingsField.ShadowMaps, false);
+			frameSettings.SetEnabled(FrameSettingsField.ContactShadows, false);
+			frameSettings.SetEnabled(FrameSettingsField.ScreenSpaceShadows, false);
+			frameSettings.SetEnabled(FrameSettingsField.Volumetrics, false);
+			frameSettings.SetEnabled(FrameSettingsField.ReprojectionForVolumetrics, false);
+			frameSettings.SetEnabled(FrameSettingsField.AtmosphericScattering, false);
+			frameSettings.SetEnabled(FrameSettingsField.Postprocess, false);
+			frameSettings.SetEnabled(FrameSettingsField.SSAO, false);
+			frameSettings.SetEnabled(FrameSettingsField.SSR, false);
+			frameSettings.SetEnabled(FrameSettingsField.SubsurfaceScattering, false);
+			frameSettings.SetEnabled(FrameSettingsField.Refraction, false);
+			frameSettings.SetEnabled(FrameSettingsField.MotionVectors, false);
+			frameSettings.SetEnabled(FrameSettingsField.Decals, false);
+			frameSettings.SetEnabled(FrameSettingsField.TransparentObjects, false);
+			hdLaserCamData.renderingPathCustomFrameSettings = frameSettings;
 
 			var depthShader = Shader.Find("Sensor/DepthRange");
 			_depthMaterial = new Material(depthShader);
@@ -301,7 +338,11 @@ namespace SensorDevices
 			_cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
 			_cb.ReleaseTemporaryRT(tempTextureId);
 
-			_laserCam.AddCommandBuffer(CameraEvent.AfterEverything, _cb);
+			// AddCommandBuffer is only available with the built-in renderer, not HDRP/URP
+			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null)
+			{
+				_laserCam.AddCommandBuffer(CameraEvent.AfterEverything, _cb);
+			}
 
 			// _laserCam.hideFlags |= HideFlags.NotEditable;
 
