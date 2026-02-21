@@ -17,7 +17,7 @@ public class ObjectSpawning : MonoBehaviour
 	private const float UnitMass = 3.5f;
 	private const float CylinderRotationAngle = 90;
 
-	private static PhysicMaterial _propsPhysicalMaterial = null;
+	private static PhysicsMaterial _propsPhysicalMaterial = null;
 	private static Material _propMaterial = null;
 
 	private GameObject _propsRoot = null;
@@ -46,7 +46,7 @@ public class ObjectSpawning : MonoBehaviour
 	void Awake()
 	{
 		_propMaterial = SDF2Unity.CreateMaterial();
-		_propsPhysicalMaterial = Resources.Load<PhysicMaterial>("PhysicsMaterials/Props");
+		_propsPhysicalMaterial = Resources.Load<PhysicsMaterial>("PhysicsMaterials/Props");
 		_propsRoot = GameObject.Find("Props");
 		_mainCam = Camera.main;
 		_uiController = Main.UIObject?.GetComponent<UIController>();
@@ -106,9 +106,15 @@ public class ObjectSpawning : MonoBehaviour
 		}
 		else if (Input.GetKeyUp(KeyCode.Delete))
 		{
-			transformGizmo.GetSelectedTargets(out var list);
-			StartCoroutine(DeleteTargetObject(list));
-			transformGizmo.ClearTargets();
+			if (transformGizmo != null)
+			{
+				transformGizmo.GetSelectedTargets(out var list);
+				// Copy the list before clearing — ClearTargets empties the internal list
+				// that the delete coroutine references
+				var listCopy = new List<Transform>(list);
+				transformGizmo.ClearTargets();
+				StartCoroutine(DeleteTargetObject(listCopy));
+			}
 		}
 	}
 
@@ -245,8 +251,8 @@ public class ObjectSpawning : MonoBehaviour
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
 		rigidBody.mass = 1;
-		rigidBody.drag = 0.8f;
-		rigidBody.angularDrag = 1f;
+		rigidBody.linearDamping = 0.8f;
+		rigidBody.angularDamping = 1f;
 
 		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
 		navMeshObstacle.carving = true;
