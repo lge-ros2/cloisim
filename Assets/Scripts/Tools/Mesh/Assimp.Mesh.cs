@@ -44,7 +44,10 @@ public static partial class MeshLoader
 					}
 					else
 					{
-						Debug.LogWarning($"Cannot load texture file: {textureFullPath}");
+						if (textureFullPath.EndsWith(".renderTexture", System.StringComparison.OrdinalIgnoreCase))
+							Debug.Log($"Skipped unsupported texture format: {textureFullPath}");
+						else
+							Debug.LogWarning($"Cannot load texture file: {textureFullPath}");
 					}
 				}
 			}
@@ -132,7 +135,7 @@ public static partial class MeshLoader
 			{
 				var tex = TryLoadTexture(sceneMat.TextureDiffuse.FilePath, textureDirectories);
 				if (tex != null)
-					mat.SetTexture("_BaseMap", tex);
+					mat.SetTexture("_BaseColorMap", tex);
 			}
 
 			if (sceneMat.HasTextureNormal)
@@ -140,7 +143,7 @@ public static partial class MeshLoader
 				var tex = TryLoadTexture(sceneMat.TextureNormal.FilePath, textureDirectories);
 				if (tex != null)
 				{
-					mat.SetTexture("_BumpMap", tex);
+					mat.SetTexture("_NormalMap", tex);
 					mat.EnableKeyword("_NORMALMAP");
 				}
 				logs.AppendLine($"HasTextureNormal({sceneMat.TextureNormal.FilePath}) for {sceneMat.Name}");
@@ -148,7 +151,7 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasBumpScaling)
 			{
-				mat.SetFloat("_BumpScale", sceneMat.BumpScaling);
+				mat.SetFloat("_NormalScale", sceneMat.BumpScaling);
 				logs.AppendLine($"HasBumpScaling({sceneMat.BumpScaling}) for {sceneMat.Name}");
 			}
 
@@ -157,8 +160,7 @@ public static partial class MeshLoader
 				var tex = TryLoadTexture(sceneMat.TextureSpecular.FilePath, textureDirectories);
 				if (tex != null)
 				{
-					mat.SetTexture("_SpecGlossMap", tex);
-					mat.EnableKeyword("_SPECGLOSSMAP");
+					mat.SetTexture("_SpecularColorMap", tex);
 				}
 			}
 
@@ -167,7 +169,7 @@ public static partial class MeshLoader
 				var tex = TryLoadTexture(sceneMat.TextureEmissive.FilePath, textureDirectories);
 				if (tex != null)
 				{
-					mat.SetTexture("_EmissionMap", tex);
+					mat.SetTexture("_EmissiveColorMap", tex);
 					mat.EnableKeyword("_EMISSION");
 				}
 			}
@@ -177,10 +179,9 @@ public static partial class MeshLoader
 				var tex = TryLoadTexture(sceneMat.TextureOpacity.FilePath, textureDirectories);
 				if (tex != null)
 				{
-					mat.SetTexture("_BaseMap", tex);
-					mat.SetFloat("_Surface", 1f);
+					mat.SetTexture("_BaseColorMap", tex);
+					mat.SetFloat("_SurfaceType", 1f);
 					mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-					mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
 				}
 			}
 
