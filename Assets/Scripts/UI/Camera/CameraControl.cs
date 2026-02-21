@@ -183,7 +183,7 @@ public abstract class CameraControl : MonoBehaviour
 			if (!EventSystem.current.IsPointerOverGameObject())
 			{
 				var sdfPoint = Unity2SDF.Position(hitInfo.point);
-				Main.InfoDisplay.SetPointInfo(sdfPoint);
+				Main.InfoDisplay?.SetPointInfo(sdfPoint);
 			}
 		}
 	}

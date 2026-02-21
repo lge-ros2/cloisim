@@ -6,7 +6,6 @@
 
 using UnityEngine;
 using System.IO;
-using System.Drawing;
 using System;
 
 public static class ProceduralHeightmap
@@ -51,12 +50,7 @@ public static class ProceduralHeightmap
 	{
 		try
 		{
-			var img = new Bitmap(imagePath);
-			using (var ms = new MemoryStream())
-			{
-				img.Save(ms, img.RawFormat);
-				return ms.ToArray();
-			}
+			return File.ReadAllBytes(imagePath);
 		}
 		catch (Exception e)
 		{

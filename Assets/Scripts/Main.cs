@@ -263,6 +263,11 @@ public class Main : MonoBehaviour
 		Application.targetFrameRate = 60;
 		OnDemandRendering.renderFrameInterval = 1;
 
+		if (Application.isBatchMode)
+		{
+			Debug.Log("BatchMode detected: Enforcing vSyncCount = 0 and targetFrameRate = 60 for headless rendering");
+		}
+
 		// Debug.Log(    QualitySettings.GetQualityLevel());
 		var qualityLevel = Environment.GetEnvironmentVariable("CLOISIM_QUALITY");
 		var qualityLevelIndex = 3; // Very High Quality Preset
@@ -280,7 +285,22 @@ public class Main : MonoBehaviour
 		mainCamera.allowDynamicResolution = true;
 		mainCamera.useOcclusionCulling = true;
 		mainCamera.orthographic = false;
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+		var hdCamData = mainCamera.GetComponent<UnityEngine.Rendering.HighDefinition.HDAdditionalCameraData>();
+		if (hdCamData == null)
+		{
+			hdCamData = mainCamera.gameObject.AddComponent<UnityEngine.Rendering.HighDefinition.HDAdditionalCameraData>();
+		}
+#endif
+
 		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
+
+		// Ensure TransformGizmo is on the main camera for object selection/manipulation
+		if (mainCamera.GetComponent<RuntimeGizmos.TransformGizmo>() == null)
+		{
+			mainCamera.gameObject.AddComponent<RuntimeGizmos.TransformGizmo>();
+		}
 
 		_core = GameObject.Find("Core");
 		if (_core == null)
@@ -302,7 +322,7 @@ public class Main : MonoBehaviour
 		if (_uiRoot != null)
 		{
 			_infoDisplay = _uiRoot.GetComponentInChildren<InfoDisplay>();
-			_transformGizmo = _uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
+			_transformGizmo = FindFirstObjectByType<RuntimeGizmos.TransformGizmo>();
 			_uiController = _uiRoot.GetComponent<UIController>();
 
 			_uiMainCanvasRoot = _uiRoot.transform.Find("Main Canvas").gameObject;

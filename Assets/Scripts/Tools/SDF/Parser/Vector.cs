@@ -58,7 +58,6 @@ namespace SDF
 		{
 			_x = x;
 			_y = y;
-			// Console.WriteLine(typeof(T) + "::" + _x + ", " + _y);
 		}
 
 		public void Set(in string x, in string y)
@@ -68,7 +67,6 @@ namespace SDF
 			{
 				var parsedX = StringToDouble(x);
 				var parsedY = StringToDouble(y);
-				// Console.WriteLine(typeof(T) + "::" + parsedX + ", " + parsedY);
 				Set((T)Convert.ChangeType(parsedX, code), (T)Convert.ChangeType(parsedY, code));
 			}
 		}
@@ -77,10 +75,20 @@ namespace SDF
 			=> v;
 
 		public static Vector2<T> operator -(Vector2<T> v)
-			=> new Vector2<T>(-(dynamic)v.X, -(dynamic)v.Y);
+		{
+			var code = Type.GetTypeCode(typeof(T));
+			var nx = (T)Convert.ChangeType(-Convert.ToDouble(v.X), code);
+			var ny = (T)Convert.ChangeType(-Convert.ToDouble(v.Y), code);
+			return new Vector2<T>(nx, ny);
+		}
 
 		public static Vector2<T> operator +(in Vector2<T> left, in Vector2<T> right)
-			=> new Vector2<T>((dynamic)left.X + (dynamic)right.X, (dynamic)left.Y + (dynamic)right.Y);
+		{
+			var code = Type.GetTypeCode(typeof(T));
+			var rx = (T)Convert.ChangeType(Convert.ToDouble(left.X) + Convert.ToDouble(right.X), code);
+			var ry = (T)Convert.ChangeType(Convert.ToDouble(left.Y) + Convert.ToDouble(right.Y), code);
+			return new Vector2<T>(rx, ry);
+		}
 
 		public static Vector2<T> operator -(in Vector2<T> left, in Vector2<T> right)
 			=> left + (-right);
@@ -101,7 +109,6 @@ namespace SDF
 
 		public override string ToString()
 		{
-			// return $"Vector2({_x}, {_y})";
 			return $"{_x:f10} {_y:f10}";
 		}
 	}
@@ -135,7 +142,6 @@ namespace SDF
 		{
 			base.Set(x, y);
 			_z = z;
-			// Console.WriteLine(typeof(T) + "::" + _z);
 		}
 
 		public void Set(in string x, in string y, in string z)
@@ -144,7 +150,6 @@ namespace SDF
 			if (!code.Equals(TypeCode.Empty))
 			{
 				var parsedZ = StringToDouble(z);
-				// Console.WriteLine(typeof(T) + "::" + parsedZ);
 				base.Set(x, y);
 				_z = (T)Convert.ChangeType(parsedZ, code);
 			}
@@ -154,17 +159,25 @@ namespace SDF
 			=> v;
 
 		public static Vector3<T> operator -(Vector3<T> v)
-			=> new Vector3<T>(-(dynamic)v.X, -(dynamic)v.Y, -(dynamic)v.Z);
+		{
+			var code = Type.GetTypeCode(typeof(T));
+			var nx = (T)Convert.ChangeType(-Convert.ToDouble(v.X), code);
+			var ny = (T)Convert.ChangeType(-Convert.ToDouble(v.Y), code);
+			var nz = (T)Convert.ChangeType(-Convert.ToDouble(v.Z), code);
+			return new Vector3<T>(nx, ny, nz);
+		}
 
 		public static Vector3<T> operator +(in Vector3<T> left, in Vector3<T> right)
-			=> new Vector3<T>(
-				(dynamic)left.X + (dynamic)right.X,
-				(dynamic)left.Y + (dynamic)right.Y,
-				(dynamic)left.Z + (dynamic)right.Z);
+		{
+			var code = Type.GetTypeCode(typeof(T));
+			var rx = (T)Convert.ChangeType(Convert.ToDouble(left.X) + Convert.ToDouble(right.X), code);
+			var ry = (T)Convert.ChangeType(Convert.ToDouble(left.Y) + Convert.ToDouble(right.Y), code);
+			var rz = (T)Convert.ChangeType(Convert.ToDouble(left.Z) + Convert.ToDouble(right.Z), code);
+			return new Vector3<T>(rx, ry, rz);
+		}
 
 		public static Vector3<T> operator -(in Vector3<T> left, in Vector3<T> right)
 			=> left + (-right);
-
 
 		new public void FromString(in string value)
 		{
@@ -182,7 +195,6 @@ namespace SDF
 
 		public override string ToString()
 		{
-			// return $"Vector3({_x}, {_y}, {_z})";
 			return $"{base.ToString()} {_z:f10}";
 		}
 	}

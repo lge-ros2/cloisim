@@ -113,7 +113,6 @@ namespace SDF
 		public void Set(T roll, T pitch, T yaw)
 		{
 			_euler.Set(roll, pitch, yaw);
-
 			ConvertEuler2Quaternion();
 		}
 
@@ -123,7 +122,6 @@ namespace SDF
 			_x = x;
 			_y = y;
 			_z = z;
-
 			ConvertQuaternion2Euler();
 		}
 
@@ -151,17 +149,17 @@ namespace SDF
 			var the = pitch * 0.5d;
 			var psi = yaw * 0.5d;
 
-			_w = (T)(dynamic)(Math.Cos(phi) * Math.Cos(the) * Math.Cos(psi) +
-							  Math.Sin(phi) * Math.Sin(the) * Math.Sin(psi));
+			_w = (T)Convert.ChangeType(Math.Cos(phi) * Math.Cos(the) * Math.Cos(psi) +
+							  Math.Sin(phi) * Math.Sin(the) * Math.Sin(psi), _code);
 
-			_x = (T)(dynamic)(Math.Sin(phi) * Math.Cos(the) * Math.Cos(psi) -
-							  Math.Cos(phi) * Math.Sin(the) * Math.Sin(psi));
+			_x = (T)Convert.ChangeType(Math.Sin(phi) * Math.Cos(the) * Math.Cos(psi) -
+							  Math.Cos(phi) * Math.Sin(the) * Math.Sin(psi), _code);
 
-			_y = (T)(dynamic)(Math.Cos(phi) * Math.Sin(the) * Math.Cos(psi) +
-							  Math.Sin(phi) * Math.Cos(the) * Math.Sin(psi));
+			_y = (T)Convert.ChangeType(Math.Cos(phi) * Math.Sin(the) * Math.Cos(psi) +
+							  Math.Sin(phi) * Math.Cos(the) * Math.Sin(psi), _code);
 
-			_z = (T)(dynamic)(Math.Cos(phi) * Math.Cos(the) * Math.Sin(psi) -
-							  Math.Sin(phi) * Math.Sin(the) * Math.Cos(psi));
+			_z = (T)Convert.ChangeType(Math.Cos(phi) * Math.Cos(the) * Math.Sin(psi) -
+							  Math.Sin(phi) * Math.Sin(the) * Math.Cos(psi), _code);
 
 			Normalize();
 		}
@@ -211,48 +209,47 @@ namespace SDF
 			var sarg = -2 * (x * z - w * y);
 			if (sarg <= -1.0d)
 			{
-				_euler.Y = (T)(dynamic)(-0.5d * Math.PI);
+				_euler.Y = (T)Convert.ChangeType(-0.5d * Math.PI, _code);
 			}
 			else if (sarg >= 1.0d)
 			{
-				_euler.Y = (T)(dynamic)(0.5d * Math.PI);
+				_euler.Y = (T)Convert.ChangeType(0.5d * Math.PI, _code);
 			}
 			else
 			{
-				_euler.Y = (T)(dynamic)(Math.Asin(sarg));
+				_euler.Y = (T)Convert.ChangeType(Math.Asin(sarg), _code);
 			}
 
-			// If the pitch angle is PI/2 or -PI/2, we can only compute the sum roll + yaw.  However, any combination that gives
-			// the right sum will produce the correct orientation, so we  set yaw = 0 and compute roll.
+			// If the pitch angle is PI/2 or -PI/2, we can only compute
+			// the sum roll + yaw. However, any combination that gives
+			// the right sum will produce the correct orientation, so we
+			// set yaw = 0 and compute roll.
 			// pitch angle is PI/2
 			if (Math.Abs(sarg - 1) < tol)
 			{
 				// Roll
-				_euler.X = (T)(dynamic)Math.Atan2(2 * (x * y - z * w),
-												  squ - sqx + sqy - sqz);
-
+				_euler.X = (T)Convert.ChangeType(Math.Atan2(2 * (x * y - z * w),
+												  squ - sqx + sqy - sqz), _code);
 				// Yaw
-				_euler.Z = (T)(dynamic)0d;
+				_euler.Z = (T)Convert.ChangeType(0d, _code);
 			}
 			// pitch angle is -PI/2
 			else if (Math.Abs(sarg + 1) < tol)
 			{
 				// Roll
-				_euler.X = (T)(dynamic)Math.Atan2(-2 * (x * y - z * w),
-												  squ - sqx + sqy - sqz);
-
+				_euler.X = (T)Convert.ChangeType(Math.Atan2(-2 * (x * y - z * w),
+												  squ - sqx + sqy - sqz), _code);
 				// Yaw
-				_euler.Z = (T)(dynamic)0d;
+				_euler.Z = (T)Convert.ChangeType(0d, _code);
 			}
 			else
 			{
 				// Roll
-				_euler.X = (T)(dynamic)Math.Atan2(2 * (y * z + w * x),
-												  squ - sqx - sqy + sqz);
-
+				_euler.X = (T)Convert.ChangeType(Math.Atan2(2 * (y * z + w * x),
+												  squ - sqx - sqy + sqz), _code);
 				// Yaw
-				_euler.Z = (T)(dynamic)Math.Atan2(2 * (x * y + w * z),
-												  squ + sqx - sqy - sqz);
+				_euler.Z = (T)Convert.ChangeType(Math.Atan2(2 * (x * y + w * z),
+												  squ + sqx - sqy - sqz), _code);
 			}
 		}
 
