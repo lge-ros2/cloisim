@@ -287,65 +287,6 @@
             The name of the feature switch that provides the value for the specified property.
             </summary>
         </member>
-        <member name="T:System.Diagnostics.CodeAnalysis.AllowNullAttribute">
-            <summary>
-              Specifies that <see langword="null"/> is allowed as an input even if the
-              corresponding type disallows it.
-            </summary>
-        </member>
-        <member name="T:System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
-            <summary>
-              Specifies that <see langword="null"/> is disallowed as an input even if the
-              corresponding type allows it.
-            </summary>
-        </member>
-        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
-            <summary>
-              Specifies that a method that will never return under any circumstance.
-            </summary>
-        </member>
-        <member name="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
-            <summary>
-              Specifies that the method will not return if the associated <see cref="T:System.Boolean"/>
-              parameter is passed the specified value.
-            </summary>
-        </member>
-        <member name="P:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.ParameterValue">
-            <summary>
-              Gets the condition parameter value.
-              Code after the method is considered unreachable by diagnostics if the argument
-              to the associated parameter matches this value.
-            </summary>
-        </member>
-        <member name="M:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute.#ctor(System.Boolean)">
-            <summary>
-              Initializes a new instance of the <see cref="T:System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute"/>
-              class with the specified parameter value.
-            </summary>
-        </member>
-        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
-            <summary>
-              Specifies that an output may be <see langword="null"/> even if the
-              corresponding type disallows it.
-            </summary>
-        </member>
-        <member name="T:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
-            <summary>
-              Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue"/>,
-              the parameter may be <see langword="null"/> even if the corresponding type disallows it.
-            </summary>
-        </member>
-        <member name="P:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.ReturnValue">
-            <summary>
-              Gets the return value condition.
-              If the method returns this value, the associated parameter may be <see langword="null"/>.
-            </summary>
-        </member>
-        <member name="M:System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute.#ctor(System.Boolean)">
-            <summary>
-               Initializes the attribute with the specified return value condition.
-            </summary>
-        </member>
         <member name="T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
             <summary>
               Specifies that the method or property will ensure that the listed field and property members have
@@ -392,41 +333,6 @@
             <summary>
               Initializes the attribute with the specified return value condition and list
               of field and property members.
-            </summary>
-        </member>
-        <member name="T:System.Diagnostics.CodeAnalysis.NotNullAttribute">
-            <summary>
-              Specifies that an output is not <see langword="null"/> even if the
-              corresponding type allows it.
-            </summary>
-        </member>
-        <member name="P:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.ParameterName">
-            <summary>
-              Gets the associated parameter name.
-              The output will be non-<see langword="null"/> if the argument to the
-              parameter specified is non-<see langword="null"/>.
-            </summary>
-        </member>
-        <member name="M:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute.#ctor(System.String)">
-            <summary>
-              Initializes the attribute with the associated parameter name.
-            </summary>
-        </member>
-        <member name="T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
-            <summary>
-              Specifies that when a method returns <see cref="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue"/>,
-              the parameter will not be <see langword="null"/> even if the corresponding type allows it.
-            </summary>
-        </member>
-        <member name="P:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.ReturnValue">
-            <summary>
-              Gets the return value condition.
-              If the method returns this value, the associated parameter will not be <see langword="null"/>.
-            </summary>
-        </member>
-        <member name="M:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute.#ctor(System.Boolean)">
-            <summary>
-              Initializes the attribute with the specified return value condition.
             </summary>
         </member>
         <member name="T:System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute">
@@ -855,74 +761,6 @@
             Initializes a new instance of the <see cref="T:System.Diagnostics.UnreachableException"/>
             class with a specified error message and a reference to the inner exception that is the cause of
             this exception.
-            </summary>
-        </member>
-        <member name="T:System.Index">
-            <summary>Represent a type can be used to index a collection either from the start or the end.</summary>
-        </member>
-        <member name="M:System.Index.#ctor(System.Int32,System.Boolean)">
-            <summary>Construct an Index using a value and indicating if the index is from the start or from the end.</summary>
-        </member>
-        <member name="P:System.Index.Start">
-            <summary>Create an Index pointing at first element.</summary>
-        </member>
-        <member name="P:System.Index.End">
-            <summary>Create an Index pointing at beyond last element.</summary>
-        </member>
-        <member name="M:System.Index.FromStart(System.Int32)">
-            <summary>Create an Index from the start at the position indicated by the value.</summary>
-        </member>
-        <member name="M:System.Index.FromEnd(System.Int32)">
-            <summary>Create an Index from the end at the position indicated by the value.</summary>
-        </member>
-        <member name="P:System.Index.Value">
-            <summary>Returns the index value.</summary>
-        </member>
-        <member name="P:System.Index.IsFromEnd">
-            <summary>Indicates whether the index is from the start or the end.</summary>
-        </member>
-        <member name="M:System.Index.GetOffset(System.Int32)">
-            <summary>Calculate the offset from the start using the giving collection length.</summary>
-        </member>
-        <member name="M:System.Index.Equals(System.Object)">
-            <summary>Indicates whether the current Index object is equal to another object of the same type.</summary>
-        </member>
-        <member name="M:System.Index.Equals(System.Index)">
-            <summary>Indicates whether the current Index object is equal to another Index object.</summary>
-        </member>
-        <member name="M:System.Index.GetHashCode">
-            <summary>Returns the hash code for this instance.</summary>
-        </member>
-        <member name="M:System.Index.op_Implicit(System.Int32)~System.Index">
-            <summary>Converts integer number to an Index.</summary>
-        </member>
-        <member name="M:System.Index.ToString">
-            <summary>Converts the value of the current Index object to its equivalent string representation.</summary>
-        </member>
-        <member name="T:System.Range">
-            <summary>Represent a range has start and end indexes.</summary>
-        </member>
-        <member name="M:System.Range.#ctor(System.Index,System.Index)">
-            <summary>Represent a range has start and end indexes.</summary>
-        </member>
-        <member name="M:System.Range.ToString">
-            <summary>Converts the value of the current Range object to its equivalent string representation.</summary>
-        </member>
-        <member name="M:System.Range.StartAt(System.Index)">
-            <summary>Create a Range object starting from start index to the end of the collection.</summary>
-        </member>
-        <member name="M:System.Range.EndAt(System.Index)">
-            <summary>Create a Range object starting from first element in the collection to the end Index.</summary>
-        </member>
-        <member name="P:System.Range.All">
-            <summary>Create a Range object starting from first element to the end.</summary>
-        </member>
-        <member name="M:System.Range.GetOffsetAndLength(System.Int32)">
-            <summary>Calculate the start offset and length of range object using a collection length.</summary>
-        </member>
-        <member name="M:System.Collections.Generic.KeyValuePair.Create``2(``0,``1)">
-            <summary>
-            Creates a new key/value pair instance using provided values.
             </summary>
         </member>
         <member name="T:System.Threading.Lock">
@@ -1962,31 +1800,6 @@
             Determines whether the specified file or directory exists.
             </summary>
         </member>
-        <member name="M:Polyfills.Polyfill.CopyTo``1(System.ArraySegment{``0},System.ArraySegment{``0})">
-            <summary>
-            Copies the contents of this instance into the specified destination array segment of the same type T.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.CopyTo``1(System.ArraySegment{``0},``0[])">
-            <summary>
-            Copies the contents of this instance into the specified destination array of the same type T.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.CopyTo``1(System.ArraySegment{``0},``0[],System.Int32)">
-            <summary>
-            Copies the contents of this instance into the specified destination array of the same type T, starting at the specified destination index.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.GetEnumerator``1(System.ArraySegment{``0})">
-            <summary>
-            Copies the contents of this instance into the specified destination array of the same type T, starting at the specified destination index.
-            </summary>
-        </member>
-        <member name="T:Polyfills.Polyfill.ArraySegmentEnumerator`1">
-            <summary>
-            Provides an enumerator for the elements of an <see cref="T:System.ArraySegment`1"/>.
-            </summary>
-        </member>
         <member name="M:Polyfills.Polyfill.UnsafeRegister(System.Threading.CancellationToken,System.Action{System.Object},System.Object)">
             <summary>
             Registers a delegate that will be called when this
@@ -2002,14 +1815,39 @@
         <member name="M:Polyfills.Polyfill.CancelAsync(System.Threading.CancellationTokenSource)">
             <summary>Communicates a request for cancellation asynchronously.</summary>
         </member>
-        <member name="M:Polyfills.Polyfill.Clear``1(System.Collections.Concurrent.ConcurrentBag{``0})">
+        <member name="M:Polyfills.Polyfill.OpenAsync(System.IO.Compression.ZipArchiveEntry,System.Threading.CancellationToken)">
             <summary>
-            Removes all values from the <see cref="T:System.Collections.Concurrent.ConcurrentBag`1"/>.
+            Opens the entry from the zip archive.
             </summary>
         </member>
-        <member name="M:Polyfills.Polyfill.Clear``1(System.Collections.Concurrent.ConcurrentQueue{``0})">
+        <member name="M:Polyfills.Polyfill.CreateEntryFromFileAsync(System.IO.Compression.ZipArchive,System.String,System.String,System.Threading.CancellationToken)">
             <summary>
-            Removes all values from the <see cref="T:System.Collections.Concurrent.ConcurrentQueue`1"/>.
+            Archives a file by compressing it and adding it to the zip archive.
+            </summary>
+        </member>
+        <member name="M:Polyfills.Polyfill.CreateEntryFromFileAsync(System.IO.Compression.ZipArchive,System.String,System.String,System.IO.Compression.CompressionLevel,System.Threading.CancellationToken)">
+            <summary>
+            Archives a file by compressing it and adding it to the zip archive.
+            </summary>
+        </member>
+        <member name="M:Polyfills.Polyfill.ExtractToDirectoryAsync(System.IO.Compression.ZipArchive,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Extracts all the files in the zip archive to a directory on the file system.
+            </summary>
+        </member>
+        <member name="M:Polyfills.Polyfill.ExtractToDirectoryAsync(System.IO.Compression.ZipArchive,System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Extracts all the files in the zip archive to a directory on the file system.
+            </summary>
+        </member>
+        <member name="M:Polyfills.Polyfill.ExtractToFileAsync(System.IO.Compression.ZipArchiveEntry,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Extracts an entry in the zip archive to a file.
+            </summary>
+        </member>
+        <member name="M:Polyfills.Polyfill.ExtractToFileAsync(System.IO.Compression.ZipArchiveEntry,System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Extracts an entry in the zip archive to a file.
             </summary>
         </member>
         <member name="M:Polyfills.Polyfill.Deconstruct(System.DateTime,System.Int32@,System.Int32@,System.Int32@)">
@@ -2027,57 +1865,11 @@
             Returns a read-only <see cref="T:System.Collections.ObjectModel.ReadOnlyDictionary`2"/> wrapper for the current dictionary.
             </summary>
         </member>
-        <member name="M:Polyfills.Polyfill.TryAdd``2(System.Collections.Generic.IDictionary{``0,``1},``0,``1)">
-            <summary>
-            Attempts to add the specified key and value to the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Remove``2(System.Collections.Generic.IDictionary{``0,``1},``0,``1@)">
-            <summary>
-            Removes the value with the specified key from the <see cref="T:System.Collections.Generic.IDictionary`2"/>, and copies the element
-            to the value parameter.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.EnsureCapacity``2(System.Collections.Generic.Dictionary{``0,``1},System.Int32)">
-            <summary>
-            Ensures that the capacity of this dictionary is at least the specified capacity. If the current capacity is less than capacity, it is increased to at least the specified capacity.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.TrimExcess``2(System.Collections.Generic.Dictionary{``0,``1},System.Int32)">
-            <summary>
-            Sets the capacity of this dictionary to hold up a specified number of entries without any further expansion of its backing storage.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.TrimExcess``2(System.Collections.Generic.Dictionary{``0,``1})">
-            <summary>
-            Sets the capacity of this dictionary to what it would be if it had been originally initialized with all its entries.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Deconstruct(System.Collections.DictionaryEntry,System.Object@,System.Object@)">
-            <summary>
-            Deconstructs the current <see cref="T:System.Collections.DictionaryEntry"/>.
-            </summary>
-        </member>
         <member name="M:Polyfills.Polyfill.GetBytes(System.Text.Encoding,System.ReadOnlySpan{System.Char},System.Span{System.Byte})">
             <summary>Encodes into a span of bytes a set of characters from the specified read-only span.</summary>
         </member>
         <member name="M:Polyfills.Polyfill.GetString(System.Text.Encoding,System.ReadOnlySpan{System.Byte})">
             <summary>When overridden in a derived class, decodes all the bytes in the specified byte span into a string.</summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.GetByteCount(System.Text.Encoding,System.ReadOnlySpan{System.Char})">
-            <summary>
-            Calculates the number of bytes produced by encoding the characters in the specified character span.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.GetCharCount(System.Text.Encoding,System.ReadOnlySpan{System.Byte})">
-            <summary>
-            Calculates the number of characters produced by decoding the provided read-only byte span.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.GetChars(System.Text.Encoding,System.ReadOnlySpan{System.Byte},System.Span{System.Char})">
-            <summary>
-            Decodes all the bytes in the specified read-only byte span into a character span.
-            </summary>
         </member>
         <member name="M:Polyfills.Polyfill.TryGetChars(System.Text.Encoding,System.ReadOnlySpan{System.Byte},System.Span{System.Char},System.Int32@)">
             <summary>Decodes into a span of chars a set of bytes from the specified read-only span if the destination is large enough.</summary>
@@ -2197,19 +1989,8 @@
         <member name="M:Polyfills.Polyfill.SingleOrDefault``1(System.Collections.Generic.IEnumerable{``0},``0)">
             <summary>Returns the only element of a sequence, or a default value if the sequence is empty; this method throws an exception if there is more than one element in the sequence.</summary>
         </member>
-        <member name="M:Polyfills.Polyfill.SkipLast``1(System.Collections.Generic.IEnumerable{``0},System.Int32)">
-            <summary>
-            Returns a new enumerable collection that contains the elements from source with the last count elements of the
-            source collection omitted.
-            </summary>
-        </member>
         <member name="M:Polyfills.Polyfill.Take``1(System.Collections.Generic.IEnumerable{``0},System.Range)">
             <summary>Returns a specified range of contiguous elements from a sequence.</summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.TakeLast``1(System.Collections.Generic.IEnumerable{``0},System.Int32)">
-            <summary>
-            Returns a new enumerable collection that contains the last count elements from source.
-            </summary>
         </member>
         <member name="M:Polyfills.Polyfill.TryGetNonEnumeratedCount``1(System.Collections.Generic.IEnumerable{``0},System.Int32@)">
             <summary>
@@ -2230,21 +2011,6 @@
         <member name="M:Polyfills.Polyfill.Zip``2(System.Collections.Generic.IEnumerable{``0},System.Collections.Generic.IEnumerable{``1})">
             <summary>
             Produces a sequence of tuples with elements from the two specified sequences.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.GetValueOrDefault``2(System.Collections.Generic.IReadOnlyDictionary{``0,``1},``0)">
-            <summary>
-            Tries to get the value associated with the specified key in the dictionary.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.GetValueOrDefault``2(System.Collections.Generic.IReadOnlyDictionary{``0,``1},``0,``1)">
-            <summary>
-            Tries to get the value associated with the specified key in the dictionary.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Deconstruct``2(System.Collections.Generic.KeyValuePair{``0,``1},``0@,``1@)">
-            <summary>
-            Deconstructs the current <see cref="T:System.Collections.Generic.KeyValuePair`2"/>
             </summary>
         </member>
         <member name="M:Polyfills.Polyfill.AsReadOnly``1(System.Collections.Generic.IList{``0})">
@@ -2545,11 +2311,6 @@
             Creates an array populated with items chosen at random from the provided set of choices.
             </summary>
         </member>
-        <member name="M:Polyfills.Polyfill.NextBytes(System.Random,System.Span{System.Byte})">
-            <summary>
-            Fills the elements of a specified span of bytes with random numbers.
-            </summary>
-        </member>
         <member name="M:Polyfills.Polyfill.Shuffle``1(System.Random,``0[])">
             <summary>
             Performs an in-place shuffle of an array.
@@ -2580,25 +2341,9 @@
             Sets the capacity of a Stack object to a specified number of entries.
             </summary>
         </member>
-        <member name="M:Polyfills.Polyfill.TryPeek``1(System.Collections.Generic.Stack{``0},``0@)">
+        <member name="M:Polyfills.Polyfill.ReadExactlyAsync(System.IO.Stream,System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)">
             <summary>
-            Returns a value that indicates whether there is an object at the top of the <see cref="T:System.Collections.Generic.Stack`1"/>, and if one is present, copies it to the result parameter. The object is not removed from the <see cref="T:System.Collections.Generic.Stack`1"/>.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.TryPop``1(System.Collections.Generic.Stack{``0},``0@)">
-            <summary>
-            Returns a value that indicates whether there is an object at the top of the <see cref="T:System.Collections.Generic.Stack`1"/>, and if one is present, copies it to the result parameter, and removes it from the <see cref="T:System.Collections.Generic.Stack`1"/>.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.CopyToAsync(System.IO.Stream,System.IO.Stream,System.Threading.CancellationToken)">
-            <summary>
-            Asynchronously reads the bytes from the current stream and writes them to another stream, using a specified
-            cancellation token. Both streams positions are advanced by the number of bytes copied.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Read(System.IO.Stream,System.Span{System.Byte})">
-            <summary>
-            Reads a sequence of bytes from the current stream and advances the position within the stream by the number of bytes read.
+            Asynchronously reads count number of bytes from the current stream, advances the position within the stream, and monitors cancellation requests.
             </summary>
         </member>
         <member name="M:Polyfills.Polyfill.ReadExactly(System.IO.Stream,System.Byte[],System.Int32,System.Int32)">
@@ -2616,6 +2361,16 @@
             Reads at least a minimum number of bytes from the current stream and advances the position within the stream by the number of bytes read.
             </summary>
         </member>
+        <member name="M:Polyfills.Polyfill.ReadExactlyAsync(System.IO.Stream,System.Memory{System.Byte},System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously reads bytes from the current stream, advances the position within the stream until the buffer is filled, and monitors cancellation requests
+            </summary>
+        </member>
+        <member name="M:Polyfills.Polyfill.ReadAtLeastAsync(System.IO.Stream,System.Memory{System.Byte},System.Int32,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously reads at least a minimum number of bytes from the current stream, advances the position within the stream by the number of bytes read, and monitors cancellation requests.
+            </summary>
+        </member>
         <member name="M:Polyfills.Polyfill.CopyTo(System.String,System.Span{System.Char})">
             <summary>
             Copies the contents of this string into the destination span.
@@ -2626,63 +2381,6 @@
             Copies the contents of this string into the destination span.
             </summary>
         </member>
-        <member name="M:Polyfills.Polyfill.GetHashCode(System.String,System.StringComparison)">
-            <summary>
-            Returns the hash code for this string using the specified rules.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Contains(System.String,System.Char,System.StringComparison)">
-            <summary>
-            Returns a value indicating whether a specified character occurs within this string, using the specified comparison rules.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.IndexOf(System.String,System.Char,System.StringComparison)">
-            <summary>
-            Reports the zero-based index of the first occurrence of the specified Unicode character in this string. A parameter specifies the type of search to use for the specified character.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Contains(System.String,System.String,System.StringComparison)">
-            <summary>
-            Returns a value indicating whether a specified string occurs within this string, using the specified comparison rules.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.StartsWith(System.String,System.Char)">
-            <summary>
-            Determines whether this string instance starts with the specified character.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.EndsWith(System.String,System.Char)">
-            <summary>
-            Returns a value indicating whether a specified character occurs within this string.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Split(System.String,System.Char,System.StringSplitOptions)">
-            <summary>
-            Splits a string into substrings based on a specified delimiting character and, optionally, options.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Split(System.String,System.Char,System.Int32,System.StringSplitOptions)">
-            <summary>
-            Splits a string into a maximum number of substrings based on a specified delimiting character and, optionally,
-            options. Splits a string into a maximum number of substrings based on the provided character separator,
-            optionally omitting empty substrings from the result.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Split(System.String,System.String,System.StringSplitOptions)">
-            <summary>
-            Splits a string into substrings that are based on the provided string separator.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Split(System.String,System.String,System.Int32,System.StringSplitOptions)">
-            <summary>
-            Splits a string into a maximum number of substrings based on a specified delimiting string and, optionally, options.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Contains(System.String,System.Char)">
-            <summary>
-            Returns a value indicating whether a specified character occurs within this string.
-            </summary>
-        </member>
         <member name="M:Polyfills.Polyfill.ReplaceLineEndings(System.String,System.String)">
             <summary>
             Replaces all newline sequences in the current string with <paramref name="replacementText"/>.
@@ -2691,51 +2389,6 @@
         <member name="M:Polyfills.Polyfill.ReplaceLineEndings(System.String)">
             <summary>
             Replaces all newline sequences in the current string with <see cref="P:System.Environment.NewLine"/>.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Equals(System.Text.StringBuilder,System.ReadOnlySpan{System.Char})">
-            <summary>
-            Returns a value indicating whether the characters in this instance are equal to the characters in a specified
-            read-only character span.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Append(System.Text.StringBuilder,System.Text.StringBuilder,System.Int32,System.Int32)">
-            <summary>
-            Appends a copy of a substring within a specified string builder to this instance.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Append(System.Text.StringBuilder,System.ReadOnlySpan{System.Char})">
-            <summary>
-            Appends the string representation of a specified read-only character span to this instance.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.AppendJoin``1(System.Text.StringBuilder,System.Char,System.Collections.Generic.IEnumerable{``0})">
-            <summary>Concatenates and appends the members of a collection, using the specified separator between each member.</summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.AppendJoin``1(System.Text.StringBuilder,System.String,System.Collections.Generic.IEnumerable{``0})">
-            <summary>Concatenates and appends the members of a collection, using the specified char separator between each member.</summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.AppendJoin(System.Text.StringBuilder,System.String,System.String[])">
-            <summary>Concatenates the strings of the provided array, using the specified separator between each string, then appends the result to the current instance of the string builder.</summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.AppendJoin(System.Text.StringBuilder,System.String,System.Object[])">
-            <summary>Concatenates the string representations of the elements in the provided array of objects, using the specified separator between each member, then appends the result to the current instance of the string builder.</summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.AppendJoin(System.Text.StringBuilder,System.Char,System.String[])">
-            <summary>Concatenates the strings of the provided array, using the specified char separator between each string, then appends the result to the current instance of the string builder.</summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.AppendJoin(System.Text.StringBuilder,System.Char,System.Object[])">
-            <summary>Concatenates the string representations of the elements in the provided array of objects, using the specified char separator between each member, then appends the result to the current instance of the string builder.</summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.AppendJoin``1(System.Text.StringBuilder,System.Char,``0[])">
-            <summary>Concatenates and appends the members of a collection, using the specified char separator between each member.</summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.AppendJoin``1(System.Text.StringBuilder,System.String,``0[])">
-            <summary>Concatenates and appends the members of a collection, using the specified char separator between each member.</summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.CopyTo(System.Text.StringBuilder,System.Int32,System.Span{System.Char},System.Int32)">
-            <summary>
-            Copies the characters from a specified segment of this instance to a destination Char span.
             </summary>
         </member>
         <member name="M:Polyfills.Polyfill.GetChunks(System.Text.StringBuilder)">
@@ -2793,11 +2446,6 @@
         <member name="T:Polyfills.Polyfill.ChunkEnumerator.ManyChunkInfo">
             <summary>
             Used to hold all the chunks indexes when you have many chunks.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Insert(System.Text.StringBuilder,System.Int32,System.ReadOnlySpan{System.Char})">
-            <summary>
-            Inserts the sequence of characters into this instance at the specified character position.
             </summary>
         </member>
         <member name="M:Polyfills.Polyfill.Replace(System.Text.StringBuilder,System.ReadOnlySpan{System.Char},System.ReadOnlySpan{System.Char})">
@@ -2871,16 +2519,6 @@
             <summary>
             Equivalent to WriteAsync(stringBuilder.ToString()) however it uses the
             StringBuilder.GetChunks() method to avoid creating the intermediate string
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.Write(System.IO.TextWriter,System.ReadOnlySpan{System.Char})">
-            <summary>
-            Writes a character span to the text stream.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.WriteLine(System.IO.TextWriter,System.ReadOnlySpan{System.Char})">
-            <summary>
-            Writes the text representation of a character span to the text stream, followed by a line terminator.
             </summary>
         </member>
         <member name="M:Polyfills.Polyfill.TryFormat(System.TimeSpan,System.Span{System.Byte},System.Int32@,System.ReadOnlySpan{System.Char},System.IFormatProvider)">
@@ -3063,36 +2701,6 @@
             Searches for the MemberInfo on the current Type that matches the specified MemberInfo.
             </summary>
         </member>
-        <member name="M:Polyfills.Polyfill.SaveAsync(System.Xml.Linq.XDocument,System.Xml.XmlWriter,System.Threading.CancellationToken)">
-            <summary>
-            Output this <see cref="T:System.Xml.Linq.XDocument"/> to an <see cref="T:System.Xml.XmlWriter"/>.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.SaveAsync(System.Xml.Linq.XDocument,System.IO.Stream,System.Xml.Linq.SaveOptions,System.Threading.CancellationToken)">
-            <summary>
-            Output this <see cref="T:System.Xml.Linq.XDocument"/> to a <see cref="T:System.IO.Stream"/>.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.SaveAsync(System.Xml.Linq.XDocument,System.IO.TextWriter,System.Xml.Linq.SaveOptions,System.Threading.CancellationToken)">
-            <summary>
-            Output this <see cref="T:System.Xml.Linq.XDocument"/> to a <see cref="T:System.IO.TextWriter"/>.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.SaveAsync(System.Xml.Linq.XElement,System.Xml.XmlWriter,System.Threading.CancellationToken)">
-            <summary>
-            Output this <see cref="T:System.Xml.Linq.XElement"/> to an <see cref="T:System.Xml.XmlWriter"/>.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.SaveAsync(System.Xml.Linq.XElement,System.IO.Stream,System.Xml.Linq.SaveOptions,System.Threading.CancellationToken)">
-            <summary>
-            Output this <see cref="T:System.Xml.Linq.XElement"/> to a <see cref="T:System.IO.Stream"/>.
-            </summary>
-        </member>
-        <member name="M:Polyfills.Polyfill.SaveAsync(System.Xml.Linq.XElement,System.IO.TextWriter,System.Xml.Linq.SaveOptions,System.Threading.CancellationToken)">
-            <summary>
-            Output this <see cref="T:System.Xml.Linq.XElement"/> to a <see cref="T:System.IO.TextWriter"/>.
-            </summary>
-        </member>
         <member name="M:Polyfills.Polyfill.IsMatch(System.Text.RegularExpressions.Regex,System.ReadOnlySpan{System.Char},System.Int32)">
             <summary>
             Indicates whether the regular expression specified in the Regex constructor finds a match in a specified input span.
@@ -3208,6 +2816,11 @@
             Computes the hash of a stream using the SHA-256 algorithm.
             </summary>
         </member>
+        <member name="M:Polyfills.SHA256Polyfill.HashDataAsync(System.IO.Stream,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously computes the hash of a stream using the SHA-256 algorithm.
+            </summary>
+        </member>
         <member name="M:Polyfills.SHA256Polyfill.HashData(System.ReadOnlySpan{System.Byte})">
             <summary>
             Computes the hash of a stream using the SHA-256 algorithm.
@@ -3216,6 +2829,11 @@
         <member name="M:Polyfills.SHA256Polyfill.HashData(System.IO.Stream,System.Span{System.Byte})">
             <summary>
             Computes the hash of a stream using the SHA-256 algorithm.
+            </summary>
+        </member>
+        <member name="M:Polyfills.SHA256Polyfill.HashDataAsync(System.IO.Stream,System.Memory{System.Byte},System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously computes the hash of a stream using the SHA-256 algorithm.
             </summary>
         </member>
         <member name="M:Polyfills.SHA256Polyfill.HashData(System.ReadOnlySpan{System.Byte},System.Span{System.Byte})">
@@ -3238,6 +2856,11 @@
             Computes the hash of a stream using the SHA-512 algorithm.
             </summary>
         </member>
+        <member name="M:Polyfills.SHA512Polyfill.HashDataAsync(System.IO.Stream,System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously computes the hash of a stream using the SHA-512 algorithm.
+            </summary>
+        </member>
         <member name="M:Polyfills.SHA512Polyfill.HashData(System.ReadOnlySpan{System.Byte})">
             <summary>
             Computes the hash of a stream using the SHA-512 algorithm.
@@ -3246,6 +2869,11 @@
         <member name="M:Polyfills.SHA512Polyfill.HashData(System.IO.Stream,System.Span{System.Byte})">
             <summary>
             Computes the hash of a stream using the SHA-512 algorithm.
+            </summary>
+        </member>
+        <member name="M:Polyfills.SHA512Polyfill.HashDataAsync(System.IO.Stream,System.Memory{System.Byte},System.Threading.CancellationToken)">
+            <summary>
+            Asynchronously computes the hash of a stream using the SHA-512 algorithm.
             </summary>
         </member>
         <member name="M:Polyfills.SHA512Polyfill.HashData(System.ReadOnlySpan{System.Byte},System.Span{System.Byte})">
