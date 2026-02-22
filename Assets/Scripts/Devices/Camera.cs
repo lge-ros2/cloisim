@@ -140,6 +140,17 @@ namespace SensorDevices
 				SetupDefaultCamera();
 				SetupCamera();
 				_startCameraWork = true;
+				// Use Invoke to start CameraWorker outside WaitForEndOfFrame context
+				// Coroutines started from WaitForEndOfFrame context don't properly
+				// resume after their first yield in Unity 6000
+				Invoke(nameof(StartCameraWorkerDelayed), 0.1f);
+			}
+		}
+
+		private void StartCameraWorkerDelayed()
+		{
+			if (_startCameraWork)
+			{
 				StartCoroutine(CameraWorker());
 			}
 		}
@@ -361,44 +372,45 @@ namespace SensorDevices
 
 		private IEnumerator CameraWorker()
 		{
-			var rateGap = (float)Application.targetFrameRate - UpdateRate;
-			var messageGenerationTime = Mathf.Approximately(rateGap, 0) ? float.PositiveInfinity : 1f / rateGap;
-			var waitNextCapture = new WaitForSeconds(WaitPeriod(messageGenerationTime));
-			// Debug.Log($"CameraWorker {rateGap} {messageGenerationTime} {WaitPeriod(messageGenerationTime)}");
+			var lastCaptureTime = 0f;
 			while (_startCameraWork)
 			{
+				var now = Time.realtimeSinceStartup;
+				if (UpdateRate > 0 && (now - lastCaptureTime) < UpdatePeriod)
+				{
+					yield return null;
+					continue;
+				}
+				lastCaptureTime = now;
+
 				_hdCamData.enabled = true;
 
-				// Debug.Log("start render and request ");
-// 				if (_hdCamData.isActiveAndEnabled)
-				{
-					_camSensor.Render();
+				_camSensor.Render();
 
-					var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
-					AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, (req) => {
-						if (req.hasError)
+				var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
+				AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, (req) => {
+					if (req.hasError)
+					{
+						Debug.LogError($"{name}: Failed to read GPU texture");
+					}
+					else if (req.done)
+					{
+						if (_depthMaterial == null)
 						{
-							Debug.LogError($"{name}: Failed to read GPU texture");
+							var readbackData = req.GetData<byte>();
+							ImageProcessing<byte>(ref readbackData, capturedTime);
 						}
-						else if (req.done)
+						else
 						{
-							if (_depthMaterial == null)
-							{
-								var readbackData = req.GetData<byte>();
-								ImageProcessing<byte>(ref readbackData, capturedTime);
-							}
-							else
-							{
-								var readbackData = req.GetData<float>();
-								ImageProcessing<float>(ref readbackData, capturedTime);
-							}
+							var readbackData = req.GetData<float>();
+							ImageProcessing<float>(ref readbackData, capturedTime);
 						}
-					});
-				}
+					}
+				});
 
 				_hdCamData.enabled = false;
 
-				yield return waitNextCapture;
+				yield return null;
 			}
 		}
 

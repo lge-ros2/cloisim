@@ -159,10 +159,14 @@ else
   else
     if WorldValidationCheck $targetWorld ; then
       if $enableHeadless ; then
-        headlessApps=("libglu1" "xvfb" "libxcursor1")
+        # Unity 6000 needs a display surface for Vulkan swapchain.
+        # Minimal Xvfb (1x1 pixel) provides this; all rendering uses real GPU.
+        headlessApps=("xvfb")
         InstallApps "${headlessApps[@]}"
-        Xvfb :${serverNumber} -screen 0 ${displaySize}x24:32 -nolisten tcp &
+        serverNumber=99
+        Xvfb :${serverNumber} -screen 0 640x480x24 -nolisten tcp &
         export DISPLAY=:$serverNumber
+        HEADLESS_ARGS="-batchmode -force-vulkan"
       fi
 
       captureArgs=()
@@ -173,7 +177,7 @@ else
         captureArgs=("-capture" "${captureFileName}")
       fi
 
-      ./CLOiSim.x86_64 -world $targetWorld "${captureArgs[@]}"
+      ./CLOiSim.x86_64 -world $targetWorld ${HEADLESS_ARGS:-} "${captureArgs[@]}"
     else
       echo -e "\n Invalid world file name or World file NOT exist.\n"
       PrintWorldList

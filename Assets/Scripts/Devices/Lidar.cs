@@ -123,12 +123,22 @@ namespace SensorDevices
 
 				_startLaserWork = true;
 
-				StartCoroutine(CaptureLaserCamera());
+				// Use Invoke to start coroutine outside WaitForEndOfFrame context
+				// (coroutines started from WaitForEndOfFrame don't resume after yield)
+				Invoke(nameof(StartLaserCaptureDelayed), 0.1f);
 
 				if (_laserProcessThread != null)
 				{
 					_laserProcessThread.Start();
 				}
+			}
+		}
+
+		private void StartLaserCaptureDelayed()
+		{
+			if (_startLaserWork)
+			{
+				StartCoroutine(CaptureLaserCamera());
 			}
 		}
 

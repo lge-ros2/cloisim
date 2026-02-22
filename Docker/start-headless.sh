@@ -1,8 +1,6 @@
 #!/bin/bash
 set -eu
 
-xhost +SI:localuser:root >/dev/null 2>&1
-
 PREFIX_PATH=/opt/resources
 
 map_and_mount_paths() {
@@ -45,19 +43,13 @@ if [[ -n "${CLOISIM_FILES_PATH:-}" ]]; then
   ENV_FILES_ARGS="-e CLOISIM_FILES_PATH=$out_env $out_mounts"
 fi
 
-# echo "OUTPUT="$ENV_MODEL_ARGS
-# echo "OUTPUT="$ENV_WORLD_ARGS
-# echo "OUTPUT="$ENV_FILES_ARGS
-
+# Headless mode: GPU rendering via Vulkan on real NVIDIA GPU.
+# Unity 6000 needs a display surface for Vulkan swapchain — minimal Xvfb
+# (1x1 pixel) provides this; all actual rendering uses NVIDIA GPU.
 docker run -it --rm --net=host --ipc=host --gpus device=0 \
-  -e QT_X11_NO_MITSHM=1 \
-  -v ${HOME}/.Xauthority:/root/.Xauthority:rw \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
   -v /tmp/cloisim/unity3d:/root/.config/unity3d \
   -v /usr/share/fonts/:/usr/share/fonts/:ro \
   $ENV_MODEL_ARGS \
   $ENV_WORLD_ARGS \
   $ENV_FILES_ARGS \
-  cloisim --headless $@
-
-xhost -SI:localuser:root >/dev/null 2>&1
+  cloisim $@
