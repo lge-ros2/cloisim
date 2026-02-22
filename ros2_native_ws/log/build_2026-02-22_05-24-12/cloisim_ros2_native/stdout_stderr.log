@@ -1,9 +1,0 @@
-[ 50%] [32mBuilding CXX object CMakeFiles/cloisim_ros2_native.dir/src/cloisim_ros2.cpp.o[0m
-[01m[K/home/nav/workspace/cloisim/cloisim/ros2_native_ws/src/ros2_native_plugin/src/cloisim_ros2.cpp:4:10:[m[K [01;31m[Kfatal error: [m[Knav_msgs/msg/odometry.hpp: No such file or directory
-    4 |  [01;31m[K<nav_msgs/msg/odometry.hpp>[m[K
-      |  [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
-
-compilation terminated.
-gmake[2]: *** [CMakeFiles/cloisim_ros2_native.dir/build.make:76: CMakeFiles/cloisim_ros2_native.dir/src/cloisim_ros2.cpp.o] Error 1
-gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/cloisim_ros2_native.dir/all] Error 2
-gmake: *** [Makefile:146: all] Error 2
