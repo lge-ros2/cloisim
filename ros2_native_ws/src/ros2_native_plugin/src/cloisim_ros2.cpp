@@ -15,6 +15,35 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <unordered_map>
+#include <cstring>
+
+// ═══════════════════════════════════════════════
+//  QoS type enum: 0 = RELIABLE (default), 1 = BEST_EFFORT sensor
+// ═══════════════════════════════════════════════
+enum QosType : int {
+    QOS_RELIABLE = 0,
+    QOS_BEST_EFFORT = 1
+};
+
+static rclcpp::QoS make_qos(int qos_depth, int qos_type) {
+    rclcpp::QoS qos(qos_depth);
+    if (qos_type == QOS_BEST_EFFORT) {
+        qos.best_effort();
+        qos.keep_last(qos_depth > 0 ? qos_depth : 1);
+        qos.durability_volatile();
+    }
+    return qos;
+}
+
+// ═══════════════════════════════════════════════
+//  Pre-allocated message cache (P2)
+//  Avoids constructing + deep-copying messages every publish call
+// ═══════════════════════════════════════════════
+static std::mutex g_msg_cache_mutex;
+static std::unordered_map<void*, sensor_msgs::msg::Image> g_image_msg_cache;
+static std::unordered_map<void*, sensor_msgs::msg::LaserScan> g_laserscan_msg_cache;
+static std::unordered_map<void*, sensor_msgs::msg::PointCloud2> g_pointcloud2_msg_cache;
 
 extern "C" {
 
@@ -76,15 +105,17 @@ void DestroyNode(void* node_ptr) {
     }
 }
 
-void* CreateLaserScanPublisher(void* node_ptr, const char* topic_name, int qos_depth) {
+void* CreateLaserScanPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10, int qos_type = QOS_BEST_EFFORT) {
     if (!node_ptr || !topic_name) return nullptr;
     auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
     if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
 
     try {
-        rclcpp::QoS qos(qos_depth);
+        auto qos = make_qos(qos_depth, qos_type);
         auto pub = (*typed_node_ptr)->create_publisher<sensor_msgs::msg::LaserScan>(topic_name, qos);
-        return new std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::LaserScan>>(pub);
+        auto ptr = new std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::LaserScan>>(pub);
+        g_laserscan_msg_cache[ptr] = sensor_msgs::msg::LaserScan();
+        return ptr;
     } catch (const std::exception& e) {
         std::cerr << "Failed to create publisher: " << e.what() << std::endl;
         return nullptr;
@@ -93,6 +124,7 @@ void* CreateLaserScanPublisher(void* node_ptr, const char* topic_name, int qos_d
 
 void DestroyLaserScanPublisher(void* pub_ptr) {
     if (pub_ptr) {
+        g_laserscan_msg_cache.erase(pub_ptr);
         auto typed_ptr = static_cast<std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::LaserScan>>*>(pub_ptr);
         delete typed_ptr;
     }
@@ -103,7 +135,8 @@ void PublishLaserScan(void* pub_ptr, LaserScanStruct* data) {
     auto typed_pub_ptr = static_cast<std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::LaserScan>>*>(pub_ptr);
     if (!typed_pub_ptr || !*typed_pub_ptr) return;
 
-    sensor_msgs::msg::LaserScan msg;
+    // P2: Reuse pre-allocated message
+    auto& msg = g_laserscan_msg_cache[pub_ptr];
     msg.header.stamp = rclcpp::Time(static_cast<int64_t>(data->timestamp * 1e9));
     if (data->frame_id) {
         msg.header.frame_id = data->frame_id;
@@ -118,10 +151,16 @@ void PublishLaserScan(void* pub_ptr, LaserScanStruct* data) {
     msg.range_max = data->range_max;
 
     if (data->ranges && data->ranges_length > 0) {
-        msg.ranges.assign(data->ranges, data->ranges + data->ranges_length);
+        msg.ranges.resize(data->ranges_length);
+        std::memcpy(msg.ranges.data(), data->ranges, data->ranges_length * sizeof(float));
+    } else {
+        msg.ranges.clear();
     }
     if (data->intensities && data->intensities_length > 0) {
-        msg.intensities.assign(data->intensities, data->intensities + data->intensities_length);
+        msg.intensities.resize(data->intensities_length);
+        std::memcpy(msg.intensities.data(), data->intensities, data->intensities_length * sizeof(float));
+    } else {
+        msg.intensities.clear();
     }
 
     (*typed_pub_ptr)->publish(msg);
@@ -142,13 +181,13 @@ struct ImuStruct {
     double linear_acceleration_z;
 };
 
-void* CreateImuPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10) {
+void* CreateImuPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10, int qos_type = QOS_BEST_EFFORT) {
     if (!node_ptr || !topic_name) return nullptr;
     auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
     if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
 
     try {
-        rclcpp::QoS qos(qos_depth);
+        auto qos = make_qos(qos_depth, qos_type);
         auto pub = (*typed_node_ptr)->create_publisher<sensor_msgs::msg::Imu>(topic_name, qos);
         return new std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Imu>>(pub);
     } catch (const std::exception& e) {
@@ -208,13 +247,13 @@ struct OdometryStruct {
     double twist_angular_z;
 };
 
-void* CreateOdometryPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10) {
+void* CreateOdometryPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10, int qos_type = QOS_BEST_EFFORT) {
     if (!node_ptr || !topic_name) return nullptr;
     auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
     if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
 
     try {
-        rclcpp::QoS qos(qos_depth);
+        auto qos = make_qos(qos_depth, qos_type);
         auto pub = (*typed_node_ptr)->create_publisher<nav_msgs::msg::Odometry>(topic_name, qos);
         return new std::shared_ptr<rclcpp::Publisher<nav_msgs::msg::Odometry>>(pub);
     } catch (const std::exception& e) {
@@ -271,13 +310,13 @@ struct NavSatFixStruct {
     uint8_t position_covariance_type;
 };
 
-void* CreateNavSatFixPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10) {
+void* CreateNavSatFixPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10, int qos_type = QOS_BEST_EFFORT) {
     if (!node_ptr || !topic_name) return nullptr;
     auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
     if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
 
     try {
-        rclcpp::QoS qos(qos_depth);
+        auto qos = make_qos(qos_depth, qos_type);
         auto pub = (*typed_node_ptr)->create_publisher<sensor_msgs::msg::NavSatFix>(topic_name, qos);
         return new std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::NavSatFix>>(pub);
     } catch (const std::exception& e) {
@@ -329,15 +368,17 @@ struct ImageStruct {
     uint32_t data_length;
 };
 
-void* CreateImagePublisher(void* node_ptr, const char* topic_name, int qos_depth = 10) {
+void* CreateImagePublisher(void* node_ptr, const char* topic_name, int qos_depth = 10, int qos_type = QOS_BEST_EFFORT) {
     if (!node_ptr || !topic_name) return nullptr;
     auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
     if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
 
     try {
-        rclcpp::QoS qos(qos_depth);
+        auto qos = make_qos(qos_depth, qos_type);
         auto pub = (*typed_node_ptr)->create_publisher<sensor_msgs::msg::Image>(topic_name, qos);
-        return new std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Image>>(pub);
+        auto ptr = new std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Image>>(pub);
+        g_image_msg_cache[ptr] = sensor_msgs::msg::Image();
+        return ptr;
     } catch (const std::exception& e) {
         std::cerr << "Failed to create Image publisher: " << e.what() << std::endl;
         return nullptr;
@@ -346,6 +387,7 @@ void* CreateImagePublisher(void* node_ptr, const char* topic_name, int qos_depth
 
 void DestroyImagePublisher(void* pub_ptr) {
     if (pub_ptr) {
+        g_image_msg_cache.erase(pub_ptr);
         auto typed_ptr = static_cast<std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Image>>*>(pub_ptr);
         delete typed_ptr;
     }
@@ -356,7 +398,8 @@ void PublishImage(void* pub_ptr, ImageStruct* data) {
     auto typed_pub_ptr = static_cast<std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Image>>*>(pub_ptr);
     if (!typed_pub_ptr || !*typed_pub_ptr) return;
 
-    sensor_msgs::msg::Image msg;
+    // P2: Reuse pre-allocated message — avoid heap alloc for data vector
+    auto& msg = g_image_msg_cache[pub_ptr];
     msg.header.stamp = rclcpp::Time(static_cast<int64_t>(data->timestamp * 1e9));
     if (data->frame_id) msg.header.frame_id = data->frame_id;
     
@@ -367,7 +410,10 @@ void PublishImage(void* pub_ptr, ImageStruct* data) {
     msg.step = data->step;
 
     if (data->data && data->data_length > 0) {
-        msg.data.assign(data->data, data->data + data->data_length);
+        msg.data.resize(data->data_length);
+        std::memcpy(msg.data.data(), data->data, data->data_length);
+    } else {
+        msg.data.clear();
     }
 
     (*typed_pub_ptr)->publish(msg);
@@ -388,13 +434,13 @@ struct CameraInfoStruct {
     uint32_t binning_y;
 };
 
-void* CreateCameraInfoPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10) {
+void* CreateCameraInfoPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10, int qos_type = QOS_BEST_EFFORT) {
     if (!node_ptr || !topic_name) return nullptr;
     auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
     if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
 
     try {
-        rclcpp::QoS qos(qos_depth);
+        auto qos = make_qos(qos_depth, qos_type);
         auto pub = (*typed_node_ptr)->create_publisher<sensor_msgs::msg::CameraInfo>(topic_name, qos);
         return new std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::CameraInfo>>(pub);
     } catch (const std::exception& e) {
@@ -445,13 +491,13 @@ struct LabelInfoStruct {
     int label_length;
 };
 
-void* CreateLabelInfoPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10) {
+void* CreateLabelInfoPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10, int qos_type = QOS_BEST_EFFORT) {
     if (!node_ptr || !topic_name) return nullptr;
     auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
     if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
 
     try {
-        rclcpp::QoS qos(qos_depth);
+        auto qos = make_qos(qos_depth, qos_type);
         auto pub = (*typed_node_ptr)->create_publisher<vision_msgs::msg::LabelInfo>(topic_name, qos);
         return new std::shared_ptr<rclcpp::Publisher<vision_msgs::msg::LabelInfo>>(pub);
     } catch (const std::exception& e) {
@@ -515,15 +561,17 @@ struct PointCloud2Struct {
     uint8_t is_dense;
 };
 
-void* CreatePointCloud2Publisher(void* node_ptr, const char* topic_name, int qos_depth = 10) {
+void* CreatePointCloud2Publisher(void* node_ptr, const char* topic_name, int qos_depth = 10, int qos_type = QOS_BEST_EFFORT) {
     if (!node_ptr || !topic_name) return nullptr;
     auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
     if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
 
     try {
-        rclcpp::QoS qos(qos_depth);
+        auto qos = make_qos(qos_depth, qos_type);
         auto pub = (*typed_node_ptr)->create_publisher<sensor_msgs::msg::PointCloud2>(topic_name, qos);
-        return new std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>>(pub);
+        auto ptr = new std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>>(pub);
+        g_pointcloud2_msg_cache[ptr] = sensor_msgs::msg::PointCloud2();
+        return ptr;
     } catch (const std::exception& e) {
         std::cerr << "Failed to create PointCloud2 publisher: " << e.what() << std::endl;
         return nullptr;
@@ -532,6 +580,7 @@ void* CreatePointCloud2Publisher(void* node_ptr, const char* topic_name, int qos
 
 void DestroyPointCloud2Publisher(void* pub_ptr) {
     if (pub_ptr) {
+        g_pointcloud2_msg_cache.erase(pub_ptr);
         auto typed_ptr = static_cast<std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>>*>(pub_ptr);
         delete typed_ptr;
     }
@@ -542,7 +591,8 @@ void PublishPointCloud2(void* pub_ptr, PointCloud2Struct* data) {
     auto typed_pub_ptr = static_cast<std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>>*>(pub_ptr);
     if (!typed_pub_ptr || !*typed_pub_ptr) return;
 
-    sensor_msgs::msg::PointCloud2 msg;
+    // P2: Reuse pre-allocated message
+    auto& msg = g_pointcloud2_msg_cache[pub_ptr];
     msg.header.stamp = rclcpp::Time(static_cast<int64_t>(data->timestamp * 1e9));
     if (data->frame_id) msg.header.frame_id = data->frame_id;
     
@@ -550,15 +600,15 @@ void PublishPointCloud2(void* pub_ptr, PointCloud2Struct* data) {
     msg.width = data->width;
     
     if (data->fields && data->fields_length > 0) {
-        msg.fields.reserve(data->fields_length);
+        msg.fields.resize(data->fields_length);
         for (int i = 0; i < data->fields_length; i++) {
-            sensor_msgs::msg::PointField pf;
-            if (data->fields[i].name) pf.name = data->fields[i].name;
-            pf.offset = data->fields[i].offset;
-            pf.datatype = data->fields[i].datatype;
-            pf.count = data->fields[i].count;
-            msg.fields.push_back(pf);
+            if (data->fields[i].name) msg.fields[i].name = data->fields[i].name;
+            msg.fields[i].offset = data->fields[i].offset;
+            msg.fields[i].datatype = data->fields[i].datatype;
+            msg.fields[i].count = data->fields[i].count;
         }
+    } else {
+        msg.fields.clear();
     }
     
     msg.is_bigendian = data->is_bigendian;
@@ -566,7 +616,10 @@ void PublishPointCloud2(void* pub_ptr, PointCloud2Struct* data) {
     msg.row_step = data->row_step;
     
     if (data->data && data->data_length > 0) {
-        msg.data.assign(data->data, data->data + data->data_length);
+        msg.data.resize(data->data_length);
+        std::memcpy(msg.data.data(), data->data, data->data_length);
+    } else {
+        msg.data.clear();
     }
     
     msg.is_dense = data->is_dense;
@@ -584,13 +637,13 @@ struct RangeStruct {
     float range;
 };
 
-void* CreateRangePublisher(void* node_ptr, const char* topic_name, int qos_depth = 10) {
+void* CreateRangePublisher(void* node_ptr, const char* topic_name, int qos_depth = 10, int qos_type = QOS_BEST_EFFORT) {
     if (!node_ptr || !topic_name) return nullptr;
     auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
     if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
 
     try {
-        rclcpp::QoS qos(qos_depth);
+        auto qos = make_qos(qos_depth, qos_type);
         auto pub = (*typed_node_ptr)->create_publisher<sensor_msgs::msg::Range>(topic_name, qos);
         return new std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Range>>(pub);
     } catch (const std::exception& e) {
@@ -636,13 +689,13 @@ struct PoseStampedStruct {
     double orientation_w;
 };
 
-void* CreatePoseStampedPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10) {
+void* CreatePoseStampedPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10, int qos_type = QOS_BEST_EFFORT) {
     if (!node_ptr || !topic_name) return nullptr;
     auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
     if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
 
     try {
-        rclcpp::QoS qos(qos_depth);
+        auto qos = make_qos(qos_depth, qos_type);
         auto pub = (*typed_node_ptr)->create_publisher<geometry_msgs::msg::PoseStamped>(topic_name, qos);
         return new std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>>(pub);
     } catch (const std::exception& e) {
@@ -707,13 +760,13 @@ struct ContactsStruct {
     int contacts_length;
 };
 
-void* CreateContactsPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10) {
+void* CreateContactsPublisher(void* node_ptr, const char* topic_name, int qos_depth = 10, int qos_type = QOS_BEST_EFFORT) {
     if (!node_ptr || !topic_name) return nullptr;
     auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
     if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
 
     try {
-        rclcpp::QoS qos(qos_depth);
+        auto qos = make_qos(qos_depth, qos_type);
         auto pub = (*typed_node_ptr)->create_publisher<ros_gz_interfaces::msg::Contacts>(topic_name, qos);
         return new std::shared_ptr<rclcpp::Publisher<ros_gz_interfaces::msg::Contacts>>(pub);
     } catch (const std::exception& e) {
@@ -792,13 +845,13 @@ struct JointStateStruct {
     int length;
 };
 
-void* CreateJointStatePublisher(void* node_ptr, const char* topic_name, int qos_depth = 10) {
+void* CreateJointStatePublisher(void* node_ptr, const char* topic_name, int qos_depth = 10, int qos_type = QOS_BEST_EFFORT) {
     if (!node_ptr || !topic_name) return nullptr;
     auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
     if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
 
     try {
-        rclcpp::QoS qos(qos_depth);
+        auto qos = make_qos(qos_depth, qos_type);
         auto pub = (*typed_node_ptr)->create_publisher<sensor_msgs::msg::JointState>(topic_name, qos);
         return new std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::JointState>>(pub);
     } catch (const std::exception& e) {

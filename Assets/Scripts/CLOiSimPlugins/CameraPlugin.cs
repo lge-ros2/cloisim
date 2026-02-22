@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 using System.Collections;
+using System.Collections.Concurrent;
+using System.Threading;
 using cloisim.Native;
 using System.Runtime.InteropServices;
 using System;
@@ -16,6 +18,63 @@ public class CameraPlugin : CLOiSimPlugin
 	private IntPtr _rosNode = IntPtr.Zero;
 	private IntPtr _rosImagePublisher = IntPtr.Zero;
 	private IntPtr _rosCameraInfoPublisher = IntPtr.Zero;
+
+	// ═══════════════════════════════════════════════
+	//  P0: Background publish thread — prevents DDS blocking the render thread
+	// ═══════════════════════════════════════════════
+	private struct ImagePublishPayload
+	{
+		public ImageStruct data;
+		public byte[] pixelBuffer;   // owned copy so GPU readback buffer can be released
+	}
+
+	private readonly ConcurrentQueue<ImagePublishPayload> _publishQueue = new ConcurrentQueue<ImagePublishPayload>();
+	private Thread _publishThread;
+	private volatile bool _publishThreadRunning;
+
+	private void StartPublishThread()
+	{
+		_publishThreadRunning = true;
+		_publishThread = new Thread(PublishLoop)
+		{
+			Name = "CameraPlugin_PublishThread",
+			IsBackground = true
+		};
+		_publishThread.Start();
+	}
+
+	private void StopPublishThread()
+	{
+		_publishThreadRunning = false;
+		_publishThread?.Join(500);
+		_publishThread = null;
+	}
+
+	private unsafe void PublishLoop()
+	{
+		while (_publishThreadRunning)
+		{
+			if (_publishQueue.TryDequeue(out var payload))
+			{
+				fixed (byte* dataPtr = payload.pixelBuffer)
+				{
+					var data = payload.data;
+					data.data = (IntPtr)dataPtr;
+					Ros2NativeWrapper.PublishImage(_rosImagePublisher, ref data);
+				}
+			}
+			else
+			{
+				Thread.Sleep(1); // yield CPU when queue is empty
+			}
+		}
+
+		// Drain remaining items on shutdown
+		while (_publishQueue.TryDequeue(out var remaining))
+		{
+			// discard to free memory
+		}
+	}
 
 	protected override void OnAwake()
 	{
@@ -48,6 +107,9 @@ public class CameraPlugin : CLOiSimPlugin
 		var infoTopicName = GetPluginParameters().GetValue<string>("topic_info", "/camera_info");
 		_rosCameraInfoPublisher = Ros2NativeWrapper.CreateCameraInfoPublisher(_rosNode, infoTopicName);
 
+		// P0: Start the background publish thread before subscribing to data
+		StartPublishThread();
+
 		_cam.OnCameraDataGenerated += HandleNativeCameraData;
 		_cam.OnCameraInfoGenerated += HandleNativeCameraInfo;
 
@@ -78,11 +140,16 @@ public class CameraPlugin : CLOiSimPlugin
 
 	private unsafe void HandleNativeCameraData(messages.ImageStamped msg)
 	{
-		if (_rosImagePublisher == IntPtr.Zero) return;
+		if (_rosImagePublisher == IntPtr.Zero || !_publishThreadRunning) return;
 
-		fixed (byte* dataPtr = msg.Image.Data)
+		// P0: Copy pixel data and enqueue for background publishing.
+		// This avoids blocking the Unity render thread on DDS serialization.
+		var pixelCopy = new byte[msg.Image.Data.Length];
+		Buffer.BlockCopy(msg.Image.Data, 0, pixelCopy, 0, pixelCopy.Length);
+
+		var payload = new ImagePublishPayload
 		{
-			var data = new ImageStruct
+			data = new ImageStruct
 			{
 				timestamp = msg.Time.Sec + (msg.Time.Nsec * 1e-9),
 				frame_id = _partsName,
@@ -99,12 +166,19 @@ public class CameraPlugin : CLOiSimPlugin
 				},
 				is_bigendian = 0,
 				step = msg.Image.Step,
-				data = (IntPtr)dataPtr,
-				data_length = (uint)msg.Image.Data.Length
-			};
+				data = IntPtr.Zero, // will be set in publish loop
+				data_length = (uint)pixelCopy.Length
+			},
+			pixelBuffer = pixelCopy
+		};
 
-			Ros2NativeWrapper.PublishImage(_rosImagePublisher, ref data);
+		// Drop oldest frame if queue is backing up (keep at most 2 pending)
+		while (_publishQueue.Count >= 2)
+		{
+			_publishQueue.TryDequeue(out _);
 		}
+
+		_publishQueue.Enqueue(payload);
 	}
 
 	private unsafe void HandleNativeCameraInfo(messages.CameraSensor msg)
@@ -173,6 +247,9 @@ public class CameraPlugin : CLOiSimPlugin
 
 	new protected void OnDestroy()
 	{
+		// P0: Stop background thread before destroying publishers
+		StopPublishThread();
+
 		if (_cam != null)
 		{
 			_cam.OnCameraDataGenerated -= HandleNativeCameraData;

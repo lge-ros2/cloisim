@@ -142,6 +142,17 @@ namespace SensorDevices
 				SetupDefaultCamera();
 				SetupCamera();
 				_startCameraWork = true;
+				// Use Invoke to start CameraWorker outside WaitForEndOfFrame context.
+				// In Unity 6000, coroutines started from WaitForEndOfFrame context
+				// don't resume after their first yield, so AsyncGPUReadback never fires.
+				Invoke(nameof(StartCameraWorkerDelayed), 0.1f);
+			}
+		}
+
+		private void StartCameraWorkerDelayed()
+		{
+			if (_startCameraWork)
+			{
 				StartCoroutine(CameraWorker());
 			}
 		}

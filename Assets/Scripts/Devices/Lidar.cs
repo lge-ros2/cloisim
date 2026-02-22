@@ -161,12 +161,23 @@ namespace SensorDevices
 
 				_startLaserWork = true;
 
-				StartCoroutine(CaptureLaserCamera());
+				// Use Invoke to start CaptureLaserCamera outside WaitForEndOfFrame context.
+				// In Unity 6000, coroutines started from WaitForEndOfFrame context
+				// don't resume after their first yield.
+				Invoke(nameof(StartLaserCaptureDelayed), 0.1f);
 
 				if (_laserProcessThread != null)
 				{
 					_laserProcessThread.Start();
 				}
+			}
+		}
+
+		private void StartLaserCaptureDelayed()
+		{
+			if (_startLaserWork)
+			{
+				StartCoroutine(CaptureLaserCamera());
 			}
 		}
 
