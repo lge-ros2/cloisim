@@ -7,6 +7,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Any = cloisim.msgs.Any;
 using messages = cloisim.msgs;
+using cloisim.Native;
+using System.Runtime.InteropServices;
+using System;
 
 public class JointControlPlugin : CLOiSimPlugin
 {
@@ -14,6 +17,9 @@ public class JointControlPlugin : CLOiSimPlugin
 	private string _robotDescription = "<?xml version='1.0' ?><sdf></sdf>";
 	private SensorDevices.JointCommand _jointCommand = null;
 	private SensorDevices.JointState _jointState = null;
+
+	private IntPtr _rosNode = IntPtr.Zero;
+	private IntPtr _rosJointStatePublisher = IntPtr.Zero;
 
 	protected override void OnAwake()
 	{
@@ -51,7 +57,95 @@ public class JointControlPlugin : CLOiSimPlugin
 		_robotDescription = "<?xml version='1.0' ?><sdf>" + GetPluginParameters().ParentRawXml() + "</sdf>";
 		// UnityEngine.Debug.Log(_robotDescription);
 
+		// Initialize native ROS2 JointState publisher
+		Ros2NativeWrapper.InitROS2(0, IntPtr.Zero);
+		var nodeName = "cloisim_jointcontrol_" + gameObject.name.Replace(" ", "_");
+		_rosNode = Ros2NativeWrapper.CreateNode(nodeName);
+
+		var topicName = GetPluginParameters().GetValue<string>("ros2/joint_state_topic", "/joint_states");
+		_rosJointStatePublisher = Ros2NativeWrapper.CreateJointStatePublisher(_rosNode, topicName);
+
+		_jointState.OnJointStateDataGenerated += HandleNativeJointStateData;
+
 		yield return null;
+	}
+
+	private unsafe void HandleNativeJointStateData(messages.JointStateV msg)
+	{
+		if (_rosJointStatePublisher == IntPtr.Zero || msg == null) return;
+
+		int count = msg.JointStates.Count;
+		if (count == 0) return;
+
+		double timestamp = msg.Header.Stamp.Sec + (msg.Header.Stamp.Nsec * 1e-9);
+
+		var nameArray = new string[count];
+		var positionArray = new double[count];
+		var velocityArray = new double[count];
+		var effortArray = new double[count];
+
+		for (int i = 0; i < count; i++)
+		{
+			var js = msg.JointStates[i];
+			nameArray[i] = js.Name;
+			positionArray[i] = js.Position;
+			velocityArray[i] = js.Velocity;
+			effortArray[i] = js.Effort;
+		}
+
+		// Marshal string array
+		IntPtr namesPtr = Marshal.AllocHGlobal(count * IntPtr.Size);
+		IntPtr[] stringPointers = new IntPtr[count];
+		for (int i = 0; i < count; i++)
+		{
+			stringPointers[i] = Marshal.StringToHGlobalAnsi(nameArray[i] ?? "");
+		}
+		Marshal.Copy(stringPointers, 0, namesPtr, count);
+
+		// Marshal double arrays
+		IntPtr posPtr = Marshal.AllocHGlobal(count * sizeof(double));
+		Marshal.Copy(positionArray, 0, posPtr, count);
+
+		IntPtr velPtr = Marshal.AllocHGlobal(count * sizeof(double));
+		Marshal.Copy(velocityArray, 0, velPtr, count);
+
+		IntPtr effPtr = Marshal.AllocHGlobal(count * sizeof(double));
+		Marshal.Copy(effortArray, 0, effPtr, count);
+
+		try
+		{
+			var data = new JointStateStruct
+			{
+				timestamp = timestamp,
+				frame_id = "",
+				name = namesPtr,
+				position = posPtr,
+				velocity = velPtr,
+				effort = effPtr,
+				length = count
+			};
+
+			Ros2NativeWrapper.PublishJointState(_rosJointStatePublisher, ref data);
+		}
+		finally
+		{
+			// Free unmanaged memory
+			for (int i = 0; i < count; i++)
+			{
+				Marshal.FreeHGlobal(stringPointers[i]);
+			}
+			Marshal.FreeHGlobal(namesPtr);
+			Marshal.FreeHGlobal(posPtr);
+			Marshal.FreeHGlobal(velPtr);
+			Marshal.FreeHGlobal(effPtr);
+		}
+	}
+
+	new protected void OnDestroy()
+	{
+		if (_jointState != null) _jointState.OnJointStateDataGenerated -= HandleNativeJointStateData;
+		if (_rosJointStatePublisher != IntPtr.Zero) Ros2NativeWrapper.DestroyJointStatePublisher(_rosJointStatePublisher);
+		if (_rosNode != IntPtr.Zero) Ros2NativeWrapper.DestroyNode(_rosNode);
 	}
 
 	protected override void OnReset()

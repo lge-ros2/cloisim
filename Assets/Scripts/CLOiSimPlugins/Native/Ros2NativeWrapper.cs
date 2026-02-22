@@ -117,5 +117,14 @@ namespace cloisim.Native
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void PublishContacts(IntPtr pub_ptr, ref ContactsStruct data);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern IntPtr CreateJointStatePublisher(IntPtr node_ptr, string topic_name, int qos_depth = 10);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void DestroyJointStatePublisher(IntPtr pub_ptr);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PublishJointState(IntPtr pub_ptr, ref JointStateStruct data);
     }
 }
