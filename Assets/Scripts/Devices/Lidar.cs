@@ -96,6 +96,44 @@ namespace SensorDevices
 		private ConcurrentQueue<(double, Pose, LaserData.Output[])> _outputQueue = new();
 		private readonly AutoResetEvent _dataAvailable = new(false);
 
+		/// <summary>
+		/// In HDRP, register for endCameraRendering to apply the DepthRange shader
+		/// as a post-process on the laser camera. The built-in renderer uses
+		/// Camera.AddCommandBuffer instead, but that API is unavailable in SRP.
+		/// Without this, the laser camera's color target contains scene colors
+		/// instead of linear depth values, causing the compute shader to produce
+		/// garbage range data.
+		/// </summary>
+		private void OnEnable()
+		{
+			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null)
+			{
+				RenderPipelineManager.endCameraRendering += OnEndLaserCameraRendering;
+			}
+		}
+
+		private void OnDisable()
+		{
+			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null)
+			{
+				RenderPipelineManager.endCameraRendering -= OnEndLaserCameraRendering;
+			}
+		}
+
+		/// <summary>
+		/// HDRP endCameraRendering callback: apply DepthRange post-process to the laser camera.
+		/// Reads the HDRP depth buffer (_CameraDepthTexture) and writes linear depth values
+		/// to the camera's color target (R32_SFloat), which the compute shader then reads.
+		/// </summary>
+		private void OnEndLaserCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
+		{
+			if (camera == _laserCam && _cb != null)
+			{
+				context.ExecuteCommandBuffer(_cb);
+				context.Submit();
+			}
+		}
+
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
@@ -123,22 +161,12 @@ namespace SensorDevices
 
 				_startLaserWork = true;
 
-				// Use Invoke to start coroutine outside WaitForEndOfFrame context
-				// (coroutines started from WaitForEndOfFrame don't resume after yield)
-				Invoke(nameof(StartLaserCaptureDelayed), 0.1f);
+				StartCoroutine(CaptureLaserCamera());
 
 				if (_laserProcessThread != null)
 				{
 					_laserProcessThread.Start();
 				}
-			}
-		}
-
-		private void StartLaserCaptureDelayed()
-		{
-			if (_startLaserWork)
-			{
-				StartCoroutine(CaptureLaserCamera());
 			}
 		}
 
@@ -157,21 +185,23 @@ namespace SensorDevices
 
 			if (_cb != null)
 			{
-				if (_laserCam != null)
+				// RemoveCommandBuffer is only available with the built-in renderer
+				if (_laserCam != null && UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null)
 					_laserCam.RemoveCommandBuffer(CameraEvent.AfterEverything, _cb);
 				_cb.Release();
 				_cb = null;
 			}
 
-			if (_laserCam != null)
+			// RemoveAllCommandBuffers is only available with the built-in renderer
+			if (_laserCam != null && UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null)
 			{
 				try
 				{
-					 _laserCam.RemoveAllCommandBuffers();
+					_laserCam.RemoveAllCommandBuffers();
 				}
 				catch
 				{
-					Debug.LogWarning("Failed to remove RemoveAllCommandBuffers");
+					Debug.LogWarning("Failed to RemoveAllCommandBuffers");
 				}
 			}
 

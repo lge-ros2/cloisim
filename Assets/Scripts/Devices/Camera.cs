@@ -33,6 +33,7 @@ namespace SensorDevices
 		protected GraphicsFormat _readbackDstFormat;
 
 		protected bool _startCameraWork = false;
+		protected bool _needsReadbackFormatConversion = false;
 		private RTHandle _rtHandle;
 		protected Texture2D _textureForCapture = null;
 
@@ -137,21 +138,29 @@ namespace SensorDevices
 			if (_camSensor)
 			{
 				SetupTexture();
+				CheckReadbackFormatSupport();
 				SetupDefaultCamera();
 				SetupCamera();
 				_startCameraWork = true;
-				// Use Invoke to start CameraWorker outside WaitForEndOfFrame context
-				// Coroutines started from WaitForEndOfFrame context don't properly
-				// resume after their first yield in Unity 6000
-				Invoke(nameof(StartCameraWorkerDelayed), 0.1f);
+				StartCoroutine(CameraWorker());
 			}
 		}
 
-		private void StartCameraWorkerDelayed()
+		/// <summary>
+		/// Verify the desired readback format is supported for GPU readback.
+		/// On Vulkan/Linux, 3-byte formats like R8G8B8_SRGB are often unsupported.
+		/// Falls back to the render target's native format with CPU-side conversion.
+		/// </summary>
+		protected void CheckReadbackFormatSupport()
 		{
-			if (_startCameraWork)
+			if (_readbackDstFormat != _targetColorFormat)
 			{
-				StartCoroutine(CameraWorker());
+				if (!SystemInfo.IsFormatSupported(_readbackDstFormat, FormatUsage.ReadPixels))
+				{
+					Debug.LogWarning($"{DeviceName}: Readback format {_readbackDstFormat} not supported for ReadPixels, falling back to {_targetColorFormat} with CPU conversion");
+					_readbackDstFormat = _targetColorFormat;
+					_needsReadbackFormatConversion = true;
+				}
 			}
 		}
 
@@ -372,26 +381,30 @@ namespace SensorDevices
 
 		private IEnumerator CameraWorker()
 		{
-			var lastCaptureTime = 0f;
+			var waitNextCapture = new WaitForSeconds(UpdatePeriod);
+
 			while (_startCameraWork)
 			{
-				var now = Time.realtimeSinceStartup;
-				if (UpdateRate > 0 && (now - lastCaptureTime) < UpdatePeriod)
+				if (_camSensor.targetTexture == null)
 				{
+					Debug.LogWarning($"{name}: Camera target texture is null, skipping frame");
 					yield return null;
 					continue;
 				}
-				lastCaptureTime = now;
 
-				_hdCamData.enabled = true;
-
+				// Do NOT toggle _hdCamData.enabled — in HDRP, disabling HDAdditionalCameraData
+				// destroys the internal HDCamera state. Re-enabling and immediately calling
+				// Render() doesn't give HDRP time to reconstruct it, so the render silently
+				// produces nothing and AsyncGPUReadback never completes.
+				// The camera component is already disabled (_camSensor.enabled = false),
+				// which prevents automatic rendering. Manual Render() calls still work.
 				_camSensor.Render();
 
 				var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
 				AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, (req) => {
 					if (req.hasError)
 					{
-						Debug.LogError($"{name}: Failed to read GPU texture");
+						Debug.LogError($"{name}: Failed to read GPU texture (format={_readbackDstFormat})");
 					}
 					else if (req.done)
 					{
@@ -408,9 +421,7 @@ namespace SensorDevices
 					}
 				});
 
-				_hdCamData.enabled = false;
-
-				yield return null;
+				yield return waitNextCapture;
 			}
 		}
 
@@ -451,19 +462,60 @@ namespace SensorDevices
 			var sizeOfT = UnsafeUtility.SizeOf<T>();
 			var byteView = readbackData.Reinterpret<byte>(sizeOfT);
 
-			if (image.Data != null && image.Data.Length == byteView.Length)
-			{
-				byteView.CopyTo(image.Data);
-			}
-			else
-			{
-				Debug.LogWarning($"{name}: Failed to get image Data. Size mismatch (Image: {image.Data?.Length}, Buffer: {byteView.Length})");
-			}
+			CopyReadbackToImage(byteView, image.Data);
 
 			if (OnCameraDataGenerated != null) OnCameraDataGenerated.Invoke(imageStamped);
 			if (OnCameraInfoGenerated != null) OnCameraInfoGenerated.Invoke(_sensorInfo);
 
 			_messageQueue.Enqueue(imageStamped);
+		}
+
+		/// <summary>
+		/// Copy readback data to image buffer, handling format conversion if needed.
+		/// When the GPU doesn't support the desired readback format (e.g. R8G8B8_SRGB on Vulkan),
+		/// we read back in the render target's native format (RGBA) and strip extra channels on CPU.
+		/// </summary>
+		protected void CopyReadbackToImage(NativeArray<byte> byteView, byte[] imageData)
+		{
+			if (imageData == null)
+			{
+				Debug.LogWarning($"{name}: image.Data is null");
+			}
+			else if (imageData.Length == byteView.Length)
+			{
+				byteView.CopyTo(imageData);
+			}
+			else if (_needsReadbackFormatConversion)
+			{
+				ConvertReadbackData(byteView, imageData);
+			}
+			else
+			{
+				Debug.LogWarning($"{name}: Failed to get image Data. Size mismatch (Image: {imageData.Length}, Buffer: {byteView.Length})");
+			}
+		}
+
+		/// <summary>
+		/// Convert readback data from native format (e.g. RGBA 4 BPP) to desired format (e.g. RGB 3 BPP).
+		/// Copies the first N channels from each source pixel group into the destination.
+		/// </summary>
+		protected virtual void ConvertReadbackData(NativeArray<byte> src, byte[] dst)
+		{
+			var pixelCount = (int)(_image.Width * _image.Height);
+			if (pixelCount == 0) return;
+
+			var srcBpp = src.Length / pixelCount;
+			var dstBpp = dst.Length / pixelCount;
+
+			for (int i = 0; i < pixelCount; i++)
+			{
+				var si = i * srcBpp;
+				var di = i * dstBpp;
+				for (int c = 0; c < dstBpp; c++)
+				{
+					dst[di + c] = src[si + c];
+				}
+			}
 		}
 
 		public messages.CameraSensor GetCameraInfo()

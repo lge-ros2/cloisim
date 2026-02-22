@@ -98,14 +98,7 @@ namespace SensorDevices
 			var sizeOfT = UnsafeUtility.SizeOf<T>();
 			var byteView = readbackData.Reinterpret<byte>(sizeOfT);
 
-			if (image.Data != null && image.Data.Length == byteView.Length)
-			{
-				byteView.CopyTo(image.Data);
-			}
-			else
-			{
-				Debug.LogWarning($"{name}: Failed to get image Data. Size mismatch (Image: {image.Data?.Length}, Buffer: {byteView.Length})");
-			}
+			CopyReadbackToImage(byteView, image.Data);
 
 			// update labels
 			var labelInfo = Main.SegmentationManager.GetLabelInfo();
