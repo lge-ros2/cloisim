@@ -9,16 +9,18 @@ using System.Runtime.InteropServices;
 using System;
 using messages = cloisim.msgs;
 
+using Any = cloisim.msgs.Any;
+
 public class ImuPlugin : CLOiSimPlugin
 {
-	private SensorDevices.IMU imu = null;
+	private SensorDevices.IMU _imu = null;
 	private IntPtr _rosNode = IntPtr.Zero;
 	private IntPtr _rosPublisher = IntPtr.Zero;
 
 	protected override void OnAwake()
 	{
 		_type = ICLOiSimPlugin.Type.IMU;
-		imu = gameObject.GetComponent<SensorDevices.IMU>();
+		_imu = gameObject.GetComponent<SensorDevices.IMU>();
 	}
 
 	protected override IEnumerator OnStart()
@@ -30,7 +32,7 @@ public class ImuPlugin : CLOiSimPlugin
 		var topicName = GetPluginParameters().GetValue<string>("topic", "/imu");
 		_rosPublisher = Ros2NativeWrapper.CreateImuPublisher(_rosNode, topicName);
 		
-		imu.OnImuDataGenerated += HandleNativeImuData;
+		_imu.OnImuDataGenerated += HandleNativeImuData;
 
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{
@@ -39,7 +41,7 @@ public class ImuPlugin : CLOiSimPlugin
 
 		if (RegisterTxDevice(out var portTx, "Data"))
 		{
-			AddThread(portTx, SenderThread, imu);
+			AddThread(portTx, SenderThread, _imu);
 		}
 
 		yield return null;
@@ -68,9 +70,9 @@ public class ImuPlugin : CLOiSimPlugin
 		Ros2NativeWrapper.PublishImu(_rosPublisher, ref data);
 	}
 
-	protected void OnDestroy()
+	new protected void OnDestroy()
 	{
-		if (imu != null) imu.OnImuDataGenerated -= HandleNativeImuData;
+		if (_imu != null) _imu.OnImuDataGenerated -= HandleNativeImuData;
 		if (_rosPublisher != IntPtr.Zero) Ros2NativeWrapper.DestroyImuPublisher(_rosPublisher);
 		if (_rosNode != IntPtr.Zero) Ros2NativeWrapper.DestroyNode(_rosNode);
 	}
@@ -80,8 +82,8 @@ public class ImuPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_transform":
-				var devicePose = imu.GetPose();
-				var deviceName = imu.DeviceName;
+				var devicePose = _imu.GetPose();
+				var deviceName = _imu.DeviceName;
 				SetTransformInfoResponse(ref response, deviceName, devicePose, _parentLinkName);
 				break;
 

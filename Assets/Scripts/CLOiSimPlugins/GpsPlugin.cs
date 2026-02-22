@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System;
 using messages = cloisim.msgs;
 
+using Any = cloisim.msgs.Any;
+
 public class GpsPlugin : CLOiSimPlugin
 {
 	private SensorDevices.GPS _gps = null;
@@ -94,7 +96,7 @@ public class GpsPlugin : CLOiSimPlugin
 
 	protected void OnDestroy()
 	{
-		if (_gps != null) 
+		if (_gps != null)
 		{
 			_gps.OnGpsDataGenerated -= HandleNativeGpsData;
 			_gps.OnGpsHeadingGenerated -= HandleNativeGpsHeading;

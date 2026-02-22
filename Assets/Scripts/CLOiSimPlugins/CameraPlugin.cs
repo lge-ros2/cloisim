@@ -8,6 +8,7 @@ using cloisim.Native;
 using System.Runtime.InteropServices;
 using System;
 using messages = cloisim.msgs;
+using Any = cloisim.msgs.Any;
 
 public class CameraPlugin : CLOiSimPlugin
 {
@@ -170,7 +171,7 @@ public class CameraPlugin : CLOiSimPlugin
 		}
 	}
 
-	protected void OnDestroy()
+	new protected void OnDestroy()
 	{
 		if (_cam != null)
 		{

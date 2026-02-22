@@ -5,6 +5,7 @@
  */
 using System.Collections;
 using UnityEngine;
+using System;
 using Any = cloisim.msgs.Any;
 
 public class RangePlugin : CLOiSimPlugin
@@ -95,7 +96,7 @@ public class RangePlugin : CLOiSimPlugin
 		}
 	}
 
-	protected void OnDestroy()
+	new protected void OnDestroy()
 	{
 		if (_sonar != null) _sonar.OnRangeDataGenerated -= HandleNativeRangeData;
 		if (_rosPublisher != IntPtr.Zero) cloisim.Native.Ros2NativeWrapper.DestroyRangePublisher(_rosPublisher);

@@ -167,7 +167,7 @@ public class ContactPlugin : CLOiSimPlugin
 		}
 	}
 
-	protected void OnDestroy()
+	new protected void OnDestroy()
 	{
 		if (_contact != null) _contact.OnContactsDataGenerated -= HandleNativeContactsData;
 		if (_rosPublisher != System.IntPtr.Zero) cloisim.Native.Ros2NativeWrapper.DestroyContactsPublisher(_rosPublisher);

@@ -10,7 +10,6 @@ using System.Text;
 using System;
 using cloisim.Native;
 using System.Runtime.InteropServices;
-using System;
 using Any = cloisim.msgs.Any;
 using UnityEngine;
 using UnityEngine.Video;
@@ -83,6 +82,11 @@ public class MicomPlugin : CLOiSimPlugin
 	{
 		if (_rosOdomPublisher == IntPtr.Zero || msg.Odom == null) return;
 
+		// Pose.Z contains the accumulated heading (yaw angle in radians)
+		// Convert yaw to quaternion: q = (0, 0, sin(yaw/2), cos(yaw/2))
+		var yaw = msg.Odom.Pose.Z;
+		var halfYaw = yaw * 0.5;
+
 		var data = new OdometryStruct
 		{
 			timestamp = msg.Time.Sec + (msg.Time.Nsec * 1e-9),
@@ -90,11 +94,11 @@ public class MicomPlugin : CLOiSimPlugin
 			child_frame_id = "base_footprint", // Standard child frame ID
 			pose_x = msg.Odom.Pose.X,
 			pose_y = msg.Odom.Pose.Y,
-			pose_z = msg.Odom.Pose.Z,
+			pose_z = 0, // 2D odometry, z position is 0
 			pose_orientation_x = 0,
 			pose_orientation_y = 0,
-			pose_orientation_z = msg.Odom.Twist.Angular.Z, // Temporary proxy for orientation, needs quaternion math if full 3D is needed
-			pose_orientation_w = 1.0, 
+			pose_orientation_z = Math.Sin(halfYaw),
+			pose_orientation_w = Math.Cos(halfYaw),
 			twist_linear_x = msg.Odom.Twist.Linear.X,
 			twist_linear_y = msg.Odom.Twist.Linear.Y,
 			twist_linear_z = msg.Odom.Twist.Linear.Z,
@@ -106,7 +110,7 @@ public class MicomPlugin : CLOiSimPlugin
 		Ros2NativeWrapper.PublishOdometry(_rosOdomPublisher, ref data);
 	}
 
-	protected void OnDestroy()
+	new protected void OnDestroy()
 	{
 		if (_micomSensor != null) _micomSensor.OnMicomDataGenerated -= HandleNativeMicomData;
 		if (_rosOdomPublisher != IntPtr.Zero) Ros2NativeWrapper.DestroyOdometryPublisher(_rosOdomPublisher);

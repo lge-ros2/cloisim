@@ -75,7 +75,7 @@ public class SegmentationCameraPlugin : CameraPlugin
 		
 		for (int i = 0; i < numLabels; i++)
 		{
-			classIds[i] = msg.ClassMaps[i].ClassId;
+			classIds[i] = (int)msg.ClassMaps[i].ClassId;
 			classNames[i] = msg.ClassMaps[i].ClassName;
 		}
 

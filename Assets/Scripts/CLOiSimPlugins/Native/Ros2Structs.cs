@@ -146,6 +146,7 @@ namespace cloisim.Native
         public IntPtr fields; // PointFieldStruct array
         public int fields_length;
         public byte is_bigendian;
+        public uint point_step;
         public uint row_step;
         public IntPtr data; // byte array
         public uint data_length;
@@ -213,5 +214,18 @@ namespace cloisim.Native
         public string frame_id;
         public IntPtr contacts; // ContactStruct array
         public int contacts_length;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct JointStateStruct
+    {
+        public double timestamp;
+        [MarshalAs(UnmanagedType.LPStr)]
+        public string frame_id;
+        public IntPtr name; // string array (const char**)
+        public IntPtr position; // double array
+        public IntPtr velocity; // double array
+        public IntPtr effort; // double array
+        public int length;
     }
 }

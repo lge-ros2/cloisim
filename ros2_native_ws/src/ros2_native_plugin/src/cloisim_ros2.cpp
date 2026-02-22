@@ -6,6 +6,7 @@
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/msg/range.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <vision_msgs/msg/label_info.hpp>
@@ -738,11 +739,11 @@ void PublishContacts(void* pub_ptr, ContactsStruct* data) {
     if (data->frame_id) msg.header.frame_id = data->frame_id;
 
     if (data->contacts && data->contacts_length > 0) {
-        msg.bindings.reserve(data->contacts_length);
+        msg.contacts.reserve(data->contacts_length);
         for (int i = 0; i < data->contacts_length; i++) {
             ros_gz_interfaces::msg::Contact contact_msg;
-            if (data->contacts[i].collision1) contact_msg.collision1 = data->contacts[i].collision1;
-            if (data->contacts[i].collision2) contact_msg.collision2 = data->contacts[i].collision2;
+            if (data->contacts[i].collision1) contact_msg.collision1.name = data->contacts[i].collision1;
+            if (data->contacts[i].collision2) contact_msg.collision2.name = data->contacts[i].collision2;
             
             if (data->contacts[i].positions && data->contacts[i].positions_length > 0) {
                 contact_msg.positions.reserve(data->contacts[i].positions_length);
@@ -769,13 +770,70 @@ void PublishContacts(void* pub_ptr, ContactsStruct* data) {
             if (data->contacts[i].depths && data->contacts[i].depths_length > 0) {
                 contact_msg.depths.assign(data->contacts[i].depths, data->contacts[i].depths + data->contacts[i].depths_length);
             }
-            
-            // Note: ros_gz_interfaces::msg::Contact has no `times` field based on standard definition, or if it does it might be an array of `builtin_interfaces/Time`?
-            // Wait, looking at ros_gz_interfaces, there is NO `times` array usually, but ignition::msgs::Contact has it.
-            // Let me skip `times` for ros_gz_interfaces if it doesn't exist, but I will check later.
-            // Wait I'll not assign times for now because it's not strictly necessary in ROS.
 
-            msg.bindings.push_back(contact_msg);
+            msg.contacts.push_back(contact_msg);
+        }
+    }
+
+    (*typed_pub_ptr)->publish(msg);
+}
+
+// ═══════════════════════════════════════════════
+//  JointState
+// ═══════════════════════════════════════════════
+
+struct JointStateStruct {
+    double timestamp;
+    const char* frame_id;
+    const char** name;
+    double* position;
+    double* velocity;
+    double* effort;
+    int length;
+};
+
+void* CreateJointStatePublisher(void* node_ptr, const char* topic_name, int qos_depth = 10) {
+    if (!node_ptr || !topic_name) return nullptr;
+    auto typed_node_ptr = static_cast<std::shared_ptr<rclcpp::Node>*>(node_ptr);
+    if (!typed_node_ptr || !*typed_node_ptr) return nullptr;
+
+    try {
+        rclcpp::QoS qos(qos_depth);
+        auto pub = (*typed_node_ptr)->create_publisher<sensor_msgs::msg::JointState>(topic_name, qos);
+        return new std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::JointState>>(pub);
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create JointState publisher: " << e.what() << std::endl;
+        return nullptr;
+    }
+}
+
+void DestroyJointStatePublisher(void* pub_ptr) {
+    if (pub_ptr) {
+        auto typed_ptr = static_cast<std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::JointState>>*>(pub_ptr);
+        delete typed_ptr;
+    }
+}
+
+void PublishJointState(void* pub_ptr, JointStateStruct* data) {
+    if (!pub_ptr || !data) return;
+    auto typed_pub_ptr = static_cast<std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::JointState>>*>(pub_ptr);
+    if (!typed_pub_ptr || !*typed_pub_ptr) return;
+
+    sensor_msgs::msg::JointState msg;
+    msg.header.stamp = rclcpp::Time(static_cast<int64_t>(data->timestamp * 1e9));
+    if (data->frame_id) msg.header.frame_id = data->frame_id;
+
+    if (data->length > 0) {
+        msg.name.resize(data->length);
+        msg.position.resize(data->length);
+        msg.velocity.resize(data->length);
+        msg.effort.resize(data->length);
+
+        for (int i = 0; i < data->length; i++) {
+            if (data->name && data->name[i]) msg.name[i] = data->name[i];
+            if (data->position) msg.position[i] = data->position[i];
+            if (data->velocity) msg.velocity[i] = data->velocity[i];
+            if (data->effort) msg.effort[i] = data->effort[i];
         }
     }
 

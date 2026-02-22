@@ -125,6 +125,10 @@ namespace SensorDevices
 
 			if (OnSegmentationDataGenerated != null) OnSegmentationDataGenerated.Invoke(segmentation);
 
+			// Also invoke parent Camera events so CameraPlugin publishes the image natively
+			if (OnCameraDataGenerated != null) OnCameraDataGenerated.Invoke(segmentation.ImageStamped);
+			if (OnCameraInfoGenerated != null) OnCameraInfoGenerated.Invoke(_sensorInfo);
+
 			_messageQueue.Enqueue(segmentation);
 		}
 	}

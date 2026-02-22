@@ -14,6 +14,8 @@ using System;
 public class LaserPlugin : CLOiSimPlugin
 {
 	private SensorDevices.Lidar _lidar = null;
+	private IntPtr _rosNode = IntPtr.Zero;
+	private IntPtr _rosPublisher = IntPtr.Zero;
 	private IntPtr _rosPublisherPC2 = IntPtr.Zero;
 	private string _outputType = "LaserScan";
 
@@ -140,7 +142,7 @@ public class LaserPlugin : CLOiSimPlugin
 		else if (_outputType == "PointCloud2" && _rosPublisherPC2 != IntPtr.Zero)
 		{
 			// Convert LaserScan to PointCloud2
-			int numSamples = scan.Count * scan.VerticalCount;
+			int numSamples = (int)(scan.Count * scan.VerticalCount);
 			int pointsCount = 0;
 			
 			// We need x, y, z, intensity (16 bytes per point)
@@ -157,7 +159,7 @@ public class LaserPlugin : CLOiSimPlugin
 
 				for (int h = 0; h < scan.Count; h++)
 				{
-					int index = v * scan.Count + h;
+					int index = v * (int)scan.Count + h;
 					double range = scan.Ranges[index];
 					double intensity = scan.Intensities.Length > index ? scan.Intensities[index] : 0.0;
 					
@@ -230,7 +232,7 @@ public class LaserPlugin : CLOiSimPlugin
 		}
 	}
 
-	protected void OnDestroy()
+	new protected void OnDestroy()
 	{
 		if (_lidar != null) _lidar.OnLidarDataGenerated -= HandleNativeLidarData;
 		if (_rosPublisher != IntPtr.Zero) Ros2NativeWrapper.DestroyLaserScanPublisher(_rosPublisher);

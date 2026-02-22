@@ -228,6 +228,9 @@ namespace SensorDevices
 				}
 			}
 
+			if (OnCameraDataGenerated != null) OnCameraDataGenerated.Invoke(imageStamped);
+			if (OnCameraInfoGenerated != null) OnCameraInfoGenerated.Invoke(_sensorInfo);
+
 			_messageQueue.Enqueue(imageStamped);
 		}
 	}
