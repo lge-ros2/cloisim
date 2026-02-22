@@ -1,0 +1,22 @@
+running develop
+running egg_info
+writing cloisim_test_app.egg-info/PKG-INFO
+writing dependency_links to cloisim_test_app.egg-info/dependency_links.txt
+writing entry points to cloisim_test_app.egg-info/entry_points.txt
+writing requirements to cloisim_test_app.egg-info/requires.txt
+writing top-level names to cloisim_test_app.egg-info/top_level.txt
+reading manifest file 'cloisim_test_app.egg-info/SOURCES.txt'
+writing manifest file 'cloisim_test_app.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/lib/python3.12/site-packages/cloisim-test-app.egg-link (link to .)
+Installing benchmark_compare script to /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/lib/cloisim_test_app
+Installing comm_benchmark script to /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/lib/cloisim_test_app
+Installing test_node script to /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/lib/cloisim_test_app
+
+Installed /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app
+running symlink_data
+creating /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/share/cloisim_test_app/launch
+symbolically linking /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app/launch/benchmark_zmq.launch.py -> /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/share/cloisim_test_app/launch
+symbolically linking /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app/launch/benchmark_native.launch.py -> /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/share/cloisim_test_app/launch
+creating /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/share/cloisim_test_app/scripts
+symbolically linking /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app/scripts/run_benchmark.sh -> /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/share/cloisim_test_app/scripts

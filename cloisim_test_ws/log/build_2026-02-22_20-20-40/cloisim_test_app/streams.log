@@ -1,0 +1,19 @@
+[1.079s] Invoking command in '/home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app/build --no-deps symlink_data
+[1.518s] running develop
+[1.803s] running egg_info
+[1.831s] writing cloisim_test_app.egg-info/PKG-INFO
+[1.831s] writing dependency_links to cloisim_test_app.egg-info/dependency_links.txt
+[1.831s] writing entry points to cloisim_test_app.egg-info/entry_points.txt
+[1.831s] writing requirements to cloisim_test_app.egg-info/requires.txt
+[1.832s] writing top-level names to cloisim_test_app.egg-info/top_level.txt
+[1.887s] reading manifest file 'cloisim_test_app.egg-info/SOURCES.txt'
+[1.888s] writing manifest file 'cloisim_test_app.egg-info/SOURCES.txt'
+[1.918s] running build_ext
+[1.918s] Creating /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/lib/python3.12/site-packages/cloisim-test-app.egg-link (link to .)
+[1.919s] Installing benchmark_compare script to /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/lib/cloisim_test_app
+[1.919s] Installing comm_benchmark script to /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/lib/cloisim_test_app
+[1.919s] Installing test_node script to /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/lib/cloisim_test_app
+[1.920s] 
+[1.920s] Installed /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app
+[1.920s] running symlink_data
+[1.958s] Invoked command in '/home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app/build --no-deps symlink_data

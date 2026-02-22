@@ -1,0 +1,22 @@
+running develop
+running egg_info
+creating cloisim_test_app.egg-info
+writing cloisim_test_app.egg-info/PKG-INFO
+writing dependency_links to cloisim_test_app.egg-info/dependency_links.txt
+writing entry points to cloisim_test_app.egg-info/entry_points.txt
+writing requirements to cloisim_test_app.egg-info/requires.txt
+writing top-level names to cloisim_test_app.egg-info/top_level.txt
+writing manifest file 'cloisim_test_app.egg-info/SOURCES.txt'
+reading manifest file 'cloisim_test_app.egg-info/SOURCES.txt'
+writing manifest file 'cloisim_test_app.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/lib/python3.12/site-packages/cloisim-test-app.egg-link (link to .)
+Installing test_node script to /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/lib/cloisim_test_app
+
+Installed /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app
+running symlink_data
+creating /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/share/ament_index
+creating /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/share/ament_index/resource_index
+creating /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/share/ament_index/resource_index/packages
+symbolically linking /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app/resource/cloisim_test_app -> /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/share/ament_index/resource_index/packages
+symbolically linking /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/build/cloisim_test_app/package.xml -> /home/nav/workspace/cloisim/cloisim/cloisim_test_ws/install/cloisim_test_app/share/cloisim_test_app
