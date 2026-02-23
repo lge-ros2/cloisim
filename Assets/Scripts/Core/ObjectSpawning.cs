@@ -13,7 +13,7 @@ using UnityEngine;
 [DefaultExecutionOrder(40)]
 public class ObjectSpawning : MonoBehaviour
 {
-	public enum PropsType { BOX = 0, CYLINDER = 1, SPHERE = 2 };
+	public enum PropsType { NONE = 0, BOX = 1, CYLINDER = 2, SPHERE = 3 };
 	private const float UnitMass = 3.5f;
 	private const float CylinderRotationAngle = 90;
 
@@ -26,12 +26,12 @@ public class ObjectSpawning : MonoBehaviour
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private FollowingTargetList _followingList = null;
 
-	private Dictionary<PropsType, GameObject> props = new Dictionary<PropsType, GameObject>();
+	private Dictionary<PropsType, GameObject> props = new();
 	public float maxRayDistance = 100;
-	private Dictionary<PropsType, uint> propsCount = new Dictionary<PropsType, uint>();
+	private Dictionary<PropsType, uint> propsCount = new();
 
 	private float _scaleFactor = 0.5f;
-	private PropsType _propType = 0;
+	private PropsType _propType = PropsType.NONE;
 
 	public void SetScaleFactor(in float value)
 	{
@@ -41,6 +41,11 @@ public class ObjectSpawning : MonoBehaviour
 	public void SetPropType(in PropsType value)
 	{
 		_propType = value;
+	}
+
+	public PropsType GetPropType()
+	{
+		return _propType;
 	}
 
 	void Awake()
@@ -79,7 +84,7 @@ public class ObjectSpawning : MonoBehaviour
 				if (GetPositionAndNormalOnClick(out var hitPoint, out var hitNormal))
 				{
 					var propsScale = Vector3.one * _scaleFactor;
-					StartCoroutine(SpawnTargetObject((PropsType)_propType, hitPoint, hitNormal, propsScale));
+					StartCoroutine(SpawnTargetObject(hitPoint, hitNormal, propsScale));
 				}
 			}
 			else if (Input.GetMouseButtonUp(1))
@@ -92,18 +97,6 @@ public class ObjectSpawning : MonoBehaviour
 				}
 			}
 		}
-		else if (Input.GetKeyUp(KeyCode.Alpha1))
-		{
-			ChnagePropType(PropsType.BOX);
-		}
-		else if (Input.GetKeyUp(KeyCode.Alpha2))
-		{
-			ChnagePropType(PropsType.CYLINDER);
-		}
-		else if (Input.GetKeyUp(KeyCode.Alpha3))
-		{
-			ChnagePropType(PropsType.SPHERE);
-		}
 		else if (Input.GetKeyUp(KeyCode.Delete))
 		{
 			transformGizmo.GetSelectedTargets(out var list);
@@ -112,27 +105,24 @@ public class ObjectSpawning : MonoBehaviour
 		}
 	}
 
-	private void ChnagePropType(in PropsType type)
+	private IEnumerator SpawnTargetObject(Vector3 position, Vector3 normal, Vector3 scale)
 	{
-		if (!_uiController.IsScaleFieldFocused())
+		if (_propType == PropsType.NONE)
 		{
-			SetPropType(type);
+			Main.UIController.SetWarningMessage($"Select props type first!!!!");
+			yield break;
 		}
-	}
+		Main.UIController.ClearMessage();
 
-	private IEnumerator SpawnTargetObject(PropsType type, Vector3 position, Vector3 normal, Vector3 scale)
-	{
-		GameObject spawnedObject = null;
+		if (!propsCount.ContainsKey(_propType))
+		{
+			propsCount.Add(_propType, 0);
+		}
+
 		Mesh mesh = null;
-
-		if (!propsCount.ContainsKey(type))
+		if (!props.ContainsKey(_propType))
 		{
-			propsCount.Add(type, 0);
-		}
-
-		if (!props.ContainsKey(type))
-		{
-			switch (type)
+			switch (_propType)
 			{
 				case PropsType.BOX:
 					mesh = ProceduralMesh.CreateBox();
@@ -149,16 +139,17 @@ public class ObjectSpawning : MonoBehaviour
 
 			if (mesh != null)
 			{
-				var newTempPropsObject = CreateUnitProps(type, mesh);
-				props.Add(type, newTempPropsObject);
+				var newTempPropsObject = CreateUnitProps(_propType, mesh);
+				props.Add(_propType, newTempPropsObject);
 				newTempPropsObject.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSave;
 				newTempPropsObject.SetActive(false);
 			}
 		}
 
-		var propsName = type.ToString() + "-" + propsCount[type]++;
+		var propsName = _propType.ToString() + "-" + propsCount[_propType]++;
 
-		if (props.TryGetValue(type, out var targetObject))
+		GameObject spawnedObject = null;
+		if (props.TryGetValue(_propType, out var targetObject))
 		{
 			spawnedObject = Instantiate(targetObject);
 			spawnedObject.name = propsName;
@@ -178,12 +169,11 @@ public class ObjectSpawning : MonoBehaviour
 			rigidBody.ResetCenterOfMass();
 			rigidBody.ResetInertiaTensor();
 
-			// var propTypeName = (type.ToString() + scale.ToString()).Trim();
+			// var propTypeName = (_propType.ToString() + scale.ToString()).Trim();
 			// Debug.Log(propTypeName);
-			Main.SegmentationManager.AttachTag(type.ToString(), spawnedObject);
+			Main.SegmentationManager.AttachTag(_propType.ToString(), spawnedObject);
 			Main.SegmentationManager.UpdateTags();
 		}
-
 
 		var spawanedObjectTransform = spawnedObject.transform;
 		spawanedObjectTransform.position = position;

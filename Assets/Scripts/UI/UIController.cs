@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -21,6 +22,9 @@ public class UIController : MonoBehaviour
 	private TextField _scaleField = null;
 	private Label _statusMessage = null;
 	private Button _recordSave = null;
+	private Button _buttonPropsBox = null;
+	private Button _buttonPropsCylinder = null;
+	private Button _buttonPropsSphere = null;
 
 	private const float CameraViewDistance = 30f;
 	private const float ScaleFactorMin = 0.01f;
@@ -55,14 +59,13 @@ public class UIController : MonoBehaviour
 		_scaleField.RegisterCallback<FocusOutEvent>(OnFocusOutScaleField);
 		_prevScaleFactorString = _scaleField.text;
 
-		var buttonPropsBox = _rootVisualElement.Q<Button>("PropsBox");
-		buttonPropsBox.clickable.clicked += () => objectSpawning?.SetPropType(ObjectSpawning.PropsType.BOX);
+		_buttonPropsBox = _rootVisualElement.Q<Button>("PropsBox");
+		_buttonPropsCylinder = _rootVisualElement.Q<Button>("PropsCylinder");
+		_buttonPropsSphere = _rootVisualElement.Q<Button>("PropsSphere");
 
-		var buttonPropsCylinder = _rootVisualElement.Q<Button>("PropsCylinder");
-		buttonPropsCylinder.clickable.clicked += () => objectSpawning?.SetPropType(ObjectSpawning.PropsType.CYLINDER);
-
-		var buttonPropsSphere = _rootVisualElement.Q<Button>("PropsSphere");
-		buttonPropsSphere.clickable.clicked += () => objectSpawning?.SetPropType(ObjectSpawning.PropsType.SPHERE);
+		_buttonPropsBox.clickable.clicked += () => SelectPropButton(_buttonPropsBox, ObjectSpawning.PropsType.BOX);
+		_buttonPropsCylinder.clickable.clicked += () => SelectPropButton(_buttonPropsCylinder, ObjectSpawning.PropsType.CYLINDER);
+		_buttonPropsSphere.clickable.clicked += () => SelectPropButton(_buttonPropsSphere, ObjectSpawning.PropsType.SPHERE);
 
 		_statusMessage = _rootVisualElement.Q<Label>("StatusMessage");
 		ClearMessage();
@@ -172,6 +175,31 @@ public class UIController : MonoBehaviour
 		button.style.backgroundColor = new StyleColor(color);
 	}
 
+	private void SelectPropButton(Button selected, ObjectSpawning.PropsType type)
+	{
+		var buttons = new List<Button>
+		{
+			_buttonPropsBox,
+			_buttonPropsCylinder,
+			_buttonPropsSphere
+		};
+
+		var currentPropType = Main.ObjectSpawning?.GetPropType();
+		var finalPropType = (currentPropType == type) ? ObjectSpawning.PropsType.NONE : type;
+		// Debug.Log(finalPropType);
+		Main.ObjectSpawning?.SetPropType(finalPropType);
+
+		foreach (var button in buttons)
+		{
+			button.RemoveFromClassList("props-selected");
+		}
+
+		if (finalPropType != ObjectSpawning.PropsType.NONE)
+		{
+			selected.AddToClassList("props-selected");
+		}
+	}
+
 	void LateUpdate()
 	{
 		if (Input.GetKeyUp(KeyCode.F1))
@@ -194,6 +222,27 @@ public class UIController : MonoBehaviour
 			{
 				// Debug.Log("Save World");
 				Main.Instance.SaveWorld();
+			}
+		}
+		else if (Input.GetKeyUp(KeyCode.Alpha1))
+		{
+			if (!IsScaleFieldFocused())
+			{
+				SelectPropButton(_buttonPropsBox, ObjectSpawning.PropsType.BOX);
+			}
+		}
+		else if (Input.GetKeyUp(KeyCode.Alpha2))
+		{
+			if (!IsScaleFieldFocused())
+			{
+				SelectPropButton(_buttonPropsCylinder, ObjectSpawning.PropsType.CYLINDER);
+			}
+		}
+		else if (Input.GetKeyUp(KeyCode.Alpha3))
+		{
+			if (!IsScaleFieldFocused())
+			{
+				SelectPropButton(_buttonPropsSphere, ObjectSpawning.PropsType.SPHERE);
 			}
 		}
 	}
