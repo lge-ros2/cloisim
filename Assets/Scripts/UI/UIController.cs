@@ -8,6 +8,9 @@ using UnityEngine;
 #if !UNITY_SERVER
 using UnityEngine.UIElements;
 #endif
+#if UNITY_EDITOR || UNITY_STANDALONE
+using UnityEngine.Rendering.HighDefinition;
+#endif
 
 public class UIController : MonoBehaviour
 {
@@ -50,6 +53,11 @@ public class UIController : MonoBehaviour
 
 		var buttonCameraView = _rootVisualElement.Q<Button>("CameraView");
 		if (buttonCameraView != null) buttonCameraView.RegisterCallback<ClickEvent>(x => ShowCameraView());
+
+		var buttonRenderSettings = _rootVisualElement.Q<Button>("RenderSettings");
+		if (buttonRenderSettings != null) buttonRenderSettings.RegisterCallback<ClickEvent>(x => ShowRenderSettings());
+
+		SetupRenderSettingsToggles();
 
 		_scaleField = _rootVisualElement.Q<TextField>("ScaleField");
 		if (_scaleField != null)
@@ -222,6 +230,7 @@ public class UIController : MonoBehaviour
 		{
 			ShowHelp(false);
 			ShowCameraView(false);
+			ShowRenderSettings(false);
 			Main.ModelImporter.ShowModelList(false);
 		}
 		else if (Input.GetKey(KeyCode.LeftControl))
@@ -313,6 +322,77 @@ public class UIController : MonoBehaviour
 		cameraViewMenuVisElem.style.visibility = (!open || cameraViewMenuVisElem.style.visibility == Visibility.Visible)? Visibility.Hidden : Visibility.Visible;
 #endif
 	}
+
+	private void ShowRenderSettings(in bool open = true)
+	{
+#if !UNITY_SERVER
+		if (_rootVisualElement == null) return;
+		var renderSettingsMenu = _rootVisualElement.Q<VisualElement>("RenderSettingsMenu");
+		if (renderSettingsMenu == null) return;
+		renderSettingsMenu.style.visibility = (!open || renderSettingsMenu.style.visibility == Visibility.Visible) ? Visibility.Hidden : Visibility.Visible;
+#endif
+	}
+
+#if !UNITY_SERVER
+	private static readonly (string toggleName, FrameSettingsField field)[] RenderFeatureMap = new[]
+	{
+		("RenderToggle_Postprocess", FrameSettingsField.Postprocess),
+		("RenderToggle_ShadowMaps", FrameSettingsField.ShadowMaps),
+		("RenderToggle_SSAO", FrameSettingsField.SSAO),
+		("RenderToggle_SSR", FrameSettingsField.SSR),
+		("RenderToggle_Volumetrics", FrameSettingsField.Volumetrics),
+		("RenderToggle_AtmosphericScattering", FrameSettingsField.AtmosphericScattering),
+		("RenderToggle_ContactShadows", FrameSettingsField.ContactShadows),
+		("RenderToggle_ScreenSpaceShadows", FrameSettingsField.ScreenSpaceShadows),
+		("RenderToggle_MotionVectors", FrameSettingsField.MotionVectors),
+		("RenderToggle_Decals", FrameSettingsField.Decals),
+		("RenderToggle_SubsurfaceScattering", FrameSettingsField.SubsurfaceScattering),
+		("RenderToggle_Refraction", FrameSettingsField.Refraction),
+	};
+
+	private void SetupRenderSettingsToggles()
+	{
+		if (_rootVisualElement == null) return;
+
+		var hdCamData = Camera.main?.GetComponent<HDAdditionalCameraData>();
+		if (hdCamData == null) return;
+
+		foreach (var (toggleName, field) in RenderFeatureMap)
+		{
+			var toggle = _rootVisualElement.Q<Toggle>(toggleName);
+			if (toggle == null) continue;
+
+			// Read current state from camera frame settings
+			if (hdCamData.customRenderingSettings)
+			{
+				var mask = hdCamData.renderingPathCustomFrameSettingsOverrideMask;
+				if (mask.mask[(uint)field])
+				{
+					toggle.SetValueWithoutNotify(hdCamData.renderingPathCustomFrameSettings.IsEnabled(field));
+				}
+			}
+
+			var capturedField = field;
+			toggle.RegisterValueChangedCallback(evt => SetHDRPFeature(capturedField, evt.newValue));
+		}
+	}
+
+	private void SetHDRPFeature(FrameSettingsField field, bool enabled)
+	{
+		var hdCamData = Camera.main?.GetComponent<HDAdditionalCameraData>();
+		if (hdCamData == null) return;
+
+		hdCamData.customRenderingSettings = true;
+		var overrideMask = hdCamData.renderingPathCustomFrameSettingsOverrideMask;
+		var frameSettings = hdCamData.renderingPathCustomFrameSettings;
+
+		overrideMask.mask[(uint)field] = true;
+		frameSettings.SetEnabled(field, enabled);
+
+		hdCamData.renderingPathCustomFrameSettingsOverrideMask = overrideMask;
+		hdCamData.renderingPathCustomFrameSettings = frameSettings;
+	}
+#endif
 
 #if !UNITY_SERVER
 	private void OnFocusOutScaleField(FocusOutEvent evt)

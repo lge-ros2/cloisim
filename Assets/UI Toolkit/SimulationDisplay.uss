@@ -23,3 +23,13 @@ VisualElement#RightMenuVisualElement>Button:active {
     scale: 0.85;
     background-color: #2f2f2f;
 }
+
+.render-toggle {
+    margin-top: 2px;
+    margin-bottom: 2px;
+    margin-left: 4px;
+    margin-right: 4px;
+    color: rgb(220, 220, 220);
+    font-size: 11px;
+    -unity-font-style: normal;
+}
