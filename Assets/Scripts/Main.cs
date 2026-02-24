@@ -10,6 +10,7 @@ using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.SceneManagement;
 using Assimp.Unmanaged;
 
@@ -263,6 +264,23 @@ public class Main : MonoBehaviour
 		Application.targetFrameRate = 60;
 		OnDemandRendering.renderFrameInterval = 1;
 
+		// Configure physics timestep.
+		// Project default fixedDeltaTime is 0.001 (1000 Hz) which consumed ~60% of
+		// frame time at the default maximumDeltaTime of 0.05 (50 steps/frame).
+		// We raise fixedDeltaTime to 0.01 (100 Hz) — still accurate for robotics —
+		// and set maximumDeltaTime to 0.1 so Time.deltaTime is not capped at typical
+		// FPS ranges, keeping sim time in sync with real time and the FPS counter accurate.
+		var physicsHz = 100f;
+		var envPhysicsHz = Environment.GetEnvironmentVariable("CLOISIM_PHYSICS_HZ");
+		if (!string.IsNullOrEmpty(envPhysicsHz) && float.TryParse(envPhysicsHz,
+			System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var hz))
+		{
+			physicsHz = Mathf.Clamp(hz, 50f, 1000f);
+		}
+		Time.fixedDeltaTime = 1f / physicsHz;
+		Time.maximumDeltaTime = 0.1f;
+		Debug.Log($"[Main] Physics: fixedDeltaTime={Time.fixedDeltaTime}s ({physicsHz} Hz), maximumDeltaTime={Time.maximumDeltaTime}s (max {Mathf.CeilToInt(Time.maximumDeltaTime / Time.fixedDeltaTime)} steps/frame)");
+
 		if (Application.isBatchMode)
 		{
 			Debug.Log("BatchMode detected: Enforcing vSyncCount = 0 and targetFrameRate = 60 for headless rendering");
@@ -286,11 +304,52 @@ public class Main : MonoBehaviour
 		mainCamera.useOcclusionCulling = true;
 		mainCamera.orthographic = false;
 
+		// CLOISIM_SENSOR_ONLY=1: minimize main viewport camera for headless/benchmark use.
+		// Saves ~30-50ms/frame by disabling main camera rendering while sensors keep working.
+		var sensorOnly = Environment.GetEnvironmentVariable("CLOISIM_SENSOR_ONLY");
+		if (!string.IsNullOrEmpty(sensorOnly) && sensorOnly == "1")
+		{
+			mainCamera.cullingMask = 0; // Render nothing — sensor cameras have their own culling
+			mainCamera.clearFlags = CameraClearFlags.SolidColor;
+			Debug.Log("[Main] CLOISIM_SENSOR_ONLY=1: Main camera rendering minimized for sensor performance");
+		}
+
 #if UNITY_EDITOR || UNITY_STANDALONE
 		var hdCamData = mainCamera.GetComponent<UnityEngine.Rendering.HighDefinition.HDAdditionalCameraData>();
 		if (hdCamData == null)
 		{
 			hdCamData = mainCamera.gameObject.AddComponent<UnityEngine.Rendering.HighDefinition.HDAdditionalCameraData>();
+		}
+
+		// When CLOISIM_SENSOR_ONLY is active, disable all expensive HDRP features on main camera.
+		if (!string.IsNullOrEmpty(sensorOnly) && sensorOnly == "1" && hdCamData != null)
+		{
+			hdCamData.customRenderingSettings = true;
+			var overrideMask = hdCamData.renderingPathCustomFrameSettingsOverrideMask;
+			var frameSettings = hdCamData.renderingPathCustomFrameSettings;
+			var featuresToDisable = new[] {
+				FrameSettingsField.Postprocess,
+				FrameSettingsField.ShadowMaps,
+				FrameSettingsField.SSAO,
+				FrameSettingsField.SSR,
+				FrameSettingsField.Volumetrics,
+				FrameSettingsField.ReprojectionForVolumetrics,
+				FrameSettingsField.AtmosphericScattering,
+				FrameSettingsField.SubsurfaceScattering,
+				FrameSettingsField.ContactShadows,
+				FrameSettingsField.ScreenSpaceShadows,
+				FrameSettingsField.MotionVectors,
+				FrameSettingsField.Decals,
+				FrameSettingsField.Refraction,
+				FrameSettingsField.TransparentObjects,
+			};
+			foreach (var f in featuresToDisable)
+			{
+				overrideMask.mask[(uint)f] = true;
+				frameSettings.SetEnabled(f, false);
+			}
+			hdCamData.renderingPathCustomFrameSettingsOverrideMask = overrideMask;
+			hdCamData.renderingPathCustomFrameSettings = frameSettings;
 		}
 #endif
 
