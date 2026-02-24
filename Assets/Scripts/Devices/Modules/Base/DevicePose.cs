@@ -8,55 +8,53 @@ using UnityEngine;
 
 public class DevicePose
 {
-	private bool isSubParts = false;
+	private bool _isSubParts = false;
 
-	private Pose deviceModelPose = Pose.identity;
-	private Pose deviceLinkPose = Pose.identity;
-	private Pose devicePose = Pose.identity;
+	private Pose _deviceModelPose = Pose.identity;
+	private Pose _deviceLinkPose = Pose.identity;
+	private Pose _devicePose = Pose.identity;
 
 	public bool SubParts
 	{
-		set => isSubParts = value;
-		get => isSubParts;
+		set => _isSubParts = value;
+		get => _isSubParts;
 	}
 
 	public void Store(in Transform targetTransform)
 	{
-		// Debug.Log(deviceName + ":" + transform.name);
-		var devicePosition = Vector3.zero;
-		var deviceRotation = Quaternion.identity;
+		// Debug.Log($"{targetTransform.name}");
 
 		var parentLinkObject = targetTransform.parent;
 		if (parentLinkObject != null && parentLinkObject.CompareTag("Link"))
 		{
-			deviceLinkPose.position = parentLinkObject.localPosition;
-			deviceLinkPose.rotation = parentLinkObject.localRotation;
-			// Debug.Log(parentLinkObject.name + ": " + deviceLinkPose.position.ToString("F4") + ", " + deviceLinkPose.rotation.ToString("F4"));
+			_deviceLinkPose.position = parentLinkObject.localPosition;
+			_deviceLinkPose.rotation = parentLinkObject.localRotation;
+			// Debug.Log($"{parentLinkObject.name}: {parentLinkObject.position.ToString("F4")}, {parentLinkObject.rotation.ToString("F4")}");
 
 			var parentModelObject = parentLinkObject.parent;
 			if (parentModelObject != null && parentModelObject.CompareTag("Model"))
 			{
-				deviceModelPose.position = parentModelObject.localPosition;
-				deviceModelPose.rotation = parentModelObject.localRotation;
-				// Debug.Log(parentModelObject.name + ": " + deviceModelPose.position.ToString("F4") + ", " + deviceModelPose.rotation.ToString("F4"));
+				_deviceModelPose.position = parentModelObject.localPosition;
+				_deviceModelPose.rotation = parentModelObject.localRotation;
+				// Debug.Log($"{parentModelObject.name}: {_deviceModelPose.position.ToString("F4")}, {_deviceModelPose.rotation.ToString("F4")}");
 			}
 		}
 
-		devicePose.position = targetTransform.localPosition;
-		devicePose.rotation = targetTransform.localRotation;
+		_devicePose.position = targetTransform.localPosition;
+		_devicePose.rotation = targetTransform.localRotation;
 	}
 
 	public Pose Get()
 	{
-		var finalPose = devicePose;
+		var finalPose = _devicePose;
 
-		if (!isSubParts)
+		if (!_isSubParts)
 		{
-			finalPose.position += deviceLinkPose.position;
-			finalPose.rotation *= deviceLinkPose.rotation;
+			finalPose.position += _deviceLinkPose.position;
+			finalPose.rotation *= _deviceLinkPose.rotation;
 
-			finalPose.position += deviceModelPose.position;
-			finalPose.rotation *= deviceModelPose.rotation;
+			finalPose.position += _deviceModelPose.position;
+			finalPose.rotation *= _deviceModelPose.rotation;
 		}
 		// Debug.Log(name + ": " + finalPose.position.ToString("F4") + ", " + finalPose.rotation.ToString("F4"));
 

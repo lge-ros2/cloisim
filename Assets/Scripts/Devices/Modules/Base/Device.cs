@@ -75,14 +75,11 @@ public abstract class Device : MonoBehaviour
 
 	void Start()
 	{
-		_devicePose.Store(this.transform);
-
 		SetupMessages();
-
 		StartCoroutine(DelayedStart());
 	}
 
-	protected virtual IEnumerator DelayedStart()
+	private IEnumerator DelayedStart()
 	{
 		yield return new WaitForEndOfFrame();
 
@@ -332,5 +329,10 @@ public abstract class Device : MonoBehaviour
 	public Pose GetPose()
 	{
 		return _devicePose.Get();
+	}
+
+	public void UpdatePose()
+	{
+		_devicePose.Store(this.transform);
 	}
 }
