@@ -132,7 +132,6 @@ namespace SDF
 				var modelHelper = modelObject.GetComponent<Helper.Model>();
 				if (modelHelper.IsFirstChild)
 				{
-					// UE.Debug.Log($"AfterImportModel: {model.OriginalName}, {modelObject.name}");
 					Main.SegmentationManager.AttachTag(model.OriginalName, modelObject);
 					Main.SegmentationManager.UpdateTags();
 

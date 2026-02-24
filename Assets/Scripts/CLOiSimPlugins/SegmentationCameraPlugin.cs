@@ -51,10 +51,10 @@ public class SegmentationCameraPlugin : CameraPlugin
 
 			yield return null;
 		}
-	}
 
-	protected override void OnPluginLoad()
-	{
+		// Apply segmentation class filter from plugin parameters.
+		// Must be done here (not OnPluginLoad) because plugin parameters
+		// are set after Awake() where OnPluginLoad() runs.
 		if (GetPluginParameters() != null && _type == ICLOiSimPlugin.Type.SEGMENTCAMERA)
 		{
 			if (GetPluginParameters().GetValues<string>("segmentation/label", out var labelList))
@@ -63,6 +63,12 @@ public class SegmentationCameraPlugin : CameraPlugin
 			}
 			Main.SegmentationManager.UpdateTags();
 		}
+	}
+
+	protected override void OnPluginLoad()
+	{
+		// Segmentation label filter is now applied in OnStart() instead,
+		// because OnPluginLoad() runs during Awake() before plugin parameters are set.
 	}
 
 	private unsafe void HandleNativeSegmentationData(messages.Segmentation msg)
