@@ -6,6 +6,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Threading;
+using System.Buffers;
 using cloisim.Native;
 using System.Runtime.InteropServices;
 using System;
@@ -25,12 +26,16 @@ public class CameraPlugin : CLOiSimPlugin
 	private struct ImagePublishPayload
 	{
 		public ImageStruct data;
-		public byte[] pixelBuffer;   // owned copy so GPU readback buffer can be released
+		public byte[] pixelBuffer;   // rented from ArrayPool — MUST be returned after publish
+		public int pixelLength;      // actual data length (pool may return larger array)
 	}
 
 	private readonly ConcurrentQueue<ImagePublishPayload> _publishQueue = new ConcurrentQueue<ImagePublishPayload>();
 	private Thread _publishThread;
 	private volatile bool _publishThreadRunning;
+	// Pool pixel buffers (~921KB each) to avoid GC allocations per frame per camera.
+	// With 9 cameras at ~10 Hz, that's 90 allocations/sec × 921KB = ~83 MB/sec of GC pressure eliminated.
+	private static readonly ArrayPool<byte> _pixelPool = ArrayPool<byte>.Shared;
 
 	private void StartPublishThread()
 	{
@@ -60,8 +65,11 @@ public class CameraPlugin : CLOiSimPlugin
 				{
 					var data = payload.data;
 					data.data = (IntPtr)dataPtr;
+					data.data_length = (uint)payload.pixelLength;
 					Ros2NativeWrapper.PublishImage(_rosImagePublisher, ref data);
 				}
+				// Return buffer to pool after publishing
+				_pixelPool.Return(payload.pixelBuffer);
 			}
 			else
 			{
@@ -69,10 +77,10 @@ public class CameraPlugin : CLOiSimPlugin
 			}
 		}
 
-		// Drain remaining items on shutdown
+		// Drain remaining items on shutdown — return pooled buffers
 		while (_publishQueue.TryDequeue(out var remaining))
 		{
-			// discard to free memory
+			_pixelPool.Return(remaining.pixelBuffer);
 		}
 	}
 
@@ -142,10 +150,10 @@ public class CameraPlugin : CLOiSimPlugin
 	{
 		if (_rosImagePublisher == IntPtr.Zero || !_publishThreadRunning) return;
 
-		// P0: Copy pixel data and enqueue for background publishing.
-		// This avoids blocking the Unity render thread on DDS serialization.
-		var pixelCopy = new byte[msg.Image.Data.Length];
-		Buffer.BlockCopy(msg.Image.Data, 0, pixelCopy, 0, pixelCopy.Length);
+		// Rent pixel buffer from pool to avoid GC allocation (921KB per RGB camera frame).
+		var dataLen = msg.Image.Data.Length;
+		var pixelCopy = _pixelPool.Rent(dataLen);
+		Buffer.BlockCopy(msg.Image.Data, 0, pixelCopy, 0, dataLen);
 
 		var payload = new ImagePublishPayload
 		{
@@ -156,8 +164,8 @@ public class CameraPlugin : CLOiSimPlugin
 				height = msg.Image.Height,
 				width = msg.Image.Width,
 				encoding = msg.Image.PixelFormat switch {
-					1 => "l8", // L_INT8
-					2 => "l16", // L_INT16
+					1 => "mono8", // L_INT8
+					2 => "mono16", // L_INT16
 					3 => "rgb8", // RGB_INT8
 					4 => "rgba8", // RGBA_INT8
 					5 => "bgra8", // BGRA_INT8
@@ -167,15 +175,20 @@ public class CameraPlugin : CLOiSimPlugin
 				is_bigendian = 0,
 				step = msg.Image.Step,
 				data = IntPtr.Zero, // will be set in publish loop
-				data_length = (uint)pixelCopy.Length
+				data_length = (uint)dataLen
 			},
-			pixelBuffer = pixelCopy
+			pixelBuffer = pixelCopy,
+			pixelLength = dataLen
 		};
 
-		// Drop oldest frame if queue is backing up (keep at most 2 pending)
+		// Drop oldest frame if queue is backing up (keep at most 2 pending).
+		// Return dropped buffers to pool to prevent memory leak.
 		while (_publishQueue.Count >= 2)
 		{
-			_publishQueue.TryDequeue(out _);
+			if (_publishQueue.TryDequeue(out var dropped))
+			{
+				_pixelPool.Return(dropped.pixelBuffer);
+			}
 		}
 
 		_publishQueue.Enqueue(payload);
