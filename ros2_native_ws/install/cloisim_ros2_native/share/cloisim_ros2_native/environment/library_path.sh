@@ -1,1 +1,0 @@
-/opt/ros/jazzy/lib/python3.12/site-packages/ament_package/template/environment_hook/library_path.sh

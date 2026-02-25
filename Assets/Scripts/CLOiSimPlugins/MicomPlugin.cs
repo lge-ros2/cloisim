@@ -4,12 +4,10 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.Text;
-using System;
-using cloisim.Native;
-using System.Runtime.InteropServices;
 using Any = cloisim.msgs.Any;
 using UnityEngine;
 using UnityEngine.Video;
@@ -22,9 +20,6 @@ public class MicomPlugin : CLOiSimPlugin
 	private MotorControl _motorControl = null;
 	private SDF.Helper.Link[] _linkHelperInChildren = null;
 	private List<string> _displaySourceUris = new List<string>();
-
-	private IntPtr _rosNode = IntPtr.Zero;
-	private IntPtr _rosOdomPublisher = IntPtr.Zero;
 
 	protected override void OnAwake()
 	{
@@ -43,15 +38,6 @@ public class MicomPlugin : CLOiSimPlugin
 
 		LoadStaticTF();
 		LoadTF();
-
-		Ros2NativeWrapper.InitROS2(0, IntPtr.Zero);
-		var nodeName = "cloisim_micom_" + gameObject.name.Replace(" ", "_");
-		_rosNode = Ros2NativeWrapper.CreateNode(nodeName);
-		
-		var topicName = GetPluginParameters().GetValue<string>("ros2/odometry_topic", "odom");
-		_rosOdomPublisher = Ros2NativeWrapper.CreateOdometryPublisher(_rosNode, topicName);
-		
-		_micomSensor.OnMicomDataGenerated += HandleNativeMicomData;
 
 		yield return null;
 
@@ -76,45 +62,6 @@ public class MicomPlugin : CLOiSimPlugin
 		}
 
 		yield return null;
-	}
-
-	private void HandleNativeMicomData(cloisim.msgs.Micom msg)
-	{
-		if (_rosOdomPublisher == IntPtr.Zero || msg.Odom == null) return;
-
-		// Pose.Z contains the accumulated heading (yaw angle in radians)
-		// Convert yaw to quaternion: q = (0, 0, sin(yaw/2), cos(yaw/2))
-		var yaw = msg.Odom.Pose.Z;
-		var halfYaw = yaw * 0.5;
-
-		var data = new OdometryStruct
-		{
-			timestamp = msg.Time.Sec + (msg.Time.Nsec * 1e-9),
-			frame_id = "odom", // Standard ROS2 frame ID for odometry
-			child_frame_id = "base_footprint", // Standard child frame ID
-			pose_x = msg.Odom.Pose.X,
-			pose_y = msg.Odom.Pose.Y,
-			pose_z = 0, // 2D odometry, z position is 0
-			pose_orientation_x = 0,
-			pose_orientation_y = 0,
-			pose_orientation_z = Math.Sin(halfYaw),
-			pose_orientation_w = Math.Cos(halfYaw),
-			twist_linear_x = msg.Odom.Twist.Linear.X,
-			twist_linear_y = msg.Odom.Twist.Linear.Y,
-			twist_linear_z = msg.Odom.Twist.Linear.Z,
-			twist_angular_x = msg.Odom.Twist.Angular.X,
-			twist_angular_y = msg.Odom.Twist.Angular.Y,
-			twist_angular_z = msg.Odom.Twist.Angular.Z
-		};
-
-		Ros2NativeWrapper.PublishOdometry(_rosOdomPublisher, ref data);
-	}
-
-	new protected void OnDestroy()
-	{
-		if (_micomSensor != null) _micomSensor.OnMicomDataGenerated -= HandleNativeMicomData;
-		if (_rosOdomPublisher != IntPtr.Zero) Ros2NativeWrapper.DestroyOdometryPublisher(_rosOdomPublisher);
-		if (_rosNode != IntPtr.Zero) Ros2NativeWrapper.DestroyNode(_rosNode);
 	}
 
 	protected override void OnReset()
