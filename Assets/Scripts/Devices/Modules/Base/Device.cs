@@ -240,7 +240,9 @@ public abstract class Device : MonoBehaviour
 		while (_running)
 		{
 			GenerateMessage();
-			Thread.Sleep(WaitPeriodInMilliseconds());
+
+			var sleepMs = Mathf.Max(1, Mathf.RoundToInt(UpdatePeriod * 1000f));
+			Thread.Sleep(sleepMs);
 		}
 	}
 
