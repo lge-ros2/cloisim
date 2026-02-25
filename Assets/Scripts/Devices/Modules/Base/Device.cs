@@ -239,6 +239,13 @@ public abstract class Device : MonoBehaviour
 	{
 		while (_running)
 		{
+			if (UpdateRate <= 0)
+			{
+				// UpdateRate not yet configured; wait and retry
+				Thread.Sleep(100);
+				continue;
+			}
+
 			GenerateMessage();
 
 			var sleepMs = Mathf.Max(1, Mathf.RoundToInt(UpdatePeriod * 1000f));
