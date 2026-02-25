@@ -28,6 +28,10 @@ namespace SensorDevices
 		protected messages.CameraSensor _sensorInfo = null;
 		protected messages.Image _image = null; // for Parameters
 
+		// Reusable protobuf objects to avoid per-frame GC allocations
+		private messages.ImageStamped _imageStamped = null;
+		private messages.Time _timeMsg = null;
+
 		// TODO : Need to be implemented!!!
 		// <lens> TBD
 		// <distortion> TBD
@@ -251,6 +255,11 @@ namespace SensorDevices
 			_sensorInfo.ImageSize = new messages.Vector2d();
 			_sensorInfo.Distortion = new messages.Distortion();
 			_sensorInfo.Distortion.Center = new messages.Vector2d();
+
+			// Pre-allocate reusable protobuf objects for ImageProcessing
+			_timeMsg = new messages.Time();
+			_imageStamped = new messages.ImageStamped();
+			_imageStamped.Time = _timeMsg;
 		}
 
 		protected override void SetupMessages()
@@ -580,24 +589,20 @@ namespace SensorDevices
 		{
 			using (s_ImageProcessingMarker.Auto())
 			{
-				var imageStamped = new messages.ImageStamped();
+				// Reuse preallocated protobuf objects instead of new per frame
+				_timeMsg.Set(capturedTime);
+				_imageStamped.Image = _image;
 
-				imageStamped.Time = new messages.Time();
-				imageStamped.Time.Set(capturedTime);
-
-				imageStamped.Image = new messages.Image();
-				imageStamped.Image = _image;
-
-				var image = imageStamped.Image;
+				var image = _imageStamped.Image;
 				var sizeOfT = UnsafeUtility.SizeOf<T>();
 				var byteView = readbackData.Reinterpret<byte>(sizeOfT);
 
 				CopyReadbackToImage(byteView, image.Data);
 
-				if (OnCameraDataGenerated != null) OnCameraDataGenerated.Invoke(imageStamped);
+				if (OnCameraDataGenerated != null) OnCameraDataGenerated.Invoke(_imageStamped);
 				if (OnCameraInfoGenerated != null) OnCameraInfoGenerated.Invoke(_sensorInfo);
 
-				_messageQueue.Enqueue(imageStamped);
+				_messageQueue.Enqueue(_imageStamped);
 			}
 		}
 

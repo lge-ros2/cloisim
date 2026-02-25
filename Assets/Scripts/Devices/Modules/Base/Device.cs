@@ -21,6 +21,9 @@ public abstract class Device : MonoBehaviour
 	private DeviceMessageQueue _deviceMessageQueue = new();
 	private DevicePose _devicePose = new();
 
+	// Pool DeviceMessage objects to avoid per-frame GC allocations
+	private static readonly ConcurrentBag<DeviceMessage> _deviceMessagePool = new();
+
 	[SerializeField]
 	private string _deviceName = string.Empty;
 
@@ -263,7 +266,10 @@ public abstract class Device : MonoBehaviour
 	{
 		try
 		{
-			var deviceMessage = new DeviceMessage();
+			if (!_deviceMessagePool.TryTake(out var deviceMessage))
+			{
+				deviceMessage = new DeviceMessage();
+			}
 			deviceMessage.SetMessage<T>(instance);
 			return _deviceMessageQueue.Push(deviceMessage);
 		}
@@ -278,7 +284,10 @@ public abstract class Device : MonoBehaviour
 	{
 		try
 		{
-			var deviceMessage = new DeviceMessage();
+			if (!_deviceMessagePool.TryTake(out var deviceMessage))
+			{
+				deviceMessage = new DeviceMessage();
+			}
 			if (deviceMessage.SetMessage(data))
 			{
 				return _deviceMessageQueue.Push(deviceMessage);
@@ -290,6 +299,16 @@ public abstract class Device : MonoBehaviour
 		}
 
 		return false;
+	}
+
+	/// <summary>Return a DeviceMessage to the pool for reuse.</summary>
+	public static void ReturnDeviceMessage(DeviceMessage msg)
+	{
+		if (msg != null)
+		{
+			msg.Reset();
+			_deviceMessagePool.Add(msg);
+		}
 	}
 
 	public bool PopDeviceMessage(out DeviceMessage data)

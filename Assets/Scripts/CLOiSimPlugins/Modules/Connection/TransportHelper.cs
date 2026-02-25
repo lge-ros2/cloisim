@@ -9,7 +9,7 @@ using System;
 public static class TransportHelper
 {
 	public static ushort TagSize = 8;
-	public static int HighWaterMark = 1000;
+	public static int HighWaterMark = 5;
 
 	public static string GetAddress(in ushort port)
 	{

@@ -78,7 +78,7 @@ public class DeviceMessage : MemoryStream
 		Flush();
 		SetLength(0);
 		Position = 0;
-		Capacity = 0;
+		// Note: Do NOT reset Capacity — keep internal buffer warm to avoid GC reallocation
 	}
 
 	public bool IsValid()
