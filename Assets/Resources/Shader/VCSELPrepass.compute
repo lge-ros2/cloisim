@@ -1,0 +1,220 @@
+#pragma kernel CSApplyVcselDepthMask
+#pragma target 4.5
+
+cbuffer Params
+{
+    int _Width;
+    int _Height;
+
+    int _DotMode; // 0: Linear sample, 1: PixelSnap(Point), 2: SoftSpot(3x3)
+    float _SpotSigmaPx; // Strength of SoftSpot (1.0~2.0), 0 for off
+
+    float _FovCamH; // camera horizontal FOV (rad)
+    float _FovCamV; // camera vertical   FOV (rad)
+
+    float _FovMaskH; // mask-design horizontal FOV (rad), e.g., radians(98)
+    float _FovMaskV; // mask-design vertical   FOV (rad), e.g., radians(15)
+
+    int _BowMode; // 0: Off, 1: Quadratic, 2: Sine
+    float _BowCenter;
+    float _BowAmp; // 0..0.25
+
+    float _IRIntensity; // default 1.0
+    float _IR_FalloffK; // 1/d^k, default 2.0
+
+    float _MaskThreshold; // 0..1
+    int _UseProbDrop; // 0: Threshold, 1: probability drop
+}
+
+Texture2D<float> _VcselMaskTex;
+RWStructuredBuffer<float> _DepthBuffer;	// in/out (meters)
+
+SamplerState samplerLinearClamp
+{
+    Filter   = MIN_MAG_MIP_LINEAR;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+
+SamplerState samplerPointClamp
+{
+    Filter   = MIN_MAG_MIP_POINT;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+
+static const float kEps = 1e-6;
+static const float kPi  = 3.14159265;
+static const int MAX_R = 5;
+
+inline int2 ClampTexel(int2 t, int2 sizeI)
+{
+    return clamp(t, int2(0, 0), sizeI - int2(1, 1));
+}
+
+inline float LoadMask01(int2 t, int2 sizeI, float threshold)
+{
+    const int2 tc = ClampTexel(t, sizeI);
+    const float v = _VcselMaskTex.Load(int3(tc, 0)).r;
+    return (v >= threshold) ? 1.0 : 0.0;
+}
+
+inline float hash11(uint n)
+{
+    n = (n << 13u) ^ n;
+    const uint nn = (n * (n * n * 15731u + 789221u) + 1376312589u);
+    return (nn & 0x00FFFFFFu) / 16777215.0; // [0,1)
+}
+
+inline float sampleMaskPixelSnap(float2 mask_size, float2 uv)
+{
+    const int2 sizeI = int2((int)mask_size.x, (int)mask_size.y);
+    const float2 px = uv * mask_size;
+    int2 tc = (int2)floor(px);
+    tc = ClampTexel(tc, sizeI);
+
+    float result = 0.0;
+    const float centerOn = LoadMask01(tc, sizeI, _MaskThreshold);
+
+    if (centerOn >= 0.5)
+    {
+        result = 1.0;
+
+        if (tc.x > 0 && LoadMask01(int2(tc.x - 1, tc.y), sizeI, _MaskThreshold) > 0.5)
+            result = 0.0;
+        else if (tc.y > 0 && LoadMask01(int2(tc.x, tc.y - 1), sizeI, _MaskThreshold) > 0.5)
+            result = 0.0;
+        else if (tc.x > 0 && tc.y > 0 && LoadMask01(int2(tc.x - 1, tc.y - 1), sizeI, _MaskThreshold) > 0.5)
+            result = 0.0;
+        else if (tc.x + 1 < sizeI.x && tc.y > 0 && LoadMask01(int2(tc.x + 1, tc.y - 1), sizeI, _MaskThreshold) > 0.5)
+            result = 0.0;
+    }
+
+    return result;
+}
+
+inline float SafeRCP(float x)
+{
+    return (abs(x) > kEps) ? (1.0 / x) : (1.0 / (sign(x) == 0 ? kEps : sign(x) * kEps));
+}
+
+inline float sampleMaskSoftSpot(float2 mask_size, float2 uv, float sigmaPx)
+{
+    static const float k[9] = {
+        -1, -1, -1,
+        -1, 10, -1,
+        -1, -1, -1
+    };
+
+    const float2 texel = float2(SafeRCP(mask_size.x), SafeRCP(mask_size.y)); // safe
+
+    float s = 0.0;
+    float wsum = 0.0;
+    
+    [unroll] for (int j = -1; j <= 1; ++j)
+    {
+        [unroll] for (int i = -1; i <= 1; ++i)
+        {
+            const float2 uv2 = uv + float2(i, j) * texel * sigmaPx;
+            float w = k[(j + 1) * 3 + (i + 1)];
+            s += _VcselMaskTex.SampleLevel(samplerLinearClamp, uv2, 0).r * w;
+            wsum += w;
+        }
+    }
+
+    if (abs(wsum) <= kEps)
+        return 0.0;
+
+    return s / wsum;
+}
+
+inline float sampleMaskLinear(float2 uv)
+{
+    return _VcselMaskTex.SampleLevel(samplerLinearClamp, uv, 0).r;
+}
+
+[numthreads(8, 8, 1)]
+void CSApplyVcselDepthMask(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)_Width || id.y >= (uint)_Height)
+        return;
+
+    const uint idx = id.y * (uint)_Width + id.x;
+
+    uint w, h;
+    _VcselMaskTex.GetDimensions(w, h);
+
+    const float depth = _DepthBuffer[idx]; // consider it as meters
+    if (depth <= 0.0 || w == 0 || h == 0)
+    {
+        _DepthBuffer[idx] = 0.0;
+        return;
+    }
+
+    const float2 mask_size = float2(w, h);
+
+    const float2 uv = float2((id.x + 0.5) / (float)_Width, (id.y + 0.5) / (float)_Height);
+    const float2 ndc = float2(uv.x * 2.0 - 1.0, uv.y * 2.0 - 1.0);
+
+    // --- NDC → camera angles (keep circles in angular space) ---
+    // ang = atan( ndc * tan(FOV/2) );
+    const float angH = atan(ndc.x * tan(_FovCamH * 0.5));
+    const float angV = atan(ndc.y * tan(_FovCamV * 0.5));
+
+    // --- angles → mask UV (normalize by mask-design FOV) ---
+    float2 uvMask;
+    uvMask.x = angH / _FovMaskH + 0.5;
+    uvMask.y = angV / _FovMaskV + 0.5;
+
+    const float x = uvMask.x - 0.5;
+
+    if (_BowMode == 1) { // Quadratic
+        const float sag = _BowAmp * (x * x - 1.0/12.0);
+        uvMask.y += sag;
+    }
+    else if (_BowMode == 2) { // Sine
+        const float s = sin(kPi * x);
+        uvMask.y += _BowAmp * (s * s);
+    }
+    else if (_BowMode == 3) {
+        float prof = 1.0 - cos(kPi * 0.5 * abs(x));
+        prof *= prof;
+
+        const float dy = uvMask.y - _BowCenter;
+        const float ampY = abs(dy) / 0.5;
+        const float disp = _BowAmp * prof * ampY;
+
+        const float sgn  = (dy >= 0.0) ? -1.0 : 1.0;
+        uvMask.y += sgn * disp;
+        uvMask.y = saturate(uvMask.y);
+    }
+
+    float m = 1.0;
+    if (_DotMode == 1)
+        m = sampleMaskPixelSnap(mask_size, uvMask);
+    else if (_DotMode == 2)
+        m = sampleMaskSoftSpot(mask_size, uvMask, max(_SpotSigmaPx, 0));
+    else
+        m = sampleMaskLinear(uvMask);
+
+    // (option) IR Attenuation Model: I = m * I0 / d^k
+    float visible = 1.0;
+    if (_UseProbDrop == 0)
+    {
+        const float d = max(depth, 1e-4);
+        const float I = (_IRIntensity > 0.0 || _IR_FalloffK > 0.0) ?
+            m * _IRIntensity / pow(d, max(_IR_FalloffK, 0.0)) : m;
+        visible = (I >= _MaskThreshold) ? 1.0 : 0.0;
+    }
+    else // probability drop
+    {
+        const float d = max(depth, 1e-4);
+        float p = (_IRIntensity > 0.0 || _IR_FalloffK > 0.0) ?
+            m * _IRIntensity / pow(d, max(_IR_FalloffK, 0.0)) : m;
+        p = saturate(p);
+        const float u = hash11(idx);
+        visible = (u <= p) ? 1.0 : 0.0;
+    }
+
+    _DepthBuffer[idx] = (visible > 0.0) ? depth : 0.0;
+}

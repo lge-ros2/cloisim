@@ -46,7 +46,6 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		}
 	}
 
-
 	protected override IEnumerator OnStart()
 	{
 		var colorName = GetPluginParameters().GetValue<string>("activate/module[@name='color']");

@@ -53,6 +53,20 @@ public class CameraPlugin : CLOiSimPlugin
 			{
 				((SensorDevices.DepthCamera)_cam).SetDepthScale(depthScale);
 			}
+
+			if (GetPluginParameters().IsValidNode("tof/pattern"))
+			{
+				var tofPattern = GetPluginParameters().GetValue<string>("tof/pattern/uri");
+				var fovMaskH = GetPluginParameters().GetValue<float>("tof/pattern/fov_mask/horizontal");
+				var fovMaskV = GetPluginParameters().GetValue<float>("tof/pattern/fov_mask/vertical");
+				((SensorDevices.DepthCamera)_cam).SetTofPattern(tofPattern, fovMaskH, fovMaskV);
+			}
+
+			if (GetPluginParameters().IsValidNode("tof/vertical_fov"))
+			{
+				var desiredVerticalFov = GetPluginParameters().GetValue<float>("tof/vertical_fov");
+				((SensorDevices.DepthCamera)_cam).SetTofVerticalFov(desiredVerticalFov);
+			}
 		}
 	}
 
