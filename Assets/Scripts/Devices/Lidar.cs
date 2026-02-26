@@ -39,10 +39,11 @@ namespace SensorDevices
 		// The GPU processes tiny render targets (25px wide at 10°) instantly,
 		// so the bottleneck is CPU-side HDRP setup per render pass.
 		// At 60°, render targets are 150px wide — still trivial for GPU.
-		[SerializeField] private const float HFOV_FOR_3D_LIDAR = 60f;
+		[SerializeField] private const float HFOV_FOR_3D_LIDAR = 90f;
 		[SerializeField] private float LaserCameraHFov = 0f;
 		[SerializeField] private float LaserCameraHFovHalf = 0;
 		[SerializeField] private float LaserCameraVFov = 0;
+		[SerializeField] private float LaserCameraVFovOriginal = 0;
 
 		[Header("SDF properties")]
 		private MathUtil.MinMax _scanRange;
@@ -547,9 +548,26 @@ namespace SensorDevices
 
 		private void SetupLaserCamera()
 		{
-			LaserCameraVFov = (_vertical.samples == 1) ? 1 : (Mathf.Max(Mathf.Abs(_vertical.angle.min), Mathf.Abs(_vertical.angle.max)) * 2);
 			LaserCameraHFov = (_vertical.samples > 1) ? HFOV_FOR_3D_LIDAR : HFOV_FOR_2D_LIDAR;
 			LaserCameraHFovHalf = LaserCameraHFov * 0.5f;
+
+			// Original VFOV = lidar's actual vertical angle range (before expansion)
+			LaserCameraVFovOriginal = (_vertical.samples == 1) ? 1 : (Mathf.Max(Mathf.Abs(_vertical.angle.min), Mathf.Abs(_vertical.angle.max)) * 2);
+
+			if (_vertical.samples == 1)
+			{
+				LaserCameraVFov = 1;
+			}
+			else
+			{
+				// Expand VFOV to account for keystone distortion at sub-camera edges.
+				// At the horizontal edge (hAngle = HFOV/2), a vertical ray at elevation e
+				// projects to atan(tan(e)/cos(HFOV/2)) on the image plane.
+				var maxElevAbs = LaserCameraVFovOriginal * 0.5f;
+				var cosHalfHFov = Mathf.Cos(LaserCameraHFovHalf * Mathf.Deg2Rad);
+				var expandedHalfVFov = Mathf.Atan(Mathf.Tan(maxElevAbs * Mathf.Deg2Rad) / cosHalfHFov) * Mathf.Rad2Deg;
+				LaserCameraVFov = Mathf.Max(expandedHalfVFov * 2f, 1f);
+			}
 
 			_laserCam.ResetWorldToCameraMatrix();
 			_laserCam.ResetProjectionMatrix();
@@ -688,15 +706,19 @@ namespace SensorDevices
 
 		private void SetupLaserCameraData()
 		{
-			var LaserCameraVFovHalf = LaserCameraVFov * 0.5f;
+			var LaserCameraVFovHalf = LaserCameraVFov * 0.5f; // expanded half (for texture pixel mapping)
+			var LaserCameraVFovOriginalHalf = LaserCameraVFovOriginal * 0.5f; // lidar's actual half
 			var LaserCameraRotationAngle = LaserCameraHFov;
 
 			_numberOfLaserCamData = Mathf.CeilToInt(DEG360 / LaserCameraRotationAngle);
 			var isEven = (_numberOfLaserCamData % 2 == 0) ? true : false;
 
 			var targetDepthRT = _laserCam.targetTexture;
-			var width = targetDepthRT.width;
-			var height = targetDepthRT.height;
+			var texWidth = targetDepthRT.width;
+			var texHeight = targetDepthRT.height;
+			// Dispatch dimensions = lidar's actual sample counts (not expanded texture size)
+			var width = texWidth; // horizontal: no expansion, same as texture
+			var height = (int)_vertical.samples; // vertical: lidar's actual channel count
 			var centerAngleOffset = (_horizontal.angle.min < 0) ? (isEven ? -LaserCameraHFovHalf : 0) : LaserCameraHFovHalf;
 
 			var scanCenter = (_horizontal.angle.min + _horizontal.angle.max) * 0.5f;
@@ -723,10 +745,12 @@ namespace SensorDevices
 
 			_laserCompute.SetInt("_Width", width);
 			_laserCompute.SetInt("_Height", height);
+			_laserCompute.SetInt("_TexWidth", texWidth);
+			_laserCompute.SetInt("_TexHeight", texHeight);
 			_laserCompute.SetFloat("_MaxHAngleHalf", LaserCameraHFovHalf);
-			_laserCompute.SetFloat("_MaxVAngleHalf", LaserCameraVFovHalf);
+			_laserCompute.SetFloat("_MaxVAngleHalf", LaserCameraVFovOriginalHalf); // lidar's actual half-elevation
 			_laserCompute.SetFloat("_MaxHAngleHalfTanInv", 1f / Mathf.Tan(LaserCameraHFovHalf * Mathf.Deg2Rad));
-			_laserCompute.SetFloat("_MaxVAngleHalfTanInv", 1f / Mathf.Tan(LaserCameraVFovHalf * Mathf.Deg2Rad));
+			_laserCompute.SetFloat("_MaxVAngleHalfTanInv", 1f / Mathf.Tan(LaserCameraVFovHalf * Mathf.Deg2Rad)); // expanded half for texture mapping
 			_laserCompute.SetFloat("_RangeMin", _scanRange.min);
 			_laserCompute.SetFloat("_RangeMax", _scanRange.max);
 			_laserCompute.SetFloat("_RangeLinearResolution", _resolution.linear);
@@ -790,7 +814,7 @@ namespace SensorDevices
 			var dividedDataTotalAngleH = 1 / LaserCameraHFov;
 
 			var laserSamplesV = (int)_vertical.samples;
-			var laserSamplesVTotal = Mathf.CeilToInt(LaserCameraVFov * _vertical.samples / _vertical.angle.range);
+			var laserSamplesVTotal = Mathf.CeilToInt(LaserCameraVFovOriginal * _vertical.samples / _vertical.angle.range);
 			var isMaxAngleDominant = Mathf.Abs(_vertical.angle.max) > Mathf.Abs(_vertical.angle.min);
 			var laserSamplesVStart = isMaxAngleDominant ? (laserSamplesVTotal - laserSamplesV) : 0;
 			var laserSamplesVEnd = isMaxAngleDominant ? laserSamplesVTotal : laserSamplesV;
