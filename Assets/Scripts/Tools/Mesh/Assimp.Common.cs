@@ -163,9 +163,8 @@ public static partial class MeshLoader
 		try {
 			var scene = importer.ImportFile(targetPath, PostProcessFlags);
 
-			// Remove cameras and lights
+			// Remove cameras
 			scene.Cameras.Clear();
-			scene.Lights.Clear();
 
 			var rootNode = scene.RootNode;
 			if (!string.IsNullOrEmpty(subMesh))

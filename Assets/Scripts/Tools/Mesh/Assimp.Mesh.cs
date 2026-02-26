@@ -378,7 +378,8 @@ public static partial class MeshLoader
 
 	private static GameObject ToUnityMeshObject(
 		this Assimp.Node node,
-		in MeshMaterialList meshMatList)
+		in MeshMaterialList meshMatList,
+		in Dictionary<string, Assimp.Light> lightMap = null)
 	{
 		var nodeObject = new GameObject(node.Name);
 		// Debug.Log($"ToUnityMeshObject : {node.Name} {node.Transform}");
@@ -405,6 +406,12 @@ public static partial class MeshLoader
 			}
 		}
 
+		// Set Light
+		if (lightMap != null && lightMap.ContainsKey(node.Name))
+		{
+			ApplyLightToNode(lightMap[node.Name], nodeObject);
+		}
+
 		// Convert Assimp transfrom into Unity transform
 		var nodeTransformMatrix = node.Transform.ToUnity();
 		nodeObject.transform.localPosition = nodeTransformMatrix.GetPosition();
@@ -415,13 +422,14 @@ public static partial class MeshLoader
 		{
 			foreach (var child in node.Children)
 			{
-				if (child.ChildrenCount() == 0)
+				var hasLight = (lightMap != null && lightMap.ContainsKey(child.Name));
+				if (!hasLight && child.ChildrenCount() == 0)
 				{
 					continue;
 				}
 
 				// Debug.Log(" => Child Object: " + child.Name + " " + child.Transform);
-				var childObject = child.ToUnityMeshObject(meshMatList);
+				var childObject = child.ToUnityMeshObject(meshMatList, lightMap);
 				childObject.transform.SetParent(nodeObject.transform, false);
 			}
 		}
@@ -479,8 +487,11 @@ public static partial class MeshLoader
 				meshMatList.SetMaterials(materials);
 			}
 
-			// Create GameObjects from nodes
-			var createdMeshObject = scene.RootNode.ToUnityMeshObject(meshMatList);
+			// Build light map from scene
+			var lightMap = scene.HasLights ? BuildLightMap(scene) : null;
+
+			// Create GameObjects from nodes (including lights)
+			var createdMeshObject = scene.RootNode.ToUnityMeshObject(meshMatList, lightMap);
 			// Debug.Log(createdMeshObject.name + ": " + createdMeshObject.transform.localRotation.eulerAngles);
 
 			createdMeshObject.SetActive(false);
