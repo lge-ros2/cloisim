@@ -99,6 +99,41 @@ namespace SensorDevices
 		private ConcurrentQueue<(double, Pose, LaserData.Output[])> _outputQueue = new();
 		private readonly AutoResetEvent _dataAvailable = new(false);
 
+#if UNITY_EDITOR
+		#region LIDAR PROFILER
+		private int _profFrameCount = 0;
+		private double _profByteCount = 0;
+		private float _periodForLidarProfiler = 5f; // seconds
+
+		private System.Diagnostics.Stopwatch _profWatch = System.Diagnostics.Stopwatch.StartNew();
+
+		[ContextMenu("Reset Lidar Profiler")]
+		private void ResetLidarProfiler()
+		{
+			_profFrameCount = 0;
+			_profByteCount = 0;
+			_profWatch.Restart();
+		}
+
+		private void UpdateLidarProfiler(double byteCount)
+		{
+			const double oneMegabyte = 1024.0 * 1024.0;
+
+			_profFrameCount++;
+			_profByteCount += byteCount;
+			if (_profWatch.Elapsed.TotalSeconds >= _periodForLidarProfiler)
+			{
+				double seconds = _profWatch.ElapsedMilliseconds / 1000.0;
+				double hz = _profFrameCount / seconds;
+				double mbPerSec = (_profByteCount / seconds) / oneMegabyte;
+				double mbps = (_profByteCount * 8.0 / seconds) / oneMegabyte;
+				Debug.Log($"[PROF][LIDAR] {DeviceName} Hz: {hz:F2} | Bandwidth: {mbps:F2} Mbps ({mbPerSec:F2} MB/s)");
+				ResetLidarProfiler();
+			}
+		}
+		#endregion
+#endif
+
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
@@ -679,8 +714,11 @@ namespace SensorDevices
 						_laserFilter.DoFilter(ref laserScan);
 					}
 
-
 					_messageQueue.Enqueue(laserScanStamped);
+
+#if UNITY_EDITOR
+					UpdateLidarProfiler(_laserScan.Count * _laserScan.VerticalCount * sizeof(double) * 2);
+#endif
 				}
 				else
 				{
