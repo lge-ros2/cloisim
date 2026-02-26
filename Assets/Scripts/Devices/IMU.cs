@@ -46,6 +46,8 @@ namespace SensorDevices
 		private Quaternion _previousImuRotation = Quaternion.identity;
 		private Vector3 _previousLinearVelocity = Vector3.zero;
 
+		private volatile bool _hasNewPhysicsData = false;
+
 		private NoiseIMU _noises = new NoiseIMU();
 
 		public void SetupNoises(in SDF.IMU element)
@@ -204,21 +206,25 @@ namespace SensorDevices
 			_imuOrientation = _imuRotation.eulerAngles;
 			var calculatedPitch = CalculatePitchFromForwardBaseAxis();
 			_imuOrientation.x = calculatedPitch;
+
+			_hasNewPhysicsData = true;
 		}
 
 		public System.Action<messages.Imu> OnImuDataGenerated;
 
 		protected override void GenerateMessage()
 		{
+			if (!_hasNewPhysicsData)
+				return;
+
+			_hasNewPhysicsData = false;
+
 			_imu.Orientation.Set(_imuRotation);
 			_imu.AngularVelocity.Set(_imuAngularVelocity * Mathf.Deg2Rad);
 			_imu.LinearAcceleration.Set(_imuLinearAcceleration);
 			_imu.Stamp.SetCurrentTime();
-			
-			if (OnImuDataGenerated != null)
-			{
-				OnImuDataGenerated.Invoke(_imu);
-			}
+
+			OnImuDataGenerated?.Invoke(_imu);
 
 			PushDeviceMessage<messages.Imu>(_imu);
 		}
