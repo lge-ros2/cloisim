@@ -44,6 +44,26 @@ namespace cloisim.msgs
         [global::ProtoBuf.ProtoMember(8, Name = @"log_playback_stats")]
         public LogPlaybackStatistics LogPlaybackStats { get; set; }
 
+        [global::ProtoBuf.ProtoMember(9, Name = @"render_fps")]
+        public int RenderFps
+        {
+            get => __pbn__RenderFps.GetValueOrDefault();
+            set => __pbn__RenderFps = value;
+        }
+        public bool ShouldSerializeRenderFps() => __pbn__RenderFps != null;
+        public void ResetRenderFps() => __pbn__RenderFps = null;
+        private int? __pbn__RenderFps;
+
+        [global::ProtoBuf.ProtoMember(10, Name = @"physics_hz")]
+        public int PhysicsHz
+        {
+            get => __pbn__PhysicsHz.GetValueOrDefault();
+            set => __pbn__PhysicsHz = value;
+        }
+        public bool ShouldSerializePhysicsHz() => __pbn__PhysicsHz != null;
+        public void ResetPhysicsHz() => __pbn__PhysicsHz = null;
+        private int? __pbn__PhysicsHz;
+
     }
 
 }
