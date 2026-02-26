@@ -87,6 +87,15 @@ namespace SensorDevices
 		private Transform _lidarLink = null;
 		private UnityEngine.Camera _laserCam = null;
 
+		/// <summary>
+		/// Cached renderers of the parent robot model, used to hide the robot's
+		/// own body during LiDAR rendering to prevent self-occlusion.
+		/// </summary>
+		private Renderer[] _parentModelRenderers = null;
+		private int[] _parentModelOriginalLayers = null;
+		// Unity built-in layer 2 = "Ignore Raycast" — always exists, not in the lidar culling mask
+		private const int SelfOcclusionLayer = 2;
+
 		private int _numberOfLaserCamData = 0;
 		private LaserData.CameraControlInfo[] _camControlInfo;
 
@@ -98,6 +107,17 @@ namespace SensorDevices
 		private Material _depthMaterial;
 		private CommandBuffer _cb;
 		private ComputeShader _laserCompute;
+
+		// HDRP depth capture via endCameraRendering callback.
+		// CustomPassVolume was unreliable for the lidar because Camera.Render()
+		// is called 6 times per frame (for sub-cameras), and the Custom Pass
+		// system could miss some renders or let the GUI camera interfere.
+		// The endCameraRendering callback fires reliably for EVERY Camera.Render()
+		// call.  At that point _CameraDepthTexture and all HDRP shader globals
+		// are still bound for the current camera, so DrawFullScreen with the
+		// DepthCaptureFullscreen shader reads correct depth.
+		private Material _depthCaptureMaterial;
+		private RenderTexture _capturedDepthRT;
 		private int _laserComputeGroupsX;
 		private int _laserComputeGroupsY;
 		private int _laserComputeKernel;
@@ -116,12 +136,9 @@ namespace SensorDevices
 		private int _bufferIndex = 0;
 
 		/// <summary>
-		/// In HDRP, register for endCameraRendering to apply the DepthRange shader
-		/// as a post-process on the laser camera. The built-in renderer uses
-		/// Camera.AddCommandBuffer instead, but that API is unavailable in SRP.
-		/// Without this, the laser camera's color target contains scene colors
-		/// instead of linear depth values, causing the compute shader to produce
-		/// garbage range data.
+		/// In HDRP, register for endCameraRendering to capture depth after each
+		/// sub-camera render.  This replaces the CustomPassVolume approach which
+		/// was unreliable for the lidar's 6 explicit Camera.Render() calls.
 		/// </summary>
 		private void OnEnable()
 		{
@@ -140,17 +157,40 @@ namespace SensorDevices
 		}
 
 		/// <summary>
-		/// HDRP endCameraRendering callback: apply DepthRange post-process to the laser camera.
-		/// Reads the HDRP depth buffer (_CameraDepthTexture) and writes linear depth values
-		/// to the camera's color target (R32_SFloat), which the compute shader then reads.
+		/// Capture linear depth from _CameraDepthTexture into _capturedDepthRT
+		/// using the HDRP-native DepthCaptureFullscreen shader.
+		/// At this callback point, all HDRP shader globals (_CameraDepthTexture,
+		/// _ZBufferParams, _ScreenSize, _ProjectionParams) are still valid for
+		/// the camera that just rendered.  CoreUtils.DrawFullScreen invokes the
+		/// shader which uses LoadCameraDepth() (LOAD_TEXTURE2D_X) to correctly
+		/// read from HDRP's Tex2DArray depth buffer.
 		/// </summary>
 		private void OnEndLaserCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
 		{
-			if (camera == _laserCam && _cb != null)
+			if (camera != _laserCam || _depthCaptureMaterial == null)
+				return;
+
+			var w = camera.pixelWidth;
+			var h = camera.pixelHeight;
+
+			// Lazy-allocate (or resize) the capture RT
+			if (_capturedDepthRT == null || _capturedDepthRT.width != w || _capturedDepthRT.height != h)
 			{
-				context.ExecuteCommandBuffer(_cb);
-				context.Submit();
+				if (_capturedDepthRT != null) _capturedDepthRT.Release();
+				_capturedDepthRT = new RenderTexture(w, h, 0, GraphicsFormat.R32_SFloat)
+				{
+					name = "LidarCapturedDepth",
+					filterMode = FilterMode.Point,
+				};
+				_capturedDepthRT.Create();
 			}
+
+			var cmd = CommandBufferPool.Get("LidarDepthCapture");
+			CoreUtils.SetRenderTarget(cmd, _capturedDepthRT);
+			CoreUtils.DrawFullScreen(cmd, _depthCaptureMaterial, shaderPassId: 0);
+			context.ExecuteCommandBuffer(cmd);
+			context.Submit();
+			CommandBufferPool.Release(cmd);
 		}
 
 		protected override void OnAwake()
@@ -197,6 +237,67 @@ namespace SensorDevices
 				{
 					_laserProcessThread.Start();
 				}
+
+				// Cache parent model renderers to hide the robot's own body during LiDAR rendering
+				_parentModelRenderers = FindParentModelRenderers();
+				if (_parentModelRenderers != null)
+				{
+					_parentModelOriginalLayers = new int[_parentModelRenderers.Length];
+					var modelName = "unknown";
+					var current = transform.parent;
+					while (current != null)
+					{
+						if (current.CompareTag("Model")) { modelName = current.name; break; }
+						current = current.parent;
+					}
+					Debug.Log($"[Lidar] Found {_parentModelRenderers.Length} renderers in model '{modelName}' for self-occlusion exclusion (target layer={SelfOcclusionLayer})");
+				}
+			}
+		}
+
+		/// <summary>
+		/// Walk up the transform hierarchy to find the closest parent tagged "Model"
+		/// and return all Renderer components in its children. These will be moved
+		/// to "Ignore Raycast" layer during LiDAR rendering to prevent the robot
+		/// from seeing its own body.
+		/// </summary>
+		private Renderer[] FindParentModelRenderers()
+		{
+			var current = transform.parent;
+			while (current != null)
+			{
+				if (current.CompareTag("Model"))
+				{
+					var renderers = current.GetComponentsInChildren<Renderer>(true);
+					return renderers.Length > 0 ? renderers : null;
+				}
+				current = current.parent;
+			}
+			return null;
+		}
+
+		private void HideParentModelFromLidar()
+		{
+			if (_parentModelRenderers == null)
+				return;
+			for (var i = 0; i < _parentModelRenderers.Length; i++)
+			{
+				if (_parentModelRenderers[i] != null)
+				{
+					_parentModelOriginalLayers[i] = _parentModelRenderers[i].gameObject.layer;
+					_parentModelRenderers[i].gameObject.layer = SelfOcclusionLayer;
+				}
+			}
+		}
+
+		private void RestoreParentModelVisibility()
+		{
+			if (_parentModelRenderers == null)
+				return;
+			for (var i = 0; i < _parentModelRenderers.Length; i++)
+			{
+				if (_parentModelRenderers[i] != null)
+					_parentModelRenderers[i].gameObject.layer = _parentModelOriginalLayers[i];
 			}
 		}
 
@@ -252,6 +353,9 @@ namespace SensorDevices
 					outputs[i] = new LaserData.Output(i);
 				}
 
+				// Hide the robot's own body so the LiDAR doesn't see it
+				HideParentModelFromLidar();
+
 				// Render all sub-cameras in tight loop
 				for (var dataIndex = 0; dataIndex < _numberOfLaserCamData; dataIndex++)
 				{
@@ -275,13 +379,23 @@ namespace SensorDevices
 						if (_laserCompute != null)
 						{
 							_laserCompute.SetInt("_DataOffset", dataIndex * _outputBufferLength);
-							_laserCompute.SetTexture(_laserComputeKernel, "_DepthTexture", _laserCam.targetTexture);
+							// In HDRP, read from _capturedDepthRT (written by
+							// OnEndLaserCameraRendering after each Camera.Render()).
+							// In built-in, read from camera.targetTexture (modified
+							// by the attached command buffer).
+							var depthSource = _capturedDepthRT != null
+								? (Texture)_capturedDepthRT
+								: (Texture)_laserCam.targetTexture;
+							_laserCompute.SetTexture(_laserComputeKernel, "_DepthTexture", depthSource);
 							_laserCompute.SetBuffer(_laserComputeKernel, "_RayData", currentBuffer);
 							_laserCompute.Dispatch(_laserComputeKernel, _laserComputeGroupsX, _laserComputeGroupsY, 1);
 						}
 					}
 					_laserCam.enabled = false;
 				}
+
+				// Restore parent model visibility after all sub-cameras have rendered
+				RestoreParentModelVisibility();
 
 				// Async GPU readback — capture locals for closure
 				var framePose = sensorPose;
@@ -367,6 +481,18 @@ namespace SensorDevices
 				_depthMaterial = null;
 			}
 
+			if (_depthCaptureMaterial != null)
+			{
+				Destroy(_depthCaptureMaterial);
+				_depthCaptureMaterial = null;
+			}
+
+			if (_capturedDepthRT != null)
+			{
+				_capturedDepthRT.Release();
+				_capturedDepthRT = null;
+			}
+
 			_rtHandle?.Release();
 			Destroy(_laserCompute);
 			_laserCompute = null;
@@ -416,7 +542,7 @@ namespace SensorDevices
 			_laserScan.Ranges = new double[totalSamples];
 			_laserScan.Intensities = new double[totalSamples];
 			Array.Fill(_laserScan.Ranges, double.NaN);
-			Array.Fill(_laserScan.Intensities, double.NaN);
+			Array.Fill(_laserScan.Intensities, 0.0);
 		}
 
 		private void SetupLaserCamera()
@@ -524,20 +650,29 @@ namespace SensorDevices
 			frameSettings.SetEnabled(FrameSettingsField.Decals, false);
 			hdLaserCamData.renderingPathCustomFrameSettings = frameSettings;
 
-			var depthShader = Shader.Find("Sensor/DepthRange");
-			_depthMaterial = new Material(depthShader);
-
-			_cb = new CommandBuffer();
-			_cb.ClearRenderTarget(true, true, Color.clear);
-			var tempTextureId = Shader.PropertyToID("_RenderCameraDepthTexture");
-			_cb.GetTemporaryRT(tempTextureId, -1, -1);
-			_cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
-			_cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
-			_cb.ReleaseTemporaryRT(tempTextureId);
-
-			// AddCommandBuffer is only available with the built-in renderer, not HDRP/URP
-			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null)
+			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null)
 			{
+				// HDRP: depth capture is handled by the endCameraRendering callback
+				// (OnEndLaserCameraRendering) which fires for EVERY Camera.Render()
+				// call.  It uses CoreUtils.DrawFullScreen with the DepthCaptureFullscreen
+				// shader to read _CameraDepthTexture (still valid at callback time) and
+				// write linearized depth to _capturedDepthRT.
+				var depthShader = Shader.Find("FullScreen/DepthCapture");
+				_depthCaptureMaterial = new Material(depthShader);
+			}
+			else
+			{
+				// Built-in pipeline: use command buffer approach
+				var depthShader = Shader.Find("Sensor/DepthRange");
+				_depthMaterial = new Material(depthShader);
+
+				_cb = new CommandBuffer();
+				_cb.ClearRenderTarget(true, true, Color.clear);
+				var tempTextureId = Shader.PropertyToID("_RenderCameraDepthTexture");
+				_cb.GetTemporaryRT(tempTextureId, -1, -1);
+				_cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
+				_cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
+				_cb.ReleaseTemporaryRT(tempTextureId);
 				_laserCam.AddCommandBuffer(CameraEvent.AfterEverything, _cb);
 			}
 

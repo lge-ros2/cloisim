@@ -32,6 +32,7 @@ namespace SensorDevices
 		private LayerMask _layerMask;
 		private RenderTexture _segmentationRT;
 		private MaterialPropertyBlock _tmpMpb = new MaterialPropertyBlock();
+		private UnityEngine.Camera _targetCamera;
 
 		/// <summary>
 		/// The captured segmentation output. Valid after Camera.Render() returns.
@@ -46,6 +47,15 @@ namespace SensorDevices
 		public void SetLayerMask(LayerMask mask)
 		{
 			_layerMask = mask;
+		}
+
+		/// <summary>
+		/// Restrict this pass to a specific camera to prevent the GUI camera
+		/// from overwriting segmentationRT with unrelated data.
+		/// </summary>
+		public void SetTargetCamera(UnityEngine.Camera cam)
+		{
+			_targetCamera = cam;
 		}
 
 		/// <summary>
@@ -68,6 +78,8 @@ namespace SensorDevices
 			if (_segMaterial == null) return;
 
 			var cam = ctx.hdCamera.camera;
+
+			if (_targetCamera != null && cam != _targetCamera) return;
 			var w = cam.pixelWidth;
 			var h = cam.pixelHeight;
 

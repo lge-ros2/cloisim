@@ -111,6 +111,7 @@ namespace SensorDevices
 			}
 			_segmentationPass.SetSegmentationMaterial(_segMaterial);
 			_segmentationPass.SetLayerMask(_camSensor.cullingMask);
+			_segmentationPass.SetTargetCamera(_camSensor);
 		}
 
 		/// <summary>

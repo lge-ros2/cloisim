@@ -173,6 +173,7 @@ namespace SensorDevices
 			if (depthPass is DepthCapturePass dcp)
 			{
 				dcp.SetDepthMaterial(_depthBlitMaterial);
+				dcp.SetTargetCamera(_camSensor);
 				_depthCapturePass = dcp;
 			}
 

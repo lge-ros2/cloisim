@@ -23,6 +23,7 @@ namespace SensorDevices
 	{
 		private Material _depthMaterial;
 		private RenderTexture _capturedDepthRT;
+		private UnityEngine.Camera _targetCamera;
 
 		/// <summary>
 		/// The captured linearized depth. Valid after Camera.Render() returns.
@@ -32,6 +33,16 @@ namespace SensorDevices
 		public void SetDepthMaterial(Material mat)
 		{
 			_depthMaterial = mat;
+		}
+
+		/// <summary>
+		/// Restrict this pass to a specific camera. Without this guard,
+		/// the GUI/scene camera can trigger Execute and overwrite
+		/// _capturedDepthRT with its own depth, producing spurious frames.
+		/// </summary>
+		public void SetTargetCamera(UnityEngine.Camera cam)
+		{
+			_targetCamera = cam;
 		}
 
 		protected override void Setup(ScriptableRenderContext renderContext, CommandBuffer cmd)
@@ -44,6 +55,11 @@ namespace SensorDevices
 			if (_depthMaterial == null) return;
 
 			var cam = ctx.hdCamera.camera;
+
+			// Only capture depth for the intended sensor camera.
+			// Without this, the GUI camera can trigger this pass and
+			// overwrite _capturedDepthRT with unrelated depth data.
+			if (_targetCamera != null && cam != _targetCamera) return;
 			var w = cam.pixelWidth;
 			var h = cam.pixelHeight;
 
