@@ -261,8 +261,31 @@ public class Main : MonoBehaviour
 		AsyncIO.ForceDotNet.Force();
 
 		QualitySettings.vSyncCount = 0;
-		Application.targetFrameRate = 60;
 		OnDemandRendering.renderFrameInterval = 1;
+
+		// Detect batchmode via Application.isBatchMode OR by scanning
+		// command-line arguments — Unity 6000 player builds sometimes
+		// report isBatchMode=false even when -batchmode was passed.
+		var cmdArgs = Environment.GetCommandLineArgs();
+		var hasBatchArg = System.Array.Exists(cmdArgs, a => a == "-batchmode");
+		var isBatchMode = Application.isBatchMode || hasBatchArg;
+		Debug.Log("[Main] Application.isBatchMode=" + Application.isBatchMode
+			+ ", cmdline has -batchmode=" + hasBatchArg
+			+ ", effective isBatchMode=" + isBatchMode);
+
+		if (isBatchMode)
+		{
+			// Headless / batchmode: uncap frame rate so the GPU runs as fast as
+			// possible. Unity's internal loop in -batchmode does not reliably
+			// honour a fixed targetFrameRate — setting -1 removes the cap and
+			// lets sensor coroutines (which yield once per frame) tick faster.
+			Application.targetFrameRate = -1;
+			Debug.Log("[Main] BatchMode detected: targetFrameRate = -1 (uncapped)");
+		}
+		else
+		{
+			Application.targetFrameRate = 60;
+		}
 
 		// Configure physics timestep.
 		// Project default fixedDeltaTime is 0.001 (1000 Hz) which consumed ~60% of
@@ -280,11 +303,6 @@ public class Main : MonoBehaviour
 		Time.fixedDeltaTime = 1f / physicsHz;
 		Time.maximumDeltaTime = 0.1f;
 		Debug.Log($"[Main] Physics: fixedDeltaTime={Time.fixedDeltaTime}s ({physicsHz} Hz), maximumDeltaTime={Time.maximumDeltaTime}s (max {Mathf.CeilToInt(Time.maximumDeltaTime / Time.fixedDeltaTime)} steps/frame)");
-
-		if (Application.isBatchMode)
-		{
-			Debug.Log("BatchMode detected: Enforcing vSyncCount = 0 and targetFrameRate = 60 for headless rendering");
-		}
 
 		// Debug.Log(    QualitySettings.GetQualityLevel());
 		var qualityLevel = Environment.GetEnvironmentVariable("CLOISIM_QUALITY");
@@ -304,14 +322,26 @@ public class Main : MonoBehaviour
 		mainCamera.useOcclusionCulling = true;
 		mainCamera.orthographic = false;
 
-		// CLOISIM_SENSOR_ONLY=1: minimize main viewport camera for headless/benchmark use.
-		// Saves ~30-50ms/frame by disabling main camera rendering while sensors keep working.
+		// Sensor-only mode: minimize main viewport camera to save ~30-50ms/frame.
+		// Activated automatically in batchmode (no human viewer) or via CLOISIM_SENSOR_ONLY=1.
 		var sensorOnly = Environment.GetEnvironmentVariable("CLOISIM_SENSOR_ONLY");
-		if (!string.IsNullOrEmpty(sensorOnly) && sensorOnly == "1")
+		var enableSensorOnly = isBatchMode
+			|| (!string.IsNullOrEmpty(sensorOnly) && sensorOnly == "1");
+
+		if (enableSensorOnly)
 		{
 			mainCamera.cullingMask = 0; // Render nothing — sensor cameras have their own culling
 			mainCamera.clearFlags = CameraClearFlags.SolidColor;
-			Debug.Log("[Main] CLOISIM_SENSOR_ONLY=1: Main camera rendering minimized for sensor performance");
+			Debug.Log("[Main] Sensor-only mode: Main camera rendering minimized"
+				+ (isBatchMode ? " (auto-enabled in batchmode)" : " (CLOISIM_SENSOR_ONLY=1)"));
+
+			// In headless mode, increase the sensor render budget — no interactive UI
+			// to keep smooth, so we can spend more time per frame on sensor cameras.
+			if (isBatchMode)
+			{
+				SensorDevices.SensorRenderManager.Instance.FrameBudgetMs = 40f;
+				Debug.Log("[Main] SensorRenderManager.FrameBudgetMs raised to 40ms for headless");
+			}
 		}
 
 #if UNITY_EDITOR || UNITY_STANDALONE
@@ -321,8 +351,8 @@ public class Main : MonoBehaviour
 			hdCamData = mainCamera.gameObject.AddComponent<UnityEngine.Rendering.HighDefinition.HDAdditionalCameraData>();
 		}
 
-		// When CLOISIM_SENSOR_ONLY is active, disable all expensive HDRP features on main camera.
-		if (!string.IsNullOrEmpty(sensorOnly) && sensorOnly == "1" && hdCamData != null)
+		// When sensor-only mode is active, disable all expensive HDRP features on main camera.
+		if (enableSensorOnly && hdCamData != null)
 		{
 			hdCamData.customRenderingSettings = true;
 			var overrideMask = hdCamData.renderingPathCustomFrameSettingsOverrideMask;
