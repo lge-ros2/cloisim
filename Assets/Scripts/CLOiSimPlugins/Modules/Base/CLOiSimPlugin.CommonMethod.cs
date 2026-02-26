@@ -222,7 +222,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		ros2CommonInfo.Name = "static_transforms";
 		ros2CommonInfo.Value = new Any { Type = Any.ValueType.None };
 
-		foreach (var tf in staticTfList)
+		foreach (var tf in _staticTfList)
 		{
 			var ros2StaticTransformLink = new messages.Param();
 			ros2StaticTransformLink.Name = "parent_frame_id";
@@ -232,10 +232,10 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 				var tfPose = tf.GetPose();
 
 				var poseMessage = new messages.Pose();
+				poseMessage.Name = tf.ChildFrameID;
 				poseMessage.Position = new messages.Vector3d();
 				poseMessage.Orientation = new messages.Quaternion();
 
-				poseMessage.Name = tf.ChildFrameID;
 				poseMessage.Position.Set(tfPose.position);
 				poseMessage.Orientation.Set(tfPose.rotation);
 

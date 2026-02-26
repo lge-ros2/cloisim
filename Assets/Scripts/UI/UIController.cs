@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -20,7 +21,13 @@ public class UIController : MonoBehaviour
 	private Toggle _toggleLockVerticalMoving = null;
 	private TextField _scaleField = null;
 	private Label _statusMessage = null;
+	private Button _buttonCameraView = null;
+	private Button _buttonHelp = null;
 	private Button _recordSave = null;
+	private Button _buttonImport = null;
+	private Button _buttonPropsBox = null;
+	private Button _buttonPropsCylinder = null;
+	private Button _buttonPropsSphere = null;
 
 	private const float CameraViewDistance = 30f;
 	private const float ScaleFactorMin = 0.01f;
@@ -41,8 +48,8 @@ public class UIController : MonoBehaviour
 		_toggleLockVerticalMoving = _rootVisualElement.Q<Toggle>("LockVerticalMoving");
 		_toggleLockVerticalMoving.RegisterValueChangedCallback(x => Main.CameraControl.VerticalMovementLock = x.newValue);
 
-		var buttonCameraView = _rootVisualElement.Q<Button>("CameraView");
-		buttonCameraView.RegisterCallback<ClickEvent>(x => ShowCameraView());
+		_buttonCameraView = _rootVisualElement.Q<Button>("CameraView");
+		_buttonCameraView.clickable.clicked += () => ShowCameraView();
 
 		_scaleField = _rootVisualElement.Q<TextField>("ScaleField");
 		var scaleFieldTextElem = _scaleField.Q<TextElement>();
@@ -55,20 +62,19 @@ public class UIController : MonoBehaviour
 		_scaleField.RegisterCallback<FocusOutEvent>(OnFocusOutScaleField);
 		_prevScaleFactorString = _scaleField.text;
 
-		var buttonPropsBox = _rootVisualElement.Q<Button>("PropsBox");
-		buttonPropsBox.clickable.clicked += () => objectSpawning?.SetPropType(ObjectSpawning.PropsType.BOX);
+		_buttonPropsBox = _rootVisualElement.Q<Button>("PropsBox");
+		_buttonPropsCylinder = _rootVisualElement.Q<Button>("PropsCylinder");
+		_buttonPropsSphere = _rootVisualElement.Q<Button>("PropsSphere");
 
-		var buttonPropsCylinder = _rootVisualElement.Q<Button>("PropsCylinder");
-		buttonPropsCylinder.clickable.clicked += () => objectSpawning?.SetPropType(ObjectSpawning.PropsType.CYLINDER);
-
-		var buttonPropsSphere = _rootVisualElement.Q<Button>("PropsSphere");
-		buttonPropsSphere.clickable.clicked += () => objectSpawning?.SetPropType(ObjectSpawning.PropsType.SPHERE);
+		_buttonPropsBox.clickable.clicked += () => SelectPropButton(_buttonPropsBox, ObjectSpawning.PropsType.BOX);
+		_buttonPropsCylinder.clickable.clicked += () => SelectPropButton(_buttonPropsCylinder, ObjectSpawning.PropsType.CYLINDER);
+		_buttonPropsSphere.clickable.clicked += () => SelectPropButton(_buttonPropsSphere, ObjectSpawning.PropsType.SPHERE);
 
 		_statusMessage = _rootVisualElement.Q<Label>("StatusMessage");
 		ClearMessage();
 
-		var buttonHelp = _rootVisualElement.Q<Button>("Help");
-		buttonHelp.clickable.clicked += () => ShowHelp();
+		_buttonHelp = _rootVisualElement.Q<Button>("Help");
+		_buttonHelp.clickable.clicked += () => ShowHelp();
 
 		_recordSave = _rootVisualElement.Q<Button>("Record");
 		_recordSave.clickable.clicked += () => {
@@ -80,8 +86,11 @@ public class UIController : MonoBehaviour
 		var buttonSave = _rootVisualElement.Q<Button>("Save");
 		buttonSave.clickable.clicked += () => Main.Instance.SaveWorld();
 
-		var buttonImport = _rootVisualElement.Q<Button>("Import");
-		buttonImport.clickable.clicked += () => Main.ModelImporter.ToggleModelList();
+		_buttonImport = _rootVisualElement.Q<Button>("Import");
+		_buttonImport.clickable.clicked += () => {
+			_buttonImport.ToggleInClassList("selected");
+			Main.ModelImporter.ToggleModelList();
+		};
 
 		var buttonHome = _rootVisualElement.Q<Button>("Home");
  		buttonHome.clickable.clicked += () => Main.CameraControl.StartCameraChange(Main.CameraInitPose);
@@ -172,6 +181,31 @@ public class UIController : MonoBehaviour
 		button.style.backgroundColor = new StyleColor(color);
 	}
 
+	private void SelectPropButton(Button selected, ObjectSpawning.PropsType type)
+	{
+		var buttons = new List<Button>
+		{
+			_buttonPropsBox,
+			_buttonPropsCylinder,
+			_buttonPropsSphere
+		};
+
+		var currentPropType = Main.ObjectSpawning?.GetPropType();
+		var finalPropType = (currentPropType == type) ? ObjectSpawning.PropsType.NONE : type;
+		// Debug.Log(finalPropType);
+		Main.ObjectSpawning?.SetPropType(finalPropType);
+
+		foreach (var button in buttons)
+		{
+			button.RemoveFromClassList("selected");
+		}
+
+		if (finalPropType != ObjectSpawning.PropsType.NONE)
+		{
+			selected.AddToClassList("selected");
+		}
+	}
+
 	void LateUpdate()
 	{
 		if (Input.GetKeyUp(KeyCode.F1))
@@ -180,12 +214,14 @@ public class UIController : MonoBehaviour
 		}
 		else if (Input.GetKeyUp(KeyCode.F3))
 		{
+			_buttonImport.ToggleInClassList("selected");
 			Main.ModelImporter.ToggleModelList();
 		}
 		else if (Input.GetKeyUp(KeyCode.Escape))
 		{
 			ShowHelp(false);
 			ShowCameraView(false);
+			_buttonImport.EnableInClassList("selected", false);
 			Main.ModelImporter.ShowModelList(false);
 		}
 		else if (Input.GetKey(KeyCode.LeftControl))
@@ -194,6 +230,27 @@ public class UIController : MonoBehaviour
 			{
 				// Debug.Log("Save World");
 				Main.Instance.SaveWorld();
+			}
+		}
+		else if (Input.GetKeyUp(KeyCode.Alpha1))
+		{
+			if (!IsScaleFieldFocused())
+			{
+				SelectPropButton(_buttonPropsBox, ObjectSpawning.PropsType.BOX);
+			}
+		}
+		else if (Input.GetKeyUp(KeyCode.Alpha2))
+		{
+			if (!IsScaleFieldFocused())
+			{
+				SelectPropButton(_buttonPropsCylinder, ObjectSpawning.PropsType.CYLINDER);
+			}
+		}
+		else if (Input.GetKeyUp(KeyCode.Alpha3))
+		{
+			if (!IsScaleFieldFocused())
+			{
+				SelectPropButton(_buttonPropsSphere, ObjectSpawning.PropsType.SPHERE);
 			}
 		}
 	}
@@ -238,11 +295,13 @@ public class UIController : MonoBehaviour
 
 		if (!open || helpDialogScrollView.style.display == DisplayStyle.Flex)
 		{
+			_buttonHelp?.EnableInClassList("selected", false);
 			helpDialogScrollView.style.display = DisplayStyle.None;
 			Main.CameraControl.BlockMouseWheelControl(false);
 		}
 		else
 		{
+			_buttonHelp?.EnableInClassList("selected", true);
 			helpDialogScrollView.style.display = DisplayStyle.Flex;
 			Main.CameraControl.BlockMouseWheelControl(true);
 		}
@@ -250,6 +309,7 @@ public class UIController : MonoBehaviour
 
 	private void ShowCameraView(in bool open = true)
 	{
+		_buttonCameraView?.EnableInClassList("selected", open);
 		var cameraViewMenuVisElem = _rootVisualElement.Q<VisualElement>("CameraViewMenu");
 		cameraViewMenuVisElem.style.visibility = (!open || cameraViewMenuVisElem.style.visibility == Visibility.Visible)? Visibility.Hidden : Visibility.Visible;
 	}

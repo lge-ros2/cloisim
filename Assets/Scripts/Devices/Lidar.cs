@@ -78,6 +78,8 @@ namespace SensorDevices
 		private int _numberOfLaserCamData = 0;
 		private LaserData.CameraControlInfo[] _camControlInfo;
 
+		[SerializeField] private int _slicesPerFrame = 2;
+
 		private bool _startLaserWork = false;
 
 		private RTHandle _rtHandle = null;
@@ -94,6 +96,41 @@ namespace SensorDevices
 		private int _outputBufferLength;
 		private ConcurrentQueue<(double, Pose, LaserData.Output[])> _outputQueue = new();
 		private readonly AutoResetEvent _dataAvailable = new(false);
+
+#if UNITY_EDITOR
+		#region LIDAR PROFILER
+		private int _profFrameCount = 0;
+		private double _profByteCount = 0;
+		private float _periodForLidarProfiler = 5f; // seconds
+
+		private System.Diagnostics.Stopwatch _profWatch = System.Diagnostics.Stopwatch.StartNew();
+
+		[ContextMenu("Reset Lidar Profiler")]
+		private void ResetLidarProfiler()
+		{
+			_profFrameCount = 0;
+			_profByteCount = 0;
+			_profWatch.Restart();
+		}
+
+		private void UpdateLidarProfiler(double byteCount)
+		{
+			const double oneMegabyte = 1024.0 * 1024.0;
+
+			_profFrameCount++;
+			_profByteCount += byteCount;
+			if (_profWatch.Elapsed.TotalSeconds >= _periodForLidarProfiler)
+			{
+				double seconds = _profWatch.ElapsedMilliseconds / 1000.0;
+				double hz = _profFrameCount / seconds;
+				double mbPerSec = (_profByteCount / seconds) / oneMegabyte;
+				double mbps = (_profByteCount * 8.0 / seconds) / oneMegabyte;
+				Debug.Log($"[PROF][LIDAR] {DeviceName} Hz: {hz:F2} | Bandwidth: {mbps:F2} Mbps ({mbPerSec:F2} MB/s)");
+				ResetLidarProfiler();
+			}
+		}
+		#endregion
+#endif
 
 		protected override void OnAwake()
 		{
@@ -284,6 +321,8 @@ namespace SensorDevices
 			universalLaserCamData.allowXRRendering = false;
 			universalLaserCamData.volumeLayerMask = default;
 			universalLaserCamData.renderType = CameraRenderType.Base;
+			universalLaserCamData.renderPostProcessing = false;
+			universalLaserCamData.antialiasing = AntialiasingMode.None;
 			universalLaserCamData.requiresColorOption = CameraOverrideOption.Off;
 			universalLaserCamData.requiresDepthOption = CameraOverrideOption.Off;
 			universalLaserCamData.requiresColorTexture = false;
@@ -418,6 +457,18 @@ namespace SensorDevices
 			var axisRotation = Vector3.zero;
 
 			var outputs = new LaserData.Output[_numberOfLaserCamData];
+			for (var i = 0; i < _numberOfLaserCamData; i++)
+				outputs[i] = new LaserData.Output(i, _outputBufferLength);
+
+			const int FrameOutputPoolSize = 5;
+			var frameOutputPool = new LaserData.Output[FrameOutputPoolSize][];
+			for (var p = 0; p < FrameOutputPoolSize; p++)
+			{
+				frameOutputPool[p] = new LaserData.Output[_numberOfLaserCamData];
+				for (var i = 0; i < _numberOfLaserCamData; i++)
+					frameOutputPool[p][i] = new LaserData.Output(i, _outputBufferLength);
+			}
+			var frameOutputPoolIndex = 0;
 
 			const int BufferCount = 5;
 			var bufferIndex = 0;
@@ -428,80 +479,101 @@ namespace SensorDevices
 				computedBuffers[b] = new ComputeBuffer(totalBufferLength, sizeof(float));
 			}
 
+			var	currentSliceIndex = 0;
+			var accumulatedCount = 0;
+			var framesPerScan = Mathf.CeilToInt((float)_numberOfLaserCamData / _slicesPerFrame);
+			var sliceUpdatePeriod = UpdatePeriod / framesPerScan;
 			var lastUpdateTime = 0f;
+			ComputeBuffer currentComputeBuffer = null;
 
 			while (_startLaserWork)
 			{
-				var now = Time.realtimeSinceStartup;
 				lastUpdateTime += Time.unscaledDeltaTime;
-				if (lastUpdateTime < UpdatePeriod)
+
+				var maxRendersPerFrame = Mathf.Max(_slicesPerFrame * 2, framesPerScan);
+				var rendersThisFrame = 0;
+
+				while (lastUpdateTime >= sliceUpdatePeriod && _startLaserWork && rendersThisFrame < maxRendersPerFrame)
 				{
-					yield return null;
-					continue;
-				}
+					lastUpdateTime -= sliceUpdatePeriod;
 
-				lastUpdateTime -= UpdatePeriod;
-
-				bufferIndex = (bufferIndex + 1) % BufferCount;
-				var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
-
-				lidarSensorWorldPose.position = transform.position;
-				lidarSensorWorldPose.rotation = transform.rotation;
-
-				var currentComputeBuffer = computedBuffers[bufferIndex];
-				for (var dataIndex = 0; dataIndex < _numberOfLaserCamData; dataIndex++)
-				{
-					if (!_camControlInfo[dataIndex].isOverlappingDirection)
+					// Start of a new scan cycle: advance buffer and capture pose/time
+					if (accumulatedCount == 0)
 					{
-						// Debug.Log($"Skip to render for {dataIndex} {_camControlInfo[dataIndex].laserCamRotationalAngle} {name}");
-						outputs[dataIndex] = new LaserData.Output(dataIndex);
-						continue;
-					}
-					else
-					{
-						outputs[dataIndex] = new LaserData.Output(dataIndex, _outputBufferLength);
+						bufferIndex = (bufferIndex + 1) % BufferCount;
+						currentComputeBuffer = computedBuffers[bufferIndex];
+
+						lidarSensorWorldPose.position = transform.position;
+						lidarSensorWorldPose.rotation = transform.rotation;
 					}
 
-					axisRotation.y = _camControlInfo[dataIndex].laserCamRotationalAngle;
+					var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
 
-					_laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
-					_laserCam.Render();
-
-					if (_laserCompute != null)
+					for (var slice = 0; slice < _slicesPerFrame; slice++)
 					{
-						_laserCompute.SetInt("_DataOffset", dataIndex * _outputBufferLength);
-						_laserCompute.SetTexture(_laserComputeKernel, "_DepthTexture", _laserCam.targetTexture);
-						_laserCompute.SetBuffer(_laserComputeKernel, "_RayData", currentComputeBuffer);
-						_laserCompute.Dispatch(_laserComputeKernel, _laserComputeGroupsX, _laserComputeGroupsY, 1);
-					}
-					_laserCam.enabled = false;
-				}
+						var dataIndex = currentSliceIndex;
+						currentSliceIndex = (currentSliceIndex + 1) % _numberOfLaserCamData;
 
-				var framePose = lidarSensorWorldPose;
-				var frameCapturedTime = capturedTime;
-				var frameOutputs = new LaserData.Output[_numberOfLaserCamData];
-				for (var i = 0; i < _numberOfLaserCamData; i++)
-					frameOutputs[i] = new LaserData.Output(outputs[i].dataIndex, outputs[i].rayData != null ? outputs[i].rayData.Length : 0);
-
-				AsyncGPUReadback.Request(currentComputeBuffer, (req) =>
-					{
-						if (req.hasError || !req.done)
+						if (!_camControlInfo[dataIndex].isOverlappingDirection)
 						{
-							Debug.LogWarning($"GPU readback not ready");
-							return;
+							// Debug.Log($"Skip to render for {dataIndex} {_camControlInfo[dataIndex].laserCamRotationalAngle} {name}");
+							outputs[dataIndex].Reset(dataIndex, false);
+						}
+						else
+						{
+							outputs[dataIndex].Reset(dataIndex, true);
+
+							axisRotation.y = _camControlInfo[dataIndex].laserCamRotationalAngle;
+
+							_laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
+							_laserCam.Render();
+
+							if (_laserCompute != null)
+							{
+								_laserCompute.SetInt("_DataOffset", dataIndex * _outputBufferLength);
+								_laserCompute.SetTexture(_laserComputeKernel, "_DepthTexture", _laserCam.targetTexture);
+								_laserCompute.SetBuffer(_laserComputeKernel, "_RayData", currentComputeBuffer);
+								_laserCompute.Dispatch(_laserComputeKernel, _laserComputeGroupsX, _laserComputeGroupsY, 1);
+							}
+							_laserCam.enabled = false;
 						}
 
-						var src = req.GetData<float>();
+						accumulatedCount++;
+						rendersThisFrame++;
+					}
+
+					if (accumulatedCount >= _numberOfLaserCamData)
+					{
+						accumulatedCount = 0;
+
+						var framePose = lidarSensorWorldPose;
+						var frameCapturedTime = capturedTime;
+
+						var frameOutputs = frameOutputPool[frameOutputPoolIndex];
+						frameOutputPoolIndex = (frameOutputPoolIndex + 1) % FrameOutputPoolSize;
 						for (var i = 0; i < _numberOfLaserCamData; i++)
-						{
-							if (frameOutputs[i].rayData == null)
-								continue;
-							frameOutputs[i].ConvertDataType(src);
-						}
+							frameOutputs[i].Reset(outputs[i].dataIndex, outputs[i].hasData);
 
-						_outputQueue.Enqueue((frameCapturedTime, framePose, frameOutputs));
-						_dataAvailable.Set();
-					});
+						AsyncGPUReadback.Request(currentComputeBuffer, (req) =>
+							{
+								if (req.hasError || !req.done)
+								{
+									Debug.LogWarning($"GPU readback not ready");
+									return;
+								}
+
+								var src = req.GetData<float>();
+								for (var i = 0; i < _numberOfLaserCamData; i++)
+								{
+									if (frameOutputs[i].hasData)
+										frameOutputs[i].ConvertDataType(src);
+								}
+
+								_outputQueue.Enqueue((frameCapturedTime, framePose, frameOutputs));
+								_dataAvailable.Set();
+							});
+					}
+				}
 
 				yield return null;
 			}
@@ -555,11 +627,12 @@ namespace SensorDevices
 
 					Parallel.For(0, _numberOfLaserCamData, _parallelOptions, index =>
 					{
-						var srcBuffer = item.outputs[index].rayData;
-						if (srcBuffer == null)
+						if (!item.outputs[index].hasData)
 						{
 							return;
 						}
+
+						var srcBuffer = item.outputs[index].rayData;
 
 						var dataStartAngleH = _camControlInfo[index].laserCamRotationalAngle - LaserCameraHFovHalf;
 						var dataEndAngleH = _camControlInfo[index].laserCamRotationalAngle + LaserCameraHFovHalf;
@@ -662,8 +735,11 @@ namespace SensorDevices
 						_laserFilter.DoFilter(ref laserScan);
 					}
 
-
 					_messageQueue.Enqueue(laserScanStamped);
+
+#if UNITY_EDITOR
+					UpdateLidarProfiler(_laserScan.Count * _laserScan.VerticalCount * sizeof(double) * 2);
+#endif
 				}
 				else
 				{

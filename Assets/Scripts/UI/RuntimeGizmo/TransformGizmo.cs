@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.Rendering;
 
 namespace RuntimeGizmos
@@ -516,6 +517,9 @@ namespace RuntimeGizmos
 
 		void GetTarget()
 		{
+			if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+				return;
+
 			if (nearAxis == Axis.None &&
 				!Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButtonDown(0))
 			{

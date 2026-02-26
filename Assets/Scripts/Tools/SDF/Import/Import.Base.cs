@@ -140,12 +140,12 @@ namespace SDF
 				ImportActors(world.GetActors());
 				yield return null;
 
+				worldObject?.SpecifyPose();
+
 				foreach (var pluginObject in _pluginObjectList)
 				{
 					ImportPlugin(pluginObject.Key, pluginObject.Value);
 				}
-
-				worldObject?.SpecifyPose();
 			}
 
 			public IEnumerator Start(Model model, Action<Object> onCreatedRoot = null)
@@ -161,12 +161,12 @@ namespace SDF
 					ImportJoint(jointObject.Key, jointObject.Value);
 				}
 
+				modelObject?.SpecifyPose();
+
 				foreach (var pluginObject in _pluginObjectList)
 				{
 					ImportPlugin(pluginObject.Key, pluginObject.Value);
 				}
-
-				modelObject?.SpecifyPose();
 
 				onCreatedRoot?.Invoke(modelObject);
 			}
