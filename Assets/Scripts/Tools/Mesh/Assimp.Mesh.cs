@@ -224,7 +224,10 @@ public static partial class MeshLoader
 		}
 
 		if (logs.Length > 0)
-			Debug.LogWarning("LoadMaterials() - Implementation logs\n" + logs.ToString());
+		{
+			logs.Insert(0, "MeshLoader.LoadMaterials() - Implementation logs\n");
+			Debug.LogWarning(logs.ToString());
+		}
 
 		return materials;
 	}

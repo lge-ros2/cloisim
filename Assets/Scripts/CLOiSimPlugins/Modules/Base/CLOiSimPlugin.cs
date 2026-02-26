@@ -53,9 +53,9 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected string _parentLinkName = string.Empty;
 
-	protected List<TF> staticTfList = new();
+	protected List<TF> _staticTfList = new();
 
-	private Pose pluginPose = Pose.identity;
+	private Pose _pluginPose = Pose.identity;
 
 	private SDF.Plugin _pluginParameters = null;
 
@@ -134,15 +134,14 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	void Awake()
 	{
 		SetCustomHandleRequestMessage();
-
 		OnAwake();
-
-		OnPluginLoad();
 	}
 
 	// Start is called before the first frame update
 	void Start()
 	{
+		OnPluginLoad();
+
 		DetectMultiplePlugin();
 
 		StorePose();
@@ -194,13 +193,13 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	public Pose GetPose()
 	{
-		return pluginPose;
+		return _pluginPose;
 	}
 
 	private void StorePose()
 	{
-		pluginPose.position = transform.localPosition;
-		pluginPose.rotation = transform.localRotation;
-		// Debug.Log(modelName + ":" + transform.name + ", " + pluginPose.position + ", " + pluginPose.rotation);
+		_pluginPose.position = transform.localPosition;
+		_pluginPose.rotation = transform.localRotation;
+		// Debug.Log(modelName + ":" + transform.name + ", " + _pluginPose.position + ", " + _pluginPose.rotation);
 	}
 }

@@ -10,7 +10,7 @@ using messages = cloisim.msgs;
 
 public class JointControlPlugin : CLOiSimPlugin
 {
-	private List<TF> tfList = new List<TF>();
+	private List<TF> _tfList = new List<TF>();
 	private string _robotDescription = "<?xml version='1.0' ?><sdf></sdf>";
 	private SensorDevices.JointCommand _jointCommand = null;
 	private SensorDevices.JointState _jointState = null;
@@ -43,7 +43,7 @@ public class JointControlPlugin : CLOiSimPlugin
 
 		if (RegisterTxDevice(out var portTf, "Tf"))
 		{
-			AddThread(portTf, PublishTfThread, tfList);
+			AddThread(portTf, PublishTfThread, _tfList);
 		}
 
 		LoadJoints();
@@ -75,13 +75,13 @@ public class JointControlPlugin : CLOiSimPlugin
 					var tf = new TF(targetLink, targetLink.JointChildLinkName, jointParentLinkName);
 					if (isStatic)
 					{
-						staticTfList.Add(tf);
-						// UnityEngine.Debug.LogFormat("staticTfList Added: {0}::{1}", targetLink.Model.name, targetLink.name);
+						_staticTfList.Add(tf);
+						// UnityEngine.Debug.LogFormat("StaticTfList Added: {0}::{1}", targetLink.Model.name, targetLink.name);
 					}
 					else
 					{
-						tfList.Add(tf);
-						// UnityEngine.Debug.LogFormat("tfList Added: {0}::{1}", targetLink.Model.name, targetLink.name);
+						_tfList.Add(tf);
+						// UnityEngine.Debug.LogFormat("_tfList Added: {0}::{1}", targetLink.Model.name, targetLink.name);
 					}
 				}
 			}
