@@ -1,0 +1,79 @@
+// LivoxLaserCamData.compute
+// Compute shader for Livox non-repetitive scan pattern LiDAR.
+// Unlike LaserCamData.compute which iterates a uniform angular grid,
+// this shader processes arbitrary ray directions from a StructuredBuffer.
+// Each thread handles one ray, converting its angle to a pixel coordinate
+// in the sub-camera's depth texture and reading the range.
+
+#pragma kernel ComputeLivoxData
+
+#define THREADS 64
+
+struct LivoxRay
+{
+    float hAngleLocalRad;  // azimuth relative to sub-camera center (radians)
+    float vAngleRad;       // elevation angle (radians), positive = up
+    uint  outputIndex;     // index into output buffer
+};
+
+cbuffer Params
+{
+    float _MaxHAngleHalf;        // sub-camera half-FOV horizontal (degrees)
+    float _MaxVAngleHalf;        // sub-camera half-FOV vertical (degrees)
+    float _MaxHAngleHalfTanInv;  // 1 / tan(MaxHAngleHalf in radians)
+    float _MaxVAngleHalfTanInv;  // 1 / tan(MaxVAngleHalf in radians)
+    float _RangeMin;
+    float _RangeMax;
+    uint  _Width;                // depth texture width in pixels
+    uint  _Height;               // depth texture height in pixels
+    uint  _RayCount;             // number of rays to process this dispatch
+};
+
+Texture2D<float> _DepthTexture;           // Input - linearised depth [0,1]
+StructuredBuffer<LivoxRay> _Rays;         // Input - per-ray angle data
+RWStructuredBuffer<float>  _RayData;      // Output - range per ray
+
+[numthreads(THREADS, 1, 1)]
+void ComputeLivoxData(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _RayCount)
+        return;
+
+    LivoxRay ray = _Rays[id.x];
+
+    float hAngleInCam = ray.hAngleLocalRad;
+    float vAngleInCam = ray.vAngleRad;
+
+    // Convert ray angle to normalised pixel position.
+    // For a pinhole camera, a ray at spherical angles (h, v) projects to:
+    //   ndc.x = tan(h) / tan(HFOV/2)
+    //   ndc.y = tan(v) / (cos(h) * tan(VFOV/2))
+    // The 1/cos(h) factor accounts for the fact that at off-axis horizontal
+    // angles, the same elevation angle projects to a higher pixel position
+    // ("keystone" effect of perspective projection).
+    float cosH = cos(hAngleInCam);
+    float offsetXratio = tan(hAngleInCam) * _MaxHAngleHalfTanInv;
+    float offsetYratio = tan(vAngleInCam) * _MaxVAngleHalfTanInv / cosH;
+
+    // Map normalised [-1,1] to pixel coordinates.
+    // X: -1 = left edge (px=0), +1 = right edge (px=Width-1)
+    // Y: -1 = bottom edge (py=0), +1 = top edge (py=Height-1)
+    int px = clamp((int)((1 + offsetXratio) * 0.5 * _Width),  0, _Width  - 1);
+    int py = clamp((int)((1 + offsetYratio) * 0.5 * _Height), 0, _Height - 1);
+
+    float depth = _DepthTexture.Load(int3(px, py, 0));
+
+    // Correct for off-axis perspective distortion (pinhole camera model):
+    // depth texture stores perpendicular depth; we need radial range.
+    // range = Z_depth / (cos(h) * cos(v))
+    float vCos = cos(vAngleInCam);
+    depth *= 1.0 / (cosH * vCos);
+
+    float rayDist = depth * _RangeMax;
+
+    // Below-minimum → NaN
+    if (rayDist < _RangeMin)
+        rayDist = asfloat(0x7FC00000); // quiet NaN
+
+    _RayData[ray.outputIndex] = rayDist;
+}
