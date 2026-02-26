@@ -1,13 +1,14 @@
 Button#Record {
-    background-image: resource("icons/record");
+    background-image: resource('icons/record');
     background-repeat: no-repeat;
     background-position: 4px 50%;
     background-size: 16px 16px;
     padding-left: 48px;
 }
 
-Button.props-selected {
-    background-color: #2f2f2f;
+Button.selected {
+    background-color: rgb(47, 47, 47);
+    color: white;
 }
 
 Button.recording {
@@ -22,8 +23,34 @@ Button:hover {
     background-color: rgb(130, 130, 130);
 }
 
-VisualElement#MainVisualElement Button:active,
-VisualElement#RightMenuVisualElement>Button:active {
+VisualElement#MainVisualElement Button:active {
     scale: 0.85;
-    background-color: #2f2f2f;
+    background-color: rgb(47, 47, 47);
+}
+
+VisualElement#RightMenuVisualElement > Button:active {
+    scale: 0.85;
+    background-color: rgb(47, 47, 47);
+}
+
+#HelpDialog #unity-content-and-vertical-scroll-container > Scroller > #unity-slider > VisualElement > #unity-dragger {
+    border-radius: 8px;
+    background-color: rgba(180, 180, 180, 0.5);
+    width: 8px;
+    margin-left: 2px;
+}
+
+#HelpDialog #unity-content-and-vertical-scroll-container > Scroller > #unity-slider > VisualElement > #unity-tracker {
+    border-radius: 8px;
+    background-color: rgba(80, 80, 80, 0.3);
+    width: 8px;
+    margin-left: 2px;
+}
+
+#HelpDialog #unity-content-and-vertical-scroll-container > Scroller > #unity-low-button {
+    display: none;
+}
+
+#HelpDialog #unity-content-and-vertical-scroll-container > Scroller > #unity-high-button {
+    display: none;
 }

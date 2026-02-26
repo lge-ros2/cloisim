@@ -21,7 +21,10 @@ public class UIController : MonoBehaviour
 	private Toggle _toggleLockVerticalMoving = null;
 	private TextField _scaleField = null;
 	private Label _statusMessage = null;
+	private Button _buttonCameraView = null;
+	private Button _buttonHelp = null;
 	private Button _recordSave = null;
+	private Button _buttonImport = null;
 	private Button _buttonPropsBox = null;
 	private Button _buttonPropsCylinder = null;
 	private Button _buttonPropsSphere = null;
@@ -45,8 +48,8 @@ public class UIController : MonoBehaviour
 		_toggleLockVerticalMoving = _rootVisualElement.Q<Toggle>("LockVerticalMoving");
 		_toggleLockVerticalMoving.RegisterValueChangedCallback(x => Main.CameraControl.VerticalMovementLock = x.newValue);
 
-		var buttonCameraView = _rootVisualElement.Q<Button>("CameraView");
-		buttonCameraView.RegisterCallback<ClickEvent>(x => ShowCameraView());
+		_buttonCameraView = _rootVisualElement.Q<Button>("CameraView");
+		_buttonCameraView.clickable.clicked += () => ShowCameraView();
 
 		_scaleField = _rootVisualElement.Q<TextField>("ScaleField");
 		var scaleFieldTextElem = _scaleField.Q<TextElement>();
@@ -70,8 +73,8 @@ public class UIController : MonoBehaviour
 		_statusMessage = _rootVisualElement.Q<Label>("StatusMessage");
 		ClearMessage();
 
-		var buttonHelp = _rootVisualElement.Q<Button>("Help");
-		buttonHelp.clickable.clicked += () => ShowHelp();
+		_buttonHelp = _rootVisualElement.Q<Button>("Help");
+		_buttonHelp.clickable.clicked += () => ShowHelp();
 
 		_recordSave = _rootVisualElement.Q<Button>("Record");
 		_recordSave.clickable.clicked += () => {
@@ -83,8 +86,11 @@ public class UIController : MonoBehaviour
 		var buttonSave = _rootVisualElement.Q<Button>("Save");
 		buttonSave.clickable.clicked += () => Main.Instance.SaveWorld();
 
-		var buttonImport = _rootVisualElement.Q<Button>("Import");
-		buttonImport.clickable.clicked += () => Main.ModelImporter.ToggleModelList();
+		_buttonImport = _rootVisualElement.Q<Button>("Import");
+		_buttonImport.clickable.clicked += () => {
+			_buttonImport.ToggleInClassList("selected");
+			Main.ModelImporter.ToggleModelList();
+		};
 
 		var buttonHome = _rootVisualElement.Q<Button>("Home");
  		buttonHome.clickable.clicked += () => Main.CameraControl.StartCameraChange(Main.CameraInitPose);
@@ -191,12 +197,12 @@ public class UIController : MonoBehaviour
 
 		foreach (var button in buttons)
 		{
-			button.RemoveFromClassList("props-selected");
+			button.RemoveFromClassList("selected");
 		}
 
 		if (finalPropType != ObjectSpawning.PropsType.NONE)
 		{
-			selected.AddToClassList("props-selected");
+			selected.AddToClassList("selected");
 		}
 	}
 
@@ -208,12 +214,14 @@ public class UIController : MonoBehaviour
 		}
 		else if (Input.GetKeyUp(KeyCode.F3))
 		{
+			_buttonImport.ToggleInClassList("selected");
 			Main.ModelImporter.ToggleModelList();
 		}
 		else if (Input.GetKeyUp(KeyCode.Escape))
 		{
 			ShowHelp(false);
 			ShowCameraView(false);
+			_buttonImport.EnableInClassList("selected", false);
 			Main.ModelImporter.ShowModelList(false);
 		}
 		else if (Input.GetKey(KeyCode.LeftControl))
@@ -287,11 +295,13 @@ public class UIController : MonoBehaviour
 
 		if (!open || helpDialogScrollView.style.display == DisplayStyle.Flex)
 		{
+			_buttonHelp?.EnableInClassList("selected", false);
 			helpDialogScrollView.style.display = DisplayStyle.None;
 			Main.CameraControl.BlockMouseWheelControl(false);
 		}
 		else
 		{
+			_buttonHelp?.EnableInClassList("selected", true);
 			helpDialogScrollView.style.display = DisplayStyle.Flex;
 			Main.CameraControl.BlockMouseWheelControl(true);
 		}
@@ -299,6 +309,7 @@ public class UIController : MonoBehaviour
 
 	private void ShowCameraView(in bool open = true)
 	{
+		_buttonCameraView?.EnableInClassList("selected", open);
 		var cameraViewMenuVisElem = _rootVisualElement.Q<VisualElement>("CameraViewMenu");
 		cameraViewMenuVisElem.style.visibility = (!open || cameraViewMenuVisElem.style.visibility == Visibility.Visible)? Visibility.Hidden : Visibility.Visible;
 	}
