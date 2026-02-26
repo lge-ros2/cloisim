@@ -73,11 +73,19 @@ namespace SensorDevices
 		{
 			public int dataIndex;
 			public double[] rayData;
+			public bool hasData;
 
 			public Output(in int index, in int bufferLength = 0)
 			{
 				dataIndex = index;
 				rayData = bufferLength > 0 ? new double[bufferLength] : null;
+				hasData = bufferLength > 0;
+			}
+
+			public void Reset(in int index, in bool active)
+			{
+				dataIndex = index;
+				hasData = active;
 			}
 
 			public void ConvertDataType(Unity.Collections.NativeArray<float> src)
