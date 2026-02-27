@@ -422,11 +422,13 @@ public static partial class MeshLoader
 			lightMap[node.Name].ApplyLightToNode(nodeObject);
 		}
 
-		// Convert Assimp transfrom into Unity transform
+		// Convert Assimp transform into Unity transform
+		// Use proper decomposition that preserves negative scale (reflection)
 		var nodeTransformMatrix = node.Transform.ToUnity();
-		nodeObject.transform.localPosition = nodeTransformMatrix.GetPosition();
-		nodeObject.transform.localRotation = nodeTransformMatrix.rotation;
-		nodeObject.transform.localScale = nodeTransformMatrix.lossyScale;
+		nodeTransformMatrix.DecomposeTransformMatrix(out var localPos, out var localRot, out var localScale);
+		nodeObject.transform.localPosition = localPos;
+		nodeObject.transform.localRotation = localRot;
+		nodeObject.transform.localScale = localScale;
 
 		if (node.HasChildren)
 		{

@@ -142,6 +142,55 @@ public static partial class MeshLoader
 			new Vector4(m.M14, m.M24, m.M34, m.M44)
 		);
 
+	/// <summary>
+	/// Decompose a 4x4 transform matrix into position, rotation, and scale,
+	/// correctly handling negative scales (reflections) that can occur in
+	/// FBX files exported from tools like Blender.
+	/// Unity's Matrix4x4.lossyScale and .rotation do not preserve negative
+	/// scale signs, causing mirrored objects to appear flipped.
+	/// </summary>
+	private static void DecomposeTransformMatrix(
+		this Matrix4x4 matrix,
+		out Vector3 position,
+		out Quaternion rotation,
+		out Vector3 scale)
+	{
+		position = matrix.GetPosition();
+
+		// Extract column vectors of the 3x3 rotation-scale sub-matrix
+		var col0 = new Vector3(matrix.m00, matrix.m10, matrix.m20);
+		var col1 = new Vector3(matrix.m01, matrix.m11, matrix.m21);
+		var col2 = new Vector3(matrix.m02, matrix.m12, matrix.m22);
+
+		// Compute scale magnitudes
+		var sx = col0.magnitude;
+		var sy = col1.magnitude;
+		var sz = col2.magnitude;
+
+		// Detect reflection via determinant of the 3x3 sub-matrix.
+		// A negative determinant means an odd number of axes are mirrored.
+		var det = Vector3.Dot(col0, Vector3.Cross(col1, col2));
+		if (det < 0f)
+		{
+			sx = -sx;
+		}
+
+		scale = new Vector3(sx, sy, sz);
+
+		// Normalize columns to extract pure rotation
+		if (Mathf.Abs(sx) > Mathf.Epsilon) col0 /= sx;
+		if (Mathf.Abs(sy) > Mathf.Epsilon) col1 /= sy;
+		if (Mathf.Abs(sz) > Mathf.Epsilon) col2 /= sz;
+
+		// Build pure rotation matrix
+		var rotMatrix = Matrix4x4.identity;
+		rotMatrix.m00 = col0.x; rotMatrix.m10 = col0.y; rotMatrix.m20 = col0.z;
+		rotMatrix.m01 = col1.x; rotMatrix.m11 = col1.y; rotMatrix.m21 = col1.z;
+		rotMatrix.m02 = col2.x; rotMatrix.m12 = col2.y; rotMatrix.m22 = col2.z;
+
+		rotation = rotMatrix.rotation;
+	}
+
 	private static Assimp.Scene GetScene(in string targetPath, in string subMesh = null)
 	{
 		if (!File.Exists(targetPath))
