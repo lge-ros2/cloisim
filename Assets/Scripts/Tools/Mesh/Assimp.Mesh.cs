@@ -409,7 +409,7 @@ public static partial class MeshLoader
 		// Set Light
 		if (lightMap != null && lightMap.ContainsKey(node.Name))
 		{
-			ApplyLightToNode(lightMap[node.Name], nodeObject);
+			lightMap[node.Name].ApplyLightToNode(nodeObject);
 		}
 
 		// Convert Assimp transfrom into Unity transform
@@ -488,7 +488,7 @@ public static partial class MeshLoader
 			}
 
 			// Build light map from scene
-			var lightMap = scene.HasLights ? BuildLightMap(scene) : null;
+			var lightMap = scene.HasLights ? scene.BuildLightMap() : null;
 
 			// Create GameObjects from nodes (including lights)
 			var createdMeshObject = scene.RootNode.ToUnityMeshObject(meshMatList, lightMap);

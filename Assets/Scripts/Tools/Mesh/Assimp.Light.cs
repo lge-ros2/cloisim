@@ -21,7 +21,7 @@ public static partial class MeshLoader
 	/// a normalized [0,1] color and a scalar intensity value.
 	/// </summary>
 	private static void DecomposeHDRColor(
-		in SN.Vector3 hdrColor,
+		this SN.Vector3 hdrColor,
 		out Color normalizedColor,
 		out float intensity)
 	{
@@ -76,7 +76,7 @@ public static partial class MeshLoader
 		return 100f; // default range
 	}
 
-	private static Dictionary<string, Assimp.Light> BuildLightMap(in Assimp.Scene scene)
+	private static Dictionary<string, Assimp.Light> BuildLightMap(this Assimp.Scene scene)
 	{
 		var lightMap = new Dictionary<string, Assimp.Light>();
 
@@ -95,7 +95,7 @@ public static partial class MeshLoader
 	}
 
 	private static void ApplyLightToNode(
-		in Assimp.Light assimpLight,
+		this Assimp.Light assimpLight,
 		in GameObject nodeObject)
 	{
 		var lightObject = new GameObject(assimpLight.Name);
@@ -110,7 +110,7 @@ public static partial class MeshLoader
 
 		// Decompose HDR color: Blender bakes light power into the color channels,
 		// so (R,G,B) can be > 1.0. Separate into normalized color + scalar intensity.
-		DecomposeHDRColor(assimpLight.ColorDiffuse, out var lightColor, out var colorIntensity);
+		assimpLight.ColorDiffuse.DecomposeHDRColor(out var lightColor, out var colorIntensity);
 		lightComponent.color = lightColor;
 
 		lightComponent.cullingMask = LayerMask.GetMask("Default", "Plane");
@@ -190,6 +190,8 @@ public static partial class MeshLoader
 				break;
 		}
 
+#if UNITY_EDITOR
 		Debug.Log($"Light created: {assimpLight.Name}, Type: {assimpLight.LightType}, Color: {lightComponent.color}, Intensity: {lightComponent.intensity} (raw HDR: {colorIntensity}, gain: {LightIntensityGain})");
+#endif
 	}
 }
