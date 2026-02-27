@@ -14,7 +14,9 @@ using UnityEngine.Rendering;
 
 public static partial class MeshLoader
 {
+#if ENABLE_MESH_CACHE
 	private static Dictionary<string, GameObject> MeshCache = new Dictionary<string, GameObject>();
+#endif
 
 	public static Texture2D GetTexture(in string textureFullPath)
 	{
@@ -321,6 +323,7 @@ public static partial class MeshLoader
 		{
 			var newMesh = new Mesh();
 			newMesh.name = sceneMesh.Name;
+			// Debug.Log(newMesh.name + ": " + sceneMesh.VertexCount + " vertices, " + sceneMesh.FaceCount + " faces, " + sceneMesh.MaterialIndex + " material index");
 
 			if (sceneMesh.VertexCount < 3)
 			{
@@ -446,8 +449,6 @@ public static partial class MeshLoader
 				// }
 
 				newMesh.tangents = tangents.ToArray();
-
-				newMesh.RecalculateNormals();
 			}
 
 			// Debug.Log("Done - " + sceneMesh.Name + ", " + newMesh.vertexCount + " : " + sceneMesh.MaterialIndex + ", " + newMesh.bindposes.LongLength);
@@ -483,7 +484,7 @@ public static partial class MeshLoader
 				meshRenderer.receiveShadows = true;
 
 				subObject.transform.SetParent(nodeObject.transform, true);
-				// Debug.Log("Sub Object: " + subObject.name);
+				// Debug.Log($"[MeshAssign] Node='{node.Name}' MeshIndex={index} Mesh='{meshMat.mesh.name}' MatIdx={meshMat.materialIndex} Mat='{meshMat.material?.name}'");
 			}
 		}
 
