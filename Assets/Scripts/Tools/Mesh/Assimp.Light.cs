@@ -10,8 +10,38 @@ using SN = System.Numerics;
 
 public static partial class MeshLoader
 {
-	private static Color ToUnity(this SN.Vector3 color)
-		=> new Color(color.X, color.Y, color.Z, 1f);
+	// Gain factor for converting Blender's physical light units (Watts) to Unity URP intensity.
+	// Blender computes point light irradiance as E = P / (4π × d²),
+	// so 4π (≈12.57) serves as a physically-motivated base conversion factor.
+	// Adjust this value if lights still appear too dark or too bright.
+	private static readonly float LightIntensityGain = 4f * Mathf.PI;
+
+	/// <summary>
+	/// Separates an HDR color (where intensity may be baked into RGB channels) into
+	/// a normalized [0,1] color and a scalar intensity value.
+	/// </summary>
+	private static void DecomposeHDRColor(
+		in SN.Vector3 hdrColor,
+		out Color normalizedColor,
+		out float intensity)
+	{
+		var maxComponent = Mathf.Max(hdrColor.X, Mathf.Max(hdrColor.Y, hdrColor.Z));
+
+		if (maxComponent > 0f)
+		{
+			normalizedColor = new Color(
+				hdrColor.X / maxComponent,
+				hdrColor.Y / maxComponent,
+				hdrColor.Z / maxComponent,
+				1f);
+			intensity = maxComponent;
+		}
+		else
+		{
+			normalizedColor = Color.white;
+			intensity = 0f;
+		}
+	}
 
 	private static float CalculateLightIntensity(
 		in float attenuationConstant,
@@ -78,8 +108,10 @@ public static partial class MeshLoader
 		lightComponent.shadows = LightShadows.Hard;
 		lightComponent.shadowResolution = UnityEngine.Rendering.LightShadowResolution.Medium;
 
-		// Set diffuse color
-		lightComponent.color = assimpLight.ColorDiffuse.ToUnity();
+		// Decompose HDR color: Blender bakes light power into the color channels,
+		// so (R,G,B) can be > 1.0. Separate into normalized color + scalar intensity.
+		DecomposeHDRColor(assimpLight.ColorDiffuse, out var lightColor, out var colorIntensity);
+		lightComponent.color = lightColor;
 
 		lightComponent.cullingMask = LayerMask.GetMask("Default", "Plane");
 
@@ -90,10 +122,14 @@ public static partial class MeshLoader
 		var position = assimpLight.Position;
 		var direction = assimpLight.Direction;
 
+		// Apply gain-adjusted intensity: colorIntensity (from HDR color) × gain factor
+		var baseIntensity = colorIntensity * LightIntensityGain;
+
 		switch (assimpLight.LightType)
 		{
 			case Assimp.LightSourceType.Directional:
 				lightComponent.type = LightType.Directional;
+				lightComponent.intensity = baseIntensity;
 
 				if (direction != SN.Vector3.Zero)
 				{
@@ -107,7 +143,7 @@ public static partial class MeshLoader
 				lightComponent.spotAngle = assimpLight.AngleOuterCone * Mathf.Rad2Deg;
 				lightComponent.innerSpotAngle = assimpLight.AngleInnerCone * Mathf.Rad2Deg;
 				lightComponent.range = CalculateLightRange(attConstant, attLinear, attQuadratic);
-				lightComponent.intensity = CalculateLightIntensity(attConstant, attLinear, attQuadratic);
+				lightComponent.intensity = baseIntensity;
 
 				lightComponent.transform.localPosition = new Vector3(position.X, position.Y, position.Z);
 
@@ -123,7 +159,7 @@ public static partial class MeshLoader
 				var areaSize = assimpLight.AreaSize;
 				lightComponent.areaSize = new Vector2(areaSize.X, areaSize.Y);
 				lightComponent.range = CalculateLightRange(attConstant, attLinear, attQuadratic);
-				lightComponent.intensity = CalculateLightIntensity(attConstant, attLinear, attQuadratic);
+				lightComponent.intensity = baseIntensity;
 
 				lightComponent.transform.localPosition = new Vector3(position.X, position.Y, position.Z);
 
@@ -137,20 +173,23 @@ public static partial class MeshLoader
 			case Assimp.LightSourceType.Ambient:
 				lightComponent.type = LightType.Point;
 				lightComponent.range = CalculateLightRange(attConstant, attLinear, attQuadratic);
-				lightComponent.intensity = CalculateLightIntensity(attConstant, attLinear, attQuadratic);
-				lightComponent.color = assimpLight.ColorAmbient.ToUnity();
+
+				// For ambient, use ambient color instead of diffuse
+				DecomposeHDRColor(assimpLight.ColorAmbient, out var ambientColor, out var ambientIntensity);
+				lightComponent.color = ambientColor;
+				lightComponent.intensity = ambientIntensity * LightIntensityGain;
 				break;
 
 			case Assimp.LightSourceType.Point:
 			default:
 				lightComponent.type = LightType.Point;
 				lightComponent.range = CalculateLightRange(attConstant, attLinear, attQuadratic);
-				lightComponent.intensity = CalculateLightIntensity(attConstant, attLinear, attQuadratic);
+				lightComponent.intensity = baseIntensity;
 
 				lightComponent.transform.localPosition = new Vector3(position.X, position.Y, position.Z);
 				break;
 		}
 
-		// Debug.Log($"Light created: {assimpLight.Name}, Type: {assimpLight.LightType}, Color: {lightComponent.color}");
+		Debug.Log($"Light created: {assimpLight.Name}, Type: {assimpLight.LightType}, Color: {lightComponent.color}, Intensity: {lightComponent.intensity} (raw HDR: {colorIntensity}, gain: {LightIntensityGain})");
 	}
 }
