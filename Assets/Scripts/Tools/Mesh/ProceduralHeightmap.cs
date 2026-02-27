@@ -156,6 +156,7 @@ public static class ProceduralHeightmap
 
 			var terrain = heightmapObject.AddComponent<Terrain>();
 			terrain.materialTemplate = new Material(TerrainShader);
+			terrain.materialTemplate.hideFlags = HideFlags.DontUnloadUnusedAsset;
 			terrain.terrainData = terrainData;
 			terrain.drawInstanced = false;
 			terrain.basemapDistance = BaseMapDistance;

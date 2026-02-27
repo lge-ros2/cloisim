@@ -188,6 +188,7 @@ namespace SensorDevices
 			// Debug.Log("Depth Setup Camera");
 			var depthShader = Shader.Find("Sensor/DepthRange");
 			_depthMaterial = new Material(depthShader);
+			_depthMaterial.hideFlags = HideFlags.DontUnloadUnusedAsset;
 
 			if (_camParam.depth_camera_output.Equals("points"))
 			{

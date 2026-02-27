@@ -331,6 +331,7 @@ namespace SensorDevices
 
 			var depthShader = Shader.Find("Sensor/DepthRange");
 			_depthMaterial = new Material(depthShader);
+			_depthMaterial.hideFlags = HideFlags.DontUnloadUnusedAsset;
 
 			_cb = new CommandBuffer();
 			_cb.ClearRenderTarget(true, true, Color.clear);
@@ -764,6 +765,7 @@ namespace SensorDevices
 			lineRenderer.positionCount = 0;
 			lineRenderer.widthMultiplier = 0.001f;
 			lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+			lineRenderer.material.hideFlags = HideFlags.DontUnloadUnusedAsset;
 			lineRenderer.useWorldSpace = true;
 
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);

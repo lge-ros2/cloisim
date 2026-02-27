@@ -169,10 +169,12 @@ public class MicomPlugin : CLOiSimPlugin
 
 				var renderTexture = new RenderTexture(videoWidth, videoHeight, 0);
 				renderTexture.name = "VideoTexture";
+				renderTexture.hideFlags = HideFlags.DontUnloadUnusedAsset;
 
 				var meshRenderer = visualHelper.GetComponentInChildren<MeshRenderer>();
 				var shader = Shader.Find("Custom/Unlit/VideoTexture");
 				meshRenderer.material = new Material(shader);
+				meshRenderer.material.hideFlags = HideFlags.DontUnloadUnusedAsset;
 				meshRenderer.sharedMaterial.SetTexture("_MainTex", renderTexture);
 
 				var videoPlayer = visualHelper.gameObject.AddComponent<VideoPlayer>();

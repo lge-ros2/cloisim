@@ -25,6 +25,7 @@ public static partial class MeshLoader
 				var texture = TextureUtil.LoadTGA(textureFullPath);
 				if (texture != null)
 				{
+					texture.hideFlags = HideFlags.DontUnloadUnusedAsset;
 					return texture;
 				}
 				else
@@ -40,6 +41,7 @@ public static partial class MeshLoader
 					var texture = new Texture2D(0, 0);
 					if (texture.LoadImage(byteArray))
 					{
+						texture.hideFlags = HideFlags.DontUnloadUnusedAsset;
 						return texture;
 					}
 					else
@@ -71,7 +73,10 @@ public static partial class MeshLoader
 			{
 				var texture = new Texture2D(2, 2);
 				if (texture.LoadImage(embeddedTex.CompressedData))
+				{
+					texture.hideFlags = HideFlags.DontUnloadUnusedAsset;
 					textures[$"*{i}"] = texture;
+				}
 				else
 					Debug.LogWarning($"Failed to load embedded texture at index {i}");
 			}
@@ -254,14 +259,10 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasTextureOpacity)
 			{
-				var tex = TryLoadTexture(sceneMat.TextureOpacity.FilePath, textureDirectories, embeddedTextures);
-				if (tex != null)
-				{
-					mat.SetTexture("_BaseMap", tex);
-					mat.SetFloat("_Surface", 1f);
-					mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-					mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-				}
+				// Blender FBX often exports TextureOpacity even for fully opaque materials.
+				// Transparency is already handled via the HasOpacity scalar check above,
+				// so we only log this for diagnostics and do NOT enable transparent mode here.
+				logs.AppendLine($"HasTextureOpacity({sceneMat.TextureOpacity.FilePath}) ignored for {sceneMat.Name} (transparency handled via HasOpacity)");
 			}
 
 #if UNITY_EDITOR
