@@ -161,8 +161,10 @@ public static partial class MeshLoader
 
 			case Assimp.LightSourceType.Area:
 				lightComponent.type = LightType.Area;
+#if UNITY_EDITOR
 				var areaSize = assimpLight.AreaSize;
 				lightComponent.areaSize = new Vector2(areaSize.X, areaSize.Y);
+#endif
 				lightComponent.range = CalculateLightRange(attConstant, attLinear, attQuadratic);
 				lightComponent.intensity = baseIntensity;
 
