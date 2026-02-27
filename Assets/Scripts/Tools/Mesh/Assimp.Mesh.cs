@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-// #define ENABLE_MESH_CACHE
+#define ENABLE_MESH_CACHE
 
 using System.Collections.Generic;
 using System.Text;
@@ -40,9 +40,19 @@ public static partial class MeshLoader
 				var byteArray = File.ReadAllBytes(textureFullPath);
 				if (byteArray != null && byteArray.Length > 0)
 				{
-					var texture = new Texture2D(0, 0);
+					// Enable mipmaps for better distance rendering performance
+					var texture = new Texture2D(2, 2, TextureFormat.RGBA32, true);
 					if (texture.LoadImage(byteArray))
 					{
+						texture.filterMode = FilterMode.Trilinear;
+						texture.anisoLevel = 4;
+						// Compress texture to reduce GPU memory bandwidth (requires dimensions multiple of 4)
+						if (texture.width % 4 == 0 && texture.height % 4 == 0)
+						{
+							texture.Compress(true);
+						}
+						// Free the CPU-side copy to reduce RAM usage
+						texture.Apply(false, true);
 						texture.hideFlags = HideFlags.DontUnloadUnusedAsset;
 						return texture;
 					}
@@ -73,9 +83,16 @@ public static partial class MeshLoader
 			var embeddedTex = scene.Textures[i];
 			if (embeddedTex.IsCompressed)
 			{
-				var texture = new Texture2D(2, 2);
+				var texture = new Texture2D(2, 2, TextureFormat.RGBA32, true);
 				if (texture.LoadImage(embeddedTex.CompressedData))
 				{
+					texture.filterMode = FilterMode.Trilinear;
+					if (texture.width % 4 == 0 && texture.height % 4 == 0)
+					{
+						texture.Compress(true);
+					}
+					// Free the CPU-side copy to reduce RAM usage
+					texture.Apply(false, true);
 					texture.hideFlags = HideFlags.DontUnloadUnusedAsset;
 					textures[$"*{i}"] = texture;
 				}
@@ -542,7 +559,9 @@ public static partial class MeshLoader
 #else
 		if (MeshCache.ContainsKey(cacheKey))
 		{
+#if UNITY_EDITOR
 			Debug.Log($"Use cached mesh({cacheKey}) for {meshPath}");
+#endif
 		}
 		else
 #endif

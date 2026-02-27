@@ -32,7 +32,7 @@ public static partial class MeshLoader
 		// GlobalScale
 		// Assimp.PostProcessSteps.OptimizeGraph | // --> occurs sub-mesh merged
 		// Assimp.PostProcessSteps.GenerateSmoothNormals | // --> it may causes conflict with GenerateNormals
-		// Assimp.PostProcessSteps.OptimizeMeshes | // -> it may causes face reverting
+		Assimp.PostProcessSteps.OptimizeMeshes | // reduces draw calls by merging small meshes
 		// Assimp.PostProcessSteps.FixInFacingNormals | // -> it may causes wrong face
 		Assimp.PostProcessSteps.RemoveComponent |
 		Assimp.PostProcessSteps.ImproveCacheLocality |
@@ -51,11 +51,10 @@ public static partial class MeshLoader
 
 	private static List<string> MaterialSearchPaths = new List<string>()
 		{
-			"",
-			"/textures/",
-			"../materials/", "../materials/textures/",
-			"../../materials/", "../../materials/textures/",
-			"../", "../../"
+			"", "../", "../../", "../../../",
+			"textures/",
+			"../materials/", "../../materials/", "../../../materials/",
+			"../materials/textures/", "../../materials/textures/", "../../../materials/textures/"
 		};
 
 	private static List<string> GetRootTexturePaths(in string parentPath)
