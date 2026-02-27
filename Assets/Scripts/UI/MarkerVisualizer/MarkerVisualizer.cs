@@ -122,6 +122,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 		if (renderer != null)
 		{
 			renderer.material = new Material(commonShader);
+			renderer.material.hideFlags = HideFlags.DontUnloadUnusedAsset;
 			renderer.shadowCastingMode = ShadowCastingMode.Off;
 			renderer.receiveShadows = false;
 			renderer.lightProbeUsage = LightProbeUsage.Off;

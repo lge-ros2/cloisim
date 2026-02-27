@@ -102,6 +102,7 @@ namespace SensorDevices
 			{
 				Debug.Log($"{DeviceName}: Apply noise type:{param.type} mean:{param.mean} stddev:{param.stddev}");
 				_noiseMaterial = new Material(Shader.Find("Sensor/Camera/GaussianNoise"));
+				_noiseMaterial.hideFlags = HideFlags.DontUnloadUnusedAsset;
 				_noiseMaterial.SetFloat("_Mean", (float)param.mean);
 				_noiseMaterial.SetFloat("_StdDev", (float)param.stddev);
 				_noiseCmdBuffer = new CommandBuffer { name = "Gaussian Noise" };

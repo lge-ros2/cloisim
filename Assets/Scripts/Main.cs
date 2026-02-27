@@ -272,13 +272,34 @@ public class Main : MonoBehaviour
 		}
 		QualitySettings.SetQualityLevel(qualityLevelIndex);
 
+		// Enable texture streaming to reduce GPU memory usage for distant textures
+		QualitySettings.streamingMipmapsActive = true;
+		QualitySettings.streamingMipmapsMemoryBudget = 512;
+		QualitySettings.streamingMipmapsAddAllCameras = true;
+
+		// Reduce shadow distance for better performance
+		QualitySettings.shadowDistance = 50f;
+		QualitySettings.shadowResolution = ShadowResolution.Medium;
+
 		var mainCamera = Camera.main;
 		mainCamera.depthTextureMode = DepthTextureMode.None;
-		mainCamera.allowHDR = true;
-		mainCamera.allowMSAA = true;
+		mainCamera.allowHDR = false; // Deferred rendering doesn't benefit; saves bandwidth
+		mainCamera.allowMSAA = false; // MSAA is ignored in deferred mode
 		mainCamera.allowDynamicResolution = true;
 		mainCamera.useOcclusionCulling = true;
 		mainCamera.orthographic = false;
+
+		// Set per-layer culling distances to reduce draw calls for distant objects
+		var layerCullDistances = new float[32];
+		for (var i = 0; i < layerCullDistances.Length; i++)
+		{
+			layerCullDistances[i] = mainCamera.farClipPlane;
+		}
+		// "Default" layer gets a tighter cull distance for small objects
+		layerCullDistances[LayerMask.NameToLayer("Default")] = mainCamera.farClipPlane * 0.5f;
+		mainCamera.layerCullDistances = layerCullDistances;
+		mainCamera.layerCullSpherical = true;
+
 		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
 
 		_core = GameObject.Find("Core");

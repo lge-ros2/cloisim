@@ -228,7 +228,7 @@ public static partial class MeshLoader
 			List<Material> materials = null;
 			if (scene.HasMaterials)
 			{
-				materials = scene.Materials.ToUnity(meshPath);
+				materials = scene.Materials.ToUnity(meshPath, scene);
 			}
 
 			// additional rotation for skin loading

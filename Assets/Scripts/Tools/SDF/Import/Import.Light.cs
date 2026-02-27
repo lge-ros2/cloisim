@@ -39,10 +39,21 @@ namespace SDF
 
 				lightComponent.transform.SetParent(targetObject.transform);
 
-				lightComponent.renderMode = UE.LightRenderMode.ForcePixel;
+				lightComponent.renderMode = UE.LightRenderMode.Auto;
 
-				lightComponent.shadows = (light.cast_shadow) ? UE.LightShadows.Hard : UE.LightShadows.None;
-				lightComponent.shadowResolution = UE.Rendering.LightShadowResolution.Medium;
+				// Only enable shadows for directional lights by default;
+				// point/spot light shadows are very expensive (6 cubemap passes per point light)
+				if (light.Type == "directional")
+				{
+					lightComponent.shadows = (light.cast_shadow) ? UE.LightShadows.Hard : UE.LightShadows.None;
+					lightComponent.shadowResolution = UE.Rendering.LightShadowResolution.Medium;
+				}
+				else
+				{
+					lightComponent.shadows = UE.LightShadows.None;
+					lightComponent.shadowResolution = UE.Rendering.LightShadowResolution.Low;
+					lightComponent.renderMode = UE.LightRenderMode.ForcePixel;
+				}
 
 				lightComponent.color = light.diffuse.ToUnity();
 				lightComponent.cullingMask = UE.LayerMask.GetMask("Default", "Plane");
