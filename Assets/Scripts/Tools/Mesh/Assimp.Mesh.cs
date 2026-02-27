@@ -88,6 +88,16 @@ public static partial class MeshLoader
 				// logs.AppendLine($"HasColorDiffuse({sceneMat.ColorDiffuse.ToUnity()}) for {sceneMat.Name}");
 			}
 
+			// Blender FBX exporter stores Principled BSDF Alpha as Opacity (separate float),
+			// not in ColorDiffuse.W. Apply it to the base color alpha channel.
+			if (sceneMat.HasOpacity && sceneMat.Opacity < 1.0f)
+			{
+				var baseColor = mat.GetColor("_BaseColor");
+				baseColor.a = sceneMat.Opacity;
+				mat.SetBaseColor(baseColor);
+				// logs.AppendLine($"HasOpacity({sceneMat.Opacity}) for {sceneMat.Name}");
+			}
+
 			if (sceneMat.HasColorEmissive)
 			{
 				mat.SetEmission(sceneMat.ColorEmissive.ToUnity());
