@@ -84,18 +84,24 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasColorDiffuse)
 			{
-				mat.SetBaseColor(sceneMat.ColorDiffuse.ToUnity());
+				// Force alpha to 1.0 when setting diffuse color.
+				// Blender FBX exports may store Principled BSDF Alpha in ColorDiffuse.W,
+				// which incorrectly triggers transparent mode for opaque materials.
+				// Actual transparency is handled by the HasOpacity check below.
+				var diffuseColor = sceneMat.ColorDiffuse.ToUnity();
+				diffuseColor.a = 1.0f;
+				mat.SetBaseColor(diffuseColor);
 				// logs.AppendLine($"HasColorDiffuse({sceneMat.ColorDiffuse.ToUnity()}) for {sceneMat.Name}");
 			}
 
-			// Blender FBX exporter stores Principled BSDF Alpha as Opacity (separate float),
-			// not in ColorDiffuse.W. Apply it to the base color alpha channel.
+			// Blender FBX exporter stores Principled BSDF Alpha as Opacity (separate float).
+			// Only apply transparency when the explicit Opacity property indicates it.
 			if (sceneMat.HasOpacity && sceneMat.Opacity < 1.0f)
 			{
 				var baseColor = mat.GetColor("_BaseColor");
 				baseColor.a = sceneMat.Opacity;
 				mat.SetBaseColor(baseColor);
-				// logs.AppendLine($"HasOpacity({sceneMat.Opacity}) for {sceneMat.Name}");
+				logs.AppendLine($"HasOpacity({sceneMat.Opacity}) applied transparency for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorEmissive)
