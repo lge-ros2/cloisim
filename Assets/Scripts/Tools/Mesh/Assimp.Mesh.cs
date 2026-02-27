@@ -194,14 +194,18 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasShininess)
 			{
-				mat.SetFloat("_Smoothness", sceneMat.Shininess);
-				logs.AppendLine($"HasShinines({sceneMat.Shininess}) for {sceneMat.Name}");
+				// Blender FBX exports Principled BSDF Roughness as Shininess.
+				// Unity uses Smoothness (inverse of Roughness): Smoothness = 1 - Roughness
+				var smoothness = Mathf.Clamp01(1.0f - sceneMat.Shininess);
+				mat.SetFloat("_Smoothness", smoothness);
+				logs.AppendLine($"HasShininess({sceneMat.Shininess}) -> Smoothness({smoothness}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasReflectivity)
 			{
-				mat.SetFloat("_Smoothness", Mathf.Clamp01((float)sceneMat.Reflectivity));
-				logs.AppendLine($"HasReflectivity({sceneMat.Reflectivity}) for {sceneMat.Name}");
+				var smoothness = Mathf.Clamp01(1.0f - (float)sceneMat.Reflectivity);
+				mat.SetFloat("_Smoothness", smoothness);
+				logs.AppendLine($"HasReflectivity({sceneMat.Reflectivity}) -> Smoothness({smoothness}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureDiffuse)
