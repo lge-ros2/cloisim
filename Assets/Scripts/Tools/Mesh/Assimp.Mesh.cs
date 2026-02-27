@@ -53,14 +53,60 @@ public static partial class MeshLoader
 		return null;
 	}
 
-	private static Texture2D TryLoadTexture(string filePath, IEnumerable<string> textureDirectories)
+	/// <summary>
+	/// Pre-load all embedded textures from an Assimp scene.
+	/// FBX files can embed textures directly; Assimp references them with "*N" paths.
+	/// </summary>
+	private static Dictionary<string, Texture2D> LoadEmbeddedTextures(Assimp.Scene scene)
+	{
+		var textures = new Dictionary<string, Texture2D>();
+
+		if (scene == null || !scene.HasTextures)
+			return textures;
+
+		for (var i = 0; i < scene.TextureCount; i++)
+		{
+			var embeddedTex = scene.Textures[i];
+			if (embeddedTex.IsCompressed)
+			{
+				var texture = new Texture2D(2, 2);
+				if (texture.LoadImage(embeddedTex.CompressedData))
+					textures[$"*{i}"] = texture;
+				else
+					Debug.LogWarning($"Failed to load embedded texture at index {i}");
+			}
+		}
+
+		return textures;
+	}
+
+	private static Texture2D TryLoadTexture(
+		string filePath,
+		IEnumerable<string> textureDirectories,
+		Dictionary<string, Texture2D> embeddedTextures = null)
 	{
 		if (string.IsNullOrEmpty(filePath))
 			return null;
 
+		// Check pre-loaded embedded textures first (Assimp "*N" convention)
+		if (embeddedTextures != null && embeddedTextures.TryGetValue(filePath, out var embeddedTex))
+			return embeddedTex;
+
 		if (filePath.Contains("model://"))
 			filePath = filePath.Replace("model://", "");
 
+		// Normalize path separators (Windows backslashes from cross-platform FBX files)
+		filePath = filePath.Replace('\\', '/');
+
+		// Strip Blender's "//" relative path prefix
+		if (filePath.StartsWith("//"))
+			filePath = filePath.Substring(2);
+
+		// Strip leading slash from absolute paths so Path.Combine works with search directories
+		if (Path.IsPathRooted(filePath))
+			filePath = Path.GetFileName(filePath);
+
+		// Try the (cleaned) path against all search directories
 		foreach (var dir in textureDirectories)
 		{
 			var fullPath = Path.Combine(dir, filePath);
@@ -68,13 +114,27 @@ public static partial class MeshLoader
 				return GetTexture(fullPath);
 		}
 
+		// If the path contained subdirectories and didn't match, try just the filename
+		var fileName = Path.GetFileName(filePath);
+		if (fileName != filePath)
+		{
+			foreach (var dir in textureDirectories)
+			{
+				var fullPath = Path.Combine(dir, fileName);
+				if (File.Exists(fullPath))
+					return GetTexture(fullPath);
+			}
+		}
+
+		Debug.LogWarning($"Texture not found: {filePath}");
 		return null;
 	}
 
-	private static List<Material> ToUnity(this List<Assimp.Material> sceneMaterials, in string meshPath)
+	private static List<Material> ToUnity(this List<Assimp.Material> sceneMaterials, in string meshPath, Assimp.Scene scene = null)
 	{
 		var parentPath = Directory.GetParent(meshPath).FullName;
 		var textureDirectories = GetRootTexturePaths(parentPath);
+		var embeddedTextures = LoadEmbeddedTextures(scene);
 		var materials = new List<Material>();
 		var logs = new StringBuilder();
 
@@ -146,14 +206,14 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasTextureDiffuse)
 			{
-				var tex = TryLoadTexture(sceneMat.TextureDiffuse.FilePath, textureDirectories);
+				var tex = TryLoadTexture(sceneMat.TextureDiffuse.FilePath, textureDirectories, embeddedTextures);
 				if (tex != null)
 					mat.SetTexture("_BaseMap", tex);
 			}
 
 			if (sceneMat.HasTextureNormal)
 			{
-				var tex = TryLoadTexture(sceneMat.TextureNormal.FilePath, textureDirectories);
+				var tex = TryLoadTexture(sceneMat.TextureNormal.FilePath, textureDirectories, embeddedTextures);
 				if (tex != null)
 				{
 					mat.SetTexture("_BumpMap", tex);
@@ -170,7 +230,7 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasTextureSpecular)
 			{
-				var tex = TryLoadTexture(sceneMat.TextureSpecular.FilePath, textureDirectories);
+				var tex = TryLoadTexture(sceneMat.TextureSpecular.FilePath, textureDirectories, embeddedTextures);
 				if (tex != null)
 				{
 					mat.SetTexture("_SpecGlossMap", tex);
@@ -180,7 +240,7 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasTextureEmissive)
 			{
-				var tex = TryLoadTexture(sceneMat.TextureEmissive.FilePath, textureDirectories);
+				var tex = TryLoadTexture(sceneMat.TextureEmissive.FilePath, textureDirectories, embeddedTextures);
 				if (tex != null)
 				{
 					mat.SetTexture("_EmissionMap", tex);
@@ -190,7 +250,7 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasTextureOpacity)
 			{
-				var tex = TryLoadTexture(sceneMat.TextureOpacity.FilePath, textureDirectories);
+				var tex = TryLoadTexture(sceneMat.TextureOpacity.FilePath, textureDirectories, embeddedTextures);
 				if (tex != null)
 				{
 					mat.SetTexture("_BaseMap", tex);
@@ -498,7 +558,7 @@ public static partial class MeshLoader
 				List<Material> materials = null;
 				if (scene.HasMaterials)
 				{
-					materials = scene.Materials.ToUnity(meshPath);
+					materials = scene.Materials.ToUnity(meshPath, scene);
 				}
 
 				meshMatList = scene.Meshes.ToUnity();

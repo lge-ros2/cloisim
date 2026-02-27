@@ -282,12 +282,34 @@ public static class TextureUtil
 					var green = r.ReadByte();
 					var blue = r.ReadByte();
 
-					pulledColors[i] = new Color32(blue, green, red, 1);
+					pulledColors[i] = new Color32(blue, green, red, 255);
+				}
+			}
+			else if (bitDepth == 16)
+			{
+				for (var i = 0; i < width * height; i++)
+				{
+					var pixel = r.ReadUInt16();
+					var red = (byte)((pixel & 0x7C00) >> 7);   // 5 bits
+					var green = (byte)((pixel & 0x03E0) >> 2); // 5 bits
+					var blue = (byte)((pixel & 0x001F) << 3);  // 5 bits
+					var alpha = (byte)(((pixel & 0x8000) != 0) ? 255 : 0);
+
+					pulledColors[i] = new Color32(red, green, blue, alpha);
+				}
+			}
+			else if (bitDepth == 8)
+			{
+				for (var i = 0; i < width * height; i++)
+				{
+					var gray = r.ReadByte();
+					pulledColors[i] = new Color32(gray, gray, gray, 255);
 				}
 			}
 			else
 			{
-				throw new Exception("TGA texture had non 32/24 bit depth.");
+				Debug.LogWarning($"TGA texture had unsupported bit depth: {bitDepth}");
+				return null;
 			}
 
 			texture.SetPixels32(pulledColors);
