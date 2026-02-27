@@ -39,7 +39,7 @@ namespace SDF
 
 				lightComponent.transform.SetParent(targetObject.transform);
 
-				lightComponent.renderMode = UE.LightRenderMode.ForcePixel;
+				lightComponent.renderMode = UE.LightRenderMode.Auto;
 
 				lightComponent.shadows = (light.cast_shadow) ? UE.LightShadows.Hard : UE.LightShadows.None;
 				lightComponent.shadowResolution = UE.Rendering.LightShadowResolution.Medium;

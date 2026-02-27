@@ -158,7 +158,7 @@ public static class ProceduralHeightmap
 			terrain.materialTemplate = new Material(TerrainShader);
 			terrain.materialTemplate.hideFlags = HideFlags.DontUnloadUnusedAsset;
 			terrain.terrainData = terrainData;
-			terrain.drawInstanced = false;
+			terrain.drawInstanced = true;
 			terrain.basemapDistance = BaseMapDistance;
 			terrain.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
 		}

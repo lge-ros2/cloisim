@@ -104,7 +104,7 @@ public static partial class MeshLoader
 		var lightComponent = lightObject.AddComponent<Light>();
 		lightComponent.transform.SetParent(nodeObject.transform);
 
-		lightComponent.renderMode = LightRenderMode.ForcePixel;
+		lightComponent.renderMode = LightRenderMode.Auto;
 		lightComponent.shadows = LightShadows.Hard;
 		lightComponent.shadowResolution = UnityEngine.Rendering.LightShadowResolution.Medium;
 

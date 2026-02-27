@@ -31,7 +31,7 @@ namespace SDF
 				foreach (var meshFilter in meshFilters)
 				{
 					var meshRenderer = meshFilter.gameObject.GetComponent<UE.MeshRenderer>();
-					var material = meshRenderer.material;
+					var material = meshRenderer.sharedMaterial;
 					var materialName = material.name;
 
 					if (!materialTable.ContainsKey(materialName))
@@ -81,7 +81,11 @@ namespace SDF
 						newMeshFilter.sharedMesh = mergedMesh;
 
 						var meshRenderer = newVisualGeometryObject.AddComponent<UE.MeshRenderer>();
-						meshRenderer.material = material;
+						meshRenderer.sharedMaterial = material;
+						meshRenderer.lightProbeUsage = UE.Rendering.LightProbeUsage.Off;
+						meshRenderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.Off;
+						meshRenderer.motionVectorGenerationMode = UE.MotionVectorGenerationMode.ForceNoMotion;
+						meshRenderer.allowOcclusionWhenDynamic = true;
 
 						newVisualGeometryObject.transform.SetParent(targetParent, true);
 
@@ -127,6 +131,9 @@ namespace SDF
 						meshRenderer.materials = new UE.Material[] { SDF2Unity.CreateMaterial(meshFilter.name + "_material") };
 						meshRenderer.allowOcclusionWhenDynamic = true;
 						meshRenderer.receiveShadows = true;
+						meshRenderer.lightProbeUsage = UE.Rendering.LightProbeUsage.Off;
+						meshRenderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.Off;
+						meshRenderer.motionVectorGenerationMode = UE.MotionVectorGenerationMode.ForceNoMotion;
 					}
 				}
 			}

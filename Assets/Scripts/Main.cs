@@ -279,6 +279,18 @@ public class Main : MonoBehaviour
 		mainCamera.allowDynamicResolution = true;
 		mainCamera.useOcclusionCulling = true;
 		mainCamera.orthographic = false;
+
+		// Set per-layer culling distances to reduce draw calls for distant objects
+		var layerCullDistances = new float[32];
+		for (var i = 0; i < layerCullDistances.Length; i++)
+		{
+			layerCullDistances[i] = mainCamera.farClipPlane;
+		}
+		// "Default" layer gets a tighter cull distance for small objects
+		layerCullDistances[LayerMask.NameToLayer("Default")] = mainCamera.farClipPlane * 0.7f;
+		mainCamera.layerCullDistances = layerCullDistances;
+		mainCamera.layerCullSpherical = true;
+
 		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
 
 		_core = GameObject.Find("Core");

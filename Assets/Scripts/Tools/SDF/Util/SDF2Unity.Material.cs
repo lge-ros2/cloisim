@@ -20,7 +20,7 @@ public static partial class SDF2Unity
 
 		newMaterial.name = materialName;
 		newMaterial.hideFlags = UE.HideFlags.DontUnloadUnusedAsset;
-		newMaterial.renderQueue = (int)RenderQueue.Background;
+		newMaterial.renderQueue = (int)RenderQueue.Geometry;
 
 		newMaterial.SetFloat("_Cull", (float)CullMode.Back); // Render face front
 		newMaterial.SetFloat("_ZWrite", 1);
