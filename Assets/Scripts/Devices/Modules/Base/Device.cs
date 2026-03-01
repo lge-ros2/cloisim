@@ -98,11 +98,14 @@ public abstract class Device : MonoBehaviour
 
 	void Start()
 	{
+		_devicePose.Store(this.transform);
+
 		SetupMessages();
+
 		StartCoroutine(DelayedStart());
 	}
 
-	private IEnumerator DelayedStart()
+	protected virtual IEnumerator DelayedStart()
 	{
 		yield return new WaitForEndOfFrame();
 
@@ -294,7 +297,9 @@ public abstract class Device : MonoBehaviour
 			{
 				lastUpdateRate = UpdateRate;
 				periodTicks = (long)(UpdatePeriod * Stopwatch.Frequency);
-				useHighRes = periodTicks > 0 && UpdatePeriod < 0.010f;
+				// Use high-res spin-wait for ≤10ms periods (≥100 Hz).
+				// The 0.0101f threshold accommodates float imprecision at exactly 100 Hz.
+				useHighRes = periodTicks > 0 && UpdatePeriod <= 0.0101f;
 				nextDeadline = Stopwatch.GetTimestamp() + periodTicks;
 			}
 
@@ -458,11 +463,6 @@ public abstract class Device : MonoBehaviour
 	public Pose GetPose()
 	{
 		return _devicePose.Get();
-	}
-
-	public void UpdatePose()
-	{
-		_devicePose.Store(this.transform);
 	}
 
 	/// <summary>

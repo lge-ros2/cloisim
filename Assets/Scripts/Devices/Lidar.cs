@@ -18,7 +18,7 @@ using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
-	public partial class Lidar : Device
+	public partial class Lidar : Device, ISensorRenderable
 	{
 		// ── Profiling markers ──
 		private static readonly ProfilerMarker s_LidarSubCamRenderMarker = new("Lidar.SubCamRender");
@@ -140,13 +140,13 @@ namespace SensorDevices
 		private ConcurrentQueue<(double, Pose, LaserData.Output[])> _outputQueue = new();
 		private readonly AutoResetEvent _dataAvailable = new(false);
 
-		// ── Render state for independent coroutine ──
-		// Lidar uses its own coroutine (not SensorRenderManager) because
-		// it needs to render 4-6 sub-cameras per scan, and sharing the
-		// frame budget with 9 cameras would starve it.
+		// ── Render state for SensorRenderManager integration ──
 		private const int BufferCount = 5;
 		private ComputeBuffer[] _computeBuffers;
 		private int _bufferIndex = 0;
+
+		// ── ISensorRenderable: phase-locked scheduling ──
+		private float _nextRenderTime = -1f;
 
 		/// <summary>
 		/// In HDRP, register for endCameraRendering to capture depth after each
@@ -247,10 +247,11 @@ namespace SensorDevices
 					}
 				}
 
-				// LiDAR uses its own coroutine — not the SensorRenderManager —
-				// because it needs to render 4-6 sub-cameras per scan.
-				// Camera sensors use SensorRenderManager for batched scheduling.
-				Invoke(nameof(StartLaserCaptureDelayed), 0.1f);
+				// Register with SensorRenderManager for budget-managed scheduling.
+				// For rasterization: each ExecuteRenderStep renders one sub-camera.
+				// For DXR: single-step dispatch (IsURT=true).
+				_nextRenderTime = Time.realtimeSinceStartup + 0.1f; // delayed start
+				SensorRenderManager.Instance?.Register(this);
 
 				if (!_useDXR && _laserProcessThread != null)
 				{
@@ -516,6 +517,7 @@ namespace SensorDevices
 			}
 
 			_messageQueue.Enqueue(laserScanStamped);
+			SignalDataReady();
 		}
 
 		/// <summary>
@@ -634,8 +636,217 @@ namespace SensorDevices
 			}
 		}
 
+		// ═══════════════════════════════════════════════════════════════
+		// ISensorRenderable implementation
+		// ═══════════════════════════════════════════════════════════════
+
+		/// <summary>
+		/// DXR path is a single cheap compute dispatch (URT).
+		/// Rasterization path requires multiple sub-camera renders.
+		/// </summary>
+		public bool IsURT => _useDXR;
+
+		/// <summary>
+		/// Phase-locked readiness check.
+		/// </summary>
+		public bool IsReadyToRender(float realtimeNow)
+		{
+			if (!_startLaserWork) return false;
+			if (_laserCam == null) return false;
+			return realtimeNow >= _nextRenderTime;
+		}
+
+		/// <summary>
+		/// Urgency = how overdue this LiDAR is (seconds past scheduled time).
+		/// </summary>
+		public float GetRenderUrgency(float realtimeNow)
+		{
+			return realtimeNow - _nextRenderTime;
+		}
+
+		/// <summary>
+		/// Execute one render step of the LiDAR scan.
+		/// For DXR: single dispatch → returns true immediately.
+		/// For rasterization: renders one sub-camera per call.
+		///   Returns false while scan in progress, true when the last
+		///   sub-camera finishes (triggers async readback).
+		/// </summary>
+		public bool ExecuteRenderStep(float realtimeNow)
+		{
+			if (_useDXR)
+			{
+				return ExecuteDXRStep(realtimeNow);
+			}
+			return ExecuteRasterStep(realtimeNow);
+		}
+
+		/// <summary>
+		/// DXR single-step: dispatch all rays, async readback, advance schedule.
+		/// </summary>
+		private bool ExecuteDXRStep(float realtimeNow)
+		{
+			AdvanceLidarRenderSchedule(realtimeNow);
+
+			var capturedTime = GetNextSyntheticTime();
+			var sensorPose = new Pose(transform.position, transform.rotation);
+
+			var hSamples = (uint)_horizontal.samples;
+			var vSamples = (uint)_vertical.samples;
+			var dxrManager = DXRSensorManager.Instance;
+
+			if (dxrManager == null || dxrManager.AccelStruct == null)
+				return true;
+
+			var cmd = _urtCmd;
+			cmd.Clear();
+
+			var pos = transform.position;
+			var idSensorOrigin = Shader.PropertyToID("_SensorOrigin");
+			var idSensorToWorld = Shader.PropertyToID("_SensorToWorld");
+			var idAccelStruct = "_AccelStruct";
+			var idOutput = Shader.PropertyToID("_Output");
+
+			_urtShader.SetVectorParam(cmd, idSensorOrigin, new Vector4(pos.x, pos.y, pos.z, 0));
+			_urtShader.SetMatrixParam(cmd, idSensorToWorld, transform.localToWorldMatrix);
+			_urtShader.SetAccelerationStructure(cmd, idAccelStruct, dxrManager.AccelStruct);
+			_urtShader.SetBufferParam(cmd, idOutput, _urtOutputBuffer);
+
+			_urtShader.Dispatch(cmd, _urtScratchBuffer, hSamples, vSamples, 1);
+			Graphics.ExecuteCommandBuffer(cmd);
+
+			var frameCapturedTime = capturedTime;
+			var framePose = sensorPose;
+			AsyncGPUReadback.Request(_urtOutputBuffer, (req) =>
+			{
+				if (req.hasError || !req.done)
+				{
+					Debug.LogWarning("[Lidar URT] GPU readback error");
+					return;
+				}
+				ProcessDXROutput(req, frameCapturedTime, framePose);
+			});
+
+			return true;
+		}
+
+		/// <summary>
+		/// Rasterization single-step: renders ALL sub-cameras in one call.
+		///
+		/// This mirrors the original coroutine's tight loop: render all
+		/// sub-cameras, then issue a single async readback for the whole scan.
+		/// Total GPU cost is ~2ms for 4 sub-cameras — well within budget.
+		///
+		/// Single-step rendering is preferred over multi-step because:
+		/// - HDRP can reuse render graph state across sequential Camera.Render() calls
+		/// - All sub-cameras share the same parent model hide/restore cycle
+		/// - The SensorRenderManager can re-schedule the LiDAR within the
+		///   same frame if it's overdue (e.g., 50 Hz target at 30 FPS)
+		/// </summary>
+		private bool ExecuteRasterStep(float realtimeNow)
+		{
+			var capturedTime = GetNextSyntheticTime();
+			var sensorPose = new Pose(transform.position, transform.rotation);
+			_bufferIndex = (_bufferIndex + 1) % BufferCount;
+			var currentBuffer = _computeBuffers[_bufferIndex];
+
+			// Allocate output array
+			var outputs = new LaserData.Output[_numberOfLaserCamData];
+			for (var i = 0; i < _numberOfLaserCamData; i++)
+			{
+				outputs[i] = new LaserData.Output(i);
+			}
+
+			HideParentModelFromLidar();
+
+			// Render ALL sub-cameras in tight loop
+			var axisRotation = Vector3.zero;
+			for (var dataIndex = 0; dataIndex < _numberOfLaserCamData; dataIndex++)
+			{
+				if (!_camControlInfo[dataIndex].isOverlappingDirection)
+					continue;
+
+				outputs[dataIndex] = new LaserData.Output(dataIndex, _outputBufferLength);
+
+				axisRotation.y = _camControlInfo[dataIndex].laserCamRotationalAngle;
+				_laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
+
+				using (s_LidarSubCamRenderMarker.Auto())
+				{
+					_laserCam.Render();
+				}
+
+				using (s_LidarComputeMarker.Auto())
+				{
+					if (_laserCompute != null)
+					{
+						_laserCompute.SetInt("_DataOffset", dataIndex * _outputBufferLength);
+						var depthSource = _capturedDepthRT != null
+							? (Texture)_capturedDepthRT
+							: (Texture)_laserCam.targetTexture;
+						_laserCompute.SetTexture(_laserComputeKernel, "_DepthTexture", depthSource);
+						_laserCompute.SetBuffer(_laserComputeKernel, "_RayData", currentBuffer);
+						_laserCompute.Dispatch(_laserComputeKernel, _laserComputeGroupsX, _laserComputeGroupsY, 1);
+					}
+				}
+				_laserCam.enabled = false;
+			}
+
+			RestoreParentModelVisibility();
+			AdvanceLidarRenderSchedule(realtimeNow);
+
+			// Async GPU readback — capture locals for closure
+			var framePose = sensorPose;
+			var frameCapturedTime = capturedTime;
+			var frameOutputs = new LaserData.Output[_numberOfLaserCamData];
+			for (var i = 0; i < _numberOfLaserCamData; i++)
+			{
+				frameOutputs[i] = new LaserData.Output(
+					outputs[i].dataIndex,
+					outputs[i].rayData != null ? outputs[i].rayData.Length : 0);
+			}
+
+			AsyncGPUReadback.Request(currentBuffer, (req) =>
+			{
+				if (req.hasError || !req.done)
+				{
+					Debug.LogWarning("Lidar GPU readback error");
+					return;
+				}
+
+				var src = req.GetData<float>();
+				for (var i = 0; i < _numberOfLaserCamData; i++)
+				{
+					if (frameOutputs[i].rayData == null)
+						continue;
+					frameOutputs[i].ConvertDataType(src);
+				}
+
+				_outputQueue.Enqueue((frameCapturedTime, framePose, frameOutputs));
+				_dataAvailable.Set();
+			});
+
+			return true; // Always single-step
+		}
+
+		/// <summary>
+		/// Phase-locked schedule advancement for LiDAR.
+		/// Same logic as Camera.AdvanceRenderSchedule.
+		/// </summary>
+		private void AdvanceLidarRenderSchedule(float realtimeNow)
+		{
+			_nextRenderTime += UpdatePeriod;
+			// Cap max overdue backlog to 3 periods to prevent runaway burst,
+			// but preserve 2 periods of debt so the catch-up pass can fire
+			// 2-3 times per frame after a spike.
+			if (_nextRenderTime < realtimeNow - UpdatePeriod * 3f)
+				_nextRenderTime = realtimeNow - UpdatePeriod * 2f;
+		}
+
 		protected new void OnDestroy()
 		{
+			// Unregister from SensorRenderManager
+			SensorRenderManager.Instance?.Unregister(this);
+
 			_outputQueue.Clear();
 			_startLaserWork = false;
 			_dataAvailable.Set();
@@ -1169,6 +1380,7 @@ namespace SensorDevices
 					}
 
 					_messageQueue.Enqueue(laserScanStamped);
+					SignalDataReady();
 				}
 				else
 				{

@@ -49,8 +49,6 @@ namespace SensorDevices
 		private Quaternion _previousImuRotation = Quaternion.identity;
 		private Vector3 _previousLinearVelocity = Vector3.zero;
 
-		private volatile bool _hasNewPhysicsData = false;
-
 		private NoiseIMU _noises = new NoiseIMU();
 
 		public void SetupNoises(in SDF.IMU element)
@@ -192,10 +190,6 @@ namespace SensorDevices
 
 			var angularDisplacement = _imuRotation * Quaternion.Inverse(_previousImuRotation);
 			_imuAngularVelocity = angularDisplacement.eulerAngles / Time.fixedDeltaTime;
-			// angularDisplacement.ToAngleAxis(out var angle, out var angleAxis);
-			// _imuAngularVelocity = angleAxis * angle / Time.fixedDeltaTime;
-
-			// Debug.Log($"{_imuAngularVelocity} {angularDisplacement.eulerAngles / Time.fixedDeltaTime}");
 
 			var currentLinearVelocity = (currentPosition - _previousImuPosition) / Time.fixedDeltaTime;
 			_imuLinearAcceleration = (currentLinearVelocity - _previousLinearVelocity) / Time.fixedDeltaTime;
@@ -214,29 +208,26 @@ namespace SensorDevices
 			// Record physics-step time for accurate timestamps
 			_fixedSimTimeAtLastPhysics = (_clock != null) ? _clock.FixedSimTime : (double)Time.fixedTimeAsDouble;
 
-			_hasNewPhysicsData = true;
-		}
-
-		public System.Action<messages.Imu> OnImuDataGenerated;
-
-		protected override void GenerateMessage()
-		{
-			if (!_hasNewPhysicsData)
+			// Guard: don't enqueue before UpdateRate is configured by the plugin
+			if (UpdateRate <= 0)
 				return;
 
-			_hasNewPhysicsData = false;
-
+			// Build and enqueue the IMU message directly from FixedUpdate.
+			// Using _messageQueue instead of a bool flag ensures that every
+			// physics step's data reaches the TX thread, even when multiple
+			// FixedUpdates run in a burst within a single render frame.
 			_imu.Orientation.Set(_imuRotation);
 			_imu.AngularVelocity.Set(_imuAngularVelocity * Mathf.Deg2Rad);
 			_imu.LinearAcceleration.Set(_imuLinearAcceleration);
-			// Use fixed-dt synthetic time instead of physics-step SimTime
-			// so consecutive IMU messages always have exactly UpdatePeriod apart.
 			_imu.Stamp.Set(GetNextSyntheticTime());
 
 			OnImuDataGenerated?.Invoke(_imu);
 
-			PushDeviceMessage<messages.Imu>(_imu);
+			_messageQueue.Enqueue(_imu);
+			SignalDataReady();
 		}
+
+		public System.Action<messages.Imu> OnImuDataGenerated;
 
 		public messages.Imu GetImuMessage()
 		{

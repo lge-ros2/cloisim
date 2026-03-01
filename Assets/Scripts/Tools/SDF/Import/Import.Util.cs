@@ -177,12 +177,8 @@ namespace SDF
 					body.enabled = true;
 				}
 
-				var devices = rootObject.GetComponentsInChildren<Device>();
-				foreach (var device in devices)
-				{
-					device.UpdatePose();
-					// Debug.LogWarning(device.GetPose());
-				}
+				// Device pose is now initialized in Device.Start(), no need
+				// to call UpdatePose() here.
 			}
 		}
 	}

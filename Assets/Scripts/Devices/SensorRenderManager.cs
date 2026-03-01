@@ -182,10 +182,10 @@ namespace SensorDevices
 					}
 
 					// Phase 3: Render with adaptive budget
+					var steps = 0;
 					using (s_RenderBatchMarker.Auto())
 					{
 						var budgetRemainingMs = FrameBudgetMs;
-						var steps = 0;
 
 						for (int i = 0; i < readyDevices.Count; i++)
 						{
@@ -222,17 +222,54 @@ namespace SensorDevices
 								i--;
 						}
 
-						// Phase 4: URT multi-fire disabled — publishing duplicate data from
-						// the same BVH/camera-pose is wasteful. The real fix is making
-						// the Unity frame rate higher so each render has fresh data.
-						// The urtExtraSteps counter is kept for diagnostics.
+						// Phase 4: Catch-up pass — re-check completed devices
+						// that are STILL overdue (e.g., 50 Hz sensor at 30 FPS).
+						// This allows 2+ renders per frame to maintain target rate.
+						if (steps < MAX_RENDER_STEPS_PER_FRAME && budgetRemainingMs > _avgRenderStepMs)
+						{
+							bool anyOverdue = true;
+							while (anyOverdue && steps < MAX_RENDER_STEPS_PER_FRAME && budgetRemainingMs > _avgRenderStepMs * 0.5f)
+							{
+								anyOverdue = false;
+								for (int i = 0; i < _renderables.Count; i++)
+								{
+									if (steps >= MAX_RENDER_STEPS_PER_FRAME || budgetRemainingMs < _avgRenderStepMs * 0.5f)
+										break;
+
+									var device = _renderables[i];
+									if (device == null || (device is UnityEngine.Object obj && obj == null))
+										continue;
+									if (!device.IsReadyToRender(now))
+										continue;
+
+									_batchStopwatch.Restart();
+									bool completed;
+									using (s_SingleRenderStepMarker.Auto())
+									{
+										completed = device.ExecuteRenderStep(now);
+									}
+									_batchStopwatch.Stop();
+									var elapsedMs = (float)_batchStopwatch.Elapsed.TotalMilliseconds;
+									budgetRemainingMs -= elapsedMs;
+									steps++;
+
+									if (device.IsURT)
+										_avgURTStepMs = _avgURTStepMs * (1f - EMA_ALPHA) + elapsedMs * EMA_ALPHA;
+									else
+										_avgRenderStepMs = _avgRenderStepMs * (1f - EMA_ALPHA) + elapsedMs * EMA_ALPHA;
+
+									if (!completed) i--;
+									else anyOverdue = true; // A device was ready and completed — check again
+								}
+							}
+						}
 					}
 
 					// ── Periodic diagnostics ──
 					frameBatchStopwatch.Stop();
 					var frameBatchMs = (float)frameBatchStopwatch.Elapsed.TotalMilliseconds;
 					_diagFrameCount++;
-					_diagTotalSteps += readyDevices.Count;
+					_diagTotalSteps += steps;
 					_diagTotalBatchMs += frameBatchMs;
 					if (frameBatchMs > _diagMaxBatchMs) _diagMaxBatchMs = frameBatchMs;
 

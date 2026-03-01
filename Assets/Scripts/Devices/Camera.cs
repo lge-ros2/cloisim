@@ -602,9 +602,11 @@ namespace SensorDevices
 		protected void AdvanceRenderSchedule(float realtimeNow)
 		{
 			_nextRenderTime += UpdatePeriod;
-			// If we've fallen far behind, snap forward to prevent burst rendering
-			if (_nextRenderTime < realtimeNow - UpdatePeriod)
-				_nextRenderTime = realtimeNow + UpdatePeriod;
+			// Cap max overdue backlog to 3 periods to prevent runaway burst,
+			// but preserve 2 periods of debt so the catch-up pass can fire
+			// 2-3 times per frame after a spike.
+			if (_nextRenderTime < realtimeNow - UpdatePeriod * 3f)
+				_nextRenderTime = realtimeNow - UpdatePeriod * 2f;
 		}
 
 		void LateUpdate()
