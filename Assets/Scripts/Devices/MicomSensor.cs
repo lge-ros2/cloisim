@@ -181,7 +181,7 @@ namespace SensorDevices
 
 			var micomSensorData = new messages.Micom();
 			micomSensorData.Time = new messages.Time();
-			micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
+			micomSensorData.Time.Set(GetNextSyntheticTime());
 
 			UpdateBattery(micomSensorData, delta);
 			UpdateUss(micomSensorData);

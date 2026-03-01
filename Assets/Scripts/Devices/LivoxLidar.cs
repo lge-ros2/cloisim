@@ -475,7 +475,7 @@ namespace SensorDevices
 				}
 				lastUpdateTime -= UpdatePeriod;
 
-				var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
+				var capturedTime = GetNextSyntheticTime();
 				var sensorPose = new Pose(transform.position, transform.rotation);
 				_bufferIndex = (_bufferIndex + 1) % BufferCount;
 				var currentOutputBuffer = _outputBuffers[_bufferIndex];
