@@ -30,6 +30,7 @@ namespace SensorDevices
 	///   - Single scheduling point with proper real-time rate limiting
 	///   - Elimination of 9 separate coroutines (1 instead)
 	///   - Adaptive frame budget to prevent frame time spikes
+	///   - URT cameras can fire multiple times per frame to catch up
 	/// </summary>
 	public class SensorRenderManager : MonoBehaviour
 	{
@@ -43,19 +44,26 @@ namespace SensorDevices
 		private static readonly ProfilerMarker s_SortMarker = new("SensorRender.Sort");
 		private static readonly ProfilerMarker s_RenderBatchMarker = new("SensorRender.RenderBatch");
 		private static readonly ProfilerMarker s_SingleRenderStepMarker = new("SensorRender.RenderStep");
+		private static readonly ProfilerMarker s_URTMultiFireMarker = new("SensorRender.URTMultiFire");
 
 		// ── Adaptive budget tracking ──
 		private readonly Stopwatch _batchStopwatch = new();
-		private float _avgRenderStepMs = 5f; // EMA of per-render-step time
+		private float _avgRenderStepMs = 5f; // EMA of per-render-step time (HDRP cameras)
+		private float _avgURTStepMs = 0.5f;  // EMA of per-render-step time (URT cameras)
 		private const float EMA_ALPHA = 0.2f;
 
 		// ── Diagnostics ──
 		private float _diagLastLogTime = 0f;
 		private int _diagFrameCount = 0;
 		private int _diagTotalSteps = 0;
+		private int _diagTotalURTExtraSteps = 0;
 		private float _diagTotalBatchMs = 0f;
 		private float _diagMaxBatchMs = 0f;
+		private float _diagMaxFrameTimeMs = 0f;
+		private float _lastFrameTime = 0f;
+		private int _diagSpikeCount = 0;
 		private const float DIAG_INTERVAL_SEC = 10f;
+		private const float SPIKE_THRESHOLD_MS = 50f;
 
 		/// <summary>
 		/// Frame time budget for sensor renders (milliseconds).
@@ -138,6 +146,10 @@ namespace SensorDevices
 				using (s_BatchLoopMarker.Auto())
 				{
 					var now = Time.realtimeSinceStartup;
+					var frameTimeMs = (now - _lastFrameTime) * 1000f;
+					_lastFrameTime = now;
+					if (frameTimeMs > _diagMaxFrameTimeMs) _diagMaxFrameTimeMs = frameTimeMs;
+
 					readyDevices.Clear();
 					frameBatchStopwatch.Restart();
 
@@ -169,9 +181,7 @@ namespace SensorDevices
 						}
 					}
 
-					// Phase 3: Render with adaptive budget — stop when frame budget exhausted
-					// Devices that need multiple steps per scan (e.g., LiDAR with N
-					// sub-cameras) are re-processed immediately if budget remains.
+					// Phase 3: Render with adaptive budget
 					using (s_RenderBatchMarker.Auto())
 					{
 						var budgetRemainingMs = FrameBudgetMs;
@@ -200,13 +210,22 @@ namespace SensorDevices
 							steps++;
 
 							// Update EMA of per-render-step cost
-							_avgRenderStepMs = _avgRenderStepMs * (1f - EMA_ALPHA) + elapsedMs * EMA_ALPHA;
+							var device = readyDevices[i].device;
+							if (device.IsURT)
+								_avgURTStepMs = _avgURTStepMs * (1f - EMA_ALPHA) + elapsedMs * EMA_ALPHA;
+							else
+								_avgRenderStepMs = _avgRenderStepMs * (1f - EMA_ALPHA) + elapsedMs * EMA_ALPHA;
 
 							// If the device needs more steps (e.g., lidar multi-subcam scan),
 							// re-process it on the next iteration (budget permitting)
 							if (!completed)
 								i--;
 						}
+
+						// Phase 4: URT multi-fire disabled — publishing duplicate data from
+						// the same BVH/camera-pose is wasteful. The real fix is making
+						// the Unity frame rate higher so each render has fresh data.
+						// The urtExtraSteps counter is kept for diagnostics.
 					}
 
 					// ── Periodic diagnostics ──
@@ -217,19 +236,35 @@ namespace SensorDevices
 					_diagTotalBatchMs += frameBatchMs;
 					if (frameBatchMs > _diagMaxBatchMs) _diagMaxBatchMs = frameBatchMs;
 
+					// Spike detection: log individual frames that exceed threshold
+					if (frameTimeMs > SPIKE_THRESHOLD_MS && _diagLastLogTime > 0)
+					{
+						_diagSpikeCount++;
+						var nonBatchMs = frameTimeMs - frameBatchMs;
+						Debug.LogWarning($"[SensorRenderManager] SPIKE: frameTime={frameTimeMs:F1}ms " +
+							$"(batch={frameBatchMs:F1}ms, other={nonBatchMs:F1}ms) " +
+							$"ready={readyDevices.Count} spike#{_diagSpikeCount}");
+					}
+
 					if (now - _diagLastLogTime >= DIAG_INTERVAL_SEC)
 					{
 						var avgBatch = _diagFrameCount > 0 ? _diagTotalBatchMs / _diagFrameCount : 0;
 						var avgSteps = _diagFrameCount > 0 ? (float)_diagTotalSteps / _diagFrameCount : 0;
+						var fps = _diagFrameCount > 0 ? _diagFrameCount / DIAG_INTERVAL_SEC : 0;
 						Debug.Log($"[SensorRenderManager] {DIAG_INTERVAL_SEC}s stats: " +
-							$"frames={_diagFrameCount}, avgBatchMs={avgBatch:F2}, maxBatchMs={_diagMaxBatchMs:F2}, " +
-							$"avgSteps/frame={avgSteps:F1}, avgStepMs={_avgRenderStepMs:F2}, " +
-							$"registered={_renderables.Count}");
+							$"fps={fps:F1}, frames={_diagFrameCount}, " +
+							$"avgBatchMs={avgBatch:F2}, maxBatchMs={_diagMaxBatchMs:F2}, " +
+							$"avgSteps/frame={avgSteps:F1}, avgStepMs(HDRP)={_avgRenderStepMs:F2}, avgStepMs(URT)={_avgURTStepMs:F2}, " +
+							$"maxFrameTimeMs={_diagMaxFrameTimeMs:F1}, spikes(>{SPIKE_THRESHOLD_MS}ms)={_diagSpikeCount}, " +
+							$"urtExtraSteps={_diagTotalURTExtraSteps}, registered={_renderables.Count}");
 						_diagLastLogTime = now;
 						_diagFrameCount = 0;
 						_diagTotalSteps = 0;
+						_diagTotalURTExtraSteps = 0;
 						_diagTotalBatchMs = 0;
 						_diagMaxBatchMs = 0;
+						_diagMaxFrameTimeMs = 0;
+						_diagSpikeCount = 0;
 					}
 				}
 

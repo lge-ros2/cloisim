@@ -16,6 +16,16 @@ namespace SensorDevices
 		/// <summary>Device name for logging.</summary>
 		string DeviceName { get; }
 
+		/// <summary>Target update period (seconds). Used by multi-fire logic.</summary>
+		float UpdatePeriod { get; }
+
+		/// <summary>
+		/// True if this device uses Unified Ray Tracing (compute dispatch only,
+		/// no Camera.Render). URT devices are cheap enough to render multiple
+		/// times per frame when they fall behind their target rate.
+		/// </summary>
+		bool IsURT { get; }
+
 		/// <summary>Check if this device needs a render pass this frame.</summary>
 		bool IsReadyToRender(float realtimeNow);
 

@@ -39,6 +39,19 @@ namespace SensorDevices
 
 		#endregion
 
+		#region "Unified Ray Tracing"
+
+		// When Unified RT is available (hardware or compute backend), replaces
+		// Camera.Render() + DepthCapturePass + DepthBufferScaling with a single dispatch.
+		private bool _useDXR = false;
+		private UnityEngine.Rendering.UnifiedRayTracing.IRayTracingShader _urtShader;
+		private GraphicsBuffer _urtScratchBuffer;
+		private CommandBuffer _urtCmd;
+
+		public override bool IsURT => _useDXR;
+
+		#endregion
+
 		private uint _depthScale = 1000;
 		private int _imageDepth;
 
@@ -98,6 +111,13 @@ namespace SensorDevices
 			_computeBufferSrc?.Release();
 			_computeBufferDst?.Release();
 
+			// Clean up URT resources
+			_urtScratchBuffer?.Release();
+			_urtScratchBuffer = null;
+			_urtCmd?.Release();
+			_urtCmd = null;
+			_urtShader = null;
+
 			base.OnDestroy();
 		}
 
@@ -152,29 +172,27 @@ namespace SensorDevices
 
 		protected override void SetupCamera()
 		{
-			// Debug.Log("Depth Setup Camera");
-			// Use the HDRP-native fullscreen shader that handles Tex2DArray depth
-			// via LoadCameraDepth() / LOAD_TEXTURE2D_X — required for Unity 6000.x
-			// where the depth buffer is a Tex2DArray, not a simple Tex2D.
-			var depthShader = Shader.Find("FullScreen/DepthCapture");
-			_depthBlitMaterial = new Material(depthShader);
-			// Don't set _depthMaterial — keep it null so OnEndCameraRendering
-			// skips the depth blit (which would use the stale _CameraDepthTexture).
+			// Try DXR ray tracing path first
+			InitDXRDepth();
 
-			// Add HDRP Custom Pass to capture depth during the render pipeline.
-			// In Unity 6000.x Render Graph, _CameraDepthTexture is only valid
-			// during pipeline execution, not in OnEndCameraRendering callbacks.
-			_customPassVolume = gameObject.AddComponent<CustomPassVolume>();
-			_customPassVolume.targetCamera = _camSensor;
-			_customPassVolume.injectionPoint = CustomPassInjectionPoint.AfterOpaqueDepthAndNormal;
-			_customPassVolume.isGlobal = false;
-
-			var depthPass = _customPassVolume.AddPassOfType<DepthCapturePass>();
-			if (depthPass is DepthCapturePass dcp)
+			if (!_useDXR)
 			{
-				dcp.SetDepthMaterial(_depthBlitMaterial);
-				dcp.SetTargetCamera(_camSensor);
-				_depthCapturePass = dcp;
+				// Rasterization fallback path
+				var depthShader = Shader.Find("FullScreen/DepthCapture");
+				_depthBlitMaterial = new Material(depthShader);
+
+				_customPassVolume = gameObject.AddComponent<CustomPassVolume>();
+				_customPassVolume.targetCamera = _camSensor;
+				_customPassVolume.injectionPoint = CustomPassInjectionPoint.AfterOpaqueDepthAndNormal;
+				_customPassVolume.isGlobal = false;
+
+				var depthPass = _customPassVolume.AddPassOfType<DepthCapturePass>();
+				if (depthPass is DepthCapturePass dcp)
+				{
+					dcp.SetDepthMaterial(_depthBlitMaterial);
+					dcp.SetTargetCamera(_camSensor);
+					_depthCapturePass = dcp;
+				}
 			}
 
 			if (_camParam.depth_camera_output.Equals("points"))
@@ -293,18 +311,105 @@ namespace SensorDevices
 		}
 
 		/// <summary>
-		/// Override ExecuteRender to use direct GPU texture → compute → readback path.
-		/// In HDRP Render Graph (Unity 6000.x), _CameraDepthTexture is released after
-		/// the render graph completes, making it unavailable in OnEndCameraRendering.
-		/// Solution: use an HDRP Custom Pass (DepthCapturePass) that captures depth
-		/// during the pipeline at AfterOpaqueDepthAndNormal, writing linearized depth
-		/// to a dedicated RT that persists after Camera.Render() returns.
+		/// Initialize Unified Ray Tracing for depth camera if available.
 		/// </summary>
+		private void InitDXRDepth()
+		{
+			var dxrManager = DXRSensorManager.Instance;
+			if (dxrManager == null || !dxrManager.IsSupported) return;
+
+			var shaderAsset = Resources.Load<ComputeShader>("Shader/URTDepthRaycast");
+			if (shaderAsset == null) return;
+
+			_urtShader = dxrManager.CreateShader(shaderAsset);
+			if (_urtShader == null) return;
+
+			var width = (uint)_camParam.image.width;
+			var height = (uint)_camParam.image.height;
+
+			_urtCmd = new CommandBuffer { name = "DepthCameraURT" };
+
+			// Pre-allocate scratch buffer
+			var scratchSize = _urtShader.GetTraceScratchBufferRequiredSizeInBytes(width, height, 1);
+			if (scratchSize > 0)
+			{
+				_urtScratchBuffer = new GraphicsBuffer(
+					UnityEngine.Rendering.UnifiedRayTracing.RayTracingHelper.ScratchBufferTarget,
+					(int)((scratchSize + 3) / 4), 4);
+			}
+
+			// Set static params
+			var cmd = _urtCmd;
+			cmd.Clear();
+			_urtShader.SetIntParam(cmd, Shader.PropertyToID("_Width"), (int)width);
+			_urtShader.SetIntParam(cmd, Shader.PropertyToID("_Height"), (int)height);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_NearClip"), (float)_camParam.clip.near);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_FarClip"), (float)_camParam.clip.far);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_DepthScale"), (float)_depthScale);
+			_urtShader.SetIntParam(cmd, Shader.PropertyToID("_UnitSize"), _imageDepth);
+
+			var camHFov = (float)_camParam.horizontal_fov * Mathf.Rad2Deg;
+			var camVFov = SensorHelper.HorizontalToVerticalFOV(camHFov, (float)width / height);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_TanHalfHFov"), Mathf.Tan(camHFov * 0.5f * Mathf.Deg2Rad));
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_TanHalfVFov"), Mathf.Tan(camVFov * 0.5f * Mathf.Deg2Rad));
+			Graphics.ExecuteCommandBuffer(cmd);
+
+			_useDXR = true;
+			Debug.Log($"[DepthCamera:{DeviceName}] Unified RT enabled (backend: {dxrManager.RTContext.BackendType}) — {width}x{height}");
+		}
+
+		/// <summary>
+		/// Unified RT render path: single dispatch replaces
+		/// Camera.Render() + DepthCapturePass + DepthBufferScaling.
+		/// </summary>
+		private void ExecuteRenderDXR(float realtimeNow)
+		{
+			var dxrManager = DXRSensorManager.Instance;
+			if (dxrManager?.AccelStruct == null) return;
+
+			var capturedTime = GetNextSyntheticTime();
+			var width = (uint)_camParam.image.width;
+			var height = (uint)_camParam.image.height;
+
+			var cmd = _urtCmd;
+			cmd.Clear();
+
+			var pos = _camSensor.transform.position;
+			_urtShader.SetVectorParam(cmd, Shader.PropertyToID("_CameraOrigin"), new Vector4(pos.x, pos.y, pos.z, 0));
+			_urtShader.SetMatrixParam(cmd, Shader.PropertyToID("_CameraToWorld"), _camSensor.transform.localToWorldMatrix);
+			_urtShader.SetAccelerationStructure(cmd, "_AccelStruct", dxrManager.AccelStruct);
+			_urtShader.SetBufferParam(cmd, Shader.PropertyToID("_Output"), _computeBufferDst);
+
+			_urtShader.Dispatch(cmd, _urtScratchBuffer, width, height, 1);
+			Graphics.ExecuteCommandBuffer(cmd);
+
+			AsyncGPUReadback.Request(_computeBufferDst, (computeReq) =>
+			{
+				if (computeReq.hasError || !computeReq.done)
+				{
+					Debug.LogWarning($"{name}: URT depth readback failed");
+					return;
+				}
+
+				using (s_DepthCopyMarker.Auto())
+				{
+					ProcessComputeOutput(computeReq, capturedTime);
+				}
+				SignalDataReady();
+			});
+		}
+
 		public override void ExecuteRender(float realtimeNow)
 		{
 			using (s_DepthRenderMarker.Auto())
 			{
-				_lastCaptureRealtime = realtimeNow;
+				AdvanceRenderSchedule(realtimeNow);
+
+				if (_useDXR)
+				{
+					ExecuteRenderDXR(realtimeNow);
+					return;
+				}
 
 				_camSensor.Render();
 
@@ -319,7 +424,7 @@ namespace SensorDevices
 					return;
 				}
 
-				var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
+				var capturedTime = GetNextSyntheticTime();
 
 				if (_computeShader != null && _kernelIndexFromTex >= 0)
 				{
@@ -344,6 +449,7 @@ namespace SensorDevices
 						{
 							ProcessComputeOutput(computeReq, capturedTime);
 						}
+						SignalDataReady();
 					});
 				}
 				else
@@ -357,6 +463,7 @@ namespace SensorDevices
 							var readbackData = req.GetData<float>();
 							ImageProcessing<float>(ref readbackData, capturedTime);
 						}
+						SignalDataReady();
 					});
 				}
 			}
@@ -402,6 +509,7 @@ namespace SensorDevices
 			if (OnCameraInfoGenerated != null) OnCameraInfoGenerated.Invoke(_sensorInfo);
 
 			_messageQueue.Enqueue(imageStamped);
+			SignalDataReady();
 		}
 	}
 }

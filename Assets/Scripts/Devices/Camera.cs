@@ -38,12 +38,19 @@ namespace SensorDevices
 		protected UnityEngine.Camera _camSensor = null;
 		protected HDAdditionalCameraData _hdCamData = null;
 
+		/// <summary>Public accessor for sensor HDRP camera data (used by RenderQualityManager).</summary>
+		public HDAdditionalCameraData HdCameraData => _hdCamData;
+
 		// ── Batched rendering: managed by SensorRenderManager ──
 		// Instead of each camera running its own coroutine, a central
 		// manager renders all cameras in a tight batch each frame.
 		// This reduces HDRP per-camera CPU overhead by allowing the
 		// render pipeline to share state across sequential renders.
-		protected float _lastCaptureRealtime = 0f;
+		//
+		// Phase-locked scheduling: _nextRenderTime advances by exactly
+		// UpdatePeriod each render, preventing drift accumulation that
+		// occurs with elapsed-time checks.
+		protected float _nextRenderTime = -1f;
 		private float _initTime = 0f;
 
 		protected string _targetRTname;
@@ -186,7 +193,7 @@ namespace SensorDevices
 				// This replaces per-camera CameraWorker coroutines and avoids
 				// the Unity 6000 coroutine context bug.
 				_initTime = Time.realtimeSinceStartup;
-				_lastCaptureRealtime = _initTime;
+				_nextRenderTime = _initTime + 0.1f; // delay 100ms for HDRP init
 				SensorRenderManager.Instance.Register(this);
 			}
 		}
@@ -244,9 +251,10 @@ namespace SensorDevices
 			_textureForCapture = new Texture2D(_camParam.image.width, _camParam.image.height, textureFormatForCapture, false, true);
 			_textureForCapture.filterMode = FilterMode.Point;
 
-			// HDRP Postprocess handles tonemapping/exposure/color grading (matching GUI rendering).
-			// No custom tonemap shader needed — HDR→LDR blit uses hardware sRGB conversion.
-			_tonemapMaterial = null;
+			// Lightweight ACES tonemap: a single fullscreen shader blit replaces
+			// HDRP Postprocess (~0.1ms vs ~3-5ms). Auto-exposure and color grading
+			// are sacrificed, but robot perception doesn't need them.
+			_tonemapMaterial = new Material(Shader.Find("Sensor/Tonemap"));
 		}
 
 		protected override void InitializeMessages()
@@ -437,18 +445,37 @@ namespace SensorDevices
 			if (_hdCamData == null)
 				return;
 
-			// RGB sensor cameras: match GUI rendering quality exactly.
-			// Keep ALL HDRP features at their defaults including Postprocess
-			// (tonemapping, exposure, color grading from the Volume system).
-			// Only disable MotionVectors (unnecessary for sensor capture).
+			// RGB sensor cameras: strip all expensive HDRP features.
+			// Robot perception doesn't need photorealistic effects — SSAO, SSR,
+			// volumetrics, contact shadows, etc. each add GPU passes (~0.5-2ms)
+			// that compound across 3+ cameras. Tonemapping is handled by a
+			// lightweight ACES shader blit instead of HDRP Postprocess (~0.1ms
+			// vs ~3-5ms per camera). ShadowMaps are kept for basic lighting.
+			// TransparentObjects kept so transparent scene objects are visible.
 			_hdCamData.customRenderingSettings = true;
 
 			var overrideMask = _hdCamData.renderingPathCustomFrameSettingsOverrideMask;
-			overrideMask.mask[(uint)FrameSettingsField.MotionVectors] = true;
+			var featuresToDisable = new[] {
+				FrameSettingsField.Postprocess,
+				FrameSettingsField.SSAO,
+				FrameSettingsField.SSR,
+				FrameSettingsField.Volumetrics,
+				FrameSettingsField.ReprojectionForVolumetrics,
+				FrameSettingsField.AtmosphericScattering,
+				FrameSettingsField.SubsurfaceScattering,
+				FrameSettingsField.ContactShadows,
+				FrameSettingsField.ScreenSpaceShadows,
+				FrameSettingsField.MotionVectors,
+				FrameSettingsField.Refraction,
+				FrameSettingsField.Decals,
+			};
+			foreach (var f in featuresToDisable)
+				overrideMask.mask[(uint)f] = true;
 			_hdCamData.renderingPathCustomFrameSettingsOverrideMask = overrideMask;
 
 			var frameSettings = _hdCamData.renderingPathCustomFrameSettings;
-			frameSettings.SetEnabled(FrameSettingsField.MotionVectors, false);
+			foreach (var f in featuresToDisable)
+				frameSettings.SetEnabled(f, false);
 			_hdCamData.renderingPathCustomFrameSettings = frameSettings;
 		}
 
@@ -473,30 +500,32 @@ namespace SensorDevices
 		// ═══════════════════════════════════════════════════════════════
 
 		/// <summary>
+		/// Whether this camera uses Unified Ray Tracing (cheap compute dispatch).
+		/// Override in subclasses that use URT. Default: false (full HDRP Camera.Render).
+		/// </summary>
+		public virtual bool IsURT => false;
+
+		/// <summary>
 		/// Check if this camera should render this frame.
-		/// Uses real-time rate limiting (not Unity Time) to prevent the
-		/// death spiral where all cameras render every frame when FPS
-		/// drops below the target update rate.
+		/// Phase-locked: compares against absolute _nextRenderTime
+		/// to prevent drift accumulation from frame-rate jitter.
 		/// </summary>
 		public bool IsReadyToRender(float realtimeNow)
 		{
 			if (!_startCameraWork) return false;
 			if (_camSensor == null || _camSensor.targetTexture == null) return false;
 
-			// Allow HDRP 100ms to initialize HDCamera state after setup
-			if (realtimeNow - _initTime < 0.1f) return false;
-
-			return (realtimeNow - _lastCaptureRealtime) >= UpdatePeriod;
+			return realtimeNow >= _nextRenderTime;
 		}
 
 		/// <summary>
 		/// How overdue this camera is for rendering (seconds past its
-		/// update period). Used by SensorRenderManager to prioritize
+		/// scheduled time). Used by SensorRenderManager to prioritize
 		/// the most starved cameras when frame budget is limited.
 		/// </summary>
 		public float GetRenderUrgency(float realtimeNow)
 		{
-			return (realtimeNow - _lastCaptureRealtime) - UpdatePeriod;
+			return realtimeNow - _nextRenderTime;
 		}
 
 		/// <summary>
@@ -519,7 +548,7 @@ namespace SensorDevices
 		{
 			using (s_ExecuteRenderMarker.Auto())
 			{
-				_lastCaptureRealtime = realtimeNow;
+				AdvanceRenderSchedule(realtimeNow);
 
 				using (s_HdrpRenderMarker.Auto())
 				{
@@ -540,7 +569,7 @@ namespace SensorDevices
 					readbackTarget = _ldrReadbackRT.rt;
 				}
 
-				var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
+				var capturedTime = GetNextSyntheticTime();
 				AsyncGPUReadback.Request(readbackTarget, 0, _readbackDstFormat, (req) => {
 					if (req.hasError)
 					{
@@ -559,8 +588,23 @@ namespace SensorDevices
 							ImageProcessing<float>(ref readbackData, capturedTime);
 						}
 					}
+					SignalDataReady();
 				});
 			}
+		}
+
+		/// <summary>
+		/// Advance the phase-locked render schedule.
+		/// Increments _nextRenderTime by exactly UpdatePeriod to maintain
+		/// a stable cadence. If we fall more than 2 periods behind (e.g.
+		/// long frame spike), snaps forward to avoid burst catch-up.
+		/// </summary>
+		protected void AdvanceRenderSchedule(float realtimeNow)
+		{
+			_nextRenderTime += UpdatePeriod;
+			// If we've fallen far behind, snap forward to prevent burst rendering
+			if (_nextRenderTime < realtimeNow - UpdatePeriod)
+				_nextRenderTime = realtimeNow + UpdatePeriod;
 		}
 
 		void LateUpdate()
