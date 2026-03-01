@@ -269,18 +269,41 @@ public class Main : MonoBehaviour
 		var cmdArgs = Environment.GetCommandLineArgs();
 		var hasBatchArg = System.Array.Exists(cmdArgs, a => a == "-batchmode");
 		var isBatchMode = Application.isBatchMode || hasBatchArg;
+		var sensorOnlyEnv = Environment.GetEnvironmentVariable("CLOISIM_SENSOR_ONLY");
+		var enableSensorOnly = isBatchMode
+			|| (!string.IsNullOrEmpty(sensorOnlyEnv) && sensorOnlyEnv == "1");
 		Debug.Log("[Main] Application.isBatchMode=" + Application.isBatchMode
 			+ ", cmdline has -batchmode=" + hasBatchArg
-			+ ", effective isBatchMode=" + isBatchMode);
+			+ ", effective isBatchMode=" + isBatchMode
+			+ ", enableSensorOnly=" + enableSensorOnly);
 
-		if (isBatchMode)
+		// Inform RenderQualityManager before UIController.Initialize() runs.
+		// This prevents the GUI camera from re-enabling expensive HDRP features
+		// that Main strips for sensor-only mode.
+		if (enableSensorOnly)
 		{
-			// Headless / batchmode: uncap frame rate so the GPU runs as fast as
-			// possible. Unity's internal loop in -batchmode does not reliably
-			// honour a fixed targetFrameRate — setting -1 removes the cap and
-			// lets sensor coroutines (which yield once per frame) tick faster.
-			Application.targetFrameRate = -1;
-			Debug.Log("[Main] BatchMode detected: targetFrameRate = -1 (uncapped)");
+			RenderQualityManager.SetSensorOnlyMode(true);
+		}
+
+		if (isBatchMode || enableSensorOnly)
+		{
+			// Sensor-only / headless: cap frame rate to prevent GPU thermal throttling.
+			// On laptop GPUs, uncapped FPS (-1) causes the GPU to overheat → clock
+			// throttle → worse sustained performance than a capped rate.
+			//
+			// Calculation: 9 cameras at 30 Hz = 270 renders/sec.
+			// At ~6 camera steps per frame, we need 270/6 = 45 FPS minimum.
+			// 60 FPS gives 360 renders/sec (33% headroom) while keeping GPU cool.
+			// Env var CLOISIM_TARGET_FPS overrides (-1 = uncapped for desktop GPUs).
+			var targetFps = 60;
+			var envFps = Environment.GetEnvironmentVariable("CLOISIM_TARGET_FPS");
+			if (!string.IsNullOrEmpty(envFps) && int.TryParse(envFps, out var customFps))
+			{
+				targetFps = customFps;
+			}
+			Application.targetFrameRate = targetFps;
+			QualitySettings.vSyncCount = 0; // disable vsync — use targetFrameRate only
+			Debug.Log($"[Main] targetFrameRate={targetFps} for {(isBatchMode ? "batchmode" : "sensor-only")} (set CLOISIM_TARGET_FPS to override, -1=uncapped)");
 		}
 		else
 		{
@@ -322,26 +345,25 @@ public class Main : MonoBehaviour
 		mainCamera.useOcclusionCulling = true;
 		mainCamera.orthographic = false;
 
-		// Sensor-only mode: minimize main viewport camera to save ~30-50ms/frame.
+		// Sensor-only mode: minimize main viewport camera to save GPU time.
 		// Activated automatically in batchmode (no human viewer) or via CLOISIM_SENSOR_ONLY=1.
-		var sensorOnly = Environment.GetEnvironmentVariable("CLOISIM_SENSOR_ONLY");
-		var enableSensorOnly = isBatchMode
-			|| (!string.IsNullOrEmpty(sensorOnly) && sensorOnly == "1");
 
 		if (enableSensorOnly)
 		{
-			mainCamera.cullingMask = 0; // Render nothing — sensor cameras have their own culling
-			mainCamera.clearFlags = CameraClearFlags.SolidColor;
-			Debug.Log("[Main] Sensor-only mode: Main camera rendering minimized"
-				+ (isBatchMode ? " (auto-enabled in batchmode)" : " (CLOISIM_SENSOR_ONLY=1)"));
-
-			// In headless mode, increase the sensor render budget — no interactive UI
-			// to keep smooth, so we can spend more time per frame on sensor cameras.
 			if (isBatchMode)
 			{
-				SensorDevices.SensorRenderManager.Instance.FrameBudgetMs = 40f;
-				Debug.Log("[Main] SensorRenderManager.FrameBudgetMs raised to 40ms for headless");
+				// Headless: no human viewer, completely skip main camera rendering
+				mainCamera.cullingMask = 0;
+				mainCamera.clearFlags = CameraClearFlags.SolidColor;
 			}
+			// In GUI mode: keep scene visible but HDRP features are stripped below
+
+			Debug.Log("[Main] Sensor-only mode: Main camera rendering minimized"
+				+ (isBatchMode ? " (headless — culling disabled)" : " (GUI — HDRP features reduced)"));
+
+			// Increase the sensor render budget — prioritize sensor throughput
+			SensorDevices.SensorRenderManager.Instance.FrameBudgetMs = 40f;
+			Debug.Log("[Main] SensorRenderManager.FrameBudgetMs raised to 40ms for sensor-only");
 		}
 
 #if UNITY_EDITOR || UNITY_STANDALONE
@@ -432,6 +454,8 @@ public class Main : MonoBehaviour
 
 		_segmentationManager = gameObject.AddComponent<Segmentation.Manager>();
 
+		gameObject.AddComponent<SensorDevices.DXRSensorManager>();
+
 		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
 		_vhacd.m_parameters = VHACD.Params;
 
@@ -450,6 +474,12 @@ public class Main : MonoBehaviour
 			Debug.LogError("This API does not support AsyncGPURreadback.");
 			_uiController?.SetErrorMessage("This API does not support AsyncGPURreadback.");
 			return;
+		}
+
+		// Photorealistic HDRP post-processing (GUI mode only)
+		if (!Application.isBatchMode)
+		{
+			gameObject.AddComponent<PhotorealisticSetup>();
 		}
 
 		if (_simulationService.IsStarted())

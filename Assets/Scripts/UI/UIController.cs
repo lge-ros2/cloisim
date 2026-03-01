@@ -329,14 +329,16 @@ public class UIController : MonoBehaviour
 		if (_rootVisualElement == null) return;
 		var renderSettingsMenu = _rootVisualElement.Q<VisualElement>("RenderSettingsMenu");
 		if (renderSettingsMenu == null) return;
-		renderSettingsMenu.style.visibility = (!open || renderSettingsMenu.style.visibility == Visibility.Visible) ? Visibility.Hidden : Visibility.Visible;
+
+		var isVisible = (!open || renderSettingsMenu.style.visibility == Visibility.Visible);
+		renderSettingsMenu.style.visibility = isVisible ? Visibility.Hidden : Visibility.Visible;
+		Main.CameraControl.BlockMouseWheelControl(!isVisible);
 #endif
 	}
 
 #if !UNITY_SERVER
 	private static readonly (string toggleName, FrameSettingsField field)[] RenderFeatureMap = new[]
 	{
-		("RenderToggle_Postprocess", FrameSettingsField.Postprocess),
 		("RenderToggle_ShadowMaps", FrameSettingsField.ShadowMaps),
 		("RenderToggle_SSAO", FrameSettingsField.SSAO),
 		("RenderToggle_SSR", FrameSettingsField.SSR),
@@ -354,43 +356,89 @@ public class UIController : MonoBehaviour
 	{
 		if (_rootVisualElement == null) return;
 
+		// Initialize shared render quality defaults
+		// (GUI mode: full HDRP quality; headless: expensive features off)
+		RenderQualityManager.Initialize();
+
+		// Apply defaults to GUI camera immediately
 		var hdCamData = Camera.main?.GetComponent<HDAdditionalCameraData>();
-		if (hdCamData == null) return;
+		if (hdCamData != null)
+		{
+			RenderQualityManager.ApplyTo(hdCamData);
+		}
 
 		foreach (var (toggleName, field) in RenderFeatureMap)
 		{
 			var toggle = _rootVisualElement.Q<Toggle>(toggleName);
 			if (toggle == null) continue;
 
-			// Read current state from camera frame settings
-			if (hdCamData.customRenderingSettings)
-			{
-				var mask = hdCamData.renderingPathCustomFrameSettingsOverrideMask;
-				if (mask.mask[(uint)field])
-				{
-					toggle.SetValueWithoutNotify(hdCamData.renderingPathCustomFrameSettings.IsEnabled(field));
-				}
-			}
+			// Sync toggle state from RenderQualityManager's current overrides.
+			// null (no override) means HDRP default = enabled → show toggle as ON.
+			var featureState = RenderQualityManager.IsEnabled(field);
+			toggle.SetValueWithoutNotify(featureState ?? true);
 
 			var capturedField = field;
 			toggle.RegisterValueChangedCallback(evt => SetHDRPFeature(capturedField, evt.newValue));
+		}
+
+		// ── Post-Processing & Photorealistic feature toggles ──
+		SetupPhotorealisticToggles();
+	}
+
+	// Maps UXML toggle names to PhotorealisticSetup.Feature enum values.
+	private static readonly (string toggleName, PhotorealisticSetup.Feature feature)[] PhotoFeatureMap = new[]
+	{
+		// Post Processing
+		("PhotoToggle_Bloom",            PhotorealisticSetup.Feature.Bloom),
+		("PhotoToggle_Tonemapping",      PhotorealisticSetup.Feature.Tonemapping),
+		("PhotoToggle_AutoExposure",     PhotorealisticSetup.Feature.AutoExposure),
+		// Photorealistic
+		("PhotoToggle_SSR",              PhotorealisticSetup.Feature.SSR),
+		("PhotoToggle_VolumetricFog",    PhotorealisticSetup.Feature.VolumetricFog),
+		("PhotoToggle_ColorGrading",     PhotorealisticSetup.Feature.ColorGrading),
+		("PhotoToggle_WhiteBalance",     PhotorealisticSetup.Feature.WhiteBalance),
+		("PhotoToggle_Vignette",         PhotorealisticSetup.Feature.Vignette),
+		("PhotoToggle_IndirectLighting", PhotorealisticSetup.Feature.IndirectLighting),
+	};
+
+	private void SetupPhotorealisticToggles()
+	{
+		if (_rootVisualElement == null) return;
+		var setup = PhotorealisticSetup.Instance;
+
+		// Master toggle — enables/disables the entire photorealistic volume
+		var masterToggle = _rootVisualElement.Q<Toggle>("PhotoToggle_Master");
+		if (masterToggle != null)
+		{
+			masterToggle.SetValueWithoutNotify(setup != null && setup.IsActive);
+			masterToggle.RegisterValueChangedCallback(evt =>
+			{
+				var ps = PhotorealisticSetup.Instance;
+				if (ps != null) ps.SetEnabled(evt.newValue);
+			});
+		}
+
+		// Individual feature toggles
+		foreach (var (toggleName, feature) in PhotoFeatureMap)
+		{
+			var toggle = _rootVisualElement.Q<Toggle>(toggleName);
+			if (toggle == null) continue;
+
+			toggle.SetValueWithoutNotify(setup != null && setup.IsFeatureEnabled(feature));
+
+			var capturedFeature = feature;
+			toggle.RegisterValueChangedCallback(evt =>
+			{
+				var ps = PhotorealisticSetup.Instance;
+				if (ps != null) ps.SetFeatureEnabled(capturedFeature, evt.newValue);
+			});
 		}
 	}
 
 	private void SetHDRPFeature(FrameSettingsField field, bool enabled)
 	{
-		var hdCamData = Camera.main?.GetComponent<HDAdditionalCameraData>();
-		if (hdCamData == null) return;
-
-		hdCamData.customRenderingSettings = true;
-		var overrideMask = hdCamData.renderingPathCustomFrameSettingsOverrideMask;
-		var frameSettings = hdCamData.renderingPathCustomFrameSettings;
-
-		overrideMask.mask[(uint)field] = true;
-		frameSettings.SetEnabled(field, enabled);
-
-		hdCamData.renderingPathCustomFrameSettingsOverrideMask = overrideMask;
-		hdCamData.renderingPathCustomFrameSettings = frameSettings;
+		// Update shared state and propagate to GUI camera + all sensor cameras
+		RenderQualityManager.SetFeature(field, enabled);
 	}
 #endif
 

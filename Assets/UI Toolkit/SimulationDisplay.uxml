@@ -39,9 +39,9 @@
         <ui:Button parse-escape-sequences="false" display-tooltip-when-elided="false" name="Bottom" enable-rich-text="false" style="margin-top: 5px; margin-right: 5px; margin-bottom: 5px; margin-left: 5px; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; background-image: resource(&apos;icons/view_angle_bottom&apos;); -unity-background-image-tint-color: rgb(255, 255, 255); background-color: rgba(0, 0, 0, 0); -unity-background-scale-mode: scale-to-fit; width: 30px; height: 30px; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; position: absolute; top: 100px; left: 55px; border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; border-bottom-left-radius: 6px;" />
         <ui:EnumField type="global::UIController+CameraViewModeEnum, Assembly-CSharp" name="CameraViewModeEnum" value="Perspective" style="width: 138px; height: 25px; position: absolute; top: 145px; align-items: center; justify-content: center; align-self: center; font-size: 10px; -unity-font-style: bold; margin-top: 0; margin-bottom: 0; margin-right: 0; margin-left: 0; -unity-font: url(&quot;project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf?fileID=12800000&amp;guid=e3265ab4bf004d28a9537516768c1c75&amp;type=3#LiberationSans&quot;); -unity-text-align: middle-center; left: 3px; padding-top: 0;" />
     </ui:VisualElement>
-    <ui:VisualElement name="RenderSettingsMenu" style="flex-grow: 0; top: 46px; position: absolute; left: 310px; background-color: rgba(80, 80, 80, 0.95); width: 220px; border-top-left-radius: 10px; border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-bottom-left-radius: 10px; display: flex; border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-left-color: rgb(51, 51, 51); border-right-color: rgb(51, 51, 51); border-top-color: rgb(51, 51, 51); border-bottom-color: rgb(51, 51, 51); padding-top: 8px; padding-right: 8px; padding-bottom: 8px; padding-left: 8px; visibility: hidden;">
+    <ui:VisualElement name="RenderSettingsMenu" style="flex-grow: 0; top: 46px; position: absolute; left: 310px; background-color: rgba(80, 80, 80, 0.95); width: 240px; max-height: 600px; border-top-left-radius: 10px; border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-bottom-left-radius: 10px; display: flex; border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-left-color: rgb(51, 51, 51); border-right-color: rgb(51, 51, 51); border-top-color: rgb(51, 51, 51); border-bottom-color: rgb(51, 51, 51); padding-top: 8px; padding-right: 8px; padding-bottom: 8px; padding-left: 8px; visibility: hidden; -unity-font: url(&quot;project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf?fileID=12800000&amp;guid=e3265ab4bf004d28a9537516768c1c75&amp;type=3#LiberationSans&quot;);">
+      <ui:ScrollView style="flex-grow: 1;">
         <ui:Label text="Rendering Features" style="color: rgb(230, 230, 230); -unity-font-style: bold; font-size: 12px; margin-bottom: 6px; -unity-text-align: upper-center; text-shadow: 1px 1px 0 rgb(0, 0, 0);" />
-        <ui:Toggle label="Post Processing" name="RenderToggle_Postprocess" value="true" class="render-toggle" />
         <ui:Toggle label="Shadow Maps" name="RenderToggle_ShadowMaps" value="true" class="render-toggle" />
         <ui:Toggle label="SSAO" name="RenderToggle_SSAO" value="true" class="render-toggle" />
         <ui:Toggle label="SSR" name="RenderToggle_SSR" value="true" class="render-toggle" />
@@ -53,5 +53,20 @@
         <ui:Toggle label="Decals" name="RenderToggle_Decals" value="true" class="render-toggle" />
         <ui:Toggle label="Subsurface Scattering" name="RenderToggle_SubsurfaceScattering" value="true" class="render-toggle" />
         <ui:Toggle label="Refraction" name="RenderToggle_Refraction" value="true" class="render-toggle" />
+        <ui:VisualElement style="height: 1px; background-color: rgb(120, 120, 120); margin-top: 6px; margin-bottom: 6px;" />
+        <ui:Label text="Post Processing" style="color: rgb(200, 200, 200); -unity-font-style: bold; font-size: 11px; margin-bottom: 4px; -unity-text-align: upper-center;" />
+        <ui:Toggle label="Bloom" name="PhotoToggle_Bloom" value="true" class="render-toggle" />
+        <ui:Toggle label="Tonemapping (ACES)" name="PhotoToggle_Tonemapping" value="true" class="render-toggle" />
+        <ui:Toggle label="Auto Exposure" name="PhotoToggle_AutoExposure" value="true" class="render-toggle" />
+        <ui:VisualElement style="height: 1px; background-color: rgb(120, 120, 120); margin-top: 6px; margin-bottom: 6px;" />
+        <ui:Label text="Photorealistic" style="color: rgb(200, 200, 200); -unity-font-style: bold; font-size: 11px; margin-bottom: 4px; -unity-text-align: upper-center;" />
+        <ui:Toggle label="All Photorealistic" name="PhotoToggle_Master" value="true" class="render-toggle" />
+        <ui:Toggle label="SSR Quality" name="PhotoToggle_SSR" value="true" class="render-toggle" />
+        <ui:Toggle label="Volumetric Fog" name="PhotoToggle_VolumetricFog" value="true" class="render-toggle" />
+        <ui:Toggle label="Color Grading" name="PhotoToggle_ColorGrading" value="true" class="render-toggle" />
+        <ui:Toggle label="White Balance" name="PhotoToggle_WhiteBalance" value="true" class="render-toggle" />
+        <ui:Toggle label="Vignette" name="PhotoToggle_Vignette" value="true" class="render-toggle" />
+        <ui:Toggle label="Indirect Lighting" name="PhotoToggle_IndirectLighting" value="true" class="render-toggle" />
+      </ui:ScrollView>
     </ui:VisualElement>
 </ui:UXML>
