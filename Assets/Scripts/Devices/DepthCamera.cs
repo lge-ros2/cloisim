@@ -6,9 +6,13 @@
 
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
+using Unity.Profiling;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using System;
+using System.Threading.Tasks;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -16,16 +20,27 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class DepthCamera : Camera
 	{
+		// ── Profiling ──
+		private static readonly ProfilerMarker s_DepthImageProcessMarker = new("DepthCamera.ImageProcessing");
+		private static readonly ProfilerMarker s_DepthComputeMarker = new("DepthCamera.ComputeDispatch");
+		private static readonly ProfilerMarker s_DepthCopyMarker = new("DepthCamera.CopyOutput");
+		private static readonly ProfilerMarker s_DepthRenderMarker = new("DepthCamera.DirectRender");
+
 		#region "Compute Shader For Depth Buffer Scaling"
-		private uint _depthScale = 1;
 		private static ComputeShader ComputeShaderDepthBufferScaling = null;
 		private ComputeShader _csDepthScaling = null;
 		private int _kernelScalingIndex = -1;
+		private int _kernelScalingFromTexIndex = -1;
 		private int _threadGroupScalingX;
 		private int _threadGroupScalingY;
 		ComputeBuffer _computeBufferSrc = null;
 		ComputeBuffer _computeBufferDst = null;
 		private byte[] _computedBufferOutput;
+		private int _computedBufferOutputUnitLength;
+		private const uint OutputMaxUnitSize = 4;
+		private int _imageDepth;
+
+		private ParallelOptions _parallelOptions = null;
 		#endregion
 
 		#region "Compute Shader For VCSEL prepass"
@@ -69,6 +84,21 @@ namespace SensorDevices
 		[SerializeField, Range(0.01f, 5.0f)]
 		private float _bowAmp = 2f;
 		#endregion
+
+		#region "Unified Ray Tracing"
+
+		// When Unified RT is available (hardware or compute backend), replaces
+		// Camera.Render() + depth blit + DepthBufferScaling with a single dispatch.
+		private bool _useURT = false;
+		private UnityEngine.Rendering.UnifiedRayTracing.IRayTracingShader _urtShader;
+		private GraphicsBuffer _urtScratchBuffer;
+		private CommandBuffer _urtCmd;
+
+		public override bool IsURT => _useURT;
+
+		#endregion
+
+		private uint _depthScale = 1;
 
 		public static void LoadComputeShader()
 		{
@@ -119,6 +149,19 @@ namespace SensorDevices
 		public void SetDepthScale(in uint value)
 		{
 			_depthScale = value;
+			if (_csDepthScaling != null)
+			{
+				_csDepthScaling.SetFloat("_DepthScale", (float)_depthScale);
+			}
+
+			// Also update the URT shader when depth scale changes after init
+			if (_useURT && _urtShader != null && _urtCmd != null)
+			{
+				var cmd = new CommandBuffer { name = "DepthScaleUpdate" };
+				_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_DepthScale"), (float)_depthScale);
+				Graphics.ExecuteCommandBuffer(cmd);
+				cmd.Release();
+			}
 		}
 
 		public void SetTofPattern(in string vcselPatternPath, in float fovMaskH, in float fovMaskV)
@@ -136,7 +179,6 @@ namespace SensorDevices
 
 			_fovMaskHInRad = fovMaskH;
 			_fovMaskVInRad = fovMaskV;
-			// Debug.Log($"path={vcselPatternPath} mask={_textureVcselMask.name} fovMaskH={_fovMaskHInRad} fovMaskV={_fovMaskVInRad}");
 
 			var width = _camParam.image.width;
 			var height = _camParam.image.height;
@@ -163,6 +205,13 @@ namespace SensorDevices
 			_computeBufferSrc = null;
 			_computeBufferDst = null;
 
+			// Clean up URT resources
+			_urtScratchBuffer?.Release();
+			_urtScratchBuffer = null;
+			_urtCmd?.Release();
+			_urtCmd = null;
+			_urtShader = null;
+
 			base.OnDestroy();
 		}
 
@@ -172,23 +221,38 @@ namespace SensorDevices
 			_targetColorFormat = GraphicsFormat.R32_SFloat;
 			_readbackDstFormat = GraphicsFormat.R32_SFloat;
 
+			// When URT is available, skip full RT allocation to reduce Vulkan
+			// framebuffer count. The URT path writes to a ComputeBuffer directly
+			// and never touches the base-class RTHandle.
+			var urtManager = URTSensorManager.Instance;
+			if (urtManager != null && urtManager.IsSupported)
+			{
+				_skipRTAllocation = true;
+			}
+
 			var width = _camParam.image.width;
 			var height = _camParam.image.height;
 			var format = CameraData.GetPixelFormat(_camParam.image.format);
-			var imageDepth = CameraData.GetImageDepth(format);
+			_imageDepth = CameraData.GetImageDepth(format);
 
 			_textureForCapture = new Texture2D(width, height, TextureFormat.R8, false);
 			_textureForCapture.filterMode = FilterMode.Point;
 
-			SetupDepthBufferScaling(width, height, imageDepth, (float)_camParam.clip.far);
+			SetupDepthBufferScaling(width, height, _imageDepth, (float)_camParam.clip.far);
 		}
 
 		protected override void SetupCamera()
 		{
-			// Debug.Log("Depth Setup Camera");
-			var depthShader = Shader.Find("Sensor/DepthRange");
-			_depthMaterial = new Material(depthShader);
-			_depthMaterial.hideFlags = HideFlags.DontUnloadUnusedAsset;
+			// Try Unified RT path first
+			InitURTDepth();
+
+			if (!_useURT)
+			{
+				// Rasterization path: use DepthRange shader via base class _depthMaterial
+				var depthShader = Shader.Find("Sensor/DepthRange");
+				_depthMaterial = new Material(depthShader);
+				_depthMaterial.hideFlags = HideFlags.DontUnloadUnusedAsset;
+			}
 
 			if (_camParam.depth_camera_output.Equals("points"))
 			{
@@ -200,6 +264,7 @@ namespace SensorDevices
 			_camSensor.allowMSAA = true;
 			_camSensor.depthTextureMode = DepthTextureMode.Depth;
 
+			// URP-specific camera settings: only need depth, disable unnecessary features
 			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
 			_universalCamData.requiresDepthOption = CameraOverrideOption.On;
 			_universalCamData.requiresColorTexture = false;
@@ -227,6 +292,9 @@ namespace SensorDevices
 				return;
 			}
 
+			// Optional: direct texture→compute kernel (avoids CPU round-trip when available)
+			_kernelScalingFromTexIndex = _csDepthScaling.FindKernel("CSScaleDepthBufferFromTex");
+
 			_csDepthScaling.SetFloat("_DepthMax", clipFar);
 			_csDepthScaling.SetFloat("_DepthScale", (float)_depthScale);
 			_csDepthScaling.SetInt("_Width", width);
@@ -235,21 +303,32 @@ namespace SensorDevices
 
 			_csDepthScaling.GetKernelThreadGroupSizes(_kernelScalingIndex, out var threadX, out var threadY, out var _);
 
-			// Consider packWidth, (8bit=4, 16bit=2, 32bit=1)
-			var pack = (imageDepth == 4) ? 1 : (imageDepth == 2 ? 2 : 4);
-			var packedWidth = Mathf.CeilToInt(width / (float)pack);
-
-			_threadGroupScalingX = Mathf.CeilToInt(packedWidth / (float)threadX);
+			// Each shader thread writes one uint32 per pixel (_Output[y*Width+x]).
+			// Dispatch and buffer must cover the full pixel grid.
+			_threadGroupScalingX = Mathf.CeilToInt(width / (float)threadX);
 			_threadGroupScalingY = Mathf.CeilToInt(height / (float)threadY);
 
 			var pixelCount = width * height;
-			var packedCount = (imageDepth == 4)
-				? pixelCount
-				: (imageDepth == 2 ? (pixelCount + 1) / 2 : (pixelCount + 3) / 4);
+			_computedBufferOutputUnitLength = pixelCount;
 
 			_computeBufferSrc = new ComputeBuffer(pixelCount, sizeof(float));
-			_computeBufferDst = new ComputeBuffer(packedCount, sizeof(uint));
-			_computedBufferOutput = new byte[packedCount * sizeof(uint)];
+			_computeBufferDst = new ComputeBuffer(pixelCount, sizeof(uint));
+			_computedBufferOutput = new byte[pixelCount * sizeof(uint)];
+
+			// Configure parallelism for ProcessComputeOutput
+			int MaxParallelism = 8;
+			do {
+				if (_computedBufferOutputUnitLength % MaxParallelism == 0)
+				{
+					_parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = MaxParallelism };
+					break;
+				}
+			} while (MaxParallelism-- > 0);
+
+			if (_parallelOptions == null)
+			{
+				Debug.Log($"Check Image size of depth camera!! width={width} height={height}");
+			}
 		}
 
 		private void SetupVCSELPrepass(in int width, in int height)
@@ -276,7 +355,7 @@ namespace SensorDevices
 			_csVcselPrepass.SetInt("_Width", width);
 			_csVcselPrepass.SetInt("_Height", height);
 
-			_csVcselPrepass.SetInt("_DotMode", _dotMode); // 0:Linear, 1:PixelSnap, 2:SoftSpot
+			_csVcselPrepass.SetInt("_DotMode", _dotMode);
 			_csVcselPrepass.SetFloat("_SpotSigmaPx", _spotSigmaPx);
 
 			var fovV = _camSensor.fieldOfView;
@@ -302,48 +381,288 @@ namespace SensorDevices
 
 			_threadGroupVcselX = Mathf.CeilToInt(width / (float)threadX);
 			_threadGroupVcselY = Mathf.CeilToInt(height / (float)threadY);
-
-			// Debug.Log($"VCSEL mask applied '{_textureVcselMask.name}' " +
-			// 		$"({_textureVcselMask.width}×{_textureVcselMask.height}), threshold={_vcselThreshold:F2} " +
-			// 		$"intensity={_irIntensity} falloffK={_irFalloffK} " +
-			// 		$"useProbDrop={_useProbDrop} bowMode={_bowMode} bowAmp={_bowAmp}");
 		}
 
 		protected override void ImageProcessing<T>(ref NativeArray<T> readbackData, in double capturedTime) where T : struct
 		{
+			// This path handles the standard readback flow.
+			// When ExecuteRender uses the direct texture→compute path, this is bypassed.
+			using (s_DepthImageProcessMarker.Auto())
+			{
+				var imageStamped = new messages.ImageStamped();
+				imageStamped.Time = new messages.Time();
+				imageStamped.Time.Set(capturedTime);
+				imageStamped.Image = new messages.Image();
+				imageStamped.Image = _image;
+
+				_computeBufferSrc?.SetData(readbackData);
+
+				// Apply VCSEL prepass if configured
+				if (_csVcselPrepass != null && _kernelVcselIndex > -1)
+				{
+					_csVcselPrepass.SetInt("_BowMode", _bowMode);
+					_csVcselPrepass.SetFloat("_BowAmp", _bowAmp);
+
+					_csVcselPrepass.SetFloat("_IRIntensity", _irIntensity);
+					_csVcselPrepass.SetFloat("_IR_FalloffK", _irFalloffK);
+
+					_csVcselPrepass.SetInt("_DotMode", _dotMode);
+					_csVcselPrepass.SetFloat("_SpotSigmaPx", _spotSigmaPx);
+
+					_csVcselPrepass.SetBuffer(_kernelVcselIndex, "_DepthBuffer", _computeBufferSrc);
+					_csVcselPrepass.Dispatch(_kernelVcselIndex, _threadGroupVcselX, _threadGroupVcselY, 1);
+				}
+
+				if (_csDepthScaling != null && _kernelScalingIndex > -1)
+				{
+					using (s_DepthComputeMarker.Auto())
+					{
+						_csDepthScaling.SetFloat("_DepthScale", (float)_depthScale);
+						_csDepthScaling.SetBuffer(_kernelScalingIndex, "_Input", _computeBufferSrc);
+						_csDepthScaling.SetBuffer(_kernelScalingIndex, "_Output", _computeBufferDst);
+						_csDepthScaling.Dispatch(_kernelScalingIndex, _threadGroupScalingX, _threadGroupScalingY, 1);
+					}
+
+					_computeBufferDst.GetData(_computedBufferOutput);
+
+					// Each uint32 holds one depth value in its lower _imageDepth bytes.
+					// Extract _imageDepth bytes per pixel from the uint32 array.
+					if (_imageDepth == (int)OutputMaxUnitSize)
+					{
+						Buffer.BlockCopy(_computedBufferOutput, 0, imageStamped.Image.Data, 0, imageStamped.Image.Data.Length);
+					}
+					else
+					{
+						unsafe
+						{
+							fixed (byte* srcPtr = _computedBufferOutput)
+							fixed (byte* dstPtr = imageStamped.Image.Data)
+							{
+								for (int i = 0; i < _computedBufferOutputUnitLength; i++)
+								{
+									var si = i * (int)OutputMaxUnitSize;
+									var di = i * _imageDepth;
+									for (int j = 0; j < _imageDepth; j++)
+										dstPtr[di + j] = srcPtr[si + j];
+								}
+							}
+						}
+					}
+				}
+
+				if (OnCameraDataGenerated != null) OnCameraDataGenerated.Invoke(imageStamped);
+				if (OnCameraInfoGenerated != null) OnCameraInfoGenerated.Invoke(_sensorInfo);
+
+				EnqueueMessage(imageStamped);
+			}
+		}
+
+		/// <summary>
+		/// Initialize Unified Ray Tracing for depth camera if available.
+		/// </summary>
+		private void InitURTDepth()
+		{
+			var urtManager = URTSensorManager.Instance;
+			if (urtManager == null || !urtManager.IsSupported) return;
+
+			var shaderAsset = Resources.Load<ComputeShader>("Shader/URTDepthRaycast");
+			if (shaderAsset == null) return;
+
+			_urtShader = urtManager.CreateShader(shaderAsset);
+			if (_urtShader == null) return;
+
+			var width = (uint)_camParam.image.width;
+			var height = (uint)_camParam.image.height;
+
+			_urtCmd = new CommandBuffer { name = "DepthCameraURT" };
+
+			// Pre-allocate scratch buffer
+			var scratchSize = _urtShader.GetTraceScratchBufferRequiredSizeInBytes(width, height, 1);
+			if (scratchSize > 0)
+			{
+				_urtScratchBuffer = new GraphicsBuffer(
+					UnityEngine.Rendering.UnifiedRayTracing.RayTracingHelper.ScratchBufferTarget,
+					(int)((scratchSize + 3) / 4), 4);
+			}
+
+			// Set static params
+			var cmd = _urtCmd;
+			cmd.Clear();
+			_urtShader.SetIntParam(cmd, Shader.PropertyToID("_Width"), (int)width);
+			_urtShader.SetIntParam(cmd, Shader.PropertyToID("_Height"), (int)height);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_NearClip"), (float)_camParam.clip.near);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_FarClip"), (float)_camParam.clip.far);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_DepthScale"), (float)_depthScale);
+			_urtShader.SetIntParam(cmd, Shader.PropertyToID("_UnitSize"), _imageDepth);
+
+			var camHFov = (float)_camParam.horizontal_fov * Mathf.Rad2Deg;
+			var camVFov = SensorHelper.HorizontalToVerticalFOV(camHFov, (float)width / height);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_TanHalfHFov"), Mathf.Tan(camHFov * 0.5f * Mathf.Deg2Rad));
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_TanHalfVFov"), Mathf.Tan(camVFov * 0.5f * Mathf.Deg2Rad));
+			Graphics.ExecuteCommandBuffer(cmd);
+
+			_useURT = true;
+			Debug.Log($"[DepthCamera:{DeviceName}] Unified RT enabled (backend: {urtManager.RTContext.BackendType}) — {width}x{height}");
+		}
+
+		/// <summary>
+		/// Unified RT render path: single dispatch replaces
+		/// Camera.Render() + depth blit + DepthBufferScaling.
+		/// </summary>
+		private void ExecuteRenderURT(float realtimeNow)
+		{
+			var urtManager = URTSensorManager.Instance;
+			if (urtManager?.AccelStruct == null) return;
+
+			var capturedTime = GetNextSyntheticTime();
+			var width = (uint)_camParam.image.width;
+			var height = (uint)_camParam.image.height;
+
+			var cmd = _urtCmd;
+			cmd.Clear();
+
+			var pos = _camSensor.transform.position;
+			_urtShader.SetVectorParam(cmd, Shader.PropertyToID("_CameraOrigin"), new Vector4(pos.x, pos.y, pos.z, 0));
+			_urtShader.SetMatrixParam(cmd, Shader.PropertyToID("_CameraToWorld"), _camSensor.transform.localToWorldMatrix);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_DepthScale"), (float)_depthScale);
+			_urtShader.SetAccelerationStructure(cmd, "_AccelStruct", urtManager.AccelStruct);
+			_urtShader.SetBufferParam(cmd, Shader.PropertyToID("_Output"), _computeBufferDst);
+
+			_urtShader.Dispatch(cmd, _urtScratchBuffer, width, height, 1);
+			Graphics.ExecuteCommandBuffer(cmd);
+
+			AsyncGPUReadback.Request(_computeBufferDst, (computeReq) =>
+			{
+				if (computeReq.hasError || !computeReq.done)
+				{
+					Debug.LogWarning($"{name}: URT depth readback failed");
+					return;
+				}
+
+				using (s_DepthCopyMarker.Auto())
+				{
+					ProcessComputeOutput(computeReq, capturedTime);
+				}
+			});
+		}
+
+		public override void ExecuteRender(float realtimeNow)
+		{
+			using (s_DepthRenderMarker.Auto())
+			{
+				AdvanceRenderSchedule(realtimeNow);
+
+				if (_useURT)
+				{
+					ExecuteRenderURT(realtimeNow);
+					return;
+				}
+
+				_universalCamData.enabled = true;
+
+				if (_universalCamData.isActiveAndEnabled)
+				{
+					_camSensor.Render();
+				}
+
+				// After Camera.Render(), the depth was blitted to targetTexture
+				// by OnEndCameraRendering via the DepthRange shader (_depthMaterial).
+				var targetRT = _camSensor.targetTexture;
+				if (targetRT == null)
+				{
+					_universalCamData.enabled = false;
+					Debug.LogWarning($"{name}: targetTexture is null after render");
+					return;
+				}
+
+				var capturedTime = GetNextSyntheticTime();
+
+				// Direct texture→compute path if the kernel is available (avoids CPU round-trip)
+				if (_csDepthScaling != null && _kernelScalingFromTexIndex >= 0)
+				{
+					using (s_DepthComputeMarker.Auto())
+					{
+						_csDepthScaling.SetFloat("_DepthScale", (float)_depthScale);
+						_csDepthScaling.SetTexture(_kernelScalingFromTexIndex, "_InputTex", targetRT);
+						_csDepthScaling.SetBuffer(_kernelScalingFromTexIndex, "_Output", _computeBufferDst);
+						_csDepthScaling.Dispatch(_kernelScalingFromTexIndex, _threadGroupScalingX, _threadGroupScalingY, 1);
+					}
+
+					AsyncGPUReadback.Request(_computeBufferDst, (computeReq) =>
+					{
+						if (computeReq.hasError || !computeReq.done)
+						{
+							Debug.LogWarning($"{name}: Depth compute readback failed");
+							return;
+						}
+
+						using (s_DepthCopyMarker.Auto())
+						{
+							ProcessComputeOutput(computeReq, capturedTime);
+						}
+					});
+				}
+				else
+				{
+					// Standard path: async readback from targetTexture → ImageProcessing
+					AsyncGPUReadback.Request(targetRT, 0, _readbackDstFormat, (req) =>
+					{
+						if (req.hasError)
+						{
+							Debug.LogError($"{name}: Failed to read GPU texture (format={_readbackDstFormat})");
+							return;
+						}
+						if (req.done)
+						{
+							var readbackData = req.GetData<float>();
+							ImageProcessing<float>(ref readbackData, capturedTime);
+						}
+					});
+				}
+
+				_universalCamData.enabled = false;
+			}
+		}
+
+		/// <summary>
+		/// Shared method to process compute shader output into an ImageStamped message.
+		/// Used by both the direct texture→compute path and (when available) the URT path.
+		/// </summary>
+		private void ProcessComputeOutput(AsyncGPUReadbackRequest computeReq, double capturedTime)
+		{
 			var imageStamped = new messages.ImageStamped();
 			imageStamped.Time = new messages.Time();
 			imageStamped.Time.Set(capturedTime);
-
 			imageStamped.Image = new messages.Image();
 			imageStamped.Image = _image;
 
-			_computeBufferSrc?.SetData(readbackData);
+			var computeData = computeReq.GetData<byte>();
 
-			if (_csVcselPrepass != null && _kernelVcselIndex > -1)
+			if (_parallelOptions != null)
 			{
-				_csVcselPrepass.SetInt("_BowMode", _bowMode);
-				_csVcselPrepass.SetFloat("_BowAmp", _bowAmp);
+				unsafe
+				{
+					var srcPtr = (byte*)computeData.GetUnsafeReadOnlyPtr();
+					var computeGroupSize = _computedBufferOutputUnitLength / _parallelOptions.MaxDegreeOfParallelism;
+					Parallel.For(0, _parallelOptions.MaxDegreeOfParallelism, _parallelOptions, groupIndex =>
+					{
+						for (var i = 0; i < computeGroupSize; i++)
+						{
+							var bufferIndex = computeGroupSize * groupIndex + i;
+							var dataIndex = bufferIndex * _imageDepth;
+							var outputGroupIndex = bufferIndex * (int)OutputMaxUnitSize;
 
-				_csVcselPrepass.SetFloat("_IRIntensity", _irIntensity);
-				_csVcselPrepass.SetFloat("_IR_FalloffK", _irFalloffK);
-
-				_csVcselPrepass.SetInt("_DotMode", _dotMode);
-				_csVcselPrepass.SetFloat("_SpotSigmaPx", _spotSigmaPx);
-
-				_csVcselPrepass.SetBuffer(_kernelVcselIndex, "_DepthBuffer", _computeBufferSrc);
-				_csVcselPrepass.Dispatch(_kernelVcselIndex, _threadGroupVcselX, _threadGroupVcselY, 1);
+							for (var j = 0; j < _imageDepth; j++)
+							{
+								imageStamped.Image.Data[dataIndex + j] = srcPtr[outputGroupIndex + j];
+							}
+						}
+					});
+				}
 			}
 
-			if (_csDepthScaling != null && _kernelScalingIndex > -1)
-			{
-				_csDepthScaling.SetBuffer(_kernelScalingIndex, "_Input", _computeBufferSrc);
-				_csDepthScaling.SetBuffer(_kernelScalingIndex, "_Output", _computeBufferDst);
-				_csDepthScaling.Dispatch(_kernelScalingIndex, _threadGroupScalingX, _threadGroupScalingY, 1);
-				_computeBufferDst.GetData(_computedBufferOutput);
-
-				Buffer.BlockCopy(_computedBufferOutput, 0, imageStamped.Image.Data, 0, imageStamped.Image.Data.Length);
-			}
+			if (OnCameraDataGenerated != null) OnCameraDataGenerated.Invoke(imageStamped);
+			if (OnCameraInfoGenerated != null) OnCameraInfoGenerated.Invoke(_sensorInfo);
 
 			EnqueueMessage(imageStamped);
 		}
