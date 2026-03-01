@@ -203,6 +203,7 @@ namespace SDF
 					}
 				}
 
+				// ?check Device pose is now initialized in Device.Start(), no need to call UpdatePose() here.
 				var devices = rootObject.GetComponentsInChildren<Device>();
 				foreach (var device in devices)
 				{
