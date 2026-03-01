@@ -74,7 +74,7 @@ public static partial class MeshLoader
 		return null;
 	}
 
-	private static List<Material> ToUnity(this List<Assimp.Material> sceneMaterials, in string meshPath)
+	private static List<Material> ToUnity(this List<Assimp.Material> sceneMaterials, in string meshPath, Assimp.Scene scene = null)
 	{
 		var parentPath = Directory.GetParent(meshPath).FullName;
 		var textureDirectories = GetRootTexturePaths(parentPath);

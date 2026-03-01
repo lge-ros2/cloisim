@@ -102,6 +102,18 @@ namespace SensorDevices
 			}
 		}
 
+		/// <summary>Stub for ToF pattern (VCSEL) — not yet ported to HDRP pipeline.</summary>
+		public void SetTofPattern(in string vcselPatternPath, in float fovMaskH, in float fovMaskV)
+		{
+			Debug.LogWarning("[DepthCamera] SetTofPattern not yet implemented in HDRP pipeline");
+		}
+
+		/// <summary>Stub for ToF vertical FOV — not yet ported to HDRP pipeline.</summary>
+		public void SetTofVerticalFov(in float targetVerticalFov)
+		{
+			Debug.LogWarning("[DepthCamera] SetTofVerticalFov not yet implemented in HDRP pipeline");
+		}
+
 		new void OnDestroy()
 		{
 			// Debug.Log("OnDestroy(Depth Camera)");
