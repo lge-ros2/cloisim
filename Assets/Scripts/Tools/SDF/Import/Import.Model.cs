@@ -42,7 +42,7 @@ namespace SDF
 
 				articulationBody.solverIterations = 0;
 				articulationBody.solverVelocityIterations = 0;
-				articulationBody.velocity = UE.Vector3.zero;
+				articulationBody.linearVelocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
 				articulationBody.sleepThreshold = 0.01f;
 				articulationBody.Sleep();
