@@ -97,6 +97,18 @@ namespace SensorDevices
 		// Unity built-in layer 2 = "Ignore Raycast" — always exists, not in the lidar culling mask
 		private const int SelfOcclusionLayer = 2;
 
+		// ── Unified Ray Tracing path ──
+		// When Unified RT is available (hardware or compute backend), replaces
+		// the entire sub-camera rasterization pipeline with a single dispatch.
+		// Eliminates: N Camera.Render() calls, HDRP render graph setup per camera,
+		// depth blit, LaserProcessing thread stitching.
+		private bool _useDXR = false;
+		private UnityEngine.Rendering.UnifiedRayTracing.IRayTracingShader _urtShader;
+		private GraphicsBuffer _urtOutputBuffer;
+		private GraphicsBuffer _urtScratchBuffer;
+		private uint _dxrInclusionMask = 0xFF;
+		private CommandBuffer _urtCmd;
+
 		private int _numberOfLaserCamData = 0;
 		private LaserData.CameraControlInfo[] _camControlInfo;
 
@@ -221,12 +233,18 @@ namespace SensorDevices
 
 				_startLaserWork = true;
 
-				// Pre-allocate compute buffer ring
-				var totalBufferLength = _numberOfLaserCamData * _outputBufferLength;
-				_computeBuffers = new ComputeBuffer[BufferCount];
-				for (var b = 0; b < BufferCount; b++)
+				// Try to initialize DXR ray tracing path
+				InitDXR();
+
+				if (!_useDXR)
 				{
-					_computeBuffers[b] = new ComputeBuffer(totalBufferLength, sizeof(float));
+					// Pre-allocate compute buffer ring for rasterization path
+					var totalBufferLength = _numberOfLaserCamData * _outputBufferLength;
+					_computeBuffers = new ComputeBuffer[BufferCount];
+					for (var b = 0; b < BufferCount; b++)
+					{
+						_computeBuffers[b] = new ComputeBuffer(totalBufferLength, sizeof(float));
+					}
 				}
 
 				// LiDAR uses its own coroutine — not the SensorRenderManager —
@@ -234,7 +252,7 @@ namespace SensorDevices
 				// Camera sensors use SensorRenderManager for batched scheduling.
 				Invoke(nameof(StartLaserCaptureDelayed), 0.1f);
 
-				if (_laserProcessThread != null)
+				if (!_useDXR && _laserProcessThread != null)
 				{
 					_laserProcessThread.Start();
 				}
@@ -302,11 +320,79 @@ namespace SensorDevices
 			}
 		}
 
+		/// <summary>
+		/// Initialize Unified Ray Tracing if available (hardware or compute backend).
+		/// Falls back to rasterization if not available.
+		/// </summary>
+		private void InitDXR()
+		{
+			var dxrManager = DXRSensorManager.Instance;
+			if (dxrManager == null || !dxrManager.IsSupported)
+			{
+				Debug.Log($"[Lidar:{DeviceName}] Unified RT not available — using rasterized sub-cameras");
+				return;
+			}
+
+			var shaderAsset = Resources.Load<ComputeShader>("Shader/URTLidarRaycast");
+			if (shaderAsset == null)
+			{
+				Debug.Log($"[Lidar:{DeviceName}] URTLidarRaycast shader not found — using rasterized sub-cameras");
+				return;
+			}
+
+			_urtShader = dxrManager.CreateShader(shaderAsset);
+			if (_urtShader == null)
+			{
+				Debug.Log($"[Lidar:{DeviceName}] Failed to create URT shader — using rasterized sub-cameras");
+				return;
+			}
+
+			var hSamples = (int)_horizontal.samples;
+			var vSamples = (int)_vertical.samples;
+			var totalSamples = hSamples * vSamples;
+
+			_urtOutputBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, totalSamples, sizeof(float));
+			_urtCmd = new CommandBuffer { name = "LidarURT" };
+
+			// Pre-allocate scratch buffer for trace dispatch
+			var scratchSize = _urtShader.GetTraceScratchBufferRequiredSizeInBytes((uint)hSamples, (uint)vSamples, 1);
+			if (scratchSize > 0)
+			{
+				_urtScratchBuffer = new GraphicsBuffer(
+					UnityEngine.Rendering.UnifiedRayTracing.RayTracingHelper.ScratchBufferTarget,
+					(int)((scratchSize + 3) / 4), 4);
+			}
+
+			// Get self-exclusion mask from DXRSensorManager
+			_dxrInclusionMask = dxrManager.GetLidarInclusionMask(transform);
+
+			// Configure static params via command buffer then execute
+			var cmd = _urtCmd;
+			cmd.Clear();
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_HAngleMax"), (float)_horizontal.angle.max);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_HAngleStep"), _resolution.angleH);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_VAngleMax"), (float)_vertical.angle.max);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_VAngleStep"), _resolution.angleV);
+			_urtShader.SetIntParam(cmd, Shader.PropertyToID("_HSamples"), hSamples);
+			_urtShader.SetIntParam(cmd, Shader.PropertyToID("_VSamples"), vSamples);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_RangeMin"), _scanRange.min);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_RangeMax"), _scanRange.max);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_RangeLinearResolution"), _resolution.linear);
+			_urtShader.SetIntParam(cmd, Shader.PropertyToID("_InstanceInclusionMask"), (int)_dxrInclusionMask);
+			Graphics.ExecuteCommandBuffer(cmd);
+
+			_useDXR = true;
+			Debug.Log($"[Lidar:{DeviceName}] Unified RT enabled (backend: {dxrManager.RTContext.BackendType}) — {hSamples}x{vSamples} rays, inclusionMask=0x{_dxrInclusionMask:X2}");
+		}
+
 		private void StartLaserCaptureDelayed()
 		{
 			if (_startLaserWork)
 			{
-				StartCoroutine(CaptureLaserCamera());
+				if (_useDXR)
+					StartCoroutine(CaptureLaserDXR());
+				else
+					StartCoroutine(CaptureLaserCamera());
 			}
 		}
 
@@ -315,6 +401,121 @@ namespace SensorDevices
 			var lidarSequence = _globalSequence++;
 			for (var i = 0; i < lidarSequence; i++)
 				yield return null;
+		}
+
+		/// <summary>
+		/// Unified RT capture coroutine. Replaces the entire sub-camera pipeline
+		/// with a single shader dispatch. No sub-cameras, no HDRP render graph
+		/// overhead, no LaserProcessing thread stitching.
+		/// Fires all rays in parallel → async readback → directly fills LaserScan.Ranges.
+		/// </summary>
+		private IEnumerator CaptureLaserDXR()
+		{
+			yield return WaitStartSequence();
+
+			var lastUpdateTime = 0f;
+			var hSamples = (uint)_horizontal.samples;
+			var vSamples = (uint)_vertical.samples;
+			var dxrManager = DXRSensorManager.Instance;
+
+			// Cache shader property IDs
+			var idSensorOrigin = Shader.PropertyToID("_SensorOrigin");
+			var idSensorToWorld = Shader.PropertyToID("_SensorToWorld");
+			var idAccelStruct = "_AccelStruct";
+			var idOutput = Shader.PropertyToID("_Output");
+
+			while (_startLaserWork)
+			{
+				lastUpdateTime += Time.unscaledDeltaTime;
+				if (lastUpdateTime < UpdatePeriod)
+				{
+					yield return null;
+					continue;
+				}
+
+				lastUpdateTime -= UpdatePeriod;
+
+				if (dxrManager == null || dxrManager.AccelStruct == null)
+				{
+					yield return null;
+					continue;
+				}
+
+				var capturedTime = GetNextSyntheticTime();
+				var sensorPose = new Pose(transform.position, transform.rotation);
+
+				// Build command buffer for this frame
+				var cmd = _urtCmd;
+				cmd.Clear();
+
+				var pos = transform.position;
+				_urtShader.SetVectorParam(cmd, idSensorOrigin, new Vector4(pos.x, pos.y, pos.z, 0));
+				_urtShader.SetMatrixParam(cmd, idSensorToWorld, transform.localToWorldMatrix);
+				_urtShader.SetAccelerationStructure(cmd, idAccelStruct, dxrManager.AccelStruct);
+				_urtShader.SetBufferParam(cmd, idOutput, _urtOutputBuffer);
+
+				_urtShader.Dispatch(cmd, _urtScratchBuffer, hSamples, vSamples, 1);
+				Graphics.ExecuteCommandBuffer(cmd);
+
+				// Async GPU readback
+				var frameCapturedTime = capturedTime;
+				var framePose = sensorPose;
+				AsyncGPUReadback.Request(_urtOutputBuffer, (req) =>
+				{
+					if (req.hasError || !req.done)
+					{
+						Debug.LogWarning("[Lidar URT] GPU readback error");
+						return;
+					}
+
+					ProcessDXROutput(req, frameCapturedTime, framePose);
+				});
+
+				yield return null;
+			}
+		}
+
+		/// <summary>
+		/// Process DXR ray tracing output: copy distances directly to LaserScan.Ranges,
+		/// apply noise and filters, then enqueue the message.
+		/// No stitching needed — all rays are already in the correct order.
+		/// </summary>
+		private void ProcessDXROutput(AsyncGPUReadbackRequest req, double capturedTime, Pose sensorPose)
+		{
+			var laserScanStamped = new messages.LaserScanStamped();
+			laserScanStamped.Time = new messages.Time();
+			laserScanStamped.Time.Set(capturedTime);
+			laserScanStamped.Scan = _laserScan;
+
+			var laserScan = laserScanStamped.Scan;
+			laserScan.WorldPose.Position.Set(sensorPose.position);
+			laserScan.WorldPose.Orientation.Set(sensorPose.rotation);
+
+			var src = req.GetData<float>();
+			var totalSamples = src.Length;
+
+			// Copy DXR distances directly to Ranges (already in CW order: max→min)
+			for (var i = 0; i < totalSamples && i < laserScan.Ranges.Length; i++)
+			{
+				laserScan.Ranges[i] = src[i];
+			}
+
+			if (_noise != null)
+			{
+				_noise.Apply<double>(laserScan.Ranges);
+			}
+
+			if (_laserFilter != null)
+			{
+				_laserFilter.DoFilter(ref laserScan);
+			}
+
+			if (OnLidarDataGenerated != null)
+			{
+				OnLidarDataGenerated.Invoke(laserScanStamped);
+			}
+
+			_messageQueue.Enqueue(laserScanStamped);
 		}
 
 		/// <summary>
@@ -343,7 +544,7 @@ namespace SensorDevices
 
 				lastUpdateTime -= UpdatePeriod;
 
-				var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
+				var capturedTime = GetNextSyntheticTime();
 				var sensorPose = new Pose(transform.position, transform.rotation);
 				_bufferIndex = (_bufferIndex + 1) % BufferCount;
 				var currentBuffer = _computeBuffers[_bufferIndex];
@@ -493,6 +694,15 @@ namespace SensorDevices
 				_capturedDepthRT.Release();
 				_capturedDepthRT = null;
 			}
+
+			// Clean up URT resources
+			_urtOutputBuffer?.Release();
+			_urtOutputBuffer = null;
+			_urtScratchBuffer?.Release();
+			_urtScratchBuffer = null;
+			_urtCmd?.Release();
+			_urtCmd = null;
+			_urtShader = null;
 
 			_rtHandle?.Release();
 			Destroy(_laserCompute);
