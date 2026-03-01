@@ -13,9 +13,37 @@ namespace SensorDevices
 {
 	public class JointState : Device
 	{
-		private Dictionary<string, Tuple<Articulation, messages.JointState>> articulationTable = new Dictionary<string, Tuple<Articulation, messages.JointState>>();
+		/// <summary>
+		/// Per-joint interpolation state.
+		/// Physics FixedUpdate runs at ~100 Hz; JointState publishes at up to 1000 Hz.
+		/// We store two consecutive physics frames and interpolate between them so that
+		/// each TX message contains smooth intermediate values rather than stale repeats.
+		/// </summary>
+		private struct PhysicsSample
+		{
+			public double position;
+			public double velocity;
+			public double effort;
+		}
+
+		private class JointEntry
+		{
+			public Articulation articulation;
+			public messages.JointState message;
+
+			// Double-buffered physics samples for interpolation
+			public PhysicsSample prev;
+			public PhysicsSample curr;
+		}
+
+		private Dictionary<string, JointEntry> articulationTable = new();
 
 		private messages.JointStateV jointStateV = null;
+
+		private readonly object _jointStateLock = new();
+
+		// Physics timing for interpolation
+		private double _lastFixedSimtime = 0;
 
 		protected override void OnAwake()
 		{
@@ -32,8 +60,40 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			jointStateV.Header.Stamp.SetCurrentTime();
-			PushDeviceMessage<messages.JointStateV>(jointStateV);
+			lock (_jointStateLock)
+			{
+				if (_lastFixedSimtime <= 0)
+					return; // No physics data yet
+
+				// Compute interpolation fraction: how far past the last FixedUpdate are we?
+				// SimTime advances with render frames while FixedSimTime advances with physics.
+				var fixedSimTime = (Clock != null) ? Clock.FixedSimTime : (double)Time.fixedTimeAsDouble;
+				var fixedDeltaTime = Clock.FixedDeltaTime;
+				var t = 0.0;
+				if (fixedDeltaTime > 0)
+				{
+					t = (fixedSimTime - _lastFixedSimtime) / fixedDeltaTime;
+					t = Math.Max(0.0, Math.Min(1.0, t));
+				}
+
+				// Interpolate each joint between prev and curr physics samples
+				foreach (var entry in articulationTable.Values)
+				{
+					entry.message.Position = entry.prev.position + (entry.curr.position - entry.prev.position) * t;
+					entry.message.Velocity = entry.prev.velocity + (entry.curr.velocity - entry.prev.velocity) * t;
+					entry.message.Effort = entry.prev.effort + (entry.curr.effort - entry.prev.effort) * t;
+				}
+
+				// Fixed-dt synthetic timestamp: advances by exactly UpdatePeriod (1ms at 1000 Hz)
+				// per publish for jitter-free timestamps.
+				jointStateV.Header.Stamp.Set(GetNextSyntheticTime());
+
+				PushDeviceMessage<messages.JointStateV>(jointStateV);
+			}
+
+#if UNITY_EDITOR
+			UpdateProfiler("JOINTSTATE", jointStateV.JointStates.Count * sizeof(double) * 3);
+#endif
 		}
 
 		public bool AddTargetJoint(in string targetJointName, out SDF.Helper.Link link, out bool isStatic)
@@ -74,7 +134,13 @@ namespace SensorDevices
 					var jointState = new messages.JointState();
 					jointState.Name = targetJointName;
 
-					articulationTable.Add(targetJointName, new Tuple<Articulation, messages.JointState>(articulation, jointState));
+					var entry = new JointEntry
+					{
+						articulation = articulation,
+						message = jointState
+					};
+
+					articulationTable.Add(targetJointName, entry);
 
 					jointStateV.JointStates.Add(jointState);
 					return true;
@@ -86,32 +152,45 @@ namespace SensorDevices
 
 		public Articulation GetArticulation(in string targetJointName)
 		{
-			return articulationTable.ContainsKey(targetJointName) ? articulationTable[targetJointName].Item1 : null;
+			return articulationTable.ContainsKey(targetJointName) ? articulationTable[targetJointName].articulation : null;
 		}
 
 		void FixedUpdate()
 		{
-			foreach (var item in articulationTable.Values)
+			// Record physics timing (once per FixedUpdate, not per joint)
+			var fixedSimTime = (Clock != null) ? Clock.FixedSimTime : (double)Time.fixedTimeAsDouble;
+			_lastFixedSimtime = fixedSimTime;
+
+			foreach (var entry in articulationTable.Values)
 			{
-				var articulation = item.Item1;
-				var jointState = item.Item2;
+				var articulation = entry.articulation;
+
+				// Shift current → previous for interpolation
+				entry.prev = entry.curr;
 
 				var jointVelocity = articulation.GetJointVelocity();
 				var jointPosition = articulation.GetJointPosition();
 				var jointForce = articulation.GetForce();
 
-				jointState.Effort = (articulation.IsRevoluteType()) ?
-										Unity2SDF.Direction.Curve(jointForce) :
-											(articulation.IsPrismaticType() ?
-												 Unity2SDF.Direction.Joint.Prismatic(jointForce, articulation.GetAnchorRotation()) : jointForce);
+				var effort = (articulation.IsRevoluteType()) ?
+								Unity2SDF.Direction.Curve(jointForce) :
+									(articulation.IsPrismaticType() ?
+										 Unity2SDF.Direction.Joint.Prismatic(jointForce, articulation.GetAnchorRotation()) : jointForce);
 
-				jointState.Position = (articulation.IsRevoluteType()) ?
-										Unity2SDF.Direction.Curve(jointPosition) :
-											(articulation.IsPrismaticType() ?
-												 Unity2SDF.Direction.Joint.Prismatic(jointPosition, articulation.GetAnchorRotation()) : jointPosition);
+				var position = (articulation.IsRevoluteType()) ?
+								Unity2SDF.Direction.Curve(jointPosition) :
+									(articulation.IsPrismaticType() ?
+										 Unity2SDF.Direction.Joint.Prismatic(jointPosition, articulation.GetAnchorRotation()) : jointPosition);
 
-				jointState.Velocity = (articulation.IsRevoluteType()) ?
-										Unity2SDF.Direction.Curve(jointVelocity) : jointVelocity;
+				var velocity = (articulation.IsRevoluteType()) ?
+								Unity2SDF.Direction.Curve(jointVelocity) : jointVelocity;
+
+				entry.curr = new PhysicsSample
+				{
+					position = position,
+					velocity = velocity,
+					effort = effort
+				};
 			}
 		}
 	}
