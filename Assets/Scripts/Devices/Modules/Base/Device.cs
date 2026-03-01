@@ -9,6 +9,8 @@ using System.Threading;
 using System.Collections;
 using System.Collections.Concurrent;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
+using Debug = UnityEngine.Debug;
 
 public abstract class Device : MonoBehaviour
 {
@@ -23,6 +25,16 @@ public abstract class Device : MonoBehaviour
 
 	// Pool DeviceMessage objects to avoid per-frame GC allocations
 	private static readonly ConcurrentBag<DeviceMessage> _deviceMessagePool = new();
+
+	// Event-driven TX: signal from readback callbacks to wake the TX thread
+	// immediately instead of waiting for the next timer-based poll.
+	private readonly AutoResetEvent _txDataReady = new(false);
+
+	// Per-sensor publish Hz diagnostics
+	private readonly Stopwatch _diagPublishSw = new();
+	private int _diagPublishCount;
+	private float _diagPublishHz;
+	private const float DEVICE_DIAG_INTERVAL_SEC = 10f;
 
 	[SerializeField]
 	private string _deviceName = string.Empty;
@@ -43,9 +55,17 @@ public abstract class Device : MonoBehaviour
 
 	private bool _running = false;
 
+	// Synthetic monotonic timestamp for fixed-dt publishing.
+	// Advances by exactly UpdatePeriod per publish for jitter-free timestamps.
+	private double _syntheticTime = -1;
+	private readonly object _syntheticTimeLock = new();
+
 	public float UpdatePeriod => 1f / UpdateRate;
 
 	public float UpdateRate => _updateRate;
+
+	/// <summary>Actual measured publish Hz (updated every 10s).</summary>
+	public float PublishHz => _diagPublishHz;
 
 	public string DeviceName
 	{
@@ -130,6 +150,9 @@ public abstract class Device : MonoBehaviour
 	{
 		_running = false;
 
+		// Wake TX thread so it can exit cleanly
+		_txDataReady.Set();
+
 		_messageQueue.Clear();
 
 		switch (Mode)
@@ -185,12 +208,11 @@ public abstract class Device : MonoBehaviour
 	// Used for TX
 	protected virtual void GenerateMessage()
 	{
-		var totalCountToPush = _messageQueue.Count;
-
-		if (totalCountToPush <= 0)
+		if (_messageQueue.IsEmpty)
 			return;
 
-		var countToPush = totalCountToPush;
+		// Flush all queued messages immediately -- no sleeping between them.
+		// Data has already been rate-limited at the render/capture stage.
 		while (_messageQueue.TryDequeue(out var msg))
 		{
 			try
@@ -201,12 +223,17 @@ public abstract class Device : MonoBehaviour
 			{
 				Debug.LogWarning($"failed to PushDeviceMessage(): {ex.Message}");
 			}
-
-			if (--countToPush > 0)
-				Thread.Sleep(WaitPeriodInMilliseconds() / totalCountToPush);
-			else
-				break;
 		}
+	}
+
+	/// <summary>
+	/// Wake the TX thread immediately. Call from readback callbacks
+	/// after enqueueing to _messageQueue so data is published with
+	/// minimal latency instead of waiting for the next timer poll.
+	/// </summary>
+	protected void SignalDataReady()
+	{
+		_txDataReady.Set();
 	}
 
 	private IEnumerator DeviceCoroutineTx()
@@ -234,19 +261,72 @@ public abstract class Device : MonoBehaviour
 
 	private void DeviceThreadTx()
 	{
+		// Event-driven TX loop.
+		// Instead of sleeping for UpdatePeriod and hoping data is ready,
+		// we block on _txDataReady which is signaled by readback callbacks.
+		// This publishes data within <1ms of GPU readback completion.
+		//
+		// For high-rate sensors (>100 Hz, e.g. JointState at 1000 Hz),
+		// WaitOne(1) has OS timer granularity (~1.3ms on Linux) which caps throughput.
+		// We use a Stopwatch-based spin-yield loop for sub-10ms periods.
+		//
+		// NOTE: UpdateRate may be set AFTER the thread starts (e.g., from SDF config),
+		// so timing parameters are re-evaluated dynamically inside the loop.
+
+		_diagPublishSw.Start();
+
+		// Timing parameters — recomputed when UpdateRate changes
+		float lastUpdateRate = -1;
+		long periodTicks = 0;
+		bool useHighRes = false;
+		long nextDeadline = 0;
+
 		while (_running)
 		{
 			if (UpdateRate <= 0)
 			{
-				// UpdateRate not yet configured; wait and retry
 				Thread.Sleep(100);
 				continue;
 			}
 
+			// Re-evaluate timing when UpdateRate changes
+			if (UpdateRate != lastUpdateRate)
+			{
+				lastUpdateRate = UpdateRate;
+				periodTicks = (long)(UpdatePeriod * Stopwatch.Frequency);
+				useHighRes = periodTicks > 0 && UpdatePeriod < 0.010f;
+				nextDeadline = Stopwatch.GetTimestamp() + periodTicks;
+			}
+
+			if (!useHighRes)
+			{
+				// Standard event-driven path for ≥10ms periods (cameras, lidar, etc.)
+				var timeoutMs = Mathf.Max(1, Mathf.RoundToInt(UpdatePeriod * 1000f));
+				_txDataReady.WaitOne(timeoutMs);
+			}
+
 			GenerateMessage();
 
-			var sleepMs = Mathf.Max(1, Mathf.RoundToInt(UpdatePeriod * 1000f));
-			Thread.Sleep(sleepMs);
+			if (useHighRes)
+			{
+				// Absolute-deadline spin wait: self-corrects drift.
+				while (Stopwatch.GetTimestamp() < nextDeadline)
+					Thread.SpinWait(1);
+				nextDeadline += periodTicks;
+				var now = Stopwatch.GetTimestamp();
+				if (nextDeadline < now - 2 * periodTicks)
+					nextDeadline = now + periodTicks;
+			}
+
+			// Periodic per-sensor Hz diagnostics
+			var elapsed = (float)_diagPublishSw.Elapsed.TotalSeconds;
+			if (elapsed >= DEVICE_DIAG_INTERVAL_SEC)
+			{
+				_diagPublishHz = _diagPublishCount / elapsed;
+				Debug.Log($"[Device:{_deviceName}] publishHz={_diagPublishHz:F1} (target={UpdateRate:F0}) msgs={_diagPublishCount}/{elapsed:F1}s");
+				_diagPublishCount = 0;
+				_diagPublishSw.Restart();
+			}
 		}
 	}
 
@@ -276,8 +356,29 @@ public abstract class Device : MonoBehaviour
 			{
 				deviceMessage = new DeviceMessage();
 			}
-			deviceMessage.SetMessage<T>(instance);
-			return _deviceMessageQueue.Push(deviceMessage);
+
+			// Raw binary fast-path for image types — bypasses protobuf serialization
+			if (instance is cloisim.msgs.ImageStamped imgStamped)
+			{
+				deviceMessage.SetRawImage(imgStamped);
+			}
+			else if (instance is cloisim.msgs.Segmentation seg)
+			{
+				deviceMessage.SetRawSegmentation(seg);
+			}
+			else if (instance is cloisim.msgs.ImagesStamped imgsStamped)
+			{
+				deviceMessage.SetRawImagesStamped(imgsStamped);
+			}
+			else
+			{
+				// Protobuf fallback for non-image sensors (lidar, IMU, etc.)
+				deviceMessage.SetMessage<T>(instance);
+			}
+
+			var pushed = _deviceMessageQueue.Push(deviceMessage);
+			if (pushed) Interlocked.Increment(ref _diagPublishCount);
+			return pushed;
 		}
 		catch (Exception ex)
 		{
@@ -362,5 +463,29 @@ public abstract class Device : MonoBehaviour
 	public void UpdatePose()
 	{
 		_devicePose.Store(this.transform);
+	}
+
+	/// <summary>
+	/// Get the next synthetic publish timestamp with fixed delta.
+	/// First call: snaps to current SimTime.
+	/// Subsequent calls: advances by exactly 1.0/UpdateRate (double precision)
+	/// for jitter-free timestamps. Thread-safe.
+	/// </summary>
+	protected double GetNextSyntheticTime()
+	{
+		lock (_syntheticTimeLock)
+		{
+			if (_syntheticTime < 0)
+			{
+				var clock = DeviceHelper.GetGlobalClock();
+				_syntheticTime = (clock != null) ? clock.SimTime : Time.timeAsDouble;
+			}
+			else
+			{
+				// Use double division for exact period (avoids float truncation)
+				_syntheticTime += 1.0 / (double)UpdateRate;
+			}
+			return _syntheticTime;
+		}
 	}
 }
