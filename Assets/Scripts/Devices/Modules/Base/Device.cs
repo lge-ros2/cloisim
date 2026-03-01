@@ -40,6 +40,11 @@ public abstract class Device : MonoBehaviour
 
 	private bool _running = false;
 
+	// Synthetic monotonic timestamp for fixed-dt publishing.
+	// Advances by exactly UpdatePeriod per publish for jitter-free timestamps.
+	private double _syntheticTime = -1;
+	private readonly object _syntheticTimeLock = new();
+
 	public Clock Clock { get; protected set; }
 
 	public float UpdatePeriod => 1f / UpdateRate;
@@ -221,12 +226,11 @@ public abstract class Device : MonoBehaviour
 	// Used for TX
 	protected virtual void GenerateMessage()
 	{
-		var totalCountToPush = _messageQueue.Count;
-
-		if (totalCountToPush <= 0)
+		if (_messageQueue.IsEmpty)
 			return;
 
-		var countToPush = totalCountToPush;
+		// Flush all queued messages immediately -- no sleeping between them.
+		// Data has already been rate-limited at the render/capture stage.
 		while (_messageQueue.TryDequeue(out var msg))
 		{
 			try
@@ -237,11 +241,6 @@ public abstract class Device : MonoBehaviour
 			{
 				Debug.LogWarning($"failed to PushDeviceMessage(): {ex.Message}");
 			}
-
-			if (--countToPush > 0)
-				Thread.Sleep(WaitPeriodInMilliseconds() / totalCountToPush);
-			else
-				break;
 		}
 	}
 
@@ -373,5 +372,29 @@ public abstract class Device : MonoBehaviour
 	public void UpdatePose()
 	{
 		_devicePose.Store(this.transform);
+	}
+
+	/// <summary>
+	/// Get the next synthetic publish timestamp with fixed delta.
+	/// First call: snaps to current SimTime.
+	/// Subsequent calls: advances by exactly 1.0/UpdateRate (double precision)
+	/// for jitter-free timestamps. Thread-safe.
+	/// </summary>
+	protected double GetNextSyntheticTime()
+	{
+		lock (_syntheticTimeLock)
+		{
+			if (_syntheticTime < 0)
+			{
+				var clock = DeviceHelper.GetGlobalClock();
+				_syntheticTime = (clock != null) ? clock.SimTime : Time.timeAsDouble;
+			}
+			else
+			{
+				// Use double division for exact period (avoids float truncation)
+				_syntheticTime += 1.0 / (double)UpdateRate;
+			}
+			return _syntheticTime;
+		}
 	}
 }
