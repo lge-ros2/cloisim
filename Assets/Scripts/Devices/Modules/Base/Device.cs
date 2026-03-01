@@ -48,6 +48,9 @@ public abstract class Device : MonoBehaviour
 	private int _diagPublishCount;
 	private float _diagPublishHz;
 	private const float DEVICE_DIAG_INTERVAL_SEC = 30f;
+
+	/// <summary>Actual measured publish Hz (updated every DEVICE_DIAG_INTERVAL_SEC).</summary>
+	public float PublishHz => _diagPublishHz;
 #endif
 
 	[SerializeField]
@@ -420,9 +423,33 @@ public abstract class Device : MonoBehaviour
 	{
 		try
 		{
-			var deviceMessage = new DeviceMessage();
-			deviceMessage.SetMessage<T>(instance);
-			return _deviceMessageQueue.Push(deviceMessage);
+			if (!_deviceMessagePool.TryTake(out var deviceMessage))
+			{
+				deviceMessage = new DeviceMessage();
+			}
+
+			// Raw binary fast-path for image types — bypasses protobuf serialization
+			if (instance is cloisim.msgs.ImageStamped imgStamped)
+			{
+				deviceMessage.SetRawImage(imgStamped);
+			}
+			else if (instance is cloisim.msgs.Segmentation seg)
+			{
+				deviceMessage.SetRawSegmentation(seg);
+			}
+			else if (instance is cloisim.msgs.ImagesStamped imgsStamped)
+			{
+				deviceMessage.SetRawImagesStamped(imgsStamped);
+			}
+			else
+			{
+				// Protobuf fallback for non-image sensors (lidar, IMU, etc.)
+				deviceMessage.SetMessage<T>(instance);
+			}
+
+			var pushed = _deviceMessageQueue.Push(deviceMessage);
+			if (pushed) Interlocked.Increment(ref _diagPublishCount);
+			return pushed;
 		}
 		catch (Exception ex)
 		{
