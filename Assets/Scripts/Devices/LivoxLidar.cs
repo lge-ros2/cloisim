@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.Experimental.Rendering;
 using Unity.Profiling;
 using messages = cloisim.msgs;
@@ -21,7 +21,7 @@ namespace SensorDevices
 {
 	/// <summary>
 	/// Livox non-repetitive scan pattern LiDAR sensor device.
-	/// Renders depth via HDRP sub-cameras (same approach as <see cref="Lidar"/>)
+	/// Renders depth via URP sub-cameras (same approach as <see cref="Lidar"/>)
 	/// but samples at non-uniform ray directions loaded from a CSV scan pattern file.
 	/// Each frame advances through the pattern in a rolling window, producing the
 	/// characteristic non-repetitive coverage of Livox sensors.
@@ -126,7 +126,7 @@ namespace SensorDevices
 		private readonly AutoResetEvent _dataAvailable = new(false);
 
 		// ═══════════════════════════════════════════════
-		//  HDRP DEPTH CAPTURE (same pattern as Lidar.cs)
+		//  URP DEPTH CAPTURE (same pattern as Lidar.cs)
 		// ═══════════════════════════════════════════════
 
 		private void OnEnable()
@@ -299,54 +299,31 @@ namespace SensorDevices
 				SUB_CAM_HFOV, _cameraVFov, _laserCam.nearClipPlane, _laserCam.farClipPlane);
 			_laserCam.projectionMatrix = projMatrix;
 
-			// HDRP camera optimizations — disable all expensive features
-			var hdCamData = _laserCam.GetComponent<HDAdditionalCameraData>()
-							?? _laserCam.gameObject.AddComponent<HDAdditionalCameraData>();
-			hdCamData.customRenderingSettings = true;
+			// URP camera optimizations — disable all expensive features
+			// (same pattern as Lidar.cs for consistency)
+			var universalLaserCamData = _laserCam.GetUniversalAdditionalCameraData();
+			universalLaserCamData.renderShadows = false;
+			universalLaserCamData.stopNaN = true;
+			universalLaserCamData.dithering = false;
+			universalLaserCamData.allowXRRendering = false;
+			universalLaserCamData.volumeLayerMask = default;
+			universalLaserCamData.renderType = CameraRenderType.Base;
+			universalLaserCamData.renderPostProcessing = false;
+			universalLaserCamData.antialiasing = AntialiasingMode.None;
+			universalLaserCamData.requiresColorOption = CameraOverrideOption.Off;
+			universalLaserCamData.requiresDepthOption = CameraOverrideOption.Off;
+			universalLaserCamData.requiresColorTexture = false;
+			universalLaserCamData.requiresDepthTexture = true;
+			universalLaserCamData.cameraStack.Clear();
 
-			var mask = hdCamData.renderingPathCustomFrameSettingsOverrideMask;
-			var disableFields = new[]
+			// URP depth-capture material — uses the same DepthRange shader as Lidar
+			var depthShader = Shader.Find("Sensor/DepthRange");
+			if (depthShader != null)
 			{
-				FrameSettingsField.ShadowMaps,
-				FrameSettingsField.ContactShadows,
-				FrameSettingsField.ScreenSpaceShadows,
-				FrameSettingsField.Volumetrics,
-				FrameSettingsField.ReprojectionForVolumetrics,
-				FrameSettingsField.AtmosphericScattering,
-				FrameSettingsField.Postprocess,
-				FrameSettingsField.SSAO,
-				FrameSettingsField.SSR,
-				FrameSettingsField.SubsurfaceScattering,
-				FrameSettingsField.Refraction,
-				FrameSettingsField.MotionVectors,
-				FrameSettingsField.Decals,
-				FrameSettingsField.TransparentObjects,
-			};
-			foreach (var field in disableFields)
-				mask.mask[(uint)field] = true;
-			hdCamData.renderingPathCustomFrameSettingsOverrideMask = mask;
-
-			var frameSettings = hdCamData.renderingPathCustomFrameSettings;
-			frameSettings.SetEnabled(FrameSettingsField.TransparentObjects, true);
-			foreach (var field in disableFields)
-			{
-				if (field != FrameSettingsField.TransparentObjects)
-					frameSettings.SetEnabled(field, false);
-			}
-			hdCamData.renderingPathCustomFrameSettings = frameSettings;
-
-			// HDRP depth-capture material
-			if (GraphicsSettings.currentRenderPipeline != null)
-			{
-				var depthShader = Shader.Find("FullScreen/DepthCapture");
 				_depthCaptureMaterial = new Material(depthShader);
+				_depthCaptureMaterial.hideFlags = HideFlags.DontUnloadUnusedAsset;
 				// Disable the horizontal flip: the depth buffer from Camera.Render()
-				// already has the correct left-right orientation. The shader's default
-				// _FlipX=1 would mirror the depth, causing the compute shader to read
-				// depth from the opposite horizontal direction. For uniform scan grids
-				// this manifests as a harmless mirror, but for non-uniform patterns like
-				// Livox (where each ray has an explicit azimuth), it creates angular
-				// distortion that makes walls appear non-perpendicular.
+				// already has the correct left-right orientation.
 				_depthCaptureMaterial.SetInt("_FlipX", 0);
 			}
 
