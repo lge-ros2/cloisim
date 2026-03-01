@@ -138,6 +138,8 @@ public class CLOiSimPluginThread : IDisposable
 					// Debug.Log($"{transportingTime:F5}");
 					device.SetTransportedTime(transportingTime);
 				}
+				// Return to pool for reuse
+				Device.ReturnDeviceMessage(dataStreamToSend);
 			}
 			else
 			{

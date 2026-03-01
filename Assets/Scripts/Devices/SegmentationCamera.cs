@@ -5,7 +5,8 @@
  */
 
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using messages = cloisim.msgs;
 using Unity.Collections;
@@ -16,6 +17,9 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class SegmentationCamera : Camera
 	{
+		private SegmentationPass _segmentationPass;
+		private Material _segMaterial;
+
 		protected override void SetupTexture()
 		{
 			_targetRTname = "SegmentationTexture";
@@ -30,26 +34,120 @@ namespace SensorDevices
 			_targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
 			_readbackDstFormat = GraphicsFormat.R8G8_UNorm;
 
+			// Point filtering is critical for segmentation — bilinear filtering
+			// would interpolate between class IDs at object edges, creating
+			// gradation artifacts that corrupt the discrete label data.
+			_rtFilterMode = FilterMode.Point;
+
+			// Keep DepthBits.None (default) — the RT is a color buffer.
+			// HDRP provides ctx.cameraDepthBuffer for depth testing in custom passes.
+
 			_textureForCapture = new Texture2D(_camParam.image.width, _camParam.image.height, TextureFormat.R16, false, true);
+			_textureForCapture.filterMode = FilterMode.Point;
 		}
 
 		protected override void SetupCamera()
 		{
-			// Debug.Log("Segmenataion Setup");
+			if (_hdCamData != null)
+			{
+				// Segmentation camera only needs object IDs as colors — disable all
+				// visual effects. TransparentObjects stays enabled so transparent
+				// environment objects get segmented.
+				var overrideMask = _hdCamData.renderingPathCustomFrameSettingsOverrideMask;
+				overrideMask.mask[(uint)FrameSettingsField.Postprocess] = true;
+				overrideMask.mask[(uint)FrameSettingsField.ShadowMaps] = true;
+				overrideMask.mask[(uint)FrameSettingsField.SSAO] = true;
+				overrideMask.mask[(uint)FrameSettingsField.SSR] = true;
+				overrideMask.mask[(uint)FrameSettingsField.Volumetrics] = true;
+				overrideMask.mask[(uint)FrameSettingsField.ReprojectionForVolumetrics] = true;
+				overrideMask.mask[(uint)FrameSettingsField.AtmosphericScattering] = true;
+				overrideMask.mask[(uint)FrameSettingsField.ContactShadows] = true;
+				overrideMask.mask[(uint)FrameSettingsField.ScreenSpaceShadows] = true;
+				overrideMask.mask[(uint)FrameSettingsField.SubsurfaceScattering] = true;
+				overrideMask.mask[(uint)FrameSettingsField.Refraction] = true;
+				overrideMask.mask[(uint)FrameSettingsField.Decals] = true;
+				overrideMask.mask[(uint)FrameSettingsField.TransparentObjects] = true;
+				_hdCamData.renderingPathCustomFrameSettingsOverrideMask = overrideMask;
 
-			// Refer to SegmentationRenderer (Universal Renderer Data)
-			_universalCamData.SetRenderer(1);
-			_universalCamData.renderPostProcessing = true;
-			_universalCamData.requiresColorOption = CameraOverrideOption.Off;
-			_universalCamData.requiresDepthOption = CameraOverrideOption.Off;
-			_universalCamData.requiresColorTexture = false;
-			_universalCamData.requiresDepthTexture = false;
-			_universalCamData.renderShadows = false;
-			_universalCamData.dithering = true;
-			_universalCamData.stopNaN = true;
-			_universalCamData.allowHDROutput = false;
-			_universalCamData.allowXRRendering = false;
-			_universalCamData.antialiasing = AntialiasingMode.FastApproximateAntialiasing;
+				var frameSettings = _hdCamData.renderingPathCustomFrameSettings;
+				frameSettings.SetEnabled(FrameSettingsField.TransparentObjects, true);
+				frameSettings.SetEnabled(FrameSettingsField.Postprocess, false);
+				frameSettings.SetEnabled(FrameSettingsField.ShadowMaps, false);
+				frameSettings.SetEnabled(FrameSettingsField.SSAO, false);
+				frameSettings.SetEnabled(FrameSettingsField.SSR, false);
+				frameSettings.SetEnabled(FrameSettingsField.Volumetrics, false);
+				frameSettings.SetEnabled(FrameSettingsField.ReprojectionForVolumetrics, false);
+				frameSettings.SetEnabled(FrameSettingsField.AtmosphericScattering, false);
+				frameSettings.SetEnabled(FrameSettingsField.ContactShadows, false);
+				frameSettings.SetEnabled(FrameSettingsField.ScreenSpaceShadows, false);
+				frameSettings.SetEnabled(FrameSettingsField.SubsurfaceScattering, false);
+				frameSettings.SetEnabled(FrameSettingsField.Refraction, false);
+				frameSettings.SetEnabled(FrameSettingsField.Decals, false);
+				_hdCamData.renderingPathCustomFrameSettings = frameSettings;
+			}
+
+			// Set up HDRP Custom Pass for segmentation material override.
+			// This replaces the URP SegmentationRenderObjects renderer feature
+			// that is not available in HDRP. The custom pass overrides all
+			// rendered objects' materials with the flat segmentation shader,
+			// producing discrete class IDs without lighting or gradation.
+			//
+			// Uses a dedicated RenderTexture (not ctx.cameraColorBuffer) —
+			// same pattern as DepthCapturePass — because HDRP internal buffers
+			// have render state restrictions that prevent draw calls from
+			// producing visible output even though clears work.
+			_segMaterial = new Material(Shader.Find("Sensor/Segmentation"));
+
+			var customPassVolume = gameObject.AddComponent<CustomPassVolume>();
+			customPassVolume.targetCamera = _camSensor;
+			customPassVolume.injectionPoint = CustomPassInjectionPoint.AfterPostProcess;
+			customPassVolume.isGlobal = false;
+
+			_segmentationPass = customPassVolume.AddPassOfType<SegmentationPass>() as SegmentationPass;
+			if (_segmentationPass == null)
+			{
+				Debug.LogError("SegmentationCamera: Failed to create SegmentationPass");
+				return;
+			}
+			_segmentationPass.SetSegmentationMaterial(_segMaterial);
+			_segmentationPass.SetLayerMask(_camSensor.cullingMask);
+			_segmentationPass.SetTargetCamera(_camSensor);
+		}
+
+		/// <summary>
+		/// Override readback to use the dedicated segmentation RT from the custom pass
+		/// rather than the camera's target texture. Same pattern as DepthCamera.
+		/// </summary>
+		public override void ExecuteRender(float realtimeNow)
+		{
+			using (var marker = new Unity.Profiling.ProfilerMarker("SegmentationCamera.Render").Auto())
+			{
+				_lastCaptureRealtime = realtimeNow;
+
+				_camSensor.Render();
+
+				var segRT = _segmentationPass?.segmentationRT;
+				if (segRT == null)
+				{
+					Debug.LogWarning($"{name}: SegmentationPass has no segmentationRT");
+					return;
+				}
+
+				var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
+
+				AsyncGPUReadback.Request(segRT, 0, _readbackDstFormat, (req) =>
+				{
+					if (req.hasError)
+					{
+						Debug.LogError($"{name}: Failed to read segmentation GPU texture (format={_readbackDstFormat})");
+					}
+					else if (req.done)
+					{
+						var readbackData = req.GetData<byte>();
+						ImageProcessing<byte>(ref readbackData, capturedTime);
+					}
+				});
+			}
 		}
 
 		protected override void InitializeMessages()
@@ -69,6 +167,8 @@ namespace SensorDevices
 			}
 		}
 
+		public System.Action<messages.Segmentation> OnSegmentationDataGenerated;
+
 		protected override void ImageProcessing<T>(ref NativeArray<T> readbackData, in double capturedTime) where T : struct
 		{
 			var segmentation = new messages.Segmentation();
@@ -83,14 +183,7 @@ namespace SensorDevices
 			var sizeOfT = UnsafeUtility.SizeOf<T>();
 			var byteView = readbackData.Reinterpret<byte>(sizeOfT);
 
-			if (image.Data != null && image.Data.Length == byteView.Length)
-			{
-				byteView.CopyTo(image.Data);
-			}
-			else
-			{
-				Debug.LogWarning($"{name}: Failed to get image Data. Size mismatch (Image: {image.Data?.Length}, Buffer: {byteView.Length})");
-			}
+			CopyReadbackToImage(byteView, image.Data);
 
 			// update labels
 			var labelInfo = Main.SegmentationManager.GetLabelInfo();
@@ -107,6 +200,12 @@ namespace SensorDevices
 					segmentation.ClassMaps.Add(visionClass);
 				}
 			}
+
+			if (OnSegmentationDataGenerated != null) OnSegmentationDataGenerated.Invoke(segmentation);
+
+			// Also invoke parent Camera events so CameraPlugin publishes the image natively
+			if (OnCameraDataGenerated != null) OnCameraDataGenerated.Invoke(segmentation.ImageStamped);
+			if (OnCameraInfoGenerated != null) OnCameraInfoGenerated.Invoke(_sensorInfo);
 
 			_messageQueue.Enqueue(segmentation);
 		}

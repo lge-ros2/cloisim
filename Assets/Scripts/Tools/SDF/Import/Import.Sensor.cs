@@ -45,6 +45,11 @@ namespace SDF
 						device = targetObject.AddLidar(lidar);
 						break;
 
+					case "livox":
+						var livox = sensor.GetSensor() as SDF.Livox;
+						device = targetObject.AddLivoxLidar(livox);
+						break;
+
 					case "depth_camera":
 					case "depth":
 						var depthCamera = sensor.GetSensor() as SDF.Camera;

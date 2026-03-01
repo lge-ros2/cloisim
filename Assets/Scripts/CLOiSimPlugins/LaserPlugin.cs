@@ -10,6 +10,7 @@ using Any = cloisim.msgs.Any;
 public class LaserPlugin : CLOiSimPlugin
 {
 	private SensorDevices.Lidar _lidar = null;
+	private string _outputType = "LaserScan";
 
 	protected override void OnAwake()
 	{
@@ -43,7 +44,8 @@ public class LaserPlugin : CLOiSimPlugin
 			var customNoiseInRawXml = GetPluginParameters().GetValue<string>("custom_noise");
 			_lidar.SetupCustomNoise(customNoiseInRawXml);
 		}
-		yield return null;
+		
+		_outputType = GetPluginParameters().GetValue<string>("output_type", "LaserScan");
 
 		if (RegisterServiceDevice(out var portService, "Info"))
 		{

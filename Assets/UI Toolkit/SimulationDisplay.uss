@@ -54,3 +54,13 @@ VisualElement#RightMenuVisualElement > Button:active {
 #HelpDialog #unity-content-and-vertical-scroll-container > Scroller > #unity-high-button {
     display: none;
 }
+
+.render-toggle {
+    margin-top: 2px;
+    margin-bottom: 2px;
+    margin-left: 4px;
+    margin-right: 4px;
+    color: rgb(220, 220, 220);
+    font-size: 11px;
+    -unity-font-style: normal;
+}

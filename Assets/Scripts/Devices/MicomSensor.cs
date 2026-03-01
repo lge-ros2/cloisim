@@ -161,6 +161,8 @@ namespace SensorDevices
 			_odomData.Twist.Angular = new messages.Vector3d();
 		}
 
+		public System.Action<messages.Micom> OnMicomDataGenerated;
+
 		void FixedUpdate()
 		{
 			var delta = Time.fixedDeltaTime;
@@ -188,6 +190,11 @@ namespace SensorDevices
 			UpdateIMU(micomSensorData);
 
 			micomSensorData.Odom = _odomData;
+
+			if (OnMicomDataGenerated != null)
+			{
+				OnMicomDataGenerated.Invoke(micomSensorData);
+			}
 
 			_messageQueue.Enqueue(micomSensorData);
 		}

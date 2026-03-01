@@ -17,6 +17,10 @@ namespace SensorDevices
 
 		private messages.JointStateV jointStateV = null;
 
+		private readonly object _jointStateLock = new object();
+
+		public System.Action<messages.JointStateV> OnJointStateDataGenerated;
+
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
@@ -32,8 +36,17 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
-			jointStateV.Header.Stamp.SetCurrentTime();
-			PushDeviceMessage<messages.JointStateV>(jointStateV);
+			lock (_jointStateLock)
+			{
+				jointStateV.Header.Stamp.SetCurrentTime();
+
+				if (OnJointStateDataGenerated != null)
+				{
+					OnJointStateDataGenerated.Invoke(jointStateV);
+				}
+
+				PushDeviceMessage<messages.JointStateV>(jointStateV);
+			}
 		}
 
 		public bool AddTargetJoint(in string targetJointName, out SDF.Helper.Link link, out bool isStatic)
@@ -76,7 +89,10 @@ namespace SensorDevices
 
 					articulationTable.Add(targetJointName, new Tuple<Articulation, messages.JointState>(articulation, jointState));
 
-					jointStateV.JointStates.Add(jointState);
+					lock (_jointStateLock)
+					{
+						jointStateV.JointStates.Add(jointState);
+					}
 					return true;
 				}
 			}
@@ -91,27 +107,30 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			foreach (var item in articulationTable.Values)
+			lock (_jointStateLock)
 			{
-				var articulation = item.Item1;
-				var jointState = item.Item2;
+				foreach (var item in articulationTable.Values)
+				{
+					var articulation = item.Item1;
+					var jointState = item.Item2;
 
-				var jointVelocity = articulation.GetJointVelocity();
-				var jointPosition = articulation.GetJointPosition();
-				var jointForce = articulation.GetForce();
+					var jointVelocity = articulation.GetJointVelocity();
+					var jointPosition = articulation.GetJointPosition();
+					var jointForce = articulation.GetForce();
 
-				jointState.Effort = (articulation.IsRevoluteType()) ?
-										Unity2SDF.Direction.Curve(jointForce) :
-											(articulation.IsPrismaticType() ?
-												 Unity2SDF.Direction.Joint.Prismatic(jointForce, articulation.GetAnchorRotation()) : jointForce);
+					jointState.Effort = (articulation.IsRevoluteType()) ?
+											Unity2SDF.Direction.Curve(jointForce) :
+												(articulation.IsPrismaticType() ?
+													 Unity2SDF.Direction.Joint.Prismatic(jointForce, articulation.GetAnchorRotation()) : jointForce);
 
-				jointState.Position = (articulation.IsRevoluteType()) ?
-										Unity2SDF.Direction.Curve(jointPosition) :
-											(articulation.IsPrismaticType() ?
-												 Unity2SDF.Direction.Joint.Prismatic(jointPosition, articulation.GetAnchorRotation()) : jointPosition);
+					jointState.Position = (articulation.IsRevoluteType()) ?
+											Unity2SDF.Direction.Curve(jointPosition) :
+												(articulation.IsPrismaticType() ?
+													 Unity2SDF.Direction.Joint.Prismatic(jointPosition, articulation.GetAnchorRotation()) : jointPosition);
 
-				jointState.Velocity = (articulation.IsRevoluteType()) ?
-										Unity2SDF.Direction.Curve(jointVelocity) : jointVelocity;
+					jointState.Velocity = (articulation.IsRevoluteType()) ?
+											Unity2SDF.Direction.Curve(jointVelocity) : jointVelocity;
+				}
 			}
 		}
 	}

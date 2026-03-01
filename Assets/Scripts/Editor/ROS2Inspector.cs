@@ -70,7 +70,7 @@ public class ROS2Inspector : Editor
 
 			if (rb != null)
 			{
-				EditorGUILayout.Vector3Field("Velocity", Unity2SDF.Vector(rb.velocity).AsUnity());
+				EditorGUILayout.Vector3Field("Velocity", Unity2SDF.Vector(rb.linearVelocity).AsUnity());
 				EditorGUILayout.Vector3Field("Angular Velocity", Unity2SDF.Vector(rb.angularVelocity).AsUnity());
 				EditorGUILayout.Vector3Field("Inertia Tensor", Unity2SDF.Vector(rb.inertiaTensor).AsUnity());
 				EditorGUILayout.Vector3Field("Inertia Tensor Rotation", Unity2SDF.Vector(rb.inertiaTensorRotation.eulerAngles).AsUnity());
@@ -79,7 +79,7 @@ public class ROS2Inspector : Editor
 			}
 			else if (ab != null)
 			{
-				EditorGUILayout.Vector3Field("Velocity", Unity2SDF.Vector(ab.velocity).AsUnity());
+				EditorGUILayout.Vector3Field("Velocity", Unity2SDF.Vector(ab.linearVelocity).AsUnity());
 				EditorGUILayout.Vector3Field("Angular Velocity", Unity2SDF.Vector(ab.angularVelocity).AsUnity());
 				EditorGUILayout.Vector3Field("Inertia Tensor", Unity2SDF.Vector(ab.inertiaTensor).AsUnity());
 				EditorGUILayout.Vector3Field("Inertia Tensor Rotation", Unity2SDF.Vector(ab.inertiaTensorRotation.eulerAngles).AsUnity());

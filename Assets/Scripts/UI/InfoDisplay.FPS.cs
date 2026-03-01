@@ -21,7 +21,7 @@ public partial class InfoDisplay : MonoBehaviour
 	private void CalculateFPS()
 	{
 		_frameCount++;
-		_deltaTime += Time.deltaTime;
+		_deltaTime += Time.unscaledDeltaTime;
 		if (_deltaTime > _fpsUpdatePeriod)
 		{
 			_fps = Mathf.Round(_frameCount / _deltaTime);

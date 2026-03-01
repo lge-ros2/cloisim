@@ -7,8 +7,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.SceneManagement;
 using Assimp.Unmanaged;
 
@@ -259,8 +261,48 @@ public class Main : MonoBehaviour
 		AsyncIO.ForceDotNet.Force();
 
 		QualitySettings.vSyncCount = 0;
-		Application.targetFrameRate = 60;
 		OnDemandRendering.renderFrameInterval = 1;
+
+		// Detect batchmode via Application.isBatchMode OR by scanning
+		// command-line arguments — Unity 6000 player builds sometimes
+		// report isBatchMode=false even when -batchmode was passed.
+		var cmdArgs = Environment.GetCommandLineArgs();
+		var hasBatchArg = System.Array.Exists(cmdArgs, a => a == "-batchmode");
+		var isBatchMode = Application.isBatchMode || hasBatchArg;
+		Debug.Log("[Main] Application.isBatchMode=" + Application.isBatchMode
+			+ ", cmdline has -batchmode=" + hasBatchArg
+			+ ", effective isBatchMode=" + isBatchMode);
+
+		if (isBatchMode)
+		{
+			// Headless / batchmode: uncap frame rate so the GPU runs as fast as
+			// possible. Unity's internal loop in -batchmode does not reliably
+			// honour a fixed targetFrameRate — setting -1 removes the cap and
+			// lets sensor coroutines (which yield once per frame) tick faster.
+			Application.targetFrameRate = -1;
+			Debug.Log("[Main] BatchMode detected: targetFrameRate = -1 (uncapped)");
+		}
+		else
+		{
+			Application.targetFrameRate = 60;
+		}
+
+		// Configure physics timestep.
+		// Project default fixedDeltaTime is 0.001 (1000 Hz) which consumed ~60% of
+		// frame time at the default maximumDeltaTime of 0.05 (50 steps/frame).
+		// We raise fixedDeltaTime to 0.01 (100 Hz) — still accurate for robotics —
+		// and set maximumDeltaTime to 0.1 so Time.deltaTime is not capped at typical
+		// FPS ranges, keeping sim time in sync with real time and the FPS counter accurate.
+		var physicsHz = 100f;
+		var envPhysicsHz = Environment.GetEnvironmentVariable("CLOISIM_PHYSICS_HZ");
+		if (!string.IsNullOrEmpty(envPhysicsHz) && float.TryParse(envPhysicsHz,
+			System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var hz))
+		{
+			physicsHz = Mathf.Clamp(hz, 50f, 1000f);
+		}
+		Time.fixedDeltaTime = 1f / physicsHz;
+		Time.maximumDeltaTime = 0.1f;
+		Debug.Log($"[Main] Physics: fixedDeltaTime={Time.fixedDeltaTime}s ({physicsHz} Hz), maximumDeltaTime={Time.maximumDeltaTime}s (max {Mathf.CeilToInt(Time.maximumDeltaTime / Time.fixedDeltaTime)} steps/frame)");
 
 		// Debug.Log(    QualitySettings.GetQualityLevel());
 		var qualityLevel = Environment.GetEnvironmentVariable("CLOISIM_QUALITY");
@@ -272,35 +314,82 @@ public class Main : MonoBehaviour
 		}
 		QualitySettings.SetQualityLevel(qualityLevelIndex);
 
-		// Enable texture streaming to reduce GPU memory usage for distant textures
-		QualitySettings.streamingMipmapsActive = true;
-		QualitySettings.streamingMipmapsMemoryBudget = 512;
-		QualitySettings.streamingMipmapsAddAllCameras = true;
-
-		// Reduce shadow distance for better performance
-		QualitySettings.shadowDistance = 50f;
-		QualitySettings.shadowResolution = ShadowResolution.Medium;
-
 		var mainCamera = Camera.main;
 		mainCamera.depthTextureMode = DepthTextureMode.None;
-		mainCamera.allowHDR = false; // Deferred rendering doesn't benefit; saves bandwidth
-		mainCamera.allowMSAA = false; // MSAA is ignored in deferred mode
+		mainCamera.allowHDR = true;
+		mainCamera.allowMSAA = true;
 		mainCamera.allowDynamicResolution = true;
 		mainCamera.useOcclusionCulling = true;
 		mainCamera.orthographic = false;
 
-		// Set per-layer culling distances to reduce draw calls for distant objects
-		var layerCullDistances = new float[32];
-		for (var i = 0; i < layerCullDistances.Length; i++)
+		// Sensor-only mode: minimize main viewport camera to save ~30-50ms/frame.
+		// Activated automatically in batchmode (no human viewer) or via CLOISIM_SENSOR_ONLY=1.
+		var sensorOnly = Environment.GetEnvironmentVariable("CLOISIM_SENSOR_ONLY");
+		var enableSensorOnly = isBatchMode
+			|| (!string.IsNullOrEmpty(sensorOnly) && sensorOnly == "1");
+
+		if (enableSensorOnly)
 		{
-			layerCullDistances[i] = mainCamera.farClipPlane;
+			mainCamera.cullingMask = 0; // Render nothing — sensor cameras have their own culling
+			mainCamera.clearFlags = CameraClearFlags.SolidColor;
+			Debug.Log("[Main] Sensor-only mode: Main camera rendering minimized"
+				+ (isBatchMode ? " (auto-enabled in batchmode)" : " (CLOISIM_SENSOR_ONLY=1)"));
+
+			// In headless mode, increase the sensor render budget — no interactive UI
+			// to keep smooth, so we can spend more time per frame on sensor cameras.
+			if (isBatchMode)
+			{
+				SensorDevices.SensorRenderManager.Instance.FrameBudgetMs = 40f;
+				Debug.Log("[Main] SensorRenderManager.FrameBudgetMs raised to 40ms for headless");
+			}
 		}
-		// "Default" layer gets a tighter cull distance for small objects
-		layerCullDistances[LayerMask.NameToLayer("Default")] = mainCamera.farClipPlane * 0.5f;
-		mainCamera.layerCullDistances = layerCullDistances;
-		mainCamera.layerCullSpherical = true;
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+		var hdCamData = mainCamera.GetComponent<UnityEngine.Rendering.HighDefinition.HDAdditionalCameraData>();
+		if (hdCamData == null)
+		{
+			hdCamData = mainCamera.gameObject.AddComponent<UnityEngine.Rendering.HighDefinition.HDAdditionalCameraData>();
+		}
+
+		// When sensor-only mode is active, disable all expensive HDRP features on main camera.
+		if (enableSensorOnly && hdCamData != null)
+		{
+			hdCamData.customRenderingSettings = true;
+			var overrideMask = hdCamData.renderingPathCustomFrameSettingsOverrideMask;
+			var frameSettings = hdCamData.renderingPathCustomFrameSettings;
+			var featuresToDisable = new[] {
+				FrameSettingsField.Postprocess,
+				FrameSettingsField.ShadowMaps,
+				FrameSettingsField.SSAO,
+				FrameSettingsField.SSR,
+				FrameSettingsField.Volumetrics,
+				FrameSettingsField.ReprojectionForVolumetrics,
+				FrameSettingsField.AtmosphericScattering,
+				FrameSettingsField.SubsurfaceScattering,
+				FrameSettingsField.ContactShadows,
+				FrameSettingsField.ScreenSpaceShadows,
+				FrameSettingsField.MotionVectors,
+				FrameSettingsField.Decals,
+				FrameSettingsField.Refraction,
+				FrameSettingsField.TransparentObjects,
+			};
+			foreach (var f in featuresToDisable)
+			{
+				overrideMask.mask[(uint)f] = true;
+				frameSettings.SetEnabled(f, false);
+			}
+			hdCamData.renderingPathCustomFrameSettingsOverrideMask = overrideMask;
+			hdCamData.renderingPathCustomFrameSettings = frameSettings;
+		}
+#endif
 
 		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
+
+		// Ensure TransformGizmo is on the main camera for object selection/manipulation
+		if (mainCamera.GetComponent<RuntimeGizmos.TransformGizmo>() == null)
+		{
+			mainCamera.gameObject.AddComponent<RuntimeGizmos.TransformGizmo>();
+		}
 
 		_core = GameObject.Find("Core");
 		if (_core == null)
@@ -322,7 +411,7 @@ public class Main : MonoBehaviour
 		if (_uiRoot != null)
 		{
 			_infoDisplay = _uiRoot.GetComponentInChildren<InfoDisplay>();
-			_transformGizmo = _uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
+			_transformGizmo = FindFirstObjectByType<RuntimeGizmos.TransformGizmo>();
 			_uiController = _uiRoot.GetComponent<UIController>();
 
 			_uiMainCanvasRoot = _uiRoot.transform.Find("Main Canvas").gameObject;
@@ -520,12 +609,7 @@ public class Main : MonoBehaviour
 	private void OnAllPluginsStarted()
 	{
 		_pluginAllStarted = true;
-
-		if (!string.IsNullOrEmpty(_pluginStartTracker.AllSummaries))
-		{
-			Debug.LogWarning(_pluginStartTracker.AllSummaries);
-		}
-
+		Debug.LogWarning(_pluginStartTracker.AllSummaries);
 		var message = $"All plugins started! ({_pluginStartTracker.StartedCount}/{_pluginStartTracker.TotalCount})";
 		_uiController?.SetInfoMessage(message);
 		Debug.Log(message);

@@ -17,6 +17,8 @@ cbuffer Params
     float _AngleResV;
     uint _Width;
     uint _Height;
+    uint _TexWidth;
+    uint _TexHeight;
     uint _DataOffset;
 };
 
@@ -35,17 +37,34 @@ void ComputeLaserData(uint3 id : SV_DispatchThreadID)
     float hAngleInCam = radians(hAngle - _MaxHAngleHalf);
     float vAngleInCam = radians(vAngle - _MaxVAngleHalf);
 
+    float cosH = cos(hAngleInCam);
     float offsetXratio = tan(hAngleInCam) * _MaxHAngleHalfTanInv;
-    float offsetYratio = tan(vAngleInCam) * _MaxVAngleHalfTanInv;
+    float offsetYratio = tan(vAngleInCam) * _MaxVAngleHalfTanInv / cosH;
 
-    int px = clamp((int)((1 + offsetXratio) * 0.5 * _Width), 0, _Width - 1);
-    int py = clamp((int)((1 + offsetYratio) * 0.5 * _Height), 0, _Height - 1);
+    // Bilinear interpolation to eliminate jagging from integer pixel quantization.
+    // The keystone correction (/ cosH) makes py vary continuously across horizontal
+    // samples for the same ring. Without interpolation, integer truncation of py
+    // creates step artifacts visible as zigzag patterns in each ring.
+    float fpx = clamp((1 + offsetXratio) * 0.5 * _TexWidth, 0, _TexWidth - 1.0);
+    float fpy = clamp((1 + offsetYratio) * 0.5 * _TexHeight, 0, _TexHeight - 1.0);
 
-    float depth = _DepthTexture.Load(int3(px, py, 0));
+    int px0 = (int)fpx;
+    int py0 = (int)fpy;
+    int px1 = min(px0 + 1, (int)_TexWidth - 1);
+    int py1 = min(py0 + 1, (int)_TexHeight - 1);
 
-    float hCos = cos(hAngleInCam);
+    float fx = fpx - px0;
+    float fy = fpy - py0;
+
+    float d00 = _DepthTexture.Load(int3(px0, py0, 0));
+    float d10 = _DepthTexture.Load(int3(px1, py0, 0));
+    float d01 = _DepthTexture.Load(int3(px0, py1, 0));
+    float d11 = _DepthTexture.Load(int3(px1, py1, 0));
+
+    float depth = lerp(lerp(d00, d10, fx), lerp(d01, d11, fx), fy);
+
     float vCos = cos(vAngleInCam);
-    depth *= 1.0 / (hCos * vCos);
+    depth *= 1.0 / (cosH * vCos);
 
     float rayDist = depth * _RangeMax;
 

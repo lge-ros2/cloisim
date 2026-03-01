@@ -125,3 +125,14 @@ tags
 # SDF files
 *.world
 *.sdf
+
+# colcon / ROS 2 build artifacts
+ros2_native_ws/build/
+ros2_native_ws/install/
+ros2_native_ws/log/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Build logs
+*.log

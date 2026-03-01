@@ -88,6 +88,15 @@ namespace SensorDevices
 				hasData = active;
 			}
 
+			/// <summary>
+			/// Re-initialize with a pre-existing buffer to avoid GC allocation.
+			/// </summary>
+			public void Reset(in int index, double[] existingBuffer)
+			{
+				dataIndex = index;
+				rayData = existingBuffer;
+			}
+
 			public void ConvertDataType(Unity.Collections.NativeArray<float> src)
 			{
 				var offset = dataIndex * rayData.Length;

@@ -62,6 +62,30 @@ namespace SDF
 			return lidar;
 		}
 
+		private Livox ParseLivox(in string element_path = "livox")
+		{
+			var livox = new Livox();
+
+			livox.scan_mode = GetValue<string>(element_path + "/scan_mode", "mid360");
+			livox.samples = GetValue<uint>(element_path + "/samples", 24000);
+			livox.down_sample = GetValue<uint>(element_path + "/down_sample", 1);
+
+			if (IsValidNode(element_path + "/range"))
+			{
+				livox.range.min = GetValue<double>(element_path + "/range/min");
+				livox.range.max = GetValue<double>(element_path + "/range/max");
+				livox.range.resolution = GetValue<double>(element_path + "/range/resolution");
+			}
+
+			if (IsValidNode(element_path + "/noise"))
+			{
+				livox.noise = new Noise();
+				ParseNoise(ref livox.noise, element_path);
+			}
+
+			return livox;
+		}
+
 		private Camera ParseCamera(in int index = 1)
 		{
 			var cameraElement = "camera[" + index + "]";

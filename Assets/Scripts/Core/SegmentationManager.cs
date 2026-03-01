@@ -58,11 +58,6 @@ namespace Segmentation
 		{
 			_labelClassFilters.Clear();
 			_labelClassFilters.AddRange(items);
-
-			// foreach (var item in items)
-			// {
-			// 	Debug.Log(item);
-			// }
 		}
 
 		public void AddClass(in string className, in Tag tag)
@@ -102,7 +97,6 @@ namespace Segmentation
 				{
 					tag.Hide = allowedTag ? false : true;
 				}
-				// Debug.Log(vk.Key + ", " + allowedTag);
 			}
 		}
 

@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#define ENABLE_MESH_CACHE
+// #define ENABLE_MESH_CACHE
 
 using System.Collections.Generic;
 using System.Text;
@@ -14,9 +14,7 @@ using UnityEngine.Rendering;
 
 public static partial class MeshLoader
 {
-#if ENABLE_MESH_CACHE
 	private static Dictionary<string, GameObject> MeshCache = new Dictionary<string, GameObject>();
-#endif
 
 	public static Texture2D GetTexture(in string textureFullPath)
 	{
@@ -27,7 +25,6 @@ public static partial class MeshLoader
 				var texture = TextureUtil.LoadTGA(textureFullPath);
 				if (texture != null)
 				{
-					texture.hideFlags = HideFlags.DontUnloadUnusedAsset;
 					return texture;
 				}
 				else
@@ -40,25 +37,17 @@ public static partial class MeshLoader
 				var byteArray = File.ReadAllBytes(textureFullPath);
 				if (byteArray != null && byteArray.Length > 0)
 				{
-					// Enable mipmaps for better distance rendering performance
-					var texture = new Texture2D(2, 2, TextureFormat.RGBA32, true);
+					var texture = new Texture2D(0, 0);
 					if (texture.LoadImage(byteArray))
 					{
-						texture.filterMode = FilterMode.Trilinear;
-						texture.anisoLevel = 4;
-						// Compress texture to reduce GPU memory bandwidth (requires dimensions multiple of 4)
-						if (texture.width % 4 == 0 && texture.height % 4 == 0)
-						{
-							texture.Compress(true);
-						}
-						// Free the CPU-side copy to reduce RAM usage
-						texture.Apply(false, true);
-						texture.hideFlags = HideFlags.DontUnloadUnusedAsset;
 						return texture;
 					}
 					else
 					{
-						Debug.LogWarning($"Cannot load texture file: {textureFullPath}");
+						if (textureFullPath.EndsWith(".renderTexture", System.StringComparison.OrdinalIgnoreCase))
+							Debug.Log($"Skipped unsupported texture format: {textureFullPath}");
+						else
+							Debug.LogWarning($"Cannot load texture file: {textureFullPath}");
 					}
 				}
 			}
@@ -67,70 +56,14 @@ public static partial class MeshLoader
 		return null;
 	}
 
-	/// <summary>
-	/// Pre-load all embedded textures from an Assimp scene.
-	/// FBX files can embed textures directly; Assimp references them with "*N" paths.
-	/// </summary>
-	private static Dictionary<string, Texture2D> LoadEmbeddedTextures(Assimp.Scene scene)
-	{
-		var textures = new Dictionary<string, Texture2D>();
-
-		if (scene == null || !scene.HasTextures)
-			return textures;
-
-		for (var i = 0; i < scene.TextureCount; i++)
-		{
-			var embeddedTex = scene.Textures[i];
-			if (embeddedTex.IsCompressed)
-			{
-				var texture = new Texture2D(2, 2, TextureFormat.RGBA32, true);
-				if (texture.LoadImage(embeddedTex.CompressedData))
-				{
-					texture.filterMode = FilterMode.Trilinear;
-					if (texture.width % 4 == 0 && texture.height % 4 == 0)
-					{
-						texture.Compress(true);
-					}
-					// Free the CPU-side copy to reduce RAM usage
-					texture.Apply(false, true);
-					texture.hideFlags = HideFlags.DontUnloadUnusedAsset;
-					textures[$"*{i}"] = texture;
-				}
-				else
-					Debug.LogWarning($"Failed to load embedded texture at index {i}");
-			}
-		}
-
-		return textures;
-	}
-
-	private static Texture2D TryLoadTexture(
-		string filePath,
-		IEnumerable<string> textureDirectories,
-		Dictionary<string, Texture2D> embeddedTextures = null)
+	private static Texture2D TryLoadTexture(string filePath, IEnumerable<string> textureDirectories)
 	{
 		if (string.IsNullOrEmpty(filePath))
 			return null;
 
-		// Check pre-loaded embedded textures first (Assimp "*N" convention)
-		if (embeddedTextures != null && embeddedTextures.TryGetValue(filePath, out var embeddedTex))
-			return embeddedTex;
-
 		if (filePath.Contains("model://"))
 			filePath = filePath.Replace("model://", "");
 
-		// Normalize path separators (Windows backslashes from cross-platform FBX files)
-		filePath = filePath.Replace('\\', '/');
-
-		// Strip Blender's "//" relative path prefix
-		if (filePath.StartsWith("//"))
-			filePath = filePath.Substring(2);
-
-		// Strip leading slash from absolute paths so Path.Combine works with search directories
-		if (Path.IsPathRooted(filePath))
-			filePath = Path.GetFileName(filePath);
-
-		// Try the (cleaned) path against all search directories
 		foreach (var dir in textureDirectories)
 		{
 			var fullPath = Path.Combine(dir, filePath);
@@ -138,27 +71,13 @@ public static partial class MeshLoader
 				return GetTexture(fullPath);
 		}
 
-		// If the path contained subdirectories and didn't match, try just the filename
-		var fileName = Path.GetFileName(filePath);
-		if (fileName != filePath)
-		{
-			foreach (var dir in textureDirectories)
-			{
-				var fullPath = Path.Combine(dir, fileName);
-				if (File.Exists(fullPath))
-					return GetTexture(fullPath);
-			}
-		}
-
-		Debug.LogWarning($"Texture not found: {filePath}");
 		return null;
 	}
 
-	private static List<Material> ToUnity(this List<Assimp.Material> sceneMaterials, in string meshPath, Assimp.Scene scene = null)
+	private static List<Material> ToUnity(this List<Assimp.Material> sceneMaterials, in string meshPath)
 	{
 		var parentPath = Directory.GetParent(meshPath).FullName;
 		var textureDirectories = GetRootTexturePaths(parentPath);
-		var embeddedTextures = LoadEmbeddedTextures(scene);
 		var materials = new List<Material>();
 		var logs = new StringBuilder();
 
@@ -168,24 +87,8 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasColorDiffuse)
 			{
-				// Force alpha to 1.0 when setting diffuse color.
-				// Blender FBX exports may store Principled BSDF Alpha in ColorDiffuse.W,
-				// which incorrectly triggers transparent mode for opaque materials.
-				// Actual transparency is handled by the HasOpacity check below.
-				var diffuseColor = sceneMat.ColorDiffuse.ToUnity();
-				diffuseColor.a = 1.0f;
-				mat.SetBaseColor(diffuseColor);
+				mat.SetBaseColor(sceneMat.ColorDiffuse.ToUnity());
 				// logs.AppendLine($"HasColorDiffuse({sceneMat.ColorDiffuse.ToUnity()}) for {sceneMat.Name}");
-			}
-
-			// Blender FBX exporter stores Principled BSDF Alpha as Opacity (separate float).
-			// Only apply transparency when the explicit Opacity property indicates it.
-			if (sceneMat.HasOpacity && sceneMat.Opacity < 1.0f)
-			{
-				var baseColor = mat.GetColor("_BaseColor");
-				baseColor.a = sceneMat.Opacity;
-				mat.SetBaseColor(baseColor);
-				logs.AppendLine($"HasOpacity({sceneMat.Opacity}) applied transparency for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorEmissive)
@@ -218,33 +121,29 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasShininess)
 			{
-				// Blender FBX exports Principled BSDF Roughness as Shininess.
-				// Unity uses Smoothness (inverse of Roughness): Smoothness = 1 - Roughness
-				var smoothness = Mathf.Clamp01(1.0f - sceneMat.Shininess);
-				mat.SetFloat("_Smoothness", smoothness);
-				logs.AppendLine($"HasShininess({sceneMat.Shininess}) -> Smoothness({smoothness}) for {sceneMat.Name}");
+				mat.SetFloat("_Smoothness", sceneMat.Shininess);
+				logs.AppendLine($"HasShinines({sceneMat.Shininess}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasReflectivity)
 			{
-				var smoothness = Mathf.Clamp01(1.0f - (float)sceneMat.Reflectivity);
-				mat.SetFloat("_Smoothness", smoothness);
-				logs.AppendLine($"HasReflectivity({sceneMat.Reflectivity}) -> Smoothness({smoothness}) for {sceneMat.Name}");
+				mat.SetFloat("_Smoothness", Mathf.Clamp01((float)sceneMat.Reflectivity));
+				logs.AppendLine($"HasReflectivity({sceneMat.Reflectivity}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureDiffuse)
 			{
-				var tex = TryLoadTexture(sceneMat.TextureDiffuse.FilePath, textureDirectories, embeddedTextures);
+				var tex = TryLoadTexture(sceneMat.TextureDiffuse.FilePath, textureDirectories);
 				if (tex != null)
-					mat.SetTexture("_BaseMap", tex);
+					mat.SetTexture("_BaseColorMap", tex);
 			}
 
 			if (sceneMat.HasTextureNormal)
 			{
-				var tex = TryLoadTexture(sceneMat.TextureNormal.FilePath, textureDirectories, embeddedTextures);
+				var tex = TryLoadTexture(sceneMat.TextureNormal.FilePath, textureDirectories);
 				if (tex != null)
 				{
-					mat.SetTexture("_BumpMap", tex);
+					mat.SetTexture("_NormalMap", tex);
 					mat.EnableKeyword("_NORMALMAP");
 				}
 				logs.AppendLine($"HasTextureNormal({sceneMat.TextureNormal.FilePath}) for {sceneMat.Name}");
@@ -252,36 +151,38 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasBumpScaling)
 			{
-				mat.SetFloat("_BumpScale", sceneMat.BumpScaling);
+				mat.SetFloat("_NormalScale", sceneMat.BumpScaling);
 				logs.AppendLine($"HasBumpScaling({sceneMat.BumpScaling}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasTextureSpecular)
 			{
-				var tex = TryLoadTexture(sceneMat.TextureSpecular.FilePath, textureDirectories, embeddedTextures);
+				var tex = TryLoadTexture(sceneMat.TextureSpecular.FilePath, textureDirectories);
 				if (tex != null)
 				{
-					mat.SetTexture("_SpecGlossMap", tex);
-					mat.EnableKeyword("_SPECGLOSSMAP");
+					mat.SetTexture("_SpecularColorMap", tex);
 				}
 			}
 
 			if (sceneMat.HasTextureEmissive)
 			{
-				var tex = TryLoadTexture(sceneMat.TextureEmissive.FilePath, textureDirectories, embeddedTextures);
+				var tex = TryLoadTexture(sceneMat.TextureEmissive.FilePath, textureDirectories);
 				if (tex != null)
 				{
-					mat.SetTexture("_EmissionMap", tex);
+					mat.SetTexture("_EmissiveColorMap", tex);
 					mat.EnableKeyword("_EMISSION");
 				}
 			}
 
 			if (sceneMat.HasTextureOpacity)
 			{
-				// Blender FBX often exports TextureOpacity even for fully opaque materials.
-				// Transparency is already handled via the HasOpacity scalar check above,
-				// so we only log this for diagnostics and do NOT enable transparent mode here.
-				logs.AppendLine($"HasTextureOpacity({sceneMat.TextureOpacity.FilePath}) ignored for {sceneMat.Name} (transparency handled via HasOpacity)");
+				var tex = TryLoadTexture(sceneMat.TextureOpacity.FilePath, textureDirectories);
+				if (tex != null)
+				{
+					mat.SetTexture("_BaseColorMap", tex);
+					mat.SetFloat("_SurfaceType", 1f);
+					mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+				}
 			}
 
 #if UNITY_EDITOR
@@ -324,10 +225,7 @@ public static partial class MeshLoader
 		}
 
 		if (logs.Length > 0)
-		{
-			logs.Insert(0, "MeshLoader.LoadMaterials() - Implementation logs\n");
-			Debug.LogWarning(logs.ToString());
-		}
+			Debug.LogWarning("LoadMaterials() - Implementation logs\n" + logs.ToString());
 
 		return materials;
 	}
@@ -340,7 +238,6 @@ public static partial class MeshLoader
 		{
 			var newMesh = new Mesh();
 			newMesh.name = sceneMesh.Name;
-			// Debug.Log(newMesh.name + ": " + sceneMesh.VertexCount + " vertices, " + sceneMesh.FaceCount + " faces, " + sceneMesh.MaterialIndex + " material index");
 
 			if (sceneMesh.VertexCount < 3)
 			{
@@ -466,6 +363,8 @@ public static partial class MeshLoader
 				// }
 
 				newMesh.tangents = tangents.ToArray();
+
+				newMesh.RecalculateNormals();
 			}
 
 			// Debug.Log("Done - " + sceneMesh.Name + ", " + newMesh.vertexCount + " : " + sceneMesh.MaterialIndex + ", " + newMesh.bindposes.LongLength);
@@ -477,8 +376,7 @@ public static partial class MeshLoader
 
 	private static GameObject ToUnityMeshObject(
 		this Assimp.Node node,
-		in MeshMaterialList meshMatList,
-		in Dictionary<string, Assimp.Light> lightMap = null)
+		in MeshMaterialList meshMatList)
 	{
 		var nodeObject = new GameObject(node.Name);
 		// Debug.Log($"ToUnityMeshObject : {node.Name} {node.Transform}");
@@ -501,36 +399,27 @@ public static partial class MeshLoader
 				meshRenderer.receiveShadows = true;
 
 				subObject.transform.SetParent(nodeObject.transform, true);
-				// Debug.Log($"[MeshAssign] Node='{node.Name}' MeshIndex={index} Mesh='{meshMat.mesh.name}' MatIdx={meshMat.materialIndex} Mat='{meshMat.material?.name}'");
+				// Debug.Log("Sub Object: " + subObject.name);
 			}
 		}
 
-		// Set Light
-		if (lightMap != null && lightMap.ContainsKey(node.Name))
-		{
-			lightMap[node.Name].ApplyLightToNode(nodeObject);
-		}
-
-		// Convert Assimp transform into Unity transform
-		// Use proper decomposition that preserves negative scale (reflection)
+		// Convert Assimp transfrom into Unity transform
 		var nodeTransformMatrix = node.Transform.ToUnity();
-		nodeTransformMatrix.DecomposeTransformMatrix(out var localPos, out var localRot, out var localScale);
-		nodeObject.transform.localPosition = localPos;
-		nodeObject.transform.localRotation = localRot;
-		nodeObject.transform.localScale = localScale;
+		nodeObject.transform.localPosition = nodeTransformMatrix.GetPosition();
+		nodeObject.transform.localRotation = nodeTransformMatrix.rotation;
+		nodeObject.transform.localScale = nodeTransformMatrix.lossyScale;
 
 		if (node.HasChildren)
 		{
 			foreach (var child in node.Children)
 			{
-				var hasLight = (lightMap != null && lightMap.ContainsKey(child.Name));
-				if (!hasLight && child.ChildrenCount() == 0)
+				if (child.ChildrenCount() == 0)
 				{
 					continue;
 				}
 
 				// Debug.Log(" => Child Object: " + child.Name + " " + child.Transform);
-				var childObject = child.ToUnityMeshObject(meshMatList, lightMap);
+				var childObject = child.ToUnityMeshObject(meshMatList);
 				childObject.transform.SetParent(nodeObject.transform, false);
 			}
 		}
@@ -559,9 +448,7 @@ public static partial class MeshLoader
 #else
 		if (MeshCache.ContainsKey(cacheKey))
 		{
-#if UNITY_EDITOR
 			Debug.Log($"Use cached mesh({cacheKey}) for {meshPath}");
-#endif
 		}
 		else
 #endif
@@ -583,18 +470,15 @@ public static partial class MeshLoader
 				List<Material> materials = null;
 				if (scene.HasMaterials)
 				{
-					materials = scene.Materials.ToUnity(meshPath, scene);
+					materials = scene.Materials.ToUnity(meshPath);
 				}
 
 				meshMatList = scene.Meshes.ToUnity();
 				meshMatList.SetMaterials(materials);
 			}
 
-			// Build light map from scene
-			var lightMap = scene.HasLights ? scene.BuildLightMap() : null;
-
-			// Create GameObjects from nodes (including lights)
-			var createdMeshObject = scene.RootNode.ToUnityMeshObject(meshMatList, lightMap);
+			// Create GameObjects from nodes
+			var createdMeshObject = scene.RootNode.ToUnityMeshObject(meshMatList);
 			// Debug.Log(createdMeshObject.name + ": " + createdMeshObject.transform.localRotation.eulerAngles);
 
 			createdMeshObject.SetActive(false);

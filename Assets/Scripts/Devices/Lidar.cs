@@ -9,9 +9,10 @@ using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
-using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
+using Unity.Profiling;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -19,18 +20,30 @@ namespace SensorDevices
 {
 	public partial class Lidar : Device
 	{
+		// ── Profiling markers ──
+		private static readonly ProfilerMarker s_LidarSubCamRenderMarker = new("Lidar.SubCamRender");
+		private static readonly ProfilerMarker s_LidarComputeMarker = new("Lidar.ComputeDispatch");
+		private static readonly ProfilerMarker s_LidarProcessMarker = new("Lidar.LaserProcessing");
+
 		private static int _globalSequence = 0;
 		[SerializeField] private messages.LaserScan _laserScan = null;
 		[SerializeField] private Thread _laserProcessThread = null;
+		public Action<messages.LaserScanStamped> OnLidarDataGenerated;
 
 		[SerializeField] private const float DEG180 = Mathf.PI * Mathf.Rad2Deg;
 		[SerializeField] private const float DEG360 = DEG180 * 2;
 
 		[SerializeField] private const float HFOV_FOR_2D_LIDAR = 90f;
-		[SerializeField] private const float HFOV_FOR_3D_LIDAR = 10f;
+		// Wider FOV = fewer sub-cameras = fewer GPU render passes per scan.
+		// 10° → 36 sub-cameras, 60° → 6 sub-cameras (6× fewer render calls).
+		// The GPU processes tiny render targets (25px wide at 10°) instantly,
+		// so the bottleneck is CPU-side HDRP setup per render pass.
+		// At 60°, render targets are 150px wide — still trivial for GPU.
+		[SerializeField] private const float HFOV_FOR_3D_LIDAR = 90f;
 		[SerializeField] private float LaserCameraHFov = 0f;
 		[SerializeField] private float LaserCameraHFovHalf = 0;
 		[SerializeField] private float LaserCameraVFov = 0;
+		[SerializeField] private float LaserCameraVFovOriginal = 0;
 
 		[Header("SDF properties")]
 		private MathUtil.MinMax _scanRange;
@@ -75,10 +88,17 @@ namespace SensorDevices
 		private Transform _lidarLink = null;
 		private UnityEngine.Camera _laserCam = null;
 
+		/// <summary>
+		/// Cached renderers of the parent robot model, used to hide the robot's
+		/// own body during LiDAR rendering to prevent self-occlusion.
+		/// </summary>
+		private Renderer[] _parentModelRenderers = null;
+		private int[] _parentModelOriginalLayers = null;
+		// Unity built-in layer 2 = "Ignore Raycast" — always exists, not in the lidar culling mask
+		private const int SelfOcclusionLayer = 2;
+
 		private int _numberOfLaserCamData = 0;
 		private LaserData.CameraControlInfo[] _camControlInfo;
-
-		[SerializeField] private int _slicesPerFrame = 2;
 
 		private bool _startLaserWork = false;
 
@@ -88,6 +108,17 @@ namespace SensorDevices
 		private Material _depthMaterial;
 		private CommandBuffer _cb;
 		private ComputeShader _laserCompute;
+
+		// HDRP depth capture via endCameraRendering callback.
+		// CustomPassVolume was unreliable for the lidar because Camera.Render()
+		// is called 6 times per frame (for sub-cameras), and the Custom Pass
+		// system could miss some renders or let the GUI camera interfere.
+		// The endCameraRendering callback fires reliably for EVERY Camera.Render()
+		// call.  At that point _CameraDepthTexture and all HDRP shader globals
+		// are still bound for the current camera, so DrawFullScreen with the
+		// DepthCaptureFullscreen shader reads correct depth.
+		private Material _depthCaptureMaterial;
+		private RenderTexture _capturedDepthRT;
 		private int _laserComputeGroupsX;
 		private int _laserComputeGroupsY;
 		private int _laserComputeKernel;
@@ -97,40 +128,71 @@ namespace SensorDevices
 		private ConcurrentQueue<(double, Pose, LaserData.Output[])> _outputQueue = new();
 		private readonly AutoResetEvent _dataAvailable = new(false);
 
-#if UNITY_EDITOR
-		#region LIDAR PROFILER
-		private int _profFrameCount = 0;
-		private double _profByteCount = 0;
-		private float _periodForLidarProfiler = 5f; // seconds
+		// ── Render state for independent coroutine ──
+		// Lidar uses its own coroutine (not SensorRenderManager) because
+		// it needs to render 4-6 sub-cameras per scan, and sharing the
+		// frame budget with 9 cameras would starve it.
+		private const int BufferCount = 5;
+		private ComputeBuffer[] _computeBuffers;
+		private int _bufferIndex = 0;
 
-		private System.Diagnostics.Stopwatch _profWatch = System.Diagnostics.Stopwatch.StartNew();
-
-		[ContextMenu("Reset Lidar Profiler")]
-		private void ResetLidarProfiler()
+		/// <summary>
+		/// In HDRP, register for endCameraRendering to capture depth after each
+		/// sub-camera render.  This replaces the CustomPassVolume approach which
+		/// was unreliable for the lidar's 6 explicit Camera.Render() calls.
+		/// </summary>
+		private void OnEnable()
 		{
-			_profFrameCount = 0;
-			_profByteCount = 0;
-			_profWatch.Restart();
-		}
-
-		private void UpdateLidarProfiler(double byteCount)
-		{
-			const double oneMegabyte = 1024.0 * 1024.0;
-
-			_profFrameCount++;
-			_profByteCount += byteCount;
-			if (_profWatch.Elapsed.TotalSeconds >= _periodForLidarProfiler)
+			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null)
 			{
-				double seconds = _profWatch.ElapsedMilliseconds / 1000.0;
-				double hz = _profFrameCount / seconds;
-				double mbPerSec = (_profByteCount / seconds) / oneMegabyte;
-				double mbps = (_profByteCount * 8.0 / seconds) / oneMegabyte;
-				Debug.Log($"[PROF][LIDAR] {DeviceName} Hz: {hz:F2} | Bandwidth: {mbps:F2} Mbps ({mbPerSec:F2} MB/s)");
-				ResetLidarProfiler();
+				RenderPipelineManager.endCameraRendering += OnEndLaserCameraRendering;
 			}
 		}
-		#endregion
-#endif
+
+		private void OnDisable()
+		{
+			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null)
+			{
+				RenderPipelineManager.endCameraRendering -= OnEndLaserCameraRendering;
+			}
+		}
+
+		/// <summary>
+		/// Capture linear depth from _CameraDepthTexture into _capturedDepthRT
+		/// using the HDRP-native DepthCaptureFullscreen shader.
+		/// At this callback point, all HDRP shader globals (_CameraDepthTexture,
+		/// _ZBufferParams, _ScreenSize, _ProjectionParams) are still valid for
+		/// the camera that just rendered.  CoreUtils.DrawFullScreen invokes the
+		/// shader which uses LoadCameraDepth() (LOAD_TEXTURE2D_X) to correctly
+		/// read from HDRP's Tex2DArray depth buffer.
+		/// </summary>
+		private void OnEndLaserCameraRendering(ScriptableRenderContext context, UnityEngine.Camera camera)
+		{
+			if (camera != _laserCam || _depthCaptureMaterial == null)
+				return;
+
+			var w = camera.pixelWidth;
+			var h = camera.pixelHeight;
+
+			// Lazy-allocate (or resize) the capture RT
+			if (_capturedDepthRT == null || _capturedDepthRT.width != w || _capturedDepthRT.height != h)
+			{
+				if (_capturedDepthRT != null) _capturedDepthRT.Release();
+				_capturedDepthRT = new RenderTexture(w, h, 0, GraphicsFormat.R32_SFloat)
+				{
+					name = "LidarCapturedDepth",
+					filterMode = FilterMode.Point,
+				};
+				_capturedDepthRT.Create();
+			}
+
+			var cmd = CommandBufferPool.Get("LidarDepthCapture");
+			CoreUtils.SetRenderTarget(cmd, _capturedDepthRT);
+			CoreUtils.DrawFullScreen(cmd, _depthCaptureMaterial, shaderPassId: 0);
+			context.ExecuteCommandBuffer(cmd);
+			context.Submit();
+			CommandBufferPool.Release(cmd);
+		}
 
 		protected override void OnAwake()
 		{
@@ -159,12 +221,215 @@ namespace SensorDevices
 
 				_startLaserWork = true;
 
-				StartCoroutine(CaptureLaserCamera());
+				// Pre-allocate compute buffer ring
+				var totalBufferLength = _numberOfLaserCamData * _outputBufferLength;
+				_computeBuffers = new ComputeBuffer[BufferCount];
+				for (var b = 0; b < BufferCount; b++)
+				{
+					_computeBuffers[b] = new ComputeBuffer(totalBufferLength, sizeof(float));
+				}
+
+				// LiDAR uses its own coroutine — not the SensorRenderManager —
+				// because it needs to render 4-6 sub-cameras per scan.
+				// Camera sensors use SensorRenderManager for batched scheduling.
+				Invoke(nameof(StartLaserCaptureDelayed), 0.1f);
 
 				if (_laserProcessThread != null)
 				{
 					_laserProcessThread.Start();
 				}
+
+				// Cache parent model renderers to hide the robot's own body during LiDAR rendering
+				_parentModelRenderers = FindParentModelRenderers();
+				if (_parentModelRenderers != null)
+				{
+					_parentModelOriginalLayers = new int[_parentModelRenderers.Length];
+					var modelName = "unknown";
+					var current = transform.parent;
+					while (current != null)
+					{
+						if (current.CompareTag("Model")) { modelName = current.name; break; }
+						current = current.parent;
+					}
+					Debug.Log($"[Lidar] Found {_parentModelRenderers.Length} renderers in model '{modelName}' for self-occlusion exclusion (target layer={SelfOcclusionLayer})");
+				}
+			}
+		}
+
+		/// <summary>
+		/// Walk up the transform hierarchy to find the closest parent tagged "Model"
+		/// and return all Renderer components in its children. These will be moved
+		/// to "Ignore Raycast" layer during LiDAR rendering to prevent the robot
+		/// from seeing its own body.
+		/// </summary>
+		private Renderer[] FindParentModelRenderers()
+		{
+			var current = transform.parent;
+			while (current != null)
+			{
+				if (current.CompareTag("Model"))
+				{
+					var renderers = current.GetComponentsInChildren<Renderer>(true);
+					return renderers.Length > 0 ? renderers : null;
+				}
+				current = current.parent;
+			}
+			return null;
+		}
+
+		private void HideParentModelFromLidar()
+		{
+			if (_parentModelRenderers == null)
+				return;
+			for (var i = 0; i < _parentModelRenderers.Length; i++)
+			{
+				if (_parentModelRenderers[i] != null)
+				{
+					_parentModelOriginalLayers[i] = _parentModelRenderers[i].gameObject.layer;
+					_parentModelRenderers[i].gameObject.layer = SelfOcclusionLayer;
+				}
+			}
+		}
+
+		private void RestoreParentModelVisibility()
+		{
+			if (_parentModelRenderers == null)
+				return;
+			for (var i = 0; i < _parentModelRenderers.Length; i++)
+			{
+				if (_parentModelRenderers[i] != null)
+					_parentModelRenderers[i].gameObject.layer = _parentModelOriginalLayers[i];
+			}
+		}
+
+		private void StartLaserCaptureDelayed()
+		{
+			if (_startLaserWork)
+			{
+				StartCoroutine(CaptureLaserCamera());
+			}
+		}
+
+		private IEnumerator WaitStartSequence()
+		{
+			var lidarSequence = _globalSequence++;
+			for (var i = 0; i < lidarSequence; i++)
+				yield return null;
+		}
+
+		/// <summary>
+		/// Independent lidar capture coroutine with async GPU readback.
+		/// Renders all sub-cameras in a tight loop each frame (no yielding between them),
+		/// then issues async GPU readback to avoid blocking the main thread.
+		/// With 60° HFOV (6 sub-cameras), total render cost is ~2-3ms per scan.
+		/// </summary>
+		private IEnumerator CaptureLaserCamera()
+		{
+			yield return WaitStartSequence();
+
+			var axisRotation = Vector3.zero;
+			var outputs = new LaserData.Output[_numberOfLaserCamData];
+			var lastUpdateTime = 0f;
+
+			while (_startLaserWork)
+			{
+				var now = Time.realtimeSinceStartup;
+				lastUpdateTime += Time.unscaledDeltaTime;
+				if (lastUpdateTime < UpdatePeriod)
+				{
+					yield return null;
+					continue;
+				}
+
+				lastUpdateTime -= UpdatePeriod;
+
+				var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
+				var sensorPose = new Pose(transform.position, transform.rotation);
+				_bufferIndex = (_bufferIndex + 1) % BufferCount;
+				var currentBuffer = _computeBuffers[_bufferIndex];
+
+				// Reset outputs
+				for (var i = 0; i < _numberOfLaserCamData; i++)
+				{
+					outputs[i] = new LaserData.Output(i);
+				}
+
+				// Hide the robot's own body so the LiDAR doesn't see it
+				HideParentModelFromLidar();
+
+				// Render all sub-cameras in tight loop
+				for (var dataIndex = 0; dataIndex < _numberOfLaserCamData; dataIndex++)
+				{
+					if (!_camControlInfo[dataIndex].isOverlappingDirection)
+					{
+						continue;
+					}
+
+					outputs[dataIndex] = new LaserData.Output(dataIndex, _outputBufferLength);
+
+					axisRotation.y = _camControlInfo[dataIndex].laserCamRotationalAngle;
+					_laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
+
+					using (s_LidarSubCamRenderMarker.Auto())
+					{
+						_laserCam.Render();
+					}
+
+					using (s_LidarComputeMarker.Auto())
+					{
+						if (_laserCompute != null)
+						{
+							_laserCompute.SetInt("_DataOffset", dataIndex * _outputBufferLength);
+							// In HDRP, read from _capturedDepthRT (written by
+							// OnEndLaserCameraRendering after each Camera.Render()).
+							// In built-in, read from camera.targetTexture (modified
+							// by the attached command buffer).
+							var depthSource = _capturedDepthRT != null
+								? (Texture)_capturedDepthRT
+								: (Texture)_laserCam.targetTexture;
+							_laserCompute.SetTexture(_laserComputeKernel, "_DepthTexture", depthSource);
+							_laserCompute.SetBuffer(_laserComputeKernel, "_RayData", currentBuffer);
+							_laserCompute.Dispatch(_laserComputeKernel, _laserComputeGroupsX, _laserComputeGroupsY, 1);
+						}
+					}
+					_laserCam.enabled = false;
+				}
+
+				// Restore parent model visibility after all sub-cameras have rendered
+				RestoreParentModelVisibility();
+
+				// Async GPU readback — capture locals for closure
+				var framePose = sensorPose;
+				var frameCapturedTime = capturedTime;
+				var frameOutputs = new LaserData.Output[_numberOfLaserCamData];
+				for (var i = 0; i < _numberOfLaserCamData; i++)
+				{
+					frameOutputs[i] = new LaserData.Output(
+						outputs[i].dataIndex,
+						outputs[i].rayData != null ? outputs[i].rayData.Length : 0);
+				}
+
+				AsyncGPUReadback.Request(currentBuffer, (req) =>
+				{
+					if (req.hasError || !req.done)
+					{
+						Debug.LogWarning("Lidar GPU readback error");
+						return;
+					}
+
+					var src = req.GetData<float>();
+					for (var i = 0; i < _numberOfLaserCamData; i++)
+					{
+						if (frameOutputs[i].rayData == null)
+							continue;
+						frameOutputs[i].ConvertDataType(src);
+					}
+
+					_outputQueue.Enqueue((frameCapturedTime, framePose, frameOutputs));
+					_dataAvailable.Set();
+				});
+
+				yield return null;
 			}
 		}
 
@@ -173,6 +438,14 @@ namespace SensorDevices
 			_outputQueue.Clear();
 			_startLaserWork = false;
 			_dataAvailable.Set();
+
+			// Clean up compute buffers
+			if (_computeBuffers != null)
+			{
+				foreach (var buf in _computeBuffers)
+					buf?.Release();
+				_computeBuffers = null;
+			}
 
 			if (_laserProcessThread != null && _laserProcessThread.IsAlive)
 			{
@@ -183,21 +456,23 @@ namespace SensorDevices
 
 			if (_cb != null)
 			{
-				if (_laserCam != null)
+				// RemoveCommandBuffer is only available with the built-in renderer
+				if (_laserCam != null && UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null)
 					_laserCam.RemoveCommandBuffer(CameraEvent.AfterEverything, _cb);
 				_cb.Release();
 				_cb = null;
 			}
 
-			if (_laserCam != null)
+			// RemoveAllCommandBuffers is only available with the built-in renderer
+			if (_laserCam != null && UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null)
 			{
 				try
 				{
-					 _laserCam.RemoveAllCommandBuffers();
+					_laserCam.RemoveAllCommandBuffers();
 				}
 				catch
 				{
-					Debug.LogWarning("Failed to remove RemoveAllCommandBuffers");
+					Debug.LogWarning("Failed to RemoveAllCommandBuffers");
 				}
 			}
 
@@ -205,6 +480,18 @@ namespace SensorDevices
 			{
 				Destroy(_depthMaterial);
 				_depthMaterial = null;
+			}
+
+			if (_depthCaptureMaterial != null)
+			{
+				Destroy(_depthCaptureMaterial);
+				_depthCaptureMaterial = null;
+			}
+
+			if (_capturedDepthRT != null)
+			{
+				_capturedDepthRT.Release();
+				_capturedDepthRT = null;
 			}
 
 			_rtHandle?.Release();
@@ -256,14 +543,31 @@ namespace SensorDevices
 			_laserScan.Ranges = new double[totalSamples];
 			_laserScan.Intensities = new double[totalSamples];
 			Array.Fill(_laserScan.Ranges, double.NaN);
-			Array.Fill(_laserScan.Intensities, double.NaN);
+			Array.Fill(_laserScan.Intensities, 0.0);
 		}
 
 		private void SetupLaserCamera()
 		{
-			LaserCameraVFov = (_vertical.samples == 1) ? 1 : (Mathf.Max(Mathf.Abs(_vertical.angle.min), Mathf.Abs(_vertical.angle.max)) * 2);
 			LaserCameraHFov = (_vertical.samples > 1) ? HFOV_FOR_3D_LIDAR : HFOV_FOR_2D_LIDAR;
 			LaserCameraHFovHalf = LaserCameraHFov * 0.5f;
+
+			// Original VFOV = lidar's actual vertical angle range (before expansion)
+			LaserCameraVFovOriginal = (_vertical.samples == 1) ? 1 : (Mathf.Max(Mathf.Abs(_vertical.angle.min), Mathf.Abs(_vertical.angle.max)) * 2);
+
+			if (_vertical.samples == 1)
+			{
+				LaserCameraVFov = 1;
+			}
+			else
+			{
+				// Expand VFOV to account for keystone distortion at sub-camera edges.
+				// At the horizontal edge (hAngle = HFOV/2), a vertical ray at elevation e
+				// projects to atan(tan(e)/cos(HFOV/2)) on the image plane.
+				var maxElevAbs = LaserCameraVFovOriginal * 0.5f;
+				var cosHalfHFov = Mathf.Cos(LaserCameraHFovHalf * Mathf.Deg2Rad);
+				var expandedHalfVFov = Mathf.Atan(Mathf.Tan(maxElevAbs * Mathf.Deg2Rad) / cosHalfHFov) * Mathf.Rad2Deg;
+				LaserCameraVFov = Mathf.Max(expandedHalfVFov * 2f, 1f);
+			}
 
 			_laserCam.ResetWorldToCameraMatrix();
 			_laserCam.ResetProjectionMatrix();
@@ -273,14 +577,19 @@ namespace SensorDevices
 			_laserCam.allowDynamicResolution = false;
 			_laserCam.useOcclusionCulling = false;
 			_laserCam.usePhysicalProperties = false;
-			_laserCam.stereoTargetEye = StereoTargetEyeMask.None;
 			_laserCam.orthographic = false;
 			_laserCam.nearClipPlane = _scanRange.min;
 			_laserCam.farClipPlane = _scanRange.max;
 			_laserCam.cullingMask = LayerMask.GetMask("Default", "Plane");
 			_laserCam.clearFlags = CameraClearFlags.Depth;
 			_laserCam.depthTextureMode = DepthTextureMode.Depth;
-			_laserCam.renderingPath = RenderingPath.Forward;
+
+			// These APIs are only available with the built-in renderer, not HDRP/URP
+			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null)
+			{
+				_laserCam.stereoTargetEye = StereoTargetEyeMask.None;
+				_laserCam.renderingPath = RenderingPath.Forward;
+			}
 
 			var renderTextureWidth = Mathf.CeilToInt(LaserCameraHFov / _resolution.angleH);
 			var renderTextureHeight = Mathf.CeilToInt(LaserCameraVFov / _resolution.angleV);
@@ -314,34 +623,76 @@ namespace SensorDevices
 			var projMatrix = SensorHelper.MakeProjectionMatrixPerspective(LaserCameraHFov, LaserCameraVFov, _laserCam.nearClipPlane, _laserCam.farClipPlane);
 			_laserCam.projectionMatrix = projMatrix;
 
-			var universalLaserCamData = _laserCam.GetUniversalAdditionalCameraData();
-			universalLaserCamData.renderShadows = false;
-			universalLaserCamData.stopNaN = true;
-			universalLaserCamData.dithering = true;
-			universalLaserCamData.allowXRRendering = false;
-			universalLaserCamData.volumeLayerMask = default;
-			universalLaserCamData.renderType = CameraRenderType.Base;
-			universalLaserCamData.renderPostProcessing = false;
-			universalLaserCamData.antialiasing = AntialiasingMode.None;
-			universalLaserCamData.requiresColorOption = CameraOverrideOption.Off;
-			universalLaserCamData.requiresDepthOption = CameraOverrideOption.Off;
-			universalLaserCamData.requiresColorTexture = false;
-			universalLaserCamData.requiresDepthTexture = true;
-			universalLaserCamData.cameraStack.Clear();
+			var hdLaserCamData = _laserCam.GetComponent<HDAdditionalCameraData>();
+			if (hdLaserCamData == null)
+			{
+				hdLaserCamData = _laserCam.gameObject.AddComponent<HDAdditionalCameraData>();
+			}
 
-			var depthShader = Shader.Find("Sensor/DepthRange");
-			_depthMaterial = new Material(depthShader);
-			_depthMaterial.hideFlags = HideFlags.DontUnloadUnusedAsset;
+			// Optimize HDRP lidar camera — we only need depth, disable all expensive features
+			hdLaserCamData.customRenderingSettings = true;
+			// Disable shadows
+			var shadowMask = hdLaserCamData.renderingPathCustomFrameSettingsOverrideMask;
+			shadowMask.mask[(uint)FrameSettingsField.ShadowMaps] = true;
+			shadowMask.mask[(uint)FrameSettingsField.ContactShadows] = true;
+			shadowMask.mask[(uint)FrameSettingsField.ScreenSpaceShadows] = true;
+			// Disable volumetrics and atmosphere
+			shadowMask.mask[(uint)FrameSettingsField.Volumetrics] = true;
+			shadowMask.mask[(uint)FrameSettingsField.ReprojectionForVolumetrics] = true;
+			shadowMask.mask[(uint)FrameSettingsField.AtmosphericScattering] = true;
+			// Disable post-processing and effects
+			shadowMask.mask[(uint)FrameSettingsField.Postprocess] = true;
+			shadowMask.mask[(uint)FrameSettingsField.SSAO] = true;
+			shadowMask.mask[(uint)FrameSettingsField.SSR] = true;
+			shadowMask.mask[(uint)FrameSettingsField.SubsurfaceScattering] = true;
+			shadowMask.mask[(uint)FrameSettingsField.Refraction] = true;
+			shadowMask.mask[(uint)FrameSettingsField.MotionVectors] = true;
+			shadowMask.mask[(uint)FrameSettingsField.Decals] = true;
+			shadowMask.mask[(uint)FrameSettingsField.TransparentObjects] = true;
+			hdLaserCamData.renderingPathCustomFrameSettingsOverrideMask = shadowMask;
 
-			_cb = new CommandBuffer();
-			_cb.ClearRenderTarget(true, true, Color.clear);
-			var tempTextureId = Shader.PropertyToID("_RenderCameraDepthTexture");
-			_cb.GetTemporaryRT(tempTextureId, -1, -1);
-			_cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
-			_cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
-			_cb.ReleaseTemporaryRT(tempTextureId);
+			var frameSettings = hdLaserCamData.renderingPathCustomFrameSettings;
+			frameSettings.SetEnabled(FrameSettingsField.TransparentObjects, true);
+			frameSettings.SetEnabled(FrameSettingsField.ShadowMaps, false);
+			frameSettings.SetEnabled(FrameSettingsField.ContactShadows, false);
+			frameSettings.SetEnabled(FrameSettingsField.ScreenSpaceShadows, false);
+			frameSettings.SetEnabled(FrameSettingsField.Volumetrics, false);
+			frameSettings.SetEnabled(FrameSettingsField.ReprojectionForVolumetrics, false);
+			frameSettings.SetEnabled(FrameSettingsField.AtmosphericScattering, false);
+			frameSettings.SetEnabled(FrameSettingsField.Postprocess, false);
+			frameSettings.SetEnabled(FrameSettingsField.SSAO, false);
+			frameSettings.SetEnabled(FrameSettingsField.SSR, false);
+			frameSettings.SetEnabled(FrameSettingsField.SubsurfaceScattering, false);
+			frameSettings.SetEnabled(FrameSettingsField.Refraction, false);
+			frameSettings.SetEnabled(FrameSettingsField.MotionVectors, false);
+			frameSettings.SetEnabled(FrameSettingsField.Decals, false);
+			hdLaserCamData.renderingPathCustomFrameSettings = frameSettings;
 
-			_laserCam.AddCommandBuffer(CameraEvent.AfterEverything, _cb);
+			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null)
+			{
+				// HDRP: depth capture is handled by the endCameraRendering callback
+				// (OnEndLaserCameraRendering) which fires for EVERY Camera.Render()
+				// call.  It uses CoreUtils.DrawFullScreen with the DepthCaptureFullscreen
+				// shader to read _CameraDepthTexture (still valid at callback time) and
+				// write linearized depth to _capturedDepthRT.
+				var depthShader = Shader.Find("FullScreen/DepthCapture");
+				_depthCaptureMaterial = new Material(depthShader);
+			}
+			else
+			{
+				// Built-in pipeline: use command buffer approach
+				var depthShader = Shader.Find("Sensor/DepthRange");
+				_depthMaterial = new Material(depthShader);
+
+				_cb = new CommandBuffer();
+				_cb.ClearRenderTarget(true, true, Color.clear);
+				var tempTextureId = Shader.PropertyToID("_RenderCameraDepthTexture");
+				_cb.GetTemporaryRT(tempTextureId, -1, -1);
+				_cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
+				_cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
+				_cb.ReleaseTemporaryRT(tempTextureId);
+				_laserCam.AddCommandBuffer(CameraEvent.AfterEverything, _cb);
+			}
 
 			// _laserCam.hideFlags |= HideFlags.NotEditable;
 
@@ -355,15 +706,19 @@ namespace SensorDevices
 
 		private void SetupLaserCameraData()
 		{
-			var LaserCameraVFovHalf = LaserCameraVFov * 0.5f;
+			var LaserCameraVFovHalf = LaserCameraVFov * 0.5f; // expanded half (for texture pixel mapping)
+			var LaserCameraVFovOriginalHalf = LaserCameraVFovOriginal * 0.5f; // lidar's actual half
 			var LaserCameraRotationAngle = LaserCameraHFov;
 
 			_numberOfLaserCamData = Mathf.CeilToInt(DEG360 / LaserCameraRotationAngle);
 			var isEven = (_numberOfLaserCamData % 2 == 0) ? true : false;
 
 			var targetDepthRT = _laserCam.targetTexture;
-			var width = targetDepthRT.width;
-			var height = targetDepthRT.height;
+			var texWidth = targetDepthRT.width;
+			var texHeight = targetDepthRT.height;
+			// Dispatch dimensions = lidar's actual sample counts (not expanded texture size)
+			var width = texWidth; // horizontal: no expansion, same as texture
+			var height = (int)_vertical.samples; // vertical: lidar's actual channel count
 			var centerAngleOffset = (_horizontal.angle.min < 0) ? (isEven ? -LaserCameraHFovHalf : 0) : LaserCameraHFovHalf;
 
 			var scanCenter = (_horizontal.angle.min + _horizontal.angle.max) * 0.5f;
@@ -390,10 +745,12 @@ namespace SensorDevices
 
 			_laserCompute.SetInt("_Width", width);
 			_laserCompute.SetInt("_Height", height);
+			_laserCompute.SetInt("_TexWidth", texWidth);
+			_laserCompute.SetInt("_TexHeight", texHeight);
 			_laserCompute.SetFloat("_MaxHAngleHalf", LaserCameraHFovHalf);
-			_laserCompute.SetFloat("_MaxVAngleHalf", LaserCameraVFovHalf);
+			_laserCompute.SetFloat("_MaxVAngleHalf", LaserCameraVFovOriginalHalf); // lidar's actual half-elevation
 			_laserCompute.SetFloat("_MaxHAngleHalfTanInv", 1f / Mathf.Tan(LaserCameraHFovHalf * Mathf.Deg2Rad));
-			_laserCompute.SetFloat("_MaxVAngleHalfTanInv", 1f / Mathf.Tan(LaserCameraVFovHalf * Mathf.Deg2Rad));
+			_laserCompute.SetFloat("_MaxVAngleHalfTanInv", 1f / Mathf.Tan(LaserCameraVFovHalf * Mathf.Deg2Rad)); // expanded half for texture mapping
 			_laserCompute.SetFloat("_RangeMin", _scanRange.min);
 			_laserCompute.SetFloat("_RangeMax", _scanRange.max);
 			_laserCompute.SetFloat("_RangeLinearResolution", _resolution.linear);
@@ -443,146 +800,6 @@ namespace SensorDevices
 			_noiseParamInRawXml = noiseParamInRawXml;
 		}
 
-		private IEnumerator WaitStartSequence()
-		{
-			var lidarSequence = _globalSequence++;
-			for (var i = 0; i < lidarSequence; i++)
-				yield return null;
-		}
-
-		private IEnumerator CaptureLaserCamera()
-		{
-			yield return WaitStartSequence();
-
-			var lidarSensorWorldPose = new Pose();
-			var axisRotation = Vector3.zero;
-
-			var outputs = new LaserData.Output[_numberOfLaserCamData];
-			for (var i = 0; i < _numberOfLaserCamData; i++)
-				outputs[i] = new LaserData.Output(i, _outputBufferLength);
-
-			const int FrameOutputPoolSize = 5;
-			var frameOutputPool = new LaserData.Output[FrameOutputPoolSize][];
-			for (var p = 0; p < FrameOutputPoolSize; p++)
-			{
-				frameOutputPool[p] = new LaserData.Output[_numberOfLaserCamData];
-				for (var i = 0; i < _numberOfLaserCamData; i++)
-					frameOutputPool[p][i] = new LaserData.Output(i, _outputBufferLength);
-			}
-			var frameOutputPoolIndex = 0;
-
-			const int BufferCount = 5;
-			var bufferIndex = 0;
-			var totalBufferLength = _numberOfLaserCamData * _outputBufferLength;
-			var computedBuffers = new ComputeBuffer[BufferCount];
-			for (var b = 0; b < BufferCount; b++)
-			{
-				computedBuffers[b] = new ComputeBuffer(totalBufferLength, sizeof(float));
-			}
-
-			var	currentSliceIndex = 0;
-			var accumulatedCount = 0;
-			var framesPerScan = Mathf.CeilToInt((float)_numberOfLaserCamData / _slicesPerFrame);
-			var sliceUpdatePeriod = UpdatePeriod / framesPerScan;
-			var lastUpdateTime = 0f;
-			ComputeBuffer currentComputeBuffer = null;
-
-			while (_startLaserWork)
-			{
-				lastUpdateTime += Time.unscaledDeltaTime;
-
-				var maxRendersPerFrame = Mathf.Max(_slicesPerFrame * 2, framesPerScan);
-				var rendersThisFrame = 0;
-
-				while (lastUpdateTime >= sliceUpdatePeriod && _startLaserWork && rendersThisFrame < maxRendersPerFrame)
-				{
-					lastUpdateTime -= sliceUpdatePeriod;
-
-					// Start of a new scan cycle: advance buffer and capture pose/time
-					if (accumulatedCount == 0)
-					{
-						bufferIndex = (bufferIndex + 1) % BufferCount;
-						currentComputeBuffer = computedBuffers[bufferIndex];
-
-						lidarSensorWorldPose.position = transform.position;
-						lidarSensorWorldPose.rotation = transform.rotation;
-					}
-
-					var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
-
-					for (var slice = 0; slice < _slicesPerFrame; slice++)
-					{
-						var dataIndex = currentSliceIndex;
-						currentSliceIndex = (currentSliceIndex + 1) % _numberOfLaserCamData;
-
-						if (!_camControlInfo[dataIndex].isOverlappingDirection)
-						{
-							// Debug.Log($"Skip to render for {dataIndex} {_camControlInfo[dataIndex].laserCamRotationalAngle} {name}");
-							outputs[dataIndex].Reset(dataIndex, false);
-						}
-						else
-						{
-							outputs[dataIndex].Reset(dataIndex, true);
-
-							axisRotation.y = _camControlInfo[dataIndex].laserCamRotationalAngle;
-
-							_laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
-							_laserCam.Render();
-
-							if (_laserCompute != null)
-							{
-								_laserCompute.SetInt("_DataOffset", dataIndex * _outputBufferLength);
-								_laserCompute.SetTexture(_laserComputeKernel, "_DepthTexture", _laserCam.targetTexture);
-								_laserCompute.SetBuffer(_laserComputeKernel, "_RayData", currentComputeBuffer);
-								_laserCompute.Dispatch(_laserComputeKernel, _laserComputeGroupsX, _laserComputeGroupsY, 1);
-							}
-							_laserCam.enabled = false;
-						}
-
-						accumulatedCount++;
-						rendersThisFrame++;
-					}
-
-					if (accumulatedCount >= _numberOfLaserCamData)
-					{
-						accumulatedCount = 0;
-
-						var framePose = lidarSensorWorldPose;
-						var frameCapturedTime = capturedTime;
-
-						var frameOutputs = frameOutputPool[frameOutputPoolIndex];
-						frameOutputPoolIndex = (frameOutputPoolIndex + 1) % FrameOutputPoolSize;
-						for (var i = 0; i < _numberOfLaserCamData; i++)
-							frameOutputs[i].Reset(outputs[i].dataIndex, outputs[i].hasData);
-
-						AsyncGPUReadback.Request(currentComputeBuffer, (req) =>
-							{
-								if (req.hasError || !req.done)
-								{
-									Debug.LogWarning($"GPU readback not ready");
-									return;
-								}
-
-								var src = req.GetData<float>();
-								for (var i = 0; i < _numberOfLaserCamData; i++)
-								{
-									if (frameOutputs[i].hasData)
-										frameOutputs[i].ConvertDataType(src);
-								}
-
-								_outputQueue.Enqueue((frameCapturedTime, framePose, frameOutputs));
-								_dataAvailable.Set();
-							});
-					}
-				}
-
-				yield return null;
-			}
-
-			foreach (var computeBuffer in computedBuffers)
-				computeBuffer.Release();
-		}
-
 		private void LaserProcessing()
 		{
 			const int BufferUnitSize = sizeof(double);
@@ -597,7 +814,7 @@ namespace SensorDevices
 			var dividedDataTotalAngleH = 1 / LaserCameraHFov;
 
 			var laserSamplesV = (int)_vertical.samples;
-			var laserSamplesVTotal = Mathf.CeilToInt(LaserCameraVFov * _vertical.samples / _vertical.angle.range);
+			var laserSamplesVTotal = Mathf.CeilToInt(LaserCameraVFovOriginal * _vertical.samples / _vertical.angle.range);
 			var isMaxAngleDominant = Mathf.Abs(_vertical.angle.max) > Mathf.Abs(_vertical.angle.min);
 			var laserSamplesVStart = isMaxAngleDominant ? (laserSamplesVTotal - laserSamplesV) : 0;
 			var laserSamplesVEnd = isMaxAngleDominant ? laserSamplesVTotal : laserSamplesV;
@@ -628,12 +845,11 @@ namespace SensorDevices
 
 					Parallel.For(0, _numberOfLaserCamData, _parallelOptions, index =>
 					{
-						if (!item.outputs[index].hasData)
+						var srcBuffer = item.outputs[index].rayData;
+						if (srcBuffer == null)
 						{
 							return;
 						}
-
-						var srcBuffer = item.outputs[index].rayData;
 
 						var dataStartAngleH = _camControlInfo[index].laserCamRotationalAngle - LaserCameraHFovHalf;
 						var dataEndAngleH = _camControlInfo[index].laserCamRotationalAngle + LaserCameraHFovHalf;
@@ -736,11 +952,13 @@ namespace SensorDevices
 						_laserFilter.DoFilter(ref laserScan);
 					}
 
-					_messageQueue.Enqueue(laserScanStamped);
 
-#if UNITY_EDITOR
-					UpdateLidarProfiler(_laserScan.Count * _laserScan.VerticalCount * sizeof(double) * 2);
-#endif
+					if (OnLidarDataGenerated != null)
+					{
+						OnLidarDataGenerated.Invoke(laserScanStamped);
+					}
+
+					_messageQueue.Enqueue(laserScanStamped);
 				}
 				else
 				{
@@ -765,7 +983,6 @@ namespace SensorDevices
 			lineRenderer.positionCount = 0;
 			lineRenderer.widthMultiplier = 0.001f;
 			lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-			lineRenderer.material.hideFlags = HideFlags.DontUnloadUnusedAsset;
 			lineRenderer.useWorldSpace = true;
 
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);

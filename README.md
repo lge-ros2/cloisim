@@ -209,12 +209,14 @@ Run script with world file name.
 ./run.sh cloisim.world
 ```
 
-or can run headless mode (experimental only for linux)
+or can run headless mode (GPU accelerated rendering on linux without Xserver/Wayland via batchmode and Vulkan)
 
 ```shell
 ./run.sh --headless --world cloisim.world
 ./run.sh --headless --capture-screen --world cloisim.world # Capture screen
 ```
+
+*(Note: In Unity 6 LTS, GPU accelerated headless simulation on Linux leverages Vulkan. Ensure your host or container environments provide proper Vulkan drivers and GPU access. The `-batchmode` argument is used in the background without `-nographics` to allow headless rendering.)*
 
 or you can execute [binary](https://github.com/lge-ros2/cloisim/releases) file directly.
 

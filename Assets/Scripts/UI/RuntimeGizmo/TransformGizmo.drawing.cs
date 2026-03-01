@@ -411,8 +411,46 @@ namespace RuntimeGizmos
 		{
 			if (lineMaterial == null)
 			{
-				lineMaterial = Resources.Load<Material>("Materials/Lines");
+				// For GL immediate mode drawing (handles/axes), use Hidden/Internal-Colored.
+				// This is Unity's built-in shader designed for GL.Begin/GL.End that properly
+				// supports GL.Color() vertex colors in all render pipelines including HDRP.
+				var glShader = Shader.Find("Hidden/Internal-Colored");
+				if (glShader != null)
+				{
+					lineMaterial = new Material(glShader);
+					lineMaterial.name = "Lines_GL";
+					lineMaterial.hideFlags = HideFlags.HideAndDontSave;
+					lineMaterial.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha);
+					lineMaterial.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
+					lineMaterial.SetInt("_Cull", (int)CullMode.Off);
+					lineMaterial.SetInt("_ZWrite", 0);
+					lineMaterial.SetInt("_ZTest", (int)CompareFunction.Always);
+				}
+				else
+				{
+					lineMaterial = Resources.Load<Material>("Materials/Lines");
+				}
+
+				// For outline material (added to renderer materials), use HDRP/Unlit with
+				// proper keywords so it renders correctly in HDRP.
 				outlineMaterial = Resources.Load<Material>("Materials/Outline");
+				if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null)
+				{
+					var hdrpUnlitShader = Shader.Find("HDRP/Unlit");
+					if (hdrpUnlitShader != null)
+					{
+						outlineMaterial = new Material(hdrpUnlitShader);
+						outlineMaterial.name = "Outline_HDRP";
+						outlineMaterial.SetColor("_UnlitColor", new Color(1f, 0.9f, 0f, 0.35f));
+						outlineMaterial.SetFloat("_SurfaceType", 1); // Transparent
+						outlineMaterial.SetFloat("_BlendMode", 0); // Alpha
+						outlineMaterial.SetFloat("_ZWrite", 0);
+						outlineMaterial.SetFloat("_CullMode", 2); // Back
+						outlineMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+						outlineMaterial.renderQueue = 3050;
+						outlineMaterial.enableInstancing = true;
+					}
+				}
 			}
 		}
 

@@ -34,6 +34,7 @@ Shader "Sensor/DepthRange"
 			int _ReverseData;
 			int _FlipX;
 
+			uniform sampler2D _MainTex;
 			uniform sampler2D _CameraDepthTexture;
 			uniform half4 _MainTex_TexelSize;
 
@@ -59,7 +60,9 @@ Shader "Sensor/DepthRange"
 
 			float4 frag(v2f_img i) : COLOR
 			{
-				const float depth = UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, i.uv.xy));
+				// Read depth from _MainTex: either the blit source containing raw depth
+				// values, or _CameraDepthTexture passed through as _MainTex by the blit.
+				const float depth = UNITY_SAMPLE_DEPTH(tex2D(_MainTex, i.uv.xy));
 				const float linearDepth = Linear01Depth(depth);
 	
 				// if depth is near to far clip, return nothing

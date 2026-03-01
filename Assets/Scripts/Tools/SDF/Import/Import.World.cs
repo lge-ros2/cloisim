@@ -77,13 +77,17 @@ namespace SDF
 					}
 					else
 					{
-						var resolutionIndex = UE.Screen.resolutions.Length / 2;
-						// for (int i = 0; i < UE.Screen.resolutions.Length; i++)
-						// 	UE.Debug.Log(UE.Screen.resolutions[i]);
-						var selectedResolution = UE.Screen.resolutions[resolutionIndex];
-						// UE.Debug.Log($"SelectedWindowResolution={selectedResolution}");
-
-						UE.Screen.SetResolution(selectedResolution.width, selectedResolution.height, UE.FullScreenMode.Windowed);
+						var resolutions = UE.Screen.resolutions;
+						if (resolutions.Length > 0)
+						{
+							var resolutionIndex = resolutions.Length / 2;
+							var selectedResolution = resolutions[resolutionIndex];
+							UE.Screen.SetResolution(selectedResolution.width, selectedResolution.height, UE.FullScreenMode.Windowed);
+						}
+						else
+						{
+							UE.Debug.LogWarning("[ImportWorld] No screen resolutions available (headless?), skipping SetResolution.");
+						}
 					}
 				}
 

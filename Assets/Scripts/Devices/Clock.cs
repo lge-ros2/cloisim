@@ -132,6 +132,10 @@ public class Clock : Device
 		worldStat.SimTime.SetCurrentTime();
 		worldStat.RealTime.SetCurrentTime(true);
 
+		// Include performance counters from PerformanceLogger
+		worldStat.RenderFps = PerformanceLogger.LastRenderFPS;
+		worldStat.PhysicsHz = PerformanceLogger.LastPhysicsHz;
+
 		// filter same clock info
 		if ((_prevSimTime >= SimTime) ||
 			(_prevRealTime >= RealTime))

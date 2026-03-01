@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 using System.Collections;
+using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 
 public class CameraPlugin : CLOiSimPlugin

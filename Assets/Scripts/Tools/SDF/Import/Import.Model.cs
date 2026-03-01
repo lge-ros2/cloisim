@@ -23,7 +23,12 @@ namespace SDF
 				// Configure articulation body for root object
 				if (articulationBody == null)
 				{
+					// Temporarily deactivate to prevent PhysX error:
+					// "PxArticulationLink::release(): root link may not be released while articulation is in a scene"
+					var wasActive = targetObject.activeSelf;
+					targetObject.SetActive(false);
 					articulationBody = targetObject.AddComponent<UE.ArticulationBody>();
+					targetObject.SetActive(wasActive);
 				}
 
 				articulationBody.useGravity = false;
@@ -42,7 +47,7 @@ namespace SDF
 
 				articulationBody.solverIterations = 0;
 				articulationBody.solverVelocityIterations = 0;
-				articulationBody.velocity = UE.Vector3.zero;
+				articulationBody.linearVelocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
 				articulationBody.sleepThreshold = 0.01f;
 				articulationBody.Sleep();
@@ -127,7 +132,6 @@ namespace SDF
 				var modelHelper = modelObject.GetComponent<Helper.Model>();
 				if (modelHelper.IsFirstChild)
 				{
-					// UE.Debug.Log($"AfterImportModel: {model.OriginalName}, {modelObject.name}");
 					Main.SegmentationManager.AttachTag(model.OriginalName, modelObject);
 					Main.SegmentationManager.UpdateTags();
 
