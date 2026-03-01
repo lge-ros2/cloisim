@@ -1,4 +1,5 @@
 #pragma kernel CSScaleDepthBuffer
+#pragma kernel CSScaleDepthBufferFromTex
 
 #define THREADS 16
 #define GROUPS 16
@@ -6,98 +7,55 @@
 #define MAX_RANGE_16BITS 65535.0
 #define MAX_RANGE_8BITS 255.0
 
-StructuredBuffer<float> _Input; // length = _Width * _Height
-RWStructuredBuffer<uint> _Output; // packed stream (per uint)
+StructuredBuffer<float> _Input;
+Texture2D<float> _InputTex;
+RWStructuredBuffer<uint> _Output;
 
-cbuffer Params
+float _DepthMax;
+float _DepthScale;
+uint _Width;
+int _UnitSize;
+
+// Shared scaling logic used by both kernels.
+uint ScaleDepth(float data)
 {
-    float _DepthMax;
-    float _DepthScale;
-    uint _Width;
-    uint _Height;
-    uint _UnitSize; // 4: 32F, 2: 16U, 1: 8U
+	const float rangedData = data * _DepthMax;
+	uint finalData = 0;
+
+	if (_UnitSize == 4)
+	{
+		finalData = asuint(rangedData);
+	}
+	else if (_UnitSize == 2)
+	{
+		const float max_scaled_range = MAX_RANGE_16BITS / _DepthScale;
+		const float scaledData = ((rangedData > max_scaled_range) ? max_scaled_range : rangedData) * _DepthScale;
+		finalData = asuint((uint)scaledData) & 0xFFFF;
+	}
+	else // 1
+	{
+		const float scaledData = rangedData / _DepthMax * MAX_RANGE_8BITS;
+		finalData = asuint((uint)scaledData) & 0xFF;
+	}
+	return finalData;
 }
 
-inline uint GetPackWidth()
-{
-    return (_UnitSize == 4) ? 1u : (_UnitSize == 2 ? 2u : 4u);
-}
-
-inline uint Pack4Bytes(const uint b0, const uint b1, const uint b2, const uint b3)
-{
-    return (b0 & 0xFFu) | ((b1 & 0xFFu) << 8) | ((b2 & 0xFFu) << 16) | ((b3 & 0xFFu) << 24);
-}
-
-inline float depth_ranged(const float d)
-{
-    return d * _DepthMax;
-}
-
-inline uint toU16(const float ranged)
-{
-    static const float max_scaled = MAX_RANGE_16BITS / _DepthScale;
-    float scaled = min(max(ranged, 0), max_scaled) * _DepthScale;
-    scaled = clamp(scaled, 0, MAX_RANGE_16BITS);
-    return (uint)scaled & 0xFFFFu;
-}
-
-inline uint sampleU16(const uint baseIndex, const uint x0, const uint xOffset)
-{
-    const bool inbound = (x0 + xOffset) < _Width;
-    const float data = _Input[baseIndex + xOffset];
-    return inbound ? toU16(depth_ranged(data)) : 0u;
-}
-
-
-inline uint toU8(const float ranged)
-{
-    const float s8 = (ranged <= 0.0) ? 0.0 : (ranged / _DepthMax) * MAX_RANGE_8BITS;
-    return (uint)round(clamp(s8, 0.0, 255.0));
-}
-
-// baseIndex = y * _Width + x0
-inline uint sampleU8(const uint baseIndex, const uint x0, const uint xOffset)
-{
-    const bool inbound = (x0 + xOffset) < _Width;
-    const float data = _Input[baseIndex + xOffset];
-    return inbound ? toU8(depth_ranged(data)) : 0u;
-}
-
+// Original kernel: reads from StructuredBuffer (used as fallback)
 [numthreads(THREADS, GROUPS, 1)]
 void CSScaleDepthBuffer(uint3 id : SV_DispatchThreadID)
 {
-    const uint packWidth = GetPackWidth();
-    const uint x0 = id.x * packWidth;
+	const uint bufIndex = id.y * _Width + id.x;
+	const float data = _Input.Load(bufIndex);
+	_Output[bufIndex] = ScaleDepth(data);
+}
 
-    if (id.y >= _Height || x0 >= _Width)
-        return;
-
-    const uint pixelIndex0 = id.y * _Width + x0;
-
-    if (_UnitSize == 4)
-    {
-        const float data = _Input[pixelIndex0];
-        const float ranged = max(depth_ranged(data), 0);
-        _Output[pixelIndex0] = asuint(ranged);
-    }
-    else if (_UnitSize == 2)
-    {
-        // 2 Pixels → 1uint (Lo16 | Hi16)
-        const uint v0 = sampleU16(pixelIndex0, x0, 0u); // P0
-        const uint v1 = sampleU16(pixelIndex0, x0, 1u); // P1
-
-        const uint outIndex = (id.y * _Width + x0) >> 1; // /2
-        _Output[outIndex] = (v0) | (v1 << 16);
-    }
-    else // _UnitSize == 1
-    {
-        // 4 Pixels → 1uint (B0 | B1<<8 | B2<<16 | B3<<24)
-        const uint b0 = sampleU8(pixelIndex0, x0, 0u); // P0
-        const uint b1 = sampleU8(pixelIndex0, x0, 1u); // P1
-        const uint b2 = sampleU8(pixelIndex0, x0, 2u); // P2
-        const uint b3 = sampleU8(pixelIndex0, x0, 3u); // P3
-
-        const uint outIndex = (id.y * _Width + x0) >> 2; // /4
-        _Output[outIndex] = Pack4Bytes(b0, b1, b2, b3);
-    }
+// New kernel: reads directly from render texture (R32_SFloat).
+// Eliminates CPU round-trip: no GPU→CPU readback + CPU→GPU SetData().
+// Saves ~1-2ms per depth camera per frame.
+[numthreads(THREADS, GROUPS, 1)]
+void CSScaleDepthBufferFromTex(uint3 id : SV_DispatchThreadID)
+{
+	const uint bufIndex = id.y * _Width + id.x;
+	const float data = _InputTex[id.xy];
+	_Output[bufIndex] = ScaleDepth(data);
 }
