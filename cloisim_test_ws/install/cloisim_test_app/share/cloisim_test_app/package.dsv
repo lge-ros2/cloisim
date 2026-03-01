@@ -1,0 +1,9 @@
+source;share/cloisim_test_app/hook/pythonpath.ps1
+source;share/cloisim_test_app/hook/pythonpath.dsv
+source;share/cloisim_test_app/hook/pythonpath.sh
+source;share/cloisim_test_app/hook/ament_prefix_path.ps1
+source;share/cloisim_test_app/hook/ament_prefix_path.dsv
+source;share/cloisim_test_app/hook/ament_prefix_path.sh
+source;../../build/cloisim_test_app/share/cloisim_test_app/hook/pythonpath_develop.ps1
+source;../../build/cloisim_test_app/share/cloisim_test_app/hook/pythonpath_develop.dsv
+source;../../build/cloisim_test_app/share/cloisim_test_app/hook/pythonpath_develop.sh

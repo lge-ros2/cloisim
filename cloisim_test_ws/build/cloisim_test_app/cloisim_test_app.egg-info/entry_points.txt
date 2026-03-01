@@ -1,0 +1,4 @@
+[console_scripts]
+benchmark_compare = cloisim_test_app.benchmark_compare:main
+comm_benchmark = cloisim_test_app.comm_benchmark_node:main
+test_node = cloisim_test_app.cloisim_test_node:main

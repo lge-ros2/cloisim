@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: cloisim-test-app
+Version: 0.1.0
+Summary: CLOiSim communication benchmark and test tools
+Maintainer: nav
+Maintainer-email: jamie.lee@lge.com
+License: MIT
+Provides-Extra: test
