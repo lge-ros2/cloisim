@@ -17,16 +17,16 @@ namespace SensorDevices
 	/// into a single coroutine per frame.
 	///
 	/// Problem:
-	///   Each Camera.Render() triggers a full HDRP pipeline pass (~2-5ms CPU):
+	///   Each Camera.Render() triggers a full URP pipeline pass (~2-5ms CPU):
 	///   culling, shadow atlas, render graph setup, command buffer submission.
 	///   With 9 cameras running independent CameraWorker coroutines, the
 	///   scheduling is unpredictable and each coroutine yields between renders,
-	///   preventing HDRP from reusing internal state across cameras.
+	///   preventing the pipeline from reusing internal state across cameras.
 	///
 	/// Solution:
 	///   A single render loop renders all eligible cameras in a tight sequence
 	///   within the same frame, without yielding between them. This allows:
-	///   - HDRP to share shadow atlas state across sequential renders
+	///   - URP to share shadow atlas state across sequential renders
 	///   - Single scheduling point with proper real-time rate limiting
 	///   - Elimination of 9 separate coroutines (1 instead)
 	///   - Adaptive frame budget to prevent frame time spikes
@@ -48,7 +48,7 @@ namespace SensorDevices
 
 		// ── Adaptive budget tracking ──
 		private readonly Stopwatch _batchStopwatch = new();
-		private float _avgRenderStepMs = 5f; // EMA of per-render-step time (HDRP cameras)
+		private float _avgRenderStepMs = 5f; // EMA of per-render-step time (rasterization cameras)
 		private float _avgURTStepMs = 0.5f;  // EMA of per-render-step time (URT cameras)
 		private const float EMA_ALPHA = 0.2f;
 
@@ -291,7 +291,7 @@ namespace SensorDevices
 						Debug.Log($"[SensorRenderManager] {DIAG_INTERVAL_SEC}s stats: " +
 							$"fps={fps:F1}, frames={_diagFrameCount}, " +
 							$"avgBatchMs={avgBatch:F2}, maxBatchMs={_diagMaxBatchMs:F2}, " +
-							$"avgSteps/frame={avgSteps:F1}, avgStepMs(HDRP)={_avgRenderStepMs:F2}, avgStepMs(URT)={_avgURTStepMs:F2}, " +
+							$"avgSteps/frame={avgSteps:F1}, avgStepMs(Raster)={_avgRenderStepMs:F2}, avgStepMs(URT)={_avgURTStepMs:F2}, " +
 							$"maxFrameTimeMs={_diagMaxFrameTimeMs:F1}, spikes(>{SPIKE_THRESHOLD_MS}ms)={_diagSpikeCount}, " +
 							$"urtExtraSteps={_diagTotalURTExtraSteps}, registered={_renderables.Count}");
 						_diagLastLogTime = now;
