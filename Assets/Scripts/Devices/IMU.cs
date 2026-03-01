@@ -23,7 +23,7 @@ namespace SensorDevices
 					{"y", defaultNoise},
 					{"z", defaultNoise}
 				};
-				
+
 				linear_acceleration = new Dictionary<string, Noise>
 				{
 					{"x", defaultNoise},
@@ -211,7 +211,10 @@ namespace SensorDevices
 			_imu.Orientation.Set(_imuRotation);
 			_imu.AngularVelocity.Set(_imuAngularVelocity * Mathf.Deg2Rad);
 			_imu.LinearAcceleration.Set(_imuLinearAcceleration);
-			_imu.Stamp.SetCurrentTime();
+			// Use fixed-dt synthetic time instead of physics-step SimTime
+			// so consecutive IMU messages always have exactly UpdatePeriod apart.
+			_imu.Stamp.Set(GetNextSyntheticTime());
+
 			PushDeviceMessage<messages.Imu>(_imu);
 		}
 
