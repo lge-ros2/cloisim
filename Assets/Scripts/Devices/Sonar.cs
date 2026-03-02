@@ -150,6 +150,8 @@ namespace SensorDevices
 			_sonarStamped.Sonar.Contact = new messages.Vector3d();
 		}
 
+		public System.Action<messages.SonarStamped> OnRangeDataGenerated;
+
 		protected override void GenerateMessage()
 		{
 			var sonarPosition = _sonarLink.position;
@@ -161,6 +163,9 @@ namespace SensorDevices
 			sonar.Frame = DeviceName;
 			sonar.WorldPose.Position.Set(sonarPosition);
 			sonar.WorldPose.Orientation.Set(sonarRotation);
+			
+			if (OnRangeDataGenerated != null) OnRangeDataGenerated.Invoke(_sonarStamped);
+			
 			PushDeviceMessage<messages.SonarStamped>(_sonarStamped);
 		}
 

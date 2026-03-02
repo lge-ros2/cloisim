@@ -1,0 +1,68 @@
+// URTSegmentationRaycast.urtshader
+// Unified Ray Tracing shader for segmentation cameras.
+// Works on BOTH hardware RT cores and compute fallback.
+// Uses instance ID as segmentation class ID.
+
+#define UNIFIED_RT_GROUP_SIZE_X 8
+#define UNIFIED_RT_GROUP_SIZE_Y 8
+
+#include "Packages/com.unity.render-pipelines.core/Runtime/UnifiedRayTracing/TraceRayAndQueryHit.hlsl"
+
+UNIFIED_RT_DECLARE_ACCEL_STRUCT(_AccelStruct);
+
+float3 _CameraOrigin;
+float4x4 _CameraToWorld;
+float _TanHalfHFov;
+float _TanHalfVFov;
+uint _Width;
+uint _Height;
+float _NearClip;
+float _FarClip;
+
+RWTexture2D<float4> _OutputTex;
+
+void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
+{
+    uint px = dispatchInfo.dispatchThreadID.x;
+    uint py = dispatchInfo.dispatchThreadID.y;
+
+    if (px >= _Width || py >= _Height)
+        return;
+
+    float u = ((float)px + 0.5) / (float)_Width;
+    float v = ((float)py + 0.5) / (float)_Height;
+
+    float3 camDir = float3(
+        (u * 2.0 - 1.0) * _TanHalfHFov,
+        -(v * 2.0 - 1.0) * _TanHalfVFov,
+        1.0
+    );
+
+    float3 worldDir = normalize(mul((float3x3)_CameraToWorld, camDir));
+
+    UnifiedRT::Ray ray;
+    ray.origin = _CameraOrigin;
+    ray.direction = worldDir;
+    ray.tMin = _NearClip;
+    ray.tMax = _FarClip;
+
+    UnifiedRT::RayTracingAccelStruct accelStruct = UNIFIED_RT_GET_ACCEL_STRUCT(_AccelStruct);
+    UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(
+        dispatchInfo, accelStruct, 0xFF, ray,
+        UnifiedRT::kRayFlagForceOpaque);
+
+    float4 result = float4(0, 0, 0, 1);
+
+    if (hit.IsValid())
+    {
+        uint segId = hit.instanceID;
+        if (segId > 0)
+        {
+            float lo = (float)(segId & 0xFF) / 255.0;
+            float hi = (float)((segId >> 8) & 0xFF) / 255.0;
+            result = float4(lo, hi, 0, 1);
+        }
+    }
+
+    _OutputTex[uint2(px, py)] = result;
+}

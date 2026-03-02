@@ -161,16 +161,26 @@ namespace SensorDevices
 			_odomData.Twist.Angular = new messages.Vector3d();
 		}
 
+		public System.Action<messages.Micom> OnMicomDataGenerated;
+
 		void FixedUpdate()
 		{
 			var delta = Time.fixedDeltaTime;
 
-			_accumulatedTime += delta;
-
+			// Motor control must run every physics step for accurate odometry
 			if (_motorControl?.Update(_odomData, Time.fixedDeltaTime, _imuSensor) == false)
 			{
 				Debug.LogWarning("Update failed in MotorControl");
 			}
+
+			// Guard: skip accumulation if UpdateRate hasn't been set yet.
+			// With _updateRate=-1 (initial), UpdatePeriod=-1 and the
+			// subtraction `_accumulatedTime -= UpdatePeriod` would ADD to
+			// the accumulator, causing runaway growth that never recovers.
+			if (UpdateRate <= 0)
+				return;
+
+			_accumulatedTime += delta;
 
 			if (_accumulatedTime < UpdatePeriod)
 				return;
@@ -179,7 +189,7 @@ namespace SensorDevices
 
 			var micomSensorData = new messages.Micom();
 			micomSensorData.Time = new messages.Time();
-			micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
+			micomSensorData.Time.Set(GetNextSyntheticTime());
 
 			UpdateBattery(micomSensorData, delta);
 			UpdateUss(micomSensorData);
@@ -189,7 +199,13 @@ namespace SensorDevices
 
 			micomSensorData.Odom = _odomData;
 
+			if (OnMicomDataGenerated != null)
+			{
+				OnMicomDataGenerated.Invoke(micomSensorData);
+			}
+
 			_messageQueue.Enqueue(micomSensorData);
+			SignalDataReady();
 		}
 
 		private void UpdateBattery(messages.Micom micomData, in float deltaTime)

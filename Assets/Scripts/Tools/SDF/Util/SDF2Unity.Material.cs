@@ -9,42 +9,54 @@ using UE = UnityEngine;
 
 public static partial class SDF2Unity
 {
-	private static readonly string _commonShaderName = "Custom/URP/Simple Lit";
-	private static readonly string _speedTreeShaderName = "Universal Render Pipeline/Nature/SpeedTree8";
-	public static UE.Shader CommonShader = UE.Shader.Find(_commonShaderName);
-	public static UE.Shader SpeedTreeShader = UE.Shader.Find(_speedTreeShaderName);
+	private static UE.Material _baseHDRPMaterial;
+
+	private static UE.Material GetBaseHDRPMaterial()
+	{
+		if (_baseHDRPMaterial == null)
+		{
+			// Load the pre-configured HDRP material from Resources.
+			// This avoids magenta issues caused by procedural material creation lacking necessary HDRP serialization data.
+			_baseHDRPMaterial = UE.Resources.Load<UE.Material>("Materials/HDRPBase");
+			
+			if (_baseHDRPMaterial != null)
+			{
+				UE.Debug.Log($"[SDF2Unity] Successfully loaded base HDRP material from Resources.");
+			}
+			else
+			{
+				UE.Debug.LogError("[SDF2Unity] Cannot find Materials/HDRPBase in Resources, falling back to Standard.");
+				_baseHDRPMaterial = new UE.Material(UE.Shader.Find("Standard"));
+			}
+		}
+		return _baseHDRPMaterial;
+	}
+
+	public static UE.Shader CommonShader
+	{
+		get { return GetBaseHDRPMaterial().shader; }
+	}
+
+	public static UE.Shader SpeedTreeShader
+	{
+		get { return CommonShader; }
+	}
 
 	public static UE.Material CreateMaterial(in string materialName = "")
 	{
-		var newMaterial = new UE.Material(CommonShader);
+		// Instantiate a copy of the properly initialized base material
+		var newMaterial = new UE.Material(GetBaseHDRPMaterial());
 
 		newMaterial.name = materialName;
-		newMaterial.hideFlags = UE.HideFlags.DontUnloadUnusedAsset;
-		newMaterial.renderQueue = (int)RenderQueue.Geometry;
-
-		newMaterial.SetFloat("_Cull", (float)CullMode.Back); // Render face front
+		
+		newMaterial.SetFloat("_CullMode", (float)CullMode.Back);
 		newMaterial.SetFloat("_ZWrite", 1);
-
-		newMaterial.SetFloat("_ReceiveShadows", 1f);
-
+		newMaterial.SetFloat("_ReceivesSSR", 1f);
 		newMaterial.SetColor("_BaseColor", UE.Color.white);
-
-		// var specularSmoothness = 0.35f;
-		// SetSpecular(newMaterial, specularSmoothness);
-
-		newMaterial.SetFloat("_EnvironmentReflections", 0.5f);
-		newMaterial.DisableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
-
+		newMaterial.SetFloat("_Smoothness", 0.5f);
 		newMaterial.DisableKeyword("_NORMALMAP");
-
-		newMaterial.EnableKeyword("_INSTANCING_ON");
-		newMaterial.EnableKeyword("_DOTS_INSTANCING_ON");
-		newMaterial.DisableKeyword("_SPECGLOSSMAP");
-
 		newMaterial.enableInstancing = true;
 		newMaterial.doubleSidedGI = false;
-
-		// newMaterial.hideFlags |= HideFlags.NotEditable;
 
 		return newMaterial;
 	}
@@ -52,44 +64,34 @@ public static partial class SDF2Unity
 	public static void SetTransparent(this UE.Material target)
 	{
 		target.SetOverrideTag("RenderType", "Transparent");
-		target.SetFloat("_Surface", 1); // set to transparent
+		target.SetFloat("_SurfaceType", 1); // set to transparent
 
 		target.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
 		target.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
-		target.SetFloat("_AlphaClip", 0);
-		target.SetFloat("_QueueOffset", 1);
+		target.SetFloat("_AlphaCutoffEnable", 0);
 
-		target.DisableKeyword("_ALPHABLEND_ON");
 		target.renderQueue = (int)RenderQueue.Transparent;
 	}
 
 	public static void SetOpaque(this UE.Material target)
 	{
 		target.SetOverrideTag("RenderType", "Opaque");
-		target.SetFloat("_Surface", 0); // set to opaque
+		target.SetFloat("_SurfaceType", 0); // set to opaque
 
-		target.DisableKeyword("_ALPHABLEND_ON");
 		target.renderQueue = (int)RenderQueue.Geometry;
 	}
 
 	public static void ConvertToSpeedTree(this UE.Material target)
 	{
-		var existingTexture = target.GetTexture("_BaseMap");
-		var existingTextureScale = target.GetTextureScale("_BaseMap");
-		var existingColor = target.GetColor("_Color");
+		var existingTexture = target.GetTexture("_BaseColorMap");
+		var existingTextureScale = target.GetTextureScale("_BaseColorMap");
+		var existingColor = target.GetColor("_BaseColor");
 
 		target.shader = SpeedTreeShader;
-		target.SetTexture("_MainTex", existingTexture);
-		target.SetTextureScale("_MainTex", existingTextureScale);
-		target.SetColor("_Color", existingColor);
-		target.SetFloat("_Glossiness", 0f);
-		target.SetInt("_TwoSided", 0);
-
-		target.SetFloat("_BillboardKwToggle", 0);
-		target.SetFloat("_BillSboardShadowFade", 0f);
-		target.DisableKeyword("EFFECT_BILLBOARD");
-
-		target.EnableKeyword("_INSTANCING_ON");
+		target.SetTexture("_BaseColorMap", existingTexture);
+		target.SetTextureScale("_BaseColorMap", existingTextureScale);
+		target.SetColor("_BaseColor", existingColor);
+		target.SetFloat("_Smoothness", 0f);
 	}
 
 	public static void SetBaseColor(this UE.Material target, UE.Color color)
@@ -108,7 +110,7 @@ public static partial class SDF2Unity
 
 	public static void SetEmission(this UE.Material target, UE.Color color)
 	{
-		target.SetColor("_EmissionColor", color);
+		target.SetColor("_EmissiveColor", color);
 		target.globalIlluminationFlags = UE.MaterialGlobalIlluminationFlags.None;
 		target.EnableKeyword("_EMISSION");
 	}
@@ -123,16 +125,13 @@ public static partial class SDF2Unity
 	public static void SetNormalMap(this UE.Material target, in string normalMapPath)
 	{
 		var texture = MeshLoader.GetTexture(normalMapPath);
-		target.SetTexture("_BumpMap", texture);
+		target.SetTexture("_NormalMap", texture);
 		target.EnableKeyword("_NORMALMAP");
 	}
 
 	public static void SetSpecular(this UE.Material target, UE.Color color)
 	{
-		target.SetFloat("_SmoothnessSource", 0f); // Specular Alpha (0) vs Albedo Alpha (1)
-		target.SetColor("_SpecColor", color);
+		target.SetColor("_SpecularColor", color);
 		target.SetFloat("_Smoothness", color.a);
-		target.SetFloat("_SpecularHighlights", 1f);
-		target.EnableKeyword("_SPECGLOSSMAP");
 	}
 }

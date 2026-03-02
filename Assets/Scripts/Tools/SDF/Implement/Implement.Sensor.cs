@@ -72,6 +72,23 @@ namespace SDF
 				return lidar;
 			}
 
+			public static Device AddLivoxLidar(this UE.GameObject targetObject, in SDF.Livox element)
+			{
+				var newSensorObject = new UE.GameObject();
+				targetObject.AttachSensor(newSensorObject);
+
+				var livox = newSensorObject.AddComponent<SensorDevices.LivoxLidar>();
+				livox.DeviceName = newSensorObject.GetFrameName();
+				livox.ScanMode = element.scan_mode;
+				livox.SamplesPerFrame = (int)element.samples;
+				livox.DownSample = (int)element.down_sample;
+				livox.ScanRange = new MathUtil.MinMax(element.range.min, element.range.max);
+				livox.RangeResolution = (float)element.range.resolution;
+				livox.SetupNoise(element.noise);
+
+				return livox;
+			}
+
 			public static Device AddCamera(this UE.GameObject targetObject, in SDF.Camera element)
 			{
 				var newSensorObject = new UE.GameObject();

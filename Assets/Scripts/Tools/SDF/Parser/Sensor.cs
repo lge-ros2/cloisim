@@ -87,6 +87,13 @@ namespace SDF
 					}
 					break;
 
+				case "livox":
+					if (IsValidNode("livox"))
+					{
+						sensor = ParseLivox();
+					}
+					break;
+
 				case "rgbd_camera":
 				case "rgbd":
 				case "multicamera":

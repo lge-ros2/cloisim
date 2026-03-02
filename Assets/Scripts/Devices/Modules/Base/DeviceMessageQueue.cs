@@ -10,7 +10,7 @@ using System;
 
 public sealed class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 {
-	private const int MaxQueue = 100;
+	private const int MaxQueue = 10;
 	private const int TimeoutInMilliseconds = 100;
 	private const float FlushLeaveRate = 0.1f;
 	private readonly int _flushThreshold;

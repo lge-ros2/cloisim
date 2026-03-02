@@ -8,12 +8,12 @@ using Any = cloisim.msgs.Any;
 
 public class ImuPlugin : CLOiSimPlugin
 {
-	private SensorDevices.IMU imu = null;
+	private SensorDevices.IMU _imu = null;
 
 	protected override void OnAwake()
 	{
 		_type = ICLOiSimPlugin.Type.IMU;
-		imu = gameObject.GetComponent<SensorDevices.IMU>();
+		_imu = gameObject.GetComponent<SensorDevices.IMU>();
 	}
 
 	protected override IEnumerator OnStart()
@@ -25,7 +25,7 @@ public class ImuPlugin : CLOiSimPlugin
 
 		if (RegisterTxDevice(out var portTx, "Data"))
 		{
-			AddThread(portTx, SenderThread, imu);
+			AddThread(portTx, SenderThread, _imu);
 		}
 
 		yield return null;
@@ -36,8 +36,8 @@ public class ImuPlugin : CLOiSimPlugin
 		switch (requestType)
 		{
 			case "request_transform":
-				var devicePose = imu.GetPose();
-				var deviceName = imu.DeviceName;
+				var devicePose = _imu.GetPose();
+				var deviceName = _imu.DeviceName;
 				SetTransformInfoResponse(ref response, deviceName, devicePose, _parentLinkName);
 				break;
 

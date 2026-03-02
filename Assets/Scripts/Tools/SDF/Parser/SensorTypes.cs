@@ -293,6 +293,28 @@ namespace SDF
 		public Noise noise = null;
 	}
 
+	public class Livox : SensorType
+	{
+		// Description: Livox scan pattern model name (e.g. mid360, avia, HAP, horizon, mid40, mid70, tele)
+		public string scan_mode = "mid360";
+
+		// Description: Number of ray samples per scan frame
+		public uint samples = 24000;
+
+		// Description: Down-sample factor (1 = no skip, 2 = every other ray)
+		public uint down_sample = 1;
+
+		public class Range
+		{
+			public double min = 0;
+			public double max = 0;
+			public double resolution = 0;
+		}
+
+		public Range range = new Range();
+		public Noise noise = null;
+	}
+
 	public class RfidTag : SensorType
 	{
 	}

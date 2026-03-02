@@ -4,9 +4,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
 using UnityEngine;
+#if !UNITY_SERVER
 using UnityEngine.UIElements;
+#endif
+#if UNITY_EDITOR || UNITY_STANDALONE
+using UnityEngine.Rendering.HighDefinition;
+#endif
 
 public class UIController : MonoBehaviour
 {
@@ -16,305 +20,429 @@ public class UIController : MonoBehaviour
 		Orthographic
 	}
 
+#if !UNITY_SERVER
 	private UIDocument _uiDocument = null;
 	private VisualElement _rootVisualElement = null;
 	private Toggle _toggleLockVerticalMoving = null;
 	private TextField _scaleField = null;
 	private Label _statusMessage = null;
-	private Button _buttonCameraView = null;
-	private Button _buttonHelp = null;
 	private Button _recordSave = null;
-	private Button _buttonImport = null;
-	private Button _buttonPropsBox = null;
-	private Button _buttonPropsCylinder = null;
-	private Button _buttonPropsSphere = null;
 
 	private const float CameraViewDistance = 30f;
 	private const float ScaleFactorMin = 0.01f;
 	private const float ScaleFactorMax = 10;
 	private string _prevScaleFactorString = string.Empty;
+#endif
 
 	void Awake()
 	{
+#if !UNITY_SERVER
 		_uiDocument = GetComponent<UIDocument>();
-		_rootVisualElement = _uiDocument.rootVisualElement;
+		if (_uiDocument != null) _rootVisualElement = _uiDocument.rootVisualElement;
+#endif
 	}
 
-	// Start is called before the first frame update
 	void Start()
 	{
+#if !UNITY_SERVER
+		if (_rootVisualElement == null) return;
 		var objectSpawning = Main.ObjectSpawning;
 
 		_toggleLockVerticalMoving = _rootVisualElement.Q<Toggle>("LockVerticalMoving");
-		_toggleLockVerticalMoving.RegisterValueChangedCallback(x => Main.CameraControl.VerticalMovementLock = x.newValue);
+		if (_toggleLockVerticalMoving != null) _toggleLockVerticalMoving.RegisterValueChangedCallback(x => Main.CameraControl.VerticalMovementLock = x.newValue);
 
-		_buttonCameraView = _rootVisualElement.Q<Button>("CameraView");
-		_buttonCameraView.clickable.clicked += () => ShowCameraView();
+		var buttonCameraView = _rootVisualElement.Q<Button>("CameraView");
+		if (buttonCameraView != null) buttonCameraView.RegisterCallback<ClickEvent>(x => ShowCameraView());
+
+		var buttonRenderSettings = _rootVisualElement.Q<Button>("RenderSettings");
+		if (buttonRenderSettings != null) buttonRenderSettings.RegisterCallback<ClickEvent>(x => ShowRenderSettings());
+
+		SetupRenderSettingsToggles();
 
 		_scaleField = _rootVisualElement.Q<TextField>("ScaleField");
-		var scaleFieldTextElem = _scaleField.Q<TextElement>();
-		scaleFieldTextElem.style.unityTextAlign = TextAnchor.MiddleCenter;
-
-		if (float.TryParse(_scaleField.text, out var scaleFactor))
+		if (_scaleField != null)
 		{
-			objectSpawning.SetScaleFactor(scaleFactor);
+			var scaleFieldTextElem = _scaleField.Q<TextElement>();
+			scaleFieldTextElem.style.unityTextAlign = TextAnchor.MiddleCenter;
+
+			if (float.TryParse(_scaleField.text, out var scaleFactor))
+			{
+				objectSpawning.SetScaleFactor(scaleFactor);
+			}
+			_scaleField.RegisterCallback<FocusOutEvent>(OnFocusOutScaleField);
+			_prevScaleFactorString = _scaleField.text;
 		}
-		_scaleField.RegisterCallback<FocusOutEvent>(OnFocusOutScaleField);
-		_prevScaleFactorString = _scaleField.text;
 
-		_buttonPropsBox = _rootVisualElement.Q<Button>("PropsBox");
-		_buttonPropsCylinder = _rootVisualElement.Q<Button>("PropsCylinder");
-		_buttonPropsSphere = _rootVisualElement.Q<Button>("PropsSphere");
+		var buttonPropsBox = _rootVisualElement.Q<Button>("PropsBox");
+		if (buttonPropsBox != null) buttonPropsBox.clickable.clicked += () => objectSpawning?.SetPropType(ObjectSpawning.PropsType.BOX);
 
-		_buttonPropsBox.clickable.clicked += () => SelectPropButton(_buttonPropsBox, ObjectSpawning.PropsType.BOX);
-		_buttonPropsCylinder.clickable.clicked += () => SelectPropButton(_buttonPropsCylinder, ObjectSpawning.PropsType.CYLINDER);
-		_buttonPropsSphere.clickable.clicked += () => SelectPropButton(_buttonPropsSphere, ObjectSpawning.PropsType.SPHERE);
+		var buttonPropsCylinder = _rootVisualElement.Q<Button>("PropsCylinder");
+		if (buttonPropsCylinder != null) buttonPropsCylinder.clickable.clicked += () => objectSpawning?.SetPropType(ObjectSpawning.PropsType.CYLINDER);
+
+		var buttonPropsSphere = _rootVisualElement.Q<Button>("PropsSphere");
+		if (buttonPropsSphere != null) buttonPropsSphere.clickable.clicked += () => objectSpawning?.SetPropType(ObjectSpawning.PropsType.SPHERE);
 
 		_statusMessage = _rootVisualElement.Q<Label>("StatusMessage");
 		ClearMessage();
 
-		_buttonHelp = _rootVisualElement.Q<Button>("Help");
-		_buttonHelp.clickable.clicked += () => ShowHelp();
+		var buttonHelp = _rootVisualElement.Q<Button>("Help");
+		if (buttonHelp != null) buttonHelp.clickable.clicked += () => ShowHelp();
 
 		_recordSave = _rootVisualElement.Q<Button>("Record");
-		_recordSave.clickable.clicked += () => {
-
+		if (_recordSave != null) _recordSave.clickable.clicked += () => {
 			var recording = Main.Instance.ToggleRecord();
 			OnRecordClicked(recording);
 		};
 
 		var buttonSave = _rootVisualElement.Q<Button>("Save");
-		buttonSave.clickable.clicked += () => Main.Instance.SaveWorld();
+		if (buttonSave != null) buttonSave.clickable.clicked += () => Main.Instance.SaveWorld();
 
-		_buttonImport = _rootVisualElement.Q<Button>("Import");
-		_buttonImport.clickable.clicked += () => {
-			_buttonImport.ToggleInClassList("selected");
-			Main.ModelImporter.ToggleModelList();
-		};
+		var buttonImport = _rootVisualElement.Q<Button>("Import");
+		if (buttonImport != null) buttonImport.clickable.clicked += () => Main.ModelImporter.ToggleModelList();
 
 		var buttonHome = _rootVisualElement.Q<Button>("Home");
- 		buttonHome.clickable.clicked += () => Main.CameraControl.StartCameraChange(Main.CameraInitPose);
-		buttonHome.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonHome, Color.gray); });
-		buttonHome.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonHome, Color.clear); });
+		if (buttonHome != null)
+		{
+			buttonHome.clickable.clicked += () => Main.CameraControl.StartCameraChange(Main.CameraInitPose);
+			buttonHome.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonHome, Color.gray); });
+			buttonHome.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonHome, Color.clear); });
+		}
 
 		var buttonFront = _rootVisualElement.Q<Button>("Front");
-		buttonFront.clickable.clicked += () => {
-			var position = Vector3.forward * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
-			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
-		};
-		buttonFront.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonFront, Color.gray); });
-		buttonFront.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonFront, Color.clear); });
+		if (buttonFront != null)
+		{
+			buttonFront.clickable.clicked += () => {
+				var position = Vector3.forward * CameraViewDistance;
+				var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+				Main.CameraControl.StartCameraChange(new Pose(position, rotation));
+			};
+			buttonFront.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonFront, Color.gray); });
+			buttonFront.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonFront, Color.clear); });
+		}
 
 		var buttonLeft = _rootVisualElement.Q<Button>("Left");
-		buttonLeft.clickable.clicked += () => {
-			var position = Vector3.right * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
-			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
-		};
-		buttonLeft.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonLeft, Color.gray); });
-		buttonLeft.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonLeft, Color.clear); });
+		if (buttonLeft != null)
+		{
+			buttonLeft.clickable.clicked += () => {
+				var position = Vector3.right * CameraViewDistance;
+				var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+				Main.CameraControl.StartCameraChange(new Pose(position, rotation));
+			};
+			buttonLeft.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonLeft, Color.gray); });
+			buttonLeft.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonLeft, Color.clear); });
+		}
 
 		var buttonBack = _rootVisualElement.Q<Button>("Back");
-		buttonBack.clickable.clicked += () => {
-			var position = Vector3.back * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
-			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
-		};
-		buttonBack.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBack, Color.gray); });
-		buttonBack.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonBack, Color.clear); });
+		if (buttonBack != null)
+		{
+			buttonBack.clickable.clicked += () => {
+				var position = Vector3.back * CameraViewDistance;
+				var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+				Main.CameraControl.StartCameraChange(new Pose(position, rotation));
+			};
+			buttonBack.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBack, Color.gray); });
+			buttonBack.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonBack, Color.clear); });
+		}
 
 		var buttonRight = _rootVisualElement.Q<Button>("Right");
-		buttonRight.clickable.clicked += () => {
-			var position = Vector3.left * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
-			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
-		};
-		buttonRight.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonRight, Color.gray); });
-		buttonRight.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonRight, Color.clear); });
+		if (buttonRight != null)
+		{
+			buttonRight.clickable.clicked += () => {
+				var position = Vector3.left * CameraViewDistance;
+				var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+				Main.CameraControl.StartCameraChange(new Pose(position, rotation));
+			};
+			buttonRight.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonRight, Color.gray); });
+			buttonRight.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonRight, Color.clear); });
+		}
 
 		var buttonTop = _rootVisualElement.Q<Button>("Top");
-		buttonTop.clickable.clicked += () => {
-			var position = Vector3.up * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
-			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
-		};
-		buttonTop.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonTop, Color.gray); });
-		buttonTop.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonTop, Color.clear); });
+		if (buttonTop != null)
+		{
+			buttonTop.clickable.clicked += () => {
+				var position = Vector3.up * CameraViewDistance;
+				var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+				Main.CameraControl.StartCameraChange(new Pose(position, rotation));
+			};
+			buttonTop.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonTop, Color.gray); });
+			buttonTop.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonTop, Color.clear); });
+		}
 
 		var buttonBottom = _rootVisualElement.Q<Button>("Bottom");
-		buttonBottom.clickable.clicked += () => {
-			var position = Vector3.down * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
-			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
-		};
-		buttonBottom.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBottom, Color.gray); });
-		buttonBottom.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonBottom, Color.clear); });
+		if (buttonBottom != null)
+		{
+			buttonBottom.clickable.clicked += () => {
+				var position = Vector3.down * CameraViewDistance;
+				var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+				Main.CameraControl.StartCameraChange(new Pose(position, rotation));
+			};
+			buttonBottom.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBottom, Color.gray); });
+			buttonBottom.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonBottom, Color.clear); });
+		}
 
 		var camViewEnumField = _rootVisualElement.Q<EnumField>("CameraViewModeEnum");
-		var enumFieldTextElem = camViewEnumField.Q<TextElement>();
-		enumFieldTextElem.style.marginRight = 0;
-		camViewEnumField.Init(CameraViewModeEnum.Perspective);
-		camViewEnumField.SetEnabled(true);
-		camViewEnumField.RegisterValueChangedCallback(evt =>
+		if (camViewEnumField != null)
 		{
-			if (!evt.previousValue.Equals(evt.newValue))
+			var enumFieldTextElem = camViewEnumField.Q<TextElement>();
+			enumFieldTextElem.style.marginRight = 0;
+			camViewEnumField.Init(CameraViewModeEnum.Perspective);
+			camViewEnumField.SetEnabled(true);
+			camViewEnumField.RegisterValueChangedCallback(evt =>
 			{
-				// Debug.Log("Change Camera view mode: " + evt.newValue);
-				if (evt.newValue.Equals(CameraViewModeEnum.Perspective))
+				if (!evt.previousValue.Equals(evt.newValue))
 				{
-					Main.SetCameraPerspective();
+					if (evt.newValue.Equals(CameraViewModeEnum.Perspective))
+					{
+						Main.SetCameraPerspective();
+					}
+					else
+					{
+						Main.SetCameraOrthographic();
+					}
 				}
-				else
-				{
-					Main.SetCameraOrthographic();
-				}
-			}
-		});
+			});
+		}
 
 		UpdateWebServiceInfo();
 		UpdateVersionInfo();
+#endif
 	}
 
+#if !UNITY_SERVER
 	private void ChangeBackground(ref Button button, in Color color)
 	{
 		button.style.backgroundColor = new StyleColor(color);
 	}
-
-	private void SelectPropButton(Button selected, ObjectSpawning.PropsType type)
-	{
-		var buttons = new List<Button>
-		{
-			_buttonPropsBox,
-			_buttonPropsCylinder,
-			_buttonPropsSphere
-		};
-
-		var currentPropType = Main.ObjectSpawning?.GetPropType();
-		var finalPropType = (currentPropType == type) ? ObjectSpawning.PropsType.NONE : type;
-		// Debug.Log(finalPropType);
-		Main.ObjectSpawning?.SetPropType(finalPropType);
-
-		foreach (var button in buttons)
-		{
-			button.RemoveFromClassList("selected");
-		}
-
-		if (finalPropType != ObjectSpawning.PropsType.NONE)
-		{
-			selected.AddToClassList("selected");
-		}
-	}
+#endif
 
 	void LateUpdate()
 	{
+#if !UNITY_SERVER
 		if (Input.GetKeyUp(KeyCode.F1))
 		{
 			ShowHelp();
 		}
 		else if (Input.GetKeyUp(KeyCode.F3))
 		{
-			_buttonImport.ToggleInClassList("selected");
 			Main.ModelImporter.ToggleModelList();
 		}
 		else if (Input.GetKeyUp(KeyCode.Escape))
 		{
 			ShowHelp(false);
 			ShowCameraView(false);
-			_buttonImport.EnableInClassList("selected", false);
+			ShowRenderSettings(false);
 			Main.ModelImporter.ShowModelList(false);
 		}
 		else if (Input.GetKey(KeyCode.LeftControl))
 		{
 			if (Input.GetKeyUp(KeyCode.S))
 			{
-				// Debug.Log("Save World");
 				Main.Instance.SaveWorld();
 			}
 		}
-		else if (Input.GetKeyUp(KeyCode.Alpha1))
-		{
-			if (!IsScaleFieldFocused())
-			{
-				SelectPropButton(_buttonPropsBox, ObjectSpawning.PropsType.BOX);
-			}
-		}
-		else if (Input.GetKeyUp(KeyCode.Alpha2))
-		{
-			if (!IsScaleFieldFocused())
-			{
-				SelectPropButton(_buttonPropsCylinder, ObjectSpawning.PropsType.CYLINDER);
-			}
-		}
-		else if (Input.GetKeyUp(KeyCode.Alpha3))
-		{
-			if (!IsScaleFieldFocused())
-			{
-				SelectPropButton(_buttonPropsSphere, ObjectSpawning.PropsType.SPHERE);
-			}
-		}
+#endif
 	}
 
 	public void OnRecordClicked(bool enable)
 	{
+#if !UNITY_SERVER
 		_recordSave?.EnableInClassList("recording", enable);
+#endif
 	}
 
 	public void ChangeCameraViewMode(in CameraViewModeEnum value)
 	{
+#if !UNITY_SERVER
+		if (_rootVisualElement == null) return;
 		var camViewEnumField = _rootVisualElement.Q<EnumField>("CameraViewModeEnum");
-		camViewEnumField.SetValueWithoutNotify(value);
+		camViewEnumField?.SetValueWithoutNotify(value);
+#endif
 	}
 
 	private void UpdateWebServiceInfo()
 	{
+#if !UNITY_SERVER
+		if (_rootVisualElement == null) return;
 		var label = _rootVisualElement.Q<Label>("WebServiceInfo");
-		label.text = Main.SimulationService.ServicePort.ToString();
+		if (label != null) label.text = Main.SimulationService.ServicePort.ToString();
+#endif
 	}
 
 	private void UpdateVersionInfo()
 	{
+#if !UNITY_SERVER
+		if (_rootVisualElement == null) return;
 		var label = _rootVisualElement.Q<Label>("VersionInfo");
-		label.text = Application.version;
+		if (label != null) label.text = Application.version;
+#endif
 	}
 
 	public bool IsScaleFieldFocused()
 	{
-		// Debug.Log(_scaleField?.panel.focusController.focusedElement);
+#if !UNITY_SERVER
 		return (_scaleField?.panel.focusController.focusedElement == _scaleField);
+#else
+		return false;
+#endif
 	}
 
 	public void SetVerticalMovementLockToggle(in bool value)
 	{
-		_toggleLockVerticalMoving.value = value;
+#if !UNITY_SERVER
+		if (_toggleLockVerticalMoving != null) _toggleLockVerticalMoving.value = value;
+#endif
 	}
 
 	private void ShowHelp(in bool open = true)
 	{
+#if !UNITY_SERVER
+		if (_rootVisualElement == null) return;
 		var helpDialogScrollView = _rootVisualElement.Q<ScrollView>("HelpDialog");
+		if (helpDialogScrollView == null) return;
 
 		if (!open || helpDialogScrollView.style.display == DisplayStyle.Flex)
 		{
-			_buttonHelp?.EnableInClassList("selected", false);
 			helpDialogScrollView.style.display = DisplayStyle.None;
 			Main.CameraControl.BlockMouseWheelControl(false);
 		}
 		else
 		{
-			_buttonHelp?.EnableInClassList("selected", true);
 			helpDialogScrollView.style.display = DisplayStyle.Flex;
 			Main.CameraControl.BlockMouseWheelControl(true);
 		}
+#endif
 	}
 
 	private void ShowCameraView(in bool open = true)
 	{
-		_buttonCameraView?.EnableInClassList("selected", open);
+#if !UNITY_SERVER
+		if (_rootVisualElement == null) return;
 		var cameraViewMenuVisElem = _rootVisualElement.Q<VisualElement>("CameraViewMenu");
+		if (cameraViewMenuVisElem == null) return;
 		cameraViewMenuVisElem.style.visibility = (!open || cameraViewMenuVisElem.style.visibility == Visibility.Visible)? Visibility.Hidden : Visibility.Visible;
+#endif
 	}
 
-	// private void OnValueChangedScaleField(ChangeEvent<string> evt)
+	private void ShowRenderSettings(in bool open = true)
+	{
+#if !UNITY_SERVER
+		if (_rootVisualElement == null) return;
+		var renderSettingsMenu = _rootVisualElement.Q<VisualElement>("RenderSettingsMenu");
+		if (renderSettingsMenu == null) return;
+
+		var isVisible = (!open || renderSettingsMenu.style.visibility == Visibility.Visible);
+		renderSettingsMenu.style.visibility = isVisible ? Visibility.Hidden : Visibility.Visible;
+		Main.CameraControl.BlockMouseWheelControl(!isVisible);
+#endif
+	}
+
+#if !UNITY_SERVER
+	private static readonly (string toggleName, FrameSettingsField field)[] RenderFeatureMap = new[]
+	{
+		("RenderToggle_ShadowMaps", FrameSettingsField.ShadowMaps),
+		("RenderToggle_SSAO", FrameSettingsField.SSAO),
+		("RenderToggle_SSR", FrameSettingsField.SSR),
+		("RenderToggle_Volumetrics", FrameSettingsField.Volumetrics),
+		("RenderToggle_AtmosphericScattering", FrameSettingsField.AtmosphericScattering),
+		("RenderToggle_ContactShadows", FrameSettingsField.ContactShadows),
+		("RenderToggle_ScreenSpaceShadows", FrameSettingsField.ScreenSpaceShadows),
+		("RenderToggle_MotionVectors", FrameSettingsField.MotionVectors),
+		("RenderToggle_Decals", FrameSettingsField.Decals),
+		("RenderToggle_SubsurfaceScattering", FrameSettingsField.SubsurfaceScattering),
+		("RenderToggle_Refraction", FrameSettingsField.Refraction),
+	};
+
+	private void SetupRenderSettingsToggles()
+	{
+		if (_rootVisualElement == null) return;
+
+		// Initialize shared render quality defaults
+		// (GUI mode: full HDRP quality; headless: expensive features off)
+		RenderQualityManager.Initialize();
+
+		// Apply defaults to GUI camera immediately
+		var hdCamData = Camera.main?.GetComponent<HDAdditionalCameraData>();
+		if (hdCamData != null)
+		{
+			RenderQualityManager.ApplyTo(hdCamData);
+		}
+
+		foreach (var (toggleName, field) in RenderFeatureMap)
+		{
+			var toggle = _rootVisualElement.Q<Toggle>(toggleName);
+			if (toggle == null) continue;
+
+			// Sync toggle state from RenderQualityManager's current overrides.
+			// null (no override) means HDRP default = enabled → show toggle as ON.
+			var featureState = RenderQualityManager.IsEnabled(field);
+			toggle.SetValueWithoutNotify(featureState ?? true);
+
+			var capturedField = field;
+			toggle.RegisterValueChangedCallback(evt => SetHDRPFeature(capturedField, evt.newValue));
+		}
+
+		// ── Post-Processing & Photorealistic feature toggles ──
+		SetupPhotorealisticToggles();
+	}
+
+	// Maps UXML toggle names to PhotorealisticSetup.Feature enum values.
+	private static readonly (string toggleName, PhotorealisticSetup.Feature feature)[] PhotoFeatureMap = new[]
+	{
+		// Post Processing
+		("PhotoToggle_Bloom",            PhotorealisticSetup.Feature.Bloom),
+		("PhotoToggle_Tonemapping",      PhotorealisticSetup.Feature.Tonemapping),
+		("PhotoToggle_AutoExposure",     PhotorealisticSetup.Feature.AutoExposure),
+		// Photorealistic
+		("PhotoToggle_SSR",              PhotorealisticSetup.Feature.SSR),
+		("PhotoToggle_VolumetricFog",    PhotorealisticSetup.Feature.VolumetricFog),
+		("PhotoToggle_ColorGrading",     PhotorealisticSetup.Feature.ColorGrading),
+		("PhotoToggle_WhiteBalance",     PhotorealisticSetup.Feature.WhiteBalance),
+		("PhotoToggle_Vignette",         PhotorealisticSetup.Feature.Vignette),
+		("PhotoToggle_IndirectLighting", PhotorealisticSetup.Feature.IndirectLighting),
+	};
+
+	private void SetupPhotorealisticToggles()
+	{
+		if (_rootVisualElement == null) return;
+		var setup = PhotorealisticSetup.Instance;
+
+		// Master toggle — enables/disables the entire photorealistic volume
+		var masterToggle = _rootVisualElement.Q<Toggle>("PhotoToggle_Master");
+		if (masterToggle != null)
+		{
+			masterToggle.SetValueWithoutNotify(setup != null && setup.IsActive);
+			masterToggle.RegisterValueChangedCallback(evt =>
+			{
+				var ps = PhotorealisticSetup.Instance;
+				if (ps != null) ps.SetEnabled(evt.newValue);
+			});
+		}
+
+		// Individual feature toggles
+		foreach (var (toggleName, feature) in PhotoFeatureMap)
+		{
+			var toggle = _rootVisualElement.Q<Toggle>(toggleName);
+			if (toggle == null) continue;
+
+			toggle.SetValueWithoutNotify(setup != null && setup.IsFeatureEnabled(feature));
+
+			var capturedFeature = feature;
+			toggle.RegisterValueChangedCallback(evt =>
+			{
+				var ps = PhotorealisticSetup.Instance;
+				if (ps != null) ps.SetFeatureEnabled(capturedFeature, evt.newValue);
+			});
+		}
+	}
+
+	private void SetHDRPFeature(FrameSettingsField field, bool enabled)
+	{
+		// Update shared state and propagate to GUI camera + all sensor cameras
+		RenderQualityManager.SetFeature(field, enabled);
+	}
+#endif
+
+#if !UNITY_SERVER
 	private void OnFocusOutScaleField(FocusOutEvent evt)
 	{
 		var textField = evt.target as TextField;
@@ -354,6 +482,7 @@ public class UIController : MonoBehaviour
 
 		Main.ObjectSpawning?.SetScaleFactor(scaleFactor);
 	}
+#endif
 
 	public void ClearMessage()
 	{
@@ -362,11 +491,15 @@ public class UIController : MonoBehaviour
 
 	public void SetStatusMessage(in string message, in Color color)
 	{
+#if !UNITY_SERVER
 		if (_statusMessage != null)
 		{
 			_statusMessage.style.color = color;
 			_statusMessage.text = message;
 		}
+#else
+        Debug.Log($"UI Status Message: {message}");
+#endif
 	}
 
 	public void SetEventMessage(in string value)

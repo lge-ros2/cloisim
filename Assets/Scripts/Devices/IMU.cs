@@ -11,6 +11,9 @@ namespace SensorDevices
 {
 	public class IMU : Device
 	{
+		private Clock _clock = null;
+		private double _fixedSimTimeAtLastPhysics = 0;
+
 		private class NoiseIMU
 		{
 			public Dictionary<string, Noise> angular_velocity;
@@ -96,6 +99,7 @@ namespace SensorDevices
 		protected override void OnStart()
 		{
 			_imuInitialRotation = transform.rotation;
+			_clock = DeviceHelper.GetGlobalClock();
 			// Debug.Log("_imuInitialRotation=" + _imuInitialRotation);
 		}
 
@@ -186,10 +190,6 @@ namespace SensorDevices
 
 			var angularDisplacement = _imuRotation * Quaternion.Inverse(_previousImuRotation);
 			_imuAngularVelocity = angularDisplacement.eulerAngles / Time.fixedDeltaTime;
-			// angularDisplacement.ToAngleAxis(out var angle, out var angleAxis);
-			// _imuAngularVelocity = angleAxis * angle / Time.fixedDeltaTime;
-
-			// Debug.Log($"{_imuAngularVelocity} {angularDisplacement.eulerAngles / Time.fixedDeltaTime}");
 
 			var currentLinearVelocity = (currentPosition - _previousImuPosition) / Time.fixedDeltaTime;
 			_imuLinearAcceleration = (currentLinearVelocity - _previousLinearVelocity) / Time.fixedDeltaTime;
@@ -204,16 +204,30 @@ namespace SensorDevices
 			_imuOrientation = _imuRotation.eulerAngles;
 			var calculatedPitch = CalculatePitchFromForwardBaseAxis();
 			_imuOrientation.x = calculatedPitch;
-		}
 
-		protected override void GenerateMessage()
-		{
+			// Record physics-step time for accurate timestamps
+			_fixedSimTimeAtLastPhysics = (_clock != null) ? _clock.FixedSimTime : (double)Time.fixedTimeAsDouble;
+
+			// Guard: don't enqueue before UpdateRate is configured by the plugin
+			if (UpdateRate <= 0)
+				return;
+
+			// Build and enqueue the IMU message directly from FixedUpdate.
+			// Using _messageQueue instead of a bool flag ensures that every
+			// physics step's data reaches the TX thread, even when multiple
+			// FixedUpdates run in a burst within a single render frame.
 			_imu.Orientation.Set(_imuRotation);
 			_imu.AngularVelocity.Set(_imuAngularVelocity * Mathf.Deg2Rad);
 			_imu.LinearAcceleration.Set(_imuLinearAcceleration);
-			_imu.Stamp.SetCurrentTime();
-			PushDeviceMessage<messages.Imu>(_imu);
+			_imu.Stamp.Set(GetNextSyntheticTime());
+
+			OnImuDataGenerated?.Invoke(_imu);
+
+			_messageQueue.Enqueue(_imu);
+			SignalDataReady();
 		}
+
+		public System.Action<messages.Imu> OnImuDataGenerated;
 
 		public messages.Imu GetImuMessage()
 		{

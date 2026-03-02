@@ -44,7 +44,7 @@ namespace SDF
 
 		#region SegmentationTag and SaveWorld
 		private string _originalName = string.Empty;
-		public string OriginalName => _originalName;
+		public string OriginalName => string.IsNullOrEmpty(_originalName) ? Name : _originalName;
 		#endregion
 
 		#region Check nested model
