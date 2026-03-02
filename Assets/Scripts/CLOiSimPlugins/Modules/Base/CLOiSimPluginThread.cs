@@ -138,10 +138,16 @@ public class CLOiSimPluginThread : IDisposable
 					// Debug.Log($"{transportingTime:F5}");
 					device.SetTransportedTime(transportingTime);
 				}
+
+				// Return to pool for reuse — avoids per-frame MemoryStream allocation
+				Device.ReturnDeviceMessage(dataStreamToSend);
 			}
 			else
 			{
-				Sleep();
+				// Yield instead of Sleep(1) to minimize latency —
+				// Sleep(1) has ~1-4ms granularity on Linux, which caps
+				// throughput for high-rate sensors (1000Hz JointState, etc.)
+				Wait();
 			}
 		}
 	}
