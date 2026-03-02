@@ -208,7 +208,9 @@ public class DeviceMessage : MemoryStream
 		Flush();
 		SetLength(0);
 		Position = 0;
-		Capacity = 0;
+		// NOTE: Capacity is intentionally NOT reset to 0.
+		// Keeping the existing buffer avoids reallocation when pooled
+		// DeviceMessage objects are reused in high-frequency publish paths.
 	}
 
 	public bool IsValid()

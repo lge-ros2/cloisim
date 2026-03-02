@@ -25,6 +25,19 @@ public abstract class Device : MonoBehaviour
 
 	// Pool DeviceMessage objects to avoid per-frame GC allocations
 	private static readonly ConcurrentBag<DeviceMessage> _deviceMessagePool = new();
+	private const int MaxPoolSize = 128;
+
+	/// <summary>
+	/// Return a DeviceMessage to the pool for reuse.
+	/// Call after the Sender thread has finished publishing.
+	/// </summary>
+	public static void ReturnDeviceMessage(DeviceMessage msg)
+	{
+		if (msg != null && _deviceMessagePool.Count < MaxPoolSize)
+		{
+			_deviceMessagePool.Add(msg);
+		}
+	}
 
 	// Event-driven TX: signal from readback callbacks to wake the TX thread
 	// immediately instead of waiting for the next timer-based poll.
@@ -268,7 +281,8 @@ public abstract class Device : MonoBehaviour
 		//
 		// For high-rate sensors (>100 Hz, e.g. JointState at 1000 Hz),
 		// WaitOne(1) has OS timer granularity (~1.3ms on Linux) which caps throughput.
-		// We use a Stopwatch-based spin-yield loop for sub-10ms periods.
+		// We use a Stopwatch-based spin-yield loop for sub-20ms periods
+		// (≥50 Hz sensors: IMU 100Hz, Odom 50Hz, JointState 1000Hz, etc.).
 		//
 		// NOTE: UpdateRate may be set AFTER the thread starts (e.g., from SDF config),
 		// so timing parameters are re-evaluated dynamically inside the loop.
@@ -294,13 +308,16 @@ public abstract class Device : MonoBehaviour
 			{
 				lastUpdateRate = UpdateRate;
 				periodTicks = (long)(UpdatePeriod * Stopwatch.Frequency);
-				useHighRes = periodTicks > 0 && UpdatePeriod < 0.010f;
+				// Use high-res spin loop for ≥50 Hz sensors (period ≤ 20ms).
+				// OS timer-based WaitOne has ~1-4ms jitter on Linux, which is
+				// unacceptable for 100Hz+ sensors and causes ~10% rate loss.
+				useHighRes = periodTicks > 0 && UpdatePeriod <= 0.020f;
 				nextDeadline = Stopwatch.GetTimestamp() + periodTicks;
 			}
 
 			if (!useHighRes)
 			{
-				// Standard event-driven path for ≥10ms periods (cameras, lidar, etc.)
+				// Standard event-driven path for low-rate sensors (cameras, etc.)
 				var timeoutMs = Mathf.Max(1, Mathf.RoundToInt(UpdatePeriod * 1000f));
 				_txDataReady.WaitOne(timeoutMs);
 			}
@@ -309,9 +326,20 @@ public abstract class Device : MonoBehaviour
 
 			if (useHighRes)
 			{
-				// Absolute-deadline spin wait: self-corrects drift.
-				while (Stopwatch.GetTimestamp() < nextDeadline)
-					Thread.SpinWait(1);
+				// Absolute-deadline spin-yield: self-corrects drift.
+				// Use Thread.Yield for periods > 2ms to reduce CPU burn,
+				// fall back to SpinWait for the final <1ms approach.
+				while (true)
+				{
+					var remaining = nextDeadline - Stopwatch.GetTimestamp();
+					if (remaining <= 0) break;
+					if (remaining > Stopwatch.Frequency / 500) // > 2ms
+						Thread.Sleep(1);
+					else if (remaining > Stopwatch.Frequency / 2000) // > 0.5ms
+						Thread.Yield();
+					else
+						Thread.SpinWait(1);
+				}
 				nextDeadline += periodTicks;
 				var now = Stopwatch.GetTimestamp();
 				if (nextDeadline < now - 2 * periodTicks)

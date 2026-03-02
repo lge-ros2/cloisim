@@ -10,9 +10,9 @@ using System;
 
 public sealed class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 {
-	private const int MaxQueue = 10;
-	private const int TimeoutInMilliseconds = 100;
-	private const float FlushLeaveRate = 0.1f;
+	private const int MaxQueue = 512;
+	private const int TimeoutInMilliseconds = 50;
+	private const float FlushLeaveRate = 0.5f;
 	private readonly int _flushThreshold;
 	private CancellationTokenSource _cts;
 	private int _disposed;
