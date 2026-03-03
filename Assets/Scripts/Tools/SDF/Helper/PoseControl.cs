@@ -231,8 +231,18 @@ namespace SDF
 					{
 						if (_articulationBody.isRoot)
 						{
+							// targetPose is in local coordinates; TeleportRoot expects world coordinates.
+							// Convert local pose to world space using the parent transform.
+							var parentTransform = _targetTransform.parent;
+							var worldPos = (parentTransform != null)
+								? parentTransform.TransformPoint(targetPose.position)
+								: targetPose.position;
+							var worldRot = (parentTransform != null)
+								? parentTransform.rotation * targetPose.rotation
+								: targetPose.rotation;
+
 							_articulationBody.Sleep();
-							_articulationBody.TeleportRoot(targetPose.position, targetPose.rotation);
+							_articulationBody.TeleportRoot(worldPos, worldRot);
 						}
 
 						ResetArticulationBody(targetFrame);

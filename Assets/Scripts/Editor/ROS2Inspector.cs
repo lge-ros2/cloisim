@@ -49,46 +49,33 @@ public class ROS2Inspector : Editor
 
 			var rb = targetTransform.GetComponent<Rigidbody>();
 			var ab = targetTransform.GetComponent<ArticulationBody>();
-			var bodyType = string.Empty;
-			
-			if (rb == null && ab == null)
-			{
-				return;
-			}
-			else if (ab != null)
-			{
-				bodyType = "ArticulationBody";
-			}
-			else
-			{
-				bodyType = "RigidBody";
-			}
 
-			EditorGUILayout.Space();
-			EditorGUILayout.LabelField($"Physics Info: {bodyType}", EditorStyles.boldLabel);
-			EditorGUILayout.HelpBox("Inertia Tensor Rotation is displayed as Roll, Pitch, Yaw (Euler angles).", MessageType.None);
+			if (rb != null || ab != null)
+			{
+				var bodyType = (ab != null) ? "ArticulationBody" : "RigidBody";
 
-			if (rb != null)
-			{
-				EditorGUILayout.Vector3Field("Velocity", Unity2SDF.Vector(rb.velocity).AsUnity());
-				EditorGUILayout.Vector3Field("Angular Velocity", Unity2SDF.Vector(rb.angularVelocity).AsUnity());
-				EditorGUILayout.Vector3Field("Inertia Tensor", Unity2SDF.Vector(rb.inertiaTensor).AsUnity());
-				EditorGUILayout.Vector3Field("Inertia Tensor Rotation", Unity2SDF.Vector(rb.inertiaTensorRotation.eulerAngles).AsUnity());
-				EditorGUILayout.Vector3Field("Center of Mass (Local)", Unity2SDF.Vector(rb.centerOfMass).AsUnity());
-				EditorGUILayout.Vector3Field("Center of Mass (World)", Unity2SDF.Vector(rb.worldCenterOfMass).AsUnity());
-			}
-			else if (ab != null)
-			{
-				EditorGUILayout.Vector3Field("Velocity", Unity2SDF.Vector(ab.velocity).AsUnity());
-				EditorGUILayout.Vector3Field("Angular Velocity", Unity2SDF.Vector(ab.angularVelocity).AsUnity());
-				EditorGUILayout.Vector3Field("Inertia Tensor", Unity2SDF.Vector(ab.inertiaTensor).AsUnity());
-				EditorGUILayout.Vector3Field("Inertia Tensor Rotation", Unity2SDF.Vector(ab.inertiaTensorRotation.eulerAngles).AsUnity());
-				EditorGUILayout.Vector3Field("Center of Mass (Local)", Unity2SDF.Vector(ab.centerOfMass).AsUnity());
-				EditorGUILayout.Vector3Field("Center of Mass (World)", Unity2SDF.Vector(ab.transform.TransformPoint(ab.centerOfMass)).AsUnity());
-			}
-			else
-			{
-				EditorGUILayout.LabelField("No RigidBody or ArticulationBody exist.");
+				EditorGUILayout.Space();
+				EditorGUILayout.LabelField($"Physics Info: {bodyType}", EditorStyles.boldLabel);
+				EditorGUILayout.HelpBox("Inertia Tensor Rotation is displayed as Roll, Pitch, Yaw (Euler angles).", MessageType.None);
+
+				if (rb != null)
+				{
+					EditorGUILayout.Vector3Field("Velocity", Unity2SDF.Vector(rb.velocity).AsUnity());
+					EditorGUILayout.Vector3Field("Angular Velocity", Unity2SDF.Vector(rb.angularVelocity).AsUnity());
+					EditorGUILayout.Vector3Field("Inertia Tensor", Unity2SDF.Scale(rb.inertiaTensor).AsUnity());
+					EditorGUILayout.Vector3Field("Inertia Tensor Rotation", Unity2SDF.Vector(rb.inertiaTensorRotation.eulerAngles).AsUnity());
+					EditorGUILayout.Vector3Field("Center of Mass (Local)", Unity2SDF.Vector(rb.centerOfMass).AsUnity());
+					EditorGUILayout.Vector3Field("Center of Mass (World)", Unity2SDF.Vector(rb.worldCenterOfMass).AsUnity());
+				}
+				else if (ab != null)
+				{
+					EditorGUILayout.Vector3Field("Velocity", Unity2SDF.Vector(ab.velocity).AsUnity());
+					EditorGUILayout.Vector3Field("Angular Velocity", Unity2SDF.Vector(ab.angularVelocity).AsUnity());
+					EditorGUILayout.Vector3Field("Inertia Tensor", Unity2SDF.Scale(ab.inertiaTensor).AsUnity());
+					EditorGUILayout.Vector3Field("Inertia Tensor Rotation", Unity2SDF.Vector(ab.inertiaTensorRotation.eulerAngles).AsUnity());
+					EditorGUILayout.Vector3Field("Center of Mass (Local)", Unity2SDF.Vector(ab.centerOfMass).AsUnity());
+					EditorGUILayout.Vector3Field("Center of Mass (World)", Unity2SDF.Vector(ab.transform.TransformPoint(ab.centerOfMass)).AsUnity());
+				}
 			}
 		}
 	}

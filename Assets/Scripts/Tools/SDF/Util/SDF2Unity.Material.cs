@@ -28,6 +28,7 @@ public static partial class SDF2Unity
 		newMaterial.SetFloat("_ReceiveShadows", 1f);
 
 		newMaterial.SetColor("_BaseColor", UE.Color.white);
+		newMaterial.SetFloat("_Smoothness", 0f);
 
 		// var specularSmoothness = 0.35f;
 		// SetSpecular(newMaterial, specularSmoothness);

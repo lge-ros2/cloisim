@@ -196,8 +196,14 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasColorSpecular)
 			{
-				mat.SetSpecular(sceneMat.ColorSpecular.ToUnity());
-				// logs.AppendLine($"HasColorSpecular({sceneMat.ColorSpecular.ToUnity()}) for {sceneMat.Name}");
+				// Set specular color but don't let its alpha control smoothness.
+				// Blender FBX exports specular alpha as 1.0, which would make
+				// everything maximally shiny. Smoothness is handled by HasShininess.
+				var specColor = sceneMat.ColorSpecular.ToUnity();
+				mat.SetColor("_SpecColor", specColor);
+				mat.SetFloat("_SpecularHighlights", 1f);
+				mat.EnableKeyword("_SPECGLOSSMAP");
+				// logs.AppendLine($"HasColorSpecular({specColor}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorTransparent)
@@ -403,13 +409,14 @@ public static partial class MeshLoader
 				}
 			}
 
-			// Vertex Color
-			for (var channelIndex = 0; channelIndex < sceneMesh.VertexColorChannelCount; channelIndex++)
+			// Vertex Color (Unity only supports a single color channel)
+			if (sceneMesh.VertexColorChannelCount > 0 && sceneMesh.HasVertexColors(0))
 			{
-				if (sceneMesh.HasVertexColors(channelIndex))
-				{
-					Debug.LogWarning("Has vertex color : " + channelIndex);
-				}
+				var colors = new Queue<Color>();
+				foreach (var c in sceneMesh.VertexColorChannels[0])
+					colors.Enqueue(new Color(c.X, c.Y, c.Z, c.W));
+
+				newMesh.colors = colors.ToArray();
 			}
 
 			// Triangles

@@ -68,6 +68,7 @@ namespace SDF
 				linkHelper.isSelfCollide = link.SelfCollide;
 				linkHelper.useGravity = (link.Kinematic) ? false : link.Gravity;
 				linkHelper.Pose = link?.Pose;
+				linkHelper.Inertial = link?.Inertial;
 
 				if (link.Battery != null)
 				{
@@ -109,16 +110,16 @@ namespace SDF
 				var inertial = link.Inertial;
 				if (!hasStaticModel && inertial != null)
 				{
-					Loader.CreateArticulationBody(linkObject, inertial);
+					Loader.CreateArticulationBody(linkObject);
 				}
 			}
 
-			public static UE.ArticulationBody CreateArticulationBody(in UE.Transform linkObjectTransform, in Inertial inertial = null)
+			public static UE.ArticulationBody CreateArticulationBody(in UE.Transform linkObjectTransform)
 			{
-				return CreateArticulationBody(linkObjectTransform.gameObject, inertial);
+				return CreateArticulationBody(linkObjectTransform.gameObject);
 			}
 
-			private static UE.ArticulationBody CreateArticulationBody(in UE.GameObject linkObject, in Inertial inertial = null)
+			private static UE.ArticulationBody CreateArticulationBody(in UE.GameObject linkObject)
 			{
 				if (linkObject == null)
 				{
@@ -128,6 +129,7 @@ namespace SDF
 
 				var linkHelper = linkObject.GetComponent<SDF.Helper.Link>();
 				var colliders = linkObject.GetComponentsInChildren<UE.Collider>();
+				var inertial = linkHelper?.Inertial;
 
 				// handling mesh collider
 				foreach (var collider in colliders)
@@ -136,6 +138,10 @@ namespace SDF
 
 					if (meshCollider != null)
 					{
+						meshCollider.cookingOptions =
+							UE.MeshColliderCookingOptions.CookForFasterSimulation |
+							UE.MeshColliderCookingOptions.EnableMeshCleaning |
+							UE.MeshColliderCookingOptions.WeldColocatedVertices;
 						meshCollider.convex = true;
 					}
 				}
@@ -146,7 +152,7 @@ namespace SDF
 				articulationBody.angularVelocity = UE.Vector3.zero;
 				articulationBody.useGravity = (linkHelper == null) ? false : linkHelper.useGravity;
 				articulationBody.jointType = UE.ArticulationJointType.FixedJoint;
-				articulationBody.mass = (inertial == null) ? 0.5f : (float)inertial.mass;
+				articulationBody.mass = (inertial == null) ? 0.5f : (float)linkHelper.Inertial.mass;
 				articulationBody.linearDamping = 3;
 				articulationBody.angularDamping = 1;
 				articulationBody.jointFriction = 0f;
@@ -185,7 +191,13 @@ namespace SDF
 					articulationBody.automaticInertiaTensor = true;
 				}
 
+				// Keep disabled to prevent physics from modifying the transform during import.
+				// SpecifyPose() will re-enable all ArticulationBodies after poses are applied.
+				articulationBody.enabled = false;
+
 				// Debug.Log("Create link body " + linkObject.name);
+				// Debug.Log($"{linkObject.name} => local position: {articulationBody.transform.localPosition.ToString("F5")}");
+
 				return articulationBody;
 			}
 		}

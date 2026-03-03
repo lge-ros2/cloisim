@@ -28,16 +28,78 @@ namespace SDF
 					MCCookingOptions.WeldColocatedVertices |
 					MCCookingOptions.UseFastMidphase;
 
+			private static readonly float DegenerateTriangleArea = 1e-8f;
+
+			/// <summary>
+			/// Remove degenerate triangles (zero/near-zero area) from a mesh
+			/// to prevent PhysX "cleaning the mesh failed" warnings.
+			/// </summary>
+			private static UE.Mesh CleanMesh(UE.Mesh source)
+			{
+				if (source == null)
+					return source;
+
+				var srcVertices = source.vertices;
+				var srcTriangles = source.triangles;
+
+				if (srcTriangles.Length < 3)
+					return source;
+
+				var cleanIndices = new System.Collections.Generic.List<int>(srcTriangles.Length);
+
+				for (var i = 0; i < srcTriangles.Length; i += 3)
+				{
+					var v0 = srcVertices[srcTriangles[i]];
+					var v1 = srcVertices[srcTriangles[i + 1]];
+					var v2 = srcVertices[srcTriangles[i + 2]];
+
+					// Check for degenerate triangle (zero area via cross product magnitude)
+					var cross = UE.Vector3.Cross(v1 - v0, v2 - v0);
+					if (cross.sqrMagnitude <= DegenerateTriangleArea)
+						continue;
+
+					cleanIndices.Add(srcTriangles[i]);
+					cleanIndices.Add(srcTriangles[i + 1]);
+					cleanIndices.Add(srcTriangles[i + 2]);
+				}
+
+				if (cleanIndices.Count == srcTriangles.Length)
+					return source; // no degenerate triangles found
+
+				var removedCount = (srcTriangles.Length - cleanIndices.Count) / 3;
+				UE.Debug.LogWarning($"CleanMesh({source.name}): removed {removedCount} degenerate triangle(s)");
+
+				if (cleanIndices.Count == 0)
+				{
+					UE.Debug.LogWarning($"CleanMesh({source.name}): all triangles are degenerate, skipping");
+					return null;
+				}
+
+				var cleanMesh = new UE.Mesh();
+				cleanMesh.name = source.name;
+				cleanMesh.indexFormat = source.indexFormat;
+				cleanMesh.vertices = srcVertices;
+				cleanMesh.normals = source.normals;
+				cleanMesh.uv = source.uv;
+				cleanMesh.triangles = cleanIndices.ToArray();
+				cleanMesh.RecalculateBounds();
+
+				return cleanMesh;
+			}
+
 			private static void KeepUnmergedMeshes(ref UE.MeshFilter[] meshFilters)
 			{
 				foreach (var meshFilter in meshFilters)
 				{
+					var cleanedMesh = CleanMesh(meshFilter.sharedMesh);
+					if (cleanedMesh == null)
+						continue;
+
 					var meshObject = meshFilter.gameObject;
 					var meshCollider = meshObject.AddComponent<UE.MeshCollider>();
-					meshCollider.sharedMesh = meshFilter.sharedMesh;
+					meshCollider.sharedMesh = cleanedMesh;
 					meshCollider.convex = false;
 					meshCollider.cookingOptions = CookingOptions;
-					// meshCollider.hideFlags |= UE.HideFlags.NotEditable;
 				}
 			}
 
@@ -58,11 +120,15 @@ namespace SDF
 					UE.GameObject.Destroy(transformObjects[index].gameObject);
 				}
 
-				var mergedMeshCollider = targetObject.AddComponent<UE.MeshCollider>();
-				mergedMeshCollider.sharedMesh = mergedMesh;
-				mergedMeshCollider.convex = false;
-				mergedMeshCollider.cookingOptions = CookingOptions;
-				mergedMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
+				var cleanedMergedMesh = CleanMesh(mergedMesh);
+				if (cleanedMergedMesh != null)
+				{
+					var mergedMeshCollider = targetObject.AddComponent<UE.MeshCollider>();
+					mergedMeshCollider.sharedMesh = cleanedMergedMesh;
+					mergedMeshCollider.convex = false;
+					mergedMeshCollider.cookingOptions = CookingOptions;
+					mergedMeshCollider.hideFlags |= UE.HideFlags.NotEditable;
+				}
 			}
 
 			public static void MakeCollision(this UE.GameObject targetObject)
