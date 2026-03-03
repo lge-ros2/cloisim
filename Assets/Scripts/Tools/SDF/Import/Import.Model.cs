@@ -16,7 +16,7 @@ namespace SDF
 		{
 			/// <summary>make root articulation body for handling robots</summary>
 			/// <remarks>should add root body first</remarks>
-			private void CreateRootArticulationBody(in UE.GameObject targetObject)
+			private static UE.ArticulationBody CreateRootArticulationBody(UE.GameObject targetObject)
 			{
 				var articulationBody = targetObject.GetComponent<UE.ArticulationBody>();
 
@@ -47,10 +47,15 @@ namespace SDF
 				articulationBody.sleepThreshold = 0.01f;
 				articulationBody.Sleep();
 
+				// Keep disabled to prevent physics from shifting transforms during import.
+				// SpecifyPose() will re-enable all ArticulationBodies after poses are applied.
+				articulationBody.enabled = false;
+
 				// UE.Debug.Log(targetObject.name + " Create root articulation body");
+				return articulationBody;
 			}
 
-			private static void CreateRootRigidBody(in UE.GameObject targetObject)
+			private static UE.Rigidbody CreateRootRigidBody(UE.GameObject targetObject)
 			{
 				var rigidBody = targetObject.GetComponent<UE.Rigidbody>();
 
@@ -66,6 +71,8 @@ namespace SDF
 				rigidBody.ResetCenterOfMass();
 				rigidBody.ResetInertiaTensor();
 				rigidBody.Sleep();
+
+				return rigidBody;
 			}
 
 			private UE.GameObject CreateModel(in SDF.Model model, in UE.GameObject parentObject)
@@ -133,7 +140,9 @@ namespace SDF
 
 					if (modelHelper.isStatic)
 					{
-						CreateRootRigidBody(modelObject);
+						var rb = CreateRootRigidBody(modelObject);
+						rb.isKinematic = true;
+						rb.useGravity = false;
 					}
 					else
 					{
