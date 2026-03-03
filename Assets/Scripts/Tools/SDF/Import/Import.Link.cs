@@ -138,6 +138,10 @@ namespace SDF
 
 					if (meshCollider != null)
 					{
+						meshCollider.cookingOptions =
+							UE.MeshColliderCookingOptions.CookForFasterSimulation |
+							UE.MeshColliderCookingOptions.EnableMeshCleaning |
+							UE.MeshColliderCookingOptions.WeldColocatedVertices;
 						meshCollider.convex = true;
 					}
 				}
