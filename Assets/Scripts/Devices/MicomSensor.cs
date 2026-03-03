@@ -185,7 +185,6 @@ namespace SensorDevices
 			UpdateUss(micomSensorData);
 			UpdateIr(micomSensorData);
 			UpdateBumper(micomSensorData);
-			UpdateIMU(micomSensorData);
 
 			micomSensorData.Odom = _odomData;
 
@@ -247,14 +246,6 @@ namespace SensorDevices
 
 					micomData.Irs.Add(ir);
 				}
-			}
-		}
-
-		private void UpdateIMU(messages.Micom micomData)
-		{
-			if (_imuSensor != null && micomData != null)
-			{
-				micomData.Imu = _imuSensor.GetImuMessage();
 			}
 		}
 	}

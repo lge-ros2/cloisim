@@ -5,7 +5,7 @@
 // </auto-generated>
 
 #region Designer generated code
-#pragma warning disable CS0612, CS0618, CS1591, CS3021, IDE0079, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning disable CS0612, CS0618, CS1591, CS3021, CS8981, IDE0079, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 namespace cloisim.msgs
 {
 
@@ -22,25 +22,22 @@ namespace cloisim.msgs
         [global::ProtoBuf.ProtoMember(2, Name = @"odom")]
         public Odometry Odom { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"imu")]
-        public Imu Imu { get; set; }
-
-        [global::ProtoBuf.ProtoMember(4, Name = @"uss")]
+        [global::ProtoBuf.ProtoMember(3, Name = @"uss")]
         public global::System.Collections.Generic.List<Uss> Usses { get; } = new global::System.Collections.Generic.List<Uss>();
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"ir")]
+        [global::ProtoBuf.ProtoMember(4, Name = @"ir")]
         public global::System.Collections.Generic.List<Ir> Irs { get; } = new global::System.Collections.Generic.List<Ir>();
 
-        [global::ProtoBuf.ProtoMember(6, Name = @"magnet")]
+        [global::ProtoBuf.ProtoMember(5, Name = @"magnet")]
         public global::System.Collections.Generic.List<Magnet> Magnets { get; } = new global::System.Collections.Generic.List<Magnet>();
 
-        [global::ProtoBuf.ProtoMember(7, Name = @"bumper")]
+        [global::ProtoBuf.ProtoMember(6, Name = @"bumper")]
         public global::System.Collections.Generic.List<Bumper> Bumpers { get; } = new global::System.Collections.Generic.List<Bumper>();
 
-        [global::ProtoBuf.ProtoMember(8, Name = @"battery")]
+        [global::ProtoBuf.ProtoMember(7, Name = @"battery")]
         public Battery Battery { get; set; }
 
-        [global::ProtoBuf.ProtoMember(9, Name = @"pose")]
+        [global::ProtoBuf.ProtoMember(8, Name = @"pose")]
         public Pose Pose { get; set; }
 
         [global::ProtoBuf.ProtoContract()]
@@ -140,5 +137,5 @@ namespace cloisim.msgs
 
 }
 
-#pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE0079, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
+#pragma warning restore CS0612, CS0618, CS1591, CS3021, CS8981, IDE0079, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 #endregion
