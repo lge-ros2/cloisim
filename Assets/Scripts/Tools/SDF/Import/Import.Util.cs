@@ -132,7 +132,7 @@ namespace SDF
 
 				var articulationBodies = rootObject.GetComponentsInChildren<UE.ArticulationBody>();
 
-				// Due to aritucaltion body transformmation
+				// Due to articulation body transformation
 				foreach (var body in articulationBodies)
 				{
 					body.enabled = false;
@@ -141,47 +141,73 @@ namespace SDF
 				foreach (var baseHelper in rootObject.GetComponentsInChildren<SDF.Helper.Base>())
 				{
 					var pose = baseHelper?.Pose;
-					if (pose != null)
+					if (pose == null)
 					{
-						var localPosition = pose?.Pos.ToUnity() ?? UE.Vector3.zero;
-						var localRotation = pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
+						continue;
+					}
 
-						// UE.Debug.Log($"SpecifyPose {baseHelper.name} {pose.relative_to}");
-						if (string.IsNullOrEmpty(pose.relative_to))
+					var localPosition = pose?.Pos.ToUnity() ?? UE.Vector3.zero;
+					var localRotation = pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
+
+					// UE.Debug.Log($"SpecifyPose {baseHelper.name} {pose?.relative_to}");
+					if (string.IsNullOrEmpty(pose?.relative_to))
+					{
+						SpecifyPoseAbsolute(baseHelper, ref localPosition, ref localRotation);
+						// UE.Debug.Log($"SpecifyPoseAbsolute {baseHelper.name} {pose?.relative_to}");
+					}
+					else
+					{
+						var relativeObjectBaseHelper
+							= baseHelper.RootModel.GetComponentsInChildren<SDF.Helper.Base>().FirstOrDefault(x => x.name.Equals(pose?.relative_to));
+
+						if (relativeObjectBaseHelper != null)
 						{
-							SpecifyPoseAbsolute(baseHelper, ref localPosition, ref localRotation);
+							SpecifyPoseRelative(baseHelper, relativeObjectBaseHelper, ref localPosition, ref localRotation);
+							// UE.Debug.Log($"SpecifyPoseRelative {baseHelper.name} {pose?.relative_to}");
 						}
 						else
 						{
-							var relativeObjectBaseHelper
-								= baseHelper.RootModel.GetComponentsInChildren<SDF.Helper.Base>().FirstOrDefault(x => x.name.Equals(pose.relative_to));
-
-							if (relativeObjectBaseHelper != null)
-							{
-								SpecifyPoseRelative(baseHelper, relativeObjectBaseHelper, ref localPosition, ref localRotation);
-							}
-							else
-							{
-								UE.Debug.LogWarning($"{baseHelper.name}: AdjustPose: relative_to: {pose.relative_to} NOT FOUND !!!!!!");
-							}
-
+							UE.Debug.LogWarning($"{baseHelper.name}: AdjustPose: relative_to: {pose?.relative_to} NOT FOUND !!!!!!");
 						}
+					}
 
-						baseHelper.SetPose(localPosition, localRotation);
-						baseHelper.ResetPose();
+					// UE.Debug.Log($"SpecifyPose {baseHelper.name} {localPosition} {localRotation.eulerAngles}");
+					baseHelper.SetPose(localPosition, localRotation);
+					baseHelper.ResetPose();
+				}
+
+				// Before enabling, mark root ABs in static models as immovable
+				// to prevent joint spring forces from shifting them.
+				foreach (var body in articulationBodies)
+				{
+					// A root AB has no parent AB in the hierarchy
+					var parentAB = body.transform.parent?.GetComponentInParent<UE.ArticulationBody>();
+					if (parentAB == null)
+					{
+						var modelHelper = body.GetComponentInParent<SDF.Helper.Model>();
+						if (modelHelper != null && modelHelper.isStatic)
+						{
+							body.immovable = true;
+						}
 					}
 				}
 
 				foreach (var body in articulationBodies)
 				{
 					body.enabled = true;
+
+					if (body.isRoot)
+					{
+						body.TeleportRoot(body.transform.position, body.transform.rotation);
+						body.Sleep();
+					}
 				}
 
 				var devices = rootObject.GetComponentsInChildren<Device>();
 				foreach (var device in devices)
 				{
 					device.UpdatePose();
-					// Debug.LogWarning(device.GetPose());
+					// UE.Debug.LogWarning($"{device.DeviceName} {device.GetPose()}");
 				}
 			}
 		}
