@@ -196,8 +196,14 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasColorSpecular)
 			{
-				mat.SetSpecular(sceneMat.ColorSpecular.ToUnity());
-				// logs.AppendLine($"HasColorSpecular({sceneMat.ColorSpecular.ToUnity()}) for {sceneMat.Name}");
+				// Set specular color but don't let its alpha control smoothness.
+				// Blender FBX exports specular alpha as 1.0, which would make
+				// everything maximally shiny. Smoothness is handled by HasShininess.
+				var specColor = sceneMat.ColorSpecular.ToUnity();
+				mat.SetColor("_SpecColor", specColor);
+				mat.SetFloat("_SpecularHighlights", 1f);
+				mat.EnableKeyword("_SPECGLOSSMAP");
+				// logs.AppendLine($"HasColorSpecular({specColor}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorTransparent)
