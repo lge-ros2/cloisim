@@ -138,6 +138,13 @@ namespace SDF
 
 					if (meshCollider != null)
 					{
+						if (meshCollider.sharedMesh == null || meshCollider.sharedMesh.vertexCount == 0)
+						{
+							Debug.LogWarning("MeshCollider on '" + meshCollider.transform.parent?.name + "/" + meshCollider.name + "' has no vertices, removing it.");
+							UE.Object.Destroy(meshCollider);
+							continue;
+						}
+
 						meshCollider.cookingOptions =
 							UE.MeshColliderCookingOptions.CookForFasterSimulation |
 							UE.MeshColliderCookingOptions.EnableMeshCleaning |

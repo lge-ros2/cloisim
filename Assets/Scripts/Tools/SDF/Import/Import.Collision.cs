@@ -49,16 +49,18 @@ namespace SDF
 					{
 						var shapeType = shape.GetType();
 
-						var existingMeshCollider = geometryObject.GetComponent<UE.MeshCollider>();
-
 						if (shapeType.Equals(typeof(Plane)))
 						{
 							collisionObject.layer = Implement.Collision.PlaneLayerIndex;
-							existingMeshCollider.convex = false;
+							var existingMeshCollider = geometryObject.GetComponent<UE.MeshCollider>();
+							if (existingMeshCollider != null)
+							{
+								existingMeshCollider.convex = false;
+							}
 						}
 						else
 						{
-							if (EnhanceCollisionPerformance(shapeType, shape, existingMeshCollider))
+							if (EnhanceCollisionPerformance(shapeType, shape, geometryObject))
 							{
 								var meshColliders = geometryObject.GetComponentsInChildren<UE.MeshCollider>();
 								for (var index = 0; index < meshColliders.Length; index++)
@@ -85,14 +87,14 @@ namespace SDF
 			private bool EnhanceCollisionPerformance(
 				in System.Type shapeType,
 				in ShapeType shape,
-				UE.MeshCollider meshCollider)
+				UE.GameObject targetObject)
 			{
 				if (shapeType.Equals(typeof(Box)))
 				{
 					var box = shape as SDF.Box;
 					var scale = SDF2Unity.Scale(box.size);
 
-					var boxCollider = meshCollider.gameObject.AddComponent<UE.BoxCollider>();
+					var boxCollider = targetObject.AddComponent<UE.BoxCollider>();
 					boxCollider.size = scale;
 					return true;
 				}
@@ -100,7 +102,7 @@ namespace SDF
 				{
 					var sphere = shape as SDF.Sphere;
 
-					var sphereCollider = meshCollider.gameObject.AddComponent<UE.SphereCollider>();
+					var sphereCollider = targetObject.AddComponent<UE.SphereCollider>();
 					sphereCollider.radius = (float)sphere.radius;
 					return true;
 				}
@@ -108,7 +110,7 @@ namespace SDF
 				{
 					var capsule = shape as SDF.Capsule;
 
-					var capsuleCollider = meshCollider.gameObject.AddComponent<UE.CapsuleCollider>();
+					var capsuleCollider = targetObject.AddComponent<UE.CapsuleCollider>();
 					capsuleCollider.radius = (float)capsule.radius;
 					capsuleCollider.height = (float)capsule.length;
 					return true;

@@ -28,7 +28,7 @@ namespace SDF
 					MCCookingOptions.WeldColocatedVertices |
 					MCCookingOptions.UseFastMidphase;
 
-			private static readonly float DegenerateTriangleArea = 1e-8f;
+			private static readonly float DegenerateTriangleArea = 1e-14f;
 
 			/// <summary>
 			/// Remove degenerate triangles (zero/near-zero area) from a mesh
@@ -43,7 +43,7 @@ namespace SDF
 				var srcTriangles = source.triangles;
 
 				if (srcTriangles.Length < 3)
-					return source;
+					return null;
 
 				var cleanIndices = new System.Collections.Generic.List<int>(srcTriangles.Length);
 
@@ -107,6 +107,10 @@ namespace SDF
 			{
 				var geometryWorldToLocalMatrix = targetObject.transform.worldToLocalMatrix;
 				var meshColliders = targetObject.GetComponentsInChildren<UE.MeshCollider>();
+
+				if (meshColliders.Length == 0)
+					return;
+
 				var mergedMesh = meshColliders.MergeMeshes(geometryWorldToLocalMatrix);
 
 				for (var index = 0; index < meshColliders.Length; index++)
