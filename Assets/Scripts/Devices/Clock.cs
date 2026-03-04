@@ -25,6 +25,8 @@ public class Clock : Device
 	private double _currentSimTime = 0;
 	private double _currentFixedSimTime = 0;
 	private double _currentRealTime = 0;
+	private double _deltaTime = 0;
+	private double _fixedDeltaTime = 0;
 
 	#region time in _hms format
 	public class HMS
@@ -66,7 +68,7 @@ public class Clock : Device
 		public string DiffTime => _diffTime;
 	}
 
-	private HMS _hms = new HMS();
+	private HMS _hms = new();
 
 	private int _hmsUpdateIndex = 0;
 	#endregion
@@ -74,6 +76,8 @@ public class Clock : Device
 	public double SimTime => _currentSimTime;
 	public double FixedSimTime => _currentFixedSimTime;
 	public double RealTime => _currentRealTime;
+	public double DeltaTime => _deltaTime;
+	public double FixedDeltaTime => _fixedDeltaTime;
 
 	public HMS ToHMS() => _hms;
 
@@ -96,11 +100,13 @@ public class Clock : Device
 	{
 		_currentSimTime = Time.timeAsDouble - _restartedSimTime;
 		_currentRealTime = Time.realtimeSinceStartupAsDouble - _restartedRealTime;
+		_deltaTime = (double)Time.deltaTime;
 	}
 
 	void FixedUpdate()
 	{
 		_currentFixedSimTime = Time.fixedTimeAsDouble - _restartedFixedSimTime;
+		_fixedDeltaTime = (double)Time.fixedDeltaTime;
 	}
 
 	void LateUpdate()
