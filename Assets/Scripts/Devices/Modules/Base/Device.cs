@@ -40,6 +40,8 @@ public abstract class Device : MonoBehaviour
 
 	private bool _running = false;
 
+	public Clock Clock { get; protected set; }
+
 	public float UpdatePeriod => 1f / UpdateRate;
 
 	public float UpdateRate => _updateRate;
@@ -117,6 +119,8 @@ public abstract class Device : MonoBehaviour
 	private IEnumerator DelayedStart()
 	{
 		yield return new WaitForEndOfFrame();
+
+		Clock = DeviceHelper.GetGlobalClock();
 
 		OnStart();
 
