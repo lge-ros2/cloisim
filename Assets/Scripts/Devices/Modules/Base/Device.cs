@@ -67,6 +67,41 @@ public abstract class Device : MonoBehaviour
 		_devicePose.SubParts = value;
 	}
 
+#if UNITY_EDITOR
+	#region PROFILER
+	private int _profFrameCount = 0;
+	private double _profByteCount = 0;
+	private float _periodForProfiler = 5f; // seconds
+
+	private System.Diagnostics.Stopwatch _profWatch = System.Diagnostics.Stopwatch.StartNew();
+
+	[ContextMenu("Reset Profiler")]
+	private void ResetProfiler()
+	{
+		_profFrameCount = 0;
+		_profByteCount = 0;
+		_profWatch.Restart();
+	}
+
+	protected void UpdateProfiler(in string targetName, in double byteCount)
+	{
+		const double oneMegabyte = 1024.0 * 1024.0;
+
+		_profFrameCount++;
+		_profByteCount += byteCount;
+		var seconds = _profWatch.Elapsed.TotalSeconds;
+		if (seconds >= _periodForProfiler)
+		{
+			var hz = _profFrameCount / seconds;
+			var mbPerSec = (_profByteCount / seconds) / oneMegabyte;
+			var mbps = (_profByteCount * 8.0 / seconds) / oneMegabyte;
+			Debug.Log($"[PROF][{targetName}] {DeviceName} Hz: {hz:F2} | Bandwidth: {mbps:F2} Mbps ({mbPerSec:F2} MB/s)");
+			ResetProfiler();
+		}
+	}
+	#endregion
+#endif
+
 	void Awake()
 	{
 		OnAwake();
