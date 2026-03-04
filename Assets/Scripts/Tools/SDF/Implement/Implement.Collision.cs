@@ -180,7 +180,7 @@ namespace SDF
 
 			public static void SetSurfaceFriction(this UE.GameObject targetObject, in SDF.Surface surface)
 			{
-				var material = new UE.PhysicMaterial();
+				var material = new UE.PhysicsMaterial();
 
 				if (surface != null)
 				{
@@ -194,15 +194,15 @@ namespace SDF
 						{
 							material.staticFriction = (float)surface.friction.ode.mu;
 							material.dynamicFriction = (float)surface.friction.ode.mu * DynamicFrictionRatio;
-							material.frictionCombine = ((float)surface.friction.ode.mu2 <= ThresholdFrictionCombineMultiply) ? UE.PhysicMaterialCombine.Multiply : UE.PhysicMaterialCombine.Average;
+							material.frictionCombine = ((float)surface.friction.ode.mu2 <= ThresholdFrictionCombineMultiply) ? UE.PhysicsMaterialCombine.Multiply : UE.PhysicsMaterialCombine.Average;
 						}
 					}
 					else
 					{
-						material.frictionCombine = UE.PhysicMaterialCombine.Average;
+						material.frictionCombine = UE.PhysicsMaterialCombine.Average;
 					}
 
-					material.bounceCombine = UE.PhysicMaterialCombine.Average;
+					material.bounceCombine = UE.PhysicsMaterialCombine.Average;
 				}
 				else
 				{
@@ -211,8 +211,8 @@ namespace SDF
 					material.dynamicFriction = 0.6f;
 					material.staticFriction = 0.6f;
 					material.bounciness = 0.0f;
-					material.frictionCombine = UE.PhysicMaterialCombine.Average;
-					material.bounceCombine = UE.PhysicMaterialCombine.Average;
+					material.frictionCombine = UE.PhysicsMaterialCombine.Average;
+					material.bounceCombine = UE.PhysicsMaterialCombine.Average;
 
 #if false
 					// Rubber Material
@@ -220,40 +220,40 @@ namespace SDF
 					material.dynamicFriction = 0.8f;
 					material.staticFriction = 0.9f;
 					material.bounciness = 0.8f;
-					material.frictionCombine = UE.PhysicMaterialCombine.Maximum;
-					material.bounceCombine = UE.PhysicMaterialCombine.Average;
+					material.frictionCombine = UE.PhysicsMaterialCombine.Maximum;
+					material.bounceCombine = UE.PhysicsMaterialCombine.Average;
 
 					// Ice Material
 					material.name = "Ice";
 					material.dynamicFriction = 0.05f;
 					material.staticFriction = 0.1f;
 					material.bounciness = 0.05f;
-					material.frictionCombine = UE.PhysicMaterialCombine.Multiply;
-					material.bounceCombine = UE.PhysicMaterialCombine.Multiply;
+					material.frictionCombine = UE.PhysicsMaterialCombine.Multiply;
+					material.bounceCombine = UE.PhysicsMaterialCombine.Multiply;
 
 					// Wood Material
 					material.name = "Wood";
 					material.dynamicFriction = 0.475f;
 					material.staticFriction = 0.475f;
 					material.bounciness = 0f;
-					material.frictionCombine = UE.PhysicMaterialCombine.Average;
-					material.bounceCombine = UE.PhysicMaterialCombine.Average;
+					material.frictionCombine = UE.PhysicsMaterialCombine.Average;
+					material.bounceCombine = UE.PhysicsMaterialCombine.Average;
 
 					// Metal Material
 					material.name = "Metal";
 					material.dynamicFriction = 0.15f;
 					material.staticFriction = 0.2f;
 					material.bounciness = 0f;
-					material.frictionCombine = UE.PhysicMaterialCombine.Minimum;
-					material.bounceCombine = UE.PhysicMaterialCombine.Average;
+					material.frictionCombine = UE.PhysicsMaterialCombine.Minimum;
+					material.bounceCombine = UE.PhysicsMaterialCombine.Average;
 
 					// Mud Material
 					material.name = "Mud";
 					material.dynamicFriction = 1f;
 					material.staticFriction = 0.9f;
 					material.bounciness = 0f;
-					material.frictionCombine = UE.PhysicMaterialCombine.Minimum;
-					material.bounceCombine = UE.PhysicMaterialCombine.Minimum;
+					material.frictionCombine = UE.PhysicsMaterialCombine.Minimum;
+					material.bounceCombine = UE.PhysicsMaterialCombine.Minimum;
 #endif
 
 					material.name = "(default) " + material.name;

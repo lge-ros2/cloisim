@@ -11,6 +11,12 @@ namespace SensorDevices
 {
 	public class IMU : Device
 	{
+		private Clock _clock = null;
+		private double _fixedSimTimeAtLastPhysics = 0;
+		private bool _hasNewPhysicsData = false;
+
+		public System.Action<messages.Imu> OnImuDataGenerated;
+
 		private class NoiseIMU
 		{
 			public Dictionary<string, Noise> angular_velocity;
@@ -96,6 +102,7 @@ namespace SensorDevices
 		protected override void OnStart()
 		{
 			_imuInitialRotation = transform.rotation;
+			_clock = DeviceHelper.GetGlobalClock();
 			// Debug.Log("_imuInitialRotation=" + _imuInitialRotation);
 		}
 
@@ -204,6 +211,11 @@ namespace SensorDevices
 			_imuOrientation = _imuRotation.eulerAngles;
 			var calculatedPitch = CalculatePitchFromForwardBaseAxis();
 			_imuOrientation.x = calculatedPitch;
+
+			// Record physics-step time for accurate timestamps
+			_fixedSimTimeAtLastPhysics = (_clock != null) ? _clock.FixedSimTime : (double)Time.fixedTimeAsDouble;
+
+			_hasNewPhysicsData = true;
 		}
 
 		protected override void GenerateMessage()
@@ -211,7 +223,12 @@ namespace SensorDevices
 			_imu.Orientation.Set(_imuRotation);
 			_imu.AngularVelocity.Set(_imuAngularVelocity * Mathf.Deg2Rad);
 			_imu.LinearAcceleration.Set(_imuLinearAcceleration);
-			_imu.Stamp.SetCurrentTime();
+			// Use fixed-dt synthetic time instead of physics-step SimTime
+			// so consecutive IMU messages always have exactly UpdatePeriod apart.
+			_imu.Stamp.Set(GetNextSyntheticTime());
+
+			OnImuDataGenerated?.Invoke(_imu);
+
 			PushDeviceMessage<messages.Imu>(_imu);
 		}
 

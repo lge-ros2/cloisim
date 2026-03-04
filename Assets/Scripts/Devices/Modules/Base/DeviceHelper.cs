@@ -82,7 +82,7 @@ public static partial class DeviceHelper
 	{
 		try
 		{
-			if (targetObject.CompareTag("Model") || targetObject.CompareTag("Sensor"))
+			if (targetObject.CompareTag("Model"))
 			{
 				return targetObject.name;
 			}
@@ -111,11 +111,6 @@ public static partial class DeviceHelper
 
 	public static void Set(this messages.Time msg, in double time)
 	{
-		msg.Set((float)time);
-	}
-
-	public static void Set(this messages.Time msg, in float time)
-	{
 		if (msg == null)
 		{
 			msg = new messages.Time();
@@ -123,6 +118,11 @@ public static partial class DeviceHelper
 
 		msg.Sec = (int)time;
 		msg.Nsec = (int)((time - (double)msg.Sec) * Sec2NSec);
+	}
+
+	public static void Set(this messages.Time msg, in float time)
+	{
+		msg.Set((double)time);
 	}
 
 	public static float Get(this messages.Time msg)

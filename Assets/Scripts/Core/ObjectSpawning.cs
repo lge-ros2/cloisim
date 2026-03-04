@@ -17,7 +17,7 @@ public class ObjectSpawning : MonoBehaviour
 	private const float UnitMass = 3.5f;
 	private const float CylinderRotationAngle = 90;
 
-	private static PhysicMaterial _propsPhysicalMaterial = null;
+	private static PhysicsMaterial _propsPhysicalMaterial = null;
 	private static Material _propMaterial = null;
 
 	private GameObject _propsRoot = null;
@@ -51,7 +51,7 @@ public class ObjectSpawning : MonoBehaviour
 	void Awake()
 	{
 		_propMaterial = SDF2Unity.CreateMaterial();
-		_propsPhysicalMaterial = Resources.Load<PhysicMaterial>("PhysicsMaterials/Props");
+		_propsPhysicalMaterial = Resources.Load<PhysicsMaterial>("PhysicsMaterials/Props");
 		_propsRoot = GameObject.Find("Props");
 		_mainCam = Camera.main;
 		_uiController = Main.UIObject?.GetComponent<UIController>();

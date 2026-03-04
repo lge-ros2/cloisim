@@ -1,0 +1,75 @@
+// URTLidarRaycast.urtshader
+// Unified Ray Tracing shader for LiDAR sensors.
+// Works on BOTH hardware RT cores (DXR/Vulkan RT) and compute fallback (RadeonRays BVH).
+// Replaces multi-sub-camera rasterization with a single dispatch.
+
+#define UNIFIED_RT_GROUP_SIZE_X 64
+#define UNIFIED_RT_GROUP_SIZE_Y 1
+
+#include "Packages/com.unity.render-pipelines.core/Runtime/UnifiedRayTracing/TraceRayAndQueryHit.hlsl"
+
+UNIFIED_RT_DECLARE_ACCEL_STRUCT(_AccelStruct);
+
+float3 _SensorOrigin;
+float4x4 _SensorToWorld;
+float _HAngleMax;
+float _HAngleStep;
+float _VAngleMax;
+float _VAngleStep;
+uint _HSamples;
+uint _VSamples;
+float _RangeMin;
+float _RangeMax;
+float _RangeLinearResolution;
+uint _InstanceInclusionMask;
+
+RWStructuredBuffer<float> _Output;
+
+void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
+{
+    uint hIdx = dispatchInfo.dispatchThreadID.x;
+    uint vIdx = dispatchInfo.dispatchThreadID.y;
+
+    if (hIdx >= _HSamples || vIdx >= _VSamples)
+        return;
+
+    float hAngleDeg = _HAngleMax - hIdx * _HAngleStep;
+    float vAngleDeg = _VAngleMax - vIdx * _VAngleStep;
+
+    float hRad = radians(hAngleDeg);
+    float vRad = radians(vAngleDeg);
+
+    float cosV = cos(vRad);
+    float sinV = sin(vRad);
+    float cosH = cos(hRad);
+    float sinH = sin(hRad);
+
+    float3 localDir = float3(cosV * sinH, sinV, cosV * cosH);
+    float3 worldDir = normalize(mul((float3x3)_SensorToWorld, localDir));
+
+    UnifiedRT::Ray ray;
+    ray.origin = _SensorOrigin;
+    ray.direction = worldDir;
+    ray.tMin = _RangeMin;
+    ray.tMax = _RangeMax;
+
+    UnifiedRT::RayTracingAccelStruct accelStruct = UNIFIED_RT_GET_ACCEL_STRUCT(_AccelStruct);
+    UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(
+        dispatchInfo, accelStruct, _InstanceInclusionMask, ray,
+        UnifiedRT::kRayFlagForceOpaque | UnifiedRT::kRayFlagCullBackFacingTriangles);
+
+    float dist;
+    if (hit.IsValid())
+    {
+        dist = hit.hitDistance;
+        if (_RangeLinearResolution > 0)
+            dist = round(dist / _RangeLinearResolution) * _RangeLinearResolution;
+    }
+    else
+    {
+        dist = asfloat(0x7FC00000); // NaN
+    }
+
+    uint outIdx = vIdx * _HSamples + hIdx;
+    _Output[outIdx] = dist;
+}
