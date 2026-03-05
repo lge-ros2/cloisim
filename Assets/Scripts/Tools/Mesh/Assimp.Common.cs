@@ -198,6 +198,26 @@ public static partial class MeshLoader
 			return null;
 		}
 
+		// Detect Git LFS pointer files that haven't been pulled.
+		// Feeding these to Assimp causes a native SIGSEGV crash in the importer destructor.
+		try
+		{
+			using var fs = new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+			var header = new byte[System.Math.Min(44, fs.Length)];
+			fs.Read(header, 0, header.Length);
+			var headerStr = System.Text.Encoding.ASCII.GetString(header);
+			if (headerStr.StartsWith("version https://git-lfs"))
+			{
+				Debug.LogError($"Skipping Git LFS pointer (not pulled): {targetPath}");
+				return null;
+			}
+		}
+		catch (System.Exception e)
+		{
+			Debug.LogWarning($"Could not read file header: {targetPath} — {e.Message}");
+			return null;
+		}
+
 		// logstream.Attach();
 
 		var fileExtension = Path.GetExtension(targetPath).ToLower();
