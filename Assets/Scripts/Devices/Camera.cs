@@ -204,7 +204,7 @@ namespace SensorDevices
 
 			if (_readbackDstFormat != readbackSourceFormat)
 			{
-				if (!SystemInfo.IsFormatSupported(_readbackDstFormat, FormatUsage.ReadPixels))
+				if (!SystemInfo.IsFormatSupported(_readbackDstFormat, GraphicsFormatUsage.ReadPixels))
 				{
 					Debug.LogWarning($"{DeviceName}: Readback format {_readbackDstFormat} not supported for ReadPixels, falling back to {readbackSourceFormat} with CPU conversion");
 					_readbackDstFormat = readbackSourceFormat;

@@ -13,7 +13,6 @@ namespace SensorDevices
 	{
 		private Clock _clock = null;
 		private double _fixedSimTimeAtLastPhysics = 0;
-		private bool _hasNewPhysicsData = false;
 
 		public System.Action<messages.Imu> OnImuDataGenerated;
 
@@ -214,8 +213,6 @@ namespace SensorDevices
 
 			// Record physics-step time for accurate timestamps
 			_fixedSimTimeAtLastPhysics = (_clock != null) ? _clock.FixedSimTime : (double)Time.fixedTimeAsDouble;
-
-			_hasNewPhysicsData = true;
 		}
 
 		protected override void GenerateMessage()

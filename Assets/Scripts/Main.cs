@@ -354,7 +354,7 @@ public class Main : MonoBehaviour
 		// "Default" layer gets a tighter cull distance for small objects
 		layerCullDistances[LayerMask.NameToLayer("Default")] = mainCamera.farClipPlane * 0.5f;
 		mainCamera.layerCullDistances = layerCullDistances;
-		mainCamera.layerCullSpherical = true;
+		// layerCullSpherical is not supported with URP/SRP — removed for Unity 6
 
 		// Sensor-only mode: minimize main viewport camera to save GPU time.
 		// Activated automatically in batchmode (no human viewer) or via CLOISIM_SENSOR_ONLY=1.
