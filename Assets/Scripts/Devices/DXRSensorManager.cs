@@ -43,7 +43,7 @@ namespace SensorDevices
 		private IRayTracingAccelStruct _accelStruct;
 		private GraphicsBuffer _buildScratchBuffer;
 		private bool _isSupported;
-		private MaterialPropertyBlock _tmpMpb = new MaterialPropertyBlock();
+		private MaterialPropertyBlock _tmpMpb;
 		private CommandBuffer _cmd;
 
 		// Robot model self-exclusion: each model root gets a bit index (0-7).
@@ -154,7 +154,6 @@ namespace SensorDevices
 					? RayTracingBackend.Hardware
 					: RayTracingBackend.Compute;
 				_rtContext = new RayTracingContext(backend, resources);
-				_isSupported = true;
 
 				var options = new AccelerationStructureOptions
 				{
@@ -163,6 +162,10 @@ namespace SensorDevices
 				_accelStruct = _rtContext.CreateAccelerationStructure(options);
 
 				_cmd = new CommandBuffer { name = "DXRSensorManager" };
+				_tmpMpb = new MaterialPropertyBlock();
+
+				// Mark supported only after ALL objects are successfully created
+				_isSupported = true;
 
 				Debug.Log($"[DXRSensorManager] Initialized — backend: {_rtContext.BackendType}");
 			}
@@ -317,7 +320,7 @@ namespace SensorDevices
 
 		void LateUpdate()
 		{
-			if (!_isSupported || _accelStruct == null) return;
+			if (!_isSupported || _accelStruct == null || _cmd == null) return;
 
 			using (s_LateUpdateMarker.Auto())
 			{
@@ -607,9 +610,9 @@ namespace SensorDevices
 				return tag.ClassId;
 
 			// Fallback: read per-material-index property block (index 0)
-			r.GetPropertyBlock(_tmpMpb, 0);
 			if (_tmpMpb != null)
 			{
+				r.GetPropertyBlock(_tmpMpb, 0);
 				var val = _tmpMpb.GetInt("_SegmentationValue");
 				if (val != 0) return (uint)val;
 			}
