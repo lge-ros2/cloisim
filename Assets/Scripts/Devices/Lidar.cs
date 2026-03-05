@@ -97,7 +97,6 @@ namespace SensorDevices
 		// Unity built-in layer 2 = "Ignore Raycast" -- always exists, not in the lidar culling mask
 		private const int SelfOcclusionLayer = 2;
 
-#if CLOISIM_WITH_DXR
 		// ── Unified Ray Tracing path ──
 		// When Unified RT is available (hardware or compute backend), replaces
 		// the entire sub-camera rasterization pipeline with a single dispatch.
@@ -109,9 +108,6 @@ namespace SensorDevices
 		private GraphicsBuffer _urtScratchBuffer;
 		private uint _dxrInclusionMask = 0xFF;
 		private CommandBuffer _urtCmd;
-#else
-		private readonly bool _useDXR = false;
-#endif
 
 		private int _numberOfLaserCamData = 0;
 		private LaserData.CameraControlInfo[] _camControlInfo;
@@ -170,9 +166,7 @@ namespace SensorDevices
 				_startLaserWork = true;
 
 				// Try to initialize DXR ray tracing path
-#if CLOISIM_WITH_DXR
 				InitDXR();
-#endif
 
 				if (!_useDXR)
 				{
@@ -259,7 +253,6 @@ namespace SensorDevices
 			}
 		}
 
-#if CLOISIM_WITH_DXR
 		/// <summary>
 		/// Initialize Unified Ray Tracing if available (hardware or compute backend).
 		/// Falls back to rasterization if not available.
@@ -324,17 +317,14 @@ namespace SensorDevices
 			_useDXR = true;
 			Debug.Log($"[Lidar:{DeviceName}] Unified RT enabled (backend: {dxrManager.RTContext.BackendType}) -- {hSamples}x{vSamples} rays, inclusionMask=0x{_dxrInclusionMask:X2}");
 		}
-#endif
 
 		private void StartLaserCaptureDelayed()
 		{
 			if (_startLaserWork)
 			{
-#if CLOISIM_WITH_DXR
 				if (_useDXR)
 					StartCoroutine(CaptureLaserDXR());
 				else
-#endif
 					StartCoroutine(CaptureLaserCamera());
 			}
 		}
@@ -346,7 +336,6 @@ namespace SensorDevices
 				yield return null;
 		}
 
-#if CLOISIM_WITH_DXR
 		/// <summary>
 		/// Unified RT capture coroutine. Replaces the entire sub-camera pipeline
 		/// with a single shader dispatch. No sub-cameras, no render graph
@@ -462,7 +451,6 @@ namespace SensorDevices
 			_messageQueue.Enqueue(laserScanStamped);
 			SignalDataReady();
 		}
-#endif
 
 		/// <summary>
 		/// Independent lidar capture coroutine with async GPU readback.
@@ -609,16 +597,13 @@ namespace SensorDevices
 		/// </summary>
 		public bool ExecuteRenderStep(float realtimeNow)
 		{
-#if CLOISIM_WITH_DXR
 			if (_useDXR)
 			{
 				return ExecuteDXRStep(realtimeNow);
 			}
-#endif
 			return ExecuteRasterStep(realtimeNow);
 		}
 
-#if CLOISIM_WITH_DXR
 		/// <summary>
 		/// DXR single-step: dispatch all rays, async readback, advance schedule.
 		/// </summary>
@@ -667,7 +652,6 @@ namespace SensorDevices
 
 			return true;
 		}
-#endif
 
 		/// <summary>
 		/// Rasterization single-step: renders ALL sub-cameras in one call.
@@ -829,7 +813,6 @@ namespace SensorDevices
 				_depthMaterial = null;
 			}
 
-#if CLOISIM_WITH_DXR
 			// Clean up URT resources
 			_urtOutputBuffer?.Release();
 			_urtOutputBuffer = null;
@@ -838,7 +821,6 @@ namespace SensorDevices
 			_urtCmd?.Release();
 			_urtCmd = null;
 			_urtShader = null;
-#endif
 
 			_rtHandle?.Release();
 			Destroy(_laserCompute);

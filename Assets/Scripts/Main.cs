@@ -418,9 +418,7 @@ public class Main : MonoBehaviour
 
 		_segmentationManager = gameObject.AddComponent<Segmentation.Manager>();
 
-#if CLOISIM_WITH_DXR
 		gameObject.AddComponent<SensorDevices.DXRSensorManager>();
-#endif
 
 		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
 		_vhacd.m_parameters = VHACD.Params;

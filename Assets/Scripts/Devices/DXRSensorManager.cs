@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-#if CLOISIM_WITH_DXR
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.UnifiedRayTracing;
@@ -633,4 +632,3 @@ namespace SensorDevices
 		}
 	}
 }
-#endif // CLOISIM_WITH_DXR
