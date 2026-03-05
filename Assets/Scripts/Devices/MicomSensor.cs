@@ -179,13 +179,12 @@ namespace SensorDevices
 
 			var micomSensorData = new messages.Micom();
 			micomSensorData.Time = new messages.Time();
-			micomSensorData.Time.Set(DeviceHelper.GlobalClock.FixedSimTime);
+			micomSensorData.Time.Set(GetNextSyntheticTime());
 
 			UpdateBattery(micomSensorData, delta);
 			UpdateUss(micomSensorData);
 			UpdateIr(micomSensorData);
 			UpdateBumper(micomSensorData);
-			UpdateIMU(micomSensorData);
 
 			micomSensorData.Odom = _odomData;
 
@@ -247,14 +246,6 @@ namespace SensorDevices
 
 					micomData.Irs.Add(ir);
 				}
-			}
-		}
-
-		private void UpdateIMU(messages.Micom micomData)
-		{
-			if (_imuSensor != null && micomData != null)
-			{
-				micomData.Imu = _imuSensor.GetImuMessage();
 			}
 		}
 	}

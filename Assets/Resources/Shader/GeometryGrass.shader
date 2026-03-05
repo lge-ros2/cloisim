@@ -307,7 +307,7 @@ Shader "Custom/GeometryGrass"
 		[maxvertexcount(BLADE_SEGMENTS * 2 + 1)]
 		void geom(triangle v2g input[3], inout TriangleStream<g2f> triStream)
 		{
-#if VISIBILITY_ON
+#ifdef VISIBILITY_ON
 			float grassVisibility = tex2Dlod(_GrassMap, float4(input[0].uv, 0, 0)).r;
 #else
 			float grassVisibility = 1.0f;
@@ -337,7 +337,7 @@ Shader "Custom/GeometryGrass"
 				// The rest of the grass blade rotates slightly around the base.
 				float3x3 randBendMatrix = angleAxis3x3(rand(pos.zzx) * _BladeBendDelta * HALF_PI, float3(-1.0f, 0, 0));
 
-#if WIND_ON
+#ifndef WIND_OFF
 				float2 windUV = pos.xz * _WindMap_ST.xy + _WindMap_ST.zw + normalize(_WindVelocity.xz) * _WindFrequency * _Time.y;
 				float2 windSample = (tex2Dlod(_WindMap, float4(windUV, 0, 0)).xy * 2.0f - 0.5f) * length(_WindVelocity);
 
@@ -351,7 +351,7 @@ Shader "Custom/GeometryGrass"
 				float3x3 tipTransformationMatrix = mul(mul(tangentToLocal, randBendMatrix), randRotMatrix);
 #endif
 
-#if VISIBILITY_ON
+#ifdef VISIBILITY_ON
 				float falloff = smoothstep(_GrassThreshold, _GrassThreshold + _GrassFalloff, grassVisibility);
 #else
 				float falloff = 1.0f;

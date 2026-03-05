@@ -109,9 +109,7 @@ public class Articulation
 
 	public bool IsPrismaticType()
 	{
-		return (
-			_jointType == ArticulationJointType.RevoluteJoint ||
-			_jointType == ArticulationJointType.PrismaticJoint) ? true : false;
+		return (_jointType == ArticulationJointType.PrismaticJoint) ? true : false;
 	}
 
 #if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
@@ -157,34 +155,24 @@ public class Articulation
 			return 0;
 		}
 
-		if (IsRevoluteType())
+		index = GetValidIndex(index);
+
+		if (index < 0)
 		{
+			return 0;
+		}
+
+		if (IsRevoluteType() || _jointType == ArticulationJointType.PrismaticJoint)
+		{
+			// Use jointPosition[] for all supported types to avoid accessing
+			// Transform.localPosition, which triggers ScheduleGeometryJobs
+			// via implicit Physics.SyncTransforms() when Physics.autoSyncTransforms is enabled.
+			// Returns: radian for angular, meter for linear.
 			return _jointBody.jointPosition[index];
 		}
 		else
 		{
-			if (_jointType == ArticulationJointType.PrismaticJoint)
-			{
-				if (_jointBody.linearLockX == ArticulationDofLock.LockedMotion &&
-					_jointBody.linearLockY == ArticulationDofLock.LockedMotion)
-				{
-					return _jointBody.transform.localPosition.z;
-				}
-				else if (_jointBody.linearLockY == ArticulationDofLock.LockedMotion &&
-						 _jointBody.linearLockZ == ArticulationDofLock.LockedMotion)
-				{
-					return _jointBody.transform.localPosition.x;
-				}
-				else if (_jointBody.linearLockX == ArticulationDofLock.LockedMotion &&
-						 _jointBody.linearLockZ == ArticulationDofLock.LockedMotion)
-				{
-					return _jointBody.transform.localPosition.y;
-				}
-			}
-			else
-			{
-				Debug.LogWarning("Unsupported articulation JointType: " + _jointType);
-			}
+			Debug.LogWarning("Unsupported articulation JointType: " + _jointType);
 		}
 
 		return 0;
