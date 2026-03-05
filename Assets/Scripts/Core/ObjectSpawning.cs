@@ -235,8 +235,8 @@ public class ObjectSpawning : MonoBehaviour
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
 		rigidBody.mass = 1;
-		rigidBody.drag = 0.8f;
-		rigidBody.angularDrag = 1f;
+		rigidBody.linearDamping = 0.8f;
+		rigidBody.angularDamping = 1f;
 
 		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
 		navMeshObstacle.carving = true;
