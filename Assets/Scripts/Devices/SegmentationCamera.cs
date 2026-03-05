@@ -21,7 +21,6 @@ namespace SensorDevices
 		// ── Profiling ──
 		private static readonly ProfilerMarker s_SegRenderMarker = new("SegmentationCamera.Render");
 
-#if CLOISIM_WITH_DXR
 		#region "Unified Ray Tracing"
 
 		// ── Unified Ray Tracing ──
@@ -37,9 +36,6 @@ namespace SensorDevices
 		public override bool IsURT => _useDXR;
 
 		#endregion
-#else
-		private bool _useDXR = false;
-#endif
 
 		protected override void SetupTexture()
 		{
@@ -80,13 +76,10 @@ namespace SensorDevices
 			_universalCamData.allowXRRendering = false;
 			_universalCamData.antialiasing = AntialiasingMode.FastApproximateAntialiasing;
 
-#if CLOISIM_WITH_DXR
 			// Try DXR ray tracing path first
 			InitDXRSegmentation();
-#endif
 		}
 
-#if CLOISIM_WITH_DXR
 		/// <summary>
 		/// Initialize Unified Ray Tracing for segmentation camera if available.
 		/// Instance IDs in the acceleration structure carry segmentation class IDs.
@@ -181,7 +174,6 @@ namespace SensorDevices
 				SignalDataReady();
 			});
 		}
-#endif
 
 		/// <summary>
 		/// Override readback to handle DXR path and match the segmentation
@@ -194,13 +186,11 @@ namespace SensorDevices
 			{
 				AdvanceRenderSchedule(realtimeNow);
 
-#if CLOISIM_WITH_DXR
 				if (_useDXR)
 				{
 					ExecuteRenderDXR(realtimeNow);
 					return;
 				}
-#endif
 
 				// URP rasterization path: segmentation handled by dedicated renderer (index 1)
 				_universalCamData.enabled = true;
@@ -237,7 +227,6 @@ namespace SensorDevices
 
 		new void OnDestroy()
 		{
-#if CLOISIM_WITH_DXR
 			// Clean up URT resources
 			_urtScratchBuffer?.Release();
 			_urtScratchBuffer = null;
@@ -250,7 +239,6 @@ namespace SensorDevices
 				_dxrOutputRT.Release();
 				_dxrOutputRT = null;
 			}
-#endif
 
 			base.OnDestroy();
 		}

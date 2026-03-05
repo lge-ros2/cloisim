@@ -85,7 +85,6 @@ namespace SensorDevices
 		private float _bowAmp = 2f;
 		#endregion
 
-#if CLOISIM_WITH_DXR
 		#region "Unified Ray Tracing"
 
 		// When Unified RT is available (hardware or compute backend), replaces
@@ -98,9 +97,6 @@ namespace SensorDevices
 		public override bool IsURT => _useDXR;
 
 		#endregion
-#else
-		private bool _useDXR = false;
-#endif
 
 		private uint _depthScale = 1;
 
@@ -200,14 +196,12 @@ namespace SensorDevices
 			_computeBufferSrc = null;
 			_computeBufferDst = null;
 
-#if CLOISIM_WITH_DXR
 			// Clean up URT resources
 			_urtScratchBuffer?.Release();
 			_urtScratchBuffer = null;
 			_urtCmd?.Release();
 			_urtCmd = null;
 			_urtShader = null;
-#endif
 
 			base.OnDestroy();
 		}
@@ -231,10 +225,8 @@ namespace SensorDevices
 
 		protected override void SetupCamera()
 		{
-#if CLOISIM_WITH_DXR
 			// Try DXR ray tracing path first
 			InitDXRDepth();
-#endif
 
 			if (!_useDXR)
 			{
@@ -430,7 +422,6 @@ namespace SensorDevices
 			}
 		}
 
-#if CLOISIM_WITH_DXR
 		/// <summary>
 		/// Initialize Unified Ray Tracing for depth camera if available.
 		/// </summary>
@@ -519,7 +510,6 @@ namespace SensorDevices
 				SignalDataReady();
 			});
 		}
-#endif
 
 		public override void ExecuteRender(float realtimeNow)
 		{
@@ -527,13 +517,11 @@ namespace SensorDevices
 			{
 				AdvanceRenderSchedule(realtimeNow);
 
-#if CLOISIM_WITH_DXR
 				if (_useDXR)
 				{
 					ExecuteRenderDXR(realtimeNow);
 					return;
 				}
-#endif
 
 				_universalCamData.enabled = true;
 
