@@ -82,19 +82,27 @@ public static partial class DeviceHelper
 	{
 		try
 		{
-			if (targetObject.CompareTag("Model") || targetObject.CompareTag("Sensor"))
+			if (targetObject.CompareTag("Model"))
 			{
+				// Debug.Log($"Parts Name: {targetObject.name}");
 				return targetObject.name;
+			}
+			else if (targetObject.CompareTag("Sensor"))
+			{
+				var linkHelper = targetObject.GetComponentInParent<SDF.Helper.Link>();
+				return (linkHelper != null) ? linkHelper.Model?.name : targetObject.name;
 			}
 			else
 			{
 				var linkHelper = targetObject.GetComponentInParent<SDF.Helper.Link>();
 				if (linkHelper.transform.parent.CompareTag("Link")) // if sensor link is nested in link element
 				{
+					// Debug.Log($"Parts Name: {linkHelper.Model.name}");
 					return linkHelper.name; // link name
 				}
 				else
 				{
+					// Debug.Log($"Parts Name: {linkHelper.Model.name}");
 					return linkHelper.Model.name; // model name
 				}
 			}
