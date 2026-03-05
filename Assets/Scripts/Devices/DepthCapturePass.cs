@@ -8,15 +8,16 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.RenderGraphModule;
 
 namespace SensorDevices
 {
 	/// <summary>
 	/// URP ScriptableRenderPass that captures linearized depth via the DepthRange shader.
-	/// Replaces the former HDRP CustomPass. Uses Compatibility Mode Execute() path
-	/// (m_EnableRenderGraph: 0) which is supported in Unity 6 URP 17.x.
+	/// Replaces the former HDRP CustomPass. Uses the Render Graph UnsafePass API
+	/// (Unity 6 URP 17.x).
 	///
-	/// The pass runs AfterRenderingOpaques, reads _CameraDepthTexture via the
+	/// The pass runs AfterRenderingOpaques, reads the camera color texture via the
 	/// DepthRange shader (which linearizes depth), and writes to a dedicated
 	/// RenderTexture that persists after Camera.Render() returns.
 	/// </summary>
@@ -24,6 +25,7 @@ namespace SensorDevices
 	{
 		private Material _depthMaterial;
 		private RenderTexture _capturedDepthRT;
+		private RTHandle _capturedDepthRTHandle;
 		private UnityEngine.Camera _targetCamera;
 
 		/// <summary>
@@ -51,43 +53,68 @@ namespace SensorDevices
 			_targetCamera = cam;
 		}
 
-#pragma warning disable CS0618, CS0672 // Compatibility Mode: Execute is obsolete but required when RenderGraph is disabled
-		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+		private class PassData
 		{
-			if (_depthMaterial == null) return;
+			internal TextureHandle source;
+			internal TextureHandle destination;
+			internal Material material;
+		}
 
-			var cam = renderingData.cameraData.camera;
-
-			// Only capture depth for the intended sensor camera.
-			if (_targetCamera != null && cam != _targetCamera) return;
-
-			var w = cam.pixelWidth;
-			var h = cam.pixelHeight;
-
-			// Lazy-allocate (or resize) the capture RT
+		private void EnsureCaptureRT(int w, int h)
+		{
 			if (_capturedDepthRT == null || _capturedDepthRT.width != w || _capturedDepthRT.height != h)
 			{
+				if (_capturedDepthRTHandle != null) _capturedDepthRTHandle.Release();
 				if (_capturedDepthRT != null) _capturedDepthRT.Release();
+
 				_capturedDepthRT = new RenderTexture(w, h, 0, GraphicsFormat.R32_SFloat)
 				{
 					name = "CapturedDepth",
 					filterMode = FilterMode.Point,
 				};
 				_capturedDepthRT.Create();
+				_capturedDepthRTHandle = RTHandles.Alloc(_capturedDepthRT);
 			}
-
-			var cmd = CommandBufferPool.Get("DepthCapturePass");
-
-			// Blit camera depth through the DepthRange material to our dedicated RT.
-			cmd.Blit(cam.targetTexture, _capturedDepthRT, _depthMaterial);
-
-			context.ExecuteCommandBuffer(cmd);
-			CommandBufferPool.Release(cmd);
 		}
-#pragma warning restore CS0618
+
+		public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
+		{
+			if (_depthMaterial == null) return;
+
+			var cameraData = frameData.Get<UniversalCameraData>();
+			var cam = cameraData.camera;
+
+			if (_targetCamera != null && cam != _targetCamera) return;
+
+			EnsureCaptureRT(cam.pixelWidth, cam.pixelHeight);
+
+			var resourceData = frameData.Get<UniversalResourceData>();
+
+			using (var builder = renderGraph.AddUnsafePass<PassData>("DepthCapturePass", out var passData))
+			{
+				passData.source = resourceData.activeColorTexture;
+				passData.destination = renderGraph.ImportTexture(_capturedDepthRTHandle);
+				passData.material = _depthMaterial;
+
+				builder.UseTexture(passData.source);
+				builder.UseTexture(passData.destination, AccessFlags.WriteAll);
+				builder.AllowPassCulling(false);
+
+				builder.SetRenderFunc(static (PassData data, UnsafeGraphContext context) =>
+				{
+					var cmd = CommandBufferHelpers.GetNativeCommandBuffer(context.cmd);
+					Blitter.BlitCameraTexture(cmd, data.source, data.destination, data.material, 0);
+				});
+			}
+		}
 
 		public void Cleanup()
 		{
+			if (_capturedDepthRTHandle != null)
+			{
+				_capturedDepthRTHandle.Release();
+				_capturedDepthRTHandle = null;
+			}
 			if (_capturedDepthRT != null)
 			{
 				_capturedDepthRT.Release();
