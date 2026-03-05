@@ -132,16 +132,37 @@ namespace SensorDevices
 		{
 			if (_isSupported) return; // Already initialized
 
-			// Load resources from HDRP render pipeline
+			// Check CLOISIM_FORCE_RASTER env var — when set to "1", skip RT and use rasterization
+			var forceRaster = System.Environment.GetEnvironmentVariable("CLOISIM_FORCE_RASTER");
+			if (forceRaster == "1")
+			{
+				Debug.Log("[DXRSensorManager] CLOISIM_FORCE_RASTER=1 — forcing rasterization path");
+				_isSupported = false;
+				return;
+			}
+
+			// Load resources from render pipeline
 			var resources = new RayTracingResources();
-			if (!resources.LoadFromRenderPipelineResources())
+			bool resourcesLoaded = resources.LoadFromRenderPipelineResources();
+			if (!resourcesLoaded)
 			{
 				Debug.LogWarning("[DXRSensorManager] LoadFromRenderPipelineResources failed — trying reflection fallback");
+				resourcesLoaded = TryLoadResourcesViaReflection(resources);
+			}
 
-				// Try to load resources via HDRP Global Settings reflection
-				if (!TryLoadResourcesViaReflection(resources))
+			// If resources still not loaded but HW RT is supported, use empty resources.
+			// The HardwareRayTracingBackend never accesses the compute shaders — they are
+			// only needed by the ComputeRayTracingBackend (RadeonRays BVH software path).
+			if (!resourcesLoaded)
+			{
+				if (RayTracingContext.IsBackendSupported(RayTracingBackend.Hardware))
 				{
-					Debug.LogWarning("[DXRSensorManager] All resource loading methods failed — sensors will use rasterization");
+					Debug.Log("[DXRSensorManager] Resource loading failed but HW RT available — using empty resources for Hardware backend");
+					resources = new RayTracingResources();
+				}
+				else
+				{
+					Debug.LogWarning("[DXRSensorManager] All resource loading methods failed and no HW RT — sensors will use rasterization");
 					_isSupported = false;
 					return;
 				}

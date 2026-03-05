@@ -212,6 +212,15 @@ namespace SensorDevices
 			_targetColorFormat = GraphicsFormat.R32_SFloat;
 			_readbackDstFormat = GraphicsFormat.R32_SFloat;
 
+			// When DXR is available, skip full RT allocation to reduce Vulkan
+			// framebuffer count. The URT path writes to a ComputeBuffer directly
+			// and never touches the base-class RTHandle.
+			var dxrManager = DXRSensorManager.Instance;
+			if (dxrManager != null && dxrManager.IsSupported)
+			{
+				_skipRTAllocation = true;
+			}
+
 			var width = _camParam.image.width;
 			var height = _camParam.image.height;
 			var format = CameraData.GetPixelFormat(_camParam.image.format);

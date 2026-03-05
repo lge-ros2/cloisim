@@ -51,6 +51,15 @@ namespace SensorDevices
 			_targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
 			_readbackDstFormat = GraphicsFormat.R8G8_UNorm;
 
+			// When DXR is available, skip full RT allocation to reduce Vulkan
+			// framebuffer count. The URT path writes to its own _dxrOutputRT
+			// and never touches the base-class RTHandle.
+			var dxrManager = DXRSensorManager.Instance;
+			if (dxrManager != null && dxrManager.IsSupported)
+			{
+				_skipRTAllocation = true;
+			}
+
 			// Point filtering is critical for segmentation — bilinear filtering
 			// would interpolate between class IDs at object edges, creating
 			// gradation artifacts that corrupt the discrete label data.

@@ -81,7 +81,11 @@ public abstract class Device : MonoBehaviour
 	public float UpdateRate => _updateRate;
 
 	/// <summary>Actual measured publish Hz (updated every 10s).</summary>
+#if UNITY_EDITOR
 	public float PublishHz => _diagPublishHz;
+#else
+	public float PublishHz => UpdateRate;
+#endif
 
 	public string DeviceName
 	{
@@ -327,7 +331,9 @@ public abstract class Device : MonoBehaviour
 		// NOTE: UpdateRate may be set AFTER the thread starts (e.g., from SDF config),
 		// so timing parameters are re-evaluated dynamically inside the loop.
 
+#if UNITY_EDITOR
 		_diagPublishSw.Start();
+#endif
 
 		// Timing parameters — recomputed when UpdateRate changes
 		float lastUpdateRate = -1;
@@ -448,7 +454,9 @@ public abstract class Device : MonoBehaviour
 			}
 
 			var pushed = _deviceMessageQueue.Push(deviceMessage);
+#if UNITY_EDITOR
 			if (pushed) Interlocked.Increment(ref _diagPublishCount);
+#endif
 			return pushed;
 		}
 		catch (Exception ex)

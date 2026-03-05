@@ -66,6 +66,15 @@ namespace SensorDevices
 		protected bool _startCameraWork = false;
 		protected bool _needsReadbackFormatConversion = false;
 		private RTHandle _rtHandle;
+
+		/// <summary>
+		/// When true, SetupDefaultCamera allocates a tiny 1×1 dummy render target
+		/// instead of the full sensor resolution. This saves Vulkan framebuffer
+		/// resources for DXR cameras that bypass Camera.Render() entirely —
+		/// they dispatch URT compute shaders writing to GraphicsBuffer/RenderTexture
+		/// and never touch the base-class RTHandle.
+		/// </summary>
+		protected bool _skipRTAllocation = false;
 		protected Texture2D _textureForCapture = null;
 
 		private CommandBuffer _invertCullingOnCmdBuffer = null;
@@ -336,9 +345,17 @@ namespace SensorDevices
 			_camSensor.cullingMask = LayerMask.GetMask("Default", "Plane");
 
 			RTHandles.SetHardwareDynamicResolutionState(false);
+
+			// DXR cameras skip full RT allocation to stay below the Vulkan driver's
+			// concurrent render-target limit (~3M total pixels on RTX 3080 Laptop,
+			// driver 590.48.01). Allocate a 1×1 dummy so IsReadyToRender() passes
+			// its targetTexture != null guard, but don't consume real VRAM.
+			var rtWidth = _skipRTAllocation ? 1 : _camParam.image.width;
+			var rtHeight = _skipRTAllocation ? 1 : _camParam.image.height;
+
 			_rtHandle = RTHandles.Alloc(
-				width: _camParam.image.width,
-				height: _camParam.image.height,
+				width: rtWidth,
+				height: rtHeight,
 				slices: 1,
 				depthBufferBits: _targetDepthBits,
 				colorFormat: _targetColorFormat,
