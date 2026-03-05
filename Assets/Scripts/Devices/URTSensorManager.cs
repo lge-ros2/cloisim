@@ -20,7 +20,7 @@ namespace SensorDevices
 	/// devices (lidar, depth camera, segmentation camera).
 	///
 	/// Uses the Unified RT API which provides:
-	///   - Hardware RT core path (DXR/Vulkan RT) when available
+	///   - Hardware RT core path when available
 	///   - Compute BVH fallback (RadeonRays) on any GPU with compute shaders
 	///
 	/// Each MeshInstanceDesc carries:
@@ -29,15 +29,15 @@ namespace SensorDevices
 	///
 	/// Rebuilt every frame in LateUpdate to track dynamic objects.
 	/// </summary>
-	public class DXRSensorManager : MonoBehaviour
+	public class URTSensorManager : MonoBehaviour
 	{
-		public static DXRSensorManager Instance { get; private set; }
+		public static URTSensorManager Instance { get; private set; }
 
 		// ── Profiling markers ──
-		private static readonly ProfilerMarker s_LateUpdateMarker = new("DXRSensorManager.LateUpdate");
-		private static readonly ProfilerMarker s_FindRenderersMarker = new("DXRSensorManager.FindRenderers");
-		private static readonly ProfilerMarker s_AddInstancesMarker = new("DXRSensorManager.AddInstances");
-		private static readonly ProfilerMarker s_BvhBuildMarker = new("DXRSensorManager.BvhBuild");
+		private static readonly ProfilerMarker s_LateUpdateMarker = new("URTSensorManager.LateUpdate");
+		private static readonly ProfilerMarker s_FindRenderersMarker = new("URTSensorManager.FindRenderers");
+		private static readonly ProfilerMarker s_AddInstancesMarker = new("URTSensorManager.AddInstances");
+		private static readonly ProfilerMarker s_BvhBuildMarker = new("URTSensorManager.BvhBuild");
 
 		private RayTracingContext _rtContext;
 		private IRayTracingAccelStruct _accelStruct;
@@ -107,7 +107,7 @@ namespace SensorDevices
 				bitIndex = _nextModelBit++;
 				_modelBitIndices[modelRoot] = bitIndex;
 				if (bitIndex > 7)
-					Debug.LogWarning("[DXRSensorManager] More than 8 robot models — mask bits exhausted");
+					Debug.LogWarning("[URTSensorManager] More than 8 robot models — mask bits exhausted");
 			}
 
 			return 1u << bitIndex;
@@ -136,7 +136,7 @@ namespace SensorDevices
 			var forceRaster = System.Environment.GetEnvironmentVariable("CLOISIM_FORCE_RASTER");
 			if (forceRaster == "1")
 			{
-				Debug.Log("[DXRSensorManager] CLOISIM_FORCE_RASTER=1 — forcing rasterization path");
+				Debug.Log("[URTSensorManager] CLOISIM_FORCE_RASTER=1 — forcing rasterization path");
 				_isSupported = false;
 				return;
 			}
@@ -146,7 +146,7 @@ namespace SensorDevices
 			bool resourcesLoaded = resources.LoadFromRenderPipelineResources();
 			if (!resourcesLoaded)
 			{
-				Debug.LogWarning("[DXRSensorManager] LoadFromRenderPipelineResources failed — trying reflection fallback");
+				Debug.LogWarning("[URTSensorManager] LoadFromRenderPipelineResources failed — trying reflection fallback");
 				resourcesLoaded = TryLoadResourcesViaReflection(resources);
 			}
 
@@ -157,12 +157,12 @@ namespace SensorDevices
 			{
 				if (RayTracingContext.IsBackendSupported(RayTracingBackend.Hardware))
 				{
-					Debug.Log("[DXRSensorManager] Resource loading failed but HW RT available — using empty resources for Hardware backend");
+					Debug.Log("[URTSensorManager] Resource loading failed but HW RT available — using empty resources for Hardware backend");
 					resources = new RayTracingResources();
 				}
 				else
 				{
-					Debug.LogWarning("[DXRSensorManager] All resource loading methods failed and no HW RT — sensors will use rasterization");
+					Debug.LogWarning("[URTSensorManager] All resource loading methods failed and no HW RT — sensors will use rasterization");
 					_isSupported = false;
 					return;
 				}
@@ -182,17 +182,17 @@ namespace SensorDevices
 				};
 				_accelStruct = _rtContext.CreateAccelerationStructure(options);
 
-				_cmd = new CommandBuffer { name = "DXRSensorManager" };
+				_cmd = new CommandBuffer { name = "URTSensorManager" };
 				_tmpMpb = new MaterialPropertyBlock();
 
 				// Mark supported only after ALL objects are successfully created
 				_isSupported = true;
 
-				Debug.Log($"[DXRSensorManager] Initialized — backend: {_rtContext.BackendType}");
+				Debug.Log($"[URTSensorManager] Initialized — backend: {_rtContext.BackendType}");
 			}
 			catch (System.Exception e)
 			{
-				Debug.LogWarning($"[DXRSensorManager] Failed to create RayTracingContext: {e.Message} — sensors will use rasterization");
+				Debug.LogWarning($"[URTSensorManager] Failed to create RayTracingContext: {e.Message} — sensors will use rasterization");
 				_isSupported = false;
 			}
 		}
@@ -211,7 +211,7 @@ namespace SensorDevices
 				var rpAsset = QualitySettings.renderPipeline ?? GraphicsSettings.defaultRenderPipeline;
 				if (rpAsset == null)
 				{
-					Debug.LogWarning("[DXRSensorManager] No render pipeline asset found");
+					Debug.LogWarning("[URTSensorManager] No render pipeline asset found");
 					return false;
 				}
 
@@ -243,11 +243,11 @@ namespace SensorDevices
 
 				if (globalSettings == null)
 				{
-					Debug.LogWarning("[DXRSensorManager] Could not access render pipeline global settings");
+					Debug.LogWarning("[URTSensorManager] Could not access render pipeline global settings");
 					return false;
 				}
 
-				Debug.Log($"[DXRSensorManager] Got global settings type: {globalSettings.GetType().Name}");
+				Debug.Log($"[URTSensorManager] Got global settings type: {globalSettings.GetType().Name}");
 
 				// Search for RayTracingRenderPipelineResources in the settings list
 				// RenderPipelineGlobalSettings stores IRenderPipelineGraphicsSettings in m_Settings
@@ -268,12 +268,12 @@ namespace SensorDevices
 					var settings = settingsField.GetValue(settingsObj) as System.Collections.IList;
 					if (settings != null)
 					{
-						Debug.Log($"[DXRSensorManager] Found settings list with {settings.Count} entries");
+						Debug.Log($"[URTSensorManager] Found settings list with {settings.Count} entries");
 						foreach (var item in settings)
 						{
 							if (item == null) continue;
 							var typeName = item.GetType().Name;
-							Debug.Log($"[DXRSensorManager]   Setting: {typeName}");
+							Debug.Log($"[URTSensorManager]   Setting: {typeName}");
 							if (typeName == "RayTracingRenderPipelineResources")
 							{
 								return CopyRtResourceFields(item, resources);
@@ -282,12 +282,12 @@ namespace SensorDevices
 					}
 				}
 
-				Debug.LogWarning($"[DXRSensorManager] RayTracingRenderPipelineResources not found in global settings");
+				Debug.LogWarning($"[URTSensorManager] RayTracingRenderPipelineResources not found in global settings");
 				return false;
 			}
 			catch (System.Exception e)
 			{
-				Debug.LogWarning($"[DXRSensorManager] Reflection fallback failed: {e.Message}\n{e.StackTrace}");
+				Debug.LogWarning($"[URTSensorManager] Reflection fallback failed: {e.Message}\n{e.StackTrace}");
 				return false;
 			}
 		}
@@ -322,7 +322,7 @@ namespace SensorDevices
 				var value = srcField.GetValue(rtPipelineResources) as ComputeShader;
 				if (value == null)
 				{
-					Debug.LogWarning($"[DXRSensorManager] Reflection: {srcFieldNames[i]} is null");
+					Debug.LogWarning($"[URTSensorManager] Reflection: {srcFieldNames[i]} is null");
 					continue;
 				}
 
@@ -335,7 +335,7 @@ namespace SensorDevices
 				}
 			}
 
-			Debug.Log($"[DXRSensorManager] Reflection: assigned {assigned}/{fieldNames.Length} compute shaders");
+			Debug.Log($"[URTSensorManager] Reflection: assigned {assigned}/{fieldNames.Length} compute shaders");
 			return assigned >= 6; // Need at least the core RadeonRays shaders
 		}
 
@@ -376,7 +376,7 @@ namespace SensorDevices
 				if (_diagAccumTime >= DIAG_INTERVAL)
 				{
 					var avgMs = _diagRebuildCount > 0 ? _diagTotalRebuildMs / _diagRebuildCount : 0;
-					Debug.Log($"[DXRSensorManager] {DIAG_INTERVAL}s: rebuilds={_diagRebuildCount}, skipped={_diagSkipCount}, " +
+					Debug.Log($"[URTSensorManager] {DIAG_INTERVAL}s: rebuilds={_diagRebuildCount}, skipped={_diagSkipCount}, " +
 						$"avgRebuildMs={avgMs:F2}, maxRebuildMs={_diagMaxRebuildMs:F2}");
 					_diagAccumTime = 0;
 					_diagRebuildCount = 0;
@@ -577,7 +577,7 @@ namespace SensorDevices
 
 			if (!_initialBuildDone)
 			{
-				Debug.Log($"[DXRSensorManager] Initial BVH build: {instanceCount} instances, " +
+				Debug.Log($"[URTSensorManager] Initial BVH build: {instanceCount} instances, " +
 					$"{meshRendererCount} MR, {skinnedRendererCount} SMR");
 			}
 		}
@@ -594,7 +594,7 @@ namespace SensorDevices
 					{
 						_modelBitIndices[go.transform] = _nextModelBit++;
 						if (_nextModelBit > 8)
-							Debug.LogWarning($"[DXRSensorManager] Model bit overflow for '{go.name}'");
+							Debug.LogWarning($"[URTSensorManager] Model bit overflow for '{go.name}'");
 					}
 				}
 			}

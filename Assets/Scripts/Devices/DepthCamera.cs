@@ -89,12 +89,12 @@ namespace SensorDevices
 
 		// When Unified RT is available (hardware or compute backend), replaces
 		// Camera.Render() + depth blit + DepthBufferScaling with a single dispatch.
-		private bool _useDXR = false;
+		private bool _useURT = false;
 		private UnityEngine.Rendering.UnifiedRayTracing.IRayTracingShader _urtShader;
 		private GraphicsBuffer _urtScratchBuffer;
 		private CommandBuffer _urtCmd;
 
-		public override bool IsURT => _useDXR;
+		public override bool IsURT => _useURT;
 
 		#endregion
 
@@ -212,11 +212,11 @@ namespace SensorDevices
 			_targetColorFormat = GraphicsFormat.R32_SFloat;
 			_readbackDstFormat = GraphicsFormat.R32_SFloat;
 
-			// When DXR is available, skip full RT allocation to reduce Vulkan
+			// When URT is available, skip full RT allocation to reduce Vulkan
 			// framebuffer count. The URT path writes to a ComputeBuffer directly
 			// and never touches the base-class RTHandle.
-			var dxrManager = DXRSensorManager.Instance;
-			if (dxrManager != null && dxrManager.IsSupported)
+			var urtManager = URTSensorManager.Instance;
+			if (urtManager != null && urtManager.IsSupported)
 			{
 				_skipRTAllocation = true;
 			}
@@ -234,10 +234,10 @@ namespace SensorDevices
 
 		protected override void SetupCamera()
 		{
-			// Try DXR ray tracing path first
-			InitDXRDepth();
+			// Try Unified RT path first
+			InitURTDepth();
 
-			if (!_useDXR)
+			if (!_useURT)
 			{
 				// Rasterization path: use DepthRange shader via base class _depthMaterial
 				var depthShader = Shader.Find("Sensor/DepthRange");
@@ -434,15 +434,15 @@ namespace SensorDevices
 		/// <summary>
 		/// Initialize Unified Ray Tracing for depth camera if available.
 		/// </summary>
-		private void InitDXRDepth()
+		private void InitURTDepth()
 		{
-			var dxrManager = DXRSensorManager.Instance;
-			if (dxrManager == null || !dxrManager.IsSupported) return;
+			var urtManager = URTSensorManager.Instance;
+			if (urtManager == null || !urtManager.IsSupported) return;
 
 			var shaderAsset = Resources.Load<ComputeShader>("Shader/URTDepthRaycast");
 			if (shaderAsset == null) return;
 
-			_urtShader = dxrManager.CreateShader(shaderAsset);
+			_urtShader = urtManager.CreateShader(shaderAsset);
 			if (_urtShader == null) return;
 
 			var width = (uint)_camParam.image.width;
@@ -475,18 +475,18 @@ namespace SensorDevices
 			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_TanHalfVFov"), Mathf.Tan(camVFov * 0.5f * Mathf.Deg2Rad));
 			Graphics.ExecuteCommandBuffer(cmd);
 
-			_useDXR = true;
-			Debug.Log($"[DepthCamera:{DeviceName}] Unified RT enabled (backend: {dxrManager.RTContext.BackendType}) — {width}x{height}");
+			_useURT = true;
+			Debug.Log($"[DepthCamera:{DeviceName}] Unified RT enabled (backend: {urtManager.RTContext.BackendType}) — {width}x{height}");
 		}
 
 		/// <summary>
 		/// Unified RT render path: single dispatch replaces
 		/// Camera.Render() + depth blit + DepthBufferScaling.
 		/// </summary>
-		private void ExecuteRenderDXR(float realtimeNow)
+		private void ExecuteRenderURT(float realtimeNow)
 		{
-			var dxrManager = DXRSensorManager.Instance;
-			if (dxrManager?.AccelStruct == null) return;
+			var urtManager = URTSensorManager.Instance;
+			if (urtManager?.AccelStruct == null) return;
 
 			var capturedTime = GetNextSyntheticTime();
 			var width = (uint)_camParam.image.width;
@@ -498,7 +498,7 @@ namespace SensorDevices
 			var pos = _camSensor.transform.position;
 			_urtShader.SetVectorParam(cmd, Shader.PropertyToID("_CameraOrigin"), new Vector4(pos.x, pos.y, pos.z, 0));
 			_urtShader.SetMatrixParam(cmd, Shader.PropertyToID("_CameraToWorld"), _camSensor.transform.localToWorldMatrix);
-			_urtShader.SetAccelerationStructure(cmd, "_AccelStruct", dxrManager.AccelStruct);
+			_urtShader.SetAccelerationStructure(cmd, "_AccelStruct", urtManager.AccelStruct);
 			_urtShader.SetBufferParam(cmd, Shader.PropertyToID("_Output"), _computeBufferDst);
 
 			_urtShader.Dispatch(cmd, _urtScratchBuffer, width, height, 1);
@@ -526,9 +526,9 @@ namespace SensorDevices
 			{
 				AdvanceRenderSchedule(realtimeNow);
 
-				if (_useDXR)
+				if (_useURT)
 				{
-					ExecuteRenderDXR(realtimeNow);
+					ExecuteRenderURT(realtimeNow);
 					return;
 				}
 

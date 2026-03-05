@@ -27,13 +27,13 @@ namespace SensorDevices
 		// When Unified RT is available (hardware or compute backend), replaces
 		// Camera.Render() with a single dispatch.
 		// Instance IDs in the accel struct carry the segmentation class ID.
-		private bool _useDXR = false;
+		private bool _useURT = false;
 		private UnityEngine.Rendering.UnifiedRayTracing.IRayTracingShader _urtShader;
 		private GraphicsBuffer _urtScratchBuffer;
 		private CommandBuffer _urtCmd;
-		private RenderTexture _dxrOutputRT;
+		private RenderTexture _urtOutputRT;
 
-		public override bool IsURT => _useDXR;
+		public override bool IsURT => _useURT;
 
 		#endregion
 
@@ -51,11 +51,11 @@ namespace SensorDevices
 			_targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
 			_readbackDstFormat = GraphicsFormat.R8G8_UNorm;
 
-			// When DXR is available, skip full RT allocation to reduce Vulkan
-			// framebuffer count. The URT path writes to its own _dxrOutputRT
+			// When URT is available, skip full RT allocation to reduce Vulkan
+			// framebuffer count. The URT path writes to its own _urtOutputRT
 			// and never touches the base-class RTHandle.
-			var dxrManager = DXRSensorManager.Instance;
-			if (dxrManager != null && dxrManager.IsSupported)
+			var urtManager = URTSensorManager.Instance;
+			if (urtManager != null && urtManager.IsSupported)
 			{
 				_skipRTAllocation = true;
 			}
@@ -85,23 +85,23 @@ namespace SensorDevices
 			_universalCamData.allowXRRendering = false;
 			_universalCamData.antialiasing = AntialiasingMode.FastApproximateAntialiasing;
 
-			// Try DXR ray tracing path first
-			InitDXRSegmentation();
+			// Try Unified RT path first
+			InitURTSegmentation();
 		}
 
 		/// <summary>
 		/// Initialize Unified Ray Tracing for segmentation camera if available.
 		/// Instance IDs in the acceleration structure carry segmentation class IDs.
 		/// </summary>
-		private void InitDXRSegmentation()
+		private void InitURTSegmentation()
 		{
-			var dxrManager = DXRSensorManager.Instance;
-			if (dxrManager == null || !dxrManager.IsSupported) return;
+			var urtManager = URTSensorManager.Instance;
+			if (urtManager == null || !urtManager.IsSupported) return;
 
 			var shaderAsset = Resources.Load<ComputeShader>("Shader/URTSegmentationRaycast");
 			if (shaderAsset == null) return;
 
-			_urtShader = dxrManager.CreateShader(shaderAsset);
+			_urtShader = urtManager.CreateShader(shaderAsset);
 			if (_urtShader == null) return;
 
 			var width = (uint)_camParam.image.width;
@@ -132,26 +132,26 @@ namespace SensorDevices
 			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_TanHalfVFov"), Mathf.Tan(camVFov * 0.5f * Mathf.Deg2Rad));
 			Graphics.ExecuteCommandBuffer(cmd);
 
-			_dxrOutputRT = new RenderTexture((int)width, (int)height, 0, GraphicsFormat.R8G8B8A8_UNorm)
+			_urtOutputRT = new RenderTexture((int)width, (int)height, 0, GraphicsFormat.R8G8B8A8_UNorm)
 			{
 				name = "URTSegmentationOutput",
 				filterMode = FilterMode.Point,
 				enableRandomWrite = true,
 			};
-			_dxrOutputRT.Create();
+			_urtOutputRT.Create();
 
-			_useDXR = true;
-			Debug.Log($"[SegmentationCamera:{DeviceName}] Unified RT enabled (backend: {dxrManager.RTContext.BackendType}) — {width}x{height}");
+			_useURT = true;
+			Debug.Log($"[SegmentationCamera:{DeviceName}] Unified RT enabled (backend: {urtManager.RTContext.BackendType}) — {width}x{height}");
 		}
 
 		/// <summary>
 		/// Unified RT render path: single dispatch replaces
 		/// Camera.Render() + per-object segmentation rendering.
 		/// </summary>
-		private void ExecuteRenderDXR(float realtimeNow)
+		private void ExecuteRenderURT(float realtimeNow)
 		{
-			var dxrManager = DXRSensorManager.Instance;
-			if (dxrManager?.AccelStruct == null) return;
+			var urtManager = URTSensorManager.Instance;
+			if (urtManager?.AccelStruct == null) return;
 
 			var capturedTime = GetNextSyntheticTime();
 			var width = (uint)_camParam.image.width;
@@ -163,13 +163,13 @@ namespace SensorDevices
 			var pos = _camSensor.transform.position;
 			_urtShader.SetVectorParam(cmd, Shader.PropertyToID("_CameraOrigin"), new Vector4(pos.x, pos.y, pos.z, 0));
 			_urtShader.SetMatrixParam(cmd, Shader.PropertyToID("_CameraToWorld"), _camSensor.transform.localToWorldMatrix);
-			_urtShader.SetAccelerationStructure(cmd, "_AccelStruct", dxrManager.AccelStruct);
-			_urtShader.SetTextureParam(cmd, Shader.PropertyToID("_OutputTex"), _dxrOutputRT);
+			_urtShader.SetAccelerationStructure(cmd, "_AccelStruct", urtManager.AccelStruct);
+			_urtShader.SetTextureParam(cmd, Shader.PropertyToID("_OutputTex"), _urtOutputRT);
 
 			_urtShader.Dispatch(cmd, _urtScratchBuffer, width, height, 1);
 			Graphics.ExecuteCommandBuffer(cmd);
 
-			AsyncGPUReadback.Request(_dxrOutputRT, 0, _readbackDstFormat, (req) =>
+			AsyncGPUReadback.Request(_urtOutputRT, 0, _readbackDstFormat, (req) =>
 			{
 				if (req.hasError)
 				{
@@ -185,7 +185,7 @@ namespace SensorDevices
 		}
 
 		/// <summary>
-		/// Override readback to handle DXR path and match the segmentation
+		/// Override readback to handle URT path and match the segmentation
 		/// camera's render target. URP rasterization path renders via the
 		/// dedicated SegmentationRenderer and reads back from targetTexture.
 		/// </summary>
@@ -195,9 +195,9 @@ namespace SensorDevices
 			{
 				AdvanceRenderSchedule(realtimeNow);
 
-				if (_useDXR)
+				if (_useURT)
 				{
-					ExecuteRenderDXR(realtimeNow);
+					ExecuteRenderURT(realtimeNow);
 					return;
 				}
 
@@ -243,10 +243,10 @@ namespace SensorDevices
 			_urtCmd = null;
 			_urtShader = null;
 
-			if (_dxrOutputRT != null)
+			if (_urtOutputRT != null)
 			{
-				_dxrOutputRT.Release();
-				_dxrOutputRT = null;
+				_urtOutputRT.Release();
+				_urtOutputRT = null;
 			}
 
 			base.OnDestroy();

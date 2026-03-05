@@ -18,7 +18,7 @@ namespace UnityEditor.Rendering.CLOiSim
 	/// When the type is internal (some Unity 6 builds), the stripper cannot be
 	/// compiled, so we rely on:
 	///   1. link.xml (Assets/link.xml) to preserve the URT assembly from IL stripping.
-	///   2. DXRSensorManager.TryLoadResourcesViaReflection() to load compute shaders
+	///   2. URTSensorManager.TryLoadResourcesViaReflection() to load compute shaders
 	///      at runtime without compile-time dependency on the internal type.
 	/// </summary>
 	[InitializeOnLoad]

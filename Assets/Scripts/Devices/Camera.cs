@@ -70,7 +70,7 @@ namespace SensorDevices
 		/// <summary>
 		/// When true, SetupDefaultCamera allocates a tiny 1×1 dummy render target
 		/// instead of the full sensor resolution. This saves Vulkan framebuffer
-		/// resources for DXR cameras that bypass Camera.Render() entirely —
+		/// resources for URT cameras that bypass Camera.Render() entirely —
 		/// they dispatch URT compute shaders writing to GraphicsBuffer/RenderTexture
 		/// and never touch the base-class RTHandle.
 		/// </summary>
@@ -346,7 +346,7 @@ namespace SensorDevices
 
 			RTHandles.SetHardwareDynamicResolutionState(false);
 
-			// DXR cameras skip full RT allocation to stay below the Vulkan driver's
+			// URT cameras skip full RT allocation to stay below the Vulkan driver's
 			// concurrent render-target limit (~3M total pixels on RTX 3080 Laptop,
 			// driver 590.48.01). Allocate a 1×1 dummy so IsReadyToRender() passes
 			// its targetTexture != null guard, but don't consume real VRAM.

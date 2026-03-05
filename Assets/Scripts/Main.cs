@@ -418,7 +418,7 @@ public class Main : MonoBehaviour
 
 		_segmentationManager = gameObject.AddComponent<Segmentation.Manager>();
 
-		gameObject.AddComponent<SensorDevices.DXRSensorManager>();
+		gameObject.AddComponent<SensorDevices.URTSensorManager>();
 
 		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
 		_vhacd.m_parameters = VHACD.Params;
