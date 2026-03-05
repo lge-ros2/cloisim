@@ -1,0 +1,9 @@
+<!--
+  Preserve Unified Ray Tracing types from being stripped by the managed
+  code linker during player builds.  Without this, the compute-backend
+  fallback cannot initialise because RayTracingRenderPipelineResources
+  (and its compute-shader references) are removed.
+-->
+<linker>
+  <assembly fullname="Unity.RenderPipelines.UnifiedRayTracing.Runtime" preserve="all" />
+</linker>
