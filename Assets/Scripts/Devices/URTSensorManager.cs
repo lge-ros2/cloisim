@@ -132,6 +132,16 @@ namespace SensorDevices
 		{
 			if (_isSupported) return; // Already initialized
 
+			// ── SystemInfo ray tracing capability diagnostics ──
+			Debug.Log($"[URTSensorManager] SystemInfo.supportsRayTracing         = {SystemInfo.supportsRayTracing}");
+			Debug.Log($"[URTSensorManager] SystemInfo.supportsRayTracingShaders  = {SystemInfo.supportsRayTracingShaders}");
+			Debug.Log($"[URTSensorManager] SystemInfo.supportsInlineRayTracing   = {SystemInfo.supportsInlineRayTracing}");
+			Debug.Log($"[URTSensorManager] SystemInfo.supportsComputeShaders     = {SystemInfo.supportsComputeShaders}");
+			Debug.Log($"[URTSensorManager] SystemInfo.graphicsDeviceType         = {SystemInfo.graphicsDeviceType}");
+			Debug.Log($"[URTSensorManager] SystemInfo.graphicsDeviceName         = {SystemInfo.graphicsDeviceName}");
+			Debug.Log($"[URTSensorManager] RayTracingContext.IsBackendSupported(Hardware) = {RayTracingContext.IsBackendSupported(RayTracingBackend.Hardware)}");
+			Debug.Log($"[URTSensorManager] RayTracingContext.IsBackendSupported(Compute)  = {RayTracingContext.IsBackendSupported(RayTracingBackend.Compute)}");
+
 			// Check CLOISIM_FORCE_RASTER env var — when set to "1", skip RT and use rasterization
 			var forceRaster = System.Environment.GetEnvironmentVariable("CLOISIM_FORCE_RASTER");
 			if (forceRaster == "1")
@@ -150,9 +160,16 @@ namespace SensorDevices
 				resourcesLoaded = TryLoadResourcesViaReflection(resources);
 			}
 
-			// If resources still not loaded but HW RT is supported, use empty resources.
-			// The HardwareRayTracingBackend never accesses the compute shaders — they are
-			// only needed by the ComputeRayTracingBackend (RadeonRays BVH software path).
+			// If pipeline resources failed, try loading from our bundled asset
+			// (URTComputeShaderRefs ScriptableObject in Resources/URT/).
+			if (!resourcesLoaded)
+			{
+				Debug.LogWarning("[URTSensorManager] Pipeline resources unavailable — trying URTComputeShaderRefs asset");
+				resourcesLoaded = TryLoadFromShaderRefsAsset(resources);
+			}
+
+			// Last resort: if HW RT is available, empty resources work because the
+			// HardwareRayTracingBackend never accesses the compute shaders.
 			if (!resourcesLoaded)
 			{
 				if (RayTracingContext.IsBackendSupported(RayTracingBackend.Hardware))
@@ -288,6 +305,61 @@ namespace SensorDevices
 			catch (System.Exception e)
 			{
 				Debug.LogWarning($"[URTSensorManager] Reflection fallback failed: {e.Message}\n{e.StackTrace}");
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// Load compute shaders from the bundled URTComputeShaderRefs asset
+		/// (Assets/Resources/URT/URTComputeShaderRefs.asset) and assign them
+		/// to the RayTracingResources via reflection.
+		/// </summary>
+		private bool TryLoadFromShaderRefsAsset(RayTracingResources resources)
+		{
+			try
+			{
+				var refs = URTComputeShaderRefs.Load();
+				if (refs == null)
+				{
+					Debug.LogWarning("[URTSensorManager] URTComputeShaderRefs asset not found or invalid");
+					return false;
+				}
+
+				var targetType = typeof(RayTracingResources);
+				var bindingFlags = System.Reflection.BindingFlags.NonPublic
+					| System.Reflection.BindingFlags.Instance
+					| System.Reflection.BindingFlags.Public;
+
+				(string propName, ComputeShader shader)[] mappings = {
+					("geometryPoolKernels", refs.geometryPoolKernels),
+					("copyBuffer",          refs.copyBuffer),
+					("copyPositions",       refs.copyPositions),
+					("bitHistogram",        refs.bitHistogram),
+					("blockReducePart",     refs.blockReducePart),
+					("blockScan",           refs.blockScan),
+					("buildHlbvh",          refs.buildHlbvh),
+					("restructureBvh",      refs.restructureBvh),
+					("scatter",             refs.scatter),
+				};
+
+				int assigned = 0;
+				foreach (var (propName, shader) in mappings)
+				{
+					if (shader == null) continue;
+					var prop = targetType.GetProperty(propName, bindingFlags);
+					if (prop != null && prop.CanWrite)
+					{
+						prop.SetValue(resources, shader);
+						assigned++;
+					}
+				}
+
+				Debug.Log($"[URTSensorManager] URTComputeShaderRefs: assigned {assigned}/{mappings.Length} compute shaders");
+				return assigned >= 6; // Need at least the core RadeonRays shaders
+			}
+			catch (System.Exception e)
+			{
+				Debug.LogWarning($"[URTSensorManager] URTComputeShaderRefs fallback failed: {e.Message}");
 				return false;
 			}
 		}
