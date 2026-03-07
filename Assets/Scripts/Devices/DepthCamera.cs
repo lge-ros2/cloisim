@@ -153,6 +153,15 @@ namespace SensorDevices
 			{
 				_csDepthScaling.SetFloat("_DepthScale", (float)_depthScale);
 			}
+
+			// Also update the URT shader when depth scale changes after init
+			if (_useURT && _urtShader != null && _urtCmd != null)
+			{
+				var cmd = new CommandBuffer { name = "DepthScaleUpdate" };
+				_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_DepthScale"), (float)_depthScale);
+				Graphics.ExecuteCommandBuffer(cmd);
+				cmd.Release();
+			}
 		}
 
 		public void SetTofPattern(in string vcselPatternPath, in float fovMaskH, in float fovMaskV)
@@ -515,6 +524,7 @@ namespace SensorDevices
 			var pos = _camSensor.transform.position;
 			_urtShader.SetVectorParam(cmd, Shader.PropertyToID("_CameraOrigin"), new Vector4(pos.x, pos.y, pos.z, 0));
 			_urtShader.SetMatrixParam(cmd, Shader.PropertyToID("_CameraToWorld"), _camSensor.transform.localToWorldMatrix);
+			_urtShader.SetFloatParam(cmd, Shader.PropertyToID("_DepthScale"), (float)_depthScale);
 			_urtShader.SetAccelerationStructure(cmd, "_AccelStruct", urtManager.AccelStruct);
 			_urtShader.SetBufferParam(cmd, Shader.PropertyToID("_Output"), _computeBufferDst);
 
