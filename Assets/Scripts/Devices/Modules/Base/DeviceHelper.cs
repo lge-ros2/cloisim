@@ -90,7 +90,7 @@ public static partial class DeviceHelper
 			else if (targetObject.CompareTag("Sensor"))
 			{
 				var linkHelper = targetObject.GetComponentInParent<SDF.Helper.Link>();
-				return (linkHelper != null) ? linkHelper.Model?.name : targetObject.name;
+				return (linkHelper != null) ? linkHelper.name : targetObject.name;
 			}
 			else
 			{
