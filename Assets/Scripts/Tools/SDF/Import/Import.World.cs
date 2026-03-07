@@ -32,17 +32,17 @@ namespace SDF
 						if (world.gui.camera.projection_type.Equals("orthographic"))
 						{
 							Main.SetCameraOrthographic(!isOrbitControl);
-							Main.UIController.ChangeCameraViewMode(UIController.CameraViewModeEnum.Orthographic);
+							Main.UIController?.ChangeCameraViewMode(UIController.CameraViewModeEnum.Orthographic);
 						}
 						else if (world.gui.camera.projection_type.Equals("perspective"))
 						{
 							Main.SetCameraPerspective(isOrbitControl);
-							Main.UIController.ChangeCameraViewMode(UIController.CameraViewModeEnum.Perspective);
+							Main.UIController?.ChangeCameraViewMode(UIController.CameraViewModeEnum.Perspective);
 						}
 						else
 						{
 							UE.Debug.LogWarning($"{world.gui.camera.projection_type} is not supported. Default value is set to 'perspective'");
-							Main.UIController.ChangeCameraViewMode(UIController.CameraViewModeEnum.Perspective);
+							Main.UIController?.ChangeCameraViewMode(UIController.CameraViewModeEnum.Perspective);
 						}
 
 						mainCamera.transform.localPosition = cameraPose?.Pos.ToUnity() ?? UE.Vector3.zero;
@@ -67,23 +67,31 @@ namespace SDF
 						}
 					}
 
-					Main.CameraInitPose = new UE.Pose(mainCamera.transform.localPosition, mainCamera.transform.localRotation);
-
-					UE.Screen.fullScreen = world.gui.fullscreen;
-					if (world.gui.fullscreen)
+					if (mainCamera != null)
 					{
-						var currentResolution = UE.Screen.currentResolution;
-						UE.Screen.SetResolution(currentResolution.width, currentResolution.height, UE.FullScreenMode.MaximizedWindow);
+						Main.CameraInitPose = new UE.Pose(mainCamera.transform.localPosition, mainCamera.transform.localRotation);
 					}
-					else
-					{
-						var resolutionIndex = UE.Screen.resolutions.Length / 2;
-						// for (int i = 0; i < UE.Screen.resolutions.Length; i++)
-						// 	UE.Debug.Log(UE.Screen.resolutions[i]);
-						var selectedResolution = UE.Screen.resolutions[resolutionIndex];
-						// UE.Debug.Log($"SelectedWindowResolution={selectedResolution}");
 
-						UE.Screen.SetResolution(selectedResolution.width, selectedResolution.height, UE.FullScreenMode.Windowed);
+					// Skip screen resolution changes in headless/batchmode where
+					// Screen.resolutions is empty and there is no display surface.
+					if (!UE.Application.isBatchMode)
+					{
+						UE.Screen.fullScreen = world.gui.fullscreen;
+						if (world.gui.fullscreen)
+						{
+							var currentResolution = UE.Screen.currentResolution;
+							UE.Screen.SetResolution(currentResolution.width, currentResolution.height, UE.FullScreenMode.MaximizedWindow);
+						}
+						else
+						{
+							var resolutions = UE.Screen.resolutions;
+							if (resolutions.Length > 0)
+							{
+								var resolutionIndex = resolutions.Length / 2;
+								var selectedResolution = resolutions[resolutionIndex];
+								UE.Screen.SetResolution(selectedResolution.width, selectedResolution.height, UE.FullScreenMode.Windowed);
+							}
+						}
 					}
 				}
 
