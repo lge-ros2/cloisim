@@ -294,22 +294,17 @@ namespace SensorDevices
 
 			_csDepthScaling.GetKernelThreadGroupSizes(_kernelScalingIndex, out var threadX, out var threadY, out var _);
 
-			// Consider packWidth, (8bit=4, 16bit=2, 32bit=1)
-			var pack = (imageDepth == 4) ? 1 : (imageDepth == 2 ? 2 : 4);
-			var packedWidth = Mathf.CeilToInt(width / (float)pack);
-
-			_threadGroupScalingX = Mathf.CeilToInt(packedWidth / (float)threadX);
+			// Each shader thread writes one uint32 per pixel (_Output[y*Width+x]).
+			// Dispatch and buffer must cover the full pixel grid.
+			_threadGroupScalingX = Mathf.CeilToInt(width / (float)threadX);
 			_threadGroupScalingY = Mathf.CeilToInt(height / (float)threadY);
 
 			var pixelCount = width * height;
 			_computedBufferOutputUnitLength = pixelCount;
-			var packedCount = (imageDepth == 4)
-				? pixelCount
-				: (imageDepth == 2 ? (pixelCount + 1) / 2 : (pixelCount + 3) / 4);
 
 			_computeBufferSrc = new ComputeBuffer(pixelCount, sizeof(float));
-			_computeBufferDst = new ComputeBuffer(packedCount, sizeof(uint));
-			_computedBufferOutput = new byte[packedCount * sizeof(uint)];
+			_computeBufferDst = new ComputeBuffer(pixelCount, sizeof(uint));
+			_computedBufferOutput = new byte[pixelCount * sizeof(uint)];
 
 			// Configure parallelism for ProcessComputeOutput
 			int MaxParallelism = 8;
@@ -421,7 +416,29 @@ namespace SensorDevices
 
 					_computeBufferDst.GetData(_computedBufferOutput);
 
-					Buffer.BlockCopy(_computedBufferOutput, 0, imageStamped.Image.Data, 0, imageStamped.Image.Data.Length);
+					// Each uint32 holds one depth value in its lower _imageDepth bytes.
+					// Extract _imageDepth bytes per pixel from the uint32 array.
+					if (_imageDepth == (int)OutputMaxUnitSize)
+					{
+						Buffer.BlockCopy(_computedBufferOutput, 0, imageStamped.Image.Data, 0, imageStamped.Image.Data.Length);
+					}
+					else
+					{
+						unsafe
+						{
+							fixed (byte* srcPtr = _computedBufferOutput)
+							fixed (byte* dstPtr = imageStamped.Image.Data)
+							{
+								for (int i = 0; i < _computedBufferOutputUnitLength; i++)
+								{
+									var si = i * (int)OutputMaxUnitSize;
+									var di = i * _imageDepth;
+									for (int j = 0; j < _imageDepth; j++)
+										dstPtr[di + j] = srcPtr[si + j];
+								}
+							}
+						}
+					}
 				}
 
 				if (OnCameraDataGenerated != null) OnCameraDataGenerated.Invoke(imageStamped);
