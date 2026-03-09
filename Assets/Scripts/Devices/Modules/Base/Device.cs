@@ -387,7 +387,7 @@ public abstract class Device : MonoBehaviour
 #if UNITY_EDITOR
 			// Periodic per-sensor Hz diagnostics
 			var elapsed = (float)_diagPublishSw.Elapsed.TotalSeconds;
-			if (elapsed >= DEVICE_DIAG_INTERVAL_SEC)
+			if (elapsed >= DEVICE_DIAG_INTERVAL_SEC && _diagPublishCount > 0)
 			{
 				_diagPublishHz = _diagPublishCount / elapsed;
 				Debug.Log($"[Device:{_deviceName}] publishHz={_diagPublishHz:F1} (target={UpdateRate:F0}) msgs={_diagPublishCount}/{elapsed:F1}s");
