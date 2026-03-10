@@ -22,36 +22,15 @@ public abstract class Device : MonoBehaviour
 	private DeviceMessageQueue _deviceMessageQueue = new();
 	private DevicePose _devicePose = new();
 
+	private const double HighResolutionThresholdPeriod = 1.0 / 50.0; // ≥50 Hz sensors use high-res spin-wait loop instead of timer-based sleep
+
 	// Pool DeviceMessage objects to avoid per-frame GC allocations
 	private static readonly ConcurrentBag<DeviceMessage> _deviceMessagePool = new();
 	private const int MaxPoolSize = 128;
 
-	/// <summary>
-	/// Return a DeviceMessage to the pool for reuse.
-	/// Call after the Sender thread has finished publishing.
-	/// </summary>
-	public static void ReturnDeviceMessage(DeviceMessage msg)
-	{
-		if (msg != null && _deviceMessagePool.Count < MaxPoolSize)
-		{
-			_deviceMessagePool.Add(msg);
-		}
-	}
-
 	// Event-driven TX: signal from readback callbacks to wake the TX thread
 	// immediately instead of waiting for the next timer-based poll.
 	private readonly AutoResetEvent _txDataReady = new(false);
-
-#if UNITY_EDITOR
-	// Per-sensor publish Hz diagnostics
-	private readonly Stopwatch _diagPublishSw = new();
-	private int _diagPublishCount;
-	private float _diagPublishHz;
-	private const float DEVICE_DIAG_INTERVAL_SEC = 30f;
-
-	/// <summary>Actual measured publish Hz (updated every DEVICE_DIAG_INTERVAL_SEC).</summary>
-	public float PublishHz => _diagPublishHz;
-#endif
 
 	[SerializeField]
 	private string _deviceName = string.Empty;
@@ -106,7 +85,30 @@ public abstract class Device : MonoBehaviour
 		_devicePose.SubParts = value;
 	}
 
+	/// <summary>
+	/// Return a DeviceMessage to the pool for reuse.
+	/// Call after the Sender thread has finished publishing.
+	/// </summary>
+	public static void ReturnDeviceMessage(DeviceMessage msg)
+	{
+		if (msg != null && _deviceMessagePool.Count < MaxPoolSize)
+		{
+			_deviceMessagePool.Add(msg);
+		}
+	}
+
 #if UNITY_EDITOR
+	#region DIAGNOSTICS
+	// Per-sensor publish Hz diagnostics
+	private readonly Stopwatch _diagPublishSw = new();
+	private int _diagPublishCount;
+	private float _diagPublishHz;
+	private const float DEVICE_DIAG_INTERVAL_SEC = 10f;
+
+	/// <summary>Actual measured publish Hz (updated every DEVICE_DIAG_INTERVAL_SEC).</summary>
+	public float PublishHz => _diagPublishHz;
+	#endregion
+
 	#region PROFILER
 	private int _profFrameCount = 0;
 	private double _profByteCount = 0;
@@ -280,12 +282,12 @@ public abstract class Device : MonoBehaviour
 	}
 
 	/// <summary>
-	/// Wake the TX thread immediately. Call from readback callbacks
-	/// after enqueueing to _messageQueue so data is published with
-	/// minimal latency instead of waiting for the next timer poll.
+	/// Enqueue a protobuf message and wake the TX thread immediately
+	/// so data is published with minimal latency.
 	/// </summary>
-	protected void SignalDataReady()
+	protected void EnqueueMessage(global::ProtoBuf.IExtensible message)
 	{
+		_messageQueue.Enqueue(message);
 		_txDataReady.Set();
 	}
 
@@ -314,15 +316,20 @@ public abstract class Device : MonoBehaviour
 
 	private void DeviceThreadTx()
 	{
-		// Event-driven TX loop.
-		// Instead of sleeping for UpdatePeriod and hoping data is ready,
-		// we block on _txDataReady which is signaled by readback callbacks.
-		// This publishes data within <1ms of GPU readback completion.
+		// Two TX patterns share this thread:
 		//
-		// For high-rate sensors (>100 Hz, e.g. JointState at 1000 Hz),
-		// WaitOne(1) has OS timer granularity (~1.3ms on Linux) which caps throughput.
-		// We use a Stopwatch-based spin-yield loop for sub-20ms periods
-		// (≥50 Hz sensors: IMU 100Hz, Odom 50Hz, JointState 1000Hz, etc.).
+		// 1. Event-driven (cameras, lidar, contact, micom):
+		//    Data arrives via EnqueueMessage() which enqueues and signals the TX thread.
+		//    Rate is controlled by the producer (e.g. CameraWorker coroutine).
+		//    TX thread just waits for the signal, flushes, and loops.
+		//
+		// 2. Timer-polled (GPS, IMU, JointState, Clock):
+		//    GenerateMessage() override builds & pushes data when called.
+		//    TX thread must call it at precise intervals.
+		//
+		// For ≥50 Hz sensors (period ≤ 20ms), OS timer granularity (~1-4ms)
+		// is too coarse, so we use a Stopwatch-based spin-yield loop.
+		// For <50 Hz sensors, WaitOne(timeout) provides sufficient accuracy.
 		//
 		// NOTE: UpdateRate may be set AFTER the thread starts (e.g., from SDF config),
 		// so timing parameters are re-evaluated dynamically inside the loop.
@@ -351,29 +358,24 @@ public abstract class Device : MonoBehaviour
 				// Use high-res spin loop for ≥50 Hz sensors (period ≤ 20ms).
 				// OS timer-based WaitOne has ~1-4ms jitter on Linux, which is
 				// unacceptable for 100Hz+ sensors and causes ~10% rate loss.
-				useHighRes = periodTicks > 0 && UpdatePeriod <= 0.020f;
+				useHighRes = periodTicks > 0 && UpdatePeriod <= HighResolutionThresholdPeriod;
+
+
 				nextDeadline = Stopwatch.GetTimestamp() + periodTicks;
 			}
 
-			if (!useHighRes)
-			{
-				// Standard event-driven path for low-rate sensors (cameras, etc.)
-				var timeoutMs = Mathf.Max(1, Mathf.RoundToInt(UpdatePeriod * 1000f));
-				_txDataReady.WaitOne(timeoutMs);
-				// Debug.Log($"[Device:{_deviceName}] WaitOne({timeoutMs} ms) signaled");
-			}
-
-			GenerateMessage();
-
 			if (useHighRes)
 			{
-				// Absolute-deadline spin-yield: self-corrects drift.
-				// Use Thread.Yield for periods > 2ms to reduce CPU burn,
-				// fall back to SpinWait for the final <1ms approach.
+				// High-res path for ≥50 Hz timer-polled sensors (IMU, JointState, etc.)
+				// Precise Stopwatch-based spin-yield until next deadline.
+				GenerateMessage();
+
 				while (true)
 				{
 					var remaining = nextDeadline - Stopwatch.GetTimestamp();
-					if (remaining <= 0) break;
+					if (remaining <= 0)
+						break;
+
 					if (remaining > Stopwatch.Frequency / 500) // > 2ms
 						Thread.Sleep(1);
 					else if (remaining > Stopwatch.Frequency / 2000) // > 0.5ms
@@ -381,10 +383,21 @@ public abstract class Device : MonoBehaviour
 					else
 						Thread.SpinWait(1);
 				}
+
 				nextDeadline += periodTicks;
 				var now = Stopwatch.GetTimestamp();
 				if (nextDeadline < now - 2 * periodTicks)
 					nextDeadline = now + periodTicks;
+			}
+			else
+			{
+				// Low-rate path for <50 Hz sensors.
+				// Event-driven sensors (cameras, lidar): SignalDataReady() wakes
+				// WaitOne immediately, flush and loop — no spin-wait needed.
+				// Timer-polled sensors (GPS): WaitOne times out at UpdatePeriod.
+				var timeoutMs = Mathf.Max(1, Mathf.RoundToInt(UpdatePeriod * 1000f));
+				_txDataReady.WaitOne(timeoutMs);
+				GenerateMessage();
 			}
 
 #if UNITY_EDITOR

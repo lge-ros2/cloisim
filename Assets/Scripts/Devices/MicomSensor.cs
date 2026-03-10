@@ -188,7 +188,7 @@ namespace SensorDevices
 
 			micomSensorData.Odom = _odomData;
 
-			_messageQueue.Enqueue(micomSensorData);
+			EnqueueMessage(micomSensorData);
 		}
 
 		private void UpdateBattery(messages.Micom micomData, in float deltaTime)

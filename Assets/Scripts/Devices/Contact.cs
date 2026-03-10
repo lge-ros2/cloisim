@@ -178,7 +178,7 @@ namespace SensorDevices
 			// Debug.Log("{DeviceName} CollisionStay: " + contacts.contact.Count);
 			_lastContacts = contactsMessage;
 
-			_messageQueue.Enqueue(contactsMessage);
+			EnqueueMessage(contactsMessage);
 			_lastTimeContactsMessageGenerated = Time.timeAsDouble;
 		}
 
@@ -191,8 +191,7 @@ namespace SensorDevices
 			var contactsMessage = new messages.Contacts();
 			contactsMessage.Time = new messages.Time();
 			contactsMessage.Time.SetCurrentTime();
-			_messageQueue.Enqueue(contactsMessage);
-
+			EnqueueMessage(contactsMessage);
 			// Debug.Log($"{DeviceName} {_targetCollision} CollisionExit: {other.contacts.Length}");
 		}
 

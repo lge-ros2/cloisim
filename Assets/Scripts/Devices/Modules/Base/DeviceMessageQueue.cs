@@ -11,7 +11,8 @@ using System;
 public sealed class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 {
 	private const int MaxQueue = 512;
-	private const int TimeoutInMilliseconds = 50;
+	private const int PushTimeoutMs = 50;
+	private const int PopTimeoutMs = 3;
 	private const float FlushLeaveRate = 0.5f;
 	private readonly int _flushThreshold;
 	private CancellationTokenSource _cts;
@@ -68,7 +69,7 @@ public sealed class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 
 		try
 		{
-			return TryAdd(data, TimeoutInMilliseconds, _cts.Token);
+			return TryAdd(data, PushTimeoutMs, _cts.Token);
 		}
 		catch (Exception ex)
 		{
@@ -81,7 +82,7 @@ public sealed class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 	{
 		try
 		{
-			return TryTake(out item, TimeoutInMilliseconds, _cts.Token);
+			return TryTake(out item, PopTimeoutMs, _cts.Token);
 		}
 		catch (ObjectDisposedException)
 		{

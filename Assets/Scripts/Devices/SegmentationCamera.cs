@@ -108,7 +108,7 @@ namespace SensorDevices
 				}
 			}
 
-			_messageQueue.Enqueue(segmentation);
+			EnqueueMessage(segmentation);
 		}
 	}
 }

@@ -75,7 +75,7 @@ namespace SensorDevices
 				else
 				{
 					imagesStamped.Time.Set(latestImageTimestamp);
-					_messageQueue.Enqueue(imagesStamped);
+					EnqueueMessage(imagesStamped);
 				}
 
 				Thread.Sleep(1);

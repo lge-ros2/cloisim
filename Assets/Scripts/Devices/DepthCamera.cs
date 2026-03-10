@@ -46,7 +46,7 @@ namespace SensorDevices
 
 		[SerializeField]
 		private int _dotMode = 2; // 0:Linear, 1:PixelSnap, 2:SoftSpot
-	
+
 		[SerializeField, Range(0.0001f, 10f)]
 		private float _spotSigmaPx = 0.1f; // (only for dotMode=2)
 
@@ -345,7 +345,7 @@ namespace SensorDevices
 				Buffer.BlockCopy(_computedBufferOutput, 0, imageStamped.Image.Data, 0, imageStamped.Image.Data.Length);
 			}
 
-			_messageQueue.Enqueue(imageStamped);
+			EnqueueMessage(imageStamped);
 		}
 	}
 }
