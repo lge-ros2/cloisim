@@ -28,6 +28,8 @@ public class Clock : Device
 	private double _deltaTime = 0;
 	private double _fixedDeltaTime = 0;
 
+	private bool _isSecondsOnly = false;
+
 	#region time in _hms format
 	public class HMS
 	{
@@ -35,14 +37,14 @@ public class Clock : Device
 		private string _realTime = string.Empty;
 		private string _diffTime = string.Empty;
 
-		public void SetSimTime(in TimeSpan ts)
+		public void SetSimTime(in TimeSpan ts, in bool secondsOnly = false)
 		{
-			SetTimeString(ref this._simTime, ts);
+			SetTimeString(ref this._simTime, ts, secondsOnly);
 		}
 
-		public void SetRealTime(in TimeSpan ts)
+		public void SetRealTime(in TimeSpan ts, in bool secondsOnly = false)
 		{
-			SetTimeString(ref this._realTime, ts);
+			SetTimeString(ref this._realTime, ts, secondsOnly);
 		}
 
 		public void SetDiffTime(in TimeSpan ts)
@@ -54,13 +56,36 @@ public class Clock : Device
 
 		private void SetTimeString(ref string target, in TimeSpan ts, in bool secondsOnly = false)
 		{
-			var timeString = (secondsOnly)?
-				$"{ts.TotalSeconds}" :
-				$"{ts.Days}d {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}.{ts.Milliseconds:D3}";
-
-			_tempSB.AppendFormat(timeString);
-			target = _tempSB.ToString();
 			_tempSB.Clear();
+			if (secondsOnly)
+			{
+				_tempSB.Append(ts.TotalSeconds);
+			}
+			else
+			{
+				_tempSB.Append(ts.Days).Append("d ");
+				AppendTwoDigits(ts.Hours);
+				_tempSB.Append(':');
+				AppendTwoDigits(ts.Minutes);
+				_tempSB.Append(':');
+				AppendTwoDigits(ts.Seconds);
+				_tempSB.Append('.');
+				AppendThreeDigits(ts.Milliseconds);
+			}
+			target = _tempSB.ToString();
+		}
+
+		private void AppendTwoDigits(int value)
+		{
+			if (value < 10) _tempSB.Append('0');
+			_tempSB.Append(value);
+		}
+
+		private void AppendThreeDigits(int value)
+		{
+			if (value < 10) _tempSB.Append("00");
+			else if (value < 100) _tempSB.Append('0');
+			_tempSB.Append(value);
 		}
 
 		public string SimTime => _simTime;
@@ -78,6 +103,7 @@ public class Clock : Device
 	public double RealTime => _currentRealTime;
 	public double DeltaTime => _deltaTime;
 	public double FixedDeltaTime => _fixedDeltaTime;
+	public bool IsSecondsOnly { get => _isSecondsOnly;  set => _isSecondsOnly = value; }
 
 	public HMS ToHMS() => _hms;
 
@@ -118,10 +144,10 @@ public class Clock : Device
 		switch (_hmsUpdateIndex++)
 		{
 			case 0:
-				_hms.SetSimTime(simTs);
+				_hms.SetSimTime(simTs, _isSecondsOnly);
 				break;
 			case 1:
-				_hms.SetRealTime(realTs);
+				_hms.SetRealTime(realTs, _isSecondsOnly);
 				break;
 			case 2:
 				_hms.SetDiffTime(diffTs);

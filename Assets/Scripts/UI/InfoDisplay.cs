@@ -5,6 +5,7 @@
  */
 
 using UnityEngine;
+using UnityEngine.EventSystems;
 using System;
 using TMPro;
 
@@ -31,22 +32,37 @@ public partial class InfoDisplay : MonoBehaviour
 			{
 				_inputFieldFPS = inputField;
 				_inputFieldFPS.enabled = false;
+				_inputFieldSim.readOnly = true;
 			}
 			else if (inputField.name.Equals("SimTime"))
 			{
 				_inputFieldSim = inputField;
+				_inputFieldSim.readOnly = true;
 			}
 			else if (inputField.name.Equals("RealTime"))
 			{
 				_inputFieldReal = inputField;
+				_inputFieldReal.readOnly = true;
 			}
 			else if (inputField.name.Equals("DiffTime"))
 			{
 				_inputFieldDiff = inputField;
+				_inputFieldDiff.enabled = false;
+				_inputFieldDiff.readOnly = true;
 			}
 			else if (inputField.name.Equals("HitPoint"))
 			{
 				_inputFieldHitPoint = inputField;
+				_inputFieldHitPoint.readOnly = true;
+			}
+		}
+
+		foreach (var tmp in GetComponentsInChildren<TMP_Text>())
+		{
+			if (tmp.name.Equals("Sim"))
+			{
+				AddClickEvent(tmp.gameObject, OnTimeLabelClicked);
+				break;
 			}
 		}
 	}
@@ -82,6 +98,28 @@ public partial class InfoDisplay : MonoBehaviour
 		if (_inputFieldDiff != null)
 		{
 			_inputFieldDiff.text = diffRealSimTime;
+		}
+	}
+
+	private void AddClickEvent(GameObject target, Action callback)
+	{
+		var trigger = target.GetComponent<EventTrigger>();
+		if (trigger == null)
+		{
+			trigger = target.AddComponent<EventTrigger>();
+		}
+
+		var entry = new EventTrigger.Entry();
+		entry.eventID = EventTriggerType.PointerClick;
+		entry.callback.AddListener((_) => callback());
+		trigger.triggers.Add(entry);
+	}
+
+	private void OnTimeLabelClicked()
+	{
+		if (_clock != null)
+		{
+			_clock.IsSecondsOnly = !_clock.IsSecondsOnly;
 		}
 	}
 
