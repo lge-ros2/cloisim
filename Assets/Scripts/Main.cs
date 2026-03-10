@@ -714,7 +714,6 @@ public class Main : MonoBehaviour
 
 		Reset();
 
-		DeviceHelper.GetGlobalClock()?.ResetTime();
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
 		yield return new WaitForSeconds(0.1f);
 

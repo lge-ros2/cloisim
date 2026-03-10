@@ -496,9 +496,17 @@ public abstract class Device : MonoBehaviour
 
 	public void Reset()
 	{
-		// Debug.Log("Reset(): flush message queue");
+		// Flush queues BEFORE resetting synthetic time to avoid a race
+		// where the TX thread re-snaps _syntheticTime between the reset
+		// and the flush, wasting the snap and causing the first post-reset
+		// timestamp to increment from a stale value instead of re-snapping.
 		_messageQueue.Clear();
 		_deviceMessageQueue.Flush();
+
+		lock (_syntheticTimeLock)
+		{
+			_syntheticTime = -1;
+		}
 
 		OnReset();
 	}
@@ -548,8 +556,10 @@ public abstract class Device : MonoBehaviour
 		{
 			if (_syntheticTime < 0)
 			{
-				var clock = DeviceHelper.GetGlobalClock();
-				_syntheticTime = (clock != null) ? clock.SimTime : Time.timeAsDouble;
+				_syntheticTime = (Clock != null) ? Clock.SimTime : Time.timeAsDouble;
+#if UNITY_EDITOR
+				Debug.Log($"[Device:{_deviceName}] Snap synthetic time to SimTime: {_syntheticTime:F6}");
+#endif
 			}
 			else
 			{

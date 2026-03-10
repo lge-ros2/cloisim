@@ -183,10 +183,19 @@ public class Clock : Device
 		_prevRealTime = RealTime;
 	}
 
-	public void ResetTime()
+	protected override void OnReset()
 	{
+		Debug.Log("[Clock] ResetTime called. Restarting clock to zero.");
+
 		_restartedSimTime = Time.timeAsDouble;
 		_restartedFixedSimTime = Time.fixedTimeAsDouble;
 		_restartedRealTime = Time.realtimeSinceStartupAsDouble;
+
+		// Immediately reflect the reset so that any thread reading
+		// Clock.SimTime sees ~0 right away, not the stale cached value
+		// from the last Update() frame.
+		_currentSimTime = 0;
+		_currentFixedSimTime = 0;
+		_currentRealTime = 0;
 	}
 }
