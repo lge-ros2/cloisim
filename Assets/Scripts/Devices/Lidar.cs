@@ -701,7 +701,7 @@ namespace SensorDevices
 						_laserFilter.DoFilter(ref laserScan);
 					}
 
-					_messageQueue.Enqueue(laserScanStamped);
+					EnqueueMessage(laserScanStamped);
 
 #if UNITY_EDITOR
 					UpdateProfiler("LIDAR", _laserScan.Count * _laserScan.VerticalCount * sizeof(double) * 2);

@@ -10,11 +10,26 @@ using SN = System.Numerics;
 
 public static partial class MeshLoader
 {
-	// Gain factor for converting Blender's physical light units (Watts) to Unity URP intensity.
-	// Blender computes point light irradiance as E = P / (4π × d²),
-	// so 4π (≈12.57) serves as a physically-motivated base conversion factor.
-	// Adjust this value if lights still appear too dark or too bright.
-	private static readonly float LightIntensityGain = 4f * Mathf.PI;
+	private const float LightIntensityGain = 100f;
+
+	/// <summary>
+	/// Auto-detect gain factor based on color intensity.
+	/// DAE/Collada bakes omnidirectional power (Watts) into color channels,
+	/// producing values >> 1.0 — divide by 4π (≈12.57) to convert to candelas.
+	/// FBX exports very small normalized values (e.g. 0.01) — scale up by 1000
+	/// to reach practical Unity URP intensity levels.
+	/// </summary>
+	private static float GetLightIntensityGain(in float colorIntensity)
+	{
+		if (colorIntensity > 1f)
+		{
+			// candelas = lumens / (4π steradians)
+			return 1f / (4f * Mathf.PI * LightIntensityGain); // Scale down for DAE/Collada
+		}
+
+		// FBX and similar: intensity values are very small, scale up
+		return LightIntensityGain;
+	}
 
 	/// <summary>
 	/// Separates an HDR color (where intensity may be baked into RGB channels) into
@@ -125,8 +140,10 @@ public static partial class MeshLoader
 		var position = assimpLight.Position;
 		var direction = assimpLight.Direction;
 
-		// Apply gain-adjusted intensity: colorIntensity (from HDR color) × gain factor
-		var baseIntensity = colorIntensity * LightIntensityGain;
+		// Auto-detect gain: HDR colors (> 1.0) indicate baked power (e.g. DAE),
+		// normalized colors (≤ 1.0) indicate direct intensity (e.g. FBX).
+		var gain = GetLightIntensityGain(colorIntensity);
+		var baseIntensity = colorIntensity * gain;
 
 		switch (assimpLight.LightType)
 		{
@@ -184,7 +201,7 @@ public static partial class MeshLoader
 				// For ambient, use ambient color instead of diffuse
 				DecomposeHDRColor(assimpLight.ColorAmbient, out var ambientColor, out var ambientIntensity);
 				lightComponent.color = ambientColor;
-				lightComponent.intensity = ambientIntensity * LightIntensityGain;
+				lightComponent.intensity = ambientIntensity * GetLightIntensityGain(ambientIntensity);
 				break;
 
 			case Assimp.LightSourceType.Point:
@@ -198,7 +215,7 @@ public static partial class MeshLoader
 		}
 
 #if UNITY_EDITOR
-		Debug.Log($"Light created: {assimpLight.Name}, Type: {assimpLight.LightType}, Color: {lightComponent.color}, Intensity: {lightComponent.intensity} (raw HDR: {colorIntensity}, gain: {LightIntensityGain})");
+		Debug.Log($"Light created: {assimpLight.Name}, Type: {assimpLight.LightType}, Color: {lightComponent.color}, Intensity: {lightComponent.intensity} gain: {gain}, Range: {lightComponent.range} (raw HDR: {colorIntensity})");
 #endif
 	}
 }

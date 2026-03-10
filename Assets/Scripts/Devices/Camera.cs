@@ -344,44 +344,61 @@ namespace SensorDevices
 
 		private IEnumerator CameraWorker()
 		{
-			var rateGap = (float)Application.targetFrameRate - UpdateRate;
-			var messageGenerationTime = Mathf.Approximately(rateGap, 0) ? float.PositiveInfinity : 1f / rateGap;
-			var waitNextCapture = new WaitForSeconds(WaitPeriod(messageGenerationTime));
-			// Debug.Log($"CameraWorker {rateGap} {messageGenerationTime} {WaitPeriod(messageGenerationTime)}");
+			// Use absolute-deadline time tracking instead of WaitForSeconds.
+			// WaitForSeconds(33.33ms) at 60fps (16.67ms/frame) sits exactly
+			// on a frame boundary, causing Unity to sometimes round to 3 frames
+			// instead of 2 — giving ~23 Hz instead of the target 30 Hz.
+			// Checking every frame with an absolute deadline avoids this.
+			var nextCaptureTime = Time.timeAsDouble;
+
 			while (_startCameraWork)
 			{
-				_universalCamData.enabled = true;
-
-				// Debug.Log("start render and request ");
-				if (_universalCamData.isActiveAndEnabled)
+				if (Time.timeAsDouble >= nextCaptureTime)
 				{
-					_camSensor.Render();
+					nextCaptureTime += UpdatePeriod;
 
-					var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
-					AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, (req) => {
-						if (req.hasError)
-						{
-							Debug.LogError($"{name}: Failed to read GPU texture");
-						}
-						else if (req.done)
-						{
-							if (_depthMaterial == null)
+					var processStartTime = Time.realtimeSinceStartupAsDouble;
+
+					_universalCamData.enabled = true;
+
+					if (_universalCamData.isActiveAndEnabled)
+					{
+						_camSensor.Render();
+
+						var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
+						AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, (req) => {
+							if (req.hasError)
 							{
-								var readbackData = req.GetData<byte>();
-								ImageProcessing<byte>(ref readbackData, capturedTime);
+								Debug.LogError($"{name}: Failed to read GPU texture");
 							}
-							else
+							else if (req.done)
 							{
-								var readbackData = req.GetData<float>();
-								ImageProcessing<float>(ref readbackData, capturedTime);
+								if (_depthMaterial == null)
+								{
+									var readbackData = req.GetData<byte>();
+									ImageProcessing<byte>(ref readbackData, capturedTime);
+								}
+								else
+								{
+									var readbackData = req.GetData<float>();
+									ImageProcessing<float>(ref readbackData, capturedTime);
+								}
 							}
-						}
-					});
+						});
+					}
+
+					_universalCamData.enabled = false;
+
+					// If we fell behind, don't try to catch up — reset deadline
+					// Subtract processing time so the next interval stays closer to UpdatePeriod
+					if (nextCaptureTime < Time.timeAsDouble)
+					{
+						var processingTime = Time.realtimeSinceStartupAsDouble - processStartTime;
+						nextCaptureTime = Time.timeAsDouble + System.Math.Max(0, UpdatePeriod - processingTime);
+					}
 				}
 
-				_universalCamData.enabled = false;
-
-				yield return waitNextCapture;
+				yield return null;
 			}
 		}
 
@@ -428,7 +445,7 @@ namespace SensorDevices
 				Debug.LogWarning($"{name}: Failed to get image Data. Size mismatch (Image: {image.Data?.Length}, Buffer: {byteView.Length})");
 			}
 
-			_messageQueue.Enqueue(imageStamped);
+			EnqueueMessage(imageStamped);
 		}
 
 		public messages.CameraSensor GetCameraInfo()
