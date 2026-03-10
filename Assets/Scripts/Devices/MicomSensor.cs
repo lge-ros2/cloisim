@@ -163,25 +163,28 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			var delta = Time.fixedDeltaTime;
-
-			_accumulatedTime += delta;
-
 			if (_motorControl?.Update(_odomData, Time.fixedDeltaTime, _imuSensor) == false)
 			{
 				Debug.LogWarning("Update failed in MotorControl");
 			}
 
+			// Skip message generation until UpdateRate is configured
+			if (UpdateRate <= 0)
+				return;
+
+			_accumulatedTime += Time.fixedDeltaTime;
+
 			if (_accumulatedTime < UpdatePeriod)
 				return;
 
-			 _accumulatedTime -= UpdatePeriod;
+			// Clamp to avoid runaway accumulation (e.g. after a long pause)
+			_accumulatedTime = _accumulatedTime % UpdatePeriod;
 
 			var micomSensorData = new messages.Micom();
 			micomSensorData.Time = new messages.Time();
 			micomSensorData.Time.Set(GetNextSyntheticTime());
 
-			UpdateBattery(micomSensorData, delta);
+			UpdateBattery(micomSensorData, UpdatePeriod);
 			UpdateUss(micomSensorData);
 			UpdateIr(micomSensorData);
 			UpdateBumper(micomSensorData);
