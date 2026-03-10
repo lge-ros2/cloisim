@@ -333,9 +333,9 @@ public abstract class Device : MonoBehaviour
 		//
 		// NOTE: UpdateRate may be set AFTER the thread starts (e.g., from SDF config),
 		// so timing parameters are re-evaluated dynamically inside the loop.
-
+#if UNITY_EDITOR
 		_diagPublishSw.Start();
-
+#endif
 		// Timing parameters — recomputed when UpdateRate changes
 		float lastUpdateRate = -1;
 		long periodTicks = 0;
@@ -461,7 +461,9 @@ public abstract class Device : MonoBehaviour
 			}
 
 			var pushed = _deviceMessageQueue.Push(deviceMessage);
+#if UNITY_EDITOR
 			if (pushed) Interlocked.Increment(ref _diagPublishCount);
+#endif
 			return pushed;
 		}
 		catch (Exception ex)
