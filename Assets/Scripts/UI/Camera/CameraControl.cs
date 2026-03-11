@@ -7,6 +7,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 public abstract class CameraControl : MonoBehaviour
 {
@@ -91,7 +92,7 @@ public abstract class CameraControl : MonoBehaviour
 			return;
 		}
 
-		if (Input.GetKeyUp(KeyCode.Space))
+		if (Keyboard.current[Key.Space].wasReleasedThisFrame)
 		{
 			LockVerticalMovement();
 		}
@@ -131,18 +132,18 @@ public abstract class CameraControl : MonoBehaviour
 
 	private void HandleMouseControl()
 	{
-		_lastMouse = Input.mousePosition - _lastMouse;
+		_lastMouse = (Vector3)Mouse.current.position.ReadValue() - _lastMouse;
 
 		var mousePoseX = transform.eulerAngles.x - _lastMouse.y * _camSens;
 		var mousePoseY = transform.eulerAngles.y + _lastMouse.x * _camSens;
 		_lastMouse.Set(mousePoseX, mousePoseY, 0);
 
 		// Mouse camera angle done.
-		if (Input.GetMouseButton(0))
+		if (Mouse.current.leftButton.isPressed)
 		{
 			HandleLeftClickOnScreen();
 		}
-		else if (Input.GetMouseButton(2) || Input.GetMouseButton(1))
+		else if (Mouse.current.middleButton.isPressed || Mouse.current.rightButton.isPressed)
 		{
 			HandleScreenOrbitControl();
 
@@ -153,13 +154,13 @@ public abstract class CameraControl : MonoBehaviour
 			_edgeSensAccumlated = 0.0f;
 		}
 
-		_lastMouse = Input.mousePosition;
+		_lastMouse = (Vector3)Mouse.current.position.ReadValue();
 	}
 
 	private Vector3 HandleKeyboardCommands()
 	{
 		var p = GetBaseInput();
-		if (Input.GetKey(KeyCode.LeftShift))
+		if (Keyboard.current[Key.LeftShift].isPressed)
 		{
 			_totalRun += Time.deltaTime;
 			p *= (_totalRun * _shiftAdd);
@@ -177,7 +178,7 @@ public abstract class CameraControl : MonoBehaviour
 
 	private void HandleLeftClickOnScreen()
 	{
-		var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+		var ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
 		if (Physics.Raycast(ray.origin, ray.direction, out var hitInfo, 100f, _targetLayerMask))
 		{
 			if (!EventSystem.current.IsPointerOverGameObject())
@@ -197,22 +198,23 @@ public abstract class CameraControl : MonoBehaviour
 			_edgeSensAccumlated += _edgeSens;
 		}
 
-		if (Input.mousePosition.x < _edgeWidth)
+		var mousePos = Mouse.current.position.ReadValue();
+		if (mousePos.x < _edgeWidth)
 		{
 			// Debug.Log("rotate camera left here");
 			_lastMouse.y -= _edgeSensAccumlated;
 		}
-		else if (Input.mousePosition.x > Screen.width - _edgeWidth)
+		else if (mousePos.x > Screen.width - _edgeWidth)
 		{
 			// Debug.Log("rotate camera right here");
 			_lastMouse.y += _edgeSensAccumlated;
 		}
-		else if (Input.mousePosition.y < _edgeWidth)
+		else if (mousePos.y < _edgeWidth)
 		{
 			// Debug.Log("rotate camera down here");
 			_lastMouse.x += _edgeSensAccumlated;
 		}
-		else if (Input.mousePosition.y > Screen.height - _edgeWidth)
+		else if (mousePos.y > Screen.height - _edgeWidth)
 		{
 			_lastMouse.x -= _edgeSensAccumlated;
 		}
@@ -232,14 +234,14 @@ public abstract class CameraControl : MonoBehaviour
 	private void Rotate()
 	{
 		var rotation = transform.rotation.eulerAngles;
-		if (!Input.GetKey(KeyCode.LeftControl))
+		if (!Keyboard.current[Key.LeftCtrl].isPressed)
 		{
-			if (Input.GetKey(KeyCode.Q))
+			if (Keyboard.current[Key.Q].isPressed)
 			{
 				transform.RotateAround(transform.position, Vector3.up, -_angleStep);
 				_terminateMoving = true;
 			}
-			else if (Input.GetKey(KeyCode.E))
+			else if (Keyboard.current[Key.E].isPressed)
 			{
 				transform.RotateAround(transform.position, Vector3.up, _angleStep);
 				_terminateMoving = true;
@@ -272,7 +274,7 @@ public abstract class CameraControl : MonoBehaviour
 
 		if (!_blockMouseWheelControl)
 		{
-			var scrollWheel = Input.GetAxisRaw("Mouse ScrollWheel");
+			var scrollWheel = Mouse.current.scroll.ReadValue().y;
 			if (scrollWheel != 0)
 			{
 				baseDirection += HandleMouseWheelScroll();
@@ -281,12 +283,12 @@ public abstract class CameraControl : MonoBehaviour
 			}
 		}
 
-		if (!Input.GetKey(KeyCode.LeftControl))
+		if (!Keyboard.current[Key.LeftCtrl].isPressed)
 		{
 			baseDirection += HandleKeyboardDirection();
-			if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.S) ||
-				Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D) ||
-				Input.GetKey(KeyCode.G) || Input.GetKey(KeyCode.F))
+			if (Keyboard.current[Key.W].isPressed || Keyboard.current[Key.S].isPressed ||
+				Keyboard.current[Key.A].isPressed || Keyboard.current[Key.D].isPressed ||
+				Keyboard.current[Key.G].isPressed || Keyboard.current[Key.F].isPressed)
 			{
 				_terminateMoving = true;
 			}

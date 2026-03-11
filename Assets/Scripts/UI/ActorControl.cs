@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [DefaultExecutionOrder(700)]
 public class ActorControl : MonoBehaviour
@@ -36,7 +37,7 @@ public class ActorControl : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (Input.GetMouseButton(1))
+		if (Mouse.current.rightButton.isPressed)
 		{
 			if (Main.Gizmos != null)
 			{
@@ -44,7 +45,7 @@ public class ActorControl : MonoBehaviour
 
 				if (list.Count > 0)
 				{
-					var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+					var ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
 					if (Physics.Raycast(ray.origin, ray.direction, out m_HitInfo))
 					{
 						ClickToMove(ref list);
