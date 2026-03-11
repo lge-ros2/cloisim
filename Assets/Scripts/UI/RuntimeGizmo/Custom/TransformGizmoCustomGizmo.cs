@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace RuntimeGizmos
 {
@@ -52,9 +53,9 @@ namespace RuntimeGizmos
 		{
 			ShowProperGizmoType();
 
-			if(Input.GetMouseButtonDown(0))
+			if(Mouse.current.leftButton.wasPressedThisFrame)
 			{
-				if(Physics.Raycast(transformGizmo.myCamera.ScreenPointToRay(Input.mousePosition), out var hitInfo, Mathf.Infinity, mask))
+				if(Physics.Raycast(transformGizmo.myCamera.ScreenPointToRay(Mouse.current.position.ReadValue()), out var hitInfo, Mathf.Infinity, mask))
 				{
 					Axis selectedAxis = Axis.None;
 					TransformType type = transformGizmo.transformType;

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using UnityEngine.AI;
 using UnityEngine.Rendering;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [DefaultExecutionOrder(40)]
 public class ObjectSpawning : MonoBehaviour
@@ -75,9 +76,9 @@ public class ObjectSpawning : MonoBehaviour
 	// Update is called once per frame
 	void LateUpdate()
 	{
-		if (Input.GetKey(KeyCode.LeftControl))
+		if (Keyboard.current[Key.LeftCtrl].isPressed)
 		{
-			if (Input.GetMouseButtonUp(0))
+			if (Mouse.current.leftButton.wasReleasedThisFrame)
 			{
 				// Add On left click spawn
 				// selected prefab and align its rotation to a surface normal
@@ -87,7 +88,7 @@ public class ObjectSpawning : MonoBehaviour
 					StartCoroutine(SpawnTargetObject(hitPoint, hitNormal, propsScale));
 				}
 			}
-			else if (Input.GetMouseButtonUp(1))
+			else if (Mouse.current.rightButton.wasReleasedThisFrame)
 			{
 				// Remove spawned prefab when holding left control and right clicking
 				var selectedPropsTransform = GetTransformOnClick();
@@ -97,7 +98,7 @@ public class ObjectSpawning : MonoBehaviour
 				}
 			}
 		}
-		else if (Input.GetKeyUp(KeyCode.Delete))
+		else if (Keyboard.current[Key.Delete].wasReleasedThisFrame)
 		{
 			transformGizmo.GetSelectedTargets(out var list);
 			StartCoroutine(DeleteTargetObject(list));
@@ -279,7 +280,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	private bool GetPositionAndNormalOnClick(out Vector3 hitPoint, out Vector3 hitNormal)
 	{
-		var ray = _mainCam.ScreenPointToRay(Input.mousePosition);
+		var ray = _mainCam.ScreenPointToRay(Mouse.current.position.ReadValue());
 		if (Physics.Raycast(ray, out var hit, maxRayDistance))
 		{
 			hitPoint = hit.point; // 0 = spawn poisiton
@@ -297,7 +298,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	private Transform GetTransformOnClick()
 	{
-		var screenPoint2Ray = _mainCam.ScreenPointToRay(Input.mousePosition);
+		var screenPoint2Ray = _mainCam.ScreenPointToRay(Mouse.current.position.ReadValue());
 
 		if (Physics.Raycast(screenPoint2Ray, out var hit, maxRayDistance))
 		{
