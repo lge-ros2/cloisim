@@ -1,17 +1,18 @@
 {
     "files.exclude": {
-		".vscode": true,
-		"*.world": true,
-		"**/*.meta": true,
-		"**/TextMesh Pro": true,
-		"**/VSCode": true,
-		"Library": true,
-		"obj": true,
-		"Temp": true,
-		"UserSettings": true
-	},
+        ".vscode": true,
+        "*.world": true,
+        "**/*.meta": true,
+        "**/TextMesh Pro": true,
+        "**/VSCode": true,
+        "Library": true,
+        "obj": true,
+        "Temp": true,
+        "UserSettings": true
+    },
     "editor.detectIndentation": false,
     "editor.indentSize": "tabSize",
     "editor.insertSpaces": false,
     "editor.tabSize": 4,
+    "dotnet.defaultSolution": "cloisim.slnx"
 }
