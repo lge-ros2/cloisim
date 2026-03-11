@@ -44,6 +44,7 @@ public class UIController : MonoBehaviour
 	void Start()
 	{
 		var objectSpawning = Main.ObjectSpawning;
+		var core = Main.Core;
 
 		_toggleLockVerticalMoving = _rootVisualElement.Q<Toggle>("LockVerticalMoving");
 		_toggleLockVerticalMoving.RegisterValueChangedCallback(x => Main.CameraControl.VerticalMovementLock = x.newValue);
@@ -100,7 +101,7 @@ public class UIController : MonoBehaviour
 		var buttonFront = _rootVisualElement.Q<Button>("Front");
 		buttonFront.clickable.clicked += () => {
 			var position = Vector3.forward * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			var rotation = Quaternion.LookRotation(core.transform.position - position);
 			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonFront.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonFront, Color.gray); });
@@ -109,7 +110,7 @@ public class UIController : MonoBehaviour
 		var buttonLeft = _rootVisualElement.Q<Button>("Left");
 		buttonLeft.clickable.clicked += () => {
 			var position = Vector3.right * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			var rotation = Quaternion.LookRotation(core.transform.position - position);
 			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonLeft.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonLeft, Color.gray); });
@@ -118,7 +119,7 @@ public class UIController : MonoBehaviour
 		var buttonBack = _rootVisualElement.Q<Button>("Back");
 		buttonBack.clickable.clicked += () => {
 			var position = Vector3.back * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			var rotation = Quaternion.LookRotation(core.transform.position - position);
 			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonBack.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBack, Color.gray); });
@@ -127,7 +128,7 @@ public class UIController : MonoBehaviour
 		var buttonRight = _rootVisualElement.Q<Button>("Right");
 		buttonRight.clickable.clicked += () => {
 			var position = Vector3.left * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			var rotation = Quaternion.LookRotation(core.transform.position - position);
 			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonRight.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonRight, Color.gray); });
@@ -136,7 +137,7 @@ public class UIController : MonoBehaviour
 		var buttonTop = _rootVisualElement.Q<Button>("Top");
 		buttonTop.clickable.clicked += () => {
 			var position = Vector3.up * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			var rotation = Quaternion.LookRotation(core.transform.position - position);
 			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonTop.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonTop, Color.gray); });
@@ -145,7 +146,7 @@ public class UIController : MonoBehaviour
 		var buttonBottom = _rootVisualElement.Q<Button>("Bottom");
 		buttonBottom.clickable.clicked += () => {
 			var position = Vector3.down * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			var rotation = Quaternion.LookRotation(core.transform.position - position);
 			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonBottom.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBottom, Color.gray); });

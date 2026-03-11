@@ -76,7 +76,9 @@ public class Main : MonoBehaviour
 	public static GameObject PropsRoot => _instance._propsRoot;
 	public static GameObject WorldRoot => _instance._worldRoot;
 	public static GameObject RoadsRoot => _instance._roadsRoot;
-	public static GameObject CoreObject => _instance._core;
+
+	public static GameObject Core => _instance._core;
+
 	public static GameObject UIObject => _instance._uiRoot;
 	public static GameObject UIMainCanvas => _instance._uiMainCanvasRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => _instance._transformGizmo;
