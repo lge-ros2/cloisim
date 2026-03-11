@@ -84,10 +84,10 @@ namespace RuntimeGizmos
 		private TransformType translatingType;
 
 		// We use a HashSet and a List for targetRoots so that we get fast lookup with the hashset while also keeping track of the order with the list.
-		private List<Transform> targetRootsOrdered = new List<Transform>();
-		private Dictionary<Transform, TargetInfo> targetRoots = new Dictionary<Transform, TargetInfo>();
-		private HashSet<Transform> children = new HashSet<Transform>();
-		private List<Transform> childrenBuffer = new List<Transform>();
+		private List<Transform> targetRootsOrdered = new();
+		private Dictionary<Transform, TargetInfo> targetRoots = new();
+		private HashSet<Transform> children = new();
+		private List<Transform> childrenBuffer = new();
 		private Coroutine forceUpdatePivotCoroutine;
 
 		void Awake()
