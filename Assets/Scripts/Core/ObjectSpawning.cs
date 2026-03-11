@@ -261,9 +261,13 @@ public class ObjectSpawning : MonoBehaviour
 
 	private IEnumerator DeleteTargetObject(List<Transform> targetObjectsTransform)
 	{
-		for (var i = 0; i < targetObjectsTransform.Count; i++)
+		var targets = new List<Transform>(targetObjectsTransform);
+		for (var i = 0; i < targets.Count; i++)
 		{
-			var targetObjectTransform = targetObjectsTransform[i];
+			var targetObjectTransform = targets[i];
+			if (targetObjectTransform == null)
+				continue;
+
 			if (targetObjectTransform.CompareTag("Props") ||
 				targetObjectTransform.CompareTag("Road") ||
 				targetObjectTransform.CompareTag("Model"))
@@ -271,8 +275,7 @@ public class ObjectSpawning : MonoBehaviour
 				Destroy(targetObjectTransform.gameObject);
 				yield return null;
 			}
-		}
-
+		}		
 		_followingList?.UpdateList();
 
 		yield return null;
