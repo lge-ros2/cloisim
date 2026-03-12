@@ -8,15 +8,21 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Central manager that renders all ISensorRenderable cameras in a tight batch
-/// each frame. Replaces per-camera CameraWorker coroutines to reduce CPU
-/// overhead by allowing the render pipeline to share state across sequential
-/// renders.
+/// Central manager that owns render scheduling for all ISensorRenderable sensors.
+/// Determines when each sensor should render based on its RenderPeriod,
+/// sorts by urgency, and dispatches ExecuteRenderStep in a tight batch each frame.
 /// </summary>
 public class SensorRenderManager : MonoBehaviour
 {
 	private static SensorRenderManager s_instance;
 	private static bool s_applicationQuitting = false;
+
+	/// <summary>Per-sensor scheduling state owned by the manager.</summary>
+	private struct SensorEntry
+	{
+		public ISensorRenderable Sensor;
+		public float NextRenderTime;
+	}
 
 	public static SensorRenderManager Instance
 	{
@@ -33,17 +39,25 @@ public class SensorRenderManager : MonoBehaviour
 		}
 	}
 
-	private readonly List<ISensorRenderable> _sensors = new();
-	private readonly List<ISensorRenderable> _pendingAdd = new();
+	private readonly List<SensorEntry> _entries = new();
+	private readonly List<(ISensorRenderable sensor, float initialDelay)> _pendingAdd = new();
 	private readonly List<ISensorRenderable> _pendingRemove = new();
 
-	public static void Register(ISensorRenderable sensor)
+	/// <summary>
+	/// Register a sensor with an optional initial delay before the first render.
+	/// </summary>
+	public static void Register(ISensorRenderable sensor, float initialDelay = 0.1f)
 	{
-		if (!Instance._sensors.Contains(sensor) &&
-			!Instance._pendingAdd.Contains(sensor))
-		{
-			Instance._pendingAdd.Add(sensor);
-		}
+		var inst = Instance;
+		if (inst == null) return;
+
+		// Avoid duplicates
+		foreach (var e in inst._entries)
+			if (e.Sensor == sensor) return;
+		foreach (var p in inst._pendingAdd)
+			if (p.sensor == sensor) return;
+
+		inst._pendingAdd.Add((sensor, initialDelay));
 	}
 
 	public static void Unregister(ISensorRenderable sensor)
@@ -51,35 +65,71 @@ public class SensorRenderManager : MonoBehaviour
 		Instance?._pendingRemove.Add(sensor);
 	}
 
-	private void LateUpdate()
+	private void ApplyPendingAdditions()
 	{
-		// Apply pending additions/removals
 		if (_pendingAdd.Count > 0)
 		{
-			_sensors.AddRange(_pendingAdd);
+			var now = Time.realtimeSinceStartup;
+			foreach (var (sensor, delay) in _pendingAdd)
+			{
+				_entries.Add(new SensorEntry
+				{
+					Sensor = sensor,
+					NextRenderTime = now + delay,
+				});
+			}
 			_pendingAdd.Clear();
 		}
+	}
 
+	private void ApplyPendingRemovals()
+	{
 		if (_pendingRemove.Count > 0)
 		{
 			foreach (var s in _pendingRemove)
-				_sensors.Remove(s);
+				_entries.RemoveAll(e => e.Sensor == s);
 			_pendingRemove.Clear();
 		}
+	}
 
-		var now = Time.realtimeSinceStartup;
+	private void AdvanceSensorSchedule(ref SensorEntry entry, float realtimeNow)
+	{
+		// Advance schedule by one period
+		var period = entry.Sensor.RenderPeriod;
+		entry.NextRenderTime += period;
+
+		// If too far behind (> 3 periods), snap forward to avoid burst catch-up
+		if (entry.NextRenderTime < realtimeNow - period * 3f)
+			entry.NextRenderTime = realtimeNow + period;
+	}
+
+	private void LateUpdate()
+	{
+		ApplyPendingAdditions();
+		ApplyPendingRemovals();
+
+		var realtimeNow = Time.realtimeSinceStartup;
 
 		// Sort by urgency (most overdue first)
-		_sensors.Sort((a, b) => b.GetRenderUrgency(now).CompareTo(a.GetRenderUrgency(now)));
-
-		// Render all ready sensors in a tight batch
-		for (var i = 0; i < _sensors.Count; i++)
+		_entries.Sort((a, b) =>
 		{
-			var sensor = _sensors[i];
-			if (sensor.IsReadyToRender(now))
-			{
-				sensor.ExecuteRenderStep(now);
-			}
+			var urgA = realtimeNow - a.NextRenderTime;
+			var urgB = realtimeNow - b.NextRenderTime;
+			return urgB.CompareTo(urgA);
+		});
+
+		// Render all ready sensors and advance their schedules
+		for (var i = 0; i < _entries.Count; i++)
+		{
+			var entry = _entries[i];
+			if (!entry.Sensor.CanRender || (realtimeNow < entry.NextRenderTime))
+				continue;
+
+			entry.Sensor.ExecuteRenderStep(realtimeNow);
+
+			AdvanceSensorSchedule(ref entry, realtimeNow);
+
+			_entries[i] = entry;
 		}
 	}
 
@@ -90,7 +140,7 @@ public class SensorRenderManager : MonoBehaviour
 
 	private void OnDestroy()
 	{
-		_sensors.Clear();
+		_entries.Clear();
 		_pendingAdd.Clear();
 		_pendingRemove.Clear();
 
