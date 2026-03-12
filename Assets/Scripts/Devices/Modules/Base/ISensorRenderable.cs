@@ -6,7 +6,8 @@
 
 /// <summary>
 /// Interface for sensor devices that can be rendered by SensorRenderManager.
-/// Provides scheduling and execution hooks for batched rendering.
+/// Scheduling (nextRenderTime, urgency) is owned by SensorRenderManager.
+/// Sensors only provide timing parameters and execution logic.
 /// </summary>
 public interface ISensorRenderable
 {
@@ -16,15 +17,16 @@ public interface ISensorRenderable
 	bool IsURT { get; }
 
 	/// <summary>
-	/// Check if this sensor should render this frame.
+	/// The desired render period in seconds (1 / updateRate).
+	/// Used by SensorRenderManager for scheduling.
 	/// </summary>
-	bool IsReadyToRender(float realtimeNow);
+	float RenderPeriod { get; }
 
 	/// <summary>
-	/// How overdue this sensor is for rendering (seconds past its
-	/// scheduled time). Used to prioritize the most starved sensors.
+	/// Whether the sensor is ready to accept render commands
+	/// (e.g. has been initialized, has a valid render target).
 	/// </summary>
-	float GetRenderUrgency(float realtimeNow);
+	bool CanRender { get; }
 
 	/// <summary>
 	/// Execute one render step. Returns true when the render is complete

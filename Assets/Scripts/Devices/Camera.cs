@@ -41,10 +41,6 @@ namespace SensorDevices
 		/// <summary>Public accessor for sensor camera data.</summary>
 		// public UniversalAdditionalCameraData UniversalCameraData => _universalCamData;
 
-		#region BatchedRenderingFields
-		protected float _nextRenderTime = -1f;
-		#endregion // managed by SensorRenderManager
-
 		protected string _targetRTname;
 		protected GraphicsFormat _targetColorFormat;
 		protected GraphicsFormat _readbackDstFormat;
@@ -183,8 +179,7 @@ namespace SensorDevices
 				_startCameraWork = true;
 
 				// Register with centralized render manager.
-				_nextRenderTime = Time.realtimeSinceStartup + 0.1f; // delay 100ms for pipeline init
-				SensorRenderManager.Register(this);
+				SensorRenderManager.Register(this, initialDelay: 0.1f);
 			}
 		}
 
@@ -195,11 +190,11 @@ namespace SensorDevices
 		/// </summary>
 		protected void CheckReadbackFormatSupport()
 		{
-			if (_readbackDstFormat != _targetColorFormat)
-			{
-				Debug.Log($"{DeviceName}: Readback will use [{_targetColorFormat}] (RT native) instead of [{_readbackDstFormat}], with CPU conversion");
-				_readbackDstFormat = _targetColorFormat;
-			}
+			// if (_readbackDstFormat != _targetColorFormat)
+			// {
+			// 	Debug.Log($"{DeviceName}: Readback will use [{_targetColorFormat}] (RT native) instead of [{_readbackDstFormat}], with CPU conversion");
+			// 	_readbackDstFormat = _targetColorFormat;
+			// }
 		}
 
 		protected virtual void SetupTexture()
@@ -316,7 +311,7 @@ namespace SensorDevices
 			_camSensor.cullingMask = LayerMask.GetMask("Default", "Plane");
 
 			// URT cameras skip full RT allocation to stay below the Vulkan driver's
-			// concurrent render-target limit. Allocate a 1×1 dummy so IsReadyToRender()
+			// concurrent render-target limit. Allocate a 1×1 dummy so CanRender
 			// passes its targetTexture != null guard.
 			var rtWidth = _skipRTAllocation ? 1 : _camParam.image.width;
 			var rtHeight = _skipRTAllocation ? 1 : _camParam.image.height;
@@ -432,38 +427,25 @@ namespace SensorDevices
 			base.OnDestroy();
 		}
 
-		// ═══════════════════════════════════════════════════════════════
-		//  Batched rendering interface — called by SensorRenderManager
-		// ═══════════════════════════════════════════════════════════════
-
 		#region BatchedRenderingInterface
 		/// <summary>
-		/// Whether this camera uses Unified Ray Tracing (cheap compute dispatch).
 		/// Override in subclasses that use URT. Default: false (full Camera.Render).
 		/// </summary>
 		public virtual bool IsURT => false;
 
-		/// <summary>
-		/// Check if this camera should render this frame.
-		/// Phase-locked: compares against absolute _nextRenderTime
-		/// to prevent drift accumulation from frame-rate jitter.
-		/// </summary>
-		public bool IsReadyToRender(float realtimeNow)
-		{
-			if (!_startCameraWork) return false;
-			if (_camSensor == null || _camSensor.targetTexture == null) return false;
-
-			return realtimeNow >= _nextRenderTime;
-		}
+		public float RenderPeriod => UpdatePeriod;
 
 		/// <summary>
-		/// How overdue this camera is for rendering (seconds past its
-		/// scheduled time). Used by SensorRenderManager to prioritize
-		/// the most starved cameras when frame budget is limited.
+		/// Whether this camera is initialized and can accept render commands.
 		/// </summary>
-		public float GetRenderUrgency(float realtimeNow)
+		public bool CanRender
 		{
-			return realtimeNow - _nextRenderTime;
+			get
+			{
+				if (!_startCameraWork) return false;
+				if (_camSensor == null || _camSensor.targetTexture == null) return false;
+				return true;
+			}
 		}
 
 		/// <summary>
@@ -477,20 +459,6 @@ namespace SensorDevices
 		}
 
 		/// <summary>
-		/// Advance the phase-locked render schedule.
-		/// Increments _nextRenderTime by exactly UpdatePeriod to maintain
-		/// a stable cadence. If we fall more than 2 periods behind,
-		/// snaps forward to avoid burst catch-up.
-		/// </summary>
-		protected void AdvanceRenderSchedule(float realtimeNow)
-		{
-			_nextRenderTime += UpdatePeriod;
-			// Cap max overdue backlog to 3 periods to prevent runaway burst
-			if (_nextRenderTime < realtimeNow - UpdatePeriod * 3f)
-				_nextRenderTime = realtimeNow - UpdatePeriod * 2f;
-		}
-
-		/// <summary>
 		/// Execute a single render + async readback for this camera.
 		/// Called by SensorRenderManager in a tight loop so the render
 		/// pipeline can share state across sequential camera renders.
@@ -499,15 +467,16 @@ namespace SensorDevices
 		{
 			using (s_ExecuteRenderMarker.Auto())
 			{
-				AdvanceRenderSchedule(realtimeNow);
-
 				_universalCamData.enabled = true;
 
 				if (_universalCamData.isActiveAndEnabled)
 				{
-					_camSensor.Render();
+					// Capture actual sim time at render submission.
+					// SensorRenderManager owns the schedule; the timestamp
+					// must reflect when the scene was actually captured.
+					var capturedTime = (Clock != null) ? Clock.SimTime : Time.timeAsDouble;
 
-					var capturedTime = GetNextSyntheticTime();
+					_camSensor.Render();
 					AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, (req) => {
 						if (req.hasError)
 						{
