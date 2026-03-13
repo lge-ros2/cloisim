@@ -154,6 +154,7 @@ public class ObjectSpawning : MonoBehaviour
 		{
 			spawnedObject = Instantiate(targetObject);
 			spawnedObject.name = propsName;
+			spawnedObject.hideFlags = HideFlags.None; // Ensure spawned props are visible to FindObjectsByType
 			spawnedObject.SetActive(false);
 
 			// Do NOT activate yet — set position/scale first to avoid physics jitter

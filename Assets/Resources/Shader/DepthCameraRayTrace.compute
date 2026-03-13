@@ -1,0 +1,89 @@
+// Unified Ray Tracing (Compute backend) depth camera shader.
+// Casts one ray per pixel from the camera origin through the frustum
+// and writes the normalized hit distance (hitDistance / farClip) into
+// the output buffer.  A miss writes 0.
+
+#pragma only_renderers d3d11 vulkan metal
+#pragma target 4.5
+
+// Kernel declarations must be in the root .compute file for Unity to find them.
+#pragma kernel MainRayGenShader
+#pragma kernel ComputeIndirectDispatchDims
+
+// ---------- URT Compute backend setup ----------
+#define UNIFIED_RT_BACKEND_COMPUTE
+#define UNIFIED_RT_GROUP_SIZE_X 16
+#define UNIFIED_RT_GROUP_SIZE_Y 8
+
+#include "Packages/com.unity.render-pipelines.core/Runtime/UnifiedRayTracing/Bindings.hlsl"
+#include "Packages/com.unity.render-pipelines.core/Runtime/UnifiedRayTracing/TraceRayAndQueryHit.hlsl"
+
+// ---------- Acceleration structure --------
+UNIFIED_RT_DECLARE_ACCEL_STRUCT(_AccelStruct);
+
+// ---------- IO buffers ----------
+RWStructuredBuffer<float> _DepthOutput; // length = _Width * _Height
+
+// ---------- Camera parameters ----------
+uint _Width;
+uint _Height;
+float _NearClip;
+float _FarClip;
+
+float3 _CameraPosition;
+float3 _CameraRight;
+float3 _CameraUp;
+float3 _CameraForward;
+
+float _TanHalfFovH;
+float _TanHalfFovV;
+
+int _FlipX;
+
+// ---------- Ray generation ----------
+void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
+{
+    const uint2 pixel = dispatchInfo.dispatchThreadID.xy;
+    if (pixel.x >= _Width || pixel.y >= _Height)
+        return;
+
+    float2 uv = float2(
+        (pixel.x + 0.5) / (float)_Width,
+        (pixel.y + 0.5) / (float)_Height);
+
+    if (_FlipX)
+        uv.x = 1.0 - uv.x;
+
+    // NDC: x [-1,+1] left-to-right, y [+1,-1] top-to-bottom (image row 0 = top)
+    const float2 ndc = float2(
+        uv.x * 2.0 - 1.0,
+        1.0 - uv.y * 2.0);
+
+    // Direction in camera-local space
+    const float3 dirLocal = float3(
+        ndc.x * _TanHalfFovH,
+        ndc.y * _TanHalfFovV,
+        1.0);
+
+    // Transform to world space
+    const float3 dirWorld = normalize(
+        dirLocal.x * _CameraRight +
+        dirLocal.y * _CameraUp +
+        dirLocal.z * _CameraForward);
+
+    UnifiedRT::Ray ray;
+    ray.origin    = _CameraPosition;
+    ray.direction = dirWorld;
+    ray.tMin      = _NearClip;
+    ray.tMax      = _FarClip;
+
+    UnifiedRT::RayTracingAccelStruct accelStruct = UNIFIED_RT_GET_ACCEL_STRUCT(_AccelStruct);
+    UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(
+        dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
+
+    const uint idx = pixel.y * _Width + pixel.x;
+    _DepthOutput[idx] = hit.IsValid() ? (hit.hitDistance / _FarClip) : 0.0;
+}
+
+// ---------- Kernel entry point (local copy without #pragma kernel to avoid Vulkan warning) ----------
+#include "ComputeRaygenShaderLocal.hlsl"
