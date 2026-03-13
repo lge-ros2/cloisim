@@ -19,7 +19,7 @@ namespace SensorDevices
 	{
 		#region Profiling markers
 		private static readonly ProfilerMarker s_ExecuteRenderMarker = new("Camera.ExecuteRender");
-		private static readonly ProfilerMarker s_ImageProcessingMarker = new("Camera.ImageProcessing");
+		protected static readonly ProfilerMarker s_ImageProcessingMarker = new("Camera.ImageProcessing");
 		private static readonly ProfilerMarker s_ConvertReadbackMarker = new("Camera.ConvertReadback");
 		private static readonly ProfilerMarker s_CopyReadbackMarker = new("Camera.CopyReadback");
 		#endregion
@@ -29,8 +29,8 @@ namespace SensorDevices
 		protected messages.Image _image = null; // for Parameters
 
 		// Reusable protobuf objects to avoid per-frame GC allocations
-		private messages.ImageStamped _imageStamped = null;
-		private messages.Time _timeMsg = null;
+		protected messages.ImageStamped _imageStamped = null;
+		protected messages.Time _timeMsg = null;
 
 		// TODO : Need to be implemented!!!
 		// <lens> TBD
