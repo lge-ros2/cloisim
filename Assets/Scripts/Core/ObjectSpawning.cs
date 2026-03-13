@@ -182,6 +182,9 @@ public class ObjectSpawning : MonoBehaviour
 		spawnedObject.transform.localScale = scale;
 		spawnedObject.transform.SetParent(_propsRoot.transform);
 
+		// Notify URT acceleration structure that new renderers exist
+		SensorDevices.URTSensorManager.Instance?.SetDirty(invalidateRenderers: true);
+
 		yield return null;
 	}
 
@@ -260,6 +263,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	private IEnumerator DeleteTargetObject(List<Transform> targetObjectsTransform)
 	{
+		var anyDeleted = false;
 		for (var i = 0; i < targetObjectsTransform.Count; i++)
 		{
 			var targetObjectTransform = targetObjectsTransform[i];
@@ -268,8 +272,15 @@ public class ObjectSpawning : MonoBehaviour
 				targetObjectTransform.CompareTag("Model"))
 			{
 				Destroy(targetObjectTransform.gameObject);
+				anyDeleted = true;
 				yield return null;
 			}
+		}
+
+		if (anyDeleted)
+		{
+			// Notify URT acceleration structure that renderers were removed
+			SensorDevices.URTSensorManager.Instance?.SetDirty(invalidateRenderers: true);
 		}
 
 		_followingList?.UpdateList();
