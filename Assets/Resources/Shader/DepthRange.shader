@@ -35,7 +35,6 @@ Shader "Sensor/DepthRange"
 			int _FlipX;
 
 			uniform sampler2D _CameraDepthTexture;
-			uniform half4 _MainTex_TexelSize;
 
 			v2f_img vert(appdata_img v)
 			{
@@ -43,13 +42,7 @@ Shader "Sensor/DepthRange"
 				UNITY_INITIALIZE_OUTPUT(v2f_img, o);
 
 				o.pos = UnityObjectToClipPos(v.vertex);
-				o.uv = MultiplyUV(UNITY_MATRIX_TEXTURE0, v.texcoord);
-
-				// why do we need this? cause sometimes the image I get is flipped. see: http://docs.unity3d.com/Manual/SL-PlatformDifferences.html
-				#if UNITY_UV_STARTS_AT_TOP
-				if (_MainTex_TexelSize.y < 0)
-					o.uv.y = 1 - o.uv.y;
-				#endif
+				o.uv = v.texcoord;
 
 				if (_FlipX > 0)
 					o.uv.x = 1 - o.uv.x;

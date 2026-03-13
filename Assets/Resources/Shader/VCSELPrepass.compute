@@ -154,8 +154,8 @@ void CSApplyVcselDepthMask(uint3 id : SV_DispatchThreadID)
     const float2 mask_size = float2(w, h);
 
     const float2 uv = float2((id.x + 0.5) / (float)_Width, (id.y + 0.5) / (float)_Height);
-    const float2 ndc = float2(uv.x * 2.0 - 1.0, uv.y * 2.0 - 1.0);
-
+    // Match URT convention: row 0 = top → ndc.y = +1 (up)
+    const float2 ndc = float2(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0);
     // --- NDC → camera angles (keep circles in angular space) ---
     // ang = atan( ndc * tan(FOV/2) );
     const float angH = atan(ndc.x * tan(_FovCamH * 0.5));

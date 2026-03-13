@@ -39,6 +39,13 @@ public class SensorRenderManager : MonoBehaviour
 		}
 	}
 
+	/// <summary>
+	/// Maximum number of rasterization-based (non-URT) sensor renders allowed
+	/// per frame. URT sensors (compute dispatch only) are not counted.
+	/// This prevents frame spikes when many cameras become due simultaneously.
+	/// </summary>
+	private const int MaxRasterRendersPerFrame = 2;
+
 	private readonly List<SensorEntry> _entries = new();
 	private readonly List<(ISensorRenderable sensor, float initialDelay)> _pendingAdd = new();
 	private readonly List<ISensorRenderable> _pendingRemove = new();
@@ -118,12 +125,22 @@ public class SensorRenderManager : MonoBehaviour
 			return urgB.CompareTo(urgA);
 		});
 
-		// Render all ready sensors and advance their schedules
+		// Render ready sensors with a per-frame budget for rasterization renders.
+		// URT sensors (compute-only, no Camera.Render) bypass the budget.
+		var rasterRenderCount = 0;
 		for (var i = 0; i < _entries.Count; i++)
 		{
 			var entry = _entries[i];
 			if (!entry.Sensor.CanRender || (realtimeNow < entry.NextRenderTime))
 				continue;
+
+			// Enforce budget only for rasterization sensors
+			if (!entry.Sensor.IsURT)
+			{
+				if (rasterRenderCount >= MaxRasterRendersPerFrame)
+					continue;
+				rasterRenderCount++;
+			}
 
 			entry.Sensor.ExecuteRenderStep(realtimeNow);
 
