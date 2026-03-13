@@ -16,9 +16,15 @@ namespace SensorDevices
 	[RequireComponent(typeof(UnityEngine.Camera))]
 	public class SegmentationCamera : Camera
 	{
+		// Reusable protobuf objects to avoid per-frame GC allocations
+		private messages.Segmentation _segmentation = null;
+
 		protected override void SetupTexture()
 		{
 			_targetRTname = "SegmentationTexture";
+
+			// Discrete label data must not be interpolated
+			_rtFilterMode = FilterMode.Point;
 
 			var pixelFormat = CameraData.GetPixelFormat(_camParam.image.format);
 			if (pixelFormat != CameraData.PixelFormat.L_INT16)
@@ -50,11 +56,19 @@ namespace SensorDevices
 			_universalCamData.allowHDROutput = false;
 			_universalCamData.allowXRRendering = false;
 			_universalCamData.antialiasing = AntialiasingMode.FastApproximateAntialiasing;
+
+			// Prevent skybox from rendering; its depth values can leak
+			// through the linearDepth threshold and produce a visible gradient.
+			_camSensor.clearFlags = CameraClearFlags.SolidColor;
+			_camSensor.backgroundColor = Color.black;
 		}
 
 		protected override void InitializeMessages()
 		{
 			base.InitializeMessages();
+
+			_segmentation = new messages.Segmentation();
+			_segmentation.ImageStamped = _imageStamped;
 		}
 
 		void LateUpdate()
@@ -71,44 +85,35 @@ namespace SensorDevices
 
 		protected override void ImageProcessing<T>(ref NativeArray<T> readbackData, in double capturedTime) where T : struct
 		{
-			var segmentation = new messages.Segmentation();
-			segmentation.ImageStamped = new messages.ImageStamped();
-			segmentation.ImageStamped.Time = new messages.Time();
-			segmentation.ImageStamped.Time.Set(capturedTime);
-
-			segmentation.ImageStamped.Image = new messages.Image();
-			segmentation.ImageStamped.Image = _image;
-
-			var image = segmentation.ImageStamped.Image;
-			var sizeOfT = UnsafeUtility.SizeOf<T>();
-			var byteView = readbackData.Reinterpret<byte>(sizeOfT);
-
-			if (image.Data != null && image.Data.Length == byteView.Length)
+			using (s_ImageProcessingMarker.Auto())
 			{
-				byteView.CopyTo(image.Data);
-			}
-			else
-			{
-				Debug.LogWarning($"{name}: Failed to get image Data. Size mismatch (Image: {image.Data?.Length}, Buffer: {byteView.Length})");
-			}
+				_timeMsg.Set(capturedTime);
+				_imageStamped.Image = _image;
 
-			// update labels
-			var labelInfo = Main.SegmentationManager.GetLabelInfo();
-			segmentation.ClassMaps.Clear();
-			foreach (var kv in labelInfo)
-			{
-				if (kv.Value.Count > 0 && !kv.Value[0].Hide)
+				var image = _imageStamped.Image;
+				var sizeOfT = UnsafeUtility.SizeOf<T>();
+				var byteView = readbackData.Reinterpret<byte>(sizeOfT);
+
+				CopyReadbackToImage(byteView, image.Data);
+
+				// update labels
+				var labelInfo = Main.SegmentationManager.GetLabelInfo();
+				_segmentation.ClassMaps.Clear();
+				foreach (var kv in labelInfo)
 				{
-					var visionClass = new messages.VisionClass()
+					if (kv.Value.Count > 0 && !kv.Value[0].Hide)
 					{
-						ClassName = kv.Key,
-						ClassId = kv.Value[0].ClassId
-					};
-					segmentation.ClassMaps.Add(visionClass);
+						var visionClass = new messages.VisionClass()
+						{
+							ClassName = kv.Key,
+							ClassId = kv.Value[0].ClassId
+						};
+						_segmentation.ClassMaps.Add(visionClass);
+					}
 				}
-			}
 
-			EnqueueMessage(segmentation);
+				EnqueueMessage(_segmentation);
+			}
 		}
 	}
 }
