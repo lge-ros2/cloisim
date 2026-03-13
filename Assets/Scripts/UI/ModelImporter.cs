@@ -101,6 +101,8 @@ public class ModelImporter : MonoBehaviour
 		{
 			GameObject.Destroy(_targetObject.gameObject);
 			_targetObject = null;
+			// Notify URT acceleration structure that renderers were removed
+			SensorDevices.URTSensorManager.Instance?.SetDirty(invalidateRenderers: true);
 		}
 		_rootArticulationBody = null;
 	}
@@ -227,6 +229,9 @@ public class ModelImporter : MonoBehaviour
 		{
 			plugin.Reset();
 		}
+
+		// Notify URT acceleration structure that new renderers may exist
+		SensorDevices.URTSensorManager.Instance?.SetDirty(invalidateRenderers: true);
 
 		_targetObject = null;
 		_rootArticulationBody = null;

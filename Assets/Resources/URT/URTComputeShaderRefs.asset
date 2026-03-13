@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24ee0fb9146f70bea9fc86780b0730fb, type: 3}
+  m_Name: URTComputeShaderRefs
+  m_EditorClassIdentifier: Assembly-CSharp::SensorDevices.URTComputeShaderRefs
+  geometryPoolKernels: {fileID: 7200000, guid: 98e3d58cae7210c4786f67f504c9e899, type: 3}
+  copyBuffer: {fileID: 7200000, guid: 1b95b5dcf48d1914c9e1e7405c7660e3, type: 3}
+  copyPositions: {fileID: 7200000, guid: 1ad53a96b58d3c3488dde4f14db1aaeb, type: 3}
+  bitHistogram: {fileID: 7200000, guid: 8670f7ce4b60cef43bed36148aa1b0a2, type: 3}
+  blockReducePart: {fileID: 7200000, guid: 4e034cc8ea2635c4e9f063e5ddc7ea7a, type: 3}
+  blockScan: {fileID: 7200000, guid: 4d6d5de35fa45ef4a92119397a045cc9, type: 3}
+  buildHlbvh: {fileID: 7200000, guid: 2d70cd6be91bd7843a39a54b51c15b13, type: 3}
+  restructureBvh: {fileID: 7200000, guid: 56641cb88dcb31a4398a4997ef7a7a8c, type: 3}
+  scatter: {fileID: 7200000, guid: a2eaeefdac4637a44b734e85b7be9186, type: 3}

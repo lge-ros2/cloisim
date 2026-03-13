@@ -259,8 +259,64 @@ public class Main : MonoBehaviour
 		AsyncIO.ForceDotNet.Force();
 
 		QualitySettings.vSyncCount = 0;
-		Application.targetFrameRate = 60;
 		OnDemandRendering.renderFrameInterval = 1;
+
+		// Detect batchmode via Application.isBatchMode OR by scanning
+		// command-line arguments — Unity 6000 player builds sometimes
+		// report isBatchMode=false even when -batchmode was passed.
+		var cmdArgs = Environment.GetCommandLineArgs();
+		var hasBatchArg = System.Array.Exists(cmdArgs, a => a == "-batchmode");
+		var isBatchMode = Application.isBatchMode || hasBatchArg;
+
+		// Detect Xvfb virtual framebuffer (tiny display like 1x1x24).
+		// When running on Xvfb, the screen resolution is tiny and there's
+		// no human viewer — enable sensor-only mode automatically.
+		// Note: Screen.width measures the Unity window size, not the desktop.
+		// Screen.currentResolution measures the actual display resolution.
+		var desktopRes = Screen.currentResolution;
+		var isXvfb = (desktopRes.width <= 4 && desktopRes.height <= 4);
+		var displayEnv = Environment.GetEnvironmentVariable("DISPLAY");
+		if (isXvfb)
+		{
+			Debug.Log($"[Main] Tiny display detected ({desktopRes.width}x{desktopRes.height}) — Xvfb mode assumed (DISPLAY={displayEnv})");
+		}
+
+		var sensorOnlyEnv = Environment.GetEnvironmentVariable("CLOISIM_SENSOR_ONLY");
+		var enableSensorOnly = isBatchMode || isXvfb
+			|| (!string.IsNullOrEmpty(sensorOnlyEnv) && sensorOnlyEnv == "1");
+		Debug.Log("[Main] Application.isBatchMode=" + Application.isBatchMode
+			+ ", cmdline has -batchmode=" + hasBatchArg
+			+ ", effective isBatchMode=" + isBatchMode
+			+ ", isXvfb=" + isXvfb
+			+ ", enableSensorOnly=" + enableSensorOnly);
+
+		if (isBatchMode || enableSensorOnly)
+		{
+			// Sensor-only / headless: determine optimal frame rate.
+			//
+			// Xvfb mode: uncap FPS — there's no display, no thermal concern from
+			// a tiny 1x1 backbuffer, and higher FPS = more render opportunities
+			// for sensors = easier to hit target rates.
+			//
+			// Batchmode (non-Xvfb): cap at 60 to prevent GPU thermal throttling.
+			// 9 cameras at 30 Hz = 270 renders/sec. At ~6 camera steps per frame,
+			// we need 270/6 = 45 FPS minimum. 60 FPS gives 33% headroom.
+			//
+			// Env var CLOISIM_TARGET_FPS overrides all.
+			var targetFps = isXvfb ? -1 : 60;
+			var envFps = Environment.GetEnvironmentVariable("CLOISIM_TARGET_FPS");
+			if (!string.IsNullOrEmpty(envFps) && int.TryParse(envFps, out var customFps))
+			{
+				targetFps = customFps;
+			}
+			Application.targetFrameRate = targetFps;
+			QualitySettings.vSyncCount = 0; // disable vsync — use targetFrameRate only
+			Debug.Log($"[Main] targetFrameRate={targetFps} for {(isXvfb ? "Xvfb" : isBatchMode ? "batchmode" : "sensor-only")} (set CLOISIM_TARGET_FPS to override, -1=uncapped)");
+		}
+		else
+		{
+			Application.targetFrameRate = 60;
+		}
 
 		// Debug.Log(    QualitySettings.GetQualityLevel());
 		var qualityLevel = Environment.GetEnvironmentVariable("CLOISIM_QUALITY");
@@ -298,7 +354,26 @@ public class Main : MonoBehaviour
 		// "Default" layer gets a tighter cull distance for small objects
 		layerCullDistances[LayerMask.NameToLayer("Default")] = mainCamera.farClipPlane * 0.5f;
 		mainCamera.layerCullDistances = layerCullDistances;
-		mainCamera.layerCullSpherical = true;
+		// layerCullSpherical is not supported with URP/SRP — removed for Unity 6
+
+		// Sensor-only mode: minimize main viewport camera to save GPU time.
+		// Activated automatically in batchmode (no human viewer) or via CLOISIM_SENSOR_ONLY=1.
+		if (enableSensorOnly)
+		{
+			// Sensor-only: no human viewer needs the main viewport.
+			// Disable culling to save GPU time for sensor cameras.
+			// Note: Cannot set mainCamera.enabled=false because Camera.main
+			// returns null when disabled, breaking SDF import code.
+			mainCamera.cullingMask = 0;
+			mainCamera.clearFlags = CameraClearFlags.SolidColor;
+
+			Debug.Log("[Main] Sensor-only mode: Main camera culling disabled");
+
+			// Increase the sensor render budget — prioritize sensor throughput.
+			var budgetMs = isXvfb ? 50f : 40f;
+			SensorDevices.SensorRenderManager.Instance.FrameBudgetMs = budgetMs;
+			Debug.Log($"[Main] SensorRenderManager.FrameBudgetMs raised to {budgetMs}ms for sensor-only");
+		}
 
 		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
 
@@ -342,6 +417,8 @@ public class Main : MonoBehaviour
 		_modelImporter = gameObject.AddComponent<ModelImporter>();
 
 		_segmentationManager = gameObject.AddComponent<Segmentation.Manager>();
+
+		gameObject.AddComponent<SensorDevices.URTSensorManager>();
 
 		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
 		_vhacd.m_parameters = VHACD.Params;

@@ -17,7 +17,7 @@ public class ObjectSpawning : MonoBehaviour
 	private const float UnitMass = 3.5f;
 	private const float CylinderRotationAngle = 90;
 
-	private static PhysicMaterial _propsPhysicalMaterial = null;
+	private static PhysicsMaterial _propsPhysicalMaterial = null;
 	private static Material _propMaterial = null;
 
 	private GameObject _propsRoot = null;
@@ -51,7 +51,7 @@ public class ObjectSpawning : MonoBehaviour
 	void Awake()
 	{
 		_propMaterial = SDF2Unity.CreateMaterial();
-		_propsPhysicalMaterial = Resources.Load<PhysicMaterial>("PhysicsMaterials/Props");
+		_propsPhysicalMaterial = Resources.Load<PhysicsMaterial>("PhysicsMaterials/Props");
 		_propsRoot = GameObject.Find("Props");
 		_mainCam = Camera.main;
 		_uiController = Main.UIObject?.GetComponent<UIController>();
@@ -182,6 +182,9 @@ public class ObjectSpawning : MonoBehaviour
 		spawnedObject.transform.localScale = scale;
 		spawnedObject.transform.SetParent(_propsRoot.transform);
 
+		// Notify URT acceleration structure that new renderers exist
+		SensorDevices.URTSensorManager.Instance?.SetDirty(invalidateRenderers: true);
+
 		yield return null;
 	}
 
@@ -235,8 +238,8 @@ public class ObjectSpawning : MonoBehaviour
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
 		rigidBody.mass = 1;
-		rigidBody.drag = 0.8f;
-		rigidBody.angularDrag = 1f;
+		rigidBody.linearDamping = 0.8f;
+		rigidBody.angularDamping = 1f;
 
 		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
 		navMeshObstacle.carving = true;
@@ -260,6 +263,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	private IEnumerator DeleteTargetObject(List<Transform> targetObjectsTransform)
 	{
+		var anyDeleted = false;
 		for (var i = 0; i < targetObjectsTransform.Count; i++)
 		{
 			var targetObjectTransform = targetObjectsTransform[i];
@@ -268,8 +272,15 @@ public class ObjectSpawning : MonoBehaviour
 				targetObjectTransform.CompareTag("Model"))
 			{
 				Destroy(targetObjectTransform.gameObject);
+				anyDeleted = true;
 				yield return null;
 			}
+		}
+
+		if (anyDeleted)
+		{
+			// Notify URT acceleration structure that renderers were removed
+			SensorDevices.URTSensorManager.Instance?.SetDirty(invalidateRenderers: true);
 		}
 
 		_followingList?.UpdateList();
