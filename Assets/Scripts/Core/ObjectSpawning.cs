@@ -154,12 +154,24 @@ public class ObjectSpawning : MonoBehaviour
 		{
 			spawnedObject = Instantiate(targetObject);
 			spawnedObject.name = propsName;
-			spawnedObject.SetActive(true);
-			var meshFilter = spawnedObject.GetComponentInChildren<MeshFilter>();
+			spawnedObject.SetActive(false);
+
+			// Do NOT activate yet — set position/scale first to avoid physics jitter
+			var meshFilter = spawnedObject.GetComponentInChildren<MeshFilter>(true);
 			mesh = meshFilter.sharedMesh;
 
-			const float SpawningMargin = 0.001f;
+			const float SpawningMargin = 0.01f;
 			position.y += mesh.bounds.max.y + SpawningMargin;
+
+			// Set transform BEFORE activation so physics starts at the correct pose
+			var spawanedObjectTransform = spawnedObject.transform;
+			spawanedObjectTransform.SetParent(_propsRoot.transform);
+			spawanedObjectTransform.position = position;
+			spawanedObjectTransform.rotation = Quaternion.FromToRotation(spawanedObjectTransform.up, normal);
+			spawanedObjectTransform.localScale = scale;
+
+			// Now activate — physics will start from the correct position
+			spawnedObject.SetActive(true);
 
 			var renderer = spawnedObject.GetComponentInChildren<Renderer>();
 			var newColor = Random.ColorHSV(0f, 1f, 0.4f, 1f, 0.3f, 1f);
@@ -170,18 +182,9 @@ public class ObjectSpawning : MonoBehaviour
 			rigidBody.ResetCenterOfMass();
 			rigidBody.ResetInertiaTensor();
 
-			// var propTypeName = (_propType.ToString() + scale.ToString()).Trim();
-			// Debug.Log(propTypeName);
 			Main.SegmentationManager.AttachTag(_propType.ToString(), spawnedObject);
 			Main.SegmentationManager.UpdateTags();
 		}
-
-		var spawanedObjectTransform = spawnedObject.transform;
-		spawanedObjectTransform.position = position;
-		spawanedObjectTransform.rotation = Quaternion.FromToRotation(spawanedObjectTransform.up, normal);
-
-		spawnedObject.transform.localScale = scale;
-		spawnedObject.transform.SetParent(_propsRoot.transform);
 
 		yield return null;
 	}
@@ -195,7 +198,7 @@ public class ObjectSpawning : MonoBehaviour
 	{
 		var newObject = new GameObject(type.ToString());
 		newObject.tag = "Props";
-		newObject.isStatic = true;
+		newObject.isStatic = false;
 
 		var meshFilter = newObject.AddComponent<MeshFilter>();
 		meshFilter.sharedMesh = targetMesh;
@@ -236,8 +239,10 @@ public class ObjectSpawning : MonoBehaviour
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
 		rigidBody.mass = 1;
-		rigidBody.linearDamping = 0.8f;
-		rigidBody.angularDamping = 1f;
+		rigidBody.linearDamping = 2f;
+		rigidBody.angularDamping = 2f;
+		rigidBody.sleepThreshold = 0.05f;
+		rigidBody.interpolation = RigidbodyInterpolation.Interpolate;
 
 		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
 		navMeshObstacle.carving = true;
