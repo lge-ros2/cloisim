@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 using System;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
@@ -82,6 +83,8 @@ namespace SensorDevices
 
 		private bool _startLaserWork = false;
 
+		private static readonly int MinimumHeightForRenderTexture = 5;
+		private int _actualRenderTextureHeight = 0;
 		private RTHandle _rtHandle = null;
 		private ParallelOptions _parallelOptions = null;
 
@@ -257,7 +260,7 @@ namespace SensorDevices
 				width: renderTextureWidth,
 				height: renderTextureHeight,
 				slices: 1,
-				depthBufferBits: DepthBits.None,
+				depthBufferBits: DepthBits.Depth24,
 				colorFormat: GraphicsFormat.R32_SFloat,
 				filterMode: FilterMode.Point,
 				wrapMode: TextureWrapMode.Clamp,
@@ -552,10 +555,10 @@ namespace SensorDevices
 		{
 			const int BufferUnitSize = sizeof(double);
 
-			var laserSamplesH = (int)_horizontal.samples;
-			var laserStartAngleH = _horizontal.angle.min;
-			var laserEndAngleH = _horizontal.angle.max;
-			var laserTotalAngleH = _horizontal.angle.range;
+			var laserSamplesH = (int)horizontal.samples;
+			var laserStartAngleH = horizontal.angle.min;
+			var laserEndAngleH = horizontal.angle.max;
+			var laserTotalAngleH = horizontal.angle.range;
 
 			var dividedLaserTotalAngleH = 1 / laserTotalAngleH;
 			var srcBufferHorizontalLength = _horizontalBufferLength;
@@ -566,6 +569,11 @@ namespace SensorDevices
 			var isMaxAngleDominant = Mathf.Abs(_vertical.angle.max) > Mathf.Abs(_vertical.angle.min);
 			var laserSamplesVStart = isMaxAngleDominant ? (laserSamplesVTotal - laserSamplesV) : 0;
 			var laserSamplesVEnd = isMaxAngleDominant ? laserSamplesVTotal : laserSamplesV;
+
+			var vSampleLines =
+				(_actualRenderTextureHeight < MinimumHeightForRenderTexture) ?
+					GetValidSampleLines(_actualRenderTextureHeight) :
+					Enumerable.Range(laserSamplesVStart, laserSamplesVEnd - laserSamplesVStart).ToArray();
 
 			// Debug.Log($"laserSamplesVTotal: {laserSamplesVTotal}, " +
 			// 			$"isMaxAngleDominant: {isMaxAngleDominant}, " +
@@ -610,7 +618,7 @@ namespace SensorDevices
 						}
 
 						var dstSampleIndexV = 0;
-						for (var srcSampleIndexV = laserSamplesVStart; srcSampleIndexV < laserSamplesVEnd; srcSampleIndexV++)
+						foreach (var srcSampleIndexV in vSampleLines)
 						{
 							var srcBufferOffset = 0;
 							var dstBufferOffset = 0;

@@ -33,7 +33,7 @@ namespace SensorDevices
 		protected GraphicsFormat _readbackDstFormat;
 
 		protected bool _startCameraWork = false;
-		private RTHandle _rtHandle;
+		private RenderTexture _targetRT;
 		protected Texture2D _textureForCapture = null;
 
 		private CommandBuffer _invertCullingOnCmdBuffer = null;
@@ -123,7 +123,6 @@ namespace SensorDevices
 
 			// for controlling targetDisplay
 			_camSensor.targetDisplay = -1;
-			_camSensor.stereoTargetEye = StereoTargetEyeMask.None;
 		}
 
 		protected override void OnStart()
@@ -249,28 +248,33 @@ namespace SensorDevices
 			_camSensor.cullingMask = LayerMask.GetMask("Default", "Plane");
 
 			RTHandles.SetHardwareDynamicResolutionState(true);
-			_rtHandle = RTHandles.Alloc(
-				width: _camParam.image.width,
-				height: _camParam.image.height,
-				slices: 1,
-				depthBufferBits: DepthBits.None,
-				colorFormat: _targetColorFormat,
-				filterMode: FilterMode.Bilinear,
-				wrapMode: TextureWrapMode.Clamp,
-				dimension: TextureDimension.Tex2D,
-				msaaSamples: MSAASamples.MSAA2x,
-				enableRandomWrite: false,
-				useMipMap: false,
-				autoGenerateMips: false,
-				isShadowMap: false,
-				anisoLevel: 2,
-				mipMapBias: 0,
-				bindTextureMS: false,
-				useDynamicScale: true,
-				memoryless: RenderTextureMemoryless.None,
-				name: _targetRTname);
+			
+			var desc = new RenderTextureDescriptor(
+				_camParam.image.width, 
+				_camParam.image.height,
+                _targetColorFormat,
+				0)
+            {
+                depthStencilFormat = GraphicsFormat.D24_UNorm_S8_UInt,
+                msaaSamples = (int)MSAASamples.None,
+				enableRandomWrite = false,
+                useMipMap = false,
+				shadowSamplingMode = ShadowSamplingMode.None,
+				bindMS = false,
+				useDynamicScaleExplicit = false,
+                autoGenerateMips = false,
+                sRGB = true
+            };
 
-			_camSensor.targetTexture = _rtHandle.rt;
+            _targetRT = new RenderTexture(desc)
+            {
+                name = _targetRTname,
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            _targetRT.Create();
+
+            _camSensor.targetTexture = _targetRT;
 
 			var isOrthoGraphic = false;
 			if (_camParam.lens != null)
@@ -337,7 +341,11 @@ namespace SensorDevices
 			Thread.Sleep(1);
 			StopAllCoroutines();
 
-			_rtHandle?.Release();
+			if (_targetRT != null)
+            {
+                _targetRT.Release();
+                Destroy(_targetRT);
+            }
 
 			base.OnDestroy();
 		}
