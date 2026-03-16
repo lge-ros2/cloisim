@@ -79,7 +79,7 @@ It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atm
 There is problem with `<pose>` in `<joint>` since introduction of articulation body model. Therefore, plaese
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material', 'Collada(.dae) including animation' and 'STL(.stl)'.
-`<ambient>` elements in `<materal>` and ambient properies in mesh files are not support in CLOiSim.
+`<ambient>` elements in `<material>` and ambient properties in mesh files are not support in CLOiSim.
 
 If you're trying to connect `<link>` of `<model>`, it needs to specify unique name in link name in `joint/parent` or `joint/child` within same root model.
 
@@ -134,7 +134,7 @@ Refer to core codes in 'Assets/Scripts'.
 Shaders are also used to get depth buffer information in a few sensor model.
 
 Default physics engine 'Nvidia PhysX' is used for physics. And it retrieves some of physics parameters from `<ode>` in sdf.
-'SDFPlugins' help physics tricky handling for jointing `<link>` ojbects by `<joint>` element.
+'SDFPlugins' help physics tricky handling for jointing `<link>` objects by `<joint>` element.
 
 We've deceided to change a solver type of physics engine since new solver "TGS(Temporal Gauss Seidel)" is intorduced recently(PhysX 4.1).
 
@@ -152,15 +152,15 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 - Processor: testing and looking for the minimum
 - Memory: testing and looking for the minimum
-- Graphics: testing and looking for the minimum
+- Graphics: device supports Vulkan
 - OS: Ubuntu 22.04 since CLOiSim-4.12.0
 
 ### Tested environment (latest)
 
-- Unity Editor Version: *'2022.3.71f1 (LTS)'*.
+- Unity Editor Version: *'6000.3.11f1 (LTS)'*.
 
 - Linux Machine
-  - OS: Ubuntu 24.04.3 LTS
+  - OS: Ubuntu 24.04.4 LTS
   - Processor: AMD® Ryzen 9 5950x 16-core processor × 32
   - Memory: 128.0 GiB
   - Graphics: NVIDIA Corporation [GeForce RTX 3090]
