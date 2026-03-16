@@ -41,6 +41,7 @@ ExportedObj/
 *.csproj
 *.unityproj
 *.sln
+*.slnx
 *.suo
 *.tmp
 *.user
@@ -70,6 +71,7 @@ sysinfo.txt
 
 # Crashlytics generated file
 crashlytics-build.properties
+mono_crash*
 
 # Packed Addressables
 /[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
@@ -77,6 +79,9 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Performance Test
+/[Aa]ssets/[Rr]esources/[Pp]erformance[Tt]est*
 
 
 ###############################

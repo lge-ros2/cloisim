@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using UnityEngine.AI;
 using UnityEngine.Rendering;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [DefaultExecutionOrder(40)]
 public class ObjectSpawning : MonoBehaviour
@@ -17,7 +18,7 @@ public class ObjectSpawning : MonoBehaviour
 	private const float UnitMass = 3.5f;
 	private const float CylinderRotationAngle = 90;
 
-	private static PhysicMaterial _propsPhysicalMaterial = null;
+	private static PhysicsMaterial _propsPhysicalMaterial = null;
 	private static Material _propMaterial = null;
 
 	private GameObject _propsRoot = null;
@@ -51,7 +52,7 @@ public class ObjectSpawning : MonoBehaviour
 	void Awake()
 	{
 		_propMaterial = SDF2Unity.CreateMaterial();
-		_propsPhysicalMaterial = Resources.Load<PhysicMaterial>("PhysicsMaterials/Props");
+		_propsPhysicalMaterial = Resources.Load<PhysicsMaterial>("PhysicsMaterials/Props");
 		_propsRoot = GameObject.Find("Props");
 		_mainCam = Camera.main;
 		_uiController = Main.UIObject?.GetComponent<UIController>();
@@ -75,9 +76,9 @@ public class ObjectSpawning : MonoBehaviour
 	// Update is called once per frame
 	void LateUpdate()
 	{
-		if (Input.GetKey(KeyCode.LeftControl))
+		if (Keyboard.current[Key.LeftCtrl].isPressed)
 		{
-			if (Input.GetMouseButtonUp(0))
+			if (Mouse.current.leftButton.wasReleasedThisFrame)
 			{
 				// Add On left click spawn
 				// selected prefab and align its rotation to a surface normal
@@ -87,7 +88,7 @@ public class ObjectSpawning : MonoBehaviour
 					StartCoroutine(SpawnTargetObject(hitPoint, hitNormal, propsScale));
 				}
 			}
-			else if (Input.GetMouseButtonUp(1))
+			else if (Mouse.current.rightButton.wasReleasedThisFrame)
 			{
 				// Remove spawned prefab when holding left control and right clicking
 				var selectedPropsTransform = GetTransformOnClick();
@@ -97,7 +98,7 @@ public class ObjectSpawning : MonoBehaviour
 				}
 			}
 		}
-		else if (Input.GetKeyUp(KeyCode.Delete))
+		else if (Keyboard.current[Key.Delete].wasReleasedThisFrame)
 		{
 			transformGizmo.GetSelectedTargets(out var list);
 			StartCoroutine(DeleteTargetObject(list));
@@ -153,12 +154,25 @@ public class ObjectSpawning : MonoBehaviour
 		{
 			spawnedObject = Instantiate(targetObject);
 			spawnedObject.name = propsName;
-			spawnedObject.SetActive(true);
-			var meshFilter = spawnedObject.GetComponentInChildren<MeshFilter>();
+			spawnedObject.hideFlags = HideFlags.None; // Ensure spawned props are visible to FindObjectsByType
+			spawnedObject.SetActive(false);
+
+			// Do NOT activate yet — set position/scale first to avoid physics jitter
+			var meshFilter = spawnedObject.GetComponentInChildren<MeshFilter>(true);
 			mesh = meshFilter.sharedMesh;
 
-			const float SpawningMargin = 0.001f;
+			const float SpawningMargin = 0.01f;
 			position.y += mesh.bounds.max.y + SpawningMargin;
+
+			// Set transform BEFORE activation so physics starts at the correct pose
+			var spawanedObjectTransform = spawnedObject.transform;
+			spawanedObjectTransform.SetParent(_propsRoot.transform);
+			spawanedObjectTransform.position = position;
+			spawanedObjectTransform.rotation = Quaternion.FromToRotation(spawanedObjectTransform.up, normal);
+			spawanedObjectTransform.localScale = scale;
+
+			// Now activate — physics will start from the correct position
+			spawnedObject.SetActive(true);
 
 			var renderer = spawnedObject.GetComponentInChildren<Renderer>();
 			var newColor = Random.ColorHSV(0f, 1f, 0.4f, 1f, 0.3f, 1f);
@@ -169,18 +183,9 @@ public class ObjectSpawning : MonoBehaviour
 			rigidBody.ResetCenterOfMass();
 			rigidBody.ResetInertiaTensor();
 
-			// var propTypeName = (_propType.ToString() + scale.ToString()).Trim();
-			// Debug.Log(propTypeName);
 			Main.SegmentationManager.AttachTag(_propType.ToString(), spawnedObject);
 			Main.SegmentationManager.UpdateTags();
 		}
-
-		var spawanedObjectTransform = spawnedObject.transform;
-		spawanedObjectTransform.position = position;
-		spawanedObjectTransform.rotation = Quaternion.FromToRotation(spawanedObjectTransform.up, normal);
-
-		spawnedObject.transform.localScale = scale;
-		spawnedObject.transform.SetParent(_propsRoot.transform);
 
 		yield return null;
 	}
@@ -194,7 +199,7 @@ public class ObjectSpawning : MonoBehaviour
 	{
 		var newObject = new GameObject(type.ToString());
 		newObject.tag = "Props";
-		newObject.isStatic = true;
+		newObject.isStatic = false;
 
 		var meshFilter = newObject.AddComponent<MeshFilter>();
 		meshFilter.sharedMesh = targetMesh;
@@ -235,8 +240,10 @@ public class ObjectSpawning : MonoBehaviour
 
 		var rigidBody = newObject.AddComponent<Rigidbody>();
 		rigidBody.mass = 1;
-		rigidBody.drag = 0.8f;
-		rigidBody.angularDrag = 1f;
+		rigidBody.linearDamping = 2f;
+		rigidBody.angularDamping = 2f;
+		rigidBody.sleepThreshold = 0.05f;
+		rigidBody.interpolation = RigidbodyInterpolation.Interpolate;
 
 		var navMeshObstacle = newObject.AddComponent<NavMeshObstacle>();
 		navMeshObstacle.carving = true;
@@ -260,9 +267,13 @@ public class ObjectSpawning : MonoBehaviour
 
 	private IEnumerator DeleteTargetObject(List<Transform> targetObjectsTransform)
 	{
-		for (var i = 0; i < targetObjectsTransform.Count; i++)
+		var targets = new List<Transform>(targetObjectsTransform);
+		for (var i = 0; i < targets.Count; i++)
 		{
-			var targetObjectTransform = targetObjectsTransform[i];
+			var targetObjectTransform = targets[i];
+			if (targetObjectTransform == null)
+				continue;
+
 			if (targetObjectTransform.CompareTag("Props") ||
 				targetObjectTransform.CompareTag("Road") ||
 				targetObjectTransform.CompareTag("Model"))
@@ -270,8 +281,7 @@ public class ObjectSpawning : MonoBehaviour
 				Destroy(targetObjectTransform.gameObject);
 				yield return null;
 			}
-		}
-
+		}		
 		_followingList?.UpdateList();
 
 		yield return null;
@@ -279,7 +289,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	private bool GetPositionAndNormalOnClick(out Vector3 hitPoint, out Vector3 hitNormal)
 	{
-		var ray = _mainCam.ScreenPointToRay(Input.mousePosition);
+		var ray = _mainCam.ScreenPointToRay(Mouse.current.position.ReadValue());
 		if (Physics.Raycast(ray, out var hit, maxRayDistance))
 		{
 			hitPoint = hit.point; // 0 = spawn poisiton
@@ -297,7 +307,7 @@ public class ObjectSpawning : MonoBehaviour
 
 	private Transform GetTransformOnClick()
 	{
-		var screenPoint2Ray = _mainCam.ScreenPointToRay(Input.mousePosition);
+		var screenPoint2Ray = _mainCam.ScreenPointToRay(Mouse.current.position.ReadValue());
 
 		if (Physics.Raycast(screenPoint2Ray, out var hit, maxRayDistance))
 		{

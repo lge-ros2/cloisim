@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 public class UIController : MonoBehaviour
@@ -44,6 +45,7 @@ public class UIController : MonoBehaviour
 	void Start()
 	{
 		var objectSpawning = Main.ObjectSpawning;
+		var core = Main.Core;
 
 		_toggleLockVerticalMoving = _rootVisualElement.Q<Toggle>("LockVerticalMoving");
 		_toggleLockVerticalMoving.RegisterValueChangedCallback(x => Main.CameraControl.VerticalMovementLock = x.newValue);
@@ -100,7 +102,7 @@ public class UIController : MonoBehaviour
 		var buttonFront = _rootVisualElement.Q<Button>("Front");
 		buttonFront.clickable.clicked += () => {
 			var position = Vector3.forward * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			var rotation = Quaternion.LookRotation(core.transform.position - position);
 			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonFront.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonFront, Color.gray); });
@@ -109,7 +111,7 @@ public class UIController : MonoBehaviour
 		var buttonLeft = _rootVisualElement.Q<Button>("Left");
 		buttonLeft.clickable.clicked += () => {
 			var position = Vector3.right * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			var rotation = Quaternion.LookRotation(core.transform.position - position);
 			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonLeft.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonLeft, Color.gray); });
@@ -118,7 +120,7 @@ public class UIController : MonoBehaviour
 		var buttonBack = _rootVisualElement.Q<Button>("Back");
 		buttonBack.clickable.clicked += () => {
 			var position = Vector3.back * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			var rotation = Quaternion.LookRotation(core.transform.position - position);
 			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonBack.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBack, Color.gray); });
@@ -127,7 +129,7 @@ public class UIController : MonoBehaviour
 		var buttonRight = _rootVisualElement.Q<Button>("Right");
 		buttonRight.clickable.clicked += () => {
 			var position = Vector3.left * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			var rotation = Quaternion.LookRotation(core.transform.position - position);
 			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonRight.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonRight, Color.gray); });
@@ -136,7 +138,7 @@ public class UIController : MonoBehaviour
 		var buttonTop = _rootVisualElement.Q<Button>("Top");
 		buttonTop.clickable.clicked += () => {
 			var position = Vector3.up * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			var rotation = Quaternion.LookRotation(core.transform.position - position);
 			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonTop.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonTop, Color.gray); });
@@ -145,7 +147,7 @@ public class UIController : MonoBehaviour
 		var buttonBottom = _rootVisualElement.Q<Button>("Bottom");
 		buttonBottom.clickable.clicked += () => {
 			var position = Vector3.down * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(Main.CoreObject.transform.position - position);
+			var rotation = Quaternion.LookRotation(core.transform.position - position);
 			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
 		};
 		buttonBottom.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBottom, Color.gray); });
@@ -208,45 +210,45 @@ public class UIController : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (Input.GetKeyUp(KeyCode.F1))
+		if (Keyboard.current[Key.F1].wasReleasedThisFrame)
 		{
 			ShowHelp();
 		}
-		else if (Input.GetKeyUp(KeyCode.F3))
+		else if (Keyboard.current[Key.F3].wasReleasedThisFrame)
 		{
 			_buttonImport.ToggleInClassList("selected");
 			Main.ModelImporter.ToggleModelList();
 		}
-		else if (Input.GetKeyUp(KeyCode.Escape))
+		else if (Keyboard.current[Key.Escape].wasReleasedThisFrame)
 		{
 			ShowHelp(false);
 			ShowCameraView(false);
 			_buttonImport.EnableInClassList("selected", false);
 			Main.ModelImporter.ShowModelList(false);
 		}
-		else if (Input.GetKey(KeyCode.LeftControl))
+		else if (Keyboard.current[Key.LeftCtrl].isPressed)
 		{
-			if (Input.GetKeyUp(KeyCode.S))
+			if (Keyboard.current[Key.S].wasReleasedThisFrame)
 			{
 				// Debug.Log("Save World");
 				Main.Instance.SaveWorld();
 			}
 		}
-		else if (Input.GetKeyUp(KeyCode.Alpha1))
+		else if (Keyboard.current[Key.Digit1].wasReleasedThisFrame)
 		{
 			if (!IsScaleFieldFocused())
 			{
 				SelectPropButton(_buttonPropsBox, ObjectSpawning.PropsType.BOX);
 			}
 		}
-		else if (Input.GetKeyUp(KeyCode.Alpha2))
+		else if (Keyboard.current[Key.Digit2].wasReleasedThisFrame)
 		{
 			if (!IsScaleFieldFocused())
 			{
 				SelectPropButton(_buttonPropsCylinder, ObjectSpawning.PropsType.CYLINDER);
 			}
 		}
-		else if (Input.GetKeyUp(KeyCode.Alpha3))
+		else if (Keyboard.current[Key.Digit3].wasReleasedThisFrame)
 		{
 			if (!IsScaleFieldFocused())
 			{
@@ -281,7 +283,7 @@ public class UIController : MonoBehaviour
 	public bool IsScaleFieldFocused()
 	{
 		// Debug.Log(_scaleField?.panel.focusController.focusedElement);
-		return (_scaleField?.panel.focusController.focusedElement == _scaleField);
+		return _scaleField?.panel.focusController.focusedElement == _scaleField;
 	}
 
 	public void SetVerticalMovementLockToggle(in bool value)
@@ -318,7 +320,6 @@ public class UIController : MonoBehaviour
 	private void OnFocusOutScaleField(FocusOutEvent evt)
 	{
 		var textField = evt.target as TextField;
-		var scaleFactor = 0f;
 		var scaleFactorString = textField.text;
 
 		if (string.IsNullOrEmpty(scaleFactorString))
@@ -326,7 +327,7 @@ public class UIController : MonoBehaviour
 			scaleFactorString = _prevScaleFactorString;
 		}
 
-		if (float.TryParse(scaleFactorString, out scaleFactor))
+		if (float.TryParse(scaleFactorString, out float scaleFactor))
 		{
 			if (scaleFactor < ScaleFactorMin)
 			{

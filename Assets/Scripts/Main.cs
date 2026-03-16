@@ -8,6 +8,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using Assimp.Unmanaged;
@@ -76,7 +78,9 @@ public class Main : MonoBehaviour
 	public static GameObject PropsRoot => _instance._propsRoot;
 	public static GameObject WorldRoot => _instance._worldRoot;
 	public static GameObject RoadsRoot => _instance._roadsRoot;
-	public static GameObject CoreObject => _instance._core;
+
+	public static GameObject Core => _instance._core;
+
 	public static GameObject UIObject => _instance._uiRoot;
 	public static GameObject UIMainCanvas => _instance._uiMainCanvasRoot;
 	public static RuntimeGizmos.TransformGizmo Gizmos => _instance._transformGizmo;
@@ -215,9 +219,34 @@ public class Main : MonoBehaviour
 #endif
 	}
 
+	private static void ReplaceStandaloneInputModule()
+	{
+		var eventSystem = UnityEngine.EventSystems.EventSystem.current;
+		if (eventSystem != null)
+		{
+			var standaloneModule = eventSystem.GetComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+			if (standaloneModule != null)
+			{
+				Destroy(standaloneModule);
+				if (eventSystem.GetComponent<InputSystemUIInputModule>() == null)
+				{
+					eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
+				}
+			}
+		}
+		else
+		{
+			var go = new GameObject("EventSystem");
+			go.AddComponent<UnityEngine.EventSystems.EventSystem>();
+			go.AddComponent<InputSystemUIInputModule>();
+		}
+	}
+
 	void Awake()
 	{
 		_instance = this;
+
+		ReplaceStandaloneInputModule();
 
 		var logger = new DebugLogWriter();
 		var loggerErr = new DebugLogWriter(true);
@@ -625,10 +654,10 @@ public class Main : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (Input.GetKey(KeyCode.LeftControl))
+		if (Keyboard.current[Key.LeftCtrl].isPressed)
 		{
 			// Debug.Log("LeftControl Triggered");
-		 	if (Input.GetKeyUp(KeyCode.R))
+		 	if (Keyboard.current[Key.R].wasReleasedThisFrame)
 			{
 				// Debug.Log("Reset Triggered");
 				_resetTriggered = true;
@@ -637,7 +666,7 @@ public class Main : MonoBehaviour
 
 		if (_resetTriggered && !_isResetting)
 		{
-			if (Input.GetKey(KeyCode.LeftShift))
+			if (Keyboard.current[Key.LeftShift].isPressed)
 			{
 				// full Reset
 				_isResetting = true;

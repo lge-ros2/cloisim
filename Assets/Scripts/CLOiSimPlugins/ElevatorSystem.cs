@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections;
 
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Any = cloisim.msgs.Any;
 using Param = cloisim.msgs.Param;
 
@@ -574,26 +575,26 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 #if UNITY_EDITOR
 	// just for test....
-	private KeyCode[] numKeyCodes = {
-		 KeyCode.Alpha0,
-		 KeyCode.Alpha1,
-		 KeyCode.Alpha2,
-		 KeyCode.Alpha3,
-		 KeyCode.Alpha4,
-		 KeyCode.Alpha5,
-		 KeyCode.Alpha6,
-		 KeyCode.Alpha7,
-		 KeyCode.Alpha8,
-		 KeyCode.Alpha9,
+	private Key[] numKeyCodes = {
+		 Key.Digit0,
+		 Key.Digit1,
+		 Key.Digit2,
+		 Key.Digit3,
+		 Key.Digit4,
+		 Key.Digit5,
+		 Key.Digit6,
+		 Key.Digit7,
+		 Key.Digit8,
+		 Key.Digit9,
 	 };
 
 	void Update()
 	{
-		foreach (var numKey in numKeyCodes)
+		for (var i = 0; i < numKeyCodes.Length; i++)
 		{
-			if (Input.GetKeyUp(numKey))
+			if (Keyboard.current[numKeyCodes[i]].wasReleasedThisFrame)
 			{
-				var index = (int)numKey - (int)(KeyCode.Alpha0);
+				var index = i;
 
 				var elevatorName = elevators.GetEntityNameByIndex(index);
 				if (elevatorName.Equals(string.Empty))
@@ -603,25 +604,25 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 				Debug.Log("Test elevatorIndex: " + elevatorName);
 
-				if (Input.GetKey(KeyCode.LeftAlt) && Input.GetKey(KeyCode.LeftShift))
+				if (Keyboard.current[Key.LeftAlt].isPressed && Keyboard.current[Key.LeftShift].isPressed)
 				{
 					RequestDoorClose(elevatorName);
 				}
-				else if (Input.GetKey(KeyCode.Tab) && Input.GetKey(KeyCode.LeftShift))
+				else if (Keyboard.current[Key.Tab].isPressed && Keyboard.current[Key.LeftShift].isPressed)
 				{
 					var result = GetCalledElevator("B1F", "25F", out elevatorName);
 					// Debug.Log(elevatorIndex + " - " + result);
 				}
-				else if (Input.GetKey(KeyCode.Tab))
+				else if (Keyboard.current[Key.Tab].isPressed)
 				{
 					var result = CallElevator("B1F", "25F");
 					// Debug.Log(result);
 				}
-				else if (Input.GetKey(KeyCode.LeftAlt))
+				else if (Keyboard.current[Key.LeftAlt].isPressed)
 				{
 					CallElevator("25F", "B1F", elevatorName);
 				}
-				else if (Input.GetKey(KeyCode.LeftShift))
+				else if (Keyboard.current[Key.LeftShift].isPressed)
 				{
 					CallElevator("B1F", "25F", elevatorName);
 				}

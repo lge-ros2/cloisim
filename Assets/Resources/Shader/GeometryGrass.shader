@@ -68,7 +68,7 @@ Shader "Custom/GeometryGrass"
 
 		#pragma multi_compile_local DRY_GRASS_ON _
 		#pragma multi_compile_local VISIBILITY_ON _
-		#pragma multi_compile_local WIND_OFF _
+		#pragma multi_compile_local _ WIND_ON
 
 		#pragma multi_compile_instancing
 		#pragma instancing_options renderinglayer
@@ -199,7 +199,7 @@ Shader "Custom/GeometryGrass"
 		{
 			tessControlPoint o;
 
-			o.positionWS = float4(TransformObjectToWorld(v.positionOS), 1.0f);
+			o.positionWS = float4(TransformObjectToWorld(v.positionOS.xyz), 1.0f);
 			o.normalWS = TransformObjectToWorldNormal(v.normalOS);
 			o.tangentWS = v.tangentOS;
 			o.uv = TRANSFORM_TEX(v.uv, _GrassMap);
@@ -337,12 +337,12 @@ Shader "Custom/GeometryGrass"
 				// The rest of the grass blade rotates slightly around the base.
 				float3x3 randBendMatrix = angleAxis3x3(rand(pos.zzx) * _BladeBendDelta * HALF_PI, float3(-1.0f, 0, 0));
 
-#ifndef WIND_OFF
+#ifdef WIND_ON
 				float2 windUV = pos.xz * _WindMap_ST.xy + _WindMap_ST.zw + normalize(_WindVelocity.xz) * _WindFrequency * _Time.y;
 				float2 windSample = (tex2Dlod(_WindMap, float4(windUV, 0, 0)).xy * 2.0f - 0.5f) * length(_WindVelocity);
 
 				float3 windAxis = normalize(float3(windSample.x, windSample.y, 0));
-				float3x3 windMatrix = angleAxis3x3(PI * windSample, windAxis);
+				float3x3 windMatrix = angleAxis3x3(PI * length(windSample), windAxis);
 
 				// Create a matrix for the non-base vertices of the grass blade, incorporating wind.
 				float3x3 tipTransformationMatrix = mul(mul(mul(tangentToLocal, windMatrix), randBendMatrix), randRotMatrix);
@@ -461,7 +461,7 @@ Shader "Custom/GeometryGrass"
 				o.tangentWS = v.tangentOS;
 				o.uv = TRANSFORM_TEX(v.uv, _GrassMap);
 
-				float3 positionWS = TransformObjectToWorld(v.positionOS);
+				float3 positionWS = TransformObjectToWorld(v.positionOS.xyz);
 
 				// Code required to account for shadow bias.
 #if _CASTING_PUNCTUAL_LIGHT_SHADOW

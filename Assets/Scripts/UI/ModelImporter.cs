@@ -6,6 +6,7 @@
 
 using UnityEngine.UI;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class ModelImporter : MonoBehaviour
 {
@@ -178,7 +179,7 @@ public class ModelImporter : MonoBehaviour
 
 	private bool GetPointAndNormalOnClick(out Vector3 point, out Vector3 normal)
 	{
-		var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+		var ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
 		var layerMask = ~(LayerMask.GetMask("Ignore Raycast")
 						| LayerMask.GetMask("TransparentFX")
 						| LayerMask.GetMask("UI")
@@ -254,11 +255,11 @@ public class ModelImporter : MonoBehaviour
 
 	private void HandlingImportedObject()
 	{
-		if (Input.GetMouseButtonUp(0))
+		if (Mouse.current.leftButton.wasReleasedThisFrame)
 		{
 			CompleteDeployment();
 		}
-		else if (Input.GetKeyUp(KeyCode.Escape))
+		else if (Keyboard.current[Key.Escape].wasReleasedThisFrame)
 		{
 			DiscardSelectedModel();
 		}
@@ -277,16 +278,16 @@ public class ModelImporter : MonoBehaviour
 		else
 		{
 			// close 'Add model' list Panel
-			if (Input.GetKeyUp(KeyCode.Escape))
+			if (Keyboard.current[Key.Escape].wasReleasedThisFrame)
 			{
 				_modelList.SetActive(false);
 				Main.CameraControl.BlockMouseWheelControl(false);
 			}
 		}
 
-		if (Input.GetKey(KeyCode.LeftControl))
+		if (Keyboard.current[Key.LeftCtrl].isPressed)
 		{
-			if (Input.GetKeyUp(KeyCode.C))
+			if (Keyboard.current[Key.C].wasReleasedThisFrame)
 			{
 				Main.Gizmos.GetSelectedTargets(out var objectListForCopy);
 
@@ -302,7 +303,7 @@ public class ModelImporter : MonoBehaviour
 					Main.Gizmos.ClearTargets();
 				}
 			}
-			else if (Input.GetKeyUp(KeyCode.V))
+			else if (Keyboard.current[Key.V].wasReleasedThisFrame)
 			{
 				if (_targetObjectForCopy != null)
 				{
