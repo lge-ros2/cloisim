@@ -13,10 +13,12 @@ public class Motor : Articulation
 	private PID _pidControl = null;
 	private float _targetAngularVelocity = 0; // degree per seconds
 	private float _currentMotorVelocity = 0; // degree per seconds
+	private double _timeDelta = double.Epsilon;
 
 	public Motor(in GameObject gameObject)
 		: base(gameObject)
 	{
+		_timeDelta = (double)Time.fixedDeltaTime;
 		DriveType = ArticulationDriveType.Force;
 
 		CheckDriveType();
@@ -94,27 +96,22 @@ public class Motor : Articulation
 	}
 
 	private float _prevJointPosition = float.NaN; // in deg, for GetAngularVelocity()
-	private double _prevTimeStamp = double.NaN;
 
 	public float GetVelocity()
 	{
-		if (float.IsNaN(_prevJointPosition) || double.IsNaN(_prevTimeStamp))
+		if (float.IsNaN(_prevJointPosition))
 		{
 			_prevJointPosition = GetJointPosition() * Mathf.Rad2Deg;
-			_prevTimeStamp = Time.timeAsDouble;
 			_currentMotorVelocity = 0;
 		}
-		else if (System.Math.Abs(Time.timeAsDouble - _prevTimeStamp) > float.Epsilon)
+		else
 		{
-			var timeDelta = Time.timeAsDouble - _prevTimeStamp;
-
 			var jointPosition = GetJointPosition() * Mathf.Rad2Deg;
-			var motorVelocity = (float)(Mathf.DeltaAngle(_prevJointPosition, jointPosition) / timeDelta);
+			var motorVelocity = (float)(Mathf.DeltaAngle(_prevJointPosition, jointPosition) / _timeDelta);
 			var sampledVelocity = Mathf.Sign(motorVelocity) * Mathf.Floor(Mathf.Abs(motorVelocity) / WheelResolution) * WheelResolution;
 			// Debug.LogFormat("prv={0:F5} cur={1:F5} vel={2:F5} sampVel={3:F5}", _prevJointPosition, jointPosition, motorVelocity, sampledVelocity);
 
 			_prevJointPosition = jointPosition;
-			_prevTimeStamp = Time.timeAsDouble;
 
 			_currentMotorVelocity = (Mathf.Abs(sampledVelocity) < Quaternion.kEpsilon) ? 0 : sampledVelocity;
 		}
