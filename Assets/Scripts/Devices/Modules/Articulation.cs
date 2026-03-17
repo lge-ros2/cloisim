@@ -14,6 +14,11 @@ public class Articulation
 	protected ArticulationJointType _jointType = ArticulationJointType.FixedJoint;
 	private ArticulationDriveType _driveType = ArticulationDriveType.Force;
 
+	// Cached drive axis to avoid recomputing from lock-state properties every frame.
+	// Joint type and lock configuration don't change at runtime.
+	private ArticulationDriveAxis _cachedDriveAxis;
+	private bool _driveAxisCached = false;
+
 #if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 	protected float _velocityLimit = float.NaN;
 #endif
@@ -249,7 +254,7 @@ public class Articulation
 			return;
 		}
 
-		var drivceAxis = GetDriveAxis();
+		var drivceAxis = GetCachedDriveAxis();
 		// Debug.LogWarning($"targetVelocity={targetVelocity} targetPosition={targetPosition} Type={_driveType}");
 
 		// Arccording to document(https://docs.unity3d.com/2020.3/Documentation/ScriptReference/ArticulationDrive.html)
@@ -275,6 +280,16 @@ public class Articulation
 				_jointBody.SetDriveTarget(drivceAxis, targetPosition);
 			}
 		}
+	}
+
+	private ArticulationDriveAxis GetCachedDriveAxis()
+	{
+		if (!_driveAxisCached)
+		{
+			_cachedDriveAxis = GetDriveAxis();
+			_driveAxisCached = true;
+		}
+		return _cachedDriveAxis;
 	}
 
 	private ArticulationDriveAxis GetDriveAxis()
