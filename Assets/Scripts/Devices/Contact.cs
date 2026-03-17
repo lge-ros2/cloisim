@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Concurrent;
 using System;
 using UnityEngine;
 using messages = cloisim.msgs;
@@ -18,18 +17,12 @@ namespace SensorDevices
 
 		private void OnCollisionStay(Collision other)
 		{
-			if (collisionStay != null)
-			{
-				collisionStay.Invoke(other);
-			}
+			collisionStay?.Invoke(other);
 		}
 
 		private void OnCollisionExit(Collision other)
 		{
-			if (collisionExit != null)
-			{
-				collisionExit.Invoke(other);
-			}
+			collisionExit?.Invoke(other);
 		}
 	}
 
@@ -39,8 +32,8 @@ namespace SensorDevices
 
 		private double _lastTimeContactsMessageGenerated = 0;
 
-		public string _targetCollision = string.Empty;
-		public string _topic = string.Empty;
+		private string _targetCollision = string.Empty;
+		private string _topic = string.Empty;
 
 		public string TargetCollision
 		{
@@ -86,11 +79,6 @@ namespace SensorDevices
 			}
 		}
 
-		public void CollisionEnter(Collision other)
-		{
-			// Debug.Log("{DeviceName} CollisionEnter: " + other.contacts.Length);
-		}
-
 		public void CollisionStay(Collision other)
 		{
 			if (Time.timeAsDouble - _lastTimeContactsMessageGenerated < UpdatePeriod)
@@ -103,7 +91,8 @@ namespace SensorDevices
 
 			contactsMessage.Time = new messages.Time();
 			contactsMessage.Time.SetCurrentTime();
-			contactsMessage.contact.Clear();
+
+			var targetSuffix = "::" + _targetCollision;
 
 			for (var i = 0; i < other.contacts.Length; i++)
 			{
@@ -112,17 +101,17 @@ namespace SensorDevices
 				var collision2 = GetColliderName(collisionContact.otherCollider);
 				// Debug.Log($"{DeviceName} CollisionStay: {collision1} <-> {collision2}");
 
-				if (collision1.EndsWith("::" + _targetCollision))
+				if (collision1.EndsWith(targetSuffix))
 				{
 					// find existing collision set
 					var existingContact = contactsMessage.contact.Find(x => x.Collision1.Contains(collision1) && x.Collision2.Contains(collision2));
 					if (existingContact != null)
 					{
-						var depth = new double[existingContact.Depths.Length + 1];
-						Array.Copy(existingContact.Depths, depth, existingContact.Depths.Length);
-						depth[existingContact.Depths.Length] = collisionContact.separation;
-
-						existingContact.Depths = depth;
+						var depths = existingContact.Depths;
+						var newLength = depths.Length + 1;
+						Array.Resize(ref depths, newLength);
+						depths[newLength - 1] = collisionContact.separation;
+						existingContact.Depths = depths;
 
 						var normal = new messages.Vector3d();
 						normal.Set(collisionContact.normal);
@@ -197,7 +186,7 @@ namespace SensorDevices
 
 		public bool IsContacted()
 		{
-			return (_lastContacts != null && _lastContacts.contact.Count > 0) ? true : false;
+			return _lastContacts != null && _lastContacts.contact.Count > 0;
 		}
 
 		public messages.Contacts GetContacts()
