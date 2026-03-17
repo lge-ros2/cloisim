@@ -1,4 +1,3 @@
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 Shader "Sensor/DepthRange"
 {
 	Properties
@@ -11,6 +10,7 @@ Shader "Sensor/DepthRange"
 	{
 		Tags
 		{
+			"RenderPipeline" = "UniversalPipeline"
 			"RenderType" = "Opaque"
 			"Queue" = "Geometry"
 			"ForceNoShadowCasting" = "True"
@@ -21,40 +21,58 @@ Shader "Sensor/DepthRange"
 			Cull Back
 			ZWrite On
 			ZTest LEqual
-			Fog { Mode Off }
 
-			CGPROGRAM
+			HLSLPROGRAM
 
 			#pragma multi_compile_instancing
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma target 5.0
-			#include "UnityCG.cginc"
 
-			int _ReverseData;
-			int _FlipX;
+			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
-			uniform sampler2D _CameraDepthTexture;
+			CBUFFER_START(UnityPerMaterial)
+				int _ReverseData;
+				int _FlipX;
+			CBUFFER_END
 
-			v2f_img vert(appdata_img v)
+			struct Attributes
 			{
-				v2f_img o;
-				UNITY_INITIALIZE_OUTPUT(v2f_img, o);
+				float4 positionOS : POSITION;
+				float2 uv         : TEXCOORD0;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
+			};
 
-				o.pos = UnityObjectToClipPos(v.vertex);
-				o.uv = v.texcoord;
+			struct Varyings
+			{
+				float2 uv         : TEXCOORD0;
+				float4 positionCS : SV_POSITION;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
+			};
+
+			Varyings vert(Attributes IN)
+			{
+				Varyings OUT;
+				UNITY_SETUP_INSTANCE_ID(IN);
+				UNITY_TRANSFER_INSTANCE_ID(IN, OUT);
+
+				OUT.positionCS = TransformObjectToHClip(IN.positionOS.xyz);
+				OUT.uv = IN.uv;
 
 				if (_FlipX > 0)
-					o.uv.x = 1 - o.uv.x;
+					OUT.uv.x = 1 - OUT.uv.x;
 
-				return o;
+				return OUT;
 			}
 
-			float4 frag(v2f_img i) : COLOR
+			float4 frag(Varyings IN) : SV_Target
 			{
-				const float depth = UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, i.uv.xy));
-				const float linearDepth = Linear01Depth(depth);
-	
+				UNITY_SETUP_INSTANCE_ID(IN);
+
+				const float depth = SampleSceneDepth(IN.uv.xy);
+				const float linearDepth = Linear01Depth(depth, _ZBufferParams);
+
 				// if depth is near to far clip, return nothing
 				if (linearDepth > 0.999999)
 					return float4(0, 0, 0, 0);
@@ -69,8 +87,7 @@ Shader "Sensor/DepthRange"
 				return float4(finalDepthRange, 0, 0, 0);
 			}
 
-			ENDCG
+			ENDHLSL
 		}
 	}
-	FallBack "VertexLit"
 }
