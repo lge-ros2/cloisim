@@ -397,9 +397,10 @@ namespace SensorDevices
 			_universalCamData.requiresColorTexture = true;
 			_universalCamData.requiresDepthTexture = false;
 			_universalCamData.renderShadows = true;
+			_universalCamData.antialiasing = AntialiasingMode.None;
 			_universalCamData.enabled = false;
 			_universalCamData.stopNaN = true;
-			_universalCamData.dithering = true;
+			_universalCamData.dithering = false;
 			_universalCamData.renderPostProcessing = false;
 			_universalCamData.allowXRRendering = false;
 			_universalCamData.volumeLayerMask = default;
