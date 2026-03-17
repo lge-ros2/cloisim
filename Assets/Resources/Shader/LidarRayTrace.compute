@@ -1,0 +1,101 @@
+// Unified Ray Tracing (Compute backend) lidar ray trace shader.
+// Casts rays in a spherical pattern defined by horizontal/vertical
+// angle ranges and step sizes. Each ray writes its hit distance
+// (in meters) into the output buffer. A miss writes NaN.
+
+#pragma only_renderers d3d11 vulkan metal
+#pragma target 4.5
+
+#pragma kernel MainRayGenShader
+#pragma kernel ComputeIndirectDispatchDims
+
+// ---------- URT Compute backend setup ----------
+#define UNIFIED_RT_BACKEND_COMPUTE
+#define UNIFIED_RT_GROUP_SIZE_X 16
+#define UNIFIED_RT_GROUP_SIZE_Y 8
+
+#include "Packages/com.unity.render-pipelines.core/Runtime/UnifiedRayTracing/Bindings.hlsl"
+#include "Packages/com.unity.render-pipelines.core/Runtime/UnifiedRayTracing/TraceRayAndQueryHit.hlsl"
+
+// ---------- Acceleration structure ----------
+UNIFIED_RT_DECLARE_ACCEL_STRUCT(_AccelStruct);
+
+// ---------- IO buffers ----------
+// Length = _SamplesH * _SamplesV
+RWStructuredBuffer<float> _RangeOutput;
+
+// ---------- Lidar parameters ----------
+uint _SamplesH;     // horizontal sample count
+uint _SamplesV;     // vertical sample count
+
+float _AngleMinH;   // horizontal min angle (radians)
+float _AngleStepH;  // horizontal angle step (radians)
+float _AngleMinV;   // vertical min angle (radians, bottom-most beam)
+float _AngleStepV;  // vertical angle step (radians)
+
+float _RangeMin;    // near clip (meters)
+float _RangeMax;    // far clip (meters)
+float _RangeLinearResolution; // quantisation step (0 = disabled)
+
+float3 _SensorPosition; // world-space origin
+float3 _SensorRight;    // world-space right axis
+float3 _SensorUp;       // world-space up axis
+float3 _SensorForward;  // world-space forward axis
+
+// ---------- Ray generation ----------
+void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
+{
+    const uint2 pixel = dispatchInfo.dispatchThreadID.xy;
+    // x = horizontal sample index, y = vertical sample index
+    if (pixel.x >= _SamplesH || pixel.y >= _SamplesV)
+        return;
+
+    // Compute beam angles
+    float angleH = _AngleMinH + _AngleStepH * pixel.x; // radians
+    float angleV = _AngleMinV + _AngleStepV * pixel.y;  // radians, bottom-up (Gazebo/SDF convention)
+
+    // Build direction in sensor-local space then transform to world
+    float cosV, sinV, cosH, sinH;
+    sincos(angleV, sinV, cosV);
+    sincos(angleH, sinH, cosH);
+
+    // local: forward * cosV*cosH, -right * cosV*sinH, up * sinV
+    float3 dirLocal = float3(cosV * cosH, cosV * sinH, sinV);
+
+    // Transform to world space using sensor basis vectors
+    float3 dirWorld = normalize(
+        dirLocal.x * _SensorForward +
+        dirLocal.y * (-_SensorRight) +
+        dirLocal.z * _SensorUp);
+
+    UnifiedRT::Ray ray;
+    ray.origin    = _SensorPosition;
+    ray.direction = dirWorld;
+    ray.tMin      = _RangeMin;
+    ray.tMax      = _RangeMax;
+
+    UnifiedRT::RayTracingAccelStruct accelStruct = UNIFIED_RT_GET_ACCEL_STRUCT(_AccelStruct);
+    UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(
+        dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
+
+    float dist = asfloat(0x7FC00000); // NaN = no hit / out of range
+    if (hit.IsValid())
+    {
+        dist = hit.hitDistance;
+
+        // Apply linear resolution quantisation
+        if (_RangeLinearResolution > 0)
+            dist = round(dist / _RangeLinearResolution) * _RangeLinearResolution;
+
+        // Clamp to valid range
+        if (dist < _RangeMin || dist > _RangeMax)
+            dist = asfloat(0x7FC00000);
+    }
+
+    // Store in row-major order: [vIndex * samplesH + hIndex]
+    uint idx = pixel.y * _SamplesH + pixel.x;
+    _RangeOutput[idx] = dist;
+}
+
+// ---------- Kernel entry point ----------
+#include "ComputeRaygenShaderLocal.hlsl"

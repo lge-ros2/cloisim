@@ -6,31 +6,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
 using System.Threading;
 using System;
-using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
-using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering.UnifiedRayTracing;
 using UnityEngine;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
-	public partial class Lidar : Device
+	public partial class Lidar : Device, ISensorRenderable
 	{
-		private static int _globalSequence = 0;
 		[SerializeField] private messages.LaserScan _laserScan = null;
 		[SerializeField] private Thread _laserProcessThread = null;
-
-		[SerializeField] private const float DEG180 = Mathf.PI * Mathf.Rad2Deg;
-		[SerializeField] private const float DEG360 = DEG180 * 2;
-
-		[SerializeField] private const float HFOV_FOR_2D_LIDAR = 90f;
-		[SerializeField] private const float HFOV_FOR_3D_LIDAR = 10f;
-		[SerializeField] private float LaserCameraHFov = 0f;
-		[SerializeField] private float LaserCameraHFovHalf = 0;
-		[SerializeField] private float LaserCameraVFov = 0;
 
 		[Header("SDF properties")]
 		private MathUtil.MinMax _scanRange;
@@ -65,116 +53,114 @@ namespace SensorDevices
 			set => _vertical = value;
 		}
 
-		public string NoiseParamInRawXml
-		{
-			get => _noiseParamInRawXml;
-			set => _noiseParamInRawXml = value;
-		}
-
 		[Header("Processing")]
 		private Transform _lidarLink = null;
-		private UnityEngine.Camera _laserCam = null;
-
-		private int _numberOfLaserCamData = 0;
-		private LaserData.CameraControlInfo[] _camControlInfo;
-
-		[SerializeField] private int _slicesPerFrame = 2;
 
 		private bool _startLaserWork = false;
 
-		private RTHandle _rtHandle = null;
-		private ParallelOptions _parallelOptions = null;
-
-		private Material _depthMaterial;
-		private CommandBuffer _cb;
-		private ComputeShader _laserCompute;
-		private int _laserComputeGroupsX;
-		private int _laserComputeGroupsY;
-		private int _laserComputeKernel;
-
-		private int _horizontalBufferLength;
-		private int _outputBufferLength;
-		private ConcurrentQueue<(double, Pose, LaserData.Output[])> _outputQueue = new();
+		private ConcurrentQueue<(double, Pose, float[])> _outputQueue = new();
 		private readonly AutoResetEvent _dataAvailable = new(false);
+
+		#region "Unified Ray Tracing (per-sensor resources)"
+		private static ComputeShader ComputeShaderLidarRayTrace = null;
+		private ComputeShader _csRayTrace = null;
+		private IRayTracingShader _rtShader = null;
+		private GraphicsBuffer _rtTraceScratchBuffer = null;
+		private CommandBuffer _urtCmdBuffer = null;
+		private ComputeBuffer _rangeOutputBuffer = null;
+
+		private uint _totalSamples = 0;
+
+		// Cached shader property IDs
+		private static readonly int PID_RangeOutput = Shader.PropertyToID("_RangeOutput");
+		private static readonly int PID_SamplesH = Shader.PropertyToID("_SamplesH");
+		private static readonly int PID_SamplesV = Shader.PropertyToID("_SamplesV");
+		private static readonly int PID_AngleMinH = Shader.PropertyToID("_AngleMinH");
+		private static readonly int PID_AngleStepH = Shader.PropertyToID("_AngleStepH");
+		private static readonly int PID_AngleMinV = Shader.PropertyToID("_AngleMinV");
+		private static readonly int PID_AngleStepV = Shader.PropertyToID("_AngleStepV");
+		private static readonly int PID_RangeMin = Shader.PropertyToID("_RangeMin");
+		private static readonly int PID_RangeMax = Shader.PropertyToID("_RangeMax");
+		private static readonly int PID_RangeLinearResolution = Shader.PropertyToID("_RangeLinearResolution");
+		private static readonly int PID_SensorPosition = Shader.PropertyToID("_SensorPosition");
+		private static readonly int PID_SensorRight = Shader.PropertyToID("_SensorRight");
+		private static readonly int PID_SensorUp = Shader.PropertyToID("_SensorUp");
+		private static readonly int PID_SensorForward = Shader.PropertyToID("_SensorForward");
+		#endregion
+
+		public static void LoadComputeShader()
+		{
+			if (ComputeShaderLidarRayTrace == null)
+			{
+				ComputeShaderLidarRayTrace = Resources.Load<ComputeShader>("Shader/LidarRayTrace");
+			}
+		}
+
+		public static void UnloadComputeShader()
+		{
+			if (ComputeShaderLidarRayTrace != null)
+			{
+				Resources.UnloadAsset(ComputeShaderLidarRayTrace);
+				ComputeShaderLidarRayTrace = null;
+			}
+			Resources.UnloadUnusedAssets();
+		}
 
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX_THREAD;
 			_lidarLink = transform.parent;
-
-			_laserCompute = Instantiate(Resources.Load<ComputeShader>("Shader/LaserCamData"));
-
-			var laserSensor = new GameObject("__laser__");
-			laserSensor.transform.SetParent(this.transform, false);
-			laserSensor.transform.localPosition = Vector3.zero;
-			laserSensor.transform.localRotation = Quaternion.identity;
-			_laserCam = laserSensor.AddComponent<UnityEngine.Camera>();
-			_laserCam.enabled = false;
-
 			_laserProcessThread = new Thread(() => LaserProcessing());
 		}
 
 		protected override void OnStart()
 		{
-			if (_laserCam != null)
+			SetupURT();
+			SetupNoiseLimits();
+
+			_startLaserWork = true;
+
+			SensorRenderManager.Register(this, initialDelay: 0.1f);
+
+			if (_laserProcessThread != null)
 			{
-				SetupLaserCamera();
-
-				SetupLaserCameraData();
-
-				_startLaserWork = true;
-
-				StartCoroutine(CaptureLaserCamera());
-
-				if (_laserProcessThread != null)
-				{
-					_laserProcessThread.Start();
-				}
+				_laserProcessThread.Start();
 			}
 		}
 
 		protected new void OnDestroy()
 		{
-			_outputQueue.Clear();
+			UnloadComputeShader();
+
 			_startLaserWork = false;
 			_dataAvailable.Set();
+
+			SensorRenderManager.Unregister(this);
 
 			if (_laserProcessThread != null && _laserProcessThread.IsAlive)
 			{
 				_laserProcessThread.Join();
 			}
 
-			StopAllCoroutines();
+			_outputQueue.Clear();
 
-			if (_cb != null)
+			// Clean up per-sensor URT resources
+			_urtCmdBuffer?.Release();
+			_urtCmdBuffer = null;
+
+			_rtTraceScratchBuffer?.Dispose();
+			_rtTraceScratchBuffer = null;
+
+			_rangeOutputBuffer?.Release();
+			_rangeOutputBuffer = null;
+
+			if (_csRayTrace != null)
 			{
-				if (_laserCam != null)
-					_laserCam.RemoveCommandBuffer(CameraEvent.AfterEverything, _cb);
-				_cb.Release();
-				_cb = null;
+				Destroy(_csRayTrace);
+				_csRayTrace = null;
 			}
 
-			if (_laserCam != null)
-			{
-				try
-				{
-					 _laserCam.RemoveAllCommandBuffers();
-				}
-				catch
-				{
-					Debug.LogWarning("Failed to remove RemoveAllCommandBuffers");
-				}
-			}
-
-			if (_depthMaterial != null)
-			{
-				Destroy(_depthMaterial);
-				_depthMaterial = null;
-			}
-
-			_rtHandle?.Release();
-			Destroy(_laserCompute);
-			_laserCompute = null;
+			URTSensorManager.Unregister(GetInstanceID());
 
 			base.OnDestroy();
 		}
@@ -211,105 +197,53 @@ namespace SensorDevices
 			_resolution.angleH = (float)_horizontal.angleStep;
 			_resolution.angleV = (float)_vertical.angleStep;
 
-			var totalSamples = _laserScan.Count * _laserScan.VerticalCount;
+			_totalSamples = _laserScan.Count * _laserScan.VerticalCount;
 
-			// Debug.Log(_laserScan.VerticalCount + ", " + _laserScan.VerticalAngleMin + ", " + _laserScan.VerticalAngleMax + ", " + _laserScan.VerticalAngleStep);
-			// Debug.Log(_laserScan.Count + " x " + _laserScan.VerticalCount + " = " + totalSamples);
-			// Debug.Log($"angle step: deg H:{_horizontal.angleStep} V:{_vertical.angleStep}, rad H:{_laserScan.AngleStep} V:{_laserScan.VerticalAngleStep}");
-			// Debug.Log($"linear: {_resolution.linear} angle H: {_resolution.angleH} V: {_resolution.angleV}");
-
-			_laserScan.Ranges = new double[totalSamples];
-			_laserScan.Intensities = new double[totalSamples];
+			_laserScan.Ranges = new double[_totalSamples];
+			_laserScan.Intensities = new double[_totalSamples];
 			Array.Fill(_laserScan.Ranges, double.NaN);
 			Array.Fill(_laserScan.Intensities, double.NaN);
 		}
 
-		private void SetupLaserCamera()
+		#region "URT Setup"
+
+		private void SetupURT()
 		{
-			LaserCameraVFov = (_vertical.samples == 1) ? 1 : (Mathf.Max(Mathf.Abs(_vertical.angle.min), Mathf.Abs(_vertical.angle.max)) * 2);
-			LaserCameraHFov = (_vertical.samples > 1) ? HFOV_FOR_3D_LIDAR : HFOV_FOR_2D_LIDAR;
-			LaserCameraHFovHalf = LaserCameraHFov * 0.5f;
+			LoadComputeShader();
 
-			_laserCam.ResetWorldToCameraMatrix();
-			_laserCam.ResetProjectionMatrix();
+			if (!URTSensorManager.Register(GetInstanceID()))
+			{
+				Debug.LogError("[Lidar] Failed to register with URTSensorManager");
+				return;
+			}
 
-			_laserCam.allowHDR = false;
-			_laserCam.allowMSAA = false;
-			_laserCam.allowDynamicResolution = false;
-			_laserCam.useOcclusionCulling = false;
-			_laserCam.usePhysicalProperties = false;
-			_laserCam.stereoTargetEye = StereoTargetEyeMask.None;
-			_laserCam.orthographic = false;
-			_laserCam.nearClipPlane = _scanRange.min;
-			_laserCam.farClipPlane = _scanRange.max;
-			_laserCam.cullingMask = LayerMask.GetMask("Default", "Plane");
-			_laserCam.clearFlags = CameraClearFlags.Depth;
-			_laserCam.depthTextureMode = DepthTextureMode.Depth;
-			_laserCam.renderingPath = RenderingPath.Forward;
+			_csRayTrace = Instantiate(ComputeShaderLidarRayTrace);
+			if (_csRayTrace == null)
+			{
+				Debug.LogError("[Lidar] Failed to instantiate LidarRayTrace compute shader");
+				return;
+			}
 
-			var renderTextureWidth = Mathf.CeilToInt(LaserCameraHFov / _resolution.angleH);
-			var renderTextureHeight = Mathf.CeilToInt(LaserCameraVFov / _resolution.angleV);
-			// Debug.Log($"SetupLaserCamera: {_resolution.linear} {LaserCameraHFov} {_resolution.angleH} {LaserCameraVFov} {_resolution.angleV}, {renderTextureWidth} {renderTextureHeight}");
+			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
 
-			RTHandles.SetHardwareDynamicResolutionState(false);
-			_rtHandle?.Release();
-			_rtHandle = RTHandles.Alloc(
-				width: renderTextureWidth,
-				height: renderTextureHeight,
-				slices: 1,
-				depthBufferBits: DepthBits.None,
-				colorFormat: GraphicsFormat.R32_SFloat,
-				filterMode: FilterMode.Point,
-				wrapMode: TextureWrapMode.Clamp,
-				dimension: TextureDimension.Tex2D,
-				msaaSamples: MSAASamples.None,
-				enableRandomWrite: false,
-				useMipMap: false,
-				autoGenerateMips: false,
-				isShadowMap: false,
-				anisoLevel: 0,
-				mipMapBias: 0,
-				bindTextureMS: false,
-				useDynamicScale: false,
-				memoryless: RenderTextureMemoryless.None,
-				name: "RT_LidarDepthTexture");
+			var samplesH = _laserScan.Count;
+			var samplesV = _laserScan.VerticalCount;
 
-			_laserCam.targetTexture = _rtHandle.rt;
+			_rangeOutputBuffer?.Release();
+			_rangeOutputBuffer = new ComputeBuffer((int)_totalSamples, sizeof(float));
 
-			var projMatrix = SensorHelper.MakeProjectionMatrixPerspective(LaserCameraHFov, LaserCameraVFov, _laserCam.nearClipPlane, _laserCam.farClipPlane);
-			_laserCam.projectionMatrix = projMatrix;
+			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(
+				_rtShader, samplesH, samplesV, 1);
 
-			var universalLaserCamData = _laserCam.GetUniversalAdditionalCameraData();
-			universalLaserCamData.renderShadows = false;
-			universalLaserCamData.stopNaN = true;
-			universalLaserCamData.dithering = true;
-			universalLaserCamData.allowXRRendering = false;
-			universalLaserCamData.volumeLayerMask = default;
-			universalLaserCamData.renderType = CameraRenderType.Base;
-			universalLaserCamData.renderPostProcessing = false;
-			universalLaserCamData.antialiasing = AntialiasingMode.None;
-			universalLaserCamData.requiresColorOption = CameraOverrideOption.Off;
-			universalLaserCamData.requiresDepthOption = CameraOverrideOption.Off;
-			universalLaserCamData.requiresColorTexture = false;
-			universalLaserCamData.requiresDepthTexture = true;
-			universalLaserCamData.cameraStack.Clear();
+			_urtCmdBuffer = new CommandBuffer { name = "Lidar URT Dispatch" };
 
-			var depthShader = Shader.Find("Sensor/DepthRange");
-			_depthMaterial = new Material(depthShader);
-			_depthMaterial.hideFlags = HideFlags.DontUnloadUnusedAsset;
+			Debug.Log($"[Lidar] URT initialized, samples={samplesH}x{samplesV}={_totalSamples}, " +
+				$"range=[{_scanRange.min:F2}, {_scanRange.max:F2}], " +
+				$"hAngle=[{_horizontal.angle.min:F1}, {_horizontal.angle.max:F1}] deg");
+		}
 
-			_cb = new CommandBuffer();
-			_cb.ClearRenderTarget(true, true, Color.clear);
-			var tempTextureId = Shader.PropertyToID("_RenderCameraDepthTexture");
-			_cb.GetTemporaryRT(tempTextureId, -1, -1);
-			_cb.Blit(BuiltinRenderTextureType.CameraTarget, tempTextureId);
-			_cb.Blit(tempTextureId, BuiltinRenderTextureType.CameraTarget, _depthMaterial);
-			_cb.ReleaseTemporaryRT(tempTextureId);
-
-			_laserCam.AddCommandBuffer(CameraEvent.AfterEverything, _cb);
-
-			// _laserCam.hideFlags |= HideFlags.NotEditable;
-
+		private void SetupNoiseLimits()
+		{
 			if (_noise != null)
 			{
 				_noise.SetCustomNoiseParameter(_noiseParamInRawXml);
@@ -318,61 +252,121 @@ namespace SensorDevices
 			}
 		}
 
-		private void SetupLaserCameraData()
+		/// <summary>Bind acceleration structure and output buffer to the shader.</summary>
+		private void BindShaderResources(CommandBuffer cmd)
 		{
-			var LaserCameraVFovHalf = LaserCameraVFov * 0.5f;
-			var LaserCameraRotationAngle = LaserCameraHFov;
-
-			_numberOfLaserCamData = Mathf.CeilToInt(DEG360 / LaserCameraRotationAngle);
-			var isEven = (_numberOfLaserCamData % 2 == 0) ? true : false;
-
-			var targetDepthRT = _laserCam.targetTexture;
-			var width = targetDepthRT.width;
-			var height = targetDepthRT.height;
-			var centerAngleOffset = (_horizontal.angle.min < 0) ? (isEven ? -LaserCameraHFovHalf : 0) : LaserCameraHFovHalf;
-
-			var scanCenter = (_horizontal.angle.min + _horizontal.angle.max) * 0.5f;
-			var scanHalfFov = (_horizontal.angle.max - _horizontal.angle.min) * 0.5f;
-
-			_camControlInfo = new LaserData.CameraControlInfo[_numberOfLaserCamData];
-			for (var index = 0; index < _numberOfLaserCamData; index++)
-			{
-				var centerAngle = LaserCameraRotationAngle * index + centerAngleOffset;
-				_camControlInfo[index].laserCamRotationalAngle = centerAngle;
-
-				// var camMin = centerAngle - LaserCameraHFovHalf;
-				// var camMax = centerAngle + LaserCameraHFovHalf;
-				// var isOverlapping = (_horizontal.angle.min <= camMax) && (_horizontal.angle.max >= camMin);
-
-				var angleDiff = Mathf.Abs(Mathf.DeltaAngle(scanCenter, centerAngle));
-				var isOverlapping = angleDiff <= (scanHalfFov + LaserCameraHFovHalf);
-				_camControlInfo[index].isOverlappingDirection = isOverlapping;
-			}
-
-			_laserComputeKernel = _laserCompute.FindKernel("ComputeLaserData");
-			_laserCompute.GetKernelThreadGroupSizes(_laserComputeKernel, out var threadX, out var threadY, out var threadZ);
-			// Debug.Log($"ComputeLaserData: THREADS_X Y Z = {threadX}, {threadY}, {threadZ}");
-
-			_laserCompute.SetInt("_Width", width);
-			_laserCompute.SetInt("_Height", height);
-			_laserCompute.SetFloat("_MaxHAngleHalf", LaserCameraHFovHalf);
-			_laserCompute.SetFloat("_MaxVAngleHalf", LaserCameraVFovHalf);
-			_laserCompute.SetFloat("_MaxHAngleHalfTanInv", 1f / Mathf.Tan(LaserCameraHFovHalf * Mathf.Deg2Rad));
-			_laserCompute.SetFloat("_MaxVAngleHalfTanInv", 1f / Mathf.Tan(LaserCameraVFovHalf * Mathf.Deg2Rad));
-			_laserCompute.SetFloat("_RangeMin", _scanRange.min);
-			_laserCompute.SetFloat("_RangeMax", _scanRange.max);
-			_laserCompute.SetFloat("_RangeLinearResolution", _resolution.linear);
-			_laserCompute.SetFloat("_AngleResH", _resolution.angleH);
-			_laserCompute.SetFloat("_AngleResV", _resolution.angleV);
-
-			_horizontalBufferLength = width;
-			_laserComputeGroupsX = Mathf.CeilToInt(width / (float)threadX);
-			_laserComputeGroupsY = Mathf.CeilToInt(height / (float)threadY);
-
-			_parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = _numberOfLaserCamData };
-
-			_outputBufferLength = width * height;
+			_rtShader.SetAccelerationStructure(cmd, "_AccelStruct", URTSensorManager.AccelStruct);
+			_rtShader.SetBufferParam(cmd, PID_RangeOutput, _rangeOutputBuffer);
 		}
+
+		/// <summary>Static scan configuration — values never change after setup.</summary>
+		private void SetScanConfigParams(CommandBuffer cmd, uint samplesH, uint samplesV)
+		{
+			_rtShader.SetIntParam(cmd, PID_SamplesH, (int)samplesH);
+			_rtShader.SetIntParam(cmd, PID_SamplesV, (int)samplesV);
+
+			_rtShader.SetFloatParam(cmd, PID_AngleMinH, (float)_laserScan.AngleMin);
+			_rtShader.SetFloatParam(cmd, PID_AngleStepH, (float)_laserScan.AngleStep);
+			_rtShader.SetFloatParam(cmd, PID_AngleMinV, (float)_laserScan.VerticalAngleMin);
+			_rtShader.SetFloatParam(cmd, PID_AngleStepV, (float)_laserScan.VerticalAngleStep);
+
+			_rtShader.SetFloatParam(cmd, PID_RangeMin, _scanRange.min);
+			_rtShader.SetFloatParam(cmd, PID_RangeMax, _scanRange.max);
+			_rtShader.SetFloatParam(cmd, PID_RangeLinearResolution, _resolution.linear);
+		}
+
+		/// <summary>Dynamic sensor pose — changes every frame.</summary>
+		private void SetSensorPoseParams(CommandBuffer cmd, Vector3 position, Vector3 right, Vector3 up, Vector3 forward)
+		{
+			_rtShader.SetVectorParam(cmd, PID_SensorPosition, new Vector4(position.x, position.y, position.z, 0f));
+			_rtShader.SetVectorParam(cmd, PID_SensorRight, new Vector4(right.x, right.y, right.z, 0f));
+			_rtShader.SetVectorParam(cmd, PID_SensorUp, new Vector4(up.x, up.y, up.z, 0f));
+			_rtShader.SetVectorParam(cmd, PID_SensorForward, new Vector4(forward.x, forward.y, forward.z, 0f));
+		}
+
+		#endregion
+
+		#region "ISensorRenderable"
+
+		public bool IsURT => true;
+		public float RenderPeriod => UpdatePeriod;
+
+		public bool CanRender
+		{
+			get
+			{
+				if (!_startLaserWork) return false;
+				if (_rtShader == null || _rangeOutputBuffer == null) return false;
+				return true;
+			}
+		}
+
+		public bool ExecuteRenderStep(float realtimeNow)
+		{
+			ExecuteRender();
+			return true;
+		}
+
+		/// <summary>
+		/// URT render path: cast rays on the GPU in a spherical pattern
+		/// matching the lidar's configured scan angles. All rays are dispatched
+		/// in a single compute pass — no camera rotation or multi-slice stitching needed.
+		/// </summary>
+		private void ExecuteRender()
+		{
+			if (URTSensorManager.AccelStruct == null || _rtShader == null)
+				return;
+
+			var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
+
+			var sensorTransform = this.transform;
+			var sensorPos = sensorTransform.position;
+			var sensorRight = sensorTransform.right;
+			var sensorUp = sensorTransform.up;
+			var sensorForward = sensorTransform.forward;
+			var sensorWorldPose = new Pose(sensorPos, sensorTransform.rotation);
+
+			var samplesH = _laserScan.Count;
+			var samplesV = _laserScan.VerticalCount;
+
+			// Resize scratch buffer if needed
+			RayTracingHelper.ResizeScratchBufferForTrace(_rtShader, samplesH, samplesV, 1, ref _rtTraceScratchBuffer);
+
+			// === Record all GPU work into a single CommandBuffer ===
+			_urtCmdBuffer.Clear();
+
+			// 1. Shared BVH: scene gather, transform update, build (once per frame)
+			URTSensorManager.EnsureBVHReady(_urtCmdBuffer);
+
+			// 2. URT lidar ray trace dispatch
+			BindShaderResources(_urtCmdBuffer);
+			SetScanConfigParams(_urtCmdBuffer, samplesH, samplesV);
+			SetSensorPoseParams(_urtCmdBuffer, sensorPos, sensorRight, sensorUp, sensorForward);
+
+			_rtShader.Dispatch(_urtCmdBuffer, _rtTraceScratchBuffer, samplesH, samplesV, 1);
+
+			// === Execute all recorded GPU work ===
+			Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
+
+			// --- Async readback (non-blocking) ---
+			AsyncGPUReadback.Request(_rangeOutputBuffer, (req) =>
+			{
+				if (req.hasError || !req.done)
+				{
+					Debug.LogWarning("[Lidar] Async GPU readback failed");
+					return;
+				}
+
+				var src = req.GetData<float>();
+				var rangeData = new float[src.Length];
+				src.CopyTo(rangeData);
+
+				_outputQueue.Enqueue((capturedTime, sensorWorldPose, rangeData));
+				_dataAvailable.Set();
+			});
+		}
+
+		#endregion
 
 		public void SetupLaserAngleFilter(in double filterAngleLower, in double filterAngleUpper, in bool useIntensity = false)
 		{
@@ -408,172 +402,15 @@ namespace SensorDevices
 			_noiseParamInRawXml = noiseParamInRawXml;
 		}
 
-		private IEnumerator WaitStartSequence()
-		{
-			var lidarSequence = _globalSequence++;
-			for (var i = 0; i < lidarSequence; i++)
-				yield return null;
-		}
-
-		private IEnumerator CaptureLaserCamera()
-		{
-			yield return WaitStartSequence();
-
-			var lidarSensorWorldPose = new Pose();
-			var axisRotation = Vector3.zero;
-
-			var outputs = new LaserData.Output[_numberOfLaserCamData];
-			for (var i = 0; i < _numberOfLaserCamData; i++)
-				outputs[i] = new LaserData.Output(i, _outputBufferLength);
-
-			const int FrameOutputPoolSize = 5;
-			var frameOutputPool = new LaserData.Output[FrameOutputPoolSize][];
-			for (var p = 0; p < FrameOutputPoolSize; p++)
-			{
-				frameOutputPool[p] = new LaserData.Output[_numberOfLaserCamData];
-				for (var i = 0; i < _numberOfLaserCamData; i++)
-					frameOutputPool[p][i] = new LaserData.Output(i, _outputBufferLength);
-			}
-			var frameOutputPoolIndex = 0;
-
-			const int BufferCount = 5;
-			var bufferIndex = 0;
-			var totalBufferLength = _numberOfLaserCamData * _outputBufferLength;
-			var computedBuffers = new ComputeBuffer[BufferCount];
-			for (var b = 0; b < BufferCount; b++)
-			{
-				computedBuffers[b] = new ComputeBuffer(totalBufferLength, sizeof(float));
-			}
-
-			var	currentSliceIndex = 0;
-			var accumulatedCount = 0;
-			var framesPerScan = Mathf.CeilToInt((float)_numberOfLaserCamData / _slicesPerFrame);
-			var sliceUpdatePeriod = UpdatePeriod / framesPerScan;
-			var lastUpdateTime = 0f;
-			ComputeBuffer currentComputeBuffer = null;
-
-			while (_startLaserWork)
-			{
-				lastUpdateTime += Time.unscaledDeltaTime;
-
-				var maxRendersPerFrame = Mathf.Max(_slicesPerFrame * 2, framesPerScan);
-				var rendersThisFrame = 0;
-
-				while (lastUpdateTime >= sliceUpdatePeriod && _startLaserWork && rendersThisFrame < maxRendersPerFrame)
-				{
-					lastUpdateTime -= sliceUpdatePeriod;
-
-					// Start of a new scan cycle: advance buffer and capture pose/time
-					if (accumulatedCount == 0)
-					{
-						bufferIndex = (bufferIndex + 1) % BufferCount;
-						currentComputeBuffer = computedBuffers[bufferIndex];
-
-						lidarSensorWorldPose.position = transform.position;
-						lidarSensorWorldPose.rotation = transform.rotation;
-					}
-
-					var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
-
-					for (var slice = 0; slice < _slicesPerFrame; slice++)
-					{
-						var dataIndex = currentSliceIndex;
-						currentSliceIndex = (currentSliceIndex + 1) % _numberOfLaserCamData;
-
-						if (!_camControlInfo[dataIndex].isOverlappingDirection)
-						{
-							// Debug.Log($"Skip to render for {dataIndex} {_camControlInfo[dataIndex].laserCamRotationalAngle} {name}");
-							outputs[dataIndex].Reset(dataIndex, false);
-						}
-						else
-						{
-							outputs[dataIndex].Reset(dataIndex, true);
-
-							axisRotation.y = _camControlInfo[dataIndex].laserCamRotationalAngle;
-
-							_laserCam.transform.localRotation = Quaternion.Euler(axisRotation);
-							_laserCam.Render();
-
-							if (_laserCompute != null)
-							{
-								_laserCompute.SetInt("_DataOffset", dataIndex * _outputBufferLength);
-								_laserCompute.SetTexture(_laserComputeKernel, "_DepthTexture", _laserCam.targetTexture);
-								_laserCompute.SetBuffer(_laserComputeKernel, "_RayData", currentComputeBuffer);
-								_laserCompute.Dispatch(_laserComputeKernel, _laserComputeGroupsX, _laserComputeGroupsY, 1);
-							}
-							_laserCam.enabled = false;
-						}
-
-						accumulatedCount++;
-						rendersThisFrame++;
-					}
-
-					if (accumulatedCount >= _numberOfLaserCamData)
-					{
-						accumulatedCount = 0;
-
-						var framePose = lidarSensorWorldPose;
-						var frameCapturedTime = capturedTime;
-
-						var frameOutputs = frameOutputPool[frameOutputPoolIndex];
-						frameOutputPoolIndex = (frameOutputPoolIndex + 1) % FrameOutputPoolSize;
-						for (var i = 0; i < _numberOfLaserCamData; i++)
-							frameOutputs[i].Reset(outputs[i].dataIndex, outputs[i].hasData);
-
-						AsyncGPUReadback.Request(currentComputeBuffer, (req) =>
-							{
-								if (req.hasError || !req.done)
-								{
-									Debug.LogWarning($"GPU readback not ready");
-									return;
-								}
-
-								var src = req.GetData<float>();
-								for (var i = 0; i < _numberOfLaserCamData; i++)
-								{
-									if (frameOutputs[i].hasData)
-										frameOutputs[i].ConvertDataType(src);
-								}
-
-								_outputQueue.Enqueue((frameCapturedTime, framePose, frameOutputs));
-								_dataAvailable.Set();
-							});
-					}
-				}
-
-				yield return null;
-			}
-
-			foreach (var computeBuffer in computedBuffers)
-				computeBuffer.Release();
-		}
-
+		/// <summary>
+		/// Background thread: dequeues GPU readback results and assembles
+		/// LaserScanStamped messages. The URT output buffer is already laid
+		/// out as [vIndex * samplesH + hIndex] so no multi-camera stitching
+		/// is needed — a simple copy converts float to double.
+		/// </summary>
 		private void LaserProcessing()
 		{
-			const int BufferUnitSize = sizeof(double);
-
-			var laserSamplesH = (int)_horizontal.samples;
-			var laserStartAngleH = _horizontal.angle.min;
-			var laserEndAngleH = _horizontal.angle.max;
-			var laserTotalAngleH = _horizontal.angle.range;
-
-			var dividedLaserTotalAngleH = 1 / laserTotalAngleH;
-			var srcBufferHorizontalLength = _horizontalBufferLength;
-			var dividedDataTotalAngleH = 1 / LaserCameraHFov;
-
-			var laserSamplesV = (int)_vertical.samples;
-			var laserSamplesVTotal = Mathf.CeilToInt(LaserCameraVFov * _vertical.samples / _vertical.angle.range);
-			var isMaxAngleDominant = Mathf.Abs(_vertical.angle.max) > Mathf.Abs(_vertical.angle.min);
-			var laserSamplesVStart = isMaxAngleDominant ? (laserSamplesVTotal - laserSamplesV) : 0;
-			var laserSamplesVEnd = isMaxAngleDominant ? laserSamplesVTotal : laserSamplesV;
-
-			// Debug.Log($"laserSamplesVTotal: {laserSamplesVTotal}, " +
-			// 			$"isMaxAngleDominant: {isMaxAngleDominant}, " +
-			// 			$"laserSamplesVStart: {laserSamplesVStart}, " +
-			// 			$"laserSamplesVEnd: {laserSamplesVEnd} " +
-			// 			$"laserScan.Ranges: {_laserScan.Ranges.LongLength}");
-
-			(double capturedTime, Pose sensorWorldPose, LaserData.Output[] outputs) item;
+			(double capturedTime, Pose sensorWorldPose, float[] rangeData) item;
 
 			while (_startLaserWork)
 			{
@@ -589,110 +426,15 @@ namespace SensorDevices
 					laserScan.WorldPose.Position.Set(item.sensorWorldPose.position);
 					laserScan.WorldPose.Orientation.Set(item.sensorWorldPose.rotation);
 
-					Array.Fill(laserScan.Ranges, double.NaN);
-
-					Parallel.For(0, _numberOfLaserCamData, _parallelOptions, index =>
+					// Direct copy: GPU output is already in the correct order
+					var ranges = laserScan.Ranges;
+					for (var i = 0; i < ranges.Length && i < item.rangeData.Length; i++)
 					{
-						if (!item.outputs[index].hasData)
-						{
-							return;
-						}
-
-						var srcBuffer = item.outputs[index].rayData;
-
-						var dataStartAngleH = _camControlInfo[index].laserCamRotationalAngle - LaserCameraHFovHalf;
-						var dataEndAngleH = _camControlInfo[index].laserCamRotationalAngle + LaserCameraHFovHalf;
-
-						if (laserStartAngleH < 0 && dataEndAngleH > DEG180)
-						{
-							dataStartAngleH -= DEG360;
-							dataEndAngleH -= DEG360;
-						}
-
-						var dstSampleIndexV = 0;
-						for (var srcSampleIndexV = laserSamplesVStart; srcSampleIndexV < laserSamplesVEnd; srcSampleIndexV++)
-						{
-							var srcBufferOffset = 0;
-							var dstBufferOffset = 0;
-							var copyLength = 0;
-							var doCopy = true;
-
-							if (dataStartAngleH <= laserStartAngleH && laserStartAngleH < dataEndAngleH) // start side
-							{
-								if (laserEndAngleH >= dataEndAngleH)
-								{
-									var dataCopyLengthRatio = (laserStartAngleH - dataStartAngleH) * dividedDataTotalAngleH;
-									copyLength = srcBufferHorizontalLength - Mathf.CeilToInt(srcBufferHorizontalLength * dataCopyLengthRatio);
-									srcBufferOffset = srcBufferHorizontalLength * srcSampleIndexV;
-									dstBufferOffset = laserSamplesH * dstSampleIndexV + (laserSamplesH - copyLength);
-									// Debug.LogFormat("dataAngleH {0}~{1} laserAngleH {2}~{3} dataCopyLengthRatio {4:F6} copyLength{5} srcBufferOffset {6} dstBufferOffset {7}",
-									// 	dataStartAngleH, dataEndAngleH, laserStartAngleH, laserEndAngleH, dataCopyLengthRatio, copyLength, srcBufferOffset, dstBufferOffset);
-								}
-								else
-								{
-									var dataCopyLengthRatio = (laserEndAngleH - laserStartAngleH) * dividedDataTotalAngleH;
-									var startBufferOffsetRatio = (laserStartAngleH - dataStartAngleH) * dividedDataTotalAngleH;
-									copyLength = Mathf.FloorToInt(srcBufferHorizontalLength * dataCopyLengthRatio) - 1;
-									srcBufferOffset = srcBufferHorizontalLength * srcSampleIndexV + Mathf.CeilToInt(srcBufferHorizontalLength * startBufferOffsetRatio);
-									dstBufferOffset = laserSamplesH * dstSampleIndexV;
-									// Debug.LogFormat("dataAngleH {0}~{1} laserAngleH {2}~{3} dataLengthRatio {4:F6} dataCopyLengthRatio{5} srcBufferOffset {6} dstBufferOffset {7} startBufferOffsetRatio{8} index{9} srcBufferHorizontalLength{10} srcBuffer.Length{11}" ,
-									// 	dataStartAngleH, dataEndAngleH, laserStartAngleH, laserEndAngleH, dataLengthRatio, dataCopyLengthRatio, srcBufferOffset, dstBufferOffset, startBufferOffsetRatio, index, srcBufferHorizontalLength, srcBuffer.Length);
-								}
-							}
-							else if (dataStartAngleH > laserStartAngleH && dataEndAngleH < laserEndAngleH) // middle
-							{
-								copyLength = srcBufferHorizontalLength;
-								var bufferLengthRatio = (dataStartAngleH - laserStartAngleH) * dividedLaserTotalAngleH;
-								srcBufferOffset = srcBufferHorizontalLength * srcSampleIndexV;
-								dstBufferOffset = Mathf.CeilToInt(laserSamplesH * (dstSampleIndexV + 1 - bufferLengthRatio)) - copyLength;
-								// Debug.LogFormat("dataAngleH {0}~{1} laserAngleH {2}~{3} dataLengthRatio {4:F6} bufferLengthRatio{5} srcBufferOffset {6} dstBufferOffset {7}",
-								// 	dataStartAngleH, dataEndAngleH, laserStartAngleH, laserEndAngleH, bufferLengthRatio, copyLength, srcBufferOffset, dstBufferOffset);
-							}
-							else if (dataStartAngleH > laserStartAngleH && laserEndAngleH >= dataStartAngleH) // end side
-							{
-								var dataCopyLengthRatio = Mathf.Abs(laserEndAngleH - dataStartAngleH) * dividedDataTotalAngleH;
-								copyLength = Mathf.CeilToInt(srcBufferHorizontalLength * dataCopyLengthRatio);
-								srcBufferOffset = srcBufferHorizontalLength * (srcSampleIndexV + 1) - copyLength;
-								dstBufferOffset = laserSamplesH * dstSampleIndexV;
-								// Debug.LogFormat("dataAngleH {0}~{1} laserAngleH {2}~{3} dataCopyLengthRatio {4:F6} copyLength{5} srcBufferOffset {6} dstBufferOffset {7}",
-								// 	dataStartAngleH, dataEndAngleH, laserStartAngleH, laserEndAngleH, dataCopyLengthRatio, copyLength, srcBufferOffset, dstBufferOffset);
-							}
-							else
-							{
-								// Debug.LogWarning($"exception case dataAngleH {dataStartAngleH}~{dataEndAngleH} laserAngleH {laserStartAngleH}~{laserEndAngleH}");
-								doCopy = false;
-							}
-
-							if (doCopy && copyLength > 0 &&
-								srcBufferOffset >= 0 && dstBufferOffset >= 0 &&
-								srcBufferOffset + copyLength <= srcBuffer.Length &&
-								dstBufferOffset + copyLength <= laserScan.Ranges.Length)
-							{
-								try
-								{
-									Buffer.BlockCopy(srcBuffer, srcBufferOffset * BufferUnitSize,
-													laserScan.Ranges, dstBufferOffset * BufferUnitSize,
-													copyLength * BufferUnitSize);
-								}
-								catch (Exception ex)
-								{
-									Debug.LogWarning(
-										$"[BufferCopyError] {ex.Message}\n" +
-										$"idx={index} srcVidx={srcSampleIndexV} dstVidx={dstSampleIndexV}\n" +
-										$"srcTotalLen={srcBuffer.Length} dstTotalLen={laserScan.Ranges.Length}\n" +
-										$"srcOffset={srcBufferOffset} dstOffset={dstBufferOffset} copyLen={copyLength}\n" +
-										$"srcOffsetEnd={srcBufferOffset + copyLength} dstOffsetEnd={dstBufferOffset + copyLength}"
-									);
-								}
-							}
-
-							dstSampleIndexV++;
-						}
-					});
+						ranges[i] = item.rangeData[i];
+					}
 
 					if (_noise != null)
 					{
-						var ranges = laserScan.Ranges;
 						_noise.Apply<double>(ranges);
 					}
 
@@ -735,9 +477,8 @@ namespace SensorDevices
 
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 			var startAngleH = _horizontal.angle.min;
-			var startAngleV = _vertical.angle.max;
-			var endAngleV = _vertical.angle.min;
-			var angleRangeV = _vertical.angle.range;
+			var startAngleV = _vertical.angle.min;
+			var endAngleV = _vertical.angle.max;
 			var horizontalSamples = _horizontal.samples;
 			var rangeMin = _scanRange.min;
 			var rangeMax = _scanRange.max;
@@ -749,8 +490,6 @@ namespace SensorDevices
 			}
 			var hue = ((float)_indexForVisualize++ / Mathf.Max(1, _maxCountForVisualize)) + _hueOffsetForVisualize;
 			hue = (hue % 1f + 1f) % 1f;
-			// Debug.Log($"hue{hue} _indexForVisualize{_indexForVisualize}");
-			var baseRayColor = Color.HSVToRGB(hue, 0.9f, 1f);
 
 			var positions = new List<Vector3>((int)(horizontalSamples * _vertical.samples) * 2);
 
@@ -773,20 +512,19 @@ namespace SensorDevices
 					var scanIndexV = scanIndex / horizontalSamples;
 
 					var rayAngleH = startAngleH + (_resolution.angleH * scanIndexH);
-					var rayAngleV = startAngleV - (_resolution.angleV * scanIndexV);
+					var rayAngleV = startAngleV + (_resolution.angleV * scanIndexV);
 
-					var ccwIndex = (int)(rangeData.Count - scanIndex - 1);
-					var rayData = (float)rangeData[ccwIndex];
+					var rayData = (float)rangeData[scanIndex];
 
 					if (float.IsNaN(rayData) || rayData > rangeMax)
 						continue;
 
-					var t = Mathf.InverseLerp(endAngleV, startAngleV, rayAngleV);
+					var t = Mathf.InverseLerp(startAngleV, endAngleV, rayAngleV);
 					var s = Mathf.Lerp(0.55f, 0.95f, t);
 					var rayColor = Color.HSVToRGB(hue, s, 0.95f);
 					rayColor.a = AlphaForVisualize;
 
-					var localAngles = Quaternion.AngleAxis(rayAngleH, Vector3.up) * Quaternion.AngleAxis(rayAngleV, -Vector3.right);
+					var localAngles = Quaternion.AngleAxis(-rayAngleH, Vector3.up) * Quaternion.AngleAxis(rayAngleV, -Vector3.right);
 					var dir = sensorWorldRotation * localAngles * Vector3.forward;
 					dir.Normalize();
 

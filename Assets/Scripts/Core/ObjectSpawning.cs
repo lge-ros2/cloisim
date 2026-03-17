@@ -209,6 +209,8 @@ public class ObjectSpawning : MonoBehaviour
 		meshRenderer.receiveShadows = true;
 		meshRenderer.sharedMaterial = _propMaterial;
 
+		newObject.AddComponent<URTSceneChangeNotifier>();
+
 		meshRenderer.material.name = targetMesh.name;
 		meshRenderer.material.color = Color.white;
 

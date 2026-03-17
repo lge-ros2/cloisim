@@ -507,6 +507,8 @@ public static partial class MeshLoader
 				meshRenderer.allowOcclusionWhenDynamic = true;
 				meshRenderer.receiveShadows = true;
 
+				subObject.AddComponent<URTSceneChangeNotifier>();
+
 				subObject.transform.SetParent(nodeObject.transform, true);
 				// Debug.Log($"[MeshAssign] Node='{node.Name}' MeshIndex={index} Mesh='{meshMat.mesh.name}' MatIdx={meshMat.materialIndex} Mat='{meshMat.material?.name}'");
 			}

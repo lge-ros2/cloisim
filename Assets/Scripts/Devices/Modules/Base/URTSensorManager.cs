@@ -22,7 +22,7 @@ using System.Collections.Generic;
 public class URTSensorManager : MonoBehaviour
 {
 	private static URTSensorManager s_instance;
-	private static bool s_applicationQuitting;
+	private static bool s_applicationQuitting = false;
 
 	#region "Shared URT resources"
 
@@ -46,8 +46,14 @@ public class URTSensorManager : MonoBehaviour
 	private float _sceneGatherInterval = MinSceneGatherInterval;
 	[SerializeField]
 	private float _lastSceneGatherTime;
-	[SerializeField]
-	private int _lastKnownRendererCount;
+
+	private int _cullingMask;
+
+	/// <summary>
+	/// Dirty flag set by OnEnable/OnDisable callbacks on MeshRenderers.
+	/// Avoids per-frame FindObjectsByType allocation.
+	/// </summary>
+	private bool _sceneDirty = true;
 
 	/// <summary>Cameras registered for shared BVH access.</summary>
 	private readonly HashSet<int> _registeredCameras = new();
@@ -68,32 +74,34 @@ public class URTSensorManager : MonoBehaviour
 			if (s_instance == null)
 			{
 				s_instance = Main.Core.AddComponent<URTSensorManager>();
+				s_instance._cullingMask = LayerMask.GetMask("Default", "Plane");
 			}
 			return s_instance;
 		}
 	}
 
-	/// <summary>The shared RayTracingContext (Compute backend).</summary>
-	public RayTracingContext Context => _rtContext;
-
 	/// <summary>The shared acceleration structure. All cameras trace against this.</summary>
-	public IRayTracingAccelStruct AccelStruct => _rtAccelStruct;
+	public static IRayTracingAccelStruct AccelStruct => Instance?._rtAccelStruct;
 
 	/// <summary>
 	/// Register a DepthCamera for shared BVH access.
 	/// Call from SetupCamera(). Returns false if initialization failed.
 	/// </summary>
-	public bool Register(int cameraInstanceId)
+	public static bool Register(int cameraInstanceId)
 	{
-		if (_rtContext == null)
-			Initialize();
-
-		if (_rtAccelStruct == null)
+		var inst = Instance;
+		if (inst == null)
 			return false;
 
-		if (_registeredCameras.Add(cameraInstanceId))
+		if (inst._rtContext == null)
+			inst.Initialize();
+
+		if (inst._rtAccelStruct == null)
+			return false;
+
+		if (inst._registeredCameras.Add(cameraInstanceId))
 		{
-			Debug.Log($"[URTSensorManager] Registered camera {cameraInstanceId}, total={_registeredCameras.Count}");
+			Debug.Log($"[URTSensorManager] Registered camera {cameraInstanceId}, total={inst._registeredCameras.Count}");
 		}
 
 		return true;
@@ -103,15 +111,18 @@ public class URTSensorManager : MonoBehaviour
 	/// Unregister a DepthCamera. Call from OnDestroy().
 	/// When no cameras remain, shared resources are released.
 	/// </summary>
-	public void Unregister(int cameraInstanceId)
+	public static void Unregister(int cameraInstanceId)
 	{
-		_registeredCameras.Remove(cameraInstanceId);
+		var inst = Instance;
+		if (inst == null) return;
 
-		Debug.Log($"[URTSensorManager] Unregistered camera {cameraInstanceId}, remaining={_registeredCameras.Count}");
+		inst._registeredCameras.Remove(cameraInstanceId);
 
-		if (_registeredCameras.Count == 0)
+		Debug.Log($"[URTSensorManager] Unregistered camera {cameraInstanceId}, remaining={inst._registeredCameras.Count}");
+
+		if (inst._registeredCameras.Count == 0)
 		{
-			ReleaseResources();
+			inst.ReleaseResources();
 		}
 	}
 
@@ -120,9 +131,21 @@ public class URTSensorManager : MonoBehaviour
 	/// The shader is lightweight (no GPU allocations) but must be
 	/// disposed by the caller.
 	/// </summary>
-	public IRayTracingShader CreateShader(ComputeShader computeShader)
+	public static IRayTracingShader CreateShader(ComputeShader computeShader)
 	{
-		return _rtContext?.CreateRayTracingShader(computeShader);
+		return Instance?._rtContext?.CreateRayTracingShader(computeShader);
+	}
+
+	/// <summary>
+	/// Mark the scene as dirty so the BVH is rebuilt on the next frame.
+	/// Call this when MeshRenderers are added, removed, enabled, or disabled.
+	/// </summary>
+	public static void MarkSceneDirty()
+	{
+		if (s_instance != null)
+		{
+			s_instance._sceneDirty = true;
+		}
 	}
 
 	/// <summary>
@@ -132,37 +155,36 @@ public class URTSensorManager : MonoBehaviour
 	/// calls in the same frame are no-ops.
 	/// </summary>
 	/// <param name="cmd">CommandBuffer to record the Build into.</param>
-	public void EnsureBVHReady(CommandBuffer cmd)
+	public static void EnsureBVHReady(CommandBuffer cmd)
 	{
-		if (_rtAccelStruct == null)
+		var inst = Instance;
+		if (inst == null) return;
+
+		if (inst._rtAccelStruct == null)
 			return;
 
 		var currentFrame = Time.frameCount;
-		if (_frameOfLastBuild == currentFrame)
+		if (inst._frameOfLastBuild == currentFrame)
 			return; // Already built this frame
 
-		_frameOfLastBuild = currentFrame;
+		inst._frameOfLastBuild = currentFrame;
 
 		// --- Detect new/removed objects ---
-		// Use FindObjectsByType instead of Resources.FindObjectsOfTypeAll
-		// to avoid scanning unloaded/hidden assets and reduce CPU overhead.
-		var currentRendererCount = UnityEngine.Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None).Length;
-		var sceneChanged = currentRendererCount != _lastKnownRendererCount;
 		var realtimeNow = Time.realtimeSinceStartup;
 
-		if (sceneChanged || (realtimeNow - _lastSceneGatherTime > _sceneGatherInterval))
+		if (inst._sceneDirty || (realtimeNow - inst._lastSceneGatherTime > inst._sceneGatherInterval))
 		{
-			GatherSceneMeshes();
-			_lastKnownRendererCount = currentRendererCount;
+			inst.GatherSceneMeshes();
+			inst._sceneDirty = false;
 		}
 
-		UpdateInstanceTransforms();
+		inst.UpdateInstanceTransforms();
 
 		// --- Resize scratch buffer if needed ---
-		RayTracingHelper.ResizeScratchBufferForBuild(_rtAccelStruct, ref _rtBuildScratchBuffer);
+		RayTracingHelper.ResizeScratchBufferForBuild(inst._rtAccelStruct, ref inst._rtBuildScratchBuffer);
 
 		// --- Build BVH (idempotent if already built) ---
-		_rtAccelStruct.Build(cmd, _rtBuildScratchBuffer);
+		inst._rtAccelStruct.Build(cmd, inst._rtBuildScratchBuffer);
 	}
 
 	#endregion
@@ -199,7 +221,6 @@ public class URTSensorManager : MonoBehaviour
 
 		_rtInstances.Clear();
 		_lastSceneGatherTime = 0f;
-		_lastKnownRendererCount = 0;
 		_frameOfLastBuild = -1;
 
 		Debug.Log("[URTSensorManager] Released shared URT resources");
@@ -221,7 +242,6 @@ public class URTSensorManager : MonoBehaviour
 		_rtAccelStruct.ClearInstances();
 		_rtInstances.Clear();
 
-		var cullingMask = LayerMask.GetMask("Default", "Plane");
 		// Use FindObjectsByType for active scene renderers only (cheaper than Resources.FindObjectsOfTypeAll)
 		var renderers = UnityEngine.Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None);
 
@@ -238,7 +258,7 @@ public class URTSensorManager : MonoBehaviour
 			if (!renderer.enabled || !renderer.gameObject.activeInHierarchy)
 				continue;
 
-			if ((cullingMask & (1 << renderer.gameObject.layer)) == 0)
+			if ((_cullingMask & (1 << renderer.gameObject.layer)) == 0)
 			{
 				skippedLayer++;
 				continue;

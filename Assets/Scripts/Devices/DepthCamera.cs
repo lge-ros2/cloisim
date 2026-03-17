@@ -196,7 +196,7 @@ namespace SensorDevices
 			}
 
 			// Unregister from shared URT manager
-			URTSensorManager.Instance?.Unregister(GetInstanceID());
+			URTSensorManager.Unregister(GetInstanceID());
 
 			base.OnDestroy();
 		}
@@ -355,8 +355,7 @@ namespace SensorDevices
 		/// </summary>
 		private void SetupURTPerCamera()
 		{
-			var manager = URTSensorManager.Instance;
-			if (manager == null || !manager.Register(GetInstanceID()))
+			if (!URTSensorManager.Register(GetInstanceID()))
 			{
 				Debug.LogError("[DepthCamera] Failed to register with URTSensorManager");
 				return;
@@ -370,7 +369,7 @@ namespace SensorDevices
 				return;
 			}
 
-			_rtShader = manager.CreateShader(_csRayTrace);
+			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
 
 			var width = (uint)_camParam.image.width;
 			var height = (uint)_camParam.image.height;
@@ -382,9 +381,9 @@ namespace SensorDevices
 		}
 
 		/// <summary>Bind acceleration structure and output buffer to the shader.</summary>
-		private void BindShaderResources(CommandBuffer cmd, IRayTracingAccelStruct accelStruct)
+		private void BindShaderResources(CommandBuffer cmd)
 		{
-			_rtShader.SetAccelerationStructure(cmd, "_AccelStruct", accelStruct);
+			_rtShader.SetAccelerationStructure(cmd, "_AccelStruct", URTSensorManager.AccelStruct);
 			_rtShader.SetBufferParam(cmd, PID_DepthOutput, _computeBufferSrc);
 		}
 
@@ -422,7 +421,7 @@ namespace SensorDevices
 		protected override void ExecuteRender(float realtimeNow)
 		{
 			var manager = URTSensorManager.Instance;
-			if (manager == null || manager.AccelStruct == null || _rtShader == null)
+			if (manager == null || URTSensorManager.AccelStruct == null || _rtShader == null)
 				return;
 
 			var capturedTime = (Clock != null) ? Clock.SimTime : Time.timeAsDouble;
@@ -444,10 +443,10 @@ namespace SensorDevices
 			_urtCmdBuffer.Clear();
 
 			// 1. Shared BVH: scene gather, transform update, and build (once per frame)
-			manager.EnsureBVHReady(_urtCmdBuffer);
+			URTSensorManager.EnsureBVHReady(_urtCmdBuffer);
 
 			// 2. URT ray trace dispatch
-			BindShaderResources(_urtCmdBuffer, manager.AccelStruct);
+			BindShaderResources(_urtCmdBuffer);
 			SetCameraConfigParams(_urtCmdBuffer, width, height);
 			SetCameraPoseParams(_urtCmdBuffer, camPos, camRight, camUp, camForward);
 
