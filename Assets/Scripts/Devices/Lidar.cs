@@ -456,94 +456,19 @@ namespace SensorDevices
 			}
 		}
 
-		[SerializeField] private static int _indexForVisualize = 0;
-		[SerializeField] private static int _maxCountForVisualize = 3;
-		[SerializeField] private static float _hueOffsetForVisualize = 0f;
-		[SerializeField] private const float UnitHueOffsetForVisualize = 0.07f;
-		[SerializeField] private const float AlphaForVisualize = 0.75f;
-
 		protected override IEnumerator OnVisualize()
 		{
 			var visualizer = new GameObject("__laser_visualizer__");
 			visualizer.layer = LayerMask.NameToLayer("Visualization");
 			visualizer.transform.SetParent(this.transform, false);
 
-			var lineRenderer = visualizer.AddComponent<LineRenderer>();
-			lineRenderer.positionCount = 0;
-			lineRenderer.widthMultiplier = 0.001f;
-			lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-			lineRenderer.material.hideFlags = HideFlags.DontUnloadUnusedAsset;
-			lineRenderer.useWorldSpace = true;
-
-			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
-			var startAngleH = _horizontal.angle.min;
-			var startAngleV = _vertical.angle.min;
-			var endAngleV = _vertical.angle.max;
-			var horizontalSamples = _horizontal.samples;
-			var rangeMin = _scanRange.min;
-			var rangeMax = _scanRange.max;
-
-			if (_indexForVisualize >= _maxCountForVisualize)
+			if (_vertical.samples > 1)
 			{
-				_indexForVisualize = 0;
-				_hueOffsetForVisualize += UnitHueOffsetForVisualize;
+				yield return OnVisualizePointCloud(visualizer);
 			}
-			var hue = ((float)_indexForVisualize++ / Mathf.Max(1, _maxCountForVisualize)) + _hueOffsetForVisualize;
-			hue = (hue % 1f + 1f) % 1f;
-
-			var positions = new List<Vector3>((int)(horizontalSamples * _vertical.samples) * 2);
-
-			while (true)
+			else
 			{
-				var rangeData = GetRangeData();
-				if (rangeData == null)
-				{
-					yield return waitForSeconds;
-					continue;
-				}
-
-				positions.Clear();
-				var rayStartBase = transform.position;
-				var sensorWorldRotation = transform.rotation;
-
-				for (var scanIndex = 0; scanIndex < rangeData.Count; scanIndex++)
-				{
-					var scanIndexH = scanIndex % horizontalSamples;
-					var scanIndexV = scanIndex / horizontalSamples;
-
-					var rayAngleH = startAngleH + (_resolution.angleH * scanIndexH);
-					var rayAngleV = startAngleV + (_resolution.angleV * scanIndexV);
-
-					var rayData = (float)rangeData[scanIndex];
-
-					if (float.IsNaN(rayData) || rayData > rangeMax)
-						continue;
-
-					var t = Mathf.InverseLerp(startAngleV, endAngleV, rayAngleV);
-					var s = Mathf.Lerp(0.55f, 0.95f, t);
-					var rayColor = Color.HSVToRGB(hue, s, 0.95f);
-					rayColor.a = AlphaForVisualize;
-
-					var localAngles = Quaternion.AngleAxis(-rayAngleH, Vector3.up) * Quaternion.AngleAxis(rayAngleV, -Vector3.right);
-					var dir = sensorWorldRotation * localAngles * Vector3.forward;
-					dir.Normalize();
-
-					var start = rayStartBase + dir * rangeMin;
-					var end = start + dir * (rayData - rangeMin);
-
-					positions.Add(start);
-					positions.Add(end);
-				}
-
-				lineRenderer.positionCount = positions.Count;
-				lineRenderer.SetPositions(positions.ToArray());
-
-				var baseColor = Color.HSVToRGB(hue, 0.9f, 1f);
-				baseColor.a = AlphaForVisualize;
-				lineRenderer.startColor = baseColor;
-				lineRenderer.endColor = baseColor;
-
-				yield return waitForSeconds;
+				yield return OnVisualizeLines(visualizer);
 			}
 		}
 
