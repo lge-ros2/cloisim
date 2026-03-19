@@ -290,9 +290,9 @@ namespace RuntimeGizmos
 
 					if (articulationBody.immovable)
 					{
-						articulationBody.Sleep();
 						var marginForTransform = new Pose(articulationBody.transform.position, articulationBody.transform.rotation);
 						marginForTransform.position.y += MarginForPositionY;
+						articulationBody.Sleep();
 						articulationBody.TeleportRoot(marginForTransform.position, marginForTransform.rotation);
 					}
 				}
@@ -328,8 +328,6 @@ namespace RuntimeGizmos
 				var mouseRay = myCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
 				var mousePosition = Geometry.LinePlaneIntersect(mouseRay.origin, mouseRay.direction, originalPivot, planeNormal);
 				var isSnapping = Keyboard.current[translationSnapping].isPressed;
-
-				mousePosition.y += 0.1f;
 
 				if (previousMousePosition != Vector3.zero && mousePosition != Vector3.zero)
 				{
@@ -390,9 +388,9 @@ namespace RuntimeGizmos
 
 								for (var i = 0; i < targetRootsOrdered.Count; i++)
 								{
-									Transform target = targetRootsOrdered[i];
+									var targetTransform = targetRootsOrdered[i];
 
-									var articulationBody = target.GetComponent<ArticulationBody>();
+									var articulationBody = targetTransform.GetComponent<ArticulationBody>();
 									if (articulationBody != null && articulationBody.isRoot)
 									{
 										var newPose = new Pose(articulationBody.transform.position, articulationBody.transform.rotation);
@@ -402,7 +400,7 @@ namespace RuntimeGizmos
 									}
 									else
 									{
-										var actor = target.GetComponent<SDF.Helper.Actor>();
+										var actor = targetTransform.GetComponent<SDF.Helper.Actor>();
 										if (actor != null && actor.HasWayPoints)
 										{
 											var newPose = (actor.GetPoseCount() == 1) ? actor.GetPose(0) : actor.GetPose(1);
@@ -411,7 +409,15 @@ namespace RuntimeGizmos
 										}
 										else
 										{
-											target.Translate(movement, Space.World);
+											var rb = targetTransform.GetComponent<Rigidbody>();
+											if (rb != null)
+											{
+												rb.position += movement;
+											}
+											else
+											{
+												targetTransform.position += movement;
+											}
 										}
 									}
 								}
@@ -462,23 +468,37 @@ namespace RuntimeGizmos
 
 								for (int i = 0; i < targetRootsOrdered.Count; i++)
 								{
-									Transform target = targetRootsOrdered[i];
+									var targetTransform = targetRootsOrdered[i];
 
 									if (pivot == TransformPivot.Pivot)
 									{
-										target.Rotate(rotationAxis, rotateAmount, Space.World);
+										targetTransform.Rotate(rotationAxis, rotateAmount);
 									}
 									else if (pivot == TransformPivot.Center)
 									{
-										target.RotateAround(originalPivot, rotationAxis, rotateAmount);
+										targetTransform.RotateAround(originalPivot, rotationAxis, rotateAmount);
 									}
 
-									var articulationBody = target.GetComponent<ArticulationBody>();
+									var articulationBody = targetTransform.GetComponent<ArticulationBody>();
 									if (articulationBody != null && articulationBody.isRoot)
 									{
 										var newPose = new Pose(articulationBody.transform.position, articulationBody.transform.rotation);
 										articulationBody.Sleep();
 										articulationBody.TeleportRoot(newPose.position, newPose.rotation);
+									}
+									else
+									{
+										var rb = targetTransform.GetComponent<Rigidbody>();
+										if (rb != null)
+										{
+											rb.position = targetTransform.position;
+											rb.rotation = targetTransform.rotation;
+										}
+										else
+										{
+											targetTransform.position = targetTransform.position;
+											targetTransform.rotation = targetTransform.rotation;
+										}
 									}
 								}
 
