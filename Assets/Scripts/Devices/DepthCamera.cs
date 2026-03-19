@@ -39,6 +39,15 @@ namespace SensorDevices
 		private int _threadGroupVcselX;
 		private int _threadGroupVcselY;
 
+		// Screen-space bunch center post-process (DotMode=3)
+		private ComputeBuffer _computeBufferBunchFlag = null;
+		private int _kernelClearBunchIndex = -1;
+		private int _kernelMarkBunchIndex = -1;
+		private int _kernelFilterBunchIndex = -1;
+		private int _threadGroupBunchClear;
+		private int _threadGroupBunchX;
+		private int _threadGroupBunchY;
+
 		[Header("Properties for VCSEL prepass")]
 		[SerializeField]
 		private Texture2D _textureVcselMask = null;
@@ -46,7 +55,7 @@ namespace SensorDevices
 		private float _targetVerticalFovDeg = 0;
 
 		[SerializeField]
-		private int _dotMode = 2; // 0:Linear, 1:PixelSnap, 2:SoftSpot
+		private int _dotMode = 3; // 0:Linear, 1:PixelSnap, 2:SoftSpot, 3:BunchCenter
 
 		[SerializeField, Range(0.0001f, 10f)]
 		private float _spotSigmaPx = 0.1f; // (only for dotMode=2)
@@ -179,8 +188,10 @@ namespace SensorDevices
 
 			_computeBufferSrc?.Release();
 			_computeBufferDst?.Release();
+			_computeBufferBunchFlag?.Release();
 			_computeBufferSrc = null;
 			_computeBufferDst = null;
+			_computeBufferBunchFlag = null;
 
 			// Clean up per-camera URT resources
 			_urtCmdBuffer?.Release();
@@ -225,6 +236,9 @@ namespace SensorDevices
 			_computeBufferSrc = new ComputeBuffer(pixelCount, sizeof(float));
 			_computeBufferDst?.Release();
 			_computeBufferDst = new ComputeBuffer(packedCount, sizeof(uint));
+
+			_computeBufferBunchFlag?.Release();
+			_computeBufferBunchFlag = new ComputeBuffer(pixelCount, sizeof(int));
 		}
 
 		protected override void SetupCamera()
@@ -342,6 +356,24 @@ namespace SensorDevices
 
 			_threadGroupVcselX = Mathf.CeilToInt(width / (float)threadX);
 			_threadGroupVcselY = Mathf.CeilToInt(height / (float)threadY);
+
+			// Screen-space bunch center kernels (for DotMode=3)
+			_kernelClearBunchIndex = _csVcselPrepass.FindKernel("CSClearBunchFlags");
+			_kernelMarkBunchIndex = _csVcselPrepass.FindKernel("CSMarkBunchCenters");
+			_kernelFilterBunchIndex = _csVcselPrepass.FindKernel("CSApplyBunchFilter");
+
+			if (_kernelClearBunchIndex >= 0)
+			{
+				_csVcselPrepass.GetKernelThreadGroupSizes(_kernelClearBunchIndex, out var clearThreadX, out _, out _);
+				_threadGroupBunchClear = Mathf.CeilToInt((width * height) / (float)clearThreadX);
+			}
+
+			if (_kernelMarkBunchIndex >= 0)
+			{
+				_csVcselPrepass.GetKernelThreadGroupSizes(_kernelMarkBunchIndex, out var markThreadX, out var markThreadY, out _);
+				_threadGroupBunchX = Mathf.CeilToInt(width / (float)markThreadX);
+				_threadGroupBunchY = Mathf.CeilToInt(height / (float)markThreadY);
+			}
 
 			Debug.Log($"[DepthCamera] VCSEL prepass set up with fovCamH={hFovDeg:F1}°, fovCamV={vFovDeg:F1}°, fovMaskH={fovMaskH:F2}, fovMaskV={fovMaskV:F2}");
 		}
@@ -464,6 +496,24 @@ namespace SensorDevices
 
 				_urtCmdBuffer.SetComputeBufferParam(_csVcselPrepass, _kernelVcselIndex, "_DepthBuffer", _computeBufferSrc);
 				_urtCmdBuffer.DispatchCompute(_csVcselPrepass, _kernelVcselIndex, _threadGroupVcselX, _threadGroupVcselY, 1);
+
+				// 3b. Screen-space bunch center post-process (DotMode=3)
+				if (_dotMode == 3 && _kernelClearBunchIndex >= 0 && _kernelMarkBunchIndex >= 0 && _kernelFilterBunchIndex >= 0)
+				{
+					// Clear flags
+					_urtCmdBuffer.SetComputeBufferParam(_csVcselPrepass, _kernelClearBunchIndex, "_BunchFlag", _computeBufferBunchFlag);
+					_urtCmdBuffer.DispatchCompute(_csVcselPrepass, _kernelClearBunchIndex, _threadGroupBunchClear, 1, 1);
+
+					// Mark centers
+					_urtCmdBuffer.SetComputeBufferParam(_csVcselPrepass, _kernelMarkBunchIndex, "_DepthBuffer", _computeBufferSrc);
+					_urtCmdBuffer.SetComputeBufferParam(_csVcselPrepass, _kernelMarkBunchIndex, "_BunchFlag", _computeBufferBunchFlag);
+					_urtCmdBuffer.DispatchCompute(_csVcselPrepass, _kernelMarkBunchIndex, _threadGroupBunchX, _threadGroupBunchY, 1);
+
+					// Filter non-centers
+					_urtCmdBuffer.SetComputeBufferParam(_csVcselPrepass, _kernelFilterBunchIndex, "_DepthBuffer", _computeBufferSrc);
+					_urtCmdBuffer.SetComputeBufferParam(_csVcselPrepass, _kernelFilterBunchIndex, "_BunchFlag", _computeBufferBunchFlag);
+					_urtCmdBuffer.DispatchCompute(_csVcselPrepass, _kernelFilterBunchIndex, _threadGroupBunchX, _threadGroupBunchY, 1);
+				}
 			}
 
 			// 4. Depth buffer scaling → packed output
