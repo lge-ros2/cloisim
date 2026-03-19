@@ -53,9 +53,9 @@ VisualElement#RightMenuVisualElement > Button:active {
 
 #ScaleField #unity-text-input {
     flex-grow: 1;
-    flex-shrink: 1;
+    flex-shrink: 0;
     overflow: hidden;
-    min-width: 0;
+    width: 100%;
 }
 
 #HelpDialog #unity-content-and-vertical-scroll-container > Scroller > #unity-low-button {

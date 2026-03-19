@@ -316,11 +316,9 @@ public class UIController : MonoBehaviour
 		cameraViewMenuVisElem.style.visibility = (!open || cameraViewMenuVisElem.style.visibility == Visibility.Visible)? Visibility.Hidden : Visibility.Visible;
 	}
 
-	// private void OnValueChangedScaleField(ChangeEvent<string> evt)
 	private void OnFocusOutScaleField(FocusOutEvent evt)
 	{
-		var textField = evt.target as TextField;
-		var scaleFactorString = textField.text;
+		var scaleFactorString = _scaleField.text;
 
 		if (string.IsNullOrEmpty(scaleFactorString))
 		{
