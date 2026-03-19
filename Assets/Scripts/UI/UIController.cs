@@ -311,9 +311,10 @@ public class UIController : MonoBehaviour
 
 	private void ShowCameraView(in bool open = true)
 	{
-		_buttonCameraView?.EnableInClassList("selected", open);
 		var cameraViewMenuVisElem = _rootVisualElement.Q<VisualElement>("CameraViewMenu");
-		cameraViewMenuVisElem.style.visibility = (!open || cameraViewMenuVisElem.style.visibility == Visibility.Visible)? Visibility.Hidden : Visibility.Visible;
+		var isVisible = cameraViewMenuVisElem.style.visibility == Visibility.Visible;
+		cameraViewMenuVisElem.style.visibility = (!open || isVisible)? Visibility.Hidden : Visibility.Visible;
+		_buttonCameraView?.EnableInClassList("selected", !isVisible);
 	}
 
 	private void OnFocusOutScaleField(FocusOutEvent evt)
