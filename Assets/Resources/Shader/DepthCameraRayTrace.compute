@@ -65,6 +65,11 @@ void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
         ndc.y * _TanHalfFovV,
         1.0);
 
+    // Cosine of the angle between this ray and the optical axis.
+    // Used to convert radial hit distance to planar Z-depth so that
+    // flat surfaces produce uniform depth values across the image.
+    const float cosAngle = rsqrt(dot(dirLocal, dirLocal)); // 1 / length(dirLocal)
+
     // Transform to world space
     const float3 dirWorld = normalize(
         dirLocal.x * _CameraRight +
@@ -82,7 +87,10 @@ void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
         dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
 
     const uint idx = pixel.y * _Width + pixel.x;
-    _DepthOutput[idx] = hit.IsValid() ? (hit.hitDistance / _FarClip) : 0.0;
+
+    // Project radial distance onto the camera forward axis to get planar Z-depth.
+    // Without this, depth-to-pointcloud reconstruction curves flat surfaces.
+    _DepthOutput[idx] = hit.IsValid() ? (hit.hitDistance * cosAngle / _FarClip) : 0.0;
 }
 
 // ---------- Kernel entry point (local copy without #pragma kernel to avoid Vulkan warning) ----------
