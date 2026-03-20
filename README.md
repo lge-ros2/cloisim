@@ -38,12 +38,14 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] LiDAR Sensor
     - [X] 2D: Due to performance issue, < 40hz is recommended
     - [X] 3D: Raster method using depth shader, same vertical angle `-N° to N°` required
+      - [X] pattern based like Livox
   - [X] Sonar/IR sensor
   - [X] IMU
   - [X] Contact
   - [X] Camera: Due to performance issue, < 40hz is recommended
     - [ ] Camera intrinsic parameter
     - [X] Depth Camera
+	  - [X] VCSEL Pattern applied 
     - [X] Multi-camera
     - [X] RealSense (RGB + IR1 + IR2 + Depth)
     - [X] Semantic Segmentation Camera
@@ -57,7 +59,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] Visualization, <visualize>true</visualize>
 	- [X] LiDAR Sensor
 	  - [X] line visualization
-	  - [ ] point cloud for 3D
+	  - [X] point cloud for 3D
 - [X] Physics
   - [ ] Support all physics parameters in SDF specification
   - [X] Support `<Joint type="revolute2">`
@@ -157,7 +159,7 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 ### Tested environment (latest)
 
-- Unity Editor Version: *'6000.3.11f1 (LTS)'*.
+- Unity Editor Version: *Unity 6.4 '6000.4.0f1 (Supported)'*.
 
 - Linux Machine
   - OS: Ubuntu 24.04.4 LTS
