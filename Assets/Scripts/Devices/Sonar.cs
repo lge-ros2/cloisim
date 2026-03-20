@@ -15,11 +15,10 @@ namespace SensorDevices
 	public class Sonar : Device
 	{
 		private static readonly float Margin = 0.001f;
-		private const int CollisionDecayRate = 5;
 
 		private messages.SonarStamped _sonarStamped = null;
 
-		private ConcurrentDictionary<EntityId, int> _collisionMonitoringList = new();
+		private ConcurrentDictionary<EntityId, byte> _collisionMonitoringList = new();
 
 		[SerializeField]
 		private string _geometry = string.Empty;
@@ -203,34 +202,14 @@ namespace SensorDevices
 			_collisionMonitoringList.TryAdd(other.gameObject.GetEntityId(), 0);
 		}
 
-		void OnTriggerStay(Collider other)
-		{
-			_collisionMonitoringList.AddOrUpdate(other.gameObject.GetEntityId(), 0, (key, existingValues) => existingValues + 1);
-		}
-
 		void OnTriggerExit(Collider other)
 		{
-			_collisionMonitoringList.TryRemove(other.gameObject.GetEntityId(), out var _);
-			// Debug.Log(other.name + " |Exit| " + "," + sonar.Range.ToString("F5"));
+			_collisionMonitoringList.TryRemove(other.gameObject.GetEntityId(), out _);
 		}
 
 		void LateUpdate()
 		{
-			if (_collisionMonitoringList.Count > 0)
-			{
-				foreach (var elem in _collisionMonitoringList)
-				{
-					if (elem.Value < 0)
-					{
-						_collisionMonitoringList.TryRemove(elem.Key, out var _);
-					}
-					else
-					{
-						_collisionMonitoringList.AddOrUpdate(elem.Key, 0, (key, existingValues) => existingValues - CollisionDecayRate);
-					}
-				}
-			}
-			else
+			if (_collisionMonitoringList.IsEmpty)
 			{
 				OnReset();
 			}
@@ -247,10 +226,8 @@ namespace SensorDevices
 			{
 				return;
 			}
-			else
-			{
-				_sensorTimeElapsed = 0.0f;
-			}
+
+			_sensorTimeElapsed = 0.0f;
 
 			_detectedRange = float.NegativeInfinity;
 			var contactPoint = Vector3.zero;
