@@ -1,0 +1,126 @@
+// Livox Lidar ray trace shader (Unified Ray Tracing, Compute backend).
+//
+// Casts rays using a non-repetitive scan pattern loaded from a CSV-derived
+// GPU buffer. Each ray direction is defined by (azimuth, zenith) angles
+// in standard spherical coordinates:
+//   azimuth  = horizontal rotation angle (radians)
+//   zenith   = polar angle from Z-up (radians): 0 = up, π/2 = horizontal
+//
+// Outputs XYZ hit positions in the sensor's local frame (SDF/ROS convention:
+// X = forward, Y = left, Z = up). A miss writes NaN for all three components.
+
+#pragma only_renderers d3d11 vulkan metal
+#pragma target 4.5
+
+#pragma kernel MainRayGenShader
+#pragma kernel ComputeIndirectDispatchDims
+
+// ---------- URT Compute backend setup ----------
+#define UNIFIED_RT_BACKEND_COMPUTE
+#define UNIFIED_RT_GROUP_SIZE_X 64
+#define UNIFIED_RT_GROUP_SIZE_Y 1
+
+#include "Packages/com.unity.render-pipelines.core/Runtime/UnifiedRayTracing/Bindings.hlsl"
+#include "Packages/com.unity.render-pipelines.core/Runtime/UnifiedRayTracing/TraceRayAndQueryHit.hlsl"
+
+// ---------- Acceleration structure ----------
+UNIFIED_RT_DECLARE_ACCEL_STRUCT(_AccelStruct);
+
+// ---------- Scan pattern buffer ----------
+// All pattern entries from CSV: (azimuth_rad, zenith_rad) pairs
+StructuredBuffer<float2> _ScanPattern;
+uint _PatternSize;       // total entries in pattern buffer
+uint _SampleCount;       // rays to cast this frame (samplesPerCycle / downsample)
+uint _StartIndex;        // current offset into pattern
+uint _DownsampleStep;    // step through pattern entries (downsample value)
+
+// ---------- Output buffer ----------
+// 3 floats per ray: (x, y, z) in sensor-local frame. Length = _SampleCount * 3
+RWStructuredBuffer<float> _XYZOutput;
+
+// ---------- Range parameters ----------
+float _RangeMin;                // near clip (meters)
+float _RangeMax;                // far clip (meters)
+float _RangeLinearResolution;   // quantisation step (0 = disabled)
+
+// ---------- Sensor pose (world space) ----------
+float3 _SensorPosition;
+float3 _SensorRight;
+float3 _SensorUp;
+float3 _SensorForward;
+
+// ---------- Ray generation ----------
+void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
+{
+    const uint rayIdx = dispatchInfo.dispatchThreadID.x;
+    if (rayIdx >= _SampleCount)
+        return;
+
+    // Look up angles from pattern buffer with wrapping
+    uint patternIdx = (_StartIndex + rayIdx * _DownsampleStep) % _PatternSize;
+    float2 angles = _ScanPattern[patternIdx];
+    float azimuth = angles.x;   // horizontal angle (radians)
+    float zenith  = angles.y;   // polar angle from Z-up (radians)
+
+    // Standard spherical coordinate → direction in sensor-local frame
+    //   x = sin(zenith) * cos(azimuth)  → forward
+    //   y = sin(zenith) * sin(azimuth)  → left
+    //   z = cos(zenith)                 → up
+    float cosZ, sinZ, cosA, sinA;
+    sincos(zenith, sinZ, cosZ);
+    sincos(azimuth, sinA, cosA);
+
+    float3 dirLocal = float3(sinZ * cosA, sinZ * sinA, cosZ);
+
+    // Transform to world space using sensor basis vectors
+    float3 dirWorld = normalize(
+        dirLocal.x * _SensorForward +
+        dirLocal.y * (-_SensorRight) +
+        dirLocal.z * _SensorUp);
+
+    UnifiedRT::Ray ray;
+    ray.origin    = _SensorPosition;
+    ray.direction = dirWorld;
+    ray.tMin      = _RangeMin;
+    ray.tMax      = _RangeMax;
+
+    UnifiedRT::RayTracingAccelStruct accelStruct = UNIFIED_RT_GET_ACCEL_STRUCT(_AccelStruct);
+    UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(
+        dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
+
+    uint outIdx = rayIdx * 3;
+    float nanVal = asfloat(0x7FC00000); // NaN
+
+    if (hit.IsValid())
+    {
+        float dist = hit.hitDistance;
+
+        // Apply linear resolution quantisation
+        if (_RangeLinearResolution > 0)
+            dist = round(dist / _RangeLinearResolution) * _RangeLinearResolution;
+
+        // Clamp to valid range
+        if (dist < _RangeMin || dist > _RangeMax)
+        {
+            _XYZOutput[outIdx + 0] = nanVal;
+            _XYZOutput[outIdx + 1] = nanVal;
+            _XYZOutput[outIdx + 2] = nanVal;
+        }
+        else
+        {
+            // Hit position in sensor-local frame (SDF/ROS convention)
+            _XYZOutput[outIdx + 0] = dirLocal.x * dist;
+            _XYZOutput[outIdx + 1] = dirLocal.y * dist;
+            _XYZOutput[outIdx + 2] = dirLocal.z * dist;
+        }
+    }
+    else
+    {
+        _XYZOutput[outIdx + 0] = nanVal;
+        _XYZOutput[outIdx + 1] = nanVal;
+        _XYZOutput[outIdx + 2] = nanVal;
+    }
+}
+
+// ---------- Kernel entry point ----------
+#include "ComputeRaygenShaderLocal.hlsl"

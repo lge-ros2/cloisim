@@ -139,6 +139,7 @@ namespace SensorDevices
 		protected new void OnDestroy()
 		{
 			UnloadComputeShader();
+			UnloadLivoxComputeShader();
 
 			_startLaserWork = false;
 			_dataAvailable.Set();
@@ -151,6 +152,9 @@ namespace SensorDevices
 			}
 
 			_outputQueue.Clear();
+
+			// Clean up Livox-specific resources
+			CleanupLivoxResources();
 
 			// Clean up per-sensor URT resources
 			_urtCmdBuffer?.Release();
@@ -188,6 +192,13 @@ namespace SensorDevices
 				_vertical = new LaserData.Scan(1);
 			}
 
+			// Livox mode: different buffer layout (XYZ triples in Ranges)
+			if (_isLivoxMode && _livoxPattern != null)
+			{
+				SetupLivoxMessages();
+				return;
+			}
+
 			_laserScan.Frame = DeviceName;
 			_laserScan.Count = _horizontal.samples;
 			_laserScan.AngleMin = _horizontal.angle.min * Mathf.Deg2Rad;
@@ -221,6 +232,13 @@ namespace SensorDevices
 
 		private void SetupURT()
 		{
+			// Livox mode: use dedicated compute shader with pattern buffer
+			if (_isLivoxMode && _livoxPattern != null)
+			{
+				SetupLivoxURT();
+				return;
+			}
+
 			LoadComputeShader();
 
 			if (!URTSensorManager.Register(GetEntityId()))
@@ -298,7 +316,7 @@ namespace SensorDevices
 
 		#endregion
 
-		#region "ISensorRenderable"
+		#region "BatchedRenderingInterface"
 
 		public bool IsURT => true;
 		public float RenderPeriod => UpdatePeriod;
@@ -315,7 +333,10 @@ namespace SensorDevices
 
 		public bool ExecuteRenderStep(float realtimeNow)
 		{
-			ExecuteRender();
+			if (_isLivoxMode)
+				ExecuteLivoxRender();
+			else
+				ExecuteRender();
 			return true;
 		}
 
@@ -433,39 +454,48 @@ namespace SensorDevices
 			{
 				if (_outputQueue.TryDequeue(out item))
 				{
-					var laserScanStamped = new messages.LaserScanStamped();
-					laserScanStamped.Time = new messages.Time();
-					laserScanStamped.Time.Set(item.capturedTime);
+					messages.LaserScanStamped laserScanStamped;
 
-					// Hold reference for pool return after data has been copied
-					var rangeDataToReturn = item.rangeData;
-
-					laserScanStamped.Scan = _laserScan;
-
-					var laserScan = laserScanStamped.Scan;
-					laserScan.WorldPose.Position.Set(item.sensorWorldPose.position);
-					laserScan.WorldPose.Orientation.Set(item.sensorWorldPose.rotation);
-
-					// Direct copy: GPU output is already in the correct order
-					var ranges = laserScan.Ranges;
-					for (var i = 0; i < ranges.Length && i < item.rangeData.Length; i++)
+					if (_isLivoxMode)
 					{
-						ranges[i] = item.rangeData[i];
+						// Livox: XYZ triples copied directly, no noise/filter
+						laserScanStamped = ProcessLivoxData(
+							item.capturedTime, item.sensorWorldPose, item.rangeData);
 					}
-
-					if (_noise != null)
+					else
 					{
-						_noise.Apply<double>(ranges);
-					}
+						laserScanStamped = new messages.LaserScanStamped();
+						laserScanStamped.Time = new messages.Time();
+						laserScanStamped.Time.Set(item.capturedTime);
 
-					if (_laserFilter != null)
-					{
-						_laserFilter.DoFilter(ref laserScan);
+						laserScanStamped.Scan = _laserScan;
+
+						var laserScan = laserScanStamped.Scan;
+						laserScan.WorldPose.Position.Set(item.sensorWorldPose.position);
+						laserScan.WorldPose.Orientation.Set(item.sensorWorldPose.rotation);
+
+						// Direct copy: GPU output is already in the correct order
+						var ranges = laserScan.Ranges;
+						for (var i = 0; i < ranges.Length && i < item.rangeData.Length; i++)
+						{
+							ranges[i] = item.rangeData[i];
+						}
+
+						if (_noise != null)
+						{
+							_noise.Apply<double>(ranges);
+						}
+
+						if (_laserFilter != null)
+						{
+							_laserFilter.DoFilter(ref laserScan);
+						}
 					}
 
 					EnqueueMessage(laserScanStamped);
 
 					// Return pooled array now that data has been copied to double[] ranges
+					var rangeDataToReturn = item.rangeData;
 					if (rangeDataToReturn != null)
 						_rangeDataPool.Enqueue(rangeDataToReturn);
 
@@ -486,7 +516,7 @@ namespace SensorDevices
 			visualizer.layer = LayerMask.NameToLayer("Visualization");
 			visualizer.transform.SetParent(this.transform, false);
 
-			if (_vertical.samples > 1)
+			if (_isLivoxMode || _vertical.samples > 1)
 			{
 				yield return OnVisualizePointCloud(visualizer);
 			}

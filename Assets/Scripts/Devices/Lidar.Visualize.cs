@@ -53,12 +53,6 @@ namespace SensorDevices
 			ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
-			var startAngleH = _horizontal.angle.min;
-			var startAngleV = _vertical.angle.min;
-			var endAngleV = _vertical.angle.max;
-			var horizontalSamples = _horizontal.samples;
-			var rangeMin = _scanRange.min;
-			var rangeMax = _scanRange.max;
 
 			if (_indexForVisualize >= _maxCountForVisualize)
 			{
@@ -69,6 +63,95 @@ namespace SensorDevices
 			hue = (hue % 1f + 1f) % 1f;
 
 			var particles = new ParticleSystem.Particle[_totalSamples];
+
+			if (_isLivoxMode)
+			{
+				yield return OnVisualizePointCloudLivox(ps, particles, waitForSeconds, hue);
+			}
+			else
+			{
+				yield return OnVisualizePointCloudStandard(ps, particles, waitForSeconds, hue);
+			}
+		}
+
+		/// <summary>
+		/// Livox point cloud visualization: reads pre-computed XYZ triples from Ranges.
+		/// </summary>
+		private IEnumerator OnVisualizePointCloudLivox(
+			ParticleSystem ps, ParticleSystem.Particle[] particles,
+			WaitForSeconds waitForSeconds, float hue)
+		{
+			var rangeMax = _scanRange.max;
+
+			while (true)
+			{
+				var rangeData = GetRangeData();
+				if (rangeData == null)
+				{
+					yield return waitForSeconds;
+					continue;
+				}
+
+				var particleCount = 0;
+				var sensorWorldRotation = transform.rotation;
+				var sensorWorldPosition = transform.position;
+
+				// Ranges stores XYZ triples: [x0, y0, z0, x1, y1, z1, ...]
+				var pointCount = (int)_totalSamples;
+				for (var i = 0; i < pointCount; i++)
+				{
+					var baseIdx = i * 3;
+					if (baseIdx + 2 >= rangeData.Count)
+						break;
+
+					var x = (float)rangeData[baseIdx + 0];
+					var y = (float)rangeData[baseIdx + 1];
+					var z = (float)rangeData[baseIdx + 2];
+
+					if (float.IsNaN(x) || float.IsNaN(y) || float.IsNaN(z))
+						continue;
+
+					// Convert from sensor-local SDF frame (X-fwd, Y-left, Z-up)
+					// to Unity world space
+					var localPos = new Vector3(-y, z, x);
+					var worldPos = sensorWorldPosition + sensorWorldRotation * localPos;
+
+					// Color by elevation (z component in SDF frame)
+					var dist = Mathf.Sqrt(x * x + y * y + z * z);
+					if (dist > rangeMax)
+						continue;
+
+					var elevation = Mathf.Atan2(z, Mathf.Sqrt(x * x + y * y));
+					var t = Mathf.InverseLerp(-0.15f, 1.0f, elevation);
+					var pointColor = Color.HSVToRGB(t, 0.9f, 0.95f);
+					pointColor.a = AlphaForVisualize;
+
+					particles[particleCount].position = worldPos;
+					particles[particleCount].startColor = pointColor;
+					particles[particleCount].startSize = 0.004f;
+					particles[particleCount].remainingLifetime = 1f;
+					particleCount++;
+				}
+
+				ps.SetParticles(particles, particleCount);
+
+				yield return waitForSeconds;
+			}
+		}
+
+		/// <summary>
+		/// Standard 3D lidar point cloud visualization: computes positions from angles + ranges.
+		/// </summary>
+		private IEnumerator OnVisualizePointCloudStandard(
+			ParticleSystem ps, ParticleSystem.Particle[] particles,
+			WaitForSeconds waitForSeconds, float hue)
+		{
+			var startAngleH = _horizontal.angle.min;
+			var startAngleV = _vertical.angle.min;
+			var endAngleV = _vertical.angle.max;
+			var horizontalSamples = _horizontal.samples;
+			var rangeMin = _scanRange.min;
+			var rangeMax = _scanRange.max;
 
 			while (true)
 			{
