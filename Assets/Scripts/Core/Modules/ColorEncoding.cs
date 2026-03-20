@@ -31,6 +31,7 @@ public class ColorEncoding
 		if (uid < 0)
 			uid = -uid + 1;
 
+
 		var sid =
 			(SparsifyBits((byte)(uid >> 16), 3) << 2) |
 			(SparsifyBits((byte)(uid >> 8), 3) << 1) |

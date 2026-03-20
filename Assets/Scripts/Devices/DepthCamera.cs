@@ -207,7 +207,7 @@ namespace SensorDevices
 			}
 
 			// Unregister from shared URT manager
-			URTSensorManager.Unregister(GetInstanceID());
+			URTSensorManager.Unregister(GetEntityId());
 
 			base.OnDestroy();
 		}
@@ -387,7 +387,7 @@ namespace SensorDevices
 		/// </summary>
 		private void SetupURTPerCamera()
 		{
-			if (!URTSensorManager.Register(GetInstanceID()))
+			if (!URTSensorManager.Register(GetEntityId()))
 			{
 				Debug.LogError("[DepthCamera] Failed to register with URTSensorManager");
 				return;

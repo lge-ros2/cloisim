@@ -21,7 +21,7 @@ namespace RuntimeGizmos
 		{
 			if(transformGizmo == null && autoFindTransformGizmo)
 			{
-				transformGizmo = FindFirstObjectByType<TransformGizmo>();
+				transformGizmo = FindAnyObjectByType<TransformGizmo>();
 			}
 
 			transformGizmo.manuallyHandleGizmo = true;

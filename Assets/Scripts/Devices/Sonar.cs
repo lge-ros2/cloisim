@@ -19,7 +19,7 @@ namespace SensorDevices
 
 		private messages.SonarStamped _sonarStamped = null;
 
-		private ConcurrentDictionary<int, int> _collisionMonitoringList = new();
+		private ConcurrentDictionary<EntityId, int> _collisionMonitoringList = new();
 
 		[SerializeField]
 		private string _geometry = string.Empty;
@@ -200,17 +200,17 @@ namespace SensorDevices
 
 		void OnTriggerEnter(Collider other)
 		{
-			_collisionMonitoringList.TryAdd(other.gameObject.GetInstanceID(), 0);
+			_collisionMonitoringList.TryAdd(other.gameObject.GetEntityId(), 0);
 		}
 
 		void OnTriggerStay(Collider other)
 		{
-			_collisionMonitoringList.AddOrUpdate(other.gameObject.GetInstanceID(), 0, (key, existingValues) => existingValues + 1);
+			_collisionMonitoringList.AddOrUpdate(other.gameObject.GetEntityId(), 0, (key, existingValues) => existingValues + 1);
 		}
 
 		void OnTriggerExit(Collider other)
 		{
-			_collisionMonitoringList.TryRemove(other.gameObject.GetInstanceID(), out var _);
+			_collisionMonitoringList.TryRemove(other.gameObject.GetEntityId(), out var _);
 			// Debug.Log(other.name + " |Exit| " + "," + sonar.Range.ToString("F5"));
 		}
 

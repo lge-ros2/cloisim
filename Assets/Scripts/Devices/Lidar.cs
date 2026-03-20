@@ -160,7 +160,7 @@ namespace SensorDevices
 				_csRayTrace = null;
 			}
 
-			URTSensorManager.Unregister(GetInstanceID());
+			URTSensorManager.Unregister(GetEntityId());
 
 			base.OnDestroy();
 		}
@@ -211,7 +211,7 @@ namespace SensorDevices
 		{
 			LoadComputeShader();
 
-			if (!URTSensorManager.Register(GetInstanceID()))
+			if (!URTSensorManager.Register(GetEntityId()))
 			{
 				Debug.LogError("[Lidar] Failed to register with URTSensorManager");
 				return;

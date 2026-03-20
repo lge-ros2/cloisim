@@ -308,7 +308,7 @@ public class ModelImporter : MonoBehaviour
 				if (_targetObjectForCopy != null)
 				{
 					var instantiatedObject = GameObject.Instantiate(_targetObjectForCopy, _targetObjectForCopy.root, true);
-					instantiatedObject.name = $"{_targetObjectForCopy.name}_clone_{instantiatedObject.GetInstanceID()}";
+					instantiatedObject.name = $"{_targetObjectForCopy.name}_clone_{instantiatedObject.GetEntityId()}";
 
 					if (_targetObjectForCopy.CompareTag("Road"))
 					{

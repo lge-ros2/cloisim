@@ -56,7 +56,7 @@ public class URTSensorManager : MonoBehaviour
 	private bool _sceneDirty = true;
 
 	/// <summary>Cameras registered for shared BVH access.</summary>
-	private readonly HashSet<int> _registeredCameras = new();
+	private readonly HashSet<EntityId> _registeredCameras = new();
 	[SerializeField]
 	private int _frameOfLastBuild = -1;
 
@@ -87,7 +87,7 @@ public class URTSensorManager : MonoBehaviour
 	/// Register a DepthCamera for shared BVH access.
 	/// Call from SetupCamera(). Returns false if initialization failed.
 	/// </summary>
-	public static bool Register(int cameraInstanceId)
+	public static bool Register(EntityId cameraInstanceId)
 	{
 		var inst = Instance;
 		if (inst == null)
@@ -111,7 +111,7 @@ public class URTSensorManager : MonoBehaviour
 	/// Unregister a DepthCamera. Call from OnDestroy().
 	/// When no cameras remain, shared resources are released.
 	/// </summary>
-	public static void Unregister(int cameraInstanceId)
+	public static void Unregister(EntityId cameraInstanceId)
 	{
 		var inst = Instance;
 		if (inst == null) return;
@@ -243,7 +243,7 @@ public class URTSensorManager : MonoBehaviour
 		_rtInstances.Clear();
 
 		// Use FindObjectsByType for active scene renderers only (cheaper than Resources.FindObjectsOfTypeAll)
-		var renderers = UnityEngine.Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None);
+		var renderers = UnityEngine.Object.FindObjectsByType<MeshRenderer>();
 
 		int addedCount = 0;
 		int skippedLayer = 0;

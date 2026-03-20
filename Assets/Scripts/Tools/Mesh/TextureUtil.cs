@@ -20,7 +20,7 @@ public static class TextureUtil
 	};
 
 	private static Material _rotateMaterial = new Material(Shader.Find("Hidden/Rotate180"));
-	private static readonly Dictionary<int, RenderTexture> _rtForSaveImageCache = new();
+	private static readonly Dictionary<EntityId, RenderTexture> _rtForSaveImageCache = new();
 
 	static TextureUtil()
 	{
@@ -192,7 +192,7 @@ public static class TextureUtil
 
 	private static void SaveRawImage(this Texture2D texture, in string path, in string name)
 	{
-		var id = texture.GetInstanceID();
+		var id = texture.GetEntityId();
 		if (!_rtForSaveImageCache.TryGetValue(id, out var rt) ||
 			rt == null || !rt.IsCreated() ||
 			rt.width != texture.width || rt.height != texture.height)
