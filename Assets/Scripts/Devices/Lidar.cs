@@ -61,6 +61,14 @@ namespace SensorDevices
 		private ConcurrentQueue<(double, Pose, float[])> _outputQueue = new();
 		private readonly AutoResetEvent _dataAvailable = new(false);
 
+		/// <summary>
+		/// Pool of pre-allocated float arrays for readback results.
+		/// Avoids GC allocation (`new float[]`) on the main thread every
+		/// AsyncGPUReadback callback, which contributes to frame spikes.
+		/// </summary>
+		private ConcurrentQueue<float[]> _rangeDataPool = new();
+		private const int RangeDataPoolSize = 8;
+
 		#region "Unified Ray Tracing (per-sensor resources)"
 		private static ComputeShader ComputeShaderLidarRayTrace = null;
 		private ComputeShader _csRayTrace = null;
@@ -203,6 +211,10 @@ namespace SensorDevices
 			_laserScan.Intensities = new double[_totalSamples];
 			Array.Fill(_laserScan.Ranges, double.NaN);
 			Array.Fill(_laserScan.Intensities, double.NaN);
+
+			// Pre-populate range data pool to avoid runtime GC allocations
+			for (var i = 0; i < RangeDataPoolSize; i++)
+				_rangeDataPool.Enqueue(new float[_totalSamples]);
 		}
 
 		#region "URT Setup"
@@ -358,7 +370,12 @@ namespace SensorDevices
 				}
 
 				var src = req.GetData<float>();
-				var rangeData = new float[src.Length];
+
+				// Reuse pooled array to avoid GC allocation on the main thread.
+				// Falls back to allocation only if pool is exhausted.
+				if (!_rangeDataPool.TryDequeue(out var rangeData) || rangeData.Length != src.Length)
+					rangeData = new float[src.Length];
+
 				src.CopyTo(rangeData);
 
 				_outputQueue.Enqueue((capturedTime, sensorWorldPose, rangeData));
@@ -420,6 +437,9 @@ namespace SensorDevices
 					laserScanStamped.Time = new messages.Time();
 					laserScanStamped.Time.Set(item.capturedTime);
 
+					// Hold reference for pool return after data has been copied
+					var rangeDataToReturn = item.rangeData;
+
 					laserScanStamped.Scan = _laserScan;
 
 					var laserScan = laserScanStamped.Scan;
@@ -444,6 +464,10 @@ namespace SensorDevices
 					}
 
 					EnqueueMessage(laserScanStamped);
+
+					// Return pooled array now that data has been copied to double[] ranges
+					if (rangeDataToReturn != null)
+						_rangeDataPool.Enqueue(rangeDataToReturn);
 
 #if UNITY_EDITOR
 					UpdateProfiler("LIDAR", _laserScan.Count * _laserScan.VerticalCount * sizeof(double) * 2);

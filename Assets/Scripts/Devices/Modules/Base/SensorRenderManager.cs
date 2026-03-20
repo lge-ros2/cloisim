@@ -41,17 +41,41 @@ public class SensorRenderManager : MonoBehaviour
 
 	/// <summary>
 	/// Maximum number of rasterization-based (non-URT) sensor renders allowed
-	/// per frame. URT sensors (compute dispatch only) are not counted.
-	/// This prevents frame spikes when many cameras become due simultaneously.
+	/// per frame. This prevents frame spikes when many cameras become due simultaneously.
 	/// </summary>
 	private const int MaxRasterRendersPerFrame = 2;
+
+	/// <summary>
+	/// Maximum number of URT (compute dispatch + AsyncGPUReadback) sensor renders
+	/// allowed per frame. Without a cap, simultaneous readback completions cause
+	/// callback storms in EarlyUpdate.UpdateAsyncReadbackManager (40ms+ spikes).
+	/// Keep this low (1-2) because readback callbacks from prior frames can still
+	/// cluster even if dispatches are spread out.
+	/// </summary>
+	private const int MaxURTRendersPerFrame = 2;
+
+	/// <summary>Number of distinct jitter slots used to stagger sensor schedules.</summary>
+	private const int JitterSlotCount = 7;
+
+	/// <summary>Time offset (seconds) between adjacent jitter slots.</summary>
+	private const float JitterStepSeconds = 0.005f;
+
+	/// <summary>
+	/// If a sensor falls behind by more than this many periods, its schedule
+	/// is snapped forward instead of bursting through all missed renders.
+	/// </summary>
+	private const float MaxCatchUpPeriods = 3f;
 
 	private readonly List<SensorEntry> _entries = new();
 	private readonly List<(ISensorRenderable sensor, float initialDelay)> _pendingAdd = new();
 	private readonly List<ISensorRenderable> _pendingRemove = new();
 
+	private static int s_registrationCounter = 0;
+
 	/// <summary>
 	/// Register a sensor with an optional initial delay before the first render.
+	/// A small per-sensor jitter is added to prevent schedule synchronization
+	/// that causes periodic readback callback storms.
 	/// </summary>
 	public static void Register(ISensorRenderable sensor, float initialDelay = 0.1f)
 	{
@@ -64,7 +88,10 @@ public class SensorRenderManager : MonoBehaviour
 		foreach (var p in inst._pendingAdd)
 			if (p.sensor == sensor) return;
 
-		inst._pendingAdd.Add((sensor, initialDelay));
+		// Stagger sensors by adding a small offset based on registration order.
+		// This prevents all sensors from becoming due on the same frame.
+		var jitter = (s_registrationCounter++ % JitterSlotCount) * JitterStepSeconds;
+		inst._pendingAdd.Add((sensor, initialDelay + jitter));
 	}
 
 	public static void Unregister(ISensorRenderable sensor)
@@ -105,8 +132,8 @@ public class SensorRenderManager : MonoBehaviour
 		var period = entry.Sensor.RenderPeriod;
 		entry.NextRenderTime += period;
 
-		// If too far behind (> 3 periods), snap forward to avoid burst catch-up
-		if (entry.NextRenderTime < realtimeNow - period * 3f)
+		// If too far behind, snap forward to avoid burst catch-up
+		if (entry.NextRenderTime < realtimeNow - period * MaxCatchUpPeriods)
 			entry.NextRenderTime = realtimeNow + period;
 	}
 
@@ -125,17 +152,24 @@ public class SensorRenderManager : MonoBehaviour
 			return urgB.CompareTo(urgA);
 		});
 
-		// Render ready sensors with a per-frame budget for rasterization renders.
-		// URT sensors (compute-only, no Camera.Render) bypass the budget.
+		// Render ready sensors with a per-frame budget for both raster and URT renders.
+		// This prevents AsyncGPUReadback callback storms when many sensors fire together.
 		var rasterRenderCount = 0;
+		var urtRenderCount = 0;
 		for (var i = 0; i < _entries.Count; i++)
 		{
 			var entry = _entries[i];
 			if (!entry.Sensor.CanRender || (realtimeNow < entry.NextRenderTime))
 				continue;
 
-			// Enforce budget only for rasterization sensors
-			if (!entry.Sensor.IsURT)
+			// Enforce budget for both sensor types
+			if (entry.Sensor.IsURT)
+			{
+				if (urtRenderCount >= MaxURTRendersPerFrame)
+					continue;
+				urtRenderCount++;
+			}
+			else
 			{
 				if (rasterRenderCount >= MaxRasterRendersPerFrame)
 					continue;

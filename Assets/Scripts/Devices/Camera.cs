@@ -184,17 +184,27 @@ namespace SensorDevices
 		}
 
 		/// <summary>
-		/// Force readback format to match the render target's native format.
-		/// 3-byte formats like R8G8B8_SRGB are unsupported for async GPU readback
-		/// on Vulkan. Always read back as RGBA and strip channels on CPU.
+		/// Force readback format to match the render target's native format when
+		/// the requested format is not natively supported by the GPU for async
+		/// readback (e.g. R8G8B8_SRGB on Vulkan). In that case Unity either
+		/// performs an expensive internal conversion or returns data in the RT's
+		/// native format, triggering a per-pixel CPU conversion in
+		/// ConvertReadbackData() that can cost 60ms+ for HD resolutions.
+		///
+		/// By reading back as RGBA (matching the RT) and stripping the alpha
+		/// channel afterwards, we avoid the GPU-side penalty entirely and keep
+		/// the CPU conversion path — which is unavoidable either way — under
+		/// our own control. The real fix is to store/publish RGBA and skip the
+		/// strip altogether (see ImageProcessing).
 		/// </summary>
 		protected void CheckReadbackFormatSupport()
 		{
-			// if (_readbackDstFormat != _targetColorFormat)
-			// {
-			// 	Debug.Log($"{DeviceName}: Readback will use [{_targetColorFormat}] (RT native) instead of [{_readbackDstFormat}], with CPU conversion");
-			// 	_readbackDstFormat = _targetColorFormat;
-			// }
+			if (!SystemInfo.IsFormatSupported(_readbackDstFormat, GraphicsFormatUsage.ReadPixels))
+			{
+				Debug.LogWarning($"{DeviceName}: Readback format [{_readbackDstFormat}] not supported for ReadPixels, " +
+					$"falling back to RT native format [{_targetColorFormat}] with CPU channel stripping");
+				_readbackDstFormat = _targetColorFormat;
+			}
 		}
 
 		protected virtual void SetupTexture()
@@ -561,7 +571,6 @@ namespace SensorDevices
 				}
 				else if (byteView.Length > imageData.Length)
 				{
-					Debug.Log("Converting readback data with CPU fallback (this may cause performance issues, consider using a supported format to avoid conversion)");
 					ConvertReadbackData(byteView, imageData);
 				}
 				else
@@ -574,6 +583,7 @@ namespace SensorDevices
 		/// <summary>
 		/// Convert readback data from native format (e.g. RGBA 4 BPP) to desired format (e.g. RGB 3 BPP).
 		/// Copies the first N channels from each source pixel group into the destination.
+		/// Uses block processing for the RGBA→RGB hot path to improve cache and throughput.
 		/// </summary>
 		protected virtual void ConvertReadbackData(NativeArray<byte> src, byte[] dst)
 		{
@@ -585,7 +595,6 @@ namespace SensorDevices
 				var srcBpp = src.Length / pixelCount;
 				var dstBpp = dst.Length / pixelCount;
 
-				// Fast RGBA→RGB stripping using unsafe pointer arithmetic.
 				unsafe
 				{
 					var srcPtr = (byte*)src.GetUnsafeReadOnlyPtr();
@@ -593,14 +602,32 @@ namespace SensorDevices
 					{
 						if (srcBpp == 4 && dstBpp == 3)
 						{
-							// Hot path: RGBA→RGB (most common case for sensor cameras)
-							for (var i = 0; i < pixelCount; i++)
+							// Hot path: RGBA→RGB — process 4 pixels at a time
+							// to reduce loop overhead and improve instruction throughput.
+							var blockCount = pixelCount / 4;
+							var remainder = pixelCount % 4;
+
+							var s = srcPtr;
+							var d = dstPtr;
+							for (var b = 0; b < blockCount; b++)
 							{
-								var s = srcPtr + i * 4;
-								var d = dstPtr + i * 3;
-								d[0] = s[0];
-								d[1] = s[1];
-								d[2] = s[2];
+								// Pixel 0
+								d[0] = s[0]; d[1] = s[1]; d[2] = s[2];
+								// Pixel 1
+								d[3] = s[4]; d[4] = s[5]; d[5] = s[6];
+								// Pixel 2
+								d[6] = s[8]; d[7] = s[9]; d[8] = s[10];
+								// Pixel 3
+								d[9] = s[12]; d[10] = s[13]; d[11] = s[14];
+
+								s += 16; // 4 pixels * 4 BPP
+								d += 12; // 4 pixels * 3 BPP
+							}
+							for (var i = 0; i < remainder; i++)
+							{
+								d[0] = s[0]; d[1] = s[1]; d[2] = s[2];
+								s += 4;
+								d += 3;
 							}
 						}
 						else
