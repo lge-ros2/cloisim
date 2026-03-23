@@ -19,10 +19,10 @@ namespace SensorDevices
 	public partial class Lidar
 	{
 		#region "Livox fields"
-
+		private const int XYZComponents = 3;
 		private LivoxScanPattern _livoxPattern = null;
 		private ComputeBuffer _scanPatternBuffer = null;
-		private bool _isLivoxMode = false;
+		private bool IsLivoxMode => _livoxPattern != null;
 
 		private static ComputeShader ComputeShaderLivoxRayTrace = null;
 
@@ -33,8 +33,6 @@ namespace SensorDevices
 		private static readonly int PID_StartIndex = Shader.PropertyToID("_StartIndex");
 		private static readonly int PID_DownsampleStep = Shader.PropertyToID("_DownsampleStep");
 		private static readonly int PID_XYZOutput = Shader.PropertyToID("_XYZOutput");
-
-		public bool IsLivoxMode => _isLivoxMode;
 
 		#endregion
 
@@ -72,7 +70,7 @@ namespace SensorDevices
 				return;
 			}
 
-			_isLivoxMode = true;
+			Debug.LogWarning($"[Lidar] Livox pattern loaded: {csvPath}, samples/cycle={samplesPerCycle}, downsample={downsample}");
 
 			// Re-setup messages for Livox mode (different buffer sizes)
 			SetupMessages();
@@ -100,26 +98,13 @@ namespace SensorDevices
 		{
 			var raysPerCycle = (uint)_livoxPattern.TotalRaysPerCycle;
 
-			_laserScan.Frame = DeviceName;
 			_laserScan.Count = raysPerCycle;
-
-			// Preserve the SDF-defined angle metadata for identification
-			_laserScan.AngleMin = _horizontal.angle.min * Mathf.Deg2Rad;
-			_laserScan.AngleMax = _horizontal.angle.max * Mathf.Deg2Rad;
-			_laserScan.AngleStep = _horizontal.angleStep * Mathf.Deg2Rad;
-
-			_laserScan.RangeMin = _scanRange.min;
-			_laserScan.RangeMax = _scanRange.max;
-
 			_laserScan.VerticalCount = 1;
-			_laserScan.VerticalAngleMin = _vertical.angle.min * Mathf.Deg2Rad;
-			_laserScan.VerticalAngleMax = _vertical.angle.max * Mathf.Deg2Rad;
-			_laserScan.VerticalAngleStep = _vertical.angleStep * Mathf.Deg2Rad;
 
 			_totalSamples = raysPerCycle;
 
 			// Ranges stores 3 floats per point (x, y, z) for PointCloud2Raw
-			_laserScan.Ranges = new double[_totalSamples * 3];
+			_laserScan.Ranges = new double[_totalSamples * XYZComponents];
 			_laserScan.Intensities = new double[_totalSamples];
 			Array.Fill(_laserScan.Ranges, double.NaN);
 			Array.Fill(_laserScan.Intensities, 0.0);
@@ -152,11 +137,10 @@ namespace SensorDevices
 
 			// Output buffer: 3 floats per ray (x, y, z)
 			_rangeOutputBuffer?.Release();
-			_rangeOutputBuffer = new ComputeBuffer((int)(raysPerCycle * 3), sizeof(float));
+			_rangeOutputBuffer = new ComputeBuffer((int)(raysPerCycle * XYZComponents), sizeof(float));
 
 			// Scratch buffer for 1D dispatch (width = raysPerCycle, height = 1)
-			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(
-				_rtShader, raysPerCycle, 1, 1);
+			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, raysPerCycle, 1, 1);
 
 			// Upload scan pattern to GPU (persistent buffer for entire CSV)
 			_scanPatternBuffer?.Release();
@@ -168,6 +152,15 @@ namespace SensorDevices
 			Debug.Log($"[Lidar] Livox URT initialized, rays/cycle={raysPerCycle}, " +
 				$"pattern={_livoxPattern.PatternSize}, " +
 				$"range=[{_scanRange.min:F2}, {_scanRange.max:F2}]");
+		}
+
+		private void SetLivoxPatternParams(CommandBuffer cmd, uint raysPerCycle)
+		{
+			_rtShader.SetBufferParam(cmd, PID_ScanPattern, _scanPatternBuffer);
+			_rtShader.SetIntParam(cmd, PID_PatternSize, _livoxPattern.PatternSize);
+			_rtShader.SetIntParam(cmd, PID_SampleCount, (int)raysPerCycle);
+			_rtShader.SetIntParam(cmd, PID_StartIndex, _livoxPattern.CurrentStartIndex);
+			_rtShader.SetIntParam(cmd, PID_DownsampleStep, _livoxPattern.Downsample);
 		}
 
 		/// <summary>
@@ -191,8 +184,7 @@ namespace SensorDevices
 			var raysPerCycle = (uint)_livoxPattern.TotalRaysPerCycle;
 
 			// Resize scratch buffer if needed
-			RayTracingHelper.ResizeScratchBufferForTrace(
-				_rtShader, raysPerCycle, 1, 1, ref _rtTraceScratchBuffer);
+			RayTracingHelper.ResizeScratchBufferForTrace(_rtShader, raysPerCycle, 1, 1, ref _rtTraceScratchBuffer);
 
 			// === Record GPU work ===
 			_urtCmdBuffer.Clear();
@@ -201,30 +193,16 @@ namespace SensorDevices
 			URTSensorManager.EnsureBVHReady(_urtCmdBuffer);
 
 			// 2. Bind resources
-			_rtShader.SetAccelerationStructure(_urtCmdBuffer, "_AccelStruct", URTSensorManager.AccelStruct);
-			_rtShader.SetBufferParam(_urtCmdBuffer, PID_XYZOutput, _rangeOutputBuffer);
-			_rtShader.SetBufferParam(_urtCmdBuffer, PID_ScanPattern, _scanPatternBuffer);
+			BindShaderResources(_urtCmdBuffer);
 
 			// 3. Pattern parameters
-			_rtShader.SetIntParam(_urtCmdBuffer, PID_PatternSize, _livoxPattern.PatternSize);
-			_rtShader.SetIntParam(_urtCmdBuffer, PID_SampleCount, (int)raysPerCycle);
-			_rtShader.SetIntParam(_urtCmdBuffer, PID_StartIndex, _livoxPattern.CurrentStartIndex);
-			_rtShader.SetIntParam(_urtCmdBuffer, PID_DownsampleStep, _livoxPattern.Downsample);
+			SetLivoxPatternParams(_urtCmdBuffer, raysPerCycle);
 
 			// 4. Range parameters
-			_rtShader.SetFloatParam(_urtCmdBuffer, PID_RangeMin, _scanRange.min);
-			_rtShader.SetFloatParam(_urtCmdBuffer, PID_RangeMax, _scanRange.max);
-			_rtShader.SetFloatParam(_urtCmdBuffer, PID_RangeLinearResolution, _resolution.linear);
+			SetScanRangeConfigParams(_urtCmdBuffer);
 
 			// 5. Sensor pose
-			_rtShader.SetVectorParam(_urtCmdBuffer, PID_SensorPosition,
-				new Vector4(sensorPos.x, sensorPos.y, sensorPos.z, 0f));
-			_rtShader.SetVectorParam(_urtCmdBuffer, PID_SensorRight,
-				new Vector4(sensorRight.x, sensorRight.y, sensorRight.z, 0f));
-			_rtShader.SetVectorParam(_urtCmdBuffer, PID_SensorUp,
-				new Vector4(sensorUp.x, sensorUp.y, sensorUp.z, 0f));
-			_rtShader.SetVectorParam(_urtCmdBuffer, PID_SensorForward,
-				new Vector4(sensorForward.x, sensorForward.y, sensorForward.z, 0f));
+			SetSensorPoseParams(_urtCmdBuffer, sensorPos, sensorRight, sensorUp, sensorForward);
 
 			// 6. Dispatch (1D: raysPerCycle × 1 × 1)
 			_rtShader.Dispatch(_urtCmdBuffer, _rtTraceScratchBuffer, raysPerCycle, 1, 1);
@@ -257,8 +235,7 @@ namespace SensorDevices
 		/// Process Livox readback data into LaserScanStamped message.
 		/// XYZ triples are copied directly into the Ranges array for PointCloud2Raw output.
 		/// </summary>
-		private messages.LaserScanStamped ProcessLivoxData(
-			double capturedTime, Pose sensorWorldPose, float[] xyzData)
+		private messages.LaserScanStamped ProcessLivoxData(double capturedTime, Pose sensorWorldPose, float[] xyzData)
 		{
 			var laserScanStamped = new messages.LaserScanStamped();
 			laserScanStamped.Time = new messages.Time();

@@ -53,6 +53,8 @@ namespace SensorDevices
 			set => _vertical = value;
 		}
 
+		public bool Is3DLidar => _vertical.samples > 1;
+
 		[Header("Processing")]
 		private Transform _lidarLink = null;
 
@@ -185,36 +187,10 @@ namespace SensorDevices
 			_laserScan.WorldPose.Orientation = new messages.Quaternion();
 		}
 
-		protected override void SetupMessages()
+		private void SetupStandardMessages()
 		{
-			if (_vertical.Equals(default(LaserData.Scan)))
-			{
-				_vertical = new LaserData.Scan(1);
-			}
-
-			// Livox mode: different buffer layout (XYZ triples in Ranges)
-			if (_isLivoxMode && _livoxPattern != null)
-			{
-				SetupLivoxMessages();
-				return;
-			}
-
-			_laserScan.Frame = DeviceName;
 			_laserScan.Count = _horizontal.samples;
-			_laserScan.AngleMin = _horizontal.angle.min * Mathf.Deg2Rad;
-			_laserScan.AngleMax = _horizontal.angle.max * Mathf.Deg2Rad;
-			_laserScan.AngleStep = _horizontal.angleStep * Mathf.Deg2Rad;
-
-			_laserScan.RangeMin = _scanRange.min;
-			_laserScan.RangeMax = _scanRange.max;
-
 			_laserScan.VerticalCount = _vertical.samples;
-			_laserScan.VerticalAngleMin = _vertical.angle.min * Mathf.Deg2Rad;
-			_laserScan.VerticalAngleMax = _vertical.angle.max * Mathf.Deg2Rad;
-			_laserScan.VerticalAngleStep = _vertical.angleStep * Mathf.Deg2Rad;
-
-			_resolution.angleH = (float)_horizontal.angleStep;
-			_resolution.angleV = (float)_vertical.angleStep;
 
 			_totalSamples = _laserScan.Count * _laserScan.VerticalCount;
 
@@ -222,6 +198,41 @@ namespace SensorDevices
 			_laserScan.Intensities = new double[_totalSamples];
 			Array.Fill(_laserScan.Ranges, double.NaN);
 			Array.Fill(_laserScan.Intensities, double.NaN);
+		}
+
+		protected override void SetupMessages()
+		{
+			if (_vertical.Equals(default(LaserData.Scan)))
+			{
+				_vertical = new LaserData.Scan(1);
+			}
+
+			Debug.LogWarning($"[Lidar] Setting up messages for device {DeviceName}");
+
+			_laserScan.Frame = DeviceName;
+			_laserScan.AngleMin = _horizontal.angle.min * Mathf.Deg2Rad;
+			_laserScan.AngleMax = _horizontal.angle.max * Mathf.Deg2Rad;
+			_laserScan.AngleStep = _horizontal.angleStep * Mathf.Deg2Rad;
+
+			_laserScan.RangeMin = _scanRange.min;
+			_laserScan.RangeMax = _scanRange.max;
+
+			_laserScan.VerticalAngleMin = _vertical.angle.min * Mathf.Deg2Rad;
+			_laserScan.VerticalAngleMax = _vertical.angle.max * Mathf.Deg2Rad;
+			_laserScan.VerticalAngleStep = _vertical.angleStep * Mathf.Deg2Rad;
+
+			_resolution.angleH = (float)_horizontal.angleStep;
+			_resolution.angleV = (float)_vertical.angleStep;
+
+			// Livox mode: different buffer layout (XYZ triples in Ranges)
+			if (IsLivoxMode)
+			{
+				SetupLivoxMessages();
+			}
+			else
+			{
+				SetupStandardMessages();
+			}
 
 			// Pre-populate range data pool to avoid runtime GC allocations
 			for (var i = 0; i < RangeDataPoolSize; i++)
@@ -229,16 +240,8 @@ namespace SensorDevices
 		}
 
 		#region "URT Setup"
-
-		private void SetupURT()
+		private void SetupStandardURT()
 		{
-			// Livox mode: use dedicated compute shader with pattern buffer
-			if (_isLivoxMode && _livoxPattern != null)
-			{
-				SetupLivoxURT();
-				return;
-			}
-
 			LoadComputeShader();
 
 			if (!URTSensorManager.Register(GetEntityId()))
@@ -262,14 +265,26 @@ namespace SensorDevices
 			_rangeOutputBuffer?.Release();
 			_rangeOutputBuffer = new ComputeBuffer((int)_totalSamples, sizeof(float));
 
-			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(
-				_rtShader, samplesH, samplesV, 1);
+			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, samplesH, samplesV, 1);
 
 			_urtCmdBuffer = new CommandBuffer { name = "Lidar URT Dispatch" };
 
 			Debug.Log($"[Lidar] URT initialized, samples={samplesH}x{samplesV}={_totalSamples}, " +
 				$"range=[{_scanRange.min:F2}, {_scanRange.max:F2}], " +
 				$"hAngle=[{_horizontal.angle.min:F1}, {_horizontal.angle.max:F1}] deg");
+		}
+
+		private void SetupURT()
+		{
+			// Livox mode: use dedicated compute shader with pattern buffer
+			if (IsLivoxMode)
+			{
+				SetupLivoxURT();
+			}
+			else
+			{
+				SetupStandardURT();
+			}
 		}
 
 		private void SetupNoiseLimits()
@@ -299,7 +314,11 @@ namespace SensorDevices
 			_rtShader.SetFloatParam(cmd, PID_AngleStepH, (float)_laserScan.AngleStep);
 			_rtShader.SetFloatParam(cmd, PID_AngleMinV, (float)_laserScan.VerticalAngleMin);
 			_rtShader.SetFloatParam(cmd, PID_AngleStepV, (float)_laserScan.VerticalAngleStep);
+			SetScanRangeConfigParams(cmd);
+		}
 
+		private void SetScanRangeConfigParams(CommandBuffer cmd)
+		{
 			_rtShader.SetFloatParam(cmd, PID_RangeMin, _scanRange.min);
 			_rtShader.SetFloatParam(cmd, PID_RangeMax, _scanRange.max);
 			_rtShader.SetFloatParam(cmd, PID_RangeLinearResolution, _resolution.linear);
@@ -333,10 +352,10 @@ namespace SensorDevices
 
 		public bool ExecuteRenderStep(float realtimeNow)
 		{
-			if (_isLivoxMode)
+			if (IsLivoxMode)
 				ExecuteLivoxRender();
 			else
-				ExecuteRender();
+				ExecuteStandardRender();
 			return true;
 		}
 
@@ -345,7 +364,7 @@ namespace SensorDevices
 		/// matching the lidar's configured scan angles. All rays are dispatched
 		/// in a single compute pass — no camera rotation or multi-slice stitching needed.
 		/// </summary>
-		private void ExecuteRender()
+		private void ExecuteStandardRender()
 		{
 			if (URTSensorManager.AccelStruct == null || _rtShader == null)
 				return;
@@ -440,6 +459,37 @@ namespace SensorDevices
 			_noiseParamInRawXml = noiseParamInRawXml;
 		}
 
+		private messages.LaserScanStamped ProcessStandardData(double capturedTime, Pose sensorWorldPose, float[] rangeData)
+		{
+			var laserScanStamped = new messages.LaserScanStamped();
+			laserScanStamped.Time = new messages.Time();
+			laserScanStamped.Time.Set(capturedTime);
+
+			laserScanStamped.Scan = _laserScan;
+
+			var laserScan = laserScanStamped.Scan;
+			laserScan.WorldPose.Position.Set(sensorWorldPose.position);
+			laserScan.WorldPose.Orientation.Set(sensorWorldPose.rotation);
+
+			// Direct copy: GPU output is already in the correct order
+			var ranges = laserScan.Ranges;
+			for (var i = 0; i < ranges.Length && i < rangeData.Length; i++)
+			{
+				ranges[i] = rangeData[i];
+			}
+
+			if (_noise != null)
+			{
+				_noise.Apply<double>(ranges);
+			}
+
+			if (_laserFilter != null)
+			{
+				_laserFilter.DoFilter(ref laserScan);
+			}
+			return laserScanStamped;
+		}
+
 		/// <summary>
 		/// Background thread: dequeues GPU readback results and assembles
 		/// LaserScanStamped messages. The URT output buffer is already laid
@@ -456,40 +506,14 @@ namespace SensorDevices
 				{
 					messages.LaserScanStamped laserScanStamped;
 
-					if (_isLivoxMode)
+					if (IsLivoxMode)
 					{
 						// Livox: XYZ triples copied directly, no noise/filter
-						laserScanStamped = ProcessLivoxData(
-							item.capturedTime, item.sensorWorldPose, item.rangeData);
+						laserScanStamped = ProcessLivoxData(item.capturedTime, item.sensorWorldPose, item.rangeData);
 					}
 					else
 					{
-						laserScanStamped = new messages.LaserScanStamped();
-						laserScanStamped.Time = new messages.Time();
-						laserScanStamped.Time.Set(item.capturedTime);
-
-						laserScanStamped.Scan = _laserScan;
-
-						var laserScan = laserScanStamped.Scan;
-						laserScan.WorldPose.Position.Set(item.sensorWorldPose.position);
-						laserScan.WorldPose.Orientation.Set(item.sensorWorldPose.rotation);
-
-						// Direct copy: GPU output is already in the correct order
-						var ranges = laserScan.Ranges;
-						for (var i = 0; i < ranges.Length && i < item.rangeData.Length; i++)
-						{
-							ranges[i] = item.rangeData[i];
-						}
-
-						if (_noise != null)
-						{
-							_noise.Apply<double>(ranges);
-						}
-
-						if (_laserFilter != null)
-						{
-							_laserFilter.DoFilter(ref laserScan);
-						}
+						laserScanStamped = ProcessStandardData(item.capturedTime, item.sensorWorldPose, item.rangeData);
 					}
 
 					EnqueueMessage(laserScanStamped);
@@ -516,7 +540,7 @@ namespace SensorDevices
 			visualizer.layer = LayerMask.NameToLayer("Visualization");
 			visualizer.transform.SetParent(this.transform, false);
 
-			if (_isLivoxMode || _vertical.samples > 1)
+			if (IsLivoxMode || Is3DLidar)
 			{
 				yield return OnVisualizePointCloud(visualizer);
 			}

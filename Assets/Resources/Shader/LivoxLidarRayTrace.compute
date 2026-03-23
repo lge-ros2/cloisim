@@ -36,7 +36,7 @@ uint _DownsampleStep;    // step through pattern entries (downsample value)
 
 // ---------- Output buffer ----------
 // 3 floats per ray: (x, y, z) in sensor-local frame. Length = _SampleCount * 3
-RWStructuredBuffer<float> _XYZOutput;
+RWStructuredBuffer<float> _RangeOutput;
 
 // ---------- Range parameters ----------
 float _RangeMin;                // near clip (meters)
@@ -102,23 +102,23 @@ void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
         // Clamp to valid range
         if (dist < _RangeMin || dist > _RangeMax)
         {
-            _XYZOutput[outIdx + 0] = nanVal;
-            _XYZOutput[outIdx + 1] = nanVal;
-            _XYZOutput[outIdx + 2] = nanVal;
+            _RangeOutput[outIdx + 0] = nanVal;
+            _RangeOutput[outIdx + 1] = nanVal;
+            _RangeOutput[outIdx + 2] = nanVal;
         }
         else
         {
             // Hit position in sensor-local frame (SDF/ROS convention)
-            _XYZOutput[outIdx + 0] = dirLocal.x * dist;
-            _XYZOutput[outIdx + 1] = dirLocal.y * dist;
-            _XYZOutput[outIdx + 2] = dirLocal.z * dist;
+            _RangeOutput[outIdx + 0] = dirLocal.x * dist;
+            _RangeOutput[outIdx + 1] = dirLocal.y * dist;
+            _RangeOutput[outIdx + 2] = dirLocal.z * dist;
         }
     }
     else
     {
-        _XYZOutput[outIdx + 0] = nanVal;
-        _XYZOutput[outIdx + 1] = nanVal;
-        _XYZOutput[outIdx + 2] = nanVal;
+        _RangeOutput[outIdx + 0] = nanVal;
+        _RangeOutput[outIdx + 1] = nanVal;
+        _RangeOutput[outIdx + 2] = nanVal;
     }
 }
 

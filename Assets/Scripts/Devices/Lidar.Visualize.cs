@@ -64,7 +64,7 @@ namespace SensorDevices
 
 			var particles = new ParticleSystem.Particle[_totalSamples];
 
-			if (_isLivoxMode)
+			if (IsLivoxMode)
 			{
 				yield return OnVisualizePointCloudLivox(ps, particles, waitForSeconds, hue);
 			}
@@ -100,7 +100,7 @@ namespace SensorDevices
 				var pointCount = (int)_totalSamples;
 				for (var i = 0; i < pointCount; i++)
 				{
-					var baseIdx = i * 3;
+					var baseIdx = i * XYZComponents;
 					if (baseIdx + 2 >= rangeData.Count)
 						break;
 
@@ -113,17 +113,17 @@ namespace SensorDevices
 
 					// Convert from sensor-local SDF frame (X-fwd, Y-left, Z-up)
 					// to Unity world space
-					var localPos = new Vector3(-y, z, x);
+					var localPos = SDF2Unity.Position(x, y, z);
 					var worldPos = sensorWorldPosition + sensorWorldRotation * localPos;
 
 					// Color by elevation (z component in SDF frame)
-					var dist = Mathf.Sqrt(x * x + y * y + z * z);
-					if (dist > rangeMax)
-						continue;
+					// Prevent index out of bounds if lidar parameters change at runtime
+					if (particleCount >= particles.Length)
+						break;
 
 					var elevation = Mathf.Atan2(z, Mathf.Sqrt(x * x + y * y));
 					var t = Mathf.InverseLerp(-0.15f, 1.0f, elevation);
-					var pointColor = Color.HSVToRGB(t, 0.9f, 0.95f);
+					var pointColor = Color.HSVToRGB((hue + t) % 1.0f, 0.9f, 0.95f);
 					pointColor.a = AlphaForVisualize;
 
 					particles[particleCount].position = worldPos;
@@ -179,6 +179,10 @@ namespace SensorDevices
 					if (float.IsNaN(rayData) || rayData > rangeMax)
 						continue;
 
+					// Prevent index out of bounds if lidar parameters change at runtime
+					if (particleCount >= particles.Length)
+						break;
+
 					var localAngles = Quaternion.AngleAxis(-rayAngleH, Vector3.up) * Quaternion.AngleAxis(rayAngleV, -Vector3.right);
 					var dir = sensorWorldRotation * localAngles * Vector3.forward;
 					dir.Normalize();
@@ -186,7 +190,7 @@ namespace SensorDevices
 					var hitPos = rayStartBase + dir * rayData;
 
 					var t = Mathf.InverseLerp(startAngleV, endAngleV, rayAngleV);
-					var pointColor = Color.HSVToRGB(t, 0.9f, 0.95f);
+					var pointColor = Color.HSVToRGB((hue + t) % 1.0f, 0.9f, 0.95f);
 					pointColor.a = AlphaForVisualize;
 
 					particles[particleCount].position = hitPos;
