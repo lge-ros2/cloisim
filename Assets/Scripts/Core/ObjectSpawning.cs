@@ -134,7 +134,7 @@ public class ObjectSpawning : MonoBehaviour
 					break;
 
 				case PropsType.SPHERE:
-					mesh = ProceduralMesh.CreateSphere(0.5f, 13, 13);
+					mesh = ProceduralMesh.CreateSphere(0.5f, 25, 25);
 					break;
 			}
 
@@ -283,7 +283,7 @@ public class ObjectSpawning : MonoBehaviour
 				Destroy(targetObjectTransform.gameObject);
 				yield return null;
 			}
-		}		
+		}
 		_followingList?.UpdateList();
 
 		yield return null;

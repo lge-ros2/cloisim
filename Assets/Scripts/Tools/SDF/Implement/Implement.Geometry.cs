@@ -51,6 +51,7 @@ namespace SDF
 			//
 			public static void GenerateMesh(this UE.GameObject targetParentObject, in SDF.ShapeType shape)
 			{
+				var isVisualMesh = IsVisualObject(targetParentObject);
 				var createdObject = new UE.GameObject("Primitive Mesh");
 				createdObject.tag = "Geometry";
 
@@ -65,7 +66,8 @@ namespace SDF
 				else if (shape is SDF.Sphere)
 				{
 					var sphere = shape as SDF.Sphere;
-					mesh = ProceduralMesh.CreateSphere((float)sphere.radius);
+					var resolution = isVisualMesh ? 30 : 15;
+					mesh = ProceduralMesh.CreateSphere((float)sphere.radius, resolution, resolution);
 				}
 				else if (shape is SDF.Capsule)
 				{
@@ -75,7 +77,7 @@ namespace SDF
 				else if (shape is SDF.Cylinder)
 				{
 					var cylinder = shape as SDF.Cylinder;
-					mesh = ProceduralMesh.CreateCylinder((float)cylinder.radius, (float)cylinder.length, 60);
+					mesh = ProceduralMesh.CreateCylinder((float)cylinder.radius, (float)cylinder.length, 72);
 				}
 				else if (shape is SDF.Plane)
 				{
