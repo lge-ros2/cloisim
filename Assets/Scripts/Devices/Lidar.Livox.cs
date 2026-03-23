@@ -108,6 +108,10 @@ namespace SensorDevices
 			_laserScan.Intensities = new double[_totalSamples];
 			Array.Fill(_laserScan.Ranges, double.NaN);
 			Array.Fill(_laserScan.Intensities, 0.0);
+
+			// Pre-populate range data pool to avoid runtime GC allocations
+			for (var i = 0; i < RangeDataPoolSize; i++)
+				_rangeDataPool.Enqueue(new float[_totalSamples * XYZComponents]);
 		}
 
 		/// <summary>
@@ -223,10 +227,15 @@ namespace SensorDevices
 				}
 
 				var src = req.GetData<float>();
-				var xyzData = new float[src.Length];
-				src.CopyTo(xyzData);
 
-				_outputQueue.Enqueue((capturedTime, sensorWorldPose, xyzData));
+				// Reuse pooled array to avoid GC allocation on the main thread.
+				// Falls back to allocation only if pool is exhausted.
+				if (!_rangeDataPool.TryDequeue(out var rangeData) || rangeData.Length != src.Length)
+					rangeData = new float[src.Length];
+
+				src.CopyTo(rangeData);
+
+				_outputQueue.Enqueue((capturedTime, sensorWorldPose, rangeData));
 				_dataAvailable.Set();
 			});
 		}

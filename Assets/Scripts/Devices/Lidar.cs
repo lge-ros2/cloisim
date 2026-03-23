@@ -198,6 +198,10 @@ namespace SensorDevices
 			_laserScan.Intensities = new double[_totalSamples];
 			Array.Fill(_laserScan.Ranges, double.NaN);
 			Array.Fill(_laserScan.Intensities, double.NaN);
+
+			// Pre-populate range data pool to avoid runtime GC allocations
+			for (var i = 0; i < RangeDataPoolSize; i++)
+				_rangeDataPool.Enqueue(new float[_totalSamples]);
 		}
 
 		protected override void SetupMessages()
@@ -233,10 +237,6 @@ namespace SensorDevices
 			{
 				SetupStandardMessages();
 			}
-
-			// Pre-populate range data pool to avoid runtime GC allocations
-			for (var i = 0; i < RangeDataPoolSize; i++)
-				_rangeDataPool.Enqueue(new float[_totalSamples]);
 		}
 
 		#region "URT Setup"
