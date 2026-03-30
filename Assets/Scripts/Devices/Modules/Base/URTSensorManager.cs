@@ -3,12 +3,78 @@
  *
  * SPDX-License-Identifier: MIT
  */
-
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.UnifiedRayTracing;
 using System;
 using System.Collections.Generic;
+
+public static class RayTracingResourcesExtension
+{
+	public static void LoadFromURTResourcesByManual(this RayTracingResources resources)
+	{
+		var shaderRefs = Resources.Load<URTShaderReferences>("Shader/URTShaderReferences");
+		if (shaderRefs == null)
+		{
+			Debug.LogError("[URT] Failed to load URTShaderReferences asset from Resources. Make sure the asset exists and is named 'URTShaderReferences' inside a Resources folder.");
+			return;
+		}
+
+		SetShader(resources, "geometryPoolKernels", shaderRefs.geometryPoolKernels);
+		SetShader(resources, "copyBuffer", shaderRefs.copyBuffer);
+		SetShader(resources, "copyPositions", shaderRefs.copyPositions);
+		SetShader(resources, "bitHistogram", shaderRefs.bitHistogram);
+		SetShader(resources, "blockReducePart", shaderRefs.blockReducePart);
+		SetShader(resources, "blockScan", shaderRefs.blockScan);
+		SetShader(resources, "buildHlbvh", shaderRefs.buildHlbvh);
+		SetShader(resources, "restructureBvh", shaderRefs.restructureBvh);
+		SetShader(resources, "scatter", shaderRefs.scatter);
+	}
+
+	private static void SetShader(RayTracingResources resources, string name, ComputeShader shader)
+	{
+		if (shader == null)
+		{
+			Debug.LogError($"[URT] ComputeShader for '{name}' is null. Check the URTShaderReferences asset in the editor.");
+			return;
+		}
+
+		var type = typeof(RayTracingResources);
+		string pascalName = char.ToUpper(name[0]) + name.Substring(1);
+
+		// Search fields (including C# compiler-generated backing fields)
+		string[] possibleFields = {
+			name, pascalName,
+			"m_" + pascalName, "m_" + name,
+			$"<{name}>k__BackingField", $"<{pascalName}>k__BackingField"
+		};
+
+		foreach (var pName in possibleFields)
+		{
+			var field = type.GetField(pName, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+			if (field != null)
+			{
+				field.SetValue(resources, shader);
+				return;
+			}
+		}
+
+		// Search properties
+		string[] possibleProps = { name, pascalName };
+		foreach (var pName in possibleProps)
+		{
+			var prop = type.GetProperty(pName, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+			if (prop != null && prop.CanWrite)
+			{
+				prop.SetValue(resources, shader);
+				return;
+			}
+		}
+
+		Debug.LogWarning($"[URT] Could not find field or property for '{name}' on RayTracingResources via Reflection. It might have been stripped by IL2CPP.");
+	}
+}
 
 /// <summary>
 /// Singleton manager that owns shared Unified Ray Tracing resources
@@ -57,6 +123,7 @@ public class URTSensorManager : MonoBehaviour
 
 	/// <summary>Cameras registered for shared BVH access.</summary>
 	private readonly HashSet<EntityId> _registeredCameras = new();
+
 	[SerializeField]
 	private int _frameOfLastBuild = -1;
 
@@ -194,18 +261,16 @@ public class URTSensorManager : MonoBehaviour
 	private void Initialize()
 	{
 		var resources = new RayTracingResources();
-		if (!resources.LoadFromRenderPipelineResources())
-		{
-			Debug.LogError("[URTSensorManager] Failed to load RayTracingResources from render pipeline");
-			return;
-		}
+		resources.LoadFromURTResourcesByManual();
 
-		_rtContext = new RayTracingContext(RayTracingBackend.Compute, resources);
+		var backend = RayTracingContext.IsBackendSupported(RayTracingBackend.Hardware) ?
+			RayTracingBackend.Hardware : RayTracingBackend.Compute;
+		_rtContext = new RayTracingContext(backend, resources);
 
 		_rtAccelStruct = _rtContext.CreateAccelerationStructure(
 			new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
 
-		// Debug.Log("[URTSensorManager] Initialized (Compute backend)");
+		Debug.Log($"[URTSensorManager] Initialized context with backend: {backend}");
 	}
 
 	private void ReleaseResources()
