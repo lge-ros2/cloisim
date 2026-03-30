@@ -102,8 +102,6 @@ if [ $# -eq 0  ]; then
   echo -e "\n <Possible world file list>\n"
   PrintWorldList
 else
-  displaySize="1024x768"
-  serverNumber="99"
   targetWorld=""
   enableHeadless=false
   captureScreen=false
@@ -129,22 +127,13 @@ else
             PrintWorldList
             exit 1
           fi ;;
-        -n|--server-number)
-          if [[ -n $2 && $2 != -* ]]; then
-            echo "Option --server-number has value: $2"
-            serverNumber=$2
-            shift 2
-          else
-            echo "Server number required.  ex) 99, 88, 100"
-            exit 1
-          fi ;;
         -c|--capture-screen)
           echo "Option --capture-screen was specified!!"
           captureScreen=true
           shift ;;
         *)
           echo "Unknown option: $1"
-          echo "Possible options: -h|--headless, -w|--world, -n|--server-number, -c|--capture-screen"
+          echo "Possible options: -h|--headless, -w|--world, -c|--capture-screen"
           exit 1 ;;
       esac
     done
@@ -158,11 +147,9 @@ else
     PrintWorldList
   else
     if WorldValidationCheck $targetWorld ; then
+      headlessArgs=()
       if $enableHeadless ; then
-        headlessApps=("libglu1" "xvfb" "libxcursor1")
-        InstallApps "${headlessApps[@]}"
-        Xvfb :${serverNumber} -screen 0 ${displaySize}x24:32 -nolisten tcp &
-        export DISPLAY=:$serverNumber
+        headlessArgs=("-batchmode")
       fi
 
       captureArgs=()
@@ -173,7 +160,7 @@ else
         captureArgs=("-capture" "${captureFileName}")
       fi
 
-      ./CLOiSim.x86_64 -world $targetWorld "${captureArgs[@]}"
+      ./CLOiSim.x86_64 "${headlessArgs[@]}" -world $targetWorld "${captureArgs[@]}"
     else
       echo -e "\n Invalid world file name or World file NOT exist.\n"
       PrintWorldList
