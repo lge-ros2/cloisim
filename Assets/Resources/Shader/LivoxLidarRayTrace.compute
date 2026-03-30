@@ -85,8 +85,7 @@ void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
     ray.tMax      = _RangeMax;
 
     UnifiedRT::RayTracingAccelStruct accelStruct = UNIFIED_RT_GET_ACCEL_STRUCT(_AccelStruct);
-    UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(
-        dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
+    UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
 
     uint outIdx = rayIdx * 3;
     float nanVal = asfloat(0x7FC00000); // NaN

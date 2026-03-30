@@ -75,8 +75,7 @@ void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
     ray.tMax      = _RangeMax;
 
     UnifiedRT::RayTracingAccelStruct accelStruct = UNIFIED_RT_GET_ACCEL_STRUCT(_AccelStruct);
-    UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(
-        dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
+    UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
 
     float dist = asfloat(0x7FC00000); // NaN = no hit / out of range
     if (hit.IsValid())

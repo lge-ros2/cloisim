@@ -76,10 +76,16 @@ Shader "Custom/GeometryGrass"
 
 		#define BLADE_SEGMENTS 4
 
+		// Samplers and Textures cannot be defined inside a CBUFFER.
+		// They must be declared in the global scope.
+		sampler2D _BaseTex;
+		sampler2D _GrassMap;
+		sampler2D _DryGrassMap;
+		sampler2D _WindMap;
+
 		CBUFFER_START(UnityPerMaterial)
 			float4 _BaseColor;
 			float4 _TipColor;
-			sampler2D _BaseTex;
 			float4 _BaseTex_ST;
 
 			float _BladeWidthMin;
@@ -95,16 +101,13 @@ Shader "Custom/GeometryGrass"
 			float _TessMinDistance;
 			float _TessMaxDistance;
 
-			sampler2D _GrassMap;
 			float4 _GrassMap_ST;
 			float  _GrassThreshold;
 			float  _GrassFalloff;
 
-			sampler2D _DryGrassMap;
 			float4 _DryGrassMap_ST;
 			float4 _DryGrassColor;
 
-			sampler2D _WindMap;
 			float4 _WindMap_ST;
 			float4 _WindVelocity;
 			float  _WindFrequency;
@@ -298,7 +301,7 @@ Shader "Custom/GeometryGrass"
 			o.positionCS = TransformObjectToHClip(pos + mul(transformationMatrix, offset));
 			o.positionWS = TransformObjectToWorld(pos + mul(transformationMatrix, offset));
 			o.uv = TRANSFORM_TEX(uv, _BaseTex);
-			o.dryRate = dryRate;
+			o.dryRate = float4(dryRate, 0, 0, 0);
 			return o;
 		}
 
@@ -314,7 +317,7 @@ Shader "Custom/GeometryGrass"
 #endif
 			if (grassVisibility >= _GrassThreshold)
 			{
-				float3 pos = (input[0].positionWS + input[1].positionWS + input[2].positionWS) / 3.0f;
+				float3 pos = (input[0].positionWS.xyz + input[1].positionWS.xyz + input[2].positionWS.xyz) / 3.0f;
 				float3 normal = (input[0].normalWS + input[1].normalWS + input[2].normalWS) / 3.0f;
 				float4 tangent = (input[0].tangentWS + input[1].tangentWS + input[2].tangentWS) / 3.0f;
 				float3 bitangent = cross(normal, tangent.xyz) * tangent.w;
@@ -375,12 +378,12 @@ Shader "Custom/GeometryGrass"
 
 					float3x3 transformationMatrix = (i == 0) ? baseTransformationMatrix : tipTransformationMatrix;
 
-					triStream.Append(worldToClip(pos, float3( offset.x, offset.y, offset.z), transformationMatrix, float2(0, t), dryRate));
-					triStream.Append(worldToClip(pos, float3(-offset.x, offset.y, offset.z), transformationMatrix, float2(1, t), dryRate));
+					triStream.Append(worldToClip(pos, float3( offset.x, offset.y, offset.z), transformationMatrix, float2(0.0f, t), dryRate));
+					triStream.Append(worldToClip(pos, float3(-offset.x, offset.y, offset.z), transformationMatrix, float2(1.0f, t), dryRate));
 				}
 
 				// Add the final vertex at the tip of the grass blade.
-				triStream.Append(worldToClip(pos, float3(0, forward, height), tipTransformationMatrix, float2(0.5, 1), dryRate));
+				triStream.Append(worldToClip(pos, float3(0.0f, forward, height), tipTransformationMatrix, float2(0.5f, 1.0f), dryRate));
 
 				triStream.RestartStrip();
 			}
@@ -477,7 +480,7 @@ Shader "Custom/GeometryGrass"
 			float4 shadowFrag(g2f i) : SV_Target
 			{
 				Alpha(SampleAlbedoAlpha(i.uv, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap)).a, _BaseColor, _Cutoff);
-				return 0;
+				return float4(0, 0, 0, 0);
 			}
 			ENDHLSL
 		}

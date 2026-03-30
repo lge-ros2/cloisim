@@ -83,8 +83,7 @@ void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
     ray.tMax      = _FarClip;
 
     UnifiedRT::RayTracingAccelStruct accelStruct = UNIFIED_RT_GET_ACCEL_STRUCT(_AccelStruct);
-    UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(
-        dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
+    UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
 
     const uint idx = pixel.y * _Width + pixel.x;
 

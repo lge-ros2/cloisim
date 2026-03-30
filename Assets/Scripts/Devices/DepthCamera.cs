@@ -269,11 +269,12 @@ namespace SensorDevices
 			_tanHalfFovV = Mathf.Tan(vFovRad * 0.5f);
 			_tanHalfFovH = _tanHalfFovV * imageAspect;
 
-			SetupURTPerCamera();
-
-			Debug.Log($"[DepthCamera] URT initialized (shared Compute backend), " +
-				$"image={_camParam.image.width}x{_camParam.image.height}, " +
-				$"clip=[{_camParam.clip.near:F2}, {_camParam.clip.far:F2}] vFov={_camSensor.fieldOfView:F1}°");
+			if (SetupURTPerCamera())
+			{
+				Debug.Log($"[DepthCamera] URT initialized (shared Compute backend), " +
+					$"image={_camParam.image.width}x{_camParam.image.height}, " +
+					$"clip=[{_camParam.clip.near:F2}, {_camParam.clip.far:F2}] vFov={_camSensor.fieldOfView:F1}°");
+			}
 		}
 
 		private void SetupDepthBufferScaling(in int width, in int height, in int imageDepth, in float clipFar, in float depthScale)
@@ -385,12 +386,12 @@ namespace SensorDevices
 		/// command buffer) using the shared URTSensorManager for context
 		/// and acceleration structure.
 		/// </summary>
-		private void SetupURTPerCamera()
+		private bool SetupURTPerCamera()
 		{
 			if (!URTSensorManager.Register(GetEntityId()))
 			{
 				Debug.LogError("[DepthCamera] Failed to register with URTSensorManager");
-				return;
+				return false;
 			}
 
 			// Instantiate the URT compute shader and wrap it via shared context
@@ -398,7 +399,7 @@ namespace SensorDevices
 			if (_csRayTrace == null)
 			{
 				Debug.LogError("[DepthCamera] Failed to instantiate DepthCameraRayTrace compute shader");
-				return;
+				return false;
 			}
 
 			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
@@ -410,6 +411,8 @@ namespace SensorDevices
 			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, width, height, 1);
 
 			_urtCmdBuffer = new CommandBuffer { name = "DepthCamera URT Dispatch" };
+
+			return true;
 		}
 
 		/// <summary>Bind acceleration structure and output buffer to the shader.</summary>
