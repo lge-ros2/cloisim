@@ -31,7 +31,7 @@ namespace Segmentation
 
 		public int TagId
 		{
-			get => this.gameObject.GetInstanceID();
+			get => this.gameObject.GetEntityId().GetHashCode();
 		}
 
 		public int TagLayer

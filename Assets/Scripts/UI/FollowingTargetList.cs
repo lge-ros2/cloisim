@@ -5,6 +5,7 @@
  */
 
 using UnityEngine;
+using UnityEngine.InputSystem;
 using TMPro;
 
 [DefaultExecutionOrder(45)]
@@ -101,11 +102,11 @@ public class FollowingTargetList : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (Input.GetKey(KeyCode.LeftControl))
+		if (Keyboard.current[Key.LeftCtrl].isPressed)
 		{
-		 	if (Input.GetKeyUp(KeyCode.F))
+		 	if (Keyboard.current[Key.F].wasReleasedThisFrame)
 			{
-				if (Input.GetKey(KeyCode.LeftShift))
+				if (Keyboard.current[Key.LeftShift].isPressed)
 				{
 					StopFollowing();
 				}

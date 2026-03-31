@@ -1,4 +1,7 @@
 #pragma kernel CSApplyVcselDepthMask
+#pragma kernel CSClearBunchFlags
+#pragma kernel CSMarkBunchCenters
+#pragma kernel CSApplyBunchFilter
 #pragma target 4.5
 
 cbuffer Params
@@ -28,6 +31,7 @@ cbuffer Params
 
 Texture2D<float> _VcselMaskTex;
 RWStructuredBuffer<float> _DepthBuffer;	// in/out (meters)
+RWStructuredBuffer<int> _BunchFlag;		// screen-space center marker
 
 SamplerState samplerLinearClamp
 {
@@ -45,7 +49,7 @@ SamplerState samplerPointClamp
 
 static const float kEps = 1e-6;
 static const float kPi  = 3.14159265;
-static const int MAX_R = 5;
+static const int MAX_R = 6;
 
 inline int2 ClampTexel(int2 t, int2 sizeI)
 {
@@ -154,8 +158,8 @@ void CSApplyVcselDepthMask(uint3 id : SV_DispatchThreadID)
     const float2 mask_size = float2(w, h);
 
     const float2 uv = float2((id.x + 0.5) / (float)_Width, (id.y + 0.5) / (float)_Height);
-    const float2 ndc = float2(uv.x * 2.0 - 1.0, uv.y * 2.0 - 1.0);
-
+    // Match URT convention: row 0 = top → ndc.y = +1 (up)
+    const float2 ndc = float2(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0);
     // --- NDC → camera angles (keep circles in angular space) ---
     // ang = atan( ndc * tan(FOV/2) );
     const float angH = atan(ndc.x * tan(_FovCamH * 0.5));
@@ -194,7 +198,7 @@ void CSApplyVcselDepthMask(uint3 id : SV_DispatchThreadID)
         m = sampleMaskPixelSnap(mask_size, uvMask);
     else if (_DotMode == 2)
         m = sampleMaskSoftSpot(mask_size, uvMask, max(_SpotSigmaPx, 0));
-    else
+    else // DotMode 0 and 3 both use linear; DotMode 3 adds screen-space post-process
         m = sampleMaskLinear(uvMask);
 
     // (option) IR Attenuation Model: I = m * I0 / d^k
@@ -217,4 +221,71 @@ void CSApplyVcselDepthMask(uint3 id : SV_DispatchThreadID)
     }
 
     _DepthBuffer[idx] = (visible > 0.0) ? depth : 0.0;
+}
+
+// ============================================================
+// Screen-space bunch center: 3-kernel post-process
+// Runs on _DepthBuffer AFTER mask+IR have been applied.
+// Reduces each cluster of non-zero depth pixels to one pixel.
+// ============================================================
+
+/// Kernel 1: Zero the flag buffer.
+[numthreads(64, 1, 1)]
+void CSClearBunchFlags(uint3 id : SV_DispatchThreadID)
+{
+    const uint total = (uint)_Width * (uint)_Height;
+    if (id.x < total)
+        _BunchFlag[id.x] = 0;
+}
+
+/// Kernel 2: Mark the topmost-leftmost pixel of each 8-connected cluster.
+/// A non-zero pixel is the cluster representative if and only if none of
+/// its 4 "upper-left" neighbors are non-zero:
+///   (x-1, y-1)  (x, y-1)  (x+1, y-1)
+///   (x-1, y)    [self]
+/// This guarantees exactly 1 pixel per 8-connected cluster.
+/// Cost: only 4 buffer reads per pixel.
+[numthreads(8, 8, 1)]
+void CSMarkBunchCenters(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)_Width || id.y >= (uint)_Height)
+        return;
+
+    const uint idx = id.y * (uint)_Width + id.x;
+    if (_DepthBuffer[idx] <= 0.0)
+        return;
+
+    const int ix = (int)id.x;
+    const int iy = (int)id.y;
+
+    // Check left neighbor
+    if (ix > 0 && _DepthBuffer[iy * _Width + (ix - 1)] > 0.0)
+        return;
+
+    // Check above neighbor
+    if (iy > 0 && _DepthBuffer[(iy - 1) * _Width + ix] > 0.0)
+        return;
+
+    // Check above-left neighbor
+    if (ix > 0 && iy > 0 && _DepthBuffer[(iy - 1) * _Width + (ix - 1)] > 0.0)
+        return;
+
+    // Check above-right neighbor
+    if (ix + 1 < _Width && iy > 0 && _DepthBuffer[(iy - 1) * _Width + (ix + 1)] > 0.0)
+        return;
+
+    // No non-zero pixel above or to the left → this is the representative
+    _BunchFlag[idx] = 1;
+}
+
+/// Kernel 3: Zero out any depth pixel not marked as a center.
+[numthreads(8, 8, 1)]
+void CSApplyBunchFilter(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)_Width || id.y >= (uint)_Height)
+        return;
+
+    const uint idx = id.y * (uint)_Width + id.x;
+    if (_DepthBuffer[idx] > 0.0 && _BunchFlag[idx] == 0)
+        _DepthBuffer[idx] = 0.0;
 }

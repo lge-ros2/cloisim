@@ -130,6 +130,30 @@ namespace SDF
 			return false;
 		}
 
+		private string SortModelConfigName(XmlDocument xmldoc, DirectoryInfo directoryInfo)
+		{
+			var modelConfig = directoryInfo.FullName + "/model.config";
+
+			if (!File.Exists(modelConfig))
+			{
+				return string.Empty;
+			}
+
+			try
+			{
+				xmldoc.Load(modelConfig);
+			}
+			catch (XmlException)
+			{
+				return string.Empty;
+			}
+
+			var modelNode = xmldoc.SelectSingleNode("model");
+			var modelNameNode = modelNode.SelectSingleNode("name");
+
+			return (modelNameNode == null) ? string.Empty : modelNameNode.InnerText;
+		}
+
 		public void UpdateResourceModelTable()
 		{
 			if (_resourceModelTable == null)
@@ -157,7 +181,7 @@ namespace SDF
 				//Console.Write(">>> Model Default Path: " + modelPath);
 
 				// Loop models
-				foreach (var subDirectory in rootDirectory.GetDirectories())
+				foreach (var subDirectory in rootDirectory.GetDirectories().OrderBy(d => SortModelConfigName(modelConfigDoc, d)))
 				{
 					if (subDirectory.Name.StartsWith("."))
 					{

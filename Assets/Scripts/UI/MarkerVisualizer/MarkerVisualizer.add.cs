@@ -161,7 +161,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 			text.fontSize = (int)markerProperties.size;
 			text.alignment = GetTextAlignment(markerProperties.align);
 			text.text = markerProperties.text;
-			text.enableWordWrapping = false;
+			text.textWrappingMode = TextWrappingModes.NoWrap;
 			text.overflowMode = TextOverflowModes.Overflow;
 
 			var rectTransform = markerObject.GetComponent<RectTransform>();

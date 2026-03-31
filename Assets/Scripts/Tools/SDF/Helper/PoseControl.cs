@@ -134,7 +134,7 @@ namespace SDF
 			{
 				if (_articulationBody != null)
 				{
-					_articulationBody.velocity = UE.Vector3.zero;
+					_articulationBody.linearVelocity = UE.Vector3.zero;
 					_articulationBody.angularVelocity = UE.Vector3.zero;
 
 					var zeroSpace = new UE.ArticulationReducedSpace();

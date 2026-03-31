@@ -103,7 +103,7 @@ public abstract class Device : MonoBehaviour
 	private readonly Stopwatch _diagPublishSw = new();
 	private int _diagPublishCount;
 	private float _diagPublishHz;
-	private const float DEVICE_DIAG_INTERVAL_SEC = 10f;
+	private const float DEVICE_DIAG_INTERVAL_SEC = 15f;
 
 	/// <summary>Actual measured publish Hz (updated every DEVICE_DIAG_INTERVAL_SEC).</summary>
 	public float PublishHz => _diagPublishHz;

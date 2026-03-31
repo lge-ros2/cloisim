@@ -4,13 +4,13 @@
 
 Happy to announce CLOiSim. It is a new multi-robot simulator that uses an [SDF](www.sdformat.org) file containing 3d world environemnts and robot descriptions.
 
-The simulator is based on Unity 3D. It may look similar to Gazebo, where, unfortunately, we encountered performance problems while loading multiple robots equipped with multiple sensors. Hence, CLOiSim.
+The simulator is based on Unity 6. It may look similar to Gazebo, where, unfortunately, we encountered performance problems while loading multiple robots equipped with multiple sensors. Hence, CLOiSim.
 
 This project consists of
 
 - [SDF](http://sdformat.org/spec?ver=1.7) Parser for C#
 - [SDF](http://sdformat.org/spec?ver=1.7) Robot Implementation for Unity -> **Visual / Collision / Sensor / Physics for joints**
-- [SDF](http://sdformat.org/spec?ver=1.7) Plugins for Unity3D
+- [SDF](http://sdformat.org/spec?ver=1.7) Plugins for Unity
 - UI modules -> Module for on-screen information
 - Network modules -> Module for transporting sensor data or control signal
 - Web service -> Module for controling simulation through a web interface
@@ -20,8 +20,22 @@ This project consists of
 
 ## Notices
 
-Working branch policy has been updated. Previous latest `main` branch which is corresponding to `release-3.2.0` branch is no longer available. So please check `release-3.2.0` branch if you want to follow the history of `CLOiSim-3.x.x`.
+CLOiSim has been upgraded to **Unity 6** (6000.4.0f1). Previous Unity 2022.3 LTS based releases are no longer maintained.
 `develop` branch shall be merged into `main` branch every released.
+
+Working branch policy has been updated.
+Previous latest `main` branch which is corresponding to `release-3.2.0` branch is no longer available. 
+
+So please check below table to follow the history of previous releases.
+
+| Branch | CLOiSim Version | Unity Version |
+|--------|----------------|---------------|
+| `release-1.11.0` | CLOiSim-1.x.x | Unity 2020 |
+| `release-2.7.7` | CLOiSim-2.x.x | Unity 2020 |
+| `release-3.2.0` | CLOiSim-3.x.x | Unity 2021 |
+| `release-4.10.0` | CLOiSim-4.x.x | Unity 2022.3 LTS |
+| `release-4.14.6` | CLOiSim-4.x.x | Unity 2022.3 LTS |
+| `main` | CLOiSim-5.x.x (latest) | Unity 6 |
 
 ## Features
 
@@ -38,12 +52,14 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] LiDAR Sensor
     - [X] 2D: Due to performance issue, < 40hz is recommended
     - [X] 3D: Raster method using depth shader, same vertical angle `-N° to N°` required
+      - [X] pattern based like Livox
   - [X] Sonar/IR sensor
   - [X] IMU
   - [X] Contact
   - [X] Camera: Due to performance issue, < 40hz is recommended
     - [ ] Camera intrinsic parameter
     - [X] Depth Camera
+	  - [X] VCSEL Pattern applied 
     - [X] Multi-camera
     - [X] RealSense (RGB + IR1 + IR2 + Depth)
     - [X] Semantic Segmentation Camera
@@ -57,7 +73,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] Visualization, <visualize>true</visualize>
 	- [X] LiDAR Sensor
 	  - [X] line visualization
-	  - [ ] point cloud for 3D
+	  - [X] point cloud for 3D
 - [X] Physics
   - [ ] Support all physics parameters in SDF specification
   - [X] Support `<Joint type="revolute2">`
@@ -79,7 +95,7 @@ It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atm
 There is problem with `<pose>` in `<joint>` since introduction of articulation body model. Therefore, plaese
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material', 'Collada(.dae) including animation' and 'STL(.stl)'.
-`<ambient>` elements in `<materal>` and ambient properies in mesh files are not support in CLOiSim.
+`<ambient>` elements in `<material>` and ambient properties in mesh files are not support in CLOiSim.
 
 If you're trying to connect `<link>` of `<model>`, it needs to specify unique name in link name in `joint/parent` or `joint/child` within same root model.
 
@@ -134,11 +150,11 @@ Refer to core codes in 'Assets/Scripts'.
 Shaders are also used to get depth buffer information in a few sensor model.
 
 Default physics engine 'Nvidia PhysX' is used for physics. And it retrieves some of physics parameters from `<ode>` in sdf.
-'SDFPlugins' help physics tricky handling for jointing `<link>` ojbects by `<joint>` element.
+'SDFPlugins' help physics tricky handling for jointing `<link>` objects by `<joint>` element.
 
-We've deceided to change a solver type of physics engine since new solver "TGS(Temporal Gauss Seidel)" is intorduced recently(PhysX 4.1).
+We've decided to change a solver type of physics engine since new solver "TGS(Temporal Gauss Seidel)" is intorduced recently(PhysX 4.1).
 
-So there is NO more constaints for rigidbodies by PGS(Projected Gauss Seidel) solver type since latest version([CLOiSim-1.11.0](https://github.com/lge-ros2/cloisim/releases/tag/1.11.0)).
+So there is NO more constraints for rigidbodies by PGS(Projected Gauss Seidel) solver type since latest version([CLOiSim-1.11.0](https://github.com/lge-ros2/cloisim/releases/tag/1.11.0)).
 
 For the performance in terms of collision handling, designing collision geometry properly may important.
 
@@ -152,15 +168,15 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 - Processor: testing and looking for the minimum
 - Memory: testing and looking for the minimum
-- Graphics: testing and looking for the minimum
+- Graphics: device supports Vulkan
 - OS: Ubuntu 22.04 since CLOiSim-4.12.0
 
 ### Tested environment (latest)
 
-- Unity Editor Version: *'2022.3.71f1 (LTS)'*.
+- Unity Editor Version: *Unity 6.4 '6000.4.0f1 (Supported)'*.
 
 - Linux Machine
-  - OS: Ubuntu 24.04.3 LTS
+  - OS: Ubuntu 24.04.4 LTS
   - Processor: AMD® Ryzen 9 5950x 16-core processor × 32
   - Memory: 128.0 GiB
   - Graphics: NVIDIA Corporation [GeForce RTX 3090]

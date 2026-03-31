@@ -5,6 +5,7 @@
  */
 
 using UnityEngine;
+using UnityEngine.InputSystem;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -222,53 +223,53 @@ namespace SensorDevices
 			var balancedDrive = _motorControl as SelfBalancedDrive;
 			if (balancedDrive != null)
 			{
-				if (Input.GetKey(KeyCode.H))
+				if (Keyboard.current[Key.H].isPressed)
 				{
-					if (Input.GetKey(KeyCode.UpArrow))
+					if (Keyboard.current[Key.UpArrow].isPressed)
 					{
 						balancedDrive.HeadsetTarget -= HeadsetRotationUnit;
 					}
-					else if (Input.GetKey(KeyCode.DownArrow))
+					else if (Keyboard.current[Key.DownArrow].isPressed)
 					{
 						balancedDrive.HeadsetTarget += HeadsetRotationUnit;
 					}
 					// Debug.Log(balancedDrive.HeadsetTarget);
 				}
-				else if (Input.GetKey(KeyCode.P))
+				else if (Keyboard.current[Key.P].isPressed)
 				{
-					if (Input.GetKey(KeyCode.UpArrow))
+					if (Keyboard.current[Key.UpArrow].isPressed)
 					{
 						balancedDrive.PitchTarget += PitchRotationUnit;
 					}
-					else if (Input.GetKey(KeyCode.DownArrow))
+					else if (Keyboard.current[Key.DownArrow].isPressed)
 					{
 						balancedDrive.PitchTarget -= PitchRotationUnit;
 					}
 					// Debug.Log($"PitchTarget={balancedDrive.PitchTarget}");
 				}
-				else if (Input.GetKey(KeyCode.M))
+				else if (Keyboard.current[Key.M].isPressed)
 				{
-					if (Input.GetKey(KeyCode.LeftArrow))
+					if (Keyboard.current[Key.LeftArrow].isPressed)
 					{
 						balancedDrive.RollTarget -= RollRotationUnitKeyboard;
 					}
-					else if (Input.GetKey(KeyCode.RightArrow))
+					else if (Keyboard.current[Key.RightArrow].isPressed)
 					{
 						balancedDrive.RollTarget += RollRotationUnitKeyboard;
 					}
 					// Debug.Log($"RollTarget={balancedDrive.RollTarget}");
 
-					if (Input.GetKey(KeyCode.UpArrow))
+					if (Keyboard.current[Key.UpArrow].isPressed)
 					{
 						balancedDrive.HeightTarget -= HeightMovementUnitKeyboard;
 					}
-					else if (Input.GetKey(KeyCode.DownArrow))
+					else if (Keyboard.current[Key.DownArrow].isPressed)
 					{
 						balancedDrive.HeightTarget += HeightMovementUnitKeyboard;
 					}
 					// Debug.Log($"HeightTarget={balancedDrive.HeightTarget}");
 				}
-				else if (Input.GetKeyUp(KeyCode.B))
+				else if (Keyboard.current[Key.B].wasReleasedThisFrame)
 				{
 					balancedDrive.Balancing = !balancedDrive.Balancing;
 					Debug.LogWarning($"{name}::Toggle Balancing [{balancedDrive.Balancing}] ");
