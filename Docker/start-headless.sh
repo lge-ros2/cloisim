@@ -1,8 +1,6 @@
 #!/bin/bash
 set -eu
 
-xhost +SI:localuser:root >/dev/null 2>&1
-
 PREFIX_PATH=/opt/resources
 
 map_and_mount_paths() {
@@ -23,9 +21,17 @@ map_and_mount_paths() {
   output_mounts=${joined_mount}
 }
 
-ENV_MODEL_ARGS="-v ${CLOISIM_RESOURCES_PATH}/models:${PREFIX_PATH}/models:ro"
-ENV_WORLD_ARGS="-v ${CLOISIM_RESOURCES_PATH}/worlds:${PREFIX_PATH}/worlds:ro"
-ENV_FILES_ARGS="-v ${CLOISIM_RESOURCES_PATH}/materials:${PREFIX_PATH}/materials:ro"
+CLOISIM_RESOURCES_PATH="${CLOISIM_RESOURCES_PATH:-}"
+
+ENV_MODEL_ARGS=""
+ENV_WORLD_ARGS=""
+ENV_FILES_ARGS=""
+
+if [[ -n "$CLOISIM_RESOURCES_PATH" ]]; then
+  ENV_MODEL_ARGS="-v ${CLOISIM_RESOURCES_PATH}/models:${PREFIX_PATH}/models:ro"
+  ENV_WORLD_ARGS="-v ${CLOISIM_RESOURCES_PATH}/worlds:${PREFIX_PATH}/worlds:ro"
+  ENV_FILES_ARGS="-v ${CLOISIM_RESOURCES_PATH}/materials:${PREFIX_PATH}/materials:ro"
+fi
 
 out_env=""
 out_mounts=""
@@ -49,15 +55,12 @@ fi
 # echo "OUTPUT="$ENV_WORLD_ARGS
 # echo "OUTPUT="$ENV_FILES_ARGS
 
-docker run -it --rm --net=host --ipc=host --gpus device=0 \
-  -e QT_X11_NO_MITSHM=1 \
-  -v ${HOME}/.Xauthority:/root/.Xauthority:rw \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
+docker run -it --rm --init --net=host --ipc=host --gpus device=0 \
   -v /tmp/cloisim/unity3d:/root/.config/unity3d \
   -v /usr/share/fonts/:/usr/share/fonts/:ro \
   $ENV_MODEL_ARGS \
   $ENV_WORLD_ARGS \
   $ENV_FILES_ARGS \
-  cloisim --headless $@
-
-xhost -SI:localuser:root >/dev/null 2>&1
+  --entrypoint xvfb-run \
+  cloisim \
+  -a -s "-screen 0 1280x1024x24 -nolisten local" ./run.sh --headless -w $@
