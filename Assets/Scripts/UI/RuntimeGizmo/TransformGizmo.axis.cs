@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using System.Collections;
 
@@ -219,7 +220,7 @@ namespace RuntimeGizmos
 			else if (zClosestDistance <= minSelectedDistanceCheck && zClosestDistance <= xClosestDistance && zClosestDistance <= yClosestDistance) SetTranslatingAxis(type, Axis.Z);
 			else if (type == TransformType.Rotate && mainTargetRoot != null)
 			{
-				Ray mouseRay = myCamera.ScreenPointToRay(Input.mousePosition);
+				Ray mouseRay = myCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
 				Vector3 mousePlaneHit = Geometry.LinePlaneIntersect(mouseRay.origin, mouseRay.direction, pivotPoint, (transform.position - pivotPoint).normalized);
 				if ((pivotPoint - mousePlaneHit).sqrMagnitude <= (GetHandleLength(TransformType.Rotate)).Squared()) SetTranslatingAxis(type, Axis.Any);
 			}
@@ -227,7 +228,7 @@ namespace RuntimeGizmos
 
 		float ClosestDistanceFromMouseToLines(List<Vector3> lines)
 		{
-			Ray mouseRay = myCamera.ScreenPointToRay(Input.mousePosition);
+			Ray mouseRay = myCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
 
 			float closestDistance = float.MaxValue;
 			for (var i = 0; i + 1 < lines.Count; i++)
@@ -248,7 +249,7 @@ namespace RuntimeGizmos
 
 			if (planePoints.Count >= 4)
 			{
-				Ray mouseRay = myCamera.ScreenPointToRay(Input.mousePosition);
+				Ray mouseRay = myCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
 
 				for (var i = 0; i < planePoints.Count; i += 4)
 				{

@@ -5,9 +5,12 @@
  */
 
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class FollowingCamera : MonoBehaviour
 {
+	private const float BlockZeroDistance = 0.001f;
+
 	private bool _isFollowing = false;
 	private Transform _targetObjectTransform = null;
 
@@ -82,38 +85,46 @@ public class FollowingCamera : MonoBehaviour
 
 	private void ChangeParameterByBaseInput()
 	{
-		if (!Input.GetKey(KeyCode.LeftControl))
+		if (!Keyboard.current[Key.LeftCtrl].isPressed)
 		{
-			if (Input.GetKey(KeyCode.W))
+			if (Keyboard.current[Key.W].isPressed)
 			{
-				const float blockZeroDistance = 0.001f;
-
-				if (_distance > moveAmount + blockZeroDistance)
+				if (_distance > moveAmount + BlockZeroDistance)
 				{
 					_distance -= moveAmount;
 				}
 			}
-			else if (Input.GetKey(KeyCode.S))
+			else if (Keyboard.current[Key.S].isPressed)
 			{
 				_distance += moveAmount;
 			}
 
-			if (Input.GetKey(KeyCode.A))
+			if (Keyboard.current[Key.A].isPressed)
 			{
 				followingAngle += (angleStep);
 			}
-			else if (Input.GetKey(KeyCode.D))
+			else if (Keyboard.current[Key.D].isPressed)
 			{
 				followingAngle -= (angleStep);
 			}
 
-			if (Input.GetKey(KeyCode.G))
+			if (Keyboard.current[Key.G].isPressed)
 			{
 				_height += moveAmount;
 			}
-			else if (Input.GetKey(KeyCode.F))
+			else if (Keyboard.current[Key.F].isPressed)
 			{
 				_height -= moveAmount;
+			}
+
+			var scrollValue = Mouse.current.scroll.ReadValue().y;
+			if (scrollValue != 0)
+			{
+				var delta = Mathf.Sign(scrollValue) * moveAmount;
+				if (delta < 0 || _distance > moveAmount + BlockZeroDistance)
+				{
+					_distance -= delta;
+				}
 			}
 		}
 	}

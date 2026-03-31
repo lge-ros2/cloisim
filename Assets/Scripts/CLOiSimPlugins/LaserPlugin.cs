@@ -43,6 +43,20 @@ public class LaserPlugin : CLOiSimPlugin
 			var customNoiseInRawXml = GetPluginParameters().GetValue<string>("custom_noise");
 			_lidar.SetupCustomNoise(customNoiseInRawXml);
 		}
+
+		// Livox non-repetitive scan pattern support
+		if (GetPluginParameters().IsValidNode("scan/pattern"))
+		{
+			var csvUri = GetPluginParameters().GetValue<string>("scan/pattern/uri", string.Empty);
+			var samplesPerCycle = GetPluginParameters().GetValue<int>("scan/pattern/samples", 24000);
+			var downsample = GetPluginParameters().GetValue<int>("scan/pattern/downsample", 1);
+
+			if (!string.IsNullOrEmpty(csvUri))
+			{
+				_lidar.SetupLivoxPattern(csvUri, samplesPerCycle, downsample);
+			}
+		}
+
 		yield return null;
 
 		if (RegisterServiceDevice(out var portService, "Info"))

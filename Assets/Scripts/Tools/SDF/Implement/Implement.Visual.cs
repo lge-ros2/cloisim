@@ -87,6 +87,8 @@ namespace SDF
 						meshRenderer.motionVectorGenerationMode = UE.MotionVectorGenerationMode.ForceNoMotion;
 						meshRenderer.allowOcclusionWhenDynamic = true;
 
+						newVisualGeometryObject.AddComponent<URTSceneChangeNotifier>();
+
 						newVisualGeometryObject.transform.SetParent(targetParent, true);
 
 						foreach (var meshFilter in meshFilters)
@@ -134,6 +136,8 @@ namespace SDF
 						meshRenderer.lightProbeUsage = UE.Rendering.LightProbeUsage.Off;
 						meshRenderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.Off;
 						meshRenderer.motionVectorGenerationMode = UE.MotionVectorGenerationMode.ForceNoMotion;
+
+						meshFilter.gameObject.AddComponent<URTSceneChangeNotifier>();
 					}
 				}
 			}

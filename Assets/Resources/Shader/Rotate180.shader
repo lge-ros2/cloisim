@@ -6,43 +6,49 @@ Shader "Hidden/Rotate180"
     }
     SubShader
     {
+        Tags { "RenderPipeline"="UniversalPipeline" }
         Cull Off ZWrite Off ZTest Always
         Pass
         {
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #include "UnityCG.cginc"
 
-            struct appdata
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            TEXTURE2D(_MainTex);
+            SAMPLER(sampler_MainTex);
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _MainTex_ST;
+            CBUFFER_END
+
+            struct Attributes
             {
-                float4 vertex : POSITION;
-                float2 uv : TEXCOORD0;
+                float4 positionOS : POSITION;
+                float2 uv         : TEXCOORD0;
             };
 
-            struct v2f
+            struct Varyings
             {
-                float2 uv : TEXCOORD0;
-                float4 vertex : SV_POSITION;
+                float2 uv         : TEXCOORD0;
+                float4 positionCS : SV_POSITION;
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-
-            v2f vert (appdata v)
+            Varyings vert (Attributes IN)
             {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                o.uv = float2(1.0 - o.uv.x, 1.0 - o.uv.y);
-                return o;
+                Varyings OUT;
+                OUT.positionCS = TransformObjectToHClip(IN.positionOS.xyz);
+                OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);
+                OUT.uv = float2(1.0 - OUT.uv.x, 1.0 - OUT.uv.y);
+                return OUT;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            half4 frag (Varyings IN) : SV_Target
             {
-                return tex2D(_MainTex, i.uv);
+                return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uv);
             }
-            ENDCG
+            ENDHLSL
         }
     }
 }

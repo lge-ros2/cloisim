@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 
 namespace RuntimeGizmos
@@ -54,11 +55,11 @@ namespace RuntimeGizmos
 
 		// These are the same as the unity editor hotkeys
 		[Header("Key configurations")]
-		public KeyCode SetMoveType = KeyCode.T;
-		public KeyCode SetRotateType = KeyCode.R;
-		public KeyCode SetAllTransformType = KeyCode.Y;
-		public KeyCode SetSpaceToggle = KeyCode.X;
-		public KeyCode translationSnapping = KeyCode.LeftShift;
+		[NonSerialized] public Key SetMoveType = Key.T;
+		[NonSerialized] public Key SetRotateType = Key.R;
+		[NonSerialized] public Key SetAllTransformType = Key.Y;
+		[NonSerialized] public Key SetSpaceToggle = Key.X;
+		[NonSerialized] public Key translationSnapping = Key.LeftShift;
 
 		private bool _lockRotation = false;
 
@@ -83,10 +84,10 @@ namespace RuntimeGizmos
 		private TransformType translatingType;
 
 		// We use a HashSet and a List for targetRoots so that we get fast lookup with the hashset while also keeping track of the order with the list.
-		private List<Transform> targetRootsOrdered = new List<Transform>();
-		private Dictionary<Transform, TargetInfo> targetRoots = new Dictionary<Transform, TargetInfo>();
-		private HashSet<Transform> children = new HashSet<Transform>();
-		private List<Transform> childrenBuffer = new List<Transform>();
+		private List<Transform> targetRootsOrdered = new();
+		private Dictionary<Transform, TargetInfo> targetRoots = new();
+		private HashSet<Transform> children = new();
+		private List<Transform> childrenBuffer = new();
 		private Coroutine forceUpdatePivotCoroutine;
 
 		void Awake()
@@ -147,7 +148,7 @@ namespace RuntimeGizmos
 			TransformSelected();
 
 			// Clear Tagets when ESC
-			if (Input.GetKey(KeyCode.Escape))
+			if (Keyboard.current[Key.Escape].isPressed)
 			{
 				ClearTargets();
 			}
@@ -225,27 +226,27 @@ namespace RuntimeGizmos
 		void SetSpaceAndType()
 		{
 			// avoid pressing left control
-			if (Input.GetKey(KeyCode.LeftControl))
+			if (Keyboard.current[Key.LeftCtrl].isPressed)
 			{
 				return;
 			}
 
-			if (Input.GetKeyUp(SetMoveType))
+			if (Keyboard.current[SetMoveType].wasReleasedThisFrame)
 			{
 				transformType = TransformType.Move;
 			}
-			else if (Input.GetKeyUp(SetRotateType) && _lockRotation == false)
+			else if (Keyboard.current[SetRotateType].wasReleasedThisFrame && _lockRotation == false)
 			{
 				transformType = TransformType.Rotate;
 			}
-			else if (Input.GetKeyUp(SetAllTransformType) && _lockRotation == false)
+			else if (Keyboard.current[SetAllTransformType].wasReleasedThisFrame && _lockRotation == false)
 			{
 				transformType = TransformType.All;
 			}
 
 			if (!isTransforming) translatingType = transformType;
 
-			if (Input.GetKeyUp(SetSpaceToggle))
+			if (Keyboard.current[SetSpaceToggle].wasReleasedThisFrame)
 			{
 				switch (space)
 				{
@@ -267,7 +268,7 @@ namespace RuntimeGizmos
 		{
 			if (mainTargetRoot != null)
 			{
-				if (nearAxis != Axis.None && Input.GetMouseButtonDown(0))
+				if (nearAxis != Axis.None && Mouse.current.leftButton.wasPressedThisFrame)
 				{
 					StartCoroutine(TransformSelected(translatingType));
 				}
@@ -289,9 +290,9 @@ namespace RuntimeGizmos
 
 					if (articulationBody.immovable)
 					{
-						articulationBody.Sleep();
 						var marginForTransform = new Pose(articulationBody.transform.position, articulationBody.transform.rotation);
 						marginForTransform.position.y += MarginForPositionY;
+						articulationBody.Sleep();
 						articulationBody.TeleportRoot(marginForTransform.position, marginForTransform.rotation);
 					}
 				}
@@ -322,13 +323,11 @@ namespace RuntimeGizmos
 
 			MakeImmovableBodyTransformSelected(true);
 
-			while (!Input.GetMouseButtonUp(0))
+			while (!Mouse.current.leftButton.wasReleasedThisFrame)
 			{
-				var mouseRay = myCamera.ScreenPointToRay(Input.mousePosition);
+				var mouseRay = myCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
 				var mousePosition = Geometry.LinePlaneIntersect(mouseRay.origin, mouseRay.direction, originalPivot, planeNormal);
-				var isSnapping = Input.GetKey(translationSnapping);
-
-				mousePosition.y += 0.1f;
+				var isSnapping = Keyboard.current[translationSnapping].isPressed;
 
 				if (previousMousePosition != Vector3.zero && mousePosition != Vector3.zero)
 				{
@@ -389,9 +388,9 @@ namespace RuntimeGizmos
 
 								for (var i = 0; i < targetRootsOrdered.Count; i++)
 								{
-									Transform target = targetRootsOrdered[i];
+									var targetTransform = targetRootsOrdered[i];
 
-									var articulationBody = target.GetComponent<ArticulationBody>();
+									var articulationBody = targetTransform.GetComponent<ArticulationBody>();
 									if (articulationBody != null && articulationBody.isRoot)
 									{
 										var newPose = new Pose(articulationBody.transform.position, articulationBody.transform.rotation);
@@ -401,7 +400,7 @@ namespace RuntimeGizmos
 									}
 									else
 									{
-										var actor = target.GetComponent<SDF.Helper.Actor>();
+										var actor = targetTransform.GetComponent<SDF.Helper.Actor>();
 										if (actor != null && actor.HasWayPoints)
 										{
 											var newPose = (actor.GetPoseCount() == 1) ? actor.GetPose(0) : actor.GetPose(1);
@@ -410,7 +409,15 @@ namespace RuntimeGizmos
 										}
 										else
 										{
-											target.Translate(movement, Space.World);
+											var rb = targetTransform.GetComponent<Rigidbody>();
+											if (rb != null)
+											{
+												rb.position += movement;
+											}
+											else
+											{
+												targetTransform.position += movement;
+											}
 										}
 									}
 								}
@@ -426,7 +433,8 @@ namespace RuntimeGizmos
 
 								if (nearAxis == Axis.Any)
 								{
-									Vector3 rotation = transform.TransformDirection(new Vector3(Input.GetAxis("Mouse Y"), -Input.GetAxis("Mouse X"), 0));
+									var mouseDelta = Mouse.current.delta.ReadValue();
+									Vector3 rotation = transform.TransformDirection(new Vector3(mouseDelta.y * 0.1f, -mouseDelta.x * 0.1f, 0));
 									Quaternion.Euler(rotation).ToAngleAxis(out rotateAmount, out rotationAxis);
 									rotateAmount *= allRotateSpeedMultiplier;
 								}
@@ -460,23 +468,37 @@ namespace RuntimeGizmos
 
 								for (int i = 0; i < targetRootsOrdered.Count; i++)
 								{
-									Transform target = targetRootsOrdered[i];
+									var targetTransform = targetRootsOrdered[i];
 
 									if (pivot == TransformPivot.Pivot)
 									{
-										target.Rotate(rotationAxis, rotateAmount, Space.World);
+										targetTransform.Rotate(rotationAxis, rotateAmount);
 									}
 									else if (pivot == TransformPivot.Center)
 									{
-										target.RotateAround(originalPivot, rotationAxis, rotateAmount);
+										targetTransform.RotateAround(originalPivot, rotationAxis, rotateAmount);
 									}
 
-									var articulationBody = target.GetComponent<ArticulationBody>();
+									var articulationBody = targetTransform.GetComponent<ArticulationBody>();
 									if (articulationBody != null && articulationBody.isRoot)
 									{
 										var newPose = new Pose(articulationBody.transform.position, articulationBody.transform.rotation);
 										articulationBody.Sleep();
 										articulationBody.TeleportRoot(newPose.position, newPose.rotation);
+									}
+									else
+									{
+										var rb = targetTransform.GetComponent<Rigidbody>();
+										if (rb != null)
+										{
+											rb.position = targetTransform.position;
+											rb.rotation = targetTransform.rotation;
+										}
+										else
+										{
+											targetTransform.position = targetTransform.position;
+											targetTransform.rotation = targetTransform.rotation;
+										}
 									}
 								}
 
@@ -521,9 +543,9 @@ namespace RuntimeGizmos
 				return;
 
 			if (nearAxis == Axis.None &&
-				!Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButtonDown(0))
+				!Keyboard.current[Key.LeftCtrl].isPressed && Mouse.current.leftButton.wasPressedThisFrame)
 			{
-				var ray = myCamera.ScreenPointToRay(Input.mousePosition);
+				var ray = myCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
 				if (Physics.Raycast(ray, out var hitInfo, Mathf.Infinity))
 				{
 					Transform target = null;
@@ -533,7 +555,7 @@ namespace RuntimeGizmos
 
 					if (hitObject.CompareTag("Props") ||
 						hitObject.CompareTag("Actor") ||
-						(hitObject.CompareTag("Road") && Input.GetKey(KeyCode.LeftAlt)))
+						(hitObject.CompareTag("Road") && Keyboard.current[Key.LeftAlt].isPressed))
 					{
 						if (hitObject.CompareTag("Road"))
 						{
@@ -565,7 +587,7 @@ namespace RuntimeGizmos
 								}
 							}
 							// Select static object(non articulation body) only when left alt is pressed
-							else if (hitParentLinkHelper == null && Input.GetKey(KeyCode.LeftAlt))
+							else if (hitParentLinkHelper == null && Keyboard.current[Key.LeftAlt].isPressed)
 							{
 								target = hitObject.transform;
 							}
@@ -583,7 +605,7 @@ namespace RuntimeGizmos
 						{
 							RemoveTarget(target);
 						}
-						else if (Input.GetKey(KeyCode.LeftShift))
+						else if (Keyboard.current[Key.LeftShift].isPressed)
 						{
 							AddTarget(target);
 						}

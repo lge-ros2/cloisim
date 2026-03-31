@@ -41,12 +41,10 @@ namespace SensorDevices
 		private Vector3 _sensorCurrentRotation = Vector3.zero;
 		private Vector3 _worldFrameOrientation = Vector3.zero;
 
-		public Vector3 _worldPosition;
-		public Vector3 _sensorVelocity;
+		private Vector3 _worldPosition;
+		private Vector3 _sensorVelocity;
 
 		private Vector3 _previousSensorPosition;
-		// public Vector3d _gpsCoordinates;
-		// public Vector3d _gpsVelocity;
 
 		private NoiseGPS _noises = new NoiseGPS();
 
@@ -92,6 +90,13 @@ namespace SensorDevices
 		protected override void OnStart()
 		{
 			_previousSensorPosition = _gpsLink.position;
+			_sensorInitialRotation = transform.rotation.eulerAngles;
+		}
+
+		protected override void OnReset()
+		{
+			_previousSensorPosition = _gpsLink.position;
+			_sensorVelocity = Vector3.zero;
 		}
 
 		protected override void InitializeMessages()
@@ -156,21 +161,20 @@ namespace SensorDevices
 			convertedPosition.Y *= -1;
 			var gpsCoordinates = _sphericalCoordinates.SphericalFromLocal(convertedPosition);
 
-			_gps.LatitudeDeg = gpsCoordinates.x;
-			_gps.LongitudeDeg = gpsCoordinates.y;
-			_gps.Altitude = gpsCoordinates.z;
-
 			// Convert to global frame
 			var velocityRHS = Unity2SDF.Position(_sensorVelocity);
 			var gpsVelocity = _sphericalCoordinates.GlobalFromLocal(velocityRHS);
 
+			// Apply noise after converting to global frame
+			ApplyNoises(ref gpsCoordinates, ref gpsVelocity);
+
+			_gps.LatitudeDeg = gpsCoordinates.x;
+			_gps.LongitudeDeg = gpsCoordinates.y;
+			_gps.Altitude = gpsCoordinates.z;
+
 			_gps.VelocityEast = gpsVelocity.x;
 			_gps.VelocityNorth = -gpsVelocity.y;
 			_gps.VelocityUp = gpsVelocity.z;
-			// Debug.Log($"{_gps.VelocityEast} {_gps.VelocityNorth} {_gps.VelocityUp}");
-
-			// Apply noise after converting to global frame
-			ApplyNoises(ref gpsCoordinates, ref gpsVelocity);
 		}
 
 		public void AssembleHeadingMessage()

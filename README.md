@@ -38,12 +38,14 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] LiDAR Sensor
     - [X] 2D: Due to performance issue, < 40hz is recommended
     - [X] 3D: Raster method using depth shader, same vertical angle `-N° to N°` required
+      - [X] pattern based like Livox
   - [X] Sonar/IR sensor
   - [X] IMU
   - [X] Contact
   - [X] Camera: Due to performance issue, < 40hz is recommended
     - [ ] Camera intrinsic parameter
     - [X] Depth Camera
+	  - [X] VCSEL Pattern applied 
     - [X] Multi-camera
     - [X] RealSense (RGB + IR1 + IR2 + Depth)
     - [X] Semantic Segmentation Camera
@@ -57,7 +59,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
   - [X] Visualization, <visualize>true</visualize>
 	- [X] LiDAR Sensor
 	  - [X] line visualization
-	  - [ ] point cloud for 3D
+	  - [X] point cloud for 3D
 - [X] Physics
   - [ ] Support all physics parameters in SDF specification
   - [X] Support `<Joint type="revolute2">`
@@ -79,7 +81,7 @@ It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atm
 There is problem with `<pose>` in `<joint>` since introduction of articulation body model. Therefore, plaese
 
 Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material', 'Collada(.dae) including animation' and 'STL(.stl)'.
-`<ambient>` elements in `<materal>` and ambient properies in mesh files are not support in CLOiSim.
+`<ambient>` elements in `<material>` and ambient properties in mesh files are not support in CLOiSim.
 
 If you're trying to connect `<link>` of `<model>`, it needs to specify unique name in link name in `joint/parent` or `joint/child` within same root model.
 
@@ -134,7 +136,7 @@ Refer to core codes in 'Assets/Scripts'.
 Shaders are also used to get depth buffer information in a few sensor model.
 
 Default physics engine 'Nvidia PhysX' is used for physics. And it retrieves some of physics parameters from `<ode>` in sdf.
-'SDFPlugins' help physics tricky handling for jointing `<link>` ojbects by `<joint>` element.
+'SDFPlugins' help physics tricky handling for jointing `<link>` objects by `<joint>` element.
 
 We've deceided to change a solver type of physics engine since new solver "TGS(Temporal Gauss Seidel)" is intorduced recently(PhysX 4.1).
 
@@ -152,15 +154,15 @@ if `<name>` element of `<script>` element in `<material>` element contains "tree
 
 - Processor: testing and looking for the minimum
 - Memory: testing and looking for the minimum
-- Graphics: testing and looking for the minimum
+- Graphics: device supports Vulkan
 - OS: Ubuntu 22.04 since CLOiSim-4.12.0
 
 ### Tested environment (latest)
 
-- Unity Editor Version: *'2022.3.71f1 (LTS)'*.
+- Unity Editor Version: *Unity 6.4 '6000.4.0f1 (Supported)'*.
 
 - Linux Machine
-  - OS: Ubuntu 24.04.3 LTS
+  - OS: Ubuntu 24.04.4 LTS
   - Processor: AMD® Ryzen 9 5950x 16-core processor × 32
   - Memory: 128.0 GiB
   - Graphics: NVIDIA Corporation [GeForce RTX 3090]

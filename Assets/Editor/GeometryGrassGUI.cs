@@ -4,8 +4,15 @@ using UnityEditor;
 #if UNITY_EDITOR
 public class GeometryGrassGUI : ShaderGUI
 {
+	private static bool s_isInsideGui = false;
 	public override void OnGUI(MaterialEditor editor, MaterialProperty[] properties)
 	{
+		if (s_isInsideGui)
+		{
+			return;
+		}
+		s_isInsideGui = true;
+
 		var guiStyleTitle = new GUIStyle();
 		guiStyleTitle.fontSize = 20;
 		guiStyleTitle.fontStyle = FontStyle.Bold;
@@ -164,6 +171,7 @@ public class GeometryGrassGUI : ShaderGUI
 			var windFrequencyLabel = new GUIContent(windFrequency.displayName, "How frequently the wind pulses over the grass.");
 			editor.ShaderProperty(windFrequency, windFrequencyLabel);
 		}
+		s_isInsideGui = false;
 	}
 
 	private void SetKeywordValue(string keyword, bool state, Material target)

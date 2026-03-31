@@ -192,6 +192,10 @@ namespace SensorDevices
 			micomSensorData.Odom = _odomData;
 
 			EnqueueMessage(micomSensorData);
+
+#if UNITY_EDITOR
+			UpdateProfiler("MicomSensor", 512);
+#endif
 		}
 
 		private void UpdateBattery(messages.Micom micomData, in float deltaTime)

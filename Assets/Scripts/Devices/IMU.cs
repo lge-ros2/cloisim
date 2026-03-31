@@ -96,6 +96,8 @@ namespace SensorDevices
 		protected override void OnStart()
 		{
 			_imuInitialRotation = transform.rotation;
+			_previousImuPosition = transform.position;
+			_previousLinearVelocity = Vector3.zero;
 			// Debug.Log("_imuInitialRotation=" + _imuInitialRotation);
 		}
 
@@ -103,8 +105,12 @@ namespace SensorDevices
 		{
 			// Debug.Log("IMU Reset");
 			_previousImuRotation = Quaternion.identity;
+			_previousImuPosition = transform.position;
+			_previousLinearVelocity = Vector3.zero;
 
 			_imuOrientation = Vector3.zero;
+			_imuAngularVelocity = Vector3.zero;
+			_imuLinearAcceleration = Vector3.zero;
 		}
 
 		protected override void InitializeMessages()
@@ -180,16 +186,16 @@ namespace SensorDevices
 		{
 			var currentPosition = transform.position;
 
-			// Caculate orientation and acceleration
+			// Calculate orientation and acceleration
 			// Rotation from A to B : B * Quaternion.Inverse(A);
 			_imuRotation = transform.rotation * Quaternion.Inverse(_imuInitialRotation);
 
 			var angularDisplacement = _imuRotation * Quaternion.Inverse(_previousImuRotation);
-			_imuAngularVelocity = angularDisplacement.eulerAngles / Time.fixedDeltaTime;
-			// angularDisplacement.ToAngleAxis(out var angle, out var angleAxis);
-			// _imuAngularVelocity = angleAxis * angle / Time.fixedDeltaTime;
-
-			// Debug.Log($"{_imuAngularVelocity} {angularDisplacement.eulerAngles / Time.fixedDeltaTime}");
+			angularDisplacement.ToAngleAxis(out var angle, out var angleAxis);
+			// Normalize angle to [-180, 180] to get shortest rotation path
+			if (angle > 180f)
+				angle -= 360f;
+			_imuAngularVelocity = angleAxis * angle / Time.fixedDeltaTime;
 
 			var currentLinearVelocity = (currentPosition - _previousImuPosition) / Time.fixedDeltaTime;
 			_imuLinearAcceleration = (currentLinearVelocity - _previousLinearVelocity) / Time.fixedDeltaTime;

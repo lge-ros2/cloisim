@@ -81,13 +81,13 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		}
 	}
 
-	private Dictionary<string, int> _propsClassId = new Dictionary<string, int>();
-	private Dictionary<string, SDF.Helper.Base> allLoadedModelList = new Dictionary<string, SDF.Helper.Base>();
-	private Dictionary<int, ObjectTracking> _trackingObjectList = new Dictionary<int, ObjectTracking>();
+	private Dictionary<string, int> _propsClassId = new();
+	private Dictionary<string, SDF.Helper.Base> allLoadedModelList = new();
+	private Dictionary<int, ObjectTracking> _trackingObjectList = new();
 
 	private messages.PerceptionV _messagePerceptions;
-	private Dictionary<int, messages.Perception> _messagePerceptionProps = new Dictionary<int, messages.Perception>();
-	private List<messages.Perception> _messagePerceptionObjects = new List<messages.Perception>();
+	private Dictionary<UE.EntityId, messages.Perception> _messagePerceptionProps = new();
+	private List<messages.Perception> _messagePerceptionObjects = new();
 
 	private int sleepPeriodForPublishInMilliseconds = 1000;
 
@@ -342,7 +342,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 		lock (_messagePerceptionProps)
 		{
-			var propsInstanceIdlist = new HashSet<int>();
+			var propsInstanceIdlist = new HashSet<UE.EntityId>();
 			foreach (var prop in props)
 			{
 				if (!prop.CompareTag("Props"))
@@ -354,7 +354,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 				var propName = propNameSplitted[0];
 				var propId = Int32.Parse(propNameSplitted[1]);
-				var instanceId = prop.GetInstanceID();
+				var instanceId = prop.GetEntityId();
 
 				if (_messagePerceptionProps.TryGetValue(instanceId, out var perception))
 				{
