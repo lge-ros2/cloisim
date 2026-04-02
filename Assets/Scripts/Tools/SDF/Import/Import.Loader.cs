@@ -6,7 +6,7 @@
 
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Import
 	{

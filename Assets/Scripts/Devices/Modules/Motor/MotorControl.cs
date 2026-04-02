@@ -62,7 +62,7 @@ public abstract class MotorControl
 	{
 		var log = new StringBuilder();
 
-		var linkHelperList = _baseTransform.GetComponentsInChildren<SDF.Helper.Link>();
+		var linkHelperList = _baseTransform.GetComponentsInChildren<SDFormat.Helper.Link>();
 		foreach (var linkHelper in linkHelperList)
 		{
 			// Debug.Log("AttachMotor:" + linkHelper.name + " , " + linkHelper.Model.name + " ==> " + targetName);

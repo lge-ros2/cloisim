@@ -90,7 +90,7 @@ Here are the list of items that is implemented(marked) or planned to be implemen
 
 Plus, [SDF](http://sdformat.org/spec?ver=1.6) file basically targeting and supporting version 1.6 and works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
 
-It does not support optional elmenets like `<wind>`, `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<scene>`, `<population>`.
+It does not support optional elements like `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<population>`.
 
 There is problem with `<pose>` in `<joint>` since introduction of articulation body model. Therefore, plaese
 

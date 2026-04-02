@@ -66,9 +66,9 @@ public static class ProceduralHeightmap
 		return null;
 	}
 
-	public static void GenerateHeightMap(this GameObject heightmapObject, in SDF.Heightmap property, in bool isVisualMesh)
+	public static void GenerateHeightMap(this GameObject heightmapObject, in SDFormat.Heightmap property, in bool isVisualMesh)
 	{
-		var byteArray = GetBytesFromImage(property.uri);
+		var byteArray = GetBytesFromImage(property.Uri);
 		if (byteArray == null)
 		{
 			return;
@@ -84,7 +84,6 @@ public static class ProceduralHeightmap
 			if (terrainCollider != null)
 			{
 				terrainData = terrainCollider.terrainData;
-				// Debug.Log("terrainData Found visual mesh");
 			}
 		}
 		else
@@ -93,63 +92,58 @@ public static class ProceduralHeightmap
 			if (terrain != null)
 			{
 				terrainData = terrain.terrainData;
-				// Debug.Log("terrainData Found collision mesh");
 			}
 		}
 
 		if (terrainData == null)
 		{
 			terrainData = new TerrainData();
-			terrainData.name = Path.GetFileNameWithoutExtension(property.uri);
+			terrainData.name = Path.GetFileNameWithoutExtension(property.Uri);
 
 			var texture = new Texture2D(0, 0);
 
 			texture.LoadImage(byteArray, false);
-			// Debug.Log("texture = " + texture.width + "," + texture.height + ", " + texture.format + "," + texture.graphicsFormat);
 
 			if (texture.width != texture.height)
 			{
 				Debug.LogWarningFormat(
 					"Width={0}, Height={1}, Texture({2}) is not same!! Not proper for heightmap",
-					texture.width, texture.height, property.uri);
+					texture.width, texture.height, property.Uri);
 			}
 
-			// Configuration order is importatnt
 			terrainData.heightmapResolution = Mathf.Max(Mathf.NextPowerOfTwo(texture.width), Mathf.NextPowerOfTwo(texture.height)) + 1;
 
-			var sampling = (int)(property.sampling * MinDetailResolution);
+			var sampling = (int)(property.Sampling * MinDetailResolution);
 			terrainData.SetDetailResolution(sampling * DetailResolutionRate, sampling);
 
 			terrainData.UpdateHeightMap(texture);
 
-			var terrainSize = SDF2Unity.Scale(property.size);
+			var terrainSize = SDF2Unity.Scale(property.Size);
 			var DefaultTerrainSize = new Vector3(texture.width, 1f, texture.height);
 			terrainData.size = (terrainSize == Vector3.one) ? DefaultTerrainSize : terrainSize;
 		}
 
 		if (isVisualMesh)
 		{
-			var terrainLayers = new TerrainLayer[property.texture.Count];
-			for (var i = 0; i < property.texture.Count; i++)
+			var terrainLayers = new TerrainLayer[property.Textures.Count];
+			for (var i = 0; i < property.Textures.Count; i++)
 			{
-				var elem = property.texture[i];
+				var elem = property.Textures[i];
 				var terrainLayer = new TerrainLayer();
 
-				terrainLayer.name = Path.GetFileNameWithoutExtension(elem.diffuse);
-				terrainLayer.diffuseTexture = MeshLoader.GetTexture(elem.diffuse);
-				terrainLayer.normalMapTexture = MeshLoader.GetTexture(elem.normal);
-				terrainLayer.tileSize = (Vector2.one * (int)elem.size);
+				terrainLayer.name = Path.GetFileNameWithoutExtension(elem.Diffuse);
+				terrainLayer.diffuseTexture = MeshLoader.GetTexture(elem.Diffuse);
+				terrainLayer.normalMapTexture = MeshLoader.GetTexture(elem.Normal);
+				terrainLayer.tileSize = (Vector2.one * (int)elem.Size);
 				terrainLayer.smoothness = DefaultSmootheness;
 
-				// Debug.Log(terrainLayer.name);
 				terrainLayers[i] = terrainLayer;
 			}
 
-			// TODO: blend texture
-			for (var i = 0; i < property.blend.Count; i++)
+			for (var i = 0; i < property.Blends.Count; i++)
 			{
-				var elem = property.blend[i];
-				// elem.min_height;
+				var elem = property.Blends[i];
+				// elem.MinHeight;
 			}
 
 			terrainData.terrainLayers = terrainLayers;

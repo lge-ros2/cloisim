@@ -6,6 +6,7 @@
 using System.Collections;
 using UnityEngine;
 using ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode;
+using SDFormat;
 
 [RequireComponent(typeof(ParticleSystem))]
 public class ParticleSystemPlugin : CLOiSimPlugin
@@ -62,14 +63,37 @@ public class ParticleSystemPlugin : CLOiSimPlugin
 	{
 		var angle = GetPluginParameters().GetValue<float>("shape/angle");
 		var radius = GetPluginParameters().GetValue<float>("shape/radius");
-		var rotationStr = GetPluginParameters().GetValue<string>("shape/rotation");
-		var rotation = (new SDF.Quaternion<float>(rotationStr)).ToUnity();
-		// Debug.Log("shapeRotation: " + shapeRotation);
+		var rotationStr = GetPluginParameters().GetValue<string>("shape/rotation", "");
+		var rotParts = rotationStr.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
 
 		var particleShape = _particleSystem.shape;
 		particleShape.angle = angle;
 		particleShape.radius = radius;
-		particleShape.rotation = rotation.eulerAngles;
+
+		if (rotParts.Length >= 4)
+		{
+			// Quaternion format: x y z w
+			var rotation = SDF2Unity.Rotation(
+				double.Parse(rotParts[3]), double.Parse(rotParts[0]),
+				double.Parse(rotParts[1]), double.Parse(rotParts[2]));
+			particleShape.rotation = rotation.eulerAngles;
+		}
+		else if (rotParts.Length == 3)
+		{
+			// Euler format: roll pitch yaw (radians, SDF convention)
+			var roll = float.Parse(rotParts[0]) * Mathf.Rad2Deg;
+			var pitch = float.Parse(rotParts[1]) * Mathf.Rad2Deg;
+			var yaw = float.Parse(rotParts[2]) * Mathf.Rad2Deg;
+			// SDF RPY → SDF quaternion → Unity quaternion
+			var sdfQuat = Quaternion.Euler(roll, pitch, yaw);
+			var rotation = SDF2Unity.Rotation(sdfQuat.w, sdfQuat.x, sdfQuat.y, sdfQuat.z);
+			particleShape.rotation = rotation.eulerAngles;
+		}
+		else if (rotParts.Length > 0)
+		{
+			Debug.LogWarning($"ParticleSystemPlugin: shape/rotation expects 3 (rpy) or 4 (xyzw) components, got {rotParts.Length}");
+		}
+
 		particleShape.alignToDirection = true;
 		particleShape.randomDirectionAmount = 1.0f;
 		particleShape.arcMode = ParticleSystemShapeMultiModeValue.Random;
@@ -116,7 +140,7 @@ public class ParticleSystemPlugin : CLOiSimPlugin
 		var materilColorString = GetPluginParameters().GetValue<string>("renderer/material/color");
 		var materialColor = materilColorString.ToColor();
 
-		var particleMaterial = Instantiate(Resources.Load<Material>("Materials/Particle Material"));
+		var particleMaterial = Instantiate(Resources.Load<UnityEngine.Material>("Materials/Particle Material"));
 		particleMaterial.color = materialColor;
 
 		_particleSystemRenderer.minParticleSize = sizeMin;

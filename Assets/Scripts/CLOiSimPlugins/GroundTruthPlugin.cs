@@ -8,6 +8,7 @@ using System.Collections;
 using System;
 using UE = UnityEngine;
 using messages = cloisim.msgs;
+using SDFormat;
 
 public class GroundTruthPlugin : CLOiSimPlugin
 {
@@ -20,7 +21,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	}
 
 	private Dictionary<string, int> _propsClassId = new(StringComparer.OrdinalIgnoreCase);
-	private Dictionary<string, SDF.Helper.Base> _allLoadedModelList = new();
+	private Dictionary<string, SDFormat.Helper.Base> _allLoadedModelList = new();
 	private Dictionary<int, ObjectTracking> _trackingObjectList = new();
 	private List<ObjectTracking> _trackingObjects = new();
 
@@ -28,8 +29,8 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	private float _lastCheckTime = 0f;
 	private float _checkInterval = 1.0f;
 
-	private List<SDF.Helper.Model> _tempModelList = new();
-	private List<SDF.Helper.Actor> _tempActorList = new();
+	private List<SDFormat.Helper.Model> _tempModelList = new();
+	private List<SDFormat.Helper.Actor> _tempActorList = new();
 
 	private messages.PerceptionV _messagePerceptions;
 	private Dictionary<UE.EntityId, messages.Perception> _messagePerceptionProps = new();
@@ -67,7 +68,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		_partsName = GetType().Name;
 
 		var worldRoot = Main.WorldRoot;
-		foreach (var model in worldRoot.GetComponentsInChildren<SDF.Helper.Model>())
+		foreach (var model in worldRoot.GetComponentsInChildren<SDFormat.Helper.Model>())
 		{
 			if (model.IsFirstChild)
 			{
@@ -76,7 +77,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			}
 		}
 
-		foreach (var actor in worldRoot.GetComponentsInChildren<SDF.Helper.Actor>())
+		foreach (var actor in worldRoot.GetComponentsInChildren<SDFormat.Helper.Actor>())
 		{
 			_allLoadedModelList.Add(actor.name, actor);
 		}
@@ -238,7 +239,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				var worldRoot = Main.WorldRoot;
 				if (worldRoot != null)
 				{
-					worldRoot.GetComponentsInChildren<SDF.Helper.Model>(false, _tempModelList);
+					worldRoot.GetComponentsInChildren<SDFormat.Helper.Model>(false, _tempModelList);
 					foreach (var m in _tempModelList)
 					{
 						if (m.IsFirstChild)
@@ -247,7 +248,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 						}
 					}
 
-					worldRoot.GetComponentsInChildren<SDF.Helper.Actor>(false, _tempActorList);
+					worldRoot.GetComponentsInChildren<SDFormat.Helper.Actor>(false, _tempActorList);
 					foreach (var a in _tempActorList)
 					{
 						_allLoadedModelList[a.name] = a;

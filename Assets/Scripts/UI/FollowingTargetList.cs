@@ -146,7 +146,7 @@ public class FollowingTargetList : MonoBehaviour
 
 		if (modelRoot != null)
 		{
-			foreach (var modelHelper in modelRoot.GetComponentsInChildren<SDF.Helper.Model>())
+			foreach (var modelHelper in modelRoot.GetComponentsInChildren<SDFormat.Helper.Model>())
 			{
 				if (modelHelper.IsFirstChild && !modelHelper.isStatic && modelHelper.hasRootArticulationBody)
 				{

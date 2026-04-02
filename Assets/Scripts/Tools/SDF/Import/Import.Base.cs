@@ -7,112 +7,106 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Import
 	{
 		public partial class Base
 		{
-			private Dictionary<Joint, Object> _jointObjectList = new();
-			private Dictionary<Plugin, Object> _pluginObjectList = new();
+			private Dictionary<SDFormat.Joint, Object> _jointObjectList = new();
+			private Dictionary<SDFormat.Plugin, Object> _pluginObjectList = new();
 
-			private void ImportVisuals(IReadOnlyList<Visual> items, in Object parentObject)
+			private void ImportVisuals(IReadOnlyList<SDFormat.Visual> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
-					// Console.WriteLine("[Visual] {0}", item.Name);
 					var createdObject = ImportVisual(item, parentObject);
 
-					ImportGeometry(item.GetGeometry(), createdObject);
+					ImportGeometry(item.Geom, createdObject);
 
 					AfterImportVisual(item, createdObject);
 
-					ImportMaterial(item.GetMaterial(), createdObject);
+					ImportMaterial(item.MaterialInfo, createdObject);
 
-					StorePlugins(item.GetPlugins(), createdObject);
+					StorePlugins(item.Plugins, createdObject);
 				}
 			}
 
-			private void ImportCollisions(IReadOnlyList<Collision> items, in Object parentObject)
+			private void ImportCollisions(IReadOnlyList<SDFormat.Collision> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
-					// Console.WriteLine("[Collision] {0}", item.Name);
 					var createdObject = ImportCollision(item, parentObject);
 
-					ImportGeometry(item.GetGeometry(), createdObject);
+					ImportGeometry(item.Geom, createdObject);
 
 					AfterImportCollision(item, createdObject);
 				}
 			}
 
-			private void ImportSensors(IReadOnlyList<Sensor> items, in Object parentObject)
+			private void ImportSensors(IReadOnlyList<SDFormat.Sensor> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
 					var createdObject = ImportSensor(item, parentObject);
-					StorePlugins(item.GetPlugins(), createdObject);
+					StorePlugins(item.Plugins, createdObject);
 				}
 			}
 
-			protected void ImportLinks(IReadOnlyList<Link> items, in Object parentObject)
+			protected void ImportLinks(IReadOnlyList<SDFormat.Link> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
-					// Console.WriteLine("[Link] {0}", item.Name);
 					var createdObject = ImportLink(item, parentObject);
 
-					ImportVisuals(item.GetVisuals(), createdObject);
+					ImportVisuals(item.Visuals, createdObject);
 
-					ImportCollisions(item.GetCollisions(), createdObject);
+					ImportCollisions(item.Collisions, createdObject);
 
-					ImportSensors(item.GetSensors(), createdObject);
+					ImportSensors(item.Sensors, createdObject);
 
-					ImportLights(item.GetLights(), createdObject);
+					ImportLights(item.Lights, createdObject);
 
 					AfterImportLink(item, createdObject);
 				}
 			}
 
-			protected void StorePlugins(IReadOnlyList<Plugin> items, Object parentObject)
+			protected void StorePlugins(IReadOnlyList<SDFormat.Plugin> items, Object parentObject)
 			{
 				// Plugin should be handled after all links of model are loaded due to articulation body.
 				foreach (var item in items)
 				{
-					// Console.WriteLine($"PluginName: {item.Name}");
 					_pluginObjectList.Add(item, parentObject);
 				}
 			}
 
-			protected void StoreJoints(IReadOnlyList<Joint> items, in Object parentObject)
+			protected void StoreJoints(IReadOnlyList<SDFormat.Joint> items, in Object parentObject)
 			{
 				// Joints should be handled after all links of model are loaded due to articulation body.
 				foreach (var item in items)
 				{
-					// Console.WriteLine($"JointName: {item.Name} Child: {item.ChildLinkName} Parent: {item.ParentLinkName}");
 					_jointObjectList.Add(item, parentObject);
 				}
 			}
 
-			protected IEnumerator ImportModels(IReadOnlyList<Model> items, Object parentObject = null)
+			protected IEnumerator ImportModels(IReadOnlyList<SDFormat.Model> items, Object parentObject = null)
 			{
 				foreach (var item in items)
 				{
-					// Console.WriteLine("[Model][{0}][{1}]", item.Name, parentObject);
 					yield return ImportModel(item, parentObject);
 				}
 			}
 
-			protected void ImportActors(IReadOnlyList<Actor> items)
+			protected void ImportActors(IReadOnlyList<SDFormat.Actor> items)
 			{
 				foreach (var item in items)
 				{
 					var createdObject = ImportActor(item);
-					StorePlugins(item.GetPlugins(), createdObject);
+					StorePlugins(item.Plugins, createdObject);
 				}
 			}
 
-			protected void ImportLights(IReadOnlyList<Light> items, in Object parentObject)
+			protected void ImportLights(IReadOnlyList<SDFormat.Light> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -120,24 +114,23 @@ namespace SDF
 				}
 			}
 
-			public IEnumerator Start(World world)
+			public IEnumerator Start(SDFormat.World world)
 			{
-				// Console.WriteLine("Import Models({0})/Links/Joints", world.GetModels().Count);
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
 
 				var worldObject = ImportWorld(world);
 
-				yield return ImportModels(world.GetModels());
+				yield return ImportModels(world.Models);
 
 				foreach (var jointObject in _jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
 				}
 
-				StorePlugins(world.GetPlugins(), worldObject);
+				StorePlugins(world.Plugins, worldObject);
 
-				ImportActors(world.GetActors());
+				ImportActors(world.Actors);
 				yield return null;
 
 				worldObject?.SpecifyPose();
@@ -148,7 +141,7 @@ namespace SDF
 				}
 			}
 
-			public IEnumerator Start(Model model, Action<Object> onCreatedRoot = null)
+			public IEnumerator Start(SDFormat.Model model, Action<Object> onCreatedRoot = null)
 			{
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();

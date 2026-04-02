@@ -7,7 +7,7 @@
 using System.Collections.Generic;
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Implement
 	{
@@ -46,12 +46,12 @@ namespace SDF
 				return relativePaths;
 			}
 
-			public static UE.GameObject CreateSkin(in SDF.Actor.Skin skin)
+			public static UE.GameObject CreateSkin(in string skinFilename)
 			{
-				return MeshLoader.CreateSkinObject(skin.filename);
+				return MeshLoader.CreateSkinObject(skinFilename);
 			}
 
-			public static void SetAnimation(in UE.GameObject targetObject, in SDF.Actor.Animation animation, in bool autoStart, in bool loop)
+			public static void SetAnimation(in UE.GameObject targetObject, in SDFormat.Animation animation, in bool autoStart, in bool loop)
 			{
 				if (targetObject == null)
 				{
@@ -67,7 +67,7 @@ namespace SDF
 				var skinnedMeshRenderer = targetObject.GetComponentInChildren<UE.SkinnedMeshRenderer>();
 				var relativePaths = GetBoneHierachy(skinnedMeshRenderer.rootBone);
 
-				var animationClip = MeshLoader.LoadAnimation(animation.name, animation.filename, relativePaths, (float)animation.scale);
+				var animationClip = MeshLoader.LoadAnimation(animation.Name, animation.Filename, relativePaths, (float)animation.Scale);
 				if (animationClip != null)
 				{
 					// UE.Debug.Log("animation clip name: " + animationClip.name);

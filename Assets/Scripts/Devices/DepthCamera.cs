@@ -145,13 +145,13 @@ namespace SensorDevices
 
 		public void SetDepthScale(in uint value)
 		{
-			var width = _camParam.image.width;
-			var height = _camParam.image.height;
-			var format = CameraData.GetPixelFormat(_camParam.image.format);
+			var width = (int)_camParam.ImageWidth;
+			var height = (int)_camParam.ImageHeight;
+			var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
 			var imageDepth = CameraData.GetImageDepth(format);
 
-			Debug.Log($"[DepthCamera] format={_camParam.image.format} pixelFormat={format} imageDepth={imageDepth} depthScale={value}");
-			SetupDepthBufferScaling(width, height, imageDepth, (float)_camParam.clip.far, (float)value);
+			Debug.Log($"[DepthCamera] format={_camParam.ImageFormat} pixelFormat={format} imageDepth={imageDepth} depthScale={value}");
+			SetupDepthBufferScaling(width, height, imageDepth, (float)_camParam.FarClip, (float)value);
 		}
 
 		public void SetTofPattern(in string vcselPatternPath, in float fovMaskH, in float fovMaskV)
@@ -167,8 +167,8 @@ namespace SensorDevices
 			_textureVcselMask.filterMode = FilterMode.Point;
 			_textureVcselMask.wrapMode = TextureWrapMode.Clamp;
 
-			var width = _camParam.image.width;
-			var height = _camParam.image.height;
+			var width = (int)_camParam.ImageWidth;
+			var height = (int)_camParam.ImageHeight;
 			SetupVCSELPrepass(width, height, fovMaskH, fovMaskV);
 		}
 
@@ -219,9 +219,9 @@ namespace SensorDevices
 			_readbackDstFormat = GraphicsFormat.R32_SFloat;
 			_skipRTAllocation = true; // URT doesn't need a rasterization render target
 
-			var width = _camParam.image.width;
-			var height = _camParam.image.height;
-			var format = CameraData.GetPixelFormat(_camParam.image.format);
+			var width = (int)_camParam.ImageWidth;
+			var height = (int)_camParam.ImageHeight;
+			var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
 			var imageDepth = CameraData.GetImageDepth(format);
 
 			_textureForCapture = new Texture2D(width, height, TextureFormat.R8, false);
@@ -243,10 +243,11 @@ namespace SensorDevices
 
 		protected override void SetupCamera()
 		{
-			if (_camParam.depth_camera_output.Equals("points"))
+			var depthCameraOutput = SDFormat.Extensions.GetElementValue(_camParam.Element?.FindElement("depth_camera"), "output", string.Empty);
+			if (depthCameraOutput.Equals("points"))
 			{
 				Debug.Log("Enable Point Cloud data mode - NOT SUPPORT YET!");
-				_camParam.image.format = "RGB_FLOAT32";
+				_camParam.ImageFormat = "RGB_FLOAT32";
 			}
 
 			// No rasterization-based depth rendering needed — URT replaces it.
@@ -261,8 +262,8 @@ namespace SensorDevices
 			// vFov using _camSensor.aspect which is 1.0 from the 1×1 dummy RT,
 			// making fieldOfView = hFov. Recompute using the real image aspect
 			// so that ExecuteRender's tanHalfV/tanHalfH are correct.
-			var imageAspect = (float)_camParam.image.width / _camParam.image.height;
-			var camHFov = (float)_camParam.horizontal_fov * Mathf.Rad2Deg;
+			var imageAspect = (float)_camParam.ImageWidth / _camParam.ImageHeight;
+			var camHFov = (float)_camParam.HorizontalFov * Mathf.Rad2Deg;
 			_camSensor.fieldOfView = SensorHelper.HorizontalToVerticalFOV(camHFov, imageAspect);
 
 			var vFovRad = _camSensor.fieldOfView * Mathf.Deg2Rad;
@@ -272,8 +273,8 @@ namespace SensorDevices
 			if (SetupURTPerCamera())
 			{
 				Debug.Log($"[DepthCamera] URT initialized (shared Compute backend), " +
-					$"image={_camParam.image.width}x{_camParam.image.height}, " +
-					$"clip=[{_camParam.clip.near:F2}, {_camParam.clip.far:F2}] vFov={_camSensor.fieldOfView:F1}°");
+					$"image={_camParam.ImageWidth}x{_camParam.ImageHeight}, " +
+					$"clip=[{_camParam.NearClip:F2}, {_camParam.FarClip:F2}] vFov={_camSensor.fieldOfView:F1}°");
 			}
 		}
 
@@ -336,7 +337,7 @@ namespace SensorDevices
 			_csVcselPrepass.SetInt("_DotMode", _dotMode);
 			_csVcselPrepass.SetFloat("_SpotSigmaPx", _spotSigmaPx);
 
-			var hFovDeg = (float)_camParam.horizontal_fov * Mathf.Rad2Deg;
+			var hFovDeg = (float)_camParam.HorizontalFov * Mathf.Rad2Deg;
 			var vFovDeg = _camSensor.fieldOfView;
 			_csVcselPrepass.SetFloat("_FovCamH", hFovDeg * Mathf.Deg2Rad);
 			_csVcselPrepass.SetFloat("_FovCamV", ((_targetVerticalFovDeg > 0) ? _targetVerticalFovDeg : vFovDeg) * Mathf.Deg2Rad);
@@ -404,8 +405,8 @@ namespace SensorDevices
 
 			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
 
-			var width = (uint)_camParam.image.width;
-			var height = (uint)_camParam.image.height;
+			var width = _camParam.ImageWidth;
+			var height = _camParam.ImageHeight;
 
 			// Create per-camera scratch buffer for ray trace dispatch
 			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, width, height, 1);
@@ -427,8 +428,8 @@ namespace SensorDevices
 		{
 			_rtShader.SetIntParam(cmd, PID_Width, (int)width);
 			_rtShader.SetIntParam(cmd, PID_Height, (int)height);
-			_rtShader.SetFloatParam(cmd, PID_NearClip, (float)_camParam.clip.near);
-			_rtShader.SetFloatParam(cmd, PID_FarClip, (float)_camParam.clip.far);
+			_rtShader.SetFloatParam(cmd, PID_NearClip, (float)_camParam.NearClip);
+			_rtShader.SetFloatParam(cmd, PID_FarClip, (float)_camParam.FarClip);
 
 			_rtShader.SetFloatParam(cmd, PID_TanHalfFovH, _tanHalfFovH);
 			_rtShader.SetFloatParam(cmd, PID_TanHalfFovV, _tanHalfFovV);
@@ -461,8 +462,8 @@ namespace SensorDevices
 
 			var capturedTime = (Clock != null) ? Clock.SimTime : Time.timeAsDouble;
 
-			var width = (uint)_camParam.image.width;
-			var height = (uint)_camParam.image.height;
+			var width = _camParam.ImageWidth;
+			var height = _camParam.ImageHeight;
 
 			// --- Camera parameters ---
 			var camTransform = _camSensor.transform;

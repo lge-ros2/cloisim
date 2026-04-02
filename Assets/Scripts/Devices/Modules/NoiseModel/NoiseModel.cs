@@ -8,7 +8,7 @@ using System;
 
 public abstract class NoiseModel
 {
-	protected readonly SDF.Noise _parameter;
+	protected readonly SDFormat.Noise _parameter;
 
 	protected double bias = 0;
 	protected bool _quantized = false;
@@ -17,20 +17,20 @@ public abstract class NoiseModel
 	protected double clampMin = double.NegativeInfinity;
 	protected double clampMax = double.PositiveInfinity;
 
-	protected NoiseModel(in SDF.Noise parameter)
+	protected NoiseModel(in SDFormat.Noise parameter)
 	{
 		this._parameter = parameter;
 
-		if (double.IsNaN(_parameter.precision))
+		if (double.IsNaN(_parameter.Precision))
 		{
-			if (_parameter.precision < 0)
+			if (_parameter.Precision < 0)
 			{
 				System.Console.WriteLine("Noise precision cannot be less than 0");
 			}
-			else if (Math.Abs(_parameter.precision - 0d) > Epsilon)
+			else if (Math.Abs(_parameter.Precision - 0d) > Epsilon)
 			{
 				this._quantized = true;
-				System.Console.WriteLine($"Noise Quantized, precision={_parameter.precision}");
+				System.Console.WriteLine($"Noise Quantized, precision={_parameter.Precision}");
 			}
 		}
 		SampleBias();
@@ -53,7 +53,7 @@ public abstract class NoiseModel
 
 	private void SampleBias()
 	{
-		this.bias = RandomNumberGenerator.GetNormal(_parameter.bias_mean, _parameter.bias_stddev);
+		this.bias = RandomNumberGenerator.GetNormal(_parameter.BiasMean, _parameter.BiasStdDev);
 		// With equal probability, we pick a negative bias
 		// (by convention, rateBiasMean should be positive, though it would work fine if negative).
 

@@ -7,7 +7,7 @@
 using System.Collections.Generic;
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Helper
 	{
@@ -39,6 +39,9 @@ namespace SDF
 			private float _jointAxisLimitVelocity = float.NaN;
 			private float _jointAxis2LimitVelocity = float.NaN;
 #endif
+
+			private SDFormat.MimicConstraint _jointAxisMimic = null;
+			private SDFormat.MimicConstraint _jointAxis2Mimic = null;
 
 			private List<UE.ContactPoint> collisionContacts = new List<UE.ContactPoint>();
 
@@ -75,6 +78,18 @@ namespace SDF
 				set => this._jointAxis2LimitVelocity = value;
 			}
 #endif
+
+			public SDFormat.MimicConstraint JointAxisMimic
+			{
+				get => this._jointAxisMimic;
+				set => this._jointAxisMimic = value;
+			}
+
+			public SDFormat.MimicConstraint JointAxis2Mimic
+			{
+				get => this._jointAxis2Mimic;
+				set => this._jointAxis2Mimic = value;
+			}
 
 			public UE.Pose LinkJointPose => _jointPose;
 

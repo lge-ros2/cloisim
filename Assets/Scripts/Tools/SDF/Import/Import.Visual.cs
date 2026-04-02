@@ -9,7 +9,7 @@ using UE = UnityEngine;
 using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;
 #endif
 
-namespace SDF
+namespace SDFormat
 {
 	using Implement;
 
@@ -19,7 +19,7 @@ namespace SDF
 		{
 			private static readonly bool EnableOptimization = true;
 
-			protected override System.Object ImportVisual(in SDF.Visual visual, in System.Object parentObject)
+			protected override System.Object ImportVisual(in SDFormat.Visual visual, in System.Object parentObject)
 			{
 				var targetObject = (parentObject as UE.GameObject);
 				var newVisualObject = new UE.GameObject(visual.Name);
@@ -27,18 +27,19 @@ namespace SDF
 
 				targetObject.SetChild(newVisualObject);
 
-				var localPosition = visual.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
-				var localRotation = visual.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
+				var localPosition = visual.RawPose.ToUnityPosition();
+				var localRotation = visual.RawPose.ToUnityRotation();
 
 				var visualHelper = newVisualObject.AddComponent<Helper.Visual>();
-				visualHelper.isCastingShadow = visual.CastShadow;
+				visualHelper.isCastingShadow = visual.CastShadows;
 				visualHelper.metaLayer = visual.GetMetaLayer();
-				visualHelper.Pose = visual?.Pose;
+				visualHelper.Pose = visual.RawPose;
+				visualHelper.PoseRelativeTo = visual.PoseRelativeTo;
 
 				return newVisualObject as System.Object;
 			}
 
-			protected override void AfterImportVisual(in SDF.Visual visual, in System.Object targetObject)
+			protected override void AfterImportVisual(in SDFormat.Visual visual, in System.Object targetObject)
 			{
 				if (visual == null)
 				{

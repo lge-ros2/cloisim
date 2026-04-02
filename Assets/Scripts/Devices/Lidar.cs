@@ -445,11 +445,11 @@ namespace SensorDevices
 			_laserFilter.SetupRangeFilter(filterRangeMin, filterRangeMax);
 		}
 
-		public void SetupNoise(in SDF.Noise param)
+		public void SetupNoise(in SDFormat.Noise param)
 		{
-			if (param != null)
+			if (param != null && param.Type != SDFormat.NoiseType.None)
 			{
-				Debug.Log($"{DeviceName}: Apply noise type:{param.type} mean:{param.mean} stddev:{param.stddev}");
+				Debug.Log($"{DeviceName}: Apply noise type:{param.Type} mean:{param.Mean} stddev:{param.StdDev}");
 				_noise = new Noise(param);
 			}
 		}

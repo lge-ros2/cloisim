@@ -6,11 +6,11 @@
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Collections;
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Any = cloisim.msgs.Any;
 using Param = cloisim.msgs.Param;
+using SDFormat;
 
 public partial class ElevatorSystem : CLOiSimPlugin
 {
@@ -133,7 +133,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var elevatorOutsideDoorNameLeft = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='left']");
 		var elevatorOutsideDoorNameRight = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='right']");
 
-		foreach (var child in this.GetComponentsInChildren<SDF.Helper.Model>())
+		foreach (var child in this.GetComponentsInChildren<SDFormat.Helper.Model>())
 		{
 			var objectName = child.name;
 			if (objectName.StartsWith(elevatorPrefixName))

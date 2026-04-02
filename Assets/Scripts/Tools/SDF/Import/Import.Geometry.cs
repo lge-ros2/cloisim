@@ -6,7 +6,7 @@
 
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	using Implement;
 
@@ -14,35 +14,39 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportGeometry(in SDF.Geometry geometry, in System.Object parentObject)
+			protected override void ImportGeometry(in SDFormat.Geometry geometry, in System.Object parentObject)
 			{
-				if (geometry == null || geometry.IsEmpty)
+				if (geometry == null || geometry.IsEmpty())
 				{
 					return;
 				}
 
 				var targetObject = (parentObject as UE.GameObject);
-				var shape = geometry.GetShape();
-				var t = shape.GetType();
 
-				if (t != null && t.Equals(typeof(SDF.Mesh)))
+				switch (geometry.Type)
 				{
-					var mesh = shape as SDF.Mesh;
-					targetObject.GenerateMesh(mesh);
-				}
-				else if (t != null && t.Equals(typeof(SDF.Heightmap)))
-				{
-					var heightmap = shape as SDF.Heightmap;
-					targetObject.GenerateMesh(heightmap);
-				}
-				else if (t != null && typeof(SDF.ShapeType).IsAssignableFrom(t))
-				{
-					targetObject.GenerateMesh(shape);
-				}
-				else
-				{
-					UE.Debug.LogErrorFormat("[{0}] Not support type({1}) for geometry", geometry.Name, geometry.Type);
-					return;
+					case SDFormat.GeometryType.Mesh:
+						targetObject.GenerateMesh(geometry.MeshShape);
+						break;
+
+					case SDFormat.GeometryType.Heightmap:
+						targetObject.GenerateMesh(geometry.HeightmapShape);
+						break;
+
+					case SDFormat.GeometryType.Box:
+					case SDFormat.GeometryType.Cylinder:
+					case SDFormat.GeometryType.Sphere:
+					case SDFormat.GeometryType.Capsule:
+					case SDFormat.GeometryType.Cone:
+					case SDFormat.GeometryType.Plane:
+					case SDFormat.GeometryType.Polyline:
+					case SDFormat.GeometryType.Ellipsoid:
+						targetObject.GenerateMesh(geometry);
+						break;
+
+					default:
+						UE.Debug.LogErrorFormat("[{0}] Not support type({1}) for geometry", geometry.Type, geometry.Type);
+						return;
 				}
 
 				targetObject.SetActive(true);

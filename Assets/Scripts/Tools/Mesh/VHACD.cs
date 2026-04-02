@@ -55,8 +55,8 @@ public partial class VHACD
 					colliderMesh.name = "VHACD_" + meshFilter.name + "_" + index;
 
 					currentMeshCollider.sharedMesh = colliderMesh;
-					currentMeshCollider.convex = true;
-					currentMeshCollider.cookingOptions = SDF.Implement.Collision.CookingOptions;
+					currentMeshCollider.convex = false;
+					currentMeshCollider.cookingOptions = SDFormat.Implement.Collision.CookingOptions;
 					currentMeshCollider.hideFlags |= HideFlags.NotEditable;
 				}
 			}
@@ -64,8 +64,8 @@ public partial class VHACD
 			{
 				var meshCollider = meshFilter.gameObject.AddComponent<MeshCollider>();
 				meshCollider.sharedMesh = meshFilter.sharedMesh;
-				meshCollider.convex = true;
-				meshCollider.cookingOptions = SDF.Implement.Collision.CookingOptions;
+				meshCollider.convex = false;
+				meshCollider.cookingOptions = SDFormat.Implement.Collision.CookingOptions;
 				meshCollider.hideFlags |= HideFlags.NotEditable;
 			}
 		}

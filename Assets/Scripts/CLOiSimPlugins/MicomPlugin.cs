@@ -11,6 +11,8 @@ using System;
 using Any = cloisim.msgs.Any;
 using UnityEngine;
 using UnityEngine.Video;
+using SDFormat;
+using Material = UnityEngine.Material;
 
 public class MicomPlugin : CLOiSimPlugin
 {
@@ -18,7 +20,7 @@ public class MicomPlugin : CLOiSimPlugin
 	private SensorDevices.MicomCommand _micomCommand = null;
 	private SensorDevices.MicomSensor _micomSensor = null;
 	private MotorControl _motorControl = null;
-	private SDF.Helper.Link[] _linkHelperInChildren = null;
+	private SDFormat.Helper.Link[] _linkHelperInChildren = null;
 	private List<string> _displaySourceUris = new List<string>();
 
 	protected override void OnAwake()
@@ -32,7 +34,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 	protected override IEnumerator OnStart()
 	{
-		_linkHelperInChildren = GetComponentsInChildren<SDF.Helper.Link>();
+		_linkHelperInChildren = GetComponentsInChildren<SDFormat.Helper.Link>();
 
 		SetupMicom();
 
@@ -156,7 +158,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 		var defaultSourceUri = GetPluginParameters().GetValue<string>("display/source/uri[@default='true']", _displaySourceUris[0]);
 
-		var visualHelpers = GetComponentsInChildren<SDF.Helper.Visual>();
+		var visualHelpers = GetComponentsInChildren<SDFormat.Helper.Visual>();
 		foreach (var visualHelper in visualHelpers)
 		{
 			if (visualHelper.name.Equals(targetVisual))
@@ -388,7 +390,7 @@ public class MicomPlugin : CLOiSimPlugin
 		if (string.IsNullOrEmpty(targetBladeName))
 			return;
 
-		SDF.Helper.Link targetBlade = null;
+		SDFormat.Helper.Link targetBlade = null;
 		foreach (var linkHelper in _linkHelperInChildren)
 			if (linkHelper.name == targetBladeName) { targetBlade = linkHelper; break; }
 

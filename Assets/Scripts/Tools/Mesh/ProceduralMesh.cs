@@ -708,7 +708,7 @@ public class ProceduralMesh
 		return mesh;
 	}
 
-	public static Mesh CreatePolylines(in SDF.Polylines polylines)
+	public static Mesh CreatePolylines(in List<SDFormat.Polyline> polylines)
 	{
 		// Enables tesselation (before calculating constrained edges) when greater than zero.
 		// It subdivides the triangles until each of them has an area smaller than this value.
@@ -718,29 +718,35 @@ public class ProceduralMesh
 		// This is used when creating a list of distinct points in the polylines.
 		const float tolerance = 1e-4f;
 
-		var height = polylines.Count == 0 ? 1f : (float)polylines[0].height;
+		var height = polylines.Count == 0 ? 1f : (float)polylines[0].Height;
 		var halfHeight = height * 0.5f;
 
 		// close all the loops
 		foreach (var polyline in polylines)
 		{
+			if (polyline.Points == null || polyline.Points.Count < 2)
+			{
+				Debug.LogWarning("Skipping polyline with insufficient points");
+				continue;
+			}
+
 			// does the poly ends with the first point?
-			var first = polyline.point[0];
-			var last = polyline.point[polyline.point.Count - 1];
+			var first = polyline.Points[0];
+			var last = polyline.Points[polyline.Points.Count - 1];
 			var distance = (first.X - last.X) * (first.X - last.X) + (first.Y - last.Y) * (first.Y - last.Y);
 
 			// within range
 			if (distance > tolerance * tolerance)
 			{
-				polyline.point.Add(first);
+				polyline.Points.Add(first);
 				Debug.LogWarning("add the first point at the ends");
 			}
 		}
 
 		var pointsToTriangulate = new List<Vector2>();
-		if (polylines.Count > 0)
+		if (polylines.Count > 0 && polylines[0].Points != null && polylines[0].Points.Count >= 3)
 		{
-			foreach (var point in polylines[0].point)
+			foreach (var point in polylines[0].Points)
 			{
 				pointsToTriangulate.Add(SDF2Unity.Point(point));
 			}
@@ -754,7 +760,7 @@ public class ProceduralMesh
 			for (int i = 1; i < polylines.Count; i++)
 			{
 				var points = new List<Vector2>();
-				foreach (var point in polylines[i].point)
+				foreach (var point in polylines[i].Points)
 				{
 					points.Add(SDF2Unity.Point(point));
 				}
@@ -763,6 +769,12 @@ public class ProceduralMesh
 		}
 
 		var outputTriangles = new List<Triangle2D>();
+		if (pointsToTriangulate.Count < 3)
+		{
+			Debug.LogWarning("Not enough points to triangulate polyline");
+			return null;
+		}
+
 		var triangulator = new DelaunayTriangulation();
 		triangulator.Triangulate(pointsToTriangulate, TesselationMaximumTriangleArea, constrainedEdgePoints);
 		triangulator.GetTrianglesDiscardingHoles(outputTriangles);

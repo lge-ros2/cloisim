@@ -62,7 +62,7 @@ namespace Unity.Splines
 
 		[SerializeField]
 		private float _sdfWidth = 0;
-		private SDF.Material _sdfMaterial = null;
+		private SDFormat.Material _sdfMaterial = null;
 
 		public IReadOnlyList<Spline> LoftSplines
 		{
@@ -91,7 +91,7 @@ namespace Unity.Splines
 			}
 		}
 
-		public SDF.Material SdfMaterial
+		public SDFormat.Material SdfMaterial
 		{
 			get => _sdfMaterial;
 			set =>  _sdfMaterial = value;
@@ -262,7 +262,7 @@ namespace Unity.Splines
 			var meshCollider = GetComponent<MeshCollider>();
 			meshCollider.material = _physicalMaterial;
 			meshCollider.convex = false;
-			meshCollider.cookingOptions = SDF.Implement.Collision.CookingOptions;
+			meshCollider.cookingOptions = SDFormat.Implement.Collision.CookingOptions;
 			meshCollider.sharedMesh = m_Mesh;
 		}
 

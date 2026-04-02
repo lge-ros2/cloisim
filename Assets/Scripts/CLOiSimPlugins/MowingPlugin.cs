@@ -8,6 +8,9 @@ using System.Collections;
 using System.Linq;
 using System;
 using UnityEngine;
+using SDFormat;
+using Material = UnityEngine.Material;
+using Mesh = UnityEngine.Mesh;
 
 [DefaultExecutionOrder(800)]
 public class MowingPlugin : CLOiSimPlugin
@@ -59,7 +62,7 @@ public class MowingPlugin : CLOiSimPlugin
 			bounds.center = boundCenter;
 		}
 
-		public void SetMaterial(in SDF.Plugin plugin)
+		public void SetMaterial(in SDFormat.Plugin plugin)
 		{
 			var colorBaseStr = plugin.GetValue<string>("grass/color/base");
 			var colorTipStr = plugin.GetValue<string>("grass/color/tip");
@@ -219,14 +222,14 @@ public class MowingPlugin : CLOiSimPlugin
 	{
 		(_grass.modelName, _grass.linkName) = SDF2Unity.GetModelLinkName(targetPlane);
 
-		var modelHelpers = GetComponentsInChildren<SDF.Helper.Model>();
+		var modelHelpers = GetComponentsInChildren<SDFormat.Helper.Model>();
 		var targetModel = modelHelpers.FirstOrDefault(x => x.name == _grass.modelName);
 
-		_targetPlane = targetModel?.GetComponentsInChildren<SDF.Helper.Link>()
+		_targetPlane = targetModel?.GetComponentsInChildren<SDFormat.Helper.Link>()
 			.FirstOrDefault(x => x.name == _grass.linkName)?.transform;
 
 		var targetPlaneCollision
-				= _targetPlane?.GetComponentsInChildren<SDF.Helper.Collision>()
+				= _targetPlane?.GetComponentsInChildren<SDFormat.Helper.Collision>()
 					.FirstOrDefault(x => x.gameObject.layer == LayerMask.NameToLayer("Plane"));
 
 		return targetPlaneCollision != null;
@@ -236,10 +239,10 @@ public class MowingPlugin : CLOiSimPlugin
 	{
 		var (targetBladeModelName, targetBladeLinkName) = SDF2Unity.GetModelLinkName(targetBlade);
 
-		var modelHelpers = GetComponentsInChildren<SDF.Helper.Model>();
+		var modelHelpers = GetComponentsInChildren<SDFormat.Helper.Model>();
 		var targetModel = modelHelpers.FirstOrDefault(x => x.name == targetBladeModelName);
 
-		var targetBladeLinkHelper = targetModel?.GetComponentsInChildren<SDF.Helper.Link>()
+		var targetBladeLinkHelper = targetModel?.GetComponentsInChildren<SDFormat.Helper.Link>()
 			.FirstOrDefault(x => x.name == targetBladeLinkName)?.transform;
 
 		if (targetBladeLinkHelper == null)
@@ -302,21 +305,21 @@ public class MowingPlugin : CLOiSimPlugin
 
 	private void CreateTempColliderInVisuals(ref List<Collider> tempColliders)
 	{
-		var bladeModel = _mowingBlade?.GetComponentInParent<SDF.Helper.Model>()?.RootModel;
+		var bladeModel = _mowingBlade?.GetComponentInParent<SDFormat.Helper.Model>()?.RootModel;
 		// Debug.LogWarning(bladeModel != null ? $"Mowing Blade Model: {bladeModel.name}" : "Mowing Blade Model not found");
-		var helperLinks = GetComponentsInChildren<SDF.Helper.Link>();
+		var helperLinks = GetComponentsInChildren<SDFormat.Helper.Link>();
 		foreach (var helperLink in helperLinks)
 		{
-			if (bladeModel != null && helperLink.GetComponentInParent<SDF.Helper.Model>().RootModel == bladeModel)
+			if (bladeModel != null && helperLink.GetComponentInParent<SDFormat.Helper.Model>().RootModel == bladeModel)
 			{
 				continue;
 			}
-			// Debug.LogWarning($"Checking Link: {helperLink.name} in Model: {helperLink.GetComponentInParent<SDF.Helper.Model>()?.name}");
+			// Debug.LogWarning($"Checking Link: {helperLink.name} in Model: {helperLink.GetComponentInParent<SDFormat.Helper.Model>()?.name}");
 
 			var meshColliders = helperLink.GetComponentsInChildren<MeshCollider>();
 			if (meshColliders.Length == 0)
 			{
-				var helperVisuals = helperLink.GetComponentsInChildren<SDF.Helper.Visual>();
+				var helperVisuals = helperLink.GetComponentsInChildren<SDFormat.Helper.Visual>();
 				foreach (var helperVisual in helperVisuals)
 				{
 					var meshFilters = helperVisual.GetComponentsInChildren<MeshFilter>();
@@ -384,15 +387,15 @@ public class MowingPlugin : CLOiSimPlugin
 
 	private void FindMeshFiltersToPunching()
 	{
-		var bladeModel = _mowingBlade?.GetComponentInParent<SDF.Helper.Model>()?.RootModel;
+		var bladeModel = _mowingBlade?.GetComponentInParent<SDFormat.Helper.Model>()?.RootModel;
 		var layerMask = LayerMask.GetMask("Default");
 
-		var hitColliders = Physics.OverlapBox(_grass.bounds.center, _grass.bounds.extents, Quaternion.identity, layerMask);
+		var hitColliders = UnityEngine.Physics.OverlapBox(_grass.bounds.center, _grass.bounds.extents, Quaternion.identity, layerMask);
 		var i = 0;
 		while (i < hitColliders.Length)
 		{
 			var hitCollider = hitColliders[i++];
-			var helperModel = hitCollider.GetComponentInParent<SDF.Helper.Model>();
+			var helperModel = hitCollider.GetComponentInParent<SDFormat.Helper.Model>();
 			// Debug.Log($"Hit: {helperModel?.name} {hitCollider.name}-{i}");
 
 			if (helperModel != null)
@@ -404,7 +407,7 @@ public class MowingPlugin : CLOiSimPlugin
 				// punching other object on same target model
 				if (helperModel.name.Equals(_grass.modelName))
 				{
-					var helperLink = hitCollider.GetComponentInParent<SDF.Helper.Link>();
+					var helperLink = hitCollider.GetComponentInParent<SDFormat.Helper.Link>();
 					if (helperLink != null && !helperLink.name.Equals(_grass.linkName))
 					{
 						var meshFilters = helperLink.GetComponentsInChildren<MeshFilter>();

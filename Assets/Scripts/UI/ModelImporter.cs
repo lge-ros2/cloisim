@@ -53,7 +53,7 @@ public class ModelImporter : MonoBehaviour
 		}
 	}
 
-	public void UpdateUIModelList(in SDF.ResourceModelTable resourceModelTable)
+	public void UpdateUIModelList(in SDFormat.ResourceModelTable resourceModelTable)
 	{
 		if (_modelList == null)
 		{
@@ -201,7 +201,7 @@ public class ModelImporter : MonoBehaviour
 
 	private void SetInitPose()
 	{
-		var modelHelper = _targetObject.GetComponent<SDF.Helper.Model>();
+		var modelHelper = _targetObject.GetComponent<SDFormat.Helper.Model>();
 		if (modelHelper != null)
 		{
 			modelHelper.SetPose(_targetObject.localPosition + _modelDeployOffset, _targetObject.localRotation);
@@ -219,7 +219,7 @@ public class ModelImporter : MonoBehaviour
 
 		UnblockSelfRaycast();
 
-		foreach (var helper in _targetObject.GetComponentsInChildren<SDF.Helper.Base>())
+		foreach (var helper in _targetObject.GetComponentsInChildren<SDFormat.Helper.Base>())
 		{
 			helper.Reset();
 		}

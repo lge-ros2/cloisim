@@ -8,7 +8,7 @@
 using UE = UnityEngine;
 using MCCookingOptions = UnityEngine.MeshColliderCookingOptions;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Implement
 	{
@@ -136,7 +136,7 @@ namespace SDF
 
 			public static void MakeCollision(this UE.GameObject targetObject)
 			{
-				var modelHelper = targetObject.GetComponentInParent<SDF.Helper.Model>();
+				var modelHelper = targetObject.GetComponentInParent<SDFormat.Helper.Model>();
 				// UE.Debug.Log(modelHelper.name + " MakeCollision");
 
 				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
@@ -177,7 +177,13 @@ namespace SDF
 				}
 			}
 
-			public static void SetSurfaceFriction(this UE.GameObject targetObject, in SDF.Surface surface)
+			public static void RemoveRenderers(UE.GameObject targetObject)
+			{
+				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
+				RemoveRenderers(ref meshFilters);
+			}
+
+			public static void SetSurfaceFriction(this UE.GameObject targetObject, in SDFormat.Surface surface)
 			{
 				var material = new UE.PhysicsMaterial();
 
@@ -185,27 +191,30 @@ namespace SDF
 				{
 					material.name = "SDF Surface Friction";
 
-					material.bounciness = (surface.bounce == null) ? 0 : (float)surface.bounce.restitution_coefficient;
+					material.bounciness = 0;
 
-					if (surface.friction != null)
+					if (surface.BounceInfo != null)
 					{
-						if (surface.friction.ode != null)
+						material.bounciness = (float)surface.BounceInfo.RestitutionCoefficient;
+						material.bounceCombine = UE.PhysicsMaterialCombine.Maximum;
+					}
+
+					if (surface.FrictionInfo != null)
+					{
+						if (surface.FrictionInfo.Ode != null)
 						{
-							// SDF has two friction directions (mu, mu2).
-							// Unity doesn't support anisotropic friction, so use Harmonic Mean
-							var mu = (float)surface.friction.ode.mu;
-							var mu2 = (float)surface.friction.ode.mu2;
+							var mu = (float)surface.FrictionInfo.Ode.Mu;
+							var mu2 = (float)surface.FrictionInfo.Ode.Mu2;
 							var combinedMu = 2f * mu * mu2 / (mu + mu2);
 
 							material.staticFriction = combinedMu;
 							material.dynamicFriction = combinedMu * DynamicFrictionRatio;
 							material.frictionCombine = UE.PhysicsMaterialCombine.Multiply;
-							// UE.Debug.Log($"{targetObject.name} Set friction from SDF surface: mu={mu}, mu2={mu2}, combined={combinedMu}");
 
-							if (surface.friction.ode.slip1 > 0 || surface.friction.ode.slip2 > 0)
+							if (surface.FrictionInfo.Ode.Slip1 > 0 || surface.FrictionInfo.Ode.Slip2 > 0)
 							{
 								UE.Debug.LogWarning(
-									$"Surface has ODE slip values (slip1={surface.friction.ode.slip1}, slip2={surface.friction.ode.slip2}) " +
+									$"Surface has ODE slip values (slip1={surface.FrictionInfo.Ode.Slip1}, slip2={surface.FrictionInfo.Ode.Slip2}) " +
 									"which Unity PhysX cannot represent directly.");
 							}
 						}
