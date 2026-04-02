@@ -215,8 +215,10 @@ namespace SDF
 					if (IsValidNode("surface/friction/ode"))
 					{
 						surface.friction.ode = new Surface.Friction.ODE();
-						surface.friction.ode.mu = Math.Clamp(GetValue<double>("surface/friction/ode/mu"), 0, 1);
-						surface.friction.ode.mu2 = Math.Clamp(GetValue<double>("surface/friction/ode/mu2"), 0, 1);
+						surface.friction.ode.mu = GetValue<double>("surface/friction/ode/mu", surface.friction.ode.mu);
+						surface.friction.ode.mu2 = GetValue<double>("surface/friction/ode/mu2", surface.friction.ode.mu2);
+						surface.friction.ode.slip1 = GetValue<double>("surface/friction/ode/slip1", surface.friction.ode.slip1);
+						surface.friction.ode.slip2 = GetValue<double>("surface/friction/ode/slip2", surface.friction.ode.slip2);
 					}
 				}
 			}
