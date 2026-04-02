@@ -18,6 +18,7 @@ public sealed class ObjectTracking
 	private readonly List<Vector3> _rotatedFootPrint;
 	private Vector3 _previousFixedPosition;
 
+	public bool IsValid => _rootTransform != null;
 	public Vector3 Velocity => _velocity;
 	public Vector3 Position => _position;
 	public Quaternion Rotation => _rotation;

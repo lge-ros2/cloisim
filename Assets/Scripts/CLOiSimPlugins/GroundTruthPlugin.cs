@@ -198,12 +198,36 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	void LateUpdate()
 	{
-		for (var i = 0; i < _trackingObjects.Count; i++)
+		for (var i = _trackingObjects.Count - 1; i >= 0; i--)
 		{
-			_trackingObjects[i].Update();
+			var trackingObject = _trackingObjects[i];
+			if (!trackingObject.IsValid)
+			{
+				RemoveTrackingObject(i);
+				continue;
+			}
+			trackingObject.Update();
 		}
 
 		UpdateProps();
+	}
+
+	private void RemoveTrackingObject(int index)
+	{
+		var trackingObject = _trackingObjects[index];
+		_trackingObjects.RemoveAt(index);
+
+		// Find and remove from _trackingObjectList and _messagePerceptionObjects by matching trackingId
+		for (var j = _messagePerceptionObjects.Count - 1; j >= 0; j--)
+		{
+			var perception = _messagePerceptionObjects[j];
+			if (_trackingObjectList.TryGetValue(perception.TrackingId, out var obj) && obj == trackingObject)
+			{
+				_trackingObjectList.Remove(perception.TrackingId);
+				_messagePerceptionObjects.RemoveAt(j);
+				break;
+			}
+		}
 	}
 
 	private static bool TryParsePropNameAndId(string propObjectName, out string propName, out int propId)
