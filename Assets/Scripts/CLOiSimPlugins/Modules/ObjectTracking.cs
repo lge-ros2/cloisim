@@ -172,19 +172,13 @@ public sealed class ObjectTracking
 				combinedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
 				combinedMesh.CombineMeshes(combine, true, true);
 				combinedMesh.RecalculateBounds();
-				// Debug.Log(gameObject.name + ", " + combinedMesh.bounds.size + ", " + combinedMesh.bounds.extents+ ", " + combinedMesh.bounds.center);
-				// trackingGameObject.AddComponent<MeshFilter>().sharedMesh = combinedMesh;
 
-				// move offset and projection to 2D
+				// Project to 2D and downsample via spatial grid before convex hull
 				var vertices = combinedMesh.vertices;
-				for (var i = 0; i < vertices.Length; i++)
-				{
-					vertices[i] -= combinedMesh.bounds.center;
-					vertices[i].y = 0;
-					vertices[i] = initialRotation * vertices[i];
-				}
+				var center = combinedMesh.bounds.center;
+				var downsampledVertices = DownsampleVertices2D(vertices, center, initialRotation);
 
-				var convexHullMeshData = DeviceHelper.SolveConvexHull2D(vertices);
+				var convexHullMeshData = downsampledVertices.SolveConvexHull2D();
 				if (convexHullMeshData.Length > 0)
 				{
 					const float minimumDistance = 0.065f;
@@ -195,11 +189,9 @@ public sealed class ObjectTracking
 						if (Vector3.Distance(prevPoint, convexHullMeshData[i]) > minimumDistance)
 						{
 							lowConvexHullMeshData.Add(convexHullMeshData[i]);
-							// Debug.Log(convexHullMeshData[i].ToString("F8"));
 							prevPoint = convexHullMeshData[i];
 						}
 					}
-					// Debug.Log("convexhull _footPrint count: " + convexHullMeshData.Length + " => low: " + lowConvexHullMeshData.Count);
 
 					Set2DFootprint(lowConvexHullMeshData.ToArray());
 				}
@@ -208,5 +200,36 @@ public sealed class ObjectTracking
 				Object.Destroy(combinedMesh);
 			}
 		}
+	}
+
+	/// <summary>
+	/// Projects vertices to 2D (y=0), applies center offset and rotation,
+	/// then reduces count via spatial grid bucketing so the convex hull
+	/// receives at most a few thousand points instead of the full mesh.
+	/// </summary>
+	private static Vector3[] DownsampleVertices2D(Vector3[] vertices, Vector3 center, Quaternion rotation)
+	{
+		const float cellSize = 0.01f; // 1 cm grid
+		var inv = 1f / cellSize;
+		var seen = new HashSet<long>();
+		var result = new List<Vector3>();
+
+		for (var i = 0; i < vertices.Length; i++)
+		{
+			var v = vertices[i] - center;
+			v.y = 0;
+			v = rotation * v;
+
+			var ix = (long)Mathf.FloorToInt(v.x * inv);
+			var iz = (long)Mathf.FloorToInt(v.z * inv);
+			var key = ix * 73856093L ^ iz * 19349663L;
+
+			if (seen.Add(key))
+			{
+				result.Add(v);
+			}
+		}
+
+		return result.ToArray();
 	}
 }

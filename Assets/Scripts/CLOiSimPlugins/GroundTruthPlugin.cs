@@ -184,6 +184,9 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			{
 				UE.Debug.LogWarning(trackingId + "(" + perception.ClassId + ") is wrong object to get");
 			}
+
+			// Yield each iteration to spread the heavy mesh work across frames
+			yield return null;
 		}
 	}
 

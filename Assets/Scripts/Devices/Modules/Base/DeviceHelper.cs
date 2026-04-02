@@ -225,79 +225,55 @@ public static partial class DeviceHelper
 		}
 	}
 
-	public static Vector3[] SolveConvexHull2D(in Vector3[] points)
+	public static Vector3[] SolveConvexHull2D(this Vector3[] points)
 	{
-		var result = new List<Vector3>();
-
-		if (points.Length == 0)
+		var n = points.Length;
+		if (n == 0)
 		{
-			return result.ToArray();
+			return System.Array.Empty<Vector3>();
 		}
 
-		int leftMostIndex = 0;
-		for (var i = 1; i < points.Length; i++)
+		// Andrew's monotone chain algorithm — O(n log n)
+		var sorted = new Vector3[n];
+		System.Array.Copy(points, sorted, n);
+		System.Array.Sort(sorted, (a, b) =>
 		{
-			if (points[leftMostIndex].x > points[i].x)
-			{
-				leftMostIndex = i;
-			}
-		}
-		result.Add(points[leftMostIndex]);
+			var cmp = a.x.CompareTo(b.x);
+			return cmp != 0 ? cmp : a.z.CompareTo(b.z);
+		});
 
-		var collinearPoints = new List<Vector3>();
-		var current = points[leftMostIndex];
+		var hull = new Vector3[2 * n];
+		var k = 0;
 
-		while (true)
+		// Build lower hull
+		for (var i = 0; i < n; i++)
 		{
-			var nextTarget = points[0];
-			for (var i = 1; i < points.Length; i++)
+			while (k >= 2 && Cross2D(hull[k - 2], hull[k - 1], sorted[i]) <= 0)
 			{
-				if (points[i] == current)
-				{
-					continue;
-				}
-
-				var x1 = current.x - nextTarget.x;
-				var x2 = current.x - points[i].x;
-				var z1 = current.z - nextTarget.z;
-				var z2 = current.z - points[i].z;
-
-				var val = (z2 * x1) - (z1 * x2);
-				if (val > 0)
-				{
-					nextTarget = points[i];
-					collinearPoints = new List<Vector3>();
-				}
-				else if (val == 0)
-				{
-					if (Vector3.Distance(current, nextTarget) < Vector3.Distance(current, points[i]))
-					{
-						collinearPoints.Add(nextTarget);
-						nextTarget = points[i];
-					}
-					else
-					{
-						collinearPoints.Add(points[i]);
-					}
-				}
+				k--;
 			}
-
-			foreach (var t in collinearPoints)
-			{
-				result.Add(t);
-			}
-
-			if (nextTarget == points[leftMostIndex])
-			{
-				break;
-			}
-
-			result.Add(nextTarget);
-			current = nextTarget;
+			hull[k++] = sorted[i];
 		}
 
-		var sortedList = result.OrderBy(point => Mathf.Atan2(point.z, point.x));
+		// Build upper hull
+		var lower = k + 1;
+		for (var i = n - 2; i >= 0; i--)
+		{
+			while (k >= lower && Cross2D(hull[k - 2], hull[k - 1], sorted[i]) <= 0)
+			{
+				k--;
+			}
+			hull[k++] = sorted[i];
+		}
 
-		return sortedList.ToArray();
+		// Last point equals first point, so omit it
+		var result = new Vector3[k - 1];
+		System.Array.Copy(hull, result, k - 1);
+		return result;
+	}
+
+	private static float Cross2D(in Vector3 o, in Vector3 a, in Vector3 b)
+	{
+		return (a.x - o.x) * (b.z - o.z) - (a.z - o.z) * (b.x - o.x);
 	}
 }
