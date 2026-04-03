@@ -2,6 +2,10 @@ Shader "Custom/GeometryGrass"
 {
 	Properties
 	{
+		// Segmentation properties (set via MaterialPropertyBlock by Segmentation.Tag).
+		_SegmentationValue ("Segmentation Value", Int) = 0
+		[Toggle] _Hide ("Hide this label", Int) = 0
+
 		// Albedo color properties.
 		_BaseColor("Base Color", Color) = (1, 1, 1, 1)
 		_TipColor("Tip Color", Color) = (1, 1, 1, 1)
@@ -484,6 +488,41 @@ Shader "Custom/GeometryGrass"
 			{
 				Alpha(SampleAlbedoAlpha(i.uv, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap)).a, _BaseColor, _Cutoff);
 				return float4(0, 0, 0, 0);
+			}
+			ENDHLSL
+		}
+
+		// Segmentation pass: preserves tessellation + geometry stages so grass
+		// blades are visible to the segmentation camera.
+		Pass
+		{
+			Name "SegmentationGrass"
+			Tags { "LightMode" = "SegmentationGrass" }
+
+			HLSLPROGRAM
+			#pragma vertex vert
+			#pragma hull hull
+			#pragma domain domain
+			#pragma geometry geom
+			#pragma fragment segFrag
+
+			// Set via MaterialPropertyBlock by Segmentation.Tag
+			int _SegmentationValue;
+			int _Hide;
+
+			half4 segFrag(g2f i) : SV_Target
+			{
+				half4 segColor = half4(0, 0, 0, 0);
+				if (_Hide == 0)
+				{
+					// Encode 16Bits To RG (matches Segmentation.shader)
+					float R = ((_SegmentationValue >> 8) & 0xFF) / 255.0;
+					float G = (_SegmentationValue & 0xFF) / 255.0;
+					// Due to little-endian data, SWAP
+					segColor.r = G;
+					segColor.g = R;
+				}
+				return segColor;
 			}
 			ENDHLSL
 		}

@@ -95,8 +95,25 @@ namespace Segmentation
 
 		public void UpdateTags()
 		{
+			// Process model-level tags first (no "::"), then link-level tags (with "::")
+			// so that more specific link-level settings override model-level ones.
 			foreach (var vk in _labelInfo)
 			{
+				if (vk.Key.Contains("::"))
+					continue;
+
+				var allowedTag = _labelClassFilters.Contains(vk.Key);
+				foreach (var tag in vk.Value)
+				{
+					tag.Hide = allowedTag ? false : true;
+				}
+			}
+
+			foreach (var vk in _labelInfo)
+			{
+				if (!vk.Key.Contains("::"))
+					continue;
+
 				var allowedTag = _labelClassFilters.Contains(vk.Key);
 				foreach (var tag in vk.Value)
 				{

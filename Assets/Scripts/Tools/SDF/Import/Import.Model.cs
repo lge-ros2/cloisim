@@ -136,6 +136,15 @@ namespace SDF
 				{
 					// UE.Debug.Log($"AfterImportModel: {model.OriginalName}, {modelObject.name}");
 					Main.SegmentationManager.AttachTag(model.OriginalName, modelObject);
+
+					// Also attach per-link tags with model::link naming for link-level segmentation
+					var linkHelpers = modelObject.GetComponentsInChildren<Helper.Link>();
+					foreach (var linkHelper in linkHelpers)
+					{
+						var linkTagName = model.OriginalName + "::" + linkHelper.name;
+						Main.SegmentationManager.AttachTag(linkTagName, linkHelper.gameObject);
+					}
+
 					Main.SegmentationManager.UpdateTags();
 
 					if (modelHelper.isStatic)

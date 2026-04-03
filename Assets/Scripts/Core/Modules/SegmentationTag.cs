@@ -160,6 +160,7 @@ namespace Segmentation
 				for (var i = 0; i < renderer.materials.Length; i++)
 				{
 					renderer.GetPropertyBlock(mpb, i);
+					mpb.SetInt("_SegmentationValue", (int)_classId);
 					mpb.SetInt("_Hide", value ? 1 : 0);
 					renderer.SetPropertyBlock(mpb, i);
 				}
