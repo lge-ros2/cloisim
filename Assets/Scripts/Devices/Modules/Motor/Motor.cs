@@ -75,7 +75,7 @@ public class Motor : Articulation
 		return GetVelocity() * Mathf.Deg2Rad;
 	}
 
-	/// <summary>Set Target Velocity wmotorLeftith PID control</summary>
+	/// <summary>Set Target Velocity with PID control</summary>
 	/// <remarks>degree per second</remarks>
 	public void SetTargetVelocity(in float angularVelocity)
 	{

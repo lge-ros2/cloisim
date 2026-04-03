@@ -19,9 +19,9 @@ public class PID
 	private double _commandMin, _commandMax;
 
 	public PID(
-		in double pGain, in double iGain, in double dGain,
-		in double integralMin, in double integralMax,
-		in double commandMin, in double commandMax)
+		double pGain, double iGain, double dGain,
+		double integralMin, double integralMax,
+		double commandMin, double commandMax)
 	{
 		Change(pGain, iGain, dGain);
 
@@ -35,8 +35,8 @@ public class PID
 	}
 
 	public PID(
-		in double pGain, in double iGain, in double dGain,
-		in double integralLimit = IntegralMax, in double commandLimit = CommandMax)
+		double pGain, double iGain, double dGain,
+		double integralLimit = IntegralMax, double commandLimit = CommandMax)
 		: this(
 			pGain, iGain, dGain,
 			-Math.Abs(integralLimit), Math.Abs(integralLimit),
@@ -44,23 +44,23 @@ public class PID
 	{
 	}
 
-	public void SetIntegralRange(in double min, in double max)
+	public void SetIntegralRange(double min, double max)
 	{
-		this._integralMin = min;
-		this._integralMax = max;
+		_integralMin = Math.Min(min, max);
+		_integralMax = Math.Max(min, max);
 	}
 
-	public void SetOutputRange(in double min, in double max)
+	public void SetOutputRange(double min, double max)
 	{
-		this._commandMin = min;
-		this._commandMax = max;
+		_commandMin = Math.Min(min, max);
+		_commandMax = Math.Max(min, max);
 	}
 
-	public void Change(in double pGain, in double iGain, in double dGain)
+	public void Change(double pGain, double iGain, double dGain)
 	{
-		this._pGain = pGain;
-		this._iGain = iGain;
-		this._dGain = dGain;
+		_pGain = pGain;
+		_iGain = iGain;
+		_dGain = dGain;
 	}
 
 	public void Reset()
@@ -69,15 +69,15 @@ public class PID
 		_lastError = 0;
 	}
 
-	public double Update(in double actual, in double target, in double deltaTime)
+	public double Update(double actual, double target, double deltaTime)
 	{
 		var error = actual - target;
 		return Update(error, deltaTime);
 	}
 
-	public double Update(in double error, in double deltaTime)
+	public double Update(double error, double deltaTime)
 	{
-		if (Math.Abs(deltaTime) < double.Epsilon ||
+		if (deltaTime <= 0d ||
 			double.IsNaN(deltaTime) || double.IsInfinity(deltaTime))
 		{
 			return 0;
@@ -86,24 +86,30 @@ public class PID
 		// Calculate proportional contribution to command
 		var pTerm = _pGain * error;
 
-		// Calculate the integral error
-		_integralError += deltaTime * error;
-
-		// Calculate integral contribution to command
-		var iTerm = _iGain * _integralError;
-
-		// Limit iTerm so that the limit is meaningful in the output
-		if (iTerm > _integralMax)
+		var iTerm = 0.0;
+		if (_iGain != 0.0)
 		{
-			iTerm = _integralMax;
-			// UnityEngine.Debug.Log("MAX=" + iTerm);
-			_integralError = iTerm / _iGain;
+			// Calculate the integral error
+			_integralError += deltaTime * error;
+
+			// Calculate integral contribution to command
+			iTerm = _iGain * _integralError;
+
+			// Limit iTerm so that the limit is meaningful in the output
+			if (iTerm > _integralMax)
+			{
+				iTerm = _integralMax;
+				_integralError = iTerm / _iGain;
+			}
+			else if (iTerm < _integralMin)
+			{
+				iTerm = _integralMin;
+				_integralError = iTerm / _iGain;
+			}
 		}
-		else if (iTerm < _integralMin)
+		else
 		{
-			iTerm = _integralMin;
-			// UnityEngine.Debug.Log("MIN=" + iTerm);
-			_integralError = iTerm / _iGain;
+			_integralError = 0;
 		}
 
 		// Calculate the derivative error
