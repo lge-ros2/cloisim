@@ -41,21 +41,7 @@ Shader "Custom/Unlit/VideoTexture"
                 Varyings OUT;
 
                 OUT.positionCS = TransformObjectToHClip(IN.positionOS.xyz);
-
-                // rotating UV by 90 degrees
-                const float Deg2Rad = (PI * 2.0) / 360.0;
-                const float Rotation = 90.0;
-
-                float rotationRadians = Rotation * Deg2Rad;
-                float s = sin(rotationRadians);
-                float c = cos(rotationRadians);
-
-                float2x2 rotationMatrix = float2x2(c, -s, s, c);
-                float2 uv = IN.uv - 0.5;
-                uv = mul(rotationMatrix, uv);
-                uv += 0.5;
-
-                OUT.uv = TRANSFORM_TEX(uv, _MainTex);
+                OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);
                 return OUT;
             }
 

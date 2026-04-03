@@ -122,8 +122,8 @@ public class MowingPlugin : CLOiSimPlugin
 
 		private void CreateGrassMapTexture()
 		{
-			var targetWidth = (int)(bounds.size.z / mapResolution);
-			var targetHeight = (int)(bounds.size.x / mapResolution);
+			var targetWidth = (int)(bounds.size.x / mapResolution);
+			var targetHeight = (int)(bounds.size.z / mapResolution);
 
 			texture = new Texture2D(targetWidth, targetHeight, TextureFormat.R8, false);
 			texture.name = "Grass Map";
@@ -388,8 +388,6 @@ public class MowingPlugin : CLOiSimPlugin
 		var textureCenterX = (int)(texture.width * 0.5f);
 		var textureCenterY = (int)(texture.height * 0.5f);
 		var textureCenter = new Vector2(textureCenterX, textureCenterY);
-		var offset = _grass.GetGrassOffset();
-		var targetPlaneY = _targetPlane.position.y;
 
 		var mesh = meshFilter.sharedMesh;
 		var vertices = mesh.vertices;
@@ -400,22 +398,22 @@ public class MowingPlugin : CLOiSimPlugin
 			var p0 = vertices[triangles[i + 0]];
 			var p1 = vertices[triangles[i + 1]];
 			var p2 = vertices[triangles[i + 2]];
-			var tp0 = meshFilter.transform.TransformPoint(p0) - offset;
-			var tp1 = meshFilter.transform.TransformPoint(p1) - offset;
-			var tp2 = meshFilter.transform.TransformPoint(p2) - offset;
+			var tp0 = _targetPlane.InverseTransformPoint(meshFilter.transform.TransformPoint(p0));
+			var tp1 = _targetPlane.InverseTransformPoint(meshFilter.transform.TransformPoint(p1));
+			var tp2 = _targetPlane.InverseTransformPoint(meshFilter.transform.TransformPoint(p2));
 
 			if ((tp0.y > _grass.blade.heightMax &&
 				 tp1.y > _grass.blade.heightMax &&
 				 tp2.y > _grass.blade.heightMax)
-				|| (tp0.y < targetPlaneY && tp1.y < targetPlaneY && tp2.y < targetPlaneY))
+				|| (tp0.y < 0 && tp1.y < 0 && tp2.y < 0))
 			{
 				// Debug.Log($"{meshFilter.name} {p0.y} {p1.y} {p2.y} => {tp0.y} {tp1.y} {tp2.y}");
 				continue;
 			}
 
-			var P1 = new Vector2(tp0.z, tp0.x);
-			var P2 = new Vector2(tp1.z, tp1.x);
-			var P3 = new Vector2(tp2.z, tp2.x);
+			var P1 = new Vector2(tp0.x, tp0.z);
+			var P2 = new Vector2(tp1.x, tp1.z);
+			var P3 = new Vector2(tp2.x, tp2.z);
 
 			P1 /= _grass.mapResolution;
 			P2 /= _grass.mapResolution;
@@ -435,28 +433,26 @@ public class MowingPlugin : CLOiSimPlugin
 
 		var mowingThreshold = _grass.blade.heightMax;
 		var mowingRatioInColor = Color.clear;
-		var planeCenterPosition = _targetPlane.position;
 
 		while (true)
 		{
 			if (_mowingBlade != null && _mowingBlade.IsRunning())
 			{
 				var bladeRadiusIntexture = _mowingBlade.Diameter /_grass.mapResolution;
-				var bladeToPlaneDistance = _targetPlane.TransformPoint(_mowingBlade.Position);
+				var bladeLocalPos = _targetPlane.InverseTransformPoint(_mowingBlade.Position);
 
-				if (bladeToPlaneDistance.y <= mowingThreshold)
+				if (bladeLocalPos.y <= mowingThreshold)
 				{
-					mowingRatioInColor.r = bladeToPlaneDistance.y / mowingThreshold;
-					// Debug.Log($"{_grass.blade.heightMin}, {_grass.blade.heightMax}, {bladeToPlaneDistance.y} => {mowingRatioInColor.r }");
+					mowingRatioInColor.r = bladeLocalPos.y / mowingThreshold;
+					// Debug.Log($"{_grass.blade.heightMin}, {_grass.blade.heightMax}, {bladeLocalPos.y} => {mowingRatioInColor.r }");
 
-					var bladePositionInTexture = _mowingBlade.Position;
-					bladePositionInTexture -= planeCenterPosition;
+					var bladePositionInTexture = bladeLocalPos;
 					bladePositionInTexture += _grass.bounds.extents;
 					bladePositionInTexture /= _grass.mapResolution;
 
 					_grass.texture.FillCircle(
-						bladePositionInTexture.z,
 						bladePositionInTexture.x,
+						bladePositionInTexture.z,
 						bladeRadiusIntexture,
 						mowingRatioInColor,
 						TextureUtil.FillOptions.Lesser);
