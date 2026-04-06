@@ -9,7 +9,7 @@ using System;
 using UE = UnityEngine;
 using messages = cloisim.msgs;
 
-public class GroundTruthPlugin : CLOiSimPlugin 
+public class GroundTruthPlugin : CLOiSimPlugin
 {
 	private struct PropSnapshot
 	{
@@ -20,9 +20,16 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	}
 
 	private Dictionary<string, int> _propsClassId = new(StringComparer.OrdinalIgnoreCase);
-	private Dictionary<string, SDF.Helper.Base> allLoadedModelList = new();
+	private Dictionary<string, SDF.Helper.Base> _allLoadedModelList = new();
 	private Dictionary<int, ObjectTracking> _trackingObjectList = new();
 	private List<ObjectTracking> _trackingObjects = new();
+
+	private Dictionary<int, string> _targetNameList = new();
+	private float _lastCheckTime = 0f;
+	private float _checkInterval = 1.0f;
+
+	private List<SDF.Helper.Model> _tempModelList = new();
+	private List<SDF.Helper.Actor> _tempActorList = new();
 
 	private messages.PerceptionV _messagePerceptions;
 	private Dictionary<UE.EntityId, messages.Perception> _messagePerceptionProps = new();
@@ -37,9 +44,16 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	private UE.GameObject GetTrackingObject(in string modelName)
 	{
-		if (allLoadedModelList.TryGetValue(modelName, out var model))
+		if (_allLoadedModelList.TryGetValue(modelName, out var model))
 		{
-			return model.gameObject;
+			if (model != null)
+			{
+				return model.gameObject;
+			}
+			else
+			{
+				_allLoadedModelList.Remove(modelName);
+			}
 		}
 
 		return null;
@@ -56,14 +70,14 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		{
 			if (model.IsFirstChild)
 			{
-				allLoadedModelList.Add(model.name, model);
+				_allLoadedModelList.Add(model.name, model);
 				// UE.Debug.Log("GT -> add allLodadedModellist: " + model.name);
 			}
 		}
 
 		foreach (var actor in worldRoot.GetComponentsInChildren<SDF.Helper.Actor>())
 		{
-			allLoadedModelList.Add(actor.name, actor);
+			_allLoadedModelList.Add(actor.name, actor);
 		}
 
 		_messagePerceptions = new messages.PerceptionV();
@@ -124,6 +138,8 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			var trackingId = GetPluginParameters().GetAttributeInPath<int>("list/target[text()='" + target + "']", "tracking_id");
 			var classId = GetPluginParameters().GetAttributeInPath<int>("list/target[text()='" + target + "']", "class_id");
 
+			_targetNameList[trackingId] = target;
+
 			var perception = new messages.Perception();
 			perception.Header = new messages.Header();
 			perception.Header.Stamp = new messages.Time();
@@ -180,13 +196,24 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				trackingObject.CalculateFootprint();
 				perception.Footprints.Capacity = trackingObject.FootprintCount;
 			}
-			else
-			{
-				UE.Debug.LogWarning(trackingId + "(" + perception.ClassId + ") is wrong object to get");
-			}
 
 			// Yield each iteration to spread the heavy mesh work across frames
 			yield return null;
+		}
+	}
+
+	IEnumerator DoUpdateFootprint(int trackingId, ObjectTracking trackingObject)
+	{
+		yield return new UE.WaitForEndOfFrame();
+
+		trackingObject.CalculateFootprint();
+		foreach (var perception in _messagePerceptionObjects)
+		{
+			if (perception.TrackingId == trackingId)
+			{
+				perception.Footprints.Capacity = trackingObject.FootprintCount;
+				break;
+			}
 		}
 	}
 
@@ -201,6 +228,53 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	void LateUpdate()
 	{
+		if (_messagePerceptionObjects.Count > _trackingObjectList.Count)
+		{
+			if (UE.Time.time - _lastCheckTime > _checkInterval)
+			{
+				_lastCheckTime = UE.Time.time;
+
+				var worldRoot = Main.WorldRoot;
+				if (worldRoot != null)
+				{
+					worldRoot.GetComponentsInChildren<SDF.Helper.Model>(false, _tempModelList);
+					foreach (var m in _tempModelList)
+					{
+						if (m.IsFirstChild)
+						{
+							_allLoadedModelList[m.name] = m;
+						}
+					}
+
+					worldRoot.GetComponentsInChildren<SDF.Helper.Actor>(false, _tempActorList);
+					foreach (var a in _tempActorList)
+					{
+						_allLoadedModelList[a.name] = a;
+					}
+				}
+
+				foreach (var perception in _messagePerceptionObjects)
+				{
+					var trackingId = perception.TrackingId;
+					if (!_trackingObjectList.ContainsKey(trackingId))
+					{
+						if (_targetNameList.TryGetValue(trackingId, out var targetName))
+						{
+							var trackingGameObject = GetTrackingObject(targetName);
+							if (trackingGameObject != null)
+							{
+								var trackingObject = new ObjectTracking(trackingGameObject);
+								_trackingObjectList.Add(trackingId, trackingObject);
+								_trackingObjects.Add(trackingObject);
+
+								StartCoroutine(DoUpdateFootprint(trackingId, trackingObject));
+							}
+						}
+					}
+				}
+			}
+		}
+
 		for (var i = _trackingObjects.Count - 1; i >= 0; i--)
 		{
 			var trackingObject = _trackingObjects[i];
@@ -220,14 +294,13 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		var trackingObject = _trackingObjects[index];
 		_trackingObjects.RemoveAt(index);
 
-		// Find and remove from _trackingObjectList and _messagePerceptionObjects by matching trackingId
+		// Find and remove from _trackingObjectList
 		for (var j = _messagePerceptionObjects.Count - 1; j >= 0; j--)
 		{
 			var perception = _messagePerceptionObjects[j];
 			if (_trackingObjectList.TryGetValue(perception.TrackingId, out var obj) && obj == trackingObject)
 			{
 				_trackingObjectList.Remove(perception.TrackingId);
-				_messagePerceptionObjects.RemoveAt(j);
 				break;
 			}
 		}
@@ -380,7 +453,14 @@ public class GroundTruthPlugin : CLOiSimPlugin
 					perceptions.Capacity = totalCount;
 				}
 
-				perceptions.AddRange(_messagePerceptionObjects);
+				foreach (var perception in _messagePerceptionObjects)
+				{
+					if (_trackingObjectList.ContainsKey(perception.TrackingId))
+					{
+						perceptions.Add(perception);
+					}
+				}
+
 				foreach (var propPerception in _messagePerceptionProps.Values)
 				{
 					perceptions.Add(propPerception);
