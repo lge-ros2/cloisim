@@ -13,7 +13,7 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			private static readonly float MinimumInertiaTensor = 1e-6f;
+			private static readonly float MinimumInertiaTensor = 1e-39f;
 
 			private static UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia inertia, in UE.ArticulationBody tempArticulationBodyForCalculation)
 			{
