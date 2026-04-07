@@ -52,6 +52,19 @@ public class Motor : Articulation
 		{
 			_pidControl.Change(pFactor, iFactor, dFactor);
 		}
+
+#if UNITY_EDITOR
+		if (_jointBody != null)
+		{
+			var tuner = _jointBody.GetComponent<MotorPIDTuner>();
+			if (tuner == null)
+			{
+				tuner = _jointBody.gameObject.AddComponent<MotorPIDTuner>();
+			}
+			tuner.Initialize(_pidControl, pFactor, iFactor, dFactor,
+				integralMin, integralMax, outputMin, outputMax);
+		}
+#endif
 	}
 
 	private void CheckDriveType()
@@ -75,7 +88,7 @@ public class Motor : Articulation
 		return GetVelocity() * Mathf.Deg2Rad;
 	}
 
-	/// <summary>Set Target Velocity wmotorLeftith PID control</summary>
+	/// <summary>Set Target Velocity with PID control</summary>
 	/// <remarks>degree per second</remarks>
 	public void SetTargetVelocity(in float angularVelocity)
 	{

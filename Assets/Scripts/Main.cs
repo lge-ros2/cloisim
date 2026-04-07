@@ -6,6 +6,8 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -257,14 +259,20 @@ public class Main : MonoBehaviour
 
 		// Load Library for Assimp
 #if UNITY_EDITOR
- 		var pluginsFolder = System.IO.Path.Combine(Application.dataPath, "Plugins");
-		var AssimpVersion = "6.0.2.1";
+ 		var pluginsFolder = Path.Combine(Application.dataPath, "Plugins");
+		var assimpDir = Directory.GetDirectories(pluginsFolder, "AssimpNetter.*").OrderByDescending(d => d).FirstOrDefault();
+
+		if (assimpDir == null)
+		{
+			throw new Exception("AssimpNetter folder not found in Plugins");
+		}
+
 #	if UNITY_EDITOR_LINUX
-		var assimpLibraryPath = $"{pluginsFolder}/AssimpNetter.{AssimpVersion}/runtimes/linux-x64/native/libassimp";
+		var assimpLibraryPath = Path.Combine(assimpDir, "runtimes/linux-x64/native/libassimp");
 #	elif UNITY_EDITOR_OSX // TODO: need to be verified,
-		var assimpLibraryPath = $"{pluginsFolder}/AssimpNetter.{AssimpVersion}/runtimes/osx-x64/native/libassimp";
+		var assimpLibraryPath = Path.Combine(assimpDir, "runtimes/osx-x64/native/libassimp");
 #	else // == UNITY_EDITOR_WIN
-		var assimpLibraryPath = $"{pluginsFolder}/AssimpNetter.{AssimpVersion}/runtimes/win-x64/native/assimp";
+		var assimpLibraryPath = Path.Combine(assimpDir, "runtimes/win-x64/native/assimp");
 #	endif
 #else
 #	if UNITY_STANDALONE_WIN

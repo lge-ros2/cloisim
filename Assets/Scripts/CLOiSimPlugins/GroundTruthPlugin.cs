@@ -5,97 +5,56 @@
  */
 using System.Collections.Generic;
 using System.Collections;
-using System.Linq;
 using System;
 using UE = UnityEngine;
 using messages = cloisim.msgs;
 
 public class GroundTruthPlugin : CLOiSimPlugin
 {
-	public struct ObjectTracking
+	private struct PropSnapshot
 	{
-		private UE.Transform rootTransform;
-		public UE.Vector3 velocity;
-		public UE.Vector3 position;
-		public UE.Quaternion rotation;
-		public UE.Vector3 size;
-		private List<UE.Vector3> footprint;
-		private ArrayList rotatedFootprint;
-
-		public ObjectTracking(UE.GameObject gameObject)
-		{
-			this.rootTransform = gameObject.transform;
-			this.velocity = UE.Vector3.zero;
-			this.position = UE.Vector3.zero;
-			this.rotation = UE.Quaternion.identity;
-			this.size = UE.Vector3.zero;
-			this.footprint = new List<UE.Vector3>();
-			this.rotatedFootprint = new ArrayList();
-		}
-
-		public UE.GameObject GetGameObject()
-		{
-			return (this.rootTransform != null) ? this.rootTransform.gameObject : null;
-		}
-
-		public void Update()
-		{
-			if (this.rootTransform != null)
-			{
-				var newPosition = this.rootTransform.position;
-				this.velocity = (newPosition - this.position) / UE.Time.deltaTime;
-				this.position = newPosition;
-				this.rotation = this.rootTransform.rotation;
-				// UE.Debug.Log(this.rootTransform.name + ": " + this.Velocity + ", " + this.Position);
-
-				lock (this.rotatedFootprint.SyncRoot)
-				{
-					for (var i = 0; i < this.footprint.Count; i++)
-					{
-						rotatedFootprint[i] = this.rotation * footprint[i];
-					}
-				}
-			}
-		}
-
-		public UE.Vector3[] Footprint()
-		{
-			UE.Vector3[] footprintList;
-			lock (this.rotatedFootprint.SyncRoot)
-			{
-				footprintList = (UE.Vector3[])rotatedFootprint.ToArray(typeof(UE.Vector3));
-			}
-			return footprintList;
-		}
-
-		public void Set2DFootprint(in UE.Vector3[] vertices)
-		{
-			this.footprint.AddRange(vertices);
-			this.rotatedFootprint.AddRange(vertices);
-		}
-
-		public void Add2DFootprint(in UE.Vector3 vertex)
-		{
-			this.footprint.Add(vertex);
-			this.rotatedFootprint.Add(vertex);
-		}
+		public UE.EntityId instanceId;
+		public string name;
+		public UE.Vector3 localPosition;
+		public UE.Vector3 localScale;
 	}
 
-	private Dictionary<string, int> _propsClassId = new();
-	private Dictionary<string, SDF.Helper.Base> allLoadedModelList = new();
+	private Dictionary<string, int> _propsClassId = new(StringComparer.OrdinalIgnoreCase);
+	private Dictionary<string, SDF.Helper.Base> _allLoadedModelList = new();
 	private Dictionary<int, ObjectTracking> _trackingObjectList = new();
+	private List<ObjectTracking> _trackingObjects = new();
+
+	private Dictionary<int, string> _targetNameList = new();
+	private float _lastCheckTime = 0f;
+	private float _checkInterval = 1.0f;
+
+	private List<SDF.Helper.Model> _tempModelList = new();
+	private List<SDF.Helper.Actor> _tempActorList = new();
 
 	private messages.PerceptionV _messagePerceptions;
 	private Dictionary<UE.EntityId, messages.Perception> _messagePerceptionProps = new();
 	private List<messages.Perception> _messagePerceptionObjects = new();
+	private List<UE.Vector3> _footprintScratchBuffer = new();
+	private List<PropSnapshot> _propSnapshots = new();
+	private HashSet<UE.EntityId> _activePropInstanceIds = new();
+	private List<UE.EntityId> _stalePropInstanceIds = new();
+	private Stack<UE.Transform> _propTraversalStack = new();
+	private float _propVelocitySmoothingFactor = 0.25f;
 
 	private int sleepPeriodForPublishInMilliseconds = 1000;
 
 	private UE.GameObject GetTrackingObject(in string modelName)
 	{
-		if (allLoadedModelList.TryGetValue(modelName, out var model))
+		if (_allLoadedModelList.TryGetValue(modelName, out var model))
 		{
-			return model.gameObject;
+			if (model != null)
+			{
+				return model.gameObject;
+			}
+			else
+			{
+				_allLoadedModelList.Remove(modelName);
+			}
 		}
 
 		return null;
@@ -105,102 +64,26 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	{
 		_type = ICLOiSimPlugin.Type.GROUNDTRUTH;
 		_modelName = "World";
-		_partsName = this.GetType().Name;
+		_partsName = GetType().Name;
 
 		var worldRoot = Main.WorldRoot;
 		foreach (var model in worldRoot.GetComponentsInChildren<SDF.Helper.Model>())
 		{
 			if (model.IsFirstChild)
 			{
-				allLoadedModelList.Add(model.name, model);
+				_allLoadedModelList.Add(model.name, model);
 				// UE.Debug.Log("GT -> add allLodadedModellist: " + model.name);
 			}
 		}
 
 		foreach (var actor in worldRoot.GetComponentsInChildren<SDF.Helper.Actor>())
 		{
-			allLoadedModelList.Add(actor.name, actor);
+			_allLoadedModelList.Add(actor.name, actor);
 		}
 
 		_messagePerceptions = new messages.PerceptionV();
 		_messagePerceptions.Header = new messages.Header();
 		_messagePerceptions.Header.Stamp = new messages.Time();
-	}
-
-	private void CalculateFootprint(ref ObjectTracking trackingObject)
-	{
-		var trackingGameObject = trackingObject.GetGameObject();
-
-		var capsuleCollider = trackingGameObject.GetComponentInChildren<UE.CapsuleCollider>();
-		if (capsuleCollider != null && trackingGameObject.CompareTag("Actor"))
-		{
-			var radius = capsuleCollider.radius;
-
-			const float angleResolution = 0.34906585f;
-			for (var theta = 0f; theta < UE.Mathf.PI * 2; theta += angleResolution)
-			{
-				var x = UE.Mathf.Cos(theta) * radius;
-				var z = UE.Mathf.Sin(theta) * radius;
-				trackingObject.Add2DFootprint(new UE.Vector3(x, 0, z));
-			}
-
-			trackingObject.size = capsuleCollider.bounds.size;
-		}
-		else
-		{
-			var meshFilters = trackingGameObject.GetComponentsInChildren<UE.MeshFilter>();
-			if (meshFilters != null && trackingGameObject.CompareTag("Model"))
-			{
-				var initialRotation = trackingGameObject.transform.rotation;
-				var combine = new UE.CombineInstance[meshFilters.Length];
-				for (var i = 0; i < combine.Length; i++)
-				{
-					combine[i].mesh = meshFilters[i].sharedMesh;
-					combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
-				}
-
-				var combinedMesh = new UE.Mesh();
-				combinedMesh.indexFormat = UE.Rendering.IndexFormat.UInt32;
-				combinedMesh.CombineMeshes(combine, true, true);
-				combinedMesh.RecalculateBounds();
-				combinedMesh.RecalculateNormals();
-				combinedMesh.RecalculateTangents();
-				combinedMesh.Optimize();
-				// UE.Debug.Log(gameObject.name + ", " + combinedMesh.bounds.size + ", " + combinedMesh.bounds.extents+ ", " + combinedMesh.bounds.center);
-				// trackingGameObject.AddComponent<UE.MeshFilter>().sharedMesh = combinedMesh;
-
-				// move offset and projection to 2D
-				var vertices = combinedMesh.vertices;
-				for (var i = 0; i < vertices.Length; i++)
-				{
-					vertices[i] -= combinedMesh.bounds.center;
-					vertices[i].y = 0;
-					vertices[i] = initialRotation * vertices[i];
-				}
-
-				var convexHullMeshData = DeviceHelper.SolveConvexHull2D(vertices);
-				if (convexHullMeshData.Length > 0)
-				{
-					const float minimumDistance = 0.065f;
-					var lowConvexHullMeshData = new List<UE.Vector3>();
-					var prevPoint = convexHullMeshData[0];
-					for (var i = 1; i < convexHullMeshData.Length; i++)
-					{
-						if (UE.Vector3.Distance(prevPoint, convexHullMeshData[i]) > minimumDistance)
-						{
-							lowConvexHullMeshData.Add(convexHullMeshData[i]);
-							// UE.Debug.Log(convexHullMeshData[i].ToString("F8"));
-							prevPoint = convexHullMeshData[i];
-						}
-					}
-					// UE.Debug.Log("convexhull footprint count: " + convexHullMeshData.Length + " => low: " + lowConvexHullMeshData.Count);
-
-					trackingObject.Set2DFootprint(lowConvexHullMeshData.ToArray());
-				}
-
-				trackingObject.size = combinedMesh.bounds.size;
-			}
-		}
 	}
 
 	protected override IEnumerator OnStart()
@@ -227,12 +110,12 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	protected override void OnReset()
 	{
-		foreach (var trackingObjectItem in _trackingObjectList)
+		for (var i = 0; i < _trackingObjects.Count; i++)
 		{
-			var trackingObject = trackingObjectItem.Value;
-			trackingObject.velocity = UE.Vector3.zero;
-			trackingObject.position = UE.Vector3.zero;
+			var trackingObject = _trackingObjects[i];
+			trackingObject.Reset();
 		}
+		StartCoroutine(DoUpdateFootprint());
 	}
 
 	private void SetPropClassId()
@@ -256,6 +139,8 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			var trackingId = GetPluginParameters().GetAttributeInPath<int>("list/target[text()='" + target + "']", "tracking_id");
 			var classId = GetPluginParameters().GetAttributeInPath<int>("list/target[text()='" + target + "']", "class_id");
 
+			_targetNameList[trackingId] = target;
+
 			var perception = new messages.Perception();
 			perception.Header = new messages.Header();
 			perception.Header.Stamp = new messages.Time();
@@ -268,7 +153,9 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			var trackingGameObject = GetTrackingObject(target);
 			if (trackingGameObject != null)
 			{
-				_trackingObjectList.Add(trackingId, new ObjectTracking(trackingGameObject));
+				var trackingObject = new ObjectTracking(trackingGameObject);
+				_trackingObjectList.Add(trackingId, trackingObject);
+				_trackingObjects.Add(trackingObject);
 			}
 
 			_messagePerceptionObjects.Add(perception);
@@ -279,17 +166,17 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	private void OnDrawGizmos()
 	{
 		var prevColor = UE.Gizmos.color;
-		foreach (var objectItem in _trackingObjectList)
+		for (var i = 0; i < _trackingObjects.Count; i++)
 		{
-			var trackingObject = objectItem.Value;
+			var trackingObject = _trackingObjects[i];
 
 			UE.Gizmos.color = UE.Color.red;
-			UE.Gizmos.DrawSphere(trackingObject.position, 0.05f);
+			UE.Gizmos.DrawSphere(trackingObject.Position, 0.03f);
 
 			UE.Gizmos.color = UE.Color.yellow;
 			foreach (var vertex in trackingObject.Footprint())
 			{
-				UE.Gizmos.DrawSphere(vertex + trackingObject.position, 0.015f);
+				UE.Gizmos.DrawSphere(vertex + trackingObject.Position, 0.005f);
 			}
 		}
 
@@ -305,96 +192,245 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		{
 			var perception = _messagePerceptionObjects[i];
 			var trackingId = perception.TrackingId;
-			try
+			if (_trackingObjectList.TryGetValue(trackingId, out var trackingObject))
 			{
-				var trackingObject = _trackingObjectList[trackingId];
-				CalculateFootprint(ref trackingObject);
+				trackingObject.CalculateFootprint();
+				perception.Footprints.Capacity = trackingObject.FootprintCount;
+			}
 
-				perception.Footprints.Capacity = trackingObject.Footprint().Length;
-			}
-			catch
+			// Yield each iteration to spread the heavy mesh work across frames
+			yield return null;
+		}
+	}
+
+	IEnumerator DoUpdateFootprint(int trackingId, ObjectTracking trackingObject)
+	{
+		yield return new UE.WaitForEndOfFrame();
+
+		trackingObject.CalculateFootprint();
+		foreach (var perception in _messagePerceptionObjects)
+		{
+			if (perception.TrackingId == trackingId)
 			{
-				UE.Debug.LogWarning(trackingId + "(" + perception.ClassId + ") is wrong object to get");
-				// foreach (var track in _trackingObjectList)
-				// {
-				// 	UE.Debug.Log(track.Key + ", " + track.Value.GetGameObject().name);
-				// }
+				perception.Footprints.Capacity = trackingObject.FootprintCount;
+				break;
 			}
+		}
+	}
+
+	void FixedUpdate()
+	{
+		var deltaTime = UE.Time.fixedDeltaTime;
+		for (var i = 0; i < _trackingObjects.Count; i++)
+		{
+			_trackingObjects[i].UpdateVelocity(deltaTime);
 		}
 	}
 
 	void LateUpdate()
 	{
-		var keys = _trackingObjectList.Keys.ToArray();
-		foreach (var key in keys)
+		if (_messagePerceptionObjects.Count > _trackingObjectList.Count)
 		{
-			var trackingObject = _trackingObjectList[key];
-			trackingObject.Update();
-			_trackingObjectList[key] = trackingObject;
+			if (UE.Time.time - _lastCheckTime > _checkInterval)
+			{
+				_lastCheckTime = UE.Time.time;
+
+				var worldRoot = Main.WorldRoot;
+				if (worldRoot != null)
+				{
+					worldRoot.GetComponentsInChildren<SDF.Helper.Model>(false, _tempModelList);
+					foreach (var m in _tempModelList)
+					{
+						if (m.IsFirstChild)
+						{
+							_allLoadedModelList[m.name] = m;
+						}
+					}
+
+					worldRoot.GetComponentsInChildren<SDF.Helper.Actor>(false, _tempActorList);
+					foreach (var a in _tempActorList)
+					{
+						_allLoadedModelList[a.name] = a;
+					}
+				}
+
+				foreach (var perception in _messagePerceptionObjects)
+				{
+					var trackingId = perception.TrackingId;
+					if (!_trackingObjectList.ContainsKey(trackingId))
+					{
+						if (_targetNameList.TryGetValue(trackingId, out var targetName))
+						{
+							var trackingGameObject = GetTrackingObject(targetName);
+							if (trackingGameObject != null)
+							{
+								var trackingObject = new ObjectTracking(trackingGameObject);
+								_trackingObjectList.Add(trackingId, trackingObject);
+								_trackingObjects.Add(trackingObject);
+
+								StartCoroutine(DoUpdateFootprint(trackingId, trackingObject));
+							}
+						}
+					}
+				}
+			}
 		}
 
-		StartCoroutine(UpdateProps());
+		for (var i = _trackingObjects.Count - 1; i >= 0; i--)
+		{
+			var trackingObject = _trackingObjects[i];
+			if (!trackingObject.IsValid)
+			{
+				RemoveTrackingObject(i);
+				continue;
+			}
+			trackingObject.Update();
+		}
+
+		UpdateProps();
 	}
 
-	private IEnumerator UpdateProps()
+	private void RemoveTrackingObject(int index)
 	{
-		var props = Main.PropsRoot.GetComponentsInChildren<UE.Transform>();
+		var trackingObject = _trackingObjects[index];
+		_trackingObjects.RemoveAt(index);
 
-		lock (_messagePerceptionProps)
+		// Find and remove from _trackingObjectList
+		for (var j = _messagePerceptionObjects.Count - 1; j >= 0; j--)
 		{
-			var propsInstanceIdlist = new HashSet<UE.EntityId>();
-			foreach (var prop in props)
+			var perception = _messagePerceptionObjects[j];
+			if (_trackingObjectList.TryGetValue(perception.TrackingId, out var obj) && obj == trackingObject)
 			{
-				if (!prop.CompareTag("Props"))
+				_trackingObjectList.Remove(perception.TrackingId);
+				break;
+			}
+		}
+	}
+
+	private static bool TryParsePropNameAndId(string propObjectName, out string propName, out int propId)
+	{
+		var separatorIndex = propObjectName.LastIndexOf('-');
+		if (separatorIndex <= 0 || separatorIndex >= propObjectName.Length - 1)
+		{
+			propName = string.Empty;
+			propId = 0;
+			return false;
+		}
+
+		propName = propObjectName.Substring(0, separatorIndex);
+		return Int32.TryParse(propObjectName.Substring(separatorIndex + 1), out propId);
+	}
+
+	private bool TryCreatePropPerception(in PropSnapshot propSnapshot, out messages.Perception perception)
+	{
+		perception = null;
+		if (!TryParsePropNameAndId(propSnapshot.name, out var propName, out var propId))
+		{
+			return false;
+		}
+
+		if (!_propsClassId.TryGetValue(propName, out var classId))
+		{
+			return false;
+		}
+
+		perception = new();
+		perception.Header = new();
+		perception.Header.Stamp = new();
+		perception.TrackingId = propName.GetHashCode() + propId;
+		perception.ClassId = classId;
+		perception.Position = new();
+		perception.Position.Set(propSnapshot.localPosition);
+		perception.Velocity = new();
+		perception.Size = new();
+		perception.Size.SetScale(propSnapshot.localScale);
+		return true;
+	}
+
+	private void CollectPropSnapshots()
+	{
+		_propSnapshots.Clear();
+		_activePropInstanceIds.Clear();
+		_propTraversalStack.Clear();
+
+		if (Main.PropsRoot == null)
+		{
+			return;
+		}
+
+		_propTraversalStack.Push(Main.PropsRoot.transform);
+		while (_propTraversalStack.Count > 0)
+		{
+			var current = _propTraversalStack.Pop();
+			for (var i = 0; i < current.childCount; i++)
+			{
+				var child = current.GetChild(i);
+				_propTraversalStack.Push(child);
+				if (!child.CompareTag("Props"))
 				{
 					continue;
 				}
 
-				var propNameSplitted = prop.name.Split('-');
-
-				var propName = propNameSplitted[0];
-				var propId = Int32.Parse(propNameSplitted[1]);
-				var instanceId = prop.GetEntityId();
-
-				if (_messagePerceptionProps.TryGetValue(instanceId, out var perception))
+				var instanceId = child.GetEntityId();
+				_activePropInstanceIds.Add(instanceId);
+				_propSnapshots.Add(new PropSnapshot
 				{
-					perception.Position.Set(prop.localPosition);
-					perception.Size.SetScale(prop.localScale);
-				}
-				else
-				{
-					if (_propsClassId.TryGetValue(propName, out var classId))
-					{
-						perception = new messages.Perception();
-						perception.Header = new messages.Header();
-						perception.Header.Stamp = new messages.Time();
-						perception.TrackingId = propName.GetHashCode() + propId;
-						perception.ClassId = classId;
-						perception.Position = new messages.Vector3d();
-						perception.Position.Set(prop.localPosition);
-						perception.Velocity = new messages.Vector3d();
-						perception.Size = new messages.Vector3d();
-						perception.Size.SetScale(prop.localScale);
-
-						_messagePerceptionProps.Add(instanceId, perception);
-					}
-				}
-
-				propsInstanceIdlist.Add(instanceId);
-			}
-
-			// remove unused props
-			for (var i = 0; i < _messagePerceptionProps.Keys.Count; i++)
-			{
-				var key = _messagePerceptionProps.Keys.ElementAt(i);
-				if (!propsInstanceIdlist.Contains(key))
-				{
-					_messagePerceptionProps.Remove(key);
-				}
+					instanceId = instanceId,
+					name = child.name,
+					localPosition = child.localPosition,
+					localScale = child.localScale,
+				});
 			}
 		}
+	}
 
-		yield return null;
+	private void UpdateProps()
+	{
+		if (_propsClassId.Count == 0)
+		{
+			return;
+		}
+
+		CollectPropSnapshots();
+
+		lock (_messagePerceptionProps)
+		{
+			var deltaTime = UE.Time.deltaTime;
+			for (var i = 0; i < _propSnapshots.Count; i++)
+			{
+				var propSnapshot = _propSnapshots[i];
+				if (_messagePerceptionProps.TryGetValue(propSnapshot.instanceId, out var perception))
+				{
+					var previousPosition = SDF2Unity.Position(perception.Position.X, perception.Position.Y, perception.Position.Z);
+					var instantVelocity = deltaTime > 0f ? (propSnapshot.localPosition - previousPosition) / deltaTime : UE.Vector3.zero;
+					var smoothedVelocity = UE.Vector3.Lerp(
+						SDF2Unity.Position(perception.Velocity.X, perception.Velocity.Y, perception.Velocity.Z),
+						instantVelocity,
+						_propVelocitySmoothingFactor);
+					perception.Velocity.Set(smoothedVelocity);
+					perception.Position.Set(propSnapshot.localPosition);
+					perception.Size.SetScale(propSnapshot.localScale);
+				}
+				else if (TryCreatePropPerception(in propSnapshot, out perception))
+				{
+					_messagePerceptionProps.Add(propSnapshot.instanceId, perception);
+				}
+			}
+
+			_stalePropInstanceIds.Clear();
+			foreach (var instanceId in _messagePerceptionProps.Keys)
+			{
+				if (!_activePropInstanceIds.Contains(instanceId))
+				{
+					_stalePropInstanceIds.Add(instanceId);
+				}
+			}
+
+			for (var i = 0; i < _stalePropInstanceIds.Count; i++)
+			{
+				_messagePerceptionProps.Remove(_stalePropInstanceIds[i]);
+			}
+		}
 	}
 
 	private void PublishThread(System.Object threadObject)
@@ -408,22 +444,32 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		}
 
 		var deviceMessage = new DeviceMessage();
+		var perceptions = _messagePerceptions.Perceptions;
 		while (PluginThread.IsRunning)
 		{
-			UpdatePeceptionObjects();
+			UpdatePerceptionObjects();
 
-			_messagePerceptions.Perceptions.AddRange(_messagePerceptionObjects);
-
-			var capacity = _messagePerceptions.Perceptions.Capacity;
+			perceptions.Clear();
 			lock (_messagePerceptionProps)
 			{
-				// UE.Debug.Log(capacity + " , " + _messagePerceptionObjects.Count  + " , " + _messagePerceptionProps.Count);
-				if (capacity < _messagePerceptionObjects.Count + _messagePerceptionProps.Count)
+				var totalCount = _messagePerceptionObjects.Count + _messagePerceptionProps.Count;
+				if (perceptions.Capacity < totalCount)
 				{
-					capacity = _messagePerceptionObjects.Count + _messagePerceptionProps.Count;
+					perceptions.Capacity = totalCount;
 				}
-				_messagePerceptions.Perceptions.Capacity = capacity;
-				_messagePerceptions.Perceptions.InsertRange(_messagePerceptionObjects.Count, _messagePerceptionProps.Values.ToList());
+
+				foreach (var perception in _messagePerceptionObjects)
+				{
+					if (_trackingObjectList.ContainsKey(perception.TrackingId))
+					{
+						perceptions.Add(perception);
+					}
+				}
+
+				foreach (var propPerception in _messagePerceptionProps.Values)
+				{
+					perceptions.Add(propPerception);
+				}
 			}
 
 			_messagePerceptions.Header.Stamp.SetCurrentTime();
@@ -431,12 +477,12 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			publisher.Publish(deviceMessage);
 
 			CLOiSimPluginThread.Sleep(sleepPeriodForPublishInMilliseconds);
-			_messagePerceptions.Perceptions.Clear();
+			perceptions.Clear();
 		}
 		deviceMessage.Dispose();
 	}
 
-	private void UpdatePeceptionObjects()
+	private void UpdatePerceptionObjects()
 	{
 		for (var index = 0; index < _messagePerceptionObjects.Count; index++)
 		{
@@ -444,24 +490,33 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			if (_trackingObjectList.TryGetValue(perception.TrackingId, out var trackingObject))
 			{
 				perception.Header.Stamp.SetCurrentTime();
-				perception.Position.Set(trackingObject.position);
-				perception.Velocity.Set(trackingObject.velocity);
-				perception.Size.SetScale(trackingObject.size);
+				perception.Position.Set(trackingObject.Position);
+				perception.Velocity.Set(trackingObject.Velocity);
+				perception.Size.SetScale(trackingObject.Size);
 
-				var footprint = trackingObject.Footprint();
-				for (var i = 0; i < footprint.Length; i++)
+				trackingObject.CopyFootprintTo(_footprintScratchBuffer);
+				if (perception.Footprints.Capacity < _footprintScratchBuffer.Count)
 				{
-					var point = new messages.Vector3d();
-					point.Set(footprint[i]);
+					perception.Footprints.Capacity = _footprintScratchBuffer.Count;
+				}
 
+				for (var i = 0; i < _footprintScratchBuffer.Count; i++)
+				{
 					if (i < perception.Footprints.Count)
 					{
-						perception.Footprints[i] = point;
+						perception.Footprints[i].Set(_footprintScratchBuffer[i]);
 					}
 					else
 					{
+						var point = new messages.Vector3d();
+						point.Set(_footprintScratchBuffer[i]);
 						perception.Footprints.Add(point);
 					}
+				}
+
+				if (perception.Footprints.Count > _footprintScratchBuffer.Count)
+				{
+					perception.Footprints.RemoveRange(_footprintScratchBuffer.Count, perception.Footprints.Count - _footprintScratchBuffer.Count);
 				}
 			}
 		}

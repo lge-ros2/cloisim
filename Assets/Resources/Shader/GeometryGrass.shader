@@ -2,6 +2,10 @@ Shader "Custom/GeometryGrass"
 {
 	Properties
 	{
+		// Segmentation properties (set via MaterialPropertyBlock by Segmentation.Tag).
+		_SegmentationValue ("Segmentation Value", Int) = 0
+		[Toggle] _Hide ("Hide this label", Int) = 0
+
 		// Albedo color properties.
 		_BaseColor("Base Color", Color) = (1, 1, 1, 1)
 		_TipColor("Tip Color", Color) = (1, 1, 1, 1)
@@ -240,9 +244,9 @@ Shader "Custom/GeometryGrass"
 			float edgeFactor1 = saturate(1.0f - (dist1 - _TessMinDistance) / fadeDist);
 			float edgeFactor2 = saturate(1.0f - (dist2 - _TessMinDistance) / fadeDist);
 
-			f.edge[0] = max(pow(edgeFactor0, 2) * _TessAmount, 1);
-			f.edge[1] = max(pow(edgeFactor1, 2) * _TessAmount, 1);
-			f.edge[2] = max(pow(edgeFactor2, 2) * _TessAmount, 1);
+			f.edge[0] = max(edgeFactor0 * edgeFactor0 * _TessAmount, 1);
+			f.edge[1] = max(edgeFactor1 * edgeFactor1 * _TessAmount, 1);
+			f.edge[2] = max(edgeFactor2 * edgeFactor2 * _TessAmount, 1);
 
 			f.inside = (f.edge[0] + f.edge[1] + f.edge[2]) / 3.0f;
 
@@ -295,11 +299,13 @@ Shader "Custom/GeometryGrass"
 
 		// This function applies a transformation (during the geometry shader),
 		// converting to clip space in the process.
+		// Note: pos is already in world space from the vertex/tessellation stage.
 		g2f worldToClip(float3 pos, float3 offset, float3x3 transformationMatrix, float2 uv, float dryRate = 0)
 		{
 			g2f o;
-			o.positionCS = TransformObjectToHClip(pos + mul(transformationMatrix, offset));
-			o.positionWS = TransformObjectToWorld(pos + mul(transformationMatrix, offset));
+			float3 worldPos = pos + mul(transformationMatrix, offset);
+			o.positionCS = TransformWorldToHClip(worldPos);
+			o.positionWS = worldPos;
 			o.uv = TRANSFORM_TEX(uv, _BaseTex);
 			o.dryRate = float4(dryRate, 0, 0, 0);
 			return o;
@@ -318,8 +324,9 @@ Shader "Custom/GeometryGrass"
 			if (grassVisibility >= _GrassThreshold)
 			{
 				float3 pos = (input[0].positionWS.xyz + input[1].positionWS.xyz + input[2].positionWS.xyz) / 3.0f;
-				float3 normal = (input[0].normalWS + input[1].normalWS + input[2].normalWS) / 3.0f;
+				float3 normal = normalize(input[0].normalWS + input[1].normalWS + input[2].normalWS);
 				float4 tangent = (input[0].tangentWS + input[1].tangentWS + input[2].tangentWS) / 3.0f;
+				tangent.xyz = normalize(tangent.xyz);
 				float3 bitangent = cross(normal, tangent.xyz) * tangent.w;
 
 				pos -= _GrassOffset.xyz;
@@ -365,7 +372,7 @@ Shader "Custom/GeometryGrass"
 				float forward = rand(pos.yyz) * _BladeBendDistance * grassVisibility;
 
 #ifdef DRY_GRASS_ON
-				float dryRate = tex2Dlod(_DryGrassMap, float4(-input[0].uv, 0, 0)).r;
+				float dryRate = tex2Dlod(_DryGrassMap, float4(input[0].uv, 0, 0)).r;
 #else
 				float dryRate = 0;
 #endif
@@ -481,6 +488,41 @@ Shader "Custom/GeometryGrass"
 			{
 				Alpha(SampleAlbedoAlpha(i.uv, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap)).a, _BaseColor, _Cutoff);
 				return float4(0, 0, 0, 0);
+			}
+			ENDHLSL
+		}
+
+		// Segmentation pass: preserves tessellation + geometry stages so grass
+		// blades are visible to the segmentation camera.
+		Pass
+		{
+			Name "SegmentationGrass"
+			Tags { "LightMode" = "SegmentationGrass" }
+
+			HLSLPROGRAM
+			#pragma vertex vert
+			#pragma hull hull
+			#pragma domain domain
+			#pragma geometry geom
+			#pragma fragment segFrag
+
+			// Set via MaterialPropertyBlock by Segmentation.Tag
+			int _SegmentationValue;
+			int _Hide;
+
+			half4 segFrag(g2f i) : SV_Target
+			{
+				half4 segColor = half4(0, 0, 0, 0);
+				if (_Hide == 0)
+				{
+					// Encode 16Bits To RG (matches Segmentation.shader)
+					float R = ((_SegmentationValue >> 8) & 0xFF) / 255.0;
+					float G = (_SegmentationValue & 0xFF) / 255.0;
+					// Due to little-endian data, SWAP
+					segColor.r = G;
+					segColor.g = R;
+				}
+				return segColor;
 			}
 			ENDHLSL
 		}

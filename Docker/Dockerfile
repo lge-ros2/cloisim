@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # Configuration for Nvidia device capability
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -7,8 +7,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 ENV XDG_RUNTIME_DIR=/tmp
 
-# Prerequisite for Vulkan capability in Docker Container
-ADD https://gitlab.com/nvidia/container-images/vulkan/-/raw/ubuntu18.04/nvidia_icd.json /etc/vulkan/icd.d/nvidia_icd.json
+# Nvidia Vulkan ICD configuration
+RUN mkdir -p /etc/vulkan/icd.d && \
+    echo '{"file_format_version":"1.0.1","ICD":{"library_path":"libGLX_nvidia.so.0","api_version":"1.4.303"}}' \
+    > /etc/vulkan/icd.d/nvidia_icd.json
 
 RUN \
 apt-get update -qq && \
@@ -16,7 +18,8 @@ apt-get upgrade -qq -y && \
 apt-get install --no-install-recommends -qq -y \
  sudo libgomp1 libxi6 libglu1 libxcursor1 \
  xz-utils wget curl ca-certificates \
- libgl1 libvulkan1 libc6-dev libminizip-dev ffmpeg && \
+ libgl1 libvulkan1 libc6-dev libminizip-dev ffmpeg \
+ xvfb && \
 rm -rf /var/lib/apt/lists/* && \
 apt-get clean
 

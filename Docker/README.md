@@ -32,6 +32,12 @@ Run following command to build a image:
 docker build -t cloisim .
 ```
 
+if rebuild required, do below command.
+
+```shell
+docker build --no-cache -t cloisim .
+```
+
 ### run docker container
 
 You can change paths for resources in docker run command.
@@ -100,15 +106,15 @@ docker run -ti --rm --gpus all --net=host
 refer to start-headless.sh
 
 ```shell
-xhost +SI:localuser:root
-docker run -it --rm --net=host --ipc=host --gpus '"device=0"' \
-    -v /tmp/cloisim/unity3d:/root/.config/unity3d \
-    -v /usr/share/fonts/:/usr/share/fonts/ \
-    -v ${CLOISIM_RESOURCES_PATH}/materials:/opt/resources/materials:ro \
-    -v ${CLOISIM_RESOURCES_PATH}/models:/opt/resources/models:ro \
-    -v ${CLOISIM_RESOURCES_PATH}/worlds:/opt/resources/worlds:ro \
-    cloisim --headless --world lg_seocho.world
-xhost -SI:localuser:root
+docker run -it --rm --net=host --ipc=host --gpus device=0 \
+  -v /tmp/cloisim/unity3d:/root/.config/unity3d \
+  -v /usr/share/fonts/:/usr/share/fonts/:ro \
+  $ENV_MODEL_ARGS \
+  $ENV_WORLD_ARGS \
+  $ENV_FILES_ARGS \
+  --entrypoint xvfb-run \
+  cloisim \
+  -s "-screen 0 1280x1024x24" ./run.sh --headless -w $@
 ```
 
 #### Option C (Predefined script)

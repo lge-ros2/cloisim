@@ -9,7 +9,6 @@ using System.Text;
 using UnityEngine;
 using messages = cloisim.msgs;
 
-
 public abstract class MotorControl
 {
 	public enum Location
@@ -59,7 +58,7 @@ public abstract class MotorControl
 		AttachMotor(Location.REAR_WHEEL_RIGHT, rearWheelRightName);
 	}
 
-	protected void AttachMotor(in Location targetlLocation, in string targetName)
+	protected void AttachMotor(in Location targetLocation, in string targetName)
 	{
 		var log = new StringBuilder();
 
@@ -72,19 +71,19 @@ public abstract class MotorControl
 				linkHelper.Model.name.Equals(targetName))
 			{
 				var motorObject = (linkHelper.gameObject != null) ? linkHelper.gameObject : linkHelper.Model.gameObject;
-				_motorList[targetlLocation] = new Motor(motorObject);
-				log.AppendLine($"AttachMotor: {_motorList[targetlLocation]} {targetlLocation} {targetName}");
+				_motorList[targetLocation] = new Motor(motorObject);
+				log.AppendLine($"AttachMotor: {_motorList[targetLocation]} {targetLocation} {targetName}");
 				return;
 			}
 		}
 		Debug.Log(log.ToString());
 	}
 
-	protected void ChangeDriveType(in Location targetlLocation, in ArticulationDriveType type)
+	protected void ChangeDriveType(in Location targetLocation, in ArticulationDriveType type)
 	{
-		if (_motorList.ContainsKey(targetlLocation) && _motorList[targetlLocation] != null)
+		if (_motorList.ContainsKey(targetLocation) && _motorList[targetLocation] != null)
 		{
-			_motorList[targetlLocation].DriveType = type;
+			_motorList[targetLocation].DriveType = type;
 		}
 	}
 

@@ -22,9 +22,17 @@ map_and_mount_paths() {
   output_mounts=${joined_mount}
 }
 
-ENV_MODEL_ARGS="-v ${CLOISIM_RESOURCES_PATH}/models:${PREFIX_PATH}/models:ro"
-ENV_WORLD_ARGS="-v ${CLOISIM_RESOURCES_PATH}/worlds:${PREFIX_PATH}/worlds:ro"
-ENV_FILES_ARGS="-v ${CLOISIM_RESOURCES_PATH}/materials:${PREFIX_PATH}/materials:ro"
+CLOISIM_RESOURCES_PATH="${CLOISIM_RESOURCES_PATH:-}"
+
+ENV_MODEL_ARGS=""
+ENV_WORLD_ARGS=""
+ENV_FILES_ARGS=""
+
+if [[ -n "$CLOISIM_RESOURCES_PATH" ]]; then
+  ENV_MODEL_ARGS="-v ${CLOISIM_RESOURCES_PATH}/models:${PREFIX_PATH}/models:ro"
+  ENV_WORLD_ARGS="-v ${CLOISIM_RESOURCES_PATH}/worlds:${PREFIX_PATH}/worlds:ro"
+  ENV_FILES_ARGS="-v ${CLOISIM_RESOURCES_PATH}/materials:${PREFIX_PATH}/materials:ro"
+fi
 
 out_env=""
 out_mounts=""
