@@ -17,6 +17,7 @@ public sealed class ObjectTracking
 	private readonly List<Vector3> _footPrint;
 	private readonly List<Vector3> _rotatedFootPrint;
 	private Vector3 _previousFixedPosition;
+	private float _velocitySmoothingFactor = 0.25f;
 
 	public bool IsValid => _rootTransform != null;
 	public Vector3 Velocity => _velocity;
@@ -53,7 +54,8 @@ public sealed class ObjectTracking
 		if (_rootTransform != null)
 		{
 			var newPosition = _rootTransform.position;
-			_velocity = deltaTime > 0f ? (newPosition - _previousFixedPosition) / deltaTime : Vector3.zero;
+			var instantVelocity = deltaTime > 0f ? (newPosition - _previousFixedPosition) / deltaTime : Vector3.zero;
+			_velocity = Vector3.Lerp(_velocity, instantVelocity, _velocitySmoothingFactor);
 			_previousFixedPosition = newPosition;
 		}
 	}

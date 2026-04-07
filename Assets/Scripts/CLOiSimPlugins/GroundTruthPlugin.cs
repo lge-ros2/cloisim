@@ -39,6 +39,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	private HashSet<UE.EntityId> _activePropInstanceIds = new();
 	private List<UE.EntityId> _stalePropInstanceIds = new();
 	private Stack<UE.Transform> _propTraversalStack = new();
+	private float _propVelocitySmoothingFactor = 0.25f;
 
 	private int sleepPeriodForPublishInMilliseconds = 1000;
 
@@ -333,15 +334,15 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			return false;
 		}
 
-		perception = new messages.Perception();
-		perception.Header = new messages.Header();
-		perception.Header.Stamp = new messages.Time();
+		perception = new();
+		perception.Header = new();
+		perception.Header.Stamp = new();
 		perception.TrackingId = propName.GetHashCode() + propId;
 		perception.ClassId = classId;
-		perception.Position = new messages.Vector3d();
+		perception.Position = new();
 		perception.Position.Set(propSnapshot.localPosition);
-		perception.Velocity = new messages.Vector3d();
-		perception.Size = new messages.Vector3d();
+		perception.Velocity = new();
+		perception.Size = new();
 		perception.Size.SetScale(propSnapshot.localScale);
 		return true;
 	}
@@ -401,8 +402,12 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				if (_messagePerceptionProps.TryGetValue(propSnapshot.instanceId, out var perception))
 				{
 					var previousPosition = SDF2Unity.Position(perception.Position.X, perception.Position.Y, perception.Position.Z);
-					var velocity = deltaTime > 0f ? (propSnapshot.localPosition - previousPosition) / deltaTime : UE.Vector3.zero;
-					perception.Velocity.Set(velocity);
+					var instantVelocity = deltaTime > 0f ? (propSnapshot.localPosition - previousPosition) / deltaTime : UE.Vector3.zero;
+					var smoothedVelocity = UE.Vector3.Lerp(
+						SDF2Unity.Position(perception.Velocity.X, perception.Velocity.Y, perception.Velocity.Z),
+						instantVelocity,
+						_propVelocitySmoothingFactor);
+					perception.Velocity.Set(smoothedVelocity);
 					perception.Position.Set(propSnapshot.localPosition);
 					perception.Size.SetScale(propSnapshot.localScale);
 				}
