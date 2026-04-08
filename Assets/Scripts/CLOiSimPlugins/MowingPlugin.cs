@@ -187,6 +187,12 @@ public class MowingPlugin : CLOiSimPlugin
 	{
 		yield return new WaitForEndOfFrame();
 
+		var bladeTarget = GetPluginParameters().GetValue<string>("mowing/blade/target");
+		if (FindTargetBlade(bladeTarget) == false)
+		{
+			Debug.LogWarning("Target blade not found");
+		}
+
 		var grassTarget = GetPluginParameters().GetValue<string>("grass/target");
 
 		if (FindTargetPlane(grassTarget))
@@ -196,12 +202,6 @@ public class MowingPlugin : CLOiSimPlugin
 		else
 		{
 			Debug.LogWarning("Target is not Plane");
-		}
-
-		var bladeTarget = GetPluginParameters().GetValue<string>("mowing/blade/target");
-		if (FindTargetBlade(bladeTarget) == false)
-		{
-			Debug.LogWarning("Target blade not found");
 		}
 	}
 
@@ -282,13 +282,13 @@ public class MowingPlugin : CLOiSimPlugin
 
 	private IEnumerator PunchingGrass()
 	{
-		var tempVisualMeshCollider = new List<MeshCollider>();
+		var tempColliders = new List<Collider>();
 
-		CreateTempColliderInVisuals(ref tempVisualMeshCollider);
+		CreateTempColliderInVisuals(ref tempColliders);
 
 		FindMeshFiltersToPunching();
 
-		RemoveTempColliderInVisuals(ref tempVisualMeshCollider);
+		RemoveTempColliders(ref tempColliders);
 
 		foreach (var meshFilter in _punchingMeshFilters)
 		{
@@ -300,11 +300,19 @@ public class MowingPlugin : CLOiSimPlugin
 		yield return StartMowing();
 	}
 
-	private void CreateTempColliderInVisuals(ref List<MeshCollider> tempMeshColliders)
+	private void CreateTempColliderInVisuals(ref List<Collider> tempColliders)
 	{
+		var bladeModel = _mowingBlade?.GetComponentInParent<SDF.Helper.Model>()?.RootModel;
+		// Debug.LogWarning(bladeModel != null ? $"Mowing Blade Model: {bladeModel.name}" : "Mowing Blade Model not found");
 		var helperLinks = GetComponentsInChildren<SDF.Helper.Link>();
 		foreach (var helperLink in helperLinks)
 		{
+			if (bladeModel != null && helperLink.GetComponentInParent<SDF.Helper.Model>().RootModel == bladeModel)
+			{
+				continue;
+			}
+			// Debug.LogWarning($"Checking Link: {helperLink.name} in Model: {helperLink.GetComponentInParent<SDF.Helper.Model>()?.name}");
+
 			var meshColliders = helperLink.GetComponentsInChildren<MeshCollider>();
 			if (meshColliders.Length == 0)
 			{
@@ -314,18 +322,69 @@ public class MowingPlugin : CLOiSimPlugin
 					var meshFilters = helperVisual.GetComponentsInChildren<MeshFilter>();
 					foreach (var meshFilter in meshFilters)
 					{
-						var meshCollider = meshFilter.gameObject.AddComponent<MeshCollider>();
-						meshCollider.convex = true;
-						meshCollider.isTrigger = false;
-						tempMeshColliders.Add(meshCollider);
+						var collider = AddPrimitiveCollider(meshFilter);
+						if (collider != null)
+						{
+							tempColliders.Add(collider);
+						}
 					}
 				}
 			}
 		}
 	}
 
+	private static Collider AddPrimitiveCollider(MeshFilter meshFilter)
+	{
+		var go = meshFilter.gameObject;
+		var meshName = meshFilter.sharedMesh?.name ?? string.Empty;
+
+		if (meshName.Contains("Sphere"))
+		{
+			var col = go.AddComponent<SphereCollider>();
+			var bounds = meshFilter.sharedMesh.bounds;
+			col.center = bounds.center;
+			col.radius = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
+			return col;
+		}
+
+		if (meshName.Contains("Cube") || meshName.Contains("Box"))
+		{
+			var col = go.AddComponent<BoxCollider>();
+			var bounds = meshFilter.sharedMesh.bounds;
+			col.center = bounds.center;
+			col.size = bounds.size;
+			return col;
+		}
+
+		if (meshName.Contains("Capsule"))
+		{
+			var col = go.AddComponent<CapsuleCollider>();
+			var bounds = meshFilter.sharedMesh.bounds;
+			col.center = bounds.center;
+			col.radius = Mathf.Max(bounds.extents.x, bounds.extents.z);
+			col.height = bounds.size.y;
+			return col;
+		}
+
+		if (meshName.Contains("Cylinder"))
+		{
+			var col = go.AddComponent<CapsuleCollider>();
+			var bounds = meshFilter.sharedMesh.bounds;
+			col.center = bounds.center;
+			col.radius = Mathf.Max(bounds.extents.x, bounds.extents.z);
+			col.height = bounds.size.y;
+			return col;
+		}
+
+		var meshCollider = go.AddComponent<MeshCollider>();
+		meshCollider.convex = true;
+		meshCollider.isTrigger = false;
+		return meshCollider;
+	}
+
 	private void FindMeshFiltersToPunching()
 	{
+		var bladeModel = _mowingBlade?.GetComponentInParent<SDF.Helper.Model>()?.RootModel;
 		var layerMask = LayerMask.GetMask("Default");
 
 		var hitColliders = Physics.OverlapBox(_grass.bounds.center, _grass.bounds.extents, Quaternion.identity, layerMask);
@@ -338,6 +397,10 @@ public class MowingPlugin : CLOiSimPlugin
 
 			if (helperModel != null)
 			{
+				if (bladeModel != null && helperModel.RootModel == bladeModel)
+				{
+					continue;
+				}
 				// punching other object on same target model
 				if (helperModel.name.Equals(_grass.modelName))
 				{
@@ -365,11 +428,11 @@ public class MowingPlugin : CLOiSimPlugin
 		}
 	}
 
-	private void RemoveTempColliderInVisuals(ref List<MeshCollider> meshColliders)
+	private void RemoveTempColliders(ref List<Collider> colliders)
 	{
-		for (var i = 0; i < meshColliders.Count; i++)
+		for (var i = 0; i < colliders.Count; i++)
 		{
-			GameObject.Destroy(meshColliders[i]);
+			GameObject.Destroy(colliders[i]);
 		}
 	}
 
