@@ -662,14 +662,10 @@ public class Main : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (Keyboard.current[Key.LeftCtrl].isPressed)
+		if ((Keyboard.current[Key.LeftCtrl].isPressed && Keyboard.current[Key.R].wasReleasedThisFrame) ||
+			Keyboard.current[Key.F5].wasReleasedThisFrame)
 		{
-			// Debug.Log("LeftControl Triggered");
-		 	if (Keyboard.current[Key.R].wasReleasedThisFrame)
-			{
-				// Debug.Log("Reset Triggered");
-				_resetTriggered = true;
-			}
+			_resetTriggered = true;
 		}
 
 		if (_resetTriggered && !_isResetting)
