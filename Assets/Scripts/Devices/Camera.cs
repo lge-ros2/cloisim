@@ -409,7 +409,7 @@ namespace SensorDevices
 			_universalCamData.renderShadows = true;
 			_universalCamData.antialiasing = AntialiasingMode.None;
 			_universalCamData.enabled = false;
-			_universalCamData.stopNaN = true;
+			_universalCamData.stopNaN = false;
 			_universalCamData.dithering = false;
 			_universalCamData.renderPostProcessing = false;
 			_universalCamData.allowXRRendering = false;

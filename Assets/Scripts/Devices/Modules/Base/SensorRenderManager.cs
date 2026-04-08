@@ -70,6 +70,8 @@ public class SensorRenderManager : MonoBehaviour
 	private readonly List<(ISensorRenderable sensor, float initialDelay)> _pendingAdd = new();
 	private readonly List<ISensorRenderable> _pendingRemove = new();
 
+	private bool _paused = false;
+
 	private static int s_registrationCounter = 0;
 
 	/// <summary>
@@ -98,6 +100,16 @@ public class SensorRenderManager : MonoBehaviour
 	{
 		Instance?._pendingRemove.Add(sensor);
 	}
+
+	/// <summary>
+	/// Pause all sensor rendering (e.g. during simulation reset).
+	/// </summary>
+	public static void Pause() { if (Instance != null) Instance._paused = true; }
+
+	/// <summary>
+	/// Resume sensor rendering after a pause.
+	/// </summary>
+	public static void Resume() { if (Instance != null) Instance._paused = false; }
 
 	private void ApplyPendingAdditions()
 	{
@@ -141,6 +153,9 @@ public class SensorRenderManager : MonoBehaviour
 	{
 		ApplyPendingAdditions();
 		ApplyPendingRemovals();
+
+		if (_paused)
+			return;
 
 		var realtimeNow = Time.realtimeSinceStartup;
 

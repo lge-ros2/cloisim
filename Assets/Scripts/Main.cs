@@ -741,6 +741,8 @@ public class Main : MonoBehaviour
 		_isResetting = true;
 		// Debug.LogWarning("Reset positions in simulation!!!");
 
+		SensorRenderManager.Pause();
+
 		_simulationWorld?.SignalReset();
 
 		_transformGizmo?.ClearTargets();
@@ -749,6 +751,8 @@ public class Main : MonoBehaviour
 
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
 		yield return new WaitForSeconds(0.1f);
+
+		SensorRenderManager.Resume();
 
 		_isResetting = false;
 	}
