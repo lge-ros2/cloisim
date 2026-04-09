@@ -5,13 +5,13 @@
  */
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Import
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportWorld(in World world)
+			protected override System.Object ImportWorld(in SDFormat.World world)
 			{
 				if (world == null)
 				{
@@ -19,50 +19,64 @@ namespace SDF
 				}
 
 				// Debug.Log("Import World");
-				if (world.gui != null)
+				if (world.GuiInfo != null)
 				{
 					var mainCamera = UE.Camera.main;
-					if (mainCamera != null && world.gui.camera != null)
+					var guiCamera = world.Element?.FindElement("gui")?.FindElement("camera");
+					if (mainCamera != null && guiCamera != null)
 					{
-						var cameraPose = world.gui.camera.Pose;
+						var cameraPoseStr = guiCamera.FindElement("pose")?.Value?.GetAsString();
+						SDFormat.Math.Pose3d cameraPose = SDFormat.Math.Pose3d.Zero;
+						if (!string.IsNullOrEmpty(cameraPoseStr))
+						{
+							cameraPose = SDFormat.Math.Pose3d.Parse(cameraPoseStr);
+						}
 
-						var isOrbitControl = (world.gui.camera.view_controller.Equals("orbit")) ?
-							true : (world.gui.camera.view_controller.Equals("ortho") ? false : true);
+						var viewController = guiCamera.FindElement("view_controller")?.Value?.GetAsString() ?? string.Empty;
+						var projectionType = guiCamera.FindElement("projection_type")?.Value?.GetAsString() ?? string.Empty;
 
-						if (world.gui.camera.projection_type.Equals("orthographic"))
+						var isOrbitControl = viewController.Equals("orbit") ||
+							(!viewController.Equals("ortho"));
+
+						if (projectionType.Equals("orthographic"))
 						{
 							Main.SetCameraOrthographic(!isOrbitControl);
 							Main.UIController?.ChangeCameraViewMode(UIController.CameraViewModeEnum.Orthographic);
 						}
-						else if (world.gui.camera.projection_type.Equals("perspective"))
+						else if (projectionType.Equals("perspective"))
 						{
 							Main.SetCameraPerspective(isOrbitControl);
 							Main.UIController?.ChangeCameraViewMode(UIController.CameraViewModeEnum.Perspective);
 						}
 						else
 						{
-							UE.Debug.LogWarning($"{world.gui.camera.projection_type} is not supported. Default value is set to 'perspective'");
+							UE.Debug.LogWarning($"{projectionType} is not supported. Default value is set to 'perspective'");
 							Main.UIController?.ChangeCameraViewMode(UIController.CameraViewModeEnum.Perspective);
 						}
 
-						mainCamera.transform.localPosition = cameraPose?.Pos.ToUnity() ?? UE.Vector3.zero;
-						mainCamera.transform.localRotation = cameraPose?.Rot.ToUnity() ?? UE.Quaternion.identity;
+						mainCamera.transform.localPosition = cameraPose.ToUnityPosition();
+						mainCamera.transform.localRotation = cameraPose.ToUnityRotation();
 
-						var trackVisual = world.gui.camera.track_visual;
-						if (trackVisual != null)
+						var trackVisualElem = guiCamera.FindElement("track_visual");
+						if (trackVisualElem != null)
 						{
-							if (!trackVisual.name.Equals("__default__") &&
-								!string.IsNullOrEmpty(trackVisual.name) &&
-								trackVisual.use_model_frame)
+							var trackName = trackVisualElem.FindElement("name")?.Value?.GetAsString() ?? "__default__";
+							var trackUseModelFrame = SDFormat.Extensions.GetElementValue(trackVisualElem, "use_model_frame", false);
+							var trackStatic = SDFormat.Extensions.GetElementValue(trackVisualElem, "static", false);
+							var trackInheritYaw = SDFormat.Extensions.GetElementValue(trackVisualElem, "inherit_yaw", false);
+							var trackXyzStr = trackVisualElem.FindElement("xyz")?.Value?.GetAsString() ?? string.Empty;
+
+							if (!trackName.Equals("__default__") &&
+								!string.IsNullOrEmpty(trackName) &&
+								trackUseModelFrame)
 							{
-								Main.TrackVisualModelName = trackVisual.name;
+								Main.TrackVisualModelName = trackName;
 							}
 
-							if (trackVisual.static_ &&
-								trackVisual.use_model_frame)
+							if (trackStatic && trackUseModelFrame && !string.IsNullOrEmpty(trackXyzStr))
 							{
-								Main.TrackVisualPosition = trackVisual.xyz.ToUnity();
-								Main.TrackVisualInheritYaw = trackVisual.inherit_yaw;
+								Main.TrackVisualPosition = SDFormat.Math.Vector3d.Parse(trackXyzStr).ToUnity();
+								Main.TrackVisualInheritYaw = trackInheritYaw;
 							}
 						}
 					}
@@ -76,8 +90,9 @@ namespace SDF
 					// Screen.resolutions is empty and there is no display surface.
 					if (!UE.Application.isBatchMode)
 					{
-						UE.Screen.fullScreen = world.gui.fullscreen;
-						if (world.gui.fullscreen)
+						var fullscreen = world.GuiInfo.Fullscreen;
+						UE.Screen.fullScreen = fullscreen;
+						if (fullscreen)
 						{
 							var currentResolution = UE.Screen.currentResolution;
 							UE.Screen.SetResolution(currentResolution.width, currentResolution.height, UE.FullScreenMode.MaximizedWindow);
@@ -95,28 +110,73 @@ namespace SDF
 					}
 				}
 
-				if (world.spherical_coordinates != null)
+				if (world.SphericalCoordinatesInfo != null)
 				{
 					var sphericalCoordinatesCore = DeviceHelper.GetGlobalSphericalCoordinates();
 
-					var sphericalCoordinates = world.spherical_coordinates;
+					var sphericalCoordinates = world.SphericalCoordinatesInfo;
 
-					sphericalCoordinatesCore.SetSurfaceType(sphericalCoordinates.surface_model);
+					sphericalCoordinatesCore.SetSurfaceType(sphericalCoordinates.Surface.ToString());
 
-					sphericalCoordinatesCore.SetWorldOrientation(sphericalCoordinates.world_frame_orientation);
+					sphericalCoordinatesCore.SetWorldOrientation("ENU");
 
 					sphericalCoordinatesCore.SetCoordinatesReference(
-						(float)sphericalCoordinates.latitude_deg,
-						(float)sphericalCoordinates.longitude_deg,
-						(float)sphericalCoordinates.elevation,
-						SDF2Unity.CurveOrientationAngle((float)sphericalCoordinates.heading_deg));
+						(float)sphericalCoordinates.LatitudeDeg,
+						(float)sphericalCoordinates.LongitudeDeg,
+						(float)sphericalCoordinates.ElevationM,
+						SDF2Unity.CurveOrientationAngle((float)sphericalCoordinates.HeadingDeg));
 				}
 
-				ImportRoads(world.GetRoads());
+				ImportRoads(world);
 
-				UE.Physics.gravity = world.gravity.ToUnity();
+				UE.Physics.gravity = world.Gravity.ToUnity();
 
-				ImportLights(world.GetLights(), _rootLights);
+				// Apply wind if defined
+				if (!world.WindLinearVelocity.Equals(SDFormat.Math.Vector3d.Zero))
+				{
+					var windZone = Main.WorldRoot?.GetComponentInChildren<UE.WindZone>();
+					if (windZone == null)
+					{
+						var windObj = new UE.GameObject("Wind");
+						windObj.transform.SetParent((Main.WorldRoot as UE.GameObject)?.transform, false);
+						windZone = windObj.AddComponent<UE.WindZone>();
+						windZone.mode = UE.WindZoneMode.Directional;
+					}
+					var windVelocity = world.WindLinearVelocity.ToUnity();
+					windZone.transform.forward = windVelocity.normalized;
+					windZone.windMain = windVelocity.magnitude;
+				}
+
+				// Apply scene settings (ambient, background, fog, shadows)
+				if (world.SceneInfo != null)
+				{
+					UE.RenderSettings.ambientLight = world.SceneInfo.Ambient.ToUnity();
+
+					if (UE.Camera.main != null)
+					{
+						UE.Camera.main.backgroundColor = world.SceneInfo.Background.ToUnity();
+					}
+
+					if (world.SceneInfo.FogSettings != null && world.SceneInfo.FogSettings.FogType != "none")
+					{
+						UE.RenderSettings.fog = true;
+						UE.RenderSettings.fogColor = world.SceneInfo.FogSettings.FogColor.ToUnity();
+						UE.RenderSettings.fogStartDistance = (float)world.SceneInfo.FogSettings.Start;
+						UE.RenderSettings.fogEndDistance = (float)world.SceneInfo.FogSettings.End;
+						UE.RenderSettings.fogDensity = (float)world.SceneInfo.FogSettings.Density;
+
+						if (world.SceneInfo.FogSettings.FogType == "linear")
+						{
+							UE.RenderSettings.fogMode = UE.FogMode.Linear;
+						}
+						else
+						{
+							UE.RenderSettings.fogMode = UE.FogMode.ExponentialSquared;
+						}
+					}
+				}
+
+				ImportLights(world.Lights, _rootLights);
 
 				return Main.WorldRoot;
 			}

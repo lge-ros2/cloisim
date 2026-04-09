@@ -5,6 +5,7 @@
  */
 using System.Collections;
 using Any = cloisim.msgs.Any;
+using SDFormat;
 
 public class CameraPlugin : CLOiSimPlugin
 {

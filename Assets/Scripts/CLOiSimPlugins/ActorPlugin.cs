@@ -5,6 +5,7 @@
  */
 using System.Collections;
 using UnityEngine;
+using SDFormat;
 
 [DefaultExecutionOrder(600)]
 public class ActorPlugin : CLOiSimPlugin
@@ -18,7 +19,7 @@ public class ActorPlugin : CLOiSimPlugin
 
 	protected override IEnumerator OnStart()
 	{
-		var actorHelper = GetComponent<SDF.Helper.Actor>();
+		var actorHelper = GetComponent<SDFormat.Helper.Actor>();
 
 		if (actorHelper.HasWayPoints)
 		{

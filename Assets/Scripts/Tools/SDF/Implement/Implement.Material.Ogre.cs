@@ -9,7 +9,7 @@ using System.IO;
 using System;
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Implement
 	{

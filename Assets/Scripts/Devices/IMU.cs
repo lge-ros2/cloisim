@@ -48,41 +48,39 @@ namespace SensorDevices
 
 		private NoiseIMU _noises = new NoiseIMU();
 
-		public void SetupNoises(in SDF.IMU element)
+		public void SetupNoises(in SDFormat.ImuSensor element)
 		{
 			if (element == null)
 				return;
 
-			Debug.Log($"{DeviceName}: Apply noise type:{element.type}");
-
-			if (element.noise_angular_velocity.x != null)
+			if (element.AngularVelocityXNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.angular_velocity["x"] = new Noise(element.noise_angular_velocity.x);
+				_noises.angular_velocity["x"] = new Noise(element.AngularVelocityXNoise);
 			}
 
-			if (element.noise_angular_velocity.y != null)
+			if (element.AngularVelocityYNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.angular_velocity["y"] = new Noise(element.noise_angular_velocity.y);
+				_noises.angular_velocity["y"] = new Noise(element.AngularVelocityYNoise);
 			}
 
-			if (element.noise_angular_velocity.z != null)
+			if (element.AngularVelocityZNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.angular_velocity["z"] = new Noise(element.noise_angular_velocity.z);
+				_noises.angular_velocity["z"] = new Noise(element.AngularVelocityZNoise);
 			}
 
-			if (element.noise_linear_acceleration.x != null)
+			if (element.LinearAccelerationXNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.linear_acceleration["x"] = new Noise(element.noise_linear_acceleration.x);
+				_noises.linear_acceleration["x"] = new Noise(element.LinearAccelerationXNoise);
 			}
 
-			if (element.noise_linear_acceleration.y != null)
+			if (element.LinearAccelerationYNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.linear_acceleration["y"] = new Noise(element.noise_linear_acceleration.y);
+				_noises.linear_acceleration["y"] = new Noise(element.LinearAccelerationYNoise);
 			}
 
-			if (element.noise_linear_acceleration.z != null)
+			if (element.LinearAccelerationZNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.linear_acceleration["z"] = new Noise(element.noise_linear_acceleration.z);
+				_noises.linear_acceleration["z"] = new Noise(element.LinearAccelerationZNoise);
 			}
 		}
 

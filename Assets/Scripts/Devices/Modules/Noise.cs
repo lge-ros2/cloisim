@@ -14,24 +14,19 @@ namespace SensorDevices
 
 		private NoiseModel _noiseModel = null;
 
-		public Noise(in SDF.Noise noise)
+		public Noise(in SDFormat.Noise noise)
 		{
-			switch (noise.type)
+			switch (noise.Type)
 			{
-				case "gaussian":
-				case "gaussian_quantized":
+				case SDFormat.NoiseType.Gaussian:
+				case SDFormat.NoiseType.GaussianQuantized:
 					_noiseModel = new GaussianNoiseModel(noise);
-					if (noise.type == "gaussian_quantized")
+					if (noise.Type == SDFormat.NoiseType.GaussianQuantized)
 					{
 						_noiseModel.SetQuantization(true);
 					}
 					break;
 
-				case "custom":
-					_noiseModel = new CustomNoiseModel(noise);
-					break;
-
-				case "none":
 				default:
 					_noiseModel = null;
 					break;

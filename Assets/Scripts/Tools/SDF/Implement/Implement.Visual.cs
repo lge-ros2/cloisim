@@ -10,7 +10,7 @@ using System.IO;
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Implement
 	{

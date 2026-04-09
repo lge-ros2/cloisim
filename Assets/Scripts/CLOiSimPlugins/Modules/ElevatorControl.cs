@@ -47,7 +47,7 @@ public class ElevatorControl : MonoBehaviour
 		liftControl.SetFinishedEventListener(FindAndSetOutsideDoor);
 
 		// find elevator door inside
-		foreach (var link in GetComponentsInChildren<SDF.Helper.Link>())
+		foreach (var link in GetComponentsInChildren<SDFormat.Helper.Link>())
 		{
 			if (link.name.Equals(doorLinkNameLeft))
 			{
@@ -124,7 +124,7 @@ public class ElevatorControl : MonoBehaviour
 	public void FindAndSetOutsideDoor()
 	{
 		var elevatorSystemObject = transform.parent.gameObject;
-		foreach (var link in elevatorSystemObject.GetComponentsInChildren<SDF.Helper.Link>())
+		foreach (var link in elevatorSystemObject.GetComponentsInChildren<SDFormat.Helper.Link>())
 		{
 			// find only nearset object
 			var leftDoorDistance = Vector3.Distance(link.transform.position, doorsControl.GetLeftDoorPosition());

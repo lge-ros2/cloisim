@@ -7,7 +7,7 @@
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace SDF
+namespace SDFormat
 {
 	using Implement;
 
@@ -15,23 +15,22 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportJoint(in Joint joint, in System.Object parentObject)
+			protected override void ImportJoint(in SDFormat.Joint joint, in System.Object parentObject)
 			{
 				var targetObject = (parentObject as UE.GameObject);
-				// Debug.LogFormat("[Joint] {0}, {1} <= {2}", joint.Name, joint.ParentLinkName, joint.ChildLinkName);
 
-				var linkObjectParent = targetObject.FindTransformByName(joint.ParentLinkName);
-				var linkObjectChild = targetObject.FindTransformByName(joint.ChildLinkName);
+				var linkObjectParent = targetObject.FindTransformByName(joint.ParentName);
+				var linkObjectChild = targetObject.FindTransformByName(joint.ChildName);
 
 				if (linkObjectParent is null)
 				{
-					Debug.LogWarningFormat("Parent Link object is NULL!!! {0}", joint.ParentLinkName);
+					Debug.LogWarningFormat("Parent Link object is NULL!!! {0}", joint.ParentName);
 					return;
 				}
 
 				if (linkObjectChild is null)
 				{
-					Debug.LogWarning($"Child Link object is NULL!!! {joint.ChildLinkName}");
+					Debug.LogWarning($"Child Link object is NULL!!! {joint.ChildName}");
 					return;
 				}
 
@@ -64,41 +63,43 @@ namespace SDF
 					var axis2SpringReference = 0f;
 
 					linkHelper.JointName = joint.Name;
-					linkHelper.JointParentLinkName = joint.ParentLinkName;
-					linkHelper.JointChildLinkName = joint.ChildLinkName;
+					linkHelper.JointParentLinkName = joint.ParentName;
+					linkHelper.JointChildLinkName = joint.ChildName;
 
 					if (joint.Axis != null)
 					{
-						if (joint.Axis.dynamics != null)
-						{
-							axis1xyz = joint.Axis.xyz.ToUnity();
-							axisSpringReference = (joint.Type.Equals("prismatic")) ?
-							 	(float)joint.Axis.dynamics.spring_reference :
-								SDF2Unity.CurveOrientation((float)joint.Axis.dynamics.spring_reference);
-						}
+						axis1xyz = joint.Axis.Xyz.ToUnity();
+						axisSpringReference = (joint.Type == SDFormat.JointType.Prismatic) ?
+							(float)joint.Axis.SpringReference :
+							SDF2Unity.CurveOrientation((float)joint.Axis.SpringReference);
 
 #if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
-						if (!double.IsInfinity(joint.Axis.limit.velocity))
+						if (!double.IsInfinity(joint.Axis.MaxVelocity))
 						{
-							linkHelper.JointAxisLimitVelocity = (float)joint.Axis.limit.velocity;
+							linkHelper.JointAxisLimitVelocity = (float)joint.Axis.MaxVelocity;
 						}
 #endif
+						if (joint.Axis.Mimic != null)
+						{
+							linkHelper.JointAxisMimic = joint.Axis.Mimic;
+						}
 					}
 
 					if (joint.Axis2 != null)
 					{
-						if (joint.Axis2.dynamics != null)
-						{
-							axis2xyz = joint.Axis2.xyz.ToUnity();
-							axis2SpringReference = SDF2Unity.CurveOrientation((float)joint.Axis2.dynamics.spring_reference);
-						}
+						axis2xyz = joint.Axis2.Xyz.ToUnity();
+						axis2SpringReference = SDF2Unity.CurveOrientation((float)joint.Axis2.SpringReference);
 
 #if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
-						if (!double.IsInfinity(joint.Axis2.limit.velocity))
+						if (!double.IsInfinity(joint.Axis2.MaxVelocity))
 						{
-							linkHelper.JointAxis2LimitVelocity = (float)joint.Axis2.limit.velocity;
+							linkHelper.JointAxis2LimitVelocity = (float)joint.Axis2.MaxVelocity;
 						}
 #endif
+						if (joint.Axis2.Mimic != null)
+						{
+							linkHelper.JointAxis2Mimic = joint.Axis2.Mimic;
+						}
 					}
 
 					linkHelper.SetJointPoseTarget(axis1xyz, axisSpringReference, axis2xyz, axis2SpringReference);

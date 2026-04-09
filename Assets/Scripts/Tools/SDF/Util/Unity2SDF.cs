@@ -15,38 +15,35 @@ public static class Unity2SDF
 	/// </summary>
 	///
 
-	public static Vector3 AsUnity(this SDF.Vector3<double>? value)
+	public static Vector3 AsUnity(this SDFormat.Math.Vector3d value)
 	{
-		return (value == null) ? Vector3.zero : new Vector3((float)value.X, (float)value.Y, (float)value.Z);
+		return new Vector3((float)value.X, (float)value.Y, (float)value.Z);
 	}
 
-	public static SDF.Vector3<double> Vector(in Vector3 value)
+	public static SDFormat.Math.Vector3d Vector(in Vector3 value)
 	{
-		return new SDF.Vector3<double>(value.z, -value.x, value.y);
+		return new SDFormat.Math.Vector3d(value.z, -value.x, value.y);
 	}
 
-	public static SDF.Vector3<double> Scale(in Vector3 value)
+	public static SDFormat.Math.Vector3d Scale(in Vector3 value)
 	{
 		var scale = Vector(value);
-		scale.X = Math.Abs(scale.X);
-		scale.Y = Math.Abs(scale.Y);
-		scale.Z = Math.Abs(scale.Z);
-		return scale;
+		return new SDFormat.Math.Vector3d(Math.Abs(scale.X), Math.Abs(scale.Y), Math.Abs(scale.Z));
 	}
 
-	public static SDF.Vector3<double> Position(in Vector3 value)
+	public static SDFormat.Math.Vector3d Position(in Vector3 value)
 	{
 		return Vector(value);
 	}
 
-	public static SDF.Quaternion<double> Rotation(in Quaternion value)
+	public static SDFormat.Math.Quaterniond Rotation(in Quaternion value)
 	{
-		return new SDF.Quaternion<double>(value.w, -value.z, value.x, -value.y);
+		return new SDFormat.Math.Quaterniond(value.w, -value.z, value.x, -value.y);
 	}
 
-	public static SDF.Pose<double> Pose(in SDF.Vector3<double> position, in SDF.Quaternion<double> rotation)
+	public static SDFormat.Math.Pose3d Pose(in SDFormat.Math.Vector3d position, in SDFormat.Math.Quaterniond rotation)
 	{
-		return new SDF.Pose<double>(position, rotation);
+		return new SDFormat.Math.Pose3d(position, rotation);
 	}
 
 	public class Direction

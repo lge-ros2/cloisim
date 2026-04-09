@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Helper
 	{

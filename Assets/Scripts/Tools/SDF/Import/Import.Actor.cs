@@ -6,13 +6,13 @@
 
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Import
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportActor(in Actor actor)
+			protected override System.Object ImportActor(in SDFormat.Actor actor)
 			{
 				if (actor == null)
 				{
@@ -24,30 +24,29 @@ namespace SDF
 				Main.WorldRoot.SetChild(newActorObject);
 
 				// Apply attributes
-				var localPosition = actor.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
-				var localRotation = actor.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
-				// Debug.Log(newActorObject.name + "::" + localPosition + ", " + localRotation);
+				var localPosition = actor.RawPose.ToUnityPosition();
+				var localRotation = actor.RawPose.ToUnityRotation();
 
 				var actorHelper = newActorObject.AddComponent<Helper.Actor>();
-				actorHelper.Pose = actor?.Pose;
+				actorHelper.Pose = actor.RawPose;
+				actorHelper.PoseRelativeTo = actor.PoseRelativeTo;
 
-				var newSkinObject = Implement.Actor.CreateSkin(actor.skin);
+				var newSkinObject = Implement.Actor.CreateSkin(actor.SkinFilename);
 
 				if (newSkinObject != null)
 				{
 					newActorObject.SetChild(newSkinObject);
-					newSkinObject.transform.localScale = UE.Vector3.one * (float)actor.skin.scale;
+					newSkinObject.transform.localScale = UE.Vector3.one * (float)actor.SkinScale;
 
-					var script = actor.script;
-					if (actor.animations != null)
+					if (actor.Animations != null)
 					{
-						foreach (var animation in actor.animations)
+						foreach (var animation in actor.Animations)
 						{
-							Implement.Actor.SetAnimation(newSkinObject, animation, script.auto_start, script.loop);
+							Implement.Actor.SetAnimation(newSkinObject, animation, actor.ScriptAutoStart, actor.ScriptLoop);
 						}
 					}
 
-					actorHelper.SetScript(script);
+					actorHelper.SetScript(actor);
 				}
 
 				var capsuleCollider = newActorObject.AddComponent<UE.CapsuleCollider>();

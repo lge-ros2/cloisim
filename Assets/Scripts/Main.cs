@@ -119,8 +119,8 @@ public class Main : MonoBehaviour
 	}
 
 	#region SDF Parser
-	private SDF.Root _sdfRoot = null;
-	private SDF.Import.Loader _sdfLoader = null;
+	private SDFormat.RootLoader _sdfRoot = null;
+	private SDFormat.Import.Loader _sdfLoader = null;
 	#endregion
 
 	#region Non-Component class
@@ -416,7 +416,7 @@ public class Main : MonoBehaviour
 				_worldFilename = newWorldFilename;
 			}
 
-			_sdfRoot = new SDF.Root();
+			_sdfRoot = new SDFormat.RootLoader();
 			_sdfRoot.fileDefaultPaths.AddRange(_fileRootDirectories);
 			_sdfRoot.modelDefaultPaths.AddRange(_modelRootDirectories);
 			_sdfRoot.worldDefaultPaths.AddRange(_worldRootDirectories);
@@ -500,7 +500,7 @@ public class Main : MonoBehaviour
 
 		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
 		{
-			_sdfLoader = new SDF.Import.Loader();
+			_sdfLoader = new SDFormat.Import.Loader();
 			_sdfLoader.SetRootLights(_lightsRoot);
 			_sdfLoader.SetRootRoads(_roadsRoot);
 
@@ -720,7 +720,7 @@ public class Main : MonoBehaviour
 
 	void Reset()
 	{
-		foreach (var helper in _worldRoot.GetComponentsInChildren<SDF.Helper.Base>())
+		foreach (var helper in _worldRoot.GetComponentsInChildren<SDFormat.Helper.Base>())
 		{
 			helper.Reset();
 		}

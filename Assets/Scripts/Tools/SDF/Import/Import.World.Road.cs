@@ -6,25 +6,27 @@
 
 using System.Collections.Generic;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Import
 	{
 		public partial class Loader : Base
 		{
-			private void ImportRoad(in World.Road road)
+			private void ImportRoads(in SDFormat.World world)
 			{
-				var roadObject = Implement.Road.Generate(road);
-
-				Main.SegmentationManager.AttachTag(roadObject.name, roadObject);
-				Main.SegmentationManager.UpdateTags();
-			}
-
-			private void ImportRoads(IReadOnlyList<World.Road> items)
-			{
-				foreach (var item in items)
+				if (world.Element == null)
 				{
-					ImportRoad(item);
+					return;
+				}
+
+				foreach (var roadElement in world.Element.GetElements("road"))
+				{
+					var roadObject = Implement.Road.Generate(roadElement);
+					if (roadObject != null)
+					{
+						Main.SegmentationManager.AttachTag(roadObject.name, roadObject);
+						Main.SegmentationManager.UpdateTags();
+					}
 				}
 			}
 		}

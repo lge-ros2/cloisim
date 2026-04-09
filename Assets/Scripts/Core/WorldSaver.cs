@@ -151,7 +151,7 @@ public class WorldSaver
 				modelNameNode.InnerText = modelName;
 				model.AppendChild(modelNameNode);
 
-				var modelHelper = childTransform.GetComponent<SDF.Helper.Model>();
+				var modelHelper = childTransform.GetComponent<SDFormat.Helper.Model>();
 
 				var uriNode = _doc.CreateElement("uri");
 				uriNode.InnerText = $"model://{modelHelper.modelNameInPath}";
@@ -220,16 +220,15 @@ public class WorldSaver
 			var roadMaterialNode = _doc.CreateElement("material");
 			var roadMaterialScriptNode = _doc.CreateElement("script");
 
-			foreach (var uri in roadGenerator.SdfMaterial.script.original_uri)
+			if (!string.IsNullOrEmpty(roadGenerator.SdfMaterial.ScriptUri))
 			{
-				// Debug.Log(uri);
 				var roadMaterialUriNode = _doc.CreateElement("uri");
-				roadMaterialUriNode.InnerText = uri;
+				roadMaterialUriNode.InnerText = roadGenerator.SdfMaterial.ScriptUri;
 				roadMaterialScriptNode.AppendChild(roadMaterialUriNode);
 			}
 
 			var roadMaterialNameNode = _doc.CreateElement("name");
-			roadMaterialNameNode.InnerText = roadGenerator.SdfMaterial.script.name;
+			roadMaterialNameNode.InnerText = roadGenerator.SdfMaterial.ScriptName;
 			roadMaterialScriptNode.AppendChild(roadMaterialNameNode);
 
 			roadMaterialNode.AppendChild(roadMaterialScriptNode);

@@ -7,7 +7,7 @@
 using System.Text;
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	using Implement;
 
@@ -15,7 +15,7 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportMaterial(in SDF.Material sdfMaterial, in System.Object parentObject)
+			protected override void ImportMaterial(in SDFormat.Material sdfMaterial, in System.Object parentObject)
 			{
 				var logs = new StringBuilder();
 				var targetObject = (parentObject as UE.GameObject);
@@ -40,7 +40,7 @@ namespace SDF
 
 				if (logs.Length > 0)
 				{
-					logs.Insert(0, "SDF.Import.ImportMaterial() - Implementation logs\n");
+					logs.Insert(0, "SDFormat.Import.ImportMaterial() - Implementation logs\n");
 					UE.Debug.LogWarning(logs.ToString());
 				}
 			}

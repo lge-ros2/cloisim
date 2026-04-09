@@ -48,31 +48,29 @@ namespace SensorDevices
 
 		private NoiseGPS _noises = new NoiseGPS();
 
-		public void SetupNoises(in SDF.NavSat element)
+		public void SetupNoises(in SDFormat.NavSatSensor element)
 		{
 			if (element == null)
 				return;
 
-			Debug.Log($"{DeviceName}: Apply noise type:{element.type}");
-
-			if (element.position_sensing.horizontal_noise != null)
+			if (element.HorizontalPositionNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.position_sensing["horizontal"] = new SensorDevices.Noise(element.position_sensing.horizontal_noise);
+				_noises.position_sensing["horizontal"] = new SensorDevices.Noise(element.HorizontalPositionNoise);
 			}
 
-			if (element.position_sensing.vertical_noise != null)
+			if (element.VerticalPositionNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.position_sensing["vertical"] = new SensorDevices.Noise(element.position_sensing.vertical_noise);
+				_noises.position_sensing["vertical"] = new SensorDevices.Noise(element.VerticalPositionNoise);
 			}
 
-			if (element.velocity_sensing.horizontal_noise != null)
+			if (element.HorizontalVelocityNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.velocity_sensing["horizontal"] = new SensorDevices.Noise(element.velocity_sensing.horizontal_noise);
+				_noises.velocity_sensing["horizontal"] = new SensorDevices.Noise(element.HorizontalVelocityNoise);
 			}
 
-			if (element.velocity_sensing.vertical_noise != null)
+			if (element.VerticalVelocityNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.velocity_sensing["vertical"] = new SensorDevices.Noise(element.velocity_sensing.vertical_noise);
+				_noises.velocity_sensing["vertical"] = new SensorDevices.Noise(element.VerticalVelocityNoise);
 			}
 		}
 

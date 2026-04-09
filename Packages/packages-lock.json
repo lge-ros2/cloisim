@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.lge-ros2.sdformat": {
+      "version": "https://github.com/lge-ros2/sdformat-sharp.git?path=com.lge-ros2.sdformat",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "e3e6812a19446d74defb24cad7162f116e75ee2f"
+    },
     "com.unity.ai.navigation": {
       "version": "2.0.12",
       "depth": 0,

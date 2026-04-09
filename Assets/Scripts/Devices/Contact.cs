@@ -67,14 +67,14 @@ namespace SensorDevices
 
 		public string GetColliderName(in Collider collider)
 		{
-			var collisionHelper = collider.transform.gameObject.GetComponentInParent<SDF.Helper.Collision>();
+			var collisionHelper = collider.transform.gameObject.GetComponentInParent<SDFormat.Helper.Collision>();
 			if (collisionHelper == null)
 			{
 				return collider.transform.parent.name + "::" + collider.name;
 			}
 			else
 			{
-				var linkHelper = collisionHelper.GetComponentInParent<SDF.Helper.Link>();
+				var linkHelper = collisionHelper.GetComponentInParent<SDFormat.Helper.Link>();
  				return linkHelper.Model.name + "::" + linkHelper.name + "::" + collisionHelper.name;
 			}
 		}

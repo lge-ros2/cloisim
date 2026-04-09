@@ -12,13 +12,13 @@ public class TF
 
 	public string _parentFrameId = string.Empty;
 	public string _childFrameId = string.Empty;
-	private SDF.Helper.Link _link = null;
+	private SDFormat.Helper.Link _link = null;
 
 	public string ParentFrameID => _parentFrameId;
 	public string ChildFrameID => _childFrameId;
 
 
-	public TF(in SDF.Helper.Link link, in string childFrameId, in string parentFrameId)
+	public TF(in SDFormat.Helper.Link link, in string childFrameId, in string parentFrameId)
 	{
 		this._parentFrameId = parentFrameId.Replace("::", "_");
 		this._childFrameId = childFrameId.Replace("::", "_");

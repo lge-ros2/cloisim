@@ -9,7 +9,7 @@ using System.Collections;
 using UE = UnityEngine;
 using UEAI = UnityEngine.AI;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Helper
 	{
@@ -38,13 +38,16 @@ namespace SDF
 
 			[UE.Header("SDF Properties")]
 			public bool isStatic = false;
-			private SDF.Actor.Script _script = null;
+			private bool _scriptLoop = true;
+			private double _scriptDelayStart = 0;
+			private bool _scriptAutoStart = true;
+			private List<SDFormat.Trajectory> _scriptTrajectories = null;
 
 			private UE.CapsuleCollider capsuleCollider = null;
 			private UE.SkinnedMeshRenderer skinMeshRenderer = null;
 			private UEAI.NavMeshAgent _navMeshAgent = null;
 
-			public bool HasWayPoints => (_script.trajectories != null && _script.trajectories.Count > 0);
+			public bool HasWayPoints => (_scriptTrajectories != null && _scriptTrajectories.Count > 0);
 
 			new public void Reset()
 			{
@@ -63,7 +66,7 @@ namespace SDF
 				capsuleCollider = GetComponentInChildren<UE.CapsuleCollider>();
 				skinMeshRenderer = GetComponentInChildren<UE.SkinnedMeshRenderer>();
 
-				if (_script != null && _script.auto_start && HasWayPoints)
+				if (_scriptAutoStart && HasWayPoints)
 				{
 					StartWaypointFollowing();
 				}
@@ -103,7 +106,7 @@ namespace SDF
 			{
 				if (_followingWaypoint && _waypointTowardsIndex < _waypointTowards.Count)
 				{
-					if (_elapsedTimeSinceAnimationStarted < _script.delay_start)
+					if (_elapsedTimeSinceAnimationStarted < _scriptDelayStart)
 					{
 						_elapsedTimeSinceAnimationStarted += UE.Time.timeAsDouble;
 						// UE.Debug.Log("waiting for start: " + _elapsedTimeSinceAnimationStarted);
@@ -132,7 +135,7 @@ namespace SDF
 						// UE.Debug.Log("go next waypoint: " + _waypointTowardsIndex);
 					}
 
-					if (_script.loop && _waypointTowardsIndex >= _waypointTowards.Count)
+					if (_scriptLoop && _waypointTowardsIndex >= _waypointTowards.Count)
 					{
 						StopWaypointFollowing();
 						StartWaypointFollowing();
@@ -186,42 +189,43 @@ namespace SDF
 				transform.localRotation = targetPose.rotation * initPose.rotation;
 			}
 
-			public void SetScript(in SDF.Actor.Script _script)
+			public void SetScript(in SDFormat.Actor actor)
 			{
-				this._script = _script;
+				_scriptLoop = actor.ScriptLoop;
+				_scriptDelayStart = actor.ScriptDelayStart;
+				_scriptAutoStart = actor.ScriptAutoStart;
+				_scriptTrajectories = actor.Trajectories;
 
-				if (this._script.trajectories != null)
+				if (_scriptTrajectories != null)
 				{
-					foreach (var trajectory in _script.trajectories)
+					foreach (var trajectory in _scriptTrajectories)
 					{
-						// UE.Debug.LogFormat("id:{0} type:{1} tension:{2}", trajectory.id, trajectory.Type, trajectory.tension);
-						if (trajectory.waypoints.Count > 0)
+						// UE.Debug.LogFormat("id:{0} type:{1} tension:{2}", trajectory.Id, trajectory.Type, trajectory.Tension);
+						if (trajectory.Waypoints.Count > 0)
 						{
 							var lastPosition = UE.Vector3.zero;
 							var lastRotation = UE.Quaternion.identity;
 							var startIndex = 0;
-							var firstWayPoint = trajectory.waypoints[0];
+							var firstWayPoint = trajectory.Waypoints[0];
 
-							if (firstWayPoint.time == 0)
+							if (firstWayPoint.Time == 0)
 							{
-								lastPosition = firstWayPoint.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
-								lastRotation = firstWayPoint.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
+								lastPosition = firstWayPoint.Pose.ToUnityPosition();
+								lastRotation = firstWayPoint.Pose.ToUnityRotation();
 								startIndex = 1;
 							}
 
 							SetActorPose(lastPosition, lastRotation);
 
 							var lastTime = 0f;
-							for (var i = startIndex; i < trajectory.waypoints.Count; i++)
+							for (var i = startIndex; i < trajectory.Waypoints.Count; i++)
 							{
-								var waypoint = trajectory.waypoints[i];
+								var waypoint = trajectory.Waypoints[i];
 
 								var waypointToward = new WaypointToward();
-								var nextTime = (float)waypoint.time;
-								var nextPosition = waypoint.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
-								var nextRotation = waypoint.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
-
-								// UE.Debug.Log("Time: " + waypoint.time + ", Position: " + nextPosition + ", Rotation: " + nextRotation);
+								var nextTime = (float)waypoint.Time;
+								var nextPosition = waypoint.Pose.ToUnityPosition();
+								var nextRotation = waypoint.Pose.ToUnityRotation();
 
 								waypointToward.linearSpeed = UE.Vector3.Distance(nextPosition, lastPosition) / (nextTime - lastTime);
 								waypointToward.angularSpeed = UE.Quaternion.Angle(nextRotation, lastRotation) / (nextTime - lastTime);
@@ -229,7 +233,6 @@ namespace SDF
 								waypointToward.rotateTo = nextRotation;
 
 								_waypointTowards.Add(waypointToward);
-								// UE.Debug.Log("\t Speed(linear/angular): (" + waypointToward.linearSpeed + "/" + waypointToward.angularSpeed + ", pos: " + waypointToward.tranlateTo + ", rot:" + waypointToward.rotateTo);
 
 								lastTime = nextTime;
 								lastPosition = nextPosition;

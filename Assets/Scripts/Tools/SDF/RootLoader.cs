@@ -11,14 +11,14 @@ using System.Linq;
 using System.Text;
 using System;
 
-namespace SDF
+namespace SDFormat
 {
 	public sealed class ResourceModelTable
-        : Dictionary<string, (string configName, string path, string filename)>
-    {
-    }
+		: Dictionary<string, (string configName, string path, string filename)>
+	{
+	}
 
-	public class Root
+	public class RootLoader
 	{
 		private readonly string[] SdfVersions = {
 					"1.9", "1.8", "1.7", "1.6", "1.5", "1.4",
@@ -45,13 +45,8 @@ namespace SDF
 
 		public ResourceModelTable ResourceModelTable { get => _resourceModelTable; }
 
-		public Root()
+		public bool DoParse(out SDFormat.World world, out string worldFilePath, in string worldFileName)
 		{
-		}
-
-		public bool DoParse(out World world, out string worldFilePath, in string worldFileName)
-		{
-			// Console.Write("Loading World File from SDF!!!!!");
 			world = null;
 			worldFilePath = string.Empty;
 			if (worldFileName.Trim().Length <= 0)
@@ -59,7 +54,6 @@ namespace SDF
 				return false;
 			}
 
-			// Console.Write("World file, PATH: " + worldFileName);
 			foreach (var worldPath in worldDefaultPaths)
 			{
 				var fullFilePath = worldPath + "/" + worldFileName;
@@ -76,9 +70,24 @@ namespace SDF
 
 						ConvertPathToAbsolutePaths();
 
-						// Console.Write("Load World");
-						var worldNode = _doc.SelectSingleNode("/sdf/world");
-						world = new World(worldNode);
+						// Parse with SdFormat
+						var sdfElement = ParseWithSdFormat(_doc);
+						if (sdfElement == null)
+						{
+							Console.Error.Write($"Failed to parse World with SdFormat({fullFilePath})");
+							return false;
+						}
+
+						var worldElement = sdfElement.FindElement("world");
+						world = new SDFormat.World();
+						var errors = world.Load(worldElement);
+						foreach (var error in errors)
+						{
+							if (error.HasError)
+							{
+								Console.Error.Write($"SdFormat World load error: {error.Message}");
+							}
+						}
 						worldFilePath = worldPath;
 
 						return true;
@@ -95,14 +104,12 @@ namespace SDF
 			return false;
 		}
 
-		public bool DoParse(out Model model, in string modelFullPath, in string modelFileName)
+		public bool DoParse(out SDFormat.Model model, in string modelFullPath, in string modelFileName)
 		{
-			// Console.Write("Loading World File from SDF!!!!!");
 			model = null;
 
 			var modelLocation = Path.Combine(modelFullPath, modelFileName);
 			var modelName = Path.GetFileName(modelFullPath);
-			// Console.Write(modelFullPath + " -> " + modelName);
 			try
 			{
 				_doc.RemoveAll();
@@ -110,14 +117,30 @@ namespace SDF
 
 				ReplaceAllIncludedModel();
 
-				// Console.Write("Load World");
 				var modelNode = _doc.SelectSingleNode("/sdf/model");
 
 				StoreOriginalModelName(_doc, modelName, modelNode);
 
 				ConvertPathToAbsolutePaths();
 
-				model = new Model(modelNode);
+				// Parse with SdFormat
+				var sdfElement = ParseWithSdFormat(_doc);
+				if (sdfElement == null)
+				{
+					Console.Error.Write("Failed to parse Model with SdFormat(" + modelLocation + ")");
+					return false;
+				}
+
+				var modelElement = sdfElement.FindElement("model");
+				model = new SDFormat.Model();
+				var errors = model.Load(modelElement);
+				foreach (var error in errors)
+				{
+					if (error.HasError)
+					{
+						Console.Error.Write($"SdFormat Model load error: {error.Message}");
+					}
+				}
 
 				return true;
 			}
@@ -128,6 +151,31 @@ namespace SDF
 			}
 
 			return false;
+		}
+
+		/// <summary>
+		/// Serialize XmlDocument to string and parse with SDFormat.SdfParser.
+		/// Returns the root SDFormat.Element (the &lt;sdf&gt; element).
+		/// </summary>
+		private SDFormat.Element ParseWithSdFormat(XmlDocument doc)
+		{
+			var sw = new StringWriter();
+			var xw = new XmlTextWriter(sw);
+			doc.WriteTo(xw);
+			var xmlString = sw.ToString();
+
+			var parser = new SDFormat.SdfParser();
+			var (rootElement, errors) = parser.Parse(xmlString);
+
+			foreach (var error in errors)
+			{
+				if (error.HasError)
+				{
+					Console.Error.Write($"SdFormat parse error: {error.Message}");
+				}
+			}
+
+			return rootElement;
 		}
 
 		private string SortModelConfigName(XmlDocument xmldoc, DirectoryInfo directoryInfo)
@@ -178,7 +226,6 @@ namespace SDF
 				}
 
 				var rootDirectory = new DirectoryInfo(modelPath);
-				//Console.Write(">>> Model Default Path: " + modelPath);
 
 				// Loop models
 				foreach (var subDirectory in rootDirectory.GetDirectories().OrderBy(d => SortModelConfigName(modelConfigDoc, d)))
@@ -188,7 +235,6 @@ namespace SDF
 						continue;
 					}
 
-					// Console.Write(subDirectory.Name + " => " + subDirectory.FullName);
 					var modelConfig = subDirectory.FullName + "/model.config";
 
 					if (!File.Exists(modelConfig))
@@ -220,14 +266,11 @@ namespace SDF
 					var sdfFileName = string.Empty;
 					foreach (var version in SdfVersions)
 					{
-						// Console.Write(version);
-						// Console.Write(modelNode);
 						var sdfNode = modelNode.SelectSingleNode($"sdf[@version={version} or not(@version)]");
 						if (sdfNode != null)
 						{
 							sdfFileName = sdfNode.InnerText;
 							_sdfVersion = version;
-							//Console.Write(version + "," + sdfFileName);
 							break;
 						}
 					}
@@ -242,8 +285,6 @@ namespace SDF
 					var modelValue = (configName: modelConfigName, path: subDirectory.FullName, filename: sdfFileName);
 					try
 					{
-						// Console.Write(modelName + ":" + subDirectory.FullName + ":" + sdfFileName);
-						// Console.Write(modelName + ", " + modelValue);
 						if (_resourceModelTable.ContainsKey(modelName))
 						{
 							failedModelTableList.AppendLine(string.Empty);
@@ -294,11 +335,9 @@ namespace SDF
 			var node = targetNode?.ParentNode;
 			while (node != null)
 			{
-				// Console.Write(node.Name + " - " + node.LocalName);
 				if (node.Name == "model")
 				{
 					modelName = node.Attributes["original_name"]?.Value;
-					// Console.Write("Found model " + modelName);
 					break;
 				}
 				node = node?.ParentNode;
@@ -316,7 +355,6 @@ namespace SDF
 		private void ConvertPathToAbsolutePath(in string targetElement)
 		{
 			var nodeList = _doc.SelectNodes($"//{targetElement}");
-			// Console.Write("Target:" + targetElement + ", Num Of uri nodes: " + nodeList.Count);
 			foreach (XmlNode node in nodeList)
 			{
 				var uri = node.InnerText;
@@ -358,7 +396,6 @@ namespace SDF
 					{
 						node.InnerText = value.Item2 + "/" + meshUri;
 					}
-					// Console.Write($"Cannot convert: {uri}");
 				}
 			}
 		}
@@ -395,16 +432,12 @@ namespace SDF
 			{
 				nodes = _doc.SelectNodes("//include");
 
-				// if (nodes.Count > 0)
-				// 	Console.Write("Num Of Included Model nodes: " + nodes.Count);
-
 				foreach (XmlNode node in nodes)
 				{
 					var modelNode = GetIncludedModel(node);
 
 					if (modelNode != null)
 					{
-						// Console.Write("Node - " + modelNode);
 						var importNode = _doc.ImportNode(modelNode, true);
 
 						var newAttr = _doc.CreateAttribute("is_nested");
@@ -424,11 +457,10 @@ namespace SDF
 		#region Segmentation Tag
 		private void StoreOriginalModelName(in XmlDocument targetDoc, in string modelName, XmlNode targetNode)
 		{
- 			// store original model's name for segmentation Tag
+			// store original model's name for segmentation Tag
 			var newAttr = targetDoc.CreateAttribute("original_name");
 			newAttr.Value = modelName;
 			targetNode.Attributes.Append(newAttr);
-			// Console.Write(targetNode.Name + " - " + targetNode.LocalName + " - " + modelName);
 		}
 		#endregion
 
@@ -455,7 +487,6 @@ namespace SDF
 			var poseAttributes = poseNode?.Attributes;
 
 			var pluginNode = includedNode.SelectSingleNode("plugin");
-			// var plugin = (pluginNode == null) ? null : pluginNode.InnerText;
 
 			var uri = uriNode.InnerText;
 			var modelName = uri.Replace(ProtocolModel, string.Empty);
@@ -463,7 +494,6 @@ namespace SDF
 			if (_resourceModelTable.TryGetValue(modelName, out var value))
 			{
 				uri = value.Item2 + "/" + value.Item3;
-				// Console.WriteLine($"include/modelname = {name} | {uri} | {modelName} | {pose} | {isStatic}");
 			}
 			else
 			{
@@ -558,7 +588,7 @@ namespace SDF
 		public void Save(in string filePath = "")
 		{
 			var fileName = Path.GetFileNameWithoutExtension(_worldFileName);
-			var datetime = DateTime.Now.ToString("yyMMddHHmmss"); // DateTime.Now.ToString("yyyyMMddHHmmss");
+			var datetime = DateTime.Now.ToString("yyMMddHHmmss");
 
 			var saveName = $"{filePath}/{fileName}{datetime}.world";
 			_originalDoc.Save(saveName);

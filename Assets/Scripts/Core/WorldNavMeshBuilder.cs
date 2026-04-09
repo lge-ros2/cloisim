@@ -85,7 +85,7 @@ public class WorldNavMeshBuilder : MonoBehaviour
 
 		if (!alreadyAdded)
 		{
-			var models = Main.WorldRoot.GetComponentsInChildren<SDF.Helper.Model>();
+			var models = Main.WorldRoot.GetComponentsInChildren<SDFormat.Helper.Model>();
 
 			foreach (var model in models)
 			{

@@ -26,7 +26,7 @@ namespace SensorDevices
 			// Discrete label data must not be interpolated
 			_rtFilterMode = FilterMode.Point;
 
-			var pixelFormat = CameraData.GetPixelFormat(_camParam.image.format);
+			var pixelFormat = CameraData.GetPixelFormat(_camParam.ImageFormat);
 			if (pixelFormat != CameraData.PixelFormat.L_INT16)
 			{
 				Debug.Log("Only support INT16 format");
@@ -36,7 +36,7 @@ namespace SensorDevices
 			_targetColorFormat = GraphicsFormat.R8G8B8A8_UNorm;
 			_readbackDstFormat = GraphicsFormat.R8G8_UNorm;
 
-			_textureForCapture = new Texture2D(_camParam.image.width, _camParam.image.height, TextureFormat.R16, false, true);
+			_textureForCapture = new Texture2D((int)_camParam.ImageWidth, (int)_camParam.ImageHeight, TextureFormat.R16, false, true);
 		}
 
 		protected override void SetupCamera()
@@ -72,12 +72,12 @@ namespace SensorDevices
 		void LateUpdate()
 		{
 			if (_startCameraWork &&
-				_camParam.save_enabled &&
+				_camParam.SaveFrames &&
 				_messageQueue.TryPeek(out var msg))
 			{
 				var imageStampedMsg = ((messages.Segmentation)msg).ImageStamped;
 				var saveName = $"{DeviceName}_{imageStampedMsg.Time.Sec}.{imageStampedMsg.Time.Nsec}";
-				_textureForCapture.SaveRawImage(imageStampedMsg.Image.Data, _camParam.save_path, saveName);
+				_textureForCapture.SaveRawImage(imageStampedMsg.Image.Data, _camParam.SavePath, saveName);
 			}
 		}
 

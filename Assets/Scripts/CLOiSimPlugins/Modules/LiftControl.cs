@@ -57,7 +57,7 @@ public class LiftControl : MonoBehaviour
 
 	private void FindFloorRegionInLift()
 	{
-		var collisions = transform.GetComponentsInChildren<SDF.Helper.Collision>();
+		var collisions = transform.GetComponentsInChildren<SDFormat.Helper.Collision>();
 		foreach (var collision in collisions)
 		{
 			if (collision.name.Equals(floorColliderName))
@@ -73,7 +73,7 @@ public class LiftControl : MonoBehaviour
 		_hashsetLiftingObjects.Clear();
 		_hashsetLiftingProps.Clear();
 
-		var allModelHelpers = _rootModelTransform.GetComponentsInChildren<SDF.Helper.Model>();
+		var allModelHelpers = _rootModelTransform.GetComponentsInChildren<SDFormat.Helper.Model>();
 		foreach (var modelHelper in allModelHelpers)
 		{
 			if (modelHelper.IsFirstChild)
