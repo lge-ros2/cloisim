@@ -415,8 +415,8 @@ public class ClothPlugin : CLOiSimPlugin
 
 		StartSummary.AppendLine(
 			$"Constraints: {constraints.Length} stretch ({weldCount} weld) + {bendingConstraints.Length} bending, " +
-			$"stiffness={plugin.GetValue<float>("cloth/constraints/stretching_stiffness", 0.9f)}/" +
-			$"{plugin.GetValue<float>("cloth/constraints/bending_stiffness", 0.3f)}, " +
+			$"stiffness={plugin.GetValue<float>("cloth/constraints/stretching_stiffness", 1.0f)}/" +
+			$"{plugin.GetValue<float>("cloth/constraints/bending_stiffness", 0.8f)}, " +
 			$"damping={_cloth.Damping}, iterations={_cloth.SolverIterations}");
 	}
 
@@ -525,8 +525,8 @@ public class ClothPlugin : CLOiSimPlugin
 		List<DistanceConstraint> weldConstraints,
 		out DistanceConstraint[] outConstraints, out BendingConstraint[] outBendingConstraints)
 	{
-		var stiffness = plugin.GetValue<float>("cloth/constraints/stretching_stiffness", 0.9f);
-		var bendingStiffness = plugin.GetValue<float>("cloth/constraints/bending_stiffness", 0.3f);
+		var stiffness = plugin.GetValue<float>("cloth/constraints/stretching_stiffness", 1.0f);
+		var bendingStiffness = plugin.GetValue<float>("cloth/constraints/bending_stiffness", 0.8f);
 		var edgeSet = new HashSet<long>();
 		var constraints = new List<DistanceConstraint>(weldConstraints);
 		var edgeToTriOpposite = new Dictionary<long, int>();
@@ -553,16 +553,16 @@ public class ClothPlugin : CLOiSimPlugin
 
 	private void ApplyClothParameters(SDFormat.Plugin plugin)
 	{
-		_cloth.SolverIterations = plugin.GetValue<int>("cloth/solver/iterations", 5);
-		_cloth.Damping = plugin.GetValue<float>("cloth/simulation/damping", 0.98f);
+		_cloth.SolverIterations = plugin.GetValue<int>("cloth/solver/iterations", 10);
+		_cloth.Damping = plugin.GetValue<float>("cloth/simulation/damping", 0.9f);
 		_cloth.Gravity = new float3(
 			plugin.GetValue<float>("cloth/simulation/gravity/x", 0f),
 			plugin.GetValue<float>("cloth/simulation/gravity/y", -9.81f),
 			plugin.GetValue<float>("cloth/simulation/gravity/z", 0f));
 		_cloth.ParticleRadius = plugin.GetValue<float>("cloth/collider/particle_radius", 0.01f);
 		_cloth.SubSteps = plugin.GetValue<int>("cloth/solver/sub_steps", 4);
-		_cloth.Friction = plugin.GetValue<float>("cloth/simulation/friction", 0.5f);
-		_cloth.SleepThreshold = plugin.GetValue<float>("cloth/simulation/sleep_threshold", 0.001f);
+		_cloth.Friction = plugin.GetValue<float>("cloth/simulation/friction", 0.8f);
+		_cloth.SleepThreshold = plugin.GetValue<float>("cloth/simulation/sleep_threshold", 0.05f);
 	}
 
 	private static void TryAddEdge(
