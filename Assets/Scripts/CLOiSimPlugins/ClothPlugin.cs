@@ -10,6 +10,7 @@ using Unity.Mathematics;
 using Unity.Collections;
 using CLOiSim.Cloth;
 using SDFormat;
+using UEPhysics = UnityEngine.Physics;
 
 [DefaultExecutionOrder(100)]
 public class ClothPlugin : CLOiSimPlugin
@@ -25,7 +26,7 @@ public class ClothPlugin : CLOiSimPlugin
 	private ColliderBridge _colliderBridge;
 
 	[SerializeField]
-	private Transform _linkTransform;
+	private Transform _clothRoot;
 
 	[SerializeField]
 	private Transform _meshTransform;
@@ -36,16 +37,20 @@ public class ClothPlugin : CLOiSimPlugin
 	[SerializeField]
 	private float _colliderUpdateInterval = 1.0f;
 
+	[SerializeField]
+	private float _totalMass = 0f;
+
 	private BoxCollider _clothCollider;
 	private float _nextColliderUpdate;
 	private float _nextSelectionColliderUpdate;
-	private Transform _clothRoot;
 	private Transform _worldRoot;
 	private Transform _propsRoot;
 	private readonly HashSet<Transform> _currentColliderSet = new();
 	private Vector3 _lastMeshWorldPosition;
 	private ArticulationBody _clothArticulationBody;
 	private Rigidbody _clothRigidbody;
+	private bool _wasGizmoSelected = false;
+	private Vector3 _cachedSyncTarget;  // computed each LateUpdate, used by SyncRootToClothCentroid
 
 	protected override void OnAwake()
 	{
@@ -62,8 +67,8 @@ public class ClothPlugin : CLOiSimPlugin
 		}
 
 		var target = pluginParams.GetValue<string>("target");
-		_linkTransform = ResolveTargetTransform(target);
-		if (_linkTransform == null)
+		_clothRoot = ResolveTargetTransform(target);
+		if (_clothRoot == null)
 		{
 			Debug.LogError($"ClothPlugin: Cannot resolve target link '{target}'");
 			yield break;
@@ -77,7 +82,6 @@ public class ClothPlugin : CLOiSimPlugin
 		yield return WaitForModelDeployment();
 		yield return null;
 
-		_clothRoot = _linkTransform;
 		_worldRoot = Main.WorldRoot.transform;
 		_propsRoot = Main.PropsRoot.transform;
 		_searchMargin = pluginParams.GetValue<float>("cloth/collider/search_margin", _searchMargin);
@@ -95,7 +99,7 @@ public class ClothPlugin : CLOiSimPlugin
 
 	private bool InitializeClothMesh(string target)
 	{
-		var meshFilter = _linkTransform.GetComponentInChildren<MeshFilter>();
+		var meshFilter = _clothRoot.GetComponentInChildren<MeshFilter>();
 		if (meshFilter == null || meshFilter.sharedMesh == null)
 		{
 			Debug.LogError($"ClothPlugin: No mesh found under target link '{target}'");
@@ -119,7 +123,7 @@ public class ClothPlugin : CLOiSimPlugin
 		collider.size = bounds.size;
 		_clothCollider = collider;
 
-		var rootModel = _linkTransform.GetComponentInParent<SDFormat.Helper.Model>();
+		var rootModel = _clothRoot.GetComponentInParent<SDFormat.Helper.Model>();
 		if (rootModel != null &&!rootModel.hasRootArticulationBody)
 		{
 			rootModel.gameObject.layer = LayerMask.NameToLayer("Cloth");
@@ -132,7 +136,7 @@ public class ClothPlugin : CLOiSimPlugin
 	{
 		return new WaitUntil(() =>
 		{
-			var modelHelper = _linkTransform.GetComponentInParent<SDFormat.Helper.Model>();
+			var modelHelper = _clothRoot.GetComponentInParent<SDFormat.Helper.Model>();
 			if (modelHelper == null) return true;
 			var rootModel = modelHelper.RootModel ?? modelHelper;
 			var artBody = rootModel.GetComponentInChildren<ArticulationBody>();
@@ -178,13 +182,30 @@ public class ClothPlugin : CLOiSimPlugin
 		_cloth?.ResetToInitialState();
 	}
 
+	private bool _wasTransforming = false;
+
 	private void Update()
 	{
 		if (_cloth == null || _meshTransform == null) return;
 
-		// Pause cloth simulation while gizmo is actively transforming this object
 		var gizmo = Main.Gizmos;
-		_cloth.Paused = gizmo != null && gizmo.isTransforming && IsGizmoTargetingSelf(gizmo);
+		var isSelected = gizmo != null && IsGizmoTargetingSelf(gizmo);
+		var isTransforming = isSelected && gizmo.isTransforming;
+
+		// On selection start (click): sync root body to cached cloth centroid (computed last LateUpdate)
+		if (!_wasGizmoSelected && isSelected)
+			SyncRootToClothCentroid();
+		_wasGizmoSelected = isSelected;
+
+		// On transform end: deselect so gizmo disappears
+		if (_wasTransforming && !isTransforming && isSelected)
+			gizmo.ClearTargets();
+		_wasTransforming = isTransforming;
+
+		// Pause simulation while selected (prevents jitter after SyncRootToClothCentroid
+		// moves the root and wakes the cloth via Translate).
+		// Cloth resumes when ClearTargets() is called on transform end.
+		_cloth.Paused = isSelected;
 
 		// Detect if the parent transform was moved (e.g. by gizmo) and shift cloth positions accordingly
 		var currentPos = _meshTransform.position;
@@ -202,6 +223,61 @@ public class ClothPlugin : CLOiSimPlugin
 			_clothRigidbody.isKinematic = true;
 	}
 
+	private void CacheClothSyncTarget(NativeArray<float3> positions)
+	{
+		if (!positions.IsCreated || positions.Length == 0) return;
+
+		// X, Z: centroid of all particles; Y: highest particle + initial offset
+		var centroid = Vector3.zero;
+		var maxY = float.MinValue;
+		for (var i = 0; i < positions.Length; i++)
+		{
+			var p = (Vector3)positions[i];
+			centroid += p;
+			if (p.y > maxY) maxY = p.y;
+		}
+		centroid /= positions.Length;
+		_cachedSyncTarget = new Vector3(centroid.x, maxY, centroid.z);
+	}
+
+	private void SyncRootToClothCentroid()
+	{
+		var targetPos = _cachedSyncTarget;
+
+		// Get current root position before moving
+		var currentRootPos = Vector3.zero;
+		if (_clothArticulationBody != null)
+			currentRootPos = _clothArticulationBody.transform.position;
+		else if (_clothRigidbody != null)
+			currentRootPos = _clothRigidbody.transform.position;
+		else
+			currentRootPos = _meshTransform.root.position;
+
+		// Calculate delta
+		var rootDelta = targetPos - currentRootPos;
+
+		// Move root to sync point
+		if (_clothArticulationBody != null)
+		{
+			_clothArticulationBody.TeleportRoot(targetPos, _clothArticulationBody.transform.rotation);
+		}
+		else if (_clothRigidbody != null)
+		{
+			_clothRigidbody.position = targetPos;
+		}
+		else
+		{
+			_meshTransform.root.position = targetPos;
+		}
+
+		// Keep cloth particles at same world position (don't move them when root moves)
+		_cloth.Translate(-rootDelta);
+
+		UEPhysics.SyncTransforms();
+
+		_lastMeshWorldPosition = _meshTransform.position;
+	}
+
 	private bool IsGizmoTargetingSelf(RuntimeGizmos.TransformGizmo gizmo)
 	{
 		gizmo.GetSelectedTargets(out var targets);
@@ -209,6 +285,8 @@ public class ClothPlugin : CLOiSimPlugin
 
 		for (var i = 0; i < targets.Count; i++)
 		{
+			if (targets[i] == null) continue;
+			if (_meshTransform == null) return false;
 			if (_meshTransform.IsChildOf(targets[i]))
 				return true;
 		}
@@ -221,6 +299,9 @@ public class ClothPlugin : CLOiSimPlugin
 
 		var positions = _cloth.GetPositions();
 		if (!positions.IsCreated || positions.Length != _clothMesh.vertexCount) return;
+
+		// Cache sync target here — after BurstCloth.LateUpdate() has run fresh simulation
+		CacheClothSyncTarget(positions);
 
 		UpdateClothMesh(positions);
 		UpdateSelectionCollider();
@@ -288,7 +369,7 @@ public class ClothPlugin : CLOiSimPlugin
 		var worldExtents = Vector3.Scale(meshBounds.extents, _meshTransform.lossyScale);
 		worldExtents += Vector3.one * _searchMargin; // Search margin
 
-		var overlapping = UnityEngine.Physics.OverlapBox(worldCenter, worldExtents, _meshTransform.rotation);
+		var overlapping = UEPhysics.OverlapBox(worldCenter, worldExtents, _meshTransform.rotation);
 		var colliderTransforms = new List<Transform>();
 
 		foreach (var col in overlapping)
@@ -310,7 +391,9 @@ public class ClothPlugin : CLOiSimPlugin
 
 		if (!newSet.SetEquals(_currentColliderSet))
 		{
+#if UNITY_EDITOR
 			Debug.Log($"ClothPlugin: Colliders updated — {newColliders.Length} scene colliders near cloth");
+#endif
 			_currentColliderSet.Clear();
 			_currentColliderSet.UnionWith(newColliders);
 			_colliderBridge.UpdateSceneColliders(newColliders);
@@ -348,16 +431,15 @@ public class ClothPlugin : CLOiSimPlugin
 
 	private float[] ComputeVertexMasses(SDFormat.Plugin plugin, int vertexCount)
 	{
-		var totalMass = 0f;
 		if (_clothArticulationBody != null)
-			totalMass = _clothArticulationBody.mass;
+			_totalMass = _clothArticulationBody.mass;
 		else if (_clothRigidbody != null)
-			totalMass = _clothRigidbody.mass;
+			_totalMass = _clothRigidbody.mass;
 
-		if (totalMass <= 0f)
-			totalMass = plugin.GetValue<float>("cloth/simulation/mass", 1.0f);
+		if (_totalMass <= 0f)
+			_totalMass = plugin.GetValue<float>("cloth/simulation/mass", 1.0f);
 
-		var perVertexMass = totalMass / vertexCount;
+		var perVertexMass = _totalMass / vertexCount;
 		var masses = new float[vertexCount];
 		for (var i = 0; i < masses.Length; i++) masses[i] = perVertexMass;
 		return masses;
