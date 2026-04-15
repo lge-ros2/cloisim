@@ -164,17 +164,34 @@ public class MicomPlugin : CLOiSimPlugin
 			if (visualHelper.name.Equals(targetVisual))
 			{
 				var meshFilter = visualHelper.GetComponentInChildren<MeshFilter>();
+				var meshRenderer = visualHelper.GetComponentInChildren<MeshRenderer>();
+				if (meshFilter == null || meshFilter.sharedMesh == null || meshRenderer == null)
+				{
+					StartSummary.AppendLine($"Failed to set display - Missing mesh or renderer for visual '{targetVisual}'");
+					continue;
+				}
+
 				var mesh = meshFilter.sharedMesh;
 				var displaySize = mesh.bounds.size;
-				var videoWidth = (int)(displaySize.x * meshScalingFactor);
-				var videoHeight = (int)(displaySize.z * meshScalingFactor);
+				var videoWidth = Mathf.RoundToInt(displaySize.x * meshScalingFactor);
+				var videoHeight = Mathf.RoundToInt(displaySize.z * meshScalingFactor);
+				if (videoWidth <= 0 || videoHeight <= 0)
+				{
+					StartSummary.AppendLine($"Failed to set display - Invalid display size for visual '{targetVisual}'");
+					continue;
+				}
 
 				var renderTexture = new RenderTexture(videoWidth, videoHeight, 0);
 				renderTexture.name = "VideoTexture";
 				renderTexture.hideFlags = HideFlags.DontUnloadUnusedAsset;
 
-				var meshRenderer = visualHelper.GetComponentInChildren<MeshRenderer>();
 				var shader = Shader.Find("Custom/Unlit/VideoTexture");
+				if (shader == null)
+				{
+					StartSummary.AppendLine("Failed to set display - Shader not found: Custom/Unlit/VideoTexture");
+					return;
+				}
+
 				meshRenderer.material = new Material(shader);
 				meshRenderer.material.hideFlags = HideFlags.DontUnloadUnusedAsset;
 				meshRenderer.sharedMaterial.SetTexture("_MainTex", renderTexture);

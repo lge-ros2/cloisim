@@ -72,6 +72,11 @@ namespace SDFormat
 					{
 						var targetParent = meshFilterList[0].transform.parent;
 						var mergedMesh = meshFilterList.MergeMeshes();
+						if (mergedMesh == null)
+						{
+							Debug.LogWarning("Skip optimize -> no valid meshes under " + target.name);
+							continue;
+						}
 
 						var newName = meshFilterSet.Key.Replace("(Instance)", "(Combined Mesh)").Trim();
 						var newVisualGeometryObject = new UE.GameObject(newName);
