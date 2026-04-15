@@ -9,6 +9,9 @@ using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Burst;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace CLOiSim.Cloth
 {
@@ -66,6 +69,16 @@ namespace CLOiSim.Cloth
 		[NonSerialized]
 		public bool Paused = false;
 		public float ParticleRadius = 0.01f;
+
+		[Header("Editor Visualization")]
+		public bool DrawVertices = true;
+		public bool DrawPinnedVertices = true;
+		public bool DrawConstraints = false;
+		public bool DrawVertexLabels = false;
+		public float VertexSize = 0.005f;
+		public Color PinnedVertexColor = Color.red;
+		public Color FreeVertexColor = Color.cyan;
+		public Color ConstraintColor = new Color(0.2f, 1f, 0.2f, 0.5f);
 
 		// Native collections for Burst Jobs
 		private NativeArray<float3> _positions;
@@ -373,6 +386,97 @@ namespace CLOiSim.Cloth
 			DisposeIfCreated(ref _meshVertices);
 			DisposeIfCreated(ref _meshTriangles);
 		}
+
+#if UNITY_EDITOR
+		private void OnDrawGizmosSelected()
+		{
+			if (!_isInitialized || !_positions.IsCreated) return;
+
+			if (DrawVertices)
+			{
+				DrawVerticesGizmo();
+			}
+
+			if (DrawConstraints)
+			{
+				DrawConstraintsGizmo();
+			}
+		}
+
+		private void DrawVerticesGizmo()
+		{
+			var oldColor = Gizmos.color;
+
+			for (var i = 0; i < _positions.Length; i++)
+			{
+				var pos = (Vector3)_positions[i];
+				bool isPinned = _inverseMasses[i] == 0f;
+
+				// Draw pinned and free vertices based on settings
+				if (isPinned && DrawPinnedVertices)
+				{
+					Gizmos.color = PinnedVertexColor;
+					DrawVertex(pos);
+
+					if (DrawVertexLabels)
+					{
+						Handles.Label(pos + Vector3.up * VertexSize * 2, $"P{i}");
+					}
+				}
+				else if (!isPinned)
+				{
+					Gizmos.color = FreeVertexColor;
+					DrawVertex(pos);
+
+					if (DrawVertexLabels)
+					{
+						Handles.Label(pos + Vector3.up * VertexSize * 2, $"{i}");
+					}
+				}
+			}
+
+			Gizmos.color = oldColor;
+		}
+
+		private void DrawVertex(Vector3 position)
+		{
+			// Draw a small filled sphere for each vertex
+			Gizmos.DrawSphere(position, VertexSize);
+		}
+
+		private void DrawConstraintsGizmo()
+		{
+			var oldColor = Gizmos.color;
+			Gizmos.color = ConstraintColor;
+
+			// Draw distance constraints
+			if (_constraints.IsCreated)
+			{
+				for (var i = 0; i < _constraints.Length; i++)
+				{
+					var constraint = _constraints[i];
+					var posA = (Vector3)_positions[constraint.IndexA];
+					var posB = (Vector3)_positions[constraint.IndexB];
+					Gizmos.DrawLine(posA, posB);
+				}
+			}
+
+			// Draw bending constraints with different color
+			if (_bendingConstraints.IsCreated && _bendingConstraints.Length > 0)
+			{
+				Gizmos.color = new Color(ConstraintColor.r, ConstraintColor.g * 0.5f, ConstraintColor.b, ConstraintColor.a);
+				for (var i = 0; i < _bendingConstraints.Length; i++)
+				{
+					var constraint = _bendingConstraints[i];
+					var posA = (Vector3)_positions[constraint.IndexA];
+					var posB = (Vector3)_positions[constraint.IndexB];
+					Gizmos.DrawLine(posA, posB);
+				}
+			}
+
+			Gizmos.color = oldColor;
+		}
+#endif
 
 		private static void DisposeIfCreated<T>(ref NativeArray<T> array) where T : struct
 		{
