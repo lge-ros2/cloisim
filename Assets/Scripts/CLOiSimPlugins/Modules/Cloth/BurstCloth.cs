@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+using System;
 using UnityEngine;
 using Unity.Mathematics;
 using Unity.Collections;
@@ -38,6 +39,14 @@ namespace CLOiSim.Cloth
         public float Stiffness;
     }
 
+    public struct BendingConstraint
+    {
+        public int IndexA;  // opposite vertex of triangle 1
+        public int IndexB;  // opposite vertex of triangle 2
+        public float RestLength;  // rest distance between the two opposite vertices
+        public float Stiffness;
+    }
+
     /// <summary>
     /// High-performance cloth simulator utilizing Position-Based Dynamics (PBD) and Burst.
     /// </summary>
@@ -45,9 +54,18 @@ namespace CLOiSim.Cloth
     {
         [Header("Simulation Settings")]
         public int SolverIterations = 5;
+        public int SubSteps = 4;
         public float3 Gravity = new float3(0, -9.81f, 0);
         public float Damping = 0.98f;
-        public float ParticleRadius = 0.005f;
+        public float Friction = 0.5f;
+        public float SleepThreshold = 0.001f;
+
+        /// <summary>
+        /// When true, the simulation is paused (e.g. during gizmo manipulation).
+        /// </summary>
+        [NonSerialized]
+        public bool Paused = false;
+        public float ParticleRadius = 0.01f;
 
         // Native collections for Burst Jobs
         private NativeArray<float3> _positions;
@@ -55,17 +73,22 @@ namespace CLOiSim.Cloth
         private NativeArray<float3> _velocities;
         private NativeArray<float> _inverseMasses;
         private NativeArray<DistanceConstraint> _constraints;
+        private NativeArray<BendingConstraint> _bendingConstraints;
         private NativeArray<ClothCollider> _colliders;
         private NativeArray<float3> _meshVertices;
         private NativeArray<int> _meshTriangles;
         private NativeArray<float3> _initialPositions;
+        private NativeArray<float3> _preCollisionPositions;
 
         private JobHandle _clothJobHandle;
         private bool _isInitialized = false;
         private int _colliderCount = 0;
+        private bool _isSleeping = false;
+        private int _sleepCounter = 0;
+        private const int SleepFramesRequired = 10;
 
         // Call this to setup the cloth topology
-        public void Initialize(float3[] vertices, float[] masses, DistanceConstraint[] structuralConstraints)
+        public void Initialize(float3[] vertices, float[] masses, DistanceConstraint[] structuralConstraints, BendingConstraint[] bendingConstraints = null)
         {
             int count = vertices.Length;
             _positions = new(count, Allocator.Persistent);
@@ -73,7 +96,9 @@ namespace CLOiSim.Cloth
             _velocities = new(count, Allocator.Persistent);
             _inverseMasses = new(count, Allocator.Persistent);
             _initialPositions = new(count, Allocator.Persistent);
+            _preCollisionPositions = new(count, Allocator.Persistent);
             _constraints = new(structuralConstraints.Length, Allocator.Persistent);
+            _bendingConstraints = new(bendingConstraints != null ? bendingConstraints.Length : 0, Allocator.Persistent);
 
             // Allow up to 10 max colliders initially (can be resized dynamically)
             _colliders = new(10, Allocator.Persistent);
@@ -92,6 +117,8 @@ namespace CLOiSim.Cloth
             }
 
             _constraints.CopyFrom(structuralConstraints);
+            if (bendingConstraints != null && bendingConstraints.Length > 0)
+                _bendingConstraints.CopyFrom(bendingConstraints);
             _isInitialized = true;
         }
 
@@ -112,6 +139,8 @@ namespace CLOiSim.Cloth
                 _predictedPositions[i] = _initialPositions[i];
                 _velocities[i] = float3.zero;
             }
+            _isSleeping = false;
+            _sleepCounter = 0;
         }
 
         /// <summary>
@@ -129,7 +158,10 @@ namespace CLOiSim.Cloth
                 _positions[i] += delta;
                 _predictedPositions[i] += delta;
                 _initialPositions[i] += delta;
+                _velocities[i] = float3.zero;
             }
+            _isSleeping = false;
+            _sleepCounter = 0;
         }
 
         public void UpdateColliders(ClothCollider[] currentColliders)
@@ -172,80 +204,167 @@ namespace CLOiSim.Cloth
             if (!_isInitialized) return;
 
             float dt = Time.deltaTime;
-            if (dt <= 0f) return;
+            if (dt <= 0f || _isSleeping || Paused) return;
 
-            // Wait for previous frame jobs just in case an error occurred mid-frame
             _clothJobHandle.Complete();
+            RunSubSteps(dt);
+            UpdateSleepState();
+        }
 
-            // 1. Integrate forces (Gravity)
-            var integrateJob = new IntegrateJob
+        private void RunSubSteps(float dt)
+        {
+            var subSteps = math.max(1, SubSteps);
+            var subDt = dt / subSteps;
+            var subDamping = math.pow(Damping, 1f / subSteps);
+
+            for (var s = 0; s < subSteps; s++)
+            {
+                var handle = ScheduleIntegration(subDt, subDamping);
+                handle = ScheduleConstraintsAndCollisions(handle);
+                handle = ScheduleVelocityUpdate(handle, subDt);
+                handle.Complete();
+            }
+        }
+
+        private JobHandle ScheduleIntegration(float subDt, float subDamping)
+        {
+            var job = new IntegrateJob
             {
                 Positions = _positions,
                 PredictedPositions = _predictedPositions,
                 Velocities = _velocities,
                 InverseMasses = _inverseMasses,
                 Gravity = Gravity,
-                DeltaTime = dt,
-                Damping = Damping
+                DeltaTime = subDt,
+                Damping = subDamping
             };
-            JobHandle integrateHandle = integrateJob.Schedule(_positions.Length, 64);
+            return job.Schedule(_positions.Length, 64);
+        }
 
-            // 2. Solve Distance Constraints & Collisions iteratively
-            JobHandle solverHandle = integrateHandle;
-            for (int i = 0; i < SolverIterations; i++)
+        private JobHandle ScheduleConstraintsAndCollisions(JobHandle handle)
+        {
+            for (var i = 0; i < SolverIterations; i++)
             {
-                var constraintJob = new SolveDistanceConstraintsJob
-                {
-                    PredictedPositions = _predictedPositions,
-                    InverseMasses = _inverseMasses,
-                    Constraints = _constraints
-                };
-                // Note: For extreme performance, constraints should be graph-colored to use IJobParallelFor.
-                // Using IJob (single thread) here prevents race conditions on shared vertices.
-                solverHandle = constraintJob.Schedule(solverHandle);
-
-                var collisionJob = new SolveCollisionsJob
-                {
-                    PredictedPositions = _predictedPositions,
-                    Colliders = _colliders,
-                    ColliderCount = _colliderCount,
-                    MeshVertices = _meshVertices,
-                    MeshTriangles = _meshTriangles,
-                    ParticleRadius = ParticleRadius
-                };
-                solverHandle = collisionJob.Schedule(_positions.Length, 64, solverHandle);
+                handle = ScheduleDistanceConstraints(handle);
+                handle = ScheduleBendingConstraints(handle);
+                handle = ScheduleCollisionAndFriction(handle);
             }
+            return handle;
+        }
 
-            // 3. Update Velocities and Final Positions
-            var updateJob = new UpdateVelocitiesJob
+        private JobHandle ScheduleDistanceConstraints(JobHandle handle)
+        {
+            var job = new SolveDistanceConstraintsJob
+            {
+                PredictedPositions = _predictedPositions,
+                InverseMasses = _inverseMasses,
+                Constraints = _constraints
+            };
+            return job.Schedule(handle);
+        }
+
+        private JobHandle ScheduleBendingConstraints(JobHandle handle)
+        {
+            if (_bendingConstraints.Length <= 0) return handle;
+
+            var job = new SolveBendingConstraintsJob
+            {
+                PredictedPositions = _predictedPositions,
+                InverseMasses = _inverseMasses,
+                Constraints = _bendingConstraints
+            };
+            return job.Schedule(handle);
+        }
+
+        private JobHandle ScheduleCollisionAndFriction(JobHandle handle)
+        {
+            var copyJob = new CopyPositionsJob
+            {
+                Source = _predictedPositions,
+                Destination = _preCollisionPositions
+            };
+            handle = copyJob.Schedule(_positions.Length, 64, handle);
+
+            var collisionJob = new SolveCollisionsJob
+            {
+                PredictedPositions = _predictedPositions,
+                Colliders = _colliders,
+                ColliderCount = _colliderCount,
+                MeshVertices = _meshVertices,
+                MeshTriangles = _meshTriangles,
+                ParticleRadius = ParticleRadius
+            };
+            handle = collisionJob.Schedule(_positions.Length, 64, handle);
+
+            var frictionJob = new ApplyFrictionJob
+            {
+                PredictedPositions = _predictedPositions,
+                PreCollisionPositions = _preCollisionPositions,
+                OriginalPositions = _positions,
+                Friction = Friction
+            };
+            return frictionJob.Schedule(_positions.Length, 64, handle);
+        }
+
+        private JobHandle ScheduleVelocityUpdate(JobHandle handle, float subDt)
+        {
+            var job = new UpdateVelocitiesJob
             {
                 Positions = _positions,
                 PredictedPositions = _predictedPositions,
+                PreCollisionPositions = _preCollisionPositions,
                 Velocities = _velocities,
                 InverseMasses = _inverseMasses,
-                DeltaTime = dt
+                DeltaTime = subDt,
+                SleepThreshold = SleepThreshold
             };
-            _clothJobHandle = updateJob.Schedule(_positions.Length, 64, solverHandle);
+            return job.Schedule(_positions.Length, 64, handle);
+        }
 
-            // Wait for jobs to finish before reading positions
-            // In a fully optimized system, you wait at the *start* of the next frame.
-            _clothJobHandle.Complete();
+        private void UpdateSleepState()
+        {
+            var maxVelSq = 0f;
+            for (var i = 0; i < _velocities.Length; i++)
+            {
+                var vSq = math.lengthsq(_velocities[i]);
+                if (vSq > maxVelSq) maxVelSq = vSq;
+            }
 
-            // TODO: Apply _positions to your Mesh or LineRenderer here.
+            if (maxVelSq < SleepThreshold * SleepThreshold)
+            {
+                _sleepCounter++;
+                if (_sleepCounter >= SleepFramesRequired)
+                {
+                    _isSleeping = true;
+                    for (var i = 0; i < _velocities.Length; i++)
+                        _velocities[i] = float3.zero;
+                }
+            }
+            else
+            {
+                _sleepCounter = 0;
+            }
         }
 
         private void OnDestroy()
         {
             _clothJobHandle.Complete();
-            if (_positions.IsCreated) _positions.Dispose();
-            if (_predictedPositions.IsCreated) _predictedPositions.Dispose();
-            if (_velocities.IsCreated) _velocities.Dispose();
-            if (_inverseMasses.IsCreated) _inverseMasses.Dispose();
-            if (_initialPositions.IsCreated) _initialPositions.Dispose();
-            if (_constraints.IsCreated) _constraints.Dispose();
-            if (_colliders.IsCreated) _colliders.Dispose();
-            if (_meshVertices.IsCreated) _meshVertices.Dispose();
-            if (_meshTriangles.IsCreated) _meshTriangles.Dispose();
+            DisposeIfCreated(ref _positions);
+            DisposeIfCreated(ref _predictedPositions);
+            DisposeIfCreated(ref _preCollisionPositions);
+            DisposeIfCreated(ref _velocities);
+            DisposeIfCreated(ref _inverseMasses);
+            DisposeIfCreated(ref _initialPositions);
+            DisposeIfCreated(ref _constraints);
+            DisposeIfCreated(ref _bendingConstraints);
+            DisposeIfCreated(ref _colliders);
+            DisposeIfCreated(ref _meshVertices);
+            DisposeIfCreated(ref _meshTriangles);
+        }
+
+        private static void DisposeIfCreated<T>(ref NativeArray<T> array) where T : struct
+        {
+            if (array.IsCreated) array.Dispose();
         }
     }
 
@@ -306,6 +425,40 @@ namespace CLOiSim.Cloth
     }
 
     [BurstCompile(CompileSynchronously = true)]
+    public struct SolveBendingConstraintsJob : IJob
+    {
+        public NativeArray<float3> PredictedPositions;
+        [ReadOnly] public NativeArray<float> InverseMasses;
+        [ReadOnly] public NativeArray<BendingConstraint> Constraints;
+
+        public void Execute()
+        {
+            for (int i = 0; i < Constraints.Length; i++)
+            {
+                var c = Constraints[i];
+                float wA = InverseMasses[c.IndexA];
+                float wB = InverseMasses[c.IndexB];
+                float wSum = wA + wB;
+
+                if (wSum == 0f) continue;
+
+                float3 pA = PredictedPositions[c.IndexA];
+                float3 pB = PredictedPositions[c.IndexB];
+
+                float3 delta = pB - pA;
+                float currentLength = math.length(delta);
+                if (currentLength < 1e-4f) continue;
+
+                float error = currentLength - c.RestLength;
+                float3 correction = (delta / currentLength) * (error * c.Stiffness / wSum);
+
+                PredictedPositions[c.IndexA] += correction * wA;
+                PredictedPositions[c.IndexB] -= correction * wB;
+            }
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
     public struct SolveCollisionsJob : IJobParallelFor
     {
         public NativeArray<float3> PredictedPositions;
@@ -318,126 +471,137 @@ namespace CLOiSim.Cloth
         public void Execute(int i)
         {
             float3 p = PredictedPositions[i];
-            float particleRadius = ParticleRadius;
 
             for (int c = 0; c < ColliderCount; c++)
             {
                 var collider = Colliders[c];
 
-                if (collider.Type == ColliderType.Sphere)
+                switch (collider.Type)
                 {
-                    float3 delta = p - collider.Position;
-                    float distSq = math.lengthsq(delta);
-                    float radius = collider.Scale.x + particleRadius;
-
-                    if (distSq < radius * radius && distSq > 1e-6f)
-                    {
-                        float dist = math.sqrt(distSq);
-                        p = collider.Position + (delta / dist) * radius;
-                    }
-                }
-                else if (collider.Type == ColliderType.Box)
-                {
-                    // Transform point to box local space
-                    float3 localP = math.mul(math.inverse(collider.Rotation), p - collider.Position);
-                    float3 extents = collider.Scale + particleRadius; // Half-size + padding
-
-                    // Check if inside the box
-                    if (math.abs(localP.x) < extents.x &&
-                        math.abs(localP.y) < extents.y &&
-                        math.abs(localP.z) < extents.z)
-                    {
-                        // Find closest face to push out
-                        float3 dists = extents - math.abs(localP);
-
-                        if (dists.x < dists.y && dists.x < dists.z)
-                            localP.x = (localP.x >= 0f ? 1f : -1f) * extents.x;
-                        else if (dists.y < dists.z)
-                            localP.y = (localP.y >= 0f ? 1f : -1f) * extents.y;
-                        else
-                            localP.z = (localP.z >= 0f ? 1f : -1f) * extents.z;
-
-                        // Transform back to world space
-                        p = collider.Position + math.mul(collider.Rotation, localP);
-                    }
-                }
-                else if (collider.Type == ColliderType.Capsule)
-                {
-                    // Local Y-axis defines the capsule's height segment
-                    float3 up = math.mul(collider.Rotation, new float3(0f, 1f, 0f));
-                    // Scale.y is the half-height of the cylinder part, Scale.x is the radius
-                    float3 pA = collider.Position + up * collider.Scale.y;
-                    float3 pB = collider.Position - up * collider.Scale.y;
-
-                    float3 ab = pB - pA;
-                    float3 ap = p - pA;
-                    float abSq = math.lengthsq(ab);
-
-                    // Find the closest point on the line segment AB to point P
-                    float t = abSq > 1e-5f ? math.saturate(math.dot(ap, ab) / abSq) : 0f;
-                    float3 closest = pA + t * ab;
-
-                    float3 delta = p - closest;
-                    float distSq = math.lengthsq(delta);
-                    float radius = collider.Scale.x + particleRadius;
-
-                    if (distSq < radius * radius && distSq > 1e-6f)
-                    {
-                        float dist = math.sqrt(distSq);
-                        p = closest + (delta / dist) * radius;
-                    }
-                }
-                else if (collider.Type == ColliderType.Mesh)
-                {
-                    // Transform point to mesh local space
-                    float3 localP = math.mul(math.inverse(collider.Rotation), p - collider.Position);
-                    localP /= collider.Scale;
-
-                    // AABB Early Out check (padding added for cloth particle radius)
-                    float padding = 0.1f;
-                    if (localP.x < collider.BoundsMin.x - padding || localP.x > collider.BoundsMax.x + padding ||
-                        localP.y < collider.BoundsMin.y - padding || localP.y > collider.BoundsMax.y + padding ||
-                        localP.z < collider.BoundsMin.z - padding || localP.z > collider.BoundsMax.z + padding)
-                    {
-                        continue;
-                    }
-
-                    float minDistSq = float.MaxValue;
-                    float3 bestLocalPush = localP;
-                    bool hit = false;
-
-                    for (int t = 0; t < collider.TriCount; t += 3)
-                    {
-                        int triIndex = collider.TriStart + t;
-                        float3 v0 = MeshVertices[MeshTriangles[triIndex]];
-                        float3 v1 = MeshVertices[MeshTriangles[triIndex + 1]];
-                        float3 v2 = MeshVertices[MeshTriangles[triIndex + 2]];
-
-                        float3 closest = ClosestPointOnTriangle(localP, v0, v1, v2);
-                        float distSq = math.lengthsq(localP - closest);
-
-                        if (distSq < minDistSq)
-                        {
-                            minDistSq = distSq;
-                            bestLocalPush = closest;
-                            hit = true;
-                        }
-                    }
-
-                    float localRadius = particleRadius;
-                    if (hit && minDistSq < localRadius * localRadius && minDistSq > 1e-8f)
-                    {
-                        float dist = math.sqrt(minDistSq);
-                        float3 dir = (localP - bestLocalPush) / dist;
-                        localP = bestLocalPush + dir * localRadius;
-
-                        // Transform back to world space
-                        p = collider.Position + math.mul(collider.Rotation, localP * collider.Scale);
-                    }
+                    case ColliderType.Sphere:
+                        p = ResolveSphere(p, collider);
+                        break;
+                    case ColliderType.Box:
+                        p = ResolveBox(p, collider);
+                        break;
+                    case ColliderType.Capsule:
+                        p = ResolveCapsule(p, collider);
+                        break;
+                    case ColliderType.Mesh:
+                        p = ResolveMesh(p, collider);
+                        break;
                 }
             }
 
             PredictedPositions[i] = p;
+        }
+
+        private float3 ResolveSphere(float3 p, in ClothCollider collider)
+        {
+            float3 delta = p - collider.Position;
+            float distSq = math.lengthsq(delta);
+            float radius = collider.Scale.x + ParticleRadius;
+
+            if (distSq < radius * radius && distSq > 1e-6f)
+            {
+                float dist = math.sqrt(distSq);
+                p = collider.Position + (delta / dist) * radius;
+            }
+            return p;
+        }
+
+        private float3 ResolveBox(float3 p, in ClothCollider collider)
+        {
+            float3 localP = math.mul(math.inverse(collider.Rotation), p - collider.Position);
+            float3 extents = collider.Scale + ParticleRadius;
+
+            if (math.abs(localP.x) < extents.x &&
+                math.abs(localP.y) < extents.y &&
+                math.abs(localP.z) < extents.z)
+            {
+                float3 dists = extents - math.abs(localP);
+
+                if (dists.x < dists.y && dists.x < dists.z)
+                    localP.x = (localP.x >= 0f ? 1f : -1f) * extents.x;
+                else if (dists.y < dists.z)
+                    localP.y = (localP.y >= 0f ? 1f : -1f) * extents.y;
+                else
+                    localP.z = (localP.z >= 0f ? 1f : -1f) * extents.z;
+
+                p = collider.Position + math.mul(collider.Rotation, localP);
+            }
+            return p;
+        }
+
+        private float3 ResolveCapsule(float3 p, in ClothCollider collider)
+        {
+            float3 up = math.mul(collider.Rotation, new float3(0f, 1f, 0f));
+            float3 pA = collider.Position + up * collider.Scale.y;
+            float3 pB = collider.Position - up * collider.Scale.y;
+
+            float3 ab = pB - pA;
+            float3 ap = p - pA;
+            float abSq = math.lengthsq(ab);
+
+            float t = abSq > 1e-5f ? math.saturate(math.dot(ap, ab) / abSq) : 0f;
+            float3 closest = pA + t * ab;
+
+            float3 delta = p - closest;
+            float distSq = math.lengthsq(delta);
+            float radius = collider.Scale.x + ParticleRadius;
+
+            if (distSq < radius * radius && distSq > 1e-6f)
+            {
+                float dist = math.sqrt(distSq);
+                p = closest + (delta / dist) * radius;
+            }
+            return p;
+        }
+
+        private float3 ResolveMesh(float3 p, in ClothCollider collider)
+        {
+            float3 localP = math.mul(math.inverse(collider.Rotation), p - collider.Position);
+            localP /= collider.Scale;
+
+            float padding = 0.1f;
+            if (localP.x < collider.BoundsMin.x - padding || localP.x > collider.BoundsMax.x + padding ||
+                localP.y < collider.BoundsMin.y - padding || localP.y > collider.BoundsMax.y + padding ||
+                localP.z < collider.BoundsMin.z - padding || localP.z > collider.BoundsMax.z + padding)
+            {
+                return p;
+            }
+
+            float minDistSq = float.MaxValue;
+            float3 bestLocalPush = localP;
+            bool hit = false;
+
+            for (int t = 0; t < collider.TriCount; t += 3)
+            {
+                int triIndex = collider.TriStart + t;
+                float3 v0 = MeshVertices[MeshTriangles[triIndex]];
+                float3 v1 = MeshVertices[MeshTriangles[triIndex + 1]];
+                float3 v2 = MeshVertices[MeshTriangles[triIndex + 2]];
+
+                float3 closest = ClosestPointOnTriangle(localP, v0, v1, v2);
+                float distSq = math.lengthsq(localP - closest);
+
+                if (distSq < minDistSq)
+                {
+                    minDistSq = distSq;
+                    bestLocalPush = closest;
+                    hit = true;
+                }
+            }
+
+            float localRadius = ParticleRadius;
+            if (hit && minDistSq < localRadius * localRadius && minDistSq > 1e-8f)
+            {
+                float dist = math.sqrt(minDistSq);
+                float3 dir = (localP - bestLocalPush) / dist;
+                localP = bestLocalPush + dir * localRadius;
+                p = collider.Position + math.mul(collider.Rotation, localP * collider.Scale);
+            }
+            return p;
         }
 
         // Math utility: Find closest point on a triangle in 3D space
@@ -470,17 +634,79 @@ namespace CLOiSim.Cloth
     {
         public NativeArray<float3> Positions;
         [ReadOnly] public NativeArray<float3> PredictedPositions;
+        [ReadOnly] public NativeArray<float3> PreCollisionPositions;
         public NativeArray<float3> Velocities;
         [ReadOnly] public NativeArray<float> InverseMasses;
         public float DeltaTime;
+        public float SleepThreshold;
 
         public void Execute(int i)
         {
             if (InverseMasses[i] == 0f) return; // Pinned
 
-            // Compute velocity from the PBD correction
-            Velocities[i] = (PredictedPositions[i] - Positions[i]) / DeltaTime;
+            var vel = (PredictedPositions[i] - Positions[i]) / DeltaTime;
+
+            // If collision happened, remove velocity along the collision push direction (prevents bouncing)
+            var collisionPush = PredictedPositions[i] - PreCollisionPositions[i];
+            if (math.lengthsq(collisionPush) > 1e-8f)
+            {
+                var normal = math.normalize(collisionPush);
+                var normalVel = math.dot(vel, normal);
+                // Only remove outward velocity (away from surface), keep inward to allow settling
+                if (normalVel > 0f)
+                    vel -= normalVel * normal;
+            }
+
+            // Sleep: zero out tiny velocities to let the cloth settle
+            if (math.lengthsq(vel) < SleepThreshold * SleepThreshold)
+                vel = float3.zero;
+
+            Velocities[i] = vel;
             Positions[i] = PredictedPositions[i];
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    public struct CopyPositionsJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<float3> Source;
+        [WriteOnly] public NativeArray<float3> Destination;
+
+        public void Execute(int i)
+        {
+            Destination[i] = Source[i];
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    public struct ApplyFrictionJob : IJobParallelFor
+    {
+        public NativeArray<float3> PredictedPositions;
+        [ReadOnly] public NativeArray<float3> PreCollisionPositions;
+        [ReadOnly] public NativeArray<float3> OriginalPositions;
+        public float Friction;
+
+        public void Execute(int i)
+        {
+            var pre = PreCollisionPositions[i];
+            var post = PredictedPositions[i];
+            var collisionPush = post - pre;
+
+            // No collision happened on this vertex
+            if (math.lengthsq(collisionPush) < 1e-8f) return;
+
+            // Collision normal = direction the collision pushed the vertex out
+            var normal = math.normalize(collisionPush);
+
+            // Total motion this substep: from start-of-substep position to post-collision
+            var totalMotion = post - OriginalPositions[i];
+
+            // Decompose into normal and tangential components
+            var normalMotion = math.dot(totalMotion, normal) * normal;
+            var tangentialMotion = totalMotion - normalMotion;
+
+            // Apply friction: reduce tangential sliding
+            PredictedPositions[i] = OriginalPositions[i] + normalMotion + tangentialMotion * (1f - Friction);
         }
     }
 }
