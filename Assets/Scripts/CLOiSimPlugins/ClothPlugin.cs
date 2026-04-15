@@ -119,16 +119,11 @@ public class ClothPlugin : CLOiSimPlugin
 		collider.size = bounds.size;
 		_clothCollider = collider;
 
-		// Match layer of existing colliders on this model.
-		// During deployment, they are on "Ignore Raycast" so our new collider
-		// won't intercept the placement raycast. UnblockSelfRaycast() in
-		// CompleteDeployment restores all colliders to "Default" afterwards.
 		var rootModel = _linkTransform.GetComponentInParent<SDFormat.Helper.Model>();
-		var existingCollider = rootModel != null
-			? rootModel.GetComponentInChildren<Collider>()
-			: null;
-		if (existingCollider != null && existingCollider != collider)
-			collider.gameObject.layer = existingCollider.gameObject.layer;
+		if (rootModel != null &&!rootModel.hasRootArticulationBody)
+		{
+			rootModel.gameObject.layer = LayerMask.NameToLayer("Cloth");
+		}
 
 		return true;
 	}

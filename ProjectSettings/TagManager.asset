@@ -23,7 +23,7 @@ TagManager:
   - Water
   - UI
   - Visualization
-  - 
+  - Cloth
   - 
   - 
   - 
@@ -55,3 +55,4 @@ TagManager:
   m_RenderingLayers:
   - Default
   - Plane
+  m_MigratedRenderPipelines: []
