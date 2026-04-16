@@ -25,7 +25,7 @@ namespace SDFormat
 		/// - "a/b[@attr='value']" selects a child whose attribute matches
 		/// - "a/b[@name='left']" selects a child whose 'name' attribute matches
 		/// </summary>
-		public static SDFormat.Element FindElementByPath(SDFormat.Element root, string path)
+		public static SDFormat.Element FindElementByPath(this SDFormat.Element root, string path)
 		{
 			if (root == null || string.IsNullOrEmpty(path))
 				return null;
@@ -56,7 +56,7 @@ namespace SDFormat
 		/// <summary>
 		/// Find all elements matching a slash-separated path (last segment may match multiple).
 		/// </summary>
-		public static List<SDFormat.Element> FindAllElementsByPath(SDFormat.Element root, string path)
+		public static List<SDFormat.Element> FindAllElementsByPath(this SDFormat.Element root, string path)
 		{
 			var result = new List<SDFormat.Element>();
 			if (root == null || string.IsNullOrEmpty(path))
@@ -133,6 +133,21 @@ namespace SDFormat
 
 		private static SDFormat.Element FindWithPredicate(SDFormat.Element parent, string childName, string predicate)
 		{
+			// Handle positional predicate [N]
+			var posMatch = Regex.Match(predicate, @"^\[(\d+)\]$");
+			if (posMatch.Success)
+			{
+				var targetPos = int.Parse(posMatch.Groups[1].Value);
+				var pos = 0;
+				foreach (var child in parent.Children)
+				{
+					if (child.Name != childName) continue;
+					pos++;
+					if (pos == targetPos) return child;
+				}
+				return null;
+			}
+
 			foreach (var child in parent.Children)
 			{
 				if (child.Name != childName)

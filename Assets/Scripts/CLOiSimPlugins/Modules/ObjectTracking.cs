@@ -162,12 +162,28 @@ public sealed class ObjectTracking
 			var meshFilters = _rootTransform.GetComponentsInChildren<MeshFilter>();
 			if (meshFilters != null && _rootTransform.CompareTag("Model"))
 			{
+				var validMeshFilters = new List<MeshFilter>(meshFilters.Length);
+				for (var i = 0; i < meshFilters.Length; i++)
+				{
+					var meshFilter = meshFilters[i];
+					if (meshFilter == null || meshFilter.sharedMesh == null || meshFilter.sharedMesh.vertexCount == 0)
+						continue;
+
+					validMeshFilters.Add(meshFilter);
+				}
+
+				if (validMeshFilters.Count == 0)
+				{
+					_size = Vector3.zero;
+					return;
+				}
+
 				var initialRotation = _rootTransform.transform.rotation;
-				var combine = new CombineInstance[meshFilters.Length];
+				var combine = new CombineInstance[validMeshFilters.Count];
 				for (var i = 0; i < combine.Length; i++)
 				{
-					combine[i].mesh = meshFilters[i].sharedMesh;
-					combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
+					combine[i].mesh = validMeshFilters[i].sharedMesh;
+					combine[i].transform = validMeshFilters[i].transform.localToWorldMatrix;
 				}
 
 				var combinedMesh = new Mesh();

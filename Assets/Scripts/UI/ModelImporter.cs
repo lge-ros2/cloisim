@@ -184,18 +184,20 @@ public class ModelImporter : MonoBehaviour
 						| LayerMask.GetMask("TransparentFX")
 						| LayerMask.GetMask("UI")
 						| LayerMask.GetMask("Water"));
-		if (Physics.Raycast(ray, out var hitInfo, _maxRayDistance, layerMask))
+		var hits = Physics.RaycastAll(ray, _maxRayDistance, layerMask);
+		System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+		foreach (var hit in hits)
 		{
-			point = hitInfo.point;
-			normal = hitInfo.normal;
-			// Debug.Log(point + ", " + normal);
+			if (_targetObject != null && hit.transform.IsChildOf(_targetObject))
+				continue;
+
+			point = hit.point;
+			normal = hit.normal;
 			return true;
 		}
-		else
-		{
-			point = Vector3.negativeInfinity;
-			normal = Vector3.negativeInfinity;
-		}
+
+		point = Vector3.negativeInfinity;
+		normal = Vector3.negativeInfinity;
 		return false;
 	}
 

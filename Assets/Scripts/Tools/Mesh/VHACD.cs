@@ -9,6 +9,7 @@ using UnityEngine;
 public partial class VHACD
 {
 	private static readonly int NumOfLimitConvexMeshTriangles = 255;
+	private static readonly float DegenerateThreshold = 1e-4f;
 
 	public static MeshProcess.VHACD.Parameters Params = new MeshProcess.VHACD.Parameters()
 	{
@@ -34,18 +35,34 @@ public partial class VHACD
 
 		foreach (var meshFilter in meshFilters)
 		{
+			var mesh = meshFilter.sharedMesh;
+
+			// Skip degenerate/planar meshes that would crash VHACD voxelization
+			var bounds = mesh.bounds;
+			var size = bounds.size;
+			if (size.x < DegenerateThreshold || size.y < DegenerateThreshold || size.z < DegenerateThreshold)
+			{
+				Debug.LogWarning($"Skip VHACD({meshFilter.name}): degenerate bounds {size}, using simple MeshCollider");
+				var meshCollider = meshFilter.gameObject.AddComponent<MeshCollider>();
+				meshCollider.sharedMesh = mesh;
+				meshCollider.convex = false;
+				meshCollider.cookingOptions = SDFormat.Implement.Collision.CookingOptions;
+				meshCollider.hideFlags |= HideFlags.NotEditable;
+				continue;
+			}
+
 			// Just skip if the number of vertices in the mesh is less than the limit of convex mesh triangles
-			if (meshFilter.sharedMesh.vertexCount >= NumOfLimitConvexMeshTriangles)
+			if (mesh.vertexCount >= NumOfLimitConvexMeshTriangles)
 			{
 #if UNITY_EDITOR
 #if ENABLE_MERGE_COLLIDER
-				Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{meshFilter.sharedMesh.name}) -> {meshFilter.sharedMesh.vertexCount}, EnableMergeCollider will be ignored.");
+				Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{mesh.name}) -> {mesh.vertexCount}, EnableMergeCollider will be ignored.");
 #else
-				Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{meshFilter.sharedMesh.name}) -> {meshFilter.sharedMesh.vertexCount}");
+				Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{mesh.name}) -> {mesh.vertexCount}");
 #endif
 #endif
 
-				var colliderMeshes = decomposer.GenerateConvexMeshes(meshFilter.sharedMesh);
+				var colliderMeshes = decomposer.GenerateConvexMeshes(mesh);
 
 				for (var index = 0; index < colliderMeshes.Count; index++)
 				{
@@ -63,7 +80,7 @@ public partial class VHACD
 			else
 			{
 				var meshCollider = meshFilter.gameObject.AddComponent<MeshCollider>();
-				meshCollider.sharedMesh = meshFilter.sharedMesh;
+				meshCollider.sharedMesh = mesh;
 				meshCollider.convex = false;
 				meshCollider.cookingOptions = SDFormat.Implement.Collision.CookingOptions;
 				meshCollider.hideFlags |= HideFlags.NotEditable;
