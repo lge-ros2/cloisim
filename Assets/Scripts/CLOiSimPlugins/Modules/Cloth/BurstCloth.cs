@@ -63,6 +63,7 @@ namespace CLOiSim.Cloth
 		public float Damping = 0.98f;
 		public float Friction = 0.5f;
 		public float SleepThreshold = 0.001f;
+		public float VelocityDecay = 10f;
 
 		/// <summary>
 		/// When true, the simulation is paused (e.g. during gizmo manipulation).
@@ -319,8 +320,33 @@ namespace CLOiSim.Cloth
 				_colliders = new NativeArray<ClothCollider>(currentColliders.Length, Allocator.Persistent);
 			}
 
+			// Wake cloth if any collider moved since last update
+			if (_isSleeping && HasCollidersChanged(currentColliders))
+			{
+				_isSleeping = false;
+				_sleepCounter = 0;
+			}
+
 			NativeArray<ClothCollider>.Copy(currentColliders, _colliders, currentColliders.Length);
 			_colliderCount = currentColliders.Length;
+		}
+
+		private bool HasCollidersChanged(ClothCollider[] newColliders)
+		{
+			if (newColliders.Length != _colliderCount) return true;
+
+			for (var i = 0; i < _colliderCount; i++)
+			{
+				var prev = _colliders[i];
+				var curr = newColliders[i];
+				if (math.lengthsq(prev.Position - curr.Position) > 1e-6f ||
+					math.lengthsq(prev.Scale - curr.Scale) > 1e-6f ||
+					!prev.Rotation.Equals(curr.Rotation))
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 
 		public void SetMeshData(float3[] vertices, int[] triangles)
@@ -360,16 +386,17 @@ namespace CLOiSim.Cloth
 			var subDt = dt / subSteps;
 			var subDamping = math.pow(Damping, 1f / subSteps);
 
+			var handle = default(JobHandle);
 			for (var s = 0; s < subSteps; s++)
 			{
-				var handle = ScheduleIntegration(subDt, subDamping);
+				handle = ScheduleIntegration(subDt, subDamping, handle);
 				handle = ScheduleConstraintsAndCollisions(handle);
 				handle = ScheduleVelocityUpdate(handle, subDt);
-				handle.Complete();
 			}
+			handle.Complete();
 		}
 
-		private JobHandle ScheduleIntegration(float subDt, float subDamping)
+		private JobHandle ScheduleIntegration(float subDt, float subDamping, JobHandle dependency)
 		{
 			var job = new IntegrateJob
 			{
@@ -381,7 +408,7 @@ namespace CLOiSim.Cloth
 				DeltaTime = subDt,
 				Damping = subDamping
 			};
-			return job.Schedule(_positions.Length, 64);
+			return job.Schedule(_positions.Length, 64, dependency);
 		}
 
 		private JobHandle ScheduleConstraintsAndCollisions(JobHandle handle)
@@ -389,9 +416,11 @@ namespace CLOiSim.Cloth
 			for (var i = 0; i < SolverIterations; i++)
 			{
 				handle = ScheduleDistanceConstraints(handle);
-				handle = ScheduleBendingConstraints(handle);
-				handle = ScheduleCollisionAndFriction(handle);
+				if (i == 0)
+					handle = ScheduleBendingConstraints(handle);
 			}
+			// Collision only once after all constraint iterations
+			handle = ScheduleCollisionAndFriction(handle);
 			return handle;
 		}
 
@@ -459,7 +488,7 @@ namespace CLOiSim.Cloth
 				Velocities = _velocities,
 				InverseMasses = _inverseMasses,
 				DeltaTime = subDt,
-				SleepThreshold = SleepThreshold
+				VelocityDecay = VelocityDecay
 			};
 			return job.Schedule(_positions.Length, 64, handle);
 		}
@@ -925,7 +954,7 @@ namespace CLOiSim.Cloth
 		public NativeArray<float3> Velocities;
 		[ReadOnly] public NativeArray<float> InverseMasses;
 		public float DeltaTime;
-		public float SleepThreshold;
+		public float VelocityDecay;
 
 		public void Execute(int i)
 		{
@@ -940,14 +969,13 @@ namespace CLOiSim.Cloth
 			{
 				var normal = math.normalize(collisionPush);
 				var normalVel = math.dot(vel, normal);
-				// Only remove outward velocity (away from surface), keep inward to allow settling
 				if (normalVel > 0f)
 					vel -= normalVel * normal;
 			}
 
-			// Sleep: zero out tiny velocities to let the cloth settle
-			if (math.lengthsq(vel) < SleepThreshold * SleepThreshold)
-				vel = float3.zero;
+			// Exponential velocity decay — damps jitter without killing gravity
+			// At 60fps with 5 substeps: factor ≈ 0.97 per substep, 0.86 per frame
+			vel *= math.exp(-VelocityDecay * DeltaTime);
 
 			Velocities[i] = vel;
 			Positions[i] = PredictedPositions[i];
