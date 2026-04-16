@@ -64,6 +64,22 @@ namespace CLOiSim.Cloth
 		/// <summary>Deactivates the grabber and releases any grabbed vertex. Call when gripper opens.</summary>
 		public void Deactivate() => IsActive = false;
 
+		/// <summary>
+		/// Returns true if any cloth has a free vertex within <paramref name="distance"/> of the grab collider center.
+		/// Does NOT grab — use for proximity queries only.
+		/// </summary>
+		public bool HasClothWithinDistance(float distance)
+		{
+			if (_grabCollider == null) return false;
+			var center = (float3)_grabCollider.bounds.center;
+			foreach (var cloth in BurstCloth.Instances)
+			{
+				if (cloth.FindNearestVertex(center, distance) >= 0)
+					return true;
+			}
+			return false;
+		}
+
 		/// <summary>Releases the currently grabbed vertex without deactivating.</summary>
 		public void Release()
 		{
