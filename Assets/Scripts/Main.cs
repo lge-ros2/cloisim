@@ -452,10 +452,11 @@ public class Main : MonoBehaviour
 
 	public IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
-		_uiController?.SetInfoMessage($"Model({modelFileName}) is now loading....");
-
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
+			_uiController?.SetInfoMessage($"Model '{model.Name}' is now loading....");
+			yield return null;
+			
 			_bridgeManager.ClearAllocatedHistory();
 
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
@@ -487,7 +488,7 @@ public class Main : MonoBehaviour
 			yield return new WaitUntil(() => _pluginAllStarted);
 			_bridgeManager.PrintAllocatedHistory();
 
-			var message = $"Model({modelFileName}) is loaded > {model.Name}";
+			var message = $"Model '{model.Name}' is successfully loaded.";
 			Debug.Log(message);
 			_uiController?.SetInfoMessage(message);
 		}
@@ -496,7 +497,7 @@ public class Main : MonoBehaviour
 	private IEnumerator LoadWorld()
 	{
 		Debug.Log("Target World: " + _worldFilename);
-		_uiController?.SetInfoMessage($"World({_worldFilename}) is now loading....");
+		_uiController?.SetInfoMessage($"World '{_worldFilename}' is now loading....");
 
 		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
 		{
@@ -531,7 +532,7 @@ public class Main : MonoBehaviour
 
 			TrackModel();
 
-			var message = $"World({_worldFilename}) is loaded";
+			var message = $"World '{_worldFilename}' is loaded";
 			Debug.Log(message);
 			_uiController?.SetInfoMessage(message);
 		}
