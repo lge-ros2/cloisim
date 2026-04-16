@@ -77,10 +77,10 @@ namespace CLOiSim.Cloth
 		public bool DrawPinnedVertices = true;
 		public bool DrawConstraints = false;
 		public bool DrawVertexLabels = false;
-		public float VertexSize = 0.005f;
+		public float VertexSize = 0.006f;
 		public Color PinnedVertexColor = Color.red;
 		public Color FreeVertexColor = Color.cyan;
-		public Color GrabbedVertexColor = Color.yellow;
+		public Color GrabbedVertexColor = Color.blue;
 		public Color ConstraintColor = new Color(0.2f, 1f, 0.2f, 0.5f);
 
 		// Native collections for Burst Jobs
@@ -99,6 +99,10 @@ namespace CLOiSim.Cloth
 
 		private JobHandle _clothJobHandle;
 		private bool _isInitialized = false;
+
+		public bool IsInitialized => _isInitialized;
+		public int VertexCount => _isInitialized ? _positions.Length : 0;
+		public bool IsVertexPinned(int index) => _isInitialized && index >= 0 && index < _inverseMasses.Length && _originalInverseMasses[index] == 0f;
 		private int _colliderCount = 0;
 		private bool _isSleeping = false;
 		private int _sleepCounter = 0;
