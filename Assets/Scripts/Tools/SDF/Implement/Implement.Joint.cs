@@ -81,44 +81,35 @@ namespace SDFormat
 				body.jointFriction = (float)axis.Friction;
 				body.maxJointVelocity = (float)axis.MaxVelocity;
 
-				var jointAxis = axis.Xyz.ToUnity();
+				var jointAxis = axis.Xyz.ToUnity().normalized;
 
-				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
+				var absX = UE.Mathf.Abs(jointAxis.x);
+				var absY = UE.Mathf.Abs(jointAxis.y);
+				var absZ = UE.Mathf.Abs(jointAxis.z);
+
+				if (absX >= absY && absX >= absZ)
 				{
-					if (jointAxis.Equals(UE.Vector3.left))
-					{
-						body.ReverseAxis(UE.Vector3.forward);
-					}
+					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.right, jointAxis);
 					body.xDrive = drive;
 					body.twistLock = (axis.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.swingYLock = UE.ArticulationDofLock.LockedMotion;
 					body.swingZLock = UE.ArticulationDofLock.LockedMotion;
 				}
-				else if (jointAxis.Equals(UE.Vector3.up) || jointAxis.Equals(UE.Vector3.down))
+				else if (absY >= absX && absY >= absZ)
 				{
-					if (jointAxis.Equals(UE.Vector3.down))
-					{
-						body.ReverseAxis(UE.Vector3.right);
-					}
+					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.up, jointAxis);
 					body.yDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
 					body.swingYLock = (axis.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.swingZLock = UE.ArticulationDofLock.LockedMotion;
 				}
-				else if (jointAxis.Equals(UE.Vector3.forward) || jointAxis.Equals(UE.Vector3.back))
+				else
 				{
-					if (jointAxis.Equals(UE.Vector3.back))
-					{
-						body.ReverseAxis(UE.Vector3.up);
-					}
+					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.forward, jointAxis);
 					body.zDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
 					body.swingYLock = UE.ArticulationDofLock.LockedMotion;
 					body.swingZLock = (axis.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
-				}
-				else
-				{
-					UE.Debug.LogWarning("MakeRevoluteJoint - Wrong axis, " + body.transform.parent.name + "::" + body.name + " = " + jointAxis);
 				}
 			}
 
@@ -140,38 +131,29 @@ namespace SDFormat
 				body.jointFriction = UE.Mathf.Min(body.jointFriction, axis2JointFriction);
 				body.maxJointVelocity = UE.Mathf.Min(body.maxJointVelocity, (float)axis2.MaxVelocity);
 
-				var joint2Axis = axis2.Xyz.ToUnity();
+				var joint2Axis = axis2.Xyz.ToUnity().normalized;
 
-				if (joint2Axis.Equals(UE.Vector3.right) || joint2Axis.Equals(UE.Vector3.left))
+				var abs2X = UE.Mathf.Abs(joint2Axis.x);
+				var abs2Y = UE.Mathf.Abs(joint2Axis.y);
+				var abs2Z = UE.Mathf.Abs(joint2Axis.z);
+
+				if (abs2X >= abs2Y && abs2X >= abs2Z)
 				{
-					if (joint2Axis.Equals(UE.Vector3.left))
-					{
-						body.ReverseAxis(UE.Vector3.forward);
-					}
+					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.right, joint2Axis);
 					body.xDrive = drive;
 					body.twistLock = (axis2.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
-				else if (joint2Axis.Equals(UE.Vector3.up) || joint2Axis.Equals(UE.Vector3.down))
+				else if (abs2Y >= abs2X && abs2Y >= abs2Z)
 				{
-					if (joint2Axis.Equals(UE.Vector3.down))
-					{
-						body.ReverseAxis(UE.Vector3.right);
-					}
+					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.up, joint2Axis);
 					body.yDrive = drive;
 					body.swingYLock = (axis2.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
-				else if (joint2Axis.Equals(UE.Vector3.forward) || joint2Axis.Equals(UE.Vector3.back))
-				{
-					if (joint2Axis.Equals(UE.Vector3.back))
-					{
-						body.ReverseAxis(UE.Vector3.up);
-					}
-					body.zDrive = drive;
-					body.swingZLock = (axis2.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
-				}
 				else
 				{
-					UE.Debug.LogWarning("MakeRevoluteJoint2 - Wrong axis2, " + body.transform.parent.name + "::" + body.name + " = " + joint2Axis);
+					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.forward, joint2Axis);
+					body.zDrive = drive;
+					body.swingZLock = (axis2.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 			}
 
@@ -242,47 +224,38 @@ namespace SDFormat
 				drive.damping = (float)axis.Damping;
 				body.jointFriction = (float)axis.Friction;
 
-				var jointAxis = axis.Xyz.ToUnity();
+				var jointAxis = axis.Xyz.ToUnity().normalized;
 
-				if (jointAxis.Equals(UE.Vector3.right) || jointAxis.Equals(UE.Vector3.left))
+				var absX = UE.Mathf.Abs(jointAxis.x);
+				var absY = UE.Mathf.Abs(jointAxis.y);
+				var absZ = UE.Mathf.Abs(jointAxis.z);
+
+				if (absX >= absY && absX >= absZ)
 				{
-					if (jointAxis.Equals(UE.Vector3.left))
-					{
-						body.ReverseAxis(UE.Vector3.forward);
-					}
+					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.right, jointAxis);
 
 					body.xDrive = drive;
 					body.linearLockX = (axis.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.linearLockY = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockZ = UE.ArticulationDofLock.LockedMotion;
 				}
-				else if (jointAxis.Equals(UE.Vector3.up) || jointAxis.Equals(UE.Vector3.down))
+				else if (absY >= absX && absY >= absZ)
 				{
-					if (jointAxis.Equals(UE.Vector3.down))
-					{
-						body.ReverseAxis(UE.Vector3.right);
-					}
+					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.up, jointAxis);
 
 					body.yDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockY = (axis.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.linearLockZ = UE.ArticulationDofLock.LockedMotion;
 				}
-				else if (jointAxis.Equals(UE.Vector3.forward) || jointAxis.Equals(UE.Vector3.back))
+				else
 				{
-					if (jointAxis.Equals(UE.Vector3.back))
-					{
-						body.ReverseAxis(UE.Vector3.up);
-					}
+					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.forward, jointAxis);
 
 					body.zDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockY = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockZ = (axis.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
-				}
-				else
-				{
-					UE.Debug.LogWarning("MakePrismaticJoint - Wrong axis, " + body.transform.parent.name + "::" + body.name + " = " + jointAxis);
 				}
 			}
 
@@ -323,11 +296,6 @@ namespace SDFormat
 						UE.Debug.LogWarningFormat("Check Joint type[{0}]", joint.Type);
 						break;
 				}
-			}
-
-			private static void ReverseAxis(this UE.ArticulationBody body, in UE.Vector3 euler)
-			{
-				body.anchorRotation *= UE.Quaternion.Euler(euler * 180f);
 			}
 
 			private static void SetRevoluteDriveLimit(this ref UE.ArticulationDrive drive, in SDFormat.JointAxis axis)
