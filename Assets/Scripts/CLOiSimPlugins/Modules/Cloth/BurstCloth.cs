@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Mathematics;
 using Unity.Collections;
@@ -17,7 +18,7 @@ namespace CLOiSim.Cloth
 {
 	public enum ColliderType
 	{
-		Sphere, Box, Capsule, Mesh
+		Sphere, Box, Capsule, Mesh, Plane
 	}
 
 	public struct ClothCollider
@@ -78,6 +79,7 @@ namespace CLOiSim.Cloth
 		public float VertexSize = 0.005f;
 		public Color PinnedVertexColor = Color.red;
 		public Color FreeVertexColor = Color.cyan;
+		public Color GrabbedVertexColor = Color.yellow;
 		public Color ConstraintColor = new Color(0.2f, 1f, 0.2f, 0.5f);
 
 		// Native collections for Burst Jobs
@@ -92,6 +94,7 @@ namespace CLOiSim.Cloth
 		private NativeArray<int> _meshTriangles;
 		private NativeArray<float3> _initialPositions;
 		private NativeArray<float3> _preCollisionPositions;
+		private NativeArray<float> _originalInverseMasses;
 
 		private JobHandle _clothJobHandle;
 		private bool _isInitialized = false;
@@ -99,6 +102,14 @@ namespace CLOiSim.Cloth
 		private bool _isSleeping = false;
 		private int _sleepCounter = 0;
 		private const int SleepFramesRequired = 10;
+
+		// Grab system
+		private readonly HashSet<int> _grabbedVertices = new();
+		private static readonly List<BurstCloth> _instances = new();
+		public static IReadOnlyList<BurstCloth> Instances => _instances;
+
+		private void OnEnable() => _instances.Add(this);
+		private void OnDisable() => _instances.Remove(this);
 
 		// Call this to setup the cloth topology
 		public void Initialize(float3[] vertices, float[] masses, DistanceConstraint[] structuralConstraints, BendingConstraint[] bendingConstraints = null)
@@ -129,6 +140,9 @@ namespace CLOiSim.Cloth
 				_inverseMasses[i] = masses[i] > 0f ? 1f / masses[i] : 0f; // 0 inverse mass = pinned/kinematic
 			}
 
+			_originalInverseMasses = new(count, Allocator.Persistent);
+			NativeArray<float>.Copy(_inverseMasses, _originalInverseMasses);
+
 			_constraints.CopyFrom(structuralConstraints);
 			if (bendingConstraints != null && bendingConstraints.Length > 0)
 				_bendingConstraints.CopyFrom(bendingConstraints);
@@ -145,6 +159,7 @@ namespace CLOiSim.Cloth
 			if (!_isInitialized) return;
 
 			_clothJobHandle.Complete();
+			ReleaseAllGrabs();
 
 			for (var i = 0; i < _positions.Length; i++)
 			{
@@ -176,6 +191,109 @@ namespace CLOiSim.Cloth
 			_isSleeping = false;
 			_sleepCounter = 0;
 		}
+
+		#region Grab API
+
+		/// <summary>
+		/// Finds the nearest non-grabbed, non-pinned vertex within maxRadius.
+		/// Returns -1 if none found.
+		/// </summary>
+		public int FindNearestVertex(float3 worldPosition, float maxRadius)
+		{
+			if (!_isInitialized) return -1;
+
+			_clothJobHandle.Complete();
+
+			var bestIndex = -1;
+			var bestDistSq = maxRadius * maxRadius;
+			for (var i = 0; i < _positions.Length; i++)
+			{
+				// Skip already-grabbed or originally-pinned vertices
+				if (_grabbedVertices.Contains(i)) continue;
+				if (_originalInverseMasses[i] == 0f) continue;
+
+				var distSq = math.lengthsq(_positions[i] - worldPosition);
+				if (distSq < bestDistSq)
+				{
+					bestDistSq = distSq;
+					bestIndex = i;
+				}
+			}
+			return bestIndex;
+		}
+
+		/// <summary>
+		/// Grabs a vertex: pins it to the given world position.
+		/// Returns false if the vertex is already grabbed or originally pinned.
+		/// </summary>
+		public bool GrabVertex(int index, float3 position)
+		{
+			if (!_isInitialized || index < 0 || index >= _positions.Length) return false;
+			if (_originalInverseMasses[index] == 0f) return false; // originally pinned
+
+			_clothJobHandle.Complete();
+
+			_grabbedVertices.Add(index);
+			_inverseMasses[index] = 0f;
+			_positions[index] = position;
+			_predictedPositions[index] = position;
+			_velocities[index] = float3.zero;
+			_isSleeping = false;
+			_sleepCounter = 0;
+			return true;
+		}
+
+		/// <summary>
+		/// Updates the world position of an already-grabbed vertex.
+		/// </summary>
+		public void UpdateGrabPosition(int index, float3 position)
+		{
+			if (!_isInitialized || index < 0 || index >= _positions.Length) return;
+			if (!_grabbedVertices.Contains(index)) return;
+
+			_clothJobHandle.Complete();
+
+			_positions[index] = position;
+			_predictedPositions[index] = position;
+			_velocities[index] = float3.zero;
+			_isSleeping = false;
+			_sleepCounter = 0;
+		}
+
+		/// <summary>
+		/// Releases a grabbed vertex, restoring its original mass.
+		/// </summary>
+		public void ReleaseVertex(int index)
+		{
+			if (!_isInitialized || index < 0 || index >= _positions.Length) return;
+			if (!_grabbedVertices.Remove(index)) return;
+
+			_clothJobHandle.Complete();
+
+			_inverseMasses[index] = _originalInverseMasses[index];
+			_isSleeping = false;
+			_sleepCounter = 0;
+		}
+
+		/// <summary>
+		/// Releases all grabbed vertices.
+		/// </summary>
+		public void ReleaseAllGrabs()
+		{
+			if (!_isInitialized) return;
+
+			_clothJobHandle.Complete();
+
+			foreach (var index in _grabbedVertices)
+				_inverseMasses[index] = _originalInverseMasses[index];
+			_grabbedVertices.Clear();
+			_isSleeping = false;
+			_sleepCounter = 0;
+		}
+
+		public bool IsVertexGrabbed(int index) => _grabbedVertices.Contains(index);
+
+		#endregion
 
 		public void ForceSleep()
 		{
@@ -385,6 +503,7 @@ namespace CLOiSim.Cloth
 			DisposeIfCreated(ref _colliders);
 			DisposeIfCreated(ref _meshVertices);
 			DisposeIfCreated(ref _meshTriangles);
+			DisposeIfCreated(ref _originalInverseMasses);
 		}
 
 #if UNITY_EDITOR
@@ -410,10 +529,22 @@ namespace CLOiSim.Cloth
 			for (var i = 0; i < _positions.Length; i++)
 			{
 				var pos = (Vector3)_positions[i];
-				bool isPinned = _inverseMasses[i] == 0f;
+				var isGrabbed = _grabbedVertices.Contains(i);
+				var isPinned = _inverseMasses[i] == 0f && !isGrabbed;
 
+				// Draw grabbed vertices
+				if (isGrabbed)
+				{
+					Gizmos.color = GrabbedVertexColor;
+					DrawVertex(pos);
+
+					if (DrawVertexLabels)
+					{
+						Handles.Label(pos + Vector3.up * VertexSize * 2, $"G{i}");
+					}
+				}
 				// Draw pinned and free vertices based on settings
-				if (isPinned && DrawPinnedVertices)
+				else if (isPinned && DrawPinnedVertices)
 				{
 					Gizmos.color = PinnedVertexColor;
 					DrawVertex(pos);
@@ -606,6 +737,9 @@ namespace CLOiSim.Cloth
 					case ColliderType.Mesh:
 						p = ResolveMesh(p, collider);
 						break;
+					case ColliderType.Plane:
+						p = ResolvePlane(p, collider);
+						break;
 				}
 			}
 
@@ -649,6 +783,17 @@ namespace CLOiSim.Cloth
 			return p;
 		}
 
+		// Half-space plane collision — immune to tunneling regardless of particle speed.
+		// collider.Scale stores the world-space plane normal (unit vector pointing toward valid side).
+		private float3 ResolvePlane(float3 p, in ClothCollider collider)
+		{
+			var normal = collider.Scale;
+			var dist = math.dot(p - collider.Position, normal);
+			if (dist < ParticleRadius)
+				p += normal * (ParticleRadius - dist);
+			return p;
+		}
+
 		private float3 ResolveCapsule(float3 p, in ClothCollider collider)
 		{
 			var up = math.mul(collider.Rotation, new float3(0f, 1f, 0f));
@@ -680,16 +825,16 @@ namespace CLOiSim.Cloth
 			localP /= collider.Scale;
 
 			var padding = 0.1f;
+			// Keep XZ bounds and upper-Y check, but do NOT skip particles below BoundsMin.y —
+			// they may have tunneled through the surface and still need to be resolved.
 			if (localP.x < collider.BoundsMin.x - padding || localP.x > collider.BoundsMax.x + padding ||
-				localP.y < collider.BoundsMin.y - padding || localP.y > collider.BoundsMax.y + padding ||
+				localP.y > collider.BoundsMax.y + padding ||
 				localP.z < collider.BoundsMin.z - padding || localP.z > collider.BoundsMax.z + padding)
 			{
 				return p;
 			}
 
-			var minDistSq = float.MaxValue;
-			var bestLocalPush = localP;
-			var hit = false;
+			var localRadius = ParticleRadius;
 
 			for (var t = 0; t < collider.TriCount; t += 3)
 			{
@@ -698,25 +843,31 @@ namespace CLOiSim.Cloth
 				var v1 = MeshVertices[MeshTriangles[triIndex + 1]];
 				var v2 = MeshVertices[MeshTriangles[triIndex + 2]];
 
-				var closest = ClosestPointOnTriangle(localP, v0, v1, v2);
-				var distSq = math.lengthsq(localP - closest);
+				// Use signed distance to triangle plane so tunneled particles (negative
+				// signed distance) are caught even when far below the surface.
+				var crossVec = math.cross(v1 - v0, v2 - v0);
+				var crossLen = math.length(crossVec);
+				if (crossLen < 1e-6f) continue; // Degenerate triangle — skip
 
-				if (distSq < minDistSq)
-				{
-					minDistSq = distSq;
-					bestLocalPush = closest;
-					hit = true;
-				}
-			}
+				var triNormal = crossVec / crossLen;
+				var signedDist = math.dot(localP - v0, triNormal);
 
-			var localRadius = ParticleRadius;
-			if (hit && minDistSq < localRadius * localRadius && minDistSq > 1e-8f)
-			{
-				var dist = math.sqrt(minDistSq);
-				var dir = (localP - bestLocalPush) / dist;
-				localP = bestLocalPush + dir * localRadius;
+				// Particle is safely above the surface — no collision needed
+				if (signedDist >= localRadius) continue;
+
+				// Check that the horizontal projection onto the triangle plane falls
+				// within (or close to) the triangle's footprint before resolving.
+				var projectedP = localP - signedDist * triNormal;
+				var closestInTri = ClosestPointOnTriangle(projectedP, v0, v1, v2);
+				var projDistSq = math.lengthsq(projectedP - closestInTri);
+				if (projDistSq > localRadius * localRadius) continue;
+
+				// Push particle to the correct (front) side of the triangle surface.
+				localP += triNormal * (localRadius - signedDist);
 				p = collider.Position + math.mul(collider.Rotation, localP * collider.Scale);
+				break;
 			}
+
 			return p;
 		}
 

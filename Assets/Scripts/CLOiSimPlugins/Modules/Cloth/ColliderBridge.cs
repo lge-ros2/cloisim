@@ -123,13 +123,44 @@ namespace CLOiSim.Cloth
                 }
                 else if (t.TryGetComponent(out BoxCollider box))
                 {
-                    _clothColliders[i] = new ClothCollider
+                    var halfExtX = box.size.x * 0.5f * Mathf.Abs(t.lossyScale.x);
+                    var halfExtY = box.size.y * 0.5f * Mathf.Abs(t.lossyScale.y);
+                    var halfExtZ = box.size.z * 0.5f * Mathf.Abs(t.lossyScale.z);
+                    var maxHalfExt = Mathf.Max(halfExtX, Mathf.Max(halfExtY, halfExtZ));
+                    var minHalfExt = Mathf.Min(halfExtX, Mathf.Min(halfExtY, halfExtZ));
+
+                    // A box that is very flat in one dimension (e.g. a floor or wall panel) is
+                    // treated as a one-sided half-space plane.  This prevents cloth particles from
+                    // tunneling through thin geometry at high velocities, because the half-space
+                    // test is valid regardless of how far the particle has moved per sub-step.
+                    if (minHalfExt < maxHalfExt * 0.1f)
                     {
-                        Type = ColliderType.Box,
-                        Position = t.TransformPoint(box.center),
-                        Rotation = t.rotation,
-                        Scale = (float3)box.size * 0.5f * (float3)t.lossyScale // Half-extents
-                    };
+                        // Pick the world-space normal along the thinnest axis.
+                        float3 normal;
+                        if (halfExtX <= halfExtY && halfExtX <= halfExtZ)
+                            normal = (float3)t.right;
+                        else if (halfExtZ <= halfExtX && halfExtZ <= halfExtY)
+                            normal = (float3)t.forward;
+                        else
+                            normal = (float3)t.up;
+
+                        _clothColliders[i] = new ClothCollider
+                        {
+                            Type = ColliderType.Plane,
+                            Position = t.TransformPoint(box.center),
+                            Scale = normal, // unit normal stored in Scale; other fields unused
+                        };
+                    }
+                    else
+                    {
+                        _clothColliders[i] = new ClothCollider
+                        {
+                            Type = ColliderType.Box,
+                            Position = t.TransformPoint(box.center),
+                            Rotation = t.rotation,
+                            Scale = (float3)box.size * 0.5f * (float3)t.lossyScale // Half-extents
+                        };
+                    }
                 }
                 else if (t.TryGetComponent(out CapsuleCollider capsule))
                 {

@@ -133,6 +133,21 @@ namespace SDFormat
 
 		private static SDFormat.Element FindWithPredicate(SDFormat.Element parent, string childName, string predicate)
 		{
+			// Handle positional predicate [N]
+			var posMatch = Regex.Match(predicate, @"^\[(\d+)\]$");
+			if (posMatch.Success)
+			{
+				var targetPos = int.Parse(posMatch.Groups[1].Value);
+				var pos = 0;
+				foreach (var child in parent.Children)
+				{
+					if (child.Name != childName) continue;
+					pos++;
+					if (pos == targetPos) return child;
+				}
+				return null;
+			}
+
 			foreach (var child in parent.Children)
 			{
 				if (child.Name != childName)
