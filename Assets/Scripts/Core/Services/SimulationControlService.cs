@@ -74,6 +74,54 @@ public class SimulationControlResponseTopicList : SimulationControlResponseBase
 	}
 }
 
+public class TeleportPose
+{
+	[JsonProperty("x")]
+	public double x = 0;
+
+	[JsonProperty("y")]
+	public double y = 0;
+
+	[JsonProperty("z")]
+	public double z = 0;
+
+	[JsonProperty("roll")]
+	public double roll = 0; // roll
+
+	[JsonProperty("pitch")]
+	public double pitch = 0; // pitch
+
+	[JsonProperty("yaw")]
+	public double yaw = 0; // yaw
+}
+
+public class TeleportTarget
+{
+	[JsonProperty("target")]
+	public string target = string.Empty;
+
+	[JsonProperty("pose")]
+	public TeleportPose pose = null;
+
+	[JsonProperty("reset")]
+	public bool reset = false;
+}
+
+public struct TeleportOperation
+{
+	public List<TeleportTarget> targets;
+	public bool worldReset;
+}
+
+public class SimulationControlRequestTeleport : SimulationControlRequest
+{
+	[JsonProperty("world_reset")]
+	public bool world_reset = false;
+
+	[JsonProperty("targets")]
+	public List<TeleportTarget> targets = new();
+}
+
 public class SimulationControlService : WebSocketBehavior
 {
 	private BridgeManager bridgeManager = null;
@@ -171,6 +219,16 @@ public class SimulationControlService : WebSocketBehavior
 					(output as SimulationControlResponseNormal).result = true.ToString();
 				}
 				break;
+
+			case "teleport":
+				{
+					var teleportRequest = JsonConvert.DeserializeObject<SimulationControlRequestTeleport>(e.Data);
+					var result = TeleportModel(teleportRequest);
+					output = new SimulationControlResponseNormal();
+					(output as SimulationControlResponseNormal).result = result;
+				}
+				break;
+
 			default:
 				output = new SimulationControlResponseBase();
 				request.command = "Invalid Command";
@@ -190,6 +248,39 @@ public class SimulationControlService : WebSocketBehavior
 		{
 			Console.Error.WriteLine($"Send failed: {ex.GetType().Name} {ex.Message}");
 		}
+	}
+
+	private string TeleportModel(in SimulationControlRequestTeleport request)
+	{
+		// Validation for targets
+		if (request.targets == null || request.targets.Count == 0)
+		{
+			return "targets list is empty";
+		}
+
+		foreach (var target in request.targets)
+		{
+			if (string.IsNullOrEmpty(target.target))
+			{
+				return "one or more target model names are empty";
+			}
+
+			if (target.pose == null)
+			{
+				return "one or more pose information is null";
+			}
+		}
+
+		// Create lightweight operation struct and delegate to Main for async execution
+		var operation = new TeleportOperation
+		{
+			targets = request.targets,
+			worldReset = request.world_reset
+		};
+
+		Main.Instance.TriggerTeleportService(in operation);
+
+		return SimulationService.SUCCESS;
 	}
 
 	protected override void OnError(ErrorEventArgs e)
