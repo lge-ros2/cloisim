@@ -4,15 +4,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
-
 namespace SDFormat
 {
 	namespace Import
 	{
 		public partial class Loader : Base
 		{
-			private void ImportRoads(in SDFormat.World world)
+			private void ImportRoads(in World world)
 			{
 				if (world.Element == null)
 				{

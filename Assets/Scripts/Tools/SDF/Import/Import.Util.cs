@@ -27,7 +27,7 @@ namespace SDFormat
 				child.transform.localRotation = UE.Quaternion.identity;
 			}
 
-			private static UE.Transform FindRootParentModel(SDFormat.Helper.Base targetBaseHelper)
+			private static UE.Transform FindRootParentModel(Helper.Base targetBaseHelper)
 			{
 				if (targetBaseHelper == null)
 					return null;
@@ -47,9 +47,9 @@ namespace SDFormat
 
 				switch (targetBaseHelper)
 				{
-					case SDFormat.Helper.Model modelHelper:
+					case Helper.Model modelHelper:
 						{
-							var result = FindParent<SDFormat.Helper.Model>(
+							var result = FindParent<Helper.Model>(
 								modelHelper.transform,
 								m => !m.isNested
 							);
@@ -58,9 +58,9 @@ namespace SDFormat
 							break;
 						}
 
-					case SDFormat.Helper.Link linkHelper:
+					case Helper.Link linkHelper:
 						{
-							var result = FindParent<SDFormat.Helper.Link>(
+							var result = FindParent<Helper.Link>(
 								linkHelper.transform,
 								l => l.Model.isNested
 							);
@@ -71,7 +71,7 @@ namespace SDFormat
 
 					default:
 						{
-							var result = FindParent<SDFormat.Helper.Link>(
+							var result = FindParent<Helper.Link>(
 								targetBaseHelper.transform,
 								_ => true
 							);
@@ -84,7 +84,7 @@ namespace SDFormat
 				return foundRootModelTransform;
 			}
 
-			private static void SpecifyPoseAbsolute(in SDFormat.Helper.Base baseHelper, ref UE.Vector3 localPosition, ref UE.Quaternion localRotation)
+			private static void SpecifyPoseAbsolute(in Helper.Base baseHelper, ref UE.Vector3 localPosition, ref UE.Quaternion localRotation)
 			{
 				var parentObject = baseHelper.transform.parent;
 
@@ -95,21 +95,21 @@ namespace SDFormat
 
 				// For elements directly inside a nested model, poses are relative
 				// to that model — no root model offset adjustment needed.
-				var parentModelHelper = parentObject?.GetComponent<SDFormat.Helper.Model>();
+				var parentModelHelper = parentObject?.GetComponent<Helper.Model>();
 				if (parentModelHelper != null && parentModelHelper.isNested)
 				{
 					rootModelTransform = parentObject;
 				}
 
-				var rotationOffset = (rootModelTransform.Equals(parentObject)) ? UE.Quaternion.identity : parentObject.localRotation;
-				var positionOffset = (rootModelTransform.Equals(parentObject)) ? UE.Vector3.zero : (parentObject.position - rootModelTransform.position);
+				var rotationOffset = rootModelTransform.Equals(parentObject) ? UE.Quaternion.identity : parentObject.localRotation;
+				var positionOffset = rootModelTransform.Equals(parentObject) ? UE.Vector3.zero : (parentObject.position - rootModelTransform.position);
 				positionOffset = UE.Quaternion.Inverse(rootModelTransform.localRotation) * positionOffset;
 
 				localPosition = localPosition - positionOffset;
 				localRotation = rotationOffset * localRotation;
 			}
 
-			private static void SpecifyPoseRelative(in SDFormat.Helper.Base baseHelper, in SDFormat.Helper.Base targetBaseHelper, ref UE.Vector3 localPosition, ref UE.Quaternion localRotation)
+			private static void SpecifyPoseRelative(in Helper.Base baseHelper, in Helper.Base targetBaseHelper, ref UE.Vector3 localPosition, ref UE.Quaternion localRotation)
 			{
 				if (baseHelper == null || targetBaseHelper == null)
 				{
@@ -127,8 +127,8 @@ namespace SDFormat
 				// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localPosition.ToString("F9")}, {relativeObject.position.ToString("F9")}");
 				// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localRotation.eulerAngles.ToString("F9")}, {relativeObject.rotation.eulerAngles.ToString("F9")}");
 
-				var positionOffset = (relativeObject.Equals(parentObject)) ? UE.Vector3.zero : (relativeObject.position - parentObject.position);
-				var rotationOffset = (relativeObject.Equals(parentObject)) ? UE.Quaternion.identity : (parentObject.localRotation * relativeObject.localRotation);
+				var positionOffset = relativeObject.Equals(parentObject) ? UE.Vector3.zero : (relativeObject.position - parentObject.position);
+				var rotationOffset = relativeObject.Equals(parentObject) ? UE.Quaternion.identity : (parentObject.localRotation * relativeObject.localRotation);
 
 				localPosition = localPosition + positionOffset;
 				localRotation = rotationOffset * localRotation;
@@ -146,7 +146,7 @@ namespace SDFormat
 					body.enabled = false;
 				}
 
-				foreach (var baseHelper in rootObject.GetComponentsInChildren<SDFormat.Helper.Base>())
+				foreach (var baseHelper in rootObject.GetComponentsInChildren<Helper.Base>())
 				{
 					var pose = baseHelper?.Pose;
 					if (pose == null)
@@ -154,8 +154,7 @@ namespace SDFormat
 						continue;
 					}
 
-					var localPosition = pose.Value.ToUnityPosition();
-					var localRotation = pose.Value.ToUnityRotation();
+					var (localPosition, localRotation) = pose.Value.ToUnity();
 
 					var poseRelativeTo = baseHelper?.PoseRelativeTo;
 					if (string.IsNullOrEmpty(poseRelativeTo))
@@ -165,7 +164,7 @@ namespace SDFormat
 					else
 					{
 						var relativeObjectBaseHelper
-							= baseHelper.RootModel.GetComponentsInChildren<SDFormat.Helper.Base>().FirstOrDefault(x => x.name.Equals(poseRelativeTo));
+							= baseHelper.RootModel.GetComponentsInChildren<Helper.Base>().FirstOrDefault(x => x.name.Equals(poseRelativeTo));
 
 						if (relativeObjectBaseHelper != null)
 						{
@@ -189,7 +188,7 @@ namespace SDFormat
 					var parentAB = body.transform.parent?.GetComponentInParent<UE.ArticulationBody>();
 					if (parentAB == null)
 					{
-						var modelHelper = body.GetComponentInParent<SDFormat.Helper.Model>();
+						var modelHelper = body.GetComponentInParent<Helper.Model>();
 						if (modelHelper != null && modelHelper.isStatic)
 						{
 							body.immovable = true;

@@ -11,7 +11,7 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportWorld(in SDFormat.World world)
+			protected override System.Object ImportWorld(in World world)
 			{
 				if (world == null)
 				{
@@ -26,10 +26,10 @@ namespace SDFormat
 					if (mainCamera != null && guiCamera != null)
 					{
 						var cameraPoseStr = guiCamera.FindElement("pose")?.Value?.GetAsString();
-						SDFormat.Math.Pose3d cameraPose = SDFormat.Math.Pose3d.Zero;
+						Math.Pose3d cameraPose = Math.Pose3d.Zero;
 						if (!string.IsNullOrEmpty(cameraPoseStr))
 						{
-							cameraPose = SDFormat.Math.Pose3d.Parse(cameraPoseStr);
+							cameraPose = Math.Pose3d.Parse(cameraPoseStr);
 						}
 
 						var viewController = guiCamera.FindElement("view_controller")?.Value?.GetAsString() ?? string.Empty;
@@ -54,16 +54,17 @@ namespace SDFormat
 							Main.UIController?.ChangeCameraViewMode(UIController.CameraViewModeEnum.Perspective);
 						}
 
-						mainCamera.transform.localPosition = cameraPose.ToUnityPosition();
-						mainCamera.transform.localRotation = cameraPose.ToUnityRotation();
+						var (cameraPosition, cameraRotation) = cameraPose.ToUnity();
+						mainCamera.transform.localPosition = cameraPosition;
+						mainCamera.transform.localRotation = cameraRotation;
 
 						var trackVisualElem = guiCamera.FindElement("track_visual");
 						if (trackVisualElem != null)
 						{
 							var trackName = trackVisualElem.FindElement("name")?.Value?.GetAsString() ?? "__default__";
-							var trackUseModelFrame = SDFormat.Extensions.GetElementValue(trackVisualElem, "use_model_frame", false);
-							var trackStatic = SDFormat.Extensions.GetElementValue(trackVisualElem, "static", false);
-							var trackInheritYaw = SDFormat.Extensions.GetElementValue(trackVisualElem, "inherit_yaw", false);
+							var trackUseModelFrame = Extensions.GetElementValue(trackVisualElem, "use_model_frame", false);
+							var trackStatic = Extensions.GetElementValue(trackVisualElem, "static", false);
+							var trackInheritYaw = Extensions.GetElementValue(trackVisualElem, "inherit_yaw", false);
 							var trackXyzStr = trackVisualElem.FindElement("xyz")?.Value?.GetAsString() ?? string.Empty;
 
 							if (!trackName.Equals("__default__") &&
@@ -75,7 +76,7 @@ namespace SDFormat
 
 							if (trackStatic && trackUseModelFrame && !string.IsNullOrEmpty(trackXyzStr))
 							{
-								Main.TrackVisualPosition = SDFormat.Math.Vector3d.Parse(trackXyzStr).ToUnity();
+								Main.TrackVisualPosition = Math.Vector3d.Parse(trackXyzStr).ToUnity();
 								Main.TrackVisualInheritYaw = trackInheritYaw;
 							}
 						}
@@ -132,7 +133,7 @@ namespace SDFormat
 				UE.Physics.gravity = world.Gravity.ToUnity();
 
 				// Apply wind if defined
-				if (!world.WindLinearVelocity.Equals(SDFormat.Math.Vector3d.Zero))
+				if (!world.WindLinearVelocity.Equals(Math.Vector3d.Zero))
 				{
 					var windZone = Main.WorldRoot?.GetComponentInChildren<UE.WindZone>();
 					if (windZone == null)

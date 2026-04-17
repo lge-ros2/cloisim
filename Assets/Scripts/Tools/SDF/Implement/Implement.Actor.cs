@@ -51,7 +51,7 @@ namespace SDFormat
 				return MeshLoader.CreateSkinObject(skinFilename);
 			}
 
-			public static void SetAnimation(in UE.GameObject targetObject, in SDFormat.Animation animation, in bool autoStart, in bool loop)
+			public static void SetAnimation(in UE.GameObject targetObject, in Animation animation, in bool autoStart, in bool loop)
 			{
 				if (targetObject == null)
 				{

@@ -17,7 +17,7 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportSensor(in SDFormat.Sensor sensor, in System.Object parentObject)
+			protected override System.Object ImportSensor(in Sensor sensor, in System.Object parentObject)
 			{
 				var targetObject = (parentObject as UE.GameObject);
 
@@ -28,15 +28,15 @@ namespace SDFormat
 				switch (sensorType)
 				{
 					case "ray":
-						Debug.LogWarning("[SDFormat.Import] It is preferred to use 'lidar' since 'ray' will be deprecated.");
+						Debug.LogWarning("[Import] It is preferred to use 'lidar' since 'ray' will be deprecated.");
 						goto case "lidar";
 
 					case "lidar":
-						Debug.LogWarning("[SDFormat.Import] CPU based lidar or ray does not support. It will change to GPU based sensor.");
+						Debug.LogWarning("[Import] CPU based lidar or ray does not support. It will change to GPU based sensor.");
 						goto case "gpu_lidar";
 
 					case "gpu_ray":
-						Debug.LogWarning("[SDFormat.Import] It is preferred to use 'gpu_lidar' since 'gpu_ray' will be deprecated.");
+						Debug.LogWarning("[Import] It is preferred to use 'gpu_lidar' since 'gpu_ray' will be deprecated.");
 						goto case "gpu_lidar";
 
 					case "gpu_lidar":
@@ -79,7 +79,7 @@ namespace SDFormat
 						break;
 
 					case "gps":
-						Debug.LogWarning("[SDFormat.Import] It is preferred to use 'navsat' since 'gps' will be deprecated.");
+						Debug.LogWarning("[Import] It is preferred to use 'navsat' since 'gps' will be deprecated.");
 						goto case "navsat";
 
 					case "navsat":
@@ -123,10 +123,12 @@ namespace SDFormat
 
 					if (newSensorObject != null)
 					{
+						var (localPosition, localRotation) = sensor.RawPose.ToUnity();
+
 						newSensorObject.tag = "Sensor";
 						newSensorObject.name = sensor.Name;
-						newSensorObject.transform.localPosition += sensor.RawPose.ToUnityPosition();
-						newSensorObject.transform.localRotation *= sensor.RawPose.ToUnityRotation();
+						newSensorObject.transform.localPosition += localPosition;
+						newSensorObject.transform.localRotation *= localRotation;
 #if UNITY_EDITOR
 						SceneVisibilityManager.instance.ToggleVisibility(newSensorObject, true);
 						SceneVisibilityManager.instance.DisablePicking(newSensorObject, true);

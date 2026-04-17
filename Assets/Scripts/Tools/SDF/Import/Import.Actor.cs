@@ -12,20 +12,23 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportActor(in SDFormat.Actor actor)
+			protected override System.Object ImportActor(in Actor actor)
 			{
 				if (actor == null)
 				{
 					return null;
 				}
 
-				var newActorObject = new UE.GameObject(actor.Name);
-				newActorObject.tag = "Actor";
+				var newActorObject = new UE.GameObject(actor.Name)
+				{
+					tag = "Actor"
+				};
 				Main.WorldRoot.SetChild(newActorObject);
 
 				// Apply attributes
-				var localPosition = actor.RawPose.ToUnityPosition();
-				var localRotation = actor.RawPose.ToUnityRotation();
+				var (localPosition, localRotation) = actor.RawPose.ToUnity();
+				newActorObject.transform.localPosition = localPosition;
+				newActorObject.transform.localRotation = localRotation;
 
 				var actorHelper = newActorObject.AddComponent<Helper.Actor>();
 				actorHelper.Pose = actor.RawPose;

@@ -15,7 +15,7 @@ namespace SDFormat
 		{
 			private static readonly float MinimumInertiaTensor = 1e-39f;
 
-			private static UE.Pose GetInertiaTensor(in SDFormat.Math.Inertial inertial, in UE.ArticulationBody tempArticulationBodyForCalculation)
+			private static UE.Pose GetInertiaTensor(in Math.Inertial inertial, in UE.ArticulationBody tempArticulationBodyForCalculation)
 			{
 				/**
 				 *  Inertia Tensor
@@ -56,11 +56,13 @@ namespace SDFormat
 				return inertiaMomentum;
 			}
 
-			protected override System.Object ImportLink(in SDFormat.Link link, in System.Object parentObject)
+			protected override System.Object ImportLink(in Link link, in System.Object parentObject)
 			{
 				var targetObject = (parentObject as UE.GameObject);
-				var newLinkObject = new UE.GameObject(link.Name);
-				newLinkObject.tag = "Link";
+				var newLinkObject = new UE.GameObject(link.Name)
+				{
+					tag = "Link"
+				};
 
 				targetObject.SetChild(newLinkObject);
 
@@ -80,7 +82,7 @@ namespace SDFormat
 				return newLinkObject as System.Object;
 			}
 
-			protected override void AfterImportLink(in SDFormat.Link link, in System.Object targetObject)
+			protected override void AfterImportLink(in Link link, in System.Object targetObject)
 			{
 				var linkObject = (targetObject as UE.GameObject);
 
@@ -129,7 +131,7 @@ namespace SDFormat
 					return null;
 				}
 
-				var linkHelper = linkObject.GetComponent<SDFormat.Helper.Link>();
+				var linkHelper = linkObject.GetComponent<Helper.Link>();
 				var colliders = linkObject.GetComponentsInChildren<UE.Collider>();
 				var inertial = linkHelper?.Inertial;
 
@@ -179,7 +181,10 @@ namespace SDFormat
 
 				articulationBody.ResetCenterOfMass();
 				articulationBody.automaticCenterOfMass = false;
-				articulationBody.centerOfMass = inertial?.Pose.ToUnityPosition() ?? UE.Vector3.zero;
+
+				var (centerOfMassPos, _) = inertial.Pose.ToUnity();
+				articulationBody.centerOfMass = centerOfMassPos;
+
 				// Debug.Log($"{linkObject.name} => Center Of Mass: {articulationBody.centerOfMass.ToString("F5")} | inertia: {articulationBody.inertiaTensor.ToString("F5")}, {articulationBody.inertiaTensorRotation.ToString("F5")}");
 
 				if (colliders.Length == 0)

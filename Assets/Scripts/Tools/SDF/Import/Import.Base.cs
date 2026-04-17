@@ -13,10 +13,10 @@ namespace SDFormat
 	{
 		public partial class Base
 		{
-			private Dictionary<SDFormat.Joint, Object> _jointObjectList = new();
-			private Dictionary<SDFormat.Plugin, Object> _pluginObjectList = new();
+			private Dictionary<Joint, Object> _jointObjectList = new();
+			private Dictionary<Plugin, Object> _pluginObjectList = new();
 
-			private void ImportVisuals(IReadOnlyList<SDFormat.Visual> items, in Object parentObject)
+			private void ImportVisuals(IReadOnlyList<Visual> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -32,7 +32,7 @@ namespace SDFormat
 				}
 			}
 
-			private void ImportCollisions(IReadOnlyList<SDFormat.Collision> items, in Object parentObject)
+			private void ImportCollisions(IReadOnlyList<Collision> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -44,7 +44,7 @@ namespace SDFormat
 				}
 			}
 
-			private void ImportSensors(IReadOnlyList<SDFormat.Sensor> items, in Object parentObject)
+			private void ImportSensors(IReadOnlyList<Sensor> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -53,7 +53,7 @@ namespace SDFormat
 				}
 			}
 
-			protected void ImportLinks(IReadOnlyList<SDFormat.Link> items, in Object parentObject)
+			protected void ImportLinks(IReadOnlyList<Link> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -71,7 +71,7 @@ namespace SDFormat
 				}
 			}
 
-			protected void StorePlugins(IReadOnlyList<SDFormat.Plugin> items, Object parentObject)
+			protected void StorePlugins(IReadOnlyList<Plugin> items, Object parentObject)
 			{
 				// Plugin should be handled after all links of model are loaded due to articulation body.
 				foreach (var item in items)
@@ -80,7 +80,7 @@ namespace SDFormat
 				}
 			}
 
-			protected void StoreJoints(IReadOnlyList<SDFormat.Joint> items, in Object parentObject)
+			protected void StoreJoints(IReadOnlyList<Joint> items, in Object parentObject)
 			{
 				// Joints should be handled after all links of model are loaded due to articulation body.
 				foreach (var item in items)
@@ -89,7 +89,7 @@ namespace SDFormat
 				}
 			}
 
-			protected IEnumerator ImportModels(IReadOnlyList<SDFormat.Model> items, Object parentObject = null)
+			protected IEnumerator ImportModels(IReadOnlyList<Model> items, Object parentObject = null)
 			{
 				foreach (var item in items)
 				{
@@ -97,7 +97,7 @@ namespace SDFormat
 				}
 			}
 
-			protected void ImportActors(IReadOnlyList<SDFormat.Actor> items)
+			protected void ImportActors(IReadOnlyList<Actor> items)
 			{
 				foreach (var item in items)
 				{
@@ -106,7 +106,7 @@ namespace SDFormat
 				}
 			}
 
-			protected void ImportLights(IReadOnlyList<SDFormat.Light> items, in Object parentObject)
+			protected void ImportLights(IReadOnlyList<Light> items, in Object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -114,7 +114,7 @@ namespace SDFormat
 				}
 			}
 
-			public IEnumerator Start(SDFormat.World world)
+			public IEnumerator Start(World world)
 			{
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
@@ -141,7 +141,7 @@ namespace SDFormat
 				}
 			}
 
-			public IEnumerator Start(SDFormat.Model model, Action<Object> onCreatedRoot = null)
+			public IEnumerator Start(Model model, Action<Object> onCreatedRoot = null)
 			{
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();

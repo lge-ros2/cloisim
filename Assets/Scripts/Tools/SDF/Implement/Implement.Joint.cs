@@ -18,10 +18,10 @@ namespace SDFormat
 				var modelTransformParent = linkParent.parent;
 				var modelTransformChild = linkChild.parent;
 
-				var modelHelperChild = modelTransformChild.GetComponent<SDFormat.Helper.Model>();
+				var modelHelperChild = modelTransformChild.GetComponent<Helper.Model>();
 
-				var linkHelperParent = linkParent.GetComponent<SDFormat.Helper.Link>();
-				var linkHelperChild = linkChild.GetComponent<SDFormat.Helper.Link>();
+				var linkHelperParent = linkParent.GetComponent<Helper.Link>();
+				var linkHelperChild = linkChild.GetComponent<Helper.Link>();
 
 				var linkParentArticulationBody = linkParent.GetComponent<UE.ArticulationBody>();
 				if (linkParentArticulationBody == null)
@@ -30,9 +30,11 @@ namespace SDFormat
 					linkParentArticulationBody = Import.Loader.CreateArticulationBody(linkParent);
 				}
 
-				var anchorPose = new UE.Pose();
-				anchorPose.position = UE.Vector3.zero;
-				anchorPose.rotation = UE.Quaternion.identity;
+				var anchorPose = new UE.Pose
+				{
+					position = UE.Vector3.zero,
+					rotation = UE.Quaternion.identity
+				};
 
 				if (linkHelperChild.Model.Equals(linkHelperParent.Model) ||
 					modelTransformChild.Equals(modelTransformParent) ||
@@ -45,10 +47,9 @@ namespace SDFormat
 					modelTransformChild.SetParent(linkParent, false);
 				}
 
-				var jointPosition = joint.RawPose.ToUnityPosition();
-				var jointRotation = joint.RawPose.ToUnityRotation();
-				anchorPose.position += jointPosition;
-				anchorPose.rotation *= jointRotation;
+				var (jointPos, jointRot) = joint.RawPose.ToUnity();
+				anchorPose.position += jointPos;
+				anchorPose.rotation *= jointRot;
 
 				return anchorPose;
 			}
@@ -59,7 +60,7 @@ namespace SDFormat
 				body.anchorRotation = parentAnchor.rotation;
 			}
 
-			public static void MakeRevoluteJoint(this UE.ArticulationBody body, in SDFormat.JointAxis axis)
+			public static void MakeRevoluteJoint(this UE.ArticulationBody body, in JointAxis axis)
 			{
 				body.jointType = UE.ArticulationJointType.SphericalJoint;
 				body.linearDamping = 1.5f;
@@ -72,7 +73,7 @@ namespace SDFormat
 					drive.SetRevoluteDriveLimit(axis);
 				}
 
-				drive.forceLimit = (double.IsInfinity(axis.Effort)) ? float.MaxValue : (float)axis.Effort;
+				drive.forceLimit = double.IsInfinity(axis.Effort) ? float.MaxValue : (float)axis.Effort;
 
 				drive.stiffness = (float)axis.SpringStiffness;
 				drive.target = SDF2Unity.CurveOrientation((float)axis.SpringReference);
@@ -91,7 +92,7 @@ namespace SDFormat
 				{
 					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.right, jointAxis);
 					body.xDrive = drive;
-					body.twistLock = (axis.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.twistLock = axis.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.swingYLock = UE.ArticulationDofLock.LockedMotion;
 					body.swingZLock = UE.ArticulationDofLock.LockedMotion;
 				}
@@ -100,7 +101,7 @@ namespace SDFormat
 					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.up, jointAxis);
 					body.yDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
-					body.swingYLock = (axis.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.swingYLock = axis.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.swingZLock = UE.ArticulationDofLock.LockedMotion;
 				}
 				else
@@ -109,11 +110,11 @@ namespace SDFormat
 					body.zDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
 					body.swingYLock = UE.ArticulationDofLock.LockedMotion;
-					body.swingZLock = (axis.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.swingZLock = axis.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 			}
 
-			private static void MakeRevoluteJoint2(this UE.ArticulationBody body, in SDFormat.JointAxis axis1, in SDFormat.JointAxis axis2)
+			private static void MakeRevoluteJoint2(this UE.ArticulationBody body, in JointAxis axis1, in JointAxis axis2)
 			{
 				MakeRevoluteJoint(body, axis1);
 
@@ -124,7 +125,7 @@ namespace SDFormat
 					drive.SetRevoluteDriveLimit(axis2);
 				}
 
-				drive.forceLimit = (double.IsInfinity(axis2.Effort)) ? float.MaxValue : (float)axis2.Effort;
+				drive.forceLimit = double.IsInfinity(axis2.Effort) ? float.MaxValue : (float)axis2.Effort;
 
 				var axis2JointFriction = (float)axis2.Friction;
 
@@ -141,19 +142,19 @@ namespace SDFormat
 				{
 					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.right, joint2Axis);
 					body.xDrive = drive;
-					body.twistLock = (axis2.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.twistLock = axis2.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 				else if (abs2Y >= abs2X && abs2Y >= abs2Z)
 				{
 					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.up, joint2Axis);
 					body.yDrive = drive;
-					body.swingYLock = (axis2.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.swingYLock = axis2.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 				else
 				{
 					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.forward, joint2Axis);
 					body.zDrive = drive;
-					body.swingZLock = (axis2.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.swingZLock = axis2.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 			}
 
@@ -199,11 +200,9 @@ namespace SDFormat
 				}
 			}
 
-			private static void MakePrismaticJoint(this UE.ArticulationBody body, in SDFormat.JointAxis axis, in SDFormat.Math.Pose3d pose)
+			private static void MakePrismaticJoint(this UE.ArticulationBody body, in JointAxis axis)
 			{
 				body.jointType = UE.ArticulationJointType.PrismaticJoint;
-				body.anchorRotation *= pose.ToUnityRotation();
-
 				body.linearDamping = 1.5f;
 				body.angularDamping = 1;
 
@@ -217,7 +216,7 @@ namespace SDFormat
 
 				body.maxJointVelocity = (float)axis.MaxVelocity;
 
-				drive.forceLimit = (double.IsInfinity(axis.Effort)) ? float.MaxValue : (float)axis.Effort;
+				drive.forceLimit = double.IsInfinity(axis.Effort) ? float.MaxValue : (float)axis.Effort;
 
 				drive.stiffness = (float)axis.SpringStiffness;
 				drive.target = (float)axis.SpringReference;
@@ -235,7 +234,7 @@ namespace SDFormat
 					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.right, jointAxis);
 
 					body.xDrive = drive;
-					body.linearLockX = (axis.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.linearLockX = axis.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.linearLockY = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockZ = UE.ArticulationDofLock.LockedMotion;
 				}
@@ -245,7 +244,7 @@ namespace SDFormat
 
 					body.yDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
-					body.linearLockY = (axis.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.linearLockY = axis.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.linearLockZ = UE.ArticulationDofLock.LockedMotion;
 				}
 				else
@@ -255,7 +254,7 @@ namespace SDFormat
 					body.zDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockY = UE.ArticulationDofLock.LockedMotion;
-					body.linearLockZ = (axis.HasJointLimits()) ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
+					body.linearLockZ = axis.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 			}
 
@@ -263,32 +262,32 @@ namespace SDFormat
 			{
 				switch (joint.Type)
 				{
-					case SDFormat.JointType.Ball:
+					case JointType.Ball:
 						body.MakeBallJoint(joint);
 						break;
 
-					case SDFormat.JointType.Prismatic:
-						body.MakePrismaticJoint(joint.Axis, joint.RawPose);
+					case JointType.Prismatic:
+						body.MakePrismaticJoint(joint.Axis);
 						break;
 
-					case SDFormat.JointType.Revolute:
-					case SDFormat.JointType.Continuous:
+					case JointType.Revolute:
+					case JointType.Continuous:
 						body.MakeRevoluteJoint(joint.Axis);
 						break;
-					case SDFormat.JointType.Universal:
-					case SDFormat.JointType.Revolute2:
+					case JointType.Universal:
+					case JointType.Revolute2:
 						body.MakeRevoluteJoint2(joint.Axis, joint.Axis2);
 						break;
 
-					case SDFormat.JointType.Fixed:
+					case JointType.Fixed:
 						body.MakeFixedJoint();
 						break;
 
-					case SDFormat.JointType.Gearbox:
+					case JointType.Gearbox:
 						UE.Debug.LogWarning("This type[gearbox] is not supported now.");
 						break;
 
-					case SDFormat.JointType.Screw:
+					case JointType.Screw:
 						UE.Debug.LogWarning("This type[screw] is not supported now.");
 						break;
 
@@ -298,7 +297,7 @@ namespace SDFormat
 				}
 			}
 
-			private static void SetRevoluteDriveLimit(this ref UE.ArticulationDrive drive, in SDFormat.JointAxis axis)
+			private static void SetRevoluteDriveLimit(this ref UE.ArticulationDrive drive, in JointAxis axis)
 			{
 				drive.lowerLimit = SDF2Unity.CurveOrientation((float)axis.Upper);
 				drive.upperLimit = SDF2Unity.CurveOrientation((float)axis.Lower);
@@ -330,12 +329,12 @@ namespace SDFormat
 				}
 				else
 				{
-					var modelHelper = rootTransform.GetComponentsInChildren<SDFormat.Helper.Model>().FirstOrDefault(x => x.name.Equals(modelName));
+					var modelHelper = rootTransform.GetComponentsInChildren<Helper.Model>().FirstOrDefault(x => x.name.Equals(modelName));
 					var modelTransform = modelHelper?.transform;
 
 					if (modelTransform != null)
 					{
-						var foundLinkHelper = modelTransform.GetComponentsInChildren<SDFormat.Helper.Link>().FirstOrDefault(x => x.transform.name.Equals(linkName));
+						var foundLinkHelper = modelTransform.GetComponentsInChildren<Helper.Link>().FirstOrDefault(x => x.transform.name.Equals(linkName));
 						foundLinkObject = foundLinkHelper?.transform;
 					}
 				}

@@ -57,14 +57,10 @@ public static partial class SDF2Unity
 		return Scale(SDFormat.Math.Vector2d.Parse(value));
 	}
 
-	public static Vector3 Scale(in double x, in double y, in double z)
-	{
-		return Scalar(x, y, z);
-	}
-
 	public static Vector3 Scale(in SDFormat.Math.Vector3d value)
 	{
-		return Scale(value.X, value.Y, value.Z);
+		var sign = new Vector3(Mathf.Sign((float)value.Y), Mathf.Sign((float)value.Z), Mathf.Sign((float)value.X));
+		return Vector3.Scale(Scalar(value.X, value.Y, value.Z), sign);
 	}
 
 	/// <param name="w">right handed system w</param>
@@ -81,14 +77,9 @@ public static partial class SDF2Unity
 		return Rotation(value.W, value.X, value.Y, value.Z);
 	}
 
-	public static Vector3 ToUnityPosition(this SDFormat.Math.Pose3d pose)
+	public static (Vector3, Quaternion) ToUnity(this SDFormat.Math.Pose3d pose)
 	{
-		return Position(pose.Position.X, pose.Position.Y, pose.Position.Z);
-	}
-
-	public static Quaternion ToUnityRotation(this SDFormat.Math.Pose3d pose)
-	{
-		return Rotation(pose.Rotation.W, pose.Rotation.X, pose.Rotation.Y, pose.Rotation.Z);
+		return (ToUnity(pose.Position), ToUnity(pose.Rotation));
 	}
 
 	public static Vector2 Size(in SDFormat.Math.Vector2d value)

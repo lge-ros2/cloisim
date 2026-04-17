@@ -15,7 +15,7 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportMaterial(in SDFormat.Material sdfMaterial, in System.Object parentObject)
+			protected override void ImportMaterial(in Material sdfMaterial, in System.Object parentObject)
 			{
 				var logs = new StringBuilder();
 				var targetObject = (parentObject as UE.GameObject);

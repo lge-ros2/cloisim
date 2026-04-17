@@ -14,7 +14,7 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportGeometry(in SDFormat.Geometry geometry, in System.Object parentObject)
+			protected override void ImportGeometry(in Geometry geometry, in System.Object parentObject)
 			{
 				if (geometry == null || geometry.IsEmpty())
 				{
@@ -25,22 +25,22 @@ namespace SDFormat
 
 				switch (geometry.Type)
 				{
-					case SDFormat.GeometryType.Mesh:
+					case GeometryType.Mesh:
 						targetObject.GenerateMesh(geometry.MeshShape);
 						break;
 
-					case SDFormat.GeometryType.Heightmap:
+					case GeometryType.Heightmap:
 						targetObject.GenerateMesh(geometry.HeightmapShape);
 						break;
 
-					case SDFormat.GeometryType.Box:
-					case SDFormat.GeometryType.Cylinder:
-					case SDFormat.GeometryType.Sphere:
-					case SDFormat.GeometryType.Capsule:
-					case SDFormat.GeometryType.Cone:
-					case SDFormat.GeometryType.Plane:
-					case SDFormat.GeometryType.Polyline:
-					case SDFormat.GeometryType.Ellipsoid:
+					case GeometryType.Box:
+					case GeometryType.Cylinder:
+					case GeometryType.Sphere:
+					case GeometryType.Capsule:
+					case GeometryType.Cone:
+					case GeometryType.Plane:
+					case GeometryType.Polyline:
+					case GeometryType.Ellipsoid:
 						targetObject.GenerateMesh(geometry);
 						break;
 

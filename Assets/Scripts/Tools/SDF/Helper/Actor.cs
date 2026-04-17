@@ -210,8 +210,7 @@ namespace SDFormat
 
 							if (firstWayPoint.Time == 0)
 							{
-								lastPosition = firstWayPoint.Pose.ToUnityPosition();
-								lastRotation = firstWayPoint.Pose.ToUnityRotation();
+								(lastPosition, lastRotation) = firstWayPoint.Pose.ToUnity();
 								startIndex = 1;
 							}
 
@@ -224,8 +223,7 @@ namespace SDFormat
 
 								var waypointToward = new WaypointToward();
 								var nextTime = (float)waypoint.Time;
-								var nextPosition = waypoint.Pose.ToUnityPosition();
-								var nextRotation = waypoint.Pose.ToUnityRotation();
+								var (nextPosition, nextRotation) = waypoint.Pose.ToUnity();
 
 								waypointToward.linearSpeed = UE.Vector3.Distance(nextPosition, lastPosition) / (nextTime - lastTime);
 								waypointToward.angularSpeed = UE.Quaternion.Angle(nextRotation, lastRotation) / (nextTime - lastTime);

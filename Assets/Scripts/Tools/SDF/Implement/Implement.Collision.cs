@@ -136,7 +136,7 @@ namespace SDFormat
 
 			public static void MakeCollision(this UE.GameObject targetObject)
 			{
-				var modelHelper = targetObject.GetComponentInParent<SDFormat.Helper.Model>();
+				var modelHelper = targetObject.GetComponentInParent<Helper.Model>();
 				// UE.Debug.Log(modelHelper.name + " MakeCollision");
 
 				var meshFilters = targetObject.GetComponentsInChildren<UE.MeshFilter>();
@@ -183,7 +183,7 @@ namespace SDFormat
 				RemoveRenderers(ref meshFilters);
 			}
 
-			public static void SetSurfaceFriction(this UE.GameObject targetObject, in SDFormat.Surface surface)
+			public static void SetSurfaceFriction(this UE.GameObject targetObject, in Surface surface)
 			{
 				var material = new UE.PhysicsMaterial();
 

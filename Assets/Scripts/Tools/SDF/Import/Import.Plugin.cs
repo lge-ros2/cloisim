@@ -14,7 +14,7 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportPlugin(in SDFormat.Plugin plugin, in System.Object parentObject)
+			protected override void ImportPlugin(in Plugin plugin, in System.Object parentObject)
 			{
 				// filtering plugin name
 				var pluginLibraryName = plugin.LibraryName();

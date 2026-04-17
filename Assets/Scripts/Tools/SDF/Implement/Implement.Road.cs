@@ -15,7 +15,7 @@ namespace SDFormat
 	{
 		public class Road
 		{
-			public static UE.GameObject Generate(in SDFormat.Element roadElement)
+			public static UE.GameObject Generate(in Element roadElement)
 			{
 				if (roadElement == null)
 				{
@@ -23,7 +23,7 @@ namespace SDFormat
 				}
 
 				var roadName = roadElement.GetAttribute<string>("name", "road");
-				var roadWidth = SDFormat.Extensions.GetElementValue(roadElement, "width", 1.0);
+				var roadWidth = Extensions.GetElementValue(roadElement, "width", 1.0);
 
 				var newRoadObject = new UE.GameObject();
 				newRoadObject.transform.SetParent(Main.RoadsRoot.transform);
@@ -32,13 +32,13 @@ namespace SDFormat
 
 				var splineContainer = newRoadObject.AddComponent<Splines.SplineContainer>();
 
-				var points = new List<SDFormat.Math.Vector3d>();
+				var points = new List<Math.Vector3d>();
 				foreach (var pointElement in roadElement.GetElements("point"))
 				{
 					var pointStr = pointElement.Value?.GetAsString();
 					if (!string.IsNullOrEmpty(pointStr))
 					{
-						points.Add(SDFormat.Math.Vector3d.Parse(pointStr));
+						points.Add(Math.Vector3d.Parse(pointStr));
 					}
 				}
 
@@ -50,13 +50,13 @@ namespace SDFormat
 				var centerX = points.Average(p => p.X);
 				var centerY = points.Average(p => p.Y);
 				var centerZ = points.Average(p => p.Z);
-				var centerPos = new SDFormat.Math.Vector3d(centerX, centerY, centerZ);
+				var centerPos = new Math.Vector3d(centerX, centerY, centerZ);
 
 				newRoadObject.transform.localPosition = centerPos.ToUnity();
 
 				foreach (var point in points)
 				{
-					var offset = new SDFormat.Math.Vector3d(point.X - centerPos.X, point.Y - centerPos.Y, point.Z - centerPos.Z);
+					var offset = new Math.Vector3d(point.X - centerPos.X, point.Y - centerPos.Y, point.Z - centerPos.Z);
 					splineContainer.Spline.Add(offset.ToUnity(), Splines.TangentMode.AutoSmooth);
 				}
 
@@ -74,7 +74,7 @@ namespace SDFormat
 					{
 						var scriptUri = scriptElement.FindElement("uri")?.Value?.GetAsString() ?? string.Empty;
 						var scriptName = scriptElement.FindElement("name")?.Value?.GetAsString() ?? string.Empty;
-						material = Implement.Material.ApplyScript(scriptUri, scriptName, material);
+						material = Material.ApplyScript(scriptUri, scriptName, material);
 					}
 				}
 

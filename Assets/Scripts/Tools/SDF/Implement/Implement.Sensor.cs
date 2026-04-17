@@ -30,25 +30,27 @@ namespace SDFormat
 			private static void AttachSensor(
 				this UE.GameObject targetObject,
 				in UE.GameObject sensorObject,
-				SDFormat.Math.Pose3d? sensorPose = null)
+				Math.Pose3d? sensorPose = null)
 			{
 				try
 				{
+					var (localPosition, localRotation) = (sensorPose ?? new Math.Pose3d()).ToUnity();
+
 					var sensorTransform = sensorObject.transform;
 					sensorTransform.position = UE.Vector3.zero;
 					sensorTransform.rotation = UE.Quaternion.identity;
 					sensorTransform.SetParent(targetObject.transform, false);
 					sensorTransform.localScale = UE.Vector3.one;
-					sensorTransform.localPosition = sensorPose?.ToUnityPosition() ?? UE.Vector3.zero;
-					sensorTransform.localRotation = sensorPose?.ToUnityRotation() ?? UE.Quaternion.identity;
+					sensorTransform.localPosition = localPosition;
+					sensorTransform.localRotation = localRotation;
 				}
 				catch
 				{
-					UE.Debug.Log("sensorObject is null or Invalid obejct exist");
+					UE.Debug.Log("sensorObject is null or Invalid object exist");
 				}
 			}
 
-			public static Device AddLidar(this UE.GameObject targetObject, in SDFormat.LidarSensor element)
+			public static Device AddLidar(this UE.GameObject targetObject, in LidarSensor element)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject);
@@ -75,7 +77,7 @@ namespace SDFormat
 				return lidar;
 			}
 
-			public static Device AddCamera(this UE.GameObject targetObject, in SDFormat.CameraSensor element, SDFormat.Math.Pose3d? sensorPose = null)
+			public static Device AddCamera(this UE.GameObject targetObject, in CameraSensor element, Math.Pose3d? sensorPose = null)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject, sensorPose);
@@ -90,7 +92,7 @@ namespace SDFormat
 				return camera;
 			}
 
-			public static Device AddSegmentationCamera(this UE.GameObject targetObject, in SDFormat.CameraSensor element, SDFormat.Math.Pose3d? sensorPose = null)
+			public static Device AddSegmentationCamera(this UE.GameObject targetObject, in CameraSensor element, Math.Pose3d? sensorPose = null)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject, sensorPose);
@@ -105,7 +107,7 @@ namespace SDFormat
 				return camera;
 			}
 
-			public static Device AddDepthCamera(this UE.GameObject targetObject, in SDFormat.CameraSensor element, SDFormat.Math.Pose3d? sensorPose = null)
+			public static Device AddDepthCamera(this UE.GameObject targetObject, in CameraSensor element, Math.Pose3d? sensorPose = null)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject, sensorPose);
@@ -120,7 +122,7 @@ namespace SDFormat
 				return camera;
 			}
 
-			public static Device AddMultiCamera(this UE.GameObject targetObject, in System.Collections.Generic.List<SDFormat.CameraSensor> cameras)
+			public static Device AddMultiCamera(this UE.GameObject targetObject, in System.Collections.Generic.List<CameraSensor> cameras)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject);
@@ -142,7 +144,7 @@ namespace SDFormat
 				return multicamera;
 			}
 
-			public static Device AddSonar(this UE.GameObject targetObject, in SDFormat.SonarSensor element)
+			public static Device AddSonar(this UE.GameObject targetObject, in SonarSensor element)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject);
@@ -157,7 +159,7 @@ namespace SDFormat
 				return sonar;
 			}
 
-			public static Device AddImu(this UE.GameObject targetObject, in SDFormat.ImuSensor element)
+			public static Device AddImu(this UE.GameObject targetObject, in ImuSensor element)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject);
@@ -170,7 +172,7 @@ namespace SDFormat
 				return imu;
 			}
 
-			public static Device AddNavSat(this UE.GameObject targetObject, in SDFormat.NavSatSensor element)
+			public static Device AddNavSat(this UE.GameObject targetObject, in NavSatSensor element)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject);

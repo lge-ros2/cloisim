@@ -13,7 +13,7 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			static private float GetIntensity(in SDFormat.Light light)
+			static private float GetIntensity(in Light light)
 			{
 				var range = (float)light.AttenuationRange;
 				var constant = (float)light.ConstantAttenuationFactor;
@@ -23,17 +23,18 @@ namespace SDFormat
 				return Mathf.Clamp(range * attenuationFactor, 0.1f, 10f);
 			}
 
-			protected override void ImportLight(in SDFormat.Light light, in System.Object parentObject)
+			protected override void ImportLight(in Light light, in System.Object parentObject)
 			{
 				if (light == null)
 				{
 					return;
 				}
 
-				var targetObject = (parentObject as UE.GameObject);
-				var newLightObject = new UE.GameObject();
-				newLightObject.name = light.Name;
-				newLightObject.tag = "Light";
+				var targetObject = parentObject as UE.GameObject;
+				var newLightObject = new UE.GameObject(light.Name)
+				{
+					tag = "Light"
+				};
 
 				var lightComponent = newLightObject.AddComponent<UE.Light>();
 
@@ -43,9 +44,9 @@ namespace SDFormat
 
 				var lightTypeStr = light.TypeString();
 
-				if (light.Type == SDFormat.LightType.Directional)
+				if (light.Type == LightType.Directional)
 				{
-					lightComponent.shadows = (light.CastShadows) ? UE.LightShadows.Hard : UE.LightShadows.None;
+					lightComponent.shadows = light.CastShadows ? UE.LightShadows.Hard : UE.LightShadows.None;
 					lightComponent.shadowResolution = UE.Rendering.LightShadowResolution.Medium;
 				}
 				else
@@ -64,12 +65,12 @@ namespace SDFormat
 				var defaultIntensity = 1f;
 				switch (light.Type)
 				{
-					case SDFormat.LightType.Directional:
+					case LightType.Directional:
 						lightComponent.type = UE.LightType.Directional;
 						lightComponent.transform.localRotation = UE.Quaternion.LookRotation(UE.Vector3.down, direction);
 						break;
 
-					case SDFormat.LightType.Spot:
+					case LightType.Spot:
 						lightComponent.type = UE.LightType.Spot;
 						lightComponent.spotAngle = (float)light.SpotOuterAngle.Radians * Mathf.Rad2Deg;
 						lightComponent.innerSpotAngle = (float)light.SpotInnerAngle.Radians * Mathf.Rad2Deg;
@@ -80,7 +81,7 @@ namespace SDFormat
 						defaultLightDirection = UE.Quaternion.Euler(90, 0, 0);
 						break;
 
-					case SDFormat.LightType.Point:
+					case LightType.Point:
 					default:
 						lightComponent.type = UE.LightType.Point;
 						lightComponent.range = (float)light.AttenuationRange;
@@ -90,11 +91,9 @@ namespace SDFormat
 
 				lightComponent.intensity = defaultIntensity * (float)light.Intensity;
 
-				var localPosition = light.RawPose.ToUnityPosition();
-				var localRotation = light.RawPose.ToUnityRotation();
-
+				var (localPosition, localRotation) = light.RawPose.ToUnity();
 				newLightObject.transform.localPosition = localPosition;
-				newLightObject.transform.localRotation *= (localRotation * defaultLightDirection);
+				newLightObject.transform.localRotation *= localRotation * defaultLightDirection;
 			}
 		}
 	}

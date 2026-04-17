@@ -15,7 +15,7 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportJoint(in SDFormat.Joint joint, in System.Object parentObject)
+			protected override void ImportJoint(in Joint joint, in System.Object parentObject)
 			{
 				var targetObject = (parentObject as UE.GameObject);
 
@@ -69,7 +69,7 @@ namespace SDFormat
 					if (joint.Axis != null)
 					{
 						axis1xyz = joint.Axis.Xyz.ToUnity();
-						axisSpringReference = (joint.Type == SDFormat.JointType.Prismatic) ?
+						axisSpringReference = (joint.Type == JointType.Prismatic) ?
 							(float)joint.Axis.SpringReference :
 							SDF2Unity.CurveOrientation((float)joint.Axis.SpringReference);
 

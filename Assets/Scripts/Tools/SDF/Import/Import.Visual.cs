@@ -19,16 +19,15 @@ namespace SDFormat
 		{
 			private static readonly bool EnableOptimization = true;
 
-			protected override System.Object ImportVisual(in SDFormat.Visual visual, in System.Object parentObject)
+			protected override System.Object ImportVisual(in Visual visual, in System.Object parentObject)
 			{
 				var targetObject = (parentObject as UE.GameObject);
-				var newVisualObject = new UE.GameObject(visual.Name);
-				newVisualObject.tag = "Visual";
+				var newVisualObject = new UE.GameObject(visual.Name)
+				{
+					tag = "Visual"
+				};
 
 				targetObject.SetChild(newVisualObject);
-
-				var localPosition = visual.RawPose.ToUnityPosition();
-				var localRotation = visual.RawPose.ToUnityRotation();
 
 				var visualHelper = newVisualObject.AddComponent<Helper.Visual>();
 				visualHelper.isCastingShadow = visual.CastShadows;
@@ -39,7 +38,7 @@ namespace SDFormat
 				return newVisualObject as System.Object;
 			}
 
-			protected override void AfterImportVisual(in SDFormat.Visual visual, in System.Object targetObject)
+			protected override void AfterImportVisual(in Visual visual, in System.Object targetObject)
 			{
 				if (visual == null)
 				{

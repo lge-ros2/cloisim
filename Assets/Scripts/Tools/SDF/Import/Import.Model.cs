@@ -75,17 +75,14 @@ namespace SDFormat
 				return rigidBody;
 			}
 
-			private UE.GameObject CreateModel(in SDFormat.Model model, in UE.GameObject parentObject)
+			private UE.GameObject CreateModel(in Model model, in UE.GameObject parentObject)
 			{
-				var newModelObject = new UE.GameObject(model.Name);
-				newModelObject.tag = "Model";
+				var newModelObject = new UE.GameObject(model.Name)
+				{
+					tag = "Model"
+				};
 
 				parentObject.SetChild(newModelObject);
-
-				// Apply attributes
-				var localPosition = model.RawPose.ToUnityPosition();
-				var localRotation = model.RawPose.ToUnityRotation();
-				// UE.Debug.Log(newModelObject.name + "::" + localPosition + ", " + localRotation);
 
 				var modelHelper = newModelObject.AddComponent<Helper.Model>();
 				modelHelper.modelNameInPath = model.OriginalName();
@@ -97,7 +94,7 @@ namespace SDFormat
 				return newModelObject;
 			}
 
-			protected override IEnumerator ImportModel(SDFormat.Model model, System.Object parentObject, Action<System.Object> onCreatedRoot)
+			protected override IEnumerator ImportModel(Model model, System.Object parentObject, Action<System.Object> onCreatedRoot)
 			{
 				if (model == null)
 				{
@@ -126,7 +123,7 @@ namespace SDFormat
 				yield return null;
 			}
 
-			protected override void AfterImportModel(in SDFormat.Model model, in System.Object targetObject)
+			protected override void AfterImportModel(in Model model, in System.Object targetObject)
 			{
 				var modelObject = (targetObject as UE.GameObject);
 
