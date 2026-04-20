@@ -18,8 +18,8 @@ public interface ICLOiSimPlugin
 		MICOM, JOINTCONTROL,
 		SENSOR, GPS, IMU, IR, SONAR, CONTACT, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE, SEGMENTCAMERA
 	};
-	void SetPluginParameters(in SDF.Plugin node);
-	SDF.Plugin GetPluginParameters();
+	void SetPluginParameters(in SDFormat.Plugin node);
+	SDFormat.Plugin GetPluginParameters();
 	void Reset();
 }
 
@@ -57,7 +57,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	private Pose _pluginPose = Pose.identity;
 
-	private SDF.Plugin _pluginParameters = null;
+	private SDFormat.Plugin _pluginParameters = null;
 
 	private List<ushort> _allocatedDevicePorts = new();
 	private List<string> _allocatedDeviceHashKeys = new();
@@ -98,12 +98,12 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		_type = targetType;
 	}
 
-	public void SetPluginParameters(in SDF.Plugin plugin)
+	public void SetPluginParameters(in SDFormat.Plugin plugin)
 	{
 		_pluginParameters = plugin;
 	}
 
-	public SDF.Plugin GetPluginParameters()
+	public SDFormat.Plugin GetPluginParameters()
 	{
 		return _pluginParameters;
 	}
@@ -116,7 +116,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			GetType() == typeof(IRPlugin) ||
 			GetType() == typeof(ContactPlugin))
 		{
-			var helperLink = this.GetComponentInParent<SDF.Helper.Link>();
+			var helperLink = this.GetComponentInParent<SDFormat.Helper.Link>();
 			var modelLink = (helperLink != null) ? helperLink.Model : null;
 
 			if (modelLink != null)
@@ -156,7 +156,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			_partsName = DeviceHelper.GetPartsName(gameObject);
 		}
 
-		var helperLink = this.GetComponentInParent<SDF.Helper.Link>();
+		var helperLink = this.GetComponentInParent<SDFormat.Helper.Link>();
 		if (helperLink != null)
 		{
 			_parentLinkName = string.IsNullOrEmpty(helperLink.JointParentLinkName) ? null : helperLink.JointParentLinkName;

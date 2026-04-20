@@ -8,7 +8,7 @@ using System.Collections;
 using System;
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Import
 	{
@@ -75,49 +75,45 @@ namespace SDF
 				return rigidBody;
 			}
 
-			private UE.GameObject CreateModel(in SDF.Model model, in UE.GameObject parentObject)
+			private UE.GameObject CreateModel(in Model model, in UE.GameObject parentObject)
 			{
-				var newModelObject = new UE.GameObject(model.Name);
-				newModelObject.tag = "Model";
+				var newModelObject = new UE.GameObject(model.Name)
+				{
+					tag = "Model"
+				};
 
 				parentObject.SetChild(newModelObject);
 
-				// Apply attributes
-				var localPosition = model.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
-				var localRotation = model.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
-				// UE.Debug.Log(newModelObject.name + "::" + localPosition + ", " + localRotation);
-
 				var modelHelper = newModelObject.AddComponent<Helper.Model>();
-				modelHelper.modelNameInPath = model.OriginalName;
-				modelHelper.isStatic = model.IsStatic;
-				modelHelper.Pose = model?.Pose;
-				modelHelper.isNested = model.IsNested;
+				modelHelper.modelNameInPath = model.OriginalName();
+				modelHelper.isStatic = model.Static;
+				modelHelper.Pose = model.RawPose;
+				modelHelper.PoseRelativeTo = model.PoseRelativeTo;
+				modelHelper.isNested = model.IsNested();
 
 				return newModelObject;
 			}
 
-			protected override IEnumerator ImportModel(SDF.Model model, System.Object parentObject, Action<System.Object> onCreatedRoot)
+			protected override IEnumerator ImportModel(Model model, System.Object parentObject, Action<System.Object> onCreatedRoot)
 			{
 				if (model == null)
 				{
 					yield return null;
 				}
 
-				// UE.Debug.Log("ImportModel({0})", model.Name);
-
 				var targetObject = (parentObject as UE.GameObject);
 				var newModelObject = CreateModel(model, targetObject);
 
-				ImportLinks(model.GetLinks(), newModelObject);
+				ImportLinks(model.Links, newModelObject);
 
 				// Add nested models
-				yield return ImportModels(model.GetModels(), newModelObject);
+				yield return ImportModels(model.Models, newModelObject);
 
 				AfterImportModel(model, newModelObject);
 
-				StoreJoints(model.GetJoints(), newModelObject);
+				StoreJoints(model.Joints, newModelObject);
 
-				StorePlugins(model.GetPlugins(), newModelObject);
+				StorePlugins(model.Plugins, newModelObject);
 
 				if (parentObject == null)
 				{
@@ -127,21 +123,20 @@ namespace SDF
 				yield return null;
 			}
 
-			protected override void AfterImportModel(in SDF.Model model, in System.Object targetObject)
+			protected override void AfterImportModel(in Model model, in System.Object targetObject)
 			{
 				var modelObject = (targetObject as UE.GameObject);
 
 				var modelHelper = modelObject.GetComponent<Helper.Model>();
 				if (modelHelper.IsFirstChild)
 				{
-					// UE.Debug.Log($"AfterImportModel: {model.OriginalName}, {modelObject.name}");
-					Main.SegmentationManager.AttachTag(model.OriginalName, modelObject);
+					Main.SegmentationManager.AttachTag(model.OriginalName(), modelObject);
 
 					// Also attach per-link tags with model::link naming for link-level segmentation
 					var linkHelpers = modelObject.GetComponentsInChildren<Helper.Link>();
 					foreach (var linkHelper in linkHelpers)
 					{
-						var linkTagName = model.OriginalName + "::" + linkHelper.name;
+						var linkTagName = model.OriginalName() + "::" + linkHelper.name;
 						Main.SegmentationManager.AttachTag(linkTagName, linkHelper.gameObject);
 					}
 

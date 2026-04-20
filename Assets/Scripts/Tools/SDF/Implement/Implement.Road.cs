@@ -7,46 +7,80 @@
 using UE = UnityEngine;
 using Splines = UnityEngine.Splines;
 using System.Linq;
+using System.Collections.Generic;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Implement
 	{
 		public class Road
 		{
-			public static UE.GameObject Generate(in SDF.World.Road road)
+			public static UE.GameObject Generate(in Element roadElement)
 			{
+				if (roadElement == null)
+				{
+					return null;
+				}
+
+				var roadName = roadElement.GetAttribute<string>("name", "road");
+				var roadWidth = Extensions.GetElementValue(roadElement, "width", 1.0);
+
 				var newRoadObject = new UE.GameObject();
 				newRoadObject.transform.SetParent(Main.RoadsRoot.transform);
-				newRoadObject.name = road.Name;
+				newRoadObject.name = roadName;
 				newRoadObject.tag = "Road";
 
 				var splineContainer = newRoadObject.AddComponent<Splines.SplineContainer>();
 
-				var centerPosOfRoad = new Vector3<double>(
-										road.points.Average(x => x.X),
-										road.points.Average(x => x.Y),
-										road.points.Average(x => x.Z));
-
-				newRoadObject.transform.localPosition = centerPosOfRoad.ToUnity();
-
-				foreach (var point in road.points)
+				var points = new List<Math.Vector3d>();
+				foreach (var pointElement in roadElement.GetElements("point"))
 				{
-					var offset = point - centerPosOfRoad;
+					var pointStr = pointElement.Value?.GetAsString();
+					if (!string.IsNullOrEmpty(pointStr))
+					{
+						points.Add(Math.Vector3d.Parse(pointStr));
+					}
+				}
+
+				if (points.Count == 0)
+				{
+					return newRoadObject;
+				}
+
+				var centerX = points.Average(p => p.X);
+				var centerY = points.Average(p => p.Y);
+				var centerZ = points.Average(p => p.Z);
+				var centerPos = new Math.Vector3d(centerX, centerY, centerZ);
+
+				newRoadObject.transform.localPosition = centerPos.ToUnity();
+
+				foreach (var point in points)
+				{
+					var offset = new Math.Vector3d(point.X - centerPos.X, point.Y - centerPos.Y, point.Z - centerPos.Z);
 					splineContainer.Spline.Add(offset.ToUnity(), Splines.TangentMode.AutoSmooth);
 				}
 
 				splineContainer.Spline.SetTangentMode(0, Splines.TangentMode.Linear);
-				splineContainer.Spline.SetTangentMode(road.points.Count - 1, Splines.TangentMode.Linear);
+				splineContainer.Spline.SetTangentMode(points.Count - 1, Splines.TangentMode.Linear);
 
-				var material = SDF2Unity.CreateMaterial(road.Name + "_Material");
+				var material = SDF2Unity.CreateMaterial(roadName + "_Material");
 
-				material = road.material.script.ApplyScript(material);
+				// Try to apply material script from road element
+				var materialElement = roadElement.FindElement("material");
+				if (materialElement != null)
+				{
+					var scriptElement = materialElement.FindElement("script");
+					if (scriptElement != null)
+					{
+						var scriptUri = scriptElement.FindElement("uri")?.Value?.GetAsString() ?? string.Empty;
+						var scriptName = scriptElement.FindElement("name")?.Value?.GetAsString() ?? string.Empty;
+						material = Material.ApplyScript(scriptUri, scriptName, material);
+					}
+				}
 
-				var roadGenerator = newRoadObject.AddComponent<Unity.Splines.LoftRoadGenerator>();
-				roadGenerator.SdfMaterial = road.material;
+				var roadGenerator = newRoadObject.AddComponent<global::Unity.Splines.LoftRoadGenerator>();
 				roadGenerator.Material = material;
-				roadGenerator.Width = (float)road.width;
+				roadGenerator.Width = (float)roadWidth;
 				roadGenerator.LoftAllRoads();
 
 				return newRoadObject;

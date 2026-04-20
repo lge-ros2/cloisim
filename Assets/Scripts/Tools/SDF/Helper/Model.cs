@@ -7,7 +7,7 @@
 using UE = UnityEngine;
 using UEAI = UnityEngine.AI;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Helper
 	{
@@ -42,7 +42,7 @@ namespace SDF
 
 						if (childArticulationBodies.Length == 1 && childArticulationBodies[0].index == 0)
 						{
-							// remove root articulation body if there are no ariticulation body in childeren
+							// remove root articulation body if there are no articulation body in children
 							UE.GameObject.Destroy(childArticulationBodies[0]);
 							hasRootArticulationBody = false;
 						}

@@ -13,10 +13,10 @@ using Any = cloisim.msgs.Any;
 [DefaultExecutionOrder(605)]
 public class ActorControlPlugin : CLOiSimPlugin
 {
-	public static Dictionary<string, SDF.Helper.Actor> actorList = new Dictionary<string, SDF.Helper.Actor>();
+	public static Dictionary<string, SDFormat.Helper.Actor> actorList = new Dictionary<string, SDFormat.Helper.Actor>();
 
 	private bool isReceivedRequest = false;
-	private SDF.Helper.Actor targetActor = null;
+	private SDFormat.Helper.Actor targetActor = null;
 	private Vector3 targetDestination;
 
 	protected override void OnAwake()
@@ -55,7 +55,7 @@ public class ActorControlPlugin : CLOiSimPlugin
 	private void UpdateActorList()
 	{
 		actorList.Clear();
-		foreach (var actor in Main.WorldRoot.GetComponentsInChildren<SDF.Helper.Actor>())
+		foreach (var actor in Main.WorldRoot.GetComponentsInChildren<SDFormat.Helper.Actor>())
 		{
 			actorList.Add(actor.name, actor);
 			// Debug.Log(actor.name);

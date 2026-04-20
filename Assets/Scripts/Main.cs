@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
@@ -76,6 +77,12 @@ public class Main : MonoBehaviour
 	private bool _resetTriggered = false;
 	private bool _startRecordTriggered = false;
 	private bool _stopRecordTriggered = false;
+	private bool _teleportTriggered = false;
+	private TeleportOperation _pendingTeleportOperation;
+
+	private string _pendingModelInfoQuery = null;
+	private Pose _pendingModelInfoResult;
+	private readonly ManualResetEventSlim _modelInfoQueryEvent = new(false);
 
 	public static GameObject PropsRoot => _instance._propsRoot;
 	public static GameObject WorldRoot => _instance._worldRoot;
@@ -119,8 +126,8 @@ public class Main : MonoBehaviour
 	}
 
 	#region SDF Parser
-	private SDF.Root _sdfRoot = null;
-	private SDF.Import.Loader _sdfLoader = null;
+	private SDFormat.RootLoader _sdfRoot = null;
+	private SDFormat.Import.Loader _sdfLoader = null;
 	#endregion
 
 	#region Non-Component class
@@ -416,7 +423,7 @@ public class Main : MonoBehaviour
 				_worldFilename = newWorldFilename;
 			}
 
-			_sdfRoot = new SDF.Root();
+			_sdfRoot = new SDFormat.RootLoader();
 			_sdfRoot.fileDefaultPaths.AddRange(_fileRootDirectories);
 			_sdfRoot.modelDefaultPaths.AddRange(_modelRootDirectories);
 			_sdfRoot.worldDefaultPaths.AddRange(_worldRootDirectories);
@@ -452,10 +459,11 @@ public class Main : MonoBehaviour
 
 	public IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
-		_uiController?.SetInfoMessage($"Model({modelFileName}) is now loading....");
-
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
+			_uiController?.SetInfoMessage($"Model '{model.Name}' is now loading....");
+			yield return null;
+
 			_bridgeManager.ClearAllocatedHistory();
 
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
@@ -487,7 +495,7 @@ public class Main : MonoBehaviour
 			yield return new WaitUntil(() => _pluginAllStarted);
 			_bridgeManager.PrintAllocatedHistory();
 
-			var message = $"Model({modelFileName}) is loaded > {model.Name}";
+			var message = $"Model '{model.Name}' is successfully loaded.";
 			Debug.Log(message);
 			_uiController?.SetInfoMessage(message);
 		}
@@ -496,11 +504,11 @@ public class Main : MonoBehaviour
 	private IEnumerator LoadWorld()
 	{
 		Debug.Log("Target World: " + _worldFilename);
-		_uiController?.SetInfoMessage($"World({_worldFilename}) is now loading....");
+		_uiController?.SetInfoMessage($"World '{_worldFilename}' is now loading....");
 
 		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
 		{
-			_sdfLoader = new SDF.Import.Loader();
+			_sdfLoader = new SDFormat.Import.Loader();
 			_sdfLoader.SetRootLights(_lightsRoot);
 			_sdfLoader.SetRootRoads(_roadsRoot);
 
@@ -522,7 +530,7 @@ public class Main : MonoBehaviour
 			Physics.SyncTransforms();
 			Physics.simulationMode = SimulationMode.FixedUpdate;
 
-			Reset();
+			ResetWorld();
 
 			_followingList?.UpdateList();
 
@@ -531,7 +539,7 @@ public class Main : MonoBehaviour
 
 			TrackModel();
 
-			var message = $"World({_worldFilename}) is loaded";
+			var message = $"World '{_worldFilename}' is loaded";
 			Debug.Log(message);
 			_uiController?.SetInfoMessage(message);
 		}
@@ -662,14 +670,10 @@ public class Main : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (Keyboard.current[Key.LeftCtrl].isPressed)
+		if ((Keyboard.current[Key.LeftCtrl].isPressed && Keyboard.current[Key.R].wasReleasedThisFrame) ||
+			Keyboard.current[Key.F5].wasReleasedThisFrame)
 		{
-			// Debug.Log("LeftControl Triggered");
-		 	if (Keyboard.current[Key.R].wasReleasedThisFrame)
-			{
-				// Debug.Log("Reset Triggered");
-				_resetTriggered = true;
-			}
+			_resetTriggered = true;
 		}
 
 		if (_resetTriggered && !_isResetting)
@@ -698,6 +702,38 @@ public class Main : MonoBehaviour
 			StopRecord();
 			_stopRecordTriggered = false;
 		}
+
+		if (_teleportTriggered)
+		{
+			_teleportTriggered = false;
+			StartCoroutine(DoTeleportModel());
+		}
+
+		if (_pendingModelInfoQuery != null)
+		{
+			var modelTransform = _worldRoot.transform.Find(_pendingModelInfoQuery);
+			if (modelTransform != null)
+			{
+				_pendingModelInfoResult = new Pose(modelTransform.localPosition, modelTransform.localRotation);
+			}
+			_pendingModelInfoQuery = null;
+			_modelInfoQueryEvent.Set();
+		}
+	}
+
+	public bool TriggerModelInfoQuery(in string modelName, out Pose pose, int timeoutMs = 1000)
+	{
+		pose = Pose.identity;
+		_modelInfoQueryEvent.Reset();
+		_pendingModelInfoQuery = modelName;
+
+		if (!_modelInfoQueryEvent.Wait(timeoutMs))
+		{
+			return false;
+		}
+
+		pose = _pendingModelInfoResult;
+		return pose != Pose.identity;
 	}
 
 	public bool TriggerResetService()
@@ -722,19 +758,39 @@ public class Main : MonoBehaviour
 		_stopRecordTriggered = true;
 	}
 
+	public void TriggerTeleportService(in TeleportOperation operation)
+	{
+		_pendingTeleportOperation = operation;
+		_teleportTriggered = true;
+	}
+
 	void Reset()
 	{
-		foreach (var helper in _worldRoot.GetComponentsInChildren<SDF.Helper.Base>())
+		ResetWorld();
+	}
+
+	private void ResetWorld()
+	{
+		ResetModel(_worldRoot);
+	}
+
+	private void ResetModel(GameObject targetObject)
+	{
+		var helpers = targetObject.GetComponentsInChildren<SDFormat.Helper.Base>();
+		foreach (var helper in helpers)
 		{
 			helper.Reset();
 		}
 
-		foreach (var device in _worldRoot.GetComponentsInChildren<Device>())
+		// Also reset devices and plugins for this model
+		var devices = targetObject.GetComponentsInChildren<Device>();
+		foreach (var device in devices)
 		{
 			device.Reset();
 		}
 
-		foreach (var plugin in _worldRoot.GetComponentsInChildren<CLOiSimPlugin>())
+		var plugins = targetObject.GetComponentsInChildren<CLOiSimPlugin>();
+		foreach (var plugin in plugins)
 		{
 			plugin.Reset();
 		}
@@ -745,16 +801,97 @@ public class Main : MonoBehaviour
 		_isResetting = true;
 		// Debug.LogWarning("Reset positions in simulation!!!");
 
+		SensorRenderManager.Pause();
+
 		_simulationWorld?.SignalReset();
 
 		_transformGizmo?.ClearTargets();
 
-		Reset();
+		ResetWorld();
 
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
 		yield return new WaitForSeconds(0.1f);
 
+		SensorRenderManager.Resume();
+
 		_isResetting = false;
+	}
+
+	private IEnumerator DoTeleportModel()
+	{
+		var operation = _pendingTeleportOperation;
+
+		try
+		{
+			// Switch to script mode for physics manipulation
+			Physics.simulationMode = SimulationMode.Script;
+
+			// Teleport all targets
+			foreach (var target in operation.targets)
+			{
+				// Convert SDF pose (right-handed) to Unity pose (left-handed)
+				var position = SDF2Unity.Position(target.pose.x, target.pose.y, target.pose.z);
+				var quaternion = SDFormat.Math.Quaterniond.FromEuler(target.pose.roll, target.pose.pitch, target.pose.yaw);
+				var rotation = SDF2Unity.ToUnity(quaternion);
+				TeleportSingleModel(target.target, position, rotation, target.reset);
+			}
+
+			Physics.simulationMode = SimulationMode.FixedUpdate;
+			_uiController?.SetInfoMessage($"Teleport operation completed");
+		}
+		catch (Exception ex)
+		{
+			Debug.LogError($"Teleport failed: {ex.Message}\n{ex.StackTrace}");
+			_uiController?.SetInfoMessage($"Teleport operation failed");
+			Physics.simulationMode = SimulationMode.FixedUpdate;
+		}
+
+		yield return null;
+
+		// Handle world reset if requested (do this outside try-catch to allow yields)
+		if (operation.worldReset)
+		{
+			_uiController?.SetInfoMessage($"Resetting world after teleporting models");
+			yield return ResetSimulation();
+		}
+	}
+
+	private void TeleportSingleModel(string modelName, Vector3 position, Quaternion rotation, bool doReset)
+	{
+		// Find the model in the scene
+		var modelObject = _worldRoot.transform.Find(modelName)?.gameObject;
+		if (modelObject == null)
+		{
+			Debug.LogError($"Teleport failed: Model '{modelName}' not found in scene");
+			return;
+		}
+
+		// If restart is requested, reset the specific model
+		if (doReset)
+		{
+			Debug.Log($"Resetting model '{modelName}' before teleport");
+			ResetModel(modelObject);
+		}
+
+		Debug.Log($"Teleporting model '{modelName}' to position ({position})");
+
+		// Try to teleport using ArticulationBody if available
+		var articulationBody = modelObject.GetComponentInChildren<ArticulationBody>();
+		if (articulationBody != null && articulationBody.isRoot)
+		{
+			articulationBody.Sleep();
+			articulationBody.TeleportRoot(position, rotation);
+		}
+		else
+		{
+			// Fallback to direct transform manipulation
+			modelObject.transform.position = position;
+			modelObject.transform.rotation = rotation;
+		}
+
+		Physics.SyncTransforms();
+
+		Debug.Log($"Teleport completed for model '{modelName}'");
 	}
 
 	/// <summary>

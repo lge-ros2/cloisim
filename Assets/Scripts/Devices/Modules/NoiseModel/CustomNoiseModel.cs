@@ -42,7 +42,7 @@ public class CustomNoiseModel : GaussianNoiseModel
 
 	private List<CustomNoise> customNoiseSet = new();
 
-	public CustomNoiseModel(in SDF.Noise parameter)
+	public CustomNoiseModel(in SDFormat.Noise parameter)
 		: base(parameter)
 	{
 	}
@@ -64,9 +64,9 @@ public class CustomNoiseModel : GaussianNoiseModel
 
 		if (_quantized)
 		{
-			if (Math.Abs(_parameter.precision - 0d) > Epsilon)
+			if (Math.Abs(_parameter.Precision - 0d) > Epsilon)
 			{
-				output = Math.Round(output / _parameter.precision) * _parameter.precision;
+				output = Math.Round(output / _parameter.Precision) * _parameter.Precision;
 			}
 		}
 

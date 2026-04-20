@@ -9,14 +9,14 @@ using UnityEngine;
 
 public static partial class SDF2Unity
 {
-	public static Color ToUnity(this SDF.Color value)
+	public static Color ToUnity(this SDFormat.Math.Color value)
 	{
-		return new Color((float)value.R, (float)value.G, (float)value.B, (float)value.A);
+		return new Color(value.R, value.G, value.B, value.A);
 	}
 
 	public static Color ToColor(this string value)
 	{
-		var color = new SDF.Color(value);
+		var color = SDFormat.Math.Color.Parse(value);
 		return color.ToUnity();
 	}
 
@@ -28,14 +28,9 @@ public static partial class SDF2Unity
 		return new Vector3(-(float)y, (float)z, (float)x);
 	}
 
-	public static Vector3 ToUnity(this SDF.Vector3<double>? value)
+	public static Vector3 ToUnity(this SDFormat.Math.Vector3d value)
 	{
-		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
-	}
-
-	public static Vector3 ToUnity(this SDF.Vector3<int>? value)
-	{
-		return (value == null) ? Vector3.zero : Position(value.X, value.Y, value.Z);
+		return Position(value.X, value.Y, value.Z);
 	}
 
 	public static Vector3 ToUnity(this cloisim.msgs.Vector3d value)
@@ -52,24 +47,20 @@ public static partial class SDF2Unity
 		return scalarVector;
 	}
 
-	public static Vector2 Scale(in SDF.Vector2<double> value)
+	public static Vector2 Scale(in SDFormat.Math.Vector2d value)
 	{
 		return new Vector2(Mathf.Abs((float)value.X), Mathf.Abs((float)value.Y));
 	}
 
 	public static Vector2 Scale(in string value)
 	{
-		return Scale(new SDF.Vector2<double>(value));
+		return Scale(SDFormat.Math.Vector2d.Parse(value));
 	}
 
-	public static Vector3 Scale(in double x, in double y, in double z)
+	public static Vector3 Scale(in SDFormat.Math.Vector3d value)
 	{
-		return Scalar(x, y, z);
-	}
-
-	public static Vector3 Scale(in SDF.Vector3<double> value)
-	{
-		return Scale(value.X, value.Y, value.Z);
+		var sign = new Vector3(Mathf.Sign((float)value.Y), Mathf.Sign((float)value.Z), Mathf.Sign((float)value.X));
+		return Vector3.Scale(Scalar(value.X, value.Y, value.Z), sign);
 	}
 
 	/// <param name="w">right handed system w</param>
@@ -81,22 +72,22 @@ public static partial class SDF2Unity
 		return new Quaternion((float)y, (float)-z, (float)-x, (float)w);
 	}
 
-	public static Quaternion ToUnity(this SDF.Quaternion<double>? value)
+	public static Quaternion ToUnity(this SDFormat.Math.Quaterniond value)
 	{
-		return (value == null) ? Quaternion.identity : Rotation(value.W, value.X, value.Y, value.Z);
+		return Rotation(value.W, value.X, value.Y, value.Z);
 	}
 
-	public static Quaternion ToUnity(this SDF.Quaternion<float>? value)
+	public static (Vector3, Quaternion) ToUnity(this SDFormat.Math.Pose3d pose)
 	{
-		return (value == null) ? Quaternion.identity : Rotation(value.W, value.X, value.Y, value.Z);
+		return (ToUnity(pose.Position), ToUnity(pose.Rotation));
 	}
 
-	public static Vector2 Size(in SDF.Vector2<double> value)
+	public static Vector2 Size(in SDFormat.Math.Vector2d value)
 	{
 		return new Vector2((float)value.X, (float)value.Y);
 	}
 
-	public static Vector2 Point(in SDF.Vector2<double> value)
+	public static Vector2 Point(in SDFormat.Math.Vector2d value)
 	{
 		return new Vector2((float)value.Y, (float)value.X);
 	}

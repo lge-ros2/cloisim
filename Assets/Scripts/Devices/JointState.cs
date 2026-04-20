@@ -96,7 +96,7 @@ namespace SensorDevices
 #endif
 		}
 
-		public bool AddTargetJoint(in string targetJointName, out SDF.Helper.Link link, out bool isStatic)
+		public bool AddTargetJoint(in string targetJointName, out SDFormat.Helper.Link link, out bool isStatic)
 		{
 			var childArticulationBodies = gameObject.GetComponentsInChildren<ArticulationBody>();
 			var rootModelName = string.Empty;
@@ -115,7 +115,7 @@ namespace SensorDevices
 				var parentObject = childArticulationBody.transform.parent;
 				var parentModelName = parentObject.name;
 
-				var linkHelper = childArticulationBody.GetComponentInChildren<SDF.Helper.Link>();
+				var linkHelper = childArticulationBody.GetComponentInChildren<SDFormat.Helper.Link>();
 				// Debug.Log("linkHelper.JointName " + linkHelper.JointName);
 				if (linkHelper.JointName.Equals(targetJointName))
 				{

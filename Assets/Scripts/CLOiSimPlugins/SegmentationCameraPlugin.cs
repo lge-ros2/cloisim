@@ -5,6 +5,7 @@
  */
 
 using UnityEngine;
+using SDFormat;
 
 public class SegmentationCameraPlugin : CameraPlugin
 {

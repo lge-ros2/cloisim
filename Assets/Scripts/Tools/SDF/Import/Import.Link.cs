@@ -7,7 +7,7 @@
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Import
 	{
@@ -15,7 +15,7 @@ namespace SDF
 		{
 			private static readonly float MinimumInertiaTensor = 1e-39f;
 
-			private static UE.Pose GetInertiaTensor(in SDF.Inertial.Inertia inertia, in UE.ArticulationBody tempArticulationBodyForCalculation)
+			private static UE.Pose GetInertiaTensor(in Math.Inertial inertial, in UE.ArticulationBody tempArticulationBodyForCalculation)
 			{
 				/**
 				 *  Inertia Tensor
@@ -25,7 +25,7 @@ namespace SDF
 				 *  | Ixz  Iyz  Izz |
 				 */
 				var inertiaMomentum = UE.Pose.identity;
-				var inertiaVector = SDF2Unity.Scalar((float)inertia?.ixx, (float)inertia?.iyy, (float)inertia?.izz);
+				var inertiaVector = SDF2Unity.Scalar((float)inertial.Ixx, (float)inertial.Iyy, (float)inertial.Izz);
 
 				for (var index = 0; index < 3; index++)
 				{
@@ -56,29 +56,33 @@ namespace SDF
 				return inertiaMomentum;
 			}
 
-			protected override System.Object ImportLink(in SDF.Link link, in System.Object parentObject)
+			protected override System.Object ImportLink(in Link link, in System.Object parentObject)
 			{
 				var targetObject = (parentObject as UE.GameObject);
-				var newLinkObject = new UE.GameObject(link.Name);
-				newLinkObject.tag = "Link";
+				var newLinkObject = new UE.GameObject(link.Name)
+				{
+					tag = "Link"
+				};
 
 				targetObject.SetChild(newLinkObject);
 
 				var linkHelper = newLinkObject.AddComponent<Helper.Link>();
-				linkHelper.isSelfCollide = link.SelfCollide;
-				linkHelper.useGravity = (link.Kinematic) ? false : link.Gravity;
-				linkHelper.Pose = link?.Pose;
-				linkHelper.Inertial = link?.Inertial;
+				linkHelper.isSelfCollide = link.SelfCollide();
+				linkHelper.useGravity = link.Kinematic ? false : link.EnableGravity;
+				linkHelper.Pose = link.RawPose;
+				linkHelper.PoseRelativeTo = link.PoseRelativeTo;
+				linkHelper.Inertial = link.Inertial;
 
-				if (link.Battery != null)
+				var battery = link.GetBattery();
+				if (battery != null)
 				{
-					linkHelper.AttachBattery(link.Battery.name, (float)link.Battery.voltage);
+					linkHelper.AttachBattery(battery.Value.name, (float)battery.Value.voltage);
 				}
 
 				return newLinkObject as System.Object;
 			}
 
-			protected override void AfterImportLink(in SDF.Link link, in System.Object targetObject)
+			protected override void AfterImportLink(in Link link, in System.Object targetObject)
 			{
 				var linkObject = (targetObject as UE.GameObject);
 
@@ -127,7 +131,7 @@ namespace SDF
 					return null;
 				}
 
-				var linkHelper = linkObject.GetComponent<SDF.Helper.Link>();
+				var linkHelper = linkObject.GetComponent<Helper.Link>();
 				var colliders = linkObject.GetComponentsInChildren<UE.Collider>();
 				var inertial = linkHelper?.Inertial;
 
@@ -159,7 +163,7 @@ namespace SDF
 				articulationBody.angularVelocity = UE.Vector3.zero;
 				articulationBody.useGravity = (linkHelper == null) ? false : linkHelper.useGravity;
 				articulationBody.jointType = UE.ArticulationJointType.FixedJoint;
-				articulationBody.mass = (inertial == null) ? 0.5f : (float)linkHelper.Inertial.mass;
+				articulationBody.mass = (inertial == null) ? 0.5f : (float)linkHelper.Inertial.Mass;
 				articulationBody.linearDamping = 3;
 				articulationBody.angularDamping = 1;
 				articulationBody.jointFriction = 0f;
@@ -177,7 +181,10 @@ namespace SDF
 
 				articulationBody.ResetCenterOfMass();
 				articulationBody.automaticCenterOfMass = false;
-				articulationBody.centerOfMass = inertial?.pose?.Pos?.ToUnity() ?? UE.Vector3.zero;
+
+				var (centerOfMassPos, _) = inertial.Pose.ToUnity();
+				articulationBody.centerOfMass = centerOfMassPos;
+
 				// Debug.Log($"{linkObject.name} => Center Of Mass: {articulationBody.centerOfMass.ToString("F5")} | inertia: {articulationBody.inertiaTensor.ToString("F5")}, {articulationBody.inertiaTensorRotation.ToString("F5")}");
 
 				if (colliders.Length == 0)
@@ -186,9 +193,9 @@ namespace SDF
 				}
 
 				articulationBody.ResetInertiaTensor();
-				if (inertial?.inertia != null)
+				if (inertial != null && inertial.Ixx != 0)
 				{
-					var momentum = GetInertiaTensor(inertial?.inertia, articulationBody);
+					var momentum = GetInertiaTensor(inertial, articulationBody);
 					articulationBody.inertiaTensor = momentum.position;
 					articulationBody.inertiaTensorRotation = momentum.rotation;
 					articulationBody.automaticInertiaTensor = false;

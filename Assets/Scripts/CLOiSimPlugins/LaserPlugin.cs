@@ -6,6 +6,7 @@
 using System.Collections;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
+using SDFormat;
 
 public class LaserPlugin : CLOiSimPlugin
 {

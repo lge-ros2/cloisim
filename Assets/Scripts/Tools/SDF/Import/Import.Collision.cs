@@ -9,7 +9,7 @@ using UE = UnityEngine;
 using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;
 #endif
 
-namespace SDF
+namespace SDFormat
 {
 	using Implement;
 
@@ -17,24 +17,24 @@ namespace SDF
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportCollision(in SDF.Collision collision, in System.Object parentObject)
+			protected override System.Object ImportCollision(in Collision collision, in System.Object parentObject)
 			{
 				var targetObject = (parentObject as UE.GameObject);
-				var newCollisionObject = new UE.GameObject(collision.Name);
-				newCollisionObject.tag = "Collision";
+				var newCollisionObject = new UE.GameObject(collision.Name)
+				{
+					tag = "Collision"
+				};
 
 				targetObject.SetChild(newCollisionObject);
 
-				var localPosition = collision.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
-				var localRotation = collision.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
-
 				var collisionHelper = newCollisionObject.AddComponent<Helper.Collision>();
-				collisionHelper.Pose = collision?.Pose;
+				collisionHelper.Pose = collision.RawPose;
+				collisionHelper.PoseRelativeTo = collision.PoseRelativeTo;
 
 				return newCollisionObject as System.Object;
 			}
 
-			protected override void AfterImportCollision(in SDF.Collision collision, in System.Object targetObject)
+			protected override void AfterImportCollision(in Collision collision, in System.Object targetObject)
 			{
 				var collisionObject = (targetObject as UE.GameObject);
 
@@ -42,31 +42,32 @@ namespace SDF
 				if (collisionObject.CompareTag("Collision"))
 				{
 					var geometryObject = (collisionObject.transform.childCount == 0) ? collisionObject : collisionObject.transform.GetChild(0).gameObject;
-					geometryObject.MakeCollision();
 
-					var shape = collision.GetGeometry().GetShape();
-					if (shape != null)
+					var geom = collision.Geom;
+					var enhanced = false;
+
+					// Try native colliders first (Box, Sphere, Capsule) to avoid
+					// creating MeshColliders that would be immediately discarded.
+					if (geom != null && geom.Type != GeometryType.Plane)
 					{
-						var shapeType = shape.GetType();
+						enhanced = EnhanceCollisionPerformance(geom, geometryObject);
+					}
 
-						if (shapeType.Equals(typeof(Plane)))
+					if (enhanced)
+					{
+						Implement.Collision.RemoveRenderers(geometryObject);
+					}
+					else
+					{
+						geometryObject.MakeCollision();
+
+						if (geom != null && geom.Type == GeometryType.Plane)
 						{
 							collisionObject.layer = Implement.Collision.PlaneLayerIndex;
 							var existingMeshCollider = geometryObject.GetComponent<UE.MeshCollider>();
 							if (existingMeshCollider != null)
 							{
 								existingMeshCollider.convex = false;
-							}
-						}
-						else
-						{
-							if (EnhanceCollisionPerformance(shapeType, shape, geometryObject))
-							{
-								var meshColliders = geometryObject.GetComponentsInChildren<UE.MeshCollider>();
-								for (var index = 0; index < meshColliders.Length; index++)
-								{
-									UE.GameObject.Destroy(meshColliders[index]);
-								}
 							}
 						}
 					}
@@ -78,42 +79,39 @@ namespace SDF
 				}
 
 				// Due to making collision function, it should be called after make collision regioin
-				collisionObject.transform.localPosition = collision.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
-				collisionObject.transform.localRotation = collision.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
+				var (position, rotation) = collision.RawPose.ToUnity();
+				collisionObject.transform.localPosition = position;
+				collisionObject.transform.localRotation = rotation;
 
-				collisionObject.SetSurfaceFriction(collision.GetSurface());
+				collisionObject.SetSurfaceFriction(collision.SurfaceInfo);
 			}
 
 			private bool EnhanceCollisionPerformance(
-				in System.Type shapeType,
-				in ShapeType shape,
+				in Geometry geom,
 				UE.GameObject targetObject)
 			{
-				if (shapeType.Equals(typeof(Box)))
+				switch (geom.Type)
 				{
-					var box = shape as SDF.Box;
-					var scale = SDF2Unity.Scale(box.size);
-
-					var boxCollider = targetObject.AddComponent<UE.BoxCollider>();
-					boxCollider.size = scale;
-					return true;
-				}
-				else if (shapeType.Equals(typeof(Sphere)))
-				{
-					var sphere = shape as SDF.Sphere;
-
-					var sphereCollider = targetObject.AddComponent<UE.SphereCollider>();
-					sphereCollider.radius = (float)sphere.radius;
-					return true;
-				}
-				else if (shapeType.Equals(typeof(Capsule)))
-				{
-					var capsule = shape as SDF.Capsule;
-
-					var capsuleCollider = targetObject.AddComponent<UE.CapsuleCollider>();
-					capsuleCollider.radius = (float)capsule.radius;
-					capsuleCollider.height = (float)capsule.length;
-					return true;
+					case GeometryType.Box:
+					{
+						var scale = SDF2Unity.Scale(geom.BoxShape.Size);
+						var boxCollider = targetObject.AddComponent<UE.BoxCollider>();
+						boxCollider.size = scale;
+						return true;
+					}
+					case GeometryType.Sphere:
+					{
+						var sphereCollider = targetObject.AddComponent<UE.SphereCollider>();
+						sphereCollider.radius = (float)geom.SphereShape.Radius;
+						return true;
+					}
+					case GeometryType.Capsule:
+					{
+						var capsuleCollider = targetObject.AddComponent<UE.CapsuleCollider>();
+						capsuleCollider.radius = (float)geom.CapsuleShape.Radius;
+						capsuleCollider.height = (float)geom.CapsuleShape.Length;
+						return true;
+					}
 				}
 
 				return false;

@@ -6,7 +6,7 @@
 
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Helper
 	{
@@ -23,17 +23,25 @@ namespace SDF
 			public bool IsFirstChild => _isRootModel; // root model
 
 			[UE.Header("SDF Properties")]
-			private SDF.Pose<double> _pose = null; // described in SDF file
+			private SDFormat.Math.Pose3d? _pose = null; // described in SDF file
 
-			public Pose<double> Pose
+			private string _poseRelativeTo = null;
+
+			public SDFormat.Math.Pose3d? Pose
 			{
 				get => _pose;
 				set => _pose = value;
 			}
 
-			private SDF.Inertial _inertial = null; // described in SDF file
+			public string PoseRelativeTo
+			{
+				get => _poseRelativeTo;
+				set => _poseRelativeTo = value;
+			}
 
-			public Inertial Inertial
+			private SDFormat.Math.Inertial _inertial = null; // described in SDF file
+
+			public SDFormat.Math.Inertial Inertial
 			{
 				get => _inertial;
 				set => _inertial = value;

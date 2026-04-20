@@ -25,7 +25,7 @@ public struct Vector3d
 	{
 	}
 
-	public Vector3d(in SDF.Vector3<double> v)
+	public Vector3d(in SDFormat.Math.Vector3d v)
 		: this(v.X, v.Y, v.Z)
 	{
 	}
@@ -593,7 +593,7 @@ public struct Vector3d
 		return new Vector3d(v.x, v.y, v.z);
 	}
 
-	public static implicit operator Vector3d(in SDF.Vector3<double> v)
+	public static implicit operator Vector3d(in SDFormat.Math.Vector3d v)
 	{
 		return new Vector3((float)v.X, (float)v.Y, (float)v.Z);
 	}

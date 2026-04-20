@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Collections;
 using System;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Import
 	{
@@ -42,7 +42,7 @@ namespace SDF
 				return null;
 			}
 
-			protected virtual void AfterImportVisual(in SDF.Visual visual, in System.Object targetObject)
+			protected virtual void AfterImportVisual(in Visual visual, in System.Object targetObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, visual.Name);
 			}
@@ -88,12 +88,12 @@ namespace SDF
 
 			protected virtual void ImportGeometry(in Geometry geometry, in Object parentObject)
 			{
-				PrintNotImported(MethodBase.GetCurrentMethod().Name, geometry.Name);
+				PrintNotImported(MethodBase.GetCurrentMethod().Name, geometry.Type.ToString());
 			}
 
 			protected virtual void ImportMaterial(in Material sdfMaterial, in Object parentObject)
 			{
-				PrintNotImported(MethodBase.GetCurrentMethod().Name, sdfMaterial.Name);
+				PrintNotImported(MethodBase.GetCurrentMethod().Name, "material");
 			}
 
 			protected virtual void ImportLight(in Light light, in Object parentObject)

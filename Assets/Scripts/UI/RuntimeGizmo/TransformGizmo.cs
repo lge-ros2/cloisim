@@ -400,7 +400,7 @@ namespace RuntimeGizmos
 									}
 									else
 									{
-										var actor = targetTransform.GetComponent<SDF.Helper.Actor>();
+										var actor = targetTransform.GetComponent<SDFormat.Helper.Actor>();
 										if (actor != null && actor.HasWayPoints)
 										{
 											var newPose = (actor.GetPoseCount() == 1) ? actor.GetPose(0) : actor.GetPose(1);
@@ -567,16 +567,16 @@ namespace RuntimeGizmos
 					else
 					{
 						// To avoid plane object
-						var isPlaneObject = hitObject.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex);
-						var collisionHelper = hitObject.GetComponentInChildren<SDF.Helper.Collision>();
+						var isPlaneObject = hitObject.gameObject.layer.Equals(SDFormat.Implement.Collision.PlaneLayerIndex);
+						var collisionHelper = hitObject.GetComponentInChildren<SDFormat.Helper.Collision>();
 						if (collisionHelper != null)
 						{
-							isPlaneObject |= collisionHelper.gameObject.layer.Equals(SDF.Implement.Collision.PlaneLayerIndex);
+							isPlaneObject |= collisionHelper.gameObject.layer.Equals(SDFormat.Implement.Collision.PlaneLayerIndex);
 						}
 
 						if (!isPlaneObject)
 						{
-							var hitParentLinkHelper = hitObject?.GetComponentInParent<SDF.Helper.Link>();
+							var hitParentLinkHelper = hitObject?.GetComponentInParent<SDFormat.Helper.Link>();
 							var hitRootModelHelper = hitParentLinkHelper?.RootModel;
 
 							if (hitRootModelHelper != null && hitParentLinkHelper.Model != null)

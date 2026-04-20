@@ -53,7 +53,7 @@ public class ModelImporter : MonoBehaviour
 		}
 	}
 
-	public void UpdateUIModelList(in SDF.ResourceModelTable resourceModelTable)
+	public void UpdateUIModelList(in SDFormat.ResourceModelTable resourceModelTable)
 	{
 		if (_modelList == null)
 		{
@@ -184,24 +184,26 @@ public class ModelImporter : MonoBehaviour
 						| LayerMask.GetMask("TransparentFX")
 						| LayerMask.GetMask("UI")
 						| LayerMask.GetMask("Water"));
-		if (Physics.Raycast(ray, out var hitInfo, _maxRayDistance, layerMask))
+		var hits = Physics.RaycastAll(ray, _maxRayDistance, layerMask);
+		System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+		foreach (var hit in hits)
 		{
-			point = hitInfo.point;
-			normal = hitInfo.normal;
-			// Debug.Log(point + ", " + normal);
+			if (_targetObject != null && hit.transform.IsChildOf(_targetObject))
+				continue;
+
+			point = hit.point;
+			normal = hit.normal;
 			return true;
 		}
-		else
-		{
-			point = Vector3.negativeInfinity;
-			normal = Vector3.negativeInfinity;
-		}
+
+		point = Vector3.negativeInfinity;
+		normal = Vector3.negativeInfinity;
 		return false;
 	}
 
 	private void SetInitPose()
 	{
-		var modelHelper = _targetObject.GetComponent<SDF.Helper.Model>();
+		var modelHelper = _targetObject.GetComponent<SDFormat.Helper.Model>();
 		if (modelHelper != null)
 		{
 			modelHelper.SetPose(_targetObject.localPosition + _modelDeployOffset, _targetObject.localRotation);
@@ -219,7 +221,7 @@ public class ModelImporter : MonoBehaviour
 
 		UnblockSelfRaycast();
 
-		foreach (var helper in _targetObject.GetComponentsInChildren<SDF.Helper.Base>())
+		foreach (var helper in _targetObject.GetComponentsInChildren<SDFormat.Helper.Base>())
 		{
 			helper.Reset();
 		}

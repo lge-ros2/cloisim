@@ -44,18 +44,18 @@ public static partial class DeviceHelper
 	{
 		try
 		{
-			SDF.Helper.Base nextObject = targetObject.GetComponentInParent<SDF.Helper.Model>();
+			SDFormat.Helper.Base nextObject = targetObject.GetComponentInParent<SDFormat.Helper.Model>();
 
 			if (nextObject == null)
 			{
-				nextObject = targetObject.GetComponentInParent<SDF.Helper.Actor>();
+				nextObject = targetObject.GetComponentInParent<SDFormat.Helper.Actor>();
 			}
 
 			if (nextObject != null && !nextObject.CompareTag("Actor"))
 			{
 				while (!nextObject.transform.IsRootModel())
 				{
-					nextObject = nextObject.transform.parent.GetComponentInParent<SDF.Helper.Base>();
+					nextObject = nextObject.transform.parent.GetComponentInParent<SDFormat.Helper.Base>();
 
 					if (nextObject == null)
 					{
@@ -89,7 +89,7 @@ public static partial class DeviceHelper
 			}
 			else if (targetObject.CompareTag("Sensor"))
 			{
-				var linkHelper = targetObject.GetComponentInParent<SDF.Helper.Link>();
+				var linkHelper = targetObject.GetComponentInParent<SDFormat.Helper.Link>();
 				if (linkHelper == null)
 				{
 					// Debug.LogWarning($"There is no Link helper for sensor: {targetObject.name}");
@@ -109,7 +109,7 @@ public static partial class DeviceHelper
 			}
 			else
 			{
-				var linkHelper = targetObject.GetComponentInParent<SDF.Helper.Link>();
+				var linkHelper = targetObject.GetComponentInParent<SDFormat.Helper.Link>();
 				if (linkHelper.transform.parent.CompareTag("Link")) // if sensor link is nested in link element
 				{
 					// Debug.Log($"Parts Name: {linkHelper.Model.name}");

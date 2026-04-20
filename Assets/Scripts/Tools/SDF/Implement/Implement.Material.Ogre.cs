@@ -9,7 +9,7 @@ using System.IO;
 using System;
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Implement
 	{
@@ -39,7 +39,7 @@ namespace SDF
 				return string.Empty;
 			}
 
-			private static void ApplyVertexColour(this UE.Material material, in Dictionary<string, string> passProperties)
+			private static void ApplyVertexColor(this UE.Material material, in Dictionary<string, string> passProperties)
 			{
 				if (passProperties.ContainsKey("diffuse"))
 				{
@@ -254,7 +254,7 @@ namespace SDF
 
 						var material = materials[materialIndex++];
 
-						material.ApplyVertexColour(pass.properties);
+						material.ApplyVertexColor(pass.properties);
 
 						material.ApplyTextureUnits(pass.textureUnits, texturePathURIs);
 					}

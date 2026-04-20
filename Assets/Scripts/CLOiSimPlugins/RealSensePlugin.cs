@@ -10,6 +10,7 @@ using System;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 using UnityEngine;
+using SDFormat;
 
 public class RealSensePlugin : CLOiSimMultiPlugin
 {

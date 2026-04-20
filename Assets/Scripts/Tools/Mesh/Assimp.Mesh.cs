@@ -578,10 +578,7 @@ public static partial class MeshLoader
 			var scene = GetScene(meshPath, subMesh);
 			if (scene == null)
 			{
-				meshObject = new GameObject("Empty Mesh");
-				meshObject.SetActive(false);
-				meshObject.tag = "Geometry";
-				return meshObject;
+				return null;
 			}
 
 			// Meshes

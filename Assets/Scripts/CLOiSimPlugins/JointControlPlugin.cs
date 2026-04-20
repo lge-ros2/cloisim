@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Any = cloisim.msgs.Any;
 using messages = cloisim.msgs;
+using SDFormat;
 
 public class JointControlPlugin : CLOiSimPlugin
 {

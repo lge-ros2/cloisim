@@ -11,6 +11,7 @@ using messages = cloisim.msgs;
 using Unity.Profiling;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Material = UnityEngine.Material;
 
 namespace SensorDevices
 {
@@ -24,7 +25,7 @@ namespace SensorDevices
 		private static readonly ProfilerMarker s_CopyReadbackMarker = new("Camera.CopyReadback");
 		#endregion
 
-		protected SDF.Camera _camParam = null;
+		protected SDFormat.CameraSensor _camParam = null;
 		protected messages.CameraSensor _sensorInfo = null;
 		protected messages.Image _image = null; // for Parameters
 
@@ -128,20 +129,20 @@ namespace SensorDevices
 			}
 		}
 
-		public void SetupNoise(in SDF.Noise param)
+		public void SetupNoise(in SDFormat.Noise param)
 		{
-			if (param != null)
+			if (param != null && param.Type != SDFormat.NoiseType.None)
 			{
-				Debug.Log($"{DeviceName}: Apply noise type:{param.type} mean:{param.mean} stddev:{param.stddev}");
+				Debug.Log($"{DeviceName}: Apply noise type:{param.Type} mean:{param.Mean} stddev:{param.StdDev}");
 				_noiseMaterial = new Material(Shader.Find("Sensor/Camera/GaussianNoise"));
 				_noiseMaterial.hideFlags = HideFlags.DontUnloadUnusedAsset;
-				_noiseMaterial.SetFloat("_Mean", (float)param.mean);
-				_noiseMaterial.SetFloat("_StdDev", (float)param.stddev);
+				_noiseMaterial.SetFloat("_Mean", (float)param.Mean);
+				_noiseMaterial.SetFloat("_StdDev", (float)param.StdDev);
 				_noiseCmdBuffer = new CommandBuffer { name = "Gaussian Noise" };
 			}
 		}
 
-		public void SetParameter(in SDF.Camera param)
+		public void SetParameter(in SDFormat.CameraSensor param)
 		{
 			_camParam = param;
 		}
@@ -212,7 +213,7 @@ namespace SensorDevices
 			// Debug.Log("This is not a Depth Camera!");
 			_targetRTname = "CameraColorTexture";
 
-			var pixelFormat = CameraData.GetPixelFormat(_camParam.image.format);
+			var pixelFormat = CameraData.GetPixelFormat(_camParam.ImageFormat);
 			var textureFormatForCapture = TextureFormat.RGB24;
 			switch (pixelFormat)
 			{
@@ -230,7 +231,7 @@ namespace SensorDevices
 					break;
 			}
 
-			_textureForCapture = new Texture2D(_camParam.image.width, _camParam.image.height, textureFormatForCapture, false, true);
+			_textureForCapture = new Texture2D((int)_camParam.ImageWidth, (int)_camParam.ImageHeight, textureFormatForCapture, false, true);
 			_textureForCapture.filterMode = FilterMode.Point;
 		}
 
@@ -250,31 +251,36 @@ namespace SensorDevices
 
 		protected override void SetupMessages()
 		{
-			var pixelFormat = CameraData.GetPixelFormat(_camParam.image.format);
-			_image.Width = (uint)_camParam.image.width;
-			_image.Height = (uint)_camParam.image.height;
+			var pixelFormat = CameraData.GetPixelFormat(_camParam.ImageFormat);
+			_image.Width = _camParam.ImageWidth;
+			_image.Height = _camParam.ImageHeight;
 			_image.PixelFormat = (uint)pixelFormat;
 			_image.Step = _image.Width * (uint)CameraData.GetImageStep(pixelFormat);
 			_image.Data = new byte[_image.Height * _image.Step];
 
-			_sensorInfo.HorizontalFov = _camParam.horizontal_fov;
-			_sensorInfo.ImageSize.X = _camParam.image.width;
-			_sensorInfo.ImageSize.Y = _camParam.image.height;
-			_sensorInfo.ImageFormat = _camParam.image.format;
-			_sensorInfo.NearClip = _camParam.clip.near;
-			_sensorInfo.FarClip = _camParam.clip.far;
-			_sensorInfo.SaveEnabled = _camParam.save_enabled;
-			_sensorInfo.SavePath = _camParam.save_path;
+			_sensorInfo.HorizontalFov = _camParam.HorizontalFov;
+			_sensorInfo.ImageSize.X = _camParam.ImageWidth;
+			_sensorInfo.ImageSize.Y = _camParam.ImageHeight;
+			_sensorInfo.ImageFormat = _camParam.ImageFormat;
+			_sensorInfo.NearClip = _camParam.NearClip;
+			_sensorInfo.FarClip = _camParam.FarClip;
+			_sensorInfo.SaveEnabled = _camParam.SaveFrames;
+			_sensorInfo.SavePath = _camParam.SavePath;
 
-			if (_camParam.distortion != null)
+			if (_camParam.Element != null)
 			{
-				_sensorInfo.Distortion.Center.X = _camParam.distortion.center.X;
-				_sensorInfo.Distortion.Center.Y = _camParam.distortion.center.Y;
-				_sensorInfo.Distortion.K1 = _camParam.distortion.k1;
-				_sensorInfo.Distortion.K2 = _camParam.distortion.k2;
-				_sensorInfo.Distortion.K3 = _camParam.distortion.k3;
-				_sensorInfo.Distortion.P1 = _camParam.distortion.p1;
-				_sensorInfo.Distortion.P2 = _camParam.distortion.p2;
+				var distortionElement = _camParam.Element.FindElement("distortion");
+				if (distortionElement != null)
+				{
+					var centerX = SDFormat.Extensions.GetElementValue(distortionElement, "center", "0 0").Split(' ');
+					_sensorInfo.Distortion.Center.X = double.Parse(centerX[0]);
+					_sensorInfo.Distortion.Center.Y = centerX.Length > 1 ? double.Parse(centerX[1]) : 0;
+					_sensorInfo.Distortion.K1 = SDFormat.Extensions.GetElementValue(distortionElement, "k1", 0.0);
+					_sensorInfo.Distortion.K2 = SDFormat.Extensions.GetElementValue(distortionElement, "k2", 0.0);
+					_sensorInfo.Distortion.K3 = SDFormat.Extensions.GetElementValue(distortionElement, "k3", 0.0);
+					_sensorInfo.Distortion.P1 = SDFormat.Extensions.GetElementValue(distortionElement, "p1", 0.0);
+					_sensorInfo.Distortion.P2 = SDFormat.Extensions.GetElementValue(distortionElement, "p2", 0.0);
+				}
 			}
 		}
 
@@ -316,15 +322,15 @@ namespace SensorDevices
 			_camSensor.allowDynamicResolution = false;
 			_camSensor.useOcclusionCulling = true;
 			_camSensor.orthographic = false;
-			_camSensor.nearClipPlane = (float)_camParam.clip.near;
-			_camSensor.farClipPlane = (float)_camParam.clip.far;
+			_camSensor.nearClipPlane = (float)_camParam.NearClip;
+			_camSensor.farClipPlane = (float)_camParam.FarClip;
 			_camSensor.cullingMask = LayerMask.GetMask("Default", "Plane");
 
 			// URT cameras skip full RT allocation to stay below the Vulkan driver's
 			// concurrent render-target limit. Allocate a 1×1 dummy so CanRender
 			// passes its targetTexture != null guard.
-			var rtWidth = _skipRTAllocation ? 1 : _camParam.image.width;
-			var rtHeight = _skipRTAllocation ? 1 : _camParam.image.height;
+			var rtWidth = _skipRTAllocation ? 1 : (int)_camParam.ImageWidth;
+			var rtHeight = _skipRTAllocation ? 1 : (int)_camParam.ImageHeight;
 
 			// Create RenderTexture directly with explicit GraphicsFormat so that
 			// graphicsFormat is properly reported to AsyncGPUReadback. RTHandles.Alloc
@@ -362,9 +368,11 @@ namespace SensorDevices
 			_camSensor.targetTexture = _renderTexture;
 
 			var isOrthoGraphic = false;
-			if (_camParam.lens != null)
+			var lensElement = _camParam.Element?.FindElement("lens");
+			if (lensElement != null)
 			{
-				if (_camParam.lens.type.Equals("orthographic"))
+				var lensType = lensElement.FindElement("type")?.Value?.GetAsString() ?? string.Empty;
+				if (lensType.Equals("orthographic"))
 				{
 					isOrthoGraphic = true;
 				}
@@ -377,7 +385,7 @@ namespace SensorDevices
 			}
 			else
 			{
-				var camHFov = (float)_camParam.horizontal_fov * Mathf.Rad2Deg;
+				var camHFov = (float)_camParam.HorizontalFov * Mathf.Rad2Deg;
 				var camVFov = SensorHelper.HorizontalToVerticalFOV(camHFov, _camSensor.aspect);
 
 				_camSensor.orthographic = false;
@@ -409,7 +417,7 @@ namespace SensorDevices
 			_universalCamData.renderShadows = true;
 			_universalCamData.antialiasing = AntialiasingMode.None;
 			_universalCamData.enabled = false;
-			_universalCamData.stopNaN = true;
+			_universalCamData.stopNaN = false;
 			_universalCamData.dithering = false;
 			_universalCamData.renderPostProcessing = false;
 			_universalCamData.allowXRRendering = false;
@@ -518,19 +526,19 @@ namespace SensorDevices
 		{
 			if (_startCameraWork &&
 				_textureForCapture != null &&
-				_camParam.save_enabled &&
+				_camParam.SaveFrames &&
 				_messageQueue.TryPeek(out var msg))
 			{
 				var imageStampedMsg = (messages.ImageStamped)msg;
 				var saveName = $"{DeviceName}_{imageStampedMsg.Time.Sec}.{imageStampedMsg.Time.Nsec}";
-				var format = CameraData.GetPixelFormat(_camParam.image.format);
+				var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
 
 				if (format != SensorDevices.CameraData.PixelFormat.L_INT8)
 				{
 					Debug.LogWarning($"{format.ToString()} is not support to save file");
 					return;
 				}
-				_textureForCapture.SaveRawImage(imageStampedMsg.Image.Data, _camParam.save_path, saveName);
+				_textureForCapture.SaveRawImage(imageStampedMsg.Image.Data, _camParam.SavePath, saveName);
 			}
 		}
 

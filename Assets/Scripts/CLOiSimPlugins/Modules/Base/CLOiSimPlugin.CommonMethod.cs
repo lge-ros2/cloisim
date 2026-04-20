@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
+using SDFormat;
 
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {

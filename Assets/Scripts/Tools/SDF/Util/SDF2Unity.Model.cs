@@ -15,9 +15,9 @@ public static partial class SDF2Unity
 
 		if (value.Contains("::"))
 		{
-			var splittedName = value.Split("::", System.StringSplitOptions.RemoveEmptyEntries);
-			modelName = splittedName[0];
-			linkName = splittedName[1];
+			var splittedNamePart = value.Split("::", System.StringSplitOptions.RemoveEmptyEntries);
+			modelName = splittedNamePart[0];
+			linkName = splittedNamePart[1];
 		}
 
 		return (modelName, linkName);

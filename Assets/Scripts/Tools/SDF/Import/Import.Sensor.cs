@@ -10,99 +10,102 @@ using Debug = UnityEngine.Debug;
 using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;
 #endif
 
-namespace SDF
+namespace SDFormat
 {
 	using Implement;
 	namespace Import
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportSensor(in SDF.Sensor sensor, in System.Object parentObject)
+			protected override System.Object ImportSensor(in Sensor sensor, in System.Object parentObject)
 			{
-				// Console.WriteLine("[Sensor] {0}", item.Name);
 				var targetObject = (parentObject as UE.GameObject);
 
 				Device device = null;
 
-				var sensorType = sensor.Type;
+				var sensorType = sensor.TypeStr;
 
 				switch (sensorType)
 				{
 					case "ray":
-						Debug.LogWarning("[SDF.Import] It is preferred to use 'lidar' since 'ray' will be deprecated.");
+						Debug.LogWarning("[Import] It is preferred to use 'lidar' since 'ray' will be deprecated.");
 						goto case "lidar";
 
 					case "lidar":
-						Debug.LogWarning("[SDF.Import] CPU based lidar or ray does not support. It will change to GPU based sensor.");
+						Debug.LogWarning("[Import] CPU based lidar or ray does not support. It will change to GPU based sensor.");
 						goto case "gpu_lidar";
 
 					case "gpu_ray":
-						Debug.LogWarning("[SDF.Import] It is preferred to use 'gpu_lidar' since 'gpu_ray' will be deprecated.");
+						Debug.LogWarning("[Import] It is preferred to use 'gpu_lidar' since 'gpu_ray' will be deprecated.");
 						goto case "gpu_lidar";
 
 					case "gpu_lidar":
-						var lidar = sensor.GetSensor() as SDF.Lidar;
+						var lidar = sensor.Lidar;
 						device = targetObject.AddLidar(lidar);
 						break;
 
 					case "depth_camera":
 					case "depth":
-						var depthCamera = sensor.GetSensor() as SDF.Camera;
-						device = targetObject.AddDepthCamera(depthCamera);
+						var depthCamera = sensor.Camera;
+						device = targetObject.AddDepthCamera(depthCamera, sensor.RawPose);
 						break;
 
 					case "camera":
-						var camera = sensor.GetSensor() as SDF.Camera;
-						device = targetObject.AddCamera(camera);
+						var camera = sensor.Camera;
+						device = targetObject.AddCamera(camera, sensor.RawPose);
 						break;
 
 					case "segmentation_camera":
 					case "segmentation":
-						var segmentationCamera = sensor.GetSensor() as SDF.Camera;
-						device = targetObject.AddSegmentationCamera(segmentationCamera);
+						var segmentationCamera = sensor.Camera;
+						device = targetObject.AddSegmentationCamera(segmentationCamera, sensor.RawPose);
 						break;
 
 					case "rgbd_camera":
 					case "rgbd":
 					case "multicamera":
-						var cameras = sensor.GetSensor() as SDF.Cameras;
+						var cameras = sensor.GetCameras();
 						device = targetObject.AddMultiCamera(cameras);
 						break;
 
 					case "imu":
-						var imu = sensor.GetSensor() as SDF.IMU;
+						var imu = sensor.Imu;
 						device = targetObject.AddImu(imu);
 						break;
 
 					case "sonar":
-						var sonar = sensor.GetSensor() as SDF.Sonar;
+						var sonar = sensor.Sonar;
 						device = targetObject.AddSonar(sonar);
 						break;
 
 					case "gps":
-						Debug.LogWarning("[SDF.Import] It is preferred to use 'navsat' since 'gps' will be deprecated.");
+						Debug.LogWarning("[Import] It is preferred to use 'navsat' since 'gps' will be deprecated.");
 						goto case "navsat";
 
 					case "navsat":
-						var navsat = sensor.GetSensor() as SDF.NavSat;
+						var navsat = sensor.NavSat;
 						device = targetObject.AddNavSat(navsat);
 						break;
 
 					case "contact":
-						var contact = sensor.GetSensor() as SDF.Contact;
+						var contact = sensor.GetContactData();
 						device = targetObject.AddContact(contact);
 						break;
 
 					case "air_pressure":
+					case "air_speed":
 					case "altimeter":
 					case "force_torque":
 					case "logical_camera":
 					case "thermal_camera":
+					case "bounding_box_camera":
+					case "wide_angle_camera":
 					case "magnetometer":
 					case "rfid":
 					case "rfidtag":
 					case "wireless_receiver":
 					case "wireless_transmitter":
+					case "custom":
 						Debug.LogWarningFormat("[Sensor] Not supported sensor name({0}) type({1})!!!!!", sensor.Name, sensorType);
 						break;
 
@@ -113,17 +116,19 @@ namespace SDF
 
 				if (device)
 				{
-					device.SetUpdateRate((float)sensor.UpdateRate());
+					device.SetUpdateRate((float)sensor.UpdateRate);
 					device.EnableVisualize = sensor.Visualize();
 
 					var newSensorObject = device.gameObject;
 
 					if (newSensorObject != null)
 					{
+						var (localPosition, localRotation) = sensor.RawPose.ToUnity();
+
 						newSensorObject.tag = "Sensor";
 						newSensorObject.name = sensor.Name;
-						newSensorObject.transform.localPosition += sensor.Pose?.Pos.ToUnity() ?? UE.Vector3.zero;
-						newSensorObject.transform.localRotation *= sensor.Pose?.Rot.ToUnity() ?? UE.Quaternion.identity;
+						newSensorObject.transform.localPosition += localPosition;
+						newSensorObject.transform.localRotation *= localRotation;
 #if UNITY_EDITOR
 						SceneVisibilityManager.instance.ToggleVisibility(newSensorObject, true);
 						SceneVisibilityManager.instance.DisablePicking(newSensorObject, true);

@@ -9,88 +9,86 @@ using System.Text;
 using System.IO;
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Implement
 	{
 		public static partial class Material
 		{
-			public static void Apply(this SDF.Material sdfMaterial, UE.Renderer renderer, out StringBuilder logs)
+			public static void Apply(this SDFormat.Material sdfMaterial, UE.Renderer renderer, out StringBuilder logs)
 			{
 				logs = new StringBuilder();
 
 				foreach (var material in renderer.materials)
 				{
-					if (sdfMaterial.ambient != null)
+					material.SetBaseColor(sdfMaterial.Diffuse.ToUnity());
+
+					material.SetEmission(sdfMaterial.Emissive.ToUnity());
+
+					material.SetSpecular(sdfMaterial.Specular.ToUnity());
+
+					if (sdfMaterial.Shader != SDFormat.ShaderType.Pixel && !string.IsNullOrEmpty(sdfMaterial.NormalMap))
 					{
-						logs.AppendLine($"{material.name}: ambient({sdfMaterial.ambient.ToUnity()}) is not support.");
+						material.SetNormalMap(sdfMaterial.NormalMap);
 					}
 
-					if (sdfMaterial.diffuse != null)
+					// Apply PBR workflow if available
+					if (sdfMaterial.PbrMaterial != null)
 					{
-						material.SetBaseColor(sdfMaterial.diffuse.ToUnity());
-					}
-
-					if (sdfMaterial.emissive != null)
-					{
-						material.SetEmission(sdfMaterial.emissive.ToUnity());
-					}
-
-					if (sdfMaterial.specular != null)
-					{
-						material.SetSpecular(sdfMaterial.specular.ToUnity());
-						// logs.AppendLine($"{material.name}: specular({material.GetColor("_SpecColor")})");
-					}
-
-					if (sdfMaterial.shader != null)
-					{
-						material.SetNormalMap(sdfMaterial.shader.normal_map);
-						// logs.AppendLine($"{material.name}: normalmap({sdfMaterial.shader.normal_map})");
+						ApplyPbrWorkflow(material, sdfMaterial.PbrMaterial, logs);
 					}
 				}
 
 				// apply material script
-				if (sdfMaterial.script != null)
+				if (!string.IsNullOrEmpty(sdfMaterial.ScriptName))
 				{
-					// Name of material from an installed script file.
-					// This will override the color element if the script exists.
-					var scriptAppliedMaterials = sdfMaterial.script.ApplyScript(renderer.materials);
-					renderer.materials = scriptAppliedMaterials;
-
-					if (sdfMaterial.script.name.ToLower().Contains("tree"))
+					var scriptUri = new List<string>();
+					if (!string.IsNullOrEmpty(sdfMaterial.ScriptUri))
 					{
-						foreach (var material in renderer.materials)
+						scriptUri.Add(sdfMaterial.ScriptUri);
+					}
+
+					FindMaterialFilepathAndUpdateURIs(scriptUri, out var targetMaterialFilepath, out var texturesPath);
+
+					if (!string.IsNullOrEmpty(targetMaterialFilepath))
+					{
+						var ogreMaterial = OgreMaterial.Parse(targetMaterialFilepath, sdfMaterial.ScriptName);
+						if (ogreMaterial != null)
 						{
-							material.ConvertToSpeedTree();
+							var scriptAppliedMaterials = ogreMaterial.ApplyMaterial(renderer.materials, texturesPath);
+							renderer.materials = scriptAppliedMaterials;
+
+							if (sdfMaterial.ScriptName.ToLower().Contains("tree"))
+							{
+								foreach (var mat in renderer.materials)
+								{
+									mat.ConvertToSpeedTree();
+								}
+							}
 						}
 					}
 				}
 			}
 
-			public static UE.Material ApplyScript(this SDF.Material.Script script, in UE.Material baseMasterial)
+			public static UE.Material ApplyScript(in string scriptUri, in string scriptName, in UE.Material baseMaterial)
 			{
-				var materials = script.ApplyScript(new UE.Material[] { baseMasterial });
-				return materials[0];
-			}
-
-			public static UE.Material[] ApplyScript(this SDF.Material.Script script, in UE.Material[] baseMaterials)
-			{
-				var targetMaterialName = script.name;
-				FindMaterialFilepathAndUpdateURIs(script.uri, out var targetMaterialFilepath, out var texturesPath);
-
-				var outputMaterials = baseMaterials;
-
-				if (string.IsNullOrEmpty(targetMaterialFilepath) == false)
+				var scriptUris = new List<string>();
+				if (!string.IsNullOrEmpty(scriptUri))
 				{
-					var ogreMaterial = OgreMaterial.Parse(targetMaterialFilepath, targetMaterialName);
+					scriptUris.Add(scriptUri);
+				}
+				FindMaterialFilepathAndUpdateURIs(scriptUris, out var targetMaterialFilepath, out var texturesPath);
+
+				if (!string.IsNullOrEmpty(targetMaterialFilepath))
+				{
+					var ogreMaterial = OgreMaterial.Parse(targetMaterialFilepath, scriptName);
 					if (ogreMaterial != null)
 					{
-						// UE.Debug.Log($"Found: '{ogreMaterial.name}' material, techniques: {ogreMaterial.techniques.Count}");
-						outputMaterials = ogreMaterial.ApplyMaterial(baseMaterials, texturesPath);
+						var materials = ogreMaterial.ApplyMaterial(new UE.Material[] { baseMaterial }, texturesPath);
+						return materials[0];
 					}
 				}
-
-				return outputMaterials;
+				return baseMaterial;
 			}
 
 			private static void FindMaterialFilepathAndUpdateURIs(in List<string> scriptUris, out string targetMaterialFilepath, out List<string> texturesPath)
@@ -121,6 +119,85 @@ namespace SDF
 						}
 
 						texturesPath.Add(uri);
+					}
+				}
+			}
+
+			private static void ApplyPbrWorkflow(UE.Material material, SDFormat.Pbr pbr, StringBuilder logs)
+			{
+				var metalWorkflow = pbr.GetWorkflow(SDFormat.PbrWorkflowType.Metal);
+				var specularWorkflow = pbr.GetWorkflow(SDFormat.PbrWorkflowType.Specular);
+
+				var workflow = metalWorkflow ?? specularWorkflow;
+				if (workflow == null)
+				{
+					return;
+				}
+
+				if (!string.IsNullOrEmpty(workflow.AlbedoMap))
+				{
+					var texture = MeshLoader.GetTexture(workflow.AlbedoMap);
+					if (texture != null)
+					{
+						material.SetTexture("_BaseMap", texture);
+					}
+					else
+					{
+						logs.AppendLine($"PBR: Failed to load albedo map: {workflow.AlbedoMap}");
+					}
+				}
+
+				if (!string.IsNullOrEmpty(workflow.NormalMap))
+				{
+					material.SetNormalMap(workflow.NormalMap);
+				}
+
+				if (!string.IsNullOrEmpty(workflow.EmissiveMap))
+				{
+					var texture = MeshLoader.GetTexture(workflow.EmissiveMap);
+					if (texture != null)
+					{
+						material.SetTexture("_EmissionMap", texture);
+						material.EnableKeyword("_EMISSION");
+					}
+				}
+
+				if (!string.IsNullOrEmpty(workflow.AmbientOcclusionMap))
+				{
+					var texture = MeshLoader.GetTexture(workflow.AmbientOcclusionMap);
+					if (texture != null)
+					{
+						material.SetTexture("_OcclusionMap", texture);
+					}
+				}
+
+				if (metalWorkflow != null)
+				{
+					material.SetFloat("_Metallic", (float)metalWorkflow.Metalness);
+					material.SetFloat("_Smoothness", 1f - (float)metalWorkflow.Roughness);
+
+					if (!string.IsNullOrEmpty(metalWorkflow.MetalnessMap))
+					{
+						var texture = MeshLoader.GetTexture(metalWorkflow.MetalnessMap);
+						if (texture != null)
+						{
+							material.SetTexture("_MetallicGlossMap", texture);
+							material.EnableKeyword("_METALLICSPECGLOSSMAP");
+						}
+					}
+				}
+				else if (specularWorkflow != null)
+				{
+					material.SetFloat("_Smoothness", (float)specularWorkflow.Glossiness);
+
+					if (!string.IsNullOrEmpty(specularWorkflow.SpecularMap))
+					{
+						var texture = MeshLoader.GetTexture(specularWorkflow.SpecularMap);
+						if (texture != null)
+						{
+							material.SetTexture("_SpecGlossMap", texture);
+							material.EnableKeyword("_SPECGLOSSMAP");
+						}
 					}
 				}
 			}

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Import
 	{
@@ -20,16 +20,15 @@ namespace SDF
 			{
 				foreach (var item in items)
 				{
-					// Console.WriteLine("[Visual] {0}", item.Name);
 					var createdObject = ImportVisual(item, parentObject);
 
-					ImportGeometry(item.GetGeometry(), createdObject);
+					ImportGeometry(item.Geom, createdObject);
 
 					AfterImportVisual(item, createdObject);
 
-					ImportMaterial(item.GetMaterial(), createdObject);
+					ImportMaterial(item.MaterialInfo, createdObject);
 
-					StorePlugins(item.GetPlugins(), createdObject);
+					StorePlugins(item.Plugins, createdObject);
 				}
 			}
 
@@ -37,10 +36,9 @@ namespace SDF
 			{
 				foreach (var item in items)
 				{
-					// Console.WriteLine("[Collision] {0}", item.Name);
 					var createdObject = ImportCollision(item, parentObject);
 
-					ImportGeometry(item.GetGeometry(), createdObject);
+					ImportGeometry(item.Geom, createdObject);
 
 					AfterImportCollision(item, createdObject);
 				}
@@ -51,7 +49,7 @@ namespace SDF
 				foreach (var item in items)
 				{
 					var createdObject = ImportSensor(item, parentObject);
-					StorePlugins(item.GetPlugins(), createdObject);
+					StorePlugins(item.Plugins, createdObject);
 				}
 			}
 
@@ -59,16 +57,15 @@ namespace SDF
 			{
 				foreach (var item in items)
 				{
-					// Console.WriteLine("[Link] {0}", item.Name);
 					var createdObject = ImportLink(item, parentObject);
 
-					ImportVisuals(item.GetVisuals(), createdObject);
+					ImportVisuals(item.Visuals, createdObject);
 
-					ImportCollisions(item.GetCollisions(), createdObject);
+					ImportCollisions(item.Collisions, createdObject);
 
-					ImportSensors(item.GetSensors(), createdObject);
+					ImportSensors(item.Sensors, createdObject);
 
-					ImportLights(item.GetLights(), createdObject);
+					ImportLights(item.Lights, createdObject);
 
 					AfterImportLink(item, createdObject);
 				}
@@ -79,7 +76,6 @@ namespace SDF
 				// Plugin should be handled after all links of model are loaded due to articulation body.
 				foreach (var item in items)
 				{
-					// Console.WriteLine($"PluginName: {item.Name}");
 					_pluginObjectList.Add(item, parentObject);
 				}
 			}
@@ -89,7 +85,6 @@ namespace SDF
 				// Joints should be handled after all links of model are loaded due to articulation body.
 				foreach (var item in items)
 				{
-					// Console.WriteLine($"JointName: {item.Name} Child: {item.ChildLinkName} Parent: {item.ParentLinkName}");
 					_jointObjectList.Add(item, parentObject);
 				}
 			}
@@ -98,7 +93,6 @@ namespace SDF
 			{
 				foreach (var item in items)
 				{
-					// Console.WriteLine("[Model][{0}][{1}]", item.Name, parentObject);
 					yield return ImportModel(item, parentObject);
 				}
 			}
@@ -108,7 +102,7 @@ namespace SDF
 				foreach (var item in items)
 				{
 					var createdObject = ImportActor(item);
-					StorePlugins(item.GetPlugins(), createdObject);
+					StorePlugins(item.Plugins, createdObject);
 				}
 			}
 
@@ -122,22 +116,21 @@ namespace SDF
 
 			public IEnumerator Start(World world)
 			{
-				// Console.WriteLine("Import Models({0})/Links/Joints", world.GetModels().Count);
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
 
 				var worldObject = ImportWorld(world);
 
-				yield return ImportModels(world.GetModels());
+				yield return ImportModels(world.Models);
 
 				foreach (var jointObject in _jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
 				}
 
-				StorePlugins(world.GetPlugins(), worldObject);
+				StorePlugins(world.Plugins, worldObject);
 
-				ImportActors(world.GetActors());
+				ImportActors(world.Actors);
 				yield return null;
 
 				worldObject?.SpecifyPose();

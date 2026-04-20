@@ -8,13 +8,13 @@ using System;
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Import
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportPlugin(in SDF.Plugin plugin, in System.Object parentObject)
+			protected override void ImportPlugin(in Plugin plugin, in System.Object parentObject)
 			{
 				// filtering plugin name
 				var pluginLibraryName = plugin.LibraryName();

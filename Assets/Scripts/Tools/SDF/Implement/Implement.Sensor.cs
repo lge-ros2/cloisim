@@ -6,7 +6,7 @@
 
 using UE = UnityEngine;
 
-namespace SDF
+namespace SDFormat
 {
 	namespace Implement
 	{
@@ -30,172 +30,136 @@ namespace SDF
 			private static void AttachSensor(
 				this UE.GameObject targetObject,
 				in UE.GameObject sensorObject,
-				Pose<double> sensorPose = null)
+				Math.Pose3d? sensorPose = null)
 			{
 				try
 				{
+					var (localPosition, localRotation) = (sensorPose ?? new Math.Pose3d()).ToUnity();
+
 					var sensorTransform = sensorObject.transform;
 					sensorTransform.position = UE.Vector3.zero;
 					sensorTransform.rotation = UE.Quaternion.identity;
 					sensorTransform.SetParent(targetObject.transform, false);
 					sensorTransform.localScale = UE.Vector3.one;
-					sensorTransform.localPosition = sensorPose?.Pos.ToUnity() ?? UE.Vector3.zero;
-					sensorTransform.localRotation = sensorPose?.Rot.ToUnity() ?? UE.Quaternion.identity;
+					sensorTransform.localPosition = localPosition;
+					sensorTransform.localRotation = localRotation;
 				}
 				catch
 				{
-					UE.Debug.Log("sensorObject is null or Invalid obejct exist");
+					UE.Debug.Log("sensorObject is null or Invalid object exist");
 				}
 			}
 
-			public static Device AddLidar(this UE.GameObject targetObject, in SDF.Lidar element)
+			public static Device AddLidar(this UE.GameObject targetObject, in LidarSensor element)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject);
 
 				var lidar = newSensorObject.AddComponent<SensorDevices.Lidar>();
 				lidar.DeviceName = newSensorObject.GetFrameName();
-				lidar.ScanRange = new MathUtil.MinMax(element.range.min, element.range.max);
-				lidar.Resolution = new SensorDevices.LaserData.Resolution((float)element.range.resolution);
+				lidar.ScanRange = new MathUtil.MinMax(element.RangeMin, element.RangeMax);
+				lidar.Resolution = new SensorDevices.LaserData.Resolution((float)element.RangeResolution);
 
-				var horizontal = element.horizontal;
-				lidar.Horizontal = new SensorDevices.LaserData.Scan(horizontal.samples, horizontal.min_angle, horizontal.max_angle, horizontal.resolution);
+				lidar.Horizontal = new SensorDevices.LaserData.Scan(
+					(uint)element.HorizontalScanSamples,
+					element.HorizontalScanMinAngle.Radians,
+					element.HorizontalScanMaxAngle.Radians,
+					element.HorizontalScanResolution);
 
-				var vertical = element.vertical;
-				if (vertical != null)
-				{
-					lidar.Vertical = new SensorDevices.LaserData.Scan(vertical.samples, vertical.min_angle, vertical.max_angle, vertical.resolution);
-				}
+				lidar.Vertical = new SensorDevices.LaserData.Scan(
+					(uint)element.VerticalScanSamples,
+					element.VerticalScanMinAngle.Radians,
+					element.VerticalScanMaxAngle.Radians,
+					element.VerticalScanResolution);
 
-				lidar.SetupNoise(element.noise);
+				lidar.SetupNoise(element.RangeNoise);
 
 				return lidar;
 			}
 
-			public static Device AddCamera(this UE.GameObject targetObject, in SDF.Camera element)
+			public static Device AddCamera(this UE.GameObject targetObject, in CameraSensor element, Math.Pose3d? sensorPose = null)
 			{
 				var newSensorObject = new UE.GameObject();
-				targetObject.AttachSensor(newSensorObject, element.Pose);
+				targetObject.AttachSensor(newSensorObject, sensorPose);
 
 				var camera = newSensorObject.AddComponent<SensorDevices.Camera>();
 				camera.tag = "Sensor";
 				camera.DeviceName = newSensorObject.GetFrameName();
 				camera.SetParameter(element);
 
-				camera.SetupNoise(element.noise);
+				camera.SetupNoise(element.ImageNoise);
 
 				return camera;
 			}
 
-			public static Device AddSegmentationCamera(this UE.GameObject targetObject, in SDF.Camera element)
+			public static Device AddSegmentationCamera(this UE.GameObject targetObject, in CameraSensor element, Math.Pose3d? sensorPose = null)
 			{
 				var newSensorObject = new UE.GameObject();
-				targetObject.AttachSensor(newSensorObject, element.Pose);
+				targetObject.AttachSensor(newSensorObject, sensorPose);
 
 				var camera = newSensorObject.AddComponent<SensorDevices.SegmentationCamera>();
 				camera.DeviceName = newSensorObject.GetFrameName();
 
-				switch (element.image.format)
-				{
-					case "L16":
-					case "L_UINT16":
-						// Debug.Log("Supporting data type for Depth camera");
-						break;
-
-					default:
-						if (element.image.format.Equals(string.Empty))
-						{
-							UE.Debug.LogWarningFormat("'L16' will be set for Depth camera({0})'s image format", element.name);
-						}
-						else
-						{
-							UE.Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image.format);
-						}
-						element.image.format = "L16";
-						break;
-				}
-
 				camera.SetParameter(element);
 
-				camera.SetupNoise(element.noise);
+				camera.SetupNoise(element.ImageNoise);
 
 				return camera;
 			}
 
-			public static Device AddDepthCamera(this UE.GameObject targetObject, in SDF.Camera element)
+			public static Device AddDepthCamera(this UE.GameObject targetObject, in CameraSensor element, Math.Pose3d? sensorPose = null)
 			{
 				var newSensorObject = new UE.GameObject();
-				targetObject.AttachSensor(newSensorObject, element.Pose);
+				targetObject.AttachSensor(newSensorObject, sensorPose);
 
 				var camera = newSensorObject.AddComponent<SensorDevices.DepthCamera>();
 				camera.DeviceName = newSensorObject.GetFrameName();
 
-				switch (element.image.format)
-				{
-					case "L16":
-					case "L8":
-					case "R_FLOAT32":
-					case "L_UINT16":
-					case "L_INT16":
-					case "L_INT8":
-						// Debug.Log("Supporting data type for Depth camera");
-						break;
-
-					default:
-						if (element.image.format.Equals(string.Empty))
-						{
-							UE.Debug.LogWarningFormat("'L16' will be set for Depth camera({0})'s image format", element.name);
-						}
-						else
-						{
-							UE.Debug.LogWarningFormat("Not supporting data type({0}) for Depth camera", element.image.format);
-						}
-						element.image.format = "L16";
-						break;
-				}
-
 				camera.SetParameter(element);
 
-				camera.SetupNoise(element.noise);
+				camera.SetupNoise(element.ImageNoise);
 
 				return camera;
 			}
 
-			public static Device AddMultiCamera(this UE.GameObject targetObject, in SDF.Cameras element)
+			public static Device AddMultiCamera(this UE.GameObject targetObject, in System.Collections.Generic.List<CameraSensor> cameras)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject);
 
 				var multicamera = newSensorObject.AddComponent<SensorDevices.MultiCamera>();
 				multicamera.DeviceName = newSensorObject.GetFrameName();
-				foreach (var camParam in element.cameras)
+				if (cameras != null)
 				{
-					var newCam = AddCamera(newSensorObject, camParam);
-					newCam.name = camParam.name;
-					newCam.Mode = Device.ModeType.NONE;
-					newCam.DeviceName = multicamera.DeviceName + "::" + element.name + "::" + newCam.name;
-					multicamera.AddCamera((SensorDevices.Camera)newCam);
+					foreach (var camParam in cameras)
+					{
+						var newCam = AddCamera(newSensorObject, camParam);
+						newCam.name = camParam.Name;
+						newCam.Mode = Device.ModeType.NONE;
+						newCam.DeviceName = multicamera.DeviceName + "::" + newCam.name;
+						multicamera.AddCamera((SensorDevices.Camera)newCam);
+					}
 				}
 
 				return multicamera;
 			}
 
-			public static Device AddSonar(this UE.GameObject targetObject, in SDF.Sonar element)
+			public static Device AddSonar(this UE.GameObject targetObject, in SonarSensor element)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject);
 
 				var sonar = newSensorObject.AddComponent<SensorDevices.Sonar>();
 				sonar.DeviceName = newSensorObject.GetFrameName();
-				sonar.Geometry = element.geometry;
-				sonar.RangeMin = element.min;
-				sonar.RangeMax = element.max;
-				sonar.Radius = element.radius;
+				sonar.Geometry = element.Geometry;
+				sonar.RangeMin = element.Min;
+				sonar.RangeMax = element.Max;
+				sonar.Radius = element.Radius;
 
 				return sonar;
 			}
 
-			public static Device AddImu(this UE.GameObject targetObject, in SDF.IMU element)
+			public static Device AddImu(this UE.GameObject targetObject, in ImuSensor element)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject);
@@ -208,7 +172,7 @@ namespace SDF
 				return imu;
 			}
 
-			public static Device AddNavSat(this UE.GameObject targetObject, in SDF.NavSat element)
+			public static Device AddNavSat(this UE.GameObject targetObject, in NavSatSensor element)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject);
@@ -220,8 +184,7 @@ namespace SDF
 				return gps;
 			}
 
-
-			public static Device AddContact(this UE.GameObject targetObject, in SDF.Contact element)
+			public static Device AddContact(this UE.GameObject targetObject, in ContactData element)
 			{
 				var newSensorObject = new UE.GameObject();
 				targetObject.AttachSensor(newSensorObject);

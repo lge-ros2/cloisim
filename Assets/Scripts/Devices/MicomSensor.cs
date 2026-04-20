@@ -109,7 +109,7 @@ namespace SensorDevices
 
 		public void SetMagnet(in List<string> magnetList)
 		{
-			var modelList = GetComponentsInChildren<SDF.Helper.Model>();
+			var modelList = GetComponentsInChildren<SDFormat.Helper.Model>();
 			foreach (var model in modelList)
 			{
 				// TODO: to be implemented

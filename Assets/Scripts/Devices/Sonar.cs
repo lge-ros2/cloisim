@@ -79,7 +79,15 @@ namespace SensorDevices
 		protected override void OnStart()
 		{
 			var visualMesh = _sonarLink.GetComponentInChildren<MeshFilter>();
-			_sensorStartOffset = (visualMesh == null) ? 0f : visualMesh.sharedMesh.bounds.max.y;
+			if (visualMesh != null && visualMesh.sharedMesh != null)
+			{
+				_sensorStartOffset = visualMesh.sharedMesh.bounds.max.y;
+			}
+			else
+			{
+				_sensorStartOffset = 0f;
+				Debug.LogWarning($"{name}: missing visual mesh under sonar link '{_sonarLink?.name}', using zero start offset");
+			}
 
 			// Create a new sensing area
 			Mesh mesh = null;
