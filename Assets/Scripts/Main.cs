@@ -9,13 +9,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using Assimp.Unmanaged;
-using SDFormat.Implement;
 
 [DefaultExecutionOrder(30)]
 public class Main : MonoBehaviour
@@ -79,6 +79,10 @@ public class Main : MonoBehaviour
 	private bool _stopRecordTriggered = false;
 	private bool _teleportTriggered = false;
 	private TeleportOperation _pendingTeleportOperation;
+
+	private string _pendingModelInfoQuery = null;
+	private Pose _pendingModelInfoResult;
+	private readonly ManualResetEventSlim _modelInfoQueryEvent = new(false);
 
 	public static GameObject PropsRoot => _instance._propsRoot;
 	public static GameObject WorldRoot => _instance._worldRoot;
@@ -704,6 +708,32 @@ public class Main : MonoBehaviour
 			_teleportTriggered = false;
 			StartCoroutine(DoTeleportModel());
 		}
+
+		if (_pendingModelInfoQuery != null)
+		{
+			var modelTransform = _worldRoot.transform.Find(_pendingModelInfoQuery);
+			if (modelTransform != null)
+			{
+				_pendingModelInfoResult = new Pose(modelTransform.localPosition, modelTransform.localRotation);
+			}
+			_pendingModelInfoQuery = null;
+			_modelInfoQueryEvent.Set();
+		}
+	}
+
+	public bool TriggerModelInfoQuery(in string modelName, out Pose pose, int timeoutMs = 1000)
+	{
+		pose = Pose.identity;
+		_modelInfoQueryEvent.Reset();
+		_pendingModelInfoQuery = modelName;
+
+		if (!_modelInfoQueryEvent.Wait(timeoutMs))
+		{
+			return false;
+		}
+
+		pose = _pendingModelInfoResult;
+		return pose != Pose.identity;
 	}
 
 	public bool TriggerResetService()

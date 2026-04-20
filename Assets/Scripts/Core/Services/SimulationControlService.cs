@@ -24,6 +24,9 @@ public class SimulationControlRequest
 	[JsonProperty(Order = 3)]
 	public string filename = string.Empty;
 
+	[JsonProperty(Order = 4, PropertyName = "target_model")]
+	public string targetModel = string.Empty;
+
 	public void Print()
 	{
 		Console.WriteLine($"## {this.GetType().Name}: {command} {indent} {filter} {filename}");
@@ -71,6 +74,59 @@ public class SimulationControlResponseTopicList : SimulationControlResponseBase
 	public override void Print()
 	{
 		Console.WriteLine($"## {this.GetType().Name}: {command}, {result}");
+	}
+}
+
+public class ModelInfoResult
+{
+	[JsonProperty("name")]
+	public string name = string.Empty;
+
+	[JsonProperty("pose")]
+	public ModelInfoPose pose = new();
+}
+
+public class ModelInfoPose
+{
+	[JsonProperty("position")]
+	public ModelInfoPosition position = new();
+
+	[JsonProperty("orientation")]
+	public ModelInfoOrientation orientation = new();
+}
+
+public class ModelInfoPosition
+{
+	[JsonProperty("x")]
+	public double x = 0;
+
+	[JsonProperty("y")]
+	public double y = 0;
+
+	[JsonProperty("z")]
+	public double z = 0;
+}
+
+public class ModelInfoOrientation
+{
+	[JsonProperty("roll")]
+	public double roll = 0;
+
+	[JsonProperty("pitch")]
+	public double pitch = 0;
+
+	[JsonProperty("yaw")]
+	public double yaw = 0;
+}
+
+public class SimulationControlResponseModelInfo : SimulationControlResponseBase
+{
+	[JsonProperty(Order = 1)]
+	public ModelInfoResult result = null;
+
+	public override void Print()
+	{
+		Console.WriteLine($"## {this.GetType().Name}: {command}, {result?.name}");
 	}
 }
 
@@ -176,7 +232,7 @@ public class SimulationControlService : WebSocketBehavior
 			case "reset":
 				{
 					var wasSuccessful = Main.Instance.TriggerResetService();
-					var result = (wasSuccessful) ? SimulationService.SUCCESS : SimulationService.FAIL;
+					var result = wasSuccessful ? SimulationService.SUCCESS : SimulationService.FAIL;
 
 					output = new SimulationControlResponseNormal();
 					(output as SimulationControlResponseNormal).result = result;
@@ -226,6 +282,12 @@ public class SimulationControlService : WebSocketBehavior
 					var result = TeleportModel(teleportRequest);
 					output = new SimulationControlResponseNormal();
 					(output as SimulationControlResponseNormal).result = result;
+				}
+				break;
+
+			case "get_model_info":
+				{
+					output = GetModelInfo(request.targetModel);
 				}
 				break;
 
@@ -281,6 +343,49 @@ public class SimulationControlService : WebSocketBehavior
 		Main.Instance.TriggerTeleportService(in operation);
 
 		return SimulationService.SUCCESS;
+	}
+
+	private SimulationControlResponseBase GetModelInfo(in string targetModel)
+	{
+		if (string.IsNullOrEmpty(targetModel))
+		{
+			var errorResponse = new SimulationControlResponseNormal();
+			errorResponse.result = "target_model is empty";
+			return errorResponse;
+		}
+
+		if (!Main.Instance.TriggerModelInfoQuery(targetModel, out var pose))
+		{
+			var errorResponse = new SimulationControlResponseNormal();
+			errorResponse.result = $"model '{targetModel}' not found";
+			return errorResponse;
+		}
+
+		var sdfPose = Unity2SDF.Pose(pose.position, pose.rotation);
+		var sdfRotation = sdfPose.Rotation.ToEuler();
+
+		var response = new SimulationControlResponseModelInfo();
+		response.result = new ModelInfoResult
+		{
+			name = targetModel,
+			pose = new ModelInfoPose
+			{
+				position = new ModelInfoPosition
+				{
+					x = sdfPose.Position.X,
+					y = sdfPose.Position.Y,
+					z = sdfPose.Position.Z
+				},
+				orientation = new ModelInfoOrientation
+				{
+					roll = sdfRotation.X,
+					pitch = sdfRotation.Y,
+					yaw = sdfRotation.Z
+				}
+			}
+		};
+
+		return response;
 	}
 
 	protected override void OnError(ErrorEventArgs e)
