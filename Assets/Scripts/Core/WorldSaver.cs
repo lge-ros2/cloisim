@@ -117,9 +117,7 @@ public class WorldSaver
 			cameraNode.AppendChild(cameraPoseNode);
 		}
 
-		var camPosition = Unity2SDF.Position(mainCamera.transform.localPosition);
-		var camRotation = Unity2SDF.Rotation(mainCamera.transform.localRotation);
-		var pose = Unity2SDF.Pose(camPosition, camRotation);
+		var pose = Unity2SDF.Pose(mainCamera.transform.localPosition, mainCamera.transform.localRotation);
 		cameraPoseNode.InnerText = pose.ToString();
 	}
 
@@ -136,9 +134,7 @@ public class WorldSaver
 
 			var modelName = childTransform.name;
 			var isStatic = childTransform.gameObject.isStatic;
-			var position = Unity2SDF.Position(childTransform.localPosition);
-			var rotation = Unity2SDF.Rotation(childTransform.localRotation);
-			var pose = Unity2SDF.Pose(position, rotation);
+			var pose = Unity2SDF.Pose(childTransform.localPosition, childTransform.localRotation);
 
 			var model = GetModel(modelName);
 			// Debug.Log(modelName);

@@ -41,9 +41,9 @@ public static class Unity2SDF
 		return new SDFormat.Math.Quaterniond(value.w, -value.z, value.x, -value.y);
 	}
 
-	public static SDFormat.Math.Pose3d Pose(in SDFormat.Math.Vector3d position, in SDFormat.Math.Quaterniond rotation)
+	public static SDFormat.Math.Pose3d Pose(in Vector3 position, in Quaternion rotation)
 	{
-		return new SDFormat.Math.Pose3d(position, rotation);
+		return new SDFormat.Math.Pose3d(Position(position), Rotation(rotation));
 	}
 
 	public class Direction
