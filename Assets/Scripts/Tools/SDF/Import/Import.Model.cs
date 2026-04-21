@@ -113,6 +113,8 @@ namespace SDFormat
 
 				StoreJoints(model.Joints, newModelObject);
 
+				StoreGrippers(model.Grippers, newModelObject);
+
 				StorePlugins(model.Plugins, newModelObject);
 
 				if (parentObject == null)

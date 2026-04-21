@@ -15,6 +15,7 @@ namespace SDFormat
 		{
 			private Dictionary<Joint, Object> _jointObjectList = new();
 			private Dictionary<Plugin, Object> _pluginObjectList = new();
+			private Dictionary<Gripper, Object> _gripperObjectList = new();
 
 			private void ImportVisuals(IReadOnlyList<Visual> items, in Object parentObject)
 			{
@@ -80,6 +81,15 @@ namespace SDFormat
 				}
 			}
 
+			protected void StoreGrippers(IReadOnlyList<Gripper> items, Object parentObject)
+			{
+				// Grippers should be handled after all links of model are loaded.
+				foreach (var item in items)
+				{
+					_gripperObjectList.Add(item, parentObject);
+				}
+			}
+
 			protected void StoreJoints(IReadOnlyList<Joint> items, in Object parentObject)
 			{
 				// Joints should be handled after all links of model are loaded due to articulation body.
@@ -118,6 +128,7 @@ namespace SDFormat
 			{
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
+				_gripperObjectList.Clear();
 
 				var worldObject = ImportWorld(world);
 
@@ -126,6 +137,11 @@ namespace SDFormat
 				foreach (var jointObject in _jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
+				}
+
+				foreach (var gripperObject in _gripperObjectList)
+				{
+					ImportGripper(gripperObject.Key, gripperObject.Value);
 				}
 
 				StorePlugins(world.Plugins, worldObject);
@@ -145,6 +161,7 @@ namespace SDFormat
 			{
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
+				_gripperObjectList.Clear();
 
 				Object modelObject = null;
 				yield return ImportModel(model, onCreatedRoot: obj => modelObject = obj);
@@ -152,6 +169,11 @@ namespace SDFormat
 				foreach (var jointObject in _jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
+				}
+
+				foreach (var gripperObject in _gripperObjectList)
+				{
+					ImportGripper(gripperObject.Key, gripperObject.Value);
 				}
 
 				modelObject?.SpecifyPose();

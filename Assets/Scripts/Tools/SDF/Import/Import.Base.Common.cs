@@ -101,6 +101,11 @@ namespace SDFormat
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, light.Name);
 			}
 
+			protected virtual void ImportGripper(in Gripper gripper, in Object parentObject)
+			{
+				PrintNotImported(MethodBase.GetCurrentMethod().Name, gripper.Name);
+			}
+
 			private void PrintNotImported(in string methodName, in string name)
 			{
 				Console.Error.WriteLine($"[{methodName}][{name}] Not Imported yet");
