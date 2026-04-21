@@ -44,6 +44,10 @@ namespace SDFormat
 						targetObject.GenerateMesh(geometry);
 						break;
 
+					case GeometryType.Image:
+						UE.Debug.LogWarningFormat("[Geometry] Image geometry type is not supported, skipping.");
+						break;
+
 					default:
 						UE.Debug.LogErrorFormat("[{0}] Not support type({1}) for geometry", geometry.Type, geometry.Type);
 						return;

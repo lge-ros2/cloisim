@@ -355,15 +355,20 @@ namespace SDFormat
 		}
 
 		/// <summary>
-		/// Check if this model was nested via include resolution.
+		/// Check if this model is nested — either via include resolution (is_nested attribute)
+		/// or as a direct inline &lt;model&gt; child of another &lt;model&gt; element.
 		/// </summary>
 		public static bool IsNested(this SDFormat.Model model)
 		{
 			var attr = model.Element?.GetAttribute("is_nested");
-			if (attr == null)
-				return false;
-			var val = attr.GetAsString();
-			return val == "true" || val == "1";
+			if (attr != null)
+			{
+				var val = attr.GetAsString();
+				if (val == "true" || val == "1")
+					return true;
+			}
+			// Also detect direct inline <model> inside <model>
+			return model.Element?.Parent?.Name == "model";
 		}
 
 		#endregion
@@ -448,13 +453,12 @@ namespace SDFormat
 		/// </summary>
 		public static ContactData GetContactData(this SDFormat.Sensor sensor)
 		{
-			var contactElem = sensor.Element?.FindElement("contact");
-			if (contactElem == null)
+			if (sensor.ContactSensorData == null)
 				return null;
 
 			var data = new ContactData();
-			data.collision = GetElementValue(contactElem, "collision", string.Empty);
-			data.topic = GetElementValue(contactElem, "topic", string.Empty);
+			data.collision = sensor.ContactSensorData.CollisionName;
+			data.topic = sensor.ContactSensorData.Topic;
 			return data;
 		}
 

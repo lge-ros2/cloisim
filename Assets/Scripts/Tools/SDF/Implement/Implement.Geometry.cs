@@ -103,6 +103,9 @@ namespace SDFormat
 						mesh = ProceduralMesh.CreateCone(0f, (float)geometry.ConeShape.Radius, (float)geometry.ConeShape.Length, 72);
 						break;
 					}
+					case SDFormat.GeometryType.Image:
+						Debug.LogWarning("Image geometry type is not supported.");
+						break;
 					default:
 						Debug.Log("Wrong GeometryType!!!");
 						break;
