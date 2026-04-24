@@ -127,11 +127,17 @@ namespace SDFormat
 				// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localPosition.ToString("F9")}, {relativeObject.position.ToString("F9")}");
 				// UE.Debug.Log($"SpecifyPose {relativeObject.name}: ImportLink: => relative_to {relativeObject.name}, {relativeObject.localRotation.eulerAngles.ToString("F9")}, {relativeObject.rotation.eulerAngles.ToString("F9")}");
 
-				var positionOffset = relativeObject.Equals(parentObject) ? UE.Vector3.zero : (relativeObject.position - parentObject.position);
-				var rotationOffset = relativeObject.Equals(parentObject) ? UE.Quaternion.identity : (parentObject.localRotation * relativeObject.localRotation);
-
-				localPosition = localPosition + positionOffset;
-				localRotation = rotationOffset * localRotation;
+				if (!relativeObject.Equals(parentObject))
+				{
+					// localPosition is expressed in relativeObject's local frame.
+					// Transform it into parentObject's local frame:
+					//   worldPos = relativeObject.rotation * localPosition + relativeObject.position
+					//   localPos_in_parent = Inverse(parentObject.rotation) * (worldPos - parentObject.position)
+					var worldPos = relativeObject.rotation * localPosition + relativeObject.position;
+					localPosition = UE.Quaternion.Inverse(parentObject.rotation) * (worldPos - parentObject.position);
+					localRotation = UE.Quaternion.Inverse(parentObject.rotation) * relativeObject.rotation * localRotation;
+					UE.Debug.LogWarning($"SpecifyPoseRelative(): relativeObject: {relativeObject.name} is not the same as parentObject: {parentObject.name}, applying relative pose transformation");
+				}
 			}
 
 			public static void SpecifyPose(this Object targetObject)
@@ -163,20 +169,44 @@ namespace SDFormat
 					}
 					else
 					{
-						// Search within the nearest enclosing model first to avoid name
-						// collisions between sibling nested models (e.g., left_hand vs right_hand
-						// both having "hand_base_link").
 						Helper.Base relativeObjectBaseHelper = null;
 
-						var enclosingModel = baseHelper.GetComponentInParent<Helper.Model>();
-						if (enclosingModel != null && enclosingModel.isNested)
+						// First: check direct parent — after joint re-parenting, pose relative_to
+						// almost always refers to the direct parent link. Matching by name here avoids
+						// cross-model collisions (e.g., left_hand and right_hand both having
+						// "hand_base_link") that arise when searching from the root.
+						var directParent = baseHelper.transform.parent;
+						if (directParent != null && directParent.name.Equals(poseRelativeTo))
 						{
-							relativeObjectBaseHelper = enclosingModel.GetComponentsInChildren<Helper.Base>()
-								.FirstOrDefault(x => x.name.Equals(poseRelativeTo));
+							relativeObjectBaseHelper = directParent.GetComponent<Helper.Base>();
 						}
 
-						// Fall back to root model scope for cross-model references
-						relativeObjectBaseHelper ??= baseHelper.RootModel.GetComponentsInChildren<Helper.Base>()
+						// Second: search ancestors and their immediate children for named frames.
+						// This covers cases like collision/visual poses relative to a sibling or
+						// parent that isn't the immediate parent.
+						if (relativeObjectBaseHelper == null)
+						{
+							var ancestor = directParent;
+							while (ancestor != null && relativeObjectBaseHelper == null)
+							{
+								if (ancestor.name.Equals(poseRelativeTo))
+								{
+									relativeObjectBaseHelper = ancestor.GetComponent<Helper.Base>();
+								}
+								else
+								{
+									var found = ancestor.Find(poseRelativeTo);
+									if (found != null)
+									{
+										relativeObjectBaseHelper = found.GetComponent<Helper.Base>();
+									}
+								}
+								ancestor = ancestor.parent;
+							}
+						}
+
+						// Fallback: root model scope for cross-model references
+						relativeObjectBaseHelper ??= baseHelper.RootModel?.GetComponentsInChildren<Helper.Base>()
 							.FirstOrDefault(x => x.name.Equals(poseRelativeTo));
 
 						if (relativeObjectBaseHelper != null)
