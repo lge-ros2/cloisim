@@ -26,7 +26,8 @@ public class ROS2Inspector : Editor
 		{
 			targetTransform.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
 			var ros2Position = Unity2SDF.Position(localPosition).AsUnity();
-			var ros2Rotation = Unity2SDF.Vector(localRotation.eulerAngles).AsUnity();
+			var ros2Rotation = Unity2SDF.Vector(localRotation.eulerAngles).AsUnity() * Mathf.Deg2Rad;
+			ros2Rotation.NormalizeAngle();
 			var ros2RotationDegree = ros2Rotation * Mathf.Rad2Deg;
 
 			EditorGUILayout.Space();

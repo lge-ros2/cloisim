@@ -39,15 +39,18 @@ public static class MathUtil
 
 	public static class Angle
 	{
-		// in Radian
+		// in Radian, normalize to [-π, π]
 		public static double Normalize(in double angle)
 		{
-			var normalizedAngle = angle % (2 * PI); // Normalize angle to [0, 2π]
-			if (normalizedAngle > PI)
+			var normalizedAngle = angle % (2 * PI);
+			if (normalizedAngle < -PI)
 			{
-				normalizedAngle -= PI2; // Shift to [-π, π]
+				normalizedAngle += PI2; // Shift from [-2π, -π) to [-π, 0)
 			}
-			// UnityEngine.Debug.Log("normalize :" +  angle.ToString("F5") + " -> " + normalizedAngle.ToString("F5"));
+			else if (normalizedAngle > PI)
+			{
+				normalizedAngle -= PI2; // Shift from (π, 2π] to [-π, π]
+			}
 			return normalizedAngle;
 		}
 	}
