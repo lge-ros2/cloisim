@@ -184,6 +184,21 @@ namespace SDFormat
 				return gps;
 			}
 
+			public static Device AddLogicalCamera(this UE.GameObject targetObject, in LogicalCameraSensor element)
+			{
+				var newSensorObject = new UE.GameObject();
+				targetObject.AttachSensor(newSensorObject);
+
+				var logicalCamera = newSensorObject.AddComponent<SensorDevices.LogicalCamera>();
+				logicalCamera.DeviceName = newSensorObject.GetFrameName();
+				logicalCamera.Near = (float)element.Near;
+				logicalCamera.Far = (float)element.Far;
+				logicalCamera.AspectRatio = (float)element.AspectRatio;
+				logicalCamera.HorizontalFov = (float)element.HorizontalFov;
+
+				return logicalCamera;
+			}
+
 			public static Device AddContact(this UE.GameObject targetObject, in ContactData element)
 			{
 				var newSensorObject = new UE.GameObject();

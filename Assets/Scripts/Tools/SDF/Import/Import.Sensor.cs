@@ -92,11 +92,15 @@ namespace SDFormat
 						device = targetObject.AddContact(contact);
 						break;
 
+					case "logical_camera":
+						var logicalCamera = sensor.LogicalCamera;
+						device = targetObject.AddLogicalCamera(logicalCamera);
+						break;
+
 					case "air_pressure":
 					case "air_speed":
 					case "altimeter":
 					case "force_torque":
-					case "logical_camera":
 					case "thermal_camera":
 					case "bounding_box_camera":
 					case "wide_angle_camera":
