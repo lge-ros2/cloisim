@@ -16,29 +16,29 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"collision1", IsRequired = true)]
-        public string Collision1 { get; set; }
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"collision2", IsRequired = true)]
-        public string Collision2 { get; set; }
+        [global::ProtoBuf.ProtoMember(2, Name = @"collision1")]
+        public Entity Collision1 { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"position")]
+        [global::ProtoBuf.ProtoMember(3, Name = @"collision2")]
+        public Entity Collision2 { get; set; }
+
+        [global::ProtoBuf.ProtoMember(4, Name = @"position")]
         public global::System.Collections.Generic.List<Vector3d> Positions { get; } = new global::System.Collections.Generic.List<Vector3d>();
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"normal")]
+        [global::ProtoBuf.ProtoMember(5, Name = @"normal")]
         public global::System.Collections.Generic.List<Vector3d> Normals { get; } = new global::System.Collections.Generic.List<Vector3d>();
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"depth")]
+        [global::ProtoBuf.ProtoMember(6, Name = @"depth", IsPacked = true)]
         public double[] Depths { get; set; }
 
-        [global::ProtoBuf.ProtoMember(6, Name = @"wrench")]
+        [global::ProtoBuf.ProtoMember(7, Name = @"wrench")]
         public global::System.Collections.Generic.List<JointWrench> Wrenchs { get; } = new global::System.Collections.Generic.List<JointWrench>();
 
-        [global::ProtoBuf.ProtoMember(7, Name = @"time", IsRequired = true)]
-        public Time Time { get; set; }
-
-        [global::ProtoBuf.ProtoMember(8, Name = @"world", IsRequired = true)]
-        public string World { get; set; }
+        [global::ProtoBuf.ProtoMember(8, Name = @"world")]
+        public Entity World { get; set; }
 
     }
 

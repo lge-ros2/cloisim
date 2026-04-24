@@ -114,7 +114,8 @@ namespace SensorDevices
 		protected override void InitializeMessages()
 		{
 			_imu = new messages.Imu();
-			_imu.Stamp = new messages.Time();
+			_imu.Header = new messages.Header();
+			_imu.Header.Stamp = new messages.Time();
 			_imu.Orientation = new messages.Quaternion();
 			_imu.AngularVelocity = new messages.Vector3d();
 			_imu.LinearAcceleration = new messages.Vector3d();
@@ -129,32 +130,32 @@ namespace SensorDevices
 		{
 			if (_noises.angular_velocity["x"] != null)
 			{
-				_noises.angular_velocity["x"].Apply<float>(ref _imuAngularVelocity.x, deltaTime);
+				_noises.angular_velocity["x"].Apply(ref _imuAngularVelocity.x, deltaTime);
 			}
 
 			if (_noises.angular_velocity["y"] != null)
 			{
-				_noises.angular_velocity["y"].Apply<float>(ref _imuAngularVelocity.y, deltaTime);
+				_noises.angular_velocity["y"].Apply(ref _imuAngularVelocity.y, deltaTime);
 			}
 
 			if (_noises.angular_velocity["z"] != null)
 			{
-				_noises.angular_velocity["z"].Apply<float>(ref _imuAngularVelocity.z, deltaTime);
+				_noises.angular_velocity["z"].Apply(ref _imuAngularVelocity.z, deltaTime);
 			}
 
 			if (_noises.linear_acceleration["x"] != null)
 			{
-				_noises.linear_acceleration["x"].Apply<float>(ref _imuLinearAcceleration.x, deltaTime);
+				_noises.linear_acceleration["x"].Apply(ref _imuLinearAcceleration.x, deltaTime);
 			}
 
 			if (_noises.linear_acceleration["y"] != null)
 			{
-				_noises.linear_acceleration["y"].Apply<float>(ref _imuLinearAcceleration.y, deltaTime);
+				_noises.linear_acceleration["y"].Apply(ref _imuLinearAcceleration.y, deltaTime);
 			}
 
 			if (_noises.linear_acceleration["z"] != null)
 			{
-				_noises.linear_acceleration["z"].Apply<float>(ref _imuLinearAcceleration.z, deltaTime);
+				_noises.linear_acceleration["z"].Apply(ref _imuLinearAcceleration.z, deltaTime);
 			}
 		}
 
@@ -197,7 +198,7 @@ namespace SensorDevices
 
 			var currentLinearVelocity = (currentPosition - _previousImuPosition) / Time.fixedDeltaTime;
 			_imuLinearAcceleration = (currentLinearVelocity - _previousLinearVelocity) / Time.fixedDeltaTime;
-			_imuLinearAcceleration.y += (-Physics.gravity.y);
+			_imuLinearAcceleration.y += -Physics.gravity.y;
 
 			ApplyNoises(Time.fixedDeltaTime);
 
@@ -217,9 +218,9 @@ namespace SensorDevices
 			_imu.LinearAcceleration.Set(_imuLinearAcceleration);
 			// Use fixed-dt synthetic time instead of physics-step SimTime
 			// so consecutive IMU messages always have exactly UpdatePeriod apart.
-			_imu.Stamp.Set(GetNextSyntheticTime());
+			_imu.Header.Stamp.Set(GetNextSyntheticTime());
 
-			PushDeviceMessage<messages.Imu>(_imu);
+			PushDeviceMessage(_imu);
 		}
 
 		public messages.Imu GetImuMessage()

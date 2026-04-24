@@ -16,22 +16,22 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"header", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
         public Header Header { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"tracking_id", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(2, Name = @"tracking_id")]
         public int TrackingId { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"class_id", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(3, Name = @"class_id")]
         public int ClassId { get; set; }
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"position", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(4, Name = @"position")]
         public Vector3d Position { get; set; }
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"velocity", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(5, Name = @"velocity")]
         public Vector3d Velocity { get; set; }
 
-        [global::ProtoBuf.ProtoMember(6, Name = @"size", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(6, Name = @"size")]
         public Vector3d Size { get; set; }
 
         [global::ProtoBuf.ProtoMember(7, Name = @"footprint")]

@@ -16,21 +16,67 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"width", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"width")]
         public uint Width { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"height", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(3, Name = @"height")]
         public uint Height { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"pixel_format", IsRequired = true)]
-        public uint PixelFormat { get; set; }
-
-        [global::ProtoBuf.ProtoMember(4, Name = @"step", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(4, Name = @"step")]
         public uint Step { get; set; }
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"data", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(5, Name = @"data")]
         public byte[] Data { get; set; }
 
+        [global::ProtoBuf.ProtoMember(6, Name = @"pixel_format_type")]
+        public PixelFormatType PixelFormatType { get; set; }
+
+    }
+
+    [global::ProtoBuf.ProtoContract()]
+    public enum PixelFormatType
+    {
+        [global::ProtoBuf.ProtoEnum(Name = @"UNKNOWN_PIXEL_FORMAT")]
+        UnknownPixelFormat = 0,
+        [global::ProtoBuf.ProtoEnum(Name = @"L_INT8")]
+        LInt8 = 1,
+        [global::ProtoBuf.ProtoEnum(Name = @"L_INT16")]
+        LInt16 = 2,
+        [global::ProtoBuf.ProtoEnum(Name = @"RGB_INT8")]
+        RgbInt8 = 3,
+        [global::ProtoBuf.ProtoEnum(Name = @"RGBA_INT8")]
+        RgbaInt8 = 4,
+        [global::ProtoBuf.ProtoEnum(Name = @"BGRA_INT8")]
+        BgraInt8 = 5,
+        [global::ProtoBuf.ProtoEnum(Name = @"RGB_INT16")]
+        RgbInt16 = 6,
+        [global::ProtoBuf.ProtoEnum(Name = @"RGB_INT32")]
+        RgbInt32 = 7,
+        [global::ProtoBuf.ProtoEnum(Name = @"BGR_INT8")]
+        BgrInt8 = 8,
+        [global::ProtoBuf.ProtoEnum(Name = @"BGR_INT16")]
+        BgrInt16 = 9,
+        [global::ProtoBuf.ProtoEnum(Name = @"BGR_INT32")]
+        BgrInt32 = 10,
+        [global::ProtoBuf.ProtoEnum(Name = @"R_FLOAT16")]
+        RFloat16 = 11,
+        [global::ProtoBuf.ProtoEnum(Name = @"RGB_FLOAT16")]
+        RgbFloat16 = 12,
+        [global::ProtoBuf.ProtoEnum(Name = @"R_FLOAT32")]
+        RFloat32 = 13,
+        [global::ProtoBuf.ProtoEnum(Name = @"RGB_FLOAT32")]
+        RgbFloat32 = 14,
+        [global::ProtoBuf.ProtoEnum(Name = @"BAYER_RGGB8")]
+        BayerRggb8 = 15,
+        [global::ProtoBuf.ProtoEnum(Name = @"BAYER_BGGR8")]
+        BayerBggr8 = 16,
+        [global::ProtoBuf.ProtoEnum(Name = @"BAYER_GBRG8")]
+        BayerGbrg8 = 17,
+        [global::ProtoBuf.ProtoEnum(Name = @"BAYER_GRBG8")]
+        BayerGrbg8 = 18,
     }
 
 }

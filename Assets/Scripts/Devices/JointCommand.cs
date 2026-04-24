@@ -6,7 +6,6 @@
 // #define PRINT_COMMAND_LOG
 
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -23,8 +22,8 @@ namespace SensorDevices
 			public Command(in Articulation joint, in float targetPosition_, in float targetVelocity_)
 			{
 				this.joint = joint;
-				this.targetPosition = float.NaN;
-				this.targetVelocity = float.NaN;
+				targetPosition = float.NaN;
+				targetVelocity = float.NaN;
 				SetTarget(targetPosition_, targetVelocity_);
 			}
 
@@ -32,12 +31,12 @@ namespace SensorDevices
 			{
 				if (!float.IsNaN(position))
 				{
-					this.targetPosition = (this.joint.IsRevoluteType() ? SDF2Unity.CurveOrientation(position) : position);
+					targetPosition = joint.IsRevoluteType() ? SDF2Unity.CurveOrientation(position) : position;
 				}
 
 				if (!float.IsNaN(velocity))
 				{
-					this.targetVelocity = (this.joint.IsRevoluteType() ? SDF2Unity.CurveOrientation(velocity) : velocity);
+					targetVelocity = joint.IsRevoluteType() ? SDF2Unity.CurveOrientation(velocity) : velocity;
 				}
 			}
 		}
@@ -74,18 +73,18 @@ namespace SensorDevices
 				if (articulation != null)
 				{
 					var targetPosition = float.NaN;
-					if (jointCommand.Position != null)
+					if (jointCommand.Position != null && jointCommand.Position.TargetOptional != null)
 					{
-						targetPosition = (float)jointCommand.Position.Target;
+						targetPosition = (float)jointCommand.Position.TargetOptional.Data;
 #if PRINT_COMMAND_LOG
 						commandLog.AppendLine(jointName + ": targetPosition=" + targetPosition);
 #endif
 					}
 
 					var targetVelocity = float.NaN;
-					if (jointCommand.Velocity != null)
+					if (jointCommand.Velocity != null && jointCommand.Velocity.TargetOptional != null)
 					{
-						targetVelocity = (float)jointCommand.Velocity.Target;
+						targetVelocity = (float)jointCommand.Velocity.TargetOptional.Data;
 #if PRINT_COMMAND_LOG
 						commandLog.AppendLine(jointName + ": targetVelocity=" + targetVelocity);
 #endif

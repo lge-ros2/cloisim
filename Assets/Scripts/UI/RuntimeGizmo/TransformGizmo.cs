@@ -77,7 +77,7 @@ namespace RuntimeGizmos
 
 		public Vector3 pivotPoint { get; private set; }
 
-		public Transform mainTargetRoot { get { return (targetRootsOrdered.Count > 0) ? ((useFirstSelectedAsMain) ? targetRootsOrdered[0] : targetRootsOrdered[targetRootsOrdered.Count - 1]) : null; } }
+		public Transform mainTargetRoot { get { return (targetRootsOrdered.Count > 0) ? (useFirstSelectedAsMain ? targetRootsOrdered[0] : targetRootsOrdered[targetRootsOrdered.Count - 1]) : null; } }
 
 		private Axis nearAxis = Axis.None;
 		private Axis planeAxis = Axis.None;
@@ -362,14 +362,14 @@ namespace RuntimeGizmos
 
 										if (snapAmount1 != 0)
 										{
-											var snapMove = (otherAxis1 * snapAmount1);
+											var snapMove = otherAxis1 * snapAmount1;
 											movement += snapMove;
 											currentSnapMovementAmount -= snapMove;
 										}
 
 										if (snapAmount2 != 0)
 										{
-											var snapMove = (otherAxis2 * snapAmount2);
+											var snapMove = otherAxis2 * snapAmount2;
 											movement += snapMove;
 											currentSnapMovementAmount -= snapMove;
 										}
@@ -448,7 +448,7 @@ namespace RuntimeGizmos
 									else
 									{
 										Vector3 projected = (nearAxis == Axis.Any || ExtVector3.IsParallel(axis, planeNormal)) ? planeNormal : Vector3.Cross(axis, planeNormal);
-										rotateAmount = (ExtVector3.MagnitudeInDirection(mousePosition - previousMousePosition, projected) * (rotateSpeedMultiplier * 100f)) / GetDistanceMultiplier();
+										rotateAmount = ExtVector3.MagnitudeInDirection(mousePosition - previousMousePosition, projected) * (rotateSpeedMultiplier * 100f) / GetDistanceMultiplier();
 									}
 								}
 
@@ -583,7 +583,7 @@ namespace RuntimeGizmos
 							{
 								if (!(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
 								{
-									target = (hitRootModelHelper.hasRootArticulationBody) ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
+									target = hitRootModelHelper.hasRootArticulationBody ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
 								}
 							}
 							// Select static object(non articulation body) only when left alt is pressed
@@ -699,7 +699,7 @@ namespace RuntimeGizmos
 		void AddAllChildren(in Transform target)
 		{
 			childrenBuffer.Clear();
-			target.GetComponentsInChildren<Transform>(true, childrenBuffer);
+			target.GetComponentsInChildren(true, childrenBuffer);
 			childrenBuffer.Remove(target);
 
 			for (int i = 0; i < childrenBuffer.Count; i++)
@@ -715,7 +715,7 @@ namespace RuntimeGizmos
 		void RemoveAllChildren(in Transform target)
 		{
 			childrenBuffer.Clear();
-			target.GetComponentsInChildren<Transform>(true, childrenBuffer);
+			target.GetComponentsInChildren(true, childrenBuffer);
 			childrenBuffer.Remove(target);
 
 			for (int i = 0; i < childrenBuffer.Count; i++)

@@ -16,35 +16,26 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"id", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"id")]
         public int Id { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"request", IsRequired = true)]
-        public string Request { get; set; }
-
-        [global::ProtoBuf.ProtoMember(3, IsRequired = true)]
-        public string response { get; set; }
-
-        [global::ProtoBuf.ProtoMember(4, Name = @"type")]
+        [global::ProtoBuf.ProtoMember(3, Name = @"request")]
         [global::System.ComponentModel.DefaultValue("")]
-        public string Type
-        {
-            get => __pbn__Type ?? "";
-            set => __pbn__Type = value;
-        }
-        public bool ShouldSerializeType() => __pbn__Type != null;
-        public void ResetType() => __pbn__Type = null;
-        private string __pbn__Type;
+        public string Request { get; set; } = "";
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"serialized_data")]
-        public byte[] SerializedData
-        {
-            get => __pbn__SerializedData;
-            set => __pbn__SerializedData = value;
-        }
-        public bool ShouldSerializeSerializedData() => __pbn__SerializedData != null;
-        public void ResetSerializedData() => __pbn__SerializedData = null;
-        private byte[] __pbn__SerializedData;
+        [global::ProtoBuf.ProtoMember(4)]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string response { get; set; } = "";
+
+        [global::ProtoBuf.ProtoMember(5, Name = @"type")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string Type { get; set; } = "";
+
+        [global::ProtoBuf.ProtoMember(6, Name = @"serialized_data")]
+        public byte[] SerializedData { get; set; }
 
     }
 

@@ -110,11 +110,9 @@ public class JointControlPlugin : CLOiSimPlugin
 			return;
 		}
 
-		var ros2CommonInfo = new messages.Param();
-		ros2CommonInfo.Name = "description";
-		ros2CommonInfo.Value = new Any { Type = Any.ValueType.String };
-		ros2CommonInfo.Value.StringValue = _robotDescription;
+		var ros2Param = new messages.Param();
+		ros2Param.Params["description"] = new Any { Type = Any.ValueType.String, StringValue = _robotDescription };
 
-		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
+		msRos2Info.SetMessage<messages.Param>(ros2Param);
 	}
 }

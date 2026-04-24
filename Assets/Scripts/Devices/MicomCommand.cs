@@ -43,12 +43,12 @@ namespace SensorDevices
 
 		public void SetMotorControl(in MotorControl motorControl)
 		{
-			this._motorControl = motorControl;
+			_motorControl = motorControl;
 		}
 
 		public void SetMowingBlade(in MowingBlade mowingBlade)
 		{
-			this._mowingBlade = mowingBlade;
+			_mowingBlade = mowingBlade;
 		}
 
 		protected override void ProcessReceivedDeviceMessage(DeviceMessage receivedMessage)
@@ -74,12 +74,18 @@ namespace SensorDevices
 					var customCmd = receivedMessage.GetMessage<messages.Param>();
 					if (customCmd != null)
 					{
-						if (customCmd.Name.StartsWith("mowing"))
+						var firstEntry = customCmd.Params.GetEnumerator();
+						if (firstEntry.MoveNext())
 						{
-							ControlMowing(customCmd.Name, customCmd.Value);
-						}
-						else if (customCmd.Name.StartsWith("display"))
-						{
+							var cmdName = firstEntry.Current.Key;
+							var cmdValue = firstEntry.Current.Value;
+							if (cmdName.StartsWith("mowing"))
+							{
+								ControlMowing(cmdName, cmdValue);
+							}
+							else if (cmdName.StartsWith("display"))
+							{
+							}
 						}
 					}
 #if UNITY_EDITOR
@@ -116,7 +122,7 @@ namespace SensorDevices
 		/// Currently supported buttons are:
 		/// - Triangle button: start balancing
 		/// </remarks>
-		private void ControlJoystick(in cloisim.msgs.Joystick message)
+		private void ControlJoystick(in messages.Joystick message)
 		{
 			var balancedDrive = _motorControl as SelfBalancedDrive;
 			if (balancedDrive != null)
@@ -134,7 +140,7 @@ namespace SensorDevices
 
 				if (buttonUpPressed > 0 || buttonDownPressed > 0)
 				{
-					var heightAmount = ((buttonUpPressed > 0) ? -HeightMovementUnit : HeightMovementUnit);
+					var heightAmount = (buttonUpPressed > 0) ? -HeightMovementUnit : HeightMovementUnit;
 					balancedDrive.HeightTarget += heightAmount;
 				}
 
@@ -143,7 +149,7 @@ namespace SensorDevices
 
 				if (buttonLeftPressed > 0 || buttonRightPressed > 0)
 				{
-					var rollAmount = ((buttonLeftPressed > 0) ? -RollRotationUnit : RollRotationUnit);
+					var rollAmount = (buttonLeftPressed > 0) ? -RollRotationUnit : RollRotationUnit;
 					balancedDrive.RollTarget += rollAmount;
 				}
 
@@ -187,7 +193,7 @@ namespace SensorDevices
 			}
 		}
 
-		private void ControlMowing(in string target, in cloisim.msgs.Any value)
+		private void ControlMowing(in string target, in messages.Any value)
 		{
 			if (target.Equals("mowing_blade_height"))
 			{

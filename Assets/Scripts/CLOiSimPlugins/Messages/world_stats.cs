@@ -16,33 +16,38 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"sim_time", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"sim_time")]
         public Time SimTime { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"pause_time", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(3, Name = @"pause_time")]
         public Time PauseTime { get; set; }
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"real_time", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(4, Name = @"real_time")]
         public Time RealTime { get; set; }
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"paused", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(5, Name = @"paused")]
         public bool Paused { get; set; }
 
-        [global::ProtoBuf.ProtoMember(6, Name = @"iterations", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(6, Name = @"iterations")]
         public ulong Iterations { get; set; }
 
         [global::ProtoBuf.ProtoMember(7, Name = @"model_count")]
-        public int ModelCount
-        {
-            get => __pbn__ModelCount.GetValueOrDefault();
-            set => __pbn__ModelCount = value;
-        }
-        public bool ShouldSerializeModelCount() => __pbn__ModelCount != null;
-        public void ResetModelCount() => __pbn__ModelCount = null;
-        private int? __pbn__ModelCount;
+        public int ModelCount { get; set; }
 
         [global::ProtoBuf.ProtoMember(8, Name = @"log_playback_stats")]
         public LogPlaybackStatistics LogPlaybackStats { get; set; }
+
+        [global::ProtoBuf.ProtoMember(9, Name = @"real_time_factor")]
+        public double RealTimeFactor { get; set; }
+
+        [global::ProtoBuf.ProtoMember(10, Name = @"step_size")]
+        public Time StepSize { get; set; }
+
+        [global::ProtoBuf.ProtoMember(11, Name = @"stepping")]
+        public bool Stepping { get; set; }
 
     }
 

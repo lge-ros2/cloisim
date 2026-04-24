@@ -95,10 +95,9 @@ public class LaserPlugin : CLOiSimPlugin
 	private void SetOutputTypeResponse(ref DeviceMessage msInfo)
 	{
 		var output_type = GetPluginParameters().GetValue<string>("output_type", "LaserScan");
-		var outputTypeInfo = new messages.Param();
-		outputTypeInfo.Name = "output_type";
-		outputTypeInfo.Value = new Any { Type = Any.ValueType.String, StringValue = output_type };
+		var outputParam = new messages.Param();
+		outputParam.Params["output_type"] = new Any { Type = Any.ValueType.String, StringValue = output_type };
 
-		msInfo.SetMessage<messages.Param>(outputTypeInfo);
+		msInfo.SetMessage<messages.Param>(outputParam);
 	}
 }

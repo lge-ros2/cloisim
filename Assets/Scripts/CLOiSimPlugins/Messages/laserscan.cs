@@ -16,74 +16,50 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"frame", IsRequired = true)]
-        public string Frame { get; set; }
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"world_pose", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(2, Name = @"frame")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string Frame { get; set; } = "";
+
+        [global::ProtoBuf.ProtoMember(3, Name = @"world_pose")]
         public Pose WorldPose { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"angle_min", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(4, Name = @"angle_min")]
         public double AngleMin { get; set; }
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"angle_max", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(5, Name = @"angle_max")]
         public double AngleMax { get; set; }
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"angle_step", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(6, Name = @"angle_step")]
         public double AngleStep { get; set; }
 
-        [global::ProtoBuf.ProtoMember(6, Name = @"range_min", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(7, Name = @"range_min")]
         public double RangeMin { get; set; }
 
-        [global::ProtoBuf.ProtoMember(7, Name = @"range_max", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(8, Name = @"range_max")]
         public double RangeMax { get; set; }
 
-        [global::ProtoBuf.ProtoMember(8, Name = @"count", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(9, Name = @"count")]
         public uint Count { get; set; }
 
-        [global::ProtoBuf.ProtoMember(9, Name = @"vertical_angle_min")]
-        public double VerticalAngleMin
-        {
-            get => __pbn__VerticalAngleMin.GetValueOrDefault();
-            set => __pbn__VerticalAngleMin = value;
-        }
-        public bool ShouldSerializeVerticalAngleMin() => __pbn__VerticalAngleMin != null;
-        public void ResetVerticalAngleMin() => __pbn__VerticalAngleMin = null;
-        private double? __pbn__VerticalAngleMin;
+        [global::ProtoBuf.ProtoMember(10, Name = @"vertical_angle_min")]
+        public double VerticalAngleMin { get; set; }
 
-        [global::ProtoBuf.ProtoMember(10, Name = @"vertical_angle_max")]
-        public double VerticalAngleMax
-        {
-            get => __pbn__VerticalAngleMax.GetValueOrDefault();
-            set => __pbn__VerticalAngleMax = value;
-        }
-        public bool ShouldSerializeVerticalAngleMax() => __pbn__VerticalAngleMax != null;
-        public void ResetVerticalAngleMax() => __pbn__VerticalAngleMax = null;
-        private double? __pbn__VerticalAngleMax;
+        [global::ProtoBuf.ProtoMember(11, Name = @"vertical_angle_max")]
+        public double VerticalAngleMax { get; set; }
 
-        [global::ProtoBuf.ProtoMember(11, Name = @"vertical_angle_step")]
-        public double VerticalAngleStep
-        {
-            get => __pbn__VerticalAngleStep.GetValueOrDefault();
-            set => __pbn__VerticalAngleStep = value;
-        }
-        public bool ShouldSerializeVerticalAngleStep() => __pbn__VerticalAngleStep != null;
-        public void ResetVerticalAngleStep() => __pbn__VerticalAngleStep = null;
-        private double? __pbn__VerticalAngleStep;
+        [global::ProtoBuf.ProtoMember(12, Name = @"vertical_angle_step")]
+        public double VerticalAngleStep { get; set; }
 
-        [global::ProtoBuf.ProtoMember(12, Name = @"vertical_count")]
-        public uint VerticalCount
-        {
-            get => __pbn__VerticalCount.GetValueOrDefault();
-            set => __pbn__VerticalCount = value;
-        }
-        public bool ShouldSerializeVerticalCount() => __pbn__VerticalCount != null;
-        public void ResetVerticalCount() => __pbn__VerticalCount = null;
-        private uint? __pbn__VerticalCount;
+        [global::ProtoBuf.ProtoMember(13, Name = @"vertical_count")]
+        public uint VerticalCount { get; set; }
 
-        [global::ProtoBuf.ProtoMember(13, Name = @"ranges")]
+        [global::ProtoBuf.ProtoMember(14, Name = @"ranges", IsPacked = true)]
         public double[] Ranges { get; set; }
 
-        [global::ProtoBuf.ProtoMember(14, Name = @"intensities")]
+        [global::ProtoBuf.ProtoMember(15, Name = @"intensities", IsPacked = true)]
         public double[] Intensities { get; set; }
 
     }

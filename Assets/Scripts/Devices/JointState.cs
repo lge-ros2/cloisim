@@ -88,7 +88,7 @@ namespace SensorDevices
 				// per publish for jitter-free timestamps.
 				jointStateV.Header.Stamp.Set(GetNextSyntheticTime());
 
-				PushDeviceMessage<messages.JointStateV>(jointStateV);
+				PushDeviceMessage(jointStateV);
 			}
 
 #if UNITY_EDITOR
@@ -172,17 +172,17 @@ namespace SensorDevices
 				var jointPosition = articulation.GetJointPosition();
 				var jointForce = articulation.GetForce();
 
-				var effort = (articulation.IsRevoluteType()) ?
+				var effort = articulation.IsRevoluteType() ?
 								Unity2SDF.Direction.Curve(jointForce) :
 									(articulation.IsPrismaticType() ?
 										 Unity2SDF.Direction.Joint.Prismatic(jointForce, articulation.GetAnchorRotation()) : jointForce);
 
-				var position = (articulation.IsRevoluteType()) ?
+				var position = articulation.IsRevoluteType() ?
 								Unity2SDF.Direction.Curve(jointPosition) :
 									(articulation.IsPrismaticType() ?
 										 Unity2SDF.Direction.Joint.Prismatic(jointPosition, articulation.GetAnchorRotation()) : jointPosition);
 
-				var velocity = (articulation.IsRevoluteType()) ?
+				var velocity = articulation.IsRevoluteType() ?
 								Unity2SDF.Direction.Curve(jointVelocity) : jointVelocity;
 
 				entry.curr = new PhysicsSample

@@ -442,17 +442,17 @@ public abstract class Device : MonoBehaviour
 			}
 
 			// Raw binary fast-path for image types — bypasses protobuf serialization
-			if (instance is cloisim.msgs.ImageStamped imgStamped)
+			if (instance is cloisim.msgs.Image img)
 			{
-				deviceMessage.SetRawImage(imgStamped);
+				deviceMessage.SetRawImage(img);
 			}
 			else if (instance is cloisim.msgs.Segmentation seg)
 			{
 				deviceMessage.SetRawSegmentation(seg);
 			}
-			else if (instance is cloisim.msgs.ImagesStamped imgsStamped)
+			else if (instance is cloisim.msgs.Images imgs)
 			{
-				deviceMessage.SetRawImagesStamped(imgsStamped);
+				deviceMessage.SetRawImages(imgs);
 			}
 			else
 			{

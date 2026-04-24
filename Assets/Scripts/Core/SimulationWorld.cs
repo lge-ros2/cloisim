@@ -59,9 +59,8 @@ public class SimulationWorld : CLOiSimPlugin
 			return;
 		}
 
-		var requestResetMessage = new messages.Param();
-		requestResetMessage.Name = "reset_simulation";
-		requestResetMessage.Value = new messages.Any { Type = messages.Any.ValueType.Boolean, BoolValue = true };
+		var resetParam = new messages.Param();
+		resetParam.Params["reset_simulation"] = new messages.Any { Type = messages.Any.ValueType.Boolean, BoolValue = true };
 
 		var deviceMessage = new DeviceMessage();
 		while (PluginThread.IsRunning)
@@ -72,7 +71,7 @@ public class SimulationWorld : CLOiSimPlugin
 				continue;
 			}
 
-			deviceMessage.SetMessage<messages.Param>(requestResetMessage);
+			deviceMessage.SetMessage<messages.Param>(resetParam);
 			try {
 				if (requestor.SendRequest(deviceMessage))
 				{
@@ -80,9 +79,9 @@ public class SimulationWorld : CLOiSimPlugin
 					if (receivedBuffer != null)
 					{
 						var responseMessage = CLOiSimPluginThread.ParseMessageParam(receivedBuffer);
-						if (responseMessage.Name == "result")
+						if (responseMessage.Params.ContainsKey("result"))
 						{
-							Debug.LogFormat("simulation reset result: {0}", responseMessage.Value.StringValue);
+							Debug.LogFormat("simulation reset result: {0}", responseMessage.Params["result"].StringValue);
 						}
 					}
 				}

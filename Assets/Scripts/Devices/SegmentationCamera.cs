@@ -66,7 +66,7 @@ namespace SensorDevices
 			base.InitializeMessages();
 
 			_segmentation = new messages.Segmentation();
-			_segmentation.ImageStamped = _imageStamped;
+			_segmentation.Image = _image;
 		}
 
 		void LateUpdate()
@@ -75,9 +75,9 @@ namespace SensorDevices
 				_camParam.SaveFrames &&
 				_messageQueue.TryPeek(out var msg))
 			{
-				var imageStampedMsg = ((messages.Segmentation)msg).ImageStamped;
-				var saveName = $"{DeviceName}_{imageStampedMsg.Time.Sec}.{imageStampedMsg.Time.Nsec}";
-				_textureForCapture.SaveRawImage(imageStampedMsg.Image.Data, _camParam.SavePath, saveName);
+				var imageMsg = ((messages.Segmentation)msg).Image;
+				var saveName = $"{DeviceName}_{imageMsg.Header.Stamp.Sec}.{imageMsg.Header.Stamp.Nsec}";
+				_textureForCapture.SaveRawImage(imageMsg.Data, _camParam.SavePath, saveName);
 			}
 		}
 
@@ -86,13 +86,11 @@ namespace SensorDevices
 			using (s_ImageProcessingMarker.Auto())
 			{
 				_timeMsg.Set(capturedTime);
-				_imageStamped.Image = _image;
 
-				var image = _imageStamped.Image;
 				var sizeOfT = UnsafeUtility.SizeOf<T>();
 				var byteView = readbackData.Reinterpret<byte>(sizeOfT);
 
-				CopyReadbackToImage(byteView, image.Data);
+				CopyReadbackToImage(byteView, _image.Data);
 
 				// update labels
 				var labelInfo = Main.SegmentationManager.GetLabelInfo();

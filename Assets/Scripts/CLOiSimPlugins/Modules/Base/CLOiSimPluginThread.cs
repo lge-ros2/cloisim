@@ -187,8 +187,18 @@ public class CLOiSimPluginThread : IDisposable
 
 				if (requestMessage != null && dmResponse != null)
 				{
-					HandleRequestTypeValue(requestMessage.Name, requestMessage.Value, ref dmResponse);
-					HandleRequestTypeChildren(requestMessage.Name, requestMessage.Childrens, ref dmResponse);
+					// Extract first key-value pair from Params map as the request type/value
+					string requestName = null;
+					messages.Any requestValue = null;
+					foreach (var entry in requestMessage.Params)
+					{
+						requestName = entry.Key;
+						requestValue = entry.Value;
+						break;
+					}
+
+					HandleRequestTypeValue(requestName ?? string.Empty, requestValue, ref dmResponse);
+					HandleRequestTypeChildren(requestName ?? string.Empty, requestMessage.Childrens, ref dmResponse);
 				}
 				else
 				{

@@ -11,10 +11,10 @@ namespace SensorDevices
 {
 	public class MultiCamera : Device
 	{
-		private List<SensorDevices.Camera> cameras = new();
+		private List<Camera> cameras = new();
 
 		// Pre-allocated reusable message objects to avoid per-frame GC allocations
-		private messages.ImagesStamped _imagesStamped = null;
+		private messages.Images _images = null;
 
 		// Buffered images from child cameras to avoid data loss
 		// when cameras produce data at slightly different times
@@ -35,14 +35,14 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			_imagesStamped = new messages.ImagesStamped();
-			_imagesStamped.Time = new messages.Time();
+			_images = new messages.Images();
+			_images.Time = new messages.Time();
 		}
 
 		/// <summary>
 		/// Called by the Device TX thread at each update interval.
 		/// Collects images from all child cameras and pushes a combined
-		/// ImagesStamped message. Buffers partially-collected images
+		/// Images message. Buffers partially-collected images
 		/// to avoid data loss when cameras produce data at different times.
 		/// </summary>
 		protected override void GenerateMessage()
@@ -57,15 +57,15 @@ namespace SensorDevices
 					continue;
 
 				var msg = cameras[i].GetImageDataMessage();
-				if (msg is messages.ImageStamped imageStampedMsg)
+				if (msg is messages.Image imageMsg)
 				{
-					_pendingImages[i] = imageStampedMsg.Image;
-					_pendingTimestamps[i] = imageStampedMsg.Time.Get();
+					_pendingImages[i] = imageMsg;
+					_pendingTimestamps[i] = imageMsg.Header.Stamp.Get();
 				}
 				else if (msg is messages.Segmentation segMsg)
 				{
-					_pendingImages[i] = segMsg.ImageStamped.Image;
-					_pendingTimestamps[i] = segMsg.ImageStamped.Time.Get();
+					_pendingImages[i] = segMsg.Image;
+					_pendingTimestamps[i] = segMsg.Image.Header.Stamp.Get();
 				}
 			}
 
@@ -77,12 +77,12 @@ namespace SensorDevices
 			}
 
 			// Phase 3: All ready — build and push
-			_imagesStamped.Images.Clear();
+			_images.image.Clear();
 			var latestTimestamp = 0f;
 
 			for (var i = 0; i < cameras.Count; i++)
 			{
-				_imagesStamped.Images.Add(_pendingImages[i]);
+				_images.image.Add(_pendingImages[i]);
 
 				if (_pendingTimestamps[i] > latestTimestamp)
 					latestTimestamp = _pendingTimestamps[i];
@@ -90,22 +90,22 @@ namespace SensorDevices
 				_pendingImages[i] = null;
 			}
 
-			_imagesStamped.Time.Set(latestTimestamp);
-			PushDeviceMessage(_imagesStamped);
+			_images.Time.Set(latestTimestamp);
+			PushDeviceMessage(_images);
 		}
 
-		public void AddCamera(in SensorDevices.Camera newCam)
+		public void AddCamera(in Camera newCam)
 		{
 			cameras.Add(newCam);
 		}
 
-		public SensorDevices.Camera GetCamera(in string cameraName)
+		public Camera GetCamera(in string cameraName)
 		{
 			var target = "::" + cameraName;
 			return cameras.Find(x => x.DeviceName.EndsWith(target));
 		}
 
-		public SensorDevices.Camera GetCamera(in int cameraIndex)
+		public Camera GetCamera(in int cameraIndex)
 		{
 			if (cameraIndex >= cameras.Count)
 			{

@@ -16,31 +16,20 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"name")]
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"name")]
         [global::System.ComponentModel.DefaultValue("")]
-        public string Name
-        {
-            get => __pbn__Name ?? "";
-            set => __pbn__Name = value;
-        }
-        public bool ShouldSerializeName() => __pbn__Name != null;
-        public void ResetName() => __pbn__Name = null;
-        private string __pbn__Name;
+        public string Name { get; set; } = "";
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"id")]
-        public uint Id
-        {
-            get => __pbn__Id.GetValueOrDefault();
-            set => __pbn__Id = value;
-        }
-        public bool ShouldSerializeId() => __pbn__Id != null;
-        public void ResetId() => __pbn__Id = null;
-        private uint? __pbn__Id;
+        [global::ProtoBuf.ProtoMember(3, Name = @"id")]
+        public uint Id { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"position", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(4, Name = @"position")]
         public Vector3d Position { get; set; }
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"orientation", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(5, Name = @"orientation")]
         public Quaternion Orientation { get; set; }
 
     }

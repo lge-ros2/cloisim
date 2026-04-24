@@ -182,6 +182,8 @@ namespace SensorDevices
 		protected override void InitializeMessages()
 		{
 			_laserScan = new messages.LaserScan();
+			_laserScan.Header = new messages.Header();
+			_laserScan.Header.Stamp = new messages.Time();
 			_laserScan.WorldPose = new messages.Pose();
 			_laserScan.WorldPose.Position = new messages.Vector3d();
 			_laserScan.WorldPose.Orientation = new messages.Quaternion();
@@ -371,7 +373,7 @@ namespace SensorDevices
 
 			var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
 
-			var sensorTransform = this.transform;
+			var sensorTransform = transform;
 			var sensorPos = sensorTransform.position;
 			var sensorRight = sensorTransform.right;
 			var sensorUp = sensorTransform.up;
@@ -459,15 +461,11 @@ namespace SensorDevices
 			_noiseParamInRawXml = noiseParamInRawXml;
 		}
 
-		private messages.LaserScanStamped ProcessStandardData(double capturedTime, Pose sensorWorldPose, float[] rangeData)
+		private messages.LaserScan ProcessStandardData(double capturedTime, Pose sensorWorldPose, float[] rangeData)
 		{
-			var laserScanStamped = new messages.LaserScanStamped();
-			laserScanStamped.Time = new messages.Time();
-			laserScanStamped.Time.Set(capturedTime);
+			_laserScan.Header.Stamp.Set(capturedTime);
 
-			laserScanStamped.Scan = _laserScan;
-
-			var laserScan = laserScanStamped.Scan;
+			var laserScan = _laserScan;
 			laserScan.WorldPose.Position.Set(sensorWorldPose.position);
 			laserScan.WorldPose.Orientation.Set(sensorWorldPose.rotation);
 
@@ -480,19 +478,19 @@ namespace SensorDevices
 
 			if (_noise != null)
 			{
-				_noise.Apply<double>(ranges);
+				_noise.Apply(ranges);
 			}
 
 			if (_laserFilter != null)
 			{
 				_laserFilter.DoFilter(ref laserScan);
 			}
-			return laserScanStamped;
+			return _laserScan;
 		}
 
 		/// <summary>
 		/// Background thread: dequeues GPU readback results and assembles
-		/// LaserScanStamped messages. The URT output buffer is already laid
+		/// LaserScan messages. The URT output buffer is already laid
 		/// out as [vIndex * samplesH + hIndex] so no multi-camera stitching
 		/// is needed — a simple copy converts float to double.
 		/// </summary>
@@ -504,19 +502,19 @@ namespace SensorDevices
 			{
 				if (_outputQueue.TryDequeue(out item))
 				{
-					messages.LaserScanStamped laserScanStamped;
+					messages.LaserScan laserScan;
 
 					if (IsLivoxMode)
 					{
 						// Livox: XYZ triples copied directly, no noise/filter
-						laserScanStamped = ProcessLivoxData(item.capturedTime, item.sensorWorldPose, item.rangeData);
+						laserScan = ProcessLivoxData(item.capturedTime, item.sensorWorldPose, item.rangeData);
 					}
 					else
 					{
-						laserScanStamped = ProcessStandardData(item.capturedTime, item.sensorWorldPose, item.rangeData);
+						laserScan = ProcessStandardData(item.capturedTime, item.sensorWorldPose, item.rangeData);
 					}
 
-					EnqueueMessage(laserScanStamped);
+					EnqueueMessage(laserScan);
 
 					// Return pooled array now that data has been copied to double[] ranges
 					var rangeDataToReturn = item.rangeData;
@@ -538,7 +536,7 @@ namespace SensorDevices
 		{
 			var visualizer = new GameObject("__laser_visualizer__");
 			visualizer.layer = LayerMask.NameToLayer("Visualization");
-			visualizer.transform.SetParent(this.transform, false);
+			visualizer.transform.SetParent(transform, false);
 
 			if (IsLivoxMode || Is3DLidar)
 			{

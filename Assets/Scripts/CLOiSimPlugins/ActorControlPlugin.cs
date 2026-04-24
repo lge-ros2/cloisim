@@ -64,8 +64,7 @@ public class ActorControlPlugin : CLOiSimPlugin
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
 	{
-		var moveResponse = new messages.Param();
-		moveResponse.Name = "result";
+		var resultParam = new messages.Param();
 
 		var result = false;
 		if (actorList.ContainsKey(requestType) && requestValue != null)
@@ -80,7 +79,7 @@ public class ActorControlPlugin : CLOiSimPlugin
 			}
 		}
 
-		moveResponse.Value = new Any { Type = Any.ValueType.Boolean, BoolValue = result };
-		response.SetMessage<messages.Param>(moveResponse);
+		resultParam.Params["result"] = new Any { Type = Any.ValueType.Boolean, BoolValue = result };
+		response.SetMessage<messages.Param>(resultParam);
 	}
 }

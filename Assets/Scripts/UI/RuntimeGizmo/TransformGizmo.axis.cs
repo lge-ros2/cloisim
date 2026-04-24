@@ -222,7 +222,7 @@ namespace RuntimeGizmos
 			{
 				Ray mouseRay = myCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
 				Vector3 mousePlaneHit = Geometry.LinePlaneIntersect(mouseRay.origin, mouseRay.direction, pivotPoint, (transform.position - pivotPoint).normalized);
-				if ((pivotPoint - mousePlaneHit).sqrMagnitude <= (GetHandleLength(TransformType.Rotate)).Squared()) SetTranslatingAxis(type, Axis.Any);
+				if ((pivotPoint - mousePlaneHit).sqrMagnitude <= GetHandleLength(TransformType.Rotate).Squared()) SetTranslatingAxis(type, Axis.Any);
 			}
 		}
 

@@ -50,7 +50,7 @@ namespace RuntimeGizmos
 
 			if (lineMaterial.SetPass(0))
 			{
-				var transformingColor = (isTransforming) ? selectedColor : hoverColor;
+				var transformingColor = isTransforming ? selectedColor : hoverColor;
 
 				var xColor = (nearAxis == Axis.X) ? transformingColor : this.xColor;
 				var yColor = (nearAxis == Axis.Y) ? transformingColor : this.yColor;
@@ -148,22 +148,22 @@ namespace RuntimeGizmos
 
 			if (TranslatingTypeContains(TransformType.Move))
 			{
-				Vector3 pivotToCamera = myCamera.transform.position - pivotPoint;
-				float cameraXSign = Mathf.Sign(Vector3.Dot(axisInfo.xDirection, pivotToCamera));
-				float cameraYSign = Mathf.Sign(Vector3.Dot(axisInfo.yDirection, pivotToCamera));
-				float cameraZSign = Mathf.Sign(Vector3.Dot(axisInfo.zDirection, pivotToCamera));
+				var pivotToCamera = myCamera.transform.position - pivotPoint;
+				var cameraXSign = Mathf.Sign(Vector3.Dot(axisInfo.xDirection, pivotToCamera));
+				var cameraYSign = Mathf.Sign(Vector3.Dot(axisInfo.yDirection, pivotToCamera));
+				var cameraZSign = Mathf.Sign(Vector3.Dot(axisInfo.zDirection, pivotToCamera));
 
-				float planeSize = this.planeSize;
+				var planeSize = this.planeSize;
 				if (transformType == TransformType.All) { planeSize *= allMoveHandleLengthMultiplier; }
 				planeSize *= GetDistanceMultiplier();
 
-				Vector3 xDirection = (axisInfo.xDirection * planeSize) * cameraXSign;
-				Vector3 yDirection = (axisInfo.yDirection * planeSize) * cameraYSign;
-				Vector3 zDirection = (axisInfo.zDirection * planeSize) * cameraZSign;
+				var xDirection = axisInfo.xDirection * planeSize * cameraXSign;
+				var yDirection = axisInfo.yDirection * planeSize * cameraYSign;
+				var zDirection = axisInfo.zDirection * planeSize * cameraZSign;
 
-				Vector3 xPlaneCenter = pivotPoint + (yDirection + zDirection);
-				Vector3 yPlaneCenter = pivotPoint + (xDirection + zDirection);
-				Vector3 zPlaneCenter = pivotPoint + (xDirection + yDirection);
+				var xPlaneCenter = pivotPoint + (yDirection + zDirection);
+				var yPlaneCenter = pivotPoint + (xDirection + zDirection);
+				var zPlaneCenter = pivotPoint + (xDirection + yDirection);
 
 				AddQuad(xPlaneCenter, axisInfo.yDirection, axisInfo.zDirection, planeSize, handlePlanes.x);
 				AddQuad(yPlaneCenter, axisInfo.xDirection, axisInfo.zDirection, planeSize, handlePlanes.y);
@@ -257,8 +257,8 @@ namespace RuntimeGizmos
 		Square GetBaseSquare(Vector3 axisEnd, Vector3 axisOtherDirection1, Vector3 axisOtherDirection2, float size)
 		{
 			Square square;
-			var offsetUp = ((axisOtherDirection1 * size) + (axisOtherDirection2 * size));
-			var offsetDown = ((axisOtherDirection1 * size) - (axisOtherDirection2 * size));
+			var offsetUp = (axisOtherDirection1 * size) + (axisOtherDirection2 * size);
+			var offsetDown = (axisOtherDirection1 * size) - (axisOtherDirection2 * size);
 			//These might not really be the proper directions, as in the bottomLeft might not really be at the bottom left...
 			square.bottomLeft = axisEnd + offsetDown;
 			square.topLeft = axisEnd + offsetUp;
@@ -311,8 +311,8 @@ namespace RuntimeGizmos
 
 			for (int i = 0; i < circleDetail + 1; i++)
 			{
-				nextPoint.x = Mathf.Cos((i * multiplier) * Mathf.Deg2Rad);
-				nextPoint.z = Mathf.Sin((i * multiplier) * Mathf.Deg2Rad);
+				nextPoint.x = Mathf.Cos(i * multiplier * Mathf.Deg2Rad);
+				nextPoint.z = Mathf.Sin(i * multiplier * Mathf.Deg2Rad);
 				nextPoint.y = 0;
 
 				nextPoint = origin + matrix.MultiplyPoint3x4(nextPoint);
@@ -328,6 +328,7 @@ namespace RuntimeGizmos
 			}
 		}
 
+#if false
 		void DrawLines(List<Vector3> lines, Color color)
 		{
 			if (lines.Count == 0)
@@ -344,6 +345,7 @@ namespace RuntimeGizmos
 
 			GL.End();
 		}
+#endif
 
 		void DrawTriangles(List<Vector3> lines, Color color)
 		{
@@ -382,6 +384,7 @@ namespace RuntimeGizmos
 			GL.End();
 		}
 
+#if false
 		void DrawFilledCircle(List<Vector3> lines, Color color)
 		{
 			if (lines.Count == 0)
@@ -406,6 +409,7 @@ namespace RuntimeGizmos
 
 			GL.End();
 		}
+#endif
 
 		void SetMaterial()
 		{
@@ -422,7 +426,7 @@ namespace RuntimeGizmos
 			renderers.Clear();
 			if (target != null)
 			{
-				target.GetComponentsInChildren<Renderer>(false, renderers);
+				target.GetComponentsInChildren(false, renderers);
 			}
 		}
 

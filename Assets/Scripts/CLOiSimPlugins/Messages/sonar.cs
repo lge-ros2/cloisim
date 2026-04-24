@@ -16,25 +16,33 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"frame", IsRequired = true)]
-        public string Frame { get; set; }
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"world_pose", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(2, Name = @"frame")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string Frame { get; set; } = "";
+
+        [global::ProtoBuf.ProtoMember(3, Name = @"world_pose")]
         public Pose WorldPose { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"range_min", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(4, Name = @"range_min")]
         public double RangeMin { get; set; }
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"range_max", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(5, Name = @"range_max")]
         public double RangeMax { get; set; }
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"radius", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(6, Name = @"radius")]
         public double Radius { get; set; }
 
-        [global::ProtoBuf.ProtoMember(6, Name = @"range", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(7, Name = @"range")]
         public double Range { get; set; }
 
-        [global::ProtoBuf.ProtoMember(7, Name = @"contact")]
+        [global::ProtoBuf.ProtoMember(8, Name = @"geometry")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string Geometry { get; set; } = "";
+
+        [global::ProtoBuf.ProtoMember(9, Name = @"contact")]
         public Vector3d Contact { get; set; }
 
     }

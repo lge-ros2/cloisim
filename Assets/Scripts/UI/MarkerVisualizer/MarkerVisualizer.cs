@@ -111,7 +111,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 	private void DoneMarkerRequested(in VisualMarkerRequest.MarkerCommands command, in bool result)
 	{
 		response.command = command.ToString().ToLower();
-		response.result = (result)? SimulationService.SUCCESS : SimulationService.FAIL;
+		response.result = result? SimulationService.SUCCESS : SimulationService.FAIL;
 		responseEvent.Invoke();
 
 		request = null; // remove requested message

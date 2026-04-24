@@ -16,7 +16,7 @@ namespace SensorDevices
 	{
 		private static readonly float Margin = 0.001f;
 
-		private messages.SonarStamped _sonarStamped = null;
+		private messages.Sonar _sonar = null;
 
 		private ConcurrentDictionary<EntityId, byte> _collisionMonitoringList = new();
 
@@ -35,7 +35,7 @@ namespace SensorDevices
 		[SerializeField]
 		private Vector3 _sensorStartPoint = Vector3.zero;
 
-		private List<Vector3> _meshSensorRegionVertices = new List<Vector3>();
+		private List<Vector3> _meshSensorRegionVertices = new();
 
 		private Transform _sonarLink = null;
 
@@ -113,7 +113,7 @@ namespace SensorDevices
 
 			ResolveSensingArea(meshCollider.sharedMesh);
 
-			var sonar = _sonarStamped.Sonar;
+			var sonar = _sonar;
 			sonar.Radius = _radius;
 			sonar.RangeMin = _rangeMin;
 			sonar.RangeMax = _rangeMax;
@@ -125,7 +125,7 @@ namespace SensorDevices
 		{
 			_detectedRange = float.NegativeInfinity;
 
-			var sonar = _sonarStamped.Sonar;
+			var sonar = _sonar;
 			sonar.Range = (float)_rangeMax;
 			sonar.Contact.Set(Vector3.zero);
 		}
@@ -152,18 +152,24 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			_sonarStamped = new messages.SonarStamped();
-			_sonarStamped.Time = new messages.Time();
-			_sonarStamped.Sonar = new messages.Sonar();
-			_sonarStamped.Sonar.WorldPose = new messages.Pose();
-			_sonarStamped.Sonar.WorldPose.Position = new messages.Vector3d();
-			_sonarStamped.Sonar.WorldPose.Orientation = new messages.Quaternion();
-			_sonarStamped.Sonar.Contact = new messages.Vector3d();
+			_sonar = new messages.Sonar
+			{
+				Header = new messages.Header
+				{
+					Stamp = new messages.Time()
+				},
+				WorldPose = new messages.Pose
+				{
+					Position = new messages.Vector3d(),
+					Orientation = new messages.Quaternion()
+				},
+				Contact = new messages.Vector3d()
+			};
 		}
 
 		protected override void SetupMessages()
 		{
-			_sonarStamped.Sonar.Frame = DeviceName;
+			_sonar.Frame = DeviceName;
 		}
 
 		protected override void GenerateMessage()
@@ -171,12 +177,11 @@ namespace SensorDevices
 			var sonarPosition = _sonarLink.position;
 			var sonarRotation = _sonarLink.rotation;
 
-			_sonarStamped.Time.SetCurrentTime();
+			_sonar.Header.Stamp.SetCurrentTime();
 
-			var sonar = _sonarStamped.Sonar;
-			sonar.WorldPose.Position.Set(sonarPosition);
-			sonar.WorldPose.Orientation.Set(sonarRotation);
-			PushDeviceMessage<messages.SonarStamped>(_sonarStamped);
+			_sonar.WorldPose.Position.Set(sonarPosition);
+			_sonar.WorldPose.Orientation.Set(sonarRotation);
+			PushDeviceMessage(_sonar);
 		}
 
 		private void ResolveSensingArea(Mesh targetMesh)
@@ -239,10 +244,10 @@ namespace SensorDevices
 
 			_detectedRange = float.NegativeInfinity;
 			var contactPoint = Vector3.zero;
-			var localToWorld = this.transform.localToWorldMatrix;
+			var localToWorld = transform.localToWorldMatrix;
 
 			_sensorStartPoint.Set(0, -(Margin + _sensorStartOffset), 0);
-			_sensorStartPoint = this.transform.localRotation * _sensorStartPoint;
+			_sensorStartPoint = transform.localRotation * _sensorStartPoint;
 			_sensorStartPoint += localToWorld.GetPosition();
 
 			// Debug.Log("Hit Points: " + _meshSensorRegionVertices.Count);
@@ -277,7 +282,7 @@ namespace SensorDevices
 				}
 			}
 
-			var sonar = _sonarStamped.Sonar;
+			var sonar = _sonar;
 			sonar.Range = _detectedRange;
 			sonar.Contact.Set(contactPoint);
 			// Debug.Log($"{DeviceName}: |Stay| {detectedRange.ToString("F5")} | {contactPoint}");
@@ -288,16 +293,16 @@ namespace SensorDevices
 			return _detectedRange;
 		}
 
-		public messages.SonarStamped GetSonar()
+		public messages.Sonar GetSonar()
 		{
-			return _sonarStamped;
+			return _sonar;
 		}
 
 		public Vector3 GetDetectedPoint()
 		{
 			try
 			{
-				var point = _sonarStamped.Sonar.Contact.ToUnity();
+				var point = _sonar.Contact.ToUnity();
 				return point;
 			}
 			catch

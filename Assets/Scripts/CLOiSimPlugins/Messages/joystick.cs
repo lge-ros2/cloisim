@@ -16,13 +16,16 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"translation")]
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"translation")]
         public Vector3d Translation { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"rotation")]
+        [global::ProtoBuf.ProtoMember(3, Name = @"rotation")]
         public Vector3d Rotation { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"buttons")]
+        [global::ProtoBuf.ProtoMember(4, Name = @"buttons", IsPacked = true)]
         public int[] Buttons { get; set; }
 
     }

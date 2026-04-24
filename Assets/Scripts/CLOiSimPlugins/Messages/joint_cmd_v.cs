@@ -16,10 +16,10 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"time", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(1, Name = @"time")]
         public Time Time { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"JointCmd")]
+        [global::ProtoBuf.ProtoMember(2, Name = @"joint_cmd")]
         public global::System.Collections.Generic.List<JointCmd> JointCmds { get; } = new global::System.Collections.Generic.List<JointCmd>();
 
     }
