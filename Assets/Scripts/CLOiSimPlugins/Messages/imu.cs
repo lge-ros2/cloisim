@@ -16,20 +16,30 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"stamp", IsRequired = true)]
-        public Time Stamp { get; set; }
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"entity_name", IsRequired = true)]
-        public string EntityName { get; set; }
+        [global::ProtoBuf.ProtoMember(2, Name = @"entity_name")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string EntityName { get; set; } = "";
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"orientation", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(3, Name = @"orientation")]
         public Quaternion Orientation { get; set; }
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"angular_velocity", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(4, Name = @"orientation_covariance")]
+        public FloatV OrientationCovariance { get; set; }
+
+        [global::ProtoBuf.ProtoMember(5, Name = @"angular_velocity")]
         public Vector3d AngularVelocity { get; set; }
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"linear_acceleration", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(6, Name = @"angular_velocity_covariance")]
+        public FloatV AngularVelocityCovariance { get; set; }
+
+        [global::ProtoBuf.ProtoMember(7, Name = @"linear_acceleration")]
         public Vector3d LinearAcceleration { get; set; }
+
+        [global::ProtoBuf.ProtoMember(8, Name = @"linear_acceleration_covariance")]
+        public FloatV LinearAccelerationCovariance { get; set; }
 
     }
 

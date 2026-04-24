@@ -40,11 +40,11 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		}
 	}
 
-	private Elevator elevators = new Elevator();
+	private Elevator elevators = new();
 
-	private Dictionary<string, float> floorList = new Dictionary<string, float>();
+	private Dictionary<string, float> floorList = new();
 
-	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue = new ConcurrentQueue<ElevatorTask>();
+	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue = new();
 
 	private string elevatorSystemName = string.Empty;
 
@@ -54,7 +54,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 	{
 		_type = ICLOiSimPlugin.Type.ELEVATOR;
 		_modelName = "World";
-		_partsName = this.GetType().Name;
+		_partsName = GetType().Name;
 	}
 
 	protected override IEnumerator OnStart()
@@ -133,7 +133,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var elevatorOutsideDoorNameLeft = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='left']");
 		var elevatorOutsideDoorNameRight = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='right']");
 
-		foreach (var child in this.GetComponentsInChildren<SDFormat.Helper.Model>())
+		foreach (var child in GetComponentsInChildren<SDFormat.Helper.Model>())
 		{
 			var objectName = child.name;
 			if (objectName.StartsWith(elevatorPrefixName))
@@ -160,7 +160,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	public void ReadFloorContext()
 	{
-		this.initialFloor = "B1F";
+		initialFloor = "B1F";
 		if (GetPluginParameters().GetValues<string>("floors/floor/name", out var listFloorName) &&
 			GetPluginParameters().GetValues<float>("floors/floor/height", out var listFloorHeight))
 		{
@@ -211,37 +211,21 @@ public partial class ElevatorSystem : CLOiSimPlugin
 	{
 		responseMessage = new Param();
 
-		var serviceNameParam = new Param
-		{
-			Name = "service_name",
-			Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
-		};
+		var serviceNameParam = new Param();
+		serviceNameParam.Params["service_name"] = new Any { Type = Any.ValueType.String, StringValue = string.Empty };
 
-		var resultParam = new Param
-		{
-			Name = "result",
-			Value = new Any { Type = Any.ValueType.Boolean, BoolValue = false }
-		};
+		var resultParam = new Param();
+		resultParam.Params["result"] = new Any { Type = Any.ValueType.Boolean, BoolValue = false };
 
-		var elevatorIndexParam = new Param
-		{
-			Name = "elevator_index",
-			Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
-		};
+		var elevatorIndexParam = new Param();
+		elevatorIndexParam.Params["elevator_index"] = new Any { Type = Any.ValueType.String, StringValue = string.Empty };
 
-		var floorParam = new Param
-		{
-			Name = "current_floor",
-			Value = new Any { Type = Any.ValueType.String, StringValue = string.Empty }
-		};
+		var floorParam = new Param();
+		floorParam.Params["current_floor"] = new Any { Type = Any.ValueType.String, StringValue = string.Empty };
 
-		var heightParam = new Param
-		{
-			Name = "height",
-			Value = new Any { Type = Any.ValueType.Double, DoubleValue = 0 }
-		};
+		var heightParam = new Param();
+		heightParam.Params["height"] = new Any { Type = Any.ValueType.Double, DoubleValue = 0 };
 
-		responseMessage.Name = string.Empty;
 		responseMessage.Childrens.Add(serviceNameParam);
 		responseMessage.Childrens.Add(resultParam);
 		responseMessage.Childrens.Add(elevatorIndexParam);
@@ -251,10 +235,10 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	private void SetResponseMessage(ref Param responseMessage, in bool result, in string elevatorIndex, in string currentFloor, in float height)
 	{
-		responseMessage.Childrens[1].Value.BoolValue = result;
-		responseMessage.Childrens[2].Value.StringValue = elevatorIndex;
-		responseMessage.Childrens[3].Value.StringValue = currentFloor;
-		responseMessage.Childrens[4].Value.DoubleValue = height;
+		responseMessage.Childrens[1].Params["result"] = new Any { Type = Any.ValueType.Boolean, BoolValue = result };
+		responseMessage.Childrens[2].Params["elevator_index"] = new Any { Type = Any.ValueType.String, StringValue = elevatorIndex };
+		responseMessage.Childrens[3].Params["current_floor"] = new Any { Type = Any.ValueType.String, StringValue = currentFloor };
+		responseMessage.Childrens[4].Params["height"] = new Any { Type = Any.ValueType.Double, DoubleValue = height };
 	}
 
 	protected override void HandleCustomRequestMessage(in string requestType, in Any requestValue, ref DeviceMessage response)
@@ -281,10 +265,9 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	private void SetSystemNameResponse(ref DeviceMessage response)
 	{
-		var nameResponseMessage = new Param();
-		nameResponseMessage.Name = "request_system_name";
-		nameResponseMessage.Value = new Any { Type = Any.ValueType.String, StringValue = elevatorSystemName };
-		response.SetMessage<Param>(nameResponseMessage);
+		var nameParam = new Param();
+		nameParam.Params["request_system_name"] = new Any { Type = Any.ValueType.String, StringValue = elevatorSystemName };
+		response.SetMessage(nameParam);
 	}
 
 	private void HandleServiceRequest(in List<Param> requestChildren, ref DeviceMessage response)
@@ -293,44 +276,44 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 		var serviceName = string.Empty;
 		param = requestChildren[0];
-		if (param != null && param.Name.Equals("service_name") &&
-			param.Value.Type.Equals(Any.ValueType.String))
+		if (param != null && param.Params.ContainsKey("service_name") &&
+			param.Params["service_name"].Type.Equals(Any.ValueType.String))
 		{
-			serviceName = param.Value.StringValue;
+			serviceName = param.Params["service_name"].StringValue;
 		}
 
 		var currentFloor = string.Empty;
 		param = requestChildren[1];
-		if (param != null && param.Name.Equals("current_floor") &&
-			param.Value.Type.Equals(Any.ValueType.String))
+		if (param != null && param.Params.ContainsKey("current_floor") &&
+			param.Params["current_floor"].Type.Equals(Any.ValueType.String))
 		{
-			currentFloor = param.Value.StringValue;
+			currentFloor = param.Params["current_floor"].StringValue;
 		}
 
 		var targetFloor = string.Empty;
 		param = requestChildren[2];
-		if (param != null && param.Name.Equals("target_floor") &&
-			param.Value.Type.Equals(Any.ValueType.String))
+		if (param != null && param.Params.ContainsKey("target_floor") &&
+			param.Params["target_floor"].Type.Equals(Any.ValueType.String))
 		{
-			targetFloor = param.Value.StringValue;
+			targetFloor = param.Params["target_floor"].StringValue;
 		}
 
 		var elevatorIndex = string.Empty;
 		param = requestChildren[3];
-		if (param != null && param.Name.Equals("elevator_index") &&
-			param.Value.Type.Equals(Any.ValueType.String))
+		if (param != null && param.Params.ContainsKey("elevator_index") &&
+			param.Params["elevator_index"].Type.Equals(Any.ValueType.String))
 		{
-			elevatorIndex = param.Value.StringValue;
+			elevatorIndex = param.Params["elevator_index"].StringValue;
 		}
 
 		// Debug.LogFormat("Parsed {0} {1} {2} {3} {4}", elevatorSystemName, serviceName, currentFloor, targetFloor, elevatorIndex);
 		GenerateResponseMessage(out var responseMessage);
-		responseMessage.Name = elevatorSystemName;
-		responseMessage.Childrens[0].Value.StringValue = serviceName;
+		responseMessage.Params[elevatorSystemName] = new Any { Type = Any.ValueType.None };
+		responseMessage.Childrens[0].Params["service_name"] = new Any { Type = Any.ValueType.String, StringValue = serviceName };
 
 		HandleService(ref responseMessage, serviceName, currentFloor, targetFloor, elevatorIndex);
 
-		response.SetMessage<Param>(responseMessage);
+		response.SetMessage(responseMessage);
 	}
 
 	private void HandleService(ref Param responseMessage, in string serviceName, string currentFloor, in string targetFloor, string elevatorIndex)

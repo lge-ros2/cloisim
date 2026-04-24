@@ -16,99 +16,40 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"type", IsRequired = true)]
-        public string Type { get; set; }
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"c1")]
-        public double C1
-        {
-            get => __pbn__C1.GetValueOrDefault();
-            set => __pbn__C1 = value;
-        }
-        public bool ShouldSerializeC1() => __pbn__C1 != null;
-        public void ResetC1() => __pbn__C1 = null;
-        private double? __pbn__C1;
-
-        [global::ProtoBuf.ProtoMember(3, Name = @"c2")]
-        public double C2
-        {
-            get => __pbn__C2.GetValueOrDefault();
-            set => __pbn__C2 = value;
-        }
-        public bool ShouldSerializeC2() => __pbn__C2 != null;
-        public void ResetC2() => __pbn__C2 = null;
-        private double? __pbn__C2;
-
-        [global::ProtoBuf.ProtoMember(4, Name = @"c3")]
-        public double C3
-        {
-            get => __pbn__C3.GetValueOrDefault();
-            set => __pbn__C3 = value;
-        }
-        public bool ShouldSerializeC3() => __pbn__C3 != null;
-        public void ResetC3() => __pbn__C3 = null;
-        private double? __pbn__C3;
-
-        [global::ProtoBuf.ProtoMember(5, Name = @"f")]
-        public double F
-        {
-            get => __pbn__F.GetValueOrDefault();
-            set => __pbn__F = value;
-        }
-        public bool ShouldSerializeF() => __pbn__F != null;
-        public void ResetF() => __pbn__F = null;
-        private double? __pbn__F;
-
-        [global::ProtoBuf.ProtoMember(6, Name = @"fun")]
+        [global::ProtoBuf.ProtoMember(2, Name = @"type")]
         [global::System.ComponentModel.DefaultValue("")]
-        public string Fun
-        {
-            get => __pbn__Fun ?? "";
-            set => __pbn__Fun = value;
-        }
-        public bool ShouldSerializeFun() => __pbn__Fun != null;
-        public void ResetFun() => __pbn__Fun = null;
-        private string __pbn__Fun;
+        public string Type { get; set; } = "";
 
-        [global::ProtoBuf.ProtoMember(7, Name = @"scale_to_hfov")]
-        public bool ScaleToHfov
-        {
-            get => __pbn__ScaleToHfov.GetValueOrDefault();
-            set => __pbn__ScaleToHfov = value;
-        }
-        public bool ShouldSerializeScaleToHfov() => __pbn__ScaleToHfov != null;
-        public void ResetScaleToHfov() => __pbn__ScaleToHfov = null;
-        private bool? __pbn__ScaleToHfov;
+        [global::ProtoBuf.ProtoMember(3, Name = @"c1")]
+        public double C1 { get; set; }
 
-        [global::ProtoBuf.ProtoMember(8, Name = @"cutoff_angle")]
-        public double CutoffAngle
-        {
-            get => __pbn__CutoffAngle.GetValueOrDefault();
-            set => __pbn__CutoffAngle = value;
-        }
-        public bool ShouldSerializeCutoffAngle() => __pbn__CutoffAngle != null;
-        public void ResetCutoffAngle() => __pbn__CutoffAngle = null;
-        private double? __pbn__CutoffAngle;
+        [global::ProtoBuf.ProtoMember(4, Name = @"c2")]
+        public double C2 { get; set; }
 
-        [global::ProtoBuf.ProtoMember(9, Name = @"hfov")]
-        public double Hfov
-        {
-            get => __pbn__Hfov.GetValueOrDefault();
-            set => __pbn__Hfov = value;
-        }
-        public bool ShouldSerializeHfov() => __pbn__Hfov != null;
-        public void ResetHfov() => __pbn__Hfov = null;
-        private double? __pbn__Hfov;
+        [global::ProtoBuf.ProtoMember(5, Name = @"c3")]
+        public double C3 { get; set; }
 
-        [global::ProtoBuf.ProtoMember(10, Name = @"env_texture_size")]
-        public int EnvTextureSize
-        {
-            get => __pbn__EnvTextureSize.GetValueOrDefault();
-            set => __pbn__EnvTextureSize = value;
-        }
-        public bool ShouldSerializeEnvTextureSize() => __pbn__EnvTextureSize != null;
-        public void ResetEnvTextureSize() => __pbn__EnvTextureSize = null;
-        private int? __pbn__EnvTextureSize;
+        [global::ProtoBuf.ProtoMember(6, Name = @"f")]
+        public double F { get; set; }
+
+        [global::ProtoBuf.ProtoMember(7, Name = @"fun")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string Fun { get; set; } = "";
+
+        [global::ProtoBuf.ProtoMember(8, Name = @"scale_to_hfov")]
+        public bool ScaleToHfov { get; set; }
+
+        [global::ProtoBuf.ProtoMember(9, Name = @"cutoff_angle")]
+        public double CutoffAngle { get; set; }
+
+        [global::ProtoBuf.ProtoMember(10, Name = @"hfov")]
+        public double Hfov { get; set; }
+
+        [global::ProtoBuf.ProtoMember(11, Name = @"env_texture_size")]
+        public int EnvTextureSize { get; set; }
 
     }
 

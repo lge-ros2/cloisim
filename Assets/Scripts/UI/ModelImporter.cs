@@ -48,7 +48,7 @@ public class ModelImporter : MonoBehaviour
 			var contentList = viewport.GetChild(0).gameObject;
 			foreach (var child in contentList.GetComponentsInChildren<Button>())
 			{
-				GameObject.Destroy(child.gameObject);
+				Destroy(child.gameObject);
 			}
 		}
 	}
@@ -72,7 +72,7 @@ public class ModelImporter : MonoBehaviour
 		{
 			// var itemKey = item.Key;
 			var itemValue = item.Value;
-			var duplicatedButton = GameObject.Instantiate(buttonTemplate);
+			var duplicatedButton = Instantiate(buttonTemplate);
 			duplicatedButton.SetActive(true);
 			duplicatedButton.transform.SetParent(contentList.transform, false);
 
@@ -100,7 +100,7 @@ public class ModelImporter : MonoBehaviour
 	{
 		if (_targetObject != null)
 		{
-			GameObject.Destroy(_targetObject.gameObject);
+			Destroy(_targetObject.gameObject);
 			_targetObject = null;
 		}
 		_rootArticulationBody = null;
@@ -309,7 +309,7 @@ public class ModelImporter : MonoBehaviour
 			{
 				if (_targetObjectForCopy != null)
 				{
-					var instantiatedObject = GameObject.Instantiate(_targetObjectForCopy, _targetObjectForCopy.root, true);
+					var instantiatedObject = Instantiate(_targetObjectForCopy, _targetObjectForCopy.root, true);
 					instantiatedObject.name = $"{_targetObjectForCopy.name}_clone_{instantiatedObject.GetEntityId()}";
 
 					if (_targetObjectForCopy.CompareTag("Road"))

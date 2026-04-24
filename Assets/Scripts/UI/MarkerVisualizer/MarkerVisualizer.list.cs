@@ -24,7 +24,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 		requestedMarkerSphereList.Clear();
 
 		var filter = request.filter;
-		var filterOn = (filter == null)? false : ((filter.IsEmpty())? false : true);
+		var filterOn = (filter == null)? false : (filter.IsEmpty()? false : true);
 
 		// if (filterOn)
 		// {

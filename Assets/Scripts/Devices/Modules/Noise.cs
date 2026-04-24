@@ -59,7 +59,7 @@ namespace SensorDevices
 		{
 			if (_noiseModel != null)
 			{
-				data = _noiseModel.Generate<T>(data, deltaTime);
+				data = _noiseModel.Generate(data, deltaTime);
 			}
 		}
 

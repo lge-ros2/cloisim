@@ -62,14 +62,14 @@ public class FollowingCamera : MonoBehaviour
 
 		if (_isFollowing && _targetObjectTransform != null)
 		{
-			var targetAngle = (_alignSameDirection) ?
+			var targetAngle = _alignSameDirection ?
 				_targetObjectTransform.rotation.eulerAngles.y : followingAngle;
 			var yawRot = Quaternion.Euler(0, targetAngle, 0);
 
 			var localOffset = new Vector3(_horizontalOffset, _height, -_distance);
 			transform.position = _targetObjectTransform.position + (yawRot * localOffset);
 
-			var toTarget = (_targetObjectTransform.position - transform.position);
+			var toTarget = _targetObjectTransform.position - transform.position;
 			var dir = toTarget.normalized;
 
 			var stableUp = yawRot * Vector3.forward;
@@ -101,11 +101,11 @@ public class FollowingCamera : MonoBehaviour
 
 			if (Keyboard.current[Key.A].isPressed)
 			{
-				followingAngle += (angleStep);
+				followingAngle += angleStep;
 			}
 			else if (Keyboard.current[Key.D].isPressed)
 			{
-				followingAngle -= (angleStep);
+				followingAngle -= angleStep;
 			}
 
 			if (Keyboard.current[Key.G].isPressed)
@@ -159,7 +159,7 @@ public class FollowingCamera : MonoBehaviour
 		_targetObjectTransform = null;
 		_isFollowing = false;
 		Main.CameraControl?.UnBlockControl();
-		this.blockControl = true;
+		blockControl = true;
 	}
 
 	private void LockTargetObject(in Transform targetTransform)
@@ -168,6 +168,6 @@ public class FollowingCamera : MonoBehaviour
 		_targetObjectTransform = targetTransform;
 		_isFollowing = true;
 		Main.CameraControl?.BlockControl();
-		this.blockControl = false;
+		blockControl = false;
 	}
 }

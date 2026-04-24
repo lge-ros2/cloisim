@@ -100,7 +100,7 @@ public class Requestor : RequestSocket
 		{
 			if (this.TryReceiveFrameBytes(timeout, out var frameReceived))
 			{
-				return TransportHelper.RetrieveData(frameReceived, (checkTag) ? hashValue : null);
+				return TransportHelper.RetrieveData(frameReceived, checkTag ? hashValue : null);
 			}
 			else
 			{

@@ -11,7 +11,7 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportWorld(in World world)
+			protected override object ImportWorld(in World world)
 			{
 				if (world == null)
 				{

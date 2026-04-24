@@ -69,7 +69,7 @@ public struct Quaterniond
 		get
 		{
 			var m = QuaternionToMatrix(this);
-			return (MatrixToEuler(m) * 180 / Math.PI);
+			return MatrixToEuler(m) * 180 / Math.PI;
 		}
 		set
 		{
@@ -124,7 +124,7 @@ public struct Quaterniond
 		var qY = new Quaterniond(0, sY, 0, cY);
 		var qZ = new Quaterniond(0, 0, sZ, cZ);
 
-		return (qY * qX) * qZ;
+		return qY * qX * qZ;
 	}
 
 	public static Quaterniond FromToRotation(in Vector3d fromDirection, in Vector3d toDirection)
@@ -189,7 +189,7 @@ public struct Quaterniond
 
 	public static Quaterniond RotateTowards(in Quaterniond from, in Quaterniond to, in double maxDegreesDelta)
 	{
-		var num = Quaterniond.Angle(from, to);
+		var num = Angle(from, to);
 		var result = new Quaterniond();
 		if (num == 0f)
 		{
@@ -198,7 +198,7 @@ public struct Quaterniond
 		else
 		{
 			var t = Math.Min(1f, maxDegreesDelta / num);
-			result = Quaterniond.SlerpUnclamped(from, to, t);
+			result = SlerpUnclamped(from, to, t);
 		}
 		return result;
 	}
@@ -254,10 +254,10 @@ public struct Quaterniond
 
 	public void Set(in double new_x, in double new_y, in double new_z, in double new_w)
 	{
-		this.x = new_x;
-		this.y = new_y;
-		this.z = new_z;
-		this.w = new_w;
+		x = new_x;
+		y = new_y;
+		z = new_z;
+		w = new_w;
 	}
 
 	public void SetFromToRotation(in Vector3d fromDirection, in Vector3d toDirection)
@@ -292,12 +292,12 @@ public struct Quaterniond
 
 	public override string ToString()
 	{
-		return String.Format("({0}, {1}, {2}, {3})", x, y, z, w);
+		return string.Format("({0}, {1}, {2}, {3})", x, y, z, w);
 	}
 
 	public override int GetHashCode()
 	{
-		return this.x.GetHashCode() ^ this.y.GetHashCode() << 2 ^ this.z.GetHashCode() >> 2 ^ this.w.GetHashCode() >> 1;
+		return x.GetHashCode() ^ y.GetHashCode() << 2 ^ z.GetHashCode() >> 2 ^ w.GetHashCode() >> 1;
 	}
 
 	public override bool Equals(object other)
@@ -307,7 +307,7 @@ public struct Quaterniond
 
 	public string ToString(in string format)
 	{
-		return String.Format("({0}, {1}, {2}, {3})", x.ToString(format), y.ToString(format), z.ToString(format), w.ToString(format));
+		return string.Format("({0}, {1}, {2}, {3})", x.ToString(format), y.ToString(format), z.ToString(format), w.ToString(format));
 	}
 
 	private Vector3d MatrixToEuler(in Matrix4x4d m)

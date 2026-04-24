@@ -29,7 +29,7 @@ public class DifferentialDrive : MotorControl
 
 	public override void SetWheelInfo(in float radius, in float separation)
 	{
-		this._odometry = new Odometry(radius, separation);
+		_odometry = new Odometry(radius, separation);
 	}
 
 	public override void Drive(in float linearVelocity, in float angularVelocity)
@@ -37,7 +37,7 @@ public class DifferentialDrive : MotorControl
 		// m/s, rad/s
 		// var linearVelocityLeft = ((2 * linearVelocity) - (angularVelocity * WheelSeparation)) / (2 * wheelRadius);
 		// var linearVelocityRight = ((2 * linearVelocity) + (angularVelocity * WheelSeparation)) / (2 * wheelRadius);
-		var angularCalculation = (angularVelocity * _odometry.WheelSeparation * 0.5f);
+		var angularCalculation = angularVelocity * _odometry.WheelSeparation * 0.5f;
 
 		// Velocity(rad per second) for wheels
 		var linearVelocityLeft = (linearVelocity - angularCalculation) * _odometry.InverseWheelRadius;

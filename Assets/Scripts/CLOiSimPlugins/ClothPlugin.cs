@@ -84,8 +84,8 @@ public class ClothPlugin : CLOiSimPlugin
 
 		_worldRoot = Main.WorldRoot.transform;
 		_propsRoot = Main.PropsRoot.transform;
-		_searchMargin = pluginParams.GetValue<float>("cloth/collider/search_margin", _searchMargin);
-		_colliderUpdateInterval = pluginParams.GetValue<float>("cloth/collider/update_interval", _colliderUpdateInterval);
+		_searchMargin = pluginParams.GetValue("cloth/collider/search_margin", _searchMargin);
+		_colliderUpdateInterval = pluginParams.GetValue("cloth/collider/update_interval", _colliderUpdateInterval);
 
 		DisableModelPhysics();
 		ConfigureClothFromMesh(pluginParams);
@@ -106,7 +106,7 @@ public class ClothPlugin : CLOiSimPlugin
 			return false;
 		}
 
-		_clothMesh = Object.Instantiate(meshFilter.sharedMesh);
+		_clothMesh = Instantiate(meshFilter.sharedMesh);
 		_clothMesh.name = meshFilter.sharedMesh.name + "_cloth";
 		_clothMesh.MarkDynamic();
 		meshFilter.mesh = _clothMesh;
@@ -400,7 +400,7 @@ public class ClothPlugin : CLOiSimPlugin
 		}
 	}
 
-	private void ConfigureClothFromMesh(SDFormat.Plugin plugin)
+	private void ConfigureClothFromMesh(Plugin plugin)
 	{
 		var worldVerts = ConvertVerticesToWorldSpace();
 		var masses = ComputeVertexMasses(plugin, worldVerts.Length);
@@ -415,8 +415,8 @@ public class ClothPlugin : CLOiSimPlugin
 
 		StartSummary.AppendLine(
 			$"Constraints: {constraints.Length} stretch ({weldCount} weld) + {bendingConstraints.Length} bending, " +
-			$"stiffness={plugin.GetValue<float>("cloth/constraints/stretching_stiffness", 1.0f)}/" +
-			$"{plugin.GetValue<float>("cloth/constraints/bending_stiffness", 0.8f)}, " +
+			$"stiffness={plugin.GetValue("cloth/constraints/stretching_stiffness", 1.0f)}/" +
+			$"{plugin.GetValue("cloth/constraints/bending_stiffness", 0.8f)}, " +
 			$"damping={_cloth.Damping}, iterations={_cloth.SolverIterations}");
 	}
 
@@ -429,7 +429,7 @@ public class ClothPlugin : CLOiSimPlugin
 		return worldVerts;
 	}
 
-	private float[] ComputeVertexMasses(SDFormat.Plugin plugin, int vertexCount)
+	private float[] ComputeVertexMasses(Plugin plugin, int vertexCount)
 	{
 		if (_clothArticulationBody != null)
 			_totalMass = _clothArticulationBody.mass;
@@ -437,7 +437,7 @@ public class ClothPlugin : CLOiSimPlugin
 			_totalMass = _clothRigidbody.mass;
 
 		if (_totalMass <= 0f)
-			_totalMass = plugin.GetValue<float>("cloth/simulation/mass", 1.0f);
+			_totalMass = plugin.GetValue("cloth/simulation/mass", 1.0f);
 
 		var perVertexMass = _totalMass / vertexCount;
 		var masses = new float[vertexCount];
@@ -445,13 +445,13 @@ public class ClothPlugin : CLOiSimPlugin
 		return masses;
 	}
 
-	private void ApplyAnchorPins(SDFormat.Plugin plugin, float3[] worldVerts, float[] masses)
+	private void ApplyAnchorPins(Plugin plugin, float3[] worldVerts, float[] masses)
 	{
 		if (!plugin.HasElement("cloth/anchor")) return;
 
-		var axisStr = plugin.GetValue<string>("cloth/anchor/axis", "y").ToLower();
-		var sideStr = plugin.GetValue<string>("cloth/anchor/side", "max").ToLower();
-		var threshold = plugin.GetValue<float>("cloth/anchor/threshold", 0.01f);
+		var axisStr = plugin.GetValue("cloth/anchor/axis", "y").ToLower();
+		var sideStr = plugin.GetValue("cloth/anchor/side", "max").ToLower();
+		var threshold = plugin.GetValue("cloth/anchor/threshold", 0.01f);
 
 		var axisIndex = axisStr switch { "x" => 0, "y" => 1, "z" => 2, _ => 1 };
 		var findMax = sideStr == "max";
@@ -521,12 +521,12 @@ public class ClothPlugin : CLOiSimPlugin
 	}
 
 	private static void BuildEdgeAndBendingConstraints(
-		SDFormat.Plugin plugin, float3[] worldVerts, int[] triangles,
+		Plugin plugin, float3[] worldVerts, int[] triangles,
 		List<DistanceConstraint> weldConstraints,
 		out DistanceConstraint[] outConstraints, out BendingConstraint[] outBendingConstraints)
 	{
-		var stiffness = plugin.GetValue<float>("cloth/constraints/stretching_stiffness", 1.0f);
-		var bendingStiffness = plugin.GetValue<float>("cloth/constraints/bending_stiffness", 0.8f);
+		var stiffness = plugin.GetValue("cloth/constraints/stretching_stiffness", 1.0f);
+		var bendingStiffness = plugin.GetValue("cloth/constraints/bending_stiffness", 0.8f);
 		var edgeSet = new HashSet<long>();
 		var constraints = new List<DistanceConstraint>(weldConstraints);
 		var edgeToTriOpposite = new Dictionary<long, int>();
@@ -551,18 +551,18 @@ public class ClothPlugin : CLOiSimPlugin
 		outBendingConstraints = bendingConstraints.ToArray();
 	}
 
-	private void ApplyClothParameters(SDFormat.Plugin plugin)
+	private void ApplyClothParameters(Plugin plugin)
 	{
-		_cloth.SolverIterations = plugin.GetValue<int>("cloth/solver/iterations", 10);
-		_cloth.Damping = plugin.GetValue<float>("cloth/simulation/damping", 0.9f);
+		_cloth.SolverIterations = plugin.GetValue("cloth/solver/iterations", 10);
+		_cloth.Damping = plugin.GetValue("cloth/simulation/damping", 0.9f);
 		_cloth.Gravity = new float3(
-			plugin.GetValue<float>("cloth/simulation/gravity/x", 0f),
-			plugin.GetValue<float>("cloth/simulation/gravity/y", -9.81f),
-			plugin.GetValue<float>("cloth/simulation/gravity/z", 0f));
-		_cloth.ParticleRadius = plugin.GetValue<float>("cloth/collider/particle_radius", 0.01f);
-		_cloth.SubSteps = plugin.GetValue<int>("cloth/solver/sub_steps", 4);
-		_cloth.Friction = plugin.GetValue<float>("cloth/simulation/friction", 0.8f);
-		_cloth.SleepThreshold = plugin.GetValue<float>("cloth/simulation/sleep_threshold", 0.05f);
+			plugin.GetValue("cloth/simulation/gravity/x", 0f),
+			plugin.GetValue("cloth/simulation/gravity/y", -9.81f),
+			plugin.GetValue("cloth/simulation/gravity/z", 0f));
+		_cloth.ParticleRadius = plugin.GetValue("cloth/collider/particle_radius", 0.01f);
+		_cloth.SubSteps = plugin.GetValue("cloth/solver/sub_steps", 4);
+		_cloth.Friction = plugin.GetValue("cloth/simulation/friction", 0.8f);
+		_cloth.SleepThreshold = plugin.GetValue("cloth/simulation/sleep_threshold", 0.05f);
 	}
 
 	private static void TryAddEdge(

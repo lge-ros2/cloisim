@@ -200,7 +200,7 @@ namespace SDFormat
 
 				if (_fixedJoint != null)
 				{
-					UE.Object.Destroy(_fixedJoint);
+					Destroy(_fixedJoint);
 					_fixedJoint = null;
 				}
 
@@ -210,7 +210,7 @@ namespace SDFormat
 
 			private bool IsPartOfThisModel(UE.Transform t)
 			{
-				var root = this.transform;
+				var root = transform;
 				while (t != null)
 				{
 					if (t == root)

@@ -367,7 +367,7 @@ namespace SensorDevices
 			if (_kernelClearBunchIndex >= 0)
 			{
 				_csVcselPrepass.GetKernelThreadGroupSizes(_kernelClearBunchIndex, out var clearThreadX, out _, out _);
-				_threadGroupBunchClear = Mathf.CeilToInt((width * height) / (float)clearThreadX);
+				_threadGroupBunchClear = Mathf.CeilToInt(width * height / (float)clearThreadX);
 			}
 
 			if (_kernelMarkBunchIndex >= 0)
@@ -544,15 +544,14 @@ namespace SensorDevices
 				var src = req.GetData<byte>();
 
 				_timeMsg.Set(capturedTime);
-				_imageStamped.Image = _image;
 
-				if (_imageStamped.Image.Data != null && src.Length > 0)
+				if (_image.Data != null && src.Length > 0)
 				{
-					var copyLen = Math.Min(src.Length, _imageStamped.Image.Data.Length);
-					Unity.Collections.NativeArray<byte>.Copy(src, 0, _imageStamped.Image.Data, 0, copyLen);
+					var copyLen = Math.Min(src.Length, _image.Data.Length);
+					Unity.Collections.NativeArray<byte>.Copy(src, 0, _image.Data, 0, copyLen);
 				}
 
-				EnqueueMessage(_imageStamped);
+				EnqueueMessage(_image);
 			});
 		}
 	}

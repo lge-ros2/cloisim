@@ -14,94 +14,94 @@ namespace SDFormat
 	{
 		public partial class Base
 		{
-			protected virtual Object ImportWorld(in World world)
+			protected virtual object ImportWorld(in World world)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, world.Name);
 				return null;
 			}
 
-			protected virtual void ImportPlugin(in Plugin plugin, in Object parentObject)
+			protected virtual void ImportPlugin(in Plugin plugin, in object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, plugin.Name);
 			}
 
-			protected virtual void ImportJoint(in Joint joint, in Object parentObject)
+			protected virtual void ImportJoint(in Joint joint, in object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, joint.Name);
 			}
 
-			protected virtual Object ImportSensor(in Sensor sensor, in Object parentObject)
+			protected virtual object ImportSensor(in Sensor sensor, in object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, sensor.Name);
 				return null;
 			}
 
-			protected virtual Object ImportVisual(in Visual visual, in Object parentObject)
+			protected virtual object ImportVisual(in Visual visual, in object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, visual.Name);
 				return null;
 			}
 
-			protected virtual void AfterImportVisual(in Visual visual, in System.Object targetObject)
+			protected virtual void AfterImportVisual(in Visual visual, in object targetObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, visual.Name);
 			}
 
-			protected virtual Object ImportCollision(in Collision collision, in Object parentObject)
+			protected virtual object ImportCollision(in Collision collision, in object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, collision.Name);
 				return null;
 			}
 
-			protected virtual void AfterImportCollision(in Collision collision, in Object targetObject)
+			protected virtual void AfterImportCollision(in Collision collision, in object targetObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, collision.Name);
 			}
 
-			protected virtual Object ImportLink(in Link link, in Object parentObject)
+			protected virtual object ImportLink(in Link link, in object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, link.Name);
 				return null;
 			}
 
-			protected virtual void AfterImportLink(in Link link, in Object targetObject)
+			protected virtual void AfterImportLink(in Link link, in object targetObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, link.Name);
 			}
 
-			protected virtual IEnumerator ImportModel(Model model, Object parentObject = null, Action<Object> onCreatedRoot = null)
+			protected virtual IEnumerator ImportModel(Model model, object parentObject = null, Action<object> onCreatedRoot = null)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, model.Name);
 				yield return null;
 			}
 
-			protected virtual void AfterImportModel(in Model model, in Object targetObject)
+			protected virtual void AfterImportModel(in Model model, in object targetObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, model.Name);
 			}
 
-			protected virtual System.Object ImportActor(in Actor actor)
+			protected virtual object ImportActor(in Actor actor)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, actor.Name);
 				return null;
 			}
 
-			protected virtual void ImportGeometry(in Geometry geometry, in Object parentObject)
+			protected virtual void ImportGeometry(in Geometry geometry, in object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, geometry.Type.ToString());
 			}
 
-			protected virtual void ImportMaterial(in Material sdfMaterial, in Object parentObject)
+			protected virtual void ImportMaterial(in Material sdfMaterial, in object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, "material");
 			}
 
-			protected virtual void ImportLight(in Light light, in Object parentObject)
+			protected virtual void ImportLight(in Light light, in object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, light.Name);
 			}
 
-			protected virtual void ImportGripper(in Gripper gripper, in Object parentObject)
+			protected virtual void ImportGripper(in Gripper gripper, in object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, gripper.Name);
 			}

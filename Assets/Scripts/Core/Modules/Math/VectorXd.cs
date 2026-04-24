@@ -78,7 +78,7 @@ public struct VectorXd
 
 	private static void ZeroCheck(in double value)
 	{
-		if (double.IsNaN(value) || Math.Abs(value) < Double.Epsilon)
+		if (double.IsNaN(value) || Math.Abs(value) < double.Epsilon)
 		{
 			throw new DivideByZeroException("Cannot divide by Zero!!");
 		}
@@ -97,7 +97,7 @@ public struct VectorXd
 	public override int GetHashCode()
 	{
 		var hashCode = 0;
-		for (var i = 0; i < this.Size; i++)
+		for (var i = 0; i < Size; i++)
 		{
 			hashCode ^= this[i].GetHashCode();
 		}
@@ -117,9 +117,9 @@ public struct VectorXd
 	public string ToString(in string format)
 	{
 		var str = "VectorXd (";
-		for (var i = 0; i < this.Size; i++)
+		for (var i = 0; i < Size; i++)
 		{
-			str += this[i].ToString(format) + (i == this.Size - 1 ? "" : ", ");
+			str += this[i].ToString(format) + (i == Size - 1 ? "" : ", ");
 		}
 		str += ")";
 		return str;
@@ -215,7 +215,7 @@ public struct VectorXd
 	{
 		for (var i = 0; i < lhs.Size; i++)
 		{
-			if (Math.Abs(lhs[i] - rhs[i]) > Double.Epsilon)
+			if (Math.Abs(lhs[i] - rhs[i]) > double.Epsilon)
 			{
 				return false;
 			}

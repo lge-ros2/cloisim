@@ -16,11 +16,17 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1)]
-        public AngularVelocity angular_velocity { get; set; }
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
 
         [global::ProtoBuf.ProtoMember(2)]
+        public AngularVelocity angular_velocity { get; set; }
+
+        [global::ProtoBuf.ProtoMember(3)]
         public LinearAcceleration linear_acceleration { get; set; }
+
+        [global::ProtoBuf.ProtoMember(4, Name = @"orientation_ref_frame")]
+        public OrientationReferenceFrame OrientationRefFrame { get; set; }
 
         [global::ProtoBuf.ProtoContract()]
         public partial class AngularVelocity : global::ProtoBuf.IExtensible
@@ -55,6 +61,33 @@ namespace cloisim.msgs
 
             [global::ProtoBuf.ProtoMember(3, Name = @"z_noise")]
             public SensorNoise ZNoise { get; set; }
+
+        }
+
+        [global::ProtoBuf.ProtoContract()]
+        public partial class OrientationReferenceFrame : global::ProtoBuf.IExtensible
+        {
+            private global::ProtoBuf.IExtension __pbn__extensionData;
+            global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+                => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+            [global::ProtoBuf.ProtoMember(1, Name = @"localization")]
+            [global::System.ComponentModel.DefaultValue("")]
+            public string Localization { get; set; } = "";
+
+            [global::ProtoBuf.ProtoMember(2, Name = @"custom_rpy")]
+            public Vector3d CustomRpy { get; set; }
+
+            [global::ProtoBuf.ProtoMember(3, Name = @"custom_rpy_parent_frame")]
+            [global::System.ComponentModel.DefaultValue("")]
+            public string CustomRpyParentFrame { get; set; } = "";
+
+            [global::ProtoBuf.ProtoMember(4, Name = @"gravity_dir_x")]
+            public Vector3d GravityDirX { get; set; }
+
+            [global::ProtoBuf.ProtoMember(5, Name = @"gravity_dir_x_parent_frame")]
+            [global::System.ComponentModel.DefaultValue("")]
+            public string GravityDirXParentFrame { get; set; } = "";
 
         }
 

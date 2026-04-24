@@ -14,14 +14,14 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportGeometry(in Geometry geometry, in System.Object parentObject)
+			protected override void ImportGeometry(in Geometry geometry, in object parentObject)
 			{
 				if (geometry == null || geometry.IsEmpty())
 				{
 					return;
 				}
 
-				var targetObject = (parentObject as UE.GameObject);
+				var targetObject = parentObject as UE.GameObject;
 
 				switch (geometry.Type)
 				{

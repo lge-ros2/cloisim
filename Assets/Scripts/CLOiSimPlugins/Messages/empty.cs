@@ -17,14 +17,7 @@ namespace cloisim.msgs
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"unused")]
-        public bool Unused
-        {
-            get => __pbn__Unused.GetValueOrDefault();
-            set => __pbn__Unused = value;
-        }
-        public bool ShouldSerializeUnused() => __pbn__Unused != null;
-        public void ResetUnused() => __pbn__Unused = null;
-        private bool? __pbn__Unused;
+        public bool Unused { get; set; }
 
     }
 

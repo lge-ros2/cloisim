@@ -114,13 +114,13 @@ namespace SDFormat
 
 				for (var index = 0; index < meshColliders.Length; index++)
 				{
-					UE.GameObject.Destroy(meshColliders[index]);
+					UE.Object.Destroy(meshColliders[index]);
 				}
 
 				var transformObjects = targetObject.GetComponentsInChildren<UE.Transform>();
 				for (var index = 1; index < transformObjects.Length; index++)
 				{
-					UE.GameObject.Destroy(transformObjects[index].gameObject);
+					UE.Object.Destroy(transformObjects[index].gameObject);
 				}
 
 				var cleanedMergedMesh = CleanMesh(mergedMesh);
@@ -171,9 +171,9 @@ namespace SDFormat
 					if (meshRenderer != null)
 					{
 						// UE.Debug.LogWarning($"{meshFilter.name} MeshRenderer should not exist");
-						UE.GameObject.Destroy(meshRenderer);
+						UE.Object.Destroy(meshRenderer);
 					}
-					UE.GameObject.Destroy(meshFilter);
+					UE.Object.Destroy(meshFilter);
 				}
 			}
 

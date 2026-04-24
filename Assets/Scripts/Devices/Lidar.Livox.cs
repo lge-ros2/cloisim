@@ -178,7 +178,7 @@ namespace SensorDevices
 
 			var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
 
-			var sensorTransform = this.transform;
+			var sensorTransform = transform;
 			var sensorPos = sensorTransform.position;
 			var sensorRight = sensorTransform.right;
 			var sensorUp = sensorTransform.up;
@@ -241,18 +241,14 @@ namespace SensorDevices
 		}
 
 		/// <summary>
-		/// Process Livox readback data into LaserScanStamped message.
+		/// Process Livox readback data into LaserScan message.
 		/// XYZ triples are copied directly into the Ranges array for PointCloud2Raw output.
 		/// </summary>
-		private messages.LaserScanStamped ProcessLivoxData(double capturedTime, Pose sensorWorldPose, float[] xyzData)
+		private messages.LaserScan ProcessLivoxData(double capturedTime, Pose sensorWorldPose, float[] xyzData)
 		{
-			var laserScanStamped = new messages.LaserScanStamped();
-			laserScanStamped.Time = new messages.Time();
-			laserScanStamped.Time.Set(capturedTime);
+			_laserScan.Header.Stamp.Set(capturedTime);
 
-			laserScanStamped.Scan = _laserScan;
-
-			var laserScan = laserScanStamped.Scan;
+			var laserScan = _laserScan;
 			laserScan.WorldPose.Position.Set(sensorWorldPose.position);
 			laserScan.WorldPose.Orientation.Set(sensorWorldPose.rotation);
 
@@ -267,7 +263,7 @@ namespace SensorDevices
 			// Intensities: no intensity model for Livox patterns currently,
 			// fill with 0.0 (already initialized in SetupLivoxMessages)
 
-			return laserScanStamped;
+			return _laserScan;
 		}
 
 		/// <summary>Clean up Livox-specific GPU resources.</summary>

@@ -23,11 +23,11 @@ namespace SDFormat
 			public bool IsFirstChild => _isRootModel; // root model
 
 			[UE.Header("SDF Properties")]
-			private SDFormat.Math.Pose3d? _pose = null; // described in SDF file
+			private Math.Pose3d? _pose = null; // described in SDF file
 
 			private string _poseRelativeTo = null;
 
-			public SDFormat.Math.Pose3d? Pose
+			public Math.Pose3d? Pose
 			{
 				get => _pose;
 				set => _pose = value;
@@ -39,9 +39,9 @@ namespace SDFormat
 				set => _poseRelativeTo = value;
 			}
 
-			private SDFormat.Math.Inertial _inertial = null; // described in SDF file
+			private Math.Inertial _inertial = null; // described in SDF file
 
-			public SDFormat.Math.Inertial Inertial
+			public Math.Inertial Inertial
 			{
 				get => _inertial;
 				set => _inertial = value;
@@ -49,8 +49,8 @@ namespace SDFormat
 
 			protected void Awake()
 			{
-				_isRootModel = this.gameObject.IsRootModel();
-				_poseControl = new PoseControl(this.transform);
+				_isRootModel = gameObject.IsRootModel();
+				_poseControl = new PoseControl(transform);
 				Reset();
 
 				UpdateRootModel();

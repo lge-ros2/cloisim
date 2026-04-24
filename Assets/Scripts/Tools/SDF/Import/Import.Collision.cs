@@ -17,9 +17,9 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportCollision(in Collision collision, in System.Object parentObject)
+			protected override object ImportCollision(in Collision collision, in object parentObject)
 			{
-				var targetObject = (parentObject as UE.GameObject);
+				var targetObject = parentObject as UE.GameObject;
 				var newCollisionObject = new UE.GameObject(collision.Name)
 				{
 					tag = "Collision"
@@ -31,12 +31,12 @@ namespace SDFormat
 				collisionHelper.Pose = collision.RawPose;
 				collisionHelper.PoseRelativeTo = collision.PoseRelativeTo;
 
-				return newCollisionObject as System.Object;
+				return newCollisionObject as object;
 			}
 
-			protected override void AfterImportCollision(in Collision collision, in System.Object targetObject)
+			protected override void AfterImportCollision(in Collision collision, in object targetObject)
 			{
-				var collisionObject = (targetObject as UE.GameObject);
+				var collisionObject = targetObject as UE.GameObject;
 
 				// Make collision region for Collision
 				if (collisionObject.CompareTag("Collision"))

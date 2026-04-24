@@ -40,8 +40,8 @@ namespace SDFormat
 			private float _jointAxis2LimitVelocity = float.NaN;
 #endif
 
-			private SDFormat.MimicConstraint _jointAxisMimic = null;
-			private SDFormat.MimicConstraint _jointAxis2Mimic = null;
+			private MimicConstraint _jointAxisMimic = null;
+			private MimicConstraint _jointAxis2Mimic = null;
 
 			private List<UE.ContactPoint> collisionContacts = new List<UE.ContactPoint>();
 
@@ -50,45 +50,45 @@ namespace SDFormat
 
 			public string JointName
 			{
-				get => this.jointName;
-				set => this.jointName = value;
+				get => jointName;
+				set => jointName = value;
 			}
 
 			public string JointParentLinkName
 			{
-				get => this.jointParentLinkName;
-				set => this.jointParentLinkName = value;
+				get => jointParentLinkName;
+				set => jointParentLinkName = value;
 			}
 
 			public string JointChildLinkName
 			{
-				get => this.jointChildLinkName;
-				set => this.jointChildLinkName = value;
+				get => jointChildLinkName;
+				set => jointChildLinkName = value;
 			}
 #if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 			public float JointAxisLimitVelocity
 			{
-				get => this._jointAxisLimitVelocity;
-				set => this._jointAxisLimitVelocity = value;
+				get => _jointAxisLimitVelocity;
+				set => _jointAxisLimitVelocity = value;
 			}
 
 			public float JointAxis2LimitVelocity
 			{
-				get => this._jointAxis2LimitVelocity;
-				set => this._jointAxis2LimitVelocity = value;
+				get => _jointAxis2LimitVelocity;
+				set => _jointAxis2LimitVelocity = value;
 			}
 #endif
 
-			public SDFormat.MimicConstraint JointAxisMimic
+			public MimicConstraint JointAxisMimic
 			{
-				get => this._jointAxisMimic;
-				set => this._jointAxisMimic = value;
+				get => _jointAxisMimic;
+				set => _jointAxisMimic = value;
 			}
 
-			public SDFormat.MimicConstraint JointAxis2Mimic
+			public MimicConstraint JointAxis2Mimic
 			{
-				get => this._jointAxis2Mimic;
-				set => this._jointAxis2Mimic = value;
+				get => _jointAxis2Mimic;
+				set => _jointAxis2Mimic = value;
 			}
 
 			public UE.Pose LinkJointPose => _jointPose;
@@ -167,7 +167,7 @@ namespace SDFormat
 					UE.Gizmos.DrawCube(transform.position, region);
 				}
 
-				lock (this.collisionContacts)
+				lock (collisionContacts)
 				{
 					if (drawContact && collisionContacts != null && collisionContacts.Count > 0)
 					{
@@ -193,10 +193,10 @@ namespace SDFormat
 #if UNITY_EDITOR
 			void OnCollisionStay(UE.Collision collisionInfo)
 			{
-				lock (this.collisionContacts)
+				lock (collisionContacts)
 				{
 					// UE.Debug.Log(name + " |Stay| " + collisionInfo.gameObject.name);
-					collisionInfo.GetContacts(this.collisionContacts);
+					collisionInfo.GetContacts(collisionContacts);
 				}
 			}
 #endif

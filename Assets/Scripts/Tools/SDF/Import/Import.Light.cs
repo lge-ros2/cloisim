@@ -23,7 +23,7 @@ namespace SDFormat
 				return Mathf.Clamp(range * attenuationFactor, 0.1f, 10f);
 			}
 
-			protected override void ImportLight(in Light light, in System.Object parentObject)
+			protected override void ImportLight(in Light light, in object parentObject)
 			{
 				if (light == null)
 				{

@@ -19,7 +19,7 @@ namespace SDFormat
 			}
 
 			/// <summary>Set mesh from external source</summary>
-			public static void GenerateMesh(this UE.GameObject targetParentObject, in SDFormat.Mesh obj)
+			public static void GenerateMesh(this UE.GameObject targetParentObject, in Mesh obj)
 			{
 				var loadedObject = MeshLoader.CreateMeshObject(obj.Uri, obj.Submesh);
 				var isVisualMesh = IsVisualObject(targetParentObject);
@@ -35,7 +35,7 @@ namespace SDFormat
 				}
 			}
 
-			public static void GenerateMesh(this UE.GameObject targetParentObject, in SDFormat.Heightmap obj)
+			public static void GenerateMesh(this UE.GameObject targetParentObject, in Heightmap obj)
 			{
 				var heightmapObject = new UE.GameObject("Heightmap");
 				var isVisualMesh = IsVisualObject(targetParentObject);
@@ -58,52 +58,52 @@ namespace SDFormat
 
 				switch (geometry.Type)
 				{
-					case SDFormat.GeometryType.Box:
+					case GeometryType.Box:
 					{
 						var scale = SDF2Unity.Scale(geometry.BoxShape.Size);
 						mesh = ProceduralMesh.CreateBox(scale.x, scale.y, scale.z);
 						break;
 					}
-					case SDFormat.GeometryType.Sphere:
+					case GeometryType.Sphere:
 					{
 						var resolution = isVisualMesh ? 30 : 15;
 						mesh = ProceduralMesh.CreateSphere((float)geometry.SphereShape.Radius, resolution, resolution);
 						break;
 					}
-					case SDFormat.GeometryType.Capsule:
+					case GeometryType.Capsule:
 					{
 						mesh = ProceduralMesh.CreateCapsule((float)geometry.CapsuleShape.Radius, (float)geometry.CapsuleShape.Length);
 						break;
 					}
-					case SDFormat.GeometryType.Cylinder:
+					case GeometryType.Cylinder:
 					{
 						mesh = ProceduralMesh.CreateCylinder((float)geometry.CylinderShape.Radius, (float)geometry.CylinderShape.Length, 72);
 						break;
 					}
-					case SDFormat.GeometryType.Plane:
+					case GeometryType.Plane:
 					{
 						var normal = geometry.PlaneShape.Normal.ToUnity();
 						var size = SDF2Unity.Size(geometry.PlaneShape.Size);
 						mesh = ProceduralMesh.CreatePlane(size.x, size.y, normal);
 						break;
 					}
-					case SDFormat.GeometryType.Polyline:
+					case GeometryType.Polyline:
 					{
 						mesh = ProceduralMesh.CreatePolylines(geometry.PolylineShape);
 						break;
 					}
-					case SDFormat.GeometryType.Ellipsoid:
+					case GeometryType.Ellipsoid:
 					{
 						var radii = SDF2Unity.Scale(geometry.EllipsoidShape.Radii);
 						mesh = ProceduralMesh.CreateSphere(radii);
 						break;
 					}
-					case SDFormat.GeometryType.Cone:
+					case GeometryType.Cone:
 					{
 						mesh = ProceduralMesh.CreateCone(0f, (float)geometry.ConeShape.Radius, (float)geometry.ConeShape.Length, 72);
 						break;
 					}
-					case SDFormat.GeometryType.Image:
+					case GeometryType.Image:
 						Debug.LogWarning("Image geometry type is not supported.");
 						break;
 					default:

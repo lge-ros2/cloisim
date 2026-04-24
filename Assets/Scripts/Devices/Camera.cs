@@ -29,8 +29,7 @@ namespace SensorDevices
 		protected messages.CameraSensor _sensorInfo = null;
 		protected messages.Image _image = null; // for Parameters
 
-		// Reusable protobuf objects to avoid per-frame GC allocations
-		protected messages.ImageStamped _imageStamped = null;
+		// Reusable protobuf time object to avoid per-frame GC allocations
 		protected messages.Time _timeMsg = null;
 
 		// TODO : Need to be implemented!!!
@@ -134,8 +133,10 @@ namespace SensorDevices
 			if (param != null && param.Type != SDFormat.NoiseType.None)
 			{
 				Debug.Log($"{DeviceName}: Apply noise type:{param.Type} mean:{param.Mean} stddev:{param.StdDev}");
-				_noiseMaterial = new Material(Shader.Find("Sensor/Camera/GaussianNoise"));
-				_noiseMaterial.hideFlags = HideFlags.DontUnloadUnusedAsset;
+				_noiseMaterial = new Material(Shader.Find("Sensor/Camera/GaussianNoise"))
+				{
+					hideFlags = HideFlags.DontUnloadUnusedAsset
+				};
 				_noiseMaterial.SetFloat("_Mean", (float)param.Mean);
 				_noiseMaterial.SetFloat("_StdDev", (float)param.StdDev);
 				_noiseCmdBuffer = new CommandBuffer { name = "Gaussian Noise" };
@@ -161,7 +162,7 @@ namespace SensorDevices
 			// for controlling targetDisplay
 			_camSensor.targetDisplay = -1;
 			// These APIs are only available with the built-in renderer, not URP
-			if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null)
+			if (GraphicsSettings.currentRenderPipeline == null)
 			{
 				Debug.Log("Using built-in render pipeline settings for camera");
 				_camSensor.renderingPath = RenderingPath.Forward;
@@ -231,22 +232,30 @@ namespace SensorDevices
 					break;
 			}
 
-			_textureForCapture = new Texture2D((int)_camParam.ImageWidth, (int)_camParam.ImageHeight, textureFormatForCapture, false, true);
-			_textureForCapture.filterMode = FilterMode.Point;
+			_textureForCapture = new Texture2D((int)_camParam.ImageWidth, (int)_camParam.ImageHeight, textureFormatForCapture, false, true)
+			{
+				filterMode = FilterMode.Point
+			};
 		}
 
 		protected override void InitializeMessages()
 		{
 			_image = new messages.Image();
-			_sensorInfo = new messages.CameraSensor();
-			_sensorInfo.ImageSize = new messages.Vector2d();
-			_sensorInfo.Distortion = new messages.Distortion();
-			_sensorInfo.Distortion.Center = new messages.Vector2d();
+			_sensorInfo = new messages.CameraSensor
+			{
+				ImageSize = new messages.Vector2d(),
+				Distortion = new messages.Distortion
+				{
+					Center = new messages.Vector2d()
+				}
+			};
 
 			// Pre-allocate reusable protobuf objects for ImageProcessing
 			_timeMsg = new messages.Time();
-			_imageStamped = new messages.ImageStamped();
-			_imageStamped.Time = _timeMsg;
+			_image.Header = new messages.Header
+			{
+				Stamp = _timeMsg
+			};
 		}
 
 		protected override void SetupMessages()
@@ -254,14 +263,13 @@ namespace SensorDevices
 			var pixelFormat = CameraData.GetPixelFormat(_camParam.ImageFormat);
 			_image.Width = _camParam.ImageWidth;
 			_image.Height = _camParam.ImageHeight;
-			_image.PixelFormat = (uint)pixelFormat;
+			_image.PixelFormatType = (messages.PixelFormatType)pixelFormat;
 			_image.Step = _image.Width * (uint)CameraData.GetImageStep(pixelFormat);
 			_image.Data = new byte[_image.Height * _image.Step];
 
 			_sensorInfo.HorizontalFov = _camParam.HorizontalFov;
 			_sensorInfo.ImageSize.X = _camParam.ImageWidth;
 			_sensorInfo.ImageSize.Y = _camParam.ImageHeight;
-			_sensorInfo.ImageFormat = _camParam.ImageFormat;
 			_sensorInfo.NearClip = _camParam.NearClip;
 			_sensorInfo.FarClip = _camParam.FarClip;
 			_sensorInfo.SaveEnabled = _camParam.SaveFrames;
@@ -336,28 +344,32 @@ namespace SensorDevices
 			// graphicsFormat is properly reported to AsyncGPUReadback. RTHandles.Alloc
 			// can produce textures whose graphicsFormat reads as None on some platforms,
 			// causing async readback to fail.
-			var desc = new RenderTextureDescriptor(rtWidth, rtHeight);
-			desc.graphicsFormat = _targetColorFormat;
-			desc.depthStencilFormat = _targetDepthBits switch
+			var desc = new RenderTextureDescriptor(rtWidth, rtHeight)
 			{
-				DepthBits.Depth16 => GraphicsFormat.D16_UNorm,
-				DepthBits.Depth24 => GraphicsFormat.D24_UNorm_S8_UInt,
-				DepthBits.Depth32 => GraphicsFormat.D32_SFloat,
-				_ => GraphicsFormat.None
+				graphicsFormat = _targetColorFormat,
+				depthStencilFormat = _targetDepthBits switch
+				{
+					DepthBits.Depth16 => GraphicsFormat.D16_UNorm,
+					DepthBits.Depth24 => GraphicsFormat.D24_UNorm_S8_UInt,
+					DepthBits.Depth32 => GraphicsFormat.D32_SFloat,
+					_ => GraphicsFormat.None
+				},
+				msaaSamples = 1,
+				dimension = TextureDimension.Tex2D,
+				volumeDepth = 1,
+				useMipMap = false,
+				autoGenerateMips = false,
+				enableRandomWrite = false,
+				memoryless = RenderTextureMemoryless.None
 			};
-			desc.msaaSamples = 1;
-			desc.dimension = TextureDimension.Tex2D;
-			desc.volumeDepth = 1;
-			desc.useMipMap = false;
-			desc.autoGenerateMips = false;
-			desc.enableRandomWrite = false;
-			desc.memoryless = RenderTextureMemoryless.None;
 
-			_renderTexture = new RenderTexture(desc);
-			_renderTexture.name = _targetRTname;
-			_renderTexture.filterMode = _rtFilterMode;
-			_renderTexture.wrapMode = TextureWrapMode.Clamp;
-			_renderTexture.anisoLevel = 0;
+			_renderTexture = new RenderTexture(desc)
+			{
+				name = _targetRTname,
+				filterMode = _rtFilterMode,
+				wrapMode = TextureWrapMode.Clamp,
+				anisoLevel = 0
+			};
 			_renderTexture.Create();
 
 			if (_renderTexture.graphicsFormat == GraphicsFormat.None)
@@ -506,12 +518,12 @@ namespace SensorDevices
 							if (_depthMaterial == null)
 							{
 								var readbackData = req.GetData<byte>();
-								ImageProcessing<byte>(ref readbackData, capturedTime);
+								ImageProcessing(ref readbackData, capturedTime);
 							}
 							else
 							{
 								var readbackData = req.GetData<float>();
-								ImageProcessing<float>(ref readbackData, capturedTime);
+								ImageProcessing(ref readbackData, capturedTime);
 							}
 						}
 					});
@@ -529,16 +541,16 @@ namespace SensorDevices
 				_camParam.SaveFrames &&
 				_messageQueue.TryPeek(out var msg))
 			{
-				var imageStampedMsg = (messages.ImageStamped)msg;
-				var saveName = $"{DeviceName}_{imageStampedMsg.Time.Sec}.{imageStampedMsg.Time.Nsec}";
+				var imageMsg = (messages.Image)msg;
+				var saveName = $"{DeviceName}_{imageMsg.Header.Stamp.Sec}.{imageMsg.Header.Stamp.Nsec}";
 				var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
 
-				if (format != SensorDevices.CameraData.PixelFormat.L_INT8)
+				if (format != CameraData.PixelFormat.L_INT8)
 				{
 					Debug.LogWarning($"{format.ToString()} is not support to save file");
 					return;
 				}
-				_textureForCapture.SaveRawImage(imageStampedMsg.Image.Data, _camParam.SavePath, saveName);
+				_textureForCapture.SaveRawImage(imageMsg.Data, _camParam.SavePath, saveName);
 			}
 		}
 
@@ -548,15 +560,13 @@ namespace SensorDevices
 			{
 				// Reuse preallocated protobuf objects instead of new per frame
 				_timeMsg.Set(capturedTime);
-				_imageStamped.Image = _image;
 
-				var image = _imageStamped.Image;
 				var sizeOfT = UnsafeUtility.SizeOf<T>();
 				var byteView = readbackData.Reinterpret<byte>(sizeOfT);
 
-				CopyReadbackToImage(byteView, image.Data);
+				CopyReadbackToImage(byteView, _image.Data);
 
-				EnqueueMessage(_imageStamped);
+				EnqueueMessage(_image);
 			}
 		}
 
@@ -661,7 +671,7 @@ namespace SensorDevices
 			return _sensorInfo;
 		}
 
-		public global::ProtoBuf.IExtensible GetImageDataMessage()
+		public ProtoBuf.IExtensible GetImageDataMessage()
 		{
 			if (_messageQueue.TryDequeue(out var msg))
 			{

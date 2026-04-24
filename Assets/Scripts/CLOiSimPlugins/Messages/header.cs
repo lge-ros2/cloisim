@@ -16,29 +16,27 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"str_id")]
-        [global::System.ComponentModel.DefaultValue("")]
-        public string StrId
-        {
-            get => __pbn__StrId ?? "";
-            set => __pbn__StrId = value;
-        }
-        public bool ShouldSerializeStrId() => __pbn__StrId != null;
-        public void ResetStrId() => __pbn__StrId = null;
-        private string __pbn__StrId;
-
-        [global::ProtoBuf.ProtoMember(2, Name = @"stamp")]
+        [global::ProtoBuf.ProtoMember(1, Name = @"stamp")]
         public Time Stamp { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"index")]
-        public int Index
+        [global::ProtoBuf.ProtoMember(2, Name = @"data")]
+        public global::System.Collections.Generic.List<Map> Datas { get; } = new global::System.Collections.Generic.List<Map>();
+
+        [global::ProtoBuf.ProtoContract()]
+        public partial class Map : global::ProtoBuf.IExtensible
         {
-            get => __pbn__Index.GetValueOrDefault();
-            set => __pbn__Index = value;
+            private global::ProtoBuf.IExtension __pbn__extensionData;
+            global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+                => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+            [global::ProtoBuf.ProtoMember(1, Name = @"key")]
+            [global::System.ComponentModel.DefaultValue("")]
+            public string Key { get; set; } = "";
+
+            [global::ProtoBuf.ProtoMember(2, Name = @"value")]
+            public global::System.Collections.Generic.List<string> Values { get; } = new global::System.Collections.Generic.List<string>();
+
         }
-        public bool ShouldSerializeIndex() => __pbn__Index != null;
-        public void ResetIndex() => __pbn__Index = null;
-        private int? __pbn__Index;
 
     }
 

@@ -26,7 +26,7 @@ namespace SDFormat
 
 			private void SetShadowMode()
 			{
-				var shadowCastingMode = (isCastingShadow) ? UE.Rendering.ShadowCastingMode.On : UE.Rendering.ShadowCastingMode.Off;
+				var shadowCastingMode = isCastingShadow ? UE.Rendering.ShadowCastingMode.On : UE.Rendering.ShadowCastingMode.Off;
 
 				foreach (var renderer in GetComponentsInChildren<UE.Renderer>())
 				{

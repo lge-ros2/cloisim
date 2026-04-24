@@ -696,7 +696,7 @@ namespace CLOiSim.Cloth
 				if (currentLength < 1e-4f) continue;
 
 				var error = currentLength - constraint.RestLength;
-				var correction = (delta / currentLength) * (error * constraint.Stiffness / wSum);
+				var correction = delta / currentLength * (error * constraint.Stiffness / wSum);
 
 				PredictedPositions[constraint.IndexA] += correction * wA;
 				PredictedPositions[constraint.IndexB] -= correction * wB;
@@ -730,7 +730,7 @@ namespace CLOiSim.Cloth
 				if (currentLength < 1e-4f) continue;
 
 				var error = currentLength - c.RestLength;
-				var correction = (delta / currentLength) * (error * c.Stiffness / wSum);
+				var correction = delta / currentLength * (error * c.Stiffness / wSum);
 
 				PredictedPositions[c.IndexA] += correction * wA;
 				PredictedPositions[c.IndexB] -= correction * wB;
@@ -788,7 +788,7 @@ namespace CLOiSim.Cloth
 			if (distSq < radius * radius && distSq > 1e-6f)
 			{
 				var dist = math.sqrt(distSq);
-				p = collider.Position + (delta / dist) * radius;
+				p = collider.Position + delta / dist * radius;
 			}
 			return p;
 		}
@@ -847,7 +847,7 @@ namespace CLOiSim.Cloth
 			if (distSq < radius * radius && distSq > 1e-6f)
 			{
 				var dist = math.sqrt(distSq);
-				p = closest + (delta / dist) * radius;
+				p = closest + delta / dist * radius;
 			}
 			return p;
 		}
@@ -939,7 +939,7 @@ namespace CLOiSim.Cloth
 			var va = d3 * d6 - d5 * d4;
 			if (va <= 0.0f && (d4 - d3) >= 0.0f && (d5 - d6) >= 0.0f)
 			{
-				var w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+				var w = (d4 - d3) / (d4 - d3 + (d5 - d6));
 				return b + w * (c - b);
 			}
 			var denom = 1.0f / (va + vb + vc);

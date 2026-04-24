@@ -16,13 +16,16 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"force", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"force")]
         public Vector3d Force { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"torque", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(3, Name = @"torque")]
         public Vector3d Torque { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"force_offset")]
+        [global::ProtoBuf.ProtoMember(4, Name = @"force_offset")]
         public Vector3d ForceOffset { get; set; }
 
     }

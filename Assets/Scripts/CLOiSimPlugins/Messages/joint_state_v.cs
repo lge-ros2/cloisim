@@ -16,10 +16,10 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"header", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
         public Header Header { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"JointState")]
+        [global::ProtoBuf.ProtoMember(2, Name = @"joint_state")]
         public global::System.Collections.Generic.List<JointState> JointStates { get; } = new global::System.Collections.Generic.List<JointState>();
 
     }

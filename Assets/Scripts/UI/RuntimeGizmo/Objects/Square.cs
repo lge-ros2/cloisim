@@ -17,15 +17,15 @@ namespace RuntimeGizmos
 				switch (index)
 				{
 					case 0:
-						return this.bottomLeft;
+						return bottomLeft;
 					case 1:
-						return this.topLeft;
+						return topLeft;
 					case 2:
-						return this.topRight;
+						return topRight;
 					case 3:
-						return this.bottomRight;
+						return bottomRight;
 					case 4:
-						return this.bottomLeft; //so we wrap around back to start
+						return bottomLeft; //so we wrap around back to start
 					default:
 						return Vector3.zero;
 				}

@@ -26,9 +26,9 @@ public class LaserFilter
 
 	public LaserFilter(in messages.LaserScan laserScan, bool useIntensity = false)
 	{
-		this.numberOfHorizontalBeams = laserScan.Count;
-		this.numberOfVerticalBeams = laserScan.VerticalCount;
-		this.totalNumberOfLaserBeams = this.numberOfHorizontalBeams * this.numberOfVerticalBeams;
+		numberOfHorizontalBeams = laserScan.Count;
+		numberOfVerticalBeams = laserScan.VerticalCount;
+		totalNumberOfLaserBeams = numberOfHorizontalBeams * numberOfVerticalBeams;
 
 		angle = new MathUtil.MinMax(laserScan.AngleMin, laserScan.AngleMax);
 
@@ -37,24 +37,24 @@ public class LaserFilter
 
 	public void SetupAngleFilter(in double filterLowerHorizontalAngle, in double filterUpperHorizontalAngle)
 	{
-		this.horizontalAnlgeFilter = new MathUtil.MinMax(filterLowerHorizontalAngle, filterUpperHorizontalAngle);
+		horizontalAnlgeFilter = new MathUtil.MinMax(filterLowerHorizontalAngle, filterUpperHorizontalAngle);
 
 		var filterLowerBeamIndexRatio = (horizontalAnlgeFilter.min - angle.min) / angle.range;
 		var filterUpperBeamIndexRatio = (horizontalAnlgeFilter.max - angle.min) / angle.range;
 
-		this.filterLowerHorizontalBeamIndex = (angle.min >= horizontalAnlgeFilter.min) ? (int?)null : (int)((double)numberOfHorizontalBeams * filterLowerBeamIndexRatio);
-		this.filterUpperHorizontalBeamIndex = (angle.max <= horizontalAnlgeFilter.max) ? (int?)null : (int)((double)numberOfHorizontalBeams * filterUpperBeamIndexRatio);
+		filterLowerHorizontalBeamIndex = (angle.min >= horizontalAnlgeFilter.min) ? (int?)null : (int)((double)numberOfHorizontalBeams * filterLowerBeamIndexRatio);
+		filterUpperHorizontalBeamIndex = (angle.max <= horizontalAnlgeFilter.max) ? (int?)null : (int)((double)numberOfHorizontalBeams * filterUpperBeamIndexRatio);
 	}
 
 	public void SetupRangeFilter(in double filterRangeMin, in double filterRangeMax)
 	{
-		this.rangeFilter = new MathUtil.MinMax(filterRangeMin, filterRangeMax);
+		rangeFilter = new MathUtil.MinMax(filterRangeMin, filterRangeMax);
 	}
 
 	private bool IsIndexFiltering(in int index)
 	{
-		return ((filterLowerHorizontalBeamIndex != null && filterLowerHorizontalBeamIndex > index) ||
-				(filterUpperHorizontalBeamIndex != null && filterUpperHorizontalBeamIndex < index));
+		return (filterLowerHorizontalBeamIndex != null && filterLowerHorizontalBeamIndex > index) ||
+				(filterUpperHorizontalBeamIndex != null && filterUpperHorizontalBeamIndex < index);
 	}
 
 	public void DoFilter(ref messages.LaserScan laserScan)
@@ -68,7 +68,7 @@ public class LaserFilter
 		{
 			for (var horizontalIndex = 0; horizontalIndex < numberOfHorizontalBeams; horizontalIndex++)
 			{
-				var doFilter = (IsIndexFiltering(horizontalIndex)) ? true : false;
+				var doFilter = IsIndexFiltering(horizontalIndex) ? true : false;
 
 				for (var verticalIndex = 0; verticalIndex < numberOfVerticalBeams; verticalIndex++)
 				{

@@ -89,8 +89,9 @@ namespace SensorDevices
 			var contactsMessage = new messages.Contacts();
 			// Debug.Log("{DeviceName} CollisionStay: " + other.contacts.Length);
 
-			contactsMessage.Time = new messages.Time();
-			contactsMessage.Time.SetCurrentTime();
+			contactsMessage.Header = new messages.Header();
+			contactsMessage.Header.Stamp = new messages.Time();
+			contactsMessage.Header.Stamp.SetCurrentTime();
 
 			var targetSuffix = "::" + _targetCollision;
 
@@ -104,7 +105,7 @@ namespace SensorDevices
 				if (collision1.EndsWith(targetSuffix))
 				{
 					// find existing collision set
-					var existingContact = contactsMessage.contact.Find(x => x.Collision1.Contains(collision1) && x.Collision2.Contains(collision2));
+					var existingContact = contactsMessage.contact.Find(x => x.Collision1.Name.Contains(collision1, StringComparison.Ordinal) && x.Collision2.Name.Contains(collision2, StringComparison.Ordinal));
 					if (existingContact != null)
 					{
 						var depths = existingContact.Depths;
@@ -127,15 +128,15 @@ namespace SensorDevices
 						jointWrench.Body1Wrench.Force.Set(collisionContact.impulse);
 						existingContact.Wrenchs.Add(jointWrench);
 
-						existingContact.Time.SetCurrentTime();
+						existingContact.Header.Stamp.SetCurrentTime();
 					}
 					else
 					{
 						var newContact = new messages.Contact();
-						newContact.World = "default";
+						newContact.World = new messages.Entity { Name = "default" };
 
-						newContact.Collision1 = collision1;
-						newContact.Collision2 = collision2;
+						newContact.Collision1 = new messages.Entity { Name = collision1 };
+						newContact.Collision2 = new messages.Entity { Name = collision2 };
 
 						newContact.Depths = new double[] { collisionContact.separation };
 
@@ -153,8 +154,9 @@ namespace SensorDevices
 						jointWrench.Body1Wrench.Force.Set(collisionContact.impulse);
 						newContact.Wrenchs.Add(jointWrench);
 
-						newContact.Time = new messages.Time();
-						newContact.Time.SetCurrentTime();
+						newContact.Header = new messages.Header();
+						newContact.Header.Stamp = new messages.Time();
+						newContact.Header.Stamp.SetCurrentTime();
 						// Debug.Log("{DeviceName} CollisionStay: " + collision1 + " <-> " + collision2);
 
 						contactsMessage.contact.Add(newContact);
@@ -178,8 +180,9 @@ namespace SensorDevices
 			_lastTimeContactsMessageGenerated = 0;
 
 			var contactsMessage = new messages.Contacts();
-			contactsMessage.Time = new messages.Time();
-			contactsMessage.Time.SetCurrentTime();
+			contactsMessage.Header = new messages.Header();
+			contactsMessage.Header.Stamp = new messages.Time();
+			contactsMessage.Header.Stamp.SetCurrentTime();
 			EnqueueMessage(contactsMessage);
 			// Debug.Log($"{DeviceName} {_targetCollision} CollisionExit: {other.contacts.Length}");
 		}

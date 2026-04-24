@@ -21,7 +21,7 @@ public class ArticulationBodyConstantForce : MonoBehaviour
 	// Start is called before the first frame update
 	void Start()
 	{
-		targetBody = this.GetComponent<ArticulationBody>();
+		targetBody = GetComponent<ArticulationBody>();
 
 		if (targetBody == null)
 		{

@@ -16,16 +16,12 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"collision_name")]
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"collision_name")]
         [global::System.ComponentModel.DefaultValue("")]
-        public string CollisionName
-        {
-            get => __pbn__CollisionName ?? "";
-            set => __pbn__CollisionName = value;
-        }
-        public bool ShouldSerializeCollisionName() => __pbn__CollisionName != null;
-        public void ResetCollisionName() => __pbn__CollisionName = null;
-        private string __pbn__CollisionName;
+        public string CollisionName { get; set; } = "";
 
     }
 

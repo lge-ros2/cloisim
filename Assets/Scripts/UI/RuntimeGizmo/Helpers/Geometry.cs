@@ -8,7 +8,7 @@ namespace RuntimeGizmos
 		public static float LinePlaneDistance(Vector3 linePoint, Vector3 lineVec, Vector3 planePoint, Vector3 planeNormal)
 		{
 			//calculate the distance between the linePoint and the line-plane intersection point
-			float dotNumerator = Vector3.Dot((planePoint - linePoint), planeNormal);
+			float dotNumerator = Vector3.Dot(planePoint - linePoint, planeNormal);
 			float dotDenominator = Vector3.Dot(lineVec, planeNormal);
 
 			//line and plane are not parallel

@@ -56,9 +56,9 @@ namespace SDFormat
 				return inertiaMomentum;
 			}
 
-			protected override System.Object ImportLink(in Link link, in System.Object parentObject)
+			protected override object ImportLink(in Link link, in object parentObject)
 			{
-				var targetObject = (parentObject as UE.GameObject);
+				var targetObject = parentObject as UE.GameObject;
 				var newLinkObject = new UE.GameObject(link.Name)
 				{
 					tag = "Link"
@@ -79,12 +79,12 @@ namespace SDFormat
 					linkHelper.AttachBattery(battery.Value.name, (float)battery.Value.voltage);
 				}
 
-				return newLinkObject as System.Object;
+				return newLinkObject as object;
 			}
 
-			protected override void AfterImportLink(in Link link, in System.Object targetObject)
+			protected override void AfterImportLink(in Link link, in object targetObject)
 			{
-				var linkObject = (targetObject as UE.GameObject);
+				var linkObject = targetObject as UE.GameObject;
 
 				if (linkObject == null)
 				{
@@ -114,7 +114,7 @@ namespace SDFormat
 				var inertial = link.Inertial;
 				if (!hasStaticModel && inertial != null)
 				{
-					Loader.CreateArticulationBody(linkObject);
+					CreateArticulationBody(linkObject);
 				}
 			}
 

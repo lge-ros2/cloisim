@@ -16,7 +16,7 @@ public abstract class Device : MonoBehaviour
 	public enum ModeType { NONE, TX, RX, TX_THREAD, RX_THREAD };
 	public ModeType Mode = ModeType.NONE;
 
-	protected ConcurrentQueue<global::ProtoBuf.IExtensible> _messageQueue = new();
+	protected ConcurrentQueue<ProtoBuf.IExtensible> _messageQueue = new();
 
 	[NonSerialized]
 	private DeviceMessageQueue _deviceMessageQueue = new();
@@ -114,7 +114,7 @@ public abstract class Device : MonoBehaviour
 	private double _profByteCount = 0;
 	private float _periodForProfiler = 5f; // seconds
 
-	private System.Diagnostics.Stopwatch _profWatch = System.Diagnostics.Stopwatch.StartNew();
+	private Stopwatch _profWatch = Stopwatch.StartNew();
 
 	[ContextMenu("Reset Profiler")]
 	private void ResetProfiler()
@@ -134,8 +134,8 @@ public abstract class Device : MonoBehaviour
 		if (seconds >= _periodForProfiler)
 		{
 			var hz = _profFrameCount / seconds;
-			var mbPerSec = (_profByteCount / seconds) / oneMegabyte;
-			var mbps = (_profByteCount * 8.0 / seconds) / oneMegabyte;
+			var mbPerSec = _profByteCount / seconds / oneMegabyte;
+			var mbps = _profByteCount * 8.0 / seconds / oneMegabyte;
 			Debug.Log($"[PROF][{targetName}] {DeviceName} Hz: {hz:F2} | Bandwidth: {mbps:F2} Mbps ({mbPerSec:F2} MB/s)");
 			ResetProfiler();
 		}
@@ -285,7 +285,7 @@ public abstract class Device : MonoBehaviour
 	/// Enqueue a protobuf message and wake the TX thread immediately
 	/// so data is published with minimal latency.
 	/// </summary>
-	protected void EnqueueMessage(global::ProtoBuf.IExtensible message)
+	protected void EnqueueMessage(ProtoBuf.IExtensible message)
 	{
 		_messageQueue.Enqueue(message);
 		_txDataReady.Set();
@@ -303,7 +303,7 @@ public abstract class Device : MonoBehaviour
 
 	private IEnumerator DeviceCoroutineRx()
 	{
-		var waitUntil = new WaitUntil(() => (_deviceMessageQueue.Count > 0));
+		var waitUntil = new WaitUntil(() => _deviceMessageQueue.Count > 0);
 		while (_running)
 		{
 			yield return waitUntil;
@@ -432,7 +432,7 @@ public abstract class Device : MonoBehaviour
 		}
 	}
 
-	public bool PushDeviceMessage<T>(T instance) where T : global::ProtoBuf.IExtensible
+	public bool PushDeviceMessage<T>(T instance) where T : ProtoBuf.IExtensible
 	{
 		try
 		{
@@ -442,22 +442,22 @@ public abstract class Device : MonoBehaviour
 			}
 
 			// Raw binary fast-path for image types — bypasses protobuf serialization
-			if (instance is cloisim.msgs.ImageStamped imgStamped)
+			if (instance is cloisim.msgs.Image img)
 			{
-				deviceMessage.SetRawImage(imgStamped);
+				deviceMessage.SetRawImage(img);
 			}
 			else if (instance is cloisim.msgs.Segmentation seg)
 			{
 				deviceMessage.SetRawSegmentation(seg);
 			}
-			else if (instance is cloisim.msgs.ImagesStamped imgsStamped)
+			else if (instance is cloisim.msgs.Images imgs)
 			{
-				deviceMessage.SetRawImagesStamped(imgsStamped);
+				deviceMessage.SetRawImages(imgs);
 			}
 			else
 			{
 				// Protobuf fallback for non-image sensors (lidar, IMU, etc.)
-				deviceMessage.SetMessage<T>(instance);
+				deviceMessage.SetMessage(instance);
 			}
 
 			var pushed = _deviceMessageQueue.Push(deviceMessage);
@@ -543,7 +543,7 @@ public abstract class Device : MonoBehaviour
 
 	public void UpdatePose()
 	{
-		_devicePose.Store(this.transform);
+		_devicePose.Store(transform);
 	}
 
 	/// <summary>

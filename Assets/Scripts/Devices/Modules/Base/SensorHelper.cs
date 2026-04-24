@@ -15,7 +15,7 @@ public static class SensorHelper
 		var h = 1.0f / Mathf.Tan(hFov * Mathf.Deg2Rad / 2f);
 		var v = 1.0f / Mathf.Tan(vFov * Mathf.Deg2Rad / 2f);
 		var a = (far + near) / (near - far);
-		var b = (2.0f * far * near / (near - far));
+		var b = 2.0f * far * near / (near - far);
 
 		var projMatrix = new Matrix4x4(
 			new Vector4(h, 0, 0, 0),
@@ -28,6 +28,6 @@ public static class SensorHelper
 
 	public static float HorizontalToVerticalFOV(in float horizontalFOV, in float aspect = 1.0f)
 	{
-		return Mathf.Rad2Deg * 2 * Mathf.Atan(Mathf.Tan((horizontalFOV * Mathf.Deg2Rad) / 2f) / aspect);
+		return Mathf.Rad2Deg * 2 * Mathf.Atan(Mathf.Tan(horizontalFOV * Mathf.Deg2Rad / 2f) / aspect);
 	}
 }

@@ -16,32 +16,22 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"id", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"id")]
         public int Id { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, IsRequired = true)]
-        public string request { get; set; }
-
-        [global::ProtoBuf.ProtoMember(3, Name = @"data")]
+        [global::ProtoBuf.ProtoMember(3)]
         [global::System.ComponentModel.DefaultValue("")]
-        public string Data
-        {
-            get => __pbn__Data ?? "";
-            set => __pbn__Data = value;
-        }
-        public bool ShouldSerializeData() => __pbn__Data != null;
-        public void ResetData() => __pbn__Data = null;
-        private string __pbn__Data;
+        public string request { get; set; } = "";
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"dbl_data")]
-        public double DblData
-        {
-            get => __pbn__DblData.GetValueOrDefault();
-            set => __pbn__DblData = value;
-        }
-        public bool ShouldSerializeDblData() => __pbn__DblData != null;
-        public void ResetDblData() => __pbn__DblData = null;
-        private double? __pbn__DblData;
+        [global::ProtoBuf.ProtoMember(4, Name = @"data")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string Data { get; set; } = "";
+
+        [global::ProtoBuf.ProtoMember(5, Name = @"dbl_data")]
+        public double DblData { get; set; }
 
     }
 

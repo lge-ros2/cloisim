@@ -16,10 +16,10 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"sec", IsRequired = true)]
-        public int Sec { get; set; }
+        [global::ProtoBuf.ProtoMember(1, Name = @"sec")]
+        public long Sec { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"nsec", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(2, Name = @"nsec")]
         public int Nsec { get; set; }
 
     }

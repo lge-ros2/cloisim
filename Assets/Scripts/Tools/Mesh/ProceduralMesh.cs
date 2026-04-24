@@ -518,12 +518,12 @@ public class ProceduralMesh
 			for (var z = 0; z < resZ; z++)
 			{
 				// [ -length / 2, length / 2 ]
-				var zPos = ((float)z / (resZ - 1) - .5f);
+				var zPos = (float)z / (resZ - 1) - .5f;
 
 				for (var x = 0; x < resX; x++)
 				{
 					// [ -width / 2, width / 2 ]
-					var xPos = ((float)x / (resX - 1) - .5f);
+					var xPos = (float)x / (resX - 1) - .5f;
 					vertices[x + z * resX] = new Vector3(xPos, 0f, zPos);
 				}
 			}

@@ -15,7 +15,7 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportGripper(in Gripper gripper, in System.Object parentObject)
+			protected override void ImportGripper(in Gripper gripper, in object parentObject)
 			{
 				var modelObject = parentObject as UE.GameObject;
 

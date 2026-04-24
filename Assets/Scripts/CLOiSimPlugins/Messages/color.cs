@@ -16,25 +16,20 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"r", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"r")]
         public float R { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"g", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(3, Name = @"g")]
         public float G { get; set; }
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"b", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(4, Name = @"b")]
         public float B { get; set; }
 
         [global::ProtoBuf.ProtoMember(5, Name = @"a")]
-        [global::System.ComponentModel.DefaultValue(1f)]
-        public float A
-        {
-            get => __pbn__A ?? 1f;
-            set => __pbn__A = value;
-        }
-        public bool ShouldSerializeA() => __pbn__A != null;
-        public void ResetA() => __pbn__A = null;
-        private float? __pbn__A;
+        public float A { get; set; }
 
     }
 
