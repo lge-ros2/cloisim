@@ -159,7 +159,7 @@ public class FollowingCamera : MonoBehaviour
 		_targetObjectTransform = null;
 		_isFollowing = false;
 		Main.CameraControl?.UnBlockControl();
-		this.blockControl = true;
+		blockControl = true;
 	}
 
 	private void LockTargetObject(in Transform targetTransform)
@@ -168,6 +168,6 @@ public class FollowingCamera : MonoBehaviour
 		_targetObjectTransform = targetTransform;
 		_isFollowing = true;
 		Main.CameraControl?.BlockControl();
-		this.blockControl = false;
+		blockControl = false;
 	}
 }

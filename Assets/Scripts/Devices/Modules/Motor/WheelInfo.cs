@@ -14,10 +14,10 @@ public struct WheelInfo
 
 	public WheelInfo(in float radius = 0.1f, in float separation = 0)
 	{
-		this.wheelRadius = radius;
-		this.wheelSeparation = separation;
-		this.inversedWheelRadius = 1.0f / wheelRadius;
-		this.inversedWheelSeparation = 1.0f / wheelSeparation;
-		this.halfWheelRadius = wheelRadius * 0.5f;
+		wheelRadius = radius;
+		wheelSeparation = separation;
+		inversedWheelRadius = 1.0f / wheelRadius;
+		inversedWheelSeparation = 1.0f / wheelSeparation;
+		halfWheelRadius = wheelRadius * 0.5f;
 	}
 }

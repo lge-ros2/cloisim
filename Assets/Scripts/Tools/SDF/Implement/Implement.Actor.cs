@@ -75,7 +75,7 @@ namespace SDFormat
 					animationComponent.clip = animationClip;
 				}
 
-				animationComponent.wrapMode = (loop) ? UE.WrapMode.Loop : UE.WrapMode.Once;
+				animationComponent.wrapMode = loop ? UE.WrapMode.Loop : UE.WrapMode.Once;
 				animationComponent.animatePhysics = false;
 				animationComponent.playAutomatically = autoStart;
 

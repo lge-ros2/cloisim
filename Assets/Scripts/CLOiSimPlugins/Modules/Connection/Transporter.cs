@@ -14,7 +14,7 @@ public class Transporter : IDisposable
 
 	public T Get<T>(in ushort targetPort) where T : class
 	{
-		return (transportList.ContainsKey(targetPort)) ? transportList[targetPort] as T : null;
+		return transportList.ContainsKey(targetPort) ? transportList[targetPort] as T : null;
 	}
 
 	public bool InitializePublisher(in ushort targetPort, in ulong hash)
@@ -79,7 +79,7 @@ public class Transporter : IDisposable
 			var transporter = item.Value;
 			transporter.Close();
 		}
-		System.GC.SuppressFinalize(this);
+		GC.SuppressFinalize(this);
 	}
 
 	public static string GetAddress(in ushort port)

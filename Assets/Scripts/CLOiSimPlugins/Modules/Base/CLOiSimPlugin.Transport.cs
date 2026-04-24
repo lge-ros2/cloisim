@@ -16,8 +16,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	public string SubPartsName
 	{
-		get => this._subPartsName;
-		set => this._subPartsName = value;
+		get => _subPartsName;
+		set => _subPartsName = value;
 	}
 
 	public Transporter GetTransport()

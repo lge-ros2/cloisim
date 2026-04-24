@@ -112,7 +112,7 @@ public static class OgreMaterial
 					}
 					else if (key == "technique" && propertyLevel == PropertyLevel.MATERIAL)
 					{
-						var techName = (string.IsNullOrEmpty(value))? (key + material.techniques.Count) : value;
+						var techName = string.IsNullOrEmpty(value)? (key + material.techniques.Count) : value;
 
 						material.techniques[techName] = new Technique();
 						targetTechName = techName;
@@ -131,7 +131,7 @@ public static class OgreMaterial
 
 						var targetTechnique = material.techniques[targetTechName];
 
-						var passName = (string.IsNullOrEmpty(value))? (key + targetTechnique.passes.Count) : value;
+						var passName = string.IsNullOrEmpty(value)? (key + targetTechnique.passes.Count) : value;
 
 						if (!targetTechnique.passes.ContainsKey(passName))
 							targetTechnique.passes[passName] = new Pass();

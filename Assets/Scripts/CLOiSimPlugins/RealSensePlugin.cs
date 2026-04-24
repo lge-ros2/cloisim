@@ -175,6 +175,6 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 			modulesInfo.Childrens.Add(moduleInfo);
 		}
 
-		msModuleInfo.SetMessage<messages.Param>(modulesInfo);
+		msModuleInfo.SetMessage(modulesInfo);
 	}
 }

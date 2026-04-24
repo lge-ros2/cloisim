@@ -45,7 +45,7 @@ namespace SDFormat
 
 		public ResourceModelTable ResourceModelTable { get => _resourceModelTable; }
 
-		public bool DoParse(out SDFormat.World world, out string worldFilePath, in string worldFileName)
+		public bool DoParse(out World world, out string worldFilePath, in string worldFileName)
 		{
 			world = null;
 			worldFilePath = string.Empty;
@@ -82,7 +82,7 @@ namespace SDFormat
 						}
 
 						var worldElement = sdfElement.FindElement("world");
-						world = new SDFormat.World();
+						world = new World();
 						var errors = world.Load(worldElement);
 						foreach (var error in errors)
 						{
@@ -107,7 +107,7 @@ namespace SDFormat
 			return false;
 		}
 
-		public bool DoParse(out SDFormat.Model model, in string modelFullPath, in string modelFileName)
+		public bool DoParse(out Model model, in string modelFullPath, in string modelFileName)
 		{
 			model = null;
 
@@ -135,7 +135,7 @@ namespace SDFormat
 				}
 
 				var modelElement = sdfElement.FindElement("model");
-				model = new SDFormat.Model();
+				model = new Model();
 				var errors = model.Load(modelElement);
 				foreach (var error in errors)
 				{
@@ -160,14 +160,14 @@ namespace SDFormat
 		/// Serialize XmlDocument to string and parse with SDFormat.SdfParser.
 		/// Returns the root SDFormat.Element (the &lt;sdf&gt; element).
 		/// </summary>
-		private SDFormat.Element ParseWithSdFormat(XmlDocument doc)
+		private Element ParseWithSdFormat(XmlDocument doc)
 		{
 			var sw = new StringWriter();
 			var xw = new XmlTextWriter(sw);
 			doc.WriteTo(xw);
 			var xmlString = sw.ToString();
 
-			var parser = new SDFormat.SdfParser();
+			var parser = new SdfParser();
 			var (rootElement, errors) = parser.Parse(xmlString);
 
 			foreach (var error in errors)
@@ -293,7 +293,7 @@ namespace SDFormat
 						if (_resourceModelTable.ContainsKey(modelName))
 						{
 							failedModelTableList.AppendLine(string.Empty);
-							failedModelTableList.Append(String.Concat(modelName, " => ", modelValue));
+							failedModelTableList.Append(string.Concat(modelName, " => ", modelValue));
 						}
 						else
 						{
@@ -570,8 +570,8 @@ namespace SDFormat
 				?.Attributes?.GetNamedItem("version")?.Value ?? string.Empty;
 			if (!string.IsNullOrEmpty(sdfDocVersion) && !string.IsNullOrEmpty(_sdfVersion))
 			{
-				if (System.Version.TryParse(sdfDocVersion, out var includedVer) &&
-					System.Version.TryParse(_sdfVersion, out var worldVer))
+				if (Version.TryParse(sdfDocVersion, out var includedVer) &&
+					Version.TryParse(_sdfVersion, out var worldVer))
 				{
 					if (includedVer.Major != worldVer.Major)
 					{

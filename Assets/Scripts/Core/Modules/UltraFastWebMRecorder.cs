@@ -248,7 +248,7 @@ public class UltraFastWebMRecorder : MonoBehaviour
 
 		var desc = new RenderTextureDescriptor(w, h, RenderTextureFormat.ARGB32, 0)
 		{
-			sRGB = (QualitySettings.activeColorSpace == ColorSpace.Linear),
+			sRGB = QualitySettings.activeColorSpace == ColorSpace.Linear,
 			msaaSamples = 1
 		};
 		_rt = new RenderTexture(desc) { name = "WebMRecorder_RT" };

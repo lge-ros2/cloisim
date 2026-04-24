@@ -34,7 +34,7 @@ public class Subscriber : SubscriberSocket
 
 		if (_hashValue != null)
 		{
-			this.Subscribe(_hashValue);
+			Subscribe(_hashValue);
 		}
 
 		Bind(TransportHelper.GetAddress(targetPort));

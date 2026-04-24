@@ -37,7 +37,7 @@ public struct Vector4d
 
 	public Vector4d(in double x, in double y, in double z, in double w)
 	{
-		this.Size = 4;
+		Size = 4;
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -92,7 +92,7 @@ public struct Vector4d
 
 	public Vector4d normalized => Vector4.Normalize(this);
 
-	public double sqrMagnitude => (x * x + y * y + z * z + w * w);
+	public double sqrMagnitude => x * x + y * y + z * z + w * w;
 
 
 	public static double Distance(in Vector4d a, in Vector4d b)
@@ -156,7 +156,7 @@ public struct Vector4d
 		{
 			return target;
 		}
-		return current + ((vector4 / single) * maxDistanceDelta);
+		return current + (vector4 / single * maxDistanceDelta);
 	}
 
 	public static Vector4d Normalize(in Vector4d value)
@@ -230,10 +230,10 @@ public struct Vector4d
 
 	public void Set(in double new_x, in double new_y, in double new_z, in double new_w)
 	{
-		this.x = new_x;
-		this.y = new_y;
-		this.z = new_z;
-		this.w = new_w;
+		x = new_x;
+		y = new_y;
+		z = new_z;
+		w = new_w;
 	}
 
 	public double SqrMagnitude()
@@ -243,17 +243,17 @@ public struct Vector4d
 
 	public override string ToString()
 	{
-		return String.Format("({0}, {1}, {2}, {3})", x, y, z, w);
+		return string.Format("({0}, {1}, {2}, {3})", x, y, z, w);
 	}
 
 	public string ToString(string format)
 	{
-		return String.Format("({0}, {1}, {2}, {3})", x.ToString(format), y.ToString(format), z.ToString(format), w.ToString(format));
+		return string.Format("({0}, {1}, {2}, {3})", x.ToString(format), y.ToString(format), z.ToString(format), w.ToString(format));
 	}
 
 	public override int GetHashCode()
 	{
-		return this.x.GetHashCode() ^ this.y.GetHashCode() << 2 ^ this.z.GetHashCode() >> 2 ^ this.w.GetHashCode() >> 1;
+		return x.GetHashCode() ^ y.GetHashCode() << 2 ^ z.GetHashCode() >> 2 ^ w.GetHashCode() >> 1;
 	}
 
 	public override bool Equals(object other)

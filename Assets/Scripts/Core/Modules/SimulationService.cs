@@ -39,12 +39,12 @@ public class SimulationService : IDisposable
 			if (IsStarted())
 			{
 				var wsLog = new StringBuilder();
-				wsLog.Append(String.Concat("Listening on port ", wsServer.Port, ", and providing services are:"));
+				wsLog.Append(string.Concat("Listening on port ", wsServer.Port, ", and providing services are:"));
 				wsLog.AppendLine();
 
 				foreach (var path in wsServer.WebSocketServices.Paths)
 				{
-					wsLog.Append(String.Concat(" - ", path));
+					wsLog.Append(string.Concat(" - ", path));
 					wsLog.AppendLine();
 				}
 
@@ -89,13 +89,13 @@ public class SimulationService : IDisposable
 			return;
 		}
 
-		wsServer.AddWebSocketService<SimulationControlService>("/control", () => new SimulationControlService()
+		wsServer.AddWebSocketService("/control", () => new SimulationControlService()
 		{
 			IgnoreExtensions = true
 		});
 
 		var markerVisualizer = Main.UIObject?.GetComponent<MarkerVisualizer>();
-		wsServer.AddWebSocketService<MarkerVisualizerService>("/markers", () => new MarkerVisualizerService(markerVisualizer)
+		wsServer.AddWebSocketService("/markers", () => new MarkerVisualizerService(markerVisualizer)
 		{
 			IgnoreExtensions = true
 		});

@@ -15,10 +15,10 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportMaterial(in Material sdfMaterial, in System.Object parentObject)
+			protected override void ImportMaterial(in Material sdfMaterial, in object parentObject)
 			{
 				var logs = new StringBuilder();
-				var targetObject = (parentObject as UE.GameObject);
+				var targetObject = parentObject as UE.GameObject;
 
 				if (targetObject == null || sdfMaterial == null)
 				{
@@ -32,9 +32,9 @@ namespace SDFormat
 					logs.Append(outputLogs);
 
 					// Turn off high-loading features in renderer as a performance tuning
-					renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
-					renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-					renderer.motionVectorGenerationMode = UnityEngine.MotionVectorGenerationMode.ForceNoMotion;
+					renderer.lightProbeUsage = UE.Rendering.LightProbeUsage.Off;
+					renderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.Off;
+					renderer.motionVectorGenerationMode = UE.MotionVectorGenerationMode.ForceNoMotion;
 					renderer.allowOcclusionWhenDynamic = true;
 				}
 

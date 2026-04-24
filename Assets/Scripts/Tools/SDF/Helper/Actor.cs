@@ -41,13 +41,13 @@ namespace SDFormat
 			private bool _scriptLoop = true;
 			private double _scriptDelayStart = 0;
 			private bool _scriptAutoStart = true;
-			private List<SDFormat.Trajectory> _scriptTrajectories = null;
+			private List<Trajectory> _scriptTrajectories = null;
 
 			private UE.CapsuleCollider capsuleCollider = null;
 			private UE.SkinnedMeshRenderer skinMeshRenderer = null;
 			private UEAI.NavMeshAgent _navMeshAgent = null;
 
-			public bool HasWayPoints => (_scriptTrajectories != null && _scriptTrajectories.Count > 0);
+			public bool HasWayPoints => _scriptTrajectories != null && _scriptTrajectories.Count > 0;
 
 			new public void Reset()
 			{

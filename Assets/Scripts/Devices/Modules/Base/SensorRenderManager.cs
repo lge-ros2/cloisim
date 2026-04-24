@@ -92,7 +92,7 @@ public class SensorRenderManager : MonoBehaviour
 
 		// Stagger sensors by adding a small offset based on registration order.
 		// This prevents all sensors from becoming due on the same frame.
-		var jitter = (s_registrationCounter++ % JitterSlotCount) * JitterStepSeconds;
+		var jitter = s_registrationCounter++ % JitterSlotCount * JitterStepSeconds;
 		inst._pendingAdd.Add((sensor, initialDelay + jitter));
 	}
 

@@ -6,7 +6,6 @@
 
 using System.Collections.Generic;
 using System.Collections;
-using System;
 using UnityEngine;
 
 public class MowingBlade : MonoBehaviour
@@ -18,7 +17,7 @@ public class MowingBlade : MonoBehaviour
 	private float _height = 0;
 
 	[SerializeField]
-	private UInt16 _revSpeed = 0;
+	private ushort _revSpeed = 0;
 
 	[SerializeField]
 	private float _heightMin = 0;
@@ -27,7 +26,7 @@ public class MowingBlade : MonoBehaviour
 	private float _heightMax = 0;
 
 	[SerializeField]
-	private UInt16 _revSpeedMax = 0;
+	private ushort _revSpeedMax = 0;
 
 	private bool _doAdjust = false;
 
@@ -48,7 +47,7 @@ public class MowingBlade : MonoBehaviour
 		set => _heightMax = value;
 	}
 
-	public UInt16 RevSpeedMax
+	public ushort RevSpeedMax
 	{
 		get => _revSpeedMax;
 		set => _revSpeedMax = value;
@@ -60,15 +59,15 @@ public class MowingBlade : MonoBehaviour
 		set => _height = (value <= _heightMin) ? _heightMin : (value >= _heightMax ? _heightMax : value);
 	}
 
-	public UInt16 RevSpeed
+	public ushort RevSpeed
 	{
 		get => _revSpeed;
-		set => _revSpeed = (value >= _revSpeedMax ? _revSpeedMax : value);
+		set => _revSpeed = value >= _revSpeedMax ? _revSpeedMax : value;
 	}
 
 	public Vector3 Position
 	{
-		get => this.transform.position;
+		get => transform.position;
 	}
 
 	public bool IsRunning()

@@ -12,7 +12,7 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override System.Object ImportActor(in Actor actor)
+			protected override object ImportActor(in Actor actor)
 			{
 				if (actor == null)
 				{
@@ -55,7 +55,7 @@ namespace SDFormat
 				var capsuleCollider = newActorObject.AddComponent<UE.CapsuleCollider>();
 				capsuleCollider.direction = 1;
 
-				return newActorObject as System.Object;
+				return newActorObject as object;
 			}
 		}
 	}

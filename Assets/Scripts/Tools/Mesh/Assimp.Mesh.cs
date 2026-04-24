@@ -358,7 +358,7 @@ public static partial class MeshLoader
 			// Vertices
 			if (sceneMesh.HasVertices)
 			{
-				newMesh.indexFormat = (sceneMesh.VertexCount >= UInt16.MaxValue) ? IndexFormat.UInt32 : IndexFormat.UInt16;
+				newMesh.indexFormat = (sceneMesh.VertexCount >= ushort.MaxValue) ? IndexFormat.UInt32 : IndexFormat.UInt16;
 
 				var vertices = new Queue<Vector3>();
 				foreach (var v in sceneMesh.Vertices)
@@ -532,7 +532,7 @@ public static partial class MeshLoader
 		{
 			foreach (var child in node.Children)
 			{
-				var hasLight = (lightMap != null && lightMap.ContainsKey(child.Name));
+				var hasLight = lightMap != null && lightMap.ContainsKey(child.Name);
 				if (!hasLight && child.ChildrenCount() == 0)
 				{
 					continue;
@@ -605,7 +605,7 @@ public static partial class MeshLoader
 
 			createdMeshObject.SetActive(false);
 #if ENABLE_MESH_CACHE
-			GameObject.DontDestroyOnLoad(createdMeshObject);
+			UnityEngine.Object.DontDestroyOnLoad(createdMeshObject);
 			MeshCache.Add(cacheKey, createdMeshObject);
 #else
  			sceneMeshObject = createdMeshObject;
@@ -617,7 +617,7 @@ public static partial class MeshLoader
 		meshObject.tag = "Geometry";
 
 #if ENABLE_MESH_CACHE
-		var sceneMeshObject = GameObject.Instantiate(MeshCache[cacheKey]);
+		var sceneMeshObject = UnityEngine.Object.Instantiate(MeshCache[cacheKey]);
 #endif
 		sceneMeshObject.SetActive(true);
 		sceneMeshObject.transform.SetParent(meshObject.transform, false);

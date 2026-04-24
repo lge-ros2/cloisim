@@ -22,9 +22,9 @@ public class Elevator
 
 		public ElevatorEntity(in string elevatorName, in ElevatorControl elevatorControl)
 		{
-			this.state = ElevatorState.STOP;
-			this.name = elevatorName;
-			this.control = elevatorControl;
+			state = ElevatorState.STOP;
+			name = elevatorName;
+			control = elevatorControl;
 		}
 
 		public ElevatorState State => state;
@@ -55,7 +55,7 @@ public class Elevator
 
 		public void MoveElevatorTo(in float to)
 		{
-			SetState(this.Height, to);
+			SetState(Height, to);
 			control.MoveTo(to);
 		}
 

@@ -280,7 +280,7 @@ namespace Unity.Splines
 
 			var segmentsPerLength = SegmentsPerMeter * length;
 			var segments = Mathf.CeilToInt(segmentsPerLength);
-			var segmentStepT = (1f / SegmentsPerMeter) / length;
+			var segmentStepT = 1f / SegmentsPerMeter / length;
 			var steps = segments + 1;
 			var vertexCount = steps * 2;
 			var triangleCount = segments * 6;

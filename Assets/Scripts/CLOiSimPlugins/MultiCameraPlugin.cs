@@ -45,7 +45,7 @@ public class MultiCameraPlugin : CLOiSimPlugin
 		{
 			case "request_camera_info":
 				var cameraInfoMessage = camera.GetCameraInfo();
-				CameraPlugin.SetCameraInfoResponse(ref response, cameraInfoMessage);
+				SetCameraInfoResponse(ref response, cameraInfoMessage);
 				break;
 
 			case "request_transform":

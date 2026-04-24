@@ -19,7 +19,7 @@ public class ColorEncoding
 		int retVal = 0;
 		for (int bits = 0; bits < 8; bits++, value >>= 1)
 		{
-			retVal |= (value & 1);
+			retVal |= value & 1;
 			retVal <<= sparse;
 		}
 		return retVal >> sparse;
@@ -35,12 +35,12 @@ public class ColorEncoding
 		var sid =
 			(SparsifyBits((byte)(uid >> 16), 3) << 2) |
 			(SparsifyBits((byte)(uid >> 8), 3) << 1) |
-			 SparsifyBits((byte)(uid), 3);
+			 SparsifyBits((byte)uid, 3);
 		//Debug.Log(uid + " >>> " + System.Convert.ToString(sid, 2).PadLeft(24, '0'));
 
 		var r = (byte)(sid >> 8);
 		var g = (byte)(sid >> 16);
-		var b = (byte)(sid);
+		var b = (byte)sid;
 		// Debug.Log($"EncodeIDAsColor({instanceId}): {r} {g} {b}");
 		return new Color32(r, g, b, 255);
 	}
@@ -56,7 +56,7 @@ public class ColorEncoding
 		var a = (byte)(hash >> 24);
 		var r = (byte)(hash >> 16);
 		var g = (byte)(hash >> 8);
-		var b = (byte)(hash);
+		var b = (byte)hash;
 		// Debug.Log($"EncodeTagAsColor({tag}): {r} {g} {b} {a}");
 		return new Color32(r, g, b, a);
 	}

@@ -40,11 +40,11 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		}
 	}
 
-	private Elevator elevators = new Elevator();
+	private Elevator elevators = new();
 
-	private Dictionary<string, float> floorList = new Dictionary<string, float>();
+	private Dictionary<string, float> floorList = new();
 
-	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue = new ConcurrentQueue<ElevatorTask>();
+	private ConcurrentQueue<ElevatorTask> elevatorTaskQueue = new();
 
 	private string elevatorSystemName = string.Empty;
 
@@ -54,7 +54,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 	{
 		_type = ICLOiSimPlugin.Type.ELEVATOR;
 		_modelName = "World";
-		_partsName = this.GetType().Name;
+		_partsName = GetType().Name;
 	}
 
 	protected override IEnumerator OnStart()
@@ -133,7 +133,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var elevatorOutsideDoorNameLeft = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='left']");
 		var elevatorOutsideDoorNameRight = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='right']");
 
-		foreach (var child in this.GetComponentsInChildren<SDFormat.Helper.Model>())
+		foreach (var child in GetComponentsInChildren<SDFormat.Helper.Model>())
 		{
 			var objectName = child.name;
 			if (objectName.StartsWith(elevatorPrefixName))
@@ -160,7 +160,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	public void ReadFloorContext()
 	{
-		this.initialFloor = "B1F";
+		initialFloor = "B1F";
 		if (GetPluginParameters().GetValues<string>("floors/floor/name", out var listFloorName) &&
 			GetPluginParameters().GetValues<float>("floors/floor/height", out var listFloorHeight))
 		{
@@ -267,7 +267,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 	{
 		var nameParam = new Param();
 		nameParam.Params["request_system_name"] = new Any { Type = Any.ValueType.String, StringValue = elevatorSystemName };
-		response.SetMessage<Param>(nameParam);
+		response.SetMessage(nameParam);
 	}
 
 	private void HandleServiceRequest(in List<Param> requestChildren, ref DeviceMessage response)
@@ -313,7 +313,7 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 		HandleService(ref responseMessage, serviceName, currentFloor, targetFloor, elevatorIndex);
 
-		response.SetMessage<Param>(responseMessage);
+		response.SetMessage(responseMessage);
 	}
 
 	private void HandleService(ref Param responseMessage, in string serviceName, string currentFloor, in string targetFloor, string elevatorIndex)

@@ -55,11 +55,11 @@ public class DeviceMessage : MemoryStream
 			Reset();
 			try
 			{
-				Serializer.Serialize<T>(this, instance);
+				Serializer.Serialize(this, instance);
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"ERROR: SetMessage<{typeof(T).ToString()}>() during Serializer.Serialize: {ex.Message}");
+				Console.WriteLine($"ERROR: SetMessage<{typeof(T)}>() during Serializer.Serialize: {ex.Message}");
 			}
 		}
 		else
@@ -213,14 +213,14 @@ public class DeviceMessage : MemoryStream
 
 	public bool IsValid()
 	{
-		return (CanRead && Length > 0);
+		return CanRead && Length > 0;
 	}
 
 	// --- Little-endian binary helpers (avoid BinaryWriter allocation) ---
 
 	private static void WriteUInt32LE(byte[] buf, int offset, uint value)
 	{
-		buf[offset] = (byte)(value);
+		buf[offset] = (byte)value;
 		buf[offset + 1] = (byte)(value >> 8);
 		buf[offset + 2] = (byte)(value >> 16);
 		buf[offset + 3] = (byte)(value >> 24);
@@ -228,7 +228,7 @@ public class DeviceMessage : MemoryStream
 
 	private static void WriteInt32LE(byte[] buf, int offset, int value)
 	{
-		buf[offset] = (byte)(value);
+		buf[offset] = (byte)value;
 		buf[offset + 1] = (byte)(value >> 8);
 		buf[offset + 2] = (byte)(value >> 16);
 		buf[offset + 3] = (byte)(value >> 24);
@@ -236,7 +236,7 @@ public class DeviceMessage : MemoryStream
 
 	private static void WriteUInt16LE(byte[] buf, int offset, ushort value)
 	{
-		buf[offset] = (byte)(value);
+		buf[offset] = (byte)value;
 		buf[offset + 1] = (byte)(value >> 8);
 	}
 }

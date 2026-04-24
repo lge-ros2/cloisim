@@ -13,7 +13,7 @@ using Any = cloisim.msgs.Any;
 [DefaultExecutionOrder(605)]
 public class ActorControlPlugin : CLOiSimPlugin
 {
-	public static Dictionary<string, SDFormat.Helper.Actor> actorList = new Dictionary<string, SDFormat.Helper.Actor>();
+	public static Dictionary<string, SDFormat.Helper.Actor> actorList = new();
 
 	private bool isReceivedRequest = false;
 	private SDFormat.Helper.Actor targetActor = null;
@@ -23,7 +23,7 @@ public class ActorControlPlugin : CLOiSimPlugin
 	{
 		_type = ICLOiSimPlugin.Type.ACTOR;
 		_modelName = "World";
-		_partsName = this.GetType().Name;
+		_partsName = GetType().Name;
 
 		UpdateActorList();
 	}
@@ -80,6 +80,6 @@ public class ActorControlPlugin : CLOiSimPlugin
 		}
 
 		resultParam.Params["result"] = new Any { Type = Any.ValueType.Boolean, BoolValue = result };
-		response.SetMessage<messages.Param>(resultParam);
+		response.SetMessage(resultParam);
 	}
 }

@@ -205,7 +205,7 @@ public class SphericalCoordinates
 
 	public void SetSurfaceType(in string type)
 	{
-		var surfaceType = (SurfaceType)System.Enum.Parse(typeof(SurfaceType), type);
+		var surfaceType = (SurfaceType)Enum.Parse(typeof(SurfaceType), type);
 		SetSurfaceType(surfaceType);
 	}
 
@@ -218,25 +218,25 @@ public class SphericalCoordinates
 			case SurfaceType.EARTH_WGS84:
 				{
 					// Set the semi-major axis
-					this.ellA = WGS84.EarthAxisEquatorial;
+					ellA = WGS84.EarthAxisEquatorial;
 
 					// Set the semi-minor axis
-					this.ellB = WGS84.EarthAxisPolar;
+					ellB = WGS84.EarthAxisPolar;
 
 					// Set the flattening parameter
-					this.ellF = WGS84.EarthFlattening;
+					ellF = WGS84.EarthFlattening;
 
 					// Set the first eccentricity ellipse parameter
 					// https://en.wikipedia.org/wiki/Eccentricity_(mathematics)#Ellipses
 					// this.ellE = Math.Sqrt(1f - Math.Pow(this.ellB, 2) / Math.Pow(ellA, 2));
-					this.ellE = Math.Sqrt(1d - Math.Pow(this.ellB/this.ellA, 2));
+					ellE = Math.Sqrt(1d - Math.Pow(ellB/ellA, 2));
 
 					// Set the second eccentricity ellipse parameter
 					// https://en.wikipedia.org/wiki/Eccentricity_(mathematics)#Ellipses
 					// this.ellP = Math.Sqrt(Math.Pow(ellA, 2) / Math.Pow(ellB, 2) - 1d);
-					this.ellP = Math.Sqrt(Math.Pow(this.ellA/this.ellB, 2) - 1d);
+					ellP = Math.Sqrt(Math.Pow(ellA/ellB, 2) - 1d);
 
-					_ = this.ellF;
+					_ = ellF;
 
 					break;
 				}
@@ -264,8 +264,8 @@ public class SphericalCoordinates
 		var sinLon = Math.Sin(tmpPosition.y);
 
 		// Radius of planet curvature (meters)
-		var curvature = 1d - Math.Pow(this.ellE, 2) * Math.Pow(sinLat, 2);
-		curvature = this.ellA / Math.Sqrt(curvature);
+		var curvature = 1d - Math.Pow(ellE, 2) * Math.Pow(sinLat, 2);
+		curvature = ellA / Math.Sqrt(curvature);
 
 		// Convert whatever arrives to a more flexible ECEF coordinate
 		switch (input)
@@ -286,7 +286,7 @@ public class SphericalCoordinates
 				tmpPosition.x = curvatureOffset * cosLat * cosLon;
 				tmpPosition.y = curvatureOffset * cosLat * sinLon;
 				// tmpPosition.z = (Math.Pow(this.ellB, 2) / Math.Pow(this.ellA, 2) * curvature + position.z) * sinLat;
-				tmpPosition.z = (Math.Pow(this.ellB/this.ellA, 2) * curvature + position.z) * sinLat;
+				tmpPosition.z = (Math.Pow(ellB/ellA, 2) * curvature + position.z) * sinLat;
 				break;
 
 			// Do nothing
@@ -304,11 +304,11 @@ public class SphericalCoordinates
 			case CoordinateType.SPHERICAL:
 				// Convert from ECEF to SPHERICAL
 				var p = Math.Sqrt(Math.Pow(tmpPosition.x, 2) + Math.Pow(tmpPosition.y, 2));
-				var theta = Math.Atan((tmpPosition.z * this.ellA) / (p * this.ellB));
+				var theta = Math.Atan(tmpPosition.z * ellA / (p * ellB));
 
 				// Calculate latitude and longitude
-				var lat = Math.Atan((tmpPosition.z + Math.Pow(this.ellP, 2) * this.ellB * Math.Pow(Math.Sin(theta), 3)) /
-									(p - Math.Pow(this.ellE, 2) * this.ellA * Math.Pow(Math.Cos(theta), 3)));
+				var lat = Math.Atan((tmpPosition.z + Math.Pow(ellP, 2) * ellB * Math.Pow(Math.Sin(theta), 3)) /
+									(p - Math.Pow(ellE, 2) * ellA * Math.Pow(Math.Cos(theta), 3)));
 				var lon = Math.Atan2(tmpPosition.y, tmpPosition.x);
 
 				// Recalculate radius of planet curvature at the current latitude.

@@ -21,14 +21,14 @@ public static class MathUtil
 		{
 			this.min = min;
 			this.max = max;
-			this.range = max - min;
+			range = max - min;
 		}
 
 		public MinMax(in double min = 0, in double max = 0)
 		{
 			this.min = (float)min;
 			this.max = (float)max;
-			this.range = (float)(max - min);
+			range = (float)(max - min);
 		}
 
 		public override string ToString()

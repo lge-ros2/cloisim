@@ -26,15 +26,15 @@ public class LaserPlugin : CLOiSimPlugin
 
 			if (GetPluginParameters().IsValidNode("filter/angle/horizontal"))
 			{
-				var filterAngleLower = GetPluginParameters().GetValue<double>("filter/angle/horizontal/lower", double.NegativeInfinity);
-				var filterAngleUpper = GetPluginParameters().GetValue<double>("filter/angle/horizontal/upper", double.PositiveInfinity);
+				var filterAngleLower = GetPluginParameters().GetValue("filter/angle/horizontal/lower", double.NegativeInfinity);
+				var filterAngleUpper = GetPluginParameters().GetValue("filter/angle/horizontal/upper", double.PositiveInfinity);
 				_lidar.SetupLaserAngleFilter(filterAngleLower, filterAngleUpper, useIntensity);
 			}
 
 			if (GetPluginParameters().IsValidNode("filter/range"))
 			{
-				var filterRangeMin = GetPluginParameters().GetValue<double>("filter/range/min", double.NegativeInfinity);
-				var filterRangeMax = GetPluginParameters().GetValue<double>("filter/range/max", double.PositiveInfinity);
+				var filterRangeMin = GetPluginParameters().GetValue("filter/range/min", double.NegativeInfinity);
+				var filterRangeMax = GetPluginParameters().GetValue("filter/range/max", double.PositiveInfinity);
 				_lidar.SetupLaserRangeFilter(filterRangeMin, filterRangeMax, useIntensity);
 			}
 		}
@@ -48,9 +48,9 @@ public class LaserPlugin : CLOiSimPlugin
 		// Livox non-repetitive scan pattern support
 		if (GetPluginParameters().IsValidNode("scan/pattern"))
 		{
-			var csvUri = GetPluginParameters().GetValue<string>("scan/pattern/uri", string.Empty);
-			var samplesPerCycle = GetPluginParameters().GetValue<int>("scan/pattern/samples", 24000);
-			var downsample = GetPluginParameters().GetValue<int>("scan/pattern/downsample", 1);
+			var csvUri = GetPluginParameters().GetValue("scan/pattern/uri", string.Empty);
+			var samplesPerCycle = GetPluginParameters().GetValue("scan/pattern/samples", 24000);
+			var downsample = GetPluginParameters().GetValue("scan/pattern/downsample", 1);
 
 			if (!string.IsNullOrEmpty(csvUri))
 			{
@@ -94,10 +94,10 @@ public class LaserPlugin : CLOiSimPlugin
 
 	private void SetOutputTypeResponse(ref DeviceMessage msInfo)
 	{
-		var output_type = GetPluginParameters().GetValue<string>("output_type", "LaserScan");
+		var output_type = GetPluginParameters().GetValue("output_type", "LaserScan");
 		var outputParam = new messages.Param();
 		outputParam.Params["output_type"] = new Any { Type = Any.ValueType.String, StringValue = output_type };
 
-		msInfo.SetMessage<messages.Param>(outputParam);
+		msInfo.SetMessage(outputParam);
 	}
 }

@@ -239,7 +239,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 				var worldRoot = Main.WorldRoot;
 				if (worldRoot != null)
 				{
-					worldRoot.GetComponentsInChildren<SDFormat.Helper.Model>(false, _tempModelList);
+					worldRoot.GetComponentsInChildren(false, _tempModelList);
 					foreach (var m in _tempModelList)
 					{
 						if (m.IsFirstChild)
@@ -248,7 +248,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 						}
 					}
 
-					worldRoot.GetComponentsInChildren<SDFormat.Helper.Actor>(false, _tempActorList);
+					worldRoot.GetComponentsInChildren(false, _tempActorList);
 					foreach (var a in _tempActorList)
 					{
 						_allLoadedModelList[a.name] = a;
@@ -319,7 +319,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		}
 
 		propName = propObjectName.Substring(0, separatorIndex);
-		return Int32.TryParse(propObjectName.Substring(separatorIndex + 1), out propId);
+		return int.TryParse(propObjectName.Substring(separatorIndex + 1), out propId);
 	}
 
 	private bool TryCreatePropPerception(in PropSnapshot propSnapshot, out messages.Perception perception)
@@ -434,7 +434,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		}
 	}
 
-	private void PublishThread(System.Object threadObject)
+	private void PublishThread(object threadObject)
 	{
 		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
 		var publisher = GetTransport().Get<Publisher>(paramObject.targetPort);
@@ -474,7 +474,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			}
 
 			_messagePerceptions.Header.Stamp.SetCurrentTime();
-			deviceMessage.SetMessage<messages.PerceptionV>(_messagePerceptions);
+			deviceMessage.SetMessage(_messagePerceptions);
 			publisher.Publish(deviceMessage);
 
 			CLOiSimPluginThread.Sleep(sleepPeriodForPublishInMilliseconds);

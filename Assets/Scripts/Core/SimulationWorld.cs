@@ -18,7 +18,7 @@ public class SimulationWorld : CLOiSimPlugin
 	{
 		_type = ICLOiSimPlugin.Type.WORLD;
 		_modelName = "World";
-		_partsName = this.GetType().Name;
+		_partsName = GetType().Name;
 
 		_clock = gameObject.GetComponent<Clock>();
 	}
@@ -49,7 +49,7 @@ public class SimulationWorld : CLOiSimPlugin
 		_signalReset = true;
 	}
 
-	private void ClientThread(System.Object threadObject)
+	private void ClientThread(object threadObject)
 	{
 		var paramObject = threadObject as CLOiSimPluginThread.ParamObject;
 		var requestor = GetTransport().Get<Requestor>(paramObject.targetPort);
@@ -71,7 +71,7 @@ public class SimulationWorld : CLOiSimPlugin
 				continue;
 			}
 
-			deviceMessage.SetMessage<messages.Param>(resetParam);
+			deviceMessage.SetMessage(resetParam);
 			try {
 				if (requestor.SendRequest(deviceMessage))
 				{

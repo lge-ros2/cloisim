@@ -78,10 +78,10 @@ public static partial class MeshLoader
 
 		public MeshMaterial(in Mesh mesh, in int materialIndex)
 		{
-			this.valid = true;
+			valid = true;
 			this.materialIndex = materialIndex;
 			this.mesh = mesh;
-			this.material = null;
+			material = null;
 		}
 	}
 
@@ -90,7 +90,7 @@ public static partial class MeshLoader
 		public void SetMaterials(in List<Material> materials)
 		{
 			// foreach (var meshMat in meshMatList)
-			for (var i = 0; i < this.Count; i++)
+			for (var i = 0; i < Count; i++)
 			{
 				var meshMat = this[i];
 				meshMat.material = materials[meshMat.materialIndex];

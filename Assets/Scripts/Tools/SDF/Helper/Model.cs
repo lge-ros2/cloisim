@@ -43,7 +43,7 @@ namespace SDFormat
 						if (childArticulationBodies.Length == 1 && childArticulationBodies[0].index == 0)
 						{
 							// remove root articulation body if there are no articulation body in children
-							UE.GameObject.Destroy(childArticulationBodies[0]);
+							Destroy(childArticulationBodies[0]);
 							hasRootArticulationBody = false;
 						}
 						else if (childArticulationBodies.Length > 1)

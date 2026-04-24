@@ -98,7 +98,7 @@ namespace RuntimeGizmos
 		{
 			var waitForEndOfFrame = new WaitForEndOfFrame();
 
-			while (this.enabled)
+			while (enabled)
 			{
 				ForceUpdatePivotPointOnChange();
 				yield return waitForEndOfFrame;
@@ -132,8 +132,8 @@ namespace RuntimeGizmos
 
 		public void SetTranslatingAxis(TransformType type, Axis axis, Axis planeAxis = Axis.None)
 		{
-			this.translatingType = type;
-			this.nearAxis = axis;
+			translatingType = type;
+			nearAxis = axis;
 			this.planeAxis = planeAxis;
 		}
 
@@ -160,12 +160,12 @@ namespace RuntimeGizmos
 			if (mainTargetRoot == null) return;
 
 			float distanceMultiplier = GetDistanceMultiplier();
-			float handleMinSelectedDistanceCheck = (this.minSelectedDistanceCheck + handleWidth) * distanceMultiplier;
+			float handleMinSelectedDistanceCheck = (minSelectedDistanceCheck + handleWidth) * distanceMultiplier;
 
 			if (nearAxis == Axis.None && TransformTypeContains(TransformType.Move))
 			{
 				//Important to check the planes first before the handle tip since it makes selecting the planes easier.
-				float planeMinSelectedDistanceCheck = (this.minSelectedDistanceCheck + planeSize) * distanceMultiplier;
+				float planeMinSelectedDistanceCheck = (minSelectedDistanceCheck + planeSize) * distanceMultiplier;
 				HandleNearestPlanes(TransformType.Move, handlePlanes, planeMinSelectedDistanceCheck);
 
 				if (nearAxis != Axis.None)
@@ -174,7 +174,7 @@ namespace RuntimeGizmos
 				}
 				else
 				{
-					float tipMinSelectedDistanceCheck = (this.minSelectedDistanceCheck + triangleSize) * distanceMultiplier;
+					float tipMinSelectedDistanceCheck = (minSelectedDistanceCheck + triangleSize) * distanceMultiplier;
 					HandleNearestLines(TransformType.Move, handleTriangles, tipMinSelectedDistanceCheck);
 				}
 
@@ -287,7 +287,7 @@ namespace RuntimeGizmos
 			if (mainTargetRoot == null) return 0f;
 			if (myCamera.orthographic) return Mathf.Max(.01f, myCamera.orthographicSize * 2f);
 			var mag = Mathf.Abs(ExtVector3.MagnitudeInDirection(pivotPoint - transform.position, myCamera.transform.forward));
-			return Mathf.Max(this.minimumDistanceHandleLengthMultiplier, mag);
+			return Mathf.Max(minimumDistanceHandleLengthMultiplier, mag);
 		}
 	}
 }

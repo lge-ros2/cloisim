@@ -14,7 +14,7 @@ public class ActorPlugin : CLOiSimPlugin
 	{
 		_type = ICLOiSimPlugin.Type.ACTOR;
 		_modelName = "World";
-		_partsName = this.GetType().Name;
+		_partsName = GetType().Name;
 	}
 
 	protected override IEnumerator OnStart()
@@ -27,7 +27,7 @@ public class ActorPlugin : CLOiSimPlugin
 			yield return null;
 		}
 
-		var defaultMotion = GetPluginParameters().GetValue<string>("default/motion", "random");
+		var defaultMotion = GetPluginParameters().GetValue("default/motion", "random");
 		if (!defaultMotion.Equals("random") && !defaultMotion.Equals("manual"))
 		{
 			Debug.LogWarningFormat("Failed to ActorPlugin: default motion type({0}) is invalid", defaultMotion);
@@ -43,9 +43,9 @@ public class ActorPlugin : CLOiSimPlugin
 
 		Main.WorldNavMeshBuilder.UpdateNavMesh(false);
 
-		var motionSpeed = GetPluginParameters().GetValue<float>("default/steering/speed", 1.0f);
-		var motionAngularSpeed = GetPluginParameters().GetValue<float>("default/steering/angular_speed", 2.09f) * Mathf.Rad2Deg;
-		var motionAcceleration = GetPluginParameters().GetValue<float>("default/steering/acceleration", 8.0f);
+		var motionSpeed = GetPluginParameters().GetValue("default/steering/speed", 1.0f);
+		var motionAngularSpeed = GetPluginParameters().GetValue("default/steering/angular_speed", 2.09f) * Mathf.Rad2Deg;
+		var motionAcceleration = GetPluginParameters().GetValue("default/steering/acceleration", 8.0f);
 
 		// Debug.Log("speed:" + motionSpeed + ", angularspeed: " + motionAngularSpeed + ", acceleration: " + motionAcceleration);
 		var actorAgent = gameObject.AddComponent<ActorAgent>();
@@ -57,7 +57,7 @@ public class ActorPlugin : CLOiSimPlugin
 		actorAgent.SetMotionType(ActorAgent.Type.STANDBY, motionStandby);
 		actorAgent.SetMotionType(ActorAgent.Type.MOVING, motionMoving);
 
-		actorAgent.RandomWalking = (defaultMotion.Equals("manual")) ? false : true;
+		actorAgent.RandomWalking = defaultMotion.Equals("manual") ? false : true;
 
 		// actorAgent.AssignTargetDestination(new Vector3(35.8297f, -6.361397f, -35.49258f));
 	}

@@ -15,8 +15,8 @@ public struct MatrixXd
 
 	public MatrixXd(in int row, in int col)
 	{
-		this.Row = row;
-		this.Col = col;
+		Row = row;
+		Col = col;
 
 		_elements = new double[Row, Col];
 	}
@@ -49,8 +49,8 @@ public struct MatrixXd
 	{
 		var lines = value.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
 
-		this.Row = lines.Length;
-		this.Col = lines[0].Split(',', StringSplitOptions.RemoveEmptyEntries).Length;
+		Row = lines.Length;
+		Col = lines[0].Split(',', StringSplitOptions.RemoveEmptyEntries).Length;
 		_elements = new double[Row, Col];
 
 		for (var i = 0; i < lines.Length; i++)
@@ -89,9 +89,9 @@ public struct MatrixXd
 	public override int GetHashCode()
 	{
 		var hashCode = 0;
-		for (var i = 0; i < this.Row; i++)
+		for (var i = 0; i < Row; i++)
 		{
-			for (var j = 0; j < this.Row; j++)
+			for (var j = 0; j < Row; j++)
 			{
 				hashCode ^= this[i, j].GetHashCode();
 			}
@@ -117,9 +117,9 @@ public struct MatrixXd
 			str += "[";
 			for (var j = 0; j < Col; j++)
 			{
-				str += this[i, j].ToString(format) + (j == this.Col - 1 ? "" : ", ");
+				str += this[i, j].ToString(format) + (j == Col - 1 ? "" : ", ");
 			}
-			str += "]" + (i == this.Row - 1 ? "" : (", " + System.Environment.NewLine));
+			str += "]" + (i == Row - 1 ? "" : (", " + Environment.NewLine));
 		}
 		return str;
 	}
@@ -128,8 +128,8 @@ public struct MatrixXd
 	{
 		get
 		{
-			var m = this.Row;
-			var n = this.Col;
+			var m = Row;
+			var n = Col;
 
 			if (m != n)
 			{

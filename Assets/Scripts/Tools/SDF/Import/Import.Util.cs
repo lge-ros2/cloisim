@@ -140,9 +140,9 @@ namespace SDFormat
 				}
 			}
 
-			public static void SpecifyPose(this Object targetObject)
+			public static void SpecifyPose(this object targetObject)
 			{
-				var rootObject = (targetObject as UE.GameObject);
+				var rootObject = targetObject as UE.GameObject;
 
 				var articulationBodies = rootObject.GetComponentsInChildren<UE.ArticulationBody>();
 

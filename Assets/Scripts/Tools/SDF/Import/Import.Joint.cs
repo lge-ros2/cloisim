@@ -15,9 +15,9 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportJoint(in Joint joint, in System.Object parentObject)
+			protected override void ImportJoint(in Joint joint, in object parentObject)
 			{
-				var targetObject = (parentObject as UE.GameObject);
+				var targetObject = parentObject as UE.GameObject;
 
 				var linkObjectParent = targetObject.FindTransformByName(joint.ParentName);
 				var linkObjectChild = targetObject.FindTransformByName(joint.ChildName);

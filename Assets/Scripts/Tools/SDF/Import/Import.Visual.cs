@@ -19,9 +19,9 @@ namespace SDFormat
 		{
 			private static readonly bool EnableOptimization = true;
 
-			protected override System.Object ImportVisual(in Visual visual, in System.Object parentObject)
+			protected override object ImportVisual(in Visual visual, in object parentObject)
 			{
-				var targetObject = (parentObject as UE.GameObject);
+				var targetObject = parentObject as UE.GameObject;
 				var newVisualObject = new UE.GameObject(visual.Name)
 				{
 					tag = "Visual"
@@ -35,17 +35,17 @@ namespace SDFormat
 				visualHelper.Pose = visual.RawPose;
 				visualHelper.PoseRelativeTo = visual.PoseRelativeTo;
 
-				return newVisualObject as System.Object;
+				return newVisualObject as object;
 			}
 
-			protected override void AfterImportVisual(in Visual visual, in System.Object targetObject)
+			protected override void AfterImportVisual(in Visual visual, in object targetObject)
 			{
 				if (visual == null)
 				{
 					return;
 				}
 
-				var visualObject = (targetObject as UE.GameObject);
+				var visualObject = targetObject as UE.GameObject;
 
 				// Optimize geometry and materials
 				if (visualObject.CompareTag("Visual") == false)

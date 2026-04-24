@@ -100,7 +100,7 @@ namespace SDFormat
 						{
 							if (!meshFilter.gameObject.CompareTag("Visual"))
 							{
-								UE.GameObject.Destroy(meshFilter.gameObject);
+								UE.Object.Destroy(meshFilter.gameObject);
 							}
 						}
 					}
@@ -121,8 +121,8 @@ namespace SDFormat
 				var colliders = targetObject.GetComponentsInChildren<UE.Collider>();
 				foreach (var collider in colliders)
 				{
-					UE.Debug.LogWarning($"{collider.name} Collider should not exit. There was collider");
-					UE.GameObject.Destroy(collider);
+					Debug.LogWarning($"{collider.name} Collider should not exit. There was collider");
+					UE.Object.Destroy(collider);
 				}
 			}
 

@@ -17,12 +17,12 @@ public class CLOiSimPluginThread : IDisposable
 	public class ParamObject
 	{
 		public ushort targetPort;
-		public System.Object param;
+		public object param;
 
-		public ParamObject(in ushort targetPort, in System.Object parameter)
+		public ParamObject(in ushort targetPort, in object parameter)
 		{
 			this.targetPort = targetPort;
-			this.param = parameter;
+			param = parameter;
 		}
 	}
 
@@ -34,7 +34,7 @@ public class CLOiSimPluginThread : IDisposable
 	public delegate void RefAction<T1, T2, T3>(in T1 arg1, in T2 arg2, ref T3 arg3);
 	public delegate void RefAction<T1, T2>(in T1 arg1, ref T2 arg3);
 
-	public RefAction<string, messages.Any, DeviceMessage> HandleRequestTypeValue = delegate (in string requestType, in Any requestValue, ref DeviceMessage response) { };
+	public RefAction<string, Any, DeviceMessage> HandleRequestTypeValue = delegate (in string requestType, in Any requestValue, ref DeviceMessage response) { };
 	public RefAction<string, List<messages.Param>, DeviceMessage> HandleRequestTypeChildren = delegate (in string requestType, in List<messages.Param> requestChildren, ref DeviceMessage response) { };
 
 	~CLOiSimPluginThread()
@@ -49,7 +49,7 @@ public class CLOiSimPluginThread : IDisposable
 		RequestStop();
 	}
 
-	public bool Add(in ushort targetPortForThread, in ParameterizedThreadStart function, in System.Object pluginObject = null)
+	public bool Add(in ushort targetPortForThread, in ParameterizedThreadStart function, in object pluginObject = null)
 	{
 		if (function != null)
 		{
@@ -183,13 +183,13 @@ public class CLOiSimPluginThread : IDisposable
 
 			if (receivedBuffer != null)
 			{
-				var requestMessage = CLOiSimPluginThread.ParseMessageParam(receivedBuffer);
+				var requestMessage = ParseMessageParam(receivedBuffer);
 
 				if (requestMessage != null && dmResponse != null)
 				{
 					// Extract first key-value pair from Params map as the request type/value
 					string requestName = null;
-					messages.Any requestValue = null;
+					Any requestValue = null;
 					foreach (var entry in requestMessage.Params)
 					{
 						requestName = entry.Key;

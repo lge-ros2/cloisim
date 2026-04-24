@@ -27,7 +27,7 @@ namespace SDFormat
 
 					material.SetSpecular(sdfMaterial.Specular.ToUnity());
 
-					if (sdfMaterial.Shader != SDFormat.ShaderType.Pixel && !string.IsNullOrEmpty(sdfMaterial.NormalMap))
+					if (sdfMaterial.Shader != ShaderType.Pixel && !string.IsNullOrEmpty(sdfMaterial.NormalMap))
 					{
 						material.SetNormalMap(sdfMaterial.NormalMap);
 					}
@@ -123,10 +123,10 @@ namespace SDFormat
 				}
 			}
 
-			private static void ApplyPbrWorkflow(UE.Material material, SDFormat.Pbr pbr, StringBuilder logs)
+			private static void ApplyPbrWorkflow(UE.Material material, Pbr pbr, StringBuilder logs)
 			{
-				var metalWorkflow = pbr.GetWorkflow(SDFormat.PbrWorkflowType.Metal);
-				var specularWorkflow = pbr.GetWorkflow(SDFormat.PbrWorkflowType.Specular);
+				var metalWorkflow = pbr.GetWorkflow(PbrWorkflowType.Metal);
+				var specularWorkflow = pbr.GetWorkflow(PbrWorkflowType.Specular);
 
 				var workflow = metalWorkflow ?? specularWorkflow;
 				if (workflow == null)

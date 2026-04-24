@@ -153,13 +153,13 @@ public struct Matrix4x4d
 
 	public static Matrix4x4d zero => new Matrix4x4d();
 
-	public double determinant => (
+	public double determinant => 
 				m03 * m12 * m21 * m30 - m02 * m13 * m21 * m30 - m03 * m11 * m22 * m30 + m01 * m13 * m22 * m30 +
 				m02 * m11 * m23 * m30 - m01 * m12 * m23 * m30 - m03 * m12 * m20 * m31 + m02 * m13 * m20 * m31 +
 				m03 * m10 * m22 * m31 - m00 * m13 * m22 * m31 - m02 * m10 * m23 * m31 + m00 * m12 * m23 * m31 +
 				m03 * m11 * m20 * m32 - m01 * m13 * m20 * m32 - m03 * m10 * m21 * m32 + m00 * m13 * m21 * m32 +
 				m01 * m10 * m23 * m32 - m00 * m11 * m23 * m32 - m02 * m11 * m20 * m33 + m01 * m12 * m20 * m33 +
-				m02 * m10 * m21 * m33 - m00 * m12 * m21 * m33 - m01 * m10 * m22 * m33 + m00 * m11 * m22 * m33);
+				m02 * m10 * m21 * m33 - m00 * m12 * m21 * m33 - m01 * m10 * m22 * m33 + m00 * m11 * m22 * m33;
 
 	public Matrix4x4d inverse
 	{
@@ -233,7 +233,7 @@ public struct Matrix4x4d
 		}
 	}
 
-	public bool IsIdentity => (this == identity);
+	public bool IsIdentity => this == identity;
 
 	public Matrix4x4d transpose
 	{
@@ -285,7 +285,7 @@ public struct Matrix4x4d
 	{
 		var result = new Matrix4x4d();
 
-		var radians = (fov / 2.0) * (Math.PI / 180);
+		var radians = fov / 2.0 * (Math.PI / 180);
 		var cotangent = Math.Cos(radians) / Math.Sin(radians);
 		var deltaZ = zNear - zFar;
 

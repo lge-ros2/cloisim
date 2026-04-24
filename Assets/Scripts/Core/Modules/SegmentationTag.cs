@@ -18,7 +18,7 @@ namespace Segmentation
 		private string _className = string.Empty;
 
 		[SerializeField]
-		private UInt16 _classId = 0;
+		private ushort _classId = 0;
 
 		[SerializeField]
 		private string _tagName = string.Empty;
@@ -26,20 +26,20 @@ namespace Segmentation
 		public string TagName
 		{
 			set => _tagName = value;
-			get => (string.IsNullOrEmpty(_tagName) ? this.name : _tagName);
+			get => string.IsNullOrEmpty(_tagName) ? name : _tagName;
 		}
 
 		public int TagId
 		{
-			get => this.gameObject.GetEntityId().GetHashCode();
+			get => gameObject.GetEntityId().GetHashCode();
 		}
 
 		public int TagLayer
 		{
-			get => this.gameObject.layer;
+			get => gameObject.layer;
 		}
 
-		public UInt16 ClassId
+		public ushort ClassId
 		{
 			get => _classId;
 		}
@@ -68,15 +68,15 @@ namespace Segmentation
 			var color = new Color();
 			switch (Main.SegmentationManager.Mode)
 			{
-				case Segmentation.Manager.ReplacementMode.ObjectId:
+				case Manager.ReplacementMode.ObjectId:
 					color = ColorEncoding.EncodeIDAsColor(TagId);
 					break;
 
-				case Segmentation.Manager.ReplacementMode.ObjectName:
+				case Manager.ReplacementMode.ObjectName:
 					color = ColorEncoding.EncodeNameAsColor(TagName);
 					break;
 
-				case Segmentation.Manager.ReplacementMode.LayerId:
+				case Manager.ReplacementMode.LayerId:
 					color = ColorEncoding.EncodeLayerAsColor(TagLayer);
 					break;
 
@@ -85,7 +85,7 @@ namespace Segmentation
 					break;
 			}
 
-			_classId = (UInt16)(color.grayscale * UInt16.MaxValue);
+			_classId = (ushort)(color.grayscale * ushort.MaxValue);
 			
 			mpb.SetInt("_SegmentationValue", (int)_classId);
 			mpb.SetInt("_Hide", 0);
@@ -102,15 +102,15 @@ namespace Segmentation
 		{
 			switch (Main.SegmentationManager.Mode)
 			{
-				case Segmentation.Manager.ReplacementMode.ObjectId:
+				case Manager.ReplacementMode.ObjectId:
 					_className = TagId.ToString();
 					break;
 
-				case Segmentation.Manager.ReplacementMode.ObjectName:
+				case Manager.ReplacementMode.ObjectName:
 					_className = TagName;
 					break;
 
-				case Segmentation.Manager.ReplacementMode.LayerId:
+				case Manager.ReplacementMode.LayerId:
 					_className = TagLayer.ToString();
 					break;
 
