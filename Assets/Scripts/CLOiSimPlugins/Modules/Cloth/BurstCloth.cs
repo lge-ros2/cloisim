@@ -98,6 +98,7 @@ namespace CLOiSim.Cloth
 		private NativeArray<float> _originalInverseMasses;
 
 		private JobHandle _clothJobHandle;
+		private int _lastJobCompletedFrame = -1;
 		private bool _isInitialized = false;
 
 		public bool IsInitialized => _isInitialized;
@@ -200,6 +201,19 @@ namespace CLOiSim.Cloth
 		#region Grab API
 
 		/// <summary>
+		/// Completes the cloth job handle only if it hasn't been completed this frame.
+		/// </summary>
+		private void EnsureJobCompleted()
+		{
+			var currentFrame = Time.frameCount;
+			if (_lastJobCompletedFrame != currentFrame)
+			{
+				_clothJobHandle.Complete();
+				_lastJobCompletedFrame = currentFrame;
+			}
+		}
+
+		/// <summary>
 		/// Finds the nearest non-grabbed, non-pinned vertex within maxRadius.
 		/// Returns -1 if none found.
 		/// </summary>
@@ -207,7 +221,7 @@ namespace CLOiSim.Cloth
 		{
 			if (!_isInitialized) return -1;
 
-			_clothJobHandle.Complete();
+			EnsureJobCompleted();
 
 			var bestIndex = -1;
 			var bestDistSq = maxRadius * maxRadius;
@@ -236,7 +250,7 @@ namespace CLOiSim.Cloth
 			if (!_isInitialized || index < 0 || index >= _positions.Length) return false;
 			if (_originalInverseMasses[index] == 0f) return false; // originally pinned
 
-			_clothJobHandle.Complete();
+			EnsureJobCompleted();
 
 			_grabbedVertices.Add(index);
 			_inverseMasses[index] = 0f;
@@ -256,7 +270,7 @@ namespace CLOiSim.Cloth
 			if (!_isInitialized || index < 0 || index >= _positions.Length) return;
 			if (!_grabbedVertices.Contains(index)) return;
 
-			_clothJobHandle.Complete();
+			EnsureJobCompleted();
 
 			_positions[index] = position;
 			_predictedPositions[index] = position;
@@ -273,7 +287,7 @@ namespace CLOiSim.Cloth
 			if (!_isInitialized || index < 0 || index >= _positions.Length) return;
 			if (!_grabbedVertices.Remove(index)) return;
 
-			_clothJobHandle.Complete();
+			EnsureJobCompleted();
 
 			_inverseMasses[index] = _originalInverseMasses[index];
 			_isSleeping = false;
@@ -287,7 +301,7 @@ namespace CLOiSim.Cloth
 		{
 			if (!_isInitialized) return;
 
-			_clothJobHandle.Complete();
+			EnsureJobCompleted();
 
 			foreach (var index in _grabbedVertices)
 				_inverseMasses[index] = _originalInverseMasses[index];
