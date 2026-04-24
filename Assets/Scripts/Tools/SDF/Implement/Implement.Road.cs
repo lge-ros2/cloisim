@@ -22,7 +22,7 @@ namespace SDFormat
 					return null;
 				}
 
-				var roadName = roadElement.GetAttribute<string>("name", "road");
+				var roadName = roadElement.GetAttribute("name", "road");
 				var roadWidth = Extensions.GetElementValue(roadElement, "width", 1.0);
 
 				var newRoadObject = new UE.GameObject();

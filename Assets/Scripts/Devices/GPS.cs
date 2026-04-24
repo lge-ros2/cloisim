@@ -32,7 +32,7 @@ namespace SensorDevices
 				};
 			}
 		}
-		private messages.Gps _gps = null;
+		private messages.NavSatWithCovariance _navSat = null;
 
 		private Transform _gpsLink = null;
 		private SphericalCoordinates _sphericalCoordinates = null;
@@ -55,22 +55,22 @@ namespace SensorDevices
 
 			if (element.HorizontalPositionNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.position_sensing["horizontal"] = new SensorDevices.Noise(element.HorizontalPositionNoise);
+				_noises.position_sensing["horizontal"] = new Noise(element.HorizontalPositionNoise);
 			}
 
 			if (element.VerticalPositionNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.position_sensing["vertical"] = new SensorDevices.Noise(element.VerticalPositionNoise);
+				_noises.position_sensing["vertical"] = new Noise(element.VerticalPositionNoise);
 			}
 
 			if (element.HorizontalVelocityNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.velocity_sensing["horizontal"] = new SensorDevices.Noise(element.HorizontalVelocityNoise);
+				_noises.velocity_sensing["horizontal"] = new Noise(element.HorizontalVelocityNoise);
 			}
 
 			if (element.VerticalVelocityNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.velocity_sensing["vertical"] = new SensorDevices.Noise(element.VerticalVelocityNoise);
+				_noises.velocity_sensing["vertical"] = new Noise(element.VerticalVelocityNoise);
 			}
 		}
 
@@ -81,7 +81,7 @@ namespace SensorDevices
 			DeviceName = name;
 
 			_sphericalCoordinates = DeviceHelper.GetGlobalSphericalCoordinates();
-			_worldFrameOrientation = (Vector3.up * _sphericalCoordinates.HeadingAngle);
+			_worldFrameOrientation = Vector3.up * _sphericalCoordinates.HeadingAngle;
 			// Debug.Log("worldFrameOrientation=" + _worldFrameOrientation.ToString("F3"));
 		}
 
@@ -99,19 +99,18 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			_gps = new messages.Gps();
-			_gps.Time = new messages.Time();
-			_gps.Heading = new messages.Imu();
-			_gps.Heading.Stamp = new messages.Time();
-			_gps.Heading.Orientation = new messages.Quaternion();
-			_gps.Heading.AngularVelocity = new messages.Vector3d();
-			_gps.Heading.LinearAcceleration = new messages.Vector3d();
+			_navSat = new messages.NavSatWithCovariance
+			{
+				Header = new messages.Header
+				{
+					Stamp = new messages.Time()
+				}
+			};
 		}
 
 		protected override void SetupMessages()
 		{
-			_gps.LinkName = DeviceName;
-			_gps.Heading.EntityName = DeviceName + "_heading";
+			_navSat.FrameId = DeviceName;
 		}
 
 		void Update()
@@ -130,28 +129,28 @@ namespace SensorDevices
 		{
 			if (_noises.position_sensing["horizontal"] != null)
 			{
-				_noises.position_sensing["horizontal"].Apply<double>(ref coordinates.x);
+				_noises.position_sensing["horizontal"].Apply(ref coordinates.x);
 			}
 
 			if (_noises.position_sensing["vertical"] != null)
 			{
-				_noises.position_sensing["vertical"].Apply<double>(ref coordinates.y);
+				_noises.position_sensing["vertical"].Apply(ref coordinates.y);
 			}
 
 			if (_noises.velocity_sensing["horizontal"] != null)
 			{
-				_noises.velocity_sensing["horizontal"].Apply<double>(ref velocity.x);
+				_noises.velocity_sensing["horizontal"].Apply(ref velocity.x);
 			}
 
 			if (_noises.velocity_sensing["vertical"] != null)
 			{
-				_noises.velocity_sensing["vertical"].Apply<double>(ref velocity.y);
+				_noises.velocity_sensing["vertical"].Apply(ref velocity.y);
 			}
 		}
 
 		private void AssembleGPSMessage()
 		{
-			_gps.Time.SetCurrentTime();
+			_navSat.Header.Stamp.SetCurrentTime();
 
 			// Convert to global frames
 			var convertedPosition = Unity2SDF.Position(_worldPosition);
@@ -166,24 +165,19 @@ namespace SensorDevices
 			// Apply noise after converting to global frame
 			ApplyNoises(ref gpsCoordinates, ref gpsVelocity);
 
-			_gps.LatitudeDeg = gpsCoordinates.x;
-			_gps.LongitudeDeg = gpsCoordinates.y;
-			_gps.Altitude = gpsCoordinates.z;
+			_navSat.LatitudeDeg = gpsCoordinates.x;
+			_navSat.LongitudeDeg = gpsCoordinates.y;
+			_navSat.Altitude = gpsCoordinates.z;
 
-			_gps.VelocityEast = gpsVelocity.x;
-			_gps.VelocityNorth = -gpsVelocity.y;
-			_gps.VelocityUp = gpsVelocity.z;
+			_navSat.VelocityEast = gpsVelocity.x;
+			_navSat.VelocityNorth = -gpsVelocity.y;
+			_navSat.VelocityUp = gpsVelocity.z;
 		}
 
 		public void AssembleHeadingMessage()
 		{
-			_gps.Heading.Stamp.SetCurrentTime();
-			var sensorRotation = _sensorCurrentRotation - _sensorInitialRotation + _worldFrameOrientation;
-			var sensorOrientation = Quaternion.Euler(sensorRotation.x, sensorRotation.y, sensorRotation.z);
-
-			_gps.Heading.Orientation.Set(sensorOrientation);
-			_gps.Heading.AngularVelocity.Set(Vector3.zero);
-			_gps.Heading.LinearAcceleration.Set(Vector3.zero);
+			// Heading (IMU) data was removed from Gps message in proto3
+			// Heading is now handled separately if needed
 		}
 
 		protected override void GenerateMessage()
@@ -191,24 +185,24 @@ namespace SensorDevices
 			AssembleGPSMessage();
 			AssembleHeadingMessage();
 
-			PushDeviceMessage<messages.Gps>(_gps);
+			PushDeviceMessage(_navSat);
 		}
 
-		public double Longitude => _gps.LongitudeDeg;
+		public double Longitude => _navSat.LongitudeDeg;
 
-		public double Latitude => _gps.LatitudeDeg;
+		public double Latitude => _navSat.LatitudeDeg;
 
-		public double Altitude => _gps.Altitude;
+		public double Altitude => _navSat.Altitude;
 
-		public double VelocityEast => _gps.VelocityEast;
+		public double VelocityEast => _navSat.VelocityEast;
 
-		public double VelocityNorth => _gps.VelocityNorth;
+		public double VelocityNorth => _navSat.VelocityNorth;
 
-		public double VelocityUp => _gps.VelocityUp;
+		public double VelocityUp => _navSat.VelocityUp;
 
 		public Vector3 VelocityENU()
 		{
-			return new Vector3((float)_gps.VelocityEast, (float)_gps.VelocityNorth, (float)_gps.VelocityUp);
+			return new Vector3((float)_navSat.VelocityEast, (float)_navSat.VelocityNorth, (float)_navSat.VelocityUp);
 		}
 	}
 }

@@ -18,10 +18,10 @@ public class ParticleSystemPlugin : CLOiSimPlugin
 	{
 		_type = ICLOiSimPlugin.Type.NONE;
 		_modelName = "World";
-		_partsName = this.GetType().Name;
+		_partsName = GetType().Name;
 
-		_particleSystem = this.gameObject.GetComponent<ParticleSystem>();
-		_particleSystemRenderer = this.gameObject.GetComponent<ParticleSystemRenderer>();
+		_particleSystem = gameObject.GetComponent<ParticleSystem>();
+		_particleSystemRenderer = gameObject.GetComponent<ParticleSystemRenderer>();
 	}
 
 	protected override IEnumerator OnStart()
@@ -42,7 +42,7 @@ public class ParticleSystemPlugin : CLOiSimPlugin
 		var startSize = GetPluginParameters().GetValue<float>("main/start/size", 1);
 		var gravityModifier = GetPluginParameters().GetValue<float>("main/gravity_modifier", 0);
 		var simulationSpeed = GetPluginParameters().GetValue<float>("main/simulation_speed", 1);
-		var maxParticles = GetPluginParameters().GetValue<int>("main/max_particles", 1000);
+		var maxParticles = GetPluginParameters().GetValue("main/max_particles", 1000);
 
 		var particleMain = _particleSystem.main;
 		particleMain.startLifetimeMultiplier = startLifetime;
@@ -63,7 +63,7 @@ public class ParticleSystemPlugin : CLOiSimPlugin
 	{
 		var angle = GetPluginParameters().GetValue<float>("shape/angle");
 		var radius = GetPluginParameters().GetValue<float>("shape/radius");
-		var rotationStr = GetPluginParameters().GetValue<string>("shape/rotation", "");
+		var rotationStr = GetPluginParameters().GetValue("shape/rotation", "");
 		var rotParts = rotationStr.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
 
 		var particleShape = _particleSystem.shape;

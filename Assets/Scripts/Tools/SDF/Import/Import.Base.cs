@@ -13,10 +13,11 @@ namespace SDFormat
 	{
 		public partial class Base
 		{
-			private Dictionary<Joint, Object> _jointObjectList = new();
-			private Dictionary<Plugin, Object> _pluginObjectList = new();
+			private Dictionary<Joint, object> _jointObjectList = new();
+			private Dictionary<Plugin, object> _pluginObjectList = new();
+			private Dictionary<Gripper, object> _gripperObjectList = new();
 
-			private void ImportVisuals(IReadOnlyList<Visual> items, in Object parentObject)
+			private void ImportVisuals(IReadOnlyList<Visual> items, in object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -32,7 +33,7 @@ namespace SDFormat
 				}
 			}
 
-			private void ImportCollisions(IReadOnlyList<Collision> items, in Object parentObject)
+			private void ImportCollisions(IReadOnlyList<Collision> items, in object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -44,7 +45,7 @@ namespace SDFormat
 				}
 			}
 
-			private void ImportSensors(IReadOnlyList<Sensor> items, in Object parentObject)
+			private void ImportSensors(IReadOnlyList<Sensor> items, in object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -53,7 +54,7 @@ namespace SDFormat
 				}
 			}
 
-			protected void ImportLinks(IReadOnlyList<Link> items, in Object parentObject)
+			protected void ImportLinks(IReadOnlyList<Link> items, in object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -71,7 +72,7 @@ namespace SDFormat
 				}
 			}
 
-			protected void StorePlugins(IReadOnlyList<Plugin> items, Object parentObject)
+			protected void StorePlugins(IReadOnlyList<Plugin> items, object parentObject)
 			{
 				// Plugin should be handled after all links of model are loaded due to articulation body.
 				foreach (var item in items)
@@ -80,7 +81,16 @@ namespace SDFormat
 				}
 			}
 
-			protected void StoreJoints(IReadOnlyList<Joint> items, in Object parentObject)
+			protected void StoreGrippers(IReadOnlyList<Gripper> items, object parentObject)
+			{
+				// Grippers should be handled after all links of model are loaded.
+				foreach (var item in items)
+				{
+					_gripperObjectList.Add(item, parentObject);
+				}
+			}
+
+			protected void StoreJoints(IReadOnlyList<Joint> items, in object parentObject)
 			{
 				// Joints should be handled after all links of model are loaded due to articulation body.
 				foreach (var item in items)
@@ -89,7 +99,7 @@ namespace SDFormat
 				}
 			}
 
-			protected IEnumerator ImportModels(IReadOnlyList<Model> items, Object parentObject = null)
+			protected IEnumerator ImportModels(IReadOnlyList<Model> items, object parentObject = null)
 			{
 				foreach (var item in items)
 				{
@@ -106,7 +116,7 @@ namespace SDFormat
 				}
 			}
 
-			protected void ImportLights(IReadOnlyList<Light> items, in Object parentObject)
+			protected void ImportLights(IReadOnlyList<Light> items, in object parentObject)
 			{
 				foreach (var item in items)
 				{
@@ -118,6 +128,7 @@ namespace SDFormat
 			{
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
+				_gripperObjectList.Clear();
 
 				var worldObject = ImportWorld(world);
 
@@ -126,6 +137,11 @@ namespace SDFormat
 				foreach (var jointObject in _jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
+				}
+
+				foreach (var gripperObject in _gripperObjectList)
+				{
+					ImportGripper(gripperObject.Key, gripperObject.Value);
 				}
 
 				StorePlugins(world.Plugins, worldObject);
@@ -141,17 +157,23 @@ namespace SDFormat
 				}
 			}
 
-			public IEnumerator Start(Model model, Action<Object> onCreatedRoot = null)
+			public IEnumerator Start(Model model, Action<object> onCreatedRoot = null)
 			{
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
+				_gripperObjectList.Clear();
 
-				Object modelObject = null;
+				object modelObject = null;
 				yield return ImportModel(model, onCreatedRoot: obj => modelObject = obj);
 
 				foreach (var jointObject in _jointObjectList)
 				{
 					ImportJoint(jointObject.Key, jointObject.Value);
+				}
+
+				foreach (var gripperObject in _gripperObjectList)
+				{
+					ImportGripper(gripperObject.Key, gripperObject.Value);
 				}
 
 				modelObject?.SpecifyPose();

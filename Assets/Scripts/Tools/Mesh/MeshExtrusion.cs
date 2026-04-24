@@ -78,8 +78,8 @@ public class MeshExtrusion
 		// Build extruded triangles
 		for (int i = 0; i < extrusion.Length - 1; i++)
 		{
-			int baseVertexIndex = (edges.Length * 2) * i;
-			int nextVertexIndex = (edges.Length * 2) * (i + 1);
+			int baseVertexIndex = edges.Length * 2 * i;
+			int nextVertexIndex = edges.Length * 2 * (i + 1);
 			for (int e = 0; e < edges.Length; e++)
 			{
 				int triIndex = i * triIndicesPerStep + e * 6;

@@ -16,45 +16,27 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"name", IsRequired = true)]
-        public string Name { get; set; }
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"axis")]
-        [global::System.ComponentModel.DefaultValue(0)]
-        public int Axis
-        {
-            get => __pbn__Axis ?? 0;
-            set => __pbn__Axis = value;
-        }
-        public bool ShouldSerializeAxis() => __pbn__Axis != null;
-        public void ResetAxis() => __pbn__Axis = null;
-        private int? __pbn__Axis;
+        [global::ProtoBuf.ProtoMember(2, Name = @"name")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string Name { get; set; } = "";
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"force")]
-        public double Force
-        {
-            get => __pbn__Force.GetValueOrDefault();
-            set => __pbn__Force = value;
-        }
-        public bool ShouldSerializeForce() => __pbn__Force != null;
-        public void ResetForce() => __pbn__Force = null;
-        private double? __pbn__Force;
+        [global::ProtoBuf.ProtoMember(3, Name = @"axis")]
+        public int Axis { get; set; }
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"position")]
+        [global::ProtoBuf.ProtoMember(5, Name = @"position")]
         public Pid Position { get; set; }
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"velocity")]
+        [global::ProtoBuf.ProtoMember(6, Name = @"velocity")]
         public Pid Velocity { get; set; }
 
-        [global::ProtoBuf.ProtoMember(6, Name = @"reset")]
-        public bool Reset
-        {
-            get => __pbn__Reset.GetValueOrDefault();
-            set => __pbn__Reset = value;
-        }
-        public bool ShouldSerializeReset() => __pbn__Reset != null;
-        public void ResetReset() => __pbn__Reset = null;
-        private bool? __pbn__Reset;
+        [global::ProtoBuf.ProtoMember(7, Name = @"reset")]
+        public bool Reset { get; set; }
+
+        [global::ProtoBuf.ProtoMember(8, Name = @"force_optional")]
+        public Double ForceOptional { get; set; }
 
     }
 

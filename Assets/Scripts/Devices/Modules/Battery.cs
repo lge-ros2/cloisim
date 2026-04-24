@@ -28,19 +28,19 @@ namespace SensorDevices
 
 		public void SetMax(in float startVoltage = 0)
 		{
-			this.maxVoltage = startVoltage;
-			this.minVoltage = startVoltage * minThresholdRate;
-			this.currentVoltage = maxVoltage;
+			maxVoltage = startVoltage;
+			minVoltage = startVoltage * minThresholdRate;
+			currentVoltage = maxVoltage;
 		}
 
 		public void Discharge(in float value)
 		{
-			this.consumeVoltage = (value <= 0) ? value : -value;
+			consumeVoltage = (value <= 0) ? value : -value;
 		}
 
 		public void Charge(in float value)
 		{
-			this.consumeVoltage = (value <= 0) ? value : -value;
+			consumeVoltage = (value <= 0) ? value : -value;
 		}
 
 		private float elapsedTime = 0;

@@ -16,11 +16,12 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"class_id", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(1, Name = @"class_id")]
         public uint ClassId { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"class_name", IsRequired = true)]
-        public string ClassName { get; set; }
+        [global::ProtoBuf.ProtoMember(2, Name = @"class_name")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string ClassName { get; set; } = "";
 
     }
 

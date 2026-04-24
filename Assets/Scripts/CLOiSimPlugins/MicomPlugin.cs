@@ -21,7 +21,7 @@ public class MicomPlugin : CLOiSimPlugin
 	private SensorDevices.MicomSensor _micomSensor = null;
 	private MotorControl _motorControl = null;
 	private SDFormat.Helper.Link[] _linkHelperInChildren = null;
-	private List<string> _displaySourceUris = new List<string>();
+	private List<string> _displaySourceUris = new();
 
 	protected override void OnAwake()
 	{
@@ -75,9 +75,9 @@ public class MicomPlugin : CLOiSimPlugin
 	{
 		StartSummary.AppendLine($"[SetupMicom({name})]");
 
-		_micomSensor.EnableDebugging = GetPluginParameters().GetValue<bool>("debug", false);
+		_micomSensor.EnableDebugging = GetPluginParameters().GetValue("debug", false);
 
-		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20f);
+		var updateRate = GetPluginParameters().GetValue("update_rate", 20f);
 		if (updateRate.Equals(0))
 		{
 			StartSummary.AppendLine("Update rate for micom CANNOT be 0. Set to default value 20 Hz");
@@ -142,7 +142,7 @@ public class MicomPlugin : CLOiSimPlugin
 	private void SetDisplay()
 	{
 		const float meshScalingFactor = 1000f;
-		var targetVisual = GetPluginParameters().GetValue<string>("display/target/visual", string.Empty);
+		var targetVisual = GetPluginParameters().GetValue("display/target/visual", string.Empty);
 
 		if (string.IsNullOrEmpty(targetVisual))
 		{
@@ -150,13 +150,13 @@ public class MicomPlugin : CLOiSimPlugin
 			return;
 		}
 
-		if (GetPluginParameters().GetValues<string>("display/source/uri", out _displaySourceUris) == false)
+		if (GetPluginParameters().GetValues("display/source/uri", out _displaySourceUris) == false)
 		{
 			StartSummary.AppendLine("Failed to set display - Empty display source uri");
 			return;
 		}
 
-		var defaultSourceUri = GetPluginParameters().GetValue<string>("display/source/uri[@default='true']", _displaySourceUris[0]);
+		var defaultSourceUri = GetPluginParameters().GetValue("display/source/uri[@default='true']", _displaySourceUris[0]);
 
 		var visualHelpers = GetComponentsInChildren<SDFormat.Helper.Visual>();
 		foreach (var visualHelper in visualHelpers)
@@ -218,15 +218,15 @@ public class MicomPlugin : CLOiSimPlugin
 		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/smc") &&
 			GetPluginParameters().IsValidNode($"{parameterPrefix}/smc/mode"))
 		{
-			var outputMode = GetPluginParameters().GetValue<string> ($"{parameterPrefix}/smc/mode/output", "LQR");
-			var switchingMode = GetPluginParameters().GetValue<string> ($"{parameterPrefix}/smc/mode/switching", "SAT");
+			var outputMode = GetPluginParameters().GetValue($"{parameterPrefix}/smc/mode/output", "LQR");
+			var switchingMode = GetPluginParameters().GetValue($"{parameterPrefix}/smc/mode/switching", "SAT");
 			StartSummary.AppendLine($"outputMode: {outputMode}, switchingMode: {switchingMode}");
 
-			_motorControl = new SelfBalancedDrive(this.transform, outputMode, switchingMode);
+			_motorControl = new SelfBalancedDrive(transform, outputMode, switchingMode);
 		}
 		else
 		{
-			_motorControl = new SelfBalancedDrive(this.transform);
+			_motorControl = new SelfBalancedDrive(transform);
 		}
 
 		if (_micomSensor != null)
@@ -274,7 +274,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/body/rotation/hip_adjust"))
 		{
-			var adjust = GetPluginParameters().GetValue<double>($"{parameterPrefix}/body/rotation/hip_adjust", 1.88);
+			var adjust = GetPluginParameters().GetValue($"{parameterPrefix}/body/rotation/hip_adjust", 1.88);
 			(_motorControl as SelfBalancedDrive).AdjustBodyRotation = adjust;
 		}
 
@@ -306,7 +306,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 	private void SetDifferentialDrive(in string parameterPrefix)
 	{
-		_motorControl = new DifferentialDrive(this.transform);
+		_motorControl = new DifferentialDrive(transform);
 
 		if (_micomSensor != null)
 		{
@@ -331,16 +331,16 @@ public class MicomPlugin : CLOiSimPlugin
 		}
 
 		var wheelTread = GetPluginParameters().GetValue<float>($"{parameterPrefix}/tread"); // TODO: to be deprecated
-		var wheelSeparation = GetPluginParameters().GetValue<float>($"{parameterPrefix}/separation", wheelTread);
+		var wheelSeparation = GetPluginParameters().GetValue($"{parameterPrefix}/separation", wheelTread);
 
 		StartSummary.AppendLine($"wheel separation/radius: {wheelSeparation}/{wheelRadius}");
 		_motorControl.SetWheelInfo(wheelRadius, wheelSeparation);
 
-		var wheelLeftName = GetPluginParameters().GetValue<string>($"{parameterPrefix}/location[@type='left']", string.Empty);
-		var wheelRightName = GetPluginParameters().GetValue<string>($"{parameterPrefix}/location[@type='right']", string.Empty);
+		var wheelLeftName = GetPluginParameters().GetValue($"{parameterPrefix}/location[@type='left']", string.Empty);
+		var wheelRightName = GetPluginParameters().GetValue($"{parameterPrefix}/location[@type='right']", string.Empty);
 
-		var wheelRearNameLeft = GetPluginParameters().GetValue<string>($"{parameterPrefix}/location[@type='rear_left']", string.Empty);
-		var wheelRearNameRight = GetPluginParameters().GetValue<string>($"{parameterPrefix}/location[@type='rear_right']", string.Empty);
+		var wheelRearNameLeft = GetPluginParameters().GetValue($"{parameterPrefix}/location[@type='rear_left']", string.Empty);
+		var wheelRearNameRight = GetPluginParameters().GetValue($"{parameterPrefix}/location[@type='rear_right']", string.Empty);
 
 		if (!wheelRearNameLeft.Equals(string.Empty) && !wheelRearNameRight.Equals(string.Empty))
 		{
@@ -388,10 +388,10 @@ public class MicomPlugin : CLOiSimPlugin
 				outputMax = Math.Abs(limitOutput);
 			}
 
-			integralMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/min", integralMin);
-			integralMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/integral/max", integralMax);
-			outputMin = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/min", outputMin);
-			outputMax = GetPluginParameters().GetValue<float>($"{parameterPrefix}/limit/output/max", outputMax);
+			integralMin = GetPluginParameters().GetValue($"{parameterPrefix}/limit/integral/min", integralMin);
+			integralMax = GetPluginParameters().GetValue($"{parameterPrefix}/limit/integral/max", integralMax);
+			outputMin = GetPluginParameters().GetValue($"{parameterPrefix}/limit/output/min", outputMin);
+			outputMax = GetPluginParameters().GetValue($"{parameterPrefix}/limit/output/max", outputMax);
 		}
 
 		SetPID(P, I, D, integralMin, integralMax, outputMin, outputMax);
@@ -415,9 +415,9 @@ public class MicomPlugin : CLOiSimPlugin
 		{
 			var mowingBlade = targetBlade.gameObject.AddComponent<MowingBlade>();
 
-			mowingBlade.HeightMin = GetPluginParameters().GetValue<float>("mowing/blade/height/min", 0f);
-			mowingBlade.HeightMax = GetPluginParameters().GetValue<float>("mowing/blade/height/max", 0.1f);
-			mowingBlade.RevSpeedMax = GetPluginParameters().GetValue<UInt16>("mowing/blade/rev_speed/max", 1000);
+			mowingBlade.HeightMin = GetPluginParameters().GetValue("mowing/blade/height/min", 0f);
+			mowingBlade.HeightMax = GetPluginParameters().GetValue("mowing/blade/height/max", 0.1f);
+			mowingBlade.RevSpeedMax = GetPluginParameters().GetValue<ushort>("mowing/blade/rev_speed/max", 1000);
 			mowingBlade.Height = 0;
 
 			if (_micomCommand != null)
@@ -462,7 +462,7 @@ public class MicomPlugin : CLOiSimPlugin
 		{
 			foreach (var link in staticLinks)
 			{
-				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("ros2/static_transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
+				var parentFrameId = GetPluginParameters().GetAttributeInPath("ros2/static_transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
 
 				var (modelName, linkName) = SDF2Unity.GetModelLinkName(link);
 
@@ -490,7 +490,7 @@ public class MicomPlugin : CLOiSimPlugin
 		{
 			foreach (var link in links)
 			{
-				var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("ros2/transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
+				var parentFrameId = GetPluginParameters().GetAttributeInPath("ros2/transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
 				var (modelName, linkName) = SDF2Unity.GetModelLinkName(link);
 
 				foreach (var linkHelper in _linkHelperInChildren)

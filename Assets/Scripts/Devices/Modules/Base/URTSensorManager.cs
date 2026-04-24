@@ -308,7 +308,7 @@ public class URTSensorManager : MonoBehaviour
 		_rtInstances.Clear();
 
 		// Use FindObjectsByType for active scene renderers only (cheaper than Resources.FindObjectsOfTypeAll)
-		var renderers = UnityEngine.Object.FindObjectsByType<MeshRenderer>();
+		var renderers = FindObjectsByType<MeshRenderer>();
 
 		int addedCount = 0;
 		int skippedLayer = 0;

@@ -13,19 +13,19 @@ public partial class VHACD
 
 	public static MeshProcess.VHACD.Parameters Params = new MeshProcess.VHACD.Parameters()
 	{
-		m_resolution = 100000,
-		m_concavity = 0.01,
-		m_planeDownsampling = 6,
-		m_convexhullDownsampling = 6,
+		m_resolution = 50000,
+		m_concavity = 0.05,
+		m_planeDownsampling = 8,
+		m_convexhullDownsampling = 8,
 		m_alpha = 0.05,
 		m_beta = 0.05,
 		m_pca = 0,
 		m_mode = 0,
-		m_maxNumVerticesPerCH = 64,
+		m_maxNumVerticesPerCH = 32,
 		m_minVolumePerCH = 0.003,
 		m_convexhullApproximation = 1,
 		m_oclAcceleration = 1,
-		m_maxConvexHulls = 64,
+		m_maxConvexHulls = 32,
 		m_projectHullVertices = true
 	};
 

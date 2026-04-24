@@ -95,9 +95,9 @@ public class Actuator
 
 	private void RecalculateInitialPoseByRodDirection()
 	{
-		initialPose.x -= (initialPose.x * rodDirection.x);
-		initialPose.y -= (initialPose.y * rodDirection.y);
-		initialPose.z -= (initialPose.z * rodDirection.z);
+		initialPose.x -= initialPose.x * rodDirection.x;
+		initialPose.y -= initialPose.y * rodDirection.y;
+		initialPose.z -= initialPose.z * rodDirection.z;
 	}
 
 	public void SetMaxSpeed(in float value)
@@ -133,7 +133,7 @@ public class Actuator
 			return Vector3.zero;
 		}
 
-		return (worldPosition) ? targetTransform.position : targetTransform.localPosition;
+		return worldPosition ? targetTransform.position : targetTransform.localPosition;
 	}
 
 	//

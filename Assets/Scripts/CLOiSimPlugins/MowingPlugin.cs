@@ -62,7 +62,7 @@ public class MowingPlugin : CLOiSimPlugin
 			bounds.center = boundCenter;
 		}
 
-		public void SetMaterial(in SDFormat.Plugin plugin)
+		public void SetMaterial(in Plugin plugin)
 		{
 			var colorBaseStr = plugin.GetValue<string>("grass/color/base");
 			var colorTipStr = plugin.GetValue<string>("grass/color/tip");
@@ -83,7 +83,7 @@ public class MowingPlugin : CLOiSimPlugin
 			var visibilityThreshold = plugin.GetValue<float>("grass/visibility/threshold");
 			var visibilityFalloff = plugin.GetValue<float>("grass/visibility/falloff");
 
-			mapResolution = plugin.GetValue<float>("grass/map/resolution", 0.05f);
+			mapResolution = plugin.GetValue("grass/map/resolution", 0.05f);
 
 			if (material != null)
 			{
@@ -180,7 +180,7 @@ public class MowingPlugin : CLOiSimPlugin
 	{
 		_type = ICLOiSimPlugin.Type.NONE;
 		_modelName = "World";
-		_partsName = this.GetType().Name;
+		_partsName = GetType().Name;
 
 		var geomGrassShader = Shader.Find("Custom/GeometryGrass");
 		_grass = new Grass(geomGrassShader);
@@ -212,7 +212,7 @@ public class MowingPlugin : CLOiSimPlugin
 	{
 		if (_initialTexturePixels != null)
 		{
-			Debug.Log($"{this.GetType().Name}: Reset Grass Texture");
+			Debug.Log($"{GetType().Name}: Reset Grass Texture");
 			_grass.texture.Fill(ref _initialTexturePixels);
 			_grass.texture.Apply();
 		}
@@ -435,7 +435,7 @@ public class MowingPlugin : CLOiSimPlugin
 	{
 		for (var i = 0; i < colliders.Count; i++)
 		{
-			GameObject.Destroy(colliders[i]);
+			Destroy(colliders[i]);
 		}
 	}
 

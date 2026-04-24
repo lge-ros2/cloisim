@@ -16,8 +16,8 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"image_stamped", IsRequired = true)]
-        public ImageStamped ImageStamped { get; set; }
+        [global::ProtoBuf.ProtoMember(1, Name = @"image")]
+        public Image Image { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"class_map")]
         public global::System.Collections.Generic.List<VisionClass> ClassMaps { get; } = new global::System.Collections.Generic.List<VisionClass>();

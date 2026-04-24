@@ -163,7 +163,7 @@ public abstract class CameraControl : MonoBehaviour
 		if (Keyboard.current[Key.LeftShift].isPressed)
 		{
 			_totalRun += Time.deltaTime;
-			p *= (_totalRun * _shiftAdd);
+			p *= _totalRun * _shiftAdd;
 			p.x = Mathf.Clamp(p.x, -_maxShift, _maxShift);
 			p.y = Mathf.Clamp(p.y, -_maxShift, _maxShift);
 			p.z = Mathf.Clamp(p.z, -_maxShift, _maxShift);

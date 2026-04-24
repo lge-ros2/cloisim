@@ -15,7 +15,7 @@ public struct Vector2d
 
 	public Vector2d(in double x, in double y)
 	{
-		this.Size = 2;
+		Size = 2;
 		this.x = x;
 		this.y = y;
 	}
@@ -155,12 +155,12 @@ public struct Vector2d
 		{
 			return target;
 		}
-		return current + ((vector2 / single) * maxDistanceDelta);
+		return current + (vector2 / single * maxDistanceDelta);
 	}
 
 	public static Vector2d Reflect(in Vector2d inDirection, in Vector2d inNormal)
 	{
-		return (-2f * Dot(inNormal, inDirection)) * inNormal + inDirection;
+		return -2f * Dot(inNormal, inDirection) * inNormal + inDirection;
 	}
 
 	public static Vector2d Scale(in Vector2d a, in Vector2d b)
@@ -231,7 +231,7 @@ public struct Vector2d
 
 	public override string ToString()
 	{
-		return String.Format("({0}, {1})", x, y);
+		return string.Format("({0}, {1})", x, y);
 	}
 
 	public override bool Equals(object other)
@@ -241,12 +241,12 @@ public struct Vector2d
 
 	public string ToString(string format)
 	{
-		return String.Format("({0}, {1})", x.ToString(format), y.ToString(format));
+		return string.Format("({0}, {1})", x.ToString(format), y.ToString(format));
 	}
 
 	public override int GetHashCode()
 	{
-		return this.x.GetHashCode() ^ this.y.GetHashCode() << 2;
+		return x.GetHashCode() ^ y.GetHashCode() << 2;
 	}
 
 	public Vector2 ToVector2()

@@ -13,7 +13,7 @@ using SDFormat;
 
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
-	protected void PublishTfThread(System.Object threadObject)
+	protected void PublishTfThread(object threadObject)
 	{
 		var paramsObject = threadObject as CLOiSimPluginThread.ParamObject;
 		var publisher = GetTransport().Get<Publisher>(paramsObject.targetPort);
@@ -24,12 +24,22 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		}
 
 		var tfList = paramsObject.param as List<TF>;
-		var tfMessage = new messages.TransformStamped();
-		tfMessage.Header = new messages.Header();
-		tfMessage.Header.Stamp = new messages.Time();
-		tfMessage.Transform = new messages.Pose();
-		tfMessage.Transform.Position = new messages.Vector3d();
-		tfMessage.Transform.Orientation = new messages.Quaternion();
+		var tfMessage = new messages.Pose
+		{
+			Header = new messages.Header()
+			{
+				Stamp = new messages.Time()
+			},
+			Position = new messages.Vector3d(),
+			Orientation = new messages.Quaternion()
+		};
+
+		// Store parent frame ID in Header.Datas
+		var parentFrameMap = new messages.Header.Map
+		{
+			Key = "parent_frame_id"
+		};
+		tfMessage.Header.Datas.Add(parentFrameMap);
 
 		var deviceMessage = new DeviceMessage();
 		const int EmptyTfPublishPeriod = 2000;
@@ -44,32 +54,33 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			{
 				var tf = tfList[i];
 
-				tfMessage.Header.StrId = tf.ParentFrameID;
-				tfMessage.Transform.Name = tf.ChildFrameID;
+				parentFrameMap.Values.Clear();
+				parentFrameMap.Values.Add(tf.ParentFrameID);
+				tfMessage.Name = tf.ChildFrameID;
 
 				var tfPose = tf.GetPose();
 				tfMessage.Header.Stamp.SetCurrentTime();
-				tfMessage.Transform.Position.Set(tfPose.position);
-				tfMessage.Transform.Orientation.Set(tfPose.rotation);
+				tfMessage.Position.Set(tfPose.position);
+				tfMessage.Orientation.Set(tfPose.rotation);
 
-				deviceMessage.SetMessage<messages.TransformStamped>(tfMessage);
+				deviceMessage.SetMessage(tfMessage);
 				if (publisher.Publish(deviceMessage) == false)
 				{
-					Debug.Log(tfMessage.Header.StrId + ", " + tfMessage.Transform.Name + " error to send TF!!");
+					Debug.Log(tf.ParentFrameID + ", " + tfMessage.Name + " error to send TF!!");
 				}
 				else
 				{
-					// Debug.Log(tfMessage.Header.Stamp.Sec + "." + tfMessage.Header.Stamp.Nsec + ": " + tfMessage.Header.StrId + ", " + tfMessage.Transform.Name);
+					// Debug.Log(tfMessage.Header.Stamp.Sec + "." + tfMessage.Header.Stamp.Nsec + ": " + tf.ParentFrameID + ", " + tfMessage.Name);
 				}
 				CLOiSimPluginThread.Sleep(updatePeriodPerEachTf);
 			}
 
 			if (tfList.Count == 0)
 			{
-				deviceMessage.SetMessage<messages.TransformStamped>(tfMessage);
+				deviceMessage.SetMessage(tfMessage);
 				if (publisher.Publish(deviceMessage) == false)
 				{
-					Debug.Log(tfMessage.Header.StrId + ", " + tfMessage.Transform.Name + " error to send TF!!");
+					Debug.Log(tfMessage.Name + " error to send TF!!");
 				}
 				CLOiSimPluginThread.Sleep(EmptyTfPublishPeriod);
 			}
@@ -84,7 +95,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			return;
 		}
 
-		msCameraInfo.SetMessage<messages.CameraSensor>(sensorInfo);
+		msCameraInfo.SetMessage(sensorInfo);
 	}
 
 	protected static void SetTransformInfoResponse(ref DeviceMessage msTransformInfo, in string deviceName, in Pose devicePose)
@@ -99,27 +110,27 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			return;
 		}
 
-		var objectPose = new messages.Pose();
-		objectPose.Name = deviceName;
-		objectPose.Position = new messages.Vector3d();
-		objectPose.Orientation = new messages.Quaternion();
+		var objectPose = new messages.Pose
+		{
+			Name = deviceName,
+			Position = new messages.Vector3d(),
+			Orientation = new messages.Quaternion()
+		};
 
 		objectPose.Position.Set(devicePose.position);
 		objectPose.Orientation.Set(devicePose.rotation);
 
-		var objectTransformInfo = new messages.Param();
-		objectTransformInfo.Name = "transform";
-		objectTransformInfo.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = objectPose };
+		var transformParam = new messages.Param();
+		transformParam.Params["transform"] = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = objectPose };
 
 		if (!string.IsNullOrEmpty(parentLinkName))
 		{
-			var parentLinkParam = new messages.Param();
-			parentLinkParam.Name = "parent_frame_id";
-			parentLinkParam.Value = new Any { Type = Any.ValueType.String, StringValue = parentLinkName };
-			objectTransformInfo.Childrens.Add(parentLinkParam);
+			var parentParam = new messages.Param();
+			parentParam.Params["parent_frame_id"] = new Any { Type = Any.ValueType.String, StringValue = parentLinkName };
+			transformParam.Childrens.Add(parentParam);
 		}
 
-		msTransformInfo.SetMessage<messages.Param>(objectTransformInfo);
+		msTransformInfo.SetMessage(transformParam);
 	}
 
 	protected static void SetROS2CommonInfoResponse(ref DeviceMessage msRos2Info, in string topicName, in List<string> frameIdList)
@@ -129,24 +140,21 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			return;
 		}
 
-		var ros2CommonInfo = new messages.Param();
-		ros2CommonInfo.Name = "ros2";
-		ros2CommonInfo.Value = new Any { Type = Any.ValueType.None };
+		var ros2Param = new messages.Param();
+		ros2Param.Params["ros2"] = new Any { Type = Any.ValueType.None };
 
-		var ros2TopicName = new messages.Param();
-		ros2TopicName.Name = "topic_name";
-		ros2TopicName.Value = new Any { Type = Any.ValueType.String, StringValue = topicName };
-		ros2CommonInfo.Childrens.Add(ros2TopicName);
+		var topicParam = new messages.Param();
+		topicParam.Params["topic_name"] = new Any { Type = Any.ValueType.String, StringValue = topicName };
+		ros2Param.Childrens.Add(topicParam);
 
 		foreach (var frameId in frameIdList)
 		{
-			var ros2FrameId = new messages.Param();
-			ros2FrameId.Name = "frame_id";
-			ros2FrameId.Value = new Any { Type = Any.ValueType.String, StringValue = frameId };
-			ros2CommonInfo.Childrens.Add(ros2FrameId);
+			var frameParam = new messages.Param();
+			frameParam.Params["frame_id"] = new Any { Type = Any.ValueType.String, StringValue = frameId };
+			ros2Param.Childrens.Add(frameParam);
 		}
 
-		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
+		msRos2Info.SetMessage(ros2Param);
 	}
 
 	protected static void SetEmptyResponse(ref DeviceMessage msRos2Info)
@@ -154,9 +162,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		if (msRos2Info != null)
 		{
 			var emptyMessage = new messages.Param();
-			emptyMessage.Name = "reset_odometry";
-			emptyMessage.Value = new Any { Type = Any.ValueType.Boolean, BoolValue = true };
-			msRos2Info.SetMessage<messages.Param>(emptyMessage);
+			emptyMessage.Params["reset_odometry"] = new Any { Type = Any.ValueType.Boolean, BoolValue = true };
+			msRos2Info.SetMessage(emptyMessage);
 		}
 	}
 
@@ -193,7 +200,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			var topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name[@add_parts_name_prefix='true']");
 			if (string.IsNullOrEmpty(topic_name))
 			{
-				topic_name = GetPluginParameters().GetValue<string>("ros2/topic_name", _partsName);
+				topic_name = GetPluginParameters().GetValue("ros2/topic_name", _partsName);
 				topic_name = topic_name.Replace("{parts_name}", _partsName);
 			}
 			else
@@ -219,39 +226,38 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			return;
 		}
 
-		var ros2CommonInfo = new messages.Param();
-		ros2CommonInfo.Name = "static_transforms";
-		ros2CommonInfo.Value = new Any { Type = Any.ValueType.None };
+		var ros2Param = new messages.Param();
+		ros2Param.Params["static_transforms"] = new Any { Type = Any.ValueType.None };
 
 		foreach (var tf in _staticTfList)
 		{
-			var ros2StaticTransformLink = new messages.Param();
-			ros2StaticTransformLink.Name = "parent_frame_id";
-			ros2StaticTransformLink.Value = new Any { Type = Any.ValueType.String, StringValue = tf.ParentFrameID };
+			var staticTfLink = new messages.Param();
+			staticTfLink.Params["parent_frame_id"] = new Any { Type = Any.ValueType.String, StringValue = tf.ParentFrameID };
 
 			{
 				var tfPose = tf.GetPose();
 
-				var poseMessage = new messages.Pose();
-				poseMessage.Name = tf.ChildFrameID;
-				poseMessage.Position = new messages.Vector3d();
-				poseMessage.Orientation = new messages.Quaternion();
+				var poseMessage = new messages.Pose
+				{
+					Name = tf.ChildFrameID,
+					Position = new messages.Vector3d(),
+					Orientation = new messages.Quaternion()
+				};
 
 				poseMessage.Position.Set(tfPose.position);
 				poseMessage.Orientation.Set(tfPose.rotation);
 
-				var ros2StaticTransformElement = new messages.Param();
-				ros2StaticTransformElement.Name = "pose";
-				ros2StaticTransformElement.Value = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = poseMessage };
+				var poseParam = new messages.Param();
+				poseParam.Params["pose"] = new Any { Type = Any.ValueType.Pose3d, Pose3dValue = poseMessage };
 
-				ros2StaticTransformLink.Childrens.Add(ros2StaticTransformElement);
+				staticTfLink.Childrens.Add(poseParam);
 				// Debug.Log(poseMessage.Name + ", " + poseMessage.Position + ", " + poseMessage.Orientation);
 			}
 
-			ros2CommonInfo.Childrens.Add(ros2StaticTransformLink);
+			ros2Param.Childrens.Add(staticTfLink);
 		}
 
-		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
+		msRos2Info.SetMessage(ros2Param);
 	}
 
 	protected virtual void HandleCustomRequestMessage(in string requestType, in List<messages.Param> requestChildren, ref DeviceMessage response) { }

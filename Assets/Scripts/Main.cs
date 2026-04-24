@@ -145,7 +145,7 @@ public class Main : MonoBehaviour
 				continue;
 			}
 
-			GameObject.Destroy(child.gameObject);
+			Destroy(child.gameObject);
 		}
 	}
 
@@ -159,7 +159,7 @@ public class Main : MonoBehaviour
 				continue;
 			}
 
-			GameObject.Destroy(child.gameObject);
+			Destroy(child.gameObject);
 		}
 	}
 
@@ -471,7 +471,7 @@ public class Main : MonoBehaviour
 
 			Physics.simulationMode = SimulationMode.Script;
 			GameObject targetObject = null;
-			yield return _sdfLoader.Start(model, onCreatedRoot: obj => targetObject = (obj as GameObject));
+			yield return _sdfLoader.Start(model, onCreatedRoot: obj => targetObject = obj as GameObject);
 
 			yield return new WaitUntil(() => targetObject != null);
 
@@ -581,7 +581,7 @@ public class Main : MonoBehaviour
 		if (!string.IsNullOrEmpty(_trackVisualModelName))
 		{
 			_followingList.StartFollowing(_trackVisualModelName);
-			var followingCamera = Main.UIObject.GetComponentInChildren<FollowingCamera>();
+			var followingCamera = UIObject.GetComponentInChildren<FollowingCamera>();
 
 			if (followingCamera != null)
 			{
@@ -614,14 +614,14 @@ public class Main : MonoBehaviour
 
 		recorder.SetOutput(baseName: _screenCaptureFilename);
 		var recordStarted = recorder.StartCapture();
-		Main.UIController?.OnRecordClicked(recordStarted);
+		UIController?.OnRecordClicked(recordStarted);
 	}
 
 	public void StopRecord()
 	{
-		var recorder = UnityEngine.Camera.main.GetComponent<UltraFastWebMRecorder>();
+		var recorder = Camera.main.GetComponent<UltraFastWebMRecorder>();
 		recorder.StopCapture();
-		Main.UIController?.OnRecordClicked(false);
+		UIController?.OnRecordClicked(false);
 	}
 
 	public void SaveWorld()
@@ -636,7 +636,7 @@ public class Main : MonoBehaviour
 
 	public static void SetCameraPerspective(in bool isPerspectiveViewControl = true)
 	{
-		GameObject.Destroy(Camera.main.GetComponent<CameraControl>());
+		Destroy(Camera.main.GetComponent<CameraControl>());
 
 		Camera.main.orthographic = false;
 
@@ -652,7 +652,7 @@ public class Main : MonoBehaviour
 
 	public static void SetCameraOrthographic(in bool isOrthographicViewControl = true)
 	{
-		GameObject.Destroy(Camera.main.GetComponent<CameraControl>());
+		Destroy(Camera.main.GetComponent<CameraControl>());
 
 		Camera.main.orthographic = true;
 		Camera.main.orthographicSize = DefaultOrthographicSize;
@@ -915,9 +915,9 @@ public class Main : MonoBehaviour
 	{
 		SensorDevices.DepthCamera.UnloadComputeShader();
 
-		if (Main.BridgeManager != null)
+		if (BridgeManager != null)
 		{
-			Main.BridgeManager.Dispose();
+			BridgeManager.Dispose();
 		}
 
 		if (_simulationService != null)
@@ -925,9 +925,9 @@ public class Main : MonoBehaviour
 			_simulationService.Dispose();
 		}
 
-		if (Assimp.Unmanaged.AssimpLibrary.Instance.IsLibraryLoaded)
+		if (AssimpLibrary.Instance.IsLibraryLoaded)
 		{
-			Assimp.Unmanaged.AssimpLibrary.Instance.FreeLibrary();
+			AssimpLibrary.Instance.FreeLibrary();
 		}
 	}
 }

@@ -85,9 +85,9 @@ namespace SelfBalanceControl
 
 		public SlidingModeControl(in NominalModel model, OutputMode outMode, SwitchingMode switchMode)
 		{
-			this._outputMode = outMode;
-			this._switchingMode = switchMode;
-			this._nominalModel = model;
+			_outputMode = outMode;
+			_switchingMode = switchMode;
+			_nominalModel = model;
 
 			SetDefault();
 		}
@@ -104,16 +104,16 @@ namespace SelfBalanceControl
 
 		public static OutputMode ParseOutputMode(in string mode)
 		{
-			return (Enum.IsDefined(typeof(OutputMode), mode.ToUpper()))?
+			return Enum.IsDefined(typeof(OutputMode), mode.ToUpper())?
 				OutputMode.LQR :
-				(OutputMode)Enum.Parse(typeof(SlidingModeControl.OutputMode), mode.ToUpper());
+				(OutputMode)Enum.Parse(typeof(OutputMode), mode.ToUpper());
 		}
 
 		public static SwitchingMode ParseSwitchingMode(in string mode)
 		{
-			return (Enum.IsDefined(typeof(SwitchingMode), mode.ToUpper()))?
+			return Enum.IsDefined(typeof(SwitchingMode), mode.ToUpper())?
 				SwitchingMode.SAT :
-				(SwitchingMode)Enum.Parse(typeof(SlidingModeControl.SwitchingMode), mode.ToUpper());
+				(SwitchingMode)Enum.Parse(typeof(SwitchingMode), mode.ToUpper());
 		}
 
 		public void SetNominalModel(in string matrixA, in string matrixB, in string matrixK, in string matrixS)
@@ -127,7 +127,7 @@ namespace SelfBalanceControl
 			// UnityEngine.Debug.Log(K.ToString("F15"));
 			// UnityEngine.Debug.Log(S.ToString("F15"));
 
-			this._nominalModel = new SlidingModeControl.NominalModel()
+			_nominalModel = new NominalModel()
 			{
 				A = A,
 				B = B,
@@ -165,7 +165,7 @@ namespace SelfBalanceControl
 			_f = _nominalModel.B * (((linearVelocity >= 0) ? -_ff : _ff) * Vector2d.one);
 
 			_uLQ = -_nominalModel.K * delta;
-			_uEQ = _uLQ - (_nominalModel.SxB).Inverse * _nominalModel.S * _f;
+			_uEQ = _uLQ - _nominalModel.SxB.Inverse * _nominalModel.S * _f;
 
 			// UnityEngine.Debug.Log($"states: {states.ToString("F4")} | references: {references.ToString("F4")} | Delta: {delta.ToString("F4")} | K: {_nominalModel.K.ToString("F4")} | uLQ({_uLQ.ToString("F4")})");
 			// UnityEngine.Debug.Log($"Delta: {delta.ToString("F4")}");
@@ -192,10 +192,10 @@ namespace SelfBalanceControl
 			switch (_switchingMode)
 			{
 				case SwitchingMode.SAT:
-					_uSW = (_nominalModel.SxB).Inverse * _kSW * SAT(sigma, _sigmaB);
+					_uSW = _nominalModel.SxB.Inverse * _kSW * SAT(sigma, _sigmaB);
 					break;
 				case SwitchingMode.SIGN:
-					_uSW = (_nominalModel.SxB).Inverse * _kSW * Sign(sigma);
+					_uSW = _nominalModel.SxB.Inverse * _kSW * Sign(sigma);
 					break;
 				default:
 					throw new InvalidOperationException("Unknown switching mode.");

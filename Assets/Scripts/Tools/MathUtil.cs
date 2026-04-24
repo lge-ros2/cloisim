@@ -21,14 +21,14 @@ public static class MathUtil
 		{
 			this.min = min;
 			this.max = max;
-			this.range = max - min;
+			range = max - min;
 		}
 
 		public MinMax(in double min = 0, in double max = 0)
 		{
 			this.min = (float)min;
 			this.max = (float)max;
-			this.range = (float)(max - min);
+			range = (float)(max - min);
 		}
 
 		public override string ToString()
@@ -39,15 +39,18 @@ public static class MathUtil
 
 	public static class Angle
 	{
-		// in Radian
+		// in Radian, normalize to [-π, π]
 		public static double Normalize(in double angle)
 		{
-			var normalizedAngle = angle % (2 * PI); // Normalize angle to [0, 2π]
-			if (normalizedAngle > PI)
+			var normalizedAngle = angle % (2 * PI);
+			if (normalizedAngle < -PI)
 			{
-				normalizedAngle -= PI2; // Shift to [-π, π]
+				normalizedAngle += PI2; // Shift from [-2π, -π) to [-π, 0)
 			}
-			// UnityEngine.Debug.Log("normalize :" +  angle.ToString("F5") + " -> " + normalizedAngle.ToString("F5"));
+			else if (normalizedAngle > PI)
+			{
+				normalizedAngle -= PI2; // Shift from (π, 2π] to [-π, π]
+			}
 			return normalizedAngle;
 		}
 	}

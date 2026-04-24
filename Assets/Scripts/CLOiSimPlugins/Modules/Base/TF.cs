@@ -20,9 +20,9 @@ public class TF
 
 	public TF(in SDFormat.Helper.Link link, in string childFrameId, in string parentFrameId)
 	{
-		this._parentFrameId = parentFrameId.Replace("::", "_");
-		this._childFrameId = childFrameId.Replace("::", "_");
-		this._link = link;
+		_parentFrameId = parentFrameId.Replace("::", "_");
+		_childFrameId = childFrameId.Replace("::", "_");
+		_link = link;
 		// Debug.LogFormat("{0} <- {1}", parentFrameId, childFrameId);
 	}
 

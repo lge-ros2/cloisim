@@ -16,7 +16,7 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"time", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(1, Name = @"time")]
         public Time Time { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"odom")]
@@ -47,7 +47,7 @@ namespace cloisim.msgs
             global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
                 => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-            [global::ProtoBuf.ProtoMember(1, Name = @"angular_velocity", IsRequired = true)]
+            [global::ProtoBuf.ProtoMember(1, Name = @"angular_velocity")]
             public Wheel AngularVelocity { get; set; }
 
             [global::ProtoBuf.ProtoMember(2, Name = @"linear_velocity")]
@@ -66,10 +66,10 @@ namespace cloisim.msgs
                 global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
                     => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-                [global::ProtoBuf.ProtoMember(1, Name = @"left", IsRequired = true)]
+                [global::ProtoBuf.ProtoMember(1, Name = @"left")]
                 public double Left { get; set; }
 
-                [global::ProtoBuf.ProtoMember(2, Name = @"right", IsRequired = true)]
+                [global::ProtoBuf.ProtoMember(2, Name = @"right")]
                 public double Right { get; set; }
 
             }
@@ -83,7 +83,7 @@ namespace cloisim.msgs
             global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
                 => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-            [global::ProtoBuf.ProtoMember(1, Name = @"distance", IsRequired = true)]
+            [global::ProtoBuf.ProtoMember(1, Name = @"distance")]
             public double Distance { get; set; }
 
             [global::ProtoBuf.ProtoMember(2, Name = @"state")]
@@ -98,7 +98,7 @@ namespace cloisim.msgs
             global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
                 => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-            [global::ProtoBuf.ProtoMember(1, Name = @"distance", IsRequired = true)]
+            [global::ProtoBuf.ProtoMember(1, Name = @"distance")]
             public double Distance { get; set; }
 
             [global::ProtoBuf.ProtoMember(2, Name = @"state")]
@@ -113,7 +113,7 @@ namespace cloisim.msgs
             global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
                 => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-            [global::ProtoBuf.ProtoMember(1, Name = @"detected", IsRequired = true)]
+            [global::ProtoBuf.ProtoMember(1, Name = @"detected")]
             public bool Detected { get; set; }
 
         }
@@ -125,7 +125,7 @@ namespace cloisim.msgs
             global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
                 => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-            [global::ProtoBuf.ProtoMember(1, Name = @"bumped", IsRequired = true)]
+            [global::ProtoBuf.ProtoMember(1, Name = @"bumped")]
             public bool Bumped { get; set; }
 
             [global::ProtoBuf.ProtoMember(2, Name = @"contacts")]

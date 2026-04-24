@@ -157,28 +157,24 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		}
 
 		var modulesInfo = new messages.Param();
-		modulesInfo.Name = "activated_modules";
-		modulesInfo.Value = new Any { Type = Any.ValueType.None };
+		modulesInfo.Params["activated_modules"] = new Any { Type = Any.ValueType.None };
 
 		foreach (var module in _activatedModules)
 		{
 			var moduleInfo = new messages.Param();
-			moduleInfo.Name = "module";
-			moduleInfo.Value = new Any { Type = Any.ValueType.None };
+			moduleInfo.Params["module"] = new Any { Type = Any.ValueType.None };
 
 			var moduleType = new messages.Param();
-			moduleType.Name = "type";
-			moduleType.Value = new Any { Type = Any.ValueType.String, StringValue = module.Item1 };
+			moduleType.Params["type"] = new Any { Type = Any.ValueType.String, StringValue = module.Item1 };
 			moduleInfo.Childrens.Add(moduleType);
 
-			var moduleValue = new messages.Param();
-			moduleValue.Name = "name";
-			moduleValue.Value = new Any { Type = Any.ValueType.String, StringValue = module.Item2 };
-			moduleInfo.Childrens.Add(moduleValue);
+			var moduleName = new messages.Param();
+			moduleName.Params["name"] = new Any { Type = Any.ValueType.String, StringValue = module.Item2 };
+			moduleInfo.Childrens.Add(moduleName);
 
 			modulesInfo.Childrens.Add(moduleInfo);
 		}
 
-		msModuleInfo.SetMessage<messages.Param>(modulesInfo);
+		msModuleInfo.SetMessage(modulesInfo);
 	}
 }

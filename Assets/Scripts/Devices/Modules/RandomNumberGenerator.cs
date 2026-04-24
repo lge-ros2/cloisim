@@ -41,7 +41,7 @@ public class RandomNumberGenerator
 
 	public static void SetSeedFromSystemTime()
 	{
-		System.DateTime dt = System.DateTime.Now;
+		DateTime dt = DateTime.Now;
 		long x = dt.ToFileTime();
 		SetSeed((uint)(x >> 16), (uint)(x % 4294967296));
 	}

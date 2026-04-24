@@ -21,21 +21,21 @@ namespace SensorDevices
 			{
 				this.samples = samples;
 				this.resolution = resolution;
-				this.angle = new MathUtil.MinMax(angleMinRad * Mathf.Rad2Deg, angleMaxRad * Mathf.Rad2Deg);
+				angle = new MathUtil.MinMax(angleMinRad * Mathf.Rad2Deg, angleMaxRad * Mathf.Rad2Deg);
 
-				if (Math.Abs(this.angle.range) < Quaternion.kEpsilon)
+				if (Math.Abs(angle.range) < Quaternion.kEpsilon)
 				{
-					this.angleStep = 1;
+					angleStep = 1;
 				}
 				else
 				{
 					var rangeCount = resolution * samples;
-					this.angleStep = (rangeCount <= 0) ? 0 : (this.angle.range / rangeCount);
+					angleStep = (rangeCount <= 0) ? 0 : (angle.range / rangeCount);
 
-					var residual = (Math.Abs(360d - this.angle.range) < this.angleStep) ? 0 : 1;
+					var residual = (Math.Abs(360d - angle.range) < angleStep) ? 0 : 1;
 					if (residual > 0 && rangeCount > 0)
 					{
-						this.angleStep = this.angle.range / (rangeCount + 1);
+						angleStep = angle.range / (rangeCount + 1);
 					}
 				}
 			}
@@ -43,9 +43,9 @@ namespace SensorDevices
 			public Scan(in uint samples)
 			{
 				this.samples = samples;
-				this.resolution = 1;
-				this.angle = new MathUtil.MinMax();
-				this.angleStep = 1;
+				resolution = 1;
+				angle = new MathUtil.MinMax();
+				angleStep = 1;
 			}
 		}
 
@@ -57,9 +57,9 @@ namespace SensorDevices
 
 			public Resolution(in float rangeResolution)
 			{
-				this.angleH = 0;
-				this.angleV = 0;
-				this.linear = rangeResolution;
+				angleH = 0;
+				angleV = 0;
+				linear = rangeResolution;
 			}
 		}
 

@@ -19,18 +19,18 @@ public abstract class NoiseModel
 
 	protected NoiseModel(in SDFormat.Noise parameter)
 	{
-		this._parameter = parameter;
+		_parameter = parameter;
 
 		if (double.IsNaN(_parameter.Precision))
 		{
 			if (_parameter.Precision < 0)
 			{
-				System.Console.WriteLine("Noise precision cannot be less than 0");
+				Console.WriteLine("Noise precision cannot be less than 0");
 			}
 			else if (Math.Abs(_parameter.Precision - 0d) > Epsilon)
 			{
-				this._quantized = true;
-				System.Console.WriteLine($"Noise Quantized, precision={_parameter.Precision}");
+				_quantized = true;
+				Console.WriteLine($"Noise Quantized, precision={_parameter.Precision}");
 			}
 		}
 		SampleBias();
@@ -43,35 +43,35 @@ public abstract class NoiseModel
 
 	public void SetClampMin(in double val)
 	{
-		this.clampMin = val;
+		clampMin = val;
 	}
 
 	public void SetClampMax(in double val)
 	{
-		this.clampMax = val;
+		clampMax = val;
 	}
 
 	private void SampleBias()
 	{
-		this.bias = RandomNumberGenerator.GetNormal(_parameter.BiasMean, _parameter.BiasStdDev);
+		bias = RandomNumberGenerator.GetNormal(_parameter.BiasMean, _parameter.BiasStdDev);
 		// With equal probability, we pick a negative bias
 		// (by convention, rateBiasMean should be positive, though it would work fine if negative).
 
 		if (RandomNumberGenerator.GetUniform() < 0.5d)
 		{
-			this.bias = -this.bias;
+			bias = -bias;
 		}
 	}
 
 	protected double Expm1(in double value)
 	{
-		return System.Math.Exp(value) - 1;
+		return Math.Exp(value) - 1;
 	}
 
 	protected double Clamp(in double value)
 	{
 		return (clampMax != double.PositiveInfinity && value > clampMax) ?
-			this.clampMax : ((clampMin != double.NegativeInfinity && value < clampMin) ? clampMin : value);
+			clampMax : ((clampMin != double.NegativeInfinity && value < clampMin) ? clampMin : value);
 	}
 
 	public abstract T Generate<T>(T data, float deltaTime);

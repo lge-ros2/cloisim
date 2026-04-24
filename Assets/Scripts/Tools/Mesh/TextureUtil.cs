@@ -99,10 +99,10 @@ public static class TextureUtil
 	{
 		var rSquared = radius * radius;
 
-		var minX = System.Math.Clamp(x - radius, 0, texture.width);
-		var minY = System.Math.Clamp(y - radius, 0, texture.height);
-		var maxX = System.Math.Clamp(x + radius + 1, 0, texture.width);
-		var maxY = System.Math.Clamp(y + radius + 1, 0, texture.height);
+		var minX = Math.Clamp(x - radius, 0, texture.width);
+		var minY = Math.Clamp(y - radius, 0, texture.height);
+		var maxX = Math.Clamp(x + radius + 1, 0, texture.width);
+		var maxY = Math.Clamp(y + radius + 1, 0, texture.height);
 
 		for (var u = minX; u < maxX; u++)
 		{
@@ -148,10 +148,10 @@ public static class TextureUtil
 		var maxX = Mathf.CeilToInt(Mathf.Max(v1.x, v2.x, v3.x));
 		var maxY = Mathf.CeilToInt(Mathf.Max(v1.y, v2.y, v3.y));
 
-		minX = System.Math.Clamp(minX, 0, texture.width);
-		minY = System.Math.Clamp(minY, 0, texture.height);
-		maxX = System.Math.Clamp(maxX, 0, texture.width);
-		maxY = System.Math.Clamp(maxY, 0, texture.height);
+		minX = Math.Clamp(minX, 0, texture.width);
+		minY = Math.Clamp(minY, 0, texture.height);
+		maxX = Math.Clamp(maxX, 0, texture.width);
+		maxY = Math.Clamp(maxY, 0, texture.height);
 
 		// Iterate over the pixels within the bounding box and set the color of the pixels inside the triangle:
 		for (var x = minX; x < maxX; x++)
@@ -218,7 +218,7 @@ public static class TextureUtil
 		{
 			Directory.CreateDirectory(path);
 		}
-		System.IO.File.WriteAllBytes(fileName, bytes);
+		File.WriteAllBytes(fileName, bytes);
 
 		UnityEngine.Object.DestroyImmediate(rt);
 	}

@@ -21,7 +21,7 @@ namespace SDFormat
 	public class RootLoader
 	{
 		private readonly string[] SdfVersions = {
-					"1.9", "1.8", "1.7", "1.6", "1.5", "1.4",
+					"1.12", "1.11", "1.10", "1.9", "1.8", "1.7", "1.6", "1.5", "1.4",
 					"1.3", "1.2", "1.1", "1.0", string.Empty };
 		private static readonly string ProtocolModel = "model://";
 		private static readonly string ProtocolFile = "file://";
@@ -45,7 +45,7 @@ namespace SDFormat
 
 		public ResourceModelTable ResourceModelTable { get => _resourceModelTable; }
 
-		public bool DoParse(out SDFormat.World world, out string worldFilePath, in string worldFileName)
+		public bool DoParse(out World world, out string worldFilePath, in string worldFileName)
 		{
 			world = null;
 			worldFilePath = string.Empty;
@@ -66,6 +66,9 @@ namespace SDFormat
 						_originalDoc = (XmlDocument)_doc.CloneNode(true);
 						_worldFileName = worldFileName;
 
+						_sdfVersion = _doc.SelectSingleNode("/sdf")
+							?.Attributes?["version"]?.Value ?? _sdfVersion;
+
 						ReplaceAllIncludedModel();
 
 						ConvertPathToAbsolutePaths();
@@ -79,7 +82,7 @@ namespace SDFormat
 						}
 
 						var worldElement = sdfElement.FindElement("world");
-						world = new SDFormat.World();
+						world = new World();
 						var errors = world.Load(worldElement);
 						foreach (var error in errors)
 						{
@@ -104,7 +107,7 @@ namespace SDFormat
 			return false;
 		}
 
-		public bool DoParse(out SDFormat.Model model, in string modelFullPath, in string modelFileName)
+		public bool DoParse(out Model model, in string modelFullPath, in string modelFileName)
 		{
 			model = null;
 
@@ -132,7 +135,7 @@ namespace SDFormat
 				}
 
 				var modelElement = sdfElement.FindElement("model");
-				model = new SDFormat.Model();
+				model = new Model();
 				var errors = model.Load(modelElement);
 				foreach (var error in errors)
 				{
@@ -157,14 +160,14 @@ namespace SDFormat
 		/// Serialize XmlDocument to string and parse with SDFormat.SdfParser.
 		/// Returns the root SDFormat.Element (the &lt;sdf&gt; element).
 		/// </summary>
-		private SDFormat.Element ParseWithSdFormat(XmlDocument doc)
+		private Element ParseWithSdFormat(XmlDocument doc)
 		{
 			var sw = new StringWriter();
 			var xw = new XmlTextWriter(sw);
 			doc.WriteTo(xw);
 			var xmlString = sw.ToString();
 
-			var parser = new SDFormat.SdfParser();
+			var parser = new SdfParser();
 			var (rootElement, errors) = parser.Parse(xmlString);
 
 			foreach (var error in errors)
@@ -266,11 +269,13 @@ namespace SDFormat
 					var sdfFileName = string.Empty;
 					foreach (var version in SdfVersions)
 					{
-						var sdfNode = modelNode.SelectSingleNode($"sdf[@version={version} or not(@version)]");
+						var xpath = string.IsNullOrEmpty(version)
+							? "sdf[not(@version)]"
+							: $"sdf[@version='{version}' or not(@version)]";
+						var sdfNode = modelNode.SelectSingleNode(xpath);
 						if (sdfNode != null)
 						{
 							sdfFileName = sdfNode.InnerText;
-							_sdfVersion = version;
 							break;
 						}
 					}
@@ -288,7 +293,7 @@ namespace SDFormat
 						if (_resourceModelTable.ContainsKey(modelName))
 						{
 							failedModelTableList.AppendLine(string.Empty);
-							failedModelTableList.Append(String.Concat(modelName, " => ", modelValue));
+							failedModelTableList.Append(string.Concat(modelName, " => ", modelValue));
 						}
 						else
 						{
@@ -424,6 +429,25 @@ namespace SDFormat
 			ConvertPathToAbsolutePath("normal_map");
 		}
 
+		private static bool IsMergeInclude(XmlNode includedNode)
+		{
+			// SDF 1.12 spec: merge is an XML attribute on <include merge="true">
+			var mergeAttr = includedNode.Attributes?["merge"]?.Value?.Trim().ToLowerInvariant();
+			if (mergeAttr == "true" || mergeAttr == "1")
+				return true;
+
+			// Fallback: some tools write it as a child element <merge>true</merge> or <merge/>
+			var mergeElem = includedNode.SelectSingleNode("merge");
+			if (mergeElem != null)
+			{
+				var val = mergeElem.InnerText.Trim().ToLowerInvariant();
+				// empty <merge/> element is treated as true (flag presence)
+				return val == "true" || val == "1" || val == string.Empty;
+			}
+
+			return false;
+		}
+
 		private void ReplaceAllIncludedModel()
 		{
 			// loop all include tag until all replaced.
@@ -438,13 +462,35 @@ namespace SDFormat
 
 					if (modelNode != null)
 					{
-						var importNode = _doc.ImportNode(modelNode, true);
+						if (IsMergeInclude(node))
+						{
+							// Merge: flatten model children into parent scope instead of adding a model wrapper.
+							// When parent is <world>, <link> elements are skipped (links must live inside a model).
+							var parentNode = node.ParentNode;
+							var isWorldScope = parentNode?.Name == "world";
+							var children = Enumerable.Cast<XmlNode>(modelNode.ChildNodes).ToList();
+							foreach (var child in children)
+							{
+								// In world scope, links and model-level plugins cannot be promoted
+								// to world level — links have no meaning outside a model, and robot
+								// plugins (MicomPlugin, JointControlPlugin, …) rely on a model
+								// GameObject as their parent via GetComponentsInChildren<>.
+								if (isWorldScope && (child.Name == "link" || child.Name == "plugin"))
+									continue;
+								parentNode.InsertBefore(_doc.ImportNode(child, true), node);
+							}
+							parentNode.RemoveChild(node);
+						}
+						else
+						{
+							var importNode = _doc.ImportNode(modelNode, true);
 
-						var newAttr = _doc.CreateAttribute("is_nested");
-						newAttr.Value = "true";
-						importNode.Attributes.Append(newAttr);
+							var newAttr = _doc.CreateAttribute("is_nested");
+							newAttr.Value = "true";
+							importNode.Attributes.Append(newAttr);
 
-						node.ParentNode.ReplaceChild(importNode, node);
+							node.ParentNode.ReplaceChild(importNode, node);
+						}
 					}
 					else
 					{
@@ -486,7 +532,7 @@ namespace SDFormat
 			var pose = poseNode?.InnerText;
 			var poseAttributes = poseNode?.Attributes;
 
-			var pluginNode = includedNode.SelectSingleNode("plugin");
+			var pluginNodes = includedNode.SelectNodes("plugin");
 
 			var uri = uriNode.InnerText;
 			var modelName = uri.Replace(ProtocolModel, string.Empty);
@@ -520,10 +566,26 @@ namespace SDFormat
 			}
 
 			var attributes = sdfNode.Attributes;
-			if (attributes.GetNamedItem("version") != null)
+			var sdfDocVersion = modelSdfDoc.SelectSingleNode("/sdf")
+				?.Attributes?.GetNamedItem("version")?.Value ?? string.Empty;
+			if (!string.IsNullOrEmpty(sdfDocVersion) && !string.IsNullOrEmpty(_sdfVersion))
 			{
-				var modelSdfDocVersion = attributes.GetNamedItem("version").Value;
-				// TODO: Version check
+				if (Version.TryParse(sdfDocVersion, out var includedVer) &&
+					Version.TryParse(_sdfVersion, out var worldVer))
+				{
+					if (includedVer.Major != worldVer.Major)
+					{
+						Console.Error.Write(
+							$"[Include] SDF major version mismatch: '{modelName}' uses v{sdfDocVersion}, " +
+							$"world uses v{_sdfVersion}. Parsing may fail.");
+					}
+					else if (includedVer.Minor != worldVer.Minor)
+					{
+						Console.Error.Write(
+							$"[Include] SDF minor version mismatch: '{modelName}' uses v{sdfDocVersion}, " +
+							$"world uses v{_sdfVersion}.");
+					}
+				}
 			}
 
 			StoreOriginalModelName(modelSdfDoc, modelName, sdfNode);
@@ -577,9 +639,12 @@ namespace SDFormat
 				}
 			}
 
-			if (pluginNode != null)
+			if (pluginNodes != null && pluginNodes.Count > 0)
 			{
-				sdfNode.InsertBefore(modelSdfDoc.ImportNode(pluginNode, true), sdfNode.LastChild);
+				foreach (XmlNode pluginNode in pluginNodes)
+				{
+					sdfNode.AppendChild(modelSdfDoc.ImportNode(pluginNode, true));
+				}
 			}
 
 			return sdfNode;

@@ -24,12 +24,12 @@ public class Odometry
 	private RollingMean rollingMeanOdomTAngularVelocity = new RollingMean(RollingMeanWindowSize);
 #endif
 
-	public float WheelSeparation => this._wheelInfo.wheelSeparation;
-	public float InverseWheelRadius => this._wheelInfo.inversedWheelRadius;
+	public float WheelSeparation => _wheelInfo.wheelSeparation;
+	public float InverseWheelRadius => _wheelInfo.inversedWheelRadius;
 
 	public Odometry(in float radius, in float separation)
 	{
-		this._wheelInfo = new WheelInfo(radius, separation);
+		_wheelInfo = new WheelInfo(radius, separation);
 	}
 
 	public void Reset()
@@ -62,7 +62,7 @@ public class Odometry
 		_odomRotationalVelocity = MathUtil.IsZero(diffRightLeft) ? 0 : (diffRightLeft * _wheelInfo.inversedWheelSeparation);
 
 		var linear = _odomTranslationalVelocity * duration;
-		var angular = (float.IsNaN(deltaTheta)) ? (_odomRotationalVelocity * duration) : deltaTheta;
+		var angular = float.IsNaN(deltaTheta) ? (_odomRotationalVelocity * duration) : deltaTheta;
 		// Debug.Log($"angular: {angular}, angular(calc): {(_odomRotationalVelocity * duration)}  delta: {((_odomRotationalVelocity * duration)-angular).ToString("F5")}");
 
 		// Acculumate odometry:

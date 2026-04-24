@@ -33,12 +33,12 @@ namespace SelfBalanceControl
 
 		public Kinematics(in float radius, in float separation)
 		{
-			this._wheelInfo = new WheelInfo(radius, separation);
+			_wheelInfo = new WheelInfo(radius, separation);
 		}
 
 		public void Reset(in double wheelVelocityLeft, in double wheelVelocityRight)
 		{
-			_previousLinearVelocity = (this._wheelInfo.halfWheelRadius) * (wheelVelocityLeft + wheelVelocityRight);
+			_previousLinearVelocity = _wheelInfo.halfWheelRadius * (wheelVelocityLeft + wheelVelocityRight);
 			_previousPitch = double.NaN;
 			_s = _sRef = 0;
 			_odomPose.Set(0, 0);
@@ -49,7 +49,7 @@ namespace SelfBalanceControl
 			in double yaw, in double pitch, in double roll,
 			in double deltaTime)
 		{
-			var halfWheelRadius = this._wheelInfo.halfWheelRadius;
+			var halfWheelRadius = _wheelInfo.halfWheelRadius;
 
 			var wheelVelocitySum = wheelVelocityRight + wheelVelocityLeft;
 			var wheelVelocityDiff = wheelVelocityRight - wheelVelocityLeft;
@@ -59,7 +59,7 @@ namespace SelfBalanceControl
 			var angularVelocity = (yaw - _previousYaw) / deltaTime;
 			_previousYaw = yaw;
 #else
-			var angularVelocity = halfWheelRadius * wheelVelocityDiff * this._wheelInfo.inversedWheelSeparation;
+			var angularVelocity = halfWheelRadius * wheelVelocityDiff * _wheelInfo.inversedWheelSeparation;
 			// this._wheelInfo.wheelRadius * halfInverseWheelSeparation * wheelVelocityDiff;
 #endif
 			// UnityEngine.Debug.Log($"wheelVelocity R/L: {wheelVelocityRight}/{wheelVelocityLeft}");
@@ -67,7 +67,7 @@ namespace SelfBalanceControl
 			_odomTranslationalVelocity = linearVelocity;
 			_odomRotationalVelocity = angularVelocity;
 
-			var pitchDot = (double.IsNaN(_previousPitch)) ? 0 : ((pitch - _previousPitch) / deltaTime);
+			var pitchDot = double.IsNaN(_previousPitch) ? 0 : ((pitch - _previousPitch) / deltaTime);
 			_s += 0.5 * (linearVelocity + _previousLinearVelocity) * deltaTime;
 
 			// UnityEngine.Debug.Log($"{_previousLinearVelocity}->{linearVelocity} {_s}");
@@ -90,7 +90,7 @@ namespace SelfBalanceControl
 			var ssum = wheelVelocitySum * halfWheelRadius * deltaTime;
 			var sdiff = wheelVelocityDiff * halfWheelRadius * deltaTime;
 
-			var halfInverseWheelSeparation = this._wheelInfo.inversedWheelSeparation * 0.5f;
+			var halfInverseWheelSeparation = _wheelInfo.inversedWheelSeparation * 0.5f;
 			var deltaX = ssum * Math.Cos(yaw + sdiff / halfInverseWheelSeparation);
 			var deltaY = ssum * Math.Sin(yaw + sdiff / halfInverseWheelSeparation);
 

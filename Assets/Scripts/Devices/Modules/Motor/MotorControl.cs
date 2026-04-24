@@ -34,7 +34,7 @@ public abstract class MotorControl
 
 	public MotorControl(in Transform controllerTransform)
 	{
-		this._baseTransform = controllerTransform;
+		_baseTransform = controllerTransform;
 	}
 
 	public abstract void Reset();

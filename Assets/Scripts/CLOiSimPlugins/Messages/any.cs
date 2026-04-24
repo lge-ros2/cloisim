@@ -16,88 +16,119 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"type", IsRequired = true)]
-        public ValueType Type { get; set; } = ValueType.None;
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"double_value")]
+        [global::ProtoBuf.ProtoMember(2, Name = @"type")]
+        public ValueType Type { get; set; }
+
+        [global::ProtoBuf.ProtoMember(3, Name = @"double_value")]
         public double DoubleValue
         {
-            get => __pbn__DoubleValue.GetValueOrDefault();
-            set => __pbn__DoubleValue = value;
+            get => __pbn__value.Is(3) ? __pbn__value.Double : default;
+            set => __pbn__value = new global::ProtoBuf.DiscriminatedUnion64Object(3, value);
         }
-        public bool ShouldSerializeDoubleValue() => __pbn__DoubleValue != null;
-        public void ResetDoubleValue() => __pbn__DoubleValue = null;
-        private double? __pbn__DoubleValue;
+        public bool ShouldSerializeDoubleValue() => __pbn__value.Is(3);
+        public void ResetDoubleValue() => global::ProtoBuf.DiscriminatedUnion64Object.Reset(ref __pbn__value, 3);
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"int_value")]
+        private global::ProtoBuf.DiscriminatedUnion64Object __pbn__value;
+
+        [global::ProtoBuf.ProtoMember(4, Name = @"int_value")]
         public int IntValue
         {
-            get => __pbn__IntValue.GetValueOrDefault();
-            set => __pbn__IntValue = value;
+            get => __pbn__value.Is(4) ? __pbn__value.Int32 : default;
+            set => __pbn__value = new global::ProtoBuf.DiscriminatedUnion64Object(4, value);
         }
-        public bool ShouldSerializeIntValue() => __pbn__IntValue != null;
-        public void ResetIntValue() => __pbn__IntValue = null;
-        private int? __pbn__IntValue;
+        public bool ShouldSerializeIntValue() => __pbn__value.Is(4);
+        public void ResetIntValue() => global::ProtoBuf.DiscriminatedUnion64Object.Reset(ref __pbn__value, 4);
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"string_value")]
+        [global::ProtoBuf.ProtoMember(5, Name = @"string_value")]
         [global::System.ComponentModel.DefaultValue("")]
         public string StringValue
         {
-            get => __pbn__StringValue ?? "";
-            set => __pbn__StringValue = value;
+            get => __pbn__value.Is(5) ? ((string)__pbn__value.Object) : "";
+            set => __pbn__value = new global::ProtoBuf.DiscriminatedUnion64Object(5, value);
         }
-        public bool ShouldSerializeStringValue() => __pbn__StringValue != null;
-        public void ResetStringValue() => __pbn__StringValue = null;
-        private string __pbn__StringValue;
+        public bool ShouldSerializeStringValue() => __pbn__value.Is(5);
+        public void ResetStringValue() => global::ProtoBuf.DiscriminatedUnion64Object.Reset(ref __pbn__value, 5);
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"bool_value")]
+        [global::ProtoBuf.ProtoMember(6, Name = @"bool_value")]
         public bool BoolValue
         {
-            get => __pbn__BoolValue.GetValueOrDefault();
-            set => __pbn__BoolValue = value;
+            get => __pbn__value.Is(6) ? __pbn__value.Boolean : default;
+            set => __pbn__value = new global::ProtoBuf.DiscriminatedUnion64Object(6, value);
         }
-        public bool ShouldSerializeBoolValue() => __pbn__BoolValue != null;
-        public void ResetBoolValue() => __pbn__BoolValue = null;
-        private bool? __pbn__BoolValue;
+        public bool ShouldSerializeBoolValue() => __pbn__value.Is(6);
+        public void ResetBoolValue() => global::ProtoBuf.DiscriminatedUnion64Object.Reset(ref __pbn__value, 6);
 
-        [global::ProtoBuf.ProtoMember(6, Name = @"vector3d_value")]
-        public Vector3d Vector3dValue { get; set; }
+        [global::ProtoBuf.ProtoMember(7, Name = @"vector3d_value")]
+        public Vector3d Vector3dValue
+        {
+            get => __pbn__value.Is(7) ? ((Vector3d)__pbn__value.Object) : default;
+            set => __pbn__value = new global::ProtoBuf.DiscriminatedUnion64Object(7, value);
+        }
+        public bool ShouldSerializeVector3dValue() => __pbn__value.Is(7);
+        public void ResetVector3dValue() => global::ProtoBuf.DiscriminatedUnion64Object.Reset(ref __pbn__value, 7);
 
-        [global::ProtoBuf.ProtoMember(7, Name = @"color_value")]
-        public Color ColorValue { get; set; }
+        [global::ProtoBuf.ProtoMember(8, Name = @"color_value")]
+        public Color ColorValue
+        {
+            get => __pbn__value.Is(8) ? ((Color)__pbn__value.Object) : default;
+            set => __pbn__value = new global::ProtoBuf.DiscriminatedUnion64Object(8, value);
+        }
+        public bool ShouldSerializeColorValue() => __pbn__value.Is(8);
+        public void ResetColorValue() => global::ProtoBuf.DiscriminatedUnion64Object.Reset(ref __pbn__value, 8);
 
-        [global::ProtoBuf.ProtoMember(8, Name = @"pose3d_value")]
-        public Pose Pose3dValue { get; set; }
+        [global::ProtoBuf.ProtoMember(9, Name = @"pose3d_value")]
+        public Pose Pose3dValue
+        {
+            get => __pbn__value.Is(9) ? ((Pose)__pbn__value.Object) : default;
+            set => __pbn__value = new global::ProtoBuf.DiscriminatedUnion64Object(9, value);
+        }
+        public bool ShouldSerializePose3dValue() => __pbn__value.Is(9);
+        public void ResetPose3dValue() => global::ProtoBuf.DiscriminatedUnion64Object.Reset(ref __pbn__value, 9);
 
-        [global::ProtoBuf.ProtoMember(9, Name = @"quaternion_value")]
-        public Quaternion QuaternionValue { get; set; }
+        [global::ProtoBuf.ProtoMember(10, Name = @"quaternion_value")]
+        public Quaternion QuaternionValue
+        {
+            get => __pbn__value.Is(10) ? ((Quaternion)__pbn__value.Object) : default;
+            set => __pbn__value = new global::ProtoBuf.DiscriminatedUnion64Object(10, value);
+        }
+        public bool ShouldSerializeQuaternionValue() => __pbn__value.Is(10);
+        public void ResetQuaternionValue() => global::ProtoBuf.DiscriminatedUnion64Object.Reset(ref __pbn__value, 10);
 
-        [global::ProtoBuf.ProtoMember(10, Name = @"time_value")]
-        public Time TimeValue { get; set; }
+        [global::ProtoBuf.ProtoMember(11, Name = @"time_value")]
+        public Time TimeValue
+        {
+            get => __pbn__value.Is(11) ? ((Time)__pbn__value.Object) : default;
+            set => __pbn__value = new global::ProtoBuf.DiscriminatedUnion64Object(11, value);
+        }
+        public bool ShouldSerializeTimeValue() => __pbn__value.Is(11);
+        public void ResetTimeValue() => global::ProtoBuf.DiscriminatedUnion64Object.Reset(ref __pbn__value, 11);
 
         [global::ProtoBuf.ProtoContract()]
         public enum ValueType
         {
             [global::ProtoBuf.ProtoEnum(Name = @"NONE")]
-            None = 1,
+            None = 0,
             [global::ProtoBuf.ProtoEnum(Name = @"DOUBLE")]
-            Double = 2,
+            Double = 1,
             [global::ProtoBuf.ProtoEnum(Name = @"INT32")]
-            Int32 = 3,
+            Int32 = 2,
             [global::ProtoBuf.ProtoEnum(Name = @"STRING")]
-            String = 4,
+            String = 3,
             [global::ProtoBuf.ProtoEnum(Name = @"BOOLEAN")]
-            Boolean = 5,
+            Boolean = 4,
             [global::ProtoBuf.ProtoEnum(Name = @"VECTOR3D")]
-            Vector3d = 6,
+            Vector3d = 5,
             [global::ProtoBuf.ProtoEnum(Name = @"COLOR")]
-            Color = 7,
+            Color = 6,
             [global::ProtoBuf.ProtoEnum(Name = @"POSE3D")]
-            Pose3d = 8,
+            Pose3d = 7,
             [global::ProtoBuf.ProtoEnum(Name = @"QUATERNIOND")]
-            Quaterniond = 9,
+            Quaterniond = 8,
             [global::ProtoBuf.ProtoEnum(Name = @"TIME")]
-            Time = 10,
+            Time = 9,
         }
 
     }

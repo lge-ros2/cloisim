@@ -11,7 +11,7 @@ using SDFormat;
 
 public class JointControlPlugin : CLOiSimPlugin
 {
-	private List<TF> _tfList = new List<TF>();
+	private List<TF> _tfList = new();
 	private string _robotDescription = "<?xml version='1.0' ?><sdf></sdf>";
 	private SensorDevices.JointCommand _jointCommand = null;
 	private SensorDevices.JointState _jointState = null;
@@ -72,7 +72,7 @@ public class JointControlPlugin : CLOiSimPlugin
 				if (_jointState.AddTargetJoint(jointName, out var targetLink, out var isStatic))
 				{
 					var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("joints/joint[text()='" + jointName + "']", "parent_frame_id");
-					var jointParentLinkName = (string.IsNullOrEmpty(parentFrameId)) ? targetLink.JointParentLinkName : parentFrameId;
+					var jointParentLinkName = string.IsNullOrEmpty(parentFrameId) ? targetLink.JointParentLinkName : parentFrameId;
 					var tf = new TF(targetLink, targetLink.JointChildLinkName, jointParentLinkName);
 					if (isStatic)
 					{
@@ -110,11 +110,9 @@ public class JointControlPlugin : CLOiSimPlugin
 			return;
 		}
 
-		var ros2CommonInfo = new messages.Param();
-		ros2CommonInfo.Name = "description";
-		ros2CommonInfo.Value = new Any { Type = Any.ValueType.String };
-		ros2CommonInfo.Value.StringValue = _robotDescription;
+		var ros2Param = new messages.Param();
+		ros2Param.Params["description"] = new Any { Type = Any.ValueType.String, StringValue = _robotDescription };
 
-		msRos2Info.SetMessage<messages.Param>(ros2CommonInfo);
+		msRos2Info.SetMessage(ros2Param);
 	}
 }

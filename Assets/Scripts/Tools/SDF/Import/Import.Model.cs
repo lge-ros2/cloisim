@@ -94,14 +94,14 @@ namespace SDFormat
 				return newModelObject;
 			}
 
-			protected override IEnumerator ImportModel(Model model, System.Object parentObject, Action<System.Object> onCreatedRoot)
+			protected override IEnumerator ImportModel(Model model, object parentObject, Action<object> onCreatedRoot)
 			{
 				if (model == null)
 				{
 					yield return null;
 				}
 
-				var targetObject = (parentObject as UE.GameObject);
+				var targetObject = parentObject as UE.GameObject;
 				var newModelObject = CreateModel(model, targetObject);
 
 				ImportLinks(model.Links, newModelObject);
@@ -113,6 +113,8 @@ namespace SDFormat
 
 				StoreJoints(model.Joints, newModelObject);
 
+				StoreGrippers(model.Grippers, newModelObject);
+
 				StorePlugins(model.Plugins, newModelObject);
 
 				if (parentObject == null)
@@ -123,9 +125,9 @@ namespace SDFormat
 				yield return null;
 			}
 
-			protected override void AfterImportModel(in Model model, in System.Object targetObject)
+			protected override void AfterImportModel(in Model model, in object targetObject)
 			{
-				var modelObject = (targetObject as UE.GameObject);
+				var modelObject = targetObject as UE.GameObject;
 
 				var modelHelper = modelObject.GetComponent<Helper.Model>();
 				if (modelHelper.IsFirstChild)

@@ -14,7 +14,7 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportPlugin(in Plugin plugin, in System.Object parentObject)
+			protected override void ImportPlugin(in Plugin plugin, in object parentObject)
 			{
 				// filtering plugin name
 				var pluginLibraryName = plugin.LibraryName();
@@ -27,7 +27,7 @@ namespace SDFormat
 					return;
 				}
 
-				var targetObject = (parentObject as UE.GameObject);
+				var targetObject = parentObject as UE.GameObject;
 				if (targetObject == null)
 				{
 					Debug.LogError("[Plugin] targetObject is empty");

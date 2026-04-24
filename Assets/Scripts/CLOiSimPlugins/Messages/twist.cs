@@ -19,10 +19,10 @@ namespace cloisim.msgs
         [global::ProtoBuf.ProtoMember(1, Name = @"header")]
         public Header Header { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"linear", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(2, Name = @"linear")]
         public Vector3d Linear { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"angular", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(3, Name = @"angular")]
         public Vector3d Angular { get; set; }
 
     }

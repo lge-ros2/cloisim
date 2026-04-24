@@ -29,7 +29,7 @@ public class SimulationControlRequest
 
 	public void Print()
 	{
-		Console.WriteLine($"## {this.GetType().Name}: {command} {indent} {filter} {filename}");
+		Console.WriteLine($"## {GetType().Name}: {command} {indent} {filter} {filename}");
 	}
 }
 
@@ -40,7 +40,7 @@ public class SimulationControlResponseBase
 
 	public virtual void Print()
 	{
-		Console.WriteLine($"## {this.GetType().Name}: {command}");
+		Console.WriteLine($"## {GetType().Name}: {command}");
 	}
 }
 
@@ -51,7 +51,7 @@ public class SimulationControlResponseNormal : SimulationControlResponseBase
 
 	public override void Print()
 	{
-		Console.WriteLine($"## {this.GetType().Name}: {command}, {result}");
+		Console.WriteLine($"## {GetType().Name}: {command}, {result}");
 	}
 }
 
@@ -62,7 +62,7 @@ public class SimulationControlResponseDeviceList : SimulationControlResponseBase
 
 	public override void Print()
 	{
-		Console.WriteLine($"## {this.GetType().Name}: {command}, {result}");
+		Console.WriteLine($"## {GetType().Name}: {command}, {result}");
 	}
 }
 
@@ -73,7 +73,7 @@ public class SimulationControlResponseTopicList : SimulationControlResponseBase
 
 	public override void Print()
 	{
-		Console.WriteLine($"## {this.GetType().Name}: {command}, {result}");
+		Console.WriteLine($"## {GetType().Name}: {command}, {result}");
 	}
 }
 
@@ -126,7 +126,7 @@ public class SimulationControlResponseModelInfo : SimulationControlResponseBase
 
 	public override void Print()
 	{
-		Console.WriteLine($"## {this.GetType().Name}: {command}, {result?.name}");
+		Console.WriteLine($"## {GetType().Name}: {command}, {result?.name}");
 	}
 }
 
@@ -208,7 +208,7 @@ public class SimulationControlService : WebSocketBehavior
 		{
 			request = JsonConvert.DeserializeObject<SimulationControlRequest>(e.Data);
 		}
-		catch (System.Exception ex)
+		catch (Exception ex)
 		{
 			Console.Error.WriteLine($"Invalid JSON: {ex.Message}\nraw={e.Data}");
 			return;
@@ -299,14 +299,14 @@ public class SimulationControlService : WebSocketBehavior
 
 		output.command = request.command;
 
-		var responseJsonData = JsonConvert.SerializeObject(output, (request.indent) ? Formatting.Indented : Formatting.None);
+		var responseJsonData = JsonConvert.SerializeObject(output, request.indent ? Formatting.Indented : Formatting.None);
 
 		try
 		{
 			if (State == WebSocketState.Open)
 				Send(responseJsonData);
 		}
-		catch (System.Exception ex)
+		catch (Exception ex)
 		{
 			Console.Error.WriteLine($"Send failed: {ex.GetType().Name} {ex.Message}");
 		}

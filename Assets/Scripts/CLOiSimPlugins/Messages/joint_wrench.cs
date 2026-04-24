@@ -16,22 +16,27 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"body_1_name", IsRequired = true)]
-        public string Body1Name { get; set; }
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"body_1_id", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(2, Name = @"body_1_name")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string Body1Name { get; set; } = "";
+
+        [global::ProtoBuf.ProtoMember(3, Name = @"body_1_id")]
         public uint Body1Id { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"body_2_name", IsRequired = true)]
-        public string Body2Name { get; set; }
+        [global::ProtoBuf.ProtoMember(4, Name = @"body_2_name")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string Body2Name { get; set; } = "";
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"body_2_id", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(5, Name = @"body_2_id")]
         public uint Body2Id { get; set; }
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"body_1_wrench", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(6, Name = @"body_1_wrench")]
         public Wrench Body1Wrench { get; set; }
 
-        [global::ProtoBuf.ProtoMember(6, Name = @"body_2_wrench", IsRequired = true)]
+        [global::ProtoBuf.ProtoMember(7, Name = @"body_2_wrench")]
         public Wrench Body2Wrench { get; set; }
 
     }

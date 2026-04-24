@@ -16,73 +16,96 @@ namespace cloisim.msgs
         global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
-        [global::ProtoBuf.ProtoMember(1, Name = @"horizontal_fov")]
-        public double HorizontalFov
-        {
-            get => __pbn__HorizontalFov.GetValueOrDefault();
-            set => __pbn__HorizontalFov = value;
-        }
-        public bool ShouldSerializeHorizontalFov() => __pbn__HorizontalFov != null;
-        public void ResetHorizontalFov() => __pbn__HorizontalFov = null;
-        private double? __pbn__HorizontalFov;
+        [global::ProtoBuf.ProtoMember(1, Name = @"header")]
+        public Header Header { get; set; }
 
-        [global::ProtoBuf.ProtoMember(2, Name = @"image_size")]
+        [global::ProtoBuf.ProtoMember(2, Name = @"horizontal_fov")]
+        public double HorizontalFov { get; set; }
+
+        [global::ProtoBuf.ProtoMember(3, Name = @"image_size")]
         public Vector2d ImageSize { get; set; }
 
-        [global::ProtoBuf.ProtoMember(3, Name = @"image_format")]
+        [global::ProtoBuf.ProtoMember(4, Name = @"image_format")]
         [global::System.ComponentModel.DefaultValue("")]
-        public string ImageFormat
-        {
-            get => __pbn__ImageFormat ?? "";
-            set => __pbn__ImageFormat = value;
-        }
-        public bool ShouldSerializeImageFormat() => __pbn__ImageFormat != null;
-        public void ResetImageFormat() => __pbn__ImageFormat = null;
-        private string __pbn__ImageFormat;
+        [global::System.Obsolete]
+        public string ImageFormat { get; set; } = "";
 
-        [global::ProtoBuf.ProtoMember(4, Name = @"near_clip")]
-        public double NearClip
-        {
-            get => __pbn__NearClip.GetValueOrDefault();
-            set => __pbn__NearClip = value;
-        }
-        public bool ShouldSerializeNearClip() => __pbn__NearClip != null;
-        public void ResetNearClip() => __pbn__NearClip = null;
-        private double? __pbn__NearClip;
+        [global::ProtoBuf.ProtoMember(5, Name = @"near_clip")]
+        public double NearClip { get; set; }
 
-        [global::ProtoBuf.ProtoMember(5, Name = @"far_clip")]
-        public double FarClip
-        {
-            get => __pbn__FarClip.GetValueOrDefault();
-            set => __pbn__FarClip = value;
-        }
-        public bool ShouldSerializeFarClip() => __pbn__FarClip != null;
-        public void ResetFarClip() => __pbn__FarClip = null;
-        private double? __pbn__FarClip;
+        [global::ProtoBuf.ProtoMember(6, Name = @"far_clip")]
+        public double FarClip { get; set; }
 
-        [global::ProtoBuf.ProtoMember(6, Name = @"save_enabled")]
-        public bool SaveEnabled
-        {
-            get => __pbn__SaveEnabled.GetValueOrDefault();
-            set => __pbn__SaveEnabled = value;
-        }
-        public bool ShouldSerializeSaveEnabled() => __pbn__SaveEnabled != null;
-        public void ResetSaveEnabled() => __pbn__SaveEnabled = null;
-        private bool? __pbn__SaveEnabled;
+        [global::ProtoBuf.ProtoMember(7, Name = @"save_enabled")]
+        public bool SaveEnabled { get; set; }
 
-        [global::ProtoBuf.ProtoMember(7, Name = @"save_path")]
+        [global::ProtoBuf.ProtoMember(8, Name = @"save_path")]
         [global::System.ComponentModel.DefaultValue("")]
-        public string SavePath
-        {
-            get => __pbn__SavePath ?? "";
-            set => __pbn__SavePath = value;
-        }
-        public bool ShouldSerializeSavePath() => __pbn__SavePath != null;
-        public void ResetSavePath() => __pbn__SavePath = null;
-        private string __pbn__SavePath;
+        public string SavePath { get; set; } = "";
 
-        [global::ProtoBuf.ProtoMember(8, Name = @"distortion")]
+        [global::ProtoBuf.ProtoMember(9, Name = @"distortion")]
         public Distortion Distortion { get; set; }
+
+        [global::ProtoBuf.ProtoMember(10, Name = @"image_noise")]
+        public SensorNoise ImageNoise { get; set; }
+
+        [global::ProtoBuf.ProtoMember(11, Name = @"depth_near_clip")]
+        public Double DepthNearClip { get; set; }
+
+        [global::ProtoBuf.ProtoMember(12, Name = @"depth_far_clip")]
+        public Double DepthFarClip { get; set; }
+
+        [global::ProtoBuf.ProtoMember(13)]
+        public BoundingBoxType bounding_box_type { get; set; }
+
+        [global::ProtoBuf.ProtoMember(14)]
+        public SegmentationType segmentation_type { get; set; }
+
+        [global::ProtoBuf.ProtoMember(15, Name = @"lens")]
+        public Lens Lens { get; set; }
+
+        [global::ProtoBuf.ProtoMember(16, Name = @"triggered")]
+        public bool Triggered { get; set; }
+
+        [global::ProtoBuf.ProtoMember(17, Name = @"triggered_topic")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string TriggeredTopic { get; set; } = "";
+
+        [global::ProtoBuf.ProtoMember(18, Name = @"anti_aliasing")]
+        public int AntiAliasing { get; set; }
+
+        [global::ProtoBuf.ProtoMember(19, Name = @"visibility_mask")]
+        public uint VisibilityMask { get; set; }
+
+        [global::ProtoBuf.ProtoMember(20, Name = @"is_depth_camera")]
+        public bool IsDepthCamera { get; set; }
+
+        [global::ProtoBuf.ProtoMember(21, Name = @"pixel_format")]
+        public PixelFormatType PixelFormat { get; set; }
+
+        [global::ProtoBuf.ProtoContract()]
+        public enum BoundingBoxType
+        {
+            [global::ProtoBuf.ProtoEnum(Name = @"NO_BOUNDING_BOX")]
+            NoBoundingBox = 0,
+            [global::ProtoBuf.ProtoEnum(Name = @"FULL_BOX_2D")]
+            FullBox2d = 1,
+            [global::ProtoBuf.ProtoEnum(Name = @"VISIBLE_BOX_2D")]
+            VisibleBox2d = 2,
+            [global::ProtoBuf.ProtoEnum(Name = @"BOX_3D")]
+            Box3d = 3,
+        }
+
+        [global::ProtoBuf.ProtoContract()]
+        public enum SegmentationType
+        {
+            [global::ProtoBuf.ProtoEnum(Name = @"NO_SEGMENTATION")]
+            NoSegmentation = 0,
+            [global::ProtoBuf.ProtoEnum(Name = @"SEMANTIC")]
+            Semantic = 1,
+            [global::ProtoBuf.ProtoEnum(Name = @"PANOPTIC")]
+            Panoptic = 2,
+        }
 
     }
 

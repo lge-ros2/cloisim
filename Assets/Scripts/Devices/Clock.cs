@@ -39,17 +39,17 @@ public class Clock : Device
 
 		public void SetSimTime(in TimeSpan ts, in bool secondsOnly = false)
 		{
-			SetTimeString(ref this._simTime, ts, secondsOnly);
+			SetTimeString(ref _simTime, ts, secondsOnly);
 		}
 
 		public void SetRealTime(in TimeSpan ts, in bool secondsOnly = false)
 		{
-			SetTimeString(ref this._realTime, ts, secondsOnly);
+			SetTimeString(ref _realTime, ts, secondsOnly);
 		}
 
 		public void SetDiffTime(in TimeSpan ts)
 		{
-			SetTimeString(ref this._diffTime, ts, true);
+			SetTimeString(ref _diffTime, ts, true);
 		}
 
 		private StringBuilder _tempSB = new StringBuilder(16);
@@ -116,23 +116,25 @@ public class Clock : Device
 
 	protected override void InitializeMessages()
 	{
-		worldStat = new messages.WorldStatistics();
-		worldStat.SimTime = new messages.Time();
-		worldStat.PauseTime = new messages.Time();
-		worldStat.RealTime = new messages.Time();
+		worldStat = new messages.WorldStatistics
+		{
+			SimTime = new messages.Time(),
+			PauseTime = new messages.Time(),
+			RealTime = new messages.Time()
+		};
 	}
 
 	void Update()
 	{
 		_currentSimTime = Time.timeAsDouble - _restartedSimTime;
 		_currentRealTime = Time.realtimeSinceStartupAsDouble - _restartedRealTime;
-		_deltaTime = (double)Time.deltaTime;
+		_deltaTime = Time.deltaTime;
 	}
 
 	void FixedUpdate()
 	{
 		_currentFixedSimTime = Time.fixedTimeAsDouble - _restartedFixedSimTime;
-		_fixedDeltaTime = (double)Time.fixedDeltaTime;
+		_fixedDeltaTime = Time.fixedDeltaTime;
 	}
 
 	void LateUpdate()
@@ -176,7 +178,7 @@ public class Clock : Device
 		}
 		else
 		{
-			PushDeviceMessage<messages.WorldStatistics>(worldStat);
+			PushDeviceMessage(worldStat);
 		}
 
 		_prevSimTime = SimTime;

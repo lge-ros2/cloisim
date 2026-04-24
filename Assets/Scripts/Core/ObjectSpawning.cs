@@ -256,7 +256,7 @@ public class ObjectSpawning : MonoBehaviour
 
 		newObject.AddComponent<Segmentation.Tag>();
 
-		GameObject.DontDestroyOnLoad(newObject);
+		DontDestroyOnLoad(newObject);
 
 		return newObject;
 	}

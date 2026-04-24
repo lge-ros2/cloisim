@@ -32,7 +32,7 @@ public struct Vector3d
 
 	public Vector3d(in double x = 0, in double y = 0, in double z = 0)
 	{
-		this.Size = 3;
+		Size = 3;
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -95,7 +95,7 @@ public struct Vector3d
 
 	public Vector3d normalized => Normalize(this);
 
-	public double sqrMagnitude => (x * x + y * y + z * z);
+	public double sqrMagnitude => x * x + y * y + z * z;
 
 	public static double Angle(in Vector3d from, in Vector3d to)
 	{
@@ -202,7 +202,7 @@ public struct Vector3d
 		{
 			return target;
 		}
-		return current + ((vector3 / single) * maxDistanceDelta);
+		return current + (vector3 / single * maxDistanceDelta);
 	}
 
 	public static Vector3d Normalize(in Vector3d value)
@@ -280,7 +280,7 @@ public struct Vector3d
 
 	public static Vector3d Reflect(in Vector3d inDirection, in Vector3d inNormal)
 	{
-		return (-2f * Dot(inNormal, inDirection)) * inNormal + inDirection;
+		return -2f * Dot(inNormal, inDirection) * inNormal + inDirection;
 	}
 
 	public static Vector3d RotateTowards(in Vector3d current, in Vector3d target, in double maxRadiansDelta, in double maxMagnitudeDelta)
@@ -325,7 +325,7 @@ public struct Vector3d
 
 	public static Vector3d Scale(in Vector3d a, in Vector3d b)
 	{
-		var temp = Vector3d.zero;
+		var temp = zero;
 		temp.x = a.x * b.x;
 		temp.y = a.y * b.y;
 		temp.z = a.z * b.z;
@@ -458,12 +458,12 @@ public struct Vector3d
 
 	public override string ToString()
 	{
-		return String.Format("({0}, {1}, {2})", x, y, z);
+		return string.Format("({0}, {1}, {2})", x, y, z);
 	}
 
 	public override int GetHashCode()
 	{
-		return this.x.GetHashCode() ^ this.y.GetHashCode() << 2 ^ this.z.GetHashCode() >> 2;
+		return x.GetHashCode() ^ y.GetHashCode() << 2 ^ z.GetHashCode() >> 2;
 	}
 
 	public override bool Equals(object other)
@@ -473,7 +473,7 @@ public struct Vector3d
 
 	public string ToString(string format)
 	{
-		return String.Format("({0}, {1}, {2})", x.ToString(format), y.ToString(format), z.ToString(format));
+		return string.Format("({0}, {1}, {2})", x.ToString(format), y.ToString(format), z.ToString(format));
 	}
 
 	public Vector3 ToVector3()
@@ -484,7 +484,7 @@ public struct Vector3d
 	private static Vector3d OrthoNormalVectorFast(in Vector3d normal)
 	{
 		var k1OverSqrt2 = Math.Sqrt(0.5);
-		var res = Vector3d.zero;
+		var res = zero;
 		if (Math.Abs(normal.z) > k1OverSqrt2)
 		{
 			var a = normal.y * normal.y + normal.z * normal.z;

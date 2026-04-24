@@ -55,11 +55,11 @@ public class DeviceMessage : MemoryStream
 			Reset();
 			try
 			{
-				Serializer.Serialize<T>(this, instance);
+				Serializer.Serialize(this, instance);
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"ERROR: SetMessage<{typeof(T).ToString()}>() during Serializer.Serialize: {ex.Message}");
+				Console.WriteLine($"ERROR: SetMessage<{typeof(T)}>() during Serializer.Serialize: {ex.Message}");
 			}
 		}
 		else
@@ -69,16 +69,15 @@ public class DeviceMessage : MemoryStream
 	}
 
 	/// <summary>
-	/// Serialize an ImageStamped message as a compact binary blob:
+	/// Serialize an Image message as a compact binary blob:
 	///   [magic:4][sec:4][nsec:4][width:4][height:4][pixel_format:4][step:4][pixel_data...]
 	/// Bypasses protobuf entirely — zero-copy for the pixel payload.
 	/// </summary>
-	public void SetRawImage(cloisim.msgs.ImageStamped imgStamped)
+	public void SetRawImage(cloisim.msgs.Image img)
 	{
 		if (!CanWrite) return;
 		Reset();
 
-		var img = imgStamped.Image;
 		var data = img.Data;
 		var dataLen = (data != null) ? data.Length : 0;
 
@@ -89,11 +88,11 @@ public class DeviceMessage : MemoryStream
 
 		// Write 28-byte header into reusable buffer
 		WriteUInt32LE(_headerBuf, 0, MAGIC_RAW_IMAGE);
-		WriteInt32LE(_headerBuf, 4, imgStamped.Time.Sec);
-		WriteInt32LE(_headerBuf, 8, imgStamped.Time.Nsec);
+		WriteInt32LE(_headerBuf, 4, (int)img.Header.Stamp.Sec);
+		WriteInt32LE(_headerBuf, 8, img.Header.Stamp.Nsec);
 		WriteUInt32LE(_headerBuf, 12, img.Width);
 		WriteUInt32LE(_headerBuf, 16, img.Height);
-		WriteUInt32LE(_headerBuf, 20, img.PixelFormat);
+		WriteUInt32LE(_headerBuf, 20, (uint)img.PixelFormatType);
 		WriteUInt32LE(_headerBuf, 24, img.Step);
 
 		Write(_headerBuf, 0, RAW_IMAGE_HEADER_SIZE);
@@ -112,18 +111,17 @@ public class DeviceMessage : MemoryStream
 		if (!CanWrite) return;
 		Reset();
 
-		var imgStamped = seg.ImageStamped;
-		var img = imgStamped.Image;
+		var img = seg.Image;
 		var data = img.Data;
 		var dataLen = (data != null) ? data.Length : 0;
 
 		// Write 28-byte header with segmentation magic
 		WriteUInt32LE(_headerBuf, 0, MAGIC_RAW_SEGMENTATION);
-		WriteInt32LE(_headerBuf, 4, imgStamped.Time.Sec);
-		WriteInt32LE(_headerBuf, 8, imgStamped.Time.Nsec);
+		WriteInt32LE(_headerBuf, 4, (int)img.Header.Stamp.Sec);
+		WriteInt32LE(_headerBuf, 8, img.Header.Stamp.Nsec);
 		WriteUInt32LE(_headerBuf, 12, img.Width);
 		WriteUInt32LE(_headerBuf, 16, img.Height);
-		WriteUInt32LE(_headerBuf, 20, img.PixelFormat);
+		WriteUInt32LE(_headerBuf, 20, (uint)img.PixelFormatType);
 		WriteUInt32LE(_headerBuf, 24, img.Step);
 
 		Write(_headerBuf, 0, RAW_IMAGE_HEADER_SIZE);
@@ -151,32 +149,32 @@ public class DeviceMessage : MemoryStream
 	}
 
 	/// <summary>
-	/// Serialize an ImagesStamped (multi-camera) message as:
+	/// Serialize an Images (multi-camera) message as:
 	///   [RAWM:4][sec:4][nsec:4][image_count:4]
 	///   per image: [width:4][height:4][pixel_format:4][step:4][pixel_data...]
 	/// </summary>
-	public void SetRawImagesStamped(cloisim.msgs.ImagesStamped imgsStamped)
+	public void SetRawImages(cloisim.msgs.Images imgs)
 	{
 		if (!CanWrite) return;
 		Reset();
 
-		var imageCount = imgsStamped.Images.Count;
+		var imageCount = imgs.image.Count;
 
 		// 16-byte shared header
 		var sharedHeader = new byte[16];
 		WriteUInt32LE(sharedHeader, 0, MAGIC_RAW_MULTI_IMAGE);
-		WriteInt32LE(sharedHeader, 4, imgsStamped.Time.Sec);
-		WriteInt32LE(sharedHeader, 8, imgsStamped.Time.Nsec);
+		WriteInt32LE(sharedHeader, 4, (int)imgs.Time.Sec);
+		WriteInt32LE(sharedHeader, 8, imgs.Time.Nsec);
 		WriteUInt32LE(sharedHeader, 12, (uint)imageCount);
 		Write(sharedHeader, 0, 16);
 
 		// Per-image blocks: 16-byte sub-header + pixel data
 		var subHeader = new byte[16];
-		foreach (var img in imgsStamped.Images)
+		foreach (var img in imgs.image)
 		{
 			WriteUInt32LE(subHeader, 0, img.Width);
 			WriteUInt32LE(subHeader, 4, img.Height);
-			WriteUInt32LE(subHeader, 8, img.PixelFormat);
+			WriteUInt32LE(subHeader, 8, (uint)img.PixelFormatType);
 			WriteUInt32LE(subHeader, 12, img.Step);
 			Write(subHeader, 0, 16);
 
@@ -215,14 +213,14 @@ public class DeviceMessage : MemoryStream
 
 	public bool IsValid()
 	{
-		return (CanRead && Length > 0);
+		return CanRead && Length > 0;
 	}
 
 	// --- Little-endian binary helpers (avoid BinaryWriter allocation) ---
 
 	private static void WriteUInt32LE(byte[] buf, int offset, uint value)
 	{
-		buf[offset] = (byte)(value);
+		buf[offset] = (byte)value;
 		buf[offset + 1] = (byte)(value >> 8);
 		buf[offset + 2] = (byte)(value >> 16);
 		buf[offset + 3] = (byte)(value >> 24);
@@ -230,7 +228,7 @@ public class DeviceMessage : MemoryStream
 
 	private static void WriteInt32LE(byte[] buf, int offset, int value)
 	{
-		buf[offset] = (byte)(value);
+		buf[offset] = (byte)value;
 		buf[offset + 1] = (byte)(value >> 8);
 		buf[offset + 2] = (byte)(value >> 16);
 		buf[offset + 3] = (byte)(value >> 24);
@@ -238,7 +236,7 @@ public class DeviceMessage : MemoryStream
 
 	private static void WriteUInt16LE(byte[] buf, int offset, ushort value)
 	{
-		buf[offset] = (byte)(value);
+		buf[offset] = (byte)value;
 		buf[offset + 1] = (byte)(value >> 8);
 	}
 }

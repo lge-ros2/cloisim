@@ -17,12 +17,12 @@ namespace SensorDevices
 		private messages.Micom.Odometry _odomData = null;
 
 		private MotorControl _motorControl = null;
-		private SensorDevices.Battery _battery = null;
-		private SensorDevices.IMU _imuSensor = null;
-		private List<SensorDevices.Sonar> _ussSensors = new();
-		private List<SensorDevices.Sonar> _irSensors = new();
+		private Battery _battery = null;
+		private IMU _imuSensor = null;
+		private List<Sonar> _ussSensors = new();
+		private List<Sonar> _irSensors = new();
 		// private List<SensorDevices.Magnet> magnetSensors = null;
-		private List<SensorDevices.Contact> _bumperSensors = new();
+		private List<Contact> _bumperSensors = new();
 
 		private float _accumulatedTime = 0f;
 
@@ -48,12 +48,12 @@ namespace SensorDevices
 
 		public void SetMotorControl(in MotorControl motorControl)
 		{
-			this._motorControl = motorControl;
+			_motorControl = motorControl;
 		}
 
 		public void SetIMU(in string sensorName)
 		{
-			var imuList = gameObject.GetComponentsInChildren<SensorDevices.IMU>();
+			var imuList = gameObject.GetComponentsInChildren<IMU>();
 			foreach (var imu in imuList)
 			{
 				if (imu.DeviceName.Contains($"::{sensorName}::") || // Model name
@@ -69,7 +69,7 @@ namespace SensorDevices
 
 		public void SetUSS(in List<string> ussList)
 		{
-			var sonarList = GetComponentsInChildren<SensorDevices.Sonar>();
+			var sonarList = GetComponentsInChildren<Sonar>();
 
 			foreach (var ussName in ussList)
 			{
@@ -89,7 +89,7 @@ namespace SensorDevices
 
 		public void SetIRSensor(in List<string> irList)
 		{
-			var sonarList = GetComponentsInChildren<SensorDevices.Sonar>();
+			var sonarList = GetComponentsInChildren<Sonar>();
 
 			foreach (var irName in irList)
 			{
@@ -119,7 +119,7 @@ namespace SensorDevices
 
 		public void SetBumper(in List<string> bumperList)
 		{
-			var contactList = GetComponentsInChildren<SensorDevices.Contact>();
+			var contactList = GetComponentsInChildren<Contact>();
 
 			foreach (var bumperName in bumperList)
 			{
@@ -137,11 +137,11 @@ namespace SensorDevices
 			}
 		}
 
-		public void SetBattery(in SensorDevices.Battery targetBattery)
+		public void SetBattery(in Battery targetBattery)
 		{
 			_batteryData = new messages.Battery();
 
-			this._battery = targetBattery;
+			_battery = targetBattery;
 			_batteryData.Name = _battery.Name;
 		}
 
@@ -152,13 +152,17 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			_odomData = new messages.Micom.Odometry();
-			_odomData.AngularVelocity = new messages.Micom.Odometry.Wheel();
-			_odomData.LinearVelocity = new messages.Micom.Odometry.Wheel();
-			_odomData.Pose = new messages.Vector3d();
-			_odomData.Twist = new messages.Twist();
-			_odomData.Twist.Linear = new messages.Vector3d();
-			_odomData.Twist.Angular = new messages.Vector3d();
+			_odomData = new messages.Micom.Odometry
+			{
+				AngularVelocity = new messages.Micom.Odometry.Wheel(),
+				LinearVelocity = new messages.Micom.Odometry.Wheel(),
+				Pose = new messages.Vector3d(),
+				Twist = new messages.Twist
+				{
+					Linear = new messages.Vector3d(),
+					Angular = new messages.Vector3d()
+				}
+			};
 		}
 
 		void FixedUpdate()
@@ -180,8 +184,10 @@ namespace SensorDevices
 			// Clamp to avoid runaway accumulation (e.g. after a long pause)
 			_accumulatedTime = _accumulatedTime % UpdatePeriod;
 
-			var micomSensorData = new messages.Micom();
-			micomSensorData.Time = new messages.Time();
+			var micomSensorData = new messages.Micom
+			{
+				Time = new messages.Time()
+			};
 			micomSensorData.Time.Set(GetNextSyntheticTime());
 
 			UpdateBattery(micomSensorData, UpdatePeriod);
@@ -214,9 +220,11 @@ namespace SensorDevices
 				for (var index = 0; index < _bumperSensors.Count; index++)
 				{
 					var bumperSensor = _bumperSensors[index];
-					var bumper = new messages.Micom.Bumper();
-					bumper.Bumped = bumperSensor.IsContacted();
-					bumper.Contacts = bumperSensor.GetContacts();
+					var bumper = new messages.Micom.Bumper
+					{
+						Bumped = bumperSensor.IsContacted(),
+						Contacts = bumperSensor.GetContacts()
+					};
 
 					micomData.Bumpers.Add(bumper);
 					// _log.AppendLine(micomData.Bumpers.Count + " " + bumper.Bumped + ", " + bumper.Contacts);
@@ -231,9 +239,11 @@ namespace SensorDevices
 				for (var index = 0; index < _ussSensors.Count; index++)
 				{
 					var ussSensor = _ussSensors[index];
-					var uss = new messages.Micom.Uss();
-					uss.Distance = ussSensor.GetDetectedRange();
-					uss.State = ussSensor.GetSonar().Sonar;
+					var uss = new messages.Micom.Uss
+					{
+						Distance = ussSensor.GetDetectedRange(),
+						State = ussSensor.GetSonar()
+					};
 
 					micomData.Usses.Add(uss);
 				}
@@ -247,9 +257,11 @@ namespace SensorDevices
 				for (var index = 0; index < _irSensors.Count; index++)
 				{
 					var irSensor =_irSensors[index];
-					var ir = new messages.Micom.Ir();
-					ir.Distance = irSensor.GetDetectedRange();
-					ir.State = irSensor.GetSonar().Sonar;
+					var ir = new messages.Micom.Ir
+					{
+						Distance = irSensor.GetDetectedRange(),
+						State = irSensor.GetSonar()
+					};
 
 					micomData.Irs.Add(ir);
 				}

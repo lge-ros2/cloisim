@@ -134,7 +134,7 @@ public static class ProceduralHeightmap
 				terrainLayer.name = Path.GetFileNameWithoutExtension(elem.Diffuse);
 				terrainLayer.diffuseTexture = MeshLoader.GetTexture(elem.Diffuse);
 				terrainLayer.normalMapTexture = MeshLoader.GetTexture(elem.Normal);
-				terrainLayer.tileSize = (Vector2.one * (int)elem.Size);
+				terrainLayer.tileSize = Vector2.one * (int)elem.Size;
 				terrainLayer.smoothness = DefaultSmootheness;
 
 				terrainLayers[i] = terrainLayer;

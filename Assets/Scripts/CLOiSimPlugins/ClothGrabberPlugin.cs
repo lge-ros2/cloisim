@@ -63,6 +63,10 @@ public class ClothGrabberPlugin : CLOiSimPlugin
 	private readonly Dictionary<string, ClothGrabber> _grabbersByName = new();
 	private readonly List<ActivationGroup> _activationGroups = new();
 
+	// Per-frame cache to avoid redundant HasClothWithinDistance() calls
+	// when the same grabber appears in multiple groups
+	private readonly Dictionary<ClothGrabber, bool> _contactCache = new();
+
 	protected override void OnAwake()
 	{
 		_type = ICLOiSimPlugin.Type.NONE;
@@ -77,7 +81,7 @@ public class ClothGrabberPlugin : CLOiSimPlugin
 			yield break;
 		}
 
-		var grabRadius = pluginParams.GetValue<float>("grab_radius", 0.01f);
+		var grabRadius = pluginParams.GetValue("grab_radius", 0.01f);
 
 		// 1. Parse <grippers>
 		var grippersElem = pluginParams.GetElement("grippers");
@@ -148,7 +152,7 @@ public class ClothGrabberPlugin : CLOiSimPlugin
 		var groupElements = activationElem.GetElements("group");
 		foreach (var groupElem in groupElements)
 		{
-			var threshold = groupElem.GetAttribute<float>("contact_distance_threshold", 0.01f);
+			var threshold = groupElem.GetAttribute("contact_distance_threshold", 0.01f);
 			var group = new ActivationGroup { ContactDistanceThreshold = threshold };
 
 			var groupGripperElems = groupElem.GetElements("gripper");
@@ -193,6 +197,8 @@ public class ClothGrabberPlugin : CLOiSimPlugin
 
 	private void Update()
 	{
+		_contactCache.Clear();
+
 		foreach (var group in _activationGroups)
 		{
 			var allInContact = true;
@@ -228,10 +234,16 @@ public class ClothGrabberPlugin : CLOiSimPlugin
 	/// A grabber is "in contact" when it is already holding a vertex (distance is effectively zero)
 	/// or when a free cloth vertex is within <paramref name="threshold"/>.
 	/// </summary>
-	private static bool IsInContact(ClothGrabber grabber, float threshold)
+	private bool IsInContact(ClothGrabber grabber, float threshold)
 	{
 		if (grabber == null) return false;
-		return grabber.IsGrabbing || grabber.HasClothWithinDistance(threshold);
+
+		if (_contactCache.TryGetValue(grabber, out var cached))
+			return cached;
+
+		var result = grabber.IsGrabbing || grabber.HasClothWithinDistance(threshold);
+		_contactCache[grabber] = result;
+		return result;
 	}
 
 	/// <summary>

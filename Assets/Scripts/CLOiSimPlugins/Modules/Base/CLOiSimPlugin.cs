@@ -16,7 +16,7 @@ public interface ICLOiSimPlugin
 		NONE,
 		WORLD, GROUNDTRUTH, ELEVATOR, ACTOR,
 		MICOM, JOINTCONTROL,
-		SENSOR, GPS, IMU, IR, SONAR, CONTACT, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE, SEGMENTCAMERA
+		SENSOR, GPS, IMU, IR, SONAR, CONTACT, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE, SEGMENTCAMERA, LOGICALCAMERA
 	};
 	void SetPluginParameters(in SDFormat.Plugin node);
 	SDFormat.Plugin GetPluginParameters();
@@ -116,7 +116,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			GetType() == typeof(IRPlugin) ||
 			GetType() == typeof(ContactPlugin))
 		{
-			var helperLink = this.GetComponentInParent<SDFormat.Helper.Link>();
+			var helperLink = GetComponentInParent<SDFormat.Helper.Link>();
 			var modelLink = (helperLink != null) ? helperLink.Model : null;
 
 			if (modelLink != null)
@@ -156,7 +156,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			_partsName = DeviceHelper.GetPartsName(gameObject);
 		}
 
-		var helperLink = this.GetComponentInParent<SDFormat.Helper.Link>();
+		var helperLink = GetComponentInParent<SDFormat.Helper.Link>();
 		if (helperLink != null)
 		{
 			_parentLinkName = string.IsNullOrEmpty(helperLink.JointParentLinkName) ? null : helperLink.JointParentLinkName;
