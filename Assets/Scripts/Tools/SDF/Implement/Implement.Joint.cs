@@ -312,32 +312,39 @@ namespace SDFormat
 			{
 				UE.Transform foundLinkObject = null;
 
-				var rootTransform = targetTransform;
-
-				while (!rootTransform.IsRootModel())
-				{
-					rootTransform = rootTransform.parent;
-				}
-
 				(var modelName, var linkName) = SDF2Unity.GetModelLinkName(name, targetTransform.name);
-				// UE.Debug.Log("GetModelLinkName  => " + modelName + ", " + linkName);
 
 				if (string.IsNullOrEmpty(modelName))
 				{
-					// UE.Debug.Log(name + ", Find  => " + targetTransform.name + ", " + rootTransform.name);
 					foundLinkObject = targetTransform.GetComponentsInChildren<UE.Transform>().FirstOrDefault(x => x.name.Equals(name));
 				}
 				else
 				{
-					var modelHelper = rootTransform.GetComponentsInChildren<Helper.Model>().FirstOrDefault(x => x.name.Equals(modelName));
-					var modelTransform = modelHelper?.transform;
+					// Search within the current model scope first to avoid name collisions
+					// between sibling models (e.g., left_hand/finger_1 vs right_hand/finger_1)
+					var modelHelper = targetTransform.GetComponentsInChildren<Helper.Model>().FirstOrDefault(x => x.name.Equals(modelName));
 
+					// Fallback to root model scope for cross-model references
+					if (modelHelper == null)
+					{
+						var rootTransform = targetTransform;
+						while (!rootTransform.IsRootModel())
+						{
+							rootTransform = rootTransform.parent;
+						}
+						modelHelper = rootTransform.GetComponentsInChildren<Helper.Model>().FirstOrDefault(x => x.name.Equals(modelName));
+						UE.Debug.LogWarning($"[FindTransformByName] Fallback to root for '{name}': target='{targetTransform.name}', modelName='{modelName}', found='{modelHelper?.name}'");
+					}
+
+					var modelTransform = modelHelper?.transform;
 					if (modelTransform != null)
 					{
 						var foundLinkHelper = modelTransform.GetComponentsInChildren<Helper.Link>().FirstOrDefault(x => x.transform.name.Equals(linkName));
 						foundLinkObject = foundLinkHelper?.transform;
 					}
 				}
+
+				UE.Debug.Log($"[FindTransformByName] name='{name}', target='{targetTransform.name}', modelName='{modelName}', linkName='{linkName}', found='{foundLinkObject?.name ?? "NULL"}', foundParent='{foundLinkObject?.parent?.name ?? "NULL"}'");
 
 				return foundLinkObject;
 			}

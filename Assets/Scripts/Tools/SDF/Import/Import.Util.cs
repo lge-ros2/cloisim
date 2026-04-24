@@ -163,8 +163,21 @@ namespace SDFormat
 					}
 					else
 					{
-						var relativeObjectBaseHelper
-							= baseHelper.RootModel.GetComponentsInChildren<Helper.Base>().FirstOrDefault(x => x.name.Equals(poseRelativeTo));
+						// Search within the nearest enclosing model first to avoid name
+						// collisions between sibling nested models (e.g., left_hand vs right_hand
+						// both having "hand_base_link").
+						Helper.Base relativeObjectBaseHelper = null;
+
+						var enclosingModel = baseHelper.GetComponentInParent<Helper.Model>();
+						if (enclosingModel != null && enclosingModel.isNested)
+						{
+							relativeObjectBaseHelper = enclosingModel.GetComponentsInChildren<Helper.Base>()
+								.FirstOrDefault(x => x.name.Equals(poseRelativeTo));
+						}
+
+						// Fall back to root model scope for cross-model references
+						relativeObjectBaseHelper ??= baseHelper.RootModel.GetComponentsInChildren<Helper.Base>()
+							.FirstOrDefault(x => x.name.Equals(poseRelativeTo));
 
 						if (relativeObjectBaseHelper != null)
 						{
