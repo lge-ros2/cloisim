@@ -15,7 +15,7 @@ namespace SDFormat
 		{
 			private static readonly float MinimumInertiaTensor = 1e-39f;
 
-			private static UE.Pose GetInertiaTensor(in Math.Inertial inertial, in UE.ArticulationBody tempArticulationBodyForCalculation)
+			private static UE.Pose GetInertiaTensor(in Math.Inertial inertial)
 			{
 				/**
 				 *  Inertia Tensor
@@ -43,14 +43,7 @@ namespace SDFormat
 				// var inertiaRotationVector = SDF2Unity.Scalar((float)inertia?.ixy, (float)inertia?.iyz, (float)inertia?.ixz);
 
 				inertiaMomentum.position = inertiaVector;
-				// inertiaMomentum.rotation = UE.Quaternion.Euler(inertiaRotationVector.x, inertiaRotationVector.y, inertiaRotationVector.z);
-
-				#region Temporary Code for intertia tensor rotation
-				tempArticulationBodyForCalculation.automaticInertiaTensor = true;
-				// UE.Debug.LogWarning($"{tempArticulationBodyForCalculation.name} Inertia Tensor: {tempArticulationBodyForCalculation.inertiaTensor}, {tempArticulationBodyForCalculation.inertiaTensorRotation.eulerAngles}");
-				inertiaMomentum.rotation = tempArticulationBodyForCalculation.inertiaTensorRotation;
-				tempArticulationBodyForCalculation.automaticInertiaTensor = false;
-				#endregion
+				inertiaMomentum.rotation = UE.Quaternion.identity;
 
 				// Debug.Log("Inertia Tensor: " + inertiaMomentum.position + ", " + inertiaMomentum.rotation.eulerAngles);
 				return inertiaMomentum;
@@ -72,6 +65,7 @@ namespace SDFormat
 				linkHelper.Pose = link.RawPose;
 				linkHelper.PoseRelativeTo = link.PoseRelativeTo;
 				linkHelper.Inertial = link.Inertial;
+				linkHelper.autoInertia = link.AutoInertia;
 
 				var battery = link.GetBattery();
 				if (battery != null)
@@ -180,29 +174,44 @@ namespace SDFormat
 				articulationBody.anchorRotation = UE.Quaternion.identity;
 
 				articulationBody.ResetCenterOfMass();
-				articulationBody.automaticCenterOfMass = false;
-
-				var (centerOfMassPos, _) = inertial.Pose.ToUnity();
-				articulationBody.centerOfMass = centerOfMassPos;
-
-				// Debug.Log($"{linkObject.name} => Center Of Mass: {articulationBody.centerOfMass.ToString("F5")} | inertia: {articulationBody.inertiaTensor.ToString("F5")}, {articulationBody.inertiaTensorRotation.ToString("F5")}");
+				articulationBody.ResetInertiaTensor();
 
 				if (colliders.Length == 0)
 				{
 					Debug.LogWarning($"{articulationBody.name} => no mesh collider exists in child");
 				}
 
-				articulationBody.ResetInertiaTensor();
-				if (inertial != null && inertial.Ixx != 0)
+				if (linkHelper != null && linkHelper.autoInertia)
 				{
-					var momentum = GetInertiaTensor(inertial, articulationBody);
-					articulationBody.inertiaTensor = momentum.position;
-					articulationBody.inertiaTensorRotation = momentum.rotation;
-					articulationBody.automaticInertiaTensor = false;
+					articulationBody.automaticCenterOfMass = true;
+					articulationBody.automaticInertiaTensor = true;
 				}
 				else
 				{
-					articulationBody.automaticInertiaTensor = true;
+					if (inertial != null && inertial.Pose != Math.Pose3d.Zero)
+					{
+						articulationBody.automaticCenterOfMass = false;
+						var (centerOfMassPos, _) = inertial.Pose.ToUnity();
+						articulationBody.centerOfMass = centerOfMassPos;
+					}
+					else
+					{
+						articulationBody.automaticCenterOfMass = true;
+					}
+
+					// Debug.Log($"{linkObject.name} => Center Of Mass: {articulationBody.centerOfMass.ToString("F5")} | inertia: {articulationBody.inertiaTensor.ToString("F5")}, {articulationBody.inertiaTensorRotation.ToString("F5")}");
+
+					if (inertial != null && inertial.Ixx != 0)
+					{
+						var momentum = GetInertiaTensor(inertial);
+						articulationBody.inertiaTensor = momentum.position;
+						articulationBody.inertiaTensorRotation = momentum.rotation;
+						articulationBody.automaticInertiaTensor = false;
+					}
+					else
+					{
+						articulationBody.automaticInertiaTensor = true;
+					}
 				}
 
 				// Keep disabled to prevent physics from modifying the transform during import.

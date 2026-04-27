@@ -22,11 +22,13 @@ namespace SDFormat
 
 			[UE.Header("Properties")]
 			public bool drawInertia = false;
+			public bool drawCenterOfMass = true;
 			public bool drawContact = true;
 
 			[UE.Header("SDF Properties")]
 			public bool isSelfCollide = false;
 			public bool useGravity = true;
+			public bool autoInertia = false;
 
 			[UE.Header("Joint related")]
 			private string jointName = string.Empty;
@@ -43,7 +45,7 @@ namespace SDFormat
 			private MimicConstraint _jointAxisMimic = null;
 			private MimicConstraint _jointAxis2Mimic = null;
 
-			private List<UE.ContactPoint> collisionContacts = new List<UE.ContactPoint>();
+			private List<UE.ContactPoint> collisionContacts = new();
 
 			private SensorDevices.Battery _battery = null;
 			public SensorDevices.Battery Battery => _battery;
@@ -151,36 +153,63 @@ namespace SDFormat
 				}
 			}
 
-			void OnDrawGizmos()
+			private void DrawInertiaAndCoM(UE.ArticulationBody artBody)
 			{
-				if (_artBody && drawInertia)
-				{
-					UE.Gizmos.color = new UE.Color(0.45f, 0.1f, 0.15f, 0.3f);
+				if (_artBody == null)
+					return;
 
-					var region = _artBody.inertiaTensor;
+				if (drawInertia)
+				{
+					// Draw inertia tensor
+					UE.Gizmos.color = new UE.Color(0.45f, 0.1f, 0.15f, 0.2f);
+
+					var region = artBody.inertiaTensor;
 					if (region.x < 1f && region.y < 1f && region.z < 1f)
 					{
 						region.Set(region.magnitude / region.x, region.magnitude / region.y, region.magnitude / region.z);
 					}
 					region = region.normalized;
 
-					UE.Gizmos.DrawCube(transform.position, region);
+					UE.Gizmos.DrawCube(artBody.transform.position, region);
 				}
 
-				lock (collisionContacts)
+				if (drawCenterOfMass)
 				{
-					if (drawContact && collisionContacts != null && collisionContacts.Count > 0)
-					{
-						var contactColor = UE.Color.cyan;
-						contactColor.b = UE.Random.Range(0.5f, 1.0f);
+					// Draw center of mass
+					UE.Gizmos.color = new UE.Color(0.1f, 0.8f, 0.2f, 0.4f);
+					var comWorld = artBody.transform.TransformPoint(artBody.centerOfMass);
+					UE.Gizmos.DrawSphere(comWorld, 0.015f);
 
-						// Debug-draw all contact points and normals
-						for (var i = 0; i < collisionContacts.Count; i++)
+					UE.Gizmos.color = new UE.Color(0.1f, 0.8f, 0.2f, 0.3f);
+					UE.Gizmos.DrawWireSphere(comWorld, 0.03f);
+				}
+			}
+
+			void OnDrawGizmosSelected()
+			{
+				var childArtBodies = GetComponentsInChildren<UE.ArticulationBody>();
+				foreach (var childArtBody in childArtBodies)
+				{
+					DrawInertiaAndCoM(childArtBody);
+				}
+
+				if (drawContact)
+				{
+					lock (collisionContacts)
+					{
+						if (collisionContacts != null && collisionContacts.Count > 0)
 						{
-							var contact = collisionContacts[i];
-							UE.Debug.DrawRay(contact.point, contact.normal, contactColor);
+							var contactColor = UE.Color.cyan;
+							contactColor.b = UE.Random.Range(0.5f, 1.0f);
+
+							// Debug-draw all contact points and normals
+							for (var i = 0; i < collisionContacts.Count; i++)
+							{
+								var contact = collisionContacts[i];
+								UE.Debug.DrawRay(contact.point, contact.normal, contactColor);
+							}
+							collisionContacts.Clear();
 						}
-						collisionContacts.Clear();
 					}
 				}
 			}
