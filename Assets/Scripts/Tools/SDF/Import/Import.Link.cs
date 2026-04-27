@@ -72,6 +72,7 @@ namespace SDFormat
 				linkHelper.Pose = link.RawPose;
 				linkHelper.PoseRelativeTo = link.PoseRelativeTo;
 				linkHelper.Inertial = link.Inertial;
+				linkHelper.autoInertia = link.AutoInertia;
 
 				var battery = link.GetBattery();
 				if (battery != null)
@@ -180,29 +181,38 @@ namespace SDFormat
 				articulationBody.anchorRotation = UE.Quaternion.identity;
 
 				articulationBody.ResetCenterOfMass();
-				articulationBody.automaticCenterOfMass = false;
-
-				var (centerOfMassPos, _) = inertial.Pose.ToUnity();
-				articulationBody.centerOfMass = centerOfMassPos;
-
-				// Debug.Log($"{linkObject.name} => Center Of Mass: {articulationBody.centerOfMass.ToString("F5")} | inertia: {articulationBody.inertiaTensor.ToString("F5")}, {articulationBody.inertiaTensorRotation.ToString("F5")}");
+				articulationBody.ResetInertiaTensor();
 
 				if (colliders.Length == 0)
 				{
 					Debug.LogWarning($"{articulationBody.name} => no mesh collider exists in child");
 				}
 
-				articulationBody.ResetInertiaTensor();
-				if (inertial != null && inertial.Ixx != 0)
+				if (linkHelper != null && linkHelper.autoInertia)
 				{
-					var momentum = GetInertiaTensor(inertial, articulationBody);
-					articulationBody.inertiaTensor = momentum.position;
-					articulationBody.inertiaTensorRotation = momentum.rotation;
-					articulationBody.automaticInertiaTensor = false;
+					articulationBody.automaticCenterOfMass = true;
+					articulationBody.automaticInertiaTensor = true;
 				}
 				else
 				{
-					articulationBody.automaticInertiaTensor = true;
+					articulationBody.automaticCenterOfMass = false;
+
+					var (centerOfMassPos, _) = inertial.Pose.ToUnity();
+					articulationBody.centerOfMass = centerOfMassPos;
+
+					// Debug.Log($"{linkObject.name} => Center Of Mass: {articulationBody.centerOfMass.ToString("F5")} | inertia: {articulationBody.inertiaTensor.ToString("F5")}, {articulationBody.inertiaTensorRotation.ToString("F5")}");
+
+					if (inertial != null && inertial.Ixx != 0)
+					{
+						var momentum = GetInertiaTensor(inertial, articulationBody);
+						articulationBody.inertiaTensor = momentum.position;
+						articulationBody.inertiaTensorRotation = momentum.rotation;
+						articulationBody.automaticInertiaTensor = false;
+					}
+					else
+					{
+						articulationBody.automaticInertiaTensor = true;
+					}
 				}
 
 				// Keep disabled to prevent physics from modifying the transform during import.

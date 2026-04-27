@@ -27,6 +27,7 @@ namespace SDFormat
 			[UE.Header("SDF Properties")]
 			public bool isSelfCollide = false;
 			public bool useGravity = true;
+			public bool autoInertia = false;
 
 			[UE.Header("Joint related")]
 			private string jointName = string.Empty;
