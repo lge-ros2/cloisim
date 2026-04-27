@@ -72,6 +72,8 @@ public class Main : MonoBehaviour
 	private Vector3 _trackVisualPosition = Vector3.zero;
 	private bool _trackVisualInheritYaw = false;
 
+	private CrashReporter _crashReporter = null;
+
 	private bool _pluginAllStarted = false;
 	private bool _isResetting = false;
 	private bool _resetTriggered = false;
@@ -254,6 +256,8 @@ public class Main : MonoBehaviour
 	void Awake()
 	{
 		_instance = this;
+
+		_crashReporter = new CrashReporter();
 
 		ReplaceStandaloneInputModule();
 
@@ -670,6 +674,17 @@ public class Main : MonoBehaviour
 
 	void LateUpdate()
 	{
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+		// Ctrl+Shift+F12: Trigger test crash for CrashReporter verification
+		if (Keyboard.current[Key.LeftCtrl].isPressed &&
+			Keyboard.current[Key.LeftShift].isPressed &&
+			Keyboard.current[Key.F12].wasReleasedThisFrame)
+		{
+			Debug.LogWarning("[CrashReporter] Test crash triggered by user (Ctrl+Shift+F12)");
+			throw new System.Exception("[CrashReporter TEST] Intentional test crash to verify dump collection.");
+		}
+#endif
+
 		if ((Keyboard.current[Key.LeftCtrl].isPressed && Keyboard.current[Key.R].wasReleasedThisFrame) ||
 			Keyboard.current[Key.F5].wasReleasedThisFrame)
 		{
@@ -913,6 +928,9 @@ public class Main : MonoBehaviour
 
 	void OnDestroy()
 	{
+		_crashReporter?.Dispose();
+		_crashReporter = null;
+
 		SensorDevices.DepthCamera.UnloadComputeShader();
 
 		if (BridgeManager != null)
