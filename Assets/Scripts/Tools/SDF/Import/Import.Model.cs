@@ -32,19 +32,17 @@ namespace SDFormat
 				articulationBody.angularDamping = 1;
 				articulationBody.jointFriction = 0;
 
-				articulationBody.mass = 0.5f;
-				articulationBody.automaticCenterOfMass = false;
-				articulationBody.ResetCenterOfMass();
-				articulationBody.centerOfMass = UE.Vector3.zero;
-
+				articulationBody.mass = 0.1f;
+				articulationBody.automaticCenterOfMass = true;
 				articulationBody.automaticInertiaTensor = true;
+				articulationBody.ResetCenterOfMass();
 				articulationBody.ResetInertiaTensor();
 
 				articulationBody.solverIterations = 0;
 				articulationBody.solverVelocityIterations = 0;
 				articulationBody.linearVelocity = UE.Vector3.zero;
 				articulationBody.angularVelocity = UE.Vector3.zero;
-				articulationBody.sleepThreshold = 0.01f;
+				articulationBody.sleepThreshold = 0.1f;
 				articulationBody.Sleep();
 
 				// Keep disabled to prevent physics from shifting transforms during import.
