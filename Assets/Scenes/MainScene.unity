@@ -1885,6 +1885,7 @@ MonoBehaviour:
   - ../world_resources/logistics_center/models
   - ../world_resources/smallhouse/models
   - ../world_resources/meta-home/models
+  - ../world_resources/robot_validation_world/models
   _worldRootDirectories:
   - ../sample_resources/worlds/
   - ../world_resources/bluepearl/worlds
@@ -1893,6 +1894,7 @@ MonoBehaviour:
   - ../world_resources/logistics_center/worlds
   - ../world_resources/smallhouse/worlds
   - ../world_resources/meta-home/worlds
+  - ../world_resources/robot_validation_world/worlds
   _fileRootDirectories:
   - ../sample_resources/media/
   - ../world_resources/bluepearl/media
