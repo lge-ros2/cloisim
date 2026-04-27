@@ -251,7 +251,9 @@ namespace SDFormat
 					{
 						var oldCenterOfMass = body.centerOfMass;
 						body.centerOfMass = oldCenterOfMass + body.anchorPosition;
+#if UNITY_EDITOR
 						UE.Debug.LogWarning($"Adjusting center of mass for {body.name} by anchor offset {body.anchorPosition.ToString("F5")} due to non-root articulation body with manual center of mass.  Old center of mass: {oldCenterOfMass.ToString("F5")}, New center of mass: {body.centerOfMass.ToString("F5")}");
+#endif
 					}
 
 					if (body.isRoot)

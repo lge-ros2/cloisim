@@ -333,7 +333,9 @@ namespace SDFormat
 							rootTransform = rootTransform.parent;
 						}
 						modelHelper = rootTransform.GetComponentsInChildren<Helper.Model>().FirstOrDefault(x => x.name.Equals(modelName));
+#if UNITY_EDITOR
 						UE.Debug.LogWarning($"[FindTransformByName] Fallback to root for '{name}': target='{targetTransform.name}', modelName='{modelName}', found='{modelHelper?.name}'");
+#endif
 					}
 
 					var modelTransform = modelHelper?.transform;
@@ -344,8 +346,9 @@ namespace SDFormat
 					}
 				}
 
+#if UNITY_EDITOR
 				UE.Debug.Log($"[FindTransformByName] name='{name}', target='{targetTransform.name}', modelName='{modelName}', linkName='{linkName}', found='{foundLinkObject?.name ?? "NULL"}', foundParent='{foundLinkObject?.parent?.name ?? "NULL"}'");
-
+#endif
 				return foundLinkObject;
 			}
 		}
