@@ -38,6 +38,9 @@ public class SimulationControlResponseBase
 	[JsonProperty(Order = 0)]
 	public string command = string.Empty;
 
+	[JsonProperty(Order = -1, PropertyName = "sim_version")]
+	public string simVersion = SimulationControlService.SimVersion;
+
 	public virtual void Print()
 	{
 		Console.WriteLine($"## {GetType().Name}: {command}");
@@ -180,6 +183,8 @@ public class SimulationControlRequestTeleport : SimulationControlRequest
 
 public class SimulationControlService : WebSocketBehavior
 {
+	public static string SimVersion { get; set; } = string.Empty;
+
 	private BridgeManager bridgeManager = null;
 
 	protected override void OnOpen()

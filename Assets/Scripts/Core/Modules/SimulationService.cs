@@ -94,6 +94,8 @@ public class SimulationService : IDisposable
 			IgnoreExtensions = true
 		});
 
+		SimulationControlService.SimVersion = UnityEngine.Application.version;
+
 		var markerVisualizer = Main.UIObject?.GetComponent<MarkerVisualizer>();
 		wsServer.AddWebSocketService("/markers", () => new MarkerVisualizerService(markerVisualizer)
 		{
