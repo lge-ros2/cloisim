@@ -209,8 +209,10 @@ namespace SDFormat
 					}
 					for (var i = prevMaterials.Length - 1; i < requiredMaterialCount; i++)
 					{
-						materials[i] = new UE.Material(lastMaterial);
-						materials[i].hideFlags = UE.HideFlags.DontUnloadUnusedAsset;
+						materials[i] = new UE.Material(lastMaterial)
+						{
+							hideFlags = UE.HideFlags.DontUnloadUnusedAsset
+						};
 					}
 					// UE.Debug.Log("Resizing materials " + materials.Length);
 				}

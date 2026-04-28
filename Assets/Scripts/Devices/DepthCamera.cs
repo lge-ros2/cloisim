@@ -224,8 +224,10 @@ namespace SensorDevices
 			var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
 			var imageDepth = CameraData.GetImageDepth(format);
 
-			_textureForCapture = new Texture2D(width, height, TextureFormat.R8, false);
-			_textureForCapture.filterMode = FilterMode.Point;
+			_textureForCapture = new Texture2D(width, height, TextureFormat.R8, false)
+			{
+				filterMode = FilterMode.Point
+			};
 
 			var pixelCount = width * height;
 			var packedCount = (imageDepth == 4)

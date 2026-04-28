@@ -51,8 +51,10 @@ namespace SDFormat
 			public static void GenerateMesh(this UE.GameObject targetParentObject, in SDFormat.Geometry geometry)
 			{
 				var isVisualMesh = IsVisualObject(targetParentObject);
-				var createdObject = new UE.GameObject("Primitive Mesh");
-				createdObject.tag = "Geometry";
+				var createdObject = new UE.GameObject("Primitive Mesh")
+				{
+					tag = "Geometry"
+				};
 
 				UE.Mesh mesh = null;
 

@@ -181,12 +181,18 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			_laserScan = new messages.LaserScan();
-			_laserScan.Header = new messages.Header();
-			_laserScan.Header.Stamp = new messages.Time();
-			_laserScan.WorldPose = new messages.Pose();
-			_laserScan.WorldPose.Position = new messages.Vector3d();
-			_laserScan.WorldPose.Orientation = new messages.Quaternion();
+			_laserScan = new messages.LaserScan
+			{
+				Header = new messages.Header
+				{
+					Stamp = new messages.Time()
+				},
+				WorldPose = new messages.Pose
+				{
+					Position = new messages.Vector3d(),
+					Orientation = new messages.Quaternion()
+				}
+			};
 		}
 
 		private void SetupStandardMessages()
@@ -534,8 +540,10 @@ namespace SensorDevices
 
 		protected override IEnumerator OnVisualize()
 		{
-			var visualizer = new GameObject("__laser_visualizer__");
-			visualizer.layer = LayerMask.NameToLayer("Visualization");
+			var visualizer = new GameObject("__laser_visualizer__")
+			{
+				layer = LayerMask.NameToLayer("Visualization")
+			};
 			visualizer.transform.SetParent(transform, false);
 
 			if (IsLivoxMode || Is3DLidar)

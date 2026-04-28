@@ -36,9 +36,11 @@ public static partial class SDF2Unity
 		if (combine.Count == 0)
 			return null;
 
-		var newCombinedMesh = new Mesh();
-		newCombinedMesh.name = "Merged";
-		newCombinedMesh.indexFormat = (totalVertexCount >= ushort.MaxValue) ? IndexFormat.UInt32 : IndexFormat.UInt16;
+		var newCombinedMesh = new Mesh
+		{
+			name = "Merged",
+			indexFormat = (totalVertexCount >= ushort.MaxValue) ? IndexFormat.UInt32 : IndexFormat.UInt16
+		};
 		newCombinedMesh.CombineMeshes(combine.ToArray(), true, true);
 		newCombinedMesh.RecalculateNormals();
 		newCombinedMesh.RecalculateTangents();
@@ -74,9 +76,11 @@ public static partial class SDF2Unity
 		if (combine.Count == 0)
 			return null;
 
-		var newCombinedMesh = new Mesh();
-		newCombinedMesh.name = "Merged";
-		newCombinedMesh.indexFormat = (totalVertexCount >= ushort.MaxValue) ? IndexFormat.UInt32 : IndexFormat.UInt16;
+		var newCombinedMesh = new Mesh
+		{
+			name = "Merged",
+			indexFormat = (totalVertexCount >= ushort.MaxValue) ? IndexFormat.UInt32 : IndexFormat.UInt16
+		};
 		newCombinedMesh.CombineMeshes(combine.ToArray(), false, true);
 		newCombinedMesh.RecalculateNormals();
 		newCombinedMesh.RecalculateTangents();

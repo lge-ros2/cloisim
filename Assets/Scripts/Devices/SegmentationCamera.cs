@@ -65,8 +65,10 @@ namespace SensorDevices
 		{
 			base.InitializeMessages();
 
-			_segmentation = new messages.Segmentation();
-			_segmentation.Image = _image;
+			_segmentation = new messages.Segmentation
+			{
+				Image = _image
+			};
 		}
 
 		void LateUpdate()

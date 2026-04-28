@@ -56,11 +56,13 @@ public class NavMeshSourceTag : MonoBehaviour
 			var mesh = mf.sharedMesh;
 			if (mesh != null)
 			{
-				var navMeshBuildSrc = new NavMeshBuildSource();
-				navMeshBuildSrc.shape = NavMeshBuildSourceShape.Mesh;
-				navMeshBuildSrc.sourceObject = mesh;
-				navMeshBuildSrc.transform = mf.transform.localToWorldMatrix;
-				navMeshBuildSrc.area = 0;
+				var navMeshBuildSrc = new NavMeshBuildSource
+				{
+					shape = NavMeshBuildSourceShape.Mesh,
+					sourceObject = mesh,
+					transform = mf.transform.localToWorldMatrix,
+					area = 0
+				};
 				sources.Add(navMeshBuildSrc);
 			}
 		}

@@ -217,8 +217,10 @@ namespace SensorDevices
 
 			lineRenderer.positionCount = 0;
 			lineRenderer.widthMultiplier = 0.001f;
-			lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-			lineRenderer.material.hideFlags = HideFlags.DontUnloadUnusedAsset;
+			lineRenderer.material = new Material(Shader.Find("Sprites/Default"))
+			{
+				hideFlags = HideFlags.DontUnloadUnusedAsset
+			};
 			lineRenderer.useWorldSpace = true;
 
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);

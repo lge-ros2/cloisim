@@ -53,8 +53,10 @@ public class CLOiSimPluginThread : IDisposable
 	{
 		if (function != null)
 		{
-			var thread = new Thread(function);
-			thread.IsBackground = true;
+			var thread = new Thread(function)
+			{
+				IsBackground = true
+			};
 			var paramObject = new ParamObject(targetPortForThread, pluginObject);
 			// thread.Priority = System.Threading.ThreadPriority.AboveNormal;
 			_threadList.Add((thread, paramObject));

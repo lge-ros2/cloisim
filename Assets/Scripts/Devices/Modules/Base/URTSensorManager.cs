@@ -342,11 +342,13 @@ public class URTSensorManager : MonoBehaviour
 			{
 				try
 				{
-					var desc = new MeshInstanceDesc(mesh, sub);
-					desc.localToWorldMatrix = renderer.localToWorldMatrix;
-					desc.mask = 0xFF;
-					desc.enableTriangleCulling = false;
-					desc.opaqueGeometry = true;
+					var desc = new MeshInstanceDesc(mesh, sub)
+					{
+						localToWorldMatrix = renderer.localToWorldMatrix,
+						mask = 0xFF,
+						enableTriangleCulling = false,
+						opaqueGeometry = true
+					};
 
 					var handle = _rtAccelStruct.AddInstance(desc);
 					_rtInstances.Add(new InstanceEntry

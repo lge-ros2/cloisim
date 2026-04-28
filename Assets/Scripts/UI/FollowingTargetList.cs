@@ -150,8 +150,10 @@ public class FollowingTargetList : MonoBehaviour
 			{
 				if (modelHelper.IsFirstChild && !modelHelper.isStatic && modelHelper.hasRootArticulationBody)
 				{
-					var newOption = new TMP_Dropdown.OptionData();
-					newOption.text = modelHelper.name;
+					var newOption = new TMP_Dropdown.OptionData
+					{
+						text = modelHelper.name
+					};
 					dropdown.options.Add(newOption);
 				}
 			}

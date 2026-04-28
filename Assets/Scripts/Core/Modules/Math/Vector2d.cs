@@ -133,17 +133,21 @@ public struct Vector2d
 
 	public static Vector2d Max(in Vector2d lhs, in Vector2d rhs)
 	{
-		var temp = new Vector2d();
-		temp.x = Math.Max(lhs.x, rhs.x);
-		temp.y = Math.Max(lhs.y, rhs.y);
+		var temp = new Vector2d
+		{
+			x = Math.Max(lhs.x, rhs.x),
+			y = Math.Max(lhs.y, rhs.y)
+		};
 		return temp;
 	}
 
 	public static Vector2d Min(in Vector2d lhs, in Vector2d rhs)
 	{
-		var temp = new Vector2d();
-		temp.x = Math.Min(lhs.x, rhs.x);
-		temp.y = Math.Min(lhs.y, rhs.y);
+		var temp = new Vector2d
+		{
+			x = Math.Min(lhs.x, rhs.x),
+			y = Math.Min(lhs.y, rhs.y)
+		};
 		return temp;
 	}
 
@@ -165,9 +169,11 @@ public struct Vector2d
 
 	public static Vector2d Scale(in Vector2d a, in Vector2d b)
 	{
-		var temp = new Vector2d();
-		temp.x = a.x * b.x;
-		temp.y = a.y * b.y;
+		var temp = new Vector2d
+		{
+			x = a.x * b.x,
+			y = a.y * b.y
+		};
 		return temp;
 	}
 

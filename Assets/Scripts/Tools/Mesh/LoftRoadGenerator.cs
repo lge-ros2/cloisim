@@ -111,8 +111,10 @@ namespace Unity.Splines
 
 		public void OnEnable()
 		{
-			m_Mesh = new Mesh();
-			m_Mesh.name = "GeneratedRoadMesh";
+			m_Mesh = new Mesh
+			{
+				name = "GeneratedRoadMesh"
+			};
 
 			var meshCollider = gameObject.GetComponent<MeshCollider>();
 			if (meshCollider == null)

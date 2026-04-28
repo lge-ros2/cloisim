@@ -25,10 +25,12 @@ public class SimulationService : IDisposable
 	{
 		var envServicePort = Environment.GetEnvironmentVariable(SERVICE_PORT_ENVIRONMENT_NAME);
 		_servicePort = (envServicePort == null || envServicePort.Equals("")) ? defaultWebSocketServicePort : int.Parse(envServicePort);
-		wsServer = new WebSocketServer(_servicePort);
-		wsServer.ReuseAddress = true;
-		wsServer.KeepClean = true;
-		wsServer.WaitTime = TimeSpan.FromMilliseconds(5000);
+		wsServer = new WebSocketServer(_servicePort)
+		{
+			ReuseAddress = true,
+			KeepClean = true,
+			WaitTime = TimeSpan.FromMilliseconds(5000)
+		};
 
 		InitializeServices();
 

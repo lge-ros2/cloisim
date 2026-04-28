@@ -41,8 +41,10 @@ public class MowingPlugin : CLOiSimPlugin
 
 		public Grass(Shader shader)
 		{
-			material = new Material(shader);
-			material.hideFlags = HideFlags.DontUnloadUnusedAsset;
+			material = new Material(shader)
+			{
+				hideFlags = HideFlags.DontUnloadUnusedAsset
+			};
 		}
 
 		public void SetBound(in Mesh mesh)
@@ -128,9 +130,11 @@ public class MowingPlugin : CLOiSimPlugin
 			var targetWidth = (int)(bounds.size.x / mapResolution);
 			var targetHeight = (int)(bounds.size.z / mapResolution);
 
-			texture = new Texture2D(targetWidth, targetHeight, TextureFormat.R8, false);
-			texture.name = "Grass Map";
-			texture.hideFlags = HideFlags.DontUnloadUnusedAsset;
+			texture = new Texture2D(targetWidth, targetHeight, TextureFormat.R8, false)
+			{
+				name = "Grass Map",
+				hideFlags = HideFlags.DontUnloadUnusedAsset
+			};
 			texture.Fill(Color.red);
 			texture.Apply();
 		}

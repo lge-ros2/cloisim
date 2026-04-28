@@ -344,8 +344,10 @@ public static partial class MeshLoader
 
 		foreach (var sceneMesh in sceneMeshes)
 		{
-			var newMesh = new Mesh();
-			newMesh.name = sceneMesh.Name;
+			var newMesh = new Mesh
+			{
+				name = sceneMesh.Name
+			};
 			// Debug.Log(newMesh.name + ": " + sceneMesh.VertexCount + " vertices, " + sceneMesh.FaceCount + " faces, " + sceneMesh.MaterialIndex + " material index");
 
 			if (sceneMesh.VertexCount < 3)

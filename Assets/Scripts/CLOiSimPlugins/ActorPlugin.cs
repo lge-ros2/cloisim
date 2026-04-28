@@ -47,7 +47,7 @@ public class ActorPlugin : CLOiSimPlugin
 		var motionAngularSpeed = GetPluginParameters().GetValue("default/steering/angular_speed", 2.09f) * Mathf.Rad2Deg;
 		var motionAcceleration = GetPluginParameters().GetValue("default/steering/acceleration", 8.0f);
 
-		// Debug.Log("speed:" + motionSpeed + ", angularspeed: " + motionAngularSpeed + ", acceleration: " + motionAcceleration);
+		// Debug.Log("speed:" + motionSpeed + ", angularSpeed: " + motionAngularSpeed + ", acceleration: " + motionAcceleration);
 		var actorAgent = gameObject.AddComponent<ActorAgent>();
 		actorAgent.SetSteering(motionSpeed, motionAngularSpeed, motionAcceleration);
 

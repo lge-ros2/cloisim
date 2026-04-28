@@ -183,8 +183,10 @@ public class ProceduralMesh
 		in float topRadius = .01f, in float bottomRadius = 0.5f,
 		in float height = 1f, in int nbSides = 18)
 	{
-		var mesh = new Mesh();
-		mesh.name = "Cone";
+		var mesh = new Mesh
+		{
+			name = "Cone"
+		};
 
 		var heightHalf = height / 2;
 
@@ -381,8 +383,10 @@ public class ProceduralMesh
 		if (!MeshObjectCache.ContainsKey(meshType))
 		{
 			const float UnitRadius = 1f;
-			mesh = new Mesh();
-			mesh.name = "Sphere";
+			mesh = new Mesh
+			{
+				name = "Sphere"
+			};
 
 			#region Vertices
 			var vertices = new Vector3[(nbLong + 1) * nbLat + 2];
@@ -507,8 +511,10 @@ public class ProceduralMesh
 				normal = Vector3.up;
 			}
 
-			mesh = new Mesh();
-			mesh.name = "Plane";
+			mesh = new Mesh
+			{
+				name = "Plane"
+			};
 
 			var resX = (resolutionX < 2) ? 2 : resolutionX + 1;
 			var resZ = (resolutionZ < 2) ? 2 : resolutionZ + 1;
@@ -593,8 +599,10 @@ public class ProceduralMesh
 
 	public static Mesh CreateCapsule(in float radius = 0.5f, in float length = 2f, int segments = 24)
 	{
-		Mesh mesh = new Mesh();
-		mesh.name = "Capsule";
+		Mesh mesh = new Mesh
+		{
+			name = "Capsule"
+		};
 
 		// make segments an even number
 		if (segments % 2 != 0)
@@ -781,8 +789,10 @@ public class ProceduralMesh
 
 		var planeMesh = CreateMeshFromTriangles(outputTriangles);
 
-		var extrudedMesh = new Mesh();
-		extrudedMesh.name = "Polyline";
+		var extrudedMesh = new Mesh
+		{
+			name = "Polyline"
+		};
 
 		var extrusion = new Matrix4x4[2]
 		{
@@ -815,8 +825,10 @@ public class ProceduralMesh
 			uvs[i] = new Vector2(vertices[i].x, vertices[i].y);
 		}
 
-		var mesh = new Mesh();
-		mesh.subMeshCount = 1;
+		var mesh = new Mesh
+		{
+			subMeshCount = 1
+		};
 		mesh.SetVertices(vertices);
 		mesh.SetIndices(indices, MeshTopology.Triangles, 0);
 		mesh.SetUVs(0, uvs);

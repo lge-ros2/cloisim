@@ -354,38 +354,44 @@ public class SimulationControlService : WebSocketBehavior
 	{
 		if (string.IsNullOrEmpty(targetModel))
 		{
-			var errorResponse = new SimulationControlResponseNormal();
-			errorResponse.result = "target_model is empty";
+			var errorResponse = new SimulationControlResponseNormal
+			{
+				result = "target_model is empty"
+			};
 			return errorResponse;
 		}
 
 		if (!Main.Instance.TriggerModelInfoQuery(targetModel, out var pose))
 		{
-			var errorResponse = new SimulationControlResponseNormal();
-			errorResponse.result = $"model '{targetModel}' not found";
+			var errorResponse = new SimulationControlResponseNormal
+			{
+				result = $"model '{targetModel}' not found"
+			};
 			return errorResponse;
 		}
 
 		var sdfPose = Unity2SDF.Pose(pose.position, pose.rotation);
 		var sdfRotation = sdfPose.Rotation.ToEuler();
 
-		var response = new SimulationControlResponseModelInfo();
-		response.result = new ModelInfoResult
+		var response = new SimulationControlResponseModelInfo
 		{
-			name = targetModel,
-			pose = new ModelInfoPose
+			result = new ModelInfoResult
 			{
-				position = new ModelInfoPosition
+				name = targetModel,
+				pose = new ModelInfoPose
 				{
-					x = sdfPose.Position.X,
-					y = sdfPose.Position.Y,
-					z = sdfPose.Position.Z
-				},
-				orientation = new ModelInfoOrientation
-				{
-					roll = sdfRotation.X,
-					pitch = sdfRotation.Y,
-					yaw = sdfRotation.Z
+					position = new ModelInfoPosition
+					{
+						x = sdfPose.Position.X,
+						y = sdfPose.Position.Y,
+						z = sdfPose.Position.Z
+					},
+					orientation = new ModelInfoOrientation
+					{
+						roll = sdfRotation.X,
+						pitch = sdfRotation.Y,
+						yaw = sdfRotation.Z
+					}
 				}
 			}
 		};

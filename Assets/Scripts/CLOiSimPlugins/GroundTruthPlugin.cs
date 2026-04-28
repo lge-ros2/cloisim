@@ -82,9 +82,13 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			_allLoadedModelList.Add(actor.name, actor);
 		}
 
-		_messagePerceptions = new messages.PerceptionV();
-		_messagePerceptions.Header = new messages.Header();
-		_messagePerceptions.Header.Stamp = new messages.Time();
+		_messagePerceptions = new messages.PerceptionV
+		{
+			Header = new messages.Header
+			{
+				Stamp = new messages.Time()
+			}
+		};
 	}
 
 	protected override IEnumerator OnStart()
@@ -142,14 +146,18 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 			_targetNameList[trackingId] = target;
 
-			var perception = new messages.Perception();
-			perception.Header = new messages.Header();
-			perception.Header.Stamp = new messages.Time();
-			perception.TrackingId = trackingId;
-			perception.ClassId = classId;
-			perception.Position = new messages.Vector3d();
-			perception.Velocity = new messages.Vector3d();
-			perception.Size = new messages.Vector3d();
+			var perception = new messages.Perception
+			{
+				Header = new messages.Header
+				{
+					Stamp = new messages.Time()
+				},
+				TrackingId = trackingId,
+				ClassId = classId,
+				Position = new messages.Vector3d(),
+				Velocity = new messages.Vector3d(),
+				Size = new messages.Vector3d()
+			};
 
 			var trackingGameObject = GetTrackingObject(target);
 			if (trackingGameObject != null)
@@ -164,20 +172,26 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	}
 
 #if UNITY_EDITOR
+	private float _gizmoColorAlpha = 0.8f;
 	private void OnDrawGizmos()
 	{
 		var prevColor = UE.Gizmos.color;
+
+		var redColor = UE.Color.red;
+		redColor.a = _gizmoColorAlpha;
+		var yellowColor = UE.Color.yellow;
+		yellowColor.a = _gizmoColorAlpha;
 		for (var i = 0; i < _trackingObjects.Count; i++)
 		{
 			var trackingObject = _trackingObjects[i];
+	
+			UE.Gizmos.color = redColor;
+			UE.Gizmos.DrawSphere(trackingObject.Position, 0.02f);
 
-			UE.Gizmos.color = UE.Color.red;
-			UE.Gizmos.DrawSphere(trackingObject.Position, 0.03f);
-
-			UE.Gizmos.color = UE.Color.yellow;
+			UE.Gizmos.color = yellowColor;
 			foreach (var vertex in trackingObject.Footprint())
 			{
-				UE.Gizmos.DrawSphere(vertex + trackingObject.Position, 0.005f);
+				UE.Gizmos.DrawSphere(vertex + trackingObject.Position, 0.003f);
 			}
 		}
 
@@ -335,12 +349,16 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			return false;
 		}
 
-		perception = new();
-		perception.Header = new();
-		perception.Header.Stamp = new();
-		perception.TrackingId = propName.GetHashCode() + propId;
-		perception.ClassId = classId;
-		perception.Position = new();
+		perception = new()
+		{
+			Header = new()
+			{
+				Stamp = new()
+			},
+			TrackingId = propName.GetHashCode() + propId,
+			ClassId = classId,
+			Position = new()
+		};
 		perception.Position.Set(propSnapshot.localPosition);
 		perception.Velocity = new();
 		perception.Size = new();

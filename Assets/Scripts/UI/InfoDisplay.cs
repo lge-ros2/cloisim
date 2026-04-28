@@ -109,8 +109,10 @@ public partial class InfoDisplay : MonoBehaviour
 			trigger = target.AddComponent<EventTrigger>();
 		}
 
-		var entry = new EventTrigger.Entry();
-		entry.eventID = EventTriggerType.PointerClick;
+		var entry = new EventTrigger.Entry
+		{
+			eventID = EventTriggerType.PointerClick
+		};
 		entry.callback.AddListener((_) => callback());
 		trigger.triggers.Add(entry);
 	}

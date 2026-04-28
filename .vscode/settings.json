@@ -17,5 +17,11 @@
     "editor.indentSize": "tabSize",
     "editor.insertSpaces": false,
     "editor.tabSize": 4,
-    "dotnet.defaultSolution": "cloisim.slnx"
+	"dotnet.defaultSolution": "cloisim.slnx",
+	"cSpell.words": [
+		"cloisim",
+		"Lerp",
+		"Mathf",
+		"Micom"
+	]
 }

@@ -35,8 +35,10 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			_images = new messages.Images();
-			_images.Time = new messages.Time();
+			_images = new messages.Images
+			{
+				Time = new messages.Time()
+			};
 		}
 
 		/// <summary>
