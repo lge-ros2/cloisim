@@ -186,8 +186,10 @@ public sealed class ObjectTracking
 					combine[i].transform = validMeshFilters[i].transform.localToWorldMatrix;
 				}
 
-				var combinedMesh = new Mesh();
-				combinedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+				var combinedMesh = new Mesh
+				{
+					indexFormat = UnityEngine.Rendering.IndexFormat.UInt32
+				};
 				combinedMesh.CombineMeshes(combine, true, true);
 				combinedMesh.RecalculateBounds();
 

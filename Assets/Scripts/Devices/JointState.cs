@@ -53,9 +53,13 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			jointStateV = new messages.JointStateV();
-			jointStateV.Header = new messages.Header();
-			jointStateV.Header.Stamp = new messages.Time();
+			jointStateV = new messages.JointStateV
+			{
+				Header = new messages.Header
+				{
+					Stamp = new messages.Time()
+				}
+			};
 		}
 
 		protected override void GenerateMessage()
@@ -131,8 +135,10 @@ namespace SensorDevices
 					var articulation = new Articulation(childArticulationBody);
 					articulation.SetVelocityLimit(linkHelper.JointAxisLimitVelocity);
 
-					var jointState = new messages.JointState();
-					jointState.Name = targetJointName;
+					var jointState = new messages.JointState
+					{
+						Name = targetJointName
+					};
 
 					var entry = new JointEntry
 					{

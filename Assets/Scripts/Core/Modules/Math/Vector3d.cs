@@ -178,19 +178,23 @@ public struct Vector3d
 
 	public static Vector3d Max(in Vector3d lhs, in Vector3d rhs)
 	{
-		var temp = new Vector3d();
-		temp.x = Math.Max(lhs.x, rhs.x);
-		temp.y = Math.Max(lhs.y, rhs.y);
-		temp.z = Math.Max(lhs.z, rhs.z);
+		var temp = new Vector3d
+		{
+			x = Math.Max(lhs.x, rhs.x),
+			y = Math.Max(lhs.y, rhs.y),
+			z = Math.Max(lhs.z, rhs.z)
+		};
 		return temp;
 	}
 
 	public static Vector3d Min(in Vector3d lhs, in Vector3d rhs)
 	{
-		var temp = new Vector3d();
-		temp.x = Math.Min(lhs.x, rhs.x);
-		temp.y = Math.Min(lhs.y, rhs.y);
-		temp.z = Math.Min(lhs.z, rhs.z);
+		var temp = new Vector3d
+		{
+			x = Math.Min(lhs.x, rhs.x),
+			y = Math.Min(lhs.y, rhs.y),
+			z = Math.Min(lhs.z, rhs.z)
+		};
 		return temp;
 	}
 

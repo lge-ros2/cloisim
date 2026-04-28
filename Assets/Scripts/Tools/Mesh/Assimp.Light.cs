@@ -113,8 +113,10 @@ public static partial class MeshLoader
 		this Assimp.Light assimpLight,
 		in GameObject nodeObject)
 	{
-		var lightObject = new GameObject(assimpLight.Name);
-		lightObject.tag = "Light";
+		var lightObject = new GameObject(assimpLight.Name)
+		{
+			tag = "Light"
+		};
 
 		var lightComponent = lightObject.AddComponent<Light>();
 		lightComponent.transform.SetParent(nodeObject.transform);

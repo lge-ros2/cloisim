@@ -197,9 +197,11 @@ public class ObjectSpawning : MonoBehaviour
 
 	private GameObject CreateUnitProps(in PropsType type, in Mesh targetMesh)
 	{
-		var newObject = new GameObject(type.ToString());
-		newObject.tag = "Props";
-		newObject.isStatic = false;
+		var newObject = new GameObject(type.ToString())
+		{
+			tag = "Props",
+			isStatic = false
+		};
 
 		var meshFilter = newObject.AddComponent<MeshFilter>();
 		meshFilter.sharedMesh = targetMesh;

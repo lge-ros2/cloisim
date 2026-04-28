@@ -113,12 +113,16 @@ namespace SensorDevices
 
 		protected override void InitializeMessages()
 		{
-			_imu = new messages.Imu();
-			_imu.Header = new messages.Header();
-			_imu.Header.Stamp = new messages.Time();
-			_imu.Orientation = new messages.Quaternion();
-			_imu.AngularVelocity = new messages.Vector3d();
-			_imu.LinearAcceleration = new messages.Vector3d();
+			_imu = new messages.Imu
+			{
+				Header = new messages.Header
+				{
+					Stamp = new messages.Time()
+				},
+				Orientation = new messages.Quaternion(),
+				AngularVelocity = new messages.Vector3d(),
+				LinearAcceleration = new messages.Vector3d()
+			};
 		}
 
 		protected override void SetupMessages()

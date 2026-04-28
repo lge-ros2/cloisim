@@ -41,11 +41,13 @@ namespace SDFormat
 				in UE.Vector3 axis2xyz, in float targetAxis2,
 				in int targetFrame = 0)
 			{
-				var jointTarget = new JointTarget();
-				jointTarget.axis1xyz = axis1xyz;
-				jointTarget.axis1 = targetAxis1;
-				jointTarget.axis2xyz = axis2xyz;
-				jointTarget.axis2 = targetAxis2;
+				var jointTarget = new JointTarget
+				{
+					axis1xyz = axis1xyz,
+					axis1 = targetAxis1,
+					axis2xyz = axis2xyz,
+					axis2 = targetAxis2
+				};
 
 				if (targetFrame < _jointTargetList.Count)
 				{
@@ -137,8 +139,10 @@ namespace SDFormat
 					_articulationBody.linearVelocity = UE.Vector3.zero;
 					_articulationBody.angularVelocity = UE.Vector3.zero;
 
-					var zeroSpace = new UE.ArticulationReducedSpace();
-					zeroSpace.dofCount = _articulationBody.dofCount;
+					var zeroSpace = new UE.ArticulationReducedSpace
+					{
+						dofCount = _articulationBody.dofCount
+					};
 					for (var i = 0; i < _articulationBody.dofCount; i++)
 					{
 						zeroSpace[i] = 0;

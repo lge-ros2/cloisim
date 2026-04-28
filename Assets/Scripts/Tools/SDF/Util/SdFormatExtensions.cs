@@ -456,9 +456,11 @@ namespace SDFormat
 			if (sensor.ContactSensorData == null)
 				return null;
 
-			var data = new ContactData();
-			data.collision = sensor.ContactSensorData.CollisionName;
-			data.topic = sensor.ContactSensorData.Topic;
+			var data = new ContactData
+			{
+				collision = sensor.ContactSensorData.CollisionName,
+				topic = sensor.ContactSensorData.Topic
+			};
 			return data;
 		}
 

@@ -16,11 +16,12 @@ public static partial class SDF2Unity
 
 	public static UE.Material CreateMaterial(in string materialName = "")
 	{
-		var newMaterial = new UE.Material(CommonShader);
-
-		newMaterial.name = materialName;
-		newMaterial.hideFlags = UE.HideFlags.DontUnloadUnusedAsset;
-		newMaterial.renderQueue = (int)RenderQueue.Geometry;
+		var newMaterial = new UE.Material(CommonShader)
+		{
+			name = materialName,
+			hideFlags = UE.HideFlags.DontUnloadUnusedAsset,
+			renderQueue = (int)RenderQueue.Geometry
+		};
 
 		newMaterial.SetFloat("_Cull", (float)CullMode.Back); // Render face front
 		newMaterial.SetFloat("_ZWrite", 1);

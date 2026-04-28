@@ -117,8 +117,10 @@ public static partial class MeshLoader
 			return null;
 		}
 
-		var clip = new AnimationClip();
-		clip.name = animationName;
+		var clip = new AnimationClip
+		{
+			name = animationName
+		};
 
 		if (scene.HasAnimations)
 		{

@@ -497,16 +497,20 @@ public partial class ElevatorSystem : CLOiSimPlugin
 
 	private bool RequestDoorOpen(in string elevatorIndex)
 	{
-		var task = new ElevatorTask(elevatorIndex);
-		task.state = ElevatorTaskState.DOOR_OPEN;
+		var task = new ElevatorTask(elevatorIndex)
+		{
+			state = ElevatorTaskState.DOOR_OPEN
+		};
 		elevatorTaskQueue.Enqueue(task);
 		return true;
 	}
 
 	private bool RequestDoorClose(in string elevatorIndex)
 	{
-		var task = new ElevatorTask(elevatorIndex);
-		task.state = ElevatorTaskState.DOOR_CLOSE;
+		var task = new ElevatorTask(elevatorIndex)
+		{
+			state = ElevatorTaskState.DOOR_CLOSE
+		};
 		elevatorTaskQueue.Enqueue(task);
 		return true;
 	}

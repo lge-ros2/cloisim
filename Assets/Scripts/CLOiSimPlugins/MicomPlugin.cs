@@ -181,9 +181,11 @@ public class MicomPlugin : CLOiSimPlugin
 					continue;
 				}
 
-				var renderTexture = new RenderTexture(videoWidth, videoHeight, 0);
-				renderTexture.name = "VideoTexture";
-				renderTexture.hideFlags = HideFlags.DontUnloadUnusedAsset;
+				var renderTexture = new RenderTexture(videoWidth, videoHeight, 0)
+				{
+					name = "VideoTexture",
+					hideFlags = HideFlags.DontUnloadUnusedAsset
+				};
 
 				var shader = Shader.Find("Custom/Unlit/VideoTexture");
 				if (shader == null)
@@ -192,8 +194,10 @@ public class MicomPlugin : CLOiSimPlugin
 					return;
 				}
 
-				meshRenderer.material = new Material(shader);
-				meshRenderer.material.hideFlags = HideFlags.DontUnloadUnusedAsset;
+				meshRenderer.material = new Material(shader)
+				{
+					hideFlags = HideFlags.DontUnloadUnusedAsset
+				};
 				meshRenderer.sharedMaterial.SetTexture("_MainTex", renderTexture);
 
 				var videoPlayer = visualHelper.gameObject.AddComponent<VideoPlayer>();

@@ -74,13 +74,15 @@ namespace SDFormat
 					return null;
 				}
 
-				var cleanMesh = new UE.Mesh();
-				cleanMesh.name = source.name;
-				cleanMesh.indexFormat = source.indexFormat;
-				cleanMesh.vertices = srcVertices;
-				cleanMesh.normals = source.normals;
-				cleanMesh.uv = source.uv;
-				cleanMesh.triangles = cleanIndices.ToArray();
+				var cleanMesh = new UE.Mesh
+				{
+					name = source.name,
+					indexFormat = source.indexFormat,
+					vertices = srcVertices,
+					normals = source.normals,
+					uv = source.uv,
+					triangles = cleanIndices.ToArray()
+				};
 				cleanMesh.RecalculateBounds();
 
 				return cleanMesh;

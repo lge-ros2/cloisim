@@ -55,13 +55,19 @@ namespace SensorDevices
 
 		private messages.JointWrench MakeJointWrenchMessage()
 		{
-			var jointWrench = new messages.JointWrench();
-			jointWrench.Body1Wrench = new messages.Wrench();
-			jointWrench.Body1Wrench.Force = new messages.Vector3d();
-			jointWrench.Body1Wrench.Torque = new messages.Vector3d();
-			jointWrench.Body2Wrench = new messages.Wrench();
-			jointWrench.Body2Wrench.Force = new messages.Vector3d();
-			jointWrench.Body2Wrench.Torque = new messages.Vector3d();
+			var jointWrench = new messages.JointWrench
+			{
+				Body1Wrench = new messages.Wrench
+				{
+					Force = new messages.Vector3d(),
+					Torque = new messages.Vector3d()
+				},
+				Body2Wrench = new messages.Wrench
+				{
+					Force = new messages.Vector3d(),
+					Torque = new messages.Vector3d()
+				}
+			};
 			return jointWrench;
 		}
 
@@ -86,11 +92,15 @@ namespace SensorDevices
 				return;
 			}
 
-			var contactsMessage = new messages.Contacts();
-			// Debug.Log("{DeviceName} CollisionStay: " + other.contacts.Length);
+			var contactsMessage = new messages.Contacts
+			{
+				// Debug.Log("{DeviceName} CollisionStay: " + other.contacts.Length);
 
-			contactsMessage.Header = new messages.Header();
-			contactsMessage.Header.Stamp = new messages.Time();
+				Header = new messages.Header
+				{
+					Stamp = new messages.Time()
+				}
+			};
 			contactsMessage.Header.Stamp.SetCurrentTime();
 
 			var targetSuffix = "::" + _targetCollision;
@@ -132,13 +142,15 @@ namespace SensorDevices
 					}
 					else
 					{
-						var newContact = new messages.Contact();
-						newContact.World = new messages.Entity { Name = "default" };
+						var newContact = new messages.Contact
+						{
+							World = new messages.Entity { Name = "default" },
 
-						newContact.Collision1 = new messages.Entity { Name = collision1 };
-						newContact.Collision2 = new messages.Entity { Name = collision2 };
+							Collision1 = new messages.Entity { Name = collision1 },
+							Collision2 = new messages.Entity { Name = collision2 },
 
-						newContact.Depths = new double[] { collisionContact.separation };
+							Depths = new double[] { collisionContact.separation }
+						};
 
 						var normal = new messages.Vector3d();
 						normal.Set(collisionContact.normal);
@@ -154,8 +166,10 @@ namespace SensorDevices
 						jointWrench.Body1Wrench.Force.Set(collisionContact.impulse);
 						newContact.Wrenchs.Add(jointWrench);
 
-						newContact.Header = new messages.Header();
-						newContact.Header.Stamp = new messages.Time();
+						newContact.Header = new messages.Header
+						{
+							Stamp = new messages.Time()
+						};
 						newContact.Header.Stamp.SetCurrentTime();
 						// Debug.Log("{DeviceName} CollisionStay: " + collision1 + " <-> " + collision2);
 
@@ -179,9 +193,13 @@ namespace SensorDevices
 			_lastContacts = null;
 			_lastTimeContactsMessageGenerated = 0;
 
-			var contactsMessage = new messages.Contacts();
-			contactsMessage.Header = new messages.Header();
-			contactsMessage.Header.Stamp = new messages.Time();
+			var contactsMessage = new messages.Contacts
+			{
+				Header = new messages.Header
+				{
+					Stamp = new messages.Time()
+				}
+			};
 			contactsMessage.Header.Stamp.SetCurrentTime();
 			EnqueueMessage(contactsMessage);
 			// Debug.Log($"{DeviceName} {_targetCollision} CollisionExit: {other.contacts.Length}");

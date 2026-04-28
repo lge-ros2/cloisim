@@ -97,8 +97,10 @@ public static class ProceduralHeightmap
 
 		if (terrainData == null)
 		{
-			terrainData = new TerrainData();
-			terrainData.name = Path.GetFileNameWithoutExtension(property.Uri);
+			terrainData = new TerrainData
+			{
+				name = Path.GetFileNameWithoutExtension(property.Uri)
+			};
 
 			var texture = new Texture2D(0, 0);
 
@@ -129,13 +131,14 @@ public static class ProceduralHeightmap
 			for (var i = 0; i < property.Textures.Count; i++)
 			{
 				var elem = property.Textures[i];
-				var terrainLayer = new TerrainLayer();
-
-				terrainLayer.name = Path.GetFileNameWithoutExtension(elem.Diffuse);
-				terrainLayer.diffuseTexture = MeshLoader.GetTexture(elem.Diffuse);
-				terrainLayer.normalMapTexture = MeshLoader.GetTexture(elem.Normal);
-				terrainLayer.tileSize = Vector2.one * (int)elem.Size;
-				terrainLayer.smoothness = DefaultSmootheness;
+				var terrainLayer = new TerrainLayer
+				{
+					name = Path.GetFileNameWithoutExtension(elem.Diffuse),
+					diffuseTexture = MeshLoader.GetTexture(elem.Diffuse),
+					normalMapTexture = MeshLoader.GetTexture(elem.Normal),
+					tileSize = Vector2.one * (int)elem.Size,
+					smoothness = DefaultSmootheness
+				};
 
 				terrainLayers[i] = terrainLayer;
 			}
@@ -149,8 +152,10 @@ public static class ProceduralHeightmap
 			terrainData.terrainLayers = terrainLayers;
 
 			var terrain = heightmapObject.AddComponent<Terrain>();
-			terrain.materialTemplate = new Material(TerrainShader);
-			terrain.materialTemplate.hideFlags = HideFlags.DontUnloadUnusedAsset;
+			terrain.materialTemplate = new Material(TerrainShader)
+			{
+				hideFlags = HideFlags.DontUnloadUnusedAsset
+			};
 			terrain.terrainData = terrainData;
 			terrain.drawInstanced = true;
 			terrain.basemapDistance = BaseMapDistance;

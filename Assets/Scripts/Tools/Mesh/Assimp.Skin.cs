@@ -252,8 +252,10 @@ public static partial class MeshLoader
 			combinedBoneWeights.AddRange(meshMat.mesh.boneWeights);
 		}
 
-		var combinedMesh = new Mesh();
-		combinedMesh.name = meshObject.name;
+		var combinedMesh = new Mesh
+		{
+			name = meshObject.name
+		};
 		combinedMesh.CombineMeshes(combine, false, true);
 		combinedMesh.bindposes = bindPoseList.BindPoses;
 		combinedMesh.boneWeights = combinedBoneWeights.ToArray();
