@@ -125,11 +125,11 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		var elevatorDoorSpeed = GetPluginParameters().GetAttributeInPath<float>("elevator/doors", "speed");
 		var elevatorDoorAutoClosingTimer = GetPluginParameters().GetAttributeInPath<float>("elevator/doors", "closing_timer");
 
-		var elevatorInsideopenOffset = GetPluginParameters().GetAttributeInPath<float>("elevator/doors/inside","open_offset");
+		var elevatorInsideOpenOffset = GetPluginParameters().GetAttributeInPath<float>("elevator/doors/inside","open_offset");
 		var elevatorInsideDoorNameLeft = GetPluginParameters().GetValue<string>("elevator/doors/inside/door[@name='left']");
 		var elevatorInsideDoorNameRight = GetPluginParameters().GetValue<string>("elevator/doors/inside/door[@name='right']");
 
-		var elevatorOutsideopenOffset = GetPluginParameters().GetAttributeInPath<float>("elevator/doors/outside","open_offset");
+		var elevatorOutsideOpenOffset = GetPluginParameters().GetAttributeInPath<float>("elevator/doors/outside","open_offset");
 		var elevatorOutsideDoorNameLeft = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='left']");
 		var elevatorOutsideDoorNameRight = GetPluginParameters().GetValue<string>("elevator/doors/outside/door[@name='right']");
 
@@ -145,12 +145,12 @@ public partial class ElevatorSystem : CLOiSimPlugin
 				elevatorControl.doorLinkNameLeft = elevatorInsideDoorNameLeft;
 				elevatorControl.doorLinkNameRight = elevatorInsideDoorNameRight;
 				elevatorControl.doorsControl.speed = elevatorDoorSpeed;
-				elevatorControl.doorsControl.openOffset = elevatorInsideopenOffset;
+				elevatorControl.doorsControl.openOffset = elevatorInsideOpenOffset;
 
 				elevatorControl.outsideDoorLinkNameLeft = elevatorOutsideDoorNameLeft;
 				elevatorControl.outsideDoorLinkNameRight = elevatorOutsideDoorNameRight;
 				elevatorControl.outsideDoorsControl.speed = elevatorDoorSpeed;
-				elevatorControl.outsideDoorsControl.openOffset = elevatorOutsideopenOffset;
+				elevatorControl.outsideDoorsControl.openOffset = elevatorOutsideOpenOffset;
 				elevatorControl.doorAutoClosingTimer = elevatorDoorAutoClosingTimer;
 
 				elevators.AddEntity(objectName, elevatorControl);

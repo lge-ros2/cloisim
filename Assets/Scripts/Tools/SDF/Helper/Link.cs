@@ -38,7 +38,7 @@ namespace SDFormat
 
 			private UE.Pose _jointAnchorPose = new UE.Pose();
 
-#if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
+#if true // TODO: Candidate to remove due to ArticulationBody.maxJointVelocity
 			private float _jointAxisLimitVelocity = float.NaN;
 			private float _jointAxis2LimitVelocity = float.NaN;
 #endif
@@ -68,7 +68,7 @@ namespace SDFormat
 				get => jointChildLinkName;
 				set => jointChildLinkName = value;
 			}
-#if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
+#if true // TODO: Candidate to remove due to ArticulationBody.maxJointVelocity
 			public float JointAxisLimitVelocity
 			{
 				get => _jointAxisLimitVelocity;

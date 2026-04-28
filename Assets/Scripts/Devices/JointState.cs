@@ -43,7 +43,7 @@ namespace SensorDevices
 		private readonly object _jointStateLock = new();
 
 		// Physics timing for interpolation
-		private double _lastFixedSimtime = 0;
+		private double _lastFixedSimTime = 0;
 
 		protected override void OnAwake()
 		{
@@ -66,7 +66,7 @@ namespace SensorDevices
 		{
 			lock (_jointStateLock)
 			{
-				if (_lastFixedSimtime <= 0)
+				if (_lastFixedSimTime <= 0)
 					return; // No physics data yet
 
 				// Compute interpolation fraction: how far past the last FixedUpdate are we?
@@ -76,7 +76,7 @@ namespace SensorDevices
 				var t = 0.0;
 				if (fixedDeltaTime > 0)
 				{
-					t = (fixedSimTime - _lastFixedSimtime) / fixedDeltaTime;
+					t = (fixedSimTime - _lastFixedSimTime) / fixedDeltaTime;
 					t = Math.Max(0.0, Math.Min(1.0, t));
 				}
 
@@ -165,7 +165,7 @@ namespace SensorDevices
 		{
 			// Record physics timing (once per FixedUpdate, not per joint)
 			var fixedSimTime = (Clock != null) ? Clock.FixedSimTime : (double)Time.fixedTimeAsDouble;
-			_lastFixedSimtime = fixedSimTime;
+			_lastFixedSimTime = fixedSimTime;
 
 			foreach (var entry in articulationTable.Values)
 			{
