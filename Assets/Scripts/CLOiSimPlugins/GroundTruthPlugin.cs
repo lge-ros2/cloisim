@@ -164,20 +164,26 @@ public class GroundTruthPlugin : CLOiSimPlugin
 	}
 
 #if UNITY_EDITOR
+	private float _gizmoColorAlpha = 0.8f;
 	private void OnDrawGizmos()
 	{
 		var prevColor = UE.Gizmos.color;
+
+		var redColor = UE.Color.red;
+		redColor.a = _gizmoColorAlpha;
+		var yellowColor = UE.Color.yellow;
+		yellowColor.a = _gizmoColorAlpha;
 		for (var i = 0; i < _trackingObjects.Count; i++)
 		{
 			var trackingObject = _trackingObjects[i];
+	
+			UE.Gizmos.color = redColor;
+			UE.Gizmos.DrawSphere(trackingObject.Position, 0.02f);
 
-			UE.Gizmos.color = UE.Color.red;
-			UE.Gizmos.DrawSphere(trackingObject.Position, 0.03f);
-
-			UE.Gizmos.color = UE.Color.yellow;
+			UE.Gizmos.color = yellowColor;
 			foreach (var vertex in trackingObject.Footprint())
 			{
-				UE.Gizmos.DrawSphere(vertex + trackingObject.Position, 0.005f);
+				UE.Gizmos.DrawSphere(vertex + trackingObject.Position, 0.003f);
 			}
 		}
 

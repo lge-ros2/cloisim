@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
 using System.Collections.Generic;
 using UE = UnityEngine;
 
@@ -132,6 +133,12 @@ namespace SDFormat
 				{
 					IgnoreSelfCollision();
 				}
+
+				var artBodies = (RootModel != null)
+					? RootModel.GetComponentsInChildren<UE.ArticulationBody>()
+					: GetComponentsInChildren<UE.ArticulationBody>();
+				foreach (var ab in artBodies)
+					_totalMass += ab.mass;
 			}
 
 			void LateUpdate()
@@ -153,7 +160,10 @@ namespace SDFormat
 				}
 			}
 
-			private void DrawInertiaAndCoM(UE.ArticulationBody artBody)
+			[UE.SerializeField]
+			private float _sizeCoM = 0.03f;
+			private float _totalMass = 0f;
+			private void DrawInertiaAndCoM(UE.ArticulationBody artBody, in float totalMass)
 			{
 				if (_artBody == null)
 					return;
@@ -176,21 +186,25 @@ namespace SDFormat
 				if (drawCenterOfMass)
 				{
 					// Draw center of mass
-					UE.Gizmos.color = new UE.Color(0.1f, 0.8f, 0.2f, 0.4f);
+					// Sphere size scales with mass share: min=25% of _sizeCoM, max=_sizeCoM (ratio=1)
+					var massRatio = (totalMass > 0f) ? artBody.mass / totalMass : 0f;
+					var comSphereSize = UE.Mathf.Lerp(_sizeCoM * 0.25f, _sizeCoM, massRatio);
+					UE.Gizmos.color = new UE.Color(1f, 1f, 1f, 0.9f);
 					var comWorld = artBody.transform.TransformPoint(artBody.centerOfMass);
-					UE.Gizmos.DrawSphere(comWorld, 0.015f);
+					UE.Gizmos.DrawSphere(comWorld, comSphereSize);
 
 					UE.Gizmos.color = new UE.Color(0.1f, 0.8f, 0.2f, 0.3f);
-					UE.Gizmos.DrawWireSphere(comWorld, 0.03f);
+					UE.Gizmos.DrawWireSphere(comWorld, _sizeCoM);
 				}
 			}
 
 			void OnDrawGizmosSelected()
 			{
 				var childArtBodies = GetComponentsInChildren<UE.ArticulationBody>();
+
 				foreach (var childArtBody in childArtBodies)
 				{
-					DrawInertiaAndCoM(childArtBody);
+					DrawInertiaAndCoM(childArtBody, _totalMass);
 				}
 
 				if (drawContact)
