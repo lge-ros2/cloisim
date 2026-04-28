@@ -7,6 +7,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using Unity.Collections;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -250,37 +251,44 @@ namespace SensorDevices
 			_sensorStartPoint = transform.localRotation * _sensorStartPoint;
 			_sensorStartPoint += localToWorld.GetPosition();
 
-			// Debug.Log("Hit Points: " + _meshSensorRegionVertices.Count);
-			for (var i = 0; i < _meshSensorRegionVertices.Count; i++)
+			var rayCount = _meshSensorRegionVertices.Count;
+			var commands = new NativeArray<RaycastCommand>(rayCount, Allocator.TempJob);
+			var results = new NativeArray<RaycastHit>(rayCount, Allocator.TempJob);
+
+			var maxDist = (float)_rangeMax;
+			var queryParams = new QueryParameters(-1, false, QueryTriggerInteraction.Ignore, false);
+
+			for (var i = 0; i < rayCount; i++)
 			{
 				var targetPoint = localToWorld.MultiplyPoint3x4(_meshSensorRegionVertices[i]);
-				var direction = targetPoint - _sensorStartPoint;
+				var direction = (targetPoint - _sensorStartPoint).normalized;
+				commands[i] = new RaycastCommand(_sensorStartPoint, direction, queryParams, maxDist);
+			}
 
-				// Debug.DrawLine(_sensorStartPoint, targetPoint, Color.red, 0.5f);
-				if (Physics.Raycast(_sensorStartPoint, direction, out var hitInfo, (float)_rangeMax))
+			RaycastCommand.ScheduleBatch(commands, results, 32).Complete();
+
+			for (var i = 0; i < rayCount; i++)
+			{
+				var hit = results[i];
+				if (hit.collider == null)
+					continue;
+
+				var hitCollider = hit.collider;
+
+				// ignore itself
+				if (hitCollider.name.Equals(name) && hitCollider.transform.parent.name.Equals(_sonarLink.name))
+					continue;
+
+				var hitDistance = hit.distance;
+				if (hitDistance <= maxDist && hitDistance > (float)_rangeMin)
 				{
-					// Debug.DrawRay(_sensorStartPoint, direction, Color.magenta, 0.01f);
-					// Debug.Log("Hit Point of contact: " + hitInfo.point + " | " + _sensorStartPoint.ToString("F4"));
-
-					var hitPoint = hitInfo.point;
-					var hitDistance = Vector3.Distance(_sensorStartPoint, hitPoint);
-					var hitCollider = hitInfo.collider;
-
-					// Debug.Log($"Hit Point {hitCollider.name}<->{name} | {hitCollider.transform.parent.name}<->{_sonarLink.name}");
-					// ignore itself
-					if (hitCollider.name.Equals(name) && hitCollider.transform.parent.name.Equals(_sonarLink.name))
-					{
-						continue;
-					}
-
-					if ((hitDistance <= (float)_rangeMax) && (hitDistance > (float)_rangeMin))
-					{
-						// Debug.Log("Hit Point " + i + " of contacts: " + hitCollider.name + "," + hitInfo.point + "|" + hitDistance.ToString("F4"));
-						_detectedRange = hitDistance;
-						contactPoint = hitPoint;
-					}
+					_detectedRange = hitDistance;
+					contactPoint = hit.point;
 				}
 			}
+
+			commands.Dispose();
+			results.Dispose();
 
 			var sonar = _sonar;
 			sonar.Range = _detectedRange;
