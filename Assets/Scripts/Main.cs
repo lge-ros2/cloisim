@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2020 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
@@ -171,6 +171,7 @@ public class Main : MonoBehaviour
 	{
 		CleanAllLights();
 		CleanAllModels();
+		VHACD.ClearCache();
 	}
 
 	private void ResetRootModelsTransform()
