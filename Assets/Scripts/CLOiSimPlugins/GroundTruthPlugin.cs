@@ -115,12 +115,13 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	protected override void OnReset()
 	{
+		// Footprints are mesh-geometry derived in local space and remain valid across
+		// a simulation reset, so we avoid the expensive CalculateFootprint() recompute.
 		for (var i = 0; i < _trackingObjects.Count; i++)
 		{
 			var trackingObject = _trackingObjects[i];
 			trackingObject.Reset();
 		}
-		StartCoroutine(DoUpdateFootprint());
 	}
 
 	private void SetPropClassId()
