@@ -106,38 +106,37 @@ else
   enableHeadless=false
   captureScreen=false
 
-  if [ $# -eq 1 ]; then
-    targetWorld=$1
-    # targetWorld=${1:-"empty.world"}
-  else
-
-    while [[ $# -gt 0 ]]; do
-      case "$1" in
-        -h|--headless)
-          echo "Option --headless was specified!!"
-          enableHeadless=true
-          shift ;;
-        -w|--world)
-          if [[ -n $2 && $2 != -* ]]; then
-            echo "Option --world has value: $2"
-            targetWorld=$2
-            shift 2
-          else
-            echo "world file required"
-            PrintWorldList
-            exit 1
-          fi ;;
-        -c|--capture-screen)
-          echo "Option --capture-screen was specified!!"
-          captureScreen=true
-          shift ;;
-        *)
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -h|--headless)
+        echo "Option --headless was specified!!"
+        enableHeadless=true
+        shift ;;
+      -w|--world)
+        if [[ -n $2 && $2 != -* ]]; then
+          echo "Option --world has value: $2"
+          targetWorld=$2
+          shift 2
+        else
+          echo "world file required"
+          PrintWorldList
+          exit 1
+        fi ;;
+      -c|--capture-screen)
+        echo "Option --capture-screen was specified!!"
+        captureScreen=true
+        shift ;;
+      *)
+        if [ -z "$targetWorld" ]; then
+          targetWorld=$1
+          shift
+        else
           echo "Unknown option: $1"
           echo "Possible options: -h|--headless, -w|--world, -c|--capture-screen"
-          exit 1 ;;
-      esac
-    done
-  fi
+          exit 1
+        fi ;;
+    esac
+  done
 
   if [ -z "$targetWorld" ]; then
     echo -e "\n  Pass the world file name as a 1st argument"
@@ -221,7 +220,7 @@ else
         echo "========================================"
       }
 
-      ./CLOiSim.x86_64 "${headlessArgs[@]}" -world $targetWorld "${captureArgs[@]}"
+      ./CLOiSim.x86_64 "${headlessArgs[@]}" -world "$targetWorld" "${captureArgs[@]}"
       CLOISIM_EXIT_CODE=$?
 
       if [[ ${CLOISIM_EXIT_CODE} -ne 0 ]]; then
