@@ -74,6 +74,8 @@ public class Main : MonoBehaviour
 
 	private CrashReporter _crashReporter = null;
 
+	private LoadingCursor _loadingCursor = null;
+
 	private bool _pluginAllStarted = false;
 	private bool _isResetting = false;
 	private bool _resetTriggered = false;
@@ -394,6 +396,8 @@ public class Main : MonoBehaviour
 		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
 		_vhacd.m_parameters = VHACD.Params;
 
+		_loadingCursor = gameObject.AddComponent<LoadingCursor>();
+
 		if (_clearAllOnStart)
 		{
 			CleanAllResources();
@@ -465,6 +469,7 @@ public class Main : MonoBehaviour
 	{
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
+			_loadingCursor?.Activate();
 			_uiController?.SetInfoMessage($"Model '{model.Name}' is now loading....");
 			yield return null;
 
@@ -502,6 +507,8 @@ public class Main : MonoBehaviour
 			var message = $"Model '{model.Name}' is successfully loaded.";
 			Debug.Log(message);
 			_uiController?.SetInfoMessage(message);
+
+			_loadingCursor?.Deactivate();
 		}
 	}
 
@@ -509,6 +516,7 @@ public class Main : MonoBehaviour
 	{
 		Debug.Log("Target World: " + _worldFilename);
 		_uiController?.SetInfoMessage($"World '{_worldFilename}' is now loading....");
+		_loadingCursor?.Activate();
 
 		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
 		{
@@ -546,12 +554,16 @@ public class Main : MonoBehaviour
 			var message = $"World '{_worldFilename}' is loaded";
 			Debug.Log(message);
 			_uiController?.SetInfoMessage(message);
+
+			_loadingCursor?.Deactivate();
 		}
 		else
 		{
 			var errorMessage = $"Parsing failed!!! Failed to load world file: {_worldFilename}";
 			Debug.LogError(errorMessage);
 			_uiController?.SetErrorMessage(errorMessage);
+
+			_loadingCursor?.Deactivate();
 		}
 
 		if (!string.IsNullOrEmpty(_screenCaptureFilename))
@@ -928,6 +940,8 @@ public class Main : MonoBehaviour
 
 	void OnDestroy()
 	{
+		_loadingCursor?.Deactivate();
+
 		_crashReporter?.Dispose();
 		_crashReporter = null;
 
