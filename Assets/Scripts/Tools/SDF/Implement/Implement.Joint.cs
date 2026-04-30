@@ -297,10 +297,59 @@ namespace SDFormat
 				}
 			}
 
+			/// <summary>
+			/// Determines if the dominant axis component is negative in original SDF (right-hand) coordinates.
+			/// Example: If axis=(0, -1, 0), this returns true because Y-component is negative.
+			/// This is relevant for negative axis joint limit handling.
+			/// </summary>
+			private static bool IsAxisNegativeInOriginalCoordinates(in SDFormat.Math.Vector3d originalAxis)
+			{
+				var normalizedUnityAxis = originalAxis.ToUnity().normalized;
+
+				// Determine which axis is dominant in the normalized Unity space
+				var absX = UE.Mathf.Abs(normalizedUnityAxis.x);
+				var absY = UE.Mathf.Abs(normalizedUnityAxis.y);
+				var absZ = UE.Mathf.Abs(normalizedUnityAxis.z);
+
+				// Map back to original SDF coordinate to check sign:
+				// Unity.X = -SDF.Y,  Unity.Y = SDF.Z,  Unity.Z = SDF.X
+				if (absX >= absY && absX >= absZ)
+				{
+					return originalAxis.Y < 0;  // X-dominant in Unity ← -Y in SDF
+				}
+				else if (absY >= absX && absY >= absZ)
+				{
+					return originalAxis.Z < 0;  // Y-dominant in Unity ← Z in SDF
+				}
+				else
+				{
+					return originalAxis.X < 0;  // Z-dominant in Unity ← X in SDF
+				}
+			}
+
+			/// <summary>
+			/// Sets revolute joint limits with handling for positive and negative axes.
+			/// For positive axis: angles are negated in coordinate transform, so Lower/Upper are swapped.
+			/// For negative axis: rotation is opposite, so keep Lower/Upper in normal order.
+			/// </summary>
 			private static void SetRevoluteDriveLimit(this ref UE.ArticulationDrive drive, in JointAxis axis)
 			{
-				drive.lowerLimit = SDF2Unity.CurveOrientation((float)axis.Upper);
-				drive.upperLimit = SDF2Unity.CurveOrientation((float)axis.Lower);
+				var isNegativeAxis = IsAxisNegativeInOriginalCoordinates(axis.Xyz);
+
+				if (isNegativeAxis)
+				{
+					// Negative axis: keep normal order (no swap)
+					drive.lowerLimit = (float)axis.Lower * UE.Mathf.Rad2Deg;
+					drive.upperLimit = (float)axis.Upper * UE.Mathf.Rad2Deg;
+					UE.Debug.Log($"[SetRevoluteDriveLimit] Negative axis detected. Limits set without swap. Lower={drive.lowerLimit}, Upper={drive.upperLimit}, Original Lower={axis.Lower}, Original Upper={axis.Upper}");
+				}
+				else
+				{
+					// Positive axis: swap due to CurveOrientation negation
+					drive.lowerLimit = SDF2Unity.CurveOrientation((float)axis.Upper);
+					drive.upperLimit = SDF2Unity.CurveOrientation((float)axis.Lower);
+					UE.Debug.Log($"[SetRevoluteDriveLimit] Positive axis detected. Limits set with swap. Lower={drive.lowerLimit}, Upper={drive.upperLimit}, Original Lower={axis.Lower}, Original Upper={axis.Upper}");
+				}
 			}
 
 			public static UE.Transform FindTransformByName(this UE.GameObject targetObject, string name)
