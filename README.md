@@ -1,291 +1,155 @@
-# CLOiSim : Multi-Robot Simulator
+# CLOiSim: Multi-Robot Simulator
+
+[![Unity](https://img.shields.io/badge/Unity-6-black.svg?style=flat&logo=unity)](https://unity.com/)
+[![ROS 2 Humble](https://img.shields.io/badge/ROS%202-Humble-blue.svg?style=flat&logo=ros)](https://docs.ros.org/en/humble/)
+[![ROS 2 Jazzy](https://img.shields.io/badge/ROS%202-Jazzy-green.svg?style=flat&logo=ros)](https://docs.ros.org/en/jazzy/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/lge-ros2/cloisim)](https://github.com/lge-ros2/cloisim/releases)
+
+CLOiSim is a high-performance multi-robot simulator based on **Unity 6**. It dynamically builds simulated 3D environments and robots directly from [SDFormat (SDF)](http://sdformat.org/) description files.
 
 ![multi-type-of-robots](https://github.com/lge-ros2/cloisim/assets/21001946/499fc995-0a29-454b-902f-3df77d00c7de)
 
-Happy to announce CLOiSim. It is a new multi-robot simulator that uses an [SDF](www.sdformat.org) file containing 3d world environemnts and robot descriptions.
+## 🚀 Overview
 
-The simulator is based on Unity 6. It may look similar to Gazebo, where, unfortunately, we encountered performance problems while loading multiple robots equipped with multiple sensors. Hence, CLOiSim.
+CLOiSim was developed to address performance bottlenecks encountered with other simulators when loading multiple robots with complex sensor suites. By leveraging Unity's efficient rendering and physics pipelines, CLOiSim provides a scalable solution for large-scale robot simulation.
 
-This project consists of
-
-- [SDF](http://sdformat.org/spec?ver=1.7) Parser for C#
-- [SDF](http://sdformat.org/spec?ver=1.7) Robot Implementation for Unity -> **Visual / Collision / Sensor / Physics for joints**
-- [SDF](http://sdformat.org/spec?ver=1.7) Plugins for Unity
-- UI modules -> Module for on-screen information
-- Network modules -> Module for transporting sensor data or control signal
-- Web service -> Module for controling simulation through a web interface
+### Key Components
+- **SDF Parser**: Utilizes [sdformat-sharp](https://github.com/lge-ros2/sdformat-sharp) as a Unity package for robust and comprehensive SDF 1.6+ specification parsing.
+- **Unity Implementer**: Automated mapping of SDF elements to Unity's Visual, Collision, and Physics (ArticulationBody) components.
+- **Transport Layer**: High-performance sensor data and control signal transport via ZeroMQ (NetMQ).
+- **Web Service**: JSON-based simulation control and monitoring through a web interface.
 
 ![cloisim_multirobot](https://user-images.githubusercontent.com/21001946/107105748-3a124f80-686b-11eb-8ac8-74377696e641.gif)
-[video link](https://user-images.githubusercontent.com/21001946/104274159-96d84f80-54e3-11eb-9975-9d4bbbbdd586.mp4)
+*[Full Video Demo](https://user-images.githubusercontent.com/21001946/104274159-96d84f80-54e3-11eb-9975-9d4bbbbdd586.mp4)*
 
-## Notices
+---
 
-CLOiSim has been upgraded to **Unity 6** (6000.4.0f1). Previous Unity 2022.3 LTS based releases are no longer maintained.
-`develop` branch shall be merged into `main` branch every released.
+## 📢 Notices
 
-Working branch policy has been updated.
-Previous latest `main` branch which is corresponding to `release-3.2.0` branch is no longer available. 
+> [!IMPORTANT]
+> CLOiSim has been upgraded to **Unity 6** (6000.4.0f1). Legacy versions based on Unity 2022.3 LTS are no longer maintained.
 
-So please check below table to follow the history of previous releases.
+### Version History
+| Branch | CLOiSim Version | Unity Version | Status |
+| :--- | :--- | :--- | :--- |
+| `main` | **5.x.x (Latest)** | **Unity 6** | Active |
+| `release-4.14.6` | 4.x.x | Unity 2022.3 LTS | Maintenance |
+| `release-3.2.0` | 3.x.x | Unity 2021 | Legacy |
+| `release-2.7.7` | 2.x.x | Unity 2020 | Legacy |
 
-| Branch | CLOiSim Version | Unity Version |
-|--------|----------------|---------------|
-| `release-1.11.0` | CLOiSim-1.x.x | Unity 2020 |
-| `release-2.7.7` | CLOiSim-2.x.x | Unity 2020 |
-| `release-3.2.0` | CLOiSim-3.x.x | Unity 2021 |
-| `release-4.10.0` | CLOiSim-4.x.x | Unity 2022.3 LTS |
-| `release-4.14.6` | CLOiSim-4.x.x | Unity 2022.3 LTS |
-| `main` | CLOiSim-5.x.x (latest) | Unity 6 |
+---
 
-## Features
+## ✨ Features
 
-### Sensors
+### 🛠 Sensors & Actuators
+| Category | Feature | Status | Notes |
+| :--- | :--- | :---: | :--- |
+| **Joints** | Joint Control / Pose | ✅ | ArticulationBody based |
+| **LiDAR** | 2D / 3D (Raster-based) | ✅ | Pattern-based (e.g., Livox) supported |
+| **Camera** | Color / Depth / Multi | ✅ | Semantic Segmentation, RealSense |
+| **Inertial** | IMU / GPS | ✅ | Gaussian noise models included |
+| **Other** | Sonar / IR / Contact | ✅ | |
+| **Noise** | Gaussian / Custom | 🚧 | Gaussian fully supported |
 
-The current release includes the features only for marked items in the list below.
-Other sensor models are work in progress.
-Here are the list of items that is implemented(marked) or planned to be implemented.
-
-- [X] Joint models
-  - [X] Joint control
-  - [ ] Joint Pose
-- [X] Sensor models
-  - [X] LiDAR Sensor
-    - [X] 2D: Due to performance issue, < 40hz is recommended
-    - [X] 3D: Raster method using depth shader, same vertical angle `-N° to N°` required
-      - [X] pattern based like Livox
-  - [X] Sonar/IR sensor
-  - [X] IMU
-  - [X] Contact
-  - [X] Camera: Due to performance issue, < 40hz is recommended
-    - [ ] Camera intrinsic parameter
-    - [X] Depth Camera
-	  - [X] VCSEL Pattern applied 
-    - [X] Multi-camera
-    - [X] RealSense (RGB + IR1 + IR2 + Depth)
-    - [X] Semantic Segmentation Camera
-  - [X] GPS sensor
-  - [ ] Sensor noise models
-    - [X] Gaussian
-      - [X] GPS, IMU
-      - [X] Lidar
-      - [X] Camera
-    - [ ] Custom
-  - [X] Visualization, <visualize>true</visualize>
-	- [X] LiDAR Sensor
-	  - [X] line visualization
-	  - [X] point cloud for 3D
-- [X] Physics
-  - [ ] Support all physics parameters in SDF specification
-  - [X] Support `<Joint type="revolute2">`
-- [X] Worlds
-  - [X] Actors
-    - [ ] interpolate_x in `<animation>`
-  - [X] Lights
-    - [ ] supporting `<specular>`, `<attenuation/linear>`, `<attenuation/contant>`, `<attenuation/quadratic>`, `<spot/falloff>`
-  - [X] Spherical Coordinates
-  - [X] Heightmap (DEM)
-    - [ ] Support GeoTIFF
-    - [ ] Texture Blend
-  - [X] Road
-
-Plus, [SDF](http://sdformat.org/spec?ver=1.6) file basically targeting and supporting version 1.6 and works on the essential elements such as `<model>`, `<link>`, `<visual>`, `<collision>`, `<joint>`,  etc.
-
-It does not support optional elements like `<audio>`, `<state>`, `<atmosphere>`, `<magnetic_field>`, `<population>`.
-
-There is problem with `<pose>` in `<joint>` since introduction of articulation body model. Therefore, plaese
-
-Currently, geometry mesh type is supporting only 'Wavefront(.obj) with material', 'Collada(.dae) including animation' and 'STL(.stl)'.
-`<ambient>` elements in `<material>` and ambient properties in mesh files are not support in CLOiSim.
-
-If you're trying to connect `<link>` of `<model>`, it needs to specify unique name in link name in `joint/parent` or `joint/child` within same root model.
+### 🌍 World & Physics
+- **Physics Engine**: NVIDIA PhysX with **Temporal Gauss Seidel (TGS)** solver for enhanced stability.
+- **World Elements**: Actors (animated characters), Lights, Heightmaps (DEM), Roads.
+- **Coordinates**: Support for Spherical Coordinates.
+- **Rendering**: URP-based high-quality visuals with specialized shaders for sensors.
 
 ![cloisim_lidar_ros](https://user-images.githubusercontent.com/21001946/107105540-42b65600-686a-11eb-8797-7d937b108c11.gif)
-[video link](https://user-images.githubusercontent.com/21001946/103972179-d0415000-51af-11eb-824b-3d77051664d5.mp4)
 
-### Sensor Plugins
+---
 
-It called 'CLOiSimPlugin'. And below plugins could be utilized through write an element on SDF.
+## 🔌 Plugin System
 
-Plugin name should be written in filename attribute and it's case sensitive.
+CLOiSim uses a flexible plugin architecture to extend robot and world functionalities via SDF `<plugin>` tags. Plugin names are case-sensitive and should be specified in the `filename` attribute (e.g., `<plugin name="actor_plugin" filename="libActorPlugin.so" />`).
 
-For example,
+### Model Plugins
+- `LaserPlugin`: Publishes 2D or 3D LiDAR data.
+- `CameraPlugin`: Publishes 2D color or depth image data.
+- `SegmentationCameraPlugin`: Publishes semantic segmentation images and label info.
+- `MultiCameraPlugin`: Publishes data from multiple color cameras.
+- `RealSensePlugin`: Handles IR1, IR2, depth, and color data for RealSense sensors.
+- `MicomPlugin`: Controls differential drive (2/4-wheeled) and self-balancing robots.
+- `JointControlPlugin`: Controls joints and publishes joint status.
+- `GpsPlugin`: Provides GPS position data in the world.
+- `ImuPlugin`: Publishes IMU sensor data.
+- `SonarPlugin` / `IRPlugin`: Publishes range data from Sonar or IR sensors.
+- `LogicalCameraPlugin`: Publishes object detection and info within the camera view.
+- `ContactPlugin`: Publishes contact sensor data.
+- `ActorPlugin`: Adds character control functionality using Unity AI components.
+- `ParticleSystemPlugin`: Enables Unity's particle systems.
+- `ClothPlugin` / `ClothGrabberPlugin`: Handles cloth simulation and fingertip grabbers.
 
-```xml
-<plugin name="actor_plugin" filename="libActorPlugin.so" />
+### World Plugins
+- `ElevatorSystemPlugin`: Controls lifting and calling logic for elevator systems.
+- `GroundTruthPlugin`: Retrieves precise information (position, size, velocity) for all objects.
+- `ActorControlPlugin`: Centrally controls actors that have the `ActorPlugin` attached.
+- `MowingPlugin`: Handles grass and mowing simulation.
+
+---
+
+## 🏁 Getting Started
+
+### Prerequisites
+- **OS**: Ubuntu 22.04+ (Recommended) or Windows 10+
+- **Graphics**: Vulkan-capable GPU (NVIDIA RTX 30-series recommended)
+- **Unity**: Unity Editor 6000.4.5f1 (if building from source)
+
+### Installation
+1. **Release Binary**: [Download the latest Linux version](https://github.com/lge-ros2/cloisim/releases).
+2. **From Source**: Refer to the [Build Guide](https://github.com/lge-ros2/cloisim/wiki/Build-Guide) for detailed instructions.
+
+---
+
+## 📖 Usage
+
+### 1. Environment Setup
+Set the paths to your resources (models, worlds, media):
+```bash
+export CLOISIM_FILES_PATH="/path/to/sample_resources/media"
+export CLOISIM_MODEL_PATH="/path/to/sample_resources/models"
+export CLOISIM_WORLD_PATH="/path/to/sample_resources/worlds"
 ```
 
-More details and usages for configuration/parameters in [here](https://github.com/lge-ros2/cloisim/tree/main/Assets/Scripts/CLOiSimPlugins).
-
-#### Model Specific
-
-- `LaserPlugin`: help to publish 2D or 3D lidar data
-- `CameraPlugin`: help to publish 2D color image data or depth image data
-- `SegmentationCameraPlugin`: help to publish semantic segmentation image data and label info
-- `MultiCameraPlugin`: help to publish multiple color image data
-- `RealSensePlugin`: can handle ir1(left), ir2(right), depth, color
-- `MicomPlugin`: control micom(differential drive) input/output(sensor)
-  - 2/4-Wheeled Motor differntial drive
-  - 2-Wheel Self-balancing drive
-- `GpsPlugin`: gps position in world
-- `JointControlPlugin`: can control joints and help to publish joints status.
-- `ActorPlugin`: add actor control functionality using AI(Unity) components
-- `ImuPlugin`: help to publish IMU sensor data
-- `SonarPlugin`: help to publish Sonar range data
-- `IRPlugin`: help to publish IR range data
-- `ParticleSystemPlugin`: Enable particla system of Unity
-
-#### World Specific
-
-- `ElevatorSystemPlugin`: control(lifting, cal) elevators
-- `GroundTruthPlugin`: retrieve all information(position, size, velocity) for objects
-- `ActorControlPlugin`: controls actor using AI(Unity) components(actor which loaded `ActorPlugin`)
-- `MowingPlugin`: plant grass and enable to mow
-
-## How it works
-
-Refer to core codes in 'Assets/Scripts'.
-
-- Load SDF file -> Parse SDF(simulation description) -> Implement and realize description
-
-Shaders are also used to get depth buffer information in a few sensor model.
-
-Default physics engine 'Nvidia PhysX' is used for physics. And it retrieves some of physics parameters from `<ode>` in sdf.
-'SDFPlugins' help physics tricky handling for jointing `<link>` objects by `<joint>` element.
-
-We've decided to change a solver type of physics engine since new solver "TGS(Temporal Gauss Seidel)" is intorduced recently(PhysX 4.1).
-
-So there is NO more constraints for rigidbodies by PGS(Projected Gauss Seidel) solver type since latest version([CLOiSim-1.11.0](https://github.com/lge-ros2/cloisim/releases/tag/1.11.0)).
-
-For the performance in terms of collision handling, designing collision geometry properly may important.
-
-### an aspect of rendering
-
-if `<name>` element of `<script>` element in `<material>` element contains "tree" words, CLOiSim applies "URP/Nature/SpeedTree" Shader as a rendering material.
-
-## Getting Started
-
-### Minimum requirement
-
-- Processor: testing and looking for the minimum
-- Memory: testing and looking for the minimum
-- Graphics: device supports Vulkan
-- OS: Ubuntu 22.04 since CLOiSim-4.12.0
-
-### Tested environment (latest)
-
-- Unity Editor Version: *Unity 6.4 '6000.4.0f1 (Supported)'*.
-
-- Linux Machine
-  - OS: Ubuntu 24.04.4 LTS
-  - Processor: AMD® Ryzen 9 5950x 16-core processor × 32
-  - Memory: 128.0 GiB
-  - Graphics: NVIDIA Corporation [GeForce RTX 3090]
-
-- Windows Machine
-  - OS: Windows 10 20H2
-  - Processor: AMD® Ryzen 9 5900HS 8-core processor x 16
-  - Memory: 32GB
-  - Graphics: NVIDIA GeForce RTX3060 Laptop GPU
-
-### Release version
-
-If you don't want to build a project, just USE a release binary([Download linux version](https://github.com/lge-ros2/cloisim/releases)). And just refer to '[Usage](https://github.com/lge-ros2/cloisim#usage)' section.
-
-In terms of branch, 'main' is release(stable) version, and 'develop' is used for development(on-going).
-
-### If you want to build a project
-
-Please visit here [build guide](https://github.com/lge-ros2/cloisim/wiki/Build-Guide) in Wiki pages.
-
-## Usage
-
-![multi-robots](https://user-images.githubusercontent.com/21001946/82773215-75572480-9e7c-11ea-85a2-a3838fa1e190.png)
-
-Any problem during launching the simultion, please refer to [Wiki Page/Usage](https://github.com/lge-ros2/cloisim/wiki/Usage)' section.
-
-### How to run 'CLOiSim'
-
-#### Environment configuration
-
-Set environment path like below. You can find the sample resources [here](https://github.com/lge-ros2/sample_resources)
-
-Multiple path can be set by :(colon).
-
-```shell
-export CLOISIM_FILES_PATH="/home/Unity/cloisim/sample_resources/media"
-export CLOISIM_MODEL_PATH="/home/Unity/cloisim/sample_resources/models:/home/Unity/cloisim/another_resources/models"
-export CLOISIM_WORLD_PATH="/home/Unity/cloisim/sample_resources/worlds"
-```
-
-#### Run 'CLOiSim'
-
-Run script with world file name.
-
-```shell
+### 2. Running the Simulator
+```bash
+# Standard mode
 ./run.sh cloisim.world
-```
 
-or can run headless mode (experimental only for linux)
-
-```shell
+# Headless mode (Linux only)
 ./run.sh --headless --world cloisim.world
-./run.sh --headless --capture-screen --world cloisim.world # Capture screen
 ```
 
-or you can execute [binary](https://github.com/lge-ros2/cloisim/releases) file directly.
+### 3. ROS 2 Integration
+ To bridge simulation data to ROS 2, use the [cloisim_ros](https://github.com/lge-ros2/cloisim_ros) package:
+- Supports **ROS 2 Humble & Jazzy**.
+- Launch the bringup node to start publishing sensor topics.
 
-```shell
-./CLOiSim.x86_64 -world lg_seocho.world
-```
+---
 
-#### Run '[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' after running CLOiSim
+## 🛠 Advanced Features
 
-- *You need to run this package in order to publish sensor data in ROS2.*
-
-- *Run bringup node in '[cloisim_ros](https://github.com/lge-ros2/cloisim_ros)' ros2 packages*
-
-- Latest version of CLOiSim will support only humble version of ROS2
-
-- That's it. *Have fun!!!*
-
-#### Debugging log
-
-```shell
-tail -f ~/.config/unity3d/LGE.RoboticsPlatform/CLOiSim/Player.log
-```
-
-#### Control and external UI service
-
-CLOiSim supports web-based control service through websocket as an external interface.
-
-websocket service path: ***ws://127.0.0.1:8080/{service-name}***
-
-You can add markers like line, text, box, or sphere point and reset simulation by just sending a request data as a JSON format.
-
-Read [detail guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-service) in Wiki pages.
-
-### CLOiSim + nav2
+### External UI & Control
+CLOiSim provides a WebSocket interface for runtime interaction:
+- **Path**: `ws://127.0.0.1:8080/{service-name}`
+- **Capabilities**: Marker placement (lines, boxes, text), simulation reset, and more.
+- [Detailed Guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-service)
 
 ![cloisim_nav2_ros2](https://user-images.githubusercontent.com/21001946/107105530-37fbc100-686a-11eb-9ff8-f3cf45012d9b.gif)
-[video link](https://user-images.githubusercontent.com/21001946/103973626-2f549400-51b3-11eb-8d1f-0945d40c700b.mp4)
 
-## Future Plan
+---
 
-New features or functions shall be developed on demand.
+## 🗺 Roadmap
+- [ ] Full SDF specification compatibility.
+- [ ] Programmable C++ plugin interface.
+- [ ] Advanced sensor performance optimizations.
+- [ ] Enhanced graphical fidelity and material support.
 
-- Fully support to keep up with the latest version of 'SDF specification'
+## 🤝 Support
+If you encounter any issues or have feature requests, please open an [Issue](https://github.com/lge-ros2/cloisim/issues).
 
-  - Considering wrapper class for SDF c++ library.
-
-- Add new sensor models and enhance sensor performance
-
-- introduce programmable c++ plugin
-
-- Performance optimization for sensors
-
-- Upgrade quality of graphical elements
-
-- **If you have any troubles or issues, please don't hesitate to create a new issue on 'Issues'.**
-  <https://github.com/lge-ros2/cloisim/issues>
-
-감사합니다. Thank you
+---
+감사합니다. Thank you!
