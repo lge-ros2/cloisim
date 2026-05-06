@@ -19,6 +19,10 @@ namespace RuntimeGizmos
 		public Color selectedColor = new Color(1, 1, 0, 0.8f);
 		public Color hoverColor = new Color(1, .75f, 0, 0.8f);
 
+		[Header("Outline properties")]
+		public Color outlineColor = new Color(1.0f, 0.5f, 0.0f, 1.0f);
+		[Range(1f, 10f)]
+		public float outlineWidth = 5.0f;
 
 		private AxisVectors handleLines = new AxisVectors();
 		private AxisVectors handlePlanes = new AxisVectors();
@@ -28,10 +32,10 @@ namespace RuntimeGizmos
 
 		private HashSet<Renderer> highlightedRenderers = new HashSet<Renderer>();
 		private List<Renderer> renderersBuffer = new List<Renderer>();
-		private List<Material> materialsBuffer = new List<Material>();
 
 		private static Material lineMaterial;
-		private static Material outlineMaterial;
+		private static Material selectionMaskMaterial;
+		private static Material selectionOutline2DMaterial;
 
 		private void EndCameraRendering(ScriptableRenderContext context, Camera camera)
 		{
@@ -46,6 +50,71 @@ namespace RuntimeGizmos
 			if (mainTargetRoot == null || manuallyHandleGizmo)
 			{
 				return;
+			}
+
+			if (highlightedRenderers.Count > 0 && selectionMaskMaterial != null && selectionOutline2DMaterial != null)
+			{
+				var camera = Camera.main;
+				if (camera != null)
+				{
+					var prevColor = Graphics.activeColorBuffer;
+					var prevDepth = Graphics.activeDepthBuffer;
+
+					var format = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.R8) ? RenderTextureFormat.R8 : RenderTextureFormat.Default;
+					var maskRT = RenderTexture.GetTemporary(camera.pixelWidth, camera.pixelHeight, 0, format, RenderTextureReadWrite.Linear);
+
+					Graphics.SetRenderTarget(maskRT);
+					GL.Clear(false, true, Color.clear);
+
+					// Step 1: Draw masks
+					if (selectionMaskMaterial.SetPass(0))
+					{
+						foreach (var render in highlightedRenderers)
+						{
+							if (render == null) continue;
+							Mesh mesh = null;
+							var mf = render.GetComponent<MeshFilter>();
+							if (mf != null)
+								mesh = mf.sharedMesh;
+							else
+							{
+								var smr = render as SkinnedMeshRenderer;
+								if (smr != null)
+									mesh = smr.sharedMesh;
+							}
+							if (mesh != null)
+							{
+								for (var i = 0; i < mesh.subMeshCount; i++)
+								{
+									Graphics.DrawMeshNow(mesh, render.transform.localToWorldMatrix, i);
+								}
+							}
+						}
+					}
+
+					// Restore render target
+					Graphics.SetRenderTarget(prevColor, prevDepth);
+
+					// Step 2: Draw outline post-process
+					selectionOutline2DMaterial.SetTexture("_MaskTex", maskRT);
+					selectionOutline2DMaterial.SetColor("_OutlineColor", outlineColor);
+					selectionOutline2DMaterial.SetFloat("_OutlineWidth", outlineWidth);
+
+					if (selectionOutline2DMaterial.SetPass(0))
+					{
+						GL.PushMatrix();
+						GL.LoadOrtho();
+						GL.Begin(GL.QUADS);
+						GL.TexCoord2(0, 0); GL.Vertex3(0, 0, 0);
+						GL.TexCoord2(0, 1); GL.Vertex3(0, 1, 0);
+						GL.TexCoord2(1, 1); GL.Vertex3(1, 1, 0);
+						GL.TexCoord2(1, 0); GL.Vertex3(1, 0, 0);
+						GL.End();
+						GL.PopMatrix();
+					}
+
+					RenderTexture.ReleaseTemporary(maskRT);
+				}
 			}
 
 			if (lineMaterial.SetPass(0))
@@ -415,8 +484,44 @@ namespace RuntimeGizmos
 		{
 			if (lineMaterial == null)
 			{
-				lineMaterial = Resources.Load<Material>("Materials/Lines");
-				outlineMaterial = Resources.Load<Material>("Materials/Outline");
+				var shader = Shader.Find("Hidden/Internal-Colored");
+				if (shader != null)
+				{
+					lineMaterial = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+					lineMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+					lineMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+					lineMaterial.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
+					lineMaterial.SetInt("_ZWrite", 0);
+					lineMaterial.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+				}
+				else
+				{
+					lineMaterial = Resources.Load<Material>("Materials/Lines");
+				}
+			}
+
+			if (selectionMaskMaterial == null)
+			{
+				var maskShader = Shader.Find("Hidden/SelectionMaskSolid");
+				if (maskShader != null)
+				{
+					selectionMaskMaterial = new Material(maskShader)
+					{
+						name = "SelectionMaskSolid"
+					};
+				}
+			}
+
+			if (selectionOutline2DMaterial == null)
+			{
+				var outlineShader = Shader.Find("Hidden/OutlinePostProcess");
+				if (outlineShader != null)
+				{
+					selectionOutline2DMaterial = new Material(outlineShader)
+					{
+						name = "OutlinePostProcess"
+					};
+				}
 			}
 		}
 
@@ -457,17 +562,8 @@ namespace RuntimeGizmos
 				Renderer render = renderers[i];
 				if (render != null)
 				{
-					materialsBuffer.Clear();
-					materialsBuffer.AddRange(render.sharedMaterials);
-
-					if (materialsBuffer.Contains(outlineMaterial))
-					{
-						materialsBuffer.Remove(outlineMaterial);
-						render.materials = materialsBuffer.ToArray();
-					}
+					highlightedRenderers.Remove(render);
 				}
-
-				highlightedRenderers.Remove(render);
 			}
 
 			renderers.Clear();
@@ -485,20 +581,9 @@ namespace RuntimeGizmos
 
 					if (!highlightedRenderers.Contains(render))
 					{
-						materialsBuffer.Clear();
-						materialsBuffer.AddRange(render.sharedMaterials);
-
-						if (!materialsBuffer.Contains(outlineMaterial))
-						{
-							materialsBuffer.Add(outlineMaterial);
-							render.materials = materialsBuffer.ToArray();
-						}
-
 						highlightedRenderers.Add(render);
 					}
 				}
-
-				materialsBuffer.Clear();
 			}
 		}
 	}

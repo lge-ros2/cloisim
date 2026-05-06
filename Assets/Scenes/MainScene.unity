@@ -233,9 +233,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawInertia: 0
+  drawCenterOfMass: 1
   drawContact: 1
   isSelfCollide: 0
   useGravity: 0
+  autoInertia: 0
+  _sizeCoM: 0.03
 --- !u!1 &20107706
 GameObject:
   m_ObjectHideFlags: 0
@@ -441,9 +444,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawInertia: 0
+  drawCenterOfMass: 1
   drawContact: 1
   isSelfCollide: 0
   useGravity: 0
+  autoInertia: 0
+  _sizeCoM: 0.03
 --- !u!1 &34803206
 GameObject:
   m_ObjectHideFlags: 0
@@ -2711,9 +2717,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawInertia: 0
+  drawCenterOfMass: 1
   drawContact: 1
   isSelfCollide: 0
   useGravity: 0
+  autoInertia: 0
+  _sizeCoM: 0.03
 --- !u!135 &402915479
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -3537,9 +3546,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawInertia: 0
+  drawCenterOfMass: 1
   drawContact: 1
   isSelfCollide: 0
   useGravity: 0
+  autoInertia: 0
+  _sizeCoM: 0.03
 --- !u!171741748 &635764732
 ArticulationBody:
   m_ObjectHideFlags: 0
@@ -4560,9 +4572,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawInertia: 0
+  drawCenterOfMass: 1
   drawContact: 1
   isSelfCollide: 0
   useGravity: 0
+  autoInertia: 0
+  _sizeCoM: 0.03
 --- !u!1 &887438904
 GameObject:
   m_ObjectHideFlags: 0
@@ -5087,6 +5102,8 @@ MonoBehaviour:
   allColor: {r: 0.7, g: 0.7, b: 0.7, a: 0.8}
   selectedColor: {r: 1, g: 1, b: 0, a: 0.8}
   hoverColor: {r: 1, g: 0.42769694, b: 0, a: 0.57254905}
+  outlineColor: {r: 1, g: 0.5, b: 0, a: 1}
+  outlineWidth: 6
 --- !u!114 &963194231
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7747,9 +7764,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawInertia: 0
+  drawCenterOfMass: 1
   drawContact: 1
   isSelfCollide: 0
   useGravity: 0
+  autoInertia: 0
+  _sizeCoM: 0.03
 --- !u!1 &1829705135
 GameObject:
   m_ObjectHideFlags: 0
