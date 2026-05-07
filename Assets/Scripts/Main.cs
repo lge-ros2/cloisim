@@ -468,9 +468,11 @@ public class Main : MonoBehaviour
 
 	public IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
+		_loadingCursor?.Activate();
+		yield return null;
+
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
-			_loadingCursor?.Activate();
 			_uiController?.SetInfoMessage($"Model '{model.Name}' is now loading....");
 			yield return null;
 
@@ -509,6 +511,10 @@ public class Main : MonoBehaviour
 			Debug.Log(message);
 			_uiController?.SetInfoMessage(message);
 
+			_loadingCursor?.Deactivate();
+		}
+		else
+		{
 			_loadingCursor?.Deactivate();
 		}
 	}
