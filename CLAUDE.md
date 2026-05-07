@@ -88,7 +88,7 @@ This layer has three sub-stages:
 | `SegmentationManager.cs` | Manages semantic segmentation tags (max 256 labels), attaches `Segmentation.Tag` components |
 | `Modules/BridgeManager.cs` | Dynamic port allocator for device transport. Range: 49152–65535. Maintains a nested map: `ModelName → PluginType → PartsName → TopicName → Port`. Thread-safe |
 | `Modules/SimulationService.cs` | WebSocket server (default port 8080, override via `CLOISIM_SERVICE_PORT`). Registers `/control` and `/markers` services |
-| `Services/SimulationControlService.cs` | Handles JSON commands: `reset`, `device_list`, `port_list`, `fps`, `start_record`, `stop_record` |
+| `Services/SimulationControlService.cs` | Handles JSON commands: `reset`, `device_list`, `port_list`, `fps`, `start_record`, `stop_record`, `teleport`, `get_model_info` |
 | `Services/MarkerVisualizerService.cs` | Runtime marker creation (line, text, box, sphere) via WebSocket |
 | `Modules/SphericalCoordinates.cs` | GPS coordinate frame for world positioning |
 | `Modules/UltraFastWebMRecorder.cs` | Screen capture to WebM |
@@ -105,10 +105,10 @@ These are two distinct but tightly coupled subsystems:
 - Object pooling for `DeviceMessage` to reduce GC
 - Diagnostic profiling (Hz measurement, bandwidth in editor)
 
-Concrete devices: `Lidar`, `Camera`, `DepthCamera`, `MultiCamera`, `SegmentationCamera`, `GPS`, `IMU`, `Sonar`, `Contact`, `Clock`, `JointCommand`, `JointState`, `MicomCommand`, `MicomSensor`
+Concrete devices: `Lidar` (+ `Lidar.Livox`, `Lidar.Visualize`), `Camera`, `DepthCamera`, `MultiCamera`, `SegmentationCamera`, `LogicalCamera`, `GPS`, `IMU`, `Sonar`, `Contact`, `Clock`, `JointCommand`, `JointState`, `MicomCommand`, `MicomSensor`
 
 **Plugins** (`CLOiSimPlugins/`) are the transport/control bridge layer. `CLOiSimPlugin` (base in `CLOiSimPlugins/Modules/Base/CLOiSimPlugin.cs`) is an abstract `MonoBehaviour` that:
-- Has a typed category via `ICLOiSimPlugin.Type` enum (WORLD, SENSOR, LASER, CAMERA, MICOM, GPS, IMU, etc.)
+- Has a typed category via `ICLOiSimPlugin.Type` enum (NONE, WORLD, GROUNDTRUTH, ELEVATOR, ACTOR, MICOM, JOINTCONTROL, SENSOR, GPS, IMU, IR, SONAR, CONTACT, LASER, CAMERA, DEPTHCAMERA, MULTICAMERA, REALSENSE, SEGMENTCAMERA, LOGICALCAMERA)
 - Manages a `Transporter` (NetMQ socket collection) and a `CLOiSimPluginThread` (background thread pool)
 - Registers TX/RX/Service/Client device ports via `BridgeManager`
 - Uses a delayed startup pattern: `Awake()` → `OnAwake()` abstract, then coroutine-based `OnStart()`
@@ -159,18 +159,22 @@ From `ProjectSettings/DynamicsManager.asset`:
 
 Custom Unity tags used: `Model`, `Link`, `Visual`, `Collision`, `Sensor`, `Light`, `Actor`, `Marker`, `Props`, `Geometry`, `Road`
 
-Custom layers: `Plane` (3), `Visualization` (6)
+Custom layers: `Plane` (3), `Visualization` (6), `Cloth` (7)
 
 ## 6. GPU/rendering pipeline details
 
-- URP (Universal Render Pipeline) 17.3.0
+- URP (Universal Render Pipeline) 17.4.0
 - Custom shaders in `Assets/Resources/Shader/`:
-  - `DepthBufferScaling.compute`, `DepthCameraRayTrace.compute`, `LaserCamData.compute` — GPU-side depth/lidar processing
+  - `DepthBufferScaling.compute`, `DepthCameraRayTrace.compute` — GPU-side depth processing
+  - `LidarRayTrace.compute`, `LivoxLidarRayTrace.compute` — GPU-side lidar ray tracing
+  - `ComputeRaygenShaderLocal.hlsl` — Shared ray generation helper
   - `VCSELPrepass.compute` — IR depth camera emulation
   - `AddGaussianNoise.shader` — GPU noise injection for cameras
   - `Segmentation.shader` — Semantic segmentation rendering
   - `GeometryGrass.shader` — Grass rendering for mowing simulation
-  - `DepthRange.shader`, `Rotate180.shader` — Sensor utilities
+  - `URPSimpleLit.shader` — Custom simplified URP lit shader
+  - `UnlitVideoTexture.shader` — Unlit video texture display
+  - `Rotate180.shader` — Sensor utility
 - `AsyncGPUReadback` is mandatory — startup fails without it
 - `SensorRenderManager` singleton centrally schedules render timing for all `ISensorRenderable` sensors
 
@@ -255,14 +259,14 @@ Assets/Scripts/
 │       ├── SimulationControlService.cs  # /control endpoint
 │       └── MarkerVisualizerService.cs   # /markers endpoint
 ├── Devices/
-│   ├── Lidar.cs, Camera.cs, DepthCamera.cs, GPS.cs, IMU.cs, ...
+│   ├── Lidar.cs, Camera.cs, DepthCamera.cs, LogicalCamera.cs, GPS.cs, IMU.cs, ...
 │   └── Modules/
 │       ├── Base/Device.cs           # Abstract sensor base class
 │       ├── Noise.cs                 # Noise application
 │       ├── Motor/                   # Differential drive, PID, self-balance
 │       └── NoiseModel/              # Gaussian, custom noise models
 ├── CLOiSimPlugins/
-│   ├── LaserPlugin.cs, CameraPlugin.cs, MicomPlugin.cs, ...
+│   ├── LaserPlugin.cs, CameraPlugin.cs, MicomPlugin.cs, LogicalCameraPlugin.cs, ...
 │   ├── Modules/
 │   │   ├── Base/
 │   │   │   ├── CLOiSimPlugin.cs            # Abstract plugin base
@@ -299,4 +303,4 @@ GitHub Actions runs CodeQL analysis on `main`, `develop`, `develop-2` branches f
 
 ## 13. Docker
 
-`Docker/Dockerfile` builds an Ubuntu 22.04 image with Vulkan support. It auto-downloads the latest CLOiSim release binary. Entrypoint is `run.sh`. Resource paths are set via environment variables inside the container.
+`Docker/Dockerfile` builds an Ubuntu 24.04 image with Vulkan support. It auto-downloads the latest CLOiSim release binary. Entrypoint is `run.sh`. Resource paths are set via environment variables inside the container.
