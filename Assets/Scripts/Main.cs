@@ -378,6 +378,10 @@ public class Main : MonoBehaviour
 
 			_uiMainCanvasRoot = _uiRoot.transform.Find("Main Canvas").gameObject;
 			_followingList = _uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
+
+			_uiRoot.AddComponent<PIDTunerWindow>();
+
+			_loadingCursor = _uiRoot.AddComponent<LoadingCursor>();
 		}
 
 		_bridgeManager = new();
@@ -396,8 +400,6 @@ public class Main : MonoBehaviour
 
 		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
 		_vhacd.m_parameters = VHACD.Params;
-
-		_loadingCursor = gameObject.AddComponent<LoadingCursor>();
 
 		if (_clearAllOnStart)
 		{
@@ -947,7 +949,10 @@ public class Main : MonoBehaviour
 
 	void OnDestroy()
 	{
-		_loadingCursor?.Deactivate();
+		if (_loadingCursor != null)
+		{
+			_loadingCursor.Deactivate();
+		}
 
 		_crashReporter?.Dispose();
 		_crashReporter = null;

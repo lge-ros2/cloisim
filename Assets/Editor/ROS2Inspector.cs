@@ -6,14 +6,14 @@
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(UnityEngine.Transform), true), CanEditMultipleObjects]
+[CustomEditor(typeof(Transform), true), CanEditMultipleObjects]
 public class ROS2Inspector : Editor
 {
 	public override void OnInspectorGUI()
 	{
 		DrawDefaultInspector();
 
-		var targetTransform = (UnityEngine.Transform)target;
+		var targetTransform = (Transform)target;
 		if (targetTransform.CompareTag("Props") ||
 			targetTransform.CompareTag("Model") ||
 			targetTransform.CompareTag("Link") ||
@@ -31,7 +31,7 @@ public class ROS2Inspector : Editor
 			var ros2RotationDegree = ros2Rotation * Mathf.Rad2Deg;
 
 			EditorGUILayout.Space();
-			EditorGUILayout.LabelField("ROS2 Coordinates, ", EditorStyles.boldLabel);
+			EditorGUILayout.LabelField("ROS2 Coordinates", EditorStyles.boldLabel);
 			EditorGUILayout.HelpBox("Rotation is displayed as Roll, Pitch, Yaw (Euler angles).", MessageType.None);
 
 			// GUI.enabled = false;
@@ -76,6 +76,44 @@ public class ROS2Inspector : Editor
 					EditorGUILayout.Vector3Field("Inertia Tensor Rotation", Unity2SDF.Vector(ab.inertiaTensorRotation.eulerAngles).AsUnity());
 					EditorGUILayout.Vector3Field("Center of Mass (Local)", Unity2SDF.Vector(ab.centerOfMass).AsUnity());
 					EditorGUILayout.Vector3Field("Center of Mass (World)", Unity2SDF.Vector(ab.transform.TransformPoint(ab.centerOfMass)).AsUnity());
+
+					var motor = Motor.FindByArticulationBody(ab);
+					if (motor != null)
+					{
+						EditorGUILayout.Space();
+						EditorGUILayout.LabelField("Motor PID Tuner", EditorStyles.boldLabel);
+						EditorGUILayout.HelpBox("Adjust the PID gains and ranges for the motor.", MessageType.None);
+
+						if (motor?.PidControl != null)
+						{
+							var pid = motor.PidControl;
+
+							EditorGUI.BeginChangeCheck();
+							EditorGUILayout.LabelField("Gain", EditorStyles.miniBoldLabel);
+							var pGain = EditorGUILayout.FloatField("P", (float)pid.PGain);
+							var iGain = EditorGUILayout.FloatField("I", (float)pid.IGain);
+							var dGain = EditorGUILayout.FloatField("D", (float)pid.DGain);
+							if (EditorGUI.EndChangeCheck())
+								pid.Change(pGain, iGain, dGain);
+
+							EditorGUI.BeginChangeCheck();
+							EditorGUILayout.LabelField("Integral", EditorStyles.miniBoldLabel);
+							var intMin = EditorGUILayout.FloatField("Min", (float)pid.IntegralRangeMin);
+							var intMax = EditorGUILayout.FloatField("Max", (float)pid.IntegralRangeMax);
+							if (EditorGUI.EndChangeCheck())
+								pid.SetIntegralRange(intMin, intMax);
+
+							EditorGUI.BeginChangeCheck();
+							EditorGUILayout.LabelField("Output", EditorStyles.miniBoldLabel);
+							var outMin = EditorGUILayout.FloatField("Min", (float)pid.OutputRangeMin);
+							var outMax = EditorGUILayout.FloatField("Max", (float)pid.OutputRangeMax);
+							if (EditorGUI.EndChangeCheck())
+								pid.SetOutputRange(outMin, outMax);
+
+							if (GUILayout.Button("Reset"))
+								pid.Reset();
+						}
+					}
 				}
 			}
 		}

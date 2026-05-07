@@ -18,6 +18,14 @@ public class PID
 	private double _integralMin, _integralMax;
 	private double _commandMin, _commandMax;
 
+	public double PGain => _pGain;
+	public double IGain => _iGain;
+	public double DGain => _dGain;
+	public double IntegralRangeMin => _integralMin;
+	public double IntegralRangeMax => _integralMax;
+	public double OutputRangeMin => _commandMin;
+	public double OutputRangeMax => _commandMax;
+
 	public PID(
 		double pGain, double iGain, double dGain,
 		double integralMin, double integralMax,

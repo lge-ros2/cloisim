@@ -15,6 +15,16 @@ public class Motor : Articulation
 	private float _currentMotorVelocity = 0; // degree per seconds
 	private double _timeDelta = double.Epsilon;
 
+	private static readonly System.Collections.Generic.Dictionary<ArticulationBody, Motor> _registry = new();
+
+	public PID PidControl => _pidControl;
+	public string JointName => _jointBody != null ? _jointBody.name : string.Empty;
+
+	public static Motor FindByArticulationBody(ArticulationBody ab)
+	{
+		return (ab != null && _registry.TryGetValue(ab, out var motor)) ? motor : null;
+	}
+
 	public Motor(in GameObject gameObject)
 		: base(gameObject)
 	{
@@ -22,6 +32,9 @@ public class Motor : Articulation
 		DriveType = ArticulationDriveType.Force;
 
 		CheckDriveType();
+
+		if (_jointBody != null)
+			_registry[_jointBody] = this;
 	}
 
 	public override void Reset()
@@ -52,19 +65,6 @@ public class Motor : Articulation
 		{
 			_pidControl.Change(pFactor, iFactor, dFactor);
 		}
-
-#if UNITY_EDITOR
-		if (_jointBody != null)
-		{
-			var tuner = _jointBody.GetComponent<MotorPIDTuner>();
-			if (tuner == null)
-			{
-				tuner = _jointBody.gameObject.AddComponent<MotorPIDTuner>();
-			}
-			tuner.Initialize(_pidControl, pFactor, iFactor, dFactor,
-				integralMin, integralMax, outputMin, outputMax);
-		}
-#endif
 	}
 
 	private void CheckDriveType()

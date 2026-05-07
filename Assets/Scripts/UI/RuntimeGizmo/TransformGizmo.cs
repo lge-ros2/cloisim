@@ -542,6 +542,9 @@ namespace RuntimeGizmos
 			if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
 				return;
 
+			if (PIDTunerWindow.IsMouseOver)
+				return;
+
 			if (nearAxis == Axis.None &&
 				!Keyboard.current[Key.LeftCtrl].isPressed && Mouse.current.leftButton.wasPressedThisFrame)
 			{
