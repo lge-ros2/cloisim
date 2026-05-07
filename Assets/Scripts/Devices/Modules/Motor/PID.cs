@@ -18,6 +18,10 @@ public class PID
 	private double _integralMin, _integralMax;
 	private double _commandMin, _commandMax;
 
+	private readonly double _initialPGain, _initialIGain, _initialDGain;
+	private readonly double _initialIntegralMin, _initialIntegralMax;
+	private readonly double _initialCommandMin, _initialCommandMax;
+
 	public double PGain => _pGain;
 	public double IGain => _iGain;
 	public double DGain => _dGain;
@@ -40,6 +44,14 @@ public class PID
 		SetOutputRange(
 			double.IsNegativeInfinity(commandMin)? -CommandMax: commandMin,
 			double.IsPositiveInfinity(commandMax)? CommandMax: commandMax);
+
+		_initialPGain = _pGain;
+		_initialIGain = _iGain;
+		_initialDGain = _dGain;
+		_initialIntegralMin = _integralMin;
+		_initialIntegralMax = _integralMax;
+		_initialCommandMin = _commandMin;
+		_initialCommandMax = _commandMax;
 	}
 
 	public PID(
@@ -73,6 +85,13 @@ public class PID
 
 	public void Reset()
 	{
+		_pGain = _initialPGain;
+		_iGain = _initialIGain;
+		_dGain = _initialDGain;
+		_integralMin = _initialIntegralMin;
+		_integralMax = _initialIntegralMax;
+		_commandMin = _initialCommandMin;
+		_commandMax = _initialCommandMax;
 		_integralError = 0;
 		_lastError = 0;
 	}
