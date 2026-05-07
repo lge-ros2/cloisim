@@ -12,12 +12,12 @@ namespace RuntimeGizmos
 	public partial class TransformGizmo : MonoBehaviour
 	{
 		[Header("Color properties")]
-		public Color xColor = new Color(1, 0, 0, 0.8f);
-		public Color yColor = new Color(0, 1, 0, 0.8f);
-		public Color zColor = new Color(0, 0, 1, 0.8f);
-		public Color allColor = new Color(.7f, .7f, .7f, 0.8f);
-		public Color selectedColor = new Color(1, 1, 0, 0.8f);
-		public Color hoverColor = new Color(1, .75f, 0, 0.8f);
+		public Color xColor = new Color(1, 0, 0, 1f);
+		public Color yColor = new Color(0, 1, 0, 1f);
+		public Color zColor = new Color(0, 0, 1, 1f);
+		public Color allColor = new Color(.7f, .7f, .7f, 1f);
+		public Color selectedColor = new Color(1, 1, 0, 1f);
+		public Color hoverColor = new Color(1, .75f, 0, 1f);
 
 		[Header("Outline properties")]
 		public Color outlineColor = new Color(1.0f, 0.5f, 0.0f, 1.0f);
@@ -37,6 +37,9 @@ namespace RuntimeGizmos
 		private static Material shadedMaterial;
 		private static Material selectionMaskMaterial;
 		private static Material selectionOutline2DMaterial;
+		private static Material _gizmoCompositeMaterial;
+
+		private static readonly int _ClipRectID = Shader.PropertyToID("_ClipRect");
 
 		private void EndCameraRendering(ScriptableRenderContext context, Camera camera)
 		{
@@ -53,71 +56,101 @@ namespace RuntimeGizmos
 				return;
 			}
 
-			if (highlightedRenderers.Count > 0 && selectionMaskMaterial != null && selectionOutline2DMaterial != null)
+			var camera = Camera.main;
+			var needClip = PIDTunerWindow.IsVisible && camera != null;
+			RenderTexture gizmoRT = null;
+			RenderBuffer savedColor = default;
+			RenderBuffer savedDepth = default;
+
+			if (needClip)
 			{
-				var camera = Camera.main;
-				if (camera != null)
+				savedColor = Graphics.activeColorBuffer;
+				savedDepth = Graphics.activeDepthBuffer;
+				gizmoRT = RenderTexture.GetTemporary(camera.pixelWidth, camera.pixelHeight, 24, RenderTextureFormat.ARGB32);
+				Graphics.SetRenderTarget(gizmoRT);
+				GL.Clear(true, true, Color.clear);
+			}
+
+			DrawSelectionOutline(camera);
+			DrawGizmoHandles();
+
+			if (needClip && gizmoRT != null)
+			{
+				Graphics.SetRenderTarget(savedColor, savedDepth);
+				CompositeGizmoRT(gizmoRT, camera);
+				RenderTexture.ReleaseTemporary(gizmoRT);
+			}
+		}
+
+		void DrawSelectionOutline(Camera camera)
+		{
+			if (highlightedRenderers.Count == 0 || selectionMaskMaterial == null || selectionOutline2DMaterial == null)
+				return;
+
+			if (camera == null)
+				return;
+
+			var prevColor = Graphics.activeColorBuffer;
+			var prevDepth = Graphics.activeDepthBuffer;
+
+			var format = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.R8) ? RenderTextureFormat.R8 : RenderTextureFormat.Default;
+			var maskRT = RenderTexture.GetTemporary(camera.pixelWidth, camera.pixelHeight, 0, format, RenderTextureReadWrite.Linear);
+
+			Graphics.SetRenderTarget(maskRT);
+			GL.Clear(false, true, Color.clear);
+
+			// Step 1: Draw masks
+			if (selectionMaskMaterial.SetPass(0))
+			{
+				foreach (var render in highlightedRenderers)
 				{
-					var prevColor = Graphics.activeColorBuffer;
-					var prevDepth = Graphics.activeDepthBuffer;
-
-					var format = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.R8) ? RenderTextureFormat.R8 : RenderTextureFormat.Default;
-					var maskRT = RenderTexture.GetTemporary(camera.pixelWidth, camera.pixelHeight, 0, format, RenderTextureReadWrite.Linear);
-
-					Graphics.SetRenderTarget(maskRT);
-					GL.Clear(false, true, Color.clear);
-
-					// Step 1: Draw masks
-					if (selectionMaskMaterial.SetPass(0))
+					if (render == null) continue;
+					Mesh mesh = null;
+					var mf = render.GetComponent<MeshFilter>();
+					if (mf != null)
+						mesh = mf.sharedMesh;
+					else
 					{
-						foreach (var render in highlightedRenderers)
+						var smr = render as SkinnedMeshRenderer;
+						if (smr != null)
+							mesh = smr.sharedMesh;
+					}
+					if (mesh != null)
+					{
+						for (var i = 0; i < mesh.subMeshCount; i++)
 						{
-							if (render == null) continue;
-							Mesh mesh = null;
-							var mf = render.GetComponent<MeshFilter>();
-							if (mf != null)
-								mesh = mf.sharedMesh;
-							else
-							{
-								var smr = render as SkinnedMeshRenderer;
-								if (smr != null)
-									mesh = smr.sharedMesh;
-							}
-							if (mesh != null)
-							{
-								for (var i = 0; i < mesh.subMeshCount; i++)
-								{
-									Graphics.DrawMeshNow(mesh, render.transform.localToWorldMatrix, i);
-								}
-							}
+							Graphics.DrawMeshNow(mesh, render.transform.localToWorldMatrix, i);
 						}
 					}
-
-					// Restore render target
-					Graphics.SetRenderTarget(prevColor, prevDepth);
-
-					// Step 2: Draw outline post-process
-					selectionOutline2DMaterial.SetTexture("_MaskTex", maskRT);
-					selectionOutline2DMaterial.SetColor("_OutlineColor", outlineColor);
-					selectionOutline2DMaterial.SetFloat("_OutlineWidth", outlineWidth);
-
-					if (selectionOutline2DMaterial.SetPass(0))
-					{
-						GL.PushMatrix();
-						GL.LoadOrtho();
-						GL.Begin(GL.QUADS);
-						GL.TexCoord2(0, 0); GL.Vertex3(0, 0, 0);
-						GL.TexCoord2(0, 1); GL.Vertex3(0, 1, 0);
-						GL.TexCoord2(1, 1); GL.Vertex3(1, 1, 0);
-						GL.TexCoord2(1, 0); GL.Vertex3(1, 0, 0);
-						GL.End();
-						GL.PopMatrix();
-					}
-
-					RenderTexture.ReleaseTemporary(maskRT);
 				}
 			}
 
+			// Restore render target (either the gizmoRT or the screen)
+			Graphics.SetRenderTarget(prevColor, prevDepth);
+
+			// Step 2: Draw outline post-process
+			selectionOutline2DMaterial.SetTexture("_MaskTex", maskRT);
+			selectionOutline2DMaterial.SetColor("_OutlineColor", outlineColor);
+			selectionOutline2DMaterial.SetFloat("_OutlineWidth", outlineWidth);
+
+			if (selectionOutline2DMaterial.SetPass(0))
+			{
+				GL.PushMatrix();
+				GL.LoadOrtho();
+				GL.Begin(GL.QUADS);
+				GL.TexCoord2(0, 0); GL.Vertex3(0, 0, 0);
+				GL.TexCoord2(0, 1); GL.Vertex3(0, 1, 0);
+				GL.TexCoord2(1, 1); GL.Vertex3(1, 1, 0);
+				GL.TexCoord2(1, 0); GL.Vertex3(1, 0, 0);
+				GL.End();
+				GL.PopMatrix();
+			}
+
+			RenderTexture.ReleaseTemporary(maskRT);
+		}
+
+		void DrawGizmoHandles()
+		{
 			var transformingColor = isTransforming ? selectedColor : hoverColor;
 
 			var xColor = (nearAxis == Axis.X) ? transformingColor : this.xColor;
@@ -155,6 +188,45 @@ namespace RuntimeGizmos
 				DrawQuads(handlePlanes.z, GetColor(TransformType.Move, this.zColor, zColor, planesOpacity, !hasTranslatingAxisPlane));
 				DrawQuads(handlePlanes.x, GetColor(TransformType.Move, this.xColor, xColor, planesOpacity, !hasTranslatingAxisPlane));
 				DrawQuads(handlePlanes.y, GetColor(TransformType.Move, this.yColor, yColor, planesOpacity, !hasTranslatingAxisPlane));
+			}
+		}
+
+		void CompositeGizmoRT(RenderTexture gizmoRT, Camera camera)
+		{
+			if (_gizmoCompositeMaterial == null)
+			{
+				var shader = Shader.Find("Hidden/GizmoComposite");
+				if (shader != null)
+				{
+					_gizmoCompositeMaterial = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+				}
+			}
+
+			if (_gizmoCompositeMaterial == null)
+				return;
+
+			var pidRect = PIDTunerWindow.ActiveWindowRect;
+			// Convert IMGUI rect (top-left origin) to normalized viewport coords (bottom-left origin)
+			var clipRect = new Vector4(
+				pidRect.x / camera.pixelWidth,
+				1f - (pidRect.y + pidRect.height) / camera.pixelHeight,
+				(pidRect.x + pidRect.width) / camera.pixelWidth,
+				1f - pidRect.y / camera.pixelHeight
+			);
+			_gizmoCompositeMaterial.SetVector(_ClipRectID, clipRect);
+			_gizmoCompositeMaterial.SetTexture("_GizmoTex", gizmoRT);
+
+			if (_gizmoCompositeMaterial.SetPass(0))
+			{
+				GL.PushMatrix();
+				GL.LoadOrtho();
+				GL.Begin(GL.QUADS);
+				GL.TexCoord2(0, 0); GL.Vertex3(0, 0, 0);
+				GL.TexCoord2(0, 1); GL.Vertex3(0, 1, 0);
+				GL.TexCoord2(1, 1); GL.Vertex3(1, 1, 0);
+				GL.TexCoord2(1, 0); GL.Vertex3(1, 0, 0);
+				GL.End();
+				GL.PopMatrix();
 			}
 		}
 
@@ -213,9 +285,9 @@ namespace RuntimeGizmos
 					xLineLength = yLineLength = zLineLength = GetHandleLength(TransformType.Move);
 				}
 
-				AddQuads(pivotPoint, axisInfo.xDirection, axisInfo.yDirection, axisInfo.zDirection, xLineLength, lineWidth, handleLines.x);
-				AddQuads(pivotPoint, axisInfo.yDirection, axisInfo.xDirection, axisInfo.zDirection, yLineLength, lineWidth, handleLines.y);
-				AddQuads(pivotPoint, axisInfo.zDirection, axisInfo.xDirection, axisInfo.yDirection, zLineLength, lineWidth, handleLines.z);
+				AddCylinder(pivotPoint, axisInfo.xDirection, axisInfo.yDirection, axisInfo.zDirection, xLineLength, lineWidth, handleLines.x);
+				AddCylinder(pivotPoint, axisInfo.yDirection, axisInfo.xDirection, axisInfo.zDirection, yLineLength, lineWidth, handleLines.y);
+				AddCylinder(pivotPoint, axisInfo.zDirection, axisInfo.xDirection, axisInfo.yDirection, zLineLength, lineWidth, handleLines.z);
 			}
 		}
 		int AxisDirectionMultiplier(Vector3 direction, Vector3 otherDirection)
@@ -259,29 +331,56 @@ namespace RuntimeGizmos
 			if (TranslatingTypeContains(TransformType.Move))
 			{
 				float triangleLength = triangleSize * GetDistanceMultiplier();
-				AddTriangles(axisInfo.GetXAxisEnd(GetHandleLength(TransformType.Move)), axisInfo.xDirection, axisInfo.yDirection, axisInfo.zDirection, triangleLength, handleTriangles.x);
-				AddTriangles(axisInfo.GetYAxisEnd(GetHandleLength(TransformType.Move)), axisInfo.yDirection, axisInfo.xDirection, axisInfo.zDirection, triangleLength, handleTriangles.y);
-				AddTriangles(axisInfo.GetZAxisEnd(GetHandleLength(TransformType.Move)), axisInfo.zDirection, axisInfo.yDirection, axisInfo.xDirection, triangleLength, handleTriangles.z);
+				AddCone(axisInfo.GetXAxisEnd(GetHandleLength(TransformType.Move)), axisInfo.xDirection, axisInfo.yDirection, axisInfo.zDirection, triangleLength, handleTriangles.x);
+				AddCone(axisInfo.GetYAxisEnd(GetHandleLength(TransformType.Move)), axisInfo.yDirection, axisInfo.xDirection, axisInfo.zDirection, triangleLength, handleTriangles.y);
+				AddCone(axisInfo.GetZAxisEnd(GetHandleLength(TransformType.Move)), axisInfo.zDirection, axisInfo.yDirection, axisInfo.xDirection, triangleLength, handleTriangles.z);
 			}
 		}
 
-		void AddTriangles(Vector3 axisEnd, Vector3 axisDirection, Vector3 axisOtherDirection1, Vector3 axisOtherDirection2, float size, List<Vector3> resultsBuffer)
+		void AddCone(Vector3 axisEnd, Vector3 axisDirection, Vector3 axisOtherDirection1, Vector3 axisOtherDirection2, float size, List<Vector3> resultsBuffer)
 		{
-			Vector3 endPoint = axisEnd + (axisDirection * (size * 2f));
-			Square baseSquare = GetBaseSquare(axisEnd, axisOtherDirection1, axisOtherDirection2, size / 2f);
+			const int sides = 12;
+			var tip = axisEnd + (axisDirection * (size * 2f));
+			var radius = size / 2f;
 
-			resultsBuffer.Add(baseSquare.bottomLeft);
-			resultsBuffer.Add(baseSquare.topLeft);
-			resultsBuffer.Add(baseSquare.topRight);
-			resultsBuffer.Add(baseSquare.topLeft);
-			resultsBuffer.Add(baseSquare.bottomRight);
-			resultsBuffer.Add(baseSquare.topRight);
-
-			for (int i = 0; i < 4; i++)
+			for (var i = 0; i < sides; i++)
 			{
-				resultsBuffer.Add(baseSquare[i]);
-				resultsBuffer.Add(baseSquare[i + 1]);
-				resultsBuffer.Add(endPoint);
+				var angle0 = (2f * Mathf.PI * i) / sides;
+				var angle1 = (2f * Mathf.PI * (i + 1)) / sides;
+
+				var offset0 = (axisOtherDirection1 * Mathf.Cos(angle0) + axisOtherDirection2 * Mathf.Sin(angle0)) * radius;
+				var offset1 = (axisOtherDirection1 * Mathf.Cos(angle1) + axisOtherDirection2 * Mathf.Sin(angle1)) * radius;
+
+				// Side face
+				resultsBuffer.Add(axisEnd + offset0);
+				resultsBuffer.Add(axisEnd + offset1);
+				resultsBuffer.Add(tip);
+
+				// Base cap
+				resultsBuffer.Add(axisEnd);
+				resultsBuffer.Add(axisEnd + offset1);
+				resultsBuffer.Add(axisEnd + offset0);
+			}
+		}
+
+		void AddCylinder(Vector3 axisStart, Vector3 axisDirection, Vector3 axisOtherDirection1, Vector3 axisOtherDirection2, float length, float width, List<Vector3> resultsBuffer)
+		{
+			const int sides = 8;
+			var axisEnd = axisStart + (axisDirection * length);
+
+			for (var i = 0; i < sides; i++)
+			{
+				var angle0 = (2f * Mathf.PI * i) / sides;
+				var angle1 = (2f * Mathf.PI * (i + 1)) / sides;
+
+				var offset0 = (axisOtherDirection1 * Mathf.Cos(angle0) + axisOtherDirection2 * Mathf.Sin(angle0)) * width;
+				var offset1 = (axisOtherDirection1 * Mathf.Cos(angle1) + axisOtherDirection2 * Mathf.Sin(angle1)) * width;
+
+				// Side quad
+				resultsBuffer.Add(axisStart + offset0);
+				resultsBuffer.Add(axisEnd + offset0);
+				resultsBuffer.Add(axisEnd + offset1);
+				resultsBuffer.Add(axisStart + offset1);
 			}
 		}
 

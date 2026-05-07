@@ -5076,7 +5076,7 @@ MonoBehaviour:
   transformType: 0
   pivot: 0
   centerType: 0
-  planesOpacity: 0.4
+  planesOpacity: 0.8
   movementSnap: 0.5
   rotationSnap: 10
   handleLength: 0.15
@@ -5103,7 +5103,7 @@ MonoBehaviour:
   selectedColor: {r: 1, g: 1, b: 0, a: 0.8}
   hoverColor: {r: 1, g: 1, b: 1, a: 0.9490196}
   outlineColor: {r: 1, g: 0.5, b: 0, a: 1}
-  outlineWidth: 6
+  outlineWidth: 7
 --- !u!114 &963194231
 MonoBehaviour:
   m_ObjectHideFlags: 0

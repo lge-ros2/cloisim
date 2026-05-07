@@ -18,7 +18,7 @@ public class Motor : Articulation
 	private static readonly System.Collections.Generic.Dictionary<ArticulationBody, Motor> _registry = new();
 
 	public PID PidControl => _pidControl;
-	public string JointName => _jointBody != null ? _jointBody.name : string.Empty;
+	public string Name => _jointBody != null ? _jointBody.name : string.Empty;
 
 	public static Motor FindByArticulationBody(ArticulationBody ab)
 	{

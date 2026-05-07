@@ -24,14 +24,18 @@ public class PIDTunerWindow : MonoBehaviour
 	private bool _collapsed = false;
 	private bool _closedByUser = false;
 	private readonly Dictionary<Transform, bool> _collapsedState = new();
+	private readonly Dictionary<Transform, Vector2> _windowPosState = new();
 	private Rect _windowRect = new Rect(20, 200, 300, 400);
 
 	public static bool IsMouseOver { get; private set; }
+	public static Rect ActiveWindowRect { get; private set; }
+	public static bool IsVisible { get; private set; }
+	public static bool IsEditing { get; private set; }
 	private Vector2 _scrollPos;
 
 	private const float TitleBarHeight = 28f;
 	private const float FieldWidth = 64f;
-	private const float LabelWidth = 14f;
+	private const float LabelWidth = 12f;
 	private const float RangeLabelWidth = 48f;
 	private const float WindowWidth = 260f;
 	private const int CornerRadius = 6;
@@ -88,6 +92,7 @@ public class PIDTunerWindow : MonoBehaviour
 		{
 			if (_currentTarget != null)
 			{
+				SaveWindowState();
 				_currentTarget = null;
 				_showWindow = false;
 				_closedByUser = false;
@@ -97,14 +102,35 @@ public class PIDTunerWindow : MonoBehaviour
 
 		if (target != _currentTarget)
 		{
+			SaveWindowState();
 			_currentTarget = target;
 			_closedByUser = false;
+			RestoreWindowState();
 			RefreshMotors();
 		}
 		else if (!_showWindow && !_closedByUser && _entries.Count > 0)
 		{
 			_showWindow = true;
 		}
+	}
+
+	private void SaveWindowState()
+	{
+		if (_currentTarget != null)
+		{
+			_windowPosState[_currentTarget] = new Vector2(_windowRect.x, _windowRect.y);
+			_collapsedState[_currentTarget] = _collapsed;
+		}
+	}
+
+	private void RestoreWindowState()
+	{
+		if (_currentTarget != null && _windowPosState.TryGetValue(_currentTarget, out var pos))
+		{
+			_windowRect.x = pos.x;
+			_windowRect.y = pos.y;
+		}
+		_collapsed = _currentTarget != null && _collapsedState.TryGetValue(_currentTarget, out var saved) && saved;
 	}
 
 	private void RefreshMotors()
@@ -123,9 +149,14 @@ public class PIDTunerWindow : MonoBehaviour
 			var motor = Motor.FindByArticulationBody(ab);
 			if (motor?.PidControl != null)
 			{
+				var parentModel = ab.GetComponentInParent<SDFormat.Helper.Model>();
+				var name = (parentModel != null && parentModel.transform != _currentTarget)
+					? parentModel.name + "/" + motor.Name
+					: motor.Name;
+
 				_entries.Add(new MotorEntry
 				{
-					Name = motor.JointName,
+					Name = name,
 					Motor = motor,
 					Pid = motor.PidControl,
 				});
@@ -133,7 +164,6 @@ public class PIDTunerWindow : MonoBehaviour
 		}
 
 		_showWindow = _entries.Count > 0;
-		_collapsed = _currentTarget != null && _collapsedState.TryGetValue(_currentTarget, out var saved) && saved;
 	}
 
 	private Texture2D MakeTex(Color color)
@@ -279,6 +309,8 @@ public class PIDTunerWindow : MonoBehaviour
 		if (!_showWindow || _entries.Count == 0)
 		{
 			IsMouseOver = false;
+			IsVisible = false;
+			IsEditing = false;
 			return;
 		}
 
@@ -301,6 +333,10 @@ public class PIDTunerWindow : MonoBehaviour
 		_windowRect.y = Mathf.Clamp(_windowRect.y, 0, Screen.height - TitleBarHeight);
 
 		_windowRect = GUI.Window(9901, _windowRect, DrawWindow, GUIContent.none, _windowBgStyle);
+
+		ActiveWindowRect = _windowRect;
+		IsVisible = true;
+		IsEditing = GUIUtility.keyboardControl != 0;
 	}
 
 	private void DrawWindow(int windowID)
@@ -315,7 +351,7 @@ public class PIDTunerWindow : MonoBehaviour
 		// Title bar content
 		var modelName = _currentTarget != null ? _currentTarget.name : "PID";
 		var titleContentRect = new Rect(8, 0, _windowRect.width - 64, TitleBarHeight);
-		GUI.Label(titleContentRect, "PID Control for [" + modelName + "]", _titleStyle);
+		GUI.Label(titleContentRect, "PID Control [" + modelName + "]", _titleStyle);
 
 		// Collapse button
 		var collapseRect = new Rect(_windowRect.width - 54, 3, 24, 24);
@@ -332,6 +368,7 @@ public class PIDTunerWindow : MonoBehaviour
 		{
 			_showWindow = false;
 			_closedByUser = true;
+			SaveWindowState();
 		}
 
 		// Drag from title bar
@@ -362,7 +399,7 @@ public class PIDTunerWindow : MonoBehaviour
 		var pid = entry.Pid;
 		var cardH = 96f;
 		var cardRect = new Rect(CardPadding, y, width - CardPadding * 2, cardH);
-		var innerPad = 6f;
+		var innerPad = 2f;
 		var rightEdge = cardRect.xMax - innerPad;
 
 		// Card background (rounded)
@@ -372,16 +409,17 @@ public class PIDTunerWindow : MonoBehaviour
 		var nameRect = new Rect(cardRect.x + innerPad, cardRect.y + 2, cardRect.width - innerPad * 2, 16);
 		GUI.Label(nameRect, entry.Name, _motorNameStyle);
 
-		// P, I, D row — evenly distributed across card width
-		var rowY = cardRect.y + 20;
-		var availW = cardRect.width - innerPad * 2;
+		// P, I, D row — evenly distributed with gaps between fields
+		var rowY = cardRect.y + 24;
+		var fieldGap = 10f;
+		var availW = cardRect.width - innerPad * 2 - fieldGap * 2;
 		var pairW = availW / 3f;
 
 		DrawGainField("P", pid.PGain, cardRect.x + innerPad, rowY, pairW,
 			v => pid.Change(v, pid.IGain, pid.DGain));
-		DrawGainField("I", pid.IGain, cardRect.x + innerPad + pairW, rowY, pairW,
+		DrawGainField("I", pid.IGain, cardRect.x + innerPad + pairW + fieldGap, rowY, pairW,
 			v => pid.Change(pid.PGain, v, pid.DGain));
-		DrawGainField("D", pid.DGain, cardRect.x + innerPad + pairW * 2, rowY, pairW,
+		DrawGainField("D", pid.DGain, cardRect.x + innerPad + (pairW + fieldGap) * 2, rowY, pairW,
 			v => pid.Change(pid.PGain, pid.IGain, v));
 
 		// Separator
