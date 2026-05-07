@@ -90,6 +90,9 @@ namespace SDFormat
 						if (joint.Axis.Mimic != null)
 						{
 							linkHelper.JointAxisMimic = joint.Axis.Mimic;
+
+							var mimicJoint = linkObjectChild.gameObject.AddComponent<Helper.MimicJoint>();
+							mimicJoint.Initialize(joint.Axis.Mimic, joint.Type, articulationBodyChild);
 						}
 					}
 
@@ -107,6 +110,9 @@ namespace SDFormat
 						if (joint.Axis2.Mimic != null)
 						{
 							linkHelper.JointAxis2Mimic = joint.Axis2.Mimic;
+
+							var mimicJoint2 = linkObjectChild.gameObject.AddComponent<Helper.MimicJoint>();
+							mimicJoint2.Initialize(joint.Axis2.Mimic, joint.Type, articulationBodyChild);
 						}
 					}
 
