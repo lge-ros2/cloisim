@@ -1,5 +1,72 @@
 #!/bin/bash
 
+GenerateCompletion()
+{
+  cat << 'COMPLETION_EOF'
+_cloisim_run_completion()
+{
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts="--headless --world --capture-screen --install-completion -h -w -c"
+
+  case "${prev}" in
+    --world|-w)
+      local world_files=""
+      IFS=':' read -ra ADDR <<< "${CLOISIM_WORLD_PATH}"
+      for dir in "${ADDR[@]}"; do
+        if [[ -d "${dir}" ]]; then
+          for file in "${dir}"/*.world; do
+            if [[ -f "${file}" ]]; then
+              world_files+="$(basename "${file}") "
+            fi
+          done
+        fi
+      done
+      COMPREPLY=( $(compgen -W "${world_files}" -- "${cur}") )
+      return 0
+      ;;
+    *)
+      ;;
+  esac
+
+  if [[ "${cur}" == -* ]]; then
+    COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+    return 0
+  fi
+
+  local world_files=""
+  IFS=':' read -ra ADDR <<< "${CLOISIM_WORLD_PATH}"
+  for dir in "${ADDR[@]}"; do
+    if [[ -d "${dir}" ]]; then
+      for file in "${dir}"/*.world; do
+        if [[ -f "${file}" ]]; then
+          world_files+="$(basename "${file}") "
+        fi
+      done
+    fi
+  done
+  COMPREPLY=( $(compgen -W "${world_files}" -- "${cur}") )
+}
+
+complete -F _cloisim_run_completion ./run.sh
+complete -F _cloisim_run_completion run.sh
+COMPLETION_EOF
+}
+
+InstallCompletion()
+{
+  local COMP_DIR="${HOME}/.local/share/bash-completion/completions"
+  local COMP_FILE="${COMP_DIR}/run.sh"
+
+  mkdir -p "${COMP_DIR}"
+  GenerateCompletion > "${COMP_FILE}"
+
+  echo "Bash completion installed to ${COMP_FILE}"
+  echo "Open a new terminal to enable auto-completion."
+}
+
 ShowEnvironmentHelp()
 {
   echo ""
@@ -99,6 +166,8 @@ if [ $# -eq 0  ]; then
   echo -e "     ex) ./run.sh --world"
   echo -e "     ex) ./run.sh --world empty.world --headless"
   echo -e "     ex) ./run.sh --headless --world empty.world --capture-screen"
+  echo -e "\n Install bash auto-completion (one-time):"
+  echo -e "     ./run.sh --install-completion"
   echo -e "\n <Possible world file list>\n"
   PrintWorldList
 else
@@ -126,13 +195,17 @@ else
         echo "Option --capture-screen was specified!!"
         captureScreen=true
         shift ;;
+      --install-completion)
+        InstallCompletion
+        exit 0
+        ;;
       *)
         if [ -z "$targetWorld" ]; then
           targetWorld=$1
           shift
         else
           echo "Unknown option: $1"
-          echo "Possible options: -h|--headless, -w|--world, -c|--capture-screen"
+          echo "Possible options: -h|--headless, -w|--world, -c|--capture-screen, --install-completion"
           exit 1
         fi ;;
     esac
