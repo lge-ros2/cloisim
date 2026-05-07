@@ -383,7 +383,7 @@ public class PIDTunerWindow : MonoBehaviour
 		var viewHeight = _entries.Count * 100 + 8;
 		var viewRect = new Rect(0, 0, contentRect.width - 14, viewHeight);
 
-		_scrollPos = GUI.BeginScrollView(contentRect, _scrollPos, viewRect);
+		_scrollPos = GUI.BeginScrollView(contentRect, _scrollPos, viewRect, false, true);
 
 		var y = 4f;
 		foreach (var entry in _entries)
