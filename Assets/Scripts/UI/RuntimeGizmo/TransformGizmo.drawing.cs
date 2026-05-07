@@ -34,6 +34,7 @@ namespace RuntimeGizmos
 		private List<Renderer> renderersBuffer = new List<Renderer>();
 
 		private static Material lineMaterial;
+		private static Material shadedMaterial;
 		private static Material selectionMaskMaterial;
 		private static Material selectionOutline2DMaterial;
 
@@ -117,32 +118,43 @@ namespace RuntimeGizmos
 				}
 			}
 
+			var transformingColor = isTransforming ? selectedColor : hoverColor;
+
+			var xColor = (nearAxis == Axis.X) ? transformingColor : this.xColor;
+			var yColor = (nearAxis == Axis.Y) ? transformingColor : this.yColor;
+			var zColor = (nearAxis == Axis.Z) ? transformingColor : this.zColor;
+			var allColor = (nearAxis == Axis.Any) ? transformingColor : this.allColor;
+
+			var camDir = transform.forward;
+
+			// Clear depth buffer so gizmo faces self-occlude without being hidden by scene geometry
+			GL.Clear(true, false, Color.clear);
+
+			if (shadedMaterial != null && shadedMaterial.SetPass(0))
+			{
+				// Axis shafts with per-face shading
+				DrawQuadsShaded(handleLines.z, GetColor(TransformType.Move, this.zColor, zColor, hasTranslatingAxisPlane), camDir);
+				DrawQuadsShaded(handleLines.x, GetColor(TransformType.Move, this.xColor, xColor, hasTranslatingAxisPlane), camDir);
+				DrawQuadsShaded(handleLines.y, GetColor(TransformType.Move, this.yColor, yColor, hasTranslatingAxisPlane), camDir);
+
+				// Arrow tips with per-face shading
+				DrawTrianglesShaded(handleTriangles.x, GetColor(TransformType.Move, this.xColor, xColor, hasTranslatingAxisPlane), camDir);
+				DrawTrianglesShaded(handleTriangles.y, GetColor(TransformType.Move, this.yColor, yColor, hasTranslatingAxisPlane), camDir);
+				DrawTrianglesShaded(handleTriangles.z, GetColor(TransformType.Move, this.zColor, zColor, hasTranslatingAxisPlane), camDir);
+
+				// Rotation circles with per-face shading
+				DrawQuadsShaded(circlesLines.all, GetColor(TransformType.Rotate, this.allColor, allColor), camDir);
+				DrawQuadsShaded(circlesLines.x, GetColor(TransformType.Rotate, this.xColor, xColor), camDir);
+				DrawQuadsShaded(circlesLines.y, GetColor(TransformType.Rotate, this.yColor, yColor), camDir);
+				DrawQuadsShaded(circlesLines.z, GetColor(TransformType.Rotate, this.zColor, zColor), camDir);
+			}
+
+			// Plane handles stay flat (semi-transparent overlays)
 			if (lineMaterial.SetPass(0))
 			{
-				var transformingColor = isTransforming ? selectedColor : hoverColor;
-
-				var xColor = (nearAxis == Axis.X) ? transformingColor : this.xColor;
-				var yColor = (nearAxis == Axis.Y) ? transformingColor : this.yColor;
-				var zColor = (nearAxis == Axis.Z) ? transformingColor : this.zColor;
-				var allColor = (nearAxis == Axis.Any) ? transformingColor : this.allColor;
-
-				// Note: The order of drawing the axis decides what gets drawn over what.
-				DrawQuads(handleLines.z, GetColor(TransformType.Move, this.zColor, zColor, hasTranslatingAxisPlane));
-				DrawQuads(handleLines.x, GetColor(TransformType.Move, this.xColor, xColor, hasTranslatingAxisPlane));
-				DrawQuads(handleLines.y, GetColor(TransformType.Move, this.yColor, yColor, hasTranslatingAxisPlane));
-
-				DrawTriangles(handleTriangles.x, GetColor(TransformType.Move, this.xColor, xColor, hasTranslatingAxisPlane));
-				DrawTriangles(handleTriangles.y, GetColor(TransformType.Move, this.yColor, yColor, hasTranslatingAxisPlane));
-				DrawTriangles(handleTriangles.z, GetColor(TransformType.Move, this.zColor, zColor, hasTranslatingAxisPlane));
-
 				DrawQuads(handlePlanes.z, GetColor(TransformType.Move, this.zColor, zColor, planesOpacity, !hasTranslatingAxisPlane));
 				DrawQuads(handlePlanes.x, GetColor(TransformType.Move, this.xColor, xColor, planesOpacity, !hasTranslatingAxisPlane));
 				DrawQuads(handlePlanes.y, GetColor(TransformType.Move, this.yColor, yColor, planesOpacity, !hasTranslatingAxisPlane));
-
-				DrawQuads(circlesLines.all, GetColor(TransformType.Rotate, this.allColor, allColor));
-				DrawQuads(circlesLines.x, GetColor(TransformType.Rotate, this.xColor, xColor));
-				DrawQuads(circlesLines.y, GetColor(TransformType.Rotate, this.yColor, yColor));
-				DrawQuads(circlesLines.z, GetColor(TransformType.Rotate, this.zColor, zColor));
 			}
 		}
 
@@ -453,6 +465,60 @@ namespace RuntimeGizmos
 			GL.End();
 		}
 
+		void DrawQuadsShaded(List<Vector3> verts, Color baseColor, Vector3 camDir)
+		{
+			if (verts.Count == 0)
+				return;
+
+			GL.Begin(GL.QUADS);
+
+			for (int i = 0; i < verts.Count; i += 4)
+			{
+				var v0 = verts[i];
+				var v1 = verts[i + 1];
+				var v2 = verts[i + 2];
+				var v3 = verts[i + 3];
+
+				var normal = Vector3.Cross(v1 - v0, v3 - v0).normalized;
+				var nDotL = Vector3.Dot(normal, -camDir);
+				var shade = 0.35f + 0.65f * (nDotL * 0.5f + 0.5f);
+
+				GL.Color(new Color(baseColor.r * shade, baseColor.g * shade, baseColor.b * shade, baseColor.a));
+				GL.Vertex(v0);
+				GL.Vertex(v1);
+				GL.Vertex(v2);
+				GL.Vertex(v3);
+			}
+
+			GL.End();
+		}
+
+		void DrawTrianglesShaded(List<Vector3> verts, Color baseColor, Vector3 camDir)
+		{
+			if (verts.Count == 0)
+				return;
+
+			GL.Begin(GL.TRIANGLES);
+
+			for (int i = 0; i < verts.Count; i += 3)
+			{
+				var v0 = verts[i];
+				var v1 = verts[i + 1];
+				var v2 = verts[i + 2];
+
+				var normal = Vector3.Cross(v1 - v0, v2 - v0).normalized;
+				var nDotL = Vector3.Dot(normal, -camDir);
+				var shade = 0.35f + 0.65f * (nDotL * 0.5f + 0.5f);
+
+				GL.Color(new Color(baseColor.r * shade, baseColor.g * shade, baseColor.b * shade, baseColor.a));
+				GL.Vertex(v0);
+				GL.Vertex(v1);
+				GL.Vertex(v2);
+			}
+
+			GL.End();
+		}
+
 #if false
 		void DrawFilledCircle(List<Vector3> lines, Color color)
 		{
@@ -497,6 +563,20 @@ namespace RuntimeGizmos
 				else
 				{
 					lineMaterial = Resources.Load<Material>("Materials/Lines");
+				}
+			}
+
+			if (shadedMaterial == null)
+			{
+				var shader = Shader.Find("Hidden/Internal-Colored");
+				if (shader != null)
+				{
+					shadedMaterial = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+					shadedMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+					shadedMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+					shadedMaterial.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
+					shadedMaterial.SetInt("_ZWrite", 1);
+					shadedMaterial.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.LessEqual);
 				}
 			}
 

@@ -5076,12 +5076,12 @@ MonoBehaviour:
   transformType: 0
   pivot: 0
   centerType: 0
-  planesOpacity: 0.2
+  planesOpacity: 0.4
   movementSnap: 0.5
   rotationSnap: 10
   handleLength: 0.15
   handleWidth: 0.003
-  planeSize: 0.03
+  planeSize: 0.025
   triangleSize: 0.015
   boxSize: 0.02
   circleDetail: 50
@@ -5096,12 +5096,12 @@ MonoBehaviour:
   circularRotationMethod: 0
   forceUpdatePivotPointOnChange: 1
   manuallyHandleGizmo: 0
-  xColor: {r: 1, g: 0, b: 0, a: 0.8}
-  yColor: {r: 0, g: 1, b: 0, a: 0.8}
-  zColor: {r: 0, g: 0, b: 1, a: 0.8}
+  xColor: {r: 1, g: 0, b: 0, a: 0.9019608}
+  yColor: {r: 0, g: 1, b: 0, a: 0.9019608}
+  zColor: {r: 0, g: 0, b: 1, a: 0.9019608}
   allColor: {r: 0.7, g: 0.7, b: 0.7, a: 0.8}
   selectedColor: {r: 1, g: 1, b: 0, a: 0.8}
-  hoverColor: {r: 1, g: 0.42769694, b: 0, a: 0.57254905}
+  hoverColor: {r: 1, g: 1, b: 1, a: 0.9490196}
   outlineColor: {r: 1, g: 0.5, b: 0, a: 1}
   outlineWidth: 6
 --- !u!114 &963194231
