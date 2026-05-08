@@ -2,6 +2,7 @@
     "files.exclude": {
         ".vscode": true,
         "*.world": true,
+        "*.sdf": true,
         "**/*.meta": true,
         "**/mono_crash*": true,
         "**/TextMesh Pro": true,
@@ -17,11 +18,11 @@
     "editor.indentSize": "tabSize",
     "editor.insertSpaces": false,
     "editor.tabSize": 4,
-	"dotnet.defaultSolution": "cloisim.slnx",
-	"cSpell.words": [
-		"cloisim",
-		"Lerp",
-		"Mathf",
-		"Micom"
-	]
+    "dotnet.defaultSolution": "cloisim.slnx",
+    "cSpell.words": [
+        "cloisim",
+        "Lerp",
+        "Mathf",
+        "Micom"
+    ]
 }
