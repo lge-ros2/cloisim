@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class PIDTunerWindow : MonoBehaviour
 {
@@ -31,7 +32,6 @@ public class PIDTunerWindow : MonoBehaviour
 	public static Rect ActiveWindowRect { get; private set; }
 	public static bool IsVisible { get; private set; }
 	public static bool IsEditing { get; private set; }
-	private Vector2 _scrollPos;
 
 	private const float TitleBarHeight = 28f;
 	private const float FieldWidth = 64f;
@@ -42,14 +42,17 @@ public class PIDTunerWindow : MonoBehaviour
 	private const float CardPadding = 6f;
 
 	// Colors
-	private static readonly Color BgColor = new Color(0.16f, 0.16f, 0.20f, 0.94f);
-	private static readonly Color TitleBarColor = new Color(0.22f, 0.22f, 0.28f, 1f);
-	private static readonly Color CardColor = new Color(0.20f, 0.20f, 0.26f, 1f);
+	private static readonly Color BgColor = new Color(0.22f, 0.22f, 0.27f, 0.94f);
+	private static readonly Color TitleBarColor = new Color(0.28f, 0.28f, 0.34f, 1f);
+	private static readonly Color CardColor = new Color(0.26f, 0.26f, 0.32f, 1f);
 	private static readonly Color AccentColor = new Color(0.35f, 0.55f, 0.95f, 1f);
+	private static readonly Color MotorNameColor = new Color(0.95f, 0.80f, 0.30f, 1f);
 	private static readonly Color TextColor = new Color(0.88f, 0.88f, 0.92f, 1f);
 	private static readonly Color DimTextColor = new Color(0.55f, 0.55f, 0.62f, 1f);
-	private static readonly Color FieldBgColor = new Color(0.12f, 0.12f, 0.15f, 1f);
+	private static readonly Color FieldBgColor = new Color(0.18f, 0.18f, 0.22f, 1f);
+	private static readonly Color ButtonBgColor = new Color(0.18f, 0.18f, 0.24f, 0.96f);
 	private static readonly Color ButtonHoverColor = new Color(0.30f, 0.30f, 0.38f, 1f);
+	private static readonly Color ButtonDangerColor = new Color(0.62f, 0.24f, 0.28f, 0.98f);
 	private static readonly Color SeparatorColor = new Color(0.30f, 0.30f, 0.38f, 0.5f);
 
 	private Texture2D _bgTex;
@@ -58,6 +61,7 @@ public class PIDTunerWindow : MonoBehaviour
 	private Texture2D _fieldTex;
 	private Texture2D _btnNormalTex;
 	private Texture2D _btnHoverTex;
+	private Texture2D _btnDangerTex;
 	private Texture2D _accentTex;
 
 	private GUIStyle _titleStyle;
@@ -66,8 +70,9 @@ public class PIDTunerWindow : MonoBehaviour
 	private GUIStyle _dimLabelStyle;
 	private GUIStyle _fieldStyle;
 	private GUIStyle _btnStyle;
+	private GUIStyle _collapseBtnStyle;
+	private GUIStyle _closeBtnStyle;
 	private GUIStyle _windowBgStyle;
-	private GUIStyle _cardStyle;
 	private bool _stylesInitialized;
 
 	void Start()
@@ -206,8 +211,9 @@ public class PIDTunerWindow : MonoBehaviour
 		_titleBarTex = MakeTex(TitleBarColor);
 		_cardTex = MakeTex(CardColor);
 		_fieldTex = MakeTex(FieldBgColor);
-		_btnNormalTex = MakeTex(new Color(0, 0, 0, 0));
-		_btnHoverTex = MakeTex(ButtonHoverColor);
+		_btnNormalTex = MakeRoundedTex(24, 24, ButtonBgColor, 4);
+		_btnHoverTex = MakeRoundedTex(24, 24, ButtonHoverColor, 4);
+		_btnDangerTex = MakeRoundedTex(24, 24, ButtonDangerColor, 4);
 		_accentTex = MakeTex(AccentColor);
 	}
 
@@ -219,6 +225,7 @@ public class PIDTunerWindow : MonoBehaviour
 		Destroy(_fieldTex);
 		Destroy(_btnNormalTex);
 		Destroy(_btnHoverTex);
+		Destroy(_btnDangerTex);
 		Destroy(_accentTex);
 	}
 
@@ -241,7 +248,7 @@ public class PIDTunerWindow : MonoBehaviour
 			fontStyle = FontStyle.Bold,
 			fontSize = 12,
 			alignment = TextAnchor.MiddleLeft,
-			normal = { textColor = AccentColor },
+			normal = { textColor = MotorNameColor },
 			padding = new RectOffset(2, 0, 2, 2),
 		};
 
@@ -274,16 +281,35 @@ public class PIDTunerWindow : MonoBehaviour
 			fixedHeight = 20,
 		};
 
-		_btnStyle = new GUIStyle(GUI.skin.label)
+		_btnStyle = new GUIStyle(GUI.skin.button)
 		{
 			fontSize = 14,
-			fixedWidth = 24,
-			fixedHeight = 24,
+			fontStyle = FontStyle.Bold,
+			fixedWidth = 22,
+			fixedHeight = 22,
 			alignment = TextAnchor.MiddleCenter,
-			normal = { textColor = DimTextColor },
+			normal = { textColor = TextColor, background = _btnNormalTex },
 			hover = { textColor = TextColor, background = _btnHoverTex },
-			padding = new RectOffset(0, 0, 0, 2),
+			active = { textColor = TextColor, background = _btnHoverTex },
+			focused = { textColor = TextColor, background = _btnNormalTex },
+			border = new RectOffset(0, 0, 0, 0),
+			padding = new RectOffset(0, 0, 0, 0),
 			margin = new RectOffset(0, 0, 3, 0),
+			contentOffset = new Vector2(0, -1),
+		};
+
+		_collapseBtnStyle = new GUIStyle(_btnStyle)
+		{
+			fontSize = 13,
+			contentOffset = Vector2.zero,
+		};
+
+		_closeBtnStyle = new GUIStyle(_btnStyle)
+		{
+			fontSize = 13,
+			contentOffset = Vector2.zero,
+			hover = { textColor = Color.white, background = _btnDangerTex },
+			active = { textColor = Color.white, background = _btnDangerTex },
 		};
 
 		_windowBgStyle = new GUIStyle
@@ -291,14 +317,6 @@ public class PIDTunerWindow : MonoBehaviour
 			normal = { background = _bgTex },
 			border = new RectOffset(CornerRadius, CornerRadius, CornerRadius, CornerRadius),
 			padding = new RectOffset(0, 0, 0, 0),
-		};
-
-		_cardStyle = new GUIStyle
-		{
-			normal = { background = _cardTex },
-			padding = new RectOffset(8, 8, 6, 6),
-			margin = new RectOffset(6, 6, 3, 3),
-			border = new RectOffset(0, 0, 0, 0),
 		};
 
 		_stylesInitialized = true;
@@ -323,14 +341,13 @@ public class PIDTunerWindow : MonoBehaviour
 		var contentHeight = _collapsed
 			? TitleBarHeight
 			: TitleBarHeight + 6 + _entries.Count * 100 + 6;
-		contentHeight = Mathf.Min(contentHeight, Screen.height * 0.7f);
 
 		_windowRect.width = WindowWidth;
 		_windowRect.height = contentHeight;
 
 		// Clamp to screen before drawing
 		_windowRect.x = Mathf.Clamp(_windowRect.x, 0, Screen.width - _windowRect.width);
-		_windowRect.y = Mathf.Clamp(_windowRect.y, 0, Screen.height - TitleBarHeight);
+		_windowRect.y = Mathf.Clamp(_windowRect.y, 0, Mathf.Max(0, Screen.height - _windowRect.height));
 
 		_windowRect = GUI.Window(9901, _windowRect, DrawWindow, GUIContent.none, _windowBgStyle);
 
@@ -354,8 +371,8 @@ public class PIDTunerWindow : MonoBehaviour
 		GUI.Label(titleContentRect, "PID Control [" + modelName + "]", _titleStyle);
 
 		// Collapse button
-		var collapseRect = new Rect(_windowRect.width - 54, 3, 24, 24);
-		if (GUI.Button(collapseRect, _collapsed ? "\u25a1" : "\u2014", _btnStyle))
+		var collapseRect = new Rect(_windowRect.width - 52, 3, 22, 22);
+		if (GUI.Button(collapseRect, _collapsed ? "\u25A1" : "_", _collapseBtnStyle))
 		{
 			_collapsed = !_collapsed;
 			if (_currentTarget != null)
@@ -363,8 +380,8 @@ public class PIDTunerWindow : MonoBehaviour
 		}
 
 		// Close button
-		var closeRect = new Rect(_windowRect.width - 28, 3, 24, 24);
-		if (GUI.Button(closeRect, "\u2715", _btnStyle))
+		var closeRect = new Rect(_windowRect.width - 27, 3, 22, 22);
+		if (GUI.Button(closeRect, "X", _closeBtnStyle))
 		{
 			_showWindow = false;
 			_closedByUser = true;
@@ -378,20 +395,11 @@ public class PIDTunerWindow : MonoBehaviour
 			return;
 
 		// Content area
-		var contentY = TitleBarHeight + 4;
-		var contentRect = new Rect(0, contentY, _windowRect.width, _windowRect.height - contentY);
-		var viewHeight = _entries.Count * 100 + 8;
-		var viewRect = new Rect(0, 0, contentRect.width - 14, viewHeight);
-
-		_scrollPos = GUI.BeginScrollView(contentRect, _scrollPos, viewRect, false, true);
-
-		var y = 4f;
+		var y = TitleBarHeight + 8f;
 		foreach (var entry in _entries)
 		{
-			y = DrawMotorPID(entry, y, viewRect.width);
+			y = DrawMotorPID(entry, y, _windowRect.width);
 		}
-
-		GUI.EndScrollView();
 	}
 
 	private float DrawMotorPID(in MotorEntry entry, float y, float width)
