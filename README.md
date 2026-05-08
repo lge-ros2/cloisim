@@ -95,8 +95,8 @@ CLOiSim uses a flexible plugin architecture to extend robot and world functional
 
 ### Prerequisites
 - **OS**: Ubuntu 22.04+ (Recommended) or Windows 10+
-- **Graphics**: Vulkan-capable GPU (NVIDIA RTX 30-series recommended)
-- **Unity**: Unity Editor 6000.4.5f1 (if building from source)
+- **Graphics**: Vulkan-capable GPU (NVIDIA RTX 20-series recommended)
+- **Unity**: Unity Editor 6000.4.6f1 (if building from source)
 
 ### Installation
 1. **Release Binary**: [Download the latest Linux version](https://github.com/lge-ros2/cloisim/releases).
