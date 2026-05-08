@@ -5096,9 +5096,9 @@ MonoBehaviour:
   circularRotationMethod: 0
   forceUpdatePivotPointOnChange: 1
   manuallyHandleGizmo: 0
-  xColor: {r: 1, g: 0, b: 0, a: 0.9019608}
-  yColor: {r: 0, g: 1, b: 0, a: 0.9019608}
-  zColor: {r: 0, g: 0, b: 1, a: 0.9019608}
+  xColor: {r: 1, g: 0, b: 0, a: 0.9490196}
+  yColor: {r: 0, g: 1, b: 0, a: 0.9490196}
+  zColor: {r: 0, g: 0, b: 1, a: 0.9490196}
   allColor: {r: 0.7, g: 0.7, b: 0.7, a: 0.8}
   selectedColor: {r: 1, g: 1, b: 0, a: 0.8}
   hoverColor: {r: 1, g: 1, b: 1, a: 0.9490196}
