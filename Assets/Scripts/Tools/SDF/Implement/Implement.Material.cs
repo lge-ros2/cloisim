@@ -36,6 +36,7 @@ namespace SDFormat
 					if (sdfMaterial.PbrMaterial != null)
 					{
 						ApplyPbrWorkflow(material, sdfMaterial.PbrMaterial, logs);
+						UE.Debug.Log($"Applied PBR workflow for material: {renderer.name}");
 					}
 				}
 
@@ -196,6 +197,7 @@ namespace SDFormat
 						if (texture != null)
 						{
 							material.SetTexture("_SpecGlossMap", texture);
+							material.DisableKeyword("_SPECULAR_COLOR");
 							material.EnableKeyword("_SPECGLOSSMAP");
 						}
 					}

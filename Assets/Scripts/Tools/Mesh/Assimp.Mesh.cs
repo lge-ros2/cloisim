@@ -16,6 +16,7 @@ public static partial class MeshLoader
 {
 #if ENABLE_MESH_CACHE
 	private static Dictionary<string, GameObject> MeshCache = new Dictionary<string, GameObject>();
+	private const string MeshCacheVersion = "smooth-normals-v1";
 #endif
 
 	public static Texture2D GetTexture(in string textureFullPath)
@@ -202,8 +203,9 @@ public static partial class MeshLoader
 				var specColor = sceneMat.ColorSpecular.ToUnity();
 				mat.SetColor("_SpecColor", specColor);
 				mat.SetFloat("_SpecularHighlights", 1f);
-				mat.EnableKeyword("_SPECGLOSSMAP");
-				// logs.AppendLine($"HasColorSpecular({specColor}) for {sceneMat.Name}");
+				mat.DisableKeyword("_SPECGLOSSMAP");
+				mat.EnableKeyword("_SPECULAR_COLOR");
+				logs.AppendLine($"HasColorSpecular({specColor}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorTransparent)
@@ -563,7 +565,7 @@ public static partial class MeshLoader
 	{
 		GameObject meshObject = null;
 
-		var cacheKey = meshPath + (string.IsNullOrEmpty(subMesh) ? "" : subMesh);
+		var cacheKey = MeshCacheVersion + ":" + meshPath + (string.IsNullOrEmpty(subMesh) ? "" : subMesh);
 
 #if !ENABLE_MESH_CACHE
 		GameObject sceneMeshObject;

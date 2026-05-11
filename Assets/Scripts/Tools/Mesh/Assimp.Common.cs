@@ -253,7 +253,11 @@ public static partial class MeshLoader
 
 		try {
 			using var importer = new Assimp.AssimpContext();
-			var scene = importer.ImportFile(targetPath, PostProcessFlags);
+			var postProcessFlags = fileExtension == ".stl"
+				? (PostProcessFlags & ~Assimp.PostProcessSteps.GenerateNormals) |
+				  Assimp.PostProcessSteps.GenerateSmoothNormals
+				: PostProcessFlags;
+			var scene = importer.ImportFile(targetPath, postProcessFlags);
 
 			// Remove cameras
 			scene.Cameras.Clear();

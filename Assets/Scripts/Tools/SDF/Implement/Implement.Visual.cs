@@ -88,7 +88,7 @@ namespace SDFormat
 						var meshRenderer = newVisualGeometryObject.AddComponent<UE.MeshRenderer>();
 						meshRenderer.sharedMaterial = material;
 						meshRenderer.lightProbeUsage = UE.Rendering.LightProbeUsage.Off;
-						meshRenderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.Off;
+						meshRenderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.BlendProbesAndSkybox;
 						meshRenderer.motionVectorGenerationMode = UE.MotionVectorGenerationMode.ForceNoMotion;
 						meshRenderer.allowOcclusionWhenDynamic = true;
 
@@ -139,7 +139,7 @@ namespace SDFormat
 						meshRenderer.allowOcclusionWhenDynamic = true;
 						meshRenderer.receiveShadows = true;
 						meshRenderer.lightProbeUsage = UE.Rendering.LightProbeUsage.Off;
-						meshRenderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.Off;
+						meshRenderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.BlendProbesAndSkybox;
 						meshRenderer.motionVectorGenerationMode = UE.MotionVectorGenerationMode.ForceNoMotion;
 
 						meshFilter.gameObject.AddComponent<URTSceneChangeNotifier>();

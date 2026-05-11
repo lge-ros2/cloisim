@@ -365,9 +365,9 @@ public class Main : MonoBehaviour
 		QualitySettings.streamingMipmapsMemoryBudget = 512;
 		QualitySettings.streamingMipmapsAddAllCameras = true;
 
-		// Reduce shadow distance for better performance
+		// Keep shadow quality high enough for close-up robot inspection.
 		QualitySettings.shadowDistance = 50f;
-		QualitySettings.shadowResolution = ShadowResolution.Medium;
+		QualitySettings.shadowResolution = ShadowResolution.VeryHigh;
 
 		var mainCamera = Camera.main;
 		if (mainCamera == null)

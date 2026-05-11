@@ -33,7 +33,7 @@ namespace SDFormat
 
 					// Turn off high-loading features in renderer as a performance tuning
 					renderer.lightProbeUsage = UE.Rendering.LightProbeUsage.Off;
-					renderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.Off;
+					renderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.BlendProbesAndSkybox;
 					renderer.motionVectorGenerationMode = UE.MotionVectorGenerationMode.ForceNoMotion;
 					renderer.allowOcclusionWhenDynamic = true;
 				}
