@@ -424,6 +424,7 @@ namespace SDFormat
 			DuplicateNode("uri", "original_uri");
 			ConvertPathToAbsolutePath("uri");
 			ConvertPathToAbsolutePath("filename");
+			ConvertPathToAbsolutePath("cubemap_uri");
 			ConvertPathToAbsolutePath("texture/diffuse");
 			ConvertPathToAbsolutePath("texture/normal");
 			ConvertPathToAbsolutePath("normal_map");

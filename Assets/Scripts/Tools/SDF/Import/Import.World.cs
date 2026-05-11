@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+using System;
 using UE = UnityEngine;
 
 namespace SDFormat
@@ -11,6 +12,171 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
+			private const string SceneVisualRootName = "SceneVisuals";
+			private const string SceneGridName = "SceneGrid";
+			private const string SceneOriginVisualName = "SceneOriginVisual";
+			private const float SceneVisualHeightOffset = 0.01f;
+			private const float SceneVisualLineWidth = 0.02f;
+			private const int SceneGridHalfExtent = 10;
+			private static readonly UE.Color SceneGridColor = new UE.Color(0.55f, 0.55f, 0.55f, 0.7f);
+			private static readonly UE.Color SceneGridAxisColor = new UE.Color(0.72f, 0.72f, 0.72f, 0.8f);
+
+			private static UE.Material _sceneVisualMaterial = null;
+
+			private static UE.Material GetSceneVisualMaterial()
+			{
+				if (_sceneVisualMaterial == null)
+				{
+					var shader = UE.Shader.Find("Sprites/Default");
+					if (shader == null)
+					{
+						return null;
+					}
+
+					_sceneVisualMaterial = new UE.Material(shader)
+					{
+						hideFlags = UE.HideFlags.DontUnloadUnusedAsset
+					};
+				}
+
+				return _sceneVisualMaterial;
+			}
+
+			private static UE.GameObject CreateOrGetChild(in UE.Transform parent, in string name)
+			{
+				var child = parent.Find(name);
+				if (child != null)
+				{
+					return child.gameObject;
+				}
+
+				var childObject = new UE.GameObject(name);
+				childObject.transform.SetParent(parent, false);
+				return childObject;
+			}
+
+			private static void ConfigureSceneLine(in UE.LineRenderer lineRenderer, in UE.Color color)
+			{
+				lineRenderer.sharedMaterial = GetSceneVisualMaterial();
+				lineRenderer.useWorldSpace = false;
+				lineRenderer.alignment = UE.LineAlignment.TransformZ;
+				lineRenderer.widthMultiplier = SceneVisualLineWidth;
+				lineRenderer.positionCount = 2;
+				lineRenderer.startColor = color;
+				lineRenderer.endColor = color;
+				lineRenderer.shadowCastingMode = UE.Rendering.ShadowCastingMode.Off;
+				lineRenderer.receiveShadows = false;
+				lineRenderer.lightProbeUsage = UE.Rendering.LightProbeUsage.Off;
+				lineRenderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.Off;
+				lineRenderer.motionVectorGenerationMode = UE.MotionVectorGenerationMode.ForceNoMotion;
+			}
+
+			private static void CreateLine(in UE.Transform parent, in string name, in UE.Vector3 start, in UE.Vector3 end, in UE.Color color)
+			{
+				var lineObject = CreateOrGetChild(parent, name);
+				var lineRenderer = lineObject.GetComponent<UE.LineRenderer>();
+				if (lineRenderer == null)
+				{
+					lineRenderer = lineObject.AddComponent<UE.LineRenderer>();
+				}
+
+				ConfigureSceneLine(lineRenderer, color);
+				lineRenderer.SetPosition(0, start);
+				lineRenderer.SetPosition(1, end);
+			}
+
+			private static void CreateSceneGridVisual(in UE.Transform parent)
+			{
+				var gridObject = CreateOrGetChild(parent, SceneGridName);
+				var gridTransform = gridObject.transform;
+				for (var index = -SceneGridHalfExtent; index <= SceneGridHalfExtent; index++)
+				{
+					var color = index == 0 ? SceneGridAxisColor : SceneGridColor;
+					CreateLine(
+						gridTransform,
+						$"GridX_{index}",
+						new UE.Vector3(-SceneGridHalfExtent, SceneVisualHeightOffset, index),
+						new UE.Vector3(SceneGridHalfExtent, SceneVisualHeightOffset, index),
+						color);
+					CreateLine(
+						gridTransform,
+						$"GridZ_{index}",
+						new UE.Vector3(index, SceneVisualHeightOffset, -SceneGridHalfExtent),
+						new UE.Vector3(index, SceneVisualHeightOffset, SceneGridHalfExtent),
+						color);
+				}
+			}
+
+			private static void CreateSceneOriginVisual(in UE.Transform parent)
+			{
+				var originObject = CreateOrGetChild(parent, SceneOriginVisualName);
+				var originTransform = originObject.transform;
+				CreateLine(originTransform, "AxisX", UE.Vector3.zero, UE.Vector3.right * 1.5f, UE.Color.red);
+				CreateLine(originTransform, "AxisY", UE.Vector3.zero, UE.Vector3.up * 1.5f, UE.Color.green);
+				CreateLine(originTransform, "AxisZ", UE.Vector3.zero, UE.Vector3.forward * 1.5f, UE.Color.blue);
+			}
+
+			private static void ApplyFogSettings(in Fog fogSettings)
+			{
+				if (fogSettings == null || string.Equals(fogSettings.FogType, "none", StringComparison.OrdinalIgnoreCase))
+				{
+					UE.RenderSettings.fog = false;
+					return;
+				}
+
+				UE.RenderSettings.fog = true;
+				UE.RenderSettings.fogColor = fogSettings.FogColor.ToUnity();
+				UE.RenderSettings.fogStartDistance = (float)fogSettings.Start;
+				UE.RenderSettings.fogEndDistance = (float)fogSettings.End;
+				UE.RenderSettings.fogDensity = (float)fogSettings.Density;
+
+				switch (fogSettings.FogType?.ToLowerInvariant())
+				{
+					case "linear":
+						UE.RenderSettings.fogMode = UE.FogMode.Linear;
+						break;
+
+					case "constant":
+						UE.Debug.LogWarning("SDF scene fog type 'constant' is approximated with Unity exponential fog.");
+						UE.RenderSettings.fogMode = UE.FogMode.Exponential;
+						break;
+
+					case "quadratic":
+					default:
+						UE.RenderSettings.fogMode = UE.FogMode.ExponentialSquared;
+						break;
+				}
+			}
+
+			private void ApplySceneSettings(in Scene scene)
+			{
+				_sceneShadowsEnabled = scene.Shadows;
+				_sceneSkySettings = scene.SkySettings;
+				_sceneSkyAppliedToDirectionalLight = false;
+				UE.QualitySettings.shadows = _sceneShadowsEnabled ? UE.ShadowQuality.All : UE.ShadowQuality.Disable;
+				UE.RenderSettings.ambientMode = UE.Rendering.AmbientMode.Flat;
+				UE.RenderSettings.ambientLight = scene.Ambient.ToUnity();
+
+				if (UE.Camera.main != null)
+				{
+					UE.Camera.main.clearFlags = UE.CameraClearFlags.SolidColor;
+					UE.Camera.main.backgroundColor = scene.Background.ToUnity();
+				}
+
+				ApplyFogSettings(scene.FogSettings);
+
+				var sceneVisualRoot = CreateOrGetChild(Main.WorldRoot.transform, SceneVisualRootName).transform;
+				if (scene.Element?.FindElement("grid") != null && scene.Grid)
+				{
+					CreateSceneGridVisual(sceneVisualRoot);
+				}
+
+				if (scene.Element?.FindElement("origin_visual") != null && scene.OriginVisual)
+				{
+					CreateSceneOriginVisual(sceneVisualRoot);
+				}
+			}
+
 			protected override object ImportWorld(in World world)
 			{
 				if (world == null)
@@ -131,6 +297,9 @@ namespace SDFormat
 				ImportRoads(world);
 
 				UE.Physics.gravity = world.Gravity.ToUnity();
+				_sceneShadowsEnabled = true;
+				_sceneSkySettings = null;
+				_sceneSkyAppliedToDirectionalLight = false;
 
 				// Apply wind if defined
 				if (!world.WindLinearVelocity.Equals(Math.Vector3d.Zero))
@@ -151,30 +320,7 @@ namespace SDFormat
 				// Apply scene settings (ambient, background, fog, shadows)
 				if (world.SceneInfo != null)
 				{
-					UE.RenderSettings.ambientLight = world.SceneInfo.Ambient.ToUnity();
-
-					if (UE.Camera.main != null)
-					{
-						UE.Camera.main.backgroundColor = world.SceneInfo.Background.ToUnity();
-					}
-
-					if (world.SceneInfo.FogSettings != null && world.SceneInfo.FogSettings.FogType != "none")
-					{
-						UE.RenderSettings.fog = true;
-						UE.RenderSettings.fogColor = world.SceneInfo.FogSettings.FogColor.ToUnity();
-						UE.RenderSettings.fogStartDistance = (float)world.SceneInfo.FogSettings.Start;
-						UE.RenderSettings.fogEndDistance = (float)world.SceneInfo.FogSettings.End;
-						UE.RenderSettings.fogDensity = (float)world.SceneInfo.FogSettings.Density;
-
-						if (world.SceneInfo.FogSettings.FogType == "linear")
-						{
-							UE.RenderSettings.fogMode = UE.FogMode.Linear;
-						}
-						else
-						{
-							UE.RenderSettings.fogMode = UE.FogMode.ExponentialSquared;
-						}
-					}
+					ApplySceneSettings(world.SceneInfo);
 				}
 
 				ImportLights(world.Lights, _rootLights);

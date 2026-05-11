@@ -531,7 +531,6 @@ public class Main : MonoBehaviour
 		{
 			_sdfLoader = new SDFormat.Import.Loader();
 			_sdfLoader.SetRootLights(_lightsRoot);
-			_sdfLoader.SetRootRoads(_roadsRoot);
 
 			Physics.simulationMode = SimulationMode.Script;
 			yield return _sdfLoader.Start(world);
