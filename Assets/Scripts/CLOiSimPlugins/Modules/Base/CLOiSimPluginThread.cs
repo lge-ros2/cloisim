@@ -97,7 +97,7 @@ public class CLOiSimPluginThread : IDisposable
 			if (thread == null) continue;
 			if (!thread.IsAlive) continue;
 
-			if (thread.Join(joinTimeoutMs))
+			if (!thread.Join(joinTimeoutMs))
 			{
 #if UNITY_EDITOR
 				Debug.LogWarning($"Thread({thread.ManagedThreadId}) did not stop within {joinTimeoutMs}ms");

@@ -171,19 +171,14 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		for (var i = 0; i < sequence; i++)
 			yield return null;
 
-		try
-		{
-			yield return OnStart();
-		}
-		finally
-		{
-			_thread.Start();
+		yield return OnStart();
 
-			IsStarted = true;
-			Started?.Invoke(this);
+		_thread.Start();
 
-			StartSummary.AppendLine($"modelName=[{_modelName}] partsName=[{_partsName}] parentLinkName=[{_parentLinkName}]");
-		}
+		IsStarted = true;
+		Started?.Invoke(this);
+
+		StartSummary.AppendLine($"modelName=[{_modelName}] partsName=[{_partsName}] parentLinkName=[{_parentLinkName}]");
 	}
 
 	public void Reset()
