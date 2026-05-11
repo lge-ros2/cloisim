@@ -310,7 +310,7 @@ MonoBehaviour:
       type: {class: UniversalRenderPipelineEditorAssets, ns: UnityEngine.Rendering.Universal,
         asm: Unity.RenderPipelines.Universal.Runtime}
       data:
-        m_DefaultSettingsVolumeProfile: {fileID: 11400000, guid: eda47df5b85f4f249abf7abd73db2cb2,
+        m_DefaultSettingsVolumeProfile: {fileID: 11400000, guid: b8072d35d0b1cea9ab753e557bb9c857,
           type: 2}
     - rid: 8642158334220435469
       type: {class: OnTilePostProcessResource, ns: UnityEngine.Rendering.Universal,
