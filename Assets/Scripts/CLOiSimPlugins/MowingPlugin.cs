@@ -269,6 +269,12 @@ public class MowingPlugin : CLOiSimPlugin
 		if (_targetPlane != null)
 		{
 			var targetPlaneMesh = _targetPlane?.GetComponentInChildren<MeshFilter>();
+			if (targetPlaneMesh == null || targetPlaneMesh.sharedMesh == null || targetPlaneMesh.sharedMesh.vertexCount == 0)
+			{
+				StartSummary.AppendLine("Failed to plant grass - target plane mesh is missing or empty");
+				return;
+			}
+
 			_grass.SetMaterial(GetPluginParameters());
 			_grass.SetGrassOffset(_targetPlane.position);
 			_grass.SetBound(targetPlaneMesh.sharedMesh);
@@ -342,6 +348,11 @@ public class MowingPlugin : CLOiSimPlugin
 
 	private static Collider AddPrimitiveCollider(MeshFilter meshFilter)
 	{
+		if (meshFilter == null || meshFilter.sharedMesh == null || meshFilter.sharedMesh.vertexCount == 0)
+		{
+			return null;
+		}
+
 		var go = meshFilter.gameObject;
 		var meshName = meshFilter.sharedMesh?.name ?? string.Empty;
 
