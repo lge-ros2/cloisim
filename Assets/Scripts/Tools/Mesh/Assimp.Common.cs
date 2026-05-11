@@ -12,8 +12,6 @@ using SN = System.Numerics;
 
 public static partial class MeshLoader
 {
-	private static readonly Assimp.AssimpContext importer = new Assimp.AssimpContext();
-
 	// private static readonly Assimp.LogStream logstream = new Assimp.LogStream(
 	// 	delegate (String msg, String userData)
 	// 	{
@@ -209,6 +207,7 @@ public static partial class MeshLoader
 		}
 
 		try {
+			using var importer = new Assimp.AssimpContext();
 			var scene = importer.ImportFile(targetPath, PostProcessFlags);
 
 			// Remove cameras
