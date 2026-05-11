@@ -321,9 +321,26 @@ namespace SDFormat
 				if (world.SceneInfo != null)
 				{
 					ApplySceneSettings(world.SceneInfo);
+					UE.Debug.Log("Applied scene settings: " +
+						$"Ambient={world.SceneInfo.Ambient}, " +
+						$"Background={world.SceneInfo.Background}, " +
+						$"Shadows={world.SceneInfo.Shadows}, " +
+						$"SkySettings={(world.SceneInfo.SkySettings != null ? $"SkyColor={world.SceneInfo.SkySettings.CloudAmbient}, " : "null")} " +
+						$"FogSettings={(world.SceneInfo.FogSettings != null ? $"FogType={world.SceneInfo.FogSettings.FogType}, " : "null")}");
+				}
+				else
+				{
+					UE.RenderSettings.ambientMode = UE.Rendering.AmbientMode.Skybox;
+					if (UE.Camera.main != null)
+					{
+						UE.Camera.main.clearFlags = UE.CameraClearFlags.Skybox;
+					}
+					UE.Debug.Log("No scene settings found. Set ambient mode to Skybox and camera clear flags to Skybox.");
 				}
 
 				ImportLights(world.Lights, _rootLights);
+
+				UE.DynamicGI.UpdateEnvironment();
 
 				return Main.WorldRoot;
 			}

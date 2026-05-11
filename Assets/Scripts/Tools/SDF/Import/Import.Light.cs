@@ -166,7 +166,6 @@ namespace SDFormat
 				lightComponent.cullingMask = UE.LayerMask.GetMask("Default", "Plane");
 
 				var direction = light.Direction.ToUnity();
-				var applySceneSky = false;
 
 				var defaultLightDirection = UE.Quaternion.identity;
 				var defaultIntensity = 1f;
@@ -178,15 +177,10 @@ namespace SDFormat
 							direction = sceneSunDirection;
 							defaultIntensity *= sceneSunIntensityScale;
 							_sceneSkyAppliedToDirectionalLight = true;
-							applySceneSky = true;
 						}
 
 						lightComponent.type = UE.LightType.Directional;
 						lightComponent.transform.localRotation = GetDirectionalLightRotation(direction);
-						if (applySceneSky || UE.RenderSettings.sun == null)
-						{
-							UE.RenderSettings.sun = lightComponent;
-						}
 						break;
 
 					case LightType.Spot:

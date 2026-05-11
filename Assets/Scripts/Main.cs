@@ -165,13 +165,7 @@ public class Main : MonoBehaviour
 
 			Destroy(child.gameObject);
 		}
-	}
-
-	private void CleanAllResources()
-	{
-		CleanAllLights();
-		CleanAllModels();
-		VHACD.ClearCache();
+		RenderSettings.sun = null;
 	}
 
 	private void ResetRootModelsTransform()
@@ -401,11 +395,6 @@ public class Main : MonoBehaviour
 		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
 		_vhacd.m_parameters = VHACD.Params;
 
-		if (_clearAllOnStart)
-		{
-			CleanAllResources();
-		}
-
 		ResetRootModelsTransform();
 	}
 
@@ -529,6 +518,13 @@ public class Main : MonoBehaviour
 
 		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
 		{
+			if (_clearAllOnStart)
+			{
+				CleanAllModels();
+				CleanAllLights();
+				VHACD.ClearCache();
+			}
+
 			_sdfLoader = new SDFormat.Import.Loader();
 			_sdfLoader.SetRootLights(_lightsRoot);
 
