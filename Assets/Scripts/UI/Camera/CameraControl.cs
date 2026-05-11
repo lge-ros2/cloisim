@@ -87,7 +87,7 @@ public abstract class CameraControl : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (_blockControl)
+		if (_blockControl || PIDTunerWindow.IsEditing)
 		{
 			return;
 		}

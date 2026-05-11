@@ -331,7 +331,7 @@ public class MicomPlugin : CLOiSimPlugin
 
 		if (GetPluginParameters().IsValidNode($"{parameterPrefix}/tread"))
 		{
-			StartSummary.AppendLine($"<tread> will be depreacted!! please use <separation>");
+			StartSummary.AppendLine($"<tread> will be deprecated!! please use <separation>");
 		}
 
 		var wheelTread = GetPluginParameters().GetValue<float>($"{parameterPrefix}/tread"); // TODO: to be deprecated

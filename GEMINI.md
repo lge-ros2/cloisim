@@ -8,10 +8,10 @@ CLOiSim is a multi-robot simulator based on the Unity engine. It dynamically bui
 
 ### Key Technologies & State
 
-*   **Simulation Engine:** Unity 6 (`6000.3.11f1`), *not* Unity 2022 LTS as older docs might imply.
-*   **Rendering Pipeline:** Universal Render Pipeline (URP) version 17.3.0.
-*   **Input & Navigation:** Input System `1.19.0`, AI Navigation `2.0.11`.
-*   **Plugin Dependencies:** AssimpNet (native mesh import), NetMQ (ZeroMQ transport), protobuf-net (messaging), WebSocketSharp (control API).
+*   **Simulation Engine:** Unity 6 (`6000.4.5f1`), *not* Unity 2022 LTS as older docs might imply.
+*   **Rendering Pipeline:** Universal Render Pipeline (URP) version 17.4.0.
+*   **Input & Navigation:** Input System `1.19.0`, AI Navigation `2.0.12`.
+*   **Plugin Dependencies:** AssimpNetter 6.0.4 (native mesh import), NetMQ 4.0.4 (ZeroMQ transport), protobuf-net 3.2.56 (messaging), WebSocketSharp 1.0.3-rc11 (control API), Newtonsoft.Json 13.0.4 (JSON).
 *   **Core Logic:** C# scripts located under `Assets/Scripts/`.
 
 ## Architecture Layers
@@ -49,4 +49,4 @@ The simulator architecture is divided into five main layers heavily coordinated 
 
 *   **Plugin Threading:** Devices offload transmission/serialization to `CLOiSimPluginThread` worker threads to maintain 60 FPS. Ensure data passed out of Unity Engine threads uses concurrent structures (like `DeviceMessageQueue` buffers).
 *   **SDF Import Loop:** Do not manually instantiate complex models in code for permanent features. Implement parsing hooks inside `Import.Element.cs` or `Implement.Element.cs` layers.
-*   **Custom Tags and Layers:** Components depend on explicitly named tags: `Model`, `Link`, `Visual`, `Collision`, `Sensor`, `Geometry`. URP culls standard cameras with explicit bitmask matrices—be aware of this when editing `SensorRenderManager` render loops.
+*   **Custom Tags and Layers:** Components depend on explicitly named tags: `Model`, `Link`, `Visual`, `Collision`, `Sensor`, `Light`, `Actor`, `Marker`, `Props`, `Geometry`, `Road`. Custom layers: `Plane` (3), `Visualization` (6), `Cloth` (7). URP culls standard cameras with explicit bitmask matrices—be aware of this when editing `SensorRenderManager` render loops.

@@ -15,6 +15,9 @@ IF /I "%~1" == "-h" (
 ) ELSE IF /I "%~1" == "--world" (
 	SET TargetWorld=%~2
 	SHIFT
+) ELSE IF /I "%~1" == "--install-completion" (
+	CALL :InstallCompletion
+	EXIT /B 0
 ) ELSE IF "%TargetWorld%" == "" (
 	SET TargetWorld=%~1
 )
@@ -42,6 +45,9 @@ IF NOT DEFINED CLOISIM_WORLD_PATH (
 	ECHO   ex^) run.bat lg_seocho.world
 	ECHO   ex^) run.bat --world lg_seocho.world
 	ECHO   ex^) run.bat --headless --world lg_seocho.world
+	ECHO.
+	ECHO   Install PowerShell auto-completion ^(one-time^):
+	ECHO   run.bat --install-completion
 	ECHO.
 ) ELSE (
 	ECHO.
@@ -116,6 +122,68 @@ EXIT /B %ERRORLEVEL%
 	ECHO  Dump directory  : %DUMP_DIR%
 	ECHO ========================================
 	ENDLOCAL
+EXIT /B 0
+
+:InstallCompletion
+	WHERE powershell >NUL 2>&1
+	IF !ERRORLEVEL! NEQ 0 (
+		ECHO PowerShell is required for auto-completion support.
+		EXIT /B 1
+	)
+
+	powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+	"$compDir = Join-Path $env:LOCALAPPDATA 'CLOiSim'; " ^
+	"New-Item -ItemType Directory -Force -Path $compDir | Out-Null; " ^
+	"$compFile = Join-Path $compDir 'completion.ps1'; " ^
+	"@'" ^
+	"" ^
+	"Register-ArgumentCompleter -Native -CommandName 'run.bat' -ScriptBlock {" ^
+	"    param($wordToComplete, $commandAst, $cursorPosition)" ^
+	"    $opts = @('--headless', '--world', '--capture-screen', '--install-completion', '-h', '-w', '-c')" ^
+	"    $tokens = $commandAst.ToString() -split '\s+'" ^
+	"    $prev = if ($tokens.Count -ge 2) { $tokens[-1] } else { '' }" ^
+	"    if ($prev -eq '--world' -or $prev -eq '-w') {" ^
+	"        $worldPath = $env:CLOISIM_WORLD_PATH" ^
+	"        if ($worldPath) {" ^
+	"            foreach ($dir in $worldPath -split ';') {" ^
+	"                if (Test-Path $dir) {" ^
+	"                    Get-ChildItem -Path $dir -Filter '*.world' -File | ForEach-Object {" ^
+	"                        [System.Management.Automation.CompletionResult]::new($_.Name, $_.Name, 'ParameterValue', $_.Name)" ^
+	"                    }" ^
+	"                }" ^
+	"            }" ^
+	"        }" ^
+	"    } elseif ($wordToComplete.StartsWith('-')) {" ^
+	"        $opts | Where-Object { $_ -like \"$wordToComplete*\" } | ForEach-Object {" ^
+	"            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterName', $_)" ^
+	"        }" ^
+	"    } else {" ^
+	"        $worldPath = $env:CLOISIM_WORLD_PATH" ^
+	"        if ($worldPath) {" ^
+	"            foreach ($dir in $worldPath -split ';') {" ^
+	"                if (Test-Path $dir) {" ^
+	"                    Get-ChildItem -Path $dir -Filter '*.world' -File | ForEach-Object {" ^
+	"                        [System.Management.Automation.CompletionResult]::new($_.Name, $_.Name, 'ParameterValue', $_.Name)" ^
+	"                    }" ^
+	"                }" ^
+	"            }" ^
+	"        }" ^
+	"    }" ^
+	"}" ^
+	"" ^
+	"'@ | Set-Content -Path $compFile -Encoding UTF8; " ^
+	"$profileDir = Split-Path $PROFILE -Parent; " ^
+	"if (!(Test-Path $profileDir)) { New-Item -ItemType Directory -Force -Path $profileDir | Out-Null }; " ^
+	"if (!(Test-Path $PROFILE)) { New-Item -ItemType File -Force -Path $PROFILE | Out-Null }; " ^
+	"$sourceLine = \". '$compFile'\"; " ^
+	"$content = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue; " ^
+	"if (!$content -or !$content.Contains($sourceLine)) { Add-Content -Path $PROFILE -Value \"`n$sourceLine\" }; " ^
+	"Write-Host 'PowerShell completion installed to:' $compFile; " ^
+	"Write-Host 'Added to PowerShell profile:' $PROFILE; " ^
+	"Write-Host 'Open a new PowerShell terminal to enable auto-completion.'"
+
+	ECHO.
+	ECHO NOTE: Auto-completion only works in PowerShell, not in cmd.exe.
 EXIT /B 0
 
 :ShowEnvironmentHelp

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2020 LG Electronics Inc.
  *
  * SPDX-License-Identifier: MIT
@@ -73,6 +73,8 @@ public class Main : MonoBehaviour
 	private bool _trackVisualInheritYaw = false;
 
 	private CrashReporter _crashReporter = null;
+
+	private LoadingCursor _loadingCursor = null;
 
 	private bool _pluginAllStarted = false;
 	private bool _isResetting = false;
@@ -163,12 +165,7 @@ public class Main : MonoBehaviour
 
 			Destroy(child.gameObject);
 		}
-	}
-
-	private void CleanAllResources()
-	{
-		CleanAllLights();
-		CleanAllModels();
+		RenderSettings.sun = null;
 	}
 
 	private void ResetRootModelsTransform()
@@ -346,7 +343,6 @@ public class Main : MonoBehaviour
 		// "Default" layer gets a tighter cull distance for small objects
 		layerCullDistances[LayerMask.NameToLayer("Default")] = mainCamera.farClipPlane * 0.5f;
 		mainCamera.layerCullDistances = layerCullDistances;
-		mainCamera.layerCullSpherical = true;
 
 		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
 
@@ -375,6 +371,10 @@ public class Main : MonoBehaviour
 
 			_uiMainCanvasRoot = _uiRoot.transform.Find("Main Canvas").gameObject;
 			_followingList = _uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
+
+			_uiRoot.AddComponent<PIDTunerWindow>();
+
+			_loadingCursor = _uiRoot.AddComponent<LoadingCursor>();
 		}
 
 		_bridgeManager = new();
@@ -393,11 +393,6 @@ public class Main : MonoBehaviour
 
 		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
 		_vhacd.m_parameters = VHACD.Params;
-
-		if (_clearAllOnStart)
-		{
-			CleanAllResources();
-		}
 
 		ResetRootModelsTransform();
 	}
@@ -463,6 +458,9 @@ public class Main : MonoBehaviour
 
 	public IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
+		_loadingCursor?.Activate();
+		yield return null;
+
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
 			_uiController?.SetInfoMessage($"Model '{model.Name}' is now loading....");
@@ -502,6 +500,12 @@ public class Main : MonoBehaviour
 			var message = $"Model '{model.Name}' is successfully loaded.";
 			Debug.Log(message);
 			_uiController?.SetInfoMessage(message);
+
+			_loadingCursor?.Deactivate();
+		}
+		else
+		{
+			_loadingCursor?.Deactivate();
 		}
 	}
 
@@ -509,12 +513,19 @@ public class Main : MonoBehaviour
 	{
 		Debug.Log("Target World: " + _worldFilename);
 		_uiController?.SetInfoMessage($"World '{_worldFilename}' is now loading....");
+		_loadingCursor?.Activate();
 
 		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
 		{
+			if (_clearAllOnStart)
+			{
+				CleanAllModels();
+				CleanAllLights();
+				VHACD.ClearCache();
+			}
+
 			_sdfLoader = new SDFormat.Import.Loader();
 			_sdfLoader.SetRootLights(_lightsRoot);
-			_sdfLoader.SetRootRoads(_roadsRoot);
 
 			Physics.simulationMode = SimulationMode.Script;
 			yield return _sdfLoader.Start(world);
@@ -546,12 +557,16 @@ public class Main : MonoBehaviour
 			var message = $"World '{_worldFilename}' is loaded";
 			Debug.Log(message);
 			_uiController?.SetInfoMessage(message);
+
+			_loadingCursor?.Deactivate();
 		}
 		else
 		{
 			var errorMessage = $"Parsing failed!!! Failed to load world file: {_worldFilename}";
 			Debug.LogError(errorMessage);
 			_uiController?.SetErrorMessage(errorMessage);
+
+			_loadingCursor?.Deactivate();
 		}
 
 		if (!string.IsNullOrEmpty(_screenCaptureFilename))
@@ -928,6 +943,11 @@ public class Main : MonoBehaviour
 
 	void OnDestroy()
 	{
+		if (_loadingCursor != null)
+		{
+			_loadingCursor.Deactivate();
+		}
+
 		_crashReporter?.Dispose();
 		_crashReporter = null;
 

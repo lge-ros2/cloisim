@@ -69,9 +69,17 @@ namespace SDFormat
 					if (joint.Axis != null)
 					{
 						axis1xyz = joint.Axis.Xyz.ToUnity();
-						axisSpringReference = (joint.Type == JointType.Prismatic) ?
-							(float)joint.Axis.SpringReference :
-							SDF2Unity.CurveOrientation((float)joint.Axis.SpringReference);
+
+						// For revolute and other non-prismatic joints, apply curve orientation conversion.
+						// Prismatic joints keep spring reference as-is since they do not have rotation semantics.
+						if (joint.Type == JointType.Prismatic)
+						{
+							axisSpringReference = (float)joint.Axis.SpringReference;
+						}
+						else
+						{
+							axisSpringReference = SDF2Unity.CurveOrientation((float)joint.Axis.SpringReference);
+						}
 
 #if true // TODO: Candidate to remove due to AriticulationBody.maxJointVelocity
 						if (!double.IsInfinity(joint.Axis.MaxVelocity))
@@ -82,6 +90,9 @@ namespace SDFormat
 						if (joint.Axis.Mimic != null)
 						{
 							linkHelper.JointAxisMimic = joint.Axis.Mimic;
+
+							var mimicJoint = linkObjectChild.gameObject.AddComponent<Helper.MimicJoint>();
+							mimicJoint.Initialize(joint.Axis.Mimic, joint.Type, articulationBodyChild);
 						}
 					}
 
@@ -99,6 +110,9 @@ namespace SDFormat
 						if (joint.Axis2.Mimic != null)
 						{
 							linkHelper.JointAxis2Mimic = joint.Axis2.Mimic;
+
+							var mimicJoint2 = linkObjectChild.gameObject.AddComponent<Helper.MimicJoint>();
+							mimicJoint2.Initialize(joint.Axis2.Mimic, joint.Type, articulationBodyChild);
 						}
 					}
 

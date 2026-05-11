@@ -38,7 +38,7 @@ From the current workspace, the simulator is best understood as five cooperating
 
 The repository documentation still mentions Unity `2022.3.71f1`, but the checked-in project currently declares:
 
-- `ProjectSettings/ProjectVersion.txt` → `6000.3.11f1`
+- `ProjectSettings/ProjectVersion.txt` → `6000.4.5f1`
 
 So GPT-5.4 should treat this workspace as a **Unity 6-era project state** with legacy documentation still present. If behavior differs between docs and code, prefer the checked-in project files and package manifest.
 
@@ -46,9 +46,9 @@ So GPT-5.4 should treat this workspace as a **Unity 6-era project state** with l
 
 Key package signals from `Packages/manifest.json`:
 
-- URP: `com.unity.render-pipelines.universal` `17.3.0`
+- URP: `com.unity.render-pipelines.universal` `17.4.0`
 - Input System: `com.unity.inputsystem` `1.19.0`
-- AI Navigation: `com.unity.ai.navigation` `2.0.11`
+- AI Navigation: `com.unity.ai.navigation` `2.0.12`
 - Mathematics: `com.unity.mathematics` `1.3.3`
 - Splines, Terrain Tools, uGUI, and robotics VHACD support are included
 
@@ -205,6 +205,7 @@ Sensor/control abstractions such as:
 - `Lidar.cs`
 - `Camera.cs`
 - `DepthCamera.cs`
+- `LogicalCamera.cs`
 - `GPS.cs`
 - `IMU.cs`
 - `Contact.cs`
@@ -213,6 +214,9 @@ Sensor/control abstractions such as:
 - `MicomCommand.cs`
 - `MicomSensor.cs`
 - `SegmentationCamera.cs`
+- `MultiCamera.cs`
+- `Sonar.cs`
+- `Clock.cs`
 
 This layer appears to model device semantics independently from plugin transport wrappers.
 
@@ -224,10 +228,13 @@ Feature and transport bridge layer. Concrete plugins include:
 - `RealSensePlugin`
 - `SegmentationCameraPlugin`
 - `MultiCameraPlugin`
+- `LogicalCameraPlugin`
 - `ImuPlugin`
 - `GpsPlugin`
 - `SonarPlugin`
 - `IRPlugin`
+- `RangePlugin`
+- `ContactPlugins`
 - `JointControlPlugin`
 - `MicomPlugin`
 - `ActorPlugin`
@@ -236,6 +243,8 @@ Feature and transport bridge layer. Concrete plugins include:
 - `ElevatorSystem`
 - `MowingPlugin`
 - `ParticleSystemPlugin`
+- `ClothPlugin`
+- `ClothGrabberPlugin`
 
 ### `Assets/Scripts/Tools/SDF/`
 Core parser/importer implementation. This is where to work when the request involves SDF compatibility, parser bugs, or model/world import behavior.
@@ -338,3 +347,5 @@ CLOiSim is a Unity-based SDF simulator whose true center of gravity is `Main.cs`
 - explicit plugin startup synchronization
 - GPU-sensitive sensor/render paths
 - a likely in-progress migration from older documented Unity versions to a current Unity 6 project state
+- logical camera support for object detection simulation
+- cloth simulation with interactive grabbing

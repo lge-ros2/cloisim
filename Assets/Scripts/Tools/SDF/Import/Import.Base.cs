@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using System;
+using UE = UnityEngine;
 
 namespace SDFormat
 {
@@ -16,6 +17,21 @@ namespace SDFormat
 			private Dictionary<Joint, object> _jointObjectList = new();
 			private Dictionary<Plugin, object> _pluginObjectList = new();
 			private Dictionary<Gripper, object> _gripperObjectList = new();
+
+			private static void UpdateEnvironmentIfNeeded(in object targetObject)
+			{
+				if (targetObject is not UE.GameObject gameObject)
+				{
+					return;
+				}
+
+				if (gameObject.GetComponentsInChildren<UE.Light>(true).Length <= 0)
+				{
+					return;
+				}
+
+				UE.DynamicGI.UpdateEnvironment();
+			}
 
 			private void ImportVisuals(IReadOnlyList<Visual> items, in object parentObject)
 			{
@@ -150,6 +166,7 @@ namespace SDFormat
 				yield return null;
 
 				worldObject?.SpecifyPose();
+				UpdateEnvironmentIfNeeded(worldObject);
 
 				foreach (var pluginObject in _pluginObjectList)
 				{
@@ -177,6 +194,7 @@ namespace SDFormat
 				}
 
 				modelObject?.SpecifyPose();
+				UpdateEnvironmentIfNeeded(modelObject);
 
 				foreach (var pluginObject in _pluginObjectList)
 				{

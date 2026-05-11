@@ -40,13 +40,14 @@ public sealed class ObjectTracking
 
 	public void Reset()
 	{
+		// Note: _size and the cached footprint (_footPrint / _rotatedFootPrint) are
+		// derived from mesh geometry and survive a simulation reset, so we deliberately
+		// do not clear them here. Re-running CalculateFootprint() can take hundreds of
+		// milliseconds per tracked object due to Mesh.CombineMeshes.
 		_velocity = Vector3.zero;
 		_position = Vector3.zero;
 		_rotation = Quaternion.identity;
-		_size = Vector3.zero;
 		_previousFixedPosition = (_rootTransform != null) ? _rootTransform.position : Vector3.zero;
-
-		ClearFootprint();
 	}
 
 	public void UpdateVelocity(float deltaTime)
@@ -179,24 +180,39 @@ public sealed class ObjectTracking
 				}
 
 				var initialRotation = _rootTransform.transform.rotation;
-				var combine = new CombineInstance[validMeshFilters.Count];
-				for (var i = 0; i < combine.Length; i++)
+
+				// Compute world-space bounds from local AABB corners (8 per mesh) without
+				// touching every vertex. Avoids the giant Mesh.CombineMeshes allocation that
+				// dominated CalculateFootprint() (CombineMeshes + CombineVertices in profiler).
+				var worldBounds = new Bounds();
+				var worldBoundsInit = false;
+				for (var i = 0; i < validMeshFilters.Count; i++)
 				{
-					combine[i].mesh = validMeshFilters[i].sharedMesh;
-					combine[i].transform = validMeshFilters[i].transform.localToWorldMatrix;
+					var ltw = validMeshFilters[i].transform.localToWorldMatrix;
+					var lb = validMeshFilters[i].sharedMesh.bounds;
+					var lbMin = lb.min;
+					var lbMax = lb.max;
+					for (var c = 0; c < 8; c++)
+					{
+						var corner = new Vector3(
+							((c & 1) == 0) ? lbMin.x : lbMax.x,
+							((c & 2) == 0) ? lbMin.y : lbMax.y,
+							((c & 4) == 0) ? lbMin.z : lbMax.z);
+						var wp = ltw.MultiplyPoint3x4(corner);
+						if (!worldBoundsInit)
+						{
+							worldBounds = new Bounds(wp, Vector3.zero);
+							worldBoundsInit = true;
+						}
+						else
+						{
+							worldBounds.Encapsulate(wp);
+						}
+					}
 				}
 
-				var combinedMesh = new Mesh
-				{
-					indexFormat = UnityEngine.Rendering.IndexFormat.UInt32
-				};
-				combinedMesh.CombineMeshes(combine, true, true);
-				combinedMesh.RecalculateBounds();
-
-				// Project to 2D and downsample via spatial grid before convex hull
-				var vertices = combinedMesh.vertices;
-				var center = combinedMesh.bounds.center;
-				var downsampledVertices = DownsampleVertices2D(vertices, center, initialRotation);
+				var center = worldBounds.center;
+				var downsampledVertices = DownsampleVertices2D(validMeshFilters, center, initialRotation);
 
 				var convexHullMeshData = downsampledVertices.SolveConvexHull2D();
 				if (convexHullMeshData.Length > 0)
@@ -216,37 +232,46 @@ public sealed class ObjectTracking
 					Set2DFootprint(lowConvexHullMeshData.ToArray());
 				}
 
-				_size = combinedMesh.bounds.size;
-				Object.Destroy(combinedMesh);
+				_size = worldBounds.size;
 			}
 		}
 	}
 
 	/// <summary>
-	/// Projects vertices to 2D (y=0), applies center offset and rotation,
-	/// then reduces count via spatial grid bucketing so the convex hull
-	/// receives at most a few thousand points instead of the full mesh.
+	/// Iterates each MeshFilter's vertices via Mesh.GetVertices (reusable buffer),
+	/// transforms them to world space, projects to 2D (y=0), applies center offset
+	/// and rotation, then reduces count via spatial grid bucketing so the convex
+	/// hull receives at most a few thousand points instead of the full mesh.
+	/// Avoids Mesh.CombineMeshes which copied the entire vertex set into a new mesh.
 	/// </summary>
-	private static Vector3[] DownsampleVertices2D(Vector3[] vertices, Vector3 center, Quaternion rotation)
+	private static Vector3[] DownsampleVertices2D(List<MeshFilter> meshFilters, Vector3 center, Quaternion rotation)
 	{
 		const float cellSize = 0.01f; // 1 cm grid
 		var inv = 1f / cellSize;
 		var seen = new HashSet<long>();
 		var result = new List<Vector3>();
+		var vertsBuffer = new List<Vector3>(1024);
 
-		for (var i = 0; i < vertices.Length; i++)
+		for (var m = 0; m < meshFilters.Count; m++)
 		{
-			var v = vertices[i] - center;
-			v.y = 0;
-			v = rotation * v;
+			var mf = meshFilters[m];
+			mf.sharedMesh.GetVertices(vertsBuffer);
+			var ltw = mf.transform.localToWorldMatrix;
 
-			var ix = (long)Mathf.FloorToInt(v.x * inv);
-			var iz = (long)Mathf.FloorToInt(v.z * inv);
-			var key = ix * 73856093L ^ iz * 19349663L;
-
-			if (seen.Add(key))
+			for (var i = 0; i < vertsBuffer.Count; i++)
 			{
-				result.Add(v);
+				var v = ltw.MultiplyPoint3x4(vertsBuffer[i]) - center;
+				v.y = 0;
+				v = rotation * v;
+
+				var ix = (long)Mathf.FloorToInt(v.x * inv);
+				var iz = (long)Mathf.FloorToInt(v.z * inv);
+				var key = ix * 73856093L ^ iz * 19349663L;
+
+				if (seen.Add(key))
+				{
+					result.Add(v);
+				}
 			}
 		}
 
