@@ -343,7 +343,6 @@ public class Main : MonoBehaviour
 		// "Default" layer gets a tighter cull distance for small objects
 		layerCullDistances[LayerMask.NameToLayer("Default")] = mainCamera.farClipPlane * 0.5f;
 		mainCamera.layerCullDistances = layerCullDistances;
-		mainCamera.layerCullSpherical = true;
 
 		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
 
