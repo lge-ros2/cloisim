@@ -104,16 +104,16 @@ namespace SelfBalanceControl
 
 		public static OutputMode ParseOutputMode(in string mode)
 		{
-			return Enum.IsDefined(typeof(OutputMode), mode.ToUpper())?
-				OutputMode.LQR :
-				(OutputMode)Enum.Parse(typeof(OutputMode), mode.ToUpper());
+			return Enum.TryParse<OutputMode>(mode, true, out var parsed)
+				? parsed
+				: OutputMode.LQR;
 		}
 
 		public static SwitchingMode ParseSwitchingMode(in string mode)
 		{
-			return Enum.IsDefined(typeof(SwitchingMode), mode.ToUpper())?
-				SwitchingMode.SAT :
-				(SwitchingMode)Enum.Parse(typeof(SwitchingMode), mode.ToUpper());
+			return Enum.TryParse<SwitchingMode>(mode, true, out var parsed)
+				? parsed
+				: SwitchingMode.SAT;
 		}
 
 		public void SetNominalModel(in string matrixA, in string matrixB, in string matrixK, in string matrixS)
