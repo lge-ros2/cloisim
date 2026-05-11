@@ -24,12 +24,41 @@ public class SimulationService : IDisposable
 	public SimulationService(in int defaultWebSocketServicePort = 8080)
 	{
 		var envServicePort = Environment.GetEnvironmentVariable(SERVICE_PORT_ENVIRONMENT_NAME);
-		_servicePort = (envServicePort == null || envServicePort.Equals("")) ? defaultWebSocketServicePort : int.Parse(envServicePort);
+		if (string.IsNullOrEmpty(envServicePort))
+		{
+			_servicePort = defaultWebSocketServicePort;
+		}
+		else if (!int.TryParse(envServicePort, out _servicePort))
+		{
+			_servicePort = defaultWebSocketServicePort;
+			var warningMessage = $"Invalid {SERVICE_PORT_ENVIRONMENT_NAME} value '{envServicePort}'. Using default port {_servicePort}.";
+			Main.UIController?.SetWarningMessage(warningMessage);
+			Debug.LogWarning(warningMessage);
+		}
+
 		wsServer = new WebSocketServer(_servicePort)
 		{
 			ReuseAddress = true,
 			KeepClean = true,
 			WaitTime = TimeSpan.FromMilliseconds(5000)
+		};
+
+		wsServer.Log.Output = (logData, _) =>
+		{
+			var msg = $"[WebSocket] {logData.Level}: {logData.Message}";
+			switch (logData.Level)
+			{
+				case WebSocketSharp.LogLevel.Fatal:
+				case WebSocketSharp.LogLevel.Error:
+					Debug.LogWarning(msg);
+					break;
+				case WebSocketSharp.LogLevel.Warn:
+					Debug.LogWarning(msg);
+					break;
+				default:
+					Debug.Log(msg);
+					break;
+			}
 		};
 
 		InitializeServices();

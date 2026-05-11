@@ -184,8 +184,49 @@ public class SimulationControlRequestTeleport : SimulationControlRequest
 public class SimulationControlService : WebSocketBehavior
 {
 	public static string SimVersion { get; set; } = string.Empty;
+	private const int MaxFilterLength = 256;
+	private const int MaxFilenameLength = 512;
 
 	private BridgeManager bridgeManager = null;
+
+	private static SimulationControlResponseNormal CreateNormalResponse(in string result)
+	{
+		return new SimulationControlResponseNormal
+		{
+			result = result
+		};
+	}
+
+	private static bool TryValidateFilter(in string filter, out SimulationControlResponseNormal errorResponse)
+	{
+		if (!string.IsNullOrEmpty(filter) && filter.Length > MaxFilterLength)
+		{
+			errorResponse = CreateNormalResponse($"filter is too long (max {MaxFilterLength} characters)");
+			return false;
+		}
+
+		errorResponse = null;
+		return true;
+	}
+
+	private void SendResponse(SimulationControlRequest request, SimulationControlResponseBase output)
+	{
+		output.command = request?.command ?? string.Empty;
+
+		var responseJsonData = JsonConvert.SerializeObject(output, request != null && request.indent ? Formatting.Indented : Formatting.None);
+
+		try
+		{
+			if (State == WebSocketState.Open)
+			{
+				Send(responseJsonData);
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine($"Send failed: {ex.GetType().Name} {ex.Message}");
+		}
+	}
 
 	protected override void OnOpen()
 	{
@@ -216,6 +257,19 @@ public class SimulationControlService : WebSocketBehavior
 		catch (Exception ex)
 		{
 			Console.Error.WriteLine($"Invalid JSON: {ex.Message}\nraw={e.Data}");
+			SendResponse(null, CreateNormalResponse($"invalid json: {ex.Message}"));
+			return;
+		}
+
+		if (request == null)
+		{
+			SendResponse(null, CreateNormalResponse("request body is empty"));
+			return;
+		}
+
+		if (string.IsNullOrWhiteSpace(request.command))
+		{
+			SendResponse(request, CreateNormalResponse("command is empty"));
 			return;
 		}
 
@@ -228,9 +282,14 @@ public class SimulationControlService : WebSocketBehavior
 		{
 			case "fps":
 				{
+						if (Main.InfoDisplay == null)
+						{
+							output = CreateNormalResponse("fps service is unavailable");
+							break;
+						}
+
 					var fps = Main.InfoDisplay.FPS();
-					output = new SimulationControlResponseNormal();
-					(output as SimulationControlResponseNormal).result = fps.ToString();
+						output = CreateNormalResponse(fps.ToString());
 				}
 				break;
 
@@ -239,13 +298,24 @@ public class SimulationControlService : WebSocketBehavior
 					var wasSuccessful = Main.Instance.TriggerResetService();
 					var result = wasSuccessful ? SimulationService.SUCCESS : SimulationService.FAIL;
 
-					output = new SimulationControlResponseNormal();
-					(output as SimulationControlResponseNormal).result = result;
+						output = CreateNormalResponse(result);
 				}
 				break;
 
 			case "device_list":
 				{
+						if (!TryValidateFilter(request.filter, out var filterError))
+						{
+							output = filterError;
+							break;
+						}
+
+						if (bridgeManager == null)
+						{
+							output = CreateNormalResponse("bridge manager is unavailable");
+							break;
+						}
+
 					var result = bridgeManager.GetDeviceMapList(request.filter);
 					output = new SimulationControlResponseDeviceList();
 					(output as SimulationControlResponseDeviceList).result = result;
@@ -254,6 +324,18 @@ public class SimulationControlService : WebSocketBehavior
 
 			case "port_list":
 				{
+						if (!TryValidateFilter(request.filter, out var filterError))
+						{
+							output = filterError;
+							break;
+						}
+
+						if (bridgeManager == null)
+						{
+							output = CreateNormalResponse("bridge manager is unavailable");
+							break;
+						}
+
 					var result = bridgeManager.GetDevicePortList(request.filter);
 					output = new SimulationControlResponseTopicList();
 					(output as SimulationControlResponseTopicList).result = result;
@@ -262,31 +344,40 @@ public class SimulationControlService : WebSocketBehavior
 
 			case "start_record":
 				{
-					var result = "filename is empty!!";
-					if (!string.IsNullOrEmpty(request.filename))
+						var result = "filename is empty!!";
+						if (!string.IsNullOrEmpty(request.filename) && request.filename.Length <= MaxFilenameLength)
 					{
 						Main.Instance.TriggerStartRecordService(request.filename);
 						result = true.ToString();
 					}
-					output = new SimulationControlResponseNormal();
-					(output as SimulationControlResponseNormal).result = result;
+						else if (!string.IsNullOrEmpty(request.filename))
+						{
+							result = $"filename is too long (max {MaxFilenameLength} characters)";
+						}
+
+						output = CreateNormalResponse(result);
 				}
 				break;
 
 			case "stop_record":
 				{
 					Main.Instance.TriggerStopRecordService();
-					output = new SimulationControlResponseNormal();
-					(output as SimulationControlResponseNormal).result = true.ToString();
+						output = CreateNormalResponse(true.ToString());
 				}
 				break;
 
 			case "teleport":
 				{
-					var teleportRequest = JsonConvert.DeserializeObject<SimulationControlRequestTeleport>(e.Data);
-					var result = TeleportModel(teleportRequest);
-					output = new SimulationControlResponseNormal();
-					(output as SimulationControlResponseNormal).result = result;
+						try
+						{
+							var teleportRequest = JsonConvert.DeserializeObject<SimulationControlRequestTeleport>(e.Data);
+							var result = TeleportModel(teleportRequest);
+							output = CreateNormalResponse(result);
+						}
+						catch (Exception ex)
+						{
+							output = CreateNormalResponse($"invalid teleport request: {ex.Message}");
+						}
 				}
 				break;
 
@@ -297,28 +388,20 @@ public class SimulationControlService : WebSocketBehavior
 				break;
 
 			default:
-				output = new SimulationControlResponseBase();
-				request.command = "Invalid Command";
+					output = CreateNormalResponse($"unsupported command '{request.command}'");
 				break;
 		}
 
-		output.command = request.command;
-
-		var responseJsonData = JsonConvert.SerializeObject(output, request.indent ? Formatting.Indented : Formatting.None);
-
-		try
-		{
-			if (State == WebSocketState.Open)
-				Send(responseJsonData);
-		}
-		catch (Exception ex)
-		{
-			Console.Error.WriteLine($"Send failed: {ex.GetType().Name} {ex.Message}");
-		}
+		SendResponse(request, output);
 	}
 
 	private string TeleportModel(in SimulationControlRequestTeleport request)
 	{
+		if (request == null)
+		{
+			return "teleport request is empty";
+		}
+
 		// Validation for targets
 		if (request.targets == null || request.targets.Count == 0)
 		{

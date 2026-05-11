@@ -44,7 +44,14 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected static bool DeregisterDevice(in List<ushort> allocatedPorts, in List<string> hashKeys)
 	{
+		if (allocatedPorts.Count == 0 && hashKeys.Count == 0)
+		{
+			return true;
+		}
+
 		BridgeManager.DeallocateDevice(allocatedPorts, hashKeys);
+		allocatedPorts.Clear();
+		hashKeys.Clear();
 		return true;
 	}
 

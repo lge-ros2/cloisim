@@ -144,11 +144,11 @@ public class BridgeManager : IDisposable
 		{
 			if (string.IsNullOrEmpty(filter))
 			{
-				return _deviceMapTable;
+				return CloneDeviceMapTable(_deviceMapTable);
 			}
 			else
 			{
-				return _deviceMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(k => k.Key, v => v.Value);
+				return CloneDeviceMapTable(_deviceMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(k => k.Key, v => v.Value));
 			}
 		}
 	}
@@ -159,13 +159,25 @@ public class BridgeManager : IDisposable
 		{
 			if (string.IsNullOrEmpty(filter))
 			{
-				return _haskKeyPortMapTable;
+				return new Dictionary<string, ushort>(_haskKeyPortMapTable);
 			}
 			else
 			{
 				return _haskKeyPortMapTable.Where(p => p.Key.StartsWith(filter)).ToDictionary(k => k.Key, v => v.Value);
 			}
 		}
+	}
+
+	private static Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> CloneDeviceMapTable(
+		Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> source)
+	{
+		return source.ToDictionary(
+			modelEntry => modelEntry.Key,
+			modelEntry => modelEntry.Value.ToDictionary(
+				deviceTypeEntry => deviceTypeEntry.Key,
+				deviceTypeEntry => deviceTypeEntry.Value.ToDictionary(
+					partsEntry => partsEntry.Key,
+					partsEntry => new Dictionary<string, ushort>(partsEntry.Value))));
 	}
 
 	public static bool IsAvailablePort(in ushort port)
@@ -210,47 +222,50 @@ public class BridgeManager : IDisposable
 
 		if (port > 0)
 		{
-			if (_deviceMapTable.TryGetValue(modelName, out var devicesTypeMapTable))
+			lock (_deviceMapTable)
 			{
-				if (devicesTypeMapTable.TryGetValue(deviceType, out var partsMapTable))
+				if (_deviceMapTable.TryGetValue(modelName, out var devicesTypeMapTable))
 				{
-					if (partsMapTable.TryGetValue(partsName, out var portsMapTable))
+					if (devicesTypeMapTable.TryGetValue(deviceType, out var partsMapTable))
 					{
-						portsMapTable.Add(subPartsName + controlKey, port);
-					}
-					else if (partsMapTable.TryGetValue(fullPartsName, out portsMapTable))
-					{
-						portsMapTable.Add(controlKey, port);
+						if (partsMapTable.TryGetValue(partsName, out var portsMapTable))
+						{
+							portsMapTable.Add(subPartsName + controlKey, port);
+						}
+						else if (partsMapTable.TryGetValue(fullPartsName, out portsMapTable))
+						{
+							portsMapTable.Add(controlKey, port);
+						}
+						else
+						{
+							var newPortsMapTable = new Dictionary<string, ushort>();
+							newPortsMapTable.Add(controlKey, port);
+							partsMapTable.Add(fullPartsName, newPortsMapTable);
+						}
 					}
 					else
 					{
-						var newPortsMapTable = new Dictionary<string, ushort>();
-						newPortsMapTable.Add(controlKey, port);
-						partsMapTable.Add(fullPartsName, newPortsMapTable);
+						var portsMapTable = new Dictionary<string, ushort>();
+						portsMapTable.Add(controlKey, port);
+						var newPartsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
+						newPartsMapTable.Add(fullPartsName, portsMapTable);
+
+						devicesTypeMapTable.Add(deviceType, newPartsMapTable);
 					}
 				}
 				else
 				{
 					var portsMapTable = new Dictionary<string, ushort>();
 					portsMapTable.Add(controlKey, port);
-					var newPartsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
-					newPartsMapTable.Add(fullPartsName, portsMapTable);
 
-					devicesTypeMapTable.Add(deviceType, newPartsMapTable);
+					var partsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
+					partsMapTable.Add(fullPartsName, portsMapTable);
+
+					var devicesTypeMap = new Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>();
+					devicesTypeMap.Add(deviceType, partsMapTable);
+
+					_deviceMapTable.Add(modelName, devicesTypeMap);
 				}
-			}
-			else
-			{
-				var portsMapTable = new Dictionary<string, ushort>();
-				portsMapTable.Add(controlKey, port);
-
-				var partsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
-				partsMapTable.Add(fullPartsName, portsMapTable);
-
-				var devicesTypeMap = new Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>();
-				devicesTypeMap.Add(deviceType, partsMapTable);
-
-				_deviceMapTable.Add(modelName, devicesTypeMap);
 			}
 
 			return true;
@@ -261,52 +276,41 @@ public class BridgeManager : IDisposable
 
 	public static ushort AllocateDevicePort(in string hashKey)
 	{
-		// check if already occupied
-		var newPort = SearchSensorPort(hashKey);
-
-		if (newPort > 0)
+		lock (_haskKeyPortMapTable)
 		{
-			var errorMessage = string.Format("HashKey({0}) is already occupied.", hashKey);
-			Console.Error.Write(errorMessage);
-			Main.UIController?.SetErrorMessage(errorMessage);
-			return 0;
-		}
-
-		// find available port number and start with minimum port range
-		for (var index = 0; index < (MaxPortRange - MinPortRange); index++)
-		{
-			var port = (ushort)(MinPortRange + index);
-			var isContained = false;
-
-			lock (_haskKeyPortMapTable)
+			if (_haskKeyPortMapTable.TryGetValue(hashKey, out var occupiedPort))
 			{
-				isContained = _haskKeyPortMapTable.ContainsValue(port);
+				var errorMessage = string.Format("HashKey({0}) is already occupied.", hashKey);
+				Console.Error.Write(errorMessage);
+				Main.UIController?.SetErrorMessage(errorMessage);
+				return 0;
 			}
 
-			// check if already binded
-			if (!isContained && IsAvailablePort(port))
-			{
-				newPort = port;
-				break;
-			}
-		}
+			ushort newPort = 0;
 
-		if (newPort > 0)
-		{
-			lock (_haskKeyPortMapTable)
+			for (var index = 0; index < (MaxPortRange - MinPortRange); index++)
+			{
+				var port = (ushort)(MinPortRange + index);
+				if (!_haskKeyPortMapTable.ContainsValue(port) && IsAvailablePort(port))
+				{
+					newPort = port;
+					break;
+				}
+			}
+
+			if (newPort > 0)
 			{
 				_haskKeyPortMapTable.Add(hashKey, newPort);
+				_sbAllocatedHistory.AppendFormat("Allocated for HashKey({0}) Port({1})", hashKey, newPort);
+			}
+			else
+			{
+				Console.Error.WriteLine($"Failed to allocate port for HashKey({hashKey}).");
 			}
 
-			_sbAllocatedHistory.AppendFormat("Allocated for HashKey({0}) Port({1})", hashKey, newPort);
+			_sbAllocatedHistory.AppendLine();
+			return newPort;
 		}
-		else
-		{
-			Console.Error.WriteLine($"Failed to allocate port for HashKey({hashKey}).");
-		}
-		_sbAllocatedHistory.AppendLine();
-
-		return newPort;
 	}
 
 	public void ClearAllocatedHistory()

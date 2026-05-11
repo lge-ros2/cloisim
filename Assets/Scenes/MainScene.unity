@@ -3853,8 +3853,8 @@ Light:
   m_InnerSpotAngle: 21.802082
   m_CookieSize2D: {x: 0, y: 0}
   m_Shadows:
-    m_Type: 1
-    m_Resolution: 1
+    m_Type: 2
+    m_Resolution: 3
     m_CustomResolution: -1
     m_Strength: 0.8
     m_Bias: 0.01

@@ -12,8 +12,6 @@ using SN = System.Numerics;
 
 public static partial class MeshLoader
 {
-	private static readonly Assimp.AssimpContext importer = new Assimp.AssimpContext();
-
 	// private static readonly Assimp.LogStream logstream = new Assimp.LogStream(
 	// 	delegate (String msg, String userData)
 	// 	{
@@ -108,6 +106,46 @@ public static partial class MeshLoader
 			return true;
 		else
 			return false;
+	}
+
+	private static bool ValidateStlFile(in string filePath)
+	{
+		const int BinaryHeaderSize = 80;
+		const int TriangleCountSize = 4;
+		const int TriangleRecordSize = 50; // 12 floats (48 bytes) + 2-byte attribute
+
+		var fileInfo = new FileInfo(filePath);
+		if (fileInfo.Length < BinaryHeaderSize + TriangleCountSize)
+		{
+			Debug.LogError($"STL file too small ({fileInfo.Length} bytes): {filePath}");
+			return false;
+		}
+
+		using var stream = File.OpenRead(filePath);
+
+		// Check for ASCII STL (starts with "solid")
+		var header = new byte[BinaryHeaderSize];
+		stream.Read(header, 0, header.Length);
+		var headerStr = System.Text.Encoding.ASCII.GetString(header, 0, 5);
+		if (headerStr == "solid")
+		{
+			// Likely ASCII STL — let Assimp handle parsing
+			return true;
+		}
+
+		// Binary STL: validate triangle count vs file size
+		var countBytes = new byte[TriangleCountSize];
+		stream.Read(countBytes, 0, countBytes.Length);
+		var triangleCount = BitConverter.ToUInt32(countBytes, 0);
+
+		var expectedSize = (long)BinaryHeaderSize + TriangleCountSize + (long)triangleCount * TriangleRecordSize;
+		if (fileInfo.Length < expectedSize)
+		{
+			Debug.LogError($"STL file corrupted: expected {expectedSize} bytes for {triangleCount} triangles, got {fileInfo.Length} bytes: {filePath}");
+			return false;
+		}
+
+		return true;
 	}
 
 	private static SN.Quaternion GetRotationByFileExtension(in string fileExtension, in string meshPath)
@@ -208,8 +246,18 @@ public static partial class MeshLoader
 			return null;
 		}
 
+		if (fileExtension == ".stl" && !ValidateStlFile(targetPath))
+		{
+			return null;
+		}
+
 		try {
-			var scene = importer.ImportFile(targetPath, PostProcessFlags);
+			using var importer = new Assimp.AssimpContext();
+			var postProcessFlags = fileExtension == ".stl"
+				? (PostProcessFlags & ~Assimp.PostProcessSteps.GenerateNormals) |
+				  Assimp.PostProcessSteps.GenerateSmoothNormals
+				: PostProcessFlags;
+			var scene = importer.ImportFile(targetPath, postProcessFlags);
 
 			// Remove cameras
 			scene.Cameras.Clear();

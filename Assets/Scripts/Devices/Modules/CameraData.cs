@@ -61,7 +61,15 @@ namespace SensorDevices
 					break;
 
 				default:
-					parsedEnum = (PixelFormat)Enum.Parse(typeof(PixelFormat), imageFormat);
+					if (Enum.TryParse<PixelFormat>(imageFormat, true, out var parsed))
+					{
+						parsedEnum = parsed;
+					}
+					else
+					{
+						UnityEngine.Debug.LogWarning($"Unknown image format '{imageFormat}', defaulting to RGB_INT8");
+						parsedEnum = PixelFormat.RGB_INT8;
+					}
 					break;
 			}
 

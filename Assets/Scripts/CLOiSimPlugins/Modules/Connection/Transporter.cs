@@ -77,8 +77,9 @@ public class Transporter : IDisposable
 		foreach (var item in transportList)
 		{
 			var transporter = item.Value;
-			transporter.Close();
+			transporter?.Dispose();
 		}
+		transportList.Clear();
 		GC.SuppressFinalize(this);
 	}
 

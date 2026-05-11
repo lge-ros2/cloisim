@@ -140,6 +140,20 @@ namespace SDFormat
 				}
 			}
 
+			private static Helper.Base FindRelativeObjectInNestedModelScope(Helper.Base baseHelper, string poseRelativeTo)
+			{
+				var nestedModel = baseHelper.GetComponentsInParent<Helper.Model>()
+					.FirstOrDefault(model => model != null && model.isNested);
+
+				if (nestedModel == null)
+				{
+					return null;
+				}
+
+				return nestedModel.GetComponentsInChildren<Helper.Base>()
+					.FirstOrDefault(helper => helper != null && helper.name.Equals(poseRelativeTo));
+			}
+
 			public static void SpecifyPose(this object targetObject)
 			{
 				var rootObject = targetObject as UE.GameObject;
@@ -204,6 +218,10 @@ namespace SDFormat
 								ancestor = ancestor.parent;
 							}
 						}
+
+						// Search the nearest enclosing nested model before falling back to the
+						// root model so sibling nested models with identical link names do not collide.
+						relativeObjectBaseHelper ??= FindRelativeObjectInNestedModelScope(baseHelper, poseRelativeTo);
 
 						// Fallback: root model scope for cross-model references
 						relativeObjectBaseHelper ??= baseHelper.RootModel?.GetComponentsInChildren<Helper.Base>()

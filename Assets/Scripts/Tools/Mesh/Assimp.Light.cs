@@ -13,22 +13,33 @@ public static partial class MeshLoader
 	private const float LightIntensityGain = 100f;
 
 	/// <summary>
+	/// Scales down direct intensity to compensate for DynamicGI indirect lighting.
+	/// Interior lights in enclosed spaces receive significant GI bounce;
+	/// this factor keeps total perceived brightness reasonable.
+	/// </summary>
+	private const float GICompensationFactor = 0.4f;
+
+	private const float DefaultLightRange = 15f;
+	private const float MaxLightRange = 50f;
+
+	/// <summary>
 	/// Auto-detect gain factor based on color intensity.
 	/// DAE/Collada bakes omnidirectional power (Watts) into color channels,
 	/// producing values >> 1.0 — divide by 4π (≈12.57) to convert to candelas.
-	/// FBX exports very small normalized values (e.g. 0.01) — scale up by 1000
-	/// to reach practical Unity URP intensity levels.
+	/// FBX exports very small normalized values (e.g. 0.01) — scale up to
+	/// reach practical Unity URP intensity levels.
+	/// Both paths apply GICompensationFactor to account for indirect lighting.
 	/// </summary>
 	private static float GetLightIntensityGain(in float colorIntensity)
 	{
 		if (colorIntensity > 1f)
 		{
-			// candelas = lumens / (4π steradians)
-			return 1f / (4f * Mathf.PI * LightIntensityGain); // Scale down for DAE/Collada
+			// candelas = lumens / (4π steradians), scaled for GI
+			return GICompensationFactor / (4f * Mathf.PI * LightIntensityGain);
 		}
 
-		// FBX and similar: intensity values are very small, scale up
-		return LightIntensityGain;
+		// FBX and similar: intensity values are very small, scale up (GI-compensated)
+		return LightIntensityGain * GICompensationFactor;
 	}
 
 	/// <summary>
@@ -58,15 +69,6 @@ public static partial class MeshLoader
 		}
 	}
 
-	private static float CalculateLightIntensity(
-		in float attenuationConstant,
-		in float attenuationLinear,
-		in float attenuationQuadratic)
-	{
-		var attenuationFactor = 1.0f / Mathf.Max(0.001f, attenuationConstant + attenuationLinear + attenuationQuadratic);
-		return Mathf.Clamp(attenuationFactor, 0.1f, 10f);
-	}
-
 	private static float CalculateLightRange(
 		in float attenuationConstant,
 		in float attenuationLinear,
@@ -80,15 +82,15 @@ public static partial class MeshLoader
 			var discriminant = attenuationLinear * attenuationLinear - 4f * attenuationQuadratic * (attenuationConstant - 100f);
 			if (discriminant >= 0)
 			{
-				return (-attenuationLinear + Mathf.Sqrt(discriminant)) / (2f * attenuationQuadratic);
+				return Mathf.Min((-attenuationLinear + Mathf.Sqrt(discriminant)) / (2f * attenuationQuadratic), MaxLightRange);
 			}
 		}
 		else if (attenuationLinear > 0.0001f)
 		{
-			return (100f - attenuationConstant) / attenuationLinear;
+			return Mathf.Min((100f - attenuationConstant) / attenuationLinear, MaxLightRange);
 		}
 
-		return 100f; // default range
+		return DefaultLightRange;
 	}
 
 	private static Dictionary<string, Assimp.Light> BuildLightMap(this Assimp.Scene scene)

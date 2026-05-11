@@ -16,11 +16,15 @@ using UnityEngine.InputSystem.UI;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using Assimp.Unmanaged;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [DefaultExecutionOrder(30)]
 public class Main : MonoBehaviour
 {
 	private static float DefaultOrthographicSize = 8;
+	private const float PluginStartupTimeoutSeconds = 30f;
 
 	[Header("Clean all models and lights before load model")]
 
@@ -139,6 +143,30 @@ public class Main : MonoBehaviour
 	private SimulationService _simulationService = null;
 	#endregion
 
+	public static void SuppressPhysicsDebugContacts(in string operationName)
+	{
+#if UNITY_EDITOR
+		if (!EditorWindow.HasOpenInstances<PhysicsDebugWindow>())
+		{
+			return;
+		}
+
+		if (!PhysicsVisualizationSettings.showContacts &&
+			!PhysicsVisualizationSettings.showAllContacts)
+		{
+			return;
+		}
+
+		PhysicsVisualizationSettings.showContacts = false;
+		PhysicsVisualizationSettings.showAllContacts = false;
+		PhysicsVisualizationSettings.showContactImpulse = false;
+		PhysicsVisualizationSettings.showContactSeparation = false;
+
+		Debug.LogWarning(
+			$"[{nameof(Main)}] Disabled Physics Debug contact visualization before {operationName} to avoid a Unity editor crash in PhysicsDebugWindow.ReadContactsJob.");
+#endif
+	}
+
 	private void CleanAllModels()
 	{
 		foreach (var child in _worldRoot.GetComponentsInChildren<Transform>())
@@ -250,6 +278,21 @@ public class Main : MonoBehaviour
 		}
 	}
 
+	private void AbortBootstrap(in string errorMessage)
+	{
+		Debug.LogError(errorMessage);
+		_uiController?.SetErrorMessage(errorMessage);
+		enabled = false;
+	}
+
+	private static void AddMissingSceneRoot(List<string> missingSceneRoots, GameObject targetObject, in string objectName)
+	{
+		if (targetObject == null)
+		{
+			missingSceneRoots.Add(objectName);
+		}
+	}
+
 	void Awake()
 	{
 		_instance = this;
@@ -322,11 +365,17 @@ public class Main : MonoBehaviour
 		QualitySettings.streamingMipmapsMemoryBudget = 512;
 		QualitySettings.streamingMipmapsAddAllCameras = true;
 
-		// Reduce shadow distance for better performance
+		// Keep shadow quality high enough for close-up robot inspection.
 		QualitySettings.shadowDistance = 50f;
-		QualitySettings.shadowResolution = ShadowResolution.Medium;
+		QualitySettings.shadowResolution = ShadowResolution.VeryHigh;
 
 		var mainCamera = Camera.main;
+		if (mainCamera == null)
+		{
+			AbortBootstrap("Failed to find the main camera.");
+			return;
+		}
+
 		mainCamera.depthTextureMode = DepthTextureMode.None;
 		mainCamera.allowHDR = false; // Deferred rendering doesn't benefit; saves bandwidth
 		mainCamera.allowMSAA = false; // MSAA is ignored in deferred mode
@@ -347,16 +396,25 @@ public class Main : MonoBehaviour
 		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
 
 		_core = GameObject.Find("Core");
-		if (_core == null)
-		{
-			Debug.LogError("Failed to Find 'Core'!!!!");
-		}
-
 		_propsRoot = GameObject.Find("Props");
 		_worldRoot = GameObject.Find("World");
 		_lightsRoot = GameObject.Find("Lights");
 		_roadsRoot = GameObject.Find("Roads");
 		_uiRoot = GameObject.Find("UI");
+
+		var missingSceneRoots = new List<string>();
+		AddMissingSceneRoot(missingSceneRoots, _core, "Core");
+		AddMissingSceneRoot(missingSceneRoots, _propsRoot, "Props");
+		AddMissingSceneRoot(missingSceneRoots, _worldRoot, "World");
+		AddMissingSceneRoot(missingSceneRoots, _lightsRoot, "Lights");
+		AddMissingSceneRoot(missingSceneRoots, _roadsRoot, "Roads");
+		AddMissingSceneRoot(missingSceneRoots, _uiRoot, "UI");
+
+		if (missingSceneRoots.Count > 0)
+		{
+			AbortBootstrap($"Missing required scene roots: {string.Join(", ", missingSceneRoots)}");
+			return;
+		}
 
 		_worldNavMeshBuilder = _worldRoot.GetComponent<WorldNavMeshBuilder>();
 
@@ -369,7 +427,14 @@ public class Main : MonoBehaviour
 			_transformGizmo = _uiRoot.GetComponentInChildren<RuntimeGizmos.TransformGizmo>();
 			_uiController = _uiRoot.GetComponent<UIController>();
 
-			_uiMainCanvasRoot = _uiRoot.transform.Find("Main Canvas").gameObject;
+			var uiMainCanvasTransform = _uiRoot.transform.Find("Main Canvas");
+			if (uiMainCanvasTransform == null)
+			{
+				AbortBootstrap("Missing required scene object: UI/Main Canvas");
+				return;
+			}
+
+			_uiMainCanvasRoot = uiMainCanvasTransform.gameObject;
 			_followingList = _uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
 
 			_uiRoot.AddComponent<PIDTunerWindow>();
@@ -458,6 +523,8 @@ public class Main : MonoBehaviour
 
 	public IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
+		SuppressPhysicsDebugContacts("loading a model");
+
 		_loadingCursor?.Activate();
 		yield return null;
 
@@ -494,7 +561,16 @@ public class Main : MonoBehaviour
 
 			_followingList?.UpdateList();
 
-			yield return new WaitUntil(() => _pluginAllStarted);
+			var pluginStartupDeadline = Time.realtimeSinceStartup + PluginStartupTimeoutSeconds;
+			while (!_pluginAllStarted)
+			{
+				if (HasPluginStartupTimedOut(pluginStartupDeadline, $"model '{model.Name}'"))
+				{
+					yield break;
+				}
+
+				yield return null;
+			}
 			_bridgeManager.PrintAllocatedHistory();
 
 			var message = $"Model '{model.Name}' is successfully loaded.";
@@ -511,6 +587,8 @@ public class Main : MonoBehaviour
 
 	private IEnumerator LoadWorld()
 	{
+		SuppressPhysicsDebugContacts("loading a world");
+
 		Debug.Log("Target World: " + _worldFilename);
 		_uiController?.SetInfoMessage($"World '{_worldFilename}' is now loading....");
 		_loadingCursor?.Activate();
@@ -549,7 +627,16 @@ public class Main : MonoBehaviour
 
 			_followingList?.UpdateList();
 
-			yield return new WaitUntil(() => _pluginAllStarted);
+			var pluginStartupDeadline = Time.realtimeSinceStartup + PluginStartupTimeoutSeconds;
+			while (!_pluginAllStarted)
+			{
+				if (HasPluginStartupTimedOut(pluginStartupDeadline, $"world '{_worldFilename}'"))
+				{
+					yield break;
+				}
+
+				yield return null;
+			}
 			_bridgeManager.PrintAllocatedHistory();
 
 			TrackModel();
@@ -579,6 +666,24 @@ public class Main : MonoBehaviour
 	private void OnPluginProgressChanged(int started, int total)
 	{
 		_uiController?.SetInfoMessage($"Starting plugins... ({started}/{total})");
+	}
+
+	private bool HasPluginStartupTimedOut(in float deadline, in string targetDescription)
+	{
+		if (Time.realtimeSinceStartup < deadline)
+		{
+			return false;
+		}
+
+		var startedCount = _pluginStartTracker.StartedCount;
+		var totalCount = _pluginStartTracker.TotalCount;
+		_pluginStartTracker.Clear();
+
+		var errorMessage = $"Timed out waiting for plugins while loading {targetDescription} ({startedCount}/{totalCount} started).";
+		Debug.LogError(errorMessage);
+		_uiController?.SetErrorMessage(errorMessage);
+		_loadingCursor?.Deactivate();
+		return true;
 	}
 
 	private void OnAllPluginsStarted()
@@ -712,6 +817,7 @@ public class Main : MonoBehaviour
 			{
 				// full Reset
 				_isResetting = true;
+				SuppressPhysicsDebugContacts("reloading the scene");
 				SceneManager.LoadScene(SceneManager.GetActiveScene().name);
 				_isResetting = false;
 			}
@@ -829,6 +935,7 @@ public class Main : MonoBehaviour
 	private IEnumerator ResetSimulation()
 	{
 		_isResetting = true;
+		SuppressPhysicsDebugContacts("resetting the simulation");
 		// Debug.LogWarning("Reset positions in simulation!!!");
 
 		SensorRenderManager.Pause();

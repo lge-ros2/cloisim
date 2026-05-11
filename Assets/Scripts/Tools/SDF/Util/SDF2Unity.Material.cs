@@ -42,6 +42,7 @@ public static partial class SDF2Unity
 		newMaterial.EnableKeyword("_INSTANCING_ON");
 		newMaterial.EnableKeyword("_DOTS_INSTANCING_ON");
 		newMaterial.DisableKeyword("_SPECGLOSSMAP");
+		newMaterial.DisableKeyword("_SPECULAR_COLOR");
 
 		newMaterial.enableInstancing = true;
 		newMaterial.doubleSidedGI = false;
@@ -135,6 +136,7 @@ public static partial class SDF2Unity
 		target.SetColor("_SpecColor", color);
 		target.SetFloat("_Smoothness", color.a);
 		target.SetFloat("_SpecularHighlights", 1f);
-		target.EnableKeyword("_SPECGLOSSMAP");
+		target.DisableKeyword("_SPECGLOSSMAP");
+		target.EnableKeyword("_SPECULAR_COLOR");
 	}
 }
