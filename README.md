@@ -128,6 +128,9 @@ export CLOISIM_WORLD_PATH="/path/to/sample_resources/worlds"
 - Supports **ROS 2 Humble & Jazzy**.
 - Launch the bringup node to start publishing sensor topics.
 
+### 4. Running EditMode Unit Tests
+See [scripts/README.md](scripts/README.md) for detailed EditMode test runner usage and configuration.
+
 ---
 
 ## 🛠 Advanced Features
