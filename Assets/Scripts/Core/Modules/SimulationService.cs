@@ -32,6 +32,24 @@ public class SimulationService : IDisposable
 			WaitTime = TimeSpan.FromMilliseconds(5000)
 		};
 
+		wsServer.Log.Output = (logData, _) =>
+		{
+			var msg = $"[WebSocket] {logData.Level}: {logData.Message}";
+			switch (logData.Level)
+			{
+				case WebSocketSharp.LogLevel.Fatal:
+				case WebSocketSharp.LogLevel.Error:
+					Debug.LogWarning(msg);
+					break;
+				case WebSocketSharp.LogLevel.Warn:
+					Debug.LogWarning(msg);
+					break;
+				default:
+					Debug.Log(msg);
+					break;
+			}
+		};
+
 		InitializeServices();
 
 		try
