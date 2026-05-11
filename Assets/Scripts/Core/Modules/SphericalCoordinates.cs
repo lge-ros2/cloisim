@@ -6,6 +6,7 @@
 
 using UnityEngine;
 using System;
+using SdfSurfaceType = SDFormat.Math.SphericalCoordinates.SurfaceType;
 
 public class SphericalCoordinates
 {
@@ -47,17 +48,6 @@ public class SphericalCoordinates
 	// }
 
 
-	public enum SurfaceType
-	{
-		// Model of reference ellipsoid for earth, based on WGS 84 standard.
-		// see wikipedia: World_Geodetic_System
-		EARTH_WGS84 = 1,
-
-		// Model of the moon, based on the Selenographic coordinate system,
-		// see wikipedia: Selenographic Coordinate System.
-		MOON_SCS = 2
-	};
-
 	public enum CoordinateType
 	{
 		SPHERICAL = 1, // Latitude, Longitude and Altitude by SurfaceType
@@ -93,7 +83,7 @@ public class SphericalCoordinates
 
 	private Vector3d origin = Vector3d.zero; // It is ECEF coordinates
 
-	private SurfaceType surfaceType;
+	private SdfSurfaceType surfaceType;
 
 	private double _latitudeReference = 0; // in radian
 	private double _longitudeReference = 0; // in radian
@@ -128,7 +118,7 @@ public class SphericalCoordinates
 
 	void Awake()
 	{
-		SetSurfaceType(SurfaceType.EARTH_WGS84);
+		SetSurfaceType(SdfSurfaceType.EarthWgs84);
 
 		UpdateTransformation();
 	}
@@ -203,19 +193,13 @@ public class SphericalCoordinates
 		}
 	}
 
-	public void SetSurfaceType(in string type)
-	{
-		var surfaceType = (SurfaceType)Enum.Parse(typeof(SurfaceType), type);
-		SetSurfaceType(surfaceType);
-	}
-
-	public void SetSurfaceType(in SurfaceType type)
+	public void SetSurfaceType(in SdfSurfaceType type)
 	{
 		surfaceType = type;
 
 		switch (surfaceType)
 		{
-			case SurfaceType.EARTH_WGS84:
+			case SdfSurfaceType.EarthWgs84:
 				{
 					// Set the semi-major axis
 					ellA = WGS84.EarthAxisEquatorial;

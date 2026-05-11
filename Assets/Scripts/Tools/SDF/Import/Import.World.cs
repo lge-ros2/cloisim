@@ -283,7 +283,7 @@ namespace SDFormat
 
 					var sphericalCoordinates = world.SphericalCoordinatesInfo;
 
-					sphericalCoordinatesCore.SetSurfaceType(sphericalCoordinates.Surface.ToString());
+					sphericalCoordinatesCore.SetSurfaceType(sphericalCoordinates.Surface);
 
 					sphericalCoordinatesCore.SetWorldOrientation("ENU");
 
