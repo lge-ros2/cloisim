@@ -16,6 +16,9 @@ using UnityEngine.InputSystem.UI;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using Assimp.Unmanaged;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [DefaultExecutionOrder(30)]
 public class Main : MonoBehaviour
@@ -138,6 +141,30 @@ public class Main : MonoBehaviour
 	private BridgeManager _bridgeManager = null;
 	private SimulationService _simulationService = null;
 	#endregion
+
+	public static void SuppressPhysicsDebugContacts(in string operationName)
+	{
+#if UNITY_EDITOR
+		if (!EditorWindow.HasOpenInstances<PhysicsDebugWindow>())
+		{
+			return;
+		}
+
+		if (!PhysicsVisualizationSettings.showContacts &&
+			!PhysicsVisualizationSettings.showAllContacts)
+		{
+			return;
+		}
+
+		PhysicsVisualizationSettings.showContacts = false;
+		PhysicsVisualizationSettings.showAllContacts = false;
+		PhysicsVisualizationSettings.showContactImpulse = false;
+		PhysicsVisualizationSettings.showContactSeparation = false;
+
+		Debug.LogWarning(
+			$"[{nameof(Main)}] Disabled Physics Debug contact visualization before {operationName} to avoid a Unity editor crash in PhysicsDebugWindow.ReadContactsJob.");
+#endif
+	}
 
 	private void CleanAllModels()
 	{
@@ -458,6 +485,8 @@ public class Main : MonoBehaviour
 
 	public IEnumerator LoadModel(string modelPath, string modelFileName)
 	{
+		SuppressPhysicsDebugContacts("loading a model");
+
 		_loadingCursor?.Activate();
 		yield return null;
 
@@ -511,6 +540,8 @@ public class Main : MonoBehaviour
 
 	private IEnumerator LoadWorld()
 	{
+		SuppressPhysicsDebugContacts("loading a world");
+
 		Debug.Log("Target World: " + _worldFilename);
 		_uiController?.SetInfoMessage($"World '{_worldFilename}' is now loading....");
 		_loadingCursor?.Activate();
@@ -712,6 +743,7 @@ public class Main : MonoBehaviour
 			{
 				// full Reset
 				_isResetting = true;
+				SuppressPhysicsDebugContacts("reloading the scene");
 				SceneManager.LoadScene(SceneManager.GetActiveScene().name);
 				_isResetting = false;
 			}
@@ -829,6 +861,7 @@ public class Main : MonoBehaviour
 	private IEnumerator ResetSimulation()
 	{
 		_isResetting = true;
+		SuppressPhysicsDebugContacts("resetting the simulation");
 		// Debug.LogWarning("Reset positions in simulation!!!");
 
 		SensorRenderManager.Pause();
