@@ -22,6 +22,10 @@ public class UIController : MonoBehaviour
 	private Toggle _toggleLockVerticalMoving = null;
 	private TextField _scaleField = null;
 	private Label _statusMessage = null;
+	private VisualElement _loadingOverlay = null;
+	private Label _loadingTitle = null;
+	private Label _loadingDetail = null;
+	private CameraKeyOverlay _cameraKeyOverlay = null;
 	private Button _buttonCameraView = null;
 	private Button _buttonHelp = null;
 	private Button _recordSave = null;
@@ -39,6 +43,7 @@ public class UIController : MonoBehaviour
 	{
 		_uiDocument = GetComponent<UIDocument>();
 		_rootVisualElement = _uiDocument.rootVisualElement;
+		_cameraKeyOverlay = new CameraKeyOverlay(_rootVisualElement);
 	}
 
 	// Start is called before the first frame update
@@ -74,6 +79,11 @@ public class UIController : MonoBehaviour
 
 		_statusMessage = _rootVisualElement.Q<Label>("StatusMessage");
 		ClearMessage();
+
+		_loadingOverlay = _rootVisualElement.Q<VisualElement>("LoadingOverlay");
+		_loadingTitle = _rootVisualElement.Q<Label>("LoadingTitle");
+		_loadingDetail = _rootVisualElement.Q<Label>("LoadingDetail");
+		HideLoadingOverlay();
 
 		_buttonHelp = _rootVisualElement.Q<Button>("Help");
 		_buttonHelp.clickable.clicked += () => ShowHelp();
@@ -291,6 +301,11 @@ public class UIController : MonoBehaviour
 		_toggleLockVerticalMoving.value = value;
 	}
 
+	public void UpdateCameraKeyOverlay(CameraKeyOverlayInput activeInputs)
+	{
+		_cameraKeyOverlay?.Update(activeInputs);
+	}
+
 	private void ShowHelp(in bool open = true)
 	{
 		var helpDialogScrollView = _rootVisualElement.Q<ScrollView>("HelpDialog");
@@ -366,6 +381,38 @@ public class UIController : MonoBehaviour
 		{
 			_statusMessage.style.color = color;
 			_statusMessage.text = message;
+		}
+	}
+
+	public void ShowLoadingOverlay(in string title, in string detail)
+	{
+		if (_loadingOverlay == null)
+		{
+			return;
+		}
+
+		if (_loadingTitle != null)
+		{
+			_loadingTitle.text = title;
+		}
+
+		UpdateLoadingOverlay(detail);
+		_loadingOverlay.style.display = DisplayStyle.Flex;
+	}
+
+	public void UpdateLoadingOverlay(in string detail)
+	{
+		if (_loadingDetail != null)
+		{
+			_loadingDetail.text = detail;
+		}
+	}
+
+	public void HideLoadingOverlay()
+	{
+		if (_loadingOverlay != null)
+		{
+			_loadingOverlay.style.display = DisplayStyle.None;
 		}
 	}
 

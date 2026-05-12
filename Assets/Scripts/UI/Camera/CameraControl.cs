@@ -81,7 +81,7 @@ public abstract class CameraControl : MonoBehaviour
 	void Awake()
 	{
 		_targetLayerMask = LayerMask.GetMask("Default");
-		_uiController = Main.UIObject?.GetComponent<UIController>();
+		_uiController = GetUIController();
 		// Debug.Log(_uiController);
 	}
 
@@ -89,6 +89,7 @@ public abstract class CameraControl : MonoBehaviour
 	{
 		if (_blockControl || PIDTunerWindow.IsEditing)
 		{
+			GetUIController()?.UpdateCameraKeyOverlay(CameraKeyOverlayInput.None);
 			return;
 		}
 
@@ -96,6 +97,8 @@ public abstract class CameraControl : MonoBehaviour
 		{
 			LockVerticalMovement();
 		}
+
+		GetUIController()?.UpdateCameraKeyOverlay(GetActiveCameraKeyOverlayInputs());
 
 		HandleMouseControl();
 
@@ -127,7 +130,28 @@ public abstract class CameraControl : MonoBehaviour
 	{
 		_verticalMovementLock = !_verticalMovementLock;
 		// Debug.Log(_verticalMovementLock);
-		_uiController.SetVerticalMovementLockToggle(_verticalMovementLock);
+		GetUIController()?.SetVerticalMovementLockToggle(_verticalMovementLock);
+	}
+
+	private UIController GetUIController()
+	{
+		if (_uiController != null)
+		{
+			return _uiController;
+		}
+
+		if (Main.Instance == null)
+		{
+			return null;
+		}
+
+		_uiController = Main.UIController;
+		if (_uiController == null && Main.UIObject != null)
+		{
+			_uiController = Main.UIObject.GetComponent<UIController>();
+		}
+
+		return _uiController;
 	}
 
 	private void HandleMouseControl()
@@ -249,6 +273,55 @@ public abstract class CameraControl : MonoBehaviour
 		}
 	}
 
+	private CameraKeyOverlayInput GetActiveCameraKeyOverlayInputs()
+	{
+		var activeInputs = CameraKeyOverlayInput.None;
+
+		if (Keyboard.current[Key.LeftCtrl].isPressed)
+		{
+			return activeInputs;
+		}
+
+		if (Keyboard.current[Key.W].isPressed)
+		{
+			activeInputs |= CameraKeyOverlayInput.KeyW;
+		}
+		if (Keyboard.current[Key.A].isPressed)
+		{
+			activeInputs |= CameraKeyOverlayInput.KeyA;
+		}
+		if (Keyboard.current[Key.S].isPressed)
+		{
+			activeInputs |= CameraKeyOverlayInput.KeyS;
+		}
+		if (Keyboard.current[Key.D].isPressed)
+		{
+			activeInputs |= CameraKeyOverlayInput.KeyD;
+		}
+		if (Keyboard.current[Key.Q].isPressed)
+		{
+			activeInputs |= CameraKeyOverlayInput.KeyQ;
+		}
+		if (Keyboard.current[Key.E].isPressed)
+		{
+			activeInputs |= CameraKeyOverlayInput.KeyE;
+		}
+		if (Keyboard.current[Key.R].isPressed)
+		{
+			activeInputs |= CameraKeyOverlayInput.KeyR;
+		}
+		if (Keyboard.current[Key.F].isPressed)
+		{
+			activeInputs |= CameraKeyOverlayInput.KeyF;
+		}
+		if (activeInputs != CameraKeyOverlayInput.None && Keyboard.current[Key.LeftShift].isPressed)
+		{
+			activeInputs |= CameraKeyOverlayInput.LeftShift;
+		}
+
+		return activeInputs;
+	}
+
 	public void BlockControl()
 	{
 		_blockControl = true;
@@ -288,7 +361,7 @@ public abstract class CameraControl : MonoBehaviour
 			baseDirection += HandleKeyboardDirection();
 			if (Keyboard.current[Key.W].isPressed || Keyboard.current[Key.S].isPressed ||
 				Keyboard.current[Key.A].isPressed || Keyboard.current[Key.D].isPressed ||
-				Keyboard.current[Key.G].isPressed || Keyboard.current[Key.F].isPressed)
+				Keyboard.current[Key.R].isPressed || Keyboard.current[Key.F].isPressed)
 			{
 				_terminateMoving = true;
 			}

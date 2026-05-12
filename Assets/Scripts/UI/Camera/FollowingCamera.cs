@@ -108,7 +108,7 @@ public class FollowingCamera : MonoBehaviour
 				followingAngle -= angleStep;
 			}
 
-			if (Keyboard.current[Key.G].isPressed)
+			if (Keyboard.current[Key.R].isPressed)
 			{
 				_height += moveAmount;
 			}
