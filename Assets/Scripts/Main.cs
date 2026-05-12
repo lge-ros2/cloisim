@@ -526,11 +526,12 @@ public class Main : MonoBehaviour
 		SuppressPhysicsDebugContacts("loading a model");
 
 		_loadingCursor?.Activate();
+		_uiController?.ShowLoadingOverlay("Loading model...", $"Preparing '{modelFileName}'");
 		yield return null;
 
 		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
 		{
-			_uiController?.SetInfoMessage($"Model '{model.Name}' is now loading....");
+			_uiController?.UpdateLoadingOverlay($"Importing '{model.Name}'");
 			yield return null;
 
 			_bridgeManager.ClearAllocatedHistory();
@@ -578,10 +579,12 @@ public class Main : MonoBehaviour
 			_uiController?.SetInfoMessage(message);
 
 			_loadingCursor?.Deactivate();
+			_uiController?.HideLoadingOverlay();
 		}
 		else
 		{
 			_loadingCursor?.Deactivate();
+			_uiController?.HideLoadingOverlay();
 		}
 	}
 
@@ -590,11 +593,14 @@ public class Main : MonoBehaviour
 		SuppressPhysicsDebugContacts("loading a world");
 
 		Debug.Log("Target World: " + _worldFilename);
-		_uiController?.SetInfoMessage($"World '{_worldFilename}' is now loading....");
 		_loadingCursor?.Activate();
+		_uiController?.ShowLoadingOverlay("Loading world...", $"Preparing '{_worldFilename}'");
+		yield return null;
 
 		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
 		{
+			_uiController?.UpdateLoadingOverlay($"Importing '{_worldFilename}'");
+
 			if (_clearAllOnStart)
 			{
 				CleanAllModels();
@@ -646,6 +652,7 @@ public class Main : MonoBehaviour
 			_uiController?.SetInfoMessage(message);
 
 			_loadingCursor?.Deactivate();
+			_uiController?.HideLoadingOverlay();
 		}
 		else
 		{
@@ -654,6 +661,7 @@ public class Main : MonoBehaviour
 			_uiController?.SetErrorMessage(errorMessage);
 
 			_loadingCursor?.Deactivate();
+			_uiController?.HideLoadingOverlay();
 		}
 
 		if (!string.IsNullOrEmpty(_screenCaptureFilename))
@@ -665,7 +673,9 @@ public class Main : MonoBehaviour
 
 	private void OnPluginProgressChanged(int started, int total)
 	{
-		_uiController?.SetInfoMessage($"Starting plugins... ({started}/{total})");
+		var message = $"Starting plugins... ({started}/{total})";
+		_uiController?.SetInfoMessage(message);
+		_uiController?.UpdateLoadingOverlay(message);
 	}
 
 	private bool HasPluginStartupTimedOut(in float deadline, in string targetDescription)
@@ -683,6 +693,7 @@ public class Main : MonoBehaviour
 		Debug.LogError(errorMessage);
 		_uiController?.SetErrorMessage(errorMessage);
 		_loadingCursor?.Deactivate();
+		_uiController?.HideLoadingOverlay();
 		return true;
 	}
 

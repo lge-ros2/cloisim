@@ -33,6 +33,73 @@ VisualElement#RightMenuVisualElement > Button:active {
     background-color: rgb(47, 47, 47);
 }
 
+.loading-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-panel {
+    min-width: 260px;
+    max-width: 420px;
+    padding-top: 18px;
+    padding-right: 24px;
+    padding-bottom: 18px;
+    padding-left: 24px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-left-color: rgba(220, 220, 220, 0.35);
+    border-right-color: rgba(220, 220, 220, 0.35);
+    border-top-color: rgba(220, 220, 220, 0.35);
+    border-bottom-color: rgba(220, 220, 220, 0.35);
+    background-color: rgba(38, 42, 45, 0.88);
+    align-items: center;
+}
+
+.loading-title {
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 6px;
+    margin-left: 0;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    color: rgb(245, 245, 245);
+    font-size: 18px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    text-shadow: 1px 1px 0 rgb(0, 0, 0);
+    white-space: normal;
+}
+
+.loading-detail {
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    color: rgb(198, 225, 255);
+    font-size: 12px;
+    -unity-font-style: normal;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
 #HelpDialog #unity-content-and-vertical-scroll-container > Scroller > #unity-slider > VisualElement > #unity-dragger {
     border-radius: 8px;
     background-color: rgba(180, 180, 180, 0.5);
