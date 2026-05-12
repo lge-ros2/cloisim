@@ -28,9 +28,111 @@ TEST_RESULTS_DIR="${PROJECT_ROOT}/Logs/TestResults"
 RESULTS_FILE="${TEST_RESULTS_DIR}/editmode-results.xml"
 LOG_FILE="${PROJECT_ROOT}/Logs/EditModeTests.log"
 TEST_FILTER="${1:-${TEST_FILTER:-}}"
+TEST_PROGRESS="${TEST_PROGRESS:-1}"
+PROGRESS_DONE_FILE="${TEST_RESULTS_DIR}/.editmode-progress.done.$$"
+PROGRESS_PID=""
 
 mkdir -p "${TEST_RESULTS_DIR}"
 rm -f "${RESULTS_FILE}"
+rm -f "${LOG_FILE}"
+rm -f "${PROGRESS_DONE_FILE}"
+
+cleanup_progress_reporter() {
+  touch "${PROGRESS_DONE_FILE}" 2>/dev/null || true
+
+  if [[ -n "${PROGRESS_PID}" ]]; then
+  wait "${PROGRESS_PID}" 2>/dev/null || true
+  fi
+
+  rm -f "${PROGRESS_DONE_FILE}"
+}
+
+start_progress_reporter() {
+  if [[ "${TEST_PROGRESS}" == "0" ]]; then
+  return
+  fi
+
+  python3 -u - "${LOG_FILE}" "${PROGRESS_DONE_FILE}" <<'PY' &
+import json
+import os
+import sys
+import time
+
+log_file = sys.argv[1]
+done_file = sys.argv[2]
+
+state_names = {
+  1: "INCONCLUSIVE",
+  2: "SKIPPED",
+  3: "SKIPPED",
+  4: "PASS",
+  5: "FAIL",
+}
+
+total = None
+completed = 0
+
+
+def stamp() -> str:
+  return time.strftime("%H:%M:%S")
+
+
+while not os.path.exists(log_file):
+  if os.path.exists(done_file):
+    sys.exit(0)
+  time.sleep(0.1)
+
+with open(log_file, "r", encoding="utf-8", errors="replace") as handle:
+  while True:
+    line = handle.readline()
+    if line:
+      if not line.startswith("##utp:"):
+        continue
+
+      payload = line[len("##utp:"):].strip()
+      try:
+        event = json.loads(payload)
+      except json.JSONDecodeError:
+        continue
+
+      if event.get("type") == "TestPlan":
+        tests = event.get("tests") or []
+        total = len(tests)
+        if total > 0:
+          print(f"[{stamp()}] Tracking {total} EditMode tests", flush=True)
+        continue
+
+      if event.get("type") != "TestStatus" or event.get("phase") != "End":
+        continue
+
+      completed += 1
+      name = event.get("name", "<unknown>").replace("CLOiSim.Tests.EditMode.", "")
+      state = event.get("state")
+      status = state_names.get(state, f"STATE-{state}")
+      duration_ms = event.get("duration")
+      message = (event.get("message") or "").strip().splitlines()
+      progress = f"{completed}/{total}" if total else str(completed)
+      duration_suffix = f" ({duration_ms} ms)" if duration_ms is not None else ""
+
+      if message and status != "PASS":
+        print(
+          f"[{stamp()}] [{progress}] {status} {name}{duration_suffix} - {message[0]}",
+          flush=True,
+        )
+      else:
+        print(f"[{stamp()}] [{progress}] {status} {name}{duration_suffix}", flush=True)
+      continue
+
+    if os.path.exists(done_file):
+      break
+
+    time.sleep(0.1)
+PY
+
+  PROGRESS_PID=$!
+}
+
+trap cleanup_progress_reporter EXIT
 
 ## 3. build command
 UNITY_COMMAND=(
@@ -56,6 +158,8 @@ echo "Log: ${LOG_FILE}"
 if [[ -n "${TEST_FILTER}" ]]; then
   echo "Filter: ${TEST_FILTER}"
 fi
+
+start_progress_reporter
 
 if "${UNITY_COMMAND[@]}"; then
   UNITY_EXIT_CODE=0

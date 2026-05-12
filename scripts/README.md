@@ -29,6 +29,19 @@ Pass a namespace, fixture, or test name as the first argument to narrow the run:
 ./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.SDF2UnityTests"
 ./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.CameraDataTests"
 ./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.CustomNoiseModelTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.GroundTruthPluginTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.CameraPluginTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.MultiCameraPluginTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.GpsPluginTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.RangePluginTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.LaserPluginTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.ImuPluginTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.ContactPluginTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.ClothGrabberPluginTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.ObjectTrackingTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.ClothPluginTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.LogicalCameraPluginTests"
+./scripts/run-editmode-tests.sh "CLOiSim.Tests.EditMode.JointControlPluginTests"
 ```
 
 ## Test File Layout
@@ -37,8 +50,9 @@ The EditMode tests are currently split by concern under `Assets/Editor/Tests/`.
 
 - `EditModeUnitTests.cs`: general deterministic utility tests such as `SDF2Unity`, `ColorEncoding`, `Battery`, and `PID`
 - `SensorEditModeUnitTests.cs`: sensor-related pure logic tests such as `RandomNumberGenerator`, `CameraData`, `LaserFilter`, `GaussianNoiseModel`, and `CustomNoiseModel`
+- `PluginEditModeUnitTests.cs`: plugin and tracking helper tests such as `GroundTruthPlugin`, `CameraPlugin`, `MultiCameraPlugin`, `GpsPlugin`, `RangePlugin`, `LaserPlugin`, `ImuPlugin`, `ContactPlugin`, `ClothGrabberPlugin`, `ObjectTracking`, `ClothPlugin`, `LogicalCameraPlugin`, and `JointControlPlugin`
 
-The runner filter is based on namespace, fixture, or test name, not file path. Splitting sensor tests into a separate file improves maintainability, but you still target the fixture name when you want a narrow run.
+The runner filter is based on namespace, fixture, or test name, not file path. Splitting tests by concern improves maintainability, but you still target the fixture name when you want a narrow run.
 
 ## UNITY_EDITOR Override
 
