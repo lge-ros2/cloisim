@@ -46,7 +46,7 @@ public class OrthographicCameraControl : CameraControl
 			movementAmout.x += 1;
 		}
 
-		if (Keyboard.current[Key.G].isPressed)
+		if (Keyboard.current[Key.R].isPressed)
 		{
 			Camera.main.orthographicSize += _wheelMoveOrthoSize;
 		}

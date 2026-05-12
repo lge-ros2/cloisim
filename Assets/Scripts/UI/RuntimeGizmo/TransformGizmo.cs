@@ -56,7 +56,7 @@ namespace RuntimeGizmos
 		// These are the same as the unity editor hotkeys
 		[Header("Key configurations")]
 		[NonSerialized] public Key SetMoveType = Key.T;
-		[NonSerialized] public Key SetRotateType = Key.R;
+		[NonSerialized] public Key SetRotateType = Key.G;
 		[NonSerialized] public Key SetAllTransformType = Key.Y;
 		[NonSerialized] public Key SetSpaceToggle = Key.X;
 		[NonSerialized] public Key translationSnapping = Key.LeftShift;

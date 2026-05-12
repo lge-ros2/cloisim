@@ -25,6 +25,7 @@ public class UIController : MonoBehaviour
 	private VisualElement _loadingOverlay = null;
 	private Label _loadingTitle = null;
 	private Label _loadingDetail = null;
+	private CameraKeyOverlay _cameraKeyOverlay = null;
 	private Button _buttonCameraView = null;
 	private Button _buttonHelp = null;
 	private Button _recordSave = null;
@@ -42,6 +43,7 @@ public class UIController : MonoBehaviour
 	{
 		_uiDocument = GetComponent<UIDocument>();
 		_rootVisualElement = _uiDocument.rootVisualElement;
+		_cameraKeyOverlay = new CameraKeyOverlay(_rootVisualElement);
 	}
 
 	// Start is called before the first frame update
@@ -297,6 +299,11 @@ public class UIController : MonoBehaviour
 	public void SetVerticalMovementLockToggle(in bool value)
 	{
 		_toggleLockVerticalMoving.value = value;
+	}
+
+	public void UpdateCameraKeyOverlay(CameraKeyOverlayInput activeInputs)
+	{
+		_cameraKeyOverlay?.Update(activeInputs);
 	}
 
 	private void ShowHelp(in bool open = true)

@@ -100,6 +100,101 @@ VisualElement#RightMenuVisualElement > Button:active {
     white-space: normal;
 }
 
+#CameraKeyOverlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 62px;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+.camera-key-overlay-board {
+    flex-direction: column;
+    align-items: center;
+    padding-top: 8px;
+    padding-right: 10px;
+    padding-bottom: 8px;
+    padding-left: 10px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-left-color: rgba(230, 230, 230, 0.18);
+    border-right-color: rgba(230, 230, 230, 0.18);
+    border-top-color: rgba(230, 230, 230, 0.18);
+    border-bottom-color: rgba(230, 230, 230, 0.18);
+    background-color: rgba(10, 12, 14, 0.42);
+}
+
+.camera-key-overlay-cluster {
+    flex-direction: column;
+    align-items: center;
+}
+
+.camera-key-overlay-row {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2px;
+    margin-right: 0;
+    margin-bottom: 2px;
+    margin-left: 0;
+}
+
+.camera-key {
+    width: 34px;
+    height: 30px;
+    margin-top: 0;
+    margin-right: 2px;
+    margin-bottom: 0;
+    margin-left: 2px;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    align-items: center;
+    justify-content: center;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 2px;
+    border-left-width: 1px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-left-color: rgba(255, 255, 255, 0.22);
+    border-right-color: rgba(255, 255, 255, 0.22);
+    border-top-color: rgba(255, 255, 255, 0.28);
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(235, 238, 242, 0.10);
+    color: rgba(246, 248, 250, 0.74);
+    font-size: 12px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.75);
+    white-space: normal;
+}
+
+.camera-key--wide {
+    width: 82px;
+    font-size: 10px;
+}
+
+.camera-key--active {
+    background-color: rgba(104, 190, 255, 0.44);
+    border-left-color: rgba(170, 224, 255, 0.78);
+    border-right-color: rgba(170, 224, 255, 0.78);
+    border-top-color: rgba(190, 235, 255, 0.86);
+    border-bottom-color: rgba(71, 143, 190, 0.68);
+    color: rgb(255, 255, 255);
+}
+
 #HelpDialog #unity-content-and-vertical-scroll-container > Scroller > #unity-slider > VisualElement > #unity-dragger {
     border-radius: 8px;
     background-color: rgba(180, 180, 180, 0.5);
