@@ -7,6 +7,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.UnifiedRayTracing;
+using Unity.Profiling;
 using System;
 using System.Collections.Generic;
 
@@ -90,6 +91,13 @@ public class URTSensorManager : MonoBehaviour
 	private static URTSensorManager s_instance;
 	private static bool s_applicationQuitting = false;
 
+	#region "Profiling markers"
+	private static readonly ProfilerMarker s_EnsureBVHReadyMarker = new("URTSensorManager.EnsureBVHReady");
+	private static readonly ProfilerMarker s_GatherSceneMeshesMarker = new("URTSensorManager.GatherSceneMeshes");
+	private static readonly ProfilerMarker s_UpdateInstanceTransformsMarker = new("URTSensorManager.UpdateInstanceTransforms");
+	private static readonly ProfilerMarker s_BuildBVHMarker = new("URTSensorManager.BuildBVH");
+	#endregion
+
 	#region "Shared URT resources"
 
 	private RayTracingContext _rtContext;
@@ -100,10 +108,45 @@ public class URTSensorManager : MonoBehaviour
 	internal struct InstanceEntry
 	{
 		public MeshRenderer renderer;
+		public Mesh mesh;
+		public int subMeshIndex;
 		public int handle;
 	}
 
+	private readonly struct InstanceKey : IEquatable<InstanceKey>
+	{
+		private readonly EntityId _rendererId;
+		private readonly EntityId _meshId;
+		private readonly int _subMeshIndex;
+
+		public InstanceKey(MeshRenderer renderer, Mesh mesh, int subMeshIndex)
+		{
+			_rendererId = renderer != null ? renderer.GetEntityId() : default;
+			_meshId = mesh != null ? mesh.GetEntityId() : default;
+			_subMeshIndex = subMeshIndex;
+		}
+
+		public bool Equals(InstanceKey other)
+		{
+			return _rendererId.Equals(other._rendererId) &&
+				_meshId.Equals(other._meshId) &&
+				_subMeshIndex == other._subMeshIndex;
+		}
+
+		public override bool Equals(object obj)
+		{
+			return obj is InstanceKey other && Equals(other);
+		}
+
+		public override int GetHashCode()
+		{
+			return HashCode.Combine(_rendererId, _meshId, _subMeshIndex);
+		}
+	}
+
 	private readonly List<InstanceEntry> _rtInstances = new();
+	private readonly HashSet<InstanceKey> _desiredInstanceKeys = new();
+	private readonly HashSet<InstanceKey> _existingInstanceKeys = new();
 
 	private const float MinSceneGatherInterval = 10.0f;
 	private const float RendererCountScalingFactor = 500.0f;
@@ -224,6 +267,8 @@ public class URTSensorManager : MonoBehaviour
 	/// <param name="cmd">CommandBuffer to record the Build into.</param>
 	public static void EnsureBVHReady(CommandBuffer cmd)
 	{
+		using (s_EnsureBVHReadyMarker.Auto())
+		{
 		var inst = Instance;
 		if (inst == null) return;
 
@@ -247,11 +292,15 @@ public class URTSensorManager : MonoBehaviour
 
 		inst.UpdateInstanceTransforms();
 
-		// --- Resize scratch buffer if needed ---
-		RayTracingHelper.ResizeScratchBufferForBuild(inst._rtAccelStruct, ref inst._rtBuildScratchBuffer);
+		using (s_BuildBVHMarker.Auto())
+		{
+			// --- Resize scratch buffer if needed ---
+			RayTracingHelper.ResizeScratchBufferForBuild(inst._rtAccelStruct, ref inst._rtBuildScratchBuffer);
 
-		// --- Build BVH (idempotent if already built) ---
-		inst._rtAccelStruct.Build(cmd, inst._rtBuildScratchBuffer);
+			// --- Build BVH (idempotent if already built) ---
+			inst._rtAccelStruct.Build(cmd, inst._rtBuildScratchBuffer);
+		}
+		}
 	}
 
 	#endregion
@@ -301,16 +350,25 @@ public class URTSensorManager : MonoBehaviour
 	/// </summary>
 	private void GatherSceneMeshes()
 	{
+		using (s_GatherSceneMeshesMarker.Auto())
+		{
 		if (_rtAccelStruct == null)
 			return;
 
-		_rtAccelStruct.ClearInstances();
-		_rtInstances.Clear();
+		_existingInstanceKeys.Clear();
+		for (var i = 0; i < _rtInstances.Count; i++)
+		{
+			var entry = _rtInstances[i];
+			_existingInstanceKeys.Add(new InstanceKey(entry.renderer, entry.mesh, entry.subMeshIndex));
+		}
+
+		_desiredInstanceKeys.Clear();
 
 		// Use FindObjectsByType for active scene renderers only (cheaper than Resources.FindObjectsOfTypeAll)
 		var renderers = FindObjectsByType<MeshRenderer>();
 
 		int addedCount = 0;
+		int removedCount = 0;
 		int skippedLayer = 0;
 		int skippedNoMesh = 0;
 		int skippedError = 0;
@@ -340,6 +398,12 @@ public class URTSensorManager : MonoBehaviour
 
 			for (int sub = 0; sub < mesh.subMeshCount; sub++)
 			{
+				var key = new InstanceKey(renderer, mesh, sub);
+				_desiredInstanceKeys.Add(key);
+
+				if (_existingInstanceKeys.Contains(key))
+					continue;
+
 				try
 				{
 					var desc = new MeshInstanceDesc(mesh, sub)
@@ -354,6 +418,8 @@ public class URTSensorManager : MonoBehaviour
 					_rtInstances.Add(new InstanceEntry
 					{
 						renderer = renderer,
+						mesh = mesh,
+						subMeshIndex = sub,
 						handle = handle
 					});
 					addedCount++;
@@ -367,10 +433,31 @@ public class URTSensorManager : MonoBehaviour
 			}
 		}
 
+		for (var i = _rtInstances.Count - 1; i >= 0; i--)
+		{
+			var entry = _rtInstances[i];
+			var key = new InstanceKey(entry.renderer, entry.mesh, entry.subMeshIndex);
+			if (_desiredInstanceKeys.Contains(key))
+				continue;
+
+			try
+			{
+				_rtAccelStruct.RemoveInstance(entry.handle);
+			}
+			catch (Exception e)
+			{
+				Debug.LogWarning($"[URTSensorManager] Failed to remove '{entry.renderer?.name ?? "<destroyed>"}' " +
+					$"sub={entry.subMeshIndex} mesh='{entry.mesh?.name ?? "<unknown>"}': {e.Message}");
+			}
+
+			_rtInstances.RemoveAt(i);
+			removedCount++;
+		}
+
 		_lastSceneGatherTime = Time.realtimeSinceStartup;
 
 #if UNITY_EDITOR
-		Debug.Log($"[URTSensorManager] GatherSceneMeshes: added={addedCount}, " +
+		Debug.Log($"[URTSensorManager] GatherSceneMeshes: added={addedCount}, removed={removedCount}, " +
 			$"skippedLayer={skippedLayer}, skippedNoMesh={skippedNoMesh}, " +
 			$"skippedError={skippedError}, totalRenderers={renderers.Length}");
 #endif
@@ -379,6 +466,7 @@ public class URTSensorManager : MonoBehaviour
 
 		// Allocate / resize the build scratch buffer
 		RayTracingHelper.ResizeScratchBufferForBuild(_rtAccelStruct, ref _rtBuildScratchBuffer);
+		}
 	}
 
 	/// <summary>
@@ -386,6 +474,8 @@ public class URTSensorManager : MonoBehaviour
 	/// </summary>
 	private void UpdateInstanceTransforms()
 	{
+		using (s_UpdateInstanceTransformsMarker.Auto())
+		{
 		bool needsRebuild = false;
 
 		for (int i = _rtInstances.Count - 1; i >= 0; i--)
@@ -403,6 +493,7 @@ public class URTSensorManager : MonoBehaviour
 		if (needsRebuild)
 		{
 			_lastSceneGatherTime = 0f; // Force re-gather next call
+		}
 		}
 	}
 
