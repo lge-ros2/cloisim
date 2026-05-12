@@ -582,7 +582,7 @@ namespace SDFormat
 					}
 					else if (includedVer.Minor != worldVer.Minor)
 					{
-						Console.Error.Write(
+						Console.Write(
 							$"[Include] SDF minor version mismatch: '{modelName}' uses v{sdfDocVersion}, " +
 							$"world uses v{_sdfVersion}.");
 					}
