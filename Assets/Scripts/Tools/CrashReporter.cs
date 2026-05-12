@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using UnityEngine;
 
 /// <summary>
@@ -22,20 +23,24 @@ public sealed class CrashReporter : IDisposable
 
 	private readonly LinkedList<string> _logBuffer = new();
 	private readonly object _lock = new();
+	private readonly object _dumpLock = new();
 	private readonly string _dumpRootPath;
+	private readonly string _mirrorDumpRootPath;
+	private readonly int _mainThreadId;
+	private readonly string _systemInfoSnapshot;
+	private readonly string[] _playerLogCandidates;
 
+	private int _dumpSequence = 0;
 	private bool _disposed;
 
 	public CrashReporter()
 	{
-		// Place crash dumps next to the executable (standalone) or in persistentDataPath
-#if UNITY_EDITOR
-		_dumpRootPath = Path.Combine(Application.dataPath, "..", DumpDirectoryName);
-#else
-		_dumpRootPath = Path.Combine(
-			Path.GetDirectoryName(Application.dataPath) ?? ".",
-			DumpDirectoryName);
-#endif
+		_mainThreadId = Thread.CurrentThread.ManagedThreadId;
+
+		_dumpRootPath = BuildLocalDumpRootPath();
+		_mirrorDumpRootPath = BuildMirrorDumpRootPath(_dumpRootPath);
+		_systemInfoSnapshot = CaptureSystemInfoSnapshot();
+		_playerLogCandidates = BuildPlayerLogCandidates();
 
 		Application.logMessageReceivedThreaded += OnLogMessageReceived;
 		AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
@@ -95,78 +100,243 @@ public sealed class CrashReporter : IDisposable
 	{
 		try
 		{
-			Directory.CreateDirectory(_dumpRootPath);
-
-			var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-			var dumpDir = Path.Combine(_dumpRootPath, $"crash_{timestamp}");
-			Directory.CreateDirectory(dumpDir);
-
-			// --- 1. Recent logs ---
-			var logPath = Path.Combine(dumpDir, "recent_logs.txt");
-			lock (_lock)
+			string dumpDir;
+			string mirroredDumpDir = null;
+			lock (_dumpLock)
 			{
-				using var writer = new StreamWriter(logPath, false, Encoding.UTF8);
-				foreach (var entry in _logBuffer)
+				Directory.CreateDirectory(_dumpRootPath);
+
+				var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
+				var sequence = ++_dumpSequence;
+				dumpDir = Path.Combine(_dumpRootPath, $"crash_{timestamp}_{sequence:000}");
+				Directory.CreateDirectory(dumpDir);
+				WriteDumpContents(dumpDir, reason, message, stackTrace);
+				mirroredDumpDir = TryMirrorDumpDirectory(dumpDir);
+			}
+
+			if (IsMainThread())
+			{
+				if (!string.IsNullOrEmpty(mirroredDumpDir))
 				{
-					writer.WriteLine(entry);
+					Debug.LogWarning($"[CrashReporter] Dump saved to: {dumpDir} (mirrored to {mirroredDumpDir})");
+				}
+				else
+				{
+					Debug.LogWarning($"[CrashReporter] Dump saved to: {dumpDir}");
 				}
 			}
-
-			// --- 2. Crash info ---
-			var crashInfoPath = Path.Combine(dumpDir, "crash_info.txt");
-			using (var writer = new StreamWriter(crashInfoPath, false, Encoding.UTF8))
-			{
-				writer.WriteLine($"Crash Time   : {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
-				writer.WriteLine($"Reason       : {reason}");
-				writer.WriteLine($"Message      : {message}");
-				writer.WriteLine();
-				writer.WriteLine("=== Stack Trace ===");
-				writer.WriteLine(stackTrace);
-			}
-
-			// --- 3. System info ---
-			var sysInfoPath = Path.Combine(dumpDir, "system_info.txt");
-			WriteSystemInfo(sysInfoPath);
-
-			// --- 4. Copy Player.log if available ---
-			CopyPlayerLog(dumpDir);
-
-			// --- 5. Copy Unity CrashReports if available ---
-			CopyCrashReports(dumpDir);
-
-			Debug.LogWarning($"[CrashReporter] Dump saved to: {dumpDir}");
 		}
 		catch (Exception ex)
 		{
 			// Last resort — don't let the reporter itself crash the app
-			Debug.LogError($"[CrashReporter] Failed to write dump: {ex.Message}");
+			ReportWriteFailure(ex);
 		}
 	}
 
-	private static void WriteSystemInfo(string path)
+	private bool IsMainThread()
 	{
-		using var writer = new StreamWriter(path, false, Encoding.UTF8);
-		writer.WriteLine($"OS              : {SystemInfo.operatingSystem}");
-		writer.WriteLine($"Device Model    : {SystemInfo.deviceModel}");
-		writer.WriteLine($"Device Type     : {SystemInfo.deviceType}");
-		writer.WriteLine($"Processor       : {SystemInfo.processorType}");
-		writer.WriteLine($"Processor Count : {SystemInfo.processorCount}");
-		writer.WriteLine($"System Memory   : {SystemInfo.systemMemorySize} MB");
-		writer.WriteLine($"GPU             : {SystemInfo.graphicsDeviceName}");
-		writer.WriteLine($"GPU Vendor      : {SystemInfo.graphicsDeviceVendor}");
-		writer.WriteLine($"GPU Memory      : {SystemInfo.graphicsMemorySize} MB");
-		writer.WriteLine($"GPU API         : {SystemInfo.graphicsDeviceType}");
-		writer.WriteLine($"GPU Version     : {SystemInfo.graphicsDeviceVersion}");
-		writer.WriteLine($"Unity Version   : {Application.unityVersion}");
-		writer.WriteLine($"App Version     : {Application.version}");
-		writer.WriteLine($"Product Name    : {Application.productName}");
-		writer.WriteLine($"Platform        : {Application.platform}");
-		writer.WriteLine($"Quality Level   : {QualitySettings.GetQualityLevel()} ({QualitySettings.names[QualitySettings.GetQualityLevel()]})");
-		writer.WriteLine($"Target FPS      : {Application.targetFrameRate}");
-		writer.WriteLine($"Screen          : {Screen.width}x{Screen.height} @ {Screen.currentResolution.refreshRateRatio}Hz");
+		return Thread.CurrentThread.ManagedThreadId == _mainThreadId;
 	}
 
-	private static void CopyPlayerLog(string destDir)
+	private void ReportWriteFailure(Exception ex)
+	{
+		var message = $"[CrashReporter] Failed to write dump: {ex.Message}";
+		try
+		{
+			AppendFailureLog(_dumpRootPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}\n{ex}\n");
+		}
+		catch
+		{
+			// Nothing left to do safely.
+		}
+
+		if (IsMainThread())
+		{
+			Debug.LogError(message);
+		}
+	}
+
+	private void WriteSystemInfo(string path)
+	{
+		File.WriteAllText(path, _systemInfoSnapshot, Encoding.UTF8);
+	}
+
+	private string TryMirrorDumpDirectory(string dumpDir)
+	{
+		if (string.IsNullOrEmpty(_mirrorDumpRootPath))
+		{
+			return null;
+		}
+
+		try
+		{
+			Directory.CreateDirectory(_mirrorDumpRootPath);
+
+			var mirroredDumpDir = Path.Combine(_mirrorDumpRootPath, Path.GetFileName(dumpDir));
+			CopyDirectory(dumpDir, mirroredDumpDir);
+			return mirroredDumpDir;
+		}
+		catch (Exception ex)
+		{
+			AppendFailureLog(_dumpRootPath,
+				$"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [CrashReporter] Failed to mirror dump to '{_mirrorDumpRootPath}': {ex}\n");
+			return null;
+		}
+	}
+
+	private static void CopyDirectory(string sourceDir, string destinationDir)
+	{
+		Directory.CreateDirectory(destinationDir);
+
+		foreach (var filePath in Directory.GetFiles(sourceDir))
+		{
+			var destinationFile = Path.Combine(destinationDir, Path.GetFileName(filePath));
+			File.Copy(filePath, destinationFile, true);
+		}
+
+		foreach (var childDir in Directory.GetDirectories(sourceDir))
+		{
+			var destinationChildDir = Path.Combine(destinationDir, Path.GetFileName(childDir));
+			CopyDirectory(childDir, destinationChildDir);
+		}
+	}
+
+	private static void AppendFailureLog(string dumpRootPath, string content)
+	{
+		Directory.CreateDirectory(dumpRootPath);
+		File.AppendAllText(
+			Path.Combine(dumpRootPath, "crash_reporter_failures.log"),
+			content,
+			Encoding.UTF8);
+	}
+
+	private void WriteDumpContents(string dumpDir, string reason, string message, string stackTrace)
+	{
+		// --- 1. Recent logs ---
+		var logPath = Path.Combine(dumpDir, "recent_logs.txt");
+		lock (_lock)
+		{
+			using var writer = new StreamWriter(logPath, false, Encoding.UTF8);
+			foreach (var entry in _logBuffer)
+			{
+				writer.WriteLine(entry);
+			}
+		}
+
+		// --- 2. Crash info ---
+		var crashInfoPath = Path.Combine(dumpDir, "crash_info.txt");
+		using (var writer = new StreamWriter(crashInfoPath, false, Encoding.UTF8))
+		{
+			writer.WriteLine($"Crash Time   : {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+			writer.WriteLine($"Reason       : {reason}");
+			writer.WriteLine($"Message      : {message}");
+			writer.WriteLine();
+			writer.WriteLine("=== Stack Trace ===");
+			writer.WriteLine(stackTrace);
+		}
+
+		// --- 3. System info ---
+		var sysInfoPath = Path.Combine(dumpDir, "system_info.txt");
+		WriteSystemInfo(sysInfoPath);
+
+		// --- 4. Copy Player.log if available ---
+		CopyPlayerLog(dumpDir);
+
+		// --- 5. Copy Unity CrashReports if available ---
+		if (IsMainThread())
+		{
+			CopyCrashReports(dumpDir);
+		}
+	}
+
+	private static string BuildLocalDumpRootPath()
+	{
+		return BuildExecutableDumpRootPath();
+	}
+
+	private static string BuildMirrorDumpRootPath(string localDumpRootPath)
+	{
+		var dumpRootPath = BuildUnityDefaultDumpRootPath();
+		if (string.IsNullOrEmpty(dumpRootPath))
+		{
+			return null;
+		}
+
+		dumpRootPath = Path.GetFullPath(dumpRootPath);
+		if (string.Equals(dumpRootPath, localDumpRootPath, StringComparison.Ordinal))
+		{
+			return null;
+		}
+
+		return dumpRootPath;
+	}
+
+	private static string BuildExecutableDumpRootPath()
+	{
+#if UNITY_EDITOR
+		return Path.GetFullPath(Path.Combine(Application.dataPath, "..", DumpDirectoryName));
+#else
+		return Path.Combine(
+			Path.GetDirectoryName(Application.dataPath) ?? ".",
+			DumpDirectoryName);
+#endif
+	}
+
+	private static string BuildUnityDefaultDumpRootPath()
+	{
+		if (!string.IsNullOrEmpty(Application.persistentDataPath))
+		{
+			return Application.persistentDataPath;
+		}
+
+		var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+		if (string.IsNullOrEmpty(appDataPath))
+		{
+			return null;
+		}
+
+		return Path.Combine(appDataPath, "unity3d", Application.companyName, Application.productName);
+	}
+
+	private static string CaptureSystemInfoSnapshot()
+	{
+		var builder = new StringBuilder();
+		using var writer = new StringWriter(builder);
+		try
+		{
+			var qualityLevel = QualitySettings.GetQualityLevel();
+			var qualityNames = QualitySettings.names;
+			var qualityName = qualityNames != null && qualityLevel >= 0 && qualityLevel < qualityNames.Length ?
+				qualityNames[qualityLevel] : "Unknown";
+
+			writer.WriteLine($"OS              : {SystemInfo.operatingSystem}");
+			writer.WriteLine($"Device Model    : {SystemInfo.deviceModel}");
+			writer.WriteLine($"Device Type     : {SystemInfo.deviceType}");
+			writer.WriteLine($"Processor       : {SystemInfo.processorType}");
+			writer.WriteLine($"Processor Count : {SystemInfo.processorCount}");
+			writer.WriteLine($"System Memory   : {SystemInfo.systemMemorySize} MB");
+			writer.WriteLine($"GPU             : {SystemInfo.graphicsDeviceName}");
+			writer.WriteLine($"GPU Vendor      : {SystemInfo.graphicsDeviceVendor}");
+			writer.WriteLine($"GPU Memory      : {SystemInfo.graphicsMemorySize} MB");
+			writer.WriteLine($"GPU API         : {SystemInfo.graphicsDeviceType}");
+			writer.WriteLine($"GPU Version     : {SystemInfo.graphicsDeviceVersion}");
+			writer.WriteLine($"Unity Version   : {Application.unityVersion}");
+			writer.WriteLine($"App Version     : {Application.version}");
+			writer.WriteLine($"Product Name    : {Application.productName}");
+			writer.WriteLine($"Platform        : {Application.platform}");
+			writer.WriteLine($"Quality Level   : {qualityLevel} ({qualityName})");
+			writer.WriteLine($"Target FPS      : {Application.targetFrameRate}");
+			writer.WriteLine($"Screen          : {Screen.width}x{Screen.height} @ {Screen.currentResolution.refreshRateRatio}Hz");
+		}
+		catch (Exception ex)
+		{
+			writer.WriteLine($"Failed to capture Unity system info: {ex.Message}");
+		}
+
+		return builder.ToString();
+	}
+
+	private static string[] BuildPlayerLogCandidates()
 	{
 		var candidates = new List<string>();
 
@@ -192,7 +362,12 @@ public sealed class CrashReporter : IDisposable
 			candidates.Add(Path.Combine(xdgLogDir, "Player.log"));
 		}
 
-		foreach (var logFile in candidates)
+		return candidates.ToArray();
+	}
+
+	private void CopyPlayerLog(string destDir)
+	{
+		foreach (var logFile in _playerLogCandidates)
 		{
 			if (!File.Exists(logFile))
 			{

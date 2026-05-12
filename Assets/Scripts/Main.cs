@@ -146,24 +146,31 @@ public class Main : MonoBehaviour
 	public static void SuppressPhysicsDebugContacts(in string operationName)
 	{
 #if UNITY_EDITOR
-		if (!EditorWindow.HasOpenInstances<PhysicsDebugWindow>())
+		var physicsDebugWindows = Resources.FindObjectsOfTypeAll<PhysicsDebugWindow>();
+		if (physicsDebugWindows == null || physicsDebugWindows.Length == 0)
 		{
 			return;
 		}
 
-		if (!PhysicsVisualizationSettings.showContacts &&
-			!PhysicsVisualizationSettings.showAllContacts)
-		{
-			return;
-		}
+		var contactFlagsWereEnabled = PhysicsVisualizationSettings.showContacts ||
+			PhysicsVisualizationSettings.showAllContacts ||
+			PhysicsVisualizationSettings.showContactImpulse ||
+			PhysicsVisualizationSettings.showContactSeparation;
 
 		PhysicsVisualizationSettings.showContacts = false;
 		PhysicsVisualizationSettings.showAllContacts = false;
 		PhysicsVisualizationSettings.showContactImpulse = false;
 		PhysicsVisualizationSettings.showContactSeparation = false;
 
+		foreach (var physicsDebugWindow in physicsDebugWindows)
+		{
+			physicsDebugWindow?.Close();
+		}
+
+		var contactMessage = contactFlagsWereEnabled ? " and disabled contact visualization" : string.Empty;
 		Debug.LogWarning(
-			$"[{nameof(Main)}] Disabled Physics Debug contact visualization before {operationName} to avoid a Unity editor crash in PhysicsDebugWindow.ReadContactsJob.");
+			$"[{nameof(Main)}] Closed Physics Debug Window{contactMessage} before {operationName} " +
+			"to avoid a Unity editor crash in PhysicsDebugWindow.ReadContactsJob.");
 #endif
 	}
 
