@@ -5087,7 +5087,7 @@ MonoBehaviour:
   circleDetail: 50
   allMoveHandleLengthMultiplier: 1
   allRotateHandleLengthMultiplier: 1
-  minimumDistanceHandleLengthMultiplier: 5
+  minimumDistanceHandleLengthMultiplier: 1
   minSelectedDistanceCheck: 0.01
   moveSpeedMultiplier: 1
   rotateSpeedMultiplier: 1
