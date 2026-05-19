@@ -128,7 +128,6 @@ public static partial class MeshLoader
 		// Disable shadows for point/spot/area lights — very expensive (cubemap renders)
 		// Only directional lights get shadows
 		lightComponent.shadows = LightShadows.None;
-		lightComponent.shadowResolution = UnityEngine.Rendering.LightShadowResolution.Low;
 
 		// Decompose HDR color: Blender bakes light power into the color channels,
 		// so (R,G,B) can be > 1.0. Separate into normalized color + scalar intensity.
@@ -155,7 +154,6 @@ public static partial class MeshLoader
 				lightComponent.type = LightType.Directional;
 				lightComponent.intensity = baseIntensity;
 				lightComponent.shadows = LightShadows.Hard; // Only directional lights get shadows
-				lightComponent.shadowResolution = UnityEngine.Rendering.LightShadowResolution.Medium;
 
 				if (direction != SN.Vector3.Zero)
 				{

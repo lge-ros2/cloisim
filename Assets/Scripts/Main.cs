@@ -374,7 +374,6 @@ public class Main : MonoBehaviour
 
 		// Keep shadow quality high enough for close-up robot inspection.
 		QualitySettings.shadowDistance = 50f;
-		QualitySettings.shadowResolution = ShadowResolution.VeryHigh;
 
 		var mainCamera = Camera.main;
 		if (mainCamera == null)
