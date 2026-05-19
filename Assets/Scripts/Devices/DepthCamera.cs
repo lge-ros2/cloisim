@@ -179,6 +179,9 @@ namespace SensorDevices
 
 		new void OnDestroy()
 		{
+			// Drain in-flight readbacks before releasing GPU resources
+			AsyncGPUReadback.WaitAllRequests();
+
 			// Clean up compute shaders
 			Destroy(_csDepthScaling);
 			_csDepthScaling = null;
