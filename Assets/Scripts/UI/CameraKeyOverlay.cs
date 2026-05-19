@@ -39,7 +39,7 @@ public sealed class CameraKeyOverlay
 
 	private const string ActiveClassName = "camera-key--active";
 	private const float VisibleOpacity = 0.72f;
-	private const float FadeDelay = 0.08f;
+	private const float FadeDelay = 0.1f;
 	private const float FadeDuration = 0.28f;
 
 	private readonly VisualElement _root = null;
@@ -77,9 +77,15 @@ public sealed class CameraKeyOverlay
 		var keyF = CreateKey(CameraKeyOverlayInput.KeyF, "F");
 		var keyLeftShift = CreateKey(CameraKeyOverlayInput.LeftShift, "Left Shift", "camera-key--wide");
 
-		AddRow(cluster, keyQ.Element, keyW.Element, keyE.Element, keyR.Element);
-		AddRow(cluster, keyA.Element, keyS.Element, keyD.Element, keyF.Element);
-		AddRow(cluster, keyLeftShift.Element);
+		var qRowSpacer = new VisualElement { pickingMode = PickingMode.Ignore };
+		qRowSpacer.AddToClassList("camera-key--wide");
+		qRowSpacer.style.visibility = Visibility.Hidden;
+		qRowSpacer.style.height = 0;
+		qRowSpacer.style.marginTop = 0;
+		qRowSpacer.style.marginBottom = 0;
+
+		AddRow(cluster, qRowSpacer, keyQ.Element, keyW.Element, keyE.Element, keyR.Element);
+		AddRow(cluster, keyLeftShift.Element, keyA.Element, keyS.Element, keyD.Element, keyF.Element);
 
 		board.Add(cluster);
 		_root.Add(board);
