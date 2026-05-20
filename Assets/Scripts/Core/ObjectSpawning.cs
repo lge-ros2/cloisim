@@ -176,7 +176,9 @@ public class ObjectSpawning : MonoBehaviour
 
 			var renderer = spawnedObject.GetComponentInChildren<Renderer>();
 			var newColor = Random.ColorHSV(0f, 1f, 0.4f, 1f, 0.3f, 1f);
-			renderer.material.SetColor("_BaseColor", newColor);
+			var freshMaterial = SDF2Unity.CreateMaterial(propsName + "_material");
+			freshMaterial.SetBaseColor(newColor);
+			renderer.sharedMaterial = freshMaterial;
 
 			var rigidBody = spawnedObject.GetComponentInChildren<Rigidbody>();
 			rigidBody.mass = CalculateMass(scale);
@@ -209,12 +211,12 @@ public class ObjectSpawning : MonoBehaviour
 		var meshRenderer = newObject.AddComponent<MeshRenderer>();
 		meshRenderer.shadowCastingMode = ShadowCastingMode.On;
 		meshRenderer.receiveShadows = true;
-		meshRenderer.sharedMaterial = _propMaterial;
+		meshRenderer.sharedMaterial = SDF2Unity.CreateMaterial(type + "_material");
 
 		newObject.AddComponent<URTSceneChangeNotifier>();
 
-		meshRenderer.material.name = targetMesh.name;
-		meshRenderer.material.color = Color.white;
+		meshRenderer.sharedMaterial.name = targetMesh.name;
+		meshRenderer.sharedMaterial.SetBaseColor(Color.white);
 
 		switch (type)
 		{

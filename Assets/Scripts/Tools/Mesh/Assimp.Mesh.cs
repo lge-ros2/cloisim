@@ -16,7 +16,7 @@ public static partial class MeshLoader
 {
 #if ENABLE_MESH_CACHE
 	private static Dictionary<string, GameObject> MeshCache = new Dictionary<string, GameObject>();
-	private const string MeshCacheVersion = "smooth-normals-v1";
+	private const string MeshCacheVersion = "lit-material-contract-v1";
 #endif
 
 	public static Texture2D GetTexture(in string textureFullPath)
@@ -41,10 +41,13 @@ public static partial class MeshLoader
 				var byteArray = File.ReadAllBytes(textureFullPath);
 				if (byteArray != null && byteArray.Length > 0)
 				{
-					// Enable mipmaps for better distance rendering performance
+					// Enable mipmaps for better distance rendering performance.
+					// The mip chain must be rebuilt after runtime LoadImage/compression,
+					// otherwise distant shading collapses to flat low-frequency tones.
 					var texture = new Texture2D(2, 2, TextureFormat.RGBA32, true);
 					if (texture.LoadImage(byteArray))
 					{
+						texture.name = Path.GetFileName(textureFullPath);
 						texture.filterMode = FilterMode.Trilinear;
 						texture.anisoLevel = 4;
 						// Compress texture to reduce GPU memory bandwidth (requires dimensions multiple of 4)
@@ -53,7 +56,7 @@ public static partial class MeshLoader
 							texture.Compress(true);
 						}
 						// Free the CPU-side copy to reduce RAM usage
-						texture.Apply(false, true);
+						texture.Apply(true, true);
 						texture.hideFlags = HideFlags.DontUnloadUnusedAsset;
 						return texture;
 					}
@@ -87,13 +90,14 @@ public static partial class MeshLoader
 				var texture = new Texture2D(2, 2, TextureFormat.RGBA32, true);
 				if (texture.LoadImage(embeddedTex.CompressedData))
 				{
+					texture.name = $"embedded_{i}";
 					texture.filterMode = FilterMode.Trilinear;
 					if (texture.width % 4 == 0 && texture.height % 4 == 0)
 					{
 						texture.Compress(true);
 					}
 					// Free the CPU-side copy to reduce RAM usage
-					texture.Apply(false, true);
+					texture.Apply(true, true);
 					texture.hideFlags = HideFlags.DontUnloadUnusedAsset;
 					textures[$"*{i}"] = texture;
 				}
@@ -197,15 +201,13 @@ public static partial class MeshLoader
 
 			if (sceneMat.HasColorSpecular)
 			{
-				// Set specular color but don't let its alpha control smoothness.
-				// Blender FBX exports specular alpha as 1.0, which would make
-				// everything maximally shiny. Smoothness is handled by HasShininess.
+				// Assimp's constant specular color is typically a legacy Phong/gloss term,
+				// not a reliable URP Lit F0 input. Enabling Lit's specular workflow from a
+				// flat color here tends to suppress diffuse albedo too aggressively and
+				// makes imported textured materials look flat. Keep metallic workflow unless
+				// there is an actual specular map to justify specular setup.
 				var specColor = sceneMat.ColorSpecular.ToUnity();
-				mat.SetColor("_SpecColor", specColor);
-				mat.SetFloat("_SpecularHighlights", 1f);
-				mat.DisableKeyword("_SPECGLOSSMAP");
-				mat.EnableKeyword("_SPECULAR_COLOR");
-				logs.AppendLine($"HasColorSpecular({specColor}) for {sceneMat.Name}");
+				logs.AppendLine($"HasColorSpecular({specColor}) ignored as constant specular color import on {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasColorTransparent)
@@ -240,11 +242,25 @@ public static partial class MeshLoader
 				logs.AppendLine($"HasReflectivity({sceneMat.Reflectivity}) -> Smoothness({smoothness}) for {sceneMat.Name}");
 			}
 
+			var hasBaseColorTexture = false;
 			if (sceneMat.HasTextureDiffuse)
 			{
 				var tex = TryLoadTexture(sceneMat.TextureDiffuse.FilePath, textureDirectories, embeddedTextures);
 				if (tex != null)
+				{
 					mat.SetTexture("_BaseMap", tex);
+					hasBaseColorTexture = true;
+				}
+			}
+
+			if (!hasBaseColorTexture && sceneMat.IsPBRMaterial && sceneMat.PBR.HasTextureBaseColor)
+			{
+				var tex = TryLoadTexture(sceneMat.PBR.TextureBaseColor.FilePath, textureDirectories, embeddedTextures);
+				if (tex != null)
+				{
+					mat.SetTexture("_BaseMap", tex);
+					logs.AppendLine($"HasTextureBaseColor({sceneMat.PBR.TextureBaseColor.FilePath}) for {sceneMat.Name}");
+				}
 			}
 
 			if (sceneMat.HasTextureNormal)
@@ -253,7 +269,6 @@ public static partial class MeshLoader
 				if (tex != null)
 				{
 					mat.SetTexture("_BumpMap", tex);
-					mat.EnableKeyword("_NORMALMAP");
 				}
 				logs.AppendLine($"HasTextureNormal({sceneMat.TextureNormal.FilePath}) for {sceneMat.Name}");
 			}
@@ -269,8 +284,9 @@ public static partial class MeshLoader
 				var tex = TryLoadTexture(sceneMat.TextureSpecular.FilePath, textureDirectories, embeddedTextures);
 				if (tex != null)
 				{
+					mat.UseSpecularWorkflow();
+					mat.SetFloat("_SmoothnessTextureChannel", 0f);
 					mat.SetTexture("_SpecGlossMap", tex);
-					mat.EnableKeyword("_SPECGLOSSMAP");
 				}
 			}
 
@@ -280,7 +296,10 @@ public static partial class MeshLoader
 				if (tex != null)
 				{
 					mat.SetTexture("_EmissionMap", tex);
-					mat.EnableKeyword("_EMISSION");
+					if (mat.GetColor("_EmissionColor").maxColorComponent <= 0f)
+					{
+						mat.SetColor("_EmissionColor", Color.white);
+					}
 				}
 			}
 
@@ -328,6 +347,7 @@ public static partial class MeshLoader
 				logs.AppendLine($"HasTextureLightMap({sceneMat.TextureLightMap.FilePath}) but not support for {sceneMat.Name}");
 			}
 #endif
+			mat.RefreshLitKeywords();
 			materials.Add(mat);
 		}
 

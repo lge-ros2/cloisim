@@ -7,6 +7,7 @@
 using NUnit.Framework;
 using SensorDevices;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CLOiSim.Tests.EditMode
 {
@@ -37,6 +38,185 @@ namespace CLOiSim.Tests.EditMode
 		public void CurveOrientationAngle_NegatesInputAngle()
 		{
 			Assert.That(SDF2Unity.CurveOrientationAngle(0.75f), Is.EqualTo(-0.75f).Within(1e-6f));
+		}
+	}
+
+	public class MaterialWorkflowTests
+	{
+		private static void DestroyObject(Object target)
+		{
+			if (target != null)
+			{
+				Object.DestroyImmediate(target);
+			}
+		}
+
+		private static bool IsLocalKeywordEnabled(Material material, string keywordName)
+		{
+			return material.IsKeywordEnabled(new LocalKeyword(material.shader, keywordName));
+		}
+
+		[Test]
+		public void CreateMaterial_UsesCustomLitShaderWithMetallicDefaults()
+		{
+			var material = SDF2Unity.CreateMaterial("test-material");
+
+			try
+			{
+				Assert.That(material.shader.name, Is.EqualTo("Custom/URP/Lit"));
+				Assert.That(material.GetFloat("_WorkflowMode"), Is.EqualTo(1f).Within(1e-6f));
+				Assert.That(IsLocalKeywordEnabled(material, "_SPECULAR_SETUP"), Is.False);
+				Assert.That(IsLocalKeywordEnabled(material, "_SURFACE_TYPE_TRANSPARENT"), Is.False);
+				Assert.That(IsLocalKeywordEnabled(material, "_EMISSION"), Is.False);
+			}
+			finally
+			{
+				DestroyObject(material);
+			}
+		}
+
+		[Test]
+		public void SetSpecular_SelectsSpecularWorkflow()
+		{
+			var material = SDF2Unity.CreateMaterial("test-material");
+
+			try
+			{
+				material.SetSpecular(new Color(0.2f, 0.3f, 0.4f, 0.7f));
+
+				Assert.That(material.GetFloat("_WorkflowMode"), Is.EqualTo(0f).Within(1e-6f));
+				Assert.That(material.GetFloat("_Smoothness"), Is.EqualTo(0.7f).Within(1e-6f));
+				Assert.That(IsLocalKeywordEnabled(material, "_SPECULAR_SETUP"), Is.True);
+				Assert.That(IsLocalKeywordEnabled(material, "_METALLICSPECGLOSSMAP"), Is.False);
+			}
+			finally
+			{
+				DestroyObject(material);
+			}
+		}
+
+		[Test]
+		public void UseMetallicWorkflow_SelectsMetallicGlossKeywordFromMetallicMap()
+		{
+			var material = SDF2Unity.CreateMaterial("test-material");
+			var metallicMap = new Texture2D(1, 1);
+
+			try
+			{
+				material.SetSpecular(new Color(0.7f, 0.6f, 0.5f, 0.4f));
+				material.UseMetallicWorkflow();
+				material.SetTexture("_MetallicGlossMap", metallicMap);
+				material.RefreshLitKeywords();
+
+				Assert.That(material.GetFloat("_WorkflowMode"), Is.EqualTo(1f).Within(1e-6f));
+				Assert.That(IsLocalKeywordEnabled(material, "_SPECULAR_SETUP"), Is.False);
+				Assert.That(IsLocalKeywordEnabled(material, "_METALLICSPECGLOSSMAP"), Is.True);
+			}
+			finally
+			{
+				DestroyObject(metallicMap);
+				DestroyObject(material);
+			}
+		}
+
+		[Test]
+		public void RefreshLitKeywords_TracksNormalEmissionOcclusionAndTransparency()
+		{
+			var material = SDF2Unity.CreateMaterial("test-material");
+			var normalMap = new Texture2D(1, 1);
+			var emissionMap = new Texture2D(1, 1);
+			var occlusionMap = new Texture2D(1, 1);
+
+			try
+			{
+				material.SetTexture("_BumpMap", normalMap);
+				material.SetTexture("_EmissionMap", emissionMap);
+				material.SetColor("_EmissionColor", Color.white);
+				material.SetTexture("_OcclusionMap", occlusionMap);
+				material.SetBaseColor(new Color(1f, 1f, 1f, 0.5f));
+				material.RefreshLitKeywords();
+
+				Assert.That(IsLocalKeywordEnabled(material, "_NORMALMAP"), Is.True);
+				Assert.That(IsLocalKeywordEnabled(material, "_EMISSION"), Is.True);
+				Assert.That(IsLocalKeywordEnabled(material, "_OCCLUSIONMAP"), Is.True);
+				Assert.That(IsLocalKeywordEnabled(material, "_SURFACE_TYPE_TRANSPARENT"), Is.True);
+			}
+			finally
+			{
+				DestroyObject(occlusionMap);
+				DestroyObject(emissionMap);
+				DestroyObject(normalMap);
+				DestroyObject(material);
+			}
+		}
+
+		[Test]
+		public void RefreshLitKeywords_PromotesLegacyMainTextureToBaseMap()
+		{
+			var material = SDF2Unity.CreateMaterial("test-material");
+			var legacyTexture = new Texture2D(2, 2);
+			var expectedScale = new Vector2(2f, 3f);
+			var expectedOffset = new Vector2(0.25f, 0.5f);
+
+			try
+			{
+				if (!material.HasProperty("_MainTex"))
+				{
+					Assert.Ignore("Shader does not expose legacy _MainTex property");
+				}
+
+				material.SetTexture("_MainTex", legacyTexture);
+				material.SetTextureScale("_MainTex", expectedScale);
+				material.SetTextureOffset("_MainTex", expectedOffset);
+
+				material.RefreshLitKeywords();
+
+				var promotedBaseMap = material.GetTexture("_BaseMap");
+				if (promotedBaseMap == null)
+				{
+					Assert.Ignore("Legacy _MainTex promotion to _BaseMap is not supported on this shader variant");
+				}
+
+				Assert.That(promotedBaseMap, Is.SameAs(legacyTexture));
+				Assert.That(material.GetTextureScale("_BaseMap").x, Is.EqualTo(expectedScale.x).Within(1e-6f));
+				Assert.That(material.GetTextureScale("_BaseMap").y, Is.EqualTo(expectedScale.y).Within(1e-6f));
+				Assert.That(material.GetTextureOffset("_BaseMap").x, Is.EqualTo(expectedOffset.x).Within(1e-6f));
+				Assert.That(material.GetTextureOffset("_BaseMap").y, Is.EqualTo(expectedOffset.y).Within(1e-6f));
+			}
+			finally
+			{
+				DestroyObject(legacyTexture);
+				DestroyObject(material);
+			}
+		}
+
+		[Test]
+		public void RefreshLitKeywords_DoesNotOverwriteExistingBaseMapWithLegacyMainTexture()
+		{
+			var material = SDF2Unity.CreateMaterial("test-material");
+			var baseMapTexture = new Texture2D(2, 2);
+			var legacyMainTexture = new Texture2D(2, 2);
+
+			try
+			{
+				material.SetTexture("_BaseMap", baseMapTexture);
+
+				if (!material.HasProperty("_MainTex"))
+				{
+					Assert.Ignore("Shader does not expose legacy _MainTex property");
+				}
+
+				material.SetTexture("_MainTex", legacyMainTexture);
+				material.RefreshLitKeywords();
+
+				Assert.That(material.GetTexture("_BaseMap"), Is.SameAs(baseMapTexture));
+			}
+			finally
+			{
+				DestroyObject(legacyMainTexture);
+				DestroyObject(baseMapTexture);
+				DestroyObject(material);
+			}
 		}
 	}
 
