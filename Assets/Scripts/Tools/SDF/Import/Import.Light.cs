@@ -153,12 +153,10 @@ namespace SDFormat
 				if (light.Type == LightType.Directional)
 				{
 					lightComponent.shadows = light.CastShadows && _sceneShadowsEnabled ? UE.LightShadows.Hard : UE.LightShadows.None;
-					lightComponent.shadowResolution = UE.Rendering.LightShadowResolution.Medium;
 				}
 				else
 				{
 					lightComponent.shadows = UE.LightShadows.None;
-					lightComponent.shadowResolution = UE.Rendering.LightShadowResolution.Low;
 					lightComponent.renderMode = UE.LightRenderMode.ForcePixel;
 				}
 

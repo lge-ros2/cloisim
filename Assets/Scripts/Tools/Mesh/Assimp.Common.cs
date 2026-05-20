@@ -108,6 +108,29 @@ public static partial class MeshLoader
 			return false;
 	}
 
+	private static bool ValidateMeshFile(in string filePath)
+	{
+		try
+		{
+			var fileInfo = new FileInfo(filePath);
+			if (fileInfo.Length == 0)
+			{
+				Debug.LogError($"Mesh file is empty (0 bytes): {filePath}");
+				return false;
+			}
+
+			using var stream = File.OpenRead(filePath);
+			stream.ReadByte();
+		}
+		catch (Exception e)
+		{
+			Debug.LogError($"Cannot read mesh file: {filePath} — {e.Message}");
+			return false;
+		}
+
+		return true;
+	}
+
 	private static bool ValidateStlFile(in string filePath)
 	{
 		const int BinaryHeaderSize = 80;
@@ -246,10 +269,19 @@ public static partial class MeshLoader
 			return null;
 		}
 
+		if (!ValidateMeshFile(targetPath))
+		{
+			return null;
+		}
+
 		if (fileExtension == ".stl" && !ValidateStlFile(targetPath))
 		{
 			return null;
 		}
+
+#if UNITY_EDITOR
+		Debug.Log($"Importing mesh: {targetPath}");
+#endif
 
 		try {
 			using var importer = new Assimp.AssimpContext();

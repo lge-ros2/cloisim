@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 /// <summary>
 /// Central manager that owns render scheduling for all ISensorRenderable sensors.
@@ -202,6 +203,12 @@ public class SensorRenderManager : MonoBehaviour
 	private void OnApplicationQuit()
 	{
 		s_applicationQuitting = true;
+		_paused = true;
+
+		// Drain all in-flight AsyncGPUReadback requests before any sensor
+		// OnDestroy runs. Without this, GPU resources freed in OnDestroy
+		// can be accessed by the GfxDevice thread → SIGSEGV.
+		AsyncGPUReadback.WaitAllRequests();
 	}
 
 	private void OnDestroy()

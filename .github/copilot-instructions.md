@@ -31,6 +31,15 @@ Do not rename these scene root objects: `Core`, `Props`, `World`, `Lights`, `Roa
 - Avoid `GameObject.Find()` at runtime except in `Main.cs` bootstrap
 - `AsyncGPUReadback` is mandatory — never replace with synchronous GPU reads
 
+## Change Scope And Validation
+
+- Prefer the smallest viable edit in the nearest code that directly decides the behavior; avoid widening into adjacent systems without evidence.
+- Do not mix localized fixes with unrelated cleanup, renames, or refactors.
+- Validate with the narrowest existing command that covers the touched behavior before running broader checks.
+- For deterministic Unity unit coverage, prefer `./scripts/run-editmode-tests.sh "<namespace-or-fixture>"` from the repository root, targeting the nearest fixture under `Assets/Editor/Tests/`.
+- If there is no reliable narrow filter for the touched slice, run `./scripts/run-editmode-tests.sh`.
+- If Unity test execution is blocked by a project lock or compiler errors, report that explicitly and point to `Logs/EditModeTests.log`.
+
 ---
 
 ## C# (`**/*.cs`)

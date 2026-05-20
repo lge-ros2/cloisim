@@ -5,7 +5,6 @@
  */
 using System.Collections.Generic;
 using System.Collections;
-using System.Threading.Tasks;
 using System.Text;
 using System;
 using UnityEngine;
@@ -71,26 +70,15 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	/// </summary>
 	protected virtual void OnPluginLoad() { }
 
-	protected async void OnDestroy()
+	protected void OnDestroy()
 	{
 		_thread.Dispose();
-		await TryCompleteThreadShutdownAsync(joinTimeoutMs: 50);
+		_thread.TryJoinStep(joinTimeoutMs: 500);
 
 		_transport.Dispose();
 
 		DeregisterDevice(_allocatedDevicePorts, _allocatedDeviceHashKeys);
 		// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
-	}
-
-	private async Task TryCompleteThreadShutdownAsync(int joinTimeoutMs = 50)
-	{
-		while (true)
-		{
-			if (_thread.TryJoinStep(joinTimeoutMs))
-				break;
-	        await Task.Yield();
-		}
-        await Task.Yield();
 	}
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)

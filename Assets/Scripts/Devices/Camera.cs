@@ -448,6 +448,9 @@ namespace SensorDevices
 			_startCameraWork = false;
 			SensorRenderManager.Unregister(this);
 
+			// Drain in-flight readbacks before releasing GPU resources
+			AsyncGPUReadback.WaitAllRequests();
+
 			if (_renderTexture != null)
 			{
 				_renderTexture.Release();

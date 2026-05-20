@@ -367,11 +367,11 @@ public class PIDTunerWindow : MonoBehaviour
 
 		// Title bar content
 		var modelName = _currentTarget != null ? _currentTarget.name : "PID";
-		var titleContentRect = new Rect(8, 0, _windowRect.width - 64, TitleBarHeight);
+		var titleContentRect = new Rect(8, 1, _windowRect.width - 64, TitleBarHeight);
 		GUI.Label(titleContentRect, "PID Control [" + modelName + "]", _titleStyle);
 
 		// Collapse button
-		var collapseRect = new Rect(_windowRect.width - 52, 3, 22, 22);
+		var collapseRect = new Rect(_windowRect.width - 52, 5, 22, 22);
 		if (GUI.Button(collapseRect, _collapsed ? "\u25A1" : "_", _collapseBtnStyle))
 		{
 			_collapsed = !_collapsed;
@@ -380,7 +380,7 @@ public class PIDTunerWindow : MonoBehaviour
 		}
 
 		// Close button
-		var closeRect = new Rect(_windowRect.width - 27, 3, 22, 22);
+		var closeRect = new Rect(_windowRect.width - 27, 5, 22, 22);
 		if (GUI.Button(closeRect, "X", _closeBtnStyle))
 		{
 			_showWindow = false;

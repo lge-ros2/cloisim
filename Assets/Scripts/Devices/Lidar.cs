@@ -148,6 +148,9 @@ namespace SensorDevices
 
 			SensorRenderManager.Unregister(this);
 
+			// Drain in-flight readbacks before releasing GPU resources
+			AsyncGPUReadback.WaitAllRequests();
+
 			if (_laserProcessThread != null && _laserProcessThread.IsAlive)
 			{
 				_laserProcessThread.Join();
