@@ -66,6 +66,12 @@ public class WorldSaver
 		for (var i = 0; i < worldTransform.childCount; i++)
 		{
 			var childTransform = worldTransform.GetChild(i);
+			var modelHelper = childTransform.GetComponent<SDFormat.Helper.Model>();
+			if (modelHelper == null)
+			{
+				continue;
+			}
+
 			var modelName = childTransform.name;
 			// Debug.Log("model-in-world= " + modelName);
 			worldModelList.Add(modelName);
@@ -131,6 +137,11 @@ public class WorldSaver
 		for (var i = 0; i < worldTransform.childCount; i++)
 		{
 			var childTransform = worldTransform.GetChild(i);
+			var modelHelper = childTransform.GetComponent<SDFormat.Helper.Model>();
+			if (modelHelper == null)
+			{
+				continue;
+			}
 
 			var modelName = childTransform.name;
 			var isStatic = childTransform.gameObject.isStatic;
@@ -146,8 +157,6 @@ public class WorldSaver
 				var modelNameNode = _doc.CreateElement("name");
 				modelNameNode.InnerText = modelName;
 				model.AppendChild(modelNameNode);
-
-				var modelHelper = childTransform.GetComponent<SDFormat.Helper.Model>();
 
 				var uriNode = _doc.CreateElement("uri");
 				uriNode.InnerText = $"model://{modelHelper.modelNameInPath}";
