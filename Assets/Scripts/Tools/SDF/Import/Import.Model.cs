@@ -10,6 +10,8 @@ using UE = UnityEngine;
 
 namespace SDFormat
 {
+	using Implement;
+
 	namespace Import
 	{
 		public partial class Loader : Base
@@ -73,6 +75,17 @@ namespace SDFormat
 				return rigidBody;
 			}
 
+			private static UE.GameObject ResolveModelHierarchyParent(in Model model, UE.GameObject parentObject)
+			{
+				if (parentObject == null || !model.IsNested() || string.IsNullOrEmpty(model.PoseRelativeTo))
+				{
+					return parentObject;
+				}
+
+				var relativeParent = Util.FindPoseRelativeObject(parentObject.transform, model.PoseRelativeTo);
+				return relativeParent != null ? relativeParent.gameObject : parentObject;
+			}
+
 			private UE.GameObject CreateModel(in Model model, in UE.GameObject parentObject)
 			{
 				var newModelObject = new UE.GameObject(model.Name)
@@ -80,7 +93,7 @@ namespace SDFormat
 					tag = "Model"
 				};
 
-				parentObject.SetChild(newModelObject);
+				ResolveModelHierarchyParent(model, parentObject).SetChild(newModelObject);
 
 				var modelHelper = newModelObject.AddComponent<Helper.Model>();
 				modelHelper.modelNameInPath = model.OriginalName();

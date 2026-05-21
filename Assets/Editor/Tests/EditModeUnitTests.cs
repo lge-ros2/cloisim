@@ -40,6 +40,64 @@ namespace CLOiSim.Tests.EditMode
 		}
 	}
 
+	public class PoseRelativeLookupTests
+	{
+		[Test]
+		public void FindPoseRelativeObject_ResolvesUnscopedLinkFromParentModelScope()
+		{
+			var world = new GameObject("world");
+			var rootModel = new GameObject("robot_model");
+			var chestLink = new GameObject("chest_link");
+
+			try
+			{
+				rootModel.transform.SetParent(world.transform, false);
+				rootModel.AddComponent<SDFormat.Helper.Model>();
+
+				chestLink.transform.SetParent(rootModel.transform, false);
+				var chestLinkHelper = chestLink.AddComponent<SDFormat.Helper.Link>();
+
+				var relativeObject = SDFormat.Import.Util.FindPoseRelativeObject(rootModel.transform, "chest_link");
+
+				Assert.That(relativeObject, Is.SameAs(chestLinkHelper));
+			}
+			finally
+			{
+				Object.DestroyImmediate(world);
+			}
+		}
+
+		[Test]
+		public void FindPoseRelativeObject_ResolvesScopedLinkFromNestedModelScope()
+		{
+			var world = new GameObject("world");
+			var rootModel = new GameObject("robot_model");
+			var chestLink = new GameObject("chest_link");
+			var nestedModel = new GameObject("sensor_mount");
+
+			try
+			{
+				rootModel.transform.SetParent(world.transform, false);
+				rootModel.AddComponent<SDFormat.Helper.Model>();
+
+				chestLink.transform.SetParent(rootModel.transform, false);
+				var chestLinkHelper = chestLink.AddComponent<SDFormat.Helper.Link>();
+
+				nestedModel.transform.SetParent(rootModel.transform, false);
+				var nestedModelHelper = nestedModel.AddComponent<SDFormat.Helper.Model>();
+				nestedModelHelper.isNested = true;
+
+				var relativeObject = SDFormat.Import.Util.FindPoseRelativeObject(nestedModel.transform, "robot_model::chest_link");
+
+				Assert.That(relativeObject, Is.SameAs(chestLinkHelper));
+			}
+			finally
+			{
+				Object.DestroyImmediate(world);
+			}
+		}
+	}
+
 	public class ColorEncodingTests
 	{
 		[Test]
