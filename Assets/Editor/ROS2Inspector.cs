@@ -6,6 +6,8 @@
 using UnityEditor;
 using UnityEngine;
 
+using Helper = SDFormat.Helper;
+
 [CustomEditor(typeof(Transform), true), CanEditMultipleObjects]
 public class ROS2Inspector : Editor
 {
@@ -25,14 +27,16 @@ public class ROS2Inspector : Editor
 			targetTransform.CompareTag("Light"))
 		{
 			targetTransform.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
-			var ros2Position = Unity2SDF.Position(localPosition).AsUnity();
-			var ros2Rotation = Unity2SDF.Vector(localRotation.eulerAngles).AsUnity() * Mathf.Deg2Rad;
-			ros2Rotation.NormalizeAngle();
-			var ros2RotationDegree = ros2Rotation * Mathf.Rad2Deg;
+			ConvertPoseToRos2(localPosition, localRotation, out var ros2Position, out var ros2Rotation, out var ros2RotationDegree);
+			var poseRelativeTo = targetTransform.GetComponent<Helper.Base>()?.PoseRelativeTo ?? string.Empty;
 
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("ROS2 Coordinates", EditorStyles.boldLabel);
 			EditorGUILayout.HelpBox("Rotation is displayed as Roll, Pitch, Yaw (Euler angles).", MessageType.None);
+			if (!string.IsNullOrEmpty(poseRelativeTo))
+			{
+				EditorGUILayout.LabelField("Relative To", poseRelativeTo);
+			}
 
 			// GUI.enabled = false;
 			EditorGUILayout.Vector3Field("Position (m)", ros2Position);
@@ -42,8 +46,8 @@ public class ROS2Inspector : Editor
 
 			if (GUILayout.Button("Copy pose"))
 			{
-				var poseText = $"{ros2Position.x.ToString("0.##########")} {ros2Position.y.ToString("0.##########")} {ros2Position.z.ToString("0.##########")} "
-							+ $"{ros2Rotation.x.ToString("0.##########")} {ros2Rotation.y.ToString("0.##########")} {ros2Rotation.z.ToString("0.##########")}";
+				var poseText = $"{ros2Position.x:0.##########} {ros2Position.y:0.##########} {ros2Position.z:0.##########} "
+							+ $"{ros2Rotation.x:0.##########} {ros2Rotation.y:0.##########} {ros2Rotation.z:0.##########}";
 				GUIUtility.systemCopyBuffer = poseText;
 				Debug.LogFormat("Pose '{0}' Copied for {1}", poseText, targetTransform.name);
 			}
@@ -117,5 +121,14 @@ public class ROS2Inspector : Editor
 				}
 			}
 		}
+	}
+
+	private static void ConvertPoseToRos2(in Vector3 position, in Quaternion rotation,
+		out Vector3 ros2Position, out Vector3 ros2Rotation, out Vector3 ros2RotationDegree)
+	{
+		ros2Position = Unity2SDF.Position(position).AsUnity();
+		ros2Rotation = Unity2SDF.Vector(rotation.eulerAngles).AsUnity() * Mathf.Deg2Rad;
+		ros2Rotation.NormalizeAngle();
+		ros2RotationDegree = ros2Rotation * Mathf.Rad2Deg;
 	}
 }

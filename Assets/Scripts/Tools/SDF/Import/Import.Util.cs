@@ -10,6 +10,8 @@ using UE = UnityEngine;
 
 namespace SDFormat
 {
+	using Implement;
+
 	namespace Import
 	{
 		public static class Util
@@ -118,7 +120,6 @@ namespace SDFormat
 				}
 
 				var parentObject = baseHelper.transform.parent;
-				var pose = baseHelper?.Pose;
 
 				var relativeObject = targetBaseHelper.transform;
 
@@ -140,9 +141,9 @@ namespace SDFormat
 				}
 			}
 
-			private static Helper.Base FindRelativeObjectInNestedModelScope(Helper.Base baseHelper, string poseRelativeTo)
+			private static Helper.Base FindRelativeObjectInNestedModelScope(UE.Transform startTransform, string poseRelativeTo)
 			{
-				var nestedModel = baseHelper.GetComponentsInParent<Helper.Model>()
+				var nestedModel = startTransform?.GetComponentsInParent<Helper.Model>()
 					.FirstOrDefault(model => model != null && model.isNested);
 
 				if (nestedModel == null)
@@ -152,6 +153,73 @@ namespace SDFormat
 
 				return nestedModel.GetComponentsInChildren<Helper.Base>()
 					.FirstOrDefault(helper => helper != null && helper.name.Equals(poseRelativeTo));
+			}
+
+			private static Helper.Model FindRootModelInScope(UE.Transform startTransform)
+			{
+				return startTransform?.GetComponentsInParent<Helper.Model>().LastOrDefault();
+			}
+
+			public static Helper.Base FindPoseRelativeObject(UE.Transform startTransform, string poseRelativeTo)
+			{
+				if (startTransform == null || string.IsNullOrEmpty(poseRelativeTo))
+				{
+					return null;
+				}
+
+				if (poseRelativeTo.Contains("::"))
+				{
+					var scopedRelativeTransform = startTransform.FindTransformByName(poseRelativeTo);
+					return scopedRelativeTransform?.GetComponent<Helper.Base>();
+				}
+
+				Helper.Base relativeObjectBaseHelper = null;
+
+				var ancestor = startTransform;
+				while (ancestor != null && relativeObjectBaseHelper == null)
+				{
+					if (ancestor.name.Equals(poseRelativeTo))
+					{
+						relativeObjectBaseHelper = ancestor.GetComponent<Helper.Base>();
+					}
+					else
+					{
+						var found = ancestor.Find(poseRelativeTo);
+						if (found != null)
+						{
+							relativeObjectBaseHelper = found.GetComponent<Helper.Base>();
+						}
+					}
+
+					ancestor = ancestor.parent;
+				}
+
+				relativeObjectBaseHelper ??= FindRelativeObjectInNestedModelScope(startTransform, poseRelativeTo);
+				relativeObjectBaseHelper ??= FindRootModelInScope(startTransform)?.GetComponentsInChildren<Helper.Base>()
+					.FirstOrDefault(helper => helper != null && helper.name.Equals(poseRelativeTo));
+
+				return relativeObjectBaseHelper;
+			}
+
+			private static UE.ArticulationBody FindParentArticulationBody(UE.ArticulationBody body)
+			{
+				return body.transform.parent?.GetComponentInParent<UE.ArticulationBody>();
+			}
+
+			private static void UpdateParentAnchor(UE.ArticulationBody body)
+			{
+				var parentBody = FindParentArticulationBody(body);
+				if (parentBody == null)
+				{
+					return;
+				}
+
+				var anchorWorldPosition = body.transform.TransformPoint(body.anchorPosition);
+				var anchorWorldRotation = body.transform.rotation * body.anchorRotation;
+
+				body.matchAnchors = false;
+				body.parentAnchorPosition = parentBody.transform.InverseTransformPoint(anchorWorldPosition);
+				body.parentAnchorRotation = UE.Quaternion.Inverse(parentBody.transform.rotation) * anchorWorldRotation;
 			}
 
 			public static void SpecifyPose(this object targetObject)
@@ -183,49 +251,9 @@ namespace SDFormat
 					}
 					else
 					{
-						Helper.Base relativeObjectBaseHelper = null;
-
-						// First: check direct parent — after joint re-parenting, pose relative_to
-						// almost always refers to the direct parent link. Matching by name here avoids
-						// cross-model collisions (e.g., left_hand and right_hand both having
-						// "hand_base_link") that arise when searching from the root.
-						var directParent = baseHelper.transform.parent;
-						if (directParent != null && directParent.name.Equals(poseRelativeTo))
-						{
-							relativeObjectBaseHelper = directParent.GetComponent<Helper.Base>();
-						}
-
-						// Second: search ancestors and their immediate children for named frames.
-						// This covers cases like collision/visual poses relative to a sibling or
-						// parent that isn't the immediate parent.
-						if (relativeObjectBaseHelper == null)
-						{
-							var ancestor = directParent;
-							while (ancestor != null && relativeObjectBaseHelper == null)
-							{
-								if (ancestor.name.Equals(poseRelativeTo))
-								{
-									relativeObjectBaseHelper = ancestor.GetComponent<Helper.Base>();
-								}
-								else
-								{
-									var found = ancestor.Find(poseRelativeTo);
-									if (found != null)
-									{
-										relativeObjectBaseHelper = found.GetComponent<Helper.Base>();
-									}
-								}
-								ancestor = ancestor.parent;
-							}
-						}
-
-						// Search the nearest enclosing nested model before falling back to the
-						// root model so sibling nested models with identical link names do not collide.
-						relativeObjectBaseHelper ??= FindRelativeObjectInNestedModelScope(baseHelper, poseRelativeTo);
-
-						// Fallback: root model scope for cross-model references
-						relativeObjectBaseHelper ??= baseHelper.RootModel?.GetComponentsInChildren<Helper.Base>()
-							.FirstOrDefault(x => x.name.Equals(poseRelativeTo));
+						// Keep create-time parent selection and pose-time relative_to resolution
+						// on the same search rules to avoid frame mismatches for nested models.
+						var relativeObjectBaseHelper = FindPoseRelativeObject(baseHelper.transform.parent, poseRelativeTo);
 
 						if (relativeObjectBaseHelper != null)
 						{
@@ -241,12 +269,17 @@ namespace SDFormat
 					baseHelper.ResetPose();
 				}
 
+				foreach (var body in articulationBodies)
+				{
+					UpdateParentAnchor(body);
+				}
+
 				// Before enabling, mark root ABs in static models as immovable
 				// to prevent joint spring forces from shifting them.
 				foreach (var body in articulationBodies)
 				{
 					// A root AB has no parent AB in the hierarchy
-					var parentAB = body.transform.parent?.GetComponentInParent<UE.ArticulationBody>();
+					var parentAB = FindParentArticulationBody(body);
 					if (parentAB == null)
 					{
 						var modelHelper = body.GetComponentInParent<Helper.Model>();

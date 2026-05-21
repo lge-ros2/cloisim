@@ -18,16 +18,13 @@ namespace SDFormat
 				var modelTransformParent = linkParent.parent;
 				var modelTransformChild = linkChild.parent;
 
-				var modelHelperChild = modelTransformChild.GetComponent<Helper.Model>();
-
 				var linkHelperParent = linkParent.GetComponent<Helper.Link>();
 				var linkHelperChild = linkChild.GetComponent<Helper.Link>();
 
-				var linkParentArticulationBody = linkParent.GetComponent<UE.ArticulationBody>();
-				if (linkParentArticulationBody == null)
+				if (linkParent.GetComponent<UE.ArticulationBody>() == null)
 				{
 					UE.Debug.LogWarningFormat("LinkParent({0}) has no ArticulationBody -> create empty one", linkParent.name);
-					linkParentArticulationBody = Import.Loader.CreateArticulationBody(linkParent);
+					Import.Loader.CreateArticulationBody(linkParent);
 				}
 
 				var anchorPose = new UE.Pose
@@ -37,13 +34,14 @@ namespace SDFormat
 				};
 
 				if (linkHelperChild.Model.Equals(linkHelperParent.Model) ||
-					modelTransformChild.Equals(modelTransformParent) ||
-					modelHelperChild.IsFirstChild)
+					modelTransformChild.Equals(modelTransformParent))
 				{
 					linkChild.SetParent(linkParent, false);
 				}
 				else
 				{
+					// Keep cross-model includes attached through their model root so the
+					// authored include pose is still applied to the mounted subtree.
 					modelTransformChild.SetParent(linkParent, false);
 				}
 

@@ -47,18 +47,18 @@ namespace SDFormat
 					case "depth_camera":
 					case "depth":
 						var depthCamera = sensor.Camera;
-						device = targetObject.AddDepthCamera(depthCamera, sensor.RawPose);
+						device = targetObject.AddDepthCamera(depthCamera);
 						break;
 
 					case "camera":
 						var camera = sensor.Camera;
-						device = targetObject.AddCamera(camera, sensor.RawPose);
+						device = targetObject.AddCamera(camera);
 						break;
 
 					case "segmentation_camera":
 					case "segmentation":
 						var segmentationCamera = sensor.Camera;
-						device = targetObject.AddSegmentationCamera(segmentationCamera, sensor.RawPose);
+						device = targetObject.AddSegmentationCamera(segmentationCamera);
 						break;
 
 					case "rgbd_camera":
