@@ -25,7 +25,14 @@ namespace SDFormat
 
 					material.SetEmission(sdfMaterial.Emissive.ToUnity());
 
-					material.SetSpecular(sdfMaterial.Specular.ToUnity());
+					// Only apply specular when SDF provides non-trivial data.
+					// Default black (0,0,0) is a Phong-era "no highlight" signal,
+					// not a PBR F0 color — switching workflow for it kills diffuse.
+					var specColor = sdfMaterial.Specular.ToUnity();
+					if (specColor.maxColorComponent > 0.01f)
+					{
+						material.SetSpecular(specColor);
+					}
 
 					if (sdfMaterial.Shader != ShaderType.Pixel && !string.IsNullOrEmpty(sdfMaterial.NormalMap))
 					{
@@ -159,7 +166,10 @@ namespace SDFormat
 					if (texture != null)
 					{
 						material.SetTexture("_EmissionMap", texture);
-						material.EnableKeyword("_EMISSION");
+						if (material.GetColor("_EmissionColor").maxColorComponent <= 0f)
+						{
+							material.SetColor("_EmissionColor", UE.Color.white);
+						}
 					}
 				}
 
@@ -174,6 +184,8 @@ namespace SDFormat
 
 				if (metalWorkflow != null)
 				{
+					material.UseMetallicWorkflow();
+					material.SetFloat("_SmoothnessTextureChannel", 0f);
 					material.SetFloat("_Metallic", (float)metalWorkflow.Metalness);
 					material.SetFloat("_Smoothness", 1f - (float)metalWorkflow.Roughness);
 
@@ -183,12 +195,13 @@ namespace SDFormat
 						if (texture != null)
 						{
 							material.SetTexture("_MetallicGlossMap", texture);
-							material.EnableKeyword("_METALLICSPECGLOSSMAP");
 						}
 					}
 				}
 				else if (specularWorkflow != null)
 				{
+					material.UseSpecularWorkflow();
+					material.SetFloat("_SmoothnessTextureChannel", 0f);
 					material.SetFloat("_Smoothness", (float)specularWorkflow.Glossiness);
 
 					if (!string.IsNullOrEmpty(specularWorkflow.SpecularMap))
@@ -197,11 +210,11 @@ namespace SDFormat
 						if (texture != null)
 						{
 							material.SetTexture("_SpecGlossMap", texture);
-							material.DisableKeyword("_SPECULAR_COLOR");
-							material.EnableKeyword("_SPECGLOSSMAP");
 						}
 					}
 				}
+
+				material.RefreshLitKeywords();
 			}
 		}
 	}
