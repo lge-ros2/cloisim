@@ -87,7 +87,7 @@ namespace SDFormat
 
 						var meshRenderer = newVisualGeometryObject.AddComponent<UE.MeshRenderer>();
 						meshRenderer.sharedMaterial = material;
-						meshRenderer.lightProbeUsage = UE.Rendering.LightProbeUsage.Off;
+						meshRenderer.lightProbeUsage = UE.Rendering.LightProbeUsage.BlendProbes;
 						meshRenderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.BlendProbesAndSkybox;
 						meshRenderer.motionVectorGenerationMode = UE.MotionVectorGenerationMode.ForceNoMotion;
 						meshRenderer.allowOcclusionWhenDynamic = true;
@@ -138,7 +138,7 @@ namespace SDFormat
 						meshRenderer.materials = new UE.Material[] { SDF2Unity.CreateMaterial(meshFilter.name + "_material") };
 						meshRenderer.allowOcclusionWhenDynamic = true;
 						meshRenderer.receiveShadows = true;
-						meshRenderer.lightProbeUsage = UE.Rendering.LightProbeUsage.Off;
+						meshRenderer.lightProbeUsage = UE.Rendering.LightProbeUsage.BlendProbes;
 						meshRenderer.reflectionProbeUsage = UE.Rendering.ReflectionProbeUsage.BlendProbesAndSkybox;
 						meshRenderer.motionVectorGenerationMode = UE.MotionVectorGenerationMode.ForceNoMotion;
 
