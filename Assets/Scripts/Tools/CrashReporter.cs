@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using UnityEngine;
@@ -28,7 +29,7 @@ public sealed class CrashReporter : IDisposable
 	private readonly string _mirrorDumpRootPath;
 	private readonly int _mainThreadId;
 	private readonly string _systemInfoSnapshot;
-	private readonly string[] _playerLogCandidates;
+	private readonly string[] _sessionLogCandidates;
 
 	private int _dumpSequence = 0;
 	private bool _disposed;
@@ -40,7 +41,7 @@ public sealed class CrashReporter : IDisposable
 		_dumpRootPath = BuildLocalDumpRootPath();
 		_mirrorDumpRootPath = BuildMirrorDumpRootPath(_dumpRootPath);
 		_systemInfoSnapshot = CaptureSystemInfoSnapshot();
-		_playerLogCandidates = BuildPlayerLogCandidates();
+		_sessionLogCandidates = BuildSessionLogCandidates();
 
 		Application.logMessageReceivedThreaded += OnLogMessageReceived;
 		AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
@@ -239,8 +240,8 @@ public sealed class CrashReporter : IDisposable
 		var sysInfoPath = Path.Combine(dumpDir, "system_info.txt");
 		WriteSystemInfo(sysInfoPath);
 
-		// --- 4. Copy Player.log if available ---
-		CopyPlayerLog(dumpDir);
+		// --- 4. Copy the current session log if available ---
+		CopySessionLog(dumpDir);
 
 		// --- 5. Copy Unity CrashReports if available ---
 		if (IsMainThread())
@@ -336,22 +337,35 @@ public sealed class CrashReporter : IDisposable
 		return builder.ToString();
 	}
 
-	private static string[] BuildPlayerLogCandidates()
+	private static string[] BuildSessionLogCandidates()
 	{
 		var candidates = new List<string>();
+		AddLogCandidate(candidates, TryGetConsoleLogPath());
 
+#if UNITY_EDITOR
+		var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+		if (!string.IsNullOrEmpty(appDataPath))
+		{
+			AddLogCandidate(candidates, Path.Combine(appDataPath, "unity3d", "Editor.log"));
+		}
+
+		var xdgConfig = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+		if (!string.IsNullOrEmpty(xdgConfig))
+		{
+			AddLogCandidate(candidates, Path.Combine(xdgConfig, "unity3d", "Editor.log"));
+		}
+#else
 		// Unity standalone Linux: ~/.config/unity3d/<Company>/<Product>/Player.log
 		var unityLogDir = Path.Combine(
 			Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
 			"unity3d",
 			Application.companyName,
 			Application.productName);
-		candidates.Add(Path.Combine(unityLogDir, "Player.log"));
-		candidates.Add(Path.Combine(unityLogDir, "Player-prev.log"));
+		AddLogCandidate(candidates, Path.Combine(unityLogDir, "Player.log"));
 
 		// Some Unity versions place it next to the executable
 		var exeDir = Path.GetDirectoryName(Application.dataPath) ?? ".";
-		candidates.Add(Path.Combine(exeDir, "Player.log"));
+		AddLogCandidate(candidates, Path.Combine(exeDir, "Player.log"));
 
 		// Linux XDG config path
 		var xdgConfig = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
@@ -359,15 +373,45 @@ public sealed class CrashReporter : IDisposable
 		{
 			var xdgLogDir = Path.Combine(xdgConfig, "unity3d",
 				Application.companyName, Application.productName);
-			candidates.Add(Path.Combine(xdgLogDir, "Player.log"));
+			AddLogCandidate(candidates, Path.Combine(xdgLogDir, "Player.log"));
 		}
+#endif
 
 		return candidates.ToArray();
 	}
 
-	private void CopyPlayerLog(string destDir)
+	private static string TryGetConsoleLogPath()
 	{
-		foreach (var logFile in _playerLogCandidates)
+		try
+		{
+			var property = typeof(Application).GetProperty("consoleLogPath", BindingFlags.Public | BindingFlags.Static);
+			return property?.GetValue(null) as string;
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	private static void AddLogCandidate(List<string> candidates, string logPath)
+	{
+		if (string.IsNullOrWhiteSpace(logPath))
+		{
+			return;
+		}
+
+		var fullPath = Path.GetFullPath(logPath);
+		if (candidates.Exists(candidate => string.Equals(candidate, fullPath, StringComparison.OrdinalIgnoreCase)))
+		{
+			return;
+		}
+
+		candidates.Add(fullPath);
+	}
+
+	private void CopySessionLog(string destDir)
+	{
+		foreach (var logFile in _sessionLogCandidates)
 		{
 			if (!File.Exists(logFile))
 			{
@@ -377,17 +421,12 @@ public sealed class CrashReporter : IDisposable
 			try
 			{
 				var destFile = Path.Combine(destDir, Path.GetFileName(logFile));
-				// Avoid name collisions
-				if (File.Exists(destFile))
-				{
-					destFile = Path.Combine(destDir,
-						Path.GetFileNameWithoutExtension(logFile) + "_alt" + Path.GetExtension(logFile));
-				}
-				File.Copy(logFile, destFile, overwrite: false);
+				File.Copy(logFile, destFile, overwrite: true);
+				return;
 			}
 			catch
 			{
-				// Player.log may be locked; best-effort copy
+				// The session log may be locked; best-effort copy
 			}
 		}
 	}
