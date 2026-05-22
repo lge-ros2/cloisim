@@ -147,7 +147,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		var helperLink = GetComponentInParent<SDFormat.Helper.Link>();
 		if (helperLink != null)
 		{
-			_parentLinkName = string.IsNullOrEmpty(helperLink.JointParentLinkName) ? null : helperLink.JointParentLinkName;
+			_parentLinkName = ResolvePluginParentFrameName(helperLink);
 		}
 
 		StartCoroutine(DelayedOnStart());
@@ -177,6 +177,20 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	public Pose GetPose()
 	{
 		return _pluginPose;
+	}
+
+	private static string ResolvePluginParentFrameName(in SDFormat.Helper.Link helperLink)
+	{
+		if (helperLink == null)
+		{
+			return null;
+		}
+
+		var parentFrameName = string.IsNullOrEmpty(helperLink.JointChildLinkName)
+			? helperLink.name
+			: helperLink.JointChildLinkName;
+
+		return string.IsNullOrEmpty(parentFrameName) ? null : parentFrameName;
 	}
 
 	private void StorePose()

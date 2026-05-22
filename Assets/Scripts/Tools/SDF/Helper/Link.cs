@@ -144,6 +144,7 @@ namespace SDFormat
 			void LateUpdate()
 			{
 				SetPose(transform.localPosition, transform.localRotation, 1);
+				StoreWorldPoseSnapshot(transform.position, transform.rotation);
 
 				if (_artBody != null)
 				{

@@ -462,29 +462,118 @@ public class MicomPlugin : CLOiSimPlugin
 	{
 		StartSummary.AppendLine("Loaded Static TF Info : " + _modelName);
 
+		var loadedStaticTfNames = new HashSet<string>(StringComparer.Ordinal);
+
+		LoadExplicitStaticTF(loadedStaticTfNames);
+	}
+
+	private void LoadExplicitStaticTF(ISet<string> loadedStaticTfNames)
+	{
 		if (GetPluginParameters().GetValues<string>("ros2/static_transforms/link", out var staticLinks))
 		{
 			foreach (var link in staticLinks)
 			{
 				var parentFrameId = GetPluginParameters().GetAttributeInPath("ros2/static_transforms/link[text()='" + link + "']", "parent_frame_id", "base_link");
 
-				var (modelName, linkName) = SDF2Unity.GetModelLinkName(link);
-
-				foreach (var linkHelper in _linkHelperInChildren)
+				if (TryFindLinkHelper(link, out var linkHelper, out _, out _) &&
+					TryAddStaticTF(linkHelper, link, parentFrameId, loadedStaticTfNames))
 				{
-					if ((string.IsNullOrEmpty(modelName) || (!string.IsNullOrEmpty(modelName) &&
-						linkHelper.Model.name.Equals(modelName))) &&
-						linkHelper.name.Equals(linkName))
-					{
-						var tf = new TF(linkHelper, link, parentFrameId);
-						_staticTfList.Add(tf);
-						StartSummary.AppendLine(modelName + "::" + linkName + " : Static TF added");
-						break;
-					}
+					var childFrameId = ScopeAutoStaticTfChildFrameId(linkHelper, link);
+					StartSummary.AppendLine(childFrameId + " -> " + parentFrameId + " : Static TF added");
+				}
+				else
+				{
+					StartSummary.AppendLine(link + " -> " + parentFrameId + " : Static TF not added");
 				}
 			}
 		}
 	}
+
+	private bool TryFindLinkHelper(in string link, out SDFormat.Helper.Link matchedLinkHelper, out string modelName, out string linkName)
+	{
+		(modelName, linkName) = SDF2Unity.GetModelLinkName(link);
+
+		foreach (var linkHelper in _linkHelperInChildren)
+		{
+			if ((string.IsNullOrEmpty(modelName) ||
+				 modelName.Equals("__default__") ||
+				 (!string.IsNullOrEmpty(modelName) && linkHelper.Model.name.Equals(modelName))) &&
+				linkHelper.name.Equals(linkName))
+			{
+				matchedLinkHelper = linkHelper;
+				return true;
+			}
+		}
+
+		matchedLinkHelper = null;
+		return false;
+	}
+
+	private bool TryAddStaticTF(
+		in SDFormat.Helper.Link linkHelper,
+		in string childFrameId,
+		in string parentFrameId,
+		ISet<string> loadedStaticTfNames,
+		in string source = "Explicit")
+	{
+		var normalizedChildFrameId = TF.NormalizeFrameId(childFrameId);
+		if (!loadedStaticTfNames.Add(normalizedChildFrameId))
+		{
+			StartSummary.AppendLine(childFrameId + " -> " + parentFrameId + " : " + source + " static TF skipped because it is already configured");
+			return false;
+		}
+
+		var tf = new TF(linkHelper, normalizedChildFrameId, parentFrameId);
+		_staticTfList.Add(tf);
+		return true;
+	}
+
+
+	private string ScopeAutoStaticTfChildFrameId(in SDFormat.Helper.Link linkHelper, in string childFrameId)
+	{
+		if (string.IsNullOrEmpty(childFrameId) || childFrameId.Contains("::"))
+		{
+			return childFrameId;
+		}
+
+		if (linkHelper.Model == null || linkHelper.RootModel == null || linkHelper.Model.Equals(linkHelper.RootModel))
+		{
+			return childFrameId;
+		}
+
+		return $"{linkHelper.Model.name}::{childFrameId}";
+	}
+
+	// private string ScopeAutoStaticTfParentFrameId(in SDFormat.Helper.Link linkHelper, in string parentFrameId)
+	// {
+	// 	if (string.IsNullOrEmpty(parentFrameId) || parentFrameId.Equals("base_link") || parentFrameId.Contains("::"))
+	// 	{
+	// 		return parentFrameId;
+	// 	}
+
+	// 	if (linkHelper.Model == null || linkHelper.RootModel == null || linkHelper.Model.Equals(linkHelper.RootModel))
+	// 	{
+	// 		return parentFrameId;
+	// 	}
+
+	// 	foreach (var candidateLinkHelper in _linkHelperInChildren)
+	// 	{
+	// 		if (candidateLinkHelper.Model == null || !candidateLinkHelper.Model.Equals(linkHelper.Model))
+	// 		{
+	// 			continue;
+	// 		}
+
+	// 		var candidateFrameId = string.IsNullOrEmpty(candidateLinkHelper.JointChildLinkName)
+	// 			? candidateLinkHelper.name
+	// 			: candidateLinkHelper.JointChildLinkName;
+	// 		if (candidateFrameId.Equals(parentFrameId))
+	// 		{
+	// 			return $"{linkHelper.Model.name}::{parentFrameId}";
+	// 		}
+	// 	}
+
+	// 	return parentFrameId;
+	// }
 
 	private void LoadTF()
 	{
@@ -506,7 +595,7 @@ public class MicomPlugin : CLOiSimPlugin
 					{
 						var tf = new TF(linkHelper, link, parentFrameId);
 						_tfList.Add(tf);
-						StartSummary.AppendLine(modelName + "::" + linkName + " -> " + parentFrameId + " : TF added");
+						StartSummary.AppendLine($"{modelName}::{linkName} ({link}) -> {parentFrameId} : TF added");
 						break;
 					}
 				}

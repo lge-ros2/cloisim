@@ -4,44 +4,63 @@
  * SPDX-License-Identifier: MIT
  */
 
+using SDFormat.Implement;
 using UnityEngine;
 
 public class TF
 {
-	private const int TargetPoseFrame = 1;
-
 	public string _parentFrameId = string.Empty;
 	public string _childFrameId = string.Empty;
 	private SDFormat.Helper.Link _link = null;
+	private SDFormat.Helper.Base _cachedParentFrameHelper = null;
 
 	public string ParentFrameID => _parentFrameId;
 	public string ChildFrameID => _childFrameId;
 
+	public static string NormalizeFrameId(in string frameId)
+	{
+		return frameId.Replace("::", "_");
+	}
 
 	public TF(in SDFormat.Helper.Link link, in string childFrameId, in string parentFrameId)
 	{
-		_parentFrameId = parentFrameId.Replace("::", "_");
-		_childFrameId = childFrameId.Replace("::", "_");
+		_parentFrameId = NormalizeFrameId(parentFrameId);
+		_childFrameId = NormalizeFrameId(childFrameId);
 		_link = link;
+		_cachedParentFrameHelper = ResolveParentFrameHelper(parentFrameId);
 		// Debug.LogFormat("{0} <- {1}", parentFrameId, childFrameId);
 	}
 
 	public Pose GetPose()
 	{
-		var tfPose = Pose.identity;
-		var modelPose = _link.Model.GetPose(TargetPoseFrame);
-		var linkJointPose = _link.LinkJointPose;
-		var linkPoseMoving = _link.GetPose(TargetPoseFrame);
+		var childWorldPose = _link.GetWorldPoseSnapshot();
 
-		if (!_link.Model.Equals(_link.RootModel))
+		if (_cachedParentFrameHelper == null)
 		{
-			tfPose.position += modelPose.position;
-			tfPose.rotation *= modelPose.rotation;
+			return childWorldPose;
 		}
 
-		tfPose.position += linkJointPose.position;
-		tfPose.rotation *= linkPoseMoving.rotation;
+		var parentWorldPose = _cachedParentFrameHelper.GetWorldPoseSnapshot();
 
-		return tfPose;
+		return new Pose(
+			Quaternion.Inverse(parentWorldPose.rotation) * (childWorldPose.position - parentWorldPose.position),
+			Quaternion.Inverse(parentWorldPose.rotation) * childWorldPose.rotation);
+	}
+
+	private SDFormat.Helper.Base ResolveParentFrameHelper(in string parentFrameId)
+	{
+		if (string.IsNullOrEmpty(parentFrameId) || _link == null)
+		{
+			return null;
+		}
+
+		var searchRoot = (_link.RootModel != null) ? _link.RootModel.transform : _link.transform.root;
+		if (searchRoot == null)
+		{
+			return null;
+		}
+
+		var parentFrameTransform = searchRoot.FindTransformByName(parentFrameId);
+		return parentFrameTransform?.GetComponent<SDFormat.Helper.Base>();
 	}
 }

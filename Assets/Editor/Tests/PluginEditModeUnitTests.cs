@@ -697,6 +697,55 @@ namespace CLOiSim.Tests.EditMode
 		}
 	}
 
+	public class CLOiSimPluginTests
+	{
+		private static readonly MethodInfo ResolvePluginParentFrameNameMethod = typeof(CLOiSimPlugin).GetMethod(
+			"ResolvePluginParentFrameName",
+			BindingFlags.NonPublic | BindingFlags.Static);
+
+		[Test]
+		public void ResolvePluginParentFrameName_UsesOwningLinkFrameInsteadOfParentLinkFrame()
+		{
+			var linkObject = new GameObject("chest_link");
+			var link = linkObject.AddComponent<SDFormat.Helper.Link>();
+
+			link.JointChildLinkName = "chest_link";
+			link.JointParentLinkName = "waist_link_3";
+
+			try
+			{
+				var resolvedParentFrameName = (string)ResolvePluginParentFrameNameMethod.Invoke(null, new object[] { link });
+
+				Assert.That(resolvedParentFrameName, Is.EqualTo("chest_link"));
+			}
+			finally
+			{
+				Object.DestroyImmediate(linkObject);
+			}
+		}
+
+		[Test]
+		public void ResolvePluginParentFrameName_FallsBackToLinkObjectNameWhenJointChildFrameIsMissing()
+		{
+			var linkObject = new GameObject("sensor_mount");
+			var link = linkObject.AddComponent<SDFormat.Helper.Link>();
+
+			link.JointChildLinkName = string.Empty;
+			link.JointParentLinkName = "base_link";
+
+			try
+			{
+				var resolvedParentFrameName = (string)ResolvePluginParentFrameNameMethod.Invoke(null, new object[] { link });
+
+				Assert.That(resolvedParentFrameName, Is.EqualTo("sensor_mount"));
+			}
+			finally
+			{
+				Object.DestroyImmediate(linkObject);
+			}
+		}
+	}
+
 	public class CameraPluginTests
 	{
 		private static readonly FieldInfo CameraField = typeof(CameraPlugin).GetField(
@@ -1685,6 +1734,254 @@ namespace CLOiSim.Tests.EditMode
 			finally
 			{
 				Object.DestroyImmediate(root);
+			}
+		}
+	}
+
+	public class MicomPluginTests
+	{
+		private class TestMicomPlugin : MicomPlugin
+		{
+			protected override void OnAwake() { }
+
+			protected override System.Collections.IEnumerator OnStart()
+			{
+				yield break;
+			}
+		}
+
+		private static readonly MethodInfo LoadStaticTfMethod = typeof(MicomPlugin).GetMethod(
+			"LoadStaticTF",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly FieldInfo LinkHelperInChildrenField = typeof(MicomPlugin).GetField(
+			"_linkHelperInChildren",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly FieldInfo StaticTfListField = typeof(CLOiSimPlugin).GetField(
+			"_staticTfList",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly FieldInfo ParentModelHelperField = typeof(SDFormat.Helper.Link).GetField(
+			"_parentModelHelper",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly FieldInfo RootModelInScopeField = typeof(SDFormat.Helper.Base).GetField(
+			"_rootModelInScope",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+
+		[Test]
+		public void LoadStaticTF_PrefersExplicitStaticTransformOverAutoDuplicateByDefault()
+		{
+			var pluginRoot = new GameObject("micom-root");
+			var plugin = pluginRoot.AddComponent<TestMicomPlugin>();
+			var (articulationRoot, linkHelper) = CreateFixedJointLink("fixed_link", "joint_parent");
+
+			plugin.SetPluginParameters(CreatePluginParameters(explicitStaticLink: "fixed_link", explicitStaticParentFrameId: "explicit_parent"));
+			LinkHelperInChildrenField.SetValue(plugin, new[] { linkHelper });
+
+			try
+			{
+				LoadStaticTfMethod.Invoke(plugin, null);
+				var staticTfList = GetStaticTfList(plugin);
+
+				Assert.That(staticTfList.Count, Is.EqualTo(1));
+				Assert.That(staticTfList[0].ChildFrameID, Is.EqualTo("fixed_link"));
+				Assert.That(staticTfList[0].ParentFrameID, Is.EqualTo("explicit_parent"));
+			}
+			finally
+			{
+				Object.DestroyImmediate(pluginRoot);
+				Object.DestroyImmediate(articulationRoot);
+			}
+		}
+
+		[Test]
+		public void LoadStaticTF_SkipsAutoStaticTransformWhenDynamicTfIsExplicitlyConfigured()
+		{
+			var pluginRoot = new GameObject("micom-root");
+			var plugin = pluginRoot.AddComponent<TestMicomPlugin>();
+			var (articulationRoot, linkHelper) = CreateFixedJointLink("fixed_link", "joint_parent");
+
+			plugin.SetPluginParameters(CreatePluginParameters(explicitDynamicLink: "fixed_link"));
+			LinkHelperInChildrenField.SetValue(plugin, new[] { linkHelper });
+
+			try
+			{
+				LoadStaticTfMethod.Invoke(plugin, null);
+				var staticTfList = GetStaticTfList(plugin);
+
+				Assert.That(staticTfList, Is.Empty);
+			}
+			finally
+			{
+				Object.DestroyImmediate(pluginRoot);
+				Object.DestroyImmediate(articulationRoot);
+			}
+		}
+
+		[Test]
+		public void LoadStaticTF_SkipsAutoStaticTransformWhenChildAndParentFramesMatch()
+		{
+			var pluginRoot = new GameObject("micom-root");
+			var plugin = pluginRoot.AddComponent<TestMicomPlugin>();
+			var (articulationRoot, linkHelper) = CreateFixedJointLink("base_link", "base_link");
+
+			plugin.SetPluginParameters(CreatePluginParameters());
+			LinkHelperInChildrenField.SetValue(plugin, new[] { linkHelper });
+
+			try
+			{
+				LoadStaticTfMethod.Invoke(plugin, null);
+				var staticTfList = GetStaticTfList(plugin);
+
+				Assert.That(staticTfList, Is.Empty);
+			}
+			finally
+			{
+				Object.DestroyImmediate(pluginRoot);
+				Object.DestroyImmediate(articulationRoot);
+			}
+		}
+
+		private static System.Collections.Generic.List<TF> GetStaticTfList(CLOiSimPlugin plugin)
+		{
+			return (System.Collections.Generic.List<TF>)StaticTfListField.GetValue(plugin);
+		}
+
+		private static SDFormat.Plugin CreatePluginParameters(
+			string explicitStaticLink = null,
+			string explicitStaticParentFrameId = "base_link",
+			string explicitDynamicLink = null)
+		{
+			var pluginParameters = new SDFormat.Plugin("libMicomPlugin.so", "micom_plugin");
+			var pluginElement = pluginParameters.ToElement();
+			var ros2Element = pluginElement.AddElement("ros2");
+			var staticTransformsElement = ros2Element.AddElement("static_transforms");
+
+			if (!string.IsNullOrEmpty(explicitStaticLink))
+			{
+				var staticLinkElement = staticTransformsElement.AddElement("link");
+				staticLinkElement.AddAttribute("parent_frame_id", "string", "base_link", false);
+				staticLinkElement.GetAttribute("parent_frame_id")?.SetFromString(explicitStaticParentFrameId);
+				staticLinkElement.AddValue("string", string.Empty, false);
+				staticLinkElement.GetValue()?.SetFromString(explicitStaticLink);
+			}
+
+			if (!string.IsNullOrEmpty(explicitDynamicLink))
+			{
+				var transformsElement = ros2Element.AddElement("transforms");
+				var dynamicLinkElement = transformsElement.AddElement("link");
+				dynamicLinkElement.AddValue("string", string.Empty, false);
+				dynamicLinkElement.GetValue()?.SetFromString(explicitDynamicLink);
+			}
+
+			pluginParameters.Element = pluginElement;
+			return pluginParameters;
+		}
+
+		private static (GameObject articulationRoot, SDFormat.Helper.Link linkHelper) CreateFixedJointLink(string childFrameId, string parentFrameId)
+		{
+			var articulationRoot = new GameObject("articulation-root");
+			articulationRoot.AddComponent<ArticulationBody>();
+
+			var articulationChild = new GameObject("articulation-child");
+			articulationChild.transform.SetParent(articulationRoot.transform);
+			var articulationBody = articulationChild.AddComponent<ArticulationBody>();
+			articulationBody.jointType = ArticulationJointType.FixedJoint;
+			articulationChild.AddComponent<SDFormat.Helper.Model>();
+
+			var linkObject = new GameObject(childFrameId);
+			linkObject.transform.SetParent(articulationChild.transform);
+			var linkHelper = linkObject.AddComponent<SDFormat.Helper.Link>();
+			linkHelper.JointChildLinkName = childFrameId;
+			linkHelper.JointParentLinkName = parentFrameId;
+
+			return (articulationRoot, linkHelper);
+		}
+
+		private static (GameObject rootObject, SDFormat.Helper.Link linkHelper) CreateNestedFixedJointLink(
+			string nestedModelName,
+			string childFrameId,
+			string parentFrameId)
+		{
+			var rootObject = new GameObject($"{nestedModelName}-root");
+			var rootModel = rootObject.AddComponent<SDFormat.Helper.Model>();
+			rootObject.AddComponent<ArticulationBody>();
+
+			var articulationChild = new GameObject($"{nestedModelName}-joint");
+			articulationChild.transform.SetParent(rootObject.transform);
+			var articulationBody = articulationChild.AddComponent<ArticulationBody>();
+			articulationBody.jointType = ArticulationJointType.FixedJoint;
+
+			var nestedModelObject = new GameObject(nestedModelName);
+			nestedModelObject.transform.SetParent(articulationChild.transform);
+			var nestedModel = nestedModelObject.AddComponent<SDFormat.Helper.Model>();
+
+			var linkObject = new GameObject(childFrameId);
+			linkObject.transform.SetParent(nestedModelObject.transform);
+			var linkHelper = linkObject.AddComponent<SDFormat.Helper.Link>();
+			linkHelper.JointChildLinkName = childFrameId;
+			linkHelper.JointParentLinkName = parentFrameId;
+
+			ParentModelHelperField.SetValue(linkHelper, nestedModel);
+			RootModelInScopeField.SetValue(linkHelper, rootModel);
+
+			return (rootObject, linkHelper);
+		}
+	}
+
+	public class TFTests
+	{
+		private static readonly FieldInfo RootModelInScopeField = typeof(SDFormat.Helper.Base).GetField(
+			"_rootModelInScope",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+
+		[Test]
+		public void GetPose_UsesConfiguredParentFrameTransform()
+		{
+			var rootObject = new GameObject("robot_model");
+			var rootModel = rootObject.AddComponent<SDFormat.Helper.Model>();
+
+			var baseLinkObject = new GameObject("base_link");
+			baseLinkObject.transform.SetParent(rootObject.transform, false);
+			baseLinkObject.transform.localPosition = new Vector3(1.2f, -0.4f, 0.8f);
+			baseLinkObject.transform.localRotation = Quaternion.Euler(0f, 35f, 0f);
+			var baseLink = baseLinkObject.AddComponent<SDFormat.Helper.Link>();
+
+			var bodyBaseLinkObject = new GameObject("body_base_link");
+			bodyBaseLinkObject.transform.SetParent(baseLinkObject.transform, false);
+			bodyBaseLinkObject.transform.localPosition = new Vector3(0.3f, 0.1f, -0.25f);
+			bodyBaseLinkObject.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+			var bodyBaseLink = bodyBaseLinkObject.AddComponent<SDFormat.Helper.Link>();
+
+			var wheelLinkObject = new GameObject("left_wheel_link");
+			wheelLinkObject.transform.SetParent(bodyBaseLinkObject.transform, false);
+			wheelLinkObject.transform.localPosition = new Vector3(0.15f, -0.22f, 0.41f);
+			wheelLinkObject.transform.localRotation = Quaternion.Euler(22f, -17f, 61f);
+			var wheelLink = wheelLinkObject.AddComponent<SDFormat.Helper.Link>();
+
+			RootModelInScopeField.SetValue(baseLink, rootModel);
+			RootModelInScopeField.SetValue(bodyBaseLink, rootModel);
+			RootModelInScopeField.SetValue(wheelLink, rootModel);
+
+			rootModel.StoreWorldPoseSnapshot(rootObject.transform.position, rootObject.transform.rotation);
+			baseLink.StoreWorldPoseSnapshot(baseLinkObject.transform.position, baseLinkObject.transform.rotation);
+			bodyBaseLink.StoreWorldPoseSnapshot(bodyBaseLinkObject.transform.position, bodyBaseLinkObject.transform.rotation);
+			wheelLink.StoreWorldPoseSnapshot(wheelLinkObject.transform.position, wheelLinkObject.transform.rotation);
+
+			try
+			{
+				var tf = new TF(wheelLink, "left_wheel_link", "base_link");
+
+				var pose = tf.GetPose();
+				var expectedPosition = baseLinkObject.transform.InverseTransformPoint(wheelLinkObject.transform.position);
+				var expectedRotation = Quaternion.Inverse(baseLinkObject.transform.rotation) * wheelLinkObject.transform.rotation;
+
+				Assert.That(pose.position.x, Is.EqualTo(expectedPosition.x).Within(1e-5f));
+				Assert.That(pose.position.y, Is.EqualTo(expectedPosition.y).Within(1e-5f));
+				Assert.That(pose.position.z, Is.EqualTo(expectedPosition.z).Within(1e-5f));
+				Assert.That(Quaternion.Angle(pose.rotation, expectedRotation), Is.LessThan(1e-4f));
+			}
+			finally
+			{
+				Object.DestroyImmediate(rootObject);
 			}
 		}
 	}
