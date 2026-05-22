@@ -28,8 +28,11 @@ Shader "Hidden/GizmoComposite"
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+			#define MAX_CLIP_RECTS 64
+
 			sampler2D _GizmoTex;
-			float4 _ClipRect; // (xMin, yMin, xMax, yMax) in normalized coords
+			int _ClipRectCount;
+			float4 _ClipRects[MAX_CLIP_RECTS]; // (xMin, yMin, xMax, yMax) in normalized coords
 
 			struct Attributes
 			{
@@ -53,11 +56,15 @@ Shader "Hidden/GizmoComposite"
 
 			half4 frag(Varyings input) : SV_Target
 			{
-				// Discard pixels inside the PID window clip rect
-				if (input.uv.x >= _ClipRect.x && input.uv.x <= _ClipRect.z &&
-					input.uv.y >= _ClipRect.y && input.uv.y <= _ClipRect.w)
+				[loop]
+				for (int index = 0; index < _ClipRectCount; index++)
 				{
-					discard;
+					float4 clipRect = _ClipRects[index];
+					if (input.uv.x >= clipRect.x && input.uv.x <= clipRect.z &&
+						input.uv.y >= clipRect.y && input.uv.y <= clipRect.w)
+					{
+						discard;
+					}
 				}
 
 				half4 col = tex2D(_GizmoTex, input.uv);
