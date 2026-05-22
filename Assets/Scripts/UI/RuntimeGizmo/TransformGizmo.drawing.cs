@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.UIElements;
+using UGUI = UnityEngine.UI;
 
 namespace RuntimeGizmos
 {
@@ -39,7 +41,13 @@ namespace RuntimeGizmos
 		private static Material selectionOutline2DMaterial;
 		private static Material _gizmoCompositeMaterial;
 
-		private static readonly int _ClipRectID = Shader.PropertyToID("_ClipRect");
+		private static readonly int _ClipRectCountID = Shader.PropertyToID("_ClipRectCount");
+		private static readonly int _ClipRectsID = Shader.PropertyToID("_ClipRects");
+		private const int MaxClipRects = 64;
+
+		private readonly List<Vector4> _overlayClipRects = new(MaxClipRects);
+		private readonly Vector3[] _uiWorldCorners = new Vector3[4];
+		private UIDocument _hudDocument;
 
 		private void EndCameraRendering(ScriptableRenderContext context, Camera camera)
 		{
@@ -56,8 +64,9 @@ namespace RuntimeGizmos
 				return;
 			}
 
-			var camera = Camera.main;
-			var needClip = PIDTunerWindow.IsVisible && camera != null;
+			var camera = myCamera != null ? myCamera : Camera.main;
+			CollectOverlayClipRects(camera);
+			var needClip = camera != null && _overlayClipRects.Count > 0;
 			RenderTexture gizmoRT = null;
 			RenderBuffer savedColor = default;
 			RenderBuffer savedDepth = default;
@@ -77,9 +86,231 @@ namespace RuntimeGizmos
 			if (needClip && gizmoRT != null)
 			{
 				Graphics.SetRenderTarget(savedColor, savedDepth);
-				CompositeGizmoRT(gizmoRT, camera);
+				CompositeGizmoRT(gizmoRT);
 				RenderTexture.ReleaseTemporary(gizmoRT);
 			}
+		}
+
+		void CollectOverlayClipRects(Camera camera)
+		{
+			_overlayClipRects.Clear();
+
+			if (camera == null)
+			{
+				return;
+			}
+
+			if (PIDTunerWindow.IsVisible)
+			{
+				AddTopLeftClipRect(PIDTunerWindow.ActiveWindowRect, camera, true);
+			}
+
+			AddUiToolkitClipRects(camera);
+			AddOverlayCanvasClipRects(camera);
+		}
+
+		void AddUiToolkitClipRects(Camera camera)
+		{
+			if (_hudDocument == null)
+			{
+				var uiController = FindAnyObjectByType<UIController>();
+				if (uiController != null)
+				{
+					_hudDocument = uiController.GetComponent<UIDocument>();
+				}
+			}
+
+			var root = _hudDocument?.rootVisualElement;
+			if (root == null)
+			{
+				return;
+			}
+
+			AddUiToolkitClipRects(root, camera);
+		}
+
+		void AddUiToolkitClipRects(VisualElement element, Camera camera)
+		{
+			if (_overlayClipRects.Count >= MaxClipRects || !ShouldClip(element))
+			{
+				return;
+			}
+
+			var allowFullscreen = element.name == "LoadingOverlay";
+			if (allowFullscreen || ShouldClipSelf(element))
+			{
+				AddTopLeftClipRect(element.worldBound, camera, allowFullscreen);
+			}
+
+			if (allowFullscreen)
+			{
+				return;
+			}
+
+			foreach (var child in element.Children())
+			{
+				if (_overlayClipRects.Count >= MaxClipRects)
+				{
+					return;
+				}
+
+				AddUiToolkitClipRects(child, camera);
+			}
+		}
+
+		static bool ShouldClip(VisualElement element)
+		{
+			if (element == null)
+			{
+				return false;
+			}
+
+			if (element.resolvedStyle.display == DisplayStyle.None ||
+				element.resolvedStyle.visibility == Visibility.Hidden)
+			{
+				return false;
+			}
+
+			var rect = element.worldBound;
+			return rect.width > 1f && rect.height > 1f;
+		}
+
+		static bool ShouldClipSelf(VisualElement element)
+		{
+			if (element is Button ||
+				element is TextField ||
+				element is Toggle ||
+				element is EnumField ||
+				element is ScrollView ||
+				element is GroupBox)
+			{
+				return true;
+			}
+
+			var style = element.resolvedStyle;
+			if (style.backgroundColor.a > 0.001f)
+			{
+				return true;
+			}
+
+			return (style.borderLeftWidth > 0f && style.borderLeftColor.a > 0.001f) ||
+				(style.borderRightWidth > 0f && style.borderRightColor.a > 0.001f) ||
+				(style.borderTopWidth > 0f && style.borderTopColor.a > 0.001f) ||
+				(style.borderBottomWidth > 0f && style.borderBottomColor.a > 0.001f);
+		}
+
+		void AddOverlayCanvasClipRects(Camera camera)
+		{
+			var mainCanvas = Main.UIMainCanvas;
+			if (mainCanvas == null)
+			{
+				return;
+			}
+
+			var graphics = mainCanvas.GetComponentsInChildren<UGUI.Graphic>(false);
+			foreach (var graphic in graphics)
+			{
+				if (_overlayClipRects.Count >= MaxClipRects)
+				{
+					return;
+				}
+
+				if (!ShouldClip(graphic))
+				{
+					continue;
+				}
+
+				if (!TryGetCanvasGraphicBounds(graphic, out var screenRect))
+				{
+					continue;
+				}
+
+				AddNormalizedClipRect(screenRect, camera);
+			}
+		}
+
+		static bool ShouldClip(UGUI.Graphic graphic)
+		{
+			return graphic != null &&
+				graphic.enabled &&
+				graphic.gameObject.activeInHierarchy &&
+				!graphic.canvasRenderer.cull &&
+				graphic.rectTransform.rect.width > 1f &&
+				graphic.rectTransform.rect.height > 1f &&
+				graphic.color.a > 0.001f;
+		}
+
+		bool TryGetCanvasGraphicBounds(UGUI.Graphic graphic, out Rect screenRect)
+		{
+			screenRect = default;
+			var rectTransform = graphic.rectTransform;
+			rectTransform.GetWorldCorners(_uiWorldCorners);
+
+			var eventCamera = graphic.canvas != null && graphic.canvas.renderMode != RenderMode.ScreenSpaceOverlay
+				? graphic.canvas.worldCamera
+				: null;
+
+			Vector2 min = RectTransformUtility.WorldToScreenPoint(eventCamera, _uiWorldCorners[0]);
+			Vector2 max = min;
+			for (var index = 1; index < _uiWorldCorners.Length; index++)
+			{
+				var screenPoint = RectTransformUtility.WorldToScreenPoint(eventCamera, _uiWorldCorners[index]);
+				min = Vector2.Min(min, screenPoint);
+				max = Vector2.Max(max, screenPoint);
+			}
+
+			screenRect = Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+			return screenRect.width > 1f && screenRect.height > 1f;
+		}
+
+		void AddTopLeftClipRect(Rect rect, Camera camera, bool allowFullscreen = false)
+		{
+			var screenRect = Rect.MinMaxRect(
+				rect.xMin,
+				camera.pixelHeight - rect.yMax,
+				rect.xMax,
+				camera.pixelHeight - rect.yMin);
+
+			AddNormalizedClipRect(screenRect, camera, allowFullscreen);
+		}
+
+		void AddNormalizedClipRect(Rect screenRect, Camera camera, bool allowFullscreen = false)
+		{
+			if (_overlayClipRects.Count >= MaxClipRects)
+			{
+				return;
+			}
+
+			var pixelWidth = camera.pixelWidth;
+			var pixelHeight = camera.pixelHeight;
+			if (pixelWidth <= 0 || pixelHeight <= 0)
+			{
+				return;
+			}
+
+			if (!allowFullscreen &&
+				screenRect.width >= pixelWidth * 0.98f &&
+				screenRect.height >= pixelHeight * 0.98f)
+			{
+				return;
+			}
+
+			var padding = 1f;// Mathf.Max(2f, outlineWidth);
+			screenRect.xMin = Mathf.Clamp(screenRect.xMin - padding, 0f, pixelWidth);
+			screenRect.xMax = Mathf.Clamp(screenRect.xMax + padding, 0f, pixelWidth);
+			screenRect.yMin = Mathf.Clamp(screenRect.yMin - padding, 0f, pixelHeight);
+			screenRect.yMax = Mathf.Clamp(screenRect.yMax + padding, 0f, pixelHeight);
+
+			if (screenRect.width <= 1f || screenRect.height <= 1f)
+			{
+				return;
+			}
+
+			_overlayClipRects.Add(new Vector4(
+				screenRect.xMin / pixelWidth,
+				screenRect.yMin / pixelHeight,
+				screenRect.xMax / pixelWidth,
+				screenRect.yMax / pixelHeight));
 		}
 
 		void DrawSelectionOutline(Camera camera)
@@ -191,7 +422,7 @@ namespace RuntimeGizmos
 			}
 		}
 
-		void CompositeGizmoRT(RenderTexture gizmoRT, Camera camera)
+		void CompositeGizmoRT(RenderTexture gizmoRT)
 		{
 			if (_gizmoCompositeMaterial == null)
 			{
@@ -205,16 +436,9 @@ namespace RuntimeGizmos
 			if (_gizmoCompositeMaterial == null)
 				return;
 
-			var pidRect = PIDTunerWindow.ActiveWindowRect;
-			// Convert IMGUI rect (top-left origin) to normalized viewport coords (bottom-left origin)
-			var clipRect = new Vector4(
-				pidRect.x / camera.pixelWidth,
-				1f - (pidRect.y + pidRect.height) / camera.pixelHeight,
-				(pidRect.x + pidRect.width) / camera.pixelWidth,
-				1f - pidRect.y / camera.pixelHeight
-			);
-			_gizmoCompositeMaterial.SetVector(_ClipRectID, clipRect);
 			_gizmoCompositeMaterial.SetTexture("_GizmoTex", gizmoRT);
+			_gizmoCompositeMaterial.SetInt(_ClipRectCountID, _overlayClipRects.Count);
+			_gizmoCompositeMaterial.SetVectorArray(_ClipRectsID, _overlayClipRects);
 
 			if (_gizmoCompositeMaterial.SetPass(0))
 			{
