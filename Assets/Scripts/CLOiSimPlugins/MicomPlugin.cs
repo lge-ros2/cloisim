@@ -544,37 +544,6 @@ public class MicomPlugin : CLOiSimPlugin
 		return $"{linkHelper.Model.name}::{childFrameId}";
 	}
 
-	// private string ScopeAutoStaticTfParentFrameId(in SDFormat.Helper.Link linkHelper, in string parentFrameId)
-	// {
-	// 	if (string.IsNullOrEmpty(parentFrameId) || parentFrameId.Equals("base_link") || parentFrameId.Contains("::"))
-	// 	{
-	// 		return parentFrameId;
-	// 	}
-
-	// 	if (linkHelper.Model == null || linkHelper.RootModel == null || linkHelper.Model.Equals(linkHelper.RootModel))
-	// 	{
-	// 		return parentFrameId;
-	// 	}
-
-	// 	foreach (var candidateLinkHelper in _linkHelperInChildren)
-	// 	{
-	// 		if (candidateLinkHelper.Model == null || !candidateLinkHelper.Model.Equals(linkHelper.Model))
-	// 		{
-	// 			continue;
-	// 		}
-
-	// 		var candidateFrameId = string.IsNullOrEmpty(candidateLinkHelper.JointChildLinkName)
-	// 			? candidateLinkHelper.name
-	// 			: candidateLinkHelper.JointChildLinkName;
-	// 		if (candidateFrameId.Equals(parentFrameId))
-	// 		{
-	// 			return $"{linkHelper.Model.name}::{parentFrameId}";
-	// 		}
-	// 	}
-
-	// 	return parentFrameId;
-	// }
-
 	private void LoadTF()
 	{
 		StartSummary.AppendLine("Loaded TF Info : " + _modelName);

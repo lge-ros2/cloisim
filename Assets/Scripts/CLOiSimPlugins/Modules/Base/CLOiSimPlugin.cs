@@ -190,6 +190,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			? helperLink.name
 			: helperLink.JointChildLinkName;
 
+		parentFrameName = TF.NormalizeFrameId(parentFrameName);
+
 		return string.IsNullOrEmpty(parentFrameName) ? null : parentFrameName;
 	}
 

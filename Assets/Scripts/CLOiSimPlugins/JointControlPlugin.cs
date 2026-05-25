@@ -69,6 +69,15 @@ public class JointControlPlugin : CLOiSimPlugin
 	{
 	}
 
+	private string ApplyPrefixOnce(string frame)
+	{
+		if (string.IsNullOrEmpty(frame) || string.IsNullOrEmpty(_tfPrefix))
+			return frame;
+
+		var prefix = $"{_tfPrefix}_";
+		return frame.StartsWith(prefix) ? frame : $"{prefix}{frame}";
+	}
+
 	private void LoadJoints()
 	{
 		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
@@ -84,13 +93,8 @@ public class JointControlPlugin : CLOiSimPlugin
 					var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("joints/joint[text()='" + jointName + "']", "parent_frame_id");
 					var jointParentLinkName = string.IsNullOrEmpty(parentFrameId) ? targetLink.JointParentLinkName : parentFrameId;
 
-					var childFrame = string.IsNullOrEmpty(_tfPrefix)
-						? targetLink.JointChildLinkName
-						: $"{_tfPrefix}_{targetLink.JointChildLinkName}";
-
-					var parentFrame = string.IsNullOrEmpty(_tfPrefix)
-						? jointParentLinkName
-						: $"{_tfPrefix}_{jointParentLinkName}";
+					var childFrame = ApplyPrefixOnce(targetLink.JointChildLinkName);
+					var parentFrame = ApplyPrefixOnce(jointParentLinkName);
 
 					var tf = new TF(targetLink, childFrame, parentFrame);
 

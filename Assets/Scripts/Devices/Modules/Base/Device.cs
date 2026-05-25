@@ -80,11 +80,6 @@ public abstract class Device : MonoBehaviour
 		set => _visualize = value;
 	}
 
-	public void SetSubParts(in bool value)
-	{
-		_devicePose.SubParts = value;
-	}
-
 	/// <summary>
 	/// Return a DeviceMessage to the pool for reuse.
 	/// Call after the Sender thread has finished publishing.

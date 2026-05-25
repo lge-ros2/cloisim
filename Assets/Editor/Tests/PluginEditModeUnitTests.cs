@@ -5,6 +5,7 @@
  */
 
 using System.Reflection;
+using System.Collections.Generic;
 using NUnit.Framework;
 using CLOiSim.Cloth;
 using Unity.Mathematics;
@@ -1743,7 +1744,6 @@ namespace CLOiSim.Tests.EditMode
 		private class TestMicomPlugin : MicomPlugin
 		{
 			protected override void OnAwake() { }
-
 			protected override System.Collections.IEnumerator OnStart()
 			{
 				yield break;
@@ -1753,27 +1753,26 @@ namespace CLOiSim.Tests.EditMode
 		private static readonly MethodInfo LoadStaticTfMethod = typeof(MicomPlugin).GetMethod(
 			"LoadStaticTF",
 			BindingFlags.NonPublic | BindingFlags.Instance);
+
 		private static readonly FieldInfo LinkHelperInChildrenField = typeof(MicomPlugin).GetField(
 			"_linkHelperInChildren",
 			BindingFlags.NonPublic | BindingFlags.Instance);
+
 		private static readonly FieldInfo StaticTfListField = typeof(CLOiSimPlugin).GetField(
 			"_staticTfList",
 			BindingFlags.NonPublic | BindingFlags.Instance);
-		private static readonly FieldInfo ParentModelHelperField = typeof(SDFormat.Helper.Link).GetField(
-			"_parentModelHelper",
-			BindingFlags.NonPublic | BindingFlags.Instance);
-		private static readonly FieldInfo RootModelInScopeField = typeof(SDFormat.Helper.Base).GetField(
-			"_rootModelInScope",
-			BindingFlags.NonPublic | BindingFlags.Instance);
 
 		[Test]
-		public void LoadStaticTF_PrefersExplicitStaticTransformOverAutoDuplicateByDefault()
+		public void LoadStaticTF_AddsExplicitStaticTransformOnly()
 		{
 			var pluginRoot = new GameObject("micom-root");
 			var plugin = pluginRoot.AddComponent<TestMicomPlugin>();
 			var (articulationRoot, linkHelper) = CreateFixedJointLink("fixed_link", "joint_parent");
 
-			plugin.SetPluginParameters(CreatePluginParameters(explicitStaticLink: "fixed_link", explicitStaticParentFrameId: "explicit_parent"));
+			plugin.SetPluginParameters(CreatePluginParameters(
+				explicitStaticLink: "fixed_link",
+				explicitStaticParentFrameId: "explicit_parent"));
+
 			LinkHelperInChildrenField.SetValue(plugin, new[] { linkHelper });
 
 			try
@@ -1793,12 +1792,36 @@ namespace CLOiSim.Tests.EditMode
 		}
 
 		[Test]
-		public void LoadStaticTF_SkipsAutoStaticTransformWhenDynamicTfIsExplicitlyConfigured()
+		public void LoadStaticTF_DoesNotCreateAnything_WhenExplicitStaticTransformsNotProvided()
 		{
 			var pluginRoot = new GameObject("micom-root");
 			var plugin = pluginRoot.AddComponent<TestMicomPlugin>();
 			var (articulationRoot, linkHelper) = CreateFixedJointLink("fixed_link", "joint_parent");
 
+			plugin.SetPluginParameters(CreatePluginParameters()); // no explicit static
+			LinkHelperInChildrenField.SetValue(plugin, new[] { linkHelper });
+
+			try
+			{
+				LoadStaticTfMethod.Invoke(plugin, null);
+				var staticTfList = GetStaticTfList(plugin);
+				Assert.That(staticTfList, Is.Empty);
+			}
+			finally
+			{
+				Object.DestroyImmediate(pluginRoot);
+				Object.DestroyImmediate(articulationRoot);
+			}
+		}
+
+		[Test]
+		public void LoadStaticTF_DoesNotCreateAnything_WhenOnlyDynamicTransformsConfigured()
+		{
+			var pluginRoot = new GameObject("micom-root");
+			var plugin = pluginRoot.AddComponent<TestMicomPlugin>();
+			var (articulationRoot, linkHelper) = CreateFixedJointLink("fixed_link", "joint_parent");
+
+			// only dynamic transforms configured; static should remain empty
 			plugin.SetPluginParameters(CreatePluginParameters(explicitDynamicLink: "fixed_link"));
 			LinkHelperInChildrenField.SetValue(plugin, new[] { linkHelper });
 
@@ -1817,13 +1840,18 @@ namespace CLOiSim.Tests.EditMode
 		}
 
 		[Test]
-		public void LoadStaticTF_SkipsAutoStaticTransformWhenChildAndParentFramesMatch()
+		public void LoadStaticTF_LastExplicitWins_WhenDuplicateChildFrameIdProvided()
 		{
 			var pluginRoot = new GameObject("micom-root");
 			var plugin = pluginRoot.AddComponent<TestMicomPlugin>();
-			var (articulationRoot, linkHelper) = CreateFixedJointLink("base_link", "base_link");
+			var (articulationRoot, linkHelper) = CreateFixedJointLink("fixed_link", "joint_parent");
 
-			plugin.SetPluginParameters(CreatePluginParameters());
+			// Provide duplicate explicit entries for the same child frame id
+			plugin.SetPluginParameters(CreatePluginParametersWithDuplicateExplicit(
+				link: "fixed_link",
+				parent1: "explicit_parent_1",
+				parent2: "explicit_parent_2"));
+
 			LinkHelperInChildrenField.SetValue(plugin, new[] { linkHelper });
 
 			try
@@ -1831,7 +1859,9 @@ namespace CLOiSim.Tests.EditMode
 				LoadStaticTfMethod.Invoke(plugin, null);
 				var staticTfList = GetStaticTfList(plugin);
 
-				Assert.That(staticTfList, Is.Empty);
+				Assert.That(staticTfList.Count, Is.EqualTo(1));
+				Assert.That(staticTfList[0].ChildFrameID, Is.EqualTo("fixed_link"));
+				Assert.That(staticTfList[0].ParentFrameID, Is.EqualTo("explicit_parent_1"));
 			}
 			finally
 			{
@@ -1840,9 +1870,9 @@ namespace CLOiSim.Tests.EditMode
 			}
 		}
 
-		private static System.Collections.Generic.List<TF> GetStaticTfList(CLOiSimPlugin plugin)
+		private static List<TF> GetStaticTfList(CLOiSimPlugin plugin)
 		{
-			return (System.Collections.Generic.List<TF>)StaticTfListField.GetValue(plugin);
+			return (List<TF>)StaticTfListField.GetValue(plugin);
 		}
 
 		private static SDFormat.Plugin CreatePluginParameters(
@@ -1876,7 +1906,39 @@ namespace CLOiSim.Tests.EditMode
 			return pluginParameters;
 		}
 
-		private static (GameObject articulationRoot, SDFormat.Helper.Link linkHelper) CreateFixedJointLink(string childFrameId, string parentFrameId)
+		private static SDFormat.Plugin CreatePluginParametersWithDuplicateExplicit(
+			string link,
+			string parent1,
+			string parent2)
+		{
+			var pluginParameters = new SDFormat.Plugin("libMicomPlugin.so", "micom_plugin");
+			var pluginElement = pluginParameters.ToElement();
+			var ros2Element = pluginElement.AddElement("ros2");
+			var staticTransformsElement = ros2Element.AddElement("static_transforms");
+
+			// first
+			{
+				var e = staticTransformsElement.AddElement("link");
+				e.AddAttribute("parent_frame_id", "string", "base_link", false);
+				e.GetAttribute("parent_frame_id")?.SetFromString(parent1);
+				e.AddValue("string", string.Empty, false);
+				e.GetValue()?.SetFromString(link);
+			}
+			// second (duplicate child id)
+			{
+				var e = staticTransformsElement.AddElement("link");
+				e.AddAttribute("parent_frame_id", "string", "base_link", false);
+				e.GetAttribute("parent_frame_id")?.SetFromString(parent2);
+				e.AddValue("string", string.Empty, false);
+				e.GetValue()?.SetFromString(link);
+			}
+
+			pluginParameters.Element = pluginElement;
+			return pluginParameters;
+		}
+
+		private static (GameObject articulationRoot, SDFormat.Helper.Link linkHelper)
+			CreateFixedJointLink(string childFrameId, string parentFrameId)
 		{
 			var articulationRoot = new GameObject("articulation-root");
 			articulationRoot.AddComponent<ArticulationBody>();
@@ -1894,36 +1956,6 @@ namespace CLOiSim.Tests.EditMode
 			linkHelper.JointParentLinkName = parentFrameId;
 
 			return (articulationRoot, linkHelper);
-		}
-
-		private static (GameObject rootObject, SDFormat.Helper.Link linkHelper) CreateNestedFixedJointLink(
-			string nestedModelName,
-			string childFrameId,
-			string parentFrameId)
-		{
-			var rootObject = new GameObject($"{nestedModelName}-root");
-			var rootModel = rootObject.AddComponent<SDFormat.Helper.Model>();
-			rootObject.AddComponent<ArticulationBody>();
-
-			var articulationChild = new GameObject($"{nestedModelName}-joint");
-			articulationChild.transform.SetParent(rootObject.transform);
-			var articulationBody = articulationChild.AddComponent<ArticulationBody>();
-			articulationBody.jointType = ArticulationJointType.FixedJoint;
-
-			var nestedModelObject = new GameObject(nestedModelName);
-			nestedModelObject.transform.SetParent(articulationChild.transform);
-			var nestedModel = nestedModelObject.AddComponent<SDFormat.Helper.Model>();
-
-			var linkObject = new GameObject(childFrameId);
-			linkObject.transform.SetParent(nestedModelObject.transform);
-			var linkHelper = linkObject.AddComponent<SDFormat.Helper.Link>();
-			linkHelper.JointChildLinkName = childFrameId;
-			linkHelper.JointParentLinkName = parentFrameId;
-
-			ParentModelHelperField.SetValue(linkHelper, nestedModel);
-			RootModelInScopeField.SetValue(linkHelper, rootModel);
-
-			return (rootObject, linkHelper);
 		}
 	}
 
