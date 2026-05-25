@@ -15,6 +15,7 @@ public class JointControlPlugin : CLOiSimPlugin
 	private string _robotDescription = "<?xml version='1.0' ?><sdf></sdf>";
 	private SensorDevices.JointCommand _jointCommand = null;
 	private SensorDevices.JointState _jointState = null;
+	private string _tfPrefix = string.Empty;
 
 	protected override void OnAwake()
 	{
@@ -47,10 +48,19 @@ public class JointControlPlugin : CLOiSimPlugin
 			AddThread(portTf, PublishTfThread, _tfList);
 		}
 
-		LoadJoints();
+		yield return null;
 
 		_robotDescription = "<?xml version='1.0' ?><sdf>" + GetPluginParameters().ParentRawXml() + "</sdf>";
 		// UnityEngine.Debug.Log(_robotDescription);
+
+		var modelHelper = GetComponent<SDFormat.Helper.Model>();
+		if (modelHelper?.isNested == true)
+		{
+			_tfPrefix = modelHelper.name;
+			UnityEngine.Debug.Log($"[JointControlPlugin] {gameObject.name} is Nested model, _tfPrefix: {_tfPrefix}");
+		}
+
+		LoadJoints();
 
 		yield return null;
 	}
@@ -73,7 +83,17 @@ public class JointControlPlugin : CLOiSimPlugin
 				{
 					var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("joints/joint[text()='" + jointName + "']", "parent_frame_id");
 					var jointParentLinkName = string.IsNullOrEmpty(parentFrameId) ? targetLink.JointParentLinkName : parentFrameId;
-					var tf = new TF(targetLink, targetLink.JointChildLinkName, jointParentLinkName);
+
+					var childFrame = string.IsNullOrEmpty(_tfPrefix)
+						? targetLink.JointChildLinkName
+						: $"{_tfPrefix}_{targetLink.JointChildLinkName}";
+
+					var parentFrame = string.IsNullOrEmpty(_tfPrefix)
+						? jointParentLinkName
+						: $"{_tfPrefix}_{jointParentLinkName}";
+
+					var tf = new TF(targetLink, childFrame, parentFrame);
+
 					if (isStatic)
 					{
 						_staticTfList.Add(tf);
