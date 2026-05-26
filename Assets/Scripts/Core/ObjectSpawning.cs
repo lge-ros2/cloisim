@@ -103,6 +103,7 @@ public class ObjectSpawning : MonoBehaviour
 			transformGizmo.GetSelectedTargets(out var list);
 			StartCoroutine(DeleteTargetObject(list));
 			transformGizmo.ClearTargets();
+			PIDTunerWindow.CloseIfOpen();
 		}
 	}
 

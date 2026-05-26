@@ -119,6 +119,26 @@ public class PIDTunerWindow : MonoBehaviour
 		}
 	}
 
+	public static void CloseIfOpen()
+	{
+		var window = FindAnyObjectByType<PIDTunerWindow>();
+		if (window == null)
+		{
+			return;
+		}
+
+		window.CloseWindow();
+	}
+
+	private void CloseWindow()
+	{
+		SaveWindowState();
+		_currentTarget = null;
+		_showWindow = false;
+		_closedByUser = false;
+		_entries.Clear();
+	}
+
 	private void SaveWindowState()
 	{
 		if (_currentTarget != null)
