@@ -60,18 +60,25 @@ public class Publisher : PublisherSocket
 	{
 		var wasSucessful = false;
 
-		if (TransportHelper.StoreData(ref dataToPublish, buffer, bufferLength))
+		try
 		{
-			if (!IsDisposed)
+			if (TransportHelper.StoreData(ref dataToPublish, buffer, bufferLength))
 			{
-				var dataLength = TransportHelper.TagSize + bufferLength;
-				wasSucessful = this.TrySendFrame(dataToPublish, dataLength);
-				// Debug.LogFormat("Publish data({0}) length({1})", buffer, bufferLength);
+				if (!IsDisposed)
+				{
+					var dataLength = TransportHelper.TagSize + bufferLength;
+					wasSucessful = this.TrySendFrame(dataToPublish, dataLength);
+					// Debug.LogFormat("Publish data({0}) length({1})", buffer, bufferLength);
+				}
+				else
+				{
+					Console.Error.WriteLine("Socket for publisher is not ready yet or removed!");
+				}
 			}
-			else
-			{
-				Console.Error.WriteLine("Socket for publisher is not ready yet or removed!");
-			}
+		}
+		catch (Exception ex)
+		{
+			Console.Error.WriteLine($"Socket exception in Publish: {ex.Message}");
 		}
 
 		return wasSucessful;

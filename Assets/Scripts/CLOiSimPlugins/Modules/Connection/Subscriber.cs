@@ -51,10 +51,17 @@ public class Subscriber : SubscriberSocket
 		}
 		else
 		{
-			if (this.TryReceiveFrameBytes(_timeout, out var frameReceived))
+			try
 			{
-				// Console.Error.WriteLine(frameReceived.Length);
-				return TransportHelper.RetrieveData(frameReceived);
+				if (this.TryReceiveFrameBytes(_timeout, out var frameReceived))
+				{
+					// Console.Error.WriteLine(frameReceived.Length);
+					return TransportHelper.RetrieveData(frameReceived);
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Socket exception in Subscribe: {ex.Message}");
 			}
 		}
 

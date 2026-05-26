@@ -74,14 +74,21 @@ public class Requestor : RequestSocket
 	/// <returns>It returns false if failed to send, otherwise returns true</returns>
 	public bool SendRequest(in byte[] buffer, in int bufferLength)
 	{
-		if (!IsDisposed && TransportHelper.StoreData(ref dataToSendRequest, buffer, bufferLength) )
+		try
 		{
-			var dataLength = TransportHelper.TagSize + bufferLength;
-			return this.TrySendFrame(dataToSendRequest, dataLength);
+			if (!IsDisposed && TransportHelper.StoreData(ref dataToSendRequest, buffer, bufferLength) )
+			{
+				var dataLength = TransportHelper.TagSize + bufferLength;
+				return this.TrySendFrame(dataToSendRequest, dataLength);
+			}
+			else
+			{
+				Console.Error.WriteLine("Socket for request is not ready yet.");
+			}
 		}
-		else
+		catch (Exception ex)
 		{
-			Console.Error.WriteLine("Socket for request is not ready yet.");
+			Console.Error.WriteLine($"Socket exception in SendRequest: {ex.Message}");
 		}
 
 		return false;
@@ -98,13 +105,20 @@ public class Requestor : RequestSocket
 	{
 		if (!IsDisposed)
 		{
-			if (this.TryReceiveFrameBytes(timeout, out var frameReceived))
+			try
 			{
-				return TransportHelper.RetrieveData(frameReceived, checkTag ? hashValue : null);
+				if (this.TryReceiveFrameBytes(timeout, out var frameReceived))
+				{
+					return TransportHelper.RetrieveData(frameReceived, checkTag ? hashValue : null);
+				}
+				else
+				{
+					Console.Error.WriteLine("failed to receive frame.");
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				Console.Error.WriteLine("failed to receive frame.");
+				Console.Error.WriteLine($"Socket exception in ReceiveResponse: {ex.Message}");
 			}
 		}
 		else
