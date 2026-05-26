@@ -11,24 +11,24 @@ Open Source Package:
   license: MPL-2.0
 
 - name: NetMQ
-  version: 4.0.0.207
+  version: 4.0.4.1
   source: https://github.com/zeromq/netmq
   license: LGPL-3.0
 
 - name: protobuf-net
-  version: 2.4.6
+  version: 3.2.56
   source: https://github.com/protobuf-net/protobuf-net
   license: Apache-2.0
 
-- name: gazebo
-  version: 9.13.0
-  source: https://bitbucket.org/osrf/gazebo/src/gazebo9_9.13.0
+- name: gz-msgs
+  version: 12.0.1
+  source: https://github.com/gazebosim/gz-msgs
   license: Apache-2.0
 
-- name: AssimpNet
-  version: 5.0.0-beta1
-  source: https://bitbucket.org/Starnick/assimpnet/src/master/
-  license: AssimpNet
+- name: AssimpNetter
+  version: 6.0.4
+  source: https://github.com/stefan-koch/AssimpNetter
+  license: MIT
 
 - name: Unity3DRuntimeTransformGizmo
   source: https://github.com/HiddenMonk/Unity3DRuntimeTransformGizmo
@@ -47,3 +47,33 @@ Open Source Package:
   version: main
   source: https://github.com/daniel-ilett/shaders-6grass
   license: MIT
+
+- name: Newtonsoft.Json
+  version: 13.0.4
+  source: https://github.com/JamesNK/Newtonsoft.Json
+  license: MIT
+
+- name: Microsoft.Bcl.AsyncInterfaces
+  version: 10.0.6
+  source: https://github.com/dotnet/runtime
+  license: MIT
+
+- name: System.Collections.Immutable
+  version: 10.0.7
+  source: https://github.com/dotnet/runtime
+  license: MIT
+
+- name: System.Memory
+  version: 4.6.3
+  source: https://github.com/dotnet/runtime
+  license: MIT
+
+- name: System.Runtime.CompilerServices.Unsafe
+  version: 6.1.2
+  source: https://github.com/dotnet/runtime
+  license: MIT
+
+- name: protobuf-net.Core
+  version: 3.2.56
+  source: https://github.com/protobuf-net/protobuf-net
+  license: Apache-2.0

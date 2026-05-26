@@ -15,6 +15,8 @@ namespace SDFormat
 			private Model _rootModelInScope = null;
 
 			private PoseControl _poseControl = null;
+			private readonly object _worldPoseSnapshotLock = new();
+			private UE.Pose _worldPoseSnapshot = UE.Pose.identity;
 
 			private bool _isRootModel = false;
 
@@ -118,6 +120,23 @@ namespace SDFormat
 			public UE.Pose GetPose(in int targetFrame = 0)
 			{
 				return (_poseControl != null) ? _poseControl.Get(targetFrame) : UE.Pose.identity;
+			}
+
+			public void StoreWorldPoseSnapshot(in UE.Vector3 position, in UE.Quaternion rotation)
+			{
+				lock (_worldPoseSnapshotLock)
+				{
+					_worldPoseSnapshot.position = position;
+					_worldPoseSnapshot.rotation = rotation;
+				}
+			}
+
+			public UE.Pose GetWorldPoseSnapshot()
+			{
+				lock (_worldPoseSnapshotLock)
+				{
+					return _worldPoseSnapshot;
+				}
 			}
 
 			public int GetPoseCount()

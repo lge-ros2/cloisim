@@ -1,4 +1,4 @@
-﻿# Open Source Software Notice
+# Open Source Software Notice
 
 Please be informed that this product may contain the open source software below.
 Please refer to the indicated open source licenses (as are included following this notice) for the terms and conditions of their use.
@@ -7,7 +7,7 @@ Please refer to the indicated open source licenses (as are included following th
 
 - NaCl.Net 0.1.13 (MPL-2.0)
 
-- NetMQ 4.0.2.2 (LGPL-3.0)
+- NetMQ 4.0.4.1 (LGPL-3.0)
 Copyright (c) 2007-2015 Other contributors as noted in the AUTHORS file
 Copyright (c) 2009-2011 250bpm s.r.o.
 Copyright (c) 2007-2009 iMatix Corporation
@@ -18,13 +18,14 @@ Copyright (c) 2011 VMware, Inc.
 - ProceduralGrass
 Copyright (c) 2022 Daniel Ilett
 
-- AssimpNet 5.0.0-beta1
-Copyright (c) 2012-2018 AssimpNet - Nicholas Woodfield
+- AssimpNetter 6.0.4
+Copyright (c) 2012-2020 AssimpNet - Nicholas Woodfield
+Copyright (c) 2024-2026 AssimpNetter - Stefan Koch
 
 - Open Asset Import Library (Assimp)
-Copyright (c) 2006-2018, Assimp Development Team
+Copyright (c) 2006-2021, assimp team
 
-- Gazebo 9.13.0 (Apache-2.0)
+- gz-msgs 12.0.1 (Apache-2.0)
 Copyright (c) 2012 Open Source Robotics Foundation
 
 - protobuf-net 3.2.56 (Apache-2.0)
@@ -33,13 +34,13 @@ Copyright (c) 2008 Marc Gravell
 - protobuf-net.Core 3.2.56 (Apache-2.0)
 Copyright (c) 2008 Marc Gravell
 
-- Microsoft.Bcl.AsyncInterfaces.9.0.6 (MIT)
+- Microsoft.Bcl.AsyncInterfaces.10.0.6 (MIT)
 Copyright (c) .NET Foundation and Contributors
 
-- System.Collections.Immutable 7.0.0 (MIT)
+- System.Collections.Immutable 10.0.7 (MIT)
 Copyright (c) .NET Foundation and Contributors
 
-- System.Memory 4.6.2 (MIT)
+- System.Memory 4.6.3 (MIT)
 Copyright (c) .NET Foundation and Contributors
 
 - System.Runtime.CompilerServices.Unsafe 6.1.2 (MIT)

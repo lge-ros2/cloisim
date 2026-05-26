@@ -357,7 +357,7 @@ public class Main : MonoBehaviour
 		Application.targetFrameRate = 60;
 		OnDemandRendering.renderFrameInterval = 1;
 
-		// Debug.Log(    QualitySettings.GetQualityLevel());
+		// Debug.Log(QualitySettings.GetQualityLevel());
 		var qualityLevel = Environment.GetEnvironmentVariable("CLOISIM_QUALITY");
 		var qualityLevelIndex = 3; // Very High Quality Preset
 		if (!string.IsNullOrEmpty(qualityLevel))

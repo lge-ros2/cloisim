@@ -98,7 +98,6 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 	{
 		if (_imu.name.Equals(name))
 		{
-			_imu.SetSubParts(true);
 			var plugin = _imu.gameObject.AddComponent<ImuPlugin>();
 			plugin.ChangePluginType(ICLOiSimPlugin.Type.REALSENSE);
 			plugin.PartsName = _partsName;
@@ -115,7 +114,6 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 		{
 			if (camera.name.Equals(name))
 			{
-				camera.SetSubParts(true);
 				var plugin = camera.gameObject.AddComponent<CameraPlugin>();
 				plugin.ChangePluginType(ICLOiSimPlugin.Type.REALSENSE);
 				plugin.PartsName = _partsName;
@@ -124,7 +122,7 @@ public class RealSensePlugin : CLOiSimMultiPlugin
 				AddPlugin(name, plugin);
 				_activatedModules.Add(new Tuple<string, string>("camera", name));
 
-	            onPluginCreated?.Invoke(camera);
+				onPluginCreated?.Invoke(camera);
 				break;
 			}
 		}

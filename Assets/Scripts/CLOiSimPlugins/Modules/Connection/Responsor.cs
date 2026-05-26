@@ -41,9 +41,16 @@ public class Responsor : ResponseSocket
 	{
 		if (!IsDisposed)
 		{
-			if (this.TryReceiveFrameBytes(timeout, out var frameReceived))
+			try
 			{
-				return TransportHelper.RetrieveData(frameReceived, checkTag ? hashValue : null);
+				if (this.TryReceiveFrameBytes(timeout, out var frameReceived))
+				{
+					return TransportHelper.RetrieveData(frameReceived, checkTag ? hashValue : null);
+				}
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"Socket exception in ReceiveRequest: {ex.Message}");
 			}
 		}
 		else
@@ -72,14 +79,21 @@ public class Responsor : ResponseSocket
 
 	public bool SendResponse(in byte[] buffer, in int bufferLength)
 	{
-		if (TransportHelper.StoreData(ref dataToSendResponse, buffer, bufferLength))
+		try
 		{
-			var dataLength = TransportHelper.TagSize + bufferLength;
-			return this.TrySendFrame(dataToSendResponse, dataLength);
+			if (!IsDisposed && TransportHelper.StoreData(ref dataToSendResponse, buffer, bufferLength))
+			{
+				var dataLength = TransportHelper.TagSize + bufferLength;
+				return this.TrySendFrame(dataToSendResponse, dataLength);
+			}
+			else
+			{
+				Console.Error.WriteLine("Socket for response is not ready yet.");
+			}
 		}
-		else
+		catch (Exception ex)
 		{
-			Console.Error.WriteLine("Socket for response is not ready yet.");
+			Console.Error.WriteLine($"Socket exception in SendResponse: {ex.Message}");
 		}
 
 		return false;

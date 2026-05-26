@@ -8,56 +8,30 @@ using UnityEngine;
 
 public class DevicePose
 {
-	private bool _isSubParts = false;
+    // Local pose of the device relative to its parent transform (usually a Link)
+    private Pose _deviceLocalPose = Pose.identity;
 
-	private Pose _deviceModelPose = Pose.identity;
-	private Pose _deviceLinkPose = Pose.identity;
-	private Pose _devicePose = Pose.identity;
+    /// <summary>
+    /// Must be called on Unity main thread (Update/LateUpdate/FixedUpdate).
+    /// Stores device's local pose (relative to its parent).
+    /// </summary>
+    public void Store(in Transform targetTransform)
+    {
+        // Always store local pose only.
+        // The TF tree already contains base_link->...->Link transforms.
+        _deviceLocalPose.position = targetTransform.localPosition;
+        _deviceLocalPose.rotation = targetTransform.localRotation;
+    }
 
-	public bool SubParts
-	{
-		set => _isSubParts = value;
-		get => _isSubParts;
-	}
-
-	public void Store(in Transform targetTransform)
-	{
-		// Debug.Log($"{targetTransform.name}");
-
-		var parentLinkObject = targetTransform.parent;
-		if (parentLinkObject != null && parentLinkObject.CompareTag("Link"))
-		{
-			_deviceLinkPose.position = parentLinkObject.localPosition;
-			_deviceLinkPose.rotation = parentLinkObject.localRotation;
-			// Debug.Log($"{parentLinkObject.name}: {parentLinkObject.position.ToString("F4")}, {parentLinkObject.rotation.ToString("F4")}");
-
-			var parentModelObject = parentLinkObject.parent;
-			if (parentModelObject != null && parentModelObject.CompareTag("Model"))
-			{
-				_deviceModelPose.position = parentModelObject.localPosition;
-				_deviceModelPose.rotation = parentModelObject.localRotation;
-				// Debug.Log($"{parentModelObject.name}: {_deviceModelPose.position.ToString("F4")}, {_deviceModelPose.rotation.ToString("F4")}");
-			}
-		}
-
-		_devicePose.position = targetTransform.localPosition;
-		_devicePose.rotation = targetTransform.localRotation;
-	}
-
-	public Pose Get()
-	{
-		var finalPose = _devicePose;
-
-		if (!_isSubParts)
-		{
-			finalPose.position += _deviceLinkPose.position;
-			finalPose.rotation *= _deviceLinkPose.rotation;
-
-			finalPose.position += _deviceModelPose.position;
-			finalPose.rotation *= _deviceModelPose.rotation;
-		}
-		// Debug.Log(name + ": " + finalPose.position.ToString("F4") + ", " + finalPose.rotation.ToString("F4"));
-
-		return finalPose;
-	}
+    /// <summary>
+    /// Returns pose that should be used for TF edge:
+    /// parent_frame (mount link) -> child_frame (sensor frame)
+    /// </summary>
+    public Pose Get()
+    {
+        // IMPORTANT:
+        // Do NOT accumulate parent Link / Model poses here.
+        // Doing so causes double-transform when the TF publisher also publishes link chain.
+        return _deviceLocalPose;
+    }
 }

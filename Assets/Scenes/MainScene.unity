@@ -1901,6 +1901,7 @@ MonoBehaviour:
   - ../world_resources/smallhouse/worlds
   - ../world_resources/meta-home/worlds
   - ../world_resources/robot_validation_world/worlds
+  - ../world_resources/cloid_training_world/worlds
   _fileRootDirectories:
   - ../sample_resources/media/
   - ../world_resources/bluepearl/media

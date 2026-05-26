@@ -97,3 +97,33 @@ Summary: result=Passed, total=18, passed=18, failed=0, skipped=0, inconclusive=0
 - For headless CI later, run Unity under a virtual display such as Xvfb.
 - Unity test execution requires exclusive project access. Close other Unity editor or background import processes before running tests.
 - The current scope is pure EditMode unit tests only. PlayMode, GPU sensor, transport, plugin integration, and scene lifecycle coverage are outside this first phase.
+
+## Running Tests Inside Unity Editor (Recommended for Development)
+
+When actively developing or debugging tests, it is recommended to run EditMode tests directly from the Unity Editor instead of using the batchmode script.
+
+Unity does **not allow multiple instances of the same project**, so `run-editmode-tests.sh` cannot be executed while the Editor is already open.
+
+### How to run inside Editor
+
+1. Open the project in Unity Editor
+2. Go to:
+   Window > General > Test Runner
+3. Select the **EditMode** tab
+4. Click **Run All** or run individual tests
+
+### Advantages
+
+- Faster iteration during development
+- Easy debugging with breakpoints
+- Immediate access to logs and stack traces
+- No need to close the current Editor session
+
+### When to use which
+
+- Use **Editor Test Runner**
+  - During development and debugging
+
+- Use **run-editmode-tests.sh**
+  - For CI / automation
+  - When running tests in batchmode (Editor must be closed)
