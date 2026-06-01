@@ -50,22 +50,23 @@ Shader "Hidden/OutlinePostProcess"
 
                 float w = _OutlineWidth * _MaskTex_TexelSize.x;
                 float h = _OutlineWidth * _MaskTex_TexelSize.y;
-                
-                float maxMask = 0.0;
-                // 8-neighbor sample for a smooth outline
-                maxMask = max(maxMask, tex2D(_MaskTex, input.uv + float2(w, 0)).r);
-                maxMask = max(maxMask, tex2D(_MaskTex, input.uv + float2(-w, 0)).r);
-                maxMask = max(maxMask, tex2D(_MaskTex, input.uv + float2(0, h)).r);
-                maxMask = max(maxMask, tex2D(_MaskTex, input.uv + float2(0, -h)).r);
-                
-                maxMask = max(maxMask, tex2D(_MaskTex, input.uv + float2(w, h)).r);
-                maxMask = max(maxMask, tex2D(_MaskTex, input.uv + float2(-w, -h)).r);
-                maxMask = max(maxMask, tex2D(_MaskTex, input.uv + float2(w, -h)).r);
-                maxMask = max(maxMask, tex2D(_MaskTex, input.uv + float2(-w, h)).r);
 
-                if (maxMask > 0.5)
+                // Sample around a circle instead of only 8 cardinal/diagonal taps so
+                // outline ends and corners read as rounded rather than blocky.
+                const int SampleCount = 20;
+                float outlineAlpha = 0.0;
+
+                [unroll]
+                for (int index = 0; index < SampleCount; index++)
                 {
-                    return _OutlineColor;
+                    float angle = TWO_PI * ((float)index / (float)SampleCount);
+                    float2 offset = float2(cos(angle) * w, sin(angle) * h);
+                    outlineAlpha = max(outlineAlpha, tex2D(_MaskTex, input.uv + offset).r);
+                }
+
+                if (outlineAlpha > 0.5)
+                {
+                    return float4(_OutlineColor.rgb, _OutlineColor.a * outlineAlpha);
                 }
                 
                 return float4(0,0,0,0);
