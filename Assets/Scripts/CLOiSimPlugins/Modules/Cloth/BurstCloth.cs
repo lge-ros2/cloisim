@@ -64,6 +64,7 @@ namespace CLOiSim.Cloth
 		public float Friction = 0.5f;
 		public float SleepThreshold = 0.001f;
 		public float VelocityDecay = 10f;
+		public float CollisionSurfaceOffset = 0.001f;
 
 		/// <summary>
 		/// When true, the simulation is paused (e.g. during gizmo manipulation).
@@ -95,6 +96,8 @@ namespace CLOiSim.Cloth
 		private NativeArray<int> _meshTriangles;
 		private NativeArray<float3> _initialPositions;
 		private NativeArray<float3> _preCollisionPositions;
+		private NativeArray<float3> _contactNormals;
+		private NativeArray<float3> _currentContactNormals;
 		private NativeArray<float> _originalInverseMasses;
 
 		private JobHandle _clothJobHandle;
@@ -105,9 +108,11 @@ namespace CLOiSim.Cloth
 		public int VertexCount => _isInitialized ? _positions.Length : 0;
 		public bool IsVertexPinned(int index) => _isInitialized && index >= 0 && index < _inverseMasses.Length && _originalInverseMasses[index] == 0f;
 		private int _colliderCount = 0;
+		private bool _hasMeshColliders = false;
 		private bool _isSleeping = false;
 		private int _sleepCounter = 0;
 		private const int SleepFramesRequired = 10;
+		private const int MeshCollisionIterationStride = 2;
 
 		// Grab system
 		private readonly HashSet<int> _grabbedVertices = new();
@@ -127,6 +132,8 @@ namespace CLOiSim.Cloth
 			_inverseMasses = new(count, Allocator.Persistent);
 			_initialPositions = new(count, Allocator.Persistent);
 			_preCollisionPositions = new(count, Allocator.Persistent);
+			_contactNormals = new(count, Allocator.Persistent);
+			_currentContactNormals = new(count, Allocator.Persistent);
 			_constraints = new(structuralConstraints.Length, Allocator.Persistent);
 			_bendingConstraints = new(bendingConstraints != null ? bendingConstraints.Length : 0, Allocator.Persistent);
 
@@ -143,6 +150,8 @@ namespace CLOiSim.Cloth
 				_predictedPositions[i] = vertices[i];
 				_initialPositions[i] = vertices[i];
 				_velocities[i] = float3.zero;
+				_contactNormals[i] = float3.zero;
+				_currentContactNormals[i] = float3.zero;
 				_inverseMasses[i] = masses[i] > 0f ? 1f / masses[i] : 0f; // 0 inverse mass = pinned/kinematic
 			}
 
@@ -172,6 +181,8 @@ namespace CLOiSim.Cloth
 				_positions[i] = _initialPositions[i];
 				_predictedPositions[i] = _initialPositions[i];
 				_velocities[i] = float3.zero;
+				_contactNormals[i] = float3.zero;
+				_currentContactNormals[i] = float3.zero;
 			}
 			_isSleeping = false;
 			_sleepCounter = 0;
@@ -193,6 +204,31 @@ namespace CLOiSim.Cloth
 				_predictedPositions[i] += delta;
 				_initialPositions[i] += delta;
 				_velocities[i] = float3.zero;
+				_contactNormals[i] = float3.zero;
+				_currentContactNormals[i] = float3.zero;
+			}
+			_isSleeping = false;
+			_sleepCounter = 0;
+		}
+
+		/// <summary>
+		/// Rotates all cloth positions around a world-space pivot.
+		/// Use when the parent transform is rotated externally (e.g. by a gizmo).
+		/// </summary>
+		public void RotateAround(float3 pivot, quaternion deltaRotation)
+		{
+			if (!_isInitialized) return;
+
+			_clothJobHandle.Complete();
+
+			for (var i = 0; i < _positions.Length; i++)
+			{
+				_positions[i] = pivot + math.mul(deltaRotation, _positions[i] - pivot);
+				_predictedPositions[i] = pivot + math.mul(deltaRotation, _predictedPositions[i] - pivot);
+				_initialPositions[i] = pivot + math.mul(deltaRotation, _initialPositions[i] - pivot);
+				_velocities[i] = float3.zero;
+				_contactNormals[i] = float3.zero;
+				_currentContactNormals[i] = float3.zero;
 			}
 			_isSleeping = false;
 			_sleepCounter = 0;
@@ -331,6 +367,7 @@ namespace CLOiSim.Cloth
 			if (!_isInitialized) return;
 
 			_clothJobHandle.Complete();
+			_hasMeshColliders = false;
 
 			if (currentColliders.Length > _colliders.Length)
 			{
@@ -343,6 +380,15 @@ namespace CLOiSim.Cloth
 			{
 				_isSleeping = false;
 				_sleepCounter = 0;
+			}
+
+			for (var i = 0; i < currentColliders.Length; i++)
+			{
+				if (currentColliders[i].Type == ColliderType.Mesh)
+				{
+					_hasMeshColliders = true;
+					break;
+				}
 			}
 
 			NativeArray<ClothCollider>.Copy(currentColliders, _colliders, currentColliders.Length);
@@ -436,10 +482,19 @@ namespace CLOiSim.Cloth
 				handle = ScheduleDistanceConstraints(handle);
 				if (i == 0)
 					handle = ScheduleBendingConstraints(handle);
+				if (ShouldResolveIterationCollisions(i))
+					handle = ScheduleCollisionResolution(handle);
 			}
-			// Collision only once after all constraint iterations
 			handle = ScheduleCollisionAndFriction(handle);
 			return handle;
+		}
+
+		private bool ShouldResolveIterationCollisions(int iterationIndex)
+		{
+			if (!_hasMeshColliders)
+				return true;
+
+			return (iterationIndex + 1) % MeshCollisionIterationStride == 0;
 		}
 
 		private JobHandle ScheduleDistanceConstraints(JobHandle handle)
@@ -474,26 +529,35 @@ namespace CLOiSim.Cloth
 				Destination = _preCollisionPositions
 			};
 			handle = copyJob.Schedule(_positions.Length, 64, handle);
-
-			var collisionJob = new SolveCollisionsJob
-			{
-				PredictedPositions = _predictedPositions,
-				Colliders = _colliders,
-				ColliderCount = _colliderCount,
-				MeshVertices = _meshVertices,
-				MeshTriangles = _meshTriangles,
-				ParticleRadius = ParticleRadius
-			};
-			handle = collisionJob.Schedule(_positions.Length, 64, handle);
+			handle = ScheduleCollisionResolution(handle);
 
 			var frictionJob = new ApplyFrictionJob
 			{
 				PredictedPositions = _predictedPositions,
 				PreCollisionPositions = _preCollisionPositions,
 				OriginalPositions = _positions,
+				CurrentContactNormals = _currentContactNormals,
+				ContactNormals = _contactNormals,
 				Friction = Friction
 			};
 			return frictionJob.Schedule(_positions.Length, 64, handle);
+		}
+
+		private JobHandle ScheduleCollisionResolution(JobHandle handle)
+		{
+			var collisionJob = new SolveCollisionsJob
+			{
+				PredictedPositions = _predictedPositions,
+				PreCollisionPositions = _preCollisionPositions,
+				CurrentContactNormals = _currentContactNormals,
+				Colliders = _colliders,
+				ColliderCount = _colliderCount,
+				MeshVertices = _meshVertices,
+				MeshTriangles = _meshTriangles,
+				ParticleRadius = ParticleRadius,
+				CollisionSurfaceOffset = CollisionSurfaceOffset
+			};
+			return collisionJob.Schedule(_positions.Length, 64, handle);
 		}
 
 		private JobHandle ScheduleVelocityUpdate(JobHandle handle, float subDt)
@@ -505,8 +569,11 @@ namespace CLOiSim.Cloth
 				PreCollisionPositions = _preCollisionPositions,
 				Velocities = _velocities,
 				InverseMasses = _inverseMasses,
+				CurrentContactNormals = _currentContactNormals,
+				ContactNormals = _contactNormals,
 				DeltaTime = subDt,
-				VelocityDecay = VelocityDecay
+				VelocityDecay = VelocityDecay,
+				VelocitySnapThreshold = SleepThreshold * 0.5f
 			};
 			return job.Schedule(_positions.Length, 64, handle);
 		}
@@ -542,6 +609,8 @@ namespace CLOiSim.Cloth
 			DisposeIfCreated(ref _positions);
 			DisposeIfCreated(ref _predictedPositions);
 			DisposeIfCreated(ref _preCollisionPositions);
+			DisposeIfCreated(ref _contactNormals);
+			DisposeIfCreated(ref _currentContactNormals);
 			DisposeIfCreated(ref _velocities);
 			DisposeIfCreated(ref _inverseMasses);
 			DisposeIfCreated(ref _initialPositions);
@@ -756,15 +825,21 @@ namespace CLOiSim.Cloth
 	public struct SolveCollisionsJob : IJobParallelFor
 	{
 		public NativeArray<float3> PredictedPositions;
+		[ReadOnly] public NativeArray<float3> PreCollisionPositions;
+		public NativeArray<float3> CurrentContactNormals;
 		[ReadOnly] public NativeArray<ClothCollider> Colliders;
 		[ReadOnly] public int ColliderCount;
 		[ReadOnly] public NativeArray<float3> MeshVertices;
 		[ReadOnly] public NativeArray<int> MeshTriangles;
 		[ReadOnly] public float ParticleRadius;
+		[ReadOnly] public float CollisionSurfaceOffset;
+		private const float ContactBand = 0.003f;
 
 		public void Execute(int i)
 		{
 			var p = PredictedPositions[i];
+			var preCollisionP = PreCollisionPositions[i];
+			var currentContactNormal = float3.zero;
 
 			for (var c = 0; c < ColliderCount; c++)
 			{
@@ -776,20 +851,22 @@ namespace CLOiSim.Cloth
 						p = ResolveSphere(p, collider);
 						break;
 					case ColliderType.Box:
-						p = ResolveBox(p, collider);
+						p = ResolveBox(p, collider, ref currentContactNormal);
 						break;
 					case ColliderType.Capsule:
 						p = ResolveCapsule(p, collider);
 						break;
 					case ColliderType.Mesh:
-						p = ResolveMesh(p, collider);
+						p = ResolveMesh(p, preCollisionP, collider);
 						break;
 					case ColliderType.Plane:
-						p = ResolvePlane(p, collider);
+						p = ResolvePlane(p, collider, ref currentContactNormal);
 						break;
 				}
 			}
 
+			if (CurrentContactNormals.IsCreated)
+				CurrentContactNormals[i] = currentContactNormal;
 			PredictedPositions[i] = p;
 		}
 
@@ -797,7 +874,7 @@ namespace CLOiSim.Cloth
 		{
 			var delta = p - collider.Position;
 			var distSq = math.lengthsq(delta);
-			var radius = collider.Scale.x + ParticleRadius;
+			var radius = collider.Scale.x + ParticleRadius + CollisionSurfaceOffset;
 
 			if (distSq < radius * radius && distSq > 1e-6f)
 			{
@@ -807,37 +884,64 @@ namespace CLOiSim.Cloth
 			return p;
 		}
 
-		private float3 ResolveBox(float3 p, in ClothCollider collider)
+		private float3 ResolveBox(float3 p, in ClothCollider collider, ref float3 currentContactNormal)
 		{
 			var localP = math.mul(math.inverse(collider.Rotation), p - collider.Position);
-			var extents = collider.Scale + ParticleRadius;
+			var extents = collider.Scale + ParticleRadius + CollisionSurfaceOffset;
+			var absLocalP = math.abs(localP);
 
-			if (math.abs(localP.x) < extents.x &&
-				math.abs(localP.y) < extents.y &&
-				math.abs(localP.z) < extents.z)
+			if (absLocalP.x < extents.x &&
+				absLocalP.y < extents.y &&
+				absLocalP.z < extents.z)
 			{
-				float3 dists = extents - math.abs(localP);
+				float3 dists = extents - absLocalP;
+				float3 localNormal;
 
 				if (dists.x < dists.y && dists.x < dists.z)
+				{
 					localP.x = (localP.x >= 0f ? 1f : -1f) * extents.x;
+					localNormal = new float3(localP.x >= 0f ? 1f : -1f, 0f, 0f);
+				}
 				else if (dists.y < dists.z)
+				{
 					localP.y = (localP.y >= 0f ? 1f : -1f) * extents.y;
+					localNormal = new float3(0f, localP.y >= 0f ? 1f : -1f, 0f);
+				}
 				else
+				{
 					localP.z = (localP.z >= 0f ? 1f : -1f) * extents.z;
+					localNormal = new float3(0f, 0f, localP.z >= 0f ? 1f : -1f);
+				}
 
+				currentContactNormal = math.mul(collider.Rotation, localNormal);
 				p = collider.Position + math.mul(collider.Rotation, localP);
+				return p;
 			}
+
+			if (absLocalP.y >= extents.y && absLocalP.y <= extents.y + ContactBand &&
+				absLocalP.x <= extents.x && absLocalP.z <= extents.z)
+				currentContactNormal = math.mul(collider.Rotation, new float3(0f, localP.y >= 0f ? 1f : -1f, 0f));
+			else if (absLocalP.x >= extents.x && absLocalP.x <= extents.x + ContactBand &&
+				absLocalP.y <= extents.y && absLocalP.z <= extents.z)
+				currentContactNormal = math.mul(collider.Rotation, new float3(localP.x >= 0f ? 1f : -1f, 0f, 0f));
+			else if (absLocalP.z >= extents.z && absLocalP.z <= extents.z + ContactBand &&
+				absLocalP.x <= extents.x && absLocalP.y <= extents.y)
+				currentContactNormal = math.mul(collider.Rotation, new float3(0f, 0f, localP.z >= 0f ? 1f : -1f));
+
 			return p;
 		}
 
 		// Half-space plane collision — immune to tunneling regardless of particle speed.
 		// collider.Scale stores the world-space plane normal (unit vector pointing toward valid side).
-		private float3 ResolvePlane(float3 p, in ClothCollider collider)
+		private float3 ResolvePlane(float3 p, in ClothCollider collider, ref float3 currentContactNormal)
 		{
 			var normal = collider.Scale;
 			var dist = math.dot(p - collider.Position, normal);
-			if (dist < ParticleRadius)
-				p += normal * (ParticleRadius - dist);
+			var contactDistance = ParticleRadius + CollisionSurfaceOffset;
+			if (dist <= contactDistance + ContactBand)
+				currentContactNormal = normal;
+			if (dist < contactDistance)
+				p += normal * (contactDistance - dist);
 			return p;
 		}
 
@@ -856,7 +960,7 @@ namespace CLOiSim.Cloth
 
 			var delta = p - closest;
 			var distSq = math.lengthsq(delta);
-			var radius = collider.Scale.x + ParticleRadius;
+			var radius = collider.Scale.x + ParticleRadius + CollisionSurfaceOffset;
 
 			if (distSq < radius * radius && distSq > 1e-6f)
 			{
@@ -866,10 +970,12 @@ namespace CLOiSim.Cloth
 			return p;
 		}
 
-		private float3 ResolveMesh(float3 p, in ClothCollider collider)
+		private float3 ResolveMesh(float3 p, float3 preCollisionP, in ClothCollider collider)
 		{
 			var localP = math.mul(math.inverse(collider.Rotation), p - collider.Position);
 			localP /= collider.Scale;
+			var previousLocalP = math.mul(math.inverse(collider.Rotation), preCollisionP - collider.Position);
+			previousLocalP /= collider.Scale;
 
 			var padding = 0.1f;
 			// Keep XZ bounds and upper-Y check, but do NOT skip particles below BoundsMin.y —
@@ -881,7 +987,7 @@ namespace CLOiSim.Cloth
 				return p;
 			}
 
-			var localRadius = ParticleRadius;
+			var localRadius = ParticleRadius + CollisionSurfaceOffset;
 
 			for (var t = 0; t < collider.TriCount; t += 3)
 			{
@@ -898,9 +1004,14 @@ namespace CLOiSim.Cloth
 
 				var triNormal = crossVec / crossLen;
 				var signedDist = math.dot(localP - v0, triNormal);
+				var previousSignedDist = math.dot(previousLocalP - v0, triNormal);
 
 				// Particle is safely above the surface — no collision needed
 				if (signedDist >= localRadius) continue;
+
+				// Treat the mesh as one-sided: only resolve back-side penetration when the
+				// particle actually crossed the triangle plane during this substep.
+				if (signedDist < 0f && previousSignedDist <= 0f) continue;
 
 				// Check that the horizontal projection onto the triangle plane falls
 				// within (or close to) the triangle's footprint before resolving.
@@ -971,8 +1082,11 @@ namespace CLOiSim.Cloth
 		[ReadOnly] public NativeArray<float3> PreCollisionPositions;
 		public NativeArray<float3> Velocities;
 		[ReadOnly] public NativeArray<float> InverseMasses;
+		[ReadOnly] public NativeArray<float3> CurrentContactNormals;
+		public NativeArray<float3> ContactNormals;
 		public float DeltaTime;
 		public float VelocityDecay;
+		public float VelocitySnapThreshold;
 
 		public void Execute(int i)
 		{
@@ -980,20 +1094,45 @@ namespace CLOiSim.Cloth
 				return; // Pinned
 
 			var vel = (PredictedPositions[i] - Positions[i]) / DeltaTime;
+			var currentContactNormal = CurrentContactNormals.IsCreated ? CurrentContactNormals[i] : float3.zero;
 
-			// If collision happened, remove velocity along the collision push direction (prevents bouncing)
-			var collisionPush = PredictedPositions[i] - PreCollisionPositions[i];
-			if (math.lengthsq(collisionPush) > 1e-8f)
+			if (math.lengthsq(currentContactNormal) > 0.01f)
 			{
-				var normal = math.normalize(collisionPush);
+				// Current sub-step contact: preserve full contact normal even when there
+				// was no penetration push, so resting support does not immediately lose friction.
+				var normal = math.normalize(currentContactNormal);
+				if (ContactNormals.IsCreated)
+					ContactNormals[i] = normal;
+
 				var normalVel = math.dot(vel, normal);
 				if (normalVel > 0f)
 					vel -= normalVel * normal;
 			}
+			else
+			{
+				var collisionPush = PredictedPositions[i] - PreCollisionPositions[i];
+				if (math.lengthsq(collisionPush) > 1e-8f)
+				{
+					var normal = math.normalize(collisionPush);
+					if (ContactNormals.IsCreated)
+						ContactNormals[i] = normal;
 
-			// Exponential velocity decay — damps jitter without killing gravity
-			// At 60fps with 5 substeps: factor ≈ 0.97 per substep, 0.86 per frame
+					var normalVel = math.dot(vel, normal);
+					if (normalVel > 0f)
+						vel -= normalVel * normal;
+				}
+				else
+				{
+					var storedNormal = ContactNormals.IsCreated ? ContactNormals[i] : float3.zero;
+					if (ContactNormals.IsCreated && math.lengthsq(storedNormal) > 0.01f)
+						ContactNormals[i] = storedNormal * 0.5f;
+				}
+			}
+
 			vel *= math.exp(-VelocityDecay * DeltaTime);
+
+			if (math.lengthsq(vel) < VelocitySnapThreshold * VelocitySnapThreshold)
+				vel = float3.zero;
 
 			Velocities[i] = vel;
 			Positions[i] = PredictedPositions[i];
@@ -1018,6 +1157,8 @@ namespace CLOiSim.Cloth
 		public NativeArray<float3> PredictedPositions;
 		[ReadOnly] public NativeArray<float3> PreCollisionPositions;
 		[ReadOnly] public NativeArray<float3> OriginalPositions;
+		[ReadOnly] public NativeArray<float3> CurrentContactNormals;
+		[ReadOnly] public NativeArray<float3> ContactNormals;
 		public float Friction;
 
 		public void Execute(int i)
@@ -1025,22 +1166,49 @@ namespace CLOiSim.Cloth
 			var pre = PreCollisionPositions[i];
 			var post = PredictedPositions[i];
 			var collisionPush = post - pre;
+			var currentContactNormal = CurrentContactNormals.IsCreated ? CurrentContactNormals[i] : float3.zero;
+			var hasActiveCollision = math.lengthsq(collisionPush) > 1e-8f;
 
-			// No collision happened on this vertex
-			if (math.lengthsq(collisionPush) < 1e-8f) return;
+			float3 normal;
+			float frictionStrength;
 
-			// Collision normal = direction the collision pushed the vertex out
-			var normal = math.normalize(collisionPush);
+			if (math.lengthsq(currentContactNormal) > 0.01f)
+			{
+				normal = math.normalize(currentContactNormal);
+				frictionStrength = 1f;
+			}
+			else if (hasActiveCollision)
+			{
+				// Active collision: use fresh normal at full strength
+				normal = math.normalize(collisionPush);
+				frictionStrength = 1f;
+			}
+			else
+			{
+				// No active collision — check stored contact normal for persistence
+				var stored = ContactNormals.IsCreated ? ContactNormals[i] : float3.zero;
+				var storedLenSq = math.lengthsq(stored);
+				if (storedLenSq < 0.01f) return; // no recent contact
 
-			// Total motion this substep: from start-of-substep position to post-collision
+				normal = math.normalize(stored);
+				frictionStrength = math.sqrt(storedLenSq); // decayed magnitude
+			}
+
 			var totalMotion = post - OriginalPositions[i];
-
-			// Decompose into normal and tangential components
 			var normalMotion = math.dot(totalMotion, normal) * normal;
 			var tangentialMotion = totalMotion - normalMotion;
 
-			// Apply friction: reduce tangential sliding
-			PredictedPositions[i] = OriginalPositions[i] + normalMotion + tangentialMotion * (1f - Friction);
+			var effectiveFriction = Friction * frictionStrength;
+			var tangentialScale = math.saturate(1f - effectiveFriction);
+			tangentialScale *= tangentialScale;
+
+			var staticFrictionMotionThreshold = 0.002f * effectiveFriction;
+			if (math.lengthsq(tangentialMotion) < staticFrictionMotionThreshold * staticFrictionMotionThreshold)
+				tangentialMotion = float3.zero;
+			else
+				tangentialMotion *= tangentialScale;
+
+			PredictedPositions[i] = OriginalPositions[i] + normalMotion + tangentialMotion;
 		}
 	}
 }

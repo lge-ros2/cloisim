@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using NUnit.Framework;
 using CLOiSim.Cloth;
+using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -30,6 +31,167 @@ namespace CLOiSim.Tests.EditMode
 				null,
 				HandleRequestParameterTypes,
 				null);
+		}
+	}
+
+	public class BurstClothCollisionTests
+	{
+		private static ClothCollider CreateVerticalMeshCollider()
+		{
+			return new ClothCollider
+			{
+				Type = ColliderType.Mesh,
+				Position = float3.zero,
+				Rotation = quaternion.identity,
+				Scale = new float3(1f, 1f, 1f),
+				TriStart = 0,
+				TriCount = 3,
+				BoundsMin = new float3(0f, -1f, -1f),
+				BoundsMax = new float3(0f, 1f, 1f)
+			};
+		}
+
+		[Test]
+		public void SolveCollisionsJob_MeshBackfaceWithoutCrossing_DoesNotAttractParticle()
+		{
+			var predicted = new NativeArray<float3>(1, Allocator.Temp);
+			var preCollision = new NativeArray<float3>(1, Allocator.Temp);
+			var currentContactNormals = new NativeArray<float3>(1, Allocator.Temp);
+			var colliders = new NativeArray<ClothCollider>(1, Allocator.Temp);
+			var vertices = new NativeArray<float3>(3, Allocator.Temp);
+			var triangles = new NativeArray<int>(3, Allocator.Temp);
+
+			try
+			{
+				predicted[0] = new float3(-0.05f, 0f, 0f);
+				preCollision[0] = new float3(-0.04f, 0f, 0f);
+				colliders[0] = CreateVerticalMeshCollider();
+
+				vertices[0] = new float3(0f, -1f, -1f);
+				vertices[1] = new float3(0f, 1f, -1f);
+				vertices[2] = new float3(0f, 0f, 1f);
+				triangles[0] = 0;
+				triangles[1] = 1;
+				triangles[2] = 2;
+
+				var job = new SolveCollisionsJob
+				{
+					PredictedPositions = predicted,
+					PreCollisionPositions = preCollision,
+					CurrentContactNormals = currentContactNormals,
+					Colliders = colliders,
+					ColliderCount = 1,
+					MeshVertices = vertices,
+					MeshTriangles = triangles,
+					ParticleRadius = 0.01f,
+					CollisionSurfaceOffset = 0f
+				};
+
+				job.Execute(0);
+
+				Assert.That(predicted[0].x, Is.EqualTo(-0.05f).Within(1e-6f));
+			}
+			finally
+			{
+				predicted.Dispose();
+				preCollision.Dispose();
+				currentContactNormals.Dispose();
+				colliders.Dispose();
+				vertices.Dispose();
+				triangles.Dispose();
+			}
+		}
+
+		[Test]
+		public void SolveCollisionsJob_MeshCrossingBackface_PushesParticleToFrontSide()
+		{
+			var predicted = new NativeArray<float3>(1, Allocator.Temp);
+			var preCollision = new NativeArray<float3>(1, Allocator.Temp);
+			var currentContactNormals = new NativeArray<float3>(1, Allocator.Temp);
+			var colliders = new NativeArray<ClothCollider>(1, Allocator.Temp);
+			var vertices = new NativeArray<float3>(3, Allocator.Temp);
+			var triangles = new NativeArray<int>(3, Allocator.Temp);
+
+			try
+			{
+				predicted[0] = new float3(-0.05f, 0f, 0f);
+				preCollision[0] = new float3(0.05f, 0f, 0f);
+				colliders[0] = CreateVerticalMeshCollider();
+
+				vertices[0] = new float3(0f, -1f, -1f);
+				vertices[1] = new float3(0f, 1f, -1f);
+				vertices[2] = new float3(0f, 0f, 1f);
+				triangles[0] = 0;
+				triangles[1] = 1;
+				triangles[2] = 2;
+
+				var job = new SolveCollisionsJob
+				{
+					PredictedPositions = predicted,
+					PreCollisionPositions = preCollision,
+					CurrentContactNormals = currentContactNormals,
+					Colliders = colliders,
+					ColliderCount = 1,
+					MeshVertices = vertices,
+					MeshTriangles = triangles,
+					ParticleRadius = 0.01f,
+					CollisionSurfaceOffset = 0f
+				};
+
+				job.Execute(0);
+
+				Assert.That(predicted[0].x, Is.EqualTo(0.01f).Within(1e-6f));
+			}
+			finally
+			{
+				predicted.Dispose();
+				preCollision.Dispose();
+				currentContactNormals.Dispose();
+				colliders.Dispose();
+				vertices.Dispose();
+				triangles.Dispose();
+			}
+		}
+
+		[Test]
+		public void ApplyFrictionJob_HighFrictionSnapsSmallTangentialCreep()
+		{
+			var predicted = new NativeArray<float3>(1, Allocator.Temp);
+			var preCollision = new NativeArray<float3>(1, Allocator.Temp);
+			var original = new NativeArray<float3>(1, Allocator.Temp);
+			var currentContactNormals = new NativeArray<float3>(1, Allocator.Temp);
+			var contactNormals = new NativeArray<float3>(1, Allocator.Temp);
+
+			try
+			{
+				original[0] = float3.zero;
+				preCollision[0] = new float3(0.001f, -0.001f, 0f);
+				predicted[0] = new float3(0.001f, 0f, 0f);
+				currentContactNormals[0] = new float3(0f, 1f, 0f);
+
+				var job = new ApplyFrictionJob
+				{
+					PredictedPositions = predicted,
+					PreCollisionPositions = preCollision,
+					OriginalPositions = original,
+					CurrentContactNormals = currentContactNormals,
+					ContactNormals = contactNormals,
+					Friction = 0.95f
+				};
+
+				job.Execute(0);
+
+				Assert.That(predicted[0].x, Is.EqualTo(0f).Within(1e-6f));
+				Assert.That(predicted[0].y, Is.EqualTo(0f).Within(1e-6f));
+			}
+			finally
+			{
+				predicted.Dispose();
+				preCollision.Dispose();
+				original.Dispose();
+				currentContactNormals.Dispose();
+				contactNormals.Dispose();
+			}
 		}
 	}
 
@@ -231,6 +393,12 @@ namespace CLOiSim.Tests.EditMode
 
 	public class ClothGrabberPluginTests
 	{
+		private static readonly FieldInfo BurstClothInstancesField = typeof(BurstCloth).GetField(
+			"_instances",
+			BindingFlags.NonPublic | BindingFlags.Static);
+		private static readonly MethodInfo ClothGrabberUpdateMethod = typeof(ClothGrabber).GetMethod(
+			"Update",
+			BindingFlags.NonPublic | BindingFlags.Instance);
 		private static readonly MethodInfo FindInHierarchyMethod = typeof(ClothGrabberPlugin).GetMethod(
 			"FindInHierarchy",
 			BindingFlags.NonPublic | BindingFlags.Static);
@@ -252,6 +420,14 @@ namespace CLOiSim.Tests.EditMode
 				collider.isTrigger = true;
 			}
 
+			return collider;
+		}
+
+		private static MeshCollider AddCenteredCubeMeshCollider(GameObject target)
+		{
+			var collider = target.AddComponent<MeshCollider>();
+			collider.sharedMesh = CreateCenteredCubeMesh();
+			collider.convex = true;
 			return collider;
 		}
 
@@ -277,6 +453,71 @@ namespace CLOiSim.Tests.EditMode
 
 			mesh.RecalculateNormals();
 			return mesh;
+		}
+
+		private static Mesh CreateCenteredCubeMesh()
+		{
+			var mesh = new Mesh
+			{
+				vertices = new[]
+				{
+					new Vector3(-0.05f, -0.05f, -0.05f),
+					new Vector3(0.05f, -0.05f, -0.05f),
+					new Vector3(0.05f, 0.05f, -0.05f),
+					new Vector3(-0.05f, 0.05f, -0.05f),
+					new Vector3(-0.05f, -0.05f, 0.05f),
+					new Vector3(0.05f, -0.05f, 0.05f),
+					new Vector3(0.05f, 0.05f, 0.05f),
+					new Vector3(-0.05f, 0.05f, 0.05f)
+				},
+				triangles = new[]
+				{
+					0, 2, 1, 0, 3, 2,
+					4, 5, 6, 4, 6, 7,
+					0, 1, 5, 0, 5, 4,
+					1, 2, 6, 1, 6, 5,
+					2, 3, 7, 2, 7, 6,
+					3, 0, 4, 3, 4, 7
+				}
+			};
+
+			mesh.RecalculateNormals();
+			mesh.RecalculateBounds();
+			return mesh;
+		}
+
+		private static BurstCloth CreateSingleVertexCloth(GameObject target, float3 vertexPosition)
+		{
+			var cloth = target.AddComponent<BurstCloth>();
+			cloth.Initialize(
+				new[] { vertexPosition },
+				new[] { 1f },
+				new DistanceConstraint[0]);
+			EnsureBurstClothRegistered(cloth);
+			return cloth;
+		}
+
+		private static void EnsureBurstClothRegistered(BurstCloth cloth)
+		{
+			var instances = (List<BurstCloth>)BurstClothInstancesField.GetValue(null);
+			for (var i = instances.Count - 1; i >= 0; i--)
+			{
+				if (instances[i] == null)
+					instances.RemoveAt(i);
+			}
+
+			if (!instances.Contains(cloth))
+				instances.Add(cloth);
+		}
+
+		private static void UnregisterBurstCloth(BurstCloth cloth)
+		{
+			var instances = (List<BurstCloth>)BurstClothInstancesField.GetValue(null);
+			for (var i = instances.Count - 1; i >= 0; i--)
+			{
+				if (instances[i] == null || instances[i] == cloth)
+					instances.RemoveAt(i);
+			}
 		}
 
 		private static void DestroyTestMesh(MeshCollider collider)
@@ -468,6 +709,66 @@ namespace CLOiSim.Tests.EditMode
 				Object.DestroyImmediate(root);
 			}
 		}
+
+		[Test]
+		public void HasClothWithinDistance_UsesSurfaceDistanceInsteadOfColliderCenter()
+		{
+			var grabberRoot = new GameObject("grabber-root");
+			var clothRoot = new GameObject("cloth-root");
+			var grabber = grabberRoot.AddComponent<ClothGrabber>();
+			var collider = AddCenteredCubeMeshCollider(grabberRoot);
+			var cloth = CreateSingleVertexCloth(clothRoot, new float3(0f, 0f, 0.055f));
+
+			grabber.GrabCollider = collider;
+			grabber.GrabRadius = 0.005f;
+
+			try
+			{
+				Physics.SyncTransforms();
+
+				Assert.That(grabber.HasClothWithinDistance(0.01f), Is.True);
+			}
+			finally
+			{
+				UnregisterBurstCloth(cloth);
+				DestroyTestMesh(collider);
+				Object.DestroyImmediate(clothRoot);
+				Object.DestroyImmediate(grabberRoot);
+			}
+		}
+
+		[Test]
+		public void Update_GrabsVertexAtColliderSurfaceInsteadOfBoundsCenter()
+		{
+			var grabberRoot = new GameObject("grabber-root");
+			var clothRoot = new GameObject("cloth-root");
+			var grabber = grabberRoot.AddComponent<ClothGrabber>();
+			var collider = AddCenteredCubeMeshCollider(grabberRoot);
+			var cloth = CreateSingleVertexCloth(clothRoot, new float3(0f, 0f, 0.055f));
+
+			grabber.GrabCollider = collider;
+			grabber.GrabRadius = 0.005f;
+			grabber.IsActive = true;
+
+			try
+			{
+				Physics.SyncTransforms();
+				ClothGrabberUpdateMethod.Invoke(grabber, null);
+
+				var positions = cloth.GetPositions();
+				Assert.That(grabber.IsGrabbing, Is.True);
+				Assert.That(positions[0].x, Is.EqualTo(0f).Within(1e-4f));
+				Assert.That(positions[0].y, Is.EqualTo(0f).Within(1e-4f));
+				Assert.That(positions[0].z, Is.EqualTo(0.05f).Within(1e-3f));
+			}
+			finally
+			{
+				UnregisterBurstCloth(cloth);
+				DestroyTestMesh(collider);
+				Object.DestroyImmediate(clothRoot);
+				Object.DestroyImmediate(grabberRoot);
+			}
+		}
 	}
 
 	public class ObjectTrackingTests
@@ -623,12 +924,149 @@ namespace CLOiSim.Tests.EditMode
 		private static readonly MethodInfo BuildWeldConstraintsMethod = typeof(ClothPlugin).GetMethod(
 			"BuildWeldConstraints",
 			BindingFlags.NonPublic | BindingFlags.Static);
+		private static readonly MethodInfo ApplyClothParametersMethod = typeof(ClothPlugin).GetMethod(
+			"ApplyClothParameters",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly MethodInfo ApplyColliderDiscoveryParametersMethod = typeof(ClothPlugin).GetMethod(
+			"ApplyColliderDiscoveryParameters",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly MethodInfo DiscoverSceneCollidersMethod = typeof(ClothPlugin).GetMethod(
+			"DiscoverSceneColliders",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly MethodInfo ShouldIncludeColliderMethod = typeof(ClothPlugin).GetMethod(
+			"ShouldIncludeCollider",
+			BindingFlags.NonPublic | BindingFlags.Instance);
 		private static readonly MethodInfo TryAddEdgeMethod = typeof(ClothPlugin).GetMethod(
 			"TryAddEdge",
 			BindingFlags.NonPublic | BindingFlags.Static);
 		private static readonly MethodInfo TryAddBendingMethod = typeof(ClothPlugin).GetMethod(
 			"TryAddBending",
 			BindingFlags.NonPublic | BindingFlags.Static);
+		private static readonly FieldInfo ClothField = typeof(ClothPlugin).GetField(
+			"_cloth",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly FieldInfo ClothRootField = typeof(ClothPlugin).GetField(
+			"_clothRoot",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly FieldInfo ClothMeshField = typeof(ClothPlugin).GetField(
+			"_clothMesh",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly FieldInfo MeshTransformField = typeof(ClothPlugin).GetField(
+			"_meshTransform",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly FieldInfo WorldRootField = typeof(ClothPlugin).GetField(
+			"_worldRoot",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly FieldInfo PropsRootField = typeof(ClothPlugin).GetField(
+			"_propsRoot",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly FieldInfo SearchMarginField = typeof(ClothPlugin).GetField(
+			"_searchMargin",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+
+		private static SDFormat.Plugin CreateClothPluginParameters(
+			float? velocityDecay = null,
+			float? sleepThreshold = null)
+		{
+			var pluginParameters = new SDFormat.Plugin("libClothPlugin.so", "cloth_plugin");
+			var pluginElement = pluginParameters.ToElement();
+			var clothElement = pluginElement.AddElement("cloth");
+
+			if (velocityDecay.HasValue || sleepThreshold.HasValue)
+			{
+				var simulationElement = clothElement.AddElement("simulation");
+				if (velocityDecay.HasValue)
+				{
+					AddScalarElement(
+						simulationElement,
+						"velocity_decay",
+						"double",
+						velocityDecay.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+				}
+
+				if (sleepThreshold.HasValue)
+				{
+					AddScalarElement(
+						simulationElement,
+						"sleep_threshold",
+						"double",
+						sleepThreshold.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+				}
+			}
+
+			pluginParameters.Element = pluginElement;
+			return pluginParameters;
+		}
+
+		private static void AddScalarElement(SDFormat.Element parent, string name, string type, string value)
+		{
+			var element = parent.AddElement(name);
+			element.AddValue(type, string.Empty, false);
+			element.GetValue()?.SetFromString(value);
+		}
+
+		private static Mesh CreateClothBoundsMesh()
+		{
+			var mesh = new Mesh
+			{
+				vertices = new[]
+				{
+					new Vector3(-0.05f, 0f, -0.05f),
+					new Vector3(0.05f, 0f, -0.05f),
+					new Vector3(-0.05f, 0f, 0.05f),
+					new Vector3(0.05f, 0f, 0.05f)
+				},
+				triangles = new[]
+				{
+					0, 2, 1,
+					2, 3, 1
+				}
+			};
+
+			mesh.RecalculateNormals();
+			mesh.RecalculateBounds();
+			return mesh;
+		}
+
+		[Test]
+		public void ApplyClothParameters_AppliesVelocityDecayFromPluginParameters()
+		{
+			var root = new GameObject("cloth-plugin-root");
+			var plugin = root.AddComponent<ClothPlugin>();
+			var cloth = root.AddComponent<BurstCloth>();
+			ClothField.SetValue(plugin, cloth);
+
+			try
+			{
+				ApplyClothParametersMethod.Invoke(plugin, new object[] { CreateClothPluginParameters(velocityDecay: 20f) });
+
+				Assert.That(cloth.VelocityDecay, Is.EqualTo(20f).Within(1e-6f));
+			}
+			finally
+			{
+				Object.DestroyImmediate(root);
+			}
+		}
+
+		[Test]
+		public void ApplyClothParameters_ClampsAggressiveSleepThreshold()
+		{
+			var root = new GameObject("cloth-plugin-root");
+			var plugin = root.AddComponent<ClothPlugin>();
+			var cloth = root.AddComponent<BurstCloth>();
+			ClothField.SetValue(plugin, cloth);
+
+			try
+			{
+				ApplyClothParametersMethod.Invoke(plugin, new object[] { CreateClothPluginParameters(sleepThreshold: 0.1f) });
+
+				Assert.That(cloth.SleepThreshold, Is.EqualTo(0.01f).Within(1e-6f));
+			}
+			finally
+			{
+				Object.DestroyImmediate(root);
+			}
+		}
 
 		[Test]
 		public void BuildWeldConstraints_CreatesZeroLengthConstraintAndPropagatesPinnedMass()
