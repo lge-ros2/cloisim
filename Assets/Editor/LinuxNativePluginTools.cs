@@ -7,7 +7,9 @@
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using System.Linq;
 
 public sealed class LinuxNativePluginBuildPreprocessor : IPreprocessBuildWithReport
 {
@@ -20,6 +22,7 @@ public sealed class LinuxNativePluginBuildPreprocessor : IPreprocessBuildWithRep
 			return;
 		}
 
+		LinuxNativePluginTools.PrepareMainSceneForBuild();
 		LinuxNativePluginTools.ConfigureLinuxNativePluginsForBuild();
 	}
 }
@@ -35,12 +38,17 @@ public sealed class LinuxBuildPdbCleanupPostprocessor : IPostprocessBuildWithRep
 			return;
 		}
 
+		LinuxNativePluginTools.RestoreMainSceneAfterBuild();
 		LinuxNativePluginTools.DeleteDebugArtifactsFromBuild(report.summary.outputPath);
 	}
 }
 
 public static class LinuxNativePluginTools
 {
+	private const string MainScenePath = "Assets/Scenes/MainScene.unity";
+	private const string WorldRootName = "World";
+	private const string MainSceneBackupFileName = "MainScene.unity.build-backup";
+
 	private static readonly BuildTarget[] SupportedCleanupTargets =
 	{
 		BuildTarget.StandaloneLinux64,
@@ -60,6 +68,9 @@ public static class LinuxNativePluginTools
 		"Assets/Plugins/AssimpNetter.6.0.4/runtimes/linux-x64/native/libassimp.so",
 		"Assets/Scripts/Tools/StdHash/lib/linux/libStdHash.so",
 	};
+
+	private static string MainSceneBackupPath =>
+		System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CLOiSim", MainSceneBackupFileName);
 
 	[MenuItem("CLOiSim/Diagnostics/Log Build Link Settings")]
 	private static void LogBuildLinkSettings()
@@ -87,6 +98,69 @@ public static class LinuxNativePluginTools
 		AssetDatabase.SaveAssets();
 		AssetDatabase.Refresh();
 		Debug.Log("Configured Linux native plugin import settings.");
+	}
+
+	public static void PrepareMainSceneForBuild()
+	{
+		if (!System.IO.File.Exists(MainScenePath))
+		{
+			Debug.LogWarning($"Main scene not found at '{MainScenePath}'. Skipping scene strip.");
+			return;
+		}
+
+		System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(MainSceneBackupPath));
+		System.IO.File.Copy(MainScenePath, MainSceneBackupPath, true);
+
+		var activeScene = EditorSceneManager.GetActiveScene();
+		var activeScenePath = activeScene.path;
+		var mainScene = EditorSceneManager.OpenScene(MainScenePath, OpenSceneMode.Single);
+		var worldRoot = mainScene.GetRootGameObjects().FirstOrDefault(root => root.name == WorldRootName);
+		if (worldRoot == null)
+		{
+			Debug.LogWarning($"'{WorldRootName}' root not found in '{MainScenePath}'. Skipping scene strip.");
+			RestorePreviouslyActiveScene(activeScenePath);
+			return;
+		}
+
+		for (var index = worldRoot.transform.childCount - 1; index >= 0; index--)
+		{
+			Object.DestroyImmediate(worldRoot.transform.GetChild(index).gameObject);
+		}
+
+		EditorSceneManager.SaveScene(mainScene);
+		RestorePreviouslyActiveScene(activeScenePath);
+		AssetDatabase.Refresh();
+		Debug.Log("Prepared MainScene for build by stripping World children.");
+	}
+
+	public static void RestoreMainSceneAfterBuild()
+	{
+		if (!System.IO.File.Exists(MainSceneBackupPath))
+		{
+			return;
+		}
+
+		var activeScene = EditorSceneManager.GetActiveScene();
+		var activeScenePath = activeScene.path;
+		System.IO.File.Copy(MainSceneBackupPath, MainScenePath, true);
+		System.IO.File.Delete(MainSceneBackupPath);
+		AssetDatabase.Refresh();
+		RestorePreviouslyActiveScene(activeScenePath);
+		Debug.Log("Restored MainScene after build.");
+	}
+
+	[MenuItem("CLOiSim/Build/Cleanup MainScene Backup Metadata")]
+	private static void CleanupMainSceneBackupMetadata()
+	{
+		const string staleBackupAssetPath = MainScenePath + ".build-backup";
+		const string staleBackupMetaPath = staleBackupAssetPath + ".meta";
+
+		if (System.IO.File.Exists(staleBackupMetaPath))
+		{
+			System.IO.File.Delete(staleBackupMetaPath);
+		}
+
+		AssetDatabase.Refresh();
 	}
 
 	public static bool ShouldCleanupBuildArtifacts(BuildTarget buildTarget)
@@ -154,5 +228,20 @@ public static class LinuxNativePluginTools
 		importer.SetCompatibleWithPlatform(BuildTarget.StandaloneLinux64, true);
 		importer.SetPlatformData(BuildTarget.StandaloneLinux64, "CPU", "x86_64");
 		importer.SaveAndReimport();
+	}
+
+	private static void RestorePreviouslyActiveScene(string activeScenePath)
+	{
+		if (string.IsNullOrEmpty(activeScenePath) || activeScenePath == MainScenePath)
+		{
+			return;
+		}
+
+		if (!System.IO.File.Exists(activeScenePath))
+		{
+			return;
+		}
+
+		EditorSceneManager.OpenScene(activeScenePath, OpenSceneMode.Single);
 	}
 }
