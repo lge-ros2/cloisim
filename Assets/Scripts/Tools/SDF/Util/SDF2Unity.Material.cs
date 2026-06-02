@@ -205,6 +205,21 @@ public static partial class SDF2Unity
 		target.SyncLegacyBaseMap();
 		target.SyncLegacyBaseColor();
 
+		if (target.HasProperty("_SpecularHighlights") && target.GetFloat("_SpecularHighlights") < 0.5f)
+		{
+			target.SetFloat("_SpecularHighlights", 1f);
+		}
+
+		if (target.HasProperty("_EnvironmentReflections") && target.GetFloat("_EnvironmentReflections") < 0.5f)
+		{
+			target.SetFloat("_EnvironmentReflections", 1f);
+		}
+
+		if (target.HasProperty("_ReceiveShadows") && target.GetFloat("_ReceiveShadows") < 0.5f)
+		{
+			target.SetFloat("_ReceiveShadows", 1f);
+		}
+
 		var isSpecularWorkflow = target.HasProperty("_WorkflowMode") &&
 			UE.Mathf.Approximately(target.GetFloat("_WorkflowMode"), SpecularWorkflowMode);
 		var glossMapPropertyName = isSpecularWorkflow ? "_SpecGlossMap" : "_MetallicGlossMap";
@@ -266,11 +281,21 @@ public static partial class SDF2Unity
 		newMaterial.SetColor("_BaseColor", UE.Color.white);
 		newMaterial.SetColor("_Color", UE.Color.white);
 		newMaterial.SetColor("_EmissionColor", UE.Color.black);
+		newMaterial.globalIlluminationFlags = UE.MaterialGlobalIlluminationFlags.RealtimeEmissive;
 		newMaterial.SetTexture("_MetallicGlossMap", null);
 		newMaterial.SetTexture("_SpecGlossMap", null);
 		newMaterial.SetTexture("_BumpMap", null);
 		newMaterial.SetTexture("_EmissionMap", null);
 		newMaterial.SetTexture("_OcclusionMap", null);
+		newMaterial.SetTexture("_ParallaxMap", null);
+		newMaterial.SetTexture("_DetailMask", null);
+		newMaterial.SetTexture("_DetailAlbedoMap", null);
+		newMaterial.SetTexture("_DetailNormalMap", null);
+		newMaterial.SetFloat("_OcclusionStrength", 1f);
+		newMaterial.SetFloat("_BumpScale", 1f);
+		newMaterial.SetFloat("_Parallax", 0.005f);
+		newMaterial.SetFloat("_DetailAlbedoMapScale", 1f);
+		newMaterial.SetFloat("_DetailNormalMapScale", 1f);
 		newMaterial.SetFloat("_Smoothness", 0f);
 		newMaterial.SetOverrideTag("RenderType", "Opaque");
 		newMaterial.UseMetallicWorkflow();
