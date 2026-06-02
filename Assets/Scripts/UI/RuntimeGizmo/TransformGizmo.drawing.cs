@@ -44,6 +44,7 @@ namespace RuntimeGizmos
 		private static readonly int _ClipRectCountID = Shader.PropertyToID("_ClipRectCount");
 		private static readonly int _ClipRectsID = Shader.PropertyToID("_ClipRects");
 		private const int MaxClipRects = 64;
+		private static int _clipRectUploadCapacity = MaxClipRects;
 
 		private readonly List<Vector4> _overlayClipRects = new(MaxClipRects);
 		private readonly Vector3[] _uiWorldCorners = new Vector3[4];
@@ -436,9 +437,18 @@ namespace RuntimeGizmos
 			if (_gizmoCompositeMaterial == null)
 				return;
 
+			if (_overlayClipRects.Count < _clipRectUploadCapacity)
+			{
+				_clipRectUploadCapacity = _overlayClipRects.Count;
+			}
+
+			var clipRectCount = Mathf.Min(_overlayClipRects.Count, _clipRectUploadCapacity);
 			_gizmoCompositeMaterial.SetTexture("_GizmoTex", gizmoRT);
-			_gizmoCompositeMaterial.SetInt(_ClipRectCountID, _overlayClipRects.Count);
-			_gizmoCompositeMaterial.SetVectorArray(_ClipRectsID, _overlayClipRects);
+			_gizmoCompositeMaterial.SetInt(_ClipRectCountID, clipRectCount);
+			if (clipRectCount > 0)
+			{
+				_gizmoCompositeMaterial.SetVectorArray(_ClipRectsID, _overlayClipRects.GetRange(0, clipRectCount));
+			}
 
 			if (_gizmoCompositeMaterial.SetPass(0))
 			{
