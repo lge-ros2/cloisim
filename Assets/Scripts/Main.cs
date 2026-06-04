@@ -86,6 +86,9 @@ public class Main : MonoBehaviour
 	private bool _startRecordTriggered = false;
 	private bool _stopRecordTriggered = false;
 	private bool _teleportTriggered = false;
+	private Transform _deferredCleanupRoot = null;
+	private readonly Queue<GameObject> _deferredDestroyQueue = new();
+	private Coroutine _deferredDestroyCoroutine = null;
 	private TeleportOperation _pendingTeleportOperation;
 
 	private string _pendingModelInfoQuery = null;
@@ -174,17 +177,137 @@ public class Main : MonoBehaviour
 #endif
 	}
 
-	private void CleanAllModels()
+	private Transform GetDeferredCleanupRoot()
 	{
-		foreach (var child in _worldRoot.GetComponentsInChildren<Transform>())
+		if (_deferredCleanupRoot != null)
 		{
-			// skip root gameobject
-			if (child == null || child.gameObject == null || child.gameObject == _worldRoot)
+			return _deferredCleanupRoot;
+		}
+
+		var deferredCleanupObject = new GameObject("DeferredCleanupRoot")
+		{
+			hideFlags = HideFlags.HideAndDontSave
+		};
+		DontDestroyOnLoad(deferredCleanupObject);
+		_deferredCleanupRoot = deferredCleanupObject.transform;
+		return _deferredCleanupRoot;
+	}
+
+	private bool HasPendingDeferredDestroy()
+	{
+		return _deferredDestroyQueue.Count > 0 || _deferredDestroyCoroutine != null;
+	}
+
+	private static bool HasRootArticulationBody(Transform target)
+	{
+		if (target == null)
+		{
+			return false;
+		}
+
+		var modelHelper = target.GetComponent<SDFormat.Helper.Model>();
+		if (modelHelper != null)
+		{
+			return modelHelper.hasRootArticulationBody;
+		}
+
+		var articulationBody = target.GetComponentInChildren<ArticulationBody>();
+		return articulationBody != null && articulationBody.isRoot;
+	}
+
+	private void EnqueueDeferredDestroy(GameObject target)
+	{
+		if (target == null)
+		{
+			return;
+		}
+
+		_deferredDestroyQueue.Enqueue(target);
+		if (_deferredDestroyCoroutine == null)
+		{
+			_deferredDestroyCoroutine = StartCoroutine(ProcessDeferredDestroyQueue());
+		}
+	}
+
+	private IEnumerator ProcessDeferredDestroyQueue()
+	{
+		while (_deferredDestroyQueue.Count > 0)
+		{
+			var target = _deferredDestroyQueue.Dequeue();
+			if (target == null)
 			{
 				continue;
 			}
 
-			Destroy(child.gameObject);
+			yield return null;
+			yield return null;
+
+			if (target != null)
+			{
+				Destroy(target);
+			}
+		}
+
+		_deferredDestroyCoroutine = null;
+	}
+
+	private void SafeDestroyModelRootInternal(Transform target)
+	{
+		if (target == null)
+		{
+			return;
+		}
+
+		if (!HasRootArticulationBody(target))
+		{
+			Destroy(target.gameObject);
+			return;
+		}
+
+		target.SetParent(GetDeferredCleanupRoot(), true);
+		target.gameObject.SetActive(false);
+		EnqueueDeferredDestroy(target.gameObject);
+	}
+
+	public static void SafeDestroyModelRoot(Transform target)
+	{
+		if (_instance == null || target == null)
+		{
+			return;
+		}
+
+		_instance.SafeDestroyModelRootInternal(target);
+	}
+
+	private IEnumerator CleanAllModels()
+	{
+		var worldRootTransform = _worldRoot.transform;
+		var targets = new List<Transform>(worldRootTransform.childCount);
+		for (var i = 0; i < worldRootTransform.childCount; i++)
+		{
+			targets.Add(worldRootTransform.GetChild(i));
+		}
+
+		foreach (var target in targets)
+		{
+			if (target == null || target.gameObject == null)
+			{
+				continue;
+			}
+
+			if (target.CompareTag("Model"))
+			{
+				SafeDestroyModelRoot(target);
+			}
+			else
+			{
+				Destroy(target.gameObject);
+			}
+		}
+
+		while (HasPendingDeferredDestroy())
+		{
+			yield return null;
 		}
 	}
 
@@ -640,7 +763,7 @@ public class Main : MonoBehaviour
 
 			if (_clearAllOnStart)
 			{
-				CleanAllModels();
+				yield return CleanAllModels();
 				CleanAllLights();
 				VHACD.ClearCache();
 			}

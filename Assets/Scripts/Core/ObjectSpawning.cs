@@ -316,7 +316,14 @@ public class ObjectSpawning : MonoBehaviour
 				targetObjectTransform.CompareTag("Road") ||
 				targetObjectTransform.CompareTag("Model"))
 			{
-				Destroy(targetObjectTransform.gameObject);
+				if (targetObjectTransform.CompareTag("Model"))
+				{
+					Main.SafeDestroyModelRoot(targetObjectTransform);
+				}
+				else
+				{
+					Destroy(targetObjectTransform.gameObject);
+				}
 				yield return null;
 			}
 		}
