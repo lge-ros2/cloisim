@@ -13,14 +13,20 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
+			static private UE.Color GetLightColor(in Light light)
+			{
+				var color = light.Diffuse.ToUnity();
+				color.a = 1f;
+				return color;
+			}
+
 			static private float GetIntensity(in Light light)
 			{
-				var range = (float)light.AttenuationRange;
 				var constant = (float)light.ConstantAttenuationFactor;
 				var linear = (float)light.LinearAttenuationFactor;
 				var quadratic = (float)light.QuadraticAttenuationFactor;
 				var attenuationFactor = 1.0f / Mathf.Max(0.001f, constant + linear + quadratic);
-				return Mathf.Clamp(range * attenuationFactor, 0.1f, 10f);
+				return attenuationFactor;
 			}
 
 			static private UE.Quaternion GetDirectionalLightRotation(in UE.Vector3 direction)
@@ -160,7 +166,7 @@ namespace SDFormat
 					lightComponent.renderMode = UE.LightRenderMode.ForcePixel;
 				}
 
-				lightComponent.color = light.Diffuse.ToUnity();
+				lightComponent.color = GetLightColor(light);
 				lightComponent.cullingMask = UE.LayerMask.GetMask("Default", "Plane");
 
 				var direction = light.Direction.ToUnity();
