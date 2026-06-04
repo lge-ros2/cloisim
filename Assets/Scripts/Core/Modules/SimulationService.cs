@@ -15,6 +15,7 @@ public class SimulationService : IDisposable
 	public static readonly string FAIL = "fail";
 	public static readonly string Delimiter = "!%!";
 	public static readonly string SERVICE_PORT_ENVIRONMENT_NAME = "CLOISIM_SERVICE_PORT";
+	private const string BenignHandshakeReadFailure = "The header cannot be read from the data source.";
 
 	private int _servicePort;
 	public int ServicePort => _servicePort;
@@ -46,6 +47,16 @@ public class SimulationService : IDisposable
 		wsServer.Log.Output = (logData, _) =>
 		{
 			var msg = $"[WebSocket] {logData.Level}: {logData.Message}";
+			var isBenignDisconnect = logData.Level == WebSocketSharp.LogLevel.Fatal &&
+				logData.Message != null &&
+				logData.Message.Contains(BenignHandshakeReadFailure, StringComparison.Ordinal);
+
+			if (isBenignDisconnect)
+			{
+				Debug.Log($"[WebSocket] Disconnect before handshake completed: {logData.Message}");
+				return;
+			}
+
 			switch (logData.Level)
 			{
 				case WebSocketSharp.LogLevel.Fatal:
