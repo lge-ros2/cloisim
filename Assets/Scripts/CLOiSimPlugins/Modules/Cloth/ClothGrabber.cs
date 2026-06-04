@@ -5,6 +5,7 @@
  */
 using UnityEngine;
 using Unity.Mathematics;
+using Unity.Profiling;
 
 namespace CLOiSim.Cloth
 {
@@ -15,6 +16,10 @@ namespace CLOiSim.Cloth
 	/// </summary>
 	public class ClothGrabber : MonoBehaviour
 	{
+		private static readonly ProfilerMarker HasClothWithinDistanceMarker = new("CLOiSim.ClothGrabber.HasClothWithinDistance");
+		private static readonly ProfilerMarker GrabberUpdateMarker = new("CLOiSim.ClothGrabber.Update");
+		private static readonly ProfilerMarker TryGrabNearestVertexMarker = new("CLOiSim.ClothGrabber.TryGrabNearestVertex");
+
 		[Header("Grab Collider")]
 		[SerializeField] private MeshCollider _grabCollider;
 		[SerializeField] private float _grabRadius = 0.01f; // fallback search radius around collider bounds
@@ -69,22 +74,26 @@ namespace CLOiSim.Cloth
 		/// </summary>
 		public bool HasClothWithinDistance(float distance)
 		{
-			if (_grabCollider == null) return false;
-			var maxSurfaceDistanceSq = distance * distance;
-			foreach (var cloth in BurstCloth.Instances)
+			using (HasClothWithinDistanceMarker.Auto())
 			{
-				var positions = cloth.GetPositions();
-				if (!positions.IsCreated) continue;
-
-				for (var i = 0; i < positions.Length; i++)
+				if (_grabCollider == null) return false;
+				var colliderBounds = GetColliderBounds();
+				var maxSurfaceDistanceSq = distance * distance;
+				foreach (var cloth in BurstCloth.Instances)
 				{
-					if (cloth.IsVertexGrabbed(i) || cloth.IsVertexPinned(i)) continue;
+					var positions = cloth.GetPositions();
+					if (!positions.IsCreated) continue;
 
-					if (GetSurfaceDistanceSq(positions[i]) <= maxSurfaceDistanceSq)
-						return true;
+					for (var i = 0; i < positions.Length; i++)
+					{
+						if (cloth.IsVertexGrabbed(i) || cloth.IsVertexPinned(i)) continue;
+
+						if (GetSurfaceDistanceSq(positions[i], colliderBounds) <= maxSurfaceDistanceSq)
+							return true;
+					}
 				}
+				return false;
 			}
-			return false;
 		}
 
 		/// <summary>Releases the currently grabbed vertex without deactivating.</summary>
@@ -98,98 +107,110 @@ namespace CLOiSim.Cloth
 
 		private void Update()
 		{
-			if (!_isActive) return;
-			if (_grabCollider == null) return;
-
-			var grabReference = (float3)GetColliderBounds().center;
-
-			if (_grabbedVertexIndex >= 0)
+			using (GrabberUpdateMarker.Auto())
 			{
-				if (_cloth != null)
-				{
-					var positions = _cloth.GetPositions();
-					if (positions.IsCreated && _grabbedVertexIndex < positions.Length)
-					{
-						var grabTarget = GetGrabTargetPosition(positions[_grabbedVertexIndex]);
-						_cloth.UpdateGrabPosition(_grabbedVertexIndex, grabTarget);
-					}
-				}
-				return;
-			}
+				if (!_isActive) return;
+				if (_grabCollider == null) return;
 
-			TryGrabNearestVertex(grabReference);
+				var colliderBounds = GetColliderBounds();
+				var grabReference = (float3)colliderBounds.center;
+
+				if (_grabbedVertexIndex >= 0)
+				{
+					if (_cloth != null)
+					{
+						var positions = _cloth.GetPositions();
+						if (positions.IsCreated && _grabbedVertexIndex < positions.Length)
+						{
+							var grabTarget = GetGrabTargetPosition(positions[_grabbedVertexIndex], colliderBounds);
+							_cloth.UpdateGrabPosition(_grabbedVertexIndex, grabTarget);
+						}
+					}
+					return;
+				}
+
+				TryGrabNearestVertex(grabReference, colliderBounds);
+			}
 		}
 
-		private void TryGrabNearestVertex(float3 grabCenter)
+		private void TryGrabNearestVertex(float3 grabCenter, Bounds colliderBounds)
 		{
-			// Compute search radius from collider bounds diagonal + fallback margin
-			var bounds = GetColliderBounds();
-			var boundsRadius = math.length((float3)bounds.extents) + _grabRadius;
-
-			var bestIndex = -1;
-			var bestDistSq = boundsRadius * boundsRadius;
-			BurstCloth bestCloth = null;
-
-			foreach (var cloth in BurstCloth.Instances)
+			using (TryGrabNearestVertexMarker.Auto())
 			{
-				var positions = cloth.GetPositions();
-				if (!positions.IsCreated) continue;
+				// Compute search radius from collider bounds diagonal + fallback margin
+				var bounds = colliderBounds;
+				var boundsRadius = math.length((float3)bounds.extents) + _grabRadius;
 
-				// First pass: look for vertices strictly inside collider bounds
-				var strictIndex = -1;
-				var strictDistSq = float.MaxValue;
-				for (var i = 0; i < positions.Length; i++)
+				var bestIndex = -1;
+				var bestDistSq = boundsRadius * boundsRadius;
+				BurstCloth bestCloth = null;
+
+				foreach (var cloth in BurstCloth.Instances)
 				{
-					if (cloth.IsVertexGrabbed(i)) continue;
-					var pos = (Vector3)positions[i];
-					if (!bounds.Contains(pos)) continue;
-					var grabTarget = GetGrabTargetPosition(positions[i]);
-					var dSq = math.lengthsq(positions[i] - grabTarget);
-					if (dSq < strictDistSq)
+					var positions = cloth.GetPositions();
+					if (!positions.IsCreated) continue;
+
+					// First pass: look for vertices strictly inside collider bounds
+					var strictIndex = -1;
+					var strictDistSq = float.MaxValue;
+					for (var i = 0; i < positions.Length; i++)
 					{
-						strictDistSq = dSq;
-						strictIndex = i;
+						if (cloth.IsVertexGrabbed(i)) continue;
+						var pos = (Vector3)positions[i];
+						if (!bounds.Contains(pos)) continue;
+						var grabTarget = GetGrabTargetPosition(positions[i], bounds);
+						var dSq = math.lengthsq(positions[i] - grabTarget);
+						if (dSq < strictDistSq)
+						{
+							strictDistSq = dSq;
+							strictIndex = i;
+						}
 					}
-				}
 
-				if (strictIndex >= 0 && strictDistSq < bestDistSq)
-				{
-					bestDistSq = strictDistSq;
-					bestIndex = strictIndex;
-					bestCloth = cloth;
-				}
-				else
-				{
-					// Fallback: nearest within boundsRadius
-					var fallbackIndex = cloth.FindNearestVertex(grabCenter, boundsRadius);
-					if (fallbackIndex < 0) continue;
-					var grabTarget = GetGrabTargetPosition(positions[fallbackIndex]);
-					var dSq = math.lengthsq(positions[fallbackIndex] - grabTarget);
-					if (dSq < bestDistSq)
+					if (strictIndex >= 0 && strictDistSq < bestDistSq)
 					{
-						bestDistSq = dSq;
-						bestIndex = fallbackIndex;
+						bestDistSq = strictDistSq;
+						bestIndex = strictIndex;
 						bestCloth = cloth;
 					}
+					else
+					{
+						// Fallback: nearest within boundsRadius
+						var fallbackIndex = cloth.FindNearestVertex(grabCenter, boundsRadius);
+						if (fallbackIndex < 0) continue;
+						var grabTarget = GetGrabTargetPosition(positions[fallbackIndex], bounds);
+						var dSq = math.lengthsq(positions[fallbackIndex] - grabTarget);
+						if (dSq < bestDistSq)
+						{
+							bestDistSq = dSq;
+							bestIndex = fallbackIndex;
+							bestCloth = cloth;
+						}
+					}
 				}
-			}
 
-			if (bestCloth == null || bestIndex < 0)
-				return;
+				if (bestCloth == null || bestIndex < 0)
+					return;
 
-			var positionsForBestCloth = bestCloth.GetPositions();
-			if (!positionsForBestCloth.IsCreated || bestIndex >= positionsForBestCloth.Length)
-				return;
+				var positionsForBestCloth = bestCloth.GetPositions();
+				if (!positionsForBestCloth.IsCreated || bestIndex >= positionsForBestCloth.Length)
+					return;
 
-			var grabTargetForBestVertex = GetGrabTargetPosition(positionsForBestCloth[bestIndex]);
-			if (bestCloth.GrabVertex(bestIndex, grabTargetForBestVertex))
-			{
-				_cloth = bestCloth;
-				_grabbedVertexIndex = bestIndex;
+				var grabTargetForBestVertex = GetGrabTargetPosition(positionsForBestCloth[bestIndex], bounds);
+				if (bestCloth.GrabVertex(bestIndex, grabTargetForBestVertex))
+				{
+					_cloth = bestCloth;
+					_grabbedVertexIndex = bestIndex;
+				}
 			}
 		}
 
 		private float3 GetGrabTargetPosition(float3 referencePosition)
+		{
+			return GetGrabTargetPosition(referencePosition, GetColliderBounds());
+		}
+
+		private float3 GetGrabTargetPosition(float3 referencePosition, Bounds colliderBounds)
 		{
 			if (_grabCollider == null)
 				return referencePosition;
@@ -198,29 +219,33 @@ namespace CLOiSim.Cloth
 			if (math.lengthsq(closestPoint - referencePosition) > 1e-8f)
 				return closestPoint;
 
-			var bounds = GetColliderBounds();
-			var boundsClosestPoint = (float3)bounds.ClosestPoint((Vector3)referencePosition);
+			var boundsClosestPoint = (float3)colliderBounds.ClosestPoint((Vector3)referencePosition);
 			if (math.lengthsq(boundsClosestPoint - referencePosition) > 1e-8f)
 				return boundsClosestPoint;
 
-			var colliderCenter = (float3)bounds.center;
+			var colliderCenter = (float3)colliderBounds.center;
 			var outward = referencePosition - colliderCenter;
 			if (math.lengthsq(outward) < 1e-8f)
 				outward = (float3)_grabCollider.transform.up;
 
-			var probeDistance = math.length((float3)bounds.extents) + _grabRadius + 0.001f;
+			var probeDistance = math.length((float3)colliderBounds.extents) + _grabRadius + 0.001f;
 			var probePoint = colliderCenter + math.normalize(outward) * probeDistance;
-			return (float3)bounds.ClosestPoint((Vector3)probePoint);
+			return (float3)colliderBounds.ClosestPoint((Vector3)probePoint);
 		}
 
 		private float GetSurfaceDistanceSq(float3 referencePosition)
 		{
-			var grabTarget = GetGrabTargetPosition(referencePosition);
+			return GetSurfaceDistanceSq(referencePosition, GetColliderBounds());
+		}
+
+		private float GetSurfaceDistanceSq(float3 referencePosition, Bounds colliderBounds)
+		{
+			var grabTarget = GetGrabTargetPosition(referencePosition, colliderBounds);
 			var bestDistanceSq = math.lengthsq(referencePosition - grabTarget);
 
 			// Bounds.ClosestPoint is a more stable fallback for proximity-only checks,
 			// especially in EditMode tests using procedural colliders.
-			var boundsTarget = (float3)GetColliderBounds().ClosestPoint((Vector3)referencePosition);
+			var boundsTarget = (float3)colliderBounds.ClosestPoint((Vector3)referencePosition);
 			var boundsDistanceSq = math.lengthsq(referencePosition - boundsTarget);
 			return math.min(bestDistanceSq, boundsDistanceSq);
 		}

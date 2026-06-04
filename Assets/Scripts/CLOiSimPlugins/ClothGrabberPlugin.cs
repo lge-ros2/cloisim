@@ -6,6 +6,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Profiling;
 using CLOiSim.Cloth;
 using SDFormat;
 
@@ -54,10 +55,26 @@ using SDFormat;
 /// </summary>
 public class ClothGrabberPlugin : CLOiSimPlugin
 {
+	private static readonly ProfilerMarker UpdateMarker = new("CLOiSim.ClothGrabberPlugin.Update");
+	private static readonly ProfilerMarker GroupEvaluationMarker = new("CLOiSim.ClothGrabberPlugin.EvaluateGroup");
+	private static readonly ProfilerMarker ContactCheckMarker = new("CLOiSim.ClothGrabberPlugin.IsInContact");
+
 	private class ActivationGroup
 	{
 		public float ContactDistanceThreshold;
 		public List<ClothGrabber> Grabbers = new();
+	}
+
+	private readonly struct ContactCacheKey
+	{
+		public readonly ClothGrabber Grabber;
+		public readonly float Threshold;
+
+		public ContactCacheKey(ClothGrabber grabber, float threshold)
+		{
+			Grabber = grabber;
+			Threshold = threshold;
+		}
 	}
 
 	private readonly Dictionary<string, ClothGrabber> _grabbersByName = new();
@@ -65,7 +82,7 @@ public class ClothGrabberPlugin : CLOiSimPlugin
 
 	// Per-frame cache to avoid redundant HasClothWithinDistance() calls
 	// when the same grabber appears in multiple groups
-	private readonly Dictionary<ClothGrabber, bool> _contactCache = new();
+	private readonly Dictionary<ContactCacheKey, bool> _contactCache = new();
 
 	protected override void OnAwake()
 	{
@@ -197,34 +214,40 @@ public class ClothGrabberPlugin : CLOiSimPlugin
 
 	private void Update()
 	{
-		_contactCache.Clear();
-
-		foreach (var group in _activationGroups)
+		using (UpdateMarker.Auto())
 		{
-			var allInContact = true;
-			foreach (var grabber in group.Grabbers)
-			{
-				if (!IsInContact(grabber, group.ContactDistanceThreshold))
-				{
-					allInContact = false;
-					break;
-				}
-			}
+			_contactCache.Clear();
 
-			if (allInContact)
+			foreach (var group in _activationGroups)
 			{
-				foreach (var grabber in group.Grabbers)
+				using (GroupEvaluationMarker.Auto())
 				{
-					if (!grabber.IsActive)
-						grabber.Activate();
-				}
-			}
-			else
-			{
-				foreach (var grabber in group.Grabbers)
-				{
-					if (grabber.IsActive)
-						grabber.Deactivate();
+					var allInContact = true;
+					foreach (var grabber in group.Grabbers)
+					{
+						if (!IsInContact(grabber, group.ContactDistanceThreshold))
+						{
+							allInContact = false;
+							break;
+						}
+					}
+
+					if (allInContact)
+					{
+						foreach (var grabber in group.Grabbers)
+						{
+							if (!grabber.IsActive)
+								grabber.Activate();
+						}
+					}
+					else
+					{
+						foreach (var grabber in group.Grabbers)
+						{
+							if (grabber.IsActive)
+								grabber.Deactivate();
+						}
+					}
 				}
 			}
 		}
@@ -236,14 +259,18 @@ public class ClothGrabberPlugin : CLOiSimPlugin
 	/// </summary>
 	private bool IsInContact(ClothGrabber grabber, float threshold)
 	{
-		if (grabber == null) return false;
+		using (ContactCheckMarker.Auto())
+		{
+			if (grabber == null) return false;
+			var cacheKey = new ContactCacheKey(grabber, threshold);
 
-		if (_contactCache.TryGetValue(grabber, out var cached))
-			return cached;
+			if (_contactCache.TryGetValue(cacheKey, out var cached))
+				return cached;
 
-		var result = grabber.IsGrabbing || grabber.HasClothWithinDistance(threshold);
-		_contactCache[grabber] = result;
-		return result;
+			var result = grabber.IsGrabbing || grabber.HasClothWithinDistance(threshold);
+			_contactCache[cacheKey] = result;
+			return result;
+		}
 	}
 
 	/// <summary>
