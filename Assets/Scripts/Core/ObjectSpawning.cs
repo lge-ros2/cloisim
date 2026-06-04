@@ -165,7 +165,8 @@ public class ObjectSpawning : MonoBehaviour
 			mesh = meshFilter.sharedMesh;
 
 			const float SpawningMargin = 0.01f;
-			position.y += mesh.bounds.max.y + SpawningMargin;
+			var scaledSpawnHeight = Mathf.Abs(mesh.bounds.max.y * scale.y);
+			position.y += scaledSpawnHeight + SpawningMargin;
 
 			// Set transform BEFORE activation so physics starts at the correct pose
 			var spawanedObjectTransform = spawnedObject.transform;
