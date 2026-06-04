@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Reflection;
 using NUnit.Framework;
 using SensorDevices;
 using UnityEngine;
@@ -270,6 +271,75 @@ namespace CLOiSim.Tests.EditMode
 				var relativeObject = SDFormat.Import.Util.FindPoseRelativeObject(nestedModel.transform, "robot_model::chest_link");
 
 				Assert.That(relativeObject, Is.SameAs(chestLinkHelper));
+			}
+			finally
+			{
+				Object.DestroyImmediate(world);
+			}
+		}
+	}
+
+	public class TFScopeResolutionTests
+	{
+		private static readonly FieldInfo RootModelInScopeField = typeof(SDFormat.Helper.Base).GetField(
+			"_rootModelInScope",
+			BindingFlags.NonPublic | BindingFlags.Instance);
+
+		[Test]
+		public void GetPose_PrefersNearestModelScopeForPrefixedLocalNameFallback()
+		{
+			var world = new GameObject("world");
+			var rootModelObject = new GameObject("robot_model");
+			var wrongScopedModelObject = new GameObject("right_hand");
+			var wrongParentObject = new GameObject("index_proximal");
+			var currentScopedModelObject = new GameObject("current_hand_scope");
+			var correctParentObject = new GameObject("index_proximal");
+			var childObject = new GameObject("index_middle");
+
+			try
+			{
+				rootModelObject.transform.SetParent(world.transform, false);
+				var rootModel = rootModelObject.AddComponent<SDFormat.Helper.Model>();
+
+				wrongScopedModelObject.transform.SetParent(rootModelObject.transform, false);
+				wrongScopedModelObject.transform.localPosition = new Vector3(0.5f, 0f, 0f);
+				var wrongScopedModel = wrongScopedModelObject.AddComponent<SDFormat.Helper.Model>();
+				wrongScopedModel.isNested = true;
+
+				wrongParentObject.transform.SetParent(wrongScopedModelObject.transform, false);
+				var wrongParentLink = wrongParentObject.AddComponent<SDFormat.Helper.Link>();
+
+				currentScopedModelObject.transform.SetParent(rootModelObject.transform, false);
+				var currentScopedModel = currentScopedModelObject.AddComponent<SDFormat.Helper.Model>();
+				currentScopedModel.isNested = true;
+
+				correctParentObject.transform.SetParent(currentScopedModelObject.transform, false);
+				correctParentObject.transform.localPosition = new Vector3(0.01f, 0f, 0f);
+				var correctParentLink = correctParentObject.AddComponent<SDFormat.Helper.Link>();
+
+				childObject.transform.SetParent(currentScopedModelObject.transform, false);
+				childObject.transform.localPosition = new Vector3(0.04f, 0f, 0.02f);
+				var childLink = childObject.AddComponent<SDFormat.Helper.Link>();
+
+				RootModelInScopeField.SetValue(wrongParentLink, rootModel);
+				RootModelInScopeField.SetValue(correctParentLink, rootModel);
+				RootModelInScopeField.SetValue(childLink, rootModel);
+
+				wrongParentLink.StoreWorldPoseSnapshot(wrongParentObject.transform.position, wrongParentObject.transform.rotation);
+				correctParentLink.StoreWorldPoseSnapshot(correctParentObject.transform.position, correctParentObject.transform.rotation);
+				childLink.StoreWorldPoseSnapshot(childObject.transform.position, childObject.transform.rotation);
+
+				var tf = new TF(childLink, "right_hand_index_middle", "right_hand_index_proximal");
+				var pose = tf.GetPose();
+
+				var expectedPosition = correctParentObject.transform.InverseTransformPoint(childObject.transform.position);
+				var expectedRotation = Quaternion.Inverse(correctParentObject.transform.rotation) * childObject.transform.rotation;
+
+				Assert.That(pose.position.x, Is.EqualTo(expectedPosition.x).Within(1e-5f));
+				Assert.That(pose.position.y, Is.EqualTo(expectedPosition.y).Within(1e-5f));
+				Assert.That(pose.position.z, Is.EqualTo(expectedPosition.z).Within(1e-5f));
+				Assert.That(Quaternion.Angle(pose.rotation, expectedRotation), Is.LessThan(1e-4f));
+				Assert.That(pose.position.magnitude, Is.LessThan(0.1f));
 			}
 			finally
 			{

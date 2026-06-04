@@ -159,7 +159,7 @@ namespace SDFormat
 
 				if (UE.Camera.main != null)
 				{
-					UE.Camera.main.clearFlags = UE.CameraClearFlags.SolidColor;
+					UE.Camera.main.clearFlags = UE.CameraClearFlags.Skybox;
 					UE.Camera.main.backgroundColor = scene.Background.ToUnity();
 				}
 

@@ -30,6 +30,9 @@ public sealed class CrashReporter : IDisposable
 	private readonly int _mainThreadId;
 	private readonly string _systemInfoSnapshot;
 	private readonly string[] _sessionLogCandidates;
+	private static string _persistentDataPath;
+	private readonly string _companyName;
+	private readonly string _productName;
 
 	private int _dumpSequence = 0;
 	private bool _disposed;
@@ -37,6 +40,11 @@ public sealed class CrashReporter : IDisposable
 	public CrashReporter()
 	{
 		_mainThreadId = Thread.CurrentThread.ManagedThreadId;
+		_companyName = Application.companyName;
+		_productName = Application.productName;
+
+		var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+		_persistentDataPath = Path.Combine(appDataPath, "unity3d", _companyName, _productName);
 
 		_dumpRootPath = BuildLocalDumpRootPath();
 		_mirrorDumpRootPath = BuildMirrorDumpRootPath(_dumpRootPath);
@@ -231,6 +239,11 @@ public sealed class CrashReporter : IDisposable
 			writer.WriteLine($"Crash Time   : {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
 			writer.WriteLine($"Reason       : {reason}");
 			writer.WriteLine($"Message      : {message}");
+			writer.WriteLine($"Company Name : {_companyName}");
+			writer.WriteLine($"Product Name : {_productName}");
+			writer.WriteLine($"Persistent   : {_persistentDataPath}");
+			writer.WriteLine($"Local Dump   : {_dumpRootPath}");
+			writer.WriteLine($"Mirror Dump  : {_mirrorDumpRootPath ?? "<none>"}");
 			writer.WriteLine();
 			writer.WriteLine("=== Stack Trace ===");
 			writer.WriteLine(stackTrace);
@@ -257,13 +270,12 @@ public sealed class CrashReporter : IDisposable
 
 	private static string BuildMirrorDumpRootPath(string localDumpRootPath)
 	{
-		var dumpRootPath = BuildUnityDefaultDumpRootPath();
-		if (string.IsNullOrEmpty(dumpRootPath))
+		if (string.IsNullOrEmpty(_persistentDataPath))
 		{
 			return null;
 		}
 
-		dumpRootPath = Path.GetFullPath(dumpRootPath);
+		var dumpRootPath = Path.GetFullPath(_persistentDataPath);
 		if (string.Equals(dumpRootPath, localDumpRootPath, StringComparison.Ordinal))
 		{
 			return null;
@@ -281,22 +293,6 @@ public sealed class CrashReporter : IDisposable
 			Path.GetDirectoryName(Application.dataPath) ?? ".",
 			DumpDirectoryName);
 #endif
-	}
-
-	private static string BuildUnityDefaultDumpRootPath()
-	{
-		if (!string.IsNullOrEmpty(Application.persistentDataPath))
-		{
-			return Application.persistentDataPath;
-		}
-
-		var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-		if (string.IsNullOrEmpty(appDataPath))
-		{
-			return null;
-		}
-
-		return Path.Combine(appDataPath, "unity3d", Application.companyName, Application.productName);
 	}
 
 	private static string CaptureSystemInfoSnapshot()
@@ -342,6 +338,7 @@ public sealed class CrashReporter : IDisposable
 		var candidates = new List<string>();
 		AddLogCandidate(candidates, TryGetConsoleLogPath());
 
+		var xdgConfig = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
 #if UNITY_EDITOR
 		var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 		if (!string.IsNullOrEmpty(appDataPath))
@@ -349,7 +346,6 @@ public sealed class CrashReporter : IDisposable
 			AddLogCandidate(candidates, Path.Combine(appDataPath, "unity3d", "Editor.log"));
 		}
 
-		var xdgConfig = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
 		if (!string.IsNullOrEmpty(xdgConfig))
 		{
 			AddLogCandidate(candidates, Path.Combine(xdgConfig, "unity3d", "Editor.log"));
@@ -368,7 +364,6 @@ public sealed class CrashReporter : IDisposable
 		AddLogCandidate(candidates, Path.Combine(exeDir, "Player.log"));
 
 		// Linux XDG config path
-		var xdgConfig = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
 		if (!string.IsNullOrEmpty(xdgConfig))
 		{
 			var xdgLogDir = Path.Combine(xdgConfig, "unity3d",

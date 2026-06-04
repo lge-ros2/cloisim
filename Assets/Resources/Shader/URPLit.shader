@@ -125,16 +125,16 @@ Shader "Custom/URP/Lit"
             #pragma shader_feature_local _PARALLAXMAP
             #pragma shader_feature_local _RECEIVE_SHADOWS_OFF
             #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
-            #pragma multi_compile_local_fragment _ _SURFACE_TYPE_TRANSPARENT
+            #pragma shader_feature_local_fragment _SURFACE_TYPE_TRANSPARENT
             #pragma shader_feature_local_fragment _ALPHATEST_ON
             #pragma shader_feature_local_fragment _ _ALPHAPREMULTIPLY_ON _ALPHAMODULATE_ON
-            #pragma multi_compile_local_fragment _ _EMISSION
-            #pragma multi_compile_local_fragment _ _METALLICSPECGLOSSMAP
+            #pragma shader_feature_local_fragment _EMISSION
+            #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
-            #pragma multi_compile_local_fragment _ _OCCLUSIONMAP
+            #pragma shader_feature_local_fragment _OCCLUSIONMAP
             #pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
-            #pragma multi_compile_local_fragment _ _SPECULAR_SETUP
+            #pragma shader_feature_local_fragment _SPECULAR_SETUP
 
             // -------------------------------------
             // Universal Pipeline keywords
@@ -265,16 +265,16 @@ Shader "Custom/URP/Lit"
             #pragma multi_compile_local _ _NORMALMAP
             #pragma shader_feature_local_fragment _ALPHATEST_ON
             //#pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
-            #pragma multi_compile_local_fragment _ _EMISSION
-            #pragma multi_compile_local_fragment _ _METALLICSPECGLOSSMAP
+            #pragma shader_feature_local_fragment _EMISSION
+            #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
-            #pragma multi_compile_local_fragment _ _OCCLUSIONMAP
+            #pragma shader_feature_local_fragment _OCCLUSIONMAP
             #pragma shader_feature_local _PARALLAXMAP
             #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
 
             #pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
-            #pragma multi_compile_local_fragment _ _SPECULAR_SETUP
+            #pragma shader_feature_local_fragment _SPECULAR_SETUP
             #pragma shader_feature_local _RECEIVE_SHADOWS_OFF
 
             // -------------------------------------

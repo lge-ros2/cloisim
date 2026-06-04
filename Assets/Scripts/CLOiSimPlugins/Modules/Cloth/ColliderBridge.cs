@@ -128,12 +128,13 @@ namespace CLOiSim.Cloth
                     var halfExtZ = box.size.z * 0.5f * Mathf.Abs(t.lossyScale.z);
                     var maxHalfExt = Mathf.Max(halfExtX, Mathf.Max(halfExtY, halfExtZ));
                     var minHalfExt = Mathf.Min(halfExtX, Mathf.Min(halfExtY, halfExtZ));
+                    var midHalfExt = (halfExtX + halfExtY + halfExtZ) - maxHalfExt - minHalfExt;
 
                     // A box that is very flat in one dimension (e.g. a floor or wall panel) is
                     // treated as a one-sided half-space plane.  This prevents cloth particles from
                     // tunneling through thin geometry at high velocities, because the half-space
                     // test is valid regardless of how far the particle has moved per sub-step.
-                    if (minHalfExt < maxHalfExt * 0.1f)
+                    if (minHalfExt < maxHalfExt * 0.1f && midHalfExt > 0.5f)
                     {
                         // Pick the world-space normal along the thinnest axis.
                         float3 normal;

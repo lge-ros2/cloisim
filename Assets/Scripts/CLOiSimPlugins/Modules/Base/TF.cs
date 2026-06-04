@@ -200,18 +200,19 @@ public class TF
 			t = t.parent;
 		}
 
-		var searchRoot = (_link.RootModel != null) ? _link.RootModel.transform : _link.transform.root;
+		// If the inferred prefix is not represented in the ancestor chain, keep the
+		// local-name fallback inside the nearest containing model instead of searching
+		// the broader root by prefix. That broader search can bind to a sibling scope
+		// that happens to share the same prefix and duplicated local link names.
+		for (var searchRoot = _link.transform.parent; searchRoot != null; searchRoot = searchRoot.parent)
+		{
+			if (searchRoot.GetComponent<SDFormat.Helper.Model>() != null)
+			{
+				return searchRoot;
+			}
+		}
 
-		if (searchRoot == null)
-			return _link.transform;
-
-		// If the model root is not an ancestor, try to find it under the root model.
-		var modelRoot = SafeFindTransformByName(searchRoot, prefix);
-
-		if (modelRoot != null)
-			return modelRoot;
-
-		// If the scoped root cannot be resolved, avoid searching the entire root.
+		// If the scoped root still cannot be resolved, avoid searching the entire root.
 		// Returning the current link transform is safer than binding to an unrelated duplicated local name.
 		return _link.transform;
 	}

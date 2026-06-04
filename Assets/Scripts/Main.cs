@@ -316,31 +316,7 @@ public class Main : MonoBehaviour
 		GetResourcesPaths();
 
 		// Load Library for Assimp
-#if UNITY_EDITOR
- 		var pluginsFolder = Path.Combine(Application.dataPath, "Plugins");
-		var assimpDir = Directory.GetDirectories(pluginsFolder, "AssimpNetter.*").OrderByDescending(d => d).FirstOrDefault();
-
-		if (assimpDir == null)
-		{
-			throw new Exception("AssimpNetter folder not found in Plugins");
-		}
-
-#	if UNITY_EDITOR_LINUX
-		var assimpLibraryPath = Path.Combine(assimpDir, "runtimes/linux-x64/native/libassimp");
-#	elif UNITY_EDITOR_OSX // TODO: need to be verified,
-		var assimpLibraryPath = Path.Combine(assimpDir, "runtimes/osx-x64/native/libassimp");
-#	else // == UNITY_EDITOR_WIN
-		var assimpLibraryPath = Path.Combine(assimpDir, "runtimes/win-x64/native/assimp");
-#	endif
-#else
-#	if UNITY_STANDALONE_WIN
-		var assimpLibraryPath = "./CLOiSim_Data/Plugins/x86_64/assimp";
-#	elif UNITY_STANDALONE_OSX // TODO: need to be verified,
-		var assimpLibraryPath = "./Contents/PlugIns/libassimp";
-#	else // == UNITY_STANDALONE_LINUX
-		var assimpLibraryPath = "./CLOiSim_Data/Plugins/libassimp";
-#	endif
-#endif
+		var assimpLibraryPath = ResolveAssimpLibraryPath();
   		AssimpLibrary.Instance.LoadLibrary(assimpLibraryPath);
 
 		if (AssimpLibrary.Instance.IsLibraryLoaded == false)
@@ -468,6 +444,61 @@ public class Main : MonoBehaviour
 		ResetRootModelsTransform();
 	}
 
+	private static string ResolveAssimpLibraryPath()
+	{
+#if UNITY_EDITOR
+		var pluginsFolder = Path.Combine(Application.dataPath, "Plugins");
+		var assimpDir = Directory.GetDirectories(pluginsFolder, "AssimpNetter.*").OrderByDescending(d => d).FirstOrDefault();
+
+		if (assimpDir == null)
+		{
+			throw new Exception("AssimpNetter folder not found in Plugins");
+		}
+
+#if UNITY_EDITOR_LINUX
+		return ResolveExistingPath(
+			Path.Combine(assimpDir, "runtimes/linux-x64/native/libassimp.so"),
+			Path.Combine(assimpDir, "runtimes/linux-x64/native/libassimp"));
+#elif UNITY_EDITOR_OSX // TODO: need to be verified,
+		return ResolveExistingPath(
+			Path.Combine(assimpDir, "runtimes/osx-x64/native/libassimp.dylib"),
+			Path.Combine(assimpDir, "runtimes/osx-x64/native/libassimp"));
+#else // == UNITY_EDITOR_WIN
+		return ResolveExistingPath(
+			Path.Combine(assimpDir, "runtimes/win-x64/native/assimp.dll"),
+			Path.Combine(assimpDir, "runtimes/win-x64/native/assimp"));
+#endif
+#else
+#if UNITY_STANDALONE_WIN
+		return ResolveExistingPath(
+			"./CLOiSim_Data/Plugins/x86_64/assimp.dll",
+			"./CLOiSim_Data/Plugins/x86_64/assimp");
+#elif UNITY_STANDALONE_OSX // TODO: need to be verified,
+		return ResolveExistingPath(
+			"./Contents/PlugIns/libassimp.dylib",
+			"./Contents/PlugIns/libassimp");
+#else // == UNITY_STANDALONE_LINUX
+		return ResolveExistingPath(
+			"./CLOiSim_Data/Plugins/x86_64/libassimp.so",
+			"./CLOiSim_Data/Plugins/libassimp.so",
+			"./CLOiSim_Data/Plugins/x86_64/libassimp",
+			"./CLOiSim_Data/Plugins/libassimp");
+#endif
+#endif
+	}
+
+	private static string ResolveExistingPath(params string[] candidates)
+	{
+		foreach (var candidate in candidates)
+		{
+			if (File.Exists(candidate))
+			{
+				return candidate;
+			}
+		}
+
+		return candidates[0];
+	}
 	void Start()
 	{
 		if (!SystemInfo.supportsAsyncGPUReadback)

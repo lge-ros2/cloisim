@@ -21,10 +21,9 @@ namespace CLOiSim.Cloth
 		[SerializeField] private bool _isActive = false;
 
 		private BurstCloth _cloth;
-		private int _grabbedIndex = -1;
 
 		/// <summary>Whether this grabber is currently holding a cloth vertex.</summary>
-		public bool IsGrabbing => _grabbedIndex >= 0;
+		public bool IsGrabbing => _grabbedVertexIndex >= 0;
 
 		/// <summary>Index of the currently grabbed vertex, or -1 if not grabbing.</summary>
 		public int GrabbedVertexIndex => _grabbedVertexIndex;
@@ -65,17 +64,25 @@ namespace CLOiSim.Cloth
 		public void Deactivate() => IsActive = false;
 
 		/// <summary>
-		/// Returns true if any cloth has a free vertex within <paramref name="distance"/> of the grab collider center.
+		/// Returns true if any cloth has a free vertex within <paramref name="distance"/> of the grab collider surface.
 		/// Does NOT grab — use for proximity queries only.
 		/// </summary>
 		public bool HasClothWithinDistance(float distance)
 		{
 			if (_grabCollider == null) return false;
-			var center = (float3)_grabCollider.bounds.center;
+			var maxSurfaceDistanceSq = distance * distance;
 			foreach (var cloth in BurstCloth.Instances)
 			{
-				if (cloth.FindNearestVertex(center, distance) >= 0)
-					return true;
+				var positions = cloth.GetPositions();
+				if (!positions.IsCreated) continue;
+
+				for (var i = 0; i < positions.Length; i++)
+				{
+					if (cloth.IsVertexGrabbed(i) || cloth.IsVertexPinned(i)) continue;
+
+					if (GetSurfaceDistanceSq(positions[i]) <= maxSurfaceDistanceSq)
+						return true;
+				}
 			}
 			return false;
 		}
@@ -94,23 +101,29 @@ namespace CLOiSim.Cloth
 			if (!_isActive) return;
 			if (_grabCollider == null) return;
 
-			var grabCenter = (float3)_grabCollider.bounds.center;
+			var grabReference = (float3)GetColliderBounds().center;
 
 			if (_grabbedVertexIndex >= 0)
 			{
-				// Already grabbing — move grabbed vertex to collider center
 				if (_cloth != null)
-					_cloth.UpdateGrabPosition(_grabbedVertexIndex, grabCenter);
+				{
+					var positions = _cloth.GetPositions();
+					if (positions.IsCreated && _grabbedVertexIndex < positions.Length)
+					{
+						var grabTarget = GetGrabTargetPosition(positions[_grabbedVertexIndex]);
+						_cloth.UpdateGrabPosition(_grabbedVertexIndex, grabTarget);
+					}
+				}
 				return;
 			}
 
-			TryGrabNearestVertex(grabCenter);
+			TryGrabNearestVertex(grabReference);
 		}
 
 		private void TryGrabNearestVertex(float3 grabCenter)
 		{
 			// Compute search radius from collider bounds diagonal + fallback margin
-			var bounds = _grabCollider.bounds;
+			var bounds = GetColliderBounds();
 			var boundsRadius = math.length((float3)bounds.extents) + _grabRadius;
 
 			var bestIndex = -1;
@@ -130,7 +143,8 @@ namespace CLOiSim.Cloth
 					if (cloth.IsVertexGrabbed(i)) continue;
 					var pos = (Vector3)positions[i];
 					if (!bounds.Contains(pos)) continue;
-					var dSq = math.lengthsq(positions[i] - grabCenter);
+					var grabTarget = GetGrabTargetPosition(positions[i]);
+					var dSq = math.lengthsq(positions[i] - grabTarget);
 					if (dSq < strictDistSq)
 					{
 						strictDistSq = dSq;
@@ -149,7 +163,8 @@ namespace CLOiSim.Cloth
 					// Fallback: nearest within boundsRadius
 					var fallbackIndex = cloth.FindNearestVertex(grabCenter, boundsRadius);
 					if (fallbackIndex < 0) continue;
-					var dSq = math.lengthsq(positions[fallbackIndex] - grabCenter);
+					var grabTarget = GetGrabTargetPosition(positions[fallbackIndex]);
+					var dSq = math.lengthsq(positions[fallbackIndex] - grabTarget);
 					if (dSq < bestDistSq)
 					{
 						bestDistSq = dSq;
@@ -159,11 +174,94 @@ namespace CLOiSim.Cloth
 				}
 			}
 
-			if (bestCloth != null && bestCloth.GrabVertex(bestIndex, grabCenter))
+			if (bestCloth == null || bestIndex < 0)
+				return;
+
+			var positionsForBestCloth = bestCloth.GetPositions();
+			if (!positionsForBestCloth.IsCreated || bestIndex >= positionsForBestCloth.Length)
+				return;
+
+			var grabTargetForBestVertex = GetGrabTargetPosition(positionsForBestCloth[bestIndex]);
+			if (bestCloth.GrabVertex(bestIndex, grabTargetForBestVertex))
 			{
 				_cloth = bestCloth;
 				_grabbedVertexIndex = bestIndex;
 			}
+		}
+
+		private float3 GetGrabTargetPosition(float3 referencePosition)
+		{
+			if (_grabCollider == null)
+				return referencePosition;
+
+			var closestPoint = (float3)_grabCollider.ClosestPoint((Vector3)referencePosition);
+			if (math.lengthsq(closestPoint - referencePosition) > 1e-8f)
+				return closestPoint;
+
+			var bounds = GetColliderBounds();
+			var boundsClosestPoint = (float3)bounds.ClosestPoint((Vector3)referencePosition);
+			if (math.lengthsq(boundsClosestPoint - referencePosition) > 1e-8f)
+				return boundsClosestPoint;
+
+			var colliderCenter = (float3)bounds.center;
+			var outward = referencePosition - colliderCenter;
+			if (math.lengthsq(outward) < 1e-8f)
+				outward = (float3)_grabCollider.transform.up;
+
+			var probeDistance = math.length((float3)bounds.extents) + _grabRadius + 0.001f;
+			var probePoint = colliderCenter + math.normalize(outward) * probeDistance;
+			return (float3)bounds.ClosestPoint((Vector3)probePoint);
+		}
+
+		private float GetSurfaceDistanceSq(float3 referencePosition)
+		{
+			var grabTarget = GetGrabTargetPosition(referencePosition);
+			var bestDistanceSq = math.lengthsq(referencePosition - grabTarget);
+
+			// Bounds.ClosestPoint is a more stable fallback for proximity-only checks,
+			// especially in EditMode tests using procedural colliders.
+			var boundsTarget = (float3)GetColliderBounds().ClosestPoint((Vector3)referencePosition);
+			var boundsDistanceSq = math.lengthsq(referencePosition - boundsTarget);
+			return math.min(bestDistanceSq, boundsDistanceSq);
+		}
+
+		private Bounds GetColliderBounds()
+		{
+			if (_grabCollider == null)
+				return new Bounds(transform.position, Vector3.zero);
+
+			var colliderBounds = _grabCollider.bounds;
+			if (colliderBounds.size.sqrMagnitude > 1e-10f)
+				return colliderBounds;
+
+			if (_grabCollider.sharedMesh == null)
+				return new Bounds(_grabCollider.transform.position, Vector3.zero);
+
+			var localBounds = _grabCollider.sharedMesh.bounds;
+			var localCenter = localBounds.center;
+			var localExtents = localBounds.extents;
+			var colliderTransform = _grabCollider.transform;
+
+			var min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+			var max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+
+			for (var x = -1; x <= 1; x += 2)
+			{
+				for (var y = -1; y <= 1; y += 2)
+				{
+					for (var z = -1; z <= 1; z += 2)
+					{
+						var localCorner = localCenter + Vector3.Scale(localExtents, new Vector3(x, y, z));
+						var worldCorner = colliderTransform.TransformPoint(localCorner);
+						min = Vector3.Min(min, worldCorner);
+						max = Vector3.Max(max, worldCorner);
+					}
+				}
+			}
+
+			var bounds = new Bounds();
+			bounds.SetMinMax(min, max);
+			return bounds;
 		}
 
 		private void OnDisable() => Release();
@@ -175,10 +273,11 @@ namespace CLOiSim.Cloth
 		{
 			if (_grabCollider != null)
 			{
+				var bounds = GetColliderBounds();
 				Gizmos.color = _isActive ? Color.yellow : Color.gray;
-				Gizmos.DrawWireCube(_grabCollider.bounds.center, _grabCollider.bounds.size);
+				Gizmos.DrawWireCube(bounds.center, bounds.size);
 				Gizmos.color = new Color(1f, 1f, 0f, 0.15f);
-				Gizmos.DrawCube(_grabCollider.bounds.center, _grabCollider.bounds.size);
+				Gizmos.DrawCube(bounds.center, bounds.size);
 			}
 			else
 			{

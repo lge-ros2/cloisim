@@ -47,6 +47,7 @@ public class ClothPlugin : CLOiSimPlugin
 	private Transform _propsRoot;
 	private readonly HashSet<Transform> _currentColliderSet = new();
 	private Vector3 _lastMeshWorldPosition;
+	private Quaternion _lastMeshWorldRotation;
 	private ArticulationBody _clothArticulationBody;
 	private Rigidbody _clothRigidbody;
 	private bool _wasGizmoSelected = false;
@@ -84,8 +85,7 @@ public class ClothPlugin : CLOiSimPlugin
 
 		_worldRoot = Main.WorldRoot.transform;
 		_propsRoot = Main.PropsRoot.transform;
-		_searchMargin = pluginParams.GetValue("cloth/collider/search_margin", _searchMargin);
-		_colliderUpdateInterval = pluginParams.GetValue("cloth/collider/update_interval", _colliderUpdateInterval);
+		ApplyColliderDiscoveryParameters(pluginParams);
 
 		DisableModelPhysics();
 		ConfigureClothFromMesh(pluginParams);
@@ -175,6 +175,13 @@ public class ClothPlugin : CLOiSimPlugin
 		_currentColliderSet.UnionWith(sceneColliders);
 		_nextColliderUpdate = Time.time + _colliderUpdateInterval;
 		_lastMeshWorldPosition = _meshTransform.position;
+		_lastMeshWorldRotation = _meshTransform.rotation;
+	}
+
+	private void ApplyColliderDiscoveryParameters(Plugin plugin)
+	{
+		_searchMargin = plugin.GetValue("cloth/collider/search_margin", _searchMargin);
+		_colliderUpdateInterval = plugin.GetValue("cloth/collider/update_interval", _colliderUpdateInterval);
 	}
 
 	protected override void OnReset()
@@ -207,13 +214,30 @@ public class ClothPlugin : CLOiSimPlugin
 		// Cloth resumes when ClearTargets() is called on transform end.
 		_cloth.Paused = isSelected;
 
-		// Detect if the parent transform was moved (e.g. by gizmo) and shift cloth positions accordingly
+		// Detect if the parent transform was moved/rotated (e.g. by gizmo) and keep the
+		// cloth particles aligned with that rigid transform while simulation is paused.
 		var currentPos = _meshTransform.position;
+		var currentRotation = _meshTransform.rotation;
 		var delta = currentPos - _lastMeshWorldPosition;
-		if (delta.sqrMagnitude > 1e-8f)
+		var positionChanged = delta.sqrMagnitude > 1e-8f;
+		var rotationChanged = Quaternion.Angle(_lastMeshWorldRotation, currentRotation) > 1e-4f;
+		if (positionChanged)
 		{
 			_cloth.Translate(delta);
+		}
+
+		if (rotationChanged)
+		{
+			var deltaRotation = currentRotation * Quaternion.Inverse(_lastMeshWorldRotation);
+			_cloth.RotateAround(
+				(float3)currentPos,
+				new quaternion(deltaRotation.x, deltaRotation.y, deltaRotation.z, deltaRotation.w));
+		}
+
+		if (positionChanged || rotationChanged)
+		{
 			_lastMeshWorldPosition = currentPos;
+			_lastMeshWorldRotation = currentRotation;
 		}
 
 		// Re-enforce immovable after gizmo releases (gizmo sets immovable=false on release)
@@ -276,6 +300,7 @@ public class ClothPlugin : CLOiSimPlugin
 		UEPhysics.SyncTransforms();
 
 		_lastMeshWorldPosition = _meshTransform.position;
+		_lastMeshWorldRotation = _meshTransform.rotation;
 	}
 
 	private bool IsGizmoTargetingSelf(RuntimeGizmos.TransformGizmo gizmo)
@@ -374,14 +399,27 @@ public class ClothPlugin : CLOiSimPlugin
 
 		foreach (var col in overlapping)
 		{
-			if (col.isTrigger) continue;
-			if (col.transform.IsChildOf(modelTransform)) continue;
-			if (!col.transform.IsChildOf(_worldRoot) && !col.transform.IsChildOf(_propsRoot)) continue;
+			if (!ShouldIncludeCollider(col, modelTransform)) continue;
 			if (!colliderTransforms.Contains(col.transform))
 				colliderTransforms.Add(col.transform);
 		}
 
 		return colliderTransforms.ToArray();
+	}
+
+	private bool ShouldIncludeCollider(Collider collider, Transform modelTransform)
+	{
+		if (collider == null || collider.isTrigger)
+			return false;
+
+		var colliderTransform = collider.transform;
+		if (colliderTransform.IsChildOf(modelTransform))
+			return false;
+
+		if (!colliderTransform.IsChildOf(_worldRoot) && !colliderTransform.IsChildOf(_propsRoot))
+			return false;
+
+		return true;
 	}
 
 	private void RefreshSceneColliders()
@@ -555,14 +593,19 @@ public class ClothPlugin : CLOiSimPlugin
 	{
 		_cloth.SolverIterations = plugin.GetValue("cloth/solver/iterations", 10);
 		_cloth.Damping = plugin.GetValue("cloth/simulation/damping", 0.9f);
+		_cloth.VelocityDecay = plugin.GetValue("cloth/simulation/velocity_decay", _cloth.VelocityDecay);
 		_cloth.Gravity = new float3(
 			plugin.GetValue("cloth/simulation/gravity/x", 0f),
 			plugin.GetValue("cloth/simulation/gravity/y", -9.81f),
 			plugin.GetValue("cloth/simulation/gravity/z", 0f));
 		_cloth.ParticleRadius = plugin.GetValue("cloth/collider/particle_radius", 0.01f);
+		_cloth.CollisionSurfaceOffset = plugin.GetValue("cloth/collider/surface_offset", _cloth.CollisionSurfaceOffset);
 		_cloth.SubSteps = plugin.GetValue("cloth/solver/sub_steps", 4);
 		_cloth.Friction = plugin.GetValue("cloth/simulation/friction", 0.8f);
-		_cloth.SleepThreshold = plugin.GetValue("cloth/simulation/sleep_threshold", 0.05f);
+		var configuredSleepThreshold = plugin.GetValue("cloth/simulation/sleep_threshold", 0.05f);
+		// BurstCloth derives a per-step velocity snap threshold from SleepThreshold.
+		// Large SDF values such as 0.05-0.1 stop ordinary cloth drift instead of only killing jitter.
+		_cloth.SleepThreshold = Mathf.Clamp(configuredSleepThreshold, 0.0001f, 0.01f);
 	}
 
 	private static void TryAddEdge(
