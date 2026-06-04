@@ -21,6 +21,8 @@ public class SimulationService : IDisposable
 	public int ServicePort => _servicePort;
 
 	private WebSocketServer wsServer = null;
+	private readonly object _disposeLock = new();
+	private bool _isDisposed = false;
 
 	public SimulationService(in int defaultWebSocketServicePort = 8080)
 	{
@@ -112,13 +114,23 @@ public class SimulationService : IDisposable
 
 	public void Dispose()
 	{
-		if (wsServer != null)
+		lock (_disposeLock)
 		{
-			Debug.Log("Stop WebSocket Server");
-			wsServer.RemoveWebSocketService("/control");
-			wsServer.RemoveWebSocketService("/markers");
-			wsServer.Stop();
-			wsServer = null;
+			if (_isDisposed)
+			{
+				return;
+			}
+
+			_isDisposed = true;
+
+			if (wsServer != null)
+			{
+				Debug.Log("Stop WebSocket Server");
+				wsServer.RemoveWebSocketService("/control");
+				wsServer.RemoveWebSocketService("/markers");
+				wsServer.Stop();
+				wsServer = null;
+			}
 		}
 
 		GC.SuppressFinalize(this);

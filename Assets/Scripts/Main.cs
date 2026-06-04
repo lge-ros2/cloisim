@@ -1108,14 +1108,14 @@ public class Main : MonoBehaviour
 
 		SensorDevices.DepthCamera.UnloadComputeShader();
 
-		if (BridgeManager != null)
-		{
-			BridgeManager.Dispose();
-		}
-
 		if (_simulationService != null)
 		{
 			_simulationService.Dispose();
+		}
+
+		if (BridgeManager != null)
+		{
+			BridgeManager.Dispose();
 		}
 
 		if (AssimpLibrary.Instance.IsLibraryLoaded)
