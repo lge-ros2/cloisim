@@ -20,6 +20,8 @@ public class ObjectSpawning : MonoBehaviour
 
 	private static PhysicsMaterial _propsPhysicalMaterial = null;
 	private static Material _propMaterial = null;
+	private static readonly WaitForEndOfFrame WaitForEndOfFrameYield = new WaitForEndOfFrame();
+	private const int DeferredNavMeshCarvingFrames = 2;
 
 	private GameObject _propsRoot = null;
 	private Camera _mainCam = null;
@@ -27,9 +29,9 @@ public class ObjectSpawning : MonoBehaviour
 	private RuntimeGizmos.TransformGizmo transformGizmo = null;
 	private FollowingTargetList _followingList = null;
 
-	private Dictionary<PropsType, GameObject> props = new();
+	private Dictionary<PropsType, GameObject> _props = new();
 	public float maxRayDistance = 100;
-	private Dictionary<PropsType, uint> propsCount = new();
+	private Dictionary<PropsType, uint> _propsCount = new();
 
 	private float _scaleFactor = 0.5f;
 	private PropsType _propType = PropsType.NONE;
@@ -52,6 +54,8 @@ public class ObjectSpawning : MonoBehaviour
 	void Awake()
 	{
 		_propMaterial = SDF2Unity.CreateMaterial();
+		_propMaterial.name = "Props_SharedMaterial";
+		_propMaterial.SetBaseColor(Color.white);
 		_propsPhysicalMaterial = Resources.Load<PhysicsMaterial>("PhysicsMaterials/Props");
 		_propsRoot = GameObject.Find("Props");
 		_mainCam = Camera.main;
@@ -111,18 +115,18 @@ public class ObjectSpawning : MonoBehaviour
 	{
 		if (_propType == PropsType.NONE)
 		{
-			Main.UIController.SetWarningMessage($"Select props type first!!!!");
+			Main.UIController.SetWarningMessage($"Select _props type first!!!!");
 			yield break;
 		}
 		Main.UIController.ClearMessage();
 
-		if (!propsCount.ContainsKey(_propType))
+		if (!_propsCount.ContainsKey(_propType))
 		{
-			propsCount.Add(_propType, 0);
+			_propsCount.Add(_propType, 0);
 		}
 
 		Mesh mesh = null;
-		if (!props.ContainsKey(_propType))
+		if (!_props.ContainsKey(_propType))
 		{
 			switch (_propType)
 			{
@@ -142,20 +146,18 @@ public class ObjectSpawning : MonoBehaviour
 			if (mesh != null)
 			{
 				var newTempPropsObject = CreateUnitProps(_propType, mesh);
-				props.Add(_propType, newTempPropsObject);
+				_props.Add(_propType, newTempPropsObject);
 				newTempPropsObject.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSave;
 				newTempPropsObject.SetActive(false);
 			}
 		}
 
-		var propsName = _propType.ToString() + "-" + propsCount[_propType]++;
-
-		GameObject spawnedObject = null;
-		if (props.TryGetValue(_propType, out var targetObject))
+		var propsName = _propType.ToString() + "-" + _propsCount[_propType]++;
+		if (_props.TryGetValue(_propType, out var targetObject))
 		{
-			spawnedObject = Instantiate(targetObject);
+			var spawnedObject = Instantiate(targetObject);
 			spawnedObject.name = propsName;
-			spawnedObject.hideFlags = HideFlags.None; // Ensure spawned props are visible to FindObjectsByType
+			spawnedObject.hideFlags = HideFlags.None; // Ensure spawned _props are visible to FindObjectsByType
 			spawnedObject.SetActive(false);
 
 			// Do NOT activate yet — set position/scale first to avoid physics jitter
@@ -163,7 +165,8 @@ public class ObjectSpawning : MonoBehaviour
 			mesh = meshFilter.sharedMesh;
 
 			const float SpawningMargin = 0.01f;
-			position.y += mesh.bounds.max.y + SpawningMargin;
+			var scaledSpawnHeight = Mathf.Abs(mesh.bounds.max.y * scale.y);
+			position.y += scaledSpawnHeight + SpawningMargin;
 
 			// Set transform BEFORE activation so physics starts at the correct pose
 			var spawanedObjectTransform = spawnedObject.transform;
@@ -177,17 +180,32 @@ public class ObjectSpawning : MonoBehaviour
 
 			var renderer = spawnedObject.GetComponentInChildren<Renderer>();
 			var newColor = Random.ColorHSV(0f, 1f, 0.4f, 1f, 0.3f, 1f);
-			var freshMaterial = SDF2Unity.CreateMaterial(propsName + "_material");
-			freshMaterial.SetBaseColor(newColor);
-			renderer.sharedMaterial = freshMaterial;
+			var materialInstance = new Material(_propMaterial)
+			{
+				name = propsName + "_material"
+			};
+			materialInstance.SetBaseColor(newColor);
+			renderer.sharedMaterial = materialInstance;
 
 			var rigidBody = spawnedObject.GetComponentInChildren<Rigidbody>();
 			rigidBody.mass = CalculateMass(scale);
 			rigidBody.ResetCenterOfMass();
 			rigidBody.ResetInertiaTensor();
 
-			Main.SegmentationManager.AttachTag(_propType.ToString(), spawnedObject);
-			Main.SegmentationManager.UpdateTags();
+			var segmentationTag = spawnedObject.GetComponentInChildren<Segmentation.Tag>(true);
+			if (segmentationTag != null)
+			{
+				segmentationTag.TagName = _propType.ToString();
+				segmentationTag.Refresh();
+				Main.SegmentationManager.UpdateTags();
+			}
+
+			var navMeshObstacle = spawnedObject.GetComponent<NavMeshObstacle>();
+			if (navMeshObstacle != null && navMeshObstacle.carving)
+			{
+				navMeshObstacle.carving = false;
+				StartCoroutine(EnableNavMeshCarvingAfterSpawn(navMeshObstacle));
+			}
 		}
 
 		yield return null;
@@ -196,6 +214,22 @@ public class ObjectSpawning : MonoBehaviour
 	private float CalculateMass(in Vector3 scale)
 	{
 		return (scale.x + scale.y + scale.z) / 3 * UnitMass;
+	}
+
+	private IEnumerator EnableNavMeshCarvingAfterSpawn(NavMeshObstacle navMeshObstacle)
+	{
+		yield return WaitForEndOfFrameYield;
+
+		for (var i = 0; i < DeferredNavMeshCarvingFrames; i++)
+		{
+			if (navMeshObstacle == null)
+				yield break;
+
+			yield return null;
+		}
+
+		if (navMeshObstacle != null)
+			navMeshObstacle.carving = true;
 	}
 
 	private GameObject CreateUnitProps(in PropsType type, in Mesh targetMesh)
@@ -212,12 +246,9 @@ public class ObjectSpawning : MonoBehaviour
 		var meshRenderer = newObject.AddComponent<MeshRenderer>();
 		meshRenderer.shadowCastingMode = ShadowCastingMode.On;
 		meshRenderer.receiveShadows = true;
-		meshRenderer.sharedMaterial = SDF2Unity.CreateMaterial(type + "_material");
+		meshRenderer.sharedMaterial = _propMaterial;
 
 		newObject.AddComponent<URTSceneChangeNotifier>();
-
-		meshRenderer.sharedMaterial.name = targetMesh.name;
-		meshRenderer.sharedMaterial.SetBaseColor(Color.white);
 
 		switch (type)
 		{
@@ -285,7 +316,14 @@ public class ObjectSpawning : MonoBehaviour
 				targetObjectTransform.CompareTag("Road") ||
 				targetObjectTransform.CompareTag("Model"))
 			{
-				Destroy(targetObjectTransform.gameObject);
+				if (targetObjectTransform.CompareTag("Model"))
+				{
+					Main.SafeDestroyModelRoot(targetObjectTransform);
+				}
+				else
+				{
+					Destroy(targetObjectTransform.gameObject);
+				}
 				yield return null;
 			}
 		}

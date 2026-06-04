@@ -101,7 +101,14 @@ public class ModelImporter : MonoBehaviour
 		if (_targetObject != null)
 		{
 			Main.SuppressPhysicsDebugContacts("discarding a staged model");
-			Destroy(_targetObject.gameObject);
+			if (_targetObject.CompareTag("Model"))
+			{
+				Main.SafeDestroyModelRoot(_targetObject);
+			}
+			else
+			{
+				Destroy(_targetObject.gameObject);
+			}
 			_targetObject = null;
 		}
 		_rootArticulationBody = null;

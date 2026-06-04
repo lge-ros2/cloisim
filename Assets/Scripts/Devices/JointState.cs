@@ -102,58 +102,61 @@ namespace SensorDevices
 
 		public bool AddTargetJoint(in string targetJointName, out SDFormat.Helper.Link link, out bool isStatic)
 		{
-			var childArticulationBodies = gameObject.GetComponentsInChildren<ArticulationBody>();
-			var rootModelName = string.Empty;
-			link = null;
-			isStatic = false;
-
-			foreach (var childArticulationBody in childArticulationBodies)
+			lock (_jointStateLock)
 			{
-				// Debug.Log (childArticulationBody.name + " | " + childArticulationBody.transform.parent.name);
-				if (childArticulationBody.isRoot)
-				{
-					rootModelName = childArticulationBody.name;
-					continue;
-				}
+				var childArticulationBodies = gameObject.GetComponentsInChildren<ArticulationBody>();
+				var rootModelName = string.Empty;
+				link = null;
+				isStatic = false;
 
-				var parentObject = childArticulationBody.transform.parent;
-				var parentModelName = parentObject.name;
-
-				var linkHelper = childArticulationBody.GetComponentInChildren<SDFormat.Helper.Link>();
-				// Debug.Log("linkHelper.JointName " + linkHelper.JointName);
-				if (linkHelper.JointName.Equals(targetJointName))
+				foreach (var childArticulationBody in childArticulationBodies)
 				{
-					// Debug.Log("AddTargetJoint " + targetJointName);
-					link = linkHelper;
-					if (childArticulationBody.jointType == ArticulationJointType.FixedJoint)
+					// Debug.Log (childArticulationBody.name + " | " + childArticulationBody.transform.parent.name);
+					if (childArticulationBody.isRoot)
 					{
-						Debug.LogWarning("Skip to AddTargetJoint due to fixed joint: " + targetJointName);
-						isStatic = true;
-						return true;
+						rootModelName = childArticulationBody.name;
+						continue;
 					}
 
-					var articulation = new Articulation(childArticulationBody);
-					articulation.SetVelocityLimit(linkHelper.JointAxisLimitVelocity);
+					var parentObject = childArticulationBody.transform.parent;
+					var parentModelName = parentObject.name;
 
-					var jointState = new messages.JointState
+					var linkHelper = childArticulationBody.GetComponentInChildren<SDFormat.Helper.Link>();
+					// Debug.Log("linkHelper.JointName " + linkHelper.JointName);
+					if (linkHelper.JointName.Equals(targetJointName))
 					{
-						Name = targetJointName
-					};
+						// Debug.Log("AddTargetJoint " + targetJointName);
+						link = linkHelper;
+						if (childArticulationBody.jointType == ArticulationJointType.FixedJoint)
+						{
+							Debug.LogWarning("Skip to AddTargetJoint due to fixed joint: " + targetJointName);
+							isStatic = true;
+							return true;
+						}
 
-					var entry = new JointEntry
-					{
-						articulation = articulation,
-						message = jointState
-					};
+						var articulation = new Articulation(childArticulationBody);
+						articulation.SetVelocityLimit(linkHelper.JointAxisLimitVelocity);
 
-					articulationTable.Add(targetJointName, entry);
+						var jointState = new messages.JointState
+						{
+							Name = targetJointName
+						};
 
-					jointStateV.JointStates.Add(jointState);
-					return true;
+						var entry = new JointEntry
+						{
+							articulation = articulation,
+							message = jointState
+						};
+
+						articulationTable.Add(targetJointName, entry);
+
+						jointStateV.JointStates.Add(jointState);
+						return true;
+					}
 				}
-			}
 
-			return false;
+				return false;
+			}
 		}
 
 		public Articulation GetArticulation(in string targetJointName)
@@ -163,40 +166,44 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			// Record physics timing (once per FixedUpdate, not per joint)
-			var fixedSimTime = (Clock != null) ? Clock.FixedSimTime : (double)Time.fixedTimeAsDouble;
-			_lastFixedSimTime = fixedSimTime;
-
-			foreach (var entry in articulationTable.Values)
+			lock (_jointStateLock)
 			{
-				var articulation = entry.articulation;
+				// Record physics timing (once per FixedUpdate, not per joint)
+				var fixedSimTime = (Clock != null) ? Clock.FixedSimTime : (double)Time.fixedTimeAsDouble;
+				_lastFixedSimTime = fixedSimTime;
 
-				// Shift current → previous for interpolation
-				entry.prev = entry.curr;
-
-				var jointVelocity = articulation.GetJointVelocity();
-				var jointPosition = articulation.GetJointPosition();
-				var jointForce = articulation.GetForce();
-
-				var effort = articulation.IsRevoluteType() ?
-								Unity2SDF.Direction.Curve(jointForce) :
-									(articulation.IsPrismaticType() ?
-										 Unity2SDF.Direction.Joint.Prismatic(jointForce, articulation.GetAnchorRotation()) : jointForce);
-
-				var position = articulation.IsRevoluteType() ?
-								Unity2SDF.Direction.Curve(jointPosition) :
-									(articulation.IsPrismaticType() ?
-										 Unity2SDF.Direction.Joint.Prismatic(jointPosition, articulation.GetAnchorRotation()) : jointPosition);
-
-				var velocity = articulation.IsRevoluteType() ?
-								Unity2SDF.Direction.Curve(jointVelocity) : jointVelocity;
-
-				entry.curr = new PhysicsSample
+				foreach (var entry in articulationTable.Values)
 				{
-					position = position,
-					velocity = velocity,
-					effort = effort
-				};
+					var articulation = entry.articulation;
+
+					// Shift current → previous for interpolation
+					entry.prev = entry.curr;
+
+					var jointVelocity = articulation.GetJointVelocity();
+					var jointPosition = articulation.GetJointPosition();
+					var jointForce = articulation.GetForce();
+
+					var effort = articulation.IsRevoluteType() ?
+									Unity2SDF.Direction.Curve(jointForce) :
+										(articulation.IsPrismaticType() ?
+											 Unity2SDF.Direction.Joint.Prismatic(jointForce, articulation.GetAnchorRotation()) : jointForce);
+
+					var position = articulation.IsRevoluteType() ?
+									Unity2SDF.Direction.Curve(jointPosition) :
+										(articulation.IsPrismaticType() ?
+											 Unity2SDF.Direction.Joint.Prismatic(jointPosition, articulation.GetAnchorRotation()) : jointPosition);
+
+					var velocity = articulation.IsRevoluteType() ?
+									Unity2SDF.Direction.Curve(jointVelocity) : jointVelocity;
+
+					entry.curr = new PhysicsSample
+					{
+						position = position,
+						velocity = velocity,
+						effort = effort
+					};
+				}
+				;
 			}
 		}
 	}

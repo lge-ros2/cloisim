@@ -113,6 +113,7 @@ namespace CLOiSim.Cloth
 		private int _sleepCounter = 0;
 		private const int SleepFramesRequired = 10;
 		private const int MeshCollisionIterationStride = 2;
+		private const float RestingContactNormalThresholdSq = 0.01f;
 
 		// Grab system
 		private readonly HashSet<int> _grabbedVertices = new();
@@ -365,9 +366,23 @@ namespace CLOiSim.Cloth
 		public void UpdateColliders(ClothCollider[] currentColliders)
 		{
 			if (!_isInitialized) return;
+			if (currentColliders == null) return;
+
+			var hasMeshColliders = false;
+			for (var i = 0; i < currentColliders.Length; i++)
+			{
+				if (currentColliders[i].Type == ColliderType.Mesh)
+				{
+					hasMeshColliders = true;
+					break;
+				}
+			}
+
+			if (!HasCollidersChanged(currentColliders, hasMeshColliders))
+				return;
 
 			_clothJobHandle.Complete();
-			_hasMeshColliders = false;
+			_hasMeshColliders = hasMeshColliders;
 
 			if (currentColliders.Length > _colliders.Length)
 			{
@@ -376,28 +391,20 @@ namespace CLOiSim.Cloth
 			}
 
 			// Wake cloth if any collider moved since last update
-			if (_isSleeping && HasCollidersChanged(currentColliders))
+			if (_isSleeping)
 			{
 				_isSleeping = false;
 				_sleepCounter = 0;
-			}
-
-			for (var i = 0; i < currentColliders.Length; i++)
-			{
-				if (currentColliders[i].Type == ColliderType.Mesh)
-				{
-					_hasMeshColliders = true;
-					break;
-				}
 			}
 
 			NativeArray<ClothCollider>.Copy(currentColliders, _colliders, currentColliders.Length);
 			_colliderCount = currentColliders.Length;
 		}
 
-		private bool HasCollidersChanged(ClothCollider[] newColliders)
+		private bool HasCollidersChanged(ClothCollider[] newColliders, bool hasMeshColliders)
 		{
 			if (newColliders.Length != _colliderCount) return true;
+			if (hasMeshColliders != _hasMeshColliders) return true;
 
 			for (var i = 0; i < _colliderCount; i++)
 			{
@@ -581,13 +588,23 @@ namespace CLOiSim.Cloth
 		private void UpdateSleepState()
 		{
 			var maxVelSq = 0f;
+			var hasRestingContact = false;
 			for (var i = 0; i < _velocities.Length; i++)
 			{
 				var vSq = math.lengthsq(_velocities[i]);
 				if (vSq > maxVelSq) maxVelSq = vSq;
+
+				if (!hasRestingContact && _contactNormals.IsCreated &&
+					math.lengthsq(_contactNormals[i]) > RestingContactNormalThresholdSq)
+				{
+					hasRestingContact = true;
+				}
 			}
 
-			if (maxVelSq < SleepThreshold * SleepThreshold)
+			var sleepThresholdSq = SleepThreshold * SleepThreshold;
+			var restingContactSleepThresholdSq = sleepThresholdSq * 4f;
+
+			if (maxVelSq < sleepThresholdSq || (hasRestingContact && maxVelSq < restingContactSleepThresholdSq))
 			{
 				_sleepCounter++;
 				if (_sleepCounter >= SleepFramesRequired)
@@ -1077,6 +1094,9 @@ namespace CLOiSim.Cloth
 	[BurstCompile(CompileSynchronously = true)]
 	public struct UpdateVelocitiesJob : IJobParallelFor
 	{
+		private const float RestingContactNormalThresholdSq = 0.01f;
+		private const float RestingContactVelocitySnapScale = 3f;
+
 		public NativeArray<float3> Positions;
 		[ReadOnly] public NativeArray<float3> PredictedPositions;
 		[ReadOnly] public NativeArray<float3> PreCollisionPositions;
@@ -1095,14 +1115,16 @@ namespace CLOiSim.Cloth
 
 			var vel = (PredictedPositions[i] - Positions[i]) / DeltaTime;
 			var currentContactNormal = CurrentContactNormals.IsCreated ? CurrentContactNormals[i] : float3.zero;
+			var hasRestingContact = false;
 
-			if (math.lengthsq(currentContactNormal) > 0.01f)
+			if (math.lengthsq(currentContactNormal) > RestingContactNormalThresholdSq)
 			{
 				// Current sub-step contact: preserve full contact normal even when there
 				// was no penetration push, so resting support does not immediately lose friction.
 				var normal = math.normalize(currentContactNormal);
 				if (ContactNormals.IsCreated)
 					ContactNormals[i] = normal;
+				hasRestingContact = true;
 
 				var normalVel = math.dot(vel, normal);
 				if (normalVel > 0f)
@@ -1124,14 +1146,21 @@ namespace CLOiSim.Cloth
 				else
 				{
 					var storedNormal = ContactNormals.IsCreated ? ContactNormals[i] : float3.zero;
-					if (ContactNormals.IsCreated && math.lengthsq(storedNormal) > 0.01f)
+					if (ContactNormals.IsCreated && math.lengthsq(storedNormal) > RestingContactNormalThresholdSq)
+					{
+						hasRestingContact = true;
 						ContactNormals[i] = storedNormal * 0.5f;
+					}
 				}
 			}
 
 			vel *= math.exp(-VelocityDecay * DeltaTime);
 
-			if (math.lengthsq(vel) < VelocitySnapThreshold * VelocitySnapThreshold)
+			var velocitySnapThreshold = hasRestingContact ?
+				VelocitySnapThreshold * RestingContactVelocitySnapScale :
+				VelocitySnapThreshold;
+
+			if (math.lengthsq(vel) < velocitySnapThreshold * velocitySnapThreshold)
 				vel = float3.zero;
 
 			Velocities[i] = vel;
@@ -1154,6 +1183,10 @@ namespace CLOiSim.Cloth
 	[BurstCompile(CompileSynchronously = true)]
 	public struct ApplyFrictionJob : IJobParallelFor
 	{
+		private const float RestingContactNormalThresholdSq = 0.01f;
+		private const float RestingContactStaticFrictionScale = 5f;
+		private const float RestingContactTangentialScale = 0.25f;
+
 		public NativeArray<float3> PredictedPositions;
 		[ReadOnly] public NativeArray<float3> PreCollisionPositions;
 		[ReadOnly] public NativeArray<float3> OriginalPositions;
@@ -1171,11 +1204,13 @@ namespace CLOiSim.Cloth
 
 			float3 normal;
 			float frictionStrength;
+			var hasRestingContact = false;
 
-			if (math.lengthsq(currentContactNormal) > 0.01f)
+			if (math.lengthsq(currentContactNormal) > RestingContactNormalThresholdSq)
 			{
 				normal = math.normalize(currentContactNormal);
 				frictionStrength = 1f;
+				hasRestingContact = true;
 			}
 			else if (hasActiveCollision)
 			{
@@ -1188,10 +1223,11 @@ namespace CLOiSim.Cloth
 				// No active collision — check stored contact normal for persistence
 				var stored = ContactNormals.IsCreated ? ContactNormals[i] : float3.zero;
 				var storedLenSq = math.lengthsq(stored);
-				if (storedLenSq < 0.01f) return; // no recent contact
+				if (storedLenSq < RestingContactNormalThresholdSq) return; // no recent contact
 
 				normal = math.normalize(stored);
 				frictionStrength = math.sqrt(storedLenSq); // decayed magnitude
+				hasRestingContact = true;
 			}
 
 			var totalMotion = post - OriginalPositions[i];
@@ -1203,10 +1239,17 @@ namespace CLOiSim.Cloth
 			tangentialScale *= tangentialScale;
 
 			var staticFrictionMotionThreshold = 0.002f * effectiveFriction;
+			if (hasRestingContact)
+				staticFrictionMotionThreshold *= RestingContactStaticFrictionScale;
+
 			if (math.lengthsq(tangentialMotion) < staticFrictionMotionThreshold * staticFrictionMotionThreshold)
 				tangentialMotion = float3.zero;
 			else
+			{
 				tangentialMotion *= tangentialScale;
+				if (hasRestingContact)
+					tangentialMotion *= RestingContactTangentialScale;
+			}
 
 			PredictedPositions[i] = OriginalPositions[i] + normalMotion + tangentialMotion;
 		}

@@ -15,11 +15,14 @@ public class SimulationService : IDisposable
 	public static readonly string FAIL = "fail";
 	public static readonly string Delimiter = "!%!";
 	public static readonly string SERVICE_PORT_ENVIRONMENT_NAME = "CLOISIM_SERVICE_PORT";
+	private const string BenignHandshakeReadFailure = "The header cannot be read from the data source.";
 
 	private int _servicePort;
 	public int ServicePort => _servicePort;
 
 	private WebSocketServer wsServer = null;
+	private readonly object _disposeLock = new();
+	private bool _isDisposed = false;
 
 	public SimulationService(in int defaultWebSocketServicePort = 8080)
 	{
@@ -46,6 +49,16 @@ public class SimulationService : IDisposable
 		wsServer.Log.Output = (logData, _) =>
 		{
 			var msg = $"[WebSocket] {logData.Level}: {logData.Message}";
+			var isBenignDisconnect = logData.Level == WebSocketSharp.LogLevel.Fatal &&
+				logData.Message != null &&
+				logData.Message.Contains(BenignHandshakeReadFailure, StringComparison.Ordinal);
+
+			if (isBenignDisconnect)
+			{
+				Debug.Log($"[WebSocket] Disconnect before handshake completed: {logData.Message}");
+				return;
+			}
+
 			switch (logData.Level)
 			{
 				case WebSocketSharp.LogLevel.Fatal:
@@ -101,13 +114,23 @@ public class SimulationService : IDisposable
 
 	public void Dispose()
 	{
-		if (wsServer != null)
+		lock (_disposeLock)
 		{
-			Debug.Log("Stop WebSocket Server");
-			wsServer.RemoveWebSocketService("/control");
-			wsServer.RemoveWebSocketService("/markers");
-			wsServer.Stop();
-			wsServer = null;
+			if (_isDisposed)
+			{
+				return;
+			}
+
+			_isDisposed = true;
+
+			if (wsServer != null)
+			{
+				Debug.Log("Stop WebSocket Server");
+				wsServer.RemoveWebSocketService("/control");
+				wsServer.RemoveWebSocketService("/markers");
+				wsServer.Stop();
+				wsServer = null;
+			}
 		}
 
 		GC.SuppressFinalize(this);

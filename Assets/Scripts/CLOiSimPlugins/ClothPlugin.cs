@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Mathematics;
 using Unity.Collections;
+using Unity.Profiling;
 using CLOiSim.Cloth;
 using SDFormat;
 using UEPhysics = UnityEngine.Physics;
@@ -15,6 +16,10 @@ using UEPhysics = UnityEngine.Physics;
 [DefaultExecutionOrder(100)]
 public class ClothPlugin : CLOiSimPlugin
 {
+	private static readonly ProfilerMarker UpdateMarker = new("CLOiSim.ClothPlugin.Update");
+	private static readonly ProfilerMarker LateUpdateMarker = new("CLOiSim.ClothPlugin.LateUpdate");
+	private static readonly ProfilerMarker RefreshSceneCollidersMarker = new("CLOiSim.ClothPlugin.RefreshSceneColliders");
+
 	[Header("ClothPlugin Settings")]
 	[SerializeField]
 	private UnityEngine.Mesh _clothMesh;
@@ -193,58 +198,61 @@ public class ClothPlugin : CLOiSimPlugin
 
 	private void Update()
 	{
-		if (_cloth == null || _meshTransform == null) return;
-
-		var gizmo = Main.Gizmos;
-		var isSelected = gizmo != null && IsGizmoTargetingSelf(gizmo);
-		var isTransforming = isSelected && gizmo.isTransforming;
-
-		// On selection start (click): sync root body to cached cloth centroid (computed last LateUpdate)
-		if (!_wasGizmoSelected && isSelected)
-			SyncRootToClothCentroid();
-		_wasGizmoSelected = isSelected;
-
-		// On transform end: deselect so gizmo disappears
-		if (_wasTransforming && !isTransforming && isSelected)
-			gizmo.ClearTargets();
-		_wasTransforming = isTransforming;
-
-		// Pause simulation while selected (prevents jitter after SyncRootToClothCentroid
-		// moves the root and wakes the cloth via Translate).
-		// Cloth resumes when ClearTargets() is called on transform end.
-		_cloth.Paused = isSelected;
-
-		// Detect if the parent transform was moved/rotated (e.g. by gizmo) and keep the
-		// cloth particles aligned with that rigid transform while simulation is paused.
-		var currentPos = _meshTransform.position;
-		var currentRotation = _meshTransform.rotation;
-		var delta = currentPos - _lastMeshWorldPosition;
-		var positionChanged = delta.sqrMagnitude > 1e-8f;
-		var rotationChanged = Quaternion.Angle(_lastMeshWorldRotation, currentRotation) > 1e-4f;
-		if (positionChanged)
+		using (UpdateMarker.Auto())
 		{
-			_cloth.Translate(delta);
-		}
+			if (_cloth == null || _meshTransform == null) return;
 
-		if (rotationChanged)
-		{
-			var deltaRotation = currentRotation * Quaternion.Inverse(_lastMeshWorldRotation);
-			_cloth.RotateAround(
-				(float3)currentPos,
-				new quaternion(deltaRotation.x, deltaRotation.y, deltaRotation.z, deltaRotation.w));
-		}
+			var gizmo = Main.Gizmos;
+			var isSelected = gizmo != null && IsGizmoTargetingSelf(gizmo);
+			var isTransforming = isSelected && gizmo.isTransforming;
 
-		if (positionChanged || rotationChanged)
-		{
-			_lastMeshWorldPosition = currentPos;
-			_lastMeshWorldRotation = currentRotation;
-		}
+			// On selection start (click): sync root body to cached cloth centroid (computed last LateUpdate)
+			if (!_wasGizmoSelected && isSelected)
+				SyncRootToClothCentroid();
+			_wasGizmoSelected = isSelected;
 
-		// Re-enforce immovable after gizmo releases (gizmo sets immovable=false on release)
-		if (_clothArticulationBody != null && !_clothArticulationBody.immovable)
-			_clothArticulationBody.immovable = true;
-		else if (_clothRigidbody != null && !_clothRigidbody.isKinematic)
-			_clothRigidbody.isKinematic = true;
+			// On transform end: deselect so gizmo disappears
+			if (_wasTransforming && !isTransforming && isSelected)
+				gizmo.ClearTargets();
+			_wasTransforming = isTransforming;
+
+			// Pause simulation while selected (prevents jitter after SyncRootToClothCentroid
+			// moves the root and wakes the cloth via Translate).
+			// Cloth resumes when ClearTargets() is called on transform end.
+			_cloth.Paused = isSelected;
+
+			// Detect if the parent transform was moved/rotated (e.g. by gizmo) and keep the
+			// cloth particles aligned with that rigid transform while simulation is paused.
+			var currentPos = _meshTransform.position;
+			var currentRotation = _meshTransform.rotation;
+			var delta = currentPos - _lastMeshWorldPosition;
+			var positionChanged = delta.sqrMagnitude > 1e-8f;
+			var rotationChanged = Quaternion.Angle(_lastMeshWorldRotation, currentRotation) > 1e-4f;
+			if (positionChanged)
+			{
+				_cloth.Translate(delta);
+			}
+
+			if (rotationChanged)
+			{
+				var deltaRotation = currentRotation * Quaternion.Inverse(_lastMeshWorldRotation);
+				_cloth.RotateAround(
+					(float3)currentPos,
+					new quaternion(deltaRotation.x, deltaRotation.y, deltaRotation.z, deltaRotation.w));
+			}
+
+			if (positionChanged || rotationChanged)
+			{
+				_lastMeshWorldPosition = currentPos;
+				_lastMeshWorldRotation = currentRotation;
+			}
+
+			// Re-enforce immovable after gizmo releases (gizmo sets immovable=false on release)
+			if (_clothArticulationBody != null && !_clothArticulationBody.immovable)
+				_clothArticulationBody.immovable = true;
+			else if (_clothRigidbody != null && !_clothRigidbody.isKinematic)
+				_clothRigidbody.isKinematic = true;
+		}
 	}
 
 	private void CacheClothSyncTarget(NativeArray<float3> positions)
@@ -320,21 +328,27 @@ public class ClothPlugin : CLOiSimPlugin
 
 	private void LateUpdate()
 	{
-		if (_cloth == null || _clothMesh == null || _meshTransform == null) return;
-
-		var positions = _cloth.GetPositions();
-		if (!positions.IsCreated || positions.Length != _clothMesh.vertexCount) return;
-
-		// Cache sync target here — after BurstCloth.LateUpdate() has run fresh simulation
-		CacheClothSyncTarget(positions);
-
-		UpdateClothMesh(positions);
-		UpdateSelectionCollider();
-
-		if (_colliderBridge != null && _clothRoot != null && Time.time >= _nextColliderUpdate)
+		using (LateUpdateMarker.Auto())
 		{
-			_nextColliderUpdate = Time.time + _colliderUpdateInterval;
-			RefreshSceneColliders();
+			if (_cloth == null || _clothMesh == null || _meshTransform == null) return;
+
+			var positions = _cloth.GetPositions();
+			if (!positions.IsCreated || positions.Length != _clothMesh.vertexCount) return;
+
+			// Cache sync target here — after BurstCloth.LateUpdate() has run fresh simulation
+			CacheClothSyncTarget(positions);
+
+			UpdateClothMesh(positions);
+			UpdateSelectionCollider();
+
+			if (_colliderBridge != null && _clothRoot != null && Time.time >= _nextColliderUpdate)
+			{
+				_nextColliderUpdate = Time.time + _colliderUpdateInterval;
+				using (RefreshSceneCollidersMarker.Auto())
+				{
+					RefreshSceneColliders();
+				}
+			}
 		}
 	}
 
@@ -396,15 +410,38 @@ public class ClothPlugin : CLOiSimPlugin
 
 		var overlapping = UEPhysics.OverlapBox(worldCenter, worldExtents, _meshTransform.rotation);
 		var colliderTransforms = new List<Transform>();
+		var closestSupportDistanceSqByTransform = new Dictionary<Transform, float>();
 
 		foreach (var col in overlapping)
 		{
 			if (!ShouldIncludeCollider(col, modelTransform)) continue;
-			if (!colliderTransforms.Contains(col.transform))
-				colliderTransforms.Add(col.transform);
+
+			var colliderBounds = col.bounds;
+			var closestPoint = colliderBounds.ClosestPoint(worldCenter);
+			var supportDistanceSq = (closestPoint - worldCenter).sqrMagnitude;
+
+			if (supportDistanceSq > GetMaxSupportDistanceSq(worldExtents))
+				continue;
+
+			if (closestSupportDistanceSqByTransform.TryGetValue(col.transform, out var existingDistanceSq) &&
+				existingDistanceSq <= supportDistanceSq)
+			{
+				continue;
+			}
+
+			closestSupportDistanceSqByTransform[col.transform] = supportDistanceSq;
 		}
 
+		foreach (var pair in closestSupportDistanceSqByTransform)
+			colliderTransforms.Add(pair.Key);
+
 		return colliderTransforms.ToArray();
+	}
+
+	private static float GetMaxSupportDistanceSq(Vector3 worldExtents)
+	{
+		var minRelevantExtent = Mathf.Max(Mathf.Min(worldExtents.x, worldExtents.y, worldExtents.z), 0.05f);
+		return minRelevantExtent * minRelevantExtent;
 	}
 
 	private bool ShouldIncludeCollider(Collider collider, Transform modelTransform)

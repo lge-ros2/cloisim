@@ -54,7 +54,7 @@ public class JointControlPlugin : CLOiSimPlugin
 		// UnityEngine.Debug.Log(_robotDescription);
 
 		var modelHelper = GetComponent<SDFormat.Helper.Model>();
-		if (modelHelper?.isNested == true)
+		if (modelHelper != null && modelHelper.RootModel != null && !modelHelper.Equals(modelHelper.RootModel))
 		{
 			_tfPrefix = modelHelper.name;
 			UnityEngine.Debug.Log($"[JointControlPlugin] {gameObject.name} is Nested model, _tfPrefix: {_tfPrefix}");
