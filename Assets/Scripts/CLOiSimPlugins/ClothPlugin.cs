@@ -45,6 +45,12 @@ public class ClothPlugin : CLOiSimPlugin
 	[SerializeField]
 	private float _totalMass = 0f;
 
+	[SerializeField]
+	private int _normalRecalculationInterval = 3;
+
+	[SerializeField]
+	private int _boundsRecalculationInterval = 2;
+
 	private BoxCollider _clothCollider;
 	private float _nextColliderUpdate;
 	private float _nextSelectionColliderUpdate;
@@ -57,6 +63,7 @@ public class ClothPlugin : CLOiSimPlugin
 	private Rigidbody _clothRigidbody;
 	private bool _wasGizmoSelected = false;
 	private Vector3 _cachedSyncTarget;  // computed each LateUpdate, used by SyncRootToClothCentroid
+	private int _clothMeshUpdateFrameCount = 0;
 
 	protected override void OnAwake()
 	{
@@ -360,8 +367,19 @@ public class ClothPlugin : CLOiSimPlugin
 			localPositions[i] = worldToLocal.MultiplyPoint3x4((Vector3)positions[i]);
 
 		_clothMesh.SetVertices(localPositions);
-		_clothMesh.RecalculateNormals();
-		_clothMesh.RecalculateBounds();
+		_clothMeshUpdateFrameCount++;
+
+		if (_normalRecalculationInterval <= 1 ||
+			(_clothMeshUpdateFrameCount % _normalRecalculationInterval) == 0)
+		{
+			_clothMesh.RecalculateNormals();
+		}
+
+		if (_boundsRecalculationInterval <= 1 ||
+			(_clothMeshUpdateFrameCount % _boundsRecalculationInterval) == 0)
+		{
+			_clothMesh.RecalculateBounds();
+		}
 		localPositions.Dispose();
 	}
 
