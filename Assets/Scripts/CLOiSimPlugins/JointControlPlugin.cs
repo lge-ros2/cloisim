@@ -12,7 +12,7 @@ using SDFormat;
 public class JointControlPlugin : CLOiSimPlugin
 {
 	private List<TF> _tfList = new();
-	private string _robotDescription = "<?xml version='1.0' ?><sdf></sdf>";
+	private string _robotDescription = "<?xml version='1.0' ?><robot></robot>";
 	private SensorDevices.JointCommand _jointCommand = null;
 	private SensorDevices.JointState _jointState = null;
 	private string _tfPrefix = string.Empty;
@@ -50,7 +50,7 @@ public class JointControlPlugin : CLOiSimPlugin
 
 		yield return null;
 
-		_robotDescription = "<?xml version='1.0' ?><sdf>" + GetPluginParameters().ParentRawXml() + "</sdf>";
+		_robotDescription = SDF2URDF.ConvertModelXmlToUrdf(GetPluginParameters().ParentRawXml(), gameObject.name);
 		// UnityEngine.Debug.Log(_robotDescription);
 
 		var modelHelper = GetComponent<SDFormat.Helper.Model>();
