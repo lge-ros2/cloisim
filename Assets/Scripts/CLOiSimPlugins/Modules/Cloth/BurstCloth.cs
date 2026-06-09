@@ -62,8 +62,8 @@ namespace CLOiSim.Cloth
 		public float3 Gravity = new float3(0, -9.81f, 0);
 		public float Damping = 0.98f;
 		public float Friction = 0.5f;
-		public float SleepThreshold = 0.001f;
-		public float VelocityDecay = 10f;
+		public float SleepThreshold = 0.003f;
+		public float VelocityDecay = 14f;
 		public float CollisionSurfaceOffset = 0.001f;
 
 		/// <summary>
@@ -111,7 +111,7 @@ namespace CLOiSim.Cloth
 		private bool _hasMeshColliders = false;
 		private bool _isSleeping = false;
 		private int _sleepCounter = 0;
-		private const int SleepFramesRequired = 10;
+		private const int SleepFramesRequired = 6;
 		private const int MeshCollisionIterationStride = 2;
 		private const float RestingContactNormalThresholdSq = 0.01f;
 

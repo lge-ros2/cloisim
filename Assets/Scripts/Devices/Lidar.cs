@@ -69,7 +69,7 @@ namespace SensorDevices
 		/// AsyncGPUReadback callback, which contributes to frame spikes.
 		/// </summary>
 		private ConcurrentQueue<float[]> _rangeDataPool = new();
-		private const int RangeDataPoolSize = 8;
+		private const int RangeDataPoolSize = 4;
 
 		#region "Unified Ray Tracing (per-sensor resources)"
 		private static ComputeShader ComputeShaderLidarRayTrace = null;
