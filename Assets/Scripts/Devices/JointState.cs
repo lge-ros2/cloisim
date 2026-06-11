@@ -34,6 +34,10 @@ namespace SensorDevices
 			// Double-buffered physics samples for interpolation
 			public PhysicsSample prev;
 			public PhysicsSample curr;
+
+			public bool isRevolute;
+			public bool isPrismatic;
+			public Vector3 anchorRotation;
 		}
 
 		private Dictionary<string, JointEntry> articulationTable = new();
@@ -91,9 +95,9 @@ namespace SensorDevices
 				// Fixed-dt synthetic timestamp: advances by exactly UpdatePeriod (1ms at 1000 Hz)
 				// per publish for jitter-free timestamps.
 				jointStateV.Header.Stamp.Set(GetNextSyntheticTime());
-
-				PushDeviceMessage(jointStateV);
 			}
+
+			PushDeviceMessage(jointStateV);
 
 #if UNITY_EDITOR
 			UpdateProfiler("JOINTSTATE", jointStateV.JointStates.Count * sizeof(double) * 3);
@@ -145,7 +149,10 @@ namespace SensorDevices
 						var entry = new JointEntry
 						{
 							articulation = articulation,
-							message = jointState
+							message = jointState,
+							isRevolute = articulation.IsRevoluteType(),
+							isPrismatic = articulation.IsPrismaticType(),
+							anchorRotation = articulation.GetAnchorRotation()
 						};
 
 						articulationTable.Add(targetJointName, entry);
@@ -183,17 +190,17 @@ namespace SensorDevices
 					var jointPosition = articulation.GetJointPosition();
 					var jointForce = articulation.GetForce();
 
-					var effort = articulation.IsRevoluteType() ?
+					var effort = entry.isRevolute ?
 									Unity2SDF.Direction.Curve(jointForce) :
-										(articulation.IsPrismaticType() ?
-											 Unity2SDF.Direction.Joint.Prismatic(jointForce, articulation.GetAnchorRotation()) : jointForce);
+										(entry.isPrismatic ?
+											 Unity2SDF.Direction.Joint.Prismatic(jointForce, entry.anchorRotation) : jointForce);
 
-					var position = articulation.IsRevoluteType() ?
+					var position = entry.isRevolute ?
 									Unity2SDF.Direction.Curve(jointPosition) :
-										(articulation.IsPrismaticType() ?
-											 Unity2SDF.Direction.Joint.Prismatic(jointPosition, articulation.GetAnchorRotation()) : jointPosition);
+										(entry.isPrismatic ?
+											 Unity2SDF.Direction.Joint.Prismatic(jointPosition, entry.anchorRotation) : jointPosition);
 
-					var velocity = articulation.IsRevoluteType() ?
+					var velocity = entry.isRevolute ?
 									Unity2SDF.Direction.Curve(jointVelocity) : jointVelocity;
 
 					entry.curr = new PhysicsSample
