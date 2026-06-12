@@ -5,6 +5,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -94,8 +95,6 @@ namespace SensorDevices
 
 			var contactsMessage = new messages.Contacts
 			{
-				// Debug.Log("{DeviceName} CollisionStay: " + other.contacts.Length);
-
 				Header = new messages.Header
 				{
 					Stamp = new messages.Time()
@@ -105,82 +104,67 @@ namespace SensorDevices
 
 			var targetSuffix = "::" + _targetCollision;
 
+			// Optimization: Group contact points by collision pair to avoid multiple searches and array resizes
+			var contactGroup = new Dictionary<ValueTuple<string, string>, List<int>>();
+
 			for (var i = 0; i < other.contacts.Length; i++)
 			{
 				var collisionContact = other.contacts[i];
 				var collision1 = GetColliderName(collisionContact.thisCollider);
-				var collision2 = GetColliderName(collisionContact.otherCollider);
-				// Debug.Log($"{DeviceName} CollisionStay: {collision1} <-> {collision2}");
 
 				if (collision1.EndsWith(targetSuffix))
 				{
-					// find existing collision set
-					var existingContact = contactsMessage.contact.Find(x => x.Collision1.Name.Contains(collision1, StringComparison.Ordinal) && x.Collision2.Name.Contains(collision2, StringComparison.Ordinal));
-					if (existingContact != null)
+					var collision2 = GetColliderName(collisionContact.otherCollider);
+					var key = (collision1, collision2);
+					if (!contactGroup.ContainsKey(key))
 					{
-						var depths = existingContact.Depths;
-						var newLength = depths.Length + 1;
-						Array.Resize(ref depths, newLength);
-						depths[newLength - 1] = collisionContact.separation;
-						existingContact.Depths = depths;
-
-						var normal = new messages.Vector3d();
-						normal.Set(collisionContact.normal);
-						existingContact.Normals.Add(normal);
-
-						var position = new messages.Vector3d();
-						position.Set(collisionContact.point);
-						existingContact.Positions.Add(position);
-
-						var jointWrench = MakeJointWrenchMessage();
-						jointWrench.Body1Name = collision1;
-						jointWrench.Body2Name = collision2;
-						jointWrench.Body1Wrench.Force.Set(collisionContact.impulse);
-						existingContact.Wrenchs.Add(jointWrench);
-
-						existingContact.Header.Stamp.SetCurrentTime();
+						contactGroup[key] = new List<int>();
 					}
-					else
-					{
-						var newContact = new messages.Contact
-						{
-							World = new messages.Entity { Name = "default" },
-
-							Collision1 = new messages.Entity { Name = collision1 },
-							Collision2 = new messages.Entity { Name = collision2 },
-
-							Depths = new double[] { collisionContact.separation }
-						};
-
-						var normal = new messages.Vector3d();
-						normal.Set(collisionContact.normal);
-						newContact.Normals.Add(normal);
-
-						var position = new messages.Vector3d();
-						position.Set(collisionContact.point);
-						newContact.Positions.Add(position);
-
-						var jointWrench = MakeJointWrenchMessage();
-						jointWrench.Body1Name = collision1;
-						jointWrench.Body2Name = collision2;
-						jointWrench.Body1Wrench.Force.Set(collisionContact.impulse);
-						newContact.Wrenchs.Add(jointWrench);
-
-						newContact.Header = new messages.Header
-						{
-							Stamp = new messages.Time()
-						};
-						newContact.Header.Stamp.SetCurrentTime();
-						// Debug.Log("{DeviceName} CollisionStay: " + collision1 + " <-> " + collision2);
-
-						contactsMessage.contact.Add(newContact);
-					}
-					// Debug.Log($"{_targetCollision} collisionContact.separation = {collisionContact.separation.ToString("F10")} .impulse = {collisionContact.impulse.ToString("F10")}");
+					contactGroup[key].Add(i);
 				}
-				// Debug.DrawLine(collisionContact.point, collisionContact.normal, Color.white);
 			}
 
-			// Debug.Log("{DeviceName} CollisionStay: " + contacts.contact.Count);
+			foreach (var group in contactGroup)
+			{
+				var collision1 = group.Key.Item1;
+				var collision2 = group.Key.Item2;
+				var indices = group.Value;
+
+				var newContact = new messages.Contact
+				{
+					World = new messages.Entity { Name = "default" },
+					Collision1 = new messages.Entity { Name = collision1 },
+					Collision2 = new messages.Entity { Name = collision2 },
+					Header = new messages.Header { Stamp = new messages.Time() },
+					Depths = new double[indices.Count]
+				};
+				newContact.Header.Stamp.SetCurrentTime();
+
+				for (var j = 0; j < indices.Count; j++)
+				{
+					var idx = indices[j];
+					var collisionContact = other.contacts[idx];
+
+					newContact.Depths[j] = collisionContact.separation;
+
+					var normal = new messages.Vector3d();
+					normal.Set(collisionContact.normal);
+					newContact.Normals.Add(normal);
+
+					var position = new messages.Vector3d();
+					position.Set(collisionContact.point);
+					newContact.Positions.Add(position);
+
+					var jointWrench = MakeJointWrenchMessage();
+					jointWrench.Body1Name = collision1;
+					jointWrench.Body2Name = collision2;
+					jointWrench.Body1Wrench.Force.Set(collisionContact.impulse);
+					newContact.Wrenchs.Add(jointWrench);
+				}
+
+				contactsMessage.contact.Add(newContact);
+			}
+
 			_lastContacts = contactsMessage;
 
 			EnqueueMessage(contactsMessage);

@@ -40,7 +40,15 @@ namespace SensorDevices
 			public Vector3 anchorRotation;
 		}
 
+		private struct InterpolationData
+		{
+			public messages.JointState message;
+			public PhysicsSample prev;
+			public PhysicsSample curr;
+		}
+
 		private Dictionary<string, JointEntry> articulationTable = new();
+		private List<InterpolationData> _interpolationBuffer = new();
 
 		private messages.JointStateV jointStateV = null;
 
@@ -68,6 +76,8 @@ namespace SensorDevices
 
 		protected override void GenerateMessage()
 		{
+			var t = 0.0;
+
 			lock (_jointStateLock)
 			{
 				if (_lastFixedSimTime <= 0)
@@ -77,24 +87,36 @@ namespace SensorDevices
 				// SimTime advances with render frames while FixedSimTime advances with physics.
 				var fixedSimTime = (Clock != null) ? Clock.FixedSimTime : (double)Time.fixedTimeAsDouble;
 				var fixedDeltaTime = Clock.FixedDeltaTime;
-				var t = 0.0;
 				if (fixedDeltaTime > 0)
 				{
 					t = (fixedSimTime - _lastFixedSimTime) / fixedDeltaTime;
 					t = Math.Max(0.0, Math.Min(1.0, t));
 				}
 
-				// Interpolate each joint between prev and curr physics samples
+				// Copy data to buffer under lock to minimize lock duration
+				_interpolationBuffer.Clear();
 				foreach (var entry in articulationTable.Values)
 				{
-					entry.message.Position = entry.prev.position + (entry.curr.position - entry.prev.position) * t;
-					entry.message.Velocity = entry.prev.velocity + (entry.curr.velocity - entry.prev.velocity) * t;
-					entry.message.Effort = entry.prev.effort + (entry.curr.effort - entry.prev.effort) * t;
+					_interpolationBuffer.Add(new InterpolationData
+					{
+						message = entry.message,
+						prev = entry.prev,
+						curr = entry.curr
+					});
 				}
 
 				// Fixed-dt synthetic timestamp: advances by exactly UpdatePeriod (1ms at 1000 Hz)
 				// per publish for jitter-free timestamps.
 				jointStateV.Header.Stamp.Set(GetNextSyntheticTime());
+			}
+
+			// Perform interpolation outside the lock
+			for (var i = 0; i < _interpolationBuffer.Count; i++)
+			{
+				var data = _interpolationBuffer[i];
+				data.message.Position = data.prev.position + (data.curr.position - data.prev.position) * t;
+				data.message.Velocity = data.prev.velocity + (data.curr.velocity - data.prev.velocity) * t;
+				data.message.Effort = data.prev.effort + (data.curr.effort - data.prev.effort) * t;
 			}
 
 			PushDeviceMessage(jointStateV);
