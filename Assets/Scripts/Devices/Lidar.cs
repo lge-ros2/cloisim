@@ -69,7 +69,7 @@ namespace SensorDevices
 		/// AsyncGPUReadback callback, which contributes to frame spikes.
 		/// </summary>
 		private ConcurrentQueue<float[]> _rangeDataPool = new();
-		private const int RangeDataPoolSize = 4;
+		private const int RangeDataPoolSize = 10;
 
 		#region "Unified Ray Tracing (per-sensor resources)"
 		private static ComputeShader ComputeShaderLidarRayTrace = null;
@@ -210,7 +210,8 @@ namespace SensorDevices
 			Array.Fill(_laserScan.Ranges, double.NaN);
 			Array.Fill(_laserScan.Intensities, double.NaN);
 
-			// Pre-populate range data pool to avoid runtime GC allocations
+			// Clear and pre-populate range data pool to avoid runtime GC allocations
+			while (_rangeDataPool.TryDequeue(out _)) { }
 			for (var i = 0; i < RangeDataPoolSize; i++)
 				_rangeDataPool.Enqueue(new float[_totalSamples]);
 		}
@@ -423,9 +424,17 @@ namespace SensorDevices
 				var src = req.GetData<float>();
 
 				// Reuse pooled array to avoid GC allocation on the main thread.
-				// Falls back to allocation only if pool is exhausted.
+				// Falls back to allocation only if pool is exhausted or size mismatch.
 				if (!_rangeDataPool.TryDequeue(out var rangeData) || rangeData.Length != src.Length)
+				{
+#if UNITY_EDITOR
+					if (rangeData != null && rangeData.Length != src.Length)
+						Debug.LogWarning($"[Lidar] Readback pool size mismatch ({rangeData.Length} vs {src.Length}). Allocating new array.");
+					else
+						Debug.LogWarning($"[Lidar] Readback pool exhausted for {DeviceName}. Allocating new array (size={src.Length}). Consider increasing RangeDataPoolSize.");
+#endif
 					rangeData = new float[src.Length];
+				}
 
 				src.CopyTo(rangeData);
 
