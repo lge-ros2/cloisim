@@ -91,7 +91,7 @@ public struct MatrixXd
 		var hashCode = 0;
 		for (var i = 0; i < Row; i++)
 		{
-			for (var j = 0; j < Row; j++)
+			for (var j = 0; j < Col; j++)
 			{
 				hashCode ^= this[i, j].GetHashCode();
 			}
