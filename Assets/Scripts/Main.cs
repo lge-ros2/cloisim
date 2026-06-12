@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System;
 using System.Threading;
+using NetMQ;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
@@ -1240,6 +1241,8 @@ public class Main : MonoBehaviour
 		{
 			BridgeManager.Dispose();
 		}
+
+		NetMQConfig.Cleanup(false);
 
 		if (AssimpLibrary.Instance.IsLibraryLoaded)
 		{

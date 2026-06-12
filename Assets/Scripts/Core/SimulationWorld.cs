@@ -91,14 +91,10 @@ public class SimulationWorld : CLOiSimPlugin
 				}
 			}
 			catch (NetMQ.FiniteStateMachineException ex)
-            {
-                Debug.LogErrorFormat($"[SimulationWorld] FSM error: {ex.Message}.");
-				var usedTargetPort = requestor.TargetPort;
-				var usedHash = requestor.Hash;
-				requestor.Dispose();
-				requestor = new Requestor(usedHash);
-				requestor.Initialize(usedTargetPort);
-            }
+			{
+				Debug.LogErrorFormat($"[SimulationWorld] FSM error: {ex.Message}.");
+				break;
+			}
 
 			_signalReset = false;
 		}

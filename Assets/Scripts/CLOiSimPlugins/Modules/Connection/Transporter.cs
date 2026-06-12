@@ -6,11 +6,13 @@
 
 using System.Collections.Generic;
 using System;
+using System.Threading;
 using NetMQ;
 
 public class Transporter : IDisposable
 {
 	private Dictionary<ushort, NetMQSocket> transportList = new();
+	private int _disposed;
 
 	public T Get<T>(in ushort targetPort) where T : class
 	{
@@ -68,19 +70,36 @@ public class Transporter : IDisposable
 
 	~Transporter()
 	{
-		Dispose();
+		Dispose(false);
 	}
 
 	public virtual void Dispose()
 	{
-		// Console.WriteLine("Destruct DestroyTransporter");
-		foreach (var item in transportList)
+		Dispose(true);
+		GC.SuppressFinalize(this);
+	}
+
+	protected virtual void Dispose(bool disposing)
+	{
+		if (Interlocked.Exchange(ref _disposed, 1) == 1)
+		{
+			return;
+		}
+
+		if (!disposing)
+		{
+			return;
+		}
+
+		var currentTransportList = transportList;
+		transportList = new Dictionary<ushort, NetMQSocket>();
+
+		foreach (var item in currentTransportList)
 		{
 			var transporter = item.Value;
 			transporter?.Dispose();
 		}
-		transportList.Clear();
-		GC.SuppressFinalize(this);
+		currentTransportList.Clear();
 	}
 
 	public static string GetAddress(in ushort port)
