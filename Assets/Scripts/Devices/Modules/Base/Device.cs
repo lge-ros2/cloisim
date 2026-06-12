@@ -268,6 +268,7 @@ public abstract class Device : MonoBehaviour
 			try
 			{
 				PushDeviceMessage(msg);
+				OnMessagePublished(msg);
 			}
 			catch (Exception ex)
 			{
@@ -275,6 +276,8 @@ public abstract class Device : MonoBehaviour
 			}
 		}
 	}
+
+	protected virtual void OnMessagePublished(ProtoBuf.IExtensible message) { }
 
 	/// <summary>
 	/// Enqueue a protobuf message and wake the TX thread immediately

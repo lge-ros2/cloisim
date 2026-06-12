@@ -20,6 +20,25 @@ namespace SensorDevices
 		private readonly List<messages.Micom.Uss> _ussMessages = new();
 		private readonly List<messages.Micom.Ir> _irMessages = new();
 
+		// Pool for Micom messages to avoid per-frame allocations
+		private readonly System.Collections.Concurrent.ConcurrentQueue<messages.Micom> _micomPool = new();
+
+		protected override void OnMessagePublished(ProtoBuf.IExtensible message)
+		{
+			if (message is messages.Micom micom)
+			{
+				_micomPool.Enqueue(micom);
+			}
+		}
+
+		private messages.Micom GetMicomMessage()
+		{
+			if (!_micomPool.TryDequeue(out var micom))
+			{
+				micom = new messages.Micom { Time = new messages.Time() };
+			}
+			return micom;
+		}
 
 		private MotorControl _motorControl = null;
 		private Battery _battery = null;
@@ -172,10 +191,16 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+			UnityEngine.Profiling.Profiler.BeginSample("MicomSensor.FixedUpdate:MotorControl");
+#endif
 			if (_motorControl?.Update(_odomData, Time.fixedDeltaTime, _imuSensor) == false)
 			{
 				Debug.LogWarning("Update failed in MotorControl");
 			}
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+			UnityEngine.Profiling.Profiler.EndSample();
+#endif
 
 			// Skip message generation until UpdateRate is configured
 			if (UpdateRate <= 0)
@@ -189,11 +214,13 @@ namespace SensorDevices
 			// Clamp to avoid runaway accumulation (e.g. after a long pause)
 			_accumulatedTime = _accumulatedTime % UpdatePeriod;
 
-			// Always allocate a fresh message: IsEmpty only means the queue was
-			// drained, not that the TX thread finished serializing the dequeued
-			// object. Reusing the same instance causes the TX thread to publish
-			// the mutated (next-frame) timestamp twice → duplicate timestamps.
-			var micomSensorData = new messages.Micom { Time = new messages.Time() };
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+			UnityEngine.Profiling.Profiler.BeginSample("MicomSensor.FixedUpdate:GenerateMessage");
+#endif
+			
+			// Use pooled message to avoid per-frame allocations. 
+			// We still need multiple instances (handled by pool) to avoid mutating data while TX thread is reading.
+			var micomSensorData = GetMicomMessage();
 
 			micomSensorData.Bumpers.Clear();
 			micomSensorData.Usses.Clear();
@@ -208,6 +235,10 @@ namespace SensorDevices
 			micomSensorData.Odom = _odomData;
 
 			EnqueueMessage(micomSensorData);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+			UnityEngine.Profiling.Profiler.EndSample();
+#endif
 
 #if UNITY_EDITOR
 			UpdateProfiler("MicomSensor", 512);

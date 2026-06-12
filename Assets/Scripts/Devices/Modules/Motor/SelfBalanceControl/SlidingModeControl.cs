@@ -17,9 +17,19 @@ namespace SelfBalanceControl
 			public MatrixXd K;	// 2x5
 			public MatrixXd S;	// 2x5
 
-			public MatrixXd SxA => S * A;
-			public MatrixXd SxB => S * B;
-			public MatrixXd SxBxK => SxB * K;
+			// Pre-calculate expensive matrix operations to avoid per-frame Gaussian elimination
+			public MatrixXd SxA;
+			public MatrixXd SxB;
+			public MatrixXd SxBxK;
+			public MatrixXd SxBInverse;
+
+			public void Refresh()
+			{
+				SxA = S * A;
+				SxB = S * B;
+				SxBxK = SxB * K;
+				SxBInverse = SxB.Inverse;
+			}
 		};
 
 		public enum OutputMode
@@ -88,6 +98,7 @@ namespace SelfBalanceControl
 			_outputMode = outMode;
 			_switchingMode = switchMode;
 			_nominalModel = model;
+			_nominalModel.Refresh();
 
 			SetDefault();
 		}
@@ -134,6 +145,7 @@ namespace SelfBalanceControl
 				K = K,
 				S = S
 			};
+			_nominalModel.Refresh();
 
 			SetDefault();
 		}
@@ -142,6 +154,7 @@ namespace SelfBalanceControl
 		{
 			_sigmaIntegralElementPrev = Vector2d.zero;
 			_nominalModel.S = _DefaultNominalModel.S; // recommanded values
+			_nominalModel.Refresh();
 		}
 
 		public void Reset()
@@ -165,7 +178,7 @@ namespace SelfBalanceControl
 			_f = _nominalModel.B * (((linearVelocity >= 0) ? -_ff : _ff) * Vector2d.one);
 
 			_uLQ = -_nominalModel.K * delta;
-			_uEQ = _uLQ - _nominalModel.SxB.Inverse * _nominalModel.S * _f;
+			_uEQ = _uLQ - _nominalModel.SxBInverse * _nominalModel.S * _f;
 
 			// UnityEngine.Debug.Log($"states: {states.ToString("F4")} | references: {references.ToString("F4")} | Delta: {delta.ToString("F4")} | K: {_nominalModel.K.ToString("F4")} | uLQ({_uLQ.ToString("F4")})");
 			// UnityEngine.Debug.Log($"Delta: {delta.ToString("F4")}");
@@ -192,10 +205,10 @@ namespace SelfBalanceControl
 			switch (_switchingMode)
 			{
 				case SwitchingMode.SAT:
-					_uSW = _nominalModel.SxB.Inverse * _kSW * SAT(sigma, _sigmaB);
+					_uSW = _nominalModel.SxBInverse * _kSW * SAT(sigma, _sigmaB);
 					break;
 				case SwitchingMode.SIGN:
-					_uSW = _nominalModel.SxB.Inverse * _kSW * Sign(sigma);
+					_uSW = _nominalModel.SxBInverse * _kSW * Sign(sigma);
 					break;
 				default:
 					throw new InvalidOperationException("Unknown switching mode.");
