@@ -50,13 +50,19 @@ public sealed class DeviceMessageQueue : BlockingCollection<DeviceMessage>
 
 	public void Flush()
 	{
-		while (TryTake(out _)) { };
+		while (TryTake(out var msg))
+		{
+			Device.ReturnDeviceMessage(msg);
+		}
 	}
 
 	private void FlushPortion()
 	{
 		var currentCount = Count;
-		while (currentCount-- > _flushThreshold && TryTake(out _)) { };
+		while (currentCount-- > _flushThreshold && TryTake(out var msg))
+		{
+			Device.ReturnDeviceMessage(msg);
+		}
 	}
 
 	public bool Push(in DeviceMessage data)

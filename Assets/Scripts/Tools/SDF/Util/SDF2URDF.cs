@@ -110,7 +110,7 @@ namespace SDFormat
 
 		private static void AppendJointUrdf(StringBuilder urdf, XmlNode jointNode, string scopePrefix)
 		{
-			var jointName = GetAttributeOrDefault(jointNode, "name", "joint");
+			var jointName = NormalizeScopedName(scopePrefix, GetAttributeOrDefault(jointNode, "name", "joint"));
 			var axisNode = jointNode.SelectSingleNode("axis");
 			var limitNode = axisNode?.SelectSingleNode("limit");
 			var jointType = NormalizeJointType(GetAttributeOrDefault(jointNode, "type", "fixed"), limitNode != null);

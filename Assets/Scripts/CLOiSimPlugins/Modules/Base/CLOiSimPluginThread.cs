@@ -181,7 +181,15 @@ public class CLOiSimPluginThread : IDisposable
 		var dmResponse = new DeviceMessage();
 		while (IsRunning)
 		{
-			var receivedBuffer = responsor.ReceiveRequest();
+			byte[] receivedBuffer = null;
+			try
+			{
+				receivedBuffer = responsor.ReceiveRequest();
+			}
+			catch (ObjectDisposedException)
+			{
+				break;
+			}
 
 			if (receivedBuffer != null)
 			{
@@ -207,7 +215,14 @@ public class CLOiSimPluginThread : IDisposable
 					Debug.Log("DeviceMessage for response or requestMessage is null");
 				}
 
-				responsor.SendResponse(dmResponse);
+				try
+				{
+					responsor.SendResponse(dmResponse);
+				}
+				catch (ObjectDisposedException)
+				{
+					break;
+				}
 			}
 
 			Wait();

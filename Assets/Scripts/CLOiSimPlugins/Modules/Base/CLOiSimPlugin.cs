@@ -73,9 +73,15 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	protected void OnDestroy()
 	{
 		_thread.Dispose();
-		_thread.TryJoinStep(joinTimeoutMs: 500);
+		if (!_thread.TryJoinStep(joinTimeoutMs: 500))
+		{
+			Debug.LogWarning($"[{name}] plugin threads are still running; skipping transport dispose during teardown.");
+		}
+		else
+		{
+			_transport.Dispose();
+		}
 
-		_transport.Dispose();
 
 		DeregisterDevice(_allocatedDevicePorts, _allocatedDeviceHashKeys);
 		// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");

@@ -22,6 +22,9 @@ public class DeviceMessage : MemoryStream
 	// Reusable write buffer for header to avoid per-frame allocation
 	private readonly byte[] _headerBuf = new byte[RAW_IMAGE_HEADER_SIZE];
 
+	// Reusable buffer for string encoding and small headers
+	private readonly byte[] _encodingBuf = new byte[1024];
+
 	public DeviceMessage()
 	{
 		Reset();
@@ -132,19 +135,33 @@ public class DeviceMessage : MemoryStream
 
 		// Class map suffix
 		var classMapCount = seg.ClassMaps.Count;
-		var countBuf = new byte[4];
-		WriteUInt32LE(countBuf, 0, (uint)classMapCount);
-		Write(countBuf, 0, 4);
+		WriteUInt32LE(_headerBuf, 0, (uint)classMapCount);
+		Write(_headerBuf, 0, 4);
 
 		foreach (var vc in seg.ClassMaps)
 		{
-			var nameBuf = new byte[6]; // class_id(4) + name_len(2)
-			WriteUInt32LE(nameBuf, 0, vc.ClassId);
-			var nameBytes = Encoding.UTF8.GetBytes(vc.ClassName ?? "");
-			WriteUInt16LE(nameBuf, 4, (ushort)nameBytes.Length);
-			Write(nameBuf, 0, 6);
-			if (nameBytes.Length > 0)
-				Write(nameBytes, 0, nameBytes.Length);
+			WriteUInt32LE(_headerBuf, 0, vc.ClassId);
+
+			var name = vc.ClassName ?? string.Empty;
+			var nameByteCount = Encoding.UTF8.GetByteCount(name);
+
+			WriteUInt16LE(_headerBuf, 4, (ushort)nameByteCount);
+			Write(_headerBuf, 0, 6);
+
+			if (nameByteCount > 0)
+			{
+				if (nameByteCount <= _encodingBuf.Length)
+				{
+					Encoding.UTF8.GetBytes(name, 0, name.Length, _encodingBuf, 0);
+					Write(_encodingBuf, 0, nameByteCount);
+				}
+				else
+				{
+					// Fallback for very long names
+					var nameBytes = Encoding.UTF8.GetBytes(name);
+					Write(nameBytes, 0, nameBytes.Length);
+				}
+			}
 		}
 	}
 
@@ -160,23 +177,21 @@ public class DeviceMessage : MemoryStream
 
 		var imageCount = imgs.image.Count;
 
-		// 16-byte shared header
-		var sharedHeader = new byte[16];
-		WriteUInt32LE(sharedHeader, 0, MAGIC_RAW_MULTI_IMAGE);
-		WriteInt32LE(sharedHeader, 4, (int)imgs.Time.Sec);
-		WriteInt32LE(sharedHeader, 8, imgs.Time.Nsec);
-		WriteUInt32LE(sharedHeader, 12, (uint)imageCount);
-		Write(sharedHeader, 0, 16);
+		// 16-byte shared header: [magic:4][sec:4][nsec:4][image_count:4]
+		WriteUInt32LE(_headerBuf, 0, MAGIC_RAW_MULTI_IMAGE);
+		WriteInt32LE(_headerBuf, 4, (int)imgs.Time.Sec);
+		WriteInt32LE(_headerBuf, 8, imgs.Time.Nsec);
+		WriteUInt32LE(_headerBuf, 12, (uint)imageCount);
+		Write(_headerBuf, 0, 16);
 
 		// Per-image blocks: 16-byte sub-header + pixel data
-		var subHeader = new byte[16];
 		foreach (var img in imgs.image)
 		{
-			WriteUInt32LE(subHeader, 0, img.Width);
-			WriteUInt32LE(subHeader, 4, img.Height);
-			WriteUInt32LE(subHeader, 8, (uint)img.PixelFormatType);
-			WriteUInt32LE(subHeader, 12, img.Step);
-			Write(subHeader, 0, 16);
+			WriteUInt32LE(_headerBuf, 0, img.Width);
+			WriteUInt32LE(_headerBuf, 4, img.Height);
+			WriteUInt32LE(_headerBuf, 8, (uint)img.PixelFormatType);
+			WriteUInt32LE(_headerBuf, 12, img.Step);
+			Write(_headerBuf, 0, 16);
 
 			var data = img.Data;
 			if (data != null && data.Length > 0)

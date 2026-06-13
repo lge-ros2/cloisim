@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -11,6 +12,8 @@ using UnityEngine.UIElements;
 
 public class UIController : MonoBehaviour
 {
+	private static int _mainThreadId;
+
 	public enum CameraViewModeEnum
 	{
 		Perspective,
@@ -33,14 +36,28 @@ public class UIController : MonoBehaviour
 	private Button _buttonPropsBox = null;
 	private Button _buttonPropsCylinder = null;
 	private Button _buttonPropsSphere = null;
+	private readonly ConcurrentQueue<StatusMessageRequest> _pendingStatusMessages = new();
 
 	private const float CameraViewDistance = 30f;
 	private const float ScaleFactorMin = 0.01f;
 	private const float ScaleFactorMax = 10;
 	private string _prevScaleFactorString = string.Empty;
 
+	private readonly struct StatusMessageRequest
+	{
+		public string Message { get; }
+		public Color Color { get; }
+
+		public StatusMessageRequest(string message, Color color)
+		{
+			Message = message;
+			Color = color;
+		}
+	}
+
 	void Awake()
 	{
+		_mainThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
 		_uiDocument = GetComponent<UIDocument>();
 		_rootVisualElement = _uiDocument.rootVisualElement;
 		_cameraKeyOverlay = new CameraKeyOverlay(_rootVisualElement);
@@ -186,6 +203,33 @@ public class UIController : MonoBehaviour
 
 		UpdateWebServiceInfo();
 		UpdateVersionInfo();
+	}
+
+	private void Update()
+	{
+		FlushPendingStatusMessages();
+	}
+
+	private void FlushPendingStatusMessages()
+	{
+		while (_pendingStatusMessages.TryDequeue(out var request))
+		{
+			ApplyStatusMessage(request.Message, request.Color);
+		}
+	}
+
+	private void ApplyStatusMessage(in string message, in Color color)
+	{
+		if (_statusMessage != null)
+		{
+			_statusMessage.style.color = color;
+			_statusMessage.text = message;
+		}
+	}
+
+	private static bool IsMainThread()
+	{
+		return System.Threading.Thread.CurrentThread.ManagedThreadId == _mainThreadId;
 	}
 
 	private void ChangeBackground(ref Button button, in Color color)
@@ -377,11 +421,13 @@ public class UIController : MonoBehaviour
 
 	public void SetStatusMessage(in string message, in Color color)
 	{
-		if (_statusMessage != null)
+		if (!IsMainThread())
 		{
-			_statusMessage.style.color = color;
-			_statusMessage.text = message;
+			_pendingStatusMessages.Enqueue(new StatusMessageRequest(message, color));
+			return;
 		}
+
+		ApplyStatusMessage(message, color);
 	}
 
 	public void ShowLoadingOverlay(in string title, in string detail)

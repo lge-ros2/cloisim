@@ -46,6 +46,10 @@ namespace SensorDevices
 
 		private float _detectedRange = float.NegativeInfinity;
 
+		private NativeArray<RaycastCommand> _raycastCommands;
+		private NativeArray<RaycastHit> _raycastResults;
+		private bool _raycastArraysAllocated = false;
+
 		public string Geometry
 		{
 			get => _geometry;
@@ -70,11 +74,33 @@ namespace SensorDevices
 			set => _radius = value;
 		}
 
+		protected new void OnDestroy()
+		{
+			if (_raycastArraysAllocated)
+			{
+				_raycastCommands.Dispose();
+				_raycastResults.Dispose();
+				_raycastArraysAllocated = false;
+			}
+			base.OnDestroy();
+		}
+
 		protected override void OnAwake()
 		{
 			Mode = ModeType.TX;
 			DeviceName = name;
 			_sonarLink = transform.parent;
+		}
+
+		private void AllocateRaycastArrays()
+		{
+			var rayCount = _meshSensorRegionVertices.Count;
+			if (rayCount > 0)
+			{
+				_raycastCommands = new NativeArray<RaycastCommand>(rayCount, Allocator.Persistent);
+				_raycastResults = new NativeArray<RaycastHit>(rayCount, Allocator.Persistent);
+				_raycastArraysAllocated = true;
+			}
 		}
 
 		protected override void OnStart()
@@ -113,6 +139,8 @@ namespace SensorDevices
 			meshCollider.isTrigger = true;
 
 			ResolveSensingArea(meshCollider.sharedMesh);
+
+			AllocateRaycastArrays();
 
 			var sonar = _sonar;
 			sonar.Radius = _radius;
@@ -252,8 +280,16 @@ namespace SensorDevices
 			_sensorStartPoint += localToWorld.GetPosition();
 
 			var rayCount = _meshSensorRegionVertices.Count;
-			var commands = new NativeArray<RaycastCommand>(rayCount, Allocator.TempJob);
-			var results = new NativeArray<RaycastHit>(rayCount, Allocator.TempJob);
+
+			if (!_raycastArraysAllocated || _raycastCommands.Length != rayCount)
+			{
+				if (_raycastArraysAllocated)
+				{
+					_raycastCommands.Dispose();
+					_raycastResults.Dispose();
+				}
+				AllocateRaycastArrays();
+			}
 
 			var maxDist = (float)_rangeMax;
 			var queryParams = new QueryParameters(-1, false, QueryTriggerInteraction.Ignore, false);
@@ -262,14 +298,14 @@ namespace SensorDevices
 			{
 				var targetPoint = localToWorld.MultiplyPoint3x4(_meshSensorRegionVertices[i]);
 				var direction = (targetPoint - _sensorStartPoint).normalized;
-				commands[i] = new RaycastCommand(_sensorStartPoint, direction, queryParams, maxDist);
+				_raycastCommands[i] = new RaycastCommand(_sensorStartPoint, direction, queryParams, maxDist);
 			}
 
-			RaycastCommand.ScheduleBatch(commands, results, 32).Complete();
+			RaycastCommand.ScheduleBatch(_raycastCommands, _raycastResults, 32).Complete();
 
 			for (var i = 0; i < rayCount; i++)
 			{
-				var hit = results[i];
+				var hit = _raycastResults[i];
 				if (hit.collider == null)
 					continue;
 
@@ -286,9 +322,6 @@ namespace SensorDevices
 					contactPoint = hit.point;
 				}
 			}
-
-			commands.Dispose();
-			results.Dispose();
 
 			var sonar = _sonar;
 			sonar.Range = _detectedRange;

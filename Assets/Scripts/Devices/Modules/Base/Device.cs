@@ -268,6 +268,7 @@ public abstract class Device : MonoBehaviour
 			try
 			{
 				PushDeviceMessage(msg);
+				OnMessagePublished(msg);
 			}
 			catch (Exception ex)
 			{
@@ -275,6 +276,8 @@ public abstract class Device : MonoBehaviour
 			}
 		}
 	}
+
+	protected virtual void OnMessagePublished(ProtoBuf.IExtensible message) { }
 
 	/// <summary>
 	/// Enqueue a protobuf message and wake the TX thread immediately
@@ -456,9 +459,16 @@ public abstract class Device : MonoBehaviour
 			}
 
 			var pushed = _deviceMessageQueue.Push(deviceMessage);
+			if (pushed)
+			{
 #if UNITY_EDITOR
-			if (pushed) Interlocked.Increment(ref _diagPublishCount);
+				Interlocked.Increment(ref _diagPublishCount);
 #endif
+			}
+			else
+			{
+				ReturnDeviceMessage(deviceMessage);
+			}
 			return pushed;
 		}
 		catch (Exception ex)
@@ -472,10 +482,23 @@ public abstract class Device : MonoBehaviour
 	{
 		try
 		{
-			var deviceMessage = new DeviceMessage();
+			if (!_deviceMessagePool.TryTake(out var deviceMessage))
+			{
+				deviceMessage = new DeviceMessage();
+			}
+
 			if (deviceMessage.SetMessage(data))
 			{
-				return _deviceMessageQueue.Push(deviceMessage);
+				var pushed = _deviceMessageQueue.Push(deviceMessage);
+				if (!pushed)
+				{
+					ReturnDeviceMessage(deviceMessage);
+				}
+				return pushed;
+			}
+			else
+			{
+				ReturnDeviceMessage(deviceMessage);
 			}
 		}
 		catch (Exception ex)
