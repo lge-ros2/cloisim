@@ -215,14 +215,17 @@ public class UltraFastWebMRecorder : MonoBehaviour
 		IsRecording = false;
 
 		_writerRunning = false;
-		_writerThread?.Join(2000);
+		if (_writerThread != null && _writerThread.IsAlive && !_writerThread.Join(500))
+		{
+			Debug.LogWarning("[WebMRecorder] Writer thread did not stop within 500ms; continuing shutdown.");
+		}
 
 		try { _ffmpegStdin?.Flush(); } catch { }
 		try { _ffmpegStdin?.Close(); } catch { }
 
 		if (_ffmpeg != null && !_ffmpeg.HasExited)
 		{
-			if (!_ffmpeg.WaitForExit(4000))
+			if (!_ffmpeg.WaitForExit(1000))
 			{
 				try { _ffmpeg.Kill(); } catch { }
 			}

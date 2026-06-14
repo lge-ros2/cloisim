@@ -67,7 +67,8 @@ public partial class ElevatorSystem : CLOiSimPlugin
 		ReadFloorContext();
 		ReadElevatorContext();
 
-		yield return ServiceLoop();
+		StartCoroutine(ServiceLoop());
+		yield return null;
 	}
 
 	new void OnDestroy()

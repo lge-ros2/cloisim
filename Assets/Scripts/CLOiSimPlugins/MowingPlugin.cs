@@ -173,6 +173,8 @@ public class MowingPlugin : CLOiSimPlugin
 
 	private Grass _grass = null;
 	private MowingBlade _mowingBlade = null;
+	private WaitForEndOfFrame _mowingYield = new();
+	private int _mowingFrameSkip = 0;
 
 	private Color[] _initialTexturePixels = null;
 	private Transform _targetPlane = null;
@@ -514,11 +516,19 @@ public class MowingPlugin : CLOiSimPlugin
 
 		var mowingThreshold = _grass.blade.heightMax;
 		var mowingRatioInColor = Color.clear;
+		const int MowingUpdateInterval = 4;
 
 		while (true)
 		{
 			if (_mowingBlade != null && _mowingBlade.IsRunning())
 			{
+				if (++_mowingFrameSkip < MowingUpdateInterval)
+				{
+					yield return _mowingYield;
+					continue;
+				}
+
+				_mowingFrameSkip = 0;
 				var bladeRadiusIntexture = _mowingBlade.Diameter /_grass.mapResolution;
 				var bladeLocalPos = _targetPlane.InverseTransformPoint(_mowingBlade.Position);
 
@@ -538,16 +548,17 @@ public class MowingPlugin : CLOiSimPlugin
 						mowingRatioInColor,
 						TextureUtil.FillOptions.Lesser);
 
-					yield return null;
+					yield return _mowingYield;
 				}
 				else
 				{
-					yield return new WaitForEndOfFrame();
+					yield return _mowingYield;
 				}
 			}
 			else
 			{
-				yield return new WaitForEndOfFrame();
+				_mowingFrameSkip = 0;
+				yield return _mowingYield;
 			}
 		}
 	}

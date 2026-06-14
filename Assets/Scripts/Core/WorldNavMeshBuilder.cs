@@ -127,7 +127,14 @@ public class WorldNavMeshBuilder : MonoBehaviour
 		while (true)
 		{
 			UpdateNavMesh(true);
-			yield return m_Operation;
+			if (m_Operation != null)
+			{
+				yield return m_Operation;
+			}
+			else
+			{
+				yield return null;
+			}
 		}
 	}
 
@@ -162,6 +169,9 @@ public class WorldNavMeshBuilder : MonoBehaviour
 
 	public void UpdateNavMesh(in bool asyncUpdate = false)
 	{
+		m_Sources.Clear();
+		m_Operation = null;
+
 		for (var i = 0; i < m_NavMeshTracks.Count; i++)
 		{
 			m_NavMeshTracks[i].Collect(ref m_Sources);
