@@ -146,10 +146,7 @@ public class CLOiSimPluginThread : IDisposable
 			}
 			else
 			{
-				// Yield instead of Sleep(1) to minimize latency —
-				// Sleep(1) has ~1-4ms granularity on Linux, which caps
-				// throughput for high-rate sensors (1000Hz JointState, etc.)
-				Wait();
+				Thread.Yield();
 			}
 		}
 	}
@@ -165,8 +162,14 @@ public class CLOiSimPluginThread : IDisposable
 		while (IsRunning && device != null)
 		{
 			var receivedData = subscriber.Subscribe();
-			device.PushDeviceMessage(receivedData);
-			Wait();
+			if (receivedData != null)
+			{
+				device.PushDeviceMessage(receivedData);
+			}
+			else
+			{
+				Thread.Yield();
+			}
 		}
 	}
 
@@ -225,7 +228,7 @@ public class CLOiSimPluginThread : IDisposable
 				}
 			}
 
-			Wait();
+			Thread.Yield();
 		}
 		dmResponse.Dispose();
 	}

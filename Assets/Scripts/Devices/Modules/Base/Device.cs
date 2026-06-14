@@ -425,7 +425,7 @@ public abstract class Device : MonoBehaviour
 			}
 			else
 			{
-				Thread.SpinWait(1);
+				Thread.Yield();
 			}
 		}
 	}
