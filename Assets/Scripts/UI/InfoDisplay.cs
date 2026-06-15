@@ -31,8 +31,7 @@ public partial class InfoDisplay : MonoBehaviour
 			if (inputField.name.Equals("FPS"))
 			{
 				_inputFieldFPS = inputField;
-				_inputFieldFPS.enabled = false;
-				_inputFieldSim.readOnly = true;
+				_inputFieldFPS.readOnly = true;
 			}
 			else if (inputField.name.Equals("SimTime"))
 			{
@@ -47,7 +46,6 @@ public partial class InfoDisplay : MonoBehaviour
 			else if (inputField.name.Equals("DiffTime"))
 			{
 				_inputFieldDiff = inputField;
-				_inputFieldDiff.enabled = false;
 				_inputFieldDiff.readOnly = true;
 			}
 			else if (inputField.name.Equals("HitPoint"))

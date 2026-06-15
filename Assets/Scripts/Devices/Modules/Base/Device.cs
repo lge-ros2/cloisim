@@ -16,6 +16,21 @@ public abstract class Device : MonoBehaviour
 	public enum ModeType { NONE, TX, RX, TX_THREAD, RX_THREAD };
 	public ModeType Mode = ModeType.NONE;
 
+	// --- Idle-freeze diagnostics (all thread-safe, negligible overhead) ---
+	/// <summary>AsyncGPUReadback requests currently in-flight across all sensors.</summary>
+	public static long GpuReadbackInflight => Interlocked.Read(ref s_gpuReadbackInflight);
+	private static long s_gpuReadbackInflight;
+
+	/// <summary>DeviceThreadRx idle-yield iterations (accumulated; reset by dump).</summary>
+	public static long RxThreadYields => Interlocked.Read(ref s_rxThreadYields);
+	private static long s_rxThreadYields;
+	public static long ResetRxThreadYields() => Interlocked.Exchange(ref s_rxThreadYields, 0);
+
+	/// <summary>Call immediately before AsyncGPUReadback.Request().</summary>
+	public static void GpuReadbackBegin() => Interlocked.Increment(ref s_gpuReadbackInflight);
+	/// <summary>Call as the first statement inside the readback callback.</summary>
+	public static void GpuReadbackEnd()   => Interlocked.Decrement(ref s_gpuReadbackInflight);
+
 	protected ConcurrentQueue<ProtoBuf.IExtensible> _messageQueue = new();
 
 	[NonSerialized]
@@ -425,7 +440,13 @@ public abstract class Device : MonoBehaviour
 			}
 			else
 			{
-				Thread.Yield();
+				Interlocked.Increment(ref s_rxThreadYields);
+				// Sleep(1) instead of Thread.Yield(): on Linux when no other
+				// thread is ready, Yield returns immediately and the RX thread
+				// burns a full core. Many sensors collectively starve render
+				// and physics threads (observed ~5.9M yields/sec). 1ms wakeup
+				// granularity is well below sensor RX needs.
+				Thread.Sleep(1);
 			}
 		}
 	}

@@ -48,6 +48,9 @@ public class Responsor : ResponseSocket
 					return TransportHelper.RetrieveData(frameReceived, checkTag ? hashValue : null);
 				}
 			}
+			catch (NetMQ.TerminatingException)
+			{
+			}
 			catch (Exception ex)
 			{
 				Console.Error.WriteLine($"Socket exception in ReceiveRequest: {ex.Message}");
@@ -90,6 +93,9 @@ public class Responsor : ResponseSocket
 			{
 				Console.Error.WriteLine("Socket for response is not ready yet.");
 			}
+		}
+		catch (NetMQ.TerminatingException)
+		{
 		}
 		catch (Exception ex)
 		{

@@ -76,6 +76,9 @@ public class Publisher : PublisherSocket
 				}
 			}
 		}
+		catch (NetMQ.TerminatingException)
+		{
+		}
 		catch (Exception ex)
 		{
 			Console.Error.WriteLine($"Socket exception in Publish: {ex.Message}");

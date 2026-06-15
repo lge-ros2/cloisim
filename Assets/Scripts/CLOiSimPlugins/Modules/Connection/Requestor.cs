@@ -86,6 +86,9 @@ public class Requestor : RequestSocket
 				Console.Error.WriteLine("Socket for request is not ready yet.");
 			}
 		}
+		catch (NetMQ.TerminatingException)
+		{
+		}
 		catch (Exception ex)
 		{
 			Console.Error.WriteLine($"Socket exception in SendRequest: {ex.Message}");
@@ -115,6 +118,9 @@ public class Requestor : RequestSocket
 				{
 					Console.Error.WriteLine("failed to receive frame.");
 				}
+			}
+			catch (NetMQ.TerminatingException)
+			{
 			}
 			catch (Exception ex)
 			{
