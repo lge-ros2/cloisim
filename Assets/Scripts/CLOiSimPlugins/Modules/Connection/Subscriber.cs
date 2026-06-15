@@ -59,6 +59,9 @@ public class Subscriber : SubscriberSocket
 					return TransportHelper.RetrieveData(frameReceived);
 				}
 			}
+			catch (NetMQ.TerminatingException)
+			{
+			}
 			catch (Exception ex)
 			{
 				Console.Error.WriteLine($"Socket exception in Subscribe: {ex.Message}");
