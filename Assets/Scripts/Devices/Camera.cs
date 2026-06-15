@@ -511,7 +511,9 @@ namespace SensorDevices
 					var capturedTime = (Clock != null) ? Clock.SimTime : Time.timeAsDouble;
 
 					_camSensor.Render();
+					Device.GpuReadbackBegin();
 					AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, (req) => {
+						Device.GpuReadbackEnd();
 						if (req.hasError)
 						{
 							Debug.LogError($"{name}: Failed to read GPU texture (format={_readbackDstFormat})");

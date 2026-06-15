@@ -219,8 +219,10 @@ namespace SensorDevices
 			_livoxPattern.AdvanceCycle();
 
 			// --- Async readback ---
+			Device.GpuReadbackBegin();
 			AsyncGPUReadback.Request(_rangeOutputBuffer, (req) =>
 			{
+				Device.GpuReadbackEnd();
 				if (req.hasError || !req.done)
 				{
 					Debug.LogWarning("[Lidar] Livox async GPU readback failed");

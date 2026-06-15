@@ -14,6 +14,17 @@ using Any = cloisim.msgs.Any;
 
 public class CLOiSimPluginThread : IDisposable
 {
+	// --- Idle-freeze diagnostics ---
+	/// <summary>Sender idle-yield iterations (accumulated; reset by dump).</summary>
+	public static long SenderYields => Interlocked.Read(ref s_senderYields);
+	private static long s_senderYields;
+	public static long ResetSenderYields() => Interlocked.Exchange(ref s_senderYields, 0);
+
+	/// <summary>Receiver idle-yield iterations (accumulated; reset by dump).</summary>
+	public static long ReceiverYields => Interlocked.Read(ref s_receiverYields);
+	private static long s_receiverYields;
+	public static long ResetReceiverYields() => Interlocked.Exchange(ref s_receiverYields, 0);
+
 	public class ParamObject
 	{
 		public ushort targetPort;
@@ -146,6 +157,7 @@ public class CLOiSimPluginThread : IDisposable
 			}
 			else
 			{
+				Interlocked.Increment(ref s_senderYields);
 				Thread.Yield();
 			}
 		}
@@ -168,6 +180,7 @@ public class CLOiSimPluginThread : IDisposable
 			}
 			else
 			{
+				Interlocked.Increment(ref s_receiverYields);
 				Thread.Yield();
 			}
 		}

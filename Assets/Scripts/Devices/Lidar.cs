@@ -413,8 +413,10 @@ namespace SensorDevices
 			Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 
 			// --- Async readback (non-blocking) ---
+			Device.GpuReadbackBegin();
 			AsyncGPUReadback.Request(_rangeOutputBuffer, (req) =>
 			{
+				Device.GpuReadbackEnd();
 				if (req.hasError || !req.done)
 				{
 					Debug.LogWarning("[Lidar] Async GPU readback failed");

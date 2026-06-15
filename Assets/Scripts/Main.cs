@@ -566,21 +566,6 @@ public class Main : MonoBehaviour
 		_vhacd.m_parameters = VHACD.Params;
 
 		ResetRootModelsTransform();
-
-		// URT scratch-buffer freeze diagnostic: detect "missing UAV / incompatible ComputeBuffer"
-		// in production builds and dump the URTSensorManager ring buffer for post-mortem analysis.
-		Application.logMessageReceivedThreaded += OnLogMessageForURTDiag;
-	}
-
-	private static void OnLogMessageForURTDiag(string condition, string stackTrace, LogType type)
-	{
-		if (type != LogType.Error && type != LogType.Exception)
-			return;
-
-		if (condition.Contains("missing UAV") || condition.Contains("incompatible ComputeBuffer"))
-		{
-			URTSensorManager.DumpDiagHistory($"logHook: {condition}");
-		}
 	}
 
 	private static string ResolveAssimpLibraryPath()

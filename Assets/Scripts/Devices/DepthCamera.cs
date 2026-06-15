@@ -538,8 +538,10 @@ namespace SensorDevices
 			Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 
 			// --- Async readback (non-blocking) replaces synchronous GetData ---
+			Device.GpuReadbackBegin();
 			AsyncGPUReadback.Request(_computeBufferDst, (req) =>
 			{
+				Device.GpuReadbackEnd();
 				if (req.hasError || !req.done)
 				{
 					Debug.LogWarning($"[DepthCamera] {name}: async GPU readback failed");
