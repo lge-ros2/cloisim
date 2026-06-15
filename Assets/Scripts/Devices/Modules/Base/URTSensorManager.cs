@@ -98,6 +98,43 @@ public class URTSensorManager : MonoBehaviour
 	private static readonly ProfilerMarker s_BuildBVHMarker = new("URTSensorManager.BuildBVH");
 	#endregion
 
+	#region "Diagnostics"
+
+	private const int DiagRingSize = 16;
+	private readonly Queue<string> _diagHistory = new(DiagRingSize + 1);
+	private int _diagPrevInstanceCount = -1;
+	private int _diagPrevScratchHash;
+
+	private void DiagRecord(string entry)
+	{
+		_diagHistory.Enqueue(entry);
+		if (_diagHistory.Count > DiagRingSize)
+			_diagHistory.Dequeue();
+	}
+
+	/// <summary>
+	/// Dump the last DiagRingSize URT state-change events to the log.
+	/// Called automatically when a GPU UAV error is detected.
+	/// </summary>
+	public static void DumpDiagHistory(string trigger)
+	{
+		var inst = s_instance;
+		if (inst == null)
+		{
+			Debug.LogError("[URT-DIAG] DumpDiagHistory: URTSensorManager instance is null.");
+			return;
+		}
+
+		var sb = new System.Text.StringBuilder();
+		sb.AppendLine($"[URT-DIAG] === History dump triggered by: {trigger} (frame={Time.frameCount}) ===");
+		foreach (var line in inst._diagHistory)
+			sb.AppendLine(line);
+		sb.AppendLine("[URT-DIAG] === End of history ===");
+		Debug.LogError(sb.ToString());
+	}
+
+	#endregion
+
 	#region "Shared URT resources"
 
 	private RayTracingContext _rtContext;
@@ -295,9 +332,31 @@ public class URTSensorManager : MonoBehaviour
 		using (s_BuildBVHMarker.Auto())
 		{
 			// --- Resize scratch buffer if needed ---
+			var scratchHashBefore = inst._rtBuildScratchBuffer?.GetHashCode() ?? 0;
+			var instanceCountNow = inst._rtInstances.Count;
+
 			RayTracingHelper.ResizeScratchBufferForBuild(inst._rtAccelStruct, ref inst._rtBuildScratchBuffer);
 
-			// --- Build BVH (idempotent if already built) ---
+			var scratchHashAfter = inst._rtBuildScratchBuffer?.GetHashCode() ?? 0;
+
+			// Record into ring buffer only on change — avoids log spam
+			if (scratchHashAfter != inst._diagPrevScratchHash || instanceCountNow != inst._diagPrevInstanceCount)
+			{
+				var reallocated = scratchHashBefore != scratchHashAfter;
+				var msg = $"[URT-DIAG] frame={Time.frameCount}"
+					+ $" instances:{inst._diagPrevInstanceCount}\u2192{instanceCountNow}"
+					+ $" scratchHash:0x{inst._diagPrevScratchHash:X}\u21920x{scratchHashAfter:X}"
+					+ $" reallocated:{reallocated}";
+				inst.DiagRecord(msg);
+				if (reallocated)
+					Debug.LogWarning(msg + " *** SCRATCH REALLOCATED — potential in-flight hazard ***");
+				else
+					Debug.Log(msg);
+				inst._diagPrevInstanceCount = instanceCountNow;
+				inst._diagPrevScratchHash = scratchHashAfter;
+			}
+
+			// --- Build BVH ---
 			inst._rtAccelStruct.Build(cmd, inst._rtBuildScratchBuffer);
 		}
 		}
@@ -336,6 +395,9 @@ public class URTSensorManager : MonoBehaviour
 		_rtInstances.Clear();
 		_lastSceneGatherTime = 0f;
 		_frameOfLastBuild = -1;
+
+		_diagHistory.Clear();
+		_diagPrevInstanceCount = -1;
 
 		Debug.Log("[URTSensorManager] Released shared URT resources");
 	}
