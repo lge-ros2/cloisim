@@ -188,8 +188,10 @@ namespace SensorDevices
 
 			var raysPerCycle = (uint)_livoxPattern.TotalRaysPerCycle;
 
-			// Resize scratch buffer if needed
-			RayTracingHelper.ResizeScratchBufferForTrace(_rtShader, raysPerCycle, 1, 1, ref _rtTraceScratchBuffer);
+			// Resize scratch buffer if needed (grow-with-headroom + deferred dispose
+			// to avoid freeing a buffer still referenced by an in-flight Dispatch)
+			_rtTraceScratchBuffer = URTSensorManager.GrowScratch(
+				_rtTraceScratchBuffer, _rtShader.GetTraceScratchBufferRequiredSizeInBytes(raysPerCycle, 1, 1));
 
 			// === Record GPU work ===
 			_urtCmdBuffer.Clear();

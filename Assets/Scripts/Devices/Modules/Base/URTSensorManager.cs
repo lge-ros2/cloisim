@@ -141,6 +141,30 @@ public class URTSensorManager : MonoBehaviour
 	private IRayTracingAccelStruct _rtAccelStruct;
 	private GraphicsBuffer _rtBuildScratchBuffer;
 
+	#region "Safe scratch-buffer management"
+	// The package's RayTracingHelper.Resize*ScratchBuffer* disposes the old
+	// GraphicsBuffer immediately. Because the shared build scratch buffer (and
+	// the per-camera trace scratch buffers) are referenced by Build()/Dispatch()
+	// commands that may still be executing on the GPU, an immediate dispose on
+	// the next frame's growth corrupts the in-flight command stream
+	// ("missing UAV ID ... incompatible ComputeBuffer" -> device-lost -> freeze).
+	//
+	// We replace it with: grow-with-headroom (never shrink, so reallocations are
+	// rare) + deferred dispose (old buffers are freed only after SafetyFrames,
+	// which exceeds GPU pipeline depth + AsyncGPUReadback latency).
+
+	/// <summary>Extra capacity multiplier applied when (re)allocating a scratch buffer.</summary>
+	private const float ScratchHeadroomFactor = 2.0f;
+
+	/// <summary>
+	/// Frames an old scratch buffer is kept alive before disposal. Must exceed the
+	/// max number of frames the GPU/readback pipeline can lag behind the main thread.
+	/// </summary>
+	private const int ScratchSafetyFrames = 4;
+
+	private readonly Queue<(GraphicsBuffer buffer, int frame)> _deferredScratchFree = new();
+	#endregion
+
 	/// <summary>Per-instance tracking for transform updates.</summary>
 	internal struct InstanceEntry
 	{
@@ -329,13 +353,21 @@ public class URTSensorManager : MonoBehaviour
 
 		inst.UpdateInstanceTransforms();
 
+		// Skip Build when no geometry is present (prevents SIGSEGV in GraphicsBuffer ctor with count=0)
+		if (inst._rtInstances.Count == 0)
+			return;
+
 		using (s_BuildBVHMarker.Auto())
 		{
 			// --- Resize scratch buffer if needed ---
 			var scratchHashBefore = inst._rtBuildScratchBuffer?.GetHashCode() ?? 0;
 			var instanceCountNow = inst._rtInstances.Count;
 
-			RayTracingHelper.ResizeScratchBufferForBuild(inst._rtAccelStruct, ref inst._rtBuildScratchBuffer);
+			// Grow-with-headroom + deferred dispose: the old buffer (if any) is kept
+			// alive for ScratchSafetyFrames so an in-flight Build() referencing it is
+			// not corrupted. See GrowScratch.
+			inst._rtBuildScratchBuffer = GrowScratch(
+				inst._rtBuildScratchBuffer, inst._rtAccelStruct.GetBuildScratchBufferRequiredSizeInBytes());
 
 			var scratchHashAfter = inst._rtBuildScratchBuffer?.GetHashCode() ?? 0;
 
@@ -349,7 +381,7 @@ public class URTSensorManager : MonoBehaviour
 					+ $" reallocated:{reallocated}";
 				inst.DiagRecord(msg);
 				if (reallocated)
-					Debug.LogWarning(msg + " *** SCRATCH REALLOCATED — potential in-flight hazard ***");
+					Debug.Log(msg + " (scratch grown; old buffer deferred-freed)");
 				else
 					Debug.Log(msg);
 				inst._diagPrevInstanceCount = instanceCountNow;
@@ -371,18 +403,141 @@ public class URTSensorManager : MonoBehaviour
 		var resources = new RayTracingResources();
 		resources.LoadFromURTResourcesByManual();
 
-		var backend = RayTracingContext.IsBackendSupported(RayTracingBackend.Hardware) ?
-			RayTracingBackend.Hardware : RayTracingBackend.Compute;
-		_rtContext = new RayTracingContext(backend, resources);
+		var backend = SelectBackend();
 
-		_rtAccelStruct = _rtContext.CreateAccelerationStructure(
-			new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
+		// Context / acceleration-structure creation runs real GPU work. On some
+		// Linux/Vulkan drivers the Hardware ray-tracing path faults inside the
+		// driver and SIGSEGVs the native render thread. Fail soft: on any error,
+		// leave _rtContext/_rtAccelStruct null so Register() returns false and the
+		// sensors skip URT rendering (degraded but alive) instead of crashing.
+		try
+		{
+			_rtContext = new RayTracingContext(backend, resources);
 
-		Debug.Log($"[URTSensorManager] Initialized context with backend: {backend}");
+			_rtAccelStruct = _rtContext.CreateAccelerationStructure(
+				new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
+
+			Debug.Log($"[URTSensorManager] Initialized context with backend: {backend}");
+		}
+		catch (Exception e)
+		{
+			Debug.LogError($"[URTSensorManager] Failed to initialize ray tracing context (backend={backend}): {e.Message}. URT sensors (lidar/depth camera) will be disabled.");
+
+			_rtAccelStruct?.Dispose();
+			_rtAccelStruct = null;
+			_rtContext?.Dispose();
+			_rtContext = null;
+		}
+	}
+
+	/// <summary>
+	/// Choose the Unified Ray Tracing backend.
+	/// Default: Compute on Vulkan/Linux (the Hardware backend faults on many
+	/// Linux GPU drivers), auto elsewhere. Override with the CLOISIM_URT_BACKEND
+	/// environment variable: "compute" | "hardware" | "auto".
+	/// Hardware is only selected when both the preference allows it and the
+	/// device actually reports support.
+	/// </summary>
+	private static RayTracingBackend SelectBackend()
+	{
+		var pref = (Environment.GetEnvironmentVariable("CLOISIM_URT_BACKEND") ?? string.Empty).Trim().ToLowerInvariant();
+
+		if (string.IsNullOrEmpty(pref))
+		{
+			var isVulkanOrLinux =
+				SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan ||
+				Application.platform == RuntimePlatform.LinuxPlayer ||
+				Application.platform == RuntimePlatform.LinuxEditor;
+			pref = isVulkanOrLinux ? "compute" : "auto";
+		}
+
+		var hardwareSupported = RayTracingContext.IsBackendSupported(RayTracingBackend.Hardware);
+
+		switch (pref)
+		{
+			case "compute":
+				return RayTracingBackend.Compute;
+
+			case "hardware":
+				if (!hardwareSupported)
+					Debug.LogWarning("[URTSensorManager] CLOISIM_URT_BACKEND=hardware requested but the device reports no hardware ray-tracing support; falling back to Compute.");
+				return hardwareSupported ? RayTracingBackend.Hardware : RayTracingBackend.Compute;
+
+			case "auto":
+			default:
+				return hardwareSupported ? RayTracingBackend.Hardware : RayTracingBackend.Compute;
+		}
+	}
+
+	/// <summary>
+	/// Return a scratch GraphicsBuffer at least <paramref name="requiredBytes"/> large,
+	/// growing with headroom and never shrinking. When a larger buffer is needed the
+	/// old one is queued for deferred disposal (see <see cref="DeferScratchFree"/>)
+	/// rather than freed immediately, so a still-in-flight Build()/Dispatch() that
+	/// references it is not corrupted. Safe to call every frame.
+	/// </summary>
+	public static GraphicsBuffer GrowScratch(GraphicsBuffer current, ulong requiredBytes)
+	{
+		if (requiredBytes == 0)
+			return current;
+
+		var capacity = (current != null) ? (ulong)((long)current.count * current.stride) : 0UL;
+		if (current != null && capacity >= requiredBytes)
+			return current;
+
+		var targetBytes = (ulong)(requiredBytes * ScratchHeadroomFactor);
+		var count = (int)((targetBytes + 3) / 4); // stride 4, round up
+		var grown = new GraphicsBuffer(RayTracingHelper.ScratchBufferTarget, count, 4);
+
+		if (current != null)
+			DeferScratchFree(current);
+
+		return grown;
+	}
+
+	/// <summary>Queue an old scratch buffer for disposal after ScratchSafetyFrames have elapsed.</summary>
+	public static void DeferScratchFree(GraphicsBuffer buffer)
+	{
+		if (buffer == null)
+			return;
+
+		var inst = Instance;
+		if (inst == null)
+		{
+			// No manager to track frame age (e.g. during shutdown): dispose now.
+			buffer.Dispose();
+			return;
+		}
+
+		inst._deferredScratchFree.Enqueue((buffer, Time.frameCount));
+	}
+
+	/// <summary>Dispose deferred scratch buffers old enough to be safely out of GPU flight.</summary>
+	private void DrainDeferredScratchFrees(bool force = false)
+	{
+		var currentFrame = Time.frameCount;
+		while (_deferredScratchFree.Count > 0)
+		{
+			var (buffer, frame) = _deferredScratchFree.Peek();
+			if (!force && currentFrame - frame < ScratchSafetyFrames)
+				break;
+
+			_deferredScratchFree.Dequeue();
+			buffer?.Dispose();
+		}
+	}
+
+	private void LateUpdate()
+	{
+		DrainDeferredScratchFrees();
 	}
 
 	private void ReleaseResources()
 	{
+		// GPU is quiescent here (callers drain AsyncGPUReadback first); free every
+		// deferred buffer regardless of frame age before tearing the rest down.
+		DrainDeferredScratchFrees(force: true);
+
 		_rtBuildScratchBuffer?.Dispose();
 		_rtBuildScratchBuffer = null;
 
@@ -526,8 +681,9 @@ public class URTSensorManager : MonoBehaviour
 		// The more renderers, the larger the interval, making the periodic refresh less frequent for complex scenes
 		_sceneGatherInterval = MinSceneGatherInterval + (float)renderers.Length / RendererCountScalingFactor;
 
-		// Allocate / resize the build scratch buffer
-		RayTracingHelper.ResizeScratchBufferForBuild(_rtAccelStruct, ref _rtBuildScratchBuffer);
+		// Allocate / resize the build scratch buffer (grow-with-headroom + deferred dispose)
+		_rtBuildScratchBuffer = GrowScratch(
+			_rtBuildScratchBuffer, _rtAccelStruct.GetBuildScratchBufferRequiredSizeInBytes());
 		}
 	}
 
@@ -545,6 +701,17 @@ public class URTSensorManager : MonoBehaviour
 			var entry = _rtInstances[i];
 			if (entry.renderer == null || !entry.renderer.gameObject.activeInHierarchy)
 			{
+				// Remove stale instance immediately to prevent invalid handles reaching Build
+				try
+				{
+					_rtAccelStruct.RemoveInstance(entry.handle);
+				}
+				catch (Exception e)
+				{
+					Debug.LogWarning($"[URTSensorManager] Failed to remove stale instance " +
+						$"'{entry.renderer?.name ?? "<destroyed>"}': {e.Message}");
+				}
+				_rtInstances.RemoveAt(i);
 				needsRebuild = true;
 				continue;
 			}

@@ -393,8 +393,10 @@ namespace SensorDevices
 			var samplesH = _laserScan.Count;
 			var samplesV = _laserScan.VerticalCount;
 
-			// Resize scratch buffer if needed
-			RayTracingHelper.ResizeScratchBufferForTrace(_rtShader, samplesH, samplesV, 1, ref _rtTraceScratchBuffer);
+			// Resize scratch buffer if needed (grow-with-headroom + deferred dispose
+			// to avoid freeing a buffer still referenced by an in-flight Dispatch)
+			_rtTraceScratchBuffer = URTSensorManager.GrowScratch(
+				_rtTraceScratchBuffer, _rtShader.GetTraceScratchBufferRequiredSizeInBytes(samplesH, samplesV, 1));
 
 			// === Record all GPU work into a single CommandBuffer ===
 			_urtCmdBuffer.Clear();

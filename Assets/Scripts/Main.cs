@@ -632,6 +632,12 @@ public class Main : MonoBehaviour
 			return;
 		}
 
+		// Log GPU capabilities for diagnosing graphics-path crashes (e.g. the
+		// Unified Ray Tracing backend used by lidar/depth camera sensors).
+		Debug.Log($"[GPU] device='{SystemInfo.graphicsDeviceName}' type={SystemInfo.graphicsDeviceType} " +
+			$"computeShaders={SystemInfo.supportsComputeShaders} " +
+			$"rayTracing={SystemInfo.supportsRayTracing} rayTracingShaders={SystemInfo.supportsRayTracingShaders}");
+
 		if (_simulationService.IsStarted())
 		{
 			_screenCaptureFilename = GetArgument("-capture");
