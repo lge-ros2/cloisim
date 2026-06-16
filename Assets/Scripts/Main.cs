@@ -1118,11 +1118,23 @@ public class Main : MonoBehaviour
 
 		SensorRenderManager.Pause();
 
+		// Quiesce the GPU for sensor work before the scene is repositioned:
+		// finish any in-flight AsyncGPUReadback (and thus the dispatches that feed
+		// them) so nothing still references the URT acceleration structure.
+		Device.DrainReadbacksForTeardown();
+
 		_simulationWorld?.SignalReset();
 
 		_transformGizmo?.ClearTargets();
 
 		ResetWorld();
+
+		// A reset repositions every model at once. Recreate the shared URT accel
+		// structure from a clean slate so the post-resume rebuild does not operate
+		// on stale instance handles — which can bind an incompatible/freed buffer
+		// to a compute dispatch ("missing UAV ID ... incompatible ComputeBuffer")
+		// and freeze the GPU. Safe here: rendering is paused and readbacks drained.
+		URTSensorManager.ResetScene();
 
 		Debug.LogWarning("[Done] Reset positions in simulation!!!");
 		yield return new WaitForSeconds(0.1f);

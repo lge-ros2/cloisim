@@ -557,6 +557,64 @@ public class URTSensorManager : MonoBehaviour
 		Debug.Log("[URTSensorManager] Released shared URT resources");
 	}
 
+	/// <summary>
+	/// Drop and recreate the shared acceleration structure from a clean slate at
+	/// the simulation-reset boundary. A reset repositions every model at once;
+	/// rebuilding the BVH incrementally (RemoveInstance/UpdateInstanceTransform on
+	/// the existing handles) over that mass change can leave a compute dispatch
+	/// bound to an incompatible/freed buffer ("missing UAV ID ... incompatible
+	/// ComputeBuffer") and freeze the GPU. Recreating the accel struct guarantees
+	/// no stale handles: the next EnsureBVHReady re-gathers all renderers and
+	/// builds fresh.
+	///
+	/// REQUIRES the GPU to be quiescent for sensor work — callers must pause
+	/// rendering (SensorRenderManager.Pause) and drain AsyncGPUReadback before
+	/// calling, so no in-flight dispatch still references the old accel struct.
+	/// </summary>
+	public static void ResetScene()
+	{
+		if (s_instance != null)
+		{
+			s_instance.ResetSceneInternal();
+		}
+	}
+
+	private void ResetSceneInternal()
+	{
+		if (_rtContext == null || _rtAccelStruct == null)
+			return;
+
+		// GPU is quiescent here (caller paused rendering + drained readbacks);
+		// free every deferred scratch buffer before recreating the accel struct.
+		DrainDeferredScratchFrees(force: true);
+
+		try
+		{
+			_rtAccelStruct.Dispose();
+			_rtAccelStruct = _rtContext.CreateAccelerationStructure(
+				new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
+		}
+		catch (Exception e)
+		{
+			Debug.LogError($"[URTSensorManager] Failed to recreate acceleration structure on reset: {e.Message}. URT sensors disabled.");
+			_rtAccelStruct?.Dispose();
+			_rtAccelStruct = null;
+			return;
+		}
+
+		_rtInstances.Clear();
+		_existingInstanceKeys.Clear();
+		_desiredInstanceKeys.Clear();
+
+		// Force a full re-gather + rebuild on the next EnsureBVHReady after resume.
+		_sceneDirty = true;
+		_frameOfLastBuild = -1;
+		_lastSceneGatherTime = 0f;
+		_diagPrevInstanceCount = -1;
+
+		Debug.Log("[URTSensorManager] Acceleration structure reset (clean rebuild scheduled)");
+	}
+
 	#endregion
 
 	#region "Scene Gathering"
