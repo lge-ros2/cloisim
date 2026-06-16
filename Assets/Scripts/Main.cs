@@ -87,9 +87,10 @@ public class Main : MonoBehaviour
 	private bool _startRecordTriggered = false;
 	private bool _stopRecordTriggered = false;
 	private bool _teleportTriggered = false;
+	// Hidden DontDestroyOnLoad root that holds quarantined articulated models —
+	// see QuarantineArticulatedModel. Their ArticulationBody hierarchies are never
+	// destroyed at runtime (that crashes PhysX); memory is reclaimed on full reload.
 	private Transform _deferredCleanupRoot = null;
-	private readonly Queue<GameObject> _deferredDestroyQueue = new();
-	private Coroutine _deferredDestroyCoroutine = null;
 	private TeleportOperation _pendingTeleportOperation;
 
 	private string _pendingModelInfoQuery = null;
@@ -194,11 +195,6 @@ public class Main : MonoBehaviour
 		return _deferredCleanupRoot;
 	}
 
-	private bool HasPendingDeferredDestroy()
-	{
-		return _deferredDestroyQueue.Count > 0 || _deferredDestroyCoroutine != null;
-	}
-
 	private static bool HasRootArticulationBody(Transform target)
 	{
 		if (target == null)
@@ -216,42 +212,6 @@ public class Main : MonoBehaviour
 		return articulationBody != null && articulationBody.isRoot;
 	}
 
-	private void EnqueueDeferredDestroy(GameObject target)
-	{
-		if (target == null)
-		{
-			return;
-		}
-
-		_deferredDestroyQueue.Enqueue(target);
-		if (_deferredDestroyCoroutine == null)
-		{
-			_deferredDestroyCoroutine = StartCoroutine(ProcessDeferredDestroyQueue());
-		}
-	}
-
-	private IEnumerator ProcessDeferredDestroyQueue()
-	{
-		while (_deferredDestroyQueue.Count > 0)
-		{
-			var target = _deferredDestroyQueue.Dequeue();
-			if (target == null)
-			{
-				continue;
-			}
-
-			yield return null;
-			yield return null;
-
-			if (target != null)
-			{
-				Destroy(target);
-			}
-		}
-
-		_deferredDestroyCoroutine = null;
-	}
-
 	private void SafeDestroyModelRootInternal(Transform target)
 	{
 		if (target == null)
@@ -259,15 +219,107 @@ public class Main : MonoBehaviour
 			return;
 		}
 
+		// Stop this subtree's sensor worker threads first so they stop reading
+		// transforms/components that are about to be torn down (background-thread
+		// race → native SIGSEGV). RequestStop is idempotent.
+		StopDeviceWorkers(target);
+
 		if (!HasRootArticulationBody(target))
 		{
+			// Non-articulated models destroy cleanly.
 			Destroy(target.gameObject);
 			return;
 		}
 
-		target.SetParent(GetDeferredCleanupRoot(), true);
-		target.gameObject.SetActive(false);
-		EnqueueDeferredDestroy(target.gameObject);
+		// Articulated models are NOT destroyed. Destroying — or even deactivating —
+		// an ArticulationBody hierarchy at runtime corrupts PhysX's internal
+		// articulation cache: the first delete may succeed, but a later delete then
+		// crashes in native PhysX teardown regardless of order. Whole-GameObject
+		// Destroy, leaf-first per-component Destroy, and DestroyImmediate were all
+		// confirmed to crash on the *second* delete in release builds (debug builds
+		// only hide it via slower freed-memory reuse). So we quarantine instead.
+		QuarantineArticulatedModel(target.gameObject);
+	}
+
+	// Tear down everything on an articulated model that is safe to destroy, then
+	// hide and park the remaining ArticulationBody hierarchy without ever
+	// destroying or deactivating it. Its memory is reclaimed by the next full scene
+	// reload (Ctrl+Shift+R), which tears the whole scene down at once rather than
+	// dismantling a live articulation piecemeal. See SafeDestroyModelRootInternal.
+	private void QuarantineArticulatedModel(GameObject modelRoot)
+	{
+		if (modelRoot == null)
+		{
+			return;
+		}
+
+		Device.DrainReadbacksForTeardown();
+
+		// Plugins first: CLOiSimPlugin.OnDestroy joins threads, disposes the NetMQ
+		// transport, and deregisters its allocated ports (the "HashKey Removed"
+		// log) — that is what frees the ports for a subsequent re-import. Plugins
+		// hold no ArticulationBody, so destroying them is safe.
+		foreach (var plugin in modelRoot.GetComponentsInChildren<CLOiSimPlugin>(true))
+		{
+			if (plugin != null)
+			{
+				Destroy(plugin);
+			}
+		}
+
+		// Devices next: their OnDestroy releases sensor/URT/GPU resources.
+		foreach (var device in modelRoot.GetComponentsInChildren<Device>(true))
+		{
+			if (device != null)
+			{
+				Destroy(device);
+			}
+		}
+
+		// Make the quarantined model invisible and inert without touching the
+		// ArticulationBody components (enabling/disabling a Renderer or Collider
+		// does not perturb the PhysX articulation).
+		foreach (var renderer in modelRoot.GetComponentsInChildren<Renderer>(true))
+		{
+			if (renderer != null)
+			{
+				renderer.enabled = false;
+			}
+		}
+		foreach (var collider in modelRoot.GetComponentsInChildren<Collider>(true))
+		{
+			if (collider != null)
+			{
+				collider.enabled = false;
+			}
+		}
+
+		// Pin the root so the now-invisible body cannot drift or fall.
+		var rootBody = modelRoot.GetComponentInChildren<ArticulationBody>(true);
+		if (rootBody != null && rootBody.isRoot)
+		{
+			rootBody.immovable = true;
+		}
+
+		// Rename so a re-import of the same model name does not collide, and park it
+		// under the hidden DontDestroyOnLoad root so it is excluded from world save,
+		// reset, and the following list.
+		modelRoot.name = "(quarantined) " + modelRoot.name;
+		modelRoot.transform.SetParent(GetDeferredCleanupRoot(), worldPositionStays: true);
+	}
+
+	private static void StopDeviceWorkers(Transform target)
+	{
+		if (target == null)
+		{
+			return;
+		}
+
+		var devices = target.GetComponentsInChildren<Device>(true);
+		for (var i = 0; i < devices.Length; i++)
+		{
+			devices[i]?.RequestStop();
+		}
 	}
 
 	public static void SafeDestroyModelRoot(Transform target)
@@ -306,10 +358,10 @@ public class Main : MonoBehaviour
 			}
 		}
 
-		while (HasPendingDeferredDestroy())
-		{
-			yield return null;
-		}
+		// Let the plugin/device Destroy()s queued by quarantine flush (their
+		// OnDestroy frees ports/threads) before the world is rebuilt on top.
+		yield return null;
+		yield return null;
 	}
 
 	private void CleanAllLights()

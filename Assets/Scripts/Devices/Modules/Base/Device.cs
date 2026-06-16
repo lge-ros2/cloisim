@@ -275,6 +275,20 @@ public abstract class Device : MonoBehaviour
 		}
 	}
 
+	/// <summary>
+	/// Request the worker thread / TX-RX coroutine to stop and wake it so it
+	/// exits promptly. Safe to call repeatedly and before OnDestroy (which still
+	/// performs the join). Called when a model is being torn down so its sensor
+	/// workers stop reading transforms/components before the native deactivation
+	/// and destroy cascade runs on the main thread (avoids a background-thread
+	/// race → native SIGSEGV).
+	/// </summary>
+	public void RequestStop()
+	{
+		_running = false;
+		_txDataReady.Set();
+	}
+
 	protected void OnDestroy()
 	{
 		_running = false;
