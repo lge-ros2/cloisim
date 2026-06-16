@@ -31,6 +31,40 @@ public abstract class Device : MonoBehaviour
 	/// <summary>Call as the first statement inside the readback callback.</summary>
 	public static void GpuReadbackEnd()   => Interlocked.Decrement(ref s_gpuReadbackInflight);
 
+	// --- Worker-thread teardown gate (defends the GC stop-the-world abort) ---
+	//
+	// A TX worker thread serializing a protobuf message grows its MemoryStream
+	// buffer, which allocates managed memory. That allocation can trigger the
+	// Boehm GC, whose stop-the-world phase suspends every managed thread via
+	// signals. If the main thread is concurrently being torn down (destroying
+	// native UI/Mesh objects) the suspend can fail — "pthread_kill failed at
+	// suspend" — and the runtime aborts (SIGABRT).
+	//
+	// Once shutdown begins we stop worker threads from generating/serializing
+	// messages, so they no longer allocate and never enter GC during the
+	// dangerous teardown window. The flag is volatile (read in worker loops,
+	// written from the main thread) and is set on application quit.
+	private static volatile bool s_shuttingDown = false;
+
+	/// <summary>True once application teardown has begun; worker threads halt allocation.</summary>
+	public static bool IsShuttingDown => s_shuttingDown;
+
+	/// <summary>
+	/// Signal that teardown has begun. Idempotent and safe to call from any
+	/// teardown path; worker threads stop serializing/allocating immediately.
+	/// </summary>
+	public static void SignalShuttingDown() => s_shuttingDown = true;
+
+	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+	private static void InitTeardownGate()
+	{
+		// Reset on play start (statics survive domain-reload-disabled play mode
+		// and scene reloads) and subscribe exactly once to the quit event.
+		s_shuttingDown = false;
+		Application.quitting -= SignalShuttingDown;
+		Application.quitting += SignalShuttingDown;
+	}
+
 	/// <summary>
 	/// Drain in-flight AsyncGPUReadback requests before freeing GPU resources on
 	/// teardown/quit. Skips the blocking AsyncGPUReadback.WaitAllRequests() call
@@ -339,7 +373,10 @@ public abstract class Device : MonoBehaviour
 		var waitForSeconds = new WaitForSeconds(WaitPeriod());
 		while (_running)
 		{
-			GenerateMessage();
+			if (!s_shuttingDown)
+			{
+				GenerateMessage();
+			}
 			yield return waitForSeconds;
 		}
 	}
@@ -387,6 +424,10 @@ public abstract class Device : MonoBehaviour
 
 		while (_running)
 		{
+			// Stop allocating once teardown begins (see s_shuttingDown).
+			if (s_shuttingDown)
+				break;
+
 			if (UpdateRate <= 0)
 			{
 				Thread.Sleep(100);
@@ -483,6 +524,12 @@ public abstract class Device : MonoBehaviour
 
 	public bool PushDeviceMessage<T>(T instance) where T : ProtoBuf.IExtensible
 	{
+		// Do not serialize (and thus allocate) once teardown has begun: a GC
+		// triggered here while the main thread destroys native objects can
+		// abort the process via a failed stop-the-world suspend.
+		if (s_shuttingDown)
+			return false;
+
 		try
 		{
 			if (!_deviceMessagePool.TryTake(out var deviceMessage))
@@ -531,6 +578,9 @@ public abstract class Device : MonoBehaviour
 
 	public bool PushDeviceMessage(in byte[] data)
 	{
+		if (s_shuttingDown)
+			return false;
+
 		try
 		{
 			if (!_deviceMessagePool.TryTake(out var deviceMessage))
