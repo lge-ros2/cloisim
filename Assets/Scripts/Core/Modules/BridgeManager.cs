@@ -37,6 +37,10 @@ public class BridgeManager : IDisposable
 	private static StringBuilder _sbDeallocatedLogs = new();
 
 	private static Dictionary<string, ushort> _haskKeyPortMapTable = new Dictionary<string, ushort>();
+	// Reverse index of ports currently allocated in _haskKeyPortMapTable.
+	// Kept in sync under lock(_haskKeyPortMapTable) so the allocation scan can test
+	// port-in-use in O(1) instead of an O(n) Dictionary.ContainsValue() per candidate.
+	private static HashSet<ushort> _allocatedPorts = new HashSet<ushort>();
 	private static Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> _deviceMapTable = new Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>>();
 	private static IPGlobalProperties _properties = IPGlobalProperties.GetIPGlobalProperties();
 
@@ -107,18 +111,17 @@ public class BridgeManager : IDisposable
 		_sbDeallocatedLogs.AppendLine("HashKey Removed list");
 		lock (_haskKeyPortMapTable)
 		{
-			var isRemoved = false;
 			foreach (var hashKey in hashKeys)
 			{
-				isRemoved = _haskKeyPortMapTable.Remove(hashKey);
-
-				if (!isRemoved)
+				if (_haskKeyPortMapTable.TryGetValue(hashKey, out var removedPort))
 				{
-					Console.Error.Write($"Failed to remove HashKey({hashKey})!!!!");
+					_haskKeyPortMapTable.Remove(hashKey);
+					_allocatedPorts.Remove(removedPort);
+					_sbDeallocatedLogs.AppendLine($"- {hashKey}");
 				}
 				else
 				{
-					_sbDeallocatedLogs.AppendLine($"- {hashKey}");
+					Console.Error.Write($"Failed to remove HashKey({hashKey})!!!!");
 				}
 			}
 		}
@@ -197,6 +200,25 @@ public class BridgeManager : IDisposable
 		}
 
 		return true;
+	}
+
+	/// <summary>
+	/// Snapshot all local ports currently bound by active TCP connections.
+	/// Taken once per allocation so the candidate scan does not call
+	/// GetActiveTcpConnections() (a kernel syscall) for every candidate port.
+	/// </summary>
+	private static HashSet<int> SnapshotActiveTcpLocalPorts()
+	{
+		var ports = new HashSet<int>();
+		if (_properties != null)
+		{
+			var connections = _properties.GetActiveTcpConnections();
+			foreach (var connection in connections)
+			{
+				ports.Add(connection.LocalEndPoint.Port);
+			}
+		}
+		return ports;
 	}
 
 	private static string MakeHashKey(params string[] data)
@@ -288,10 +310,16 @@ public class BridgeManager : IDisposable
 
 			ushort newPort = 0;
 
+			// One syscall snapshot of OS-occupied ports, then an O(1) check per
+			// candidate against both that snapshot and our own allocated-port set.
+			// Avoids holding this lock across up to ~16k GetActiveTcpConnections()
+			// syscalls + O(n) ContainsValue() scans (a main-thread-stalling hazard).
+			var activeTcpPorts = SnapshotActiveTcpLocalPorts();
+
 			for (var index = 0; index < (MaxPortRange - MinPortRange); index++)
 			{
 				var port = (ushort)(MinPortRange + index);
-				if (!_haskKeyPortMapTable.ContainsValue(port) && IsAvailablePort(port))
+				if (!_allocatedPorts.Contains(port) && !activeTcpPorts.Contains(port))
 				{
 					newPort = port;
 					break;
@@ -301,6 +329,7 @@ public class BridgeManager : IDisposable
 			if (newPort > 0)
 			{
 				_haskKeyPortMapTable.Add(hashKey, newPort);
+				_allocatedPorts.Add(newPort);
 				_sbAllocatedHistory.AppendFormat("Allocated for HashKey({0}) Port({1})", hashKey, newPort);
 			}
 			else

@@ -179,8 +179,15 @@ namespace SensorDevices
 
 		new void OnDestroy()
 		{
+			// Stop render scheduling before releasing per-camera URT buffers.
+			// Otherwise SensorRenderManager can dispatch one more frame against
+			// already-freed ComputeBuffers during reset/teardown.
+			_startCameraWork = false;
+			SensorRenderManager.Unregister(this);
+
 			// Drain in-flight readbacks before releasing GPU resources
-			AsyncGPUReadback.WaitAllRequests();
+			// (skips the blocking wait entirely when nothing is in flight)
+			Device.DrainReadbacksForTeardown();
 
 			// Clean up compute shaders
 			Destroy(_csDepthScaling);
@@ -477,8 +484,10 @@ namespace SensorDevices
 			var camUp = camTransform.up;
 			var camForward = camTransform.forward;
 
-			// --- Resize per-camera trace scratch buffer if needed ---
-			RayTracingHelper.ResizeScratchBufferForTrace(_rtShader, width, height, 1, ref _rtTraceScratchBuffer);
+			// --- Resize per-camera trace scratch buffer if needed (grow-with-headroom +
+			// deferred dispose to avoid freeing a buffer still in-flight in a Dispatch) ---
+			_rtTraceScratchBuffer = URTSensorManager.GrowScratch(
+				_rtTraceScratchBuffer, _rtShader.GetTraceScratchBufferRequiredSizeInBytes(width, height, 1));
 
 			// === Record ALL GPU work into a single CommandBuffer ===
 			_urtCmdBuffer.Clear();

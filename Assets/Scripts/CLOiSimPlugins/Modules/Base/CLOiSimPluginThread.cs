@@ -39,7 +39,9 @@ public class CLOiSimPluginThread : IDisposable
 
 	private List<(Thread, ParamObject)> _threadList = new();
 
-	private bool _runningThread = true;
+	// volatile: read in tight Sender/Receiver/Service loops, written from the main
+	// thread (RequestStop); guarantees worker loops observe the stop and exit.
+	private volatile bool _runningThread = true;
 	public bool IsRunning => _runningThread;
 
 	public delegate void RefAction<T1, T2, T3>(in T1 arg1, in T2 arg2, ref T3 arg3);
