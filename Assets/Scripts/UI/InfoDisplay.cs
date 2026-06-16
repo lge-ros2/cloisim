@@ -22,6 +22,49 @@ public partial class InfoDisplay : MonoBehaviour
 
 	private TMP_InputField _inputFieldHitPoint = null;
 
+	// Teardown guard: writing TMP_InputField.text marks the field dirty and
+	// queues a Canvas geometry rebuild (CanvasUpdateRegistry → FillMesh →
+	// Mesh.Clear). If the rebuild runs after teardown has freed the underlying
+	// native Mesh, Mesh.Clear dereferences freed memory and SIGSEGVs. Once this
+	// component is disabled/destroyed or the app is quitting we stop touching
+	// the fields entirely.
+	private bool _teardown = false;
+
+	// Last value pushed to each field — only write on change so unchanged
+	// frames queue no rebuild at all, shrinking the window for a freed-Mesh
+	// rebuild and avoiding wasted per-frame canvas work.
+	private string _lastSim, _lastReal, _lastDiff, _lastFps, _lastHit;
+
+	void OnEnable()
+	{
+		_teardown = false;
+	}
+
+	void OnDisable()
+	{
+		_teardown = true;
+	}
+
+	void OnApplicationQuit()
+	{
+		_teardown = true;
+	}
+
+	/// <summary>
+	/// Write to a read-only display field only when its value changed and
+	/// teardown has not begun. SetTextWithoutNotify avoids onValueChanged churn.
+	/// </summary>
+	private void SetFieldText(TMP_InputField field, ref string cache, string value)
+	{
+		if (_teardown || field == null || string.Equals(cache, value))
+		{
+			return;
+		}
+
+		cache = value;
+		field.SetTextWithoutNotify(value);
+	}
+
 	void Awake()
 	{
 		_clock = DeviceHelper.GetGlobalClock();
@@ -72,6 +115,11 @@ public partial class InfoDisplay : MonoBehaviour
 
 	void LateUpdate()
 	{
+		if (_teardown)
+		{
+			return;
+		}
+
 		UpdateFPS();
 		UpdateTime();
 		UpdateHitPoint();
@@ -83,20 +131,9 @@ public partial class InfoDisplay : MonoBehaviour
 		var currentRealTime = (_clock == null) ? string.Empty : _clock.ToHMS().RealTime;
 		var diffRealSimTime = (_clock == null) ? string.Empty : _clock.ToHMS().DiffTime;
 
-		if (_inputFieldSim != null)
-		{
-			_inputFieldSim.text = currentSimTime;
-		}
-
-		if (_inputFieldReal != null)
-		{
-			_inputFieldReal.text = currentRealTime;
-		}
-
-		if (_inputFieldDiff != null)
-		{
-			_inputFieldDiff.text = diffRealSimTime;
-		}
+		SetFieldText(_inputFieldSim, ref _lastSim, currentSimTime);
+		SetFieldText(_inputFieldReal, ref _lastReal, currentRealTime);
+		SetFieldText(_inputFieldDiff, ref _lastDiff, diffRealSimTime);
 	}
 
 	private void AddClickEvent(GameObject target, Action callback)
@@ -133,9 +170,6 @@ public partial class InfoDisplay : MonoBehaviour
 
 	private void UpdateHitPoint()
 	{
-		if (_inputFieldHitPoint != null)
-		{
-			_inputFieldHitPoint.text = _pointInfo;
-		}
+		SetFieldText(_inputFieldHitPoint, ref _lastHit, _pointInfo);
 	}
 }

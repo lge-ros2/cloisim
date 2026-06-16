@@ -57,9 +57,6 @@ public partial class InfoDisplay : MonoBehaviour
 
 	private void UpdateFPS()
 	{
-		if (_inputFieldFPS != null)
-		{
-			_inputFieldFPS.text = _uiFps.ToString();
-		}
+		SetFieldText(_inputFieldFPS, ref _lastFps, _uiFps.ToString());
 	}
 }
