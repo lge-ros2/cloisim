@@ -192,7 +192,17 @@ public class SensorRenderManager : MonoBehaviour
 				rasterRenderCount++;
 			}
 
-			entry.Sensor.ExecuteRenderStep(realtimeNow);
+			// Isolate per-sensor faults: a throw from one sensor's render step must
+			// not abort the loop, or every sensor sorted after it is starved this
+			// frame — and if the fault repeats, those feeds freeze permanently.
+			try
+			{
+				entry.Sensor.ExecuteRenderStep(realtimeNow);
+			}
+			catch (System.Exception e)
+			{
+				Debug.LogWarning($"[SensorRenderManager] ExecuteRenderStep threw; skipping this sensor: {e.Message}");
+			}
 
 			AdvanceSensorSchedule(ref entry, realtimeNow);
 
