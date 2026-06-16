@@ -1170,30 +1170,36 @@ public class Main : MonoBehaviour
 
 		SensorRenderManager.Pause();
 
-		// Quiesce the GPU for sensor work before the scene is repositioned:
-		// finish any in-flight AsyncGPUReadback (and thus the dispatches that feed
-		// them) so nothing still references the URT acceleration structure.
-		Device.DrainReadbacksForTeardown();
+		// try/finally so rendering is ALWAYS resumed and the reset flag cleared,
+		// even if a step below throws. Otherwise SensorRenderManager stays paused
+		// (sensor feeds freeze permanently) and _isResetting stays true (every
+		// future reset — Ctrl+R or the WebSocket service — is silently rejected).
+		try
+		{
+			// Quiesce the GPU for sensor work before the scene is repositioned:
+			// finish any in-flight AsyncGPUReadback (and thus the dispatches that feed
+			// them) so nothing still references the URT acceleration structure.
+			Device.DrainReadbacksForTeardown();
 
-		_simulationWorld?.SignalReset();
+			_simulationWorld?.SignalReset();
 
-		_transformGizmo?.ClearTargets();
+			_transformGizmo?.ClearTargets();
 
-		ResetWorld();
+			ResetWorld();
 
-		// A reset repositions every model at once. Recreate the shared URT accel
-		// structure from a clean slate so the post-resume rebuild does not operate
-		// on stale instance handles — which can bind an incompatible/freed buffer
-		// to a compute dispatch ("missing UAV ID ... incompatible ComputeBuffer")
-		// and freeze the GPU. Safe here: rendering is paused and readbacks drained.
-		URTSensorManager.ResetScene();
+			// A reset repositions every model at once. Recreate the shared URT accel
+			// structure from a clean slate so the post-resume rebuild does not operate
+			// on stale instance handles.
+			URTSensorManager.ResetScene();
 
-		Debug.LogWarning("[Done] Reset positions in simulation!!!");
-		yield return new WaitForSeconds(0.1f);
-
-		SensorRenderManager.Resume();
-
-		_isResetting = false;
+			Debug.LogWarning("[Done] Reset positions in simulation!!!");
+			yield return new WaitForSeconds(0.1f);
+		}
+		finally
+		{
+			SensorRenderManager.Resume();
+			_isResetting = false;
+		}
 	}
 
 	private IEnumerator DoTeleportModel()
