@@ -452,9 +452,35 @@ namespace SDFormat
 		private void ReplaceAllIncludedModel()
 		{
 			// loop all include tag until all replaced.
+			// Guard against self-referential / cyclic includes (model A includes B
+			// includes A): without a bound, an expansion that re-introduces an
+			// <include> every pass spins forever and grows the DOM until OOM —
+			// a main-thread hang during world/model load. Cap the number of passes
+			// and abort with a diagnostic instead of hanging.
+			const int MaxExpansionPasses = 10000;
+			var pass = 0;
+
 			XmlNodeList nodes;
 			do
 			{
+				if (++pass > MaxExpansionPasses)
+				{
+					var remaining = _doc.SelectNodes("//include");
+					var firstUri = remaining.Count > 0
+						? remaining[0].SelectSingleNode("uri")?.InnerText ?? "(unknown)"
+						: "(none)";
+					Console.Error.Write(
+						$"Aborting <include> expansion after {MaxExpansionPasses} passes — " +
+						$"likely a circular/self-referential include. {remaining.Count} include(s) left, " +
+						$"first uri: {firstUri}. Remaining includes will be removed.");
+
+					foreach (XmlNode leftover in remaining)
+					{
+						leftover.ParentNode?.RemoveChild(leftover);
+					}
+					break;
+				}
+
 				nodes = _doc.SelectNodes("//include");
 
 				foreach (XmlNode node in nodes)

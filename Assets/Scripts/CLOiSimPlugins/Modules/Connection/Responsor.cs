@@ -10,7 +10,14 @@ using NetMQ.Sockets;
 
 public class Responsor : ResponseSocket
 {
-	private TimeSpan timeout = TimeSpan.FromMilliseconds(800);
+	// Poll interval for the blocking receive. Kept short (matching Subscriber's
+	// 100ms) so the Service worker loop returns and observes a stop request
+	// promptly: CLOiSimPlugin.OnDestroy only disposes the transport when all
+	// threads join within 500ms, and an 800ms poll could outlast that budget,
+	// leaving the socket undisposed ("skipping transport dispose during
+	// teardown") and the OS port bound. This is only the idle poll cadence —
+	// an arriving request still returns immediately, so latency is unaffected.
+	private TimeSpan timeout = TimeSpan.FromMilliseconds(100);
 
 	private byte[] hashValue = null;
 	private byte[] dataToSendResponse = null;

@@ -58,7 +58,9 @@ namespace SensorDevices
 		[Header("Processing")]
 		private Transform _lidarLink = null;
 
-		private bool _startLaserWork = false;
+		// volatile: read in the LaserProcessing worker loop, written from the main
+		// thread before Join(); guarantees the worker observes the stop and exits.
+		private volatile bool _startLaserWork = false;
 
 		private ConcurrentQueue<(double, Pose, float[])> _outputQueue = new();
 		private readonly AutoResetEvent _dataAvailable = new(false);
@@ -149,7 +151,8 @@ namespace SensorDevices
 			SensorRenderManager.Unregister(this);
 
 			// Drain in-flight readbacks before releasing GPU resources
-			AsyncGPUReadback.WaitAllRequests();
+			// (skips the blocking wait entirely when nothing is in flight)
+			Device.DrainReadbacksForTeardown();
 
 			if (_laserProcessThread != null && _laserProcessThread.IsAlive)
 			{
@@ -393,8 +396,10 @@ namespace SensorDevices
 			var samplesH = _laserScan.Count;
 			var samplesV = _laserScan.VerticalCount;
 
-			// Resize scratch buffer if needed
-			RayTracingHelper.ResizeScratchBufferForTrace(_rtShader, samplesH, samplesV, 1, ref _rtTraceScratchBuffer);
+			// Resize scratch buffer if needed (grow-with-headroom + deferred dispose
+			// to avoid freeing a buffer still referenced by an in-flight Dispatch)
+			_rtTraceScratchBuffer = URTSensorManager.GrowScratch(
+				_rtTraceScratchBuffer, _rtShader.GetTraceScratchBufferRequiredSizeInBytes(samplesH, samplesV, 1));
 
 			// === Record all GPU work into a single CommandBuffer ===
 			_urtCmdBuffer.Clear();

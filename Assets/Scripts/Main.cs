@@ -87,9 +87,10 @@ public class Main : MonoBehaviour
 	private bool _startRecordTriggered = false;
 	private bool _stopRecordTriggered = false;
 	private bool _teleportTriggered = false;
+	// Hidden DontDestroyOnLoad root that holds quarantined articulated models —
+	// see QuarantineArticulatedModel. Their ArticulationBody hierarchies are never
+	// destroyed at runtime (that crashes PhysX); memory is reclaimed on full reload.
 	private Transform _deferredCleanupRoot = null;
-	private readonly Queue<GameObject> _deferredDestroyQueue = new();
-	private Coroutine _deferredDestroyCoroutine = null;
 	private TeleportOperation _pendingTeleportOperation;
 
 	private string _pendingModelInfoQuery = null;
@@ -194,11 +195,6 @@ public class Main : MonoBehaviour
 		return _deferredCleanupRoot;
 	}
 
-	private bool HasPendingDeferredDestroy()
-	{
-		return _deferredDestroyQueue.Count > 0 || _deferredDestroyCoroutine != null;
-	}
-
 	private static bool HasRootArticulationBody(Transform target)
 	{
 		if (target == null)
@@ -216,42 +212,6 @@ public class Main : MonoBehaviour
 		return articulationBody != null && articulationBody.isRoot;
 	}
 
-	private void EnqueueDeferredDestroy(GameObject target)
-	{
-		if (target == null)
-		{
-			return;
-		}
-
-		_deferredDestroyQueue.Enqueue(target);
-		if (_deferredDestroyCoroutine == null)
-		{
-			_deferredDestroyCoroutine = StartCoroutine(ProcessDeferredDestroyQueue());
-		}
-	}
-
-	private IEnumerator ProcessDeferredDestroyQueue()
-	{
-		while (_deferredDestroyQueue.Count > 0)
-		{
-			var target = _deferredDestroyQueue.Dequeue();
-			if (target == null)
-			{
-				continue;
-			}
-
-			yield return null;
-			yield return null;
-
-			if (target != null)
-			{
-				Destroy(target);
-			}
-		}
-
-		_deferredDestroyCoroutine = null;
-	}
-
 	private void SafeDestroyModelRootInternal(Transform target)
 	{
 		if (target == null)
@@ -259,15 +219,107 @@ public class Main : MonoBehaviour
 			return;
 		}
 
+		// Stop this subtree's sensor worker threads first so they stop reading
+		// transforms/components that are about to be torn down (background-thread
+		// race → native SIGSEGV). RequestStop is idempotent.
+		StopDeviceWorkers(target);
+
 		if (!HasRootArticulationBody(target))
 		{
+			// Non-articulated models destroy cleanly.
 			Destroy(target.gameObject);
 			return;
 		}
 
-		target.SetParent(GetDeferredCleanupRoot(), true);
-		target.gameObject.SetActive(false);
-		EnqueueDeferredDestroy(target.gameObject);
+		// Articulated models are NOT destroyed. Destroying — or even deactivating —
+		// an ArticulationBody hierarchy at runtime corrupts PhysX's internal
+		// articulation cache: the first delete may succeed, but a later delete then
+		// crashes in native PhysX teardown regardless of order. Whole-GameObject
+		// Destroy, leaf-first per-component Destroy, and DestroyImmediate were all
+		// confirmed to crash on the *second* delete in release builds (debug builds
+		// only hide it via slower freed-memory reuse). So we quarantine instead.
+		QuarantineArticulatedModel(target.gameObject);
+	}
+
+	// Tear down everything on an articulated model that is safe to destroy, then
+	// hide and park the remaining ArticulationBody hierarchy without ever
+	// destroying or deactivating it. Its memory is reclaimed by the next full scene
+	// reload (Ctrl+Shift+R), which tears the whole scene down at once rather than
+	// dismantling a live articulation piecemeal. See SafeDestroyModelRootInternal.
+	private void QuarantineArticulatedModel(GameObject modelRoot)
+	{
+		if (modelRoot == null)
+		{
+			return;
+		}
+
+		Device.DrainReadbacksForTeardown();
+
+		// Plugins first: CLOiSimPlugin.OnDestroy joins threads, disposes the NetMQ
+		// transport, and deregisters its allocated ports (the "HashKey Removed"
+		// log) — that is what frees the ports for a subsequent re-import. Plugins
+		// hold no ArticulationBody, so destroying them is safe.
+		foreach (var plugin in modelRoot.GetComponentsInChildren<CLOiSimPlugin>(true))
+		{
+			if (plugin != null)
+			{
+				Destroy(plugin);
+			}
+		}
+
+		// Devices next: their OnDestroy releases sensor/URT/GPU resources.
+		foreach (var device in modelRoot.GetComponentsInChildren<Device>(true))
+		{
+			if (device != null)
+			{
+				Destroy(device);
+			}
+		}
+
+		// Make the quarantined model invisible and inert without touching the
+		// ArticulationBody components (enabling/disabling a Renderer or Collider
+		// does not perturb the PhysX articulation).
+		foreach (var renderer in modelRoot.GetComponentsInChildren<Renderer>(true))
+		{
+			if (renderer != null)
+			{
+				renderer.enabled = false;
+			}
+		}
+		foreach (var collider in modelRoot.GetComponentsInChildren<Collider>(true))
+		{
+			if (collider != null)
+			{
+				collider.enabled = false;
+			}
+		}
+
+		// Pin the root so the now-invisible body cannot drift or fall.
+		var rootBody = modelRoot.GetComponentInChildren<ArticulationBody>(true);
+		if (rootBody != null && rootBody.isRoot)
+		{
+			rootBody.immovable = true;
+		}
+
+		// Rename so a re-import of the same model name does not collide, and park it
+		// under the hidden DontDestroyOnLoad root so it is excluded from world save,
+		// reset, and the following list.
+		modelRoot.name = "(quarantined) " + modelRoot.name;
+		modelRoot.transform.SetParent(GetDeferredCleanupRoot(), worldPositionStays: true);
+	}
+
+	private static void StopDeviceWorkers(Transform target)
+	{
+		if (target == null)
+		{
+			return;
+		}
+
+		var devices = target.GetComponentsInChildren<Device>(true);
+		for (var i = 0; i < devices.Length; i++)
+		{
+			devices[i]?.RequestStop();
+		}
 	}
 
 	public static void SafeDestroyModelRoot(Transform target)
@@ -306,10 +358,10 @@ public class Main : MonoBehaviour
 			}
 		}
 
-		while (HasPendingDeferredDestroy())
-		{
-			yield return null;
-		}
+		// Let the plugin/device Destroy()s queued by quarantine flush (their
+		// OnDestroy frees ports/threads) before the world is rebuilt on top.
+		yield return null;
+		yield return null;
 	}
 
 	private void CleanAllLights()
@@ -631,6 +683,12 @@ public class Main : MonoBehaviour
 			_uiController?.SetErrorMessage("This API does not support AsyncGPURreadback.");
 			return;
 		}
+
+		// Log GPU capabilities for diagnosing graphics-path crashes (e.g. the
+		// Unified Ray Tracing backend used by lidar/depth camera sensors).
+		Debug.Log($"[GPU] device='{SystemInfo.graphicsDeviceName}' type={SystemInfo.graphicsDeviceType} " +
+			$"computeShaders={SystemInfo.supportsComputeShaders} " +
+			$"rayTracing={SystemInfo.supportsRayTracing} rayTracingShaders={SystemInfo.supportsRayTracingShaders}");
 
 		if (_simulationService.IsStarted())
 		{
@@ -1112,18 +1170,36 @@ public class Main : MonoBehaviour
 
 		SensorRenderManager.Pause();
 
-		_simulationWorld?.SignalReset();
+		// try/finally so rendering is ALWAYS resumed and the reset flag cleared,
+		// even if a step below throws. Otherwise SensorRenderManager stays paused
+		// (sensor feeds freeze permanently) and _isResetting stays true (every
+		// future reset — Ctrl+R or the WebSocket service — is silently rejected).
+		try
+		{
+			// Quiesce the GPU for sensor work before the scene is repositioned:
+			// finish any in-flight AsyncGPUReadback (and thus the dispatches that feed
+			// them) so nothing still references the URT acceleration structure.
+			Device.DrainReadbacksForTeardown();
 
-		_transformGizmo?.ClearTargets();
+			_simulationWorld?.SignalReset();
 
-		ResetWorld();
+			_transformGizmo?.ClearTargets();
 
-		Debug.LogWarning("[Done] Reset positions in simulation!!!");
-		yield return new WaitForSeconds(0.1f);
+			ResetWorld();
 
-		SensorRenderManager.Resume();
+			// A reset repositions every model at once. Recreate the shared URT accel
+			// structure from a clean slate so the post-resume rebuild does not operate
+			// on stale instance handles.
+			URTSensorManager.ResetScene();
 
-		_isResetting = false;
+			Debug.LogWarning("[Done] Reset positions in simulation!!!");
+			yield return new WaitForSeconds(0.1f);
+		}
+		finally
+		{
+			SensorRenderManager.Resume();
+			_isResetting = false;
+		}
 	}
 
 	private IEnumerator DoTeleportModel()
