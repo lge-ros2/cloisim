@@ -208,7 +208,8 @@ public class SensorRenderManager : MonoBehaviour
 		// Drain all in-flight AsyncGPUReadback requests before any sensor
 		// OnDestroy runs. Without this, GPU resources freed in OnDestroy
 		// can be accessed by the GfxDevice thread → SIGSEGV.
-		AsyncGPUReadback.WaitAllRequests();
+		// (skips the blocking wait entirely when nothing is in flight)
+		Device.DrainReadbacksForTeardown();
 	}
 
 	private void OnDestroy()

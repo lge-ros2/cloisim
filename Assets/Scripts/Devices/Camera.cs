@@ -53,7 +53,9 @@ namespace SensorDevices
 		/// </summary>
 		protected FilterMode _rtFilterMode = FilterMode.Bilinear;
 
-		protected bool _startCameraWork = false;
+		// volatile: gates render scheduling; written from the main thread on teardown
+		// and read across the render/readback path. (inherited by DepthCamera, etc.)
+		protected volatile bool _startCameraWork = false;
 		private RenderTexture _renderTexture;
 
 		/// <summary>
@@ -449,7 +451,8 @@ namespace SensorDevices
 			SensorRenderManager.Unregister(this);
 
 			// Drain in-flight readbacks before releasing GPU resources
-			AsyncGPUReadback.WaitAllRequests();
+			// (skips the blocking wait entirely when nothing is in flight)
+			Device.DrainReadbacksForTeardown();
 
 			if (_renderTexture != null)
 			{

@@ -31,6 +31,34 @@ public abstract class Device : MonoBehaviour
 	/// <summary>Call as the first statement inside the readback callback.</summary>
 	public static void GpuReadbackEnd()   => Interlocked.Decrement(ref s_gpuReadbackInflight);
 
+	/// <summary>
+	/// Drain in-flight AsyncGPUReadback requests before freeing GPU resources on
+	/// teardown/quit. Skips the blocking AsyncGPUReadback.WaitAllRequests() call
+	/// entirely when nothing is in flight — the common teardown case — so the main
+	/// thread never blocks needlessly. When requests ARE pending we must still wait
+	/// (WaitAllRequests pumps and completes their callbacks) to avoid the GfxDevice
+	/// thread touching freed buffers (SIGSEGV); a wedged GPU cannot be timed out from
+	/// managed code, so we only measure and log a stall for diagnosis rather than
+	/// abandoning pending readbacks.
+	/// </summary>
+	public static void DrainReadbacksForTeardown(in int warnThresholdMs = 1000)
+	{
+		if (Interlocked.Read(ref s_gpuReadbackInflight) <= 0)
+			return;
+
+		var sw = Stopwatch.StartNew();
+		UnityEngine.Rendering.AsyncGPUReadback.WaitAllRequests();
+		sw.Stop();
+
+		if (sw.ElapsedMilliseconds > warnThresholdMs)
+		{
+			Debug.LogWarning(
+				$"[Device] AsyncGPUReadback.WaitAllRequests() took {sw.ElapsedMilliseconds}ms " +
+				$"(> {warnThresholdMs}ms) during teardown — possible GPU/driver stall. " +
+				$"inflight now={Interlocked.Read(ref s_gpuReadbackInflight)}");
+		}
+	}
+
 	protected ConcurrentQueue<ProtoBuf.IExtensible> _messageQueue = new();
 
 	[NonSerialized]
@@ -64,7 +92,9 @@ public abstract class Device : MonoBehaviour
 	private Coroutine _coroutine = null;
 	private Thread _thread = null;
 
-	private bool _running = false;
+	// volatile: read in worker-thread loops, written from the main thread before
+	// an unconditional Join(); guarantees the stop is observed (no hung join).
+	private volatile bool _running = false;
 
 	// Synthetic monotonic timestamp for fixed-dt publishing.
 	// Advances by exactly UpdatePeriod per publish for jitter-free timestamps.

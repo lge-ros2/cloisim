@@ -186,7 +186,8 @@ namespace SensorDevices
 			SensorRenderManager.Unregister(this);
 
 			// Drain in-flight readbacks before releasing GPU resources
-			AsyncGPUReadback.WaitAllRequests();
+			// (skips the blocking wait entirely when nothing is in flight)
+			Device.DrainReadbacksForTeardown();
 
 			// Clean up compute shaders
 			Destroy(_csDepthScaling);
