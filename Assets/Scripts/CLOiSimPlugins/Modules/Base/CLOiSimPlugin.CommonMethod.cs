@@ -45,7 +45,14 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		const int EmptyTfPublishPeriod = 2000;
 		const float publishFrequency = 50;
 		const int updatePeriod = (int)(1f / publishFrequency * 1000f);
-		var updatePeriodPerEachTf = (tfList.Count == 0) ? int.MaxValue : (int)(updatePeriod / tfList.Count);
+		// Pace each TF send across the update period to spread the network load,
+		// but never go below 1ms. With many TF frames (e.g. humanoid hand/finger
+		// joints) the integer division would otherwise round down to 0, turning the
+		// loop into a busy-spin that overflows the publisher's send high-watermark
+		// and produces "error to send TF!!".
+		var updatePeriodPerEachTf = (tfList.Count == 0)
+			? int.MaxValue
+			: System.Math.Max(1, updatePeriod / tfList.Count);
 		// Debug.Log("PublishTfThread: " + updatePeriod + " , " + updatePeriodPerEachTf);
 
 		while (PluginThread.IsRunning)
@@ -64,7 +71,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 				tfMessage.Orientation.Set(tfPose.rotation);
 
 				deviceMessage.SetMessage(tfMessage);
-				if (publisher.Publish(deviceMessage) == false)
+				if (PublishWithRetry(publisher, deviceMessage) == false)
 				{
 					Debug.Log(tf.ParentFrameID + ", " + tfMessage.Name + " error to send TF!!");
 				}
@@ -78,7 +85,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			if (tfList.Count == 0)
 			{
 				deviceMessage.SetMessage(tfMessage);
-				if (publisher.Publish(deviceMessage) == false)
+				if (PublishWithRetry(publisher, deviceMessage) == false)
 				{
 					Debug.Log(tfMessage.Name + " error to send TF!!");
 				}
@@ -86,6 +93,23 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			}
 		}
 		deviceMessage.Dispose();
+	}
+
+	// Publishing over a non-blocking NetMQ PUB socket can transiently fail when the
+	// send high-watermark is momentarily reached (slow/late subscriber). Yield briefly
+	// and retry a few times before reporting an error, so short bursts don't drop TF.
+	private static bool PublishWithRetry(in Publisher publisher, in DeviceMessage message)
+	{
+		const int MaxRetry = 3;
+		for (var attempt = 0; attempt < MaxRetry; attempt++)
+		{
+			if (publisher.Publish(message))
+			{
+				return true;
+			}
+			CLOiSimPluginThread.Sleep(1);
+		}
+		return false;
 	}
 
 	protected static void SetCameraInfoResponse(ref DeviceMessage msCameraInfo, in messages.CameraSensor sensorInfo)
