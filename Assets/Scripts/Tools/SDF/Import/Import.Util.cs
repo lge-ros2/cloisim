@@ -206,6 +206,31 @@ namespace SDFormat
 				return body.transform.parent?.GetComponentInParent<UE.ArticulationBody>();
 			}
 
+			private static bool IsFinite(float v) => !float.IsNaN(v) && !float.IsInfinity(v);
+
+			private static bool IsFinite(UE.Vector3 v) => IsFinite(v.x) && IsFinite(v.y) && IsFinite(v.z);
+
+			private static bool IsFinite(UE.Quaternion q) =>
+				IsFinite(q.x) && IsFinite(q.y) && IsFinite(q.z) && IsFinite(q.w);
+
+			/// <summary>
+			/// Validate that an ArticulationBody's world/local transform and inertia are
+			/// finite before enabling it. Enabling an AB whose pose contains NaN/Inf builds
+			/// a degenerate PhysX articulation that SIGSEGVs natively inside set_enabled
+			/// (uncatchable by managed try/catch). Returns false so the caller can skip the
+			/// enable and keep the rest of the model alive instead of crashing the process.
+			/// </summary>
+			private static bool IsArticulationTransformValid(UE.ArticulationBody body)
+			{
+				var t = body.transform;
+				return IsFinite(t.position) && IsFinite(t.rotation) &&
+					IsFinite(t.localPosition) && IsFinite(t.localRotation) &&
+					IsFinite(t.lossyScale) &&
+					IsFinite(body.anchorPosition) && IsFinite(body.anchorRotation) &&
+					IsFinite(body.parentAnchorPosition) && IsFinite(body.parentAnchorRotation) &&
+					(body.automaticInertiaTensor || IsFinite(body.inertiaTensor));
+			}
+
 			private static void UpdateParentAnchor(UE.ArticulationBody body)
 			{
 				var parentBody = FindParentArticulationBody(body);
@@ -290,8 +315,31 @@ namespace SDFormat
 					}
 				}
 
+				// Optional breadcrumb: the last line logged before a native set_enabled
+				// SIGSEGV identifies the offending body. Off by default (one line per body
+				// per import); enable with CLOISIM_AB_DEBUG=1 if the crash recurs.
+				var abDebug = Environment.GetEnvironmentVariable("CLOISIM_AB_DEBUG") == "1";
+
 				foreach (var body in articulationBodies)
 				{
+					// A NaN/Inf pose/inertia makes the native PhysX articulation build
+					// SIGSEGV inside set_enabled — which managed try/catch cannot trap.
+					// Skip the enable for that body (logging it) to keep the process alive.
+					if (!IsArticulationTransformValid(body))
+					{
+						UE.Debug.LogError(
+							$"[SpecifyPose] Skipping enable of '{body.name}': non-finite transform/inertia " +
+							$"(pos={body.transform.position}, rot={body.transform.rotation.eulerAngles}, " +
+							$"anchor={body.anchorPosition}, parentAnchor={body.parentAnchorPosition}). " +
+							"This would crash the PhysX articulation build.");
+						continue;
+					}
+
+					if (abDebug)
+					{
+						UE.Debug.Log($"[SpecifyPose] enabling AB '{body.name}' isRoot={body.isRoot} pos={body.transform.position:F4}");
+					}
+
 					body.enabled = true;
 
 					if (body.isRoot)
