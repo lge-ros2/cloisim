@@ -156,19 +156,24 @@ public class URTSensorManager : MonoBehaviour
 	// ("missing UAV ID ... incompatible ComputeBuffer" -> device-lost -> freeze).
 	//
 	// We replace it with: grow-with-headroom (never shrink, so reallocations are
-	// rare) + deferred dispose (old buffers are freed only after SafetyFrames,
-	// which exceeds GPU pipeline depth + AsyncGPUReadback latency).
+	// rare) + deferred dispose. The old buffer is freed only once a GraphicsFence
+	// captured at deferral time has passed — i.e. the GPU has actually finished the
+	// dispatches that referenced it. A fixed frame-count delay is NOT enough: under
+	// a heavy spike the GPU can lag many frames behind the main thread, and freeing
+	// a still-in-flight buffer corrupts the dispatch ("missing UAV ID") which can
+	// hang the GPU context (NVIDIA Xid 109 CTX SWITCH TIMEOUT) -> freeze. The
+	// frame-count path remains only as a fallback when GraphicsFence is unsupported.
 
 	/// <summary>Extra capacity multiplier applied when (re)allocating a scratch buffer.</summary>
 	private const float ScratchHeadroomFactor = 2.0f;
 
 	/// <summary>
-	/// Frames an old scratch buffer is kept alive before disposal. Must exceed the
-	/// max number of frames the GPU/readback pipeline can lag behind the main thread.
+	/// Fallback only (GraphicsFence unsupported): frames an old scratch buffer is kept
+	/// alive before disposal. Must exceed the max GPU/readback pipeline lag.
 	/// </summary>
-	private const int ScratchSafetyFrames = 4;
+	private const int ScratchSafetyFrames = 6;
 
-	private readonly Queue<(GraphicsBuffer buffer, int frame)> _deferredScratchFree = new();
+	private readonly Queue<(GraphicsBuffer buffer, GraphicsFence fence, bool hasFence, int frame)> _deferredScratchFree = new();
 	#endregion
 
 	/// <summary>Per-instance tracking for transform updates.</summary>
@@ -556,7 +561,12 @@ public class URTSensorManager : MonoBehaviour
 		return grown;
 	}
 
-	/// <summary>Queue an old scratch buffer for disposal after ScratchSafetyFrames have elapsed.</summary>
+	/// <summary>
+	/// Queue an old scratch buffer for disposal once the GPU has finished the
+	/// dispatches that referenced it. A GraphicsFence is captured now: the buffer's
+	/// last use was a dispatch submitted before this point, so it is safe to free
+	/// the moment the fence passes (frame-count fallback when fences are unsupported).
+	/// </summary>
 	public static void DeferScratchFree(GraphicsBuffer buffer)
 	{
 		if (buffer == null)
@@ -565,26 +575,41 @@ public class URTSensorManager : MonoBehaviour
 		var inst = Instance;
 		if (inst == null)
 		{
-			// No manager to track frame age (e.g. during shutdown): dispose now.
+			// No manager to track GPU progress (e.g. during shutdown): dispose now.
 			buffer.Dispose();
 			return;
 		}
 
-		inst._deferredScratchFree.Enqueue((buffer, Time.frameCount));
+		GraphicsFence fence = default;
+		var hasFence = false;
+		if (s_graphicsFenceSupported)
+		{
+			fence = Graphics.CreateGraphicsFence(
+				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.ComputeProcessing);
+			hasFence = true;
+		}
+
+		inst._deferredScratchFree.Enqueue((buffer, fence, hasFence, Time.frameCount));
 	}
 
-	/// <summary>Dispose deferred scratch buffers old enough to be safely out of GPU flight.</summary>
+	/// <summary>Dispose deferred scratch buffers whose GPU work has completed (fence passed).</summary>
 	private void DrainDeferredScratchFrees(bool force = false)
 	{
 		var currentFrame = Time.frameCount;
 		while (_deferredScratchFree.Count > 0)
 		{
-			var (buffer, frame) = _deferredScratchFree.Peek();
-			if (!force && currentFrame - frame < ScratchSafetyFrames)
-				break;
+			var entry = _deferredScratchFree.Peek();
+			if (!force)
+			{
+				var safe = entry.hasFence
+					? entry.fence.passed
+					: (currentFrame - entry.frame >= ScratchSafetyFrames);
+				if (!safe)
+					break;
+			}
 
 			_deferredScratchFree.Dequeue();
-			buffer?.Dispose();
+			entry.buffer?.Dispose();
 		}
 	}
 
@@ -599,7 +624,7 @@ public class URTSensorManager : MonoBehaviour
 		if (_pendingFenceNeeded && s_graphicsFenceSupported)
 		{
 			_buildFence = Graphics.CreateGraphicsFence(
-				GraphicsFenceType.CpuSynchronisation, SynchronisationStageFlags.ComputeProcessing);
+				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.ComputeProcessing);
 			_hasBuildFence = true;
 		}
 		_pendingFenceNeeded = false;
