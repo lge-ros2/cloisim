@@ -37,7 +37,6 @@ public abstract class CameraControl : MonoBehaviour
 		get => _verticalMovementLock;
 	}
 
-	[SerializeField]
 	protected const float MoveSmoothSpeed = .0025f;
 
 	[SerializeField]

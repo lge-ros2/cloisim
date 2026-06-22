@@ -23,7 +23,6 @@ namespace Segmentation
 
 		private static readonly ReplacementMode _ReplaceMode = ReplacementMode.ObjectName;
 
-		[SerializeField]
 		private const int MAX_LABEL_INFO = 256;
 
 		private Dictionary<string, List<Tag>> _labelInfo = new Dictionary<string, List<Tag>>();
