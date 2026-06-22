@@ -89,7 +89,7 @@ public static class RayTracingResourcesExtension
 // Execution order is forced LATE so this component's LateUpdate runs *after*
 // SensorRenderManager.LateUpdate (default order 0), which is where every URT
 // sensor records and submits its trace dispatch for the frame. The build fence
-// (see IsPreviousBuildConsumed) is created in our LateUpdate and must capture
+// (see IsPriorTraceConsumed) is created in our LateUpdate and must capture
 // those already-submitted dispatches, so we must run after them.
 [DefaultExecutionOrder(1000)]
 public class URTSensorManager : MonoBehaviour
@@ -265,7 +265,9 @@ public class URTSensorManager : MonoBehaviour
 	private bool _hasBuildFence;
 	private bool _pendingFenceNeeded;
 	private bool _hasBuiltOnce;
-	private int _frameOfLastActualBuild = -1;
+	// Frame of the most recent URT render (= most recent trace dispatch submission).
+	// Used only by the no-fence fallback to require a safe frame gap before mutating.
+	private int _frameOfLastRenderSubmit = -1;
 	#endregion
 
 	#endregion
@@ -379,11 +381,25 @@ public class URTSensorManager : MonoBehaviour
 
 		inst._frameOfLastBuild = currentFrame;
 
+		// A URT sensor is rendering this frame and will submit a trace dispatch
+		// (against the current TLAS) shortly after — even if we defer the rebuild
+		// below. Request a fence in our LateUpdate so the NEXT mutation waits for
+		// THIS frame's trace too. Without this, a re-trace submitted on a deferred
+		// frame can still be in flight when a later frame disposes/rebuilds the TLAS
+		// (the build-only fence does not cover it) -> "missing UAV/input buffer" ->
+		// GPU context hang (Xid 109).
+		inst._pendingFenceNeeded = true;
+
+		// Frame of the most recent prior trace submission (the previous render frame),
+		// captured before we overwrite the render-submit marker for this frame.
+		var prevRenderFrame = inst._frameOfLastRenderSubmit;
+		inst._frameOfLastRenderSubmit = currentFrame;
+
 		// In-flight TLAS protection: defer all accel-struct mutation (which would
 		// immediately dispose the TLAS input buffers in the package) until the GPU
-		// has consumed the previous build's trace dispatches. While deferred, the
-		// existing TLAS stays valid and this sensor re-traces against it.
-		if (inst._hasBuiltOnce && !inst.IsPreviousBuildConsumed())
+		// has consumed every prior trace dispatch. While deferred, the existing TLAS
+		// stays valid and this sensor re-traces against it.
+		if (inst._hasBuiltOnce && !inst.IsPriorTraceConsumed(prevRenderFrame))
 			return;
 
 		// --- Detect new/removed objects ---
@@ -391,6 +407,15 @@ public class URTSensorManager : MonoBehaviour
 
 		if (inst._sceneDirty || (realtimeNow - inst._lastSceneGatherTime > inst._sceneGatherInterval))
 		{
+			// A structural change (object spawned/deleted) makes AddInstance/RemoveInstance
+			// reallocate the package's BLAS input buffers and free the old ones IMMEDIATELY.
+			// On top of the fence gate above, hard-sync the GPU so no trace dispatch is in
+			// flight when those input buffers are freed. This runs only on spawn/delete
+			// frames (rare, user-initiated), so the brief stall is acceptable; it does not
+			// affect steady-state frames.
+			if (inst._sceneDirty)
+				AsyncGPUReadback.WaitAllRequests();
+
 			inst.GatherSceneMeshes();
 			inst._sceneDirty = false;
 		}
@@ -435,29 +460,27 @@ public class URTSensorManager : MonoBehaviour
 			// --- Build BVH ---
 			inst._rtAccelStruct.Build(cmd, inst._rtBuildScratchBuffer);
 
-			// A fresh TLAS now exists and will be read by this frame's trace
-			// dispatches (submitted shortly after, still within SensorRenderManager
-			// .LateUpdate). Request a fence in our own (later) LateUpdate so the next
-			// cycle's mutation waits until those dispatches finish on the GPU.
+			// A TLAS now exists; the gate engages from here on. (The per-frame fence
+			// that the next mutation waits on is requested at the top of this method,
+			// covering both builds and deferred-frame re-traces.)
 			inst._hasBuiltOnce = true;
-			inst._frameOfLastActualBuild = currentFrame;
-			inst._pendingFenceNeeded = true;
 		}
 		}
 	}
 
 	/// <summary>
-	/// True when the GPU has finished the trace dispatches that read the TLAS built
-	/// last cycle, so it is safe to mutate (and thus dispose) the accel struct again.
-	/// Uses a GraphicsFence when supported; otherwise falls back to a minimum
-	/// frame-gap heuristic exceeding the GPU/readback pipeline depth.
+	/// True when the GPU has finished every prior trace dispatch that reads the TLAS,
+	/// so it is safe to mutate (and thus dispose) the accel struct again. Uses a
+	/// GraphicsFence (refreshed every render frame, so it covers deferred-frame
+	/// re-traces too) when supported; otherwise falls back to requiring a safe frame
+	/// gap since the most recent trace submission.
 	/// </summary>
-	private bool IsPreviousBuildConsumed()
+	private bool IsPriorTraceConsumed(int prevRenderFrame)
 	{
 		if (s_graphicsFenceSupported)
 			return !_hasBuildFence || _buildFence.passed;
 
-		return Time.frameCount - _frameOfLastActualBuild >= ScratchSafetyFrames;
+		return prevRenderFrame < 0 || Time.frameCount - prevRenderFrame >= ScratchSafetyFrames;
 	}
 
 	#endregion
@@ -655,7 +678,7 @@ public class URTSensorManager : MonoBehaviour
 		_hasBuildFence = false;
 		_pendingFenceNeeded = false;
 		_hasBuiltOnce = false;
-		_frameOfLastActualBuild = -1;
+		_frameOfLastRenderSubmit = -1;
 
 		Debug.Log("[URTSensorManager] Released shared URT resources");
 	}
@@ -719,7 +742,7 @@ public class URTSensorManager : MonoBehaviour
 		_hasBuildFence = false;
 		_pendingFenceNeeded = false;
 		_hasBuiltOnce = false;
-		_frameOfLastActualBuild = -1;
+		_frameOfLastRenderSubmit = -1;
 
 		Debug.Log("[URTSensorManager] Acceleration structure reset (clean rebuild scheduled)");
 	}
