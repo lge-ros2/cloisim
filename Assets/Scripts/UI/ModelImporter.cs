@@ -232,7 +232,11 @@ public class ModelImporter : MonoBehaviour
 
 		if (_rootRigidbody != null)
 		{
-			_rootRigidbody.isKinematic = false;
+			var modelHelper = _targetObject?.GetComponent<SDFormat.Helper.Model>();
+			if (modelHelper == null || !modelHelper.isStatic)
+			{
+				_rootRigidbody.isKinematic = false;
+			}
 			_rootRigidbody = null;
 		}
 
