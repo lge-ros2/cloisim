@@ -50,8 +50,19 @@ namespace SDFormat
 				// apply material script
 				if (!string.IsNullOrEmpty(sdfMaterial.ScriptName))
 				{
+					// Material.ScriptUri only holds the FIRST <uri> from <script>; gather all of them
+					// from the raw element so the textures directory is not dropped.
 					var scriptUri = new List<string>();
-					if (!string.IsNullOrEmpty(sdfMaterial.ScriptUri))
+					var scriptElem = sdfMaterial.Element?.FindElement("script");
+					if (scriptElem != null)
+					{
+						foreach (var child in scriptElem.Children)
+						{
+							if (child.Name == "uri" && !string.IsNullOrEmpty(child.Value?.StringValue))
+								scriptUri.Add(child.Value.StringValue);
+						}
+					}
+					else if (!string.IsNullOrEmpty(sdfMaterial.ScriptUri))
 					{
 						scriptUri.Add(sdfMaterial.ScriptUri);
 					}
@@ -127,6 +138,21 @@ namespace SDFormat
 						}
 
 						texturesPath.Add(uri);
+
+						// SDF commonly pairs materials/scripts/ with materials/textures/ as a sibling.
+						// The sdformat parser only picks up the first <uri> element, so the textures
+						// directory URI is dropped. Add the sibling textures/ dir automatically.
+						// Trim trailing slash: Directory.GetParent("/a/b/c/") returns "/a/b/c" (same dir),
+						// not "/a/b". We need to strip the separator first to get the actual parent.
+						var parentDir = Directory.GetParent(uri.TrimEnd('/', '\\'))?.FullName;
+						if (!string.IsNullOrEmpty(parentDir))
+						{
+							var siblingTextures = Path.Combine(parentDir, "textures");
+							if (Directory.Exists(siblingTextures) && !texturesPath.Contains(siblingTextures))
+							{
+								texturesPath.Add(siblingTextures);
+							}
+						}
 					}
 				}
 			}
