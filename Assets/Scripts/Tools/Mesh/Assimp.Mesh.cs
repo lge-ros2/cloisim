@@ -185,7 +185,11 @@ public static partial class MeshLoader
 
 			// Blender FBX exporter stores Principled BSDF Alpha as Opacity (separate float).
 			// Only apply transparency when the explicit Opacity property indicates it.
-			if (sceneMat.HasOpacity && sceneMat.Opacity < 1.0f)
+			// COLLADA quirk: <transparency>0</transparency> means fully opaque per spec, but Assimp
+			// computes opacity = transparent_alpha * transparency = 0, yielding Opacity=0.
+			// Guard against this only for .dae; other formats (FBX, OBJ) use Opacity=0 legitimately.
+			var isCollada = Path.GetExtension(meshPath).ToLowerInvariant() == ".dae";
+			if (sceneMat.HasOpacity && sceneMat.Opacity < 1.0f && !(isCollada && sceneMat.Opacity == 0.0f))
 			{
 				var baseColor = mat.GetColor("_BaseColor");
 				baseColor.a = sceneMat.Opacity;
