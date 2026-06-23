@@ -12,7 +12,7 @@ public class SimulationWorld : CLOiSimPlugin
 {
 	private Clock _clock = null;
 
-	private bool _signalReset = false;
+	private volatile bool _signalReset = false;
 
 	protected override void OnAwake()
 	{
@@ -72,7 +72,8 @@ public class SimulationWorld : CLOiSimPlugin
 			}
 
 			deviceMessage.SetMessage(resetParam);
-			try {
+			try
+			{
 				if (requestor.SendRequest(deviceMessage))
 				{
 					var receivedBuffer = requestor.ReceiveResponse();
@@ -84,16 +85,24 @@ public class SimulationWorld : CLOiSimPlugin
 							Debug.LogFormat("simulation reset result: {0}", responseMessage.Params["result"].StringValue);
 						}
 					}
+					else
+					{
+						// ReceiveResponse timed out: REQ socket FSM is stuck in "waiting for reply".
+						// The only recovery is to recreate the socket — drain is insufficient when
+						// the remote end never sent a reply.
+						GetTransport().ReinitializeRequester(paramObject.targetPort);
+						requestor = GetTransport().Get<Requestor>(paramObject.targetPort);
+					}
 				}
 				else
 				{
 					Debug.LogError("SendRequest(ResetMessage) failed");
 				}
 			}
-			catch (NetMQ.FiniteStateMachineException ex)
+			catch (NetMQ.FiniteStateMachineException)
 			{
-				Debug.LogErrorFormat($"[SimulationWorld] FSM error: {ex.Message}.");
-				break;
+				GetTransport().ReinitializeRequester(paramObject.targetPort);
+				requestor = GetTransport().Get<Requestor>(paramObject.targetPort);
 			}
 
 			_signalReset = false;

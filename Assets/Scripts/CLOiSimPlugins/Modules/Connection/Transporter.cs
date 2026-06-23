@@ -68,6 +68,17 @@ public class Transporter : IDisposable
 		return false;
 	}
 
+	public bool ReinitializeRequester(in ushort targetPort)
+	{
+		if (!transportList.TryGetValue(targetPort, out var existing))
+			return false;
+
+		var hash = (existing as Requestor)?.Hash ?? 0;
+		transportList.Remove(targetPort);
+		try { existing.Dispose(); } catch (Exception) { }
+		return InitializeRequester(targetPort, hash);
+	}
+
 	~Transporter()
 	{
 		Dispose(false);

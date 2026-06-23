@@ -86,6 +86,10 @@ public class Requestor : RequestSocket
 				Console.Error.WriteLine("Socket for request is not ready yet.");
 			}
 		}
+		catch (NetMQ.FiniteStateMachineException)
+		{
+			throw;
+		}
 		catch (NetMQ.TerminatingException)
 		{
 		}
