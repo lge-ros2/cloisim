@@ -97,6 +97,15 @@ public class URTSensorManager : MonoBehaviour
 	private static URTSensorManager s_instance;
 	private static bool s_applicationQuitting = false;
 
+	/// <summary>
+	/// Incremented every time the acceleration structure is recreated (i.e. on
+	/// simulation reset). Per-camera consumers compare their cached generation to
+	/// this value; a mismatch means per-camera URT resources must be rebuilt so
+	/// they do not hold stale binding state from the disposed accel struct.
+	/// </summary>
+	private int _rtAccelStructGeneration = 0;
+	public static int AccelStructGeneration => s_instance?._rtAccelStructGeneration ?? 0;
+
 	#region "Profiling markers"
 	private static readonly ProfilerMarker s_EnsureBVHReadyMarker = new("URTSensorManager.EnsureBVHReady");
 	private static readonly ProfilerMarker s_GatherSceneMeshesMarker = new("URTSensorManager.GatherSceneMeshes");
@@ -742,6 +751,10 @@ public class URTSensorManager : MonoBehaviour
 		_pendingFenceNeeded = false;
 		_hasBuiltOnce = false;
 		_frameOfLastRenderSubmit = -1;
+
+		// Signal per-camera consumers (DepthCamera) that they must recreate their
+		// per-camera shader wrapper so no stale binding to the disposed accel struct remains.
+		_rtAccelStructGeneration++;
 
 		Debug.Log("[URTSensorManager] Acceleration structure reset (clean rebuild scheduled)");
 	}

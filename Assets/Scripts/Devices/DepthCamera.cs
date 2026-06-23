@@ -86,6 +86,7 @@ namespace SensorDevices
 		private IRayTracingShader _rtShader = null;
 		private GraphicsBuffer _rtTraceScratchBuffer = null;
 		private CommandBuffer _urtCmdBuffer = null;
+		private int _urtAccelStructGeneration = -1;
 
 		// Cached shader property IDs for the URT shader
 		private static readonly int PID_DepthOutput = Shader.PropertyToID("_DepthOutput");
@@ -425,7 +426,37 @@ namespace SensorDevices
 
 			_urtCmdBuffer = new CommandBuffer { name = "DepthCamera URT Dispatch" };
 
+			// Stamp the current generation so the first ExecuteRender doesn't
+			// immediately rebuild (resources are fresh).
+			_urtAccelStructGeneration = URTSensorManager.AccelStructGeneration;
+
 			return true;
+		}
+
+		/// <summary>
+		/// Recreate the per-camera shader wrapper and trace scratch buffer after the
+		/// shared acceleration structure has been disposed and recreated on reset.
+		/// The old IRayTracingShader caches internal buffer bindings from the disposed
+		/// accel struct; creating a new one gives a clean binding slate.
+		/// Safe to call when the GPU is quiescent (no dispatch in flight).
+		/// </summary>
+		private void RebuildURTPerCameraResources()
+		{
+			_rtShader = null; // IRayTracingShader has no Dispose; let GC reclaim it
+
+			_rtTraceScratchBuffer?.Dispose();
+			_rtTraceScratchBuffer = null;
+
+			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
+			if (_rtShader == null)
+			{
+				Debug.LogError("[DepthCamera] Failed to recreate RT shader after accel struct reset");
+				return;
+			}
+
+			var width = _camParam.ImageWidth;
+			var height = _camParam.ImageHeight;
+			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, width, height, 1);
 		}
 
 		/// <summary>Bind acceleration structure and output buffer to the shader.</summary>
@@ -471,6 +502,17 @@ namespace SensorDevices
 			var manager = URTSensorManager.Instance;
 			if (manager == null || URTSensorManager.AccelStruct == null || _rtShader == null)
 				return;
+
+			// Detect accel struct recreation (simulation reset) and rebuild per-camera
+			// resources so no stale binding state from the disposed accel struct remains.
+			var currentGen = URTSensorManager.AccelStructGeneration;
+			if (_urtAccelStructGeneration != currentGen)
+			{
+				RebuildURTPerCameraResources();
+				_urtAccelStructGeneration = currentGen;
+				if (_rtShader == null)
+					return;
+			}
 
 			var capturedTime = (Clock != null) ? Clock.SimTime : Time.timeAsDouble;
 

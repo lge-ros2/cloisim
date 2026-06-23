@@ -5,7 +5,7 @@
  */
 // #define PRINT_COMMAND_LOG
 
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -46,7 +46,7 @@ namespace SensorDevices
 #endif
 
 		private JointState jointState = null;
-		private Queue<Command> jointCommandQueue = new Queue<Command>();
+		private ConcurrentQueue<Command> jointCommandQueue = new();
 
 		protected override void OnAwake()
 		{
@@ -107,9 +107,8 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			while (jointCommandQueue.Count > 0)
+			while (jointCommandQueue.TryDequeue(out var command))
 			{
-				var command = jointCommandQueue.Dequeue();
 				if (command.joint != null)
 				{
 					command.joint.Drive(
