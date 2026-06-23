@@ -348,18 +348,27 @@ public static partial class SDF2Unity
 	{
 		var existingTexture = target.GetTexture("_BaseMap");
 		var existingTextureScale = target.GetTextureScale("_BaseMap");
-		var existingColor = target.GetColor("_Color");
+		// URP Lit stores color in _BaseColor; fall back to _Color for other shaders
+		var existingColor = target.HasProperty("_BaseColor") ? target.GetColor("_BaseColor") : target.GetColor("_Color");
 
 		target.shader = SpeedTreeShader;
 		target.SetTexture("_MainTex", existingTexture);
 		target.SetTextureScale("_MainTex", existingTextureScale);
 		target.SetColor("_Color", existingColor);
 		target.SetFloat("_Glossiness", 0f);
-		target.SetInt("_TwoSided", 0);
+		target.SetInt("_TwoSided", 0); // 0 = two-sided (no culling), for branch polygons
 
 		target.SetFloat("_BillboardKwToggle", 0);
-		target.SetFloat("_BillSboardShadowFade", 0f);
+		target.SetFloat("_BillboardShadowFade", 0f);
 		target.DisableKeyword("EFFECT_BILLBOARD");
+
+		// Disable wind for static Gazebo tree models
+		target.SetFloat("_WindQuality", 0f);
+		target.EnableKeyword("_WINDQUALITY_NONE");
+		target.DisableKeyword("_WINDQUALITY_FAST");
+		target.DisableKeyword("_WINDQUALITY_BETTER");
+		target.DisableKeyword("_WINDQUALITY_BEST");
+		target.DisableKeyword("_WINDQUALITY_PALM");
 
 		target.EnableKeyword("_INSTANCING_ON");
 	}

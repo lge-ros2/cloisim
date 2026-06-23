@@ -198,6 +198,9 @@ namespace SDFormat
 				if (rigidBody == null)
 				{
 					rigidBody = targetObject.AddComponent<UE.Rigidbody>();
+					// Set kinematic immediately so PhysX never sees dynamic + concave-mesh-collider
+					// on any pre-existing children (the warning fires at AddComponent time).
+					rigidBody.isKinematic = true;
 				}
 
 				rigidBody.useGravity = false;
@@ -249,6 +252,15 @@ namespace SDFormat
 
 				var targetObject = parentObject as UE.GameObject;
 				var newModelObject = CreateModel(model, targetObject);
+
+				// For static root models, pre-create kinematic Rigidbody before importing links/colliders
+				// so PhysX sees a kinematic body when concave mesh colliders are built, preventing
+				// the "Concave Mesh Collider + dynamic Rigidbody" warning (ordering: kinematic body first,
+				// then colliders, rather than colliders first and kinematic flag set after AddComponent).
+				if (model.Static && newModelObject.IsRootModel())
+				{
+					CreateRootRigidBody(newModelObject);
+				}
 
 				ImportLinks(model.Links, newModelObject);
 

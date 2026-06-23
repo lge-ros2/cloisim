@@ -15,82 +15,83 @@ public class ROS2Inspector : Editor
 	{
 		DrawDefaultInspector();
 
-		var targetTransform = (Transform)target;
-		if (targetTransform.CompareTag("Props") ||
-			targetTransform.CompareTag("Model") ||
-			targetTransform.CompareTag("Link") ||
-			targetTransform.CompareTag("Geometry") ||
-			targetTransform.CompareTag("Visual") ||
-			targetTransform.CompareTag("Collision") ||
-			targetTransform.CompareTag("Sensor") ||
-			targetTransform.CompareTag("Actor") ||
-			targetTransform.CompareTag("Light"))
+		var targetTransform = target as Transform;
+		if (targetTransform == null) return;
+
+		try
 		{
-			targetTransform.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
-			ConvertPoseToRos2(localPosition, localRotation, out var ros2Position, out var ros2Rotation, out var ros2RotationDegree);
-			var poseRelativeTo = targetTransform.GetComponent<Helper.Base>()?.PoseRelativeTo ?? string.Empty;
-
-			EditorGUILayout.Space();
-			EditorGUILayout.LabelField("ROS2 Coordinates", EditorStyles.boldLabel);
-			EditorGUILayout.HelpBox("Rotation is displayed as Roll, Pitch, Yaw (Euler angles).", MessageType.None);
-			if (!string.IsNullOrEmpty(poseRelativeTo))
+			if (targetTransform.CompareTag("Props") ||
+				targetTransform.CompareTag("Model") ||
+				targetTransform.CompareTag("Link") ||
+				targetTransform.CompareTag("Geometry") ||
+				targetTransform.CompareTag("Visual") ||
+				targetTransform.CompareTag("Collision") ||
+				targetTransform.CompareTag("Sensor") ||
+				targetTransform.CompareTag("Actor") ||
+				targetTransform.CompareTag("Light"))
 			{
-				EditorGUILayout.LabelField("Relative To", poseRelativeTo);
-			}
-
-			// GUI.enabled = false;
-			EditorGUILayout.Vector3Field("Position (m)", ros2Position);
-			EditorGUILayout.Vector3Field("Rotation (rad)", ros2Rotation);
-			EditorGUILayout.Vector3Field("Rotation (deg)", ros2RotationDegree);
-			// GUI.enabled = true;
-
-			if (GUILayout.Button("Copy pose"))
-			{
-				var poseText = $"{ros2Position.x:0.##########} {ros2Position.y:0.##########} {ros2Position.z:0.##########} "
-							+ $"{ros2Rotation.x:0.##########} {ros2Rotation.y:0.##########} {ros2Rotation.z:0.##########}";
-				GUIUtility.systemCopyBuffer = poseText;
-				Debug.LogFormat("Pose '{0}' Copied for {1}", poseText, targetTransform.name);
-			}
-
-			var rb = targetTransform.GetComponent<Rigidbody>();
-			var ab = targetTransform.GetComponent<ArticulationBody>();
-
-			if (rb != null || ab != null)
-			{
-				var bodyType = (ab != null) ? "ArticulationBody" : "RigidBody";
+				targetTransform.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
+				ConvertPoseToRos2(localPosition, localRotation, out var ros2Position, out var ros2Rotation, out var ros2RotationDegree);
+				var poseRelativeTo = targetTransform.GetComponent<Helper.Base>()?.PoseRelativeTo ?? string.Empty;
 
 				EditorGUILayout.Space();
-				EditorGUILayout.LabelField($"Physics Info: {bodyType}", EditorStyles.boldLabel);
-				EditorGUILayout.HelpBox("Inertia Tensor Rotation is displayed as Roll, Pitch, Yaw (Euler angles).", MessageType.None);
-
-				if (rb != null)
+				EditorGUILayout.LabelField("ROS2 Coordinates", EditorStyles.boldLabel);
+				EditorGUILayout.HelpBox("Rotation is displayed as Roll, Pitch, Yaw (Euler angles).", MessageType.None);
+				if (!string.IsNullOrEmpty(poseRelativeTo))
 				{
-					EditorGUILayout.Vector3Field("Velocity", Unity2SDF.Vector(rb.linearVelocity).AsUnity());
-					EditorGUILayout.Vector3Field("Angular Velocity", Unity2SDF.Vector(rb.angularVelocity).AsUnity());
-					EditorGUILayout.Vector3Field("Inertia Tensor", Unity2SDF.Scale(rb.inertiaTensor).AsUnity());
-					EditorGUILayout.Vector3Field("Inertia Tensor Rotation", Unity2SDF.Vector(rb.inertiaTensorRotation.eulerAngles).AsUnity());
-					EditorGUILayout.Vector3Field("Center of Mass (Local)", Unity2SDF.Vector(rb.centerOfMass).AsUnity());
-					EditorGUILayout.Vector3Field("Center of Mass (World)", Unity2SDF.Vector(rb.worldCenterOfMass).AsUnity());
+					EditorGUILayout.LabelField("Relative To", poseRelativeTo);
 				}
-				else if (ab != null)
+
+				// GUI.enabled = false;
+				EditorGUILayout.Vector3Field("Position (m)", ros2Position);
+				EditorGUILayout.Vector3Field("Rotation (rad)", ros2Rotation);
+				EditorGUILayout.Vector3Field("Rotation (deg)", ros2RotationDegree);
+				// GUI.enabled = true;
+
+				if (GUILayout.Button("Copy pose"))
 				{
-					EditorGUILayout.Vector3Field("Velocity", Unity2SDF.Vector(ab.linearVelocity).AsUnity());
-					EditorGUILayout.Vector3Field("Angular Velocity", Unity2SDF.Vector(ab.angularVelocity).AsUnity());
-					EditorGUILayout.Vector3Field("Inertia Tensor", Unity2SDF.Scale(ab.inertiaTensor).AsUnity());
-					EditorGUILayout.Vector3Field("Inertia Tensor Rotation", Unity2SDF.Vector(ab.inertiaTensorRotation.eulerAngles).AsUnity());
-					EditorGUILayout.Vector3Field("Center of Mass (Local)", Unity2SDF.Vector(ab.centerOfMass).AsUnity());
-					EditorGUILayout.Vector3Field("Center of Mass (World)", Unity2SDF.Vector(ab.transform.TransformPoint(ab.centerOfMass)).AsUnity());
+					var poseText = $"{ros2Position.x:0.##########} {ros2Position.y:0.##########} {ros2Position.z:0.##########} "
+								+ $"{ros2Rotation.x:0.##########} {ros2Rotation.y:0.##########} {ros2Rotation.z:0.##########}";
+					GUIUtility.systemCopyBuffer = poseText;
+					Debug.LogFormat("Pose '{0}' Copied for {1}", poseText, targetTransform.name);
+				}
 
-					var motor = Motor.FindByArticulationBody(ab);
-					if (motor != null)
+				var rb = targetTransform.GetComponent<Rigidbody>();
+				var ab = targetTransform.GetComponent<ArticulationBody>();
+
+				if (rb != null || ab != null)
+				{
+					var bodyType = (ab != null) ? "ArticulationBody" : "RigidBody";
+
+					EditorGUILayout.Space();
+					EditorGUILayout.LabelField($"Physics Info: {bodyType}", EditorStyles.boldLabel);
+					EditorGUILayout.HelpBox("Inertia Tensor Rotation is displayed as Roll, Pitch, Yaw (Euler angles).", MessageType.None);
+
+					if (rb != null)
 					{
-						EditorGUILayout.Space();
-						EditorGUILayout.LabelField("Motor PID Tuner", EditorStyles.boldLabel);
-						EditorGUILayout.HelpBox("Adjust the PID gains and ranges for the motor.", MessageType.None);
+						EditorGUILayout.Vector3Field("Velocity", Unity2SDF.Vector(rb.linearVelocity).AsUnity());
+						EditorGUILayout.Vector3Field("Angular Velocity", Unity2SDF.Vector(rb.angularVelocity).AsUnity());
+						EditorGUILayout.Vector3Field("Inertia Tensor", Unity2SDF.Scale(rb.inertiaTensor).AsUnity());
+						EditorGUILayout.Vector3Field("Inertia Tensor Rotation", Unity2SDF.Vector(rb.inertiaTensorRotation.eulerAngles).AsUnity());
+						EditorGUILayout.Vector3Field("Center of Mass (Local)", Unity2SDF.Vector(rb.centerOfMass).AsUnity());
+						EditorGUILayout.Vector3Field("Center of Mass (World)", Unity2SDF.Vector(rb.worldCenterOfMass).AsUnity());
+					}
+					else if (ab != null)
+					{
+						EditorGUILayout.Vector3Field("Velocity", Unity2SDF.Vector(ab.linearVelocity).AsUnity());
+						EditorGUILayout.Vector3Field("Angular Velocity", Unity2SDF.Vector(ab.angularVelocity).AsUnity());
+						EditorGUILayout.Vector3Field("Inertia Tensor", Unity2SDF.Scale(ab.inertiaTensor).AsUnity());
+						EditorGUILayout.Vector3Field("Inertia Tensor Rotation", Unity2SDF.Vector(ab.inertiaTensorRotation.eulerAngles).AsUnity());
+						EditorGUILayout.Vector3Field("Center of Mass (Local)", Unity2SDF.Vector(ab.centerOfMass).AsUnity());
+						EditorGUILayout.Vector3Field("Center of Mass (World)", Unity2SDF.Vector(ab.transform.TransformPoint(ab.centerOfMass)).AsUnity());
 
-						if (motor?.PidControl != null)
+						var motor = Motor.FindByArticulationBody(ab);
+						var pid = motor?.PidControl;
+						if (pid != null)
 						{
-							var pid = motor.PidControl;
+							EditorGUILayout.Space();
+							EditorGUILayout.LabelField("Motor PID Tuner", EditorStyles.boldLabel);
+							EditorGUILayout.HelpBox("Adjust the PID gains and ranges for the motor.", MessageType.None);
 
 							EditorGUI.BeginChangeCheck();
 							EditorGUILayout.LabelField("Gain", EditorStyles.miniBoldLabel);
@@ -120,6 +121,15 @@ public class ROS2Inspector : Editor
 					}
 				}
 			}
+		}
+		catch (MissingReferenceException)
+		{
+			// Target was destroyed between layout/repaint passes (e.g. play mode switch,
+			// domain reload, object deletion). Silently skip the extra section.
+		}
+		catch (System.Exception e)
+		{
+			EditorGUILayout.HelpBox($"ROS2 Inspector error: {e.Message}", MessageType.Warning);
 		}
 	}
 

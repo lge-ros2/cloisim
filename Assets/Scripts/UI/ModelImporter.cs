@@ -18,6 +18,8 @@ public class ModelImporter : MonoBehaviour
 	private Vector3 _modelDeployOffset = Vector3.zero;
 	#endregion
 
+	private Rigidbody _rootRigidbody = null;
+
 	private Transform _targetObjectForCopy = null;
 
 	[SerializeField]
@@ -116,10 +118,10 @@ public class ModelImporter : MonoBehaviour
 
 	private void BlockSelfRaycast()
 	{
-		if(_targetObject.CompareTag("Road"))
+		if (_targetObject.CompareTag("Road") || _targetObject.CompareTag("Props"))
 		{
-			var meshCollider = _targetObject.GetComponentInChildren<Collider>();
-			meshCollider.enabled = false;
+			foreach (var col in _targetObject.GetComponentsInChildren<Collider>())
+				col.enabled = false;
 		}
 		else
 		{
@@ -129,10 +131,10 @@ public class ModelImporter : MonoBehaviour
 
 	private void UnblockSelfRaycast()
 	{
-		if(_targetObject.CompareTag("Road"))
+		if (_targetObject.CompareTag("Road") || _targetObject.CompareTag("Props"))
 		{
-			var meshCollider = _targetObject.GetComponentInChildren<Collider>();
-			meshCollider.enabled = true;
+			foreach (var col in _targetObject.GetComponentsInChildren<Collider>())
+				col.enabled = true;
 		}
 		else
 		{
@@ -163,16 +165,19 @@ public class ModelImporter : MonoBehaviour
 			}
 		}
 
+		_rootRigidbody = (_rootArticulationBody == null) ? _targetObject.GetComponentInChildren<Rigidbody>() : null;
+		if (_rootRigidbody != null)
+		{
+			_rootRigidbody.isKinematic = true;
+		}
+
 		var totalBound = new Bounds();
 		foreach (var renderer in _targetObject.GetComponentsInChildren<Renderer>())
 		{
-			// Debug.Log(renderer.bounds.min + ", " + renderer.bounds.max);
-			var bounds = renderer.bounds;
-			bounds.center = _targetObject.transform.TransformPoint(bounds.center);
 			totalBound.Encapsulate(renderer.bounds);
 		}
 
-		_modelDeployOffset.y = DeployOffsetMargin + ((totalBound.min.y < 0) ? -totalBound.min.y : 0);
+		_modelDeployOffset.y = DeployOffsetMargin + Mathf.Max(0f, _targetObject.position.y - totalBound.min.y);
 		// Debug.Log("Deploy == " + _modelDeployOffset.y + " " + totalBound.min + ", " + totalBound.center + "," + totalBound.extents);
 
 		#region Workaround code for Wrong TerrainHeight issue
@@ -223,6 +228,16 @@ public class ModelImporter : MonoBehaviour
 		if (_rootArticulationBody != null)
 		{
 			_rootArticulationBody.immovable = false;
+		}
+
+		if (_rootRigidbody != null)
+		{
+			var modelHelper = _targetObject?.GetComponent<SDFormat.Helper.Model>();
+			if (modelHelper == null || !modelHelper.isStatic)
+			{
+				_rootRigidbody.isKinematic = false;
+			}
+			_rootRigidbody = null;
 		}
 
 		SetInitPose();
@@ -295,25 +310,29 @@ public class ModelImporter : MonoBehaviour
 			}
 		}
 
-		if (Keyboard.current[Key.LeftCtrl].isPressed)
+		var ctrlPressed = Keyboard.current[Key.LeftCtrl].isPressed || Keyboard.current[Key.RightCtrl].isPressed;
+		if (ctrlPressed)
 		{
-			if (Keyboard.current[Key.C].wasReleasedThisFrame)
+			if (Keyboard.current[Key.C].wasPressedThisFrame)
 			{
 				Main.Gizmos.GetSelectedTargets(out var objectListForCopy);
 
-				if (objectListForCopy.Count > 0)
+				if (objectListForCopy.Count > 1)
 				{
-					if (objectListForCopy.Count > 1)
-					{
-						Main.UIController?.SetWarningMessage("Multiple Object is selected. Only single object can be copied.");
-					}
-
-					_targetObjectForCopy = objectListForCopy[objectListForCopy.Count - 1];
-
+					Main.UIController?.SetWarningMessage("Multiple Object is selected. Only single object can be copied.");
+				}
+				else if (objectListForCopy.Count == 1)
+				{
+					_targetObjectForCopy = objectListForCopy[0];
 					Main.Gizmos.ClearTargets();
+					Main.UIController?.SetInfoMessage($"Copied: {_targetObjectForCopy.name}");
+				}
+				else
+				{
+					Main.UIController?.SetWarningMessage("No object selected to copy.");
 				}
 			}
-			else if (Keyboard.current[Key.V].wasReleasedThisFrame)
+			else if (Keyboard.current[Key.V].wasPressedThisFrame)
 			{
 				if (_targetObjectForCopy != null)
 				{
@@ -328,11 +347,14 @@ public class ModelImporter : MonoBehaviour
 					}
 
 					SetModelForDeploy(instantiatedObject);
-					// Debug.Log("Paste " + instantiatedObject.name);
 
 					var segmentationTag = instantiatedObject.GetComponentInChildren<Segmentation.Tag>();
 					segmentationTag?.Refresh();
 					Main.SegmentationManager.UpdateTags();
+				}
+				else
+				{
+					Main.UIController?.SetWarningMessage("No object to paste. Select an object and use Ctrl+C first.");
 				}
 			}
 		}

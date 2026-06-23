@@ -86,6 +86,12 @@ public static class RayTracingResourcesExtension
 /// Per-camera resources (trace scratch buffer, command buffer, output
 /// compute buffers) remain owned by each DepthCamera instance.
 /// </summary>
+// Execution order is forced LATE so this component's LateUpdate runs *after*
+// SensorRenderManager.LateUpdate (default order 0), which is where every URT
+// sensor records and submits its trace dispatch for the frame. The build fence
+// (see IsPriorTraceConsumed) is created in our LateUpdate and must capture
+// those already-submitted dispatches, so we must run after them.
+[DefaultExecutionOrder(1000)]
 public class URTSensorManager : MonoBehaviour
 {
 	private static URTSensorManager s_instance;
@@ -150,19 +156,24 @@ public class URTSensorManager : MonoBehaviour
 	// ("missing UAV ID ... incompatible ComputeBuffer" -> device-lost -> freeze).
 	//
 	// We replace it with: grow-with-headroom (never shrink, so reallocations are
-	// rare) + deferred dispose (old buffers are freed only after SafetyFrames,
-	// which exceeds GPU pipeline depth + AsyncGPUReadback latency).
+	// rare) + deferred dispose. The old buffer is freed only once a GraphicsFence
+	// captured at deferral time has passed — i.e. the GPU has actually finished the
+	// dispatches that referenced it. A fixed frame-count delay is NOT enough: under
+	// a heavy spike the GPU can lag many frames behind the main thread, and freeing
+	// a still-in-flight buffer corrupts the dispatch ("missing UAV ID") which can
+	// hang the GPU context (NVIDIA Xid 109 CTX SWITCH TIMEOUT) -> freeze. The
+	// frame-count path remains only as a fallback when GraphicsFence is unsupported.
 
 	/// <summary>Extra capacity multiplier applied when (re)allocating a scratch buffer.</summary>
 	private const float ScratchHeadroomFactor = 2.0f;
 
 	/// <summary>
-	/// Frames an old scratch buffer is kept alive before disposal. Must exceed the
-	/// max number of frames the GPU/readback pipeline can lag behind the main thread.
+	/// Fallback only (GraphicsFence unsupported): frames an old scratch buffer is kept
+	/// alive before disposal. Must exceed the max GPU/readback pipeline lag.
 	/// </summary>
-	private const int ScratchSafetyFrames = 4;
+	private const int ScratchSafetyFrames = 6;
 
-	private readonly Queue<(GraphicsBuffer buffer, int frame)> _deferredScratchFree = new();
+	private readonly Queue<(GraphicsBuffer buffer, GraphicsFence fence, bool hasFence, int frame)> _deferredScratchFree = new();
 	#endregion
 
 	/// <summary>Per-instance tracking for transform updates.</summary>
@@ -230,6 +241,34 @@ public class URTSensorManager : MonoBehaviour
 
 	[SerializeField]
 	private int _frameOfLastBuild = -1;
+
+	#region "In-flight TLAS protection"
+	// The package's ComputeRayTracingAccelStruct disposes its top-level accel
+	// structure buffers (instanceInfos / topLevelBvh) IMMEDIATELY on any
+	// AddInstance / RemoveInstance / UpdateInstanceTransform (via
+	// FreeTopLevelAccelStruct). Those exact buffers are bound as trace-dispatch
+	// INPUTS (RadeonRays Bind: "instanceInfos"/"bvh"/...). If we mutate the accel
+	// struct while a previous frame's trace dispatch still reads them on the GPU,
+	// the binding resolves to a freed buffer -> "missing input compute buffer ID
+	// / incompatible ComputeBuffer" -> Vulkan device-lost -> freeze.
+	//
+	// Unlike the build scratch buffer, we cannot defer-free these (the package
+	// owns and disposes them). Instead we defer the *mutation*: a GraphicsFence is
+	// recorded after each build cycle's dispatches, and the next cycle's
+	// gather/transform-update/build is skipped until that fence has passed (the
+	// GPU has consumed the dispatches that read the old TLAS). When skipped, the
+	// still-valid TLAS is simply re-traced; the only cost is BVH transforms being
+	// 1-2 frames stale, which is imperceptible for sensors.
+
+	private static readonly bool s_graphicsFenceSupported = SystemInfo.supportsGraphicsFence;
+	private GraphicsFence _buildFence;
+	private bool _hasBuildFence;
+	private bool _pendingFenceNeeded;
+	private bool _hasBuiltOnce;
+	// Frame of the most recent URT render (= most recent trace dispatch submission).
+	// Used only by the no-fence fallback to require a safe frame gap before mutating.
+	private int _frameOfLastRenderSubmit = -1;
+	#endregion
 
 	#endregion
 
@@ -342,11 +381,40 @@ public class URTSensorManager : MonoBehaviour
 
 		inst._frameOfLastBuild = currentFrame;
 
+		// A URT sensor is rendering this frame and will submit a trace dispatch
+		// (against the current TLAS) shortly after — even if we defer the rebuild
+		// below. Request a fence in our LateUpdate so the NEXT mutation waits for
+		// THIS frame's trace too. Without this, a re-trace submitted on a deferred
+		// frame can still be in flight when a later frame disposes/rebuilds the TLAS
+		// (the build-only fence does not cover it) -> "missing UAV/input buffer" ->
+		// GPU context hang (Xid 109).
+		inst._pendingFenceNeeded = true;
+
+		// Frame of the most recent prior trace submission (the previous render frame),
+		// captured before we overwrite the render-submit marker for this frame.
+		var prevRenderFrame = inst._frameOfLastRenderSubmit;
+		inst._frameOfLastRenderSubmit = currentFrame;
+
+		// In-flight TLAS protection: defer all accel-struct mutation (which would
+		// immediately dispose the TLAS input buffers in the package) until the GPU
+		// has consumed every prior trace dispatch. While deferred, the existing TLAS
+		// stays valid and this sensor re-traces against it.
+		if (inst._hasBuiltOnce && !inst.IsPriorTraceConsumed(prevRenderFrame))
+			return;
+
 		// --- Detect new/removed objects ---
 		var realtimeNow = Time.realtimeSinceStartup;
 
 		if (inst._sceneDirty || (realtimeNow - inst._lastSceneGatherTime > inst._sceneGatherInterval))
 		{
+			// BLAS safety: AddInstance/RemoveInstance reallocates the shared BLAS vertex
+			// pool and immediately frees the old buffer. We must not call these while any
+			// GPU dispatch still reads that buffer. This is already guaranteed by the
+			// IsPriorTraceConsumed() gate above — it passes only when the AllGPUOperations
+			// fence has signalled, meaning the GPU is fully idle with respect to all URT
+			// work. A separate DrainGpuFully() busy-wait here is therefore redundant and
+			// was the source of the visible stall on prop spawn (up to ~1s main-thread
+			// block with complex scenes in flight).
 			inst.GatherSceneMeshes();
 			inst._sceneDirty = false;
 		}
@@ -390,8 +458,28 @@ public class URTSensorManager : MonoBehaviour
 
 			// --- Build BVH ---
 			inst._rtAccelStruct.Build(cmd, inst._rtBuildScratchBuffer);
+
+			// A TLAS now exists; the gate engages from here on. (The per-frame fence
+			// that the next mutation waits on is requested at the top of this method,
+			// covering both builds and deferred-frame re-traces.)
+			inst._hasBuiltOnce = true;
 		}
 		}
+	}
+
+	/// <summary>
+	/// True when the GPU has finished every prior trace dispatch that reads the TLAS,
+	/// so it is safe to mutate (and thus dispose) the accel struct again. Uses a
+	/// GraphicsFence (refreshed every render frame, so it covers deferred-frame
+	/// re-traces too) when supported; otherwise falls back to requiring a safe frame
+	/// gap since the most recent trace submission.
+	/// </summary>
+	private bool IsPriorTraceConsumed(int prevRenderFrame)
+	{
+		if (s_graphicsFenceSupported)
+			return !_hasBuildFence || _buildFence.passed;
+
+		return prevRenderFrame < 0 || Time.frameCount - prevRenderFrame >= ScratchSafetyFrames;
 	}
 
 	#endregion
@@ -495,7 +583,12 @@ public class URTSensorManager : MonoBehaviour
 		return grown;
 	}
 
-	/// <summary>Queue an old scratch buffer for disposal after ScratchSafetyFrames have elapsed.</summary>
+	/// <summary>
+	/// Queue an old scratch buffer for disposal once the GPU has finished the
+	/// dispatches that referenced it. A GraphicsFence is captured now: the buffer's
+	/// last use was a dispatch submitted before this point, so it is safe to free
+	/// the moment the fence passes (frame-count fallback when fences are unsupported).
+	/// </summary>
 	public static void DeferScratchFree(GraphicsBuffer buffer)
 	{
 		if (buffer == null)
@@ -504,32 +597,59 @@ public class URTSensorManager : MonoBehaviour
 		var inst = Instance;
 		if (inst == null)
 		{
-			// No manager to track frame age (e.g. during shutdown): dispose now.
+			// No manager to track GPU progress (e.g. during shutdown): dispose now.
 			buffer.Dispose();
 			return;
 		}
 
-		inst._deferredScratchFree.Enqueue((buffer, Time.frameCount));
+		GraphicsFence fence = default;
+		var hasFence = false;
+		if (s_graphicsFenceSupported)
+		{
+			fence = Graphics.CreateGraphicsFence(
+				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
+			hasFence = true;
+		}
+
+		inst._deferredScratchFree.Enqueue((buffer, fence, hasFence, Time.frameCount));
 	}
 
-	/// <summary>Dispose deferred scratch buffers old enough to be safely out of GPU flight.</summary>
+	/// <summary>Dispose deferred scratch buffers whose GPU work has completed (fence passed).</summary>
 	private void DrainDeferredScratchFrees(bool force = false)
 	{
 		var currentFrame = Time.frameCount;
 		while (_deferredScratchFree.Count > 0)
 		{
-			var (buffer, frame) = _deferredScratchFree.Peek();
-			if (!force && currentFrame - frame < ScratchSafetyFrames)
-				break;
+			var entry = _deferredScratchFree.Peek();
+			if (!force)
+			{
+				var safe = entry.hasFence
+					? entry.fence.passed
+					: (currentFrame - entry.frame >= ScratchSafetyFrames);
+				if (!safe)
+					break;
+			}
 
 			_deferredScratchFree.Dequeue();
-			buffer?.Dispose();
+			entry.buffer?.Dispose();
 		}
 	}
 
 	private void LateUpdate()
 	{
 		DrainDeferredScratchFrees();
+
+		// Runs after SensorRenderManager.LateUpdate (forced via DefaultExecutionOrder),
+		// so every URT trace dispatch for this frame is already submitted. Capture a
+		// fence past those dispatches; the next EnsureBVHReady defers mutation until it
+		// passes. Only needed on frames where a build actually happened.
+		if (_pendingFenceNeeded && s_graphicsFenceSupported)
+		{
+			_buildFence = Graphics.CreateGraphicsFence(
+				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
+			_hasBuildFence = true;
+		}
+		_pendingFenceNeeded = false;
 	}
 
 	private void ReleaseResources()
@@ -553,6 +673,11 @@ public class URTSensorManager : MonoBehaviour
 
 		_diagHistory.Clear();
 		_diagPrevInstanceCount = -1;
+
+		_hasBuildFence = false;
+		_pendingFenceNeeded = false;
+		_hasBuiltOnce = false;
+		_frameOfLastRenderSubmit = -1;
 
 		Debug.Log("[URTSensorManager] Released shared URT resources");
 	}
@@ -611,6 +736,12 @@ public class URTSensorManager : MonoBehaviour
 		_frameOfLastBuild = -1;
 		_lastSceneGatherTime = 0f;
 		_diagPrevInstanceCount = -1;
+
+		// Old TLAS is gone; do not gate the first post-reset rebuild on a stale fence.
+		_hasBuildFence = false;
+		_pendingFenceNeeded = false;
+		_hasBuiltOnce = false;
+		_frameOfLastRenderSubmit = -1;
 
 		Debug.Log("[URTSensorManager] Acceleration structure reset (clean rebuild scheduled)");
 	}

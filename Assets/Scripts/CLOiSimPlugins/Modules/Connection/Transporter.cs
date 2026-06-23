@@ -97,7 +97,18 @@ public class Transporter : IDisposable
 		foreach (var item in currentTransportList)
 		{
 			var transporter = item.Value;
-			transporter?.Dispose();
+			try
+			{
+				transporter?.Dispose();
+			}
+			catch (ObjectDisposedException)
+			{
+				// On app/play-mode exit, Main.OnDestroy may run NetMQConfig.Cleanup()
+				// before this transport is disposed. Closing a socket against the
+				// already-terminated context throws when its internal signaler socket
+				// is gone. The socket resources are already reclaimed, so this is safe
+				// to ignore; scoping the catch per-socket keeps the rest cleaning up.
+			}
 		}
 		currentTransportList.Clear();
 	}

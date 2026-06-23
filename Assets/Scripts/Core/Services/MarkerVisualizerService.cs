@@ -13,6 +13,7 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
+[Serializable]
 public abstract class MarkerBase
 {
 	public virtual void Print()

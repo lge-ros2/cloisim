@@ -92,6 +92,19 @@ namespace SDFormat
 						material.SetTransparent();
 					}
 				}
+
+				if (passProperties.ContainsKey("alpha_rejection"))
+				{
+					// "alpha_rejection greater <threshold_0_255>"
+					var parts = passProperties["alpha_rejection"].Trim()
+						.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+					var threshold = 128f;
+					if (parts.Length >= 2 && float.TryParse(parts[1], out var parsed))
+						threshold = parsed;
+					material.SetFloat("_AlphaClip", 1f);
+					material.SetFloat("_Cutoff", threshold / 255f);
+					material.EnableKeyword("_ALPHATEST_ON");
+				}
 			}
 
 			private static void ApplyTexture(

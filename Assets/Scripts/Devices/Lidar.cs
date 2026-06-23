@@ -17,8 +17,8 @@ namespace SensorDevices
 {
 	public partial class Lidar : Device, ISensorRenderable
 	{
-		[SerializeField] private messages.LaserScan _laserScan = null;
-		[SerializeField] private Thread _laserProcessThread = null;
+		private messages.LaserScan _laserScan = null;
+		private Thread _laserProcessThread = null;
 
 		[Header("SDF properties")]
 		private MathUtil.MinMax _scanRange;

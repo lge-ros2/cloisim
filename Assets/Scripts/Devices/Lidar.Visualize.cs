@@ -12,11 +12,11 @@ namespace SensorDevices
 {
 	public partial class Lidar
 	{
-		[SerializeField] private static int _indexForVisualize = 0;
-		[SerializeField] private static int _maxCountForVisualize = 3;
-		[SerializeField] private static float _hueOffsetForVisualize = 0f;
-		[SerializeField] private const float UnitHueOffsetForVisualize = 0.07f;
-		[SerializeField] private const float AlphaForVisualize = 0.75f;
+		private static int _indexForVisualize = 0;
+		private static int _maxCountForVisualize = 3;
+		private static float _hueOffsetForVisualize = 0f;
+		private const float UnitHueOffsetForVisualize = 0.07f;
+		private const float AlphaForVisualize = 0.75f;
 
 		/// <summary>
 		/// 3D lidar: renders hit positions as a point cloud using ParticleSystem.
