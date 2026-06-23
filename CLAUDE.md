@@ -360,3 +360,13 @@ Workflows automatically inherit the CLAUDE.md context—they know about:
 - NetMQ transport patterns
 
 No need to repeat that context; workflows use it to make better-scoped plans and implementations.
+
+## Domain-Specific Instructions
+
+@.github/instructions/core.instructions.md
+@.github/instructions/plugins.instructions.md
+@.github/instructions/devices.instructions.md
+@.github/instructions/sdf-pipeline.instructions.md
+@.github/instructions/shaders.instructions.md
+@.github/instructions/ui.instructions.md
+@.github/instructions/scripts-validation.instructions.md
