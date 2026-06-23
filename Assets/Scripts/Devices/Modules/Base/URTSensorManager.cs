@@ -407,15 +407,14 @@ public class URTSensorManager : MonoBehaviour
 
 		if (inst._sceneDirty || (realtimeNow - inst._lastSceneGatherTime > inst._sceneGatherInterval))
 		{
-			// A structural change (object spawned/deleted) makes AddInstance/RemoveInstance
-			// reallocate the package's BLAS input buffers and free the old ones IMMEDIATELY.
-			// On top of the fence gate above, hard-sync the GPU so no trace dispatch is in
-			// flight when those input buffers are freed. This runs only on spawn/delete
-			// frames (rare, user-initiated), so the brief stall is acceptable; it does not
-			// affect steady-state frames.
-			if (inst._sceneDirty)
-				AsyncGPUReadback.WaitAllRequests();
-
+			// BLAS safety: AddInstance/RemoveInstance reallocates the shared BLAS vertex
+			// pool and immediately frees the old buffer. We must not call these while any
+			// GPU dispatch still reads that buffer. This is already guaranteed by the
+			// IsPriorTraceConsumed() gate above — it passes only when the AllGPUOperations
+			// fence has signalled, meaning the GPU is fully idle with respect to all URT
+			// work. A separate DrainGpuFully() busy-wait here is therefore redundant and
+			// was the source of the visible stall on prop spawn (up to ~1s main-thread
+			// block with complex scenes in flight).
 			inst.GatherSceneMeshes();
 			inst._sceneDirty = false;
 		}
@@ -608,7 +607,7 @@ public class URTSensorManager : MonoBehaviour
 		if (s_graphicsFenceSupported)
 		{
 			fence = Graphics.CreateGraphicsFence(
-				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.ComputeProcessing);
+				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
 			hasFence = true;
 		}
 
@@ -647,7 +646,7 @@ public class URTSensorManager : MonoBehaviour
 		if (_pendingFenceNeeded && s_graphicsFenceSupported)
 		{
 			_buildFence = Graphics.CreateGraphicsFence(
-				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.ComputeProcessing);
+				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
 			_hasBuildFence = true;
 		}
 		_pendingFenceNeeded = false;
