@@ -434,10 +434,11 @@ namespace SensorDevices
 		}
 
 		/// <summary>
-		/// Recreate the per-camera shader wrapper and trace scratch buffer after the
-		/// shared acceleration structure has been disposed and recreated on reset.
-		/// The old IRayTracingShader caches internal buffer bindings from the disposed
-		/// accel struct; creating a new one gives a clean binding slate.
+		/// Recreate all per-camera URT GPU resources after the shared acceleration
+		/// structure has been disposed and recreated on reset.  Output compute buffers
+		/// and the command buffer are also recreated so no stale GPU handle survives
+		/// into the next dispatch (Unity reports "incompatible ComputeBuffer" on the
+		/// second reset when only the shader wrapper is replaced).
 		/// Safe to call when the GPU is quiescent (no dispatch in flight).
 		/// </summary>
 		private void RebuildURTPerCameraResources()
@@ -457,6 +458,25 @@ namespace SensorDevices
 			var width = _camParam.ImageWidth;
 			var height = _camParam.ImageHeight;
 			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, width, height, 1);
+
+			// Recreate output compute buffers — their GPU handles can become incompatible
+			// with a newly created URT shader on the second (and subsequent) reset.
+			var pixelCount = (int)(width * height);
+			var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
+			var imageDepth = CameraData.GetImageDepth(format);
+			var packedCount = (imageDepth == 4) ? pixelCount
+				: (imageDepth == 2 ? (pixelCount + 1) / 2 : (pixelCount + 3) / 4);
+
+			_computeBufferSrc?.Release();
+			_computeBufferSrc = new ComputeBuffer(pixelCount, sizeof(float));
+			_computeBufferDst?.Release();
+			_computeBufferDst = new ComputeBuffer(packedCount, sizeof(uint));
+			_computeBufferBunchFlag?.Release();
+			_computeBufferBunchFlag = new ComputeBuffer(pixelCount, sizeof(int));
+
+			// Fresh command buffer so no stale recorded resource handles remain.
+			_urtCmdBuffer?.Release();
+			_urtCmdBuffer = new CommandBuffer { name = "DepthCamera URT Dispatch" };
 		}
 
 		/// <summary>Bind acceleration structure and output buffer to the shader.</summary>

@@ -190,6 +190,13 @@ namespace SensorDevices
 
 			var raysPerCycle = (uint)_livoxPattern.TotalRaysPerCycle;
 			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, raysPerCycle, 1, 1);
+
+			// Recreate output buffer and command buffer — same reason as standard lidar rebuild.
+			_rangeOutputBuffer?.Release();
+			_rangeOutputBuffer = new ComputeBuffer((int)(raysPerCycle * XYZComponents), sizeof(float));
+
+			_urtCmdBuffer?.Release();
+			_urtCmdBuffer = new CommandBuffer { name = "Livox Lidar URT Dispatch" };
 		}
 
 		private void ExecuteLivoxRender()

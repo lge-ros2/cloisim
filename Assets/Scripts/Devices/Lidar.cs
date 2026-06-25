@@ -399,6 +399,14 @@ namespace SensorDevices
 			var samplesH = _laserScan.Count;
 			var samplesV = _laserScan.VerticalCount;
 			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, samplesH, samplesV, 1);
+
+			// Recreate output buffer and command buffer — GPU handles can become
+			// incompatible with a new URT shader wrapper on second (and later) resets.
+			_rangeOutputBuffer?.Release();
+			_rangeOutputBuffer = new ComputeBuffer((int)_totalSamples, sizeof(float));
+
+			_urtCmdBuffer?.Release();
+			_urtCmdBuffer = new CommandBuffer { name = "Lidar URT Dispatch" };
 		}
 
 		private void ExecuteStandardRender()
