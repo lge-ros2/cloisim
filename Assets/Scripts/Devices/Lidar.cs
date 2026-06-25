@@ -80,6 +80,7 @@ namespace SensorDevices
 		private GraphicsBuffer _rtTraceScratchBuffer = null;
 		private CommandBuffer _urtCmdBuffer = null;
 		private ComputeBuffer _rangeOutputBuffer = null;
+		private int _urtAccelStructGeneration = -1;
 
 		private uint _totalSamples = 0;
 
@@ -284,6 +285,8 @@ namespace SensorDevices
 
 			_urtCmdBuffer = new CommandBuffer { name = "Lidar URT Dispatch" };
 
+			_urtAccelStructGeneration = URTSensorManager.AccelStructGeneration;
+
 			Debug.Log($"[Lidar] URT initialized, samples={samplesH}x{samplesV}={_totalSamples}, " +
 				$"range=[{_scanRange.min:F2}, {_scanRange.max:F2}], " +
 				$"hAngle=[{_horizontal.angle.min:F1}, {_horizontal.angle.max:F1}] deg");
@@ -379,10 +382,38 @@ namespace SensorDevices
 		/// matching the lidar's configured scan angles. All rays are dispatched
 		/// in a single compute pass — no camera rotation or multi-slice stitching needed.
 		/// </summary>
+		private void RebuildURTPerSensorResources()
+		{
+			_rtShader = null;
+
+			_rtTraceScratchBuffer?.Dispose();
+			_rtTraceScratchBuffer = null;
+
+			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
+			if (_rtShader == null)
+			{
+				Debug.LogError("[Lidar] Failed to recreate RT shader after accel struct reset");
+				return;
+			}
+
+			var samplesH = _laserScan.Count;
+			var samplesV = _laserScan.VerticalCount;
+			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, samplesH, samplesV, 1);
+		}
+
 		private void ExecuteStandardRender()
 		{
 			if (URTSensorManager.AccelStruct == null || _rtShader == null)
 				return;
+
+			var currentGen = URTSensorManager.AccelStructGeneration;
+			if (_urtAccelStructGeneration != currentGen)
+			{
+				RebuildURTPerSensorResources();
+				_urtAccelStructGeneration = currentGen;
+				if (_rtShader == null)
+					return;
+			}
 
 			var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
 

@@ -154,6 +154,8 @@ namespace SensorDevices
 
 			_urtCmdBuffer = new CommandBuffer { name = "Livox Lidar URT Dispatch" };
 
+			_urtAccelStructGeneration = URTSensorManager.AccelStructGeneration;
+
 			Debug.Log($"[Lidar] Livox URT initialized, rays/cycle={raysPerCycle}, " +
 				$"pattern={_livoxPattern.PatternSize}, " +
 				$"range=[{_scanRange.min:F2}, {_scanRange.max:F2}]");
@@ -172,10 +174,37 @@ namespace SensorDevices
 		/// Execute GPU ray trace for Livox mode.
 		/// Dispatches rays from the current pattern window and outputs XYZ positions.
 		/// </summary>
+		private void RebuildURTPerSensorResourcesLivox()
+		{
+			_rtShader = null;
+
+			_rtTraceScratchBuffer?.Dispose();
+			_rtTraceScratchBuffer = null;
+
+			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
+			if (_rtShader == null)
+			{
+				Debug.LogError("[Lidar/Livox] Failed to recreate RT shader after accel struct reset");
+				return;
+			}
+
+			var raysPerCycle = (uint)_livoxPattern.TotalRaysPerCycle;
+			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, raysPerCycle, 1, 1);
+		}
+
 		private void ExecuteLivoxRender()
 		{
 			if (URTSensorManager.AccelStruct == null || _rtShader == null)
 				return;
+
+			var currentGen = URTSensorManager.AccelStructGeneration;
+			if (_urtAccelStructGeneration != currentGen)
+			{
+				RebuildURTPerSensorResourcesLivox();
+				_urtAccelStructGeneration = currentGen;
+				if (_rtShader == null)
+					return;
+			}
 
 			var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
 
