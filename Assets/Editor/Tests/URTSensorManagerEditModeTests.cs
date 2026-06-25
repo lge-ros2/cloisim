@@ -132,8 +132,9 @@ namespace CLOiSim.Tests.EditMode
 		public void SelectBackend_ComputeOverride_ReturnsComputeBackend()
 		{
 			Environment.SetEnvironmentVariable("CLOISIM_URT_BACKEND", "compute");
-			var backend = (RayTracingBackend)s_selectBackend.Invoke(null, null);
-			Assert.That(backend, Is.EqualTo(RayTracingBackend.Compute));
+			var backend = s_selectBackend.Invoke(null, null);
+			// RayTracingBackend.Compute == 1 by enum definition
+			Assert.That((int)backend, Is.EqualTo(1));
 		}
 
 		[Test]
