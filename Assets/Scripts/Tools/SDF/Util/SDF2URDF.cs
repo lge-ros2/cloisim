@@ -4,10 +4,13 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Xml;
+using SysMath = System.Math;
 using UnityEngine;
 
 namespace SDFormat
@@ -48,6 +51,15 @@ namespace SDFormat
 
 		private static void AppendModelUrdf(StringBuilder urdf, XmlNode modelNode, string scopePrefix)
 		{
+			var linkPoses = new Dictionary<string, double[]>();
+			foreach (XmlNode linkNode in modelNode.SelectNodes("link"))
+			{
+				var linkName = GetAttributeOrDefault(linkNode, "name", string.Empty);
+				var pose = ParsePose(linkNode.SelectSingleNode("pose"));
+				if (pose != null && !string.IsNullOrEmpty(linkName))
+					linkPoses[linkName] = pose;
+			}
+
 			foreach (XmlNode linkNode in modelNode.SelectNodes("link"))
 			{
 				AppendLinkUrdf(urdf, linkNode, scopePrefix);
@@ -55,7 +67,7 @@ namespace SDFormat
 
 			foreach (XmlNode jointNode in modelNode.SelectNodes("joint"))
 			{
-				AppendJointUrdf(urdf, jointNode, scopePrefix);
+				AppendJointUrdf(urdf, jointNode, scopePrefix, linkPoses);
 			}
 
 			foreach (XmlNode childModelNode in modelNode.SelectNodes("model"))
@@ -108,7 +120,7 @@ namespace SDFormat
 			urdf.Append("  </link>\n");
 		}
 
-		private static void AppendJointUrdf(StringBuilder urdf, XmlNode jointNode, string scopePrefix)
+		private static void AppendJointUrdf(StringBuilder urdf, XmlNode jointNode, string scopePrefix, Dictionary<string, double[]> linkPoses)
 		{
 			var jointName = NormalizeScopedName(scopePrefix, GetAttributeOrDefault(jointNode, "name", "joint"));
 			var axisNode = jointNode.SelectSingleNode("axis");
@@ -116,7 +128,24 @@ namespace SDFormat
 			var jointType = NormalizeJointType(GetAttributeOrDefault(jointNode, "type", "fixed"), limitNode != null);
 
 			urdf.Append($"  <joint name=\"{EscapeXml(jointName)}\" type=\"{EscapeXml(jointType)}\">\n");
-			AppendOriginFromPoseNode(urdf, jointNode.SelectSingleNode("pose"), "    ");
+
+			var jointPoseNode = jointNode.SelectSingleNode("pose");
+			var jointPose = ParsePose(jointPoseNode);
+			if (IsZeroPose(jointPose))
+			{
+				var parentLinkName = GetNodeTextOrDefault(jointNode, "parent", string.Empty);
+				var childLinkName = GetNodeTextOrDefault(jointNode, "child", string.Empty);
+				if (linkPoses.TryGetValue(parentLinkName, out var parentPose) &&
+					linkPoses.TryGetValue(childLinkName, out var childPose))
+				{
+					var relPose = ComputeRelativePose(parentPose, childPose);
+					AppendOriginFromPoseArray(urdf, relPose, "    ");
+				}
+			}
+			else
+			{
+				AppendOriginFromPoseNode(urdf, jointPoseNode, "    ");
+			}
 
 			var parent = GetNodeTextOrDefault(jointNode, "parent", string.Empty);
 			if (!string.IsNullOrEmpty(parent))
@@ -235,6 +264,100 @@ namespace SDFormat
 				pitch,
 				yaw);
 
+			urdf.Append($"{indent}<origin xyz=\"{EscapeXml(xyz)}\" rpy=\"{EscapeXml(rpy)}\"/>\n");
+		}
+
+		private static double[] ParsePose(XmlNode poseNode)
+		{
+			if (poseNode == null)
+				return null;
+			var tokens = poseNode.InnerText.Trim().Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+			if (tokens.Length < 6)
+				return null;
+			var pose = new double[6];
+			for (var i = 0; i < 6; i++)
+			{
+				if (!double.TryParse(tokens[i], NumberStyles.Float, CultureInfo.InvariantCulture, out pose[i]))
+					return null;
+			}
+			return pose;
+		}
+
+		private static bool IsZeroPose(double[] pose)
+		{
+			if (pose == null)
+				return true;
+			const double eps = 1e-9;
+			foreach (var v in pose)
+				if (SysMath.Abs(v) > eps) return false;
+			return true;
+		}
+
+		private static double[,] RpyToMatrix(double roll, double pitch, double yaw)
+		{
+			var cr = SysMath.Cos(roll); var sr = SysMath.Sin(roll);
+			var cp = SysMath.Cos(pitch); var sp = SysMath.Sin(pitch);
+			var cy = SysMath.Cos(yaw); var sy = SysMath.Sin(yaw);
+			return new double[,]
+			{
+				{ cy*cp, cy*sp*sr - sy*cr, cy*sp*cr + sy*sr },
+				{ sy*cp, sy*sp*sr + cy*cr, sy*sp*cr - cy*sr },
+				{ -sp,   cp*sr,            cp*cr            }
+			};
+		}
+
+		private static double[] MatrixToRpy(double[,] m)
+		{
+			var pitch = SysMath.Atan2(-m[2, 0], SysMath.Sqrt(m[0, 0] * m[0, 0] + m[1, 0] * m[1, 0]));
+			double roll, yaw;
+			if (SysMath.Abs(SysMath.Cos(pitch)) < 1e-6)
+			{
+				roll = 0;
+				yaw = SysMath.Atan2(-m[1, 2], m[1, 1]);
+			}
+			else
+			{
+				roll = SysMath.Atan2(m[2, 1], m[2, 2]);
+				yaw = SysMath.Atan2(m[1, 0], m[0, 0]);
+			}
+			return new[] { roll, pitch, yaw };
+		}
+
+		private static double[] ComputeRelativePose(double[] parentPose, double[] childPose)
+		{
+			var rp = RpyToMatrix(parentPose[3], parentPose[4], parentPose[5]);
+			var rc = RpyToMatrix(childPose[3], childPose[4], childPose[5]);
+
+			var dx = childPose[0] - parentPose[0];
+			var dy = childPose[1] - parentPose[1];
+			var dz = childPose[2] - parentPose[2];
+
+			// R_parent^T * delta_xyz
+			var rx = rp[0, 0] * dx + rp[1, 0] * dy + rp[2, 0] * dz;
+			var ry = rp[0, 1] * dx + rp[1, 1] * dy + rp[2, 1] * dz;
+			var rz = rp[0, 2] * dx + rp[1, 2] * dy + rp[2, 2] * dz;
+
+			// R_parent^T * R_child
+			var dr = new double[3, 3];
+			for (var i = 0; i < 3; i++)
+				for (var j = 0; j < 3; j++)
+					for (var k = 0; k < 3; k++)
+						dr[i, j] += rp[k, i] * rc[k, j];
+
+			var rpy = MatrixToRpy(dr);
+			return new[] { rx, ry, rz, rpy[0], rpy[1], rpy[2] };
+		}
+
+		private static void AppendOriginFromPoseArray(StringBuilder urdf, double[] pose, string indent)
+		{
+			if (pose == null)
+				return;
+			var xyz = string.Format(CultureInfo.InvariantCulture,
+				"{0:0.################} {1:0.################} {2:0.################}",
+				pose[0], pose[1], pose[2]);
+			var rpy = string.Format(CultureInfo.InvariantCulture,
+				"{0:0.################} {1:0.################} {2:0.################}",
+				pose[3], pose[4], pose[5]);
 			urdf.Append($"{indent}<origin xyz=\"{EscapeXml(xyz)}\" rpy=\"{EscapeXml(rpy)}\"/>\n");
 		}
 
