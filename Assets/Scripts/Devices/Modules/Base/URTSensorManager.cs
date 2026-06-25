@@ -449,9 +449,13 @@ public class URTSensorManager : MonoBehaviour
 		// Do NOT swap — promoting a never-built struct to readIdx would make AccelStruct
 		// return a struct whose m_TopLevelAccelStruct is null.  Sensors calling Bind()
 		// on that struct would pass null UAV buffers and trigger a GPU dispatch error.
-		// Both structs remain dirty so GatherSceneMeshes re-runs next frame.
+		// Re-set dirty so GatherSceneMeshes re-runs next frame instead of waiting
+		// for the 10-second interval (covers the early-loading window).
 		if (inst._perStructInstances[writeIdx].Count == 0)
+		{
+			inst._perStructDirty[writeIdx] = true;
 			return;
+		}
 
 		using (s_BuildBVHMarker.Auto())
 		{
