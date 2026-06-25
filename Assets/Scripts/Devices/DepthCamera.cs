@@ -499,8 +499,7 @@ namespace SensorDevices
 		/// </summary>
 		protected override void ExecuteRender(float realtimeNow)
 		{
-			var manager = URTSensorManager.Instance;
-			if (manager == null || URTSensorManager.AccelStruct == null || _rtShader == null)
+			if (URTSensorManager.AccelStruct == null || _rtShader == null)
 				return;
 
 			// Detect accel struct recreation (simulation reset) and rebuild per-camera

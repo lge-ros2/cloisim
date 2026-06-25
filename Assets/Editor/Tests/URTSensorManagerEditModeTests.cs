@@ -312,5 +312,39 @@ namespace CLOiSim.Tests.EditMode
 				BindingFlags.NonPublic | BindingFlags.Instance);
 			Assert.That((int)genField.GetValue(_mgr), Is.EqualTo(0));
 		}
+
+		[Test]
+		public void StructHasTlas_StartsAllFalse()
+		{
+			// Neither struct has been built; AccelStruct must not expose them.
+			var hasTlasField = typeof(URTSensorManager).GetField("_structHasTlas",
+				BindingFlags.NonPublic | BindingFlags.Instance);
+			var flags = (bool[])hasTlasField.GetValue(_mgr);
+			Assert.That(flags[0], Is.False, "Struct 0 must not have a TLAS on init");
+			Assert.That(flags[1], Is.False, "Struct 1 must not have a TLAS on init");
+		}
+
+		[Test]
+		public void AccelStruct_ReturnsNullWhenNeitherStructHasTlas()
+		{
+			// Without a successful Build+swap, AccelStruct must return null so sensors
+			// skip the dispatch rather than passing null UAV buffers to the GPU.
+			Assert.That(URTSensorManager.AccelStruct, Is.Null,
+				"AccelStruct must be null until a struct is built");
+		}
+
+		[Test]
+		public void StructHasTlas_RemainsAllFalseAfterMarkSceneDirty()
+		{
+			// MarkSceneDirty triggers re-gather but does NOT set the TLAS flag;
+			// the flag is only set after a successful Build+swap.
+			URTSensorManager.MarkSceneDirty();
+
+			var hasTlasField = typeof(URTSensorManager).GetField("_structHasTlas",
+				BindingFlags.NonPublic | BindingFlags.Instance);
+			var flags = (bool[])hasTlasField.GetValue(_mgr);
+			Assert.That(flags[0], Is.False);
+			Assert.That(flags[1], Is.False);
+		}
 	}
 }
