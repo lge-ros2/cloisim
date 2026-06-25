@@ -196,6 +196,12 @@ public class URTSensorManager : MonoBehaviour
 	private readonly float[] _perStructLastGatherTime = new float[2];
 	private readonly bool[] _perStructDirty = new[] { true, true };
 
+	// Whether each struct has ever been successfully built (i.e. Build() was called with
+	// non-empty instances).  Prevents AccelStruct from returning a struct whose
+	// m_TopLevelAccelStruct is still null, which would cause downstream Bind() calls to
+	// pass null UAV buffers and trigger a "missing UAV" GPU error.
+	private readonly bool[] _structHasTlas = new bool[2];
+
 	// Per-struct trace fences: covers all trace dispatches that READ _rtAccelStructs[i].
 	// Before building into _rtAccelStructs[writeIdx] we check _traceFences[writeIdx]
 	// to ensure the GPU has finished all previous traces that read it.
@@ -304,13 +310,17 @@ public class URTSensorManager : MonoBehaviour
 	/// <summary>
 	/// The current read-side acceleration structure. All sensors trace against this.
 	/// Updated (via swap) immediately after each successful build in EnsureBVHReady.
+	/// Returns null when the struct has never been built (TLAS is null), preventing
+	/// downstream Bind() calls from passing null UAV buffers to the GPU.
 	/// </summary>
 	public static IRayTracingAccelStruct AccelStruct
 	{
 		get
 		{
 			var inst = Instance;
-			return inst?._rtAccelStructs[inst._readIdx];
+			if (inst == null || !inst._structHasTlas[inst._readIdx])
+				return null;
+			return inst._rtAccelStructs[inst._readIdx];
 		}
 	}
 
@@ -435,14 +445,13 @@ public class URTSensorManager : MonoBehaviour
 
 		inst.UpdateInstanceTransforms(writeIdx);
 
-		// Skip Build when no geometry is present
+		// Skip Build when no geometry is present.
+		// Do NOT swap — promoting a never-built struct to readIdx would make AccelStruct
+		// return a struct whose m_TopLevelAccelStruct is null.  Sensors calling Bind()
+		// on that struct would pass null UAV buffers and trigger a GPU dispatch error.
+		// Both structs remain dirty so GatherSceneMeshes re-runs next frame.
 		if (inst._perStructInstances[writeIdx].Count == 0)
-		{
-			// Swap anyway so both structs stay exercised (avoids one struct
-			// never getting its gather triggered)
-			(inst._readIdx, inst._writeIdx) = (inst._writeIdx, inst._readIdx);
 			return;
-		}
 
 		using (s_BuildBVHMarker.Auto())
 		{
@@ -481,6 +490,9 @@ public class URTSensorManager : MonoBehaviour
 		// call SetAccelerationStructure(AccelStruct) after EnsureBVHReady
 		// automatically trace against up-to-date transforms.
 		(inst._readIdx, inst._writeIdx) = (inst._writeIdx, inst._readIdx);
+
+		// Mark the new readIdx as having a valid TLAS so AccelStruct returns it.
+		inst._structHasTlas[inst._readIdx] = true;
 		}
 	}
 
@@ -680,6 +692,7 @@ public class URTSensorManager : MonoBehaviour
 			_perStructDirty[i] = true;
 			_hasTraceFence[i] = false;
 			_frameOfLastTrace[i] = -1;
+			_structHasTlas[i] = false;
 		}
 
 		_rtContext?.Dispose();
@@ -743,6 +756,7 @@ public class URTSensorManager : MonoBehaviour
 			_perStructDirty[i] = true;
 			_hasTraceFence[i] = false;
 			_frameOfLastTrace[i] = -1;
+			_structHasTlas[i] = false;
 		}
 
 		_readIdx = 0;
