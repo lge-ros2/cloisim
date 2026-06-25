@@ -403,7 +403,7 @@ namespace SensorDevices
 
 		private void ExecuteStandardRender()
 		{
-			if (URTSensorManager.AccelStruct == null || _rtShader == null)
+			if (_rtShader == null)
 				return;
 
 			var currentGen = URTSensorManager.AccelStructGeneration;
@@ -435,8 +435,15 @@ namespace SensorDevices
 			// === Record all GPU work into a single CommandBuffer ===
 			_urtCmdBuffer.Clear();
 
-			// 1. Shared BVH: scene gather, transform update, build (once per frame)
+			// 1. Shared BVH: scene gather, transform update, build (once per frame).
+			// EnsureBVHReady must be called before AccelStruct is checked: AccelStruct
+			// returns null until a successful build, so checking it first would prevent
+			// EnsureBVHReady from ever running (chicken-and-egg deadlock).
 			URTSensorManager.EnsureBVHReady(_urtCmdBuffer);
+
+			// Skip dispatch until the first BVH build completes.
+			if (URTSensorManager.AccelStruct == null)
+				return;
 
 			// 2. URT lidar ray trace dispatch
 			BindShaderResources(_urtCmdBuffer);
