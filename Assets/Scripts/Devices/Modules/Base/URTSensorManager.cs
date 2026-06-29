@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 using System.Reflection;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.UnifiedRayTracing;
@@ -312,8 +313,11 @@ public class URTSensorManager : MonoBehaviour
 	[SerializeField]
 	private int _frameOfLastBuild = -1;
 
-	// Whether a fence should be captured this LateUpdate for _readIdx.
+	// Whether a fence should be captured this LateUpdate for the traced struct.
+	// _pendingFenceIdx records which struct index sensors traced this frame so that
+	// LateUpdate stamps the fence on the correct struct even after a readIdx/writeIdx swap.
 	private bool _pendingFenceNeeded;
+	private int _pendingFenceIdx;
 
 	#endregion
 
@@ -444,7 +448,10 @@ public class URTSensorManager : MonoBehaviour
 
 		// This frame's sensors will trace against _readIdx — request a fence
 		// in LateUpdate so the NEXT write-cycle on that struct waits for them.
+		// Save the current readIdx here: EnsureBVHReady may swap readIdx/writeIdx
+		// before LateUpdate runs, so we must record the traced index now.
 		inst._pendingFenceNeeded = true;
+		inst._pendingFenceIdx = inst._readIdx;
 
 		// Record that _readIdx is being traced this frame (no-fence fallback).
 		inst._frameOfLastTrace[inst._readIdx] = currentFrame;
@@ -755,14 +762,16 @@ public class URTSensorManager : MonoBehaviour
 		DrainDeferredDisposes();
 
 		// Runs after SensorRenderManager.LateUpdate, so every URT trace dispatch
-		// for this frame is already submitted.  Capture a fence for _readIdx
-		// (the struct sensors traced this frame); next time that struct becomes
-		// _writeIdx, EnsureBVHReady waits on this fence before mutating it.
+		// for this frame is already submitted.  Capture a fence for _pendingFenceIdx
+		// (the struct sensors actually traced this frame, saved before any swap).
+		// Using _readIdx here would be wrong: EnsureBVHReady swaps readIdx/writeIdx
+		// after building, so by LateUpdate _readIdx is the newly-built struct (not
+		// the one sensors traced), and _writeIdx is what actually needs the fence.
 		if (_pendingFenceNeeded && s_graphicsFenceSupported)
 		{
-			_traceFences[_readIdx] = Graphics.CreateGraphicsFence(
+			_traceFences[_pendingFenceIdx] = Graphics.CreateGraphicsFence(
 				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
-			_hasTraceFence[_readIdx] = true;
+			_hasTraceFence[_pendingFenceIdx] = true;
 		}
 		_pendingFenceNeeded = false;
 	}
@@ -796,6 +805,7 @@ public class URTSensorManager : MonoBehaviour
 		_writeIdx = 1;
 		_frameOfLastBuild = -1;
 		_pendingFenceNeeded = false;
+		_pendingFenceIdx = 0;
 
 		_diagHistory.Clear();
 		_diagPrevInstanceCount = -1;
@@ -866,6 +876,7 @@ public class URTSensorManager : MonoBehaviour
 		_writeIdx = 1;
 		_frameOfLastBuild = -1;
 		_pendingFenceNeeded = false;
+		_pendingFenceIdx = 0;
 		_diagPrevInstanceCount = -1;
 
 		// Signal per-sensor consumers (DepthCamera, Lidar) that they must recreate
@@ -1058,26 +1069,27 @@ public class URTSensorManager : MonoBehaviour
 
 	#region "Unity lifecycle"
 
-	// Frame of the most recent GPU-fault diagnostic dump; throttles to one dump per
-	// frame and (critically) prevents infinite re-entrancy: DumpDiagHistory logs via
-	// Debug.LogError, which re-enters OnUnityLogMessage with a string that still
-	// contains the matched fault substring.
-	private int _lastFaultDumpFrame = int.MinValue;
+	// Throttle: timestamp of last fault dump (Stopwatch ticks). Thread-safe via
+	// Interlocked — logMessageReceivedThreaded fires from the render thread, not main.
+	private long _lastFaultDumpTicks = long.MinValue;
 
 	private void OnEnable()
 	{
-		Application.logMessageReceived += OnUnityLogMessage;
+		// logMessageReceivedThreaded catches messages from all threads, including the
+		// render thread where GPU compute dispatch faults ("missing UAV") are logged.
+		Application.logMessageReceivedThreaded += OnUnityLogMessage;
 	}
 
 	private void OnDisable()
 	{
-		Application.logMessageReceived -= OnUnityLogMessage;
+		Application.logMessageReceivedThreaded -= OnUnityLogMessage;
 	}
 
 	/// <summary>
 	/// Detect Unity's native GPU dispatch faults ("missing UAV ... incompatible
 	/// ComputeBuffer") and dump the URT diagnostic history so the failing buffer and
 	/// the sequence of resets/rebuilds that led to it can be identified post-mortem.
+	/// Registered on logMessageReceivedThreaded so render-thread errors are caught.
 	/// </summary>
 	private void OnUnityLogMessage(string condition, string stackTrace, LogType type)
 	{
@@ -1091,10 +1103,13 @@ public class URTSensorManager : MonoBehaviour
 			condition.IndexOf("incompatible ComputeBuffer", StringComparison.OrdinalIgnoreCase) < 0)
 			return;
 
-		// One dump per frame — also breaks the LogError → logMessageReceived recursion.
-		if (Time.frameCount == _lastFaultDumpFrame)
+		// Throttle to one dump per second (thread-safe). CAS ensures only one thread wins.
+		long now = System.Diagnostics.Stopwatch.GetTimestamp();
+		long prev = Interlocked.Read(ref _lastFaultDumpTicks);
+		if (now - prev < System.Diagnostics.Stopwatch.Frequency)
 			return;
-		_lastFaultDumpFrame = Time.frameCount;
+		if (Interlocked.CompareExchange(ref _lastFaultDumpTicks, now, prev) != prev)
+			return; // another thread won the race
 
 		DumpDiagHistory($"GPU dispatch fault: \"{condition}\"");
 	}
