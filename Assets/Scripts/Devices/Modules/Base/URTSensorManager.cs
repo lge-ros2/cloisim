@@ -907,22 +907,46 @@ public class URTSensorManager : MonoBehaviour
 		_rtBuildScratchBuffer?.Dispose();
 		_rtBuildScratchBuffer = null;
 
-		for (var i = 0; i < 2; i++)
+		if (!gpuClean)
 		{
-			if (_rtAccelStructs[i] == null) continue;
-			try
+			// GPU TDR or timeout: the RayTracingContext itself may hold invalidated
+			// GPU device handles (Vulkan VkBuffer IDs, D3D12 resource pointers).
+			// Reusing the same context after TDR can produce "missing input compute
+			// buffer" on the first Build/Dispatch even after the cooldown, because
+			// the context's internal geometry-pool buffers reference old device handles.
+			// Full reconstruction from scratch gives the driver a completely clean slate.
+			Debug.LogWarning("[URTSensorManager] GPU timeout — rebuilding RayTracingContext from scratch.");
+			for (var i = 0; i < 2; i++)
 			{
-				_rtAccelStructs[i].Dispose();
-				_rtAccelStructs[i] = _rtContext.CreateAccelerationStructure(
-					new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
-			}
-			catch (Exception e)
-			{
-				Debug.LogError($"[URTSensorManager] Failed to recreate acceleration structure[{i}] on reset: {e.Message}. URT sensors disabled.");
 				_rtAccelStructs[i]?.Dispose();
 				_rtAccelStructs[i] = null;
 			}
+			_rtContext?.Dispose();
+			_rtContext = null;
+			Initialize();
+		}
+		else
+		{
+			for (var i = 0; i < 2; i++)
+			{
+				if (_rtAccelStructs[i] == null) continue;
+				try
+				{
+					_rtAccelStructs[i].Dispose();
+					_rtAccelStructs[i] = _rtContext.CreateAccelerationStructure(
+						new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
+				}
+				catch (Exception e)
+				{
+					Debug.LogError($"[URTSensorManager] Failed to recreate acceleration structure[{i}] on reset: {e.Message}. URT sensors disabled.");
+					_rtAccelStructs[i]?.Dispose();
+					_rtAccelStructs[i] = null;
+				}
+			}
+		}
 
+		for (var i = 0; i < 2; i++)
+		{
 			_perStructInstances[i].Clear();
 			_perStructExistingKeys[i].Clear();
 			_perStructDesiredKeys[i].Clear();
