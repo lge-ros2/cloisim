@@ -765,7 +765,15 @@ public class Main : MonoBehaviour
 
 			Physics.simulationMode = SimulationMode.Script;
 			GameObject targetObject = null;
-			yield return _sdfLoader.Start(model, onCreatedRoot: obj => targetObject = obj as GameObject);
+			CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+			try
+			{
+				yield return _sdfLoader.Start(model, onCreatedRoot: obj => targetObject = obj as GameObject);
+			}
+			finally
+			{
+				CLOiSim.Diagnostics.FreezeWatchdog.Restore();
+			}
 
 			yield return new WaitUntil(() => targetObject != null);
 
@@ -836,7 +844,18 @@ public class Main : MonoBehaviour
 			_sdfLoader.SetRootLights(_lightsRoot);
 
 			Physics.simulationMode = SimulationMode.Script;
-			yield return _sdfLoader.Start(world);
+			// Suppress FreezeWatchdog during world loading: mesh import and SDF
+			// parsing intentionally block the main thread and would otherwise fire
+			// false-positive stall warnings.
+			CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+			try
+			{
+				yield return _sdfLoader.Start(world);
+			}
+			finally
+			{
+				CLOiSim.Diagnostics.FreezeWatchdog.Restore();
+			}
 
 			yield return new WaitUntil(() => _worldRoot.transform.childCount > 0);
 

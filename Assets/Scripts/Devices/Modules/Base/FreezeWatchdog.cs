@@ -29,12 +29,40 @@ namespace CLOiSim.Diagnostics
         static readonly Stopwatch Clock = Stopwatch.StartNew();
         static long _lastHeartbeatMs;
         static volatile string _stage = "idle";
+        // Suppress counter: when > 0 the watchdog skips stall detection.
+        // Use Suppress()/Restore() around operations that are intentionally slow
+        // (world loading, mesh import) to avoid false-positive stall warnings.
+        static volatile int _suppressCount;
 
         Thread _thread;
         volatile bool _running;
 
         /// <summary>Breadcrumb: set the current heavy stage so stall logs say where it hung.</summary>
         public static void Mark(string stage) => _stage = stage;
+
+        /// <summary>
+        /// Refresh the heartbeat without changing the stage — use from slow synchronous
+        /// operations that run on the main thread (e.g. per-yield in loading coroutines)
+        /// to prevent false-positive stall warnings.
+        /// </summary>
+        public static void Ping() =>
+            Volatile.Write(ref _lastHeartbeatMs, Clock.ElapsedMilliseconds);
+
+        /// <summary>
+        /// Suppress stall warnings for the duration of an intentionally slow main-thread
+        /// operation (world/mesh loading). Calls are reference-counted; every Suppress()
+        /// must be paired with a Restore().
+        /// </summary>
+        public static void Suppress() => Interlocked.Increment(ref _suppressCount);
+
+        /// <summary>Restore stall detection after a paired Suppress() call.</summary>
+        public static void Restore()
+        {
+            if (Interlocked.Decrement(ref _suppressCount) < 0)
+                Interlocked.Increment(ref _suppressCount); // clamp to 0
+            // Refresh heartbeat so the first unsuppressed frame doesn't false-fire.
+            Volatile.Write(ref _lastHeartbeatMs, Clock.ElapsedMilliseconds);
+        }
 
         void OnEnable()
         {
@@ -77,7 +105,7 @@ namespace CLOiSim.Diagnostics
 
                 long now = Clock.ElapsedMilliseconds;
                 long stalledFor = now - Volatile.Read(ref _lastHeartbeatMs);
-                if (stalledFor < warnThresholdMs)
+                if (stalledFor < warnThresholdMs || _suppressCount > 0)
                 {
                     lastReported = -1;
                     continue;
