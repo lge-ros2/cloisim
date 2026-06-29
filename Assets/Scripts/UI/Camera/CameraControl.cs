@@ -97,6 +97,11 @@ public abstract class CameraControl : MonoBehaviour
 			LockVerticalMovement();
 		}
 
+		if (Keyboard.current[Key.LeftCtrl].isPressed && Keyboard.current[Key.Z].wasReleasedThisFrame)
+		{
+			StartCameraChange(Main.CameraInitPose);
+		}
+
 		GetUIController()?.UpdateCameraKeyOverlay(GetActiveCameraKeyOverlayInputs());
 
 		HandleMouseControl();
