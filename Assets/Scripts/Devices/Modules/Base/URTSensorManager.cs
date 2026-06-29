@@ -485,6 +485,7 @@ public class URTSensorManager : MonoBehaviour
 			return;
 		}
 
+		CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:BuildAS");
 		using (s_BuildBVHMarker.Auto())
 		{
 			// --- Resize scratch buffer if needed ---

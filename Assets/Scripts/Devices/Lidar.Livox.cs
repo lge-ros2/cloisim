@@ -254,9 +254,11 @@ namespace SensorDevices
 			SetSensorPoseParams(_urtCmdBuffer, sensorPos, sensorRight, sensorUp, sensorForward);
 
 			// 6. Dispatch (1D: raysPerCycle × 1 × 1)
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:Dispatch");
 			_rtShader.Dispatch(_urtCmdBuffer, _rtTraceScratchBuffer, raysPerCycle, 1, 1);
 
 			// === Execute ===
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:ReadbackWait");
 			Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 
 			// Advance pattern for next frame
@@ -293,6 +295,8 @@ namespace SensorDevices
 				_outputQueue.Enqueue((capturedTime, sensorWorldPose, rangeData));
 				_dataAvailable.Set();
 			});
+
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("idle");
 		}
 
 		/// <summary>

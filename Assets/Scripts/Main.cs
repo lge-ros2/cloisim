@@ -482,6 +482,11 @@ public class Main : MonoBehaviour
 
 		_crashReporter = new CrashReporter();
 
+		// Background-thread watchdog: detects main-thread hard freezes (e.g. a
+		// synchronous GPU stall in the URT pipeline) and logs the last breadcrumb
+		// stage even when the main thread is fully blocked.
+		gameObject.AddComponent<CLOiSim.Diagnostics.FreezeWatchdog>();
+
 		ReplaceStandaloneInputModule();
 
 		var logger = new DebugLogWriter();

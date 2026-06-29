@@ -575,6 +575,7 @@ namespace SensorDevices
 			SetCameraConfigParams(_urtCmdBuffer, width, height);
 			SetCameraPoseParams(_urtCmdBuffer, camPos, camRight, camUp, camForward);
 
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:Dispatch");
 			_rtShader.Dispatch(_urtCmdBuffer, _rtTraceScratchBuffer, width, height, 1);
 
 			// 3. VCSEL prepass (optional, operates on _computeBufferSrc in-place)
@@ -619,6 +620,7 @@ namespace SensorDevices
 			}
 
 			// === Execute all recorded GPU work atomically ===
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:ReadbackWait");
 			Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 
 			// --- Async readback (non-blocking) replaces synchronous GetData ---
@@ -644,6 +646,8 @@ namespace SensorDevices
 
 				EnqueueMessage(_image);
 			});
+
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("idle");
 		}
 	}
 }

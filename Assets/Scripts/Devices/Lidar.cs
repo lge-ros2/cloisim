@@ -465,9 +465,11 @@ namespace SensorDevices
 			SetScanConfigParams(_urtCmdBuffer, samplesH, samplesV);
 			SetSensorPoseParams(_urtCmdBuffer, sensorPos, sensorRight, sensorUp, sensorForward);
 
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:Dispatch");
 			_rtShader.Dispatch(_urtCmdBuffer, _rtTraceScratchBuffer, samplesH, samplesV, 1);
 
 			// === Execute all recorded GPU work ===
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:ReadbackWait");
 			Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 
 			// --- Async readback (non-blocking) ---
@@ -501,6 +503,8 @@ namespace SensorDevices
 				_outputQueue.Enqueue((capturedTime, sensorWorldPose, rangeData));
 				_dataAvailable.Set();
 			});
+
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("idle");
 		}
 
 		#endregion
