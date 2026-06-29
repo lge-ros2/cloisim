@@ -1190,7 +1190,9 @@ public class Main : MonoBehaviour
 	{
 		_isResetting = true;
 		SuppressPhysicsDebugContacts("resetting the simulation");
-		// Debug.LogWarning("Reset positions in simulation!!!");
+
+		Debug.LogWarning("[Reset] Simulation reset triggered.");
+		_uiController?.SetWarningMessage("Resetting simulation...");
 
 		SensorRenderManager.Pause();
 
@@ -1217,6 +1219,7 @@ public class Main : MonoBehaviour
 			URTSensorManager.ResetScene();
 
 			Debug.LogWarning("[Done] Reset positions in simulation!!!");
+			_uiController?.SetInfoMessage("Simulation reset complete.");
 			yield return new WaitForSeconds(0.1f);
 		}
 		finally
