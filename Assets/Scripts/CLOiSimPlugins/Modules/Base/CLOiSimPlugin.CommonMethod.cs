@@ -66,11 +66,10 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 				deviceMessage.SetMessage(tfMessage);
 				if (publisher.Publish(deviceMessage) == false)
 				{
-					Debug.Log(tf.ParentFrameID + ", " + tfMessage.Name + " error to send TF!!");
-				}
-				else
-				{
-					// Debug.Log(tfMessage.Header.Stamp.Sec + "." + tfMessage.Header.Stamp.Nsec + ": " + tf.ParentFrameID + ", " + tfMessage.Name);
+					if (PluginThread.IsRunning)
+						Debug.Log(tf.ParentFrameID + ", " + tfMessage.Name + " error to send TF!!");
+					else
+						break;
 				}
 				CLOiSimPluginThread.Sleep(updatePeriodPerEachTf);
 			}
@@ -80,7 +79,8 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 				deviceMessage.SetMessage(tfMessage);
 				if (publisher.Publish(deviceMessage) == false)
 				{
-					Debug.Log(tfMessage.Name + " error to send TF!!");
+					if (PluginThread.IsRunning)
+						Debug.Log(tfMessage.Name + " error to send TF!!");
 				}
 				CLOiSimPluginThread.Sleep(EmptyTfPublishPeriod);
 			}
