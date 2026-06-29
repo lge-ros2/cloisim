@@ -816,10 +816,6 @@ public class URTSensorManager : MonoBehaviour
 	/// <summary>
 	/// Drop and recreate both shared acceleration structures from a clean slate
 	/// at the simulation-reset boundary.
-	///
-	/// REQUIRES the GPU to be quiescent for sensor work — callers must pause
-	/// rendering (SensorRenderManager.Pause) and drain AsyncGPUReadback before
-	/// calling.
 	/// </summary>
 	public static void ResetScene()
 	{
@@ -829,12 +825,46 @@ public class URTSensorManager : MonoBehaviour
 		}
 	}
 
+	/// <summary>
+	/// Spin-wait for all in-flight GPU dispatches to complete.
+	/// Called before reset to prevent disposing resources still referenced by
+	/// in-flight work. Reset (SignalReset) can fire immediately after a
+	/// "missing UAV" GPU dispatch error while the GPU is still executing that
+	/// dispatch; disposing resources at that moment causes SIGSEGV in the driver.
+	/// </summary>
+	private static void WaitForGPUQuiescence()
+	{
+		AsyncGPUReadback.WaitAllRequests();
+
+		if (!s_graphicsFenceSupported)
+			return;
+
+		// Insert a fence after all currently-submitted GPU work. Once it passes,
+		// no prior dispatch can still be accessing GPU memory.
+		var fence = Graphics.CreateGraphicsFence(
+			GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
+
+		var deadline = System.Diagnostics.Stopwatch.GetTimestamp()
+			+ System.Diagnostics.Stopwatch.Frequency; // 1-second timeout
+		while (!fence.passed)
+		{
+			if (System.Diagnostics.Stopwatch.GetTimestamp() > deadline)
+			{
+				Debug.LogWarning("[URTSensorManager] WaitForGPUQuiescence: timed out after 1s — proceeding with reset.");
+				break;
+			}
+			System.Threading.Thread.Sleep(1);
+		}
+	}
+
 	private void ResetSceneInternal()
 	{
 		if (_rtContext == null) return;
 		if (_rtAccelStructs[0] == null && _rtAccelStructs[1] == null) return;
 
-		// GPU is quiescent here; free every deferred buffer first.
+		// Wait for in-flight GPU dispatches to complete before freeing resources.
+		WaitForGPUQuiescence();
+
 		DrainDeferredScratchFrees(force: true);
 		DrainDeferredDisposes(force: true);
 

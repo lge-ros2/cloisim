@@ -338,10 +338,10 @@ namespace SensorDevices
 			_urtCmdBuffer?.Release();
 			_urtCmdBuffer = null;
 
-			_rtTraceScratchBuffer?.Dispose();
+			URTSensorManager.DeferDispose(_rtTraceScratchBuffer);
 			_rtTraceScratchBuffer = null;
 
-			_rangeOutputBuffer?.Release();
+			URTSensorManager.DeferDispose(_rangeOutputBuffer);
 			_rangeOutputBuffer = null;
 
 			if (_csRayTrace != null)
