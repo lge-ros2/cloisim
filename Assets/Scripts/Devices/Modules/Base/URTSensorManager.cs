@@ -319,6 +319,13 @@ public class URTSensorManager : MonoBehaviour
 	private bool _pendingFenceNeeded;
 	private int _pendingFenceIdx;
 
+	// Post-reset cooldown: EnsureBVHReady skips building until this frame is reached.
+	// Set to currentFrame + 3 on a clean reset, + 60 if WaitForGPUQuiescence timed out.
+	// Prevents dispatching against a freshly-reset TLAS while the GPU may still be
+	// recovering from a prior dispatch error (fence timeout → corrupted Build() output
+	// → "missing UAV" on first post-rebuild trace).
+	private int _postResetResumeBuildFrame = 0;
+
 	#endregion
 
 	#region "Public API"
@@ -443,6 +450,12 @@ public class URTSensorManager : MonoBehaviour
 		var currentFrame = Time.frameCount;
 		if (inst._frameOfLastBuild == currentFrame)
 			return; // Already built this frame
+
+		// Post-reset cooldown: GPU may still be recovering from a dispatch error
+		// (WaitForGPUQuiescence timed out). Skipping the build keeps AccelStruct null
+		// so sensors skip dispatch — prevents "missing UAV" on the first post-rebuild trace.
+		if (currentFrame < inst._postResetResumeBuildFrame)
+			return;
 
 		inst._frameOfLastBuild = currentFrame;
 
@@ -758,6 +771,10 @@ public class URTSensorManager : MonoBehaviour
 
 	private void LateUpdate()
 	{
+		// Log when cooldown expires so the log shows exactly when sensors resume tracing.
+		if (_postResetResumeBuildFrame > 0 && Time.frameCount == _postResetResumeBuildFrame)
+			Debug.Log("[URTSensorManager] Post-reset cooldown expired — BVH rebuild and sensor tracing resuming.");
+
 		DrainDeferredScratchFrees();
 		DrainDeferredDisposes();
 
@@ -806,6 +823,7 @@ public class URTSensorManager : MonoBehaviour
 		_frameOfLastBuild = -1;
 		_pendingFenceNeeded = false;
 		_pendingFenceIdx = 0;
+		_postResetResumeBuildFrame = 0;
 
 		_diagHistory.Clear();
 		_diagPrevInstanceCount = -1;
@@ -831,29 +849,42 @@ public class URTSensorManager : MonoBehaviour
 	/// in-flight work. Reset (SignalReset) can fire immediately after a
 	/// "missing UAV" GPU dispatch error while the GPU is still executing that
 	/// dispatch; disposing resources at that moment causes SIGSEGV in the driver.
+	/// Returns true if the GPU quiesced cleanly, false if the 1-second timeout fired
+	/// (GPU is in an error/recovery state).
 	/// </summary>
-	private static void WaitForGPUQuiescence()
+	private static bool WaitForGPUQuiescence()
 	{
-		AsyncGPUReadback.WaitAllRequests();
-
-		if (!s_graphicsFenceSupported)
-			return;
-
-		// Insert a fence after all currently-submitted GPU work. Once it passes,
-		// no prior dispatch can still be accessing GPU memory.
-		var fence = Graphics.CreateGraphicsFence(
-			GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
-
-		var deadline = System.Diagnostics.Stopwatch.GetTimestamp()
-			+ System.Diagnostics.Stopwatch.Frequency; // 1-second timeout
-		while (!fence.passed)
+		// Suppress FreezeWatchdog during the intentional spin-wait: this blocks the main
+		// thread for up to 1 second and would otherwise fire a false-positive stall warning.
+		CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+		try
 		{
-			if (System.Diagnostics.Stopwatch.GetTimestamp() > deadline)
+			AsyncGPUReadback.WaitAllRequests();
+
+			if (!s_graphicsFenceSupported)
+				return true;
+
+			// Insert a fence after all currently-submitted GPU work. Once it passes,
+			// no prior dispatch can still be accessing GPU memory.
+			var fence = Graphics.CreateGraphicsFence(
+				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
+
+			var deadline = System.Diagnostics.Stopwatch.GetTimestamp()
+				+ System.Diagnostics.Stopwatch.Frequency; // 1-second timeout
+			while (!fence.passed)
 			{
-				Debug.LogWarning("[URTSensorManager] WaitForGPUQuiescence: timed out after 1s — proceeding with reset.");
-				break;
+				if (System.Diagnostics.Stopwatch.GetTimestamp() > deadline)
+				{
+					Debug.LogWarning("[URTSensorManager] WaitForGPUQuiescence: timed out after 1s — GPU may be in error state, applying extended rebuild cooldown.");
+					return false;
+				}
+				System.Threading.Thread.Sleep(1);
 			}
-			System.Threading.Thread.Sleep(1);
+			return true;
+		}
+		finally
+		{
+			CLOiSim.Diagnostics.FreezeWatchdog.Restore();
 		}
 	}
 
@@ -863,7 +894,7 @@ public class URTSensorManager : MonoBehaviour
 		if (_rtAccelStructs[0] == null && _rtAccelStructs[1] == null) return;
 
 		// Wait for in-flight GPU dispatches to complete before freeing resources.
-		WaitForGPUQuiescence();
+		var gpuClean = WaitForGPUQuiescence();
 
 		DrainDeferredScratchFrees(force: true);
 		DrainDeferredDisposes(force: true);
@@ -914,7 +945,16 @@ public class URTSensorManager : MonoBehaviour
 		// accel structs remains.
 		_rtAccelStructGeneration++;
 
-		Debug.Log("[URTSensorManager] Acceleration structures reset (clean rebuild scheduled)");
+		// Post-reset cooldown: when the GPU quiescence wait timed out the GPU may still be
+		// in an error-recovery state. Building the TLAS while the GPU is unhealthy produces
+		// a corrupt acceleration structure, and the very first trace against it triggers
+		// another "missing UAV" error + freeze. Hold off on building for 60 frames (~1 s)
+		// to allow the GPU driver to complete its TDR/recovery cycle.
+		// On a clean reset (fence passed) a 3-frame gap is enough to let any last-frame
+		// in-flight work retire before we submit new BVH commands.
+		_postResetResumeBuildFrame = Time.frameCount + (gpuClean ? 3 : 60);
+
+		Debug.Log($"[URTSensorManager] Acceleration structures reset (clean rebuild scheduled, cooldown={_postResetResumeBuildFrame - Time.frameCount} frames, gpuClean={gpuClean})");
 	}
 
 	#endregion
