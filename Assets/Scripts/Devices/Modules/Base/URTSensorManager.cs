@@ -136,6 +136,16 @@ public class URTSensorManager : MonoBehaviour
 	}
 
 	/// <summary>
+	/// Append a per-sensor diagnostic entry (e.g. buffer recreation with GPU handle
+	/// hashes) into the shared URT ring buffer so it appears in DumpDiagHistory when
+	/// a "missing UAV"/"incompatible ComputeBuffer" GPU fault is later detected.
+	/// </summary>
+	public static void DiagLog(string entry)
+	{
+		s_instance?.DiagRecord(entry);
+	}
+
+	/// <summary>
 	/// Dump the last DiagRingSize URT state-change events to the log.
 	/// Called automatically when a GPU UAV error is detected.
 	/// </summary>
@@ -150,6 +160,16 @@ public class URTSensorManager : MonoBehaviour
 
 		var sb = new System.Text.StringBuilder();
 		sb.AppendLine($"[URT-DIAG] === History dump triggered by: {trigger} (frame={Time.frameCount}) ===");
+		sb.AppendLine($"[URT-DIAG] generation={inst._rtAccelStructGeneration}"
+			+ $" readIdx={inst._readIdx} writeIdx={inst._writeIdx}"
+			+ $" hasTlas=[{inst._structHasTlas[0]},{inst._structHasTlas[1]}]"
+			+ $" accelNull=[{inst._rtAccelStructs[0] == null},{inst._rtAccelStructs[1] == null}]"
+			+ $" frameOfLastBuild={inst._frameOfLastBuild}");
+		var bs = inst._rtBuildScratchBuffer;
+		sb.AppendLine($"[URT-DIAG] buildScratch: "
+			+ (bs == null ? "null" : $"hash=0x{bs.GetHashCode():X} valid={bs.IsValid()} count={bs.count} stride={bs.stride}")
+			+ $" | deferredScratchFree={inst._deferredScratchFree.Count} deferredDispose={inst._deferredDispose.Count}");
+		sb.AppendLine("[URT-DIAG] --- recent state changes (oldest first) ---");
 		foreach (var line in inst._diagHistory)
 			sb.AppendLine(line);
 		sb.AppendLine("[URT-DIAG] === End of history ===");
@@ -226,6 +246,14 @@ public class URTSensorManager : MonoBehaviour
 	private const int ScratchSafetyFrames = 6;
 
 	private readonly Queue<(GraphicsBuffer buffer, GraphicsFence fence, bool hasFence, int frame)> _deferredScratchFree = new();
+
+	// Deferred disposal of PER-SENSOR GPU buffers (ComputeBuffer / GraphicsBuffer)
+	// recreated at the accel-struct-reset boundary (Lidar/DepthCamera
+	// RebuildURTPerSensorResources). Disposing them immediately can free a buffer
+	// still referenced by an in-flight dispatch (use-after-free → "incompatible
+	// ComputeBuffer" / Xid 109 CTX SWITCH TIMEOUT). Gated on a GraphicsFence,
+	// identical to the scratch-buffer free path above.
+	private readonly Queue<(IDisposable resource, GraphicsFence fence, bool hasFence, int frame)> _deferredDispose = new();
 	#endregion
 
 	/// <summary>Per-instance tracking for transform updates.</summary>
@@ -661,9 +689,69 @@ public class URTSensorManager : MonoBehaviour
 		}
 	}
 
+	/// <summary>
+	/// Queue a per-sensor GPU buffer (ComputeBuffer / GraphicsBuffer) for disposal
+	/// once the GPU has finished any dispatch that may still reference it. Use this
+	/// instead of an immediate Dispose()/Release() when recreating per-sensor buffers
+	/// at the accel-struct-reset boundary, where prior dispatches may still be in
+	/// flight (immediate free → "incompatible ComputeBuffer" / Xid 109).
+	/// </summary>
+	public static void DeferDispose(IDisposable resource)
+	{
+		if (resource == null)
+			return;
+
+		var inst = Instance;
+		if (inst == null)
+		{
+			resource.Dispose();
+			return;
+		}
+
+		GraphicsFence fence = default;
+		var hasFence = false;
+		if (s_graphicsFenceSupported)
+		{
+			fence = Graphics.CreateGraphicsFence(
+				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
+			hasFence = true;
+		}
+
+		inst._deferredDispose.Enqueue((resource, fence, hasFence, Time.frameCount));
+	}
+
+	/// <summary>Dispose deferred per-sensor buffers whose GPU work has completed.</summary>
+	private void DrainDeferredDisposes(bool force = false)
+	{
+		var currentFrame = Time.frameCount;
+		while (_deferredDispose.Count > 0)
+		{
+			var entry = _deferredDispose.Peek();
+			if (!force)
+			{
+				var safe = entry.hasFence
+					? entry.fence.passed
+					: (currentFrame - entry.frame >= ScratchSafetyFrames);
+				if (!safe)
+					break;
+			}
+
+			_deferredDispose.Dequeue();
+			try
+			{
+				entry.resource?.Dispose();
+			}
+			catch (Exception e)
+			{
+				Debug.LogWarning($"[URTSensorManager] Deferred dispose failed: {e.Message}");
+			}
+		}
+	}
+
 	private void LateUpdate()
 	{
 		DrainDeferredScratchFrees();
+		DrainDeferredDisposes();
 
 		// Runs after SensorRenderManager.LateUpdate, so every URT trace dispatch
 		// for this frame is already submitted.  Capture a fence for _readIdx
@@ -681,6 +769,7 @@ public class URTSensorManager : MonoBehaviour
 	private void ReleaseResources()
 	{
 		DrainDeferredScratchFrees(force: true);
+		DrainDeferredDisposes(force: true);
 
 		_rtBuildScratchBuffer?.Dispose();
 		_rtBuildScratchBuffer = null;
@@ -734,8 +823,17 @@ public class URTSensorManager : MonoBehaviour
 		if (_rtContext == null) return;
 		if (_rtAccelStructs[0] == null && _rtAccelStructs[1] == null) return;
 
-		// GPU is quiescent here; free every deferred scratch buffer first.
+		// GPU is quiescent here; free every deferred buffer first.
 		DrainDeferredScratchFrees(force: true);
+		DrainDeferredDisposes(force: true);
+
+		// Drop the build scratch buffer: a freshly-recreated accel struct must not
+		// reuse a scratch buffer that was sized/bound for the now-disposed struct
+		// (diag showed scratchHash unchanged — reallocated:False — across reset).
+		// GPU is quiescent here, so immediate dispose is safe. The next build
+		// allocates a new one via GrowScratch.
+		_rtBuildScratchBuffer?.Dispose();
+		_rtBuildScratchBuffer = null;
 
 		for (var i = 0; i < 2; i++)
 		{
@@ -958,6 +1056,47 @@ public class URTSensorManager : MonoBehaviour
 	#endregion
 
 	#region "Unity lifecycle"
+
+	// Frame of the most recent GPU-fault diagnostic dump; throttles to one dump per
+	// frame and (critically) prevents infinite re-entrancy: DumpDiagHistory logs via
+	// Debug.LogError, which re-enters OnUnityLogMessage with a string that still
+	// contains the matched fault substring.
+	private int _lastFaultDumpFrame = int.MinValue;
+
+	private void OnEnable()
+	{
+		Application.logMessageReceived += OnUnityLogMessage;
+	}
+
+	private void OnDisable()
+	{
+		Application.logMessageReceived -= OnUnityLogMessage;
+	}
+
+	/// <summary>
+	/// Detect Unity's native GPU dispatch faults ("missing UAV ... incompatible
+	/// ComputeBuffer") and dump the URT diagnostic history so the failing buffer and
+	/// the sequence of resets/rebuilds that led to it can be identified post-mortem.
+	/// </summary>
+	private void OnUnityLogMessage(string condition, string stackTrace, LogType type)
+	{
+		if (type != LogType.Error && type != LogType.Exception && type != LogType.Assert)
+			return;
+
+		if (string.IsNullOrEmpty(condition))
+			return;
+
+		if (condition.IndexOf("missing UAV", StringComparison.OrdinalIgnoreCase) < 0 &&
+			condition.IndexOf("incompatible ComputeBuffer", StringComparison.OrdinalIgnoreCase) < 0)
+			return;
+
+		// One dump per frame — also breaks the LogError → logMessageReceived recursion.
+		if (Time.frameCount == _lastFaultDumpFrame)
+			return;
+		_lastFaultDumpFrame = Time.frameCount;
+
+		DumpDiagHistory($"GPU dispatch fault: \"{condition}\"");
+	}
 
 	private void OnApplicationQuit()
 	{

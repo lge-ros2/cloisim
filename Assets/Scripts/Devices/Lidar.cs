@@ -386,7 +386,10 @@ namespace SensorDevices
 		{
 			_rtShader = null;
 
-			_rtTraceScratchBuffer?.Dispose();
+			// Fence-gated deferred dispose: a prior dispatch may still reference these
+			// buffers on the GPU. Immediate Dispose()/Release() here is a use-after-free
+			// ("incompatible ComputeBuffer" / Xid 109 CTX SWITCH TIMEOUT).
+			URTSensorManager.DeferDispose(_rtTraceScratchBuffer);
 			_rtTraceScratchBuffer = null;
 
 			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
@@ -402,11 +405,15 @@ namespace SensorDevices
 
 			// Recreate output buffer and command buffer — GPU handles can become
 			// incompatible with a new URT shader wrapper on second (and later) resets.
-			_rangeOutputBuffer?.Release();
+			URTSensorManager.DeferDispose(_rangeOutputBuffer);
 			_rangeOutputBuffer = new ComputeBuffer((int)_totalSamples, sizeof(float));
 
 			_urtCmdBuffer?.Release();
 			_urtCmdBuffer = new CommandBuffer { name = "Lidar URT Dispatch" };
+
+			URTSensorManager.DiagLog($"[Lidar:{DeviceName}] rebuilt gen={URTSensorManager.AccelStructGeneration}"
+				+ $" rangeBuf=0x{_rangeOutputBuffer.GetHashCode():X}"
+				+ $" traceScratch=0x{(_rtTraceScratchBuffer?.GetHashCode() ?? 0):X}");
 		}
 
 		private void ExecuteStandardRender()

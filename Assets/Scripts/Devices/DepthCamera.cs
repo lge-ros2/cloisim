@@ -445,7 +445,10 @@ namespace SensorDevices
 		{
 			_rtShader = null; // IRayTracingShader has no Dispose; let GC reclaim it
 
-			_rtTraceScratchBuffer?.Dispose();
+			// Fence-gated deferred dispose: a prior dispatch may still reference these
+			// buffers on the GPU. Immediate free here is a use-after-free
+			// ("incompatible ComputeBuffer" / Xid 109 CTX SWITCH TIMEOUT).
+			URTSensorManager.DeferDispose(_rtTraceScratchBuffer);
 			_rtTraceScratchBuffer = null;
 
 			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
@@ -467,16 +470,20 @@ namespace SensorDevices
 			var packedCount = (imageDepth == 4) ? pixelCount
 				: (imageDepth == 2 ? (pixelCount + 1) / 2 : (pixelCount + 3) / 4);
 
-			_computeBufferSrc?.Release();
+			URTSensorManager.DeferDispose(_computeBufferSrc);
 			_computeBufferSrc = new ComputeBuffer(pixelCount, sizeof(float));
-			_computeBufferDst?.Release();
+			URTSensorManager.DeferDispose(_computeBufferDst);
 			_computeBufferDst = new ComputeBuffer(packedCount, sizeof(uint));
-			_computeBufferBunchFlag?.Release();
+			URTSensorManager.DeferDispose(_computeBufferBunchFlag);
 			_computeBufferBunchFlag = new ComputeBuffer(pixelCount, sizeof(int));
 
 			// Fresh command buffer so no stale recorded resource handles remain.
 			_urtCmdBuffer?.Release();
 			_urtCmdBuffer = new CommandBuffer { name = "DepthCamera URT Dispatch" };
+
+			URTSensorManager.DiagLog($"[DepthCamera:{DeviceName}] rebuilt gen={URTSensorManager.AccelStructGeneration}"
+				+ $" src=0x{_computeBufferSrc.GetHashCode():X} dst=0x{_computeBufferDst.GetHashCode():X}"
+				+ $" traceScratch=0x{(_rtTraceScratchBuffer?.GetHashCode() ?? 0):X}");
 		}
 
 		/// <summary>Bind acceleration structure and output buffer to the shader.</summary>

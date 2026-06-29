@@ -178,7 +178,9 @@ namespace SensorDevices
 		{
 			_rtShader = null;
 
-			_rtTraceScratchBuffer?.Dispose();
+			// Fence-gated deferred dispose (see standard-lidar rebuild): immediate free
+			// can hit an in-flight dispatch → "incompatible ComputeBuffer" / Xid 109.
+			URTSensorManager.DeferDispose(_rtTraceScratchBuffer);
 			_rtTraceScratchBuffer = null;
 
 			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
@@ -192,11 +194,15 @@ namespace SensorDevices
 			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, raysPerCycle, 1, 1);
 
 			// Recreate output buffer and command buffer — same reason as standard lidar rebuild.
-			_rangeOutputBuffer?.Release();
+			URTSensorManager.DeferDispose(_rangeOutputBuffer);
 			_rangeOutputBuffer = new ComputeBuffer((int)(raysPerCycle * XYZComponents), sizeof(float));
 
 			_urtCmdBuffer?.Release();
 			_urtCmdBuffer = new CommandBuffer { name = "Livox Lidar URT Dispatch" };
+
+			URTSensorManager.DiagLog($"[Lidar/Livox:{DeviceName}] rebuilt gen={URTSensorManager.AccelStructGeneration}"
+				+ $" rangeBuf=0x{_rangeOutputBuffer.GetHashCode():X}"
+				+ $" traceScratch=0x{(_rtTraceScratchBuffer?.GetHashCode() ?? 0):X}");
 		}
 
 		private void ExecuteLivoxRender()
