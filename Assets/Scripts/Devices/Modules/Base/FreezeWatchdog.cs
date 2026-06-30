@@ -96,6 +96,27 @@ namespace CLOiSim.Diagnostics
             Volatile.Write(ref _lastHeartbeatMs, now);
         }
 
+        static void DumpPreExitDiagnostics(long stalledMs)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"[FreezeWatchdog] ===== PRE-EXIT DIAGNOSTICS (stalled={stalledMs}ms, stage='{_stage}') =====");
+            sb.AppendLine($"[FreezeWatchdog] frame={Time.frameCount}"
+                + $" realtime={Time.realtimeSinceStartup:F1}s"
+                + $" timeSinceLevelLoad={Time.timeSinceLevelLoad:F1}s");
+            sb.AppendLine($"[FreezeWatchdog] GPU: {SystemInfo.graphicsDeviceName}"
+                + $" ({SystemInfo.graphicsDeviceType})"
+                + $" VRAM={SystemInfo.graphicsMemorySize}MB"
+                + $" driverVersion={SystemInfo.graphicsDeviceVersion}");
+            sb.AppendLine($"[FreezeWatchdog] sys: RAM={SystemInfo.systemMemorySize}MB"
+                + $" CPU={SystemInfo.processorType}"
+                + $" cores={SystemInfo.processorCount}");
+            sb.AppendLine($"[FreezeWatchdog] supportsAsyncGPUReadback={SystemInfo.supportsAsyncGPUReadback}"
+                + $" supportsGraphicsFence={SystemInfo.supportsGraphicsFence}");
+            UnityEngine.Debug.LogError(sb.ToString());
+
+            URTSensorManager.DumpDiagHistory($"FreezeWatchdog pre-exit (stalled={stalledMs}ms)");
+        }
+
         void Watch()
         {
             long lastReported = -1;
@@ -119,7 +140,15 @@ namespace CLOiSim.Diagnostics
                 // UnityEngine.Debug logging is thread-safe and reaches Player.log.
                 string msg = $"[FreezeWatchdog] MAIN THREAD STALLED ~{stalledFor}ms at stage='{_stage}'";
                 if (errorThresholdMs > 0 && stalledFor >= errorThresholdMs)
+                {
                     UnityEngine.Debug.LogError(msg);
+                    DumpPreExitDiagnostics(stalledFor);
+#if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+#else
+                    System.Environment.Exit(1);
+#endif
+                }
                 else
                     UnityEngine.Debug.LogWarning(msg);
             }
