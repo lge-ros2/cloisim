@@ -241,6 +241,10 @@ namespace SensorDevices
 			// 1. Shared BVH
 			URTSensorManager.EnsureBVHReady(_urtCmdBuffer);
 
+			// Post-TDR warmup: skip dispatch on the gen-increment frame (BVH build only).
+			if (URTSensorManager.IsPostTDRDispatchWarmup())
+				return;
+
 			// 2. Bind resources
 			BindShaderResources(_urtCmdBuffer);
 

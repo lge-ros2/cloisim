@@ -570,6 +570,10 @@ namespace SensorDevices
 			if (URTSensorManager.AccelStruct == null)
 				return;
 
+			// Post-TDR warmup: skip dispatch on the gen-increment frame (BVH build only).
+			if (URTSensorManager.IsPostTDRDispatchWarmup())
+				return;
+
 			// 2. URT ray trace dispatch
 			BindShaderResources(_urtCmdBuffer);
 			SetCameraConfigParams(_urtCmdBuffer, width, height);
