@@ -1193,6 +1193,7 @@ public class Main : MonoBehaviour
 
 		Debug.LogWarning("[Reset] Simulation reset triggered.");
 		_uiController?.SetWarningMessage("Resetting simulation...");
+		yield return null; // let UI Toolkit flush the label before heavy sync work blocks the frame
 
 		SensorRenderManager.Pause();
 
