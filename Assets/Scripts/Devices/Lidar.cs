@@ -460,12 +460,16 @@ namespace SensorDevices
 			if (URTSensorManager.AccelStruct == null)
 				return;
 
-			// Post-TDR warmup: on the gen-increment frame the BVH build and dispatch share one
-			// CommandBuffer on a freshly-reset GPU. That combined submit reliably produces
-			// "missing UAV" + Xid 109. Let the BVH build execute alone this frame; dispatch
-			// resumes next frame against the already-warm TLAS.
-			if (URTSensorManager.IsPostTDRDispatchWarmup())
+			// Post-TDR warmup: the first sensor to render after a TDR gen increment must submit
+			// a BVH-only CommandBuffer. Combining BVH build + dispatch in the same submit on a
+			// freshly-reset GPU reliably produces "missing UAV" + Xid 109. ConsumeBVHWarmup()
+			// returns true exactly once (for the first sensor, regardless of frame number) and
+			// clears the flag so subsequent sensors proceed normally.
+			if (URTSensorManager.ConsumeBVHWarmup())
+			{
+				Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 				return;
+			}
 
 			// 2. URT lidar ray trace dispatch
 			BindShaderResources(_urtCmdBuffer);

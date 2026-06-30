@@ -570,9 +570,12 @@ namespace SensorDevices
 			if (URTSensorManager.AccelStruct == null)
 				return;
 
-			// Post-TDR warmup: skip dispatch on the gen-increment frame (BVH build only).
-			if (URTSensorManager.IsPostTDRDispatchWarmup())
+			// Post-TDR warmup: see Lidar.cs for full explanation.
+			if (URTSensorManager.ConsumeBVHWarmup())
+			{
+				Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 				return;
+			}
 
 			// 2. URT ray trace dispatch
 			BindShaderResources(_urtCmdBuffer);

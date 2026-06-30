@@ -123,23 +123,26 @@ public class URTSensorManager : MonoBehaviour
 	private bool _pendingPostTDRGenIncrement = false;
 
 	/// <summary>
-	/// Frame number on/after which per-sensor dispatch is permitted following a TDR gen increment.
-	/// Set to frameCount + 1 when gen is incremented after TDR, so the first post-reset BVH build
-	/// runs in its own frame (no dispatch). Sensors skip dispatch while frameCount is before this.
-	/// -1 means no restriction.
+	/// True after a TDR gen increment until the first sensor executes a BVH-only GPU submit.
+	/// The first sensor that reads this flag via ConsumeBVHWarmup() clears it and submits
+	/// a BVH-only CommandBuffer. Subsequent sensors see it as false and dispatch normally.
+	/// This is robust against sensors with different update rates: the warmup is consumed
+	/// on the first actual render after gen increment, regardless of frame number.
 	/// </summary>
-	private int _postTDRFirstDispatchFrame = -1;
+	private bool _postTDRBvhWarmupPending = false;
 
 	/// <summary>
-	/// True during the one-frame warmup window immediately after a TDR gen increment.
-	/// Per-sensor callers should skip dispatch (but still call EnsureBVHReady) while true.
+	/// Atomically reads and clears _postTDRBvhWarmupPending.
+	/// Returns true once (for the first sensor to render after TDR gen increment).
+	/// That sensor must execute a BVH-only CommandBuffer submit before returning.
 	/// </summary>
-	public static bool IsPostTDRDispatchWarmup()
+	public static bool ConsumeBVHWarmup()
 	{
 		var inst = s_instance;
-		if (inst == null || inst._postTDRFirstDispatchFrame < 0)
+		if (inst == null || !inst._postTDRBvhWarmupPending)
 			return false;
-		return Time.frameCount < inst._postTDRFirstDispatchFrame;
+		inst._postTDRBvhWarmupPending = false;
+		return true;
 	}
 
 	#region "Profiling markers"
@@ -812,14 +815,14 @@ public class URTSensorManager : MonoBehaviour
 			{
 				_rtAccelStructGeneration++;
 				_pendingPostTDRGenIncrement = false;
-				// Allow per-sensor rebuild this frame, but hold off dispatch until the NEXT frame.
-				// On the gen-increment frame the first BVH build fires in the same CommandBuffer
-				// as the sensor dispatch. On a freshly-reset GPU device that combined submit
-				// reliably causes "missing UAV" + a second Xid 109. Letting the BVH build execute
-				// alone first (dispatch skipped this frame) warms the GPU before any trace is fired.
-				_postTDRFirstDispatchFrame = Time.frameCount + 1;
+				// Arm the BVH warmup flag. The first sensor to render will call ConsumeBVHWarmup(),
+				// execute a BVH-only CommandBuffer submit, and clear the flag. Subsequent sensors
+				// (same or later frame) see the flag cleared and dispatch normally. This is
+				// robust against sensors with different update rates, unlike the previous
+				// frame-count window which could expire before slower sensors first rendered.
+				_postTDRBvhWarmupPending = true;
 				Debug.Log($"[URTSensorManager] Post-TDR gen increment → {_rtAccelStructGeneration}. "
-					+ $"Per-sensor rebuild this frame; dispatch resumes frame {_postTDRFirstDispatchFrame}.");
+					+ "BVH warmup pending — first sensor to render will submit BVH-only, then dispatch resumes.");
 			}
 		}
 
@@ -1024,7 +1027,7 @@ public class URTSensorManager : MonoBehaviour
 		_pendingFenceNeeded = false;
 		_pendingFenceIdx = 0;
 		_diagPrevInstanceCount = -1;
-		_postTDRFirstDispatchFrame = -1;
+		_postTDRBvhWarmupPending = false;
 
 		// Signal per-sensor consumers (DepthCamera, Lidar) that they must recreate
 		// their per-sensor shader wrapper so no stale binding to the disposed
