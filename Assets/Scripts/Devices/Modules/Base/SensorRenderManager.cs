@@ -178,17 +178,27 @@ public class SensorRenderManager : MonoBehaviour
 			if (!entry.Sensor.CanRender || (realtimeNow < entry.NextRenderTime))
 				continue;
 
-			// Enforce budget for both sensor types
+			// Enforce budget for both sensor types.
+			// When over budget, advance the schedule anyway so the sensor does not
+			// perpetually re-queue at the same time and alternate with other sensors.
 			if (entry.Sensor.IsURT)
 			{
 				if (urtRenderCount >= MaxURTRendersPerFrame)
+				{
+					AdvanceSensorSchedule(ref entry, realtimeNow);
+					_entries[i] = entry;
 					continue;
+				}
 				urtRenderCount++;
 			}
 			else
 			{
 				if (rasterRenderCount >= MaxRasterRendersPerFrame)
+				{
+					AdvanceSensorSchedule(ref entry, realtimeNow);
+					_entries[i] = entry;
 					continue;
+				}
 				rasterRenderCount++;
 			}
 
