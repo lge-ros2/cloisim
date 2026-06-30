@@ -115,6 +115,13 @@ public class URTSensorManager : MonoBehaviour
 	private int _rtAccelStructGeneration = 0;
 	public static int AccelStructGeneration => s_instance?._rtAccelStructGeneration ?? 0;
 
+	/// <summary>
+	/// When true, the generation counter increment is deferred until the post-TDR
+	/// cooldown expires. Set for non-clean (GPU-timeout) resets so per-sensor resources
+	/// are only rebuilt after the GPU has fully recovered, not while it is still in TDR.
+	/// </summary>
+	private bool _pendingPostTDRGenIncrement = false;
+
 	#region "Profiling markers"
 	private static readonly ProfilerMarker s_EnsureBVHReadyMarker = new("URTSensorManager.EnsureBVHReady");
 	private static readonly ProfilerMarker s_GatherSceneMeshesMarker = new("URTSensorManager.GatherSceneMeshes");
@@ -773,7 +780,21 @@ public class URTSensorManager : MonoBehaviour
 	{
 		// Log when cooldown expires so the log shows exactly when sensors resume tracing.
 		if (_postResetResumeBuildFrame > 0 && Time.frameCount == _postResetResumeBuildFrame)
+		{
 			Debug.Log("[URTSensorManager] Post-reset cooldown expired — BVH rebuild and sensor tracing resuming.");
+
+			// Deferred gen increment for TDR resets: do this NOW (after GPU recovery)
+			// so per-sensor rebuild allocates fresh GPU buffers on a healthy GPU.
+			// If gen were incremented at reset time (frame N), rebuild would fire at
+			// frame N+1 (GPU still in TDR recovery) and produce invalid buffer handles
+			// that cause "missing UAV ID XXXX" + Xid 109 at the first dispatch (N+60).
+			if (_pendingPostTDRGenIncrement)
+			{
+				_rtAccelStructGeneration++;
+				_pendingPostTDRGenIncrement = false;
+				Debug.Log($"[URTSensorManager] Post-TDR gen increment → {_rtAccelStructGeneration}. Per-sensor rebuild will occur on next render.");
+			}
+		}
 
 		DrainDeferredScratchFrees();
 		DrainDeferredDisposes();
@@ -980,7 +1001,23 @@ public class URTSensorManager : MonoBehaviour
 		// Signal per-sensor consumers (DepthCamera, Lidar) that they must recreate
 		// their per-sensor shader wrapper so no stale binding to the disposed
 		// accel structs remains.
-		_rtAccelStructGeneration++;
+		//
+		// For a clean reset the GPU is quiescent: increment immediately so per-sensor
+		// rebuild fires at frame N+1 (safe, GPU is healthy).
+		//
+		// For a non-clean (TDR) reset: defer the increment until the cooldown expires
+		// (frame N+60). Incrementing now would trigger per-sensor rebuild at frame N+1
+		// while the GPU is still in TDR recovery, producing invalid buffer handles.
+		// Those handles cause "missing UAV ID XXXX" + Xid 109 at the first dispatch.
+		if (gpuClean)
+		{
+			_rtAccelStructGeneration++;
+			_pendingPostTDRGenIncrement = false;
+		}
+		else
+		{
+			_pendingPostTDRGenIncrement = true;
+		}
 
 		// Post-reset cooldown: when the GPU quiescence wait timed out the GPU may still be
 		// in an error-recovery state. Building the TLAS while the GPU is unhealthy produces

@@ -200,7 +200,7 @@ namespace SensorDevices
 			_urtCmdBuffer?.Release();
 			_urtCmdBuffer = new CommandBuffer { name = "Livox Lidar URT Dispatch" };
 
-			URTSensorManager.DiagLog($"[Lidar/Livox:{DeviceName}] rebuilt gen={URTSensorManager.AccelStructGeneration}"
+			Debug.Log($"[Lidar/Livox:{DeviceName}] rebuilt gen={URTSensorManager.AccelStructGeneration}"
 				+ $" rangeBuf=0x{_rangeOutputBuffer.GetHashCode():X}"
 				+ $" traceScratch=0x{(_rtTraceScratchBuffer?.GetHashCode() ?? 0):X}");
 		}

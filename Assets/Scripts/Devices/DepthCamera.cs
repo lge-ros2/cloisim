@@ -481,7 +481,7 @@ namespace SensorDevices
 			_urtCmdBuffer?.Release();
 			_urtCmdBuffer = new CommandBuffer { name = "DepthCamera URT Dispatch" };
 
-			URTSensorManager.DiagLog($"[DepthCamera:{DeviceName}] rebuilt gen={URTSensorManager.AccelStructGeneration}"
+			Debug.Log($"[DepthCamera:{DeviceName}] rebuilt gen={URTSensorManager.AccelStructGeneration}"
 				+ $" src=0x{_computeBufferSrc.GetHashCode():X} dst=0x{_computeBufferDst.GetHashCode():X}"
 				+ $" traceScratch=0x{(_rtTraceScratchBuffer?.GetHashCode() ?? 0):X}");
 		}

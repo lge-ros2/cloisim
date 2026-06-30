@@ -411,7 +411,7 @@ namespace SensorDevices
 			_urtCmdBuffer?.Release();
 			_urtCmdBuffer = new CommandBuffer { name = "Lidar URT Dispatch" };
 
-			URTSensorManager.DiagLog($"[Lidar:{DeviceName}] rebuilt gen={URTSensorManager.AccelStructGeneration}"
+			Debug.Log($"[Lidar:{DeviceName}] rebuilt gen={URTSensorManager.AccelStructGeneration}"
 				+ $" rangeBuf=0x{_rangeOutputBuffer.GetHashCode():X}"
 				+ $" traceScratch=0x{(_rtTraceScratchBuffer?.GetHashCode() ?? 0):X}");
 		}
