@@ -859,27 +859,32 @@ public class URTSensorManager : MonoBehaviour
 		CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
 		try
 		{
-			AsyncGPUReadback.WaitAllRequests();
-
-			if (!s_graphicsFenceSupported)
-				return true;
-
-			// Insert a fence after all currently-submitted GPU work. Once it passes,
-			// no prior dispatch can still be accessing GPU memory.
-			var fence = Graphics.CreateGraphicsFence(
-				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
-
-			var deadline = System.Diagnostics.Stopwatch.GetTimestamp()
-				+ System.Diagnostics.Stopwatch.Frequency; // 1-second timeout
-			while (!fence.passed)
+			// Probe the GPU with a bounded fence poll BEFORE AsyncGPUReadback.WaitAllRequests().
+			// WaitAllRequests() has no timeout and cannot be interrupted: on a wedged GPU
+			// (TDR / GSP-death / Xid 109) the readback whose dispatch faulted never completes,
+			// so the call — and the whole main thread — would hang forever. The fence cannot be
+			// timed out either, but we CAN decline to enter the blocking drain: if the fence does
+			// not pass within the deadline we treat the GPU as lost and skip WaitAllRequests().
+			if (s_graphicsFenceSupported)
 			{
-				if (System.Diagnostics.Stopwatch.GetTimestamp() > deadline)
+				var fence = Graphics.CreateGraphicsFence(
+					GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
+
+				var deadline = System.Diagnostics.Stopwatch.GetTimestamp()
+					+ System.Diagnostics.Stopwatch.Frequency; // 1-second timeout
+				while (!fence.passed)
 				{
-					Debug.LogWarning("[URTSensorManager] WaitForGPUQuiescence: timed out after 1s — GPU may be in error state, applying extended rebuild cooldown.");
-					return false;
+					if (System.Diagnostics.Stopwatch.GetTimestamp() > deadline)
+					{
+						Debug.LogWarning("[URTSensorManager] WaitForGPUQuiescence: timed out after 1s — GPU may be lost; skipping blocking readback drain and applying extended rebuild cooldown.");
+						return false;
+					}
+					System.Threading.Thread.Sleep(1);
 				}
-				System.Threading.Thread.Sleep(1);
 			}
+
+			// GPU is responsive (or graphics fences unsupported): completing readbacks is now fast.
+			AsyncGPUReadback.WaitAllRequests();
 			return true;
 		}
 		finally
@@ -896,16 +901,24 @@ public class URTSensorManager : MonoBehaviour
 		// Wait for in-flight GPU dispatches to complete before freeing resources.
 		var gpuClean = WaitForGPUQuiescence();
 
-		DrainDeferredScratchFrees(force: true);
-		DrainDeferredDisposes(force: true);
-
-		// Drop the build scratch buffer: a freshly-recreated accel struct must not
-		// reuse a scratch buffer that was sized/bound for the now-disposed struct
-		// (diag showed scratchHash unchanged — reallocated:False — across reset).
-		// GPU is quiescent here, so immediate dispose is safe. The next build
-		// allocates a new one via GrowScratch.
-		_rtBuildScratchBuffer?.Dispose();
-		_rtBuildScratchBuffer = null;
+		// Force-free GPU-referenced resources ONLY when the GPU actually quiesced.
+		// On a timeout the GPU may still be reading these buffers, so an immediate
+		// Dispose() is a use-after-free that re-faults the driver ("missing UAV" /
+		// Xid 109). When not clean, route the build scratch buffer through the
+		// fence-gated deferred path and leave the deferred queues to drain on a
+		// later clean reset (or leak harmlessly if the device never recovers).
+		if (gpuClean)
+		{
+			DrainDeferredScratchFrees(force: true);
+			DrainDeferredDisposes(force: true);
+			_rtBuildScratchBuffer?.Dispose();
+			_rtBuildScratchBuffer = null;
+		}
+		else
+		{
+			DeferScratchFree(_rtBuildScratchBuffer);
+			_rtBuildScratchBuffer = null;
+		}
 
 		if (!gpuClean)
 		{
