@@ -95,6 +95,14 @@ public class SimulationService : IDisposable
 				Debug.Log(wsLog);
 			}
 		}
+		catch (System.Net.Sockets.SocketException sex)
+			when (sex.SocketErrorCode == System.Net.Sockets.SocketError.AddressAlreadyInUse)
+		{
+			var errMessage = $"SimulationService port {_servicePort} is already in use. Change port via {SERVICE_PORT_ENVIRONMENT_NAME} env var.";
+			Main.UIController?.SetErrorMessage(errMessage);
+			Main.UIController?.ShowLoadingOverlay("SimulationService Failed", errMessage);
+			Debug.LogError(errMessage);
+		}
 		catch (Exception ex) {
 			var errMessage = "Failed to start SimulationService: " + ex.Message;
 			Main.UIController?.SetErrorMessage(errMessage);
