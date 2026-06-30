@@ -482,6 +482,11 @@ public class Main : MonoBehaviour
 
 		_crashReporter = new CrashReporter();
 
+		// Background-thread watchdog: detects main-thread hard freezes (e.g. a
+		// synchronous GPU stall in the URT pipeline) and logs the last breadcrumb
+		// stage even when the main thread is fully blocked.
+		gameObject.AddComponent<CLOiSim.Diagnostics.FreezeWatchdog>();
+
 		ReplaceStandaloneInputModule();
 
 		var logger = new DebugLogWriter();
@@ -760,7 +765,15 @@ public class Main : MonoBehaviour
 
 			Physics.simulationMode = SimulationMode.Script;
 			GameObject targetObject = null;
-			yield return _sdfLoader.Start(model, onCreatedRoot: obj => targetObject = obj as GameObject);
+			CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+			try
+			{
+				yield return _sdfLoader.Start(model, onCreatedRoot: obj => targetObject = obj as GameObject);
+			}
+			finally
+			{
+				CLOiSim.Diagnostics.FreezeWatchdog.Restore();
+			}
 
 			yield return new WaitUntil(() => targetObject != null);
 
@@ -831,7 +844,18 @@ public class Main : MonoBehaviour
 			_sdfLoader.SetRootLights(_lightsRoot);
 
 			Physics.simulationMode = SimulationMode.Script;
-			yield return _sdfLoader.Start(world);
+			// Suppress FreezeWatchdog during world loading: mesh import and SDF
+			// parsing intentionally block the main thread and would otherwise fire
+			// false-positive stall warnings.
+			CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+			try
+			{
+				yield return _sdfLoader.Start(world);
+			}
+			finally
+			{
+				CLOiSim.Diagnostics.FreezeWatchdog.Restore();
+			}
 
 			yield return new WaitUntil(() => _worldRoot.transform.childCount > 0);
 
@@ -1166,7 +1190,10 @@ public class Main : MonoBehaviour
 	{
 		_isResetting = true;
 		SuppressPhysicsDebugContacts("resetting the simulation");
-		// Debug.LogWarning("Reset positions in simulation!!!");
+
+		Debug.LogWarning("[Reset] Simulation reset triggered.");
+		_uiController?.SetWarningMessage("Resetting simulation...");
+		yield return null; // let UI Toolkit flush the label before heavy sync work blocks the frame
 
 		SensorRenderManager.Pause();
 
@@ -1193,6 +1220,7 @@ public class Main : MonoBehaviour
 			URTSensorManager.ResetScene();
 
 			Debug.LogWarning("[Done] Reset positions in simulation!!!");
+			_uiController?.SetInfoMessage("Simulation reset complete.");
 			yield return new WaitForSeconds(0.1f);
 		}
 		finally

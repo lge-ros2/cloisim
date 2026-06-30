@@ -434,17 +434,21 @@ namespace SensorDevices
 		}
 
 		/// <summary>
-		/// Recreate the per-camera shader wrapper and trace scratch buffer after the
-		/// shared acceleration structure has been disposed and recreated on reset.
-		/// The old IRayTracingShader caches internal buffer bindings from the disposed
-		/// accel struct; creating a new one gives a clean binding slate.
+		/// Recreate all per-camera URT GPU resources after the shared acceleration
+		/// structure has been disposed and recreated on reset.  Output compute buffers
+		/// and the command buffer are also recreated so no stale GPU handle survives
+		/// into the next dispatch (Unity reports "incompatible ComputeBuffer" on the
+		/// second reset when only the shader wrapper is replaced).
 		/// Safe to call when the GPU is quiescent (no dispatch in flight).
 		/// </summary>
 		private void RebuildURTPerCameraResources()
 		{
 			_rtShader = null; // IRayTracingShader has no Dispose; let GC reclaim it
 
-			_rtTraceScratchBuffer?.Dispose();
+			// Fence-gated deferred dispose: a prior dispatch may still reference these
+			// buffers on the GPU. Immediate free here is a use-after-free
+			// ("incompatible ComputeBuffer" / Xid 109 CTX SWITCH TIMEOUT).
+			URTSensorManager.DeferDispose(_rtTraceScratchBuffer);
 			_rtTraceScratchBuffer = null;
 
 			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
@@ -457,6 +461,29 @@ namespace SensorDevices
 			var width = _camParam.ImageWidth;
 			var height = _camParam.ImageHeight;
 			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, width, height, 1);
+
+			// Recreate output compute buffers — their GPU handles can become incompatible
+			// with a newly created URT shader on the second (and subsequent) reset.
+			var pixelCount = (int)(width * height);
+			var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
+			var imageDepth = CameraData.GetImageDepth(format);
+			var packedCount = (imageDepth == 4) ? pixelCount
+				: (imageDepth == 2 ? (pixelCount + 1) / 2 : (pixelCount + 3) / 4);
+
+			URTSensorManager.DeferDispose(_computeBufferSrc);
+			_computeBufferSrc = new ComputeBuffer(pixelCount, sizeof(float));
+			URTSensorManager.DeferDispose(_computeBufferDst);
+			_computeBufferDst = new ComputeBuffer(packedCount, sizeof(uint));
+			URTSensorManager.DeferDispose(_computeBufferBunchFlag);
+			_computeBufferBunchFlag = new ComputeBuffer(pixelCount, sizeof(int));
+
+			// Fresh command buffer so no stale recorded resource handles remain.
+			_urtCmdBuffer?.Release();
+			_urtCmdBuffer = new CommandBuffer { name = "DepthCamera URT Dispatch" };
+
+			Debug.Log($"[DepthCamera:{DeviceName}] rebuilt gen={URTSensorManager.AccelStructGeneration}"
+				+ $" src=0x{_computeBufferSrc.GetHashCode():X} dst=0x{_computeBufferDst.GetHashCode():X}"
+				+ $" traceScratch=0x{(_rtTraceScratchBuffer?.GetHashCode() ?? 0):X}");
 		}
 
 		/// <summary>Bind acceleration structure and output buffer to the shader.</summary>
@@ -543,11 +570,19 @@ namespace SensorDevices
 			if (URTSensorManager.AccelStruct == null)
 				return;
 
+			// Post-TDR warmup: see Lidar.cs for full explanation.
+			if (URTSensorManager.ConsumeBVHWarmup())
+			{
+				Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
+				return;
+			}
+
 			// 2. URT ray trace dispatch
 			BindShaderResources(_urtCmdBuffer);
 			SetCameraConfigParams(_urtCmdBuffer, width, height);
 			SetCameraPoseParams(_urtCmdBuffer, camPos, camRight, camUp, camForward);
 
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:Dispatch");
 			_rtShader.Dispatch(_urtCmdBuffer, _rtTraceScratchBuffer, width, height, 1);
 
 			// 3. VCSEL prepass (optional, operates on _computeBufferSrc in-place)
@@ -592,6 +627,7 @@ namespace SensorDevices
 			}
 
 			// === Execute all recorded GPU work atomically ===
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:ReadbackWait");
 			Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 
 			// --- Async readback (non-blocking) replaces synchronous GetData ---
@@ -617,6 +653,8 @@ namespace SensorDevices
 
 				EnqueueMessage(_image);
 			});
+
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("idle");
 		}
 	}
 }

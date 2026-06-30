@@ -386,7 +386,10 @@ namespace SensorDevices
 		{
 			_rtShader = null;
 
-			_rtTraceScratchBuffer?.Dispose();
+			// Fence-gated deferred dispose: a prior dispatch may still reference these
+			// buffers on the GPU. Immediate Dispose()/Release() here is a use-after-free
+			// ("incompatible ComputeBuffer" / Xid 109 CTX SWITCH TIMEOUT).
+			URTSensorManager.DeferDispose(_rtTraceScratchBuffer);
 			_rtTraceScratchBuffer = null;
 
 			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
@@ -399,6 +402,18 @@ namespace SensorDevices
 			var samplesH = _laserScan.Count;
 			var samplesV = _laserScan.VerticalCount;
 			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, samplesH, samplesV, 1);
+
+			// Recreate output buffer and command buffer — GPU handles can become
+			// incompatible with a new URT shader wrapper on second (and later) resets.
+			URTSensorManager.DeferDispose(_rangeOutputBuffer);
+			_rangeOutputBuffer = new ComputeBuffer((int)_totalSamples, sizeof(float));
+
+			_urtCmdBuffer?.Release();
+			_urtCmdBuffer = new CommandBuffer { name = "Lidar URT Dispatch" };
+
+			Debug.Log($"[Lidar:{DeviceName}] rebuilt gen={URTSensorManager.AccelStructGeneration}"
+				+ $" rangeBuf=0x{_rangeOutputBuffer.GetHashCode():X}"
+				+ $" traceScratch=0x{(_rtTraceScratchBuffer?.GetHashCode() ?? 0):X}");
 		}
 
 		private void ExecuteStandardRender()
@@ -445,14 +460,27 @@ namespace SensorDevices
 			if (URTSensorManager.AccelStruct == null)
 				return;
 
+			// Post-TDR warmup: the first sensor to render after a TDR gen increment must submit
+			// a BVH-only CommandBuffer. Combining BVH build + dispatch in the same submit on a
+			// freshly-reset GPU reliably produces "missing UAV" + Xid 109. ConsumeBVHWarmup()
+			// returns true exactly once (for the first sensor, regardless of frame number) and
+			// clears the flag so subsequent sensors proceed normally.
+			if (URTSensorManager.ConsumeBVHWarmup())
+			{
+				Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
+				return;
+			}
+
 			// 2. URT lidar ray trace dispatch
 			BindShaderResources(_urtCmdBuffer);
 			SetScanConfigParams(_urtCmdBuffer, samplesH, samplesV);
 			SetSensorPoseParams(_urtCmdBuffer, sensorPos, sensorRight, sensorUp, sensorForward);
 
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:Dispatch");
 			_rtShader.Dispatch(_urtCmdBuffer, _rtTraceScratchBuffer, samplesH, samplesV, 1);
 
 			// === Execute all recorded GPU work ===
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:ReadbackWait");
 			Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 
 			// --- Async readback (non-blocking) ---
@@ -486,6 +514,8 @@ namespace SensorDevices
 				_outputQueue.Enqueue((capturedTime, sensorWorldPose, rangeData));
 				_dataAvailable.Set();
 			});
+
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("idle");
 		}
 
 		#endregion

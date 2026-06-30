@@ -178,7 +178,9 @@ namespace SensorDevices
 		{
 			_rtShader = null;
 
-			_rtTraceScratchBuffer?.Dispose();
+			// Fence-gated deferred dispose (see standard-lidar rebuild): immediate free
+			// can hit an in-flight dispatch → "incompatible ComputeBuffer" / Xid 109.
+			URTSensorManager.DeferDispose(_rtTraceScratchBuffer);
 			_rtTraceScratchBuffer = null;
 
 			_rtShader = URTSensorManager.CreateShader(_csRayTrace);
@@ -190,6 +192,17 @@ namespace SensorDevices
 
 			var raysPerCycle = (uint)_livoxPattern.TotalRaysPerCycle;
 			_rtTraceScratchBuffer = RayTracingHelper.CreateScratchBufferForTrace(_rtShader, raysPerCycle, 1, 1);
+
+			// Recreate output buffer and command buffer — same reason as standard lidar rebuild.
+			URTSensorManager.DeferDispose(_rangeOutputBuffer);
+			_rangeOutputBuffer = new ComputeBuffer((int)(raysPerCycle * XYZComponents), sizeof(float));
+
+			_urtCmdBuffer?.Release();
+			_urtCmdBuffer = new CommandBuffer { name = "Livox Lidar URT Dispatch" };
+
+			Debug.Log($"[Lidar/Livox:{DeviceName}] rebuilt gen={URTSensorManager.AccelStructGeneration}"
+				+ $" rangeBuf=0x{_rangeOutputBuffer.GetHashCode():X}"
+				+ $" traceScratch=0x{(_rtTraceScratchBuffer?.GetHashCode() ?? 0):X}");
 		}
 
 		private void ExecuteLivoxRender()
@@ -228,6 +241,13 @@ namespace SensorDevices
 			// 1. Shared BVH
 			URTSensorManager.EnsureBVHReady(_urtCmdBuffer);
 
+			// Post-TDR warmup: see Lidar.cs for full explanation.
+			if (URTSensorManager.ConsumeBVHWarmup())
+			{
+				Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
+				return;
+			}
+
 			// 2. Bind resources
 			BindShaderResources(_urtCmdBuffer);
 
@@ -241,9 +261,11 @@ namespace SensorDevices
 			SetSensorPoseParams(_urtCmdBuffer, sensorPos, sensorRight, sensorUp, sensorForward);
 
 			// 6. Dispatch (1D: raysPerCycle × 1 × 1)
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:Dispatch");
 			_rtShader.Dispatch(_urtCmdBuffer, _rtTraceScratchBuffer, raysPerCycle, 1, 1);
 
 			// === Execute ===
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:ReadbackWait");
 			Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 
 			// Advance pattern for next frame
@@ -280,6 +302,8 @@ namespace SensorDevices
 				_outputQueue.Enqueue((capturedTime, sensorWorldPose, rangeData));
 				_dataAvailable.Set();
 			});
+
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("idle");
 		}
 
 		/// <summary>
@@ -321,10 +345,10 @@ namespace SensorDevices
 			_urtCmdBuffer?.Release();
 			_urtCmdBuffer = null;
 
-			_rtTraceScratchBuffer?.Dispose();
+			URTSensorManager.DeferDispose(_rtTraceScratchBuffer);
 			_rtTraceScratchBuffer = null;
 
-			_rangeOutputBuffer?.Release();
+			URTSensorManager.DeferDispose(_rangeOutputBuffer);
 			_rangeOutputBuffer = null;
 
 			if (_csRayTrace != null)

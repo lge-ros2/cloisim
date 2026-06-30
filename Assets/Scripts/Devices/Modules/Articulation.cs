@@ -155,7 +155,11 @@ public class Articulation
 	/// <returns>in (rad)ian for angular OR in (m)eters for linear</param>
 	public float GetJointPosition(int index = 0)
 	{
-		if (_jointBody == null || index < 0)
+		// isActiveAndEnabled is a pure C# check (no native call), safe before the
+		// first physics step and while the body is disabled during SDF import.
+		// Accessing jointPosition on a disabled/uninitialised ArticulationBody
+		// dereferences a null native peer → SIGSEGV.
+		if (_jointBody == null || !_jointBody.isActiveAndEnabled || index < 0)
 		{
 			return 0;
 		}
@@ -188,14 +192,14 @@ public class Articulation
 	{
 		index = GetValidIndex(index);
 		// Debug.Log(_jointBody.name + ": " + _jointBody.dofCount + ", " + _jointBody.jointAcceleration[0] + ", " + _jointBody.jointForce[0]);
-		return (_jointBody == null || index < 0 || _jointBody.IsSleeping()) ? 0 : _jointBody.jointForce[index];
+		return (_jointBody == null || !_jointBody.isActiveAndEnabled || index < 0 || _jointBody.IsSleeping()) ? 0 : _jointBody.jointForce[index];
 	}
 
 	/// <returns>in radian for angular and in meters for linear</param>
 	public float GetJointVelocity(int index = 0)
 	{
 		index = GetValidIndex(index);
-		var value = (_jointBody == null || index < 0 || _jointBody.IsSleeping()) ? 0 : _jointBody.jointVelocity[index];
+		var value = (_jointBody == null || !_jointBody.isActiveAndEnabled || index < 0 || _jointBody.IsSleeping()) ? 0 : _jointBody.jointVelocity[index];
 		return (Mathf.Abs(value) < Quaternion.kEpsilon) ? 0 : value;
 	}
 
@@ -203,7 +207,7 @@ public class Articulation
 	public float GetForce(int index = 0)
 	{
 		index = GetValidIndex(index);
-		var value = (_jointBody == null || index < 0 || _jointBody.IsSleeping()) ? 0 : _jointBody.driveForce[index];
+		var value = (_jointBody == null || !_jointBody.isActiveAndEnabled || index < 0 || _jointBody.IsSleeping()) ? 0 : _jointBody.driveForce[index];
 		return value;
 	}
 

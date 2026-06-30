@@ -81,6 +81,33 @@ public abstract class Device : MonoBehaviour
 			return;
 
 		var sw = Stopwatch.StartNew();
+
+		// Probe the GPU with a bounded fence poll BEFORE the unbounded WaitAllRequests().
+		// WaitAllRequests() cannot be interrupted, but we CAN decline to enter it: a wedged
+		// GPU (TDR / GSP-death / Xid 109) never signals the fence, so we abandon the drain
+		// instead of hanging the main thread forever. Pending readbacks are left in flight;
+		// their buffers must be freed through the fence-gated deferred path, never immediately.
+		if (SystemInfo.supportsGraphicsFence)
+		{
+			var probe = Graphics.CreateGraphicsFence(
+				UnityEngine.Rendering.GraphicsFenceType.CPUSynchronisation,
+				UnityEngine.Rendering.SynchronisationStageFlags.AllGPUOperations);
+			var deadlineMs = warnThresholdMs > 0 ? warnThresholdMs : 1000;
+			while (!probe.passed)
+			{
+				if (sw.ElapsedMilliseconds > deadlineMs)
+				{
+					Debug.LogWarning(
+						$"[Device] GPU did not quiesce within {deadlineMs}ms during teardown — " +
+						$"abandoning blocking readback drain (GPU may be lost). " +
+						$"inflight now={Interlocked.Read(ref s_gpuReadbackInflight)}");
+					return;
+				}
+				Thread.Sleep(1);
+			}
+		}
+
+		// GPU is responsive (or graphics fences unsupported): completing readbacks is now fast.
 		UnityEngine.Rendering.AsyncGPUReadback.WaitAllRequests();
 		sw.Stop();
 

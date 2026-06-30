@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 using System.Reflection;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.UnifiedRayTracing;
@@ -114,6 +115,36 @@ public class URTSensorManager : MonoBehaviour
 	private int _rtAccelStructGeneration = 0;
 	public static int AccelStructGeneration => s_instance?._rtAccelStructGeneration ?? 0;
 
+	/// <summary>
+	/// When true, the generation counter increment is deferred until the post-TDR
+	/// cooldown expires. Set for non-clean (GPU-timeout) resets so per-sensor resources
+	/// are only rebuilt after the GPU has fully recovered, not while it is still in TDR.
+	/// </summary>
+	private bool _pendingPostTDRGenIncrement = false;
+
+	/// <summary>
+	/// True after a TDR gen increment until the first sensor executes a BVH-only GPU submit.
+	/// The first sensor that reads this flag via ConsumeBVHWarmup() clears it and submits
+	/// a BVH-only CommandBuffer. Subsequent sensors see it as false and dispatch normally.
+	/// This is robust against sensors with different update rates: the warmup is consumed
+	/// on the first actual render after gen increment, regardless of frame number.
+	/// </summary>
+	private bool _postTDRBvhWarmupPending = false;
+
+	/// <summary>
+	/// Atomically reads and clears _postTDRBvhWarmupPending.
+	/// Returns true once (for the first sensor to render after TDR gen increment).
+	/// That sensor must execute a BVH-only CommandBuffer submit before returning.
+	/// </summary>
+	public static bool ConsumeBVHWarmup()
+	{
+		var inst = s_instance;
+		if (inst == null || !inst._postTDRBvhWarmupPending)
+			return false;
+		inst._postTDRBvhWarmupPending = false;
+		return true;
+	}
+
 	#region "Profiling markers"
 	private static readonly ProfilerMarker s_EnsureBVHReadyMarker = new("URTSensorManager.EnsureBVHReady");
 	private static readonly ProfilerMarker s_GatherSceneMeshesMarker = new("URTSensorManager.GatherSceneMeshes");
@@ -136,6 +167,16 @@ public class URTSensorManager : MonoBehaviour
 	}
 
 	/// <summary>
+	/// Append a per-sensor diagnostic entry (e.g. buffer recreation with GPU handle
+	/// hashes) into the shared URT ring buffer so it appears in DumpDiagHistory when
+	/// a "missing UAV"/"incompatible ComputeBuffer" GPU fault is later detected.
+	/// </summary>
+	public static void DiagLog(string entry)
+	{
+		s_instance?.DiagRecord(entry);
+	}
+
+	/// <summary>
 	/// Dump the last DiagRingSize URT state-change events to the log.
 	/// Called automatically when a GPU UAV error is detected.
 	/// </summary>
@@ -150,6 +191,16 @@ public class URTSensorManager : MonoBehaviour
 
 		var sb = new System.Text.StringBuilder();
 		sb.AppendLine($"[URT-DIAG] === History dump triggered by: {trigger} (frame={Time.frameCount}) ===");
+		sb.AppendLine($"[URT-DIAG] generation={inst._rtAccelStructGeneration}"
+			+ $" readIdx={inst._readIdx} writeIdx={inst._writeIdx}"
+			+ $" hasTlas=[{inst._structHasTlas[0]},{inst._structHasTlas[1]}]"
+			+ $" accelNull=[{inst._rtAccelStructs[0] == null},{inst._rtAccelStructs[1] == null}]"
+			+ $" frameOfLastBuild={inst._frameOfLastBuild}");
+		var bs = inst._rtBuildScratchBuffer;
+		sb.AppendLine($"[URT-DIAG] buildScratch: "
+			+ (bs == null ? "null" : $"hash=0x{bs.GetHashCode():X} valid={bs.IsValid()} count={bs.count} stride={bs.stride}")
+			+ $" | deferredScratchFree={inst._deferredScratchFree.Count} deferredDispose={inst._deferredDispose.Count}");
+		sb.AppendLine("[URT-DIAG] --- recent state changes (oldest first) ---");
 		foreach (var line in inst._diagHistory)
 			sb.AppendLine(line);
 		sb.AppendLine("[URT-DIAG] === End of history ===");
@@ -226,6 +277,14 @@ public class URTSensorManager : MonoBehaviour
 	private const int ScratchSafetyFrames = 6;
 
 	private readonly Queue<(GraphicsBuffer buffer, GraphicsFence fence, bool hasFence, int frame)> _deferredScratchFree = new();
+
+	// Deferred disposal of PER-SENSOR GPU buffers (ComputeBuffer / GraphicsBuffer)
+	// recreated at the accel-struct-reset boundary (Lidar/DepthCamera
+	// RebuildURTPerSensorResources). Disposing them immediately can free a buffer
+	// still referenced by an in-flight dispatch (use-after-free → "incompatible
+	// ComputeBuffer" / Xid 109 CTX SWITCH TIMEOUT). Gated on a GraphicsFence,
+	// identical to the scratch-buffer free path above.
+	private readonly Queue<(IDisposable resource, GraphicsFence fence, bool hasFence, int frame)> _deferredDispose = new();
 	#endregion
 
 	/// <summary>Per-instance tracking for transform updates.</summary>
@@ -284,8 +343,18 @@ public class URTSensorManager : MonoBehaviour
 	[SerializeField]
 	private int _frameOfLastBuild = -1;
 
-	// Whether a fence should be captured this LateUpdate for _readIdx.
+	// Whether a fence should be captured this LateUpdate for the traced struct.
+	// _pendingFenceIdx records which struct index sensors traced this frame so that
+	// LateUpdate stamps the fence on the correct struct even after a readIdx/writeIdx swap.
 	private bool _pendingFenceNeeded;
+	private int _pendingFenceIdx;
+
+	// Post-reset cooldown: EnsureBVHReady skips building until this frame is reached.
+	// Set to currentFrame + 3 on a clean reset, + 60 if WaitForGPUQuiescence timed out.
+	// Prevents dispatching against a freshly-reset TLAS while the GPU may still be
+	// recovering from a prior dispatch error (fence timeout → corrupted Build() output
+	// → "missing UAV" on first post-rebuild trace).
+	private int _postResetResumeBuildFrame = 0;
 
 	#endregion
 
@@ -412,11 +481,20 @@ public class URTSensorManager : MonoBehaviour
 		if (inst._frameOfLastBuild == currentFrame)
 			return; // Already built this frame
 
+		// Post-reset cooldown: GPU may still be recovering from a dispatch error
+		// (WaitForGPUQuiescence timed out). Skipping the build keeps AccelStruct null
+		// so sensors skip dispatch — prevents "missing UAV" on the first post-rebuild trace.
+		if (currentFrame < inst._postResetResumeBuildFrame)
+			return;
+
 		inst._frameOfLastBuild = currentFrame;
 
 		// This frame's sensors will trace against _readIdx — request a fence
 		// in LateUpdate so the NEXT write-cycle on that struct waits for them.
+		// Save the current readIdx here: EnsureBVHReady may swap readIdx/writeIdx
+		// before LateUpdate runs, so we must record the traced index now.
 		inst._pendingFenceNeeded = true;
+		inst._pendingFenceIdx = inst._readIdx;
 
 		// Record that _readIdx is being traced this frame (no-fence fallback).
 		inst._frameOfLastTrace[inst._readIdx] = currentFrame;
@@ -457,6 +535,7 @@ public class URTSensorManager : MonoBehaviour
 			return;
 		}
 
+		CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:BuildAS");
 		using (s_BuildBVHMarker.Auto())
 		{
 			// --- Resize scratch buffer if needed ---
@@ -661,19 +740,106 @@ public class URTSensorManager : MonoBehaviour
 		}
 	}
 
+	/// <summary>
+	/// Queue a per-sensor GPU buffer (ComputeBuffer / GraphicsBuffer) for disposal
+	/// once the GPU has finished any dispatch that may still reference it. Use this
+	/// instead of an immediate Dispose()/Release() when recreating per-sensor buffers
+	/// at the accel-struct-reset boundary, where prior dispatches may still be in
+	/// flight (immediate free → "incompatible ComputeBuffer" / Xid 109).
+	/// </summary>
+	public static void DeferDispose(IDisposable resource)
+	{
+		if (resource == null)
+			return;
+
+		var inst = Instance;
+		if (inst == null)
+		{
+			resource.Dispose();
+			return;
+		}
+
+		GraphicsFence fence = default;
+		var hasFence = false;
+		if (s_graphicsFenceSupported)
+		{
+			fence = Graphics.CreateGraphicsFence(
+				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
+			hasFence = true;
+		}
+
+		inst._deferredDispose.Enqueue((resource, fence, hasFence, Time.frameCount));
+	}
+
+	/// <summary>Dispose deferred per-sensor buffers whose GPU work has completed.</summary>
+	private void DrainDeferredDisposes(bool force = false)
+	{
+		var currentFrame = Time.frameCount;
+		while (_deferredDispose.Count > 0)
+		{
+			var entry = _deferredDispose.Peek();
+			if (!force)
+			{
+				var safe = entry.hasFence
+					? entry.fence.passed
+					: (currentFrame - entry.frame >= ScratchSafetyFrames);
+				if (!safe)
+					break;
+			}
+
+			_deferredDispose.Dequeue();
+			try
+			{
+				entry.resource?.Dispose();
+			}
+			catch (Exception e)
+			{
+				Debug.LogWarning($"[URTSensorManager] Deferred dispose failed: {e.Message}");
+			}
+		}
+	}
+
 	private void LateUpdate()
 	{
+		// Log when cooldown expires so the log shows exactly when sensors resume tracing.
+		if (_postResetResumeBuildFrame > 0 && Time.frameCount == _postResetResumeBuildFrame)
+		{
+			Debug.Log("[URTSensorManager] Post-reset cooldown expired — BVH rebuild and sensor tracing resuming.");
+
+			// Deferred gen increment for TDR resets: do this NOW (after GPU recovery)
+			// so per-sensor rebuild allocates fresh GPU buffers on a healthy GPU.
+			// If gen were incremented at reset time (frame N), rebuild would fire at
+			// frame N+1 (GPU still in TDR recovery) and produce invalid buffer handles
+			// that cause "missing UAV ID XXXX" + Xid 109 at the first dispatch (N+60).
+			if (_pendingPostTDRGenIncrement)
+			{
+				_rtAccelStructGeneration++;
+				_pendingPostTDRGenIncrement = false;
+				// Arm the BVH warmup flag. The first sensor to render will call ConsumeBVHWarmup(),
+				// execute a BVH-only CommandBuffer submit, and clear the flag. Subsequent sensors
+				// (same or later frame) see the flag cleared and dispatch normally. This is
+				// robust against sensors with different update rates, unlike the previous
+				// frame-count window which could expire before slower sensors first rendered.
+				_postTDRBvhWarmupPending = true;
+				Debug.Log($"[URTSensorManager] Post-TDR gen increment → {_rtAccelStructGeneration}. "
+					+ "BVH warmup pending — first sensor to render will submit BVH-only, then dispatch resumes.");
+			}
+		}
+
 		DrainDeferredScratchFrees();
+		DrainDeferredDisposes();
 
 		// Runs after SensorRenderManager.LateUpdate, so every URT trace dispatch
-		// for this frame is already submitted.  Capture a fence for _readIdx
-		// (the struct sensors traced this frame); next time that struct becomes
-		// _writeIdx, EnsureBVHReady waits on this fence before mutating it.
+		// for this frame is already submitted.  Capture a fence for _pendingFenceIdx
+		// (the struct sensors actually traced this frame, saved before any swap).
+		// Using _readIdx here would be wrong: EnsureBVHReady swaps readIdx/writeIdx
+		// after building, so by LateUpdate _readIdx is the newly-built struct (not
+		// the one sensors traced), and _writeIdx is what actually needs the fence.
 		if (_pendingFenceNeeded && s_graphicsFenceSupported)
 		{
-			_traceFences[_readIdx] = Graphics.CreateGraphicsFence(
+			_traceFences[_pendingFenceIdx] = Graphics.CreateGraphicsFence(
 				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
-			_hasTraceFence[_readIdx] = true;
+			_hasTraceFence[_pendingFenceIdx] = true;
 		}
 		_pendingFenceNeeded = false;
 	}
@@ -681,6 +847,7 @@ public class URTSensorManager : MonoBehaviour
 	private void ReleaseResources()
 	{
 		DrainDeferredScratchFrees(force: true);
+		DrainDeferredDisposes(force: true);
 
 		_rtBuildScratchBuffer?.Dispose();
 		_rtBuildScratchBuffer = null;
@@ -706,6 +873,8 @@ public class URTSensorManager : MonoBehaviour
 		_writeIdx = 1;
 		_frameOfLastBuild = -1;
 		_pendingFenceNeeded = false;
+		_pendingFenceIdx = 0;
+		_postResetResumeBuildFrame = 0;
 
 		_diagHistory.Clear();
 		_diagPrevInstanceCount = -1;
@@ -716,10 +885,6 @@ public class URTSensorManager : MonoBehaviour
 	/// <summary>
 	/// Drop and recreate both shared acceleration structures from a clean slate
 	/// at the simulation-reset boundary.
-	///
-	/// REQUIRES the GPU to be quiescent for sensor work — callers must pause
-	/// rendering (SensorRenderManager.Pause) and drain AsyncGPUReadback before
-	/// calling.
 	/// </summary>
 	public static void ResetScene()
 	{
@@ -729,30 +894,123 @@ public class URTSensorManager : MonoBehaviour
 		}
 	}
 
+	/// <summary>
+	/// Spin-wait for all in-flight GPU dispatches to complete.
+	/// Called before reset to prevent disposing resources still referenced by
+	/// in-flight work. Reset (SignalReset) can fire immediately after a
+	/// "missing UAV" GPU dispatch error while the GPU is still executing that
+	/// dispatch; disposing resources at that moment causes SIGSEGV in the driver.
+	/// Returns true if the GPU quiesced cleanly, false if the 1-second timeout fired
+	/// (GPU is in an error/recovery state).
+	/// </summary>
+	private static bool WaitForGPUQuiescence()
+	{
+		// Suppress FreezeWatchdog during the intentional spin-wait: this blocks the main
+		// thread for up to 1 second and would otherwise fire a false-positive stall warning.
+		CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+		try
+		{
+			// Probe the GPU with a bounded fence poll BEFORE AsyncGPUReadback.WaitAllRequests().
+			// WaitAllRequests() has no timeout and cannot be interrupted: on a wedged GPU
+			// (TDR / GSP-death / Xid 109) the readback whose dispatch faulted never completes,
+			// so the call — and the whole main thread — would hang forever. The fence cannot be
+			// timed out either, but we CAN decline to enter the blocking drain: if the fence does
+			// not pass within the deadline we treat the GPU as lost and skip WaitAllRequests().
+			if (s_graphicsFenceSupported)
+			{
+				var fence = Graphics.CreateGraphicsFence(
+					GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
+
+				var deadline = System.Diagnostics.Stopwatch.GetTimestamp()
+					+ System.Diagnostics.Stopwatch.Frequency; // 1-second timeout
+				while (!fence.passed)
+				{
+					if (System.Diagnostics.Stopwatch.GetTimestamp() > deadline)
+					{
+						Debug.LogWarning("[URTSensorManager] WaitForGPUQuiescence: timed out after 1s — GPU may be lost; skipping blocking readback drain and applying extended rebuild cooldown.");
+						return false;
+					}
+					System.Threading.Thread.Sleep(1);
+				}
+			}
+
+			// GPU is responsive (or graphics fences unsupported): completing readbacks is now fast.
+			AsyncGPUReadback.WaitAllRequests();
+			return true;
+		}
+		finally
+		{
+			CLOiSim.Diagnostics.FreezeWatchdog.Restore();
+		}
+	}
+
 	private void ResetSceneInternal()
 	{
 		if (_rtContext == null) return;
 		if (_rtAccelStructs[0] == null && _rtAccelStructs[1] == null) return;
 
-		// GPU is quiescent here; free every deferred scratch buffer first.
-		DrainDeferredScratchFrees(force: true);
+		// Wait for in-flight GPU dispatches to complete before freeing resources.
+		var gpuClean = WaitForGPUQuiescence();
 
-		for (var i = 0; i < 2; i++)
+		// Force-free GPU-referenced resources ONLY when the GPU actually quiesced.
+		// On a timeout the GPU may still be reading these buffers, so an immediate
+		// Dispose() is a use-after-free that re-faults the driver ("missing UAV" /
+		// Xid 109). When not clean, route the build scratch buffer through the
+		// fence-gated deferred path and leave the deferred queues to drain on a
+		// later clean reset (or leak harmlessly if the device never recovers).
+		if (gpuClean)
 		{
-			if (_rtAccelStructs[i] == null) continue;
-			try
+			DrainDeferredScratchFrees(force: true);
+			DrainDeferredDisposes(force: true);
+			_rtBuildScratchBuffer?.Dispose();
+			_rtBuildScratchBuffer = null;
+		}
+		else
+		{
+			DeferScratchFree(_rtBuildScratchBuffer);
+			_rtBuildScratchBuffer = null;
+		}
+
+		if (!gpuClean)
+		{
+			// GPU TDR or timeout: the RayTracingContext itself may hold invalidated
+			// GPU device handles (Vulkan VkBuffer IDs, D3D12 resource pointers).
+			// Reusing the same context after TDR can produce "missing input compute
+			// buffer" on the first Build/Dispatch even after the cooldown, because
+			// the context's internal geometry-pool buffers reference old device handles.
+			// Full reconstruction from scratch gives the driver a completely clean slate.
+			Debug.LogWarning("[URTSensorManager] GPU timeout — rebuilding RayTracingContext from scratch.");
+			for (var i = 0; i < 2; i++)
 			{
-				_rtAccelStructs[i].Dispose();
-				_rtAccelStructs[i] = _rtContext.CreateAccelerationStructure(
-					new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
-			}
-			catch (Exception e)
-			{
-				Debug.LogError($"[URTSensorManager] Failed to recreate acceleration structure[{i}] on reset: {e.Message}. URT sensors disabled.");
 				_rtAccelStructs[i]?.Dispose();
 				_rtAccelStructs[i] = null;
 			}
+			_rtContext?.Dispose();
+			_rtContext = null;
+			Initialize();
+		}
+		else
+		{
+			for (var i = 0; i < 2; i++)
+			{
+				if (_rtAccelStructs[i] == null) continue;
+				try
+				{
+					_rtAccelStructs[i].Dispose();
+					_rtAccelStructs[i] = _rtContext.CreateAccelerationStructure(
+						new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
+				}
+				catch (Exception e)
+				{
+					Debug.LogError($"[URTSensorManager] Failed to recreate acceleration structure[{i}] on reset: {e.Message}. URT sensors disabled.");
+					_rtAccelStructs[i]?.Dispose();
+					_rtAccelStructs[i] = null;
+				}
+			}
+		}
 
+		for (var i = 0; i < 2; i++)
+		{
 			_perStructInstances[i].Clear();
 			_perStructExistingKeys[i].Clear();
 			_perStructDesiredKeys[i].Clear();
@@ -767,14 +1025,41 @@ public class URTSensorManager : MonoBehaviour
 		_writeIdx = 1;
 		_frameOfLastBuild = -1;
 		_pendingFenceNeeded = false;
+		_pendingFenceIdx = 0;
 		_diagPrevInstanceCount = -1;
+		_postTDRBvhWarmupPending = false;
 
 		// Signal per-sensor consumers (DepthCamera, Lidar) that they must recreate
 		// their per-sensor shader wrapper so no stale binding to the disposed
 		// accel structs remains.
-		_rtAccelStructGeneration++;
+		//
+		// For a clean reset the GPU is quiescent: increment immediately so per-sensor
+		// rebuild fires at frame N+1 (safe, GPU is healthy).
+		//
+		// For a non-clean (TDR) reset: defer the increment until the cooldown expires
+		// (frame N+60). Incrementing now would trigger per-sensor rebuild at frame N+1
+		// while the GPU is still in TDR recovery, producing invalid buffer handles.
+		// Those handles cause "missing UAV ID XXXX" + Xid 109 at the first dispatch.
+		if (gpuClean)
+		{
+			_rtAccelStructGeneration++;
+			_pendingPostTDRGenIncrement = false;
+		}
+		else
+		{
+			_pendingPostTDRGenIncrement = true;
+		}
 
-		Debug.Log("[URTSensorManager] Acceleration structures reset (clean rebuild scheduled)");
+		// Post-reset cooldown: when the GPU quiescence wait timed out the GPU may still be
+		// in an error-recovery state. Building the TLAS while the GPU is unhealthy produces
+		// a corrupt acceleration structure, and the very first trace against it triggers
+		// another "missing UAV" error + freeze. Hold off on building for 60 frames (~1 s)
+		// to allow the GPU driver to complete its TDR/recovery cycle.
+		// On a clean reset (fence passed) a 3-frame gap is enough to let any last-frame
+		// in-flight work retire before we submit new BVH commands.
+		_postResetResumeBuildFrame = Time.frameCount + (gpuClean ? 3 : 60);
+
+		Debug.Log($"[URTSensorManager] Acceleration structures reset (clean rebuild scheduled, cooldown={_postResetResumeBuildFrame - Time.frameCount} frames, gpuClean={gpuClean})");
 	}
 
 	#endregion
@@ -958,6 +1243,51 @@ public class URTSensorManager : MonoBehaviour
 	#endregion
 
 	#region "Unity lifecycle"
+
+	// Throttle: timestamp of last fault dump (Stopwatch ticks). Thread-safe via
+	// Interlocked — logMessageReceivedThreaded fires from the render thread, not main.
+	private long _lastFaultDumpTicks = long.MinValue;
+
+	private void OnEnable()
+	{
+		// logMessageReceivedThreaded catches messages from all threads, including the
+		// render thread where GPU compute dispatch faults ("missing UAV") are logged.
+		Application.logMessageReceivedThreaded += OnUnityLogMessage;
+	}
+
+	private void OnDisable()
+	{
+		Application.logMessageReceivedThreaded -= OnUnityLogMessage;
+	}
+
+	/// <summary>
+	/// Detect Unity's native GPU dispatch faults ("missing UAV ... incompatible
+	/// ComputeBuffer") and dump the URT diagnostic history so the failing buffer and
+	/// the sequence of resets/rebuilds that led to it can be identified post-mortem.
+	/// Registered on logMessageReceivedThreaded so render-thread errors are caught.
+	/// </summary>
+	private void OnUnityLogMessage(string condition, string stackTrace, LogType type)
+	{
+		if (type != LogType.Error && type != LogType.Exception && type != LogType.Assert)
+			return;
+
+		if (string.IsNullOrEmpty(condition))
+			return;
+
+		if (condition.IndexOf("missing UAV", StringComparison.OrdinalIgnoreCase) < 0 &&
+			condition.IndexOf("incompatible ComputeBuffer", StringComparison.OrdinalIgnoreCase) < 0)
+			return;
+
+		// Throttle to one dump per second (thread-safe). CAS ensures only one thread wins.
+		long now = System.Diagnostics.Stopwatch.GetTimestamp();
+		long prev = Interlocked.Read(ref _lastFaultDumpTicks);
+		if (now - prev < System.Diagnostics.Stopwatch.Frequency)
+			return;
+		if (Interlocked.CompareExchange(ref _lastFaultDumpTicks, now, prev) != prev)
+			return; // another thread won the race
+
+		DumpDiagHistory($"GPU dispatch fault: \"{condition}\"");
+	}
 
 	private void OnApplicationQuit()
 	{
