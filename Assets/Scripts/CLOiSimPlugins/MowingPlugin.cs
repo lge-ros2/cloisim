@@ -178,6 +178,7 @@ public class MowingPlugin : CLOiSimPlugin
 
 	private Color[] _initialTexturePixels = null;
 	private Transform _targetPlane = null;
+	private bool _foundTargetPlane = false;
 
 	private List<MeshFilter> _punchingMeshFilters = new List<MeshFilter>();
 
@@ -192,6 +193,16 @@ public class MowingPlugin : CLOiSimPlugin
 		_grass = new Grass(geomGrassShader);
 	}
 
+	protected override void OnPluginLoad()
+	{
+		// Resolve the target plane and clear its isStatic flag as early as possible
+		// (before Unity's static batching combine runs), since PlantGrass() adds the
+		// grass material to this renderer at runtime, and a statically-batched
+		// renderer never picks up materials added after the batch is built.
+		var grassTarget = GetPluginParameters().GetValue<string>("grass/target");
+		_foundTargetPlane = FindTargetPlane(grassTarget);
+	}
+
 	protected override IEnumerator OnStart()
 	{
 		yield return new WaitForEndOfFrame();
@@ -202,9 +213,7 @@ public class MowingPlugin : CLOiSimPlugin
 			Debug.LogWarning("Target blade not found");
 		}
 
-		var grassTarget = GetPluginParameters().GetValue<string>("grass/target");
-
-		if (FindTargetPlane(grassTarget))
+		if (_foundTargetPlane)
 		{
 			PlantGrass();
 		}
@@ -233,6 +242,18 @@ public class MowingPlugin : CLOiSimPlugin
 
 		_targetPlane = targetModel?.GetComponentsInChildren<SDFormat.Helper.Link>()
 			.FirstOrDefault(x => x.name == _grass.linkName)?.transform;
+
+		// Grass material is added to this renderer at runtime (AssignMaterial()).
+		// Static batching locks a renderer's materials in at scene start, so a
+		// statically-batched target plane would silently drop the grass material.
+		if (_targetPlane != null)
+		{
+			_targetPlane.gameObject.isStatic = false;
+			foreach (var meshRenderer in _targetPlane.GetComponentsInChildren<MeshRenderer>())
+			{
+				meshRenderer.gameObject.isStatic = false;
+			}
+		}
 
 		var targetPlaneCollision
 				= _targetPlane?.GetComponentsInChildren<SDFormat.Helper.Collision>()
