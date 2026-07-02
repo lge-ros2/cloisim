@@ -34,6 +34,14 @@ namespace SDFormat
 				if (targetBaseHelper == null)
 					return null;
 
+				if (targetBaseHelper.RootModel == null)
+				{
+					// No enclosing Model (e.g. a top-level Actor parented directly
+					// under WorldRoot) — treat the immediate parent as the root so
+					// SpecifyPoseAbsolute applies no offset correction.
+					return targetBaseHelper.transform.parent;
+				}
+
 				var foundRootModelTransform = targetBaseHelper.RootModel.transform;
 
 				UE.Transform FindParent<T>(UE.Transform start, Func<T, bool> condition) where T : UE.Component
