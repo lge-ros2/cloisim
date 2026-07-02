@@ -1191,7 +1191,7 @@ public class Main : MonoBehaviour
 		_isResetting = true;
 		SuppressPhysicsDebugContacts("resetting the simulation");
 
-		Debug.LogWarning("[Reset] Simulation reset triggered.");
+		Debug.LogWarning($"[Reset] Simulation reset triggered. elapsed={Time.realtimeSinceStartup:F3}s");
 		_uiController?.SetWarningMessage("Resetting simulation...");
 		yield return null; // let UI Toolkit flush the label before heavy sync work blocks the frame
 

@@ -34,6 +34,43 @@ namespace CLOiSim.Diagnostics
         // (world loading, mesh import) to avoid false-positive stall warnings.
         static volatile int _suppressCount;
 
+        // Immutable snapshot of diagnostic info, refreshed ONLY from the main thread
+        // (see RefreshDiagSnapshot). DumpPreExitDiagnostics runs on the watchdog thread
+        // and must never call SystemInfo/Time directly: once the GPU device is already
+        // lost, those calls can trigger a native crash on a non-main thread (observed:
+        // crash inside SystemInfo.graphicsDeviceType, called from this exact path).
+        private sealed class DiagSnapshot
+        {
+            public string GpuName, GpuDriverVersion, CpuType;
+            public string GpuType;
+            public int VramMB, RamMB, CpuCores;
+            public bool SupportsAsyncGpuReadback, SupportsGraphicsFence;
+            public int FrameCount;
+            public float RealtimeSinceStartup, TimeSinceLevelLoad;
+        }
+
+        static volatile DiagSnapshot _snapshot;
+
+        /// <summary>Call from the main thread (e.g. LateUpdate) to refresh cached diagnostics.</summary>
+        static void RefreshDiagSnapshot()
+        {
+            _snapshot = new DiagSnapshot
+            {
+                GpuName = SystemInfo.graphicsDeviceName,
+                GpuType = SystemInfo.graphicsDeviceType.ToString(),
+                GpuDriverVersion = SystemInfo.graphicsDeviceVersion,
+                VramMB = SystemInfo.graphicsMemorySize,
+                RamMB = SystemInfo.systemMemorySize,
+                CpuType = SystemInfo.processorType,
+                CpuCores = SystemInfo.processorCount,
+                SupportsAsyncGpuReadback = SystemInfo.supportsAsyncGPUReadback,
+                SupportsGraphicsFence = SystemInfo.supportsGraphicsFence,
+                FrameCount = Time.frameCount,
+                RealtimeSinceStartup = Time.realtimeSinceStartup,
+                TimeSinceLevelLoad = Time.timeSinceLevelLoad,
+            };
+        }
+
         Thread _thread;
         volatile bool _running;
 
@@ -67,6 +104,7 @@ namespace CLOiSim.Diagnostics
         void OnEnable()
         {
             Volatile.Write(ref _lastHeartbeatMs, Clock.ElapsedMilliseconds);
+            RefreshDiagSnapshot(); // seed the cache before the first LateUpdate runs
             _running = true;
             _thread = new Thread(Watch) { IsBackground = true, Name = "FreezeWatchdog" };
             _thread.Start();
@@ -94,24 +132,46 @@ namespace CLOiSim.Diagnostics
             }
 
             Volatile.Write(ref _lastHeartbeatMs, now);
+
+            // Refresh the diagnostics snapshot here (main thread) so the watchdog
+            // thread never has to touch SystemInfo/Time itself during a stall.
+            RefreshDiagSnapshot();
         }
 
         static void DumpPreExitDiagnostics(long stalledMs)
         {
+            // IMPORTANT: this runs on the watchdog (background) thread. Never call
+            // SystemInfo/Time/UnityEngine APIs other than Debug.Log directly here -
+            // if the GPU device is already lost, touching those from a non-main
+            // thread has been observed to crash natively before this log can even
+            // be written (see: SystemInfo.graphicsDeviceType in the stack trace of
+            // the "Graphics device is null" crash). Use the cached snapshot instead.
+            var snap = _snapshot;
+
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"[FreezeWatchdog] ===== PRE-EXIT DIAGNOSTICS (stalled={stalledMs}ms, stage='{_stage}') =====");
-            sb.AppendLine($"[FreezeWatchdog] frame={Time.frameCount}"
-                + $" realtime={Time.realtimeSinceStartup:F1}s"
-                + $" timeSinceLevelLoad={Time.timeSinceLevelLoad:F1}s");
-            sb.AppendLine($"[FreezeWatchdog] GPU: {SystemInfo.graphicsDeviceName}"
-                + $" ({SystemInfo.graphicsDeviceType})"
-                + $" VRAM={SystemInfo.graphicsMemorySize}MB"
-                + $" driverVersion={SystemInfo.graphicsDeviceVersion}");
-            sb.AppendLine($"[FreezeWatchdog] sys: RAM={SystemInfo.systemMemorySize}MB"
-                + $" CPU={SystemInfo.processorType}"
-                + $" cores={SystemInfo.processorCount}");
-            sb.AppendLine($"[FreezeWatchdog] supportsAsyncGPUReadback={SystemInfo.supportsAsyncGPUReadback}"
-                + $" supportsGraphicsFence={SystemInfo.supportsGraphicsFence}");
+            sb.AppendLine($"[FreezeWatchdog] ===== PRE-EXIT DIAGNOSTICS (stalled={stalledMs}ms, elapsed={Clock.ElapsedMilliseconds}ms, stage='{_stage}') =====");
+
+            if (snap == null)
+            {
+                sb.AppendLine("[FreezeWatchdog] no cached diagnostics snapshot available yet (stalled before first LateUpdate).");
+            }
+            else
+            {
+                sb.AppendLine($"[FreezeWatchdog] frame={snap.FrameCount}"
+                    + $" realtime={snap.RealtimeSinceStartup:F1}s"
+                    + $" timeSinceLevelLoad={snap.TimeSinceLevelLoad:F1}s"
+                    + " (cached, last refreshed before the stall)");
+                sb.AppendLine($"[FreezeWatchdog] GPU: {snap.GpuName}"
+                    + $" ({snap.GpuType})"
+                    + $" VRAM={snap.VramMB}MB"
+                    + $" driverVersion={snap.GpuDriverVersion}");
+                sb.AppendLine($"[FreezeWatchdog] sys: RAM={snap.RamMB}MB"
+                    + $" CPU={snap.CpuType}"
+                    + $" cores={snap.CpuCores}");
+                sb.AppendLine($"[FreezeWatchdog] supportsAsyncGPUReadback={snap.SupportsAsyncGpuReadback}"
+                    + $" supportsGraphicsFence={snap.SupportsGraphicsFence}");
+            }
+
             UnityEngine.Debug.LogError(sb.ToString());
 
             URTSensorManager.DumpDiagHistory($"FreezeWatchdog pre-exit (stalled={stalledMs}ms)");
@@ -138,7 +198,7 @@ namespace CLOiSim.Diagnostics
                 lastReported = bucket;
 
                 // UnityEngine.Debug logging is thread-safe and reaches Player.log.
-                string msg = $"[FreezeWatchdog] MAIN THREAD STALLED ~{stalledFor}ms at stage='{_stage}'";
+                string msg = $"[FreezeWatchdog] MAIN THREAD STALLED ~{stalledFor}ms at stage='{_stage}' elapsed={now}ms";
                 if (errorThresholdMs > 0 && stalledFor >= errorThresholdMs)
                 {
                     UnityEngine.Debug.LogError(msg);
