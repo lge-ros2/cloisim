@@ -72,19 +72,31 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 
 	protected void OnDestroy()
 	{
-		_thread.Dispose();
-		if (!_thread.TryJoinStep(joinTimeoutMs: 500))
+		// Suppress FreezeWatchdog for the duration of this intentional blocking join: deleting
+		// a model tears down every plugin's threads in the same OnDestroy pass, and each plugin
+		// can block the main thread for up to 500ms. Left unsuppressed, the watchdog treats this
+		// expected teardown stall (stacked across plugins/devices) as a real freeze and
+		// force-exits the process.
+		CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+		try
 		{
-			Debug.LogWarning($"[{name}] plugin threads are still running; skipping transport dispose during teardown.");
+			_thread.Dispose();
+			if (!_thread.TryJoinStep(joinTimeoutMs: 500))
+			{
+				Debug.LogWarning($"[{name}] plugin threads are still running; skipping transport dispose during teardown.");
+			}
+			else
+			{
+				_transport.Dispose();
+			}
+
+			DeregisterDevice(_allocatedDevicePorts, _allocatedDeviceHashKeys);
+			// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
 		}
-		else
+		finally
 		{
-			_transport.Dispose();
+			CLOiSim.Diagnostics.FreezeWatchdog.Restore();
 		}
-
-
-		DeregisterDevice(_allocatedDevicePorts, _allocatedDeviceHashKeys);
-		// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
 	}
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)
