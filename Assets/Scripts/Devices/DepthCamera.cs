@@ -10,6 +10,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering.UnifiedRayTracing;
 using UnityEngine.Experimental.Rendering;
 using System;
+using messages = cloisim.msgs;
 
 namespace SensorDevices
 {
@@ -144,11 +145,42 @@ namespace SensorDevices
 			Resources.UnloadUnusedAssets();
 		}
 
+		/// <summary>
+		/// Resolve the SDF-configured pixel format for this depth camera, falling back
+		/// to a single-channel float depth format for anything that is not a valid
+		/// single-channel depth encoding. A depth camera can only publish single-channel
+		/// depth (L_INT8/L_INT16/R_FLOAT16/R_FLOAT32); an RGB/color or unknown format is
+		/// meaningless here.
+		///
+		/// The SDFormat parser defaults an unspecified &lt;image&gt;&lt;format&gt; to
+		/// "R8G8B8" (not empty), so CameraData.GetPixelFormat returns RGB_INT8 — a
+		/// UNKNOWN check alone never fires for a format-less depth sensor. The
+		/// output-buffer packing math below only supports 1/2/4-byte single-channel
+		/// depths; feeding it a 3-byte RGB value mismatches the pack factor and
+		/// corrupts/tiles the published image, and downstream (ROS) reports a bogus
+		/// "rgb8" encoding. Whitelist the valid depth formats and fall back otherwise.
+		/// </summary>
+		private CameraData.PixelFormat GetDepthPixelFormat()
+		{
+			var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
+			switch (format)
+			{
+				case CameraData.PixelFormat.L_INT8:
+				case CameraData.PixelFormat.L_INT16:
+				case CameraData.PixelFormat.R_FLOAT16:
+				case CameraData.PixelFormat.R_FLOAT32:
+					return format;
+
+				default:
+					return CameraData.PixelFormat.R_FLOAT32;
+			}
+		}
+
 		public void SetDepthScale(in uint value)
 		{
 			var width = (int)_camParam.ImageWidth;
 			var height = (int)_camParam.ImageHeight;
-			var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
+			var format = GetDepthPixelFormat();
 			var imageDepth = CameraData.GetImageDepth(format);
 
 			Debug.Log($"[DepthCamera] format={_camParam.ImageFormat} pixelFormat={format} imageDepth={imageDepth} depthScale={value}");
@@ -246,6 +278,25 @@ namespace SensorDevices
 			base.OnDestroy();
 		}
 
+		/// <summary>
+		/// Camera.SetupMessages() sizes _image.PixelFormatType/Step/Data from
+		/// CameraData.GetPixelFormat(_camParam.ImageFormat) directly, which defaults an
+		/// unspecified SDF <format> to a 3-byte RGB depth. Re-derive those three fields
+		/// with GetDepthPixelFormat() so the published step/pixel-format and the actual
+		/// packed-depth byte layout produced by the URT/scaling compute shaders agree —
+		/// otherwise the AsyncGPUReadback copy in ExecuteRender is clamped to the wrong
+		/// _image.Data length and the published image is corrupted/tiled.
+		/// </summary>
+		protected override void SetupMessages()
+		{
+			base.SetupMessages();
+
+			var format = GetDepthPixelFormat();
+			_image.PixelFormatType = (messages.PixelFormatType)format;
+			_image.Step = _image.Width * (uint)CameraData.GetImageStep(format);
+			_image.Data = new byte[_image.Height * _image.Step];
+		}
+
 		protected override void SetupTexture()
 		{
 			_targetRTname = "CameraDepthTexture";
@@ -255,7 +306,7 @@ namespace SensorDevices
 
 			var width = (int)_camParam.ImageWidth;
 			var height = (int)_camParam.ImageHeight;
-			var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
+			var format = GetDepthPixelFormat();
 			var imageDepth = CameraData.GetImageDepth(format);
 
 			_textureForCapture = new Texture2D(width, height, TextureFormat.R8, false)
@@ -488,7 +539,7 @@ namespace SensorDevices
 			// Recreate output compute buffers — their GPU handles can become incompatible
 			// with a newly created URT shader on the second (and subsequent) reset.
 			var pixelCount = (int)(width * height);
-			var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
+			var format = GetDepthPixelFormat();
 			var imageDepth = CameraData.GetImageDepth(format);
 			var packedCount = (imageDepth == 4) ? pixelCount
 				: (imageDepth == 2 ? (pixelCount + 1) / 2 : (pixelCount + 3) / 4);
