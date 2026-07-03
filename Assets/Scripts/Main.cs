@@ -745,7 +745,21 @@ public class Main : MonoBehaviour
 		return tmpModelName;
 	}
 
-	public IEnumerator LoadModel(string modelPath, string modelFileName)
+	public bool TryGetModelResourcePath(in string modelName, out string path, out string filename)
+	{
+		if (_sdfRoot != null && _sdfRoot.ResourceModelTable.TryGetValue(modelName, out var entry))
+		{
+			path = entry.path;
+			filename = entry.filename;
+			return true;
+		}
+
+		path = string.Empty;
+		filename = string.Empty;
+		return false;
+	}
+
+	public IEnumerator LoadModel(string modelPath, string modelFileName, string modelNameOverride = null)
 	{
 		SuppressPhysicsDebugContacts("loading a model");
 
@@ -761,7 +775,11 @@ public class Main : MonoBehaviour
 			_bridgeManager.ClearAllocatedHistory();
 
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
-			model.Name = GetClonedModelName(model.Name);
+			// Use the caller-supplied base name (e.g. the copied object's current scene name)
+			// when provided, so clones are named after what the user copied rather than the
+			// SDF file's own <model name="..."> (which may differ from the scene instance name).
+			var baseModelName = string.IsNullOrEmpty(modelNameOverride) ? model.Name : modelNameOverride;
+			model.Name = GetClonedModelName(baseModelName);
 
 			Physics.simulationMode = SimulationMode.Script;
 			GameObject targetObject = null;
@@ -776,6 +794,13 @@ public class Main : MonoBehaviour
 			}
 
 			yield return new WaitUntil(() => targetObject != null);
+
+			var modelHelperForSource = targetObject.GetComponent<SDFormat.Helper.Model>();
+			if (modelHelperForSource != null)
+			{
+				modelHelperForSource.sourcePath = modelPath;
+				modelHelperForSource.sourceFilename = modelFileName;
+			}
 
 			_pluginAllStarted = false;
 

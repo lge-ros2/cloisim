@@ -90,6 +90,20 @@ public class ModelImporter : MonoBehaviour
 		}
 	}
 
+	private static bool TryResolveModelSource(SDFormat.Helper.Model modelHelper, out string sourcePath, out string sourceFilename)
+	{
+		if (!string.IsNullOrEmpty(modelHelper.sourcePath) && !string.IsNullOrEmpty(modelHelper.sourceFilename))
+		{
+			sourcePath = modelHelper.sourcePath;
+			sourceFilename = modelHelper.sourceFilename;
+			return true;
+		}
+
+		// Model came from a world file's inline/<include> definition rather than
+		// Main.LoadModel(); fall back to the same resource lookup used for <include> resolution.
+		return Main.Instance.TryGetModelResourcePath(modelHelper.modelNameInPath, out sourcePath, out sourceFilename);
+	}
+
 	private static void ChangeColliderObjectLayer(Transform target, in string layerName)
 	{
 		foreach (var collider in target.GetComponentsInChildren<Collider>())
@@ -336,21 +350,34 @@ public class ModelImporter : MonoBehaviour
 			{
 				if (_targetObjectForCopy != null)
 				{
-					var instantiatedObject = Instantiate(_targetObjectForCopy, _targetObjectForCopy.root, true);
-					instantiatedObject.name = $"{_targetObjectForCopy.name}_clone_{instantiatedObject.GetEntityId()}";
-
-					if (_targetObjectForCopy.CompareTag("Road"))
+					var modelHelper = _targetObjectForCopy.GetComponent<SDFormat.Helper.Model>();
+					if (modelHelper != null && TryResolveModelSource(modelHelper, out var sourcePath, out var sourceFilename))
 					{
-						var loftRoadOriginal = _targetObjectForCopy.GetComponent<Unity.Splines.LoftRoadGenerator>();
-						var loftRoadNew = instantiatedObject.GetComponent<Unity.Splines.LoftRoadGenerator>();
-						loftRoadNew.SdfMaterial = loftRoadOriginal.SdfMaterial;
+						// Live SDF models (devices, plugins, sensors) must go through the SDF
+						// parse-import-implement pipeline again; a raw Instantiate() copies
+						// already-initialized components without re-running their setup
+						// (e.g. Camera/Lidar parameters, plugin parameters, device ports),
+						// which crashes or collides with the original's registered ports.
+						StartCoroutine(Main.Instance.LoadModel(sourcePath, sourceFilename, _targetObjectForCopy.name));
 					}
+					else
+					{
+						var instantiatedObject = Instantiate(_targetObjectForCopy, _targetObjectForCopy.root, true);
+						instantiatedObject.name = $"{_targetObjectForCopy.name}_clone_{instantiatedObject.GetEntityId()}";
 
-					SetModelForDeploy(instantiatedObject);
+						if (_targetObjectForCopy.CompareTag("Road"))
+						{
+							var loftRoadOriginal = _targetObjectForCopy.GetComponent<Unity.Splines.LoftRoadGenerator>();
+							var loftRoadNew = instantiatedObject.GetComponent<Unity.Splines.LoftRoadGenerator>();
+							loftRoadNew.SdfMaterial = loftRoadOriginal.SdfMaterial;
+						}
 
-					var segmentationTag = instantiatedObject.GetComponentInChildren<Segmentation.Tag>();
-					segmentationTag?.Refresh();
-					Main.SegmentationManager.UpdateTags();
+						SetModelForDeploy(instantiatedObject);
+
+						var segmentationTag = instantiatedObject.GetComponentInChildren<Segmentation.Tag>();
+						segmentationTag?.Refresh();
+						Main.SegmentationManager.UpdateTags();
+					}
 				}
 				else
 				{
