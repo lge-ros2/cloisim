@@ -206,7 +206,15 @@ namespace CLOiSim.Diagnostics
 #if UNITY_EDITOR
                     UnityEditor.EditorApplication.isPlaying = false;
 #else
-                    System.Environment.Exit(1);
+                    // Environment.Exit() runs the managed shutdown sequence (ProcessExit
+                    // handlers, native engine/graphics teardown) on THIS thread. If the main
+                    // thread is wedged inside a native GPU driver call (the usual cause of a
+                    // stall this long — see the "missing UAV"/Xid GPU fault path in
+                    // URTSensorManager), that teardown can block on the same driver-level lock
+                    // the main thread holds, so Exit() itself hangs and the process never dies.
+                    // Kill() terminates the OS process directly (TerminateProcess/SIGKILL)
+                    // without requiring any other thread's cooperation.
+                    Process.GetCurrentProcess().Kill();
 #endif
                 }
                 else
