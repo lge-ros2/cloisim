@@ -401,6 +401,10 @@ namespace SDFormat
 					{
 						node.InnerText = value.Item2 + "/" + meshUri;
 					}
+					else
+					{
+						Console.Error.Write($"Failed to resolve relative path <{targetElement}>({uri}) - no parent <model> found or model({currentModelName}) not in resource table");
+					}
 				}
 			}
 		}

@@ -51,6 +51,10 @@ namespace SDFormat
 
 					actorHelper.SetScript(actor);
 				}
+				else
+				{
+					UE.Debug.LogWarning($"Actor({actor.Name}): failed to load skin({actor.SkinFilename}) - animations will not be loaded");
+				}
 
 				var capsuleCollider = newActorObject.AddComponent<UE.CapsuleCollider>();
 				capsuleCollider.direction = 1;
