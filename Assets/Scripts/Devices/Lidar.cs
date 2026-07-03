@@ -153,7 +153,7 @@ namespace SensorDevices
 
 			// Drain in-flight readbacks before releasing GPU resources
 			// (skips the blocking wait entirely when nothing is in flight)
-			Device.DrainReadbacksForTeardown();
+			var quiesced = Device.DrainReadbacksForTeardown();
 
 			if (_laserProcessThread != null && _laserProcessThread.IsAlive)
 			{
@@ -162,23 +162,43 @@ namespace SensorDevices
 
 			_outputQueue.Clear();
 
-			// Clean up Livox-specific resources
+			// Clean up Livox-specific resources (already fence-gated internally)
 			CleanupLivoxResources();
 
-			// Clean up per-sensor URT resources
-			_urtCmdBuffer?.Release();
+			// Snapshot and null out fields immediately so nothing else can touch them,
+			// but only free the underlying GPU resources right away if the GPU has
+			// actually caught up. If the readback drain above was abandoned, an
+			// in-flight readback may still reference these buffers — freeing them
+			// now is a use-after-free (SIGSEGV); defer until the GPU quiesces.
+			var urtCmdBuffer = _urtCmdBuffer;
+			var rtTraceScratchBuffer = _rtTraceScratchBuffer;
+			var rangeOutputBuffer = _rangeOutputBuffer;
+			var csRayTrace = _csRayTrace;
+
 			_urtCmdBuffer = null;
-
-			_rtTraceScratchBuffer?.Dispose();
 			_rtTraceScratchBuffer = null;
-
-			_rangeOutputBuffer?.Release();
 			_rangeOutputBuffer = null;
+			_csRayTrace = null;
 
-			if (_csRayTrace != null)
+			void FreeGpuResources()
 			{
-				Destroy(_csRayTrace);
-				_csRayTrace = null;
+				urtCmdBuffer?.Release();
+				rtTraceScratchBuffer?.Dispose();
+				rangeOutputBuffer?.Release();
+
+				if (csRayTrace != null)
+				{
+					Destroy(csRayTrace);
+				}
+			}
+
+			if (quiesced)
+			{
+				FreeGpuResources();
+			}
+			else
+			{
+				URTSensorManager.DeferDispose(FreeGpuResources);
 			}
 
 			URTSensorManager.Unregister(GetEntityId());

@@ -188,33 +188,56 @@ namespace SensorDevices
 
 			// Drain in-flight readbacks before releasing GPU resources
 			// (skips the blocking wait entirely when nothing is in flight)
-			Device.DrainReadbacksForTeardown();
+			var quiesced = Device.DrainReadbacksForTeardown();
 
-			// Clean up compute shaders
-			Destroy(_csDepthScaling);
+			// Snapshot and null out fields immediately so nothing else can touch them,
+			// but only free the underlying GPU resources right away if the GPU has
+			// actually caught up. If a readback drain was abandoned above, an in-flight
+			// readback may still reference these buffers — freeing them now is a
+			// use-after-free (SIGSEGV); defer until the GPU actually quiesces.
+			var csDepthScaling = _csDepthScaling;
+			var csVcselPrepass = _csVcselPrepass;
+			var computeBufferSrc = _computeBufferSrc;
+			var computeBufferDst = _computeBufferDst;
+			var computeBufferBunchFlag = _computeBufferBunchFlag;
+			var urtCmdBuffer = _urtCmdBuffer;
+			var rtTraceScratchBuffer = _rtTraceScratchBuffer;
+			var csRayTrace = _csRayTrace;
+
 			_csDepthScaling = null;
-
-			Destroy(_csVcselPrepass);
 			_csVcselPrepass = null;
-
-			_computeBufferSrc?.Release();
-			_computeBufferDst?.Release();
-			_computeBufferBunchFlag?.Release();
 			_computeBufferSrc = null;
 			_computeBufferDst = null;
 			_computeBufferBunchFlag = null;
-
-			// Clean up per-camera URT resources
-			_urtCmdBuffer?.Release();
 			_urtCmdBuffer = null;
-
-			_rtTraceScratchBuffer?.Dispose();
 			_rtTraceScratchBuffer = null;
+			_csRayTrace = null;
 
-			if (_csRayTrace != null)
+			void FreeGpuResources()
 			{
-				Destroy(_csRayTrace);
-				_csRayTrace = null;
+				Destroy(csDepthScaling);
+				Destroy(csVcselPrepass);
+
+				computeBufferSrc?.Release();
+				computeBufferDst?.Release();
+				computeBufferBunchFlag?.Release();
+
+				urtCmdBuffer?.Release();
+				rtTraceScratchBuffer?.Dispose();
+
+				if (csRayTrace != null)
+				{
+					Destroy(csRayTrace);
+				}
+			}
+
+			if (quiesced)
+			{
+				FreeGpuResources();
+			}
+			else
+			{
+				URTSensorManager.DeferDispose(FreeGpuResources);
 			}
 
 			// Unregister from shared URT manager

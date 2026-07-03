@@ -71,14 +71,19 @@ public abstract class Device : MonoBehaviour
 	/// entirely when nothing is in flight — the common teardown case — so the main
 	/// thread never blocks needlessly. When requests ARE pending we must still wait
 	/// (WaitAllRequests pumps and completes their callbacks) to avoid the GfxDevice
-	/// thread touching freed buffers (SIGSEGV); a wedged GPU cannot be timed out from
-	/// managed code, so we only measure and log a stall for diagnosis rather than
-	/// abandoning pending readbacks.
+	/// thread touching freed buffers (SIGSEGV).
+	///
+	/// Returns true when it is safe for the caller to release GPU resources
+	/// immediately. Returns false when the drain was abandoned because the GPU
+	/// did not quiesce within warnThresholdMs (wedged GPU / TDR / Xid) — callers
+	/// MUST NOT free GPU resources immediately in that case; route them through
+	/// URTSensorManager.DeferDispose() instead, since the readbacks are still
+	/// in flight and an immediate free is a use-after-free (SIGSEGV).
 	/// </summary>
-	public static void DrainReadbacksForTeardown(in int warnThresholdMs = 1000)
+	public static bool DrainReadbacksForTeardown(in int warnThresholdMs = 1000)
 	{
 		if (Interlocked.Read(ref s_gpuReadbackInflight) <= 0)
-			return;
+			return true;
 
 		// Suppress FreezeWatchdog for the duration of this intentional blocking drain:
 		// deleting a model can tear down several GPU-backed devices (Camera/DepthCamera/Lidar)
@@ -109,7 +114,7 @@ public abstract class Device : MonoBehaviour
 							$"[Device] GPU did not quiesce within {deadlineMs}ms during teardown — " +
 							$"abandoning blocking readback drain (GPU may be lost). " +
 							$"inflight now={Interlocked.Read(ref s_gpuReadbackInflight)}");
-						return;
+						return false;
 					}
 					Thread.Sleep(1);
 				}
@@ -126,6 +131,8 @@ public abstract class Device : MonoBehaviour
 					$"(> {warnThresholdMs}ms) during teardown — possible GPU/driver stall. " +
 					$"inflight now={Interlocked.Read(ref s_gpuReadbackInflight)}");
 			}
+
+			return true;
 		}
 		finally
 		{

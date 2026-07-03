@@ -781,6 +781,25 @@ public class URTSensorManager : MonoBehaviour
 		inst._deferredDispose.Enqueue((resource, fence, hasFence, Time.frameCount));
 	}
 
+	/// <summary>
+	/// Adapts an arbitrary teardown action (e.g. RenderTexture.Release()+Destroy(),
+	/// ComputeShader Destroy()) to the IDisposable-based deferred free queue below.
+	/// </summary>
+	private sealed class ActionDisposable : IDisposable
+	{
+		private readonly Action _action;
+		public ActionDisposable(Action action) => _action = action;
+		public void Dispose() => _action?.Invoke();
+	}
+
+	/// <summary>
+	/// Same contract as DeferDispose(IDisposable), for resources that are not
+	/// IDisposable (RenderTexture, ComputeShader) and must instead be torn down
+	/// via Destroy()/Release() once the GPU has caught up.
+	/// </summary>
+	public static void DeferDispose(Action teardownAction) =>
+		DeferDispose(new ActionDisposable(teardownAction));
+
 	/// <summary>Dispose deferred per-sensor buffers whose GPU work has completed.</summary>
 	private void DrainDeferredDisposes(bool force = false)
 	{

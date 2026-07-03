@@ -452,13 +452,24 @@ namespace SensorDevices
 
 			// Drain in-flight readbacks before releasing GPU resources
 			// (skips the blocking wait entirely when nothing is in flight)
-			Device.DrainReadbacksForTeardown();
+			var quiesced = Device.DrainReadbacksForTeardown();
 
 			if (_renderTexture != null)
 			{
-				_renderTexture.Release();
-				Destroy(_renderTexture);
+				var rt = _renderTexture;
 				_renderTexture = null;
+				if (quiesced)
+				{
+					rt.Release();
+					Destroy(rt);
+				}
+				else
+				{
+					// GPU did not quiesce: an in-flight readback may still reference this
+					// texture. Freeing it now is a use-after-free (SIGSEGV) — defer until
+					// the GPU actually catches up.
+					URTSensorManager.DeferDispose(() => { rt.Release(); Destroy(rt); });
+				}
 			}
 
 			base.OnDestroy();
