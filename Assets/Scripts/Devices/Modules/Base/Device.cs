@@ -217,7 +217,7 @@ public abstract class Device : MonoBehaviour
 	private readonly Stopwatch _diagPublishSw = new();
 	private int _diagPublishCount;
 	private float _diagPublishHz;
-	private const float DEVICE_DIAG_INTERVAL_SEC = 15f;
+	private const float DEVICE_DIAG_INTERVAL_SEC = 30f;
 
 	/// <summary>Actual measured publish Hz (updated every DEVICE_DIAG_INTERVAL_SEC).</summary>
 	public float PublishHz => _diagPublishHz;
@@ -226,7 +226,7 @@ public abstract class Device : MonoBehaviour
 	#region PROFILER
 	private int _profFrameCount = 0;
 	private double _profByteCount = 0;
-	private float _periodForProfiler = 5f; // seconds
+	private float _periodForProfiler = 60f; // seconds
 
 	private Stopwatch _profWatch = Stopwatch.StartNew();
 
