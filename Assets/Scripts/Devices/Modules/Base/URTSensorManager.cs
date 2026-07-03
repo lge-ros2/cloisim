@@ -282,6 +282,27 @@ public class URTSensorManager : MonoBehaviour
 	private readonly bool[] _hasTraceFence = new bool[2];
 	// No-fence fallback: frame number of the most recent trace that read each struct.
 	private readonly int[] _frameOfLastTrace = new[] { -1, -1 };
+
+	// Per-struct build-completion fences: a struct must not be promoted to readIdx
+	// (i.e. sensors must not trace it) until its most recent Build() GPU work is
+	// confirmed complete. Without this, promoting immediately after recording
+	// Build() into the same command buffer as this frame's ray-trace dispatch lets
+	// sensors trace a TLAS that has not actually finished building, which reports
+	// near-universal ray misses (NaN) for that frame.
+	private readonly GraphicsFence[] _buildFences = new GraphicsFence[2];
+	private readonly bool[] _hasBuildFence = new bool[2];
+	// No-fence fallback: frame number of the most recent Build() recorded for each struct.
+	private readonly int[] _frameOfLastBuildForStruct = new[] { -1, -1 };
+
+	// The struct most recently Build()-recorded but not yet promoted to readIdx.
+	private bool _hasPendingSwap;
+	private int _pendingSwapIdx = -1;
+
+	// Mirrors _pendingFenceNeeded/_pendingFenceIdx but for the build fence: set when
+	// EnsureBVHReady records a Build(), captured in LateUpdate once that frame's
+	// command buffer (containing the Build dispatch) has been submitted.
+	private bool _pendingBuildFenceNeeded;
+	private int _pendingBuildFenceIdx;
 	#endregion
 
 	#region "Safe scratch-buffer management"
@@ -527,6 +548,25 @@ public class URTSensorManager : MonoBehaviour
 
 		inst._frameOfLastBuild = currentFrame;
 
+		// Promote a previously-recorded Build() to the read side only once its GPU
+		// work is confirmed complete. Sensors must never trace a struct whose Build
+		// dispatch might still be in flight (see IsBuildConsumed doc comment).
+		if (inst._hasPendingSwap && inst.IsBuildConsumed(inst._pendingSwapIdx))
+		{
+			var promoted = inst._pendingSwapIdx;
+			inst._writeIdx = inst._readIdx;
+			inst._readIdx = promoted;
+			inst._structHasTlas[inst._readIdx] = true;
+			inst._hasPendingSwap = false;
+			inst._pendingSwapIdx = -1;
+		}
+
+		// A build was recorded for _writeIdx but hasn't been promoted yet (its fence
+		// hasn't passed). Don't record another Build() on top of the still-in-flight
+		// one — wait for the pending promotion instead.
+		if (inst._hasPendingSwap && inst._pendingSwapIdx == inst._writeIdx)
+			return;
+
 		// This frame's sensors will trace against _readIdx — request a fence
 		// in LateUpdate so the NEXT write-cycle on that struct waits for them.
 		// Save the current readIdx here: EnsureBVHReady may swap readIdx/writeIdx
@@ -606,14 +646,17 @@ public class URTSensorManager : MonoBehaviour
 			writeStruct.Build(cmd, inst._rtBuildScratchBuffer);
 		}
 
-		// Swap: freshly-built writeIdx becomes new readIdx.
-		// AccelStruct now returns the struct we just built, so sensors that
-		// call SetAccelerationStructure(AccelStruct) after EnsureBVHReady
-		// automatically trace against up-to-date transforms.
-		(inst._readIdx, inst._writeIdx) = (inst._writeIdx, inst._readIdx);
-
-		// Mark the new readIdx as having a valid TLAS so AccelStruct returns it.
-		inst._structHasTlas[inst._readIdx] = true;
+		// Defer promotion: writeIdx now holds a freshly-recorded Build(), but that
+		// GPU work has not been confirmed complete yet. Mark it pending — the
+		// promotion check at the top of this method swaps it in as the new readIdx
+		// on a later call, once IsBuildConsumed() reports the build fence has
+		// passed. Sensors keep tracing the current (already-complete) _readIdx
+		// this frame.
+		inst._pendingSwapIdx = writeIdx;
+		inst._hasPendingSwap = true;
+		inst._pendingBuildFenceNeeded = true;
+		inst._pendingBuildFenceIdx = writeIdx;
+		inst._frameOfLastBuildForStruct[writeIdx] = currentFrame;
 		}
 	}
 
@@ -631,6 +674,24 @@ public class URTSensorManager : MonoBehaviour
 
 		var prevFrame = _frameOfLastTrace[structIdx];
 		return prevFrame < 0 || Time.frameCount - prevFrame >= ScratchSafetyFrames;
+	}
+
+	/// <summary>
+	/// True once the Build() GPU work most recently recorded for _rtAccelStructs[structIdx]
+	/// has actually completed, so it is safe to promote that struct to readIdx. Before this
+	/// gate existed, EnsureBVHReady promoted a struct immediately after recording Build()
+	/// into the same command buffer as this frame's ray-trace dispatch; sensors then traced
+	/// a TLAS whose build had not finished on the GPU, which TraceRayClosestHit reports as
+	/// near-universal ray misses (NaN) — observed as ranges alternating between a normal
+	/// scan and an almost-all-NaN scan every other frame.
+	/// </summary>
+	private bool IsBuildConsumed(int structIdx)
+	{
+		if (s_graphicsFenceSupported)
+			return _hasBuildFence[structIdx] && _buildFences[structIdx].passed;
+
+		var builtFrame = _frameOfLastBuildForStruct[structIdx];
+		return builtFrame >= 0 && Time.frameCount > builtFrame;
 	}
 
 	#endregion
@@ -911,11 +972,11 @@ public class URTSensorManager : MonoBehaviour
 		CLOiSim.Diagnostics.FreezeWatchdog.Mark("idle");
 
 		// Runs after SensorRenderManager.LateUpdate, so every URT trace dispatch
-		// for this frame is already submitted.  Capture a fence for _pendingFenceIdx
-		// (the struct sensors actually traced this frame, saved before any swap).
-		// Using _readIdx here would be wrong: EnsureBVHReady swaps readIdx/writeIdx
-		// after building, so by LateUpdate _readIdx is the newly-built struct (not
-		// the one sensors traced), and _writeIdx is what actually needs the fence.
+		// for this frame is already submitted. Capture a fence for _pendingFenceIdx
+		// (the struct sensors actually traced this frame, saved by EnsureBVHReady
+		// before any pending promotion). Promotion of a freshly-built struct to
+		// readIdx is deferred to a later frame (see IsBuildConsumed), so _readIdx
+		// here is always the same struct sensors traced this frame.
 		if (_pendingFenceNeeded && s_graphicsFenceSupported)
 		{
 			_traceFences[_pendingFenceIdx] = Graphics.CreateGraphicsFence(
@@ -923,6 +984,17 @@ public class URTSensorManager : MonoBehaviour
 			_hasTraceFence[_pendingFenceIdx] = true;
 		}
 		_pendingFenceNeeded = false;
+
+		// Capture a fence covering this frame's Build() dispatch (if any), so the
+		// promotion check in EnsureBVHReady can confirm it has actually completed
+		// before that struct is allowed to become the read (trace) target.
+		if (_pendingBuildFenceNeeded && s_graphicsFenceSupported)
+		{
+			_buildFences[_pendingBuildFenceIdx] = Graphics.CreateGraphicsFence(
+				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
+			_hasBuildFence[_pendingBuildFenceIdx] = true;
+		}
+		_pendingBuildFenceNeeded = false;
 	}
 
 	private void ReleaseResources()
@@ -946,6 +1018,8 @@ public class URTSensorManager : MonoBehaviour
 			_hasTraceFence[i] = false;
 			_frameOfLastTrace[i] = -1;
 			_structHasTlas[i] = false;
+			_hasBuildFence[i] = false;
+			_frameOfLastBuildForStruct[i] = -1;
 		}
 
 		_rtContext?.Dispose();
@@ -956,6 +1030,10 @@ public class URTSensorManager : MonoBehaviour
 		_frameOfLastBuild = -1;
 		_pendingFenceNeeded = false;
 		_pendingFenceIdx = 0;
+		_hasPendingSwap = false;
+		_pendingSwapIdx = -1;
+		_pendingBuildFenceNeeded = false;
+		_pendingBuildFenceIdx = 0;
 		_postResetResumeBuildFrame = 0;
 
 		_diagHistory.Clear();
@@ -1104,6 +1182,8 @@ public class URTSensorManager : MonoBehaviour
 			_hasTraceFence[i] = false;
 			_frameOfLastTrace[i] = -1;
 			_structHasTlas[i] = false;
+			_hasBuildFence[i] = false;
+			_frameOfLastBuildForStruct[i] = -1;
 		}
 
 		_readIdx = 0;
@@ -1111,6 +1191,10 @@ public class URTSensorManager : MonoBehaviour
 		_frameOfLastBuild = -1;
 		_pendingFenceNeeded = false;
 		_pendingFenceIdx = 0;
+		_hasPendingSwap = false;
+		_pendingSwapIdx = -1;
+		_pendingBuildFenceNeeded = false;
+		_pendingBuildFenceIdx = 0;
 		_diagPrevInstanceCount = -1;
 		_postTDRBvhWarmupPending = false;
 
