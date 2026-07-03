@@ -214,7 +214,11 @@ namespace CLOiSim.Diagnostics
                         UnityEngine.Debug.LogError($"[FreezeWatchdog] DumpPreExitDiagnostics failed: {e}");
                     }
 #if UNITY_EDITOR
-                    UnityEditor.EditorApplication.isPlaying = false;
+                    // EditorApplication.isPlaying's setter calls into native code and requires
+                    // the main thread; calling it directly from this background thread throws.
+                    // delayCall is a plain delegate field (no native call on add), so queuing
+                    // here is safe and the assignment itself runs on the main thread later.
+                    UnityEditor.EditorApplication.delayCall += () => UnityEditor.EditorApplication.isPlaying = false;
 #else
                     // Environment.Exit() runs the managed shutdown sequence (ProcessExit
                     // handlers, native engine/graphics teardown) on THIS thread. If the main
