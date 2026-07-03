@@ -165,6 +165,14 @@ public class URTSensorManager : MonoBehaviour
 	// watchdog's escalation before it reaches Process.Kill().
 	private volatile int _cachedFrameCount;
 
+	// Same reasoning as _cachedFrameCount: GraphicsBuffer.IsValid()/count/stride
+	// call into native code that requires the main thread (IsValidBuffer_Injected),
+	// so DumpDiagHistory must never touch _rtBuildScratchBuffer's properties
+	// directly when invoked from the watchdog thread.
+	private volatile bool _cachedScratchBufferValid;
+	private volatile int _cachedScratchBufferCount;
+	private volatile int _cachedScratchBufferStride;
+
 	private void DiagRecord(string entry)
 	{
 		_diagHistory.Enqueue(entry);
@@ -207,8 +215,11 @@ public class URTSensorManager : MonoBehaviour
 			+ $" accelNull=[{inst._rtAccelStructs[0] == null},{inst._rtAccelStructs[1] == null}]"
 			+ $" frameOfLastBuild={inst._frameOfLastBuild}");
 		var bs = inst._rtBuildScratchBuffer;
+		// NOTE: use the cached values below, never bs.IsValid()/count/stride directly —
+		// those call into native code that requires the main thread and throw when
+		// invoked from FreezeWatchdog's background thread (same reasoning as frameCount above).
 		sb.AppendLine($"[URT-DIAG] buildScratch: "
-			+ (bs == null ? "null" : $"hash=0x{bs.GetHashCode():X} valid={bs.IsValid()} count={bs.count} stride={bs.stride}")
+			+ (bs == null ? "null" : $"hash=0x{bs.GetHashCode():X} valid={inst._cachedScratchBufferValid} count={inst._cachedScratchBufferCount} stride={inst._cachedScratchBufferStride} (cached)")
 			+ $" | deferredScratchFree={inst._deferredScratchFree.Count} deferredDispose={inst._deferredDispose.Count}");
 		sb.AppendLine("[URT-DIAG] --- recent state changes (oldest first) ---");
 		foreach (var line in inst._diagHistory)
@@ -300,10 +311,18 @@ public class URTSensorManager : MonoBehaviour
 	/// <summary>Per-instance tracking for transform updates.</summary>
 	internal struct InstanceEntry
 	{
-		public MeshRenderer renderer;
-		public Mesh mesh;
+		public Renderer renderer;      // MeshRenderer or SkinnedMeshRenderer
+		public Mesh keyMesh;           // identity mesh used for gather diffing (sharedMesh)
+		public Mesh geometryMesh;      // mesh handed to the accel struct (baked snapshot for skinned)
 		public int subMeshIndex;
 		public int handle;
+
+		// Non-null => animated skin: re-bake geometryMesh and rebuild its BLAS.
+		public SkinnedMeshRenderer skinned;
+
+		// Skin refresh throttling / idle detection (only meaningful when skinned != null).
+		public float nextBakeTime;     // realtime after which a re-bake is allowed
+		public Bounds lastBakedBounds; // world AABB at the last actual bake; used to skip idle actors
 	}
 
 	private readonly struct InstanceKey : IEquatable<InstanceKey>
@@ -312,7 +331,7 @@ public class URTSensorManager : MonoBehaviour
 		private readonly EntityId _meshId;
 		private readonly int _subMeshIndex;
 
-		public InstanceKey(MeshRenderer renderer, Mesh mesh, int subMeshIndex)
+		public InstanceKey(Renderer renderer, Mesh mesh, int subMeshIndex)
 		{
 			_rendererId = renderer != null ? renderer.GetEntityId() : default;
 			_meshId = mesh != null ? mesh.GetEntityId() : default;
@@ -342,6 +361,15 @@ public class URTSensorManager : MonoBehaviour
 
 	[SerializeField]
 	private float _sceneGatherInterval = MinSceneGatherInterval;
+
+	// Skin (actor) BVH refresh rate. Re-baking a SkinnedMeshRenderer and rebuilding its
+	// BLAS every render frame is expensive; animation only needs ~30 Hz to look correct
+	// to a sensor, so throttle it independently of the render frame rate.
+	[SerializeField]
+	private float _skinRefreshRate = 30.0f;
+
+	// Squared world-space AABB delta below which an actor is treated as idle (no re-bake).
+	private const float SkinIdleBoundsSqrEpsilon = 1e-8f;
 
 	private int _cullingMask;
 
@@ -831,6 +859,22 @@ public class URTSensorManager : MonoBehaviour
 	private void LateUpdate()
 	{
 		_cachedFrameCount = Time.frameCount;
+		var scratch = _rtBuildScratchBuffer;
+		_cachedScratchBufferValid = scratch != null && scratch.IsValid();
+		_cachedScratchBufferCount = scratch != null && scratch.IsValid() ? scratch.count : 0;
+		_cachedScratchBufferStride = scratch != null && scratch.IsValid() ? scratch.stride : 0;
+
+		// Consume a fault flagged by OnUnityLogMessage (render/background thread) and
+		// actually recover: rebuild the shared AccelStruct and bump the per-sensor
+		// rebuild generation, same as an explicit reset. ResetSceneInternal() has its
+		// own GPU-quiescence handling, so it is safe to call unconditionally here even
+		// if the GPU is still recovering from a TDR.
+		if (_pendingFaultRecovery)
+		{
+			_pendingFaultRecovery = false;
+			Debug.LogWarning("[URTSensorManager] GPU dispatch fault detected — auto-recovering by rebuilding URT resources.");
+			ResetSceneInternal();
+		}
 
 		// Log when cooldown expires so the log shows exactly when sensors resume tracing.
 		if (_postResetResumeBuildFrame > 0 && Time.frameCount == _postResetResumeBuildFrame)
@@ -857,8 +901,14 @@ public class URTSensorManager : MonoBehaviour
 			}
 		}
 
+		// Bracket the drain so a stall inside a native Dispose() call (freeing a
+		// buffer the GPU turns out to still be using) is attributed to this stage
+		// instead of showing up as the misleading default "idle" in FreezeWatchdog
+		// diagnostics.
+		CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:DeferredFree");
 		DrainDeferredScratchFrees();
 		DrainDeferredDisposes();
+		CLOiSim.Diagnostics.FreezeWatchdog.Mark("idle");
 
 		// Runs after SensorRenderManager.LateUpdate, so every URT trace dispatch
 		// for this frame is already submitted.  Capture a fence for _pendingFenceIdx
@@ -887,6 +937,7 @@ public class URTSensorManager : MonoBehaviour
 		{
 			_rtAccelStructs[i]?.Dispose();
 			_rtAccelStructs[i] = null;
+			DestroyOwnedGeometry(i);
 			_perStructInstances[i].Clear();
 			_perStructExistingKeys[i].Clear();
 			_perStructDesiredKeys[i].Clear();
@@ -991,10 +1042,12 @@ public class URTSensorManager : MonoBehaviour
 		// later clean reset (or leak harmlessly if the device never recovers).
 		if (gpuClean)
 		{
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:DeferredFree");
 			DrainDeferredScratchFrees(force: true);
 			DrainDeferredDisposes(force: true);
 			_rtBuildScratchBuffer?.Dispose();
 			_rtBuildScratchBuffer = null;
+			CLOiSim.Diagnostics.FreezeWatchdog.Mark("idle");
 		}
 		else
 		{
@@ -1042,6 +1095,7 @@ public class URTSensorManager : MonoBehaviour
 
 		for (var i = 0; i < 2; i++)
 		{
+			DestroyOwnedGeometry(i);
 			_perStructInstances[i].Clear();
 			_perStructExistingKeys[i].Clear();
 			_perStructDesiredKeys[i].Clear();
@@ -1095,6 +1149,22 @@ public class URTSensorManager : MonoBehaviour
 
 	#endregion
 
+	/// <summary>
+	/// Destroy the owned baked-mesh snapshots held by skinned instances in the given
+	/// struct, so clearing the instance list does not leak the Meshes created by
+	/// GatherSceneMeshes. Static-mesh entries reference shared meshes and are left alone.
+	/// </summary>
+	private void DestroyOwnedGeometry(int idx)
+	{
+		var instances = _perStructInstances[idx];
+		for (var i = 0; i < instances.Count; i++)
+		{
+			var entry = instances[i];
+			if (entry.skinned != null && entry.geometryMesh != null)
+				Destroy(entry.geometryMesh);
+		}
+	}
+
 	#region "Scene Gathering"
 
 	/// <summary>
@@ -1119,12 +1189,13 @@ public class URTSensorManager : MonoBehaviour
 		for (var i = 0; i < instances.Count; i++)
 		{
 			var entry = instances[i];
-			existingKeys.Add(new InstanceKey(entry.renderer, entry.mesh, entry.subMeshIndex));
+			existingKeys.Add(new InstanceKey(entry.renderer, entry.keyMesh, entry.subMeshIndex));
 		}
 
 		desiredKeys.Clear();
 
 		var renderers = FindObjectsByType<MeshRenderer>();
+		var skinnedRenderers = FindObjectsByType<SkinnedMeshRenderer>();
 
 		int addedCount = 0;
 		int removedCount = 0;
@@ -1177,9 +1248,11 @@ public class URTSensorManager : MonoBehaviour
 					instances.Add(new InstanceEntry
 					{
 						renderer = renderer,
-						mesh = mesh,
+						keyMesh = mesh,
+						geometryMesh = mesh,
 						subMeshIndex = sub,
-						handle = handle
+						handle = handle,
+						skinned = null
 					});
 					addedCount++;
 				}
@@ -1192,10 +1265,80 @@ public class URTSensorManager : MonoBehaviour
 			}
 		}
 
+		// Skinned (animated) meshes — actors. These are not caught by the MeshRenderer
+		// pass above; their deformed geometry lives in a SkinnedMeshRenderer and must be
+		// snapshotted with BakeMesh into an owned Mesh. UpdateInstanceTransforms re-bakes
+		// and rebuilds this instance's BLAS every frame so the animation is traced.
+		foreach (var smr in skinnedRenderers)
+		{
+			if (!smr.gameObject.scene.isLoaded)
+				continue;
+
+			if (!smr.enabled || !smr.gameObject.activeInHierarchy)
+				continue;
+
+			if ((_cullingMask & (1 << smr.gameObject.layer)) == 0)
+			{
+				skippedLayer++;
+				continue;
+			}
+
+			var srcMesh = smr.sharedMesh;
+			if (srcMesh == null)
+			{
+				skippedNoMesh++;
+				continue;
+			}
+
+			for (int sub = 0; sub < srcMesh.subMeshCount; sub++)
+			{
+				var key = new InstanceKey(smr, srcMesh, sub);
+				desiredKeys.Add(key);
+
+				if (existingKeys.Contains(key))
+					continue;
+
+				Mesh bakedMesh = null;
+				try
+				{
+					bakedMesh = new Mesh { name = $"{smr.name}_urtBaked_{sub}" };
+					smr.BakeMesh(bakedMesh);
+
+					var desc = new MeshInstanceDesc(bakedMesh, sub)
+					{
+						localToWorldMatrix = smr.localToWorldMatrix,
+						mask = 0xFF,
+						enableTriangleCulling = false,
+						opaqueGeometry = true
+					};
+
+					var handle = accelStruct.AddInstance(desc);
+					instances.Add(new InstanceEntry
+					{
+						renderer = smr,
+						keyMesh = srcMesh,
+						geometryMesh = bakedMesh,
+						subMeshIndex = sub,
+						handle = handle,
+						skinned = smr
+					});
+					addedCount++;
+				}
+				catch (Exception e)
+				{
+					skippedError++;
+					if (bakedMesh != null)
+						Destroy(bakedMesh);
+					Debug.LogWarning($"[URTSensorManager] Failed to add skinned '{smr.name}' sub={sub} " +
+						$"mesh='{srcMesh.name}' verts={srcMesh.vertexCount}: {e.Message}");
+				}
+			}
+		}
+
 		for (var i = instances.Count - 1; i >= 0; i--)
 		{
 			var entry = instances[i];
-			var key = new InstanceKey(entry.renderer, entry.mesh, entry.subMeshIndex);
+			var key = new InstanceKey(entry.renderer, entry.keyMesh, entry.subMeshIndex);
 			if (desiredKeys.Contains(key))
 				continue;
 
@@ -1206,8 +1349,12 @@ public class URTSensorManager : MonoBehaviour
 			catch (Exception e)
 			{
 				Debug.LogWarning($"[URTSensorManager] Failed to remove '{entry.renderer?.name ?? "<destroyed>"}' " +
-					$"sub={entry.subMeshIndex} mesh='{entry.mesh?.name ?? "<unknown>"}': {e.Message}");
+					$"sub={entry.subMeshIndex} mesh='{entry.keyMesh?.name ?? "<unknown>"}': {e.Message}");
 			}
+
+			// Free the owned baked-mesh snapshot for skinned instances.
+			if (entry.skinned != null && entry.geometryMesh != null)
+				Destroy(entry.geometryMesh);
 
 			instances.RemoveAt(i);
 			removedCount++;
@@ -1215,12 +1362,13 @@ public class URTSensorManager : MonoBehaviour
 
 		_perStructLastGatherTime[idx] = Time.realtimeSinceStartup;
 
+		var totalRenderers = renderers.Length + skinnedRenderers.Length;
 #if UNITY_EDITOR
 		Debug.Log($"[URTSensorManager] GatherSceneMeshes[{idx}]: added={addedCount}, removed={removedCount}, " +
 			$"skippedLayer={skippedLayer}, skippedNoMesh={skippedNoMesh}, " +
-			$"skippedError={skippedError}, totalRenderers={renderers.Length}");
+			$"skippedError={skippedError}, totalRenderers={totalRenderers} (skinned={skinnedRenderers.Length})");
 #endif
-		_sceneGatherInterval = MinSceneGatherInterval + (float)renderers.Length / RendererCountScalingFactor;
+		_sceneGatherInterval = MinSceneGatherInterval + (float)totalRenderers / RendererCountScalingFactor;
 
 		// Allocate / resize the build scratch buffer
 		_rtBuildScratchBuffer = GrowScratch(
@@ -1256,8 +1404,67 @@ public class URTSensorManager : MonoBehaviour
 					Debug.LogWarning($"[URTSensorManager] Failed to remove stale instance " +
 						$"'{entry.renderer?.name ?? "<destroyed>"}': {e.Message}");
 				}
+
+				// Free the owned baked-mesh snapshot for skinned instances.
+				if (entry.skinned != null && entry.geometryMesh != null)
+					Destroy(entry.geometryMesh);
+
 				instances.RemoveAt(i);
 				needsRebuild = true;
+				continue;
+			}
+
+			if (entry.skinned != null)
+			{
+				// Animated skin: snapshot the current deformed geometry and force a BLAS
+				// rebuild. The compute backend caches each BLAS by mesh and only builds it
+				// once (bvhBuilt), so a plain transform update would freeze the actor in its
+				// first-frame pose. Remove+Add drops the stale BLAS and re-adds the same
+				// (re-baked) mesh, which rebuilds its BLAS from fresh vertices on the next Build.
+				//
+				// This is costly, so it is throttled to _skinRefreshRate (default 30 Hz) and
+				// skipped entirely while the actor is idle (world AABB unchanged). Between
+				// refreshes the previously-built BLAS/transform is kept as-is.
+				var now = Time.realtimeSinceStartup;
+				if (now < entry.nextBakeTime)
+					continue;
+
+				var interval = (_skinRefreshRate > 0f) ? (1f / _skinRefreshRate) : 0f;
+				entry.nextBakeTime = now + interval;
+
+				var bounds = entry.skinned.bounds;
+				var centerDelta = bounds.center - entry.lastBakedBounds.center;
+				var extentsDelta = bounds.extents - entry.lastBakedBounds.extents;
+				if (centerDelta.sqrMagnitude < SkinIdleBoundsSqrEpsilon &&
+					extentsDelta.sqrMagnitude < SkinIdleBoundsSqrEpsilon)
+				{
+					// Idle actor: nothing moved since the last bake — keep the existing BLAS.
+					instances[i] = entry;
+					continue;
+				}
+
+				try
+				{
+					entry.skinned.BakeMesh(entry.geometryMesh);
+
+					accelStruct.RemoveInstance(entry.handle);
+
+					var desc = new MeshInstanceDesc(entry.geometryMesh, entry.subMeshIndex)
+					{
+						localToWorldMatrix = entry.skinned.localToWorldMatrix,
+						mask = 0xFF,
+						enableTriangleCulling = false,
+						opaqueGeometry = true
+					};
+					entry.handle = accelStruct.AddInstance(desc);
+					entry.lastBakedBounds = bounds;
+				}
+				catch (Exception e)
+				{
+					Debug.LogWarning($"[URTSensorManager] Failed to update skinned instance " +
+						$"'{entry.renderer.name}' sub={entry.subMeshIndex}: {e.Message}");
+				}
+				instances[i] = entry;
 				continue;
 			}
 
@@ -1278,6 +1485,14 @@ public class URTSensorManager : MonoBehaviour
 	// Throttle: timestamp of last fault dump (Stopwatch ticks). Thread-safe via
 	// Interlocked — logMessageReceivedThreaded fires from the render thread, not main.
 	private long _lastFaultDumpTicks = long.MinValue;
+
+	// Set by OnUnityLogMessage (render/background thread) when a "missing UAV" /
+	// "incompatible ComputeBuffer" fault is detected, consumed by LateUpdate (main
+	// thread) to actually recover. Without this, the fault was only ever logged —
+	// the corrupted shared AccelStruct and per-sensor buffers were left in place and
+	// every sensor kept re-dispatching against them every frame, producing continuous
+	// garbled/striped sensor output instead of one glitch that self-heals.
+	private volatile bool _pendingFaultRecovery;
 
 	private void OnEnable()
 	{
@@ -1318,6 +1533,13 @@ public class URTSensorManager : MonoBehaviour
 			return; // another thread won the race
 
 		DumpDiagHistory($"GPU dispatch fault: \"{condition}\"");
+
+		// Detection alone does not recover anything: ResetScene() (the only path that
+		// rebuilds the shared AccelStruct and bumps the per-sensor rebuild generation)
+		// only ran from the explicit Ctrl+R / WebSocket reset. Flag it here so the next
+		// LateUpdate (main thread) rebuilds the GPU resources instead of leaving every
+		// sensor dispatching against the now-faulted buffers indefinitely.
+		_pendingFaultRecovery = true;
 	}
 
 	private void OnApplicationQuit()
