@@ -335,7 +335,11 @@ namespace SensorDevices
 		/// <summary>Clean up Livox-specific GPU resources.</summary>
 		private void CleanupLivoxResources()
 		{
-			_scanPatternBuffer?.Release();
+			// Fence-gated deferred dispose (see CleanupURTResources): _scanPatternBuffer is
+			// bound into the Livox dispatch every frame just like _rangeOutputBuffer, so an
+			// immediate Release() while a prior dispatch is in flight is the same use-after-free
+			// that causes "missing UAV ID XXXX (incompatible ComputeBuffer)" / Xid 109.
+			URTSensorManager.DeferDispose(_scanPatternBuffer);
 			_scanPatternBuffer = null;
 		}
 
