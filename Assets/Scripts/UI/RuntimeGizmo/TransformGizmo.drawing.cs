@@ -34,6 +34,7 @@ namespace RuntimeGizmos
 
 		private HashSet<Renderer> highlightedRenderers = new HashSet<Renderer>();
 		private List<Renderer> renderersBuffer = new List<Renderer>();
+		private Mesh bakedSkinnedMesh;
 
 		private static Material lineMaterial;
 		private static Material shadedMaterial;
@@ -345,7 +346,13 @@ namespace RuntimeGizmos
 					{
 						var smr = render as SkinnedMeshRenderer;
 						if (smr != null)
-							mesh = smr.sharedMesh;
+						{
+							if (bakedSkinnedMesh == null)
+								bakedSkinnedMesh = new Mesh();
+
+							smr.BakeMesh(bakedSkinnedMesh, true);
+							mesh = bakedSkinnedMesh;
+						}
 					}
 					if (mesh != null)
 					{
