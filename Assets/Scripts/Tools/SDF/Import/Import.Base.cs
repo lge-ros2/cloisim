@@ -127,8 +127,15 @@ namespace SDFormat
 			{
 				foreach (var item in items)
 				{
-					var createdObject = ImportActor(item);
-					StorePlugins(item.Plugins, createdObject);
+					try
+					{
+						var createdObject = ImportActor(item);
+						StorePlugins(item.Plugins, createdObject);
+					}
+					catch (Exception e)
+					{
+						UE.Debug.LogError($"Failed to import actor '{item.Name}', skipping it: {e}");
+					}
 				}
 			}
 
@@ -152,12 +159,26 @@ namespace SDFormat
 
 				foreach (var jointObject in _jointObjectList)
 				{
-					ImportJoint(jointObject.Key, jointObject.Value);
+					try
+					{
+						ImportJoint(jointObject.Key, jointObject.Value);
+					}
+					catch (Exception e)
+					{
+						UE.Debug.LogError($"Failed to import joint '{jointObject.Key.Name}', skipping it: {e}");
+					}
 				}
 
 				foreach (var gripperObject in _gripperObjectList)
 				{
-					ImportGripper(gripperObject.Key, gripperObject.Value);
+					try
+					{
+						ImportGripper(gripperObject.Key, gripperObject.Value);
+					}
+					catch (Exception e)
+					{
+						UE.Debug.LogError($"Failed to import gripper '{gripperObject.Key.Name}', skipping it: {e}");
+					}
 				}
 
 				StorePlugins(world.Plugins, worldObject);
@@ -170,7 +191,14 @@ namespace SDFormat
 
 				foreach (var pluginObject in _pluginObjectList)
 				{
-					ImportPlugin(pluginObject.Key, pluginObject.Value);
+					try
+					{
+						ImportPlugin(pluginObject.Key, pluginObject.Value);
+					}
+					catch (Exception e)
+					{
+						UE.Debug.LogError($"Failed to import plugin '{pluginObject.Key.Name}', skipping it: {e}");
+					}
 				}
 			}
 
@@ -185,12 +213,26 @@ namespace SDFormat
 
 				foreach (var jointObject in _jointObjectList)
 				{
-					ImportJoint(jointObject.Key, jointObject.Value);
+					try
+					{
+						ImportJoint(jointObject.Key, jointObject.Value);
+					}
+					catch (Exception e)
+					{
+						UE.Debug.LogError($"Failed to import joint '{jointObject.Key.Name}', skipping it: {e}");
+					}
 				}
 
 				foreach (var gripperObject in _gripperObjectList)
 				{
-					ImportGripper(gripperObject.Key, gripperObject.Value);
+					try
+					{
+						ImportGripper(gripperObject.Key, gripperObject.Value);
+					}
+					catch (Exception e)
+					{
+						UE.Debug.LogError($"Failed to import gripper '{gripperObject.Key.Name}', skipping it: {e}");
+					}
 				}
 
 				modelObject?.SpecifyPose();
@@ -198,7 +240,14 @@ namespace SDFormat
 
 				foreach (var pluginObject in _pluginObjectList)
 				{
-					ImportPlugin(pluginObject.Key, pluginObject.Value);
+					try
+					{
+						ImportPlugin(pluginObject.Key, pluginObject.Value);
+					}
+					catch (Exception e)
+					{
+						UE.Debug.LogError($"Failed to import plugin '{pluginObject.Key.Name}', skipping it: {e}");
+					}
 				}
 
 				onCreatedRoot?.Invoke(modelObject);
