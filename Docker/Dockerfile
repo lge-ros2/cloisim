@@ -9,7 +9,7 @@ ENV XDG_RUNTIME_DIR=/tmp
 
 # Nvidia Vulkan ICD configuration
 RUN mkdir -p /etc/vulkan/icd.d && \
-    echo '{"file_format_version":"1.0.1","ICD":{"library_path":"libGLX_nvidia.so.0","api_version":"1.4.303"}}' \
+    echo '{"file_format_version":"1.0.1","ICD":{"library_path":"libGLX_nvidia.so.0","api_version":"1.4.329"}}' \
     > /etc/vulkan/icd.d/nvidia_icd.json
 
 RUN \
