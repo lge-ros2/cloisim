@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Threading;
 using UnityEngine;
@@ -202,7 +203,16 @@ namespace CLOiSim.Diagnostics
                 if (errorThresholdMs > 0 && stalledFor >= errorThresholdMs)
                 {
                     UnityEngine.Debug.LogError(msg);
-                    DumpPreExitDiagnostics(stalledFor);
+                    // Diagnostics are best-effort: a bug in the dump path (e.g. touching a
+                    // main-thread-only API) must never prevent the actual termination below.
+                    try
+                    {
+                        DumpPreExitDiagnostics(stalledFor);
+                    }
+                    catch (Exception e)
+                    {
+                        UnityEngine.Debug.LogError($"[FreezeWatchdog] DumpPreExitDiagnostics failed: {e}");
+                    }
 #if UNITY_EDITOR
                     UnityEditor.EditorApplication.isPlaying = false;
 #else

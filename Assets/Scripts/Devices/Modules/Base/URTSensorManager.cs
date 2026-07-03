@@ -159,6 +159,12 @@ public class URTSensorManager : MonoBehaviour
 	private int _diagPrevInstanceCount = -1;
 	private int _diagPrevScratchHash;
 
+	// Cached from LateUpdate (main thread) so DumpDiagHistory can be called safely
+	// from FreezeWatchdog's background thread — Time.frameCount throws a
+	// UnityException off the main thread, which would otherwise abort the
+	// watchdog's escalation before it reaches Process.Kill().
+	private volatile int _cachedFrameCount;
+
 	private void DiagRecord(string entry)
 	{
 		_diagHistory.Enqueue(entry);
@@ -190,7 +196,11 @@ public class URTSensorManager : MonoBehaviour
 		}
 
 		var sb = new System.Text.StringBuilder();
-		sb.AppendLine($"[URT-DIAG] === History dump triggered by: {trigger} (frame={Time.frameCount}) ===");
+		// NOTE: this can be called from FreezeWatchdog's background thread on a stall
+		// escalation — use the cached frame count, never Time.frameCount directly
+		// (throws UnityException off the main thread and would abort the caller
+		// before it reaches its own process-kill fallback).
+		sb.AppendLine($"[URT-DIAG] === History dump triggered by: {trigger} (frame={inst._cachedFrameCount}) ===");
 		sb.AppendLine($"[URT-DIAG] generation={inst._rtAccelStructGeneration}"
 			+ $" readIdx={inst._readIdx} writeIdx={inst._writeIdx}"
 			+ $" hasTlas=[{inst._structHasTlas[0]},{inst._structHasTlas[1]}]"
@@ -801,6 +811,8 @@ public class URTSensorManager : MonoBehaviour
 
 	private void LateUpdate()
 	{
+		_cachedFrameCount = Time.frameCount;
+
 		// Log when cooldown expires so the log shows exactly when sensors resume tracing.
 		if (_postResetResumeBuildFrame > 0 && Time.frameCount == _postResetResumeBuildFrame)
 		{
