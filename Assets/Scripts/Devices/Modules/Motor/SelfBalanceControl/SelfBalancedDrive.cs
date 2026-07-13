@@ -146,6 +146,7 @@ public class SelfBalancedDrive : MotorControl
 	public override void Reset()
 	{
 		Debug.Log("========== SelfBalancedDrive Reset ==========");
+		var prvOnBalancingValue =_onBalancing;
 
 		_commandTargetHeadset = _initialHeadsetTarget;
 		_commandTargetRollByDrive = 0;
@@ -173,6 +174,8 @@ public class SelfBalancedDrive : MotorControl
 		_smc.Reset();
 
 		ResetJoints();
+
+		_onBalancing = prvOnBalancingValue;
 	}
 
 	public override void SetWheelInfo(in float radius, in float separation)
