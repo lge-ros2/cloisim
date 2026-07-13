@@ -87,40 +87,25 @@ namespace SensorDevices
 			{
 				context.ExecuteCommandBuffer(_invertCullingOffCmdBuffer);
 
-				if (_noiseMaterial != null || _depthMaterial != null)
+				// Note: depth encoding (Sensor/DepthRange) is applied by DepthRangeRendererFeature
+				// as an in-graph Render Graph pass, not here. An external CommandBuffer blit
+				// executed after context.Submit() (as this used to do) cannot reliably read
+				// _CameraDepthTexture under Unity 6's Render Graph renderer: if nothing inside
+				// the graph itself consumes that resource, the graph culls the pass that
+				// publishes it, leaving the global bound to Unity's black dummy texture.
+				if (_noiseMaterial != null)
 				{
 					// Use explicit target texture instead of BuiltinRenderTextureType.CameraTarget.
 					// In some render pipelines, CameraTarget may reference an internal buffer
-					// rather than camera.targetTexture, causing depth blits to go to the wrong RT.
+					// rather than camera.targetTexture, causing blits to go to the wrong RT.
 					var cameraTarget = camera.targetTexture;
 
-					int depthRT = Shader.PropertyToID("_TempDepthRT");
 					int noiseRT = Shader.PropertyToID("_TempNoiseRT");
-					_postProcessCmdBuffer.GetTemporaryRT(depthRT, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear);
 					_postProcessCmdBuffer.GetTemporaryRT(noiseRT, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear);
 
-					if (_depthMaterial != null)
-					{
-						_postProcessCmdBuffer.Blit(cameraTarget, depthRT);
+					_postProcessCmdBuffer.Blit(cameraTarget, noiseRT);
+					_postProcessCmdBuffer.Blit(noiseRT, cameraTarget, _noiseMaterial);
 
-						if (_noiseMaterial != null)
-						{
-							_postProcessCmdBuffer.Blit(depthRT, noiseRT, _depthMaterial);
-							_postProcessCmdBuffer.Blit(noiseRT, cameraTarget, _noiseMaterial);
-						}
-						else
-							_postProcessCmdBuffer.Blit(depthRT, cameraTarget, _depthMaterial);
-					}
-					else
-					{
-						if (_noiseMaterial != null)
-						{
-							_postProcessCmdBuffer.Blit(cameraTarget, noiseRT);
-							_postProcessCmdBuffer.Blit(noiseRT, cameraTarget, _noiseMaterial);
-						}
-					}
-
-					_postProcessCmdBuffer.ReleaseTemporaryRT(depthRT);
 					_postProcessCmdBuffer.ReleaseTemporaryRT(noiseRT);
 					context.ExecuteCommandBuffer(_postProcessCmdBuffer);
 					_postProcessCmdBuffer.Clear();
