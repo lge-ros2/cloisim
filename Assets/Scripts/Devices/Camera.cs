@@ -516,8 +516,18 @@ namespace SensorDevices
 						if (req.hasError)
 						{
 							Debug.LogError($"{name}: Failed to read GPU texture (format={_readbackDstFormat})");
+							return;
 						}
-						else if (req.done)
+
+						if (!req.done)
+							return;
+
+						// Isolate per-sensor faults: an exception here (e.g. a ComputeBuffer
+						// mid-reconfiguration, or a transient GPU state issue) must not go
+						// uncaught, or this callback silently stops calling EnqueueMessage —
+						// the TX thread stays alive but never receives data again, freezing
+						// this sensor's feed permanently with no error logged.
+						try
 						{
 							if (_depthMaterial == null)
 							{
@@ -529,6 +539,10 @@ namespace SensorDevices
 								var readbackData = req.GetData<float>();
 								ImageProcessing(ref readbackData, capturedTime);
 							}
+						}
+						catch (System.Exception e)
+						{
+							Debug.LogWarning($"{name}: ImageProcessing threw; dropping this frame: {e.Message}");
 						}
 					});
 				}

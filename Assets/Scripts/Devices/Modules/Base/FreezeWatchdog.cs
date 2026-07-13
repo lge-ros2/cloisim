@@ -25,10 +25,14 @@ namespace CLOiSim.Diagnostics
         public int pollIntervalMs = 200;
 
         [Tooltip("Also warn on per-frame hitches above this (ms) from the main thread.")]
-        public int hitchThresholdMs = 250;
+        public int hitchThresholdMs = 500;
 
         static readonly Stopwatch Clock = Stopwatch.StartNew();
         static long _lastHeartbeatMs;
+        static long _lastSnapshotMs;
+
+        /// <summary>Minimum interval (ms) between diagnostic snapshot refreshes.</summary>
+        const long SnapshotRefreshIntervalMs = 500;
         static volatile string _stage = "idle";
         // Suppress counter: when > 0 the watchdog skips stall detection.
         // Use Suppress()/Restore() around operations that are intentionally slow
@@ -161,7 +165,14 @@ namespace CLOiSim.Diagnostics
 
             // Refresh the diagnostics snapshot here (main thread) so the watchdog
             // thread never has to touch SystemInfo/Time itself during a stall.
-            RefreshDiagSnapshot();
+            // Throttled: this allocates a new snapshot object + strings, and the
+            // dump is only ever read after a multi-second stall, so per-frame
+            // freshness buys nothing but adds constant GC pressure every frame.
+            if (now - _lastSnapshotMs >= SnapshotRefreshIntervalMs)
+            {
+                _lastSnapshotMs = now;
+                RefreshDiagSnapshot();
+            }
         }
 
         static void DumpPreExitDiagnostics(long stalledMs)

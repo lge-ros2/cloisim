@@ -160,13 +160,11 @@ public class SensorRenderManager : MonoBehaviour
 
 		var realtimeNow = Time.realtimeSinceStartup;
 
-		// Sort by urgency (most overdue first)
-		_entries.Sort((a, b) =>
-		{
-			var urgA = realtimeNow - a.NextRenderTime;
-			var urgB = realtimeNow - b.NextRenderTime;
-			return urgB.CompareTo(urgA);
-		});
+		// Sort by urgency (most overdue first). "realtimeNow - NextRenderTime" descending
+		// is equivalent to NextRenderTime ascending (realtimeNow cancels out in the
+		// comparison), which lets this run every frame without allocating a new closure —
+		// a lambda with no captured locals is cached by the compiler as a static delegate.
+		_entries.Sort((a, b) => a.NextRenderTime.CompareTo(b.NextRenderTime));
 
 		// Render ready sensors with a per-frame budget for both raster and URT renders.
 		// This prevents AsyncGPUReadback callback storms when many sensors fire together.
@@ -179,26 +177,22 @@ public class SensorRenderManager : MonoBehaviour
 				continue;
 
 			// Enforce budget for both sensor types.
-			// When over budget, advance the schedule anyway so the sensor does not
-			// perpetually re-queue at the same time and alternate with other sensors.
+			// A sensor skipped for budget keeps its NextRenderTime unchanged (do not
+			// advance it here) so it becomes strictly more overdue — and thus more
+			// urgent in next frame's sort — until it wins a budget slot. Advancing it
+			// like a normal render would freeze the relative urgency ordering forever,
+			// letting the same sensors win the budget every contested frame while
+			// others starve permanently.
 			if (entry.Sensor.IsURT)
 			{
 				if (urtRenderCount >= MaxURTRendersPerFrame)
-				{
-					AdvanceSensorSchedule(ref entry, realtimeNow);
-					_entries[i] = entry;
 					continue;
-				}
 				urtRenderCount++;
 			}
 			else
 			{
 				if (rasterRenderCount >= MaxRasterRendersPerFrame)
-				{
-					AdvanceSensorSchedule(ref entry, realtimeNow);
-					_entries[i] = entry;
 					continue;
-				}
 				rasterRenderCount++;
 			}
 

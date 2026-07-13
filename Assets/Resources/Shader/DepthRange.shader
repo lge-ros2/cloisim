@@ -15,7 +15,7 @@ Shader "Sensor/DepthRange"
 	Properties
 	{
 		[Toggle] _ReverseData ("reverse depth data", int) = 0
-		[Toggle] _FlipX ("horizontal flip", int) = 1
+		[Toggle] _FlipX ("horizontal flip", int) = 0
 	}
 
 	SubShader

@@ -10,7 +10,7 @@ Procedure for adding a compute shader (for GPU-side sensor processing) or a surf
 ## When to Use
 
 - Processing sensor data on the GPU (depth scaling, noise, point cloud generation)
-- Adding a new ray tracing shader for a sensor (lidar, depth camera)
+- Adding a new ray tracing shader for a sensor (lidar)
 - Creating a visual effect (segmentation overlay, grass rendering, video texture)
 - Adding a post-processing pass for a camera sensor
 
@@ -19,8 +19,8 @@ Procedure for adding a compute shader (for GPU-side sensor processing) or a surf
 | Type | Pattern | Examples |
 |------|---------|----------|
 | **Traditional Compute** | `StructuredBuffer` I/O, `cbuffer` params | `DepthBufferScaling.compute`, `VCSELPrepass.compute` |
-| **URT Ray Tracing** | Unified Ray Tracing with `_AccelStruct` | `LidarRayTrace.compute`, `DepthCameraRayTrace.compute` |
-| **Surface/Fragment** | URP vertex/fragment shader | `AddGaussianNoise.shader`, `Segmentation.shader` |
+| **URT Ray Tracing** | Unified Ray Tracing with `_AccelStruct` | `LidarRayTrace.compute`, `LivoxLidarRayTrace.compute` |
+| **Surface/Fragment** | URP vertex/fragment shader | `AddGaussianNoise.shader`, `Segmentation.shader`, `DepthRange.shader` (depth camera, rasterization-based, Blitter-driven) |
 | **Geometry** | URP with geometry stage | `GeometryGrass.shader` |
 
 ## Procedure
