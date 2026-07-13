@@ -35,6 +35,14 @@ namespace CLOiSim.Diagnostics
         // (world loading, mesh import) to avoid false-positive stall warnings.
         static volatile int _suppressCount;
 
+#if UNITY_EDITOR
+        // Cached on the main thread via the pauseStateChanged callback: reading
+        // EditorApplication.isPaused directly from the watchdog thread is a native
+        // call and unsafe off the main thread, same reasoning as the SystemInfo
+        // calls guarded elsewhere in this file.
+        static volatile bool _editorPaused;
+#endif
+
         // Immutable snapshot of diagnostic info, refreshed ONLY from the main thread
         // (see RefreshDiagSnapshot). DumpPreExitDiagnostics runs on the watchdog thread
         // and must never call SystemInfo/Time directly: once the GPU device is already
@@ -106,6 +114,10 @@ namespace CLOiSim.Diagnostics
         {
             Volatile.Write(ref _lastHeartbeatMs, Clock.ElapsedMilliseconds);
             RefreshDiagSnapshot(); // seed the cache before the first LateUpdate runs
+#if UNITY_EDITOR
+            _editorPaused = UnityEditor.EditorApplication.isPaused;
+            UnityEditor.EditorApplication.pauseStateChanged += OnEditorPauseStateChanged;
+#endif
             _running = true;
             _thread = new Thread(Watch) { IsBackground = true, Name = "FreezeWatchdog" };
             _thread.Start();
@@ -116,7 +128,20 @@ namespace CLOiSim.Diagnostics
             _running = false;
             _thread?.Join(500);
             _thread = null;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.pauseStateChanged -= OnEditorPauseStateChanged;
+#endif
         }
+
+#if UNITY_EDITOR
+        static void OnEditorPauseStateChanged(UnityEditor.PauseState state)
+        {
+            _editorPaused = state == UnityEditor.PauseState.Paused;
+            // Paused frames don't call LateUpdate, so resuming would otherwise look
+            // like one giant stall. Refresh the heartbeat on both edges.
+            Volatile.Write(ref _lastHeartbeatMs, Clock.ElapsedMilliseconds);
+        }
+#endif
 
         // LateUpdate runs on the main thread after rendering submission: a fresh
         // heartbeat here means the main thread is alive and past the render loop.
@@ -187,7 +212,11 @@ namespace CLOiSim.Diagnostics
 
                 long now = Clock.ElapsedMilliseconds;
                 long stalledFor = now - Volatile.Read(ref _lastHeartbeatMs);
+#if UNITY_EDITOR
+                if (stalledFor < warnThresholdMs || _suppressCount > 0 || _editorPaused)
+#else
                 if (stalledFor < warnThresholdMs || _suppressCount > 0)
+#endif
                 {
                     lastReported = -1;
                     continue;
