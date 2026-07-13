@@ -171,6 +171,7 @@ public abstract class Device : MonoBehaviour
 	private float _transportingTimeSeconds = 0;
 
 	private Coroutine _coroutine = null;
+	private Coroutine _visualizeCoroutine = null;
 	private Thread _thread = null;
 
 	// volatile: read in worker-thread loops, written from the main thread before
@@ -203,7 +204,29 @@ public abstract class Device : MonoBehaviour
 	public bool EnableVisualize
 	{
 		get => _visualize;
-		set => _visualize = value;
+		set
+		{
+			if (_visualize == value)
+				return;
+
+			_visualize = value;
+
+			if (_visualize)
+			{
+				if (_visualizeCoroutine == null)
+				{
+					_visualizeCoroutine = StartCoroutine(OnVisualize());
+				}
+			}
+			else
+			{
+				if (_visualizeCoroutine != null)
+				{
+					StopCoroutine(_visualizeCoroutine);
+					_visualizeCoroutine = null;
+				}
+			}
+		}
 	}
 
 	/// <summary>
@@ -318,7 +341,7 @@ public abstract class Device : MonoBehaviour
 
 		if (EnableVisualize)
 		{
-			StartCoroutine(OnVisualize());
+			_visualizeCoroutine = StartCoroutine(OnVisualize());
 		}
 	}
 
@@ -339,6 +362,12 @@ public abstract class Device : MonoBehaviour
 	protected void OnDestroy()
 	{
 		_running = false;
+
+		if (_visualizeCoroutine != null)
+		{
+			StopCoroutine(_visualizeCoroutine);
+			_visualizeCoroutine = null;
+		}
 
 		// Wake TX thread so it can exit cleanly
 		_txDataReady.Set();
