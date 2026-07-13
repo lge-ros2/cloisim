@@ -182,24 +182,46 @@ namespace SensorDevices
 			SensorRenderManager.Unregister(this);
 
 			// Drain in-flight readbacks before releasing GPU resources.
-			Device.DrainReadbacksForTeardown();
+			var quiesced = Device.DrainReadbacksForTeardown();
 
-			Destroy(_csDepthScaling);
+			var csDepthScaling = _csDepthScaling;
 			_csDepthScaling = null;
-			Destroy(_csVcselPrepass);
+			var csVcselPrepass = _csVcselPrepass;
 			_csVcselPrepass = null;
-
-			_computeBufferSrc?.Release();
+			var computeBufferSrc = _computeBufferSrc;
 			_computeBufferSrc = null;
-			_computeBufferDst?.Release();
+			var computeBufferDst = _computeBufferDst;
 			_computeBufferDst = null;
-			_computeBufferBunchFlag?.Release();
+			var computeBufferBunchFlag = _computeBufferBunchFlag;
 			_computeBufferBunchFlag = null;
+			var depthMaterial = _depthMaterial;
+			_depthMaterial = null;
 
-			if (_depthMaterial != null)
+			if (quiesced)
 			{
-				Destroy(_depthMaterial);
-				_depthMaterial = null;
+				Destroy(csDepthScaling);
+				Destroy(csVcselPrepass);
+				computeBufferSrc?.Release();
+				computeBufferDst?.Release();
+				computeBufferBunchFlag?.Release();
+				if (depthMaterial != null)
+					Destroy(depthMaterial);
+			}
+			else
+			{
+				// GPU did not quiesce: an in-flight readback may still reference these
+				// buffers. Freeing them now is a use-after-free (SIGSEGV) — defer until
+				// the GPU actually catches up.
+				URTSensorManager.DeferDispose(() =>
+				{
+					Destroy(csDepthScaling);
+					Destroy(csVcselPrepass);
+					computeBufferSrc?.Release();
+					computeBufferDst?.Release();
+					computeBufferBunchFlag?.Release();
+					if (depthMaterial != null)
+						Destroy(depthMaterial);
+				});
 			}
 
 			base.OnDestroy();
