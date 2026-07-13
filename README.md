@@ -46,8 +46,9 @@ CLOiSim was developed to address performance bottlenecks encountered with other 
 | Category | Feature | Status | Notes |
 | :--- | :--- | :---: | :--- |
 | **Joints** | Joint Control / Pose | ✅ | ArticulationBody based |
-| **LiDAR** | 2D / 3D (Raster-based) | ✅ | Pattern-based (e.g., Livox) supported |
-| **Camera** | Color / Depth / Multi | ✅ | Semantic Segmentation, RealSense |
+| **LiDAR** | 2D / 3D (URT ray tracing) | ✅ | Pattern-based (e.g., Livox) supported |
+| **Camera** | Color / Multi / Segmentation | ✅ | Rasterization-based |
+| **Depth Camera** | Depth / RealSense (IR1, IR2, VCSEL dot pattern) | ✅ | Rasterization-based |
 | **Inertial** | IMU / GPS | ✅ | Gaussian noise models included |
 | **Other** | Sonar / IR / Contact | ✅ | |
 | **Noise** | Gaussian / Custom | 🚧 | Gaussian fully supported |
