@@ -21,6 +21,15 @@ namespace SensorDevices
 		// this material (see DepthRangeMaterial below).
 		public override bool IsURT => false;
 
+		// Force renderScale=1.0 for this camera's Render() call regardless of the
+		// shared URP asset's setting (see Camera.RenderScaleOverride). A <1.0
+		// renderScale makes URP render the depth-encoded color target at reduced
+		// resolution and bilinearly upscale it; interpolating across a silhouette
+		// edge blends near/far depth values into physically meaningless
+		// in-between distances, which show up as flying-pixel noise once the
+		// depth image is converted to a point cloud.
+		protected override float? RenderScaleOverride => 1.0f;
+
 		// Exposed so DepthRangeRendererFeature can look up this camera's depth-encoding
 		// material and enqueue a pass for it.
 		public Material DepthRangeMaterial => _depthMaterial;

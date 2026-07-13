@@ -469,6 +469,16 @@ namespace SensorDevices
 		public float RenderPeriod => UpdatePeriod;
 
 		/// <summary>
+		/// Override in subclasses that need this camera's Render() call to use a
+		/// different UniversalRenderPipelineAsset.renderScale than whatever the
+		/// shared asset is currently set to (e.g. DepthCamera forces 1.0f to avoid
+		/// the bilinear upscale from a &lt;1.0 renderScale corrupting depth values at
+		/// silhouette edges with in-between near/far distances - "flying pixels").
+		/// null = leave renderScale untouched.
+		/// </summary>
+		protected virtual float? RenderScaleOverride => null;
+
+		/// <summary>
 		/// Whether this camera is initialized and can accept render commands.
 		/// </summary>
 		public bool CanRender
@@ -509,7 +519,28 @@ namespace SensorDevices
 					// must reflect when the scene was actually captured.
 					var capturedTime = (Clock != null) ? Clock.SimTime : Time.timeAsDouble;
 
+					var scaleOverride = RenderScaleOverride;
+					var urpAssetToRestore = (UniversalRenderPipelineAsset)null;
+					var prevRenderScale = 0f;
+
+					if (scaleOverride.HasValue &&
+						GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urpAsset)
+					{
+						prevRenderScale = urpAsset.renderScale;
+						if (prevRenderScale != scaleOverride.Value)
+						{
+							urpAsset.renderScale = scaleOverride.Value;
+							urpAssetToRestore = urpAsset;
+						}
+					}
+
 					_camSensor.Render();
+
+					if (urpAssetToRestore != null)
+					{
+						urpAssetToRestore.renderScale = prevRenderScale;
+					}
+
 					Device.GpuReadbackBegin();
 					AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, (req) => {
 						Device.GpuReadbackEnd();
