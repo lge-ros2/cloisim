@@ -376,15 +376,20 @@ public class URTSensorManager : MonoBehaviour
 		public float nextBakeTime;     // realtime after which a re-bake is allowed
 		public Bounds lastBakedBounds; // world AABB at the last actual bake; used to skip idle actors
 
-		// Last matrix actually pushed to accelStruct.UpdateInstanceTransform(). The
-		// package frees the whole TLAS (IRayTracingAccelStruct's Build() becomes a
-		// genuine rebuild again) as an unconditional side effect of that call, so it
-		// must only be called when the transform actually changed — otherwise a fully
-		// static scene would free the TLAS every single frame while our own
-		// static-scene signature check (by design) keeps skipping the Build() that
-		// would recreate it, leaving accelStruct with no bottom-level BVHs bound at
-		// all ("_AccelStructbottomBvhs ... not set" on the next Dispatch).
-		public Matrix4x4 lastPushedMatrix;
+		// World position/rotation last actually pushed to
+		// accelStruct.UpdateInstanceTransform(), quantized to StaticSignatureQuantum
+		// (see ComputeTransformSignature) — NOT raw floats. The package frees the
+		// whole TLAS as an unconditional side effect of that call, so it must only be
+		// called when the transform changed by more than the quantum. Comparing raw
+		// floats instead reintroduces the exact problem the quantum exists to avoid
+		// (see StaticSignatureQuantum's doc comment): residual physics jitter never
+		// settles to bit-identical floats frame-to-frame, so a raw comparison would
+		// call UpdateInstanceTransform() — and therefore force a full rebuild via
+		// _structNeedsRebuild — on effectively every frame for any object with even
+		// imperceptible settling motion, defeating the whole point of the
+		// static-scene skip and making sensor output stall constantly.
+		public long lastPushedPosQX, lastPushedPosQY, lastPushedPosQZ;
+		public long lastPushedRotQX, lastPushedRotQY, lastPushedRotQZ, lastPushedRotQW;
 	}
 
 	private readonly struct InstanceKey : IEquatable<InstanceKey>
@@ -1437,6 +1442,7 @@ public class URTSensorManager : MonoBehaviour
 
 					var handle = accelStruct.AddInstance(desc);
 					_structNeedsRebuild = true;
+					var (px, py, pz, rx, ry, rz, rw) = QuantizeTransform(renderer.transform.position, renderer.transform.rotation);
 					instances.Add(new InstanceEntry
 					{
 						renderer = renderer,
@@ -1445,7 +1451,8 @@ public class URTSensorManager : MonoBehaviour
 						subMeshIndex = sub,
 						handle = handle,
 						skinned = null,
-						lastPushedMatrix = desc.localToWorldMatrix
+						lastPushedPosQX = px, lastPushedPosQY = py, lastPushedPosQZ = pz,
+						lastPushedRotQX = rx, lastPushedRotQY = ry, lastPushedRotQZ = rz, lastPushedRotQW = rw
 					});
 					addedCount++;
 				}
@@ -1620,6 +1627,17 @@ public class URTSensorManager : MonoBehaviour
 		}
 	}
 
+	/// <summary>
+	/// Quantizes a world position/rotation pair the same way as
+	/// ComputeTransformSignature, for per-instance "did this move enough to
+	/// matter" checks (see InstanceEntry's quantized-transform fields).
+	/// </summary>
+	private static (long px, long py, long pz, long rx, long ry, long rz, long rw) QuantizeTransform(Vector3 pos, Quaternion rot)
+	{
+		return (Quantize(pos.x), Quantize(pos.y), Quantize(pos.z),
+			Quantize(rot.x), Quantize(rot.y), Quantize(rot.z), Quantize(rot.w));
+	}
+
 	private static long Quantize(float v)
 	{
 		return (long)Mathf.Round(v / StaticSignatureQuantum);
@@ -1721,15 +1739,23 @@ public class URTSensorManager : MonoBehaviour
 			}
 
 			// UpdateInstanceTransform() unconditionally frees the package's TLAS as a
-			// side effect (see InstanceEntry.lastPushedMatrix doc comment) — only call
-			// it when the transform actually moved. This is a perf optimization only;
-			// _structNeedsRebuild (set below) is what actually guarantees Build() runs
-			// whenever the struct was freed, regardless of this skip.
-			var currentMatrix = entry.renderer.localToWorldMatrix;
-			if (currentMatrix != entry.lastPushedMatrix)
+			// side effect (see InstanceEntry's quantized-transform fields doc comment)
+			// — only call it when the transform moved by more than
+			// StaticSignatureQuantum, same tolerance as ComputeTransformSignature.
+			// Comparing raw floats/matrices here would call it on effectively every
+			// frame for anything with residual physics jitter, forcing a full rebuild
+			// via _structNeedsRebuild constantly and stalling sensor output. This is a
+			// perf optimization only; _structNeedsRebuild (set below) is what actually
+			// guarantees Build() runs whenever the struct was freed, regardless of
+			// this skip.
+			var entryTransform = entry.renderer.transform;
+			var (px, py, pz, rx, ry, rz, rw) = QuantizeTransform(entryTransform.position, entryTransform.rotation);
+			if (px != entry.lastPushedPosQX || py != entry.lastPushedPosQY || pz != entry.lastPushedPosQZ ||
+				rx != entry.lastPushedRotQX || ry != entry.lastPushedRotQY || rz != entry.lastPushedRotQZ || rw != entry.lastPushedRotQW)
 			{
-				accelStruct.UpdateInstanceTransform(entry.handle, currentMatrix);
-				entry.lastPushedMatrix = currentMatrix;
+				accelStruct.UpdateInstanceTransform(entry.handle, entry.renderer.localToWorldMatrix);
+				entry.lastPushedPosQX = px; entry.lastPushedPosQY = py; entry.lastPushedPosQZ = pz;
+				entry.lastPushedRotQX = rx; entry.lastPushedRotQY = ry; entry.lastPushedRotQZ = rz; entry.lastPushedRotQW = rw;
 				instances[i] = entry;
 				_structNeedsRebuild = true;
 			}
