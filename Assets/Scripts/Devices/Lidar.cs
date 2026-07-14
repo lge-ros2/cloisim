@@ -574,11 +574,59 @@ namespace SensorDevices
 			_noiseParamInRawXml = noiseParamInRawXml;
 		}
 
-		private messages.LaserScan ProcessStandardData(double capturedTime, Pose sensorWorldPose, float[] rangeData)
+		// Second line of defense against a known Unity Unified Ray Tracing package issue
+		// where a shared acceleration structure occasionally reports near-universal ray
+		// misses for a single scan (all/almost-all NaN) even though the scene geometry is
+		// unchanged and the immediately surrounding scans hit normally. The primary
+		// mitigation lives in URTSensorManager.IsBuildConsumed() (gates promoting a struct
+		// until its build is GPU-confirmed complete); this catches whatever still slips
+		// through that gate. Rather than publish a spurious all-NaN scan (visible
+		// downstream as points flickering on/off), track the best (lowest) miss ratio this
+		// sensor has recently demonstrated it can achieve, and treat a near-total-miss scan
+		// as spurious only when we have recent proof this sensor can do much better — skip
+		// publishing for that cycle (the previous good scan's data is left as-is and simply
+		// republished next cycle).
+		// A plain rolling average was tried first and missed this: a sensor whose normal
+		// miss rate is itself high and noisy (e.g. oscillating ~0.6-0.8) drags the average
+		// up close to the near-total-miss threshold, hiding the spike. Tracking the recent
+		// best instead of the average catches "this specific scan is far worse than what
+		// this sensor just proved it can see" regardless of how noisy its normal baseline is.
+		private float _bestRecentNanRatio = 1f; // 1 => no evidence yet that this sensor can see anything
+		private const float BestRatioDecayPerSample = 0.01f; // slowly forget old good evidence
+		private const float NearTotalMissThreshold = 0.97f;
+		private const float RecentBestGoodEnoughMargin = 0.05f;
+
+		private bool TryProcessStandardData(double capturedTime, Pose sensorWorldPose, float[] rangeData, out messages.LaserScan laserScan)
 		{
+			var rawNanCount = 0;
+			for (var i = 0; i < rangeData.Length; i++)
+			{
+				if (float.IsNaN(rangeData[i]))
+					rawNanCount++;
+			}
+			var rawNanRatio = (rangeData.Length > 0) ? ((float)rawNanCount / rangeData.Length) : 0f;
+
+			_bestRecentNanRatio = Mathf.Min(_bestRecentNanRatio + BestRatioDecayPerSample, 1f);
+
+			var suspiciousBlackout = rawNanRatio >= NearTotalMissThreshold &&
+				_bestRecentNanRatio <= NearTotalMissThreshold - RecentBestGoodEnoughMargin;
+
+			if (suspiciousBlackout)
+			{
+				// Spurious spike: skip this scan entirely. Do not let it improve
+				// _bestRecentNanRatio (it is bad, not evidence of anything).
+				laserScan = null;
+				return false;
+			}
+
+			if (rawNanRatio < _bestRecentNanRatio)
+			{
+				_bestRecentNanRatio = rawNanRatio;
+			}
+
 			_laserScan.Header.Stamp.Set(capturedTime);
 
-			var laserScan = _laserScan;
+			laserScan = _laserScan;
 			laserScan.WorldPose.Position.Set(sensorWorldPose.position);
 			laserScan.WorldPose.Orientation.Set(sensorWorldPose.rotation);
 
@@ -598,7 +646,7 @@ namespace SensorDevices
 			{
 				_laserFilter.DoFilter(ref laserScan);
 			}
-			return _laserScan;
+			return true;
 		}
 
 		/// <summary>
@@ -615,19 +663,18 @@ namespace SensorDevices
 			{
 				if (_outputQueue.TryDequeue(out item))
 				{
-					messages.LaserScan laserScan;
-
 					if (IsLivoxMode)
 					{
 						// Livox: XYZ triples copied directly, no noise/filter
-						laserScan = ProcessLivoxData(item.capturedTime, item.sensorWorldPose, item.rangeData);
+						var laserScan = ProcessLivoxData(item.capturedTime, item.sensorWorldPose, item.rangeData);
+						EnqueueMessage(laserScan);
 					}
-					else
+					else if (TryProcessStandardData(item.capturedTime, item.sensorWorldPose, item.rangeData, out var laserScan))
 					{
-						laserScan = ProcessStandardData(item.capturedTime, item.sensorWorldPose, item.rangeData);
+						EnqueueMessage(laserScan);
 					}
-
-					EnqueueMessage(laserScan);
+					// else: a detected spurious all-NaN spike (see TryProcessStandardData's
+					// comment) — skip publishing this cycle.
 
 					// Return pooled array now that data has been copied to double[] ranges
 					var rangeDataToReturn = item.rangeData;
@@ -645,21 +692,32 @@ namespace SensorDevices
 			}
 		}
 
+		private GameObject _visualizer = null;
+
 		protected override IEnumerator OnVisualize()
 		{
-			var visualizer = new GameObject("__laser_visualizer__")
+			_visualizer = new GameObject("__laser_visualizer__")
 			{
 				layer = LayerMask.NameToLayer("Visualization")
 			};
-			visualizer.transform.SetParent(transform, false);
+			_visualizer.transform.SetParent(transform, false);
 
 			if (IsLivoxMode || Is3DLidar)
 			{
-				yield return OnVisualizePointCloud(visualizer);
+				yield return OnVisualizePointCloud(_visualizer);
 			}
 			else
 			{
-				yield return OnVisualizeLines(visualizer);
+				yield return OnVisualizeLines(_visualizer);
+			}
+		}
+
+		protected override void OnVisualizeStop()
+		{
+			if (_visualizer != null)
+			{
+				Destroy(_visualizer);
+				_visualizer = null;
 			}
 		}
 

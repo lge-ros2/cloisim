@@ -171,6 +171,7 @@ public abstract class Device : MonoBehaviour
 	private float _transportingTimeSeconds = 0;
 
 	private Coroutine _coroutine = null;
+	private Coroutine _visualizeCoroutine = null;
 	private Thread _thread = null;
 
 	// volatile: read in worker-thread loops, written from the main thread before
@@ -203,7 +204,67 @@ public abstract class Device : MonoBehaviour
 	public bool EnableVisualize
 	{
 		get => _visualize;
-		set => _visualize = value;
+		set
+		{
+			if (_visualize == value)
+				return;
+
+			_visualize = value;
+			_lastAppliedVisualize = _visualize;
+			ApplyVisualize();
+		}
+	}
+
+	private bool _lastAppliedVisualize = true;
+
+	private void ApplyVisualize()
+	{
+		if (_visualize)
+		{
+			if (_visualizeCoroutine == null)
+			{
+				_visualizeCoroutine = StartCoroutine(OnVisualize());
+			}
+		}
+		else
+		{
+			if (_visualizeCoroutine != null)
+			{
+				StopCoroutine(_visualizeCoroutine);
+				_visualizeCoroutine = null;
+				OnVisualizeStop();
+			}
+		}
+	}
+
+	private bool _visualizeApplyPending = false;
+
+	// Inspector's default field drawer writes directly to the [SerializeField]
+	// backing field via SerializedObject, bypassing the EnableVisualize setter
+	// above. OnValidate is Unity's hook for detecting that kind of direct edit
+	// (including in Play mode). Unity forbids SendMessage-triggering calls
+	// (AddComponent/SetParent/set_layer, all used transitively by ApplyVisualize's
+	// coroutines) while still inside OnValidate's call stack, so just flag it and
+	// defer the actual apply to the next Update().
+	private void OnValidate()
+	{
+		if (_visualize != _lastAppliedVisualize)
+		{
+			_lastAppliedVisualize = _visualize;
+			_visualizeApplyPending = true;
+		}
+	}
+
+	private void Update()
+	{
+		if (_visualizeApplyPending)
+		{
+			_visualizeApplyPending = false;
+			if (gameObject.activeInHierarchy && Application.isPlaying)
+			{
+				ApplyVisualize();
+			}
+		}
 	}
 
 	/// <summary>
@@ -318,7 +379,7 @@ public abstract class Device : MonoBehaviour
 
 		if (EnableVisualize)
 		{
-			StartCoroutine(OnVisualize());
+			_visualizeCoroutine = StartCoroutine(OnVisualize());
 		}
 	}
 
@@ -339,6 +400,12 @@ public abstract class Device : MonoBehaviour
 	protected void OnDestroy()
 	{
 		_running = false;
+
+		if (_visualizeCoroutine != null)
+		{
+			StopCoroutine(_visualizeCoroutine);
+			_visualizeCoroutine = null;
+		}
 
 		// Wake TX thread so it can exit cleanly
 		_txDataReady.Set();
@@ -381,6 +448,12 @@ public abstract class Device : MonoBehaviour
 	{
 		yield return null;
 	}
+
+	// StopCoroutine() aborts OnVisualize() mid-execution, skipping any cleanup
+	// it would otherwise reach (e.g. destroying a visualizer GameObject it
+	// created). Devices that allocate visualization resources in OnVisualize()
+	// should tear them down here instead.
+	protected virtual void OnVisualizeStop() { }
 
 	/// <summary>
 	/// Initialize message objects only

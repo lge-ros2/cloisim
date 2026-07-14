@@ -5,6 +5,7 @@
 
 #define MAX_RANGE_16BITS 65535.0
 #define MAX_RANGE_8BITS 255.0
+#define FLOAT32_NAN_BITS 0x7fc00000u
 
 StructuredBuffer<float> _Input; // length = _Width * _Height
 RWStructuredBuffer<uint> _Output; // packed stream (per uint)
@@ -77,7 +78,12 @@ void CSScaleDepthBuffer(uint3 id : SV_DispatchThreadID)
     if (_UnitSize == 4)
     {
         const float data = _Input[pixelIndex0];
-        const float ranged = max(depth_ranged(data), 0);
+
+        // miss/background pixels are encoded as exactly 0 by DepthRange.shader. In 32FC1,
+        // ROS's depth_image_proc treats 0.0 as a valid (near-camera) return and only skips
+        // NaN, so a plain 0 here shows up as spurious points at the camera origin. Emit NaN
+        // instead so those pixels are correctly discarded downstream.
+        const float ranged = (data == 0.0) ? asfloat(FLOAT32_NAN_BITS) : max(depth_ranged(data), 0);
         _Output[pixelIndex0] = asuint(ranged);
     }
     else if (_UnitSize == 2)

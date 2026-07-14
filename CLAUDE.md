@@ -165,9 +165,9 @@ Custom layers: `Plane` (3), `Visualization` (6), `Cloth` (7)
 
 - URP (Universal Render Pipeline) 17.4.0
 - Custom shaders in `Assets/Resources/Shader/`:
-  - `DepthBufferScaling.compute`, `DepthCameraRayTrace.compute` — GPU-side depth processing
-  - `LidarRayTrace.compute`, `LivoxLidarRayTrace.compute` — GPU-side lidar ray tracing
-  - `ComputeRaygenShaderLocal.hlsl` — Shared ray generation helper
+  - `DepthBufferScaling.compute` — GPU-side depth processing (rasterization-based; DepthCamera uses `DepthRangeRendererFeature` + `DepthRange.shader` to encode scene depth, not URT ray tracing)
+  - `LidarRayTrace.compute`, `LivoxLidarRayTrace.compute` — GPU-side lidar ray tracing (URT)
+  - `ComputeRaygenShaderLocal.hlsl` — Shared ray generation helper (Lidar URT only)
   - `VCSELPrepass.compute` — IR depth camera emulation
   - `AddGaussianNoise.shader` — GPU noise injection for cameras
   - `Segmentation.shader` — Semantic segmentation rendering

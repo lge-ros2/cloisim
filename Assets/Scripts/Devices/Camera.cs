@@ -87,40 +87,25 @@ namespace SensorDevices
 			{
 				context.ExecuteCommandBuffer(_invertCullingOffCmdBuffer);
 
-				if (_noiseMaterial != null || _depthMaterial != null)
+				// Note: depth encoding (Sensor/DepthRange) is applied by DepthRangeRendererFeature
+				// as an in-graph Render Graph pass, not here. An external CommandBuffer blit
+				// executed after context.Submit() (as this used to do) cannot reliably read
+				// _CameraDepthTexture under Unity 6's Render Graph renderer: if nothing inside
+				// the graph itself consumes that resource, the graph culls the pass that
+				// publishes it, leaving the global bound to Unity's black dummy texture.
+				if (_noiseMaterial != null)
 				{
 					// Use explicit target texture instead of BuiltinRenderTextureType.CameraTarget.
 					// In some render pipelines, CameraTarget may reference an internal buffer
-					// rather than camera.targetTexture, causing depth blits to go to the wrong RT.
+					// rather than camera.targetTexture, causing blits to go to the wrong RT.
 					var cameraTarget = camera.targetTexture;
 
-					int depthRT = Shader.PropertyToID("_TempDepthRT");
 					int noiseRT = Shader.PropertyToID("_TempNoiseRT");
-					_postProcessCmdBuffer.GetTemporaryRT(depthRT, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear);
 					_postProcessCmdBuffer.GetTemporaryRT(noiseRT, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Bilinear);
 
-					if (_depthMaterial != null)
-					{
-						_postProcessCmdBuffer.Blit(cameraTarget, depthRT);
+					_postProcessCmdBuffer.Blit(cameraTarget, noiseRT);
+					_postProcessCmdBuffer.Blit(noiseRT, cameraTarget, _noiseMaterial);
 
-						if (_noiseMaterial != null)
-						{
-							_postProcessCmdBuffer.Blit(depthRT, noiseRT, _depthMaterial);
-							_postProcessCmdBuffer.Blit(noiseRT, cameraTarget, _noiseMaterial);
-						}
-						else
-							_postProcessCmdBuffer.Blit(depthRT, cameraTarget, _depthMaterial);
-					}
-					else
-					{
-						if (_noiseMaterial != null)
-						{
-							_postProcessCmdBuffer.Blit(cameraTarget, noiseRT);
-							_postProcessCmdBuffer.Blit(noiseRT, cameraTarget, _noiseMaterial);
-						}
-					}
-
-					_postProcessCmdBuffer.ReleaseTemporaryRT(depthRT);
 					_postProcessCmdBuffer.ReleaseTemporaryRT(noiseRT);
 					context.ExecuteCommandBuffer(_postProcessCmdBuffer);
 					_postProcessCmdBuffer.Clear();
@@ -472,7 +457,21 @@ namespace SensorDevices
 				}
 			}
 
+			// Hook for subclasses (e.g. DepthCamera) to release their own GPU resources
+			// using the same drain result, instead of re-running the drain themselves.
+			ReleaseExtraGpuResources(quiesced);
+
 			base.OnDestroy();
+		}
+
+		/// <summary>
+		/// Override to release subclass-owned GPU resources (ComputeBuffers, ComputeShader
+		/// instances, Materials, ...) created on top of the base Camera. <paramref name="quiesced"/>
+		/// is the result of the single drain already performed in this OnDestroy() pass —
+		/// subclasses must not call Device.DrainReadbacksForTeardown() again.
+		/// </summary>
+		protected virtual void ReleaseExtraGpuResources(bool quiesced)
+		{
 		}
 
 		#region BatchedRenderingInterface
@@ -482,6 +481,16 @@ namespace SensorDevices
 		public virtual bool IsURT => false;
 
 		public float RenderPeriod => UpdatePeriod;
+
+		/// <summary>
+		/// Override in subclasses that need this camera's Render() call to use a
+		/// different UniversalRenderPipelineAsset.renderScale than whatever the
+		/// shared asset is currently set to (e.g. DepthCamera forces 1.0f to avoid
+		/// the bilinear upscale from a &lt;1.0 renderScale corrupting depth values at
+		/// silhouette edges with in-between near/far distances - "flying pixels").
+		/// null = leave renderScale untouched.
+		/// </summary>
+		protected virtual float? RenderScaleOverride => null;
 
 		/// <summary>
 		/// Whether this camera is initialized and can accept render commands.
@@ -524,15 +533,46 @@ namespace SensorDevices
 					// must reflect when the scene was actually captured.
 					var capturedTime = (Clock != null) ? Clock.SimTime : Time.timeAsDouble;
 
+					var scaleOverride = RenderScaleOverride;
+					var urpAssetToRestore = (UniversalRenderPipelineAsset)null;
+					var prevRenderScale = 0f;
+
+					if (scaleOverride.HasValue &&
+						GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urpAsset)
+					{
+						prevRenderScale = urpAsset.renderScale;
+						if (prevRenderScale != scaleOverride.Value)
+						{
+							urpAsset.renderScale = scaleOverride.Value;
+							urpAssetToRestore = urpAsset;
+						}
+					}
+
 					_camSensor.Render();
+
+					if (urpAssetToRestore != null)
+					{
+						urpAssetToRestore.renderScale = prevRenderScale;
+					}
+
 					Device.GpuReadbackBegin();
 					AsyncGPUReadback.Request(_camSensor.targetTexture, 0, _readbackDstFormat, (req) => {
 						Device.GpuReadbackEnd();
 						if (req.hasError)
 						{
 							Debug.LogError($"{name}: Failed to read GPU texture (format={_readbackDstFormat})");
+							return;
 						}
-						else if (req.done)
+
+						if (!req.done)
+							return;
+
+						// Isolate per-sensor faults: an exception here (e.g. a ComputeBuffer
+						// mid-reconfiguration, or a transient GPU state issue) must not go
+						// uncaught, or this callback silently stops calling EnqueueMessage —
+						// the TX thread stays alive but never receives data again, freezing
+						// this sensor's feed permanently with no error logged.
+						try
 						{
 							if (_depthMaterial == null)
 							{
@@ -544,6 +584,10 @@ namespace SensorDevices
 								var readbackData = req.GetData<float>();
 								ImageProcessing(ref readbackData, capturedTime);
 							}
+						}
+						catch (System.Exception e)
+						{
+							Debug.LogWarning($"{name}: ImageProcessing threw; dropping this frame: {e.Message}");
 						}
 					});
 				}

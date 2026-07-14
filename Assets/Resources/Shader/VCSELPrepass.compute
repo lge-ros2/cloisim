@@ -27,10 +27,15 @@ cbuffer Params
 
     float _MaskThreshold; // 0..1
     int _UseProbDrop; // 0: Threshold, 1: probability drop
+
+    float _DepthMax; // camera farClip (meters); converts _DepthBuffer's normalized
+                      // value back to physical meters for the IR falloff term below.
 }
 
 Texture2D<float> _VcselMaskTex;
-RWStructuredBuffer<float> _DepthBuffer;	// in/out (meters)
+// in/out, normalized planarZ/farClip in [0,1] (DepthCamera's acquisition contract,
+// shared with DepthBufferScaling.compute) -- NOT raw meters.
+RWStructuredBuffer<float> _DepthBuffer;
 RWStructuredBuffer<int> _BunchFlag;		// screen-space center marker
 
 SamplerState samplerLinearClamp
@@ -148,7 +153,7 @@ void CSApplyVcselDepthMask(uint3 id : SV_DispatchThreadID)
     uint w, h;
     _VcselMaskTex.GetDimensions(w, h);
 
-    const float depth = _DepthBuffer[idx]; // consider it as meters
+    const float depth = _DepthBuffer[idx]; // normalized planarZ/farClip in [0,1]
     if (depth <= 0.0 || w == 0 || h == 0)
     {
         _DepthBuffer[idx] = 0.0;
@@ -202,19 +207,20 @@ void CSApplyVcselDepthMask(uint3 id : SV_DispatchThreadID)
         m = sampleMaskLinear(uvMask);
 
     // (option) IR Attenuation Model: I = m * I0 / d^k
+    // d must be physical meters (falloff is 1/d^k over real distance), so convert
+    // the normalized _DepthBuffer value back using the camera's farClip.
+    const float dMeters = max(depth * _DepthMax, 1e-4);
     float visible = 1.0;
     if (_UseProbDrop == 0)
     {
-        const float d = max(depth, 1e-4);
         const float I = (_IRIntensity > 0.0 || _IR_FalloffK > 0.0) ?
-            m * _IRIntensity / pow(d, max(_IR_FalloffK, 0.0)) : m;
+            m * _IRIntensity / pow(dMeters, max(_IR_FalloffK, 0.0)) : m;
         visible = (I >= _MaskThreshold) ? 1.0 : 0.0;
     }
     else // probability drop
     {
-        const float d = max(depth, 1e-4);
         float p = (_IRIntensity > 0.0 || _IR_FalloffK > 0.0) ?
-            m * _IRIntensity / pow(d, max(_IR_FalloffK, 0.0)) : m;
+            m * _IRIntensity / pow(dMeters, max(_IR_FalloffK, 0.0)) : m;
         p = saturate(p);
         const float u = hash11(idx);
         visible = (u <= p) ? 1.0 : 0.0;

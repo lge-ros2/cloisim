@@ -143,24 +143,36 @@ public class CLOiSimPluginThread : IDisposable
 		var sw = new Stopwatch();
 		while (IsRunning && device != null)
 		{
-			if (device.PopDeviceMessage(out var dataStreamToSend))
+			// Isolate per-message faults: an uncaught exception here (e.g. a transient
+			// NetMQ/socket error) would otherwise kill this entire while loop, silently
+			// ending the sender thread. Generation (Device.DeviceThreadTx) keeps running
+			// and publishHz logs keep looking healthy, but nothing ever reaches the wire
+			// again and "Transporting Time Seconds" freezes at its last value forever.
+			try
 			{
-				var t0 = Stopwatch.GetTimestamp();
-				if (publisher.Publish(dataStreamToSend))
+				if (device.PopDeviceMessage(out var dataStreamToSend))
 				{
-					var t1 = Stopwatch.GetTimestamp();
-					var transportingTime = (float)((t1 - t0) / (double)Stopwatch.Frequency);
-					// Debug.Log($"{transportingTime:F5}");
-					device.SetTransportedTime(transportingTime);
-				}
+					var t0 = Stopwatch.GetTimestamp();
+					if (publisher.Publish(dataStreamToSend))
+					{
+						var t1 = Stopwatch.GetTimestamp();
+						var transportingTime = (float)((t1 - t0) / (double)Stopwatch.Frequency);
+						// Debug.Log($"{transportingTime:F5}");
+						device.SetTransportedTime(transportingTime);
+					}
 
-				// Return to pool for reuse — avoids per-frame MemoryStream allocation
-				Device.ReturnDeviceMessage(dataStreamToSend);
+					// Return to pool for reuse — avoids per-frame MemoryStream allocation
+					Device.ReturnDeviceMessage(dataStreamToSend);
+				}
+				else
+				{
+					Interlocked.Increment(ref s_senderYields);
+					Thread.Yield();
+				}
 			}
-			else
+			catch (Exception e)
 			{
-				Interlocked.Increment(ref s_senderYields);
-				Thread.Yield();
+				Debug.LogWarning($"[CLOiSimPluginThread] Sender threw; dropping this message: {e.Message}");
 			}
 		}
 	}
@@ -175,15 +187,23 @@ public class CLOiSimPluginThread : IDisposable
 
 		while (IsRunning && device != null)
 		{
-			var receivedData = subscriber.Subscribe();
-			if (receivedData != null)
+			// Isolate per-message faults — see the matching comment in Sender() above.
+			try
 			{
-				device.PushDeviceMessage(receivedData);
+				var receivedData = subscriber.Subscribe();
+				if (receivedData != null)
+				{
+					device.PushDeviceMessage(receivedData);
+				}
+				else
+				{
+					Interlocked.Increment(ref s_receiverYields);
+					Thread.Yield();
+				}
 			}
-			else
+			catch (Exception e)
 			{
-				Interlocked.Increment(ref s_receiverYields);
-				Thread.Yield();
+				Debug.LogWarning($"[CLOiSimPluginThread] Receiver threw; dropping this message: {e.Message}");
 			}
 		}
 	}

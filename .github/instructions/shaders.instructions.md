@@ -50,9 +50,10 @@ void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo) { ... }
 #include "ComputeRaygenShaderLocal.hlsl"
 ```
 
-Used by: `LidarRayTrace.compute`, `DepthCameraRayTrace.compute`, `LivoxLidarRayTrace.compute`
+Used by: `LidarRayTrace.compute`, `LivoxLidarRayTrace.compute`
 
-- Group sizes: 16×8 for 2D (cameras, standard lidar), 64×1 for 1D (Livox pattern-based)
+- Group sizes: 16×8 for 2D (standard lidar), 64×1 for 1D (Livox pattern-based)
+- DepthCamera does not use URT — it renders scene depth via rasterization (`DepthRangeRendererFeature` + `DepthRange.shader`, Pattern A-style fragment shader) and post-processes with `DepthBufferScaling.compute`
 - `ComputeRaygenShaderLocal.hlsl` provides `MainRayGenShader` and `ComputeIndirectDispatchDims` kernel implementations
 - `#pragma kernel` declarations must be in the root `.compute` file, not the `.hlsl` include
 

@@ -123,6 +123,16 @@ namespace SDFormat
 					device.SetUpdateRate((float)sensor.UpdateRate);
 					device.EnableVisualize = sensor.Visualize();
 
+					// DeviceName (Implement.Sensor's GetFrameName()) only walks the parent
+					// chain, never the sensor's own name — so sibling sensors sharing a
+					// parent link (e.g. a D4xx rig's ir1/ir2 cameras both under one link)
+					// end up with an identical DeviceName. That only breaks the
+					// "[Device:...]" diagnostic log prefix (BridgeManager's hashKey/port
+					// allocation is unrelated), but it makes those logs impossible to tell
+					// apart. Disambiguate with the sensor's own SDF name, same pattern
+					// AddMultiCamera already uses for its per-camera sub-devices.
+					device.DeviceName += "::" + sensor.Name;
+
 					var newSensorObject = device.gameObject;
 
 					if (newSensorObject != null)

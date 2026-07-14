@@ -25,15 +25,27 @@ namespace CLOiSim.Diagnostics
         public int pollIntervalMs = 200;
 
         [Tooltip("Also warn on per-frame hitches above this (ms) from the main thread.")]
-        public int hitchThresholdMs = 250;
+        public int hitchThresholdMs = 500;
 
         static readonly Stopwatch Clock = Stopwatch.StartNew();
         static long _lastHeartbeatMs;
+        static long _lastSnapshotMs;
+
+        /// <summary>Minimum interval (ms) between diagnostic snapshot refreshes.</summary>
+        const long SnapshotRefreshIntervalMs = 500;
         static volatile string _stage = "idle";
         // Suppress counter: when > 0 the watchdog skips stall detection.
         // Use Suppress()/Restore() around operations that are intentionally slow
         // (world loading, mesh import) to avoid false-positive stall warnings.
         static volatile int _suppressCount;
+
+#if UNITY_EDITOR
+        // Cached on the main thread via the pauseStateChanged callback: reading
+        // EditorApplication.isPaused directly from the watchdog thread is a native
+        // call and unsafe off the main thread, same reasoning as the SystemInfo
+        // calls guarded elsewhere in this file.
+        static volatile bool _editorPaused;
+#endif
 
         // Immutable snapshot of diagnostic info, refreshed ONLY from the main thread
         // (see RefreshDiagSnapshot). DumpPreExitDiagnostics runs on the watchdog thread
@@ -106,6 +118,10 @@ namespace CLOiSim.Diagnostics
         {
             Volatile.Write(ref _lastHeartbeatMs, Clock.ElapsedMilliseconds);
             RefreshDiagSnapshot(); // seed the cache before the first LateUpdate runs
+#if UNITY_EDITOR
+            _editorPaused = UnityEditor.EditorApplication.isPaused;
+            UnityEditor.EditorApplication.pauseStateChanged += OnEditorPauseStateChanged;
+#endif
             _running = true;
             _thread = new Thread(Watch) { IsBackground = true, Name = "FreezeWatchdog" };
             _thread.Start();
@@ -116,7 +132,20 @@ namespace CLOiSim.Diagnostics
             _running = false;
             _thread?.Join(500);
             _thread = null;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.pauseStateChanged -= OnEditorPauseStateChanged;
+#endif
         }
+
+#if UNITY_EDITOR
+        static void OnEditorPauseStateChanged(UnityEditor.PauseState state)
+        {
+            _editorPaused = state == UnityEditor.PauseState.Paused;
+            // Paused frames don't call LateUpdate, so resuming would otherwise look
+            // like one giant stall. Refresh the heartbeat on both edges.
+            Volatile.Write(ref _lastHeartbeatMs, Clock.ElapsedMilliseconds);
+        }
+#endif
 
         // LateUpdate runs on the main thread after rendering submission: a fresh
         // heartbeat here means the main thread is alive and past the render loop.
@@ -136,7 +165,14 @@ namespace CLOiSim.Diagnostics
 
             // Refresh the diagnostics snapshot here (main thread) so the watchdog
             // thread never has to touch SystemInfo/Time itself during a stall.
-            RefreshDiagSnapshot();
+            // Throttled: this allocates a new snapshot object + strings, and the
+            // dump is only ever read after a multi-second stall, so per-frame
+            // freshness buys nothing but adds constant GC pressure every frame.
+            if (now - _lastSnapshotMs >= SnapshotRefreshIntervalMs)
+            {
+                _lastSnapshotMs = now;
+                RefreshDiagSnapshot();
+            }
         }
 
         static void DumpPreExitDiagnostics(long stalledMs)
@@ -187,7 +223,11 @@ namespace CLOiSim.Diagnostics
 
                 long now = Clock.ElapsedMilliseconds;
                 long stalledFor = now - Volatile.Read(ref _lastHeartbeatMs);
+#if UNITY_EDITOR
+                if (stalledFor < warnThresholdMs || _suppressCount > 0 || _editorPaused)
+#else
                 if (stalledFor < warnThresholdMs || _suppressCount > 0)
+#endif
                 {
                     lastReported = -1;
                     continue;

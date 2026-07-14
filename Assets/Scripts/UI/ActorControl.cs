@@ -11,9 +11,14 @@ using UnityEngine.InputSystem;
 [DefaultExecutionOrder(700)]
 public class ActorControl : MonoBehaviour
 {
-	private RaycastHit m_HitInfo = new RaycastHit();
+	private Camera _mainCamera;
 
-	private void ClickToMove(ref List<Transform> list)
+	private void Awake()
+	{
+		_mainCamera = Camera.main;
+	}
+
+	private void ClickToMove(in List<Transform> list, in Vector3 targetPoint)
 	{
 		foreach (var transform in list)
 		{
@@ -29,7 +34,7 @@ public class ActorControl : MonoBehaviour
 				}
 				else
 				{
-					actorAgent.AssignTargetDestination(m_HitInfo.point);
+					actorAgent.AssignTargetDestination(targetPoint);
 				}
 			}
 		}
@@ -45,10 +50,10 @@ public class ActorControl : MonoBehaviour
 
 				if (list.Count > 0)
 				{
-					var ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
-					if (Physics.Raycast(ray.origin, ray.direction, out m_HitInfo))
+					var ray = _mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+					if (Physics.Raycast(ray.origin, ray.direction, out var hitInfo))
 					{
-						ClickToMove(ref list);
+						ClickToMove(list, hitInfo.point);
 					}
 				}
 			}
