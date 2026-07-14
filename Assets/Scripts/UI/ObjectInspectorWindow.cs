@@ -48,7 +48,7 @@ public class ObjectInspectorWindow : MonoBehaviour
 	private const int CornerRadius = 6;
 	private const float CardPadding = 6f;
 	private const float MotorCardHeight = 100f;
-	private const float SectionHeaderHeight = 20f;
+	private const float SectionHeaderHeight = 24f;
 	private const float VisualizeRowHeight = 22f;
 
 	// Colors
@@ -76,6 +76,7 @@ public class ObjectInspectorWindow : MonoBehaviour
 
 	private GUIStyle _titleStyle;
 	private GUIStyle _motorNameStyle;
+	private GUIStyle _sectionHeaderStyle;
 	private GUIStyle _labelStyle;
 	private GUIStyle _dimLabelStyle;
 	private GUIStyle _fieldStyle;
@@ -120,17 +121,18 @@ public class ObjectInspectorWindow : MonoBehaviour
 		return list != null && list.Contains(target);
 	}
 
-	// Opens the context inspector for the given target at the cursor position.
-	public static void OpenAt(Transform target, Vector2 screenPos)
+	// Opens the context inspector for the given target near the cursor position,
+	// offset away from the target so the window doesn't cover it.
+	public static void OpenAt(Transform target, Vector2 screenPos, Camera camera)
 	{
 		var window = FindAnyObjectByType<ObjectInspectorWindow>();
 		if (window != null)
 		{
-			window.Open(target, screenPos);
+			window.Open(target, screenPos, camera);
 		}
 	}
 
-	private void Open(Transform target, Vector2 screenPos)
+	private void Open(Transform target, Vector2 screenPos, Camera camera)
 	{
 		if (target == null)
 			return;
@@ -150,11 +152,101 @@ public class ObjectInspectorWindow : MonoBehaviour
 		}
 
 		// Input System screen space is bottom-left origin; IMGUI is top-left.
-		_windowRect.x = Mathf.Clamp(screenPos.x, 0, Mathf.Max(0, Screen.width - WindowWidth));
-		_windowRect.y = Mathf.Clamp(Screen.height - screenPos.y, 0, Mathf.Max(0, Screen.height - TitleBarHeight));
+		var guiClickPos = new Vector2(screenPos.x, Screen.height - screenPos.y);
+		var windowPos = ComputeWindowPosition(target, camera, guiClickPos);
+		_windowRect.x = windowPos.x;
+		_windowRect.y = windowPos.y;
 		_collapsed = false;
 		_closedByUser = false;
 		_showWindow = true;
+	}
+
+	// Fixed pixel gap kept between the window and the target's on-screen bounds,
+	// so the offset doesn't blow up when zoomed in close or shrink to nothing
+	// when zoomed out — unlike a gap scaled by the target's screen-space size.
+	private const float TargetClearanceGap = 24f;
+
+	// Picks the first side (right/left/below/above) of the target's screen-space
+	// bounding box that has room for the window, so it never overlaps the target.
+	// Falls back to a small offset from the click point if the target fills the
+	// screen and no side has room (e.g. extreme close-up).
+	private Vector2 ComputeWindowPosition(Transform target, Camera camera, Vector2 guiClickPos)
+	{
+		var estimatedHeight = EstimateContentHeight();
+		var fallback = ClampToScreen(guiClickPos + new Vector2(TargetClearanceGap, TargetClearanceGap), estimatedHeight);
+
+		if (camera == null)
+			return fallback;
+
+		var renderers = target.GetComponentsInChildren<Renderer>();
+		if (renderers.Length == 0)
+			return fallback;
+
+		var bounds = renderers[0].bounds;
+		for (var i = 1; i < renderers.Length; i++)
+		{
+			bounds.Encapsulate(renderers[i].bounds);
+		}
+
+		var min = new Vector2(float.MaxValue, float.MaxValue);
+		var max = new Vector2(float.MinValue, float.MinValue);
+		for (var dx = -1; dx <= 1; dx += 2)
+		{
+			for (var dy = -1; dy <= 1; dy += 2)
+			{
+				for (var dz = -1; dz <= 1; dz += 2)
+				{
+					var corner = bounds.center + Vector3.Scale(bounds.extents, new Vector3(dx, dy, dz));
+					var screenPoint = camera.WorldToScreenPoint(corner);
+					var guiPoint = new Vector2(screenPoint.x, Screen.height - screenPoint.y);
+					min = Vector2.Min(min, guiPoint);
+					max = Vector2.Max(max, guiPoint);
+				}
+			}
+		}
+
+		var verticalCenterY = Mathf.Clamp((min.y + max.y) * 0.5f - estimatedHeight * 0.5f, 0, Mathf.Max(0, Screen.height - estimatedHeight));
+		var horizontalCenterX = Mathf.Clamp((min.x + max.x) * 0.5f - WindowWidth * 0.5f, 0, Mathf.Max(0, Screen.width - WindowWidth));
+
+		// Right of target
+		if (Screen.width - max.x >= WindowWidth + TargetClearanceGap)
+		{
+			return new Vector2(max.x + TargetClearanceGap, verticalCenterY);
+		}
+
+		// Left of target
+		if (min.x - WindowWidth - TargetClearanceGap >= 0)
+		{
+			return new Vector2(min.x - WindowWidth - TargetClearanceGap, verticalCenterY);
+		}
+
+		// Below target
+		if (Screen.height - max.y >= estimatedHeight + TargetClearanceGap)
+		{
+			return new Vector2(horizontalCenterX, max.y + TargetClearanceGap);
+		}
+
+		// Above target
+		if (min.y - estimatedHeight - TargetClearanceGap >= 0)
+		{
+			return new Vector2(horizontalCenterX, min.y - estimatedHeight - TargetClearanceGap);
+		}
+
+		// Target's bounding box fills the screen (extreme close-up) — no side
+		// fully clears it, so just offset from the click point.
+		return fallback;
+	}
+
+	private float EstimateContentHeight()
+	{
+		return TitleBarHeight + 6 + PidSectionHeight() + VisualizeSectionHeight() + 6;
+	}
+
+	private static Vector2 ClampToScreen(Vector2 pos, float height)
+	{
+		return new Vector2(
+			Mathf.Clamp(pos.x, 0, Mathf.Max(0, Screen.width - WindowWidth)),
+			Mathf.Clamp(pos.y, 0, Mathf.Max(0, Screen.height - height)));
 	}
 
 	public static void CloseIfOpen()
@@ -321,6 +413,18 @@ public class ObjectInspectorWindow : MonoBehaviour
 			padding = new RectOffset(2, 0, 2, 2),
 		};
 
+		// Section headers ("PID Control", "Visualize") use a distinct accent
+		// color + smaller caps look so they read as group labels, not entries —
+		// otherwise they blend visually with the per-link/per-device names below.
+		_sectionHeaderStyle = new GUIStyle(GUI.skin.label)
+		{
+			fontStyle = FontStyle.Bold,
+			fontSize = 10,
+			alignment = TextAnchor.MiddleLeft,
+			normal = { textColor = AccentColor },
+			padding = new RectOffset(2, 0, 0, 0),
+		};
+
 		_labelStyle = new GUIStyle(GUI.skin.label)
 		{
 			fontSize = 12,
@@ -409,7 +513,7 @@ public class ObjectInspectorWindow : MonoBehaviour
 
 		var contentHeight = _collapsed
 			? TitleBarHeight
-			: TitleBarHeight + 6 + _entries.Count * MotorCardHeight + VisualizeSectionHeight() + 6;
+			: TitleBarHeight + 6 + PidSectionHeight() + VisualizeSectionHeight() + 6;
 
 		_windowRect.width = WindowWidth;
 		_windowRect.height = contentHeight;
@@ -465,15 +569,39 @@ public class ObjectInspectorWindow : MonoBehaviour
 
 		// Content area
 		var y = TitleBarHeight + 8f;
-		foreach (var entry in _entries)
+
+		if (_entries.Count > 0)
 		{
-			y = DrawMotorPID(entry, y, _windowRect.width);
+			y = DrawSectionHeader("PID CONTROL", y, _windowRect.width);
+
+			foreach (var entry in _entries)
+			{
+				y = DrawMotorPID(entry, y, _windowRect.width);
+			}
 		}
 
 		if (_visualizeEntries.Count > 0)
 		{
 			y = DrawVisualizeSection(y, _windowRect.width);
 		}
+	}
+
+	// Draws a group label (e.g. "PID CONTROL") in a distinct accent color/caps
+	// with an underline, so it reads clearly as a section separator rather than
+	// blending in with the per-entry names (e.g. right_wheel_link) drawn below it.
+	private float DrawSectionHeader(string label, float y, float width)
+	{
+		GUI.Label(new Rect(CardPadding + 2, y, width - CardPadding * 2, 16f), label, _sectionHeaderStyle);
+		var lineY = y + 17f;
+		GUI.DrawTexture(new Rect(CardPadding + 2, lineY, width - CardPadding * 4, 1), _accentTex);
+		return y + SectionHeaderHeight;
+	}
+
+	private float PidSectionHeight()
+	{
+		return _entries.Count == 0
+			? 0f
+			: SectionHeaderHeight + _entries.Count * MotorCardHeight;
 	}
 
 	private float VisualizeSectionHeight()
@@ -485,21 +613,39 @@ public class ObjectInspectorWindow : MonoBehaviour
 
 	private float DrawVisualizeSection(float y, float width)
 	{
-		GUI.Label(new Rect(CardPadding + 2, y, width - CardPadding * 2, SectionHeaderHeight), "Visualize", _motorNameStyle);
-		y += SectionHeaderHeight;
+		y = DrawSectionHeader("VISUALIZE", y, width);
 
 		foreach (var entry in _visualizeEntries)
 		{
 			var rowRect = new Rect(CardPadding + 4, y, width - CardPadding * 2 - 4, VisualizeRowHeight);
-			var enabled = GUI.Toggle(rowRect, entry.Device.EnableVisualize, " " + entry.Name, _labelStyle);
-			if (enabled != entry.Device.EnableVisualize)
-			{
-				entry.Device.EnableVisualize = enabled;
-			}
+			DrawVisualizeToggleRow(entry, rowRect);
 			y += VisualizeRowHeight;
 		}
 
 		return y;
+	}
+
+	private void DrawVisualizeToggleRow(in VisualizeEntry entry, Rect rowRect)
+	{
+		const float boxSize = 16f;
+		var boxRect = new Rect(rowRect.x, rowRect.y + (rowRect.height - boxSize) * 0.5f, boxSize, boxSize);
+		var labelRect = new Rect(boxRect.xMax + 6f, rowRect.y, rowRect.width - boxSize - 6f, rowRect.height);
+
+		var enabled = entry.Device.EnableVisualize;
+
+		GUI.DrawTexture(boxRect, _fieldTex);
+		if (enabled)
+		{
+			var checkRect = new Rect(boxRect.x + 2f, boxRect.y + 2f, boxSize - 4f, boxSize - 4f);
+			GUI.DrawTexture(checkRect, _accentTex);
+		}
+
+		GUI.Label(labelRect, entry.Name, _dimLabelStyle);
+
+		if (GUI.Button(rowRect, GUIContent.none, GUIStyle.none))
+		{
+			entry.Device.EnableVisualize = !enabled;
+		}
 	}
 
 	private float DrawMotorPID(in MotorEntry entry, float y, float width)

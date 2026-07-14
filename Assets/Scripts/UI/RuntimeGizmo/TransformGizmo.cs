@@ -537,6 +537,11 @@ namespace RuntimeGizmos
 			return 0;
 		}
 
+		// Right click opens the inspector menu on release rather than press, so a
+		// camera-orbit drag (which also uses the right button) doesn't pop the menu.
+		private const float RightClickDragThreshold = 6f;
+		private Vector2 _rightPressScreenPos;
+
 		void GetTarget()
 		{
 			if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
@@ -545,15 +550,36 @@ namespace RuntimeGizmos
 			if (ObjectInspectorWindow.IsMouseOver)
 				return;
 
+			if (Keyboard.current[Key.ContextMenu].wasPressedThisFrame)
+			{
+				OpenInspectorForCurrentSelection(Mouse.current.position.ReadValue());
+			}
+
 			if (nearAxis != Axis.None || Keyboard.current[Key.LeftCtrl].isPressed)
 				return;
 
-			var leftClick = Mouse.current.leftButton.wasPressedThisFrame;
-			var rightClick = Mouse.current.rightButton.wasPressedThisFrame;
+			if (Mouse.current.rightButton.wasPressedThisFrame)
+			{
+				_rightPressScreenPos = Mouse.current.position.ReadValue();
+			}
 
-			if (!leftClick && !rightClick)
-				return;
+			if (Mouse.current.leftButton.wasPressedThisFrame)
+			{
+				HandleLeftClick();
+			}
 
+			if (Mouse.current.rightButton.wasReleasedThisFrame)
+			{
+				var releasePos = Mouse.current.position.ReadValue();
+				if (Vector2.Distance(_rightPressScreenPos, releasePos) <= RightClickDragThreshold)
+				{
+					HandleRightClick(releasePos);
+				}
+			}
+		}
+
+		void HandleLeftClick()
+		{
 			var ray = myCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
 			if (Physics.Raycast(ray, out var hitInfo, Mathf.Infinity))
 			{
@@ -563,31 +589,51 @@ namespace RuntimeGizmos
 				{
 					ClearTargets();
 				}
+				else if (targetRoots.ContainsKey(target))
+				{
+					RemoveTarget(target);
+				}
+				else if (Keyboard.current[Key.LeftShift].isPressed)
+				{
+					AddTarget(target);
+				}
 				else
 				{
-					if (targetRoots.ContainsKey(target))
-					{
-						RemoveTarget(target);
-					}
-					else if (Keyboard.current[Key.LeftShift].isPressed)
-					{
-						AddTarget(target);
-					}
-					else
-					{
-						ClearAndAddTarget(target);
-					}
-
-					// Right click opens the context inspector window at the cursor
-					if (rightClick && targetRoots.ContainsKey(target))
-					{
-						ObjectInspectorWindow.OpenAt(target, Mouse.current.position.ReadValue());
-					}
+					ClearAndAddTarget(target);
 				}
 			}
 			else
 			{
 				ClearTargets();
+			}
+		}
+
+		void HandleRightClick(Vector2 screenPos)
+		{
+			var ray = myCamera.ScreenPointToRay(screenPos);
+			if (!Physics.Raycast(ray, out var hitInfo, Mathf.Infinity))
+				return;
+
+			var target = ResolveTarget(hitInfo.transform);
+			if (target == null)
+				return;
+
+			// Right click always ensures the target is selected and opens the menu;
+			// unlike left click it never toggles the target back off.
+			if (!targetRoots.ContainsKey(target))
+			{
+				ClearAndAddTarget(target);
+			}
+
+			ObjectInspectorWindow.OpenAt(target, screenPos, myCamera);
+		}
+
+		void OpenInspectorForCurrentSelection(Vector2 screenPos)
+		{
+			var target = mainTargetRoot;
+			if (target != null)
+			{
+				ObjectInspectorWindow.OpenAt(target, screenPos, myCamera);
 			}
 		}
 
