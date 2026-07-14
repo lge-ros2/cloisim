@@ -600,7 +600,7 @@ public class Main : MonoBehaviour
 			_uiMainCanvasRoot = uiMainCanvasTransform.gameObject;
 			_followingList = _uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
 
-			_uiRoot.AddComponent<PIDTunerWindow>();
+			_uiRoot.AddComponent<ObjectInspectorWindow>();
 
 			_loadingCursor = _uiRoot.AddComponent<LoadingCursor>();
 		}

@@ -215,6 +215,10 @@ public abstract class Device : MonoBehaviour
 		}
 	}
 
+	// Overridden to true by devices that implement OnVisualize/OnVisualizeStop,
+	// so the common inspector window only offers a toggle where it does something.
+	public virtual bool SupportsVisualize => false;
+
 	private bool _lastAppliedVisualize = true;
 
 	private void ApplyVisualize()

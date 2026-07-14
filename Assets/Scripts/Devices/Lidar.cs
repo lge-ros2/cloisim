@@ -694,6 +694,8 @@ namespace SensorDevices
 
 		private GameObject _visualizer = null;
 
+		public override bool SupportsVisualize => true;
+
 		protected override IEnumerator OnVisualize()
 		{
 			_visualizer = new GameObject("__laser_visualizer__")

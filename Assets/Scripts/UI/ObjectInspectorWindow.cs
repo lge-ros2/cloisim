@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class PIDTunerWindow : MonoBehaviour
+public class ObjectInspectorWindow : MonoBehaviour
 {
 	private struct MotorEntry
 	{
@@ -17,9 +17,16 @@ public class PIDTunerWindow : MonoBehaviour
 		public PID Pid;
 	}
 
+	private struct VisualizeEntry
+	{
+		public string Name;
+		public Device Device;
+	}
+
 	private RuntimeGizmos.TransformGizmo _gizmo;
 	private Transform _currentTarget;
 	private readonly List<MotorEntry> _entries = new();
+	private readonly List<VisualizeEntry> _visualizeEntries = new();
 
 	private bool _showWindow = false;
 	private bool _collapsed = false;
@@ -40,6 +47,9 @@ public class PIDTunerWindow : MonoBehaviour
 	private const float WindowWidth = 260f;
 	private const int CornerRadius = 6;
 	private const float CardPadding = 6f;
+	private const float MotorCardHeight = 100f;
+	private const float SectionHeaderHeight = 20f;
+	private const float VisualizeRowHeight = 22f;
 
 	// Colors
 	private static readonly Color BgColor = new Color(0.22f, 0.22f, 0.27f, 0.94f);
@@ -91,37 +101,65 @@ public class PIDTunerWindow : MonoBehaviour
 		if (_gizmo == null)
 			return;
 
-		var target = _gizmo.mainTargetRoot;
-
-		if (target == null)
-		{
-			if (_currentTarget != null)
-			{
-				SaveWindowState();
-				_currentTarget = null;
-				_showWindow = false;
-				_closedByUser = false;
-			}
+		// Close the window if its target was deselected or removed. The window is
+		// opened explicitly on right-click via OpenAt(); it is no longer shown
+		// automatically on selection.
+		if (_currentTarget == null)
 			return;
+
+		var mainTarget = _gizmo.mainTargetRoot;
+		if (mainTarget == null || (mainTarget != _currentTarget && !IsSelected(_currentTarget)))
+		{
+			CloseWindow();
 		}
+	}
+
+	private bool IsSelected(Transform target)
+	{
+		_gizmo.GetSelectedTargets(out var list);
+		return list != null && list.Contains(target);
+	}
+
+	// Opens the context inspector for the given target at the cursor position.
+	public static void OpenAt(Transform target, Vector2 screenPos)
+	{
+		var window = FindAnyObjectByType<ObjectInspectorWindow>();
+		if (window != null)
+		{
+			window.Open(target, screenPos);
+		}
+	}
+
+	private void Open(Transform target, Vector2 screenPos)
+	{
+		if (target == null)
+			return;
 
 		if (target != _currentTarget)
 		{
 			SaveWindowState();
 			_currentTarget = target;
-			_closedByUser = false;
-			RestoreWindowState();
-			RefreshMotors();
 		}
-		else if (!_showWindow && !_closedByUser && _entries.Count > 0)
+
+		RefreshContent();
+
+		if (_entries.Count == 0 && _visualizeEntries.Count == 0)
 		{
-			_showWindow = true;
+			CloseWindow();
+			return;
 		}
+
+		// Input System screen space is bottom-left origin; IMGUI is top-left.
+		_windowRect.x = Mathf.Clamp(screenPos.x, 0, Mathf.Max(0, Screen.width - WindowWidth));
+		_windowRect.y = Mathf.Clamp(Screen.height - screenPos.y, 0, Mathf.Max(0, Screen.height - TitleBarHeight));
+		_collapsed = false;
+		_closedByUser = false;
+		_showWindow = true;
 	}
 
 	public static void CloseIfOpen()
 	{
-		var window = FindAnyObjectByType<PIDTunerWindow>();
+		var window = FindAnyObjectByType<ObjectInspectorWindow>();
 		if (window == null)
 		{
 			return;
@@ -137,6 +175,7 @@ public class PIDTunerWindow : MonoBehaviour
 		_showWindow = false;
 		_closedByUser = false;
 		_entries.Clear();
+		_visualizeEntries.Clear();
 	}
 
 	private void SaveWindowState()
@@ -158,15 +197,13 @@ public class PIDTunerWindow : MonoBehaviour
 		_collapsed = _currentTarget != null && _collapsedState.TryGetValue(_currentTarget, out var saved) && saved;
 	}
 
-	private void RefreshMotors()
+	private void RefreshContent()
 	{
 		_entries.Clear();
+		_visualizeEntries.Clear();
 
 		if (_currentTarget == null)
-		{
-			_showWindow = false;
 			return;
-		}
 
 		var bodies = _currentTarget.GetComponentsInChildren<ArticulationBody>();
 		foreach (var ab in bodies)
@@ -188,7 +225,19 @@ public class PIDTunerWindow : MonoBehaviour
 			}
 		}
 
-		_showWindow = _entries.Count > 0;
+		var devices = _currentTarget.GetComponentsInChildren<Device>();
+		foreach (var device in devices)
+		{
+			if (device.SupportsVisualize)
+			{
+				var name = string.IsNullOrEmpty(device.DeviceName) ? device.name : device.DeviceName;
+				_visualizeEntries.Add(new VisualizeEntry
+				{
+					Name = name,
+					Device = device,
+				});
+			}
+		}
 	}
 
 	private Texture2D MakeTex(Color color)
@@ -344,7 +393,7 @@ public class PIDTunerWindow : MonoBehaviour
 
 	void OnGUI()
 	{
-		if (!_showWindow || _entries.Count == 0)
+		if (!_showWindow || (_entries.Count == 0 && _visualizeEntries.Count == 0))
 		{
 			IsMouseOver = false;
 			IsVisible = false;
@@ -360,7 +409,7 @@ public class PIDTunerWindow : MonoBehaviour
 
 		var contentHeight = _collapsed
 			? TitleBarHeight
-			: TitleBarHeight + 6 + _entries.Count * 100 + 6;
+			: TitleBarHeight + 6 + _entries.Count * MotorCardHeight + VisualizeSectionHeight() + 6;
 
 		_windowRect.width = WindowWidth;
 		_windowRect.height = contentHeight;
@@ -386,9 +435,9 @@ public class PIDTunerWindow : MonoBehaviour
 		GUI.DrawTexture(new Rect(0, 0, _windowRect.width, 2), _accentTex);
 
 		// Title bar content
-		var modelName = _currentTarget != null ? _currentTarget.name : "PID";
+		var modelName = _currentTarget != null ? _currentTarget.name : "Inspector";
 		var titleContentRect = new Rect(8, 1, _windowRect.width - 64, TitleBarHeight);
-		GUI.Label(titleContentRect, "PID Control [" + modelName + "]", _titleStyle);
+		GUI.Label(titleContentRect, modelName, _titleStyle);
 
 		// Collapse button
 		var collapseRect = new Rect(_windowRect.width - 52, 5, 22, 22);
@@ -420,6 +469,37 @@ public class PIDTunerWindow : MonoBehaviour
 		{
 			y = DrawMotorPID(entry, y, _windowRect.width);
 		}
+
+		if (_visualizeEntries.Count > 0)
+		{
+			y = DrawVisualizeSection(y, _windowRect.width);
+		}
+	}
+
+	private float VisualizeSectionHeight()
+	{
+		return _visualizeEntries.Count == 0
+			? 0f
+			: SectionHeaderHeight + _visualizeEntries.Count * VisualizeRowHeight;
+	}
+
+	private float DrawVisualizeSection(float y, float width)
+	{
+		GUI.Label(new Rect(CardPadding + 2, y, width - CardPadding * 2, SectionHeaderHeight), "Visualize", _motorNameStyle);
+		y += SectionHeaderHeight;
+
+		foreach (var entry in _visualizeEntries)
+		{
+			var rowRect = new Rect(CardPadding + 4, y, width - CardPadding * 2 - 4, VisualizeRowHeight);
+			var enabled = GUI.Toggle(rowRect, entry.Device.EnableVisualize, " " + entry.Name, _labelStyle);
+			if (enabled != entry.Device.EnableVisualize)
+			{
+				entry.Device.EnableVisualize = enabled;
+			}
+			y += VisualizeRowHeight;
+		}
+
+		return y;
 	}
 
 	private float DrawMotorPID(in MotorEntry entry, float y, float width)

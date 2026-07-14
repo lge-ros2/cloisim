@@ -542,87 +542,104 @@ namespace RuntimeGizmos
 			if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
 				return;
 
-			if (PIDTunerWindow.IsMouseOver)
+			if (ObjectInspectorWindow.IsMouseOver)
 				return;
 
-			if (nearAxis == Axis.None &&
-				!Keyboard.current[Key.LeftCtrl].isPressed && Mouse.current.leftButton.wasPressedThisFrame)
+			if (nearAxis != Axis.None || Keyboard.current[Key.LeftCtrl].isPressed)
+				return;
+
+			var leftClick = Mouse.current.leftButton.wasPressedThisFrame;
+			var rightClick = Mouse.current.rightButton.wasPressedThisFrame;
+
+			if (!leftClick && !rightClick)
+				return;
+
+			var ray = myCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+			if (Physics.Raycast(ray, out var hitInfo, Mathf.Infinity))
 			{
-				var ray = myCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-				if (Physics.Raycast(ray, out var hitInfo, Mathf.Infinity))
-				{
-					Transform target = null;
-					var hitObject = hitInfo.transform;
+				var target = ResolveTarget(hitInfo.transform);
 
-					_lockRotation = false;
-
-					if (hitObject.CompareTag("Props") ||
-						hitObject.CompareTag("Actor") ||
-						(hitObject.CompareTag("Road") && Keyboard.current[Key.LeftAlt].isPressed))
-					{
-						if (hitObject.CompareTag("Road"))
-						{
-							_lockRotation = true;
-						}
-
-						target = hitObject.transform;
-					}
-					else
-					{
-						// To avoid plane object
-						var isPlaneObject = hitObject.gameObject.layer.Equals(SDFormat.Implement.Collision.PlaneLayerIndex);
-						var collisionHelper = hitObject.GetComponentInChildren<SDFormat.Helper.Collision>();
-						if (collisionHelper != null)
-						{
-							isPlaneObject |= collisionHelper.gameObject.layer.Equals(SDFormat.Implement.Collision.PlaneLayerIndex);
-						}
-
-						if (!isPlaneObject)
-						{
-							var hitParentLinkHelper = hitObject?.GetComponentInParent<SDFormat.Helper.Link>();
-							var hitRootModelHelper = hitParentLinkHelper?.RootModel;
-
-							if (hitRootModelHelper != null && hitParentLinkHelper.Model != null)
-							{
-								if (!(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
-								{
-									target = hitRootModelHelper.hasRootArticulationBody ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
-								}
-							}
-							// Select static object(non articulation body) only when left alt is pressed
-							else if (hitParentLinkHelper == null && Keyboard.current[Key.LeftAlt].isPressed)
-							{
-								target = hitObject.transform;
-							}
-							// Debug.Log(hitParentObject.name + " Selected!!!!");
-						}
-					}
-
-					if (target == null)
-					{
-						ClearTargets();
-					}
-					else
-					{
-						if (targetRoots.ContainsKey(target))
-						{
-							RemoveTarget(target);
-						}
-						else if (Keyboard.current[Key.LeftShift].isPressed)
-						{
-							AddTarget(target);
-						}
-						else
-						{
-							ClearAndAddTarget(target);
-						}
-					}
-				}
-				else
+				if (target == null)
 				{
 					ClearTargets();
 				}
+				else
+				{
+					if (targetRoots.ContainsKey(target))
+					{
+						RemoveTarget(target);
+					}
+					else if (Keyboard.current[Key.LeftShift].isPressed)
+					{
+						AddTarget(target);
+					}
+					else
+					{
+						ClearAndAddTarget(target);
+					}
+
+					// Right click opens the context inspector window at the cursor
+					if (rightClick && targetRoots.ContainsKey(target))
+					{
+						ObjectInspectorWindow.OpenAt(target, Mouse.current.position.ReadValue());
+					}
+				}
 			}
+			else
+			{
+				ClearTargets();
+			}
+		}
+
+		Transform ResolveTarget(Transform hitObject)
+		{
+			Transform target = null;
+
+			_lockRotation = false;
+
+			if (hitObject.CompareTag("Props") ||
+				hitObject.CompareTag("Actor") ||
+				(hitObject.CompareTag("Road") && Keyboard.current[Key.LeftAlt].isPressed))
+			{
+				if (hitObject.CompareTag("Road"))
+				{
+					_lockRotation = true;
+				}
+
+				target = hitObject.transform;
+			}
+			else
+			{
+				// To avoid plane object
+				var isPlaneObject = hitObject.gameObject.layer.Equals(SDFormat.Implement.Collision.PlaneLayerIndex);
+				var collisionHelper = hitObject.GetComponentInChildren<SDFormat.Helper.Collision>();
+				if (collisionHelper != null)
+				{
+					isPlaneObject |= collisionHelper.gameObject.layer.Equals(SDFormat.Implement.Collision.PlaneLayerIndex);
+				}
+
+				if (!isPlaneObject)
+				{
+					var hitParentLinkHelper = hitObject?.GetComponentInParent<SDFormat.Helper.Link>();
+					var hitRootModelHelper = hitParentLinkHelper?.RootModel;
+
+					if (hitRootModelHelper != null && hitParentLinkHelper.Model != null)
+					{
+						if (!(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
+						{
+							target = hitRootModelHelper.hasRootArticulationBody ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
+						}
+					}
+					// Select static object(non articulation body) only when left alt is pressed
+					else if (hitParentLinkHelper == null && Keyboard.current[Key.LeftAlt].isPressed)
+					{
+						target = hitObject.transform;
+					}
+					// Debug.Log(hitParentObject.name + " Selected!!!!");
+				}
+			}
+
+			return target;
 		}
 
 		public void GetSelectedTargets(out List<Transform> list)

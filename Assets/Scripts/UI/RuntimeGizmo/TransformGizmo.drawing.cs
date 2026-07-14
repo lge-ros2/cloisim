@@ -102,9 +102,9 @@ namespace RuntimeGizmos
 				return;
 			}
 
-			if (PIDTunerWindow.IsVisible)
+			if (ObjectInspectorWindow.IsVisible)
 			{
-				AddTopLeftClipRect(PIDTunerWindow.ActiveWindowRect, camera, true);
+				AddTopLeftClipRect(ObjectInspectorWindow.ActiveWindowRect, camera, true);
 			}
 
 			AddUiToolkitClipRects(camera);
