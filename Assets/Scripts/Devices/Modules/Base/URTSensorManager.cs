@@ -363,6 +363,16 @@ public class URTSensorManager : MonoBehaviour
 		// Skin refresh throttling / idle detection (only meaningful when skinned != null).
 		public float nextBakeTime;     // realtime after which a re-bake is allowed
 		public Bounds lastBakedBounds; // world AABB at the last actual bake; used to skip idle actors
+
+		// Last matrix actually pushed to accelStruct.UpdateInstanceTransform(). The
+		// package frees the whole TLAS (IRayTracingAccelStruct's Build() becomes a
+		// genuine rebuild again) as an unconditional side effect of that call, so it
+		// must only be called when the transform actually changed — otherwise a fully
+		// static scene would free the TLAS every single frame while our own
+		// static-scene signature check (by design) keeps skipping the Build() that
+		// would recreate it, leaving accelStruct with no bottom-level BVHs bound at
+		// all ("_AccelStructbottomBvhs ... not set" on the next Dispatch).
+		public Matrix4x4 lastPushedMatrix;
 	}
 
 	private readonly struct InstanceKey : IEquatable<InstanceKey>
@@ -1413,7 +1423,8 @@ public class URTSensorManager : MonoBehaviour
 						geometryMesh = mesh,
 						subMeshIndex = sub,
 						handle = handle,
-						skinned = null
+						skinned = null,
+						lastPushedMatrix = desc.localToWorldMatrix
 					});
 					addedCount++;
 				}
@@ -1684,7 +1695,18 @@ public class URTSensorManager : MonoBehaviour
 				continue;
 			}
 
-			accelStruct.UpdateInstanceTransform(entry.handle, entry.renderer.localToWorldMatrix);
+			// UpdateInstanceTransform() unconditionally frees the package's TLAS as a
+			// side effect (see InstanceEntry.lastPushedMatrix doc comment) — only call
+			// it when the transform actually moved, so a static scene doesn't free the
+			// TLAS every frame only for our own static-scene signature check (below,
+			// in EnsureBVHReady) to then skip the Build() that would recreate it.
+			var currentMatrix = entry.renderer.localToWorldMatrix;
+			if (currentMatrix != entry.lastPushedMatrix)
+			{
+				accelStruct.UpdateInstanceTransform(entry.handle, currentMatrix);
+				entry.lastPushedMatrix = currentMatrix;
+				instances[i] = entry;
+			}
 		}
 
 		if (needsRebuild)
