@@ -40,10 +40,6 @@ namespace SensorDevices
 		// Reusable CPU-side buffer for the packed depth readback (avoids per-frame alloc).
 		private byte[] _packedOutput = null;
 
-		// Depth packing scale (e.g. 1000 => millimeter units for 16U). Stored so a late
-		// SetDepthScale() can reconfigure the scaling compute shader.
-		private float _depthScale = 1000f;
-
 		#region "Compute Shader For Depth Buffer Scaling"
 		private static ComputeShader ComputeShaderDepthBufferScaling = null;
 		private ComputeShader _csDepthScaling = null;
@@ -165,8 +161,6 @@ namespace SensorDevices
 
 		public void SetDepthScale(in uint value)
 		{
-			_depthScale = value;
-
 			var width = (int)_camParam.ImageWidth;
 			var height = (int)_camParam.ImageHeight;
 			var format = GetDepthPixelFormat();

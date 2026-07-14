@@ -30,7 +30,6 @@ public class ObjectInspectorWindow : MonoBehaviour
 
 	private bool _showWindow = false;
 	private bool _collapsed = false;
-	private bool _closedByUser = false;
 	private readonly Dictionary<Transform, bool> _collapsedState = new();
 	private readonly Dictionary<Transform, Vector2> _windowPosState = new();
 	private Rect _windowRect = new Rect(20, 200, 300, 400);
@@ -157,7 +156,6 @@ public class ObjectInspectorWindow : MonoBehaviour
 		_windowRect.x = windowPos.x;
 		_windowRect.y = windowPos.y;
 		_collapsed = false;
-		_closedByUser = false;
 		_showWindow = true;
 	}
 
@@ -265,7 +263,6 @@ public class ObjectInspectorWindow : MonoBehaviour
 		SaveWindowState();
 		_currentTarget = null;
 		_showWindow = false;
-		_closedByUser = false;
 		_entries.Clear();
 		_visualizeEntries.Clear();
 	}
@@ -557,7 +554,6 @@ public class ObjectInspectorWindow : MonoBehaviour
 		if (GUI.Button(closeRect, "X", _closeBtnStyle))
 		{
 			_showWindow = false;
-			_closedByUser = true;
 			SaveWindowState();
 		}
 
