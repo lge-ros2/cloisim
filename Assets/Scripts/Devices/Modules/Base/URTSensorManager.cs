@@ -284,6 +284,18 @@ public class URTSensorManager : MonoBehaviour
 	// scene is known to be in flux (dirty) so a real change is never masked.
 	private double _lastStaticSignature = double.NaN;
 
+	// True whenever this cycle's GatherSceneMeshes/UpdateInstanceTransforms called
+	// any of accelStruct.AddInstance/RemoveInstance/UpdateInstanceTransform. Every
+	// one of those calls unconditionally frees the package's internal TLAS/BLAS
+	// buffers as a side effect (Build() only does real work again once that
+	// happens), so _lastStaticSignature alone is not sufficient to decide whether
+	// Build() can be skipped — it only tracks whether *our* renderer positions
+	// look unchanged, not whether the package's internal struct was actually
+	// invalidated (e.g. by a skinned-mesh re-bake whose root transform didn't
+	// move). Skipping Build() while this is true leaves the struct bound with no
+	// bottom-level BVHs at all ("_AccelStructbottomBvhs ... not set").
+	private bool _structNeedsRebuild;
+
 	// Whether the struct has ever been successfully built (i.e. Build() was called
 	// with non-empty instances) AND that build has been confirmed complete.
 	// Prevents AccelStruct from returning a struct whose m_TopLevelAccelStruct is
@@ -706,9 +718,14 @@ public class URTSensorManager : MonoBehaviour
 		// actually changed since the last build. Without this, a single structure
 		// would need to rebuild-and-fence-wait every cycle forever (matching the
 		// original double-buffer's unconditional per-cycle Build()), pausing
-		// sensor output constantly even for a scene that never moves. ---
+		// sensor output constantly even for a scene that never moves. This is only
+		// a same-result-so-skip optimization on top of _structNeedsRebuild, which is
+		// the actual correctness gate — the package can free its internal TLAS
+		// (e.g. a skinned-mesh re-bake) without any renderer's world transform
+		// changing, and _lastStaticSignature alone would then wrongly skip the
+		// Build() needed to recreate it. ---
 		var sig = inst.ComputeTransformSignature();
-		if (inst._hasTlas && sig == inst._lastStaticSignature)
+		if (inst._hasTlas && !inst._structNeedsRebuild && sig == inst._lastStaticSignature)
 			return; // unchanged — current TLAS remains valid, sensors keep tracing it
 		inst._lastStaticSignature = sig;
 
@@ -753,6 +770,7 @@ public class URTSensorManager : MonoBehaviour
 		inst._hasPendingBuild = true;
 		inst._pendingBuildFenceNeeded = true;
 		inst._frameOfLastBuildForStruct = currentFrame;
+		inst._structNeedsRebuild = false;
 		}
 	}
 
@@ -1125,6 +1143,7 @@ public class URTSensorManager : MonoBehaviour
 		_pendingBuildFenceNeeded = false;
 		_postResetResumeBuildFrame = 0;
 		_lastStaticSignature = double.NaN;
+		_structNeedsRebuild = false;
 
 		_diagHistory.Clear();
 		_diagPrevInstanceCount = -1;
@@ -1268,6 +1287,7 @@ public class URTSensorManager : MonoBehaviour
 		_hasBuildFence = false;
 		_frameOfLastBuildForStruct = -1;
 		_lastStaticSignature = double.NaN;
+		_structNeedsRebuild = false;
 
 		_frameOfLastBuild = -1;
 		_pendingFenceNeeded = false;
@@ -1416,6 +1436,7 @@ public class URTSensorManager : MonoBehaviour
 					};
 
 					var handle = accelStruct.AddInstance(desc);
+					_structNeedsRebuild = true;
 					instances.Add(new InstanceEntry
 					{
 						renderer = renderer,
@@ -1486,6 +1507,7 @@ public class URTSensorManager : MonoBehaviour
 					};
 
 					var handle = accelStruct.AddInstance(desc);
+					_structNeedsRebuild = true;
 					instances.Add(new InstanceEntry
 					{
 						renderer = smr,
@@ -1518,6 +1540,7 @@ public class URTSensorManager : MonoBehaviour
 			try
 			{
 				accelStruct.RemoveInstance(entry.handle);
+				_structNeedsRebuild = true;
 			}
 			catch (Exception e)
 			{
@@ -1624,6 +1647,7 @@ public class URTSensorManager : MonoBehaviour
 				try
 				{
 					accelStruct.RemoveInstance(entry.handle);
+					_structNeedsRebuild = true;
 				}
 				catch (Exception e)
 				{
@@ -1685,6 +1709,7 @@ public class URTSensorManager : MonoBehaviour
 					};
 					entry.handle = accelStruct.AddInstance(desc);
 					entry.lastBakedBounds = bounds;
+					_structNeedsRebuild = true;
 				}
 				catch (Exception e)
 				{
@@ -1697,15 +1722,16 @@ public class URTSensorManager : MonoBehaviour
 
 			// UpdateInstanceTransform() unconditionally frees the package's TLAS as a
 			// side effect (see InstanceEntry.lastPushedMatrix doc comment) — only call
-			// it when the transform actually moved, so a static scene doesn't free the
-			// TLAS every frame only for our own static-scene signature check (below,
-			// in EnsureBVHReady) to then skip the Build() that would recreate it.
+			// it when the transform actually moved. This is a perf optimization only;
+			// _structNeedsRebuild (set below) is what actually guarantees Build() runs
+			// whenever the struct was freed, regardless of this skip.
 			var currentMatrix = entry.renderer.localToWorldMatrix;
 			if (currentMatrix != entry.lastPushedMatrix)
 			{
 				accelStruct.UpdateInstanceTransform(entry.handle, currentMatrix);
 				entry.lastPushedMatrix = currentMatrix;
 				instances[i] = entry;
+				_structNeedsRebuild = true;
 			}
 		}
 
