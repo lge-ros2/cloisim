@@ -66,6 +66,14 @@ namespace SensorDevices
 			}
 		}
 
+		// Single instance shared by every DepthCamera using this Renderer asset. Safe only
+		// because SensorRenderManager drives all camera rendering through synchronous,
+		// strictly sequential Camera.Render() calls (see Camera.cs) — each camera's
+		// AddRenderPasses (write) -> RecordRenderGraph (capture) -> Execute (consume) runs
+		// to completion before the next camera's Render() starts, so there is no window for
+		// one camera's Material write to be overwritten before it's consumed. If camera
+		// rendering ever becomes async/batched (e.g. Camera.RenderRequest), this must become
+		// a per-camera pass (e.g. keyed by camera instance ID) instead of one shared field.
 		private DepthRangePass _pass;
 
 		public override void Create()
