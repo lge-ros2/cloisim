@@ -137,11 +137,17 @@ public class URTSensorManager : MonoBehaviour
 	private bool _pendingPostTDRGenIncrement = false;
 
 	/// <summary>
-	/// True after a TDR gen increment until the first sensor executes a BVH-only GPU submit.
-	/// The first sensor that reads this flag via ConsumeBVHWarmup() clears it and submits
-	/// a BVH-only CommandBuffer. Subsequent sensors see it as false and dispatch normally.
-	/// This is robust against sensors with different update rates: the warmup is consumed
-	/// on the first actual render after gen increment, regardless of frame number.
+	/// True whenever _rtAccelStruct just transitioned from "building" to "built" —
+	/// after a TDR gen increment, or after any ordinary Build() completes — until
+	/// the first sensor executes a BVH-only GPU submit. The first sensor that reads
+	/// this flag via ConsumeBVHWarmup() clears it and submits a BVH-only
+	/// CommandBuffer. Subsequent sensors see it as false and dispatch normally.
+	/// This is robust against sensors with different update rates: the warmup is
+	/// consumed on the first actual render after the struct becomes ready,
+	/// regardless of frame number. Despite the name, tracing a freshly-built
+	/// struct in the same submit as a normal dispatch (not just a post-TDR one)
+	/// was also observed to produce "_AccelStructbottomBvhs ... not set" on the
+	/// very first build of a session, so this is armed on every build completion.
 	/// </summary>
 	private bool _postTDRBvhWarmupPending = false;
 
@@ -202,36 +208,6 @@ public class URTSensorManager : MonoBehaviour
 	public static void DiagLog(string entry)
 	{
 		s_instance?.DiagRecord(entry);
-	}
-
-	// TEMP DIAGNOSTIC: tracks the last (instanceCount, hasTlas) pair logged by
-	// LogAccelStructBindStateIfChanged, so it only logs on transitions instead
-	// of every dispatch. Root-causing the intermittent "bottomBvhs ... not set"
-	// kernel warning — remove once that's found.
-	private static int s_diagLastLoggedInstanceCount = -1;
-	private static bool s_diagLastLoggedHasTlas = false;
-
-	/// <summary>
-	/// TEMP DIAGNOSTIC: call right before binding AccelStruct for a dispatch.
-	/// Logs instance count / hasTlas / pending-build state only when it changed
-	/// since the last call, to correlate against the frame the
-	/// "_AccelStructbottomBvhs ... not set" kernel warning appears on.
-	/// </summary>
-	public static void LogAccelStructBindStateIfChanged(string callerTag)
-	{
-		var inst = s_instance;
-		if (inst == null) return;
-
-		var count = inst._instances.Count;
-		var hasTlas = inst._hasTlas;
-		if (count == s_diagLastLoggedInstanceCount && hasTlas == s_diagLastLoggedHasTlas)
-			return;
-
-		s_diagLastLoggedInstanceCount = count;
-		s_diagLastLoggedHasTlas = hasTlas;
-		Debug.Log($"[URT-DIAG:bind] frame={Time.frameCount} caller={callerTag}"
-			+ $" instances={count} hasTlas={hasTlas} hasPendingBuild={inst._hasPendingBuild}"
-			+ $" frameOfLastBuild={inst._frameOfLastBuildForStruct}");
 	}
 
 	/// <summary>
@@ -663,6 +639,13 @@ public class URTSensorManager : MonoBehaviour
 				// just confirmed ready, or it would never actually get traced.
 				inst._pendingFenceNeeded = true;
 				inst._frameOfLastTrace = currentFrame;
+				// A struct that just went from "building" to "built" needs the same
+				// one-time BVH-only warmup submit as the post-TDR case (see
+				// ConsumeBVHWarmup's doc comment) before it is safe to trace — this
+				// was previously armed only after a TDR gen increment, so the very
+				// first build of the session (never a TDR case) skipped it and hit
+				// "_AccelStructbottomBvhs ... not set" on its first-ever dispatch.
+				inst._postTDRBvhWarmupPending = true;
 			}
 			return;
 		}

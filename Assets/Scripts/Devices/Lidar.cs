@@ -513,7 +513,6 @@ namespace SensorDevices
 			}
 
 			// 2. URT lidar ray trace dispatch
-			URTSensorManager.LogAccelStructBindStateIfChanged($"Lidar:{DeviceName}");
 			BindShaderResources(_urtCmdBuffer);
 			SetScanConfigParams(_urtCmdBuffer, samplesH, samplesV);
 			SetSensorPoseParams(_urtCmdBuffer, sensorPos, sensorRight, sensorUp, sensorForward);
