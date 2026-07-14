@@ -83,10 +83,15 @@ namespace SensorDevices
 		[SerializeField]
 		private int _useProbDrop = 1; // 0: Threshold, 1: probability drop
 
+		// Tuned for real meter distances (see _DepthMax in SetupVCSELPrepass): at a
+		// 10m farClip ToF sensor, this keeps dots ~fully visible near the camera
+		// (d=1m -> p~1), thins substantially by mid-range (d=3m -> p~0.33), and
+		// mostly drops out near farClip (d=10m -> p~0.03). k=2 matches the physical
+		// inverse-square IR falloff of a real ToF illuminator.
 		[SerializeField, Range(0f, 10f)]
-		private float _irIntensity = 2f;
+		private float _irIntensity = 3f;
 		[SerializeField, Range(0f, 10f)]
-		private float _irFalloffK = 5f;
+		private float _irFalloffK = 2f;
 
 		[Tooltip("Luminance threshold 0-1. Pixels darker than this are masked out.")]
 		[SerializeField, Range(0f, 1f)]
