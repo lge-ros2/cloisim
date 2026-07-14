@@ -457,7 +457,21 @@ namespace SensorDevices
 				}
 			}
 
+			// Hook for subclasses (e.g. DepthCamera) to release their own GPU resources
+			// using the same drain result, instead of re-running the drain themselves.
+			ReleaseExtraGpuResources(quiesced);
+
 			base.OnDestroy();
+		}
+
+		/// <summary>
+		/// Override to release subclass-owned GPU resources (ComputeBuffers, ComputeShader
+		/// instances, Materials, ...) created on top of the base Camera. <paramref name="quiesced"/>
+		/// is the result of the single drain already performed in this OnDestroy() pass —
+		/// subclasses must not call Device.DrainReadbacksForTeardown() again.
+		/// </summary>
+		protected virtual void ReleaseExtraGpuResources(bool quiesced)
+		{
 		}
 
 		#region BatchedRenderingInterface

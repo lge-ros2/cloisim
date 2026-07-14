@@ -72,7 +72,7 @@ namespace SensorDevices
 		[SerializeField]
 		private Texture2D _textureVcselMask = null;
 		[SerializeField]
-		private float _targetVerticalFovDeg = 0;
+		private float _targetVerticalFovRad = 0;
 
 		[SerializeField]
 		private int _dotMode = 3; // 0:Linear, 1:PixelSnap, 2:SoftSpot, 3:BunchCenter
@@ -147,6 +147,17 @@ namespace SensorDevices
 			}
 		}
 
+		/// <summary>
+		/// Number of pixels packed into a single uint32 output element for the given
+		/// per-pixel byte depth (8bit=4, 16bit=2, 32bit=1). Shared by SetupTexture()
+		/// (buffer sizing) and SetupDepthBufferScaling() (thread group sizing) so the
+		/// two never disagree on the packing scheme.
+		/// </summary>
+		private static int GetPackFactor(in int imageDepth)
+		{
+			return (imageDepth == 4) ? 1 : (imageDepth == 2 ? 2 : 4);
+		}
+
 		public void SetDepthScale(in uint value)
 		{
 			_depthScale = value;
@@ -156,7 +167,6 @@ namespace SensorDevices
 			var format = GetDepthPixelFormat();
 			var imageDepth = CameraData.GetImageDepth(format);
 
-			Debug.Log($"[DepthCamera] format={_camParam.ImageFormat} pixelFormat={format} imageDepth={imageDepth} depthScale={value}");
 			SetupDepthBufferScaling(width, height, imageDepth, (float)_camParam.FarClip, (float)value);
 		}
 
@@ -180,19 +190,14 @@ namespace SensorDevices
 
 		public void SetTofVerticalFov(in float targetVerticalFov)
 		{
-			_targetVerticalFovDeg = targetVerticalFov * Mathf.Rad2Deg;
+			_targetVerticalFovRad = targetVerticalFov;
 		}
 
-		new void OnDestroy()
+		// Base Camera.OnDestroy() already stops render scheduling, unregisters from
+		// SensorRenderManager, and drains in-flight readbacks once; this hook reuses
+		// that same drain result instead of repeating it.
+		protected override void ReleaseExtraGpuResources(bool quiesced)
 		{
-			// Stop render scheduling before releasing GPU resources so the render
-			// manager cannot dispatch one more frame against freed ComputeBuffers.
-			_startCameraWork = false;
-			SensorRenderManager.Unregister(this);
-
-			// Drain in-flight readbacks before releasing GPU resources.
-			var quiesced = Device.DrainReadbacksForTeardown();
-
 			var csDepthScaling = _csDepthScaling;
 			_csDepthScaling = null;
 			var csVcselPrepass = _csVcselPrepass;
@@ -232,8 +237,6 @@ namespace SensorDevices
 						Destroy(depthMaterial);
 				});
 			}
-
-			base.OnDestroy();
 		}
 
 		/// <summary>
@@ -269,9 +272,8 @@ namespace SensorDevices
 			};
 
 			var pixelCount = width * height;
-			var packedCount = (imageDepth == 4)
-				? pixelCount
-				: (imageDepth == 2 ? (pixelCount + 1) / 2 : (pixelCount + 3) / 4);
+			var pack = GetPackFactor(imageDepth);
+			var packedCount = (pixelCount + pack - 1) / pack;
 
 			_computeBufferSrc?.Release();
 			_computeBufferSrc = new ComputeBuffer(pixelCount, sizeof(float));
@@ -325,6 +327,10 @@ namespace SensorDevices
 
 		private void SetupDepthBufferScaling(in int width, in int height, in int imageDepth, in float clipFar, in float depthScale)
 		{
+			if (_csDepthScaling != null)
+			{
+				Destroy(_csDepthScaling);
+			}
 			_csDepthScaling = Instantiate(ComputeShaderDepthBufferScaling);
 
 			if (_csDepthScaling == null)
@@ -348,8 +354,7 @@ namespace SensorDevices
 
 			_csDepthScaling.GetKernelThreadGroupSizes(_kernelScalingIndex, out var threadX, out var threadY, out var _);
 
-			// Consider packWidth, (8bit=4, 16bit=2, 32bit=1)
-			var pack = (imageDepth == 4) ? 1 : (imageDepth == 2 ? 2 : 4);
+			var pack = GetPackFactor(imageDepth);
 			var packedWidth = Mathf.CeilToInt(width / (float)pack);
 
 			_threadGroupScalingX = Mathf.CeilToInt(packedWidth / (float)threadX);
@@ -381,10 +386,10 @@ namespace SensorDevices
 			_csVcselPrepass.SetInt("_DotMode", _dotMode);
 			_csVcselPrepass.SetFloat("_SpotSigmaPx", _spotSigmaPx);
 
-			var hFovDeg = (float)_camParam.HorizontalFov * Mathf.Rad2Deg;
-			var vFovDeg = _camSensor.fieldOfView;
-			_csVcselPrepass.SetFloat("_FovCamH", hFovDeg * Mathf.Deg2Rad);
-			_csVcselPrepass.SetFloat("_FovCamV", ((_targetVerticalFovDeg > 0) ? _targetVerticalFovDeg : vFovDeg) * Mathf.Deg2Rad);
+			var hFovRad = (float)_camParam.HorizontalFov;
+			var vFovRad = _camSensor.fieldOfView * Mathf.Deg2Rad;
+			_csVcselPrepass.SetFloat("_FovCamH", hFovRad);
+			_csVcselPrepass.SetFloat("_FovCamV", (_targetVerticalFovRad > 0) ? _targetVerticalFovRad : vFovRad);
 
 			_csVcselPrepass.SetFloat("_FovMaskH", fovMaskH);
 			_csVcselPrepass.SetFloat("_FovMaskV", fovMaskV);
@@ -420,8 +425,6 @@ namespace SensorDevices
 				_threadGroupBunchX = Mathf.CeilToInt(width / (float)markThreadX);
 				_threadGroupBunchY = Mathf.CeilToInt(height / (float)markThreadY);
 			}
-
-			Debug.Log($"[DepthCamera] VCSEL prepass set up with fovCamH={hFovDeg:F1}, fovCamV={vFovDeg:F1}, fovMaskH={fovMaskH:F2}, fovMaskV={fovMaskV:F2}");
 		}
 
 		/// <summary>
