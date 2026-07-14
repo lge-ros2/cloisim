@@ -574,15 +574,18 @@ namespace SensorDevices
 			_noiseParamInRawXml = noiseParamInRawXml;
 		}
 
-		// Mitigates a known Unity Unified Ray Tracing package issue where a shared
-		// acceleration structure occasionally reports near-universal ray misses for a
-		// single scan (all/almost-all NaN) even though the scene geometry is unchanged
-		// and the immediately surrounding scans hit normally. Rather than publish that
-		// spurious all-NaN scan (visible downstream as points flickering on/off), track
-		// the best (lowest) miss ratio this sensor has recently demonstrated it can
-		// achieve, and treat a near-total-miss scan as spurious only when we have recent
-		// proof this sensor can do much better — skip publishing for that cycle (the
-		// previous good scan's data is left as-is and simply republished next cycle).
+		// Second line of defense against a known Unity Unified Ray Tracing package issue
+		// where a shared acceleration structure occasionally reports near-universal ray
+		// misses for a single scan (all/almost-all NaN) even though the scene geometry is
+		// unchanged and the immediately surrounding scans hit normally. The primary
+		// mitigation lives in URTSensorManager.IsBuildConsumed() (gates promoting a struct
+		// until its build is GPU-confirmed complete); this catches whatever still slips
+		// through that gate. Rather than publish a spurious all-NaN scan (visible
+		// downstream as points flickering on/off), track the best (lowest) miss ratio this
+		// sensor has recently demonstrated it can achieve, and treat a near-total-miss scan
+		// as spurious only when we have recent proof this sensor can do much better — skip
+		// publishing for that cycle (the previous good scan's data is left as-is and simply
+		// republished next cycle).
 		// A plain rolling average was tried first and missed this: a sensor whose normal
 		// miss rate is itself high and noisy (e.g. oscillating ~0.6-0.8) drags the average
 		// up close to the near-total-miss threshold, hiding the spike. Tracking the recent
@@ -593,7 +596,7 @@ namespace SensorDevices
 		private const float NearTotalMissThreshold = 0.97f;
 		private const float RecentBestGoodEnoughMargin = 0.05f;
 
-		private messages.LaserScan ProcessStandardData(double capturedTime, Pose sensorWorldPose, float[] rangeData)
+		private bool TryProcessStandardData(double capturedTime, Pose sensorWorldPose, float[] rangeData, out messages.LaserScan laserScan)
 		{
 			var rawNanCount = 0;
 			for (var i = 0; i < rangeData.Length; i++)
@@ -612,7 +615,8 @@ namespace SensorDevices
 			{
 				// Spurious spike: skip this scan entirely. Do not let it improve
 				// _bestRecentNanRatio (it is bad, not evidence of anything).
-				return null;
+				laserScan = null;
+				return false;
 			}
 
 			if (rawNanRatio < _bestRecentNanRatio)
@@ -622,7 +626,7 @@ namespace SensorDevices
 
 			_laserScan.Header.Stamp.Set(capturedTime);
 
-			var laserScan = _laserScan;
+			laserScan = _laserScan;
 			laserScan.WorldPose.Position.Set(sensorWorldPose.position);
 			laserScan.WorldPose.Orientation.Set(sensorWorldPose.rotation);
 
@@ -642,7 +646,7 @@ namespace SensorDevices
 			{
 				_laserFilter.DoFilter(ref laserScan);
 			}
-			return _laserScan;
+			return true;
 		}
 
 		/// <summary>
@@ -659,24 +663,18 @@ namespace SensorDevices
 			{
 				if (_outputQueue.TryDequeue(out item))
 				{
-					messages.LaserScan laserScan;
-
 					if (IsLivoxMode)
 					{
 						// Livox: XYZ triples copied directly, no noise/filter
-						laserScan = ProcessLivoxData(item.capturedTime, item.sensorWorldPose, item.rangeData);
+						var laserScan = ProcessLivoxData(item.capturedTime, item.sensorWorldPose, item.rangeData);
+						EnqueueMessage(laserScan);
 					}
-					else
-					{
-						laserScan = ProcessStandardData(item.capturedTime, item.sensorWorldPose, item.rangeData);
-					}
-
-					// ProcessStandardData returns null to signal a detected spurious
-					// all-NaN spike (see its comment) — skip publishing that cycle.
-					if (laserScan != null)
+					else if (TryProcessStandardData(item.capturedTime, item.sensorWorldPose, item.rangeData, out var laserScan))
 					{
 						EnqueueMessage(laserScan);
 					}
+					// else: a detected spurious all-NaN spike (see TryProcessStandardData's
+					// comment) — skip publishing this cycle.
 
 					// Return pooled array now that data has been copied to double[] ranges
 					var rangeDataToReturn = item.rangeData;

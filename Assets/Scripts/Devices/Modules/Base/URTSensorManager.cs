@@ -684,6 +684,10 @@ public class URTSensorManager : MonoBehaviour
 	/// a TLAS whose build had not finished on the GPU, which TraceRayClosestHit reports as
 	/// near-universal ray misses (NaN) — observed as ranges alternating between a normal
 	/// scan and an almost-all-NaN scan every other frame.
+	///
+	/// This gate is the primary mitigation but not a complete guarantee across all
+	/// scenes/sessions (see Lidar.TryProcessStandardData's comment for the client-side
+	/// second line of defense that catches whatever still slips through here).
 	/// </summary>
 	private bool IsBuildConsumed(int structIdx)
 	{
