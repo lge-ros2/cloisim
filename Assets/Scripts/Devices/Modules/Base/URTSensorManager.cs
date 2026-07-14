@@ -80,26 +80,40 @@ public static class RayTracingResourcesExtension
 
 /// <summary>
 /// Singleton manager that owns shared Unified Ray Tracing resources
-/// (context, acceleration structures, build scratch buffer, scene gathering).
+/// (context, acceleration structure, build scratch buffer, scene gathering).
 /// Multiple sensors share a single BVH set instead of each building their own.
 ///
-/// Double-buffered acceleration structures: _rtAccelStructs[_readIdx] is the
-/// current trace target (sensors ray-trace against it); _rtAccelStructs[_writeIdx]
-/// is the current build target (updated with fresh transforms and rebuilt).
-/// They swap every frame after a successful build.  This eliminates the
-/// "stale-TLAS re-trace" that single-buffer mode incurred when the GPU fence
-/// had not passed (e.g. DVFS cold-start) — in that case the write struct
-/// is skipped but the read struct is always last-frame-fresh, bounding
-/// staleness to exactly 1 build cycle instead of N cycles.
+/// Single acceleration structure, fence-gated in place: sensors always trace
+/// _rtAccelStruct; it is mutated (gather/transform-update/Build) only when a
+/// GraphicsFence confirms no prior-frame trace against it is still in flight
+/// (see IsPriorTraceConsumed), and is not offered for tracing again (AccelStruct
+/// returns null) until a GraphicsFence confirms its own Build() has actually
+/// completed on the GPU (see IsBuildConsumed) — tracing a struct whose Build is
+/// still in flight reports near-universal misses, since Build() mutates it in
+/// place. Both gates were carried over unchanged from an earlier double-buffered
+/// design; a double-buffer (structurally distinct, independently-gathered/built
+/// TLAS instances swapped every cycle) reliably avoided any trace-skip window,
+/// but two independently built structures for the identical static scene were
+/// never guaranteed to be bit-identical, and alternating which one sensors
+/// traced flipped grazing-angle hit/miss results every swap — observed as
+/// floor-point flicker that worsened with more objects in the scene and could
+/// not be fixed by forcing deterministic gather order (the acceleration
+/// structure builder itself was not verified bit-reproducible across separate
+/// Build() calls with identical input). A single structure cannot disagree with
+/// itself, which removes that flicker at the source; the cost is a brief
+/// (typically 1-2 frame) trace pause whenever a rebuild is actually needed,
+/// instead of the double-buffer's zero-pause-but-occasionally-wrong tracing.
+/// The static-scene signature check below (ComputeTransformSignature) exists
+/// to keep that pause rare by skipping rebuilds the scene doesn't actually need.
 ///
 /// Per-sensor resources (trace scratch buffer, command buffer, output
 /// compute buffers) remain owned by each sensor instance.
 /// </summary>
 // Execution order is forced LATE so this component's LateUpdate runs *after*
 // SensorRenderManager.LateUpdate (default order 0), which is where every URT
-// sensor records and submits its trace dispatch for the frame.  The per-struct
-// trace fences (see IsPriorTraceConsumed) are created in our LateUpdate and
-// must capture those already-submitted dispatches, so we must run after them.
+// sensor records and submits its trace dispatch for the frame.  The trace
+// fence (see IsPriorTraceConsumed) is created in our LateUpdate and must
+// capture those already-submitted dispatches, so we must run after them.
 [DefaultExecutionOrder(1000)]
 public class URTSensorManager : MonoBehaviour
 {
@@ -210,9 +224,8 @@ public class URTSensorManager : MonoBehaviour
 		// before it reaches its own process-kill fallback).
 		sb.AppendLine($"[URT-DIAG] === History dump triggered by: {trigger} (frame={inst._cachedFrameCount}) ===");
 		sb.AppendLine($"[URT-DIAG] generation={inst._rtAccelStructGeneration}"
-			+ $" readIdx={inst._readIdx} writeIdx={inst._writeIdx}"
-			+ $" hasTlas=[{inst._structHasTlas[0]},{inst._structHasTlas[1]}]"
-			+ $" accelNull=[{inst._rtAccelStructs[0] == null},{inst._rtAccelStructs[1] == null}]"
+			+ $" hasTlas={inst._hasTlas} hasPendingBuild={inst._hasPendingBuild}"
+			+ $" accelNull={inst._rtAccelStruct == null}"
 			+ $" frameOfLastBuild={inst._frameOfLastBuild}");
 		var bs = inst._rtBuildScratchBuffer;
 		// NOTE: use the cached values below, never bs.IsValid()/count/stride directly —
@@ -235,74 +248,74 @@ public class URTSensorManager : MonoBehaviour
 	private RayTracingContext _rtContext;
 	private GraphicsBuffer _rtBuildScratchBuffer;
 
-	#region "Double-buffered acceleration structures"
-	// Two acceleration structures ping-pong each frame:
-	//   _rtAccelStructs[_readIdx]  — sensors trace against this (last-built)
-	//   _rtAccelStructs[_writeIdx] — we gather+transform-update+build into this
-	//
-	// After a successful build we swap _readIdx/_writeIdx so the freshly-built
-	// struct becomes the new read target immediately.
-	//
-	// When the per-struct fence hasn't passed (writeIdx was traced recently and
-	// the GPU hasn't finished yet — typical during DVFS cold-start), we skip the
-	// build for that cycle.  The sensors still trace against _readIdx, which was
-	// built at most 1 frame ago, bounding staleness to 1 cycle.
-	//
-	// Contrast with the old single-buffer approach: a fence miss there caused an
-	// unknown number of stale cycles (up to N during GPU ramp-up), accumulating
-	// positional error that appeared as lidar jitter until the GPU warmed up.
+	#region "Single acceleration structure (fence-gated in place)"
+	// One acceleration structure, mutated in place and fence-gated on both ends:
+	//   - Before mutating (gather/transform-update/Build), IsPriorTraceConsumed()
+	//     must confirm no prior-frame trace against it is still in flight (mutation
+	//     APIs like AddInstance/RemoveInstance/UpdateInstanceTransform can free/
+	//     reallocate underlying GPU buffers a still-executing trace may reference).
+	//   - After Build(), IsBuildConsumed() must confirm that GPU work has actually
+	//     completed before AccelStruct offers the struct for tracing again — tracing
+	//     it earlier (even within the same command buffer as the Build) mutates the
+	//     TLAS while GPU work is still reading/writing it, and reports near-universal
+	//     misses (NaN) for that frame.
+	// Between "Build recorded" and "build confirmed complete", AccelStruct returns
+	// null and sensors skip that frame's dispatch (reusing the previous output) —
+	// see the class doc comment for why this trades a rare pause for the flicker a
+	// two-structure design could not otherwise avoid.
 
-	private readonly IRayTracingAccelStruct[] _rtAccelStructs = new IRayTracingAccelStruct[2];
-	private int _readIdx = 0;  // current trace target (sensors read this)
-	private int _writeIdx = 1; // current build target (we write into this)
+	private IRayTracingAccelStruct _rtAccelStruct;
 
-	// Per-struct instance state — each struct tracks its own instance handles.
-	// When a struct becomes the write target it re-gathers independently, so
-	// the two structs stay consistent without cross-struct handle copies.
-	private readonly List<InstanceEntry>[] _perStructInstances =
-		new[] { new List<InstanceEntry>(), new List<InstanceEntry>() };
-	private readonly HashSet<InstanceKey>[] _perStructDesiredKeys =
-		new[] { new HashSet<InstanceKey>(), new HashSet<InstanceKey>() };
-	private readonly HashSet<InstanceKey>[] _perStructExistingKeys =
-		new[] { new HashSet<InstanceKey>(), new HashSet<InstanceKey>() };
-	private readonly float[] _perStructLastGatherTime = new float[2];
-	private readonly bool[] _perStructDirty = new[] { true, true };
+	private readonly List<InstanceEntry> _instances = new();
+	private readonly HashSet<InstanceKey> _desiredKeys = new();
+	private readonly HashSet<InstanceKey> _existingKeys = new();
+	private float _lastGatherTime;
+	private bool _dirty = true;
 
-	// Whether each struct has ever been successfully built (i.e. Build() was called with
-	// non-empty instances).  Prevents AccelStruct from returning a struct whose
-	// m_TopLevelAccelStruct is still null, which would cause downstream Bind() calls to
-	// pass null UAV buffers and trigger a "missing UAV" GPU error.
-	private readonly bool[] _structHasTlas = new bool[2];
+	// Aggregate signature of all instances' world transforms, used to skip a
+	// rebuild (and the trace-pause it costs) when nothing actually changed. NaN
+	// forces a rebuild (never skipped) on the next check — used whenever the
+	// scene is known to be in flux (dirty) so a real change is never masked.
+	private double _lastStaticSignature = double.NaN;
 
-	// Per-struct trace fences: covers all trace dispatches that READ _rtAccelStructs[i].
-	// Before building into _rtAccelStructs[writeIdx] we check _traceFences[writeIdx]
-	// to ensure the GPU has finished all previous traces that read it.
+	// Whether the struct has ever been successfully built (i.e. Build() was called
+	// with non-empty instances) AND that build has been confirmed complete.
+	// Prevents AccelStruct from returning a struct whose m_TopLevelAccelStruct is
+	// still null or whose Build is still in flight, either of which would cause
+	// downstream Bind() calls to pass null/inconsistent UAV buffers and trigger a
+	// "missing UAV" GPU error.
+	private bool _hasTlas;
+
+	// Trace fence: covers all trace dispatches that read _rtAccelStruct. Before
+	// mutating the struct we check this to ensure the GPU has finished all
+	// previous traces that read it.
 	private static readonly bool s_graphicsFenceSupported = SystemInfo.supportsGraphicsFence;
-	private readonly GraphicsFence[] _traceFences = new GraphicsFence[2];
-	private readonly bool[] _hasTraceFence = new bool[2];
-	// No-fence fallback: frame number of the most recent trace that read each struct.
-	private readonly int[] _frameOfLastTrace = new[] { -1, -1 };
+	private GraphicsFence _traceFence;
+	private bool _hasTraceFence;
+	// No-fence fallback: frame number of the most recent trace.
+	private int _frameOfLastTrace = -1;
 
-	// Per-struct build-completion fences: a struct must not be promoted to readIdx
-	// (i.e. sensors must not trace it) until its most recent Build() GPU work is
-	// confirmed complete. Without this, promoting immediately after recording
-	// Build() into the same command buffer as this frame's ray-trace dispatch lets
-	// sensors trace a TLAS that has not actually finished building, which reports
-	// near-universal ray misses (NaN) for that frame.
-	private readonly GraphicsFence[] _buildFences = new GraphicsFence[2];
-	private readonly bool[] _hasBuildFence = new bool[2];
-	// No-fence fallback: frame number of the most recent Build() recorded for each struct.
-	private readonly int[] _frameOfLastBuildForStruct = new[] { -1, -1 };
+	// Build-completion fence: the struct must not be offered for tracing again
+	// until its most recent Build() GPU work is confirmed complete (see the
+	// region comment above and IsBuildConsumed's doc comment).
+	private GraphicsFence _buildFence;
+	private bool _hasBuildFence;
+	// No-fence fallback: frame number of the most recent Build() recorded.
+	private int _frameOfLastBuildForStruct = -1;
 
-	// The struct most recently Build()-recorded but not yet promoted to readIdx.
-	private bool _hasPendingSwap;
-	private int _pendingSwapIdx = -1;
+	// True from the frame a Build() is recorded until IsBuildConsumed() confirms
+	// it finished. While true, EnsureBVHReady does nothing but poll that fence —
+	// no new mutation is attempted, and AccelStruct returns null.
+	private bool _hasPendingBuild;
 
-	// Mirrors _pendingFenceNeeded/_pendingFenceIdx but for the build fence: set when
-	// EnsureBVHReady records a Build(), captured in LateUpdate once that frame's
-	// command buffer (containing the Build dispatch) has been submitted.
+	// Set when EnsureBVHReady determines sensors will trace the struct this
+	// frame; captured in LateUpdate once that frame's command buffer(s) are
+	// submitted, refreshing the trace fence.
+	private bool _pendingFenceNeeded;
+
+	// Set when EnsureBVHReady records a Build(); captured in LateUpdate once that
+	// frame's command buffer (containing the Build dispatch) has been submitted.
 	private bool _pendingBuildFenceNeeded;
-	private int _pendingBuildFenceIdx;
 	#endregion
 
 	#region "Safe scratch-buffer management"
@@ -377,6 +390,64 @@ public class URTSensorManager : MonoBehaviour
 		}
 	}
 
+	/// <summary>
+	/// Stable per-link identifier stored in MeshInstanceDesc.instanceID so a lidar's
+	/// ray-trace shader can recognize hits against its own mounting LINK (self-hit)
+	/// and re-trace past them (see LidarRayTrace.compute / Lidar.SetSensorPoseParams).
+	///
+	/// Scoped to the nearest SDF.Helper.Link ancestor, not the whole robot model:
+	/// a lidar only physically grazes the single link it is bolted to (e.g. its
+	/// mount bracket), and other links of the same robot (arms, other sensors'
+	/// brackets, ...) are legitimate ray-trace targets. Excluding the entire model
+	/// discarded those as false self-hits, which got worse as more instances were
+	/// added to the scene (more BVH depth meant more legitimately-close hits
+	/// misidentified as self across unrelated links).
+	///
+	/// transform.root is NOT usable as a fallback identity here: every SDF-imported
+	/// model (robots, ground plane, props, ...) is parented under the single shared
+	/// "World" GameObject (see Main.cs / Import.World.cs), so transform.root is
+	/// identical for the whole scene. Falls back to the outermost Helper.Model
+	/// (Helper.Base.RootModel) when no Link is found (e.g. a single-link model with
+	/// no Helper.Link, or non-SDF geometry falls back further to transform.root).
+	///
+	/// IDs are assigned from a private monotonic counter (see s_selfExclusionIds),
+	/// NOT derived by truncating EntityId.ToULong() to 32 bits: EntityId is 64-bit
+	/// specifically because Unity's legacy 32-bit instance IDs can collide/overflow
+	/// as more objects are created in a session, so truncating it back to 32 bits
+	/// reintroduces that exact collision risk. A collision here would tag an
+	/// unrelated object (e.g. the floor) with the same ID as a lidar's own link,
+	/// making the shader wrongly retrace/discard legitimate floor hits — observed
+	/// as floor points flickering once enough scene objects pushed two EntityIds
+	/// into the same truncated value, and persisting even after those objects
+	/// stopped moving (a fixed misidentification, not a timing artifact).
+	/// </summary>
+	private static readonly Dictionary<Transform, uint> s_selfExclusionIds = new();
+	private static uint s_nextSelfExclusionId = 1; // 0 reserved as "unset"; MeshInstanceDesc's own default sentinel is 0xFFFFFFFF
+
+	public static uint SelfExclusionIdOf(Component component)
+	{
+		var linkHelper = component.GetComponentInParent<SDFormat.Helper.Link>();
+		Transform scopeTransform;
+		if (linkHelper != null)
+		{
+			scopeTransform = linkHelper.transform;
+		}
+		else
+		{
+			var baseHelper = component.GetComponentInParent<SDFormat.Helper.Base>();
+			scopeTransform = (baseHelper != null && baseHelper.RootModel != null)
+				? baseHelper.RootModel.transform
+				: component.transform.root;
+		}
+
+		if (!s_selfExclusionIds.TryGetValue(scopeTransform, out var id))
+		{
+			id = s_nextSelfExclusionId++;
+			s_selfExclusionIds[scopeTransform] = id;
+		}
+		return id;
+	}
+
 	private const float MinSceneGatherInterval = 10.0f;
 	private const float RendererCountScalingFactor = 500.0f;
 
@@ -401,12 +472,6 @@ public class URTSensorManager : MonoBehaviour
 
 	[SerializeField]
 	private int _frameOfLastBuild = -1;
-
-	// Whether a fence should be captured this LateUpdate for the traced struct.
-	// _pendingFenceIdx records which struct index sensors traced this frame so that
-	// LateUpdate stamps the fence on the correct struct even after a readIdx/writeIdx swap.
-	private bool _pendingFenceNeeded;
-	private int _pendingFenceIdx;
 
 	// Post-reset cooldown: EnsureBVHReady skips building until this frame is reached.
 	// Set to currentFrame + 3 on a clean reset, + 60 if WaitForGPUQuiescence timed out.
@@ -436,19 +501,19 @@ public class URTSensorManager : MonoBehaviour
 	}
 
 	/// <summary>
-	/// The current read-side acceleration structure. All sensors trace against this.
-	/// Updated (via swap) immediately after each successful build in EnsureBVHReady.
-	/// Returns null when the struct has never been built (TLAS is null), preventing
-	/// downstream Bind() calls from passing null UAV buffers to the GPU.
+	/// The current acceleration structure. All sensors trace against this.
+	/// Returns null when the struct has never been built, or when a Build() has
+	/// been recorded but not yet confirmed complete (see IsBuildConsumed) —
+	/// either case would otherwise pass null/inconsistent UAV buffers to the GPU.
 	/// </summary>
 	public static IRayTracingAccelStruct AccelStruct
 	{
 		get
 		{
 			var inst = Instance;
-			if (inst == null || !inst._structHasTlas[inst._readIdx])
+			if (inst == null || !inst._hasTlas)
 				return null;
-			return inst._rtAccelStructs[inst._readIdx];
+			return inst._rtAccelStruct;
 		}
 	}
 
@@ -465,7 +530,7 @@ public class URTSensorManager : MonoBehaviour
 		if (inst._rtContext == null)
 			inst.Initialize();
 
-		if (inst._rtAccelStructs[0] == null)
+		if (inst._rtAccelStruct == null)
 			return false;
 
 		if (inst._registeredCameras.Add(cameraInstanceId))
@@ -513,8 +578,7 @@ public class URTSensorManager : MonoBehaviour
 	{
 		if (s_instance != null)
 		{
-			s_instance._perStructDirty[0] = true;
-			s_instance._perStructDirty[1] = true;
+			s_instance._dirty = true;
 		}
 	}
 
@@ -522,8 +586,8 @@ public class URTSensorManager : MonoBehaviour
 	/// Ensure the scene BVH is up-to-date for this frame.
 	/// Called by each URT sensor at the start of its render method.
 	/// Only the first caller per frame does actual work; subsequent
-	/// calls in the same frame are no-ops (they use the same freshly-built
-	/// read struct via AccelStruct).
+	/// calls in the same frame are no-ops (they use the same struct via
+	/// AccelStruct).
 	/// </summary>
 	/// <param name="cmd">CommandBuffer to record the Build into.</param>
 	public static void EnsureBVHReady(CommandBuffer cmd)
@@ -533,95 +597,97 @@ public class URTSensorManager : MonoBehaviour
 		var inst = Instance;
 		if (inst == null) return;
 
-		if (inst._rtAccelStructs[inst._readIdx] == null)
+		if (inst._rtAccelStruct == null)
 			return;
 
 		var currentFrame = Time.frameCount;
 		if (inst._frameOfLastBuild == currentFrame)
-			return; // Already built this frame
+			return; // Already processed this frame
 
 		// Post-reset cooldown: GPU may still be recovering from a dispatch error
-		// (WaitForGPUQuiescence timed out). Skipping the build keeps AccelStruct null
+		// (WaitForGPUQuiescence timed out). Skipping keeps AccelStruct null
 		// so sensors skip dispatch — prevents "missing UAV" on the first post-rebuild trace.
 		if (currentFrame < inst._postResetResumeBuildFrame)
 			return;
 
 		inst._frameOfLastBuild = currentFrame;
 
-		// Promote a previously-recorded Build() to the read side only once its GPU
-		// work is confirmed complete. Sensors must never trace a struct whose Build
-		// dispatch might still be in flight (see IsBuildConsumed doc comment).
-		if (inst._hasPendingSwap && inst.IsBuildConsumed(inst._pendingSwapIdx))
+		// A Build() was recorded on an earlier call; nothing to do here but poll
+		// whether its GPU work has actually completed. Until it has, the struct's
+		// TLAS is being mutated in place and must not be traced (see IsBuildConsumed's
+		// doc comment) or mutated further — return either way, once per frame.
+		if (inst._hasPendingBuild)
 		{
-			var promoted = inst._pendingSwapIdx;
-			inst._writeIdx = inst._readIdx;
-			inst._readIdx = promoted;
-			inst._structHasTlas[inst._readIdx] = true;
-			inst._hasPendingSwap = false;
-			inst._pendingSwapIdx = -1;
+			if (inst.IsBuildConsumed())
+			{
+				inst._hasTlas = true;
+				inst._hasPendingBuild = false;
+				// Let it be traced THIS frame (fence bookkeeping below) before ever
+				// considering another rebuild — see the class doc comment on why a
+				// single structure must not be re-mutated in the same cycle it was
+				// just confirmed ready, or it would never actually get traced.
+				inst._pendingFenceNeeded = true;
+				inst._frameOfLastTrace = currentFrame;
+			}
+			return;
 		}
 
-		// A build was recorded for _writeIdx but hasn't been promoted yet (its fence
-		// hasn't passed). Don't record another Build() on top of the still-in-flight
-		// one — wait for the pending promotion instead.
-		if (inst._hasPendingSwap && inst._pendingSwapIdx == inst._writeIdx)
-			return;
+		// Struct is stable (no build in flight). If it has ever been built, this
+		// frame's sensors are about to trace it — refresh the trace fence bookkeeping.
+		if (inst._hasTlas)
+		{
+			inst._pendingFenceNeeded = true;
+			inst._frameOfLastTrace = currentFrame;
+		}
 
-		// This frame's sensors will trace against _readIdx — request a fence
-		// in LateUpdate so the NEXT write-cycle on that struct waits for them.
-		// Save the current readIdx here: EnsureBVHReady may swap readIdx/writeIdx
-		// before LateUpdate runs, so we must record the traced index now.
-		inst._pendingFenceNeeded = true;
-		inst._pendingFenceIdx = inst._readIdx;
-
-		// Record that _readIdx is being traced this frame (no-fence fallback).
-		inst._frameOfLastTrace[inst._readIdx] = currentFrame;
-
-		// In-flight protection for writeIdx: if the GPU is still processing
-		// prior traces that read _rtAccelStructs[writeIdx] (it was _readIdx
-		// last frame), skip the build for this cycle.  Sensors re-trace
-		// _readIdx as-is — at most 1 frame stale, never N-frame-accumulating.
-		if (!inst.IsPriorTraceConsumed(inst._writeIdx))
-			return;
-
-		var writeIdx = inst._writeIdx;
-		var writeStruct = inst._rtAccelStructs[writeIdx];
-		if (writeStruct == null)
+		// In-flight protection: if the GPU is still processing a prior frame's
+		// trace against this struct, don't mutate it yet. Sensors keep tracing
+		// the same (unchanged, still valid) struct — at most 1 frame stale,
+		// never accumulating, and never wrong (it's the only struct, so there is
+		// no "other, different" version to disagree with).
+		if (!inst.IsPriorTraceConsumed())
 			return;
 
 		// --- Detect new/removed objects ---
 		var realtimeNow = Time.realtimeSinceStartup;
 
-		if (inst._perStructDirty[writeIdx] ||
-			(realtimeNow - inst._perStructLastGatherTime[writeIdx] > inst._sceneGatherInterval))
+		if (inst._dirty ||
+			(realtimeNow - inst._lastGatherTime > inst._sceneGatherInterval))
 		{
-			inst.GatherSceneMeshes(writeIdx);
-			inst._perStructDirty[writeIdx] = false;
+			inst.GatherSceneMeshes();
+			inst._dirty = false;
 		}
 
-		inst.UpdateInstanceTransforms(writeIdx);
+		inst.UpdateInstanceTransforms();
 
-		// Skip Build when no geometry is present.
-		// Do NOT swap — promoting a never-built struct to readIdx would make AccelStruct
-		// return a struct whose m_TopLevelAccelStruct is null.  Sensors calling Bind()
-		// on that struct would pass null UAV buffers and trigger a GPU dispatch error.
-		// Re-set dirty so GatherSceneMeshes re-runs next frame instead of waiting
-		// for the 10-second interval (covers the early-loading window).
-		if (inst._perStructInstances[writeIdx].Count == 0)
+		// Skip Build when no geometry is present. Re-set dirty so GatherSceneMeshes
+		// re-runs next frame instead of waiting for the 10-second interval (covers
+		// the early-loading window). Leave _hasTlas as-is (false at startup).
+		if (inst._instances.Count == 0)
 		{
-			inst._perStructDirty[writeIdx] = true;
+			inst._dirty = true;
 			return;
 		}
+
+		// --- Skip the rebuild (and the trace-pause it would cost) when nothing
+		// actually changed since the last build. Without this, a single structure
+		// would need to rebuild-and-fence-wait every cycle forever (matching the
+		// original double-buffer's unconditional per-cycle Build()), pausing
+		// sensor output constantly even for a scene that never moves. ---
+		var sig = inst.ComputeTransformSignature();
+		if (inst._hasTlas && sig == inst._lastStaticSignature)
+			return; // unchanged — current TLAS remains valid, sensors keep tracing it
+		inst._lastStaticSignature = sig;
 
 		CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:BuildAS");
 		using (s_BuildBVHMarker.Auto())
 		{
 			// --- Resize scratch buffer if needed ---
 			var scratchHashBefore = inst._rtBuildScratchBuffer?.GetHashCode() ?? 0;
-			var instanceCountNow = inst._perStructInstances[writeIdx].Count;
+			var instanceCountNow = inst._instances.Count;
 
 			inst._rtBuildScratchBuffer = GrowScratch(
-				inst._rtBuildScratchBuffer, writeStruct.GetBuildScratchBufferRequiredSizeInBytes());
+				inst._rtBuildScratchBuffer, inst._rtAccelStruct.GetBuildScratchBufferRequiredSizeInBytes());
 
 			var scratchHashAfter = inst._rtBuildScratchBuffer?.GetHashCode() ?? 0;
 
@@ -642,59 +708,58 @@ public class URTSensorManager : MonoBehaviour
 				inst._diagPrevScratchHash = scratchHashAfter;
 			}
 
-			// --- Build BVH into write struct ---
-			writeStruct.Build(cmd, inst._rtBuildScratchBuffer);
+			// --- Build BVH in place ---
+			inst._rtAccelStruct.Build(cmd, inst._rtBuildScratchBuffer);
 		}
 
-		// Defer promotion: writeIdx now holds a freshly-recorded Build(), but that
-		// GPU work has not been confirmed complete yet. Mark it pending — the
-		// promotion check at the top of this method swaps it in as the new readIdx
-		// on a later call, once IsBuildConsumed() reports the build fence has
-		// passed. Sensors keep tracing the current (already-complete) _readIdx
-		// this frame.
-		inst._pendingSwapIdx = writeIdx;
-		inst._hasPendingSwap = true;
+		// The struct now holds a freshly-recorded Build(), but that GPU work has
+		// not been confirmed complete yet. Mark it pending and stop offering the
+		// struct for tracing (AccelStruct returns null) until IsBuildConsumed()
+		// reports the build fence has passed on a later call.
+		inst._hasTlas = false;
+		inst._hasPendingBuild = true;
 		inst._pendingBuildFenceNeeded = true;
-		inst._pendingBuildFenceIdx = writeIdx;
-		inst._frameOfLastBuildForStruct[writeIdx] = currentFrame;
+		inst._frameOfLastBuildForStruct = currentFrame;
 		}
 	}
 
 	/// <summary>
 	/// True when the GPU has finished every prior trace dispatch that reads
-	/// _rtAccelStructs[structIdx], so it is safe to mutate (FreeTopLevelAccelStruct
-	/// will be called internally by AddInstance / UpdateInstanceTransform / etc.).
-	/// Uses a per-struct GraphicsFence (refreshed every frame the struct is traced)
-	/// when supported; falls back to a frame-count gap otherwise.
+	/// _rtAccelStruct, so it is safe to mutate (FreeTopLevelAccelStruct will be
+	/// called internally by AddInstance / UpdateInstanceTransform / etc.).
+	/// Uses a GraphicsFence (refreshed every frame the struct is traced) when
+	/// supported; falls back to a frame-count gap otherwise.
 	/// </summary>
-	private bool IsPriorTraceConsumed(int structIdx)
+	private bool IsPriorTraceConsumed()
 	{
 		if (s_graphicsFenceSupported)
-			return !_hasTraceFence[structIdx] || _traceFences[structIdx].passed;
+			return !_hasTraceFence || _traceFence.passed;
 
-		var prevFrame = _frameOfLastTrace[structIdx];
+		var prevFrame = _frameOfLastTrace;
 		return prevFrame < 0 || Time.frameCount - prevFrame >= ScratchSafetyFrames;
 	}
 
 	/// <summary>
-	/// True once the Build() GPU work most recently recorded for _rtAccelStructs[structIdx]
-	/// has actually completed, so it is safe to promote that struct to readIdx. Before this
-	/// gate existed, EnsureBVHReady promoted a struct immediately after recording Build()
-	/// into the same command buffer as this frame's ray-trace dispatch; sensors then traced
-	/// a TLAS whose build had not finished on the GPU, which TraceRayClosestHit reports as
-	/// near-universal ray misses (NaN) — observed as ranges alternating between a normal
-	/// scan and an almost-all-NaN scan every other frame.
+	/// True once the Build() GPU work most recently recorded for _rtAccelStruct
+	/// has actually completed, so it is safe to offer the struct for tracing again.
+	/// Before an equivalent gate existed in the double-buffered predecessor of this
+	/// class, EnsureBVHReady let sensors trace a struct immediately after recording
+	/// Build() into the same command buffer as that frame's ray-trace dispatch;
+	/// sensors then traced a TLAS whose build had not finished on the GPU, which
+	/// TraceRayClosestHit reports as near-universal ray misses (NaN) — observed as
+	/// ranges alternating between a normal scan and an almost-all-NaN scan every
+	/// other frame.
 	///
 	/// This gate is the primary mitigation but not a complete guarantee across all
 	/// scenes/sessions (see Lidar.TryProcessStandardData's comment for the client-side
 	/// second line of defense that catches whatever still slips through here).
 	/// </summary>
-	private bool IsBuildConsumed(int structIdx)
+	private bool IsBuildConsumed()
 	{
 		if (s_graphicsFenceSupported)
-			return _hasBuildFence[structIdx] && _buildFences[structIdx].passed;
+			return _hasBuildFence && _buildFence.passed;
 
-		var builtFrame = _frameOfLastBuildForStruct[structIdx];
+		var builtFrame = _frameOfLastBuildForStruct;
 		return builtFrame >= 0 && Time.frameCount > builtFrame;
 	}
 
@@ -713,11 +778,8 @@ public class URTSensorManager : MonoBehaviour
 		{
 			_rtContext = new RayTracingContext(backend, resources);
 
-			for (var i = 0; i < 2; i++)
-			{
-				_rtAccelStructs[i] = _rtContext.CreateAccelerationStructure(
-					new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
-			}
+			_rtAccelStruct = _rtContext.CreateAccelerationStructure(
+				new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
 
 			Debug.Log($"[URTSensorManager] Initialized context with backend: {backend}");
 		}
@@ -725,11 +787,8 @@ public class URTSensorManager : MonoBehaviour
 		{
 			Debug.LogError($"[URTSensorManager] Failed to initialize ray tracing context (backend={backend}): {e.Message}. URT sensors (lidar/depth camera) will be disabled.");
 
-			for (var i = 0; i < 2; i++)
-			{
-				_rtAccelStructs[i]?.Dispose();
-				_rtAccelStructs[i] = null;
-			}
+			_rtAccelStruct?.Dispose();
+			_rtAccelStruct = null;
 			_rtContext?.Dispose();
 			_rtContext = null;
 		}
@@ -976,27 +1035,24 @@ public class URTSensorManager : MonoBehaviour
 		CLOiSim.Diagnostics.FreezeWatchdog.Mark("idle");
 
 		// Runs after SensorRenderManager.LateUpdate, so every URT trace dispatch
-		// for this frame is already submitted. Capture a fence for _pendingFenceIdx
-		// (the struct sensors actually traced this frame, saved by EnsureBVHReady
-		// before any pending promotion). Promotion of a freshly-built struct to
-		// readIdx is deferred to a later frame (see IsBuildConsumed), so _readIdx
-		// here is always the same struct sensors traced this frame.
+		// for this frame is already submitted. Capture a fence covering this
+		// frame's trace(s) against the struct.
 		if (_pendingFenceNeeded && s_graphicsFenceSupported)
 		{
-			_traceFences[_pendingFenceIdx] = Graphics.CreateGraphicsFence(
+			_traceFence = Graphics.CreateGraphicsFence(
 				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
-			_hasTraceFence[_pendingFenceIdx] = true;
+			_hasTraceFence = true;
 		}
 		_pendingFenceNeeded = false;
 
 		// Capture a fence covering this frame's Build() dispatch (if any), so the
-		// promotion check in EnsureBVHReady can confirm it has actually completed
-		// before that struct is allowed to become the read (trace) target.
+		// check in EnsureBVHReady can confirm it has actually completed before the
+		// struct is offered for tracing again.
 		if (_pendingBuildFenceNeeded && s_graphicsFenceSupported)
 		{
-			_buildFences[_pendingBuildFenceIdx] = Graphics.CreateGraphicsFence(
+			_buildFence = Graphics.CreateGraphicsFence(
 				GraphicsFenceType.CPUSynchronisation, SynchronisationStageFlags.AllGPUOperations);
-			_hasBuildFence[_pendingBuildFenceIdx] = true;
+			_hasBuildFence = true;
 		}
 		_pendingBuildFenceNeeded = false;
 	}
@@ -1009,36 +1065,33 @@ public class URTSensorManager : MonoBehaviour
 		_rtBuildScratchBuffer?.Dispose();
 		_rtBuildScratchBuffer = null;
 
-		for (var i = 0; i < 2; i++)
-		{
-			_rtAccelStructs[i]?.Dispose();
-			_rtAccelStructs[i] = null;
-			DestroyOwnedGeometry(i);
-			_perStructInstances[i].Clear();
-			_perStructExistingKeys[i].Clear();
-			_perStructDesiredKeys[i].Clear();
-			_perStructLastGatherTime[i] = 0f;
-			_perStructDirty[i] = true;
-			_hasTraceFence[i] = false;
-			_frameOfLastTrace[i] = -1;
-			_structHasTlas[i] = false;
-			_hasBuildFence[i] = false;
-			_frameOfLastBuildForStruct[i] = -1;
-		}
+		// Drop stale Transform->ID mappings so destroyed models don't keep their
+		// Transforms rooted in this dictionary forever (see SelfExclusionIdOf).
+		s_selfExclusionIds.Clear();
+
+		_rtAccelStruct?.Dispose();
+		_rtAccelStruct = null;
+		DestroyOwnedGeometry();
+		_instances.Clear();
+		_existingKeys.Clear();
+		_desiredKeys.Clear();
+		_lastGatherTime = 0f;
+		_dirty = true;
+		_hasTraceFence = false;
+		_frameOfLastTrace = -1;
+		_hasTlas = false;
+		_hasBuildFence = false;
+		_frameOfLastBuildForStruct = -1;
 
 		_rtContext?.Dispose();
 		_rtContext = null;
 
-		_readIdx = 0;
-		_writeIdx = 1;
 		_frameOfLastBuild = -1;
 		_pendingFenceNeeded = false;
-		_pendingFenceIdx = 0;
-		_hasPendingSwap = false;
-		_pendingSwapIdx = -1;
+		_hasPendingBuild = false;
 		_pendingBuildFenceNeeded = false;
-		_pendingBuildFenceIdx = 0;
 		_postResetResumeBuildFrame = 0;
+		_lastStaticSignature = double.NaN;
 
 		_diagHistory.Clear();
 		_diagPrevInstanceCount = -1;
@@ -1111,7 +1164,7 @@ public class URTSensorManager : MonoBehaviour
 	private void ResetSceneInternal()
 	{
 		if (_rtContext == null) return;
-		if (_rtAccelStructs[0] == null && _rtAccelStructs[1] == null) return;
+		if (_rtAccelStruct == null) return;
 
 		// Wait for in-flight GPU dispatches to complete before freeing resources.
 		var gpuClean = WaitForGPUQuiescence();
@@ -1146,59 +1199,47 @@ public class URTSensorManager : MonoBehaviour
 			// the context's internal geometry-pool buffers reference old device handles.
 			// Full reconstruction from scratch gives the driver a completely clean slate.
 			Debug.LogWarning("[URTSensorManager] GPU timeout — rebuilding RayTracingContext from scratch.");
-			for (var i = 0; i < 2; i++)
-			{
-				_rtAccelStructs[i]?.Dispose();
-				_rtAccelStructs[i] = null;
-			}
+			_rtAccelStruct?.Dispose();
+			_rtAccelStruct = null;
 			_rtContext?.Dispose();
 			_rtContext = null;
 			Initialize();
 		}
 		else
 		{
-			for (var i = 0; i < 2; i++)
+			try
 			{
-				if (_rtAccelStructs[i] == null) continue;
-				try
-				{
-					_rtAccelStructs[i].Dispose();
-					_rtAccelStructs[i] = _rtContext.CreateAccelerationStructure(
-						new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
-				}
-				catch (Exception e)
-				{
-					Debug.LogError($"[URTSensorManager] Failed to recreate acceleration structure[{i}] on reset: {e.Message}. URT sensors disabled.");
-					_rtAccelStructs[i]?.Dispose();
-					_rtAccelStructs[i] = null;
-				}
+				_rtAccelStruct.Dispose();
+				_rtAccelStruct = _rtContext.CreateAccelerationStructure(
+					new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
+			}
+			catch (Exception e)
+			{
+				Debug.LogError($"[URTSensorManager] Failed to recreate acceleration structure on reset: {e.Message}. URT sensors disabled.");
+				_rtAccelStruct?.Dispose();
+				_rtAccelStruct = null;
 			}
 		}
 
-		for (var i = 0; i < 2; i++)
-		{
-			DestroyOwnedGeometry(i);
-			_perStructInstances[i].Clear();
-			_perStructExistingKeys[i].Clear();
-			_perStructDesiredKeys[i].Clear();
-			_perStructLastGatherTime[i] = 0f;
-			_perStructDirty[i] = true;
-			_hasTraceFence[i] = false;
-			_frameOfLastTrace[i] = -1;
-			_structHasTlas[i] = false;
-			_hasBuildFence[i] = false;
-			_frameOfLastBuildForStruct[i] = -1;
-		}
+		s_selfExclusionIds.Clear();
 
-		_readIdx = 0;
-		_writeIdx = 1;
+		DestroyOwnedGeometry();
+		_instances.Clear();
+		_existingKeys.Clear();
+		_desiredKeys.Clear();
+		_lastGatherTime = 0f;
+		_dirty = true;
+		_hasTraceFence = false;
+		_frameOfLastTrace = -1;
+		_hasTlas = false;
+		_hasBuildFence = false;
+		_frameOfLastBuildForStruct = -1;
+		_lastStaticSignature = double.NaN;
+
 		_frameOfLastBuild = -1;
 		_pendingFenceNeeded = false;
-		_pendingFenceIdx = 0;
-		_hasPendingSwap = false;
-		_pendingSwapIdx = -1;
+		_hasPendingBuild = false;
 		_pendingBuildFenceNeeded = false;
-		_pendingBuildFenceIdx = 0;
 		_diagPrevInstanceCount = -1;
 		_postTDRBvhWarmupPending = false;
 
@@ -1238,16 +1279,15 @@ public class URTSensorManager : MonoBehaviour
 	#endregion
 
 	/// <summary>
-	/// Destroy the owned baked-mesh snapshots held by skinned instances in the given
-	/// struct, so clearing the instance list does not leak the Meshes created by
+	/// Destroy the owned baked-mesh snapshots held by skinned instances, so
+	/// clearing the instance list does not leak the Meshes created by
 	/// GatherSceneMeshes. Static-mesh entries reference shared meshes and are left alone.
 	/// </summary>
-	private void DestroyOwnedGeometry(int idx)
+	private void DestroyOwnedGeometry()
 	{
-		var instances = _perStructInstances[idx];
-		for (var i = 0; i < instances.Count; i++)
+		for (var i = 0; i < _instances.Count; i++)
 		{
-			var entry = instances[i];
+			var entry = _instances[i];
 			if (entry.skinned != null && entry.geometryMesh != null)
 				Destroy(entry.geometryMesh);
 		}
@@ -1257,21 +1297,20 @@ public class URTSensorManager : MonoBehaviour
 
 	/// <summary>
 	/// Gather all active MeshRenderers that match the culling mask and populate
-	/// _rtAccelStructs[idx].  Each struct maintains its own independent instance
-	/// list; when a struct next becomes the write target its list is refreshed
-	/// from scratch via this method.
+	/// _rtAccelStruct. The instance list is refreshed (diffed against the current
+	/// live-renderer set) from scratch via this method.
 	/// </summary>
-	private void GatherSceneMeshes(int idx)
+	private void GatherSceneMeshes()
 	{
 		using (s_GatherSceneMeshesMarker.Auto())
 		{
-		var accelStruct = _rtAccelStructs[idx];
+		var accelStruct = _rtAccelStruct;
 		if (accelStruct == null)
 			return;
 
-		var instances = _perStructInstances[idx];
-		var existingKeys = _perStructExistingKeys[idx];
-		var desiredKeys = _perStructDesiredKeys[idx];
+		var instances = _instances;
+		var existingKeys = _existingKeys;
+		var desiredKeys = _desiredKeys;
 
 		existingKeys.Clear();
 		for (var i = 0; i < instances.Count; i++)
@@ -1282,8 +1321,18 @@ public class URTSensorManager : MonoBehaviour
 
 		desiredKeys.Clear();
 
+		// Deterministic order (sorted by EntityId below): FindObjectsByType's order
+		// is otherwise implementation-defined. With a single acceleration structure
+		// this no longer affects correctness (there is only one structure to be
+		// internally consistent with itself), but a stable add order still makes
+		// diagnostics/instance-count logs reproducible across runs. Left in place
+		// from when this mattered more, back when two independently-built
+		// structures were compared against each other. (FindObjectsSortMode is
+		// obsolete on this Unity version, so we sort manually by EntityId instead.)
 		var renderers = FindObjectsByType<MeshRenderer>();
 		var skinnedRenderers = FindObjectsByType<SkinnedMeshRenderer>();
+		Array.Sort(renderers, (a, b) => EntityId.ToULong(a.GetEntityId()).CompareTo(EntityId.ToULong(b.GetEntityId())));
+		Array.Sort(skinnedRenderers, (a, b) => EntityId.ToULong(a.GetEntityId()).CompareTo(EntityId.ToULong(b.GetEntityId())));
 
 		int addedCount = 0;
 		int removedCount = 0;
@@ -1328,6 +1377,7 @@ public class URTSensorManager : MonoBehaviour
 					{
 						localToWorldMatrix = renderer.localToWorldMatrix,
 						mask = 0xFF,
+						instanceID = SelfExclusionIdOf(renderer),
 						enableTriangleCulling = false,
 						opaqueGeometry = true
 					};
@@ -1396,6 +1446,7 @@ public class URTSensorManager : MonoBehaviour
 					{
 						localToWorldMatrix = smr.localToWorldMatrix,
 						mask = 0xFF,
+						instanceID = SelfExclusionIdOf(smr),
 						enableTriangleCulling = false,
 						opaqueGeometry = true
 					};
@@ -1448,11 +1499,11 @@ public class URTSensorManager : MonoBehaviour
 			removedCount++;
 		}
 
-		_perStructLastGatherTime[idx] = Time.realtimeSinceStartup;
+		_lastGatherTime = Time.realtimeSinceStartup;
 
 		var totalRenderers = renderers.Length + skinnedRenderers.Length;
 #if UNITY_EDITOR
-		Debug.Log($"[URTSensorManager] GatherSceneMeshes[{idx}]: added={addedCount}, removed={removedCount}, " +
+		Debug.Log($"[URTSensorManager] GatherSceneMeshes: added={addedCount}, removed={removedCount}, " +
 			$"skippedLayer={skippedLayer}, skippedNoMesh={skippedNoMesh}, " +
 			$"skippedError={skippedError}, totalRenderers={totalRenderers} (skinned={skinnedRenderers.Length})");
 #endif
@@ -1464,18 +1515,71 @@ public class URTSensorManager : MonoBehaviour
 		}
 	}
 
+	// Quantization step (meters / quaternion units) applied before hashing transforms
+	// in ComputeTransformSignature. Physics/balance controllers rarely settle to
+	// EXACTLY zero residual motion even when a scene looks static, so comparing raw
+	// float positions frame-to-frame almost never reports "unchanged" — the guard
+	// then never engages and the flicker it exists to fix persists. Measured via
+	// diagnostic logging: a spawned prop that visually looked fully at rest was
+	// still drifting 1-8mm per ~15-frame check (residual physics jitter, e.g. from
+	// having settled against another prop) — well above an initial 0.2mm quantum.
+	// 5mm is below anything visually noticeable for a prop at rest, while still
+	// catching real repositioning.
+	private const float StaticSignatureQuantum = 0.005f;
+
 	/// <summary>
-	/// Update world-space transforms for all cached instances in _rtAccelStructs[idx].
+	/// Cheap aggregate signature of every instance's world position/rotation,
+	/// quantized to StaticSignatureQuantum. Used only to skip a rebuild (and the
+	/// trace-pause it costs) when nothing moved enough to matter — any instance
+	/// moving beyond the quantum (or being added/removed, which changes the
+	/// live-renderer set) shifts the value, forcing a rebuild. Combines quantized
+	/// integer components via a standard hash-combine so the result depends only
+	/// on quantized values, never on raw float noise below the quantum.
 	/// </summary>
-	private void UpdateInstanceTransforms(int idx)
+	private double ComputeTransformSignature()
+	{
+		var instances = _instances;
+		unchecked
+		{
+			long hash = 17;
+			hash = hash * 31 + instances.Count;
+			for (var i = 0; i < instances.Count; i++)
+			{
+				var r = instances[i].renderer;
+				if (r == null)
+					continue;
+				var t = r.transform;
+				var p = t.position;
+				var q = t.rotation;
+				hash = hash * 31 + Quantize(p.x);
+				hash = hash * 31 + Quantize(p.y);
+				hash = hash * 31 + Quantize(p.z);
+				hash = hash * 31 + Quantize(q.x);
+				hash = hash * 31 + Quantize(q.y);
+				hash = hash * 31 + Quantize(q.z);
+				hash = hash * 31 + Quantize(q.w);
+			}
+			return hash;
+		}
+	}
+
+	private static long Quantize(float v)
+	{
+		return (long)Mathf.Round(v / StaticSignatureQuantum);
+	}
+
+	/// <summary>
+	/// Update world-space transforms for all cached instances in _rtAccelStruct.
+	/// </summary>
+	private void UpdateInstanceTransforms()
 	{
 		using (s_UpdateInstanceTransformsMarker.Auto())
 		{
-		var accelStruct = _rtAccelStructs[idx];
+		var accelStruct = _rtAccelStruct;
 		if (accelStruct == null)
 			return;
 
-		var instances = _perStructInstances[idx];
+		var instances = _instances;
 		bool needsRebuild = false;
 
 		for (int i = instances.Count - 1; i >= 0; i--)
@@ -1541,6 +1645,7 @@ public class URTSensorManager : MonoBehaviour
 					{
 						localToWorldMatrix = entry.skinned.localToWorldMatrix,
 						mask = 0xFF,
+						instanceID = SelfExclusionIdOf(entry.skinned),
 						enableTriangleCulling = false,
 						opaqueGeometry = true
 					};
@@ -1561,7 +1666,7 @@ public class URTSensorManager : MonoBehaviour
 
 		if (needsRebuild)
 		{
-			_perStructLastGatherTime[idx] = 0f; // Force re-gather next call
+			_lastGatherTime = 0f; // Force re-gather next call
 		}
 		}
 	}

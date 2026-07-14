@@ -207,7 +207,7 @@ namespace SensorDevices
 
 		private void ExecuteLivoxRender()
 		{
-			if (URTSensorManager.AccelStruct == null || _rtShader == null)
+			if (_rtShader == null)
 				return;
 
 			var currentGen = URTSensorManager.AccelStructGeneration;
@@ -240,6 +240,15 @@ namespace SensorDevices
 
 			// 1. Shared BVH
 			URTSensorManager.EnsureBVHReady(_urtCmdBuffer);
+
+			// Skip dispatch until the (re)build completes; still execute the command
+			// buffer so a Build() EnsureBVHReady just recorded into it is actually
+			// submitted. See Lidar.cs's ExecuteStandardRender for the full rationale.
+			if (URTSensorManager.AccelStruct == null)
+			{
+				Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
+				return;
+			}
 
 			// Post-TDR warmup: see Lidar.cs for full explanation.
 			if (URTSensorManager.ConsumeBVHWarmup())

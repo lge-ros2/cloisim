@@ -99,6 +99,7 @@ namespace SensorDevices
 		private static readonly int PID_SensorRight = Shader.PropertyToID("_SensorRight");
 		private static readonly int PID_SensorUp = Shader.PropertyToID("_SensorUp");
 		private static readonly int PID_SensorForward = Shader.PropertyToID("_SensorForward");
+		private static readonly int PID_SelfRootInstanceID = Shader.PropertyToID("_SelfRootInstanceID");
 		#endregion
 
 		public static void LoadComputeShader()
@@ -369,6 +370,16 @@ namespace SensorDevices
 			_rtShader.SetVectorParam(cmd, PID_SensorRight, new Vector4(right.x, right.y, right.z, 0f));
 			_rtShader.SetVectorParam(cmd, PID_SensorUp, new Vector4(up.x, up.y, up.z, 0f));
 			_rtShader.SetVectorParam(cmd, PID_SensorForward, new Vector4(forward.x, forward.y, forward.z, 0f));
+
+			// Exclude the single link this lidar is mounted on from self-hit: rays
+			// that hit that link's own geometry (e.g. its mount bracket close to
+			// the sensor) flickered between hit/miss at the tMin boundary. Scoped
+			// to the mounting link, not the whole robot, so other links (arms,
+			// other sensor brackets, ...) remain legitimate ray-trace targets.
+			// URTSensorManager tags every instance's MeshInstanceDesc.instanceID
+			// with its nearest SDF.Helper.Link ancestor (SelfExclusionIdOf); the
+			// shader re-traces past any hit that matches this sensor's own link.
+			_rtShader.SetIntParam(cmd, PID_SelfRootInstanceID, unchecked((int)URTSensorManager.SelfExclusionIdOf(this)));
 		}
 
 		#endregion
@@ -476,9 +487,19 @@ namespace SensorDevices
 			// EnsureBVHReady from ever running (chicken-and-egg deadlock).
 			URTSensorManager.EnsureBVHReady(_urtCmdBuffer);
 
-			// Skip dispatch until the first BVH build completes.
+			// Skip dispatch until the (re)build completes: AccelStruct is null both
+			// before the first-ever build and while a just-recorded Build() hasn't
+			// been confirmed complete yet (see URTSensorManager's class doc comment
+			// on the single-structure fence gating). EnsureBVHReady may have just
+			// recorded that Build() into this command buffer above, so it must still
+			// be executed here — returning without executing it would silently drop
+			// the Build() dispatch while URTSensorManager's state still expects it to
+			// have been submitted, desyncing the pending-build/fence bookkeeping.
 			if (URTSensorManager.AccelStruct == null)
+			{
+				Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 				return;
+			}
 
 			// Post-TDR warmup: the first sensor to render after a TDR gen increment must submit
 			// a BVH-only CommandBuffer. Combining BVH build + dispatch in the same submit on a

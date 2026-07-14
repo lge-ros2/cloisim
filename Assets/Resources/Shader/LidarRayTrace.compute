@@ -42,6 +42,12 @@ float3 _SensorRight;    // world-space right axis
 float3 _SensorUp;       // world-space up axis
 float3 _SensorForward;  // world-space forward axis
 
+uint _SelfRootInstanceID; // instanceID (see URTSensorManager) of the robot this lidar is mounted on
+
+// Max self-hit skips per ray: bounds the retrace loop so a ray grazing along its
+// own robot's surface cannot spin indefinitely.
+#define MAX_SELF_HIT_RETRACE 8
+
 // ---------- Ray generation ----------
 void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
 {
@@ -75,7 +81,26 @@ void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
     ray.tMax      = _RangeMax;
 
     UnifiedRT::RayTracingAccelStruct accelStruct = UNIFIED_RT_GET_ACCEL_STRUCT(_AccelStruct);
+
+    // Skip past hits against the lidar's own mounting robot (self-hit): the mount
+    // point sits at/near the robot's own surface, so tMin alone cannot reliably
+    // separate "own body" from "external object" there, which showed up as
+    // flickering points on the robot's base. Re-trace with tMin advanced past
+    // each self-hit until a hit belonging to another object is found.
     UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
+    uint retrace = 0;
+    for (; retrace < MAX_SELF_HIT_RETRACE && hit.IsValid() && hit.instanceID == _SelfRootInstanceID; retrace++)
+    {
+        ray.tMin = hit.hitDistance + 1e-4;
+        hit = UnifiedRT::TraceRayClosestHit(dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
+    }
+
+    // If the retry budget was exhausted while still hitting self (e.g. a ray
+    // grazing along many overlapping self surfaces), treat it as a miss rather
+    // than silently accepting a self-hit distance — that silent acceptance was
+    // the source of the residual flicker on the robot's own body.
+    if (hit.IsValid() && hit.instanceID == _SelfRootInstanceID)
+        hit.instanceID = -1;
 
     float dist = asfloat(0x7FC00000); // NaN = no hit / out of range
     if (hit.IsValid())
