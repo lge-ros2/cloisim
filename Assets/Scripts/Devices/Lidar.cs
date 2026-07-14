@@ -694,21 +694,32 @@ namespace SensorDevices
 			}
 		}
 
+		private GameObject _visualizer = null;
+
 		protected override IEnumerator OnVisualize()
 		{
-			var visualizer = new GameObject("__laser_visualizer__")
+			_visualizer = new GameObject("__laser_visualizer__")
 			{
 				layer = LayerMask.NameToLayer("Visualization")
 			};
-			visualizer.transform.SetParent(transform, false);
+			_visualizer.transform.SetParent(transform, false);
 
 			if (IsLivoxMode || Is3DLidar)
 			{
-				yield return OnVisualizePointCloud(visualizer);
+				yield return OnVisualizePointCloud(_visualizer);
 			}
 			else
 			{
-				yield return OnVisualizeLines(visualizer);
+				yield return OnVisualizeLines(_visualizer);
+			}
+		}
+
+		protected override void OnVisualizeStop()
+		{
+			if (_visualizer != null)
+			{
+				Destroy(_visualizer);
+				_visualizer = null;
 			}
 		}
 

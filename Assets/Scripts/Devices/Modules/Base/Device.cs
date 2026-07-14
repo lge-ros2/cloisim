@@ -210,21 +210,59 @@ public abstract class Device : MonoBehaviour
 				return;
 
 			_visualize = value;
+			_lastAppliedVisualize = _visualize;
+			ApplyVisualize();
+		}
+	}
 
-			if (_visualize)
+	private bool _lastAppliedVisualize = true;
+
+	private void ApplyVisualize()
+	{
+		if (_visualize)
+		{
+			if (_visualizeCoroutine == null)
 			{
-				if (_visualizeCoroutine == null)
-				{
-					_visualizeCoroutine = StartCoroutine(OnVisualize());
-				}
+				_visualizeCoroutine = StartCoroutine(OnVisualize());
 			}
-			else
+		}
+		else
+		{
+			if (_visualizeCoroutine != null)
 			{
-				if (_visualizeCoroutine != null)
-				{
-					StopCoroutine(_visualizeCoroutine);
-					_visualizeCoroutine = null;
-				}
+				StopCoroutine(_visualizeCoroutine);
+				_visualizeCoroutine = null;
+				OnVisualizeStop();
+			}
+		}
+	}
+
+	private bool _visualizeApplyPending = false;
+
+	// Inspector's default field drawer writes directly to the [SerializeField]
+	// backing field via SerializedObject, bypassing the EnableVisualize setter
+	// above. OnValidate is Unity's hook for detecting that kind of direct edit
+	// (including in Play mode). Unity forbids SendMessage-triggering calls
+	// (AddComponent/SetParent/set_layer, all used transitively by ApplyVisualize's
+	// coroutines) while still inside OnValidate's call stack, so just flag it and
+	// defer the actual apply to the next Update().
+	private void OnValidate()
+	{
+		if (_visualize != _lastAppliedVisualize)
+		{
+			_lastAppliedVisualize = _visualize;
+			_visualizeApplyPending = true;
+		}
+	}
+
+	private void Update()
+	{
+		if (_visualizeApplyPending)
+		{
+			_visualizeApplyPending = false;
+			if (gameObject.activeInHierarchy && Application.isPlaying)
+			{
+				ApplyVisualize();
 			}
 		}
 	}
@@ -410,6 +448,12 @@ public abstract class Device : MonoBehaviour
 	{
 		yield return null;
 	}
+
+	// StopCoroutine() aborts OnVisualize() mid-execution, skipping any cleanup
+	// it would otherwise reach (e.g. destroying a visualizer GameObject it
+	// created). Devices that allocate visualization resources in OnVisualize()
+	// should tear them down here instead.
+	protected virtual void OnVisualizeStop() { }
 
 	/// <summary>
 	/// Initialize message objects only
