@@ -502,16 +502,21 @@ public class URTSensorManager : MonoBehaviour
 
 	/// <summary>
 	/// The current acceleration structure. All sensors trace against this.
-	/// Returns null when the struct has never been built, or when a Build() has
-	/// been recorded but not yet confirmed complete (see IsBuildConsumed) —
-	/// either case would otherwise pass null/inconsistent UAV buffers to the GPU.
+	/// Returns null when the struct has never been built, when a Build() has
+	/// been recorded but not yet confirmed complete (see IsBuildConsumed), or
+	/// when it currently holds zero instances — binding a struct with an empty
+	/// bottom-level BVH list still passes IsBuildConsumed/_hasTlas checks (those
+	/// only gate GPU completion, not geometry presence) but produces a
+	/// "bottomBvhs ... not set" kernel warning on Dispatch, since the shader
+	/// still declares that property and nothing populated it. Any of these
+	/// cases would otherwise pass null/inconsistent/empty buffers to the GPU.
 	/// </summary>
 	public static IRayTracingAccelStruct AccelStruct
 	{
 		get
 		{
 			var inst = Instance;
-			if (inst == null || !inst._hasTlas)
+			if (inst == null || !inst._hasTlas || inst._instances.Count == 0)
 				return null;
 			return inst._rtAccelStruct;
 		}
