@@ -204,6 +204,36 @@ public class URTSensorManager : MonoBehaviour
 		s_instance?.DiagRecord(entry);
 	}
 
+	// TEMP DIAGNOSTIC: tracks the last (instanceCount, hasTlas) pair logged by
+	// LogAccelStructBindStateIfChanged, so it only logs on transitions instead
+	// of every dispatch. Root-causing the intermittent "bottomBvhs ... not set"
+	// kernel warning — remove once that's found.
+	private static int s_diagLastLoggedInstanceCount = -1;
+	private static bool s_diagLastLoggedHasTlas = false;
+
+	/// <summary>
+	/// TEMP DIAGNOSTIC: call right before binding AccelStruct for a dispatch.
+	/// Logs instance count / hasTlas / pending-build state only when it changed
+	/// since the last call, to correlate against the frame the
+	/// "_AccelStructbottomBvhs ... not set" kernel warning appears on.
+	/// </summary>
+	public static void LogAccelStructBindStateIfChanged(string callerTag)
+	{
+		var inst = s_instance;
+		if (inst == null) return;
+
+		var count = inst._instances.Count;
+		var hasTlas = inst._hasTlas;
+		if (count == s_diagLastLoggedInstanceCount && hasTlas == s_diagLastLoggedHasTlas)
+			return;
+
+		s_diagLastLoggedInstanceCount = count;
+		s_diagLastLoggedHasTlas = hasTlas;
+		Debug.Log($"[URT-DIAG:bind] frame={Time.frameCount} caller={callerTag}"
+			+ $" instances={count} hasTlas={hasTlas} hasPendingBuild={inst._hasPendingBuild}"
+			+ $" frameOfLastBuild={inst._frameOfLastBuildForStruct}");
+	}
+
 	/// <summary>
 	/// Dump the last DiagRingSize URT state-change events to the log.
 	/// Called automatically when a GPU UAV error is detected.

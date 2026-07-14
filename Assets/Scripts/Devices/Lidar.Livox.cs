@@ -258,6 +258,7 @@ namespace SensorDevices
 			}
 
 			// 2. Bind resources
+			URTSensorManager.LogAccelStructBindStateIfChanged($"Livox:{DeviceName}");
 			BindShaderResources(_urtCmdBuffer);
 
 			// 3. Pattern parameters
