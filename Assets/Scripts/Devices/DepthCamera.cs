@@ -402,6 +402,9 @@ namespace SensorDevices
 			_csVcselPrepass.SetFloat("_IRIntensity", _irIntensity);
 			_csVcselPrepass.SetFloat("_IR_FalloffK", _irFalloffK);
 			_csVcselPrepass.SetInt("_UseProbDrop", _useProbDrop);
+			// _DepthBuffer holds normalized planarZ/farClip, not meters; the IR falloff
+			// term needs physical distance, so convert back using farClip.
+			_csVcselPrepass.SetFloat("_DepthMax", (float)_camParam.FarClip);
 
 			_csVcselPrepass.GetKernelThreadGroupSizes(_kernelVcselIndex, out var threadX, out var threadY, out _);
 
