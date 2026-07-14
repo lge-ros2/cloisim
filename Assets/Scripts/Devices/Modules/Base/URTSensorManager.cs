@@ -662,9 +662,14 @@ public class URTSensorManager : MonoBehaviour
 
 		// Skip Build when no geometry is present. Re-set dirty so GatherSceneMeshes
 		// re-runs next frame instead of waiting for the 10-second interval (covers
-		// the early-loading window). Leave _hasTlas as-is (false at startup).
+		// the early-loading window). _hasTlas must also be cleared here: the loop
+		// above already RemoveInstance()'d every entry (CPU-side bottomBvhs list is
+		// now empty) without a matching Build(), so a stale _hasTlas=true from a
+		// previous build would keep offering this now-empty struct via AccelStruct,
+		// and binding it produces "_AccelStructbottomBvhs ... not set" kernel warnings.
 		if (inst._instances.Count == 0)
 		{
+			inst._hasTlas = false;
 			inst._dirty = true;
 			return;
 		}
