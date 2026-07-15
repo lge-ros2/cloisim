@@ -48,6 +48,12 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		var updatePeriodPerEachTf = (tfList.Count == 0) ? int.MaxValue : (int)(updatePeriod / tfList.Count);
 		// Debug.Log("PublishTfThread: " + updatePeriod + " , " + updatePeriodPerEachTf);
 
+		// Publish failures happen in bursts (e.g. subscriber disconnects while a model is being
+		// torn down) and every TF in the list fails on the same pass. Logging per-TF here floods
+		// the log with thousands of lines within milliseconds, so only log on the failing/recovering
+		// edge of the streak.
+		var wasPublishFailing = false;
+
 		while (PluginThread.IsRunning)
 		{
 			for (var i = 0; i < tfList.Count; i++)
@@ -66,10 +72,20 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 				deviceMessage.SetMessage(tfMessage);
 				if (publisher.Publish(deviceMessage) == false)
 				{
-					if (PluginThread.IsRunning)
-						Debug.Log(tf.ParentFrameID + ", " + tfMessage.Name + " error to send TF!!");
-					else
+					if (!PluginThread.IsRunning)
+					{
 						break;
+					}
+
+					if (!wasPublishFailing)
+					{
+						Debug.LogWarning($"[{name}] error to send TF (e.g. {tf.ParentFrameID}, {tfMessage.Name}) — subscriber may be disconnected");
+						wasPublishFailing = true;
+					}
+				}
+				else
+				{
+					wasPublishFailing = false;
 				}
 				CLOiSimPluginThread.Sleep(updatePeriodPerEachTf);
 			}
@@ -79,8 +95,15 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 				deviceMessage.SetMessage(tfMessage);
 				if (publisher.Publish(deviceMessage) == false)
 				{
-					if (PluginThread.IsRunning)
-						Debug.Log(tfMessage.Name + " error to send TF!!");
+					if (PluginThread.IsRunning && !wasPublishFailing)
+					{
+						Debug.LogWarning($"[{name}] error to send TF ({tfMessage.Name}) — subscriber may be disconnected");
+						wasPublishFailing = true;
+					}
+				}
+				else
+				{
+					wasPublishFailing = false;
 				}
 				CLOiSimPluginThread.Sleep(EmptyTfPublishPeriod);
 			}
