@@ -70,6 +70,22 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	/// </summary>
 	protected virtual void OnPluginLoad() { }
 
+	/// <summary>
+	/// Stops this plugin's background threads without disposing transport/ports.
+	/// Unity does not guarantee OnDestroy() call order across independent
+	/// GameObjects during application quit, so Main.OnDestroy's NetMQConfig.Cleanup()
+	/// can otherwise run while this plugin's thread (e.g. PublishTfThread) is still
+	/// mid-Send on its own NetMQ socket, tearing the shared context out from under
+	/// a live native call (SIGSEGV). Main.OnApplicationQuit calls this on every
+	/// plugin first, since OnApplicationQuit is guaranteed to run before any
+	/// OnDestroy() during quit.
+	/// </summary>
+	public void StopThreadsForApplicationQuit()
+	{
+		_thread.Dispose();
+		_thread.TryJoinStep(joinTimeoutMs: 500);
+	}
+
 	protected void OnDestroy()
 	{
 		// Suppress FreezeWatchdog for the duration of this intentional blocking join: deleting

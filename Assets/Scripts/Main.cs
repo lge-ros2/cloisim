@@ -1349,6 +1349,31 @@ public class Main : MonoBehaviour
 		return null;
 	}
 
+	void OnApplicationQuit()
+	{
+		// Unity does not guarantee OnDestroy() call order across independent
+		// GameObjects during quit, so OnDestroy()'s NetMQConfig.Cleanup() below can
+		// otherwise run while a CLOiSimPlugin's background thread (e.g.
+		// PublishTfThread) is still sending on its own NetMQ socket, tearing down
+		// the shared context out from under a live native call (SIGSEGV).
+		// OnApplicationQuit runs on every object before any OnDestroy() during
+		// quit, so stop every plugin thread here first. Joins can stack up to
+		// 500ms per plugin across the whole scene, so suppress the freeze
+		// watchdog for the duration like CLOiSimPlugin.OnDestroy does.
+		CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+		try
+		{
+			foreach (var plugin in FindObjectsByType<CLOiSimPlugin>(FindObjectsSortMode.None))
+			{
+				plugin.StopThreadsForApplicationQuit();
+			}
+		}
+		finally
+		{
+			CLOiSim.Diagnostics.FreezeWatchdog.Restore();
+		}
+	}
+
 	void OnDestroy()
 	{
 		if (_loadingCursor != null)
