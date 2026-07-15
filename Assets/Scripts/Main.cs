@@ -1363,7 +1363,7 @@ public class Main : MonoBehaviour
 		CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
 		try
 		{
-			foreach (var plugin in FindObjectsByType<CLOiSimPlugin>(FindObjectsSortMode.None))
+			foreach (var plugin in FindObjectsByType<CLOiSimPlugin>())
 			{
 				plugin.StopThreadsForApplicationQuit();
 			}
