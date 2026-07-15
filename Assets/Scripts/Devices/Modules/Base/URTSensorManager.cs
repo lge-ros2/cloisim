@@ -1147,8 +1147,24 @@ public class URTSensorManager : MonoBehaviour
 
 	private void ReleaseResources()
 	{
-		DrainDeferredScratchFrees(force: true);
-		DrainDeferredDisposes(force: true);
+		// A caller (e.g. Lidar/Camera.OnDestroy) may have just deferred a dispose
+		// via DeferDispose() because DrainReadbacksForTeardown() told it the GPU
+		// had not quiesced, then immediately called Unregister() -> here. Forcing
+		// the drain in that case would free a buffer the GPU may still be reading
+		// in the very same call stack that deferred it — a use-after-free
+		// (SIGSEGV). Give the GPU one more bounded chance to catch up before
+		// deciding it is actually safe to force-free.
+		var quiesced = Device.DrainReadbacksForTeardown();
+
+		DrainDeferredScratchFrees(force: quiesced);
+		DrainDeferredDisposes(force: quiesced);
+
+		if (!quiesced)
+		{
+			Debug.LogWarning("[URTSensorManager] GPU still not quiescent at last-sensor teardown — " +
+				"leaving remaining GPU resources allocated instead of forcing an unsafe free.");
+			return;
+		}
 
 		_rtBuildScratchBuffer?.Dispose();
 		_rtBuildScratchBuffer = null;
