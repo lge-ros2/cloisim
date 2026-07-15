@@ -28,12 +28,17 @@ CLOiSim was developed to address performance bottlenecks encountered with other 
 ## 📢 Notices
 
 > [!IMPORTANT]
-> CLOiSim has been upgraded to **Unity 6** (6000.4.0f1). Legacy versions based on Unity 2022.3 LTS are no longer maintained.
+> 🚨 CLOiSim has been upgraded to **Unity 6** (6000.5.3f1). Legacy versions based on Unity 2022.3 LTS are no longer maintained.
+
+> [!WARNING]
+> ⚠️🔥 **5.4.x or later is recommended over 5.3.x.** Across 5.3.0–5.3.14, several fixes were attempted for a recurring freeze in the Unified Ray Tracing (URT) path (TLAS in-flight disposal, BVH rebuild races, GPU fence gating, TDR recovery, etc.), but the freeze kept resurfacing under load. Starting with 5.4.x, Depth Camera sensors (Depth / RealSense IR / VCSEL) have been switched from URT back to **rasterization**, which resolves this class of freeze. LiDAR remains URT-based. If you're currently on 5.3.x, upgrading to 5.4.x or later is recommended.
 
 ### Version History
 | Branch | CLOiSim Version | Unity Version | Status |
 | :--- | :--- | :--- | :--- |
-| `main` | **5.x.x (Latest)** | **Unity 6** | Active |
+| `main` | **5.4.x (Latest Release)** | **Unity 6** | Active — release snapshots |
+| `develop` | 5.4.x+ (Rolling) | Unity 6 | Active — ongoing development toward the next release |
+| `release-5.3.14` | 5.3.x | Unity 6 | Not recommended (URT freeze) |
 | `release-4.14.6` | 4.x.x | Unity 2022.3 LTS | Maintenance |
 | `release-3.2.0` | 3.x.x | Unity 2021 | Legacy |
 | `release-2.7.7` | 2.x.x | Unity 2020 | Legacy |
@@ -156,4 +161,5 @@ CLOiSim provides a WebSocket interface for runtime interaction:
 If you encounter any issues or have feature requests, please open an [Issue](https://github.com/lge-ros2/cloisim/issues).
 
 ---
+
 감사합니다. Thank you!
