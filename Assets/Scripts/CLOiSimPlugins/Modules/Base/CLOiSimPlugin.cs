@@ -70,21 +70,49 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	/// </summary>
 	protected virtual void OnPluginLoad() { }
 
-	protected void OnDestroy()
+	/// <summary>
+	/// Stops this plugin's background threads without disposing transport/ports.
+	/// Unity does not guarantee OnDestroy() call order across independent
+	/// GameObjects during application quit, so Main.OnDestroy's NetMQConfig.Cleanup()
+	/// can otherwise run while this plugin's thread (e.g. PublishTfThread) is still
+	/// mid-Send on its own NetMQ socket, tearing the shared context out from under
+	/// a live native call (SIGSEGV). Main.OnApplicationQuit calls this on every
+	/// plugin first, since OnApplicationQuit is guaranteed to run before any
+	/// OnDestroy() during quit.
+	/// </summary>
+	public void StopThreadsForApplicationQuit()
 	{
 		_thread.Dispose();
-		if (!_thread.TryJoinStep(joinTimeoutMs: 500))
-		{
-			Debug.LogWarning($"[{name}] plugin threads are still running; skipping transport dispose during teardown.");
-		}
-		else
-		{
-			_transport.Dispose();
-		}
+		_thread.TryJoinStep(joinTimeoutMs: 500);
+	}
 
+	protected void OnDestroy()
+	{
+		// Suppress FreezeWatchdog for the duration of this intentional blocking join: deleting
+		// a model tears down every plugin's threads in the same OnDestroy pass, and each plugin
+		// can block the main thread for up to 500ms. Left unsuppressed, the watchdog treats this
+		// expected teardown stall (stacked across plugins/devices) as a real freeze and
+		// force-exits the process.
+		CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+		try
+		{
+			_thread.Dispose();
+			if (!_thread.TryJoinStep(joinTimeoutMs: 500))
+			{
+				Debug.LogWarning($"[{name}] plugin threads are still running; skipping transport dispose during teardown.");
+			}
+			else
+			{
+				_transport.Dispose();
+			}
 
-		DeregisterDevice(_allocatedDevicePorts, _allocatedDeviceHashKeys);
-		// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
+			DeregisterDevice(_allocatedDevicePorts, _allocatedDeviceHashKeys);
+			// Debug.Log($"({type.ToString()}){name}, CLOiSimPlugin destroyed.");
+		}
+		finally
+		{
+			CLOiSim.Diagnostics.FreezeWatchdog.Restore();
+		}
 	}
 
 	public void ChangePluginType(in ICLOiSimPlugin.Type targetType)

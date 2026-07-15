@@ -207,7 +207,7 @@ namespace SensorDevices
 
 		private void ExecuteLivoxRender()
 		{
-			if (URTSensorManager.AccelStruct == null || _rtShader == null)
+			if (_rtShader == null)
 				return;
 
 			var currentGen = URTSensorManager.AccelStructGeneration;
@@ -240,6 +240,15 @@ namespace SensorDevices
 
 			// 1. Shared BVH
 			URTSensorManager.EnsureBVHReady(_urtCmdBuffer);
+
+			// Skip dispatch until the (re)build completes; still execute the command
+			// buffer so a Build() EnsureBVHReady just recorded into it is actually
+			// submitted. See Lidar.cs's ExecuteStandardRender for the full rationale.
+			if (URTSensorManager.AccelStruct == null)
+			{
+				Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
+				return;
+			}
 
 			// Post-TDR warmup: see Lidar.cs for full explanation.
 			if (URTSensorManager.ConsumeBVHWarmup())
@@ -335,7 +344,11 @@ namespace SensorDevices
 		/// <summary>Clean up Livox-specific GPU resources.</summary>
 		private void CleanupLivoxResources()
 		{
-			_scanPatternBuffer?.Release();
+			// Fence-gated deferred dispose (see CleanupURTResources): _scanPatternBuffer is
+			// bound into the Livox dispatch every frame just like _rangeOutputBuffer, so an
+			// immediate Release() while a prior dispatch is in flight is the same use-after-free
+			// that causes "missing UAV ID XXXX (incompatible ComputeBuffer)" / Xid 109.
+			URTSensorManager.DeferDispose(_scanPatternBuffer);
 			_scanPatternBuffer = null;
 		}
 

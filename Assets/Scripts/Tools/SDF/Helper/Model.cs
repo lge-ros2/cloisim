@@ -21,6 +21,12 @@ namespace SDFormat
 			public string modelNameInPath = string.Empty;
 			public bool hasRootArticulationBody;
 
+			// Filesystem source used to (re-)import this model via Main.LoadModel(),
+			// populated for models loaded through the model list or Ctrl+V clone.
+			// Empty for models that came from a world file's inline/<include> definition.
+			public string sourcePath = string.Empty;
+			public string sourceFilename = string.Empty;
+
 			[UE.Header("SDF Properties")]
 			public bool isStatic;
 			public bool isNested;

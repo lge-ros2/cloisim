@@ -99,6 +99,7 @@ namespace SensorDevices
 		private static readonly int PID_SensorRight = Shader.PropertyToID("_SensorRight");
 		private static readonly int PID_SensorUp = Shader.PropertyToID("_SensorUp");
 		private static readonly int PID_SensorForward = Shader.PropertyToID("_SensorForward");
+		private static readonly int PID_SelfRootInstanceID = Shader.PropertyToID("_SelfRootInstanceID");
 		#endregion
 
 		public static void LoadComputeShader()
@@ -153,7 +154,7 @@ namespace SensorDevices
 
 			// Drain in-flight readbacks before releasing GPU resources
 			// (skips the blocking wait entirely when nothing is in flight)
-			Device.DrainReadbacksForTeardown();
+			var quiesced = Device.DrainReadbacksForTeardown();
 
 			if (_laserProcessThread != null && _laserProcessThread.IsAlive)
 			{
@@ -162,23 +163,43 @@ namespace SensorDevices
 
 			_outputQueue.Clear();
 
-			// Clean up Livox-specific resources
+			// Clean up Livox-specific resources (already fence-gated internally)
 			CleanupLivoxResources();
 
-			// Clean up per-sensor URT resources
-			_urtCmdBuffer?.Release();
+			// Snapshot and null out fields immediately so nothing else can touch them,
+			// but only free the underlying GPU resources right away if the GPU has
+			// actually caught up. If the readback drain above was abandoned, an
+			// in-flight readback may still reference these buffers — freeing them
+			// now is a use-after-free (SIGSEGV); defer until the GPU quiesces.
+			var urtCmdBuffer = _urtCmdBuffer;
+			var rtTraceScratchBuffer = _rtTraceScratchBuffer;
+			var rangeOutputBuffer = _rangeOutputBuffer;
+			var csRayTrace = _csRayTrace;
+
 			_urtCmdBuffer = null;
-
-			_rtTraceScratchBuffer?.Dispose();
 			_rtTraceScratchBuffer = null;
-
-			_rangeOutputBuffer?.Release();
 			_rangeOutputBuffer = null;
+			_csRayTrace = null;
 
-			if (_csRayTrace != null)
+			void FreeGpuResources()
 			{
-				Destroy(_csRayTrace);
-				_csRayTrace = null;
+				urtCmdBuffer?.Release();
+				rtTraceScratchBuffer?.Dispose();
+				rangeOutputBuffer?.Release();
+
+				if (csRayTrace != null)
+				{
+					Destroy(csRayTrace);
+				}
+			}
+
+			if (quiesced)
+			{
+				FreeGpuResources();
+			}
+			else
+			{
+				URTSensorManager.DeferDispose(FreeGpuResources);
 			}
 
 			URTSensorManager.Unregister(GetEntityId());
@@ -349,6 +370,16 @@ namespace SensorDevices
 			_rtShader.SetVectorParam(cmd, PID_SensorRight, new Vector4(right.x, right.y, right.z, 0f));
 			_rtShader.SetVectorParam(cmd, PID_SensorUp, new Vector4(up.x, up.y, up.z, 0f));
 			_rtShader.SetVectorParam(cmd, PID_SensorForward, new Vector4(forward.x, forward.y, forward.z, 0f));
+
+			// Exclude the single link this lidar is mounted on from self-hit: rays
+			// that hit that link's own geometry (e.g. its mount bracket close to
+			// the sensor) flickered between hit/miss at the tMin boundary. Scoped
+			// to the mounting link, not the whole robot, so other links (arms,
+			// other sensor brackets, ...) remain legitimate ray-trace targets.
+			// URTSensorManager tags every instance's MeshInstanceDesc.instanceID
+			// with its nearest SDF.Helper.Link ancestor (SelfExclusionIdOf); the
+			// shader re-traces past any hit that matches this sensor's own link.
+			_rtShader.SetIntParam(cmd, PID_SelfRootInstanceID, unchecked((int)URTSensorManager.SelfExclusionIdOf(this)));
 		}
 
 		#endregion
@@ -456,9 +487,19 @@ namespace SensorDevices
 			// EnsureBVHReady from ever running (chicken-and-egg deadlock).
 			URTSensorManager.EnsureBVHReady(_urtCmdBuffer);
 
-			// Skip dispatch until the first BVH build completes.
+			// Skip dispatch until the (re)build completes: AccelStruct is null both
+			// before the first-ever build and while a just-recorded Build() hasn't
+			// been confirmed complete yet (see URTSensorManager's class doc comment
+			// on the single-structure fence gating). EnsureBVHReady may have just
+			// recorded that Build() into this command buffer above, so it must still
+			// be executed here — returning without executing it would silently drop
+			// the Build() dispatch while URTSensorManager's state still expects it to
+			// have been submitted, desyncing the pending-build/fence bookkeeping.
 			if (URTSensorManager.AccelStruct == null)
+			{
+				Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 				return;
+			}
 
 			// Post-TDR warmup: the first sensor to render after a TDR gen increment must submit
 			// a BVH-only CommandBuffer. Combining BVH build + dispatch in the same submit on a
@@ -554,11 +595,59 @@ namespace SensorDevices
 			_noiseParamInRawXml = noiseParamInRawXml;
 		}
 
-		private messages.LaserScan ProcessStandardData(double capturedTime, Pose sensorWorldPose, float[] rangeData)
+		// Second line of defense against a known Unity Unified Ray Tracing package issue
+		// where a shared acceleration structure occasionally reports near-universal ray
+		// misses for a single scan (all/almost-all NaN) even though the scene geometry is
+		// unchanged and the immediately surrounding scans hit normally. The primary
+		// mitigation lives in URTSensorManager.IsBuildConsumed() (gates promoting a struct
+		// until its build is GPU-confirmed complete); this catches whatever still slips
+		// through that gate. Rather than publish a spurious all-NaN scan (visible
+		// downstream as points flickering on/off), track the best (lowest) miss ratio this
+		// sensor has recently demonstrated it can achieve, and treat a near-total-miss scan
+		// as spurious only when we have recent proof this sensor can do much better — skip
+		// publishing for that cycle (the previous good scan's data is left as-is and simply
+		// republished next cycle).
+		// A plain rolling average was tried first and missed this: a sensor whose normal
+		// miss rate is itself high and noisy (e.g. oscillating ~0.6-0.8) drags the average
+		// up close to the near-total-miss threshold, hiding the spike. Tracking the recent
+		// best instead of the average catches "this specific scan is far worse than what
+		// this sensor just proved it can see" regardless of how noisy its normal baseline is.
+		private float _bestRecentNanRatio = 1f; // 1 => no evidence yet that this sensor can see anything
+		private const float BestRatioDecayPerSample = 0.01f; // slowly forget old good evidence
+		private const float NearTotalMissThreshold = 0.97f;
+		private const float RecentBestGoodEnoughMargin = 0.05f;
+
+		private bool TryProcessStandardData(double capturedTime, Pose sensorWorldPose, float[] rangeData, out messages.LaserScan laserScan)
 		{
+			var rawNanCount = 0;
+			for (var i = 0; i < rangeData.Length; i++)
+			{
+				if (float.IsNaN(rangeData[i]))
+					rawNanCount++;
+			}
+			var rawNanRatio = (rangeData.Length > 0) ? ((float)rawNanCount / rangeData.Length) : 0f;
+
+			_bestRecentNanRatio = Mathf.Min(_bestRecentNanRatio + BestRatioDecayPerSample, 1f);
+
+			var suspiciousBlackout = rawNanRatio >= NearTotalMissThreshold &&
+				_bestRecentNanRatio <= NearTotalMissThreshold - RecentBestGoodEnoughMargin;
+
+			if (suspiciousBlackout)
+			{
+				// Spurious spike: skip this scan entirely. Do not let it improve
+				// _bestRecentNanRatio (it is bad, not evidence of anything).
+				laserScan = null;
+				return false;
+			}
+
+			if (rawNanRatio < _bestRecentNanRatio)
+			{
+				_bestRecentNanRatio = rawNanRatio;
+			}
+
 			_laserScan.Header.Stamp.Set(capturedTime);
 
-			var laserScan = _laserScan;
+			laserScan = _laserScan;
 			laserScan.WorldPose.Position.Set(sensorWorldPose.position);
 			laserScan.WorldPose.Orientation.Set(sensorWorldPose.rotation);
 
@@ -578,7 +667,7 @@ namespace SensorDevices
 			{
 				_laserFilter.DoFilter(ref laserScan);
 			}
-			return _laserScan;
+			return true;
 		}
 
 		/// <summary>
@@ -595,19 +684,18 @@ namespace SensorDevices
 			{
 				if (_outputQueue.TryDequeue(out item))
 				{
-					messages.LaserScan laserScan;
-
 					if (IsLivoxMode)
 					{
 						// Livox: XYZ triples copied directly, no noise/filter
-						laserScan = ProcessLivoxData(item.capturedTime, item.sensorWorldPose, item.rangeData);
+						var laserScan = ProcessLivoxData(item.capturedTime, item.sensorWorldPose, item.rangeData);
+						EnqueueMessage(laserScan);
 					}
-					else
+					else if (TryProcessStandardData(item.capturedTime, item.sensorWorldPose, item.rangeData, out var laserScan))
 					{
-						laserScan = ProcessStandardData(item.capturedTime, item.sensorWorldPose, item.rangeData);
+						EnqueueMessage(laserScan);
 					}
-
-					EnqueueMessage(laserScan);
+					// else: a detected spurious all-NaN spike (see TryProcessStandardData's
+					// comment) — skip publishing this cycle.
 
 					// Return pooled array now that data has been copied to double[] ranges
 					var rangeDataToReturn = item.rangeData;
@@ -625,21 +713,34 @@ namespace SensorDevices
 			}
 		}
 
+		private GameObject _visualizer = null;
+
+		public override bool SupportsVisualize => true;
+
 		protected override IEnumerator OnVisualize()
 		{
-			var visualizer = new GameObject("__laser_visualizer__")
+			_visualizer = new GameObject("__laser_visualizer__")
 			{
 				layer = LayerMask.NameToLayer("Visualization")
 			};
-			visualizer.transform.SetParent(transform, false);
+			_visualizer.transform.SetParent(transform, false);
 
 			if (IsLivoxMode || Is3DLidar)
 			{
-				yield return OnVisualizePointCloud(visualizer);
+				yield return OnVisualizePointCloud(_visualizer);
 			}
 			else
 			{
-				yield return OnVisualizeLines(visualizer);
+				yield return OnVisualizeLines(_visualizer);
+			}
+		}
+
+		protected override void OnVisualizeStop()
+		{
+			if (_visualizer != null)
+			{
+				Destroy(_visualizer);
+				_visualizer = null;
 			}
 		}
 

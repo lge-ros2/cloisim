@@ -49,6 +49,12 @@ float3 _SensorRight;
 float3 _SensorUp;
 float3 _SensorForward;
 
+uint _SelfRootInstanceID; // instanceID (see URTSensorManager) of the robot this lidar is mounted on
+
+// Max self-hit skips per ray: bounds the retrace loop so a ray grazing along its
+// own robot's surface cannot spin indefinitely.
+#define MAX_SELF_HIT_RETRACE 8
+
 // ---------- Ray generation ----------
 void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
 {
@@ -85,7 +91,20 @@ void RayGenExecute(UnifiedRT::DispatchInfo dispatchInfo)
     ray.tMax      = _RangeMax;
 
     UnifiedRT::RayTracingAccelStruct accelStruct = UNIFIED_RT_GET_ACCEL_STRUCT(_AccelStruct);
+
+    // Skip past hits against the lidar's own mounting robot (self-hit); see
+    // LidarRayTrace.compute for the full rationale.
     UnifiedRT::Hit hit = UnifiedRT::TraceRayClosestHit(dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
+    for (uint retrace = 0; retrace < MAX_SELF_HIT_RETRACE && hit.IsValid() && hit.instanceID == _SelfRootInstanceID; retrace++)
+    {
+        ray.tMin = hit.hitDistance + 1e-4;
+        hit = UnifiedRT::TraceRayClosestHit(dispatchInfo, accelStruct, 0xFF, ray, UnifiedRT::kRayFlagNone);
+    }
+
+    // Retry budget exhausted while still hitting self: treat as a miss instead
+    // of silently accepting a self-hit distance (see LidarRayTrace.compute).
+    if (hit.IsValid() && hit.instanceID == _SelfRootInstanceID)
+        hit.instanceID = -1;
 
     uint outIdx = rayIdx * 3;
     float nanVal = asfloat(0x7FC00000); // NaN

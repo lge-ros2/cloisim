@@ -78,6 +78,11 @@ namespace SDFormat
 			{
 				yield return new UE.WaitForFixedUpdate();
 
+				if (skinMeshRenderer == null || capsuleCollider == null)
+				{
+					yield break;
+				}
+
 				var localBounds = skinMeshRenderer.localBounds;
 				var bounds = skinMeshRenderer.bounds;
 				var radius = UE.Mathf.Min(bounds.extents.x, bounds.extents.z);

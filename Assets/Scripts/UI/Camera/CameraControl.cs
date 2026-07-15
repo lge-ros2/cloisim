@@ -86,7 +86,7 @@ public abstract class CameraControl : MonoBehaviour
 
 	void LateUpdate()
 	{
-		if (_blockControl || PIDTunerWindow.IsEditing)
+		if (_blockControl || ObjectInspectorWindow.IsEditing)
 		{
 			GetUIController()?.UpdateCameraKeyOverlay(CameraKeyOverlayInput.None);
 			return;

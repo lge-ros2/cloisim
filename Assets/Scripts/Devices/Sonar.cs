@@ -159,6 +159,8 @@ namespace SensorDevices
 			sonar.Contact.Set(Vector3.zero);
 		}
 
+		public override bool SupportsVisualize => true;
+
 		protected override IEnumerator OnVisualize()
 		{
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);

@@ -74,6 +74,10 @@ namespace SDFormat
 					animationComponent.AddClip(animationClip, animationClip.name);
 					animationComponent.clip = animationClip;
 				}
+				else
+				{
+					UE.Debug.LogWarning($"Animation({animation.Name}): failed to load clip from file({animation.Filename})");
+				}
 
 				animationComponent.wrapMode = loop ? UE.WrapMode.Loop : UE.WrapMode.Once;
 				animationComponent.animatePhysics = false;

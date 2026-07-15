@@ -1514,6 +1514,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   modelNameInPath: 
   hasRootArticulationBody: 0
+  sourcePath: 
+  sourceFilename: 
   isStatic: 0
   isNested: 0
 --- !u!1 &227849490
@@ -8878,6 +8880,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   modelNameInPath: 
   hasRootArticulationBody: 0
+  sourcePath: 
+  sourceFilename: 
   isStatic: 0
   isNested: 0
 --- !u!1 &2130172959

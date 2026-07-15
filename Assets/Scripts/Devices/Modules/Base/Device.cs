@@ -71,52 +71,80 @@ public abstract class Device : MonoBehaviour
 	/// entirely when nothing is in flight — the common teardown case — so the main
 	/// thread never blocks needlessly. When requests ARE pending we must still wait
 	/// (WaitAllRequests pumps and completes their callbacks) to avoid the GfxDevice
-	/// thread touching freed buffers (SIGSEGV); a wedged GPU cannot be timed out from
-	/// managed code, so we only measure and log a stall for diagnosis rather than
-	/// abandoning pending readbacks.
+	/// thread touching freed buffers (SIGSEGV).
+	///
+	/// Returns true when it is safe for the caller to release GPU resources
+	/// immediately. Returns false when the drain was abandoned because the GPU
+	/// did not quiesce within warnThresholdMs (wedged GPU / TDR / Xid) — callers
+	/// MUST NOT free GPU resources immediately in that case; route them through
+	/// URTSensorManager.DeferDispose() instead, since the readbacks are still
+	/// in flight and an immediate free is a use-after-free (SIGSEGV).
 	/// </summary>
-	public static void DrainReadbacksForTeardown(in int warnThresholdMs = 1000)
+	public static bool DrainReadbacksForTeardown(in int warnThresholdMs = 1000)
 	{
 		if (Interlocked.Read(ref s_gpuReadbackInflight) <= 0)
-			return;
+			return true;
 
-		var sw = Stopwatch.StartNew();
-
-		// Probe the GPU with a bounded fence poll BEFORE the unbounded WaitAllRequests().
-		// WaitAllRequests() cannot be interrupted, but we CAN decline to enter it: a wedged
-		// GPU (TDR / GSP-death / Xid 109) never signals the fence, so we abandon the drain
-		// instead of hanging the main thread forever. Pending readbacks are left in flight;
-		// their buffers must be freed through the fence-gated deferred path, never immediately.
-		if (SystemInfo.supportsGraphicsFence)
+		// Suppress FreezeWatchdog for the duration of this intentional blocking drain:
+		// deleting a model can tear down several GPU-backed devices (Camera/DepthCamera/Lidar)
+		// back to back in the same OnDestroy pass, each blocking the main thread for up to
+		// warnThresholdMs. Left unsuppressed, the watchdog treats this expected teardown
+		// stall as a real freeze and force-exits the process (Environment.Exit).
+		CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+		try
 		{
-			var probe = Graphics.CreateGraphicsFence(
-				UnityEngine.Rendering.GraphicsFenceType.CPUSynchronisation,
-				UnityEngine.Rendering.SynchronisationStageFlags.AllGPUOperations);
-			var deadlineMs = warnThresholdMs > 0 ? warnThresholdMs : 1000;
-			while (!probe.passed)
+			var sw = Stopwatch.StartNew();
+
+			// Probe the GPU with a bounded fence poll BEFORE the unbounded WaitAllRequests().
+			// WaitAllRequests() cannot be interrupted, but we CAN decline to enter it: a wedged
+			// GPU (TDR / GSP-death / Xid 109) never signals the fence, so we abandon the drain
+			// instead of hanging the main thread forever. Pending readbacks are left in flight;
+			// their buffers must be freed through the fence-gated deferred path, never immediately.
+			//
+			// Skip this probe once Application.quitting has fired: Unity stops pumping new
+			// frames/Present() calls after that point, so this fence can go unsignaled forever
+			// even on a perfectly healthy GPU, making the probe indistinguishable from a real
+			// wedge. WaitAllRequests() itself still forces a flush and completes on a healthy
+			// GPU without needing further frames, so call it directly — blocking a little longer
+			// during quit is preferable to a guaranteed false "GPU lost" abandonment that leaves
+			// buffers dangling for a caller who then races native teardown into a SIGSEGV.
+			if (SystemInfo.supportsGraphicsFence && !IsShuttingDown)
 			{
-				if (sw.ElapsedMilliseconds > deadlineMs)
+				var probe = Graphics.CreateGraphicsFence(
+					UnityEngine.Rendering.GraphicsFenceType.CPUSynchronisation,
+					UnityEngine.Rendering.SynchronisationStageFlags.AllGPUOperations);
+				var deadlineMs = warnThresholdMs > 0 ? warnThresholdMs : 1000;
+				while (!probe.passed)
 				{
-					Debug.LogWarning(
-						$"[Device] GPU did not quiesce within {deadlineMs}ms during teardown — " +
-						$"abandoning blocking readback drain (GPU may be lost). " +
-						$"inflight now={Interlocked.Read(ref s_gpuReadbackInflight)}");
-					return;
+					if (sw.ElapsedMilliseconds > deadlineMs)
+					{
+						Debug.LogWarning(
+							$"[Device] GPU did not quiesce within {deadlineMs}ms during teardown — " +
+							$"abandoning blocking readback drain (GPU may be lost). " +
+							$"inflight now={Interlocked.Read(ref s_gpuReadbackInflight)}");
+						return false;
+					}
+					Thread.Sleep(1);
 				}
-				Thread.Sleep(1);
 			}
+
+			// GPU is responsive (or graphics fences unsupported): completing readbacks is now fast.
+			UnityEngine.Rendering.AsyncGPUReadback.WaitAllRequests();
+			sw.Stop();
+
+			if (sw.ElapsedMilliseconds > warnThresholdMs)
+			{
+				Debug.LogWarning(
+					$"[Device] AsyncGPUReadback.WaitAllRequests() took {sw.ElapsedMilliseconds}ms " +
+					$"(> {warnThresholdMs}ms) during teardown — possible GPU/driver stall. " +
+					$"inflight now={Interlocked.Read(ref s_gpuReadbackInflight)}");
+			}
+
+			return true;
 		}
-
-		// GPU is responsive (or graphics fences unsupported): completing readbacks is now fast.
-		UnityEngine.Rendering.AsyncGPUReadback.WaitAllRequests();
-		sw.Stop();
-
-		if (sw.ElapsedMilliseconds > warnThresholdMs)
+		finally
 		{
-			Debug.LogWarning(
-				$"[Device] AsyncGPUReadback.WaitAllRequests() took {sw.ElapsedMilliseconds}ms " +
-				$"(> {warnThresholdMs}ms) during teardown — possible GPU/driver stall. " +
-				$"inflight now={Interlocked.Read(ref s_gpuReadbackInflight)}");
+			CLOiSim.Diagnostics.FreezeWatchdog.Restore();
 		}
 	}
 
@@ -151,6 +179,7 @@ public abstract class Device : MonoBehaviour
 	private float _transportingTimeSeconds = 0;
 
 	private Coroutine _coroutine = null;
+	private Coroutine _visualizeCoroutine = null;
 	private Thread _thread = null;
 
 	// volatile: read in worker-thread loops, written from the main thread before
@@ -183,7 +212,71 @@ public abstract class Device : MonoBehaviour
 	public bool EnableVisualize
 	{
 		get => _visualize;
-		set => _visualize = value;
+		set
+		{
+			if (_visualize == value)
+				return;
+
+			_visualize = value;
+			_lastAppliedVisualize = _visualize;
+			ApplyVisualize();
+		}
+	}
+
+	// Overridden to true by devices that implement OnVisualize/OnVisualizeStop,
+	// so the common inspector window only offers a toggle where it does something.
+	public virtual bool SupportsVisualize => false;
+
+	private bool _lastAppliedVisualize = true;
+
+	private void ApplyVisualize()
+	{
+		if (_visualize)
+		{
+			if (_visualizeCoroutine == null)
+			{
+				_visualizeCoroutine = StartCoroutine(OnVisualize());
+			}
+		}
+		else
+		{
+			if (_visualizeCoroutine != null)
+			{
+				StopCoroutine(_visualizeCoroutine);
+				_visualizeCoroutine = null;
+				OnVisualizeStop();
+			}
+		}
+	}
+
+	private bool _visualizeApplyPending = false;
+
+	// Inspector's default field drawer writes directly to the [SerializeField]
+	// backing field via SerializedObject, bypassing the EnableVisualize setter
+	// above. OnValidate is Unity's hook for detecting that kind of direct edit
+	// (including in Play mode). Unity forbids SendMessage-triggering calls
+	// (AddComponent/SetParent/set_layer, all used transitively by ApplyVisualize's
+	// coroutines) while still inside OnValidate's call stack, so just flag it and
+	// defer the actual apply to the next Update().
+	private void OnValidate()
+	{
+		if (_visualize != _lastAppliedVisualize)
+		{
+			_lastAppliedVisualize = _visualize;
+			_visualizeApplyPending = true;
+		}
+	}
+
+	private void Update()
+	{
+		if (_visualizeApplyPending)
+		{
+			_visualizeApplyPending = false;
+			if (gameObject.activeInHierarchy && Application.isPlaying)
+			{
+				ApplyVisualize();
+			}
+		}
 	}
 
 	/// <summary>
@@ -204,7 +297,7 @@ public abstract class Device : MonoBehaviour
 	private readonly Stopwatch _diagPublishSw = new();
 	private int _diagPublishCount;
 	private float _diagPublishHz;
-	private const float DEVICE_DIAG_INTERVAL_SEC = 15f;
+	private const float DEVICE_DIAG_INTERVAL_SEC = 30f;
 
 	/// <summary>Actual measured publish Hz (updated every DEVICE_DIAG_INTERVAL_SEC).</summary>
 	public float PublishHz => _diagPublishHz;
@@ -213,7 +306,7 @@ public abstract class Device : MonoBehaviour
 	#region PROFILER
 	private int _profFrameCount = 0;
 	private double _profByteCount = 0;
-	private float _periodForProfiler = 5f; // seconds
+	private float _periodForProfiler = 60f; // seconds
 
 	private Stopwatch _profWatch = Stopwatch.StartNew();
 
@@ -298,7 +391,7 @@ public abstract class Device : MonoBehaviour
 
 		if (EnableVisualize)
 		{
-			StartCoroutine(OnVisualize());
+			_visualizeCoroutine = StartCoroutine(OnVisualize());
 		}
 	}
 
@@ -319,6 +412,12 @@ public abstract class Device : MonoBehaviour
 	protected void OnDestroy()
 	{
 		_running = false;
+
+		if (_visualizeCoroutine != null)
+		{
+			StopCoroutine(_visualizeCoroutine);
+			_visualizeCoroutine = null;
+		}
 
 		// Wake TX thread so it can exit cleanly
 		_txDataReady.Set();
@@ -361,6 +460,12 @@ public abstract class Device : MonoBehaviour
 	{
 		yield return null;
 	}
+
+	// StopCoroutine() aborts OnVisualize() mid-execution, skipping any cleanup
+	// it would otherwise reach (e.g. destroying a visualizer GameObject it
+	// created). Devices that allocate visualization resources in OnVisualize()
+	// should tear them down here instead.
+	protected virtual void OnVisualizeStop() { }
 
 	/// <summary>
 	/// Initialize message objects only

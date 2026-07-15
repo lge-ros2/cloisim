@@ -144,18 +144,21 @@ InstallApps()
 
 PreflightCheck()
 {
-  # Report any missing shared libraries for the bundled assimp lib before launch.
+  # Fail fast if the bundled assimp lib is missing any shared library dependency.
   local lib="./CLOiSim_Data/Plugins/x86_64/libassimp.so"
-  [[ -f "$lib" ]] || return
+  [[ -f "$lib" ]] || return 0
 
   local missing
   missing=$(ldd "$lib" 2>/dev/null | grep -i "not found")
   if [[ -n "$missing" ]]; then
     echo ""
-    echo "[Preflight] WARNING: missing shared libraries for $lib:"
+    echo "[Preflight] ERROR: missing shared libraries for $lib:"
     echo "$missing" | sed 's/^/            /'
     echo ""
+    return 1
   fi
+
+  return 0
 }
 
 if [ -z "$CLOISIM_WORLD_PATH" ]; then
@@ -300,8 +303,12 @@ else
         echo "========================================"
       }
 
-      PreflightCheck
+      if ! PreflightCheck; then
+        echo "Aborting: missing shared library dependencies detected."
+        exit 1
+      fi
 
+      # VK_LOADER_DEBUG=all \
       ./CLOiSim.x86_64 "${headlessArgs[@]}" -world "$targetWorld" "${captureArgs[@]}"
       CLOISIM_EXIT_CODE=$?
 

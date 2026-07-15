@@ -537,92 +537,155 @@ namespace RuntimeGizmos
 			return 0;
 		}
 
+		// Right click opens the inspector menu on release rather than press, so a
+		// camera-orbit drag (which also uses the right button) doesn't pop the menu.
+		private const float RightClickDragThreshold = 6f;
+		private Vector2 _rightPressScreenPos;
+
 		void GetTarget()
 		{
 			if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
 				return;
 
-			if (PIDTunerWindow.IsMouseOver)
+			if (ObjectInspectorWindow.IsMouseOver)
 				return;
 
-			if (nearAxis == Axis.None &&
-				!Keyboard.current[Key.LeftCtrl].isPressed && Mouse.current.leftButton.wasPressedThisFrame)
+			if (Keyboard.current[Key.ContextMenu].wasPressedThisFrame)
 			{
-				var ray = myCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-				if (Physics.Raycast(ray, out var hitInfo, Mathf.Infinity))
+				OpenInspectorForCurrentSelection(Mouse.current.position.ReadValue());
+			}
+
+			if (nearAxis != Axis.None || Keyboard.current[Key.LeftCtrl].isPressed)
+				return;
+
+			if (Mouse.current.rightButton.wasPressedThisFrame)
+			{
+				_rightPressScreenPos = Mouse.current.position.ReadValue();
+			}
+
+			if (Mouse.current.leftButton.wasPressedThisFrame)
+			{
+				HandleLeftClick();
+			}
+
+			if (Mouse.current.rightButton.wasReleasedThisFrame)
+			{
+				var releasePos = Mouse.current.position.ReadValue();
+				if (Vector2.Distance(_rightPressScreenPos, releasePos) <= RightClickDragThreshold)
 				{
-					Transform target = null;
-					var hitObject = hitInfo.transform;
-
-					_lockRotation = false;
-
-					if (hitObject.CompareTag("Props") ||
-						hitObject.CompareTag("Actor") ||
-						(hitObject.CompareTag("Road") && Keyboard.current[Key.LeftAlt].isPressed))
-					{
-						if (hitObject.CompareTag("Road"))
-						{
-							_lockRotation = true;
-						}
-
-						target = hitObject.transform;
-					}
-					else
-					{
-						// To avoid plane object
-						var isPlaneObject = hitObject.gameObject.layer.Equals(SDFormat.Implement.Collision.PlaneLayerIndex);
-						var collisionHelper = hitObject.GetComponentInChildren<SDFormat.Helper.Collision>();
-						if (collisionHelper != null)
-						{
-							isPlaneObject |= collisionHelper.gameObject.layer.Equals(SDFormat.Implement.Collision.PlaneLayerIndex);
-						}
-
-						if (!isPlaneObject)
-						{
-							var hitParentLinkHelper = hitObject?.GetComponentInParent<SDFormat.Helper.Link>();
-							var hitRootModelHelper = hitParentLinkHelper?.RootModel;
-
-							if (hitRootModelHelper != null && hitParentLinkHelper.Model != null)
-							{
-								if (!(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
-								{
-									target = hitRootModelHelper.hasRootArticulationBody ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
-								}
-							}
-							// Select static object(non articulation body) only when left alt is pressed
-							else if (hitParentLinkHelper == null && Keyboard.current[Key.LeftAlt].isPressed)
-							{
-								target = hitObject.transform;
-							}
-							// Debug.Log(hitParentObject.name + " Selected!!!!");
-						}
-					}
-
-					if (target == null)
-					{
-						ClearTargets();
-					}
-					else
-					{
-						if (targetRoots.ContainsKey(target))
-						{
-							RemoveTarget(target);
-						}
-						else if (Keyboard.current[Key.LeftShift].isPressed)
-						{
-							AddTarget(target);
-						}
-						else
-						{
-							ClearAndAddTarget(target);
-						}
-					}
+					HandleRightClick(releasePos);
 				}
-				else
+			}
+		}
+
+		void HandleLeftClick()
+		{
+			var ray = myCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+			if (Physics.Raycast(ray, out var hitInfo, Mathf.Infinity))
+			{
+				var target = ResolveTarget(hitInfo.transform);
+
+				if (target == null)
 				{
 					ClearTargets();
 				}
+				else if (targetRoots.ContainsKey(target))
+				{
+					RemoveTarget(target);
+				}
+				else if (Keyboard.current[Key.LeftShift].isPressed)
+				{
+					AddTarget(target);
+				}
+				else
+				{
+					ClearAndAddTarget(target);
+				}
 			}
+			else
+			{
+				ClearTargets();
+			}
+		}
+
+		void HandleRightClick(Vector2 screenPos)
+		{
+			var ray = myCamera.ScreenPointToRay(screenPos);
+			if (!Physics.Raycast(ray, out var hitInfo, Mathf.Infinity))
+				return;
+
+			var target = ResolveTarget(hitInfo.transform);
+			if (target == null)
+				return;
+
+			// Right click always ensures the target is selected and opens the menu;
+			// unlike left click it never toggles the target back off.
+			if (!targetRoots.ContainsKey(target))
+			{
+				ClearAndAddTarget(target);
+			}
+
+			ObjectInspectorWindow.OpenAt(target, screenPos, myCamera);
+		}
+
+		void OpenInspectorForCurrentSelection(Vector2 screenPos)
+		{
+			var target = mainTargetRoot;
+			if (target != null)
+			{
+				ObjectInspectorWindow.OpenAt(target, screenPos, myCamera);
+			}
+		}
+
+		Transform ResolveTarget(Transform hitObject)
+		{
+			Transform target = null;
+
+			_lockRotation = false;
+
+			if (hitObject.CompareTag("Props") ||
+				hitObject.CompareTag("Actor") ||
+				(hitObject.CompareTag("Road") && Keyboard.current[Key.LeftAlt].isPressed))
+			{
+				if (hitObject.CompareTag("Road"))
+				{
+					_lockRotation = true;
+				}
+
+				target = hitObject.transform;
+			}
+			else
+			{
+				// To avoid plane object
+				var isPlaneObject = hitObject.gameObject.layer.Equals(SDFormat.Implement.Collision.PlaneLayerIndex);
+				var collisionHelper = hitObject.GetComponentInChildren<SDFormat.Helper.Collision>();
+				if (collisionHelper != null)
+				{
+					isPlaneObject |= collisionHelper.gameObject.layer.Equals(SDFormat.Implement.Collision.PlaneLayerIndex);
+				}
+
+				if (!isPlaneObject)
+				{
+					var hitParentLinkHelper = hitObject?.GetComponentInParent<SDFormat.Helper.Link>();
+					var hitRootModelHelper = hitParentLinkHelper?.RootModel;
+
+					if (hitRootModelHelper != null && hitParentLinkHelper.Model != null)
+					{
+						if (!(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
+						{
+							target = hitRootModelHelper.hasRootArticulationBody ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
+						}
+					}
+					// Select static object(non articulation body) only when left alt is pressed
+					else if (hitParentLinkHelper == null && Keyboard.current[Key.LeftAlt].isPressed)
+					{
+						target = hitObject.transform;
+					}
+					// Debug.Log(hitParentObject.name + " Selected!!!!");
+				}
+			}
+
+			return target;
 		}
 
 		public void GetSelectedTargets(out List<Transform> list)

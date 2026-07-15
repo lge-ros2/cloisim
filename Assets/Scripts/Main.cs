@@ -600,7 +600,7 @@ public class Main : MonoBehaviour
 			_uiMainCanvasRoot = uiMainCanvasTransform.gameObject;
 			_followingList = _uiMainCanvasRoot.GetComponentInChildren<FollowingTargetList>();
 
-			_uiRoot.AddComponent<PIDTunerWindow>();
+			_uiRoot.AddComponent<ObjectInspectorWindow>();
 
 			_loadingCursor = _uiRoot.AddComponent<LoadingCursor>();
 		}
@@ -745,7 +745,21 @@ public class Main : MonoBehaviour
 		return tmpModelName;
 	}
 
-	public IEnumerator LoadModel(string modelPath, string modelFileName)
+	public bool TryGetModelResourcePath(in string modelName, out string path, out string filename)
+	{
+		if (_sdfRoot != null && _sdfRoot.ResourceModelTable.TryGetValue(modelName, out var entry))
+		{
+			path = entry.path;
+			filename = entry.filename;
+			return true;
+		}
+
+		path = string.Empty;
+		filename = string.Empty;
+		return false;
+	}
+
+	public IEnumerator LoadModel(string modelPath, string modelFileName, string modelNameOverride = null)
 	{
 		SuppressPhysicsDebugContacts("loading a model");
 
@@ -761,7 +775,11 @@ public class Main : MonoBehaviour
 			_bridgeManager.ClearAllocatedHistory();
 
 			// Debug.Log("Parsed: " + item.Key + ", " + item.Value.Item1 + ", " +  item.Value.Item2);
-			model.Name = GetClonedModelName(model.Name);
+			// Use the caller-supplied base name (e.g. the copied object's current scene name)
+			// when provided, so clones are named after what the user copied rather than the
+			// SDF file's own <model name="..."> (which may differ from the scene instance name).
+			var baseModelName = string.IsNullOrEmpty(modelNameOverride) ? model.Name : modelNameOverride;
+			model.Name = GetClonedModelName(baseModelName);
 
 			Physics.simulationMode = SimulationMode.Script;
 			GameObject targetObject = null;
@@ -776,6 +794,13 @@ public class Main : MonoBehaviour
 			}
 
 			yield return new WaitUntil(() => targetObject != null);
+
+			var modelHelperForSource = targetObject.GetComponent<SDFormat.Helper.Model>();
+			if (modelHelperForSource != null)
+			{
+				modelHelperForSource.sourcePath = modelPath;
+				modelHelperForSource.sourceFilename = modelFileName;
+			}
 
 			_pluginAllStarted = false;
 
@@ -1191,7 +1216,7 @@ public class Main : MonoBehaviour
 		_isResetting = true;
 		SuppressPhysicsDebugContacts("resetting the simulation");
 
-		Debug.LogWarning("[Reset] Simulation reset triggered.");
+		Debug.LogWarning($"[Reset] Simulation reset triggered. elapsed={Time.realtimeSinceStartup:F3}s");
 		_uiController?.SetWarningMessage("Resetting simulation...");
 		yield return null; // let UI Toolkit flush the label before heavy sync work blocks the frame
 
@@ -1324,8 +1349,79 @@ public class Main : MonoBehaviour
 		return null;
 	}
 
-	void OnDestroy()
+	void OnApplicationQuit()
 	{
+		// Application.quitting (subscribed in Device's static ctor) is not reliably
+		// firing before OnDestroy on this Unity version/platform when the window is
+		// closed via the window manager — Device.IsShuttingDown was still observed
+		// false during Camera/Lidar.OnDestroy()'s GPU-quiescence probe on quit, which
+		// defeats the "skip the fence-probe on quit" guard in
+		// Device.DrainReadbacksForTeardown() and can lead to a false GPU-lost
+		// diagnosis (and a SIGSEGV in whatever forces a free afterward). OnApplicationQuit
+		// is the one teardown signal Unity sends unconditionally regardless of how quit
+		// was initiated, so set the flag here directly instead of relying on the event.
+		Device.SignalShuttingDown();
+
+#if !UNITY_EDITOR
+		// Environment.Exit(0) was tried here first and reliably hung: on Mono,
+		// Environment.Exit() still runs an orderly managed-runtime shutdown internally,
+		// which calls mono_thread_suspend_all_other_threads() to stop-the-world before
+		// tearing down the GC heap. A gdb backtrace taken while hung showed the main
+		// thread stuck inside exactly that call (pthread_kill on a target thread
+		// returning ESRCH — the runtime's thread registry no longer matches reality),
+		// independent of whether our own plugin threads were joined first. Skip Mono's
+		// managed shutdown entirely: send this process a real SIGKILL, which the kernel
+		// handles unconditionally and Mono cannot intercept, defer, or hang inside.
+		// This also skips Unity's own scene-teardown cascade, which destroys every
+		// GameObject (including CLOiD's live ArticulationBody hierarchy) as part of
+		// normal quit — destroying a live articulation at runtime crashes PhysX natively
+		// (SIGSEGV); see QuarantineArticulatedModel's comment. The process is exiting
+		// anyway, so the OS reclaims GPU/PhysX/NetMQ native memory regardless; there is
+		// nothing left for graceful teardown to protect.
+		// Editor-excluded: killing the process here would kill the whole Editor, not
+		// just this play session — so the Editor still goes through the graceful
+		// thread-join + PerformFinalCleanup() path below.
+		System.Diagnostics.Process.GetCurrentProcess().Kill();
+#else
+		// Unity does not guarantee OnDestroy() call order across independent
+		// GameObjects during quit, so OnDestroy()'s NetMQConfig.Cleanup() below can
+		// otherwise run while a CLOiSimPlugin's background thread (e.g.
+		// PublishTfThread) is still sending on its own NetMQ socket, tearing down
+		// the shared context out from under a live native call (SIGSEGV).
+		// OnApplicationQuit runs on every object before any OnDestroy() during
+		// quit, so stop every plugin thread here first. Joins can stack up to
+		// 500ms per plugin across the whole scene, so suppress the freeze
+		// watchdog for the duration like CLOiSimPlugin.OnDestroy does.
+		CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+		try
+		{
+			foreach (var plugin in FindObjectsByType<CLOiSimPlugin>())
+			{
+				plugin.StopThreadsForApplicationQuit();
+			}
+		}
+		finally
+		{
+			CLOiSim.Diagnostics.FreezeWatchdog.Restore();
+		}
+
+		PerformFinalCleanup();
+#endif
+	}
+
+	private bool _finalCleanupDone = false;
+
+	// Shared by OnApplicationQuit (Editor path only; the standalone path skips this
+	// and kills the process directly) and OnDestroy (the only path reached in the
+	// Editor, where quit does not force-exit the process).
+	private void PerformFinalCleanup()
+	{
+		if (_finalCleanupDone)
+		{
+			return;
+		}
+		_finalCleanupDone = true;
+
 		if (_loadingCursor != null)
 		{
 			_loadingCursor.Deactivate();
@@ -1352,5 +1448,10 @@ public class Main : MonoBehaviour
 		{
 			AssimpLibrary.Instance.FreeLibrary();
 		}
+	}
+
+	void OnDestroy()
+	{
+		PerformFinalCleanup();
 	}
 }

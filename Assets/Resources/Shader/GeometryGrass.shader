@@ -329,8 +329,6 @@ Shader "Custom/GeometryGrass"
 				tangent.xyz = normalize(tangent.xyz);
 				float3 bitangent = cross(normal, tangent.xyz) * tangent.w;
 
-				pos -= _GrassOffset.xyz;
-
 				float3x3 tangentToLocal = float3x3
 				(
 					tangent.x, bitangent.x, normal.x,
@@ -405,7 +403,7 @@ Shader "Custom/GeometryGrass"
 			{
 				"RenderType" = "Opaque"
 				"Queue" = "Geometry"
-				"LightMode" = "UniversalForward"
+				"LightMode" = "UniversalForwardOnly"
 			}
 
 			HLSLPROGRAM
