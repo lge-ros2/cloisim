@@ -13,6 +13,10 @@ namespace CLOiSim.Diagnostics
     /// Attach once to a persistent GameObject. Call FreezeWatchdog.Mark(...) right
     /// before/after heavy GPU work to leave a breadcrumb that pinpoints the stall.
     /// </summary>
+    // Must run its LateUpdate before SensorRenderManager (default order 0): both resume
+    // in the same frame right after a big main-thread stall, and RecentlyHadBigHitch()
+    // needs _lastHitchMs already written for that exact frame, not one frame later.
+    [DefaultExecutionOrder(-500)]
     public sealed class FreezeWatchdog : MonoBehaviour
     {
         [Tooltip("Stall duration (ms) before a warning is logged.")]
@@ -30,6 +34,7 @@ namespace CLOiSim.Diagnostics
         static readonly Stopwatch Clock = Stopwatch.StartNew();
         static long _lastHeartbeatMs;
         static long _lastSnapshotMs;
+        static long _lastHitchMs = long.MinValue;
 
         /// <summary>Minimum interval (ms) between diagnostic snapshot refreshes.</summary>
         const long SnapshotRefreshIntervalMs = 500;
@@ -105,6 +110,17 @@ namespace CLOiSim.Diagnostics
         /// </summary>
         public static void Suppress() => Interlocked.Increment(ref _suppressCount);
 
+        /// <summary>
+        /// Whether a frame hitch above <see cref="FreezeWatchdog.hitchThresholdMs"/> was
+        /// recorded within the last <paramref name="windowMs"/> milliseconds. A huge hitch
+        /// usually means a heavy synchronous import (mesh/SDF) just ran on the main thread;
+        /// GPU resource uploads it triggered may still be settling, so callers that submit
+        /// their own render/GPU work (e.g. SensorRenderManager) can use this to skip a beat
+        /// instead of racing that settling window.
+        /// </summary>
+        public static bool RecentlyHadBigHitch(long windowMs = 250) =>
+            Clock.ElapsedMilliseconds - Volatile.Read(ref _lastHitchMs) < windowMs;
+
         /// <summary>Restore stall detection after a paired Suppress() call.</summary>
         public static void Restore()
         {
@@ -159,6 +175,7 @@ namespace CLOiSim.Diagnostics
             {
                 UnityEngine.Debug.LogWarning(
                     $"[FreezeWatchdog] frame hitch ~{frameMs}ms at stage='{_stage}'");
+                Volatile.Write(ref _lastHitchMs, now);
             }
 
             Volatile.Write(ref _lastHeartbeatMs, now);

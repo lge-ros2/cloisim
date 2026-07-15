@@ -1351,6 +1351,38 @@ public class Main : MonoBehaviour
 
 	void OnApplicationQuit()
 	{
+		// Application.quitting (subscribed in Device's static ctor) is not reliably
+		// firing before OnDestroy on this Unity version/platform when the window is
+		// closed via the window manager — Device.IsShuttingDown was still observed
+		// false during Camera/Lidar.OnDestroy()'s GPU-quiescence probe on quit, which
+		// defeats the "skip the fence-probe on quit" guard in
+		// Device.DrainReadbacksForTeardown() and can lead to a false GPU-lost
+		// diagnosis (and a SIGSEGV in whatever forces a free afterward). OnApplicationQuit
+		// is the one teardown signal Unity sends unconditionally regardless of how quit
+		// was initiated, so set the flag here directly instead of relying on the event.
+		Device.SignalShuttingDown();
+
+#if !UNITY_EDITOR
+		// Environment.Exit(0) was tried here first and reliably hung: on Mono,
+		// Environment.Exit() still runs an orderly managed-runtime shutdown internally,
+		// which calls mono_thread_suspend_all_other_threads() to stop-the-world before
+		// tearing down the GC heap. A gdb backtrace taken while hung showed the main
+		// thread stuck inside exactly that call (pthread_kill on a target thread
+		// returning ESRCH — the runtime's thread registry no longer matches reality),
+		// independent of whether our own plugin threads were joined first. Skip Mono's
+		// managed shutdown entirely: send this process a real SIGKILL, which the kernel
+		// handles unconditionally and Mono cannot intercept, defer, or hang inside.
+		// This also skips Unity's own scene-teardown cascade, which destroys every
+		// GameObject (including CLOiD's live ArticulationBody hierarchy) as part of
+		// normal quit — destroying a live articulation at runtime crashes PhysX natively
+		// (SIGSEGV); see QuarantineArticulatedModel's comment. The process is exiting
+		// anyway, so the OS reclaims GPU/PhysX/NetMQ native memory regardless; there is
+		// nothing left for graceful teardown to protect.
+		// Editor-excluded: killing the process here would kill the whole Editor, not
+		// just this play session — so the Editor still goes through the graceful
+		// thread-join + PerformFinalCleanup() path below.
+		System.Diagnostics.Process.GetCurrentProcess().Kill();
+#else
 		// Unity does not guarantee OnDestroy() call order across independent
 		// GameObjects during quit, so OnDestroy()'s NetMQConfig.Cleanup() below can
 		// otherwise run while a CLOiSimPlugin's background thread (e.g.
@@ -1372,10 +1404,24 @@ public class Main : MonoBehaviour
 		{
 			CLOiSim.Diagnostics.FreezeWatchdog.Restore();
 		}
+
+		PerformFinalCleanup();
+#endif
 	}
 
-	void OnDestroy()
+	private bool _finalCleanupDone = false;
+
+	// Shared by OnApplicationQuit (Editor path only; the standalone path skips this
+	// and kills the process directly) and OnDestroy (the only path reached in the
+	// Editor, where quit does not force-exit the process).
+	private void PerformFinalCleanup()
 	{
+		if (_finalCleanupDone)
+		{
+			return;
+		}
+		_finalCleanupDone = true;
+
 		if (_loadingCursor != null)
 		{
 			_loadingCursor.Deactivate();
@@ -1402,5 +1448,10 @@ public class Main : MonoBehaviour
 		{
 			AssimpLibrary.Instance.FreeLibrary();
 		}
+	}
+
+	void OnDestroy()
+	{
+		PerformFinalCleanup();
 	}
 }

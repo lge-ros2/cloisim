@@ -100,7 +100,15 @@ public abstract class Device : MonoBehaviour
 			// GPU (TDR / GSP-death / Xid 109) never signals the fence, so we abandon the drain
 			// instead of hanging the main thread forever. Pending readbacks are left in flight;
 			// their buffers must be freed through the fence-gated deferred path, never immediately.
-			if (SystemInfo.supportsGraphicsFence)
+			//
+			// Skip this probe once Application.quitting has fired: Unity stops pumping new
+			// frames/Present() calls after that point, so this fence can go unsignaled forever
+			// even on a perfectly healthy GPU, making the probe indistinguishable from a real
+			// wedge. WaitAllRequests() itself still forces a flush and completes on a healthy
+			// GPU without needing further frames, so call it directly — blocking a little longer
+			// during quit is preferable to a guaranteed false "GPU lost" abandonment that leaves
+			// buffers dangling for a caller who then races native teardown into a SIGSEGV.
+			if (SystemInfo.supportsGraphicsFence && !IsShuttingDown)
 			{
 				var probe = Graphics.CreateGraphicsFence(
 					UnityEngine.Rendering.GraphicsFenceType.CPUSynchronisation,

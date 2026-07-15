@@ -158,6 +158,14 @@ public class SensorRenderManager : MonoBehaviour
 		if (_paused)
 			return;
 
+		// A huge frame hitch usually means a heavy synchronous SDF/mesh import just ran
+		// on the main thread (e.g. importing a very-high-poly robot). The GPU uploads it
+		// triggered may still be settling; submitting a sensor render immediately after
+		// has been observed to crash natively inside URP's ScriptableRenderContext.Submit.
+		// Skip one beat so those uploads have a frame to land before we submit our own.
+		if (CLOiSim.Diagnostics.FreezeWatchdog.RecentlyHadBigHitch())
+			return;
+
 		var realtimeNow = Time.realtimeSinceStartup;
 
 		// Sort by urgency (most overdue first). "realtimeNow - NextRenderTime" descending
