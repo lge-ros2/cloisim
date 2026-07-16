@@ -128,12 +128,11 @@ namespace SDFormat
 					_isParentLinkModel = true;
 				}
 
-				// Handle self collision
-				if (!isSelfCollide)
-				{
-					IgnoreSelfCollision();
-				}
-
+				// Self collision is ignored later, from SpecifyPose(), once every
+				// link's colliders (and its siblings') actually exist. Doing it here in
+				// Start() is too early: Start() fires on the first frame after this
+				// component's Awake(), which can be well before this link's own
+				// visuals/collisions (let alone sibling links) finish importing.
 				var artBodies = (RootModel != null)
 					? RootModel.GetComponentsInChildren<UE.ArticulationBody>()
 					: GetComponentsInChildren<UE.ArticulationBody>();
@@ -250,7 +249,7 @@ namespace SDFormat
 				return GetComponentsInChildren<UE.Collider>();
 			}
 
-			private void IgnoreSelfCollision()
+			public void IgnoreSelfCollision()
 			{
 				if (RootModel == null)
 				{
