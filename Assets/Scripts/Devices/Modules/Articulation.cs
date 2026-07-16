@@ -96,7 +96,11 @@ public class Articulation
 
 	public virtual void Reset()
 	{
-		if (_jointBody != null)
+		// isActiveAndEnabled is a pure C# check (no native call), safe before the
+		// first physics step and while the body is disabled during SDF import.
+		// Accessing jointVelocity/linearVelocity/angularVelocity on a disabled/
+		// uninitialised ArticulationBody dereferences a null native peer → SIGSEGV.
+		if (_jointBody != null && _jointBody.isActiveAndEnabled)
 		{
 			_jointBody.linearVelocity = Vector3.zero;
 			_jointBody.angularVelocity = Vector3.zero;
