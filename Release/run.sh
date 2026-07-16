@@ -312,7 +312,14 @@ else
       ./CLOiSim.x86_64 "${headlessArgs[@]}" -world "$targetWorld" "${captureArgs[@]}"
       CLOISIM_EXIT_CODE=$?
 
-      if [[ ${CLOISIM_EXIT_CODE} -ne 0 ]]; then
+      # 137 (SIGKILL) is the expected exit code for a normal quit: Main.OnApplicationQuit()
+      # deliberately calls Process.Kill() on itself for every quit path (window close, Ctrl+C,
+      # menu quit) to bypass Unity/Mono teardown crashes/hangs. Only treat other non-zero
+      # codes (e.g. 139 SIGSEGV, 134 SIGABRT) as real crashes worth dumping.
+      if [[ ${CLOISIM_EXIT_CODE} -eq 137 ]]; then
+        echo ""
+        echo "CLOiSim exited normally (code 137: expected self-kill on quit)."
+      elif [[ ${CLOISIM_EXIT_CODE} -ne 0 ]]; then
         CollectCrashDump ${CLOISIM_EXIT_CODE}
       fi
     else

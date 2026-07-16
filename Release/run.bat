@@ -105,7 +105,14 @@ IF "%TargetWorld%" == "" (
 	CLOiSim.exe !HeadlessArgs! -world !TargetWorld! !CaptureArgs!
 	SET CLOISIM_EXIT_CODE=!ERRORLEVEL!
 
-	IF !CLOISIM_EXIT_CODE! NEQ 0 (
+	REM -1 is the expected exit code for a normal quit: Main.OnApplicationQuit() deliberately
+	REM calls Process.Kill() on itself for every quit path (window close, Ctrl+C, menu quit)
+	REM to bypass Unity/Mono teardown crashes/hangs. On Windows, Kill() terminates via
+	REM TerminateProcess(handle, -1), so ERRORLEVEL comes back as -1, not 0.
+	IF !CLOISIM_EXIT_CODE! EQU -1 (
+		ECHO.
+		ECHO CLOiSim exited normally ^(code -1: expected self-kill on quit^).
+	) ELSE IF !CLOISIM_EXIT_CODE! NEQ 0 (
 		CALL :CollectCrashDump !CLOISIM_EXIT_CODE!
 	)
 )
