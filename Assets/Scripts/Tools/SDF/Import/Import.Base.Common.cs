@@ -86,9 +86,10 @@ namespace SDFormat
 				return null;
 			}
 
-			protected virtual void ImportGeometry(in Geometry geometry, in object parentObject)
+			protected virtual IEnumerator ImportGeometry(Geometry geometry, object parentObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, geometry.Type.ToString());
+				yield return null;
 			}
 
 			protected virtual void ImportMaterial(in Material sdfMaterial, in object parentObject)

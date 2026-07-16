@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections;
 using UE = UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -19,10 +20,10 @@ namespace SDFormat
 			}
 
 			/// <summary>Set mesh from external source</summary>
-			public static void GenerateMesh(this UE.GameObject targetParentObject, in Mesh obj)
+			public static IEnumerator GenerateMesh(this UE.GameObject targetParentObject, Mesh obj)
 			{
-				var loadedObject = MeshLoader.CreateMeshObject(obj.Uri, obj.Submesh);
-				var isVisualMesh = IsVisualObject(targetParentObject);
+				UE.GameObject loadedObject = null;
+				yield return MeshLoader.CreateMeshObject(obj.Uri, o => loadedObject = o, obj.Submesh);
 
 				if (loadedObject == null)
 				{

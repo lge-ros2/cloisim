@@ -33,13 +33,13 @@ namespace SDFormat
 				UE.DynamicGI.UpdateEnvironment();
 			}
 
-			private void ImportVisuals(IReadOnlyList<Visual> items, in object parentObject)
+			private IEnumerator ImportVisuals(IReadOnlyList<Visual> items, object parentObject)
 			{
 				foreach (var item in items)
 				{
 					var createdObject = ImportVisual(item, parentObject);
 
-					ImportGeometry(item.Geom, createdObject);
+					yield return ImportGeometry(item.Geom, createdObject);
 
 					AfterImportVisual(item, createdObject);
 
@@ -49,13 +49,13 @@ namespace SDFormat
 				}
 			}
 
-			private void ImportCollisions(IReadOnlyList<Collision> items, in object parentObject)
+			private IEnumerator ImportCollisions(IReadOnlyList<Collision> items, object parentObject)
 			{
 				foreach (var item in items)
 				{
 					var createdObject = ImportCollision(item, parentObject);
 
-					ImportGeometry(item.Geom, createdObject);
+					yield return ImportGeometry(item.Geom, createdObject);
 
 					AfterImportCollision(item, createdObject);
 				}
@@ -70,15 +70,15 @@ namespace SDFormat
 				}
 			}
 
-			protected void ImportLinks(IReadOnlyList<Link> items, in object parentObject)
+			protected IEnumerator ImportLinks(IReadOnlyList<Link> items, object parentObject)
 			{
 				foreach (var item in items)
 				{
 					var createdObject = ImportLink(item, parentObject);
 
-					ImportVisuals(item.Visuals, createdObject);
+					yield return ImportVisuals(item.Visuals, createdObject);
 
-					ImportCollisions(item.Collisions, createdObject);
+					yield return ImportCollisions(item.Collisions, createdObject);
 
 					ImportSensors(item.Sensors, createdObject);
 
