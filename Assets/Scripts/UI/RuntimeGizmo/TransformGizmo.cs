@@ -416,7 +416,23 @@ namespace RuntimeGizmos
 											}
 											else
 											{
-												targetTransform.position += movement;
+												// targetTransform may be a nested Model that has no ArticulationBody
+												// of its own but still sits inside an ArticulationBody chain (e.g. a
+												// non-root nested Model between the chain root and a Link). Moving
+												// its Transform directly is a no-op once the physics step recomputes
+												// the chain from the actual root, so redirect to that root instead.
+												var ancestorArticulationBody = targetTransform.GetComponentInParent<ArticulationBody>();
+												if (ancestorArticulationBody != null && ancestorArticulationBody.isRoot)
+												{
+													var newPose = new Pose(ancestorArticulationBody.transform.position, ancestorArticulationBody.transform.rotation);
+													newPose.position += movement;
+													ancestorArticulationBody.Sleep();
+													ancestorArticulationBody.TeleportRoot(newPose.position, newPose.rotation);
+												}
+												else
+												{
+													targetTransform.position += movement;
+												}
 											}
 										}
 									}
@@ -496,8 +512,16 @@ namespace RuntimeGizmos
 										}
 										else
 										{
-											targetTransform.position = targetTransform.position;
-											targetTransform.rotation = targetTransform.rotation;
+											// Same nested-Model-without-ArticulationBody case as in the Move
+											// branch above: redirect to the chain's real root so the rotation
+											// isn't overwritten by the next physics step.
+											var ancestorArticulationBody = targetTransform.GetComponentInParent<ArticulationBody>();
+											if (ancestorArticulationBody != null && ancestorArticulationBody.isRoot)
+											{
+												var newPose = new Pose(ancestorArticulationBody.transform.position, ancestorArticulationBody.transform.rotation);
+												ancestorArticulationBody.Sleep();
+												ancestorArticulationBody.TeleportRoot(newPose.position, newPose.rotation);
+											}
 										}
 									}
 								}
@@ -673,7 +697,12 @@ namespace RuntimeGizmos
 					{
 						if (!(hitRootModelHelper.isStatic || hitParentLinkHelper.Model.isStatic))
 						{
-							target = hitRootModelHelper.hasRootArticulationBody ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
+							// Check the actual component instead of the cached hasRootArticulationBody flag,
+							// which can be stale if it was evaluated before every Link's ArticulationBody
+							// was attached during SDF import, so it never targets an intermediate nested
+							// Model that has no ArticulationBody of its own.
+							var rootArticulationBody = hitRootModelHelper.GetComponent<ArticulationBody>();
+							target = (rootArticulationBody != null) ? hitRootModelHelper.transform : hitParentLinkHelper.Model.transform;
 						}
 					}
 					// Select static object(non articulation body) only when left alt is pressed
