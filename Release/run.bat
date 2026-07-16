@@ -144,6 +144,15 @@ EXIT /B %ERRORLEVEL%
 		)
 	)
 
+	REM 2. Copy Player.log -- native fatal signals are handled by Unity's own crash
+	REM handler before any managed code (CrashReporter.cs) can react, so this
+	REM shell-side copy is the only reliable way to capture the native stack trace
+	REM Unity prints to the log on those crashes.
+	SET PLAYER_LOG=%USERPROFILE%\AppData\LocalLow\LGE.RoboticsPlatform\CLOiSim\Player.log
+	IF EXIST "%PLAYER_LOG%" (
+		COPY /Y "%PLAYER_LOG%" "%DUMP_DIR%\" >NUL 2>&1
+	)
+
 	REM 3. Save environment and system info
 	(
 		ECHO Exit Code         : %EXIT_CODE%

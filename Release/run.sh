@@ -280,7 +280,16 @@ else
           mv "${CORE_FILE}" "${DUMP_DIR}/"
         fi
 
-        # 3. Save environment and system info
+        # 3. Copy Player.log — native fatal signals (SIGSEGV etc.) are handled by
+        # Unity's own crash handler before any managed code (CrashReporter.cs) can
+        # react, so this shell-side copy is the only reliable way to capture the
+        # native stack trace Unity prints to the log on those crashes.
+        local PLAYER_LOG="${HOME}/.config/unity3d/LGE.RoboticsPlatform/CLOiSim/Player.log"
+        if [[ -f "${PLAYER_LOG}" ]]; then
+          cp "${PLAYER_LOG}" "${DUMP_DIR}/"
+        fi
+
+        # 4. Save environment and system info
         {
           echo "Exit Code         : ${EXIT_CODE}"
           echo "Crash Time        : $(date '+%Y-%m-%d %H:%M:%S')"
@@ -293,7 +302,7 @@ else
           echo "CLOISIM_WORLD_PATH: ${CLOISIM_WORLD_PATH}"
         } > "${DUMP_DIR}/env_info.txt"
 
-        # 4. Package into tar.gz
+        # 5. Package into tar.gz
         local ARCHIVE="./CrashDumps/crash_${TIMESTAMP}.tar.gz"
         tar -czf "${ARCHIVE}" -C "./CrashDumps" "crash_shell_${TIMESTAMP}"
 
@@ -307,6 +316,13 @@ else
         echo "Aborting: missing shared library dependencies detected."
         exit 1
       fi
+
+      # Soft RLIMIT_CORE defaults to 0 on most desktops, which stops the kernel from
+      # ever invoking core_pattern (even if it pipes to apport) on a crash, so
+      # CollectCrashDump's local `core*` search below always comes up empty. Raise
+      # it for this process tree only (no root needed as long as the hard limit
+      # allows it).
+      ulimit -c unlimited 2>/dev/null
 
       # VK_LOADER_DEBUG=all \
       ./CLOiSim.x86_64 "${headlessArgs[@]}" -world "$targetWorld" "${captureArgs[@]}"
