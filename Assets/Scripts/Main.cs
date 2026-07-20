@@ -761,6 +761,8 @@ public class Main : MonoBehaviour
 
 	public IEnumerator LoadModel(string modelPath, string modelFileName, string modelNameOverride = null)
 	{
+		var loadStopwatch = System.Diagnostics.Stopwatch.StartNew();
+
 		SuppressPhysicsDebugContacts("loading a model");
 
 		_loadingCursor?.Activate();
@@ -831,7 +833,8 @@ public class Main : MonoBehaviour
 			}
 			_bridgeManager.PrintAllocatedHistory();
 
-			var message = $"Model '{model.Name}' is successfully loaded.";
+			loadStopwatch.Stop();
+			var message = $"Model '{model.Name}' is successfully loaded. ({loadStopwatch.ElapsedMilliseconds}ms)";
 			Debug.Log(message);
 			_uiController?.SetInfoMessage(message);
 
@@ -847,6 +850,8 @@ public class Main : MonoBehaviour
 
 	private IEnumerator LoadWorld()
 	{
+		var loadStopwatch = System.Diagnostics.Stopwatch.StartNew();
+
 		SuppressPhysicsDebugContacts("loading a world");
 
 		Debug.Log("Target World: " + _worldFilename);
@@ -915,7 +920,8 @@ public class Main : MonoBehaviour
 
 			TrackModel();
 
-			var message = $"World '{_worldFilename}' is loaded";
+			loadStopwatch.Stop();
+			var message = $"World '{_worldFilename}' is loaded ({loadStopwatch.ElapsedMilliseconds}ms)";
 			Debug.Log(message);
 			_uiController?.SetInfoMessage(message);
 
