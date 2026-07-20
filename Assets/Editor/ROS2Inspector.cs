@@ -137,7 +137,9 @@ public class ROS2Inspector : Editor
 		out Vector3 ros2Position, out Vector3 ros2Rotation, out Vector3 ros2RotationDegree)
 	{
 		ros2Position = Unity2SDF.Position(position).AsUnity();
-		ros2Rotation = Unity2SDF.Vector(rotation.eulerAngles).AsUnity() * Mathf.Deg2Rad;
+
+		var euler = Unity2SDF.Rotation(rotation).ToEuler();
+		ros2Rotation = new Vector3((float)euler.X, (float)euler.Y, (float)euler.Z);
 		ros2Rotation.NormalizeAngle();
 		ros2RotationDegree = ros2Rotation * Mathf.Rad2Deg;
 	}
