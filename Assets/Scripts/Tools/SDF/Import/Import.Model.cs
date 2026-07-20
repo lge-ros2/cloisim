@@ -262,7 +262,7 @@ namespace SDFormat
 					CreateRootRigidBody(newModelObject);
 				}
 
-				ImportLinks(model.Links, newModelObject);
+				yield return ImportLinks(model.Links, newModelObject);
 
 				// Add nested models
 				yield return ImportModels(model.Models, newModelObject);

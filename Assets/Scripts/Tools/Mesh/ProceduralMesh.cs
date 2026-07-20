@@ -479,10 +479,10 @@ public class ProceduralMesh
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
-			MeshObjectCache.Add(Type.SPHERE, mesh);
+			MeshObjectCache.Add(meshType, mesh);
 		}
 
-		mesh = Object.Instantiate(MeshObjectCache[Type.SPHERE]);
+		mesh = Object.Instantiate(MeshObjectCache[meshType]);
 		mesh.name = meshName;
 
 		var meshVertices = mesh.vertices;

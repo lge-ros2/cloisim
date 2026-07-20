@@ -302,6 +302,17 @@ namespace SDFormat
 					baseHelper.ResetPose();
 				}
 
+				// Every link's own colliders and its siblings' now exist (the whole
+				// model has finished importing), so this is the first point where
+				// self-collision can be correctly ignored across the whole hierarchy.
+				foreach (var linkHelper in rootObject.GetComponentsInChildren<Helper.Link>())
+				{
+					if (!linkHelper.isSelfCollide)
+					{
+						linkHelper.IgnoreSelfCollision();
+					}
+				}
+
 				foreach (var body in articulationBodies)
 				{
 					UpdateParentAnchor(body);
@@ -345,7 +356,7 @@ namespace SDFormat
 
 					if (abDebug)
 					{
-						UE.Debug.Log($"[SpecifyPose] enabling AB '{body.name}' isRoot={body.isRoot} pos={body.transform.position:F4}");
+						UE.Debug.Log($"[SpecifyPose] frame={UE.Time.frameCount} enabling AB '{body.name}' isRoot={body.isRoot} pos={body.transform.position:F4}");
 					}
 
 					body.enabled = true;

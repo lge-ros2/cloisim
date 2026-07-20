@@ -3,7 +3,7 @@
     "com.lge-ros2.sdformat": "https://github.com/lge-ros2/sdformat-sharp.git?path=com.lge-ros2.sdformat",
     "com.unity.ai.assistant": "2.13.0-pre.2",
     "com.unity.ai.inference": "2.6.1",
-    "com.unity.ai.navigation": "2.0.13",
+    "com.unity.ai.navigation": "2.0.14",
     "com.unity.ide.visualstudio": "2.0.27",
     "com.unity.inputsystem": "1.19.0",
     "com.unity.mathematics": "1.4.0",

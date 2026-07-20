@@ -28,6 +28,8 @@ public class UIController : MonoBehaviour
 	private VisualElement _loadingOverlay = null;
 	private Label _loadingTitle = null;
 	private Label _loadingDetail = null;
+	private string _loadingTitleBase = string.Empty;
+	private const float LoadingDotPeriod = 0.4f;
 	private CameraKeyOverlay _cameraKeyOverlay = null;
 	private Button _buttonCameraView = null;
 	private Button _buttonHelp = null;
@@ -208,6 +210,18 @@ public class UIController : MonoBehaviour
 	private void Update()
 	{
 		FlushPendingStatusMessages();
+		AnimateLoadingTitle();
+	}
+
+	private void AnimateLoadingTitle()
+	{
+		if (_loadingTitle == null || _loadingOverlay == null || _loadingOverlay.style.display == DisplayStyle.None)
+		{
+			return;
+		}
+
+		var dotCount = (int)(Time.unscaledTime / LoadingDotPeriod) % 3 + 1;
+		_loadingTitle.text = _loadingTitleBase + new string('.', dotCount);
 	}
 
 	private void FlushPendingStatusMessages()
@@ -437,9 +451,10 @@ public class UIController : MonoBehaviour
 			return;
 		}
 
+		_loadingTitleBase = title.TrimEnd('.');
 		if (_loadingTitle != null)
 		{
-			_loadingTitle.text = title;
+			_loadingTitle.text = _loadingTitleBase + "...";
 		}
 
 		UpdateLoadingOverlay(detail);

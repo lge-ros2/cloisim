@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections;
 using UE = UnityEngine;
 
 namespace SDFormat
@@ -14,11 +15,11 @@ namespace SDFormat
 	{
 		public partial class Loader : Base
 		{
-			protected override void ImportGeometry(in Geometry geometry, in object parentObject)
+			protected override IEnumerator ImportGeometry(Geometry geometry, object parentObject)
 			{
 				if (geometry == null || geometry.IsEmpty())
 				{
-					return;
+					yield break;
 				}
 
 				var targetObject = parentObject as UE.GameObject;
@@ -26,7 +27,7 @@ namespace SDFormat
 				switch (geometry.Type)
 				{
 					case GeometryType.Mesh:
-						targetObject.GenerateMesh(geometry.MeshShape);
+						yield return targetObject.GenerateMesh(geometry.MeshShape);
 						break;
 
 					case GeometryType.Heightmap:
@@ -50,7 +51,7 @@ namespace SDFormat
 
 					default:
 						UE.Debug.LogErrorFormat("[{0}] Not support type({1}) for geometry", geometry.Type, geometry.Type);
-						return;
+						yield break;
 				}
 
 				targetObject.SetActive(true);

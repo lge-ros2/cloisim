@@ -105,7 +105,14 @@ IF "%TargetWorld%" == "" (
 	CLOiSim.exe !HeadlessArgs! -world !TargetWorld! !CaptureArgs!
 	SET CLOISIM_EXIT_CODE=!ERRORLEVEL!
 
-	IF !CLOISIM_EXIT_CODE! NEQ 0 (
+	REM -1 is the expected exit code for a normal quit: Main.OnApplicationQuit() deliberately
+	REM calls Process.Kill() on itself for every quit path (window close, Ctrl+C, menu quit)
+	REM to bypass Unity/Mono teardown crashes/hangs. On Windows, Kill() terminates via
+	REM TerminateProcess(handle, -1), so ERRORLEVEL comes back as -1, not 0.
+	IF !CLOISIM_EXIT_CODE! EQU -1 (
+		ECHO.
+		ECHO CLOiSim exited normally ^(code -1: expected self-kill on quit^).
+	) ELSE IF !CLOISIM_EXIT_CODE! NEQ 0 (
 		CALL :CollectCrashDump !CLOISIM_EXIT_CODE!
 	)
 )
@@ -135,6 +142,15 @@ EXIT /B %ERRORLEVEL%
 				XCOPY "%%D" "%DUMP_DIR%\%%~nxD\" /E /I /Q >NUL 2>&1
 			)
 		)
+	)
+
+	REM 2. Copy Player.log -- native fatal signals are handled by Unity's own crash
+	REM handler before any managed code (CrashReporter.cs) can react, so this
+	REM shell-side copy is the only reliable way to capture the native stack trace
+	REM Unity prints to the log on those crashes.
+	SET PLAYER_LOG=%USERPROFILE%\AppData\LocalLow\LGE.RoboticsPlatform\CLOiSim\Player.log
+	IF EXIST "%PLAYER_LOG%" (
+		COPY /Y "%PLAYER_LOG%" "%DUMP_DIR%\" >NUL 2>&1
 	)
 
 	REM 3. Save environment and system info

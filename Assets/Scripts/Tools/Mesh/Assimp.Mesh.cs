@@ -5,10 +5,12 @@
  */
 #define ENABLE_MESH_CACHE
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using System;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -585,10 +587,10 @@ public static partial class MeshLoader
 		return node.ChildCount + node.MeshCount + childrenCount;
 	}
 
-	public static GameObject CreateMeshObject(in string meshPath, in string subMesh = null)
+	// Runs the (thread-safe, Unity-API-free) Assimp parse on a worker thread so the
+	// main thread keeps rendering frames instead of freezing for the whole file load.
+	public static IEnumerator CreateMeshObject(string meshPath, Action<GameObject> onCreated, string subMesh = null)
 	{
-		GameObject meshObject = null;
-
 		var cacheKey = MeshCacheVersion + ":" + meshPath + (string.IsNullOrEmpty(subMesh) ? "" : subMesh);
 
 #if !ENABLE_MESH_CACHE
@@ -603,10 +605,17 @@ public static partial class MeshLoader
 		else
 #endif
 		{
-			var scene = GetScene(meshPath, subMesh);
+			var sceneTask = Task.Run(() => GetScene(meshPath, subMesh));
+			while (!sceneTask.IsCompleted)
+			{
+				yield return null;
+			}
+
+			var scene = sceneTask.Result;
 			if (scene == null)
 			{
-				return null;
+				onCreated?.Invoke(null);
+				yield break;
 			}
 
 			// Meshes
@@ -640,7 +649,7 @@ public static partial class MeshLoader
 #endif
 		}
 
-		meshObject = new GameObject("Non-Primitive Mesh");
+		var meshObject = new GameObject("Non-Primitive Mesh");
 		meshObject.SetActive(true);
 		meshObject.tag = "Geometry";
 
@@ -650,6 +659,6 @@ public static partial class MeshLoader
 		sceneMeshObject.SetActive(true);
 		sceneMeshObject.transform.SetParent(meshObject.transform, false);
 
-		return meshObject;
+		onCreated?.Invoke(meshObject);
 	}
 }

@@ -52,6 +52,45 @@ namespace SDFormat
 
 				articulationBodyChild.SetAnchor(anchorPose);
 
+				// SDF frame semantics: a link's pose may be expressed relative_to its
+				// own mounting joint (e.g. <link><pose relative_to='some_joint'>).
+				// This importer has no GameObject for the joint itself, so fold the
+				// joint's own offset (already assumed parent-link-relative here, same
+				// assumption SetArticulationBodyRelationship makes above) together
+				// with the child's own joint-relative offset into a single
+				// parent-relative pose for the child's final local transform below.
+				// Scoped to an exact joint-name match only (not empty PoseRelativeTo)
+				// so it never touches the ordinary "no explicit pose" case other
+				// models rely on via SpecifyPoseAbsolute().
+				// Caveat: WorldSaver reads Helper.Base.Pose/PoseRelativeTo to
+				// serialize link poses back to SDF, so round-tripping a saved world
+				// through this path will lose the original relative_to joint
+				// reference (it will be re-saved relative to the parent link with an
+				// equivalent absolute offset instead).
+				var childLinkHelper = linkObjectChild.GetComponent<Helper.Link>();
+				if (childLinkHelper != null && childLinkHelper.PoseRelativeTo == joint.Name)
+				{
+					var (jointPos, jointRot) = joint.RawPose.ToUnity();
+					var (childPos, childRot) = (childLinkHelper.Pose ?? Math.Pose3d.Zero).ToUnity();
+					var finalPos = jointPos + jointRot * childPos;
+					var finalRot = jointRot * childRot;
+
+					linkObjectChild.localPosition = finalPos;
+					linkObjectChild.localRotation = finalRot;
+					childLinkHelper.Pose = null;
+					childLinkHelper.PoseRelativeTo = null;
+
+					// anchorPosition/anchorRotation must describe the pivot in the
+					// CHILD's own local frame (i.e. offset from the child's own
+					// origin), not the parent-relative offset used for localPosition
+					// above. The child's own declared pose (childPos/childRot) is
+					// exactly the joint-to-child offset, so invert it to get the
+					// child-to-joint (pivot) offset.
+					var invChildRot = UE.Quaternion.Inverse(childRot);
+					articulationBodyChild.anchorPosition = invChildRot * -childPos;
+					articulationBodyChild.anchorRotation = invChildRot;
+				}
+
 				articulationBodyChild.MakeJoint(joint);
 
 				var linkHelper = linkObjectChild.GetComponent<Helper.Link>();
