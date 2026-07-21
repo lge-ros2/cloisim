@@ -224,6 +224,14 @@ public class Main : MonoBehaviour
 		// race → native SIGSEGV). RequestStop is idempotent.
 		StopDeviceWorkers(target);
 
+		// Also request every plugin's threads to stop up front, in one pass. Without
+		// this, each plugin's OnDestroy calls RequestStop() one at a time and then
+		// blocks for its own ~100ms poll interval — for N plugins those waits stack
+		// serially (up to N x 500ms worst case). Requesting them all together lets
+		// the poll intervals overlap instead, so the total teardown wait stays close
+		// to a single interval regardless of plugin count.
+		StopPluginWorkers(target);
+
 		if (!HasRootArticulationBody(target))
 		{
 			// Non-articulated models destroy cleanly.
@@ -319,6 +327,20 @@ public class Main : MonoBehaviour
 		for (var i = 0; i < devices.Length; i++)
 		{
 			devices[i]?.RequestStop();
+		}
+	}
+
+	private static void StopPluginWorkers(Transform target)
+	{
+		if (target == null)
+		{
+			return;
+		}
+
+		var plugins = target.GetComponentsInChildren<CLOiSimPlugin>(true);
+		for (var i = 0; i < plugins.Length; i++)
+		{
+			plugins[i]?.RequestThreadStop();
 		}
 	}
 

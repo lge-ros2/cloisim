@@ -71,6 +71,20 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 	protected virtual void OnPluginLoad() { }
 
 	/// <summary>
+	/// Request this plugin's background threads to stop, without blocking or
+	/// disposing transport/ports. Mirrors Device.RequestStop(). Call on every
+	/// plugin in a subtree BEFORE destroying any of them (see
+	/// Main.StopPluginWorkers) so all of their threads observe the stop flag and
+	/// start exiting concurrently — otherwise each plugin's OnDestroy calls
+	/// RequestStop() one at a time, and TryJoinStep's ~100ms poll wait stacks
+	/// once per plugin instead of overlapping.
+	/// </summary>
+	public void RequestThreadStop()
+	{
+		_thread?.RequestStop();
+	}
+
+	/// <summary>
 	/// Stops this plugin's background threads without disposing transport/ports.
 	/// Unity does not guarantee OnDestroy() call order across independent
 	/// GameObjects during application quit, so Main.OnDestroy's NetMQConfig.Cleanup()
