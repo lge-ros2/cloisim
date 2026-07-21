@@ -1246,6 +1246,7 @@ public class Main : MonoBehaviour
 
 		Debug.LogWarning($"[Reset] Simulation reset triggered. elapsed={Time.realtimeSinceStartup:F3}s");
 		_uiController?.SetWarningMessage("Resetting simulation...");
+		_uiController?.ShowLoadingOverlay("Resetting simulation", "Reinitializing world and models...");
 		yield return null; // let UI Toolkit flush the label before heavy sync work blocks the frame
 
 		SensorRenderManager.Pause();
@@ -1280,6 +1281,7 @@ public class Main : MonoBehaviour
 		{
 			SensorRenderManager.Resume();
 			_isResetting = false;
+			_uiController?.HideLoadingOverlay();
 		}
 	}
 
