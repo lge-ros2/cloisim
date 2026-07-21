@@ -150,12 +150,24 @@ public class ObjectInspectorWindow : MonoBehaviour
 			return;
 		}
 
-		// Input System screen space is bottom-left origin; IMGUI is top-left.
-		var guiClickPos = new Vector2(screenPos.x, Screen.height - screenPos.y);
-		var windowPos = ComputeWindowPosition(target, camera, guiClickPos);
-		_windowRect.x = windowPos.x;
-		_windowRect.y = windowPos.y;
-		_collapsed = false;
+		if (_windowPosState.TryGetValue(target, out var savedPos))
+		{
+			// Reopening a target we've shown before — keep wherever the user
+			// last dragged it instead of recomputing a position near the click.
+			_windowRect.x = savedPos.x;
+			_windowRect.y = savedPos.y;
+			_collapsed = _collapsedState.TryGetValue(target, out var savedCollapsed) && savedCollapsed;
+		}
+		else
+		{
+			// Input System screen space is bottom-left origin; IMGUI is top-left.
+			var guiClickPos = new Vector2(screenPos.x, Screen.height - screenPos.y);
+			var windowPos = ComputeWindowPosition(target, camera, guiClickPos);
+			_windowRect.x = windowPos.x;
+			_windowRect.y = windowPos.y;
+			_collapsed = false;
+		}
+
 		_showWindow = true;
 	}
 
@@ -274,16 +286,6 @@ public class ObjectInspectorWindow : MonoBehaviour
 			_windowPosState[_currentTarget] = new Vector2(_windowRect.x, _windowRect.y);
 			_collapsedState[_currentTarget] = _collapsed;
 		}
-	}
-
-	private void RestoreWindowState()
-	{
-		if (_currentTarget != null && _windowPosState.TryGetValue(_currentTarget, out var pos))
-		{
-			_windowRect.x = pos.x;
-			_windowRect.y = pos.y;
-		}
-		_collapsed = _currentTarget != null && _collapsedState.TryGetValue(_currentTarget, out var saved) && saved;
 	}
 
 	private void RefreshContent()
