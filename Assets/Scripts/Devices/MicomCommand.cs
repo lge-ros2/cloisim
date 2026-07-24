@@ -53,9 +53,7 @@ namespace SensorDevices
 
 		protected override void ProcessReceivedDeviceMessage(DeviceMessage receivedMessage)
 		{
-			var cmdVelocity = receivedMessage.GetMessage<messages.Twist>();
-
-			if (cmdVelocity != null)
+			if (receivedMessage.TryGetMessage<messages.Twist>(out var cmdVelocity))
 			{
 				var linearVelocity =  cmdVelocity.Linear.ToUnity();
 				var angularVelocity = cmdVelocity.Angular.ToUnity();
@@ -64,15 +62,13 @@ namespace SensorDevices
 			}
 			else
 			{
-				var joystick = receivedMessage.GetMessage<messages.Joystick>();
-				if (joystick != null)
+				if (receivedMessage.TryGetMessage<messages.Joystick>(out var joystick))
 				{
 					ControlJoystick(joystick);
 				}
 				else
 				{
-					var customCmd = receivedMessage.GetMessage<messages.Param>();
-					if (customCmd != null)
+					if (receivedMessage.TryGetMessage<messages.Param>(out var customCmd))
 					{
 						var firstEntry = customCmd.Params.GetEnumerator();
 						if (firstEntry.MoveNext())

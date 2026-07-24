@@ -56,9 +56,7 @@ namespace SensorDevices
 
 		protected override void ProcessReceivedDeviceMessage(DeviceMessage receivedMessage)
 		{
-			var jointCommandV = receivedMessage.GetMessage<messages.JointCmdV>();
-
-			if (jointCommandV == null)
+			if (!receivedMessage.TryGetMessage<messages.JointCmdV>(out var jointCommandV))
 			{
 				Debug.LogWarning("JointCommand: Pop Message failed.");
 				return;

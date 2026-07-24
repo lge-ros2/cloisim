@@ -699,7 +699,11 @@ public abstract class Device : MonoBehaviour
 			else
 			{
 				// Protobuf fallback for non-image sensors (lidar, IMU, etc.)
-				deviceMessage.SetMessage(instance);
+				if (!deviceMessage.SetMessage(instance))
+				{
+					ReturnDeviceMessage(deviceMessage);
+					return false;
+				}
 			}
 
 			var pushed = _deviceMessageQueue.Push(deviceMessage);

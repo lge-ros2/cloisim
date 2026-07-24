@@ -658,11 +658,14 @@ PlayerSettings:
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
-    Standalone: 0
-  il2cppCompilerConfiguration: {}
+    Standalone: 1
+  il2cppCompilerConfiguration:
+    Standalone: 2
   il2cppCodeGeneration: {}
-  il2cppLTOMode: {}
-  il2cppStacktraceInformation: {}
+  il2cppLTOMode:
+    Standalone: 2
+  il2cppStacktraceInformation:
+    Standalone: 1
   managedStrippingLevel:
     Standalone: 4
   incrementalIl2cppBuild: {}
