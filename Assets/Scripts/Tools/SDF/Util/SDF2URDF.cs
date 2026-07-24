@@ -39,14 +39,31 @@ namespace SDFormat
 			}
 
 			var robotName = GetAttributeOrDefault(modelNode, "name", defaultRobotName);
+			var urdfVersion = DetermineRequiredUrdfVersion(modelNode);
 			var urdf = new StringBuilder();
 			urdf.Append("<?xml version='1.0'?>\n");
-			urdf.Append($"<robot name=\"{EscapeXml(robotName)}\">\n");
+			urdf.Append($"<robot name=\"{EscapeXml(robotName)}\" version=\"{urdfVersion}\">\n");
 
 			AppendModelUrdf(urdf, modelNode, string.Empty);
 
 			urdf.Append("</robot>");
 			return urdf.ToString();
+		}
+
+		// URDF version is derived from the URDF features actually emitted by this
+		// converter, not from the SDF version of the input. SDF and URDF spec
+		// versions evolve independently and do not map one-to-one.
+		//
+		// Note: parsing URDF 1.1 <capsule> requires a consumer with
+		// urdfdom >= 5.1.0 and urdfdom_headers >= 2.1.0.
+		private static string DetermineRequiredUrdfVersion(XmlNode modelNode)
+		{
+			return ContainsCapsule(modelNode) ? "1.1" : "1.0";
+		}
+
+		private static bool ContainsCapsule(XmlNode modelNode)
+		{
+			return modelNode.SelectSingleNode(".//capsule") != null;
 		}
 
 		private static void AppendModelUrdf(StringBuilder urdf, XmlNode modelNode, string scopePrefix)
@@ -206,6 +223,55 @@ namespace SDFormat
 				var radius = GetNodeTextOrDefault(cylinderNode, "radius", "1");
 				var length = GetNodeTextOrDefault(cylinderNode, "length", "1");
 				urdf.Append($"        <cylinder radius=\"{EscapeXml(radius)}\" length=\"{EscapeXml(length)}\"/>\n");
+			}
+			else if (geometryNode.SelectSingleNode("capsule") is XmlNode capsuleNode)
+			{
+				// SDF capsule length is the length of the cylindrical section along Z,
+				// independent of the two hemispherical end caps. Pass it through as-is;
+				// do not apply Unity's CapsuleCollider.height = length + 2 * radius rule,
+				// which belongs to SDF -> Unity conversion, not SDF -> URDF conversion.
+				var radiusText = GetNodeTextOrDefault(capsuleNode, "radius", "1");
+				var lengthText = GetNodeTextOrDefault(capsuleNode, "length", "1");
+				if (!double.TryParse(radiusText, NumberStyles.Float, CultureInfo.InvariantCulture, out var radius) ||
+					!double.TryParse(lengthText, NumberStyles.Float, CultureInfo.InvariantCulture, out var length) ||
+					radius <= 0.0 || length < 0.0)
+				{
+					Debug.LogWarning($"[SDF2URDF] Invalid capsule geometry: radius={radiusText}, length={lengthText}");
+				}
+				else
+				{
+					urdf.Append(string.Format(
+						CultureInfo.InvariantCulture,
+						"        <capsule radius=\"{0:0.################}\" length=\"{1:0.################}\"/>\n",
+						radius,
+						length));
+				}
+			}
+			else if (geometryNode.SelectSingleNode("ellipsoid") is XmlNode ellipsoidNode)
+			{
+				// Ellipsoid has no standard URDF primitive representation. Approximate it
+				// with a sphere whose radius is the mean of the three semi-axes. This
+				// changes visual/collision/inertia semantics for non-uniform ellipsoids,
+				// so a warning is emitted to make the approximation visible.
+				var radiiText = GetNodeTextOrDefault(ellipsoidNode, "radii", "1 1 1");
+				var radiiTokens = radiiText.Split((char[])null, System.StringSplitOptions.RemoveEmptyEntries);
+				if (radiiTokens.Length == 3 &&
+					double.TryParse(radiiTokens[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var rx) &&
+					double.TryParse(radiiTokens[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var ry) &&
+					double.TryParse(radiiTokens[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var rz) &&
+					rx > 0.0 && ry > 0.0 && rz > 0.0)
+				{
+					var approximateRadius = (rx + ry + rz) / 3.0;
+					Debug.LogWarning($"[SDF2URDF] Ellipsoid geometry is not a standard URDF primitive; approximating with a sphere of radius {approximateRadius} (mean of radii \"{radiiText}\"). Visual/collision/inertia shape will differ from the original ellipsoid.");
+					urdf.Append(string.Format(
+						CultureInfo.InvariantCulture,
+						"        <sphere radius=\"{0:0.################}\"/>\n",
+						approximateRadius));
+				}
+				else
+				{
+					Debug.LogWarning($"[SDF2URDF] Invalid ellipsoid geometry radii: \"{radiiText}\"");
+				}
 			}
 			else if (geometryNode.SelectSingleNode("mesh") is XmlNode meshNode)
 			{
