@@ -274,7 +274,10 @@ public class CLOiSimPluginThread : IDisposable
 		{
 			var deviceMessage = new DeviceMessage();
 			deviceMessage.SetMessage(infoBuffer);
-			return deviceMessage.GetMessage<messages.Param>();
+			if (deviceMessage.TryGetMessage<messages.Param>(out var result))
+			{
+				return result;
+			}
 		}
 
 		return null;

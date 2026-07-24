@@ -7,10 +7,15 @@
 using System.IO;
 using System;
 using System.Text;
-using ProtoBuf;
 
 public class DeviceMessage : MemoryStream
 {
+	// Precompiled protobuf-net serializer (see Assets/Editor/ProtoModelCompiler.cs).
+	// Its Serialize/Deserialize are plain generated IL — no reflection scan of
+	// ParameterInfo/PropertyInfo modifiers at runtime, which is what crashes
+	// under IL2CPP when going through ProtoBuf.Serializer's RuntimeTypeModel.Default.
+	private static readonly CloisimProtoModel _protoModel = new();
+
 	// Magic numbers for raw binary image transport (little-endian)
 	public const uint MAGIC_RAW_IMAGE = 0x52415749;       // "RAWI"
 	public const uint MAGIC_RAW_SEGMENTATION = 0x52415753; // "RAWS"
@@ -51,23 +56,25 @@ public class DeviceMessage : MemoryStream
 		return true;
 	}
 
-	public void SetMessage<T>(T instance)
+	public bool SetMessage<T>(T instance)
 	{
-		if (CanWrite)
-		{
-			Reset();
-			try
-			{
-				Serializer.Serialize(this, instance);
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"ERROR: SetMessage<{typeof(T)}>() during Serializer.Serialize: {ex.Message}");
-			}
-		}
-		else
+		if (!CanWrite)
 		{
 			Console.WriteLine("Failed to write memory stream");
+			return false;
+		}
+
+		Reset();
+		try
+		{
+			_protoModel.Serialize(this, instance);
+			return true;
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"ERROR: SetMessage<{typeof(T)}>() during Serialize: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+			Reset();
+			return false;
 		}
 	}
 
@@ -199,20 +206,30 @@ public class DeviceMessage : MemoryStream
 		}
 	}
 
-	public T GetMessage<T>()
+	/// <summary>
+	/// Deserialize into T. Returns false (without logging) when the stream does
+	/// not contain a valid T — callers that probe an unknown message type by
+	/// trying several T's in sequence rely on this being a routine, silent
+	/// outcome rather than an error.
+	/// </summary>
+	public bool TryGetMessage<T>(out T result)
 	{
 		Position = 0;
-
-		T result;
 		try
 		{
-			result = Serializer.Deserialize<T>(this);
+			result = _protoModel.Deserialize<T>(this, default);
+			return true;
 		}
 		catch (Exception)
 		{
-			result = default(T);
+			result = default;
+			return false;
 		}
+	}
 
+	public T GetMessage<T>()
+	{
+		TryGetMessage<T>(out var result);
 		return result;
 	}
 
