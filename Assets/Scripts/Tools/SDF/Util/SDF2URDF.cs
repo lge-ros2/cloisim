@@ -125,7 +125,11 @@ namespace SDFormat
 			var jointName = NormalizeScopedName(scopePrefix, GetAttributeOrDefault(jointNode, "name", "joint"));
 			var axisNode = jointNode.SelectSingleNode("axis");
 			var limitNode = axisNode?.SelectSingleNode("limit");
-			var jointType = NormalizeJointType(GetAttributeOrDefault(jointNode, "type", "fixed"), limitNode != null);
+			// SDF commonly expresses an unbounded revolute joint as lower=-inf/upper=inf.
+			// The target urdf_xml_parser rejects "-inf"/"inf" as a limit value, so such
+			// joints must become URDF "continuous" joints with lower/upper omitted.
+			var hasUnboundedLimit = HasUnboundedLimit(limitNode);
+			var jointType = NormalizeJointType(GetAttributeOrDefault(jointNode, "type", "fixed"), limitNode != null && !hasUnboundedLimit);
 
 			urdf.Append($"  <joint name=\"{EscapeXml(jointName)}\" type=\"{EscapeXml(jointType)}\">\n");
 
@@ -167,12 +171,27 @@ namespace SDFormat
 
 				if (limitNode != null)
 				{
-					urdf.Append("    <limit");
-					urdf.Append($" lower=\"{EscapeXml(GetNodeTextOrDefault(limitNode, "lower", "0"))}\"");
-					urdf.Append($" upper=\"{EscapeXml(GetNodeTextOrDefault(limitNode, "upper", "0"))}\"");
-					urdf.Append($" effort=\"{EscapeXml(GetNodeTextOrDefault(limitNode, "effort", "0"))}\"");
-					urdf.Append($" velocity=\"{EscapeXml(GetNodeTextOrDefault(limitNode, "velocity", "0"))}\"/>");
-					urdf.Append("\n");
+					var effortText = GetNodeTextOrDefault(limitNode, "effort", string.Empty);
+					var velocityText = GetNodeTextOrDefault(limitNode, "velocity", string.Empty);
+
+					if (!hasUnboundedLimit)
+					{
+						urdf.Append("    <limit");
+						urdf.Append($" lower=\"{EscapeXml(GetNodeTextOrDefault(limitNode, "lower", "0"))}\"");
+						urdf.Append($" upper=\"{EscapeXml(GetNodeTextOrDefault(limitNode, "upper", "0"))}\"");
+						urdf.Append($" effort=\"{EscapeXml(string.IsNullOrEmpty(effortText) ? "0" : effortText)}\"");
+						urdf.Append($" velocity=\"{EscapeXml(string.IsNullOrEmpty(velocityText) ? "0" : velocityText)}\"/>");
+						urdf.Append("\n");
+					}
+					else if (!string.IsNullOrEmpty(effortText) || !string.IsNullOrEmpty(velocityText))
+					{
+						// Continuous joint: omit lower/upper (unbounded), keep any real
+						// effort/velocity constraint.
+						urdf.Append("    <limit");
+						urdf.Append($" effort=\"{EscapeXml(string.IsNullOrEmpty(effortText) ? "0" : effortText)}\"");
+						urdf.Append($" velocity=\"{EscapeXml(string.IsNullOrEmpty(velocityText) ? "0" : velocityText)}\"/>");
+						urdf.Append("\n");
+					}
 				}
 			}
 
@@ -501,6 +520,25 @@ namespace SDFormat
 
 			var text = target.InnerText?.Trim();
 			return string.IsNullOrEmpty(text) ? defaultValue : text;
+		}
+
+		private static bool HasUnboundedLimit(XmlNode limitNode)
+		{
+			if (limitNode == null)
+			{
+				return false;
+			}
+
+			return IsUnboundedLimitValue(GetNodeTextOrDefault(limitNode, "lower", "0")) ||
+				IsUnboundedLimitValue(GetNodeTextOrDefault(limitNode, "upper", "0"));
+		}
+
+		private static bool IsUnboundedLimitValue(string text)
+		{
+			var trimmed = text?.Trim();
+			return trimmed == "-inf" || trimmed == "inf" || trimmed == "+inf" ||
+				string.Equals(trimmed, "-infinity", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(trimmed, "infinity", StringComparison.OrdinalIgnoreCase);
 		}
 
 		private static string NormalizeJointType(string jointType, bool hasLimit)

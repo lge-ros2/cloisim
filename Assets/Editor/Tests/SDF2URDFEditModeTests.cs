@@ -149,5 +149,65 @@ namespace CLOiSim.Tests.EditMode
 
 			Assert.That(urdf, Does.Contain("<cylinder radius=\"0.1\" length=\"0.4\"/>"));
 		}
+
+		[Test]
+		public void ConvertModelXmlToUrdf_WithUnboundedRevoluteLimit_EmitsContinuousJointWithoutLimit()
+		{
+			// SDF expresses an unbounded revolute joint as lower=-inf/upper=inf. The
+			// target urdf_xml_parser rejects "-inf"/"inf" as a limit value, so this
+			// must become a URDF "continuous" joint with no <limit> element at all
+			// (no effort/velocity was specified either).
+			var sdf = @"
+				<model name='caster_robot'>
+				  <link name='base_link'/>
+				  <joint name='caster_joint' type='revolute'>
+				    <parent>base_link</parent>
+				    <child>caster_link</child>
+				    <axis>
+				      <xyz>0 0 1</xyz>
+				      <limit>
+				        <lower>-inf</lower>
+				        <upper>inf</upper>
+				      </limit>
+				    </axis>
+				  </joint>
+				  <link name='caster_link'/>
+				</model>";
+
+			var urdf = SDF2URDF.ConvertModelXmlToUrdf(sdf);
+
+			Assert.That(urdf, Does.Contain("<joint name=\"caster_joint\" type=\"continuous\">"));
+			Assert.That(urdf, Does.Not.Contain("-inf"));
+			Assert.That(urdf, Does.Not.Contain("<limit"));
+		}
+
+		[Test]
+		public void ConvertModelXmlToUrdf_WithUnboundedRevoluteLimitAndEffort_EmitsContinuousJointWithEffortVelocityOnly()
+		{
+			var sdf = @"
+				<model name='wheel_robot'>
+				  <link name='base_link'/>
+				  <joint name='wheel_joint' type='revolute'>
+				    <parent>base_link</parent>
+				    <child>wheel_link</child>
+				    <axis>
+				      <xyz>0 1 0</xyz>
+				      <limit>
+				        <lower>-inf</lower>
+				        <upper>inf</upper>
+				        <effort>11.7</effort>
+				        <velocity>11.765</velocity>
+				      </limit>
+				    </axis>
+				  </joint>
+				  <link name='wheel_link'/>
+				</model>";
+
+			var urdf = SDF2URDF.ConvertModelXmlToUrdf(sdf);
+
+			Assert.That(urdf, Does.Contain("<joint name=\"wheel_joint\" type=\"continuous\">"));
+			Assert.That(urdf, Does.Not.Contain("-inf"));
+			Assert.That(urdf, Does.Contain("<limit effort=\"11.7\" velocity=\"11.765\"/>"));
+		}
 	}
 }
