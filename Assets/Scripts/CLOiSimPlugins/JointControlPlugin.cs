@@ -21,6 +21,7 @@ public class JointControlPlugin : CLOiSimPlugin
 	private SensorDevices.JointState _jointState = null;
 	private string _tfPrefix = string.Empty;
 	private readonly Dictionary<string, SDFormat.Helper.Link> _jointLinkMap = new();
+	private JointControlPlugin _rootJointControl = null;
 
 	protected override void OnAwake()
 	{
@@ -33,37 +34,61 @@ public class JointControlPlugin : CLOiSimPlugin
 
 	protected override IEnumerator OnStart()
 	{
-		if (RegisterServiceDevice(out var portService, "Info"))
+		var modelHelper = GetComponent<SDFormat.Helper.Model>();
+		if (modelHelper != null && modelHelper.RootModel != null && !modelHelper.Equals(modelHelper.RootModel))
 		{
-			AddThread(portService, ServiceThread);
+			_tfPrefix = modelHelper.name;
+			_rootJointControl = modelHelper.RootModel.GetComponent<JointControlPlugin>();
+
+			if (_rootJointControl != null)
+			{
+				Debug.Log($"[JointControlPlugin] {gameObject.name} is nested under a model with its own " +
+					$"JointControlPlugin ({modelHelper.RootModel.name}); merging joint control into it " +
+					$"instead of registering a separate joint_states/robot_description transport. _tfPrefix: {_tfPrefix}");
+
+				// Forward joint state/command handling into the root instance's devices so
+				// this nested model's joints end up on a single shared joint_states /
+				// robot_description transport rather than a separate one per nested model.
+				_jointState = _rootJointControl._jointState;
+				_jointCommand = _rootJointControl._jointCommand;
+			}
+			else
+			{
+				Debug.Log($"[JointControlPlugin] {gameObject.name} is Nested model, _tfPrefix: {_tfPrefix}");
+			}
 		}
 
-		if (RegisterRxDevice(out var portRx, "Rx"))
+		// When merged into a root JointControlPlugin, register no transport of our own
+		// at all (Info/Rx/Tx/Tf) — this model's joints, TF entries, and robot_description
+		// are folded into the root instance's, so cloisim_ros never sees a separate
+		// JointControl node for it (avoiding stray unreachable service/topic endpoints).
+		if (_rootJointControl == null)
 		{
-			AddThread(portRx, ReceiverThread, _jointCommand);
-		}
+			if (RegisterServiceDevice(out var portService, "Info"))
+			{
+				AddThread(portService, ServiceThread);
+			}
 
-		if (RegisterTxDevice(out var portTx, "Tx"))
-		{
-			AddThread(portTx, SenderThread, _jointState);
-		}
+			if (RegisterRxDevice(out var portRx, "Rx"))
+			{
+				AddThread(portRx, ReceiverThread, _jointCommand);
+			}
 
-		if (RegisterTxDevice(out var portTf, "Tf"))
-		{
-			AddThread(portTf, PublishTfThread, _tfList);
+			if (RegisterTxDevice(out var portTx, "Tx"))
+			{
+				AddThread(portTx, SenderThread, _jointState);
+			}
+
+			if (RegisterTxDevice(out var portTf, "Tf"))
+			{
+				AddThread(portTf, PublishTfThread, _tfList);
+			}
 		}
 
 		yield return null;
 
 		_robotDescription = SDF2URDF.ConvertModelXmlToUrdf(GetPluginParameters().ParentRawXml(), gameObject.name);
 		// UnityEngine.Debug.Log(_robotDescription);
-
-		var modelHelper = GetComponent<SDFormat.Helper.Model>();
-		if (modelHelper != null && modelHelper.RootModel != null && !modelHelper.Equals(modelHelper.RootModel))
-		{
-			_tfPrefix = modelHelper.name;
-			Debug.Log($"[JointControlPlugin] {gameObject.name} is Nested model, _tfPrefix: {_tfPrefix}");
-		}
 
 		LoadJoints();
 		_robotDescription = InjectJointOriginsFromScene(_robotDescription);
@@ -75,26 +100,45 @@ public class JointControlPlugin : CLOiSimPlugin
 	{
 	}
 
+	// Always concatenates "{_tfPrefix}_{frame}" unconditionally, mirroring
+	// SDF2URDF's NormalizeScopedName exactly. Do NOT skip when `frame` already
+	// happens to start with the prefix text (e.g. a link literally named
+	// "left_hand_base_link") -- SDF2URDF's combined URDF/static-transform naming
+	// has no such "already prefixed" guard either, so skipping here would make
+	// this link's dynamic TF parent name diverge from its statically-connected
+	// name (e.g. "left_hand_base_link" vs "left_hand_left_hand_base_link"),
+	// leaving everything under it disconnected from the rest of the TF tree.
 	private string ApplyPrefixOnce(string frame)
 	{
 		if (string.IsNullOrEmpty(frame) || string.IsNullOrEmpty(_tfPrefix))
 			return frame;
 
-		var prefix = $"{_tfPrefix}_";
-		return frame.StartsWith(prefix) ? frame : $"{prefix}{frame}";
+		return $"{_tfPrefix}_{frame}";
 	}
 
 	private void LoadJoints()
 	{
-		var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
-		_jointState.SetUpdateRate(updateRate);
+		// When merged into a root JointControlPlugin, don't override its update rate
+		// with this nested model's own configured rate.
+		if (_rootJointControl == null)
+		{
+			var updateRate = GetPluginParameters().GetValue<float>("update_rate", 20);
+			_jointState.SetUpdateRate(updateRate);
+		}
 
 		if (GetPluginParameters().GetValues<string>("joints/joint", out var joints))
 		{
 			foreach (var jointName in joints)
 			{
 				// UnityEngine.Debug.Log("Joints loaded "+ jointName);
-				if (_jointState.AddTargetJoint(jointName, out var targetLink, out var isStatic))
+				// Publish under the scope-prefixed name (e.g. "left_hand_index_mcp_roll") so it
+				// matches the joint name SDF2URDF emits into the combined top-level robot_description,
+				// while still looking up the articulation by its raw, unscoped SDF joint name.
+				// The search is always scoped to this plugin's own model subtree (transform),
+				// even when _jointState is a shared/root instance, so sibling nested models that
+				// reuse the same raw joint names (e.g. two included hand models) don't collide.
+				var publishedJointName = ApplyPrefixOnce(jointName);
+				if (_jointState.AddTargetJoint(jointName, publishedJointName, transform, out var targetLink, out var isStatic))
 				{
 					_jointLinkMap[jointName] = targetLink;
 					var parentFrameId = GetPluginParameters().GetAttributeInPath<string>("joints/joint[text()='" + jointName + "']", "parent_frame_id");
@@ -105,14 +149,17 @@ public class JointControlPlugin : CLOiSimPlugin
 
 					var tf = new TF(targetLink, childFrame, parentFrame);
 
+					// When merged into a root JointControlPlugin, route TF entries into its
+					// lists too, since this instance registers no "Tf"/"Info" transport of
+					// its own (see OnStart) and would otherwise never publish them.
 					if (isStatic)
 					{
-						_staticTfList.Add(tf);
+						(_rootJointControl?._staticTfList ?? _staticTfList).Add(tf);
 						// UnityEngine.Debug.LogFormat("StaticTfList Added: {0}::{1}", targetLink.Model.name, targetLink.name);
 					}
 					else
 					{
-						_tfList.Add(tf);
+						(_rootJointControl?._tfList ?? _tfList).Add(tf);
 						// UnityEngine.Debug.LogFormat("_tfList Added: {0}::{1}", targetLink.Model.name, targetLink.name);
 					}
 				}
