@@ -23,17 +23,3 @@ public sealed class LinuxNativePluginBuildPreprocessor : IPreprocessBuildWithRep
 	}
 }
 
-public sealed class LinuxBuildPdbCleanupPostprocessor : IPostprocessBuildWithReport
-{
-	public int callbackOrder => 0;
-
-	public void OnPostprocessBuild(BuildReport report)
-	{
-		if (!StrippedSceneBuildTools.ShouldCleanupBuildArtifacts(report.summary.platform))
-		{
-			return;
-		}
-
-		StrippedSceneBuildTools.DeleteDebugArtifactsFromBuild(report.summary.outputPath);
-	}
-}
