@@ -128,9 +128,35 @@ namespace SensorDevices
 
 		public bool AddTargetJoint(in string targetJointName, out SDFormat.Helper.Link link, out bool isStatic)
 		{
+			return AddTargetJoint(targetJointName, targetJointName, transform, out link, out isStatic);
+		}
+
+		/// <summary>
+		/// Looks up the articulation by its raw SDF-declared joint name (<paramref name="targetJointName"/>),
+		/// but publishes the resulting cloisim.msgs.JointState under <paramref name="publishedJointName"/>.
+		/// This lets a nested/included model's joint keep its unscoped SDF name for lookup while the
+		/// published name matches the scope-prefixed joint name that SDF2URDF emits into the combined
+		/// URDF (see JointControlPlugin.ApplyPrefixOnce), so robot_state_publisher can match it.
+		/// </summary>
+		public bool AddTargetJoint(in string targetJointName, in string publishedJointName, out SDFormat.Helper.Link link, out bool isStatic)
+		{
+			return AddTargetJoint(targetJointName, publishedJointName, transform, out link, out isStatic);
+		}
+
+		/// <summary>
+		/// Same as the two-name overload, but searches for the articulation under
+		/// <paramref name="searchRoot"/> instead of this component's own GameObject.
+		/// This lets a nested model's JointControlPlugin publish through a shared/root
+		/// JointState instance (so all nested models end up on one joint_states/
+		/// robot_description transport) while still restricting the ArticulationBody
+		/// search to its own subtree, avoiding name collisions between sibling nested
+		/// models that reuse the same raw joint names (e.g. two included hand models).
+		/// </summary>
+		public bool AddTargetJoint(in string targetJointName, in string publishedJointName, in Transform searchRoot, out SDFormat.Helper.Link link, out bool isStatic)
+		{
 			lock (_jointStateLock)
 			{
-				var childArticulationBodies = gameObject.GetComponentsInChildren<ArticulationBody>();
+				var childArticulationBodies = searchRoot.GetComponentsInChildren<ArticulationBody>();
 				var rootModelName = string.Empty;
 				link = null;
 				isStatic = false;
@@ -165,7 +191,7 @@ namespace SensorDevices
 
 						var jointState = new messages.JointState
 						{
-							Name = targetJointName
+							Name = publishedJointName
 						};
 
 						var entry = new JointEntry
@@ -177,7 +203,12 @@ namespace SensorDevices
 							anchorRotation = articulation.GetAnchorRotation()
 						};
 
-						articulationTable.Add(targetJointName, entry);
+						// Keyed by the published (externally-visible) name, not the raw SDF
+						// name, since that's what incoming JointCommand messages and any
+						// external consumer refer to it as. This also avoids key collisions
+						// when a shared JointState instance holds joints from multiple nested
+						// models that happen to reuse the same raw SDF joint name.
+						articulationTable.Add(publishedJointName, entry);
 
 						jointStateV.JointStates.Add(jointState);
 						return true;
