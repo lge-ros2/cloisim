@@ -159,16 +159,12 @@ namespace CLOiSim.Tests.EditMode
 			typeof(URTSensorManager).GetField("s_instance",
 				BindingFlags.NonPublic | BindingFlags.Static);
 
-		private static readonly FieldInfo s_readIdxField =
-			typeof(URTSensorManager).GetField("_readIdx",
+		private static readonly FieldInfo s_activeIndexField =
+			typeof(URTSensorManager).GetField("_activeIndex",
 				BindingFlags.NonPublic | BindingFlags.Instance);
 
-		private static readonly FieldInfo s_writeIdxField =
-			typeof(URTSensorManager).GetField("_writeIdx",
-				BindingFlags.NonPublic | BindingFlags.Instance);
-
-		private static readonly FieldInfo s_perStructDirtyField =
-			typeof(URTSensorManager).GetField("_perStructDirty",
+		private static readonly FieldInfo s_dirtyArrField =
+			typeof(URTSensorManager).GetField("_dirtyArr",
 				BindingFlags.NonPublic | BindingFlags.Instance);
 
 		private static readonly FieldInfo s_hasTraceFenceField =
@@ -215,16 +211,15 @@ namespace CLOiSim.Tests.EditMode
 		}
 
 		[Test]
-		public void InitialState_ReadIdxIsZeroWriteIdxIsOne()
+		public void InitialState_ActiveIndexIsZero()
 		{
-			Assert.That((int)s_readIdxField.GetValue(_mgr), Is.EqualTo(0));
-			Assert.That((int)s_writeIdxField.GetValue(_mgr), Is.EqualTo(1));
+			Assert.That((int)s_activeIndexField.GetValue(_mgr), Is.EqualTo(0));
 		}
 
 		[Test]
 		public void InitialState_BothStructsDirty()
 		{
-			var dirty = (bool[])s_perStructDirtyField.GetValue(_mgr);
+			var dirty = (bool[])s_dirtyArrField.GetValue(_mgr);
 			Assert.That(dirty[0], Is.True, "Struct 0 must start dirty");
 			Assert.That(dirty[1], Is.True, "Struct 1 must start dirty");
 		}
@@ -249,13 +244,13 @@ namespace CLOiSim.Tests.EditMode
 		public void MarkSceneDirty_SetsBothDirtyFlags()
 		{
 			// Clear dirty manually so we can verify MarkSceneDirty sets them
-			var dirty = (bool[])s_perStructDirtyField.GetValue(_mgr);
+			var dirty = (bool[])s_dirtyArrField.GetValue(_mgr);
 			dirty[0] = false;
 			dirty[1] = false;
 
 			URTSensorManager.MarkSceneDirty();
 
-			dirty = (bool[])s_perStructDirtyField.GetValue(_mgr);
+			dirty = (bool[])s_dirtyArrField.GetValue(_mgr);
 			Assert.That(dirty[0], Is.True, "Struct 0 must be dirtied");
 			Assert.That(dirty[1], Is.True, "Struct 1 must be dirtied");
 		}
@@ -317,9 +312,9 @@ namespace CLOiSim.Tests.EditMode
 		public void StructHasTlas_StartsAllFalse()
 		{
 			// Neither struct has been built; AccelStruct must not expose them.
-			var hasTlasField = typeof(URTSensorManager).GetField("_structHasTlas",
+			var structReadyField = typeof(URTSensorManager).GetField("_structReady",
 				BindingFlags.NonPublic | BindingFlags.Instance);
-			var flags = (bool[])hasTlasField.GetValue(_mgr);
+			var flags = (bool[])structReadyField.GetValue(_mgr);
 			Assert.That(flags[0], Is.False, "Struct 0 must not have a TLAS on init");
 			Assert.That(flags[1], Is.False, "Struct 1 must not have a TLAS on init");
 		}
@@ -340,9 +335,9 @@ namespace CLOiSim.Tests.EditMode
 			// the flag is only set after a successful Build+swap.
 			URTSensorManager.MarkSceneDirty();
 
-			var hasTlasField = typeof(URTSensorManager).GetField("_structHasTlas",
+			var structReadyField = typeof(URTSensorManager).GetField("_structReady",
 				BindingFlags.NonPublic | BindingFlags.Instance);
-			var flags = (bool[])hasTlasField.GetValue(_mgr);
+			var flags = (bool[])structReadyField.GetValue(_mgr);
 			Assert.That(flags[0], Is.False);
 			Assert.That(flags[1], Is.False);
 		}

@@ -256,7 +256,8 @@ public class SimulationControlService : WebSocketBehavior
 		}
 		catch (Exception ex)
 		{
-			Console.Error.WriteLine($"Invalid JSON: {ex.Message}\nraw={e.Data}");
+			// Console.Error.WriteLine($"Invalid JSON: {ex.Message}\nraw={e.Data}");
+			Console.Error.WriteLine($"Invalid JSON raw={e.Data}\n{ex}");
 			SendResponse(null, CreateNormalResponse($"invalid json: {ex.Message}"));
 			return;
 		}

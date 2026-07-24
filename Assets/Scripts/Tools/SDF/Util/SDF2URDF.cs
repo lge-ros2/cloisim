@@ -125,7 +125,11 @@ namespace SDFormat
 			var jointName = NormalizeScopedName(scopePrefix, GetAttributeOrDefault(jointNode, "name", "joint"));
 			var axisNode = jointNode.SelectSingleNode("axis");
 			var limitNode = axisNode?.SelectSingleNode("limit");
-			var jointType = NormalizeJointType(GetAttributeOrDefault(jointNode, "type", "fixed"), limitNode != null);
+			// SDF commonly expresses an unbounded revolute joint as lower=-inf/upper=inf.
+			// The target urdf_xml_parser rejects "-inf"/"inf" as a limit value, so such
+			// joints must become URDF "continuous" joints with lower/upper omitted.
+			var hasUnboundedLimit = HasUnboundedLimit(limitNode);
+			var jointType = NormalizeJointType(GetAttributeOrDefault(jointNode, "type", "fixed"), limitNode != null && !hasUnboundedLimit);
 
 			urdf.Append($"  <joint name=\"{EscapeXml(jointName)}\" type=\"{EscapeXml(jointType)}\">\n");
 
@@ -167,12 +171,27 @@ namespace SDFormat
 
 				if (limitNode != null)
 				{
-					urdf.Append("    <limit");
-					urdf.Append($" lower=\"{EscapeXml(GetNodeTextOrDefault(limitNode, "lower", "0"))}\"");
-					urdf.Append($" upper=\"{EscapeXml(GetNodeTextOrDefault(limitNode, "upper", "0"))}\"");
-					urdf.Append($" effort=\"{EscapeXml(GetNodeTextOrDefault(limitNode, "effort", "0"))}\"");
-					urdf.Append($" velocity=\"{EscapeXml(GetNodeTextOrDefault(limitNode, "velocity", "0"))}\"/>");
-					urdf.Append("\n");
+					var effortText = GetNodeTextOrDefault(limitNode, "effort", string.Empty);
+					var velocityText = GetNodeTextOrDefault(limitNode, "velocity", string.Empty);
+
+					if (!hasUnboundedLimit)
+					{
+						urdf.Append("    <limit");
+						urdf.Append($" lower=\"{EscapeXml(GetNodeTextOrDefault(limitNode, "lower", "0"))}\"");
+						urdf.Append($" upper=\"{EscapeXml(GetNodeTextOrDefault(limitNode, "upper", "0"))}\"");
+						urdf.Append($" effort=\"{EscapeXml(string.IsNullOrEmpty(effortText) ? "0" : effortText)}\"");
+						urdf.Append($" velocity=\"{EscapeXml(string.IsNullOrEmpty(velocityText) ? "0" : velocityText)}\"/>");
+						urdf.Append("\n");
+					}
+					else if (!string.IsNullOrEmpty(effortText) || !string.IsNullOrEmpty(velocityText))
+					{
+						// Continuous joint: omit lower/upper (unbounded), keep any real
+						// effort/velocity constraint.
+						urdf.Append("    <limit");
+						urdf.Append($" effort=\"{EscapeXml(string.IsNullOrEmpty(effortText) ? "0" : effortText)}\"");
+						urdf.Append($" velocity=\"{EscapeXml(string.IsNullOrEmpty(velocityText) ? "0" : velocityText)}\"/>");
+						urdf.Append("\n");
+					}
 				}
 			}
 
@@ -206,6 +225,58 @@ namespace SDFormat
 				var radius = GetNodeTextOrDefault(cylinderNode, "radius", "1");
 				var length = GetNodeTextOrDefault(cylinderNode, "length", "1");
 				urdf.Append($"        <cylinder radius=\"{EscapeXml(radius)}\" length=\"{EscapeXml(length)}\"/>\n");
+			}
+			else if (geometryNode.SelectSingleNode("capsule") is XmlNode capsuleNode)
+			{
+				// <capsule> is a URDF 1.1 primitive. The urdf_xml_parser used by
+				// robot_state_publisher/rviz2 in this deployment only accepts
+				// <robot version="1.0"> (or no version attribute) and does not
+				// recognize <capsule>, so approximate it with a <cylinder> using
+				// the same radius/length. This drops the two hemispherical end
+				// caps, so a warning is emitted to make the approximation visible.
+				var radiusText = GetNodeTextOrDefault(capsuleNode, "radius", "1");
+				var lengthText = GetNodeTextOrDefault(capsuleNode, "length", "1");
+				if (!double.TryParse(radiusText, NumberStyles.Float, CultureInfo.InvariantCulture, out var radius) ||
+					!double.TryParse(lengthText, NumberStyles.Float, CultureInfo.InvariantCulture, out var length) ||
+					radius <= 0.0 || length < 0.0)
+				{
+					Debug.LogWarning($"[SDF2URDF] Invalid capsule geometry: radius={radiusText}, length={lengthText}");
+				}
+				else
+				{
+					Debug.LogWarning($"[SDF2URDF] Capsule geometry is not supported by the target URDF parser; approximating with a cylinder of radius={radius}, length={length}. Hemispherical end caps are omitted.");
+					urdf.Append(string.Format(
+						CultureInfo.InvariantCulture,
+						"        <cylinder radius=\"{0:0.################}\" length=\"{1:0.################}\"/>\n",
+						radius,
+						length));
+				}
+			}
+			else if (geometryNode.SelectSingleNode("ellipsoid") is XmlNode ellipsoidNode)
+			{
+				// Ellipsoid has no standard URDF primitive representation. Approximate it
+				// with a sphere whose radius is the mean of the three semi-axes. This
+				// changes visual/collision/inertia semantics for non-uniform ellipsoids,
+				// so a warning is emitted to make the approximation visible.
+				var radiiText = GetNodeTextOrDefault(ellipsoidNode, "radii", "1 1 1");
+				var radiiTokens = radiiText.Split((char[])null, System.StringSplitOptions.RemoveEmptyEntries);
+				if (radiiTokens.Length == 3 &&
+					double.TryParse(radiiTokens[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var rx) &&
+					double.TryParse(radiiTokens[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var ry) &&
+					double.TryParse(radiiTokens[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var rz) &&
+					rx > 0.0 && ry > 0.0 && rz > 0.0)
+				{
+					var approximateRadius = (rx + ry + rz) / 3.0;
+					Debug.LogWarning($"[SDF2URDF] Ellipsoid geometry is not a standard URDF primitive; approximating with a sphere of radius {approximateRadius} (mean of radii \"{radiiText}\"). Visual/collision/inertia shape will differ from the original ellipsoid.");
+					urdf.Append(string.Format(
+						CultureInfo.InvariantCulture,
+						"        <sphere radius=\"{0:0.################}\"/>\n",
+						approximateRadius));
+				}
+				else
+				{
+					Debug.LogWarning($"[SDF2URDF] Invalid ellipsoid geometry radii: \"{radiiText}\"");
+				}
 			}
 			else if (geometryNode.SelectSingleNode("mesh") is XmlNode meshNode)
 			{
@@ -449,6 +520,25 @@ namespace SDFormat
 
 			var text = target.InnerText?.Trim();
 			return string.IsNullOrEmpty(text) ? defaultValue : text;
+		}
+
+		private static bool HasUnboundedLimit(XmlNode limitNode)
+		{
+			if (limitNode == null)
+			{
+				return false;
+			}
+
+			return IsUnboundedLimitValue(GetNodeTextOrDefault(limitNode, "lower", "0")) ||
+				IsUnboundedLimitValue(GetNodeTextOrDefault(limitNode, "upper", "0"));
+		}
+
+		private static bool IsUnboundedLimitValue(string text)
+		{
+			var trimmed = text?.Trim();
+			return trimmed == "-inf" || trimmed == "inf" || trimmed == "+inf" ||
+				string.Equals(trimmed, "-infinity", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(trimmed, "infinity", StringComparison.OrdinalIgnoreCase);
 		}
 
 		private static string NormalizeJointType(string jointType, bool hasLimit)

@@ -28,7 +28,7 @@ CLOiSim was developed to address performance bottlenecks encountered with other 
 ## 📢 Notices
 
 > [!IMPORTANT]
-> 🚨 CLOiSim has been upgraded to **Unity 6** (6000.5.3f1). Legacy versions based on Unity 2022.3 LTS are no longer maintained.
+> 🚨 CLOiSim has been upgraded to **Unity 6.5** (6000.5.5f1). Legacy versions based on Unity 2022.3 LTS are no longer maintained.
 
 > [!WARNING]
 > ⚠️🔥 **5.4.x or later is recommended over 5.3.x.** Across 5.3.0–5.3.14, several fixes were attempted for a recurring freeze in the Unified Ray Tracing (URT) path (TLAS in-flight disposal, BVH rebuild races, GPU fence gating, TDR recovery, etc.), but the freeze kept resurfacing under load. Starting with 5.4.x, Depth Camera sensors (Depth / RealSense IR / VCSEL) have been switched from URT back to **rasterization**, which resolves this class of freeze. LiDAR remains URT-based. If you're currently on 5.3.x, upgrading to 5.4.x or later is recommended.
@@ -105,7 +105,7 @@ CLOiSim uses a flexible plugin architecture to extend robot and world functional
 ### Prerequisites
 - **OS**: Ubuntu 24.04 LTS or Windows 10+ (older Ubuntu 20.04/22.04 not supported)
 - **Graphics**: Vulkan-capable GPU (NVIDIA RTX 20-series recommended)
-- **Unity**: Unity Editor 6000.5.3f1 (if building from source)
+- **Unity**: Unity Editor 6000.5.5f1 (if building from source)
 
 ### Installation
 1. **Release Binary**: [Download the latest Linux version](https://github.com/lge-ros2/cloisim/releases).
