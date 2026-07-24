@@ -28,8 +28,11 @@ namespace CLOiSim.Tests.EditMode
 		}
 
 		[Test]
-		public void ConvertModelXmlToUrdf_WithoutCapsule_EmitsVersion10()
+		public void ConvertModelXmlToUrdf_NeverEmitsVersionAttribute()
 		{
+			// The deployed urdf_xml_parser (robot_state_publisher/rviz2) hard-rejects
+			// any <robot version="..."> other than "1.0", so no version attribute is
+			// emitted at all (an absent attribute is treated as 1.0 by URDF consumers).
 			var sdf = @"
 				<model name='box_robot'>
 				  <link name='base_link'>
@@ -41,13 +44,16 @@ namespace CLOiSim.Tests.EditMode
 
 			var urdf = SDF2URDF.ConvertModelXmlToUrdf(sdf);
 
-			Assert.That(urdf, Does.Contain("version=\"1.0\""));
-			Assert.That(urdf, Does.Not.Contain("<capsule"));
+			Assert.That(urdf, Does.Not.Contain("<robot name=\"box_robot\" version="));
+			Assert.That(urdf, Does.Contain("<robot name=\"box_robot\">"));
 		}
 
 		[Test]
-		public void ConvertModelXmlToUrdf_WithCapsuleInVisual_EmitsVersion11AndCapsuleElement()
+		public void ConvertModelXmlToUrdf_WithCapsuleInVisual_ApproximatesAsCylinderWithoutNonStandardElement()
 		{
+			// <capsule> is not a standard URDF 1.0 primitive and is not recognized by
+			// the target urdf_xml_parser, so it is approximated with a <cylinder> of
+			// the same radius/length instead of being emitted as-is.
 			var sdf = @"
 				<model name='capsule_robot'>
 				  <link name='base_link'>
@@ -59,12 +65,12 @@ namespace CLOiSim.Tests.EditMode
 
 			var urdf = SDF2URDF.ConvertModelXmlToUrdf(sdf);
 
-			Assert.That(urdf, Does.Contain("version=\"1.1\""));
-			Assert.That(urdf, Does.Contain("<capsule radius=\"0.1\" length=\"0.4\"/>"));
+			Assert.That(urdf, Does.Not.Contain("<capsule"));
+			Assert.That(urdf, Does.Contain("<cylinder radius=\"0.1\" length=\"0.4\"/>"));
 		}
 
 		[Test]
-		public void ConvertModelXmlToUrdf_WithCapsuleOnlyInCollision_EmitsVersion11()
+		public void ConvertModelXmlToUrdf_WithCapsuleOnlyInCollision_ApproximatesAsCylinder()
 		{
 			var sdf = @"
 				<model name='capsule_robot'>
@@ -77,11 +83,12 @@ namespace CLOiSim.Tests.EditMode
 
 			var urdf = SDF2URDF.ConvertModelXmlToUrdf(sdf);
 
-			Assert.That(urdf, Does.Contain("version=\"1.1\""));
+			Assert.That(urdf, Does.Not.Contain("<capsule"));
+			Assert.That(urdf, Does.Contain("<cylinder radius=\"0.2\" length=\"0.5\"/>"));
 		}
 
 		[Test]
-		public void ConvertModelXmlToUrdf_WithCapsuleInNestedModel_EmitsVersion11()
+		public void ConvertModelXmlToUrdf_WithCapsuleInNestedModel_ApproximatesAsCylinder()
 		{
 			var sdf = @"
 				<model name='parent_robot'>
@@ -101,7 +108,8 @@ namespace CLOiSim.Tests.EditMode
 
 			var urdf = SDF2URDF.ConvertModelXmlToUrdf(sdf);
 
-			Assert.That(urdf, Does.Contain("version=\"1.1\""));
+			Assert.That(urdf, Does.Not.Contain("<capsule"));
+			Assert.That(urdf, Does.Contain("<cylinder radius=\"0.05\" length=\"0.2\"/>"));
 		}
 
 		[Test]
@@ -124,7 +132,7 @@ namespace CLOiSim.Tests.EditMode
 		}
 
 		[Test]
-		public void ConvertModelXmlToUrdf_CapsuleFormatting_IsCultureInvariant()
+		public void ConvertModelXmlToUrdf_CapsuleApproximationFormatting_IsCultureInvariant()
 		{
 			Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
 
@@ -139,7 +147,7 @@ namespace CLOiSim.Tests.EditMode
 
 			var urdf = SDF2URDF.ConvertModelXmlToUrdf(sdf);
 
-			Assert.That(urdf, Does.Contain("<capsule radius=\"0.1\" length=\"0.4\"/>"));
+			Assert.That(urdf, Does.Contain("<cylinder radius=\"0.1\" length=\"0.4\"/>"));
 		}
 	}
 }

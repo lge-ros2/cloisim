@@ -39,31 +39,14 @@ namespace SDFormat
 			}
 
 			var robotName = GetAttributeOrDefault(modelNode, "name", defaultRobotName);
-			var urdfVersion = DetermineRequiredUrdfVersion(modelNode);
 			var urdf = new StringBuilder();
 			urdf.Append("<?xml version='1.0'?>\n");
-			urdf.Append($"<robot name=\"{EscapeXml(robotName)}\" version=\"{urdfVersion}\">\n");
+			urdf.Append($"<robot name=\"{EscapeXml(robotName)}\">\n");
 
 			AppendModelUrdf(urdf, modelNode, string.Empty);
 
 			urdf.Append("</robot>");
 			return urdf.ToString();
-		}
-
-		// URDF version is derived from the URDF features actually emitted by this
-		// converter, not from the SDF version of the input. SDF and URDF spec
-		// versions evolve independently and do not map one-to-one.
-		//
-		// Note: parsing URDF 1.1 <capsule> requires a consumer with
-		// urdfdom >= 5.1.0 and urdfdom_headers >= 2.1.0.
-		private static string DetermineRequiredUrdfVersion(XmlNode modelNode)
-		{
-			return ContainsCapsule(modelNode) ? "1.1" : "1.0";
-		}
-
-		private static bool ContainsCapsule(XmlNode modelNode)
-		{
-			return modelNode.SelectSingleNode(".//capsule") != null;
 		}
 
 		private static void AppendModelUrdf(StringBuilder urdf, XmlNode modelNode, string scopePrefix)
@@ -226,10 +209,12 @@ namespace SDFormat
 			}
 			else if (geometryNode.SelectSingleNode("capsule") is XmlNode capsuleNode)
 			{
-				// SDF capsule length is the length of the cylindrical section along Z,
-				// independent of the two hemispherical end caps. Pass it through as-is;
-				// do not apply Unity's CapsuleCollider.height = length + 2 * radius rule,
-				// which belongs to SDF -> Unity conversion, not SDF -> URDF conversion.
+				// <capsule> is a URDF 1.1 primitive. The urdf_xml_parser used by
+				// robot_state_publisher/rviz2 in this deployment only accepts
+				// <robot version="1.0"> (or no version attribute) and does not
+				// recognize <capsule>, so approximate it with a <cylinder> using
+				// the same radius/length. This drops the two hemispherical end
+				// caps, so a warning is emitted to make the approximation visible.
 				var radiusText = GetNodeTextOrDefault(capsuleNode, "radius", "1");
 				var lengthText = GetNodeTextOrDefault(capsuleNode, "length", "1");
 				if (!double.TryParse(radiusText, NumberStyles.Float, CultureInfo.InvariantCulture, out var radius) ||
@@ -240,9 +225,10 @@ namespace SDFormat
 				}
 				else
 				{
+					Debug.LogWarning($"[SDF2URDF] Capsule geometry is not supported by the target URDF parser; approximating with a cylinder of radius={radius}, length={length}. Hemispherical end caps are omitted.");
 					urdf.Append(string.Format(
 						CultureInfo.InvariantCulture,
-						"        <capsule radius=\"{0:0.################}\" length=\"{1:0.################}\"/>\n",
+						"        <cylinder radius=\"{0:0.################}\" length=\"{1:0.################}\"/>\n",
 						radius,
 						length));
 				}
