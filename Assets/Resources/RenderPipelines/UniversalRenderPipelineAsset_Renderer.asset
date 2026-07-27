@@ -28,8 +28,7 @@ MonoBehaviour:
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
   - {fileID: 4242424242424242}
-  m_RendererFeatureMap: 00000000
-  m_UseNativeRenderPass: 0
+  m_RendererFeatureMap: b2c9f45d76120f00
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_AssetVersion: 3
   m_PrepassLayerMask:
@@ -56,9 +55,10 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 1
+  m_TileOnlyMode: 0
 --- !u!114 &4242424242424242
 MonoBehaviour:
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -67,5 +67,5 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8cca7ffcac4eb0847934685419256a8a, type: 3}
   m_Name: DepthRangeRendererFeature
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   m_Active: 1
