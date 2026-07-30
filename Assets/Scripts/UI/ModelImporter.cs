@@ -70,10 +70,36 @@ public class ModelImporter : MonoBehaviour
 		var contentList = viewport.GetChild(0).gameObject;
 		var buttonTemplate = viewport.Find("ButtonTemplate").gameObject;
 
+		string lastFolderName = null;
+
 		foreach (var item in resourceModelTable)
 		{
-			// var itemKey = item.Key;
 			var itemValue = item.Value;
+
+			var folderName = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(itemValue.path));
+			if (folderName != lastFolderName)
+			{
+				lastFolderName = folderName;
+
+				var headerButton = Instantiate(buttonTemplate);
+				headerButton.SetActive(true);
+				headerButton.transform.SetParent(contentList.transform, false);
+
+				var headerText = headerButton.GetComponentInChildren<Text>();
+				headerText.text = "[" + folderName + "]";
+				headerText.color = new Color(1f, 0.85f, 0.2f);
+				headerText.fontStyle = FontStyle.Bold;
+
+				var headerButtonComponent = headerButton.GetComponentInChildren<Button>();
+				headerButtonComponent.interactable = false;
+
+				var headerImage = headerButton.GetComponent<Image>();
+				if (headerImage != null)
+				{
+					headerImage.color = new Color(0.15f, 0.15f, 0.15f, 1f);
+				}
+			}
+
 			var duplicatedButton = Instantiate(buttonTemplate);
 			duplicatedButton.SetActive(true);
 			duplicatedButton.transform.SetParent(contentList.transform, false);
