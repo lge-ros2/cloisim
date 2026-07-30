@@ -736,6 +736,15 @@ public class Main : MonoBehaviour
 			{
 				_worldFilename = newWorldFilename;
 			}
+#if !UNITY_EDITOR
+			else
+			{
+				// The inspector-serialized value on the MainScene prefab (e.g. "empty.world")
+				// is a convenience default for in-Editor testing only; a build must rely solely
+				// on "-world"/"-worldFile" and fall back to the world picker otherwise.
+				_worldFilename = null;
+			}
+#endif
 
 			_sdfRoot = new SDFormat.RootLoader();
 			_sdfRoot.fileDefaultPaths.AddRange(_fileRootDirectories);
