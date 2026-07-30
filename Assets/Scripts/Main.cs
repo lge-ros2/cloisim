@@ -15,6 +15,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using Assimp.Unmanaged;
 #if UNITY_EDITOR
@@ -554,7 +555,11 @@ public class Main : MonoBehaviour
 		QualitySettings.streamingMipmapsAddAllCameras = true;
 
 		// Keep shadow quality high enough for close-up robot inspection.
-		QualitySettings.shadowDistance = 50f;
+		// URP reads shadow distance from the pipeline asset, not QualitySettings.shadowDistance.
+		if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urpAsset)
+		{
+			urpAsset.shadowDistance = 100f;
+		}
 
 		var mainCamera = Camera.main;
 		if (mainCamera == null)
