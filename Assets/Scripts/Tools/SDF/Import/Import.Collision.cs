@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System.Collections;
 using UE = UnityEngine;
 #if UNITY_EDITOR
 using SceneVisibilityManager = UnityEditor.SceneVisibilityManager;
@@ -34,7 +35,12 @@ namespace SDFormat
 				return newCollisionObject as object;
 			}
 
-			protected override void AfterImportCollision(in Collision collision, in object targetObject)
+			protected override IEnumerator AfterImportCollision(in Collision collision, in object targetObject)
+			{
+				return AfterImportCollisionAsync(collision, targetObject);
+			}
+
+			private IEnumerator AfterImportCollisionAsync(Collision collision, object targetObject)
 			{
 				var collisionObject = targetObject as UE.GameObject;
 
@@ -59,7 +65,7 @@ namespace SDFormat
 					}
 					else
 					{
-						geometryObject.MakeCollision();
+						yield return geometryObject.MakeCollisionAsync();
 
 						if (geom != null && geom.Type == GeometryType.Plane)
 						{

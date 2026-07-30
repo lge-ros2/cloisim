@@ -53,9 +53,10 @@ namespace SDFormat
 				return null;
 			}
 
-			protected virtual void AfterImportCollision(in Collision collision, in object targetObject)
+			protected virtual IEnumerator AfterImportCollision(in Collision collision, in object targetObject)
 			{
 				PrintNotImported(MethodBase.GetCurrentMethod().Name, collision.Name);
+				return null;
 			}
 
 			protected virtual object ImportLink(in Link link, in object parentObject)

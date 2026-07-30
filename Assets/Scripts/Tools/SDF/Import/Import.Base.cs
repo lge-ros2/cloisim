@@ -57,7 +57,7 @@ namespace SDFormat
 
 					yield return ImportGeometry(item.Geom, createdObject);
 
-					AfterImportCollision(item, createdObject);
+					yield return AfterImportCollision(item, createdObject);
 				}
 			}
 
