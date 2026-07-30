@@ -71,6 +71,7 @@ public class Main : MonoBehaviour
 	private MeshProcess.VHACD _vhacd = null;
 	private ObjectSpawning _objectSpawning = null;
 	private ModelImporter _modelImporter = null;
+	private WorldImporter _worldImporter = null;
 	private PluginStartTracker _pluginStartTracker = new();
 	private Pose _cameraInitPose = Pose.identity;
 	private string _trackVisualModelName = string.Empty;
@@ -108,6 +109,7 @@ public class Main : MonoBehaviour
 	public static RuntimeGizmos.TransformGizmo Gizmos => _instance._transformGizmo;
 	public static ObjectSpawning ObjectSpawning => _instance._objectSpawning;
 	public static ModelImporter ModelImporter => _instance._modelImporter;
+	public static WorldImporter WorldImporter => _instance._worldImporter;
 	public static UIController UIController => _instance._uiController;
 	public static InfoDisplay InfoDisplay => _instance._infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => _instance._worldNavMeshBuilder;
@@ -639,6 +641,8 @@ public class Main : MonoBehaviour
 
 		_modelImporter = gameObject.AddComponent<ModelImporter>();
 
+		_worldImporter = gameObject.AddComponent<WorldImporter>();
+
 		_segmentationManager = gameObject.AddComponent<Segmentation.Manager>();
 
 		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
@@ -741,12 +745,34 @@ public class Main : MonoBehaviour
 
 			ModelImporter.UpdateUIModelList(_sdfRoot.ResourceModelTable);
 
+			_sdfRoot.UpdateResourceWorldTable();
+
 			if (!string.IsNullOrEmpty(_worldFilename))
 			{
 				_uiController?.SetEventMessage("Start to load world file: " + _worldFilename);
 				StartCoroutine(LoadWorld());
 			}
+			else if (_sdfRoot.ResourceWorldTable.Count > 0)
+			{
+				StartCoroutine(ShowWorldListForPicking());
+			}
+			else
+			{
+				_uiController?.SetWarningMessage("No world file specified and none found under CLOISIM_WORLD_PATH.");
+			}
 		}
+	}
+
+	private IEnumerator ShowWorldListForPicking()
+	{
+		if (_clearAllOnStart)
+		{
+			yield return CleanAllModels();
+			CleanAllLights();
+		}
+
+		_worldImporter?.UpdateUIWorldList(_sdfRoot.ResourceWorldTable);
+		_worldImporter?.ShowWorldList(true);
 	}
 
 	private string GetClonedModelName(in string modelName)
@@ -870,8 +896,13 @@ public class Main : MonoBehaviour
 		}
 	}
 
-	private IEnumerator LoadWorld()
+	public IEnumerator LoadWorld(string worldFilename = null)
 	{
+		if (!string.IsNullOrEmpty(worldFilename))
+		{
+			_worldFilename = worldFilename;
+		}
+
 		var loadStopwatch = System.Diagnostics.Stopwatch.StartNew();
 
 		SuppressPhysicsDebugContacts("loading a world");

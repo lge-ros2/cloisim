@@ -22,6 +22,7 @@ public class UIController : MonoBehaviour
 
 	private UIDocument _uiDocument = null;
 	private VisualElement _rootVisualElement = null;
+	public VisualElement RootVisualElement => _rootVisualElement;
 	private Toggle _toggleLockVerticalMoving = null;
 	private TextField _scaleField = null;
 	private Label _statusMessage = null;

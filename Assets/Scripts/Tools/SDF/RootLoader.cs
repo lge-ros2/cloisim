@@ -18,6 +18,11 @@ namespace SDFormat
 	{
 	}
 
+	public sealed class ResourceWorldTable
+		: Dictionary<string, (string path, string filename)>
+	{
+	}
+
 	public class RootLoader
 	{
 		private readonly string[] SdfVersions = {
@@ -28,6 +33,9 @@ namespace SDFormat
 
 		// {Model Name, (Model Config Name, Model Path, Model File)}
 		private ResourceModelTable _resourceModelTable = new();
+
+		// {World Display Name, (World Path, World File)}
+		private ResourceWorldTable _resourceWorldTable = new();
 
 		private XmlDocument _doc = new();
 		private XmlDocument _originalDoc = null; // for Save
@@ -44,6 +52,8 @@ namespace SDFormat
 		public List<string> worldDefaultPaths = new();
 
 		public ResourceModelTable ResourceModelTable { get => _resourceModelTable; }
+
+		public ResourceWorldTable ResourceWorldTable { get => _resourceWorldTable; }
 
 		public bool DoParse(out World world, out string worldFilePath, in string worldFileName)
 		{
@@ -332,6 +342,59 @@ namespace SDFormat
 			}
 
 			Console.Write($"Loaded total Models: {_resourceModelTable.Count}");
+		}
+
+		public void UpdateResourceWorldTable()
+		{
+			if (_resourceWorldTable == null)
+			{
+				Console.Write("ERROR: Resource world table is not initialized!!!!");
+				return;
+			}
+
+			_resourceWorldTable.Clear();
+
+			var directoryErrlogs = new StringBuilder();
+			var failedWorldTableList = new StringBuilder();
+
+			foreach (var worldPath in worldDefaultPaths)
+			{
+				if (!Directory.Exists(worldPath))
+				{
+					directoryErrlogs.AppendLine(worldPath);
+					continue;
+				}
+
+				foreach (var worldFile in Directory.GetFiles(worldPath, "*.world"))
+				{
+					var worldDisplayName = Path.GetFileNameWithoutExtension(worldFile);
+					var worldValue = (path: worldPath, filename: Path.GetFileName(worldFile));
+
+					if (_resourceWorldTable.ContainsKey(worldDisplayName))
+					{
+						failedWorldTableList.AppendLine(string.Empty);
+						failedWorldTableList.Append(string.Concat(worldDisplayName, " => ", worldValue));
+					}
+					else
+					{
+						_resourceWorldTable.Add(worldDisplayName, worldValue);
+					}
+				}
+			}
+
+			if (directoryErrlogs.Length > 0)
+			{
+				directoryErrlogs.Insert(0, "Directory does not exists: \n");
+				Console.Error.Write(directoryErrlogs.ToString());
+			}
+
+			if (failedWorldTableList.Length > 0)
+			{
+				failedWorldTableList.Insert(0, $"Below worlds are already registered. - expected duplication of registeration");
+				Console.Error.Write(failedWorldTableList);
+			}
+
+			Console.Write($"Loaded total Worlds: {_resourceWorldTable.Count}");
 		}
 
 		private string FindParentModelFolderName(in XmlNode targetNode)
