@@ -71,50 +71,60 @@ ECHO  CLOISIM_MODEL_PATH=%CLOISIM_MODEL_PATH%
 ECHO  CLOISIM_FILES_PATH=%CLOISIM_FILES_PATH%
 ECHO.
 
-IF "%TargetWorld%" == "" (
-	ECHO   Pass the world file name as a 1st argument
-	ECHO      ex^) run.bat lg_seocho.world
-	ECHO.
-	ECHO  OR with options
-	ECHO      ex^) run.bat --world lg_seocho.world
-	ECHO      ex^) run.bat --world empty.world --headless
-	ECHO      ex^) run.bat --headless --world empty.world --capture-screen
-	ECHO.
-	ECHO  Install PowerShell auto-completion ^(one-time^):
-	ECHO      run.bat --install-completion
-	CALL :PrintWorldList
-) ELSE (
+IF NOT "%TargetWorld%" == "" (
 	CALL :WorldValidationCheck "!TargetWorld!"
 	IF !ERRORLEVEL! NEQ 0 (
 		ECHO.
-		ECHO  Invalid world file name or World file NOT exist.
+		ECHO  Invalid world file name or World file NOT exist ^(falling back to world picker^).
+		CALL :PrintWorldList
+		SET TargetWorld=
+	)
+)
+
+IF "%TargetWorld%" == "" (
+	IF /I "%HeadlessArgs%" == "-batchmode" (
+		ECHO.
+		ECHO  Headless mode requires a valid -world file ^(no UI world picker available^).
 		CALL :PrintWorldList
 		EXIT /B 1
-	)
-
-	SET CaptureArgs=
-	IF "!CaptureScreen!" == "true" (
-		WHERE ffmpeg >NUL 2>&1
-		IF !ERRORLEVEL! NEQ 0 (
-			ECHO WARNING: ffmpeg is not installed. Screen capture may not work.
-		)
-		FOR /F %%T IN ('powershell -NoProfile -Command "Get-Date -Format yyyyMMddHHmmss"') DO SET CAPTURE_TS=%%T
-		SET CaptureArgs=-capture simulation_!CAPTURE_TS!
-	)
-
-	CLOiSim.exe !HeadlessArgs! -world !TargetWorld! !CaptureArgs!
-	SET CLOISIM_EXIT_CODE=!ERRORLEVEL!
-
-	REM -1 is the expected exit code for a normal quit: Main.OnApplicationQuit() deliberately
-	REM calls Process.Kill() on itself for every quit path (window close, Ctrl+C, menu quit)
-	REM to bypass Unity/Mono teardown crashes/hangs. On Windows, Kill() terminates via
-	REM TerminateProcess(handle, -1), so ERRORLEVEL comes back as -1, not 0.
-	IF !CLOISIM_EXIT_CODE! EQU -1 (
+	) ELSE (
 		ECHO.
-		ECHO CLOiSim exited normally ^(code -1: expected self-kill on quit^).
-	) ELSE IF !CLOISIM_EXIT_CODE! NEQ 0 (
-		CALL :CollectCrashDump !CLOISIM_EXIT_CODE!
+		ECHO  No world specified - launching CLOiSim world picker...
+		ECHO      ex^) run.bat lg_seocho.world
+		ECHO      ex^) run.bat --world lg_seocho.world
+		ECHO      ex^) run.bat --headless --world empty.world --capture-screen
+		ECHO.
+		ECHO  Install PowerShell auto-completion ^(one-time^):
+		ECHO      run.bat --install-completion
+		CALL :PrintWorldList
 	)
+)
+
+SET WorldArgs=
+IF NOT "%TargetWorld%" == "" SET WorldArgs=-world !TargetWorld!
+
+SET CaptureArgs=
+IF "!CaptureScreen!" == "true" (
+	WHERE ffmpeg >NUL 2>&1
+	IF !ERRORLEVEL! NEQ 0 (
+		ECHO WARNING: ffmpeg is not installed. Screen capture may not work.
+	)
+	FOR /F %%T IN ('powershell -NoProfile -Command "Get-Date -Format yyyyMMddHHmmss"') DO SET CAPTURE_TS=%%T
+	SET CaptureArgs=-capture simulation_!CAPTURE_TS!
+)
+
+CLOiSim.exe !HeadlessArgs! !WorldArgs! !CaptureArgs!
+SET CLOISIM_EXIT_CODE=!ERRORLEVEL!
+
+REM -1 is the expected exit code for a normal quit: Main.OnApplicationQuit() deliberately
+REM calls Process.Kill() on itself for every quit path (window close, Ctrl+C, menu quit)
+REM to bypass Unity/Mono teardown crashes/hangs. On Windows, Kill() terminates via
+REM TerminateProcess(handle, -1), so ERRORLEVEL comes back as -1, not 0.
+IF !CLOISIM_EXIT_CODE! EQU -1 (
+	ECHO.
+	ECHO CLOiSim exited normally ^(code -1: expected self-kill on quit^).
+) ELSE IF !CLOISIM_EXIT_CODE! NEQ 0 (
+	CALL :CollectCrashDump !CLOISIM_EXIT_CODE!
 )
 
 EXIT /B %ERRORLEVEL%
