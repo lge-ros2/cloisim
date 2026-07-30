@@ -889,7 +889,6 @@ public class Main : MonoBehaviour
 			{
 				yield return CleanAllModels();
 				CleanAllLights();
-				VHACD.ClearCache();
 			}
 
 			_sdfLoader = new SDFormat.Import.Loader();

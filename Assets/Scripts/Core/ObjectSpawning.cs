@@ -322,6 +322,14 @@ public class ObjectSpawning : MonoBehaviour
 				}
 				else
 				{
+					if (targetObjectTransform.CompareTag("Props"))
+					{
+						var renderer = targetObjectTransform.GetComponentInChildren<Renderer>();
+						if (renderer != null && renderer.sharedMaterial != null)
+						{
+							Destroy(renderer.sharedMaterial);
+						}
+					}
 					Destroy(targetObjectTransform.gameObject);
 				}
 				yield return null;
