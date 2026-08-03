@@ -6,10 +6,12 @@
  */
 
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 using messages = cloisim.msgs;
 using Any = cloisim.msgs.Any;
 using SDFormat;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 {
@@ -44,9 +46,19 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		var deviceMessage = new DeviceMessage();
 		const int EmptyTfPublishPeriod = 2000;
 		const float publishFrequency = 50;
-		const int updatePeriod = (int)(1f / publishFrequency * 1000f);
-		var updatePeriodPerEachTf = (tfList.Count == 0) ? int.MaxValue : (int)(updatePeriod / tfList.Count);
-		// Debug.Log("PublishTfThread: " + updatePeriod + " , " + updatePeriodPerEachTf);
+		const float updatePeriodSeconds = 1f / publishFrequency;
+
+		// Pace each TF send across the update period (20ms @ 50Hz) to spread the
+		// network load. With many TF frames (e.g. humanoid hand/finger joints) the
+		// per-TF slice falls well under 1ms, where Thread.Sleep() is too coarse
+		// (OS timer resolution is typically 1-15ms) to use directly: rounding it
+		// down busy-spins and overflows the publisher's send high-watermark
+		// ("error to send TF!!"), while clamping it up overshoots the target rate.
+		// Use the same Stopwatch-based spin-yield deadline pacing as Device.cs's
+		// high-res TX path (see HighResolutionThresholdPeriod) instead.
+		var periodTicksPerEachTf = (tfList.Count == 0)
+			? long.MaxValue
+			: (long)(updatePeriodSeconds / tfList.Count * Stopwatch.Frequency);
 
 		// Publish failures happen in bursts (e.g. subscriber disconnects while a model is being
 		// torn down) and every TF in the list fails on the same pass. Logging per-TF here floods
@@ -58,6 +70,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 		{
 			for (var i = 0; i < tfList.Count; i++)
 			{
+				var deadline = Stopwatch.GetTimestamp() + periodTicksPerEachTf;
 				var tf = tfList[i];
 
 				parentFrameMap.Values.Clear();
@@ -70,7 +83,7 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 				tfMessage.Orientation.Set(tfPose.rotation);
 
 				deviceMessage.SetMessage(tfMessage);
-				if (publisher.Publish(deviceMessage) == false)
+				if (PublishWithRetry(publisher, deviceMessage) == false)
 				{
 					if (!PluginThread.IsRunning)
 					{
@@ -87,13 +100,13 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 				{
 					wasPublishFailing = false;
 				}
-				CLOiSimPluginThread.Sleep(updatePeriodPerEachTf);
+				SpinWaitUntil(deadline);
 			}
 
 			if (tfList.Count == 0)
 			{
 				deviceMessage.SetMessage(tfMessage);
-				if (publisher.Publish(deviceMessage) == false)
+				if (PublishWithRetry(publisher, deviceMessage) == false)
 				{
 					if (PluginThread.IsRunning && !wasPublishFailing)
 					{
@@ -109,6 +122,54 @@ public abstract partial class CLOiSimPlugin : MonoBehaviour, ICLOiSimPlugin
 			}
 		}
 		deviceMessage.Dispose();
+	}
+
+	// Publishing over a non-blocking NetMQ PUB socket can transiently fail when the
+	// send high-watermark is momentarily reached (slow/late subscriber). Yield briefly
+	// and retry a few times before reporting an error, so short bursts don't drop TF.
+	// Thread.Sleep(1) is avoided here: its actual delay depends on OS timer
+	// resolution (often 1-15ms) and can dwarf the whole per-TF pacing budget,
+	// starving the rest of the TF list on a single retry.
+	private static bool PublishWithRetry(in Publisher publisher, in DeviceMessage message)
+	{
+		const int MaxRetry = 3;
+		for (var attempt = 0; attempt < MaxRetry; attempt++)
+		{
+			if (publisher.Publish(message))
+			{
+				return true;
+			}
+			Thread.Yield();
+		}
+		return false;
+	}
+
+	// Stopwatch-based spin-yield wait, mirroring Device.cs's high-res TX pacing:
+	// coarse Thread.Sleep(1) while there's plenty of time left, Yield as the
+	// deadline nears, and a tight spin for the last fraction of a millisecond.
+	private static void SpinWaitUntil(long deadlineTicks)
+	{
+		while (true)
+		{
+			var remaining = deadlineTicks - Stopwatch.GetTimestamp();
+			if (remaining <= 0)
+			{
+				break;
+			}
+
+			if (remaining > Stopwatch.Frequency / 500) // > 2ms
+			{
+				Thread.Sleep(1);
+			}
+			else if (remaining > Stopwatch.Frequency / 2000) // > 0.5ms
+			{
+				Thread.Yield();
+			}
+			else
+			{
+				Thread.SpinWait(1);
+			}
+		}
 	}
 
 	protected static void SetCameraInfoResponse(ref DeviceMessage msCameraInfo, in messages.CameraSensor sensorInfo)
