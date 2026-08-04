@@ -6,6 +6,7 @@
 
 using System.Linq;
 using System;
+using System.Collections.Generic;
 using UE = UnityEngine;
 
 namespace SDFormat
@@ -330,6 +331,41 @@ namespace SDFormat
 						if (modelHelper != null && modelHelper.isStatic)
 						{
 							body.immovable = true;
+						}
+					}
+				}
+
+				// PhysX's reduced-coordinate articulation solver hard-caps a single
+				// connected ArticulationBody hierarchy ("island") at 64 nodes. Unity only
+				// reports this natively once enough bodies in the island are enabled
+				// (a generic "hierarchy of articulations..." error with no indication of
+				// which model/root is at fault). Count island sizes up front so a bad
+				// import fails with a clear, actionable message instead.
+				{
+					var islandSizeByRoot = new Dictionary<UE.ArticulationBody, int>();
+					foreach (var body in articulationBodies)
+					{
+						var root = body;
+						UE.ArticulationBody parent;
+						while ((parent = FindParentArticulationBody(root)) != null)
+						{
+							root = parent;
+						}
+
+						islandSizeByRoot.TryGetValue(root, out var count);
+						islandSizeByRoot[root] = count + 1;
+					}
+
+					const int MaxArticulationIslandSize = 64;
+					foreach (var (root, count) in islandSizeByRoot)
+					{
+						if (count > MaxArticulationIslandSize)
+						{
+							UE.Debug.LogError(
+								$"[SpecifyPose] ArticulationBody island rooted at '{root.name}' has {count} nodes, " +
+								$"exceeding Unity's {MaxArticulationIslandSize}-node PhysX articulation limit. " +
+								"Enabling it will trigger a native 'hierarchy of articulations' error. " +
+								"Split this model's fixed-joint sub-trees into separate islands or reduce its DOF.");
 						}
 					}
 				}
