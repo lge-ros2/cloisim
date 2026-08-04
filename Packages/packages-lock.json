@@ -214,7 +214,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.searcher": {
-      "version": "4.9.4",
+      "version": "4.9.5",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
