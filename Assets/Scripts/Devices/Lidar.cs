@@ -8,9 +8,11 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading;
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.UnifiedRayTracing;
 using UnityEngine;
+using CLOiSim.VulkanRT;
 using messages = cloisim.msgs;
 
 namespace SensorDevices
@@ -313,12 +315,43 @@ namespace SensorDevices
 				$"hAngle=[{_horizontal.angle.min:F1}, {_horizontal.angle.max:F1}] deg");
 		}
 
+		/// <summary>
+		/// Native Vulkan RT backend setup — no ComputeShader/IRayTracingShader
+		/// involved (the native plugin's own SPIR-V pipeline is initialized once,
+		/// globally, by URTSensorManager.InitializeNativeBackend). Only the
+		/// output buffer + command buffer this sensor owns are allocated here.
+		/// </summary>
+		private void SetupNativeURT()
+		{
+			if (!URTSensorManager.Register(GetEntityId()))
+			{
+				Debug.LogError("[Lidar] Failed to register with URTSensorManager");
+				return;
+			}
+
+			var samplesH = _laserScan.Count;
+			var samplesV = _laserScan.VerticalCount;
+
+			_rangeOutputBuffer?.Release();
+			_rangeOutputBuffer = new ComputeBuffer((int)_totalSamples, sizeof(float));
+
+			_urtCmdBuffer = new CommandBuffer { name = "Lidar Native RT Dispatch" };
+
+			Debug.Log($"[Lidar] Native Vulkan RT initialized, samples={samplesH}x{samplesV}={_totalSamples}, " +
+				$"range=[{_scanRange.min:F2}, {_scanRange.max:F2}], " +
+				$"hAngle=[{_horizontal.angle.min:F1}, {_horizontal.angle.max:F1}] deg");
+		}
+
 		private void SetupURT()
 		{
 			// Livox mode: use dedicated compute shader with pattern buffer
 			if (IsLivoxMode)
 			{
 				SetupLivoxURT();
+			}
+			else if (URTSensorManager.IsNativeVulkanRTBackend)
+			{
+				SetupNativeURT();
 			}
 			else
 			{
@@ -394,7 +427,11 @@ namespace SensorDevices
 			get
 			{
 				if (!_startLaserWork) return false;
-				if (_rtShader == null || _rangeOutputBuffer == null) return false;
+				if (_rangeOutputBuffer == null) return false;
+				// _rtShader (IRayTracingShader) is native-mode's equivalent of
+				// having no counterpart at all — the native plugin's pipeline is
+				// initialized globally by URTSensorManager, not per-sensor.
+				if (!URTSensorManager.IsNativeVulkanRTBackend && _rtShader == null) return false;
 				return true;
 			}
 		}
@@ -403,6 +440,8 @@ namespace SensorDevices
 		{
 			if (IsLivoxMode)
 				ExecuteLivoxRender();
+			else if (URTSensorManager.IsNativeVulkanRTBackend)
+				ExecuteNativeRender();
 			else
 				ExecuteStandardRender();
 			return true;
@@ -524,7 +563,109 @@ namespace SensorDevices
 			CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:ReadbackWait");
 			Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
 
-			// --- Async readback (non-blocking) ---
+			RequestRangeReadback(capturedTime, sensorWorldPose);
+		}
+
+		/// <summary>
+		/// Native Vulkan RT render path: mirrors ExecuteStandardRender's overall
+		/// shape (shared-scene ensure -> skip-if-not-ready -> dispatch -> async
+		/// readback), but the "dispatch" here is a native plugin render event
+		/// carrying a CloiSimRtLidarTraceRequest instead of an IRayTracingShader
+		/// Dispatch — see URTSensorManager.EnsureNativeSceneReady/NativeSceneReady
+		/// and cloisim_vulkan_rt_plugin's lidar.rgen for the counterpart this
+		/// reproduces bit-for-bit against LidarRayTrace.compute's math.
+		/// </summary>
+		private void ExecuteNativeRender()
+		{
+			if (_rangeOutputBuffer == null)
+				return;
+
+			var capturedTime = DeviceHelper.GetGlobalClock().SimTime;
+
+			var sensorTransform = transform;
+			var sensorPos = sensorTransform.position;
+			var sensorRight = sensorTransform.right;
+			var sensorUp = sensorTransform.up;
+			var sensorForward = sensorTransform.forward;
+			var sensorWorldPose = new Pose(sensorPos, sensorTransform.rotation);
+
+			var samplesH = _laserScan.Count;
+			var samplesV = _laserScan.VerticalCount;
+
+			_urtCmdBuffer.Clear();
+
+			// Shared native scene: gather, transform update, build (once per
+			// frame) — see EnsureBVHReady's identical chicken-and-egg-avoidance
+			// rationale (must run before NativeSceneReady is checked).
+			URTSensorManager.EnsureNativeSceneReady(_urtCmdBuffer);
+
+			if (!URTSensorManager.NativeSceneReady)
+			{
+				Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
+				return;
+			}
+
+			var request = new VulkanRTPlugin.LidarTraceRequest
+			{
+				nativeOutputBuffer = _rangeOutputBuffer.GetNativeBufferPtr(),
+				outputElementCount = _totalSamples,
+				parameters = new VulkanRTPlugin.LidarParams
+				{
+					samplesH = samplesH,
+					samplesV = samplesV,
+					angleMinH = (float)_laserScan.AngleMin,
+					angleStepH = (float)_laserScan.AngleStep,
+					angleMinV = (float)_laserScan.VerticalAngleMin,
+					angleStepV = (float)_laserScan.VerticalAngleStep,
+					rangeMin = _scanRange.min,
+					rangeMax = _scanRange.max,
+					rangeLinearResolution = _resolution.linear,
+					sensorPosition = new[] { sensorPos.x, sensorPos.y, sensorPos.z },
+					sensorRight = new[] { sensorRight.x, sensorRight.y, sensorRight.z },
+					sensorUp = new[] { sensorUp.x, sensorUp.y, sensorUp.z },
+					sensorForward = new[] { sensorForward.x, sensorForward.y, sensorForward.z },
+					// Same mount-link self-exclusion scoping as SetSensorPoseParams
+					// uses for the Compute backend — see its comment for why.
+					selfExclusionId = URTSensorManager.SelfExclusionIdOf(this),
+					maxSelfHitRetraces = 8,
+				},
+			};
+
+			// Pinned only for the duration of this call: IssuePluginEventAndData's
+			// native callback runs synchronously within Graphics.ExecuteCommandBuffer
+			// below (no WaitForEndOfFrame involved), so it is safe to free
+			// immediately after that call returns.
+			var requestPtr = Marshal.AllocHGlobal(Marshal.SizeOf<VulkanRTPlugin.LidarTraceRequest>());
+			try
+			{
+				Marshal.StructureToPtr(request, requestPtr, false);
+
+				CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:Dispatch");
+				_urtCmdBuffer.IssuePluginEventAndData(
+					URTSensorManager.NativeRenderEventFunc,
+					(int)VulkanRTContext.RenderEvent.TraceLidar,
+					requestPtr);
+
+				CLOiSim.Diagnostics.FreezeWatchdog.Mark("URT:ReadbackWait");
+				Graphics.ExecuteCommandBuffer(_urtCmdBuffer);
+			}
+			finally
+			{
+				Marshal.FreeHGlobal(requestPtr);
+			}
+
+			RequestRangeReadback(capturedTime, sensorWorldPose);
+		}
+
+		/// <summary>
+		/// Async, non-blocking readback of _rangeOutputBuffer shared by both
+		/// the Compute/Hardware and native render paths — the GPU-side
+		/// dispatch mechanism differs, but the output buffer layout (see
+		/// LidarRayTrace.compute's doc comment) and downstream processing
+		/// (TryProcessStandardData) do not.
+		/// </summary>
+		private void RequestRangeReadback(double capturedTime, Pose sensorWorldPose)
+		{
 			Device.GpuReadbackBegin();
 			AsyncGPUReadback.Request(_rangeOutputBuffer, (req) =>
 			{

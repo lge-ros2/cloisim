@@ -11,6 +11,7 @@ using UnityEngine.Rendering.UnifiedRayTracing;
 using Unity.Profiling;
 using System;
 using System.Collections.Generic;
+using CLOiSim.VulkanRT;
 
 public static class RayTracingResourcesExtension
 {
@@ -263,6 +264,61 @@ public class URTSensorManager : MonoBehaviour
 
 	private RayTracingContext _rtContext;
 	private GraphicsBuffer _rtBuildScratchBuffer;
+
+	#region "Native Vulkan RT backend"
+	// Which backend tier Initialize() actually selected. When this is
+	// NativeVulkanRT, _rtContext/_rtAccelStructs above are never created —
+	// sensors instead trace against the shared scene maintained by
+	// EnsureNativeSceneReady/GatherNativeSceneMeshes below, via the native
+	// plugin's own BLAS/TLAS (see cloisim_vulkan_rt_plugin's NativeScene).
+	private UrtBackendSelection _backendMode = UrtBackendSelection.Compute;
+
+	// Cached once at Initialize() time; passed to CommandBuffer.IssuePluginEventAndData
+	// by both EnsureNativeSceneReady (BuildScene) and Lidar's native render
+	// path (TraceLidar).
+	private IntPtr _nativeRenderEventFunc = IntPtr.Zero;
+
+	// Single shared native scene (no active/background double buffer, unlike
+	// _rtAccelStructs above — see the plan's rationale: start with the
+	// simpler single-structure design, matching this class's own documented
+	// history that it "worked correctly" before double-buffering was added
+	// purely as a narrow perf optimization). Static MeshRenderer geometry
+	// only — skinned/animated meshes are out of scope for this backend.
+	private readonly List<NativeInstanceEntry> _nativeInstances = new();
+	// Refcount per meshId (hash-combined from mesh.GetEntityId()+subMeshIndex, see
+	// NativeMeshId), so a BLAS is uploaded once and released only once no
+	// live instance references it anymore.
+	private readonly Dictionary<ulong, int> _nativeMeshRefCounts = new();
+
+	// Forces GatherNativeSceneMeshes to re-run on the next EnsureNativeSceneReady
+	// call regardless of _sceneGatherInterval — set whenever the live-renderer
+	// set is known to have changed (MarkSceneDirty(), or a renderer/GameObject
+	// destroyed mid-frame, detected in UpdateNativeInstanceTransforms).
+	private bool _nativeGatherDirty = true;
+	private float _nativeLastGatherTime;
+
+	// True whenever an instance was added/removed/moved since the last
+	// SetSceneInstances()+BuildScene push — mirrors _structNeedsRebuildArr's
+	// role for the Compute/Hardware path.
+	private bool _nativeSceneDirty;
+
+	// EnsureNativeSceneReady dedup: only the first sensor per frame does work.
+	private int _nativeFrameOfLastBuild = -1;
+
+	private struct NativeInstanceEntry
+	{
+		public Renderer renderer;
+		public Mesh keyMesh;
+		public int subMeshIndex;
+		public ulong meshId;
+
+		// Quantized world transform last pushed via SetSceneInstances — see
+		// InstanceEntry's identically-named fields for why this is quantized
+		// rather than compared as raw floats (residual physics jitter).
+		public long lastPushedPosQX, lastPushedPosQY, lastPushedPosQZ;
+		public long lastPushedRotQX, lastPushedRotQY, lastPushedRotQZ, lastPushedRotQW;
+	}
+	#endregion
 
 	#region "Pipelined dual acceleration structure"
 	// Index of the structure sensors currently trace. The other index (1 -
@@ -573,10 +629,10 @@ public class URTSensorManager : MonoBehaviour
 		if (inst == null)
 			return false;
 
-		if (inst._rtContext == null)
+		if (!inst.IsBackendReady())
 			inst.Initialize();
 
-		if (inst._rtAccelStructs[0] == null || inst._rtAccelStructs[1] == null)
+		if (!inst.IsBackendReady())
 			return false;
 
 		if (inst._registeredCameras.Add(cameraInstanceId))
@@ -629,6 +685,7 @@ public class URTSensorManager : MonoBehaviour
 		{
 			s_instance._dirtyArr[0] = true;
 			s_instance._dirtyArr[1] = true;
+			s_instance._nativeGatherDirty = true;
 		}
 	}
 
@@ -840,31 +897,174 @@ public class URTSensorManager : MonoBehaviour
 		return builtFrame >= 0 && Time.frameCount > builtFrame;
 	}
 
+	/// <summary>
+	/// True when Initialize() selected the native Vulkan RT backend.
+	/// Callers (e.g. Lidar.SetupURT) branch their setup path on this *before*
+	/// ever calling Register(), which is the only other place Initialize()
+	/// gets triggered — so this property must force lazy initialization
+	/// itself, otherwise the first caller of the frame always observes the
+	/// pre-initialization default (false) and commits to the wrong setup path.
+	/// </summary>
+	public static bool IsNativeVulkanRTBackend
+	{
+		get
+		{
+			var inst = Instance;
+			if (inst == null)
+				return false;
+
+			if (!inst.IsBackendReady())
+				inst.Initialize();
+
+			return inst._backendMode == UrtBackendSelection.NativeVulkanRT;
+		}
+	}
+
+	/// <summary>
+	/// Native render event function pointer, for CommandBuffer.IssuePluginEventAndData
+	/// calls (e.g. Lidar's TraceLidar event). IntPtr.Zero unless the native
+	/// backend is active.
+	/// </summary>
+	public static IntPtr NativeRenderEventFunc =>
+		s_instance?._nativeRenderEventFunc ?? IntPtr.Zero;
+
+	/// <summary>
+	/// True when the native scene has at least one instance and the native
+	/// plugin reports it built successfully. Mirrors AccelStruct's
+	/// null-on-empty-instances behavior: an empty native TLAS is never
+	/// created (see NativeScene::RecordBuild), so a native trace against it
+	/// would otherwise fail every dispatch rather than just reporting all-miss.
+	/// </summary>
+	public static bool NativeSceneReady =>
+		s_instance != null &&
+		s_instance._backendMode == UrtBackendSelection.NativeVulkanRT &&
+		s_instance._nativeInstances.Count > 0 &&
+		VulkanRTPlugin.IsSceneReady;
+
+	/// <summary>
+	/// Ensure the native shared scene is up-to-date for this frame. Native-mode
+	/// counterpart to EnsureBVHReady: called by each native-mode URT sensor at
+	/// the start of its render method. Only the first caller per frame does
+	/// actual work. No-op when the native backend is not active.
+	/// </summary>
+	/// <param name="cmd">CommandBuffer to record the BuildScene event into.</param>
+	public static void EnsureNativeSceneReady(CommandBuffer cmd)
+	{
+		var inst = Instance;
+		if (inst == null || inst._backendMode != UrtBackendSelection.NativeVulkanRT)
+			return;
+
+		var currentFrame = Time.frameCount;
+		if (inst._nativeFrameOfLastBuild == currentFrame)
+			return;
+		inst._nativeFrameOfLastBuild = currentFrame;
+
+		var realtimeNow = Time.realtimeSinceStartup;
+		if (inst._nativeGatherDirty ||
+			(realtimeNow - inst._nativeLastGatherTime > inst._sceneGatherInterval))
+		{
+			inst.GatherNativeSceneMeshes();
+			inst._nativeGatherDirty = false;
+			inst._nativeLastGatherTime = realtimeNow;
+		}
+
+		inst.UpdateNativeInstanceTransforms();
+
+		if (!inst._nativeSceneDirty)
+			return;
+
+		var instances = inst._nativeInstances;
+		var descs = new VulkanRTPlugin.NativeInstanceDesc[instances.Count];
+		for (var i = 0; i < instances.Count; i++)
+		{
+			var entry = instances[i];
+			var m = entry.renderer.localToWorldMatrix;
+			var r0 = m.GetRow(0);
+			var r1 = m.GetRow(1);
+			var r2 = m.GetRow(2);
+
+			var desc = new VulkanRTPlugin.NativeInstanceDesc
+			{
+				meshId = entry.meshId,
+				instanceId = SelfExclusionIdOf(entry.renderer),
+				mask = 0xFF,
+			};
+			desc.SetTransform(
+				r0.x, r0.y, r0.z, r0.w,
+				r1.x, r1.y, r1.z, r1.w,
+				r2.x, r2.y, r2.z, r2.w);
+			descs[i] = desc;
+		}
+
+		if (!VulkanRTPlugin.SetSceneInstances(descs))
+		{
+			Debug.LogWarning("[URTSensorManager] Native SetSceneInstances failed");
+			return;
+		}
+
+		cmd.IssuePluginEventAndData(
+			inst._nativeRenderEventFunc,
+			(int)VulkanRTContext.RenderEvent.BuildScene,
+			IntPtr.Zero);
+
+		inst._nativeSceneDirty = false;
+	}
+
 	#endregion
 
 	#region "Initialization / Teardown"
 
+	/// <summary>
+	/// True once Initialize() has successfully set up whichever backend
+	/// _backendMode currently names. Mirrors the pre-native-backend code's
+	/// implicit "_rtContext == null means not yet successfully initialized"
+	/// signal (Initialize() nulls _rtContext on failure), extended to also
+	/// cover the native path's IntPtr.Zero-until-successful render event func.
+	/// </summary>
+	private bool IsBackendReady() =>
+		_backendMode == UrtBackendSelection.NativeVulkanRT
+			? _nativeRenderEventFunc != IntPtr.Zero
+			: _rtContext != null;
+
 	private void Initialize()
 	{
+		var backend = SelectBackend();
+		_backendMode = backend;
+
+		if (backend == UrtBackendSelection.NativeVulkanRT)
+		{
+			if (InitializeNativeBackend())
+			{
+				Debug.Log("[URTSensorManager] Initialized native Vulkan RT backend.");
+				return;
+			}
+
+			Debug.LogError("[URTSensorManager] Native Vulkan RT initialization failed; falling back to Compute.");
+			backend = UrtBackendSelection.Compute;
+			_backendMode = backend;
+		}
+
 		var resources = new RayTracingResources();
 		resources.LoadFromURTResourcesByManual();
 
-		var backend = SelectBackend();
+		var rtBackend = backend == UrtBackendSelection.Hardware
+			? RayTracingBackend.Hardware
+			: RayTracingBackend.Compute;
 
 		try
 		{
-			_rtContext = new RayTracingContext(backend, resources);
+			_rtContext = new RayTracingContext(rtBackend, resources);
 
 			_rtAccelStructs[0] = _rtContext.CreateAccelerationStructure(
 				new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
 			_rtAccelStructs[1] = _rtContext.CreateAccelerationStructure(
 				new AccelerationStructureOptions { buildFlags = BuildFlags.PreferFastBuild });
 
-			Debug.Log($"[URTSensorManager] Initialized context with backend: {backend}");
+			Debug.Log($"[URTSensorManager] Initialized context with backend: {rtBackend}");
 		}
 		catch (Exception e)
 		{
-			Debug.LogError($"[URTSensorManager] Failed to initialize ray tracing context (backend={backend}): {e.Message}. URT sensors (lidar/depth camera) will be disabled.");
+			Debug.LogError($"[URTSensorManager] Failed to initialize ray tracing context (backend={rtBackend}): {e.Message}. URT sensors (lidar/depth camera) will be disabled.");
 
 			_rtAccelStructs[0]?.Dispose();
 			_rtAccelStructs[0] = null;
@@ -876,38 +1076,90 @@ public class URTSensorManager : MonoBehaviour
 	}
 
 	/// <summary>
-	/// Choose the Unified Ray Tracing backend.
-	/// Default: Compute on Vulkan/Linux; auto elsewhere.
-	/// Override with CLOISIM_URT_BACKEND env var: "compute" | "hardware" | "auto".
+	/// Resolves the native plugin's shader directory and initializes its
+	/// lidar ray-tracing pipeline. On success, native-mode sensors trace
+	/// against the shared scene built by EnsureNativeSceneReady instead of
+	/// Unity's UnifiedRayTracing (_rtContext/_rtAccelStructs are never
+	/// created in this mode).
 	/// </summary>
-	private static RayTracingBackend SelectBackend()
+	private bool InitializeNativeBackend()
+	{
+		var renderEventFunc = VulkanRTPlugin.GetRenderEventFunc();
+		if (renderEventFunc == IntPtr.Zero)
+			return false;
+
+		if (!VulkanRTPlugin.TryResolveShaderDirectory(out var shaderDirectory))
+		{
+			Debug.LogError("[URTSensorManager] Native Vulkan RT shader directory could not be resolved.");
+			return false;
+		}
+
+		if (!VulkanRTPlugin.InitializeLidarPipeline(shaderDirectory))
+			return false;
+
+		// Only commit the render event func once every prior step has
+		// succeeded — IsBackendReady() treats a non-zero value as "native
+		// backend fully initialized", so a partially-failed init must leave
+		// this at IntPtr.Zero.
+		_nativeRenderEventFunc = renderEventFunc;
+		return true;
+	}
+
+	/// <summary>
+	/// Backend tier actually selected/initialized for URT sensors. Kept
+	/// distinct from Unity's own two-value RayTracingBackend enum since
+	/// the native Vulkan RT plugin is not a RayTracingContext backend at
+	/// all — it's a structurally separate code path (see
+	/// EnsureNativeSceneReady) that bypasses RayTracingContext entirely.
+	/// Ordinals for Hardware/Compute intentionally match RayTracingBackend's
+	/// own so existing reflection-based tests asserting
+	/// "(int)backend == 1 for Compute" keep passing unmodified.
+	/// </summary>
+	internal enum UrtBackendSelection
+	{
+		Hardware = 0,
+		Compute = 1,
+		NativeVulkanRT = 2,
+	}
+
+	/// <summary>
+	/// Choose the URT backend tier.
+	/// Default ("auto"): Hardware -> native Vulkan RT plugin -> Compute, in
+	/// that order of preference. Override with CLOISIM_URT_BACKEND env var:
+	/// "compute" | "hardware" | "native" | "auto".
+	/// </summary>
+	private static UrtBackendSelection SelectBackend()
 	{
 		var pref = (Environment.GetEnvironmentVariable("CLOISIM_URT_BACKEND") ?? string.Empty).Trim().ToLowerInvariant();
 
 		if (string.IsNullOrEmpty(pref))
-		{
-			var isVulkanOrLinux =
-				SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan ||
-				Application.platform == RuntimePlatform.LinuxPlayer ||
-				Application.platform == RuntimePlatform.LinuxEditor;
-			pref = isVulkanOrLinux ? "compute" : "auto";
-		}
+			pref = "auto";
 
 		var hardwareSupported = RayTracingContext.IsBackendSupported(RayTracingBackend.Hardware);
+		var nativeAvailable = VulkanRTPlugin.IsNativeBackendAvailable;
 
 		switch (pref)
 		{
 			case "compute":
-				return RayTracingBackend.Compute;
+				return UrtBackendSelection.Compute;
 
 			case "hardware":
 				if (!hardwareSupported)
 					Debug.LogWarning("[URTSensorManager] CLOISIM_URT_BACKEND=hardware requested but the device reports no hardware ray-tracing support; falling back to Compute.");
-				return hardwareSupported ? RayTracingBackend.Hardware : RayTracingBackend.Compute;
+				return hardwareSupported ? UrtBackendSelection.Hardware : UrtBackendSelection.Compute;
+
+			case "native":
+				if (!nativeAvailable)
+					Debug.LogWarning("[URTSensorManager] CLOISIM_URT_BACKEND=native requested but the native Vulkan RT plugin is unavailable; falling back to Compute.");
+				return nativeAvailable ? UrtBackendSelection.NativeVulkanRT : UrtBackendSelection.Compute;
 
 			case "auto":
 			default:
-				return hardwareSupported ? RayTracingBackend.Hardware : RayTracingBackend.Compute;
+				if (hardwareSupported)
+					return UrtBackendSelection.Hardware;
+				if (nativeAvailable)
+					return UrtBackendSelection.NativeVulkanRT;
+				return UrtBackendSelection.Compute;
 		}
 	}
 
@@ -1159,6 +1411,20 @@ public class URTSensorManager : MonoBehaviour
 		DrainDeferredScratchFrees(force: quiesced);
 		DrainDeferredDisposes(force: quiesced);
 
+		// Native scene teardown: the native plugin fences its own BLAS/TLAS
+		// releases internally (its own DeferredReleaseQueue), independent of
+		// the Unity-side GraphicsFence/quiescence check below — safe to
+		// release unconditionally.
+		foreach (var meshId in _nativeMeshRefCounts.Keys)
+			VulkanRTPlugin.ReleaseMesh(meshId);
+		_nativeMeshRefCounts.Clear();
+		_nativeInstances.Clear();
+		_nativeGatherDirty = true;
+		_nativeSceneDirty = false;
+		_nativeLastGatherTime = 0f;
+		_nativeFrameOfLastBuild = -1;
+		_nativeRenderEventFunc = IntPtr.Zero;
+
 		if (!quiesced)
 		{
 			Debug.LogWarning("[URTSensorManager] GPU still not quiescent at last-sensor teardown — " +
@@ -1272,6 +1538,12 @@ public class URTSensorManager : MonoBehaviour
 
 	private void ResetSceneInternal()
 	{
+		if (_backendMode == UrtBackendSelection.NativeVulkanRT)
+		{
+			ResetNativeSceneInternal();
+			return;
+		}
+
 		if (_rtContext == null) return;
 		if (_rtAccelStructs[0] == null || _rtAccelStructs[1] == null) return;
 
@@ -1395,6 +1667,28 @@ public class URTSensorManager : MonoBehaviour
 		_postResetResumeBuildFrame = Time.frameCount + (gpuClean ? 3 : 60);
 
 		Debug.Log($"[URTSensorManager] Acceleration structures reset (clean rebuild scheduled, cooldown={_postResetResumeBuildFrame - Time.frameCount} frames, gpuClean={gpuClean})");
+	}
+
+	/// <summary>
+	/// Native Vulkan RT counterpart to ResetSceneInternal. Simpler than the
+	/// Compute/Hardware path: the native plugin fences its own BLAS/TLAS
+	/// rebuilds internally (own DeferredReleaseQueue), so there is no
+	/// equivalent GPU-quiescence/TDR-cooldown dance to replicate here for
+	/// v1 — this just clears the CPU-side instance/mesh-refcount bookkeeping
+	/// and forces a full re-gather + rebuild on the next EnsureNativeSceneReady.
+	/// </summary>
+	private void ResetNativeSceneInternal()
+	{
+		foreach (var meshId in _nativeMeshRefCounts.Keys)
+			VulkanRTPlugin.ReleaseMesh(meshId);
+		_nativeMeshRefCounts.Clear();
+		_nativeInstances.Clear();
+		_nativeGatherDirty = true;
+		_nativeSceneDirty = false;
+		_nativeLastGatherTime = 0f;
+		_nativeFrameOfLastBuild = -1;
+
+		Debug.Log("[URTSensorManager] Native Vulkan RT scene reset (rebuild scheduled)");
 	}
 
 	#endregion
@@ -1832,6 +2126,198 @@ public class URTSensorManager : MonoBehaviour
 		}
 		}
 	}
+
+	#region "Native Vulkan RT scene gathering"
+
+	/// <summary>
+	/// Packs a mesh identity into the opaque meshId the native plugin's BLAS
+	/// cache keys on. EntityId.ToULong() is a full 64-bit value (Unity 6's
+	/// GetInstanceID() replacement), so subMeshIndex is folded in via a hash
+	/// combine rather than bit-shifted into low bits — shifting would discard
+	/// entropy from the high bits and reintroduce a collision risk.
+	/// </summary>
+	private static ulong NativeMeshId(Mesh mesh, int subMeshIndex)
+	{
+		var id = EntityId.ToULong(mesh.GetEntityId());
+		return unchecked(id * 31 + (ulong)subMeshIndex);
+	}
+
+	/// <summary>
+	/// Extracts mesh's full vertex buffer + subMeshIndex's triangle list and
+	/// uploads them to the native plugin under meshId. Requires mesh.isReadable.
+	/// </summary>
+	private static bool UploadNativeMesh(Mesh mesh, int subMeshIndex, ulong meshId)
+	{
+		var vertices3 = mesh.vertices;
+		var flatVertices = new float[vertices3.Length * 3];
+		for (var i = 0; i < vertices3.Length; i++)
+		{
+			flatVertices[i * 3 + 0] = vertices3[i].x;
+			flatVertices[i * 3 + 1] = vertices3[i].y;
+			flatVertices[i * 3 + 2] = vertices3[i].z;
+		}
+
+		var triangles = mesh.GetTriangles(subMeshIndex);
+		var flatIndices = new uint[triangles.Length];
+		for (var i = 0; i < triangles.Length; i++)
+			flatIndices[i] = (uint)triangles[i];
+
+		return VulkanRTPlugin.UploadMesh(meshId, flatVertices, flatIndices);
+	}
+
+	/// <summary>
+	/// Decrements meshId's reference count; releases the native BLAS once no
+	/// live instance references it anymore.
+	/// </summary>
+	private void ReleaseNativeMeshRef(ulong meshId)
+	{
+		if (!_nativeMeshRefCounts.TryGetValue(meshId, out var count))
+			return;
+
+		count--;
+		if (count <= 0)
+		{
+			VulkanRTPlugin.ReleaseMesh(meshId);
+			_nativeMeshRefCounts.Remove(meshId);
+		}
+		else
+		{
+			_nativeMeshRefCounts[meshId] = count;
+		}
+	}
+
+	/// <summary>
+	/// Gathers all active MeshRenderers (same filters as GatherSceneMeshes:
+	/// scene loaded / enabled / active / culling mask) into _nativeInstances,
+	/// diffed against the current live-renderer set. Unlike GatherSceneMeshes,
+	/// SkinnedMeshRenderers are NOT enumerated here — skinned/animated mesh
+	/// support is out of scope for the native backend (v1).
+	/// </summary>
+	private void GatherNativeSceneMeshes()
+	{
+		var instances = _nativeInstances;
+		var existingKeys = _existingKeys;
+		var desiredKeys = _desiredKeys;
+
+		existingKeys.Clear();
+		for (var i = 0; i < instances.Count; i++)
+		{
+			var entry = instances[i];
+			existingKeys.Add(new InstanceKey(entry.renderer, entry.keyMesh, entry.subMeshIndex));
+		}
+
+		desiredKeys.Clear();
+
+		var renderers = FindObjectsByType<MeshRenderer>();
+		Array.Sort(renderers, (a, b) => EntityId.ToULong(a.GetEntityId()).CompareTo(EntityId.ToULong(b.GetEntityId())));
+
+		foreach (var renderer in renderers)
+		{
+			if (!renderer.gameObject.scene.isLoaded)
+				continue;
+
+			if (!renderer.enabled || !renderer.gameObject.activeInHierarchy)
+				continue;
+
+			if ((_cullingMask & (1 << renderer.gameObject.layer)) == 0)
+				continue;
+
+			var meshFilter = renderer.GetComponent<MeshFilter>();
+			if (meshFilter == null || meshFilter.sharedMesh == null)
+				continue;
+
+			var mesh = meshFilter.sharedMesh;
+
+			for (var sub = 0; sub < mesh.subMeshCount; sub++)
+			{
+				var key = new InstanceKey(renderer, mesh, sub);
+				desiredKeys.Add(key);
+
+				if (existingKeys.Contains(key))
+					continue;
+
+				var meshId = NativeMeshId(mesh, sub);
+
+				try
+				{
+					if (!_nativeMeshRefCounts.TryGetValue(meshId, out var refCount) || refCount == 0)
+					{
+						if (!UploadNativeMesh(mesh, sub, meshId))
+						{
+							Debug.LogWarning($"[URTSensorManager] Native mesh upload failed for '{renderer.name}' sub={sub} mesh='{mesh.name}'");
+							continue;
+						}
+					}
+					_nativeMeshRefCounts[meshId] = refCount + 1;
+
+					var (px, py, pz, rx, ry, rz, rw) = QuantizeTransform(renderer.transform.position, renderer.transform.rotation);
+					instances.Add(new NativeInstanceEntry
+					{
+						renderer = renderer,
+						keyMesh = mesh,
+						subMeshIndex = sub,
+						meshId = meshId,
+						lastPushedPosQX = px, lastPushedPosQY = py, lastPushedPosQZ = pz,
+						lastPushedRotQX = rx, lastPushedRotQY = ry, lastPushedRotQZ = rz, lastPushedRotQW = rw,
+					});
+					_nativeSceneDirty = true;
+				}
+				catch (Exception e)
+				{
+					Debug.LogWarning($"[URTSensorManager] Failed to add native instance '{renderer.name}' sub={sub} mesh='{mesh.name}': {e.Message}");
+				}
+			}
+		}
+
+		for (var i = instances.Count - 1; i >= 0; i--)
+		{
+			var entry = instances[i];
+			var key = new InstanceKey(entry.renderer, entry.keyMesh, entry.subMeshIndex);
+			if (desiredKeys.Contains(key))
+				continue;
+
+			ReleaseNativeMeshRef(entry.meshId);
+			instances.RemoveAt(i);
+			_nativeSceneDirty = true;
+		}
+	}
+
+	/// <summary>
+	/// Removes destroyed/deactivated instances and re-pushes moved ones,
+	/// mirroring UpdateInstanceTransforms's quantized-transform diffing.
+	/// Called every EnsureNativeSceneReady cycle (not gated by the gather
+	/// interval), matching the Compute/Hardware path's own per-frame call.
+	/// </summary>
+	private void UpdateNativeInstanceTransforms()
+	{
+		var instances = _nativeInstances;
+
+		for (var i = instances.Count - 1; i >= 0; i--)
+		{
+			var entry = instances[i];
+			if (entry.renderer == null || !entry.renderer.gameObject.activeInHierarchy)
+			{
+				ReleaseNativeMeshRef(entry.meshId);
+				instances.RemoveAt(i);
+				_nativeSceneDirty = true;
+				_nativeGatherDirty = true; // live-renderer set changed — force a full re-gather next cycle
+				continue;
+			}
+
+			var t = entry.renderer.transform;
+			var (px, py, pz, rx, ry, rz, rw) = QuantizeTransform(t.position, t.rotation);
+			if (px != entry.lastPushedPosQX || py != entry.lastPushedPosQY || pz != entry.lastPushedPosQZ ||
+				rx != entry.lastPushedRotQX || ry != entry.lastPushedRotQY || rz != entry.lastPushedRotQZ || rw != entry.lastPushedRotQW)
+			{
+				entry.lastPushedPosQX = px; entry.lastPushedPosQY = py; entry.lastPushedPosQZ = pz;
+				entry.lastPushedRotQX = rx; entry.lastPushedRotQY = ry; entry.lastPushedRotQZ = rz; entry.lastPushedRotQW = rw;
+				instances[i] = entry;
+				_nativeSceneDirty = true;
+			}
+		}
+	}
+
+	#endregion
 
 	#endregion
 

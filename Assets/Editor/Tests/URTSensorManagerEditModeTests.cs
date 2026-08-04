@@ -133,7 +133,10 @@ namespace CLOiSim.Tests.EditMode
 		{
 			Environment.SetEnvironmentVariable("CLOISIM_URT_BACKEND", "compute");
 			var backend = s_selectBackend.Invoke(null, null);
-			// RayTracingBackend.Compute == 1 by enum definition
+			// URTSensorManager.UrtBackendSelection.Compute == 1 by design — its
+			// ordinal intentionally matches RayTracingBackend.Compute so this
+			// assertion (and this test) needed no change when the native
+			// Vulkan RT tier was added.
 			Assert.That((int)backend, Is.EqualTo(1));
 		}
 
@@ -141,7 +144,8 @@ namespace CLOiSim.Tests.EditMode
 		public void SelectBackend_UnknownOverride_FallsBackToDefaultSelection()
 		{
 			Environment.SetEnvironmentVariable("CLOISIM_URT_BACKEND", "unknown_value");
-			// Should not throw; returns Compute or Hardware depending on system.
+			// Should not throw; returns Compute, Hardware, or NativeVulkanRT
+			// depending on system/plugin availability.
 			Assert.DoesNotThrow(() => s_selectBackend.Invoke(null, null));
 		}
 
@@ -150,6 +154,20 @@ namespace CLOiSim.Tests.EditMode
 		{
 			Environment.SetEnvironmentVariable("CLOISIM_URT_BACKEND", "");
 			Assert.DoesNotThrow(() => s_selectBackend.Invoke(null, null));
+		}
+
+		[Test]
+		public void SelectBackend_NativeOverride_FallsBackToComputeWhenPluginUnavailable()
+		{
+			// Realistic CI case: no libcloisim_vulkan_rt.so present, so
+			// VulkanRTPlugin.IsNativeBackendAvailable fails closed to false
+			// (it swallows DllNotFoundException) and SelectBackend must not
+			// throw, instead falling back to Compute.
+			Environment.SetEnvironmentVariable("CLOISIM_URT_BACKEND", "native");
+			object backend = null;
+			Assert.DoesNotThrow(() => backend = s_selectBackend.Invoke(null, null));
+			if (!CLOiSim.VulkanRT.VulkanRTPlugin.IsNativeBackendAvailable)
+				Assert.That((int)backend, Is.EqualTo(1));
 		}
 	}
 

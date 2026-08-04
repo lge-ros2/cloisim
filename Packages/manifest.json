@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.lge-ros2.cloisim.vulkan-rt": "file:../../cloisim_vulkan_rt_plugin",
     "com.lge-ros2.sdformat": "https://github.com/lge-ros2/sdformat-sharp.git?path=com.lge-ros2.sdformat",
     "com.unity.ai.assistant": "2.13.0-pre.2",
     "com.unity.ai.inference": "2.6.1",

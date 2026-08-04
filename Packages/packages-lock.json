@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "com.lge-ros2.cloisim.vulkan-rt": {
+      "version": "file:../../cloisim_vulkan_rt_plugin",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
     "com.lge-ros2.sdformat": {
       "version": "https://github.com/lge-ros2/sdformat-sharp.git?path=com.lge-ros2.sdformat",
       "depth": 0,
