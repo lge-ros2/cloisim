@@ -40,6 +40,59 @@ namespace SDFormat
 					return;
 				}
 
+				// A fixed-joint leaf (no actuated joints anywhere below it, e.g. a
+				// sensor mount) never moves relative to its parent and has nothing
+				// depending on it, so it needs no ArticulationBody at all: dropping it
+				// keeps this node out of the 64-node PhysX articulation-island limit.
+				// Its colliders keep working as a compound collider on the nearest
+				// ArticulationBody ancestor. Its mass/inertia is not folded into the
+				// parent, so this is an approximation for links whose mass is small
+				// relative to the model.
+				//
+				// A fixed-joint connector whose subtree has further actuated joints
+				// below it (e.g. an end-effector mount) still needs its ArticulationBody
+				// kept and chained normally below — there is no supported way to bridge
+				// two separate ArticulationBody islands with a classic Joint
+				// (Joint.connectedArticulationBody requires a Rigidbody on the joint's
+				// own side, not another ArticulationBody), so this case falls through to
+				// the normal chaining path further down and still counts toward the
+				// 64-node limit.
+				if (joint.Type == JointType.Fixed)
+				{
+					var subtreeHasFurtherArticulation = linkObjectChild.GetComponentsInChildren<UE.ArticulationBody>(true).Length > 1;
+
+					if (!subtreeHasFurtherArticulation)
+					{
+						var hasSensor = linkObjectChild.GetComponentInChildren<Device>() != null;
+						var childArticulationBodyToDrop = linkObjectChild.GetComponent<UE.ArticulationBody>();
+						if (childArticulationBodyToDrop != null)
+						{
+							if (!hasSensor)
+							{
+								Debug.LogWarning($"[ImportJoint] Dropping ArticulationBody on fixed-joint leaf link '{linkObjectChild.name}' " +
+									$"(mass={childArticulationBodyToDrop.mass:F3}) to stay under the articulation-island node limit; its mass is not folded into the parent.");
+							}
+							UE.Object.DestroyImmediate(childArticulationBodyToDrop);
+						}
+
+						// Frame/TF metadata is independent of ArticulationBody presence:
+						// CLOiSimPlugin.ResolvePluginParentFrameName() reads
+						// Helper.Link.JointChildLinkName to build TF parent frame ids, so
+						// it must still be populated even when we skip the
+						// ArticulationBody-based chaining below.
+						var droppedLinkHelper = linkObjectChild.GetComponent<Helper.Link>();
+						if (droppedLinkHelper != null)
+						{
+							droppedLinkHelper.JointName = joint.Name;
+							droppedLinkHelper.JointParentLinkName = joint.ParentName;
+							droppedLinkHelper.JointChildLinkName = joint.ChildName;
+						}
+
+						return;
+					}
+					// else: fall through to normal chaining below.
+				}
+
 				var articulationBodyChild = linkObjectChild.GetComponent<UE.ArticulationBody>();
 				if (articulationBodyChild == null)
 				{
