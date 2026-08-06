@@ -13,25 +13,19 @@ namespace SDFormat
 	{
 		public static class Joint
 		{
-			public static UE.Pose SetArticulationBodyRelationship(in SDFormat.Joint joint, UE.Transform linkParent, UE.Transform linkChild)
+			// Reparents linkChild (or its whole model root, for cross-model includes)
+			// under linkParent, matching the SDF joint's parent/child link
+			// relationship. Shared by SetArticulationBodyRelationship (for the
+			// normal ArticulationBody chaining path) and by fixed-joint leaves that
+			// have their ArticulationBody dropped and skip that path entirely -
+			// both still need this transform reparenting to happen.
+			public static void ReparentUnderJointParent(UE.Transform linkParent, UE.Transform linkChild)
 			{
 				var modelTransformParent = linkParent.parent;
 				var modelTransformChild = linkChild.parent;
 
 				var linkHelperParent = linkParent.GetComponent<Helper.Link>();
 				var linkHelperChild = linkChild.GetComponent<Helper.Link>();
-
-				if (linkParent.GetComponent<UE.ArticulationBody>() == null)
-				{
-					UE.Debug.LogWarningFormat("LinkParent({0}) has no ArticulationBody -> create empty one", linkParent.name);
-					Import.Loader.CreateArticulationBody(linkParent);
-				}
-
-				var anchorPose = new UE.Pose
-				{
-					position = UE.Vector3.zero,
-					rotation = UE.Quaternion.identity
-				};
 
 				if (linkHelperChild.Model.Equals(linkHelperParent.Model) ||
 					modelTransformChild.Equals(modelTransformParent))
@@ -44,6 +38,23 @@ namespace SDFormat
 					// authored include pose is still applied to the mounted subtree.
 					modelTransformChild.SetParent(linkParent, false);
 				}
+			}
+
+			public static UE.Pose SetArticulationBodyRelationship(in SDFormat.Joint joint, UE.Transform linkParent, UE.Transform linkChild)
+			{
+				if (linkParent.GetComponent<UE.ArticulationBody>() == null)
+				{
+					UE.Debug.LogWarningFormat("LinkParent({0}) has no ArticulationBody -> create empty one", linkParent.name);
+					Import.Loader.CreateArticulationBody(linkParent);
+				}
+
+				var anchorPose = new UE.Pose
+				{
+					position = UE.Vector3.zero,
+					rotation = UE.Quaternion.identity
+				};
+
+				ReparentUnderJointParent(linkParent, linkChild);
 
 				var (jointPos, jointRot) = joint.RawPose.ToUnity();
 				anchorPose.position += jointPos;

@@ -75,6 +75,13 @@ namespace SDFormat
 							UE.Object.DestroyImmediate(childArticulationBodyToDrop);
 						}
 
+						// SetArticulationBodyRelationship() is skipped on this path (no
+						// ArticulationBody chain to set up), but it is also the only place
+						// that reparents the child link's transform under the parent link.
+						// Do that reparenting here so the scene hierarchy still reflects
+						// the SDF joint's parent/child relationship.
+						Implement.Joint.ReparentUnderJointParent(linkObjectParent, linkObjectChild);
+
 						// Frame/TF metadata is independent of ArticulationBody presence:
 						// CLOiSimPlugin.ResolvePluginParentFrameName() reads
 						// Helper.Link.JointChildLinkName to build TF parent frame ids, so
