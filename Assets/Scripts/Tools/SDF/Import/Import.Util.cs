@@ -256,7 +256,7 @@ namespace SDFormat
 				body.parentAnchorRotation = UE.Quaternion.Inverse(parentBody.transform.rotation) * anchorWorldRotation;
 			}
 
-			public static void SpecifyPose(this object targetObject, IReadOnlyList<(UE.Transform parentLink, UE.Transform childRoot)> pendingIslandSplits = null)
+			public static void SpecifyPose(this object targetObject, IReadOnlyList<(UE.Transform parentLink, UE.Transform childRoot, string rootModelName)> pendingIslandSplits = null)
 			{
 				var rootObject = targetObject as UE.GameObject;
 
@@ -325,7 +325,7 @@ namespace SDFormat
 				// 64-node limit is actually evaluated.
 				if (pendingIslandSplits != null)
 				{
-					foreach (var (parentLink, childRoot) in pendingIslandSplits)
+					foreach (var (parentLink, childRoot, rootModelName) in pendingIslandSplits)
 					{
 						var childArticulationBody = childRoot.GetComponent<UE.ArticulationBody>();
 						if (childArticulationBody == null)
@@ -333,8 +333,7 @@ namespace SDFormat
 							continue;
 						}
 
-						var rootModelHelper = FindRootModelInScope(parentLink);
-						var containerName = $"{rootModelHelper?.name ?? "Unknown"}_DetachedIslands";
+						var containerName = $"{rootModelName ?? "Unknown"}_DetachedIslands";
 						var container = Main.WorldRoot.transform.Find(containerName)?.gameObject;
 						if (container == null)
 						{
