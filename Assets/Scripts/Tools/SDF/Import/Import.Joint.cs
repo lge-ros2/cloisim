@@ -40,6 +40,22 @@ namespace SDFormat
 					return;
 				}
 
+				// Frame/TF metadata is independent of ArticulationBody presence:
+				// CLOiSimPlugin.ResolvePluginParentFrameName() reads
+				// Helper.Link.JointChildLinkName to build TF parent frame ids, so it
+				// must still be populated on every path below that skips the normal
+				// ArticulationBody chaining (which sets it further down instead).
+				void SetJointFrameMetadata()
+				{
+					var linkHelper = linkObjectChild.GetComponent<Helper.Link>();
+					if (linkHelper != null)
+					{
+						linkHelper.JointName = joint.Name;
+						linkHelper.JointParentLinkName = joint.ParentName;
+						linkHelper.JointChildLinkName = joint.ChildName;
+					}
+				}
+
 				// A fixed-joint leaf (no actuated joints anywhere below it, e.g. a
 				// sensor mount) never moves relative to its parent and has nothing
 				// depending on it, so it needs no ArticulationBody at all: dropping it
@@ -49,19 +65,23 @@ namespace SDFormat
 				// parent, so this is an approximation for links whose mass is small
 				// relative to the model.
 				//
-				// A fixed-joint connector whose subtree has further actuated joints
-				// below it (e.g. an end-effector mount) still needs its ArticulationBody
-				// kept and chained normally below — there is no supported way to bridge
-				// two separate ArticulationBody islands with a classic Joint
-				// (Joint.connectedArticulationBody requires a Rigidbody on the joint's
-				// own side, not another ArticulationBody), so this case falls through to
-				// the normal chaining path further down and still counts toward the
-				// 64-node limit.
+				// A fixed-joint connector whose subtree has 2 further actuated joints
+				// still chains normally below (falls through) - two more nodes isn't
+				// worth losing real physical coupling for. A subtree with 3 or more
+				// (e.g. a whole dexterous hand) instead gets split into its own
+				// ArticulationBody island (see IslandSplitMinNodes below): there is no
+				// supported way to bridge two separate ArticulationBody islands with a
+				// classic Joint (Joint.connectedArticulationBody requires a Rigidbody
+				// on the joint's own side, not another ArticulationBody), so it's
+				// kinematically pinned to its parent link at runtime instead (see
+				// Helper.KinematicIslandFollower, wired up in SpecifyPose()).
+				const int IslandSplitMinNodes = 3;
+
 				if (joint.Type == JointType.Fixed)
 				{
-					var subtreeHasFurtherArticulation = linkObjectChild.GetComponentsInChildren<UE.ArticulationBody>(true).Length > 1;
+					var subtreeArticulationCount = linkObjectChild.GetComponentsInChildren<UE.ArticulationBody>(true).Length;
 
-					if (!subtreeHasFurtherArticulation)
+					if (subtreeArticulationCount <= 1)
 					{
 						var hasSensor = linkObjectChild.GetComponentInChildren<Device>() != null;
 						var childArticulationBodyToDrop = linkObjectChild.GetComponent<UE.ArticulationBody>();
@@ -82,22 +102,30 @@ namespace SDFormat
 						// the SDF joint's parent/child relationship.
 						Implement.Joint.ReparentUnderJointParent(linkObjectParent, linkObjectChild);
 
-						// Frame/TF metadata is independent of ArticulationBody presence:
-						// CLOiSimPlugin.ResolvePluginParentFrameName() reads
-						// Helper.Link.JointChildLinkName to build TF parent frame ids, so
-						// it must still be populated even when we skip the
-						// ArticulationBody-based chaining below.
-						var droppedLinkHelper = linkObjectChild.GetComponent<Helper.Link>();
-						if (droppedLinkHelper != null)
-						{
-							droppedLinkHelper.JointName = joint.Name;
-							droppedLinkHelper.JointParentLinkName = joint.ParentName;
-							droppedLinkHelper.JointChildLinkName = joint.ChildName;
-						}
+						SetJointFrameMetadata();
 
 						return;
 					}
-					// else: fall through to normal chaining below.
+
+					if (subtreeArticulationCount >= IslandSplitMinNodes)
+					{
+						Debug.LogWarning($"[ImportJoint] Splitting fixed-joint subtree at '{linkObjectChild.name}' " +
+							$"({subtreeArticulationCount} ArticulationBody nodes) into its own island to stay under the " +
+							"64-node articulation-island limit; it will kinematically follow its parent link instead of " +
+							"being physically coupled to it.");
+
+						// Do NOT touch the ArticulationBody or Transform parenting here.
+						// SpecifyPose() performs the actual island split (reparenting under
+						// a dedicated container + kinematic follower setup) once pose
+						// computation has finished but before ArticulationBody bodies are
+						// enabled, which is the only safe window (see SpecifyPose comments).
+						RegisterPendingIslandSplit(linkObjectParent, linkObjectChild);
+
+						SetJointFrameMetadata();
+
+						return;
+					}
+					// else (== 2): fall through to normal chaining below.
 				}
 
 				var articulationBodyChild = linkObjectChild.GetComponent<UE.ArticulationBody>();

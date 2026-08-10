@@ -256,7 +256,7 @@ namespace SDFormat
 				body.parentAnchorRotation = UE.Quaternion.Inverse(parentBody.transform.rotation) * anchorWorldRotation;
 			}
 
-			public static void SpecifyPose(this object targetObject)
+			public static void SpecifyPose(this object targetObject, IReadOnlyList<(UE.Transform parentLink, UE.Transform childRoot)> pendingIslandSplits = null)
 			{
 				var rootObject = targetObject as UE.GameObject;
 
@@ -311,6 +311,46 @@ namespace SDFormat
 					if (!linkHelper.isSelfCollide)
 					{
 						linkHelper.IgnoreSelfCollision();
+					}
+				}
+
+				// Split off oversized fixed-joint subtrees (registered by ImportJoint())
+				// into their own ArticulationBody island now: world poses are already
+				// finalized above (SetParent(..., worldPositionStays: true) preserves
+				// them) and self-collision ignoring above already ran while this
+				// subtree was still nested under its original root model, so the
+				// Physics.IgnoreCollision() pairs it registered stay valid regardless of
+				// this reparenting. This must happen before the island-size check and
+				// enable loop below, which is the only point where Unity's native
+				// 64-node limit is actually evaluated.
+				if (pendingIslandSplits != null)
+				{
+					foreach (var (parentLink, childRoot) in pendingIslandSplits)
+					{
+						var childArticulationBody = childRoot.GetComponent<UE.ArticulationBody>();
+						if (childArticulationBody == null)
+						{
+							continue;
+						}
+
+						var rootModelHelper = FindRootModelInScope(parentLink);
+						var containerName = $"{rootModelHelper?.name ?? "Unknown"}_DetachedIslands";
+						var container = Main.WorldRoot.transform.Find(containerName)?.gameObject;
+						if (container == null)
+						{
+							container = new UE.GameObject(containerName);
+							container.transform.SetParent(Main.WorldRoot.transform, false);
+						}
+
+						childRoot.SetParent(container.transform, true);
+
+						var offsetPos = UE.Quaternion.Inverse(parentLink.rotation) * (childRoot.position - parentLink.position);
+						var offsetRot = UE.Quaternion.Inverse(parentLink.rotation) * childRoot.rotation;
+
+						childArticulationBody.immovable = true;
+
+						var follower = childRoot.gameObject.AddComponent<Helper.KinematicIslandFollower>();
+						follower.Initialize(parentLink, offsetPos, offsetRot);
 					}
 				}
 

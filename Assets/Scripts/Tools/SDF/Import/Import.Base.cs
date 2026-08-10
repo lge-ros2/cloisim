@@ -17,6 +17,7 @@ namespace SDFormat
 			private Dictionary<Joint, object> _jointObjectList = new();
 			private Dictionary<Plugin, object> _pluginObjectList = new();
 			private Dictionary<Gripper, object> _gripperObjectList = new();
+			private List<(UE.Transform parentLink, UE.Transform childRoot)> _pendingIslandSplits = new();
 
 			private static void UpdateEnvironmentIfNeeded(in object targetObject)
 			{
@@ -115,6 +116,16 @@ namespace SDFormat
 				}
 			}
 
+			// Registered by ImportJoint() for fixed-joint subtrees with too many
+			// internal ArticulationBody nodes to safely join the parent's island.
+			// Processed by SpecifyPose() after pose computation but before the
+			// ArticulationBody enable loop, so the split takes effect before Unity's
+			// native 64-node island limit is evaluated.
+			protected void RegisterPendingIslandSplit(UE.Transform parentLink, UE.Transform childRoot)
+			{
+				_pendingIslandSplits.Add((parentLink, childRoot));
+			}
+
 			protected IEnumerator ImportModels(IReadOnlyList<Model> items, object parentObject = null)
 			{
 				foreach (var item in items)
@@ -152,6 +163,7 @@ namespace SDFormat
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
 				_gripperObjectList.Clear();
+				_pendingIslandSplits.Clear();
 
 				var worldObject = ImportWorld(world);
 
@@ -186,7 +198,7 @@ namespace SDFormat
 				ImportActors(world.Actors);
 				yield return null;
 
-				worldObject?.SpecifyPose();
+				worldObject?.SpecifyPose(_pendingIslandSplits);
 				UpdateEnvironmentIfNeeded(worldObject);
 
 				foreach (var pluginObject in _pluginObjectList)
@@ -207,6 +219,7 @@ namespace SDFormat
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
 				_gripperObjectList.Clear();
+				_pendingIslandSplits.Clear();
 
 				object modelObject = null;
 				yield return ImportModel(model, onCreatedRoot: obj => modelObject = obj);
@@ -235,7 +248,7 @@ namespace SDFormat
 					}
 				}
 
-				modelObject?.SpecifyPose();
+				modelObject?.SpecifyPose(_pendingIslandSplits);
 				UpdateEnvironmentIfNeeded(modelObject);
 
 				foreach (var pluginObject in _pluginObjectList)
