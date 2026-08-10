@@ -45,14 +45,18 @@ namespace SDFormat
 				// Helper.Link.JointChildLinkName to build TF parent frame ids, so it
 				// must still be populated on every path below that skips the normal
 				// ArticulationBody chaining (which sets it further down instead).
+				var jointName = joint.Name;
+				var jointParentName = joint.ParentName;
+				var jointChildName = joint.ChildName;
+
 				void SetJointFrameMetadata()
 				{
 					var linkHelper = linkObjectChild.GetComponent<Helper.Link>();
 					if (linkHelper != null)
 					{
-						linkHelper.JointName = joint.Name;
-						linkHelper.JointParentLinkName = joint.ParentName;
-						linkHelper.JointChildLinkName = joint.ChildName;
+						linkHelper.JointName = jointName;
+						linkHelper.JointParentLinkName = jointParentName;
+						linkHelper.JointChildLinkName = jointChildName;
 					}
 				}
 
