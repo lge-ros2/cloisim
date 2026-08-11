@@ -14,7 +14,7 @@ public class ProceduralMesh
 {
 	public enum Type { BOX, CYLINDER, SPHERE, ELLIPSOID, PLANE };
 
-	private static Dictionary<Type, Mesh> MeshObjectCache = new Dictionary<Type, Mesh>();
+	private static Dictionary<int, Mesh> MeshObjectCache = new Dictionary<int, Mesh>();
 
 	private const float PI = Mathf.PI;
 	private const float PI2 = PI * 2f;
@@ -24,7 +24,7 @@ public class ProceduralMesh
 	{
 		Mesh mesh;
 
-		if (!MeshObjectCache.ContainsKey(Type.BOX))
+		if (!MeshObjectCache.ContainsKey((int)Type.BOX))
 		{
 			mesh = new Mesh();
 
@@ -130,10 +130,10 @@ public class ProceduralMesh
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
-			MeshObjectCache.Add(Type.BOX, mesh);
+			MeshObjectCache.Add((int)Type.BOX, mesh);
 		}
 
-		mesh = Object.Instantiate(MeshObjectCache[Type.BOX]);
+		mesh = Object.Instantiate(MeshObjectCache[(int)Type.BOX]);
 		mesh.name = "Box";
 
 		var meshVertices = mesh.vertices;
@@ -153,15 +153,16 @@ public class ProceduralMesh
 		in float upRotationAngle = 0)
 	{
 		Mesh mesh;
+		var cylinderKey = (int)Type.CYLINDER * 1000000 + nbSides;
 
-		if (!MeshObjectCache.ContainsKey(Type.CYLINDER))
+		if (!MeshObjectCache.ContainsKey(cylinderKey))
 		{
 			mesh = CreateCone(1, 1, 1, nbSides);
 			mesh.name = "Cylinder";
-			MeshObjectCache.Add(Type.CYLINDER, mesh);
+			MeshObjectCache.Add(cylinderKey, mesh);
 		}
 
-		mesh = Object.Instantiate(MeshObjectCache[Type.CYLINDER]);
+		mesh = Object.Instantiate(MeshObjectCache[cylinderKey]);
 		mesh.name = "Cylinder";
 
 		var rotationMatrix = Quaternion.AngleAxis(upRotationAngle, Vector3.up);
@@ -379,8 +380,9 @@ public class ProceduralMesh
 		in string meshName = "Ellipsoid", in Type meshType = Type.ELLIPSOID)
 	{
 		Mesh mesh;
+		var cacheKey = (int)meshType * 1000000 + nbLong * 1000 + nbLat;
 
-		if (!MeshObjectCache.ContainsKey(meshType))
+		if (!MeshObjectCache.ContainsKey(cacheKey))
 		{
 			const float UnitRadius = 1f;
 			mesh = new Mesh
@@ -479,10 +481,10 @@ public class ProceduralMesh
 			mesh.uv = uvs;
 			mesh.triangles = triangles;
 
-			MeshObjectCache.Add(meshType, mesh);
+			MeshObjectCache.Add(cacheKey, mesh);
 		}
 
-		mesh = Object.Instantiate(MeshObjectCache[meshType]);
+		mesh = Object.Instantiate(MeshObjectCache[cacheKey]);
 		mesh.name = meshName;
 
 		var meshVertices = mesh.vertices;
@@ -502,15 +504,16 @@ public class ProceduralMesh
 		in int resolutionX = 15, in int resolutionZ = 15)
 	{
 		Mesh mesh;
-		var cacheKey = Type.PLANE + resolutionX * resolutionZ;
+		if (normal.Equals(default(Vector3)))
+		{
+			normal = Vector3.up;
+		}
+
+		var cacheKey = (int)Type.PLANE * 1000000 + resolutionX * 1000 + resolutionZ;
+		cacheKey = unchecked(cacheKey * 397 ^ normal.GetHashCode());
 
 		if (!MeshObjectCache.ContainsKey(cacheKey))
 		{
-			if (normal.Equals(default(Vector3)))
-			{
-				normal = Vector3.up;
-			}
-
 			mesh = new Mesh
 			{
 				name = "Plane"
@@ -729,7 +732,8 @@ public class ProceduralMesh
 		var height = polylines.Count == 0 ? 1f : (float)polylines[0].Height;
 		var halfHeight = height * 0.5f;
 
-		// close all the loops
+		// close all the loops without mutating the parsed input
+		var closedPolylinePoints = new List<List<SDFormat.Vector2d>>();
 		foreach (var polyline in polylines)
 		{
 			if (polyline.Points == null || polyline.Points.Count < 2)
@@ -738,37 +742,41 @@ public class ProceduralMesh
 				continue;
 			}
 
+			var points = new List<SDFormat.Vector2d>(polyline.Points);
+
 			// does the poly ends with the first point?
-			var first = polyline.Points[0];
-			var last = polyline.Points[polyline.Points.Count - 1];
+			var first = points[0];
+			var last = points[points.Count - 1];
 			var distance = (first.X - last.X) * (first.X - last.X) + (first.Y - last.Y) * (first.Y - last.Y);
 
 			// within range
 			if (distance > tolerance * tolerance)
 			{
-				polyline.Points.Add(first);
+				points.Add(first);
 				Debug.LogWarning("add the first point at the ends");
 			}
+
+			closedPolylinePoints.Add(points);
 		}
 
 		var pointsToTriangulate = new List<Vector2>();
-		if (polylines.Count > 0 && polylines[0].Points != null && polylines[0].Points.Count >= 3)
+		if (closedPolylinePoints.Count > 0 && closedPolylinePoints[0].Count >= 3)
 		{
-			foreach (var point in polylines[0].Points)
+			foreach (var point in closedPolylinePoints[0])
 			{
 				pointsToTriangulate.Add(SDF2Unity.Point(point));
 			}
 		}
 
 		List<List<Vector2>> constrainedEdgePoints = null;
-		if (polylines.Count > 1)
+		if (closedPolylinePoints.Count > 1)
 		{
 			constrainedEdgePoints = new List<List<Vector2>>();
 
-			for (int i = 1; i < polylines.Count; i++)
+			for (int i = 1; i < closedPolylinePoints.Count; i++)
 			{
 				var points = new List<Vector2>();
-				foreach (var point in polylines[i].Points)
+				foreach (var point in closedPolylinePoints[i])
 				{
 					points.Add(SDF2Unity.Point(point));
 				}
