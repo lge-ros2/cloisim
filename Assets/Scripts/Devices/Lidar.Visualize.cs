@@ -12,11 +12,22 @@ namespace SensorDevices
 {
 	public partial class Lidar
 	{
-		private static int _indexForVisualize = 0;
-		private static int _maxCountForVisualize = 3;
-		private static float _hueOffsetForVisualize = 0f;
+		private int _indexForVisualize = 0;
+		private const int _maxCountForVisualize = 3;
+		private float _hueOffsetForVisualize = 0f;
 		private const float UnitHueOffsetForVisualize = 0.07f;
 		private const float AlphaForVisualize = 0.75f;
+
+		private float ComputeVisualizeHue()
+		{
+			if (_indexForVisualize >= _maxCountForVisualize)
+			{
+				_indexForVisualize = 0;
+				_hueOffsetForVisualize += UnitHueOffsetForVisualize;
+			}
+			var hue = ((float)_indexForVisualize++ / Mathf.Max(1, _maxCountForVisualize)) + _hueOffsetForVisualize;
+			return (hue % 1f + 1f) % 1f;
+		}
 
 		/// <summary>
 		/// 3D lidar: renders hit positions as a point cloud using ParticleSystem.
@@ -54,13 +65,7 @@ namespace SensorDevices
 
 			var waitForSeconds = new WaitForSeconds(UpdatePeriod);
 
-			if (_indexForVisualize >= _maxCountForVisualize)
-			{
-				_indexForVisualize = 0;
-				_hueOffsetForVisualize += UnitHueOffsetForVisualize;
-			}
-			var hue = ((float)_indexForVisualize++ / Mathf.Max(1, _maxCountForVisualize)) + _hueOffsetForVisualize;
-			hue = (hue % 1f + 1f) % 1f;
+			var hue = ComputeVisualizeHue();
 
 			var particles = new ParticleSystem.Particle[_totalSamples];
 
@@ -231,13 +236,7 @@ namespace SensorDevices
 			var rangeMin = _scanRange.min;
 			var rangeMax = _scanRange.max;
 
-			if (_indexForVisualize >= _maxCountForVisualize)
-			{
-				_indexForVisualize = 0;
-				_hueOffsetForVisualize += UnitHueOffsetForVisualize;
-			}
-			var hue = ((float)_indexForVisualize++ / Mathf.Max(1, _maxCountForVisualize)) + _hueOffsetForVisualize;
-			hue = (hue % 1f + 1f) % 1f;
+			var hue = ComputeVisualizeHue();
 
 			var positions = new List<Vector3>((int)(horizontalSamples * _vertical.samples) * 2);
 
