@@ -733,7 +733,7 @@ public class ProceduralMesh
 		var halfHeight = height * 0.5f;
 
 		// close all the loops without mutating the parsed input
-		var closedPolylinePoints = new List<List<SDFormat.Vector2d>>();
+		var closedPolylinePoints = new List<List<SDFormat.Math.Vector2d>>();
 		foreach (var polyline in polylines)
 		{
 			if (polyline.Points == null || polyline.Points.Count < 2)
@@ -742,7 +742,7 @@ public class ProceduralMesh
 				continue;
 			}
 
-			var points = new List<SDFormat.Vector2d>(polyline.Points);
+			var points = new List<SDFormat.Math.Vector2d>(polyline.Points);
 
 			// does the poly ends with the first point?
 			var first = points[0];
