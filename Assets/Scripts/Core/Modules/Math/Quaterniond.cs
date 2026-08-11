@@ -129,7 +129,7 @@ public struct Quaterniond
 
 	public static Quaterniond FromToRotation(in Vector3d fromDirection, in Vector3d toDirection)
 	{
-		throw new IndexOutOfRangeException("Not Available!");
+		throw new NotImplementedException("Not Available!");
 	}
 
 	public static Quaterniond Inverse(in Quaterniond rotation)

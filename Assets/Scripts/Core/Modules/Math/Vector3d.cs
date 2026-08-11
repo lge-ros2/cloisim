@@ -217,10 +217,11 @@ public struct Vector3d
 		}
 		else
 		{
+			var magnitude = value.magnitude;
 			var tempDVec = new Vector3d(value);
-			tempDVec.x /= value.magnitude;
-			tempDVec.y /= value.magnitude;
-			tempDVec.z /= value.magnitude;
+			tempDVec.x /= magnitude;
+			tempDVec.y /= magnitude;
+			tempDVec.z /= magnitude;
 			return tempDVec;
 		}
 	}
@@ -236,7 +237,7 @@ public struct Vector3d
 		var dot0 = Dot(normal, tangent);
 		tangent -= dot0 * normal;
 		mag = Magnitude(tangent);
-		if (mag < 0)
+		if (mag == 0)
 			tangent = OrthoNormalVectorFast(normal);
 		else
 			tangent /= mag;
@@ -356,7 +357,7 @@ public struct Vector3d
 		var lhsMag = Magnitude(lhs);
 		var rhsMag = Magnitude(rhs);
 
-		if (lhsMag < 0 || rhsMag < 0)
+		if (lhsMag == 0 || rhsMag == 0)
 		{
 			return Lerp(lhs, rhs, t);
 		}

@@ -167,7 +167,7 @@ public struct Matrix4x4d
 		{
 			const int m = 4;
 			const int n = 4;
-			double[,] array = new double[2 * m + 1, 2 * n + 1];
+			double[,] array = new double[2 * m, 2 * n];
 
 			for (var i = 0; i < m; i++)
 			{
@@ -274,7 +274,7 @@ public struct Matrix4x4d
 
 	public static Matrix4x4d LookAt(Vector3d from, Vector3d to, Vector3d up)
 	{
-		throw new IndexOutOfRangeException("Not Available!");
+		throw new NotImplementedException("Not Available!");
 	}
 
 	public static Matrix4x4d Ortho(in double left, in double right, in double bottom, in double top, in double zNear, in double zFar)
