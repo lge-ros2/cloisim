@@ -156,7 +156,8 @@ namespace SensorDevices
 		{
 			lock (_jointStateLock)
 			{
-				var childArticulationBodies = searchRoot.GetComponentsInChildren<ArticulationBody>();
+				var childArticulationBodies = SDFormat.Helper.DetachedIslandUtil
+					.GetComponentsInChildrenIncludingOwnedDetachedIslands<ArticulationBody>(searchRoot);
 				var rootModelName = string.Empty;
 				link = null;
 				isStatic = false;

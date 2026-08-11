@@ -2454,5 +2454,55 @@ namespace CLOiSim.Tests.EditMode
 				Object.DestroyImmediate(rootObject);
 			}
 		}
+
+		[Test]
+		public void GetComponentsInChildrenIncludingOwnedDetachedIslands_FindsDetachedSubtreeLinks()
+		{
+			SDFormat.Helper.DetachedIslandUtil.ClearDetachedSubtrees();
+
+			// Owner model root (e.g. a nested left hand model).
+			var owner = new GameObject("left_hand");
+			owner.AddComponent<SDFormat.Helper.Model>();
+
+			// A link that stays nested under the owner (e.g. a palm link).
+			var nestedLinkObject = new GameObject("palm_link");
+			nestedLinkObject.transform.SetParent(owner.transform, false);
+			var nestedLink = nestedLinkObject.AddComponent<SDFormat.Helper.Link>();
+
+			// A detached subtree root, as if split out into the World container.
+			var detachedRoot = new GameObject("hand_base_link");
+			detachedRoot.transform.SetParent(null, false);
+			var detachedLink = detachedRoot.AddComponent<SDFormat.Helper.Link>();
+
+			// A sibling owner must never see this hand's detached subtree.
+			var otherOwner = new GameObject("right_hand");
+
+			try
+			{
+				// Before registration, only the nested link is visible from the owner.
+				var before = SDFormat.Helper.DetachedIslandUtil
+					.GetComponentsInChildrenIncludingOwnedDetachedIslands<SDFormat.Helper.Link>(owner.transform);
+				CollectionAssert.Contains(before, nestedLink);
+				CollectionAssert.DoesNotContain(before, detachedLink);
+
+				SDFormat.Helper.DetachedIslandUtil.RegisterDetachedSubtree(owner.transform, detachedRoot.transform);
+
+				var after = SDFormat.Helper.DetachedIslandUtil
+					.GetComponentsInChildrenIncludingOwnedDetachedIslands<SDFormat.Helper.Link>(owner.transform);
+				CollectionAssert.Contains(after, nestedLink);
+				CollectionAssert.Contains(after, detachedLink);
+
+				var other = SDFormat.Helper.DetachedIslandUtil
+					.GetComponentsInChildrenIncludingOwnedDetachedIslands<SDFormat.Helper.Link>(otherOwner.transform);
+				CollectionAssert.DoesNotContain(other, detachedLink);
+			}
+			finally
+			{
+				Object.DestroyImmediate(owner);
+				Object.DestroyImmediate(otherOwner);
+				Object.DestroyImmediate(detachedRoot);
+				SDFormat.Helper.DetachedIslandUtil.ClearDetachedSubtrees();
+			}
+		}
 	}
 }

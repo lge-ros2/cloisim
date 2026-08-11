@@ -5,6 +5,7 @@
  */
 using System.Collections.Generic;
 using System.Collections;
+using System.Linq;
 using System;
 using UE = UnityEngine;
 
@@ -17,6 +18,7 @@ namespace SDFormat
 			private Dictionary<Joint, object> _jointObjectList = new();
 			private Dictionary<Plugin, object> _pluginObjectList = new();
 			private Dictionary<Gripper, object> _gripperObjectList = new();
+			private List<(UE.Transform parentLink, UE.Transform childRoot, string rootModelName)> _pendingIslandSplits = new();
 
 			private static void UpdateEnvironmentIfNeeded(in object targetObject)
 			{
@@ -115,6 +117,25 @@ namespace SDFormat
 				}
 			}
 
+			// Registered by ImportJoint() for fixed-joint subtrees with too many
+			// internal ArticulationBody nodes to safely join the parent's island.
+			// Processed by SpecifyPose() after pose computation but before the
+			// ArticulationBody enable loop, so the split takes effect before Unity's
+			// native 64-node island limit is evaluated.
+			//
+			// The owning root model's name is resolved here (at registration time,
+			// while parentLink is still attached under its original model hierarchy)
+			// rather than later in SpecifyPose(): earlier splits in the same batch may
+			// have already reparented an ancestor of parentLink out from under the
+			// root model by the time later splits are processed, which would make a
+			// deferred lookup resolve to nothing (e.g. a whole arm subtree split off
+			// before a hand subtree mounted on that same arm is processed).
+			protected void RegisterPendingIslandSplit(UE.Transform parentLink, UE.Transform childRoot)
+			{
+				var rootModelName = parentLink.GetComponentsInParent<Helper.Model>().LastOrDefault()?.name;
+				_pendingIslandSplits.Add((parentLink, childRoot, rootModelName));
+			}
+
 			protected IEnumerator ImportModels(IReadOnlyList<Model> items, object parentObject = null)
 			{
 				foreach (var item in items)
@@ -152,6 +173,8 @@ namespace SDFormat
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
 				_gripperObjectList.Clear();
+				_pendingIslandSplits.Clear();
+				Helper.DetachedIslandUtil.ClearDetachedSubtrees();
 
 				var worldObject = ImportWorld(world);
 
@@ -186,7 +209,7 @@ namespace SDFormat
 				ImportActors(world.Actors);
 				yield return null;
 
-				worldObject?.SpecifyPose();
+				worldObject?.SpecifyPose(_pendingIslandSplits);
 				UpdateEnvironmentIfNeeded(worldObject);
 
 				foreach (var pluginObject in _pluginObjectList)
@@ -207,6 +230,8 @@ namespace SDFormat
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
 				_gripperObjectList.Clear();
+				_pendingIslandSplits.Clear();
+				Helper.DetachedIslandUtil.ClearDetachedSubtrees();
 
 				object modelObject = null;
 				yield return ImportModel(model, onCreatedRoot: obj => modelObject = obj);
@@ -235,7 +260,7 @@ namespace SDFormat
 					}
 				}
 
-				modelObject?.SpecifyPose();
+				modelObject?.SpecifyPose(_pendingIslandSplits);
 				UpdateEnvironmentIfNeeded(modelObject);
 
 				foreach (var pluginObject in _pluginObjectList)

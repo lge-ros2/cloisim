@@ -34,7 +34,8 @@ public class MicomPlugin : CLOiSimPlugin
 
 	protected override IEnumerator OnStart()
 	{
-		_linkHelperInChildren = GetComponentsInChildren<SDFormat.Helper.Link>();
+		_linkHelperInChildren = SDFormat.Helper.DetachedIslandUtil
+			.GetComponentsInChildrenIncludingDetachedIslands<SDFormat.Helper.Link>(transform);
 
 		SetupMicom();
 
