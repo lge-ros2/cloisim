@@ -85,6 +85,13 @@ public class ObjectInspectorWindow : MonoBehaviour
 	private GUIStyle _windowBgStyle;
 	private bool _stylesInitialized;
 
+	public static ObjectInspectorWindow Instance { get; private set; }
+
+	void Awake()
+	{
+		Instance = this;
+	}
+
 	void Start()
 	{
 		_gizmo = Main.Gizmos;
@@ -93,6 +100,10 @@ public class ObjectInspectorWindow : MonoBehaviour
 
 	void OnDestroy()
 	{
+		if (Instance == this)
+		{
+			Instance = null;
+		}
 		DestroyTextures();
 	}
 
@@ -124,10 +135,9 @@ public class ObjectInspectorWindow : MonoBehaviour
 	// offset away from the target so the window doesn't cover it.
 	public static void OpenAt(Transform target, Vector2 screenPos, Camera camera)
 	{
-		var window = FindAnyObjectByType<ObjectInspectorWindow>();
-		if (window != null)
+		if (Instance != null)
 		{
-			window.Open(target, screenPos, camera);
+			Instance.Open(target, screenPos, camera);
 		}
 	}
 
@@ -261,13 +271,12 @@ public class ObjectInspectorWindow : MonoBehaviour
 
 	public static void CloseIfOpen()
 	{
-		var window = FindAnyObjectByType<ObjectInspectorWindow>();
-		if (window == null)
+		if (Instance == null)
 		{
 			return;
 		}
 
-		window.CloseWindow();
+		Instance.CloseWindow();
 	}
 
 	private void CloseWindow()
