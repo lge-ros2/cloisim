@@ -78,8 +78,7 @@ namespace SensorDevices
 				_messageQueue.TryPeek(out var msg))
 			{
 				var imageMsg = ((messages.Segmentation)msg).Image;
-				var saveName = $"{DeviceName}_{imageMsg.Header.Stamp.Sec}.{imageMsg.Header.Stamp.Nsec}";
-				_textureForCapture.SaveRawImage(imageMsg.Data, _camParam.SavePath, saveName);
+				TrySaveFrame(imageMsg);
 			}
 		}
 

@@ -605,7 +605,6 @@ namespace SensorDevices
 				_messageQueue.TryPeek(out var msg))
 			{
 				var imageMsg = (messages.Image)msg;
-				var saveName = $"{DeviceName}_{imageMsg.Header.Stamp.Sec}.{imageMsg.Header.Stamp.Nsec}";
 				var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
 
 				if (format != CameraData.PixelFormat.L_INT8)
@@ -613,8 +612,19 @@ namespace SensorDevices
 					Debug.LogWarning($"{format.ToString()} is not support to save file");
 					return;
 				}
-				_textureForCapture.SaveRawImage(imageMsg.Data, _camParam.SavePath, saveName);
+				TrySaveFrame(imageMsg);
 			}
+		}
+
+		protected void TrySaveFrame(in messages.Image imageMsg)
+		{
+			if (_textureForCapture == null)
+			{
+				return;
+			}
+
+			var saveName = $"{DeviceName}_{imageMsg.Header.Stamp.Sec}.{imageMsg.Header.Stamp.Nsec}";
+			_textureForCapture.SaveRawImage(imageMsg.Data, _camParam.SavePath, saveName);
 		}
 
 		protected virtual void ImageProcessing<T>(ref NativeArray<T> readbackData, in double capturedTime) where T : struct
