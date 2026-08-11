@@ -58,3 +58,16 @@ public static class ShaderProps
 	public const string SmoothnessTextureChannel = "_SmoothnessTextureChannel";
 	public const string WorkflowMode = "_WorkflowMode";
 }
+
+/// <summary>
+/// Central definitions for the simulation WebSocket service paths and default
+/// port. Using the same constants for registration and teardown prevents a typo
+/// in one path from silently breaking the /control or /markers API.
+/// </summary>
+public static class SimServicePaths
+{
+	public const string Control = "/control";
+	public const string Markers = "/markers";
+	public const int DefaultPort = 8080;
+}
+
