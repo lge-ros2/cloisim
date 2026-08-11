@@ -364,6 +364,7 @@ public class MarkerVisualizerService : WebSocketBehavior
 	protected override void OnClose(CloseEventArgs e)
 	{
 		Debug.LogFormat("Close({0}), {1}", e.Code, e.Reason);
+		markerVisualizer.UnregisterResponseAction(SendResponse);
 	}
 
 	protected override void OnMessage(MessageEventArgs e)
