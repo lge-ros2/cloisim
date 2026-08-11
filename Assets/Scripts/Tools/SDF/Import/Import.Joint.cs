@@ -113,21 +113,36 @@ namespace SDFormat
 
 					if (subtreeArticulationCount >= IslandSplitMinNodes)
 					{
-						Debug.LogWarning($"[ImportJoint] Splitting fixed-joint subtree at '{linkObjectChild.name}' " +
-							$"({subtreeArticulationCount} ArticulationBody nodes) into its own island to stay under the " +
-							"64-node articulation-island limit; it will kinematically follow its parent link instead of " +
-							"being physically coupled to it.");
+						// Only split the INNERMOST oversized fixed-joint subtree. A fixed
+						// joint that merely holds one or more oversized nested subtrees
+						// (e.g. a tiny tool_base_link that mounts a 20-node hand) will
+						// otherwise count those nested bodies too and get split on its
+						// own, ripping an intermediate link out of the body island. When
+						// such a nested oversized subtree exists below, this link is just
+						// a connector - keep it chained into the body and let the nested
+						// fixed joint handle the island split instead.
+						if (HasOversizedNestedSubtree(linkObjectChild, IslandSplitMinNodes))
+						{
+							// Fall through to normal chaining below.
+						}
+						else
+						{
+							Debug.LogWarning($"[ImportJoint] Splitting fixed-joint subtree at '{linkObjectChild.name}' " +
+								$"({subtreeArticulationCount} ArticulationBody nodes) into its own island to stay under the " +
+								"64-node articulation-island limit; it will kinematically follow its parent link instead of " +
+								"being physically coupled to it.");
 
-						// Do NOT touch the ArticulationBody or Transform parenting here.
-						// SpecifyPose() performs the actual island split (reparenting under
-						// a dedicated container + kinematic follower setup) once pose
-						// computation has finished but before ArticulationBody bodies are
-						// enabled, which is the only safe window (see SpecifyPose comments).
-						RegisterPendingIslandSplit(linkObjectParent, linkObjectChild);
+							// Do NOT touch the ArticulationBody or Transform parenting here.
+							// SpecifyPose() performs the actual island split (reparenting under
+							// a dedicated container + kinematic follower setup) once pose
+							// computation has finished but before ArticulationBody bodies are
+							// enabled, which is the only safe window (see SpecifyPose comments).
+							RegisterPendingIslandSplit(linkObjectParent, linkObjectChild);
 
-						SetJointFrameMetadata();
+							SetJointFrameMetadata();
 
-						return;
+							return;
+						}
 					}
 					// else (== 2): fall through to normal chaining below.
 				}
@@ -249,6 +264,35 @@ namespace SDFormat
 
 					linkHelper.SetJointPoseTarget(axis1xyz, axisSpringReference, axis2xyz, axis2SpringReference);
 				}
+			}
+
+			// Returns true if any nested model subtree strictly below <paramref name="root"/>
+			// holds at least <paramref name="minNodes"/> ArticulationBodies. A fixed joint
+			// that is only a connector wrapping such a subtree (e.g. a tiny tool_base_link
+			// that mounts a whole included hand model) should not be split itself; only the
+			// nested fixed joint at the hand's root (left_hand_joint) should drive the island
+			// split. This keeps the intermediate connector link in the body island.
+			private static bool HasOversizedNestedSubtree(UE.Transform root, int minNodes)
+			{
+				if (root == null)
+				{
+					return false;
+				}
+
+				foreach (var nestedModel in root.GetComponentsInChildren<Helper.Model>(true))
+				{
+					if (nestedModel.transform == null)
+					{
+						continue;
+					}
+
+					if (nestedModel.GetComponentsInChildren<UE.ArticulationBody>(true).Length >= minNodes)
+					{
+						return true;
+					}
+				}
+
+				return false;
 			}
 		}
 	}
