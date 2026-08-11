@@ -144,7 +144,7 @@ public sealed class ObjectTracking
 		ClearFootprint();
 
 		var capsuleCollider = _rootTransform.GetComponentInChildren<CapsuleCollider>();
-		if (capsuleCollider != null && _rootTransform.CompareTag("Actor"))
+		if (capsuleCollider != null && _rootTransform.CompareTag(TagNames.Actor))
 		{
 			var radius = capsuleCollider.radius;
 
@@ -161,7 +161,7 @@ public sealed class ObjectTracking
 		else
 		{
 			var meshFilters = _rootTransform.GetComponentsInChildren<MeshFilter>();
-			if (meshFilters != null && _rootTransform.CompareTag("Model"))
+			if (meshFilters != null && _rootTransform.CompareTag(TagNames.Model))
 			{
 				var validMeshFilters = new List<MeshFilter>(meshFilters.Length);
 				for (var i = 0; i < meshFilters.Length; i++)

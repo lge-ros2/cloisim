@@ -59,7 +59,7 @@ public partial class MarkerVisualizer : MonoBehaviour
 
 				if (marker != null)
 				{
-					marker.tag = "Marker";
+					marker.tag = TagNames.Marker;
 					if (rootMarkers != null)
 					{
 						if (marker.transform.parent == null)

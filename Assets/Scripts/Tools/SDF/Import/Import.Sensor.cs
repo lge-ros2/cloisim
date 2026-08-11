@@ -139,7 +139,7 @@ namespace SDFormat
 					{
 						var (localPosition, localRotation) = sensor.RawPose.ToUnity();
 
-						newSensorObject.tag = "Sensor";
+						newSensorObject.tag = TagNames.Sensor;
 						newSensorObject.name = sensor.Name;
 						newSensorObject.transform.localPosition += localPosition;
 						newSensorObject.transform.localRotation *= localRotation;

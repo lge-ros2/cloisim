@@ -24,7 +24,7 @@ namespace SDFormat
 				var targetObject = parentObject as UE.GameObject;
 				var newVisualObject = new UE.GameObject(visual.Name)
 				{
-					tag = "Visual"
+					tag = TagNames.Visual
 				};
 
 				targetObject.SetChild(newVisualObject);
@@ -48,7 +48,7 @@ namespace SDFormat
 				var visualObject = targetObject as UE.GameObject;
 
 				// Optimize geometry and materials
-				if (visualObject.CompareTag("Visual") == false)
+				if (visualObject.CompareTag(TagNames.Visual) == false)
 				{
 					return;
 				}
@@ -63,7 +63,7 @@ namespace SDFormat
 						for (var i = 0; i < visualObject.transform.childCount; i++)
 						{
 							var geometryTransform = visualObject.transform.GetChild(i);
-							if (geometryTransform.CompareTag("Geometry"))
+							if (geometryTransform.CompareTag(TagNames.Geometry))
 							{
 								geometryTransform.OptimizeMeshes();
 							}

@@ -83,7 +83,7 @@ namespace SDFormat
 				targetObject.AttachSensor(newSensorObject, sensorPose);
 
 				var camera = newSensorObject.AddComponent<SensorDevices.Camera>();
-				camera.tag = "Sensor";
+				camera.tag = TagNames.Sensor;
 				camera.DeviceName = newSensorObject.GetFrameName();
 				camera.SetParameter(element);
 

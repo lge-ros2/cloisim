@@ -117,7 +117,7 @@ public static partial class MeshLoader
 	{
 		var lightObject = new GameObject(assimpLight.Name)
 		{
-			tag = "Light"
+			tag = TagNames.Light
 		};
 
 		var lightComponent = lightObject.AddComponent<Light>();
@@ -134,7 +134,7 @@ public static partial class MeshLoader
 		assimpLight.ColorDiffuse.DecomposeHDRColor(out var lightColor, out var colorIntensity);
 		lightComponent.color = lightColor;
 
-		lightComponent.cullingMask = LayerMask.GetMask("Default", "Plane");
+		lightComponent.cullingMask = LayerMask.GetMask(LayerNames.Default, LayerNames.Plane);
 
 		var attConstant = assimpLight.AttenuationConstant;
 		var attLinear = assimpLight.AttenuationLinear;

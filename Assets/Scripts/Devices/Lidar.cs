@@ -721,7 +721,7 @@ namespace SensorDevices
 		{
 			_visualizer = new GameObject("__laser_visualizer__")
 			{
-				layer = LayerMask.NameToLayer("Visualization")
+				layer = LayerMask.NameToLayer(LayerNames.Visualization)
 			};
 			_visualizer.transform.SetParent(transform, false);
 

@@ -532,7 +532,7 @@ public class URTSensorManager : MonoBehaviour
 			if (s_instance == null)
 			{
 				s_instance = Main.Core.AddComponent<URTSensorManager>();
-				s_instance._cullingMask = LayerMask.GetMask("Default", "Plane");
+				s_instance._cullingMask = LayerMask.GetMask(LayerNames.Default, LayerNames.Plane);
 			}
 			return s_instance;
 		}

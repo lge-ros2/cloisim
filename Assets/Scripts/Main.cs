@@ -373,7 +373,7 @@ public class Main : MonoBehaviour
 				continue;
 			}
 
-			if (target.CompareTag("Model"))
+			if (target.CompareTag(TagNames.Model))
 			{
 				SafeDestroyModelRoot(target);
 			}
@@ -582,7 +582,7 @@ public class Main : MonoBehaviour
 			layerCullDistances[i] = mainCamera.farClipPlane;
 		}
 		// "Default" layer gets a tighter cull distance for small objects
-		layerCullDistances[LayerMask.NameToLayer("Default")] = mainCamera.farClipPlane * 0.5f;
+		layerCullDistances[LayerMask.NameToLayer(LayerNames.Default)] = mainCamera.farClipPlane * 0.5f;
 		mainCamera.layerCullDistances = layerCullDistances;
 
 		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();

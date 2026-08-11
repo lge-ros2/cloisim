@@ -319,7 +319,7 @@ namespace SensorDevices
 			_camSensor.orthographic = false;
 			_camSensor.nearClipPlane = (float)_camParam.NearClip;
 			_camSensor.farClipPlane = (float)_camParam.FarClip;
-			_camSensor.cullingMask = LayerMask.GetMask("Default", "Plane");
+			_camSensor.cullingMask = LayerMask.GetMask(LayerNames.Default, LayerNames.Plane);
 
 			// URT cameras skip full RT allocation to stay below the Vulkan driver's
 			// concurrent render-target limit. Allocate a 1×1 dummy so CanRender

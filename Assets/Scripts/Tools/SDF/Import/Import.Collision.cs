@@ -23,7 +23,7 @@ namespace SDFormat
 				var targetObject = parentObject as UE.GameObject;
 				var newCollisionObject = new UE.GameObject(collision.Name)
 				{
-					tag = "Collision"
+					tag = TagNames.Collision
 				};
 
 				targetObject.SetChild(newCollisionObject);
@@ -45,7 +45,7 @@ namespace SDFormat
 				var collisionObject = targetObject as UE.GameObject;
 
 				// Make collision region for Collision
-				if (collisionObject.CompareTag("Collision"))
+				if (collisionObject.CompareTag(TagNames.Collision))
 				{
 					var geometryObject = (collisionObject.transform.childCount == 0) ? collisionObject : collisionObject.transform.GetChild(0).gameObject;
 

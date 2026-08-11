@@ -15,7 +15,7 @@ namespace SDFormat
 	{
 		public static class Collision
 		{
-			public static readonly int PlaneLayerIndex = UE.LayerMask.NameToLayer("Plane");
+			public static readonly int PlaneLayerIndex = UE.LayerMask.NameToLayer(LayerNames.Plane);
 
 			private static readonly bool UseVHACD = true; // Experimental parameters
 

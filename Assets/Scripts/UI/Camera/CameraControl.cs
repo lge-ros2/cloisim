@@ -79,7 +79,7 @@ public abstract class CameraControl : MonoBehaviour
 
 	void Awake()
 	{
-		_targetLayerMask = LayerMask.GetMask("Default");
+		_targetLayerMask = LayerMask.GetMask(LayerNames.Default);
 		_uiController = GetUIController();
 		// Debug.Log(_uiController);
 	}

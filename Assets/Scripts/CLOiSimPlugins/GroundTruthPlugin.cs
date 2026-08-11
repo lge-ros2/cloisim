@@ -394,7 +394,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			{
 				var child = current.GetChild(i);
 				_propTraversalStack.Push(child);
-				if (!child.CompareTag("Props"))
+				if (!child.CompareTag(TagNames.Props))
 				{
 					continue;
 				}

@@ -98,7 +98,7 @@ namespace SDFormat
 
 						foreach (var meshFilter in meshFilters)
 						{
-							if (!meshFilter.gameObject.CompareTag("Visual"))
+							if (!meshFilter.gameObject.CompareTag(TagNames.Visual))
 							{
 								UE.Object.Destroy(meshFilter.gameObject);
 							}

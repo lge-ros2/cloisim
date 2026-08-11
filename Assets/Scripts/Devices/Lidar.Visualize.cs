@@ -57,7 +57,7 @@ namespace SensorDevices
 			var psRenderer = visualizer.GetComponent<ParticleSystemRenderer>();
 			psRenderer.renderMode = ParticleSystemRenderMode.Billboard;
 			var particleMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-			particleMat.SetTexture("_BaseMap", Resources.Load<Texture2D>("Default-Particle"));
+			particleMat.SetTexture(ShaderProps.BaseMap, Resources.Load<Texture2D>("Default-Particle"));
 			particleMat.hideFlags = HideFlags.DontUnloadUnusedAsset;
 			psRenderer.material = particleMat;
 

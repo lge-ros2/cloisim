@@ -145,7 +145,7 @@ namespace SDFormat
 				var targetObject = parentObject as UE.GameObject;
 				var newLightObject = new UE.GameObject(light.Name)
 				{
-					tag = "Light"
+					tag = TagNames.Light
 				};
 
 				var lightComponent = newLightObject.AddComponent<UE.Light>();
@@ -167,7 +167,7 @@ namespace SDFormat
 				}
 
 				lightComponent.color = GetLightColor(light);
-				lightComponent.cullingMask = UE.LayerMask.GetMask("Default", "Plane");
+				lightComponent.cullingMask = UE.LayerMask.GetMask(LayerNames.Default, LayerNames.Plane);
 
 				var direction = light.Direction.ToUnity();
 

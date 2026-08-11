@@ -91,7 +91,7 @@ public class LiftControl : MonoBehaviour
 		var allProps = _rootPropsTransform.GetComponentsInChildren<Transform>();
 		foreach (var prop in allProps)
 		{
-			if (prop.CompareTag("Props"))
+			if (prop.CompareTag(TagNames.Props))
 			{
 				var propPosition = prop.transform.position;
 				if (_floorCollider != null && _floorCollider.bounds.Contains(propPosition))

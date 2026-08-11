@@ -193,7 +193,7 @@ public static partial class MeshLoader
 			var isCollada = Path.GetExtension(meshPath).ToLowerInvariant() == ".dae";
 			if (sceneMat.HasOpacity && sceneMat.Opacity < 1.0f && !(isCollada && sceneMat.Opacity == 0.0f))
 			{
-				var baseColor = mat.GetColor("_BaseColor");
+				var baseColor = mat.GetColor(ShaderProps.BaseColor);
 				baseColor.a = sceneMat.Opacity;
 				mat.SetBaseColor(baseColor);
 				logs.AppendLine($"HasOpacity({sceneMat.Opacity}) applied transparency for {sceneMat.Name}");
@@ -219,9 +219,9 @@ public static partial class MeshLoader
 			if (sceneMat.HasColorTransparent)
 			{
 #if false
-				var baseColor = mat.GetColor("_BaseColor");
+				var baseColor = mat.GetColor(ShaderProps.BaseColor);
 				baseColor.a = 1f - sceneMat.ColorTransparent.W;
-				mat.SetColor("_BaseColor", baseColor);
+				mat.SetColor(ShaderProps.BaseColor, baseColor);
 				mat.SetFloat("_Surface", 1f);
 				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
 				mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
@@ -237,14 +237,14 @@ public static partial class MeshLoader
 				// Blender FBX exports Principled BSDF Roughness as Shininess.
 				// Unity uses Smoothness (inverse of Roughness): Smoothness = 1 - Roughness
 				var smoothness = Mathf.Clamp01(1.0f - sceneMat.Shininess);
-				mat.SetFloat("_Smoothness", smoothness);
+				mat.SetFloat(ShaderProps.Smoothness, smoothness);
 				logs.AppendLine($"HasShininess({sceneMat.Shininess}) -> Smoothness({smoothness}) for {sceneMat.Name}");
 			}
 
 			if (sceneMat.HasReflectivity)
 			{
 				var smoothness = Mathf.Clamp01(1.0f - (float)sceneMat.Reflectivity);
-				mat.SetFloat("_Smoothness", smoothness);
+				mat.SetFloat(ShaderProps.Smoothness, smoothness);
 				logs.AppendLine($"HasReflectivity({sceneMat.Reflectivity}) -> Smoothness({smoothness}) for {sceneMat.Name}");
 			}
 
@@ -254,7 +254,7 @@ public static partial class MeshLoader
 				var tex = TryLoadTexture(sceneMat.TextureDiffuse.FilePath, textureDirectories, embeddedTextures);
 				if (tex != null)
 				{
-					mat.SetTexture("_BaseMap", tex);
+					mat.SetTexture(ShaderProps.BaseMap, tex);
 					hasBaseColorTexture = true;
 				}
 			}
@@ -264,7 +264,7 @@ public static partial class MeshLoader
 				var tex = TryLoadTexture(sceneMat.PBR.TextureBaseColor.FilePath, textureDirectories, embeddedTextures);
 				if (tex != null)
 				{
-					mat.SetTexture("_BaseMap", tex);
+					mat.SetTexture(ShaderProps.BaseMap, tex);
 					logs.AppendLine($"HasTextureBaseColor({sceneMat.PBR.TextureBaseColor.FilePath}) for {sceneMat.Name}");
 				}
 			}
@@ -274,7 +274,7 @@ public static partial class MeshLoader
 				var tex = TryLoadTexture(sceneMat.TextureNormal.FilePath, textureDirectories, embeddedTextures);
 				if (tex != null)
 				{
-					mat.SetTexture("_BumpMap", tex);
+					mat.SetTexture(ShaderProps.BumpMap, tex);
 				}
 				logs.AppendLine($"HasTextureNormal({sceneMat.TextureNormal.FilePath}) for {sceneMat.Name}");
 			}
@@ -291,8 +291,8 @@ public static partial class MeshLoader
 				if (tex != null)
 				{
 					mat.UseSpecularWorkflow();
-					mat.SetFloat("_SmoothnessTextureChannel", 0f);
-					mat.SetTexture("_SpecGlossMap", tex);
+					mat.SetFloat(ShaderProps.SmoothnessTextureChannel, 0f);
+					mat.SetTexture(ShaderProps.SpecGlossMap, tex);
 				}
 			}
 
@@ -301,10 +301,10 @@ public static partial class MeshLoader
 				var tex = TryLoadTexture(sceneMat.TextureEmissive.FilePath, textureDirectories, embeddedTextures);
 				if (tex != null)
 				{
-					mat.SetTexture("_EmissionMap", tex);
-					if (mat.GetColor("_EmissionColor").maxColorComponent <= 0f)
+					mat.SetTexture(ShaderProps.EmissionMap, tex);
+					if (mat.GetColor(ShaderProps.EmissionColor).maxColorComponent <= 0f)
 					{
-						mat.SetColor("_EmissionColor", Color.white);
+						mat.SetColor(ShaderProps.EmissionColor, Color.white);
 					}
 				}
 			}
@@ -651,7 +651,7 @@ public static partial class MeshLoader
 
 		var meshObject = new GameObject("Non-Primitive Mesh");
 		meshObject.SetActive(true);
-		meshObject.tag = "Geometry";
+		meshObject.tag = TagNames.Geometry;
 
 #if ENABLE_MESH_CACHE
 		var sceneMeshObject = UnityEngine.Object.Instantiate(MeshCache[cacheKey]);

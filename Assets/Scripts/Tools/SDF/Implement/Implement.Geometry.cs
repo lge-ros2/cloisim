@@ -16,7 +16,7 @@ namespace SDFormat
 		{
 			private static bool IsVisualObject(in UE.GameObject target)
 			{
-				return target.CompareTag("Visual");
+				return target.CompareTag(TagNames.Visual);
 			}
 
 			/// <summary>Set mesh from external source</summary>
@@ -54,7 +54,7 @@ namespace SDFormat
 				var isVisualMesh = IsVisualObject(targetParentObject);
 				var createdObject = new UE.GameObject("Primitive Mesh")
 				{
-					tag = "Geometry"
+					tag = TagNames.Geometry
 				};
 
 				UE.Mesh mesh = null;
