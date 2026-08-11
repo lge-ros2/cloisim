@@ -209,6 +209,26 @@ public class SimulationControlService : WebSocketBehavior
 		return true;
 	}
 
+	private bool TryResolveBridge(in string filter, ref SimulationControlResponseBase output, out BridgeManager manager)
+	{
+		manager = null;
+
+		if (!TryValidateFilter(filter, out var filterError))
+		{
+			output = filterError;
+			return false;
+		}
+
+		if (bridgeManager == null)
+		{
+			output = CreateNormalResponse("bridge manager is unavailable");
+			return false;
+		}
+
+		manager = bridgeManager;
+		return true;
+	}
+
 	private void SendResponse(SimulationControlRequest request, SimulationControlResponseBase output)
 	{
 		output.command = request?.command ?? string.Empty;
@@ -305,19 +325,12 @@ public class SimulationControlService : WebSocketBehavior
 
 			case "device_list":
 				{
-						if (!TryValidateFilter(request.filter, out var filterError))
-						{
-							output = filterError;
-							break;
-						}
+					if (!TryResolveBridge(request.filter, ref output, out var manager))
+					{
+						break;
+					}
 
-						if (bridgeManager == null)
-						{
-							output = CreateNormalResponse("bridge manager is unavailable");
-							break;
-						}
-
-					var result = bridgeManager.GetDeviceMapList(request.filter);
+					var result = manager.GetDeviceMapList(request.filter);
 					output = new SimulationControlResponseDeviceList();
 					(output as SimulationControlResponseDeviceList).result = result;
 				}
@@ -325,19 +338,12 @@ public class SimulationControlService : WebSocketBehavior
 
 			case "port_list":
 				{
-						if (!TryValidateFilter(request.filter, out var filterError))
-						{
-							output = filterError;
-							break;
-						}
+					if (!TryResolveBridge(request.filter, ref output, out var manager2))
+					{
+						break;
+					}
 
-						if (bridgeManager == null)
-						{
-							output = CreateNormalResponse("bridge manager is unavailable");
-							break;
-						}
-
-					var result = bridgeManager.GetDevicePortList(request.filter);
+					var result = manager2.GetDevicePortList(request.filter);
 					output = new SimulationControlResponseTopicList();
 					(output as SimulationControlResponseTopicList).result = result;
 				}
