@@ -167,7 +167,7 @@ public struct Matrix4x4d
 		{
 			const int m = 4;
 			const int n = 4;
-			double[,] array = new double[2 * m, 2 * n];
+			double[,] array = new double[m, 2 * n];
 
 			for (var i = 0; i < m; i++)
 			{
@@ -179,7 +179,7 @@ public struct Matrix4x4d
 
 			for (var k = 0; k < m; k++)
 			{
-				for (var t = n; t <= 2 * n; t++)
+				for (var t = n; t < 2 * n; t++)
 				{
 					if ((t - k) == m)
 					{
