@@ -174,6 +174,7 @@ namespace SDFormat
 				_pluginObjectList.Clear();
 				_gripperObjectList.Clear();
 				_pendingIslandSplits.Clear();
+				Helper.DetachedIslandUtil.ClearDetachedSubtrees();
 
 				var worldObject = ImportWorld(world);
 
@@ -230,6 +231,7 @@ namespace SDFormat
 				_pluginObjectList.Clear();
 				_gripperObjectList.Clear();
 				_pendingIslandSplits.Clear();
+				Helper.DetachedIslandUtil.ClearDetachedSubtrees();
 
 				object modelObject = null;
 				yield return ImportModel(model, onCreatedRoot: obj => modelObject = obj);

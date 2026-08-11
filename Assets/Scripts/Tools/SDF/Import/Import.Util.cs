@@ -341,7 +341,37 @@ namespace SDFormat
 							container.transform.SetParent(Main.WorldRoot.transform, false);
 						}
 
-						childRoot.SetParent(container.transform, true);
+						// Resolve the owning model BEFORE reparenting: once the detached
+						// subtree is moved under the World-level container it no longer
+						// has a Helper.Model ancestor here, so a deferred lookup would
+						// resolve to nothing. The nearest model (e.g. the left/right hand
+						// model) is what JointControl's AddTargetJoint scopes by, which
+						// keeps left/right joints unambiguous despite shared local names.
+						var ownerModel = childRoot.GetComponentInParent<Helper.Model>();
+
+						// Group each detached island under its owning model name instead of
+						// dumping the raw link root straight into the shared container. Both
+						// hands have a root link named "hand_base_link", so without this the
+						// container would show two ambiguous "hand_base_link" entries.
+						var containerChild = container;
+						if (ownerModel != null && !string.IsNullOrEmpty(ownerModel.name))
+						{
+							var groupName = ownerModel.name;
+							var group = container.transform.Find(groupName)?.gameObject;
+							if (group == null)
+							{
+								group = new UE.GameObject(groupName);
+								group.transform.SetParent(container.transform, false);
+							}
+							containerChild = group;
+						}
+
+						childRoot.SetParent(containerChild.transform, true);
+
+						if (ownerModel != null)
+						{
+							Helper.DetachedIslandUtil.RegisterDetachedSubtree(ownerModel.transform, childRoot);
+						}
 
 						var offsetPos = UE.Quaternion.Inverse(parentLink.rotation) * (childRoot.position - parentLink.position);
 						var offsetRot = UE.Quaternion.Inverse(parentLink.rotation) * childRoot.rotation;
