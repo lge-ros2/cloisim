@@ -986,7 +986,7 @@ public class Main : MonoBehaviour
 		_uiController?.UpdateLoadingOverlay(message);
 	}
 
-	private IEnumerator WaitForAllPlugins(in string targetDescription)
+	private IEnumerator WaitForAllPlugins(string targetDescription)
 	{
 		_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
 		_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
