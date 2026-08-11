@@ -868,12 +868,6 @@ public class Main : MonoBehaviour
 
 			_pluginAllStarted = false;
 
-			_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
-			_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
-
-			_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
-			_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
-
 			_pluginStartTracker.Bind(targetObject);
 
 			Physics.SyncTransforms();
@@ -883,17 +877,7 @@ public class Main : MonoBehaviour
 
 			_followingList?.UpdateList();
 
-			var pluginStartupDeadline = Time.realtimeSinceStartup + PluginStartupTimeoutSeconds;
-			while (!_pluginAllStarted)
-			{
-				if (HasPluginStartupTimedOut(pluginStartupDeadline, $"model '{model.Name}'"))
-				{
-					yield break;
-				}
-
-				yield return null;
-			}
-			_bridgeManager.PrintAllocatedHistory();
+			yield return WaitForAllPlugins($"model '{model.Name}'");
 
 			loadStopwatch.Stop();
 			var message = $"Model '{model.Name}' is successfully loaded. ({loadStopwatch.ElapsedMilliseconds}ms)";
@@ -957,12 +941,6 @@ public class Main : MonoBehaviour
 
 			_pluginAllStarted = false;
 
-			_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
-			_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
-
-			_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
-			_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
-
 			_pluginStartTracker.Bind(_worldRoot);
 
 			Physics.SyncTransforms();
@@ -972,17 +950,7 @@ public class Main : MonoBehaviour
 
 			_followingList?.UpdateList();
 
-			var pluginStartupDeadline = Time.realtimeSinceStartup + PluginStartupTimeoutSeconds;
-			while (!_pluginAllStarted)
-			{
-				if (HasPluginStartupTimedOut(pluginStartupDeadline, $"world '{_worldFilename}'"))
-				{
-					yield break;
-				}
-
-				yield return null;
-			}
-			_bridgeManager.PrintAllocatedHistory();
+			yield return WaitForAllPlugins($"world '{_worldFilename}'");
 
 			TrackModel();
 
@@ -1016,6 +984,27 @@ public class Main : MonoBehaviour
 		var message = $"Starting plugins... ({started}/{total})";
 		_uiController?.SetInfoMessage(message);
 		_uiController?.UpdateLoadingOverlay(message);
+	}
+
+	private IEnumerator WaitForAllPlugins(in string targetDescription)
+	{
+		_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
+		_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
+
+		_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
+		_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
+
+		var pluginStartupDeadline = Time.realtimeSinceStartup + PluginStartupTimeoutSeconds;
+		while (!_pluginAllStarted)
+		{
+			if (HasPluginStartupTimedOut(pluginStartupDeadline, targetDescription))
+			{
+				yield break;
+			}
+
+			yield return null;
+		}
+		_bridgeManager.PrintAllocatedHistory();
 	}
 
 	private bool HasPluginStartupTimedOut(in float deadline, in string targetDescription)
