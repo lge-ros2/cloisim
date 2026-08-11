@@ -58,12 +58,6 @@ public class Requestor : RequestSocket
 		return false;
 	}
 
-	public bool SendRequest(in string stringToSend)
-	{
-		var buffer = System.Text.Encoding.UTF8.GetBytes(stringToSend);
-		return SendRequest(buffer, stringToSend.Length);
-	}
-
 	/// <summary>
 	/// Request-response message pattern
 	/// required to initialize `requestSocket`
