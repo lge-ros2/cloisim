@@ -48,6 +48,8 @@ namespace SensorDevices
 
 		private NoiseIMU _noises = new NoiseIMU();
 
+		private readonly object _snapshotLock = new object();
+
 		public void SetupNoises(in SDFormat.ImuSensor element)
 		{
 			if (element == null)
@@ -187,39 +189,51 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			var currentPosition = transform.position;
+			lock (_snapshotLock)
+			{
+				var currentPosition = transform.position;
 
-			// Calculate orientation and acceleration
-			// Rotation from A to B : B * Quaternion.Inverse(A);
-			_imuRotation = transform.rotation * Quaternion.Inverse(_imuInitialRotation);
+				// Calculate orientation and acceleration
+				// Rotation from A to B : B * Quaternion.Inverse(A);
+				_imuRotation = transform.rotation * Quaternion.Inverse(_imuInitialRotation);
 
-			var angularDisplacement = _imuRotation * Quaternion.Inverse(_previousImuRotation);
-			angularDisplacement.ToAngleAxis(out var angle, out var angleAxis);
-			// Normalize angle to [-180, 180] to get shortest rotation path
-			if (angle > 180f)
-				angle -= 360f;
-			_imuAngularVelocity = angleAxis * angle / Time.fixedDeltaTime;
+				var angularDisplacement = _imuRotation * Quaternion.Inverse(_previousImuRotation);
+				angularDisplacement.ToAngleAxis(out var angle, out var angleAxis);
+				// Normalize angle to [-180, 180] to get shortest rotation path
+				if (angle > 180f)
+					angle -= 360f;
+				_imuAngularVelocity = angleAxis * angle / Time.fixedDeltaTime;
 
-			var currentLinearVelocity = (currentPosition - _previousImuPosition) / Time.fixedDeltaTime;
-			_imuLinearAcceleration = (currentLinearVelocity - _previousLinearVelocity) / Time.fixedDeltaTime;
-			_imuLinearAcceleration.y += -Physics.gravity.y;
+				var currentLinearVelocity = (currentPosition - _previousImuPosition) / Time.fixedDeltaTime;
+				_imuLinearAcceleration = (currentLinearVelocity - _previousLinearVelocity) / Time.fixedDeltaTime;
+				_imuLinearAcceleration.y += -Physics.gravity.y;
 
-			ApplyNoises(Time.fixedDeltaTime);
+				ApplyNoises(Time.fixedDeltaTime);
 
-			_previousImuRotation = _imuRotation;
-			_previousImuPosition = currentPosition;
-			_previousLinearVelocity = currentLinearVelocity;
+				_previousImuRotation = _imuRotation;
+				_previousImuPosition = currentPosition;
+				_previousLinearVelocity = currentLinearVelocity;
 
-			_imuOrientation = _imuRotation.eulerAngles;
-			var calculatedPitch = CalculatePitchFromForwardBaseAxis();
-			_imuOrientation.x = calculatedPitch;
+				_imuOrientation = _imuRotation.eulerAngles;
+				var calculatedPitch = CalculatePitchFromForwardBaseAxis();
+				_imuOrientation.x = calculatedPitch;
+			}
 		}
 
 		protected override void GenerateMessage()
 		{
-			_imu.Orientation.Set(_imuRotation);
-			_imu.AngularVelocity.Set(_imuAngularVelocity * Mathf.Deg2Rad);
-			_imu.LinearAcceleration.Set(_imuLinearAcceleration);
+			Quaternion rotation;
+			Vector3 angularVelocity, linearAcceleration;
+			lock (_snapshotLock)
+			{
+				rotation = _imuRotation;
+				angularVelocity = _imuAngularVelocity;
+				linearAcceleration = _imuLinearAcceleration;
+			}
+
+			_imu.Orientation.Set(rotation);
+			_imu.AngularVelocity.Set(angularVelocity * Mathf.Deg2Rad);
+			_imu.LinearAcceleration.Set(linearAcceleration);
 			// Use fixed-dt synthetic time instead of physics-step SimTime
 			// so consecutive IMU messages always have exactly UpdatePeriod apart.
 			_imu.Header.Stamp.Set(GetNextSyntheticTime());

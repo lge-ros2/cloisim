@@ -48,6 +48,8 @@ namespace SensorDevices
 
 		private NoiseGPS _noises = new NoiseGPS();
 
+		private readonly object _snapshotLock = new object();
+
 		public void SetupNoises(in SDFormat.NavSatSensor element)
 		{
 			if (element == null)
@@ -115,14 +117,17 @@ namespace SensorDevices
 
 		void Update()
 		{
-			_worldPosition = _gpsLink.position; // Get postion in Cartesian frame
+			lock (_snapshotLock)
+			{
+				_worldPosition = _gpsLink.position; // Get postion in Cartesian frame
 
-			var positionDiff = _worldPosition - _previousSensorPosition;
-			_previousSensorPosition = _worldPosition;
+				var positionDiff = _worldPosition - _previousSensorPosition;
+				_previousSensorPosition = _worldPosition;
 
-			_sensorVelocity = positionDiff / Time.deltaTime;
+				_sensorVelocity = positionDiff / Time.deltaTime;
 
-			_sensorCurrentRotation = transform.rotation.eulerAngles;
+				_sensorCurrentRotation = transform.rotation.eulerAngles;
+			}
 		}
 
 		private void ApplyNoises(ref Vector3d coordinates, ref Vector3d velocity)
@@ -152,14 +157,21 @@ namespace SensorDevices
 		{
 			_navSat.Header.Stamp.SetCurrentTime();
 
+			Vector3 position, velocity;
+			lock (_snapshotLock)
+			{
+				position = _worldPosition;
+				velocity = _sensorVelocity;
+			}
+
 			// Convert to global frames
-			var convertedPosition = Unity2SDF.Position(_worldPosition);
+			var convertedPosition = Unity2SDF.Position(position);
 			convertedPosition.X *= -1;
 			convertedPosition.Y *= -1;
 			var gpsCoordinates = _sphericalCoordinates.SphericalFromLocal(convertedPosition);
 
 			// Convert to global frame
-			var velocityRHS = Unity2SDF.Position(_sensorVelocity);
+			var velocityRHS = Unity2SDF.Position(velocity);
 			var gpsVelocity = _sphericalCoordinates.GlobalFromLocal(velocityRHS);
 
 			// Apply noise after converting to global frame
