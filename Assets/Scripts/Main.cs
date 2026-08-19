@@ -1068,7 +1068,13 @@ public class Main : MonoBehaviour
 	public bool ToggleRecord()
 	{
 		var recordStarted = false;
-		var recorder = Camera.main.GetComponent<UltraFastWebMRecorder>();
+		var recorder = Camera.main?.GetComponent<UltraFastWebMRecorder>();
+		if (recorder == null)
+		{
+			Debug.LogWarning("UltraFastWebMRecorder component not found on main camera; recording is disabled.");
+			return false;
+		}
+
 		if (!recorder.IsRecording)
 		{
 			recorder.SetOutput(baseName: _screenCaptureFilename);
@@ -1082,7 +1088,13 @@ public class Main : MonoBehaviour
 
 	public void StartRecord()
 	{
-		var recorder = Camera.main.GetComponent<UltraFastWebMRecorder>();
+		var recorder = Camera.main?.GetComponent<UltraFastWebMRecorder>();
+		if (recorder == null)
+		{
+			Debug.LogWarning("UltraFastWebMRecorder component not found on main camera; recording is disabled.");
+			return;
+		}
+
 		if (recorder.IsRecording)
 			return;
 
@@ -1093,7 +1105,13 @@ public class Main : MonoBehaviour
 
 	public void StopRecord()
 	{
-		var recorder = Camera.main.GetComponent<UltraFastWebMRecorder>();
+		var recorder = Camera.main?.GetComponent<UltraFastWebMRecorder>();
+		if (recorder == null)
+		{
+			Debug.LogWarning("UltraFastWebMRecorder component not found on main camera; recording is disabled.");
+			return;
+		}
+
 		recorder.StopCapture();
 		UIController?.OnRecordClicked(false);
 	}
