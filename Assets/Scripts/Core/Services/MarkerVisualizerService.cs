@@ -353,7 +353,10 @@ public class MarkerVisualizerService : WebSocketBehavior
 	public MarkerVisualizerService(in MarkerVisualizer target)
 	{
 		markerVisualizer = target;
-		markerVisualizer.RegisterResponseAction(SendResponse);
+		if (markerVisualizer != null)
+		{
+			markerVisualizer.RegisterResponseAction(SendResponse);
+		}
 	}
 
 	protected override void OnOpen()
@@ -364,7 +367,10 @@ public class MarkerVisualizerService : WebSocketBehavior
 	protected override void OnClose(CloseEventArgs e)
 	{
 		Debug.LogFormat("Close({0}), {1}", e.Code, e.Reason);
-		markerVisualizer.UnregisterResponseAction(SendResponse);
+		if (markerVisualizer != null)
+		{
+			markerVisualizer.UnregisterResponseAction(SendResponse);
+		}
 	}
 
 	protected override void OnMessage(MessageEventArgs e)
@@ -375,7 +381,28 @@ public class MarkerVisualizerService : WebSocketBehavior
 			return;
 		}
 
-		var request = JsonConvert.DeserializeObject<VisualMarkerRequest>(e.Data);
+		VisualMarkerRequest request;
+		try
+		{
+			request = JsonConvert.DeserializeObject<VisualMarkerRequest>(e.Data);
+		}
+		catch (Exception ex)
+		{
+			Debug.LogWarningFormat("Invalid marker request JSON: {0}", ex.Message);
+			return;
+		}
+
+		if (request == null)
+		{
+			Debug.LogWarning("Invalid marker request: deserialization produced null.");
+			return;
+		}
+
+		if (markerVisualizer == null)
+		{
+			Debug.LogWarning("MarkerVisualizer is not available; ignoring marker request.");
+			return;
+		}
 
 		request.Print();
 
@@ -395,6 +422,11 @@ public class MarkerVisualizerService : WebSocketBehavior
 
 	void SendResponse()
 	{
+		if (markerVisualizer == null)
+		{
+			return;
+		}
+
 		var response = markerVisualizer.GetResponseMarkers();
 		var responseJsonData = JsonConvert.SerializeObject(response, Formatting.Indented);
 
