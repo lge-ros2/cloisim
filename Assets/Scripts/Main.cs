@@ -542,10 +542,9 @@ public class Main : MonoBehaviour
 		// Debug.Log(QualitySettings.GetQualityLevel());
 		var qualityLevel = Environment.GetEnvironmentVariable("CLOISIM_QUALITY");
 		var qualityLevelIndex = 3; // Very High Quality Preset
-		if (!string.IsNullOrEmpty(qualityLevel))
+		if (!string.IsNullOrEmpty(qualityLevel) && int.TryParse(qualityLevel, out var parsedQuality))
 		{
-			qualityLevelIndex = int.Parse(qualityLevel);
-			qualityLevelIndex = Mathf.Clamp(qualityLevelIndex, 0, 4);
+			qualityLevelIndex = Mathf.Clamp(parsedQuality, 0, 4);
 		}
 		QualitySettings.SetQualityLevel(qualityLevelIndex);
 
