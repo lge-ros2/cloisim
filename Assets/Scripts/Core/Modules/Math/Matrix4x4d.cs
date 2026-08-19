@@ -194,6 +194,33 @@ public struct Matrix4x4d
 
 			for (var k = 0; k < m; k++)
 			{
+				// Partial pivoting: find the row with the largest absolute value in column k
+				var pivotRow = k;
+				var pivotMax = Math.Abs(array[k, k]);
+				for (var r = k + 1; r < m; r++)
+				{
+					var candidate = Math.Abs(array[r, k]);
+					if (candidate > pivotMax)
+					{
+						pivotMax = candidate;
+						pivotRow = r;
+					}
+				}
+
+				// Near-singular matrix: cannot compute a reliable inverse.
+				if (pivotMax <= double.Epsilon)
+				{
+					throw new InvalidOperationException("Matrix is singular and cannot be inverted.");
+				}
+
+				if (pivotRow != k)
+				{
+					for (var p = 0; p < 2 * n; p++)
+					{
+						(array[k, p], array[pivotRow, p]) = (array[pivotRow, p], array[k, p]);
+					}
+				}
+
 				if (array[k, k] != 1)
 				{
 					var bs = array[k, k];
