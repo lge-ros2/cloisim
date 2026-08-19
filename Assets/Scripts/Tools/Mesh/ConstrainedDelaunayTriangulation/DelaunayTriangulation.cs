@@ -591,6 +591,10 @@ namespace Game.Utils.Triangulation
 
 			List<DelaunayTriangleEdge> newEdges = new List<DelaunayTriangleEdge>();
 
+			// Tracks already-encountered edges so that a constrained edge that can never be
+			// flipped (e.g. a persistent non-convex quadrilateral) does not spin forever.
+			HashSet<(int, int, int)> processedEdges = new HashSet<(int, int, int)>();
+
 			while (intersectedTriangleEdges.Count > 0)
 			{
 				DelaunayTriangleEdge currentIntersectedTriangleEdge = intersectedTriangleEdges[intersectedTriangleEdges.Count - 1];
@@ -674,6 +678,15 @@ namespace Game.Utils.Triangulation
 				else
 				{
 					// Back to the list
+					var signature = (currentIntersectedTriangleEdge.TriangleIndex, currentIntersectedTriangleEdge.EdgeVertexA, currentIntersectedTriangleEdge.EdgeVertexB);
+					if (!processedEdges.Add(signature))
+					{
+						// This edge has already been re-processed without making progress.
+						// The quadrilateral cannot be made flippable, so bail out instead of spinning.
+						intersectedTriangleEdges.Clear();
+						break;
+					}
+
 					intersectedTriangleEdges.Insert(0, currentIntersectedTriangleEdge);
 				}
 			}
