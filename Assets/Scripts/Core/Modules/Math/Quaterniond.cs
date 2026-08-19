@@ -302,7 +302,7 @@ public struct Quaterniond
 
 	public override bool Equals(object other)
 	{
-		return this == (Quaterniond)other;
+		return other is Quaterniond v && this == v;
 	}
 
 	public string ToString(in string format)

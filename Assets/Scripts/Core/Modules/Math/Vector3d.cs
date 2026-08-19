@@ -473,7 +473,7 @@ public struct Vector3d
 
 	public override bool Equals(object other)
 	{
-		return this == (Vector3d)other;
+		return other is Vector3d v && this == v;
 	}
 
 	public string ToString(string format)

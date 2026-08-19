@@ -478,7 +478,7 @@ public struct Matrix4x4d
 
 	public override bool Equals(object other)
 	{
-		return this == (Matrix4x4d)other;
+		return other is Matrix4x4d v && this == v;
 	}
 
 	public string ToString(in string format)
