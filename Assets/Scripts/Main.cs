@@ -937,7 +937,18 @@ public class Main : MonoBehaviour
 				CLOiSim.Diagnostics.FreezeWatchdog.Restore();
 			}
 
-			yield return new WaitUntil(() => _worldRoot.transform.childCount > 0);
+			var worldLoadWaitTime = 0f;
+			const float worldLoadWaitTimeout = 30f;
+			while (_worldRoot.transform.childCount <= 0 && worldLoadWaitTime < worldLoadWaitTimeout)
+			{
+				worldLoadWaitTime += Time.deltaTime;
+				yield return null;
+			}
+
+			if (worldLoadWaitTime >= worldLoadWaitTimeout)
+			{
+				Debug.LogWarning($"World '{_worldFilename}' produced no scene objects within {worldLoadWaitTimeout}s; continuing with an empty world.");
+			}
 
 			_pluginAllStarted = false;
 
