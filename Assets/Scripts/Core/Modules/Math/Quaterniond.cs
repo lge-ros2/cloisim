@@ -448,17 +448,17 @@ public struct Quaterniond
 		var m = new Matrix4x4d();
 
 		var mag = Vector3d.Magnitude(z);
-		if (mag < 0)
+		if (mag <= 0)
 		{
-			m = Matrix4x4d.identity;
+			return Matrix4x4d.identity;
 		}
 		z /= mag;
 
 		var x = Vector3d.Cross(upVec, z);
 		mag = Vector3d.Magnitude(x);
-		if (mag < 0)
+		if (mag <= 0)
 		{
-			m = Matrix4x4d.identity;
+			return Matrix4x4d.identity;
 		}
 		x /= mag;
 
