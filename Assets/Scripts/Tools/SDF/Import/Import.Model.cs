@@ -247,7 +247,7 @@ namespace SDFormat
 			{
 				if (model == null)
 				{
-					yield return null;
+					yield break;
 				}
 
 				var targetObject = parentObject as UE.GameObject;
