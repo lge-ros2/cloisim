@@ -319,7 +319,7 @@ namespace SensorDevices
 			_camSensor.orthographic = false;
 			_camSensor.nearClipPlane = (float)_camParam.NearClip;
 			_camSensor.farClipPlane = (float)_camParam.FarClip;
-			_camSensor.cullingMask = LayerMask.GetMask("Default", "Plane");
+			_camSensor.cullingMask = LayerMask.GetMask(LayerNames.Default, LayerNames.Plane);
 
 			// URT cameras skip full RT allocation to stay below the Vulkan driver's
 			// concurrent render-target limit. Allocate a 1×1 dummy so CanRender
@@ -605,7 +605,6 @@ namespace SensorDevices
 				_messageQueue.TryPeek(out var msg))
 			{
 				var imageMsg = (messages.Image)msg;
-				var saveName = $"{DeviceName}_{imageMsg.Header.Stamp.Sec}.{imageMsg.Header.Stamp.Nsec}";
 				var format = CameraData.GetPixelFormat(_camParam.ImageFormat);
 
 				if (format != CameraData.PixelFormat.L_INT8)
@@ -613,8 +612,19 @@ namespace SensorDevices
 					Debug.LogWarning($"{format.ToString()} is not support to save file");
 					return;
 				}
-				_textureForCapture.SaveRawImage(imageMsg.Data, _camParam.SavePath, saveName);
+				TrySaveFrame(imageMsg);
 			}
+		}
+
+		protected void TrySaveFrame(in messages.Image imageMsg)
+		{
+			if (_textureForCapture == null)
+			{
+				return;
+			}
+
+			var saveName = $"{DeviceName}_{imageMsg.Header.Stamp.Sec}.{imageMsg.Header.Stamp.Nsec}";
+			_textureForCapture.SaveRawImage(imageMsg.Data, _camParam.SavePath, saveName);
 		}
 
 		protected virtual void ImageProcessing<T>(ref NativeArray<T> readbackData, in double capturedTime) where T : struct

@@ -81,12 +81,6 @@ public class Responsor : ResponseSocket
 		return SendResponse(buffer, bufferLength);
 	}
 
-	public bool SendResponse(in string stringToSend)
-	{
-		var buffer = System.Text.Encoding.UTF8.GetBytes(stringToSend);
-		return SendResponse(buffer, stringToSend.Length);
-	}
-
 	public bool SendResponse(in byte[] buffer, in int bufferLength)
 	{
 		try

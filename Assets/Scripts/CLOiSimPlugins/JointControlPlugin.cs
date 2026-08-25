@@ -202,7 +202,8 @@ public class JointControlPlugin : CLOiSimPlugin
 
 		// Map link name -> ArticulationBody (process the whole chain, independent of the controlled-joint list)
 		var abByName = new Dictionary<string, ArticulationBody>();
-		foreach (var ab in gameObject.GetComponentsInChildren<ArticulationBody>())
+		foreach (var ab in SDFormat.Helper.DetachedIslandUtil
+			.GetComponentsInChildrenIncludingOwnedDetachedIslands<ArticulationBody>(transform))
 		{
 			if (!abByName.ContainsKey(ab.name))
 				abByName[ab.name] = ab;

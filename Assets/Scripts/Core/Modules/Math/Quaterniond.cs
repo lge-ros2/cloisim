@@ -129,7 +129,7 @@ public struct Quaterniond
 
 	public static Quaterniond FromToRotation(in Vector3d fromDirection, in Vector3d toDirection)
 	{
-		throw new IndexOutOfRangeException("Not Available!");
+		throw new NotImplementedException("Not Available!");
 	}
 
 	public static Quaterniond Inverse(in Quaterniond rotation)
@@ -302,7 +302,7 @@ public struct Quaterniond
 
 	public override bool Equals(object other)
 	{
-		return this == (Quaterniond)other;
+		return other is Quaterniond v && this == v;
 	}
 
 	public string ToString(in string format)
@@ -448,17 +448,17 @@ public struct Quaterniond
 		var m = new Matrix4x4d();
 
 		var mag = Vector3d.Magnitude(z);
-		if (mag < 0)
+		if (mag <= 0)
 		{
-			m = Matrix4x4d.identity;
+			return Matrix4x4d.identity;
 		}
 		z /= mag;
 
 		var x = Vector3d.Cross(upVec, z);
 		mag = Vector3d.Magnitude(x);
-		if (mag < 0)
+		if (mag <= 0)
 		{
-			m = Matrix4x4d.identity;
+			return Matrix4x4d.identity;
 		}
 		x /= mag;
 

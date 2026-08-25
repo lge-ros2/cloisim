@@ -123,7 +123,7 @@ namespace SDFormat
 					}
 				}
 
-				if (transform.parent.CompareTag("Link"))
+				if (transform.parent.CompareTag(TagNames.Link))
 				{
 					_isParentLinkModel = true;
 				}

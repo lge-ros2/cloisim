@@ -256,7 +256,7 @@ public class WorldSaver
 
 			foreach (var roadTransform in roadTransforms)
 			{
-				if (roadTransform.CompareTag("Road") && roadTransform.name.Equals(roadName))
+				if (roadTransform.CompareTag(TagNames.Road) && roadTransform.name.Equals(roadName))
 				{
 					AddRoadPoint(roadNode, roadTransform);
 					break;

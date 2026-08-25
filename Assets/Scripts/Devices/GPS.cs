@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -12,26 +11,6 @@ namespace SensorDevices
 {
 	public class GPS : Device
 	{
-		private class NoiseGPS
-		{
-			public Dictionary<string, Noise> position_sensing;
-			public Dictionary<string, Noise> velocity_sensing;
-
-			public NoiseGPS(in Noise defaultNoise = null)
-			{
-				position_sensing = new Dictionary<string, Noise>
-				{
-					{"horizontal", defaultNoise},
-					{"vertical", defaultNoise}
-				};
-				
-				velocity_sensing = new Dictionary<string, Noise>
-				{
-					{"horizontal", defaultNoise},
-					{"vertical", defaultNoise}
-				};
-			}
-		}
 		private messages.NavSatWithCovariance _navSat = null;
 
 		private Transform _gpsLink = null;
@@ -46,8 +25,10 @@ namespace SensorDevices
 
 		private Vector3 _previousSensorPosition;
 
-		private NoiseGPS _noises = new NoiseGPS();
+		private readonly SensorNoiseChannels _positionNoise = new SensorNoiseChannels(new[] { "horizontal", "vertical" });
+		private readonly SensorNoiseChannels _velocityNoise = new SensorNoiseChannels(new[] { "horizontal", "vertical" });
 
+		private readonly object _snapshotLock = new object();
 		public void SetupNoises(in SDFormat.NavSatSensor element)
 		{
 			if (element == null)
@@ -55,22 +36,22 @@ namespace SensorDevices
 
 			if (element.HorizontalPositionNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.position_sensing["horizontal"] = new Noise(element.HorizontalPositionNoise);
+				_positionNoise["horizontal"] = new Noise(element.HorizontalPositionNoise);
 			}
 
 			if (element.VerticalPositionNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.position_sensing["vertical"] = new Noise(element.VerticalPositionNoise);
+				_positionNoise["vertical"] = new Noise(element.VerticalPositionNoise);
 			}
 
 			if (element.HorizontalVelocityNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.velocity_sensing["horizontal"] = new Noise(element.HorizontalVelocityNoise);
+				_velocityNoise["horizontal"] = new Noise(element.HorizontalVelocityNoise);
 			}
 
 			if (element.VerticalVelocityNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.velocity_sensing["vertical"] = new Noise(element.VerticalVelocityNoise);
+				_velocityNoise["vertical"] = new Noise(element.VerticalVelocityNoise);
 			}
 		}
 
@@ -115,51 +96,47 @@ namespace SensorDevices
 
 		void Update()
 		{
-			_worldPosition = _gpsLink.position; // Get postion in Cartesian frame
+			lock (_snapshotLock)
+			{
+				_worldPosition = _gpsLink.position; // Get postion in Cartesian frame
 
-			var positionDiff = _worldPosition - _previousSensorPosition;
-			_previousSensorPosition = _worldPosition;
+				var positionDiff = _worldPosition - _previousSensorPosition;
+				_previousSensorPosition = _worldPosition;
 
-			_sensorVelocity = positionDiff / Time.deltaTime;
+				_sensorVelocity = positionDiff / Time.deltaTime;
 
-			_sensorCurrentRotation = transform.rotation.eulerAngles;
+				_sensorCurrentRotation = transform.rotation.eulerAngles;
+			}
 		}
 
 		private void ApplyNoises(ref Vector3d coordinates, ref Vector3d velocity)
 		{
-			if (_noises.position_sensing["horizontal"] != null)
-			{
-				_noises.position_sensing["horizontal"].Apply(ref coordinates.x);
-			}
+			_positionNoise.Apply("horizontal", ref coordinates.x);
+			_positionNoise.Apply("vertical", ref coordinates.y);
 
-			if (_noises.position_sensing["vertical"] != null)
-			{
-				_noises.position_sensing["vertical"].Apply(ref coordinates.y);
-			}
-
-			if (_noises.velocity_sensing["horizontal"] != null)
-			{
-				_noises.velocity_sensing["horizontal"].Apply(ref velocity.x);
-			}
-
-			if (_noises.velocity_sensing["vertical"] != null)
-			{
-				_noises.velocity_sensing["vertical"].Apply(ref velocity.y);
-			}
+			_velocityNoise.Apply("horizontal", ref velocity.x);
+			_velocityNoise.Apply("vertical", ref velocity.y);
 		}
 
 		private void AssembleGPSMessage()
 		{
 			_navSat.Header.Stamp.SetCurrentTime();
 
+			Vector3 position, velocity;
+			lock (_snapshotLock)
+			{
+				position = _worldPosition;
+				velocity = _sensorVelocity;
+			}
+
 			// Convert to global frames
-			var convertedPosition = Unity2SDF.Position(_worldPosition);
+			var convertedPosition = Unity2SDF.Position(position);
 			convertedPosition.X *= -1;
 			convertedPosition.Y *= -1;
 			var gpsCoordinates = _sphericalCoordinates.SphericalFromLocal(convertedPosition);
 
 			// Convert to global frame
-			var velocityRHS = Unity2SDF.Position(_sensorVelocity);
+			var velocityRHS = Unity2SDF.Position(velocity);
 			var gpsVelocity = _sphericalCoordinates.GlobalFromLocal(velocityRHS);
 
 			// Apply noise after converting to global frame

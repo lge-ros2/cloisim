@@ -591,6 +591,10 @@ namespace Game.Utils.Triangulation
 
 			List<DelaunayTriangleEdge> newEdges = new List<DelaunayTriangleEdge>();
 
+			// Tracks already-encountered edges so that a constrained edge that can never be
+			// flipped (e.g. a persistent non-convex quadrilateral) does not spin forever.
+			HashSet<(int, int, int)> processedEdges = new HashSet<(int, int, int)>();
+
 			while (intersectedTriangleEdges.Count > 0)
 			{
 				DelaunayTriangleEdge currentIntersectedTriangleEdge = intersectedTriangleEdges[intersectedTriangleEdges.Count - 1];
@@ -600,7 +604,18 @@ namespace Game.Utils.Triangulation
 				// Deduces the data for both triangles
 				currentIntersectedTriangleEdge = m_triangleSet.FindTriangleThatContainsEdge(currentIntersectedTriangleEdge.EdgeVertexA, currentIntersectedTriangleEdge.EdgeVertexB);
 				DelaunayTriangle intersectedTriangle = m_triangleSet.GetTriangle(currentIntersectedTriangleEdge.TriangleIndex);
-				DelaunayTriangle oppositeTriangle = m_triangleSet.GetTriangle(intersectedTriangle.adjacent[currentIntersectedTriangleEdge.EdgeIndex]);
+				int oppositeAdjacent = intersectedTriangle.adjacent[currentIntersectedTriangleEdge.EdgeIndex];
+
+				// The constrained edge crosses the boundary of the triangulation (no adjacent
+				// triangle exists), so there is nothing to flip against: stop to avoid an
+				// out-of-range access further down.
+				if (oppositeAdjacent == NO_ADJACENT_TRIANGLE)
+				{
+					intersectedTriangleEdges.Clear();
+					break;
+				}
+
+				DelaunayTriangle oppositeTriangle = m_triangleSet.GetTriangle(oppositeAdjacent);
 				Triangle2D trianglePoints = m_triangleSet.GetTrianglePoints(currentIntersectedTriangleEdge.TriangleIndex);
 
 				// Gets the opposite vertex of adjacent triangle, knowing the fisrt vertex of the shared edge
@@ -663,6 +678,15 @@ namespace Game.Utils.Triangulation
 				else
 				{
 					// Back to the list
+					var signature = (currentIntersectedTriangleEdge.TriangleIndex, currentIntersectedTriangleEdge.EdgeVertexA, currentIntersectedTriangleEdge.EdgeVertexB);
+					if (!processedEdges.Add(signature))
+					{
+						// This edge has already been re-processed without making progress.
+						// The quadrilateral cannot be made flippable, so bail out instead of spinning.
+						intersectedTriangleEdges.Clear();
+						break;
+					}
+
 					intersectedTriangleEdges.Insert(0, currentIntersectedTriangleEdge);
 				}
 			}

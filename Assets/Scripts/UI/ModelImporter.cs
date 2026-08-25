@@ -70,10 +70,36 @@ public class ModelImporter : MonoBehaviour
 		var contentList = viewport.GetChild(0).gameObject;
 		var buttonTemplate = viewport.Find("ButtonTemplate").gameObject;
 
+		string lastFolderName = null;
+
 		foreach (var item in resourceModelTable)
 		{
-			// var itemKey = item.Key;
 			var itemValue = item.Value;
+
+			var folderName = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(itemValue.path));
+			if (folderName != lastFolderName)
+			{
+				lastFolderName = folderName;
+
+				var headerButton = Instantiate(buttonTemplate);
+				headerButton.SetActive(true);
+				headerButton.transform.SetParent(contentList.transform, false);
+
+				var headerText = headerButton.GetComponentInChildren<Text>();
+				headerText.text = "[" + folderName + "]";
+				headerText.color = new Color(1f, 0.85f, 0.2f);
+				headerText.fontStyle = FontStyle.Bold;
+
+				var headerButtonComponent = headerButton.GetComponentInChildren<Button>();
+				headerButtonComponent.interactable = false;
+
+				var headerImage = headerButton.GetComponent<Image>();
+				if (headerImage != null)
+				{
+					headerImage.color = new Color(0.15f, 0.15f, 0.15f, 1f);
+				}
+			}
+
 			var duplicatedButton = Instantiate(buttonTemplate);
 			duplicatedButton.SetActive(true);
 			duplicatedButton.transform.SetParent(contentList.transform, false);
@@ -117,7 +143,7 @@ public class ModelImporter : MonoBehaviour
 		if (_targetObject != null)
 		{
 			Main.SuppressPhysicsDebugContacts("discarding a staged model");
-			if (_targetObject.CompareTag("Model"))
+			if (_targetObject.CompareTag(TagNames.Model))
 			{
 				Main.SafeDestroyModelRoot(_targetObject);
 			}
@@ -132,7 +158,7 @@ public class ModelImporter : MonoBehaviour
 
 	private void BlockSelfRaycast()
 	{
-		if (_targetObject.CompareTag("Road") || _targetObject.CompareTag("Props"))
+		if (_targetObject.CompareTag(TagNames.Road) || _targetObject.CompareTag(TagNames.Props))
 		{
 			foreach (var col in _targetObject.GetComponentsInChildren<Collider>())
 				col.enabled = false;
@@ -145,7 +171,7 @@ public class ModelImporter : MonoBehaviour
 
 	private void UnblockSelfRaycast()
 	{
-		if (_targetObject.CompareTag("Road") || _targetObject.CompareTag("Props"))
+		if (_targetObject.CompareTag(TagNames.Road) || _targetObject.CompareTag(TagNames.Props))
 		{
 			foreach (var col in _targetObject.GetComponentsInChildren<Collider>())
 				col.enabled = true;
@@ -207,10 +233,10 @@ public class ModelImporter : MonoBehaviour
 	private bool GetPointAndNormalOnClick(out Vector3 point, out Vector3 normal)
 	{
 		var ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
-		var layerMask = ~(LayerMask.GetMask("Ignore Raycast")
-						| LayerMask.GetMask("TransparentFX")
-						| LayerMask.GetMask("UI")
-						| LayerMask.GetMask("Water"));
+		var layerMask = ~(LayerMask.GetMask(LayerNames.IgnoreRaycast)
+						| LayerMask.GetMask(LayerNames.TransparentFX)
+						| LayerMask.GetMask(LayerNames.UI)
+						| LayerMask.GetMask(LayerNames.Water));
 		var hits = Physics.RaycastAll(ray, _maxRayDistance, layerMask);
 		System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 		foreach (var hit in hits)
@@ -365,7 +391,7 @@ public class ModelImporter : MonoBehaviour
 						var instantiatedObject = Instantiate(_targetObjectForCopy, _targetObjectForCopy.root, true);
 						instantiatedObject.name = $"{_targetObjectForCopy.name}_clone_{instantiatedObject.GetEntityId()}";
 
-						if (_targetObjectForCopy.CompareTag("Road"))
+						if (_targetObjectForCopy.CompareTag(TagNames.Road))
 						{
 							var loftRoadOriginal = _targetObjectForCopy.GetComponent<Unity.Splines.LoftRoadGenerator>();
 							var loftRoadNew = instantiatedObject.GetComponent<Unity.Splines.LoftRoadGenerator>();

@@ -5,6 +5,7 @@
  */
 
 using System.Collections;
+using System.Collections.Concurrent;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering;
@@ -26,10 +27,12 @@ public partial class MarkerVisualizer : MonoBehaviour
 
 #region Request
 	private VisualMarkerRequest request = null;
+	private readonly ConcurrentQueue<VisualMarkerRequest> _requestQueue = new ConcurrentQueue<VisualMarkerRequest>();
 #endregion
 
 #region Response
 	private VisualMarkerResponse response = new VisualMarkerResponse();
+	private readonly object _responseLock = new object();
 #endregion
 
 	void Awake()
@@ -46,6 +49,11 @@ public partial class MarkerVisualizer : MonoBehaviour
 
 	void LateUpdate()
 	{
+		if (_requestQueue.TryDequeue(out var queuedRequest))
+		{
+			request = queuedRequest;
+		}
+
 		if (request != null && !request.command.Equals(VisualMarkerRequest.MarkerCommands.Unknown))
 		{
 			StartCoroutine(HandleRequsetMarkers());
@@ -108,10 +116,21 @@ public partial class MarkerVisualizer : MonoBehaviour
 		}
 	}
 
+	public void UnregisterResponseAction(in UnityAction call)
+	{
+		if (responseEvent != null)
+		{
+			responseEvent.RemoveListener(call);
+		}
+	}
+
 	private void DoneMarkerRequested(in VisualMarkerRequest.MarkerCommands command, in bool result)
 	{
-		response.command = command.ToString().ToLower();
-		response.result = result? SimulationService.SUCCESS : SimulationService.FAIL;
+		lock (_responseLock)
+		{
+			response.command = command.ToString().ToLower();
+			response.result = result ? SimulationService.SUCCESS : SimulationService.FAIL;
+		}
 		responseEvent.Invoke();
 
 		request = null; // remove requested message
@@ -178,23 +197,29 @@ public partial class MarkerVisualizer : MonoBehaviour
 	{
 		if (markerRequest.command.Equals(VisualMarkerRequest.MarkerCommands.List) && markerRequest.markers.Count > 0)
 		{
-			request = null;
-			response.command = string.Empty;
-			response.result = SimulationService.FAIL;
-			response.lines = null;
-			response.texts = null;
-			response.boxes = null;
-			response.spheres = null;
+			lock (_responseLock)
+			{
+				request = null;
+				response.command = string.Empty;
+				response.result = SimulationService.FAIL;
+				response.lines = null;
+				response.texts = null;
+				response.boxes = null;
+				response.spheres = null;
+			}
 			return false;
 		}
 
-		request = markerRequest;
+		_requestQueue.Enqueue(markerRequest);
 
 		return true;
 	}
 
 	public VisualMarkerResponse GetResponseMarkers()
 	{
-		return response;
+		lock (_responseLock)
+		{
+			return response;
+		}
 	}
 }

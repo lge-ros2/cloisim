@@ -167,7 +167,7 @@ public struct Matrix4x4d
 		{
 			const int m = 4;
 			const int n = 4;
-			double[,] array = new double[2 * m + 1, 2 * n + 1];
+			double[,] array = new double[m, 2 * n];
 
 			for (var i = 0; i < m; i++)
 			{
@@ -179,7 +179,7 @@ public struct Matrix4x4d
 
 			for (var k = 0; k < m; k++)
 			{
-				for (var t = n; t <= 2 * n; t++)
+				for (var t = n; t < 2 * n; t++)
 				{
 					if ((t - k) == m)
 					{
@@ -194,6 +194,33 @@ public struct Matrix4x4d
 
 			for (var k = 0; k < m; k++)
 			{
+				// Partial pivoting: find the row with the largest absolute value in column k
+				var pivotRow = k;
+				var pivotMax = Math.Abs(array[k, k]);
+				for (var r = k + 1; r < m; r++)
+				{
+					var candidate = Math.Abs(array[r, k]);
+					if (candidate > pivotMax)
+					{
+						pivotMax = candidate;
+						pivotRow = r;
+					}
+				}
+
+				// Near-singular matrix: cannot compute a reliable inverse.
+				if (pivotMax <= double.Epsilon)
+				{
+					throw new InvalidOperationException("Matrix is singular and cannot be inverted.");
+				}
+
+				if (pivotRow != k)
+				{
+					for (var p = 0; p < 2 * n; p++)
+					{
+						(array[k, p], array[pivotRow, p]) = (array[pivotRow, p], array[k, p]);
+					}
+				}
+
 				if (array[k, k] != 1)
 				{
 					var bs = array[k, k];
@@ -274,7 +301,7 @@ public struct Matrix4x4d
 
 	public static Matrix4x4d LookAt(Vector3d from, Vector3d to, Vector3d up)
 	{
-		throw new IndexOutOfRangeException("Not Available!");
+		throw new NotImplementedException("Not Available!");
 	}
 
 	public static Matrix4x4d Ortho(in double left, in double right, in double bottom, in double top, in double zNear, in double zFar)
@@ -478,7 +505,7 @@ public struct Matrix4x4d
 
 	public override bool Equals(object other)
 	{
-		return this == (Matrix4x4d)other;
+		return other is Matrix4x4d v && this == v;
 	}
 
 	public string ToString(in string format)

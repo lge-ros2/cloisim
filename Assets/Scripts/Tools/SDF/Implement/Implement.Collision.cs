@@ -5,6 +5,7 @@
  */
 #define ENABLE_MERGE_COLLIDER
 
+using System.Collections;
 using UE = UnityEngine;
 using MCCookingOptions = UnityEngine.MeshColliderCookingOptions;
 
@@ -14,7 +15,7 @@ namespace SDFormat
 	{
 		public static class Collision
 		{
-			public static readonly int PlaneLayerIndex = UE.LayerMask.NameToLayer("Plane");
+			public static readonly int PlaneLayerIndex = UE.LayerMask.NameToLayer(LayerNames.Plane);
 
 			private static readonly bool UseVHACD = true; // Experimental parameters
 
@@ -136,7 +137,7 @@ namespace SDFormat
 				}
 			}
 
-			public static void MakeCollision(this UE.GameObject targetObject)
+			public static IEnumerator MakeCollisionAsync(this UE.GameObject targetObject)
 			{
 				var modelHelper = targetObject.GetComponentInParent<Helper.Model>();
 				// UE.Debug.Log(modelHelper.name + " MakeCollision");
@@ -148,7 +149,7 @@ namespace SDFormat
 					targetObject.name != "Primitive Mesh" &&
 					modelHelper.isStatic == false)
 				{
-					VHACD.Apply(meshFilters);
+					yield return VHACD.ApplyAsync(meshFilters);
 				}
 				else
 				{

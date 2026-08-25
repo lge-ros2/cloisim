@@ -138,7 +138,7 @@ public class ClothPlugin : CLOiSimPlugin
 		var rootModel = _clothRoot.GetComponentInParent<SDFormat.Helper.Model>();
 		if (rootModel != null &&!rootModel.hasRootArticulationBody)
 		{
-			rootModel.gameObject.layer = LayerMask.NameToLayer("Cloth");
+			rootModel.gameObject.layer = LayerMask.NameToLayer(LayerNames.Cloth);
 		}
 
 		return true;

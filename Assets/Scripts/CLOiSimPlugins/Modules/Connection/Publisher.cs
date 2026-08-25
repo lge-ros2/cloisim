@@ -50,12 +50,6 @@ public class Publisher : PublisherSocket
 		return false;
 	}
 
-	public bool Publish(in string stringToSend)
-	{
-		var buffer = System.Text.Encoding.UTF8.GetBytes(stringToSend);
-		return Publish(buffer, stringToSend.Length);
-	}
-
 	public bool Publish(in byte[] buffer, in int bufferLength)
 	{
 		var wasSucessful = false;

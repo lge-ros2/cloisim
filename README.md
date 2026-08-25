@@ -1,27 +1,26 @@
-# CLOiSim: Multi-Robot Simulator
+# CLOiSim: Unity 6 based Multi-Robot Simulator for ROS 2
 
-[![Unity](https://img.shields.io/badge/Unity-6-black.svg?style=flat&logo=unity)](https://unity.com/)
-[![ROS 2 Humble](https://img.shields.io/badge/ROS%202-Humble-blue.svg?style=flat&logo=ros)](https://docs.ros.org/en/humble/)
-[![ROS 2 Jazzy](https://img.shields.io/badge/ROS%202-Jazzy-green.svg?style=flat&logo=ros)](https://docs.ros.org/en/jazzy/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/lge-ros2/cloisim)](https://github.com/lge-ros2/cloisim/releases)
+CLOiSim is a high-performance robotics simulator built with Unity 6 for ROS 2 based multi-robot simulation, SDFormat/SDF world loading, LiDAR, camera, depth camera, IMU, GPS, and sensor-rich robot environments.
 
-CLOiSim is a high-performance multi-robot simulator based on **Unity 6**. It dynamically builds simulated 3D environments and robots directly from [SDFormat (SDF)](http://sdformat.org/) description files.
+It is designed for scalable robot simulation, autonomous robot development, AMR scenarios, virtual testing, and robotics system integration with cloisim_ros.
+
+[![Unity](https://img.shields.io/badge/Unity-6-black.svg?style=flat&logo=unity)](https://unity.com/) [![ROS 2 Humble](https://img.shields.io/badge/ROS%202-Humble-blue.svg?style=flat&logo=ros)](https://docs.ros.org/en/humble/) [![ROS 2 Jazzy](https://img.shields.io/badge/ROS%202-Jazzy-green.svg?style=flat&logo=ros)](https://docs.ros.org/en/jazzy/) [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Release](https://img.shields.io/github/v/release/lge-ros2/cloisim)](https://github.com/lge-ros2/cloisim/releases)
 
 ![multi-type-of-robots](https://github.com/lge-ros2/cloisim/assets/21001946/499fc995-0a29-454b-902f-3df77d00c7de)
 
 ## 🚀 Overview
 
-CLOiSim was developed to address performance bottlenecks encountered with other simulators when loading multiple robots with complex sensor suites. By leveraging Unity's efficient rendering and physics pipelines, CLOiSim provides a scalable solution for large-scale robot simulation.
+CLOiSim was developed to address performance bottlenecks encountered when simulating multiple robots with complex sensor suites. It dynamically builds 3D environments and robot models from [SDFormat (SDF)](http://sdformat.org/) files, allowing users to configure worlds, robots, sensors, and plugins through standard simulation descriptions.
+
+By combining Unity's rendering and physics pipelines with ROS 2 integration through cloisim_ros, CLOiSim provides a scalable simulation environment for multi-robot systems, AMR scenarios, sensor validation, and robotics software development.
 
 ### Key Components
 - **SDF Parser**: Utilizes [sdformat-sharp](https://github.com/lge-ros2/sdformat-sharp) as a Unity package for robust and comprehensive SDF 1.6+ specification parsing.
 - **Unity Implementer**: Automated mapping of SDF elements to Unity's Visual, Collision, and Physics (ArticulationBody) components.
-- **Transport Layer**: High-performance sensor data and control signal transport via ZeroMQ (NetMQ).
+- **Transport Layer**: High-performance transport of sensor data and control signals via ZeroMQ (NetMQ).
 - **Web Service**: JSON-based simulation control and monitoring through a web interface.
 
-![cloisim_multirobot](https://user-images.githubusercontent.com/21001946/107105748-3a124f80-686b-11eb-8ac8-74377696e641.gif)
-*[Full Video Demo](https://user-images.githubusercontent.com/21001946/104274159-96d84f80-54e3-11eb-9975-9d4bbbbdd586.mp4)*
+[[CLOiSim:CLOID_ON_SMALL_HOUSE]](https://github.com/user-attachments/assets/c75c2dbd-604d-49c1-b4ec-4a9c4eaf26d3)
 
 ---
 
@@ -31,7 +30,7 @@ CLOiSim was developed to address performance bottlenecks encountered with other 
 > 🚨 CLOiSim has been upgraded to **Unity 6.5** (6000.5.5f1). Legacy versions based on Unity 2022.3 LTS are no longer maintained.
 
 > [!WARNING]
-> ⚠️🔥 **5.4.x or later is recommended over 5.3.x.** Across 5.3.0–5.3.14, several fixes were attempted for a recurring freeze in the Unified Ray Tracing (URT) path (TLAS in-flight disposal, BVH rebuild races, GPU fence gating, TDR recovery, etc.), but the freeze kept resurfacing under load. Starting with 5.4.x, Depth Camera sensors (Depth / RealSense IR / VCSEL) have been switched from URT back to **rasterization**, which resolves this class of freeze. LiDAR remains URT-based. If you're currently on 5.3.x, upgrading to 5.4.x or later is recommended.
+> ⚠️🔥 **5.4.x or later is recommended over 5.3.x.** Through 5.3.0–5.3.14, several fixes were attempted for a recurring freeze in the Unified Ray Tracing (URT) path (TLAS in-flight disposal, BVH rebuild races, GPU fence gating, TDR recovery, etc.), but the freeze kept resurfacing under load. Starting with 5.4.x, Depth Camera sensors (Depth / RealSense IR / VCSEL) have been switched from URT back to **rasterization**, which resolves this class of freeze. LiDAR remains URT-based. If you're currently on 5.3.x, upgrading to 5.4.x or later is recommended.
 
 > [!WARNING]
 > ⚠️ **From 5.4.0 onward, `Ubuntu 24.04 LTS` is required on Linux.** The bundled `AssimpNetter 6.0.5` native library requires newer GLIBC/libstdc++ and may fail to load on older distributions such as Ubuntu 20.04/22.04.
@@ -59,7 +58,7 @@ CLOiSim was developed to address performance bottlenecks encountered with other 
 | **Depth Camera** | Depth / RealSense (IR1, IR2, VCSEL dot pattern) | ✅ | Rasterization-based |
 | **Inertial** | IMU / GPS | ✅ | Gaussian noise models included |
 | **Other** | Sonar / IR / Contact | ✅ | |
-| **Noise** | Gaussian / Custom | 🚧 | Gaussian fully supported |
+| **Noise** | Gaussian / Custom | 🚧 | Gaussian is fully supported |
 
 ### 🌍 World & Physics
 - **Physics Engine**: NVIDIA PhysX with **Temporal Gauss Seidel (TGS)** solver for enhanced stability.
@@ -67,7 +66,7 @@ CLOiSim was developed to address performance bottlenecks encountered with other 
 - **Coordinates**: Support for Spherical Coordinates.
 - **Rendering**: URP-based high-quality visuals with specialized shaders for sensors.
 
-![cloisim_lidar_ros](https://user-images.githubusercontent.com/21001946/107105540-42b65600-686a-11eb-8797-7d937b108c11.gif)
+[[CLOiD:rviz2]](https://github.com/user-attachments/assets/cd4f0e81-5e39-42b1-a4da-ace702eb2253)
 
 ---
 
@@ -116,6 +115,7 @@ CLOiSim uses a flexible plugin architecture to extend robot and world functional
 ## 📖 Usage
 
 ### 1. Environment Setup
+
 Set the paths to your resources (models, worlds, media):
 ```bash
 export CLOISIM_FILES_PATH="/path/to/sample_resources/media"
@@ -124,6 +124,7 @@ export CLOISIM_WORLD_PATH="/path/to/sample_resources/worlds"
 ```
 
 ### 2. Running the Simulator
+
 ```bash
 # Standard mode
 ./run.sh cloisim.world
@@ -133,12 +134,28 @@ export CLOISIM_WORLD_PATH="/path/to/sample_resources/worlds"
 ```
 
 ### 3. ROS 2 Integration
- To bridge simulation data to ROS 2, use the [cloisim_ros](https://github.com/lge-ros2/cloisim_ros) package:
+
+To bridge simulation data to ROS 2, use the [cloisim_ros](https://github.com/lge-ros2/cloisim_ros) package:
 - Supports **ROS 2 Humble & Jazzy**.
 - Launch the bringup node to start publishing sensor topics.
 
 ### 4. Running EditMode Unit Tests
 See [scripts/README.md](scripts/README.md) for detailed EditMode test runner usage and configuration.
+
+---
+
+## Use Cases
+
+CLOiSim can be used for:
+
+- ROS 2 robot simulation
+- Multi-robot simulation
+- AMR simulation
+- LiDAR and camera sensor simulation
+- SDFormat/SDF based world and robot loading
+- Digital twin style robot environment testing
+- Large-scale robotics simulation with Unity
+- Autonomous robot development and validation
 
 ---
 
@@ -149,8 +166,6 @@ CLOiSim provides a WebSocket interface for runtime interaction:
 - **Path**: `ws://127.0.0.1:8080/{service-name}`
 - **Capabilities**: Marker placement (lines, boxes, text), simulation reset, and more.
 - [Detailed Guide](https://github.com/lge-ros2/cloisim/wiki/Usage#control-service)
-
-![cloisim_nav2_ros2](https://user-images.githubusercontent.com/21001946/107105530-37fbc100-686a-11eb-9ff8-f3cf45012d9b.gif)
 
 ---
 

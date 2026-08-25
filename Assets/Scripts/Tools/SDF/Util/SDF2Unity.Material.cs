@@ -39,52 +39,52 @@ public static partial class SDF2Unity
 
 	private static void SyncLegacyBaseMap(this UE.Material target)
 	{
-		if (!target.HasProperty("_BaseMap"))
+		if (!target.HasProperty(ShaderProps.BaseMap))
 		{
 			return;
 		}
 
-		var hasBaseMap = target.HasTexture("_BaseMap");
+		var hasBaseMap = target.HasTexture(ShaderProps.BaseMap);
 		var hasLegacyMainTex = target.HasTexture("_MainTex");
 
 		if (!hasBaseMap && hasLegacyMainTex)
 		{
-			target.SetTexture("_BaseMap", target.GetTexture("_MainTex"));
-			target.SetTextureScale("_BaseMap", target.GetTextureScale("_MainTex"));
-			target.SetTextureOffset("_BaseMap", target.GetTextureOffset("_MainTex"));
+			target.SetTexture(ShaderProps.BaseMap, target.GetTexture("_MainTex"));
+			target.SetTextureScale(ShaderProps.BaseMap, target.GetTextureScale("_MainTex"));
+			target.SetTextureOffset(ShaderProps.BaseMap, target.GetTextureOffset("_MainTex"));
 		}
 		else if (hasBaseMap && !hasLegacyMainTex)
 		{
-			target.SetTexture("_MainTex", target.GetTexture("_BaseMap"));
-			target.SetTextureScale("_MainTex", target.GetTextureScale("_BaseMap"));
-			target.SetTextureOffset("_MainTex", target.GetTextureOffset("_BaseMap"));
+			target.SetTexture("_MainTex", target.GetTexture(ShaderProps.BaseMap));
+			target.SetTextureScale("_MainTex", target.GetTextureScale(ShaderProps.BaseMap));
+			target.SetTextureOffset("_MainTex", target.GetTextureOffset(ShaderProps.BaseMap));
 		}
 	}
 
 	private static void SyncLegacyBaseColor(this UE.Material target)
 	{
-		if (!target.HasProperty("_BaseColor") || !target.HasProperty("_Color"))
+		if (!target.HasProperty(ShaderProps.BaseColor) || !target.HasProperty(ShaderProps.Color))
 		{
 			return;
 		}
 
-		var baseColor = target.GetColor("_BaseColor");
-		var legacyColor = target.GetColor("_Color");
+		var baseColor = target.GetColor(ShaderProps.BaseColor);
+		var legacyColor = target.GetColor(ShaderProps.Color);
 
 		if (baseColor != legacyColor)
 		{
-			target.SetColor("_Color", baseColor);
+			target.SetColor(ShaderProps.Color, baseColor);
 		}
 	}
 
 	private static bool HasEmission(this UE.Material target)
 	{
-		if (!target.HasProperty("_EmissionColor"))
+		if (!target.HasProperty(ShaderProps.EmissionColor))
 		{
 			return false;
 		}
 
-		var emissionColor = target.GetColor("_EmissionColor");
+		var emissionColor = target.GetColor(ShaderProps.EmissionColor);
 		return emissionColor.maxColorComponent > 0f;
 	}
 
@@ -95,13 +95,13 @@ public static partial class SDF2Unity
 
 	public static void UseMetallicWorkflow(this UE.Material target)
 	{
-		target.SetFloat("_WorkflowMode", MetallicWorkflowMode);
+		target.SetFloat(ShaderProps.WorkflowMode, MetallicWorkflowMode);
 		target.DisableKeyword("_SPECULAR_SETUP");
 	}
 
 	public static void UseSpecularWorkflow(this UE.Material target)
 	{
-		target.SetFloat("_WorkflowMode", SpecularWorkflowMode);
+		target.SetFloat(ShaderProps.WorkflowMode, SpecularWorkflowMode);
 		target.EnableKeyword("_SPECULAR_SETUP");
 	}
 
@@ -220,15 +220,15 @@ public static partial class SDF2Unity
 			target.SetFloat("_ReceiveShadows", 1f);
 		}
 
-		var isSpecularWorkflow = target.HasProperty("_WorkflowMode") &&
-			UE.Mathf.Approximately(target.GetFloat("_WorkflowMode"), SpecularWorkflowMode);
-		var glossMapPropertyName = isSpecularWorkflow ? "_SpecGlossMap" : "_MetallicGlossMap";
+		var isSpecularWorkflow = target.HasProperty(ShaderProps.WorkflowMode) &&
+			UE.Mathf.Approximately(target.GetFloat(ShaderProps.WorkflowMode), SpecularWorkflowMode);
+		var glossMapPropertyName = isSpecularWorkflow ? ShaderProps.SpecGlossMap : ShaderProps.MetallicGlossMap;
 
 		target.SetKeyword("_SPECULAR_SETUP", isSpecularWorkflow);
 		target.SetKeyword("_METALLICSPECGLOSSMAP", target.HasTexture(glossMapPropertyName));
-		target.SetKeyword("_NORMALMAP", target.HasTexture("_BumpMap"));
+		target.SetKeyword("_NORMALMAP", target.HasTexture(ShaderProps.BumpMap));
 		target.SetKeyword("_EMISSION", target.HasEmission());
-		target.SetKeyword("_OCCLUSIONMAP", target.HasTexture("_OcclusionMap"));
+		target.SetKeyword("_OCCLUSIONMAP", target.HasTexture(ShaderProps.OcclusionMap));
 		target.SetKeyword("_ALPHATEST_ON",
 			target.HasProperty("_AlphaClip") && target.GetFloat("_AlphaClip") >= 0.5f);
 		target.SetKeyword("_SPECULARHIGHLIGHTS_OFF",
@@ -237,8 +237,8 @@ public static partial class SDF2Unity
 			target.HasProperty("_EnvironmentReflections") &&
 			UE.Mathf.Approximately(target.GetFloat("_EnvironmentReflections"), 0f));
 		target.SetKeyword("_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A",
-			target.HasProperty("_SmoothnessTextureChannel") &&
-			UE.Mathf.Approximately(target.GetFloat("_SmoothnessTextureChannel"), SmoothnessTextureChannelAlbedoAlpha) &&
+			target.HasProperty(ShaderProps.SmoothnessTextureChannel) &&
+			UE.Mathf.Approximately(target.GetFloat(ShaderProps.SmoothnessTextureChannel), SmoothnessTextureChannelAlbedoAlpha) &&
 			target.IsOpaqueSurface());
 		target.SetKeyword("_SURFACE_TYPE_TRANSPARENT",
 			target.HasProperty("_Surface") && UE.Mathf.Approximately(target.GetFloat("_Surface"), TransparentSurfaceType));
@@ -276,17 +276,17 @@ public static partial class SDF2Unity
 		newMaterial.SetFloat("_ReceiveShadows", 1f);
 		newMaterial.SetFloat("_SpecularHighlights", 1f);
 		newMaterial.SetFloat("_EnvironmentReflections", 1f);
-		newMaterial.SetFloat("_SmoothnessTextureChannel", SmoothnessTextureChannelSpecularOrMetallicAlpha);
+		newMaterial.SetFloat(ShaderProps.SmoothnessTextureChannel, SmoothnessTextureChannelSpecularOrMetallicAlpha);
 		newMaterial.SetFloat("_Metallic", 0f);
-		newMaterial.SetColor("_BaseColor", UE.Color.white);
-		newMaterial.SetColor("_Color", UE.Color.white);
-		newMaterial.SetColor("_EmissionColor", UE.Color.black);
+		newMaterial.SetColor(ShaderProps.BaseColor, UE.Color.white);
+		newMaterial.SetColor(ShaderProps.Color, UE.Color.white);
+		newMaterial.SetColor(ShaderProps.EmissionColor, UE.Color.black);
 		newMaterial.globalIlluminationFlags = UE.MaterialGlobalIlluminationFlags.RealtimeEmissive;
-		newMaterial.SetTexture("_MetallicGlossMap", null);
-		newMaterial.SetTexture("_SpecGlossMap", null);
-		newMaterial.SetTexture("_BumpMap", null);
-		newMaterial.SetTexture("_EmissionMap", null);
-		newMaterial.SetTexture("_OcclusionMap", null);
+		newMaterial.SetTexture(ShaderProps.MetallicGlossMap, null);
+		newMaterial.SetTexture(ShaderProps.SpecGlossMap, null);
+		newMaterial.SetTexture(ShaderProps.BumpMap, null);
+		newMaterial.SetTexture(ShaderProps.EmissionMap, null);
+		newMaterial.SetTexture(ShaderProps.OcclusionMap, null);
 		newMaterial.SetTexture("_ParallaxMap", null);
 		newMaterial.SetTexture("_DetailMask", null);
 		newMaterial.SetTexture("_DetailAlbedoMap", null);
@@ -296,7 +296,7 @@ public static partial class SDF2Unity
 		newMaterial.SetFloat("_Parallax", 0.005f);
 		newMaterial.SetFloat("_DetailAlbedoMapScale", 1f);
 		newMaterial.SetFloat("_DetailNormalMapScale", 1f);
-		newMaterial.SetFloat("_Smoothness", 0f);
+		newMaterial.SetFloat(ShaderProps.Smoothness, 0f);
 		newMaterial.SetOverrideTag("RenderType", "Opaque");
 		newMaterial.UseMetallicWorkflow();
 
@@ -346,15 +346,15 @@ public static partial class SDF2Unity
 
 	public static void ConvertToSpeedTree(this UE.Material target)
 	{
-		var existingTexture = target.GetTexture("_BaseMap");
-		var existingTextureScale = target.GetTextureScale("_BaseMap");
+		var existingTexture = target.GetTexture(ShaderProps.BaseMap);
+		var existingTextureScale = target.GetTextureScale(ShaderProps.BaseMap);
 		// URP Lit stores color in _BaseColor; fall back to _Color for other shaders
-		var existingColor = target.HasProperty("_BaseColor") ? target.GetColor("_BaseColor") : target.GetColor("_Color");
+		var existingColor = target.HasProperty(ShaderProps.BaseColor) ? target.GetColor(ShaderProps.BaseColor) : target.GetColor(ShaderProps.Color);
 
 		target.shader = SpeedTreeShader;
 		target.SetTexture("_MainTex", existingTexture);
 		target.SetTextureScale("_MainTex", existingTextureScale);
-		target.SetColor("_Color", existingColor);
+		target.SetColor(ShaderProps.Color, existingColor);
 		target.SetFloat("_Glossiness", 0f);
 		target.SetInt("_TwoSided", 0); // 0 = two-sided (no culling), for branch polygons
 
@@ -375,8 +375,8 @@ public static partial class SDF2Unity
 
 	public static void SetBaseColor(this UE.Material target, UE.Color color)
 	{
-		target.SetColor("_BaseColor", color);
-		target.SetColor("_Color", color);
+		target.SetColor(ShaderProps.BaseColor, color);
+		target.SetColor(ShaderProps.Color, color);
 
 		if (color.a < 1)
 		{
@@ -390,7 +390,7 @@ public static partial class SDF2Unity
 
 	public static void SetEmission(this UE.Material target, UE.Color color)
 	{
-		target.SetColor("_EmissionColor", color);
+		target.SetColor(ShaderProps.EmissionColor, color);
 		target.globalIlluminationFlags = UE.MaterialGlobalIlluminationFlags.None;
 		target.RefreshLitKeywords();
 	}
@@ -405,17 +405,17 @@ public static partial class SDF2Unity
 	public static void SetNormalMap(this UE.Material target, in string normalMapPath)
 	{
 		var texture = MeshLoader.GetTexture(normalMapPath);
-		target.SetTexture("_BumpMap", texture);
+		target.SetTexture(ShaderProps.BumpMap, texture);
 		target.RefreshLitKeywords();
 	}
 
 	public static void SetSpecular(this UE.Material target, UE.Color color)
 	{
 		target.UseSpecularWorkflow();
-		target.SetFloat("_SmoothnessTextureChannel", SmoothnessTextureChannelSpecularOrMetallicAlpha);
-		target.SetTexture("_SpecGlossMap", null);
+		target.SetFloat(ShaderProps.SmoothnessTextureChannel, SmoothnessTextureChannelSpecularOrMetallicAlpha);
+		target.SetTexture(ShaderProps.SpecGlossMap, null);
 		target.SetColor("_SpecColor", color);
-		target.SetFloat("_Smoothness", color.a);
+		target.SetFloat(ShaderProps.Smoothness, color.a);
 		target.SetFloat("_SpecularHighlights", 1f);
 		target.RefreshLitKeywords();
 	}

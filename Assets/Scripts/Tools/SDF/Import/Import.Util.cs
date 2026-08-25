@@ -6,6 +6,7 @@
 
 using System.Linq;
 using System;
+using System.Collections.Generic;
 using UE = UnityEngine;
 
 namespace SDFormat
@@ -255,7 +256,7 @@ namespace SDFormat
 				body.parentAnchorRotation = UE.Quaternion.Inverse(parentBody.transform.rotation) * anchorWorldRotation;
 			}
 
-			public static void SpecifyPose(this object targetObject)
+			public static void SpecifyPose(this object targetObject, IReadOnlyList<(UE.Transform parentLink, UE.Transform childRoot, string rootModelName)> pendingIslandSplits = null)
 			{
 				var rootObject = targetObject as UE.GameObject;
 
@@ -313,6 +314,75 @@ namespace SDFormat
 					}
 				}
 
+				// Split off oversized fixed-joint subtrees (registered by ImportJoint())
+				// into their own ArticulationBody island now: world poses are already
+				// finalized above (SetParent(..., worldPositionStays: true) preserves
+				// them) and self-collision ignoring above already ran while this
+				// subtree was still nested under its original root model, so the
+				// Physics.IgnoreCollision() pairs it registered stay valid regardless of
+				// this reparenting. This must happen before the island-size check and
+				// enable loop below, which is the only point where Unity's native
+				// 64-node limit is actually evaluated.
+				if (pendingIslandSplits != null)
+				{
+					foreach (var (parentLink, childRoot, rootModelName) in pendingIslandSplits)
+					{
+						var childArticulationBody = childRoot.GetComponent<UE.ArticulationBody>();
+						if (childArticulationBody == null)
+						{
+							continue;
+						}
+
+						var containerName = $"{rootModelName ?? "Unknown"}_DetachedIslands";
+						var container = Main.WorldRoot.transform.Find(containerName)?.gameObject;
+						if (container == null)
+						{
+							container = new UE.GameObject(containerName);
+							container.transform.SetParent(Main.WorldRoot.transform, false);
+						}
+
+						// Resolve the owning model BEFORE reparenting: once the detached
+						// subtree is moved under the World-level container it no longer
+						// has a Helper.Model ancestor here, so a deferred lookup would
+						// resolve to nothing. The nearest model (e.g. the left/right hand
+						// model) is what JointControl's AddTargetJoint scopes by, which
+						// keeps left/right joints unambiguous despite shared local names.
+						var ownerModel = childRoot.GetComponentInParent<Helper.Model>();
+
+						// Group each detached island under its owning model name instead of
+						// dumping the raw link root straight into the shared container. Both
+						// hands have a root link named "hand_base_link", so without this the
+						// container would show two ambiguous "hand_base_link" entries.
+						var containerChild = container;
+						if (ownerModel != null && !string.IsNullOrEmpty(ownerModel.name))
+						{
+							var groupName = ownerModel.name;
+							var group = container.transform.Find(groupName)?.gameObject;
+							if (group == null)
+							{
+								group = new UE.GameObject(groupName);
+								group.transform.SetParent(container.transform, false);
+							}
+							containerChild = group;
+						}
+
+						childRoot.SetParent(containerChild.transform, true);
+
+						if (ownerModel != null)
+						{
+							Helper.DetachedIslandUtil.RegisterDetachedSubtree(ownerModel.transform, childRoot);
+						}
+
+						var offsetPos = UE.Quaternion.Inverse(parentLink.rotation) * (childRoot.position - parentLink.position);
+						var offsetRot = UE.Quaternion.Inverse(parentLink.rotation) * childRoot.rotation;
+
+						childArticulationBody.immovable = true;
+
+						var follower = childRoot.gameObject.AddComponent<Helper.KinematicIslandFollower>();
+						follower.Initialize(parentLink, offsetPos, offsetRot);
+					}
+				}
+
 				foreach (var body in articulationBodies)
 				{
 					UpdateParentAnchor(body);
@@ -330,6 +400,41 @@ namespace SDFormat
 						if (modelHelper != null && modelHelper.isStatic)
 						{
 							body.immovable = true;
+						}
+					}
+				}
+
+				// PhysX's reduced-coordinate articulation solver hard-caps a single
+				// connected ArticulationBody hierarchy ("island") at 64 nodes. Unity only
+				// reports this natively once enough bodies in the island are enabled
+				// (a generic "hierarchy of articulations..." error with no indication of
+				// which model/root is at fault). Count island sizes up front so a bad
+				// import fails with a clear, actionable message instead.
+				{
+					var islandSizeByRoot = new Dictionary<UE.ArticulationBody, int>();
+					foreach (var body in articulationBodies)
+					{
+						var root = body;
+						UE.ArticulationBody parent;
+						while ((parent = FindParentArticulationBody(root)) != null)
+						{
+							root = parent;
+						}
+
+						islandSizeByRoot.TryGetValue(root, out var count);
+						islandSizeByRoot[root] = count + 1;
+					}
+
+					const int MaxArticulationIslandSize = 64;
+					foreach (var (root, count) in islandSizeByRoot)
+					{
+						if (count > MaxArticulationIslandSize)
+						{
+							UE.Debug.LogError(
+								$"[SpecifyPose] ArticulationBody island rooted at '{root.name}' has {count} nodes, " +
+								$"exceeding Unity's {MaxArticulationIslandSize}-node PhysX articulation limit. " +
+								"Enabling it will trigger a native 'hierarchy of articulations' error. " +
+								"Split this model's fixed-joint sub-trees into separate islands or reduce its DOF.");
 						}
 					}
 				}

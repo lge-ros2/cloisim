@@ -15,6 +15,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using Assimp.Unmanaged;
 #if UNITY_EDITOR
@@ -71,6 +72,7 @@ public class Main : MonoBehaviour
 	private MeshProcess.VHACD _vhacd = null;
 	private ObjectSpawning _objectSpawning = null;
 	private ModelImporter _modelImporter = null;
+	private WorldImporter _worldImporter = null;
 	private PluginStartTracker _pluginStartTracker = new();
 	private Pose _cameraInitPose = Pose.identity;
 	private string _trackVisualModelName = string.Empty;
@@ -108,6 +110,7 @@ public class Main : MonoBehaviour
 	public static RuntimeGizmos.TransformGizmo Gizmos => _instance._transformGizmo;
 	public static ObjectSpawning ObjectSpawning => _instance._objectSpawning;
 	public static ModelImporter ModelImporter => _instance._modelImporter;
+	public static WorldImporter WorldImporter => _instance._worldImporter;
 	public static UIController UIController => _instance._uiController;
 	public static InfoDisplay InfoDisplay => _instance._infoDisplay;
 	public static WorldNavMeshBuilder WorldNavMeshBuilder => _instance._worldNavMeshBuilder;
@@ -370,7 +373,7 @@ public class Main : MonoBehaviour
 				continue;
 			}
 
-			if (target.CompareTag("Model"))
+			if (target.CompareTag(TagNames.Model))
 			{
 				SafeDestroyModelRoot(target);
 			}
@@ -539,10 +542,9 @@ public class Main : MonoBehaviour
 		// Debug.Log(QualitySettings.GetQualityLevel());
 		var qualityLevel = Environment.GetEnvironmentVariable("CLOISIM_QUALITY");
 		var qualityLevelIndex = 3; // Very High Quality Preset
-		if (!string.IsNullOrEmpty(qualityLevel))
+		if (!string.IsNullOrEmpty(qualityLevel) && int.TryParse(qualityLevel, out var parsedQuality))
 		{
-			qualityLevelIndex = int.Parse(qualityLevel);
-			qualityLevelIndex = Mathf.Clamp(qualityLevelIndex, 0, 4);
+			qualityLevelIndex = Mathf.Clamp(parsedQuality, 0, 4);
 		}
 		QualitySettings.SetQualityLevel(qualityLevelIndex);
 
@@ -552,7 +554,11 @@ public class Main : MonoBehaviour
 		QualitySettings.streamingMipmapsAddAllCameras = true;
 
 		// Keep shadow quality high enough for close-up robot inspection.
-		QualitySettings.shadowDistance = 50f;
+		// URP reads shadow distance from the pipeline asset, not QualitySettings.shadowDistance.
+		if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urpAsset)
+		{
+			urpAsset.shadowDistance = 100f;
+		}
 
 		var mainCamera = Camera.main;
 		if (mainCamera == null)
@@ -575,7 +581,7 @@ public class Main : MonoBehaviour
 			layerCullDistances[i] = mainCamera.farClipPlane;
 		}
 		// "Default" layer gets a tighter cull distance for small objects
-		layerCullDistances[LayerMask.NameToLayer("Default")] = mainCamera.farClipPlane * 0.5f;
+		layerCullDistances[LayerMask.NameToLayer(LayerNames.Default)] = mainCamera.farClipPlane * 0.5f;
 		mainCamera.layerCullDistances = layerCullDistances;
 
 		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
@@ -638,6 +644,8 @@ public class Main : MonoBehaviour
 		_objectSpawning = gameObject.AddComponent<ObjectSpawning>();
 
 		_modelImporter = gameObject.AddComponent<ModelImporter>();
+
+		_worldImporter = gameObject.AddComponent<WorldImporter>();
 
 		_segmentationManager = gameObject.AddComponent<Segmentation.Manager>();
 
@@ -732,6 +740,15 @@ public class Main : MonoBehaviour
 			{
 				_worldFilename = newWorldFilename;
 			}
+#if !UNITY_EDITOR
+			else
+			{
+				// The inspector-serialized value on the MainScene prefab (e.g. "empty.world")
+				// is a convenience default for in-Editor testing only; a build must rely solely
+				// on "-world"/"-worldFile" and fall back to the world picker otherwise.
+				_worldFilename = null;
+			}
+#endif
 
 			_sdfRoot = new SDFormat.RootLoader();
 			_sdfRoot.fileDefaultPaths.AddRange(_fileRootDirectories);
@@ -741,12 +758,34 @@ public class Main : MonoBehaviour
 
 			ModelImporter.UpdateUIModelList(_sdfRoot.ResourceModelTable);
 
+			_sdfRoot.UpdateResourceWorldTable();
+
 			if (!string.IsNullOrEmpty(_worldFilename))
 			{
 				_uiController?.SetEventMessage("Start to load world file: " + _worldFilename);
 				StartCoroutine(LoadWorld());
 			}
+			else if (_sdfRoot.ResourceWorldTable.Count > 0)
+			{
+				StartCoroutine(ShowWorldListForPicking());
+			}
+			else
+			{
+				_uiController?.SetWarningMessage("No world file specified and none found under CLOISIM_WORLD_PATH.");
+			}
 		}
+	}
+
+	private IEnumerator ShowWorldListForPicking()
+	{
+		if (_clearAllOnStart)
+		{
+			yield return CleanAllModels();
+			CleanAllLights();
+		}
+
+		_worldImporter?.UpdateUIWorldList(_sdfRoot.ResourceWorldTable);
+		_worldImporter?.ShowWorldList(true);
 	}
 
 	private string GetClonedModelName(in string modelName)
@@ -828,12 +867,6 @@ public class Main : MonoBehaviour
 
 			_pluginAllStarted = false;
 
-			_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
-			_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
-
-			_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
-			_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
-
 			_pluginStartTracker.Bind(targetObject);
 
 			Physics.SyncTransforms();
@@ -843,17 +876,7 @@ public class Main : MonoBehaviour
 
 			_followingList?.UpdateList();
 
-			var pluginStartupDeadline = Time.realtimeSinceStartup + PluginStartupTimeoutSeconds;
-			while (!_pluginAllStarted)
-			{
-				if (HasPluginStartupTimedOut(pluginStartupDeadline, $"model '{model.Name}'"))
-				{
-					yield break;
-				}
-
-				yield return null;
-			}
-			_bridgeManager.PrintAllocatedHistory();
+			yield return WaitForAllPlugins($"model '{model.Name}'");
 
 			loadStopwatch.Stop();
 			var message = $"Model '{model.Name}' is successfully loaded. ({loadStopwatch.ElapsedMilliseconds}ms)";
@@ -870,8 +893,13 @@ public class Main : MonoBehaviour
 		}
 	}
 
-	private IEnumerator LoadWorld()
+	public IEnumerator LoadWorld(string worldFilename = null)
 	{
+		if (!string.IsNullOrEmpty(worldFilename))
+		{
+			_worldFilename = worldFilename;
+		}
+
 		var loadStopwatch = System.Diagnostics.Stopwatch.StartNew();
 
 		SuppressPhysicsDebugContacts("loading a world");
@@ -889,7 +917,6 @@ public class Main : MonoBehaviour
 			{
 				yield return CleanAllModels();
 				CleanAllLights();
-				VHACD.ClearCache();
 			}
 
 			_sdfLoader = new SDFormat.Import.Loader();
@@ -909,15 +936,20 @@ public class Main : MonoBehaviour
 				CLOiSim.Diagnostics.FreezeWatchdog.Restore();
 			}
 
-			yield return new WaitUntil(() => _worldRoot.transform.childCount > 0);
+			var worldLoadWaitTime = 0f;
+			const float worldLoadWaitTimeout = 30f;
+			while (_worldRoot.transform.childCount <= 0 && worldLoadWaitTime < worldLoadWaitTimeout)
+			{
+				worldLoadWaitTime += Time.deltaTime;
+				yield return null;
+			}
+
+			if (worldLoadWaitTime >= worldLoadWaitTimeout)
+			{
+				Debug.LogWarning($"World '{_worldFilename}' produced no scene objects within {worldLoadWaitTimeout}s; continuing with an empty world.");
+			}
 
 			_pluginAllStarted = false;
-
-			_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
-			_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
-
-			_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
-			_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
 
 			_pluginStartTracker.Bind(_worldRoot);
 
@@ -928,17 +960,7 @@ public class Main : MonoBehaviour
 
 			_followingList?.UpdateList();
 
-			var pluginStartupDeadline = Time.realtimeSinceStartup + PluginStartupTimeoutSeconds;
-			while (!_pluginAllStarted)
-			{
-				if (HasPluginStartupTimedOut(pluginStartupDeadline, $"world '{_worldFilename}'"))
-				{
-					yield break;
-				}
-
-				yield return null;
-			}
-			_bridgeManager.PrintAllocatedHistory();
+			yield return WaitForAllPlugins($"world '{_worldFilename}'");
 
 			TrackModel();
 
@@ -972,6 +994,27 @@ public class Main : MonoBehaviour
 		var message = $"Starting plugins... ({started}/{total})";
 		_uiController?.SetInfoMessage(message);
 		_uiController?.UpdateLoadingOverlay(message);
+	}
+
+	private IEnumerator WaitForAllPlugins(string targetDescription)
+	{
+		_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
+		_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
+
+		_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
+		_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
+
+		var pluginStartupDeadline = Time.realtimeSinceStartup + PluginStartupTimeoutSeconds;
+		while (!_pluginAllStarted)
+		{
+			if (HasPluginStartupTimedOut(pluginStartupDeadline, targetDescription))
+			{
+				yield break;
+			}
+
+			yield return null;
+		}
+		_bridgeManager.PrintAllocatedHistory();
 	}
 
 	private bool HasPluginStartupTimedOut(in float deadline, in string targetDescription)
@@ -1025,7 +1068,13 @@ public class Main : MonoBehaviour
 	public bool ToggleRecord()
 	{
 		var recordStarted = false;
-		var recorder = Camera.main.GetComponent<UltraFastWebMRecorder>();
+		var recorder = Camera.main?.GetComponent<UltraFastWebMRecorder>();
+		if (recorder == null)
+		{
+			Debug.LogWarning("UltraFastWebMRecorder component not found on main camera; recording is disabled.");
+			return false;
+		}
+
 		if (!recorder.IsRecording)
 		{
 			recorder.SetOutput(baseName: _screenCaptureFilename);
@@ -1039,7 +1088,13 @@ public class Main : MonoBehaviour
 
 	public void StartRecord()
 	{
-		var recorder = Camera.main.GetComponent<UltraFastWebMRecorder>();
+		var recorder = Camera.main?.GetComponent<UltraFastWebMRecorder>();
+		if (recorder == null)
+		{
+			Debug.LogWarning("UltraFastWebMRecorder component not found on main camera; recording is disabled.");
+			return;
+		}
+
 		if (recorder.IsRecording)
 			return;
 
@@ -1050,7 +1105,13 @@ public class Main : MonoBehaviour
 
 	public void StopRecord()
 	{
-		var recorder = Camera.main.GetComponent<UltraFastWebMRecorder>();
+		var recorder = Camera.main?.GetComponent<UltraFastWebMRecorder>();
+		if (recorder == null)
+		{
+			Debug.LogWarning("UltraFastWebMRecorder component not found on main camera; recording is disabled.");
+			return;
+		}
+
 		recorder.StopCapture();
 		UIController?.OnRecordClicked(false);
 	}

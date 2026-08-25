@@ -13,25 +13,19 @@ namespace SDFormat
 	{
 		public static class Joint
 		{
-			public static UE.Pose SetArticulationBodyRelationship(in SDFormat.Joint joint, UE.Transform linkParent, UE.Transform linkChild)
+			// Reparents linkChild (or its whole model root, for cross-model includes)
+			// under linkParent, matching the SDF joint's parent/child link
+			// relationship. Shared by SetArticulationBodyRelationship (for the
+			// normal ArticulationBody chaining path) and by fixed-joint leaves that
+			// have their ArticulationBody dropped and skip that path entirely -
+			// both still need this transform reparenting to happen.
+			public static void ReparentUnderJointParent(UE.Transform linkParent, UE.Transform linkChild)
 			{
 				var modelTransformParent = linkParent.parent;
 				var modelTransformChild = linkChild.parent;
 
 				var linkHelperParent = linkParent.GetComponent<Helper.Link>();
 				var linkHelperChild = linkChild.GetComponent<Helper.Link>();
-
-				if (linkParent.GetComponent<UE.ArticulationBody>() == null)
-				{
-					UE.Debug.LogWarningFormat("LinkParent({0}) has no ArticulationBody -> create empty one", linkParent.name);
-					Import.Loader.CreateArticulationBody(linkParent);
-				}
-
-				var anchorPose = new UE.Pose
-				{
-					position = UE.Vector3.zero,
-					rotation = UE.Quaternion.identity
-				};
 
 				if (linkHelperChild.Model.Equals(linkHelperParent.Model) ||
 					modelTransformChild.Equals(modelTransformParent))
@@ -44,6 +38,23 @@ namespace SDFormat
 					// authored include pose is still applied to the mounted subtree.
 					modelTransformChild.SetParent(linkParent, false);
 				}
+			}
+
+			public static UE.Pose SetArticulationBodyRelationship(in SDFormat.Joint joint, UE.Transform linkParent, UE.Transform linkChild)
+			{
+				if (linkParent.GetComponent<UE.ArticulationBody>() == null)
+				{
+					UE.Debug.LogWarningFormat("LinkParent({0}) has no ArticulationBody -> create empty one", linkParent.name);
+					Import.Loader.CreateArticulationBody(linkParent);
+				}
+
+				var anchorPose = new UE.Pose
+				{
+					position = UE.Vector3.zero,
+					rotation = UE.Quaternion.identity
+				};
+
+				ReparentUnderJointParent(linkParent, linkChild);
 
 				var (jointPos, jointRot) = joint.RawPose.ToUnity();
 				anchorPose.position += jointPos;
@@ -56,6 +67,30 @@ namespace SDFormat
 			{
 				body.anchorPosition = parentAnchor.position;
 				body.anchorRotation = parentAnchor.rotation;
+			}
+
+			// Rotate the anchor so the joint's dominant-axis basis (X->right, Y->up,
+			// Z->forward) aligns with the articulated value axis. The X-dominant tie-break
+			// (>=) must match the drive/lock branch selection used by the callers.
+			// Shared by the revolute / revolute2 / prismatic joint builders.
+			private static void ApplyDominantAxisAnchorRotation(this UE.ArticulationBody body, in UE.Vector3 jointAxis)
+			{
+				var absX = UE.Mathf.Abs(jointAxis.x);
+				var absY = UE.Mathf.Abs(jointAxis.y);
+				var absZ = UE.Mathf.Abs(jointAxis.z);
+
+				if (absX >= absY && absX >= absZ)
+				{
+					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.right, jointAxis);
+				}
+				else if (absY >= absX && absY >= absZ)
+				{
+					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.up, jointAxis);
+				}
+				else
+				{
+					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.forward, jointAxis);
+				}
 			}
 
 			public static void MakeRevoluteJoint(this UE.ArticulationBody body, in JointAxis axis)
@@ -82,13 +117,14 @@ namespace SDFormat
 
 				var jointAxis = axis.Xyz.ToUnity().normalized;
 
+				body.ApplyDominantAxisAnchorRotation(jointAxis);
+
 				var absX = UE.Mathf.Abs(jointAxis.x);
 				var absY = UE.Mathf.Abs(jointAxis.y);
 				var absZ = UE.Mathf.Abs(jointAxis.z);
 
 				if (absX >= absY && absX >= absZ)
 				{
-					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.right, jointAxis);
 					body.xDrive = drive;
 					body.twistLock = axis.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.swingYLock = UE.ArticulationDofLock.LockedMotion;
@@ -96,7 +132,6 @@ namespace SDFormat
 				}
 				else if (absY >= absX && absY >= absZ)
 				{
-					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.up, jointAxis);
 					body.yDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
 					body.swingYLock = axis.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
@@ -104,7 +139,6 @@ namespace SDFormat
 				}
 				else
 				{
-					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.forward, jointAxis);
 					body.zDrive = drive;
 					body.twistLock = UE.ArticulationDofLock.LockedMotion;
 					body.swingYLock = UE.ArticulationDofLock.LockedMotion;
@@ -136,21 +170,20 @@ namespace SDFormat
 				var abs2Y = UE.Mathf.Abs(joint2Axis.y);
 				var abs2Z = UE.Mathf.Abs(joint2Axis.z);
 
+				body.ApplyDominantAxisAnchorRotation(joint2Axis);
+
 				if (abs2X >= abs2Y && abs2X >= abs2Z)
 				{
-					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.right, joint2Axis);
 					body.xDrive = drive;
 					body.twistLock = axis2.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 				else if (abs2Y >= abs2X && abs2Y >= abs2Z)
 				{
-					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.up, joint2Axis);
 					body.yDrive = drive;
 					body.swingYLock = axis2.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
 				else
 				{
-					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.forward, joint2Axis);
 					body.zDrive = drive;
 					body.swingZLock = axis2.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 				}
@@ -227,10 +260,10 @@ namespace SDFormat
 				var absY = UE.Mathf.Abs(jointAxis.y);
 				var absZ = UE.Mathf.Abs(jointAxis.z);
 
+				body.ApplyDominantAxisAnchorRotation(jointAxis);
+
 				if (absX >= absY && absX >= absZ)
 				{
-					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.right, jointAxis);
-
 					body.xDrive = drive;
 					body.linearLockX = axis.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
 					body.linearLockY = UE.ArticulationDofLock.LockedMotion;
@@ -238,8 +271,6 @@ namespace SDFormat
 				}
 				else if (absY >= absX && absY >= absZ)
 				{
-					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.up, jointAxis);
-
 					body.yDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockY = axis.HasJointLimits() ? UE.ArticulationDofLock.LimitedMotion : UE.ArticulationDofLock.FreeMotion;
@@ -247,8 +278,6 @@ namespace SDFormat
 				}
 				else
 				{
-					body.anchorRotation *= UE.Quaternion.FromToRotation(UE.Vector3.forward, jointAxis);
-
 					body.zDrive = drive;
 					body.linearLockX = UE.ArticulationDofLock.LockedMotion;
 					body.linearLockY = UE.ArticulationDofLock.LockedMotion;

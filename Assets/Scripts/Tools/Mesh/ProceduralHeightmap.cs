@@ -167,6 +167,6 @@ public static class ProceduralHeightmap
 			terrainCollider.terrainData = terrainData;
 		}
 
-		heightmapObject.tag = "Geometry";
+		heightmapObject.tag = TagNames.Geometry;
 	}
 }

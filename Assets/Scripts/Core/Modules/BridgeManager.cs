@@ -44,6 +44,44 @@ public class BridgeManager : IDisposable
 	private static Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>> _deviceMapTable = new Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>>();
 	private static IPGlobalProperties _properties = IPGlobalProperties.GetIPGlobalProperties();
 
+	// Reverse index: port -> exact route into _deviceMapTable. Lets removal locate
+	// and prune the nested levels in O(1) instead of walking all four levels.
+	private static readonly Dictionary<ushort, DeviceRouteKey> _portRouteTable = new Dictionary<ushort, DeviceRouteKey>();
+
+	private readonly struct DeviceRouteKey : System.IEquatable<DeviceRouteKey>
+	{
+		public readonly string Model;
+		public readonly string DeviceType;
+		public readonly string PartsKey;
+		public readonly string TopicKey;
+
+		public DeviceRouteKey(in string model, in string deviceType, in string partsKey, in string topicKey)
+		{
+			Model = model;
+			DeviceType = deviceType;
+			PartsKey = partsKey;
+			TopicKey = topicKey;
+		}
+
+		public bool Equals(DeviceRouteKey other) =>
+			Model == other.Model && DeviceType == other.DeviceType && PartsKey == other.PartsKey && TopicKey == other.TopicKey;
+
+		public override bool Equals(object obj) => obj is DeviceRouteKey key && Equals(key);
+
+		public override int GetHashCode()
+		{
+			unchecked
+			{
+				var hash = 17;
+				hash = hash * 31 + (Model?.GetHashCode() ?? 0);
+				hash = hash * 31 + (DeviceType?.GetHashCode() ?? 0);
+				hash = hash * 31 + (PartsKey?.GetHashCode() ?? 0);
+				hash = hash * 31 + (TopicKey?.GetHashCode() ?? 0);
+				return hash;
+			}
+		}
+	}
+
 	public BridgeManager()
 	{
 		ClearAllocatedHistory();
@@ -63,32 +101,28 @@ public class BridgeManager : IDisposable
 	{
 		lock (_deviceMapTable)
 		{
-			foreach (var deviceMap in _deviceMapTable.ToList())
+			if (!_portRouteTable.TryGetValue(devicePort, out var route))
 			{
-				var deviceMapValue = deviceMap.Value;
-				foreach (var partMaps in deviceMapValue.ToList())
-				{
-					var partMapsValue = partMaps.Value;
-					foreach (var portMaps in partMapsValue.ToList())
-					{
-						var portMapsValue = portMaps.Value;
-						foreach (var portMap in portMapsValue.ToList())
-						{
-							if (portMap.Value == devicePort)
-								portMapsValue.Remove(portMap.Key);
-						}
-
-						if (portMapsValue.Count == 0)
-							partMapsValue.Remove(portMaps.Key);
-					}
-
-					if (partMapsValue.Count == 0)
-						deviceMapValue.Remove(partMaps.Key);
-				}
-
-				if (deviceMapValue.Count == 0)
-					_deviceMapTable.Remove(deviceMap.Key);
+				return;
 			}
+
+			if (_deviceMapTable.TryGetValue(route.Model, out var devicesTypeMapTable) &&
+				devicesTypeMapTable.TryGetValue(route.DeviceType, out var partsMapTable) &&
+				partsMapTable.TryGetValue(route.PartsKey, out var portsMapTable))
+			{
+				portsMapTable.Remove(route.TopicKey);
+
+				if (portsMapTable.Count == 0)
+					partsMapTable.Remove(route.PartsKey);
+
+				if (partsMapTable.Count == 0)
+					devicesTypeMapTable.Remove(route.DeviceType);
+
+				if (devicesTypeMapTable.Count == 0)
+					_deviceMapTable.Remove(route.Model);
+			}
+
+			_portRouteTable.Remove(devicePort);
 		}
 	}
 
@@ -246,54 +280,50 @@ public class BridgeManager : IDisposable
 		{
 			lock (_deviceMapTable)
 			{
-				if (_deviceMapTable.TryGetValue(modelName, out var devicesTypeMapTable))
+				var partsKey = fullPartsName;
+				var topicKey = controlKey;
+
+				// Existing short-name parts entry keys its ports by subPartsName + controlKey;
+				// otherwise ports live under fullPartsName keyed by controlKey.
+				if (_deviceMapTable.TryGetValue(modelName, out var devicesTypeMapTable) &&
+					devicesTypeMapTable.TryGetValue(deviceType, out var partsMapTable) &&
+					partsMapTable.ContainsKey(partsName))
 				{
-					if (devicesTypeMapTable.TryGetValue(deviceType, out var partsMapTable))
-					{
-						if (partsMapTable.TryGetValue(partsName, out var portsMapTable))
-						{
-							portsMapTable.Add(subPartsName + controlKey, port);
-						}
-						else if (partsMapTable.TryGetValue(fullPartsName, out portsMapTable))
-						{
-							portsMapTable.Add(controlKey, port);
-						}
-						else
-						{
-							var newPortsMapTable = new Dictionary<string, ushort>();
-							newPortsMapTable.Add(controlKey, port);
-							partsMapTable.Add(fullPartsName, newPortsMapTable);
-						}
-					}
-					else
-					{
-						var portsMapTable = new Dictionary<string, ushort>();
-						portsMapTable.Add(controlKey, port);
-						var newPartsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
-						newPartsMapTable.Add(fullPartsName, portsMapTable);
-
-						devicesTypeMapTable.Add(deviceType, newPartsMapTable);
-					}
+					partsKey = partsName;
+					topicKey = subPartsName + controlKey;
 				}
-				else
-				{
-					var portsMapTable = new Dictionary<string, ushort>();
-					portsMapTable.Add(controlKey, port);
 
-					var partsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
-					partsMapTable.Add(fullPartsName, portsMapTable);
-
-					var devicesTypeMap = new Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>();
-					devicesTypeMap.Add(deviceType, partsMapTable);
-
-					_deviceMapTable.Add(modelName, devicesTypeMap);
-				}
+				RegisterDeviceRoute(modelName, deviceType, partsKey, topicKey, port);
 			}
 
 			return true;
 		}
 
 		return false;
+	}
+
+	private static void RegisterDeviceRoute(in string modelName, in string deviceType, in string partsKey, in string topicKey, in ushort port)
+	{
+		if (!_deviceMapTable.TryGetValue(modelName, out var devicesTypeMapTable))
+		{
+			devicesTypeMapTable = new Dictionary<string, Dictionary<string, Dictionary<string, ushort>>>();
+			_deviceMapTable.Add(modelName, devicesTypeMapTable);
+		}
+
+		if (!devicesTypeMapTable.TryGetValue(deviceType, out var partsMapTable))
+		{
+			partsMapTable = new Dictionary<string, Dictionary<string, ushort>>();
+			devicesTypeMapTable.Add(deviceType, partsMapTable);
+		}
+
+		if (!partsMapTable.TryGetValue(partsKey, out var portsMapTable))
+		{
+			portsMapTable = new Dictionary<string, ushort>();
+			partsMapTable.Add(partsKey, portsMapTable);
+		}
+
+		portsMapTable.Add(topicKey, port);
+		_portRouteTable[port] = new DeviceRouteKey(modelName, deviceType, partsKey, topicKey);
 	}
 
 	public static ushort AllocateDevicePort(in string hashKey)

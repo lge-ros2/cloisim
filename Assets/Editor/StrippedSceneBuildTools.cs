@@ -127,7 +127,8 @@ public static class StrippedSceneBuildTools
 		{
 			var buildReport = BuildPipeline.BuildPlayer(buildPlayerOptions);
 			CopyReleaseLauncher(buildPlayerOptions.locationPathName, buildPlayerOptions.target, buildReport);
-			ShowBuildResultDialog(buildPlayerOptions.locationPathName, buildReport);
+			var archivePath = CreateReleaseArchive(buildPlayerOptions.locationPathName, buildPlayerOptions.target, buildReport);
+			ShowBuildResultDialog(archivePath ?? buildPlayerOptions.locationPathName, buildReport);
 			return buildReport;
 		}
 		finally
@@ -221,42 +222,139 @@ public static class StrippedSceneBuildTools
 		return false;
 	}
 
-	public static void DeleteDebugArtifactsFromBuild(string buildOutputPath)
+	private static string CreateReleaseArchive(string buildLocationPath, BuildTarget buildTarget, BuildReport buildReport)
 	{
-		if (string.IsNullOrEmpty(buildOutputPath))
+		if (buildReport == null || buildReport.summary.result != BuildResult.Succeeded)
 		{
-			Debug.LogWarning("Build output path is empty. Skipping debug artifact cleanup.");
-			return;
+			return null;
 		}
 
-		var buildDirectory = System.IO.Path.GetDirectoryName(buildOutputPath);
+		if (!ShouldCleanupBuildArtifacts(buildTarget))
+		{
+			return null;
+		}
+
+		var buildDirectory = System.IO.Path.GetDirectoryName(buildLocationPath);
 		if (string.IsNullOrEmpty(buildDirectory) || !System.IO.Directory.Exists(buildDirectory))
 		{
-			Debug.LogWarning($"Build output directory not found for '{buildOutputPath}'. Skipping debug artifact cleanup.");
-			return;
+			Debug.LogWarning($"Build output directory not found for '{buildLocationPath}'. Skipping release archive creation.");
+			return null;
 		}
 
-		var removedFileCount = 0;
-		var removedDirectoryCount = 0;
+		var parentDirectory = System.IO.Path.GetDirectoryName(buildDirectory);
+		var buildDirectoryName = System.IO.Path.GetFileName(buildDirectory);
+		if (string.IsNullOrEmpty(parentDirectory) || string.IsNullOrEmpty(buildDirectoryName))
+		{
+			Debug.LogWarning($"Unable to resolve parent directory for '{buildDirectory}'. Skipping release archive creation.");
+			return null;
+		}
+
+		switch (buildTarget)
+		{
+			case BuildTarget.StandaloneLinux64:
+				return CreateTarXzArchive(parentDirectory, buildDirectoryName);
+			case BuildTarget.StandaloneWindows:
+			case BuildTarget.StandaloneWindows64:
+				return CreateSevenZipArchive(parentDirectory, buildDirectoryName);
+			default:
+				return null;
+		}
+	}
+
+	private static string CreateSevenZipArchive(string parentDirectory, string buildDirectoryName)
+	{
+		var archivePath = System.IO.Path.Combine(parentDirectory, buildDirectoryName + ".7z");
+		if (System.IO.File.Exists(archivePath))
+		{
+			System.IO.File.Delete(archivePath);
+		}
+
+		var argumentsBuilder = new System.Text.StringBuilder();
+		argumentsBuilder.Append("a -t7z -mx=9 ").Append('"').Append(archivePath).Append('"');
+		argumentsBuilder.Append(' ').Append('"').Append(buildDirectoryName).Append('"');
 		foreach (var pattern in DebugArtifactPatterns)
 		{
-			var artifactFiles = System.IO.Directory.GetFiles(buildDirectory, pattern, System.IO.SearchOption.AllDirectories);
-			foreach (var artifactFile in artifactFiles)
-			{
-				System.IO.File.Delete(artifactFile);
-				removedFileCount++;
-			}
-
-			var artifactDirectories = System.IO.Directory.GetDirectories(buildDirectory, pattern, System.IO.SearchOption.AllDirectories);
-			foreach (var artifactDirectory in artifactDirectories)
-			{
-				System.IO.Directory.Delete(artifactDirectory, true);
-				removedDirectoryCount++;
-			}
+			argumentsBuilder.Append(" -xr!").Append('"').Append(pattern).Append('"');
 		}
 
-		Debug.Log(
-			$"Removed {removedFileCount} debug artifact file(s) and {removedDirectoryCount} directory(s) from '{buildDirectory}'.");
+		var processStartInfo = new System.Diagnostics.ProcessStartInfo
+		{
+			FileName = "7z",
+			Arguments = argumentsBuilder.ToString(),
+			WorkingDirectory = parentDirectory,
+			UseShellExecute = false,
+			RedirectStandardError = true,
+			RedirectStandardOutput = true,
+			CreateNoWindow = true,
+		};
+
+		try
+		{
+			using var process = System.Diagnostics.Process.Start(processStartInfo);
+			process.WaitForExit();
+			if (process.ExitCode == 0)
+			{
+				Debug.Log($"Created release archive '{archivePath}'.");
+				return archivePath;
+			}
+
+			var stdError = process.StandardError.ReadToEnd();
+			Debug.LogError($"Failed to create release archive '{archivePath}'. 7z exit code {process.ExitCode}: {stdError}");
+			return null;
+		}
+		catch (System.ComponentModel.Win32Exception exception)
+		{
+			Debug.LogWarning($"'7z' command not found. Skipping release archive creation for '{archivePath}'. {exception.Message}");
+			return null;
+		}
+	}
+
+	private static string CreateTarXzArchive(string parentDirectory, string buildDirectoryName)
+	{
+		var archivePath = System.IO.Path.Combine(parentDirectory, buildDirectoryName + ".tar.xz");
+		if (System.IO.File.Exists(archivePath))
+		{
+			System.IO.File.Delete(archivePath);
+		}
+
+		var argumentsBuilder = new System.Text.StringBuilder();
+		argumentsBuilder.Append("-cJf ").Append('"').Append(archivePath).Append('"');
+		foreach (var pattern in DebugArtifactPatterns)
+		{
+			argumentsBuilder.Append(" --exclude=").Append('"').Append(pattern).Append('"');
+		}
+		argumentsBuilder.Append(' ').Append('"').Append(buildDirectoryName).Append('"');
+
+		var processStartInfo = new System.Diagnostics.ProcessStartInfo
+		{
+			FileName = "tar",
+			Arguments = argumentsBuilder.ToString(),
+			WorkingDirectory = parentDirectory,
+			UseShellExecute = false,
+			RedirectStandardError = true,
+			RedirectStandardOutput = true,
+			CreateNoWindow = true,
+		};
+
+		try
+		{
+			using var process = System.Diagnostics.Process.Start(processStartInfo);
+			process.WaitForExit();
+			if (process.ExitCode == 0)
+			{
+				Debug.Log($"Created release archive '{archivePath}'.");
+				return archivePath;
+			}
+
+			var stdError = process.StandardError.ReadToEnd();
+			Debug.LogError($"Failed to create release archive '{archivePath}'. tar exit code {process.ExitCode}: {stdError}");
+			return null;
+		}
+		catch (System.ComponentModel.Win32Exception exception)
+		{
+			Debug.LogWarning($"'tar' command not found. Skipping release archive creation for '{archivePath}'. {exception.Message}");
+			return null;
+		}
 	}
 
 	private static void CopyReleaseLauncher(string buildLocationPath, BuildTarget buildTarget, BuildReport buildReport)
@@ -290,7 +388,7 @@ public static class StrippedSceneBuildTools
 		Debug.Log($"Copied '{sourcePath}' to '{destinationPath}'.");
 	}
 
-	private static void ShowBuildResultDialog(string buildLocationPath, BuildReport buildReport)
+	private static void ShowBuildResultDialog(string outputPath, BuildReport buildReport)
 	{
 		if (buildReport == null)
 		{
@@ -300,7 +398,7 @@ public static class StrippedSceneBuildTools
 
 		var result = buildReport.summary.result;
 		var title = result == BuildResult.Succeeded ? "Build Succeeded" : "Build Finished";
-		var message = $"Result: {result}\nOutput: {buildLocationPath}";
+		var message = $"Result: {result}\nOutput: {outputPath}";
 		EditorUtility.DisplayDialog(title, message, "OK");
 	}
 

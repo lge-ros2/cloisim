@@ -236,7 +236,7 @@ public class ObjectSpawning : MonoBehaviour
 	{
 		var newObject = new GameObject(type.ToString())
 		{
-			tag = "Props",
+			tag = TagNames.Props,
 			isStatic = false
 		};
 
@@ -312,16 +312,24 @@ public class ObjectSpawning : MonoBehaviour
 			if (targetObjectTransform == null)
 				continue;
 
-			if (targetObjectTransform.CompareTag("Props") ||
-				targetObjectTransform.CompareTag("Road") ||
-				targetObjectTransform.CompareTag("Model"))
+			if (targetObjectTransform.CompareTag(TagNames.Props) ||
+				targetObjectTransform.CompareTag(TagNames.Road) ||
+				targetObjectTransform.CompareTag(TagNames.Model))
 			{
-				if (targetObjectTransform.CompareTag("Model"))
+				if (targetObjectTransform.CompareTag(TagNames.Model))
 				{
 					Main.SafeDestroyModelRoot(targetObjectTransform);
 				}
 				else
 				{
+					if (targetObjectTransform.CompareTag(TagNames.Props))
+					{
+						var renderer = targetObjectTransform.GetComponentInChildren<Renderer>();
+						if (renderer != null && renderer.sharedMaterial != null)
+						{
+							Destroy(renderer.sharedMaterial);
+						}
+					}
 					Destroy(targetObjectTransform.gameObject);
 				}
 				yield return null;
@@ -357,7 +365,7 @@ public class ObjectSpawning : MonoBehaviour
 		if (Physics.Raycast(screenPoint2Ray, out var hit, maxRayDistance))
 		{
 			var parent = hit.transform.parent;
-			if (parent.name.Equals("Props") && hit.transform.CompareTag("Props"))
+			if (parent.name.Equals("Props") && hit.transform.CompareTag(TagNames.Props))
 			{
 				return hit.transform;
 			}

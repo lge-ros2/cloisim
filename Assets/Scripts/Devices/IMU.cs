@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-using System.Collections.Generic;
 using UnityEngine;
 using messages = cloisim.msgs;
 
@@ -11,28 +10,6 @@ namespace SensorDevices
 {
 	public class IMU : Device
 	{
-		private class NoiseIMU
-		{
-			public Dictionary<string, Noise> angular_velocity;
-			public Dictionary<string, Noise> linear_acceleration;
-			public NoiseIMU(in Noise defaultNoise = null)
-			{
-				angular_velocity = new Dictionary<string, Noise>
-				{
-					{"x", defaultNoise},
-					{"y", defaultNoise},
-					{"z", defaultNoise}
-				};
-
-				linear_acceleration = new Dictionary<string, Noise>
-				{
-					{"x", defaultNoise},
-					{"y", defaultNoise},
-					{"z", defaultNoise}
-				};
-			}
-		}
-
 		private messages.Imu _imu = null;
 
 		private Quaternion _imuInitialRotation = Quaternion.identity;
@@ -46,7 +23,10 @@ namespace SensorDevices
 		private Quaternion _previousImuRotation = Quaternion.identity;
 		private Vector3 _previousLinearVelocity = Vector3.zero;
 
-		private NoiseIMU _noises = new NoiseIMU();
+		private readonly SensorNoiseChannels _angularVelocityNoise = new SensorNoiseChannels(new[] { "x", "y", "z" });
+		private readonly SensorNoiseChannels _linearAccelerationNoise = new SensorNoiseChannels(new[] { "x", "y", "z" });
+
+		private readonly object _snapshotLock = new object();
 
 		public void SetupNoises(in SDFormat.ImuSensor element)
 		{
@@ -55,32 +35,32 @@ namespace SensorDevices
 
 			if (element.AngularVelocityXNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.angular_velocity["x"] = new Noise(element.AngularVelocityXNoise);
+				_angularVelocityNoise["x"] = new Noise(element.AngularVelocityXNoise);
 			}
 
 			if (element.AngularVelocityYNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.angular_velocity["y"] = new Noise(element.AngularVelocityYNoise);
+				_angularVelocityNoise["y"] = new Noise(element.AngularVelocityYNoise);
 			}
 
 			if (element.AngularVelocityZNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.angular_velocity["z"] = new Noise(element.AngularVelocityZNoise);
+				_angularVelocityNoise["z"] = new Noise(element.AngularVelocityZNoise);
 			}
 
 			if (element.LinearAccelerationXNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.linear_acceleration["x"] = new Noise(element.LinearAccelerationXNoise);
+				_linearAccelerationNoise["x"] = new Noise(element.LinearAccelerationXNoise);
 			}
 
 			if (element.LinearAccelerationYNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.linear_acceleration["y"] = new Noise(element.LinearAccelerationYNoise);
+				_linearAccelerationNoise["y"] = new Noise(element.LinearAccelerationYNoise);
 			}
 
 			if (element.LinearAccelerationZNoise.Type != SDFormat.NoiseType.None)
 			{
-				_noises.linear_acceleration["z"] = new Noise(element.LinearAccelerationZNoise);
+				_linearAccelerationNoise["z"] = new Noise(element.LinearAccelerationZNoise);
 			}
 		}
 
@@ -132,35 +112,13 @@ namespace SensorDevices
 
 		private void ApplyNoises(in float deltaTime)
 		{
-			if (_noises.angular_velocity["x"] != null)
-			{
-				_noises.angular_velocity["x"].Apply(ref _imuAngularVelocity.x, deltaTime);
-			}
+			_angularVelocityNoise.Apply("x", ref _imuAngularVelocity.x, deltaTime);
+			_angularVelocityNoise.Apply("y", ref _imuAngularVelocity.y, deltaTime);
+			_angularVelocityNoise.Apply("z", ref _imuAngularVelocity.z, deltaTime);
 
-			if (_noises.angular_velocity["y"] != null)
-			{
-				_noises.angular_velocity["y"].Apply(ref _imuAngularVelocity.y, deltaTime);
-			}
-
-			if (_noises.angular_velocity["z"] != null)
-			{
-				_noises.angular_velocity["z"].Apply(ref _imuAngularVelocity.z, deltaTime);
-			}
-
-			if (_noises.linear_acceleration["x"] != null)
-			{
-				_noises.linear_acceleration["x"].Apply(ref _imuLinearAcceleration.x, deltaTime);
-			}
-
-			if (_noises.linear_acceleration["y"] != null)
-			{
-				_noises.linear_acceleration["y"].Apply(ref _imuLinearAcceleration.y, deltaTime);
-			}
-
-			if (_noises.linear_acceleration["z"] != null)
-			{
-				_noises.linear_acceleration["z"].Apply(ref _imuLinearAcceleration.z, deltaTime);
-			}
+			_linearAccelerationNoise.Apply("x", ref _imuLinearAcceleration.x, deltaTime);
+			_linearAccelerationNoise.Apply("y", ref _imuLinearAcceleration.y, deltaTime);
+			_linearAccelerationNoise.Apply("z", ref _imuLinearAcceleration.z, deltaTime);
 		}
 
 		private float CalculatePitchFromForwardBaseAxis()
@@ -187,39 +145,51 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-			var currentPosition = transform.position;
+			lock (_snapshotLock)
+			{
+				var currentPosition = transform.position;
 
-			// Calculate orientation and acceleration
-			// Rotation from A to B : B * Quaternion.Inverse(A);
-			_imuRotation = transform.rotation * Quaternion.Inverse(_imuInitialRotation);
+				// Calculate orientation and acceleration
+				// Rotation from A to B : B * Quaternion.Inverse(A);
+				_imuRotation = transform.rotation * Quaternion.Inverse(_imuInitialRotation);
 
-			var angularDisplacement = _imuRotation * Quaternion.Inverse(_previousImuRotation);
-			angularDisplacement.ToAngleAxis(out var angle, out var angleAxis);
-			// Normalize angle to [-180, 180] to get shortest rotation path
-			if (angle > 180f)
-				angle -= 360f;
-			_imuAngularVelocity = angleAxis * angle / Time.fixedDeltaTime;
+				var angularDisplacement = _imuRotation * Quaternion.Inverse(_previousImuRotation);
+				angularDisplacement.ToAngleAxis(out var angle, out var angleAxis);
+				// Normalize angle to [-180, 180] to get shortest rotation path
+				if (angle > 180f)
+					angle -= 360f;
+				_imuAngularVelocity = angleAxis * angle / Time.fixedDeltaTime;
 
-			var currentLinearVelocity = (currentPosition - _previousImuPosition) / Time.fixedDeltaTime;
-			_imuLinearAcceleration = (currentLinearVelocity - _previousLinearVelocity) / Time.fixedDeltaTime;
-			_imuLinearAcceleration.y += -Physics.gravity.y;
+				var currentLinearVelocity = (currentPosition - _previousImuPosition) / Time.fixedDeltaTime;
+				_imuLinearAcceleration = (currentLinearVelocity - _previousLinearVelocity) / Time.fixedDeltaTime;
+				_imuLinearAcceleration.y += -Physics.gravity.y;
 
-			ApplyNoises(Time.fixedDeltaTime);
+				ApplyNoises(Time.fixedDeltaTime);
 
-			_previousImuRotation = _imuRotation;
-			_previousImuPosition = currentPosition;
-			_previousLinearVelocity = currentLinearVelocity;
+				_previousImuRotation = _imuRotation;
+				_previousImuPosition = currentPosition;
+				_previousLinearVelocity = currentLinearVelocity;
 
-			_imuOrientation = _imuRotation.eulerAngles;
-			var calculatedPitch = CalculatePitchFromForwardBaseAxis();
-			_imuOrientation.x = calculatedPitch;
+				_imuOrientation = _imuRotation.eulerAngles;
+				var calculatedPitch = CalculatePitchFromForwardBaseAxis();
+				_imuOrientation.x = calculatedPitch;
+			}
 		}
 
 		protected override void GenerateMessage()
 		{
-			_imu.Orientation.Set(_imuRotation);
-			_imu.AngularVelocity.Set(_imuAngularVelocity * Mathf.Deg2Rad);
-			_imu.LinearAcceleration.Set(_imuLinearAcceleration);
+			Quaternion rotation;
+			Vector3 angularVelocity, linearAcceleration;
+			lock (_snapshotLock)
+			{
+				rotation = _imuRotation;
+				angularVelocity = _imuAngularVelocity;
+				linearAcceleration = _imuLinearAcceleration;
+			}
+
+			_imu.Orientation.Set(rotation);
+			_imu.AngularVelocity.Set(angularVelocity * Mathf.Deg2Rad);
+			_imu.LinearAcceleration.Set(linearAcceleration);
 			// Use fixed-dt synthetic time instead of physics-step SimTime
 			// so consecutive IMU messages always have exactly UpdatePeriod apart.
 			_imu.Header.Stamp.Set(GetNextSyntheticTime());
