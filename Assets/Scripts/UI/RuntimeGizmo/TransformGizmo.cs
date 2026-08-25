@@ -299,7 +299,7 @@ namespace RuntimeGizmos
 				else
 				{
 					var rigidbody = target.GetComponent<Rigidbody>();
-					if (rigidbody != null && (rigidbody.CompareTag("Props") || (!rigidbody.CompareTag("Props") && !rigidbody.isKinematic)))
+					if (rigidbody != null && (rigidbody.CompareTag(TagNames.Props) || (!rigidbody.CompareTag(TagNames.Props) && !rigidbody.isKinematic)))
 					{
 						rigidbody.isKinematic = value;
 					}
@@ -667,11 +667,11 @@ namespace RuntimeGizmos
 
 			_lockRotation = false;
 
-			if (hitObject.CompareTag("Props") ||
-				hitObject.CompareTag("Actor") ||
-				(hitObject.CompareTag("Road") && Keyboard.current[Key.LeftAlt].isPressed))
+			if (hitObject.CompareTag(TagNames.Props) ||
+				hitObject.CompareTag(TagNames.Actor) ||
+				(hitObject.CompareTag(TagNames.Road) && Keyboard.current[Key.LeftAlt].isPressed))
 			{
-				if (hitObject.CompareTag("Road"))
+				if (hitObject.CompareTag(TagNames.Road))
 				{
 					_lockRotation = true;
 				}

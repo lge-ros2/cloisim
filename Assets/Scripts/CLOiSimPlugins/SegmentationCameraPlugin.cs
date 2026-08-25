@@ -9,8 +9,6 @@ using SDFormat;
 
 public class SegmentationCameraPlugin : CameraPlugin
 {
-	protected SensorDevices.Camera cam = null;
-
 	protected override void OnAwake()
 	{
 		var segCam = gameObject.GetComponent<SensorDevices.SegmentationCamera>();

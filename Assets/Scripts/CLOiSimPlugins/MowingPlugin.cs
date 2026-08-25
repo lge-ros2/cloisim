@@ -92,7 +92,7 @@ public class MowingPlugin : CLOiSimPlugin
 				if (string.IsNullOrEmpty(colorBaseStr) == false)
 				{
 					var colorBase = colorBaseStr.ToColor();
-					material.SetColor("_BaseColor", colorBase);
+					material.SetColor(ShaderProps.BaseColor, colorBase);
 				}
 
 				if (string.IsNullOrEmpty(colorTipStr) == false)
@@ -257,7 +257,7 @@ public class MowingPlugin : CLOiSimPlugin
 
 		var targetPlaneCollision
 				= _targetPlane?.GetComponentsInChildren<SDFormat.Helper.Collision>()
-					.FirstOrDefault(x => x.gameObject.layer == LayerMask.NameToLayer("Plane"));
+					.FirstOrDefault(x => x.gameObject.layer == LayerMask.NameToLayer(LayerNames.Plane));
 
 		return targetPlaneCollision != null;
 	}
@@ -426,7 +426,7 @@ public class MowingPlugin : CLOiSimPlugin
 	private void FindMeshFiltersToPunching()
 	{
 		var bladeModel = _mowingBlade?.GetComponentInParent<SDFormat.Helper.Model>()?.RootModel;
-		var layerMask = LayerMask.GetMask("Default");
+		var layerMask = LayerMask.GetMask(LayerNames.Default);
 
 		var hitColliders = UnityEngine.Physics.OverlapBox(_grass.bounds.center, _grass.bounds.extents, Quaternion.identity, layerMask);
 		var i = 0;
@@ -460,7 +460,7 @@ public class MowingPlugin : CLOiSimPlugin
 			}
 			else
 			{
-				if (hitCollider.CompareTag("Road"))
+				if (hitCollider.CompareTag(TagNames.Road))
 				{
 					var meshFilters = hitCollider.GetComponentsInChildren<MeshFilter>();
 					_punchingMeshFilters.AddRange(meshFilters);

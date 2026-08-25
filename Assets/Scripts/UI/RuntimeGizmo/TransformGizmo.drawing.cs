@@ -50,6 +50,7 @@ namespace RuntimeGizmos
 		private readonly List<Vector4> _overlayClipRects = new(MaxClipRects);
 		private readonly Vector3[] _uiWorldCorners = new Vector3[4];
 		private UIDocument _hudDocument;
+		private UIController _uiController;
 
 		private void EndCameraRendering(ScriptableRenderContext context, Camera camera)
 		{
@@ -115,10 +116,13 @@ namespace RuntimeGizmos
 		{
 			if (_hudDocument == null)
 			{
-				var uiController = FindAnyObjectByType<UIController>();
-				if (uiController != null)
+				if (_uiController == null)
 				{
-					_hudDocument = uiController.GetComponent<UIDocument>();
+					_uiController = FindAnyObjectByType<UIController>();
+				}
+				if (_uiController != null)
+				{
+					_hudDocument = _uiController.GetComponent<UIDocument>();
 				}
 			}
 

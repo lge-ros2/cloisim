@@ -88,10 +88,18 @@ public static partial class MeshLoader
 		public void SetMaterials(in List<Material> materials)
 		{
 			// foreach (var meshMat in meshMatList)
+			if (materials == null || materials.Count == 0)
+			{
+				return;
+			}
+
 			for (var i = 0; i < Count; i++)
 			{
 				var meshMat = this[i];
-				meshMat.material = materials[meshMat.materialIndex];
+				if (meshMat.materialIndex >= 0 && meshMat.materialIndex < materials.Count)
+				{
+					meshMat.material = materials[meshMat.materialIndex];
+				}
 				this[i] = meshMat;
 			}
 		}

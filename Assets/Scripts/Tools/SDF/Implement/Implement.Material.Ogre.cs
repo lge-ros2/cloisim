@@ -152,10 +152,10 @@ namespace SDFormat
 						tileScale.x = 1 / tileScale.x;
 						tileScale.y = 1 / tileScale.y;
 
-						material.SetTextureScale("_BaseMap", tileScale);
+						material.SetTextureScale(ShaderProps.BaseMap, tileScale);
 					}
 
-					material.SetTexture("_BaseMap", texture);
+					material.SetTexture(ShaderProps.BaseMap, texture);
 				}
 				else
 				{

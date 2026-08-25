@@ -54,7 +54,7 @@ namespace SDFormat
 				var targetObject = parentObject as UE.GameObject;
 				var newLinkObject = new UE.GameObject(link.Name)
 				{
-					tag = "Link"
+					tag = TagNames.Link
 				};
 
 				targetObject.SetChild(newLinkObject);

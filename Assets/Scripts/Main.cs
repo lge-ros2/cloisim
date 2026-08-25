@@ -373,7 +373,7 @@ public class Main : MonoBehaviour
 				continue;
 			}
 
-			if (target.CompareTag("Model"))
+			if (target.CompareTag(TagNames.Model))
 			{
 				SafeDestroyModelRoot(target);
 			}
@@ -542,10 +542,9 @@ public class Main : MonoBehaviour
 		// Debug.Log(QualitySettings.GetQualityLevel());
 		var qualityLevel = Environment.GetEnvironmentVariable("CLOISIM_QUALITY");
 		var qualityLevelIndex = 3; // Very High Quality Preset
-		if (!string.IsNullOrEmpty(qualityLevel))
+		if (!string.IsNullOrEmpty(qualityLevel) && int.TryParse(qualityLevel, out var parsedQuality))
 		{
-			qualityLevelIndex = int.Parse(qualityLevel);
-			qualityLevelIndex = Mathf.Clamp(qualityLevelIndex, 0, 4);
+			qualityLevelIndex = Mathf.Clamp(parsedQuality, 0, 4);
 		}
 		QualitySettings.SetQualityLevel(qualityLevelIndex);
 
@@ -582,7 +581,7 @@ public class Main : MonoBehaviour
 			layerCullDistances[i] = mainCamera.farClipPlane;
 		}
 		// "Default" layer gets a tighter cull distance for small objects
-		layerCullDistances[LayerMask.NameToLayer("Default")] = mainCamera.farClipPlane * 0.5f;
+		layerCullDistances[LayerMask.NameToLayer(LayerNames.Default)] = mainCamera.farClipPlane * 0.5f;
 		mainCamera.layerCullDistances = layerCullDistances;
 
 		_cameraControl = mainCamera.gameObject.AddComponent<PerspectiveCameraControl>();
@@ -868,12 +867,6 @@ public class Main : MonoBehaviour
 
 			_pluginAllStarted = false;
 
-			_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
-			_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
-
-			_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
-			_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
-
 			_pluginStartTracker.Bind(targetObject);
 
 			Physics.SyncTransforms();
@@ -883,17 +876,7 @@ public class Main : MonoBehaviour
 
 			_followingList?.UpdateList();
 
-			var pluginStartupDeadline = Time.realtimeSinceStartup + PluginStartupTimeoutSeconds;
-			while (!_pluginAllStarted)
-			{
-				if (HasPluginStartupTimedOut(pluginStartupDeadline, $"model '{model.Name}'"))
-				{
-					yield break;
-				}
-
-				yield return null;
-			}
-			_bridgeManager.PrintAllocatedHistory();
+			yield return WaitForAllPlugins($"model '{model.Name}'");
 
 			loadStopwatch.Stop();
 			var message = $"Model '{model.Name}' is successfully loaded. ({loadStopwatch.ElapsedMilliseconds}ms)";
@@ -953,15 +936,20 @@ public class Main : MonoBehaviour
 				CLOiSim.Diagnostics.FreezeWatchdog.Restore();
 			}
 
-			yield return new WaitUntil(() => _worldRoot.transform.childCount > 0);
+			var worldLoadWaitTime = 0f;
+			const float worldLoadWaitTimeout = 30f;
+			while (_worldRoot.transform.childCount <= 0 && worldLoadWaitTime < worldLoadWaitTimeout)
+			{
+				worldLoadWaitTime += Time.deltaTime;
+				yield return null;
+			}
+
+			if (worldLoadWaitTime >= worldLoadWaitTimeout)
+			{
+				Debug.LogWarning($"World '{_worldFilename}' produced no scene objects within {worldLoadWaitTimeout}s; continuing with an empty world.");
+			}
 
 			_pluginAllStarted = false;
-
-			_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
-			_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
-
-			_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
-			_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
 
 			_pluginStartTracker.Bind(_worldRoot);
 
@@ -972,17 +960,7 @@ public class Main : MonoBehaviour
 
 			_followingList?.UpdateList();
 
-			var pluginStartupDeadline = Time.realtimeSinceStartup + PluginStartupTimeoutSeconds;
-			while (!_pluginAllStarted)
-			{
-				if (HasPluginStartupTimedOut(pluginStartupDeadline, $"world '{_worldFilename}'"))
-				{
-					yield break;
-				}
-
-				yield return null;
-			}
-			_bridgeManager.PrintAllocatedHistory();
+			yield return WaitForAllPlugins($"world '{_worldFilename}'");
 
 			TrackModel();
 
@@ -1016,6 +994,27 @@ public class Main : MonoBehaviour
 		var message = $"Starting plugins... ({started}/{total})";
 		_uiController?.SetInfoMessage(message);
 		_uiController?.UpdateLoadingOverlay(message);
+	}
+
+	private IEnumerator WaitForAllPlugins(string targetDescription)
+	{
+		_pluginStartTracker.AllStartedEvent -= OnAllPluginsStarted;
+		_pluginStartTracker.AllStartedEvent += OnAllPluginsStarted;
+
+		_pluginStartTracker.ProgressChanged -= OnPluginProgressChanged;
+		_pluginStartTracker.ProgressChanged += OnPluginProgressChanged;
+
+		var pluginStartupDeadline = Time.realtimeSinceStartup + PluginStartupTimeoutSeconds;
+		while (!_pluginAllStarted)
+		{
+			if (HasPluginStartupTimedOut(pluginStartupDeadline, targetDescription))
+			{
+				yield break;
+			}
+
+			yield return null;
+		}
+		_bridgeManager.PrintAllocatedHistory();
 	}
 
 	private bool HasPluginStartupTimedOut(in float deadline, in string targetDescription)
@@ -1069,7 +1068,13 @@ public class Main : MonoBehaviour
 	public bool ToggleRecord()
 	{
 		var recordStarted = false;
-		var recorder = Camera.main.GetComponent<UltraFastWebMRecorder>();
+		var recorder = Camera.main?.GetComponent<UltraFastWebMRecorder>();
+		if (recorder == null)
+		{
+			Debug.LogWarning("UltraFastWebMRecorder component not found on main camera; recording is disabled.");
+			return false;
+		}
+
 		if (!recorder.IsRecording)
 		{
 			recorder.SetOutput(baseName: _screenCaptureFilename);
@@ -1083,7 +1088,13 @@ public class Main : MonoBehaviour
 
 	public void StartRecord()
 	{
-		var recorder = Camera.main.GetComponent<UltraFastWebMRecorder>();
+		var recorder = Camera.main?.GetComponent<UltraFastWebMRecorder>();
+		if (recorder == null)
+		{
+			Debug.LogWarning("UltraFastWebMRecorder component not found on main camera; recording is disabled.");
+			return;
+		}
+
 		if (recorder.IsRecording)
 			return;
 
@@ -1094,7 +1105,13 @@ public class Main : MonoBehaviour
 
 	public void StopRecord()
 	{
-		var recorder = Camera.main.GetComponent<UltraFastWebMRecorder>();
+		var recorder = Camera.main?.GetComponent<UltraFastWebMRecorder>();
+		if (recorder == null)
+		{
+			Debug.LogWarning("UltraFastWebMRecorder component not found on main camera; recording is disabled.");
+			return;
+		}
+
 		recorder.StopCapture();
 		UIController?.OnRecordClicked(false);
 	}

@@ -28,7 +28,7 @@ namespace SDFormat
 				var newRoadObject = new UE.GameObject();
 				newRoadObject.transform.SetParent(Main.RoadsRoot.transform);
 				newRoadObject.name = roadName;
-				newRoadObject.tag = "Road";
+				newRoadObject.tag = TagNames.Road;
 
 				var splineContainer = newRoadObject.AddComponent<Splines.SplineContainer>();
 

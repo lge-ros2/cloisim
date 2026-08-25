@@ -124,14 +124,4 @@ public class Transporter : IDisposable
 		currentTransportList.Clear();
 	}
 
-	public static string GetAddress(in ushort port)
-	{
-		return GetAddress() + ":" + port;
-	}
-
-	public static string GetAddress()
-	{
-		return "tcp://*";
-	}
-
 }

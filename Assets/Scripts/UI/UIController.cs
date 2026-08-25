@@ -129,59 +129,12 @@ public class UIController : MonoBehaviour
 		buttonHome.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonHome, Color.gray); });
 		buttonHome.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonHome, Color.clear); });
 
-		var buttonFront = _rootVisualElement.Q<Button>("Front");
-		buttonFront.clickable.clicked += () => {
-			var position = Vector3.forward * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(core.transform.position - position);
-			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
-		};
-		buttonFront.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonFront, Color.gray); });
-		buttonFront.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonFront, Color.clear); });
-
-		var buttonLeft = _rootVisualElement.Q<Button>("Left");
-		buttonLeft.clickable.clicked += () => {
-			var position = Vector3.right * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(core.transform.position - position);
-			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
-		};
-		buttonLeft.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonLeft, Color.gray); });
-		buttonLeft.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonLeft, Color.clear); });
-
-		var buttonBack = _rootVisualElement.Q<Button>("Back");
-		buttonBack.clickable.clicked += () => {
-			var position = Vector3.back * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(core.transform.position - position);
-			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
-		};
-		buttonBack.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBack, Color.gray); });
-		buttonBack.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonBack, Color.clear); });
-
-		var buttonRight = _rootVisualElement.Q<Button>("Right");
-		buttonRight.clickable.clicked += () => {
-			var position = Vector3.left * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(core.transform.position - position);
-			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
-		};
-		buttonRight.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonRight, Color.gray); });
-		buttonRight.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonRight, Color.clear); });
-
-		var buttonTop = _rootVisualElement.Q<Button>("Top");
-		buttonTop.clickable.clicked += () => {
-			var position = Vector3.up * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(core.transform.position - position);
-			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
-		};
-		buttonTop.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonTop, Color.gray); });
-		buttonTop.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonTop, Color.clear); });
-
-		var buttonBottom = _rootVisualElement.Q<Button>("Bottom");
-		buttonBottom.clickable.clicked += () => {
-			var position = Vector3.down * CameraViewDistance;
-			var rotation = Quaternion.LookRotation(core.transform.position - position);
-			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
-		};
-		buttonBottom.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref buttonBottom, Color.gray); });
-		buttonBottom.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref buttonBottom, Color.clear); });
+		BindCameraViewButton(_rootVisualElement.Q<Button>("Front"), Vector3.forward, core);
+		BindCameraViewButton(_rootVisualElement.Q<Button>("Left"), Vector3.right, core);
+		BindCameraViewButton(_rootVisualElement.Q<Button>("Back"), Vector3.back, core);
+		BindCameraViewButton(_rootVisualElement.Q<Button>("Right"), Vector3.left, core);
+		BindCameraViewButton(_rootVisualElement.Q<Button>("Top"), Vector3.up, core);
+		BindCameraViewButton(_rootVisualElement.Q<Button>("Bottom"), Vector3.down, core);
 
 		var camViewEnumField = _rootVisualElement.Q<EnumField>("CameraViewModeEnum");
 		var enumFieldTextElem = camViewEnumField.Q<TextElement>();
@@ -250,6 +203,20 @@ public class UIController : MonoBehaviour
 	private void ChangeBackground(ref Button button, in Color color)
 	{
 		button.style.backgroundColor = new StyleColor(color);
+	}
+
+	// Wires a camera-view button that positions the camera along the given world
+	// direction at CameraViewDistance, looking at the target, with hover tint.
+	private void BindCameraViewButton(Button button, Vector3 direction, GameObject lookTarget)
+	{
+		button.clickable.clicked += () =>
+		{
+			var position = direction * CameraViewDistance;
+			var rotation = Quaternion.LookRotation(lookTarget.transform.position - position);
+			Main.CameraControl.StartCameraChange(new Pose(position, rotation));
+		};
+		button.RegisterCallback<MouseEnterEvent>(delegate { ChangeBackground(ref button, Color.gray); });
+		button.RegisterCallback<MouseLeaveEvent>(delegate { ChangeBackground(ref button, Color.clear); });
 	}
 
 	private void SelectPropButton(Button selected, ObjectSpawning.PropsType type)

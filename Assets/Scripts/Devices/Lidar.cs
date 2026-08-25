@@ -721,7 +721,7 @@ namespace SensorDevices
 		{
 			_visualizer = new GameObject("__laser_visualizer__")
 			{
-				layer = LayerMask.NameToLayer("Visualization")
+				layer = LayerMask.NameToLayer(LayerNames.Visualization)
 			};
 			_visualizer.transform.SetParent(transform, false);
 
@@ -746,14 +746,17 @@ namespace SensorDevices
 
 		public IReadOnlyList<double> GetRangeData()
 		{
-			try
-			{
-				return Array.AsReadOnly(_laserScan.Ranges);
-			}
-			catch
+			// Return a defensive snapshot so the visualization path never reads
+			// the range buffer that the background processing thread mutates.
+			var ranges = _laserScan?.Ranges;
+			if (ranges == null)
 			{
 				return null;
 			}
+
+			var snapshot = new double[ranges.Length];
+			Array.Copy(ranges, snapshot, ranges.Length);
+			return snapshot;
 		}
 	}
 }

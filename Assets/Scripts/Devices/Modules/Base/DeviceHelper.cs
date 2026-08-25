@@ -51,7 +51,7 @@ public static partial class DeviceHelper
 				nextObject = targetObject.GetComponentInParent<SDFormat.Helper.Actor>();
 			}
 
-			if (nextObject != null && !nextObject.CompareTag("Actor"))
+			if (nextObject != null && !nextObject.CompareTag(TagNames.Actor))
 			{
 				while (!nextObject.transform.IsRootModel())
 				{
@@ -82,12 +82,12 @@ public static partial class DeviceHelper
 	{
 		try
 		{
-			if (targetObject.CompareTag("Model"))
+			if (targetObject.CompareTag(TagNames.Model))
 			{
 				// Debug.Log($"Parts Name: {targetObject.name}");
 				return targetObject.name;
 			}
-			else if (targetObject.CompareTag("Sensor"))
+			else if (targetObject.CompareTag(TagNames.Sensor))
 			{
 				var linkHelper = targetObject.GetComponentInParent<SDFormat.Helper.Link>();
 				if (linkHelper == null)
@@ -110,7 +110,7 @@ public static partial class DeviceHelper
 			else
 			{
 				var linkHelper = targetObject.GetComponentInParent<SDFormat.Helper.Link>();
-				if (linkHelper.transform.parent.CompareTag("Link")) // if sensor link is nested in link element
+				if (linkHelper.transform.parent.CompareTag(TagNames.Link)) // if sensor link is nested in link element
 				{
 					// Debug.Log($"Parts Name: {linkHelper.Model.name}");
 					return linkHelper.name; // link name

@@ -44,6 +44,8 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	private int sleepPeriodForPublishInMilliseconds = 1000;
 
+	private readonly object _perceptionLock = new object();
+
 	private UE.GameObject GetTrackingObject(in string modelName)
 	{
 		if (_allLoadedModelList.TryGetValue(modelName, out var model))
@@ -270,21 +272,24 @@ public class GroundTruthPlugin : CLOiSimPlugin
 					}
 				}
 
-				foreach (var perception in _messagePerceptionObjects)
+				lock (_perceptionLock)
 				{
-					var trackingId = perception.TrackingId;
-					if (!_trackingObjectList.ContainsKey(trackingId))
+					foreach (var perception in _messagePerceptionObjects)
 					{
-						if (_targetNameList.TryGetValue(trackingId, out var targetName))
+						var trackingId = perception.TrackingId;
+						if (!_trackingObjectList.ContainsKey(trackingId))
 						{
-							var trackingGameObject = GetTrackingObject(targetName);
-							if (trackingGameObject != null)
+							if (_targetNameList.TryGetValue(trackingId, out var targetName))
 							{
-								var trackingObject = new ObjectTracking(trackingGameObject);
-								_trackingObjectList.Add(trackingId, trackingObject);
-								_trackingObjects.Add(trackingObject);
+								var trackingGameObject = GetTrackingObject(targetName);
+								if (trackingGameObject != null)
+								{
+									var trackingObject = new ObjectTracking(trackingGameObject);
+									_trackingObjectList.Add(trackingId, trackingObject);
+									_trackingObjects.Add(trackingObject);
 
-								StartCoroutine(DoUpdateFootprint(trackingId, trackingObject));
+									StartCoroutine(DoUpdateFootprint(trackingId, trackingObject));
+								}
 							}
 						}
 					}
@@ -308,17 +313,20 @@ public class GroundTruthPlugin : CLOiSimPlugin
 
 	private void RemoveTrackingObject(int index)
 	{
-		var trackingObject = _trackingObjects[index];
-		_trackingObjects.RemoveAt(index);
-
-		// Find and remove from _trackingObjectList
-		for (var j = _messagePerceptionObjects.Count - 1; j >= 0; j--)
+		lock (_perceptionLock)
 		{
-			var perception = _messagePerceptionObjects[j];
-			if (_trackingObjectList.TryGetValue(perception.TrackingId, out var obj) && obj == trackingObject)
+			var trackingObject = _trackingObjects[index];
+			_trackingObjects.RemoveAt(index);
+
+			// Find and remove from _trackingObjectList
+			for (var j = _messagePerceptionObjects.Count - 1; j >= 0; j--)
 			{
-				_trackingObjectList.Remove(perception.TrackingId);
-				break;
+				var perception = _messagePerceptionObjects[j];
+				if (_trackingObjectList.TryGetValue(perception.TrackingId, out var obj) && obj == trackingObject)
+				{
+					_trackingObjectList.Remove(perception.TrackingId);
+					break;
+				}
 			}
 		}
 	}
@@ -386,7 +394,7 @@ public class GroundTruthPlugin : CLOiSimPlugin
 			{
 				var child = current.GetChild(i);
 				_propTraversalStack.Push(child);
-				if (!child.CompareTag("Props"))
+				if (!child.CompareTag(TagNames.Props))
 				{
 					continue;
 				}
@@ -467,28 +475,31 @@ public class GroundTruthPlugin : CLOiSimPlugin
 		var perceptions = _messagePerceptions.Perceptions;
 		while (PluginThread.IsRunning)
 		{
-			UpdatePerceptionObjects();
-
-			perceptions.Clear();
-			lock (_messagePerceptionProps)
+			lock (_perceptionLock)
 			{
-				var totalCount = _messagePerceptionObjects.Count + _messagePerceptionProps.Count;
-				if (perceptions.Capacity < totalCount)
-				{
-					perceptions.Capacity = totalCount;
-				}
+				UpdatePerceptionObjects();
 
-				foreach (var perception in _messagePerceptionObjects)
+				perceptions.Clear();
+				lock (_messagePerceptionProps)
 				{
-					if (_trackingObjectList.ContainsKey(perception.TrackingId))
+					var totalCount = _messagePerceptionObjects.Count + _messagePerceptionProps.Count;
+					if (perceptions.Capacity < totalCount)
 					{
-						perceptions.Add(perception);
+						perceptions.Capacity = totalCount;
 					}
-				}
 
-				foreach (var propPerception in _messagePerceptionProps.Values)
-				{
-					perceptions.Add(propPerception);
+					foreach (var perception in _messagePerceptionObjects)
+					{
+						if (_trackingObjectList.ContainsKey(perception.TrackingId))
+						{
+							perceptions.Add(perception);
+						}
+					}
+
+					foreach (var propPerception in _messagePerceptionProps.Values)
+					{
+						perceptions.Add(propPerception);
+					}
 				}
 			}
 

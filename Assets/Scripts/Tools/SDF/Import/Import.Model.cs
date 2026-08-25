@@ -228,7 +228,7 @@ namespace SDFormat
 			{
 				var newModelObject = new UE.GameObject(model.Name)
 				{
-					tag = "Model"
+					tag = TagNames.Model
 				};
 
 				ResolveModelHierarchyParent(model, parentObject).SetChild(newModelObject);
@@ -247,7 +247,7 @@ namespace SDFormat
 			{
 				if (model == null)
 				{
-					yield return null;
+					yield break;
 				}
 
 				var targetObject = parentObject as UE.GameObject;

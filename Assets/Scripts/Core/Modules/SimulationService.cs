@@ -24,7 +24,7 @@ public class SimulationService : IDisposable
 	private readonly object _disposeLock = new();
 	private bool _isDisposed = false;
 
-	public SimulationService(in int defaultWebSocketServicePort = 8080)
+	public SimulationService(in int defaultWebSocketServicePort = SimServicePaths.DefaultPort)
 	{
 		var envServicePort = Environment.GetEnvironmentVariable(SERVICE_PORT_ENVIRONMENT_NAME);
 		if (string.IsNullOrEmpty(envServicePort))
@@ -134,8 +134,8 @@ public class SimulationService : IDisposable
 			if (wsServer != null)
 			{
 				Debug.Log("Stop WebSocket Server");
-				wsServer.RemoveWebSocketService("/control");
-				wsServer.RemoveWebSocketService("/markers");
+				wsServer.RemoveWebSocketService(SimServicePaths.Control);
+				wsServer.RemoveWebSocketService(SimServicePaths.Markers);
 				wsServer.Stop();
 				wsServer = null;
 			}
@@ -151,7 +151,7 @@ public class SimulationService : IDisposable
 			return;
 		}
 
-		wsServer.AddWebSocketService("/control", () => new SimulationControlService()
+		wsServer.AddWebSocketService(SimServicePaths.Control, () => new SimulationControlService()
 		{
 			IgnoreExtensions = true
 		});
@@ -159,7 +159,7 @@ public class SimulationService : IDisposable
 		SimulationControlService.SimVersion = UnityEngine.Application.version;
 
 		var markerVisualizer = Main.UIObject?.GetComponent<MarkerVisualizer>();
-		wsServer.AddWebSocketService("/markers", () => new MarkerVisualizerService(markerVisualizer)
+		wsServer.AddWebSocketService(SimServicePaths.Markers, () => new MarkerVisualizerService(markerVisualizer)
 		{
 			IgnoreExtensions = true
 		});

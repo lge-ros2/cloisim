@@ -21,7 +21,7 @@ namespace SDFormat
 
 				var newActorObject = new UE.GameObject(actor.Name)
 				{
-					tag = "Actor"
+					tag = TagNames.Actor
 				};
 				Main.WorldRoot.SetChild(newActorObject);
 

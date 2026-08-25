@@ -173,7 +173,7 @@ namespace SDFormat
 					var texture = MeshLoader.GetTexture(workflow.AlbedoMap);
 					if (texture != null)
 					{
-						material.SetTexture("_BaseMap", texture);
+						material.SetTexture(ShaderProps.BaseMap, texture);
 					}
 					else
 					{
@@ -191,10 +191,10 @@ namespace SDFormat
 					var texture = MeshLoader.GetTexture(workflow.EmissiveMap);
 					if (texture != null)
 					{
-						material.SetTexture("_EmissionMap", texture);
-						if (material.GetColor("_EmissionColor").maxColorComponent <= 0f)
+						material.SetTexture(ShaderProps.EmissionMap, texture);
+						if (material.GetColor(ShaderProps.EmissionColor).maxColorComponent <= 0f)
 						{
-							material.SetColor("_EmissionColor", UE.Color.white);
+							material.SetColor(ShaderProps.EmissionColor, UE.Color.white);
 						}
 					}
 				}
@@ -204,38 +204,38 @@ namespace SDFormat
 					var texture = MeshLoader.GetTexture(workflow.AmbientOcclusionMap);
 					if (texture != null)
 					{
-						material.SetTexture("_OcclusionMap", texture);
+						material.SetTexture(ShaderProps.OcclusionMap, texture);
 					}
 				}
 
 				if (metalWorkflow != null)
 				{
 					material.UseMetallicWorkflow();
-					material.SetFloat("_SmoothnessTextureChannel", 0f);
+					material.SetFloat(ShaderProps.SmoothnessTextureChannel, 0f);
 					material.SetFloat("_Metallic", (float)metalWorkflow.Metalness);
-					material.SetFloat("_Smoothness", 1f - (float)metalWorkflow.Roughness);
+					material.SetFloat(ShaderProps.Smoothness, 1f - (float)metalWorkflow.Roughness);
 
 					if (!string.IsNullOrEmpty(metalWorkflow.MetalnessMap))
 					{
 						var texture = MeshLoader.GetTexture(metalWorkflow.MetalnessMap);
 						if (texture != null)
 						{
-							material.SetTexture("_MetallicGlossMap", texture);
+							material.SetTexture(ShaderProps.MetallicGlossMap, texture);
 						}
 					}
 				}
 				else if (specularWorkflow != null)
 				{
 					material.UseSpecularWorkflow();
-					material.SetFloat("_SmoothnessTextureChannel", 0f);
-					material.SetFloat("_Smoothness", (float)specularWorkflow.Glossiness);
+					material.SetFloat(ShaderProps.SmoothnessTextureChannel, 0f);
+					material.SetFloat(ShaderProps.Smoothness, (float)specularWorkflow.Glossiness);
 
 					if (!string.IsNullOrEmpty(specularWorkflow.SpecularMap))
 					{
 						var texture = MeshLoader.GetTexture(specularWorkflow.SpecularMap);
 						if (texture != null)
 						{
-							material.SetTexture("_SpecGlossMap", texture);
+							material.SetTexture(ShaderProps.SpecGlossMap, texture);
 						}
 					}
 				}
