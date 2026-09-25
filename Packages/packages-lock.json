@@ -14,7 +14,7 @@
       "dependencies": {}
     },
     "com.unity.ai.assistant": {
-      "version": "2.13.0-pre.2",
+      "version": "2.20.0-pre.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -41,7 +41,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ai.navigation": {
-      "version": "2.0.14",
+      "version": "2.0.15",
       "depth": 0,
       "source": "registry",
       "dependencies": {
