@@ -179,9 +179,13 @@ public static partial class SDF2Unity
 		};
 	}
 
+	// This code lives in a runtime assembly (Assembly-CSharp) and must not reference
+	// UnityEditor types directly, so CurrentAssemblies/TypeCache are unavailable here.
+	// The editor-only path only runs in the editor domain where no assembly is unloaded.
+#pragma warning disable UAC0005
 	private static System.Reflection.Assembly FindLoadedAssembly(string assemblyName)
 	{
-		foreach (var assembly in UnityEditor.Compilation.CurrentAssemblies.GetLoadedAssemblies())
+		foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
 		{
 			if (assembly.GetName().Name == assemblyName)
 			{
@@ -198,6 +202,7 @@ public static partial class SDF2Unity
 			return null;
 		}
 	}
+#pragma warning restore UAC0005
 #endif
 
 	private static void RefreshLitKeywordsManual(this UE.Material target)
