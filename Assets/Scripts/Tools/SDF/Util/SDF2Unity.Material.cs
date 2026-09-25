@@ -181,7 +181,7 @@ public static partial class SDF2Unity
 
 	private static System.Reflection.Assembly FindLoadedAssembly(string assemblyName)
 	{
-		foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+		foreach (var assembly in UnityEditor.Compilation.CurrentAssemblies.GetLoadedAssemblies())
 		{
 			if (assembly.GetName().Name == assemblyName)
 			{

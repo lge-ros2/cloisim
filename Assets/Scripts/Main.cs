@@ -1162,16 +1162,15 @@ public class Main : MonoBehaviour
 
 	void LateUpdate()
 	{
-#if DEVELOPMENT_BUILD || UNITY_EDITOR
-		// Ctrl+Shift+F12: Trigger test crash for CrashReporter verification
-		if (Keyboard.current[Key.LeftCtrl].isPressed &&
+		// Ctrl+Shift+F12: Trigger test crash for CrashReporter verification (editor or development builds)
+		if (Debug.isDebugBuild &&
+			Keyboard.current[Key.LeftCtrl].isPressed &&
 			Keyboard.current[Key.LeftShift].isPressed &&
 			Keyboard.current[Key.F12].wasReleasedThisFrame)
 		{
 			Debug.LogWarning("[CrashReporter] Test crash triggered by user (Ctrl+Shift+F12)");
 			throw new System.Exception("[CrashReporter TEST] Intentional test crash to verify dump collection.");
 		}
-#endif
 
 		if ((Keyboard.current[Key.LeftCtrl].isPressed && Keyboard.current[Key.R].wasReleasedThisFrame) ||
 			Keyboard.current[Key.F5].wasReleasedThisFrame)
