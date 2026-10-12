@@ -2504,5 +2504,47 @@ namespace CLOiSim.Tests.EditMode
 				SDFormat.Helper.DetachedIslandUtil.ClearDetachedSubtrees();
 			}
 		}
+
+		[Test]
+		public void TakeOwnedDetachedSubtrees_ReturnsNestedModelIslandsAndClearsRegistry()
+		{
+			SDFormat.Helper.DetachedIslandUtil.ClearDetachedSubtrees();
+
+			var topModel = new GameObject("robot");
+			topModel.AddComponent<SDFormat.Helper.Model>();
+			var nestedModel = new GameObject("left_hand");
+			nestedModel.transform.SetParent(topModel.transform, false);
+			nestedModel.AddComponent<SDFormat.Helper.Model>();
+			var detachedRoot = new GameObject("hand_base_link");
+			var unrelatedModel = new GameObject("other");
+			unrelatedModel.AddComponent<SDFormat.Helper.Model>();
+			var unrelatedDetached = new GameObject("other_island");
+
+			try
+			{
+				SDFormat.Helper.DetachedIslandUtil.RegisterDetachedSubtree(nestedModel.transform, detachedRoot.transform);
+				SDFormat.Helper.DetachedIslandUtil.RegisterDetachedSubtree(unrelatedModel.transform, unrelatedDetached.transform);
+
+				var taken = new System.Collections.Generic.List<Transform>();
+				SDFormat.Helper.DetachedIslandUtil.TakeOwnedDetachedSubtrees(topModel.transform, taken);
+
+				// Transform is IEnumerable (its children), so NUnit's CollectionAssert
+				// would treat any two childless Transforms as equal; use List.Contains.
+				Assert.That(taken.Contains(detachedRoot.transform), Is.True);
+				Assert.That(taken.Contains(unrelatedDetached.transform), Is.False);
+
+				var again = new System.Collections.Generic.List<Transform>();
+				SDFormat.Helper.DetachedIslandUtil.TakeOwnedDetachedSubtrees(topModel.transform, again);
+				Assert.That(again, Is.Empty);
+			}
+			finally
+			{
+				Object.DestroyImmediate(topModel);
+				Object.DestroyImmediate(detachedRoot);
+				Object.DestroyImmediate(unrelatedModel);
+				Object.DestroyImmediate(unrelatedDetached);
+				SDFormat.Helper.DetachedIslandUtil.ClearDetachedSubtrees();
+			}
+		}
 	}
 }

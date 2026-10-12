@@ -191,15 +191,21 @@ namespace SensorDevices
 
 		void FixedUpdate()
 		{
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-			UnityEngine.Profiling.Profiler.BeginSample("MicomSensor.FixedUpdate:MotorControl");
+#if UNITY_EDITOR
+			if (Debug.isDebugBuild)
+			{
+				UnityEngine.Profiling.Profiler.BeginSample("MicomSensor.FixedUpdate:MotorControl");
+			}
 #endif
 			if (_motorControl?.Update(_odomData, Time.fixedDeltaTime, _imuSensor) == false)
 			{
 				Debug.LogWarning("Update failed in MotorControl");
 			}
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-			UnityEngine.Profiling.Profiler.EndSample();
+#if UNITY_EDITOR
+			if (Debug.isDebugBuild)
+			{
+				UnityEngine.Profiling.Profiler.EndSample();
+			}
 #endif
 
 			// Skip message generation until UpdateRate is configured
@@ -214,8 +220,11 @@ namespace SensorDevices
 			// Clamp to avoid runaway accumulation (e.g. after a long pause)
 			_accumulatedTime = _accumulatedTime % UpdatePeriod;
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-			UnityEngine.Profiling.Profiler.BeginSample("MicomSensor.FixedUpdate:GenerateMessage");
+#if UNITY_EDITOR
+			if (Debug.isDebugBuild)
+			{
+				UnityEngine.Profiling.Profiler.BeginSample("MicomSensor.FixedUpdate:GenerateMessage");
+			}
 #endif
 			
 			// Use pooled message to avoid per-frame allocations. 
@@ -236,8 +245,11 @@ namespace SensorDevices
 
 			EnqueueMessage(micomSensorData);
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-			UnityEngine.Profiling.Profiler.EndSample();
+#if UNITY_EDITOR
+			if (Debug.isDebugBuild)
+			{
+				UnityEngine.Profiling.Profiler.EndSample();
+			}
 #endif
 
 #if UNITY_EDITOR

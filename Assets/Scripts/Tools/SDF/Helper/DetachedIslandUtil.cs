@@ -53,6 +53,35 @@ namespace SDFormat
 				}
 			}
 
+			// Removes and returns every detached island root split out of the given
+			// model root or any model nested beneath it. Used on model deletion so the
+			// islands (which no longer live under the model root) can be torn down too.
+			public static void TakeOwnedDetachedSubtrees(UE.Transform modelRoot, List<UE.Transform> results)
+			{
+				if (modelRoot == null || results == null)
+				{
+					return;
+				}
+
+				foreach (var model in modelRoot.GetComponentsInChildren<Helper.Model>(true))
+				{
+					if (!_ownedDetachedSubtrees.TryGetValue(model.transform, out var subtrees))
+					{
+						continue;
+					}
+
+					foreach (var subtree in subtrees)
+					{
+						if (subtree != null && !results.Contains(subtree))
+						{
+							results.Add(subtree);
+						}
+					}
+
+					_ownedDetachedSubtrees.Remove(model.transform);
+				}
+			}
+
 			// Enumerates components in the given owner model root plus the detached
 			// island subtrees that were split out of that same model root.
 			public static T[] GetComponentsInChildrenIncludingOwnedDetachedIslands<T>(UE.Transform ownerRoot) where T : UE.Component
