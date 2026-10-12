@@ -11,7 +11,7 @@ CLOiSim is a Unity-based multi-robot simulator. It reads SDF (Simulation Descrip
 Source of truth: `ProjectSettings/ProjectVersion.txt` and `Packages/manifest.json` (re-verify these two files if this section looks stale — this project upgrades Unity versions frequently, see git log).
 
 ```
-m_EditorVersion: 6000.6.2f1
+m_EditorVersion: 6000.6.5f1
 ```
 
 This is a **Unity 6** project. Key packages from `Packages/manifest.json`:
