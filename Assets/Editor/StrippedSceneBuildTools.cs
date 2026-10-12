@@ -33,6 +33,7 @@ public static class StrippedSceneBuildTools
 	{
 		"*.pdb",
 		"*_BurstDebugInformation*",
+		"*_BackUpThisFolder_ButDontShipItWithYourGame*",
 	};
 
 	private static string MainSceneBuildTempPath =>
