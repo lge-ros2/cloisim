@@ -215,6 +215,66 @@ public class Main : MonoBehaviour
 		return articulationBody != null && articulationBody.isRoot;
 	}
 
+	// Detached ArticulationBody islands split off at import live under a World-level
+	// "{TopModel}_DetachedIslands" container, outside the model root, so deleting the
+	// model must quarantine them explicitly (and regardless of whether the model's own
+	// root still has an ArticulationBody). The registry only knows islands whose owner
+	// Helper.Model was resolved at split time, so for a top-level model the whole
+	// container is taken as well.
+	private void QuarantineDetachedIslands(Transform modelRoot)
+	{
+		var units = new List<Transform>();
+		SDFormat.Helper.DetachedIslandUtil.TakeOwnedDetachedSubtrees(modelRoot, units);
+
+		var isTopLevel = modelRoot.parent == null ||
+			modelRoot.parent.GetComponentInParent<SDFormat.Helper.Model>() == null;
+		if (isTopLevel)
+		{
+			var container = _worldRoot.transform.Find($"{modelRoot.name}_DetachedIslands");
+			if (container != null)
+			{
+				units.RemoveAll(unit => unit == null || unit.IsChildOf(container));
+				units.Add(container);
+			}
+		}
+
+		if (units.Count == 0)
+		{
+			return;
+		}
+
+		Device.DrainReadbacksForTeardown();
+
+		foreach (var unit in units)
+		{
+			if (unit == null)
+			{
+				continue;
+			}
+
+			StopDeviceWorkers(unit);
+			StopPluginWorkers(unit);
+
+			foreach (var follower in unit.GetComponentsInChildren<SDFormat.Helper.KinematicIslandFollower>(true))
+			{
+				Destroy(follower);
+			}
+
+			var oldParent = unit.parent;
+			NeutralizeForQuarantine(unit.gameObject);
+			unit.name = "(quarantined) " + unit.name;
+			unit.SetParent(GetDeferredCleanupRoot(), worldPositionStays: true);
+
+			// Drop owner groups / containers left empty by the move.
+			while (oldParent != null && oldParent != _worldRoot.transform && oldParent.childCount == 0)
+			{
+				var next = oldParent.parent;
+				Destroy(oldParent.gameObject);
+				oldParent = next;
+			}
+		}
+	}
+
 	private void SafeDestroyModelRootInternal(Transform target)
 	{
 		if (target == null)
@@ -234,6 +294,8 @@ public class Main : MonoBehaviour
 		// the poll intervals overlap instead, so the total teardown wait stays close
 		// to a single interval regardless of plugin count.
 		StopPluginWorkers(target);
+
+		QuarantineDetachedIslands(target);
 
 		if (!HasRootArticulationBody(target))
 		{
@@ -266,6 +328,19 @@ public class Main : MonoBehaviour
 
 		Device.DrainReadbacksForTeardown();
 
+		NeutralizeForQuarantine(modelRoot);
+
+		// Rename so a re-import of the same model name does not collide, and park it
+		// under the hidden DontDestroyOnLoad root so it is excluded from world save,
+		// reset, and the following list.
+		modelRoot.name = "(quarantined) " + modelRoot.name;
+		modelRoot.transform.SetParent(GetDeferredCleanupRoot(), worldPositionStays: true);
+	}
+
+	// Destroys plugins/devices and hides/pins the subtree without ever destroying
+	// or deactivating its ArticulationBody components.
+	private static void NeutralizeForQuarantine(GameObject modelRoot)
+	{
 		// Plugins first: CLOiSimPlugin.OnDestroy joins threads, disposes the NetMQ
 		// transport, and deregisters its allocated ports (the "HashKey Removed"
 		// log) — that is what frees the ports for a subsequent re-import. Plugins
@@ -311,12 +386,6 @@ public class Main : MonoBehaviour
 		{
 			rootBody.immovable = true;
 		}
-
-		// Rename so a re-import of the same model name does not collide, and park it
-		// under the hidden DontDestroyOnLoad root so it is excluded from world save,
-		// reset, and the following list.
-		modelRoot.name = "(quarantined) " + modelRoot.name;
-		modelRoot.transform.SetParent(GetDeferredCleanupRoot(), worldPositionStays: true);
 	}
 
 	private static void StopDeviceWorkers(Transform target)
