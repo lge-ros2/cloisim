@@ -10,7 +10,7 @@
     "com.unity.memoryprofiler": "1.1.12",
     "com.unity.multiplayer.center": "2.0.1",
     "com.unity.nuget.newtonsoft-json": "3.2.2",
-    "com.unity.performance.profile-analyzer": "1.4.1",
+    "com.unity.performance.profile-analyzer": "1.4.2",
     "com.unity.render-pipelines.universal": "17.6.0",
     "com.unity.robotics.vhacd": "https://github.com/Unity-Technologies/VHACD.git?path=/com.unity.robotics.vhacd",
     "com.unity.sdk.linux-x86_64": "1.1.0",
