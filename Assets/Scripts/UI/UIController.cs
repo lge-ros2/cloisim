@@ -26,6 +26,8 @@ public class UIController : MonoBehaviour
 	private Toggle _toggleLockVerticalMoving = null;
 	private TextField _scaleField = null;
 	private Label _statusMessage = null;
+	private string _lastStatusText = string.Empty;
+	private Color _lastStatusColor = Color.clear;
 	private VisualElement _loadingOverlay = null;
 	private Label _loadingTitle = null;
 	private Label _loadingDetail = null;
@@ -97,8 +99,9 @@ public class UIController : MonoBehaviour
 		_buttonPropsCylinder.clickable.clicked += () => SelectPropButton(_buttonPropsCylinder, ObjectSpawning.PropsType.CYLINDER);
 		_buttonPropsSphere.clickable.clicked += () => SelectPropButton(_buttonPropsSphere, ObjectSpawning.PropsType.SPHERE);
 
+		// Re-apply any message set before this Start() (e.g. from Main.Awake) instead of wiping it.
 		_statusMessage = _rootVisualElement.Q<Label>("StatusMessage");
-		ClearMessage();
+		ApplyStatusMessage(_lastStatusText, _lastStatusColor);
 
 		_loadingOverlay = _rootVisualElement.Q<VisualElement>("LoadingOverlay");
 		_loadingTitle = _rootVisualElement.Q<Label>("LoadingTitle");
@@ -188,6 +191,9 @@ public class UIController : MonoBehaviour
 
 	private void ApplyStatusMessage(in string message, in Color color)
 	{
+		_lastStatusText = message;
+		_lastStatusColor = color;
+
 		if (_statusMessage != null)
 		{
 			_statusMessage.style.color = color;

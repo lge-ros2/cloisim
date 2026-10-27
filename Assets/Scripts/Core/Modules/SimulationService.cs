@@ -16,9 +16,11 @@ public class SimulationService : IDisposable
 	public static readonly string Delimiter = "!%!";
 	public static readonly string SERVICE_PORT_ENVIRONMENT_NAME = "CLOISIM_SERVICE_PORT";
 	private const string BenignHandshakeReadFailure = "The header cannot be read from the data source.";
+	private const int MaxPortRetry = 100;
 
 	private int _servicePort;
 	public int ServicePort => _servicePort;
+	public string PortSwitchMessage { get; private set; } = null;
 
 	private WebSocketServer wsServer = null;
 	private readonly object _disposeLock = new();
@@ -39,14 +41,78 @@ public class SimulationService : IDisposable
 			Debug.LogWarning(warningMessage);
 		}
 
-		wsServer = new WebSocketServer(_servicePort)
+		var requestedPort = _servicePort;
+		var lastPort = Math.Min(requestedPort + MaxPortRetry, ushort.MaxValue);
+
+		try
+		{
+			while (true)
+			{
+				wsServer = CreateServer(_servicePort);
+
+				try
+				{
+					wsServer.Start();
+					break;
+				}
+				catch (System.Net.Sockets.SocketException sex)
+					when (sex.SocketErrorCode == System.Net.Sockets.SocketError.AddressAlreadyInUse
+						&& _servicePort < lastPort)
+				{
+					Debug.LogWarning($"SimulationService port {_servicePort} is already in use. Trying {_servicePort + 1}.");
+					DisposeServer();
+					_servicePort++;
+				}
+			}
+
+			if (_servicePort != requestedPort)
+			{
+				var warningMessage = $"SimulationService port {requestedPort} is already in use. Switched to port {_servicePort}.";
+				PortSwitchMessage = warningMessage;
+				Main.UIController?.SetWarningMessage(warningMessage);
+				Debug.LogWarning(warningMessage);
+			}
+
+			if (IsStarted())
+			{
+				var wsLog = new StringBuilder();
+				wsLog.Append(string.Concat("Listening on port ", wsServer.Port, ", and providing services are:"));
+				wsLog.AppendLine();
+
+				foreach (var path in wsServer.WebSocketServices.Paths)
+				{
+					wsLog.Append(string.Concat(" - ", path));
+					wsLog.AppendLine();
+				}
+
+				Debug.Log(wsLog);
+			}
+		}
+		catch (System.Net.Sockets.SocketException sex)
+			when (sex.SocketErrorCode == System.Net.Sockets.SocketError.AddressAlreadyInUse)
+		{
+			var errMessage = $"SimulationService ports {requestedPort}-{_servicePort} are all in use. Change port via {SERVICE_PORT_ENVIRONMENT_NAME} env var.";
+			Main.UIController?.SetErrorMessage(errMessage);
+			Main.UIController?.ShowLoadingOverlay("SimulationService Failed", errMessage);
+			Debug.LogError(errMessage);
+		}
+		catch (Exception ex) {
+			var errMessage = "Failed to start SimulationService: " + ex.Message;
+			Main.UIController?.SetErrorMessage(errMessage);
+			Debug.LogError(errMessage);
+		}
+	}
+
+	private WebSocketServer CreateServer(int port)
+	{
+		var server = new WebSocketServer(port)
 		{
 			ReuseAddress = true,
 			KeepClean = true,
 			WaitTime = TimeSpan.FromMilliseconds(5000)
 		};
 
-		wsServer.Log.Output = (logData, _) =>
+		server.Log.Output = (logData, _) =>
 		{
 			var msg = $"[WebSocket] {logData.Level}: {logData.Message}";
 			var isBenignDisconnect = logData.Level == WebSocketSharp.LogLevel.Fatal &&
@@ -74,40 +140,26 @@ public class SimulationService : IDisposable
 			}
 		};
 
-		InitializeServices();
+		InitializeServices(server);
+		return server;
+	}
+
+	private void DisposeServer()
+	{
+		if (wsServer == null)
+		{
+			return;
+		}
 
 		try
 		{
- 			wsServer.Start();
-
-			if (IsStarted())
-			{
-				var wsLog = new StringBuilder();
-				wsLog.Append(string.Concat("Listening on port ", wsServer.Port, ", and providing services are:"));
-				wsLog.AppendLine();
-
-				foreach (var path in wsServer.WebSocketServices.Paths)
-				{
-					wsLog.Append(string.Concat(" - ", path));
-					wsLog.AppendLine();
-				}
-
-				Debug.Log(wsLog);
-			}
+			wsServer.Stop();
 		}
-		catch (System.Net.Sockets.SocketException sex)
-			when (sex.SocketErrorCode == System.Net.Sockets.SocketError.AddressAlreadyInUse)
+		catch (Exception)
 		{
-			var errMessage = $"SimulationService port {_servicePort} is already in use. Change port via {SERVICE_PORT_ENVIRONMENT_NAME} env var.";
-			Main.UIController?.SetErrorMessage(errMessage);
-			Main.UIController?.ShowLoadingOverlay("SimulationService Failed", errMessage);
-			Debug.LogError(errMessage);
 		}
-		catch (Exception ex) {
-			var errMessage = "Failed to start SimulationService: " + ex.Message;
-			Main.UIController?.SetErrorMessage(errMessage);
-			Debug.LogError(errMessage);
-		}
+
+		wsServer = null;
 	}
 
 	~SimulationService()
@@ -144,13 +196,8 @@ public class SimulationService : IDisposable
 		GC.SuppressFinalize(this);
 	}
 
-	private void InitializeServices()
+	private static void InitializeServices(WebSocketServer wsServer)
 	{
-		if (wsServer == null)
-		{
-			return;
-		}
-
 		wsServer.AddWebSocketService(SimServicePaths.Control, () => new SimulationControlService()
 		{
 			IgnoreExtensions = true

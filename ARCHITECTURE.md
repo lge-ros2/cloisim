@@ -88,7 +88,7 @@ This layer has three sub-stages:
 | `WorldSaver.cs` | Serializes current world state back to the original loaded SDF XML document |
 | `SegmentationManager.cs` | Manages semantic segmentation tags (max 256 labels), attaches `Segmentation.Tag` components |
 | `Modules/BridgeManager.cs` | Dynamic port allocator for device transport. Range: 49152–65535. Maintains a nested map: `ModelName → PluginType → PartsName → TopicName → Port`. Thread-safe |
-| `Modules/SimulationService.cs` | WebSocket server (default port 8080, override via `CLOISIM_SERVICE_PORT`). Registers `/control` and `/markers` services |
+| `Modules/SimulationService.cs` | WebSocket server (default port 8080, override via `CLOISIM_SERVICE_PORT`; 사용 중이면 다음 포트로 자동 전환, 최대 100회). Registers `/control` and `/markers` services |
 | `Services/SimulationControlService.cs` | Handles JSON commands: `reset`, `device_list`, `port_list`, `fps`, `start_record`, `stop_record`, `teleport`, `get_model_info` |
 | `Services/MarkerVisualizerService.cs` | Runtime marker creation (line, text, box, sphere) via WebSocket |
 | `Modules/SphericalCoordinates.cs` | GPS coordinate frame for world positioning |
@@ -212,7 +212,7 @@ Quaternion conversion follows a corresponding transformation. `Unity2SDF` provid
 | `CLOISIM_MODEL_PATH` | SDF model search paths | Colon-separated, multiple supported |
 | `CLOISIM_WORLD_PATH` | SDF world file search paths | Colon-separated |
 | `CLOISIM_QUALITY` | Graphics quality preset (0-4) | Default: 3 (Very High) |
-| `CLOISIM_SERVICE_PORT` | WebSocket service port | Default: 8080 |
+| `CLOISIM_SERVICE_PORT` | WebSocket service port | Default: 8080 (사용 중이면 +1씩 자동 전환) |
 
 Command-line args: `-world <file>`, `-worldFile <file>`, `-capture <filename>`
 

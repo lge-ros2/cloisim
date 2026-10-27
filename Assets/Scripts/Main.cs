@@ -1036,7 +1036,16 @@ public class Main : MonoBehaviour
 			loadStopwatch.Stop();
 			var message = $"World '{_worldFilename}' is loaded ({loadStopwatch.ElapsedMilliseconds}ms)";
 			Debug.Log(message);
-			_uiController?.SetInfoMessage(message);
+
+			var portSwitchMessage = _simulationService?.PortSwitchMessage;
+			if (string.IsNullOrEmpty(portSwitchMessage))
+			{
+				_uiController?.SetInfoMessage(message);
+			}
+			else
+			{
+				_uiController?.SetWarningMessage($"{message}\n{portSwitchMessage}");
+			}
 
 			_loadingCursor?.Deactivate();
 			_uiController?.HideLoadingOverlay();
