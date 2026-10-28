@@ -83,6 +83,9 @@ public class Main : MonoBehaviour
 
 	private LoadingCursor _loadingCursor = null;
 
+	// World chosen in the picker; survives the scene reload that tears the old world down.
+	private static string _pendingWorldFilename = null;
+	private bool _worldLoaded = false;
 	private bool _pluginAllStarted = false;
 	private bool _isResetting = false;
 	private bool _resetTriggered = false;
@@ -819,6 +822,14 @@ public class Main : MonoBehaviour
 			}
 #endif
 
+			var worldPickerSession = string.IsNullOrEmpty(_worldFilename);
+			if (!string.IsNullOrEmpty(_pendingWorldFilename))
+			{
+				_worldFilename = _pendingWorldFilename;
+				_pendingWorldFilename = null;
+				worldPickerSession = true;
+			}
+
 			_sdfRoot = new SDFormat.RootLoader();
 			_sdfRoot.fileDefaultPaths.AddRange(_fileRootDirectories);
 			_sdfRoot.modelDefaultPaths.AddRange(_modelRootDirectories);
@@ -828,6 +839,12 @@ public class Main : MonoBehaviour
 			ModelImporter.UpdateUIModelList(_sdfRoot.ResourceModelTable);
 
 			_sdfRoot.UpdateResourceWorldTable();
+
+			if (worldPickerSession && _sdfRoot.ResourceWorldTable.Count > 0)
+			{
+				_worldImporter?.UpdateUIWorldList(_sdfRoot.ResourceWorldTable);
+				_uiController?.SetWorldSelectButtonVisible(true);
+			}
 
 			if (!string.IsNullOrEmpty(_worldFilename))
 			{
@@ -1036,6 +1053,7 @@ public class Main : MonoBehaviour
 			loadStopwatch.Stop();
 			var message = $"World '{_worldFilename}' is loaded ({loadStopwatch.ElapsedMilliseconds}ms)";
 			Debug.Log(message);
+			_worldLoaded = true;
 
 			var portSwitchMessage = _simulationService?.PortSwitchMessage;
 			if (string.IsNullOrEmpty(portSwitchMessage))
@@ -1261,10 +1279,7 @@ public class Main : MonoBehaviour
 			if (Keyboard.current[Key.LeftShift].isPressed)
 			{
 				// full Reset
-				_isResetting = true;
-				SuppressPhysicsDebugContacts("reloading the scene");
-				SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-				_isResetting = false;
+				ReloadScene();
 			}
 			else
 			{
@@ -1315,6 +1330,58 @@ public class Main : MonoBehaviour
 
 		pose = _pendingModelInfoResult;
 		return pose != Pose.identity;
+	}
+
+	public bool IsWorldLoaded => _worldLoaded;
+
+	// Tears the current world down, then reloads the scene; Start() loads the given
+	// world on the fresh scene. Models are cleaned first so articulated ones are
+	// quarantined (parked under the DontDestroyOnLoad root) instead of being
+	// destroyed by the scene unload, which crashes PhysX.
+	public void RestartWithWorld(in string worldFilename)
+	{
+		if (_isResetting)
+		{
+			return;
+		}
+
+		StartCoroutine(RestartWithWorldRoutine(worldFilename));
+	}
+
+	private IEnumerator RestartWithWorldRoutine(string worldFilename)
+	{
+		_isResetting = true;
+		var reloaded = false;
+
+		try
+		{
+			_uiController?.ShowLoadingOverlay("Closing world", "Cleaning up models...");
+			yield return null; // let UI Toolkit flush the overlay before heavy teardown
+
+			_transformGizmo?.ClearTargets();
+			yield return CleanAllModels();
+			CleanAllLights();
+
+			_pendingWorldFilename = worldFilename;
+			reloaded = true;
+			ReloadScene();
+		}
+		finally
+		{
+			if (!reloaded)
+			{
+				_isResetting = false;
+				_uiController?.HideLoadingOverlay();
+			}
+		}
+	}
+
+	private void ReloadScene()
+	{
+		_isResetting = true;
+		SuppressPhysicsDebugContacts("reloading the scene");
+		SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+		_isResetting = false;
 	}
 
 	public bool TriggerResetService()
