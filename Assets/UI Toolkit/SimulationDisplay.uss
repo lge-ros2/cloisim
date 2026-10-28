@@ -138,6 +138,20 @@ VisualElement#RightMenuVisualElement > Button:active {
     background-color: rgba(255, 255, 255, 0.18);
 }
 
+.world-confirm-buttons {
+    flex-direction: row;
+    width: 100%;
+    margin-top: 12px;
+}
+
+.world-confirm-button {
+    flex-grow: 1;
+    width: auto;
+    -unity-text-align: middle-center;
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
 #CameraKeyOverlay {
     position: absolute;
     left: 0;

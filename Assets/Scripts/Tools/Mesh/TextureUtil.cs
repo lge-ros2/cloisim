@@ -104,6 +104,33 @@ public static class TextureUtil
 		var maxX = Math.Clamp(x + radius + 1, 0, texture.width);
 		var maxY = Math.Clamp(y + radius + 1, 0, texture.height);
 
+		if (texture.format == TextureFormat.R8)
+		{
+			var data = texture.GetRawTextureData<byte>();
+			var width = texture.width;
+			var value = (byte)Mathf.RoundToInt(Mathf.Clamp01(color.r) * 255f);
+
+			for (var v = minY; v < maxY; v++)
+			{
+				for (var u = minX; u < maxX; u++)
+				{
+					if ((x - u) * (x - u) + (y - v) * (y - v) < rSquared)
+					{
+						var index = v * width + u;
+						data[index] = option switch
+						{
+							FillOptions.Lesser => Math.Min(data[index], value),
+							FillOptions.Greater => Math.Max(data[index], value),
+							_ => value
+						};
+					}
+				}
+			}
+
+			texture.Apply();
+			return;
+		}
+
 		for (var u = minX; u < maxX; u++)
 		{
 			for (var v = minY; v < maxY; v++)
@@ -141,7 +168,8 @@ public static class TextureUtil
 		texture.Apply();
 	}
 
-	public static void FillTriangle(this Texture2D texture, Vector2 v1, Vector2 v2, Vector2 v3, Color color)
+	public static void FillTriangle(
+		this Texture2D texture, Vector2 v1, Vector2 v2, Vector2 v3, Color color, in bool apply = true)
 	{
 		var minX = Mathf.FloorToInt(Mathf.Min(v1.x, v2.x, v3.x));
 		var minY = Mathf.FloorToInt(Mathf.Min(v1.y, v2.y, v3.y));
@@ -154,19 +182,42 @@ public static class TextureUtil
 		maxY = Math.Clamp(maxY, 0, texture.height);
 
 		// Iterate over the pixels within the bounding box and set the color of the pixels inside the triangle:
-		for (var x = minX; x < maxX; x++)
+		if (texture.format == TextureFormat.R8)
 		{
+			var data = texture.GetRawTextureData<byte>();
+			var width = texture.width;
+			var value = (byte)Mathf.RoundToInt(Mathf.Clamp01(color.r) * 255f);
+
 			for (var y = minY; y < maxY; y++)
 			{
-				var pixelCoord = new Vector2(x, y);
-				if (IsPointInTriangle(pixelCoord, v1, v2, v3))
+				for (var x = minX; x < maxX; x++)
 				{
-					texture.SetPixel(x, y, color);
+					if (IsPointInTriangle(new Vector2(x, y), v1, v2, v3))
+					{
+						data[y * width + x] = value;
+					}
+				}
+			}
+		}
+		else
+		{
+			for (var x = minX; x < maxX; x++)
+			{
+				for (var y = minY; y < maxY; y++)
+				{
+					var pixelCoord = new Vector2(x, y);
+					if (IsPointInTriangle(pixelCoord, v1, v2, v3))
+					{
+						texture.SetPixel(x, y, color);
+					}
 				}
 			}
 		}
 
-		texture.Apply();
+		if (apply)
+		{
+			texture.Apply();
+		}
 	}
 
 	private static bool IsPointInTriangle(Vector2 p, Vector2 v1, Vector2 v2, Vector2 v3)

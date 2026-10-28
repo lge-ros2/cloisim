@@ -527,8 +527,10 @@ public class MowingPlugin : CLOiSimPlugin
 			P2 += textureCenter;
 			P3 += textureCenter;
 
-			texture.FillTriangle(P1, P2, P3, Color.clear);
+			texture.FillTriangle(P1, P2, P3, Color.clear, false);
 		}
+
+		texture.Apply();
 	}
 
 	private IEnumerator StartMowing()

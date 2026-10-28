@@ -6,7 +6,6 @@
 
 using UnityEngine;
 using System.IO;
-using System.Drawing;
 using System;
 
 public static class ProceduralHeightmap
@@ -28,6 +27,10 @@ public static class ProceduralHeightmap
 		// Debug.Log("Terrain width,height=" + terrainWidth + ", " + terrainHeight);
 		var heightValues = terrainData.GetHeights(0, 0, terrainWidth, terrainHeight);
 
+		var pixels = heightmapTexture.GetPixels32();
+		var textureWidth = heightmapTexture.width;
+		var textureHeight = heightmapTexture.height;
+
 		for (var terrainY = 0; terrainY < terrainHeight; terrainY++)
 		{
 			if (terrainY >= heightmapTexture.height)
@@ -38,8 +41,8 @@ public static class ProceduralHeightmap
 				if (terrainX >= heightmapTexture.width)
 					break;
 
-				var heightColor = heightmapTexture.GetPixel(terrainY, terrainX);
-				heightValues[terrainX, terrainY] = heightColor.grayscale;
+				var pixel = pixels[(terrainX % textureHeight) * textureWidth + (terrainY % textureWidth)];
+				heightValues[terrainX, terrainY] = (0.299f * pixel.r + 0.587f * pixel.g + 0.114f * pixel.b) / 255f;
 				// Debug.Log(heightValues[terrainX, terrainY]);
 			}
 		}
@@ -51,12 +54,7 @@ public static class ProceduralHeightmap
 	{
 		try
 		{
-			var img = new Bitmap(imagePath);
-			using (var ms = new MemoryStream())
-			{
-				img.Save(ms, img.RawFormat);
-				return ms.ToArray();
-			}
+			return File.ReadAllBytes(imagePath);
 		}
 		catch (Exception e)
 		{
@@ -123,6 +121,8 @@ public static class ProceduralHeightmap
 			var terrainSize = SDF2Unity.Scale(property.Size);
 			var DefaultTerrainSize = new Vector3(texture.width, 1f, texture.height);
 			terrainData.size = (terrainSize == Vector3.one) ? DefaultTerrainSize : terrainSize;
+
+			UnityEngine.Object.Destroy(texture);
 		}
 
 		if (isVisualMesh)

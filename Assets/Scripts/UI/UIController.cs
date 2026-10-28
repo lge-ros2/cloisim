@@ -36,6 +36,8 @@ public class UIController : MonoBehaviour
 	private CameraKeyOverlay _cameraKeyOverlay = null;
 	private Button _buttonCameraView = null;
 	private Button _buttonHelp = null;
+	private Button _buttonWorldSelect = null;
+	private bool _worldSelectButtonVisible = false;
 	private Button _recordSave = null;
 	private Button _buttonImport = null;
 	private Button _buttonPropsBox = null;
@@ -110,6 +112,10 @@ public class UIController : MonoBehaviour
 
 		_buttonHelp = _rootVisualElement.Q<Button>("Help");
 		_buttonHelp.clickable.clicked += () => ShowHelp();
+
+		_buttonWorldSelect = _rootVisualElement.Q<Button>("WorldSelect");
+		_buttonWorldSelect.clickable.clicked += () => Main.WorldImporter.ShowWorldList(true);
+		SetWorldSelectButtonVisible(_worldSelectButtonVisible);
 
 		_recordSave = _rootVisualElement.Q<Button>("Record");
 		_recordSave.clickable.clicked += () => {
@@ -336,6 +342,15 @@ public class UIController : MonoBehaviour
 	public void UpdateCameraKeyOverlay(CameraKeyOverlayInput activeInputs)
 	{
 		_cameraKeyOverlay?.Update(activeInputs);
+	}
+
+	public void SetWorldSelectButtonVisible(in bool visible)
+	{
+		_worldSelectButtonVisible = visible;
+		if (_buttonWorldSelect != null)
+		{
+			_buttonWorldSelect.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+		}
 	}
 
 	private void ShowHelp(in bool open = true)
