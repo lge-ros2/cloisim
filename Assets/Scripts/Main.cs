@@ -579,6 +579,8 @@ public class Main : MonoBehaviour
 
 		_crashReporter = new CrashReporter();
 
+		PhysicsBackend.LogCurrent();
+
 		// Background-thread watchdog: detects main-thread hard freezes (e.g. a
 		// synchronous GPU stall in the URT pipeline) and logs the last breadcrumb
 		// stage even when the main thread is fully blocked.

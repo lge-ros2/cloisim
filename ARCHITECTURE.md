@@ -160,6 +160,8 @@ From `ProjectSettings/DynamicsManager.asset`:
 - Broadphase: default (sweep-and-prune)
 - World bounds: 250m extent
 
+Physics backend: built-in PhysX 4 by default. PhysX 5 is provided by the external UPM package `com.lge-ros2.physics-backend.physx5` ([unity-physics-backends](https://github.com/lge-ros2/unity-physics-backends)). Switch via the editor menu `Tools/Physics Backend/...` or the build argument `-physicsBackend physx4|physx5`; the active backend is logged by `PhysicsBackend.LogCurrent()` at startup.
+
 Custom Unity tags used: `Model`, `Link`, `Visual`, `Collision`, `Sensor`, `Light`, `Actor`, `Marker`, `Props`, `Geometry`, `Road`
 
 Custom layers: `Plane` (3), `Visualization` (6), `Cloth` (7)
