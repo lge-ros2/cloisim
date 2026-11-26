@@ -46,7 +46,7 @@ namespace SDFormat
 
 					var totalTriangles = meshStats.Sum(item => item.TriangleCount);
 					var totalVertices = meshStats.Sum(item => item.VertexCount);
-					var renderers = modelObject.GetComponentsInChildren<UE.Renderer>(true).Length;
+					var renderers = modelObject.GetComponentsInChildren<UE.Renderer>(true).Count(item => !IsUnderCollision(item.transform));
 					var summary = $"[PolyStats] model={modelObject.name} totalTris={totalTriangles} totalVerts={totalVertices} renderers={renderers} meshes={meshStats.Count}";
 
 					if (totalTriangles >= VeryHighPolyModelTriangleThreshold)
@@ -82,6 +82,21 @@ namespace SDFormat
 					}
 				}
 
+				// Collision renderers/mesh filters are Destroy()ed (deferred to the end of the frame) once the
+				// colliders are built, so they may still exist here. Only visual geometry counts.
+				private static bool IsUnderCollision(UE.Transform target)
+				{
+					for (var current = target; current != null; current = current.parent)
+					{
+						if (current.CompareTag(TagNames.Collision))
+						{
+							return true;
+						}
+					}
+
+					return false;
+				}
+
 				private static List<ModelMeshStats> CollectModelMeshStats(UE.GameObject modelObject)
 				{
 					var result = new List<ModelMeshStats>();
@@ -89,12 +104,22 @@ namespace SDFormat
 
 					foreach (var meshFilter in meshFilters)
 					{
+						if (IsUnderCollision(meshFilter.transform))
+						{
+							continue;
+						}
+
 						AppendMeshStats(result, meshFilter.sharedMesh, meshFilter.transform, modelObject.transform);
 					}
 
 					var skinnedMeshes = modelObject.GetComponentsInChildren<UE.SkinnedMeshRenderer>(true);
 					foreach (var skinnedMesh in skinnedMeshes)
 					{
+						if (IsUnderCollision(skinnedMesh.transform))
+						{
+							continue;
+						}
+
 						AppendMeshStats(result, skinnedMesh.sharedMesh, skinnedMesh.transform, modelObject.transform);
 					}
 

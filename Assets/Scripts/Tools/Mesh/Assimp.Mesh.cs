@@ -16,9 +16,17 @@ using UnityEngine.Rendering;
 
 public static partial class MeshLoader
 {
+	private const string MeshCacheVersion = "lit-material-contract-v1";
+
 #if ENABLE_MESH_CACHE
 	private static Dictionary<string, GameObject> MeshCache = new Dictionary<string, GameObject>();
-	private const string MeshCacheVersion = "lit-material-contract-v1";
+	private const bool MeshCacheEnabled = true;
+
+	private static bool IsMeshCached(string key) => MeshCache.ContainsKey(key);
+#else
+	private const bool MeshCacheEnabled = false;
+
+	private static bool IsMeshCached(string key) => false;
 #endif
 
 	public static Texture2D GetTexture(in string textureFullPath)
@@ -591,13 +599,15 @@ public static partial class MeshLoader
 	// main thread keeps rendering frames instead of freezing for the whole file load.
 	public static IEnumerator CreateMeshObject(string meshPath, Action<GameObject> onCreated, string subMesh = null)
 	{
-		var cacheKey = MeshCacheVersion + ":" + meshPath + (string.IsNullOrEmpty(subMesh) ? "" : subMesh);
+		var cacheKey = MakeMeshKey(meshPath, subMesh);
 
 #if !ENABLE_MESH_CACHE
 		GameObject sceneMeshObject;
 #else
 		if (MeshCache.ContainsKey(cacheKey))
 		{
+			// Served from the cache: the prefetched parse (if any) is not needed.
+			ReleasePrefetchedScene(cacheKey);
 #if UNITY_EDITOR
 			Debug.Log($"Use cached mesh({cacheKey}) for {meshPath}");
 #endif
@@ -605,13 +615,33 @@ public static partial class MeshLoader
 		else
 #endif
 		{
-			var sceneTask = Task.Run(() => GetScene(meshPath, subMesh));
-			while (!sceneTask.IsCompleted)
+			// Use the parse started ahead of time by the prefetcher, otherwise parse now.
+			var sceneTask = TakePrefetchedScene(cacheKey) ?? Task.Run(() => GetScene(meshPath, subMesh));
+			while (!LoadFrameBudget.TryWait(sceneTask))
 			{
 				yield return null;
 			}
 
-			var scene = sceneTask.Result;
+			// The prefetch session ended (cancelled) before this parse ran: parse it directly.
+			if (sceneTask.IsCanceled)
+			{
+				sceneTask = Task.Run(() => GetScene(meshPath, subMesh));
+				while (!LoadFrameBudget.TryWait(sceneTask))
+				{
+					yield return null;
+				}
+			}
+
+			Assimp.Scene scene = null;
+			if (sceneTask.IsFaulted)
+			{
+				Debug.LogError($"Failed to parse mesh({meshPath}): {sceneTask.Exception?.GetBaseException().Message}");
+			}
+			else
+			{
+				scene = sceneTask.Result;
+			}
+
 			if (scene == null)
 			{
 				onCreated?.Invoke(null);
@@ -647,6 +677,12 @@ public static partial class MeshLoader
 #else
  			sceneMeshObject = createdMeshObject;
 #endif
+		}
+
+		// Heavy main-thread conversion/instantiation may already have used up this frame's budget.
+		if (LoadFrameBudget.ShouldYield)
+		{
+			yield return null;
 		}
 
 		var meshObject = new GameObject("Non-Primitive Mesh");

@@ -913,7 +913,11 @@ public class Main : MonoBehaviour
 		_uiController?.ShowLoadingOverlay("Loading model...", $"Preparing '{modelFileName}'");
 		yield return null;
 
-		if (_sdfRoot.DoParse(out var model, modelPath, modelFileName))
+		var phase = LoadProfiler.Begin("model.parse");
+		var parsed = _sdfRoot.DoParse(out var model, modelPath, modelFileName);
+		phase.End();
+
+		if (parsed)
 		{
 			_uiController?.UpdateLoadingOverlay($"Importing '{model.Name}'");
 			yield return null;
@@ -930,6 +934,7 @@ public class Main : MonoBehaviour
 			Physics.simulationMode = SimulationMode.Script;
 			GameObject targetObject = null;
 			CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+			phase = LoadProfiler.Begin("model.import (total)");
 			try
 			{
 				yield return _sdfLoader.Start(model, onCreatedRoot: obj => targetObject = obj as GameObject);
@@ -940,6 +945,7 @@ public class Main : MonoBehaviour
 			}
 
 			yield return new WaitUntil(() => targetObject != null);
+			phase.End();
 
 			var modelHelperForSource = targetObject.GetComponent<SDFormat.Helper.Model>();
 			if (modelHelperForSource != null)
@@ -959,11 +965,14 @@ public class Main : MonoBehaviour
 
 			_followingList?.UpdateList();
 
+			phase = LoadProfiler.Begin("model.wait-plugins");
 			yield return WaitForAllPlugins($"model '{model.Name}'");
+			phase.End();
 
 			loadStopwatch.Stop();
 			var message = $"Model '{model.Name}' is successfully loaded. ({loadStopwatch.ElapsedMilliseconds}ms)";
 			Debug.Log(message);
+			LoadProfiler.LogAndReset($"model '{model.Name}' total {loadStopwatch.ElapsedMilliseconds}ms");
 			_uiController?.SetInfoMessage(message);
 
 			_loadingCursor?.Deactivate();
@@ -992,15 +1001,21 @@ public class Main : MonoBehaviour
 		_uiController?.ShowLoadingOverlay("Loading world...", $"Preparing '{_worldFilename}'");
 		yield return null;
 
-		if (_sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename))
+		var phase = LoadProfiler.Begin("world.parse");
+		var parsed = _sdfRoot.DoParse(out var world, out _loadedWorldFilePath, _worldFilename);
+		phase.End();
+
+		if (parsed)
 		{
 			_uiController?.UpdateLoadingOverlay($"Importing '{_worldFilename}'");
 
+			phase = LoadProfiler.Begin("world.clean");
 			if (_clearAllOnStart)
 			{
 				yield return CleanAllModels();
 				CleanAllLights();
 			}
+			phase.End();
 
 			_sdfLoader = new SDFormat.Import.Loader();
 			_sdfLoader.SetRootLights(_lightsRoot);
@@ -1010,6 +1025,7 @@ public class Main : MonoBehaviour
 			// parsing intentionally block the main thread and would otherwise fire
 			// false-positive stall warnings.
 			CLOiSim.Diagnostics.FreezeWatchdog.Suppress();
+			phase = LoadProfiler.Begin("world.import (total)");
 			try
 			{
 				yield return _sdfLoader.Start(world);
@@ -1018,6 +1034,9 @@ public class Main : MonoBehaviour
 			{
 				CLOiSim.Diagnostics.FreezeWatchdog.Restore();
 			}
+			phase.End();
+
+			phase = LoadProfiler.Begin("world.post-import (root wait, bind, reset)");
 
 			var worldLoadWaitTime = 0f;
 			const float worldLoadWaitTimeout = 30f;
@@ -1043,13 +1062,18 @@ public class Main : MonoBehaviour
 
 			_followingList?.UpdateList();
 
+			phase.End();
+
+			phase = LoadProfiler.Begin("world.wait-plugins");
 			yield return WaitForAllPlugins($"world '{_worldFilename}'");
+			phase.End();
 
 			TrackModel();
 
 			loadStopwatch.Stop();
 			var message = $"World '{_worldFilename}' is loaded ({loadStopwatch.ElapsedMilliseconds}ms)";
 			Debug.Log(message);
+			LoadProfiler.LogAndReset($"world '{_worldFilename}' total {loadStopwatch.ElapsedMilliseconds}ms");
 			_worldLoaded = true;
 
 			var portSwitchMessage = _simulationService?.PortSwitchMessage;

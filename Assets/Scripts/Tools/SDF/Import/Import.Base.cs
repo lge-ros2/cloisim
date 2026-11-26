@@ -41,7 +41,9 @@ namespace SDFormat
 				{
 					var createdObject = ImportVisual(item, parentObject);
 
+					var geomScope = LoadProfiler.Begin("visual.geometry");
 					yield return ImportGeometry(item.Geom, createdObject);
+					geomScope.End();
 
 					AfterImportVisual(item, createdObject);
 
@@ -57,9 +59,13 @@ namespace SDFormat
 				{
 					var createdObject = ImportCollision(item, parentObject);
 
+					var geomScope = LoadProfiler.Begin("collision.geometry");
 					yield return ImportGeometry(item.Geom, createdObject);
+					geomScope.End();
 
+					var afterScope = LoadProfiler.Begin("collision.after (VHACD+collider)");
 					yield return AfterImportCollision(item, createdObject);
+					afterScope.End();
 				}
 			}
 
@@ -86,7 +92,9 @@ namespace SDFormat
 
 					ImportLights(item.Lights, createdObject);
 
+					var afterLinkScope = LoadProfiler.Begin("link.after (articulation)");
 					AfterImportLink(item, createdObject);
+					afterLinkScope.End();
 				}
 			}
 
@@ -168,7 +176,78 @@ namespace SDFormat
 				}
 			}
 
+			// Lists every mesh file the import will load, in import order
+			// (per link: visuals then collisions; nested models after the links), for parallel pre-parsing.
+			private static void CollectMeshReferences(Geometry geometry, List<(string uri, string subMesh)> result)
+			{
+				if (geometry != null && geometry.Type == GeometryType.Mesh && geometry.MeshShape != null)
+				{
+					result.Add((geometry.MeshShape.Uri, geometry.MeshShape.Submesh));
+				}
+			}
+
+			private static void CollectMeshReferences(Model model, List<(string uri, string subMesh)> result)
+			{
+				if (model == null)
+				{
+					return;
+				}
+
+				foreach (var link in model.Links)
+				{
+					foreach (var visual in link.Visuals)
+					{
+						CollectMeshReferences(visual.Geom, result);
+					}
+
+					foreach (var collision in link.Collisions)
+					{
+						CollectMeshReferences(collision.Geom, result);
+					}
+				}
+
+				foreach (var nestedModel in model.Models)
+				{
+					CollectMeshReferences(nestedModel, result);
+				}
+			}
+
 			public IEnumerator Start(World world)
+			{
+				var meshes = new List<(string uri, string subMesh)>();
+				foreach (var model in world.Models)
+				{
+					CollectMeshReferences(model, meshes);
+				}
+
+				MeshLoader.BeginPrefetch(meshes);
+				try
+				{
+					yield return StartWorld(world);
+				}
+				finally
+				{
+					MeshLoader.EndPrefetch();
+				}
+			}
+
+			public IEnumerator Start(Model model, Action<object> onCreatedRoot = null)
+			{
+				var meshes = new List<(string uri, string subMesh)>();
+				CollectMeshReferences(model, meshes);
+
+				MeshLoader.BeginPrefetch(meshes);
+				try
+				{
+					yield return StartModel(model, onCreatedRoot);
+				}
+				finally
+				{
+					MeshLoader.EndPrefetch();
+				}
+			}
+
+			private IEnumerator StartWorld(World world)
 			{
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
@@ -176,10 +255,15 @@ namespace SDFormat
 				_pendingIslandSplits.Clear();
 				Helper.DetachedIslandUtil.ClearDetachedSubtrees();
 
+				var scope = LoadProfiler.Begin("import.world");
 				var worldObject = ImportWorld(world);
+				scope.End();
 
+				scope = LoadProfiler.Begin("import.models");
 				yield return ImportModels(world.Models);
+				scope.End();
 
+				scope = LoadProfiler.Begin("import.joints+grippers");
 				foreach (var jointObject in _jointObjectList)
 				{
 					try
@@ -204,13 +288,21 @@ namespace SDFormat
 					}
 				}
 
+				scope.End();
+
+				scope = LoadProfiler.Begin("import.actors");
 				StorePlugins(world.Plugins, worldObject);
 
 				ImportActors(world.Actors);
 				yield return null;
+				scope.End();
 
+				scope = LoadProfiler.Begin("import.pose+environment");
 				worldObject?.SpecifyPose(_pendingIslandSplits);
 				UpdateEnvironmentIfNeeded(worldObject);
+				scope.End();
+
+				scope = LoadProfiler.Begin("import.plugins");
 
 				foreach (var pluginObject in _pluginObjectList)
 				{
@@ -223,9 +315,13 @@ namespace SDFormat
 						UE.Debug.LogError($"Failed to import plugin '{pluginObject.Key.Name}', skipping it: {e}");
 					}
 				}
+
+				scope.End();
+
+				LogVhacdReport(worldObject);
 			}
 
-			public IEnumerator Start(Model model, Action<object> onCreatedRoot = null)
+			private IEnumerator StartModel(Model model, Action<object> onCreatedRoot)
 			{
 				_jointObjectList.Clear();
 				_pluginObjectList.Clear();
@@ -234,7 +330,11 @@ namespace SDFormat
 				Helper.DetachedIslandUtil.ClearDetachedSubtrees();
 
 				object modelObject = null;
+				var scope = LoadProfiler.Begin("import.models");
 				yield return ImportModel(model, onCreatedRoot: obj => modelObject = obj);
+				scope.End();
+
+				scope = LoadProfiler.Begin("import.joints+grippers");
 
 				foreach (var jointObject in _jointObjectList)
 				{
@@ -260,8 +360,14 @@ namespace SDFormat
 					}
 				}
 
+				scope.End();
+
+				scope = LoadProfiler.Begin("import.pose+environment");
 				modelObject?.SpecifyPose(_pendingIslandSplits);
 				UpdateEnvironmentIfNeeded(modelObject);
+				scope.End();
+
+				scope = LoadProfiler.Begin("import.plugins");
 
 				foreach (var pluginObject in _pluginObjectList)
 				{
@@ -275,7 +381,58 @@ namespace SDFormat
 					}
 				}
 
+				scope.End();
+
+				LogVhacdReport(modelObject);
 				onCreatedRoot?.Invoke(modelObject);
+			}
+
+			private const int VhacdReportMaxPaths = 20;
+
+			private static void LogVhacdReport(in object rootObject)
+			{
+				var summary = VHACD.ConsumeStatsSummary();
+				if (!string.IsNullOrEmpty(summary))
+				{
+					UE.Debug.Log($"[VHACD] {summary}");
+				}
+
+				// TODO(vhacd-convex): measurement for convex=true decision; remove after
+				if (rootObject is not UE.GameObject rootGameObject)
+				{
+					return;
+				}
+
+				var count = 0;
+				var paths = new List<string>();
+				foreach (var meshCollider in rootGameObject.GetComponentsInChildren<UE.MeshCollider>(true))
+				{
+					if (meshCollider.convex || meshCollider.attachedArticulationBody == null)
+					{
+						continue;
+					}
+
+					count++;
+					if (paths.Count < VhacdReportMaxPaths)
+					{
+						var path = meshCollider.name;
+						for (var t = meshCollider.transform.parent; t != null && t != rootGameObject.transform.parent; t = t.parent)
+						{
+							path = t.name + "/" + path;
+						}
+						paths.Add(path);
+					}
+				}
+
+				if (count > 0)
+				{
+					UE.Debug.Log($"[VHACD] concave MeshColliders under ArticulationBody: {count}\n  " + string.Join("\n  ", paths) +
+						(count > paths.Count ? $"\n  ... (+{count - paths.Count} more)" : string.Empty));
+				}
+				else
+				{
+					UE.Debug.Log("[VHACD] concave MeshColliders under ArticulationBody: 0");
+				}
 			}
 		}
 	}
