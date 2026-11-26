@@ -71,9 +71,11 @@ public class Motor : Articulation
 	{
 		if (DriveType is ArticulationDriveType.Force)
 		{
-			if (_jointBody.xDrive.damping < float.Epsilon &&
-				_jointBody.yDrive.damping < float.Epsilon &&
-				_jointBody.zDrive.damping < float.Epsilon)
+			// "< float.Epsilon" is false for 0 when denormals are flushed to zero (FTZ/DAZ) on this thread,
+			// which left the wheel drive in Force mode without any damping, i.e. without any torque.
+			if (_jointBody.xDrive.damping <= 0f &&
+				_jointBody.yDrive.damping <= 0f &&
+				_jointBody.zDrive.damping <= 0f)
 			{
 				Debug.LogWarning("Force DriveType requires valid damping > 0, Forcefully set to target velocity.");
 				DriveType = ArticulationDriveType.Velocity;
