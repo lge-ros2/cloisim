@@ -284,3 +284,6 @@ To add support for an unsupported joint type (e.g., `screw`, `gearbox`):
 | Child link flies away | Missing `ArticulationBody` on parent chain | Ensure all links from root to child have `ArticulationBody` |
 | Spring target wrong direction | `CurveOrientation` not applied to spring reference | Revolute targets need `CurveOrientation`; prismatic do not |
 | Cross-model joint breaks hierarchy | Wrong parent chosen in `SetArticulationBodyRelationship` | Check model scope logic in import phase |
+| Links of one model never collide although `<self_collide>` is true | PhysX 5 backend: Unity does not forward `Physics.IgnoreCollision`, so all links of one articulation are excluded from colliding with each other | Expected with PhysX 5; compare with `Tools/Physics Backend/PhysX 4 (Built-in)` |
+| Nothing moves, log says fallback (null) backend | PhysX 5 library not loaded yet (fresh clone) | Restart the editor once after the installer copied `Assets/Plugins/PhysX5Backend/` |
+| Joint position of a wheel grows past ±π | PhysX 5 reports continuous 1-DOF `SphericalJoint` positions; built-in PhysX 4 wraps them | Compute deltas between samples, do not assume a wrapped range |

@@ -11,7 +11,7 @@ CLOiSim is a Unity-based multi-robot simulator. It reads SDF (Simulation Descrip
 Source of truth: `ProjectSettings/ProjectVersion.txt` and `Packages/manifest.json` (re-verify these two files if this section looks stale — this project upgrades Unity versions frequently, see git log).
 
 ```
-m_EditorVersion: 6000.6.5f1
+m_EditorVersion: 6000.6.10f1
 ```
 
 This is a **Unity 6** project. Key packages from `Packages/manifest.json`:
@@ -19,14 +19,15 @@ This is a **Unity 6** project. Key packages from `Packages/manifest.json`:
 | Package | Version |
 |---------|---------|
 | `com.unity.render-pipelines.universal` | 17.6.0 |
-| `com.unity.inputsystem` | 1.20.0 |
-| `com.unity.ai.navigation` | 2.0.14 |
+| `com.unity.inputsystem` | 1.20.1 |
+| `com.unity.ai.navigation` | 2.0.17 |
 | `com.unity.mathematics` | 1.4.0 |
-| `com.unity.splines` | 2.9.1 |
+| `com.unity.splines` | 2.9.2 |
 | `com.unity.terrain-tools` | 5.3.3 |
 | `com.unity.nuget.newtonsoft-json` | 3.2.2 |
 | `com.unity.robotics.vhacd` | GitHub (Unity-Technologies/VHACD) |
 | `com.lge-ros2.sdformat` | GitHub (lge-ros2/sdformat-sharp) — external SDF parser package |
+| `com.lge-ros2.physics-backend.physx5` | GitHub (lge-ros2/unity-physics-backends, `#upm/v0.1.2`) — PhysX 5 physics backend, see section 5 |
 
 Third-party libraries in `Assets/Plugins/` (versioned in the directory name — check there directly, this drifts):
 
@@ -36,6 +37,7 @@ Third-party libraries in `Assets/Plugins/` (versioned in the directory name — 
 | NetMQ 4.0.4.3 + AsyncIO | ZeroMQ transport for sensor/control data |
 | protobuf-net 3.2.56 | Protocol Buffers serialization for messages |
 | WebSocketSharp 1.0.3-rc11 | WebSocket server for external simulation control |
+| PhysX5Backend | Native PhysX 5 backend library, copied here by the `com.lge-ros2.physics-backend.physx5` installer (git-ignored, not versioned) |
 
 ## 3. Architectural layers
 
@@ -160,7 +162,24 @@ From `ProjectSettings/DynamicsManager.asset`:
 - Broadphase: default (sweep-and-prune)
 - World bounds: 250m extent
 
-Physics backend: PhysX 5 by default, provided by the external UPM package `com.lge-ros2.physics-backend.physx5` ([unity-physics-backends](https://github.com/lge-ros2/unity-physics-backends), Linux and Windows x86_64; the editor installer copies its native library into `Assets/Plugins/PhysX5Backend/`, restart the editor once after the first install). The built-in PhysX 4 stays available: switch via the editor menu `Tools/Physics Backend/...` or the build argument `-physicsBackend physx4|physx5`. The active backend is logged by `PhysicsBackend.LogCurrent()` at startup. Articulation links of one model never collide with each other with PhysX 5 (Unity does not forward `Physics.IgnoreCollision` pairs to custom backends).
+### Physics backend
+
+Unity 6.6 lets the GameObject physics engine (`Rigidbody`, `ArticulationBody`, `Collider`) run on a backend plugin. CLOiSim uses **PhysX 5** by default, provided by the external UPM package `com.lge-ros2.physics-backend.physx5` ([unity-physics-backends](https://github.com/lge-ros2/unity-physics-backends), Linux and Windows x86_64). Unity's built-in **PhysX 4** stays available.
+
+| Backend | Where it comes from | `m_CurrentBackendId` |
+|---|---|---|
+| PhysX 5 (default) | `Assets/Plugins/PhysX5Backend/{linux,windows}/`, copied there by the package's editor installer | `1280329781` (`0x4C504835`) |
+| PhysX 4 (built-in) | Unity's own integration, listed as `PhysX` | `4072204805` |
+
+- The selection is the single value `m_CurrentBackendId` in `ProjectSettings/DynamicsManager.asset`. `Project Settings > Physics > GameObject SDK` (Unity's dropdown) and the package menu `Tools/Physics Backend/PhysX 4 (Built-in)` / `PhysX 5` both write it; the menu adds a check mark on the current backend and a restart prompt. Restart the editor after switching: the backend is selected at startup.
+- `Tools/Physics Backend/PhysX 4 Ref (dev)` is a development backend of the package (the same glue built against PhysX 4.1), not Unity's built-in PhysX 4. It is not shipped and stays disabled unless its library was copied in manually.
+- Player builds use the committed selection; `-physicsBackend physx4|physx5` overrides it for a batch build. When PhysX 5 is not selected the native library is left out of the player.
+- First clone: the installer copies the native library on the first editor start, then the editor must be restarted once so the library is loaded. Until then the fallback (null) backend is active and nothing is simulated; `PhysicsBackend.LogCurrent()` logs the active backend at startup and logs an error in that case. Batch builds on a fresh clone run `-executeMethod Lge.PhysicsBackend.PhysX5.Editor.NativePluginInstaller.Reinstall` once before the build.
+- Differences with PhysX 5 that matter for CLOiSim:
+  - Unity does not forward `Physics.IgnoreCollision` pairs to custom backends. The backend makes the links of one articulation never collide with each other instead, independent of SDF `<self_collide>`; `IgnoreCollision` between other colliders has no effect.
+  - Joint positions of wheel-type joints (revolute/continuous, implemented as a 1-DOF `SphericalJoint`) are continuous and accumulate past ±π, so odometry from `jointPosition` does not need unwrapping.
+  - `frictionType` other than patch and `enableAdaptiveForce` do not exist in PhysX 5 and are ignored.
+  - The Windows library is built by CI but has not been run in a Windows editor yet.
 
 Custom Unity tags used: `Model`, `Link`, `Visual`, `Collision`, `Sensor`, `Light`, `Actor`, `Marker`, `Props`, `Geometry`, `Road`
 

@@ -110,6 +110,8 @@ motor.GetVelocity();            // Reads back from ArticulationBody
 motor.Stop();                   // Zero velocity + reset PID
 ```
 
+Wheel joints with zero drive damping are switched to `ArticulationDriveType.Velocity` in `Motor.CheckDriveType()`. Compare such values with `<= 0f`, not `< float.Epsilon`: denormals can be flushed to zero (FTZ/DAZ) on the main thread, which makes `0f < float.Epsilon` false. Wheel joint positions are continuous with PhysX 5 and wrapped with built-in PhysX 4, so odometry must work from per-step deltas.
+
 ### 3. Understand the Location Enum
 
 Motors are indexed by `Location`:

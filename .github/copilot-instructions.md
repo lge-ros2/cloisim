@@ -6,6 +6,7 @@ CLOiSim is a Unity 6-based multi-robot simulator. It parses SDF (Simulation Desc
 
 - **Unity version**: 6000.x (Unity 6)
 - **Render pipeline**: URP (Universal Render Pipeline)
+- **Physics backend**: PhysX 5 by default (UPM package `com.lge-ros2.physics-backend.physx5`), Unity built-in PhysX 4 selectable; selection is `m_CurrentBackendId` in `ProjectSettings/DynamicsManager.asset` (see ARCHITECTURE.md section 5)
 - **Transport**: NetMQ (ZeroMQ) with protobuf-net serialization
 - **Coordinate conversion**: SDF right-hand → Unity left-hand (X→Z, Y→-X, Z→Y)
 

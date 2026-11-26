@@ -61,7 +61,7 @@ By combining Unity's rendering and physics pipelines with ROS 2 integration thro
 | **Noise** | Gaussian / Custom | 🚧 | Gaussian is fully supported |
 
 ### 🌍 World & Physics
-- **Physics Engine**: NVIDIA PhysX with **Temporal Gauss Seidel (TGS)** solver for enhanced stability.
+- **Physics Engine**: NVIDIA **PhysX 5** by default through the [unity-physics-backends](https://github.com/lge-ros2/unity-physics-backends) package, with Unity's built-in PhysX 4 selectable (`Tools/Physics Backend`), using the **Temporal Gauss Seidel (TGS)** solver for enhanced stability.
 - **World Elements**: Actors (animated characters), Lights, Heightmaps (DEM), Roads.
 - **Coordinates**: Support for Spherical Coordinates.
 - **Rendering**: URP-based high-quality visuals with specialized shaders for sensors.
@@ -104,7 +104,7 @@ CLOiSim uses a flexible plugin architecture to extend robot and world functional
 ### Prerequisites
 - **OS**: Ubuntu 24.04 LTS or Windows 10+ (older Ubuntu 20.04/22.04 not supported)
 - **Graphics**: Vulkan-capable GPU (NVIDIA RTX 20-series recommended)
-- **Unity**: Unity Editor 6000.6.5f1 (if building from source)
+- **Unity**: Unity Editor 6000.6.10f1 (if building from source). After the first clone, start the editor, wait until the PhysX 5 backend library is installed into `Assets/Plugins/PhysX5Backend/`, then restart the editor once.
 
 ### Installation
 1. **Release Binary**: [Download the latest Linux version](https://github.com/lge-ros2/cloisim/releases).
