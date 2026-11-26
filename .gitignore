@@ -133,3 +133,7 @@ tags
 # SDF files
 *.world
 *.sdf
+
+# Native physics backend copied by the unity-physics-backends installer
+/Assets/Plugins/PhysX5Backend/
+/Assets/Plugins/PhysX5Backend.meta

@@ -1,5 +1,14 @@
 {
   "dependencies": {
+    "com.lge-ros2.physics-backend.physx5": {
+      "version": "https://github.com/lge-ros2/unity-physics-backends.git?path=/packages/com.lge-ros2.physics-backend.physx5#upm/v0.1.2",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.modules.physics": "1.0.0"
+      },
+      "hash": "2c8d2754a0732136326ee279d909427c2eee20ce"
+    },
     "com.lge-ros2.sdformat": {
       "version": "https://github.com/lge-ros2/sdformat-sharp.git?path=com.lge-ros2.sdformat",
       "depth": 0,
