@@ -69,7 +69,6 @@ public class Main : MonoBehaviour
 	private RuntimeGizmos.TransformGizmo _transformGizmo = null;
 	private CameraControl _cameraControl = null;
 	private Segmentation.Manager _segmentationManager = null;
-	private MeshProcess.VHACD _vhacd = null;
 	private ObjectSpawning _objectSpawning = null;
 	private ModelImporter _modelImporter = null;
 	private WorldImporter _worldImporter = null;
@@ -121,7 +120,6 @@ public class Main : MonoBehaviour
 	public static SimulationService SimulationService => _instance._simulationService;
 	public static Segmentation.Manager SegmentationManager => _instance._segmentationManager;
 	public static CameraControl CameraControl => _instance._cameraControl;
-	public static MeshProcess.VHACD MeshVHACD => _instance._vhacd;
 	public static Main Instance => _instance;
 	public static Pose CameraInitPose
 	{
@@ -722,9 +720,6 @@ public class Main : MonoBehaviour
 		_worldImporter = gameObject.AddComponent<WorldImporter>();
 
 		_segmentationManager = gameObject.AddComponent<Segmentation.Manager>();
-
-		_vhacd = gameObject.AddComponent<MeshProcess.VHACD>();
-		_vhacd.m_parameters = VHACD.Params;
 
 		ResetRootModelsTransform();
 	}

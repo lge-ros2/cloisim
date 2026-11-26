@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.lge-ros2.vhacd": "file:../../unity-vhacd/packages/com.lge-ros2.vhacd",
     "com.lge-ros2.sdformat": "https://github.com/lge-ros2/sdformat-sharp.git?path=com.lge-ros2.sdformat",
     "com.lge-ros2.physics-backend.physx5": "https://github.com/lge-ros2/unity-physics-backends.git?path=/packages/com.lge-ros2.physics-backend.physx5#upm/v0.1.2",
     "com.unity.ai.assistant": "2.22.0-pre.1",
@@ -13,7 +14,6 @@
     "com.unity.nuget.newtonsoft-json": "3.2.2",
     "com.unity.performance.profile-analyzer": "1.4.2",
     "com.unity.render-pipelines.universal": "17.6.0",
-    "com.unity.robotics.vhacd": "https://github.com/Unity-Technologies/VHACD.git?path=/com.unity.robotics.vhacd",
     "com.unity.sdk.linux-x86_64": "1.1.1",
     "com.unity.searcher": "4.9.5",
     "com.unity.splines": "2.9.2",

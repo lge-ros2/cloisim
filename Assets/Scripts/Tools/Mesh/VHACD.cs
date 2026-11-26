@@ -4,12 +4,16 @@
  * SPDX-License-Identifier: MIT
  */
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Lge.Vhacd;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 public static class VHACD
 {
@@ -21,126 +25,121 @@ public static class VHACD
 	// recomputing the same convex decomposition multiple times.
 	private static readonly Dictionary<Mesh, List<Mesh>> _resultCache = new();
 
-	// libvhacd's thread-safety is not documented/verified, so only one native call
-	// runs at a time. This still keeps the (blocking) native work off the main thread.
-	private static readonly SemaphoreSlim _vhacdGate = new(1, 1);
+	// In-flight decomposition tasks keyed by source Mesh (main-thread access only).
+	// Concurrent ApplyAsync() calls that need the same Mesh join the same task.
+	private static readonly Dictionary<Mesh, Task<HullData[]>> _inFlight = new();
 
-	private struct HullData
+	// Limits the number of concurrent native decompositions. V-HACD itself is multi-threaded
+	// (asyncACD), so a small default avoids CPU oversubscription.
+	private static readonly int MaxConcurrentJobs = ReadEnvInt("CLOISIM_VHACD_JOBS", Mathf.Clamp(Environment.ProcessorCount / 2, 2, 4), 1);
+	private static readonly SemaphoreSlim _gate = new(MaxConcurrentJobs, MaxConcurrentJobs);
+
+	private static readonly HullData[] EmptyHulls = new HullData[0];
+
+	// Disk cache (lazily created on the main thread, null when disabled or unavailable).
+	private static VhacdCache _diskCache = null;
+	private static bool _diskCacheInitialized = false;
+
+	// Statistics (see ConsumeStatsSummary)
+	private static long _statDecomposed;
+	private static long _statDiskHits;
+	private static long _statMemoryHits;
+	private static long _statJoins;
+	private static long _statFailures;
+	private static long _statHulls;
+	private static long _statComputeMs;
+	private static long _statWaitMs;
+
+	public static VhacdParameters Params = CreateDefaultParams();
+
+	private static VhacdParameters CreateDefaultParams()
 	{
-		public Vector3[] Vertices;
-		public int[] Triangles;
+		var parameters = VhacdParameters.Default;
+		parameters.Resolution = (uint)ReadEnvInt("CLOISIM_VHACD_RESOLUTION", (int)parameters.Resolution, 1);
+		parameters.MaxConvexHulls = (uint)ReadEnvInt("CLOISIM_VHACD_MAX_HULLS", (int)parameters.MaxConvexHulls, 1);
+		return parameters;
 	}
 
-	// Local P/Invoke re-declarations of MeshProcess.VHACD's native bindings.
-	// The package's declarations are private, and its GenerateConvexMeshes() couples the
-	// native call to UnityEngine.Mesh access, which is main-thread only. These duplicate
-	// bindings (same native symbols) let us run just the native decomposition on a
-	// background thread and keep Mesh construction on the main thread.
-	private unsafe struct RawConvexHull
+	private static int ReadEnvInt(string name, int defaultValue, int minValue)
 	{
-		public double* m_points;
-		public uint* m_triangles;
-		public uint m_nPoints;
-		public uint m_nTriangles;
-		public double m_volume;
-		public fixed double m_center[3];
+		var text = Environment.GetEnvironmentVariable(name);
+		if (!string.IsNullOrEmpty(text) && int.TryParse(text, out var value))
+		{
+			return Mathf.Max(value, minValue);
+		}
+		return defaultValue;
 	}
 
-	[DllImport("libvhacd")] private static extern unsafe void* CreateVHACD();
-
-	[DllImport("libvhacd")] private static extern unsafe void DestroyVHACD(void* pVHACD);
-
-	[DllImport("libvhacd")]
-	private static extern unsafe bool ComputeFloat(
-		void* pVHACD,
-		float* points,
-		uint countPoints,
-		uint* triangles,
-		uint countTriangles,
-		MeshProcess.VHACD.Parameters* parameters);
-
-	[DllImport("libvhacd")] private static extern unsafe uint GetNConvexHulls(void* pVHACD);
-
-	[DllImport("libvhacd")]
-	private static extern unsafe void GetConvexHull(void* pVHACD, uint index, RawConvexHull* ch);
-
-	private static unsafe List<HullData> ComputeHullsNative(Vector3[] verts, int[] tris, MeshProcess.VHACD.Parameters parameters)
+	private static VhacdCache GetDiskCache()
 	{
-		var vhacd = CreateVHACD();
+		if (_diskCacheInitialized)
+		{
+			return _diskCache;
+		}
+		_diskCacheInitialized = true;
+
 		try
 		{
-			fixed (Vector3* pVerts = verts)
-			fixed (int* pTris = tris)
+			if (Environment.GetEnvironmentVariable("CLOISIM_VHACD_CACHE") == "0")
 			{
-				ComputeFloat(vhacd, (float*)pVerts, (uint)verts.Length, (uint*)pTris, (uint)(tris.Length / 3), &parameters);
+				return null;
 			}
 
-			var numHulls = GetNConvexHulls(vhacd);
-			var hulls = new List<HullData>((int)numHulls);
-			for (uint index = 0; index < numHulls; index++)
+			var directory = Environment.GetEnvironmentVariable("CLOISIM_VHACD_CACHE_DIR");
+			if (string.IsNullOrEmpty(directory))
 			{
-				RawConvexHull hull;
-				GetConvexHull(vhacd, index, &hull);
-
-				var hullVerts = new Vector3[hull.m_nPoints];
-				var pComponents = hull.m_points;
-				for (var i = 0; i < hullVerts.Length; i++)
+				if (Application.platform == RuntimePlatform.WindowsPlayer ||
+					Application.platform == RuntimePlatform.WindowsEditor)
 				{
-					hullVerts[i] = new Vector3((float)pComponents[0], (float)pComponents[1], (float)pComponents[2]);
-					pComponents += 3;
+					var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+					directory = Path.Combine(localAppData, "cloisim", "vhacd");
 				}
-
-				var indices = new int[hull.m_nTriangles * 3];
-				Marshal.Copy((System.IntPtr)hull.m_triangles, indices, 0, indices.Length);
-
-				hulls.Add(new HullData { Vertices = hullVerts, Triangles = indices });
+				else
+				{
+					var cacheHome = Environment.GetEnvironmentVariable("XDG_CACHE_HOME");
+					if (string.IsNullOrEmpty(cacheHome))
+					{
+						cacheHome = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache");
+					}
+					directory = Path.Combine(cacheHome, "cloisim", "vhacd");
+				}
 			}
-			return hulls;
+
+			_diskCache = new VhacdCache(directory);
+			_diskCache.TrimInBackground();
 		}
-		finally
+		catch (Exception e)
 		{
-			DestroyVHACD(vhacd);
+			Debug.LogWarning($"[VHACD] Disk cache disabled: {e.Message}");
+			_diskCache = null;
 		}
+		return _diskCache;
 	}
-
-	private static Task<List<HullData>> ComputeHullsAsync(Vector3[] verts, int[] tris)
-	{
-		var parameters = Params;
-		return Task.Run(() =>
-		{
-			_vhacdGate.Wait();
-			try
-			{
-				return ComputeHullsNative(verts, tris, parameters);
-			}
-			finally
-			{
-				_vhacdGate.Release();
-			}
-		});
-	}
-
-	public static MeshProcess.VHACD.Parameters Params = new MeshProcess.VHACD.Parameters()
-	{
-		m_resolution = 50000,
-		m_concavity = 0.05,
-		m_planeDownsampling = 8,
-		m_convexhullDownsampling = 8,
-		m_alpha = 0.05,
-		m_beta = 0.05,
-		m_pca = 0,
-		m_mode = 0,
-		m_maxNumVerticesPerCH = 32,
-		m_minVolumePerCH = 0.003,
-		m_convexhullApproximation = 1,
-		m_oclAcceleration = 1,
-		m_maxConvexHulls = 32,
-		m_projectHullVertices = true
-	};
 
 	public static void ClearCache()
 	{
 		_resultCache.Clear();
+	}
+
+	// Returns one summary line and resets the counters. Empty string if nothing was processed.
+	public static string ConsumeStatsSummary()
+	{
+		var decomposed = Interlocked.Exchange(ref _statDecomposed, 0);
+		var diskHits = Interlocked.Exchange(ref _statDiskHits, 0);
+		var memoryHits = Interlocked.Exchange(ref _statMemoryHits, 0);
+		var joins = Interlocked.Exchange(ref _statJoins, 0);
+		var failures = Interlocked.Exchange(ref _statFailures, 0);
+		var hulls = Interlocked.Exchange(ref _statHulls, 0);
+		var computeMs = Interlocked.Exchange(ref _statComputeMs, 0);
+		var waitMs = Interlocked.Exchange(ref _statWaitMs, 0);
+
+		if (decomposed + diskHits + memoryHits + joins + failures + hulls == 0)
+		{
+			return string.Empty;
+		}
+
+		return $"decomposed={decomposed}, disk_hits={diskHits}, memory_hits={memoryHits}, inflight_joins={joins}, " +
+			$"failures={failures}, hulls={hulls}, native_compute_sum={computeMs}ms, await_wall={waitMs}ms, jobs={MaxConcurrentJobs}";
 	}
 
 	private static MeshCollider AddMeshCollider(this GameObject targetObject, Mesh mesh)
@@ -153,67 +152,195 @@ public static class VHACD
 		return meshCollider;
 	}
 
+	// Runs on a background thread: only arrays and Lge.Vhacd are touched here.
+	private static Task<HullData[]> StartDecompose(Vector3[] verts, int[] tris, VhacdParameters parameters, VhacdCache cache, string meshName)
+	{
+		return Task.Run(async () =>
+		{
+			try
+			{
+				string key = null;
+				if (cache != null)
+				{
+					key = VhacdCache.ComputeKey(verts, tris, parameters);
+					if (cache.TryLoad(key, out var cachedHulls) && cachedHulls != null && cachedHulls.Length > 0)
+					{
+						Interlocked.Increment(ref _statDiskHits);
+						Interlocked.Add(ref _statHulls, cachedHulls.Length);
+						return cachedHulls;
+					}
+				}
+
+				await _gate.WaitAsync().ConfigureAwait(false);
+				HullData[] hulls;
+				try
+				{
+					var stopwatch = Stopwatch.StartNew();
+					hulls = Vhacd.Decompose(verts, tris, parameters);
+					Interlocked.Add(ref _statComputeMs, stopwatch.ElapsedMilliseconds);
+				}
+				finally
+				{
+					_gate.Release();
+				}
+
+				if (hulls == null || hulls.Length == 0)
+				{
+					Interlocked.Increment(ref _statFailures);
+					return EmptyHulls;
+				}
+
+				Interlocked.Increment(ref _statDecomposed);
+				Interlocked.Add(ref _statHulls, hulls.Length);
+
+				if (cache != null)
+				{
+					cache.Store(key, hulls);
+				}
+				return hulls;
+			}
+			catch (Exception e)
+			{
+				Interlocked.Increment(ref _statFailures);
+				Debug.LogWarning($"[VHACD] Decomposition failed for '{meshName}': {e.Message}");
+				return EmptyHulls;
+			}
+		});
+	}
+
+	private sealed class Entry
+	{
+		public MeshFilter MeshFilter;
+		public Mesh Mesh;
+		public bool Decompose;
+		public Task<HullData[]> Task;
+	}
+
 	public static IEnumerator ApplyAsync(MeshFilter[] meshFilters)
 	{
+		var entries = new List<Entry>(meshFilters.Length);
+
+		// Pass 1 (main thread): classify and start background decompositions.
 		foreach (var meshFilter in meshFilters)
 		{
 			var mesh = meshFilter.sharedMesh;
+			var entry = new Entry() { MeshFilter = meshFilter, Mesh = mesh };
+			entries.Add(entry);
 
 			// Skip degenerate/planar meshes that would crash VHACD voxelization
 			var size = mesh.bounds.size;
 			if (size.x < DegenerateThreshold || size.y < DegenerateThreshold || size.z < DegenerateThreshold)
 			{
 				Debug.LogWarning($"Skip VHACD({meshFilter.name}): degenerate bounds {size}, using simple MeshCollider");
+				continue;
+			}
+
+			if (mesh.vertexCount < NumOfLimitConvexMeshTriangles)
+			{
+				continue;
+			}
+
+#if UNITY_EDITOR
+#if ENABLE_MERGE_COLLIDER
+			Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{mesh.name}) -> {mesh.vertexCount}, EnableMergeCollider will be ignored.");
+#else
+			Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{mesh.name}) -> {mesh.vertexCount}");
+#endif
+#endif
+			entry.Decompose = true;
+
+			if (_resultCache.ContainsKey(mesh))
+			{
+				Interlocked.Increment(ref _statMemoryHits);
+			}
+			else if (_inFlight.TryGetValue(mesh, out var running))
+			{
+				Interlocked.Increment(ref _statJoins);
+				entry.Task = running;
+			}
+			else
+			{
+				// Mesh access is main-thread only, so read the arrays here.
+				var verts = mesh.vertices;
+				var tris = mesh.triangles;
+				entry.Task = StartDecompose(verts, tris, Params, GetDiskCache(), mesh.name);
+				_inFlight[mesh] = entry.Task;
+			}
+		}
+
+		// Pass 2: wait for all background work, blocking within the frame budget before giving a frame back.
+		var waitStopwatch = Stopwatch.StartNew();
+		foreach (var entry in entries)
+		{
+			if (entry.Task == null)
+			{
+				continue;
+			}
+
+			while (!LoadFrameBudget.TryWait(entry.Task))
+			{
+				yield return null;
+			}
+		}
+		Interlocked.Add(ref _statWaitMs, waitStopwatch.ElapsedMilliseconds);
+
+		// Pass 3 (main thread): build hull meshes and add colliders in the original order.
+		foreach (var entry in entries)
+		{
+			var meshFilter = entry.MeshFilter;
+			var mesh = entry.Mesh;
+
+			if (!entry.Decompose)
+			{
 				meshFilter.gameObject.AddMeshCollider(mesh);
 				continue;
 			}
 
-			if (mesh.vertexCount >= NumOfLimitConvexMeshTriangles)
+			if (!_resultCache.TryGetValue(mesh, out var colliderMeshes))
 			{
-#if UNITY_EDITOR
-#if ENABLE_MERGE_COLLIDER
-				Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{mesh.name}) -> {mesh.vertexCount}, EnableMergeCollider will be ignored.");
-#else
-				Debug.LogFormat($"Apply VHACD({meshFilter.gameObject.name}::{meshFilter.name}::{mesh.name}) -> {mesh.vertexCount}");
-#endif
-#endif
-				List<Mesh> colliderMeshes;
-				if (_resultCache.TryGetValue(mesh, out var cached))
-				{
-					colliderMeshes = cached;
-				}
-				else
-				{
-					var verts = mesh.vertices;
-					var tris = mesh.triangles;
-					var task = ComputeHullsAsync(verts, tris);
-					while (!task.IsCompleted)
-					{
-						yield return null;
-					}
+				var hullDataList = entry.Task.IsFaulted ? EmptyHulls : entry.Task.Result;
 
-					var hullDataList = task.Result;
-					colliderMeshes = new List<Mesh>(hullDataList.Count);
-					foreach (var hullData in hullDataList)
-					{
-						var hullMesh = new Mesh();
-						hullMesh.SetVertices(hullData.Vertices);
-						hullMesh.SetTriangles(hullData.Triangles, 0);
-						colliderMeshes.Add(hullMesh);
-					}
-					_resultCache[mesh] = colliderMeshes;
+				// Consumed: no longer in flight.
+				if (_inFlight.TryGetValue(mesh, out var registered) && registered == entry.Task)
+				{
+					_inFlight.Remove(mesh);
 				}
 
-				for (var index = 0; index < colliderMeshes.Count; index++)
+				if (hullDataList.Length == 0)
 				{
-					var colliderMesh = colliderMeshes[index];
-					colliderMesh.name = "VHACD_" + meshFilter.name + "_" + index;
-					meshFilter.gameObject.AddMeshCollider(colliderMesh);
+					Debug.LogWarning($"VHACD({meshFilter.name}): decomposition produced no hulls, using simple MeshCollider");
+					meshFilter.gameObject.AddMeshCollider(mesh);
+					continue;
 				}
+
+				colliderMeshes = new List<Mesh>(hullDataList.Length);
+				foreach (var hullData in hullDataList)
+				{
+					// V-HACD can emit flat zero-volume hulls; they fail convex cooking and add nothing.
+					if (hullData.Volume <= 0 || hullData.Vertices.Length < 4)
+					{
+						continue;
+					}
+
+					var hullMesh = new Mesh();
+					hullMesh.SetVertices(hullData.Vertices);
+					hullMesh.SetTriangles(hullData.Triangles, 0);
+					colliderMeshes.Add(hullMesh);
+				}
+				if (colliderMeshes.Count == 0)
+				{
+					Debug.LogWarning($"VHACD({meshFilter.name}): only degenerate hulls produced, using simple MeshCollider");
+					meshFilter.gameObject.AddMeshCollider(mesh);
+					continue;
+				}
+				_resultCache[mesh] = colliderMeshes;
 			}
-			else
+
+			for (var index = 0; index < colliderMeshes.Count; index++)
 			{
-				meshFilter.gameObject.AddMeshCollider(mesh);
+				var colliderMesh = colliderMeshes[index];
+				colliderMesh.name = "VHACD_" + meshFilter.name + "_" + index;
+				meshFilter.gameObject.AddMeshCollider(colliderMesh);
 			}
 		}
 	}

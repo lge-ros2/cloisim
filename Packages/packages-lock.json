@@ -16,6 +16,12 @@
       "dependencies": {},
       "hash": "5acc9d39275db4ba20db9a46aa71003968aefc07"
     },
+    "com.lge-ros2.vhacd": {
+      "version": "file:../../unity-vhacd/packages/com.lge-ros2.vhacd",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
     "com.unity.2d.sprite": {
       "version": "1.0.0",
       "depth": 1,
@@ -204,13 +210,6 @@
       "dependencies": {
         "com.unity.render-pipelines.core": "17.6.0"
       }
-    },
-    "com.unity.robotics.vhacd": {
-      "version": "https://github.com/Unity-Technologies/VHACD.git?path=/com.unity.robotics.vhacd",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "854b3d820901804c338365c63f067ad7f1c4b9c0"
     },
     "com.unity.sdk.linux-x86_64": {
       "version": "1.1.1",
